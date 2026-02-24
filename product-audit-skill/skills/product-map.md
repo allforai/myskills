@@ -612,6 +612,76 @@ Claude 分析 `task-inventory.json`，寻找任务间的状态衔接关系：若
 
 输出：`.allforai/product-map/product-map.json`、`.allforai/product-map/product-map-report.md`
 
+#### SVG 生成：product-map-visual.svg
+
+`product-map-report.md` 写入磁盘后，立即生成 `.allforai/product-map/product-map-visual.svg`。
+
+**数据来源**：
+- `.allforai/product-map/role-profiles.json`（roles 数组，取 status != "user_removed" 的角色）
+- `.allforai/product-map/task-inventory.json`（tasks 数组，按 owner_role 分组，取 status != "user_removed" 的任务）
+
+**布局规则**：
+- 画布宽：540px，高：动态
+- 顶部 padding：48px（图例区）
+- 角色框：x=20，宽 150px，高 40px，圆角 6px
+- 任务框：x=220，宽 240px，高 36px，圆角 4px
+- 同角色内任务垂直间距：10px
+- 角色框在 y 轴上与其任务组**居中对齐**
+- 角色组之间额外间距：20px
+- 连线折点：x=195（角色框右中心 x=170 → 折点 x=195 → 任务框左中心 x=220）
+
+**颜色规范**：
+
+| 元素 | 颜色 |
+|------|------|
+| 角色框 | fill `#3B82F6`，白色文字 13px bold，圆角 6px |
+| 任务框·frequency="高" | fill `#22C55E`，白色文字 12px |
+| 任务框·frequency="中" | fill `#F59E0B`，白色文字 12px |
+| 任务框·frequency="低" | fill `#9CA3AF`，白色文字 12px |
+| 连线 | stroke `#CBD5E1`，stroke-width 1，fill none |
+| 风险徽章（risk_level="高"） | fill `#EF4444`，半径 6px，位于任务框右侧外 (task_x+244, task_y-4) |
+| 跨部门徽章（cross_dept=true） | fill `#8B5CF6`，半径 6px，紧贴风险徽章左侧 8px |
+| 冲突 Flag（flags 不为空） | 橙色三角 `#F97316`，顶点 (task_x+240, task_y-8)，底边 12px |
+
+**图例（y=8 起，画布顶部）**：
+
+横向排列，色块 14×14px + 说明文字 12px：
+
+```
+■绿 高频   ■黄 中频   ■灰 低频   ●红 高风险   ●紫 跨部门   ▲橙 冲突
+```
+
+**SVG 结构**：
+
+```
+<svg xmlns="..." width="540" height="{total_height}" viewBox="0 0 540 {total_height}">
+  <!-- 图例行 y=8 -->
+  <!-- 遍历每个角色 -->
+  <!-- 先绘连线，再绘任务框+徽章，最后绘角色框（确保角色框在最上层） -->
+</svg>
+```
+
+**生成逻辑**（逐步）：
+1. 绘制图例行（固定 y=8）
+2. currentY = 48（图例区底部）
+3. 遍历 role-profiles.json 中每个角色（status ≠ "user_removed"）：
+   a. 取该角色 owner_role 对应的所有任务（status ≠ "user_removed"），若无任务则跳过
+   b. 计算该角色组高度 = 任务数 × (36+10) - 10
+   c. 角色框 cy = currentY + 角色组高度 / 2
+   d. 对每个任务 i（0-indexed）：
+      - task_y = currentY + i × 46
+      - task_cy = task_y + 18
+      - 绘制连线（折线：170,角色cy → 195,角色cy → 195,task_cy → 220,task_cy）
+      - 绘制任务框（x=220，y=task_y，按 frequency 填色）
+      - 绘制任务名文字（x=228，y=task_y+22，超过 18 字截断加 …）
+      - 按优先级绘制徽章（flags不空 → 三角；risk_level="高" → 红圆；cross_dept=true → 紫圆）
+   e. 绘制角色框（x=20，y=currentY+角色组高度/2-20，填蓝色）
+   f. 绘制角色名文字（截断超过 10 字的名字）
+   g. currentY += 角色组高度 + 20
+4. 画布总高度 = currentY + 20
+
+写入 `.allforai/product-map/product-map-visual.svg`
+
 ---
 
 ### Step 7：校验
