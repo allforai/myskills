@@ -5,7 +5,7 @@ description: >
   feature-gap (功能查漏), feature-prune (功能剪枝), seed-forge (种子数据锻造).
   Run product-map first to build the foundation, then optionally run screen-map,
   then use other skills as needed.
-version: "2.3.0"
+version: "2.4.0"
 ---
 
 # Product Audit — 产品审计套件
@@ -159,6 +159,8 @@ your-project/
     ├── product-map/
     │   ├── role-profiles.json          # 角色画像（权限边界、KPI）
     │   ├── task-inventory.json         # 任务清单（频次、风险、SLA、异常、验收标准）
+    │   ├── business-flows.json         # 业务流（跨角色/跨系统链路）
+    │   ├── business-flows-report.md    # 业务流摘要（人类可读）
     │   ├── conflict-report.json        # 任务级冲突与 CRUD 缺口
     │   ├── constraints.json            # 业务约束清单
     │   ├── product-map.json            # 汇总文件（供其他技能加载）
@@ -181,6 +183,7 @@ your-project/
     │   ├── screen-gaps.json            # 界面与按钮完整性检查结果（需 screen-map）
     │   ├── journey-gaps.json           # 用户旅程验证结果（X/4 评分，需 screen-map）
     │   ├── gap-tasks.json              # 缺口任务清单（按频次排优先级）
+    │   ├── flow-gaps.json              # 业务流链路完整性检查结果
     │   ├── gap-report.md               # 可读报告
     │   └── gap-decisions.json          # 用户确认记录
     ├── feature-prune/
