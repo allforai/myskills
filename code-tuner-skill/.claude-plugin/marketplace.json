@@ -1,0 +1,13 @@
+{
+  "name": "code-tuner",
+  "owner": {
+    "name": "dv"
+  },
+  "plugins": [
+    {
+      "name": "code-tuner",
+      "source": "./",
+      "description": "Analyze server-side code for architectural violations, duplication, abstraction opportunities, and validation issues. Output comprehensive score and refactoring tasks. Supports three-tier, two-tier, and DDD architectures. 服务端代码调优，架构合规检查，重复代码检测，抽象机会分析，验证逻辑规范，技术债评估。"
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "project_profile": {
+    "tech_stack": {
+      "frontend": {
+        "framework": "React",
+        "ui_library": "Ant Design",
+        "state_management": "React Query",
+        "router": "react-router-dom"
+      },
+      "backend": {
+        "framework": "NestJS",
+        "orm": "TypeORM",
+        "language": "TypeScript"
+      }
+    },
+    "monorepo": false,
+    "route_files": [
+      "src/router/index.tsx",
+      "src/router/modules/user.tsx",
+      "src/router/modules/order.tsx"
+    ],
+    "menu_files": [
+      "src/layouts/Sidebar/menuConfig.ts"
+    ],
+    "api_files": [
+      "src/modules/user/user.controller.ts",
+      "src/modules/order/order.controller.ts"
+    ]
+  },
+  "requirement_sources": [
+    {
+      "type": "prd",
+      "file": "docs/prd-v1.md",
+      "priority": 1,
+      "status": "confirmed",
+      "features_extracted": 12
+    },
+    {
+      "type": "readme",
+      "file": "README.md",
+      "priority": 2,
+      "status": "confirmed",
+      "features_extracted": 5,
+      "notes": "Features 章节，与 PRD 部分重叠"
+    },
+    {
+      "type": "openapi",
+      "file": "docs/openapi.yaml",
+      "priority": 3,
+      "status": "confirmed",
+      "features_extracted": 18
+    },
+    {
+      "type": "route",
+      "file": "src/router/index.tsx",
+      "priority": 5,
+      "status": "confirmed",
+      "features_extracted": 15
+    }
+  ],
+  "code_derived": false,
+  "confirmed_by_user": true,
+  "confirmed_at": "2024-01-15T10:00:00Z"
+}

@@ -1,0 +1,83 @@
+{
+  "scenarios": [
+    {
+      "id": "S-001",
+      "name": "用户管理",
+      "description": "管理员创建、查看和管理系统用户",
+      "user_role": "管理员",
+      "source": "docs/prd-v1.md:15",
+      "core_features": ["F-001", "F-002", "F-003"],
+      "related_features": ["F-006"]
+    },
+    {
+      "id": "S-002",
+      "name": "订单管理",
+      "description": "运营人员查看订单列表并导出订单数据进行对账",
+      "user_role": "运营人员",
+      "source": "docs/prd-v1.md:55",
+      "core_features": ["F-004", "F-005"],
+      "related_features": []
+    }
+  ],
+  "feature_scenario_map": [
+    {
+      "feature_id": "F-001",
+      "scenario_ids": ["S-001"],
+      "relation": "core",
+      "confidence": "high",
+      "mapping_signal": "route:/login + prd:docs/prd-v1.md:23"
+    },
+    {
+      "feature_id": "F-002",
+      "scenario_ids": ["S-001"],
+      "relation": "core",
+      "confidence": "high",
+      "mapping_signal": "route:/users"
+    },
+    {
+      "feature_id": "F-003",
+      "scenario_ids": ["S-001"],
+      "relation": "core",
+      "confidence": "high",
+      "mapping_signal": "route:/users/create"
+    },
+    {
+      "feature_id": "F-004",
+      "scenario_ids": ["S-002"],
+      "relation": "core",
+      "confidence": "high",
+      "mapping_signal": "route:/orders"
+    },
+    {
+      "feature_id": "F-005",
+      "scenario_ids": ["S-002"],
+      "relation": "core",
+      "confidence": "high",
+      "mapping_signal": "prd:docs/prd-v1.md:72"
+    },
+    {
+      "feature_id": "F-006",
+      "scenario_ids": ["S-001"],
+      "relation": "related",
+      "confidence": "medium",
+      "mapping_signal": "keyword:用户"
+    },
+    {
+      "feature_id": "F-007",
+      "scenario_ids": [],
+      "relation": "orphan",
+      "confidence": "none",
+      "mapping_signal": null
+    },
+    {
+      "feature_id": "F-008",
+      "scenario_ids": [],
+      "relation": "orphan",
+      "confidence": "none",
+      "mapping_signal": null
+    }
+  ],
+  "orphan_features": ["F-007", "F-008"],
+  "code_derived": false,
+  "confirmed_by_user": true
+}

@@ -1,0 +1,14 @@
+{
+  "name": "product-audit",
+  "owner": {
+    "name": "dv"
+  },
+  "plugins": [
+    {
+      "name": "product-audit",
+      "version": "1.2.0",
+      "source": "./",
+      "description": "Product-level audit suite: feature completeness audit, closed-loop user journey verification, realistic demo data generation. 产品审计套件：功能闭环审计、用户旅程验证、演示数据锻造。"
+    }
+  ]
+}

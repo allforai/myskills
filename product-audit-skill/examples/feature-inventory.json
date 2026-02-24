@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "total_planned": 12,
+    "total_implemented": 15,
+    "matched": 10,
+    "unmatched_planned": 2,
+    "unmatched_implemented": 5
+  },
+  "planned_features": [
+    {
+      "id": "PF-001",
+      "name": "用户登录",
+      "source": "docs/prd-v1.md:23",
+      "description": "用户通过账号密码登录系统",
+      "category": "用户管理"
+    },
+    {
+      "id": "PF-002",
+      "name": "用户列表",
+      "source": "docs/prd-v1.md:35",
+      "description": "管理员查看所有用户列表，支持分页和搜索",
+      "category": "用户管理"
+    },
+    {
+      "id": "PF-003",
+      "name": "创建用户",
+      "source": "docs/prd-v1.md:42",
+      "description": "管理员创建新用户",
+      "category": "用户管理"
+    },
+    {
+      "id": "PF-004",
+      "name": "订单列表",
+      "source": "docs/prd-v1.md:58",
+      "description": "查看所有订单，支持按状态筛选",
+      "category": "订单管理"
+    },
+    {
+      "id": "PF-005",
+      "name": "订单导出",
+      "source": "docs/prd-v1.md:72",
+      "description": "导出订单数据为 Excel",
+      "category": "订单管理"
+    },
+    {
+      "id": "PF-006",
+      "name": "批量导入用户",
+      "source": "docs/prd-v1.md:88",
+      "description": "通过 Excel 批量导入用户数据",
+      "category": "用户管理"
+    }
+  ],
+  "implemented_features": [
+    {
+      "id": "IF-001",
+      "name": "用户登录",
+      "evidence": {
+        "route": "/login → src/pages/Login.tsx",
+        "component": "src/pages/Login.tsx:1",
+        "api": "POST /api/auth/login → src/modules/auth/auth.controller.ts:15",
+        "test": "src/modules/auth/auth.spec.ts:8"
+      },
+      "completeness": "full"
+    },
+    {
+      "id": "IF-002",
+      "name": "用户列表",
+      "evidence": {
+        "route": "/users → src/pages/user/UserList.tsx",
+        "component": "src/pages/user/UserList.tsx:1",
+        "api": "GET /api/users → src/modules/user/user.controller.ts:12",
+        "test": null
+      },
+      "completeness": "full"
+    },
+    {
+      "id": "IF-003",
+      "name": "创建用户",
+      "evidence": {
+        "route": "/users/create → src/pages/user/UserCreate.tsx",
+        "component": "src/pages/user/UserCreate.tsx:1",
+        "api": "POST /api/users → src/modules/user/user.controller.ts:25",
+        "test": null
+      },
+      "completeness": "full"
+    },
+    {
+      "id": "IF-004",
+      "name": "订单列表",
+      "evidence": {
+        "route": "/orders → src/pages/order/OrderList.tsx",
+        "component": "src/pages/order/OrderList.tsx:1",
+        "api": "GET /api/orders → src/modules/order/order.controller.ts:10",
+        "test": null
+      },
+      "completeness": "full"
+    },
+    {
+      "id": "IF-005",
+      "name": "订单导出",
+      "evidence": {
+        "route": null,
+        "component": "src/pages/order/OrderList.tsx:45 — ExportButton",
+        "api": "GET /api/orders/export → src/modules/order/order.controller.ts:38",
+        "test": null
+      },
+      "completeness": "partial"
+    },
+    {
+      "id": "IF-008",
+      "name": "系统日志",
+      "evidence": {
+        "route": "/system/logs → src/pages/system/LogList.tsx",
+        "component": "src/pages/system/LogList.tsx:1",
+        "api": "GET /api/logs → src/modules/log/log.controller.ts:8",
+        "test": null
+      },
+      "completeness": "full"
+    }
+  ],
+  "matches": [
+    { "planned_id": "PF-001", "implemented_id": "IF-001", "confidence": "high", "signals": ["name", "route", "keyword"] },
+    { "planned_id": "PF-002", "implemented_id": "IF-002", "confidence": "high", "signals": ["name", "route"] },
+    { "planned_id": "PF-003", "implemented_id": "IF-003", "confidence": "high", "signals": ["name", "route"] },
+    { "planned_id": "PF-004", "implemented_id": "IF-004", "confidence": "high", "signals": ["name", "route"] },
+    { "planned_id": "PF-005", "implemented_id": "IF-005", "confidence": "medium", "signals": ["keyword"] }
+  ],
+  "unmatched_planned": ["PF-006"],
+  "unmatched_implemented": ["IF-008"],
+  "confirmed_by_user": true
+}
