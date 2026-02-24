@@ -1,0 +1,26 @@
+{
+  "name": "myskills",
+  "owner": {
+    "name": "dv"
+  },
+  "plugins": [
+    {
+      "name": "product-audit",
+      "version": "2.3.0",
+      "source": "./product-audit-skill/",
+      "description": "Product audit suite: product-map, screen-map, use-case, feature-gap, feature-prune, seed-forge. 产品审计套件：功能地图、界面地图、用例集、功能查漏、功能剪枝、种子数据锻造。"
+    },
+    {
+      "name": "deadhunt",
+      "version": "1.9.0",
+      "source": "./deadhunt-skill/",
+      "description": "Validate web products: find dead links, hunt ghost features, verify CRUD completeness, check field consistency. 猎杀死链，验证产品完整性，检查字段一致性。"
+    },
+    {
+      "name": "code-tuner",
+      "version": "1.0.0",
+      "source": "./code-tuner-skill/",
+      "description": "Code architecture tuner: compliance check, duplication detection, abstraction analysis. 代码架构调优：规范检查、重复检测、抽象分析。"
+    }
+  ]
+}
