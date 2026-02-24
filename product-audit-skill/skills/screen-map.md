@@ -8,7 +8,7 @@ description: >
   or mentions mapping screens to tasks, button-level CRUD analysis, UI navigation paths,
   error/empty state design, form validation rules, or exception flow coverage.
   Requires product-map to have been run first.
-version: "2.1.0"
+version: "2.2.0"
 ---
 
 # Screen Map — 界面与异常状态地图
@@ -83,9 +83,18 @@ Step 3: 输出报告
 ### 前置检查
 
 ```
-检查 .allforai/product-map/task-inventory.json：
-  - 存在 → 加载任务列表，提取每个任务的 task_name、exceptions、risk_level、main_flow
-  - 不存在 → 提示：「请先运行 /product-map 生成任务清单，再运行 /screen-map」，终止执行
+两阶段加载：
+  Phase 1 — 加载索引：
+    检查 .allforai/product-map/task-index.json
+      存在 → 加载索引（< 5KB），获取任务 id/task_name/frequency/owner_role/risk_level + 模块分组
+        scope 模式：从索引的 modules 中匹配指定模块名，仅加载该模块任务的完整数据
+        其他模式：进入 Phase 2 加载完整数据
+      不存在 → 回退到 Phase 2 全量加载
+
+  Phase 2 — 加载完整数据：
+    检查 .allforai/product-map/task-inventory.json：
+      存在 → 加载任务列表，提取每个任务的 task_name、exceptions、risk_level、main_flow
+      不存在 → 提示：「请先运行 /product-map 生成任务清单，再运行 /screen-map」，终止执行
 ```
 
 ---
@@ -234,6 +243,45 @@ Step 3: 输出报告
 
 输出：`.allforai/screen-map/screen-map.json`
 
+#### 索引文件生成
+
+`screen-map.json` 写入后，立即生成轻量索引文件，供下游技能两阶段加载使用。
+
+##### `screen-index.json`
+
+从 `screen-map.json` 提取关键字段，按模块分组。模块归组：按关联任务的 `task_name` 语义聚类，与 `task-index.json` 的模块一致。
+
+```json
+{
+  "generated_at": "2026-02-25T10:00:00Z",
+  "source": "screen-map.json",
+  "screen_count": 12,
+  "modules": [
+    {
+      "name": "退款管理",
+      "screens": [
+        {
+          "id": "S001",
+          "name": "退款申请页",
+          "task_refs": ["T001"],
+          "action_count": 2,
+          "has_gaps": false
+        }
+      ]
+    }
+  ]
+}
+```
+
+`has_gaps` 判定：界面存在任一 flag（`OVERLOADED`、`HIGH_FREQ_BURIED`、`PRIMARY_MISMATCH`、`ORPHAN`、`NO_ENTRY`）或任一按钮缺少 `on_failure` 定义时为 `true`。
+
+**生成规则**：
+- 索引随 Step 1 输出一起生成
+- `scope` 模式下索引仍生成完整内容，确保下游技能自行筛选
+- 下游技能加载索引时若发现索引不存在，回退到全量加载，行为与旧版完全一致
+
+写入 `.allforai/screen-map/screen-index.json`
+
 ---
 
 ### Step 2：界面级冲突 + 异常缺口检测
@@ -339,6 +387,7 @@ Step 3: 输出报告
 ```
 .allforai/screen-map/
 ├── screen-map.json             # Step 1: 界面地图（含 states、on_failure、exception_flows）
+├── screen-index.json           # Step 1: 界面索引（轻量，供下游两阶段加载）
 ├── screen-conflict.json        # Step 2: 界面级冲突 + 异常覆盖缺口
 ├── screen-map-report.md        # Step 3: 可读报告
 └── screen-map-decisions.json   # 用户决策日志（增量复用）

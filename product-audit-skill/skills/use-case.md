@@ -7,7 +7,7 @@ description: >
   or mentions generating Given/When/Then scenarios, deriving test cases from requirements,
   creating use case documents for QA or AI agent execution.
   Requires product-map to have been run first.
-version: "2.2.0"
+version: "2.3.0"
 ---
 
 # Use Case — 用例集
@@ -122,9 +122,16 @@ Step 4: 端到端用例生成（需 business-flows.json，quick 模式跳过）
 ### 前置检查
 
 ```
-检查 .allforai/product-map/task-inventory.json：
-  - 存在 → 加载任务和角色数据
-  - 不存在 → 提示：「请先运行 /product-map 生成功能地图，再运行 /use-case」，终止
+两阶段加载：
+  Phase 1 — 加载索引：
+    检查 .allforai/product-map/task-index.json
+      存在 → 加载索引（< 5KB），获取任务 id/task_name/frequency/owner_role/risk_level + 模块分组
+      不存在 → 回退到 Phase 2 全量加载
+
+  Phase 2 — 按需加载完整数据：
+    检查 .allforai/product-map/task-inventory.json
+      存在 → 加载任务和角色数据
+      不存在 → 提示：「请先运行 /product-map 生成功能地图，再运行 /use-case」，终止
 
 检查 .allforai/screen-map/screen-map.json：
   - 存在 → 加载界面数据，标注「已注入界面上下文」
@@ -137,7 +144,9 @@ Step 4: 端到端用例生成（需 business-flows.json，quick 模式跳过）
 
 ### Step 0：功能区分组
 
-读取 task-inventory.json 中所有任务，按语义归组：
+**数据加载**：若 `task-index.json` 存在，直接使用索引中的 `modules` 分组作为功能区初始分组（索引已按模块聚类），无需全量加载 `task-inventory.json`。`scope` 模式下，直接从索引的 `modules` 中匹配指定功能区名称进行过滤。若索引不存在，回退到读取完整 `task-inventory.json` 后 AI 语义归组。
+
+读取任务数据，按语义归组：
 
 > 以下示例以虚构业务为背景，仅用于说明输出格式。实际内容由 product-map 分析结果决定，不限行业。
 
@@ -163,6 +172,8 @@ Step 4: 端到端用例生成（需 business-flows.json，quick 模式跳过）
 ---
 
 ### Step 1：正常流用例生成
+
+**数据加载**：若前置使用了索引（Phase 1），此步按功能区分批加载完整任务数据 — 每个功能区从 `task-inventory.json` 中仅读取该区包含的任务 ID 对应条目，处理完一个功能区再加载下一个，避免一次性加载全量数据。
 
 **用例字段全集**（不同类型字段的填写规则）：
 
@@ -335,7 +346,7 @@ Step 4: 端到端用例生成（需 business-flows.json，quick 模式跳过）
 
 ```json
 {
-  "version": "2.2.0",
+  "version": "2.3.0",
   "generated_at": "...",
   "summary": {
     "role_count": 3,

@@ -23,8 +23,12 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 执行前必须检查：
 
-1. **product-map 必须存在**：检查 `.allforai/product-map/product-map.json`
-   - 若不存在 → 输出「请先运行 /product-map 建立产品地图」，**立即终止**
+1. **两阶段加载（索引优先）**：
+   - 检查 `.allforai/product-map/task-index.json`
+     - 存在 → 加载索引（< 5KB），Step 1-B 数据量设计直接使用索引的 frequency 数据
+     - 不存在 → 回退到全量加载
+   - 检查 `.allforai/product-map/product-map.json`
+   - 若 `product-map.json` 也不存在 → 输出「请先运行 /product-map 建立产品地图」，**立即终止**
 
 2. **fill 模式额外检查**：检查 `.allforai/seed-forge/seed-plan.json`
    - 若不存在 → 输出「请先运行 /seed-forge plan 生成种子方案」，终止

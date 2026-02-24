@@ -1,6 +1,6 @@
 {
   "name": "product-audit",
   "description": "Product audit suite: product-map (build product map), screen-map (map screens and exception states), use-case (generate use case tree, JSON for machines + Markdown for humans), feature-gap (detect feature gaps), feature-prune (prune over-design), seed-forge (generate realistic seed data). 产品审计套件：建立产品地图、界面与异常状态地图、用例集（双格式）、功能查漏、功能剪枝、种子数据锻造。",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "author": { "name": "dv" }
 }

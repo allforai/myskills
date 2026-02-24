@@ -26,6 +26,8 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 执行前先检查：
 - 如果 `.allforai/product-map/product-map-decisions.json` 存在，自动加载历史决策，跳过已确认项的重复询问
 
+**索引文件生成**：Step 6 完成后会自动生成 `task-index.json` 和 `flow-index.json` 索引文件，供下游技能（feature-gap、feature-prune、use-case、screen-map、seed-forge）两阶段加载使用，大幅减少 token 消耗。
+
 ## 执行流程
 
 1. 参考已加载的 `skills/product-map.md` 中的目标定义、工作流和铁律

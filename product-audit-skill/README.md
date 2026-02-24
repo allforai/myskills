@@ -1,6 +1,6 @@
 # product-audit — 产品审计套件
 
-**版本：v2.5.0**
+**版本：v2.6.0**
 
 Claude Code 插件，以产品地图为基础，系统化地查漏、剪枝、造数据。
 
@@ -180,7 +180,9 @@ your-project/
     ├── product-map/
     │   ├── role-profiles.json          # 角色画像（权限边界、KPI）
     │   ├── task-inventory.json         # 任务清单（频次、风险、SLA、异常、验收标准）
+    │   ├── task-index.json             # 任务索引（轻量，供下游两阶段加载）
     │   ├── business-flows.json         # 业务流（跨角色/跨系统链路）
+    │   ├── flow-index.json             # 业务流索引（轻量，供下游两阶段加载）
     │   ├── business-flows-report.md    # 业务流摘要（人类可读）
     │   ├── business-flows-visual.svg   # 业务流泳道图（可视化）
     │   ├── conflict-report.json        # 任务级冲突与 CRUD 缺口
@@ -194,6 +196,7 @@ your-project/
     │   └── product-map-decisions.json  # 用户决策日志
     ├── screen-map/
     │   ├── screen-map.json             # 界面地图（含 states、on_failure、exception_flows）
+    │   ├── screen-index.json           # 界面索引（轻量，供下游两阶段加载）
     │   ├── screen-conflict.json        # 界面级冲突 + 异常覆盖缺口
     │   ├── screen-map-report.md        # 可读报告
     │   └── screen-map-decisions.json   # 用户决策日志
@@ -233,12 +236,13 @@ your-project/
 
 1. **product-map 是基础** — 其他技能都以产品地图为输入，先建图再分析
 2. **screen-map 是可选增强层** — 界面分析独立运行，feature-gap Step 2/3 和 feature-prune Step 2 需要它
-3. **频次驱动一切** — 高频操作受保护不剪枝，缺口按频次排优先级，种子数据按频次分配数量
-4. **每步用户确认** — 所有分类和决策都需要用户确认，用户是权威
-5. **只标不改** — 发现问题只报告，不执行任何代码修改或删除
-6. **业务语言呈现** — 输出全程使用业务语言，不出现接口地址、组件名等工程术语
-7. **异常覆盖是质量指标** — 每个功能点的异常情况和验收标准是产品完整性的核心体现
-8. **JSON 给机器，Markdown 给人** — JSON 完整字段无省略，Markdown 摘要级突出结论，细节不重复
+3. **索引优先，按需加载** — 下游技能先加载轻量索引（< 5KB），按需再加载完整数据；索引不存在时自动回退全量加载
+4. **频次驱动一切** — 高频操作受保护不剪枝，缺口按频次排优先级，种子数据按频次分配数量
+5. **每步用户确认** — 所有分类和决策都需要用户确认，用户是权威
+6. **只标不改** — 发现问题只报告，不执行任何代码修改或删除
+7. **业务语言呈现** — 输出全程使用业务语言，不出现接口地址、组件名等工程术语
+8. **异常覆盖是质量指标** — 每个功能点的异常情况和验收标准是产品完整性的核心体现
+9. **JSON 给机器，Markdown 给人** — JSON 完整字段无省略，Markdown 摘要级突出结论，细节不重复
 
 ---
 

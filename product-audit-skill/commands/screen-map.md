@@ -16,9 +16,13 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 执行前必须检查：
 
-1. `.allforai/product-map/task-inventory.json` 是否存在
-   - 存在 → 加载任务列表，继续执行
-   - 不存在 → 输出提示并终止：
+1. **两阶段加载（索引优先）**：
+   - 检查 `.allforai/product-map/task-index.json`
+     - 存在 → 加载索引（< 5KB）
+       - `scope` 模式：从索引的 `modules` 中匹配指定模块名，仅加载该模块任务的完整数据
+       - 其他模式：进入全量加载 `task-inventory.json`
+     - 不存在 → 回退到全量加载 `.allforai/product-map/task-inventory.json`
+   - 若 `task-inventory.json` 也不存在 → 输出提示并终止：
      ```
      ⚠️ 未找到 .allforai/product-map/task-inventory.json
      请先运行 /product-map 建立产品地图，再运行 /screen-map。

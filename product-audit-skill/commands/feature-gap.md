@@ -26,8 +26,14 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 执行前必须检查：
 
-1. **product-map 必须存在**：检查 `.allforai/product-map/product-map.json` 是否存在
-   - 若不存在 → 输出「请先运行 /product-map 建立产品地图」，**立即终止，不执行任何 Step**
+1. **两阶段加载（索引优先）**：
+   - 检查三个索引文件：
+     - `.allforai/product-map/task-index.json` → 任务索引
+     - `.allforai/screen-map/screen-index.json` → 界面索引
+     - `.allforai/product-map/flow-index.json` → 业务流索引
+   - 任一索引存在 → 加载索引（< 5KB），按需决定是否加载完整数据
+   - 所有索引不存在 → 回退到全量加载 `.allforai/product-map/product-map.json`
+   - 若 `product-map.json` 也不存在 → 输出「请先运行 /product-map 建立产品地图」，**立即终止，不执行任何 Step**
 
 2. **历史决策自动加载（向后兼容）**：
    - 优先检查 `.allforai/feature-gap/gap-decisions.json`，存在则加载

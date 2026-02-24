@@ -16,9 +16,11 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 执行前必须检查：
 
-1. `.allforai/product-map/task-inventory.json` 是否存在
-   - 存在 → 加载任务和角色数据，继续执行
-   - 不存在 → 输出提示并终止：
+1. **两阶段加载（索引优先）**：
+   - 检查 `.allforai/product-map/task-index.json`
+     - 存在 → 加载索引（< 5KB），Step 0 功能区分组直接使用索引的 modules 分组
+     - 不存在 → 回退到全量加载 `.allforai/product-map/task-inventory.json`
+   - 若 `task-inventory.json` 也不存在 → 输出提示并终止：
      ```
      ⚠️ 未找到 .allforai/product-map/task-inventory.json
      请先运行 /product-map 建立功能地图，再运行 /use-case。
