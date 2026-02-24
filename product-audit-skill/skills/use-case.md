@@ -135,6 +135,8 @@ Step 4: 端到端用例生成（需 business-flows.json，quick 模式跳过）
 
 读取 task-inventory.json 中所有任务，按语义归组：
 
+> 以下示例以虚构业务为背景，仅用于说明输出格式。实际内容由 product-map 分析结果决定，不限行业。
+
 ```json
 {
   "feature_areas": [
@@ -180,6 +182,8 @@ Step 4: 端到端用例生成（需 business-flows.json，quick 模式跳过）
 
 **机器版字段**：
 
+> 以下示例以虚构业务为背景，仅用于说明输出格式。实际内容由 product-map 分析结果决定，不限行业。
+
 ```json
 {
   "id": "UC001",
@@ -224,6 +228,8 @@ Step 4: 端到端用例生成（需 business-flows.json，quick 模式跳过）
 ### Step 2：异常流 + 边界用例生成
 
 **exception 用例（来自 task.exceptions）机器版**：
+
+> 以下示例以虚构业务为背景，仅用于说明输出格式。实际内容由 product-map 分析结果决定，不限行业。
 
 ```json
 {
@@ -288,6 +294,8 @@ Step 4: 端到端用例生成（需 business-flows.json，quick 模式跳过）
 ### Step 3：双格式输出
 
 #### 机器版 `use-case-tree.json`（完整 4 层 JSON 树）
+
+> 以下示例以虚构业务为背景，仅用于说明输出格式。实际内容由 product-map 分析结果决定，不限行业。
 
 ```json
 {
@@ -363,6 +371,8 @@ Step 4: 端到端用例生成（需 business-flows.json，quick 模式跳过）
 读取 `business-flows.json`，为每条完整流（`gap_count == 0`）生成端到端用例：
 
 **E2E 用例格式（JSON）：**
+
+> 以下示例以虚构业务为背景，仅用于说明输出格式。实际内容由 product-map 分析结果决定，不限行业。
 
 ```json
 {

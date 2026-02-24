@@ -94,6 +94,8 @@ Step 3: 输出报告
 
 #### 界面 Schema
 
+> 以下示例以虚构业务为背景，仅用于说明输出格式。实际内容由 screen-map 分析结果决定，不限行业。
+
 ```json
 {
   "screens": [
@@ -227,6 +229,8 @@ Step 3: 输出报告
 | 异常无界面响应 | `UNHANDLED_EXCEPTION` | task.exceptions 中有异常，但该界面对应按钮的 `exception_flows` 没有覆盖该异常 |
 
 **冲突报告 Schema**：
+
+> 以下示例以虚构业务为背景，仅用于说明输出格式。实际内容由 screen-map 分析结果决定，不限行业。
 
 ```json
 {
