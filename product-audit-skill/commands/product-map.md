@@ -16,8 +16,8 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 根据用户参数决定执行模式：
 
-- **无参数 或 `full`** → 完整流程：Step 0 → Step 1 → Step 2 → Step 4 → Step 5 → Step 6 → Step 7
-- **`quick`** → 快速模式：Step 0 → Step 1 → Step 2 → Step 6 → Step 7（跳过 Step 4/5，Step 7 不可跳过）
+- **无参数 或 `full`** → 完整流程：Step 0 → Step 1 → Step 2 → Step 3 → Step 4 → Step 5 → Step 6 → Step 7
+- **`quick`** → 快速模式：Step 0 → Step 1 → Step 2 → Step 3 → Step 6 → Step 7（跳过 Step 4/5，Step 3/7 不可跳过）
 - **`refresh`** → 重新分析：忽略所有缓存，从 Step 0 开始重跑
 - **`scope <模块名>`** → 限定范围：全流程，但仅分析属于指定模块的任务
 
@@ -63,6 +63,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 |------|------|
 | 用户角色 | X 个 |
 | 核心任务 | X 个 |
+| 业务流 | X 条（流缺口 X 个） |
 | 高频任务（帕累托 Top 20%） | X 个 |
 | 冲突/CRUD 缺口（仅 full 模式） | X 个 |
 | 业务约束（仅 full 模式） | X 条 |
@@ -87,6 +88,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 > 产品地图: `.allforai/product-map/product-map.json`
 > 可读报告: `.allforai/product-map/product-map-report.md`
+> 业务流: `.allforai/product-map/business-flows-report.md`
 > 校验报告: `.allforai/product-map/validation-report.md`
 > 竞品分析: `.allforai/product-map/competitor-profile.json`
 > 决策日志: `.allforai/product-map/product-map-decisions.json`
