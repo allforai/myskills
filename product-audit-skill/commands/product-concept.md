@@ -32,9 +32,10 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 1. 参考已加载的 `skills/product-concept.md` 中的目标定义、工作流和铁律
 2. 根据模式按需执行对应步骤
-3. **每个 Step 必须先 WebSearch 搜索，再基于搜索结果生成 AskUserQuestion 选择题**
-4. 每个 Step 必须有用户确认环节
-5. **【强制】执行完毕后，必须在对话中直接输出完整的报告摘要**
+3. **每个 Step 必须先 WebSearch 搜索（至少 2-3 轮，多角度），再基于搜索结果生成 AskUserQuestion 选择题**
+4. **搜索是核心能力**：中英双语搜索、逐层聚焦、主动找反面证据。详见 `skills/product-concept.md` 的「搜索策略」章节
+5. 每个 Step 必须有用户确认环节
+6. **【强制】执行完毕后，必须在对话中直接输出完整的报告摘要**
 
 ## 详细文档（按需用 Read 工具加载）
 
