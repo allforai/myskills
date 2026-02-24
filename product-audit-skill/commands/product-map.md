@@ -24,6 +24,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 ## 前置检查：已有数据检测
 
 执行前先检查：
+- 如果 `.allforai/product-concept/product-concept.json` 存在 → 进入**概念指导模式**（自主执行，仅 gap 处确认），加载产品概念作为战略指导
 - 如果 `.allforai/product-map/product-map-decisions.json` 存在，自动加载历史决策，跳过已确认项的重复询问
 
 **索引文件生成**：Step 6 完成后会自动生成 `task-index.json` 和 `flow-index.json` 索引文件，供下游技能（feature-gap、feature-prune、use-case、screen-map、seed-forge）两阶段加载使用，大幅减少 token 消耗。
@@ -33,7 +34,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 1. 参考已加载的 `skills/product-map.md` 中的目标定义、工作流和铁律
 2. 根据模式按需执行对应步骤
 3. **Step 0 完成后判定产品规模**（小型≤30 / 中型31-80 / 大型>80 任务），决定后续交互策略
-4. 按工作流执行，**每个 Step 必须有用户确认环节**
+4. 按工作流执行，**每个 Step 必须有用户确认环节**（概念指导模式下仅 gap 处确认）
 5. **中型/大型产品**：Step 2 和 Step 3 完成后必须执行自审计子步骤（代码路由扫描 / handoff 验证）
 6. **中型/大型产品**：大文件（task-inventory.json 等）必须使用 Python/Node 脚本生成，不可直接用 Write 工具
 7. **【强制】执行完毕后，必须在对话中直接输出完整的报告摘要**
