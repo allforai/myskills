@@ -403,6 +403,64 @@ Claude 分析 `task-inventory.json`，寻找任务间的状态衔接关系：若
 
 输出：`.allforai/product-map/business-flows.json`、`.allforai/product-map/business-flows-report.md`
 
+#### SVG 生成：business-flows-visual.svg
+
+`business-flows.json` 写入磁盘后，立即生成 `.allforai/product-map/business-flows-visual.svg`。
+
+**数据来源**：刚写入的 `business-flows.json`
+
+**布局规则**：
+- 画布宽：780px，高：动态累计
+- 顶部 padding：24px
+- 每条流区块：流标题栏 32px + 参与泳道数 × 60px + 底部间距 16px
+- 泳道标签列宽：100px，节点区起始 x：120px
+- 节点：宽 150px，高 40px，水平间距 40px（节点间净距）
+- 节点 x = 120 + (seq-1) × 190
+- 泳道顺序：按该流中节点 seq 首次出现的 role/system 排列
+
+**颜色规范**：
+
+| 元素 | 颜色 |
+|------|------|
+| 流标题栏背景 | `#1E293B`，白色文字 14px bold |
+| 泳道标签背景 | `#F1F5F9`，`#475569` 文字 12px |
+| 泳道分割线 | `#E2E8F0`，stroke-dasharray="4 2" |
+| 正常节点 border | `#3B82F6`，fill `#EFF6FF`，文字 `#1E3A8A` 12px |
+| 缺口节点 border | `#EF4444` 虚线 stroke-dasharray="4 2"，fill `#FEF2F2`，文字 `#991B1B` |
+| 缺口节点右上角 | ⚠ 文字标记，`#EF4444`，14px |
+| handoff 箭头 | `#64748B`，marker-end arrow |
+| handoff 标签 | `#64748B`，10px，箭头上方 |
+| seq 圆 | fill `#3B82F6`，白色文字 10px，半径 10px，节点左上角偏移(-6,-6) |
+
+**SVG 结构**：
+
+```
+<svg xmlns="..." width="780" height="{total_height}" viewBox="0 0 780 {total_height}">
+  <defs>
+    <marker id="arrow" ...>  <!-- 箭头标记 -->
+  </defs>
+  <!-- 遍历 flows 数组 -->
+  <!-- 每条流：标题栏矩形+文字 → 泳道背景+标签+分割线 → 节点矩形+seq圆+文字 → handoff箭头+标签 -->
+</svg>
+```
+
+**生成逻辑**（逐步）：
+1. 遍历 `flows` 数组，对每条流收集参与的 role（去重，按 seq 首次出现排序）
+2. 计算该流区块高度 = 32 + 参与 role 数 × 60 + 16
+3. 绘制流标题栏（x=0，宽 780，高 32）+ 流名称文字
+4. 绘制每条泳道（标签矩形 + 文字 + 底部分割线）
+5. 按 seq 顺序绘制每个节点：
+   - 确定节点所在泳道 index → y = 流起点 + 32 + 泳道index × 60 + 10
+   - x = 120 + (seq-1) × 190
+   - 绘制矩形（gap=true 用虚线红框，否则实线蓝框）
+   - 绘制节点名称文字（超过 14 字截断加 …）
+   - 绘制 seq 圆（左上角偏移 -6,-6）
+   - gap=true 时右上角绘制 ⚠ 文字
+6. 连接相邻 seq 节点的 handoff 箭头；若 handoff.mechanism 非空，在箭头路径中点上方绘制标签
+7. 累加 currentY，进入下一条流
+
+写入 `.allforai/product-map/business-flows-visual.svg`
+
 ---
 
 ### Step 4：冲突 & 冗余检测
