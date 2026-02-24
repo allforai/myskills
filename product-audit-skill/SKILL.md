@@ -161,10 +161,12 @@ your-project/
     │   ├── task-inventory.json         # 任务清单（频次、风险、SLA、异常、验收标准）
     │   ├── business-flows.json         # 业务流（跨角色/跨系统链路）
     │   ├── business-flows-report.md    # 业务流摘要（人类可读）
+    │   ├── business-flows-visual.svg   # 业务流泳道图（可视化）
     │   ├── conflict-report.json        # 任务级冲突与 CRUD 缺口
     │   ├── constraints.json            # 业务约束清单
     │   ├── product-map.json            # 汇总文件（供其他技能加载）
     │   ├── product-map-report.md       # 可读报告
+    │   ├── product-map-visual.svg      # 角色-任务树（可视化）
     │   ├── competitor-profile.json     # 竞品功能概况（Step 0 草稿→Step 7 补全）
     │   ├── validation-report.json      # 三合一校验结果（机器可读）
     │   ├── validation-report.md        # 校验摘要（人类可读）
