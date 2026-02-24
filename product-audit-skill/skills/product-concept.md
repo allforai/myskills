@@ -59,7 +59,17 @@ product-concept（战略层）        product-map（运营层）
   → 范围缩小，进入下一轮或下一 Step
 ```
 
-**铁律：不问开放题，只问选择题。** 所有问题都基于搜索结果生成选项，用户只需选择。如果现有选项都不对，用户可以用"其他"自由输入，AI 再基于新输入搜索并生成新选择题。
+**铁律：不问开放题，只问选择题。** 所有问题都基于搜索结果生成选项，用户只需选择。
+
+### "其他"响应处理流程
+
+当用户选择"其他"并提供自定义输入时：
+
+1. **不要直接采纳** — 用户输入可能模糊或不完整
+2. **基于用户新输入 WebSearch** — 以用户提供的关键词为线索重新搜索
+3. **生成新的选择题** — 基于新搜索结果提炼 2-4 个更精准的选项
+4. **将用户原始输入融入选项** — 确保用户的意图被选项覆盖
+5. 重复此循环直到用户从预设选项中确认
 
 ---
 
@@ -141,8 +151,8 @@ product-concept（战略层）        product-map（运营层）
 6. **AskUserQuestion** 选择题：
    - "你的想法更接近哪个产品？"（列出搜索到的竞品，附简要描述）
    - "哪些特点是你想要的？"（从竞品中提取差异化特征）
-   - "你要解决的 TOP 3 问题是什么？"（基于机会树中的痛点生成选项）
-7. 输出：`problem-domain.json`（问题本质、机会树、竞品列表、TOP 3 问题）
+   - "你要解决的 核心问题是什么？"（基于机会树中的痛点生成选项）
+7. 输出：`problem-domain.json`（问题本质、机会树、竞品列表、核心问题）
 8. → 用户确认
 
 ---
@@ -285,6 +295,7 @@ product-concept（战略层）        product-map（运营层）
 {
   "generated_at": "ISO timestamp",
   "user_input": "用户原始输入",
+  "problem_essence": "第一性原理拆解出的问题本质",
   "problem_domain": "问题域描述",
   "top_problems": [
     {
@@ -299,6 +310,7 @@ product-concept（战略层）        product-map（运营层）
     { "name": "竞品名", "url": "来源", "description": "简要描述", "key_features": ["..."] }
   ],
   "selected_traits": ["用户选中的差异化特征"],
+  "unique_positioning": "基于竞品分析得出的差异化定位",
   "confirmed": false
 }
 ```
@@ -312,6 +324,7 @@ product-concept（战略层）        product-map（运营层）
     {
       "role_id": "R1",
       "role_name": "角色名",
+      "description": "角色简要描述（年龄段、典型特征等）",
       "jobs": [{ "type": "functional | emotional | social", "description": "..." }],
       "pains": ["痛点1", "痛点2"],
       "gains": ["期望收益1", "期望收益2"],
@@ -331,8 +344,16 @@ product-concept（战略层）        product-map（运营层）
   "revenue_streams": ["收入来源"],
   "cost_structure": ["成本结构"],
   "channels": ["获客渠道"],
-  "key_metrics": ["关键指标"],
+  "key_metrics": [
+    {
+      "metric": "指标名",
+      "type": "outcome",
+      "target": "目标值",
+      "why": "为什么选这个指标"
+    }
+  ],
   "unfair_advantage": "不可复制优势",
+  "build_trap_check": "Build Trap 审查结果：确认所有指标均为 outcome",
   "confirmed": false
 }
 ```
@@ -354,11 +375,17 @@ product-concept（战略层）        product-map（运营层）
 
 ---
 
+## 写入时机
+
+**用户确认后才写入磁盘。** 每个 Step 完成后，先在对话中展示结果摘要，等用户确认（confirmed）后才把 JSON 文件写入 `.allforai/product-concept/` 目录。未确认的结果只存在于对话上下文中，不落盘。
+
+---
+
 ## 输出文件结构
 
 ```
 .allforai/product-concept/
-├── problem-domain.json          # Step 0: 问题域 + 竞品列表 + TOP 3 问题
+├── problem-domain.json          # Step 0: 问题域 + 竞品列表 + 核心问题
 ├── role-value-map.json          # Step 1: 角色价值地图（VPC 格式）
 ├── business-model.json          # Step 2: 商业模式（Lean Canvas）
 ├── product-concept.json         # Step 3: 结构化产品概念（机器可读）
@@ -372,7 +399,7 @@ product-concept（战略层）        product-map（运营层）
 
 ### 1. 只问选择题，不问开放题
 
-所有问题都基于搜索结果生成选项。用户只需选择，不需要从零思考。如果现有选项都不对，用户可以用"其他"自由输入，AI 再基于新输入搜索并生成新选择题。
+所有问题都基于搜索结果生成选项。用户只需选择，不需要从零思考。如果用户选择"其他"并提供自定义输入，必须走「其他响应处理流程」：基于新输入 WebSearch → 生成新选择题 → 用户从新选项中确认。不可直接采纳未经搜索验证的自由输入。
 
 ### 2. 搜索先行，选项后生
 

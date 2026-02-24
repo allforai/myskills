@@ -23,8 +23,9 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 执行前先检查：
 
-1. 如果 `.allforai/product-concept/concept-decisions.json` 存在，自动加载历史决策，跳过已确认项
-2. **reverse 模式额外检查**：
+1. 确保输出目录存在：`mkdir -p .allforai/product-concept`
+2. 如果 `.allforai/product-concept/concept-decisions.json` 存在，自动加载历史决策，跳过已确认项
+3. **reverse 模式额外检查**：
    - 如果 `.allforai/product-map/product-map.json` 存在 → 直接读取作为反推输入
    - 否则扫描项目代码（路由/权限/菜单）作为反推输入
 
@@ -43,12 +44,11 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 ## Step 执行要求
 
-每个 Step 执行前，用 Read 工具加载 `skills/product-concept.md` 中的对应章节。
-
 每个 Step 完成后：
-1. 将结果写入 `.allforai/product-concept/` 目录下对应的 JSON 文件
-2. 向用户展示结果摘要
-3. 等待用户确认后才进入下一个 Step
+1. 向用户展示结果摘要
+2. 等待用户确认
+3. **用户确认后**才将结果写入 `.allforai/product-concept/` 目录下对应的 JSON 文件
+4. 进入下一个 Step
 
 ## 报告输出要求（强制执行）
 
@@ -64,11 +64,11 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 {一句话产品使命}
 
-### TOP 3 问题
+### 核心问题
 
-1. {问题1}（{严重度}）
-2. {问题2}（{严重度}）
-3. {问题3}（{严重度}）
+| # | 问题 | 严重度 |
+|---|------|--------|
+| （逐行列出所有核心问题） | | |
 
 ### 目标角色
 
