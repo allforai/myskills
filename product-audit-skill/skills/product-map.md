@@ -554,7 +554,7 @@ Claude 分析 `task-inventory.json`，寻找任务间的状态衔接关系：若
 ```json
 {
   "generated_at": "2026-02-24T10:00:00Z",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "scope": "full",
   "summary": {
     "role_count": 3,
