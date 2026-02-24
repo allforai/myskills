@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "product-audit",
-      "version": "2.3.0",
+      "version": "2.5.0",
       "source": "./",
       "description": "Product audit suite: product-map, screen-map, use-case, feature-gap, feature-prune, seed-forge. 产品审计套件：功能地图、界面地图、用例集、功能查漏、功能剪枝、种子数据锻造。"
     },

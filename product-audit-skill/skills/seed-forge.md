@@ -11,7 +11,7 @@ description: >
   or demo environment preparation.
   Requires product-map to have been run first.
   Requires a running application for data population (Step 3-4).
-version: "2.0.0"
+version: "2.1.0"
 ---
 
 # Seed Forge — 种子数据锻造
