@@ -5,7 +5,7 @@ description: >
   "figure out what to build", "validate a product idea", "产品概念", "产品定义",
   "我想做一个...", "这个产品应该怎么设计",
   or needs to discover what product to build before writing code.
-version: "1.0.0"
+version: "1.1.0"
 ---
 
 # Product Concept — 产品概念发现
@@ -78,14 +78,31 @@ product-concept（战略层）        product-map（运营层）
 
 输入：用户的一句话描述（可以很模糊）
 
-1. **WebSearch 搜索**相关行业、产品、竞品
-2. 找到 3-5 个最相关的现有产品
-3. **AskUserQuestion** 选择题：
+**Phase A — 第一性原理拆解**（在搜索竞品之前）
+
+不急于看别人怎么做，先拆解问题本质：
+1. 从用户描述中提取**最底层的需求**（不是"我要做一个 XX 平台"，而是"某类人在某场景下无法完成某件事"）
+2. **AskUserQuestion** 选择题："你描述的核心问题，本质上更接近哪一类？"（基于需求层次生成 2-4 个抽象选项，如"信息不对称"/"流程效率低"/"信任成本高"/"协作断裂"）
+3. 锁定问题本质后，才进入竞品搜索 — 避免被现有产品形态锁死想象力
+
+**Phase B — 竞品搜索 + 机会树收敛**
+
+使用 Opportunity Solution Tree 结构组织发现过程：
+
+```
+期望成果（Outcome）：用户描述 + Phase A 锁定的问题本质
+  → 机会空间（Opportunities）：WebSearch 发现的行业痛点
+    → 现有方案（Solutions）：搜索到的竞品如何解决这些痛点
+```
+
+4. **WebSearch 搜索**相关行业、产品、竞品
+5. 找到 3-5 个最相关的现有产品，按机会树组织（哪个痛点 → 哪个竞品在解决）
+6. **AskUserQuestion** 选择题：
    - "你的想法更接近哪个产品？"（列出搜索到的竞品，附简要描述）
    - "哪些特点是你想要的？"（从竞品中提取差异化特征）
-   - "你要解决的 TOP 3 问题是什么？"（基于行业痛点生成选项）
-4. 输出：`problem-domain.json`（问题域、初步竞品列表、TOP 3 问题）
-5. → 用户确认
+   - "你要解决的 TOP 3 问题是什么？"（基于机会树中的痛点生成选项）
+7. 输出：`problem-domain.json`（问题本质、机会树、竞品列表、TOP 3 问题）
+8. → 用户确认
 
 ---
 
@@ -95,13 +112,18 @@ product-concept（战略层）        product-map（运营层）
 
 1. **WebSearch 搜索**该类产品的典型用户构成
 2. 基于搜索结果 + JTBD/VPC 框架，推导角色列表
-3. **AskUserQuestion** 选择题：
+3. **AskUserQuestion** 选择题（选项基于行为事实，不基于观点预测 — Mom Test 原则）：
    - "这些角色里哪些是你的目标用户？"（多选）
-   - 对每个选中角色："这个角色最痛的问题是哪些？"（基于行业搜索生成选项）
-   - "这个角色使用你的产品后能获得什么？"（Gains 选项）
-4. 结构化为 VPC 格式：每角色的 Jobs / Pains / Gains → Pain Relievers / Gain Creators
-5. 输出：`role-value-map.json`
-6. → 用户确认
+   - 对每个选中角色："这个角色现在怎么解决这个问题？"（基于搜索到的现有替代方案生成选项，而非问"你觉得痛不痛"）
+   - "这个角色使用你的产品后，行为会发生什么变化？"（Gains 选项，聚焦可观测的行为改变）
+4. 延续 Step 0 的机会树，将每个角色的痛点映射为具体的**机会 → 方案**分支：
+   ```
+   角色 A 的痛点 1（机会）→ 我们的方案 X（Pain Reliever）
+   角色 A 的痛点 2（机会）→ 我们的方案 Y（Pain Reliever）
+   ```
+5. 结构化为 VPC 格式：每角色的 Jobs / Pains / Gains → Pain Relievers / Gain Creators
+6. 输出：`role-value-map.json`
+7. → 用户确认
 
 ---
 
@@ -115,8 +137,13 @@ product-concept（战略层）        product-map（运营层）
    - "你的核心竞争力是什么？"（基于竞品分析生成差异化选项）
    - "成功的关键指标是什么？"（基于行业标准生成选项）
 3. 用 Lean Canvas 结构化：Revenue / Cost / Key Metrics / Unfair Advantage / Channels
-4. 输出：`business-model.json`
-5. → 用户确认
+4. **Build Trap 防护**：审查 key_metrics，确保每个指标都是 **outcome**（用户行为变化），不是 output（功能数量）。例如：
+   - "月活跃用户数" ✓（outcome：用户持续使用）
+   - "完成交易的平均时间缩短 30%" ✓（outcome：效率提升）
+   - "上线 20 个功能" ✗（output：产出物数量，不反映价值）
+   - "代码覆盖率 90%" ✗（output：工程指标，用户无感）
+5. 输出：`business-model.json`
+6. → 用户确认
 
 ---
 
@@ -125,7 +152,11 @@ product-concept（战略层）        product-map（运营层）
 输入：Step 0-2 的所有确认结果
 
 1. 综合生成结构化产品概念
-2. 生成 ERRC 竞品定位矩阵（基于 Step 0 的竞品 + Step 1 的价值差异）
+2. 生成 ERRC 竞品定位矩阵（基于 Step 0 的竞品 + Step 1 的价值差异），每项标注 **Kano 分类**：
+   - **Must-have**（基本型）：没有就不及格，有了不加分 — 通常出现在 ERRC 的 reduce（降低但不能没有）
+   - **Performance**（期望型）：越多越好，线性满意 — 通常出现在 ERRC 的 raise
+   - **Delighter**（兴奋型）：没有不扣分，有了惊喜 — 通常出现在 ERRC 的 create
+   - ERRC 的 eliminate 项天然不属于任何 Kano 分类（行业认为必要但我们判定非必要）
 3. 生成一句话产品使命
 4. 输出：
    - `product-concept.json` — 机器可读，供 product-map 消费
@@ -197,12 +228,12 @@ product-concept（战略层）        product-map（运营层）
     ],
     "errc": {
       "eliminate": ["行业标配但我们不做的"],
-      "reduce": ["降低投入的"],
-      "raise": ["超出行业水平的"],
-      "create": ["行业从未有过的"]
+      "reduce": [{ "item": "降低投入的", "kano": "must-have" }],
+      "raise": [{ "item": "超出行业水平的", "kano": "performance" }],
+      "create": [{ "item": "行业从未有过的", "kano": "delighter" }]
     }
   },
-  "frameworks_referenced": ["Lean Canvas", "VPC", "JTBD", "Blue Ocean ERRC"],
+  "frameworks_referenced": ["Lean Canvas", "VPC", "JTBD", "Blue Ocean ERRC", "Kano Model", "Opportunity Solution Tree", "First Principles", "Mom Test", "Build Trap / Product Kata"],
   "search_sources": ["搜索过程中参考的 URL"]
 }
 ```
@@ -296,7 +327,7 @@ product-concept（战略层）        product-map（运营层）
 
 ---
 
-## 6 条铁律
+## 9 条铁律
 
 ### 1. 只问选择题，不问开放题
 
@@ -321,3 +352,15 @@ product-concept（战略层）        product-map（运营层）
 ### 6. 证据留痕
 
 所有搜索来源 URL 记录在输出的 `search_sources` 字段和各条目的 `evidence` 字段中。结论可溯源。
+
+### 7. 选项基于行为，不基于观点（Mom Test）
+
+所有选择题的选项必须基于**可观测的行为事实**（"用户现在怎么做"/"行为会如何改变"），不基于观点预测（"你觉得这个功能好不好"/"你会不会用"）。观点廉价且不可靠，行为才是真相。
+
+### 8. 指标必须是成果，不是产出（Build Trap）
+
+`key_metrics` 中的每个指标必须是 **outcome**（用户行为变化、业务结果），不是 output（功能数量、代码指标）。如果用户提出 output 型指标，引导其转化为背后的 outcome。这条规则防止产品陷入"不断堆功能但不创造价值"的构建陷阱。
+
+### 9. 先拆本质，再看竞品（First Principles）
+
+Step 0 必须先拆解问题的第一性原理（用户最底层的需求是什么），再搜索竞品。禁止跳过本质拆解直接进入竞品对标 — 否则产品定义会被现有产品的形态锁死，只能做"更好的 XX"而非真正的创新。
