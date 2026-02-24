@@ -35,7 +35,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 根据用户参数决定执行模式：
 
 - **无参数 或 `full`** → 完整流程：Step 0 → Step 1 → Step 2 → Step 3 → Step 4
-- **`quick`** → 快速模式：Step 0 → Step 1 → Step 3（跳过 Step 2 异常流/边界用例）
+- **`quick`** → 快速模式：Step 0 → Step 1 → Step 3（跳过 Step 2 异常流/边界用例 + Step 4 E2E）
 - **`scope <功能区名>`** → 限定范围：全流程，但仅生成指定功能区的用例
 
 ## 执行流程

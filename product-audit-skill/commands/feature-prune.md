@@ -17,6 +17,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 - **无参数 或 `full`** → 完整剪枝：Step 1 → Step 2 → Step 3 → Step 4 → Step 5
 - **`quick`** → 快速剪枝：Step 1 → Step 2 → Step 4 → Step 5（跳过 Step 3 竞品参考）
 - **`scope <模块名>`** → 限定模块：完整流程，但仅分析指定模块的功能
+- **`refresh`** → 重新分析：将 decisions.json 重命名为 .bak 备份，从 Step 1 开始完整重跑
 
 ## 前置检查
 
