@@ -34,7 +34,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 根据用户参数决定执行模式：
 
-- **无参数 或 `full`** → 完整流程：Step 0 → Step 1 → Step 2 → Step 3
+- **无参数 或 `full`** → 完整流程：Step 0 → Step 1 → Step 2 → Step 3 → Step 4
 - **`quick`** → 快速模式：Step 0 → Step 1 → Step 3（跳过 Step 2 异常流/边界用例）
 - **`scope <功能区名>`** → 限定范围：全流程，但仅生成指定功能区的用例
 
@@ -78,12 +78,19 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 | 正常流 | X 条 |
 | 异常流 | X 条 |
 | 边界用例 | X 条 |
+| E2E 用例 | X 条 |
 
 ### 用例分布（按功能区）
 
 | 功能区 | 任务数 | 用例数 | 异常覆盖率 |
 |--------|--------|--------|-----------|
 | 退款管理 | 3 | 18 | 100% |
+
+### E2E 用例
+
+| E2E ID | 标题 | 关联流 | 步骤数 |
+|--------|------|--------|--------|
+| E2E-F001-01 | 售后全链路_正常流 | F001 | 4 |
 
 ### Flags 汇总
 

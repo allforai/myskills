@@ -43,9 +43,13 @@ task-inventory.json 为基础      以 task-inventory 为输入        读 scree
 
 ```
 /screen-map              # 完整流程（Step 1-3）
-/screen-map quick        # 跳过冲突检测（Step 2），只梳理界面和按钮
+/screen-map quick        # 跳过 Step 2（冲突检测），运行 Step 1 + Step 3。Step 3 报告中冲突相关部分显示为「未检测（quick 模式）」。
 /screen-map scope 退款管理  # 只梳理指定模块的界面
 ```
+
+**scope 模式**：运行与 full 相同的 Step 序列，但仅处理 `task-inventory.json` 中 `task_name` 包含指定关键词的任务及其关联界面。
+
+**refresh 模式**：将 `screen-map-decisions.json` 重命名为 `.bak` 备份，从 Step 1 开始完整重新运行，忽略所有已有决策缓存。
 
 ---
 
@@ -89,6 +93,27 @@ Step 3: 输出报告
 ### Step 1：界面与按钮梳理
 
 按任务展开，从代码提取页面和操作按钮，转换为产品语言描述。
+
+**界面提取方法**：
+
+从代码中识别界面的常见模式：
+- **路由文件**（route config / router）：每个路由路径对应一个界面
+- **页面组件**（Page / View / Screen 命名的组件文件）：每个页面组件 = 一个界面
+- **菜单配置**（sidebar / nav 配置文件）：菜单项与界面一一对应
+- 若以上模式均不存在，询问用户描述产品的主要页面
+
+**按钮提取方法**：
+
+从界面组件代码中识别操作：
+- 表单提交（form submit / onSubmit）
+- 按钮点击（Button / onClick / handleXxx）
+- 链接跳转（Link / navigate / router.push）
+- 批量操作（batch / bulk action）
+- 每个操作标注 CRUD 类型（Create / Read / Update / Delete）
+
+**click_depth 推导**：从角色的主入口页面开始计算到达该操作需要的最少点击次数（主导航 = 0，列表页按钮 = 1，详情页按钮 = 2，弹窗内按钮 = 3）。
+
+**frequency 推导**：继承关联任务在 `task-inventory.json` 中的 `frequency` 值。同一界面有多个任务关联时，取最高频次。
 
 **关键要求**：梳理每个界面时，读取对应任务的 `exceptions` 字段，要求用户为每个异常标注对应的界面处理方式（`exception_flows`）。
 
@@ -148,6 +173,9 @@ Step 3: 输出报告
         "low_freq_buried": [],
         "high_freq_buried": []
       },
+
+**帕累托计算方法**：将该界面内所有按钮按 `frequency` 降序排列，累计占比达到 80% 的按钮标记为 `high_freq_actions`。`click_depth ≥ 3` 的高频按钮标记为 `high_freq_buried`；`click_depth ≤ 1` 的低频按钮标记为 `low_freq_buried`（疑似冗余快捷入口）。
+
       "flags": []
     }
   ]
@@ -267,6 +295,11 @@ Step 3: 输出报告
 }
 ```
 
+**severity 判定规则**：
+- `高`：影响高频操作（frequency = 高）或涉及数据丢失风险（SILENT_FAILURE）
+- `中`：影响中频操作，或用户体验问题但不影响数据完整性
+- `低`：影响低频操作，或纯粹的优化建议
+
 **用户确认**：检测结果有没有误报？哪些问题需要处理？
 
 输出：`.allforai/screen-map/screen-conflict.json`
@@ -310,6 +343,27 @@ Step 3: 输出报告
 ├── screen-map-report.md        # Step 3: 可读报告
 └── screen-map-decisions.json   # 用户决策日志（增量复用）
 ```
+
+### decisions.json 通用格式
+
+```json
+[
+  {
+    "step": "Step 1",
+    "item_id": "S001",
+    "item_name": "描述",
+    "decision": "confirmed | modified | deferred",
+    "reason": "用户备注（可选）",
+    "decided_at": "2024-01-15T10:30:00Z"
+  }
+]
+```
+
+- `confirmed`：确认无修改
+- `modified`：修改后确认
+- `deferred`：暂不决定，下次重新提问
+
+**加载逻辑**：每个 Step 开始前检查 decisions.json，已 `confirmed` 的条目跳过确认直接沿用。
 
 ---
 

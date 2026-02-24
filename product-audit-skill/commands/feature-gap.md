@@ -16,10 +16,10 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 根据用户参数决定执行模式：
 
-- **无参数 或 `full`** → 完整查漏：Step 1 → Step 2 → Step 3
-- **`quick`** → 快速查漏：Step 1 → Step 2（跳过用户旅程验证）
-- **`journey`** → 仅旅程：Step 3（仅执行用户旅程验证）
-- **`role <角色名>`** → 限定角色：完整流程，但仅分析属于指定角色的任务和界面
+- **无参数 或 `full`** → 完整查漏：Step 1 → Step 2 → Step 3 → Step 4 → Step 5
+- **`quick`** → 快速查漏：Step 1 → Step 4（跳过 Step 2、3、5，这些需要 screen-map）
+- **`journey`** → 仅旅程：Step 3 → Step 4（仅旅程验证 + 生成任务清单）
+- **`role <角色名>`** → 限定角色：同 full 完整流程，但仅分析属于指定角色的任务和界面
 
 ## 前置检查
 

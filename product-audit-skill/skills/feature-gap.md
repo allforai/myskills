@@ -67,6 +67,10 @@ Step 3: 用户旅程验证
       若 .allforai/screen-map/screen-map.json 不存在 → 跳过 Step 3，提示用户运行 /screen-map
       ↓ 用户确认（或跳过）
 Step 4: 生成缺口任务清单
+      ↓ 用户确认
+Step 5: 业务流链路完整性检查
+      基于 .allforai/product-map/business-flows.json
+      若 business-flows.json 不存在 → 跳过 Step 5，提示用户运行 /product-map
 ```
 
 ---
@@ -129,6 +133,8 @@ Step 4: 生成缺口任务清单
 | `MISSING_VALIDATION` | 表单提交按钮无 `validation_rules`，缺少前端校验 |
 | `NO_EMPTY_STATE` | 列表界面无 `states.empty`，空数据无处理 |
 | `UNHANDLED_EXCEPTION` | task.exceptions 中有异常，但界面无对应 `exception_flows` |
+| `NO_SCREEN` | 任务在 task-inventory 中存在，但 screen-map 中无对应界面 |
+| `ENTRY_BROKEN` | 界面存在但从主导航无法到达（入口链路断裂） |
 
 输出：`.allforai/feature-gap/screen-gaps.json`
 
@@ -198,6 +204,30 @@ Step 4: 生成缺口任务清单
 - `.allforai/feature-gap/gap-report.md` — 可读报告
 - `.allforai/feature-gap/gap-decisions.json` — 用户确认记录
 
+**gap-report.md 结构**：
+
+```markdown
+# 功能缺口报告
+
+## 摘要
+- 任务缺口：X 个（高 X / 中 X / 低 X）
+- 界面缺口：X 个
+- 旅程缺口：X 个
+- 业务流缺口：X 个
+
+## 缺口任务清单（按优先级排序）
+| 优先级 | 任务 | 缺口类型 | 描述 |
+|--------|------|---------|------|
+| P0 | ... | ... | ... |
+
+## Flag 统计
+| Flag | 数量 | 影响 |
+|------|------|------|
+| ... | ... | ... |
+```
+
+**用户确认**：缺口优先级排序合理吗？有需要调整优先级或移除的缺口吗？
+
 ---
 
 ### Step 5：业务流链路完整性检查（需 business-flows.json）
@@ -216,6 +246,19 @@ Step 4: 生成缺口任务清单
 
 输出：`.allforai/feature-gap/flow-gaps.json`
 
+```json
+[
+  {
+    "flow_id": "F001",
+    "flow_name": "{业务流名称}",
+    "gap_type": "ORPHAN_TASK | MISSING_TERMINAL",
+    "description": "描述",
+    "affected_tasks": ["T001", "T008"],
+    "severity": "高 | 中 | 低"
+  }
+]
+```
+
 ---
 
 ## 输出文件结构
@@ -230,6 +273,27 @@ Step 4: 生成缺口任务清单
 ├── gap-decisions.json    # 用户确认记录（增量运行复用）
 └── flow-gaps.json        # 业务流链路完整性检查结果（需 business-flows.json）
 ```
+
+### decisions.json 通用格式
+
+```json
+[
+  {
+    "step": "Step 1",
+    "item_id": "T001",
+    "item_name": "描述",
+    "decision": "confirmed | modified | deferred",
+    "reason": "用户备注（可选）",
+    "decided_at": "2024-01-15T10:30:00Z"
+  }
+]
+```
+
+- `confirmed`：确认为真实缺口
+- `modified`：修改严重级别或描述后确认
+- `deferred`：暂不处理，下次重新评估
+
+**加载逻辑**：每个 Step 开始前检查 decisions.json，已 `confirmed` 的条目跳过确认直接沿用。
 
 ---
 
