@@ -198,6 +198,24 @@ Step 4: 生成缺口任务清单
 
 ---
 
+### Step 5：业务流链路完整性检查（需 business-flows.json）
+
+**前置检查：** 若 `.allforai/product-map/business-flows.json` 不存在，跳过此步骤，提示先运行 `/product-map`。
+
+读取 `business-flows.json`，执行两项检查：
+
+**检查 1：孤立任务（ORPHAN_TASK）**
+
+遍历 `task-inventory.json` 所有任务，检查是否被任意流的节点引用。未被引用的任务标记为 `ORPHAN_TASK`，供用户判断是独立功能还是遗漏建模。
+
+**检查 2：流终止节点（MISSING_TERMINAL）**
+
+遍历每条流的节点，检查是否存在面向用户的终止节点（`role` 为最终用户角色 + 该节点的 task 有 `outputs.messages` 或 `outputs.states`）。若无，标记 `MISSING_TERMINAL`。
+
+输出：`.allforai/feature-gap/flow-gaps.json`
+
+---
+
 ## 输出文件结构
 
 ```
@@ -207,7 +225,8 @@ Step 4: 生成缺口任务清单
 ├── journey-gaps.json     # Step 3: 用户旅程验证结果（需 screen-map）
 ├── gap-tasks.json        # Step 4: 缺口任务清单（按优先级排序）
 ├── gap-report.md         # 可读报告
-└── gap-decisions.json    # 用户确认记录（增量运行复用）
+├── gap-decisions.json    # 用户确认记录（增量运行复用）
+└── flow-gaps.json        # 业务流链路完整性检查结果（需 business-flows.json）
 ```
 
 ---
