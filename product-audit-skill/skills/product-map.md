@@ -72,7 +72,7 @@ Step 2: 核心任务提取（按角色展开）
       PM 可补充代码没有的任务（期望方向）、标记代码有但业务不需要的任务
       → 用户确认任务清单，生成 task-inventory.json
       ↓
-Step 3: 业务流建模（所有模式均执行）
+Step 3: 业务流建模（所有模式均不可跳过）
       自动识别候选流 + 用户补充跨系统链路
       检测流缺口：MISSING_TASK / BROKEN_HANDOFF / ORPHAN_TASK / MISSING_TERMINAL
       → 用户确认，生成 business-flows.json + business-flows-report.md
@@ -348,6 +348,14 @@ Claude 分析 `task-inventory.json`，寻找任务间的状态衔接关系：若
             "mechanism": "webhook",
             "data": ["售后单 ID", "买家 ID", "金额", "原因"]
           },
+          "gap": false
+        },
+        {
+          "seq": 3,
+          "name": "商户处理售后申请",
+          "task_ref": "merchant-backend:T016",
+          "role": "商户",
+          "handoff": null,
           "gap": false
         },
         {
