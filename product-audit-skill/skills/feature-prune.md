@@ -113,7 +113,7 @@ Step 5: 生成剪枝任务清单
 - 不存在 → 跳过 Step 2，在报告中注明：「Step 2 已跳过，需先运行 /screen-map 生成界面地图。场景对齐分析无法执行，请直接进入 Step 3。」
 - 存在 → 对剪枝候选中的每个功能执行以下检查
 
-对剪枝候选中的每个功能，检查：
+对 `candidate`（低频）和 `review`（中频）两个分层中的每个功能，检查：
 
 **问题 A：是否服务于核心场景？**
 
@@ -153,7 +153,7 @@ Step 5: 生成剪枝任务清单
     "question_a": "core | secondary | none",
     "question_b": "match | over_engineered | under_served",
     "question_c": "standalone | dependent",
-    "recommendation": "CORE | DEFER | CUT",
+    "preliminary_decision": "CORE | DEFER | CUT",
     "reason": "综合判定理由"
   }
 ]

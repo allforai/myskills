@@ -1,6 +1,6 @@
 ---
-description: "功能查漏：基于 product-map 检测任务完整性、界面完整性和用户旅程缺口。模式: full / quick / journey / role"
-argument-hint: "[mode: full|quick|journey|role] [角色名]"
+description: "功能查漏：基于 product-map 检测任务完整性、界面完整性和用户旅程缺口。模式: full / quick / journey / role / refresh"
+argument-hint: "[mode: full|quick|journey|role|refresh] [角色名]"
 allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion"]
 ---
 
@@ -20,6 +20,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 - **`quick`** → 快速查漏：Step 1 → Step 4（跳过 Step 2、3、5，这些需要 screen-map）
 - **`journey`** → 仅旅程：Step 3 → Step 4（仅旅程验证 + 生成任务清单）
 - **`role <角色名>`** → 限定角色：同 full 完整流程，但仅分析属于指定角色的任务和界面
+- **`refresh`** → 重新分析：将 `gap-decisions.json` 重命名为 `.bak` 备份，忽略所有已有决策缓存，从 Step 1 开始完整重跑
 
 ## 前置检查
 

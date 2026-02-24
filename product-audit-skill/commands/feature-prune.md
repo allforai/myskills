@@ -1,6 +1,6 @@
 ---
 description: "功能剪枝：基于 product-map 频次数据评估功能去留，输出 CORE / DEFER / CUT 分类清单。模式: full / quick / scope"
-argument-hint: "[mode: full|quick|scope] [模块名]"
+argument-hint: "[mode: full|quick|scope|refresh] [模块名]"
 allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion", "WebSearch", "WebFetch"]
 ---
 

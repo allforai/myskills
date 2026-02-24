@@ -1,6 +1,6 @@
 ---
 description: "用例集：从功能地图和界面地图推导完整用例，输出 JSON 机器版和 Markdown 人类版。模式: full / quick / scope"
-argument-hint: "[mode: full|quick|scope] [功能区名]"
+argument-hint: "[mode: full|quick|scope|refresh] [功能区名]"
 allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion"]
 ---
 

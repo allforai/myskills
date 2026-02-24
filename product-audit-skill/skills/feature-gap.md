@@ -100,6 +100,24 @@ Step 5: 业务流链路完整性检查
 
 输出：`.allforai/feature-gap/task-gaps.json`
 
+```json
+[
+  {
+    "task_id": "T001",
+    "task_name": "{任务名}",
+    "frequency": "高 | 中 | 低",
+    "gaps": ["CRUD_INCOMPLETE", "NO_EXCEPTIONS"],
+    "details": {
+      "crud_missing": ["删除"],
+      "exceptions_count": 0,
+      "acceptance_criteria_count": 0,
+      "rules_count": 0,
+      "high_freq_buried": false
+    }
+  }
+]
+```
+
 ---
 
 ### Step 2：界面与按钮完整性检查
@@ -138,6 +156,24 @@ Step 5: 业务流链路完整性检查
 
 输出：`.allforai/feature-gap/screen-gaps.json`
 
+```json
+[
+  {
+    "screen_id": "S001",
+    "screen_name": "{界面名}",
+    "gaps": ["NO_PRIMARY", "SILENT_FAILURE"],
+    "details": [
+      {
+        "flag": "SILENT_FAILURE",
+        "description": "「{按钮名}」按钮 on_failure 未定义",
+        "affected_tasks": ["T001"],
+        "severity": "高 | 中 | 低"
+      }
+    ]
+  }
+]
+```
+
 ---
 
 ### Step 3：用户旅程验证
@@ -166,6 +202,24 @@ Step 5: 业务流链路完整性检查
 **旅程验证新增节点**：Step 3 中「操作有反馈」节点现检查 `on_failure` 是否定义，而非仅检查成功提示。若 `on_failure` 缺失，旅程在此节点断开。
 
 输出：`.allforai/feature-gap/journey-gaps.json`
+
+```json
+[
+  {
+    "role": "{角色名}",
+    "task_id": "T001",
+    "task_name": "{任务名}",
+    "score": "3/4",
+    "breakpoints": [
+      {
+        "node": "操作有反馈",
+        "issue": "on_failure 未定义",
+        "affected_screen": "S001"
+      }
+    ]
+  }
+]
+```
 
 ---
 

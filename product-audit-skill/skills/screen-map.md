@@ -217,7 +217,7 @@ Step 3: 输出报告
 
 | 检测 | 逻辑 | 意义 |
 |------|------|------|
-| 高频操作可达性 | `frequency=高` + `click_depth >= 2` → `HIGH_FREQ_BURIED` | 用户最常做的事不应被埋深 |
+| 高频操作可达性 | `frequency=高` + `click_depth >= 3` → `HIGH_FREQ_BURIED` | 用户最常做的事不应被埋深 |
 | 主操作频次一致性 | `primary_action` 不是频次最高的操作 → `PRIMARY_MISMATCH` | 主操作应由频次决定 |
 
 **`flags` 取值（界面级）**：
