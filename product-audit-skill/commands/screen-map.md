@@ -30,6 +30,8 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 2. 如果 `.allforai/screen-map/screen-map-decisions.json` 存在，自动加载历史决策，跳过已确认项的重复询问
 
+3. **加载受众类型**：检查 `.allforai/product-map/role-profiles.json` 中角色是否含 `audience_type` 字段。存在 → 构建角色-受众映射（audience_mode = "typed"）；否则 → audience_mode = "default"（使用 v2.3.0 通用阈值）
+
 ## 模式路由
 
 根据用户参数决定执行模式：
@@ -41,9 +43,11 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 ## 执行流程
 
 1. 参考已加载的 `skills/screen-map.md` 中的目标定义、工作流和铁律
-2. 根据模式按需执行对应步骤
-3. 按工作流执行，**每个 Step 必须有用户确认环节**
-4. **【强制】执行完毕后，必须在对话中直接输出完整的报告摘要**
+2. **规模判定**：统计任务数 → 判定规模等级（小型 ≤30 / 中型 31-80 / 大型 >80）→ 告知用户采用的交互模式
+3. 根据模式按需执行对应步骤
+4. **大型产品**（界面 >30）：必须使用 Python/Node 脚本批量生成 `screen-map.json`，用户审核脚本输出
+5. 按工作流执行，**每个 Step 必须有用户确认环节**（确认方式按规模分级）
+6. **【强制】执行完毕后，必须在对话中直接输出完整的报告摘要**
 
 ## 详细文档（按需用 Read 工具加载）
 
@@ -67,7 +71,9 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 > 执行时间: {时间}
 > 执行模式: {full/quick/scope}
+> 产品规模: {小型/中型/大型}（{X} 个任务）
 > 分析范围: {全产品 / 指定模块名}
+> 受众模式: {typed / default}
 
 ### 总览
 
@@ -78,6 +84,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 | 已覆盖任务 | X / 总任务数 |
 | 异常覆盖缺口（仅 full 模式） | X 个 |
 | 界面级冲突（仅 full 模式） | X 个 |
+| 受众分布 | consumer X · professional X · default X |
 
 ### 高频操作（帕累托 Top 20%）
 
@@ -97,6 +104,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 > 界面地图: `.allforai/screen-map/screen-map.json`
 > 冲突报告: `.allforai/screen-map/screen-conflict.json`
 > 可读报告: `.allforai/screen-map/screen-map-report.md`
+> 导航地图: `.allforai/screen-map/screen-map-visual.svg`
 > 决策日志: `.allforai/screen-map/screen-map-decisions.json`
 ```
 

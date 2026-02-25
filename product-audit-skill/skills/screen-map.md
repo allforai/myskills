@@ -8,7 +8,7 @@ description: >
   or mentions mapping screens to tasks, button-level CRUD analysis, UI navigation paths,
   error/empty state design, form validation rules, or exception flow coverage.
   Requires product-map to have been run first.
-version: "2.2.0"
+version: "2.4.0"
 ---
 
 # Screen Map — 界面与异常状态地图
@@ -53,11 +53,87 @@ task-inventory.json 为基础      以 task-inventory 为输入        读 scree
 
 ---
 
+## 规模适配
+
+根据产品任务数量自动判定规模，采用不同交互策略。
+
+### 规模判定
+
+| 规模 | 任务数 | 说明 |
+|------|--------|------|
+| 小型 | ≤ 30 | 逐项确认，完整展示 |
+| 中型 | 31 - 80 | 摘要确认，按模块聚合 |
+| 大型 | > 80 | 统计+分组确认，仅展开有问题项 |
+
+### 交互策略
+
+| 环节 | 小型 | 中型 | 大型 |
+|------|------|------|------|
+| Step 1 确认 | 完整列表逐个确认 | 按模块摘要（界面数/操作数/覆盖率） | 统计总览 + 仅展开有 flag 的界面 |
+| Step 2 问题展示 | 全部详细展示 | 高/中级详细展示，低级摘要 | 高级详细展示，中级摘要+示例，低/INFO 仅统计 |
+| Step 2 确认 | 逐条确认 | 按类型分组确认 | 统计总览 + 仅高级逐条确认 |
+
+### 脚本生成指南
+
+当界面数 > 30 时，**必须使用 Python/Node 脚本**生成 `screen-map.json`，而非手动逐条构建：
+
+1. 从路由配置 / 页面组件目录批量提取界面列表
+2. 从组件代码批量提取按钮和操作
+3. 关联 task-inventory.json 中的任务
+4. 输出符合 Schema 的 JSON 文件
+5. 用户仅需审核脚本输出，而非逐项构建
+
+---
+
+## 受众感知设计
+
+检测阈值和严重度规则根据界面所服务的用户群体自动调整。
+
+### 受众类型解析
+
+每个界面的 `audience_type` 按以下规则解析：
+
+1. 收集界面所有 `actions[].roles` 引用的角色 ID
+2. 查找 `role-profiles.json` 中每个角色的 `audience_type`
+3. 决定界面级受众类型：
+
+| 角色组合 | 界面 audience_type | 理由 |
+|---------|-------------------|------|
+| 全部 consumer | `consumer` | 纯 C 端界面 |
+| 全部 professional | `professional` | 纯 B 端界面 |
+| 混合 | `consumer` | 取严格侧，保护普通用户 |
+| 全部未标注 | `default` | 兼容 v2.3.0 |
+
+### 受众设计档案
+
+| 参数 | `default`（v2.3.0 兼容） | `consumer`（C端） | `professional`（B端） |
+|------|--------------------------|--------------------|-----------------------|
+| HIGH_FREQ_BURIED 阈值 | `click_depth >= 3` | `click_depth >= 3` | `click_depth >= 5` |
+| OVERLOADED 任务数上限 | `5` | `3` | `8` |
+| is_primary 推导 | frequency=高 且 depth ≤ 1 | frequency=高 且 depth ≤ 1 | frequency=高 且 depth ≤ 2 |
+| HIGH_RISK_NO_CONFIRM | risk_level=高 | risk_level >= 中 | risk_level=高 |
+| MISSING_VALIDATION | frequency=高 或 rules 匹配 | 所有 C/U 操作均触发 | frequency=高 或 rules 匹配 |
+| NO_EMPTY_STATE severity | 中 | 高（需引导式空状态） | 低（简单提示即可） |
+| SILENT_FAILURE severity | 高 | 高 | 中（专业用户可查日志） |
+
+### 设计理念对照
+
+| 维度 | Consumer（C端） | Professional（B端） |
+|------|----------------|---------------------|
+| 信息密度 | 低，每屏聚焦单一任务 | 高，仪表盘、多列表格 |
+| 校验策略 | 严格、即时、防呆 | 批量操作，专家可跳过 |
+| 空状态 | 必须有引导（情感化设计） | 简单提示即可 |
+| 确认弹窗 | 中高风险均需确认 | 仅高风险需确认 |
+| 错误恢复 | 撤销 > 确认弹窗 | 批量回滚、操作日志 |
+
+---
+
 ## 工作流
 
 ```
 前置：检查 .allforai/product-map/task-inventory.json 是否存在
       若不存在 → 提示用户先运行 /product-map，终止
+      统计任务数 → 判定规模（小型/中型/大型）→ 告知用户交互模式
       ↓
 Step 1: 界面与按钮梳理
       按任务展开，梳理每个任务的界面和操作按钮
@@ -95,6 +171,17 @@ Step 3: 输出报告
     检查 .allforai/product-map/task-inventory.json：
       存在 → 加载任务列表，提取每个任务的 task_name、exceptions、risk_level、main_flow
       不存在 → 提示：「请先运行 /product-map 生成任务清单，再运行 /screen-map」，终止执行
+
+  Phase 2.5 — 加载受众类型：
+    检查 .allforai/product-map/role-profiles.json：
+      存在且角色含 audience_type → 构建 role_id → audience_type 映射，标记 audience_mode = "typed"
+      否则 → audience_mode = "default"（使用 v2.3.0 通用阈值）
+    告知用户：「受众模式：typed — X 个 consumer 角色 + Y 个 professional 角色」或「default — 使用通用阈值」
+
+  Phase 3 — 规模判定：
+    统计任务总数 → 判定规模等级（小型/中型/大型）
+    告知用户：「本产品共 X 个任务，判定为【大/中/小】型产品，将采用 {交互模式} 进行确认」
+    记录 scale_level 供后续 Step 引用
 ```
 
 ---
@@ -120,6 +207,15 @@ Step 3: 输出报告
 - 批量操作（batch / bulk action）
 - 每个操作标注 CRUD 类型（Create / Read / Update / Delete）
 
+**校验规则提取方法**：
+
+从代码中提取前端校验规则，转换为产品语言：
+- **表单校验库**（Yup / Zod / Joi / Valibot 等）：提取 schema 定义中的 required、min/max、pattern 等规则
+- **HTML5 表单属性**：提取 `required`、`minlength`、`maxlength`、`pattern`、`type="email"` 等原生校验
+- **自定义校验函数**：识别 `validate`、`validator`、`check` 等函数中的校验逻辑
+- **关联任务 rules 字段**：参照 `task-inventory.json` 中任务的 `rules` 字段，补充前端应校验但代码未实现的规则
+- 所有提取结果统一转换为产品语言（如 `yup.string().required()` → `必填`，`yup.number().min(0)` → `金额 ≥ 0`）
+
 **click_depth 推导**：从角色的主入口页面开始计算到达该操作需要的最少点击次数（主导航 = 0，列表页按钮 = 1，详情页按钮 = 2，弹窗内按钮 = 3）。
 
 **frequency 推导**：继承关联任务在 `task-inventory.json` 中的 `frequency` 值。同一界面有多个任务关联时，取最高频次。
@@ -140,6 +236,7 @@ Step 3: 输出报告
       "primary_purpose": "让客服快速、准确地提交退款申请",
       "primary_action": "提交退款申请",
       "entry_point": "订单详情页 → 申请退款按钮",
+      "audience_type": "professional",
       "tasks": ["T001"],
       "states": {
         "empty": "暂无退款申请，提示用户新建",
@@ -198,6 +295,7 @@ Step 3: 输出报告
 | `primary_purpose` | 这个页面最重要的目标（用户视角一句话） |
 | `primary_action` | 频次最高的操作，由帕累托分析自动推导，PM 可调整 |
 | `states` | 界面的各类状态：`empty`（空数据）/ `loading`（加载中）/ `error`（错误）/ `permission_denied`（无权限）等 |
+| `audience_type` | 界面受众类型：`consumer` / `professional` / `default`，由关联角色自动推导 |
 
 #### 按钮字段说明
 
@@ -207,7 +305,7 @@ Step 3: 输出报告
 | `crud` | `C` 新增 / `R` 查看 / `U` 修改 / `D` 删除 |
 | `frequency` | 操作频次：高 / 中 / 低 |
 | `click_depth` | 触达该按钮需要几次点击（1=直接可见，2=需要展开，3+=深度隐藏） |
-| `is_primary` | 由频次自动推导（`frequency=高` 且 `click_depth=1`），PM 可覆盖 |
+| `is_primary` | 由频次自动推导（frequency=高 且 click_depth 在受众档案范围内：consumer/default ≤ 1，professional ≤ 2），PM 可覆盖 |
 | `roles` | 哪些角色可见/可操作此按钮 |
 | `requires_confirm` | 是否需要二次确认弹窗 |
 | `on_failure` | 操作失败时界面如何响应（提示文案、高亮字段、错误位置） |
@@ -226,20 +324,26 @@ Step 3: 输出报告
 
 | 检测 | 逻辑 | 意义 |
 |------|------|------|
-| 高频操作可达性 | `frequency=高` + `click_depth >= 3` → `HIGH_FREQ_BURIED` | 用户最常做的事不应被埋深 |
+| 高频操作可达性 | `frequency=高` + `click_depth >= 受众阈值`（consumer/default: 3, professional: 5）→ `HIGH_FREQ_BURIED` | 用户最常做的事不应被埋深 |
 | 主操作频次一致性 | `primary_action` 不是频次最高的操作 → `PRIMARY_MISMATCH` | 主操作应由频次决定 |
 
 **`flags` 取值（界面级）**：
 
 | 标记 | 含义 |
 |------|------|
-| `OVERLOADED` | 单页任务数超过阈值（默认 5），职责过重 |
+| `OVERLOADED` | 单页任务数超过受众阈值（consumer: 3, professional: 8, default: 5），职责过重 |
 | `HIGH_FREQ_BURIED` | 高频操作被埋在次级菜单 |
 | `PRIMARY_MISMATCH` | `primary_action` 不是频次最高的操作 |
 | `ORPHAN` | 没有任何任务关联，疑似废弃页面 |
 | `NO_ENTRY` | 没有任何其他页面指向此页（孤立入口） |
 
-**用户确认**：界面和按钮梳理完整吗？频次评估准确吗？异常响应覆盖完整吗？
+**用户确认（按规模分级）**：
+
+- **小型**（≤ 30 任务）：展示完整界面列表，逐个确认界面、按钮、异常响应
+- **中型**（31-80 任务）：按模块展示摘要（界面数 / 操作数 / 异常覆盖率），用户确认模块级汇总，仅对有 flag 的界面展开详情
+- **大型**（> 80 任务）：展示统计总览（总界面数、总操作数、覆盖率、flag 数），按模块分组仅展开有 flag 的界面，其余折叠为一行摘要
+
+所有规模均需确认：界面和按钮梳理完整吗？频次评估准确吗？异常响应覆盖完整吗？
 
 输出：`.allforai/screen-map/screen-map.json`
 
@@ -265,6 +369,7 @@ Step 3: 输出报告
           "name": "退款申请页",
           "task_refs": ["T001"],
           "action_count": 2,
+          "audience_type": "professional",
           "has_gaps": false
         }
       ]
@@ -292,17 +397,35 @@ Step 3: 输出报告
 
 | 问题类型 | Flag | 检测逻辑 |
 |----------|------|----------|
-| 冗余入口 | `REDUNDANT_ENTRY` | 同一操作（相同 `crud` + 相同任务关联）在多个界面重复出现 |
-| 高风险无确认 | `HIGH_RISK_NO_CONFIRM` | 对应任务 `risk_level=高` 且按钮 `requires_confirm=false` |
+| 冗余入口 | `REDUNDANT_ENTRY` | 同一操作（相同 `crud` + 相同任务关联）在多个界面重复出现，且不属于已识别的标准模式 |
+| 高风险无确认 | `HIGH_RISK_NO_CONFIRM` | 按钮 `requires_confirm=false` 且任务风险达到受众阈值（consumer: risk_level >= 中, professional/default: risk_level=高） |
+
+**列表+详情页模式识别**（REDUNDANT_ENTRY 例外规则）：
+
+若重复操作出现的两个界面恰好构成同一实体的列表页和详情页，属于标准产品模式，不应视为冗余。识别条件（满足任一）：
+- 界面名称一个含「列表」/「list」，另一个含「详情」/「detail」/「编辑」/「edit」
+- `click_depth` 差值为 1（列表页较浅，详情页较深）
+- 两个界面关联的任务集合为包含关系（详情页任务 ⊆ 列表页任务）
+
+匹配时：自动标记 `pattern: "list_detail_pair"`，severity 降级为 `INFO`，不计入问题总数。
 
 #### 异常覆盖缺口
 
 | 问题类型 | Flag | 检测逻辑 |
 |----------|------|----------|
 | 操作无失败反馈 | `SILENT_FAILURE` | 按钮 `crud` 为 C/U/D，但 `on_failure` 未定义或为空 |
-| 表单缺少前端校验 | `MISSING_VALIDATION` | 按钮为表单提交（`crud=C` 或 `crud=U`），`validation_rules` 为空数组 |
+| 表单缺少前端校验 | `MISSING_VALIDATION` | 按钮为表单提交（`crud=C` 或 `crud=U`），`validation_rules` 为空数组，且满足触发门槛（见下） |
 | 列表无空状态处理 | `NO_EMPTY_STATE` | 列表/表格类界面，`states.empty` 未定义或为空 |
 | 异常无界面响应 | `UNHANDLED_EXCEPTION` | task.exceptions 中有异常，但该界面对应按钮的 `exception_flows` 没有覆盖该异常 |
+
+**MISSING_VALIDATION 触发门槛**：
+
+- **consumer 界面**：所有 C/U 操作均触发（consumer 用户需要严格防呆校验）
+- **professional/default 界面**：仅在满足以下任一条件时触发为中/高 severity：
+  - 关联任务的 `rules` 字段包含前端应校验的规则（如必填、格式、范围限制）
+  - 操作 `frequency=高`
+
+不满足以上条件时（低频操作且无明确校验要求）→ 降级为 `INFO`，不计入问题总数。
 
 **冲突报告 Schema**：
 
@@ -314,9 +437,11 @@ Step 3: 输出报告
     {
       "id": "SC001",
       "type": "REDUNDANT_ENTRY",
-      "description": "「标记订单完成」按钮在订单列表页和订单详情页均出现，业务逻辑相同，入口重复",
+      "description": "「标记订单完成」按钮在订单列表页和订单详情页均出现，属于列表+详情页标准模式",
       "affected_screens": ["S005", "S009"],
-      "severity": "中",
+      "pattern": "list_detail_pair",
+      "audience_type": "professional",
+      "severity": "INFO",
       "confirmed": false
     }
   ],
@@ -327,6 +452,7 @@ Step 3: 输出报告
       "description": "「批量导出」按钮（S008）无 on_failure 定义，导出失败时用户无任何反馈",
       "affected_screens": ["S008"],
       "affected_actions": ["批量导出"],
+      "audience_type": "professional",
       "severity": "高",
       "confirmed": false
     },
@@ -336,6 +462,7 @@ Step 3: 输出报告
       "description": "T001 异常「审批超时 48h → 自动升级到上级」在退款申请页无对应 exception_flow",
       "affected_tasks": ["T001"],
       "affected_screens": ["S001"],
+      "audience_type": "professional",
       "severity": "中",
       "confirmed": false
     }
@@ -347,8 +474,28 @@ Step 3: 输出报告
 - `高`：影响高频操作（frequency = 高）或涉及数据丢失风险（SILENT_FAILURE）
 - `中`：影响中频操作，或用户体验问题但不影响数据完整性
 - `低`：影响低频操作，或纯粹的优化建议
+- `INFO`：已识别的标准模式（如 `list_detail_pair`）或降级项，不计入问题总数
 
-**用户确认**：检测结果有没有误报？哪些问题需要处理？
+**受众类型调整**（在基础规则之上）：
+
+| Flag | Consumer 调整 | Professional 调整 |
+|------|--------------|-------------------|
+| SILENT_FAILURE | 高（不变） | 中（可查操作日志） |
+| NO_EMPTY_STATE | 高（需引导设计） | 低（简单提示即可） |
+| MISSING_VALIDATION | 所有 C/U 均为中（不降级 INFO） | 按基础规则 |
+| HIGH_RISK_NO_CONFIRM | risk_level >= 中 即触发 | 仅 risk_level=高 |
+| 其他 | 按基础规则 | 按基础规则 |
+
+**大规模展示策略**：
+- **高级问题**：所有规模均完整展示详情
+- **中级问题**：小/中型完整展示；大型展示摘要+1个示例
+- **低级问题**：小型完整展示；中型摘要；大型仅统计数量
+- **INFO 级别**：小型展示列表；中/大型仅统计数量
+
+**用户确认（按规模分级）**：
+- **小型**：逐条确认每个问题
+- **中型**：按问题类型分组确认
+- **大型**：统计总览 + 仅高级问题逐条确认，其余按类型批量确认
 
 输出：`.allforai/screen-map/screen-conflict.json`
 
@@ -364,6 +511,7 @@ Step 3: 输出报告
 # 界面地图摘要
 
 界面 X 个 · 操作 X 个 · 覆盖任务 X/X · 异常缺口 X 个 · 界面冲突 X 个
+受众分布：consumer X 个界面 · professional X 个界面 · default X 个界面
 
 ## 高频操作（帕累托 Top 20%）
 - 退款申请页 → 提交退款申请（click_depth=1）
@@ -380,6 +528,34 @@ Step 3: 输出报告
 
 输出：`.allforai/screen-map/screen-map-report.md`
 
+#### `screen-map-visual.svg` — 导航地图可视化
+
+在生成 `screen-map-report.md` 后，使用 Python 脚本生成 SVG 导航地图：
+
+**生成方法**：
+
+```python
+# 脚本逻辑概要（实际执行时生成完整脚本）
+# 1. 读取 screen-map.json
+# 2. 按模块分区布局
+# 3. 每个模块一个分组框，内含界面节点
+# 4. entry_point 关系用箭头连线（界面 → 子界面）
+# 5. 颜色编码：
+#    - 正常界面：蓝色边框 (#4A90D9)
+#    - 有 flag 的界面：橙色边框 (#E8943A)
+#    - 高频界面（含高频操作）：绿色边框 (#5CB85C)
+# 6. 底部图例：正常界面 / 有问题界面 / 高频界面
+```
+
+**SVG 布局规则**：
+- 按模块水平分区，每个模块纵向排列界面节点
+- 节点显示：界面名称 + 操作数量
+- entry_point 解析为有向箭头（来源界面 → 目标界面）
+- 节点宽度固定 180px，高度按内容自适应
+- 模块标题居中显示在分组框顶部
+
+输出：`.allforai/screen-map/screen-map-visual.svg`
+
 ---
 
 ## 输出文件结构
@@ -390,6 +566,7 @@ Step 3: 输出报告
 ├── screen-index.json           # Step 1: 界面索引（轻量，供下游两阶段加载）
 ├── screen-conflict.json        # Step 2: 界面级冲突 + 异常覆盖缺口
 ├── screen-map-report.md        # Step 3: 可读报告
+├── screen-map-visual.svg       # Step 3: 导航地图可视化（按模块分区，颜色编码）
 └── screen-map-decisions.json   # 用户决策日志（增量复用）
 ```
 
