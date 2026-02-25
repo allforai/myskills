@@ -188,8 +188,24 @@ product-concept（战略层）        product-map（运营层）
 7. **AskUserQuestion** 选择题：
    - "产品运营需要哪些后台角色？"（基于反推结果生成选项，多选）
    - 对每个选中角色：简化版 VPC（Jobs + 核心工具需求，不需要 Pains/Gains 深度展开）
-8. 输出：`role-value-map.json`（消费侧 + 生产侧角色合并）
-9. → 用户确认
+
+**Phase C — 实现合并标注**
+
+概念层按职责细分角色确保需求不遗漏，但实现层通常不需要这么多独立角色。在输出中标注实现合并建议：
+
+8. 为每个生产侧角色添加 `impl_group` 字段，标注实现时归属哪个系统角色：
+   ```
+   概念角色（按职责细分）        实现角色（按权限合并）
+   ─────────────────          ─────────────────
+   内容运营    ──┐
+   AI 训练师   ──┼──→         运营后台用户（权限区分）
+   数据运营    ──┘
+   系统管理员  ──────→         超级管理员
+   ```
+9. **原则**：概念层的角色粒度服务于需求完整性，实现层的角色粒度服务于权限系统设计。product-map 生成任务时按 `impl_group` 归组，同一 `impl_group` 的角色共享一个后台界面，通过权限标签区分功能入口。
+
+10. 输出：`role-value-map.json`（消费侧 + 生产侧角色，含 `impl_group` 标注）
+11. → 用户确认
 
 ---
 
@@ -275,6 +291,7 @@ product-concept（战略层）        product-map（运营层）
       "role_id": "R1",
       "role_name": "角色名",
       "role_type": "consumer | producer | admin",
+      "impl_group": "end_user | operator | super_admin",
       "jobs": [{ "type": "functional | emotional | social", "description": "..." }],
       "pains": ["痛点1", "痛点2"],
       "gains": ["期望收益1", "期望收益2"],
@@ -341,6 +358,7 @@ product-concept（战略层）        product-map（运营层）
       "role_id": "R1",
       "role_name": "角色名",
       "role_type": "consumer | producer | admin",
+      "impl_group": "实现时归属的系统角色（如 'operator' / 'super_admin'）",
       "description": "角色简要描述（年龄段、典型特征等）",
       "jobs": [{ "type": "functional | emotional | social", "description": "..." }],
       "pains": ["痛点1", "痛点2"],
@@ -349,14 +367,22 @@ product-concept（战略层）        product-map（运营层）
       "gain_creators": ["产品如何创造收益"]
     }
   ],
+  "impl_groups": [
+    {
+      "group_id": "operator",
+      "group_name": "运营后台用户",
+      "concept_roles": ["R4", "R5", "R6"],
+      "note": "共享一个后台界面，通过权限标签区分功能入口"
+    }
+  ],
   "confirmed": false
 }
 ```
 
-**`role_type` 说明**：
-- `consumer`：消费侧角色（使用产品的最终用户）
-- `producer`：生产侧角色（创建/管理内容或服务）
-- `admin`：管理侧角色（系统管理、数据分析、客服）
+**字段说明**：
+- `role_type`：`consumer`（消费侧）/ `producer`（生产侧）/ `admin`（管理侧）
+- `impl_group`：实现时归属的系统角色。概念层按职责细分确保需求不遗漏，实现层按权限合并减少开发复杂度。消费侧角色通常 `impl_group` 为 `"end_user"`
+- `impl_groups`：实现角色分组汇总，标注哪些概念角色共享一个后台
 
 生产侧和管理侧角色的 VPC 可以简化：`pains`/`gains` 可省略，重点填写 `jobs`。
 
