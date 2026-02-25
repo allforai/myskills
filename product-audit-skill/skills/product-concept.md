@@ -5,7 +5,7 @@ description: >
   "figure out what to build", "validate a product idea", "产品概念", "产品定义",
   "我想做一个...", "这个产品应该怎么设计",
   or needs to discover what product to build before writing code.
-version: "1.2.0"
+version: "1.3.0"
 ---
 
 # Product Concept — 产品概念发现
@@ -40,7 +40,7 @@ product-concept（战略层）        product-map（运营层）
 
 | 模式 | 触发条件 | 流程 |
 |------|----------|------|
-| **发现模式**（forward） | 无代码，或用户主动触发 | Step 0→1→2→3 完整引导发现 |
+| **发现模式**（forward） | 无代码，或用户主动触发 | Step 0→1→2→3→4 完整引导发现 |
 | **提炼模式**（reverse） | 有代码，或已有 product-map | 从代码/product-map 反推 → 搜索验证 → 提炼概念 |
 
 ---
@@ -123,7 +123,7 @@ product-concept（战略层）        product-map（运营层）
 
 ---
 
-## 工作流 — 发现模式（4 Step）
+## 工作流 — 发现模式（5 Step）
 
 ### Step 0: 破题 — 锁定问题域
 
@@ -229,9 +229,34 @@ product-concept（战略层）        product-map（运营层）
 
 ---
 
-### Step 3: 概念结晶 — 输出产品概念文档
+### Step 3: 产品机制 — 核心功能怎么工作？
 
-输入：Step 0-2 的所有确认结果
+输入：Step 0-2 的确认结果
+
+产品概念定义了 WHAT（解决什么问题）和 WHO（给谁用），但没有定义 HOW（核心功能以什么机制运作）。不同的机制选择会导致完全不同的功能地图。
+
+**本步骤不涉及工程实现**（不讨论数据库/API/框架），只关注**产品机制**：用户和运营者视角下，核心功能是怎么工作的。
+
+1. **识别机制决策点**：从 Step 0-2 的功能模块和角色中，找出存在多种可行方式的核心功能：
+   - 内容生产方式（人工编辑 / AI生成+人工审核 / 实时生成 / 混合）
+   - 个性化方式（用户自选 / 算法推荐 / 两者结合）
+   - 社交机制（无社交 / 好友系统 / 排行榜 / 社区）
+   - 付费边界（功能限制 / 用量限制 / 内容限制）
+   - 等等 — 具体决策点因产品而异
+
+2. **WebSearch 搜索**竞品在这些机制上的做法
+3. **AskUserQuestion** 选择题：对每个机制决策点生成 2-4 个选项（基于竞品做法和行业趋势）
+4. 记录每个机制决策及其对功能模块的影响：
+   - 选择 X → 需要 Y 模块 / 不需要 Z 模块
+   - 选择 X → R4（内容运营）的工作量增大/减小
+5. 输出：`product-mechanisms.json`
+6. → 用户确认
+
+---
+
+### Step 4: 概念结晶 — 输出产品概念文档
+
+输入：Step 0-3 的所有确认结果
 
 1. 综合生成结构化产品概念
 2. 生成 ERRC 竞品定位矩阵（基于 Step 0 的竞品 + Step 1 的价值差异），每项标注 **Kano 分类**：
@@ -241,7 +266,7 @@ product-concept（战略层）        product-map（运营层）
    - ERRC 的 eliminate 项天然不属于任何 Kano 分类（行业认为必要但我们判定非必要）
 3. 生成一句话产品使命
 4. 输出：
-   - `product-concept.json` — 机器可读，供 product-map 消费
+   - `product-concept.json` — 机器可读，供 product-map 消费（含 mechanisms 字段）
    - `product-concept-report.md` — 人类可读报告
    - `concept-decisions.json` — 决策日志（增量复用）
 5. → 用户确认最终文档
@@ -264,7 +289,7 @@ product-concept（战略层）        product-map（运营层）
 
 ### Step 2: 概念结晶
 
-- 同发现模式 Step 3
+- 同发现模式 Step 4（跳过 Step 3 产品机制，因为代码已体现机制选择）
 
 ---
 
@@ -408,6 +433,30 @@ product-concept（战略层）        product-map（运营层）
 }
 ```
 
+### `product-mechanisms.json`（Step 3 输出）
+
+```json
+{
+  "generated_at": "ISO timestamp",
+  "mechanisms": [
+    {
+      "id": "MEC1",
+      "module": "场景库",
+      "decision_point": "内容生产方式",
+      "chosen": "AI生成 + 人工审核",
+      "alternatives_considered": ["纯人工编辑", "实时生成", "实时生成+缓存"],
+      "impact": [
+        "需要 AI 生成管线 + 审核队列",
+        "R4（内容运营）职责变为审核为主、编辑为辅",
+        "R5（AI 训练师）需要管理生成 prompt 质量"
+      ],
+      "evidence": "搜索来源 URL（可选）"
+    }
+  ],
+  "confirmed": false
+}
+```
+
 ### `concept-decisions.json`（决策日志）
 
 ```json
@@ -436,10 +485,11 @@ product-concept（战略层）        product-map（运营层）
 ```
 .allforai/product-concept/
 ├── problem-domain.json          # Step 0: 问题域 + 竞品列表 + 核心问题
-├── role-value-map.json          # Step 1: 角色价值地图（VPC 格式）
+├── role-value-map.json          # Step 1: 角色价值地图（VPC 格式，含 impl_group）
 ├── business-model.json          # Step 2: 商业模式（Lean Canvas）
-├── product-concept.json         # Step 3: 结构化产品概念（机器可读）
-├── product-concept-report.md    # Step 3: 产品概念报告（人类可读）
+├── product-mechanisms.json      # Step 3: 产品机制决策（核心功能怎么工作）
+├── product-concept.json         # Step 4: 结构化产品概念（机器可读）
+├── product-concept-report.md    # Step 4: 产品概念报告（人类可读）
 └── concept-decisions.json       # 决策日志（增量复用）
 ```
 

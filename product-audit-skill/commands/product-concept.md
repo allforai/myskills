@@ -16,8 +16,8 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 根据用户参数决定执行模式：
 
-- **无参数 或 `full`** → 发现模式：Step 0 → Step 1 → Step 2 → Step 3
-- **`reverse`** → 提炼模式：Step 0 → Step 1 → Step 2（从现有代码/地图反推）
+- **无参数 或 `full`** → 发现模式：Step 0 → Step 1 → Step 2 → Step 3 → Step 4
+- **`reverse`** → 提炼模式：Step 0 → Step 1 → Step 2（从现有代码/地图反推，跳过 Step 3 产品机制）
 
 ## 前置检查
 
