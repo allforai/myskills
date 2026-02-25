@@ -1,6 +1,6 @@
 {
   "name": "product-audit",
-  "description": "Product audit suite: product-concept (discover product vision through guided search + multiple-choice dialogue), product-map (build product map), screen-map (map screens and exception states), use-case (generate use case tree, JSON for machines + Markdown for humans), feature-gap (detect feature gaps), feature-prune (prune over-design), seed-forge (generate realistic seed data). 产品审计套件：产品概念发现、建立产品地图、界面与异常状态地图、用例集（双格式）、功能查漏、功能剪枝、种子数据锻造。",
+  "description": "Product audit suite: product-concept (discover product vision through guided search + multiple-choice dialogue), product-map (build product map), screen-map (map screens and exception states), use-case (generate use case tree, JSON for machines + Markdown for humans), feature-gap (detect feature gaps), feature-prune (prune over-design), seed-forge (generate realistic seed data), product-verify (verify code implements product map, static + dynamic acceptance test). 产品审计套件：产品概念发现、建立产品地图、界面与异常状态地图、用例集（双格式）、功能查漏、功能剪枝、种子数据锻造、产品验收（静态代码覆盖 + 动态行为验证）。",
   "version": "2.8.0",
   "author": { "name": "dv" }
 }
