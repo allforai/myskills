@@ -21,11 +21,21 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 - **`refresh`** → 重新分析：忽略所有缓存，从 Step 0 开始重跑，完成后生成 refresh-diff.md
 - **`scope <模块名>`** → 限定范围：全流程，但仅分析属于指定模块的任务
 
-## 前置检查：已有数据检测
+## ⚠️ 前置检查（必须完成，再执行任何 Step）
 
-执行前先检查：
-- 如果 `.allforai/product-concept/product-concept.json` 存在 → 进入**概念指导模式**（自主执行，仅 gap 处确认），加载产品概念作为战略指导
-- 如果 `.allforai/product-map/product-map-decisions.json` 存在，自动加载历史决策，跳过已确认项的重复询问
+**按顺序执行，不可跳过：**
+
+**Step A：检测概念指导模式**
+→ `Glob .allforai/product-concept/product-concept.json`
+→ 存在且 `version` 字段有效 → 加载全部字段，输出「检测到产品概念文档，进入概念指导模式 — 自主执行，仅在 gap 处暂停确认」，记录 `decision: "concept_guided"` 到 decisions.json
+
+**Step B：加载历史决策**
+→ `Glob .allforai/product-map/product-map-decisions.json`
+→ 存在 → 加载，输出「已加载 X 条历史决策」
+→ 已 `confirmed` / `concept_guided` / `auto_audited` 的 Step：**展示摘要，自动跳过，不重复询问**
+→ `deferred` 的 Step：重新提问
+
+**两者同时存在（概念指导 + 历史决策）**：历史决策优先 — 已确认的 Step 全部跳过，仅展示一行摘要；未确认的 Step 按概念指导模式执行（仅 gap 处暂停）。
 
 **索引文件生成**：Step 6 完成后会自动生成 `task-index.json` 和 `flow-index.json` 索引文件，供下游技能（feature-gap、feature-prune、use-case、screen-map、seed-forge）两阶段加载使用，大幅减少 token 消耗。
 
