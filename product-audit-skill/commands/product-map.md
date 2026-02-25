@@ -78,6 +78,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 | 业务约束（仅 full 模式） | X 条 |
 | 校验问题 | ERROR X / WARNING X / INFO X |
 | 竞品差距 | 竞品有我没有 X 个 / 我有竞品没有 X 个 / 做法不同 X 个 |
+| 配置项 | frontend_hardcode X / code_constant X / config_file X / general_config X / dedicated_config X |
 
 ### 高频任务清单
 
