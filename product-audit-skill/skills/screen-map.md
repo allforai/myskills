@@ -8,7 +8,7 @@ description: >
   or mentions mapping screens to tasks, button-level CRUD analysis, UI navigation paths,
   error/empty state design, form validation rules, or exception flow coverage.
   Requires product-map to have been run first.
-version: "2.4.0"
+version: "2.5.0"
 ---
 
 # Screen Map — 界面与异常状态地图
@@ -178,8 +178,15 @@ Step 3: 输出报告
       否则 → audience_mode = "default"（使用 v2.3.0 通用阈值）
     告知用户：「受众模式：typed — X 个 consumer 角色 + Y 个 professional 角色」或「default — 使用通用阈值」
 
+  Phase 2.7 — 加载概念排除清单：
+    检查 .allforai/product-concept/product-concept.json：
+      存在 → 提取 competitive_position.errc.eliminate 列表，标记 concept_mode = "active"
+      不存在 → concept_mode = "none"（不影响任何行为）
+    过滤 task-inventory：排除 status = "user_removed" 的任务，记录排除数量
+    告知用户：「概念感知：active — 已排除 X 个 user_removed 任务，ERRC.eliminate 共 Y 项」或「none — 处理全部任务」
+
   Phase 3 — 规模判定：
-    统计任务总数 → 判定规模等级（小型/中型/大型）
+    统计过滤后的活跃任务总数 → 判定规模等级（小型/中型/大型）
     告知用户：「本产品共 X 个任务，判定为【大/中/小】型产品，将采用 {交互模式} 进行确认」
     记录 scale_level 供后续 Step 引用
 ```
@@ -187,6 +194,8 @@ Step 3: 输出报告
 ---
 
 ### Step 1：界面与按钮梳理
+
+**任务过滤**：仅对 `status` 不为 `user_removed` 的任务展开界面梳理。`user_removed` 任务已被产品概念层排除（ERRC.eliminate），不需要界面。前置检查 Phase 2.7 已完成过滤。
 
 按任务展开，从代码提取页面和操作按钮，转换为产品语言描述。
 
@@ -335,7 +344,16 @@ Step 3: 输出报告
 | `HIGH_FREQ_BURIED` | 高频操作被埋在次级菜单 |
 | `PRIMARY_MISMATCH` | `primary_action` 不是频次最高的操作 |
 | `ORPHAN` | 没有任何任务关联，疑似废弃页面 |
+| `CONCEPT_ELIMINATED` | 代码中存在的界面匹配 ERRC.eliminate 功能，属于概念层战略性排除的残留代码，建议清理 |
 | `NO_ENTRY` | 没有任何其他页面指向此页（孤立入口） |
+
+**ORPHAN 重分类**（concept_mode = "active" 时）：
+
+检测到 `ORPHAN` 界面后，将其名称/描述与 `errc.eliminate` 列表进行语义匹配：
+- 匹配成功 → 重分类为 `CONCEPT_ELIMINATED`，severity 降为 `INFO`（战略性排除，非意外）
+- 匹配失败 → 保持 `ORPHAN`，severity 不变（真正的孤立页面）
+
+匹配方式：AI 对比界面名称、描述与 ERRC.eliminate 条目的语义相关性。例如 ERRC.eliminate 含「实时协作」，代码中发现名为「协作编辑页」的界面 → 匹配成功。
 
 **用户确认（按规模分级）**：
 
@@ -360,6 +378,7 @@ Step 3: 输出报告
   "generated_at": "2026-02-25T10:00:00Z",
   "source": "screen-map.json",
   "screen_count": 12,
+  "concept_eliminated_count": 2,
   "modules": [
     {
       "name": "退款管理",
@@ -378,7 +397,7 @@ Step 3: 输出报告
 }
 ```
 
-`has_gaps` 判定：界面存在任一 flag（`OVERLOADED`、`HIGH_FREQ_BURIED`、`PRIMARY_MISMATCH`、`ORPHAN`、`NO_ENTRY`）或任一按钮缺少 `on_failure` 定义时为 `true`。
+`has_gaps` 判定：界面存在任一 flag（`OVERLOADED`、`HIGH_FREQ_BURIED`、`PRIMARY_MISMATCH`、`ORPHAN`、`CONCEPT_ELIMINATED`、`NO_ENTRY`）或任一按钮缺少 `on_failure` 定义时为 `true`。
 
 **生成规则**：
 - 索引随 Step 1 输出一起生成
@@ -512,6 +531,7 @@ Step 3: 输出报告
 
 界面 X 个 · 操作 X 个 · 覆盖任务 X/X · 异常缺口 X 个 · 界面冲突 X 个
 受众分布：consumer X 个界面 · professional X 个界面 · default X 个界面
+概念排除：X 个任务已排除（user_removed）· X 个界面匹配 ERRC.eliminate（CONCEPT_ELIMINATED）
 
 ## 高频操作（帕累托 Top 20%）
 - 退款申请页 → 提交退款申请（click_depth=1）
@@ -597,7 +617,7 @@ Step 3: 输出报告
 
 ### 1. 以任务清单为唯一基准
 
-只梳理 `task-inventory.json` 中已定义任务对应的界面和按钮。不引入任务之外的界面。发现代码中有但任务清单未覆盖的界面，标记为 `ORPHAN`，由用户决定去留。
+只梳理 `task-inventory.json` 中 `status` 不为 `user_removed` 的任务对应的界面和按钮。`user_removed` 任务（概念层 ERRC.eliminate 排除）不生成界面。不引入任务之外的界面。发现代码中有但任务清单未覆盖的界面，标记为 `ORPHAN`；若 concept_mode = "active" 且匹配 ERRC.eliminate，重分类为 `CONCEPT_ELIMINATED`（INFO 级），由用户决定去留。
 
 ### 2. 异常覆盖是核心质量指标
 

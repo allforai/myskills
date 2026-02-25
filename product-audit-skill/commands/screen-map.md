@@ -32,6 +32,8 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 3. **加载受众类型**：检查 `.allforai/product-map/role-profiles.json` 中角色是否含 `audience_type` 字段。存在 → 构建角色-受众映射（audience_mode = "typed"）；否则 → audience_mode = "default"（使用 v2.3.0 通用阈值）
 
+4. **加载概念排除清单**：检查 `.allforai/product-concept/product-concept.json`。存在 → 提取 ERRC.eliminate，过滤 user_removed 任务（concept_mode = "active"）；否则 → concept_mode = "none"
+
 ## 模式路由
 
 根据用户参数决定执行模式：
@@ -74,6 +76,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 > 产品规模: {小型/中型/大型}（{X} 个任务）
 > 分析范围: {全产品 / 指定模块名}
 > 受众模式: {typed / default}
+> 概念感知: {active（已排除 X 个任务）/ none}
 
 ### 总览
 
@@ -85,6 +88,8 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 | 异常覆盖缺口（仅 full 模式） | X 个 |
 | 界面级冲突（仅 full 模式） | X 个 |
 | 受众分布 | consumer X · professional X · default X |
+| 概念排除任务 | X 个（user_removed） |
+| CONCEPT_ELIMINATED 界面 | X 个 |
 
 ### 高频操作（帕累托 Top 20%）
 
