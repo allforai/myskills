@@ -1,0 +1,61 @@
+{
+  "generated_at": "2026-02-25T14:45:00Z",
+  "analysis_mode": "interview",
+  "conflicts": [
+    {
+      "id": "C001",
+      "type": "CONFLICT",
+      "description": "T001（场景对话）明确规定免费用户每日对话轮数限制，T004（自由对话）和T021（紧急速学）需共享该配额。",
+      "affected_tasks": ["T001", "T004", "T021"],
+      "severity": "高",
+      "confirmed": true,
+      "resolution": "用户确认：自由对话和紧急速学共享免费配额。已在T004和T021规则中补充。"
+    },
+    {
+      "id": "C002",
+      "type": "CONFLICT",
+      "description": "T013（学习连胜）规则提到'断胜后可用积分恢复'，原来无积分系统。",
+      "affected_tasks": ["T013", "T015"],
+      "severity": "高",
+      "confirmed": true,
+      "resolution": "用户确认：新增积分系统（T015 查看和使用积分），积分通过学习行为自动获取，可用于恢复连胜。"
+    },
+    {
+      "id": "C003",
+      "type": "CONFLICT",
+      "description": "T023（管理订阅状态）异常流写'退款请求→引导联系客服'，与T045（提交意见与投诉）和T034（管理订阅和退款）不一致。",
+      "affected_tasks": ["T023", "T034", "T045"],
+      "severity": "中",
+      "confirmed": true,
+      "resolution": "用户确认：T023退款引导改为'通过意见反馈提交退款申请'。已更新。"
+    }
+  ],
+  "crud_gaps": [
+    {
+      "id": "CG001",
+      "type": "CRUD_INCOMPLETE",
+      "description": "用户无法自助注销账户（仅管理员可冻结）。",
+      "affected_tasks": ["T033", "T038"],
+      "severity": "中",
+      "confirmed": true,
+      "resolution": "用户确认：新增T042（注销账户），含7天冷静期和二次确认。"
+    },
+    {
+      "id": "CG002",
+      "type": "CRUD_INCOMPLETE",
+      "description": "成就模板标注为dedicated_config但无管理任务。",
+      "affected_tasks": [],
+      "severity": "中",
+      "confirmed": true,
+      "resolution": "用户决定：去掉整个成就系统。T015改为积分系统。"
+    },
+    {
+      "id": "CG003",
+      "type": "CRUD_INCOMPLETE",
+      "description": "T045（提交意见与投诉）只有提交和查看进度，缺少撤回。",
+      "affected_tasks": ["T045"],
+      "severity": "低",
+      "confirmed": false
+    }
+  ]
+}

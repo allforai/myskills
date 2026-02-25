@@ -1,0 +1,77 @@
+{
+  "version": "1.0.0",
+  "decisions": [
+    {
+      "step": "Step 0",
+      "key": "product_scale",
+      "decision": "中型产品（45任务）",
+      "confirmed_at": "2026-02-25T13:00:00Z"
+    },
+    {
+      "step": "Step 1",
+      "key": "role_profiles",
+      "decision": "7个角色（R001-R007），按audience_type分组",
+      "confirmed_at": "2026-02-25T13:10:00Z"
+    },
+    {
+      "step": "Step 2",
+      "key": "task_inventory",
+      "decision": "45个任务，含config_items（5级配置）",
+      "confirmed_at": "2026-02-25T13:30:00Z"
+    },
+    {
+      "step": "Step 2",
+      "key": "config_level",
+      "decision": "5级配置：frontend_hardcode/code_constant/config_file/general_config/dedicated_config",
+      "confirmed_at": "2026-02-25T13:25:00Z"
+    },
+    {
+      "step": "Step 3",
+      "key": "business_flows",
+      "decision": "9条业务流，0缺口，16独立操作",
+      "confirmed_at": "2026-02-25T14:00:00Z"
+    },
+    {
+      "step": "Step 3",
+      "key": "free_dialogue_memory",
+      "decision": "T004自由对话加入记忆曲线词汇引导（嵌入比例30%），归为独立操作",
+      "confirmed_at": "2026-02-25T14:00:00Z"
+    },
+    {
+      "step": "Step 3",
+      "key": "user_feedback_task",
+      "decision": "新增T045提交意见与投诉，填补F008用户投诉入口缺口",
+      "confirmed_at": "2026-02-25T14:00:00Z"
+    },
+    {
+      "step": "Step 4",
+      "key": "C001_free_quota",
+      "decision": "自由对话和紧急速学共享免费配额",
+      "confirmed_at": "2026-02-25T14:45:00Z"
+    },
+    {
+      "step": "Step 4",
+      "key": "C002_points_system",
+      "decision": "新增积分系统（T015），积分通过学习行为获取，可用于恢复连胜",
+      "confirmed_at": "2026-02-25T14:45:00Z"
+    },
+    {
+      "step": "Step 4",
+      "key": "C003_refund_channel",
+      "decision": "退款引导改为通过意见反馈提交",
+      "confirmed_at": "2026-02-25T14:45:00Z"
+    },
+    {
+      "step": "Step 4",
+      "key": "CG001_account_deletion",
+      "decision": "新增T042注销账户，含7天冷静期",
+      "confirmed_at": "2026-02-25T14:45:00Z"
+    },
+    {
+      "step": "Step 4",
+      "key": "CG002_remove_achievements",
+      "decision": "去掉成就系统，原T015改为积分系统",
+      "confirmed_at": "2026-02-25T14:45:00Z"
+    }
+  ]
+}

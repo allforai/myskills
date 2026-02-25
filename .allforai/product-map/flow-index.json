@@ -1,0 +1,95 @@
+{
+  "generated_at": "2026-02-25T15:00:00Z",
+  "source": "business-flows.json",
+  "flow_count": 9,
+  "flows": [
+    {
+      "id": "F001",
+      "name": "新用户上手流",
+      "node_count": 7,
+      "gap_count": 0,
+      "roles": [
+        "新用户"
+      ]
+    },
+    {
+      "id": "F002",
+      "name": "日常学习主流程",
+      "node_count": 8,
+      "gap_count": 0,
+      "roles": [
+        "学习者"
+      ]
+    },
+    {
+      "id": "F003",
+      "name": "记忆曲线闭环流",
+      "node_count": 5,
+      "gap_count": 0,
+      "roles": [
+        "学习者",
+        "系统"
+      ]
+    },
+    {
+      "id": "F004",
+      "name": "紧急场景速学流",
+      "node_count": 5,
+      "gap_count": 0,
+      "roles": [
+        "系统",
+        "新移民"
+      ]
+    },
+    {
+      "id": "F005",
+      "name": "场景内容生产流",
+      "node_count": 8,
+      "gap_count": 0,
+      "roles": [
+        "内容运营(审核员)",
+        "学习者",
+        "内容运营"
+      ]
+    },
+    {
+      "id": "F006",
+      "name": "免费转付费订阅流",
+      "node_count": 5,
+      "gap_count": 0,
+      "roles": [
+        "用户",
+        "系统",
+        "免费用户"
+      ]
+    },
+    {
+      "id": "F007",
+      "name": "AI质量监控与调优流",
+      "node_count": 6,
+      "gap_count": 0,
+      "roles": [
+        "AI训练师"
+      ]
+    },
+    {
+      "id": "F008",
+      "name": "用户投诉与退款处理流",
+      "node_count": 6,
+      "gap_count": 0,
+      "roles": [
+        "用户",
+        "系统管理员"
+      ]
+    },
+    {
+      "id": "F009",
+      "name": "运营数据分析与优化流",
+      "node_count": 6,
+      "gap_count": 0,
+      "roles": [
+        "数据运营"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,114 @@
+[
+  {
+    "step": "Step 0",
+    "item_id": "problem-domain",
+    "item_name": "问题域锁定：哑巴英语四合一痛点 + 竞品全景 + 场景×记忆曲线闭环定位",
+    "decision": "confirmed",
+    "reason": null,
+    "decided_at": "2026-02-25T12:00:00Z"
+  },
+  {
+    "step": "Step 1",
+    "item_id": "R1",
+    "item_name": "职场人士 (25-35)：开会/邮件/汇报/面试",
+    "decision": "confirmed",
+    "reason": null,
+    "decided_at": "2026-02-25T12:30:00Z"
+  },
+  {
+    "step": "Step 1",
+    "item_id": "R2",
+    "item_name": "英语爱好者/旅行者：旅行/社交/美剧",
+    "decision": "confirmed",
+    "reason": null,
+    "decided_at": "2026-02-25T12:30:00Z"
+  },
+  {
+    "step": "Step 1",
+    "item_id": "R3",
+    "item_name": "新移民：看病/家长会/银行/租房等生活场景",
+    "decision": "confirmed",
+    "reason": null,
+    "decided_at": "2026-02-25T12:30:00Z"
+  },
+  {
+    "step": "Step 1",
+    "item_id": "R4",
+    "item_name": "内容运营（producer）：场景脚本创建/编辑/审核",
+    "decision": "confirmed",
+    "reason": "角色闭环检查：从 cost_structure「场景内容制作」反推",
+    "decided_at": "2026-02-25T12:30:00Z"
+  },
+  {
+    "step": "Step 1",
+    "item_id": "R5",
+    "item_name": "AI 训练师（producer）：对话质量监控/模型调优",
+    "decision": "confirmed",
+    "reason": "角色闭环检查：从 cost_structure「AI推理成本」反推",
+    "decided_at": "2026-02-25T12:30:00Z"
+  },
+  {
+    "step": "Step 1",
+    "item_id": "R6",
+    "item_name": "数据运营（producer）：关键指标监控/留存分析",
+    "decision": "confirmed",
+    "reason": "角色闭环检查：从 key_metrics 反推",
+    "decided_at": "2026-02-25T12:30:00Z"
+  },
+  {
+    "step": "Step 1",
+    "item_id": "R7",
+    "item_name": "系统管理员（admin）：用户管理/订阅管理/系统配置",
+    "decision": "confirmed",
+    "reason": "角色闭环检查：从 cost_structure「运营成本」反推",
+    "decided_at": "2026-02-25T12:30:00Z"
+  },
+  {
+    "step": "Step 1",
+    "item_id": "impl-groups",
+    "item_name": "实现合并：R4+R5+R6→operator（运营后台），R7→super_admin",
+    "decision": "confirmed",
+    "reason": "概念细分确保需求不遗漏，实现合并减少开发复杂度",
+    "decided_at": "2026-02-25T12:30:00Z"
+  },
+  {
+    "step": "Step 2",
+    "item_id": "business-model",
+    "item_name": "免费增值 + 场景包，$9.99-14.99/月",
+    "decision": "confirmed",
+    "reason": null,
+    "decided_at": "2026-02-25T12:45:00Z"
+  },
+  {
+    "step": "Step 2",
+    "item_id": "unfair-advantage",
+    "item_name": "场景×记忆曲线闭环",
+    "decision": "confirmed",
+    "reason": null,
+    "decided_at": "2026-02-25T12:45:00Z"
+  },
+  {
+    "step": "Step 3",
+    "item_id": "MEC1",
+    "item_name": "场景库内容生产：混合模式（核心AI生成+人工审核，自由对话实时生成）",
+    "decision": "confirmed",
+    "reason": "质量与效率平衡：核心场景保质量，自由对话保灵活",
+    "decided_at": "2026-02-25T13:00:00Z"
+  },
+  {
+    "step": "Step 3",
+    "item_id": "MEC2",
+    "item_name": "发音纠正：融入对话实时纠正，不打断对话流",
+    "decision": "confirmed",
+    "reason": "降低技术门槛感，与ERRC reduce项一致",
+    "decided_at": "2026-02-25T13:00:00Z"
+  },
+  {
+    "step": "Step 3",
+    "item_id": "MEC3",
+    "item_name": "社交机制：轻社交（连胜/排行榜/成就），不做好友系统",
+    "decision": "confirmed",
+    "reason": "MVP阶段聚焦核心学习体验，社交粘性通过游戏化实现",
+    "decided_at": "2026-02-25T13:00:00Z"
+  }
+]

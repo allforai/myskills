@@ -1,0 +1,144 @@
+{
+  "generated_at": "2026-02-25T12:30:00Z",
+  "roles": [
+    {
+      "role_id": "R1",
+      "role_name": "职场人士",
+      "role_type": "consumer",
+      "impl_group": "end_user",
+      "description": "25-35岁外企/跨国公司白领，需要英语开会、汇报、面试、写邮件",
+      "jobs": [
+        { "type": "functional", "description": "开英语会议并自信发言" },
+        { "type": "functional", "description": "独立写英语邮件和汇报" },
+        { "type": "functional", "description": "英语面试通过外企或跨国公司" },
+        { "type": "emotional", "description": "在国际同事面前不丢面子" }
+      ],
+      "pains": ["开会时能表达但听不懂不同口音", "写邮件靠翻译工具但口语卡壳", "报班断断续续进步慢", "时间零散无法固定学习"],
+      "gains": ["开会自信发言", "不依赖翻译工具", "碎片时间有效提升"],
+      "pain_relievers": ["AI随时可用不怕丢脸", "职场场景对话（开会/汇报/面试）", "碎片化5-10分钟一轮"],
+      "gain_creators": ["场景中自然习得职场高频表达", "记忆曲线确保复现", "音素级发音纠正"]
+    },
+    {
+      "role_id": "R2",
+      "role_name": "英语爱好者/旅行者",
+      "role_type": "consumer",
+      "impl_group": "end_user",
+      "description": "旅行爱好者、美剧粉，听得懂但开口说不出",
+      "jobs": [
+        { "type": "functional", "description": "旅行时点餐/问路/聊天不求人" },
+        { "type": "functional", "description": "看美剧不靠字幕" },
+        { "type": "emotional", "description": "和外国朋友自然交流的满足感" }
+      ],
+      "pains": ["看美剧听得懂但开口说不出", "旅行时只会基础招呼", "学了没场景用遗忘快"],
+      "gains": ["旅行时自信交流", "脱离字幕看美剧", "学习变成娱乐"],
+      "pain_relievers": ["旅行/社交场景对话", "无压力练习环境", "趣味场景设计"],
+      "gain_creators": ["生活场景习得地道表达", "游戏化让学习上瘾"]
+    },
+    {
+      "role_id": "R3",
+      "role_name": "新移民",
+      "role_type": "consumer",
+      "impl_group": "end_user",
+      "description": "海外新移民家庭，生活必需场景听不懂说不出",
+      "jobs": [
+        { "type": "functional", "description": "看病时准确描述症状和理解医嘱" },
+        { "type": "functional", "description": "银行开户/办手续时独立沟通" },
+        { "type": "functional", "description": "参加孩子家长会和老师交流" },
+        { "type": "emotional", "description": "减少语言障碍带来的焦虑和无力感" }
+      ],
+      "pains": ["生活必需场景听不懂说不出焦虑感强", "文化差异导致字面懂但意思不对", "日常练习机会少", "需要立刻能用"],
+      "gains": ["独立处理日常事务", "融入社区交朋友", "建立自信和归属感"],
+      "pain_relievers": ["生活场景对话（看医生/家长会/银行/租房）", "AI模拟真实对话节奏和文化语境", "紧急场景速学"],
+      "gain_creators": ["场景中习得生活必备表达", "记忆曲线确保高频词牢记", "发音纠正减少沟通障碍"]
+    },
+    {
+      "role_id": "R4",
+      "role_name": "内容运营",
+      "role_type": "producer",
+      "impl_group": "operator",
+      "description": "负责场景对话脚本创建、编辑、审核、文化注释和难度标定",
+      "jobs": [
+        { "type": "functional", "description": "创建和编辑场景对话脚本" },
+        { "type": "functional", "description": "审核场景内容的准确性和文化适当性" },
+        { "type": "functional", "description": "标定场景难度级别和适用角色" },
+        { "type": "functional", "description": "管理场景包（职场/旅行/移民）的内容更新" }
+      ],
+      "pains": [],
+      "gains": [],
+      "pain_relievers": [],
+      "gain_creators": []
+    },
+    {
+      "role_id": "R5",
+      "role_name": "AI 训练师",
+      "role_type": "producer",
+      "impl_group": "operator",
+      "description": "负责AI对话质量监控、发音评估模型调优、prompt优化",
+      "jobs": [
+        { "type": "functional", "description": "监控AI对话质量和用户满意度" },
+        { "type": "functional", "description": "调优发音评估模型的准确性" },
+        { "type": "functional", "description": "优化对话prompt以提升场景真实感" },
+        { "type": "functional", "description": "处理AI异常对话的标注和反馈" }
+      ],
+      "pains": [],
+      "gains": [],
+      "pain_relievers": [],
+      "gain_creators": []
+    },
+    {
+      "role_id": "R6",
+      "role_name": "数据运营",
+      "role_type": "producer",
+      "impl_group": "operator",
+      "description": "负责关键指标监控、留存分析、用户行为分析、A/B测试",
+      "jobs": [
+        { "type": "functional", "description": "监控日均开口时长、7天留存率等关键指标" },
+        { "type": "functional", "description": "分析用户学习行为和流失原因" },
+        { "type": "functional", "description": "设计和分析A/B测试方案" },
+        { "type": "functional", "description": "生成运营报告和增长建议" }
+      ],
+      "pains": [],
+      "gains": [],
+      "pain_relievers": [],
+      "gain_creators": []
+    },
+    {
+      "role_id": "R7",
+      "role_name": "系统管理员",
+      "role_type": "admin",
+      "impl_group": "super_admin",
+      "description": "负责用户管理、订阅管理、权限管理、系统配置、数据安全",
+      "jobs": [
+        { "type": "functional", "description": "管理用户账户和订阅状态" },
+        { "type": "functional", "description": "配置系统参数和权限规则" },
+        { "type": "functional", "description": "处理用户投诉和退款" },
+        { "type": "functional", "description": "确保数据安全和合规" }
+      ],
+      "pains": [],
+      "gains": [],
+      "pain_relievers": [],
+      "gain_creators": []
+    }
+  ],
+  "impl_groups": [
+    {
+      "group_id": "end_user",
+      "group_name": "终端用户",
+      "concept_roles": ["R1", "R2", "R3"],
+      "note": "消费侧用户，使用移动端APP"
+    },
+    {
+      "group_id": "operator",
+      "group_name": "运营后台用户",
+      "concept_roles": ["R4", "R5", "R6"],
+      "note": "共享一个运营后台，通过权限标签区分功能入口（内容管理/AI调优/数据看板）"
+    },
+    {
+      "group_id": "super_admin",
+      "group_name": "超级管理员",
+      "concept_roles": ["R7"],
+      "note": "拥有所有后台权限，负责系统级管理"
+    }
+  ],
+  "confirmed": true
+}

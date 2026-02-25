@@ -1,0 +1,84 @@
+{
+  "generated_at": "2026-02-25T13:10:00Z",
+  "analysis_mode": "interview",
+  "concept_guided": true,
+  "roles": [
+    {
+      "id": "R001",
+      "name": "职场人士",
+      "description": "25-35岁职场人，需要在英语会议、汇报、面试、邮件中自信表达",
+      "permission_boundary": ["场景对话", "发音练习", "记忆曲线复习", "学习档案查看", "个人设置"],
+      "kpi": ["日均开口时长 > 10分钟", "场景通关率 > 70%"],
+      "audience_type": "consumer",
+      "role_type": "consumer",
+      "impl_group": "end_user",
+      "status": "user_added"
+    },
+    {
+      "id": "R002",
+      "name": "英语爱好者/旅行者",
+      "description": "对英语有兴趣或有旅行需求，希望在旅行、社交、看剧等场景中自如交流",
+      "permission_boundary": ["场景对话", "发音练习", "记忆曲线复习", "学习档案查看", "个人设置"],
+      "kpi": ["日均开口时长 > 10分钟", "7天留存率 > 40%"],
+      "audience_type": "consumer",
+      "role_type": "consumer",
+      "impl_group": "end_user",
+      "status": "user_added"
+    },
+    {
+      "id": "R003",
+      "name": "新移民",
+      "description": "新到英语国家的移民，需要在看医生、银行、家长会、租房等生活场景中独立沟通",
+      "permission_boundary": ["场景对话", "发音练习", "记忆曲线复习", "紧急场景速学", "学习档案查看", "个人设置"],
+      "kpi": ["紧急场景使用率", "场景通关率 > 70%"],
+      "audience_type": "consumer",
+      "role_type": "consumer",
+      "impl_group": "end_user",
+      "status": "user_added"
+    },
+    {
+      "id": "R004",
+      "name": "内容运营",
+      "description": "负责场景对话脚本的创建、编辑、审核、难度标定和发布管理",
+      "permission_boundary": ["场景脚本编辑器", "审核队列", "场景难度标定", "场景包管理", "场景数据查看"],
+      "kpi": ["场景上架数/月", "审核通过率", "场景评分均值"],
+      "audience_type": "professional",
+      "role_type": "producer",
+      "impl_group": "operator",
+      "status": "user_added"
+    },
+    {
+      "id": "R005",
+      "name": "AI 训练师",
+      "description": "监控AI对话质量和用户满意度，调优发音评估模型，优化对话prompt",
+      "permission_boundary": ["AI对话日志查看", "对话质量评分", "发音模型参数调整", "Prompt模板管理", "异常对话标注"],
+      "kpi": ["AI对话满意度 > 4.0/5", "发音评估准确率 > 90%"],
+      "audience_type": "professional",
+      "role_type": "producer",
+      "impl_group": "operator",
+      "status": "user_added"
+    },
+    {
+      "id": "R006",
+      "name": "数据运营",
+      "description": "监控日均开口时长、7天留存率等关键指标，分析用户行为，设计和分析A/B测试",
+      "permission_boundary": ["数据看板", "用户行为分析", "A/B测试管理", "运营报告生成", "留存漏斗分析"],
+      "kpi": ["关键指标监控覆盖率 100%", "每周产出分析报告"],
+      "audience_type": "professional",
+      "role_type": "producer",
+      "impl_group": "operator",
+      "status": "user_added"
+    },
+    {
+      "id": "R007",
+      "name": "系统管理员",
+      "description": "管理用户账户和订阅状态，配置系统参数和权限规则，处理用户投诉和退款",
+      "permission_boundary": ["用户管理", "订阅管理", "系统配置", "权限管理", "投诉处理", "退款审批"],
+      "kpi": ["系统可用性 > 99.5%", "工单处理时效 < 24h"],
+      "audience_type": "professional",
+      "role_type": "admin",
+      "impl_group": "super_admin",
+      "status": "user_added"
+    }
+  ]
+}

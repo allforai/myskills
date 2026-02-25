@@ -1,0 +1,26 @@
+{
+  "competitors": [
+    "Speak",
+    "ELSA Speak",
+    "Duolingo Max",
+    "Anki",
+    "可栗口语",
+    "Langua",
+    "Praktika AI"
+  ],
+  "comparison_scope": "comprehensive",
+  "analysis_status": "completed",
+  "analyzed_at": "2026-02-25T15:20:00Z",
+  "analyzed_competitors": [
+    "Speak",
+    "ELSA Speak",
+    "Duolingo Max",
+    "Praktika AI"
+  ],
+  "unavailable_competitors": [
+    "Anki",
+    "可栗口语",
+    "Langua"
+  ],
+  "unavailable_reason": "Anki为开源卡片工具非直接竞品；可栗口语和Langua信息有限"
+}

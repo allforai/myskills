@@ -1,0 +1,48 @@
+{
+  "generated_at": "2026-02-25T12:00:00Z",
+  "user_input": "AI辅助英文学习工具",
+  "problem_essence": "输出能力断裂 — 中国英语学习者输入充足但输出无门，词汇、口语、发音、坚持四个环节断裂无闭环",
+  "problem_domain": "哑巴英语四合一痛点 + 竞品全景 + 场景×记忆曲线闭环定位",
+  "top_problems": [
+    {
+      "id": "P1",
+      "description": "输出无门 — 没有安全、低压力的环境练习口语和写作输出",
+      "severity": "critical",
+      "current_alternatives": "找外教（贵，约200-500元/小时）、找语伴（配对难、时间不可控）、对着镜子练（无反馈）",
+      "evidence": "https://zhuanlan.zhihu.com/p/21706511"
+    },
+    {
+      "id": "P2",
+      "description": "单词脱节 — 背了就忘，孤立记忆无法转化为实际使用能力",
+      "severity": "critical",
+      "current_alternatives": "Anki背卡片（脱离语境）、百词斩等背单词APP（孤立记忆，无输出练习）",
+      "evidence": "https://journals.sagepub.com/doi/10.1177/0267658320927764"
+    },
+    {
+      "id": "P3",
+      "description": "坚持不了 — 80%用户一周内放弃学习APP，新鲜感消退后动力归零",
+      "severity": "high",
+      "current_alternatives": "Duolingo（游戏化留存率高但口语弱）、自律和打卡群（大多数人坚持不了）",
+      "evidence": "https://www.strivecloud.io/blog/gamification-examples-boost-user-retention-duolingo"
+    },
+    {
+      "id": "P4",
+      "description": "发音不准 — 没有反馈就永远不知道自己哪里错，说了别人听不懂",
+      "severity": "high",
+      "current_alternatives": "ELSA Speak（发音纠正专精但场景单一）、找外教纠正（贵且低频）",
+      "evidence": "https://globalenglishtest.com/10-best-ai-tools-for-speaking-english-2025/"
+    }
+  ],
+  "competitors": [
+    { "name": "Speak", "url": "https://www.speak.com", "description": "场景对话精良+自适应难度", "key_features": ["预设场景对话", "自适应难度", "流利度跟踪"] },
+    { "name": "ELSA Speak", "url": "https://elsaspeak.com", "description": "音素级发音纠正专家", "key_features": ["音素级发音纠正", "发音评分精准", "AI语音分析"] },
+    { "name": "Duolingo Max", "url": "https://www.duolingo.com", "description": "游戏化学习王者", "key_features": ["游戏化机制", "连胜系统", "AI角色扮演(2026)"] },
+    { "name": "Anki", "url": "https://apps.ankiweb.net", "description": "经典记忆曲线工具", "key_features": ["SRS记忆曲线", "高度可定制", "社区共享牌组"] },
+    { "name": "可栗口语", "url": "https://www.kelikoyu.com", "description": "128维音素纠错+微对话", "key_features": ["128维度音素纠错", "微对话模式", "中国市场本土化"] },
+    { "name": "Langua", "url": "https://languatalk.com", "description": "沉浸式AI对话教练", "key_features": ["AI对话教练", "原生口音语音", "沉浸式环境"] },
+    { "name": "Praktika AI", "url": "https://praktika.ai", "description": "AI角色扮演+低价", "key_features": ["AI头像互动", "角色扮演", "$8/月低价"] }
+  ],
+  "selected_traits": ["场景化对话", "记忆曲线闭环", "音素级发音纠正", "游戏化留存", "三大角色专属场景库"],
+  "unique_positioning": "场景×记忆曲线闭环 — 对话中学的词在新场景中用出来，四合一痛点闭环解决，竞品无人做到",
+  "confirmed": true
+}

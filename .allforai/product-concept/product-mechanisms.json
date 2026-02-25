@@ -1,0 +1,60 @@
+{
+  "generated_at": "2026-02-25T13:00:00Z",
+  "mechanisms": [
+    {
+      "id": "MEC1",
+      "module": "场景库",
+      "decision_point": "内容生产方式",
+      "chosen": "混合模式：核心场景 AI 生成 + 人工审核，自由对话实时生成",
+      "alternatives_considered": [
+        "纯人工编辑（质量高但产能低、成本高）",
+        "纯 AI 实时生成（产能无限但质量不可控）",
+        "实时生成 + 自动缓存（省成本但缺人工质量把关）"
+      ],
+      "impact": [
+        "需要 AI 场景生成管线（prompt 模板 + 质量评分）",
+        "需要人工审核队列和审核工具（内容运营 R4 使用）",
+        "核心场景有预制脚本保证质量，自由对话靠 AI 实时应变",
+        "AI 训练师 R5 负责生成质量监控和 prompt 调优"
+      ],
+      "evidence": "https://blog.csdn.net/echo11222266556/article/details/146313437"
+    },
+    {
+      "id": "MEC2",
+      "module": "发音纠正",
+      "decision_point": "发音纠正方式",
+      "chosen": "融入对话实时纠正：对话过程中自然纠正，不打断对话流",
+      "alternatives_considered": [
+        "独立发音练习模块（像 ELSA 那样专业但场景割裂）",
+        "对话后集中报告（不打断但反馈延迟）",
+        "实时纠正 + 独立练习双模式（全面但复杂度高）"
+      ],
+      "impact": [
+        "发音评估 API 需要实时流式调用（延迟敏感）",
+        "纠正 UI 需要融入对话界面，不能弹出专业面板",
+        "降低发音纠正的技术门槛感（ERRC reduce 项落地）",
+        "AI 训练师 R5 负责发音模型准确性调优"
+      ],
+      "evidence": "https://globalenglishtest.com/10-best-ai-tools-for-speaking-english-2025/"
+    },
+    {
+      "id": "MEC3",
+      "module": "游戏化 / 社交",
+      "decision_point": "社交机制",
+      "chosen": "轻社交：连胜/排行榜/成就系统，不做好友系统",
+      "alternatives_considered": [
+        "纯单机（最简单但缺乏社交粘性）",
+        "重社交（好友/组队/社区，高粘性但开发和运营成本高）",
+        "轻社交 + 语伴匹配（中间路线但匹配冷启动难）"
+      ],
+      "impact": [
+        "需要连胜计数、排行榜、成就徽章系统",
+        "需要社交分享功能（截图分享到社交媒体）",
+        "不需要好友关系链、消息系统、组队功能",
+        "数据运营 R6 负责游戏化指标监控和 A/B 测试"
+      ],
+      "evidence": "https://www.strivecloud.io/blog/gamification-examples-boost-user-retention-duolingo"
+    }
+  ],
+  "confirmed": true
+}
