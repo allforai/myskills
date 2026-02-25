@@ -111,7 +111,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 ## 铁律（强制执行）
 
-> 完整定义见 `${CLAUDE_PLUGIN_ROOT}/skills/product-concept.md` 的「9 条铁律」章节。
+> 完整定义见 `${CLAUDE_PLUGIN_ROOT}/skills/product-concept.md` 的「10 条铁律」章节。
 
 1. **只问选择题，不问开放题** — 所有问题都基于搜索结果生成选项
 2. **搜索先行，选项后生** — 每轮提问前必须先 WebSearch
@@ -122,3 +122,4 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 7. **选项基于行为，不基于观点** — Mom Test：问"怎么做的"而非"觉得好不好"
 8. **指标必须是成果，不是产出** — Build Trap：key_metrics 必须是 outcome
 9. **先拆本质，再看竞品** — First Principles：先拆解问题本质，再搜索竞品
+10. **角色闭环，有消费就有生产** — Role Closure：cost_structure 每项有角色负责，key_metrics 每项有角色监控

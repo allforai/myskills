@@ -5,7 +5,7 @@ description: >
   "figure out what to build", "validate a product idea", "产品概念", "产品定义",
   "我想做一个...", "这个产品应该怎么设计",
   or needs to discover what product to build before writing code.
-version: "1.1.0"
+version: "1.2.0"
 ---
 
 # Product Concept — 产品概念发现
@@ -157,9 +157,11 @@ product-concept（战略层）        product-map（运营层）
 
 ---
 
-### Step 1: 角色与价值 — 谁用？他们得到什么？
+### Step 1: 角色与价值 — 谁用？谁运营？他们得到什么？
 
 输入：Step 0 锁定的方向
+
+**Phase A — 消费侧角色**
 
 1. **WebSearch 搜索**该类产品的典型用户构成
 2. 基于搜索结果 + JTBD/VPC 框架，推导角色列表
@@ -173,8 +175,21 @@ product-concept（战略层）        product-map（运营层）
    角色 A 的痛点 2（机会）→ 我们的方案 Y（Pain Reliever）
    ```
 5. 结构化为 VPC 格式：每角色的 Jobs / Pains / Gains → Pain Relievers / Gain Creators
-6. 输出：`role-value-map.json`
-7. → 用户确认
+
+**Phase B — 生产侧角色闭环检查（强制）**
+
+消费侧角色确认后，必须追问生产/运营侧角色。产品是一个闭环：有人消费内容/服务，就必须有人生产和运营。
+
+6. **反推生产侧角色**：从 Step 2 的 `cost_structure`（或当前已知的产品特征）反推：
+   - 成本项"内容制作" → 谁来创建内容？（内容运营/编辑）
+   - 成本项"运营成本" → 谁来管理系统？（系统管理员）
+   - 关键指标需要有人监控 → 谁来看数据？（数据分析/运营）
+   - 付费模式需要管理 → 谁来处理订阅/退款？（客服/财务）
+7. **AskUserQuestion** 选择题：
+   - "产品运营需要哪些后台角色？"（基于反推结果生成选项，多选）
+   - 对每个选中角色：简化版 VPC（Jobs + 核心工具需求，不需要 Pains/Gains 深度展开）
+8. 输出：`role-value-map.json`（消费侧 + 生产侧角色合并）
+9. → 用户确认
 
 ---
 
@@ -259,6 +274,7 @@ product-concept（战略层）        product-map（运营层）
     {
       "role_id": "R1",
       "role_name": "角色名",
+      "role_type": "consumer | producer | admin",
       "jobs": [{ "type": "functional | emotional | social", "description": "..." }],
       "pains": ["痛点1", "痛点2"],
       "gains": ["期望收益1", "期望收益2"],
@@ -324,6 +340,7 @@ product-concept（战略层）        product-map（运营层）
     {
       "role_id": "R1",
       "role_name": "角色名",
+      "role_type": "consumer | producer | admin",
       "description": "角色简要描述（年龄段、典型特征等）",
       "jobs": [{ "type": "functional | emotional | social", "description": "..." }],
       "pains": ["痛点1", "痛点2"],
@@ -335,6 +352,13 @@ product-concept（战略层）        product-map（运营层）
   "confirmed": false
 }
 ```
+
+**`role_type` 说明**：
+- `consumer`：消费侧角色（使用产品的最终用户）
+- `producer`：生产侧角色（创建/管理内容或服务）
+- `admin`：管理侧角色（系统管理、数据分析、客服）
+
+生产侧和管理侧角色的 VPC 可以简化：`pains`/`gains` 可省略，重点填写 `jobs`。
 
 ### `business-model.json`（Step 2 输出）
 
@@ -395,7 +419,7 @@ product-concept（战略层）        product-map（运营层）
 
 ---
 
-## 9 条铁律
+## 10 条铁律
 
 ### 1. 只问选择题，不问开放题
 
@@ -432,3 +456,7 @@ product-concept（战略层）        product-map（运营层）
 ### 9. 先拆本质，再看竞品（First Principles）
 
 Step 0 必须先拆解问题的第一性原理（用户最底层的需求是什么），再搜索竞品。禁止跳过本质拆解直接进入竞品对标 — 否则产品定义会被现有产品的形态锁死，只能做"更好的 XX"而非真正的创新。
+
+### 10. 角色闭环 — 有消费就有生产（Role Closure）
+
+Step 1 不能只定义"谁用产品"，还必须定义"谁运营产品"。产品是一个闭环系统：有人消费内容/服务，就必须有人生产内容、管理系统、监控数据。具体检查：`cost_structure` 中每个成本项必须有对应角色负责；`key_metrics` 中每个指标必须有角色能看到和分析。只有消费侧角色没有生产侧角色的概念文档是不完整的。
