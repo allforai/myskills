@@ -50,6 +50,19 @@ product-map（现状+方向）      screen-map（可选增强）        feature-
 /product-map scope 退款管理  # 只梳理指定功能模块
 ```
 
+## 中段经理理论支持（可选增强，不破坏现有流程）
+
+为保证「概念 → 功能点 → 交互」阶段具备可审计的产品管理依据，product-map 可叠加以下理论锚点：
+
+| 理论/框架 | 对应步骤 | 落地方式 |
+|-----------|----------|----------|
+| Story Mapping（Jeff Patton） | Step 2/3 | 任务按用户活动流分层：主干活动（backbone）→ 任务切片（slice）→ 版本范围 |
+| RACI 职责矩阵 | Step 1/2 | 在角色与任务关系中明确 Responsible / Accountable / Consulted / Informed，减少角色边界冲突 |
+| 风险矩阵（Impact × Probability） | Step 2/5 | 将 risk_level 的判定从主观高/中/低，改为可解释的概率×影响分档 |
+| DoR（Definition of Ready） | Step 7 | 将 required 字段完整性视为进入下游（screen-map/use-case）的就绪门槛 |
+
+> 建议：默认沿用现有流程；当团队需要更强「产品管理可追溯性」时启用本增强。
+
 **scope 模式**：运行与 full 相同的 Step 序列，但在前置加载后先按关键词过滤 — 匹配 `task-inventory.json` 中 `task_name` 包含该关键词的任务，以及这些任务关联的角色和场景。后续所有 Step 仅处理过滤后的子集。输出文件中标注 `"scope": "{关键词}"`。若 `task-inventory.json` 尚不存在（首次运行），scope 过滤延迟到 Step 2 完成后执行，Step 0–2 按完整范围运行。
 
 **refresh 模式**：忽略所有已有输出和决策缓存。将 `product-map-decisions.json` 重命名为 `.bak` 备份，然后从 Step 0 开始完整重新运行。refresh 完成后自动生成与上一版的 diff 摘要（新增/删除/变更的任务和流），写入 `refresh-diff.md`。适用于代码大改后需要全量重新分析的场景。

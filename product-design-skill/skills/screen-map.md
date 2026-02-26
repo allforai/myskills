@@ -47,6 +47,19 @@ task-inventory.json 为基础      以 task-inventory 为输入        读 scree
 /screen-map scope 退款管理  # 只梳理指定模块的界面
 ```
 
+## 中段经理理论支持（可选增强）
+
+为让“功能点 → 交互设计”阶段具备统一的管理语言，可在现有 screen-map 规则上叠加：
+
+| 理论/框架 | 对应步骤 | 落地方式 |
+|-----------|----------|----------|
+| 服务蓝图（Service Blueprint） | Step 1/2 | 将 `entry_point`、`handoff`、`exception_flows` 解释为前台触点与后台支撑链路 |
+| Nielsen 可用性启发式 | Step 2 | 将 `SILENT_FAILURE`、`NO_EMPTY_STATE`、`MISSING_VALIDATION` 映射到可用性缺陷类型，便于评审 |
+| 认知负荷管理（Cognitive Load） | Step 1 | 用 `OVERLOADED`、`HIGH_FREQ_BURIED` 控制信息密度和操作可达性 |
+| 风险控制矩阵 | Step 2 | 将 `HIGH_RISK_NO_CONFIRM` 与受众类型联动，明确高风险操作的确认策略 |
+
+> 本增强仅补充“为什么这样设计”的理论解释，不改变原有 flags 与输出结构。
+
 **scope 模式**：运行与 full 相同的 Step 序列，但仅处理 `task-inventory.json` 中 `task_name` 包含指定关键词的任务及其关联界面。
 
 **refresh 模式**：将 `screen-map-decisions.json` 重命名为 `.bak` 备份，从 Step 1 开始完整重新运行，忽略所有已有决策缓存。
