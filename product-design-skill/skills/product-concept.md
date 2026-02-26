@@ -121,6 +121,18 @@ product-concept（战略层）        product-map（运营层）
 /product-concept reverse      # 提炼模式（从现有代码/地图反推）
 ```
 
+## 动态趋势补充（WebSearch）
+
+本技能已默认使用 WebSearch；除经典理论外，建议额外强调“近 12–24 个月趋势补充”：
+
+- 搜索关键词示例：`"JTBD" + 行业词 + "case study" + 2025`
+- 搜索关键词示例：`"problem discovery" + 产品类型 + "user research"`
+- 搜索关键词示例：`"Blue Ocean" + 行业词 + "competitive landscape"`
+- 来源优先级：官方规范/权威研究 > 一线产品团队实践 > 社区文章
+- 决策留痕：对关键结论记录 `ADOPT|REJECT|DEFER` 与理由
+
+建议将来源写入：`.allforai/product-design/trend-sources.json`（跨阶段共用）。
+
 ---
 
 ## 工作流 — 发现模式（5 Step）
@@ -492,6 +504,31 @@ product-concept（战略层）        product-map（运营层）
 ├── product-concept-report.md    # Step 4: 产品概念报告（人类可读）
 └── concept-decisions.json       # 决策日志（增量复用）
 ```
+
+---
+
+## 防御性规范
+
+> 通用模式定义见 `docs/defensive-patterns.md`，以下为本技能的具体应用。
+
+### 加载校验
+- **`concept-decisions.json`**：加载时用 `python -m json.tool` 验证 JSON 合法性。解析失败 → 检查 `.bak` → 提示恢复或重新运行 `/product-concept`。
+
+### 零结果处理
+- **Step 0 用户无输入**：若用户未提供任何描述 → 用 AskUserQuestion 引导：「请用一句话描述你想做的产品或想解决的问题」，不静默生成空结果。
+- **WebSearch 连续 3 轮无有用结果**：切换为纯访谈模式 — 基于 AI 知识 + 用户输入推进，标记 `evidence_mode: "interview_only"`，告知用户「公开信息较少，已切换为访谈模式」。
+- **用户连续 3 次选 Other 且搜索无有用结果**：提供手动输入选项 — 「看起来预设选项不符合你的想法，请直接输入你的描述」，跳出重搜循环。
+
+### 规模自适应
+- **不适用**。产品概念发现是单一产品粒度的对话流程，不涉及批量处理，无需规模分级。
+
+### WebSearch 故障
+- **工具不可用**：告知用户「⚠ WebSearch 暂不可用」→ 提供选项：(a) 切换为纯访谈模式（基于 AI 知识 + 用户输入），标记 `evidence_mode: "interview_only"` (b) 用户手动提供参考资料。
+- **工具正常但无有用结果**：按搜索策略换关键词重试一轮 → 仍无结果 → 告知用户「该方向公开信息较少」，继续流程。
+- 所有搜索步骤（Step 0–3）均适用此规则，不静默跳过任何搜索环节。
+
+### 上游过期检测
+- **不适用**。product-concept 是链路起点，无上游依赖。
 
 ---
 

@@ -41,6 +41,18 @@ product-concept → product-map → screen-map → ui-design
 /ui-design refresh    # 清除决策缓存，重新选风格 + 完整重跑
 ```
 
+## 动态趋势补充（WebSearch）
+
+除经典理论外，建议在本技能执行时补充近 12–24 个月的视觉与设计系统实践：
+
+- 搜索关键词示例：`"design system" + 行业词 + "case study" + 2025`
+- 搜索关键词示例：`"WCAG 2.2" + 组件类型 + "accessibility"`
+- 搜索关键词示例：`"dashboard UI" + "information density" + "best practices"`
+- 来源优先级：官方规范/标准 > 权威研究 > 一线团队实践 > 社区帖子
+- 决策留痕：记录 `ADOPT|REJECT|DEFER` 与理由，避免“只看不决策”
+
+建议将来源写入：`.allforai/product-design/trend-sources.json`（跨阶段共用）。
+
 ## 尾段理论支持（可选增强）
 
 为让 UI 产出从“风格偏好”升级为“可评审、可审计的设计决策”，可在现有流程叠加：
@@ -296,6 +308,37 @@ Step 5: 生成多角色 HTML 预览
     ├── ui-role-{角色2}.html
     └── ...
 ```
+
+---
+
+## 防御性规范
+
+> 通用模式定义见 `docs/defensive-patterns.md`，以下为本技能的具体应用。
+
+### 加载校验
+- **`ui-design-decisions.json`**：加载时用 `python -m json.tool` 验证 JSON 合法性。解析失败 → 检查 `.bak` → 提示恢复或重新运行 `/ui-design refresh`。
+- **`product-map.json` / `task-inventory.json`**：前置加载时验证 JSON 合法性。解析失败 → 提示用户重新运行 `/product-map`，终止执行。
+
+### 零结果处理
+- **无 screen-map 且无高/中频任务**：⚠ 明确告知「无法推导界面列表 — screen-map 不存在，且 task-inventory 中无高/中频任务可用于推导界面。请先运行 /screen-map 或 /product-map 补充任务频次」，**终止执行**（不生成空规格）。
+- **Step 1 推导 0 界面**：同上处理。
+- **Step 3 搜索 0 设计原则**：若搜索正常但无有用结果 → 告知用户，提供选项：(a) 使用所选风格的默认 CSS 变量 (b) 用户手动提供设计参考。
+
+### 规模自适应
+- **阈值**：以界面数为计量对象（来自 screen-map 或推导数量）。small ≤15 / medium 16–40 / large >40。
+- **small**（≤15 界面）：逐界面生成设计规格，逐步确认。
+- **medium**（16–40 界面）：按模块分组生成规格，摘要确认。
+- **large**（>40 界面）：脚本生成规格文件 + 仅展示高频界面预览。
+
+### WebSearch 故障
+- **Step 3 设计原则搜索**：
+  - 工具不可用 → 告知用户「⚠ WebSearch 暂不可用」→ 提供选项：(a) 跳过搜索，使用风格默认 CSS 变量参数 (b) 用户手动提供设计参考 URL。
+  - **品牌定制风（Brand Custom）+ 搜索无结果**：回退到 Flat/Minimal 风格的默认 CSS 变量 + ⚠ 警告「品牌定制风搜索无结果，已回退到 Flat/Minimal 默认参数，建议用户后续提供品牌设计规范」。
+
+### 上游过期检测
+- **`screen-map.json`**（若存在）：加载时比较 `generated_at` 与 `ui-design-decisions.json` 最新 `decided_at`。上游更新 → ⚠ 警告「screen-map 在 ui-design 上次运行后被更新，界面列表可能过期，建议重新运行 /ui-design refresh」。
+- **`task-inventory.json`**：同理检查时间戳。
+- 仅警告不阻断。
 
 ---
 

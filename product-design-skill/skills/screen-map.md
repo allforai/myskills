@@ -47,6 +47,17 @@ task-inventory.json 为基础      以 task-inventory 为输入        读 scree
 /screen-map scope 退款管理  # 只梳理指定模块的界面
 ```
 
+## 动态趋势补充（WebSearch）
+
+除经典理论外，建议在本技能执行时补充近 12–24 个月的交互设计案例：
+
+- 搜索关键词示例：`"usability audit" + 场景词 + "real examples" + 2025`
+- 搜索关键词示例：`"WCAG 2.2" + 组件类型 + "accessibility"`
+- 来源优先级：官方规范/标准 > 权威研究 > 一线产品实践 > 社区帖子
+- 决策留痕：记录 `ADOPT|REJECT|DEFER` 与理由，避免只看不落地
+
+建议将来源写入：`.allforai/product-design/trend-sources.json`（跨阶段共用）。
+
 ## 中段经理理论支持（可选增强）
 
 为让“功能点 → 交互设计”阶段具备统一的管理语言，可在现有 screen-map 规则上叠加：
@@ -623,6 +634,30 @@ Step 3: 输出报告
 - `deferred`：暂不决定，下次重新提问
 
 **加载逻辑**：每个 Step 开始前检查 decisions.json，已 `confirmed` 的条目跳过确认直接沿用。
+
+---
+
+## 防御性规范
+
+> 通用模式定义见 `docs/defensive-patterns.md`，以下为本技能的具体应用。
+
+### 加载校验
+- **`screen-map-decisions.json`**：加载时用 `python -m json.tool` 验证 JSON 合法性。解析失败 → 检查 `.bak` → 提示恢复或重新运行 `/screen-map refresh`。
+- **`task-inventory.json`**：前置加载时验证 JSON 合法性。解析失败 → 提示用户「task-inventory.json 损坏，请重新运行 /product-map」，终止执行。
+
+### 零结果处理
+- **Step 1 提取 0 界面**：⚠ 警告「未从代码中识别到任何界面（路由/页面组件/菜单配置均为空）」+ 建议检查前端页面目录路径是否正确，或项目是否为纯后端服务。
+- **Step 2 检测 0 问题**：✓ 明确告知「界面级冲突检测完毕，未发现异常缺口（共检查 {N} 个界面 {M} 个操作）」。
+
+### 规模自适应
+- 已有完整实现（见「规模适配」章节）。阈值：small ≤30 / medium 31–80 / large >80 任务。
+- 界面数通常与任务数正相关，沿用任务数阈值。
+
+### WebSearch 故障
+- **趋势搜索**（动态趋势补充）：工具不可用或无有用结果 → 跳过趋势补充，标注「趋势搜索未执行（WebSearch 不可用）」，不影响主流程。
+
+### 上游过期检测
+- **`task-inventory.json`**：加载时比较 `generated_at` 与 `screen-map-decisions.json` 最新 `decided_at`。上游更新 → ⚠ 警告「task-inventory 在 screen-map 上次运行后被更新，界面梳理可能基于旧版任务数据，建议重新运行 /screen-map refresh」。仅警告不阻断。
 
 ---
 

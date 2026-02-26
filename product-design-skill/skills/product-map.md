@@ -50,6 +50,16 @@ product-map（现状+方向）      screen-map（可选增强）        feature-
 /product-map scope 退款管理  # 只梳理指定功能模块
 ```
 
+## 动态趋势补充（WebSearch）
+
+除经典理论外，执行本技能时建议补充近 12–24 个月的实践文章/案例：
+
+- 搜索关键词示例：`"story mapping" + 行业词 + "best practices" + 2025`
+- 来源优先级：官方规范/权威研究 > 一线产品团队实践 > 社区文章
+- 决策留痕：记录“是否采纳 + 理由”，避免只收集不决策
+
+建议将来源写入：`.allforai/product-design/trend-sources.json`（跨阶段共用）。
+
 ## 中段经理理论支持（可选增强，不破坏现有流程）
 
 为保证「概念 → 功能点 → 交互」阶段具备可审计的产品管理依据，product-map 可叠加以下理论锚点：
@@ -1160,6 +1170,31 @@ ERROR X 个 · WARNING X 个 · INFO X 个（统计） · 冲突 X 个
 - `auto_audited`：自审计子步骤自动发现并补充（如代码路由审计发现的遗漏任务），已纳入输出但标记来源
 
 **加载逻辑**：每个 Step 开始前检查 decisions.json，已 `confirmed` 或 `auto_audited` 的条目跳过确认直接沿用，`deferred` 的条目重新提问。
+
+---
+
+## 防御性规范
+
+> 通用模式定义见 `docs/defensive-patterns.md`，以下为本技能的具体应用。
+
+### 加载校验
+- **`product-map-decisions.json`**：加载时用 `python -m json.tool` 验证 JSON 合法性。解析失败 → 检查 `.bak` → 提示恢复或重新运行 `/product-map refresh`。
+- **`product-concept.json`**（概念指导模式）：加载时验证 JSON 合法性 + `version` 字段有效。解析失败 → 退出概念指导模式，回退到标准模式并告知用户。
+
+### 零结果处理
+- **Step 2 提取 0 任务**：若非访谈模式（`analysis_mode != "interview"`）→ ⚠ 警告「代码路由/菜单/权限点均未识别到任何任务，可能是非标准框架」+ 建议切换为访谈模式（`analysis_mode: "interview"`）。
+- **scope 模式匹配 0 任务**：明确告知「关键词 "{关键词}" 未匹配任何任务，请检查拼写或换关键词」，列出 task-inventory 中现有模块名供参考。
+
+### 规模自适应
+- 已有完整实现（见「规模适配」章节）。阈值：small ≤30 / medium 31–80 / large >80 任务。
+- 各 Step 的交互策略已在「规模适配」章节详细定义，此处不重复。
+
+### WebSearch 故障
+- **Step 7 Part 3 竞品搜索**：工具不可用 → 告知用户「⚠ WebSearch 暂不可用，竞品差异分析无法执行」→ Part 3 标注 `analysis_status: "tool_unavailable"` 并跳过，Part 1 + Part 2 正常执行。
+- **某竞品数据无法获取**：已有处理（`data_source: "unavailable"`），不中断其余竞品分析。
+
+### 上游过期检测
+- **`product-concept.json`**（概念指导模式）：加载时比较 `generated_at` 与 `product-map-decisions.json` 最新 `decided_at`。上游更新 → ⚠ 警告「产品概念文档在 product-map 上次运行后被更新，建议重新运行 /product-map refresh 以同步最新概念」。仅警告不阻断。
 
 ---
 
