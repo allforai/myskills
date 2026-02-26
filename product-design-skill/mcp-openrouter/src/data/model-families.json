@@ -1,0 +1,46 @@
+{
+  "families": {
+    "gpt": {
+      "provider": "openai",
+      "id_prefixes": ["openai/gpt-"],
+      "display_name": "GPT (OpenAI)",
+      "strengths": ["信息综合", "结构化推理", "指令遵循"],
+      "best_for": ["competitive_analysis", "structured_output"]
+    },
+    "gemini": {
+      "provider": "google",
+      "id_prefixes": ["google/gemini-"],
+      "display_name": "Gemini (Google)",
+      "strengths": ["发散思维", "多模态", "长上下文"],
+      "best_for": ["market_research", "research_synthesis"]
+    },
+    "claude": {
+      "provider": "anthropic",
+      "id_prefixes": ["anthropic/claude-"],
+      "display_name": "Claude (Anthropic)",
+      "strengths": ["结构化分析", "严谨推理", "长文写作"],
+      "best_for": ["design_review", "risk_analysis"]
+    },
+    "deepseek": {
+      "provider": "deepseek",
+      "id_prefixes": ["deepseek/deepseek-"],
+      "display_name": "DeepSeek",
+      "strengths": ["推理链", "技术分析", "性价比"],
+      "best_for": ["technical_validation", "cost_sensitive_tasks"]
+    },
+    "llama": {
+      "provider": "meta-llama",
+      "id_prefixes": ["meta-llama/llama-", "meta-llama/Llama-"],
+      "display_name": "Llama (Meta)",
+      "strengths": ["通用推理", "多语言", "开源可控"],
+      "best_for": ["general_validation"]
+    },
+    "qwen": {
+      "provider": "qwen",
+      "id_prefixes": ["qwen/qwen-", "qwen/Qwen-"],
+      "display_name": "Qwen (Alibaba)",
+      "strengths": ["中文理解", "双语推理", "性价比"],
+      "best_for": ["chinese_market_analysis", "bilingual_tasks"]
+    }
+  }
+}
