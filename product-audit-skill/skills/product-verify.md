@@ -8,7 +8,7 @@ description: >
   "代码是否实现了产品地图", "验证功能实现", "找漏实现的功能", "代码覆盖检查",
   or wants to prove code implements the product map features and flows.
   Requires product-map to have been run first. Optionally uses screen-map and use-case.
-version: "1.0.0"
+version: "1.1.0"
 ---
 
 # Product Verify — 产品验收
@@ -35,7 +35,10 @@ version: "1.0.0"
 product-map（现状+方向）   feature-gap（功能查漏）    product-verify（验收）
 产品应该长什么样           地图说有的，现在有没有      代码实现了地图里的任务吗
 基础层                    产品层比对                 代码层比对 + 运行时验证
+不看代码                  不看代码                   扫描代码 + 跑浏览器
 ```
+
+**与 feature-gap 的区别**：feature-gap 检查**产品地图自身**是否完整（CRUD 齐不齐、旅程通不通）；product-verify 检查**代码**是否实现了产品地图中的任务（路由有没有、组件在不在、行为对不对）。一个审产品设计，一个审代码实现。
 
 **前提**：必须先运行 `product-map`，生成 `.allforai/product-map/product-map.json`。
 
@@ -67,11 +70,18 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 ## 工作流
 
 ```
-前置检查：
-  product-map.json 必须存在（否则终止）
-  screen-map.json 可选（存在则启用 S2）
-  use-case-tree.json 可选（dynamic 优先使用，否则自动推导）
-  verify-decisions.json 存在则加载历史决策
+前置检查（两阶段加载）：
+  Phase 1 — 加载索引（< 5KB）：
+    检查 task-index.json → 获取任务 id/task_name/frequency/owner_role/risk_level + 模块分组
+    检查 screen-index.json → 获取界面 id/name/task_refs/action_count（S2 用）
+    任一索引不存在 → 对应数据回退到 Phase 2 全量加载（向后兼容）
+  Phase 2 — 按需加载完整数据：
+    加载 .allforai/product-map/product-map.json
+    若 product-map.json 也不存在 → 提示用户先运行 /product-map，终止
+  其他可选数据：
+    screen-map.json 可选（存在则启用 S2）
+    use-case-tree.json 可选（dynamic 优先使用，否则自动推导）
+    verify-decisions.json 存在则加载历史决策，已决策项自动跳过
   ↓
 
 [Static 阶段]（static / full 模式）
@@ -89,6 +99,10 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
       ↓ 用户确认（逐条确认 EXTRA 去留）
 
 [Dynamic 阶段]（dynamic / full 模式）
+  D0: 应用可达性预检
+      询问用户应用 URL（或从代码配置自动检测）
+      HTTP 请求验证可达性 → 不可达则提示用户启动应用，暂停 dynamic 阶段
+      ↓ 可达后继续
   D1: 加载/推导测试序列
       use-case-tree.json 存在 → 提取正常流 + E2E 用例
       不存在 → 从 task-inventory.json 自动推导（高/中频任务）
@@ -109,7 +123,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 ### S1：Task → API 覆盖检查
 
-**数据加载**：从 `.allforai/product-map/task-inventory.json` 读取所有任务（或通过 task-index.json 两阶段加载）。
+**数据加载**：两阶段加载——先检查 `.allforai/product-map/task-index.json`（索引，< 5KB），存在则加载索引获取任务 id/task_name/frequency/owner_role，再按需从 `task-inventory.json` 加载完整任务数据。索引不存在时回退到全量加载 `task-inventory.json`。
 
 **扫描策略**：
 1. **框架检测**：Grep package.json / Gemfile / requirements.txt / composer.json 识别后端框架（Express / Rails / Django / Laravel / NestJS 等）
@@ -162,14 +176,32 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 **策略**：反向扫描——提取代码中所有路由端点，与 task-inventory 中的任务做反向比对，找出**代码有但产品地图没有**的端点。
 
-**排除项**：
-- 健康检查端点（/health, /ping, /metrics）→ 自动标注「开发支持，不计入 EXTRA」
-- 认证/OAuth 回调端点 → 自动标注「基础设施，不计入 EXTRA」
+**排除项**（自动标注「基础设施/开发支持，不计入 EXTRA」）：
+- 健康检查端点（/health, /ping, /ready, /metrics, /status）
+- 认证/OAuth 回调端点（/auth/callback, /oauth/*, /login, /logout）
+- API 文档端点（/api-docs, /swagger, /openapi, /redoc）
+- 静态资源路由（/public/*, /static/*, /assets/*, /favicon.ico）
+- 框架内置路由（Next.js `_next/*`, Rails `/rails/*`, Django `/admin/`, Vite `/@vite/*`）
+- WebSocket 升级端点（/ws, /socket.io）
 
 **输出**：每条 EXTRA 项，用户确认：
 - `add_to_map` — 补录到产品地图（记录 INFO）
 - `mark_remove` — 标记为 REMOVE_EXTRA 任务
 - `ignore` — 合理遗留，忽略
+
+---
+
+### D0：应用可达性预检
+
+**目的**：在启动 Playwright 测试前确认应用可访问，避免浪费时间。
+
+**检测策略**：
+1. 自动检测：Grep 代码中的 `PORT`、`listen`、`localhost`、`.env` 等配置，推测应用 URL
+2. 若无法自动检测，询问用户提供应用 URL（如 `http://localhost:3000`）
+3. 使用 Bash `curl -s -o /dev/null -w "%{http_code}" <URL>` 验证 HTTP 可达性
+4. 返回非 2xx/3xx → 提示「应用未运行或不可达，请先启动应用后告知」，暂停 dynamic 阶段，等待用户确认后重试
+
+**输出**：确认的 `app_url` 写入 `dynamic-report.json` 的 `app_url` 字段。
 
 ---
 
@@ -189,8 +221,16 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 ### D2/D3：Playwright 执行
 
+**执行方式**：使用 MCP Playwright 工具交互式测试，主要工具：
+- `browser_navigate` — 导航到目标页面
+- `browser_snapshot` — 获取页面可访问性快照（用于定位元素）
+- `browser_click` / `browser_type` / `browser_fill_form` — 模拟用户操作
+- `browser_take_screenshot` — 失败时截图保存到 `.allforai/product-verify/screenshots/`
+- `browser_wait_for` — 等待页面加载或元素出现
+
 **执行原则**：
 - 每个用例独立运行，不相互依赖
+- 每步操作前先 `browser_snapshot` 获取当前页面状态，再根据快照中的元素 ref 执行操作
 - 失败时记录：失败步骤、错误信息、截图路径
 - 超时阈值：单步 10 秒，单用例 60 秒（可配置）
 
@@ -211,15 +251,143 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 ---
 
-## 输出文件
+## 输出文件结构
 
-| 文件 | 内容 |
-|------|------|
-| `static-report.json` | 每个 task/screen/constraint 的覆盖状态 |
-| `dynamic-report.json` | 每个用例的测试结果（pass/fail/skip/error） |
-| `verify-tasks.json` | 待处理任务清单（IMPLEMENT / REMOVE_EXTRA / FIX_FAILING） |
-| `verify-report.md` | 可读版报告 |
-| `verify-decisions.json` | 用户决策日志（S4 EXTRA 归属确认 + D4 失败原因确认） |
+```
+.allforai/product-verify/
+├── static-report.json       # S1-S4: 静态覆盖状态
+├── dynamic-report.json      # D2-D3: 动态测试结果
+├── verify-tasks.json        # 待处理任务清单（IMPLEMENT / REMOVE_EXTRA / FIX_FAILING）
+├── verify-report.md         # 可读版报告
+└── verify-decisions.json    # 用户决策日志（S4 EXTRA 归属 + D4 失败分类）
+```
+
+### static-report.json
+
+```json
+{
+  "generated_at": "2024-01-15T10:30:00Z",
+  "task_coverage": [
+    {
+      "task_id": "T001",
+      "task_name": "{任务名}",
+      "frequency": "高 | 中 | 低",
+      "owner_role": "{角色名}",
+      "status": "covered | missing_api | partial",
+      "matched_routes": ["/api/orders POST"],
+      "notes": "缺少角色鉴权中间件"
+    }
+  ],
+  "screen_coverage": [
+    {
+      "screen_id": "S001",
+      "screen_name": "{界面名}",
+      "status": "covered | missing_screen",
+      "matched_components": ["src/pages/orders/index.tsx"],
+      "notes": ""
+    }
+  ],
+  "constraint_coverage": [
+    {
+      "task_id": "T001",
+      "constraint": "{约束描述}",
+      "status": "covered | missing_constraint",
+      "matched_code": ["src/middleware/auth.ts:42"],
+      "risk_level": "高 | 中 | 低"
+    }
+  ],
+  "extra_endpoints": [
+    {
+      "route": "/api/legacy/export GET",
+      "file": "src/routes/legacy.ts:15",
+      "decision": "add_to_map | mark_remove | ignore | pending"
+    }
+  ]
+}
+```
+
+### dynamic-report.json
+
+```json
+{
+  "generated_at": "2024-01-15T11:00:00Z",
+  "app_url": "http://localhost:3000",
+  "test_sequences": [
+    {
+      "case_id": "UC001",
+      "case_name": "{用例名}",
+      "source": "use-case-tree | auto-derived",
+      "role": "{角色名}",
+      "task_id": "T001",
+      "result": "pass | fail | skip | error",
+      "steps": [
+        {
+          "step": 1,
+          "action": "{操作描述}",
+          "status": "pass | fail",
+          "error": null,
+          "screenshot": ".allforai/product-verify/screenshots/UC001-step1.png"
+        }
+      ],
+      "duration_ms": 3200,
+      "failure_classification": "FIX_FAILING | ENV_ISSUE | DEFERRED | null"
+    }
+  ],
+  "summary": {
+    "total": 20,
+    "pass": 15,
+    "fail": 3,
+    "skip": 1,
+    "error": 1
+  }
+}
+```
+
+### verify-tasks.json
+
+> 以下示例以虚构业务为背景，仅用于说明输出格式。
+
+```json
+[
+  {
+    "id": "VT-001",
+    "type": "IMPLEMENT | REMOVE_EXTRA | FIX_FAILING",
+    "task_id": "T001",
+    "task_name": "{任务名}",
+    "frequency": "高 | 中 | 低",
+    "priority": "P0 | P1 | P2",
+    "source_step": "S1 | S2 | S3 | S4 | D4",
+    "description": "「创建订单」任务无对应 API 路由",
+    "affected_roles": ["客服专员"],
+    "suggested_action": "实现 POST /api/orders 端点"
+  }
+]
+```
+
+### verify-decisions.json
+
+```json
+[
+  {
+    "step": "S4",
+    "item_id": "/api/legacy/export",
+    "item_name": "旧版导出端点",
+    "decision": "add_to_map | mark_remove | ignore",
+    "reason": "用户备注（可选）",
+    "decided_at": "2024-01-15T10:30:00Z"
+  },
+  {
+    "step": "D4",
+    "item_id": "UC003",
+    "item_name": "客服创建退款用例失败",
+    "decision": "FIX_FAILING | ENV_ISSUE | DEFERRED",
+    "reason": "数据库连接超时，非代码问题",
+    "decided_at": "2024-01-15T11:15:00Z"
+  }
+]
+```
+
+**加载逻辑**：每个 Step 开始前检查 verify-decisions.json，已有决策的条目跳过确认直接沿用。`refresh` 模式下将文件重命名为 `.bak` 后重跑。
 
 ---
 

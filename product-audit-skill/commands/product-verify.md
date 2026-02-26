@@ -15,18 +15,24 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 ## 模式路由
 
 - **无参数 或 `static`** → 静态验收：S1 → S2 → S3 → S4 → 报告
-- **`dynamic`** → 动态验收：D1 → D2 → D3 → D4 → 报告
-- **`full`** → 完整验收：static 全部步骤 + dynamic 全部步骤 → 合并报告
+- **`dynamic`** → 动态验收：D0（应用可达性预检） → D1 → D2 → D3 → D4 → 报告
+- **`full`** → 完整验收：static 全部步骤 + D0 → D1 → D2 → D3 → D4 → 合并报告
 - **`refresh`** → 重新验收：将 verify-decisions.json 重命名为 .bak，清除缓存，完整重跑
 
 ## 前置检查
 
 执行前必须检查：
 
-1. `.allforai/product-map/product-map.json` 必须存在，否则输出「请先运行 /product-map 建立产品地图」并**立即终止**
+1. **两阶段加载（索引优先）**：
+   - 检查索引文件：
+     - `.allforai/product-map/task-index.json` → 任务索引
+     - `.allforai/screen-map/screen-index.json` → 界面索引（S2 用）
+   - 任一索引存在 → 加载索引（< 5KB），按需决定是否加载完整数据
+   - 所有索引不存在 → 回退到全量加载 `.allforai/product-map/product-map.json`
+   - 若 `product-map.json` 也不存在 → 输出「请先运行 /product-map 建立产品地图」，**立即终止，不执行任何 Step**
 2. `.allforai/screen-map/screen-map.json` 可选，存在则启用 S2（界面覆盖检查），不存在则跳过 S2
 3. `.allforai/use-case/use-case-tree.json` 可选，dynamic 阶段优先使用；不存在则从 product-map 自动推导测试序列
-4. **历史决策加载**：检查 `.allforai/product-verify/verify-decisions.json`，存在则加载，已决策项自动跳过
+4. **历史决策加载**：检查 `.allforai/product-verify/verify-decisions.json`，存在则加载，已决策项（S4 EXTRA 归属 + D4 失败分类）自动跳过，不重复询问
 
 ## 执行流程
 
