@@ -4,6 +4,28 @@
 
 Claude Code 插件，基于产品地图为开发阶段提供种子数据锻造和产品验收能力。
 
+## 30 秒上手
+
+```bash
+# 1) 安装
+claude plugin add /path/to/dev-forge-skill
+
+# 2) 先造数据
+/seed-forge
+
+# 3) 再做验收
+/product-verify
+```
+
+## 适用场景
+
+| 场景 | 推荐命令 |
+|---|---|
+| 按业务语义批量生成测试数据 | `/seed-forge` |
+| 只设计种子方案，不立即灌入 | `/seed-forge plan` |
+| 对照产品地图验证实现覆盖 | `/product-verify` |
+| 只做静态或动态专项验收 | `/product-verify static` / `/product-verify dynamic` |
+
 ## 前置依赖
 
 本插件依赖 `product-design` 插件生成的 `.allforai/product-map/` 输出。请先运行 `/product-map` 建立产品地图。
