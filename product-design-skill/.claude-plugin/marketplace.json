@@ -5,10 +5,10 @@
   },
   "plugins": [
     {
-      "name": "product-audit",
-      "version": "2.5.0",
+      "name": "product-design",
+      "version": "3.0.0",
       "source": "./",
-      "description": "Product audit suite: product-map, screen-map, use-case, feature-gap, feature-prune, seed-forge. 产品审计套件：功能地图、界面地图、用例集、功能查漏、功能剪枝、种子数据锻造。"
+      "description": "Product design suite: product-map, screen-map, use-case, feature-gap, feature-prune, ui-design. 产品设计套件：产品概念、功能地图、界面地图、用例集、功能查漏、功能剪枝、UI设计。"
     },
     {
       "name": "deadhunt",

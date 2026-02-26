@@ -1,0 +1,6 @@
+{
+  "name": "dev-forge",
+  "description": "Development forge: seed-forge (generate realistic seed data), product-verify (static code coverage + dynamic Playwright acceptance test). 开发锻造套件：种子数据锻造、产品验收（静态扫描 + 动态验证）。",
+  "version": "1.0.0",
+  "author": { "name": "dv" }
+}

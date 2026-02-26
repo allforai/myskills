@@ -1,20 +1,31 @@
 ---
-name: product-audit
+name: product-design
 description: >
-  Product audit suite with six skills: product-map (产品地图), screen-map (界面地图), use-case (用例集),
-  feature-gap (功能查漏), feature-prune (功能剪枝), seed-forge (种子数据锻造).
+  Product design suite with seven skills: product-concept (产品概念), product-map (产品地图), screen-map (界面地图), use-case (用例集),
+  feature-gap (功能查漏), feature-prune (功能剪枝), ui-design (UI设计规格).
   Run product-map first to build the foundation, then optionally run screen-map,
   then use other skills as needed.
-version: "2.6.0"
+version: "3.0.0"
 ---
 
-# Product Audit — 产品审计套件
+# Product Design — 产品设计套件
 
-> 以产品地图为基础，系统化地查漏、剪枝、造数据。
+> 以产品地图为基础，系统化地定义、查漏、剪枝。
 
 ## 包含的技能
 
-### 1. product-map — 产品地图
+### 1. product-concept — 产品概念发现
+
+> 详见 `${CLAUDE_PLUGIN_ROOT}/skills/product-concept.md`
+
+从问题出发，搜索+选择题引导，帮你发现心中的产品。
+
+```
+/product-concept          # 完整流程
+/product-concept reverse  # 从已有产品反推概念
+```
+
+### 2. product-map — 产品地图
 
 > 详见 `${CLAUDE_PLUGIN_ROOT}/skills/product-map.md`
 
@@ -31,7 +42,7 @@ version: "2.6.0"
 /product-map scope 退款管理  # 只梳理指定模块
 ```
 
-### 2. screen-map — 界面与异常状态地图
+### 3. screen-map — 界面与异常状态地图
 
 > 详见 `${CLAUDE_PLUGIN_ROOT}/skills/screen-map.md`
 
@@ -49,7 +60,7 @@ version: "2.6.0"
 /screen-map scope 退款管理  # 只梳理指定模块的界面
 ```
 
-### 3. use-case — 用例集
+### 4. use-case — 用例集
 
 > 详见 `${CLAUDE_PLUGIN_ROOT}/skills/use-case.md`
 
@@ -66,7 +77,7 @@ version: "2.6.0"
 /use-case scope 退款管理  # 只生成指定功能区的用例
 ```
 
-### 4. feature-gap — 功能查漏
+### 5. feature-gap — 功能查漏
 
 > 详见 `${CLAUDE_PLUGIN_ROOT}/skills/feature-gap.md`
 
@@ -84,7 +95,7 @@ version: "2.6.0"
 /feature-gap role 客服专员  # 只查指定角色
 ```
 
-### 5. feature-prune — 功能剪枝
+### 6. feature-prune — 功能剪枝
 
 > 详见 `${CLAUDE_PLUGIN_ROOT}/skills/feature-prune.md`
 
@@ -101,37 +112,32 @@ version: "2.6.0"
 /feature-prune scope 用户管理  # 只剪枝指定模块
 ```
 
-### 6. seed-forge — 种子数据锻造
+### 7. ui-design — UI 设计规格
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/skills/seed-forge.md`
+> 详见 `${CLAUDE_PLUGIN_ROOT}/skills/ui-design.md`
 
-按产品地图，生成有业务逻辑、有人物关系、有时间分布的真实感种子数据。
-
-- 角色驱动：按 role-profiles 创建各角色测试用户账号
-- 频次决定数量：高频任务多生成，低频少生成（80/20 分布）
-- 场景决定关联：按场景链路生成完整数据，时间戳连贯
-- 约束决定规则：业务约束在数据中强制体现
+从产品地图 + 界面地图推导高层 UI 设计规格，结合风格选择和设计原则，输出设计规格文档 + 按角色拆分的 HTML 预览。
 
 ```
-/seed-forge               # 完整流程（映射→方案→风格→采集→灌入）
-/seed-forge plan          # 只设计方案，不灌入
-/seed-forge fill          # 加载已有方案，直接采集+灌入
-/seed-forge clean         # 清理已灌入的种子数据
+/ui-design               # 完整流程
+/ui-design refresh       # 重新生成
 ```
 
 ## 定位
 
 ```
-product-audit（产品层）
-├── product-map     产品是什么？谁在用？做什么？有何约束？   代码读现状 + PM 补业务视角
-├── screen-map      在哪做？怎么做？出错怎么办？             以 task-inventory 为输入（可选）
-├── use-case    推导完整用例，双格式输出（JSON 机器版 + Markdown 人类版）   基于 product-map + screen-map（可选）
-├── feature-gap     地图说有的，有没有？旅程走得通吗？        基于 product-map + screen-map
-├── feature-prune   地图里有的，该不该留？                   基于 product-map + screen-map
-└── seed-forge      真实感种子数据                          基于 product-map + API 调用
+product-design（产品层）
+├── product-concept 想做什么产品？                       搜索+选择题引导
+├── product-map     产品是什么？谁在用？做什么？有何约束？ 代码读现状 + PM 补业务视角
+├── screen-map      在哪做？怎么做？出错怎么办？           以 task-inventory 为输入（可选）
+├── use-case        推导完整用例，双格式输出               基于 product-map + screen-map（可选）
+├── feature-gap     地图说有的，有没有？旅程走得通吗？      基于 product-map + screen-map
+├── feature-prune   地图里有的，该不该留？                 基于 product-map + screen-map
+└── ui-design       高层 UI 设计规格 + HTML 预览           基于 product-map + screen-map
 
-deadhunt（代码层）  链接通不通？CRUD 全不全？                需要 Playwright
-code-tuner（架构层）代码好不好？重复多不多？                 纯静态分析
+dev-forge（开发层）   种子数据 + 产品验收                  基于 product-map + API/Playwright
+deadhunt（QA 层）     链接通不通？CRUD 全不全？             需要 Playwright
+code-tuner（架构层）  代码好不好？重复多不多？              纯静态分析
 ```
 
 ## 索引与按需加载
@@ -171,7 +177,7 @@ product-map（必须先跑）
     │
     ├── feature-gap（Step 1 基于 product-map，Step 2/3 需要 screen-map）
     ├── feature-prune（Step 1 基于 product-map，Step 2 需要 screen-map）
-    └── seed-forge（只需 product-map）
+    └── ui-design（需 product-map + screen-map）
 ```
 
 ## 文件结构
@@ -214,22 +220,13 @@ your-project/
     │   ├── flow-gaps.json              # 业务流链路完整性检查结果
     │   ├── gap-report.md               # 可读报告
     │   └── gap-decisions.json          # 用户确认记录
-    ├── feature-prune/
-    │   ├── frequency-tier.json         # 频次分层结果
-    │   ├── scenario-alignment.json     # 场景对齐结果（需 screen-map）
-    │   ├── competitive-ref.json        # 竞品参考数据
-    │   ├── prune-decisions.json        # 用户分类决策日志
-    │   ├── prune-tasks.json            # 剪枝任务清单（DEFER/CUT）
-    │   └── prune-report.md             # 可读报告
-    └── seed-forge/
-        ├── model-mapping.json          # 代码实体 ↔ product-map 映射
-        ├── api-gaps.json               # API 缺口报告
-        ├── seed-plan.json              # 种子方案（用户/数量/链路/约束）
-        ├── style-profile.json          # 行业风格
-        ├── assets-manifest.json        # 素材清单
-        ├── assets/                     # 下载的图片
-        ├── forge-log.json              # 灌入日志
-        └── forge-data.json             # 已创建数据清单
+    └── feature-prune/
+        ├── frequency-tier.json         # 频次分层结果
+        ├── scenario-alignment.json     # 场景对齐结果（需 screen-map）
+        ├── competitive-ref.json        # 竞品参考数据
+        ├── prune-decisions.json        # 用户分类决策日志
+        ├── prune-tasks.json            # 剪枝任务清单（DEFER/CUT）
+        └── prune-report.md             # 可读报告
 ```
 
 ## 输出规范（全套件铁律）

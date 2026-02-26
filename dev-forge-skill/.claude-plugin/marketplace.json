@@ -1,0 +1,14 @@
+{
+  "name": "dev-forge",
+  "owner": {
+    "name": "dv"
+  },
+  "plugins": [
+    {
+      "name": "dev-forge",
+      "version": "1.0.0",
+      "source": "./",
+      "description": "Development forge: seed-forge, product-verify. 开发锻造套件：种子数据锻造、产品验收。"
+    }
+  ]
+}
