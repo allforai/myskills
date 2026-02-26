@@ -24,16 +24,16 @@
 
 ## 经典理论总览（阶段 × 理论锚点）
 
-| 阶段 | 经典理论锚点 | 代表来源（书籍/文章） |
+| 阶段 | 经典理论锚点 | 代表来源（作者/年份） |
 |------|--------------|------------------------|
-| product-concept | 第一性原理、JTBD、VPC、Lean Canvas、Blue Ocean ERRC、Kano、Mom Test | 《Competing Against Luck》《Value Proposition Design》《Business Model Generation》《Blue Ocean Strategy》《The Mom Test》 |
-| product-map | Story Mapping、RACI、风险矩阵、DoR | 《User Story Mapping》+ 项目治理通用实践 |
-| screen-map | Nielsen Heuristics、Service Blueprint、认知负荷理论 | Nielsen Norman Group 10 Heuristics、服务设计方法 |
-| use-case | INVEST、DoD、风险驱动测试 | 《Agile Estimating and Planning》及敏捷测试实践 |
-| feature-gap | INVEST、DoR/DoD、服务蓝图、风险矩阵 | 敏捷需求工程与服务设计实践 |
-| feature-prune | RICE、MoSCoW、Kano、Cost of Delay | Intercom RICE 方法文、MoSCoW 优先级法、Kano 模型 |
-| ui-design | Design System、Atomic Design、WCAG、Gestalt | 《Atomic Design》、W3C WCAG、格式塔原则 |
-| design-audit | Nielsen Heuristics、ISO 9241-11、WCAG、一致性原则 | ISO 9241-11、NN/g、W3C |
+| product-concept | 第一性原理、JTBD、VPC、Lean Canvas、Blue Ocean ERRC、Kano、Mom Test | Christensen et al. (2016); Osterwalder et al. (2014); Osterwalder & Pigneur (2010); Kim & Mauborgne (2005); Kano et al. (1984); Fitzpatrick (2013) |
+| product-map | Story Mapping、RACI、风险矩阵、DoR | Patton (2014); PMI (2013, RACI in PM practice) |
+| screen-map | Nielsen Heuristics、Service Blueprint、认知负荷理论 | Nielsen (1994); Shostack (1984); Sweller (1988) |
+| use-case | INVEST、DoD、风险驱动测试 | Cohn (2004); Schwaber & Sutherland (2020); Bach (1999) |
+| feature-gap | INVEST、DoR/DoD、服务蓝图、风险矩阵 | Cohn (2004); Schwaber & Sutherland (2020); Shostack (1984) |
+| feature-prune | RICE、MoSCoW、Kano、Cost of Delay | Intercom (2015, RICE); Clegg & Barker (1994, MoSCoW); Kano et al. (1984); Reinertsen (2009) |
+| ui-design | Design System、Atomic Design、WCAG、Gestalt | W3C (2018/2023, WCAG 2.1/2.2); Frost (2016); Wertheimer (1923) |
+| design-audit | Nielsen Heuristics、ISO 9241-11、WCAG、一致性原则 | Nielsen (1994); ISO 9241-11 (2018); W3C (2018/2023) |
 
 ---
 
@@ -238,3 +238,25 @@
 2. **评审会议对齐**：按“阶段 → 原则 → 产出”逐项审查
 3. **争议决策仲裁**：回到对应阶段的指导思想，避免拍脑袋讨论
 4. **流程复盘优化**：当产出质量不稳定时，优先检查是否偏离本原则
+
+---
+
+## 参考文献（经典来源）
+
+1. Christensen, C. M., Hall, T., Dillon, K., & Duncan, D. S. (2016). *Competing Against Luck*.
+2. Osterwalder, A., Pigneur, Y., Bernarda, G., & Smith, A. (2014). *Value Proposition Design*.
+3. Osterwalder, A., & Pigneur, Y. (2010). *Business Model Generation*.
+4. Kim, W. C., & Mauborgne, R. (2005). *Blue Ocean Strategy*.
+5. Kano, N., Seraku, N., Takahashi, F., & Tsuji, S. (1984). Attractive quality and must-be quality.
+6. Fitzpatrick, R. (2013). *The Mom Test*.
+7. Patton, J. (2014). *User Story Mapping*.
+8. Nielsen, J. (1994). 10 Usability Heuristics for User Interface Design.
+9. Shostack, G. L. (1984). Designing Services That Deliver.
+10. Sweller, J. (1988). Cognitive Load During Problem Solving.
+11. Cohn, M. (2004). *User Stories Applied* (INVEST).
+12. Schwaber, K., & Sutherland, J. (2020). *The Scrum Guide* (DoD).
+13. Bach, J. (1999). Risk-Based Testing.
+14. Reinertsen, D. (2009). *The Principles of Product Development Flow* (Cost of Delay).
+15. Frost, B. (2016). *Atomic Design*.
+16. W3C. (2018/2023). *WCAG 2.1 / 2.2*.
+17. ISO. (2018). *ISO 9241-11:2018 Ergonomics of human-system interaction*.

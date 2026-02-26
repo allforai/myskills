@@ -4,6 +4,17 @@
 
 Claude Code 插件，以产品地图为基础，系统化地定义、查漏、剪枝、审计。
 
+## 设计思想与经典理论支持
+
+在执行命令前，建议先阅读：
+
+- [`docs/product-design-principles.md`](docs/product-design-principles.md)
+
+该文档包含：
+- 前段 / 中段 / 尾段 的经典理论总览
+- 每个阶段对应的理论锚点（如第一性原理、JTBD、Kano、Nielsen、ISO 9241-11、WCAG）
+- 参考文献（作者 / 年份 / 来源）
+
 ## 工作顺序
 
 **先跑 `product-map`，再跑其他技能。**

@@ -12,6 +12,14 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 所有文档路径基于插件安装目录: `${CLAUDE_PLUGIN_ROOT}`
 
+## 设计思想入口（建议先读）
+
+执行全流程前，建议先阅读：
+
+- `${CLAUDE_PLUGIN_ROOT}/docs/product-design-principles.md`
+
+该文档汇总前段/中段/尾段的经典理论支持（如第一性原理、JTBD、Kano、Nielsen、ISO 9241-11、WCAG）及参考文献。
+
 ## 模式路由
 
 根据用户参数决定执行模式：
