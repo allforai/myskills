@@ -1,0 +1,266 @@
+{
+  "version": "1.0.0",
+  "description": "技术栈注册表 — project-setup 引导用户选择技术栈时读取此文件",
+  "stacks": [
+    {
+      "id": "nestjs-typeorm",
+      "name": "NestJS + TypeORM",
+      "type": "backend",
+      "language": "typescript",
+      "framework": "NestJS",
+      "orm": "TypeORM",
+      "database": "PostgreSQL",
+      "default_port": 3001,
+      "template_file": "backend/nestjs-typeorm.md",
+      "tags": ["enterprise", "typescript", "decorator-based"]
+    },
+    {
+      "id": "spring-boot-jpa",
+      "name": "Spring Boot + JPA",
+      "type": "backend",
+      "language": "java",
+      "framework": "Spring Boot",
+      "orm": "JPA / Hibernate",
+      "database": "PostgreSQL",
+      "default_port": 8080,
+      "template_file": "backend/spring-boot-jpa.md",
+      "tags": ["enterprise", "java", "mature"]
+    },
+    {
+      "id": "flask-sqlalchemy",
+      "name": "Flask + SQLAlchemy",
+      "type": "backend",
+      "language": "python",
+      "framework": "Flask",
+      "orm": "SQLAlchemy",
+      "database": "PostgreSQL",
+      "default_port": 5000,
+      "template_file": "backend/flask-sqlalchemy.md",
+      "tags": ["lightweight", "python", "flexible"]
+    },
+    {
+      "id": "django-rest",
+      "name": "Django + DRF",
+      "type": "backend",
+      "language": "python",
+      "framework": "Django",
+      "orm": "Django ORM",
+      "database": "PostgreSQL",
+      "default_port": 8000,
+      "template_file": "backend/django-rest.md",
+      "tags": ["batteries-included", "python", "admin-built-in"]
+    },
+    {
+      "id": "go-gin",
+      "name": "Go + Gin + GORM",
+      "type": "backend",
+      "language": "go",
+      "framework": "Gin",
+      "orm": "GORM",
+      "database": "PostgreSQL",
+      "default_port": 8080,
+      "template_file": "backend/go-gin.md",
+      "tags": ["high-performance", "go", "compiled"]
+    },
+    {
+      "id": "rails-postgres",
+      "name": "Ruby on Rails",
+      "type": "backend",
+      "language": "ruby",
+      "framework": "Rails",
+      "orm": "ActiveRecord",
+      "database": "PostgreSQL",
+      "default_port": 3000,
+      "template_file": "backend/rails-postgres.md",
+      "tags": ["convention-over-config", "ruby", "rapid"]
+    },
+    {
+      "id": "laravel",
+      "name": "Laravel + Eloquent",
+      "type": "backend",
+      "language": "php",
+      "framework": "Laravel",
+      "orm": "Eloquent",
+      "database": "PostgreSQL",
+      "default_port": 8000,
+      "template_file": "backend/laravel.md",
+      "tags": ["elegant", "php", "batteries-included"]
+    },
+    {
+      "id": "fastapi",
+      "name": "FastAPI + SQLAlchemy",
+      "type": "backend",
+      "language": "python",
+      "framework": "FastAPI",
+      "orm": "SQLAlchemy",
+      "database": "PostgreSQL",
+      "default_port": 8000,
+      "template_file": "backend/fastapi.md",
+      "tags": ["async", "python", "openapi-native"]
+    },
+    {
+      "id": "nextjs",
+      "name": "Next.js 14 (App Router) + Tailwind",
+      "type": "web",
+      "language": "typescript",
+      "framework": "Next.js 14",
+      "css": "Tailwind CSS",
+      "rendering": "SSR / SSG / CSR",
+      "default_port": 3000,
+      "template_file": "web/nextjs.md",
+      "sub_types": ["admin", "web-customer", "web-mobile"],
+      "tags": ["react", "fullstack-capable", "ssr"]
+    },
+    {
+      "id": "nuxt",
+      "name": "Nuxt 3 + Tailwind",
+      "type": "web",
+      "language": "typescript",
+      "framework": "Nuxt 3",
+      "css": "Tailwind CSS",
+      "rendering": "SSR / SSG / CSR",
+      "default_port": 3000,
+      "template_file": "web/nuxt.md",
+      "sub_types": ["admin", "web-customer", "web-mobile"],
+      "tags": ["vue", "fullstack-capable", "ssr"]
+    },
+    {
+      "id": "angular",
+      "name": "Angular + Angular Material",
+      "type": "web",
+      "language": "typescript",
+      "framework": "Angular",
+      "css": "Angular Material",
+      "rendering": "CSR",
+      "default_port": 4200,
+      "template_file": "web/angular.md",
+      "sub_types": ["admin", "web-customer"],
+      "tags": ["enterprise", "opinionated", "material-design"]
+    },
+    {
+      "id": "sveltekit",
+      "name": "SvelteKit + Tailwind",
+      "type": "web",
+      "language": "typescript",
+      "framework": "SvelteKit",
+      "css": "Tailwind CSS",
+      "rendering": "SSR / SSG / CSR",
+      "default_port": 5173,
+      "template_file": "web/sveltekit.md",
+      "sub_types": ["admin", "web-customer", "web-mobile"],
+      "tags": ["lightweight", "compiler-based", "fast"]
+    },
+    {
+      "id": "vite-react",
+      "name": "Vite + React + Tailwind (SPA)",
+      "type": "web",
+      "language": "typescript",
+      "framework": "React",
+      "css": "Tailwind CSS",
+      "rendering": "CSR",
+      "default_port": 5173,
+      "template_file": "web/vite-react.md",
+      "sub_types": ["admin", "web-customer"],
+      "tags": ["spa", "react", "lightweight"]
+    },
+    {
+      "id": "vite-vue",
+      "name": "Vite + Vue 3 + Tailwind (SPA)",
+      "type": "web",
+      "language": "typescript",
+      "framework": "Vue 3",
+      "css": "Tailwind CSS",
+      "rendering": "CSR",
+      "default_port": 5173,
+      "template_file": "web/vite-vue.md",
+      "sub_types": ["admin", "web-customer"],
+      "tags": ["spa", "vue", "lightweight"]
+    },
+    {
+      "id": "react-native-expo",
+      "name": "React Native + Expo",
+      "type": "mobile",
+      "language": "typescript",
+      "framework": "React Native",
+      "toolkit": "Expo",
+      "default_port": 8081,
+      "template_file": "mobile/react-native-expo.md",
+      "sub_types": ["mobile-native"],
+      "tags": ["cross-platform", "react", "expo"]
+    },
+    {
+      "id": "flutter",
+      "name": "Flutter + Dart",
+      "type": "mobile",
+      "language": "dart",
+      "framework": "Flutter",
+      "toolkit": "Material / Cupertino",
+      "default_port": null,
+      "template_file": "mobile/flutter.md",
+      "sub_types": ["mobile-native"],
+      "tags": ["cross-platform", "dart", "high-performance"]
+    }
+  ],
+  "monorepo_tools": [
+    {
+      "id": "pnpm-workspace",
+      "name": "pnpm workspace",
+      "languages": ["javascript", "typescript"],
+      "description": "轻量 JS/TS monorepo，原生 workspace 支持",
+      "config_files": ["pnpm-workspace.yaml", "package.json"]
+    },
+    {
+      "id": "turborepo",
+      "name": "Turborepo",
+      "languages": ["javascript", "typescript"],
+      "description": "JS/TS monorepo + 构建缓存 + 任务编排",
+      "config_files": ["turbo.json", "package.json"]
+    },
+    {
+      "id": "nx",
+      "name": "Nx",
+      "languages": ["javascript", "typescript", "java", "go", "python"],
+      "description": "大型多语言 monorepo，完整工具链",
+      "config_files": ["nx.json", "package.json"]
+    },
+    {
+      "id": "manual",
+      "name": "手动管理",
+      "languages": ["mixed"],
+      "description": "混合语言场景：JS 部分 pnpm workspace，非 JS 独立构建",
+      "config_files": []
+    }
+  ],
+  "sub_project_types": [
+    {
+      "id": "backend",
+      "name": "API 后端",
+      "description": "无 UI，API 设计 / 数据模型 / 业务逻辑 / 中间件",
+      "compatible_stacks": ["nestjs-typeorm", "spring-boot-jpa", "flask-sqlalchemy", "django-rest", "go-gin", "rails-postgres", "laravel", "fastapi"]
+    },
+    {
+      "id": "admin",
+      "name": "管理后台",
+      "description": "CRUD 界面、数据表格、表单、图表、权限管理",
+      "compatible_stacks": ["nextjs", "nuxt", "angular", "sveltekit", "vite-react", "vite-vue"]
+    },
+    {
+      "id": "web-customer",
+      "name": "消费者 Web",
+      "description": "SEO、性能 (Core Web Vitals)、无障碍、i18n",
+      "compatible_stacks": ["nextjs", "nuxt", "sveltekit", "vite-react", "vite-vue"]
+    },
+    {
+      "id": "web-mobile",
+      "name": "移动网页 / H5 / PWA",
+      "description": "响应式、触屏交互、离线支持、安装到桌面",
+      "compatible_stacks": ["nextjs", "nuxt", "sveltekit", "vite-react", "vite-vue"]
+    },
+    {
+      "id": "mobile-native",
+      "name": "原生移动端",
+      "description": "原生导航、离线优先、推送、设备 API",
+      "compatible_stacks": ["react-native-expo", "flutter"]
+    }
+  ]
+}

@@ -6,9 +6,9 @@
   "plugins": [
     {
       "name": "dev-forge",
-      "version": "1.0.0",
+      "version": "2.0.0",
       "source": "./",
-      "description": "Development forge: seed-forge, product-verify. 开发锻造套件：种子数据锻造、产品验收。"
+      "description": "Development forge: project-setup, design-to-spec, project-scaffold, e2e-verify, seed-forge, product-verify. Full pipeline: /project-forge. 开发锻造套件：项目引导、设计转规格、脚手架生成、跨端验证、种子数据锻造、产品验收。"
     }
   ]
 }

@@ -56,6 +56,36 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 ---
 
+## 动态趋势补充（WebSearch）
+
+除经典理论外，执行产品验收时通过 WebSearch 补充最新验收和测试实践：
+
+**搜索关键词模板**：
+- `"automated acceptance testing {framework} {year}"`
+- `"Playwright testing best practices {year}"`
+- `"Lighthouse CI performance budget {year}"`
+- `"code coverage tools {language} {year}"`
+
+**来源优先级**：P1 官方文档（Playwright/Lighthouse）> P2 知名作者（Nielsen, Beck）> P3 技术媒体 > P4 社区帖
+
+**采纳决策**：记录到 `.allforai/project-forge/trend-sources.json`，标注 ADOPT / REJECT / DEFER + 理由。
+
+---
+
+## 产品验收理论支持
+
+> 详见 `docs/dev-forge-principles.md` — 尾段：验证与交付
+
+| 理论/框架 | 对应步骤 | 落地方式 |
+|-----------|---------|---------|
+| **ATDD** (Beck, 2003) | Step 1 静态验收 | 验收条件来自 use-case，先有条件再验证实现 |
+| **Heuristic Evaluation** (Nielsen, 1994) | Step 2 动态验收 | 10 条启发式原则辅助判断 UI 可用性问题 |
+| **Shift-Left Quality** (Forrester, 2016) | 整体时机 | 静态扫描不需运行应用，尽早发现覆盖缺口 |
+| **Hexagonal Architecture** (Cockburn, 2005) | Step 1 路由扫描 | 通过端口（路由/端点）验证核心逻辑是否暴露 |
+| **Test Pyramid** (Cohn, 2009) | Step 2 动态策略 | 动态验收聚焦关键路径，不重复单元测试覆盖的逻辑 |
+
+---
+
 ## 模式说明
 
 | 模式 | 说明 | 是否需要应用运行 |
