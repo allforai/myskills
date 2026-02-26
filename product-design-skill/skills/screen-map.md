@@ -64,7 +64,20 @@ task-inventory.json 为基础      以 task-inventory 为输入        读 scree
 
 - 每个界面建议补充：`source_refs`、`constraints`、`decision_rationale`（尤其是高风险页面）。
 - 每个关键界面至少覆盖 4/6 视角（`user/business/tech/ux/data/risk`）。
-- 异常与失败处理（`on_failure` / `exception_flows`）视为“信息保真关键位”，缺失时优先标红。
+- 异常与失败处理（`on_failure` / `exception_flows`）视为”信息保真关键位”，缺失时优先标红。
+
+## 跨模型交叉验证（可选增强）
+
+当 `mcp__openrouter__ask_model` 工具可用时，在 Step 2（界面级冲突 + 异常缺口检测）完成后自动发起交叉验证，结果直接写入产出的 `cross_model_review` 字段。
+
+| 验证点 | task_type | 发送内容 | 写入字段 |
+|--------|-----------|----------|----------|
+| UX 一致性审查 | `ux_review`→gpt | 界面清单 + 按钮列表 + 异常流覆盖情况 + 受众类型分布 | cross_model_review.ux_consistency_issues |
+| 无障碍检查 | `accessibility_check`→gemini | 界面清单 + 操作频次 + 状态处理（空态/错误/加载） + 受众类型 | cross_model_review.accessibility_gaps |
+
+**自动写入内容**：UX 一致性问题（跨界面交互模式不统一、反馈方式不一致）、无障碍缺陷（对比度不足、缺少键盘导航、状态变更无通知）。
+
+工具不可用或调用失败时，自动跳过，不阻塞流程，不生成 `cross_model_review` 字段。
 
 ## 中段经理理论支持（可选增强）
 

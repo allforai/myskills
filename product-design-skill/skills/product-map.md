@@ -66,7 +66,20 @@ product-map（现状+方向）      screen-map（可选增强）        feature-
 
 - 每个任务除结论字段外，建议补充：`source_refs`、`constraints`、`decision_rationale`。
 - 每个高频/高风险任务至少覆盖 4/6 视角（`user/business/tech/ux/data/risk`）。
-- `task-inventory.json` 作为下游锚点时，优先保证“可追溯 + 可解释”，避免只保留任务名导致语义丢失。
+- `task-inventory.json` 作为下游锚点时，优先保证”可追溯 + 可解释”，避免只保留任务名导致语义丢失。
+
+## 跨模型交叉验证（可选增强）
+
+当 `mcp__openrouter__ask_model` 工具可用时，在 Step 5（约束识别）完成后自动发起交叉验证，结果直接写入产出的 `cross_model_review` 字段。
+
+| 验证点 | task_type | 发送内容 | 写入字段 |
+|--------|-----------|----------|----------|
+| 任务完整性审查 | `task_completeness_review`→gemini | 角色列表 + 高频任务清单 + 已发现的冲突 | cross_model_review.missing_tasks |
+| 隐藏冲突检测 | `conflict_detection`→gpt | 角色列表 + 高频任务 + 任务间依赖关系 + 业务规则 | cross_model_review.hidden_conflicts |
+
+**自动写入内容**：遗漏任务提示（被忽略的高频操作或角色任务）、隐藏冲突（跨角色规则矛盾、状态流转死锁风险）。
+
+工具不可用或调用失败时，自动跳过，不阻塞流程，不生成 `cross_model_review` 字段。
 
 ## 中段经理理论支持（可选增强，不破坏现有流程）
 

@@ -139,7 +139,20 @@ product-concept（战略层）        product-map（运营层）
 
 - 关键结论建议附带：`source_refs`、`assumptions`、`constraints`、`decision_rationale`。
 - 对核心问题与价值主张，至少补齐 4/6 视角（`user/business/tech/ux/data/risk`）。
-- 概念输出尽量避免“只有结论无依据”，为下游 `product-map` 保留可追溯上下文。
+- 概念输出尽量避免”只有结论无依据”，为下游 `product-map` 保留可追溯上下文。
+
+## 跨模型交叉验证（可选增强）
+
+当 `mcp__openrouter__ask_model` 工具可用时，在 Step 4（概念结晶）完成后自动发起交叉验证，结果直接写入产出的 `cross_model_review` 字段。
+
+| 验证点 | task_type | 发送内容 | 写入字段 |
+|--------|-----------|----------|----------|
+| 假设挑战 | `competitive_analysis`→gemini | 概念摘要：核心问题 + 价值主张 + 关键假设 + ERRC 矩阵 | cross_model_review.assumption_challenges |
+| 用户画像验证 | `user_persona_validation`→gpt | 角色列表 + VPC（Jobs/Pains/Gains） + 目标用户画像 | cross_model_review.persona_blindspots |
+
+**自动写入内容**：假设挑战（哪些假设可能不成立）、盲区提示（被忽略的竞品或替代方案）、替代定位建议。
+
+工具不可用或调用失败时，自动跳过，不阻塞流程，不生成 `cross_model_review` 字段。
 
 ---
 

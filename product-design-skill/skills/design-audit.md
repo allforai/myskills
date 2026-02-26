@@ -73,6 +73,19 @@ product-map（锚点）
   - **Viewpoint 覆盖率**（建议 `>= 90%`，至少覆盖 4/6 视角）
 - 对 CONFLICT/ORPHAN 问题，建议附带 `source_refs` 与 `decision_rationale`，降低修复环节的信息二次失真。
 
+## 跨模型交叉验证（可选增强）
+
+当 `mcp__openrouter__ask_model` 工具可用时，在 Step 3（横向一致性检测）完成后自动发起交叉验证，结果直接写入产出的 `cross_model_review` 字段。
+
+| 验证点 | task_type | 发送内容 | 写入字段 |
+|--------|-----------|----------|----------|
+| 跨层矛盾验证 | `cross_layer_validation`→gpt | 审计摘要：CONFLICT/ORPHAN/GAP 问题列表 + 典型矛盾案例 | cross_model_review.additional_contradictions |
+| 覆盖盲区分析 | `coverage_analysis`→deepseek | 审计摘要：覆盖率统计 + 未覆盖任务列表 + 可用层信息 | cross_model_review.coverage_blindspots |
+
+**自动写入内容**：遗漏的跨层矛盾（审计自身未检测到的层间不一致、隐性依赖断裂）、覆盖盲区（系统性遗漏模式、特定角色或模块的覆盖偏低区域）。
+
+工具不可用或调用失败时，自动跳过，不阻塞流程，不生成 `cross_model_review` 字段。
+
 ## 尾段理论支持（可选增强）
 
 为让设计审计从“规则检查”升级为“体验质量治理”，可在现有三维校验上叠加：
