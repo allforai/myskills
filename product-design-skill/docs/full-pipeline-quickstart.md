@@ -21,7 +21,7 @@ Code Tuner (架构层)
 - ✅ 质量门禁：每层都有明确的质量标准
 - ✅ 反馈循环：下游发现问题自动反馈给上游
 - ✅ 全局追踪：统一记录所有决策和问题
-- ✅ 增量执行：只重跑有变更的部分
+- ✅ 现有项目支持：代码反推产品概念，再从上往下走
 
 ## 快速开始
 
@@ -47,18 +47,12 @@ Code Tuner (架构层)
 
 自动检测已完成的阶段，从第一个未完成的阶段继续。
 
-### 3. 增量执行
+### 3. 现有代码项目
 
-只执行有变更的部分（基于 git diff 或时间戳）：
-
-```bash
-/full-pipeline incremental
-```
-
-或者只执行最近 3 天变更的部分：
+如果项目代码已经存在，加 `existing` 标记即可——product-concept 会从代码反推产品概念，之后正常从上往下走：
 
 ```bash
-/full-pipeline incremental since:3days
+/full-pipeline full existing
 ```
 
 ### 4. 跳过某层
@@ -140,13 +134,13 @@ Full Pipeline 会自动检测跨层冲突并提供解决建议：
 
 完整执行所有层，建立完整的开发和测试基础。
 
-### 日常开发
+### 日常迭代
 
 ```bash
-/full-pipeline incremental
+/full-pipeline resume
 ```
 
-代码变更后，只重跑受影响的层，节省时间。
+从上次中断的地方继续，跳过已完成的阶段。
 
 ### 发布前检查
 
@@ -182,14 +176,6 @@ A: 可以，使用 skip 参数：
 /full-pipeline full skip:deadhunt,code-tuner
 ```
 
-### Q: 增量执行如何判断需要重跑哪些层？
-
-A: 基于 git diff 或时间戳：
-- 代码变更 → Layer 2, Layer 3, Layer 4
-- 产品定义变更 → Layer 1
-- UI 变更 → Layer 1, Layer 3
-- 架构变更 → Layer 4
-
 ### Q: 质量门禁失败怎么办？
 
 A: 流程会暂停并报告问题，你可以：
@@ -202,14 +188,6 @@ A: 流程会暂停并报告问题，你可以：
 A: 查看 `global-decisions.json` 中的 `pipeline_run` 字段，包含了每次执行的元数据。
 
 ## 进阶用法
-
-### 只执行指定层
-
-```bash
-/full-pipeline incremental layer:2,3
-```
-
-只执行开发层和 QA 层。
 
 ### 自定义质量门禁标准
 

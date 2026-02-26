@@ -133,6 +133,14 @@ product-concept（战略层）        product-map（运营层）
 
 建议将来源写入：`.allforai/product-design/trend-sources.json`（跨阶段共用）。
 
+## 信息保真增强（4D + 6V）
+
+执行本阶段时，建议同步参考：`docs/information-fidelity.md`。
+
+- 关键结论建议附带：`source_refs`、`assumptions`、`constraints`、`decision_rationale`。
+- 对核心问题与价值主张，至少补齐 4/6 视角（`user/business/tech/ux/data/risk`）。
+- 概念输出尽量避免“只有结论无依据”，为下游 `product-map` 保留可追溯上下文。
+
 ---
 
 ## 工作流 — 发现模式（5 Step）

@@ -79,8 +79,9 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 ## 铁律（强制执行）
 
-> 完整定义见 `${CLAUDE_PLUGIN_ROOT}/skills/ui-design.md` 的「3 条铁律」章节。
+> 完整定义见 `${CLAUDE_PLUGIN_ROOT}/skills/ui-design.md` 的「4 条铁律」章节。
 
 1. **只出规格不出代码** — 输出是设计语言描述，不生成 React/Vue 组件代码
 2. **screen-map 优先，缺席则推导** — 有 screen-map 按界面生成；没有则从高频任务自动推导主要界面
 3. **WebSearch 摘要展示，用户确认后才应用** — 检索到的设计原则必须摘要给用户确认，不自动静默应用
+4. **风格选择不可省略** — 设计风格必须在 Step 2 由用户明确选择或确认沿用历史风格；未确认风格前不得生成规格和预览

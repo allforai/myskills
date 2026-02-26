@@ -1,7 +1,7 @@
 ---
 description: "设计审计：跨层校验产品设计全链路一致性。逆向追溯 / 覆盖洪泛 / 横向一致性。模式: full / trace / coverage / cross / role"
 argument-hint: "[mode: full|trace|coverage|cross|role] [角色名]"
-allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion"]
+allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion", "WebSearch"]
 ---
 
 # Design Audit — 设计审计

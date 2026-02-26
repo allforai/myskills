@@ -58,6 +58,14 @@ task-inventory.json 为基础      以 task-inventory 为输入        读 scree
 
 建议将来源写入：`.allforai/product-design/trend-sources.json`（跨阶段共用）。
 
+## 信息保真增强（4D + 6V）
+
+执行本阶段时，建议同步参考：`docs/information-fidelity.md`。
+
+- 每个界面建议补充：`source_refs`、`constraints`、`decision_rationale`（尤其是高风险页面）。
+- 每个关键界面至少覆盖 4/6 视角（`user/business/tech/ux/data/risk`）。
+- 异常与失败处理（`on_failure` / `exception_flows`）视为“信息保真关键位”，缺失时优先标红。
+
 ## 中段经理理论支持（可选增强）
 
 为让“功能点 → 交互设计”阶段具备统一的管理语言，可在现有 screen-map 规则上叠加：

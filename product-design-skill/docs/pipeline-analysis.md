@@ -51,11 +51,11 @@
 │  └── ✓ 依赖 product-map 输出                                 │
 │                          ↓                                   │
 │  Layer 3: DeadHunt (QA层)                                    │
-│  ├── phase0-1-2-3-4 (死链检测 + CRUD验证)                   │
+│  ├── Phase 0→1→2→3→4→5 (6阶段: 分析→静态→计划→深度→报告→补测) │
 │  └── ✓ 需要 Playwright 验证                                  │
 │                          ↓                                   │
 │  Layer 4: Code Tuner (架构层)                                │
-│  ├── phase0-1-2-3-4 (架构合规 + 重复 + 抽象)                │
+│  ├── Phase 0→1→2→3→4 (5阶段: 画像→合规→重复→抽象→评分)      │
 │  └── ✓ 纯静态分析                                            │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
@@ -106,7 +106,7 @@
 ✅ **已实现**: 创建 `/full-pipeline` 编排命令
 
 **功能**:
-- 支持三种模式：`full`, `resume`, `incremental`
+- 支持两种模式：`full`, `resume`（可加 `existing` 标记支持现有代码项目）
 - 自动检测已有产物，从断点继续
 - 统一管理质量门禁
 - 输出统一的全流程报告
@@ -220,23 +220,7 @@
 - 全流程执行时间线
 - 关键指标（覆盖率、实现率、问题数）
 
-#### 建议 7: 增量执行支持
-
-**现状**: 只有 resume 模式（从断点继续）
-
-**建议**: 支持更细粒度的增量执行：
-```bash
-/full-pipeline incremental           # 只执行有变更的部分
-/full-pipeline incremental since:3days  # 只执行最近 3 天变更的部分
-/full-pipeline incremental layer:2,3   # 只执行指定层
-```
-
-**实现方式**:
-- 分析 git diff，确定变更的文件
-- 根据文件类型映射到需要重跑的层
-- 只重新执行受影响的层和阶段
-
-#### 建议 8: 冲突解决向导
+#### 建议 7: 冲突解决向导
 
 **现状**: 发现冲突后，只列出问题，没有指导
 
@@ -265,7 +249,7 @@
 
 **功能**:
 - ✅ 统一编排四层流程
-- ✅ 支持三种模式（full, resume, incremental）
+- ✅ 支持两种模式（full, resume）+ existing 标记
 - ✅ 质量门禁检查
 - ✅ 跨层一致性检查
 - ✅ 全局决策追踪
@@ -273,9 +257,9 @@
 
 **使用示例**:
 ```bash
-/full-pipeline               # 从头执行全流程
+/full-pipeline               # 新项目，从头执行全流程
+/full-pipeline full existing # 现有代码项目，从代码反推概念再从上往下
 /full-pipeline resume        # 从断点继续
-/full-pipeline incremental   # 只执行有变更的部分
 /full-pipeline full skip:deadhunt  # 跳过某层
 ```
 
@@ -379,7 +363,6 @@
 ### 5.3 第三阶段（P2 - 中期优化）
 
 - [ ] 生成可视化 HTML 仪表板
-- [ ] 支持增量执行（基于 git diff）
 - [ ] 添加冲突解决向导
 - [ ] 优化索引加载性能
 - [ ] 创建命令自动补全文档
@@ -401,16 +384,13 @@ cat .allforai/full-pipeline/pipeline-report.md
 cat .allforai/full-pipeline/global-decisions.json
 ```
 
-### 6.2 日常开发
+### 6.2 日常迭代
 
 ```bash
-# 1. 代码变更后，增量执行
-/full-pipeline incremental
+# 1. 从上次中断处继续
+/full-pipeline resume
 
-# 2. 或者只重跑受影响的层
-/full-pipeline incremental layer:2,3
-
-# 3. 查看哪些任务需要关注
+# 2. 查看哪些任务需要关注
 cat .allforai/full-pipeline/pipeline-report.md | grep "需要关注的任务"
 ```
 
@@ -441,8 +421,8 @@ cat .allforai/full-pipeline/pipeline-report.json | jq '.cross_layer_conflicts'
 
 # 3. 查看详细报告
 cat .allforai/design-audit/audit-report.md
-cat .allforai/dev-forge/verify-report.md
-cat .allforai/deadhunt/validation-report-*.md
+cat .allforai/product-verify/verify-report.md
+cat .allforai/deadhunt/output/validation-report-*.md
 cat .allforai/code-tuner/tuner-report.md
 ```
 
@@ -459,7 +439,7 @@ cat .allforai/code-tuner/tuner-report.md
 | 决策追踪 | 各层独立 | 全局统一追踪 |
 | 质量门禁 | 部分层有 | 所有层都有 |
 | 跨层一致性 | 人工检查 | 自动检测 |
-| 执行效率 | 高 | 增量模式更高 |
+| 执行效率 | 高 | resume 模式避免重复 |
 
 ### 7.2 关键成果
 
@@ -501,43 +481,47 @@ your-project/
     │   ├── pipeline-report.json          # 全量报告（机器可读）
     │   ├── pipeline-report.md            # 人类可读摘要
     │   └── global-decisions.json         # 全局决策追踪
-    ├── product-design/
-    │   ├── product-map/
-    │   ├── screen-map/
-    │   ├── use-case/
-    │   ├── feature-gap/
-    │   ├── feature-prune/
-    │   ├── ui-design/
-    │   └── design-audit/
-    ├── dev-forge/
+    ├── product-concept/                  # Layer 1
+    ├── product-map/
+    ├── screen-map/
+    ├── use-case/
+    ├── feature-gap/
+    ├── feature-prune/
+    ├── ui-design/
+    ├── design-audit/
+    ├── seed-forge/                       # Layer 2
     │   ├── seed-plan.json
-    │   ├── verify-report.json
-    │   └── missing-tasks.json
-    ├── deadhunt/
-    │   ├── dead-links-report.json
-    │   ├── dead-links.json
-    │   ├── crud-gaps.json
-    │   └── ghost-features.json
-    └── code-tuner/
+    │   ├── forge-log.json
+    │   └── forge-data.json
+    ├── product-verify/
+    │   ├── static-report.json
+    │   ├── verify-tasks.json
+    │   └── verify-report.md
+    ├── deadhunt/                         # Layer 3
+    │   └── output/
+    │       ├── fix-tasks.json
+    │       └── validation-report-*.md
+    └── code-tuner/                       # Layer 4
+        ├── tuner-profile.json
+        ├── phase1-compliance.json
+        ├── phase2-duplicates.json
+        ├── phase3-abstractions.json
         ├── tuner-report.md
-        ├── violations.json
-        ├── duplicates.json
-        └── abstractions.json
+        └── tuner-tasks.json
 ```
 
 ### 8.3 命令参考
 
 | 命令 | 说明 | 模式 |
 |------|------|------|
-| `/full-pipeline` | 执行全流程 | full |
+| `/full-pipeline` | 新项目，从头执行全流程 | full |
 | `/full-pipeline full` | 完整执行（从头开始） | full |
+| `/full-pipeline full existing` | 现有代码项目，代码反推概念 | full + existing |
 | `/full-pipeline resume` | 从断点继续 | resume |
-| `/full-pipeline incremental` | 增量执行 | incremental |
-| `/full-pipeline incremental since:3days` | 执行最近 3 天变更 | incremental |
 | `/full-pipeline full skip:deadhunt` | 跳过指定层 | full |
 
 ---
 
 **报告生成时间**: 2026-02-27
 **报告版本**: v1.0.0
-**维护者**: Cline AI Assistant
+**维护者**: dv

@@ -53,6 +53,14 @@ product-concept → product-map → screen-map → ui-design
 
 建议将来源写入：`.allforai/product-design/trend-sources.json`（跨阶段共用）。
 
+## 信息保真增强（4D + 6V）
+
+执行本阶段时，建议同步参考：`docs/information-fidelity.md`。
+
+- 每个关键界面规格建议补充：`source_refs`、`constraints`、`decision_rationale`。
+- 视觉决策建议至少覆盖 4/6 视角（`user/business/tech/ux/data/risk`），避免“只好看不落地”。
+- 对高风险交互（删除、提交、权限）明确记录可访问性与失败反馈依据。
+
 ## 尾段理论支持（可选增强）
 
 为让 UI 产出从“风格偏好”升级为“可评审、可审计的设计决策”，可在现有流程叠加：

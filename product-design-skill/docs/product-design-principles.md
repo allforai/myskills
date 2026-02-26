@@ -19,6 +19,48 @@
 3. **结构化产出优先**：JSON 给机器、Markdown 给人，保证可执行与可读性。
 4. **层层校验闭环**：阶段间设置检查点，终审统一做逆向追溯 + 覆盖洪泛 + 横向一致性。
 5. **用户是最终决策者**：AI 提供分析与建议，最终取舍由用户确认。
+6. **双轨证据机制**：经典理论提供稳定锚点，Web 热门文章/案例提供时效补充。
+
+---
+
+## 动态研究机制（Web 热门文章与趋势补充）
+
+除了经典理论，每个阶段都建议执行一次「动态趋势补充」：
+
+1. **搜索近期内容**：优先近 12–24 个月（必要时回溯经典长文）
+2. **筛选来源质量**：优先官方规范、权威研究、头部产品实践
+3. **形成采纳决策**：不是“看到了就用”，而是记录“是否采纳 + 为什么”
+
+### 来源优先级（建议）
+
+| 级别 | 来源类型 | 处理方式 |
+|------|----------|----------|
+| P1 | 官方规范/标准（W3C、ISO、官方 Design System） | 可直接作为强依据 |
+| P2 | 权威研究机构/行业报告（NN/g、McKinsey、Gartner 等） | 高可信，建议交叉验证 |
+| P3 | 一线产品团队实践文章（Linear/Stripe/Figma/Notion 工程博客） | 可作为实操参考 |
+| P4 | 社区文章/社媒帖子 | 仅作灵感，不单独作为决策依据 |
+
+### 建议输出（趋势证据留痕）
+
+- `.allforai/product-design/trend-sources.json`（机器可读）
+- `.allforai/product-design/trend-notes.md`（人类可读）
+
+`trend-sources.json` 最小结构建议：
+
+```json
+[
+  {
+    "phase": "ui-design",
+    "topic": "dashboard information density",
+    "title": "文章标题",
+    "url": "https://...",
+    "source_level": "P1|P2|P3|P4",
+    "published_at": "2025-06-01",
+    "adoption": "ADOPT|REJECT|DEFER",
+    "reason": "采纳或拒绝理由"
+  }
+]
+```
 
 ---
 
@@ -91,6 +133,28 @@
 
 **特别原则**：
 - UI 风格选择不可省略，必须由用户明确确认。
+
+---
+
+## 分段趋势搜索建议（关键词模板）
+
+### 前段（战略定义层）
+
+- `"JTBD" + 行业词 + "case study" + 2025`
+- `"problem discovery" + 产品类型 + "user research"`
+- `"Blue Ocean" + 行业词 + "competitive landscape"`
+
+### 中段（功能与交互建模层）
+
+- `"story mapping" + 产品类型 + "best practices"`
+- `"service blueprint" + 行业词 + "journey design"`
+- `"RICE prioritization" + "product team" + 2024 OR 2025`
+
+### 尾段（视觉落地与发布审计层）
+
+- `"design system" + 行业词 + "case study" + 2025`
+- `"WCAG 2.2" + 组件类型 + "accessibility"`
+- `"usability audit" + "Nielsen heuristics" + "real examples"`
 
 ---
 

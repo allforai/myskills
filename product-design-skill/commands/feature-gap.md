@@ -1,7 +1,7 @@
 ---
 description: "功能查漏：基于 product-map 检测任务完整性、界面完整性和用户旅程缺口。模式: full / quick / journey / role / refresh"
 argument-hint: "[mode: full|quick|journey|role|refresh] [角色名]"
-allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion"]
+allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion", "WebSearch"]
 ---
 
 # Feature Gap — 功能查漏

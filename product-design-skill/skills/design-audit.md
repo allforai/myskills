@@ -20,6 +20,7 @@ version: "1.0.0"
 1. **逆向追溯（Trace）** — 每个下游产物是否有上游源头？
 2. **覆盖洪泛（Coverage）** — 每个上游节点是否被下游完整消费？
 3. **横向一致性（Cross-check）** — 相邻层之间有无矛盾？
+4. **信息保真（Fidelity）** — 关键对象是否可追溯且具备多视角覆盖？
 
 发现问题只报告，不修改任何上游产物。
 
@@ -63,6 +64,15 @@ product-map（锚点）
 
 建议将来源写入：`.allforai/product-design/trend-sources.json`（跨阶段共用）。
 
+## 信息保真增强（4D + 6V）
+
+执行本阶段时，建议同步参考：`docs/information-fidelity.md`。
+
+- 在现有 Trace/Coverage/Cross 基础上，补充两项门禁：
+  - **Traceability 完整率**（建议 `>= 95%`）
+  - **Viewpoint 覆盖率**（建议 `>= 90%`，至少覆盖 4/6 视角）
+- 对 CONFLICT/ORPHAN 问题，建议附带 `source_refs` 与 `decision_rationale`，降低修复环节的信息二次失真。
+
 ## 尾段理论支持（可选增强）
 
 为让设计审计从“规则检查”升级为“体验质量治理”，可在现有三维校验上叠加：
@@ -100,6 +110,9 @@ Step 2: 覆盖洪泛（Coverage）
       ↓ 用户确认
 Step 3: 横向一致性（Cross-check）
       相邻层之间的矛盾检测
+      ↓ 用户确认
+Step 3.5: 信息保真门禁（Fidelity）
+      统计追溯完整率与视角覆盖率
       ↓ 用户确认
 Step 4: 汇总报告
       合并三维度结果，输出 JSON + Markdown
@@ -229,6 +242,24 @@ Step 4: 汇总报告
 
 ---
 
+### Step 3.5：信息保真门禁（Fidelity）
+
+在不改变现有主流程的前提下，补充两项统计门禁：
+
+| # | 门禁 | 逻辑 | 建议阈值 |
+|---|------|------|----------|
+| F1 | Traceability 完整率 | 关键下游对象中，可追溯到上游证据/引用的比例 | ≥ 95% |
+| F2 | Viewpoint 覆盖率 | 关键对象中，覆盖至少 4/6 视角（user/business/tech/ux/data/risk）的比例 | ≥ 90% |
+
+**结果标记**：
+
+| 标记 | 含义 |
+|------|------|
+| `PASS` | 达到阈值 |
+| `BELOW_THRESHOLD` | 未达到阈值，建议回到上游补充上下文 |
+
+---
+
 ### Step 4：汇总报告
 
 合并三个维度的校验结果，生成最终报告。
@@ -248,7 +279,13 @@ Step 4: 汇总报告
   "summary": {
     "trace": { "total": 0, "pass": 0, "orphan": 0 },
     "coverage": { "total": 0, "covered": 0, "gap": 0, "rate": "0%" },
-    "cross": { "total": 0, "ok": 0, "conflict": 0, "warning": 0, "broken_ref": 0 }
+    "cross": { "total": 0, "ok": 0, "conflict": 0, "warning": 0, "broken_ref": 0 },
+    "fidelity": {
+      "traceability_rate": "0%",
+      "traceability_status": "PASS|BELOW_THRESHOLD",
+      "viewpoint_coverage_rate": "0%",
+      "viewpoint_status": "PASS|BELOW_THRESHOLD"
+    }
   },
   "trace_issues": [
     {
@@ -295,6 +332,7 @@ Step 4: 汇总报告
 - 逆向追溯：X 项检查，X PASS，X ORPHAN
 - 覆盖洪泛：X 项检查，X COVERED，X GAP，覆盖率 XX%
 - 横向一致性：X 项检查，X OK，X CONFLICT，X WARNING，X BROKEN_REF
+- 信息保真：追溯完整率 XX%（PASS/BELOW_THRESHOLD） · 视角覆盖率 XX%（PASS/BELOW_THRESHOLD）
 
 ## 问题清单（按严重度排序）
 

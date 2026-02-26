@@ -1,7 +1,7 @@
 ---
 description: "界面地图：梳理界面、按钮、导航路径和异常状态，输出界面交互地图。模式: full / quick / scope"
 argument-hint: "[mode: full|quick|scope|refresh] [模块名]"
-allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion"]
+allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion", "WebSearch"]
 ---
 
 # Screen Map — 界面与异常状态地图

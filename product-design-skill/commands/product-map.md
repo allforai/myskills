@@ -1,7 +1,7 @@
 ---
 description: "产品地图：从代码读现状，用产品语言呈现角色、任务与约束。模式: full / quick / refresh / scope"
 argument-hint: "[mode: full|quick|refresh|scope] [模块名]"
-allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion"]
+allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion", "WebSearch"]
 ---
 
 # Product Map — 产品地图

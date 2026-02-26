@@ -60,6 +60,14 @@ product-map（现状+方向）      screen-map（可选增强）        feature-
 
 建议将来源写入：`.allforai/product-design/trend-sources.json`（跨阶段共用）。
 
+## 信息保真增强（4D + 6V）
+
+执行本阶段时，建议同步参考：`docs/information-fidelity.md`。
+
+- 每个任务除结论字段外，建议补充：`source_refs`、`constraints`、`decision_rationale`。
+- 每个高频/高风险任务至少覆盖 4/6 视角（`user/business/tech/ux/data/risk`）。
+- `task-inventory.json` 作为下游锚点时，优先保证“可追溯 + 可解释”，避免只保留任务名导致语义丢失。
+
 ## 中段经理理论支持（可选增强，不破坏现有流程）
 
 为保证「概念 → 功能点 → 交互」阶段具备可审计的产品管理依据，product-map 可叠加以下理论锚点：
