@@ -1,16 +1,17 @@
 ---
 name: product-design
 description: >
-  Product design suite with seven skills: product-concept (产品概念), product-map (产品地图), screen-map (界面地图), use-case (用例集),
-  feature-gap (功能查漏), feature-prune (功能剪枝), ui-design (UI设计规格).
+  Product design suite with eight skills: product-concept (产品概念), product-map (产品地图), screen-map (界面地图), use-case (用例集),
+  feature-gap (功能查漏), feature-prune (功能剪枝), ui-design (UI设计规格), design-audit (设计审计).
   Run product-map first to build the foundation, then optionally run screen-map,
-  then use other skills as needed.
-version: "3.0.0"
+  then use other skills as needed. Use design-audit for cross-layer consistency checks.
+  Use /product-design full to run the full pipeline with checkpoints.
+version: "3.1.0"
 ---
 
 # Product Design — 产品设计套件
 
-> 以产品地图为基础，系统化地定义、查漏、剪枝。
+> 以产品地图为基础，系统化地定义、查漏、剪枝、审计。
 
 ## 包含的技能
 
@@ -123,6 +124,36 @@ version: "3.0.0"
 /ui-design refresh       # 重新生成
 ```
 
+### 8. design-audit — 设计审计
+
+> 详见 `${CLAUDE_PLUGIN_ROOT}/skills/design-audit.md`
+
+跨层校验产品设计全链路一致性，三个维度：逆向追溯（下游产物有无源头）、覆盖洪泛（上游节点是否被完整消费）、横向一致性（相邻层有无矛盾）。
+
+- 自动探测已有产物，按已有层决定校验范围
+- 只读不改，审计结果输出 JSON + Markdown
+- 支持指定角色做全链路校验
+
+```
+/design-audit              # 三合一全量校验
+/design-audit trace        # 仅逆向追溯
+/design-audit coverage     # 仅覆盖洪泛
+/design-audit cross        # 仅横向一致性
+/design-audit role 客服专员  # 指定角色全链路校验
+```
+
+## 全流程编排
+
+使用 `/product-design full` 串联全部技能 + 阶段间检查点 + 终审：
+
+```
+/product-design full                # 从头执行全流程
+/product-design full skip: concept  # 跳过概念发现
+/product-design resume              # 从断点继续
+```
+
+流程：concept → product-map → screen-map → use-case → feature-gap → feature-prune → ui-design → design-audit，每阶段间插入检查点验证产出完整性。
+
 ## 定位
 
 ```
@@ -133,7 +164,8 @@ product-design（产品层）
 ├── use-case        推导完整用例，双格式输出               基于 product-map + screen-map（可选）
 ├── feature-gap     地图说有的，有没有？旅程走得通吗？      基于 product-map + screen-map
 ├── feature-prune   地图里有的，该不该留？                 基于 product-map + screen-map
-└── ui-design       高层 UI 设计规格 + HTML 预览           基于 product-map + screen-map
+├── ui-design       高层 UI 设计规格 + HTML 预览           基于 product-map + screen-map
+└── design-audit    全链路一致性校验                       基于全部已有产物
 
 dev-forge（开发层）   种子数据 + 产品验收                  基于 product-map + API/Playwright
 deadhunt（QA 层）     链接通不通？CRUD 全不全？             需要 Playwright
@@ -177,7 +209,10 @@ product-map（必须先跑）
     │
     ├── feature-gap（Step 1 基于 product-map，Step 2/3 需要 screen-map）
     ├── feature-prune（Step 1 基于 product-map，Step 2 需要 screen-map）
-    └── ui-design（需 product-map + screen-map）
+    ├── ui-design（需 product-map + screen-map）
+    └── design-audit（终审，基于全部已有产物）
+
+或使用 /product-design full 自动编排全流程（含阶段间检查点 + 终审）。
 ```
 
 ## 文件结构
@@ -220,13 +255,16 @@ your-project/
     │   ├── flow-gaps.json              # 业务流链路完整性检查结果
     │   ├── gap-report.md               # 可读报告
     │   └── gap-decisions.json          # 用户确认记录
-    └── feature-prune/
-        ├── frequency-tier.json         # 频次分层结果
-        ├── scenario-alignment.json     # 场景对齐结果（需 screen-map）
-        ├── competitive-ref.json        # 竞品参考数据
-        ├── prune-decisions.json        # 用户分类决策日志
-        ├── prune-tasks.json            # 剪枝任务清单（DEFER/CUT）
-        └── prune-report.md             # 可读报告
+    ├── feature-prune/
+    │   ├── frequency-tier.json         # 频次分层结果
+    │   ├── scenario-alignment.json     # 场景对齐结果（需 screen-map）
+    │   ├── competitive-ref.json        # 竞品参考数据
+    │   ├── prune-decisions.json        # 用户分类决策日志
+    │   ├── prune-tasks.json            # 剪枝任务清单（DEFER/CUT）
+    │   └── prune-report.md             # 可读报告
+    └── design-audit/
+        ├── audit-report.json           # 全量校验结果（机器可读）
+        └── audit-report.md             # 人类可读摘要
 ```
 
 ## 输出规范（全套件铁律）

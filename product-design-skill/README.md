@@ -1,8 +1,8 @@
 # product-design — 产品设计套件
 
-**版本：v3.0.0**
+**版本：v3.1.0**
 
-Claude Code 插件，以产品地图为基础，系统化地定义、查漏、剪枝。
+Claude Code 插件，以产品地图为基础，系统化地定义、查漏、剪枝、审计。
 
 ## 工作顺序
 
@@ -20,7 +20,10 @@ product-map（建功能图）
     │
     ├── 功能查漏   — 地图说有的，现在有没有？（Step 2/3 需要 screen-map）
     ├── 功能剪枝   — 地图里有的，该不该留？（Step 2 需要 screen-map）
-    └── ui-design  — 高层 UI 设计规格 + HTML 预览
+    ├── ui-design  — 高层 UI 设计规格 + HTML 预览
+    └── design-audit — 全链路一致性终审（基于全部已有产物）
+
+或使用 /product-design full 自动编排全流程（含阶段间检查点 + 终审）。
 ```
 
 ---
@@ -73,6 +76,14 @@ product-map（建功能图）
 
 > 从产品地图 + 界面地图推导高层 UI 设计规格，结合风格选择和设计原则，输出设计规格文档 + 按角色拆分的 HTML 预览。
 
+### design-audit — 设计审计
+
+> 跨层校验产品设计全链路一致性：逆向追溯、覆盖洪泛、横向一致性。
+
+- **逆向追溯**：下游产物（screen-map、use-case、gap、prune）引用的 task_id 是否在 task-inventory 中存在
+- **覆盖洪泛**：每个 task 是否被下游层完整消费（有 screen、有用例、有 gap 检查、有 prune 决策）
+- **横向一致性**：gap 报缺口 + prune 标 CUT = 矛盾；高频任务点击深度过深 = 警告
+
 ---
 
 ## 定位
@@ -85,7 +96,8 @@ product-design（产品层）
 ├── use-case        推导完整用例，双格式输出               基于 product-map + screen-map
 ├── feature-gap     地图说有的，有没有？                  基于 product-map + screen-map
 ├── feature-prune   地图里有的，该不该留？                基于 product-map + screen-map
-└── ui-design       高层 UI 设计规格                     基于 product-map + screen-map
+├── ui-design       高层 UI 设计规格                     基于 product-map + screen-map
+└── design-audit    全链路一致性校验                      基于全部已有产物
 
 dev-forge（开发层）   种子数据 + 产品验收                 基于 product-map + API/Playwright
 deadhunt（QA 层）     链接通不通？CRUD 全不全？            需要 Playwright
@@ -146,6 +158,21 @@ claude plugin add /path/to/product-design-skill
 # UI 设计规格
 /ui-design               # 完整流程
 /ui-design refresh       # 重新生成
+
+# 设计审计 — 跨层一致性校验
+/design-audit              # 三合一全量校验
+/design-audit trace        # 仅逆向追溯
+/design-audit coverage     # 仅覆盖洪泛
+/design-audit cross        # 仅横向一致性
+/design-audit role 客服专员  # 指定角色全链路校验
+```
+
+### 全流程编排
+
+```bash
+/product-design full                # 从头执行全流程（含终审）
+/product-design full skip: concept  # 跳过概念发现
+/product-design resume              # 从断点继续
 ```
 
 ---
@@ -192,13 +219,16 @@ your-project/
     │   ├── flow-gaps.json              # 业务流链路
     │   ├── gap-report.md               # 可读报告
     │   └── gap-decisions.json          # 用户确认记录
-    └── feature-prune/
-        ├── frequency-tier.json         # 频次分层
-        ├── scenario-alignment.json     # 场景对齐
-        ├── competitive-ref.json        # 竞品参考
-        ├── prune-decisions.json        # 用户分类决策
-        ├── prune-tasks.json            # 剪枝任务清单
-        └── prune-report.md             # 可读报告
+    ├── feature-prune/
+    │   ├── frequency-tier.json         # 频次分层
+    │   ├── scenario-alignment.json     # 场景对齐
+    │   ├── competitive-ref.json        # 竞品参考
+    │   ├── prune-decisions.json        # 用户分类决策
+    │   ├── prune-tasks.json            # 剪枝任务清单
+    │   └── prune-report.md             # 可读报告
+    └── design-audit/
+        ├── audit-report.json           # 全量校验结果
+        └── audit-report.md             # 可读摘要
 ```
 
 ---
