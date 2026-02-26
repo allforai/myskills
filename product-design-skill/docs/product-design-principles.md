@@ -37,6 +37,63 @@
 
 ---
 
+## 三段式总览（前段 / 中段 / 尾段）
+
+为避免只看到“某一段”的理论，下面按你关心的三段式明确汇总。
+
+### 前段（战略定义层）
+
+**覆盖阶段**：`product-concept`
+
+**核心思想**：先定义问题与价值，再定义解法。
+
+**经典理论**：
+- 第一性原理（First Principles）
+- JTBD（Jobs To Be Done）
+- VPC（Value Proposition Canvas）
+- Lean Canvas
+- Blue Ocean ERRC + Kano
+- Mom Test
+
+---
+
+### 中段（功能与交互建模层）
+
+**覆盖阶段**：`product-map`、`screen-map`、`use-case`、`feature-gap`、`feature-prune`
+
+**核心思想**：把战略意图转成可执行、可验证、可取舍的产品资产。
+
+**经典理论**：
+- Story Mapping（功能切片与版本范围）
+- RACI（职责边界）
+- 风险矩阵（Impact × Probability）
+- INVEST（需求可测试性）
+- DoR / DoD（准入与完成门禁）
+- Service Blueprint（前后台链路）
+- Nielsen Heuristics（交互可用性）
+- RICE / MoSCoW / Kano / Cost of Delay（优先级与剪枝）
+
+---
+
+### 尾段（视觉落地与发布审计层）
+
+**覆盖阶段**：`ui-design`、`design-audit`
+
+**核心思想**：保证体验质量、一致性与可发布性。
+
+**经典理论**：
+- Design System / Design Tokens
+- Atomic Design
+- WCAG（可访问性）
+- Gestalt（视觉层级）
+- Nielsen Heuristics（可用性问题归类）
+- ISO 9241-11（有效性 / 效率 / 满意度）
+
+**特别原则**：
+- UI 风格选择不可省略，必须由用户明确确认。
+
+---
+
 ## 分阶段指导思想
 
 ## Phase 1：product-concept（产品概念）
