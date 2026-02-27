@@ -4,11 +4,12 @@ description: >
   Development forge: project-setup (interactive sub-project splitting + tech stack selection),
   design-to-spec (product-design artifacts → requirements + design + tasks),
   project-scaffold (template-based project skeleton + mock server),
+  task-execute (systematic task execution with progress tracking + incremental verification),
   e2e-verify (cross-project Playwright/Patrol E2E),
   seed-forge (realistic seed data), product-verify (static + dynamic acceptance).
   Full pipeline: /project-forge. Theory-backed decisions (Unix Philosophy, Clean Architecture, etc.).
-  开发锻造套件：项目引导、设计转规格、脚手架生成、跨端验证、种子数据锻造、产品验收。
-version: "2.0.0"
+  开发锻造套件：项目引导、设计转规格、脚手架生成、任务执行、跨端验证、种子数据锻造、产品验收。
+version: "2.1.0"
 ---
 
 # Dev Forge — 开发锻造套件
@@ -27,7 +28,7 @@ version: "2.0.0"
 /project-forge resume        # 从上次中断处继续
 ```
 
-## 包含的技能（6 个）
+## 包含的技能（7 个）
 
 ### 1. project-setup — 项目引导
 
@@ -64,7 +65,19 @@ version: "2.0.0"
 /project-scaffold sp-001    # 仅指定子项目
 ```
 
-### 4. e2e-verify — 跨端验证
+### 4. task-execute — 任务执行
+
+> 详见 `${CLAUDE_PLUGIN_ROOT}/skills/task-execute.md`
+
+系统化执行 tasks.md 中的原子任务：自动推断执行策略（串行/并行）、委托 superpowers skill 编写代码、build-log.json 进度追踪、每 Round 增量验证。支持断点续作和修复轮次检测。
+
+```
+/task-execute              # 从 Round 0 开始（或断点续作）
+/task-execute round 2      # 仅执行指定 Round
+/task-execute resume       # 从 build-log.json 断点续作
+```
+
+### 5. e2e-verify — 跨端验证
 
 > 详见 `${CLAUDE_PLUGIN_ROOT}/skills/e2e-verify.md`
 
@@ -76,7 +89,7 @@ version: "2.0.0"
 /e2e-verify run             # 加载已有场景并执行
 ```
 
-### 5. seed-forge — 种子数据锻造
+### 6. seed-forge — 种子数据锻造
 
 > 详见 `${CLAUDE_PLUGIN_ROOT}/skills/seed-forge.md`
 
@@ -89,7 +102,7 @@ version: "2.0.0"
 /seed-forge clean           # 清理已灌入的种子数据
 ```
 
-### 6. product-verify — 产品验收
+### 7. product-verify — 产品验收
 
 > 详见 `${CLAUDE_PLUGIN_ROOT}/skills/product-verify.md`
 
@@ -105,7 +118,7 @@ version: "2.0.0"
 
 ```
 product-design（产品层）  概念→定义→交互→视觉→用例→查漏→剪枝
-dev-forge（开发层）       引导→规格→脚手架→种子→E2E→验收 ← 你在这里
+dev-forge（开发层）       引导→规格→脚手架→执行→验证闭环→种子→验收 ← 你在这里
 deadhunt（QA 层）         死链→CRUD完整性→幽灵功能→字段一致性
 code-tuner（架构层）      合规→重复→抽象→评分
 ```
@@ -136,6 +149,7 @@ your-project/
     │   │   ├── requirements.md         # 需求
     │   │   ├── design.md               # 设计
     │   │   └── tasks.md                # 任务
+    │   ├── build-log.json              # 任务执行进度
     │   ├── e2e-scenarios.json          # 跨端场景
     │   ├── e2e-report.md               # E2E 结果
     │   ├── forge-decisions.json        # 全程决策

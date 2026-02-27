@@ -7,7 +7,7 @@ description: >
   or needs to generate actual project files (directories, configs, boilerplate code)
   based on project-manifest and tech stack templates.
   Requires project-manifest.json and design docs from design-to-spec.
-version: "1.0.0"
+version: "1.0.1"
 ---
 
 # Project Scaffold — 脚手架生成

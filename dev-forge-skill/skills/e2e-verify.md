@@ -6,7 +6,7 @@ description: >
   "跨子项目验证", "业务流程测试", "跨端 E2E",
   or needs to derive and execute cross-sub-project E2E test scenarios from business flows.
   Requires project-manifest.json and running sub-project applications.
-version: "1.0.0"
+version: "1.1.0"
 ---
 
 # E2E Verify — 跨端验证

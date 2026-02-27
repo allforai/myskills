@@ -6,7 +6,7 @@ description: >
   "拆分子项目", "选技术栈", "配置 monorepo", "项目结构设计",
   or needs to plan how to organize a multi-project codebase from product-design artifacts.
   Requires product-map to have been run first.
-version: "1.0.0"
+version: "1.0.1"
 ---
 
 # Project Setup — 项目引导

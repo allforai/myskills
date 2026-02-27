@@ -6,7 +6,7 @@ description: >
   "生成任务列表", "从产品设计产物生成开发规格", "产物转换",
   or needs to transform product-design artifacts into per-sub-project requirements, design docs, and atomic task lists.
   Requires project-manifest.json (from project-setup) and product-map artifacts.
-version: "1.0.0"
+version: "1.1.0"
 ---
 
 # Design to Spec — 设计转规格

@@ -8,7 +8,7 @@ description: >
   "代码是否实现了产品地图", "验证功能实现", "找漏实现的功能", "代码覆盖检查",
   or wants to prove code implements the product map features and flows.
   Requires product-map to have been run first. Optionally uses screen-map and use-case.
-version: "1.1.0"
+version: "1.2.0"
 ---
 
 # Product Verify — 产品验收
