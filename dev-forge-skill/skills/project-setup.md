@@ -6,7 +6,7 @@ description: >
   "拆分子项目", "选技术栈", "配置 monorepo", "项目结构设计",
   or needs to plan how to organize a multi-project codebase from product-design artifacts.
   Requires product-map to have been run first.
-version: "1.1.0"
+version: "1.2.0"
 ---
 
 # Project Setup — 项目引导
@@ -97,7 +97,8 @@ Step 0: 模式识别
     → 自动检测已有子项目和技术栈
     → 与 product-map 模块对照，识别缺口
   new 模式: 从空白开始
-  → AskUserQuestion 确认模式
+  → 若从 project-forge 编排调用（forge-decisions.json 存在）→ 模式已确定，跳过
+  → 若单独 /project-setup → AskUserQuestion 确认模式
   ↓
 Step 1: 子项目拆分 + Monorepo 工具选择
   分析 product-map 中的角色和模块
@@ -107,7 +108,7 @@ Step 1: 子项目拆分 + Monorepo 工具选择
     admin 角色 → 管理后台（可与 producer 合并）
     全部角色共享 → API 后端
     有移动端需求 → 移动端子项目
-  AskUserQuestion: 确认/调整子项目列表
+  → 生成子项目列表（不停，汇总到 Step 5）
   AskUserQuestion: 选择 monorepo 工具 (pnpm workspace / Turborepo / Nx / 手动管理)
     → 若有 preflight → 跳过，使用 preflight.monorepo_tool
   → 每个子项目: id, name, type(backend/admin/web-customer/web-mobile/mobile-native)
@@ -126,18 +127,22 @@ Step 3: 模块分配（逐子项目）
     admin 前端: 分配 producer/admin 角色的模块
     consumer 前端: 分配 consumer 角色的模块
     mobile: 分配移动端相关模块
-  AskUserQuestion: 确认/调整每个子项目的模块分配
+  → 按智能推荐分配（不停，汇总到 Step 5）
   → 检查: 所有模块都被分配了吗？有遗漏则提示
   ↓
 Step 4: 基础配置
   每子项目自动分配: 端口号（基于 stacks.json 默认端口，避免冲突）、base path
   AskUserQuestion: 确认 auth 策略 (JWT / Session / OAuth / 无)
     → 若有 preflight → 跳过，使用 preflight.auth_strategy
-  AskUserQuestion: 确认端口和配置
+  → 自动分配端口（不停，汇总到 Step 5）
   ↓
-Step 5: 生成 manifest + 确认
+Step 5: 生成 manifest + 汇总确认
   写入 project-manifest.json + project-manifest-report.md
-  → AskUserQuestion: 用户最终确认
+  展示完整汇总表:
+    | 子项目 | 类型 | 技术栈 | 模块 | 端口 |
+    | 配置: Monorepo / Auth |
+    | 模块覆盖率 |
+  → AskUserQuestion: 确认 / 调整（逐项修改后重新生成 manifest）
 ```
 
 ---
@@ -378,10 +383,11 @@ Step 0 扫描策略:
 
 所有问题基于 product-map 分析和 stacks.json 生成选项。用户只需选择。
 
-### 2. 每步确认，不跳步（preflight 除外）
+### 2. 阶段末汇总确认
 
-每个 Step 完成后展示摘要，等用户确认后才进入下一步。
-例外：若 `forge-decisions.json` 中存在 `preflight` 且 `confirmed_at` 非空，标记为「若有 preflight → 跳过」的 AskUserQuestion 直接使用 preflight 值，不再询问。
+中间步骤连续执行不停顿。Step 5 展示完整汇总，用户一次确认或逐项调整。
+偏好类问题（技术栈/架构/状态管理/缓存/认证）由 `forge-decisions.json` 的 `preflight` 提供，不再询问。
+单独 `/project-setup`（无 forge-decisions.json）时，Step 0 保留模式确认。
 
 ### 3. 模块必须全覆盖
 

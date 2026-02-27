@@ -6,7 +6,7 @@ description: >
   "生成任务列表", "从产品设计产物生成开发规格", "产物转换",
   or needs to transform product-design artifacts into per-sub-project requirements, design docs, and atomic task lists.
   Requires project-manifest.json (from project-setup) and product-map artifacts.
-version: "1.1.0"
+version: "1.2.0"
 ---
 
 # Design to Spec — 设计转规格
@@ -216,7 +216,7 @@ Step 1: Requirements 生成（逐子项目）
        - _Source: T001, F001, CN001_（← E2 Provenance）
        注: 字段不存在或为空时省略对应节，不生成空占位
     → 写入 .allforai/project-forge/sub-projects/{name}/requirements.md
-    → 展示摘要 → 用户确认
+    → 输出进度: 「{name}/requirements.md ✓ ({N} 需求项)」（不停，汇总到 Step 5）
   ↓
 Step 2: Design 生成（逐子项目，API-first 策略）
   **原则: 先表结构、后 API、再展开**
@@ -253,7 +253,7 @@ Step 2: Design 生成（逐子项目，API-first 策略）
       task.config_items → 配置管理设计（配置端点/表）
       task.cross_dept_roles → 集成点设计（webhook/回调端点）
     → 写入 .allforai/project-forge/sub-projects/{name}/design.md
-    → 展示摘要 → 用户确认
+    → 输出进度: 「{name}/design.md ✓ ({N} API端点, {M} 页面)」（不停，汇总到 Step 5）
   **生成顺序**: 后端 design.md 先于前端，确保前端 design 可直接引用 API 端点定义
   ↓
 Step 3: Tasks 生成（逐子项目）
@@ -269,7 +269,7 @@ Step 3: Tasks 生成（逐子项目）
     - 配置管理任务（从 config_items 聚合 → 配置表+端点+测试）
   → Batch 结构因子项目类型而异（见下文）
   → 写入 .allforai/project-forge/sub-projects/{name}/tasks.md
-  → 展示摘要 → 用户确认
+  → 输出进度: 「{name}/tasks.md ✓ ({N} 任务, B0-B5)」（不停，汇总到 Step 5）
   ↓
 Step 4: 跨子项目依赖分析
   识别跨项目依赖:
@@ -278,7 +278,21 @@ Step 4: 跨子项目依赖分析
     后端 B2 完成 → 前端 B4 才能开始（切换 mock → 真实后端）
   生成跨项目任务排序 → execution_order
   → 更新 project-manifest.json
-  → 展示依赖图 → 用户确认
+  → 输出进度: 「跨项目依赖图 ✓ ({N} 条依赖)」（不停，汇总到 Step 5）
+  ↓
+Step 5: 阶段末汇总确认
+  展示全部生成结果摘要:
+
+  | 子项目 | requirements | design | tasks |
+  |--------|-------------|--------|-------|
+  | {name} | {N} 需求项 | {N} API端点, {M} 页面 | {N} 任务 |
+  | ... | ... | ... | ... |
+
+  跨项目依赖: {N} 条
+  执行顺序: B0 → B1(并行) → B2 → B3(并行) → B4 → B5
+  总任务数: CORE {N} + DEFER {M}
+
+  → AskUserQuestion: 确认继续 / 需要调整（指定子项目和文档，重新生成该部分）
 ```
 
 ---
