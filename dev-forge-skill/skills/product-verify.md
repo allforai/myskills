@@ -52,6 +52,8 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 /product-verify dynamic   # 动态验收（需要应用正在运行）
 /product-verify full      # 静态 + 动态完整验收
 /product-verify refresh   # 清除决策缓存，重新完整验收
+/product-verify scope --tasks T001,T002 --sub-projects api-backend
+                          # 增量验收（仅检查指定任务/子项目范围）
 ```
 
 ---
@@ -93,6 +95,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 | `dynamic` | Playwright 浏览器测试 | 是 |
 | `full` | 静态 + 动态 | dynamic 阶段需要 |
 | `refresh` | 清除 verify-decisions.json 缓存，重新完整运行 | 视模式而定 |
+| `scope` | 增量验收：仅 S1+S3 范围过滤，S2/S4/Dynamic 跳过 | 否 |
 
 ---
 
@@ -277,6 +280,30 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 - `FIX_FAILING` — 代码缺陷，生成修复任务
 - `ENV_ISSUE` — 测试环境问题（如数据库未初始化），不计入任务清单，记录 INFO
 - `DEFERRED` — 用户标记暂缓，不生成任务
+
+---
+
+## Scope 模式（增量验收）
+
+供 `task-execute` 每 Round 结束后调用，仅验证本 Round 涉及的任务和子项目。
+
+**调用方式**：`/product-verify scope --tasks T001,T002,T003 --sub-projects api-backend`
+
+**参数**：
+- `--tasks` — 逗号分隔的 task_id 列表（来自 build-log.json 当前 Round 的任务）
+- `--sub-projects` — 逗号分隔的子项目名（来自 build-log.json 当前 Round 涉及的子项目）
+
+**执行范围**：
+
+| 步骤 | Scope 模式行为 | 理由 |
+|------|--------------|------|
+| S1: Task → API 覆盖 | 仅检查 `--tasks` 中的任务 | 增量：只验证本 Round 新实现的 |
+| S2: Screen → 组件覆盖 | **跳过** | 界面覆盖需全量比对才有意义 |
+| S3: 约束 → 代码覆盖 | 仅检查 `--tasks` 关联的约束 | 增量：只验证本 Round 涉及的约束 |
+| S4: Extra 代码扫描 | **跳过** | 反向扫描需全量，增量无意义 |
+| Dynamic (D0-D4) | **跳过** | 动态测试留给 full 模式 |
+
+**输出**：结果追加到 `static-report.json`（不覆盖之前的全量结果），同时返回给调用方（task-execute）用于写入 build-log.json 的 `verification` 字段。
 
 ---
 

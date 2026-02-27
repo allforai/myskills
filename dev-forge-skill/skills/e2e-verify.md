@@ -99,24 +99,38 @@ Step 0: 应用可达性检查
     c. 终止
   ↓
 Step 1: 跨端场景推导
-  从 business-flows 提取跨角色/跨子项目流程
-  每个 flow 映射为 E2E 场景:
-    场景名: flow.name
-    步骤序列: [
-      { sub_project, role, action, url, input, expected_result }
-    ]
-  示例:
-    商户上架商品(merchant-admin)
-    → 消费者浏览(customer-web)
-    → 消费者下单(customer-web + api-backend)
-    → 商户查看订单(merchant-admin)
+  1-A 正向场景（从 business-flows）:
+    从 business-flows 提取跨角色/跨子项目流程
+    每个 flow 映射为 E2E 场景:
+      场景名: flow.name
+      步骤序列: [
+        { sub_project, role, action, url, input, expected_result }
+      ]
+    示例:
+      商户上架商品(merchant-admin)
+      → 消费者浏览(customer-web)
+      → 消费者下单(customer-web + api-backend)
+      → 商户查看订单(merchant-admin)
+  1-B 负向场景（从 use-case-tree.json）:
+    加载 use-case-tree.json（可选）
+    提取 type = "exception" 和 "boundary" 的用例
+    筛选涉及跨子项目的用例（通过 task_refs 关联到不同 sub_project）
+    每个用例映射为负向 E2E 场景:
+      场景名: "[负向] " + use_case.name
+      priority: use_case.priority（exception 默认 high）
+      步骤序列: 正常流前置步骤 + 触发异常的操作 + 验证错误处理
+    示例:
+      消费者下单(customer-web) → 库存不足(api-backend 返回 409)
+      → 消费者看到错误提示(customer-web)
+      商户修改价格(merchant-admin) → 消费者刷新看到新价格(customer-web)
+    use-case-tree.json 不存在 → 跳过负向场景，仅用正向场景
   各端测试差异:
     admin → Playwright 桌面视口
     web-customer → Playwright 桌面 + 移动视口
     web-mobile → Playwright 移动视口模拟
     mobile-native → 标记为需要 Detox/Maestro（Playwright 无法测）
     backend → 作为 API 提供者，通过 API 调用验证
-  → AskUserQuestion 确认场景列表
+  → AskUserQuestion 确认场景列表（正向 + 负向）
   → 写入 .allforai/project-forge/e2e-scenarios.json
   ↓
 Step 2: 场景执行（Playwright）
@@ -160,7 +174,9 @@ Step 4: 报告生成
     {
       "id": "E2E-001",
       "name": "商户上架 → 消费者购买 → 商户查看订单",
+      "type": "positive",
       "flow_ref": "BF-003",
+      "use_case_ref": null,
       "priority": "high",
       "steps": [
         {
@@ -218,6 +234,39 @@ Step 4: 报告生成
             { "type": "snapshot", "verify": "订单列表包含 E2E 测试商品" }
           ],
           "expected": "商户可以看到消费者的订单"
+        }
+      ]
+    },
+    {
+      "id": "E2E-N01",
+      "name": "[负向] 消费者购买库存不足商品 → 错误提示",
+      "type": "negative",
+      "flow_ref": null,
+      "use_case_ref": "UC-EXC-003",
+      "priority": "high",
+      "steps": [
+        {
+          "seq": 1,
+          "sub_project": "customer-web",
+          "role": "consumer",
+          "viewport": "desktop",
+          "action": "尝试购买库存为 0 的商品",
+          "url": "http://localhost:3002/products/out-of-stock",
+          "operations": [
+            { "type": "navigate", "url": "http://localhost:3002/products/out-of-stock" },
+            { "type": "click", "selector": "text=购买" }
+          ],
+          "expected": "显示库存不足错误提示，不创建订单"
+        },
+        {
+          "seq": 2,
+          "sub_project": "api-backend",
+          "role": "system",
+          "action": "API 验证未创建订单",
+          "operations": [
+            { "type": "api_call", "method": "GET", "url": "http://localhost:3001/api/orders?latest=true" }
+          ],
+          "expected": "最新订单不包含库存不足商品"
         }
       ]
     }
@@ -341,9 +390,9 @@ e2e/screenshots/                    # 失败截图
 
 ## 5 条铁律
 
-### 1. 场景来自业务流，不来自想象
+### 1. 场景来自业务流和用例，不来自想象
 
-所有 E2E 场景必须可追溯到 business-flows.json 中的具体流程。不凭空编造测试场景。
+正向 E2E 场景必须可追溯到 business-flows.json 中的具体流程。负向 E2E 场景必须可追溯到 use-case-tree.json 中的 exception/boundary 用例。不凭空编造测试场景。
 
 ### 2. 用户确认场景列表
 

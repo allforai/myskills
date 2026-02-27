@@ -15,7 +15,8 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 > **跨插件调用约定**：本命令是「导航员」。
 > - Phase 1-3, 5 在本插件内执行，通过 `${CLAUDE_PLUGIN_ROOT}/skills/` 路径加载技能。
 > - Phase 2.5（seed-forge）为本插件内已有命令。
-> - Phase 4（任务执行）提示用户使用 superpowers 技能编排。
+> - Phase 4（任务执行）调用 `task-execute` skill，自动编排 superpowers 技能。
+> - Phase 4.5（验证闭环）产品验收 + E2E 验证 → 修复任务 → 回归。
 > - 各阶段产物通过 `.allforai/` 目录作为层间合约。
 
 ## 模式路由
@@ -51,13 +52,16 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 │    按模板 + mock-server                                      │
 │    输出: 项目骨架 + mock-server/                             │
 │  ↓ 质量门禁: 脚手架存在 + mock 可启动                       │
-│  Phase 4: 任务执行 (编排层)                                  │
-│    按 Round 依赖顺序执行 batch                               │
+│  Phase 4: 任务执行 (task-execute)                             │
+│    自动编排: 策略推断 → 委托执行 → 进度追踪 → 增量验证      │
 │    Round 0→1→2→3→4                                          │
 │  ↓ 质量门禁: CORE 任务完成，lint 通过                       │
-│  Phase 5: 跨端验证 (e2e-verify)                             │
+│  Phase 4.5: 验证闭环                                         │
+│    product-verify + e2e-verify → 修复任务 → 回归验证         │
+│  ↓ 质量门禁: 修复项 = 0 或用户确认跳过                      │
+│  Phase 5: 跨端验证 (e2e-verify) — 条件执行                   │
+│    仅当 Phase 4.5 被跳过时执行                                │
 │    业务流 → 跨端场景 → Playwright                            │
-│    输出: e2e-report                                          │
 │  ↓                                                          │
 │  Phase 6: 最终报告                                           │
 │                                                              │
@@ -79,7 +83,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 | design-to-spec | `.allforai/project-forge/sub-projects/*/tasks.md` 存在 |
 | seed-forge plan | `.allforai/seed-forge/seed-plan.json` 存在 |
 | project-scaffold | `.allforai/project-forge/sub-projects/*/scaffold-manifest.json` 存在 |
-| task-execution | `.allforai/project-forge/sub-projects/*/build-log.json` 存在 |
+| task-execution | `.allforai/project-forge/build-log.json` 存在 |
 | e2e-verify | `.allforai/project-forge/e2e-report.json` 存在 |
 
 ### 前置检查
@@ -111,6 +115,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
     "phase_2_5": "pending | completed | skipped",
     "phase_3": "pending | completed | skipped",
     "phase_4": "pending | in_progress | completed",
+    "phase_4_5": "pending | in_progress | completed | skipped",
     "phase_5": "pending | completed | skipped",
     "phase_6": "pending | completed"
   },
@@ -217,92 +222,95 @@ AskUserQuestion：
 
 ## Phase 4：任务执行
 
-### 执行计划展示
+### 执行方式
 
-读取各子项目 tasks.md → 统计任务数 → 构建跨子项目依赖图：
+用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/skills/task-execute.md`，按其工作流执行。
 
-```
-Round 0: B0 Monorepo Setup
-  - 0.1 配置 monorepo workspace
-  - 0.2 创建 shared-types
-  - 0.3 创建 mock-server
-
-Round 1: 全部子项目 B1 (Foundation) 并行
-  - [api-backend] B1 Foundation: X 个任务
-  - [merchant-admin] B1 Foundation: X 个任务
-  - [customer-web] B1 Foundation: X 个任务
-
-Round 2: Backend B2 (API) ∥ Frontend B3 (UI)
-  - [api-backend] B2 API: X 个任务
-  - [merchant-admin] B3 UI: X 个任务（连 mock-server）
-  - [customer-web] B3 UI: X 个任务（连 mock-server）
-
-Round 3: api-client + Frontend B4 (Integration)
-  - 生成 packages/api-client
-  - [merchant-admin] B4 Integration: X 个任务（切换真实后端）
-  - [customer-web] B4 Integration: X 个任务
-
-Round 4: 全部子项目 B5 (Testing)
-  - [api-backend] B5 Testing: X 个任务
-  - [merchant-admin] B5 Testing: X 个任务
-  - [customer-web] B5 Testing: X 个任务
-```
-
-### 执行方式选择
-
-AskUserQuestion：选择执行方式
-
-| 方式 | 说明 | 适合场景 |
-|------|------|---------|
-| **subagent-driven-development** | 逐任务执行 + 双审查，稳定但慢 | 首次使用、重要项目、不确定质量 |
-| **dispatching-parallel-agents** | 按模块并行分发，快但需文件不冲突 | 模块独立性好、有经验的用户 |
-| **手动执行** | 用户自己按 tasks.md 逐个执行 | 有特殊需求、想精细控制 |
-
-### 逐 Round 执行
-
-对每个 Round：
-
-1. 展示本 Round 任务列表
-2. 提示用户启动对应 superpowers 技能：
-   ```
-   Round {N} 就绪。请使用以下方式执行：
-
-   方式 A（推荐）: 使用 /subagent-driven-development 逐任务执行
-   方式 B: 使用 /dispatching-parallel-agents 并行执行
-
-   执行范围: 以下任务列表
-   {任务列表}
-
-   完成后请回到此处继续。
-   ```
-3. 等待用户确认完成
-4. 质量检查：
-   - 提示用户运行 lint: `pnpm lint`
-   - 提示用户运行 test: `pnpm test`
-   - 有失败 → 记录，AskUserQuestion：修复后继续 / 跳过继续
-5. 更新 build-log.json
-6. 进入下一个 Round
-
-### 并行度控制
-
-- 同模块内任务：串行（防止文件冲突）
-- 不同模块任务：可并行
-- Round 内跨子项目：可并行（独立子项目无文件冲突）
-- Round 间：串行（有依赖）
+task-execute 自动完成：
+- 加载各子项目 tasks.md + project-manifest.json
+- 初始化/恢复 build-log.json
+- 按 Round 结构分组，每 Round 自动推断执行策略（串行/并行）
+- 逐任务委托 superpowers skill 执行
+- 每 Round 结束后自动 lint/test + 增量 product-verify
 
 ### 质量门禁
 
 | 条件 | 标准 |
 |------|------|
-| CORE 任务 | 全部标记完成 |
-| lint | 通过（或用户确认跳过） |
+| CORE 任务 | 全部标记 completed（build-log.json） |
+| lint | 通过（或最后 Round 质量检查无 fail） |
 | test | 通过（或用户确认跳过） |
+
+**PASS** → 进入 Phase 4.5
+**FAIL** → 向用户报告 build-log.json 中 failed/skipped 任务
 
 ---
 
-## Phase 5：跨端验证
+## Phase 4.5：验证闭环
 
 ### 执行方式
+
+Phase 4 完成后，运行完整验证并闭环修复：
+
+```
+Step 1: 完整产品验收
+  用 Read 加载 ${CLAUDE_PLUGIN_ROOT}/skills/product-verify.md
+  执行 /product-verify full（静态 + 动态）
+  输出: verify-tasks.json（IMPLEMENT / REMOVE_EXTRA / FIX_FAILING）
+
+Step 2: 跨端验证
+  用 Read 加载 ${CLAUDE_PLUGIN_ROOT}/skills/e2e-verify.md
+  执行 /e2e-verify full
+  输出: e2e-report.json（FIX_REQUIRED 项）
+
+Step 3: 判断是否需要修复
+  汇总 verify-tasks.json 中 IMPLEMENT + FIX_FAILING 项
+  汇总 e2e-report.json 中 FIX_REQUIRED 项
+  无修复项 → PASS，进入 Phase 5
+  有修复项 → Step 4
+
+Step 4: 生成修复任务
+  将验证发现转为原子任务，格式与 tasks.md 一致:
+    - IMPLEMENT → 新增实现任务
+    - FIX_FAILING → 修复任务（含失败截图/日志引用）
+    - FIX_REQUIRED → 跨端修复任务
+  追加到对应子项目 tasks.md 的 Fix Round（B-FIX）
+  AskUserQuestion 确认修复任务列表
+
+Step 5: 执行修复
+  调用 /task-execute 执行 Fix Round
+  build-log.json 追加 fix round 记录
+
+Step 6: 回归验证
+  重跑 Step 1-2（仅 scope 模式，覆盖修复涉及的 task_ids）
+  仍有失败 → 记录到报告，AskUserQuestion:
+    a. 再次修复（回到 Step 4）
+    b. 记录为已知问题，继续
+  全部通过 → PASS
+```
+
+### 质量门禁
+
+| 条件 | 标准 |
+|------|------|
+| verify-tasks.json | IMPLEMENT + FIX_FAILING = 0（或用户确认跳过） |
+| e2e-report.json | FIX_REQUIRED = 0（或用户确认跳过） |
+
+**PASS** → 进入 Phase 5
+**FAIL** → 用户决定继续修复 / 记录已知问题继续
+
+---
+
+## Phase 5：跨端验证（条件执行）
+
+### 条件判断
+
+检查 Phase 4.5 状态：
+- Phase 4.5 **completed**（验证闭环已通过） → **跳过 Phase 5**，直接进入 Phase 6
+- Phase 4.5 **skipped**（用户跳过验证闭环） → 执行 Phase 5
+- Phase 4.5 中有 **DEFERRED** 项 → AskUserQuestion：执行完整 E2E / 跳过
+
+### 执行方式（仅 Phase 4.5 被跳过时）
 
 用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/skills/e2e-verify.md`，按其工作流执行。
 
@@ -356,7 +364,8 @@ Phase 5 需要所有子项目应用正在运行。请确认以下服务已启动
 | Phase 2.5: 种子方案 | 完成/跳过 | PASS/SKIP | seed-plan.json |
 | Phase 3: 脚手架生成 | 完成 | PASS | {N} 文件 + mock-server |
 | Phase 4: 任务执行 | 完成 | PASS | {N}/{M} 任务完成 |
-| Phase 5: 跨端验证 | 完成 | PASS | {N}/{M} 场景通过 |
+| Phase 4.5: 验证闭环 | 完成 | PASS | 修复 {N} 项，回归通过 |
+| Phase 5: 跨端验证 | 完成/跳过 | PASS/SKIP | {N}/{M} 场景通过（4.5 已覆盖则跳过） |
 
 ## 各子项目状态
 
