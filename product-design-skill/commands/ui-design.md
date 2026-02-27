@@ -22,7 +22,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 执行前必须检查：
 
 1. `.allforai/product-map/product-map.json` 必须存在，否则输出「请先运行 /product-map 建立产品地图」并**立即终止**
-2. `.allforai/screen-map/screen-map.json` 可选，存在则按界面生成规格，不存在则从高频任务自动推导界面结构
+2. `.allforai/screen-map/screen-map.json` 必须，不存在则自动运行 screen-map 生成界面地图
 3. `.allforai/product-concept/product-concept.json` 可选，存在则提取产品定位和价值主张用于配色基调
 4. **历史决策加载**：检查 `.allforai/ui-design/ui-design-decisions.json`，存在则加载，已决策项（如风格选择）自动跳过
 

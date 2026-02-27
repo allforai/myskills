@@ -8,7 +8,7 @@ description: >
   "代码是否实现了产品地图", "验证功能实现", "找漏实现的功能", "代码覆盖检查",
   or wants to prove code implements the product map features and flows.
   Requires product-map to have been run first. Optionally uses screen-map and use-case.
-version: "1.2.0"
+version: "1.3.0"
 ---
 
 # Product Verify — 产品验收
@@ -111,7 +111,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
     加载 .allforai/product-map/product-map.json
     若 product-map.json 也不存在 → 提示用户先运行 /product-map，终止
   其他可选数据：
-    screen-map.json 可选（存在则启用 S2）
+    screen-map.json 必须（不存在则自动运行 screen-map 生成，然后启用 S2）
     use-case-tree.json 可选（dynamic 优先使用，否则自动推导）
     verify-decisions.json 存在则加载历史决策，已决策项自动跳过
   ↓
@@ -119,33 +119,52 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 [Static 阶段]（static / full 模式）
   S1: Task → API 覆盖检查
       遍历 task-inventory.json，扫描代码路由，比对覆盖状态
-      ↓ 用户确认
+      → 输出进度: 「S1 Task→API ✓ covered:{N} missing:{M} partial:{K}」
   S2: Screen → 组件覆盖检查（screen-map.json 存在时）
       遍历 screen-map.json，扫描页面组件，比对覆盖状态
-      ↓ 用户确认（或跳过）
+      → 输出进度: 「S2 Screen→组件 ✓ covered:{N} missing:{M}」（或 WARNING 跳过）
   S3: 约束 → 代码覆盖检查
       遍历 product-map constraints，Grep 校验/中间件逻辑
-      ↓ 用户确认
+      → 输出进度: 「S3 约束→代码 ✓ covered:{N} missing:{M}」
   S4: Extra 代码扫描
       反向：扫描代码路由，找出未在产品地图中出现的端点
-      ↓ 用户确认（逐条确认 EXTRA 去留）
+      → 输出进度: 「S4 Extra ✓ {N} 端点不在产品地图中」
+  ↓
+  静态汇总确认（单次交互）:
+    展示覆盖率汇总表:
+    | 检查项 | 已覆盖 | 缺失 | 部分 |
+    |--------|--------|------|------|
+    | S1 Task→API | {N} | {M} | {K} |
+    | S2 Screen→组件 | {N} | {M} | — |
+    | S3 约束→代码 | {N} | {M} | — |
+
+    IMPLEMENT 候选: {N} 项（按频次排序）
+    EXTRA 端点（自动建议）:
+    | 端点 | 建议 | 理由 |
+    |------|------|------|
+    | /api/legacy/export | ignore | 无匹配任务，可能历史遗留 |
+    | /api/internal/sync | ignore | 内部同步，不面向用户 |
+
+    → AskUserQuestion: 确认全部 / 调整 EXTRA 决策
 
 [Dynamic 阶段]（dynamic / full 模式）
   D0: 应用可达性预检
-      询问用户应用 URL（或从代码配置自动检测）
-      HTTP 请求验证可达性 → 不可达则提示用户启动应用，暂停 dynamic 阶段
-      ↓ 可达后继续
+      自动检测 URL（Grep 代码配置 PORT/listen/.env）
+      HTTP 请求验证可达性
+      可达 → 继续（不停）
+      不可达 → AskUserQuestion: 启动后重试 / 跳过 dynamic
   D1: 加载/推导测试序列
       use-case-tree.json 存在 → 提取正常流 + E2E 用例
       不存在 → 从 task-inventory.json 自动推导（高/中频任务）
-      ↓ 展示测试计划，用户确认
+      自动推导测试序列（不停，汇总到 D4 批量确认）
   D2: 执行正常流用例（Playwright）
-      ↓ 用户确认
+      → 输出进度: 「D2 正常流 ✓ pass:{N} fail:{M} skip:{K}」
   D3: 执行 E2E 流用例（Playwright）
-      ↓ 用户确认
-  D4: 汇总结果，用户确认失败原因分类
-      FIX_FAILING（代码缺陷）vs ENV_ISSUE（测试环境问题，不计入任务）
-      ↓ 用户确认
+      → 输出进度: 「D3 E2E流 ✓ pass:{N} fail:{M} skip:{K}」
+  D4: 自动分类 + 批量确认（单次交互）
+      基于错误特征自动建议分类（FIX_FAILING / ENV_ISSUE）
+      展示通过数 + 失败项汇总表（含自动建议分类及理由）
+      → AskUserQuestion: 确认全部分类 / 逐条调整
 
 生成输出文件：
   static-report.json / dynamic-report.json / verify-tasks.json / verify-report.md
@@ -173,7 +192,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 ### S2：Screen → 组件覆盖检查
 
-**前提**：`.allforai/screen-map/screen-map.json` 存在；否则跳过，提示「如需界面覆盖检查，请先运行 /screen-map」。
+**前提**：`.allforai/screen-map/screen-map.json` 存在；否则自动加载并执行 `${CLAUDE_PLUGIN_ROOT}/../product-design-skill/skills/screen-map.md` 的完整工作流生成界面地图，完成后继续 S2。
 
 **扫描策略**：
 1. Glob 前端页面/视图文件（pages/**, views/**, src/pages/**, app/**/page.**, 等）
@@ -221,7 +240,10 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 - 框架内置路由（Next.js `_next/*`, Rails `/rails/*`, Django `/admin/`, Vite `/@vite/*`）
 - WebSocket 升级端点（/ws, /socket.io）
 
-**输出**：每条 EXTRA 项，用户确认：
+**EXTRA 自动建议规则**：
+基础设施端点已在排除列表中自动跳过。剩余 EXTRA 端点默认建议 `ignore`，用户在静态汇总确认时可改为 `add_to_map` 或 `mark_remove`。
+
+**输出**：EXTRA 项在静态汇总中批量展示（含自动建议），用户一次确认或逐条调整：
 - `add_to_map` — 补录到产品地图（记录 INFO）
 - `mark_remove` — 标记为 REMOVE_EXTRA 任务
 - `ignore` — 合理遗留，忽略
@@ -232,11 +254,11 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 **目的**：在启动 Playwright 测试前确认应用可访问，避免浪费时间。
 
-**检测策略**：
+**检测策略**（优先自动检测，仅不可达时交互）：
 1. 自动检测：Grep 代码中的 `PORT`、`listen`、`localhost`、`.env` 等配置，推测应用 URL
-2. 若无法自动检测，询问用户提供应用 URL（如 `http://localhost:3000`）
-3. 使用 Bash `curl -s -o /dev/null -w "%{http_code}" <URL>` 验证 HTTP 可达性
-4. 返回非 2xx/3xx → 提示「应用未运行或不可达，请先启动应用后告知」，暂停 dynamic 阶段，等待用户确认后重试
+2. 使用 Bash `curl -s -o /dev/null -w "%{http_code}" <URL>` 验证 HTTP 可达性
+3. 可达 → 继续（不停）
+4. 不可达 → AskUserQuestion: 启动后重试 / 跳过 dynamic
 
 **输出**：确认的 `app_url` 写入 `dynamic-report.json` 的 `app_url` 字段。
 

@@ -29,7 +29,7 @@ version: "2.5.0"
 ## 定位
 
 ```
-product-map（现状+方向）      screen-map（可选增强）        feature-gap（对齐视角）      feature-prune（决策视角）
+product-map（现状+方向）      screen-map（必须）            feature-gap（对齐视角）      feature-prune（决策视角）
 项目现在有什么？应该有什么？   界面、按钮、异常状态梳理        地图说有的，现在有没有？      地图里有的，该不该留？
 代码读现状，PM 定方向          以 task-inventory 为输入     以 product-map 为基准        以 product-map 为锚点
 输出产品地图（PM 语言呈现）    输出界面交互地图              输出缺口报告                 输出剪枝报告
@@ -37,7 +37,7 @@ product-map（现状+方向）      screen-map（可选增强）        feature-
 
 **核心定位**：读代码了解现状，用 PM 语言呈现，让 PM 确认并补充业务视角，最终形成"现状 + 期望"的完整产品地图，用于指导项目未来发展方向。
 
-**后续技能依赖**：`feature-gap`、`feature-prune`、`seed-forge` 均以 `.allforai/product-map/product-map.json` 为输入基准，无需重复分析。界面交互细节由 `screen-map` 技能（可选）单独梳理。
+**后续技能依赖**：`feature-gap`、`feature-prune`、`seed-forge` 均以 `.allforai/product-map/product-map.json` 为输入基准，无需重复分析。界面交互细节由 `screen-map` 技能单独梳理（必须运行，下游多个技能依赖其数据）。
 
 ---
 
@@ -871,7 +871,7 @@ Claude 分析 `task-inventory.json`，寻找任务间的状态衔接关系：若
 - CN001 描述（硬约束）
 
 ## 下一步建议
-- 运行 /screen-map 梳理界面、按钮和异常状态（可选）
+- 运行 /screen-map 梳理界面、按钮和异常状态（必须，下游技能缺失时会自动运行）
 - 运行 /use-case 生成用例集（可选）
 - 运行 /feature-gap 检测功能缺口
 - 运行 /feature-prune 评估功能去留
@@ -1252,9 +1252,9 @@ ERROR X 个 · WARNING X 个 · INFO X 个（统计） · 冲突 X 个
 
 检测到 `CONFLICT` / `CRUD_INCOMPLETE`，只标记报告，不执行任何修改，最终决定由用户做出。PM 补充的业务视角无条件纳入；代码里有但 PM 说不需要的任务，标记 `user_removed`，不强行保留。
 
-### 5. 完整功能地图不依赖界面梳理
+### 5. 产品地图独立可运行，但 screen-map 是必须的下一步
 
-产品地图独立可运行，提供完整的功能语义：谁用、做什么、怎么做、有何异常、如何验收。`screen-map` 是可选增强层，梳理界面、按钮和异常状态；`feature-gap Step 2/3` 需要 screen-map 数据，但 `feature-gap Step 1`、`feature-prune`、`seed-forge` 可直接基于产品地图运行。
+产品地图独立可运行，提供完整的功能语义：谁用、做什么、怎么做、有何异常、如何验收。`screen-map` 梳理界面、按钮和异常状态，是下游多个技能的必须输入：`feature-gap`、`use-case`、`feature-prune`、`ui-design`、`design-audit` 均依赖 screen-map 数据。当下游技能检测到 screen-map 不存在时，会自动触发 screen-map 运行。
 
 ### 6. Step 7 校验不可跳过
 

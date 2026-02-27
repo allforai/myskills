@@ -30,7 +30,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
    - 任一索引存在 → 加载索引（< 5KB），按需决定是否加载完整数据
    - 所有索引不存在 → 回退到全量加载 `.allforai/product-map/product-map.json`
    - 若 `product-map.json` 也不存在 → 输出「请先运行 /product-map 建立产品地图」，**立即终止，不执行任何 Step**
-2. `.allforai/screen-map/screen-map.json` 可选，存在则启用 S2（界面覆盖检查），不存在则跳过 S2
+2. `.allforai/screen-map/screen-map.json` 必须，不存在则自动运行 screen-map 生成界面地图，然后启用 S2
 3. `.allforai/use-case/use-case-tree.json` 可选，dynamic 阶段优先使用；不存在则从 product-map 自动推导测试序列
 4. **历史决策加载**：检查 `.allforai/product-verify/verify-decisions.json`，存在则加载，已决策项（S4 EXTRA 归属 + D4 失败分类）自动跳过，不重复询问
 

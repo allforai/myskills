@@ -124,4 +124,4 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 1. **以任务清单为唯一基准** — 只梳理 task-inventory.json 中已定义任务对应的界面
 2. **异常覆盖是核心质量指标** — 每条 task.exception 都必须有对应的界面响应
 3. **只标不改，用户是权威** — 所有 flag 只报告，不执行修改
-4. **screen-map 是增强层** — product-map 可独立运行，screen-map 为 feature-gap Step 2/3 提供数据
+4. **screen-map 是必须层** — 与 product-map 共同构成完整产品地图，feature-gap/use-case/feature-prune/ui-design 均依赖其数据

@@ -36,7 +36,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 2. **产物探测**：
    - `.allforai/product-map/` → **必须存在**（product-map.json 不存在 → 输出「请先运行 /product-map 建立产品地图」，**立即终止**）
-   - `.allforai/screen-map/` → 可选
+   - `.allforai/screen-map/` → 必须（不存在则自动运行 screen-map 生成）
    - `.allforai/use-case/` → 可选
    - `.allforai/feature-gap/` → 可选
    - `.allforai/feature-prune/` → 可选

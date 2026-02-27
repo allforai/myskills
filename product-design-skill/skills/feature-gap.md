@@ -130,12 +130,12 @@ Step 1: 任务完整性检查
       ↓ 用户确认
 Step 2: 界面与按钮完整性检查
       基于 .allforai/screen-map/screen-map.json
-      若 .allforai/screen-map/screen-map.json 不存在 → 跳过 Step 2，提示用户运行 /screen-map
-      ↓ 用户确认（或跳过）
+      若 .allforai/screen-map/screen-map.json 不存在 → 自动运行 screen-map 技能生成界面地图，然后继续 Step 2
+      ↓ 用户确认
 Step 3: 用户旅程验证
       基于 .allforai/screen-map/screen-map.json
-      若 .allforai/screen-map/screen-map.json 不存在 → 跳过 Step 3，提示用户运行 /screen-map
-      ↓ 用户确认（或跳过）
+      （Step 2 已保证 screen-map 存在）
+      ↓ 用户确认
 Step 4: 生成缺口任务清单
       ↓ 用户确认
 Step 5: 业务流链路完整性检查
@@ -196,8 +196,9 @@ Step 5: 业务流链路完整性检查
 ### Step 2：界面与按钮完整性检查
 
 **前置检查**：`.allforai/screen-map/screen-map.json` 是否存在
-- 不存在 → 跳过 Step 2，在报告中注明：「Step 2 已跳过，需先运行 /screen-map 生成界面地图」
-- 存在 → 遍历每个界面，检查以下项目
+- 不存在 → 自动加载并执行 `${CLAUDE_PLUGIN_ROOT}/skills/screen-map.md` 的完整工作流生成界面地图，完成后继续 Step 2
+- 存在 → 直接进入检查
+- 遍历每个界面，检查以下项目
 
 | 检查项 | 说明 |
 |--------|------|
@@ -252,7 +253,7 @@ Step 5: 业务流链路完整性检查
 ### Step 3：用户旅程验证
 
 **前置检查**：`.allforai/screen-map/screen-map.json` 是否存在
-- 不存在 → 跳过 Step 3，在报告中注明：「Step 3 已跳过，需先运行 /screen-map 生成界面地图」
+- 不存在 → 自动加载并执行 `${CLAUDE_PLUGIN_ROOT}/skills/screen-map.md` 的完整工作流生成界面地图（若 Step 2 已触发自动运行，此处 screen-map 必已存在）
 - 存在 → 按角色逐一走完整路径，验证四个节点
 
 ```
@@ -387,6 +388,19 @@ Step 5: 业务流链路完整性检查
   }
 ]
 ```
+
+---
+
+## 预置脚本（优先使用）
+
+检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_feature_gap.py` 是否存在：
+- **存在** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_feature_gap.py <BASE> --mode auto`
+- **不存在** → 回退到 LLM 生成脚本（向后兼容）
+
+预置脚本保证 schema 一致性和零语法错误。关键修复：
+- 防御性检查 `is_primary` / `on_failure` 字段缺失（不再假设字段存在）
+- 使用 `_common.get_screen_tasks()` 统一读取界面任务引用
+- 使用 `_common.collect_flow_task_refs()` 和 `get_flow_nodes()` 读取业务流节点（`nodes` 字段，非 `steps`）
 
 ---
 

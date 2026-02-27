@@ -30,7 +30,7 @@ product-concept → product-map → screen-map → ui-design
 （方向）          （任务）       （界面结构）  （视觉规格 + 预览）
 ```
 
-**前提**：必须先运行 `product-map`。`screen-map` 可选但推荐，存在时规格更精准。
+**前提**：必须先运行 `product-map`。`screen-map` 不存在时自动运行生成界面地图。
 
 ---
 
@@ -102,12 +102,12 @@ product-concept → product-map → screen-map → ui-design
 ```
 前置检查：
   product-map.json 必须存在（否则终止）
-  screen-map.json 可选（存在则按界面；否则从高频任务推导）
+  screen-map.json 必须（不存在则自动运行 screen-map 生成）
   product-concept.json 可选（提取定位/价值主张用于配色基调）
   ui-design-decisions.json 存在则加载历史决策
   ↓
 Step 1: 产品画像推导
-  读取 task-inventory + role-profiles + screen-map（可选）
+  读取 task-inventory + role-profiles + screen-map（前置检查已保证存在）
   推导：B端/C端、角色列表、各角色高频任务、界面总数
   向用户展示，确认
   ↓
@@ -136,7 +136,7 @@ Step 5: 生成多角色 HTML 预览
 **数据加载**：
 - `task-inventory.json` — 获取所有任务、频次、角色归属
 - `role-profiles.json` — 获取角色列表和 audience_type（consumer/professional）
-- `screen-map.json`（可选）— 获取界面列表和 audience_type
+- `screen-map.json`（前置检查已保证存在）— 获取界面列表和 audience_type
 - `product-concept.json`（可选）— 提取 value_proposition 用于文案基调
 
 **输出画像**：
@@ -322,6 +322,16 @@ Step 5: 生成多角色 HTML 预览
 | Ant Design 企业风 | #1677FF | #F0F2F5 | 6px | 0 1px 2px rgba(0,0,0,.08) |
 | Shadcn / Tailwind | #18181B | #FAFAFA | 6px | 0 1px 3px rgba(0,0,0,.05) |
 | 品牌定制风 | 由 Step 3 检索确定 | 同上 | 同上 | 同上 |
+
+---
+
+## 预置脚本（优先使用）
+
+检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_ui_design.py` 是否存在：
+- **存在** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_ui_design.py <BASE> --mode auto [--style material-design-3|ios-human-interface]`
+- **不存在** → 回退到 LLM 生成脚本（向后兼容）
+
+预置脚本保证 schema 一致性和零语法错误。支持 `--style` 参数指定风格（默认读取 `pipeline_preferences.ui_style`）。
 
 ---
 

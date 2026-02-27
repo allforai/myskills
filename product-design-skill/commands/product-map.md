@@ -104,7 +104,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 ### 下一步
 
-1. 运行 /screen-map 梳理界面、按钮和异常状态（可选，推荐）
+1. 运行 /screen-map 梳理界面、按钮和异常状态（必须，下游技能缺失时会自动运行）
 2. 运行 /use-case 生成用例集（可选）
 3. 根据产品地图，运行 /feature-gap 检测功能缺口
 4. 根据产品地图，运行 /feature-prune 评估功能去留
@@ -130,7 +130,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 2. **角色为主线，任务必须完整** — 从"谁来用"出发，每个任务必须归属角色，required 字段必须完整
 3. **频次决定主次** — 按 frequency 和 risk_level 分类，高频保完整性，高风险保约束覆盖
 4. **只标不改，用户是权威** — 检测问题只标记不修改，最终决定由用户做出
-5. **完整功能地图不依赖界面梳理** — 产品地图独立可运行，screen-map 是可选增强层
+5. **产品地图独立可运行，但 screen-map 是必须的下一步** — 下游技能缺失 screen-map 时会自动触发运行
 6. **Step 7 校验不可跳过** — 所有模式下必须执行校验，按 ERROR/WARNING/INFO 分级报告
 7. **Step 3 业务流建模不可跳过** — 所有模式下必须执行，确保链路完整性
 8. **每步确认，增量复用** — 每步展示摘要等待确认，决策写入 decisions.json 增量复用

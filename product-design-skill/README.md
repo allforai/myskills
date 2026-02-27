@@ -46,7 +46,7 @@ claude plugin add /path/to/product-design-skill
 product-map（建功能图）
     ↓ 输出 .allforai/product-map/product-map.json + task-inventory.json
     │
-    ├── screen-map（可选，建界面图）
+    ├── screen-map（必须，建界面图）
     │       ↓ 输出 .allforai/screen-map/screen-map.json
     │
     ├── use-case（可选，生成用例集）
@@ -126,7 +126,7 @@ product-map（建功能图）
 product-design（产品层）
 ├── product-concept 想做什么产品？                       搜索+选择题引导
 ├── product-map     产品是什么？谁在用？做什么？          代码读现状 + PM 补业务视角
-├── screen-map      在哪做？怎么做？出错怎么办？          以 task-inventory 为输入（可选）
+├── screen-map      在哪做？怎么做？出错怎么办？          以 task-inventory 为输入（必须）
 ├── use-case        推导完整用例，双格式输出               基于 product-map + screen-map
 ├── feature-gap     地图说有的，有没有？                  基于 product-map + screen-map
 ├── feature-prune   地图里有的，该不该留？                基于 product-map + screen-map
@@ -270,7 +270,7 @@ your-project/
 ## 核心原则
 
 1. **product-map 是基础** — 其他技能都以产品地图为输入，先建图再分析
-2. **screen-map 是可选增强层** — 界面分析独立运行，feature-gap Step 2/3 和 feature-prune Step 2 需要它
+2. **screen-map 是必须层** — 与 product-map 共同构成完整产品地图，feature-gap Step 2/3、use-case validation、feature-prune Step 2、ui-design 均依赖其数据
 3. **索引优先，按需加载** — 下游技能先加载轻量索引（< 5KB），按需再加载完整数据；索引不存在时自动回退全量加载
 4. **频次驱动一切** — 高频操作受保护不剪枝，缺口按频次排优先级，种子数据按频次分配数量
 5. **每步用户确认** — 所有分类和决策都需要用户确认，用户是权威

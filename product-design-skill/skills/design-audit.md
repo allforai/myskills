@@ -114,7 +114,7 @@ product-map（锚点）
       Phase 1 — 加载索引：task-index / screen-index / flow-index
       Phase 2 — 探测已有产物：
         .allforai/product-map/   → 必须存在
-        .allforai/screen-map/    → 可选
+        .allforai/screen-map/    → 必须（不存在则自动运行 screen-map 生成）
         .allforai/use-case/      → 可选
         .allforai/feature-gap/   → 可选
         .allforai/feature-prune/ → 可选
@@ -159,7 +159,7 @@ Step 4: 汇总报告
 | 层 | 必须/可选 | 检测文件 |
 |----|----------|----------|
 | product-map | 必须 | `.allforai/product-map/product-map.json` |
-| screen-map | 可选 | `.allforai/screen-map/screen-map.json` |
+| screen-map | 必须（不存在则自动运行 screen-map） | `.allforai/screen-map/screen-map.json` |
 | use-case | 可选 | `.allforai/use-case/use-case-tree.json` |
 | feature-gap | 可选 | `.allforai/feature-gap/gap-tasks.json` |
 | feature-prune | 可选 | `.allforai/feature-prune/prune-decisions.json` |
@@ -380,6 +380,19 @@ Step 4: 汇总报告
 |---|--------|------|------|
 | ... | ... | ... | ... |
 ```
+
+---
+
+## 预置脚本（优先使用）
+
+检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_design_audit.py` 是否存在：
+- **存在** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_design_audit.py <BASE> --mode auto`
+- **不存在** → 回退到 LLM 生成脚本（向后兼容）
+
+预置脚本保证 schema 一致性和零语法错误。关键修复：
+- 修复 `gaps[:30)` 语法错误（括号混用 → `gaps[:30]`）
+- 使用 `_common.get_screen_tasks()` 统一读取界面任务引用
+- pipeline-decisions 按 phase 去重，防止重跑产生重复条目
 
 ---
 
