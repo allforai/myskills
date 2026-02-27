@@ -295,6 +295,10 @@ XV_FAMILY_SEARCH = {
 # Runtime cache: family → resolved model ID (populated on first xv_call)
 _xv_model_cache = {}
 
+# File-based cache path + 24-hour TTL
+_XV_CACHE_FILE = os.path.join(os.environ.get("TMPDIR", "/tmp"), "xv-model-cache.json")
+_XV_CACHE_TTL = 86400  # 24 hours
+
 
 def xv_available():
     """Check if OPENROUTER_API_KEY environment variable is set."""
@@ -381,9 +385,15 @@ def _resolve_model(family, api_key):
     if family in _xv_model_cache:
         return _xv_model_cache[family]
 
-    # Fetch model list from OpenRouter (once, populates all families)
+    # Try loading from file cache (24h TTL)
     if not _xv_model_cache:
-        _populate_model_cache(api_key)
+        _load_file_cache()
+
+    if family in _xv_model_cache:
+        return _xv_model_cache[family]
+
+    # File cache miss or expired — fetch from API
+    _populate_model_cache(api_key)
 
     if family in _xv_model_cache:
         return _xv_model_cache[family]
@@ -396,13 +406,41 @@ def _resolve_model(family, api_key):
     return model
 
 
-def _populate_model_cache(api_key):
-    """Fetch OpenRouter /models and pick the latest for each XV family.
+def _load_file_cache():
+    """Load model cache from disk if fresh (< 24h old)."""
+    global _xv_model_cache
+    try:
+        if not os.path.exists(_XV_CACHE_FILE):
+            return
+        age = time.time() - os.path.getmtime(_XV_CACHE_FILE)
+        if age > _XV_CACHE_TTL:
+            return  # expired
+        with open(_XV_CACHE_FILE) as f:
+            cached = json.load(f)
+        if isinstance(cached, dict) and cached:
+            _xv_model_cache.update(cached)
+            for k, v in cached.items():
+                print(f"  XV: {k} → {v} (cached)")
+    except Exception:
+        pass  # corrupted cache, will re-fetch
 
-    Selection strategy per family:
-    - gpt: latest chat model starting with "openai/gpt-" (prefer non-mini)
-    - gemini: latest flash model starting with "google/gemini-" (prefer flash for cost)
-    - deepseek: latest "deepseek/deepseek-chat" variant
+
+def _save_file_cache():
+    """Persist model cache to disk."""
+    try:
+        with open(_XV_CACHE_FILE, "w") as f:
+            json.dump(_xv_model_cache, f)
+    except Exception:
+        pass
+
+
+def _populate_model_cache(api_key):
+    """Fetch OpenRouter /models, then ask an LLM to pick the best model per family.
+
+    Steps:
+    1. GET /models → filter text-output candidates per family
+    2. Send candidate list to a cheap LLM to select the best general-purpose model
+    3. Cache result to disk for 24h reuse
     """
     try:
         req = urllib.request.Request(
@@ -419,58 +457,90 @@ def _populate_model_cache(api_key):
         print(f"  XV: failed to fetch /models, using fallbacks: {e}")
         return
 
-    # Group candidate models by family
+    # Build candidate summaries per family
+    family_candidates = {}
     for family, prefix in XV_FAMILY_SEARCH.items():
         candidates = [m for m in models if m.get("id", "").startswith(prefix)]
-        if not candidates:
-            continue
-
-        # Filter to chat-capable models (has text output)
+        # Filter to text-output capable
         candidates = [m for m in candidates
                       if "text" in str(m.get("architecture", {}).get("output_modalities", []))]
-
         if not candidates:
             continue
+        # Sort newest first, take top 15
+        candidates.sort(key=lambda m: m.get("created", 0), reverse=True)
+        family_candidates[family] = [
+            {"id": m["id"], "name": m.get("name", ""), "created": m.get("created", 0)}
+            for m in candidates[:15]
+        ]
 
-        # Family-specific selection
-        best = _pick_best(family, candidates)
-        if best:
-            _xv_model_cache[family] = best
-            print(f"  XV: {family} → {best}")
+    if not family_candidates:
+        return
 
+    # Ask LLM to pick the best model per family (single call, all families)
+    prompt_lines = [
+        "Below are model lists from OpenRouter API, sorted by release date "
+        "(NEWEST FIRST). For each family, pick the ONE best model for "
+        "general-purpose TEXT chat and analysis.",
+        "",
+        "Rules:",
+        "- Pick the NEWEST model that supports general text chat",
+        "- EXCLUDE: image-generation, embedding, audio-only, distilled, lite/mini variants",
+        "- Model names you don't recognize are fine — trust the release date ordering",
+        "- Respond with ONLY a JSON object: {\"family\": \"model_id\", ...}",
+        ""
+    ]
+    for family, cands in family_candidates.items():
+        prompt_lines.append(f"=== {family} ===")
+        for c in cands:
+            # Convert unix timestamp to readable date
+            from datetime import datetime, timezone
+            dt = datetime.fromtimestamp(c["created"], tz=timezone.utc).strftime("%Y-%m-%d")
+            prompt_lines.append(f"  {c['id']}  (released: {dt}, name: {c['name']})")
+        prompt_lines.append("")
 
-def _pick_best(family, candidates):
-    """Pick the best model for a family from candidate list."""
-    # Sort by created timestamp descending (newest first)
-    candidates.sort(key=lambda m: m.get("created", 0), reverse=True)
+    try:
+        # Use the cheapest available model for this meta-selection
+        selector_model = "openai/gpt-4o-mini"
+        payload = json.dumps({
+            "model": selector_model,
+            "messages": [{"role": "user", "content": "\n".join(prompt_lines)}],
+            "temperature": 0,
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            "https://openrouter.ai/api/v1/chat/completions",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://github.com/product-design-skill",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+        raw = body["choices"][0]["message"]["content"]
+        picks = xv_parse_json(raw)
 
-    if family == "gpt":
-        # Prefer non-mini, non-extended, non-search models
-        for m in candidates:
-            mid = m["id"]
-            if "mini" not in mid and "extended" not in mid and "search" not in mid:
-                return mid
-        return candidates[0]["id"] if candidates else None
+        for family, model_id in picks.items():
+            if family in family_candidates:
+                # Validate the pick exists in candidates
+                valid_ids = {c["id"] for c in family_candidates[family]}
+                if model_id in valid_ids:
+                    _xv_model_cache[family] = model_id
+                    print(f"  XV: {family} → {model_id}")
+                else:
+                    print(f"  XV: {family} → LLM picked '{model_id}' not in candidates, skipping")
+    except Exception as e:
+        print(f"  XV: LLM model selection failed: {e}, using newest per family")
+        # Fallback: just pick newest text-output model per family
+        for family, cands in family_candidates.items():
+            if cands and family not in _xv_model_cache:
+                _xv_model_cache[family] = cands[0]["id"]
+                print(f"  XV: {family} → {cands[0]['id']} (fallback: newest)")
 
-    elif family == "gemini":
-        # Prefer flash (cost-effective), non-image, non-embedding
-        flash = [m for m in candidates
-                 if "flash" in m["id"] and "image" not in m["id"]
-                 and "embedding" not in m["id"] and "lite" not in m["id"]]
-        if flash:
-            return flash[0]["id"]
-        # Fall back to any non-embedding
-        non_embed = [m for m in candidates if "embedding" not in m["id"]]
-        return non_embed[0]["id"] if non_embed else candidates[0]["id"]
-
-    elif family == "deepseek":
-        # Prefer deepseek-chat (general), not coder/reasoner
-        for m in candidates:
-            if "chat" in m["id"] and "coder" not in m["id"]:
-                return m["id"]
-        return candidates[0]["id"] if candidates else None
-
-    return candidates[0]["id"] if candidates else None
+    # Persist to disk for 24h reuse
+    if _xv_model_cache:
+        _save_file_cache()
 
 
 def xv_review(reviews_list):
