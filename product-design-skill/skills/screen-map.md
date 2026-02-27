@@ -158,6 +158,27 @@ task-inventory.json 为基础      以 task-inventory 为输入        读 scree
 
 ---
 
+## 全自动模式
+
+**激活条件**（同时满足）：
+1. `.allforai/product-concept/product-concept.json` 存在且含 `pipeline_preferences` 字段
+2. 上下文含 `__orchestrator_auto: true`（由 `/product-design full` 编排器传入）
+
+**未同时满足** → 保持标准交互模式（当前行为不变）。
+
+**行为变化**：
+
+| 步骤 | 标准模式 | 全自动模式 |
+|------|----------|-----------|
+| **Step 1 界面清单确认** | AskUserQuestion 确认 | 自动确认，记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
+| **Step 2 冲突确认** | AskUserQuestion 确认 | 自动确认（所有检出的 REDUNDANT_ENTRY、HIGH_RISK_NO_CONFIRM、SILENT_FAILURE 等问题记录到 `pipeline-decisions.json`） |
+| **Step 3 报告确认** | AskUserQuestion 确认 | 自动确认 |
+
+**安全护栏**（自动模式下仍然停下来问用户）：
+- ERROR 级验证失败（screen 数 = 0、task_refs 引用断裂）
+
+---
+
 ## 工作流
 
 ```

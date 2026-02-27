@@ -271,6 +271,71 @@ product-concept（战略层）        product-map（运营层）
 
 ---
 
+### Step 3.5: 流水线偏好采集（Pipeline Preferences）
+
+> 仅在用户意图执行完整流水线时触发（`/product-design full` 或用户明确表示要跑全程）。
+> 单独运行 `/product-concept` 时**跳过此步骤**。
+> 这些问题前置到概念阶段，下游技能自动消费，无需再问。
+
+**触发条件**：用户明确表示要执行完整产品设计流水线（如 `/product-design full`、「帮我跑一遍全流程」等）。
+
+**Q1 — UI 设计风格**
+
+AskUserQuestion（单选）：
+
+问题：「产品的视觉风格偏好？」
+
+| 编号 | 选项 | 适用场景 |
+|------|------|----------|
+| 1 | Material Design 3 | Google 风，适合工具/效率类 |
+| 2 | Apple HIG | 苹果风，适合消费/精品类 |
+| 3 | Fluent Design | 微软风，适合企业/办公类 |
+| 4 | Flat / Minimal | 极简，适合信息/内容类 |
+| 5 | Glassmorphism | 玻璃拟态，适合时尚/社交类 |
+| 6 | Ant Design 企业风 | 适合后台/管理系统 |
+| 7 | Shadcn / Tailwind | 开发者友好，适合 SaaS/技术产品 |
+| 8 | 暂不确定 | 下游 ui-design 阶段再交互选择 |
+
+**Q2 — 竞品参考**
+
+AskUserQuestion（开放文本 + 预设）：
+
+问题：「有哪些竞品想参考？（输入名称，逗号分隔；无则选"无"）」
+
+| 编号 | 选项 |
+|------|------|
+| 1 | 无竞品参考 |
+| （用户可输入自定义文本） | |
+
+**Q3 — MVP 范围策略**
+
+AskUserQuestion（单选）：
+
+问题：「功能剪枝的范围策略？」
+
+| 编号 | 选项 | 说明 |
+|------|------|------|
+| 1 | 激进精简（推荐 MVP） | 只保留高频核心，低频一律 DEFER/CUT |
+| 2 | 平衡取舍 | 高频保留，低频按场景判断 |
+| 3 | 保守保全 | 尽量保留，只砍明确无用的 |
+| 4 | 暂不确定 | 下游 feature-prune 阶段再交互决策 |
+
+**写入 `product-concept.json`**：
+
+三个问题回答完毕后，将偏好写入 `pipeline_preferences` 字段：
+
+```json
+"pipeline_preferences": {
+  "ui_style": "material-design-3 | apple-hig | fluent-design | flat-minimal | glassmorphism | ant-design | shadcn-tailwind | undecided",
+  "competitors": ["竞品A", "竞品B"] | [],
+  "scope_strategy": "aggressive | balanced | conservative | undecided"
+}
+```
+
+> `pipeline_preferences` 的存在是下游自动模式的激活条件之一。选择「暂不确定」的项标记为 `"undecided"`，下游对应技能回退到交互模式。
+
+---
+
 ### Step 4: 概念结晶 — 输出产品概念文档
 
 输入：Step 0-3 的所有确认结果
@@ -358,6 +423,11 @@ product-concept（战略层）        product-map（运营层）
       "raise": [{ "item": "超出行业水平的", "kano": "performance" }],
       "create": [{ "item": "行业从未有过的", "kano": "delighter" }]
     }
+  },
+  "pipeline_preferences": {
+    "ui_style": "material-design-3 | apple-hig | fluent-design | flat-minimal | glassmorphism | ant-design | shadcn-tailwind | undecided",
+    "competitors": ["竞品A", "竞品B"],
+    "scope_strategy": "aggressive | balanced | conservative | undecided"
   },
   "frameworks_referenced": ["Lean Canvas", "VPC", "JTBD", "Blue Ocean ERRC", "Kano Model", "Opportunity Solution Tree", "First Principles", "Mom Test", "Build Trap / Product Kata"],
   "search_sources": ["搜索过程中参考的 URL"]

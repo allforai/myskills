@@ -98,6 +98,58 @@ Phase 8: design-audit full（终审）
 
 ---
 
+## 自动模式检测
+
+Phase 1（product-concept）执行完毕后，检测自动模式条件：
+
+1. 读取 `.allforai/product-concept/product-concept.json`
+2. 检查 `pipeline_preferences` 字段是否存在
+3. **存在** → 启用自动模式：
+   - 后续 Phase 2-8 每个技能调用时携带上下文标记 `__orchestrator_auto: true`
+   - 检查点策略切换为三级评估（见下方）
+   - 向用户展示：「检测到流水线偏好，启用全自动模式 — ERROR 级问题才停，WARNING 记日志继续」
+4. **不存在** → 交互模式（当前行为不变）
+
+### 检查点三级评估（自动模式）
+
+自动模式下，Phase 2-8 的每个检查点行为变更：
+
+| 级别 | 条件 | 行为 |
+|------|------|------|
+| **ERROR** | 必填字段缺失、引用断裂、task 数 = 0、必须文件不存在 | **停下来问用户**，展示错误详情，等待用户决策 |
+| **WARNING** | 推荐字段缺失、覆盖率低于预期、轻微不一致 | 记入 `.allforai/pipeline-decisions.json`（`decision: "auto_continued"`），展示日志行后自动继续 |
+| **PASS** | 检查全部通过 | 自动继续，展示一行摘要 |
+
+### `pipeline-decisions.json`（自动模式决策日志）
+
+自动模式下所有自动确认和自动跳过的决策记录在此文件，用户事后可审查：
+
+```json
+[
+  {
+    "phase": "Phase 2",
+    "skill": "product-map",
+    "step": "Step 1",
+    "decision": "auto_confirmed",
+    "severity": "PASS",
+    "summary": "角色列表 3 个，无差异",
+    "decided_at": "ISO timestamp"
+  },
+  {
+    "phase": "Phase 3",
+    "skill": "screen-map",
+    "step": "Step 2",
+    "decision": "auto_continued",
+    "severity": "WARNING",
+    "summary": "2 个 SILENT_FAILURE 检出，已记录",
+    "details": ["S008 批量导出无 on_failure", "S012 删除操作无确认弹窗"],
+    "decided_at": "ISO timestamp"
+  }
+]
+```
+
+---
+
 ## Phase 2：product-map
 
 **执行**：
@@ -109,6 +161,8 @@ Phase 8: design-audit full（终审）
 - task 数量 > 0
 
 检查点失败 → 向用户报告，询问是否继续（product-map 是后续所有阶段的基础，强烈建议修复）。
+
+**自动模式检查点**：task 数 = 0 → ERROR（停）；task 数 > 0 但有 WARNING 级校验问题 → 记日志继续。
 
 ---
 
@@ -126,6 +180,8 @@ Phase 8: design-audit full（终审）
 - 每个 screen 的 `task_refs` 中的 task_id 在 `task-inventory.json` 中存在
 - 发现问题 → 列出不一致项，询问用户是否继续
 
+**自动模式检查点**：screen 数 = 0 → ERROR（停）；task_refs 引用断裂 → ERROR（停）；其余不一致 → WARNING 记日志继续。
+
 ---
 
 ## Phase 4：use-case
@@ -141,6 +197,8 @@ Phase 8: design-audit full（终审）
 - 每个 task 至少有 1 条用例
 - 发现无用例的 task → 列出，询问用户是否继续
 
+**自动模式检查点**：use-case-tree.json 不存在 → ERROR（停）；部分 task 无用例 → WARNING 记日志继续。
+
 ---
 
 ## Phase 5：feature-gap
@@ -151,6 +209,8 @@ Phase 8: design-audit full（终审）
 
 **检查点**：
 - `gap-tasks.json` 存在
+
+**自动模式检查点**：gap-tasks.json 不存在 → ERROR（停）；缺口任务自动生成 → PASS 继续。
 
 ---
 
@@ -167,6 +227,8 @@ Phase 8: design-audit full（终审）
 - feature-gap 报缺口的 task 被 feature-prune 标 CUT → 标记矛盾
 - 发现矛盾 → 列出，询问用户是否修正（在 design-audit 终审中会再次完整检查）
 
+**自动模式检查点**：prune-decisions.json 不存在 → ERROR（停）；高频功能被 CUT 且被业务流引用 → ERROR（停，安全护栏）；gap-prune 矛盾 → WARNING 记日志继续。
+
 ---
 
 ## Phase 7：ui-design
@@ -182,6 +244,8 @@ Phase 8: design-audit full（终审）
 - 每个 CORE 任务（prune-decisions 中标为 CORE）在 UI 设计中有体现
 - 发现遗漏 → 列出，询问用户是否继续
 
+**自动模式检查点**：ui-design-spec.md 不存在 → ERROR（停）；CORE 任务 UI 覆盖率 < 50% → WARNING 记日志继续。
+
 ---
 
 ## Phase 8：design-audit full（终审）
@@ -189,6 +253,8 @@ Phase 8: design-audit full（终审）
 **执行**：
 1. 用 Read 工具加载 `${CLAUDE_PLUGIN_ROOT}/skills/design-audit.md`
 2. 按 design-audit 技能的 full 模式执行完整三合一校验
+
+**自动模式检查点**：审计正常执行，所有结果写入报告。CONFLICT 级问题在摘要中高亮标注。自动模式下终审不停，但摘要中列出所有积累的 WARNING 条目总数。
 
 **输出**：终审报告 + 全流程执行摘要
 

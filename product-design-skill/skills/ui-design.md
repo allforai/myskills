@@ -73,6 +73,30 @@ product-concept → product-map → screen-map → ui-design
 
 ---
 
+## 全自动模式
+
+**激活条件**（同时满足）：
+1. `.allforai/product-concept/product-concept.json` 存在且含 `pipeline_preferences` 字段
+2. 上下文含 `__orchestrator_auto: true`（由 `/product-design full` 编排器传入）
+
+**未同时满足** → 保持标准交互模式（当前行为不变）。
+
+**行为变化**：
+
+| 步骤 | 标准模式 | 全自动模式 |
+|------|----------|-----------|
+| **Step 1 画像确认** | AskUserQuestion 确认 | 自动确认，记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
+| **Step 2 风格选择** | AskUserQuestion 8 选 1 | 读 `pipeline_preferences.ui_style`：非 `"undecided"` → 直接使用预设风格，跳过 AskUserQuestion；`"undecided"` → **回退交互模式**（展示 8 种风格，用户选择） |
+| **Step 3 设计原则确认** | AskUserQuestion 确认 | 自动确认（WebSearch 照常执行，搜索结果自动采纳） |
+| **Step 4 规格确认** | AskUserQuestion 确认 | 自动确认 |
+| **Step 5 预览确认** | AskUserQuestion 确认 | 自动确认 |
+
+**安全护栏**（自动模式下仍然停下来问用户）：
+- ERROR 级验证失败（无法推导任何界面、product-map 损坏）
+- `ui_style = "undecided"` 时 Step 2 回退交互模式（风格选择不可自动推断）
+
+---
+
 ## 工作流
 
 ```

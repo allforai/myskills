@@ -84,6 +84,29 @@ product-map（锚点）
 
 ---
 
+## 全自动模式
+
+**激活条件**（同时满足）：
+1. `.allforai/product-concept/product-concept.json` 存在且含 `pipeline_preferences` 字段
+2. 上下文含 `__orchestrator_auto: true`（由 `/product-design full` 编排器传入）
+
+**未同时满足** → 保持标准交互模式（当前行为不变）。
+
+**行为变化**：
+
+| 步骤 | 标准模式 | 全自动模式 |
+|------|----------|-----------|
+| **Step 1 逆向追溯确认** | AskUserQuestion 确认 | 自动确认，所有 ORPHAN 问题记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
+| **Step 2 覆盖洪泛确认** | AskUserQuestion 确认 | 自动确认，所有 GAP 问题记入 `pipeline-decisions.json` |
+| **Step 3 横向一致性确认** | AskUserQuestion 确认 | 自动确认，所有 CONFLICT / WARNING / BROKEN_REF 记入 `pipeline-decisions.json` |
+| **Step 3.5 保真门禁** | AskUserQuestion 确认 | 低于阈值 → WARNING 记入日志（不停），达到阈值 → PASS 自动继续 |
+| **Step 4 报告确认** | AskUserQuestion 确认 | 自动确认 |
+
+**安全护栏**（自动模式下仍然停下来问用户）：
+- ERROR 级验证失败（product-map.json 损坏、必须层缺失）
+
+---
+
 ## 工作流
 
 ```
