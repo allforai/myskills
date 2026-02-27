@@ -47,20 +47,21 @@ manifest.json            requirements + design + tasks  实际文件和目录
 
 ---
 
-## 动态趋势补充（WebSearch）
+## 增强协议（WebSearch + 4E+4V）
 
-除经典理论外，执行设计转规格时通过 WebSearch 补充最新 API / 架构实践：
+> 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
 
-**搜索关键词模板**：
+**WebSearch 关键词**：
 - `"{framework} API design patterns {year}"`
 - `"{ORM} database schema design best practices"`
 - `"REST API naming conventions {year}"`
 - `"clean architecture {language} example {year}"`
-- `"hexagonal architecture ports adapters {framework}"`
 
-**来源优先级**：P1 官方文档 > P2 知名作者（Martin, Fowler, Cockburn）> P3 技术媒体 > P4 社区帖
-
-**采纳决策**：记录到 `.allforai/project-forge/trend-sources.json`，标注 ADOPT / REJECT / DEFER + 理由。
+**4E+4V 重点**（design-to-spec 是产品→工程的核心桥梁）：
+- **E2 Provenance**: requirements.md 每个需求项标注 `_Source: T001, F001, CN001_`
+- **E3 Guardrails**: task.rules → Business Rules 节；task.exceptions → Error Scenarios 节；task.audit → Audit Requirements 节；task.sla → SLA 标注；task.approver_role → Approval 节
+- **E4 Context**: task.value → Value 注释；task.risk_level → Risk 标签；task.frequency → Priority
+- **4V**: 高频+高风险任务的 design.md 至少覆盖 api + data + behavior 三个视角
 
 ---
 
@@ -83,18 +84,36 @@ manifest.json            requirements + design + tasks  实际文件和目录
 
 ## 核心映射逻辑
 
-| 产品设计产物 | 目标 spec | 映射规则 |
-|---|---|---|
-| role-profiles.json | requirements.md | "As a {role}" 用户故事 |
-| task-inventory.json | requirements.md | 每任务 = 1 需求项，frequency → priority |
-| acceptance_criteria | requirements.md | 直接映射为验收条件 |
-| use-case-tree.json | requirements.md | Given/When/Then 丰富验收条件 |
-| constraints.json | requirements.md | 非功能需求（安全/性能/业务规则） |
-| screen-map.json | design.md | 每 screen = 1 页面/组件规格 |
-| screen.actions | design.md | 每 action → 1 API 端点（后端）/ 1 交互规格（前端） |
-| business-flows.json | design.md | flow → 时序图（Mermaid） |
-| ui-design-spec.md | design.md | 设计 token、组件库引用 |
-| prune-decisions.json | tasks.md | 仅 CORE 任务进入实施范围 |
+| 产品设计产物 | 目标 spec | 映射规则 | 4E |
+|---|---|---|---|
+| role-profiles.json | requirements.md | "As a {role}" 用户故事 | E1 |
+| task-inventory.json | requirements.md | 每任务 = 1 需求项，frequency → priority | E1 |
+| acceptance_criteria | requirements.md | 直接映射为验收条件 | E1 |
+| use-case-tree.json | requirements.md | Given/When/Then 丰富验收条件 | E1 |
+| constraints.json | requirements.md | 非功能需求（安全/性能/业务规则） | E3 |
+| screen-map.json | design.md | 每 screen = 1 页面/组件规格 | E1 |
+| screen.states | design.md | empty/loading/error/permission_denied → 界面四态设计 | E3 |
+| screen.actions | design.md | 每 action → 1 API 端点（后端）/ 1 交互规格（前端） | E1 |
+| action.on_failure | design.md | 操作失败 → UI 反馈设计（toast/banner/inline error） | E3 |
+| action.exception_flows | design.md | 任务异常 → UI 响应映射（1-to-1，from screen-map Step 2） | E3 |
+| action.validation_rules | design.md | 前端验证规则 → 表单 Schema 设计 | E3 |
+| action.requires_confirm | design.md | 高风险操作 → 确认弹窗组件设计 | E3 |
+| screen-conflict.json | requirements.md | 异常缺口（SILENT_FAILURE 等）→ 补充 Error Scenarios | E3 |
+| business-flows.json | design.md | flow → 时序图（Mermaid） | E1 |
+| ui-design-spec.md | design.md | 设计 token、组件库引用 | E1 |
+| prune-decisions.json | tasks.md | 仅 CORE 任务进入实施范围 | E4 |
+| task.rules | requirements.md | 每需求项的「Business Rules」节 | E3 |
+| task.exceptions | requirements.md | 每需求项的「Error Scenarios」节 | E3 |
+| task.sla | requirements.md | 每需求项的 SLA 标注 | E3 |
+| task.prerequisites | requirements.md | 每需求项的「Prerequisites」节 | E3 |
+| task.config_items | requirements.md + design.md | 配置依赖节 + 配置端点/表设计 | E3 |
+| task.outputs | design.md | states → 状态机设计；notifications → 事件/通知设计 | E1 |
+| task.audit | requirements.md + design.md | 审计需求节 + 审计日志表/中间件设计 | E3 |
+| task.approver_role | requirements.md + design.md | 审批流需求 + 审批 API 端点 + 状态流转 | E3 |
+| task.cross_dept_roles | design.md | 跨部门交接 → webhook/集成点设计 | E1 |
+| task.value | requirements.md | 业务价值注释（E4 Context） | E4 |
+| task.risk_level | requirements.md + tasks.md | 风险标签 → review 优先级 | E4 |
+| constraints.code_status | requirements.md | hard 约束 → 验证中间件需求 | E3 |
 
 ---
 
@@ -117,7 +136,7 @@ manifest.json            requirements + design + tasks  实际文件和目录
 | requirements 侧重 | CRUD 完整性、批量操作、权限矩阵 |
 | design 侧重 | 页面布局、组件树、表单验证规则 |
 | 非功能需求 | 角色权限矩阵、审计日志 |
-| 从 screen-map 取 | actions → CRUD 页面规格 |
+| 从 screen-map 取 | actions → CRUD 页面规格；states → 四态设计；on_failure + exception_flows → 错误反馈；validation_rules → 表单 Schema；requires_confirm → 确认弹窗 |
 | 从 ui-design 取 | 全量设计 token |
 
 ### web-customer
@@ -127,7 +146,7 @@ manifest.json            requirements + design + tasks  实际文件和目录
 | requirements 侧重 | SEO、加载速度、可访问性 |
 | design 侧重 | SSR/SSG 策略、meta 标签、结构化数据 |
 | 非功能需求 | Lighthouse 分数、Core Web Vitals |
-| 从 screen-map 取 | actions → 页面组件规格 |
+| 从 screen-map 取 | actions → 页面组件规格；states → 四态设计（empty 状态需 SEO 友好）；on_failure + exception_flows → 用户友好错误页；validation_rules → 表单 Schema |
 | 从 ui-design 取 | 全量设计 token + 性能约束 |
 
 ### web-mobile
@@ -137,7 +156,7 @@ manifest.json            requirements + design + tasks  实际文件和目录
 | requirements 侧重 | 触屏可用性、离线场景 |
 | design 侧重 | 移动优先布局、PWA 配置 |
 | 非功能需求 | 弱网容忍、Service Worker |
-| 从 screen-map 取 | actions → 触屏交互规格 |
+| 从 screen-map 取 | actions → 触屏交互规格；states → 四态设计（loading 需骨架屏、error 需离线提示）；on_failure → 弱网重试 UI；validation_rules → 移动端表单验证 |
 | 从 ui-design 取 | 移动适配的设计 token |
 
 ### mobile-native (React Native / Flutter)
@@ -147,7 +166,7 @@ manifest.json            requirements + design + tasks  实际文件和目录
 | requirements 侧重 | 离线同步、推送、设备权限 |
 | design 侧重 | 导航栈（RN: React Navigation / Flutter: GoRouter）、原生组件、存储策略 |
 | 非功能需求 | 电池/流量优化、后台任务 |
-| 从 screen-map 取 | actions → Screen 组件规格（RN: Screen 组件 / Flutter: Screen Widget） |
+| 从 screen-map 取 | actions → Screen 组件规格（RN: Screen 组件 / Flutter: Screen Widget）；states → 四态设计（离线态额外处理）；on_failure + exception_flows → 原生错误提示；validation_rules → 表单验证 |
 | 从 ui-design 取 | 原生端设计 token（如有） |
 | 测试工具 | RN: Detox / Maestro / Flutter: Patrol / integration_test |
 
@@ -180,11 +199,22 @@ Step 1: Requirements 生成（逐子项目）
     b. 加载对应 full 数据（task-inventory + constraints + use-cases）
     c. 按子项目类型（backend/admin/web-customer/web-mobile/mobile-native）
        应用差异化 requirements 模板
-    d. 生成 requirements.md:
+    d. 生成 requirements.md（4E 增强模板）:
+       每个需求项包含：
+       - 优先级 + 角色（frequency → P0/P1/P2 + owner_role）
+       - Value 注释（← E4 Context，from task.value）
        - 用户故事（As a {role}, I want... So that...）
        - 验收条件（Given/When/Then，来自 use-case-tree）
+       - Business Rules（← E3 Guardrails，from task.rules）
+       - Error Scenarios（← E3 Guardrails，from task.exceptions）
+       - SLA（← E3 Guardrails，from task.sla）
+       - Prerequisites（← E3 Guardrails，from task.prerequisites）
+       - Approval（← E3 Guardrails，from task.approver_role）
+       - Audit（← E3 Guardrails，from task.audit）
+       - Config（← E3 Guardrails，from task.config_items）
        - 非功能需求（来自 constraints + 子项目类型特有需求）
-       - 优先级（frequency: 高→P0, 中→P1, 低→P2）
+       - _Source: T001, F001, CN001_（← E2 Provenance）
+       注: 字段不存在或为空时省略对应节，不生成空占位
     → 写入 .allforai/project-forge/sub-projects/{name}/requirements.md
     → 展示摘要 → 用户确认
   ↓
@@ -201,12 +231,27 @@ Step 2: Design 生成（逐子项目，API-first 策略）
       flows → 后端时序图
     前端类 (admin/web-customer/web-mobile):
       screens → 页面路由 + 组件架构
+      screen.states → 界面四态设计（empty/loading/error/permission_denied）
       actions → 交互规格（引用已定义的 API 端点）
+      action.on_failure + exception_flows → 操作异常 UI 反馈设计
+      action.validation_rules → 表单验证 Schema
+      action.requires_confirm → 确认弹窗组件规格
       flows → 前端状态流转图
       ui-design-spec → 设计 token 引用
     mobile-native:
       screens → 导航栈 + Screen 组件规格
+      screen.states → 界面四态设计（同上）
       actions → 原生交互规格（引用已定义的 API 端点）
+      action.on_failure + exception_flows → 原生异常 UI 反馈设计
+      action.validation_rules → 表单验证规则
+    按需生成的 4E 增强章节（字段存在时才生成）:
+      task.rules（聚合）→ 验证规则设计（验证中间件/Schema 设计）
+      task.outputs.states + task.exceptions → 状态机设计（Mermaid stateDiagram）
+      task.audit（聚合）→ 审计日志设计（audit_logs 表结构 + 中间件）
+      task.outputs.notifications → 通知/事件设计（事件触发规则）
+      task.approver_role → 审批流 API（审批端点 + 状态流转）
+      task.config_items → 配置管理设计（配置端点/表）
+      task.cross_dept_roles → 集成点设计（webhook/回调端点）
     → 写入 .allforai/project-forge/sub-projects/{name}/design.md
     → 展示摘要 → 用户确认
   **生成顺序**: 后端 design.md 先于前端，确保前端 design 可直接引用 API 端点定义
@@ -216,6 +261,12 @@ Step 3: Tasks 生成（逐子项目）
     - 1-3 文件，15-30 分钟，单一目的
     - 指明具体文件路径（基于技术栈 template 约定）
     - 标注 _Requirements_ 和 _Leverage_ 引用
+    - 标注 _Guardrails_（← E3，溯源 task.rules/exceptions/audit ID）
+    - 标注 _Risk_（← E4，from task.risk_level，HIGH 任务优先 review）
+  按需在 tasks.md 末尾生成专用任务批次（从聚合字段推导）：
+    - 审计日志任务（从 task.audit 聚合 → audit_logs 表+中间件+测试）
+    - 审批流任务（从 task.approver_role 聚合 → 审批 API+状态机+测试）
+    - 配置管理任务（从 config_items 聚合 → 配置表+端点+测试）
   → Batch 结构因子项目类型而异（见下文）
   → 写入 .allforai/project-forge/sub-projects/{name}/tasks.md
   → 展示摘要 → 用户确认
@@ -337,6 +388,8 @@ B5: Widget 测试 (flutter_test) + 集成测试 (Patrol / integration_test)
   - 具体实现要点（2-4 条）
   - _Requirements: REQ-{id}_
   - _Leverage: {existing-file-or-package}_
+  - _Guardrails: T001.rules[1,2], CN001_    ← 护栏溯源（from task.rules/exceptions/audit）
+  - _Risk: HIGH | MEDIUM | LOW_              ← 风险标签（from task.risk_level）
 ```
 
 **原子性标准**：
@@ -345,6 +398,8 @@ B5: Widget 测试 (flutter_test) + 集成测试 (Patrol / integration_test)
 - 单一目的：一个可测试的结果
 - 具体路径：基于技术栈 template 的命名约定
 - 引用明确：标注依赖的 requirements 和可复用的代码
+- 护栏溯源：标注该任务需遵守的业务规则/异常/审计 ID
+- 风险标签：HIGH 标签任务优先 code review
 
 ---
 

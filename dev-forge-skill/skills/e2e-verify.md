@@ -52,19 +52,18 @@ product-verify（单端验收）   e2e-verify（跨端验证）
 
 ---
 
-## 动态趋势补充（WebSearch）
+## 增强协议（WebSearch + 4E+4V）
 
-除经典理论外，执行跨端验证时通过 WebSearch 补充最新测试实践：
+> 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
 
-**搜索关键词模板**：
+**WebSearch 关键词**：
 - `"Playwright cross-project E2E testing {year}"`
 - `"Patrol Flutter integration testing best practices"`
 - `"contract testing microservices {year}"`
-- `"E2E testing monorepo strategy {year}"`
 
-**来源优先级**：P1 官方文档（Playwright/Patrol/Detox）> P2 知名作者（Dodds, Cohn）> P3 技术媒体 > P4 社区帖
-
-**采纳决策**：记录到 `.allforai/project-forge/trend-sources.json`，标注 ADOPT / REJECT / DEFER + 理由。
+**4E+4V 重点**：
+- **E3 Guardrails**: 从 task.exceptions 推导负向测试场景（异常路径 E2E）
+- **behavior 视角**: 从 task.outputs.states 验证状态流转的跨端一致性
 
 ---
 

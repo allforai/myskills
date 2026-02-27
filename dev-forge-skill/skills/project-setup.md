@@ -47,19 +47,18 @@ product-map（产品长什么样）   project-setup（代码怎么组织）   de
 
 ---
 
-## 动态趋势补充（WebSearch）
+## 增强协议（WebSearch + 4E+4V）
 
-除经典理论外，执行项目引导时通过 WebSearch 补充最新工程实践：
+> 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
 
-**搜索关键词模板**：
+**WebSearch 关键词**：
 - `"{tech-stack} project structure best practices {year}"`
 - `"monorepo vs polyrepo {language} {year}"`
 - `"{framework} clean architecture layout {year}"`
-- `"Conway's Law microservices team structure"`
 
-**来源优先级**：P1 官方文档 > P2 知名作者（Fowler, Richardson, Pike）> P3 技术媒体（InfoQ, ThoughtWorks Radar）> P4 社区帖
-
-**采纳决策**：记录到 `.allforai/project-forge/trend-sources.json`，标注 ADOPT / REJECT / DEFER + 理由。
+**4E+4V 重点**：
+- **E4 Context**: manifest 中的 `decision_rationale` 保留技术选型理由（为什么选这个栈、为什么这样拆）
+- **E2 Provenance**: 每个子项目的 assigned_modules 可追溯到 product-map 模块 ID
 
 ---
 

@@ -56,19 +56,18 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 ---
 
-## 动态趋势补充（WebSearch）
+## 增强协议（WebSearch + 4E+4V）
 
-除经典理论外，执行产品验收时通过 WebSearch 补充最新验收和测试实践：
+> 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
 
-**搜索关键词模板**：
+**WebSearch 关键词**：
 - `"automated acceptance testing {framework} {year}"`
 - `"Playwright testing best practices {year}"`
 - `"Lighthouse CI performance budget {year}"`
-- `"code coverage tools {language} {year}"`
 
-**来源优先级**：P1 官方文档（Playwright/Lighthouse）> P2 知名作者（Nielsen, Beck）> P3 技术媒体 > P4 社区帖
-
-**采纳决策**：记录到 `.allforai/project-forge/trend-sources.json`，标注 ADOPT / REJECT / DEFER + 理由。
+**4E+4V 重点**：
+- **E3 Guardrails**: 扩展 S3 约束检查范围：覆盖 task.rules（业务规则验证逻辑）+ task.audit（审计中间件）+ task.exceptions（异常处理逻辑）
+- **E2 Provenance**: 每条 verify-task 标注 `_Source: T001_`，可追溯到 product-map 任务
 
 ---
 
