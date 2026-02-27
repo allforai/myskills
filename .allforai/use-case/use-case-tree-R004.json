@@ -1,0 +1,329 @@
+{
+  "split_by": "role",
+  "split_value": "R004",
+  "split_label": "内容运营",
+  "description": "角色 R004（内容运营）的用例子集",
+  "generated_at": "2026-02-27T20:51:00Z",
+  "count": 1,
+  "items": [
+    {
+      "version": "2.4.0",
+      "generated_at": "2026-02-27T20:51:00Z",
+      "summary": {
+        "role_id": "R004",
+        "role_name": "内容运营",
+        "feature_area_count": 1,
+        "use_case_count": 13,
+        "happy_path_count": 4,
+        "exception_count": 4,
+        "boundary_count": 2,
+        "validation_count": 3,
+        "e2e_count": 0
+      },
+      "feature_areas": [
+        {
+          "id": "FA001",
+          "name": "场景对话",
+          "tasks": [
+            {
+              "id": "T009",
+              "task_name": "创建场景对话脚本",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC013",
+                  "title": "创建场景对话脚本_正常流",
+                  "type": "happy_path",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "具备创建场景对话脚本的操作权限"
+                  ],
+                  "when": [
+                    "新建场景",
+                    "编辑对话节点",
+                    "设置难度和适用角色",
+                    "预览场景对话",
+                    "保存草稿"
+                  ],
+                  "then": [
+                    "创建场景对话脚本操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S009",
+                  "action_ref": "创建场景对话脚本",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC014",
+                  "title": "创建场景对话脚本_保存失败",
+                  "type": "exception",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "正在执行创建场景对话脚本"
+                  ],
+                  "when": [
+                    "保存失败"
+                  ],
+                  "then": [
+                    "自动暂存草稿"
+                  ],
+                  "screen_ref": "S009",
+                  "action_ref": "创建场景对话脚本",
+                  "exception_source": "task.exceptions[0]",
+                  "flags": []
+                },
+                {
+                  "id": "UC015",
+                  "title": "创建场景对话脚本_边界_必须标定难度级别",
+                  "type": "boundary",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "正在执行创建场景对话脚本"
+                  ],
+                  "when": [
+                    "触发边界条件: 必须标定难度级别"
+                  ],
+                  "then": [
+                    "系统按规则处理: 必须标定难度级别"
+                  ],
+                  "screen_ref": "S009",
+                  "action_ref": "创建场景对话脚本",
+                  "rule_source": "task.rules[2]",
+                  "flags": []
+                },
+                {
+                  "id": "UC016",
+                  "title": "创建场景对话脚本_校验_场景名不能为空",
+                  "type": "validation",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "正在执行创建场景对话脚本"
+                  ],
+                  "when": [
+                    "违反校验规则: 场景名不能为空"
+                  ],
+                  "then": [
+                    "系统提示校验失败: 场景名不能为空"
+                  ],
+                  "screen_ref": "S009",
+                  "action_ref": "保存草稿",
+                  "validation_rule": "场景名不能为空",
+                  "flags": []
+                },
+                {
+                  "id": "UC017",
+                  "title": "创建场景对话脚本_校验_至少3轮对话节点",
+                  "type": "validation",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "正在执行创建场景对话脚本"
+                  ],
+                  "when": [
+                    "违反校验规则: 至少3轮对话节点"
+                  ],
+                  "then": [
+                    "系统提示校验失败: 至少3轮对话节点"
+                  ],
+                  "screen_ref": "S009",
+                  "action_ref": "保存草稿",
+                  "validation_rule": "至少3轮对话节点",
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "id": "T010",
+              "task_name": "审核场景内容",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC018",
+                  "title": "审核场景内容_正常流",
+                  "type": "happy_path",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "具备审核场景内容的操作权限"
+                  ],
+                  "when": [
+                    "查看待审核列表",
+                    "审核场景内容准确性",
+                    "检查文化适当性",
+                    "通过或驳回"
+                  ],
+                  "then": [
+                    "审核场景内容操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S010",
+                  "action_ref": "审核场景内容",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC019",
+                  "title": "审核场景内容_审核超时48h",
+                  "type": "exception",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "正在执行审核场景内容"
+                  ],
+                  "when": [
+                    "审核超时48h"
+                  ],
+                  "then": [
+                    "自动升级提醒"
+                  ],
+                  "screen_ref": "S010",
+                  "action_ref": "审核场景内容",
+                  "exception_source": "task.exceptions[0]",
+                  "flags": []
+                },
+                {
+                  "id": "UC020",
+                  "title": "审核场景内容_边界_驳回必须填写原因",
+                  "type": "boundary",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "正在执行审核场景内容"
+                  ],
+                  "when": [
+                    "触发边界条件: 驳回必须填写原因"
+                  ],
+                  "then": [
+                    "系统按规则处理: 驳回必须填写原因"
+                  ],
+                  "screen_ref": "S010",
+                  "action_ref": "审核场景内容",
+                  "rule_source": "task.rules[0]",
+                  "flags": []
+                },
+                {
+                  "id": "UC021",
+                  "title": "审核场景内容_校验_驳回必须填写原因",
+                  "type": "validation",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "正在执行审核场景内容"
+                  ],
+                  "when": [
+                    "违反校验规则: 驳回必须填写原因"
+                  ],
+                  "then": [
+                    "系统提示校验失败: 驳回必须填写原因"
+                  ],
+                  "screen_ref": "S010",
+                  "action_ref": "驳回并备注",
+                  "validation_rule": "驳回必须填写原因",
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "id": "T011",
+              "task_name": "管理场景包",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC022",
+                  "title": "管理场景包_正常流",
+                  "type": "happy_path",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "具备管理场景包的操作权限"
+                  ],
+                  "when": [
+                    "查看场景包列表",
+                    "创建/编辑场景包",
+                    "上架/下架场景包",
+                    "编辑标签和关键词"
+                  ],
+                  "then": [
+                    "管理场景包操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S011",
+                  "action_ref": "管理场景包",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC023",
+                  "title": "管理场景包_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S011",
+                  "action_ref": "管理场景包",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "T012",
+              "task_name": "管理场景标签",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC024",
+                  "title": "管理场景标签_正常流",
+                  "type": "happy_path",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "具备管理场景标签的操作权限"
+                  ],
+                  "when": [
+                    "查看标签列表",
+                    "创建/编辑标签",
+                    "批量打标签",
+                    "管理关键词"
+                  ],
+                  "then": [
+                    "管理场景标签操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S011",
+                  "action_ref": "管理场景标签",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC025",
+                  "title": "管理场景标签_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S011",
+                  "action_ref": "管理场景标签",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "e2e_cases": []
+    }
+  ]
+}

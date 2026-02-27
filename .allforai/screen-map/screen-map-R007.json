@@ -1,0 +1,174 @@
+{
+  "split_by": "role",
+  "split_value": "R007",
+  "split_label": "系统管理员",
+  "description": "角色 R007（系统管理员）关联的界面子集",
+  "generated_at": "2026-02-27T20:50:58Z",
+  "count": 5,
+  "items": [
+    {
+      "id": "S031",
+      "name": "用户管理页",
+      "module": "用户管理与系统配置",
+      "tasks": [
+        "T033"
+      ],
+      "actions": [
+        {
+          "label": "搜索用户",
+          "crud": "R",
+          "task_ref": "T033",
+          "click_depth": 1,
+          "frequency": "高"
+        },
+        {
+          "label": "查看用户详情",
+          "crud": "R",
+          "task_ref": "T033",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "封禁/解禁用户",
+          "crud": "U",
+          "task_ref": "T033",
+          "click_depth": 2,
+          "frequency": "中",
+          "exception_flows": [
+            "封禁需二次确认"
+          ]
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S032",
+      "name": "订阅与退款管理页",
+      "module": "用户管理与系统配置",
+      "tasks": [
+        "T034"
+      ],
+      "actions": [
+        {
+          "label": "查看订阅列表",
+          "crud": "R",
+          "task_ref": "T034",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "处理退款申请",
+          "crud": "U",
+          "task_ref": "T034",
+          "click_depth": 2,
+          "frequency": "中",
+          "validation_rules": [
+            "退款需填写审批理由"
+          ],
+          "exception_flows": [
+            "退款金额超限→需上级审批"
+          ]
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S033",
+      "name": "系统配置页",
+      "module": "用户管理与系统配置",
+      "tasks": [
+        "T035"
+      ],
+      "actions": [
+        {
+          "label": "查看系统参数",
+          "crud": "R",
+          "task_ref": "T035",
+          "click_depth": 3,
+          "frequency": "低"
+        },
+        {
+          "label": "修改参数值",
+          "crud": "U",
+          "task_ref": "T035",
+          "click_depth": 3,
+          "frequency": "低",
+          "validation_rules": [
+            "参数修改需确认"
+          ],
+          "exception_flows": [
+            "关键参数修改需二次确认"
+          ]
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S034",
+      "name": "权限角色管理页",
+      "module": "用户管理与系统配置",
+      "tasks": [
+        "T036"
+      ],
+      "actions": [
+        {
+          "label": "查看角色列表",
+          "crud": "R",
+          "task_ref": "T036",
+          "click_depth": 3,
+          "frequency": "低"
+        },
+        {
+          "label": "创建/编辑角色权限",
+          "crud": "U",
+          "task_ref": "T036",
+          "click_depth": 3,
+          "frequency": "低"
+        },
+        {
+          "label": "分配用户角色",
+          "crud": "U",
+          "task_ref": "T036",
+          "click_depth": 3,
+          "frequency": "低"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S035",
+      "name": "投诉处理页",
+      "module": "用户管理与系统配置",
+      "tasks": [
+        "T037"
+      ],
+      "actions": [
+        {
+          "label": "查看投诉列表",
+          "crud": "R",
+          "task_ref": "T037",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "处理投诉",
+          "crud": "U",
+          "task_ref": "T037",
+          "click_depth": 2,
+          "frequency": "中",
+          "validation_rules": [
+            "处理结果必填"
+          ]
+        },
+        {
+          "label": "回复用户",
+          "crud": "C",
+          "task_ref": "T037",
+          "click_depth": 2,
+          "frequency": "中"
+        }
+      ],
+      "notes": ""
+    }
+  ]
+}

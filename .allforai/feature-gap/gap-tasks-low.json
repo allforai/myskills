@@ -1,0 +1,442 @@
+{
+  "split_by": "priority",
+  "split_value": "low",
+  "split_label": "低优先级",
+  "description": "低优先级缺口任务（24 条）",
+  "generated_at": "2026-02-27T20:51:00Z",
+  "count": 24,
+  "items": [
+    {
+      "id": "GAP-054",
+      "title": "订阅付费方案 — NO_ACCEPTANCE_CRITERIA",
+      "type": "NO_ACCEPTANCE_CRITERIA",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T022"
+      ],
+      "affected_screens": [
+        "S020"
+      ],
+      "description": "任务 T022 (订阅付费方案) 检测到 NO_ACCEPTANCE_CRITERIA",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-056",
+      "title": "管理订阅 — NO_ACCEPTANCE_CRITERIA",
+      "type": "NO_ACCEPTANCE_CRITERIA",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T023"
+      ],
+      "affected_screens": [
+        "S021"
+      ],
+      "description": "任务 T023 (管理订阅) 检测到 NO_ACCEPTANCE_CRITERIA",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-057",
+      "title": "管理订阅 — CRUD_INCOMPLETE",
+      "type": "CRUD_INCOMPLETE",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T023"
+      ],
+      "affected_screens": [
+        "S021"
+      ],
+      "description": "任务 T023 (管理订阅) 检测到 CRUD_INCOMPLETE",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-059",
+      "title": "购买场景包 — NO_ACCEPTANCE_CRITERIA",
+      "type": "NO_ACCEPTANCE_CRITERIA",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T024"
+      ],
+      "affected_screens": [
+        "S022"
+      ],
+      "description": "任务 T024 (购买场景包) 检测到 NO_ACCEPTANCE_CRITERIA",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-086",
+      "title": "配置系统参数 — NO_ACCEPTANCE_CRITERIA",
+      "type": "NO_ACCEPTANCE_CRITERIA",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "系统管理员"
+      ],
+      "affected_tasks": [
+        "T035"
+      ],
+      "affected_screens": [
+        "S033"
+      ],
+      "description": "任务 T035 (配置系统参数) 检测到 NO_ACCEPTANCE_CRITERIA",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-087",
+      "title": "管理权限角色 — NO_EXCEPTIONS",
+      "type": "NO_EXCEPTIONS",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "系统管理员"
+      ],
+      "affected_tasks": [
+        "T036"
+      ],
+      "affected_screens": [
+        "S034"
+      ],
+      "description": "任务 T036 (管理权限角色) 检测到 NO_EXCEPTIONS",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-089",
+      "title": "管理权限角色 — NO_ACCEPTANCE_CRITERIA",
+      "type": "NO_ACCEPTANCE_CRITERIA",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "系统管理员"
+      ],
+      "affected_tasks": [
+        "T036"
+      ],
+      "affected_screens": [
+        "S034"
+      ],
+      "description": "任务 T036 (管理权限角色) 检测到 NO_ACCEPTANCE_CRITERIA",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-090",
+      "title": "管理权限角色 — CRUD_INCOMPLETE",
+      "type": "CRUD_INCOMPLETE",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "系统管理员"
+      ],
+      "affected_tasks": [
+        "T036"
+      ],
+      "affected_screens": [
+        "S034"
+      ],
+      "description": "任务 T036 (管理权限角色) 检测到 CRUD_INCOMPLETE",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-093",
+      "title": "注册账户 — NO_ACCEPTANCE_CRITERIA",
+      "type": "NO_ACCEPTANCE_CRITERIA",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T038"
+      ],
+      "affected_screens": [
+        "S036"
+      ],
+      "description": "任务 T038 (注册账户) 检测到 NO_ACCEPTANCE_CRITERIA",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-096",
+      "title": "管理个人设置 — NO_EXCEPTIONS",
+      "type": "NO_EXCEPTIONS",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T040"
+      ],
+      "affected_screens": [
+        "S038"
+      ],
+      "description": "任务 T040 (管理个人设置) 检测到 NO_EXCEPTIONS",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-098",
+      "title": "管理个人设置 — NO_ACCEPTANCE_CRITERIA",
+      "type": "NO_ACCEPTANCE_CRITERIA",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T040"
+      ],
+      "affected_screens": [
+        "S038"
+      ],
+      "description": "任务 T040 (管理个人设置) 检测到 NO_ACCEPTANCE_CRITERIA",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-099",
+      "title": "管理个人设置 — CRUD_INCOMPLETE",
+      "type": "CRUD_INCOMPLETE",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T040"
+      ],
+      "affected_screens": [
+        "S038"
+      ],
+      "description": "任务 T040 (管理个人设置) 检测到 CRUD_INCOMPLETE",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-100",
+      "title": "重置密码 — NO_EXCEPTIONS",
+      "type": "NO_EXCEPTIONS",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T041"
+      ],
+      "affected_screens": [
+        "S039"
+      ],
+      "description": "任务 T041 (重置密码) 检测到 NO_EXCEPTIONS",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-101",
+      "title": "重置密码 — NO_ACCEPTANCE_CRITERIA",
+      "type": "NO_ACCEPTANCE_CRITERIA",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T041"
+      ],
+      "affected_screens": [
+        "S039"
+      ],
+      "description": "任务 T041 (重置密码) 检测到 NO_ACCEPTANCE_CRITERIA",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-102",
+      "title": "注销账户 — NO_ACCEPTANCE_CRITERIA",
+      "type": "NO_ACCEPTANCE_CRITERIA",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T042"
+      ],
+      "affected_screens": [
+        "S038"
+      ],
+      "description": "任务 T042 (注销账户) 检测到 NO_ACCEPTANCE_CRITERIA",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-103",
+      "title": "完成新手引导 — NO_EXCEPTIONS",
+      "type": "NO_EXCEPTIONS",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T043"
+      ],
+      "affected_screens": [
+        "S040"
+      ],
+      "description": "任务 T043 (完成新手引导) 检测到 NO_EXCEPTIONS",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-105",
+      "title": "完成新手引导 — NO_ACCEPTANCE_CRITERIA",
+      "type": "NO_ACCEPTANCE_CRITERIA",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T043"
+      ],
+      "affected_screens": [
+        "S040"
+      ],
+      "description": "任务 T043 (完成新手引导) 检测到 NO_ACCEPTANCE_CRITERIA",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-110",
+      "title": "提交意见反馈 — NO_EXCEPTIONS",
+      "type": "NO_EXCEPTIONS",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T045"
+      ],
+      "affected_screens": [
+        "S042"
+      ],
+      "description": "任务 T045 (提交意见反馈) 检测到 NO_EXCEPTIONS",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-111",
+      "title": "提交意见反馈 — NO_ACCEPTANCE_CRITERIA",
+      "type": "NO_ACCEPTANCE_CRITERIA",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T045"
+      ],
+      "affected_screens": [
+        "S042"
+      ],
+      "description": "任务 T045 (提交意见反馈) 检测到 NO_ACCEPTANCE_CRITERIA",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-055",
+      "title": "管理订阅 — NO_RULES",
+      "type": "NO_RULES",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T023"
+      ],
+      "affected_screens": [
+        "S021"
+      ],
+      "description": "任务 T023 (管理订阅) 检测到 NO_RULES",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-058",
+      "title": "购买场景包 — NO_RULES",
+      "type": "NO_RULES",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T024"
+      ],
+      "affected_screens": [
+        "S022"
+      ],
+      "description": "任务 T024 (购买场景包) 检测到 NO_RULES",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-088",
+      "title": "管理权限角色 — NO_RULES",
+      "type": "NO_RULES",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "系统管理员"
+      ],
+      "affected_tasks": [
+        "T036"
+      ],
+      "affected_screens": [
+        "S034"
+      ],
+      "description": "任务 T036 (管理权限角色) 检测到 NO_RULES",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-097",
+      "title": "管理个人设置 — NO_RULES",
+      "type": "NO_RULES",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T040"
+      ],
+      "affected_screens": [
+        "S038"
+      ],
+      "description": "任务 T040 (管理个人设置) 检测到 NO_RULES",
+      "frequency_impact": "低频任务"
+    },
+    {
+      "id": "GAP-104",
+      "title": "完成新手引导 — NO_RULES",
+      "type": "NO_RULES",
+      "category": "basic",
+      "priority": "低",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T043"
+      ],
+      "affected_screens": [
+        "S040"
+      ],
+      "description": "任务 T043 (完成新手引导) 检测到 NO_RULES",
+      "frequency_impact": "低频任务"
+    }
+  ]
+}

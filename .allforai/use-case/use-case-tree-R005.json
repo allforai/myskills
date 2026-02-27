@@ -1,0 +1,313 @@
+{
+  "split_by": "role",
+  "split_value": "R005",
+  "split_label": "AI 训练师",
+  "description": "角色 R005（AI 训练师）的用例子集",
+  "generated_at": "2026-02-27T20:51:00Z",
+  "count": 1,
+  "items": [
+    {
+      "version": "2.4.0",
+      "generated_at": "2026-02-27T20:51:00Z",
+      "summary": {
+        "role_id": "R005",
+        "role_name": "AI 训练师",
+        "feature_area_count": 3,
+        "use_case_count": 12,
+        "happy_path_count": 4,
+        "exception_count": 4,
+        "boundary_count": 2,
+        "validation_count": 2,
+        "e2e_count": 0
+      },
+      "feature_areas": [
+        {
+          "id": "FA001",
+          "name": "场景对话",
+          "tasks": [
+            {
+              "id": "T029",
+              "task_name": "查看AI对话质量评分",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC030",
+                  "title": "查看AI对话质量评分_正常流",
+                  "type": "happy_path",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "具备查看AI对话质量评分的操作权限"
+                  ],
+                  "when": [
+                    "查看质量评分概览",
+                    "查看低分对话列表",
+                    "查看评分趋势"
+                  ],
+                  "then": [
+                    "查看AI对话质量评分操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S027",
+                  "action_ref": "查看AI对话质量评分",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC031",
+                  "title": "查看AI对话质量评分_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S027",
+                  "action_ref": "查看AI对话质量评分",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "T030",
+              "task_name": "标注异常对话",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC032",
+                  "title": "标注异常对话_正常流",
+                  "type": "happy_path",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "具备标注异常对话的操作权限"
+                  ],
+                  "when": [
+                    "查看待标注对话",
+                    "标注异常类型",
+                    "提交标注"
+                  ],
+                  "then": [
+                    "标注异常对话操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S028",
+                  "action_ref": "标注异常对话",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC033",
+                  "title": "标注异常对话_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S028",
+                  "action_ref": "标注异常对话",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                },
+                {
+                  "id": "UC034",
+                  "title": "标注异常对话_边界_必须选择异常分类",
+                  "type": "boundary",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "正在执行标注异常对话"
+                  ],
+                  "when": [
+                    "触发边界条件: 必须选择异常分类"
+                  ],
+                  "then": [
+                    "系统按规则处理: 必须选择异常分类"
+                  ],
+                  "screen_ref": "S028",
+                  "action_ref": "标注异常对话",
+                  "rule_source": "task.rules[0]",
+                  "flags": []
+                },
+                {
+                  "id": "UC035",
+                  "title": "标注异常对话_校验_必须选择异常分类",
+                  "type": "validation",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "正在执行标注异常对话"
+                  ],
+                  "when": [
+                    "违反校验规则: 必须选择异常分类"
+                  ],
+                  "then": [
+                    "系统提示校验失败: 必须选择异常分类"
+                  ],
+                  "screen_ref": "S028",
+                  "action_ref": "标注异常类型",
+                  "validation_rule": "必须选择异常分类",
+                  "flags": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "FA002",
+          "name": "发音纠正",
+          "tasks": [
+            {
+              "id": "T032",
+              "task_name": "调整发音评估参数",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC040",
+                  "title": "调整发音评估参数_正常流",
+                  "type": "happy_path",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "具备调整发音评估参数的操作权限"
+                  ],
+                  "when": [
+                    "查看当前评估参数",
+                    "调整音素阈值",
+                    "测试参数效果",
+                    "保存参数"
+                  ],
+                  "then": [
+                    "调整发音评估参数操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S030",
+                  "action_ref": "调整发音评估参数",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC041",
+                  "title": "调整发音评估参数_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S030",
+                  "action_ref": "调整发音评估参数",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                },
+                {
+                  "id": "UC042",
+                  "title": "调整发音评估参数_边界_阈值范围0.0-1.0",
+                  "type": "boundary",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "正在执行调整发音评估参数"
+                  ],
+                  "when": [
+                    "触发边界条件: 阈值范围0.0-1.0"
+                  ],
+                  "then": [
+                    "系统按规则处理: 阈值范围0.0-1.0"
+                  ],
+                  "screen_ref": "S030",
+                  "action_ref": "调整发音评估参数",
+                  "rule_source": "task.rules[0]",
+                  "flags": []
+                },
+                {
+                  "id": "UC043",
+                  "title": "调整发音评估参数_校验_阈值范围0.0-1.0",
+                  "type": "validation",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "正在执行调整发音评估参数"
+                  ],
+                  "when": [
+                    "违反校验规则: 阈值范围0.0-1.0"
+                  ],
+                  "then": [
+                    "系统提示校验失败: 阈值范围0.0-1.0"
+                  ],
+                  "screen_ref": "S030",
+                  "action_ref": "调整音素阈值",
+                  "validation_rule": "阈值范围0.0-1.0",
+                  "flags": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "FA009",
+          "name": "AI质量监控",
+          "tasks": [
+            {
+              "id": "T031",
+              "task_name": "管理Prompt模板",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC084",
+                  "title": "管理Prompt模板_正常流",
+                  "type": "happy_path",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "具备管理Prompt模板的操作权限"
+                  ],
+                  "when": [
+                    "查看Prompt模板列表",
+                    "创建/编辑Prompt模板",
+                    "测试Prompt效果",
+                    "发布到生产环境"
+                  ],
+                  "then": [
+                    "管理Prompt模板操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S029",
+                  "action_ref": "管理Prompt模板",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC085",
+                  "title": "管理Prompt模板_发布前强制预览验证",
+                  "type": "exception",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "正在执行管理Prompt模板"
+                  ],
+                  "when": [
+                    "发布前强制预览验证"
+                  ],
+                  "then": [
+                    "系统提示异常"
+                  ],
+                  "screen_ref": "S029",
+                  "action_ref": "管理Prompt模板",
+                  "exception_source": "task.exceptions[0]",
+                  "flags": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "e2e_cases": []
+    }
+  ]
+}

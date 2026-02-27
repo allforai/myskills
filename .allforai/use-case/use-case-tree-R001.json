@@ -1,0 +1,2307 @@
+{
+  "split_by": "role",
+  "split_value": "R001",
+  "split_label": "职场人士",
+  "description": "角色 R001（职场人士）的用例子集",
+  "generated_at": "2026-02-27T20:51:00Z",
+  "count": 1,
+  "items": [
+    {
+      "version": "2.4.0",
+      "generated_at": "2026-02-27T20:51:00Z",
+      "summary": {
+        "role_id": "R001",
+        "role_name": "职场人士",
+        "feature_area_count": 11,
+        "use_case_count": 75,
+        "happy_path_count": 27,
+        "exception_count": 31,
+        "boundary_count": 2,
+        "validation_count": 6,
+        "e2e_count": 9
+      },
+      "feature_areas": [
+        {
+          "id": "FA001",
+          "name": "场景对话",
+          "tasks": [
+            {
+              "id": "T001",
+              "task_name": "浏览并选择场景",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC001",
+                  "title": "浏览并选择场景_正常流",
+                  "type": "happy_path",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "具备浏览并选择场景的操作权限"
+                  ],
+                  "when": [
+                    "打开场景列表",
+                    "按角色/难度/主题筛选",
+                    "查看场景简介",
+                    "选择场景"
+                  ],
+                  "then": [
+                    "浏览并选择场景操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S001",
+                  "action_ref": "浏览并选择场景",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC002",
+                  "title": "浏览并选择场景_场景不可用",
+                  "type": "exception",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "正在执行浏览并选择场景"
+                  ],
+                  "when": [
+                    "场景不可用"
+                  ],
+                  "then": [
+                    "推荐相似场景"
+                  ],
+                  "screen_ref": "S001",
+                  "action_ref": "浏览并选择场景",
+                  "exception_source": "task.exceptions[0]",
+                  "flags": []
+                },
+                {
+                  "id": "UC003",
+                  "title": "浏览并选择场景_网络错误",
+                  "type": "exception",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "正在执行浏览并选择场景"
+                  ],
+                  "when": [
+                    "网络错误"
+                  ],
+                  "then": [
+                    "显示缓存列表"
+                  ],
+                  "screen_ref": "S001",
+                  "action_ref": "浏览并选择场景",
+                  "exception_source": "task.exceptions[1]",
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "id": "T002",
+              "task_name": "进行场景对话",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC004",
+                  "title": "进行场景对话_正常流",
+                  "type": "happy_path",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "具备进行场景对话的操作权限"
+                  ],
+                  "when": [
+                    "进入场景",
+                    "语音/文字输入",
+                    "接收AI回复",
+                    "查看实时发音纠正",
+                    "收集生词"
+                  ],
+                  "then": [
+                    "进行场景对话操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S003",
+                  "action_ref": "进行场景对话",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC005",
+                  "title": "进行场景对话_语音识别失败",
+                  "type": "exception",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "正在执行进行场景对话"
+                  ],
+                  "when": [
+                    "语音识别失败"
+                  ],
+                  "then": [
+                    "提示重说或切换文字"
+                  ],
+                  "screen_ref": "S003",
+                  "action_ref": "进行场景对话",
+                  "exception_source": "task.exceptions[0]",
+                  "flags": []
+                },
+                {
+                  "id": "UC006",
+                  "title": "进行场景对话_AI响应超时",
+                  "type": "exception",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "正在执行进行场景对话"
+                  ],
+                  "when": [
+                    "AI响应超时"
+                  ],
+                  "then": [
+                    "等待动画并重试"
+                  ],
+                  "screen_ref": "S003",
+                  "action_ref": "进行场景对话",
+                  "exception_source": "task.exceptions[1]",
+                  "flags": []
+                },
+                {
+                  "id": "UC007",
+                  "title": "进行场景对话_网络断开",
+                  "type": "exception",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "正在执行进行场景对话"
+                  ],
+                  "when": [
+                    "网络断开"
+                  ],
+                  "then": [
+                    "保存本地稍后同步"
+                  ],
+                  "screen_ref": "S003",
+                  "action_ref": "进行场景对话",
+                  "exception_source": "task.exceptions[2]",
+                  "flags": []
+                },
+                {
+                  "id": "UC008",
+                  "title": "进行场景对话_边界_每轮对话限时5分钟可配置",
+                  "type": "boundary",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "正在执行进行场景对话"
+                  ],
+                  "when": [
+                    "触发边界条件: 每轮对话限时5分钟可配置"
+                  ],
+                  "then": [
+                    "系统按规则处理: 每轮对话限时5分钟可配置"
+                  ],
+                  "screen_ref": "S003",
+                  "action_ref": "进行场景对话",
+                  "rule_source": "task.rules[0]",
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "id": "T003",
+              "task_name": "查看对话报告",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC009",
+                  "title": "查看对话报告_正常流",
+                  "type": "happy_path",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "具备查看对话报告的操作权限"
+                  ],
+                  "when": [
+                    "完成对话",
+                    "查看综合评分",
+                    "查看语法错误清单",
+                    "查看表达建议",
+                    "选择重新开始或结束"
+                  ],
+                  "then": [
+                    "查看对话报告操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S004",
+                  "action_ref": "查看对话报告",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC010",
+                  "title": "查看对话报告_评分生成失败",
+                  "type": "exception",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "正在执行查看对话报告"
+                  ],
+                  "when": [
+                    "评分生成失败"
+                  ],
+                  "then": [
+                    "显示基础统计"
+                  ],
+                  "screen_ref": "S004",
+                  "action_ref": "查看对话报告",
+                  "exception_source": "task.exceptions[0]",
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "id": "T004",
+              "task_name": "进行自由对话",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC011",
+                  "title": "进行自由对话_正常流",
+                  "type": "happy_path",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "具备进行自由对话的操作权限"
+                  ],
+                  "when": [
+                    "选择话题或自定义",
+                    "自由语音/文字输入",
+                    "AI自由回复",
+                    "查看反馈"
+                  ],
+                  "then": [
+                    "进行自由对话操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S005",
+                  "action_ref": "进行自由对话",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC012",
+                  "title": "进行自由对话_AI生成不当内容",
+                  "type": "exception",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "正在执行进行自由对话"
+                  ],
+                  "when": [
+                    "AI生成不当内容"
+                  ],
+                  "then": [
+                    "内容过滤替换"
+                  ],
+                  "screen_ref": "S005",
+                  "action_ref": "进行自由对话",
+                  "exception_source": "task.exceptions[0]",
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "id": "T024",
+              "task_name": "购买场景包",
+              "category": "basic",
+              "use_cases": [
+                {
+                  "id": "UC028",
+                  "title": "购买场景包_正常流",
+                  "type": "happy_path",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "具备购买场景包的操作权限"
+                  ],
+                  "when": [
+                    "浏览可购场景包",
+                    "查看场景包详情",
+                    "购买场景包"
+                  ],
+                  "then": [
+                    "购买场景包操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S022",
+                  "action_ref": "购买场景包",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC029",
+                  "title": "购买场景包_支付失败",
+                  "type": "exception",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "正在执行购买场景包"
+                  ],
+                  "when": [
+                    "支付失败"
+                  ],
+                  "then": [
+                    "重试"
+                  ],
+                  "screen_ref": "S022",
+                  "action_ref": "购买场景包",
+                  "exception_source": "task.exceptions[0]",
+                  "flags": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "FA002",
+          "name": "发音纠正",
+          "tasks": [
+            {
+              "id": "T005",
+              "task_name": "查看实时发音纠正",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC036",
+                  "title": "查看实时发音纠正_正常流",
+                  "type": "happy_path",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "具备查看实时发音纠正的操作权限"
+                  ],
+                  "when": [
+                    "对话中触发发音检测",
+                    "查看音素级评分",
+                    "查看纠正建议",
+                    "播放标准发音对比"
+                  ],
+                  "then": [
+                    "查看实时发音纠正操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S003",
+                  "action_ref": "查看实时发音纠正",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC037",
+                  "title": "查看实时发音纠正_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S003",
+                  "action_ref": "查看实时发音纠正",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "T006",
+              "task_name": "查看发音详细报告",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC038",
+                  "title": "查看发音详细报告_正常流",
+                  "type": "happy_path",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "具备查看发音详细报告的操作权限"
+                  ],
+                  "when": [
+                    "进入发音报告",
+                    "查看音素级评分详情",
+                    "播放标准发音对比",
+                    "查看发音趋势"
+                  ],
+                  "then": [
+                    "查看发音详细报告操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S006",
+                  "action_ref": "查看发音详细报告",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC039",
+                  "title": "查看发音详细报告_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S006",
+                  "action_ref": "查看发音详细报告",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "FA003",
+          "name": "记忆曲线",
+          "tasks": [
+            {
+              "id": "T007",
+              "task_name": "完成记忆曲线复习",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC044",
+                  "title": "完成记忆曲线复习_正常流",
+                  "type": "happy_path",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "具备完成记忆曲线复习的操作权限"
+                  ],
+                  "when": [
+                    "查看今日复习任务",
+                    "开始闪卡复习",
+                    "标记已记住/未记住",
+                    "查看复习统计"
+                  ],
+                  "then": [
+                    "完成记忆曲线复习操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S007",
+                  "action_ref": "完成记忆曲线复习",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC045",
+                  "title": "完成记忆曲线复习_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S007",
+                  "action_ref": "完成记忆曲线复习",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "T008",
+              "task_name": "管理词汇本",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC046",
+                  "title": "管理词汇本_正常流",
+                  "type": "happy_path",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "具备管理词汇本的操作权限"
+                  ],
+                  "when": [
+                    "浏览词汇列表",
+                    "按来源/状态筛选",
+                    "查看词汇详情",
+                    "手动添加/删除词汇"
+                  ],
+                  "then": [
+                    "管理词汇本操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S008",
+                  "action_ref": "管理词汇本",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC047",
+                  "title": "管理词汇本_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S008",
+                  "action_ref": "管理词汇本",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "FA004",
+          "name": "游戏化与轻社交",
+          "tasks": [
+            {
+              "id": "T013",
+              "task_name": "查看学习连胜与成就",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC048",
+                  "title": "查看学习连胜与成就_正常流",
+                  "type": "happy_path",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "具备查看学习连胜与成就的操作权限"
+                  ],
+                  "when": [
+                    "查看连胜天数",
+                    "领取连胜奖励",
+                    "查看成就徽章列表",
+                    "查看成就详情"
+                  ],
+                  "then": [
+                    "查看学习连胜与成就操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S012",
+                  "action_ref": "查看学习连胜与成就",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC049",
+                  "title": "查看学习连胜与成就_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S012",
+                  "action_ref": "查看学习连胜与成就",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "T014",
+              "task_name": "查看排行榜",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC050",
+                  "title": "查看排行榜_正常流",
+                  "type": "happy_path",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "具备查看排行榜的操作权限"
+                  ],
+                  "when": [
+                    "查看好友排名",
+                    "查看全站排名",
+                    "切换排名维度"
+                  ],
+                  "then": [
+                    "查看排行榜操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S013",
+                  "action_ref": "查看排行榜",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC051",
+                  "title": "查看排行榜_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S013",
+                  "action_ref": "查看排行榜",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "T015",
+              "task_name": "兑换积分商品",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC052",
+                  "title": "兑换积分商品_正常流",
+                  "type": "happy_path",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "具备兑换积分商品的操作权限"
+                  ],
+                  "when": [
+                    "查看积分余额",
+                    "浏览可兑换奖品",
+                    "兑换奖品",
+                    "查看兑换记录"
+                  ],
+                  "then": [
+                    "兑换积分商品操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S014",
+                  "action_ref": "兑换积分商品",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC053",
+                  "title": "兑换积分商品_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S014",
+                  "action_ref": "兑换积分商品",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "T016",
+              "task_name": "分享学习成果",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC054",
+                  "title": "分享学习成果_正常流",
+                  "type": "happy_path",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "具备分享学习成果的操作权限"
+                  ],
+                  "when": [
+                    "选择分享模板",
+                    "预览分享卡片",
+                    "分享到社交媒体"
+                  ],
+                  "then": [
+                    "分享学习成果操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S015",
+                  "action_ref": "分享学习成果",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC055",
+                  "title": "分享学习成果_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S015",
+                  "action_ref": "分享学习成果",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "FA005",
+          "name": "学习档案与进度",
+          "tasks": [
+            {
+              "id": "T017",
+              "task_name": "查看个人学习档案",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC056",
+                  "title": "查看个人学习档案_正常流",
+                  "type": "happy_path",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "具备查看个人学习档案的操作权限"
+                  ],
+                  "when": [
+                    "查看口语能力雷达图",
+                    "查看学习目标进度",
+                    "查看历史对话列表"
+                  ],
+                  "then": [
+                    "查看个人学习档案操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S016",
+                  "action_ref": "查看个人学习档案",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC057",
+                  "title": "查看个人学习档案_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S016",
+                  "action_ref": "查看个人学习档案",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "T018",
+              "task_name": "查看学习统计报告",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC058",
+                  "title": "查看学习统计报告_正常流",
+                  "type": "happy_path",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "具备查看学习统计报告的操作权限"
+                  ],
+                  "when": [
+                    "选择周/月维度",
+                    "查看学习数据",
+                    "查看开口时长趋势",
+                    "查看场景通关率"
+                  ],
+                  "then": [
+                    "查看学习统计报告操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S017",
+                  "action_ref": "查看学习统计报告",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC059",
+                  "title": "查看学习统计报告_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S017",
+                  "action_ref": "查看学习统计报告",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "FA006",
+          "name": "角色场景推荐",
+          "tasks": [
+            {
+              "id": "T019",
+              "task_name": "设置角色偏好",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC060",
+                  "title": "设置角色偏好_正常流",
+                  "type": "happy_path",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "具备设置角色偏好的操作权限"
+                  ],
+                  "when": [
+                    "选择角色类型",
+                    "设置学习目标",
+                    "选择感兴趣场景类型"
+                  ],
+                  "then": [
+                    "设置角色偏好操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S018",
+                  "action_ref": "设置角色偏好",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC061",
+                  "title": "设置角色偏好_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S018",
+                  "action_ref": "设置角色偏好",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "T020",
+              "task_name": "查看个性化推荐",
+              "category": "core",
+              "use_cases": [
+                {
+                  "id": "UC062",
+                  "title": "查看个性化推荐_正常流",
+                  "type": "happy_path",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "具备查看个性化推荐的操作权限"
+                  ],
+                  "when": [
+                    "打开首页",
+                    "查看个性化推荐场景",
+                    "查看推荐理由"
+                  ],
+                  "then": [
+                    "查看个性化推荐操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S001",
+                  "action_ref": "查看个性化推荐",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC063",
+                  "title": "查看个性化推荐_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S001",
+                  "action_ref": "查看个性化推荐",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "FA007",
+          "name": "订阅与付费",
+          "tasks": [
+            {
+              "id": "T022",
+              "task_name": "订阅付费方案",
+              "category": "basic",
+              "use_cases": [
+                {
+                  "id": "UC064",
+                  "title": "订阅付费方案_正常流",
+                  "type": "happy_path",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "具备订阅付费方案的操作权限"
+                  ],
+                  "when": [
+                    "查看订阅方案",
+                    "选择方案",
+                    "确认支付",
+                    "完成订阅"
+                  ],
+                  "then": [
+                    "订阅付费方案操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S020",
+                  "action_ref": "订阅付费方案",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC065",
+                  "title": "订阅付费方案_支付失败",
+                  "type": "exception",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "正在执行订阅付费方案"
+                  ],
+                  "when": [
+                    "支付失败"
+                  ],
+                  "then": [
+                    "提示重试"
+                  ],
+                  "screen_ref": "S020",
+                  "action_ref": "订阅付费方案",
+                  "exception_source": "task.exceptions[0]",
+                  "flags": []
+                },
+                {
+                  "id": "UC066",
+                  "title": "订阅付费方案_网络错误",
+                  "type": "exception",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "正在执行订阅付费方案"
+                  ],
+                  "when": [
+                    "网络错误"
+                  ],
+                  "then": [
+                    "保存订单稍后续费"
+                  ],
+                  "screen_ref": "S020",
+                  "action_ref": "订阅付费方案",
+                  "exception_source": "task.exceptions[1]",
+                  "flags": []
+                },
+                {
+                  "id": "UC067",
+                  "title": "订阅付费方案_边界_免费版每天3轮对话限制",
+                  "type": "boundary",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "正在执行订阅付费方案"
+                  ],
+                  "when": [
+                    "触发边界条件: 免费版每天3轮对话限制"
+                  ],
+                  "then": [
+                    "系统按规则处理: 免费版每天3轮对话限制"
+                  ],
+                  "screen_ref": "S020",
+                  "action_ref": "订阅付费方案",
+                  "rule_source": "task.rules[1]",
+                  "flags": []
+                },
+                {
+                  "id": "UC068",
+                  "title": "订阅付费方案_校验_支付前确认方案详情",
+                  "type": "validation",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "正在执行订阅付费方案"
+                  ],
+                  "when": [
+                    "违反校验规则: 支付前确认方案详情"
+                  ],
+                  "then": [
+                    "系统提示校验失败: 支付前确认方案详情"
+                  ],
+                  "screen_ref": "S020",
+                  "action_ref": "选择方案并支付",
+                  "validation_rule": "支付前确认方案详情",
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "id": "T023",
+              "task_name": "管理订阅",
+              "category": "basic",
+              "use_cases": [
+                {
+                  "id": "UC069",
+                  "title": "管理订阅_正常流",
+                  "type": "happy_path",
+                  "priority": "低",
+                  "given": [
+                    "用户已登录",
+                    "具备管理订阅的操作权限"
+                  ],
+                  "when": [
+                    "查看当前订阅",
+                    "续费/升级方案",
+                    "取消订阅"
+                  ],
+                  "then": [
+                    "管理订阅操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S021",
+                  "action_ref": "管理订阅",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC070",
+                  "title": "管理订阅_取消订阅需二次确认弹窗",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [
+                    "用户已登录",
+                    "正在执行管理订阅"
+                  ],
+                  "when": [
+                    "取消订阅需二次确认弹窗"
+                  ],
+                  "then": [
+                    "系统提示异常"
+                  ],
+                  "screen_ref": "S021",
+                  "action_ref": "管理订阅",
+                  "exception_source": "task.exceptions[0]",
+                  "flags": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "FA011",
+          "name": "注册登录与个人设置",
+          "tasks": [
+            {
+              "id": "T038",
+              "task_name": "注册账户",
+              "category": "basic",
+              "use_cases": [
+                {
+                  "id": "UC096",
+                  "title": "注册账户_正常流",
+                  "type": "happy_path",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "具备注册账户的操作权限"
+                  ],
+                  "when": [
+                    "选择注册方式",
+                    "输入手机号/邮箱",
+                    "设置密码",
+                    "完成注册"
+                  ],
+                  "then": [
+                    "注册账户操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S036",
+                  "action_ref": "注册账户",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC097",
+                  "title": "注册账户_手机号已注册",
+                  "type": "exception",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "正在执行注册账户"
+                  ],
+                  "when": [
+                    "手机号已注册"
+                  ],
+                  "then": [
+                    "提示登录"
+                  ],
+                  "screen_ref": "S036",
+                  "action_ref": "注册账户",
+                  "exception_source": "task.exceptions[0]",
+                  "flags": []
+                },
+                {
+                  "id": "UC098",
+                  "title": "注册账户_校验_手机号格式校验",
+                  "type": "validation",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "正在执行注册账户"
+                  ],
+                  "when": [
+                    "违反校验规则: 手机号格式校验"
+                  ],
+                  "then": [
+                    "系统提示校验失败: 手机号格式校验"
+                  ],
+                  "screen_ref": "S036",
+                  "action_ref": "手机号/邮箱注册",
+                  "validation_rule": "手机号格式校验",
+                  "flags": []
+                },
+                {
+                  "id": "UC099",
+                  "title": "注册账户_校验_密码强度要求",
+                  "type": "validation",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "正在执行注册账户"
+                  ],
+                  "when": [
+                    "违反校验规则: 密码强度要求"
+                  ],
+                  "then": [
+                    "系统提示校验失败: 密码强度要求"
+                  ],
+                  "screen_ref": "S036",
+                  "action_ref": "手机号/邮箱注册",
+                  "validation_rule": "密码强度要求",
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "id": "T039",
+              "task_name": "登录账户",
+              "category": "basic",
+              "use_cases": [
+                {
+                  "id": "UC100",
+                  "title": "登录账户_正常流",
+                  "type": "happy_path",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "具备登录账户的操作权限"
+                  ],
+                  "when": [
+                    "选择登录方式",
+                    "输入账号密码/验证码/第三方",
+                    "完成登录"
+                  ],
+                  "then": [
+                    "登录账户操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S037",
+                  "action_ref": "登录账户",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC101",
+                  "title": "登录账户_密码错误",
+                  "type": "exception",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "正在执行登录账户"
+                  ],
+                  "when": [
+                    "密码错误"
+                  ],
+                  "then": [
+                    "提示重试+忘记密码"
+                  ],
+                  "screen_ref": "S037",
+                  "action_ref": "登录账户",
+                  "exception_source": "task.exceptions[0]",
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "id": "T040",
+              "task_name": "管理个人设置",
+              "category": "basic",
+              "use_cases": [
+                {
+                  "id": "UC102",
+                  "title": "管理个人设置_正常流",
+                  "type": "happy_path",
+                  "priority": "低",
+                  "given": [
+                    "用户已登录",
+                    "具备管理个人设置的操作权限"
+                  ],
+                  "when": [
+                    "修改头像/昵称",
+                    "修改通知偏好",
+                    "修改语言设置"
+                  ],
+                  "then": [
+                    "管理个人设置操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S038",
+                  "action_ref": "管理个人设置",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC103",
+                  "title": "管理个人设置_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S038",
+                  "action_ref": "管理个人设置",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "T041",
+              "task_name": "重置密码",
+              "category": "basic",
+              "use_cases": [
+                {
+                  "id": "UC104",
+                  "title": "重置密码_正常流",
+                  "type": "happy_path",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "具备重置密码的操作权限"
+                  ],
+                  "when": [
+                    "输入注册邮箱/手机",
+                    "接收验证码",
+                    "输入验证码",
+                    "设置新密码"
+                  ],
+                  "then": [
+                    "重置密码操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S039",
+                  "action_ref": "重置密码",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC105",
+                  "title": "重置密码_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S039",
+                  "action_ref": "重置密码",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                },
+                {
+                  "id": "UC106",
+                  "title": "重置密码_校验_邮箱/手机格式校验",
+                  "type": "validation",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "正在执行重置密码"
+                  ],
+                  "when": [
+                    "违反校验规则: 邮箱/手机格式校验"
+                  ],
+                  "then": [
+                    "系统提示校验失败: 邮箱/手机格式校验"
+                  ],
+                  "screen_ref": "S039",
+                  "action_ref": "输入注册邮箱/手机",
+                  "validation_rule": "邮箱/手机格式校验",
+                  "flags": []
+                },
+                {
+                  "id": "UC107",
+                  "title": "重置密码_校验_密码强度要求",
+                  "type": "validation",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "正在执行重置密码"
+                  ],
+                  "when": [
+                    "违反校验规则: 密码强度要求"
+                  ],
+                  "then": [
+                    "系统提示校验失败: 密码强度要求"
+                  ],
+                  "screen_ref": "S039",
+                  "action_ref": "设置新密码",
+                  "validation_rule": "密码强度要求",
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "id": "T042",
+              "task_name": "注销账户",
+              "category": "basic",
+              "use_cases": [
+                {
+                  "id": "UC108",
+                  "title": "注销账户_正常流",
+                  "type": "happy_path",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "具备注销账户的操作权限"
+                  ],
+                  "when": [
+                    "申请注销",
+                    "确认注销",
+                    "等待冷静期",
+                    "完成注销"
+                  ],
+                  "then": [
+                    "注销账户操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S038",
+                  "action_ref": "注销账户",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC109",
+                  "title": "注销账户_注销需二次确认+等待期",
+                  "type": "exception",
+                  "priority": "高",
+                  "given": [
+                    "用户已登录",
+                    "正在执行注销账户"
+                  ],
+                  "when": [
+                    "注销需二次确认+等待期"
+                  ],
+                  "then": [
+                    "系统提示异常"
+                  ],
+                  "screen_ref": "S038",
+                  "action_ref": "注销账户",
+                  "exception_source": "task.exceptions[0]",
+                  "flags": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "FA012",
+          "name": "首次体验",
+          "tasks": [
+            {
+              "id": "T043",
+              "task_name": "完成新手引导",
+              "category": "basic",
+              "use_cases": [
+                {
+                  "id": "UC110",
+                  "title": "完成新手引导_正常流",
+                  "type": "happy_path",
+                  "priority": "低",
+                  "given": [
+                    "用户已登录",
+                    "具备完成新手引导的操作权限"
+                  ],
+                  "when": [
+                    "选择学习目的",
+                    "选择当前水平",
+                    "体验示范对话",
+                    "完成引导"
+                  ],
+                  "then": [
+                    "完成新手引导操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S040",
+                  "action_ref": "完成新手引导",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC111",
+                  "title": "完成新手引导_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S040",
+                  "action_ref": "完成新手引导",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "FA013",
+          "name": "推送与通知",
+          "tasks": [
+            {
+              "id": "T044",
+              "task_name": "管理通知中心",
+              "category": "basic",
+              "use_cases": [
+                {
+                  "id": "UC112",
+                  "title": "管理通知中心_正常流",
+                  "type": "happy_path",
+                  "priority": "中",
+                  "given": [
+                    "用户已登录",
+                    "具备管理通知中心的操作权限"
+                  ],
+                  "when": [
+                    "查看学习提醒",
+                    "查看系统通知",
+                    "管理通知设置"
+                  ],
+                  "then": [
+                    "管理通知中心操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S041",
+                  "action_ref": "管理通知中心",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC113",
+                  "title": "管理通知中心_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S041",
+                  "action_ref": "管理通知中心",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "FA014",
+          "name": "用户反馈",
+          "tasks": [
+            {
+              "id": "T045",
+              "task_name": "提交意见反馈",
+              "category": "basic",
+              "use_cases": [
+                {
+                  "id": "UC114",
+                  "title": "提交意见反馈_正常流",
+                  "type": "happy_path",
+                  "priority": "低",
+                  "given": [
+                    "用户已登录",
+                    "具备提交意见反馈的操作权限"
+                  ],
+                  "when": [
+                    "选择反馈类型",
+                    "填写反馈内容",
+                    "上传截图",
+                    "提交反馈"
+                  ],
+                  "then": [
+                    "提交意见反馈操作成功",
+                    "页面展示操作成功提示"
+                  ],
+                  "screen_ref": "S042",
+                  "action_ref": "提交意见反馈",
+                  "exception_source": null,
+                  "flags": []
+                },
+                {
+                  "id": "UC115",
+                  "title": "提交意见反馈_无异常定义",
+                  "type": "exception",
+                  "priority": "低",
+                  "given": [],
+                  "when": [],
+                  "then": [],
+                  "screen_ref": "S042",
+                  "action_ref": "提交意见反馈",
+                  "exception_source": null,
+                  "flags": [
+                    "NO_EXCEPTION_CASES"
+                  ]
+                },
+                {
+                  "id": "UC116",
+                  "title": "提交意见反馈_校验_反馈内容不能为空",
+                  "type": "validation",
+                  "priority": "低",
+                  "given": [
+                    "用户已登录",
+                    "正在执行提交意见反馈"
+                  ],
+                  "when": [
+                    "违反校验规则: 反馈内容不能为空"
+                  ],
+                  "then": [
+                    "系统提示校验失败: 反馈内容不能为空"
+                  ],
+                  "screen_ref": "S042",
+                  "action_ref": "填写反馈内容",
+                  "validation_rule": "反馈内容不能为空",
+                  "flags": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "e2e_cases": [
+        {
+          "id": "E2E-F001-01",
+          "type": "e2e",
+          "flow_ref": "F001",
+          "title": "场景学习全链路_正常流",
+          "given": [
+            "用户已登录",
+            "具备场景学习全链路相关操作权限"
+          ],
+          "steps": [
+            {
+              "seq": 1,
+              "task_ref": "T001",
+              "action": "浏览并选择场景"
+            },
+            {
+              "seq": 2,
+              "task_ref": "T002",
+              "action": "进行场景对话"
+            },
+            {
+              "seq": 3,
+              "task_ref": "T005",
+              "action": "查看实时发音纠正"
+            },
+            {
+              "seq": 4,
+              "task_ref": "T003",
+              "action": "查看对话报告"
+            },
+            {
+              "seq": 5,
+              "task_ref": "T007",
+              "action": "完成记忆曲线复习"
+            }
+          ],
+          "then": [
+            "场景学习全链路全链路执行成功"
+          ],
+          "ordering_issues": [
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                1
+              ],
+              "description": "seq 1 task T001 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                2
+              ],
+              "description": "seq 2 task T002 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                3
+              ],
+              "description": "seq 3 task T005 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                4
+              ],
+              "description": "seq 4 task T003 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                5
+              ],
+              "description": "seq 5 task T007 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "MISSING_HANDOFF_DATA",
+              "seq_pair": [
+                2,
+                3
+              ],
+              "description": "交接数据「音素评分」在上游 task 中无语义匹配",
+              "severity": "中"
+            }
+          ]
+        },
+        {
+          "id": "E2E-F002-01",
+          "type": "e2e",
+          "flow_ref": "F002",
+          "title": "记忆闭环链路_正常流",
+          "given": [
+            "用户已登录",
+            "具备记忆闭环链路相关操作权限"
+          ],
+          "steps": [
+            {
+              "seq": 1,
+              "task_ref": "T002",
+              "action": "进行场景对话"
+            },
+            {
+              "seq": 2,
+              "task_ref": "T008",
+              "action": "管理词汇本"
+            },
+            {
+              "seq": 3,
+              "task_ref": "T007",
+              "action": "完成记忆曲线复习"
+            },
+            {
+              "seq": 4,
+              "task_ref": "T001",
+              "action": "浏览并选择场景"
+            }
+          ],
+          "then": [
+            "记忆闭环链路全链路执行成功"
+          ],
+          "ordering_issues": [
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                1
+              ],
+              "description": "seq 1 task T002 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                2
+              ],
+              "description": "seq 2 task T008 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                3
+              ],
+              "description": "seq 3 task T007 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                4
+              ],
+              "description": "seq 4 task T001 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "MISSING_HANDOFF_DATA",
+              "seq_pair": [
+                1,
+                2
+              ],
+              "description": "交接数据「词汇」在上游 task 中无语义匹配",
+              "severity": "中"
+            },
+            {
+              "flag": "MISSING_HANDOFF_DATA",
+              "seq_pair": [
+                1,
+                2
+              ],
+              "description": "交接数据「语境」在上游 task 中无语义匹配",
+              "severity": "中"
+            },
+            {
+              "flag": "WEAK_TERMINAL",
+              "seq_pair": [
+                4
+              ],
+              "description": "最后节点 task T001 无 outputs.messages/states 且 main_flow 末步无感知语义",
+              "severity": "中"
+            }
+          ]
+        },
+        {
+          "id": "E2E-F003-01",
+          "type": "e2e",
+          "flow_ref": "F003",
+          "title": "场景内容生产链路_正常流",
+          "given": [
+            "用户已登录",
+            "具备场景内容生产链路相关操作权限"
+          ],
+          "steps": [
+            {
+              "seq": 1,
+              "task_ref": "T009",
+              "action": "创建场景对话脚本"
+            },
+            {
+              "seq": 2,
+              "task_ref": "T010",
+              "action": "审核场景内容"
+            },
+            {
+              "seq": 3,
+              "task_ref": "T011",
+              "action": "管理场景包"
+            }
+          ],
+          "then": [
+            "场景内容生产链路全链路执行成功"
+          ],
+          "ordering_issues": [
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                1
+              ],
+              "description": "seq 1 task T009 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                2
+              ],
+              "description": "seq 2 task T010 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                3
+              ],
+              "description": "seq 3 task T011 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "WEAK_TERMINAL",
+              "seq_pair": [
+                3
+              ],
+              "description": "最后节点 task T011 无 outputs.messages/states 且 main_flow 末步无感知语义",
+              "severity": "中"
+            }
+          ]
+        },
+        {
+          "id": "E2E-F004-01",
+          "type": "e2e",
+          "flow_ref": "F004",
+          "title": "用户注册到首次学习_正常流",
+          "given": [
+            "用户已登录",
+            "具备用户注册到首次学习相关操作权限"
+          ],
+          "steps": [
+            {
+              "seq": 1,
+              "task_ref": "T038",
+              "action": "注册账户"
+            },
+            {
+              "seq": 2,
+              "task_ref": "T043",
+              "action": "完成新手引导"
+            },
+            {
+              "seq": 3,
+              "task_ref": "T020",
+              "action": "查看个性化推荐"
+            },
+            {
+              "seq": 4,
+              "task_ref": "T001",
+              "action": "浏览并选择场景"
+            },
+            {
+              "seq": 5,
+              "task_ref": "T002",
+              "action": "进行场景对话"
+            }
+          ],
+          "then": [
+            "用户注册到首次学习全链路执行成功"
+          ],
+          "ordering_issues": [
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                1
+              ],
+              "description": "seq 1 task T038 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                2
+              ],
+              "description": "seq 2 task T043 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                3
+              ],
+              "description": "seq 3 task T020 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                4
+              ],
+              "description": "seq 4 task T001 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                5
+              ],
+              "description": "seq 5 task T002 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "MISSING_HANDOFF_DATA",
+              "seq_pair": [
+                1,
+                2
+              ],
+              "description": "交接数据「用户ID」在上游 task 中无语义匹配",
+              "severity": "中"
+            },
+            {
+              "flag": "WEAK_TERMINAL",
+              "seq_pair": [
+                5
+              ],
+              "description": "最后节点 task T002 无 outputs.messages/states 且 main_flow 末步无感知语义",
+              "severity": "中"
+            }
+          ]
+        },
+        {
+          "id": "E2E-F005-01",
+          "type": "e2e",
+          "flow_ref": "F005",
+          "title": "付费转化链路_正常流",
+          "given": [
+            "用户已登录",
+            "具备付费转化链路相关操作权限"
+          ],
+          "steps": [
+            {
+              "seq": 1,
+              "task_ref": "T002",
+              "action": "进行场景对话"
+            },
+            {
+              "seq": 2,
+              "task_ref": "T022",
+              "action": "订阅付费方案"
+            },
+            {
+              "seq": 3,
+              "task_ref": "T023",
+              "action": "管理订阅"
+            }
+          ],
+          "then": [
+            "付费转化链路全链路执行成功"
+          ],
+          "ordering_issues": [
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                1
+              ],
+              "description": "seq 1 task T002 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                2
+              ],
+              "description": "seq 2 task T022 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                3
+              ],
+              "description": "seq 3 task T023 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "MISSING_HANDOFF_DATA",
+              "seq_pair": [
+                1,
+                2
+              ],
+              "description": "交接数据「用户ID」在上游 task 中无语义匹配",
+              "severity": "中"
+            },
+            {
+              "flag": "MISSING_HANDOFF_DATA",
+              "seq_pair": [
+                1,
+                2
+              ],
+              "description": "交接数据「使用量」在上游 task 中无语义匹配",
+              "severity": "中"
+            },
+            {
+              "flag": "WEAK_TERMINAL",
+              "seq_pair": [
+                3
+              ],
+              "description": "最后节点 task T023 无 outputs.messages/states 且 main_flow 末步无感知语义",
+              "severity": "中"
+            }
+          ]
+        },
+        {
+          "id": "E2E-F006-01",
+          "type": "e2e",
+          "flow_ref": "F006",
+          "title": "AI质量监控链路_正常流",
+          "given": [
+            "用户已登录",
+            "具备AI质量监控链路相关操作权限"
+          ],
+          "steps": [
+            {
+              "seq": 1,
+              "task_ref": "T029",
+              "action": "查看AI对话质量评分"
+            },
+            {
+              "seq": 2,
+              "task_ref": "T030",
+              "action": "标注异常对话"
+            },
+            {
+              "seq": 3,
+              "task_ref": "T031",
+              "action": "管理Prompt模板"
+            },
+            {
+              "seq": 4,
+              "task_ref": "T032",
+              "action": "调整发音评估参数"
+            }
+          ],
+          "then": [
+            "AI质量监控链路全链路执行成功"
+          ],
+          "ordering_issues": [
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                1
+              ],
+              "description": "seq 1 task T029 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                2
+              ],
+              "description": "seq 2 task T030 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                3
+              ],
+              "description": "seq 3 task T031 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                4
+              ],
+              "description": "seq 4 task T032 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "WEAK_TERMINAL",
+              "seq_pair": [
+                4
+              ],
+              "description": "最后节点 task T032 无 outputs.messages/states 且 main_flow 末步无感知语义",
+              "severity": "中"
+            }
+          ]
+        },
+        {
+          "id": "E2E-F007-01",
+          "type": "e2e",
+          "flow_ref": "F007",
+          "title": "运营分析链路_正常流",
+          "given": [
+            "用户已登录",
+            "具备运营分析链路相关操作权限"
+          ],
+          "steps": [
+            {
+              "seq": 1,
+              "task_ref": "T025",
+              "action": "查看关键指标看板"
+            },
+            {
+              "seq": 2,
+              "task_ref": "T026",
+              "action": "分析用户行为"
+            },
+            {
+              "seq": 3,
+              "task_ref": "T027",
+              "action": "管理A/B测试"
+            },
+            {
+              "seq": 4,
+              "task_ref": "T028",
+              "action": "生成运营报告"
+            }
+          ],
+          "then": [
+            "运营分析链路全链路执行成功"
+          ],
+          "ordering_issues": [
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                1
+              ],
+              "description": "seq 1 task T025 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                2
+              ],
+              "description": "seq 2 task T026 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                3
+              ],
+              "description": "seq 3 task T027 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                4
+              ],
+              "description": "seq 4 task T028 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "MISSING_HANDOFF_DATA",
+              "seq_pair": [
+                2,
+                3
+              ],
+              "description": "交接数据「假设」在上游 task 中无语义匹配",
+              "severity": "中"
+            },
+            {
+              "flag": "WEAK_TERMINAL",
+              "seq_pair": [
+                4
+              ],
+              "description": "最后节点 task T028 无 outputs.messages/states 且 main_flow 末步无感知语义",
+              "severity": "中"
+            }
+          ]
+        },
+        {
+          "id": "E2E-F008-01",
+          "type": "e2e",
+          "flow_ref": "F008",
+          "title": "投诉处理链路_正常流",
+          "given": [
+            "用户已登录",
+            "具备投诉处理链路相关操作权限"
+          ],
+          "steps": [
+            {
+              "seq": 1,
+              "task_ref": "T045",
+              "action": "提交意见反馈"
+            },
+            {
+              "seq": 2,
+              "task_ref": "T037",
+              "action": "处理用户投诉"
+            }
+          ],
+          "then": [
+            "投诉处理链路全链路执行成功"
+          ],
+          "ordering_issues": [
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                1
+              ],
+              "description": "seq 1 task T045 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                2
+              ],
+              "description": "seq 2 task T037 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "WEAK_TERMINAL",
+              "seq_pair": [
+                2
+              ],
+              "description": "最后节点 task T037 无 outputs.messages/states 且 main_flow 末步无感知语义",
+              "severity": "中"
+            }
+          ]
+        },
+        {
+          "id": "E2E-F009-01",
+          "type": "e2e",
+          "flow_ref": "F009",
+          "title": "紧急场景速学链路_正常流",
+          "given": [
+            "用户已登录",
+            "具备紧急场景速学链路相关操作权限"
+          ],
+          "steps": [
+            {
+              "seq": 1,
+              "task_ref": "T021",
+              "action": "使用紧急场景速学"
+            },
+            {
+              "seq": 2,
+              "task_ref": "T007",
+              "action": "完成记忆曲线复习"
+            }
+          ],
+          "then": [
+            "紧急场景速学链路全链路执行成功"
+          ],
+          "ordering_issues": [
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                1
+              ],
+              "description": "seq 1 task T021 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                2
+              ],
+              "description": "seq 2 task T007 缺少 prerequisites",
+              "severity": "低"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

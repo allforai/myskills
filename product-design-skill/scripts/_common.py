@@ -236,6 +236,41 @@ def parse_args():
     return base, args
 
 
+# ── Split File Writer ─────────────────────────────────────────────────────────
+
+def write_split_files(base, subdir, prefix, split_by, splits, extra_meta=None):
+    """Write human-friendly split files using a unified wrapper schema.
+
+    Args:
+        base: .allforai base path
+        subdir: output subdirectory under base (e.g. "screen-map")
+        prefix: filename prefix (e.g. "screen-map" → "screen-map-R001.json")
+        split_by: dimension name (e.g. "role", "priority")
+        splits: dict {split_value: {"label": str, "description": str, "items": list}}
+        extra_meta: optional dict of extra top-level fields to merge into each file
+    """
+    out_dir = os.path.join(base, subdir)
+    ensure_dir(out_dir)
+    ts = now_iso()
+    written = []
+    for split_value, info in splits.items():
+        wrapper = {
+            "split_by": split_by,
+            "split_value": split_value,
+            "split_label": info["label"],
+            "description": info["description"],
+            "generated_at": ts,
+            "count": len(info["items"]),
+            "items": info["items"],
+        }
+        if extra_meta:
+            wrapper.update(extra_meta)
+        fname = f"{prefix}-{split_value}.json"
+        path = write_json(os.path.join(out_dir, fname), wrapper)
+        written.append(path)
+    return written
+
+
 # ── Self-test ─────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":

@@ -1,0 +1,128 @@
+{
+  "split_by": "role",
+  "split_value": "R004",
+  "split_label": "内容运营",
+  "description": "角色 R004（内容运营）关联的界面子集",
+  "generated_at": "2026-02-27T20:50:58Z",
+  "count": 3,
+  "items": [
+    {
+      "id": "S009",
+      "name": "场景脚本编辑器",
+      "module": "场景库管理",
+      "tasks": [
+        "T009"
+      ],
+      "actions": [
+        {
+          "label": "创建新场景",
+          "crud": "C",
+          "task_ref": "T009",
+          "click_depth": 2,
+          "frequency": "高"
+        },
+        {
+          "label": "编辑对话节点",
+          "crud": "U",
+          "task_ref": "T009",
+          "click_depth": 2,
+          "frequency": "高"
+        },
+        {
+          "label": "预览场景对话",
+          "crud": "R",
+          "task_ref": "T009",
+          "click_depth": 3,
+          "frequency": "中"
+        },
+        {
+          "label": "保存草稿",
+          "crud": "U",
+          "task_ref": "T009",
+          "click_depth": 2,
+          "frequency": "高",
+          "validation_rules": [
+            "场景名不能为空",
+            "至少3轮对话节点"
+          ]
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S010",
+      "name": "审核队列页",
+      "module": "场景库管理",
+      "tasks": [
+        "T010"
+      ],
+      "actions": [
+        {
+          "label": "查看待审核列表",
+          "crud": "R",
+          "task_ref": "T010",
+          "click_depth": 1,
+          "frequency": "高"
+        },
+        {
+          "label": "审核通过",
+          "crud": "U",
+          "task_ref": "T010",
+          "click_depth": 2,
+          "frequency": "高"
+        },
+        {
+          "label": "驳回并备注",
+          "crud": "U",
+          "task_ref": "T010",
+          "click_depth": 2,
+          "frequency": "高",
+          "validation_rules": [
+            "驳回必须填写原因"
+          ]
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S011",
+      "name": "场景包管理页",
+      "module": "场景库管理",
+      "tasks": [
+        "T011",
+        "T012"
+      ],
+      "actions": [
+        {
+          "label": "查看场景包列表",
+          "crud": "R",
+          "task_ref": "T011",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "上架场景包",
+          "crud": "U",
+          "task_ref": "T011",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "下架场景包",
+          "crud": "U",
+          "task_ref": "T011",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "编辑标签和关键词",
+          "crud": "U",
+          "task_ref": "T012",
+          "click_depth": 2,
+          "frequency": "中"
+        }
+      ],
+      "notes": ""
+    }
+  ]
+}

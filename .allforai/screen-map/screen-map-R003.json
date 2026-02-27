@@ -1,0 +1,52 @@
+{
+  "split_by": "role",
+  "split_value": "R003",
+  "split_label": "新移民",
+  "description": "角色 R003（新移民）关联的界面子集",
+  "generated_at": "2026-02-27T20:50:58Z",
+  "count": 1,
+  "items": [
+    {
+      "id": "S019",
+      "name": "紧急场景速学页",
+      "module": "紧急场景速学",
+      "tasks": [
+        "T021"
+      ],
+      "actions": [
+        {
+          "label": "选择紧急场景",
+          "crud": "R",
+          "task_ref": "T021",
+          "click_depth": 1,
+          "frequency": "中"
+        },
+        {
+          "label": "查看关键句模板",
+          "crud": "R",
+          "task_ref": "T021",
+          "click_depth": 1,
+          "frequency": "中"
+        },
+        {
+          "label": "跟读练习",
+          "crud": "C",
+          "task_ref": "T021",
+          "click_depth": 1,
+          "frequency": "中",
+          "exception_flows": [
+            "语音识别失败→文字替代"
+          ]
+        },
+        {
+          "label": "收藏到词汇本",
+          "crud": "C",
+          "task_ref": "T021",
+          "click_depth": 2,
+          "frequency": "低"
+        }
+      ],
+      "notes": ""
+    }
+  ]
+}

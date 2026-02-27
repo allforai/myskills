@@ -426,6 +426,14 @@ Step 3: 输出报告
 
 输出：`.allforai/screen-map/screen-map.json`
 
+写完 `screen-map.json` 后，运行预置脚本生成按角色拆分文件（供设计师按角色查阅）：
+
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_screen_map_split.py <BASE>
+```
+
+拆分文件仅供人类参考，下游脚本始终使用全量 `screen-map.json`。
+
 #### 索引文件生成
 
 `screen-map.json` 写入后，立即生成轻量索引文件，供下游技能两阶段加载使用。
@@ -645,6 +653,7 @@ Step 3: 输出报告
 .allforai/screen-map/
 ├── screen-map.json             # Step 1: 界面地图（含 states、on_failure、exception_flows）
 ├── screen-index.json           # Step 1: 界面索引（轻量，供下游两阶段加载）
+├── screen-map-{RID}.json       # 按角色拆分的界面子集（人类阅读用）
 ├── screen-conflict.json        # Step 2: 界面级冲突 + 异常覆盖缺口
 ├── screen-map-report.md        # Step 3: 可读报告
 ├── screen-map-visual.svg       # Step 3: 导航地图可视化（按模块分区，颜色编码）

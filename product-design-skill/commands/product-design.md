@@ -198,6 +198,12 @@ concept 和 product-map 完成后，追加记录到 `.allforai/pipeline-decision
 
 **自动模式检查点**：screen 数 = 0 → ERROR（停）；task_refs 引用断裂 → ERROR（停）；其余不一致 → WARNING 记日志继续。
 
+**角色拆分**：检查点通过后，运行预置脚本生成按角色拆分文件（供设计师按角色查阅）：
+
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_screen_map_split.py <BASE>
+```
+
 ---
 
 ## Phase 4-8 预置脚本优先（自动模式）
