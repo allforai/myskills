@@ -55,9 +55,10 @@ if not feature_areas:
 def calc_priority(task):
     f = task.get("frequency", "低")
     r = task.get("risk_level", "低")
+    cat = task.get("category", "")
     if f == "高" or r == "高":
         return "高"
-    if f == "中" or r == "中":
+    if f == "中" or r == "中" or cat == "core":
         return "中"
     return "低"
 
@@ -211,6 +212,7 @@ for fa in feature_areas:
         role_fas[rid][fa["id"]]["tasks"].append({
             "id": tid,
             "task_name": task["task_name"],
+            "category": task.get("category", ""),
             "use_cases": ucs
         })
 

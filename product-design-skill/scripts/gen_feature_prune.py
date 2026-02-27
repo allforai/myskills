@@ -107,10 +107,12 @@ for ft in freq_tier:
 
     # ── Risk guardrail: low-frequency tasks that must NOT be CUT ──────────
     risk_level = task.get("risk_level", "低")
+    category = task.get("category", "")
     revenue_keywords = {"付费", "购买", "订阅", "支付", "充值", "续费"}
     is_revenue = any(kw in task["task_name"] for kw in revenue_keywords)
     has_business_rules = len(rules) >= 2 or len(exceptions) >= 1
-    is_risk_protected = (risk_level in ("高", "中")) or is_revenue or has_business_rules
+    is_basic = category == "basic"
+    is_risk_protected = is_basic or (risk_level in ("高", "中")) or is_revenue or has_business_rules
 
     # Preliminary decision based on scope_strategy
     if scope_strategy == "aggressive":
@@ -148,11 +150,14 @@ for ft in freq_tier:
             prelim = "DEFER"
 
     reason_parts = [f"频次={freq}", f"场景={question_a}",
-                    f"复杂度匹配={question_b}", f"风险={risk_level}"]
+                    f"复杂度匹配={question_b}", f"风险={risk_level}",
+                    f"类别={category or '未分类'}"]
     if tid in flow_task_refs:
         reason_parts.append("被业务流引用")
     if is_risk_protected and freq == "低":
         guardrail_reasons = []
+        if is_basic:
+            guardrail_reasons.append("basic基本功能")
         if risk_level in ("高", "中"):
             guardrail_reasons.append(f"risk={risk_level}")
         if is_revenue:

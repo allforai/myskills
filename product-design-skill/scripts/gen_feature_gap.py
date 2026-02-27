@@ -86,6 +86,7 @@ for tid, task in tasks.items():
         "task_id": tid,
         "task_name": task["task_name"],
         "frequency": task.get("frequency", "低"),
+        "category": task.get("category", ""),
         "gaps": gaps if gaps else ["COMPLETE"],
         "details": details
     })
@@ -320,11 +321,13 @@ for tg in task_gaps:
         tid = tg["task_id"]
         task = tasks[tid]
         freq = tg["frequency"]
-        prio = "高" if freq == "高" or gap in ("SILENT_FAILURE", "HIGH_RISK_NO_CONFIRM") else ("中" if freq == "中" else "低")
+        cat = task.get("category", "")
+        prio = "高" if freq == "高" or gap in ("SILENT_FAILURE", "HIGH_RISK_NO_CONFIRM") else ("中" if freq == "中" or cat == "core" else "低")
         gap_tasks_list.append({
             "id": next_gap(),
             "title": f"{task['task_name']} — {gap}",
             "type": gap,
+            "category": cat,
             "priority": prio,
             "affected_roles": [role_map.get(task["owner_role"], task["owner_role"])],
             "affected_tasks": [tid],

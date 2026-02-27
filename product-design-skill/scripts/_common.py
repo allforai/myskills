@@ -73,13 +73,21 @@ def require_json(path, label="file"):
 
 # ── Data Loaders ──────────────────────────────────────────────────────────────
 
-def load_task_inventory(base):
-    """Load task-inventory.json, return dict keyed by task ID."""
+def load_task_inventory(base, category=None):
+    """Load task-inventory.json, return dict keyed by task ID.
+
+    Args:
+        base: .allforai base path
+        category: None (all), "basic", or "core" — filter by task category
+    """
     inv = require_json(
         os.path.join(base, "product-map/task-inventory.json"),
         "task-inventory.json"
     )
-    return {t["id"]: t for t in inv["tasks"]}
+    tasks = inv["tasks"]
+    if category:
+        tasks = [t for t in tasks if t.get("category") == category]
+    return {t["id"]: t for t in tasks}
 
 
 def load_task_index(base):

@@ -452,6 +452,10 @@ Step 4: 汇总报告
 
 问题清单始终按以下顺序排列：CONFLICT > ORPHAN > GAP > WARNING > BROKEN_REF。同级别内按 task_id 排序。
 
-### 5. 幂等
+### 5. category 一致性校验
+
+校验 `task-inventory.json` 中所有任务是否标注了 `category`（basic/core）。缺失 category 的任务记为 WARNING。`category=basic` 的任务被 feature-prune 标 CUT 记为 CONFLICT（基本功能不应被剪除）。
+
+### 6. 幂等
 
 多次运行结果一致。不产生副作用，不缓存决策，不依赖上次运行结果。每次运行都是全新的独立校验。

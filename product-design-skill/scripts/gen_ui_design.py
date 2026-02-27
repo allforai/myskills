@@ -161,8 +161,17 @@ for mod, slist in module_screens.items():
         else:
             layout = "单列卡片流"
 
-        spec_lines.append(f"#### {s['name']}（{s['id']}）[{audience}]\n")
+        # Determine if screen serves core or basic tasks
+        task_cats = set()
+        for tid in screen_tasks:
+            t = tasks.get(tid)
+            if t:
+                task_cats.add(t.get("category", ""))
+        cat_label = "core" if "core" in task_cats else ("basic" if "basic" in task_cats else "")
+
+        spec_lines.append(f"#### {s['name']}（{s['id']}）[{audience}]{' [core]' if cat_label == 'core' else ''}\n")
         spec_lines.append(f"**界面目的**: {s.get('notes', '支撑关联任务')}\n")
+        spec_lines.append(f"**功能类别**: {'核心功能' if cat_label == 'core' else '基本功能'}\n")
         spec_lines.append(f"**布局模式**: {layout}\n")
         spec_lines.append("**主要操作**:")
         for a in primary_actions[:3]:

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-27T20:11:30Z",
+  "generated_at": "2026-02-27T20:27:55Z",
   "mode": "full",
   "role_filter": null,
   "available_layers": [
@@ -24,8 +24,8 @@
     },
     "cross": {
       "total": 49,
-      "ok": 45,
-      "conflict": 3,
+      "ok": 46,
+      "conflict": 2,
       "warning": 1,
       "broken_ref": 0
     },
@@ -42,23 +42,16 @@
     {
       "check_id": "X1",
       "type": "CONFLICT",
-      "task_id": "T016",
-      "task_name": "分享学习成果",
-      "detail": "feature-gap 报 T016 有缺口，但 feature-prune 标为 CUT — 矛盾"
-    },
-    {
-      "check_id": "X1",
-      "type": "CONFLICT",
-      "task_id": "T040",
-      "task_name": "管理个人设置",
-      "detail": "feature-gap 报 T040 有缺口，但 feature-prune 标为 CUT — 矛盾"
-    },
-    {
-      "check_id": "X1",
-      "type": "CONFLICT",
       "task_id": "T019",
       "task_name": "设置角色偏好",
       "detail": "feature-gap 报 T019 有缺口，但 feature-prune 标为 CUT — 矛盾"
+    },
+    {
+      "check_id": "X1",
+      "type": "CONFLICT",
+      "task_id": "T016",
+      "task_name": "分享学习成果",
+      "detail": "feature-gap 报 T016 有缺口，但 feature-prune 标为 CUT — 矛盾"
     },
     {
       "check_id": "X3",

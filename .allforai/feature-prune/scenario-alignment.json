@@ -7,7 +7,7 @@
     "question_b": "match",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=中；策略=aggressive"
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=中；类别=core；策略=aggressive"
   },
   {
     "task_id": "T006",
@@ -17,7 +17,7 @@
     "question_b": "match",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；策略=aggressive"
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；类别=core；策略=aggressive"
   },
   {
     "task_id": "T008",
@@ -27,7 +27,7 @@
     "question_b": "match",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；被业务流引用；策略=aggressive"
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；类别=core；被业务流引用；策略=aggressive"
   },
   {
     "task_id": "T011",
@@ -37,7 +37,7 @@
     "question_b": "match",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；被业务流引用；策略=aggressive"
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；类别=core；被业务流引用；策略=aggressive"
   },
   {
     "task_id": "T012",
@@ -47,7 +47,7 @@
     "question_b": "match",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；策略=aggressive"
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；类别=core；策略=aggressive"
   },
   {
     "task_id": "T014",
@@ -57,7 +57,7 @@
     "question_b": "match",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；策略=aggressive"
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；类别=core；策略=aggressive"
   },
   {
     "task_id": "T015",
@@ -67,7 +67,7 @@
     "question_b": "match",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；策略=aggressive"
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；类别=core；策略=aggressive"
   },
   {
     "task_id": "T016",
@@ -77,7 +77,7 @@
     "question_b": "over_engineered",
     "question_c": "standalone",
     "preliminary_decision": "CUT",
-    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=低；策略=aggressive"
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=低；类别=core；策略=aggressive"
   },
   {
     "task_id": "T017",
@@ -87,7 +87,7 @@
     "question_b": "match",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；策略=aggressive"
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；类别=core；策略=aggressive"
   },
   {
     "task_id": "T018",
@@ -97,7 +97,7 @@
     "question_b": "match",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；策略=aggressive"
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；类别=core；策略=aggressive"
   },
   {
     "task_id": "T019",
@@ -107,7 +107,7 @@
     "question_b": "over_engineered",
     "question_c": "standalone",
     "preliminary_decision": "CUT",
-    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=低；策略=aggressive"
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=低；类别=core；策略=aggressive"
   },
   {
     "task_id": "T021",
@@ -117,7 +117,7 @@
     "question_b": "match",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=中；被业务流引用；策略=aggressive"
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=中；类别=core；被业务流引用；策略=aggressive"
   },
   {
     "task_id": "T022",
@@ -127,7 +127,7 @@
     "question_b": "over_engineered",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=高；被业务流引用；护栏保护(risk=高+营收相关+rules=2,exceptions=2)；策略=aggressive"
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=高；类别=basic；被业务流引用；护栏保护(basic基本功能+risk=高+营收相关+rules=2,exceptions=2)；策略=aggressive"
   },
   {
     "task_id": "T023",
@@ -137,7 +137,7 @@
     "question_b": "over_engineered",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=低；被业务流引用；护栏保护(营收相关+rules=0,exceptions=1)；策略=aggressive"
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=低；类别=basic；被业务流引用；护栏保护(basic基本功能+营收相关+rules=0,exceptions=1)；策略=aggressive"
   },
   {
     "task_id": "T024",
@@ -147,7 +147,7 @@
     "question_b": "over_engineered",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=中；护栏保护(risk=中+营收相关+rules=0,exceptions=1)；策略=aggressive"
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=中；类别=basic；护栏保护(basic基本功能+risk=中+营收相关+rules=0,exceptions=1)；策略=aggressive"
   },
   {
     "task_id": "T026",
@@ -157,7 +157,7 @@
     "question_b": "match",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；被业务流引用；策略=aggressive"
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；类别=core；被业务流引用；策略=aggressive"
   },
   {
     "task_id": "T027",
@@ -167,7 +167,7 @@
     "question_b": "match",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=中；被业务流引用；策略=aggressive"
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=中；类别=core；被业务流引用；策略=aggressive"
   },
   {
     "task_id": "T028",
@@ -177,7 +177,7 @@
     "question_b": "match",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；被业务流引用；策略=aggressive"
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；类别=core；被业务流引用；策略=aggressive"
   },
   {
     "task_id": "T030",
@@ -187,7 +187,7 @@
     "question_b": "match",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=中；被业务流引用；策略=aggressive"
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=中；类别=core；被业务流引用；策略=aggressive"
   },
   {
     "task_id": "T031",
@@ -197,7 +197,7 @@
     "question_b": "match",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=中；被业务流引用；策略=aggressive"
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=中；类别=core；被业务流引用；策略=aggressive"
   },
   {
     "task_id": "T032",
@@ -207,7 +207,7 @@
     "question_b": "over_engineered",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=中；被业务流引用；护栏保护(risk=中)；策略=aggressive"
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=中；类别=core；被业务流引用；护栏保护(risk=中)；策略=aggressive"
   },
   {
     "task_id": "T034",
@@ -217,7 +217,7 @@
     "question_b": "match",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=高；策略=aggressive"
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=高；类别=basic；策略=aggressive"
   },
   {
     "task_id": "T035",
@@ -227,7 +227,7 @@
     "question_b": "over_engineered",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=高；护栏保护(risk=高+rules=1,exceptions=1)；策略=aggressive"
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=高；类别=basic；护栏保护(basic基本功能+risk=高+rules=1,exceptions=1)；策略=aggressive"
   },
   {
     "task_id": "T036",
@@ -237,7 +237,7 @@
     "question_b": "over_engineered",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=中；护栏保护(risk=中)；策略=aggressive"
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=中；类别=basic；护栏保护(basic基本功能+risk=中)；策略=aggressive"
   },
   {
     "task_id": "T037",
@@ -247,7 +247,7 @@
     "question_b": "match",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=中；被业务流引用；策略=aggressive"
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=中；类别=basic；被业务流引用；策略=aggressive"
   },
   {
     "task_id": "T038",
@@ -257,7 +257,7 @@
     "question_b": "over_engineered",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=中；被业务流引用；护栏保护(risk=中+rules=2,exceptions=1)；策略=aggressive"
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=中；类别=basic；被业务流引用；护栏保护(basic基本功能+risk=中+rules=2,exceptions=1)；策略=aggressive"
   },
   {
     "task_id": "T040",
@@ -266,8 +266,8 @@
     "question_a": "secondary",
     "question_b": "over_engineered",
     "question_c": "standalone",
-    "preliminary_decision": "CUT",
-    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=低；策略=aggressive"
+    "preliminary_decision": "DEFER",
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=低；类别=basic；护栏保护(basic基本功能)；策略=aggressive"
   },
   {
     "task_id": "T041",
@@ -277,7 +277,7 @@
     "question_b": "over_engineered",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=中；护栏保护(risk=中+rules=2,exceptions=0)；策略=aggressive"
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=中；类别=basic；护栏保护(basic基本功能+risk=中+rules=2,exceptions=0)；策略=aggressive"
   },
   {
     "task_id": "T042",
@@ -287,7 +287,7 @@
     "question_b": "over_engineered",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=高；护栏保护(risk=高+rules=2,exceptions=1)；策略=aggressive"
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=高；类别=basic；护栏保护(basic基本功能+risk=高+rules=2,exceptions=1)；策略=aggressive"
   },
   {
     "task_id": "T043",
@@ -297,7 +297,7 @@
     "question_b": "over_engineered",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=低；被业务流引用；策略=aggressive"
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=低；类别=basic；被业务流引用；护栏保护(basic基本功能)；策略=aggressive"
   },
   {
     "task_id": "T044",
@@ -307,7 +307,7 @@
     "question_b": "match",
     "question_c": "standalone",
     "preliminary_decision": "CORE",
-    "reason": "频次=中；场景=core；复杂度匹配=match；风险=低；策略=aggressive"
+    "reason": "频次=中；场景=core；复杂度匹配=match；风险=低；类别=basic；策略=aggressive"
   },
   {
     "task_id": "T045",
@@ -317,6 +317,6 @@
     "question_b": "over_engineered",
     "question_c": "standalone",
     "preliminary_decision": "DEFER",
-    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=低；被业务流引用；策略=aggressive"
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=低；类别=basic；被业务流引用；护栏保护(basic基本功能)；策略=aggressive"
   }
 ]

@@ -173,10 +173,12 @@ concept 和 product-map 完成后，追加记录到 `.allforai/pipeline-decision
 **检查点**：
 - `task-inventory.json` 存在
 - task 数量 > 0
+- `task-inventory-basic.json` 和 `task-inventory-core.json` 存在
+- 每个 task 有 `category` 字段（basic 或 core）
 
 检查点失败 → 向用户报告，询问是否继续（product-map 是后续所有阶段的基础，强烈建议修复）。
 
-**自动模式检查点**：task 数 = 0 → ERROR（停）；task 数 > 0 但有 WARNING 级校验问题 → 记日志继续。
+**自动模式检查点**：task 数 = 0 → ERROR（停）；category 字段缺失 → WARNING（记日志继续）；task 数 > 0 且分类完整 → PASS。
 
 ---
 

@@ -32,7 +32,8 @@
       "rules": [
         "场景按个性化推荐排序",
         "已完成场景标记进度"
-      ]
+      ],
+      "category": "core"
     },
     {
       "id": "T002",
@@ -57,7 +58,8 @@
       "rules": [
         "每轮对话限时5分钟可配置",
         "生词自动收集到词汇本"
-      ]
+      ],
+      "category": "core"
     },
     {
       "id": "T003",
@@ -76,7 +78,8 @@
       "value": "让用户了解自己的表现并改进",
       "exceptions": [
         "评分生成失败→显示基础统计"
-      ]
+      ],
+      "category": "core"
     },
     {
       "id": "T004",
@@ -94,7 +97,8 @@
       "value": "提供无场景约束的自由练习",
       "exceptions": [
         "AI生成不当内容→内容过滤替换"
-      ]
+      ],
+      "category": "core"
     },
     {
       "id": "T005",
@@ -109,7 +113,8 @@
         "播放标准发音对比"
       ],
       "status": "concept_guided",
-      "value": "融入对话的实时发音纠正，不打断流程"
+      "value": "融入对话的实时发音纠正，不打断流程",
+      "category": "core"
     },
     {
       "id": "T006",
@@ -124,7 +129,8 @@
         "查看发音趋势"
       ],
       "status": "concept_guided",
-      "value": "深度了解发音弱点和改善趋势"
+      "value": "深度了解发音弱点和改善趋势",
+      "category": "core"
     },
     {
       "id": "T007",
@@ -143,7 +149,8 @@
       "rules": [
         "复习间隔按记忆曲线算法计算",
         "每日推送复习提醒"
-      ]
+      ],
+      "category": "core"
     },
     {
       "id": "T008",
@@ -158,7 +165,8 @@
         "手动添加/删除词汇"
       ],
       "status": "concept_guided",
-      "value": "管理从对话和复习中积累的词汇"
+      "value": "管理从对话和复习中积累的词汇",
+      "category": "core"
     },
     {
       "id": "T009",
@@ -182,7 +190,8 @@
       ],
       "exceptions": [
         "保存失败→自动暂存草稿"
-      ]
+      ],
+      "category": "core"
     },
     {
       "id": "T010",
@@ -204,7 +213,8 @@
       ],
       "exceptions": [
         "审核超时48h→自动升级提醒"
-      ]
+      ],
+      "category": "core"
     },
     {
       "id": "T011",
@@ -219,7 +229,8 @@
         "编辑标签和关键词"
       ],
       "status": "concept_guided",
-      "value": "组织场景为可售卖的场景包"
+      "value": "组织场景为可售卖的场景包",
+      "category": "core"
     },
     {
       "id": "T012",
@@ -234,7 +245,8 @@
         "管理关键词"
       ],
       "status": "concept_guided",
-      "value": "通过标签和关键词提升场景发现率"
+      "value": "通过标签和关键词提升场景发现率",
+      "category": "core"
     },
     {
       "id": "T013",
@@ -253,7 +265,8 @@
       "rules": [
         "连续学习计算逻辑：每天至少完成1轮对话",
         "连胜中断可用积分恢复1次"
-      ]
+      ],
+      "category": "core"
     },
     {
       "id": "T014",
@@ -267,7 +280,8 @@
         "切换排名维度"
       ],
       "status": "concept_guided",
-      "value": "轻社交竞争激励学习"
+      "value": "轻社交竞争激励学习",
+      "category": "core"
     },
     {
       "id": "T015",
@@ -282,7 +296,8 @@
         "查看兑换记录"
       ],
       "status": "concept_guided",
-      "value": "积分激励体系的出口"
+      "value": "积分激励体系的出口",
+      "category": "core"
     },
     {
       "id": "T016",
@@ -296,7 +311,8 @@
         "分享到社交媒体"
       ],
       "status": "concept_guided",
-      "value": "口碑传播渠道"
+      "value": "口碑传播渠道",
+      "category": "core"
     },
     {
       "id": "T017",
@@ -310,7 +326,8 @@
         "查看历史对话列表"
       ],
       "status": "concept_guided",
-      "value": "让用户了解自己的整体学习状况"
+      "value": "让用户了解自己的整体学习状况",
+      "category": "core"
     },
     {
       "id": "T018",
@@ -325,7 +342,8 @@
         "查看场景通关率"
       ],
       "status": "concept_guided",
-      "value": "数据驱动学习改进"
+      "value": "数据驱动学习改进",
+      "category": "core"
     },
     {
       "id": "T019",
@@ -339,7 +357,8 @@
         "选择感兴趣场景类型"
       ],
       "status": "concept_guided",
-      "value": "个性化推荐的基础"
+      "value": "个性化推荐的基础",
+      "category": "core"
     },
     {
       "id": "T020",
@@ -353,7 +372,8 @@
         "查看推荐理由"
       ],
       "status": "concept_guided",
-      "value": "帮用户快速发现适合的场景"
+      "value": "帮用户快速发现适合的场景",
+      "category": "core"
     },
     {
       "id": "T021",
@@ -371,7 +391,8 @@
       "value": "出发前10分钟预演即将面对的场景",
       "exceptions": [
         "语音识别失败→文字替代"
-      ]
+      ],
+      "category": "core"
     },
     {
       "id": "T022",
@@ -394,7 +415,8 @@
       "exceptions": [
         "支付失败→提示重试",
         "网络错误→保存订单稍后续费"
-      ]
+      ],
+      "category": "basic"
     },
     {
       "id": "T023",
@@ -410,7 +432,8 @@
       "status": "concept_guided",
       "exceptions": [
         "取消订阅需二次确认弹窗"
-      ]
+      ],
+      "category": "basic"
     },
     {
       "id": "T024",
@@ -426,7 +449,8 @@
       "status": "concept_guided",
       "exceptions": [
         "支付失败→重试"
-      ]
+      ],
+      "category": "basic"
     },
     {
       "id": "T025",
@@ -441,7 +465,8 @@
         "设置指标告警"
       ],
       "status": "concept_guided",
-      "value": "监控产品健康度"
+      "value": "监控产品健康度",
+      "category": "core"
     },
     {
       "id": "T026",
@@ -455,7 +480,8 @@
         "导出分析数据"
       ],
       "status": "concept_guided",
-      "value": "理解用户学习行为和流失原因"
+      "value": "理解用户学习行为和流失原因",
+      "category": "core"
     },
     {
       "id": "T027",
@@ -474,7 +500,8 @@
       "rules": [
         "测试名称必填",
         "至少2个变体"
-      ]
+      ],
+      "category": "core"
     },
     {
       "id": "T028",
@@ -489,7 +516,8 @@
         "导出报告"
       ],
       "status": "concept_guided",
-      "value": "定期汇报产品运营状况"
+      "value": "定期汇报产品运营状况",
+      "category": "core"
     },
     {
       "id": "T029",
@@ -503,7 +531,8 @@
         "查看评分趋势"
       ],
       "status": "concept_guided",
-      "value": "监控AI输出质量"
+      "value": "监控AI输出质量",
+      "category": "core"
     },
     {
       "id": "T030",
@@ -520,7 +549,8 @@
       "value": "改善AI训练数据质量",
       "rules": [
         "必须选择异常分类"
-      ]
+      ],
+      "category": "core"
     },
     {
       "id": "T031",
@@ -538,7 +568,8 @@
       "value": "优化AI场景对话质量",
       "exceptions": [
         "发布前强制预览验证"
-      ]
+      ],
+      "category": "core"
     },
     {
       "id": "T032",
@@ -556,7 +587,8 @@
       "value": "提升发音评估准确性",
       "rules": [
         "阈值范围0.0-1.0"
-      ]
+      ],
+      "category": "core"
     },
     {
       "id": "T033",
@@ -574,7 +606,8 @@
       "value": "维护平台用户生态",
       "exceptions": [
         "封禁需二次确认"
-      ]
+      ],
+      "category": "basic"
     },
     {
       "id": "T034",
@@ -595,7 +628,8 @@
       ],
       "exceptions": [
         "退款金额超限→需上级审批"
-      ]
+      ],
+      "category": "basic"
     },
     {
       "id": "T035",
@@ -616,7 +650,8 @@
       ],
       "exceptions": [
         "关键参数修改需二次确认"
-      ]
+      ],
+      "category": "basic"
     },
     {
       "id": "T036",
@@ -630,7 +665,8 @@
         "分配用户角色"
       ],
       "status": "concept_guided",
-      "value": "精细化权限管控"
+      "value": "精细化权限管控",
+      "category": "basic"
     },
     {
       "id": "T037",
@@ -648,7 +684,8 @@
       "value": "维护用户满意度",
       "rules": [
         "处理结果必填"
-      ]
+      ],
+      "category": "basic"
     },
     {
       "id": "T038",
@@ -669,7 +706,8 @@
       ],
       "exceptions": [
         "手机号已注册→提示登录"
-      ]
+      ],
+      "category": "basic"
     },
     {
       "id": "T039",
@@ -685,7 +723,8 @@
       "status": "concept_guided",
       "exceptions": [
         "密码错误→提示重试+忘记密码"
-      ]
+      ],
+      "category": "basic"
     },
     {
       "id": "T040",
@@ -699,7 +738,8 @@
         "修改语言设置"
       ],
       "status": "concept_guided",
-      "value": "个性化用户体验"
+      "value": "个性化用户体验",
+      "category": "basic"
     },
     {
       "id": "T041",
@@ -717,7 +757,8 @@
       "rules": [
         "邮箱/手机格式校验",
         "密码强度要求"
-      ]
+      ],
+      "category": "basic"
     },
     {
       "id": "T042",
@@ -738,7 +779,8 @@
       "rules": [
         "注销有7天冷静期",
         "注销后数据保留30天"
-      ]
+      ],
+      "category": "basic"
     },
     {
       "id": "T043",
@@ -753,7 +795,8 @@
         "完成引导"
       ],
       "status": "concept_guided",
-      "value": "提升首次体验转化率"
+      "value": "提升首次体验转化率",
+      "category": "basic"
     },
     {
       "id": "T044",
@@ -767,7 +810,8 @@
         "管理通知设置"
       ],
       "status": "concept_guided",
-      "value": "及时触达用户促进学习"
+      "value": "及时触达用户促进学习",
+      "category": "basic"
     },
     {
       "id": "T045",
@@ -784,7 +828,8 @@
       "status": "concept_guided",
       "rules": [
         "反馈内容不能为空"
-      ]
+      ],
+      "category": "basic"
     }
   ]
 }

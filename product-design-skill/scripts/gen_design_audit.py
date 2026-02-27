@@ -294,6 +294,35 @@ if "screen-map" in available_layers:
                             "detail": f"高频任务 {tid} 的操作 '{a.get('label', '')}' click_depth={a['click_depth']} ≥ 3（被埋深）"
                         })
 
+# X4: category field completeness
+tasks_without_category = [tid for tid, t in tasks.items() if not t.get("category")]
+if tasks_without_category:
+    cross_total += 1
+    cross_issues.append({
+        "check_id": "X4",
+        "type": "WARNING",
+        "task_id": ",".join(tasks_without_category[:5]),
+        "task_name": f"{len(tasks_without_category)} tasks missing category",
+        "detail": f"{len(tasks_without_category)} 个任务缺少 category 字段（basic/core），影响下游剪枝和优先级判定"
+    })
+else:
+    cross_total += 1
+    cross_ok += 1
+
+# X5: basic category task should not be CUT
+if "feature-prune" in available_layers:
+    for tid, decision in prune_map.items():
+        t = tasks.get(tid, {})
+        if t.get("category") == "basic" and decision == "CUT":
+            cross_total += 1
+            cross_issues.append({
+                "check_id": "X5",
+                "type": "CONFLICT",
+                "task_id": tid,
+                "task_name": t.get("task_name", "?"),
+                "detail": f"基本功能 {tid} ({t.get('task_name','?')}) 被标为 CUT — basic 类任务不应被剪除"
+            })
+
 # ── Fidelity ──────────────────────────────────────────────────────────────────
 total_downstream = trace_total
 traceable = trace_pass

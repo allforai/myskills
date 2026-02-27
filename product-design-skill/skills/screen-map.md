@@ -704,6 +704,8 @@ Step 3: 输出报告
 
 只梳理 `task-inventory.json` 中 `status` 不为 `user_removed` 的任务对应的界面和按钮。`user_removed` 任务（概念层 ERRC.eliminate 排除）不生成界面。不引入任务之外的界面。发现代码中有但任务清单未覆盖的界面，标记为 `ORPHAN`；若 concept_mode = "active" 且匹配 ERRC.eliminate，重分类为 `CONCEPT_ELIMINATED`（INFO 级），由用户决定去留。
 
+任务的 `category` 字段（`basic`/`core`）可用于界面分组展示 — 核心功能界面和基本功能界面在报告中分别呈现。
+
 ### 2. 异常覆盖是核心质量指标
 
 task.exceptions 中每条异常都必须在对应界面的 exception_flows 中有响应。`UNHANDLED_EXCEPTION` 是高优先级问题，代表产品在异常情况下的设计缺失。每个 C/U/D 操作都应有 `on_failure` 定义，操作失败不能静默。

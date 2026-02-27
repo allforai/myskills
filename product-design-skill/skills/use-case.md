@@ -245,7 +245,7 @@ Step 4: 端到端用例生成（需 business-flows.json，quick 模式跳过）
 | `validation_rule` | 省略 | 选填 | 省略 | 必填 |
 | `flags` | 必填（默认 `[]`） | 必填（默认 `[]`） | 必填（默认 `[]`） | 必填（默认 `[]`） |
 
-**priority 取值**：`高` / `中` / `低`。从任务的 `frequency` 和 `risk_level` 综合推导 — 高频或高风险任务的用例为高优先级，低频且低风险为低优先级。
+**priority 取值**：`高` / `中` / `低`。从任务的 `frequency`、`risk_level` 和 `category` 综合推导 — 高频或高风险任务的用例为高优先级；`category=core` 的任务优先级最低为「中」（核心功能即使低频也需覆盖）；低频且低风险且 basic 类为低优先级。
 
 每个任务生成 1 条 happy_path 用例：
 

@@ -1,6 +1,6 @@
 {
   "version": "2.3.0",
-  "generated_at": "2026-02-27T20:11:30Z",
+  "generated_at": "2026-02-27T20:27:55Z",
   "summary": {
     "role_count": 6,
     "feature_area_count": 14,
@@ -156,6 +156,7 @@
             {
               "id": "T001",
               "task_name": "浏览并选择场景",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC001",
@@ -226,6 +227,7 @@
             {
               "id": "T002",
               "task_name": "进行场景对话",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC004",
@@ -337,6 +339,7 @@
             {
               "id": "T003",
               "task_name": "查看对话报告",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC009",
@@ -388,6 +391,7 @@
             {
               "id": "T004",
               "task_name": "进行自由对话",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC011",
@@ -438,6 +442,7 @@
             {
               "id": "T024",
               "task_name": "购买场景包",
+              "category": "basic",
               "use_cases": [
                 {
                   "id": "UC028",
@@ -493,6 +498,7 @@
             {
               "id": "T005",
               "task_name": "查看实时发音纠正",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC036",
@@ -538,6 +544,7 @@
             {
               "id": "T006",
               "task_name": "查看发音详细报告",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC038",
@@ -589,6 +596,7 @@
             {
               "id": "T007",
               "task_name": "完成记忆曲线复习",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC044",
@@ -634,6 +642,7 @@
             {
               "id": "T008",
               "task_name": "管理词汇本",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC046",
@@ -685,6 +694,7 @@
             {
               "id": "T013",
               "task_name": "查看学习连胜与成就",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC048",
@@ -730,6 +740,7 @@
             {
               "id": "T014",
               "task_name": "查看排行榜",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC050",
@@ -774,6 +785,7 @@
             {
               "id": "T015",
               "task_name": "兑换积分商品",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC052",
@@ -819,12 +831,13 @@
             {
               "id": "T016",
               "task_name": "分享学习成果",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC054",
                   "title": "分享学习成果_正常流",
                   "type": "happy_path",
-                  "priority": "低",
+                  "priority": "中",
                   "given": [
                     "用户已登录",
                     "具备分享学习成果的操作权限"
@@ -869,6 +882,7 @@
             {
               "id": "T017",
               "task_name": "查看个人学习档案",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC056",
@@ -913,6 +927,7 @@
             {
               "id": "T018",
               "task_name": "查看学习统计报告",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC058",
@@ -964,12 +979,13 @@
             {
               "id": "T019",
               "task_name": "设置角色偏好",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC060",
                   "title": "设置角色偏好_正常流",
                   "type": "happy_path",
-                  "priority": "低",
+                  "priority": "中",
                   "given": [
                     "用户已登录",
                     "具备设置角色偏好的操作权限"
@@ -1008,6 +1024,7 @@
             {
               "id": "T020",
               "task_name": "查看个性化推荐",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC062",
@@ -1058,6 +1075,7 @@
             {
               "id": "T022",
               "task_name": "订阅付费方案",
+              "category": "basic",
               "use_cases": [
                 {
                   "id": "UC064",
@@ -1168,6 +1186,7 @@
             {
               "id": "T023",
               "task_name": "管理订阅",
+              "category": "basic",
               "use_cases": [
                 {
                   "id": "UC069",
@@ -1223,6 +1242,7 @@
             {
               "id": "T038",
               "task_name": "注册账户",
+              "category": "basic",
               "use_cases": [
                 {
                   "id": "UC096",
@@ -1313,6 +1333,7 @@
             {
               "id": "T039",
               "task_name": "登录账户",
+              "category": "basic",
               "use_cases": [
                 {
                   "id": "UC100",
@@ -1362,6 +1383,7 @@
             {
               "id": "T040",
               "task_name": "管理个人设置",
+              "category": "basic",
               "use_cases": [
                 {
                   "id": "UC102",
@@ -1406,6 +1428,7 @@
             {
               "id": "T041",
               "task_name": "重置密码",
+              "category": "basic",
               "use_cases": [
                 {
                   "id": "UC104",
@@ -1491,6 +1514,7 @@
             {
               "id": "T042",
               "task_name": "注销账户",
+              "category": "basic",
               "use_cases": [
                 {
                   "id": "UC108",
@@ -1547,6 +1571,7 @@
             {
               "id": "T043",
               "task_name": "完成新手引导",
+              "category": "basic",
               "use_cases": [
                 {
                   "id": "UC110",
@@ -1598,6 +1623,7 @@
             {
               "id": "T044",
               "task_name": "管理通知中心",
+              "category": "basic",
               "use_cases": [
                 {
                   "id": "UC112",
@@ -1648,6 +1674,7 @@
             {
               "id": "T045",
               "task_name": "提交意见反馈",
+              "category": "basic",
               "use_cases": [
                 {
                   "id": "UC114",
@@ -2022,6 +2049,7 @@
             {
               "id": "T021",
               "task_name": "使用紧急场景速学",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC026",
@@ -2085,6 +2113,7 @@
             {
               "id": "T009",
               "task_name": "创建场景对话脚本",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC013",
@@ -2196,6 +2225,7 @@
             {
               "id": "T010",
               "task_name": "审核场景内容",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC018",
@@ -2286,6 +2316,7 @@
             {
               "id": "T011",
               "task_name": "管理场景包",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC022",
@@ -2331,6 +2362,7 @@
             {
               "id": "T012",
               "task_name": "管理场景标签",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC024",
@@ -2389,6 +2421,7 @@
             {
               "id": "T029",
               "task_name": "查看AI对话质量评分",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC030",
@@ -2433,6 +2466,7 @@
             {
               "id": "T030",
               "task_name": "标注异常对话",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC032",
@@ -2523,6 +2557,7 @@
             {
               "id": "T032",
               "task_name": "调整发音评估参数",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC040",
@@ -2614,6 +2649,7 @@
             {
               "id": "T031",
               "task_name": "管理Prompt模板",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC084",
@@ -2677,6 +2713,7 @@
             {
               "id": "T025",
               "task_name": "查看关键指标看板",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC074",
@@ -2722,6 +2759,7 @@
             {
               "id": "T026",
               "task_name": "分析用户行为",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC076",
@@ -2766,6 +2804,7 @@
             {
               "id": "T027",
               "task_name": "管理A/B测试",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC078",
@@ -2851,6 +2890,7 @@
             {
               "id": "T028",
               "task_name": "生成运营报告",
+              "category": "core",
               "use_cases": [
                 {
                   "id": "UC082",
@@ -2909,6 +2949,7 @@
             {
               "id": "T034",
               "task_name": "处理订阅与退款",
+              "category": "basic",
               "use_cases": [
                 {
                   "id": "UC071",
@@ -2985,6 +3026,7 @@
             {
               "id": "T033",
               "task_name": "管理用户账户",
+              "category": "basic",
               "use_cases": [
                 {
                   "id": "UC086",
@@ -3035,6 +3077,7 @@
             {
               "id": "T035",
               "task_name": "配置系统参数",
+              "category": "basic",
               "use_cases": [
                 {
                   "id": "UC088",
@@ -3105,6 +3148,7 @@
             {
               "id": "T036",
               "task_name": "管理权限角色",
+              "category": "basic",
               "use_cases": [
                 {
                   "id": "UC091",
@@ -3149,6 +3193,7 @@
             {
               "id": "T037",
               "task_name": "处理用户投诉",
+              "category": "basic",
               "use_cases": [
                 {
                   "id": "UC093",

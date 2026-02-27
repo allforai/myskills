@@ -170,6 +170,7 @@
     "id": "GAP-003",
     "title": "查看实时发音纠正 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "core",
     "priority": "高",
     "affected_roles": [
       "职场人士"
@@ -187,6 +188,7 @@
     "id": "GAP-007",
     "title": "完成记忆曲线复习 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "core",
     "priority": "高",
     "affected_roles": [
       "职场人士"
@@ -204,6 +206,7 @@
     "id": "GAP-011",
     "title": "创建场景对话脚本 — CRUD_INCOMPLETE",
     "type": "CRUD_INCOMPLETE",
+    "category": "core",
     "priority": "高",
     "affected_roles": [
       "内容运营"
@@ -221,6 +224,7 @@
     "id": "GAP-017",
     "title": "查看学习连胜与成就 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "core",
     "priority": "高",
     "affected_roles": [
       "职场人士"
@@ -238,6 +242,7 @@
     "id": "GAP-030",
     "title": "查看个性化推荐 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "core",
     "priority": "高",
     "affected_roles": [
       "职场人士"
@@ -255,6 +260,7 @@
     "id": "GAP-036",
     "title": "查看关键指标看板 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "core",
     "priority": "高",
     "affected_roles": [
       "数据运营"
@@ -272,6 +278,7 @@
     "id": "GAP-044",
     "title": "查看AI对话质量评分 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "core",
     "priority": "高",
     "affected_roles": [
       "AI 训练师"
@@ -289,6 +296,7 @@
     "id": "GAP-051",
     "title": "管理用户账户 — CRUD_INCOMPLETE",
     "type": "CRUD_INCOMPLETE",
+    "category": "basic",
     "priority": "高",
     "affected_roles": [
       "系统管理员"
@@ -306,6 +314,7 @@
     "id": "GAP-001",
     "title": "查看对话报告 — NO_RULES",
     "type": "NO_RULES",
+    "category": "core",
     "priority": "高",
     "affected_roles": [
       "职场人士"
@@ -323,6 +332,7 @@
     "id": "GAP-004",
     "title": "查看实时发音纠正 — NO_RULES",
     "type": "NO_RULES",
+    "category": "core",
     "priority": "高",
     "affected_roles": [
       "职场人士"
@@ -340,6 +350,7 @@
     "id": "GAP-031",
     "title": "查看个性化推荐 — NO_RULES",
     "type": "NO_RULES",
+    "category": "core",
     "priority": "高",
     "affected_roles": [
       "职场人士"
@@ -357,6 +368,7 @@
     "id": "GAP-037",
     "title": "查看关键指标看板 — NO_RULES",
     "type": "NO_RULES",
+    "category": "core",
     "priority": "高",
     "affected_roles": [
       "数据运营"
@@ -374,6 +386,7 @@
     "id": "GAP-045",
     "title": "查看AI对话质量评分 — NO_RULES",
     "type": "NO_RULES",
+    "category": "core",
     "priority": "高",
     "affected_roles": [
       "AI 训练师"
@@ -391,6 +404,7 @@
     "id": "GAP-050",
     "title": "管理用户账户 — NO_RULES",
     "type": "NO_RULES",
+    "category": "basic",
     "priority": "高",
     "affected_roles": [
       "系统管理员"
@@ -408,6 +422,7 @@
     "id": "GAP-056",
     "title": "登录账户 — NO_RULES",
     "type": "NO_RULES",
+    "category": "basic",
     "priority": "高",
     "affected_roles": [
       "职场人士"
@@ -925,6 +940,7 @@
     "id": "GAP-005",
     "title": "查看发音详细报告 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "职场人士"
@@ -942,6 +958,7 @@
     "id": "GAP-008",
     "title": "管理词汇本 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "职场人士"
@@ -959,6 +976,7 @@
     "id": "GAP-010",
     "title": "管理词汇本 — CRUD_INCOMPLETE",
     "type": "CRUD_INCOMPLETE",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "职场人士"
@@ -976,6 +994,7 @@
     "id": "GAP-012",
     "title": "管理场景包 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "内容运营"
@@ -993,6 +1012,7 @@
     "id": "GAP-014",
     "title": "管理场景标签 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "内容运营"
@@ -1010,6 +1030,7 @@
     "id": "GAP-016",
     "title": "管理场景标签 — CRUD_INCOMPLETE",
     "type": "CRUD_INCOMPLETE",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "内容运营"
@@ -1027,6 +1048,7 @@
     "id": "GAP-018",
     "title": "查看排行榜 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "职场人士"
@@ -1044,6 +1066,7 @@
     "id": "GAP-020",
     "title": "兑换积分商品 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "职场人士"
@@ -1061,6 +1084,7 @@
     "id": "GAP-024",
     "title": "查看个人学习档案 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "职场人士"
@@ -1078,6 +1102,7 @@
     "id": "GAP-026",
     "title": "查看学习统计报告 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "职场人士"
@@ -1095,6 +1120,7 @@
     "id": "GAP-038",
     "title": "分析用户行为 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "数据运营"
@@ -1112,6 +1138,7 @@
     "id": "GAP-040",
     "title": "管理A/B测试 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "数据运营"
@@ -1129,6 +1156,7 @@
     "id": "GAP-041",
     "title": "管理A/B测试 — CRUD_INCOMPLETE",
     "type": "CRUD_INCOMPLETE",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "数据运营"
@@ -1146,6 +1174,7 @@
     "id": "GAP-042",
     "title": "生成运营报告 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "数据运营"
@@ -1163,6 +1192,7 @@
     "id": "GAP-046",
     "title": "标注异常对话 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "AI 训练师"
@@ -1180,6 +1210,7 @@
     "id": "GAP-048",
     "title": "管理Prompt模板 — CRUD_INCOMPLETE",
     "type": "CRUD_INCOMPLETE",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "AI 训练师"
@@ -1197,6 +1228,7 @@
     "id": "GAP-055",
     "title": "处理用户投诉 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "basic",
     "priority": "中",
     "affected_roles": [
       "系统管理员"
@@ -1214,6 +1246,7 @@
     "id": "GAP-063",
     "title": "管理通知中心 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "basic",
     "priority": "中",
     "affected_roles": [
       "职场人士"
@@ -1231,6 +1264,7 @@
     "id": "GAP-065",
     "title": "管理通知中心 — CRUD_INCOMPLETE",
     "type": "CRUD_INCOMPLETE",
+    "category": "basic",
     "priority": "中",
     "affected_roles": [
       "职场人士"
@@ -1248,6 +1282,7 @@
     "id": "GAP-002",
     "title": "进行自由对话 — NO_RULES",
     "type": "NO_RULES",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "职场人士"
@@ -1265,6 +1300,7 @@
     "id": "GAP-006",
     "title": "查看发音详细报告 — NO_RULES",
     "type": "NO_RULES",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "职场人士"
@@ -1282,6 +1318,7 @@
     "id": "GAP-009",
     "title": "管理词汇本 — NO_RULES",
     "type": "NO_RULES",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "职场人士"
@@ -1299,6 +1336,7 @@
     "id": "GAP-013",
     "title": "管理场景包 — NO_RULES",
     "type": "NO_RULES",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "内容运营"
@@ -1316,6 +1354,7 @@
     "id": "GAP-015",
     "title": "管理场景标签 — NO_RULES",
     "type": "NO_RULES",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "内容运营"
@@ -1333,6 +1372,7 @@
     "id": "GAP-019",
     "title": "查看排行榜 — NO_RULES",
     "type": "NO_RULES",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "职场人士"
@@ -1350,6 +1390,7 @@
     "id": "GAP-021",
     "title": "兑换积分商品 — NO_RULES",
     "type": "NO_RULES",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "职场人士"
@@ -1367,6 +1408,7 @@
     "id": "GAP-025",
     "title": "查看个人学习档案 — NO_RULES",
     "type": "NO_RULES",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "职场人士"
@@ -1384,6 +1426,7 @@
     "id": "GAP-027",
     "title": "查看学习统计报告 — NO_RULES",
     "type": "NO_RULES",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "职场人士"
@@ -1401,6 +1444,7 @@
     "id": "GAP-032",
     "title": "使用紧急场景速学 — NO_RULES",
     "type": "NO_RULES",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "新移民"
@@ -1418,6 +1462,7 @@
     "id": "GAP-039",
     "title": "分析用户行为 — NO_RULES",
     "type": "NO_RULES",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "数据运营"
@@ -1435,6 +1480,7 @@
     "id": "GAP-043",
     "title": "生成运营报告 — NO_RULES",
     "type": "NO_RULES",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "数据运营"
@@ -1452,6 +1498,7 @@
     "id": "GAP-047",
     "title": "管理Prompt模板 — NO_RULES",
     "type": "NO_RULES",
+    "category": "core",
     "priority": "中",
     "affected_roles": [
       "AI 训练师"
@@ -1469,6 +1516,7 @@
     "id": "GAP-064",
     "title": "管理通知中心 — NO_RULES",
     "type": "NO_RULES",
+    "category": "basic",
     "priority": "中",
     "affected_roles": [
       "职场人士"
@@ -2151,7 +2199,8 @@
     "id": "GAP-022",
     "title": "分享学习成果 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
-    "priority": "低",
+    "category": "core",
+    "priority": "中",
     "affected_roles": [
       "职场人士"
     ],
@@ -2168,7 +2217,8 @@
     "id": "GAP-028",
     "title": "设置角色偏好 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
-    "priority": "低",
+    "category": "core",
+    "priority": "中",
     "affected_roles": [
       "职场人士"
     ],
@@ -2185,6 +2235,7 @@
     "id": "GAP-034",
     "title": "管理订阅 — CRUD_INCOMPLETE",
     "type": "CRUD_INCOMPLETE",
+    "category": "basic",
     "priority": "低",
     "affected_roles": [
       "职场人士"
@@ -2202,7 +2253,8 @@
     "id": "GAP-049",
     "title": "调整发音评估参数 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
-    "priority": "低",
+    "category": "core",
+    "priority": "中",
     "affected_roles": [
       "AI 训练师"
     ],
@@ -2219,6 +2271,7 @@
     "id": "GAP-052",
     "title": "管理权限角色 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "basic",
     "priority": "低",
     "affected_roles": [
       "系统管理员"
@@ -2236,6 +2289,7 @@
     "id": "GAP-054",
     "title": "管理权限角色 — CRUD_INCOMPLETE",
     "type": "CRUD_INCOMPLETE",
+    "category": "basic",
     "priority": "低",
     "affected_roles": [
       "系统管理员"
@@ -2253,6 +2307,7 @@
     "id": "GAP-057",
     "title": "管理个人设置 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "basic",
     "priority": "低",
     "affected_roles": [
       "职场人士"
@@ -2270,6 +2325,7 @@
     "id": "GAP-059",
     "title": "管理个人设置 — CRUD_INCOMPLETE",
     "type": "CRUD_INCOMPLETE",
+    "category": "basic",
     "priority": "低",
     "affected_roles": [
       "职场人士"
@@ -2287,6 +2343,7 @@
     "id": "GAP-060",
     "title": "重置密码 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "basic",
     "priority": "低",
     "affected_roles": [
       "职场人士"
@@ -2304,6 +2361,7 @@
     "id": "GAP-061",
     "title": "完成新手引导 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "basic",
     "priority": "低",
     "affected_roles": [
       "职场人士"
@@ -2321,6 +2379,7 @@
     "id": "GAP-066",
     "title": "提交意见反馈 — NO_EXCEPTIONS",
     "type": "NO_EXCEPTIONS",
+    "category": "basic",
     "priority": "低",
     "affected_roles": [
       "职场人士"
@@ -2338,7 +2397,8 @@
     "id": "GAP-023",
     "title": "分享学习成果 — NO_RULES",
     "type": "NO_RULES",
-    "priority": "低",
+    "category": "core",
+    "priority": "中",
     "affected_roles": [
       "职场人士"
     ],
@@ -2355,7 +2415,8 @@
     "id": "GAP-029",
     "title": "设置角色偏好 — NO_RULES",
     "type": "NO_RULES",
-    "priority": "低",
+    "category": "core",
+    "priority": "中",
     "affected_roles": [
       "职场人士"
     ],
@@ -2372,6 +2433,7 @@
     "id": "GAP-033",
     "title": "管理订阅 — NO_RULES",
     "type": "NO_RULES",
+    "category": "basic",
     "priority": "低",
     "affected_roles": [
       "职场人士"
@@ -2389,6 +2451,7 @@
     "id": "GAP-035",
     "title": "购买场景包 — NO_RULES",
     "type": "NO_RULES",
+    "category": "basic",
     "priority": "低",
     "affected_roles": [
       "职场人士"
@@ -2406,6 +2469,7 @@
     "id": "GAP-053",
     "title": "管理权限角色 — NO_RULES",
     "type": "NO_RULES",
+    "category": "basic",
     "priority": "低",
     "affected_roles": [
       "系统管理员"
@@ -2423,6 +2487,7 @@
     "id": "GAP-058",
     "title": "管理个人设置 — NO_RULES",
     "type": "NO_RULES",
+    "category": "basic",
     "priority": "低",
     "affected_roles": [
       "职场人士"
@@ -2440,6 +2505,7 @@
     "id": "GAP-062",
     "title": "完成新手引导 — NO_RULES",
     "type": "NO_RULES",
+    "category": "basic",
     "priority": "低",
     "affected_roles": [
       "职场人士"
