@@ -539,7 +539,119 @@ gap_tasks_list.sort(key=lambda x: x["_sort"])
 for g in gap_tasks_list:
     del g["_sort"]
 
+
+# ── XV auto-apply helpers ────────────────────────────────────────────────────
+
+def _apply_journey_findings(data, gap_tasks_list, gap_counter):
+    """Append overlooked high-severity journey gaps to gap_tasks_list.
+
+    Returns count of added gaps.
+    """
+    added = 0
+    for item in data.get("overlooked", []):
+        if item.get("severity") != "high":
+            continue
+        gap_counter[0] += 1
+        gap_id = f"GAP-{gap_counter[0]:03d}"
+        gap_tasks_list.append({
+            "id": gap_id,
+            "title": f"[XV] {item.get('role', '')} — {item.get('gap', 'journey gap')}",
+            "type": "XV_JOURNEY_GAP",
+            "priority": "高",
+            "affected_roles": [item.get("role", "")],
+            "affected_tasks": [item.get("task", "")],
+            "affected_screens": [],
+            "description": item.get("gap", ""),
+            "frequency_impact": "XV交叉验证发现",
+            "xv_source": "journey_validation",
+        })
+        added += 1
+    return added
+
+
+def _apply_priority_findings(data, gap_tasks_list):
+    """Apply priority adjustments and mark dedup entries.
+
+    Returns (adjusted_count, dedup_count).
+    """
+    adjusted = 0
+    deduped = 0
+
+    # Build id→gap index
+    gap_by_id = {g["id"]: g for g in gap_tasks_list}
+
+    prio_map = {"high": "高", "medium": "中", "low": "低", "高": "高", "中": "中", "低": "低"}
+
+    for adj in data.get("adjustments", []):
+        gid = adj.get("id", "")
+        recommended = prio_map.get(adj.get("recommended", ""), "")
+        if gid in gap_by_id and recommended:
+            if gap_by_id[gid]["priority"] != recommended:
+                gap_by_id[gid]["priority"] = recommended
+                gap_by_id[gid].setdefault("xv_notes", []).append(
+                    f"priority {adj.get('current', '?')}→{recommended}: {adj.get('reason', '')}"
+                )
+                adjusted += 1
+
+    for gid in data.get("dedup", []):
+        if gid in gap_by_id:
+            gap_by_id[gid]["xv_dedup"] = True
+            deduped += 1
+
+    return adjusted, deduped
+
+
 C.write_json(os.path.join(OUT, "gap-tasks.json"), gap_tasks_list)
+
+# ── XV Cross-model validation ────────────────────────────────────────────────
+xv_reviews = []
+
+if C.xv_available():
+    from xv_prompts import journey_validation_prompt, gap_prioritization_prompt
+
+    # XV-1: journey_validation → gemini
+    try:
+        jv_prompt = journey_validation_prompt(journey_gaps)
+        jv_result = C.xv_call("journey_validation", jv_prompt["user"], jv_prompt["system"])
+        print(f"  XV journey_validation: model={jv_result['model_used']}")
+        jv_data = C.xv_parse_json(jv_result["response"])
+        added = _apply_journey_findings(jv_data, gap_tasks_list, gap_counter)
+        xv_reviews.append({
+            "task_type": "journey_validation",
+            "model_used": jv_result["model_used"],
+            "family": jv_result["family"],
+            "auto_applied": {"added_gaps": added},
+            "raw_findings": jv_data,
+        })
+        print(f"  XV journey_validation: {added} gaps added")
+    except Exception as e:
+        print(f"  XV journey_validation failed: {e}", file=sys.stderr)
+        raise
+
+    # XV-2: gap_prioritization → gpt
+    try:
+        gp_prompt = gap_prioritization_prompt(gap_tasks_list)
+        gp_result = C.xv_call("gap_prioritization", gp_prompt["user"], gp_prompt["system"])
+        print(f"  XV gap_prioritization: model={gp_result['model_used']}")
+        gp_data = C.xv_parse_json(gp_result["response"])
+        adjusted, deduped = _apply_priority_findings(gp_data, gap_tasks_list)
+        xv_reviews.append({
+            "task_type": "gap_prioritization",
+            "model_used": gp_result["model_used"],
+            "family": gp_result["family"],
+            "auto_applied": {"priority_adjusted": adjusted, "dedup_marked": deduped},
+            "raw_findings": gp_data,
+        })
+        print(f"  XV gap_prioritization: {adjusted} adjusted, {deduped} deduped")
+    except Exception as e:
+        print(f"  XV gap_prioritization failed: {e}", file=sys.stderr)
+        raise
+
+    # Rewrite gap-tasks.json with XV corrections (keep flat array schema)
+    C.write_json(os.path.join(OUT, "gap-tasks.json"), gap_tasks_list)
+    # Write cross_model_review to separate file
+    C.write_json(os.path.join(OUT, "gap-xv-review.json"), C.xv_review(xv_reviews))
+    print(f"  XV: gap-tasks.json rewritten, gap-xv-review.json created")
 
 # ── Per-priority split files ─────────────────────────────────────────────────
 priority_labels = {"高": "high", "中": "medium", "低": "low"}

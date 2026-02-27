@@ -28,13 +28,16 @@
 
 ---
 
-## 三、跨模型交叉验证 XV（可选增强）
+## 三、跨模型交叉验证 XV（自动闭环）
 
-当 `mcp__openrouter__ask_model` 工具可用时，在指定 Step 完成后自动发起交叉验证：
+预置脚本通过 `OPENROUTER_API_KEY` 环境变量检测可用性，直连 OpenRouter API（Python `urllib.request`），不依赖 MCP 工具：
 
-- **自动检测**：检查工具是否可用
-- **自动发起**：按各技能定义的 `task_type` 和目标模型发起验证
+- **自动检测**：检查 `OPENROUTER_API_KEY` 环境变量是否存在
+- **直连 API**：脚本使用 `urllib.request` 直连 `https://openrouter.ai/api/v1/chat/completions`，task→model 路由硬编码于 `_common.py`（与 `defaults.ts` 保持一致）
+- **自动采纳**：高严重度发现自动修正数据（追加缺口/用例、调整优先级、标记弱项），不问用户
 - **结果写入**：写入产出的 `cross_model_review` 字段
-- **失败处理**：工具不可用或调用失败时，自动跳过，不阻塞流程，不生成 `cross_model_review` 字段
+- **API Key 缺失**：静默跳过（向后兼容）
+- **API Key 存在但调用失败**：抛异常终止（不静默吞错）
+- **429 限流**：sleep 3s → 重试 1 次 → 失败则抛异常
 
 各技能定义自身的验证点、task_type、发送内容和写入字段（见各 skill 文件）。

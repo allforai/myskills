@@ -12,6 +12,9 @@ import json
 import os
 import datetime
 import sys
+import urllib.request
+import urllib.error
+import time
 
 # ── Field Constants ───────────────────────────────────────────────────────────
 # screen-map.json uses "tasks", screen-index.json uses "task_refs"
@@ -269,6 +272,134 @@ def write_split_files(base, subdir, prefix, split_by, splits, extra_meta=None):
         path = write_json(os.path.join(out_dir, fname), wrapper)
         written.append(path)
     return written
+
+
+# ── XV Cross-model Validation ─────────────────────────────────────────────────
+# Direct OpenRouter API calls — no MCP dependency.
+
+XV_ROUTING = {
+    "journey_validation": "gemini",
+    "gap_prioritization": "gpt",
+    "edge_case_generation": "deepseek",
+    "acceptance_criteria_review": "gpt",
+}
+
+XV_FAMILY_PREFIX = {
+    "gpt": "openai/gpt-4",
+    "gemini": "google/gemini-2",
+    "deepseek": "deepseek/deepseek-chat",
+}
+
+
+def xv_available():
+    """Check if OPENROUTER_API_KEY environment variable is set."""
+    return bool(os.environ.get("OPENROUTER_API_KEY"))
+
+
+def xv_call(task_type, prompt, system_prompt=None, temperature=0.3):
+    """Send XV request directly to OpenRouter API.
+
+    Uses task→family routing from defaults.ts (Python mirror).
+    Returns dict: {response, model_used, family, task_type}.
+    429 → sleep 3s → retry once → raise on failure.
+    """
+    api_key = os.environ.get("OPENROUTER_API_KEY", "")
+    if not api_key:
+        raise RuntimeError("OPENROUTER_API_KEY not set")
+
+    family = XV_ROUTING.get(task_type, "gpt")
+    model = _resolve_model(family)
+
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": prompt})
+
+    payload = json.dumps({
+        "model": model,
+        "messages": messages,
+        "temperature": temperature,
+    }).encode("utf-8")
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://github.com/product-design-skill",
+    }
+
+    last_err = None
+    for attempt in range(2):
+        if attempt > 0:
+            time.sleep(3)
+        try:
+            req = urllib.request.Request(
+                "https://openrouter.ai/api/v1/chat/completions",
+                data=payload,
+                headers=headers,
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                body = json.loads(resp.read().decode("utf-8"))
+            content = body["choices"][0]["message"]["content"]
+            return {
+                "response": content,
+                "model_used": body.get("model", model),
+                "family": family,
+                "task_type": task_type,
+            }
+        except urllib.error.HTTPError as e:
+            last_err = e
+            try:
+                err_body = e.read().decode("utf-8", errors="replace")[:200]
+            except Exception:
+                err_body = "(body unreadable)"
+            if e.code == 429 and attempt == 0:
+                print(f"  XV: 429 rate-limited, retrying in 3s...")
+                continue
+            raise RuntimeError(
+                f"XV call failed ({task_type}): HTTP {e.code} — {err_body}"
+            ) from e
+        except Exception as e:
+            raise RuntimeError(f"XV call failed ({task_type}): {e}") from e
+
+    raise RuntimeError(f"XV call failed after retry ({task_type}): {last_err}")
+
+
+def _resolve_model(family):
+    """Resolve family to a concrete model ID via prefix mapping."""
+    prefix = XV_FAMILY_PREFIX.get(family, "openai/gpt-4")
+    # Use well-known latest model IDs to avoid /models API call overhead
+    model_map = {
+        "openai/gpt-4": "openai/gpt-4o",
+        "google/gemini-2": "google/gemini-2.0-flash-001",
+        "deepseek/deepseek-chat": "deepseek/deepseek-chat",
+    }
+    return model_map.get(prefix, prefix)
+
+
+def xv_review(reviews_list):
+    """Build cross_model_review wrapper.
+
+    Returns {"generated_at": ..., "reviews": reviews_list}.
+    """
+    return {
+        "generated_at": now_iso(),
+        "reviews": reviews_list,
+    }
+
+
+def xv_parse_json(raw_text):
+    """Parse JSON from XV response, handling markdown code fences."""
+    text = raw_text.strip()
+    if text.startswith("```"):
+        # Strip ```json ... ``` wrapper
+        lines = text.split("\n")
+        if lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        text = "\n".join(lines)
+    return json.loads(text)
 
 
 # ── Self-test ─────────────────────────────────────────────────────────────────

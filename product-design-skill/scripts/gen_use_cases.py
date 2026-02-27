@@ -190,6 +190,82 @@ def gen_validation(task):
                 })
     return cases
 
+# ── XV auto-apply helpers ────────────────────────────────────────────────────
+
+def _apply_edge_case_findings(data, roles_tree, tasks_by_id, uc_counter):
+    """Append high-severity missing edge cases to the use case tree.
+
+    Returns count of added cases.
+    """
+    added = 0
+    # Build lookup: role_id → {task_id → task_entry in roles_tree}
+    task_lookup = {}
+    for role in roles_tree:
+        for fa in role.get("feature_areas", []):
+            for t_data in fa.get("tasks", []):
+                task_lookup[(role["id"], t_data["id"])] = t_data
+
+    for mc in data.get("missing_cases", []):
+        if mc.get("severity") != "high":
+            continue
+        rid = mc.get("role_id", "")
+        tid = mc.get("task_id", "")
+        t_data = task_lookup.get((rid, tid))
+        if not t_data:
+            # Try matching task_id across all roles
+            for key, val in task_lookup.items():
+                if key[1] == tid:
+                    t_data = val
+                    break
+        if not t_data:
+            continue
+
+        uc_counter[0] += 1
+        uc_id = f"UC{uc_counter[0]:03d}"
+        t_data["use_cases"].append({
+            "id": uc_id,
+            "title": f"[XV] {mc.get('title', 'edge case')}",
+            "type": mc.get("type", "boundary"),
+            "priority": "高",
+            "given": [],
+            "when": [mc.get("title", "")],
+            "then": [],
+            "screen_ref": None,
+            "action_ref": t_data.get("task_name", ""),
+            "exception_source": None,
+            "flags": ["XV_EDGE_CASE"],
+            "xv_source": "edge_case_generation",
+        })
+        added += 1
+    return added
+
+
+def _apply_acceptance_findings(data, roles_tree):
+    """Flag weak acceptance criteria on use cases.
+
+    Returns count of flagged cases.
+    """
+    flagged = 0
+    # Build uc_id → use_case lookup
+    uc_lookup = {}
+    for role in roles_tree:
+        for fa in role.get("feature_areas", []):
+            for t_data in fa.get("tasks", []):
+                for uc in t_data.get("use_cases", []):
+                    uc_lookup[uc["id"]] = uc
+
+    for weak in data.get("weak", []):
+        uc_id = weak.get("use_case_id", "")
+        uc = uc_lookup.get(uc_id)
+        if uc:
+            uc["xv_flag"] = "weak_criteria"
+            uc.setdefault("xv_notes", []).append(
+                f"{weak.get('issue', '')}: {weak.get('suggestion', '')}"
+            )
+            flagged += 1
+    return flagged
+
+
 # ── Build the tree ────────────────────────────────────────────────────────────
 role_fas = {}  # role_id -> {fa_id: fa_data}
 for fa in feature_areas:
@@ -467,6 +543,58 @@ tree = {
 }
 
 C.write_json(os.path.join(OUT, "use-case-tree.json"), tree)
+
+# ── XV Cross-model validation ────────────────────────────────────────────────
+xv_reviews = []
+
+if C.xv_available():
+    from xv_prompts import edge_case_prompt, acceptance_criteria_prompt
+
+    # XV-1: edge_case_generation → deepseek
+    try:
+        ec_prompt = edge_case_prompt(roles_tree)
+        ec_result = C.xv_call("edge_case_generation", ec_prompt["user"], ec_prompt["system"])
+        print(f"  XV edge_case_generation: model={ec_result['model_used']}")
+        ec_data = C.xv_parse_json(ec_result["response"])
+        added = _apply_edge_case_findings(ec_data, roles_tree, tasks_by_id, uc_counter)
+        xv_reviews.append({
+            "task_type": "edge_case_generation",
+            "model_used": ec_result["model_used"],
+            "family": ec_result["family"],
+            "auto_applied": {"edge_cases_added": added},
+            "raw_findings": ec_data,
+        })
+        print(f"  XV edge_case_generation: {added} cases added")
+    except Exception as e:
+        print(f"  XV edge_case_generation failed: {e}", file=sys.stderr)
+        raise
+
+    # XV-2: acceptance_criteria_review → gpt
+    try:
+        ac_prompt = acceptance_criteria_prompt(roles_tree)
+        ac_result = C.xv_call("acceptance_criteria_review", ac_prompt["user"], ac_prompt["system"])
+        print(f"  XV acceptance_criteria_review: model={ac_result['model_used']}")
+        ac_data = C.xv_parse_json(ac_result["response"])
+        flagged = _apply_acceptance_findings(ac_data, roles_tree)
+        xv_reviews.append({
+            "task_type": "acceptance_criteria_review",
+            "model_used": ac_result["model_used"],
+            "family": ac_result["family"],
+            "auto_applied": {"weak_flagged": flagged},
+            "raw_findings": ac_data,
+        })
+        print(f"  XV acceptance_criteria_review: {flagged} flagged")
+    except Exception as e:
+        print(f"  XV acceptance_criteria_review failed: {e}", file=sys.stderr)
+        raise
+
+    # Update summary counts after XV injection
+    tree["summary"]["use_case_count"] = uc_counter[0] + e2e_count
+
+    # Rewrite use-case-tree.json with cross_model_review
+    tree["cross_model_review"] = C.xv_review(xv_reviews)
+    C.write_json(os.path.join(OUT, "use-case-tree.json"), tree)
+    print(f"  XV: use-case-tree.json rewritten with cross_model_review")
 
 # ── Per-role split files ─────────────────────────────────────────────────────
 splits = {}

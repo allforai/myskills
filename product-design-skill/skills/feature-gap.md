@@ -493,6 +493,8 @@ Step 6: 状态机完整性检查（quick / journey 模式跳过）
 - 使用 `_common.get_screen_tasks()` 统一读取界面任务引用
 - 使用 `_common.collect_flow_task_refs()` 和 `get_flow_nodes()` 读取业务流节点（`nodes` 字段，非 `steps`）
 
+**XV 交叉验证（v3.3.0+）**：脚本自动执行 XV 交叉验证（需 `OPENROUTER_API_KEY` 环境变量）。通过 Python `urllib.request` 直连 OpenRouter API，不依赖 MCP。高严重度发现自动修正数据（追加缺口任务 / 调整优先级 / 标记重复），结果写入 `gap-tasks.json` 的 `cross_model_review` 字段。无 API Key 时静默跳过。
+
 ---
 
 ## 输出文件结构
