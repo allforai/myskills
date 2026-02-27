@@ -274,7 +274,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 **use-case-tree.json 不存在时（自动推导）**：
 - 从 task-inventory.json 提取 frequency=高 和 frequency=中 的任务
 - 按角色分组，为每个角色生成最简测试序列（登录 → 执行核心任务 → 验证结果）
-- 向用户展示推导出的测试序列，确认后执行
+- 自动推导测试序列（不停，汇总到 D4 批量确认）
 
 ---
 
@@ -301,11 +301,40 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 ---
 
-### D4：汇总 + 失败原因确认
+### D4：自动分类 + 批量确认
 
-对每个 `fail` 用例，向用户确认失败原因分类：
-- `FIX_FAILING` — 代码缺陷，生成修复任务
-- `ENV_ISSUE` — 测试环境问题（如数据库未初始化），不计入任务清单，记录 INFO
+**自动分类规则**（基于错误特征建议分类，用户仍是最终决策者）：
+
+| 错误特征 | 自动建议 | 理由 |
+|---------|---------|------|
+| HTTP 5xx 响应 | FIX_FAILING | 服务端错误 = 代码缺陷 |
+| 404 on expected route | FIX_FAILING | 路由未实现 |
+| 元素未找到 / 断言失败 | FIX_FAILING | 页面实现不完整 |
+| Connection refused / timeout | ENV_ISSUE | 服务未启动或网络问题 |
+| Database error in response | ENV_ISSUE | 数据库未初始化 |
+| Auth redirect (unexpected) | FIX_FAILING | 权限配置错误 |
+| CORS error | ENV_ISSUE | 开发环境跨域配置 |
+
+**批量确认展示格式**：
+
+```
+## 动态验收结果
+
+通过: {N}/{M} 用例
+
+失败项（自动建议分类）:
+| 用例 | 失败步骤 | 错误 | 建议分类 | 理由 |
+|------|---------|------|---------|------|
+| UC001 创建订单 | Step 3 | 500 Internal Error | FIX_FAILING | HTTP 5xx |
+| UC005 导出报表 | Step 1 | Connection refused | ENV_ISSUE | 连接拒绝 |
+| UC008 批量删除 | Step 2 | Element not found | FIX_FAILING | 元素缺失 |
+
+→ AskUserQuestion: 确认全部分类 / 逐条调整
+```
+
+用户可选操作：
+- 确认全部自动建议分类
+- 逐条调整：将某项从 `FIX_FAILING` 改为 `ENV_ISSUE` 或 `DEFERRED`，反之亦然
 - `DEFERRED` — 用户标记暂缓，不生成任务
 
 ---
@@ -479,5 +508,5 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 1. **product-map 是验收基准** — 静态验收以 product-map.json 为唯一真值，不引入额外需求来源；有争议的功能先补充到产品地图，再重跑验收
 2. **只报告不修改代码** — 发现缺口只标记到 verify-tasks.json，不自动生成、修改或删除任何实现代码
 3. **频次决定优先级** — IMPLEMENT 任务按 frequency 排序，高频漏实现优先于低频；低频漏实现仅列出不主动建议
-4. **用户确认 EXTRA 归属** — EXTRA 代码是「合理遗留」「补录产品地图」还是「标记删除」，由用户逐条决定；skill 不自动判定
-5. **动态失败需用户确认分类** — 测试失败可能是代码缺陷也可能是测试环境问题，必须逐条由用户确认后才写入 FIX_FAILING；不允许自动归类
+4. **用户确认 EXTRA 归属** — EXTRA 代码在静态汇总中批量展示（含自动建议），用户一次确认或逐条调整
+5. **动态失败需用户确认分类** — 基于错误特征自动建议分类，在动态汇总中批量展示，用户一次确认或逐条调整；自动建议不等于自动归类，用户仍是最终决策者

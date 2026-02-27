@@ -368,7 +368,8 @@ Step 4: 生成修复任务
     - FIX_FAILING → 修复任务（含失败截图/日志引用）
     - FIX_REQUIRED → 跨端修复任务
   追加到对应子项目 tasks.md 的 Fix Round（B-FIX）
-  AskUserQuestion 确认修复任务列表
+  → 输出: 「修复任务 ✓ IMPLEMENT:{N} FIX_FAILING:{M} FIX_REQUIRED:{K}」
+  → 直接执行（不停，来源是已经用户批量确认过的验证结果，无需二次确认）
 
 Step 5: 执行修复
   调用 /task-execute 执行 Fix Round

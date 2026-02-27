@@ -6,7 +6,7 @@ description: >
   "跨子项目验证", "业务流程测试", "跨端 E2E",
   or needs to derive and execute cross-sub-project E2E test scenarios from business flows.
   Requires project-manifest.json and running sub-project applications.
-version: "1.1.0"
+version: "1.2.0"
 ---
 
 # E2E Verify — 跨端验证
@@ -130,11 +130,12 @@ Step 1: 跨端场景推导
     web-mobile → Playwright 移动视口模拟
     mobile-native → 标记为需要 Detox/Maestro（Playwright 无法测）
     backend → 作为 API 提供者，通过 API 调用验证
-  → AskUserQuestion 确认场景列表（正向 + 负向）
+  → 输出进度: 「E2E 场景 ✓ 正向 {N} + 负向 {M}」（不停，场景列表在 Step 3 批量确认中展示）
   → 写入 .allforai/project-forge/e2e-scenarios.json
   ↓
 Step 2: 场景执行（Playwright）
-  逐场景、逐步骤执行:
+  逐场景、逐步骤执行（不停，输出进度）:
+    → 输出进度: 「E2E-001 ✓ / E2E-002 ✗ Step 2 / ...」
     browser_navigate → 子项目 A 的 URL
     browser_snapshot → 获取页面状态
     browser_fill / browser_click → 执行操作
@@ -149,11 +150,34 @@ Step 2: 场景执行（Playwright）
     screenshot: 截图路径（失败时）
     duration_ms: 耗时
   ↓
-Step 3: 失败分类
-  逐失败项 AskUserQuestion:
-    FIX_REQUIRED — 代码缺陷，需要修复
-    ENV_ISSUE — 环境/数据问题，不计入报告
-    DEFERRED — 暂缓，记录但不阻塞
+Step 3: 自动分类 + 批量确认
+  自动分类规则（同 product-verify D4）:
+    | 错误特征 | 自动建议 | 理由 |
+    |---------|---------|------|
+    | HTTP 5xx 响应 | FIX_REQUIRED | 服务端错误 = 代码缺陷 |
+    | 404 on expected route | FIX_REQUIRED | 路由未实现 |
+    | 元素未找到 / 断言失败 | FIX_REQUIRED | 页面实现不完整 |
+    | Connection refused / timeout | ENV_ISSUE | 服务未启动或网络问题 |
+    | Database error in response | ENV_ISSUE | 数据库未初始化 |
+    | Auth redirect (unexpected) | FIX_REQUIRED | 权限配置错误 |
+    | CORS error | ENV_ISSUE | 开发环境跨域配置 |
+
+  批量确认展示:
+    ## E2E 验证结果
+
+    场景列表（Step 1 推导）:
+    | 场景 | 类型 | 来源 | 步骤数 |
+    |------|------|------|--------|
+    | {name} | 正向/负向 | BF-{id} / UC-{id} | {N} |
+
+    通过: {N}/{M} 场景
+
+    失败项（自动建议分类）:
+    | 场景 | 失败步骤 | 错误 | 建议分类 | 理由 |
+    |------|---------|------|---------|------|
+    | E2E-001 | Step 2 | Element not found | FIX_REQUIRED | 元素缺失 |
+
+    → AskUserQuestion: 确认全部分类 / 逐条调整
   ↓
 Step 4: 报告生成
   写入:
@@ -394,13 +418,13 @@ e2e/screenshots/                    # 失败截图
 
 正向 E2E 场景必须可追溯到 business-flows.json 中的具体流程。负向 E2E 场景必须可追溯到 use-case-tree.json 中的 exception/boundary 用例。不凭空编造测试场景。
 
-### 2. 用户确认场景列表
+### 2. 场景列表可追溯
 
-Step 1 推导出的场景列表必须经用户确认后才执行。用户可以增删场景。
+场景从 business-flows 推导，执行后与结果一并展示。用户在 Step 3 批量确认时可审阅场景列表。
 
 ### 3. 失败分类需用户确认
 
-测试失败可能是代码缺陷、环境问题或暂缓功能。必须逐条由用户确认分类，不允许自动归类。
+基于错误特征自动建议分类，在 Step 3 批量展示，用户一次确认或逐条调整。自动建议不等于自动归类，用户仍是最终决策者。
 
 ### 4. 不修改代码
 
