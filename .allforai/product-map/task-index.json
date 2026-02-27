@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-25T15:00:00Z",
+  "generated_at": "2026-02-27T19:12:18Z",
   "source": "task-inventory.json",
   "task_count": 45,
   "modules": [
@@ -8,14 +8,14 @@
       "tasks": [
         {
           "id": "T001",
-          "task_name": "选择场景并开始对话",
+          "task_name": "浏览并选择场景",
           "frequency": "高",
           "owner_role": "R001",
           "risk_level": "低"
         },
         {
           "id": "T002",
-          "task_name": "进行AI场景对话",
+          "task_name": "进行场景对话",
           "frequency": "高",
           "owner_role": "R001",
           "risk_level": "中"
@@ -33,50 +33,7 @@
           "frequency": "中",
           "owner_role": "R001",
           "risk_level": "中"
-        }
-      ]
-    },
-    {
-      "name": "发音纠正",
-      "tasks": [
-        {
-          "id": "T005",
-          "task_name": "对话中接受实时发音纠正",
-          "frequency": "高",
-          "owner_role": "R001",
-          "risk_level": "低"
         },
-        {
-          "id": "T006",
-          "task_name": "查看发音详细报告",
-          "frequency": "中",
-          "owner_role": "R001",
-          "risk_level": "低"
-        }
-      ]
-    },
-    {
-      "name": "记忆曲线",
-      "tasks": [
-        {
-          "id": "T007",
-          "task_name": "进行记忆曲线复习",
-          "frequency": "高",
-          "owner_role": "R001",
-          "risk_level": "低"
-        },
-        {
-          "id": "T008",
-          "task_name": "查看词汇本",
-          "frequency": "中",
-          "owner_role": "R001",
-          "risk_level": "低"
-        }
-      ]
-    },
-    {
-      "name": "场景库管理",
-      "tasks": [
         {
           "id": "T009",
           "task_name": "创建场景对话脚本",
@@ -93,16 +50,89 @@
         },
         {
           "id": "T011",
-          "task_name": "管理场景包的上下架",
+          "task_name": "管理场景包",
           "frequency": "中",
           "owner_role": "R004",
           "risk_level": "低"
         },
         {
           "id": "T012",
-          "task_name": "标定场景关键词和标签",
+          "task_name": "管理场景标签",
           "frequency": "中",
           "owner_role": "R004",
+          "risk_level": "低"
+        },
+        {
+          "id": "T021",
+          "task_name": "使用紧急场景速学",
+          "frequency": "中",
+          "owner_role": "R003",
+          "risk_level": "中"
+        },
+        {
+          "id": "T024",
+          "task_name": "购买场景包",
+          "frequency": "低",
+          "owner_role": "R001",
+          "risk_level": "中"
+        },
+        {
+          "id": "T029",
+          "task_name": "查看AI对话质量评分",
+          "frequency": "高",
+          "owner_role": "R005",
+          "risk_level": "低"
+        },
+        {
+          "id": "T030",
+          "task_name": "标注异常对话",
+          "frequency": "中",
+          "owner_role": "R005",
+          "risk_level": "中"
+        }
+      ]
+    },
+    {
+      "name": "发音纠正",
+      "tasks": [
+        {
+          "id": "T005",
+          "task_name": "查看实时发音纠正",
+          "frequency": "高",
+          "owner_role": "R001",
+          "risk_level": "低"
+        },
+        {
+          "id": "T006",
+          "task_name": "查看发音详细报告",
+          "frequency": "中",
+          "owner_role": "R001",
+          "risk_level": "低"
+        },
+        {
+          "id": "T032",
+          "task_name": "调整发音评估参数",
+          "frequency": "低",
+          "owner_role": "R005",
+          "risk_level": "中"
+        }
+      ]
+    },
+    {
+      "name": "记忆曲线",
+      "tasks": [
+        {
+          "id": "T007",
+          "task_name": "完成记忆曲线复习",
+          "frequency": "高",
+          "owner_role": "R001",
+          "risk_level": "低"
+        },
+        {
+          "id": "T008",
+          "task_name": "管理词汇本",
+          "frequency": "中",
+          "owner_role": "R001",
           "risk_level": "低"
         }
       ]
@@ -112,7 +142,7 @@
       "tasks": [
         {
           "id": "T013",
-          "task_name": "查看和维护学习连胜",
+          "task_name": "查看学习连胜与成就",
           "frequency": "高",
           "owner_role": "R001",
           "risk_level": "低"
@@ -126,14 +156,14 @@
         },
         {
           "id": "T015",
-          "task_name": "查看和使用积分",
+          "task_name": "兑换积分商品",
           "frequency": "中",
           "owner_role": "R001",
           "risk_level": "低"
         },
         {
           "id": "T016",
-          "task_name": "分享学习成果到社交媒体",
+          "task_name": "分享学习成果",
           "frequency": "低",
           "owner_role": "R001",
           "risk_level": "低"
@@ -164,29 +194,17 @@
       "tasks": [
         {
           "id": "T019",
-          "task_name": "设置个人角色偏好",
+          "task_name": "设置角色偏好",
           "frequency": "低",
           "owner_role": "R001",
           "risk_level": "低"
         },
         {
           "id": "T020",
-          "task_name": "接受个性化场景推荐",
+          "task_name": "查看个性化推荐",
           "frequency": "高",
           "owner_role": "R001",
           "risk_level": "低"
-        }
-      ]
-    },
-    {
-      "name": "紧急场景速学",
-      "tasks": [
-        {
-          "id": "T021",
-          "task_name": "使用紧急场景速学",
-          "frequency": "中",
-          "owner_role": "R003",
-          "risk_level": "中"
         }
       ]
     },
@@ -195,24 +213,24 @@
       "tasks": [
         {
           "id": "T022",
-          "task_name": "查看订阅方案并购买",
+          "task_name": "订阅付费方案",
           "frequency": "低",
           "owner_role": "R001",
           "risk_level": "高"
         },
         {
           "id": "T023",
-          "task_name": "管理订阅状态",
+          "task_name": "管理订阅",
           "frequency": "低",
           "owner_role": "R001",
-          "risk_level": "中"
+          "risk_level": "低"
         },
         {
-          "id": "T024",
-          "task_name": "购买场景包",
-          "frequency": "低",
-          "owner_role": "R001",
-          "risk_level": "中"
+          "id": "T034",
+          "task_name": "处理订阅与退款",
+          "frequency": "中",
+          "owner_role": "R007",
+          "risk_level": "高"
         }
       ]
     },
@@ -228,7 +246,7 @@
         },
         {
           "id": "T026",
-          "task_name": "分析用户学习行为",
+          "task_name": "分析用户行为",
           "frequency": "中",
           "owner_role": "R006",
           "risk_level": "低"
@@ -253,32 +271,11 @@
       "name": "AI质量监控",
       "tasks": [
         {
-          "id": "T029",
-          "task_name": "查看AI对话质量评分",
-          "frequency": "高",
-          "owner_role": "R005",
-          "risk_level": "低"
-        },
-        {
-          "id": "T030",
-          "task_name": "标注异常AI对话",
+          "id": "T031",
+          "task_name": "管理Prompt模板",
           "frequency": "中",
           "owner_role": "R005",
           "risk_level": "中"
-        },
-        {
-          "id": "T031",
-          "task_name": "管理对话Prompt模板",
-          "frequency": "中",
-          "owner_role": "R005",
-          "risk_level": "高"
-        },
-        {
-          "id": "T032",
-          "task_name": "调整发音评估参数",
-          "frequency": "低",
-          "owner_role": "R005",
-          "risk_level": "高"
         }
       ]
     },
@@ -293,13 +290,6 @@
           "risk_level": "中"
         },
         {
-          "id": "T034",
-          "task_name": "管理订阅和退款",
-          "frequency": "中",
-          "owner_role": "R007",
-          "risk_level": "高"
-        },
-        {
           "id": "T035",
           "task_name": "配置系统参数",
           "frequency": "低",
@@ -308,10 +298,10 @@
         },
         {
           "id": "T036",
-          "task_name": "管理权限和角色",
+          "task_name": "管理权限角色",
           "frequency": "低",
           "owner_role": "R007",
-          "risk_level": "高"
+          "risk_level": "中"
         },
         {
           "id": "T037",
@@ -341,7 +331,7 @@
         },
         {
           "id": "T040",
-          "task_name": "修改个人设置",
+          "task_name": "管理个人设置",
           "frequency": "低",
           "owner_role": "R001",
           "risk_level": "低"
@@ -379,8 +369,8 @@
       "tasks": [
         {
           "id": "T044",
-          "task_name": "接收学习提醒推送",
-          "frequency": "高",
+          "task_name": "管理通知中心",
+          "frequency": "中",
           "owner_role": "R001",
           "risk_level": "低"
         }
@@ -391,10 +381,10 @@
       "tasks": [
         {
           "id": "T045",
-          "task_name": "提交意见与投诉",
+          "task_name": "提交意见反馈",
           "frequency": "低",
           "owner_role": "R001",
-          "risk_level": "中"
+          "risk_level": "低"
         }
       ]
     }

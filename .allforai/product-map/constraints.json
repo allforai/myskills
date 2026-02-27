@@ -1,132 +1,88 @@
 {
-  "generated_at": "2026-02-25T14:30:00Z",
-  "analysis_mode": "interview",
+  "generated_at": "2026-02-27T19:12:18Z",
   "constraints": [
     {
       "id": "CN001",
       "type": "business",
-      "description": "支付不可逆：订阅/场景包购买成功后不可直接撤销，退款必须走管理员审批流程",
-      "affected_tasks": ["T022", "T024", "T034"],
+      "description": "免费版每天3轮对话限制",
+      "affected_tasks": [
+        "T002"
+      ],
       "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
+      "code_status": "missing"
     },
     {
       "id": "CN002",
       "type": "business",
-      "description": "退款金额不可超过用户实付金额",
-      "affected_tasks": ["T034"],
+      "description": "退款金额不可超过原订单金额",
+      "affected_tasks": [
+        "T034"
+      ],
       "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
+      "code_status": "missing"
     },
     {
       "id": "CN003",
-      "type": "business",
-      "description": "Prompt模板修改必须在沙盒测试后才能发布到生产环境，保留历史版本可一键回滚",
-      "affected_tasks": ["T031"],
+      "type": "compliance",
+      "description": "用户注销后数据保留30天",
+      "affected_tasks": [
+        "T042"
+      ],
       "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
+      "code_status": "missing"
     },
     {
       "id": "CN004",
       "type": "business",
-      "description": "发音评估参数调整必须经过测试验证后才能发布，保留历史版本可回滚",
-      "affected_tasks": ["T032"],
-      "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
+      "description": "连胜中断恢复限每月1次",
+      "affected_tasks": [
+        "T013"
+      ],
+      "enforcement": "soft",
+      "code_status": "missing"
     },
     {
       "id": "CN005",
-      "type": "business",
-      "description": "场景内容上架前必须通过审核（准确性+文化适当性+难度三维度），驳回3次以上升级到高级编辑",
-      "affected_tasks": ["T009", "T010", "T011"],
+      "type": "compliance",
+      "description": "支付操作必须留存审计日志",
+      "affected_tasks": [
+        "T022",
+        "T024",
+        "T034"
+      ],
       "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
+      "code_status": "missing"
     },
     {
       "id": "CN006",
       "type": "business",
-      "description": "投诉类反馈必须在24小时内回复",
-      "affected_tasks": ["T037", "T044"],
+      "description": "场景审核通过后方可上架",
+      "affected_tasks": [
+        "T010",
+        "T011"
+      ],
       "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
+      "code_status": "missing"
     },
     {
       "id": "CN007",
       "type": "business",
-      "description": "取消自动续费不立即失效，到期日前仍可使用付费功能",
-      "affected_tasks": ["T023"],
+      "description": "发音评估阈值范围0.0-1.0",
+      "affected_tasks": [
+        "T032"
+      ],
       "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
+      "code_status": "missing"
     },
     {
       "id": "CN008",
-      "type": "business",
-      "description": "自动续费必须在购买时明确告知用户，不可默认勾选",
-      "affected_tasks": ["T022"],
-      "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
-    },
-    {
-      "id": "CN009",
-      "type": "business",
-      "description": "密码错误5次锁定15分钟，防止暴力破解",
-      "affected_tasks": ["T039"],
-      "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
-    },
-    {
-      "id": "CN010",
-      "type": "business",
-      "description": "不可删除超级管理员角色，防止权限系统瘫痪",
-      "affected_tasks": ["T036"],
-      "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
-    },
-    {
-      "id": "CN011",
       "type": "compliance",
-      "description": "查看用户数据必须脱敏处理（手机号/邮箱部分遮蔽）",
-      "affected_tasks": ["T033"],
+      "description": "用户封禁操作需二次确认+日志",
+      "affected_tasks": [
+        "T033"
+      ],
       "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
-    },
-    {
-      "id": "CN012",
-      "type": "compliance",
-      "description": "冻结账户、退款操作、配置变更、权限变更必须记录操作日志（操作人、时间、原因）",
-      "affected_tasks": ["T033", "T034", "T035", "T036"],
-      "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
-    },
-    {
-      "id": "CN013",
-      "type": "compliance",
-      "description": "关键配置参数调整需二次确认，防止误操作",
-      "affected_tasks": ["T035"],
-      "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
-    },
-    {
-      "id": "CN014",
-      "type": "business",
-      "description": "A/B测试指标显著下降时必须自动暂停并告警，防止劣化方案影响用户",
-      "affected_tasks": ["T027"],
-      "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
+      "code_status": "missing"
     }
   ]
 }

@@ -1,0 +1,317 @@
+[
+  {
+    "task_id": "T001",
+    "task_name": "浏览并选择场景",
+    "frequency": "高",
+    "tier": "protected",
+    "data_points": "frequency=高, risk=低"
+  },
+  {
+    "task_id": "T002",
+    "task_name": "进行场景对话",
+    "frequency": "高",
+    "tier": "protected",
+    "data_points": "frequency=高, risk=中"
+  },
+  {
+    "task_id": "T003",
+    "task_name": "查看对话报告",
+    "frequency": "高",
+    "tier": "protected",
+    "data_points": "frequency=高, risk=低"
+  },
+  {
+    "task_id": "T004",
+    "task_name": "进行自由对话",
+    "frequency": "中",
+    "tier": "review",
+    "data_points": "frequency=中, risk=中"
+  },
+  {
+    "task_id": "T005",
+    "task_name": "查看实时发音纠正",
+    "frequency": "高",
+    "tier": "protected",
+    "data_points": "frequency=高, risk=低"
+  },
+  {
+    "task_id": "T006",
+    "task_name": "查看发音详细报告",
+    "frequency": "中",
+    "tier": "review",
+    "data_points": "frequency=中, risk=低"
+  },
+  {
+    "task_id": "T007",
+    "task_name": "完成记忆曲线复习",
+    "frequency": "高",
+    "tier": "protected",
+    "data_points": "frequency=高, risk=低"
+  },
+  {
+    "task_id": "T008",
+    "task_name": "管理词汇本",
+    "frequency": "中",
+    "tier": "review",
+    "data_points": "frequency=中, risk=低"
+  },
+  {
+    "task_id": "T009",
+    "task_name": "创建场景对话脚本",
+    "frequency": "高",
+    "tier": "protected",
+    "data_points": "frequency=高, risk=中"
+  },
+  {
+    "task_id": "T010",
+    "task_name": "审核场景内容",
+    "frequency": "高",
+    "tier": "protected",
+    "data_points": "frequency=高, risk=中"
+  },
+  {
+    "task_id": "T011",
+    "task_name": "管理场景包",
+    "frequency": "中",
+    "tier": "review",
+    "data_points": "frequency=中, risk=低"
+  },
+  {
+    "task_id": "T012",
+    "task_name": "管理场景标签",
+    "frequency": "中",
+    "tier": "review",
+    "data_points": "frequency=中, risk=低"
+  },
+  {
+    "task_id": "T013",
+    "task_name": "查看学习连胜与成就",
+    "frequency": "高",
+    "tier": "protected",
+    "data_points": "frequency=高, risk=低"
+  },
+  {
+    "task_id": "T014",
+    "task_name": "查看排行榜",
+    "frequency": "中",
+    "tier": "review",
+    "data_points": "frequency=中, risk=低"
+  },
+  {
+    "task_id": "T015",
+    "task_name": "兑换积分商品",
+    "frequency": "中",
+    "tier": "review",
+    "data_points": "frequency=中, risk=低"
+  },
+  {
+    "task_id": "T016",
+    "task_name": "分享学习成果",
+    "frequency": "低",
+    "tier": "candidate",
+    "data_points": "frequency=低, risk=低"
+  },
+  {
+    "task_id": "T017",
+    "task_name": "查看个人学习档案",
+    "frequency": "中",
+    "tier": "review",
+    "data_points": "frequency=中, risk=低"
+  },
+  {
+    "task_id": "T018",
+    "task_name": "查看学习统计报告",
+    "frequency": "中",
+    "tier": "review",
+    "data_points": "frequency=中, risk=低"
+  },
+  {
+    "task_id": "T019",
+    "task_name": "设置角色偏好",
+    "frequency": "低",
+    "tier": "candidate",
+    "data_points": "frequency=低, risk=低"
+  },
+  {
+    "task_id": "T020",
+    "task_name": "查看个性化推荐",
+    "frequency": "高",
+    "tier": "protected",
+    "data_points": "frequency=高, risk=低"
+  },
+  {
+    "task_id": "T021",
+    "task_name": "使用紧急场景速学",
+    "frequency": "中",
+    "tier": "review",
+    "data_points": "frequency=中, risk=中"
+  },
+  {
+    "task_id": "T022",
+    "task_name": "订阅付费方案",
+    "frequency": "低",
+    "tier": "candidate",
+    "data_points": "frequency=低, risk=高"
+  },
+  {
+    "task_id": "T023",
+    "task_name": "管理订阅",
+    "frequency": "低",
+    "tier": "candidate",
+    "data_points": "frequency=低, risk=低"
+  },
+  {
+    "task_id": "T024",
+    "task_name": "购买场景包",
+    "frequency": "低",
+    "tier": "candidate",
+    "data_points": "frequency=低, risk=中"
+  },
+  {
+    "task_id": "T025",
+    "task_name": "查看关键指标看板",
+    "frequency": "高",
+    "tier": "protected",
+    "data_points": "frequency=高, risk=低"
+  },
+  {
+    "task_id": "T026",
+    "task_name": "分析用户行为",
+    "frequency": "中",
+    "tier": "review",
+    "data_points": "frequency=中, risk=低"
+  },
+  {
+    "task_id": "T027",
+    "task_name": "管理A/B测试",
+    "frequency": "中",
+    "tier": "review",
+    "data_points": "frequency=中, risk=中"
+  },
+  {
+    "task_id": "T028",
+    "task_name": "生成运营报告",
+    "frequency": "中",
+    "tier": "review",
+    "data_points": "frequency=中, risk=低"
+  },
+  {
+    "task_id": "T029",
+    "task_name": "查看AI对话质量评分",
+    "frequency": "高",
+    "tier": "protected",
+    "data_points": "frequency=高, risk=低"
+  },
+  {
+    "task_id": "T030",
+    "task_name": "标注异常对话",
+    "frequency": "中",
+    "tier": "review",
+    "data_points": "frequency=中, risk=中"
+  },
+  {
+    "task_id": "T031",
+    "task_name": "管理Prompt模板",
+    "frequency": "中",
+    "tier": "review",
+    "data_points": "frequency=中, risk=中"
+  },
+  {
+    "task_id": "T032",
+    "task_name": "调整发音评估参数",
+    "frequency": "低",
+    "tier": "candidate",
+    "data_points": "frequency=低, risk=中"
+  },
+  {
+    "task_id": "T033",
+    "task_name": "管理用户账户",
+    "frequency": "高",
+    "tier": "protected",
+    "data_points": "frequency=高, risk=中"
+  },
+  {
+    "task_id": "T034",
+    "task_name": "处理订阅与退款",
+    "frequency": "中",
+    "tier": "review",
+    "data_points": "frequency=中, risk=高"
+  },
+  {
+    "task_id": "T035",
+    "task_name": "配置系统参数",
+    "frequency": "低",
+    "tier": "candidate",
+    "data_points": "frequency=低, risk=高"
+  },
+  {
+    "task_id": "T036",
+    "task_name": "管理权限角色",
+    "frequency": "低",
+    "tier": "candidate",
+    "data_points": "frequency=低, risk=中"
+  },
+  {
+    "task_id": "T037",
+    "task_name": "处理用户投诉",
+    "frequency": "中",
+    "tier": "review",
+    "data_points": "frequency=中, risk=中"
+  },
+  {
+    "task_id": "T038",
+    "task_name": "注册账户",
+    "frequency": "低",
+    "tier": "candidate",
+    "data_points": "frequency=低, risk=中"
+  },
+  {
+    "task_id": "T039",
+    "task_name": "登录账户",
+    "frequency": "高",
+    "tier": "protected",
+    "data_points": "frequency=高, risk=低"
+  },
+  {
+    "task_id": "T040",
+    "task_name": "管理个人设置",
+    "frequency": "低",
+    "tier": "candidate",
+    "data_points": "frequency=低, risk=低"
+  },
+  {
+    "task_id": "T041",
+    "task_name": "重置密码",
+    "frequency": "低",
+    "tier": "candidate",
+    "data_points": "frequency=低, risk=中"
+  },
+  {
+    "task_id": "T042",
+    "task_name": "注销账户",
+    "frequency": "低",
+    "tier": "candidate",
+    "data_points": "frequency=低, risk=高"
+  },
+  {
+    "task_id": "T043",
+    "task_name": "完成新手引导",
+    "frequency": "低",
+    "tier": "candidate",
+    "data_points": "frequency=低, risk=低"
+  },
+  {
+    "task_id": "T044",
+    "task_name": "管理通知中心",
+    "frequency": "中",
+    "tier": "review",
+    "data_points": "frequency=中, risk=低"
+  },
+  {
+    "task_id": "T045",
+    "task_name": "提交意见反馈",
+    "frequency": "低",
+    "tier": "candidate",
+    "data_points": "frequency=低, risk=低"
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "step": "Step 1",
+    "item_id": "profile",
+    "decision": "auto_confirmed",
+    "value": "7 roles, 42 screens",
+    "decided_at": "2026-02-27T20:11:30Z"
+  },
+  {
+    "step": "Step 2",
+    "item_id": "style",
+    "decision": "auto_confirmed",
+    "value": "Material Design 3",
+    "reason": "style=material-design-3",
+    "decided_at": "2026-02-27T20:11:30Z"
+  },
+  {
+    "step": "Step 3",
+    "item_id": "principles",
+    "decision": "auto_confirmed",
+    "value": "CSS variables applied",
+    "decided_at": "2026-02-27T20:11:30Z"
+  },
+  {
+    "step": "Step 4",
+    "item_id": "spec",
+    "decision": "auto_confirmed",
+    "value": "ui-design-spec.md generated",
+    "decided_at": "2026-02-27T20:11:30Z"
+  },
+  {
+    "step": "Step 5",
+    "item_id": "preview",
+    "decision": "auto_confirmed",
+    "value": "index.html + 7 role HTML files",
+    "decided_at": "2026-02-27T20:11:30Z"
+  }
+]

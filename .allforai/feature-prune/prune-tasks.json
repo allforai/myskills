@@ -1,0 +1,436 @@
+[
+  {
+    "id": "PRUNE-001",
+    "title": "进行自由对话 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T004"
+    ],
+    "affected_screens": [
+      "S005"
+    ],
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=中；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-002",
+    "title": "查看发音详细报告 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T006"
+    ],
+    "affected_screens": [
+      "S006"
+    ],
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-003",
+    "title": "管理词汇本 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T008"
+    ],
+    "affected_screens": [
+      "S008"
+    ],
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；被业务流引用；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-004",
+    "title": "管理场景包 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T011"
+    ],
+    "affected_screens": [
+      "S011"
+    ],
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；被业务流引用；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-005",
+    "title": "管理场景标签 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T012"
+    ],
+    "affected_screens": [
+      "S011"
+    ],
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-006",
+    "title": "查看排行榜 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T014"
+    ],
+    "affected_screens": [
+      "S013"
+    ],
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-007",
+    "title": "兑换积分商品 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T015"
+    ],
+    "affected_screens": [
+      "S014"
+    ],
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-008",
+    "title": "分享学习成果 → CUT",
+    "decision": "CUT",
+    "affected_tasks": [
+      "T016"
+    ],
+    "affected_screens": [
+      "S015"
+    ],
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=低；策略=aggressive",
+    "action": "标记移除，通知开发团队清理相关代码和界面",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-009",
+    "title": "查看个人学习档案 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T017"
+    ],
+    "affected_screens": [
+      "S016"
+    ],
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-010",
+    "title": "查看学习统计报告 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T018"
+    ],
+    "affected_screens": [
+      "S017"
+    ],
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-011",
+    "title": "设置角色偏好 → CUT",
+    "decision": "CUT",
+    "affected_tasks": [
+      "T019"
+    ],
+    "affected_screens": [
+      "S018"
+    ],
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=低；策略=aggressive",
+    "action": "标记移除，通知开发团队清理相关代码和界面",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-012",
+    "title": "使用紧急场景速学 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T021"
+    ],
+    "affected_screens": [
+      "S019"
+    ],
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=中；被业务流引用；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-013",
+    "title": "订阅付费方案 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T022"
+    ],
+    "affected_screens": [
+      "S020"
+    ],
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=高；被业务流引用；护栏保护(risk=高+营收相关+rules=2,exceptions=2)；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-014",
+    "title": "管理订阅 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T023"
+    ],
+    "affected_screens": [
+      "S021"
+    ],
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=低；被业务流引用；护栏保护(营收相关+rules=0,exceptions=1)；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-015",
+    "title": "购买场景包 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T024"
+    ],
+    "affected_screens": [
+      "S022"
+    ],
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=中；护栏保护(risk=中+营收相关+rules=0,exceptions=1)；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-016",
+    "title": "分析用户行为 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T026"
+    ],
+    "affected_screens": [
+      "S024"
+    ],
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；被业务流引用；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-017",
+    "title": "管理A/B测试 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T027"
+    ],
+    "affected_screens": [
+      "S025"
+    ],
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=中；被业务流引用；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-018",
+    "title": "生成运营报告 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T028"
+    ],
+    "affected_screens": [
+      "S026"
+    ],
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=低；被业务流引用；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-019",
+    "title": "标注异常对话 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T030"
+    ],
+    "affected_screens": [
+      "S028"
+    ],
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=中；被业务流引用；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-020",
+    "title": "管理Prompt模板 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T031"
+    ],
+    "affected_screens": [
+      "S029"
+    ],
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=中；被业务流引用；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-021",
+    "title": "调整发音评估参数 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T032"
+    ],
+    "affected_screens": [
+      "S030"
+    ],
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=中；被业务流引用；护栏保护(risk=中)；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-022",
+    "title": "处理订阅与退款 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T034"
+    ],
+    "affected_screens": [
+      "S032"
+    ],
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=高；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-023",
+    "title": "配置系统参数 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T035"
+    ],
+    "affected_screens": [
+      "S033"
+    ],
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=高；护栏保护(risk=高+rules=1,exceptions=1)；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-024",
+    "title": "管理权限角色 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T036"
+    ],
+    "affected_screens": [
+      "S034"
+    ],
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=中；护栏保护(risk=中)；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-025",
+    "title": "处理用户投诉 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T037"
+    ],
+    "affected_screens": [
+      "S035"
+    ],
+    "reason": "频次=中；场景=secondary；复杂度匹配=match；风险=中；被业务流引用；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-026",
+    "title": "注册账户 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T038"
+    ],
+    "affected_screens": [
+      "S036"
+    ],
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=中；被业务流引用；护栏保护(risk=中+rules=2,exceptions=1)；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-027",
+    "title": "管理个人设置 → CUT",
+    "decision": "CUT",
+    "affected_tasks": [
+      "T040"
+    ],
+    "affected_screens": [
+      "S038"
+    ],
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=低；策略=aggressive",
+    "action": "标记移除，通知开发团队清理相关代码和界面",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-028",
+    "title": "重置密码 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T041"
+    ],
+    "affected_screens": [
+      "S039"
+    ],
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=中；护栏保护(risk=中+rules=2,exceptions=0)；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-029",
+    "title": "注销账户 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T042"
+    ],
+    "affected_screens": [
+      "S038"
+    ],
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=高；护栏保护(risk=高+rules=2,exceptions=1)；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-030",
+    "title": "完成新手引导 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T043"
+    ],
+    "affected_screens": [
+      "S040"
+    ],
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=低；被业务流引用；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  },
+  {
+    "id": "PRUNE-031",
+    "title": "提交意见反馈 → DEFER",
+    "decision": "DEFER",
+    "affected_tasks": [
+      "T045"
+    ],
+    "affected_screens": [
+      "S042"
+    ],
+    "reason": "频次=低；场景=secondary；复杂度匹配=over_engineered；风险=低；被业务流引用；策略=aggressive",
+    "action": "从当前迭代移除，迁移到 backlog，3个月后重新评估",
+    "risk": "低"
+  }
+]

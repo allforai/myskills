@@ -1,69 +1,28 @@
 {
-  "generated_at": "2026-02-25T15:00:00Z",
+  "generated_at": "2026-02-27T19:12:18Z",
   "version": "2.5.0",
   "scope": "full",
   "scale": "medium",
-  "analysis_mode": "interview",
-  "concept_guided": true,
   "summary": {
     "role_count": 7,
     "task_count": 45,
     "flow_count": 9,
     "flow_gaps": 0,
     "orphan_task_count": 0,
-    "independent_operation_count": 16,
-    "high_freq_task_count": 14,
-    "conflict_count": 3,
-    "crud_gap_count": 3,
-    "constraint_count": 14,
-    "config_level_summary": {
-      "frontend_hardcode": 6,
-      "code_constant": 2,
-      "config_file": 12,
-      "general_config": 16,
-      "dedicated_config": 10,
-      "total": 46,
-      "levels": {
-        "frontend_hardcode": "界面写死，改动需前端发版",
-        "code_constant": "代码写死，改动需后端发版",
-        "config_file": "启动配置文件(.env/config.yaml)，改动需重启",
-        "general_config": "通用配置模块(增删改查)，运营后台热更新",
-        "dedicated_config": "专用配置模块(专属管理界面)，热更新"
-      }
-    },
-    "validation_issues": 19,
-    "competitor_gaps": 6
+    "independent_operation_count": 20,
+    "conflict_count": 0,
+    "crud_gap_count": 9,
+    "constraint_count": 8
   },
   "roles": [
     {
       "id": "R001",
       "name": "职场人士",
-      "description": "25-35岁职场人，需要在英语会议、汇报、面试、邮件中自信表达",
+      "description": "需要英语开会、写邮件、面试的上班族",
       "permission_boundary": [
         "场景对话",
-        "发音练习",
-        "记忆曲线复习",
-        "学习档案查看",
-        "个人设置"
-      ],
-      "kpi": [
-        "日均开口时长 > 10分钟",
-        "场景通关率 > 70%"
-      ],
-      "audience_type": "consumer",
-      "role_type": "consumer",
-      "impl_group": "end_user",
-      "status": "user_added"
-    },
-    {
-      "id": "R002",
-      "name": "英语爱好者/旅行者",
-      "description": "对英语有兴趣或有旅行需求，希望在旅行、社交、看剧等场景中自如交流",
-      "permission_boundary": [
-        "场景对话",
-        "发音练习",
-        "记忆曲线复习",
-        "学习档案查看",
+        "学习档案",
+        "订阅管理",
         "个人设置"
       ],
       "kpi": [
@@ -73,187 +32,172 @@
       "audience_type": "consumer",
       "role_type": "consumer",
       "impl_group": "end_user",
-      "status": "user_added"
+      "status": "concept_guided"
     },
     {
-      "id": "R003",
-      "name": "新移民",
-      "description": "新到英语国家的移民，需要在看医生、银行、家长会、租房等生活场景中独立沟通",
+      "id": "R002",
+      "name": "英语爱好者/旅行者",
+      "description": "旅行交流、看美剧脱字幕的兴趣学习者",
       "permission_boundary": [
         "场景对话",
-        "发音练习",
-        "记忆曲线复习",
-        "紧急场景速学",
-        "学习档案查看",
+        "学习档案",
+        "订阅管理",
         "个人设置"
       ],
       "kpi": [
-        "紧急场景使用率",
-        "场景通关率 > 70%"
+        "首场景通关率 > 70%",
+        "词汇复现率 > 30%"
       ],
       "audience_type": "consumer",
       "role_type": "consumer",
       "impl_group": "end_user",
-      "status": "user_added"
+      "status": "concept_guided"
+    },
+    {
+      "id": "R003",
+      "name": "新移民",
+      "description": "需要在生活场景（看病/银行/家长会）独立沟通的移民群体",
+      "permission_boundary": [
+        "场景对话",
+        "紧急场景速学",
+        "学习档案",
+        "订阅管理",
+        "个人设置"
+      ],
+      "kpi": [
+        "紧急场景完成率 > 80%",
+        "生活词汇掌握率 > 50%"
+      ],
+      "audience_type": "consumer",
+      "role_type": "consumer",
+      "impl_group": "end_user",
+      "status": "concept_guided"
     },
     {
       "id": "R004",
       "name": "内容运营",
-      "description": "负责场景对话脚本的创建、编辑、审核、难度标定和发布管理",
+      "description": "创建、编辑、审核场景对话脚本，管理场景包上下架",
       "permission_boundary": [
-        "场景脚本编辑器",
+        "场景脚本编辑",
         "审核队列",
-        "场景难度标定",
         "场景包管理",
-        "场景数据查看"
+        "标签管理"
       ],
       "kpi": [
-        "场景上架数/月",
-        "审核通过率",
-        "场景评分均值"
+        "场景审核通过率",
+        "新场景上线周期"
       ],
       "audience_type": "professional",
       "role_type": "producer",
       "impl_group": "operator",
-      "status": "user_added"
+      "status": "concept_guided"
     },
     {
       "id": "R005",
       "name": "AI 训练师",
-      "description": "监控AI对话质量和用户满意度，调优发音评估模型，优化对话prompt",
+      "description": "监控AI对话质量、调优发音评估参数、优化Prompt模板",
       "permission_boundary": [
-        "AI对话日志查看",
-        "对话质量评分",
-        "发音模型参数调整",
+        "AI质量评分",
+        "异常对话标注",
         "Prompt模板管理",
-        "异常对话标注"
+        "发音评估参数"
       ],
       "kpi": [
-        "AI对话满意度 > 4.0/5",
-        "发音评估准确率 > 90%"
+        "AI对话质量评分 > 4.0/5.0",
+        "异常对话率 < 2%"
       ],
       "audience_type": "professional",
       "role_type": "producer",
       "impl_group": "operator",
-      "status": "user_added"
+      "status": "concept_guided"
     },
     {
       "id": "R006",
       "name": "数据运营",
-      "description": "监控日均开口时长、7天留存率等关键指标，分析用户行为，设计和分析A/B测试",
+      "description": "监控关键指标、分析用户行为、设计A/B测试、生成运营报告",
       "permission_boundary": [
-        "数据看板",
-        "用户行为分析",
-        "A/B测试管理",
-        "运营报告生成",
-        "留存漏斗分析"
+        "运营数据看板",
+        "行为分析",
+        "A/B测试",
+        "运营报告"
       ],
       "kpi": [
-        "关键指标监控覆盖率 100%",
-        "每周产出分析报告"
+        "DAU/MAU增长率",
+        "留存率提升幅度"
       ],
       "audience_type": "professional",
       "role_type": "producer",
       "impl_group": "operator",
-      "status": "user_added"
+      "status": "concept_guided"
     },
     {
       "id": "R007",
       "name": "系统管理员",
-      "description": "管理用户账户和订阅状态，配置系统参数和权限规则，处理用户投诉和退款",
+      "description": "管理用户账户、配置系统参数、处理投诉与退款、权限管理",
       "permission_boundary": [
         "用户管理",
-        "订阅管理",
+        "订阅退款",
         "系统配置",
-        "权限管理",
-        "投诉处理",
-        "退款审批"
+        "权限角色",
+        "投诉处理"
       ],
       "kpi": [
-        "系统可用性 > 99.5%",
-        "工单处理时效 < 24h"
+        "投诉处理时效 < 24h",
+        "系统可用性 > 99.9%"
       ],
       "audience_type": "professional",
       "role_type": "admin",
       "impl_group": "super_admin",
-      "status": "user_added"
+      "status": "concept_guided"
     }
   ],
   "tasks": [
     {
       "id": "T001",
-      "task_name": "选择场景并开始对话",
+      "task_name": "浏览并选择场景",
       "owner_role": "R001",
       "frequency": "高",
       "risk_level": "低",
       "main_flow": [
-        "浏览场景列表",
+        "打开场景列表",
         "按角色/难度/主题筛选",
-        "选择场景",
         "查看场景简介",
-        "开始对话"
+        "选择场景"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "提供安全的口语练习环境，解决P1输出无门",
-      "rules": [
-        "免费用户每天N轮对话限制",
-        "付费用户无限制"
-      ],
-      "config_items": [
-        {
-          "param": "免费用户每日对话轮数",
-          "current": "3",
-          "config_level": "general_config"
-        }
-      ],
+      "status": "concept_guided",
+      "value": "帮用户快速找到匹配需求的场景",
       "exceptions": [
-        "已达免费上限 → 提示升级付费",
-        "场景暂不可用 → 推荐相似场景"
+        "场景不可用→推荐相似场景",
+        "网络错误→显示缓存列表"
+      ],
+      "rules": [
+        "场景按个性化推荐排序",
+        "已完成场景标记进度"
       ]
     },
     {
       "id": "T002",
-      "task_name": "进行AI场景对话",
+      "task_name": "进行场景对话",
       "owner_role": "R001",
       "frequency": "高",
       "risk_level": "中",
       "main_flow": [
-        "AI发起场景开场白",
-        "用户语音/文字输入",
-        "AI理解并回复（维持场景语境）",
-        "实时收集生词",
-        "对话结束生成对话报告"
+        "进入场景",
+        "语音/文字输入",
+        "接收AI回复",
+        "查看实时发音纠正",
+        "收集生词"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "核心交互：在场景中自然练习口语",
-      "rules": [
-        "对话保持场景一致性",
-        "AI回复控制在用户水平±1级",
-        "自动收集用户不熟悉的词汇"
-      ],
-      "config_items": [
-        {
-          "param": "AI难度适配范围",
-          "current": "±1级",
-          "config_level": "code_constant"
-        },
-        {
-          "param": "LLM模型选择",
-          "current": "GPT-4o/Claude",
-          "config_level": "config_file"
-        },
-        {
-          "param": "LLM API Key",
-          "current": "-",
-          "config_level": "config_file"
-        }
-      ],
+      "status": "concept_guided",
+      "value": "核心交互——在场景中练习口语",
       "exceptions": [
-        "语音识别失败 → 提示重说或切换文字输入",
-        "AI响应超时 → 显示等待动画并重试",
-        "用户长时间无输入 → AI给出提示引导"
+        "语音识别失败→提示重说或切换文字",
+        "AI响应超时→等待动画并重试",
+        "网络断开→保存本地稍后同步"
+      ],
+      "rules": [
+        "每轮对话限时5分钟可配置",
+        "生词自动收集到词汇本"
       ]
     },
     {
@@ -263,15 +207,17 @@
       "frequency": "高",
       "risk_level": "低",
       "main_flow": [
-        "对话结束自动生成报告",
-        "展示流利度评分",
-        "展示本轮生词列表",
-        "展示发音问题汇总",
-        "提供改进建议"
+        "完成对话",
+        "查看综合评分",
+        "查看语法错误清单",
+        "查看表达建议",
+        "选择重新开始或结束"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "让用户看到进步，强化学习动力"
+      "status": "concept_guided",
+      "value": "让用户了解自己的表现并改进",
+      "exceptions": [
+        "评分生成失败→显示基础统计"
+      ]
     },
     {
       "id": "T004",
@@ -280,71 +226,31 @@
       "frequency": "中",
       "risk_level": "中",
       "main_flow": [
-        "选择自由对话模式",
-        "设定话题方向（可选）",
-        "与AI自由交谈",
-        "AI自然地将待复习词汇融入对话",
-        "结束后生成报告"
+        "选择话题或自定义",
+        "自由语音/文字输入",
+        "AI自由回复",
+        "查看反馈"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "MEC1实时生成模式落地：无预制脚本的自由练习，同时巩固记忆曲线词汇",
-      "rules": [
-        "自由对话由AI实时生成，无预制脚本",
-        "AI主动引导避免冷场",
-        "AI在对话中自然引入用户待复习的记忆曲线词汇，不生硬插入",
-        "自由对话计入免费用户每日对话配额"
-      ],
-      "config_items": [
-        {
-          "param": "自由对话中记忆词汇嵌入比例",
-          "current": "30%",
-          "config_level": "general_config"
-        }
+      "status": "concept_guided",
+      "value": "提供无场景约束的自由练习",
+      "exceptions": [
+        "AI生成不当内容→内容过滤替换"
       ]
     },
     {
       "id": "T005",
-      "task_name": "对话中接受实时发音纠正",
+      "task_name": "查看实时发音纠正",
       "owner_role": "R001",
       "frequency": "高",
       "risk_level": "低",
       "main_flow": [
-        "用户说话时实时评估发音",
-        "检测到明显偏差时在对话气泡中轻提示",
-        "用户可点击查看音素级详情",
-        "不打断对话流程"
+        "对话中触发发音检测",
+        "查看音素级评分",
+        "查看纠正建议",
+        "播放标准发音对比"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "MEC2落地：融入对话的自然纠正，降低技术门槛感",
-      "rules": [
-        "只纠正影响理解的发音偏差",
-        "提示融入对话UI，不弹出专业面板",
-        "每轮对话最多纠正N次避免打击信心"
-      ],
-      "config_items": [
-        {
-          "param": "每轮最大纠正次数",
-          "current": "3",
-          "config_level": "general_config"
-        },
-        {
-          "param": "发音偏差触发阈值",
-          "current": "由AI训练师调整",
-          "config_level": "dedicated_config"
-        },
-        {
-          "param": "语音识别API选择",
-          "current": "Azure Speech",
-          "config_level": "config_file"
-        },
-        {
-          "param": "发音评估API选择",
-          "current": "Azure Pronunciation Assessment",
-          "config_level": "config_file"
-        }
-      ]
+      "status": "concept_guided",
+      "value": "融入对话的实时发音纠正，不打断流程"
     },
     {
       "id": "T006",
@@ -353,68 +259,47 @@
       "frequency": "中",
       "risk_level": "低",
       "main_flow": [
-        "对话结束后查看发音报告",
-        "展示音素级发音评分",
-        "标注需改进的音素",
-        "提供发音示范音频",
-        "对比用户发音与标准发音"
+        "进入发音报告",
+        "查看音素级评分详情",
+        "播放标准发音对比",
+        "查看发音趋势"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "让用户了解发音弱点，有针对性改进"
+      "status": "concept_guided",
+      "value": "深度了解发音弱点和改善趋势"
     },
     {
       "id": "T007",
-      "task_name": "进行记忆曲线复习",
+      "task_name": "完成记忆曲线复习",
       "owner_role": "R001",
       "frequency": "高",
       "risk_level": "低",
       "main_flow": [
-        "系统根据遗忘曲线推送待复习词汇",
-        "将词汇嵌入新场景句子中呈现",
-        "用户在语境中使用该词汇",
-        "根据表现调整复习间隔"
+        "查看今日复习任务",
+        "开始闪卡复习",
+        "标记已记住/未记住",
+        "查看复习统计"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "核心差异化：对话中学的词在新场景中用出来",
+      "status": "concept_guided",
+      "value": "艾宾浩斯记忆曲线确保生词不忘",
       "rules": [
-        "词汇复习必须嵌入场景语境，不做孤立卡片",
-        "间隔复习算法基于用户表现动态调整",
-        "复现率目标 > 30%"
-      ],
-      "config_items": [
-        {
-          "param": "每轮复习词汇上限",
-          "current": "10",
-          "config_level": "general_config"
-        },
-        {
-          "param": "复习间隔算法参数（初始间隔/衰减因子等）",
-          "current": "SM-2变体",
-          "config_level": "config_file"
-        }
-      ],
-      "exceptions": [
-        "无待复习词汇 → 推荐新场景积累词汇",
-        "复习词汇过多 → 每轮限制10个，优先高频词"
+        "复习间隔按记忆曲线算法计算",
+        "每日推送复习提醒"
       ]
     },
     {
       "id": "T008",
-      "task_name": "查看词汇本",
+      "task_name": "管理词汇本",
       "owner_role": "R001",
       "frequency": "中",
       "risk_level": "低",
       "main_flow": [
-        "查看已收集的所有词汇",
-        "按场景/时间/掌握度筛选",
-        "查看每个词的学习轨迹",
-        "手动标记已掌握/需加强"
+        "浏览词汇列表",
+        "按来源/状态筛选",
+        "查看词汇详情",
+        "手动添加/删除词汇"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "让用户掌握自己的词汇进展"
+      "status": "concept_guided",
+      "value": "管理从对话和复习中积累的词汇"
     },
     {
       "id": "T009",
@@ -423,32 +308,21 @@
       "frequency": "高",
       "risk_level": "中",
       "main_flow": [
-        "选择场景类别和角色适用范围",
-        "使用AI生成脚本草稿",
-        "编辑对话内容和分支逻辑",
-        "标定难度级别",
-        "添加文化注释",
-        "提交审核"
+        "新建场景",
+        "编辑对话节点",
+        "设置难度和适用角色",
+        "预览场景对话",
+        "保存草稿"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "MEC1落地：AI生成+人工编辑的混合模式",
+      "status": "concept_guided",
+      "value": "为用户提供高质量的场景内容",
       "rules": [
-        "每个场景必须标定难度级别",
-        "必须指定适用角色（职场/旅行/移民）",
-        "文化敏感内容必须添加注释"
+        "场景名不能为空",
+        "至少3轮对话节点",
+        "必须标定难度级别"
       ],
-      "config_items": [
-        {
-          "param": "场景难度级别定义",
-          "current": "初级/中级/高级",
-          "config_level": "dedicated_config"
-        },
-        {
-          "param": "角色类型列表",
-          "current": "职场/旅行/移民",
-          "config_level": "dedicated_config"
-        }
+      "exceptions": [
+        "保存失败→自动暂存草稿"
       ]
     },
     {
@@ -458,99 +332,68 @@
       "frequency": "高",
       "risk_level": "中",
       "main_flow": [
-        "从审核队列领取待审场景",
-        "检查对话内容准确性",
+        "查看待审核列表",
+        "审核场景内容准确性",
         "检查文化适当性",
-        "检查难度标定合理性",
-        "通过/驳回并附审核意见"
+        "通过或驳回"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "确保场景内容质量，MEC1人工审核环节",
+      "status": "concept_guided",
+      "value": "保证上线场景的质量和适当性",
       "rules": [
-        "审核必须覆盖准确性、文化适当性、难度三个维度",
-        "驳回必须附具体修改意见"
-      ],
-      "config_items": [
-        {
-          "param": "审核超时提醒时限",
-          "current": "48h",
-          "config_level": "general_config"
-        },
-        {
-          "param": "最大驳回次数（触发升级）",
-          "current": "3",
-          "config_level": "general_config"
-        }
+        "驳回必须填写原因",
+        "审核通过后自动上架"
       ],
       "exceptions": [
-        "审核超时48h → 自动提醒",
-        "驳回3次以上 → 升级到高级编辑"
+        "审核超时48h→自动升级提醒"
       ]
     },
     {
       "id": "T011",
-      "task_name": "管理场景包的上下架",
+      "task_name": "管理场景包",
       "owner_role": "R004",
       "frequency": "中",
       "risk_level": "低",
       "main_flow": [
-        "查看场景包列表和状态",
-        "组织场景到包（职场包/旅行包/移民包）",
-        "设置场景包上架/下架",
-        "查看场景包使用数据"
+        "查看场景包列表",
+        "创建/编辑场景包",
+        "上架/下架场景包",
+        "编辑标签和关键词"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "管理场景包的内容更新和发布"
+      "status": "concept_guided",
+      "value": "组织场景为可售卖的场景包"
     },
     {
       "id": "T012",
-      "task_name": "标定场景关键词和标签",
+      "task_name": "管理场景标签",
       "owner_role": "R004",
       "frequency": "中",
       "risk_level": "低",
       "main_flow": [
-        "选择场景",
-        "设置搜索关键词",
-        "设置分类标签",
-        "设置关联场景",
-        "保存"
+        "查看标签列表",
+        "创建/编辑标签",
+        "批量打标签",
+        "管理关键词"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "确保用户能精准找到所需场景"
+      "status": "concept_guided",
+      "value": "通过标签和关键词提升场景发现率"
     },
     {
       "id": "T013",
-      "task_name": "查看和维护学习连胜",
+      "task_name": "查看学习连胜与成就",
       "owner_role": "R001",
       "frequency": "高",
       "risk_level": "低",
       "main_flow": [
-        "打开APP看到今日连胜状态",
-        "完成每日最低学习目标",
-        "连胜天数+1",
-        "查看连胜历史记录"
+        "查看连胜天数",
+        "领取连胜奖励",
+        "查看成就徽章列表",
+        "查看成就详情"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "MEC3落地：连胜机制对标Duolingo，解决P3坚持不了",
+      "status": "concept_guided",
+      "value": "游戏化激励持续学习",
       "rules": [
-        "每日最低目标：完成1轮对话",
-        "断胜后可用积分恢复（每月限N次）"
-      ],
-      "config_items": [
-        {
-          "param": "每日最低学习目标",
-          "current": "1轮对话",
-          "config_level": "general_config"
-        },
-        {
-          "param": "连胜恢复次数/月",
-          "current": "2",
-          "config_level": "general_config"
-        }
+        "连续学习计算逻辑：每天至少完成1轮对话",
+        "连胜中断可用积分恢复1次"
       ]
     },
     {
@@ -560,82 +403,41 @@
       "frequency": "中",
       "risk_level": "低",
       "main_flow": [
-        "查看周排行榜",
-        "按总学习时长/连胜天数/词汇量排名",
-        "查看自己的排名和趋势"
+        "查看好友排名",
+        "查看全站排名",
+        "切换排名维度"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "MEC3落地：轻社交的竞争激励",
-      "config_items": [
-        {
-          "param": "排行榜周期",
-          "current": "周",
-          "config_level": "code_constant"
-        },
-        {
-          "param": "排行榜维度列表",
-          "current": "学习时长/连胜/词汇量",
-          "config_level": "frontend_hardcode"
-        }
-      ]
+      "status": "concept_guided",
+      "value": "轻社交竞争激励学习"
     },
     {
       "id": "T015",
-      "task_name": "查看和使用积分",
+      "task_name": "兑换积分商品",
       "owner_role": "R001",
       "frequency": "中",
       "risk_level": "低",
       "main_flow": [
         "查看积分余额",
-        "查看积分获取和消耗明细",
-        "使用积分恢复学习连胜",
-        "查看积分规则说明"
+        "浏览可兑换奖品",
+        "兑换奖品",
+        "查看兑换记录"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "MEC3落地：积分体系激励持续学习，支撑连胜恢复机制",
-      "rules": [
-        "积分通过学习行为自动获取（完成对话/复习/连胜等）",
-        "积分可用于恢复断裂的学习连胜"
-      ],
-      "config_items": [
-        {
-          "param": "各学习行为积分奖励值",
-          "current": "完成对话+10/复习+5/连胜天+3",
-          "config_level": "dedicated_config"
-        },
-        {
-          "param": "连胜恢复消耗积分",
-          "current": "50",
-          "config_level": "general_config"
-        }
-      ]
+      "status": "concept_guided",
+      "value": "积分激励体系的出口"
     },
     {
       "id": "T016",
-      "task_name": "分享学习成果到社交媒体",
+      "task_name": "分享学习成果",
       "owner_role": "R001",
       "frequency": "低",
       "risk_level": "低",
       "main_flow": [
-        "选择要分享的连胜/排名/学习报告",
-        "生成分享卡片（图片）",
-        "选择社交平台分享"
+        "选择分享模板",
+        "预览分享卡片",
+        "分享到社交媒体"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "MEC3落地：社交分享促进口碑传播",
-      "rules": [
-        "分享卡片自动附带产品水印和下载链接"
-      ],
-      "config_items": [
-        {
-          "param": "支持的社交平台列表",
-          "current": "微信/微博/抖音",
-          "config_level": "frontend_hardcode"
-        }
-      ]
+      "status": "concept_guided",
+      "value": "口碑传播渠道"
     },
     {
       "id": "T017",
@@ -644,14 +446,12 @@
       "frequency": "中",
       "risk_level": "低",
       "main_flow": [
-        "查看总学习时长和天数",
-        "查看各项能力评分（口语/发音/词汇）",
-        "查看学习趋势图",
-        "查看里程碑记录"
+        "查看口语能力雷达图",
+        "查看学习目标进度",
+        "查看历史对话列表"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "让用户看到自己的进步轨迹"
+      "status": "concept_guided",
+      "value": "让用户了解自己的整体学习状况"
     },
     {
       "id": "T018",
@@ -660,53 +460,41 @@
       "frequency": "中",
       "risk_level": "低",
       "main_flow": [
-        "选择时间范围（本周/本月/全部）",
-        "查看开口时长统计",
-        "查看场景完成情况",
-        "查看词汇增长曲线",
-        "查看发音改善趋势"
+        "选择周/月维度",
+        "查看学习数据",
+        "查看开口时长趋势",
+        "查看场景通关率"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "详细的学习数据帮助用户自我评估"
+      "status": "concept_guided",
+      "value": "数据驱动学习改进"
     },
     {
       "id": "T019",
-      "task_name": "设置个人角色偏好",
+      "task_name": "设置角色偏好",
       "owner_role": "R001",
       "frequency": "低",
       "risk_level": "低",
       "main_flow": [
-        "首次登录选择角色（职场/旅行/移民/多选）",
-        "系统根据角色推荐场景",
-        "后续可修改角色偏好"
+        "选择角色类型",
+        "设置学习目标",
+        "选择感兴趣场景类型"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "三大角色专属场景库的入口"
+      "status": "concept_guided",
+      "value": "个性化推荐的基础"
     },
     {
       "id": "T020",
-      "task_name": "接受个性化场景推荐",
+      "task_name": "查看个性化推荐",
       "owner_role": "R001",
       "frequency": "高",
       "risk_level": "低",
       "main_flow": [
-        "系统根据角色偏好+学习历史推荐场景",
-        "展示推荐理由",
-        "用户选择或跳过",
-        "反馈推荐质量"
+        "打开首页",
+        "查看个性化推荐场景",
+        "查看推荐理由"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "ERRC create落地：角色专属场景推荐",
-      "config_items": [
-        {
-          "param": "推荐算法权重",
-          "current": "角色偏好vs学习历史vs热度",
-          "config_level": "config_file"
-        }
-      ]
+      "status": "concept_guided",
+      "value": "帮用户快速发现适合的场景"
     },
     {
       "id": "T021",
@@ -715,102 +503,54 @@
       "frequency": "中",
       "risk_level": "中",
       "main_flow": [
-        "选择即将面对的场景类型（看医生/银行/面试等）",
-        "输入具体情境",
-        "AI生成定制化速学对话",
-        "快速预演2-3轮",
-        "生成关键句清单可离线查看"
+        "选择紧急场景",
+        "查看关键句模板",
+        "跟读练习",
+        "收藏到词汇本"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "ERRC create落地：出发前10分钟预演",
-      "rules": [
-        "速学模式限时10分钟",
-        "自动生成关键句离线卡片",
-        "紧急速学计入免费用户每日对话配额"
-      ],
-      "config_items": [
-        {
-          "param": "速学模式时限",
-          "current": "10分钟",
-          "config_level": "general_config"
-        },
-        {
-          "param": "紧急场景类型列表",
-          "current": "看医生/银行/面试/家长会/租房",
-          "config_level": "dedicated_config"
-        }
-      ],
+      "status": "concept_guided",
+      "value": "出发前10分钟预演即将面对的场景",
       "exceptions": [
-        "无网络时 → 使用已缓存的通用场景"
+        "语音识别失败→文字替代"
       ]
     },
     {
       "id": "T022",
-      "task_name": "查看订阅方案并购买",
+      "task_name": "订阅付费方案",
       "owner_role": "R001",
       "frequency": "低",
       "risk_level": "高",
       "main_flow": [
-        "查看免费版vs付费版对比",
-        "选择订阅方案（月/年）",
-        "完成支付",
-        "立即解锁付费功能"
+        "查看订阅方案",
+        "选择方案",
+        "确认支付",
+        "完成订阅"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "商业模式落地：免费增值转化",
+      "status": "concept_guided",
+      "value": "将免费用户转化为付费用户",
       "rules": [
-        "支付需二次确认",
-        "自动续费需明确告知用户"
-      ],
-      "config_items": [
-        {
-          "param": "订阅方案和价格",
-          "current": "$9.99-14.99/月",
-          "config_level": "dedicated_config"
-        },
-        {
-          "param": "免费版功能范围描述",
-          "current": "每天3轮对话",
-          "config_level": "general_config"
-        },
-        {
-          "param": "付费版功能权益列表",
-          "current": "无限对话+高级场景+详细报告",
-          "config_level": "dedicated_config"
-        },
-        {
-          "param": "支付渠道配置",
-          "current": "Apple Pay/Google Pay/支付宝/微信",
-          "config_level": "config_file"
-        }
+        "支付前确认方案详情",
+        "免费版每天3轮对话限制"
       ],
       "exceptions": [
-        "支付失败 → 提示重试或更换支付方式",
-        "已是付费用户 → 展示当前方案和到期日"
+        "支付失败→提示重试",
+        "网络错误→保存订单稍后续费"
       ]
     },
     {
       "id": "T023",
-      "task_name": "管理订阅状态",
+      "task_name": "管理订阅",
       "owner_role": "R001",
       "frequency": "低",
-      "risk_level": "中",
+      "risk_level": "低",
       "main_flow": [
-        "查看当前订阅信息",
-        "查看到期日期",
-        "取消自动续费",
-        "恢复订阅"
+        "查看当前订阅",
+        "续费/升级方案",
+        "取消订阅"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "让用户掌控自己的付费状态",
-      "rules": [
-        "取消续费不立即失效，到期日前仍可使用付费功能"
-      ],
+      "status": "concept_guided",
       "exceptions": [
-        "退款请求 → 引导通过意见反馈提交退款申请"
+        "取消订阅需二次确认弹窗"
       ]
     },
     {
@@ -820,20 +560,13 @@
       "frequency": "低",
       "risk_level": "中",
       "main_flow": [
-        "浏览可购买的场景包",
-        "预览场景包内容",
-        "完成购买",
-        "解锁场景包内所有场景"
+        "浏览可购场景包",
+        "查看场景包详情",
+        "购买场景包"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "场景包单独购买的变现渠道",
-      "config_items": [
-        {
-          "param": "场景包定义和价格",
-          "current": "待定",
-          "config_level": "dedicated_config"
-        }
+      "status": "concept_guided",
+      "exceptions": [
+        "支付失败→重试"
       ]
     },
     {
@@ -843,47 +576,27 @@
       "frequency": "高",
       "risk_level": "低",
       "main_flow": [
-        "查看日均开口时长趋势",
-        "查看7天留存率曲线",
-        "查看首场景通关率",
-        "查看词汇复现率",
-        "按角色/渠道筛选"
+        "查看DAU/MAU/留存",
+        "查看开口时长指标",
+        "查看收入指标",
+        "设置指标告警"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "key_metrics监控落地",
-      "rules": [
-        "看板数据延迟不超过1小时",
-        "异常指标自动标红告警"
-      ],
-      "config_items": [
-        {
-          "param": "数据刷新频率",
-          "current": "1小时",
-          "config_level": "config_file"
-        },
-        {
-          "param": "告警阈值（各指标）",
-          "current": "各指标目标值的80%",
-          "config_level": "general_config"
-        }
-      ]
+      "status": "concept_guided",
+      "value": "监控产品健康度"
     },
     {
       "id": "T026",
-      "task_name": "分析用户学习行为",
+      "task_name": "分析用户行为",
       "owner_role": "R006",
       "frequency": "中",
       "risk_level": "低",
       "main_flow": [
-        "选择分析维度",
         "查看行为漏斗",
-        "导出分析报告",
-        "标注关键发现"
+        "创建自定义分析",
+        "导出分析数据"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "深度用户行为分析支持运营决策"
+      "status": "concept_guided",
+      "value": "理解用户学习行为和流失原因"
     },
     {
       "id": "T027",
@@ -892,21 +605,16 @@
       "frequency": "中",
       "risk_level": "中",
       "main_flow": [
-        "创建A/B测试方案",
-        "设置实验组和对照组",
-        "设置测试指标和结束条件",
-        "查看实时实验数据",
-        "结束测试并输出结论"
+        "创建A/B测试",
+        "配置测试变体",
+        "查看测试结果",
+        "停止/启动测试"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "数据驱动的产品优化",
+      "status": "concept_guided",
+      "value": "数据驱动产品优化",
       "rules": [
-        "测试必须设置结束条件",
-        "样本量不足时提示不显著"
-      ],
-      "exceptions": [
-        "测试指标显著下降 → 自动暂停并告警"
+        "测试名称必填",
+        "至少2个变体"
       ]
     },
     {
@@ -916,14 +624,13 @@
       "frequency": "中",
       "risk_level": "低",
       "main_flow": [
-        "选择报告类型（日报/周报/月报）",
-        "系统自动汇总关键指标",
-        "添加运营批注",
-        "导出或分享报告"
+        "选择报告模板",
+        "配置数据范围",
+        "生成运营报告",
+        "导出报告"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "标准化运营报告产出"
+      "status": "concept_guided",
+      "value": "定期汇报产品运营状况"
     },
     {
       "id": "T029",
@@ -932,59 +639,46 @@
       "frequency": "高",
       "risk_level": "低",
       "main_flow": [
-        "查看AI对话满意度评分趋势",
+        "查看质量评分概览",
         "查看低分对话列表",
-        "筛选问题类型",
-        "查看具体对话日志"
+        "查看评分趋势"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "AI质量监控第一步：发现问题"
+      "status": "concept_guided",
+      "value": "监控AI输出质量"
     },
     {
       "id": "T030",
-      "task_name": "标注异常AI对话",
+      "task_name": "标注异常对话",
       "owner_role": "R005",
       "frequency": "中",
       "risk_level": "中",
       "main_flow": [
-        "选择异常对话",
-        "标注问题类型和严重度",
-        "添加修正建议",
-        "提交标注结果"
+        "查看待标注对话",
+        "标注异常类型",
+        "提交标注"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "AI质量改进的数据积累",
-      "config_items": [
-        {
-          "param": "异常类型和严重度定义",
-          "current": "跑题/重复/不自然 × 高/中/低",
-          "config_level": "dedicated_config"
-        }
+      "status": "concept_guided",
+      "value": "改善AI训练数据质量",
+      "rules": [
+        "必须选择异常分类"
       ]
     },
     {
       "id": "T031",
-      "task_name": "管理对话Prompt模板",
+      "task_name": "管理Prompt模板",
       "owner_role": "R005",
       "frequency": "中",
-      "risk_level": "高",
+      "risk_level": "中",
       "main_flow": [
-        "查看当前prompt模板列表",
-        "编辑prompt模板",
-        "测试prompt效果（沙盒对话）",
-        "发布新版prompt"
+        "查看Prompt模板列表",
+        "创建/编辑Prompt模板",
+        "测试Prompt效果",
+        "发布到生产环境"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "MEC1落地：AI对话质量的核心调优手段",
-      "rules": [
-        "prompt修改必须在沙盒测试后才能发布",
-        "保留历史版本可回滚"
-      ],
+      "status": "concept_guided",
+      "value": "优化AI场景对话质量",
       "exceptions": [
-        "新prompt导致质量下降 → 一键回滚到上一版"
+        "发布前强制预览验证"
       ]
     },
     {
@@ -992,19 +686,17 @@
       "task_name": "调整发音评估参数",
       "owner_role": "R005",
       "frequency": "低",
-      "risk_level": "高",
+      "risk_level": "中",
       "main_flow": [
-        "查看发音评估准确率报告",
-        "调整音素级评估阈值",
-        "测试调整效果",
-        "发布参数更新"
+        "查看当前评估参数",
+        "调整音素阈值",
+        "测试参数效果",
+        "保存参数"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "MEC2落地：发音模型准确性持续调优",
+      "status": "concept_guided",
+      "value": "提升发音评估准确性",
       "rules": [
-        "参数调整必须经过测试验证",
-        "保留历史版本可回滚"
+        "阈值范围0.0-1.0"
       ]
     },
     {
@@ -1015,49 +707,35 @@
       "risk_level": "中",
       "main_flow": [
         "搜索用户",
-        "查看用户详情和学习记录",
-        "冻结/解冻账户",
-        "重置密码"
+        "查看用户详情",
+        "查看用户学习档案",
+        "封禁/解禁用户"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "基础用户管理能力",
-      "rules": [
-        "冻结账户需记录原因",
-        "查看用户数据需脱敏处理"
-      ],
+      "status": "concept_guided",
+      "value": "维护平台用户生态",
       "exceptions": [
-        "用户申诉解冻 → 进入审核流程"
+        "封禁需二次确认"
       ]
     },
     {
       "id": "T034",
-      "task_name": "管理订阅和退款",
+      "task_name": "处理订阅与退款",
       "owner_role": "R007",
       "frequency": "中",
       "risk_level": "高",
       "main_flow": [
-        "查看用户订阅记录",
+        "查看订阅列表",
         "处理退款申请",
-        "手动调整订阅状态",
-        "生成退款单据"
+        "审批退款",
+        "通知用户"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "订阅生命周期管理",
+      "status": "concept_guided",
+      "value": "处理付费相关问题",
       "rules": [
-        "退款需记录原因和审批",
-        "退款金额不超过实付金额"
-      ],
-      "config_items": [
-        {
-          "param": "退款审批规则",
-          "current": "任何退款需审批",
-          "config_level": "general_config"
-        }
+        "退款需填写审批理由"
       ],
       "exceptions": [
-        "超时未处理 → 自动升级"
+        "退款金额超限→需上级审批"
       ]
     },
     {
@@ -1067,38 +745,33 @@
       "frequency": "低",
       "risk_level": "高",
       "main_flow": [
-        "查看通用配置项列表",
-        "修改配置值",
-        "配置变更预览和确认",
-        "记录变更日志"
+        "查看系统参数列表",
+        "修改参数值",
+        "确认修改",
+        "查看修改日志"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "所有general_config参数的统一管理入口",
+      "status": "concept_guided",
+      "value": "运营参数热更新",
       "rules": [
-        "关键配置调整需二次确认",
-        "配置变更记录操作日志"
+        "参数修改需确认"
+      ],
+      "exceptions": [
+        "关键参数修改需二次确认"
       ]
     },
     {
       "id": "T036",
-      "task_name": "管理权限和角色",
+      "task_name": "管理权限角色",
       "owner_role": "R007",
       "frequency": "低",
-      "risk_level": "高",
+      "risk_level": "中",
       "main_flow": [
-        "查看角色和权限列表",
-        "创建/编辑运营角色",
-        "分配/回收权限",
-        "查看权限变更日志"
+        "查看角色列表",
+        "创建/编辑角色权限",
+        "分配用户角色"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "RBAC权限管理",
-      "rules": [
-        "不可删除超级管理员角色",
-        "权限变更需记录日志"
-      ]
+      "status": "concept_guided",
+      "value": "精细化权限管控"
     },
     {
       "id": "T037",
@@ -1107,27 +780,15 @@
       "frequency": "中",
       "risk_level": "中",
       "main_flow": [
-        "查看投诉工单列表",
-        "查看投诉详情和用户记录",
-        "回复用户",
-        "标记处理结果",
-        "关闭工单"
+        "查看投诉列表",
+        "查看投诉详情",
+        "处理投诉",
+        "回复用户"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "用户服务闭环",
+      "status": "concept_guided",
+      "value": "维护用户满意度",
       "rules": [
-        "工单处理时效 < 24h"
-      ],
-      "config_items": [
-        {
-          "param": "工单处理时效上限",
-          "current": "24h",
-          "config_level": "general_config"
-        }
-      ],
-      "exceptions": [
-        "升级投诉 → 转交上级处理"
+        "处理结果必填"
       ]
     },
     {
@@ -1138,34 +799,17 @@
       "risk_level": "中",
       "main_flow": [
         "选择注册方式",
-        "填写基本信息",
-        "验证手机号或邮箱",
+        "输入手机号/邮箱",
         "设置密码",
         "完成注册"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "用户入口",
+      "status": "concept_guided",
       "rules": [
-        "密码强度要求：8位以上含字母和数字",
-        "同一手机号不可重复注册"
+        "手机号格式校验",
+        "密码强度要求"
       ],
-      "config_items": [
-        {
-          "param": "密码强度规则",
-          "current": "8位以上含字母和数字",
-          "config_level": "config_file"
-        },
-        {
-          "param": "支持的注册方式",
-          "current": "手机号/邮箱/第三方",
-          "config_level": "frontend_hardcode"
-        },
-        {
-          "param": "第三方登录SDK配置",
-          "current": "微信/Apple/Google",
-          "config_level": "config_file"
-        }
+      "exceptions": [
+        "手机号已注册→提示登录"
       ]
     },
     {
@@ -1176,46 +820,27 @@
       "risk_level": "低",
       "main_flow": [
         "选择登录方式",
-        "输入账号密码或第三方授权",
-        "验证通过进入首页"
+        "输入账号密码/验证码/第三方",
+        "完成登录"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "用户入口",
-      "config_items": [
-        {
-          "param": "密码错误锁定阈值",
-          "current": "5次/锁定15分钟",
-          "config_level": "config_file"
-        }
-      ],
+      "status": "concept_guided",
       "exceptions": [
-        "密码错误5次 → 锁定15分钟",
-        "账户被冻结 → 提示联系客服"
+        "密码错误→提示重试+忘记密码"
       ]
     },
     {
       "id": "T040",
-      "task_name": "修改个人设置",
+      "task_name": "管理个人设置",
       "owner_role": "R001",
       "frequency": "低",
       "risk_level": "低",
       "main_flow": [
         "修改头像/昵称",
-        "修改学习提醒时间",
-        "修改语言偏好",
-        "修改通知设置"
+        "修改通知偏好",
+        "修改语言设置"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "个性化设置",
-      "config_items": [
-        {
-          "param": "可选语言列表",
-          "current": "中文/English",
-          "config_level": "frontend_hardcode"
-        }
-      ]
+      "status": "concept_guided",
+      "value": "个性化用户体验"
     },
     {
       "id": "T041",
@@ -1224,14 +849,16 @@
       "frequency": "低",
       "risk_level": "中",
       "main_flow": [
-        "选择手机号或邮箱验证",
+        "输入注册邮箱/手机",
+        "接收验证码",
         "输入验证码",
-        "设置新密码",
-        "完成重置"
+        "设置新密码"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "账户安全基础功能"
+      "status": "concept_guided",
+      "rules": [
+        "邮箱/手机格式校验",
+        "密码强度要求"
+      ]
     },
     {
       "id": "T042",
@@ -1240,28 +867,18 @@
       "frequency": "低",
       "risk_level": "高",
       "main_flow": [
-        "进入账户设置",
-        "选择注销账户",
-        "阅读注销须知（订阅失效/数据删除）",
-        "二次确认",
-        "进入7天冷静期（期间可撤销）",
-        "冷静期后永久删除数据"
+        "申请注销",
+        "确认注销",
+        "等待冷静期",
+        "完成注销"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "用户隐私权保障：自助数据删除",
+      "status": "concept_guided",
+      "exceptions": [
+        "注销需二次确认+等待期"
+      ],
       "rules": [
-        "注销需二次确认",
-        "冷静期内可撤销注销",
-        "冷静期后永久删除用户数据",
-        "有效订阅需先取消才能注销"
-      ],
-      "config_items": [
-        {
-          "param": "注销冷静期天数",
-          "current": "7",
-          "config_level": "general_config"
-        }
+        "注销有7天冷静期",
+        "注销后数据保留30天"
       ]
     },
     {
@@ -1272,317 +889,221 @@
       "risk_level": "低",
       "main_flow": [
         "选择学习目的",
-        "选择当前英语水平",
-        "体验一个简短示范对话",
-        "了解记忆曲线和游戏化功能",
-        "进入首页"
+        "选择当前水平",
+        "体验示范对话",
+        "完成引导"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "降低首次使用门槛，提升首场景通关率",
-      "config_items": [
-        {
-          "param": "英语水平选项",
-          "current": "入门/初级/中级/高级",
-          "config_level": "frontend_hardcode"
-        }
-      ]
+      "status": "concept_guided",
+      "value": "提升首次体验转化率"
     },
     {
       "id": "T044",
-      "task_name": "接收学习提醒推送",
+      "task_name": "管理通知中心",
       "owner_role": "R001",
-      "frequency": "高",
+      "frequency": "中",
       "risk_level": "低",
       "main_flow": [
-        "系统在用户设定时间发送学习提醒",
-        "展示今日推荐场景",
-        "一键进入学习"
+        "查看学习提醒",
+        "查看系统通知",
+        "管理通知设置"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "提升打开率和日活",
-      "config_items": [
-        {
-          "param": "推送文案模板",
-          "current": "待运营配置",
-          "config_level": "dedicated_config"
-        },
-        {
-          "param": "推送频率策略",
-          "current": "每天1次",
-          "config_level": "general_config"
-        },
-        {
-          "param": "推送服务配置",
-          "current": "APNs/FCM",
-          "config_level": "config_file"
-        }
-      ]
+      "status": "concept_guided",
+      "value": "及时触达用户促进学习"
     },
     {
       "id": "T045",
-      "task_name": "提交意见与投诉",
+      "task_name": "提交意见反馈",
       "owner_role": "R001",
       "frequency": "低",
-      "risk_level": "中",
+      "risk_level": "低",
       "main_flow": [
-        "选择反馈类型（建议/问题/投诉）",
-        "描述内容",
-        "上传截图（可选）",
-        "提交",
-        "查看处理进度"
+        "选择反馈类型",
+        "填写反馈内容",
+        "上传截图",
+        "提交反馈"
       ],
-      "status": "user_added",
-      "flags": [],
-      "value": "用户端反馈入口，闭环投诉流程",
+      "status": "concept_guided",
       "rules": [
-        "投诉类反馈24h内必须有回复"
-      ],
-      "config_items": [
-        {
-          "param": "反馈类型列表",
-          "current": "建议/问题/投诉",
-          "config_level": "frontend_hardcode"
-        }
+        "反馈内容不能为空"
       ]
     }
   ],
-  "conflicts": [
-    {
-      "id": "C001",
-      "type": "CONFLICT",
-      "description": "T001（场景对话）明确规定免费用户每日对话轮数限制，T004（自由对话）和T021（紧急速学）需共享该配额。",
-      "affected_tasks": [
-        "T001",
-        "T004",
-        "T021"
-      ],
-      "severity": "高",
-      "confirmed": true,
-      "resolution": "用户确认：自由对话和紧急速学共享免费配额。已在T004和T021规则中补充。"
-    },
-    {
-      "id": "C002",
-      "type": "CONFLICT",
-      "description": "T013（学习连胜）规则提到'断胜后可用积分恢复'，原来无积分系统。",
-      "affected_tasks": [
-        "T013",
-        "T015"
-      ],
-      "severity": "高",
-      "confirmed": true,
-      "resolution": "用户确认：新增积分系统（T015 查看和使用积分），积分通过学习行为自动获取，可用于恢复连胜。"
-    },
-    {
-      "id": "C003",
-      "type": "CONFLICT",
-      "description": "T023（管理订阅状态）异常流写'退款请求→引导联系客服'，与T045（提交意见与投诉）和T034（管理订阅和退款）不一致。",
-      "affected_tasks": [
-        "T023",
-        "T034",
-        "T045"
-      ],
-      "severity": "中",
-      "confirmed": true,
-      "resolution": "用户确认：T023退款引导改为'通过意见反馈提交退款申请'。已更新。"
-    }
-  ],
+  "conflicts": [],
   "crud_gaps": [
     {
       "id": "CG001",
       "type": "CRUD_INCOMPLETE",
-      "description": "用户无法自助注销账户（仅管理员可冻结）。",
+      "description": "订阅付费方案 有创建/提交但缺少撤回/取消流程",
       "affected_tasks": [
-        "T033",
-        "T038"
+        "T022"
       ],
       "severity": "中",
-      "confirmed": true,
-      "resolution": "用户确认：新增T042（注销账户），含7天冷静期和二次确认。"
+      "confirmed": true
     },
     {
       "id": "CG002",
       "type": "CRUD_INCOMPLETE",
-      "description": "成就模板标注为dedicated_config但无管理任务。",
-      "affected_tasks": [],
+      "description": "购买场景包 有创建/提交但缺少撤回/取消流程",
+      "affected_tasks": [
+        "T024"
+      ],
       "severity": "中",
-      "confirmed": true,
-      "resolution": "用户决定：去掉整个成就系统。T015改为积分系统。"
+      "confirmed": true
     },
     {
       "id": "CG003",
       "type": "CRUD_INCOMPLETE",
-      "description": "T045（提交意见与投诉）只有提交和查看进度，缺少撤回。",
+      "description": "管理A/B测试 有创建/提交但缺少撤回/取消流程",
       "affected_tasks": [
-        "T045"
+        "T027"
       ],
-      "severity": "低",
-      "confirmed": false
+      "severity": "中",
+      "confirmed": true
+    },
+    {
+      "id": "CG004",
+      "type": "CRUD_INCOMPLETE",
+      "description": "标注异常对话 有创建/提交但缺少撤回/取消流程",
+      "affected_tasks": [
+        "T030"
+      ],
+      "severity": "中",
+      "confirmed": true
+    },
+    {
+      "id": "CG005",
+      "type": "CRUD_INCOMPLETE",
+      "description": "管理Prompt模板 有创建/提交但缺少撤回/取消流程",
+      "affected_tasks": [
+        "T031"
+      ],
+      "severity": "中",
+      "confirmed": true
+    },
+    {
+      "id": "CG006",
+      "type": "CRUD_INCOMPLETE",
+      "description": "处理订阅与退款 有创建/提交但缺少撤回/取消流程",
+      "affected_tasks": [
+        "T034"
+      ],
+      "severity": "中",
+      "confirmed": true
+    },
+    {
+      "id": "CG007",
+      "type": "CRUD_INCOMPLETE",
+      "description": "管理权限角色 有创建/提交但缺少撤回/取消流程",
+      "affected_tasks": [
+        "T036"
+      ],
+      "severity": "中",
+      "confirmed": true
+    },
+    {
+      "id": "CG008",
+      "type": "CRUD_INCOMPLETE",
+      "description": "注册账户 有创建/提交但缺少撤回/取消流程",
+      "affected_tasks": [
+        "T038"
+      ],
+      "severity": "中",
+      "confirmed": true
+    },
+    {
+      "id": "CG009",
+      "type": "CRUD_INCOMPLETE",
+      "description": "重置密码 有创建/提交但缺少撤回/取消流程",
+      "affected_tasks": [
+        "T041"
+      ],
+      "severity": "中",
+      "confirmed": true
     }
   ],
   "constraints": [
     {
       "id": "CN001",
       "type": "business",
-      "description": "支付不可逆：订阅/场景包购买成功后不可直接撤销，退款必须走管理员审批流程",
+      "description": "免费版每天3轮对话限制",
+      "affected_tasks": [
+        "T002"
+      ],
+      "enforcement": "hard",
+      "code_status": "missing"
+    },
+    {
+      "id": "CN002",
+      "type": "business",
+      "description": "退款金额不可超过原订单金额",
+      "affected_tasks": [
+        "T034"
+      ],
+      "enforcement": "hard",
+      "code_status": "missing"
+    },
+    {
+      "id": "CN003",
+      "type": "compliance",
+      "description": "用户注销后数据保留30天",
+      "affected_tasks": [
+        "T042"
+      ],
+      "enforcement": "hard",
+      "code_status": "missing"
+    },
+    {
+      "id": "CN004",
+      "type": "business",
+      "description": "连胜中断恢复限每月1次",
+      "affected_tasks": [
+        "T013"
+      ],
+      "enforcement": "soft",
+      "code_status": "missing"
+    },
+    {
+      "id": "CN005",
+      "type": "compliance",
+      "description": "支付操作必须留存审计日志",
       "affected_tasks": [
         "T022",
         "T024",
         "T034"
       ],
       "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
-    },
-    {
-      "id": "CN002",
-      "type": "business",
-      "description": "退款金额不可超过用户实付金额",
-      "affected_tasks": [
-        "T034"
-      ],
-      "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
-    },
-    {
-      "id": "CN003",
-      "type": "business",
-      "description": "Prompt模板修改必须在沙盒测试后才能发布到生产环境，保留历史版本可一键回滚",
-      "affected_tasks": [
-        "T031"
-      ],
-      "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
-    },
-    {
-      "id": "CN004",
-      "type": "business",
-      "description": "发音评估参数调整必须经过测试验证后才能发布，保留历史版本可回滚",
-      "affected_tasks": [
-        "T032"
-      ],
-      "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
-    },
-    {
-      "id": "CN005",
-      "type": "business",
-      "description": "场景内容上架前必须通过审核（准确性+文化适当性+难度三维度），驳回3次以上升级到高级编辑",
-      "affected_tasks": [
-        "T009",
-        "T010",
-        "T011"
-      ],
-      "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
+      "code_status": "missing"
     },
     {
       "id": "CN006",
       "type": "business",
-      "description": "投诉类反馈必须在24小时内回复",
+      "description": "场景审核通过后方可上架",
       "affected_tasks": [
-        "T037",
-        "T044"
+        "T010",
+        "T011"
       ],
       "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
+      "code_status": "missing"
     },
     {
       "id": "CN007",
       "type": "business",
-      "description": "取消自动续费不立即失效，到期日前仍可使用付费功能",
+      "description": "发音评估阈值范围0.0-1.0",
       "affected_tasks": [
-        "T023"
+        "T032"
       ],
       "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
+      "code_status": "missing"
     },
     {
       "id": "CN008",
-      "type": "business",
-      "description": "自动续费必须在购买时明确告知用户，不可默认勾选",
-      "affected_tasks": [
-        "T022"
-      ],
-      "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
-    },
-    {
-      "id": "CN009",
-      "type": "business",
-      "description": "密码错误5次锁定15分钟，防止暴力破解",
-      "affected_tasks": [
-        "T039"
-      ],
-      "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
-    },
-    {
-      "id": "CN010",
-      "type": "business",
-      "description": "不可删除超级管理员角色，防止权限系统瘫痪",
-      "affected_tasks": [
-        "T036"
-      ],
-      "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
-    },
-    {
-      "id": "CN011",
       "type": "compliance",
-      "description": "查看用户数据必须脱敏处理（手机号/邮箱部分遮蔽）",
+      "description": "用户封禁操作需二次确认+日志",
       "affected_tasks": [
         "T033"
       ],
       "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
-    },
-    {
-      "id": "CN012",
-      "type": "compliance",
-      "description": "冻结账户、退款操作、配置变更、权限变更必须记录操作日志（操作人、时间、原因）",
-      "affected_tasks": [
-        "T033",
-        "T034",
-        "T035",
-        "T036"
-      ],
-      "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
-    },
-    {
-      "id": "CN013",
-      "type": "compliance",
-      "description": "关键配置参数调整需二次确认，防止误操作",
-      "affected_tasks": [
-        "T035"
-      ],
-      "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
-    },
-    {
-      "id": "CN014",
-      "type": "business",
-      "description": "A/B测试指标显著下降时必须自动暂停并告警，防止劣化方案影响用户",
-      "affected_tasks": [
-        "T027"
-      ],
-      "enforcement": "hard",
-      "code_status": "not_applicable",
-      "confirmed": false
+      "code_status": "missing"
     }
   ]
 }

@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1650">
+<text x="20" y="20" font-size="14" font-weight="bold" fill="#333">场景对话</text>
+<rect x="40" y="33" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="45" font-size="11" fill="#1565c0">场景列表页</text>
+<rect x="40" y="58" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="70" font-size="11" fill="#1565c0">场景详情页</text>
+<rect x="40" y="83" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="95" font-size="11" fill="#1565c0">AI对话页</text>
+<rect x="40" y="108" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="120" font-size="11" fill="#1565c0">对话报告页</text>
+<rect x="40" y="133" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="145" font-size="11" fill="#1565c0">自由对话页</text>
+<text x="20" y="180" font-size="14" font-weight="bold" fill="#333">发音纠正</text>
+<rect x="40" y="193" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="205" font-size="11" fill="#1565c0">发音详细报告页</text>
+<text x="20" y="240" font-size="14" font-weight="bold" fill="#333">记忆曲线</text>
+<rect x="40" y="253" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="265" font-size="11" fill="#1565c0">记忆曲线复习页</text>
+<rect x="40" y="278" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="290" font-size="11" fill="#1565c0">词汇本页</text>
+<text x="20" y="325" font-size="14" font-weight="bold" fill="#333">场景库管理</text>
+<rect x="40" y="338" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="350" font-size="11" fill="#1565c0">场景脚本编辑器</text>
+<rect x="40" y="363" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="375" font-size="11" fill="#1565c0">审核队列页</text>
+<rect x="40" y="388" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="400" font-size="11" fill="#1565c0">场景包管理页</text>
+<text x="20" y="435" font-size="14" font-weight="bold" fill="#333">游戏化与轻社交</text>
+<rect x="40" y="448" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="460" font-size="11" fill="#1565c0">学习连胜与成就页</text>
+<rect x="40" y="473" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="485" font-size="11" fill="#1565c0">排行榜页</text>
+<rect x="40" y="498" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="510" font-size="11" fill="#1565c0">积分商城页</text>
+<rect x="40" y="523" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="535" font-size="11" fill="#1565c0">分享成果页</text>
+<text x="20" y="570" font-size="14" font-weight="bold" fill="#333">学习档案与进度</text>
+<rect x="40" y="583" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="595" font-size="11" fill="#1565c0">个人学习档案页</text>
+<rect x="40" y="608" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="620" font-size="11" fill="#1565c0">学习统计报告页</text>
+<text x="20" y="655" font-size="14" font-weight="bold" fill="#333">角色场景推荐</text>
+<rect x="40" y="668" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="680" font-size="11" fill="#1565c0">角色偏好设置页</text>
+<text x="20" y="715" font-size="14" font-weight="bold" fill="#333">紧急场景速学</text>
+<rect x="40" y="728" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="740" font-size="11" fill="#1565c0">紧急场景速学页</text>
+<text x="20" y="775" font-size="14" font-weight="bold" fill="#333">订阅与付费</text>
+<rect x="40" y="788" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="800" font-size="11" fill="#1565c0">订阅方案页</text>
+<rect x="40" y="813" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="825" font-size="11" fill="#1565c0">订阅管理页</text>
+<rect x="40" y="838" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="850" font-size="11" fill="#1565c0">场景包购买页</text>
+<text x="20" y="885" font-size="14" font-weight="bold" fill="#333">运营数据看板</text>
+<rect x="40" y="898" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="910" font-size="11" fill="#1565c0">关键指标看板</text>
+<rect x="40" y="923" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="935" font-size="11" fill="#1565c0">用户行为分析页</text>
+<rect x="40" y="948" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="960" font-size="11" fill="#1565c0">A/B测试管理页</text>
+<rect x="40" y="973" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="985" font-size="11" fill="#1565c0">运营报告生成页</text>
+<text x="20" y="1020" font-size="14" font-weight="bold" fill="#333">AI质量监控</text>
+<rect x="40" y="1033" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="1045" font-size="11" fill="#1565c0">AI对话质量评分页</text>
+<rect x="40" y="1058" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="1070" font-size="11" fill="#1565c0">异常对话标注页</text>
+<rect x="40" y="1083" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="1095" font-size="11" fill="#1565c0">Prompt模板管理页</text>
+<rect x="40" y="1108" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="1120" font-size="11" fill="#1565c0">发音评估参数页</text>
+<text x="20" y="1155" font-size="14" font-weight="bold" fill="#333">用户管理与系统配置</text>
+<rect x="40" y="1168" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="1180" font-size="11" fill="#1565c0">用户管理页</text>
+<rect x="40" y="1193" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="1205" font-size="11" fill="#1565c0">订阅与退款管理页</text>
+<rect x="40" y="1218" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="1230" font-size="11" fill="#1565c0">系统配置页</text>
+<rect x="40" y="1243" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="1255" font-size="11" fill="#1565c0">权限角色管理页</text>
+<rect x="40" y="1268" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="1280" font-size="11" fill="#1565c0">投诉处理页</text>
+<text x="20" y="1315" font-size="14" font-weight="bold" fill="#333">注册登录与个人设置</text>
+<rect x="40" y="1328" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="1340" font-size="11" fill="#1565c0">注册页</text>
+<rect x="40" y="1353" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="1365" font-size="11" fill="#1565c0">登录页</text>
+<rect x="40" y="1378" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="1390" font-size="11" fill="#1565c0">个人设置页</text>
+<rect x="40" y="1403" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="1415" font-size="11" fill="#1565c0">重置密码页</text>
+<text x="20" y="1450" font-size="14" font-weight="bold" fill="#333">首次体验</text>
+<rect x="40" y="1463" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="1475" font-size="11" fill="#1565c0">新手引导页</text>
+<text x="20" y="1510" font-size="14" font-weight="bold" fill="#333">推送与通知</text>
+<rect x="40" y="1523" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="1535" font-size="11" fill="#1565c0">通知中心页</text>
+<text x="20" y="1570" font-size="14" font-weight="bold" fill="#333">用户反馈</text>
+<rect x="40" y="1583" width="200" height="20" rx="4" fill="#e3f2fd"/>
+<text x="50" y="1595" font-size="11" fill="#1565c0">意见反馈页</text>
+</svg>

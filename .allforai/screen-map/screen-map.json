@@ -1,0 +1,1464 @@
+{
+  "generated_at": "2026-02-27T19:16:30Z",
+  "mode": "full",
+  "auto_mode": true,
+  "audience_mode": "typed",
+  "concept_mode": "none",
+  "screens": [
+    {
+      "id": "S001",
+      "name": "场景列表页",
+      "module": "场景对话",
+      "tasks": [
+        "T001",
+        "T020"
+      ],
+      "actions": [
+        {
+          "label": "浏览场景列表",
+          "crud": "R",
+          "task_ref": "T001",
+          "click_depth": 1,
+          "frequency": "高"
+        },
+        {
+          "label": "按角色/难度/主题筛选",
+          "crud": "R",
+          "task_ref": "T001",
+          "click_depth": 2,
+          "frequency": "高"
+        },
+        {
+          "label": "选择场景",
+          "crud": "R",
+          "task_ref": "T001",
+          "click_depth": 2,
+          "frequency": "高"
+        },
+        {
+          "label": "查看个性化推荐",
+          "crud": "R",
+          "task_ref": "T020",
+          "click_depth": 1,
+          "frequency": "高"
+        }
+      ],
+      "notes": "入口页，合并推荐"
+    },
+    {
+      "id": "S002",
+      "name": "场景详情页",
+      "module": "场景对话",
+      "tasks": [
+        "T001"
+      ],
+      "actions": [
+        {
+          "label": "查看场景简介",
+          "crud": "R",
+          "task_ref": "T001",
+          "click_depth": 2,
+          "frequency": "高"
+        },
+        {
+          "label": "开始对话",
+          "crud": "R",
+          "task_ref": "T001",
+          "click_depth": 2,
+          "frequency": "高",
+          "exception_flows": [
+            "已达免费上限→提示升级",
+            "场景暂不可用→推荐相似"
+          ]
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S003",
+      "name": "AI对话页",
+      "module": "场景对话",
+      "tasks": [
+        "T002",
+        "T005"
+      ],
+      "actions": [
+        {
+          "label": "语音输入",
+          "crud": "C",
+          "task_ref": "T002",
+          "click_depth": 1,
+          "frequency": "高",
+          "exception_flows": [
+            "语音识别失败→提示重说或切换文字"
+          ]
+        },
+        {
+          "label": "文字输入",
+          "crud": "C",
+          "task_ref": "T002",
+          "click_depth": 1,
+          "frequency": "高"
+        },
+        {
+          "label": "查看AI回复",
+          "crud": "R",
+          "task_ref": "T002",
+          "click_depth": 1,
+          "frequency": "高",
+          "exception_flows": [
+            "AI响应超时→等待动画并重试"
+          ]
+        },
+        {
+          "label": "实时发音纠正提示",
+          "crud": "R",
+          "task_ref": "T005",
+          "click_depth": 1,
+          "frequency": "高"
+        },
+        {
+          "label": "查看生词收集",
+          "crud": "R",
+          "task_ref": "T002",
+          "click_depth": 2,
+          "frequency": "中"
+        }
+      ],
+      "notes": "核心交互页"
+    },
+    {
+      "id": "S004",
+      "name": "对话报告页",
+      "module": "场景对话",
+      "tasks": [
+        "T003"
+      ],
+      "actions": [
+        {
+          "label": "查看综合评分",
+          "crud": "R",
+          "task_ref": "T003",
+          "click_depth": 1,
+          "frequency": "高"
+        },
+        {
+          "label": "查看语法错误清单",
+          "crud": "R",
+          "task_ref": "T003",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "查看表达建议",
+          "crud": "R",
+          "task_ref": "T003",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "重新开始同场景",
+          "crud": "R",
+          "task_ref": "T003",
+          "click_depth": 2,
+          "frequency": "中"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S005",
+      "name": "自由对话页",
+      "module": "场景对话",
+      "tasks": [
+        "T004"
+      ],
+      "actions": [
+        {
+          "label": "选择话题",
+          "crud": "R",
+          "task_ref": "T004",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "自由语音/文字输入",
+          "crud": "C",
+          "task_ref": "T004",
+          "click_depth": 1,
+          "frequency": "中"
+        },
+        {
+          "label": "AI自由回复",
+          "crud": "R",
+          "task_ref": "T004",
+          "click_depth": 1,
+          "frequency": "中"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S006",
+      "name": "发音详细报告页",
+      "module": "发音纠正",
+      "tasks": [
+        "T006"
+      ],
+      "actions": [
+        {
+          "label": "查看音素级评分",
+          "crud": "R",
+          "task_ref": "T006",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "播放标准发音对比",
+          "crud": "R",
+          "task_ref": "T006",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "查看发音趋势",
+          "crud": "R",
+          "task_ref": "T006",
+          "click_depth": 3,
+          "frequency": "中"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S007",
+      "name": "记忆曲线复习页",
+      "module": "记忆曲线",
+      "tasks": [
+        "T007"
+      ],
+      "actions": [
+        {
+          "label": "查看今日复习任务",
+          "crud": "R",
+          "task_ref": "T007",
+          "click_depth": 1,
+          "frequency": "高"
+        },
+        {
+          "label": "开始闪卡复习",
+          "crud": "R",
+          "task_ref": "T007",
+          "click_depth": 1,
+          "frequency": "高"
+        },
+        {
+          "label": "标记已记住/未记住",
+          "crud": "U",
+          "task_ref": "T007",
+          "click_depth": 1,
+          "frequency": "高"
+        },
+        {
+          "label": "查看复习统计",
+          "crud": "R",
+          "task_ref": "T007",
+          "click_depth": 2,
+          "frequency": "中"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S008",
+      "name": "词汇本页",
+      "module": "记忆曲线",
+      "tasks": [
+        "T008"
+      ],
+      "actions": [
+        {
+          "label": "浏览词汇列表",
+          "crud": "R",
+          "task_ref": "T008",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "按来源/状态筛选",
+          "crud": "R",
+          "task_ref": "T008",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "查看词汇详情",
+          "crud": "R",
+          "task_ref": "T008",
+          "click_depth": 3,
+          "frequency": "低"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S009",
+      "name": "场景脚本编辑器",
+      "module": "场景库管理",
+      "tasks": [
+        "T009"
+      ],
+      "actions": [
+        {
+          "label": "创建新场景",
+          "crud": "C",
+          "task_ref": "T009",
+          "click_depth": 2,
+          "frequency": "高"
+        },
+        {
+          "label": "编辑对话节点",
+          "crud": "U",
+          "task_ref": "T009",
+          "click_depth": 2,
+          "frequency": "高"
+        },
+        {
+          "label": "预览场景对话",
+          "crud": "R",
+          "task_ref": "T009",
+          "click_depth": 3,
+          "frequency": "中"
+        },
+        {
+          "label": "保存草稿",
+          "crud": "U",
+          "task_ref": "T009",
+          "click_depth": 2,
+          "frequency": "高",
+          "validation_rules": [
+            "场景名不能为空",
+            "至少3轮对话节点"
+          ]
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S010",
+      "name": "审核队列页",
+      "module": "场景库管理",
+      "tasks": [
+        "T010"
+      ],
+      "actions": [
+        {
+          "label": "查看待审核列表",
+          "crud": "R",
+          "task_ref": "T010",
+          "click_depth": 1,
+          "frequency": "高"
+        },
+        {
+          "label": "审核通过",
+          "crud": "U",
+          "task_ref": "T010",
+          "click_depth": 2,
+          "frequency": "高"
+        },
+        {
+          "label": "驳回并备注",
+          "crud": "U",
+          "task_ref": "T010",
+          "click_depth": 2,
+          "frequency": "高",
+          "validation_rules": [
+            "驳回必须填写原因"
+          ]
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S011",
+      "name": "场景包管理页",
+      "module": "场景库管理",
+      "tasks": [
+        "T011",
+        "T012"
+      ],
+      "actions": [
+        {
+          "label": "查看场景包列表",
+          "crud": "R",
+          "task_ref": "T011",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "上架场景包",
+          "crud": "U",
+          "task_ref": "T011",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "下架场景包",
+          "crud": "U",
+          "task_ref": "T011",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "编辑标签和关键词",
+          "crud": "U",
+          "task_ref": "T012",
+          "click_depth": 2,
+          "frequency": "中"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S012",
+      "name": "学习连胜与成就页",
+      "module": "游戏化与轻社交",
+      "tasks": [
+        "T013"
+      ],
+      "actions": [
+        {
+          "label": "查看连胜天数",
+          "crud": "R",
+          "task_ref": "T013",
+          "click_depth": 1,
+          "frequency": "高"
+        },
+        {
+          "label": "领取连胜奖励",
+          "crud": "U",
+          "task_ref": "T013",
+          "click_depth": 1,
+          "frequency": "高"
+        },
+        {
+          "label": "查看成就徽章",
+          "crud": "R",
+          "task_ref": "T013",
+          "click_depth": 2,
+          "frequency": "中"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S013",
+      "name": "排行榜页",
+      "module": "游戏化与轻社交",
+      "tasks": [
+        "T014"
+      ],
+      "actions": [
+        {
+          "label": "查看好友排名",
+          "crud": "R",
+          "task_ref": "T014",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "查看全站排名",
+          "crud": "R",
+          "task_ref": "T014",
+          "click_depth": 2,
+          "frequency": "中"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S014",
+      "name": "积分商城页",
+      "module": "游戏化与轻社交",
+      "tasks": [
+        "T015"
+      ],
+      "actions": [
+        {
+          "label": "查看积分余额",
+          "crud": "R",
+          "task_ref": "T015",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "兑换奖品",
+          "crud": "U",
+          "task_ref": "T015",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "查看兑换记录",
+          "crud": "R",
+          "task_ref": "T015",
+          "click_depth": 3,
+          "frequency": "低"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S015",
+      "name": "分享成果页",
+      "module": "游戏化与轻社交",
+      "tasks": [
+        "T016"
+      ],
+      "actions": [
+        {
+          "label": "选择分享模板",
+          "crud": "R",
+          "task_ref": "T016",
+          "click_depth": 3,
+          "frequency": "低"
+        },
+        {
+          "label": "分享到社交媒体",
+          "crud": "C",
+          "task_ref": "T016",
+          "click_depth": 3,
+          "frequency": "低"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S016",
+      "name": "个人学习档案页",
+      "module": "学习档案与进度",
+      "tasks": [
+        "T017"
+      ],
+      "actions": [
+        {
+          "label": "查看口语能力雷达图",
+          "crud": "R",
+          "task_ref": "T017",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "查看学习目标进度",
+          "crud": "R",
+          "task_ref": "T017",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "查看历史对话列表",
+          "crud": "R",
+          "task_ref": "T017",
+          "click_depth": 2,
+          "frequency": "中"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S017",
+      "name": "学习统计报告页",
+      "module": "学习档案与进度",
+      "tasks": [
+        "T018"
+      ],
+      "actions": [
+        {
+          "label": "查看周/月学习数据",
+          "crud": "R",
+          "task_ref": "T018",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "查看开口时长趋势",
+          "crud": "R",
+          "task_ref": "T018",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "查看场景通关率",
+          "crud": "R",
+          "task_ref": "T018",
+          "click_depth": 2,
+          "frequency": "中"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S018",
+      "name": "角色偏好设置页",
+      "module": "角色场景推荐",
+      "tasks": [
+        "T019"
+      ],
+      "actions": [
+        {
+          "label": "选择角色类型",
+          "crud": "U",
+          "task_ref": "T019",
+          "click_depth": 3,
+          "frequency": "低"
+        },
+        {
+          "label": "设置学习目标",
+          "crud": "U",
+          "task_ref": "T019",
+          "click_depth": 3,
+          "frequency": "低"
+        },
+        {
+          "label": "选择感兴趣场景",
+          "crud": "U",
+          "task_ref": "T019",
+          "click_depth": 3,
+          "frequency": "低"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S019",
+      "name": "紧急场景速学页",
+      "module": "紧急场景速学",
+      "tasks": [
+        "T021"
+      ],
+      "actions": [
+        {
+          "label": "选择紧急场景",
+          "crud": "R",
+          "task_ref": "T021",
+          "click_depth": 1,
+          "frequency": "中"
+        },
+        {
+          "label": "查看关键句模板",
+          "crud": "R",
+          "task_ref": "T021",
+          "click_depth": 1,
+          "frequency": "中"
+        },
+        {
+          "label": "跟读练习",
+          "crud": "C",
+          "task_ref": "T021",
+          "click_depth": 1,
+          "frequency": "中",
+          "exception_flows": [
+            "语音识别失败→文字替代"
+          ]
+        },
+        {
+          "label": "收藏到词汇本",
+          "crud": "C",
+          "task_ref": "T021",
+          "click_depth": 2,
+          "frequency": "低"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S020",
+      "name": "订阅方案页",
+      "module": "订阅与付费",
+      "tasks": [
+        "T022"
+      ],
+      "actions": [
+        {
+          "label": "查看订阅方案",
+          "crud": "R",
+          "task_ref": "T022",
+          "click_depth": 2,
+          "frequency": "低"
+        },
+        {
+          "label": "选择方案并支付",
+          "crud": "C",
+          "task_ref": "T022",
+          "click_depth": 2,
+          "frequency": "低",
+          "validation_rules": [
+            "支付前确认方案详情"
+          ],
+          "exception_flows": [
+            "支付失败→提示重试",
+            "网络错误→保存订单稍后续费"
+          ]
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S021",
+      "name": "订阅管理页",
+      "module": "订阅与付费",
+      "tasks": [
+        "T023"
+      ],
+      "actions": [
+        {
+          "label": "查看当前订阅",
+          "crud": "R",
+          "task_ref": "T023",
+          "click_depth": 2,
+          "frequency": "低"
+        },
+        {
+          "label": "续费/升级",
+          "crud": "U",
+          "task_ref": "T023",
+          "click_depth": 2,
+          "frequency": "低"
+        },
+        {
+          "label": "取消订阅",
+          "crud": "D",
+          "task_ref": "T023",
+          "click_depth": 3,
+          "frequency": "低",
+          "exception_flows": [
+            "取消确认二次弹窗"
+          ]
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S022",
+      "name": "场景包购买页",
+      "module": "订阅与付费",
+      "tasks": [
+        "T024"
+      ],
+      "actions": [
+        {
+          "label": "浏览可购场景包",
+          "crud": "R",
+          "task_ref": "T024",
+          "click_depth": 2,
+          "frequency": "低"
+        },
+        {
+          "label": "购买场景包",
+          "crud": "C",
+          "task_ref": "T024",
+          "click_depth": 2,
+          "frequency": "低",
+          "exception_flows": [
+            "支付失败→重试"
+          ]
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S023",
+      "name": "关键指标看板",
+      "module": "运营数据看板",
+      "tasks": [
+        "T025"
+      ],
+      "actions": [
+        {
+          "label": "查看DAU/MAU/留存",
+          "crud": "R",
+          "task_ref": "T025",
+          "click_depth": 1,
+          "frequency": "高"
+        },
+        {
+          "label": "查看开口时长指标",
+          "crud": "R",
+          "task_ref": "T025",
+          "click_depth": 1,
+          "frequency": "高"
+        },
+        {
+          "label": "设置指标告警",
+          "crud": "U",
+          "task_ref": "T025",
+          "click_depth": 2,
+          "frequency": "中"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S024",
+      "name": "用户行为分析页",
+      "module": "运营数据看板",
+      "tasks": [
+        "T026"
+      ],
+      "actions": [
+        {
+          "label": "查看行为漏斗",
+          "crud": "R",
+          "task_ref": "T026",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "创建自定义分析",
+          "crud": "C",
+          "task_ref": "T026",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "导出分析数据",
+          "crud": "R",
+          "task_ref": "T026",
+          "click_depth": 3,
+          "frequency": "低"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S025",
+      "name": "A/B测试管理页",
+      "module": "运营数据看板",
+      "tasks": [
+        "T027"
+      ],
+      "actions": [
+        {
+          "label": "创建A/B测试",
+          "crud": "C",
+          "task_ref": "T027",
+          "click_depth": 2,
+          "frequency": "中",
+          "validation_rules": [
+            "测试名称必填",
+            "至少2个变体"
+          ]
+        },
+        {
+          "label": "查看测试结果",
+          "crud": "R",
+          "task_ref": "T027",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "停止/启动测试",
+          "crud": "U",
+          "task_ref": "T027",
+          "click_depth": 2,
+          "frequency": "中"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S026",
+      "name": "运营报告生成页",
+      "module": "运营数据看板",
+      "tasks": [
+        "T028"
+      ],
+      "actions": [
+        {
+          "label": "选择报告模板",
+          "crud": "R",
+          "task_ref": "T028",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "生成运营报告",
+          "crud": "C",
+          "task_ref": "T028",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "导出报告",
+          "crud": "R",
+          "task_ref": "T028",
+          "click_depth": 3,
+          "frequency": "低"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S027",
+      "name": "AI对话质量评分页",
+      "module": "AI质量监控",
+      "tasks": [
+        "T029"
+      ],
+      "actions": [
+        {
+          "label": "查看质量评分概览",
+          "crud": "R",
+          "task_ref": "T029",
+          "click_depth": 1,
+          "frequency": "高"
+        },
+        {
+          "label": "查看低分对话列表",
+          "crud": "R",
+          "task_ref": "T029",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "查看评分趋势",
+          "crud": "R",
+          "task_ref": "T029",
+          "click_depth": 2,
+          "frequency": "中"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S028",
+      "name": "异常对话标注页",
+      "module": "AI质量监控",
+      "tasks": [
+        "T030"
+      ],
+      "actions": [
+        {
+          "label": "查看待标注对话",
+          "crud": "R",
+          "task_ref": "T030",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "标注异常类型",
+          "crud": "U",
+          "task_ref": "T030",
+          "click_depth": 2,
+          "frequency": "中",
+          "validation_rules": [
+            "必须选择异常分类"
+          ]
+        },
+        {
+          "label": "提交标注",
+          "crud": "C",
+          "task_ref": "T030",
+          "click_depth": 2,
+          "frequency": "中"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S029",
+      "name": "Prompt模板管理页",
+      "module": "AI质量监控",
+      "tasks": [
+        "T031"
+      ],
+      "actions": [
+        {
+          "label": "查看Prompt模板列表",
+          "crud": "R",
+          "task_ref": "T031",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "创建新Prompt模板",
+          "crud": "C",
+          "task_ref": "T031",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "编辑Prompt模板",
+          "crud": "U",
+          "task_ref": "T031",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "发布Prompt到生产环境",
+          "crud": "U",
+          "task_ref": "T031",
+          "click_depth": 3,
+          "frequency": "低",
+          "exception_flows": [
+            "发布前强制预览验证"
+          ]
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S030",
+      "name": "发音评估参数页",
+      "module": "AI质量监控",
+      "tasks": [
+        "T032"
+      ],
+      "actions": [
+        {
+          "label": "查看当前评估参数",
+          "crud": "R",
+          "task_ref": "T032",
+          "click_depth": 3,
+          "frequency": "低"
+        },
+        {
+          "label": "调整音素阈值",
+          "crud": "U",
+          "task_ref": "T032",
+          "click_depth": 3,
+          "frequency": "低",
+          "validation_rules": [
+            "阈值范围0.0-1.0"
+          ]
+        },
+        {
+          "label": "测试参数效果",
+          "crud": "R",
+          "task_ref": "T032",
+          "click_depth": 3,
+          "frequency": "低"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S031",
+      "name": "用户管理页",
+      "module": "用户管理与系统配置",
+      "tasks": [
+        "T033"
+      ],
+      "actions": [
+        {
+          "label": "搜索用户",
+          "crud": "R",
+          "task_ref": "T033",
+          "click_depth": 1,
+          "frequency": "高"
+        },
+        {
+          "label": "查看用户详情",
+          "crud": "R",
+          "task_ref": "T033",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "封禁/解禁用户",
+          "crud": "U",
+          "task_ref": "T033",
+          "click_depth": 2,
+          "frequency": "中",
+          "exception_flows": [
+            "封禁需二次确认"
+          ]
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S032",
+      "name": "订阅与退款管理页",
+      "module": "用户管理与系统配置",
+      "tasks": [
+        "T034"
+      ],
+      "actions": [
+        {
+          "label": "查看订阅列表",
+          "crud": "R",
+          "task_ref": "T034",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "处理退款申请",
+          "crud": "U",
+          "task_ref": "T034",
+          "click_depth": 2,
+          "frequency": "中",
+          "validation_rules": [
+            "退款需填写审批理由"
+          ],
+          "exception_flows": [
+            "退款金额超限→需上级审批"
+          ]
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S033",
+      "name": "系统配置页",
+      "module": "用户管理与系统配置",
+      "tasks": [
+        "T035"
+      ],
+      "actions": [
+        {
+          "label": "查看系统参数",
+          "crud": "R",
+          "task_ref": "T035",
+          "click_depth": 3,
+          "frequency": "低"
+        },
+        {
+          "label": "修改参数值",
+          "crud": "U",
+          "task_ref": "T035",
+          "click_depth": 3,
+          "frequency": "低",
+          "validation_rules": [
+            "参数修改需确认"
+          ],
+          "exception_flows": [
+            "关键参数修改需二次确认"
+          ]
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S034",
+      "name": "权限角色管理页",
+      "module": "用户管理与系统配置",
+      "tasks": [
+        "T036"
+      ],
+      "actions": [
+        {
+          "label": "查看角色列表",
+          "crud": "R",
+          "task_ref": "T036",
+          "click_depth": 3,
+          "frequency": "低"
+        },
+        {
+          "label": "创建/编辑角色权限",
+          "crud": "U",
+          "task_ref": "T036",
+          "click_depth": 3,
+          "frequency": "低"
+        },
+        {
+          "label": "分配用户角色",
+          "crud": "U",
+          "task_ref": "T036",
+          "click_depth": 3,
+          "frequency": "低"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S035",
+      "name": "投诉处理页",
+      "module": "用户管理与系统配置",
+      "tasks": [
+        "T037"
+      ],
+      "actions": [
+        {
+          "label": "查看投诉列表",
+          "crud": "R",
+          "task_ref": "T037",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "处理投诉",
+          "crud": "U",
+          "task_ref": "T037",
+          "click_depth": 2,
+          "frequency": "中",
+          "validation_rules": [
+            "处理结果必填"
+          ]
+        },
+        {
+          "label": "回复用户",
+          "crud": "C",
+          "task_ref": "T037",
+          "click_depth": 2,
+          "frequency": "中"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S036",
+      "name": "注册页",
+      "module": "注册登录与个人设置",
+      "tasks": [
+        "T038"
+      ],
+      "actions": [
+        {
+          "label": "手机号/邮箱注册",
+          "crud": "C",
+          "task_ref": "T038",
+          "click_depth": 1,
+          "frequency": "低",
+          "validation_rules": [
+            "手机号格式校验",
+            "密码强度要求"
+          ],
+          "exception_flows": [
+            "手机号已注册→提示登录"
+          ]
+        },
+        {
+          "label": "第三方登录注册",
+          "crud": "C",
+          "task_ref": "T038",
+          "click_depth": 1,
+          "frequency": "低"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S037",
+      "name": "登录页",
+      "module": "注册登录与个人设置",
+      "tasks": [
+        "T039"
+      ],
+      "actions": [
+        {
+          "label": "账号密码登录",
+          "crud": "R",
+          "task_ref": "T039",
+          "click_depth": 1,
+          "frequency": "高",
+          "exception_flows": [
+            "密码错误→提示重试+忘记密码"
+          ]
+        },
+        {
+          "label": "第三方快捷登录",
+          "crud": "R",
+          "task_ref": "T039",
+          "click_depth": 1,
+          "frequency": "高"
+        },
+        {
+          "label": "验证码登录",
+          "crud": "R",
+          "task_ref": "T039",
+          "click_depth": 1,
+          "frequency": "高"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S038",
+      "name": "个人设置页",
+      "module": "注册登录与个人设置",
+      "tasks": [
+        "T040",
+        "T042"
+      ],
+      "actions": [
+        {
+          "label": "修改头像/昵称",
+          "crud": "U",
+          "task_ref": "T040",
+          "click_depth": 3,
+          "frequency": "低"
+        },
+        {
+          "label": "修改通知偏好",
+          "crud": "U",
+          "task_ref": "T040",
+          "click_depth": 3,
+          "frequency": "低"
+        },
+        {
+          "label": "修改语言设置",
+          "crud": "U",
+          "task_ref": "T040",
+          "click_depth": 3,
+          "frequency": "低"
+        },
+        {
+          "label": "注销账户",
+          "crud": "D",
+          "task_ref": "T042",
+          "click_depth": 3,
+          "frequency": "低",
+          "exception_flows": [
+            "注销需二次确认+等待期"
+          ]
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S039",
+      "name": "重置密码页",
+      "module": "注册登录与个人设置",
+      "tasks": [
+        "T041"
+      ],
+      "actions": [
+        {
+          "label": "输入注册邮箱/手机",
+          "crud": "R",
+          "task_ref": "T041",
+          "click_depth": 2,
+          "frequency": "低",
+          "validation_rules": [
+            "邮箱/手机格式校验"
+          ]
+        },
+        {
+          "label": "输入验证码",
+          "crud": "R",
+          "task_ref": "T041",
+          "click_depth": 2,
+          "frequency": "低"
+        },
+        {
+          "label": "设置新密码",
+          "crud": "U",
+          "task_ref": "T041",
+          "click_depth": 2,
+          "frequency": "低",
+          "validation_rules": [
+            "密码强度要求"
+          ]
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S040",
+      "name": "新手引导页",
+      "module": "首次体验",
+      "tasks": [
+        "T043"
+      ],
+      "actions": [
+        {
+          "label": "选择学习目的",
+          "crud": "C",
+          "task_ref": "T043",
+          "click_depth": 1,
+          "frequency": "低"
+        },
+        {
+          "label": "选择当前水平",
+          "crud": "C",
+          "task_ref": "T043",
+          "click_depth": 1,
+          "frequency": "低"
+        },
+        {
+          "label": "体验示范对话",
+          "crud": "R",
+          "task_ref": "T043",
+          "click_depth": 1,
+          "frequency": "低"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S041",
+      "name": "通知中心页",
+      "module": "推送与通知",
+      "tasks": [
+        "T044"
+      ],
+      "actions": [
+        {
+          "label": "查看学习提醒",
+          "crud": "R",
+          "task_ref": "T044",
+          "click_depth": 2,
+          "frequency": "高"
+        },
+        {
+          "label": "查看系统通知",
+          "crud": "R",
+          "task_ref": "T044",
+          "click_depth": 2,
+          "frequency": "中"
+        },
+        {
+          "label": "管理通知设置",
+          "crud": "U",
+          "task_ref": "T044",
+          "click_depth": 3,
+          "frequency": "低"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": "S042",
+      "name": "意见反馈页",
+      "module": "用户反馈",
+      "tasks": [
+        "T045"
+      ],
+      "actions": [
+        {
+          "label": "选择反馈类型",
+          "crud": "R",
+          "task_ref": "T045",
+          "click_depth": 3,
+          "frequency": "低"
+        },
+        {
+          "label": "填写反馈内容",
+          "crud": "C",
+          "task_ref": "T045",
+          "click_depth": 3,
+          "frequency": "低",
+          "validation_rules": [
+            "反馈内容不能为空"
+          ]
+        },
+        {
+          "label": "上传截图",
+          "crud": "C",
+          "task_ref": "T045",
+          "click_depth": 3,
+          "frequency": "低"
+        },
+        {
+          "label": "提交反馈",
+          "crud": "C",
+          "task_ref": "T045",
+          "click_depth": 3,
+          "frequency": "低"
+        }
+      ],
+      "notes": ""
+    }
+  ]
+}

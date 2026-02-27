@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>职场人士 — UI 设计预览</title>
+<style>
+body { font-family: 'Roboto', 'Noto Sans SC', sans-serif; background: #FFFBFE; color: #1C1B1F; margin: 0; padding: 0; }
+.header { background: #6750A4; color: #FFFFFF; padding: 16px 24px; font-size: 22px; font-weight: 500; }
+.header a { color: #FFFFFF; text-decoration: none; opacity: 0.8; font-size: 14px; }
+.header a:hover { opacity: 1; }
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.card { background: #FFFBFE; border-radius: 12px; box-shadow: 0 1px 3px 1px rgba(0,0,0,.15), 0 1px 2px rgba(0,0,0,.3); padding: 20px; transition: box-shadow 0.2s; }
+.card:hover { box-shadow: 0 2px 6px 2px rgba(0,0,0,.15), 0 1px 2px rgba(0,0,0,.3); }
+.card h3 { margin: 0 0 8px; font-size: 18px; color: #1C1B1F; }
+.card .subtitle { font-size: 14px; color: #49454F; margin-bottom: 12px; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 12px; font-weight: 500; }
+.badge-consumer { background: #E8DEF8; color: #6750A4; }
+.badge-professional { background: #D0BCFF; color: #21005D; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.btn-filled { background: #6750A4; color: #FFFFFF; border: none; padding: 8px 16px; border-radius: 20px; font-size: 14px; cursor: pointer; }
+.btn-outlined { background: transparent; color: #6750A4; border: 1px solid #6750A4; padding: 8px 16px; border-radius: 20px; font-size: 14px; cursor: pointer; }
+.states { margin-top: 12px; font-size: 13px; color: #49454F; }
+.states span { margin-right: 12px; }
+.module-title { font-size: 20px; font-weight: 500; margin: 24px 0 12px; color: #6750A4; }
+a.card-link { text-decoration: none; color: inherit; }
+.task-count { font-size: 13px; color: #49454F; margin-top: 8px; }
+</style></head>
+<body>
+<div class="header">
+  <a href="index.html">← 返回总览</a> &nbsp;·&nbsp; 职场人士
+  <div style="font-size:14px;opacity:0.8;margin-top:4px">风格: Material Design 3 · 25 个界面</div>
+</div>
+<div class="container">
+<div class="module-title">场景对话</div>
+<div class="card-grid">
+
+  <div class="card">
+    <h3>场景列表页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle">入口页，合并推荐</div>
+    <div class="actions"><button class="btn-filled">浏览场景列表</button>
+<button class="btn-filled">按角色/难度/主题筛选</button>
+<button class="btn-filled">选择场景</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">2 个关联任务</div>
+  </div>
+  <div class="card">
+    <h3>场景详情页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-filled">查看场景简介</button>
+<button class="btn-filled">开始对话</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+  <div class="card">
+    <h3>AI对话页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle">核心交互页</div>
+    <div class="actions"><button class="btn-filled">语音输入</button>
+<button class="btn-filled">文字输入</button>
+<button class="btn-filled">查看AI回复</button>
+<button class="btn-outlined">查看生词收集</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">2 个关联任务</div>
+  </div>
+  <div class="card">
+    <h3>对话报告页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-filled">查看综合评分</button>
+<button class="btn-outlined">查看语法错误清单</button>
+<button class="btn-outlined">查看表达建议</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+  <div class="card">
+    <h3>自由对话页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">选择话题</button>
+<button class="btn-outlined">自由语音/文字输入</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+</div>
+<div class="module-title">发音纠正</div>
+<div class="card-grid">
+
+  <div class="card">
+    <h3>发音详细报告页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">查看音素级评分</button>
+<button class="btn-outlined">播放标准发音对比</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+</div>
+<div class="module-title">记忆曲线</div>
+<div class="card-grid">
+
+  <div class="card">
+    <h3>记忆曲线复习页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-filled">查看今日复习任务</button>
+<button class="btn-filled">开始闪卡复习</button>
+<button class="btn-filled">标记已记住/未记住</button>
+<button class="btn-outlined">查看复习统计</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+  <div class="card">
+    <h3>词汇本页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">浏览词汇列表</button>
+<button class="btn-outlined">按来源/状态筛选</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+</div>
+<div class="module-title">游戏化与轻社交</div>
+<div class="card-grid">
+
+  <div class="card">
+    <h3>学习连胜与成就页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-filled">查看连胜天数</button>
+<button class="btn-filled">领取连胜奖励</button>
+<button class="btn-outlined">查看成就徽章</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+  <div class="card">
+    <h3>排行榜页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">查看好友排名</button>
+<button class="btn-outlined">查看全站排名</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+  <div class="card">
+    <h3>积分商城页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">查看积分余额</button>
+<button class="btn-outlined">兑换奖品</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+  <div class="card">
+    <h3>分享成果页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">选择分享模板</button>
+<button class="btn-outlined">分享到社交媒体</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+</div>
+<div class="module-title">学习档案与进度</div>
+<div class="card-grid">
+
+  <div class="card">
+    <h3>个人学习档案页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">查看口语能力雷达图</button>
+<button class="btn-outlined">查看学习目标进度</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+  <div class="card">
+    <h3>学习统计报告页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">查看周/月学习数据</button>
+<button class="btn-outlined">查看开口时长趋势</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+</div>
+<div class="module-title">角色场景推荐</div>
+<div class="card-grid">
+
+  <div class="card">
+    <h3>角色偏好设置页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">选择角色类型</button>
+<button class="btn-outlined">设置学习目标</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+</div>
+<div class="module-title">订阅与付费</div>
+<div class="card-grid">
+
+  <div class="card">
+    <h3>订阅方案页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">查看订阅方案</button>
+<button class="btn-outlined">选择方案并支付</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+  <div class="card">
+    <h3>订阅管理页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">查看当前订阅</button>
+<button class="btn-outlined">续费/升级</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+  <div class="card">
+    <h3>场景包购买页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">浏览可购场景包</button>
+<button class="btn-outlined">购买场景包</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+</div>
+<div class="module-title">注册登录与个人设置</div>
+<div class="card-grid">
+
+  <div class="card">
+    <h3>注册页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">手机号/邮箱注册</button>
+<button class="btn-outlined">第三方登录注册</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+  <div class="card">
+    <h3>登录页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-filled">账号密码登录</button>
+<button class="btn-filled">第三方快捷登录</button>
+<button class="btn-filled">验证码登录</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+  <div class="card">
+    <h3>个人设置页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">修改头像/昵称</button>
+<button class="btn-outlined">修改通知偏好</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">2 个关联任务</div>
+  </div>
+  <div class="card">
+    <h3>重置密码页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">输入注册邮箱/手机</button>
+<button class="btn-outlined">输入验证码</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+</div>
+<div class="module-title">首次体验</div>
+<div class="card-grid">
+
+  <div class="card">
+    <h3>新手引导页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">选择学习目的</button>
+<button class="btn-outlined">选择当前水平</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+</div>
+<div class="module-title">推送与通知</div>
+<div class="card-grid">
+
+  <div class="card">
+    <h3>通知中心页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-filled">查看学习提醒</button>
+<button class="btn-outlined">查看系统通知</button>
+<button class="btn-outlined">管理通知设置</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+</div>
+<div class="module-title">用户反馈</div>
+<div class="card-grid">
+
+  <div class="card">
+    <h3>意见反馈页</h3>
+    <span class="badge badge-consumer">consumer</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">选择反馈类型</button>
+<button class="btn-outlined">填写反馈内容</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+</div>
+
+</div>
+</body></html>

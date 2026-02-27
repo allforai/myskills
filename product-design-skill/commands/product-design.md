@@ -150,11 +150,25 @@ Phase 1（product-concept）执行完毕后，检测自动模式条件：
 
 ---
 
+## Phase 1-2 pipeline-decisions 写入
+
+concept 和 product-map 完成后，追加记录到 `.allforai/pipeline-decisions.json`：
+
+```json
+{"phase": "Phase 1 — concept", "decision": "auto_confirmed", "detail": "concept generated", "decided_at": "..."}
+{"phase": "Phase 2 — product-map", "decision": "auto_confirmed", "detail": "tasks=N, roles=M, flows=K", "decided_at": "..."}
+```
+
+按 `phase` 字段去重 — 重跑时替换已有条目，不产生重复。
+
+---
+
 ## Phase 2：product-map
 
 **执行**：
 1. 用 Read 工具加载 `${CLAUDE_PLUGIN_ROOT}/skills/product-map.md`
 2. 按 product-map 技能的完整工作流执行
+3. 完成后追加 pipeline-decisions 记录（自动模式下）
 
 **检查点**：
 - `task-inventory.json` 存在
@@ -184,11 +198,28 @@ Phase 1（product-concept）执行完毕后，检测自动模式条件：
 
 ---
 
+## Phase 4-8 预置脚本优先（自动模式）
+
+自动模式下，Phase 4-8 优先使用预置脚本（位于 `${CLAUDE_PLUGIN_ROOT}/scripts/`）：
+
+```
+检查 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_xxx.py 是否存在：
+  存在 → python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_xxx.py <BASE> --mode auto
+  不存在 → 回退到 LLM 临场生成脚本（向后兼容）
+```
+
+预置脚本的优势：
+- **零语法错误**：不存在 `gaps[:30)` 等括号混用
+- **字段名统一**：screen-map 用 `tasks`，flow 用 `nodes`（不再误读 `task_refs` / `steps`）
+- **pipeline-decisions 去重**：按 phase 名替换，重跑不产生重复条目
+
+---
+
 ## Phase 4：use-case
 
 **执行**：
-1. 用 Read 工具加载 `${CLAUDE_PLUGIN_ROOT}/skills/use-case.md`
-2. 按 use-case 技能的完整工作流执行
+1. 检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_use_cases.py` 是否存在
+2. 存在 → 执行预置脚本；不存在 → 加载 `${CLAUDE_PLUGIN_ROOT}/skills/use-case.md` 按工作流执行
 
 **检查点**：
 - `use-case-tree.json` 存在
@@ -204,8 +235,8 @@ Phase 1（product-concept）执行完毕后，检测自动模式条件：
 ## Phase 5：feature-gap
 
 **执行**：
-1. 用 Read 工具加载 `${CLAUDE_PLUGIN_ROOT}/skills/feature-gap.md`
-2. 按 feature-gap 技能的完整工作流执行
+1. 检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_feature_gap.py` 是否存在
+2. 存在 → 执行预置脚本；不存在 → 加载 `${CLAUDE_PLUGIN_ROOT}/skills/feature-gap.md` 按工作流执行
 
 **检查点**：
 - `gap-tasks.json` 存在
@@ -217,8 +248,8 @@ Phase 1（product-concept）执行完毕后，检测自动模式条件：
 ## Phase 6：feature-prune
 
 **执行**：
-1. 用 Read 工具加载 `${CLAUDE_PLUGIN_ROOT}/skills/feature-prune.md`
-2. 按 feature-prune 技能的完整工作流执行
+1. 检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_feature_prune.py` 是否存在
+2. 存在 → 执行预置脚本；不存在 → 加载 `${CLAUDE_PLUGIN_ROOT}/skills/feature-prune.md` 按工作流执行
 
 **检查点**：
 - `prune-decisions.json` 存在
@@ -234,8 +265,8 @@ Phase 1（product-concept）执行完毕后，检测自动模式条件：
 ## Phase 7：ui-design
 
 **执行**：
-1. 用 Read 工具加载 `${CLAUDE_PLUGIN_ROOT}/skills/ui-design.md`
-2. 按 ui-design 技能的完整工作流执行
+1. 检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_ui_design.py` 是否存在
+2. 存在 → 执行预置脚本；不存在 → 加载 `${CLAUDE_PLUGIN_ROOT}/skills/ui-design.md` 按工作流执行
 
 **检查点**：
 - `ui-design-spec.md` 存在
@@ -251,8 +282,8 @@ Phase 1（product-concept）执行完毕后，检测自动模式条件：
 ## Phase 8：design-audit full（终审）
 
 **执行**：
-1. 用 Read 工具加载 `${CLAUDE_PLUGIN_ROOT}/skills/design-audit.md`
-2. 按 design-audit 技能的 full 模式执行完整三合一校验
+1. 检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_design_audit.py` 是否存在
+2. 存在 → 执行预置脚本；不存在 → 加载 `${CLAUDE_PLUGIN_ROOT}/skills/design-audit.md` 按 full 模式执行完整三合一校验
 
 **自动模式检查点**：审计正常执行，所有结果写入报告。CONFLICT 级问题在摘要中高亮标注。自动模式下终审不停，但摘要中列出所有积累的 WARNING 条目总数。
 

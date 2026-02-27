@@ -211,6 +211,11 @@
       "impact": ["需要连胜计数、排行榜、成就徽章", "需要社交分享功能", "不需要好友关系链和消息系统"]
     }
   ],
+  "pipeline_preferences": {
+    "ui_style": "material-design-3",
+    "competitors": ["Speak", "ELSA Speak", "Duolingo Max", "Praktika AI"],
+    "scope_strategy": "aggressive"
+  },
   "frameworks_referenced": ["Lean Canvas", "VPC", "JTBD", "Blue Ocean ERRC", "Kano Model", "Opportunity Solution Tree", "First Principles", "Mom Test", "Build Trap / Product Kata"],
   "search_sources": [
     "https://zhuanlan.zhihu.com/p/21706511",

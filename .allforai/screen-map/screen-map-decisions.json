@@ -1,0 +1,793 @@
+[
+  {
+    "step": "Step1",
+    "item_id": "S001",
+    "item_name": "场景列表页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S002",
+    "item_name": "场景详情页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S003",
+    "item_name": "AI对话页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S004",
+    "item_name": "对话报告页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S005",
+    "item_name": "自由对话页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S006",
+    "item_name": "发音详细报告页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S007",
+    "item_name": "记忆曲线复习页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S008",
+    "item_name": "词汇本页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S009",
+    "item_name": "场景脚本编辑器",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S010",
+    "item_name": "审核队列页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S011",
+    "item_name": "场景包管理页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S012",
+    "item_name": "学习连胜与成就页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S013",
+    "item_name": "排行榜页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S014",
+    "item_name": "积分商城页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S015",
+    "item_name": "分享成果页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S016",
+    "item_name": "个人学习档案页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S017",
+    "item_name": "学习统计报告页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S018",
+    "item_name": "角色偏好设置页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S019",
+    "item_name": "紧急场景速学页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S020",
+    "item_name": "订阅方案页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S021",
+    "item_name": "订阅管理页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S022",
+    "item_name": "场景包购买页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S023",
+    "item_name": "关键指标看板",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S024",
+    "item_name": "用户行为分析页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S025",
+    "item_name": "A/B测试管理页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S026",
+    "item_name": "运营报告生成页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S027",
+    "item_name": "AI对话质量评分页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S028",
+    "item_name": "异常对话标注页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S029",
+    "item_name": "Prompt模板管理页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S030",
+    "item_name": "发音评估参数页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S031",
+    "item_name": "用户管理页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S032",
+    "item_name": "订阅与退款管理页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S033",
+    "item_name": "系统配置页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S034",
+    "item_name": "权限角色管理页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S035",
+    "item_name": "投诉处理页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S036",
+    "item_name": "注册页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S037",
+    "item_name": "登录页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S038",
+    "item_name": "个人设置页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S039",
+    "item_name": "重置密码页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S040",
+    "item_name": "新手引导页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S041",
+    "item_name": "通知中心页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step1",
+    "item_id": "S042",
+    "item_name": "意见反馈页",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S003",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S007",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S009",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S009",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S010",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S011",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S011",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S011",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S014",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S015",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S018",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S018",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S018",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S019",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S021",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S021",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S022",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S023",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S024",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S025",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S026",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S028",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S029",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S029",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S029",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S031",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S034",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S034",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S035",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S036",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S038",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S038",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S038",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S038",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S040",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S040",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S041",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S042",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S042",
+    "type": "MISSING_VALIDATION",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S003",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S005",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S009",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S009",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S009",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S010",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S010",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S019",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S025",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S025",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S028",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S028",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S029",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S029",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S030",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S034",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S034",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S035",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S035",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S036",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S039",
+    "type": "SILENT_FAILURE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S001",
+    "type": "NO_EMPTY_STATE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S008",
+    "type": "NO_EMPTY_STATE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S010",
+    "type": "NO_EMPTY_STATE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S011",
+    "type": "NO_EMPTY_STATE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S016",
+    "type": "NO_EMPTY_STATE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S022",
+    "type": "NO_EMPTY_STATE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S027",
+    "type": "NO_EMPTY_STATE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S029",
+    "type": "NO_EMPTY_STATE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S032",
+    "type": "NO_EMPTY_STATE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S034",
+    "type": "NO_EMPTY_STATE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  },
+  {
+    "step": "Step2",
+    "item_id": "S035",
+    "type": "NO_EMPTY_STATE",
+    "decision": "auto_confirmed",
+    "decided_at": "2026-02-27T19:16:30Z"
+  }
+]

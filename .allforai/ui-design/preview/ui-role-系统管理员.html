@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>系统管理员 — UI 设计预览</title>
+<style>
+body { font-family: 'Roboto', 'Noto Sans SC', sans-serif; background: #FFFBFE; color: #1C1B1F; margin: 0; padding: 0; }
+.header { background: #6750A4; color: #FFFFFF; padding: 16px 24px; font-size: 22px; font-weight: 500; }
+.header a { color: #FFFFFF; text-decoration: none; opacity: 0.8; font-size: 14px; }
+.header a:hover { opacity: 1; }
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.card { background: #FFFBFE; border-radius: 12px; box-shadow: 0 1px 3px 1px rgba(0,0,0,.15), 0 1px 2px rgba(0,0,0,.3); padding: 20px; transition: box-shadow 0.2s; }
+.card:hover { box-shadow: 0 2px 6px 2px rgba(0,0,0,.15), 0 1px 2px rgba(0,0,0,.3); }
+.card h3 { margin: 0 0 8px; font-size: 18px; color: #1C1B1F; }
+.card .subtitle { font-size: 14px; color: #49454F; margin-bottom: 12px; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 12px; font-weight: 500; }
+.badge-consumer { background: #E8DEF8; color: #6750A4; }
+.badge-professional { background: #D0BCFF; color: #21005D; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.btn-filled { background: #6750A4; color: #FFFFFF; border: none; padding: 8px 16px; border-radius: 20px; font-size: 14px; cursor: pointer; }
+.btn-outlined { background: transparent; color: #6750A4; border: 1px solid #6750A4; padding: 8px 16px; border-radius: 20px; font-size: 14px; cursor: pointer; }
+.states { margin-top: 12px; font-size: 13px; color: #49454F; }
+.states span { margin-right: 12px; }
+.module-title { font-size: 20px; font-weight: 500; margin: 24px 0 12px; color: #6750A4; }
+a.card-link { text-decoration: none; color: inherit; }
+.task-count { font-size: 13px; color: #49454F; margin-top: 8px; }
+</style></head>
+<body>
+<div class="header">
+  <a href="index.html">← 返回总览</a> &nbsp;·&nbsp; 系统管理员
+  <div style="font-size:14px;opacity:0.8;margin-top:4px">风格: Material Design 3 · 5 个界面</div>
+</div>
+<div class="container">
+<div class="module-title">用户管理与系统配置</div>
+<div class="card-grid">
+
+  <div class="card">
+    <h3>用户管理页</h3>
+    <span class="badge badge-professional">professional</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-filled">搜索用户</button>
+<button class="btn-outlined">查看用户详情</button>
+<button class="btn-outlined">封禁/解禁用户</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+  <div class="card">
+    <h3>订阅与退款管理页</h3>
+    <span class="badge badge-professional">professional</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">查看订阅列表</button>
+<button class="btn-outlined">处理退款申请</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+  <div class="card">
+    <h3>系统配置页</h3>
+    <span class="badge badge-professional">professional</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">查看系统参数</button>
+<button class="btn-outlined">修改参数值</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+  <div class="card">
+    <h3>权限角色管理页</h3>
+    <span class="badge badge-professional">professional</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">查看角色列表</button>
+<button class="btn-outlined">创建/编辑角色权限</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+  <div class="card">
+    <h3>投诉处理页</h3>
+    <span class="badge badge-professional">professional</span>
+    <div class="subtitle"></div>
+    <div class="actions"><button class="btn-outlined">查看投诉列表</button>
+<button class="btn-outlined">处理投诉</button>
+</div>
+    <div class="states">
+      <span>正常: 默认视图</span>
+      <span>空态: 引导+CTA</span>
+      <span>错误: Snackbar</span>
+    </div>
+    <div class="task-count">1 个关联任务</div>
+  </div>
+</div>
+
+</div>
+</body></html>
