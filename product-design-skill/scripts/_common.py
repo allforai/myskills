@@ -284,11 +284,16 @@ XV_ROUTING = {
     "acceptance_criteria_review": "gpt",
 }
 
-XV_FAMILY_PREFIX = {
-    "gpt": "openai/gpt-4",
-    "gemini": "google/gemini-2",
-    "deepseek": "deepseek/deepseek-chat",
+# Family search prefixes — used to find the latest model via OpenRouter API.
+# Each family maps to a vendor prefix; _resolve_model() picks the newest match.
+XV_FAMILY_SEARCH = {
+    "gpt": "openai/gpt-",
+    "gemini": "google/gemini-",
+    "deepseek": "deepseek/deepseek-",
 }
+
+# Runtime cache: family → resolved model ID (populated on first xv_call)
+_xv_model_cache = {}
 
 
 def xv_available():
@@ -300,6 +305,7 @@ def xv_call(task_type, prompt, system_prompt=None, temperature=0.3):
     """Send XV request directly to OpenRouter API.
 
     Uses task→family routing from defaults.ts (Python mirror).
+    Resolves family→model dynamically via OpenRouter /models API (cached).
     Returns dict: {response, model_used, family, task_type}.
     429 → sleep 3s → retry once → raise on failure.
     """
@@ -308,7 +314,7 @@ def xv_call(task_type, prompt, system_prompt=None, temperature=0.3):
         raise RuntimeError("OPENROUTER_API_KEY not set")
 
     family = XV_ROUTING.get(task_type, "gpt")
-    model = _resolve_model(family)
+    model = _resolve_model(family, api_key)
 
     messages = []
     if system_prompt:
@@ -365,16 +371,106 @@ def xv_call(task_type, prompt, system_prompt=None, temperature=0.3):
     raise RuntimeError(f"XV call failed after retry ({task_type}): {last_err}")
 
 
-def _resolve_model(family):
-    """Resolve family to a concrete model ID via prefix mapping."""
-    prefix = XV_FAMILY_PREFIX.get(family, "openai/gpt-4")
-    # Use well-known latest model IDs to avoid /models API call overhead
-    model_map = {
-        "openai/gpt-4": "openai/gpt-4o",
-        "google/gemini-2": "google/gemini-2.0-flash-001",
-        "deepseek/deepseek-chat": "deepseek/deepseek-chat",
-    }
-    return model_map.get(prefix, prefix)
+def _resolve_model(family, api_key):
+    """Resolve family to the latest model ID via OpenRouter /models API.
+
+    Queries once per session, caches results. Picks the newest non-preview
+    model matching the family prefix; falls back to newest preview if no
+    stable release exists.
+    """
+    if family in _xv_model_cache:
+        return _xv_model_cache[family]
+
+    # Fetch model list from OpenRouter (once, populates all families)
+    if not _xv_model_cache:
+        _populate_model_cache(api_key)
+
+    if family in _xv_model_cache:
+        return _xv_model_cache[family]
+
+    # Ultimate fallback
+    fallback = {"gpt": "openai/gpt-4o", "gemini": "google/gemini-2.5-flash",
+                "deepseek": "deepseek/deepseek-chat"}
+    model = fallback.get(family, "openai/gpt-4o")
+    _xv_model_cache[family] = model
+    return model
+
+
+def _populate_model_cache(api_key):
+    """Fetch OpenRouter /models and pick the latest for each XV family.
+
+    Selection strategy per family:
+    - gpt: latest chat model starting with "openai/gpt-" (prefer non-mini)
+    - gemini: latest flash model starting with "google/gemini-" (prefer flash for cost)
+    - deepseek: latest "deepseek/deepseek-chat" variant
+    """
+    try:
+        req = urllib.request.Request(
+            "https://openrouter.ai/api/v1/models",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        models = data.get("data", [])
+    except Exception as e:
+        print(f"  XV: failed to fetch /models, using fallbacks: {e}")
+        return
+
+    # Group candidate models by family
+    for family, prefix in XV_FAMILY_SEARCH.items():
+        candidates = [m for m in models if m.get("id", "").startswith(prefix)]
+        if not candidates:
+            continue
+
+        # Filter to chat-capable models (has text output)
+        candidates = [m for m in candidates
+                      if "text" in str(m.get("architecture", {}).get("output_modalities", []))]
+
+        if not candidates:
+            continue
+
+        # Family-specific selection
+        best = _pick_best(family, candidates)
+        if best:
+            _xv_model_cache[family] = best
+            print(f"  XV: {family} → {best}")
+
+
+def _pick_best(family, candidates):
+    """Pick the best model for a family from candidate list."""
+    # Sort by created timestamp descending (newest first)
+    candidates.sort(key=lambda m: m.get("created", 0), reverse=True)
+
+    if family == "gpt":
+        # Prefer non-mini, non-extended, non-search models
+        for m in candidates:
+            mid = m["id"]
+            if "mini" not in mid and "extended" not in mid and "search" not in mid:
+                return mid
+        return candidates[0]["id"] if candidates else None
+
+    elif family == "gemini":
+        # Prefer flash (cost-effective), non-image, non-embedding
+        flash = [m for m in candidates
+                 if "flash" in m["id"] and "image" not in m["id"]
+                 and "embedding" not in m["id"] and "lite" not in m["id"]]
+        if flash:
+            return flash[0]["id"]
+        # Fall back to any non-embedding
+        non_embed = [m for m in candidates if "embedding" not in m["id"]]
+        return non_embed[0]["id"] if non_embed else candidates[0]["id"]
+
+    elif family == "deepseek":
+        # Prefer deepseek-chat (general), not coder/reasoner
+        for m in candidates:
+            if "chat" in m["id"] and "coder" not in m["id"]:
+                return m["id"]
+        return candidates[0]["id"] if candidates else None
+
+    return candidates[0]["id"] if candidates else None
 
 
 def xv_review(reviews_list):
