@@ -34,7 +34,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 │                  Project Forge (项目锻造)                      │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
-│  Phase 0: 产物检测 + 模式路由                                │
+│  Phase 0: 产物检测 + 模式路由 + Preflight 偏好收集           │
 │  ↓                                                          │
 │  Phase 1: 项目引导 (project-setup)                          │
 │    交互式: 拆子项目 + 选技术栈 + 分模块                     │
@@ -70,7 +70,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 ---
 
-## Phase 0：产物检测 + 初始化
+## Phase 0：产物检测 + 初始化 + Preflight 偏好收集
 
 ### 产物探测
 
@@ -109,6 +109,32 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
     "started_at": "ISO8601",
     "product_source": ".allforai/product-map/product-map.json"
   },
+  "preflight": {
+    "inferred_endpoints": ["backend", "admin", "web-customer", "mobile-native"],
+    "tech_preferences": {
+      "backend": {
+        "template_id": "go-gin",
+        "architecture": "three-layer",
+        "cqrs": false
+      },
+      "admin": {
+        "template_id": "nextjs",
+        "state_management": "zustand",
+        "server_cache": "tanstack-query"
+      },
+      "web-customer": {
+        "template_id": "nextjs",
+        "state_management": "zustand",
+        "server_cache": "tanstack-query"
+      },
+      "mobile-native": {
+        "template_id": "flutter"
+      }
+    },
+    "monorepo_tool": "manual",
+    "auth_strategy": "jwt",
+    "confirmed_at": "ISO8601"
+  },
   "phase_status": {
     "phase_1": "pending | completed | skipped",
     "phase_2": "pending | completed | skipped",
@@ -123,7 +149,74 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 }
 ```
 
-向用户展示探测结果 + 执行计划，确认后开始。
+### Preflight 技术偏好收集
+
+> 目标：前置收集所有纯偏好问题，避免后续阶段中断。
+
+**Step 2a: 推断端类型**
+
+读取 `.allforai/product-map/role-profiles.json`：
+
+| 条件 | 推断端类型 |
+|------|-----------|
+| 始终 | `backend` |
+| 有 consumer 类角色 | `web-customer` |
+| 有 producer / admin 类角色 | `admin` |
+| 有 mobile 标记 或 screen-map 中有 mobile 界面 | `mobile-native` |
+
+读取 `${CLAUDE_PLUGIN_ROOT}/templates/stacks.json`，按端类型过滤可选技术栈。
+
+**Step 2b: 生成推荐配置**
+
+基于以下规则生成推荐值（优先级：用户偏好 > 智能推断 > 默认值）：
+
+| 配置项 | 推荐规则 |
+|--------|---------|
+| 后端技术栈 | 用户偏好（如 MEMORY 记录 Go+Gin → `go-gin`）> stacks.json 中 type=backend 第一个 |
+| 后端架构 | product-map 聚合根 > 5 或跨域交互多 → DDD；否则 → 三层架构 |
+| DDD 时 CQRS | 默认 false |
+| 前端技术栈 (admin/consumer) | 后端选 Vue 系 → Nuxt；否则 → Next.js |
+| 移动端技术栈 | 用户偏好（如 Flutter）> flutter（默认） |
+| Monorepo 工具 | 全 TS → pnpm-workspace；混合语言 → manual；子项目 > 4 → turborepo |
+| 状态管理 | React 系 → Zustand；Vue 系 → Pinia；Angular → 跳过 |
+| 服务端缓存 | TanStack Query（React / Vue 通用） |
+| 认证策略 | 多角色权限 → JWT；简单场景 → Session |
+
+**Step 2c: 展示推荐配置 + 用户确认**
+
+向用户展示推荐配置表：
+
+~~~markdown
+## Preflight — 技术偏好
+
+从产品地图分析，你的产品需要 {N} 个端：
+
+| 端 | 推荐技术栈 | 理由 |
+|---|---|---|
+| 后端 API | {stack} ({arch}) | {reason} |
+| 管理后台 | {stack} | {reason} |
+| 消费者 Web | {stack} | {reason} |
+| 移动端 | {stack} | {reason} |
+
+| 配置项 | 推荐值 |
+|---|---|
+| Monorepo | {tool} |
+| 状态管理 | {lib} |
+| 服务端缓存 | {lib} |
+| 认证策略 | {strategy} |
+~~~
+
+AskUserQuestion：
+- **全部确认** → 写入 forge-decisions.json，继续
+- **逐项调整** → 对需要调整的项逐个 AskUserQuestion（仅展示 stacks.json 中该端类型的可选项），调整完后写入
+
+**Step 2d: 写入 forge-decisions.json**
+
+将确认后的配置写入 `forge-decisions.json` 的 `preflight` 字段（结构见「初始化决策追踪」中的 JSON schema）。
+
+---
+
+向用户展示探测结果 + 执行计划（含 preflight 结果摘要），确认后开始。
 
 ---
 

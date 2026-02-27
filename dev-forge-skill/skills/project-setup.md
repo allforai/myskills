@@ -6,7 +6,7 @@ description: >
   "拆分子项目", "选技术栈", "配置 monorepo", "项目结构设计",
   or needs to plan how to organize a multi-project codebase from product-design artifacts.
   Requires product-map to have been run first.
-version: "1.0.1"
+version: "1.1.0"
 ---
 
 # Project Setup — 项目引导
@@ -84,6 +84,14 @@ product-map（产品长什么样）   project-setup（代码怎么组织）   de
       加载 .allforai/product-map/task-index.json（索引优先）
       若不存在 → 提示先运行 /product-map，终止
       ↓
+前置: Preflight 偏好检测
+      读取 .allforai/project-forge/forge-decisions.json → preflight 字段
+      若 preflight 存在且 confirmed_at 非空:
+        → preflight 模式：后续 Step 中标记「若有 preflight → 跳过」的 AskUserQuestion 直接读取 preflight 值
+        → 输出: 「检测到 Preflight 偏好配置，以下选择将自动应用: {摘要}」
+      若 preflight 不存在:
+        → 兼容模式：所有 AskUserQuestion 正常执行（向后兼容单独 /project-setup）
+      ↓
 Step 0: 模式识别
   existing 模式: 扫描工作目录下的 package.json / requirements.txt / go.mod / pom.xml 等
     → 自动检测已有子项目和技术栈
@@ -101,12 +109,14 @@ Step 1: 子项目拆分 + Monorepo 工具选择
     有移动端需求 → 移动端子项目
   AskUserQuestion: 确认/调整子项目列表
   AskUserQuestion: 选择 monorepo 工具 (pnpm workspace / Turborepo / Nx / 手动管理)
+    → 若有 preflight → 跳过，使用 preflight.monorepo_tool
   → 每个子项目: id, name, type(backend/admin/web-customer/web-mobile/mobile-native)
   ↓
 Step 2: 技术栈选择（逐子项目）
   对每个子项目:
     读取 templates/stacks.json → 过滤匹配 type 的模板
     AskUserQuestion: 从预设模板中选择
+      → 若有 preflight → 跳过，使用 preflight.tech_preferences[子项目type].template_id
     → 记录选择到 tech-profile.json
   ↓
 Step 3: 模块分配（逐子项目）
@@ -122,6 +132,7 @@ Step 3: 模块分配（逐子项目）
 Step 4: 基础配置
   每子项目自动分配: 端口号（基于 stacks.json 默认端口，避免冲突）、base path
   AskUserQuestion: 确认 auth 策略 (JWT / Session / OAuth / 无)
+    → 若有 preflight → 跳过，使用 preflight.auth_strategy
   AskUserQuestion: 确认端口和配置
   ↓
 Step 5: 生成 manifest + 确认
@@ -263,7 +274,9 @@ Controller → Service → Repository
 
 AskUserQuestion 在后端子项目的 Step 2 中：
 - "后端架构模式？" → 三层架构 (推荐: CRUD 为主) / DDD (推荐: 复杂业务)
+  → 若有 preflight → 跳过，使用 preflight.tech_preferences.backend.architecture
 - 选择 DDD 时追问: "是否启用 CQRS？" → 是 / 否
+  → 若有 preflight → 跳过，使用 preflight.tech_preferences.backend.cqrs
 
 ---
 
@@ -304,7 +317,9 @@ AskUserQuestion 在后端子项目的 Step 2 中：
 
 AskUserQuestion 在前端子项目的 Step 2 中：
 - "状态管理方案？" → 列出与框架匹配的选项
+  → 若有 preflight → 跳过，使用 preflight.tech_preferences[子项目type].state_management
 - "服务端缓存方案？" → TanStack Query (推荐) / SWR / 手动管理
+  → 若有 preflight → 跳过，使用 preflight.tech_preferences[子项目type].server_cache
 - 选择后记录到 manifest 的 `state_management` 字段
 
 ---
@@ -363,9 +378,10 @@ Step 0 扫描策略:
 
 所有问题基于 product-map 分析和 stacks.json 生成选项。用户只需选择。
 
-### 2. 每步确认，不跳步
+### 2. 每步确认，不跳步（preflight 除外）
 
 每个 Step 完成后展示摘要，等用户确认后才进入下一步。
+例外：若 `forge-decisions.json` 中存在 `preflight` 且 `confirmed_at` 非空，标记为「若有 preflight → 跳过」的 AskUserQuestion 直接使用 preflight 值，不再询问。
 
 ### 3. 模块必须全覆盖
 
