@@ -189,11 +189,16 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 ### S3：约束 → 代码覆盖检查
 
-**数据来源**：`product-map.json` 中每个任务的 `constraints` 字段。
+**数据来源**：
+- `product-map.json` 中的 `constraints` — 全局业务约束
+- `task-inventory.json` 中每个任务的 `rules` — 任务级业务规则（幂等、阈值、校验）
+- `task-inventory.json` 中每个任务的 `exceptions` — 异常处理逻辑（超时、冲突、权限）
+- `task-inventory.json` 中每个任务的 `audit` — 审计中间件（操作记录、字段变更）
 
-**扫描策略**：对每条约束，Grep 代码库中的：
+**扫描策略**：对每条约束/规则/异常/审计要求，Grep 代码库中的：
 - 校验器（validator, validate, schema）
 - 中间件（middleware, guard, interceptor, policy）
+- 审计逻辑（audit, log, track, record）
 - 条件判断中的约束关键词
 
 **覆盖状态**：
