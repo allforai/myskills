@@ -265,20 +265,10 @@ AskUserQuestion：
 
 ### 执行方式
 
-提示用户执行种子方案生成：
+用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/skills/seed-forge.md`，按 plan 模式执行。
 
-```
-Phase 2 完成。接下来需要种子数据方案作为 mock-server 数据蓝本。
-
-请执行: /seed-forge plan
-
-完成后请回到此处继续。如果不需要种子数据，可以跳过此步骤。
-```
-
-AskUserQuestion：
-- 已完成 seed-forge plan → 验证 seed-plan.json 存在，继续
-- 跳过 → 记录决策，mock-server 将使用最小占位数据
-- 需要帮助 → 说明 seed-forge 的用途
+seed-forge plan 内部完成后（含汇总确认）→ 验证 seed-plan.json 存在 → 继续。
+用户在汇总确认时选择"跳过" → 记录决策，mock-server 将使用最小占位数据。
 
 ### 质量门禁
 
@@ -305,8 +295,8 @@ AskUserQuestion：
 |------|------|
 | 脚手架文件 | scaffold-manifest.json 存在且文件数 > 0 |
 | mock-server | apps/mock-server/server.js 存在 |
-| 依赖安装 | 用户确认 pnpm install 成功 |
-| mock 启动 | 用户确认 mock-server 可访问 |
+| 依赖安装 | 自动执行 pnpm install，检查退出码 = 0 |
+| mock 启动 | 自动启动 mock-server，curl health check 返回 2xx |
 
 **PASS** → 进入 Phase 4
 **FAIL** → 向用户报告问题
