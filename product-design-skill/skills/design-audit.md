@@ -52,39 +52,22 @@ product-map（锚点）
 /design-audit role 客服专员  # 指定角色全链路校验
 ```
 
-## 动态趋势补充（WebSearch）
+## 增强协议（WebSearch + 4D+6V + XV）
 
-除经典理论外，建议在本技能执行时补充近 12–24 个月的审计与可用性评估实践：
+> 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
 
-- 搜索关键词示例：`"usability heuristic evaluation" + "case study" + 2025`
-- 搜索关键词示例：`"design audit checklist" + 产品类型 + "real project"`
-- 搜索关键词示例：`"WCAG 2.2 compliance" + "UI audit"`
-- 来源优先级：官方标准/规范 > 权威研究机构 > 一线团队实践 > 社区帖子
-- 决策留痕：记录 `ADOPT|REJECT|DEFER` 与理由，避免只收集不落地
+**WebSearch 关键词**：`"usability heuristic evaluation" + "case study" + 2025`、`"design audit checklist" + 产品类型 + "real project"`、`"WCAG 2.2 compliance" + "UI audit"`
 
-建议将来源写入：`.allforai/product-design/trend-sources.json`（跨阶段共用）。
+**4D+6V 重点**：`fidelity_score` 作为量化指标；补充 Traceability 完整率（建议 `>= 95%`）和 Viewpoint 覆盖率（建议 `>= 90%`）两项门禁；CONFLICT/ORPHAN 问题附带 `source_refs` 与 `decision_rationale`。
 
-## 信息保真增强（4D + 6V）
-
-执行本阶段时，建议同步参考：`docs/information-fidelity.md`。
-
-- 在现有 Trace/Coverage/Cross 基础上，补充两项门禁：
-  - **Traceability 完整率**（建议 `>= 95%`）
-  - **Viewpoint 覆盖率**（建议 `>= 90%`，至少覆盖 4/6 视角）
-- 对 CONFLICT/ORPHAN 问题，建议附带 `source_refs` 与 `decision_rationale`，降低修复环节的信息二次失真。
-
-## 跨模型交叉验证（可选增强）
-
-当 `mcp__openrouter__ask_model` 工具可用时，在 Step 3（横向一致性检测）完成后自动发起交叉验证，结果直接写入产出的 `cross_model_review` 字段。
+**XV 交叉验证**（Step 3 横向一致性检测后）：
 
 | 验证点 | task_type | 发送内容 | 写入字段 |
 |--------|-----------|----------|----------|
 | 跨层矛盾验证 | `cross_layer_validation`→gpt | 审计摘要：CONFLICT/ORPHAN/GAP 问题列表 + 典型矛盾案例 | cross_model_review.additional_contradictions |
 | 覆盖盲区分析 | `coverage_analysis`→deepseek | 审计摘要：覆盖率统计 + 未覆盖任务列表 + 可用层信息 | cross_model_review.coverage_blindspots |
 
-**自动写入内容**：遗漏的跨层矛盾（审计自身未检测到的层间不一致、隐性依赖断裂）、覆盖盲区（系统性遗漏模式、特定角色或模块的覆盖偏低区域）。
-
-工具不可用或调用失败时，自动跳过，不阻塞流程，不生成 `cross_model_review` 字段。
+自动写入：遗漏的跨层矛盾（审计自身未检测到的层间不一致、隐性依赖断裂）、覆盖盲区（系统性遗漏模式、特定角色或模块的覆盖偏低区域）。
 
 ## 尾段理论支持（可选增强）
 

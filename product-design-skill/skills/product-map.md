@@ -50,36 +50,22 @@ product-map（现状+方向）      screen-map（可选增强）        feature-
 /product-map scope 退款管理  # 只梳理指定功能模块
 ```
 
-## 动态趋势补充（WebSearch）
+## 增强协议（WebSearch + 4D+6V + XV）
 
-除经典理论外，执行本技能时建议补充近 12–24 个月的实践文章/案例：
+> 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
 
-- 搜索关键词示例：`"story mapping" + 行业词 + "best practices" + 2025`
-- 来源优先级：官方规范/权威研究 > 一线产品团队实践 > 社区文章
-- 决策留痕：记录“是否采纳 + 理由”，避免只收集不决策
+**WebSearch 关键词**：`”story mapping” + 行业词 + “best practices” + 2025`
 
-建议将来源写入：`.allforai/product-design/trend-sources.json`（跨阶段共用）。
+**4D+6V 重点**：每个任务补充 `source_refs`、`constraints`、`decision_rationale`；`task-inventory.json` 作为下游锚点，优先保证”可追溯 + 可解释”。
 
-## 信息保真增强（4D + 6V）
-
-执行本阶段时，建议同步参考：`docs/information-fidelity.md`。
-
-- 每个任务除结论字段外，建议补充：`source_refs`、`constraints`、`decision_rationale`。
-- 每个高频/高风险任务至少覆盖 4/6 视角（`user/business/tech/ux/data/risk`）。
-- `task-inventory.json` 作为下游锚点时，优先保证”可追溯 + 可解释”，避免只保留任务名导致语义丢失。
-
-## 跨模型交叉验证（可选增强）
-
-当 `mcp__openrouter__ask_model` 工具可用时，在 Step 5（约束识别）完成后自动发起交叉验证，结果直接写入产出的 `cross_model_review` 字段。
+**XV 交叉验证**（Step 5 约束识别后）：
 
 | 验证点 | task_type | 发送内容 | 写入字段 |
 |--------|-----------|----------|----------|
 | 任务完整性审查 | `task_completeness_review`→gemini | 角色列表 + 高频任务清单 + 已发现的冲突 | cross_model_review.missing_tasks |
 | 隐藏冲突检测 | `conflict_detection`→gpt | 角色列表 + 高频任务 + 任务间依赖关系 + 业务规则 | cross_model_review.hidden_conflicts |
 
-**自动写入内容**：遗漏任务提示（被忽略的高频操作或角色任务）、隐藏冲突（跨角色规则矛盾、状态流转死锁风险）。
-
-工具不可用或调用失败时，自动跳过，不阻塞流程，不生成 `cross_model_review` 字段。
+自动写入：遗漏任务提示、隐藏冲突（跨角色规则矛盾、状态流转死锁风险）。
 
 ## 中段经理理论支持（可选增强，不破坏现有流程）
 

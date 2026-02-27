@@ -47,37 +47,22 @@ task-inventory.json 为基础      以 task-inventory 为输入        读 scree
 /screen-map scope 退款管理  # 只梳理指定模块的界面
 ```
 
-## 动态趋势补充（WebSearch）
+## 增强协议（WebSearch + 4D+6V + XV）
 
-除经典理论外，建议在本技能执行时补充近 12–24 个月的交互设计案例：
+> 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
 
-- 搜索关键词示例：`"usability audit" + 场景词 + "real examples" + 2025`
-- 搜索关键词示例：`"WCAG 2.2" + 组件类型 + "accessibility"`
-- 来源优先级：官方规范/标准 > 权威研究 > 一线产品实践 > 社区帖子
-- 决策留痕：记录 `ADOPT|REJECT|DEFER` 与理由，避免只看不落地
+**WebSearch 关键词**：`”usability audit” + 场景词 + “real examples” + 2025`、`”WCAG 2.2” + 组件类型 + “accessibility”`
 
-建议将来源写入：`.allforai/product-design/trend-sources.json`（跨阶段共用）。
+**4D+6V 重点**：异常与失败处理（`on_failure` / `exception_flows`）视为信息保真关键位，缺失时优先标红；每个关键界面补充 `source_refs`、`constraints`、`decision_rationale`。
 
-## 信息保真增强（4D + 6V）
-
-执行本阶段时，建议同步参考：`docs/information-fidelity.md`。
-
-- 每个界面建议补充：`source_refs`、`constraints`、`decision_rationale`（尤其是高风险页面）。
-- 每个关键界面至少覆盖 4/6 视角（`user/business/tech/ux/data/risk`）。
-- 异常与失败处理（`on_failure` / `exception_flows`）视为”信息保真关键位”，缺失时优先标红。
-
-## 跨模型交叉验证（可选增强）
-
-当 `mcp__openrouter__ask_model` 工具可用时，在 Step 2（界面级冲突 + 异常缺口检测）完成后自动发起交叉验证，结果直接写入产出的 `cross_model_review` 字段。
+**XV 交叉验证**（Step 2 界面级冲突+异常缺口检测后）：
 
 | 验证点 | task_type | 发送内容 | 写入字段 |
 |--------|-----------|----------|----------|
 | UX 一致性审查 | `ux_review`→gpt | 界面清单 + 按钮列表 + 异常流覆盖情况 + 受众类型分布 | cross_model_review.ux_consistency_issues |
 | 无障碍检查 | `accessibility_check`→gemini | 界面清单 + 操作频次 + 状态处理（空态/错误/加载） + 受众类型 | cross_model_review.accessibility_gaps |
 
-**自动写入内容**：UX 一致性问题（跨界面交互模式不统一、反馈方式不一致）、无障碍缺陷（对比度不足、缺少键盘导航、状态变更无通知）。
-
-工具不可用或调用失败时，自动跳过，不阻塞流程，不生成 `cross_model_review` 字段。
+自动写入：UX 一致性问题（跨界面交互模式不统一、反馈方式不一致）、无障碍缺陷（对比度不足、缺少键盘导航、状态变更无通知）。
 
 ## 中段经理理论支持（可选增强）
 

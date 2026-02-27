@@ -41,38 +41,22 @@ product-concept → product-map → screen-map → ui-design
 /ui-design refresh    # 清除决策缓存，重新选风格 + 完整重跑
 ```
 
-## 动态趋势补充（WebSearch）
+## 增强协议（WebSearch + 4D+6V + XV）
 
-除经典理论外，建议在本技能执行时补充近 12–24 个月的视觉与设计系统实践：
+> 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
 
-- 搜索关键词示例：`"design system" + 行业词 + "case study" + 2025`
-- 搜索关键词示例：`"WCAG 2.2" + 组件类型 + "accessibility"`
-- 搜索关键词示例：`"dashboard UI" + "information density" + "best practices"`
-- 来源优先级：官方规范/标准 > 权威研究 > 一线团队实践 > 社区帖子
-- 决策留痕：记录 `ADOPT|REJECT|DEFER` 与理由，避免“只看不决策”
+**WebSearch 关键词**：`”design system” + 行业词 + “case study” + 2025`、`”WCAG 2.2” + 组件类型 + “accessibility”`、`”dashboard UI” + “information density” + “best practices”`
 
-建议将来源写入：`.allforai/product-design/trend-sources.json`（跨阶段共用）。
+**4D+6V 重点**：规格附带设计决策理由；对高风险交互（删除、提交、权限）明确记录可访问性与失败反馈依据。
 
-## 信息保真增强（4D + 6V）
-
-执行本阶段时，建议同步参考：`docs/information-fidelity.md`。
-
-- 每个关键界面规格建议补充：`source_refs`、`constraints`、`decision_rationale`。
-- 视觉决策建议至少覆盖 4/6 视角（`user/business/tech/ux/data/risk`），避免”只好看不落地”。
-- 对高风险交互（删除、提交、权限）明确记录可访问性与失败反馈依据。
-
-## 跨模型交叉验证（可选增强）
-
-当 `mcp__openrouter__ask_model` 工具可用时，在 Step 4（生成设计规格）完成后自动发起交叉验证，结果直接写入产出的 `cross_model_review` 字段。
+**XV 交叉验证**（Step 4 生成设计规格后）：
 
 | 验证点 | task_type | 发送内容 | 写入字段 |
 |--------|-----------|----------|----------|
 | 设计审查 | `design_review`→gpt | 设计规格摘要：配色系统 + 排版规范 + 关键界面布局 + 受众类型 | cross_model_review.design_issues |
 | 视觉一致性 | `visual_consistency`→gemini | 设计规格摘要：各界面配色/圆角/间距参数 + 组件风格 + 状态设计 | cross_model_review.consistency_gaps |
 
-**自动写入内容**：视觉层级问题（主操作不够突出、信息密度与受众不匹配、色彩语义冲突）、一致性缺陷（跨界面组件风格不统一、状态反馈模式不一致、间距/圆角参数偏差）。
-
-工具不可用或调用失败时，自动跳过，不阻塞流程，不生成 `cross_model_review` 字段。
+自动写入：视觉层级问题（主操作不够突出、信息密度与受众不匹配、色彩语义冲突）、一致性缺陷（跨界面组件风格不统一、状态反馈模式不一致、间距/圆角参数偏差）。
 
 ## 尾段理论支持（可选增强）
 
