@@ -1,0 +1,134 @@
+{
+  "generated_at": "2026-03-01T07:30:00Z",
+  "multi_model_collaboration": {
+    "models_used": [
+      { "role": "challenger", "model_family": "gpt", "task": "assumption_challenge", "temperature": 1.0 },
+      { "role": "guardian", "model_family": "gemini", "task": "constraint_classification", "temperature": 0.5 }
+    ],
+    "integration_method": "main_model_synthesis",
+    "disagreements": [
+      {
+        "topic": "是否需要真人互动",
+        "model_a_view": "可以完全消除，AI 已足够真实",
+        "model_b_view": "部分场景仍需真人（如商务谈判模拟）",
+        "integration_decision": "保留真人选项作为高级功能，默认 AI 互动",
+        "rationale": "AI 满足 90% 场景，真人作为差异化增值服务"
+      }
+    ]
+  },
+  "industry_assumptions": [
+    {
+      "id": "IA001",
+      "assumption": "英语学习必须有课程体系（从易到难分级）",
+      "category": "人为约定",
+      "challengeable": true,
+      "rationale": "课程分级是工业化教育产物，母语习得无分级概念"
+    },
+    {
+      "id": "IA002",
+      "assumption": "必须背单词才能学会",
+      "category": "人为约定",
+      "challengeable": true,
+      "rationale": "母语者不背单词，通过语境习得"
+    },
+    {
+      "id": "IA003",
+      "assumption": "发音纠正必须专业界面（音素图、波形图）",
+      "category": "人为约定",
+      "challengeable": true,
+      "rationale": "专业界面增加门槛感，自然纠正更友好"
+    },
+    {
+      "id": "IA004",
+      "assumption": "学习需要固定时间（每天 30 分钟）",
+      "category": "人为约定",
+      "challengeable": true,
+      "rationale": "碎片化学习更符合现代人生活节奏"
+    },
+    {
+      "id": "IA005",
+      "assumption": "必须有老师/教练指导",
+      "category": "人为约定",
+      "challengeable": true,
+      "rationale": "AI 已能提供即时反馈，真人教练非必需"
+    },
+    {
+      "id": "IA006",
+      "assumption": "学习 APP 必须有社交功能（好友、排行榜）",
+      "category": "人为约定",
+      "challengeable": true,
+      "rationale": "社交是双刃剑，部分用户偏好独自学习"
+    },
+    {
+      "id": "IA007",
+      "assumption": "必须从听说读写分项训练",
+      "category": "人为约定",
+      "challengeable": true,
+      "rationale": "真实场景是综合能力，分项是教学法人为切割"
+    },
+    {
+      "id": "IA008",
+      "assumption": "学习需要正反馈（答对才继续）",
+      "category": "人为约定",
+      "challengeable": true,
+      "rationale": "真实对话没有暂停，错误中前进更真实"
+    },
+    {
+      "id": "IA009",
+      "assumption": "用户注意力有限（单次学习<15 分钟）",
+      "category": "物理约束",
+      "challengeable": false,
+      "rationale": "人类认知极限，无法突破"
+    },
+    {
+      "id": "IA010",
+      "assumption": "语言习得需要大量重复（7 次以上接触）",
+      "category": "物理约束",
+      "challengeable": false,
+      "rationale": "大脑神经连接形成规律，无法绕过"
+    }
+  ],
+  "challengeable_list": [
+    {
+      "id": "IA001",
+      "assumption": "英语学习必须有课程体系",
+      "innovation_direction": "去课程化：按场景组织，非按难度分级"
+    },
+    {
+      "id": "IA002",
+      "assumption": "必须背单词才能学会",
+      "innovation_direction": "语境习得：单词只在对话中出现，不单独记忆"
+    },
+    {
+      "id": "IA003",
+      "assumption": "发音纠正必须专业界面",
+      "innovation_direction": "融入对话：自然纠正，无专业 UI"
+    },
+    {
+      "id": "IA004",
+      "assumption": "学习需要固定时间",
+      "innovation_direction": "碎片化：5 分钟一轮，随时开始/结束"
+    },
+    {
+      "id": "IA005",
+      "assumption": "必须有老师指导",
+      "innovation_direction": "AI 全程：真人仅作为可选增值服务"
+    },
+    {
+      "id": "IA006",
+      "assumption": "必须有社交功能",
+      "innovation_direction": "轻社交：连胜/成就，无好友系统"
+    },
+    {
+      "id": "IA007",
+      "assumption": "必须分项训练",
+      "innovation_direction": "综合场景：听说读写一体化"
+    },
+    {
+      "id": "IA008",
+      "assumption": "学习需要正反馈",
+      "innovation_direction": "容错设计：错误中前进，不中断对话"
+    }
+  ],
+  "user_selection_pending": true
+}

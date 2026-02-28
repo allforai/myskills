@@ -1,6 +1,8 @@
 {
-  "version": "1.3.0",
+  "version": "2.0.0",
   "mode": "forward",
+  "innovation_boost_applied": true,
+  "innovation_boost_date": "2026-03-01T07:45:00Z",
   "mission": "让每个人都敢开口说英语 — 通过场景对话×记忆曲线闭环，把哑巴英语变成自信表达",
   "top_problems": [
     {
@@ -182,9 +184,28 @@
         { "item": "游戏化粘性（对标Duolingo的连胜/排行榜/成就系统）", "kano": "performance" }
       ],
       "create": [
-        { "item": "场景×记忆曲线闭环：对话中收集生词 → 记忆曲线复习时在新场景句子中用出来", "kano": "delighter" },
-        { "item": "三大角色专属场景库：职场/旅行/移民，每个角色数十个深度场景", "kano": "delighter" },
-        { "item": "紧急场景速学：出发前10分钟预演即将面对的场景", "kano": "delighter" }
+        { "item": "场景×记忆曲线闭环：对话中收集生词 → 记忆曲线复习时在新场景句子中用出来", "kano": "delighter", "feasibility_score": 7, "innovation_score": 8, "protection_level": "core", "competitor_reference": "none" },
+        { "item": "三大角色专属场景库：职场/旅行/移民，每个角色数十个深度场景", "kano": "delighter", "feasibility_score": 8, "innovation_score": 7, "protection_level": "core", "competitor_reference": "evolved" },
+        { "item": "紧急场景速学：出发前 10 分钟预演即将面对的场景", "kano": "delighter", "feasibility_score": 8, "innovation_score": 8, "protection_level": "core", "competitor_reference": "cross-domain", "cross_domain_source": "下厨房 5 分钟快手菜" },
+        { "item": "英语版 TikTok—场景流无限连续学习", "kano": "delighter", "feasibility_score": 7, "innovation_score": 9, "protection_level": "core", "competitor_reference": "cross-domain", "cross_domain_source": "抖音/TikTok 无限滚动" },
+        { "item": "赛季制英语—每 3 个月段位重置", "kano": "delighter", "feasibility_score": 9, "innovation_score": 7, "protection_level": "defensible", "competitor_reference": "cross-domain", "cross_domain_source": "王者荣耀赛季制" }
+      ]
+    }
+  },
+  "innovation_preferences": {
+    "innovation_mode": "deep",
+    "risk_tolerance": "high",
+    "protected_features": ["IC001", "IC003"],
+    "multi_model_collaboration": {
+      "enabled": true,
+      "models_used": 7,
+      "total_search_rounds": 12,
+      "files_generated": [
+        "assumption-zeroing.json",
+        "innovation-opportunities.json",
+        "boundary-constraints.json",
+        "cross-domain-cases.json",
+        "adversarial-concepts.json"
       ]
     }
   },
