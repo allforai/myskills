@@ -1,43 +1,25 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { loadRouting, resolveFamily, detectRegion } from "../config/loader.js";
-import { resolveLatestModel } from "../openrouter/resolver.js";
+import { getModelIdForTask, getRegion, getTaskFamilyMap } from "../config/loader.js";
 import { chatCompletion } from "../openrouter/client.js";
-import { getRegionRoutes } from "../config/region-detector.js";
 
 export const askModelSchema = {
-  task: z.string().describe("Task type for routing, e.g. 'competitive_analysis', 'general'"),
+  task: z.string().describe("Task type for routing, e.g. 'assumption_challenge', 'general'"),
   prompt: z.string().describe("The prompt to send to the model"),
   model_family: z
     .string()
     .optional()
-    .describe("Override: force a specific model family (e.g. 'gpt', 'gemini')"),
+    .describe("Override: force a specific model family (e.g. 'gpt', 'qwen', 'deepseek')"),
   system_prompt: z.string().optional().describe("Optional system prompt"),
   temperature: z.number().min(0).max(2).optional().describe("Sampling temperature (0-2)"),
 };
 
 export function registerAskModel(server: McpServer): void {
-  server.tool("ask_model", "Send a prompt to an AI model selected by task type via OpenRouter", askModelSchema, async (params) => {
+  server.tool("ask_model", "Send a prompt to the best AI model for the task type via OpenRouter", askModelSchema, async (params) => {
     try {
-      // 自动检测区域并加载路由
-      const routing = await loadRouting();
-      const familyId = resolveFamily(routing, params.task, params.model_family);
-      const modelId = await resolveLatestModel(familyId);
-
-      if (!modelId) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify(
-                { error: `No model found for family "${familyId}"` },
-                null,
-                2,
-              ),
-            },
-          ],
-        };
-      }
+      // 根据任务特性自动选择最佳模型
+      const modelId = await getModelIdForTask(params.task, params.model_family);
+      const region = await getRegion();
 
       const messages: { role: "system" | "user"; content: string }[] = [];
       if (params.system_prompt) {
@@ -55,8 +37,8 @@ export function registerAskModel(server: McpServer): void {
               {
                 response: result.content,
                 model_used: result.model,
-                family: familyId,
                 task: params.task,
+                region: region,
                 usage: result.usage,
               },
               null,
@@ -74,11 +56,11 @@ export function registerAskModel(server: McpServer): void {
     }
   });
 
-  // 添加区域检测工具
-  server.tool("detect_region", "Detect available region and model families (auto-detect China/Global)", {}, async () => {
+  // 区域检测工具
+  server.tool("detect_region", "Detect available region and show model routing strategy", {}, async () => {
     try {
-      const region = await detectRegion();
-      const routes = getRegionRoutes(region);
+      const region = await getRegion();
+      const taskMap = getTaskFamilyMap();
       
       return {
         content: [
@@ -87,11 +69,11 @@ export function registerAskModel(server: McpServer): void {
             text: JSON.stringify(
               {
                 region,
-                routes,
+                task_routing: taskMap,
                 message: region === "china" 
-                  ? "中国区模式：使用 Qwen/DeepSeek/Llama" 
+                  ? "中国区模式：Qwen(中文理解) + DeepSeek(推理) + Llama(严谨)" 
                   : region === "global"
-                  ? "国际区模式：使用 GPT/Gemini/Claude"
+                  ? "国际区模式：GPT(通用) + Gemini(发散) + Claude(严谨)"
                   : "未知区域：使用保守路由",
               },
               null,

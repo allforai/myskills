@@ -10,7 +10,7 @@ interface ModelAvailability {
 
 const CACHE_FILE = ".allforai/mcp-region-cache.json";
 
-// 测试模型列表（按区域可用性）
+// 测试模型列表 - 用于区域检测
 const TEST_MODELS = {
   global: [
     "openai/gpt-4o-mini",
@@ -24,77 +24,86 @@ const TEST_MODELS = {
   ],
 };
 
-// 区域特定路由映射 - 移到这里避免循环引用
-function getRegionRoutes(region: Region): Record<string, string> {
-  if (region === "global") {
-    return {
-      // 创新流程
-      assumption_challenge: "gpt",
-      constraint_classification: "gemini",
-      innovation_exploration: "gpt",
-      innovation_exploration_alt: "gemini",
-      disruptive_innovation: "gpt",
-      boundary_enforcement: "gemini",
-      cross_domain_research: "deepseek",
-      synthesis_innovation: "claude",
-      // 通用
-      competitive_analysis: "gpt",
-      market_research: "gemini",
-      user_persona_validation: "gpt",
-      task_completeness_review: "gemini",
-      conflict_detection: "gpt",
-      constraint_analysis: "deepseek",
-      ux_review: "gpt",
-      accessibility_check: "gemini",
-      edge_case_generation: "deepseek",
-      acceptance_criteria_review: "gpt",
-      journey_validation: "gemini",
-      gap_prioritization: "gpt",
-      pruning_second_opinion: "deepseek",
-      competitive_benchmark: "gemini",
-      design_review: "gpt",
-      visual_consistency: "gemini",
-      cross_layer_validation: "gpt",
-      coverage_analysis: "deepseek",
-      general: "gpt",
-      chinese_analysis: "qwen",
-    };
-  } else {
-    // 中国区（包括 unknown）
-    return {
-      // 创新流程 - 全部使用中国区可用模型
-      assumption_challenge: "qwen",
-      constraint_classification: "deepseek",
-      innovation_exploration: "qwen",
-      innovation_exploration_alt: "deepseek",
-      disruptive_innovation: "qwen",
-      boundary_enforcement: "deepseek",
-      cross_domain_research: "deepseek",
-      synthesis_innovation: "llama",
-      // 通用 - 替换不可用模型
-      competitive_analysis: "qwen",
-      market_research: "deepseek",
-      user_persona_validation: "qwen",
-      task_completeness_review: "deepseek",
-      conflict_detection: "qwen",
-      constraint_analysis: "deepseek",
-      ux_review: "qwen",
-      accessibility_check: "deepseek",
-      edge_case_generation: "deepseek",
-      acceptance_criteria_review: "qwen",
-      journey_validation: "deepseek",
-      gap_prioritization: "qwen",
-      pruning_second_opinion: "deepseek",
-      competitive_benchmark: "deepseek",
-      design_review: "qwen",
-      visual_consistency: "deepseek",
-      cross_layer_validation: "qwen",
-      coverage_analysis: "deepseek",
-      general: "qwen",
-      chinese_analysis: "qwen",
-    };
-  }
-}
+// 模型家族 → 实际模型 ID 映射（根据区域动态选择）
+const MODEL_FAMILY_MAP: Record<Region, Record<string, string>> = {
+  global: {
+    gpt: "openai/gpt-4o",
+    gemini: "google/gemini-2.0-flash",
+    claude: "anthropic/claude-3.5-sonnet",
+    deepseek: "deepseek/deepseek-chat-v3",
+    qwen: "qwen/qwen-2.5-72b-instruct",
+    llama: "meta-llama/llama-3.3-70b-instruct",
+  },
+  china: {
+    gpt: "qwen/qwen-2.5-72b-instruct",      // GPT 不可用 → 用 Qwen 替代（中文理解好）
+    gemini: "deepseek/deepseek-chat-v3",    // Gemini 不可用 → 用 DeepSeek 替代（推理强）
+    claude: "meta-llama/llama-3.3-70b-instruct", // Claude 不可用 → 用 Llama 替代（严谨）
+    deepseek: "deepseek/deepseek-chat-v3",
+    qwen: "qwen/qwen-2.5-72b-instruct",
+    llama: "meta-llama/llama-3.3-70b-instruct",
+  },
+  unknown: {
+    // 保守策略：全部使用中国区可用模型
+    gpt: "qwen/qwen-2.5-72b-instruct",
+    gemini: "deepseek/deepseek-chat-v3",
+    claude: "meta-llama/llama-3.3-70b-instruct",
+    deepseek: "deepseek/deepseek-chat-v3",
+    qwen: "qwen/qwen-2.5-72b-instruct",
+    llama: "meta-llama/llama-3.3-70b-instruct",
+  },
+};
+
+// 任务类型 → 模型家族映射（固定，不随区域变化）
+// 每个任务选择最擅长的模型家族
+const TASK_FAMILY_MAP: Record<string, string> = {
+  // 创新流程
+  assumption_challenge: "qwen",        // 中文理解好，准确识别共识
+  constraint_classification: "llama",  // 逻辑分类强
+  innovation_exploration: "qwen",      // 发散思维
+  innovation_exploration_alt: "deepseek", // 独立视角
+  disruptive_innovation: "qwen",       // 创意丰富
+  boundary_enforcement: "llama",       // 严谨，边界清晰
+  cross_domain_research: "deepseek",   // 推理链强，跨域分析
+  synthesis_innovation: "llama",       // 整合能力强
+  
+  // 产品概念
+  competitive_analysis: "qwen",        // 中文市场理解
+  market_research: "deepseek",         // 数据推理
+  user_persona_validation: "qwen",     // 共情理解
+  
+  // 产品地图
+  task_completeness_review: "llama",   // 逻辑严密
+  conflict_detection: "qwen",          // 语义理解
+  constraint_analysis: "deepseek",     // 技术推理
+  
+  // 界面地图
+  ux_review: "qwen",                   // 用户体验理解
+  accessibility_check: "llama",        // 规范遵循
+  
+  // 用例
+  edge_case_generation: "deepseek",    // 推理边缘情况
+  acceptance_criteria_review: "qwen",  // 需求理解
+  
+  // 功能查漏
+  journey_validation: "llama",         // 流程逻辑
+  gap_prioritization: "qwen",          // 业务理解
+  
+  // 功能剪枝
+  pruning_second_opinion: "deepseek",  // 客观分析
+  competitive_benchmark: "qwen",       // 中文竞品理解
+  
+  // UI 设计
+  design_review: "qwen",               // 审美理解
+  visual_consistency: "llama",         // 细节观察
+  
+  // 设计审计
+  cross_layer_validation: "deepseek",  // 深度推理
+  coverage_analysis: "llama",          // 系统性检查
+  
+  // 通用
+  general: "qwen",
+  chinese_analysis: "qwen",
+};
 
 async function testModel(modelId: string): Promise<boolean> {
   try {
@@ -134,13 +143,13 @@ export async function detectRegion(): Promise<Region> {
     console.log(`✅ 判定为中国区 (${chinaAvailable}/${TEST_MODELS.china.length} 模型可用)`);
   } else {
     region = "unknown";
-    console.log(`⚠️ 无法判定区域，使用默认路由`);
+    console.log(`⚠️ 无法判定区域，使用保守路由`);
   }
 
   // 缓存结果
   const cache: ModelAvailability = {
     region,
-    availableModels: getAvailableModelsForRegion(region),
+    availableModels: MODEL_FAMILY_MAP[region],
     testedAt: Date.now(),
   };
 
@@ -149,26 +158,20 @@ export async function detectRegion(): Promise<Region> {
   return region;
 }
 
-export function getAvailableModelsForRegion(region: Region): Record<string, string> {
-  if (region === "global") {
-    return {
-      gpt: "openai/gpt-4o",
-      gemini: "google/gemini-2.0-flash",
-      claude: "anthropic/claude-3.5-sonnet",
-      deepseek: "deepseek/deepseek-chat-v3",
-      qwen: "qwen/qwen-2.5-72b-instruct",
-      llama: "meta-llama/llama-3.3-70b-instruct",
-    };
-  } else {
-    return {
-      gpt: "qwen/qwen-2.5-72b-instruct", // 用 Qwen 替代
-      gemini: "deepseek/deepseek-chat-v3", // 用 DeepSeek 替代
-      claude: "llama/llama-3.3-70b-instruct", // 用 Llama 替代
-      deepseek: "deepseek/deepseek-chat-v3",
-      qwen: "qwen/qwen-2.5-72b-instruct",
-      llama: "meta-llama/llama-3.3-70b-instruct",
-    };
-  }
+// 根据任务类型获取模型 ID（核心函数）
+export function getModelForTask(task: string, region: Region): string {
+  const family = TASK_FAMILY_MAP[task] || TASK_FAMILY_MAP.general;
+  return MODEL_FAMILY_MAP[region][family] || MODEL_FAMILY_MAP[region].qwen;
+}
+
+// 获取区域特定的模型家族映射
+export function getModelFamilyMap(region: Region): Record<string, string> {
+  return MODEL_FAMILY_MAP[region];
+}
+
+// 获取任务家族映射（固定）
+export function getTaskFamilyMap(): Record<string, string> {
+  return TASK_FAMILY_MAP;
 }
 
 async function readCache(): Promise<ModelAvailability | null> {
@@ -209,6 +212,3 @@ export async function getCachedRegion(): Promise<Region | null> {
   }
   return null;
 }
-
-// 重新导出给 loader 使用
-export { getRegionRoutes };

@@ -3,10 +3,10 @@
   "availableModels": {
     "gpt": "qwen/qwen-2.5-72b-instruct",
     "gemini": "deepseek/deepseek-chat-v3",
-    "claude": "llama/llama-3.3-70b-instruct",
+    "claude": "meta-llama/llama-3.3-70b-instruct",
     "deepseek": "deepseek/deepseek-chat-v3",
     "qwen": "qwen/qwen-2.5-72b-instruct",
     "llama": "meta-llama/llama-3.3-70b-instruct"
   },
-  "testedAt": 1772321900214
+  "testedAt": 1772322098769
 }

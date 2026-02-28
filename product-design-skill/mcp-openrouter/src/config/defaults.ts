@@ -1,47 +1,54 @@
 export const defaultRouting: Record<string, string> = {
-  // === 创新流程专用（7 个新增 task_type）===
+  // === 创新流程专用 ===
   // Step 0 Phase C: 假设清零
-  // 中国区可用模型：qwen/deepseek 替代 gpt/gemini
-  assumption_challenge: "qwen",        // 挑战者：质疑行业共识
-  constraint_classification: "deepseek", // 守护者：区分物理/人为
+  assumption_challenge: "qwen",        // 挑战者：中文理解好，能准确识别行业共识
+  constraint_classification: "llama",  // 守护者：逻辑分类能力强
   
   // Step 0 Phase B+: 创新机会
-  innovation_exploration: "qwen",      // 探索者 A
-  innovation_exploration_alt: "deepseek", // 探索者 B（独立）
+  innovation_exploration: "qwen",      // 探索者 A：发散思维，生成多样方案
+  innovation_exploration_alt: "deepseek", // 探索者 B：独立视角，避免同质化
   
   // Step 3 Phase B: 对抗性生成
-  disruptive_innovation: "qwen",       // 颠覆者：激进方案
-  boundary_enforcement: "deepseek",     // 守护者：边界约束
-  cross_domain_research: "deepseek",  // 考古学家：跨域案例
-  synthesis_innovation: "llama",       // 炼金师：预整合
+  disruptive_innovation: "qwen",       // 颠覆者：高 temperature 下创意丰富
+  boundary_enforcement: "llama",       // 守护者：严谨，识别边界清晰
+  cross_domain_research: "deepseek",   // 考古学家：推理链强，擅长跨域分析
+  synthesis_innovation: "llama",       // 炼金师：整合能力强，输出平衡
   
-  // === 产品概念阶段（原有）===
-  competitive_analysis: "qwen",
-  market_research: "deepseek",
-  user_persona_validation: "qwen",
-  // 产品地图阶段
-  task_completeness_review: "deepseek",
-  conflict_detection: "qwen",
-  constraint_analysis: "deepseek",
-  // 界面地图阶段
-  ux_review: "qwen",
-  accessibility_check: "deepseek",
-  // 用例阶段
-  edge_case_generation: "deepseek",
-  acceptance_criteria_review: "qwen",
-  // 功能查漏阶段
-  journey_validation: "deepseek",
-  gap_prioritization: "qwen",
-  // 功能剪枝阶段
-  pruning_second_opinion: "deepseek",
-  competitive_benchmark: "deepseek",
-  // UI 设计阶段
-  design_review: "qwen",
-  visual_consistency: "deepseek",
-  // 设计审计阶段
-  cross_layer_validation: "qwen",
-  coverage_analysis: "deepseek",
-  // 通用
-  general: "qwen",
-  chinese_analysis: "qwen",
+  // === 产品概念阶段 ===
+  competitive_analysis: "qwen",        // 竞品分析：中文市场理解
+  market_research: "deepseek",         // 市场研究：数据推理
+  user_persona_validation: "qwen",     // 用户画像：共情理解
+  
+  // === 产品地图阶段 ===
+  task_completeness_review: "llama",   // 任务完整性审查：逻辑严密
+  conflict_detection: "qwen",          // 冲突检测：语义理解
+  constraint_analysis: "deepseek",     // 约束分析：技术推理
+  
+  // === 界面地图阶段 ===
+  ux_review: "qwen",                   // UX 审查：用户体验理解
+  accessibility_check: "llama",        // 无障碍检查：规范遵循
+  
+  // === 用例阶段 ===
+  edge_case_generation: "deepseek",    // 边界用例：推理边缘情况
+  acceptance_criteria_review: "qwen",  // 验收标准：需求理解
+  
+  // === 功能查漏阶段 ===
+  journey_validation: "llama",         // 旅程验证：流程逻辑
+  gap_prioritization: "qwen",          // 缺口优先级：业务理解
+  
+  // === 功能剪枝阶段 ===
+  pruning_second_opinion: "deepseek",  // 剪枝二意见：客观分析
+  competitive_benchmark: "qwen",       // 竞品对比：中文竞品理解
+  
+  // === UI 设计阶段 ===
+  design_review: "qwen",               // 设计审查：审美理解
+  visual_consistency: "llama",         // 视觉一致性：细节观察
+  
+  // === 设计审计阶段 ===
+  cross_layer_validation: "deepseek",  // 跨层验证：深度推理
+  coverage_analysis: "llama",          // 覆盖分析：系统性检查
+  
+  // === 通用 ===
+  general: "qwen",                     // 通用：中文理解最佳
+  chinese_analysis: "qwen",            // 中文分析：母语优势
 };
