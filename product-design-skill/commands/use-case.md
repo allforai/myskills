@@ -81,6 +81,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 | 异常流 | X 条 |
 | 边界用例 | X 条 |
 | E2E 用例 | X 条 |
+| E2E 链路问题 | X 个 |
 
 ### 用例分布（按功能区）
 
@@ -93,6 +94,12 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 | E2E ID | 标题 | 关联流 | 步骤数 |
 |--------|------|--------|--------|
 | E2E-F001-01 | 售后全链路_正常流 | F001 | 4 |
+
+### E2E 链路验证
+
+| E2E ID | Flag | 节点 | 描述 | 严重级 |
+|--------|------|------|------|--------|
+| E2E-F001-01 | MISSING_HANDOFF_DATA | seq 2→3 | ... | 中 |
 
 ### Flags 汇总
 

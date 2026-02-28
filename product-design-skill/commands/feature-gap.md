@@ -16,11 +16,11 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 根据用户参数决定执行模式：
 
-- **无参数 或 `full`** → 完整查漏：Step 1 → Step 2 → Step 3 → Step 4 → Step 5
-- **`quick`** → 快速查漏：Step 1 → Step 4（跳过 Step 2、3、5，不触发 screen-map 自动运行）
+- **无参数 或 `full`** → 完整查漏：Step 1 → Step 2 → Step 3 → Step 4 → Step 5 → Step 6
+- **`quick`** → 快速查漏：Step 1 → Step 4（跳过 Step 2、3、5、6，不触发 screen-map 自动运行）
 - **`journey`** → 仅旅程：Step 3 → Step 4（仅旅程验证 + 生成任务清单）
-- **`role <角色名>`** → 限定角色：同 full 完整流程，但仅分析属于指定角色的任务和界面
-- **`refresh`** → 重新分析：将 `gap-decisions.json` 重命名为 `.bak` 备份，忽略所有已有决策缓存，从 Step 1 开始完整重跑
+- **`role <角色名>`** → 限定角色：同 full 完整流程（含 Step 6 状态机检查），但仅分析属于指定角色的任务和界面
+- **`refresh`** → 重新分析：将 `gap-decisions.json` 重命名为 `.bak` 备份，忽略所有已有决策缓存，从 Step 1 开始完整重跑（含 Step 6）
 
 ## 前置检查
 
@@ -79,6 +79,8 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 | 任务缺口（Step 1） | X 个 |
 | 界面/按钮缺口（Step 2） | X 个 |
 | 旅程缺口（Step 3） | X 个（仅 full/journey 模式）|
+| 业务流缺口（Step 5） | X 个 |
+| 状态机缺口（Step 6） | X 个（仅 full/role/refresh 模式）|
 
 ### Flag 统计
 
@@ -91,10 +93,21 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 | HIGH_RISK_NO_CONFIRM | X |
 | ORPHAN_SCREEN | X |
 | ENTRY_BROKEN | X |
+| DEAD_END_STATE | X |
+| UNREACHABLE_STATE | X |
+| NO_ERROR_RECOVERY | X |
+| NO_REVERSE_TRANSITION | X |
+| ORPHAN_ENTITY | X |
 
 ### 用户旅程评分（仅 full/journey 模式）
 
 （按角色列出：角色名 — 评分 X/4）
+
+### 状态机完整性（仅 full/role/refresh 模式）
+
+| 实体 | 状态数 | 转换数 | 缺口 | 严重级 |
+|------|--------|--------|------|--------|
+| ... | ... | ... | ... | ... |
 
 ### 缺口任务清单（按频次排序，高频在前）
 
