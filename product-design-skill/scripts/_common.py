@@ -278,10 +278,21 @@ def write_split_files(base, subdir, prefix, split_by, splits, extra_meta=None):
 # Direct OpenRouter API calls — no MCP dependency.
 
 XV_ROUTING = {
-    "journey_validation": "gemini",
-    "gap_prioritization": "gpt",
+    # Phase 4 (use-case)
     "edge_case_generation": "deepseek",
     "acceptance_criteria_review": "gpt",
+    # Phase 5 (feature-gap)
+    "journey_validation": "gemini",
+    "gap_prioritization": "gpt",
+    # Phase 6 (feature-prune)
+    "pruning_second_opinion": "gemini",
+    "competitive_benchmark": "deepseek",
+    # Phase 7 (ui-design)
+    "design_review": "gemini",
+    "visual_consistency": "gpt",
+    # Phase 8 (design-audit)
+    "cross_layer_validation": "deepseek",
+    "coverage_analysis": "gpt",
 }
 
 # Family search prefixes — used to find the latest model via OpenRouter API.
@@ -555,17 +566,60 @@ def xv_review(reviews_list):
 
 
 def xv_parse_json(raw_text):
-    """Parse JSON from XV response, handling markdown code fences."""
+    """Parse JSON from XV response, handling markdown fences, trailing commas, and truncation."""
+    import re
     text = raw_text.strip()
+
+    # Strip ```json ... ``` wrapper
     if text.startswith("```"):
-        # Strip ```json ... ``` wrapper
         lines = text.split("\n")
         if lines[0].startswith("```"):
             lines = lines[1:]
         if lines and lines[-1].strip() == "```":
             lines = lines[:-1]
         text = "\n".join(lines)
-    return json.loads(text)
+
+    # Remove trailing commas before } or ] (common LLM output issue)
+    text = re.sub(r",\s*([}\]])", r"\1", text)
+
+    # Remove single-line // comments (some models add them)
+    text = re.sub(r'//[^\n]*', '', text)
+
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # Fallback: try to extract the outermost JSON object
+    match = re.search(r'\{', text)
+    if match:
+        # Find the balanced closing brace
+        depth = 0
+        start = match.start()
+        for i in range(start, len(text)):
+            if text[i] == '{':
+                depth += 1
+            elif text[i] == '}':
+                depth -= 1
+                if depth == 0:
+                    candidate = text[start:i + 1]
+                    candidate = re.sub(r",\s*([}\]])", r"\1", candidate)
+                    try:
+                        return json.loads(candidate)
+                    except json.JSONDecodeError:
+                        break
+
+    # Last resort: truncated JSON — close all open brackets
+    cleaned = text.rstrip()
+    # Count unclosed brackets
+    open_braces = cleaned.count('{') - cleaned.count('}')
+    open_brackets = cleaned.count('[') - cleaned.count(']')
+    # Strip trailing comma
+    cleaned = cleaned.rstrip(',').rstrip()
+    # Close unclosed structures
+    cleaned += ']' * max(0, open_brackets) + '}' * max(0, open_braces)
+    cleaned = re.sub(r",\s*([}\]])", r"\1", cleaned)
+    return json.loads(cleaned)
 
 
 # ── Self-test ─────────────────────────────────────────────────────────────────

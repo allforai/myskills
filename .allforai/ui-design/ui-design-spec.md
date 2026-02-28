@@ -1,7 +1,7 @@
 # UI 设计规格
 
 > 风格: Material Design 3
-> 生成时间: 2026-02-27T20:27:55Z
+> 生成时间: 2026-02-27T22:21:57Z
 > 产品: 让每个人都敢开口说英语 — 通过场景对话×记忆曲线闭环，把哑巴英语变成自信表达
 
 ## 设计语言基础
@@ -869,3 +869,32 @@
   - 错误: Snackbar (错误色) + 重试按钮
   - 成功: Snackbar (成功色) / 页面跳转
 
+
+---
+
+## XV 交叉验证：高严重度可用性问题
+
+| 位置 | 问题 | 建议 |
+|------|------|------|
+| S001, S003, S005 | Inappropriate and repetitive button variants lacking visual hierarchy. S001 uses Filled Buttons for all actions, S005 uses Outlined Buttons for all actions. 'AI reply' is incorrectly listed as a button. | Establish clear visual hierarchy using Filled for primary, Outlined for secondary, and Text for tertiary actions. Remove system responses like 'AI reply' from user action lists. |
+| S010 审核队列页 | Both 'Approve' and 'Reject' actions are defined as Filled Buttons, which could lead to accidental destructive actions. | Use a Filled Button for the primary action (Approve) and an Outlined or Text Button with an error/warning color for the destructive action (Reject). |
+
+## XV 交叉验证：设计一致性
+
+### 不一致问题
+
+- **场景列表页, 审核队列页, 排行榜页**: All are list-style screens with similar action counts but belong to different user contexts (learning vs admin vs gamification) and likely require different visual density and hierarchy treatments.
+- **AI对话页, 自由对话页**: Both are conversation interfaces under the same module but have different action counts, suggesting different interaction complexity that may require distinct layouts rather than a shared template.
+- **订阅方案页, 场景包购买页**: Both are purchase-related screens with similar low action counts but may require differentiated emphasis (subscription vs one-time purchase) instead of identical templates.
+- **关键指标看板, 学习统计报告页**: Both are data dashboards in different modules (admin vs user-facing) and likely require different data density, navigation, and visualization treatments.
+
+### 缺失设计令牌
+
+- **on_success**: Text/icon color on success backgrounds (e.g., achievement badges, success alerts).
+- **on_warning**: Text/icon color on warning backgrounds (e.g., expiring subscription, risk alerts).
+- **info**: Informational state color for neutral system messages and tips.
+- **disabled**: Color definitions for disabled buttons, inputs, and navigation items.
+- **hover**: Hover state tokens for web (MUI) components.
+- **focus**: Focus ring color and outline token for accessibility compliance.
+- **elevation_levels**: Multiple elevation/shadow tiers for dialogs, bottom sheets, app bars beyond a single shadow token.
+- **spacing_scale**: Consistent spacing system for padding/margins across dense dashboards and relaxed learning screens.

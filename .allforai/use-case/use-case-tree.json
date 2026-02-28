@@ -1,16 +1,22 @@
 {
-  "version": "2.3.0",
-  "generated_at": "2026-02-27T20:27:55Z",
+  "version": "2.4.0",
+  "generated_at": "2026-02-27T22:24:13Z",
   "summary": {
     "role_count": 6,
     "feature_area_count": 14,
     "task_count": 45,
-    "use_case_count": 125,
+    "use_case_count": 134,
     "happy_path_count": 45,
     "exception_count": 49,
     "boundary_count": 6,
     "validation_count": 16,
     "e2e_count": 9,
+    "ordering_issue_count": 46,
+    "e2e_flags": [
+      "MISSING_HANDOFF_DATA",
+      "UNVERIFIABLE_PRECONDITION",
+      "WEAK_TERMINAL"
+    ],
     "screen_map_injected": true
   },
   "feature_areas": [
@@ -180,7 +186,11 @@
                   "screen_ref": "S001",
                   "action_ref": "浏览并选择场景",
                   "exception_source": null,
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "未验证筛选逻辑正确性及场景选择后的状态变更。: 增加“筛选结果仅包含符合条件的场景”“选择后进入对应场景详情页并记录最近使用”。"
+                  ]
                 },
                 {
                   "id": "UC002",
@@ -272,7 +282,11 @@
                   "screen_ref": "S003",
                   "action_ref": "进行场景对话",
                   "exception_source": "task.exceptions[0]",
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "仅描述提示行为，未验证系统状态或后续可操作性。: 增加断言如“未生成错误对话记录”“用户可重新触发语音识别”“系统未扣除次数或积分”。"
+                  ]
                 },
                 {
                   "id": "UC006",
@@ -292,7 +306,11 @@
                   "screen_ref": "S003",
                   "action_ref": "进行场景对话",
                   "exception_source": "task.exceptions[1]",
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "未说明重试次数、超时阈值或最终失败处理逻辑。: 补充“重试不超过N次”“超过后提示失败信息”“不生成重复对话记录”。"
+                  ]
                 },
                 {
                   "id": "UC007",
@@ -312,7 +330,11 @@
                   "screen_ref": "S003",
                   "action_ref": "进行场景对话",
                   "exception_source": "task.exceptions[2]",
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "未验证本地保存的数据内容与同步机制，缺少网络恢复后的行为断言。: 补充“对话内容成功写入本地缓存”“网络恢复后自动同步且不重复提交”“服务器端生成唯一记录”。"
+                  ]
                 },
                 {
                   "id": "UC008",
@@ -384,7 +406,11 @@
                   "screen_ref": "S004",
                   "action_ref": "查看对话报告",
                   "exception_source": "task.exceptions[0]",
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "未说明评分失败后的数据边界及是否记录失败状态。: 增加“评分字段为空或标记为失败”“基础统计数据来源正确且完整”。"
+                  ]
                 }
               ]
             },
@@ -465,7 +491,11 @@
                   "screen_ref": "S022",
                   "action_ref": "购买场景包",
                   "exception_source": null,
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "未验证支付结果、订单状态及资产到账情况。: 增加“生成订单记录且状态为已支付”“用户账户解锁对应场景包”“不可重复购买”。"
+                  ]
                 },
                 {
                   "id": "UC029",
@@ -486,6 +516,42 @@
                   "action_ref": "购买场景包",
                   "exception_source": "task.exceptions[0]",
                   "flags": []
+                },
+                {
+                  "id": "UC117",
+                  "title": "[XV] 购买场景包_并发_同一用户重复快速点击购买",
+                  "type": "concurrency",
+                  "priority": "高",
+                  "given": [],
+                  "when": [
+                    "购买场景包_并发_同一用户重复快速点击购买"
+                  ],
+                  "then": [],
+                  "screen_ref": null,
+                  "action_ref": "购买场景包",
+                  "exception_source": null,
+                  "flags": [
+                    "XV_EDGE_CASE"
+                  ],
+                  "xv_source": "edge_case_generation"
+                },
+                {
+                  "id": "UC118",
+                  "title": "[XV] 购买场景包_边界_支付金额边界值（如0元、极大值）",
+                  "type": "boundary",
+                  "priority": "高",
+                  "given": [],
+                  "when": [
+                    "购买场景包_边界_支付金额边界值（如0元、极大值）"
+                  ],
+                  "then": [],
+                  "screen_ref": null,
+                  "action_ref": "购买场景包",
+                  "exception_source": null,
+                  "flags": [
+                    "XV_EDGE_CASE"
+                  ],
+                  "xv_source": "edge_case_generation"
                 }
               ]
             }
@@ -620,7 +686,11 @@
                   "screen_ref": "S007",
                   "action_ref": "完成记忆曲线复习",
                   "exception_source": null,
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "缺少对记忆曲线算法结果的验证，如复习间隔更新或统计数据正确性。: 增加“已记住/未记住后更新下次复习时间”“统计数据与操作记录一致”。"
+                  ]
                 },
                 {
                   "id": "UC045",
@@ -666,7 +736,11 @@
                   "screen_ref": "S008",
                   "action_ref": "管理词汇本",
                   "exception_source": null,
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "缺少对新增/删除后数据一致性的断言，也未验证筛选结果准确性。: 增加断言如“新增词汇在列表中可见且数量+1”“删除后不可检索”“筛选结果仅包含符合条件的词汇”。"
+                  ]
                 },
                 {
                   "id": "UC047",
@@ -809,7 +883,11 @@
                   "screen_ref": "S014",
                   "action_ref": "兑换积分商品",
                   "exception_source": null,
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "未验证积分扣减、库存校验及兑换记录准确性。: 增加“积分余额正确扣减”“库存不足时阻止兑换”“生成兑换流水记录”。"
+                  ]
                 },
                 {
                   "id": "UC053",
@@ -1002,7 +1080,11 @@
                   "screen_ref": "S018",
                   "action_ref": "设置角色偏好",
                   "exception_source": null,
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "未验证偏好设置的持久化与后续推荐逻辑生效。: 增加“保存后重新进入页面仍显示所选偏好”“推荐内容基于新偏好过滤”。"
+                  ]
                 },
                 {
                   "id": "UC061",
@@ -1306,7 +1388,11 @@
                   "screen_ref": "S036",
                   "action_ref": "手机号/邮箱注册",
                   "validation_rule": "手机号格式校验",
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "Given条件错误（注册账户不应为已登录），且未验证未创建账户。: 将Given改为“用户未登录”，并增加“校验失败后不创建账户记录”。"
+                  ]
                 },
                 {
                   "id": "UC099",
@@ -1538,7 +1624,11 @@
                   "screen_ref": "S038",
                   "action_ref": "注销账户",
                   "exception_source": null,
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "未验证冷静期机制与账户状态流转，也未验证数据清理或冻结逻辑。: 增加“账户状态变为注销中”“冷静期内可撤销”“冷静期结束后账号不可登录且数据按策略处理”。"
+                  ]
                 },
                 {
                   "id": "UC109",
@@ -1646,7 +1736,11 @@
                   "screen_ref": "S041",
                   "action_ref": "管理通知中心",
                   "exception_source": null,
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "缺少通知已读状态、设置变更持久化等验证。: 增加“标记已读后状态更新”“关闭某类通知后不再接收对应推送”。"
+                  ]
                 },
                 {
                   "id": "UC113",
@@ -1779,6 +1873,57 @@
           ],
           "then": [
             "场景学习全链路全链路执行成功"
+          ],
+          "ordering_issues": [
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                1
+              ],
+              "description": "seq 1 task T001 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                2
+              ],
+              "description": "seq 2 task T002 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                3
+              ],
+              "description": "seq 3 task T005 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                4
+              ],
+              "description": "seq 4 task T003 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                5
+              ],
+              "description": "seq 5 task T007 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "MISSING_HANDOFF_DATA",
+              "seq_pair": [
+                2,
+                3
+              ],
+              "description": "交接数据「音素评分」在上游 task 中无语义匹配",
+              "severity": "中"
+            }
           ]
         },
         {
@@ -1814,6 +1959,66 @@
           ],
           "then": [
             "记忆闭环链路全链路执行成功"
+          ],
+          "ordering_issues": [
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                1
+              ],
+              "description": "seq 1 task T002 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                2
+              ],
+              "description": "seq 2 task T008 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                3
+              ],
+              "description": "seq 3 task T007 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                4
+              ],
+              "description": "seq 4 task T001 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "MISSING_HANDOFF_DATA",
+              "seq_pair": [
+                1,
+                2
+              ],
+              "description": "交接数据「词汇」在上游 task 中无语义匹配",
+              "severity": "中"
+            },
+            {
+              "flag": "MISSING_HANDOFF_DATA",
+              "seq_pair": [
+                1,
+                2
+              ],
+              "description": "交接数据「语境」在上游 task 中无语义匹配",
+              "severity": "中"
+            },
+            {
+              "flag": "WEAK_TERMINAL",
+              "seq_pair": [
+                4
+              ],
+              "description": "最后节点 task T001 无 outputs.messages/states 且 main_flow 末步无感知语义",
+              "severity": "中"
+            }
           ]
         },
         {
@@ -1844,6 +2049,40 @@
           ],
           "then": [
             "场景内容生产链路全链路执行成功"
+          ],
+          "ordering_issues": [
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                1
+              ],
+              "description": "seq 1 task T009 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                2
+              ],
+              "description": "seq 2 task T010 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                3
+              ],
+              "description": "seq 3 task T011 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "WEAK_TERMINAL",
+              "seq_pair": [
+                3
+              ],
+              "description": "最后节点 task T011 无 outputs.messages/states 且 main_flow 末步无感知语义",
+              "severity": "中"
+            }
           ]
         },
         {
@@ -1884,6 +2123,65 @@
           ],
           "then": [
             "用户注册到首次学习全链路执行成功"
+          ],
+          "ordering_issues": [
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                1
+              ],
+              "description": "seq 1 task T038 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                2
+              ],
+              "description": "seq 2 task T043 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                3
+              ],
+              "description": "seq 3 task T020 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                4
+              ],
+              "description": "seq 4 task T001 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                5
+              ],
+              "description": "seq 5 task T002 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "MISSING_HANDOFF_DATA",
+              "seq_pair": [
+                1,
+                2
+              ],
+              "description": "交接数据「用户ID」在上游 task 中无语义匹配",
+              "severity": "中"
+            },
+            {
+              "flag": "WEAK_TERMINAL",
+              "seq_pair": [
+                5
+              ],
+              "description": "最后节点 task T002 无 outputs.messages/states 且 main_flow 末步无感知语义",
+              "severity": "中"
+            }
           ]
         },
         {
@@ -1914,6 +2212,58 @@
           ],
           "then": [
             "付费转化链路全链路执行成功"
+          ],
+          "ordering_issues": [
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                1
+              ],
+              "description": "seq 1 task T002 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                2
+              ],
+              "description": "seq 2 task T022 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                3
+              ],
+              "description": "seq 3 task T023 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "MISSING_HANDOFF_DATA",
+              "seq_pair": [
+                1,
+                2
+              ],
+              "description": "交接数据「用户ID」在上游 task 中无语义匹配",
+              "severity": "中"
+            },
+            {
+              "flag": "MISSING_HANDOFF_DATA",
+              "seq_pair": [
+                1,
+                2
+              ],
+              "description": "交接数据「使用量」在上游 task 中无语义匹配",
+              "severity": "中"
+            },
+            {
+              "flag": "WEAK_TERMINAL",
+              "seq_pair": [
+                3
+              ],
+              "description": "最后节点 task T023 无 outputs.messages/states 且 main_flow 末步无感知语义",
+              "severity": "中"
+            }
           ]
         },
         {
@@ -1949,6 +2299,48 @@
           ],
           "then": [
             "AI质量监控链路全链路执行成功"
+          ],
+          "ordering_issues": [
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                1
+              ],
+              "description": "seq 1 task T029 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                2
+              ],
+              "description": "seq 2 task T030 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                3
+              ],
+              "description": "seq 3 task T031 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                4
+              ],
+              "description": "seq 4 task T032 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "WEAK_TERMINAL",
+              "seq_pair": [
+                4
+              ],
+              "description": "最后节点 task T032 无 outputs.messages/states 且 main_flow 末步无感知语义",
+              "severity": "中"
+            }
           ]
         },
         {
@@ -1984,6 +2376,57 @@
           ],
           "then": [
             "运营分析链路全链路执行成功"
+          ],
+          "ordering_issues": [
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                1
+              ],
+              "description": "seq 1 task T025 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                2
+              ],
+              "description": "seq 2 task T026 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                3
+              ],
+              "description": "seq 3 task T027 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                4
+              ],
+              "description": "seq 4 task T028 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "MISSING_HANDOFF_DATA",
+              "seq_pair": [
+                2,
+                3
+              ],
+              "description": "交接数据「假设」在上游 task 中无语义匹配",
+              "severity": "中"
+            },
+            {
+              "flag": "WEAK_TERMINAL",
+              "seq_pair": [
+                4
+              ],
+              "description": "最后节点 task T028 无 outputs.messages/states 且 main_flow 末步无感知语义",
+              "severity": "中"
+            }
           ]
         },
         {
@@ -2009,6 +2452,32 @@
           ],
           "then": [
             "投诉处理链路全链路执行成功"
+          ],
+          "ordering_issues": [
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                1
+              ],
+              "description": "seq 1 task T045 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                2
+              ],
+              "description": "seq 2 task T037 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "WEAK_TERMINAL",
+              "seq_pair": [
+                2
+              ],
+              "description": "最后节点 task T037 无 outputs.messages/states 且 main_flow 末步无感知语义",
+              "severity": "中"
+            }
           ]
         },
         {
@@ -2034,6 +2503,24 @@
           ],
           "then": [
             "紧急场景速学链路全链路执行成功"
+          ],
+          "ordering_issues": [
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                1
+              ],
+              "description": "seq 1 task T021 缺少 prerequisites",
+              "severity": "低"
+            },
+            {
+              "flag": "UNVERIFIABLE_PRECONDITION",
+              "seq_pair": [
+                2
+              ],
+              "description": "seq 2 task T007 缺少 prerequisites",
+              "severity": "低"
+            }
           ]
         }
       ]
@@ -2178,7 +2665,11 @@
                   "screen_ref": "S009",
                   "action_ref": "创建场景对话脚本",
                   "rule_source": "task.rules[2]",
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "Then描述笼统，未明确阻断创建或错误提示形式。: 增加“提交被阻止”“页面提示‘必须标定难度级别’”“数据库未生成脚本记录”。"
+                  ]
                 },
                 {
                   "id": "UC016",
@@ -2310,6 +2801,24 @@
                   "action_ref": "驳回并备注",
                   "validation_rule": "驳回必须填写原因",
                   "flags": []
+                },
+                {
+                  "id": "UC119",
+                  "title": "[XV] 审核场景内容_并发_同一场景被多人同时审核",
+                  "type": "concurrency",
+                  "priority": "高",
+                  "given": [],
+                  "when": [
+                    "审核场景内容_并发_同一场景被多人同时审核"
+                  ],
+                  "then": [],
+                  "screen_ref": null,
+                  "action_ref": "审核场景内容",
+                  "exception_source": null,
+                  "flags": [
+                    "XV_EDGE_CASE"
+                  ],
+                  "xv_source": "edge_case_generation"
                 }
               ]
             },
@@ -2386,7 +2895,11 @@
                   "screen_ref": "S011",
                   "action_ref": "管理场景标签",
                   "exception_source": null,
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "操作成功定义模糊，未验证标签与场景的关联关系及批量操作结果。: 增加“标签创建后ID唯一”“批量打标签后场景关联表记录数正确”“关键词更新后立即生效”。"
+                  ]
                 },
                 {
                   "id": "UC025",
@@ -2524,7 +3037,11 @@
                   "screen_ref": "S028",
                   "action_ref": "标注异常对话",
                   "rule_source": "task.rules[0]",
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "Then描述为“系统按规则处理”不可测试，缺乏具体错误提示或阻断行为。: 明确为“提交被阻止”“页面提示‘必须选择异常分类’”“未生成异常记录”。"
+                  ]
                 },
                 {
                   "id": "UC035",
@@ -2637,6 +3154,24 @@
                   "action_ref": "调整音素阈值",
                   "validation_rule": "阈值范围0.0-1.0",
                   "flags": []
+                },
+                {
+                  "id": "UC120",
+                  "title": "[XV] 调整发音评估参数_并发_参数调整与应用请求冲突",
+                  "type": "concurrency",
+                  "priority": "高",
+                  "given": [],
+                  "when": [
+                    "调整发音评估参数_并发_参数调整与应用请求冲突"
+                  ],
+                  "then": [],
+                  "screen_ref": null,
+                  "action_ref": "调整发音评估参数",
+                  "exception_source": null,
+                  "flags": [
+                    "XV_EDGE_CASE"
+                  ],
+                  "xv_source": "edge_case_generation"
                 }
               ]
             }
@@ -2673,7 +3208,11 @@
                   "screen_ref": "S029",
                   "action_ref": "管理Prompt模板",
                   "exception_source": null,
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "Then步骤过于笼统（仅“操作成功”和“提示成功”），缺少具体可验证结果，如数据持久化、状态变更、生产环境发布标识等。: 在Then中增加可验证结果，例如“新建模板在列表中可见且状态为已发布”“数据库中生成对应版本号”“生产环境可调用新版本模板”。"
+                  ]
                 },
                 {
                   "id": "UC085",
@@ -3014,6 +3553,24 @@
                   "action_ref": "处理退款申请",
                   "validation_rule": "退款需填写审批理由",
                   "flags": []
+                },
+                {
+                  "id": "UC122",
+                  "title": "[XV] 处理订阅与退款_并发_用户操作与管理员处理冲突",
+                  "type": "concurrency",
+                  "priority": "高",
+                  "given": [],
+                  "when": [
+                    "处理订阅与退款_并发_用户操作与管理员处理冲突"
+                  ],
+                  "then": [],
+                  "screen_ref": null,
+                  "action_ref": "处理订阅与退款",
+                  "exception_source": null,
+                  "flags": [
+                    "XV_EDGE_CASE"
+                  ],
+                  "xv_source": "edge_case_generation"
                 }
               ]
             }
@@ -3071,6 +3628,24 @@
                   "action_ref": "管理用户账户",
                   "exception_source": "task.exceptions[0]",
                   "flags": []
+                },
+                {
+                  "id": "UC121",
+                  "title": "[XV] 管理用户账户_并发_同时封禁和恢复同一用户",
+                  "type": "concurrency",
+                  "priority": "高",
+                  "given": [],
+                  "when": [
+                    "管理用户账户_并发_同时封禁和恢复同一用户"
+                  ],
+                  "then": [],
+                  "screen_ref": null,
+                  "action_ref": "管理用户账户",
+                  "exception_source": null,
+                  "flags": [
+                    "XV_EDGE_CASE"
+                  ],
+                  "xv_source": "edge_case_generation"
                 }
               ]
             },
@@ -3142,6 +3717,42 @@
                   "action_ref": "修改参数值",
                   "validation_rule": "参数修改需确认",
                   "flags": []
+                },
+                {
+                  "id": "UC123",
+                  "title": "[XV] 配置系统参数_并发_多人同时修改关键参数",
+                  "type": "concurrency",
+                  "priority": "高",
+                  "given": [],
+                  "when": [
+                    "配置系统参数_并发_多人同时修改关键参数"
+                  ],
+                  "then": [],
+                  "screen_ref": null,
+                  "action_ref": "配置系统参数",
+                  "exception_source": null,
+                  "flags": [
+                    "XV_EDGE_CASE"
+                  ],
+                  "xv_source": "edge_case_generation"
+                },
+                {
+                  "id": "UC124",
+                  "title": "[XV] 配置系统参数_边界_参数数值范围边界",
+                  "type": "boundary",
+                  "priority": "高",
+                  "given": [],
+                  "when": [
+                    "配置系统参数_边界_参数数值范围边界"
+                  ],
+                  "then": [],
+                  "screen_ref": null,
+                  "action_ref": "配置系统参数",
+                  "exception_source": null,
+                  "flags": [
+                    "XV_EDGE_CASE"
+                  ],
+                  "xv_source": "edge_case_generation"
                 }
               ]
             },
@@ -3187,6 +3798,24 @@
                   "flags": [
                     "NO_EXCEPTION_CASES"
                   ]
+                },
+                {
+                  "id": "UC125",
+                  "title": "[XV] 管理权限角色_并发_角色权限修改与用户登录冲突",
+                  "type": "concurrency",
+                  "priority": "高",
+                  "given": [],
+                  "when": [
+                    "管理权限角色_并发_角色权限修改与用户登录冲突"
+                  ],
+                  "then": [],
+                  "screen_ref": null,
+                  "action_ref": "管理权限角色",
+                  "exception_source": null,
+                  "flags": [
+                    "XV_EDGE_CASE"
+                  ],
+                  "xv_source": "edge_case_generation"
                 }
               ]
             },
@@ -3261,5 +3890,278 @@
       ],
       "e2e_cases": []
     }
-  ]
+  ],
+  "cross_model_review": {
+    "generated_at": "2026-02-27T22:25:07Z",
+    "reviews": [
+      {
+        "task_type": "edge_case_generation",
+        "model_used": "deepseek/deepseek-chat-v3.1",
+        "family": "deepseek",
+        "auto_applied": {
+          "edge_cases_added": 9
+        },
+        "raw_findings": {
+          "missing_cases": [
+            {
+              "role_id": "R001",
+              "task_id": "T002",
+              "title": "进行场景对话_并发_多个用户同时使用同一场景",
+              "type": "concurrency",
+              "severity": "medium"
+            },
+            {
+              "role_id": "R001",
+              "task_id": "T002",
+              "title": "进行场景对话_边界_对话轮数上限（如100轮）",
+              "type": "boundary",
+              "severity": "medium"
+            },
+            {
+              "role_id": "R001",
+              "task_id": "T002",
+              "title": "进行场景对话_边界_输入文本超长（如1000字符）",
+              "type": "boundary",
+              "severity": "medium"
+            },
+            {
+              "role_id": "R001",
+              "task_id": "T004",
+              "title": "进行自由对话_并发_同一用户多设备同时对话",
+              "type": "concurrency",
+              "severity": "medium"
+            },
+            {
+              "role_id": "R001",
+              "task_id": "T004",
+              "title": "进行自由对话_边界_连续对话时长超限",
+              "type": "boundary",
+              "severity": "low"
+            },
+            {
+              "role_id": "R001",
+              "task_id": "T024",
+              "title": "购买场景包_并发_同一用户重复快速点击购买",
+              "type": "concurrency",
+              "severity": "high"
+            },
+            {
+              "role_id": "R001",
+              "task_id": "T024",
+              "title": "购买场景包_边界_支付金额边界值（如0元、极大值）",
+              "type": "boundary",
+              "severity": "high"
+            },
+            {
+              "role_id": "R004",
+              "task_id": "T009",
+              "title": "创建场景对话脚本_并发_多人同时编辑同一场景",
+              "type": "concurrency",
+              "severity": "medium"
+            },
+            {
+              "role_id": "R004",
+              "task_id": "T009",
+              "title": "创建场景对话脚本_边界_场景名称长度超限",
+              "type": "boundary",
+              "severity": "medium"
+            },
+            {
+              "role_id": "R004",
+              "task_id": "T010",
+              "title": "审核场景内容_并发_同一场景被多人同时审核",
+              "type": "concurrency",
+              "severity": "high"
+            },
+            {
+              "role_id": "R004",
+              "task_id": "T010",
+              "title": "审核场景内容_边界_审核内容文本超长",
+              "type": "boundary",
+              "severity": "low"
+            },
+            {
+              "role_id": "R005",
+              "task_id": "T030",
+              "title": "标注异常对话_并发_多个训练师标注同一对话",
+              "type": "concurrency",
+              "severity": "medium"
+            },
+            {
+              "role_id": "R005",
+              "task_id": "T032",
+              "title": "调整发音评估参数_并发_参数调整与应用请求冲突",
+              "type": "concurrency",
+              "severity": "high"
+            },
+            {
+              "role_id": "R006",
+              "task_id": "T027",
+              "title": "管理A/B测试_并发_同时启动多个测试资源冲突",
+              "type": "concurrency",
+              "severity": "medium"
+            },
+            {
+              "role_id": "R006",
+              "task_id": "T027",
+              "title": "管理A/B测试_边界_测试变体数量上限",
+              "type": "boundary",
+              "severity": "medium"
+            },
+            {
+              "role_id": "R007",
+              "task_id": "T033",
+              "title": "管理用户账户_并发_同时封禁和恢复同一用户",
+              "type": "concurrency",
+              "severity": "high"
+            },
+            {
+              "role_id": "R007",
+              "task_id": "T034",
+              "title": "处理订阅与退款_并发_用户操作与管理员处理冲突",
+              "type": "concurrency",
+              "severity": "high"
+            },
+            {
+              "role_id": "R007",
+              "task_id": "T035",
+              "title": "配置系统参数_并发_多人同时修改关键参数",
+              "type": "concurrency",
+              "severity": "high"
+            },
+            {
+              "role_id": "R007",
+              "task_id": "T035",
+              "title": "配置系统参数_边界_参数数值范围边界",
+              "type": "boundary",
+              "severity": "high"
+            },
+            {
+              "role_id": "R001",
+              "task_id": "T003",
+              "title": "查看对话报告_边界_报告数据量极大加载超时",
+              "type": "boundary",
+              "severity": "medium"
+            },
+            {
+              "role_id": "R004",
+              "task_id": "T011",
+              "title": "管理场景包_并发_场景包发布与用户购买操作冲突",
+              "type": "concurrency",
+              "severity": "medium"
+            },
+            {
+              "role_id": "R007",
+              "task_id": "T036",
+              "title": "管理权限角色_并发_角色权限修改与用户登录冲突",
+              "type": "concurrency",
+              "severity": "high"
+            }
+          ]
+        }
+      },
+      {
+        "task_type": "acceptance_criteria_review",
+        "model_used": "openai/gpt-5.2-chat",
+        "family": "gpt",
+        "auto_applied": {
+          "weak_flagged": 17
+        },
+        "raw_findings": {
+          "weak": [
+            {
+              "use_case_id": "UC084",
+              "issue": "Then步骤过于笼统（仅“操作成功”和“提示成功”），缺少具体可验证结果，如数据持久化、状态变更、生产环境发布标识等。",
+              "suggestion": "在Then中增加可验证结果，例如“新建模板在列表中可见且状态为已发布”“数据库中生成对应版本号”“生产环境可调用新版本模板”。"
+            },
+            {
+              "use_case_id": "UC046",
+              "issue": "缺少对新增/删除后数据一致性的断言，也未验证筛选结果准确性。",
+              "suggestion": "增加断言如“新增词汇在列表中可见且数量+1”“删除后不可检索”“筛选结果仅包含符合条件的词汇”。"
+            },
+            {
+              "use_case_id": "UC007",
+              "issue": "未验证本地保存的数据内容与同步机制，缺少网络恢复后的行为断言。",
+              "suggestion": "补充“对话内容成功写入本地缓存”“网络恢复后自动同步且不重复提交”“服务器端生成唯一记录”。"
+            },
+            {
+              "use_case_id": "UC005",
+              "issue": "仅描述提示行为，未验证系统状态或后续可操作性。",
+              "suggestion": "增加断言如“未生成错误对话记录”“用户可重新触发语音识别”“系统未扣除次数或积分”。"
+            },
+            {
+              "use_case_id": "UC024",
+              "issue": "操作成功定义模糊，未验证标签与场景的关联关系及批量操作结果。",
+              "suggestion": "增加“标签创建后ID唯一”“批量打标签后场景关联表记录数正确”“关键词更新后立即生效”。"
+            },
+            {
+              "use_case_id": "UC108",
+              "issue": "未验证冷静期机制与账户状态流转，也未验证数据清理或冻结逻辑。",
+              "suggestion": "增加“账户状态变为注销中”“冷静期内可撤销”“冷静期结束后账号不可登录且数据按策略处理”。"
+            },
+            {
+              "use_case_id": "UC044",
+              "issue": "缺少对记忆曲线算法结果的验证，如复习间隔更新或统计数据正确性。",
+              "suggestion": "增加“已记住/未记住后更新下次复习时间”“统计数据与操作记录一致”。"
+            },
+            {
+              "use_case_id": "UC034",
+              "issue": "Then描述为“系统按规则处理”不可测试，缺乏具体错误提示或阻断行为。",
+              "suggestion": "明确为“提交被阻止”“页面提示‘必须选择异常分类’”“未生成异常记录”。"
+            },
+            {
+              "use_case_id": "UC060",
+              "issue": "未验证偏好设置的持久化与后续推荐逻辑生效。",
+              "suggestion": "增加“保存后重新进入页面仍显示所选偏好”“推荐内容基于新偏好过滤”。"
+            },
+            {
+              "use_case_id": "UC010",
+              "issue": "未说明评分失败后的数据边界及是否记录失败状态。",
+              "suggestion": "增加“评分字段为空或标记为失败”“基础统计数据来源正确且完整”。"
+            },
+            {
+              "use_case_id": "UC015",
+              "issue": "Then描述笼统，未明确阻断创建或错误提示形式。",
+              "suggestion": "增加“提交被阻止”“页面提示‘必须标定难度级别’”“数据库未生成脚本记录”。"
+            },
+            {
+              "use_case_id": "UC006",
+              "issue": "未说明重试次数、超时阈值或最终失败处理逻辑。",
+              "suggestion": "补充“重试不超过N次”“超过后提示失败信息”“不生成重复对话记录”。"
+            },
+            {
+              "use_case_id": "UC098",
+              "issue": "Given条件错误（注册账户不应为已登录），且未验证未创建账户。",
+              "suggestion": "将Given改为“用户未登录”，并增加“校验失败后不创建账户记录”。"
+            },
+            {
+              "use_case_id": "UC028",
+              "issue": "未验证支付结果、订单状态及资产到账情况。",
+              "suggestion": "增加“生成订单记录且状态为已支付”“用户账户解锁对应场景包”“不可重复购买”。"
+            },
+            {
+              "use_case_id": "UC052",
+              "issue": "未验证积分扣减、库存校验及兑换记录准确性。",
+              "suggestion": "增加“积分余额正确扣减”“库存不足时阻止兑换”“生成兑换流水记录”。"
+            },
+            {
+              "use_case_id": "UC112",
+              "issue": "缺少通知已读状态、设置变更持久化等验证。",
+              "suggestion": "增加“标记已读后状态更新”“关闭某类通知后不再接收对应推送”。"
+            },
+            {
+              "use_case_id": "UC001",
+              "issue": "未验证筛选逻辑正确性及场景选择后的状态变更。",
+              "suggestion": "增加“筛选结果仅包含符合条件的场景”“选择后进入对应场景详情页并记录最近使用”。"
+            }
+          ],
+          "good": [
+            "UC016",
+            "UC019",
+            "UC043"
+          ]
+        }
+      }
+    ]
+  }
 }

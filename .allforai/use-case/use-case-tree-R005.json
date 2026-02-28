@@ -3,17 +3,17 @@
   "split_value": "R005",
   "split_label": "AI 训练师",
   "description": "角色 R005（AI 训练师）的用例子集",
-  "generated_at": "2026-02-27T20:51:00Z",
+  "generated_at": "2026-02-27T22:25:07Z",
   "count": 1,
   "items": [
     {
       "version": "2.4.0",
-      "generated_at": "2026-02-27T20:51:00Z",
+      "generated_at": "2026-02-27T22:24:13Z",
       "summary": {
         "role_id": "R005",
         "role_name": "AI 训练师",
         "feature_area_count": 3,
-        "use_case_count": 12,
+        "use_case_count": 13,
         "happy_path_count": 4,
         "exception_count": 4,
         "boundary_count": 2,
@@ -131,7 +131,11 @@
                   "screen_ref": "S028",
                   "action_ref": "标注异常对话",
                   "rule_source": "task.rules[0]",
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "Then描述为“系统按规则处理”不可测试，缺乏具体错误提示或阻断行为。: 明确为“提交被阻止”“页面提示‘必须选择异常分类’”“未生成异常记录”。"
+                  ]
                 },
                 {
                   "id": "UC035",
@@ -244,6 +248,24 @@
                   "action_ref": "调整音素阈值",
                   "validation_rule": "阈值范围0.0-1.0",
                   "flags": []
+                },
+                {
+                  "id": "UC120",
+                  "title": "[XV] 调整发音评估参数_并发_参数调整与应用请求冲突",
+                  "type": "concurrency",
+                  "priority": "高",
+                  "given": [],
+                  "when": [
+                    "调整发音评估参数_并发_参数调整与应用请求冲突"
+                  ],
+                  "then": [],
+                  "screen_ref": null,
+                  "action_ref": "调整发音评估参数",
+                  "exception_source": null,
+                  "flags": [
+                    "XV_EDGE_CASE"
+                  ],
+                  "xv_source": "edge_case_generation"
                 }
               ]
             }
@@ -280,7 +302,11 @@
                   "screen_ref": "S029",
                   "action_ref": "管理Prompt模板",
                   "exception_source": null,
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "Then步骤过于笼统（仅“操作成功”和“提示成功”），缺少具体可验证结果，如数据持久化、状态变更、生产环境发布标识等。: 在Then中增加可验证结果，例如“新建模板在列表中可见且状态为已发布”“数据库中生成对应版本号”“生产环境可调用新版本模板”。"
+                  ]
                 },
                 {
                   "id": "UC085",

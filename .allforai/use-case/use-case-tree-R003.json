@@ -3,12 +3,12 @@
   "split_value": "R003",
   "split_label": "新移民",
   "description": "角色 R003（新移民）的用例子集",
-  "generated_at": "2026-02-27T20:51:00Z",
+  "generated_at": "2026-02-27T22:25:07Z",
   "count": 1,
   "items": [
     {
       "version": "2.4.0",
-      "generated_at": "2026-02-27T20:51:00Z",
+      "generated_at": "2026-02-27T22:24:13Z",
       "summary": {
         "role_id": "R003",
         "role_name": "新移民",

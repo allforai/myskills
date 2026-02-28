@@ -1,0 +1,156 @@
+{
+  "generated_at": "2026-02-27T22:22:34Z",
+  "reviews": [
+    {
+      "task_type": "design_review",
+      "model_used": "google/gemini-3.1-pro-preview",
+      "family": "gemini",
+      "auto_applied": {
+        "high_severity_issues": 2
+      },
+      "raw_findings": {
+        "usability_issues": [
+          {
+            "screen_or_section": "Global (S002, S004-S010)",
+            "issue": "Missing interface purpose (界面目的) descriptions for the majority of the screens.",
+            "severity": "medium",
+            "suggestion": "Define clear goals and purposes for each screen to guide the design and development process."
+          },
+          {
+            "screen_or_section": "S001, S003, S005",
+            "issue": "Inappropriate and repetitive button variants lacking visual hierarchy. S001 uses Filled Buttons for all actions, S005 uses Outlined Buttons for all actions. 'AI reply' is incorrectly listed as a button.",
+            "severity": "high",
+            "suggestion": "Establish clear visual hierarchy using Filled for primary, Outlined for secondary, and Text for tertiary actions. Remove system responses like 'AI reply' from user action lists."
+          },
+          {
+            "screen_or_section": "S003 AI对话页 & S005 自由对话页",
+            "issue": "Generic empty state (Illustration + CTA) is inappropriate for a conversational interface.",
+            "severity": "medium",
+            "suggestion": "Use a conversational greeting, AI avatar introduction, or suggested starter prompts as the empty state for chat screens."
+          },
+          {
+            "screen_or_section": "S010 审核队列页",
+            "issue": "Both 'Approve' and 'Reject' actions are defined as Filled Buttons, which could lead to accidental destructive actions.",
+            "severity": "high",
+            "suggestion": "Use a Filled Button for the primary action (Approve) and an Outlined or Text Button with an error/warning color for the destructive action (Reject)."
+          }
+        ],
+        "missing_patterns": [
+          {
+            "pattern": "Chat Interface & Voice Visualization (Message bubbles, typing indicators, mic recording waveforms)",
+            "context": "S003 AI对话页 and S005 自由对话页"
+          },
+          {
+            "pattern": "Flashcard Interactions (Tap to flip, swipe gestures for spaced repetition)",
+            "context": "S007 记忆曲线复习页"
+          },
+          {
+            "pattern": "Audio Playback & Comparison Controls (Play/pause, timeline, waveform visualization)",
+            "context": "S006 发音详细报告页"
+          },
+          {
+            "pattern": "Visual Node/Script Editor UI (Drag-and-drop, branching logic visualization)",
+            "context": "S009 场景脚本编辑器"
+          }
+        ],
+        "strengths": [
+          "Strong foundation in Material Design 3 with well-defined color tokens, typography scales, and component specifications.",
+          "Clear distinction in layout patterns between Consumer (Bottom navigation/Single column) and Professional (Navigation rail/Side nav) roles.",
+          "Consistent inclusion of key UI states (Empty, Loading, Error, Success) across all screens to ensure robust error handling and feedback."
+        ]
+      }
+    },
+    {
+      "task_type": "visual_consistency",
+      "model_used": "openai/gpt-5.2-chat",
+      "family": "gpt",
+      "auto_applied": {
+        "consistency_findings": 12
+      },
+      "raw_findings": {
+        "inconsistencies": [
+          {
+            "screens": [
+              "场景列表页",
+              "审核队列页",
+              "排行榜页"
+            ],
+            "issue": "All are list-style screens with similar action counts but belong to different user contexts (learning vs admin vs gamification) and likely require different visual density and hierarchy treatments."
+          },
+          {
+            "screens": [
+              "AI对话页",
+              "自由对话页"
+            ],
+            "issue": "Both are conversation interfaces under the same module but have different action counts, suggesting different interaction complexity that may require distinct layouts rather than a shared template."
+          },
+          {
+            "screens": [
+              "订阅方案页",
+              "场景包购买页"
+            ],
+            "issue": "Both are purchase-related screens with similar low action counts but may require differentiated emphasis (subscription vs one-time purchase) instead of identical templates."
+          },
+          {
+            "screens": [
+              "关键指标看板",
+              "学习统计报告页"
+            ],
+            "issue": "Both are data dashboards in different modules (admin vs user-facing) and likely require different data density, navigation, and visualization treatments."
+          }
+        ],
+        "token_gaps": [
+          {
+            "token": "on_success",
+            "context": "Text/icon color on success backgrounds (e.g., achievement badges, success alerts)."
+          },
+          {
+            "token": "on_warning",
+            "context": "Text/icon color on warning backgrounds (e.g., expiring subscription, risk alerts)."
+          },
+          {
+            "token": "info",
+            "context": "Informational state color for neutral system messages and tips."
+          },
+          {
+            "token": "disabled",
+            "context": "Color definitions for disabled buttons, inputs, and navigation items."
+          },
+          {
+            "token": "hover",
+            "context": "Hover state tokens for web (MUI) components."
+          },
+          {
+            "token": "focus",
+            "context": "Focus ring color and outline token for accessibility compliance."
+          },
+          {
+            "token": "elevation_levels",
+            "context": "Multiple elevation/shadow tiers for dialogs, bottom sheets, app bars beyond a single shadow token."
+          },
+          {
+            "token": "spacing_scale",
+            "context": "Consistent spacing system for padding/margins across dense dashboards and relaxed learning screens."
+          }
+        ],
+        "grouping_issues": [
+          {
+            "screen": "发音评估参数页",
+            "current_module": "AI质量监控",
+            "suggested_module": "发音纠正"
+          },
+          {
+            "screen": "角色偏好设置页",
+            "current_module": "角色场景推荐",
+            "suggested_module": "设置与个性化"
+          },
+          {
+            "screen": "紧急场景速学页",
+            "current_module": "紧急场景速学",
+            "suggested_module": "场景对话"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -3,20 +3,20 @@
   "split_value": "R001",
   "split_label": "职场人士",
   "description": "角色 R001（职场人士）的用例子集",
-  "generated_at": "2026-02-27T20:51:00Z",
+  "generated_at": "2026-02-27T22:25:07Z",
   "count": 1,
   "items": [
     {
       "version": "2.4.0",
-      "generated_at": "2026-02-27T20:51:00Z",
+      "generated_at": "2026-02-27T22:24:13Z",
       "summary": {
         "role_id": "R001",
         "role_name": "职场人士",
         "feature_area_count": 11,
-        "use_case_count": 75,
+        "use_case_count": 77,
         "happy_path_count": 27,
         "exception_count": 31,
-        "boundary_count": 2,
+        "boundary_count": 3,
         "validation_count": 6,
         "e2e_count": 9
       },
@@ -52,7 +52,11 @@
                   "screen_ref": "S001",
                   "action_ref": "浏览并选择场景",
                   "exception_source": null,
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "未验证筛选逻辑正确性及场景选择后的状态变更。: 增加“筛选结果仅包含符合条件的场景”“选择后进入对应场景详情页并记录最近使用”。"
+                  ]
                 },
                 {
                   "id": "UC002",
@@ -144,7 +148,11 @@
                   "screen_ref": "S003",
                   "action_ref": "进行场景对话",
                   "exception_source": "task.exceptions[0]",
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "仅描述提示行为，未验证系统状态或后续可操作性。: 增加断言如“未生成错误对话记录”“用户可重新触发语音识别”“系统未扣除次数或积分”。"
+                  ]
                 },
                 {
                   "id": "UC006",
@@ -164,7 +172,11 @@
                   "screen_ref": "S003",
                   "action_ref": "进行场景对话",
                   "exception_source": "task.exceptions[1]",
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "未说明重试次数、超时阈值或最终失败处理逻辑。: 补充“重试不超过N次”“超过后提示失败信息”“不生成重复对话记录”。"
+                  ]
                 },
                 {
                   "id": "UC007",
@@ -184,7 +196,11 @@
                   "screen_ref": "S003",
                   "action_ref": "进行场景对话",
                   "exception_source": "task.exceptions[2]",
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "未验证本地保存的数据内容与同步机制，缺少网络恢复后的行为断言。: 补充“对话内容成功写入本地缓存”“网络恢复后自动同步且不重复提交”“服务器端生成唯一记录”。"
+                  ]
                 },
                 {
                   "id": "UC008",
@@ -256,7 +272,11 @@
                   "screen_ref": "S004",
                   "action_ref": "查看对话报告",
                   "exception_source": "task.exceptions[0]",
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "未说明评分失败后的数据边界及是否记录失败状态。: 增加“评分字段为空或标记为失败”“基础统计数据来源正确且完整”。"
+                  ]
                 }
               ]
             },
@@ -337,7 +357,11 @@
                   "screen_ref": "S022",
                   "action_ref": "购买场景包",
                   "exception_source": null,
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "未验证支付结果、订单状态及资产到账情况。: 增加“生成订单记录且状态为已支付”“用户账户解锁对应场景包”“不可重复购买”。"
+                  ]
                 },
                 {
                   "id": "UC029",
@@ -358,6 +382,42 @@
                   "action_ref": "购买场景包",
                   "exception_source": "task.exceptions[0]",
                   "flags": []
+                },
+                {
+                  "id": "UC117",
+                  "title": "[XV] 购买场景包_并发_同一用户重复快速点击购买",
+                  "type": "concurrency",
+                  "priority": "高",
+                  "given": [],
+                  "when": [
+                    "购买场景包_并发_同一用户重复快速点击购买"
+                  ],
+                  "then": [],
+                  "screen_ref": null,
+                  "action_ref": "购买场景包",
+                  "exception_source": null,
+                  "flags": [
+                    "XV_EDGE_CASE"
+                  ],
+                  "xv_source": "edge_case_generation"
+                },
+                {
+                  "id": "UC118",
+                  "title": "[XV] 购买场景包_边界_支付金额边界值（如0元、极大值）",
+                  "type": "boundary",
+                  "priority": "高",
+                  "given": [],
+                  "when": [
+                    "购买场景包_边界_支付金额边界值（如0元、极大值）"
+                  ],
+                  "then": [],
+                  "screen_ref": null,
+                  "action_ref": "购买场景包",
+                  "exception_source": null,
+                  "flags": [
+                    "XV_EDGE_CASE"
+                  ],
+                  "xv_source": "edge_case_generation"
                 }
               ]
             }
@@ -492,7 +552,11 @@
                   "screen_ref": "S007",
                   "action_ref": "完成记忆曲线复习",
                   "exception_source": null,
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "缺少对记忆曲线算法结果的验证，如复习间隔更新或统计数据正确性。: 增加“已记住/未记住后更新下次复习时间”“统计数据与操作记录一致”。"
+                  ]
                 },
                 {
                   "id": "UC045",
@@ -538,7 +602,11 @@
                   "screen_ref": "S008",
                   "action_ref": "管理词汇本",
                   "exception_source": null,
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "缺少对新增/删除后数据一致性的断言，也未验证筛选结果准确性。: 增加断言如“新增词汇在列表中可见且数量+1”“删除后不可检索”“筛选结果仅包含符合条件的词汇”。"
+                  ]
                 },
                 {
                   "id": "UC047",
@@ -681,7 +749,11 @@
                   "screen_ref": "S014",
                   "action_ref": "兑换积分商品",
                   "exception_source": null,
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "未验证积分扣减、库存校验及兑换记录准确性。: 增加“积分余额正确扣减”“库存不足时阻止兑换”“生成兑换流水记录”。"
+                  ]
                 },
                 {
                   "id": "UC053",
@@ -874,7 +946,11 @@
                   "screen_ref": "S018",
                   "action_ref": "设置角色偏好",
                   "exception_source": null,
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "未验证偏好设置的持久化与后续推荐逻辑生效。: 增加“保存后重新进入页面仍显示所选偏好”“推荐内容基于新偏好过滤”。"
+                  ]
                 },
                 {
                   "id": "UC061",
@@ -1178,7 +1254,11 @@
                   "screen_ref": "S036",
                   "action_ref": "手机号/邮箱注册",
                   "validation_rule": "手机号格式校验",
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "Given条件错误（注册账户不应为已登录），且未验证未创建账户。: 将Given改为“用户未登录”，并增加“校验失败后不创建账户记录”。"
+                  ]
                 },
                 {
                   "id": "UC099",
@@ -1410,7 +1490,11 @@
                   "screen_ref": "S038",
                   "action_ref": "注销账户",
                   "exception_source": null,
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "未验证冷静期机制与账户状态流转，也未验证数据清理或冻结逻辑。: 增加“账户状态变为注销中”“冷静期内可撤销”“冷静期结束后账号不可登录且数据按策略处理”。"
+                  ]
                 },
                 {
                   "id": "UC109",
@@ -1518,7 +1602,11 @@
                   "screen_ref": "S041",
                   "action_ref": "管理通知中心",
                   "exception_source": null,
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "缺少通知已读状态、设置变更持久化等验证。: 增加“标记已读后状态更新”“关闭某类通知后不再接收对应推送”。"
+                  ]
                 },
                 {
                   "id": "UC113",

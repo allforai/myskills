@@ -3,17 +3,17 @@
   "split_value": "R004",
   "split_label": "内容运营",
   "description": "角色 R004（内容运营）的用例子集",
-  "generated_at": "2026-02-27T20:51:00Z",
+  "generated_at": "2026-02-27T22:25:07Z",
   "count": 1,
   "items": [
     {
       "version": "2.4.0",
-      "generated_at": "2026-02-27T20:51:00Z",
+      "generated_at": "2026-02-27T22:24:13Z",
       "summary": {
         "role_id": "R004",
         "role_name": "内容运营",
         "feature_area_count": 1,
-        "use_case_count": 13,
+        "use_case_count": 14,
         "happy_path_count": 4,
         "exception_count": 4,
         "boundary_count": 2,
@@ -93,7 +93,11 @@
                   "screen_ref": "S009",
                   "action_ref": "创建场景对话脚本",
                   "rule_source": "task.rules[2]",
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "Then描述笼统，未明确阻断创建或错误提示形式。: 增加“提交被阻止”“页面提示‘必须标定难度级别’”“数据库未生成脚本记录”。"
+                  ]
                 },
                 {
                   "id": "UC016",
@@ -225,6 +229,24 @@
                   "action_ref": "驳回并备注",
                   "validation_rule": "驳回必须填写原因",
                   "flags": []
+                },
+                {
+                  "id": "UC119",
+                  "title": "[XV] 审核场景内容_并发_同一场景被多人同时审核",
+                  "type": "concurrency",
+                  "priority": "高",
+                  "given": [],
+                  "when": [
+                    "审核场景内容_并发_同一场景被多人同时审核"
+                  ],
+                  "then": [],
+                  "screen_ref": null,
+                  "action_ref": "审核场景内容",
+                  "exception_source": null,
+                  "flags": [
+                    "XV_EDGE_CASE"
+                  ],
+                  "xv_source": "edge_case_generation"
                 }
               ]
             },
@@ -301,7 +323,11 @@
                   "screen_ref": "S011",
                   "action_ref": "管理场景标签",
                   "exception_source": null,
-                  "flags": []
+                  "flags": [],
+                  "xv_flag": "weak_criteria",
+                  "xv_notes": [
+                    "操作成功定义模糊，未验证标签与场景的关联关系及批量操作结果。: 增加“标签创建后ID唯一”“批量打标签后场景关联表记录数正确”“关键词更新后立即生效”。"
+                  ]
                 },
                 {
                   "id": "UC025",

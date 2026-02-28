@@ -5,7 +5,7 @@
     "frequency": "高",
     "category": "core",
     "gaps": [
-      "COMPLETE"
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -21,7 +21,7 @@
     "frequency": "高",
     "category": "core",
     "gaps": [
-      "COMPLETE"
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -37,7 +37,8 @@
     "frequency": "高",
     "category": "core",
     "gaps": [
-      "NO_RULES"
+      "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -53,7 +54,8 @@
     "frequency": "中",
     "category": "core",
     "gaps": [
-      "NO_RULES"
+      "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -70,7 +72,8 @@
     "category": "core",
     "gaps": [
       "NO_EXCEPTIONS",
-      "NO_RULES"
+      "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -87,7 +90,8 @@
     "category": "core",
     "gaps": [
       "NO_EXCEPTIONS",
-      "NO_RULES"
+      "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -103,7 +107,8 @@
     "frequency": "高",
     "category": "core",
     "gaps": [
-      "NO_EXCEPTIONS"
+      "NO_EXCEPTIONS",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -121,6 +126,7 @@
     "gaps": [
       "NO_EXCEPTIONS",
       "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA",
       "CRUD_INCOMPLETE"
     ],
     "details": {
@@ -139,6 +145,7 @@
     "frequency": "高",
     "category": "core",
     "gaps": [
+      "NO_ACCEPTANCE_CRITERIA",
       "CRUD_INCOMPLETE"
     ],
     "details": {
@@ -158,7 +165,7 @@
     "frequency": "高",
     "category": "core",
     "gaps": [
-      "COMPLETE"
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -175,7 +182,8 @@
     "category": "core",
     "gaps": [
       "NO_EXCEPTIONS",
-      "NO_RULES"
+      "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -193,6 +201,7 @@
     "gaps": [
       "NO_EXCEPTIONS",
       "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA",
       "CRUD_INCOMPLETE"
     ],
     "details": {
@@ -211,7 +220,8 @@
     "frequency": "高",
     "category": "core",
     "gaps": [
-      "NO_EXCEPTIONS"
+      "NO_EXCEPTIONS",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -228,7 +238,8 @@
     "category": "core",
     "gaps": [
       "NO_EXCEPTIONS",
-      "NO_RULES"
+      "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -245,7 +256,8 @@
     "category": "core",
     "gaps": [
       "NO_EXCEPTIONS",
-      "NO_RULES"
+      "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -262,7 +274,8 @@
     "category": "core",
     "gaps": [
       "NO_EXCEPTIONS",
-      "NO_RULES"
+      "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -279,7 +292,8 @@
     "category": "core",
     "gaps": [
       "NO_EXCEPTIONS",
-      "NO_RULES"
+      "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -296,7 +310,8 @@
     "category": "core",
     "gaps": [
       "NO_EXCEPTIONS",
-      "NO_RULES"
+      "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -313,7 +328,8 @@
     "category": "core",
     "gaps": [
       "NO_EXCEPTIONS",
-      "NO_RULES"
+      "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -330,7 +346,8 @@
     "category": "core",
     "gaps": [
       "NO_EXCEPTIONS",
-      "NO_RULES"
+      "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -346,7 +363,8 @@
     "frequency": "中",
     "category": "core",
     "gaps": [
-      "NO_RULES"
+      "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -362,7 +380,7 @@
     "frequency": "低",
     "category": "basic",
     "gaps": [
-      "COMPLETE"
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -379,6 +397,7 @@
     "category": "basic",
     "gaps": [
       "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA",
       "CRUD_INCOMPLETE"
     ],
     "details": {
@@ -399,7 +418,8 @@
     "frequency": "低",
     "category": "basic",
     "gaps": [
-      "NO_RULES"
+      "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -416,7 +436,8 @@
     "category": "core",
     "gaps": [
       "NO_EXCEPTIONS",
-      "NO_RULES"
+      "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -433,7 +454,8 @@
     "category": "core",
     "gaps": [
       "NO_EXCEPTIONS",
-      "NO_RULES"
+      "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -450,6 +472,7 @@
     "category": "core",
     "gaps": [
       "NO_EXCEPTIONS",
+      "NO_ACCEPTANCE_CRITERIA",
       "CRUD_INCOMPLETE"
     ],
     "details": {
@@ -470,7 +493,8 @@
     "category": "core",
     "gaps": [
       "NO_EXCEPTIONS",
-      "NO_RULES"
+      "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -487,7 +511,8 @@
     "category": "core",
     "gaps": [
       "NO_EXCEPTIONS",
-      "NO_RULES"
+      "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -503,7 +528,8 @@
     "frequency": "中",
     "category": "core",
     "gaps": [
-      "NO_EXCEPTIONS"
+      "NO_EXCEPTIONS",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -520,6 +546,7 @@
     "category": "core",
     "gaps": [
       "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA",
       "CRUD_INCOMPLETE"
     ],
     "details": {
@@ -538,7 +565,8 @@
     "frequency": "低",
     "category": "core",
     "gaps": [
-      "NO_EXCEPTIONS"
+      "NO_EXCEPTIONS",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -555,6 +583,7 @@
     "category": "basic",
     "gaps": [
       "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA",
       "CRUD_INCOMPLETE"
     ],
     "details": {
@@ -575,7 +604,7 @@
     "frequency": "中",
     "category": "basic",
     "gaps": [
-      "COMPLETE"
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -591,7 +620,7 @@
     "frequency": "低",
     "category": "basic",
     "gaps": [
-      "COMPLETE"
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -609,6 +638,7 @@
     "gaps": [
       "NO_EXCEPTIONS",
       "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA",
       "CRUD_INCOMPLETE"
     ],
     "details": {
@@ -627,7 +657,8 @@
     "frequency": "中",
     "category": "basic",
     "gaps": [
-      "NO_EXCEPTIONS"
+      "NO_EXCEPTIONS",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -643,7 +674,7 @@
     "frequency": "低",
     "category": "basic",
     "gaps": [
-      "COMPLETE"
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -659,7 +690,8 @@
     "frequency": "高",
     "category": "basic",
     "gaps": [
-      "NO_RULES"
+      "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -677,6 +709,7 @@
     "gaps": [
       "NO_EXCEPTIONS",
       "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA",
       "CRUD_INCOMPLETE"
     ],
     "details": {
@@ -697,7 +730,8 @@
     "frequency": "低",
     "category": "basic",
     "gaps": [
-      "NO_EXCEPTIONS"
+      "NO_EXCEPTIONS",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -713,7 +747,7 @@
     "frequency": "低",
     "category": "basic",
     "gaps": [
-      "COMPLETE"
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -730,7 +764,8 @@
     "category": "basic",
     "gaps": [
       "NO_EXCEPTIONS",
-      "NO_RULES"
+      "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],
@@ -748,6 +783,7 @@
     "gaps": [
       "NO_EXCEPTIONS",
       "NO_RULES",
+      "NO_ACCEPTANCE_CRITERIA",
       "CRUD_INCOMPLETE"
     ],
     "details": {
@@ -768,7 +804,8 @@
     "frequency": "低",
     "category": "basic",
     "gaps": [
-      "NO_EXCEPTIONS"
+      "NO_EXCEPTIONS",
+      "NO_ACCEPTANCE_CRITERIA"
     ],
     "details": {
       "crud_missing": [],

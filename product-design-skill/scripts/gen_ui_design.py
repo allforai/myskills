@@ -189,6 +189,111 @@ for mod, slist in module_screens.items():
 with open(os.path.join(OUT, "ui-design-spec.md"), "w", encoding="utf-8") as f:
     f.write("\n".join(spec_lines) + "\n")
 
+spec_text = "\n".join(spec_lines)
+
+
+# ── XV auto-apply helpers ────────────────────────────────────────────────────
+
+def _apply_design_review_findings(data, spec_lines):
+    """Apply design review: append high-severity usability issues as warnings in spec.
+
+    Returns issue_count.
+    """
+    issues = [i for i in data.get("usability_issues", []) if i.get("severity") == "high"]
+    if not issues:
+        return 0
+
+    spec_lines.append("\n---\n")
+    spec_lines.append("## XV 交叉验证：高严重度可用性问题\n")
+    spec_lines.append("| 位置 | 问题 | 建议 |")
+    spec_lines.append("|------|------|------|")
+    for issue in issues:
+        spec_lines.append(
+            f"| {issue.get('screen_or_section', '')} "
+            f"| {issue.get('issue', '')} "
+            f"| {issue.get('suggestion', '')} |"
+        )
+    return len(issues)
+
+
+def _apply_visual_consistency_findings(data, spec_lines):
+    """Apply visual consistency: append inconsistencies and token gaps to spec.
+
+    Returns finding_count.
+    """
+    items = data.get("inconsistencies", []) + data.get("token_gaps", [])
+    if not items:
+        return 0
+
+    spec_lines.append("\n## XV 交叉验证：设计一致性\n")
+    inconsistencies = data.get("inconsistencies", [])
+    if inconsistencies:
+        spec_lines.append("### 不一致问题\n")
+        for inc in inconsistencies:
+            screens_str = ", ".join(inc.get("screens", []))
+            spec_lines.append(f"- **{screens_str}**: {inc.get('issue', '')}")
+
+    token_gaps = data.get("token_gaps", [])
+    if token_gaps:
+        spec_lines.append("\n### 缺失设计令牌\n")
+        for tg in token_gaps:
+            spec_lines.append(f"- **{tg.get('token', '')}**: {tg.get('context', '')}")
+
+    return len(items)
+
+
+# ── XV Cross-model validation ────────────────────────────────────────────────
+xv_reviews = []
+
+if C.xv_available():
+    from xv_prompts import design_review_prompt, visual_consistency_prompt
+
+    # XV-1: design_review → gemini
+    try:
+        dr_prompt = design_review_prompt(spec_text, len(screens), len(roles))
+        dr_result = C.xv_call("design_review", dr_prompt["user"], dr_prompt["system"])
+        print(f"  XV design_review: model={dr_result['model_used']}")
+        dr_data = C.xv_parse_json(dr_result["response"])
+        issue_count = _apply_design_review_findings(dr_data, spec_lines)
+        xv_reviews.append({
+            "task_type": "design_review",
+            "model_used": dr_result["model_used"],
+            "family": dr_result["family"],
+            "auto_applied": {"high_severity_issues": issue_count},
+            "raw_findings": dr_data,
+        })
+        print(f"  XV design_review: {issue_count} high-severity issues appended")
+    except Exception as e:
+        print(f"  XV design_review failed: {e}", file=sys.stderr)
+        raise
+
+    # XV-2: visual_consistency → gpt
+    try:
+        vc_prompt = visual_consistency_prompt(screens, S)
+        vc_result = C.xv_call("visual_consistency", vc_prompt["user"], vc_prompt["system"])
+        print(f"  XV visual_consistency: model={vc_result['model_used']}")
+        vc_data = C.xv_parse_json(vc_result["response"])
+        finding_count = _apply_visual_consistency_findings(vc_data, spec_lines)
+        xv_reviews.append({
+            "task_type": "visual_consistency",
+            "model_used": vc_result["model_used"],
+            "family": vc_result["family"],
+            "auto_applied": {"consistency_findings": finding_count},
+            "raw_findings": vc_data,
+        })
+        print(f"  XV visual_consistency: {finding_count} findings appended")
+    except Exception as e:
+        print(f"  XV visual_consistency failed: {e}", file=sys.stderr)
+        raise
+
+    # Rewrite spec with XV findings appended
+    with open(os.path.join(OUT, "ui-design-spec.md"), "w", encoding="utf-8") as f:
+        f.write("\n".join(spec_lines) + "\n")
+    # Write XV review to separate file
+    C.write_json(os.path.join(OUT, "ui-xv-review.json"), C.xv_review(xv_reviews))
+    print(f"  XV: ui-design-spec.md rewritten, ui-xv-review.json created")
+
+
 # ── Generate HTML previews ───────────────────────────────────────────────────
 CSS = f"""
 body {{ font-family: {S['font']}; background: {S['bg']}; color: {S['on_surface']}; margin: 0; padding: 0; }}
@@ -332,6 +437,12 @@ decisions = [
     {"step": "Step 5", "item_id": "preview", "decision": "auto_confirmed",
      "value": f"index.html + {len(roles)} role HTML files", "decided_at": NOW},
 ]
+if xv_reviews:
+    xv_summary = ", ".join(f"{r['task_type']}({r['model_used']})" for r in xv_reviews)
+    decisions.append({
+        "step": "XV", "item_id": "cross_model_review", "decision": "auto_confirmed",
+        "value": xv_summary, "decided_at": C.now_iso(),
+    })
 C.write_json(os.path.join(OUT, "ui-design-decisions.json"), decisions)
 
 # ── Pipeline decisions ────────────────────────────────────────────────────────

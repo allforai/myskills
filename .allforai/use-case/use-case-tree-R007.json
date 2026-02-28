@@ -3,20 +3,20 @@
   "split_value": "R007",
   "split_label": "系统管理员",
   "description": "角色 R007（系统管理员）的用例子集",
-  "generated_at": "2026-02-27T20:51:00Z",
+  "generated_at": "2026-02-27T22:25:07Z",
   "count": 1,
   "items": [
     {
       "version": "2.4.0",
-      "generated_at": "2026-02-27T20:51:00Z",
+      "generated_at": "2026-02-27T22:24:13Z",
       "summary": {
         "role_id": "R007",
         "role_name": "系统管理员",
         "feature_area_count": 2,
-        "use_case_count": 13,
+        "use_case_count": 18,
         "happy_path_count": 5,
         "exception_count": 5,
-        "boundary_count": 0,
+        "boundary_count": 1,
         "validation_count": 3,
         "e2e_count": 0
       },
@@ -93,6 +93,24 @@
                   "action_ref": "处理退款申请",
                   "validation_rule": "退款需填写审批理由",
                   "flags": []
+                },
+                {
+                  "id": "UC122",
+                  "title": "[XV] 处理订阅与退款_并发_用户操作与管理员处理冲突",
+                  "type": "concurrency",
+                  "priority": "高",
+                  "given": [],
+                  "when": [
+                    "处理订阅与退款_并发_用户操作与管理员处理冲突"
+                  ],
+                  "then": [],
+                  "screen_ref": null,
+                  "action_ref": "处理订阅与退款",
+                  "exception_source": null,
+                  "flags": [
+                    "XV_EDGE_CASE"
+                  ],
+                  "xv_source": "edge_case_generation"
                 }
               ]
             }
@@ -150,6 +168,24 @@
                   "action_ref": "管理用户账户",
                   "exception_source": "task.exceptions[0]",
                   "flags": []
+                },
+                {
+                  "id": "UC121",
+                  "title": "[XV] 管理用户账户_并发_同时封禁和恢复同一用户",
+                  "type": "concurrency",
+                  "priority": "高",
+                  "given": [],
+                  "when": [
+                    "管理用户账户_并发_同时封禁和恢复同一用户"
+                  ],
+                  "then": [],
+                  "screen_ref": null,
+                  "action_ref": "管理用户账户",
+                  "exception_source": null,
+                  "flags": [
+                    "XV_EDGE_CASE"
+                  ],
+                  "xv_source": "edge_case_generation"
                 }
               ]
             },
@@ -221,6 +257,42 @@
                   "action_ref": "修改参数值",
                   "validation_rule": "参数修改需确认",
                   "flags": []
+                },
+                {
+                  "id": "UC123",
+                  "title": "[XV] 配置系统参数_并发_多人同时修改关键参数",
+                  "type": "concurrency",
+                  "priority": "高",
+                  "given": [],
+                  "when": [
+                    "配置系统参数_并发_多人同时修改关键参数"
+                  ],
+                  "then": [],
+                  "screen_ref": null,
+                  "action_ref": "配置系统参数",
+                  "exception_source": null,
+                  "flags": [
+                    "XV_EDGE_CASE"
+                  ],
+                  "xv_source": "edge_case_generation"
+                },
+                {
+                  "id": "UC124",
+                  "title": "[XV] 配置系统参数_边界_参数数值范围边界",
+                  "type": "boundary",
+                  "priority": "高",
+                  "given": [],
+                  "when": [
+                    "配置系统参数_边界_参数数值范围边界"
+                  ],
+                  "then": [],
+                  "screen_ref": null,
+                  "action_ref": "配置系统参数",
+                  "exception_source": null,
+                  "flags": [
+                    "XV_EDGE_CASE"
+                  ],
+                  "xv_source": "edge_case_generation"
                 }
               ]
             },
@@ -266,6 +338,24 @@
                   "flags": [
                     "NO_EXCEPTION_CASES"
                   ]
+                },
+                {
+                  "id": "UC125",
+                  "title": "[XV] 管理权限角色_并发_角色权限修改与用户登录冲突",
+                  "type": "concurrency",
+                  "priority": "高",
+                  "given": [],
+                  "when": [
+                    "管理权限角色_并发_角色权限修改与用户登录冲突"
+                  ],
+                  "then": [],
+                  "screen_ref": null,
+                  "action_ref": "管理权限角色",
+                  "exception_source": null,
+                  "flags": [
+                    "XV_EDGE_CASE"
+                  ],
+                  "xv_source": "edge_case_generation"
                 }
               ]
             },

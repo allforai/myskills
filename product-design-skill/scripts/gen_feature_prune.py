@@ -243,6 +243,123 @@ for sa in scenario_align:
 
 C.write_json(os.path.join(OUT, "prune-decisions.json"), decisions)
 
+
+# ── XV auto-apply helpers ────────────────────────────────────────────────────
+
+def _apply_pruning_findings(data, decisions, tasks):
+    """Apply pruning second-opinion findings: promote risky CUTs, demote over-kept.
+
+    Returns (promoted_count, demoted_count).
+    """
+    dec_by_id = {d["item_id"]: d for d in decisions}
+    promoted = 0
+    demoted = 0
+
+    for item in data.get("risky_cuts", []):
+        tid = item.get("task_id", "")
+        rec = item.get("recommended", "")
+        if tid in dec_by_id and dec_by_id[tid]["decision"] == "CUT" and rec in ("CORE", "DEFER"):
+            dec_by_id[tid]["decision"] = rec
+            dec_by_id[tid].setdefault("xv_notes", []).append(
+                f"XV: CUT→{rec} — {item.get('reason', '')}"
+            )
+            promoted += 1
+
+    for item in data.get("over_kept", []):
+        tid = item.get("task_id", "")
+        rec = item.get("recommended", "")
+        if tid in dec_by_id and dec_by_id[tid]["decision"] == "CORE" and rec in ("DEFER", "CUT"):
+            # Only demote if not high-frequency and not basic category
+            task = tasks.get(tid, {})
+            if task.get("frequency") != "高" and task.get("category") != "basic":
+                dec_by_id[tid]["decision"] = rec
+                dec_by_id[tid].setdefault("xv_notes", []).append(
+                    f"XV: CORE→{rec} — {item.get('reason', '')}"
+                )
+                demoted += 1
+
+    return promoted, demoted
+
+
+def _apply_competitive_findings(data, decisions):
+    """Apply competitive benchmark: flag competitive risks on CUT/DEFER items.
+
+    Returns flagged_count.
+    """
+    dec_by_id = {d["item_id"]: d for d in decisions}
+    flagged = 0
+
+    for risk in data.get("competitive_risks", []):
+        tid = risk.get("task_id", "")
+        if tid not in dec_by_id:
+            continue
+        current = dec_by_id[tid]["decision"]
+        if current not in ("CUT", "DEFER"):
+            continue
+        note = f"XV competitive risk: {risk.get('risk', '')} (coverage={risk.get('coverage', '')})"
+        # Promote CUT→DEFER if competitors all have it (only if still CUT)
+        if current == "CUT" and risk.get("coverage") == "all_have":
+            dec_by_id[tid]["decision"] = "DEFER"
+            note += " → CUT promoted to DEFER"
+        dec_by_id[tid].setdefault("xv_notes", []).append(note)
+        flagged += 1
+
+    return flagged
+
+
+# ── XV Cross-model validation ────────────────────────────────────────────────
+xv_reviews = []
+
+if C.xv_available():
+    from xv_prompts import pruning_second_opinion_prompt, competitive_benchmark_prompt
+
+    # XV-1: pruning_second_opinion → gemini
+    try:
+        ps_prompt = pruning_second_opinion_prompt(decisions, tasks, flow_task_refs)
+        ps_result = C.xv_call("pruning_second_opinion", ps_prompt["user"], ps_prompt["system"])
+        print(f"  XV pruning_second_opinion: model={ps_result['model_used']}")
+        ps_data = C.xv_parse_json(ps_result["response"])
+        promoted, demoted = _apply_pruning_findings(ps_data, decisions, tasks)
+        xv_reviews.append({
+            "task_type": "pruning_second_opinion",
+            "model_used": ps_result["model_used"],
+            "family": ps_result["family"],
+            "auto_applied": {"promoted": promoted, "demoted": demoted},
+            "raw_findings": ps_data,
+        })
+        print(f"  XV pruning_second_opinion: {promoted} promoted, {demoted} demoted")
+    except Exception as e:
+        print(f"  XV pruning_second_opinion failed: {e}", file=sys.stderr)
+        raise
+
+    # XV-2: competitive_benchmark → deepseek
+    # NOTE: runs after XV-1; `decisions` list is mutated in-place by XV-1,
+    # so XV-2 sees XV-1's promoted/demoted changes via Python reference semantics.
+    try:
+        cb_prompt = competitive_benchmark_prompt(comp_ref, decisions)
+        cb_result = C.xv_call("competitive_benchmark", cb_prompt["user"], cb_prompt["system"])
+        print(f"  XV competitive_benchmark: model={cb_result['model_used']}")
+        cb_data = C.xv_parse_json(cb_result["response"])
+        flagged = _apply_competitive_findings(cb_data, decisions)
+        xv_reviews.append({
+            "task_type": "competitive_benchmark",
+            "model_used": cb_result["model_used"],
+            "family": cb_result["family"],
+            "auto_applied": {"competitive_flags": flagged},
+            "raw_findings": cb_data,
+        })
+        print(f"  XV competitive_benchmark: {flagged} competitive flags")
+    except Exception as e:
+        print(f"  XV competitive_benchmark failed: {e}", file=sys.stderr)
+        raise
+
+    # Rewrite prune-decisions.json with XV corrections
+    C.write_json(os.path.join(OUT, "prune-decisions.json"), decisions)
+    # Write XV review to separate file
+    C.write_json(os.path.join(OUT, "prune-xv-review.json"), C.xv_review(xv_reviews))
+    print(f"  XV: prune-decisions.json rewritten, prune-xv-review.json created")
+
+
 # ── Step 5: Generate prune tasks ─────────────────────────────────────────────
 prune_tasks = []
 prune_counter = 0

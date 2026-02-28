@@ -374,6 +374,113 @@ report = {
 
 C.write_json(os.path.join(OUT, "audit-report.json"), report)
 
+
+# ── XV auto-apply helpers ────────────────────────────────────────────────────
+
+def _apply_cross_layer_findings(data, trace_issues, cross_issues):
+    """Apply cross-layer validation: annotate root causes, remove false alarms.
+
+    Returns (root_cause_count, false_alarm_count).
+    """
+    root_count = 0
+    alarm_count = 0
+
+    # Annotate root causes on affected issues
+    for rc in data.get("root_causes", []):
+        if rc.get("severity") == "high":
+            root_count += 1
+
+    # Mark false alarms using _xv_id composite keys
+    false_ids = {fa.get("issue_id", "") for fa in data.get("false_alarms", [])}
+    for ti in trace_issues:
+        xv_id = f"TRACE-{ti.get('check_id', '')}-{ti.get('item_id', '')}"
+        if xv_id in false_ids:
+            ti["xv_false_alarm"] = True
+            alarm_count += 1
+    for ci in cross_issues:
+        xv_id = f"CROSS-{ci.get('check_id', '')}-{ci.get('task_id', '')}"
+        if xv_id in false_ids:
+            ci["xv_false_alarm"] = True
+            alarm_count += 1
+
+    return root_count, alarm_count
+
+
+def _apply_coverage_findings(data, coverage_issues):
+    """Apply coverage analysis: annotate critical gaps and acceptable gaps.
+
+    Returns (critical_count, acceptable_count).
+    """
+    critical_count = 0
+    acceptable_count = 0
+
+    acceptable_ids = {ag.get("task_id", "") for ag in data.get("acceptable_gaps", [])}
+    critical_ids = {cg.get("task_id", "") for cg in data.get("critical_gaps", [])}
+
+    for ci in coverage_issues:
+        tid = ci.get("task_id", "")
+        if tid in critical_ids:
+            ci["xv_critical"] = True
+            critical_count += 1
+        elif tid in acceptable_ids:
+            ci["xv_acceptable"] = True
+            acceptable_count += 1
+
+    return critical_count, acceptable_count
+
+
+# ── XV Cross-model validation ────────────────────────────────────────────────
+xv_reviews = []
+
+if C.xv_available():
+    from xv_prompts import cross_layer_validation_prompt, coverage_analysis_prompt
+
+    # XV-1: cross_layer_validation → deepseek
+    try:
+        cl_prompt = cross_layer_validation_prompt(trace_issues, cross_issues, available_layers)
+        cl_result = C.xv_call("cross_layer_validation", cl_prompt["user"], cl_prompt["system"])
+        print(f"  XV cross_layer_validation: model={cl_result['model_used']}")
+        cl_data = C.xv_parse_json(cl_result["response"])
+        root_count, alarm_count = _apply_cross_layer_findings(cl_data, trace_issues, cross_issues)
+        xv_reviews.append({
+            "task_type": "cross_layer_validation",
+            "model_used": cl_result["model_used"],
+            "family": cl_result["family"],
+            "auto_applied": {"root_causes": root_count, "false_alarms": alarm_count},
+            "raw_findings": cl_data,
+        })
+        print(f"  XV cross_layer_validation: {root_count} root causes, {alarm_count} false alarms")
+    except Exception as e:
+        print(f"  XV cross_layer_validation failed: {e}", file=sys.stderr)
+        raise
+
+    # XV-2: coverage_analysis → gpt
+    try:
+        ca_prompt = coverage_analysis_prompt(coverage_issues, len(task_ids), len(available_layers))
+        ca_result = C.xv_call("coverage_analysis", ca_prompt["user"], ca_prompt["system"])
+        print(f"  XV coverage_analysis: model={ca_result['model_used']}")
+        ca_data = C.xv_parse_json(ca_result["response"])
+        critical_count, acceptable_count = _apply_coverage_findings(ca_data, coverage_issues)
+        xv_reviews.append({
+            "task_type": "coverage_analysis",
+            "model_used": ca_result["model_used"],
+            "family": ca_result["family"],
+            "auto_applied": {"critical_gaps": critical_count, "acceptable_gaps": acceptable_count},
+            "raw_findings": ca_data,
+        })
+        print(f"  XV coverage_analysis: {critical_count} critical, {acceptable_count} acceptable")
+    except Exception as e:
+        print(f"  XV coverage_analysis failed: {e}", file=sys.stderr)
+        raise
+
+    # Rewrite audit-report.json with XV annotations
+    report["cross_model_review"] = C.xv_review(xv_reviews)
+    C.write_json(os.path.join(OUT, "audit-report.json"), report)
+    # Write XV review to separate file
+    C.write_json(os.path.join(OUT, "audit-xv-review.json"), C.xv_review(xv_reviews))
+    print(f"  XV: audit-report.json rewritten, audit-xv-review.json created")
+
+
 # ── Markdown report ──────────────────────────────────────────────────────────
 lines = []
 lines.append("# 设计审计报告\n")

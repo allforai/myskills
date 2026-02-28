@@ -2,9 +2,9 @@
   "split_by": "priority",
   "split_value": "high",
   "split_label": "高优先级",
-  "description": "高优先级缺口任务（87 条）",
-  "generated_at": "2026-02-27T20:51:00Z",
-  "count": 87,
+  "description": "高优先级缺口任务（92 条）",
+  "generated_at": "2026-02-27T22:25:53Z",
+  "count": 92,
   "items": [
     {
       "id": "GAP-115",
@@ -20,7 +20,8 @@
         "S003"
       ],
       "description": "操作 '语音输入' 无失败反馈定义",
-      "frequency_impact": "高频相关"
+      "frequency_impact": "高频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-116",
@@ -36,7 +37,8 @@
         "S003"
       ],
       "description": "操作 '文字输入' 无失败反馈定义",
-      "frequency_impact": "高频相关"
+      "frequency_impact": "高频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-122",
@@ -66,7 +68,8 @@
         "S009"
       ],
       "description": "操作 '创建新场景' 无失败反馈定义",
-      "frequency_impact": "高频相关"
+      "frequency_impact": "高频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-126",
@@ -81,7 +84,8 @@
         "S009"
       ],
       "description": "操作 '编辑对话节点' 无失败反馈定义",
-      "frequency_impact": "高频相关"
+      "frequency_impact": "高频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-127",
@@ -96,7 +100,8 @@
         "S009"
       ],
       "description": "操作 '保存草稿' 无失败反馈定义",
-      "frequency_impact": "高频相关"
+      "frequency_impact": "高频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-129",
@@ -111,7 +116,8 @@
         "S010"
       ],
       "description": "操作 '审核通过' 无失败反馈定义",
-      "frequency_impact": "高频相关"
+      "frequency_impact": "高频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-130",
@@ -126,7 +132,8 @@
         "S010"
       ],
       "description": "操作 '驳回并备注' 无失败反馈定义",
-      "frequency_impact": "高频相关"
+      "frequency_impact": "高频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-136",
@@ -707,7 +714,8 @@
         "S011"
       ],
       "description": "操作 '上架场景包' 无失败反馈定义",
-      "frequency_impact": "中频相关"
+      "frequency_impact": "中频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-133",
@@ -723,7 +731,8 @@
         "S011"
       ],
       "description": "操作 '下架场景包' 无失败反馈定义",
-      "frequency_impact": "中频相关"
+      "frequency_impact": "中频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-134",
@@ -739,7 +748,8 @@
         "S011"
       ],
       "description": "操作 '编辑标签和关键词' 无失败反馈定义",
-      "frequency_impact": "中频相关"
+      "frequency_impact": "中频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-139",
@@ -769,7 +779,8 @@
         "S019"
       ],
       "description": "操作 '跟读练习' 无失败反馈定义",
-      "frequency_impact": "中频相关"
+      "frequency_impact": "中频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-150",
@@ -784,7 +795,8 @@
         "S019"
       ],
       "description": "操作 '收藏到词汇本' 无失败反馈定义",
-      "frequency_impact": "中频相关"
+      "frequency_impact": "中频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-162",
@@ -814,7 +826,8 @@
         "S025"
       ],
       "description": "操作 '创建A/B测试' 无失败反馈定义",
-      "frequency_impact": "中频相关"
+      "frequency_impact": "中频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-165",
@@ -829,7 +842,8 @@
         "S025"
       ],
       "description": "操作 '停止/启动测试' 无失败反馈定义",
-      "frequency_impact": "中频相关"
+      "frequency_impact": "中频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-167",
@@ -859,7 +873,8 @@
         "S028"
       ],
       "description": "操作 '标注异常类型' 无失败反馈定义",
-      "frequency_impact": "中频相关"
+      "frequency_impact": "中频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-171",
@@ -874,7 +889,8 @@
         "S028"
       ],
       "description": "操作 '提交标注' 无失败反馈定义",
-      "frequency_impact": "中频相关"
+      "frequency_impact": "中频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-173",
@@ -889,7 +905,8 @@
         "S029"
       ],
       "description": "操作 '创建新Prompt模板' 无失败反馈定义",
-      "frequency_impact": "中频相关"
+      "frequency_impact": "中频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-174",
@@ -904,7 +921,8 @@
         "S029"
       ],
       "description": "操作 '编辑Prompt模板' 无失败反馈定义",
-      "frequency_impact": "中频相关"
+      "frequency_impact": "中频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-175",
@@ -919,7 +937,8 @@
         "S029"
       ],
       "description": "操作 '发布Prompt到生产环境' 无失败反馈定义",
-      "frequency_impact": "中频相关"
+      "frequency_impact": "中频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-182",
@@ -949,7 +968,8 @@
         "S035"
       ],
       "description": "操作 '处理投诉' 无失败反馈定义",
-      "frequency_impact": "中频相关"
+      "frequency_impact": "中频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-191",
@@ -964,7 +984,8 @@
         "S035"
       ],
       "description": "操作 '回复用户' 无失败反馈定义",
-      "frequency_impact": "中频相关"
+      "frequency_impact": "中频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-208",
@@ -1024,7 +1045,8 @@
         "S018"
       ],
       "description": "操作 '选择角色类型' 无失败反馈定义",
-      "frequency_impact": "低频相关"
+      "frequency_impact": "低频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-146",
@@ -1039,7 +1061,8 @@
         "S018"
       ],
       "description": "操作 '设置学习目标' 无失败反馈定义",
-      "frequency_impact": "低频相关"
+      "frequency_impact": "低频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-147",
@@ -1054,7 +1077,8 @@
         "S018"
       ],
       "description": "操作 '选择感兴趣场景' 无失败反馈定义",
-      "frequency_impact": "低频相关"
+      "frequency_impact": "低频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-153",
@@ -1084,7 +1108,8 @@
         "S021"
       ],
       "description": "操作 '续费/升级' 无失败反馈定义",
-      "frequency_impact": "低频相关"
+      "frequency_impact": "低频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-156",
@@ -1099,7 +1124,8 @@
         "S021"
       ],
       "description": "操作 '取消订阅' 无失败反馈定义",
-      "frequency_impact": "低频相关"
+      "frequency_impact": "低频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-158",
@@ -1159,7 +1185,8 @@
         "S034"
       ],
       "description": "操作 '创建/编辑角色权限' 无失败反馈定义",
-      "frequency_impact": "低频相关"
+      "frequency_impact": "低频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-188",
@@ -1174,7 +1201,8 @@
         "S034"
       ],
       "description": "操作 '分配用户角色' 无失败反馈定义",
-      "frequency_impact": "低频相关"
+      "frequency_impact": "低频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-193",
@@ -1189,7 +1217,8 @@
         "S036"
       ],
       "description": "操作 '手机号/邮箱注册' 无失败反馈定义",
-      "frequency_impact": "低频相关"
+      "frequency_impact": "低频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-194",
@@ -1204,7 +1233,8 @@
         "S036"
       ],
       "description": "操作 '第三方登录注册' 无失败反馈定义",
-      "frequency_impact": "低频相关"
+      "frequency_impact": "低频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-198",
@@ -1220,7 +1250,8 @@
         "S038"
       ],
       "description": "操作 '修改头像/昵称' 无失败反馈定义",
-      "frequency_impact": "低频相关"
+      "frequency_impact": "低频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-199",
@@ -1236,7 +1267,8 @@
         "S038"
       ],
       "description": "操作 '修改通知偏好' 无失败反馈定义",
-      "frequency_impact": "低频相关"
+      "frequency_impact": "低频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-200",
@@ -1252,7 +1284,8 @@
         "S038"
       ],
       "description": "操作 '修改语言设置' 无失败反馈定义",
-      "frequency_impact": "低频相关"
+      "frequency_impact": "低频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-201",
@@ -1268,7 +1301,8 @@
         "S038"
       ],
       "description": "操作 '注销账户' 无失败反馈定义",
-      "frequency_impact": "低频相关"
+      "frequency_impact": "低频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-203",
@@ -1298,7 +1332,8 @@
         "S040"
       ],
       "description": "操作 '选择学习目的' 无失败反馈定义",
-      "frequency_impact": "低频相关"
+      "frequency_impact": "低频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-206",
@@ -1313,7 +1348,8 @@
         "S040"
       ],
       "description": "操作 '选择当前水平' 无失败反馈定义",
-      "frequency_impact": "低频相关"
+      "frequency_impact": "低频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-210",
@@ -1328,7 +1364,8 @@
         "S042"
       ],
       "description": "操作 '填写反馈内容' 无失败反馈定义",
-      "frequency_impact": "低频相关"
+      "frequency_impact": "低频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-211",
@@ -1343,7 +1380,8 @@
         "S042"
       ],
       "description": "操作 '上传截图' 无失败反馈定义",
-      "frequency_impact": "低频相关"
+      "frequency_impact": "低频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-212",
@@ -1358,7 +1396,8 @@
         "S042"
       ],
       "description": "操作 '提交反馈' 无失败反馈定义",
-      "frequency_impact": "低频相关"
+      "frequency_impact": "低频相关",
+      "xv_dedup": true
     },
     {
       "id": "GAP-152",
@@ -1404,6 +1443,101 @@
       ],
       "description": "高风险任务 T042 (注销账户) 对应操作缺少二次确认",
       "frequency_impact": "低频相关"
+    },
+    {
+      "id": "GAP-054",
+      "title": "订阅付费方案 — NO_ACCEPTANCE_CRITERIA",
+      "type": "NO_ACCEPTANCE_CRITERIA",
+      "category": "basic",
+      "priority": "高",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T022"
+      ],
+      "affected_screens": [
+        "S020"
+      ],
+      "description": "任务 T022 (订阅付费方案) 检测到 NO_ACCEPTANCE_CRITERIA",
+      "frequency_impact": "低频任务",
+      "xv_notes": [
+        "priority 低→高: 订阅付费方案直接影响收入转化，且涉及支付流程，高业务风险不应为低优先级"
+      ]
+    },
+    {
+      "id": "GAP-056",
+      "title": "管理订阅 — NO_ACCEPTANCE_CRITERIA",
+      "type": "NO_ACCEPTANCE_CRITERIA",
+      "category": "basic",
+      "priority": "高",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T023"
+      ],
+      "affected_screens": [
+        "S021"
+      ],
+      "description": "任务 T023 (管理订阅) 检测到 NO_ACCEPTANCE_CRITERIA",
+      "frequency_impact": "低频任务",
+      "xv_notes": [
+        "priority 低→高: 管理订阅涉及扣费与取消，存在资金与合规风险，应提升优先级"
+      ]
+    },
+    {
+      "id": "GAP-057",
+      "title": "管理订阅 — CRUD_INCOMPLETE",
+      "type": "CRUD_INCOMPLETE",
+      "category": "basic",
+      "priority": "高",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "T023"
+      ],
+      "affected_screens": [
+        "S021"
+      ],
+      "description": "任务 T023 (管理订阅) 检测到 CRUD_INCOMPLETE",
+      "frequency_impact": "低频任务",
+      "xv_notes": [
+        "priority 低→高: 订阅CRUD不完整可能导致计费异常或数据错误，属高风险业务"
+      ]
+    },
+    {
+      "id": "GAP-213",
+      "title": "[XV] 跨角色 — 内容运营审核场景(T010)与管理场景包(T011)后，缺乏明确的发布上线流程，导致职场人士(T001)无法获取最新场景，存在跨角色流转断层。",
+      "type": "XV_JOURNEY_GAP",
+      "priority": "高",
+      "affected_roles": [
+        "跨角色"
+      ],
+      "affected_tasks": [
+        "场景内容发布与同步"
+      ],
+      "affected_screens": [],
+      "description": "内容运营审核场景(T010)与管理场景包(T011)后，缺乏明确的发布上线流程，导致职场人士(T001)无法获取最新场景，存在跨角色流转断层。",
+      "frequency_impact": "XV交叉验证发现",
+      "xv_source": "journey_validation"
+    },
+    {
+      "id": "GAP-214",
+      "title": "[XV] 职场人士 — 存在管理词汇本(T008)和复习(T007)任务，但在进行场景对话(T002)或自由对话(T004)时，缺乏将生词或错句“加入词汇本”的收集动作，导致复习流程无数据来源。",
+      "type": "XV_JOURNEY_GAP",
+      "priority": "高",
+      "affected_roles": [
+        "职场人士"
+      ],
+      "affected_tasks": [
+        "添加生词到词汇本"
+      ],
+      "affected_screens": [],
+      "description": "存在管理词汇本(T008)和复习(T007)任务，但在进行场景对话(T002)或自由对话(T004)时，缺乏将生词或错句“加入词汇本”的收集动作，导致复习流程无数据来源。",
+      "frequency_impact": "XV交叉验证发现",
+      "xv_source": "journey_validation"
     }
   ]
 }

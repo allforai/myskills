@@ -1,6 +1,6 @@
 # 用例集摘要
 
-角色 6 个 · 功能区 14 个 · 任务 45 个 · 用例 125 条（正常流 45 / 异常流 49 / 边界 6 / 校验 16 / E2E 9）
+角色 6 个 · 功能区 14 个 · 任务 45 个 · 用例 125 条（正常流 45 / 异常流 49 / 边界 6 / 校验 16 / E2E 9） · E2E 链路问题 46 个
 
 
 ## R001 职场人士
@@ -41,12 +41,14 @@
 | UC011 | 进行自由对话_正常流 | happy_path | 中 |
 | UC012 | 进行自由对话_AI生成不当内容 | exception | 中 |
 
-**T024 购买场景包**（2 条用例）
+**T024 购买场景包**（4 条用例）
 
 | ID | 标题 | 类型 | 优先级 |
 |----|------|------|--------|
 | UC028 | 购买场景包_正常流 | happy_path | 中 |
 | UC029 | 购买场景包_支付失败 | exception | 中 |
+| UC117 | [XV] 购买场景包_并发_同一用户重复快速点击购买 | concurrency | 高 |
+| UC118 | [XV] 购买场景包_边界_支付金额边界值（如0元、极大值） | boundary | 高 |
 
 ### 发音纠正
 
@@ -269,7 +271,7 @@
 | UC016 | 创建场景对话脚本_校验_场景名不能为空 | validation | 高 |
 | UC017 | 创建场景对话脚本_校验_至少3轮对话节点 | validation | 高 |
 
-**T010 审核场景内容**（4 条用例）
+**T010 审核场景内容**（5 条用例）
 
 | ID | 标题 | 类型 | 优先级 |
 |----|------|------|--------|
@@ -277,6 +279,7 @@
 | UC019 | 审核场景内容_审核超时48h | exception | 高 |
 | UC020 | 审核场景内容_边界_驳回必须填写原因 | boundary | 高 |
 | UC021 | 审核场景内容_校验_驳回必须填写原因 | validation | 高 |
+| UC119 | [XV] 审核场景内容_并发_同一场景被多人同时审核 | concurrency | 高 |
 
 **T011 管理场景包**（2 条用例）
 
@@ -317,7 +320,7 @@
 ### 发音纠正
 
 
-**T032 调整发音评估参数**（4 条用例）
+**T032 调整发音评估参数**（5 条用例）
 
 | ID | 标题 | 类型 | 优先级 |
 |----|------|------|--------|
@@ -325,6 +328,7 @@
 | UC041 | 调整发音评估参数_无异常定义 | exception | 低 |
 | UC042 | 调整发音评估参数_边界_阈值范围0.0-1.0 | boundary | 中 |
 | UC043 | 调整发音评估参数_校验_阈值范围0.0-1.0 | validation | 中 |
+| UC120 | [XV] 调整发音评估参数_并发_参数调整与应用请求冲突 | concurrency | 高 |
 
 ### AI质量监控
 
@@ -378,38 +382,43 @@
 ### 订阅与付费
 
 
-**T034 处理订阅与退款**（3 条用例）
+**T034 处理订阅与退款**（4 条用例）
 
 | ID | 标题 | 类型 | 优先级 |
 |----|------|------|--------|
 | UC071 | 处理订阅与退款_正常流 | happy_path | 高 |
 | UC072 | 处理订阅与退款_退款金额超限 | exception | 高 |
 | UC073 | 处理订阅与退款_校验_退款需填写审批理由 | validation | 高 |
+| UC122 | [XV] 处理订阅与退款_并发_用户操作与管理员处理冲突 | concurrency | 高 |
 
 ### 用户管理与系统配置
 
 
-**T033 管理用户账户**（2 条用例）
+**T033 管理用户账户**（3 条用例）
 
 | ID | 标题 | 类型 | 优先级 |
 |----|------|------|--------|
 | UC086 | 管理用户账户_正常流 | happy_path | 高 |
 | UC087 | 管理用户账户_封禁需二次确认 | exception | 高 |
+| UC121 | [XV] 管理用户账户_并发_同时封禁和恢复同一用户 | concurrency | 高 |
 
-**T035 配置系统参数**（3 条用例）
+**T035 配置系统参数**（5 条用例）
 
 | ID | 标题 | 类型 | 优先级 |
 |----|------|------|--------|
 | UC088 | 配置系统参数_正常流 | happy_path | 高 |
 | UC089 | 配置系统参数_关键参数修改需二次确认 | exception | 高 |
 | UC090 | 配置系统参数_校验_参数修改需确认 | validation | 高 |
+| UC123 | [XV] 配置系统参数_并发_多人同时修改关键参数 | concurrency | 高 |
+| UC124 | [XV] 配置系统参数_边界_参数数值范围边界 | boundary | 高 |
 
-**T036 管理权限角色**（2 条用例）
+**T036 管理权限角色**（3 条用例）
 
 | ID | 标题 | 类型 | 优先级 |
 |----|------|------|--------|
 | UC091 | 管理权限角色_正常流 | happy_path | 中 |
 | UC092 | 管理权限角色_无异常定义 | exception | 低 |
+| UC125 | [XV] 管理权限角色_并发_角色权限修改与用户登录冲突 | concurrency | 高 |
 
 **T037 处理用户投诉**（3 条用例）
 
@@ -432,6 +441,59 @@
 | E2E-F007-01 | 运营分析链路_正常流 | e2e | F007 | 4 |
 | E2E-F008-01 | 投诉处理链路_正常流 | e2e | F008 | 2 |
 | E2E-F009-01 | 紧急场景速学链路_正常流 | e2e | F009 | 2 |
+
+## E2E 链路验证
+
+| E2E ID | Flag | 节点 | 描述 | 严重级 |
+|--------|------|------|------|--------|
+| E2E-F001-01 | UNVERIFIABLE_PRECONDITION | seq 1 | seq 1 task T001 缺少 prerequisites | 低 |
+| E2E-F001-01 | UNVERIFIABLE_PRECONDITION | seq 2 | seq 2 task T002 缺少 prerequisites | 低 |
+| E2E-F001-01 | UNVERIFIABLE_PRECONDITION | seq 3 | seq 3 task T005 缺少 prerequisites | 低 |
+| E2E-F001-01 | UNVERIFIABLE_PRECONDITION | seq 4 | seq 4 task T003 缺少 prerequisites | 低 |
+| E2E-F001-01 | UNVERIFIABLE_PRECONDITION | seq 5 | seq 5 task T007 缺少 prerequisites | 低 |
+| E2E-F001-01 | MISSING_HANDOFF_DATA | seq 2→3 | 交接数据「音素评分」在上游 task 中无语义匹配 | 中 |
+| E2E-F002-01 | UNVERIFIABLE_PRECONDITION | seq 1 | seq 1 task T002 缺少 prerequisites | 低 |
+| E2E-F002-01 | UNVERIFIABLE_PRECONDITION | seq 2 | seq 2 task T008 缺少 prerequisites | 低 |
+| E2E-F002-01 | UNVERIFIABLE_PRECONDITION | seq 3 | seq 3 task T007 缺少 prerequisites | 低 |
+| E2E-F002-01 | UNVERIFIABLE_PRECONDITION | seq 4 | seq 4 task T001 缺少 prerequisites | 低 |
+| E2E-F002-01 | MISSING_HANDOFF_DATA | seq 1→2 | 交接数据「词汇」在上游 task 中无语义匹配 | 中 |
+| E2E-F002-01 | MISSING_HANDOFF_DATA | seq 1→2 | 交接数据「语境」在上游 task 中无语义匹配 | 中 |
+| E2E-F002-01 | WEAK_TERMINAL | seq 4 | 最后节点 task T001 无 outputs.messages/states 且 main_fl | 中 |
+| E2E-F003-01 | UNVERIFIABLE_PRECONDITION | seq 1 | seq 1 task T009 缺少 prerequisites | 低 |
+| E2E-F003-01 | UNVERIFIABLE_PRECONDITION | seq 2 | seq 2 task T010 缺少 prerequisites | 低 |
+| E2E-F003-01 | UNVERIFIABLE_PRECONDITION | seq 3 | seq 3 task T011 缺少 prerequisites | 低 |
+| E2E-F003-01 | WEAK_TERMINAL | seq 3 | 最后节点 task T011 无 outputs.messages/states 且 main_fl | 中 |
+| E2E-F004-01 | UNVERIFIABLE_PRECONDITION | seq 1 | seq 1 task T038 缺少 prerequisites | 低 |
+| E2E-F004-01 | UNVERIFIABLE_PRECONDITION | seq 2 | seq 2 task T043 缺少 prerequisites | 低 |
+| E2E-F004-01 | UNVERIFIABLE_PRECONDITION | seq 3 | seq 3 task T020 缺少 prerequisites | 低 |
+| E2E-F004-01 | UNVERIFIABLE_PRECONDITION | seq 4 | seq 4 task T001 缺少 prerequisites | 低 |
+| E2E-F004-01 | UNVERIFIABLE_PRECONDITION | seq 5 | seq 5 task T002 缺少 prerequisites | 低 |
+| E2E-F004-01 | MISSING_HANDOFF_DATA | seq 1→2 | 交接数据「用户ID」在上游 task 中无语义匹配 | 中 |
+| E2E-F004-01 | WEAK_TERMINAL | seq 5 | 最后节点 task T002 无 outputs.messages/states 且 main_fl | 中 |
+| E2E-F005-01 | UNVERIFIABLE_PRECONDITION | seq 1 | seq 1 task T002 缺少 prerequisites | 低 |
+| E2E-F005-01 | UNVERIFIABLE_PRECONDITION | seq 2 | seq 2 task T022 缺少 prerequisites | 低 |
+| E2E-F005-01 | UNVERIFIABLE_PRECONDITION | seq 3 | seq 3 task T023 缺少 prerequisites | 低 |
+| E2E-F005-01 | MISSING_HANDOFF_DATA | seq 1→2 | 交接数据「用户ID」在上游 task 中无语义匹配 | 中 |
+| E2E-F005-01 | MISSING_HANDOFF_DATA | seq 1→2 | 交接数据「使用量」在上游 task 中无语义匹配 | 中 |
+| E2E-F005-01 | WEAK_TERMINAL | seq 3 | 最后节点 task T023 无 outputs.messages/states 且 main_fl | 中 |
+| E2E-F006-01 | UNVERIFIABLE_PRECONDITION | seq 1 | seq 1 task T029 缺少 prerequisites | 低 |
+| E2E-F006-01 | UNVERIFIABLE_PRECONDITION | seq 2 | seq 2 task T030 缺少 prerequisites | 低 |
+| E2E-F006-01 | UNVERIFIABLE_PRECONDITION | seq 3 | seq 3 task T031 缺少 prerequisites | 低 |
+| E2E-F006-01 | UNVERIFIABLE_PRECONDITION | seq 4 | seq 4 task T032 缺少 prerequisites | 低 |
+| E2E-F006-01 | WEAK_TERMINAL | seq 4 | 最后节点 task T032 无 outputs.messages/states 且 main_fl | 中 |
+| E2E-F007-01 | UNVERIFIABLE_PRECONDITION | seq 1 | seq 1 task T025 缺少 prerequisites | 低 |
+| E2E-F007-01 | UNVERIFIABLE_PRECONDITION | seq 2 | seq 2 task T026 缺少 prerequisites | 低 |
+| E2E-F007-01 | UNVERIFIABLE_PRECONDITION | seq 3 | seq 3 task T027 缺少 prerequisites | 低 |
+| E2E-F007-01 | UNVERIFIABLE_PRECONDITION | seq 4 | seq 4 task T028 缺少 prerequisites | 低 |
+| E2E-F007-01 | MISSING_HANDOFF_DATA | seq 2→3 | 交接数据「假设」在上游 task 中无语义匹配 | 中 |
+| E2E-F007-01 | WEAK_TERMINAL | seq 4 | 最后节点 task T028 无 outputs.messages/states 且 main_fl | 中 |
+| E2E-F008-01 | UNVERIFIABLE_PRECONDITION | seq 1 | seq 1 task T045 缺少 prerequisites | 低 |
+| E2E-F008-01 | UNVERIFIABLE_PRECONDITION | seq 2 | seq 2 task T037 缺少 prerequisites | 低 |
+| E2E-F008-01 | WEAK_TERMINAL | seq 2 | 最后节点 task T037 无 outputs.messages/states 且 main_fl | 中 |
+| E2E-F009-01 | UNVERIFIABLE_PRECONDITION | seq 1 | seq 1 task T021 缺少 prerequisites | 低 |
+| E2E-F009-01 | UNVERIFIABLE_PRECONDITION | seq 2 | seq 2 task T007 缺少 prerequisites | 低 |
+
+> 排序验证共发现 46 个链路问题
 
 > 完整字段见 .allforai/use-case/use-case-tree.json
 > 决策日志见 .allforai/use-case/use-case-decisions.json
