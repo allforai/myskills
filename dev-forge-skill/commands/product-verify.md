@@ -38,7 +38,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 1. 加载 `${CLAUDE_PLUGIN_ROOT}/skills/product-verify.md` 中的工作流和铁律
 2. 根据模式执行对应步骤
-3. 每个 Step 完成后展示摘要，等待用户确认
+3. 每个 Step 完成后输出摘要，自动进入下一个 Step
 4. **【强制】执行完毕后，必须在对话中直接输出完整的报告摘要**
 
 ## 详细文档（按需用 Read 工具加载）
@@ -49,8 +49,8 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 每个 Step 完成后：
 1. 将结果写入 `.allforai/product-verify/` 目录下对应的 JSON 文件
-2. 向用户展示结果摘要
-3. 等待用户确认后才进入下一个 Step
+2. 输出结果摘要
+3. 自动进入下一个 Step（不停）
 
 ## 报告输出要求（强制执行）
 
@@ -106,5 +106,5 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 1. **product-map 是验收基准** — 静态验收以 product-map 为唯一真值，不引入额外需求来源
 2. **只报告不修改代码** — 发现缺口只标记，不自动生成或修改任何实现代码
 3. **频次决定优先级** — IMPLEMENT 任务按 frequency 排序，高频在前
-4. **用户确认 EXTRA 归属** — EXTRA 代码是补录产品地图还是标记删除，由用户决定
-5. **动态失败需用户确认分类** — 失败原因可能是测试环境问题（ENV_ISSUE），不能自动归为代码缺陷
+4. **EXTRA 自动建议归属** — EXTRA 代码由系统自动建议 keep/remove，写入决策日志
+5. **动态失败自动分类** — 基于错误特征自动建议分类（代码缺陷/ENV_ISSUE），写入决策日志

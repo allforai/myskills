@@ -6,7 +6,7 @@ description: >
   "生成任务列表", "从产品设计产物生成开发规格", "产物转换",
   or needs to transform product-design artifacts into per-sub-project requirements, design docs, and atomic task lists.
   Requires project-manifest.json (from project-setup) and product-map artifacts.
-version: "1.2.0"
+version: "1.3.0"
 ---
 
 # Design to Spec — 设计转规格
@@ -47,7 +47,7 @@ manifest.json            requirements + design + tasks  实际文件和目录
 
 ---
 
-## 增强协议（WebSearch + 4E+4V）
+## 增强协议（WebSearch + 4E+4V + OpenRouter）
 
 > 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
 
@@ -63,22 +63,43 @@ manifest.json            requirements + design + tasks  实际文件和目录
 - **E4 Context**: task.value → Value 注释；task.risk_level → Risk 标签；task.frequency → Priority
 - **4V**: 高频+高风险任务的 design.md 至少覆盖 api + data + behavior 三个视角
 
+**OpenRouter 交叉审查**（design.md 是全链路咽喉，此处质量提升下游全受益）：
+- **`api_design_review`** (GPT) — 后端 design.md 生成后，发送 API 端点列表给 GPT 审查：
+  - RESTful 命名规范（资源复数、HTTP 动词语义）
+  - 请求/响应 DTO 字段与数据模型的一致性
+  - 缺失的常见端点（分页、批量操作、健康检查）
+  - 错误码格式统一性
+  - 输出: `{ "issues": [{ "endpoint", "type", "suggestion" }], "missing": [...] }`
+- **`data_model_review`** (DeepSeek) — ER 设计（Mermaid）生成后，发送给 DeepSeek 检查：
+  - 3NF 违反点（传递依赖、冗余字段）
+  - 缺失索引（外键字段、高频查询字段）
+  - 外键关系漏洞（孤立实体、循环依赖）
+  - 命名一致性（表名/字段名风格统一）
+  - 输出: `{ "violations": [{ "table", "field", "type", "fix" }] }`
+- 审查结果合并到 design.md 的 `## Review Notes` 附录（仅有问题时生成）
+- OpenRouter 不可用 → 跳过审查，不阻塞生成
+
 ---
 
-## 规格生成理论支持
+## 规格生成原则
 
-> 详见 `docs/dev-forge-principles.md` — 中段：规格与实现
+> 以下原则在各步骤中强制执行，生成的 spec 必须符合这些规则。
 
-| 理论/框架 | 对应步骤 | 落地方式 |
-|-----------|---------|---------|
-| **Clean Architecture** (Martin, 2017) | Step 3 Tasks 分 Batch | 依赖规则：B1→B2→B3→B4 遵循内→外依赖方向 |
-| **SOLID Principles** (Martin, 2003) | Step 3 原子任务设计 | 单一职责：每任务 1-3 文件、单一目的 |
-| **Hexagonal Architecture** (Cockburn, 2005) | Step 2 Design 生成 | 端口与适配器：API 客户端是端口，mock/真实后端是适配器 |
-| **REST Maturity Model** (Richardson, 2008) | Step 2 API 端点设计 | Level 2：资源 + HTTP 动词 + 状态码 |
-| **Database Normalization** (Codd, 1970) | Step 2 表结构设计 | 从 product-map entities 推导，遵循 3NF |
-| **User Story Mapping** (Patton, 2014) | Step 1 Requirements | 按角色+流程组织用户故事 |
-| **API-First Design** | Step 2 生成顺序 | 先后端 API 端点定义，再前端引用 |
-| **C4 Model** (Brown, 2018) | Step 2 Design 结构 | design.md 按 C4 层级组织（系统→容器→组件→代码） |
+| 原则 | 对应步骤 | 具体规则 |
+|------|---------|---------|
+| 分层依赖方向 | Step 3 | B1(数据模型) → B2(Service/API) → B3(UI页面) → B4(集成) 严格内→外。Controller 不直接调用 Repository，必须经过 Service |
+| 单一职责任务 | Step 3 | 每个原子任务 1-3 文件、15-30 分钟、单一可测结果。禁止出现"实现 XX 系统"这种宽泛任务 |
+| Service 隔离外部调用 | Step 2 | 外部 API/SDK 调用封装为独立 service 文件（如 `ai_client.py`、`speech_service.py`），业务层通过 service 接口调用，不直接 import SDK |
+| RESTful 端点设计 | Step 2 | 资源名用复数名词（`/users`），用 HTTP 动词表达操作（GET/POST/PUT/DELETE），统一错误码格式 `{ code, message, details }` |
+| 数据模型 3NF | Step 2 | 表结构遵循第三范式（消除传递依赖），冗余字段需在 design.md 中标注理由 |
+| 用户故事按角色组织 | Step 1 | requirements.md 按角色分组（"As a {role}"），每组内按 frequency 排序（高频在前） |
+| API-First 生成顺序 | Step 2 | **先生成后端 design.md（表结构→API 端点），再生成前端 design.md（引用已定义的 API）**。前端 design 中 API 调用必须引用后端 design 中的端点 ID |
+| 设计分层展开 | Step 2 | design.md 从表结构开始，逐层展开到 API → 页面 → 组件。每层引用上一层定义 |
+| 输入验证在边界层 | Step 2 | 所有用户输入在 Controller/Handler 层统一验证（whitelist 模式）。SQL 参数化查询，HTML 输出转义。认证中间件在路由注册时声明，不在业务代码中手动检查 |
+| 统一错误处理 | Step 2 | 全局错误中间件捕获未处理异常，返回统一格式 `{ code, message, details }`。业务错误用自定义 Error 类（含 error_code），日志分级 ERROR/WARN/INFO，敏感信息不进日志 |
+| 测试与实现对称 | Step 3 | 每个 B2 Service/API 任务必须对应 B5 测试任务。测试命名 `test_{行为}_{条件}_{预期}`，测试间无共享可变状态，每条测试独立可运行 |
+| 性能基线内建 | Step 2 | 列表 API 强制分页（默认 page_size ≤ 50），有外键关联的字段加数据库索引，禁止 N+1 查询（ORM eager loading 或 JOIN）。大数据量操作走异步任务 |
+| 写操作幂等 | Step 2 | 创建类 API 支持幂等键（`Idempotency-Key` header 或业务唯一约束），更新类 API 使用乐观锁（version 字段或 updated_at 条件更新），并发冲突返回 409 Conflict |
 
 ---
 
@@ -114,6 +135,9 @@ manifest.json            requirements + design + tasks  实际文件和目录
 | task.value | requirements.md | 业务价值注释（E4 Context） | E4 |
 | task.risk_level | requirements.md + tasks.md | 风险标签 → review 优先级 | E4 |
 | constraints.code_status | requirements.md | hard 约束 → 验证中间件需求 | E3 |
+| forge-decisions.technical_spikes | design.md | spike.affected_tasks 匹配当前子项目任务 → 生成「Third-Party Integrations」章节 | E4 |
+| forge-decisions.coding_principles | design.md | universal + project_specific → 生成「Coding Principles」约束章节 | E4 |
+| spike.implementation_principles | design.md | 每个匹配 spike 的实现原则 → 写入对应集成章节 | E4 |
 
 ---
 
@@ -185,13 +209,14 @@ manifest.json            requirements + design + tasks  实际文件和目录
   若 project-manifest.json 不存在 → 提示先运行 /project-setup，终止
   若 product-map.json 不存在 → 提示先运行 /product-map，终止
   加载 prune-decisions.json → 过滤: 仅 CORE 和 DEFER 任务进入范围
+  加载 forge-decisions.json → 读取 technical_spikes + coding_principles（存在时）
   ↓
 Step 0: 模块映射验证
   检查 manifest 中所有子项目的 assigned_modules
   合并后与 task-index 的全量模块对照
-  未覆盖的模块 → AskUserQuestion 解决:
-    分配给某个子项目 / 标记暂缓 / 移除
-  → 确认后更新 project-manifest.json
+  未覆盖的模块：
+    → 自动分配到最匹配的子项目（按模块类型推断），记录决策（不停）
+  → 更新 project-manifest.json
   ↓
 Step 1: Requirements 生成（逐子项目）
   对每个子项目:
@@ -252,9 +277,42 @@ Step 2: Design 生成（逐子项目，API-first 策略）
       task.approver_role → 审批流 API（审批端点 + 状态流转）
       task.config_items → 配置管理设计（配置端点/表）
       task.cross_dept_roles → 集成点设计（webhook/回调端点）
+    按需生成的 Coding Principles 章节（forge-decisions.json 存在 coding_principles 时）:
+      ## Coding Principles
+      ### 通用原则
+        coding_principles.universal → 逐条列出
+      ### 项目特定原则
+        coding_principles.project_specific → 逐条列出（含 spike/constraint 溯源标记）
+      此章节写在 design.md 开头（数据模型之前），作为全文件的架构约束前言
+    按需生成的 Technical Spike 集成章节（forge-decisions.json 存在 technical_spikes 时）:
+      过滤 technical_spikes 中 affected_tasks 与当前子项目任务有交集的 spike
+      每个匹配的 spike → 生成 Third-Party Integrations 子章节:
+        - Vendor + SDK（from spike.decision.vendor / spike.decision.sdk）
+        - Integration approach（from spike.decision.approach）
+        - Implementation principles（from spike.implementation_principles → 逐条列出）
+        - Affected endpoints / components（根据子项目类型推导）
+        - spike.status = "tbd" → 标注 [PENDING: 技术方案待定，后续确认后补充]
     → 写入 .allforai/project-forge/sub-projects/{name}/design.md
     → 输出进度: 「{name}/design.md ✓ ({N} API端点, {M} 页面)」（不停，汇总到 Step 5）
   **生成顺序**: 后端 design.md 先于前端，确保前端 design 可直接引用 API 端点定义
+  ↓
+Step 2.5: Design 交叉审查（OpenRouter 可用时）
+  后端 design.md 生成后，触发两项交叉审查:
+  审查 A — API 设计审查 (GPT):
+    提取 design.md 中所有 API 端点（路径+方法+请求/响应 DTO）
+    调用: mcp__openrouter__ask_model(task: "structured_output", model_family: "gpt")
+    审查: RESTful 规范、DTO 一致性、缺失端点、错误码统一
+    输出: issues[] + missing[]
+  审查 B — 数据模型审查 (DeepSeek):
+    提取 design.md 中 ER 设计（Mermaid + 字段定义）
+    调用: mcp__openrouter__ask_model(task: "technical_validation", model_family: "deepseek")
+    审查: 3NF 违反、缺失索引、外键漏洞、命名一致性
+    输出: violations[]
+  结果处理:
+    有问题 → 在 design.md 末尾追加 ## Review Notes 附录（按问题严重度排列）
+    无问题 → 不追加
+    → 输出进度: 「Step 2.5 交叉审查 ✓ API {N} issues, Model {M} violations」
+  OpenRouter 不可用 → 跳过，输出: 「Step 2.5 ⊘ OpenRouter 不可用，跳过交叉审查」
   ↓
 Step 3: Tasks 生成（逐子项目）
   按开发层分 Batch，每任务遵循原子标准:
@@ -292,7 +350,7 @@ Step 5: 阶段末汇总确认
   执行顺序: B0 → B1(并行) → B2 → B3(并行) → B4 → B5
   总任务数: CORE {N} + DEFER {M}
 
-  → AskUserQuestion: 确认继续 / 需要调整（指定子项目和文档，重新生成该部分）
+  → 输出汇总进度「Phase 2 ✓ {N} 子项目 × 3 文档, CORE {M} 任务」（不停）
 ```
 
 ---

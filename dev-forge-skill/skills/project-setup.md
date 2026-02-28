@@ -62,18 +62,18 @@ product-map（产品长什么样）   project-setup（代码怎么组织）   de
 
 ---
 
-## 架构决策理论支持
+## 架构决策原则
 
-> 详见 `docs/dev-forge-principles.md` — 前段：架构决策
+> 以下原则在各步骤中强制执行，违反时向用户报告。
 
-| 理论/框架 | 对应步骤 | 落地方式 |
-|-----------|---------|---------|
-| **Unix Philosophy** (McIlroy, 1978) | Step 1 子项目拆分 | "做一件事做好"：每子项目只承担一个职责 |
-| **Conway's Law** (Conway, 1968) | Step 1 子项目拆分 | 按角色/团队边界拆分，架构映射组织结构 |
-| **Bounded Context** (Evans, 2003) | Step 3 模块分配 | 同一业务概念在不同端可有不同视角 |
-| **Twelve-Factor App** (Wiggins, 2011) | Step 4 基础配置 | 配置外置(.env)、端口绑定、依赖隔离 |
-| **C4 Model** (Brown, 2018) | Step 5 manifest 生成 | manifest 对应 C4 的 Container 层视图 |
-| **Microservices Patterns** (Richardson, 2018) | Step 1 子项目拆分 | 按业务能力 / 按子域 / 按技术栈的拆分策略 |
+| 原则 | 对应步骤 | 具体规则 |
+|------|---------|---------|
+| 单一职责拆分 | Step 1 | 每子项目只承担一个端类型职责（backend/admin/mobile），禁止前后端混合在同一子项目 |
+| 按角色边界拆分 | Step 1 | consumer 角色 → 消费者前端；producer/admin 角色 → 管理后台；共享 API → 后端。不同角色类型不混入同一前端 |
+| 上下文隔离 | Step 3 | 同一业务实体在不同端可有不同字段视角（如 Order 在 admin 有审核字段，在 consumer 无）。跨子项目通过 shared-types 共享基础类型 |
+| 配置外置 | Step 4 | 数据库/API 地址/密钥等全部走 `.env`，代码中禁止硬编码。每子项目独立 `.env.example` |
+| 端口隔离 | Step 4 | 每子项目独占端口（从 stacks.json 默认端口分配），禁止端口冲突 |
+| manifest 即合约 | Step 5 | 所有项目结构决策写入 project-manifest.json，下游 skill 只读 manifest，不从对话上下文推测 |
 
 ---
 
@@ -87,18 +87,17 @@ product-map（产品长什么样）   project-setup（代码怎么组织）   de
 前置: Preflight 偏好检测
       读取 .allforai/project-forge/forge-decisions.json → preflight 字段
       若 preflight 存在且 confirmed_at 非空:
-        → preflight 模式：后续 Step 中标记「若有 preflight → 跳过」的 AskUserQuestion 直接读取 preflight 值
+        → 直接读取 preflight 值，跳过所有偏好选择（不停）
         → 输出: 「检测到 Preflight 偏好配置，以下选择将自动应用: {摘要}」
       若 preflight 不存在:
-        → 兼容模式：所有 AskUserQuestion 正常执行（向后兼容单独 /project-setup）
+        → 自动采用推荐值（不停）：后端 Go+Gin、前端 Next.js、移动端 Flutter、Monorepo manual、Auth JWT
       ↓
 Step 0: 模式识别
   existing 模式: 扫描工作目录下的 package.json / requirements.txt / go.mod / pom.xml 等
     → 自动检测已有子项目和技术栈
     → 与 product-map 模块对照，识别缺口
   new 模式: 从空白开始
-  → 若从 project-forge 编排调用（forge-decisions.json 存在）→ 模式已确定，跳过
-  → 若单独 /project-setup → AskUserQuestion 确认模式
+  → 模式已确定（从参数或 forge-decisions.json 读取），自动继续（不停）
   ↓
 Step 1: 子项目拆分 + Monorepo 工具选择
   分析 product-map 中的角色和模块
@@ -109,15 +108,13 @@ Step 1: 子项目拆分 + Monorepo 工具选择
     全部角色共享 → API 后端
     有移动端需求 → 移动端子项目
   → 生成子项目列表（不停，汇总到 Step 5）
-  AskUserQuestion: 选择 monorepo 工具 (pnpm workspace / Turborepo / Nx / 手动管理)
-    → 若有 preflight → 跳过，使用 preflight.monorepo_tool
+  自动选择 monorepo 工具: preflight.monorepo_tool（有 preflight 时）或推荐值（不停）
   → 每个子项目: id, name, type(backend/admin/web-customer/web-mobile/mobile-native)
   ↓
 Step 2: 技术栈选择（逐子项目）
   对每个子项目:
     读取 templates/stacks.json → 过滤匹配 type 的模板
-    AskUserQuestion: 从预设模板中选择
-      → 若有 preflight → 跳过，使用 preflight.tech_preferences[子项目type].template_id
+    自动选择: preflight.tech_preferences[子项目type].template_id（有 preflight 时）或推荐值（不停）
     → 记录选择到 tech-profile.json
   ↓
 Step 3: 模块分配（逐子项目）
@@ -132,8 +129,7 @@ Step 3: 模块分配（逐子项目）
   ↓
 Step 4: 基础配置
   每子项目自动分配: 端口号（基于 stacks.json 默认端口，避免冲突）、base path
-  AskUserQuestion: 确认 auth 策略 (JWT / Session / OAuth / 无)
-    → 若有 preflight → 跳过，使用 preflight.auth_strategy
+  自动选择 auth 策略: preflight.auth_strategy（有 preflight 时）或 JWT（不停）
   → 自动分配端口（不停，汇总到 Step 5）
   ↓
 Step 5: 生成 manifest + 汇总确认
@@ -142,7 +138,7 @@ Step 5: 生成 manifest + 汇总确认
     | 子项目 | 类型 | 技术栈 | 模块 | 端口 |
     | 配置: Monorepo / Auth |
     | 模块覆盖率 |
-  → AskUserQuestion: 确认 / 调整（逐项修改后重新生成 manifest）
+  → 输出汇总进度「Phase 1 ✓ {N} 子项目, {M} 模块, 覆盖率 100%」（不停）
 ```
 
 ---
@@ -277,11 +273,9 @@ Controller → Service → Repository
   - CQRS 可选（读写分离）
 ```
 
-AskUserQuestion 在后端子项目的 Step 2 中：
-- "后端架构模式？" → 三层架构 (推荐: CRUD 为主) / DDD (推荐: 复杂业务)
-  → 若有 preflight → 跳过，使用 preflight.tech_preferences.backend.architecture
-- 选择 DDD 时追问: "是否启用 CQRS？" → 是 / 否
-  → 若有 preflight → 跳过，使用 preflight.tech_preferences.backend.cqrs
+后端子项目 Step 2 中自动选择：
+- 后端架构模式: preflight.tech_preferences.backend.architecture（有 preflight 时）或按 product-map 复杂度推断（不停）
+- CQRS: preflight.tech_preferences.backend.cqrs（有 preflight 时）或 false（不停）
 
 ---
 
@@ -320,12 +314,10 @@ AskUserQuestion 在后端子项目的 Step 2 中：
    → 不进入全局状态
 ```
 
-AskUserQuestion 在前端子项目的 Step 2 中：
-- "状态管理方案？" → 列出与框架匹配的选项
-  → 若有 preflight → 跳过，使用 preflight.tech_preferences[子项目type].state_management
-- "服务端缓存方案？" → TanStack Query (推荐) / SWR / 手动管理
-  → 若有 preflight → 跳过，使用 preflight.tech_preferences[子项目type].server_cache
-- 选择后记录到 manifest 的 `state_management` 字段
+前端子项目 Step 2 中自动选择：
+- 状态管理: preflight.tech_preferences[子项目type].state_management（有 preflight 时）或按框架推荐（不停）
+- 服务端缓存: preflight.tech_preferences[子项目type].server_cache（有 preflight 时）或 TanStack Query（不停）
+- 记录到 manifest 的 `state_management` 字段
 
 ---
 
@@ -339,7 +331,7 @@ Step 0 扫描策略:
   4. 与 product-map 模块对照:
      - 已实现的模块 → 标记 is_existing: true
      - 未实现的模块 → 标记为缺口，需要新建或补充
-  5. 向用户展示检测结果，确认后继续
+  5. 输出检测结果，自动继续（不停）
 ```
 
 ---
@@ -385,13 +377,13 @@ Step 0 扫描策略:
 
 ### 2. 阶段末汇总确认
 
-中间步骤连续执行不停顿。Step 5 展示完整汇总，用户一次确认或逐项调整。
+中间步骤连续执行不停顿。Step 5 输出完整汇总，自动继续（不停）。
 偏好类问题（技术栈/架构/状态管理/缓存/认证）由 `forge-decisions.json` 的 `preflight` 提供，不再询问。
 单独 `/project-setup`（无 forge-decisions.json）时，Step 0 保留模式确认。
 
 ### 3. 模块必须全覆盖
 
-Step 3 结束后，task-index 中的所有模块都必须被分配到至少一个子项目。未覆盖的模块必须在用户确认下解决。
+Step 3 结束后，task-index 中的所有模块都必须被分配到至少一个子项目。未覆盖的模块自动分配到最匹配的子项目。
 
 ### 4. 技术栈选择基于模板
 

@@ -41,15 +41,15 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 2. 加载 `${CLAUDE_PLUGIN_ROOT}/templates/monorepo.md` — monorepo 配置模板
 3. 加载 `${CLAUDE_PLUGIN_ROOT}/templates/mock-server.md` — mock 后端模板
 4. 按 Step 0 → 1 → 2 → 3 → 4 → 5 → 6 顺序执行
-5. 每个 Step 完成后向用户展示结果摘要，等待确认
+5. 每个 Step 完成后输出结果摘要，自动进入下一个 Step
 
 ## Step 执行要求
 
 每个 Step 完成后：
 1. 将生成的文件写入项目目录
 2. 更新 scaffold-manifest.json
-3. 向用户展示结果摘要（生成了多少文件、哪些子项目）
-4. 等待用户确认后才进入下一个 Step
+3. 输出结果摘要（生成了多少文件、哪些子项目）
+4. 自动进入下一个 Step（不停）
 
 ## 报告输出要求（强制执行）
 

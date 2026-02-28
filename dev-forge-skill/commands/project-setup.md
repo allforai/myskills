@@ -29,16 +29,16 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 1. 用 Read 工具加载 `${CLAUDE_PLUGIN_ROOT}/skills/project-setup.md` 获取完整工作流定义
 2. 按 Step 0 → 1 → 2 → 3 → 4 → 5 顺序执行
-3. 每个 Step 完成后向用户展示结果摘要，等待确认
+3. 每个 Step 完成后输出结果摘要，自动进入下一个 Step
 
 ## Step 执行要求
 
 每个 Step 完成后：
 1. 将中间结果暂存对话上下文
-2. 向用户展示结果摘要
-3. 等待用户确认后才进入下一个 Step
+2. 输出结果摘要
+3. 自动进入下一个 Step（不停）
 
-最终确认后写入文件：
+最终自动写入文件：
 - `.allforai/project-forge/project-manifest.json`
 - `.allforai/project-forge/project-manifest-report.md`
 - `.allforai/project-forge/forge-decisions.json`
@@ -83,7 +83,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 > 完整定义见 `${CLAUDE_PLUGIN_ROOT}/skills/project-setup.md` 的铁律章节。
 
 1. **只问选择题** — 选项基于 product-map 和 stacks.json
-2. **每步确认** — 不跳步
+2. **自动推进** — 每步完成后自动继续，不停等确认
 3. **模块全覆盖** — 所有模块必须被分配
 4. **模板内选择** — 只推荐已注册技术栈
 5. **manifest 是合约** — 下游 skill 消费 project-manifest.json

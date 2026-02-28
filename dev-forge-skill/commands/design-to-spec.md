@@ -39,14 +39,14 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 1. 用 Read 工具加载 `${CLAUDE_PLUGIN_ROOT}/skills/design-to-spec.md` 获取完整工作流定义
 2. 加载各子项目的 tech-profile.json（从 `.allforai/project-forge/sub-projects/{name}/`）
 3. 按 Step 0 → 1 → 2 → 3 → 4 顺序执行
-4. 每个 Step 完成后向用户展示结果摘要，等待确认
+4. 每个 Step 完成后输出结果摘要，自动进入下一个 Step
 
 ## Step 执行要求
 
 每个 Step 完成后：
 1. 将结果写入 `.allforai/project-forge/sub-projects/{name}/` 对应文件
-2. 向用户展示结果摘要（任务数、需求项数、覆盖率等）
-3. 等待用户确认后才进入下一个 Step
+2. 输出结果摘要（任务数、需求项数、覆盖率等）
+3. 自动进入下一个 Step（不停）
 
 输出文件（每子项目）：
 - `requirements.md`（Step 1）

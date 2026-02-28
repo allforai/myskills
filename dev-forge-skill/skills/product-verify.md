@@ -24,7 +24,7 @@ version: "1.3.0"
 
 发现差异，生成三类任务清单：
 - **IMPLEMENT** — 产品地图有但代码没有（漏实现）
-- **REMOVE_EXTRA** — 代码有但产品地图没有（多余代码，需用户确认去留）
+- **REMOVE_EXTRA** — 代码有但产品地图没有（多余代码，自动建议 keep/remove）
 - **FIX_FAILING** — 代码有但行为不符合预期（测试失败）
 
 ---
@@ -58,7 +58,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 ---
 
-## 增强协议（WebSearch + 4E+4V）
+## 增强协议（WebSearch + 4E+4V + OpenRouter）
 
 > 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
 
@@ -71,19 +71,24 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 - **E3 Guardrails**: 扩展 S3 约束检查范围：覆盖 task.rules（业务规则验证逻辑）+ task.audit（审计中间件）+ task.exceptions（异常处理逻辑）
 - **E2 Provenance**: 每条 verify-task 标注 `_Source: T001_`，可追溯到 product-map 任务
 
+**OpenRouter 覆盖交叉验证**：
+- **`code_impl_review`** (DeepSeek) — S5 步骤，详见工作流中 S5 节
+- 审查 S1/S3 的 covered 判定是否存在假阳性（路由在但 handler 为空桩）
+
 ---
 
-## 产品验收理论支持
+## 产品验收原则
 
-> 详见 `docs/dev-forge-principles.md` — 尾段：验证与交付
+> 以下原则在各步骤中强制执行。
 
-| 理论/框架 | 对应步骤 | 落地方式 |
-|-----------|---------|---------|
-| **ATDD** (Beck, 2003) | Step 1 静态验收 | 验收条件来自 use-case，先有条件再验证实现 |
-| **Heuristic Evaluation** (Nielsen, 1994) | Step 2 动态验收 | 10 条启发式原则辅助判断 UI 可用性问题 |
-| **Shift-Left Quality** (Forrester, 2016) | 整体时机 | 静态扫描不需运行应用，尽早发现覆盖缺口 |
-| **Hexagonal Architecture** (Cockburn, 2005) | Step 1 路由扫描 | 通过端口（路由/端点）验证核心逻辑是否暴露 |
-| **Test Pyramid** (Cohn, 2009) | Step 2 动态策略 | 动态验收聚焦关键路径，不重复单元测试覆盖的逻辑 |
+| 原则 | 对应步骤 | 具体规则 |
+|------|---------|---------|
+| 先有条件再验证 | Step 1 静态 | 验收条件必须来自 use-case-tree.json 的 Given/When/Then，不自行编造验收标准 |
+| 可用性启发式检查 | Step 2 动态 | 每个页面检查：错误状态有提示、加载有反馈、操作可撤销、导航一致、权限拒绝有说明 |
+| 静态先行 | 整体时机 | 静态扫描（代码+路由+文件匹配）不需要启动应用，优先执行，尽早发现覆盖缺口 |
+| 从路由验证覆盖 | Step 1 路由扫描 | 扫描实际路由/端点文件，与 product-map 任务列表对照。路由存在 = 功能已暴露，路由缺失 = 功能未实现 |
+| E2E 只覆盖关键路径 | Step 2 动态 | 动态验收聚焦 business-flows 中的主路径，不重复验证已有单元测试覆盖的底层逻辑 |
+| 交叉验证降低盲区 | S5 交叉验证 | S1-S4 的 covered 判定基于模式匹配，可能存在假阳性（路由在但 handler 为空桩）。通过 OpenRouter 调用第二模型读实际代码片段独立判断，标记分歧项为 REVIEW_NEEDED |
 
 ---
 
@@ -130,13 +135,33 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
       反向：扫描代码路由，找出未在产品地图中出现的端点
       → 输出进度: 「S4 Extra ✓ {N} 端点不在产品地图中」
   ↓
+  S5: Cross-Model 交叉验证（OpenRouter 可用时）
+      目的: 降低 S1/S3 模式匹配的假阳性（路由在但 handler 为空桩/TODO）
+      输入: S1 中 status=covered 的任务 + S3 中 status=covered 的约束
+      流程:
+        1. 对每个 covered 项，Read 匹配文件的关键代码段（路由 handler ±15 行）
+        2. 调用 OpenRouter DeepSeek（task: "technical_validation"）:
+           prompt: 任务描述 + 代码片段 → 判断: genuine / stub / partial
+        3. DeepSeek 判定与 Claude 分歧的项 → 标记 REVIEW_NEEDED
+        4. 高频任务（frequency=高）优先审查，低频可跳过以控制成本
+      成本控制:
+        covered 项 ≤ 20 → 全量审查
+        covered 项 > 20 → 仅审查 frequency=高 + risk_level=高 的项
+      OpenRouter 不可用 → 跳过 S5，输出: 「S5 交叉验证 ⊘ OpenRouter 不可用，跳过」
+      → 输出进度: 「S5 交叉验证 ✓ {N} 项审查, {M} 项分歧(REVIEW_NEEDED)」
+  ↓
   静态汇总确认（单次交互）:
     展示覆盖率汇总表:
-    | 检查项 | 已覆盖 | 缺失 | 部分 |
-    |--------|--------|------|------|
-    | S1 Task→API | {N} | {M} | {K} |
-    | S2 Screen→组件 | {N} | {M} | — |
-    | S3 约束→代码 | {N} | {M} | — |
+    | 检查项 | 已覆盖 | 缺失 | 部分 | 分歧 |
+    |--------|--------|------|------|------|
+    | S1 Task→API | {N} | {M} | {K} | {J} |
+    | S2 Screen→组件 | {N} | {M} | — | — |
+    | S3 约束→代码 | {N} | {M} | — | {J} |
+
+    REVIEW_NEEDED 分歧项（S5 交叉验证发现）:
+    | 任务/约束 | Claude 判定 | DeepSeek 判定 | 代码位置 | 理由 |
+    |----------|------------|--------------|---------|------|
+    | T005 创建退款 | covered | stub | routes/refund.ts:23 | handler 仅返回 TODO 注释 |
 
     IMPLEMENT 候选: {N} 项（按频次排序）
     EXTRA 端点（自动建议）:
@@ -145,14 +170,14 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
     | /api/legacy/export | ignore | 无匹配任务，可能历史遗留 |
     | /api/internal/sync | ignore | 内部同步，不面向用户 |
 
-    → AskUserQuestion: 确认全部 / 调整 EXTRA 决策
+    → 自动采纳全部建议决策（不停）
 
 [Dynamic 阶段]（dynamic / full 模式）
   D0: 应用可达性预检
       自动检测 URL（Grep 代码配置 PORT/listen/.env）
       HTTP 请求验证可达性
       可达 → 继续（不停）
-      不可达 → AskUserQuestion: 启动后重试 / 跳过 dynamic
+      不可达 → 记录为 ENV_ISSUE，跳过 dynamic 阶段（不停）
   D1: 加载/推导测试序列
       use-case-tree.json 存在 → 提取正常流 + E2E 用例
       不存在 → 从 task-inventory.json 自动推导（高/中频任务）
@@ -164,7 +189,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
   D4: 自动分类 + 批量确认（单次交互）
       基于错误特征自动建议分类（FIX_FAILING / ENV_ISSUE）
       展示通过数 + 失败项汇总表（含自动建议分类及理由）
-      → AskUserQuestion: 确认全部分类 / 逐条调整
+      → 自动采纳全部建议分类（不停）
 
 生成输出文件：
   static-report.json / dynamic-report.json / verify-tasks.json / verify-report.md
@@ -250,6 +275,56 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 ---
 
+### S5：Cross-Model 交叉验证
+
+**目的**：S1 和 S3 的 covered 判定基于 Glob+Grep 模式匹配，存在假阳性风险——路由文件存在但 handler 内容为 `TODO`、空函数、或仅返回 mock 数据。通过 OpenRouter 调用第二模型（DeepSeek）读取实际代码片段，独立判断是否真正实现。
+
+**触发条件**：OpenRouter MCP 可用时自动执行。不可用时跳过并在汇总中标注。
+
+**审查范围**（成本控制）：
+
+| covered 总数 | 审查策略 |
+|-------------|---------|
+| ≤ 20 项 | 全量审查所有 covered 项 |
+| 21-50 项 | 仅审查 frequency=高 + risk_level=高 的 covered 项 |
+| > 50 项 | 仅审查 frequency=高 的 covered 项（上限 30 项） |
+
+**执行流程**：
+
+```
+对每个待审查的 covered 项:
+  1. Read 匹配文件（matched_routes / matched_code 中的文件路径）
+     提取路由 handler / 校验逻辑的关键代码段（匹配行 ±15 行，上限 50 行）
+  2. 构造审查 prompt:
+     角色: 你是一位严格的代码审查员
+     任务描述: "{task_name}: {task 简述}"
+     代码片段: （上一步提取的代码）
+     判断标准:
+       genuine — handler 包含实际业务逻辑（数据库操作/服务调用/条件判断）
+       stub — handler 为空函数、仅返回固定值、包含 TODO/FIXME、或仅 console.log
+       partial — handler 有部分逻辑但明显不完整（如只处理了 happy path，缺少错误处理）
+     输出: { "verdict": "genuine|stub|partial", "reason": "一句话理由" }
+  3. 调用 OpenRouter:
+     mcp__openrouter__ask_model(
+       task: "technical_validation",
+       model_family: "deepseek",
+       prompt: 上述 prompt
+     )
+  4. 比对结果:
+     Claude covered + DeepSeek genuine → 确认 covered（无分歧）
+     Claude covered + DeepSeek stub → 标记 REVIEW_NEEDED（假阳性嫌疑）
+     Claude covered + DeepSeek partial → 标记 REVIEW_NEEDED（实现不完整）
+```
+
+**分歧处理**：REVIEW_NEEDED 项在静态汇总中单独展示，用户可选：
+- `downgrade` — 将 covered 降级为 missing（加入 IMPLEMENT 候选）
+- `keep` — 维持 covered（代码足够）
+- `partial` — 标记为 partial（生成补全任务）
+
+**输出**：写入 `static-report.json` 的 `cross_model_review` 字段。
+
+---
+
 ### D0：应用可达性预检
 
 **目的**：在启动 Playwright 测试前确认应用可访问，避免浪费时间。
@@ -258,7 +333,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 1. 自动检测：Grep 代码中的 `PORT`、`listen`、`localhost`、`.env` 等配置，推测应用 URL
 2. 使用 Bash `curl -s -o /dev/null -w "%{http_code}" <URL>` 验证 HTTP 可达性
 3. 可达 → 继续（不停）
-4. 不可达 → AskUserQuestion: 启动后重试 / 跳过 dynamic
+4. 不可达 → 记录为 ENV_ISSUE，跳过 dynamic 阶段（不停）
 
 **输出**：确认的 `app_url` 写入 `dynamic-report.json` 的 `app_url` 字段。
 
@@ -329,13 +404,8 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 | UC005 导出报表 | Step 1 | Connection refused | ENV_ISSUE | 连接拒绝 |
 | UC008 批量删除 | Step 2 | Element not found | FIX_FAILING | 元素缺失 |
 
-→ AskUserQuestion: 确认全部分类 / 逐条调整
+→ 自动采纳全部建议分类（不停）
 ```
-
-用户可选操作：
-- 确认全部自动建议分类
-- 逐条调整：将某项从 `FIX_FAILING` 改为 `ENV_ISSUE` 或 `DEFERRED`，反之亦然
-- `DEFERRED` — 用户标记暂缓，不生成任务
 
 ---
 
@@ -357,6 +427,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 | S2: Screen → 组件覆盖 | **跳过** | 界面覆盖需全量比对才有意义 |
 | S3: 约束 → 代码覆盖 | 仅检查 `--tasks` 关联的约束 | 增量：只验证本 Round 涉及的约束 |
 | S4: Extra 代码扫描 | **跳过** | 反向扫描需全量，增量无意义 |
+| S5: 交叉验证 | 仅审查 `--tasks` 中 covered 的项 | 增量：只交叉验证本 Round 的结果 |
 | Dynamic (D0-D4) | **跳过** | 动态测试留给 full 模式 |
 
 **输出**：结果追加到 `static-report.json`（不覆盖之前的全量结果），同时返回给调用方（task-execute）用于写入 build-log.json 的 `verification` 字段。
@@ -414,7 +485,28 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
       "file": "src/routes/legacy.ts:15",
       "decision": "add_to_map | mark_remove | ignore | pending"
     }
-  ]
+  ],
+  "cross_model_review": {
+    "enabled": true,
+    "model": "deepseek",
+    "reviewed_count": 12,
+    "results": [
+      {
+        "source_step": "S1",
+        "item_id": "T005",
+        "item_name": "创建退款",
+        "claude_verdict": "covered",
+        "deepseek_verdict": "stub",
+        "deepseek_reason": "handler 仅包含 // TODO: implement refund logic",
+        "matched_file": "src/routes/refund.ts:23",
+        "resolution": "downgrade | keep | partial | pending"
+      }
+    ],
+    "summary": {
+      "agree": 10,
+      "disagree": 2
+    }
+  }
 }
 ```
 
@@ -508,5 +600,5 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 1. **product-map 是验收基准** — 静态验收以 product-map.json 为唯一真值，不引入额外需求来源；有争议的功能先补充到产品地图，再重跑验收
 2. **只报告不修改代码** — 发现缺口只标记到 verify-tasks.json，不自动生成、修改或删除任何实现代码
 3. **频次决定优先级** — IMPLEMENT 任务按 frequency 排序，高频漏实现优先于低频；低频漏实现仅列出不主动建议
-4. **用户确认 EXTRA 归属** — EXTRA 代码在静态汇总中批量展示（含自动建议），用户一次确认或逐条调整
-5. **动态失败需用户确认分类** — 基于错误特征自动建议分类，在动态汇总中批量展示，用户一次确认或逐条调整；自动建议不等于自动归类，用户仍是最终决策者
+4. **EXTRA 自动建议归属** — EXTRA 代码由系统自动建议 keep/remove，写入决策日志
+5. **动态失败自动分类** — 基于错误特征自动建议分类（FIX_FAILING / ENV_ISSUE），自动采纳写入决策日志

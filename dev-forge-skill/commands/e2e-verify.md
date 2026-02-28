@@ -47,8 +47,8 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 每个 Step 完成后：
 1. 将结果写入 `.allforai/project-forge/` 对应文件
-2. 向用户展示结果摘要
-3. 等待用户确认后才进入下一个 Step
+2. 输出结果摘要
+3. 自动进入下一个 Step（不停）
 
 输出文件：
 - `e2e-scenarios.json`（Step 1）
@@ -100,7 +100,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 > 完整定义见 `${CLAUDE_PLUGIN_ROOT}/skills/e2e-verify.md` 的铁律章节。
 
 1. **场景来自业务流** — 不凭空编造
-2. **用户确认场景** — 执行前确认列表
+2. **场景自动确认** — 推导完成后自动执行
 3. **失败分类需确认** — 不自动归类
 4. **不修改代码** — 只记录问题
 5. **原生端降级** — 标记为手动验证点

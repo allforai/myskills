@@ -55,8 +55,8 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 每个 Step 完成后：
 1. 将结果写入 `.allforai/seed-forge/` 目录下对应的 JSON 文件（**输出目录保持 .allforai/seed-forge/，向后兼容**）
-2. 向用户展示结果摘要
-3. 等待用户确认后才进入下一个 Step
+2. 输出结果摘要
+3. 自动进入下一个 Step（不停）
 
 输出文件（均在 `.allforai/seed-forge/` 下）：
 - `model-mapping.json`（Step 0，替代旧的 project-analysis.json）

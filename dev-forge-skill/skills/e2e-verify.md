@@ -20,7 +20,7 @@ version: "1.2.0"
 1. **场景推导** — 从 business-flows 提取跨角色/跨子项目流程
 2. **端点映射** — 每个流程步骤映射到具体子项目的 URL + 操作
 3. **Playwright 执行** — 跨子项目浏览器自动化测试
-4. **失败分类** — 用户确认失败原因（代码缺陷 / 环境问题 / 暂缓）
+4. **失败分类** — 自动分类失败原因（代码缺陷 / 环境问题 / 暂缓）
 5. **报告输出** — 按子项目汇总结果 + 需修复的问题
 
 ---
@@ -52,7 +52,7 @@ product-verify（单端验收）   e2e-verify（跨端验证）
 
 ---
 
-## 增强协议（WebSearch + 4E+4V）
+## 增强协议（WebSearch + 4E+4V + OpenRouter）
 
 > 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
 
@@ -65,19 +65,27 @@ product-verify（单端验收）   e2e-verify（跨端验证）
 - **E3 Guardrails**: 从 task.exceptions 推导负向测试场景（异常路径 E2E）
 - **behavior 视角**: 从 task.outputs.states 验证状态流转的跨端一致性
 
+**OpenRouter 场景补全**：
+- **`test_scenario_gap`** (Gemini) — Step 1 场景推导后，将场景列表 + 业务流摘要发给 Gemini：
+  - 审查: 是否有明显遗漏的边界场景（并发操作、竞态条件、数据不一致）
+  - Gemini 发散思维擅长想到"不显而易见"的边界情况
+  - 输出: `{ "missing_scenarios": [{ "name", "type", "reason" }] }`
+  - 补充的场景标记 `source: "cross_model_suggestion"`，用户在 Step 3 批量确认时可选择纳入或忽略
+- OpenRouter 不可用 → 跳过，仅使用 Claude 推导的场景
+
 ---
 
-## 跨端验证理论支持
+## 跨端验证原则
 
-> 详见 `docs/dev-forge-principles.md` — 尾段：验证与交付
+> 以下原则在各步骤中强制执行。
 
-| 理论/框架 | 对应步骤 | 落地方式 |
-|-----------|---------|---------|
-| **Test Pyramid** (Cohn, 2009) | 整体策略 | E2E 在金字塔顶层，仅覆盖跨端关键业务路径，不替代单元测试 |
-| **Test Trophy** (Dodds, 2019) | Step 1 场景推导 | 场景来自 business-flows 实际业务流，集成测试优先 |
-| **Contract Testing** (Pact) | Step 2 API 验证步骤 | 前端→后端 API 调用的数据结构一致性验证 |
-| **BDD** (North, 2006) | Step 1 场景格式 | 场景描述遵循 Given/When/Then，步骤对应业务行为 |
-| **Shift-Left Testing** (Forrester, 2016) | 整体时机 | mock-server 阶段即可运行前端部分 E2E，不等后端完成 |
+| 原则 | 对应步骤 | 具体规则 |
+|------|---------|---------|
+| E2E 只覆盖关键业务路径 | 整体策略 | 仅验证 business-flows.json 中定义的跨端流程，不替代单元测试。每条 flow = 1 个 E2E 场景 |
+| 场景来自业务流+用例 | Step 1 | 正向场景从 business-flows.json 推导（flow 主路径），负向场景从 use-case-tree.json 的 exception/boundary 用例推导。禁止自行编造场景 |
+| API 契约一致性 | Step 2 | 前端调用的 API 路径/参数/响应格式必须与后端实际端点一致。不一致 = FIX_REQUIRED |
+| Given/When/Then 格式 | Step 1 | 场景步骤必须遵循 Given（前置状态）/When（用户操作）/Then（预期结果），每步对应一个可断言的行为 |
+| mock 阶段可先跑 | 整体时机 | mock-server 启动后即可运行前端 E2E（连 mock），不需要等后端完成。后端完成后切真实 API 重跑 |
 
 ---
 
@@ -93,10 +101,8 @@ Step 0: 应用可达性检查
   逐子项目检查端口可访问:
     Bash curl -s -o /dev/null -w "%{http_code}" http://localhost:{port}/health
   全部可达 → 继续
-  部分不可达 → 列出不可达项目，AskUserQuestion:
-    a. 用户启动后重试
-    b. 跳过不可达项目的场景
-    c. 终止
+  部分不可达：
+    → 记录不可达项目为 ENV_ISSUE，跳过其场景（不停）
   ↓
 Step 1: 跨端场景推导
   1-A 正向场景（从 business-flows）:
@@ -132,6 +138,19 @@ Step 1: 跨端场景推导
     backend → 作为 API 提供者，通过 API 调用验证
   → 输出进度: 「E2E 场景 ✓ 正向 {N} + 负向 {M}」（不停，场景列表在 Step 3 批量确认中展示）
   → 写入 .allforai/project-forge/e2e-scenarios.json
+  ↓
+Step 1.5: 场景补全审查（OpenRouter 可用时）
+  将 Step 1 场景列表摘要 + 业务流关键信息发给 Gemini
+  调用: mcp__openrouter__ask_model(task: "research_synthesis", model_family: "gemini", temperature: 0.5)
+  Gemini 审查是否遗漏:
+    - 并发/竞态场景（两用户同时操作同一资源）
+    - 跨时区/跨地区数据一致性
+    - 网络中断后的恢复场景
+    - 权限边界交叉（A 角色操作 B 角色的数据）
+  补充场景标记 source: "cross_model_suggestion"
+  → 追加到 e2e-scenarios.json，自动纳入（不停）
+  → 输出进度: 「Step 1.5 场景补全 ✓ +{N} 建议场景」
+  OpenRouter 不可用 → 跳过
   ↓
 Step 2: 场景执行（Playwright）
   逐场景、逐步骤执行（不停，输出进度）:
@@ -177,7 +196,7 @@ Step 3: 自动分类 + 批量确认
     |------|---------|------|---------|------|
     | E2E-001 | Step 2 | Element not found | FIX_REQUIRED | 元素缺失 |
 
-    → AskUserQuestion: 确认全部分类 / 逐条调整
+    → 自动采纳全部建议分类（不停）
   ↓
 Step 4: 报告生成
   写入:
@@ -420,11 +439,11 @@ e2e/screenshots/                    # 失败截图
 
 ### 2. 场景列表可追溯
 
-场景从 business-flows 推导，执行后与结果一并展示。用户在 Step 3 批量确认时可审阅场景列表。
+场景从 business-flows 推导，执行后与结果一并展示。自动确认场景列表（不停）。
 
-### 3. 失败分类需用户确认
+### 3. 失败自动分类
 
-基于错误特征自动建议分类，在 Step 3 批量展示，用户一次确认或逐条调整。自动建议不等于自动归类，用户仍是最终决策者。
+基于错误特征自动分类（FIX_REQUIRED / ENV_ISSUE / DEFERRED），写入决策日志。
 
 ### 4. 不修改代码
 
