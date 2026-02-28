@@ -1,8 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { loadRouting, resolveFamily } from "../config/loader.js";
+import { loadRouting, resolveFamily, detectRegion } from "../config/loader.js";
 import { resolveLatestModel } from "../openrouter/resolver.js";
 import { chatCompletion } from "../openrouter/client.js";
+import { getRegionRoutes } from "../config/region-detector.js";
 
 export const askModelSchema = {
   task: z.string().describe("Task type for routing, e.g. 'competitive_analysis', 'general'"),
@@ -18,6 +19,7 @@ export const askModelSchema = {
 export function registerAskModel(server: McpServer): void {
   server.tool("ask_model", "Send a prompt to an AI model selected by task type via OpenRouter", askModelSchema, async (params) => {
     try {
+      // 自动检测区域并加载路由
       const routing = await loadRouting();
       const familyId = resolveFamily(routing, params.task, params.model_family);
       const modelId = await resolveLatestModel(familyId);
@@ -56,6 +58,41 @@ export function registerAskModel(server: McpServer): void {
                 family: familyId,
                 task: params.task,
                 usage: result.usage,
+              },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify({ error: message }, null, 2) }],
+        isError: true,
+      };
+    }
+  });
+
+  // 添加区域检测工具
+  server.tool("detect_region", "Detect available region and model families (auto-detect China/Global)", {}, async () => {
+    try {
+      const region = await detectRegion();
+      const routes = getRegionRoutes(region);
+      
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              {
+                region,
+                routes,
+                message: region === "china" 
+                  ? "中国区模式：使用 Qwen/DeepSeek/Llama" 
+                  : region === "global"
+                  ? "国际区模式：使用 GPT/Gemini/Claude"
+                  : "未知区域：使用保守路由",
               },
               null,
               2,
