@@ -1,5 +1,20 @@
 export const defaultRouting: Record<string, string> = {
-  // 产品概念阶段
+  // === 创新流程专用（7 个新增 task_type）===
+  // Step 0 Phase C: 假设清零
+  assumption_challenge: "gpt",        // 挑战者：质疑行业共识
+  constraint_classification: "gemini", // 守护者：区分物理/人为
+  
+  // Step 0 Phase B+: 创新机会
+  innovation_exploration: "gpt",      // 探索者 A
+  innovation_exploration_alt: "gemini", // 探索者 B（独立）
+  
+  // Step 3 Phase B: 对抗性生成
+  disruptive_innovation: "gpt",       // 颠覆者：激进方案
+  boundary_enforcement: "gemini",     // 守护者：边界约束
+  cross_domain_research: "deepseek",  // 考古学家：跨域案例
+  synthesis_innovation: "qwen",       // 炼金师：预整合
+  
+  // === 产品概念阶段（原有）===
   competitive_analysis: "gpt",
   market_research: "gemini",
   user_persona_validation: "gpt",
