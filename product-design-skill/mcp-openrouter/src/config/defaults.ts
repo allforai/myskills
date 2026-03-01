@@ -44,6 +44,13 @@ export const defaultRouting: Record<string, string> = {
   design_review: "qwen",               // 设计审查：审美理解
   visual_consistency: "llama",         // 视觉一致性：细节观察
   
+  // === 创新验证专用（新增） ===
+  innovation_review: "qwen",           // 创新特性审查：screen-map 阶段验证
+  innovation_design_review: "llama",   // 创新设计审查：ui-design 阶段验证
+  innovation_priority_review: "qwen",  // 创新优先级审查：task-execute 阶段验证
+  innovation_use_case_review: "qwen",  // 创新用例审查：use-case 阶段验证
+  innovation_gap_review: "llama",      // 创新缺口审查：feature-gap 阶段验证
+  
   // === 设计审计阶段 ===
   cross_layer_validation: "deepseek",  // 跨层验证：深度推理
   coverage_analysis: "llama",          // 覆盖分析：系统性检查
