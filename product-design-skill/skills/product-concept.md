@@ -403,10 +403,30 @@ product-concept（战略层）        product-map（运营层）
   - **defensible** — 有防御价值，可讨论
   - **experimental** — 实验性功能，可推迟
 
+### Step 2.5: 创新概念状态机定义（新增，通用版）
+
+对每个 `protection_level="core"` 或 `"defensible"` 的创新概念，定义其状态机（不绑定特定行业）：
+
+**指导问题**（通用描述）：
+1. 这个创新机制涉及哪些核心业务实体？（如"场景"、"会话"、"赛季"等，避免使用行业特定术语）
+2. 每个实体的生命周期状态有哪些？（初始状态 → 中间状态 → 终止状态）
+3. 关键状态转换的触发条件是什么？
+4. 异常状态如何处理？（如加载失败、网络中断等通用异常）
+
+**输出**：
+- 在 `adversarial-concepts.json` 的每个 concept 中增加 `state_machine` 字段
+- 定义实体、状态、转换、完整性要求
+- **原则**：只定义结构完整性，不验证具体业务逻辑
+
+**保护级别要求**：
+- `core` 级别创新概念：**必须**定义完整状态机
+- `defensible` 级别：**建议**定义状态机
+- `experimental` 级别：可选
+
 **输出文件**：
 - `.allforai/product-concept/boundary-constraints.json`
 - `.allforai/product-concept/cross-domain-cases.json`
-- `.allforai/product-concept/adversarial-concepts.json`
+- `.allforai/product-concept/adversarial-concepts.json`（含 state_machine 字段）
 
 **Schema（adversarial-concepts.json）**：
 ```json
@@ -442,7 +462,33 @@ product-concept（战略层）        product-map（运营层）
       "protection_level": "core | defensible | experimental",
       "feasibility_score": 3,
       "innovation_score": 9,
-      "competitor_reference": "none | cross-domain | evolved"
+      "competitor_reference": "none | cross-domain | evolved",
+      "state_machine": {
+        "description": "创新机制的核心状态流转（通用描述，不绑定特定行业）",
+        "key_entities": [
+          {
+            "name": "核心实体名",
+            "lifecycle_description": "实体的生命周期描述",
+            "critical_states": ["初始状态", "中间状态", "终止状态"],
+            "initial_state": "初始状态",
+            "terminal_states": ["终止状态"],
+            "critical_transitions": [
+              {
+                "from": "状态 A",
+                "to": "状态 B",
+                "trigger": "触发条件",
+                "business_meaning": "业务含义"
+              }
+            ]
+          }
+        ],
+        "integrity_requirements": {
+          "must_have_initial_state": true,
+          "must_have_terminal_state": true,
+          "must_have_error_recovery": true,
+          "max_unreachable_states": 0
+        }
+      }
     }
   ]
 }

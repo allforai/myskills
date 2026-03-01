@@ -405,6 +405,90 @@ Step 6: 状态机完整性检查（quick / journey 模式跳过）
 
 **目标**：从任务数据中提取业务实体的状态转换图，检测死端、不可达、无恢复路径等完整性问题。
 
+---
+
+### Step 6.5：状态闭环验证（新增，通用版）
+
+**目标**：验证每个状态从产生到消费形成完整闭环，不依赖特定行业
+
+**工作流程**：
+
+1. **提取状态生产者**（通用）：
+   - 扫描所有任务的 `outputs.states`
+   - 不预设状态语义，仅提取状态名称
+   - 构建 `{state_name: [producer_task_ids]}` 映射
+
+2. **提取状态消费者**（通用）：
+   - 扫描所有任务的 `prerequisites`
+   - 扫描所有业务流节点的 `prerequisites`
+   - 构建 `{state_name: [consumer_task_ids]}` 映射
+
+3. **供需匹配分析**（通用规则）：
+   - **孤儿状态**：有生产无消费（任何领域都应该避免）
+   - **幽灵状态**：有消费无生产（任何领域都应该避免）
+   - **语义鸿沟**：名称不同但语义相似（NLP 相似度>0.8）
+
+4. **创新概念状态验证**（若 `innovation_mode=active`）：
+   - 读取 `adversarial-concepts.json` 的 `state_machine`
+   - 验证实现的状态流转是否符合定义
+   - **不检查具体状态名称**，只检查：
+     - 是否有初始状态
+     - 是否有终止状态
+     - 关键转换是否存在
+     - 异常恢复路径是否存在
+
+**输出 Schema**（通用）：
+```json
+{
+  "orphan_states": [
+    {
+      "state": "状态 X",
+      "producers": ["T001"],
+      "consumers": [],
+      "severity": "高",
+      "business_impact": "该状态产生后无后续流转，形成数据孤岛"
+    }
+  ],
+  "ghost_states": [
+    {
+      "state": "状态 Y",
+      "producers": [],
+      "consumers": ["T002"],
+      "severity": "高",
+      "business_impact": "该状态被引用但无产生来源，永远无法触发"
+    }
+  ],
+  "semantic_gaps": [
+    {
+      "state_a": "状态 A",
+      "state_b": "状态 B",
+      "similarity": 0.85,
+      "suggestion": "建议确认是否为同一状态的不同命名"
+    }
+  ],
+  "innovation_state_gaps": [
+    {
+      "concept_id": "IC001",
+      "entity": "实体名",
+      "gap_type": "MISSING_TRANSITION | MISSING_INITIAL | MISSING_TERMINAL | NO_ERROR_RECOVERY",
+      "expected": "期望的状态流转",
+      "actual": "实际检测到的状态流转",
+      "severity": "高"
+    }
+  ]
+}
+```
+
+**严重度判定**（通用规则）：
+- 孤儿状态（core 创新概念相关）：高
+- 孤儿状态（常规功能）：中
+- 幽灵状态：高（任何领域都零容忍）
+- 语义鸿沟：中（建议修复）
+- 创新概念状态缺口：高（必须修复）
+
+**输出文件**：
+- `.allforai/feature-gap/state-cycle-gaps.json`（新增）
+
 **实体提取**：扫描 `task-inventory.json` 中所有任务的 `task_name`，提取业务实体：
 - 含「管理/创建/审核/处理/编辑/删除/查看 X」→ 实体 X
 - 同一实体被 2+ 个任务引用才纳入检查（避免单一引用的噪声实体）
