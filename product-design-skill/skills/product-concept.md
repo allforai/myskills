@@ -486,7 +486,9 @@ product-concept（战略层）        product-map（运营层）
           "must_have_initial_state": true,
           "must_have_terminal_state": true,
           "must_have_error_recovery": true,
-          "max_unreachable_states": 0
+          "max_unreachable_states": 0,
+          "must_have_timeout_transition": true,
+          "must_have_compensation_path": true
         }
       }
     }
