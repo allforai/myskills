@@ -138,3 +138,120 @@ XV 验证完全自动、完全可选：
 2. **Viewpoint 覆盖率**：关键对象覆盖至少 4/6 视角的比例，建议 `>= 90%`。
 
 这两个指标可作为现有 ORPHAN / COVERAGE / CONFLICT 的补充门禁。
+
+---
+
+## 六、创新概念的信息保真
+
+> 核心原则：**创新保真 ≠ 特殊处理**，而是通过提高信息敏感度确保 4D+6V+XV 协议有效执行。
+
+创新概念是产品差异化的核心，在信息传递链中需要特殊保护。本节定义创新概念从 `product-concept` 到 downstream 各阶段的信息保真机制。
+
+### 6.1 源头标记（product-map）
+
+product-map 阶段负责将 `product-concept` 中定义的创新概念标记为特殊任务，供下游技能识别。
+
+**读取输入**：
+- `.allforai/product-concept/adversarial-concepts.json` 的 `concepts[]` 数组
+- `.allforai/product-concept/product-concept.json` 的 `innovation_preferences` 字段
+
+**输出标记**：
+```json
+{
+  "innovation_tasks": [
+    {
+      "task_id": "T001",
+      "source": "concept_defined",
+      "protection_level": "core",
+      "innovation_score": 9,
+      "adversarial_concept_ref": "IC001"
+    }
+  ]
+}
+```
+
+**保护级别语义**：
+| 级别 | 含义 | downstream 影响 |
+|------|------|----------------|
+| `core` | 核心创新，产品差异化根本 | 不可剪枝、优先实现、ERROR 级完整性要求 |
+| `defensible` | 防御性创新，可增强竞争力 | 用户确认、WARNING 级完整性要求 |
+| `experimental` | 实验性创新，可探索 | INFO 级完整性要求、允许延后 |
+
+---
+
+### 6.2 下游传递（按技能拆分）
+
+#### 6.2.1 screen-map 阶段
+- **读取**：`task-inventory.json` 的 `innovation_tasks` 字段
+- **输出**：界面 Schema 增加 `innovation_screen: true` + `adversarial_concept_ref: IC001`
+- **自动推导**：任务 `innovation_task=true` → 界面 `innovation_screen=true`
+- **保真关键位**：`on_failure` / `exception_flows` 缺失 → 优先级提升一级
+
+#### 6.2.2 ui-design 阶段
+- **读取**：`task-inventory.json` 的 `innovation_tasks` 字段
+- **输出**：设计规格增加「创新概念 UI 规格」专节
+- **设计原则**：必须体现跨领域参考（如"抖音"、"游戏赛季"）
+
+#### 6.2.3 task-execute 阶段
+- **读取**：`tasks.md` 的 `_Source: T001_` + `task-inventory.json` 的 `innovation_tasks`
+- **优先级修正**：`core` → Round 1，`defensible` → Round 2，`experimental` → Round 3+
+- **验证增强**：创新任务必须动态验收（不能只静态扫描）
+
+#### 6.2.4 feature-prune 阶段
+- **读取**：`task-inventory.json` 的 `innovation_tasks` 字段
+- **剪枝修正**：`core` 跳过频次过滤，自动 CORE；`defensible` 用户确认
+- **延迟成本**：`core`=高，`defensible`=中，`experimental`=低
+
+#### 6.2.5 design-audit 阶段
+- **读取**：`innovation_tasks` + 各层创新标记
+- **审计增强**：追溯完整率（创新任务有下游产物）、视角覆盖率（6/6 视角）
+- **保真门禁**：追溯完整率 >= 95%，视角覆盖率 >= 90%
+
+---
+
+### 6.3 核心原则
+
+1. **高敏感度 ≠ 特殊处理**：显式读取 `innovation_task` 字段，自动标注创新标记
+2. **可追溯**：创新概念的所有下游产物必须可追溯到 `adversarial-concepts.json`
+3. **多视角**：创新界面强制覆盖 6/6 视角（常规界面 4/6 即可）
+4. **交叉验证**：创新概念需要专用 XV 验证（`innovation_review` / `innovation_design_review` / `innovation_priority_review`）
+
+---
+
+### 6.4 信息失真模式与防护
+
+| 失真模式 | 发生阶段 | 防护措施 |
+|---------|---------|---------|
+| 创新稀释 | screen-map / ui-design | 标注 `innovation_screen` + `adversarial_concept_ref` |
+| 创新延后 | task-execute | `protection_level` → Round 优先级映射 |
+| 创新误剪 | feature-prune | `core` 跳过频次过滤 |
+| 创新误解 | 全部阶段 | 6V 强制覆盖 + XV 验证 |
+| 创新孤立 | design-audit | 追溯完整率 >= 95% 门禁 |
+
+---
+
+### 6.5 量化指标
+
+| 指标 | 目标值 | 最低门禁 | 计算方式 |
+|------|-------|---------|---------|
+| 创新任务追溯完整率 | 100% | >= 95% | 有下游的创新任务数 / 创新任务总数 |
+| 创新概念视角覆盖率 | 100% | >= 90% | 覆盖 6/6 视角的创新界面数 / 创新界面总数 |
+| 创新任务 Round 1 完成率 | 100%（core） | 不可低于 100% | Round 1 完成的 core 任务数 / core 任务总数 |
+| 创新界面保真度 | >= 9/10 | >= 8/10 | AI 评分：界面设计是否体现创新方向 |
+
+---
+
+## 七、总结：创新保真 = 高敏感度 + 4D+6V+XV
+
+创新概念的信息保真不是创造新机制，而是：
+1. **高敏感度**：显式读取 `innovation_task` 字段，自动标注创新标记
+2. **4D 增强**：创新概念携带完整的 `source_refs` / `constraints` / `decision_rationale`
+3. **6V 覆盖**：创新界面强制覆盖 6/6 视角，不低于 4/6
+4. **XV 验证**：创新特性的交叉验证，确保创新方向不被误解
+
+**核心公式**：
+```
+创新保真 = (源头标记 × 下游敏感度 × 追溯完整性) / 信息压缩率
+```
+
+**目标**：确保 `product-concept` 中定义的创新概念在 downstream 各阶段不被稀释、不误解、不延后，最终实现的产品与最初创新愿景一致。

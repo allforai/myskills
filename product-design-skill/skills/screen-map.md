@@ -53,7 +53,11 @@ task-inventory.json 为基础      以 task-inventory 为输入        读 scree
 
 **WebSearch 关键词**：`”usability audit” + 场景词 + “real examples” + 2025`、`”WCAG 2.2” + 组件类型 + “accessibility”`
 
-**4D+6V 重点**：异常与失败处理（`on_failure` / `exception_flows`）视为信息保真关键位，缺失时优先标红；每个关键界面补充 `source_refs`、`constraints`、`decision_rationale`。
+**4D+6V 重点**：
+- 读取 `task-inventory.json` 中的 `innovation_tasks` 字段，对 `innovation_task=true` 的界面自动标注 `innovation_screen: true`
+- `source_refs` 指向 `adversarial-concepts.json` 的对应概念 ID（如 `IC001`）
+- 异常与失败处理（`on_failure` / `exception_flows`）视为信息保真关键位，缺失时优先标红
+- 每个关键界面补充 `source_refs`、`constraints`、`decision_rationale`
 
 **XV 交叉验证**（Step 2 界面级冲突+异常缺口检测后）：
 
@@ -201,6 +205,7 @@ Step 2: 界面级冲突 + 异常缺口检测（quick 模式跳过）
 Step 3: 输出报告
       汇总 screen-map.json 和 screen-conflict.json
       生成 screen-map-report.md
+      若 `innovation_mode=active`，在报告中增加「创新概念界面」专节（表格形式：界面 | 关联概念 | 保护级别 | 创新方向）
 ```
 
 **核心原则：每个 Step 结束都有用户确认，用户是权威。**
@@ -235,6 +240,15 @@ Step 3: 输出报告
       不存在 → concept_mode = "none"（不影响任何行为）
     过滤 task-inventory：排除 status = "user_removed" 的任务，记录排除数量
     告知用户：「概念感知：active — 已排除 X 个 user_removed 任务，ERRC.eliminate 共 Y 项」或「none — 处理全部任务」
+
+  Phase 2.8 — 加载创新概念清单：
+    检查 .allforai/product-concept/adversarial-concepts.json：
+      存在 → 加载 `concepts[]` 数组，构建 `concept_id → concept` 映射，标记 innovation_mode = "active"
+      不存在 → innovation_mode = "none"（不影响任何行为）
+    检查 task-inventory.json 的 `innovation_tasks` 字段：
+      存在 → 告知用户：「创新感知：active — 检测到 X 个创新任务（core: Y, defensible: Z）」
+      不存在 → innovation_mode = "none"
+    记录 innovation_mode 供后续 Step 引用
 
   Phase 3 — 规模判定：
     统计过滤后的活跃任务总数 → 判定规模等级（小型/中型/大型）
@@ -280,7 +294,9 @@ Step 3: 输出报告
 
 **frequency 推导**：继承关联任务在 `task-inventory.json` 中的 `frequency` 值。同一界面有多个任务关联时，取最高频次。
 
-**关键要求**：梳理每个界面时，读取对应任务的 `exceptions` 字段，要求用户为每个异常标注对应的界面处理方式（`exception_flows`）。
+**关键要求**：
+- 梳理每个界面时，读取对应任务的 `exceptions` 字段，要求用户为每个异常标注对应的界面处理方式（`exception_flows`）
+- 若任务的 `innovation_task=true`，自动标注 `innovation_screen: true` + `adversarial_concept_ref`
 
 #### 界面 Schema
 
@@ -291,12 +307,15 @@ Step 3: 输出报告
   "screens": [
     {
       "id": "S001",
-      "name": "退款申请页",
-      "description": "客服填写退款原因、金额，提交退款申请",
-      "primary_purpose": "让客服快速、准确地提交退款申请",
-      "primary_action": "提交退款申请",
-      "entry_point": "订单详情页 → 申请退款按钮",
-      "audience_type": "professional",
+      "name": "场景流首页",
+      "description": "用户进入 APP 后直接开始场景对话，无课程概念",
+      "innovation_screen": true,
+      "adversarial_concept_ref": "IC001",
+      "innovation_direction": "去课程化学习",
+      "primary_purpose": "让用户像刷抖音一样刷场景学习",
+      "primary_action": "上下滑动切换场景",
+      "entry_point": "打开 APP 直接进入",
+      "audience_type": "consumer",
       "tasks": ["T001"],
       "states": {
         "empty": "暂无退款申请，提示用户新建",
@@ -356,6 +375,9 @@ Step 3: 输出报告
 | `primary_action` | 频次最高的操作，由帕累托分析自动推导，PM 可调整 |
 | `states` | 界面的各类状态：`empty`（空数据）/ `loading`（加载中）/ `error`（错误）/ `permission_denied`（无权限）等 |
 | `audience_type` | 界面受众类型：`consumer` / `professional` / `default`，由关联角色自动推导 |
+| `innovation_screen` | `true` / `false` — 是否为创新概念定义的界面（自动推导） |
+| `adversarial_concept_ref` | 指向 `adversarial-concepts.json` 的概念 ID（如 `IC001`） |
+| `innovation_direction` | 创新方向描述（如"去课程化学习"、"紧急场景速成"） |
 
 #### 按钮字段说明
 
@@ -448,6 +470,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_screen_map_split.py <BASE>
   "source": "screen-map.json",
   "screen_count": 12,
   "concept_eliminated_count": 2,
+  "innovation_count": 3,
   "modules": [
     {
       "name": "退款管理",
