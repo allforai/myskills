@@ -297,6 +297,7 @@ Step 3: 输出报告
 **关键要求**：
 - 梳理每个界面时，读取对应任务的 `exceptions` 字段，要求用户为每个异常标注对应的界面处理方式（`exception_flows`）
 - 若任务的 `innovation_task=true`，自动标注 `innovation_screen: true` + `adversarial_concept_ref`
+- **功能-界面对齐检查**：对每个任务，检查是否有对应的界面操作（C/U/D 任务必须有按钮，R 任务必须有入口）
 
 #### 界面 Schema
 
@@ -528,6 +529,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_screen_map_split.py <BASE>
 | 表单缺少前端校验 | `MISSING_VALIDATION` | 按钮为表单提交（`crud=C` 或 `crud=U`），`validation_rules` 为空数组，且满足触发门槛（见下） |
 | 列表无空状态处理 | `NO_EMPTY_STATE` | 列表/表格类界面，`states.empty` 未定义或为空 |
 | 异常无界面响应 | `UNHANDLED_EXCEPTION` | task.exceptions 中有异常，但该界面对应按钮的 `exception_flows` 没有覆盖该异常 |
+| **功能-界面对齐缺失** | `FUNCTION_SCREEN_GAP` | 任务 `crud=C/U/D` 但界面无对应操作按钮（新增/修改/删除） |
 
 **MISSING_VALIDATION 触发门槛**：
 
