@@ -47,7 +47,11 @@ product-concept → product-map → screen-map → ui-design
 
 **WebSearch 关键词**：`”design system” + 行业词 + “case study” + 2025`、`”WCAG 2.2” + 组件类型 + “accessibility”`、`”dashboard UI” + “information density” + “best practices”`
 
-**4D+6V 重点**：规格附带设计决策理由；对高风险交互（删除、提交、权限）明确记录可访问性与失败反馈依据。
+**4D+6V 重点**：
+- 读取 `task-inventory.json` 中的 `innovation_tasks` 字段，对 `innovation_task=true` 的界面标注 `innovation_ui: true`
+- `source_refs` 指向 `adversarial-concepts.json` 的对应概念 ID（如 `IC001`）
+- 规格附带设计决策理由；对高风险交互（删除、提交、权限）明确记录可访问性与失败反馈依据
+- 创新概念 UI 规格必须体现跨领域参考（如"抖音无限滚动"、"游戏赛季制"）
 
 **XV 交叉验证**（Step 4 生成设计规格后）：
 
@@ -105,9 +109,17 @@ product-concept → product-map → screen-map → ui-design
   screen-map.json 必须（不存在则自动运行 screen-map 生成）
   product-concept.json 可选（提取定位/价值主张用于配色基调）
   ui-design-decisions.json 存在则加载历史决策
+  
+  Phase 2.8 — 加载创新概念清单（新增）：
+    检查 .allforai/product-concept/adversarial-concepts.json：
+      存在 → 加载 `concepts[]` 数组，标记 innovation_mode = "active"
+      不存在 → innovation_mode = "none"
+    检查 task-inventory.json 的 `innovation_tasks` 字段：
+      存在 → 告知用户：「创新感知：active — 检测到 X 个创新任务」
+      不存在 → innovation_mode = "none"
   ↓
 Step 1: 产品画像推导
-  读取 task-inventory + role-profiles + screen-map（前置检查已保证存在）
+  读取 task-inventory + role-profiles + screen-map + innovation_tasks（前置检查已保证存在）
   推导：B端/C端、角色列表、各角色高频任务、界面总数
   向用户展示，确认
   ↓
@@ -225,6 +237,35 @@ Step 5: 生成多角色 HTML 预览
 > 风格：{风格名}
 > 设计原则来源：{URL}
 > 生成时间：{时间}
+
+## 创新概念 UI 规格（若 innovation_mode=active）
+
+（按创新概念分组，每个概念一节，通用描述不绑定特定行业）
+
+### IC001: {创新概念名}
+
+**创新方向**：{去课程化学习/赛季制/紧急速成等}
+
+**跨领域参考**：
+- {参考 1}：{如"抖音无限滚动"}
+- {参考 2}：{如"游戏赛季制"}
+
+**关键特性**：
+- {特性 1}：{如"打开 APP 直接开始，无首页"}
+- {特性 2}：{如"3 分钟微场景"}
+- {特性 3}：{如"算法推荐下一个"}
+
+**视觉设计要点**：
+- 布局模式：{如"全屏沉浸式，隐藏导航栏"}
+- 交互组件：{如"右侧滑动按钮，类似抖音点赞"}
+- 状态反馈：{如"底部进度条显示完成度"}
+- 配色语义：{如"动态配色匹配场景主题"}
+
+**保护级别**：core/defensible
+
+**设计来源**：adversarial-concepts.json → IC001
+
+---
 
 ## 设计语言基础
 
@@ -385,7 +426,7 @@ Step 5: 生成多角色 HTML 预览
 
 1. **只出规格不出代码** — 输出是设计语言描述（布局/配色/组件建议），不生成任何 React、Vue、HTML 组件代码；HTML 预览是静态骨架展示，不是功能实现
 
-2. **screen-map 优先，缺席则推导** — 有 screen-map 按界面生成规格（每个 screen-map 界面对应一节规格）；没有 screen-map 则从 task-inventory 中的高频任务自动推导主要界面结构（每个高/中频任务 → 一个推导界面）。界面规格标注其关联任务的 `category`（core/basic），便于团队区分核心功能界面和基础设施界面
+2. **screen-map 优先，缺席则推导** — 有 screen-map 按界面生成规格（每个 screen-map 界面对应一节规格）；没有 screen-map 则从 task-inventory 中的高频任务自动推导主要界面结构（每个高/中频任务 → 一个推导界面）。界面规格标注其关联任务的 `category`（core/basic）+ `innovation_ui`（true/false），便于团队区分核心功能界面、基础设施界面和创新概念界面
 
 3. **WebSearch 摘要展示，用户确认后才应用** — 检索到的设计原则必须以摘要形式展示给用户并等待确认，不自动静默应用；用户有权跳过检索（输入「跳过」）并手动指定设计参数
 
