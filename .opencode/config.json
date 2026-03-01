@@ -1,0 +1,31 @@
+{
+  "skills": [
+    {
+      "name": "product-design",
+      "path": "../product-design-skill/skills",
+      "commands": "../product-design-skill/commands"
+    },
+    {
+      "name": "dev-forge",
+      "path": "../dev-forge-skill/skills",
+      "commands": "../dev-forge-skill/commands"
+    },
+    {
+      "name": "deadhunt",
+      "path": "../deadhunt-skill/skills"
+    },
+    {
+      "name": "code-tuner",
+      "path": "../code-tuner-skill/skills"
+    }
+  ],
+  "mcp": {
+    "openrouter": {
+      "command": "node",
+      "args": ["../product-design-skill/mcp-openrouter/dist/index.js"],
+      "env": {
+        "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}"
+      }
+    }
+  }
+}
