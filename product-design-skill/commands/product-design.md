@@ -1,5 +1,5 @@
 ---
-description: "产品设计全流程编排：按阶段串联 concept → map → screen → use-case → gap → prune → ui-design → audit，每阶段间插入检查点。模式: full / resume"
+description: "产品设计全流程编排：concept → map → screen → [use-case ∥ gap ∥ prune ∥ ui-design] → audit，Phase 4-7 并行执行。模式: full / resume"
 argument-hint: "[mode: full|resume] [skip: concept]"
 allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion", "WebSearch", "Agent"]
 ---
