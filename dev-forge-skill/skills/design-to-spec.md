@@ -369,6 +369,145 @@ Step 5: 阶段末汇总确认
 
 ---
 
+## 并行执行编排
+
+> Step 1-3 由 Agent 并行执行，编排器负责分类、调度和聚合。
+> 本段描述 Agent 调度逻辑，Step 1-3 的具体内容见上方「工作流」段落。
+
+### 子项目分类
+
+编排器读取 `project-manifest.json`，将子项目分为两组：
+
+| 组 | 条件 | 典型子项目 |
+|----|------|-----------|
+| 后端组 | `type = "backend"` | api-backend |
+| 前端组 | 其余所有类型 | admin, web-customer, web-mobile, mobile-native |
+
+### Phase A — 后端 Agent
+
+启动 1 个 Agent 处理后端子项目，完整执行 Step 1 → Step 2 → Step 2.5 → Step 3。
+
+Agent 产出：
+```
+.allforai/project-forge/sub-projects/{backend-name}/
+├── requirements.md    # Step 1
+├── design.md          # Step 2 + Step 2.5 审查结果
+└── tasks.md           # Step 3
+```
+
+### Phase B — 前端并行 Agent
+
+后端 Agent 完成后，用**单条消息发出 N 个 Agent tool 调用**并行执行。
+Agent tool 的屏障同步机制保证所有前端 Agent 完成后才继续到 Step 4。
+
+每个前端 Agent 完整执行 Step 1 → Step 2 → Step 3（不执行 Step 2.5）。
+
+每个 Agent 产出：
+```
+.allforai/project-forge/sub-projects/{frontend-name}/
+├── requirements.md    # Step 1
+├── design.md          # Step 2
+└── tasks.md           # Step 3
+```
+
+### Agent prompt 模板
+
+~~~
+你是 design-to-spec 的并行执行器。
+
+任务: 为子项目 {sub-project-name} 生成完整的 spec 文档。
+
+执行步骤:
+1. 用 Read 工具加载 ${CLAUDE_PLUGIN_ROOT}/skills/design-to-spec.md（仅参考规则和模板，不重复全局步骤）
+2. 按 Step 1 (requirements) → Step 2 (design) [→ Step 2.5 仅后端] → Step 3 (tasks) 执行
+3. 产出写入 .allforai/project-forge/sub-projects/{sub-project-name}/
+
+子项目信息:
+- name: {name}
+- type: {type}
+- tech_stack: {tech_stack}
+- assigned_modules: {modules}
+
+上下文:
+- project-manifest.json: .allforai/project-forge/project-manifest.json
+- forge-decisions.json: .allforai/project-forge/forge-decisions.json（technical_spikes + coding_principles）
+- 产品设计产物: .allforai/product-map/, .allforai/screen-map/ 等
+- 后端 design.md: .allforai/project-forge/sub-projects/{backend-name}/design.md（仅前端 Agent 引用）
+{自动模式标记: __orchestrator_auto: true（若自动模式激活）}
+
+重要:
+- 仅处理本子项目，不读写其他子项目的产出目录
+- 按端差异化规则生成（参考 design-to-spec.md 的「各端差异化 Spec 生成」表格）
+- 遵循两阶段加载（先 index 再 full data）
+- 前端 Agent: API 调用必须引用后端 design.md 中已定义的端点 ID
+- 预置脚本优先: 检查 ${CLAUDE_PLUGIN_ROOT}/scripts/ 是否有可用脚本
+~~~
+
+Agent 调用参数：
+
+| Agent | Phase | 子项目类型 | 执行步骤 | 产出目录 |
+|-------|-------|-----------|---------|---------|
+| 后端 Agent | A | backend | Step 1→2→2.5→3 | `.allforai/project-forge/sub-projects/{backend}/` |
+| 前端 Agent 1 | B | admin | Step 1→2→3 | `.allforai/project-forge/sub-projects/{admin}/` |
+| 前端 Agent 2 | B | web-customer | Step 1→2→3 | `.allforai/project-forge/sub-projects/{web}/` |
+| 前端 Agent N | B | mobile-native | Step 1→2→3 | `.allforai/project-forge/sub-projects/{mobile}/` |
+
+### 错误处理
+
+~~~
+Phase A (后端 Agent):
+  成功 → 进入 Phase B
+  失败 →
+    向用户报告错误原因
+    询问: 重试 / 中止
+    注: 后端失败不可跳过（前端依赖后端 design.md）
+
+Phase B (前端 Agent 并行):
+  全部成功 → 进入 Step 4
+  部分失败 →
+    成功的 Agent: 正常收集产出
+    失败的 Agent: 记录错误信息
+    向用户报告:
+      "前端并行执行结果:
+       ✓ admin: 完成 (requirements: N, design: N API, tasks: N)
+       ✗ web-customer: 失败 — {错误原因}
+       ✓ mobile: 完成 (requirements: N, design: N 页面, tasks: N)"
+    询问:
+      1. 重试失败的子项目（仅重跑失败的 Agent）
+      2. 跳过继续到 Step 4（依赖分析标注缺失子项目）
+      3. 中止流程
+  全部失败 →
+    向用户报告所有错误
+    询问: 全部重试 / 中止
+
+自动模式:
+  后端 Agent 失败 → ERROR（停）
+  前端 Agent 部分失败 → WARNING（记日志继续到 Step 4）
+  前端 Agent 全部失败 → ERROR（停）
+~~~
+
+### resume 模式下的并行处理
+
+~~~
+resume 模式检测 Step 1-3 完成状态:
+  检测方式: 检查 .allforai/project-forge/sub-projects/{name}/ 下三件套
+    - requirements.md 存在
+    - design.md 存在
+    - tasks.md 存在
+  三件全 → 该子项目已完成
+
+  判定:
+    后端 + 所有前端三件套全存在 → 跳过 Step 1-3，进入 Step 4
+    后端三件套存在，部分前端缺失 → 跳过 Phase A，Phase B 仅启动缺失子项目的 Agent
+    后端三件套缺失 → 从 Phase A 重新开始（全量执行）
+~~~
+
+### 单子项目退化
+
+仅有 1 个后端子项目、无前端子项目时，Phase B 不启动任何 Agent，自动退化为纯串行执行。
+
+---
+
 ## 任务 Batch 结构
 
 ### 全局 Batch（monorepo 视角）
