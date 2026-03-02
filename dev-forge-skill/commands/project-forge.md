@@ -1,7 +1,7 @@
 ---
 description: "项目锻造全流程：setup → spec → scaffold → build → verify。模式: full / existing / resume"
 argument-hint: "[mode: full|resume] [existing]"
-allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion"]
+allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion", "Agent"]
 ---
 
 # Project Forge — 项目锻造全流程编排
@@ -484,6 +484,8 @@ WebSearch 找到的候选方案: {option_list}
 ### 执行方式
 
 用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/skills/design-to-spec.md`，按其工作流执行。
+
+design-to-spec 内部使用 Agent tool 并行加速：后端子项目先完成 spec，然后多个前端子项目并行生成 spec。详见 design-to-spec.md 的「并行执行编排」段落。
 
 ### 质量门禁
 
