@@ -76,6 +76,9 @@ Phase 8: design-audit full（终审）
 **full 模式**：从 Phase 1（或 Phase 2 如果 skip concept）开始，逐阶段执行。
 **resume 模式**：从第一个未完成阶段开始。
 
+> **并行组**: use-case / feature-gap / feature-prune / ui-design 为并行执行组。
+> resume 模式下，仅当该组全部完成才视为"Phase 4-7 已完成"，否则补跑缺失的 skill。
+
 向用户展示探测结果，确认执行计划后开始。
 
 ---
@@ -361,10 +364,12 @@ resume 模式检测 Phase 4-7 完成状态:
 | concept | 完成/跳过 | — | {备注} |
 | product-map | 完成 | task 数: X | — |
 | screen-map | 完成 | screen 数: X | 校验: X 项通过 |
-| use-case | 完成 | use-case 数: X | 校验: X task 有用例 |
-| feature-gap | 完成 | gap 数: X | — |
-| feature-prune | 完成 | CORE/DEFER/CUT: X/X/X | 校验: 无矛盾/X 处矛盾 |
-| ui-design | 完成 | — | 校验: CORE 覆盖 XX% |
+| **Phase 4-7 并行** | | | |
+| ├ use-case | 完成/失败 | use-case 数: X | 校验: X task 有用例 |
+| ├ feature-gap | 完成/失败 | gap 数: X | — |
+| ├ feature-prune | 完成/失败 | CORE/DEFER/CUT: X/X/X | — |
+| └ ui-design | 完成/失败 | — | 校验: CORE 覆盖 XX% |
+| 聚合校验 | PASS/FAIL | gap×prune 矛盾: X | UI CORE 覆盖: XX% |
 | design-audit | 完成 | 见终审报告 | — |
 
 ### 终审评分
@@ -388,3 +393,4 @@ resume 模式检测 Phase 4-7 完成状态:
 3. **用户可在任意阶段中止** — 检查点失败或用户主动中止时，保存已有产出，输出部分摘要
 4. **轻量校验不替代终审** — 阶段间的轻量校验仅做快速检查，完整校验由 Phase 8 design-audit 负责
 5. **只读不改上游** — 后序阶段发现上游问题时只报告，不自动回退修改上游产物
+6. **并行 Agent 产出隔离** — Phase 4-7 的 4 个并行 Agent 各自写入独立目录和分片 pipeline-decisions 文件，不读写其他 Agent 的产出。聚合由编排器在全部完成后统一执行
