@@ -217,67 +217,118 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_screen_map_split.py <BASE>
 
 ---
 
-## Phase 4：use-case
+## Phase 4-7：并行执行
 
-**执行**：
-1. 检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_use_cases.py` 是否存在
-2. 存在 → 执行预置脚本；不存在 → 加载 `${CLAUDE_PLUGIN_ROOT}/skills/use-case.md` 按工作流执行
+> Phase 4 (use-case)、Phase 5 (feature-gap)、Phase 6 (feature-prune)、Phase 7 (ui-design)
+> 之间无数据依赖（均仅依赖 product-map + screen-map），使用 Agent tool 并行执行。
 
-**检查点**：
-- `use-case-tree.json` 存在
+### 执行方式
 
-**轻量校验**：
-- 每个 task 至少有 1 条用例
-- 发现无用例的 task → 列出，询问用户是否继续
+Phase 3 checkpoint 通过后，用**单条消息发出 4 个 Agent tool 调用**并行执行。
+Agent tool 的屏障同步机制保证 4 个 Agent 全部完成后才继续到聚合 checkpoint。
 
-**自动模式检查点**：use-case-tree.json 不存在 → ERROR（停）；部分 task 无用例 → WARNING 记日志继续。
+每个 Agent 的 prompt 模板：
 
----
+~~~
+你是产品设计流水线的并行执行器。
 
-## Phase 5：feature-gap
+任务: 执行 {skill-name} 技能的完整工作流。
 
-**执行**：
-1. 检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_feature_gap.py` 是否存在
-2. 存在 → 执行预置脚本；不存在 → 加载 `${CLAUDE_PLUGIN_ROOT}/skills/feature-gap.md` 按工作流执行
+执行步骤:
+1. 用 Read 工具加载 ${CLAUDE_PLUGIN_ROOT}/skills/{skill-name}.md
+2. 按该技能的完整工作流执行（不跳步骤、不简化）
+3. 产出写入 .allforai/{skill-name}/ 目录
+4. pipeline-decisions 写入分片文件 .allforai/pipeline-decisions-{skill-name}.json（不写 pipeline-decisions.json 主文件）
 
-**检查点**：
-- `gap-tasks.json` 存在
+上下文:
+- 产品地图: .allforai/product-map/
+- 界面地图: .allforai/screen-map/
+- 产品概念: .allforai/product-concept/（可选）
+{自动模式标记: __orchestrator_auto: true（若自动模式激活）}
 
-**自动模式检查点**：gap-tasks.json 不存在 → ERROR（停）；缺口任务自动生成 → PASS 继续。
+重要:
+- pipeline-decisions 必须写入分片文件 .allforai/pipeline-decisions-{skill-name}.json
+- 不要读写其他并行 Agent 的产出目录
+- 预置脚本优先: 检查 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_{script}.py 是否存在，存在则优先使用
+~~~
 
----
+4 个 Agent 调用的具体参数：
 
-## Phase 6：feature-prune
+| Agent | skill-name | 预置脚本 | 产出目录 | 分片文件 |
+|-------|-----------|---------|---------|---------|
+| Agent 1 | use-case | `gen_use_cases.py` | `.allforai/use-case/` | `pipeline-decisions-use-case.json` |
+| Agent 2 | feature-gap | `gen_feature_gap.py` | `.allforai/feature-gap/` | `pipeline-decisions-feature-gap.json` |
+| Agent 3 | feature-prune | `gen_feature_prune.py` | `.allforai/feature-prune/` | `pipeline-decisions-feature-prune.json` |
+| Agent 4 | ui-design | `gen_ui_design.py` | `.allforai/ui-design/` | `pipeline-decisions-ui-design.json` |
 
-**执行**：
-1. 检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_feature_prune.py` 是否存在
-2. 存在 → 执行预置脚本；不存在 → 加载 `${CLAUDE_PLUGIN_ROOT}/skills/feature-prune.md` 按工作流执行
+### 聚合 checkpoint
 
-**检查点**：
-- `prune-decisions.json` 存在
+4 个 Agent 全部返回后，编排器执行聚合 checkpoint：
 
-**轻量校验**：
-- feature-gap 报缺口的 task 被 feature-prune 标 CUT → 标记矛盾
-- 发现矛盾 → 列出，询问用户是否修正（在 design-audit 终审中会再次完整检查）
+**Step 1: 产出检查**
 
-**自动模式检查点**：prune-decisions.json 不存在 → ERROR（停）；高频功能被 CUT 且被业务流引用 → ERROR（停，安全护栏）；gap-prune 矛盾 → WARNING 记日志继续。
+| 产出 | 检查 | 来源 Phase |
+|------|------|-----------|
+| `.allforai/use-case/use-case-tree.json` | 存在 | Phase 4 |
+| `.allforai/feature-gap/gap-tasks.json` | 存在 | Phase 5 |
+| `.allforai/feature-prune/prune-decisions.json` | 存在 | Phase 6 |
+| `.allforai/ui-design/ui-design-spec.md` | 存在 | Phase 7 |
 
----
+**Step 2: pipeline-decisions 合并**
 
-## Phase 7：ui-design
+1. 读取 4 个分片文件（`pipeline-decisions-{skill}.json`）
+2. 读取已有的 `pipeline-decisions.json`（若存在）
+3. 按 `phase` 字段去重合并所有条目
+4. 写入 `pipeline-decisions.json`
+5. 删除 4 个分片文件
 
-**执行**：
-1. 检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_ui_design.py` 是否存在
-2. 存在 → 执行预置脚本；不存在 → 加载 `${CLAUDE_PLUGIN_ROOT}/skills/ui-design.md` 按工作流执行
+**Step 3: 轻量校验（跨 skill 交叉检查）**
 
-**检查点**：
-- `ui-design-spec.md` 存在
+- **use-case 覆盖**: 每个 task 至少有 1 条用例。无用例的 task → 列出
+- **gap×prune 矛盾**: feature-gap 报缺口的 task 被 feature-prune 标 CUT → 标记矛盾
+- **UI 覆盖**: 每个 CORE 任务（prune-decisions 中标为 CORE）在 UI 设计中有体现。遗漏 → 列出
 
-**轻量校验**：
-- 每个 CORE 任务（prune-decisions 中标为 CORE）在 UI 设计中有体现
-- 发现遗漏 → 列出，询问用户是否继续
+发现问题 → 向用户报告，询问是否继续（design-audit 终审会再次完整检查）。
 
-**自动模式检查点**：ui-design-spec.md 不存在 → ERROR（停）；CORE 任务 UI 覆盖率 < 50% → WARNING 记日志继续。
+**自动模式聚合 checkpoint**:
+- 产出不存在 → ERROR（停）
+- gap×prune 矛盾 → WARNING（记日志继续）
+- 高频功能被 CUT 且被业务流引用 → ERROR（停，安全护栏）
+- use-case 部分 task 无用例 → WARNING（记日志继续）
+- CORE 任务 UI 覆盖率 < 50% → WARNING（记日志继续）
+
+### 错误处理
+
+~~~
+4 个 Agent 返回后:
+  检查每个 Agent 的返回结果:
+    全部成功 → 执行聚合 checkpoint → 进入 Phase 8
+    部分失败 →
+      成功的 Agent: 正常收集产出
+      失败的 Agent: 记录错误信息
+      向用户报告:
+        "Phase 4-7 并行执行结果:
+         ✓ use-case: 完成
+         ✓ feature-gap: 完成
+         ✗ feature-prune: 失败 — {错误原因}
+         ✓ ui-design: 完成"
+      询问用户:
+        1. 重试失败的 skill（仅重跑失败的 Agent）
+        2. 跳过继续到 Phase 8（design-audit 对 use-case/gap/prune 标注为可选依赖）
+        3. 中止流程
+    全部失败 →
+      向用户报告所有错误
+      询问: 全部重试 / 中止
+~~~
+
+### resume 模式下的并行处理
+
+~~~
+resume 模式检测 Phase 4-7 完成状态:
+  4 个产出全部存在 → 跳过 Phase 4-7，进入 Phase 8
+  部分存在 → 仅启动缺失产出对应的 Agent（已有产出不重跑）
+  全部不存在 → 正常启动 4 个并行 Agent
+~~~
 
 ---
 
