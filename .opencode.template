@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.schema.json",
+  "skills": {
+    "inherit": true,
+    "description": "继承全局技能配置 (~/.config/opencode/skills.json)"
+  },
+  "mcp": {
+    "inherit": true
+  }
+}

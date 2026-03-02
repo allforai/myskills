@@ -3,6 +3,16 @@
   "owner": {
     "name": "dv"
   },
+  "platforms": {
+    "claude-code": {
+      "installCommand": "claude plugin add /home/hello/Documents/myskills/{plugin-name}",
+      "configFile": "~/.claude/settings.json"
+    },
+    "opencode": {
+      "configFile": "~/.config/opencode/skills.json",
+      "inheritConfig": ".opencode/config.json"
+    }
+  },
   "plugins": [
     {
       "name": "product-design",

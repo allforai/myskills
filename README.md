@@ -1,6 +1,6 @@
 # myskills
 
-Claude Code 插件集合，覆盖 **产品设计 → 开发锻造 → QA 验证 → 架构治理** 全链路。
+**Claude Code + OpenCode** 双平台插件集合，覆盖 **产品设计 → 开发锻造 → QA 验证 → 架构治理** 全链路。
 
 ## ✨ 新增：创新保真 + 状态闭环机制（v3.2.0）
 
@@ -27,6 +27,36 @@ Claude Code 插件集合，覆盖 **产品设计 → 开发锻造 → QA 验证 
 
 ## 30 秒上手
 
+### OpenCode（远程 Git 安装，推荐）
+
+```bash
+# 1) 运行远程安装脚本（从 GitHub 克隆）
+curl -fsSL https://raw.githubusercontent.com/allforai/myskills/main/install-remote.sh | bash
+
+# 或者手动执行
+git clone git@github.com:allforai/myskills.git ~/.opencode/skills/myskills
+~/.opencode/skills/myskills/install-remote.sh
+
+# 2) 在任意项目中创建项目配置
+mkdir -p your-project/.opencode
+cp ~/.opencode/skills/myskills/.opencode.template your-project/.opencode/config.json
+
+# 3) 开始使用
+/product-map              # 产品功能地图
+/design-to-spec           # 设计转规格
+/project-scaffold         # 生成代码脚手架
+```
+
+### OpenCode（本地路径安装，开发测试用）
+
+```bash
+# 仅建议在本地开发调试时使用
+cd /path/to/myskills
+./install-opencode.sh
+```
+
+### Claude Code（全局插件）
+
 ```bash
 # 1) 安装四个插件（统一使用 add）
 claude plugin add /path/to/myskills/product-design-skill
@@ -34,10 +64,13 @@ claude plugin add /path/to/myskills/dev-forge-skill
 claude plugin add /path/to/myskills/deadhunt-skill
 claude plugin add /path/to/myskills/code-tuner-skill
 
-# 2) 先做产品建模（建议起手）
+# 2) 启用插件（~/.claude/settings.json）
+# 添加："product-design@myskills": true
+
+# 3) 先做产品建模（建议起手）
 /product-map
 
-# 3) 需要全链路时，直接执行
+# 4) 需要全链路时，直接执行
 /full-pipeline
 ```
 
