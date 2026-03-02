@@ -1,7 +1,7 @@
 ---
 description: "产品设计全流程编排：按阶段串联 concept → map → screen → use-case → gap → prune → ui-design → audit，每阶段间插入检查点。模式: full / resume"
 argument-hint: "[mode: full|resume] [skip: concept]"
-allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion", "WebSearch"]
+allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion", "WebSearch", "Agent"]
 ---
 
 # Product Design Full — 产品设计全流程编排
@@ -45,18 +45,12 @@ Phase 2: product-map
 Phase 3: screen-map
   加载并执行 skills/screen-map.md
   ↓ checkpoint + 轻量校验
-Phase 4: use-case
-  加载并执行 skills/use-case.md
-  ↓ checkpoint + 轻量校验
-Phase 5: feature-gap
-  加载并执行 skills/feature-gap.md
-  ↓ checkpoint
-Phase 6: feature-prune
-  加载并执行 skills/feature-prune.md
-  ↓ checkpoint + 轻量校验
-Phase 7: ui-design
-  加载并执行 skills/ui-design.md
-  ↓ checkpoint + 轻量校验
+Phase 4-7: 并行执行（4 个 Agent 同时启动）
+  ┌─ Agent: use-case      → .allforai/use-case/
+  ├─ Agent: feature-gap   → .allforai/feature-gap/
+  ├─ Agent: feature-prune → .allforai/feature-prune/
+  └─ Agent: ui-design     → .allforai/ui-design/
+  全部完成 ↓ 聚合 checkpoint + pipeline-decisions 合并 + 轻量校验
 Phase 8: design-audit full（终审）
   加载并执行 skills/design-audit.md full
   ↓ 输出最终审计报告 + 全流程摘要
