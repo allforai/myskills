@@ -355,16 +355,23 @@ Step 4: 跨子项目依赖分析
 Step 5: 阶段末汇总确认
   展示全部生成结果摘要:
 
-  | 子项目 | requirements | design | tasks |
-  |--------|-------------|--------|-------|
-  | {name} | {N} 需求项 | {N} API端点, {M} 页面 | {N} 任务 |
-  | ... | ... | ... | ... |
+  Phase A (后端):
+  | 子项目 | requirements | design | tasks | Step 2.5 审查 |
+  |--------|-------------|--------|-------|--------------|
+  | {backend} | {N} 需求项 | {N} API端点 | {N} 任务 | API {N} issues, Model {M} violations |
+
+  Phase B (前端并行):
+  | 子项目 | requirements | design | tasks | 状态 |
+  |--------|-------------|--------|-------|------|
+  | {admin} | {N} 需求项 | {N} 页面 | {N} 任务 | 完成/失败 |
+  | {web} | {N} 需求项 | {N} 页面 | {N} 任务 | 完成/失败 |
+  | {mobile} | {N} 需求项 | {N} 页面 | {N} 任务 | 完成/失败 |
 
   跨项目依赖: {N} 条
   执行顺序: B0 → B1(并行) → B2 → B3(并行) → B4 → B5
   总任务数: CORE {N} + DEFER {M}
 
-  → 输出汇总进度「Phase 2 ✓ {N} 子项目 × 3 文档, CORE {M} 任务」（不停）
+  → 输出汇总进度「Phase 2 ✓ {N} 子项目 × 3 文档 (Phase A 串行 + Phase B 并行), CORE {M} 任务」（不停）
 ```
 
 ---
@@ -640,7 +647,7 @@ B5: Widget 测试 (flutter_test) + 集成测试 (Patrol / integration_test)
 
 ---
 
-## 5 条铁律
+## 6 条铁律
 
 ### 1. CORE 优先，DEFER 标记
 
@@ -661,3 +668,7 @@ B5: Widget 测试 (flutter_test) + 集成测试 (Patrol / integration_test)
 ### 5. 跨项目依赖显式声明
 
 后端 B2 → 前端 B4 的依赖、共享类型的依赖，都在 Step 4 中显式声明并写入 execution_order。
+
+### 6. 并行 Agent 产出隔离
+
+Phase A/B 的并行 Agent 各自写入独立子项目目录（`.allforai/project-forge/sub-projects/{name}/`），不读写其他 Agent 的产出。唯一跨 Agent 引用：前端 Agent 只读后端 design.md（API 端点定义），不修改。
