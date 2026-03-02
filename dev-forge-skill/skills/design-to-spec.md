@@ -218,8 +218,22 @@ Step 0: 模块映射验证
     → 自动分配到最匹配的子项目（按模块类型推断），记录决策（不停）
   → 更新 project-manifest.json
   ↓
-Step 1: Requirements 生成（逐子项目）
-  对每个子项目:
+并行执行编排（详见「## 并行执行编排」段落）:
+  子项目分类:
+    后端组: type = "backend"（通常 1 个）
+    前端组: 其余所有子项目（admin/web-customer/web-mobile/mobile-native）
+  Phase A — 后端 Agent（1 个 Agent 调用）:
+    Agent(backend): Step 1 → Step 2 → Step 2.5 → Step 3
+    ↓ 完成后
+  Phase B — 前端并行 Agent（单条消息发出 N 个 Agent 调用）:
+    ┌── Agent(前端1): Step 1 → Step 2 → Step 3
+    ├── Agent(前端2): Step 1 → Step 2 → Step 3
+    └── Agent(前端N): Step 1 → Step 2 → Step 3
+    全部完成 ↓
+  以下 Step 1-3 描述每个 Agent 内部执行的步骤内容:
+  ↓
+Step 1: Requirements 生成
+  每个 Agent 对其负责的子项目:
     a. 过滤该子项目的 assigned_modules → 获取模块内的任务列表
     b. 加载对应 full 数据（task-inventory + constraints + use-cases）
     c. 按子项目类型（backend/admin/web-customer/web-mobile/mobile-native）
@@ -243,9 +257,9 @@ Step 1: Requirements 生成（逐子项目）
     → 写入 .allforai/project-forge/sub-projects/{name}/requirements.md
     → 输出进度: 「{name}/requirements.md ✓ ({N} 需求项)」（不停，汇总到 Step 5）
   ↓
-Step 2: Design 生成（逐子项目，API-first 策略）
+Step 2: Design 生成（API-first 策略）
   **原则: 先表结构、后 API、再展开**
-  对每个子项目，基于 tech-profile 映射:
+  每个 Agent 对其子项目，基于 tech-profile 映射:
     所有端共通（最先生成）:
       entities → 数据模型 / 表结构设计（ER 图 Mermaid）
       entity.fields → 字段类型 + 约束 + 索引
@@ -294,9 +308,9 @@ Step 2: Design 生成（逐子项目，API-first 策略）
         - spike.status = "tbd" → 标注 [PENDING: 技术方案待定，后续确认后补充]
     → 写入 .allforai/project-forge/sub-projects/{name}/design.md
     → 输出进度: 「{name}/design.md ✓ ({N} API端点, {M} 页面)」（不停，汇总到 Step 5）
-  **生成顺序**: 后端 design.md 先于前端，确保前端 design 可直接引用 API 端点定义
+  **生成顺序**: 后端 Agent (Phase A) 先于前端 Agent (Phase B)，确保前端 design 可直接引用 API 端点定义
   ↓
-Step 2.5: Design 交叉审查（OpenRouter 可用时）
+Step 2.5: Design 交叉审查（由后端 Agent 在 Phase A 内执行，OpenRouter 可用时）
   后端 design.md 生成后，触发两项交叉审查:
   审查 A — API 设计审查 (GPT):
     提取 design.md 中所有 API 端点（路径+方法+请求/响应 DTO）
@@ -314,7 +328,7 @@ Step 2.5: Design 交叉审查（OpenRouter 可用时）
     → 输出进度: 「Step 2.5 交叉审查 ✓ API {N} issues, Model {M} violations」
   OpenRouter 不可用 → 跳过，输出: 「Step 2.5 ⊘ OpenRouter 不可用，跳过交叉审查」
   ↓
-Step 3: Tasks 生成（逐子项目）
+Step 3: Tasks 生成
   按开发层分 Batch，每任务遵循原子标准:
     - 1-3 文件，15-30 分钟，单一目的
     - 指明具体文件路径（基于技术栈 template 约定）
