@@ -1195,8 +1195,22 @@ B5: Widget 测试 (flutter_test) + 集成测试 (Patrol / integration_test)
 
 ```json
 {
-  "sub_project": "backend",
+  "sub_project": "admin",
   "generated_at": "ISO8601",
+  "shared_components": [
+    {
+      "primitive": "VirtualList",
+      "used_by_screens": ["S001", "S005", "S012"],
+      "suggested_name": "<DataList>",
+      "tech_stack_impl": "ProTable 内置虚拟化"
+    },
+    {
+      "primitive": "StateMachine",
+      "used_by_screens": ["S003", "S008"],
+      "suggested_name": "useStateMachine",
+      "tech_stack_impl": "自定义 hook（枚举 + 合法转换 Map）"
+    }
+  ],
   "api_endpoints": [
     {
       "method": "POST",
@@ -1220,6 +1234,14 @@ B5: Widget 测试 (flutter_test) + 集成测试 (Patrol / integration_test)
   "architecture_layers": {}
 }
 ```
+
+**`shared_components`**（Step 2 产出，仅前端子项目）：
+- `primitive`：行为原语名（来自 `interaction-types.md` 行为原语索引）
+- `used_by_screens`：使用该原语的界面 ID 列表（`screen_id` from screen-map.json）
+- `suggested_name`：建议的组件/hook 封装名称
+- `tech_stack_impl`：该技术栈下的具体实现方案（来自行为原语实现映射表）
+
+> 后端子项目 `shared_components` 为空数组 `[]`（跳过 Step 2）。
 
 ### tasks.json
 
