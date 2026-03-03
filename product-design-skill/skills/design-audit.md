@@ -22,6 +22,7 @@ version: "1.0.0"
 3. **横向一致性（Cross-check）** — 相邻层之间有无矛盾？
 4. **信息保真（Fidelity）** — 关键对象是否可追溯且具备多视角覆盖？
 5. **模式一致性（Pattern Consistency）** — 相同功能模式是否使用了一致的设计套路？（仅当 pattern-catalog.json 存在时激活）
+6. **行为一致性（Behavioral Consistency）** — 跨界面行为是否遵循已确认的行为规范？（仅当 behavioral-standards.json 存在时激活）
 
 发现问题只报告，不修改任何上游产物。
 
@@ -39,6 +40,8 @@ product-map（锚点）
     gap × prune / ui-design × prune / frequency × depth / use-case × screen
     ↓ 模式一致性（仅当 pattern-catalog.json 存在）
     pattern-catalog → ui-design-spec（_pattern_group 界面是否设计一致）
+    ↓ 行为一致性（仅当 behavioral-standards.json 存在）
+    behavioral-standards → ui-design-spec（界面是否遵循行为规范）
 ```
 
 **前提**：必须先运行 `product-map`，生成 `.allforai/product-map/product-map.json`。
@@ -53,6 +56,7 @@ product-map（锚点）
 /design-audit coverage     # 仅覆盖洪泛
 /design-audit cross        # 仅横向一致性
 /design-audit pattern        # 仅模式一致性检查（需 pattern-catalog.json 存在）
+/design-audit behavioral     # 仅行为一致性检查（需 behavioral-standards.json 存在）
 /design-audit role 客服专员  # 指定角色全链路校验
 ```
 
@@ -106,6 +110,7 @@ product-map（锚点）
 | **Step 3.5 保真门禁** | AskUserQuestion 确认 | 低于阈值 → WARNING 记入日志（不停），达到阈值 → PASS 自动继续 |
 | **Step 5 模式一致性** | AskUserQuestion 确认 | 自动执行（pattern-catalog.json 不存在 → 跳过），漂移问题记入日志 |
 | **Step 5.5 创新保真审计** | AskUserQuestion 确认 | 自动执行（adversarial-concepts.json 不存在或无 core 概念 → 跳过），稀释/不完整问题记入日志 |
+| **Step 5.6 行为一致性审计** | AskUserQuestion 确认 | 自动执行（behavioral-standards.json 不存在 → 跳过），漂移/违规问题记入日志 |
 | **Step 6 报告确认** | AskUserQuestion 确认 | 自动确认 |
 
 **安全护栏**（自动模式下仍然停下来问用户）：
@@ -144,6 +149,9 @@ Step 5: 模式一致性（Pattern Consistency）
       ↓ 自动
 Step 5.5: 创新保真审计（Innovation Fidelity）
       仅当 adversarial-concepts.json 存在且含 core 概念时执行
+      ↓ 自动
+Step 5.6: 行为一致性审计（Behavioral Consistency）
+      仅当 behavioral-standards.json 存在时执行
       ↓ 自动
 Step 6: 汇总报告
       合并所有维度结果，输出 JSON + Markdown
@@ -412,6 +420,62 @@ Step 6: 汇总报告
 
 ---
 
+### Step 5.6：行为一致性审计（Behavioral Consistency）
+
+> 目标：验证所有界面是否遵循确认的行为规范。
+> **前提**：`.allforai/behavioral-standards/behavioral-standards.json` 存在。不存在 → 跳过本步骤。
+
+#### 检测项
+
+**5.6a. 行为标准合规检查**
+
+对 behavioral-standards.json 中每个 category：
+- 读取该 category 标注的每个 screen 的 `_behavioral_standards` 方案
+- 在 ui-design-spec.md/json 中检查该 screen 的设计是否匹配标准方案
+- 不匹配 → `BEHAVIORAL_DRIFT`（行为漂移）
+
+**5.6b. 破坏性操作确认合规**
+
+对每个 screen 的 `crud=D` action 且 `requires_confirm=false`：
+- 若 BC-DELETE-CONFIRM 标准为 `modal_confirm` →
+  `BEHAVIORAL_VIOLATION`（界面违反已确认的行为规范）
+
+#### 输出格式
+
+```json
+{
+  "behavioral_consistency": {
+    "status": "pass | issues_found | skipped",
+    "total_categories_checked": 7,
+    "compliant_screens": 18,
+    "violating_screens": 2,
+    "issues": [
+      {
+        "type": "BEHAVIORAL_DRIFT | BEHAVIORAL_VIOLATION",
+        "category_id": "BC-DELETE-CONFIRM",
+        "screen_id": "S-05",
+        "expected": "modal_confirm",
+        "actual": "no_confirm",
+        "severity": "MEDIUM",
+        "recommendation": "添加模态确认弹窗"
+      }
+    ]
+  }
+}
+```
+
+**严重度分级**：
+- `HIGH`：破坏性操作无确认（`BEHAVIORAL_VIOLATION`），用户数据安全风险
+- `MEDIUM`：行为漂移（`BEHAVIORAL_DRIFT`），一致性体验受损
+- `LOW`：细微偏差（加载方式略有不同），可接受
+
+**输出处理**：
+- 所有 issues 追加到 `audit-report.json` 的 `behavioral_consistency` 字段
+- issues_found → 在 audit-report.md 中新增「行为一致性」章节展示违规列表
+- 不阻塞流程，仅报告
+
+---
+
 ### Step 6：汇总报告
 
 合并三个维度的校验结果，生成最终报告。
@@ -450,6 +514,12 @@ Step 6: 汇总报告
       "survived": 0,
       "diluted": 0,
       "incomplete": 0
+    },
+    "behavioral_consistency": {
+      "status": "pass|issues_found|skipped",
+      "total_categories_checked": 0,
+      "compliant_screens": 0,
+      "violating_screens": 0
     }
   },
   "trace_issues": [
@@ -500,6 +570,7 @@ Step 6: 汇总报告
 - 信息保真：追溯完整率 XX%（PASS/BELOW_THRESHOLD） · 视角覆盖率 XX%（PASS/BELOW_THRESHOLD）
 - 模式一致性：X 类模式检查，X 漂移（pass/issues_found/skipped）
 - 创新保真：X 核心概念，X 存活，X 稀释，X 不完整（pass/issues_found/skipped）
+- 行为一致性：X 类别检查，X 合规界面，X 违规界面（pass/issues_found/skipped）
 
 ## 问题清单（按严重度排序）
 

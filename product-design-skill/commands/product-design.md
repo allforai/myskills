@@ -48,6 +48,9 @@ Phase 3: screen-map
 Phase 3.5: design-pattern（可选，有模式时执行）
   加载并执行 skills/design-pattern.md
   ↓ checkpoint
+Phase 3.6: behavioral-standards（可选，有不一致时执行）
+  加载并执行 skills/behavioral-standards.md
+  ↓ checkpoint
 Phase 4-6: 并行执行（3 个 Agent 同时启动）
   ┌─ Agent: use-case      → .allforai/use-case/
   ├─ Agent: feature-gap   → .allforai/feature-gap/
@@ -70,6 +73,7 @@ Phase 7: design-audit full（终审）
 | product-map | `.allforai/product-map/task-inventory.json` 存在且 task 数 > 0 |
 | screen-map | `.allforai/screen-map/screen-map.json` 存在且 screen 数 > 0 |
 | design-pattern | `.allforai/design-pattern/pattern-catalog.json` 存在 |
+| behavioral-standards | `.allforai/behavioral-standards/behavioral-standards.json` 存在 |
 | use-case | `.allforai/use-case/use-case-tree.json` 存在 |
 | feature-gap | `.allforai/feature-gap/gap-tasks.json` 存在 |
 | feature-prune | `.allforai/feature-prune/prune-decisions.json` 存在（可选，手动执行） |
@@ -80,6 +84,8 @@ Phase 7: design-audit full（终审）
 **resume 模式**：从第一个未完成阶段开始。
 
 > **design-pattern**: 可选阶段，`pattern-catalog.json` 存在或 Phase 3.5 明确跳过，视为已完成。
+
+> **behavioral-standards**: 可选阶段，`behavioral-standards.json` 存在或 Phase 3.6 明确跳过，视为已完成。
 
 > **并行组**: use-case / feature-gap / ui-design 为并行执行组。feature-prune 为可选手动阶段。
 > resume 模式下，仅当该组全部完成才视为"Phase 4-6 已完成"，否则补跑缺失的 skill。
@@ -252,6 +258,32 @@ PASS → 进入 Phase 4-6 并行组
 ### resume 模式
 - `pattern-catalog.json` 存在 → 跳过 Phase 3.5
 - 文件不存在且 screen-map 已完成 → 补跑 Phase 3.5
+
+---
+
+## Phase 3.6：行为规范分析（可选）
+
+### 执行方式
+
+1. 检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_behavioral_standards.py` 是否存在
+2. 存在 → 执行预置脚本：`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_behavioral_standards.py <BASE> --mode auto`
+3. 不存在 → 用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/skills/behavioral-standards.md`，按其工作流执行
+
+执行条件：
+- screen-map 完成后执行（不依赖 design-pattern）
+- 若所有行为模式一致，脚本自动输出跳过提示
+
+### 质量门禁
+
+| 条件 | 标准 |
+|------|------|
+| behavioral-standards.json | 存在（或明确跳过）|
+
+PASS → 进入 Phase 4-6 并行组
+
+### resume 模式
+- `behavioral-standards.json` 存在 → 跳过 Phase 3.6
+- 文件不存在且 screen-map 已完成 → 补跑 Phase 3.6
 
 ---
 

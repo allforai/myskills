@@ -116,6 +116,13 @@ product-concept → product-map → screen-map → ui-design
     - _pattern_template 字段 → 作为界面设计的首选方案参考
     不存在 → 跳过，按标准流程设计
 
+  Behavioral Standards（可选读取）：
+    若 .allforai/behavioral-standards/behavioral-standards.json 存在，读取并作为设计约束：
+    - screen_behavioral_tags[screen_id]._behavioral_standards → 强制使用对应的标准方案
+    - 例：BC-LOADING 标准为 skeleton → 所有界面的 loading 状态均使用骨架屏
+    - 例：BC-DELETE-CONFIRM 标准为 modal_confirm → 所有 crud=D 操作使用模态弹窗确认
+    不存在 → 跳过，各界面独立设计状态（向后兼容）
+
   Phase 2.8 — 加载创新概念清单（新增）：
     检查 .allforai/product-concept/adversarial-concepts.json：
       存在 → 加载 `concepts[]` 数组，标记 innovation_mode = "active"
@@ -335,6 +342,12 @@ Step 5: 生成多角色 HTML 预览
 
 **检测 3**: 同一审批流（PT-APPROVAL）的状态标签颜色体系是否统一（待审=黄/通过=绿/拒绝=红）
   → 不一致 → 标记为 WARNING，在 ui-design-spec.md 中备注「需统一颜色体系」
+
+**检测 4**: 行为规范合规检查（仅当 behavioral-standards.json 存在时触发）
+  对每个有 `_behavioral_standards` 标签的界面：
+    检查生成的设计是否匹配标准方案（如 BC-LOADING 标准为 skeleton，但设计中写了 spinner → 不匹配）
+    不匹配 → `BEHAVIORAL_DRIFT` 告警，记录到模式一致性记录中
+    匹配 → 无操作
 
 结果追加到 ui-design-spec.md 末尾的「模式一致性记录」章节：
 
