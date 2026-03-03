@@ -224,6 +224,7 @@ for ft in freq_tier:
         decisions.append({
             "step": "Step 4",
             "item_id": ft["task_id"],
+            "task_id": ft["task_id"],
             "item_name": ft["task_name"],
             "decision": "CORE",
             "reason": f"高频受保护（frequency=高）— 策略={scope_strategy}",
@@ -235,6 +236,7 @@ for sa in scenario_align:
     decisions.append({
         "step": "Step 4",
         "item_id": sa["task_id"],
+        "task_id": sa["task_id"],
         "item_name": sa["task_name"],
         "decision": sa["preliminary_decision"],
         "reason": sa["reason"],
@@ -329,8 +331,7 @@ if C.xv_available():
         })
         print(f"  XV pruning_second_opinion: {promoted} promoted, {demoted} demoted")
     except Exception as e:
-        print(f"  XV pruning_second_opinion failed: {e}", file=sys.stderr)
-        raise
+        print(f"  XV pruning_second_opinion failed: {e} (continuing without XV)", file=sys.stderr)
 
     # XV-2: competitive_benchmark → deepseek
     # NOTE: runs after XV-1; `decisions` list is mutated in-place by XV-1,
@@ -350,14 +351,16 @@ if C.xv_available():
         })
         print(f"  XV competitive_benchmark: {flagged} competitive flags")
     except Exception as e:
-        print(f"  XV competitive_benchmark failed: {e}", file=sys.stderr)
-        raise
+        print(f"  XV competitive_benchmark failed: {e} (continuing without XV)", file=sys.stderr)
 
-    # Rewrite prune-decisions.json with XV corrections
-    C.write_json(os.path.join(OUT, "prune-decisions.json"), decisions)
-    # Write XV review to separate file
-    C.write_json(os.path.join(OUT, "prune-xv-review.json"), C.xv_review(xv_reviews))
-    print(f"  XV: prune-decisions.json rewritten, prune-xv-review.json created")
+    if xv_reviews:
+        # Rewrite prune-decisions.json with XV corrections
+        C.write_json(os.path.join(OUT, "prune-decisions.json"), decisions)
+        # Write XV review to separate file
+        C.write_json(os.path.join(OUT, "prune-xv-review.json"), C.xv_review(xv_reviews))
+        print(f"  XV: prune-decisions.json rewritten, prune-xv-review.json created")
+    else:
+        print(f"  XV: all calls failed, primary output unchanged")
 
 
 # ── Step 5: Generate prune tasks ─────────────────────────────────────────────
@@ -443,7 +446,8 @@ with open(os.path.join(OUT, "prune-report.md"), "w", encoding="utf-8") as f:
 C.append_pipeline_decision(
     BASE,
     "Phase 6 — feature-prune",
-    f"strategy={scope_strategy}, CORE={core_count}, DEFER={defer_count}, CUT={cut_count}"
+    f"strategy={scope_strategy}, CORE={core_count}, DEFER={defer_count}, CUT={cut_count}",
+    shard=args.get("shard")
 )
 
 # ── Summary ───────────────────────────────────────────────────────────────────

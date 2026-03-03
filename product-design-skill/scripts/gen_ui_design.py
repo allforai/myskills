@@ -264,8 +264,7 @@ if C.xv_available():
         })
         print(f"  XV design_review: {issue_count} high-severity issues appended")
     except Exception as e:
-        print(f"  XV design_review failed: {e}", file=sys.stderr)
-        raise
+        print(f"  XV design_review failed: {e} (continuing without XV)", file=sys.stderr)
 
     # XV-2: visual_consistency → gpt
     try:
@@ -283,15 +282,17 @@ if C.xv_available():
         })
         print(f"  XV visual_consistency: {finding_count} findings appended")
     except Exception as e:
-        print(f"  XV visual_consistency failed: {e}", file=sys.stderr)
-        raise
+        print(f"  XV visual_consistency failed: {e} (continuing without XV)", file=sys.stderr)
 
-    # Rewrite spec with XV findings appended
-    with open(os.path.join(OUT, "ui-design-spec.md"), "w", encoding="utf-8") as f:
-        f.write("\n".join(spec_lines) + "\n")
-    # Write XV review to separate file
-    C.write_json(os.path.join(OUT, "ui-xv-review.json"), C.xv_review(xv_reviews))
-    print(f"  XV: ui-design-spec.md rewritten, ui-xv-review.json created")
+    if xv_reviews:
+        # Rewrite spec with XV findings appended
+        with open(os.path.join(OUT, "ui-design-spec.md"), "w", encoding="utf-8") as f:
+            f.write("\n".join(spec_lines) + "\n")
+        # Write XV review to separate file
+        C.write_json(os.path.join(OUT, "ui-xv-review.json"), C.xv_review(xv_reviews))
+        print(f"  XV: ui-design-spec.md rewritten, ui-xv-review.json created")
+    else:
+        print(f"  XV: all calls failed, primary output unchanged")
 
 
 # ── Generate HTML previews ───────────────────────────────────────────────────
@@ -450,7 +451,8 @@ html_files = [f for f in os.listdir(PREVIEW) if f.endswith(".html")]
 C.append_pipeline_decision(
     BASE,
     "Phase 7 — ui-design",
-    f"style={STYLE}, roles={len(roles)}, screens={len(screens)}, html_files={len(html_files)}"
+    f"style={STYLE}, roles={len(roles)}, screens={len(screens)}, html_files={len(html_files)}",
+    shard=args.get("shard")
 )
 
 # ── Summary ───────────────────────────────────────────────────────────────────

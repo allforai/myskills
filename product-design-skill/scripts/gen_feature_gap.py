@@ -94,6 +94,31 @@ for tid, task in tasks.items():
         "details": details
     })
 
+# ── Prevalence filter: flags on >80% of tasks → SCHEMA_INCOMPLETE ────────────
+_schema_flags = {"NO_EXCEPTIONS", "NO_RULES", "NO_ACCEPTANCE_CRITERIA"}
+_total = len(task_gaps)
+if _total > 0:
+    _counts = {}
+    for tg in task_gaps:
+        for g in tg["gaps"]:
+            if g in _schema_flags:
+                _counts[g] = _counts.get(g, 0) + 1
+    _demoted = {f for f, c in _counts.items() if c / _total > 0.80}
+    for flag in _demoted:
+        print(f"  INFO: {flag} on {_counts[flag]}/{_total} tasks — reclassified as SCHEMA_INCOMPLETE")
+    if _demoted:
+        for tg in task_gaps:
+            kept = [g for g in tg["gaps"] if g not in _demoted]
+            removed = [g for g in tg["gaps"] if g in _demoted]
+            if removed:
+                tg["schema_incomplete"] = removed
+            tg["gaps"] = kept if kept else ["COMPLETE"]
+        C.write_json(os.path.join(OUT, "schema-summary.json"), {
+            "generated_at": NOW, "total_tasks": _total,
+            "demoted_flags": {f: _counts[f] for f in _demoted},
+            "threshold": 0.80
+        })
+
 C.write_json(os.path.join(OUT, "task-gaps.json"), task_gaps)
 
 # ── Step 2: Screen & button completeness check ──────────────────────────────
@@ -625,8 +650,7 @@ if C.xv_available():
         })
         print(f"  XV journey_validation: {added} gaps added")
     except Exception as e:
-        print(f"  XV journey_validation failed: {e}", file=sys.stderr)
-        raise
+        print(f"  XV journey_validation failed: {e} (continuing without XV)", file=sys.stderr)
 
     # XV-2: gap_prioritization → gpt
     try:
@@ -644,14 +668,16 @@ if C.xv_available():
         })
         print(f"  XV gap_prioritization: {adjusted} adjusted, {deduped} deduped")
     except Exception as e:
-        print(f"  XV gap_prioritization failed: {e}", file=sys.stderr)
-        raise
+        print(f"  XV gap_prioritization failed: {e} (continuing without XV)", file=sys.stderr)
 
-    # Rewrite gap-tasks.json with XV corrections (keep flat array schema)
-    C.write_json(os.path.join(OUT, "gap-tasks.json"), gap_tasks_list)
-    # Write cross_model_review to separate file
-    C.write_json(os.path.join(OUT, "gap-xv-review.json"), C.xv_review(xv_reviews))
-    print(f"  XV: gap-tasks.json rewritten, gap-xv-review.json created")
+    if xv_reviews:
+        # Rewrite gap-tasks.json with XV corrections (keep flat array schema)
+        C.write_json(os.path.join(OUT, "gap-tasks.json"), gap_tasks_list)
+        # Write cross_model_review to separate file
+        C.write_json(os.path.join(OUT, "gap-xv-review.json"), C.xv_review(xv_reviews))
+        print(f"  XV: gap-tasks.json rewritten, gap-xv-review.json created")
+    else:
+        print(f"  XV: all calls failed, primary output unchanged")
 
 # ── Per-priority split files ─────────────────────────────────────────────────
 priority_labels = {"高": "high", "中": "medium", "低": "low"}
@@ -758,7 +784,8 @@ C.append_pipeline_decision(
     "Phase 5 — feature-gap",
     f"task_gaps={task_gap_count}, screen_gaps={screen_gap_count}, "
     f"journey_gaps={journey_gap_count}, flow_gaps={flow_gap_count}, "
-    f"state_gaps={state_gap_count}, total_gap_tasks={len(gap_tasks_list)}"
+    f"state_gaps={state_gap_count}, total_gap_tasks={len(gap_tasks_list)}",
+    shard=args.get("shard")
 )
 
 # ── Summary ───────────────────────────────────────────────────────────────────

@@ -174,13 +174,18 @@ def collect_flow_task_refs(flows):
 
 # ── Pipeline Decisions ────────────────────────────────────────────────────────
 
-def append_pipeline_decision(base, phase, detail, decision="auto_confirmed"):
+def append_pipeline_decision(base, phase, detail, decision="auto_confirmed", shard=None):
     """Append a decision to pipeline-decisions.json, dedup by phase name.
 
     If an entry with the same 'phase' already exists, it is replaced
     (prevents duplicate entries on re-runs).
+
+    Args:
+        shard: If set, write to pipeline-decisions-{shard}.json instead of
+               the main file (avoids race conditions during parallel execution).
     """
-    pipe_path = os.path.join(base, "pipeline-decisions.json")
+    filename = f"pipeline-decisions-{shard}.json" if shard else "pipeline-decisions.json"
+    pipe_path = os.path.join(base, filename)
     pipe = []
     if os.path.exists(pipe_path):
         try:

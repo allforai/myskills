@@ -88,7 +88,8 @@ prune_map = {}  # task_id -> decision
 if prune:
     available_layers.append("feature-prune")
     for d in prune:
-        prune_map[d["item_id"]] = d["decision"]
+        tid = d.get("task_id", d.get("item_id"))
+        prune_map[tid] = d["decision"]
 
 # ui-design (optional)
 ui_spec_path = os.path.join(BASE, "ui-design/ui-design-spec.md")
@@ -451,8 +452,7 @@ if C.xv_available():
         })
         print(f"  XV cross_layer_validation: {root_count} root causes, {alarm_count} false alarms")
     except Exception as e:
-        print(f"  XV cross_layer_validation failed: {e}", file=sys.stderr)
-        raise
+        print(f"  XV cross_layer_validation failed: {e} (continuing without XV)", file=sys.stderr)
 
     # XV-2: coverage_analysis → gpt
     try:
@@ -470,15 +470,17 @@ if C.xv_available():
         })
         print(f"  XV coverage_analysis: {critical_count} critical, {acceptable_count} acceptable")
     except Exception as e:
-        print(f"  XV coverage_analysis failed: {e}", file=sys.stderr)
-        raise
+        print(f"  XV coverage_analysis failed: {e} (continuing without XV)", file=sys.stderr)
 
-    # Rewrite audit-report.json with XV annotations
-    report["cross_model_review"] = C.xv_review(xv_reviews)
-    C.write_json(os.path.join(OUT, "audit-report.json"), report)
-    # Write XV review to separate file
-    C.write_json(os.path.join(OUT, "audit-xv-review.json"), C.xv_review(xv_reviews))
-    print(f"  XV: audit-report.json rewritten, audit-xv-review.json created")
+    if xv_reviews:
+        # Rewrite audit-report.json with XV annotations
+        report["cross_model_review"] = C.xv_review(xv_reviews)
+        C.write_json(os.path.join(OUT, "audit-report.json"), report)
+        # Write XV review to separate file
+        C.write_json(os.path.join(OUT, "audit-xv-review.json"), C.xv_review(xv_reviews))
+        print(f"  XV: audit-report.json rewritten, audit-xv-review.json created")
+    else:
+        print(f"  XV: all calls failed, primary output unchanged")
 
 
 # ── Markdown report ──────────────────────────────────────────────────────────
@@ -539,7 +541,8 @@ C.append_pipeline_decision(
     f"coverage={coverage_rate}({len(coverage_issues)} gap), "
     f"cross={cross_total}({report['summary']['cross']['conflict']} conflict, "
     f"{report['summary']['cross']['warning']} warning), "
-    f"fidelity={traceability_rate}/{vp_rate}"
+    f"fidelity={traceability_rate}/{vp_rate}",
+    shard=args.get("shard")
 )
 
 # ── Summary ───────────────────────────────────────────────────────────────────

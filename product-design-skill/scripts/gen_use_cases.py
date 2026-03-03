@@ -566,8 +566,7 @@ if C.xv_available():
         })
         print(f"  XV edge_case_generation: {added} cases added")
     except Exception as e:
-        print(f"  XV edge_case_generation failed: {e}", file=sys.stderr)
-        raise
+        print(f"  XV edge_case_generation failed: {e} (continuing without XV)", file=sys.stderr)
 
     # XV-2: acceptance_criteria_review → gpt
     try:
@@ -585,16 +584,18 @@ if C.xv_available():
         })
         print(f"  XV acceptance_criteria_review: {flagged} flagged")
     except Exception as e:
-        print(f"  XV acceptance_criteria_review failed: {e}", file=sys.stderr)
-        raise
+        print(f"  XV acceptance_criteria_review failed: {e} (continuing without XV)", file=sys.stderr)
 
-    # Update summary counts after XV injection
-    tree["summary"]["use_case_count"] = uc_counter[0] + e2e_count
+    if xv_reviews:
+        # Update summary counts after XV injection
+        tree["summary"]["use_case_count"] = uc_counter[0] + e2e_count
 
-    # Rewrite use-case-tree.json with cross_model_review
-    tree["cross_model_review"] = C.xv_review(xv_reviews)
-    C.write_json(os.path.join(OUT, "use-case-tree.json"), tree)
-    print(f"  XV: use-case-tree.json rewritten with cross_model_review")
+        # Rewrite use-case-tree.json with cross_model_review
+        tree["cross_model_review"] = C.xv_review(xv_reviews)
+        C.write_json(os.path.join(OUT, "use-case-tree.json"), tree)
+        print(f"  XV: use-case-tree.json rewritten with cross_model_review")
+    else:
+        print(f"  XV: all calls failed, primary output unchanged")
 
 # ── Per-role split files ─────────────────────────────────────────────────────
 splits = {}
@@ -755,7 +756,8 @@ C.append_pipeline_decision(
     "Phase 4 — use-case",
     f"use_cases={total_uc + e2e_count}, happy={happy_count}, exception={exc_count}, "
     f"boundary={bnd_count}, validation={val_count}, e2e={e2e_count}, "
-    f"ordering_issues={total_ordering_issues}"
+    f"ordering_issues={total_ordering_issues}",
+    shard=args.get("shard")
 )
 
 # ── Summary ───────────────────────────────────────────────────────────────────
