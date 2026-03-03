@@ -1249,6 +1249,10 @@ MG2 实体集群由以下子屏组成，screen-map 可精确标注子类型：
 | `ImageLightbox` | 图片全屏查看 + 左右切换 | CT6, EC1 |
 | `Timeline` | 时间轴节点只读展示 | EC3, MG3（状态历史）, WK6 |
 | `BatchSelection` | 多选模式 + 批量操作工具栏 | MG1, MG2-L, MG4 |
+| `FileUpload` | 单文件或多文件上传，含选择、进度追踪、失败重试、队列管理 | MG2-C, MG2-E, WK7, SB1 |
+| `AsyncProcessing` | 触发服务端异步任务后，轮询状态直到完成/失败（含超时处理） | MG2-ST（转码/导入后状态）, SB1, TU4 |
+| `InlineEdit` | 直接在列表行或详情字段处点击进入编辑态，失焦或确认后原地保存，不弹窗不跳页 | MG2-L（可编辑表格）, MG5（详情字段内联编辑）, MG8 |
+| `BatchImport` | 上传结构化文件（CSV/Excel），解析后逐行校验，展示错误明细，确认后批量写入 | MG2-C（批量创建）, MG1（含导入入口）|
 
 ### 使用方式
 

@@ -245,6 +245,10 @@ existing 模式下，Step 3 生成 design.md 之前，先执行套路检测：
 | `ImageLightbox` | `Image.PreviewGroup`（AntD 内置） | `yet-another-react-lightbox` | `photo_view` package | `react-native-image-viewing` |
 | `Timeline` | `Steps`（竖向）/ `Timeline`（AntD） | 自定义竖向列表 | `timeline_tile` package | 自定义 `FlatList` |
 | `BatchSelection` | `ProTable` + `rowSelection` + `toolBarRender` 批量操作栏 | 自定义 checkbox state + toolbar | `ListView` + `Checkbox` + `FloatingActionButton` | `FlatList` + `Checkbox` + bottom toolbar |
+| `FileUpload` | `Upload` + `Dragger`（拖拽区）+ `beforeUpload` 校验 + `onChange` 进度；多文件用 `fileList` 受控 | `react-dropzone` + `axios` `onUploadProgress` + 自定义进度条 | `file_picker` + `dio`（`onSendProgress`）+ `LinearProgressIndicator` | `react-native-document-picker` + `axios` `onUploadProgress` |
+| `AsyncProcessing` | `useInterval`（`ahooks`）轮询 + `Steps` 状态展示；完成/失败后 `clearInterval` | `useQuery`（`refetchInterval: 2000`，`enabled: isProcessing`）+ 状态 badge | `Timer.periodic` 轮询 + Riverpod state + `LinearProgressIndicator` | `setInterval` 轮询 + Zustand state + `ActivityIndicator` |
+| `InlineEdit` | `ProTable` `editable={{ type: 'single' }}`；或 `<Typography.Text editable />` 单字段内联 | 自定义 `<InlineEdit>` 组件：`useState(editing)` + `onBlur` 保存 + `useMutation` | `InkWell` + `TextFormField`（`autofocus: true`）+ `FocusNode` 失焦保存 | `Pressable` → `TextInput`（`autoFocus`）+ `onBlur` 保存 |
+| `BatchImport` | `Upload`（`accept=".csv,.xlsx"`）+ `xlsx` 解析 + `ProTable` 展示错误行（红色高亮）+ 下载错误报告按钮 | `react-dropzone` + `papaparse`/`xlsx` 解析 + `Table` 错误行高亮 + 错误 CSV 导出 | `file_picker` + `csv` package 解析 + `DataTable` 错误高亮 | `react-native-document-picker` + `papaparse` 解析 + `FlatList` 错误行高亮 |
 
 ---
 
