@@ -211,12 +211,22 @@ manifest.json            requirements + design + tasks  实际文件和目录
   加载 prune-decisions.json → 过滤: 仅 CORE 和 DEFER 任务进入范围
   加载 forge-decisions.json → 读取 technical_spikes + coding_principles（存在时）
   ↓
+前置: 上游过期检测
+  加载输入文件时，比较关键上游文件的修改时间与本技能上次输出的生成时间：
+  - project-manifest.json 在 requirements.md / design.md / tasks.md 生成后被更新
+    → ⚠ 警告「project-manifest.json 在 requirements.md/design.md/tasks.md 生成后被更新，数据可能过期，建议重新运行 project-setup」
+  - product-map.json 在 requirements.md / design.md / tasks.md 生成后被更新
+    → ⚠ 警告「product-map.json 在 requirements.md/design.md/tasks.md 生成后被更新，数据可能过期，建议重新运行 product-map」
+  - 仅警告不阻断，用户可选择继续或先刷新上游
+  ↓
 Step 0: 模块映射验证
   检查 manifest 中所有子项目的 assigned_modules
   合并后与 task-index 的全量模块对照
   未覆盖的模块：
     → 自动分配到最匹配的子项目（按模块类型推断），记录决策（不停）
-  → 更新 project-manifest.json
+  → 写入 `.allforai/project-forge/module-assignment-supplement.json`（追加分配条目）
+  → **不修改** project-manifest.json（上游产物只读）
+  → task-execute / project-scaffold 加载时自动合并 manifest + supplement
   ↓
 并行执行编排（详见「## 并行执行编排」段落）:
   子项目分类:
@@ -349,7 +359,8 @@ Step 4: 跨子项目依赖分析
     共享类型 → packages/shared-types
     后端 B2 完成 → 前端 B4 才能开始（切换 mock → 真实后端）
   生成跨项目任务排序 → execution_order
-  → 更新 project-manifest.json
+  → 写入 `.allforai/project-forge/cross-project-dependencies.json`（依赖图 + execution_order）
+  → **不修改** project-manifest.json（上游产物只读）
   → 输出进度: 「跨项目依赖图 ✓ ({N} 条依赖)」（不停，汇总到 Step 5）
   ↓
 Step 5: 阶段末汇总确认
@@ -373,6 +384,13 @@ Step 5: 阶段末汇总确认
 
   → 输出汇总进度「Phase 2 ✓ {N} 子项目 × 3 文档 (Phase A 串行 + Phase B 并行), CORE {M} 任务」（不停）
 ```
+
+### 规模自适应
+
+根据子项目任务数自动调整 Step 5 展示策略：
+- **小规模**（≤30 tasks/子项目）：逐条展示完整任务列表
+- **中规模**（31-80 tasks/子项目）：按 Batch 分组摘要，仅展示 HIGH-risk 任务详情
+- **大规模**（>80 tasks/子项目）：统计概览（任务分布、风险分布、覆盖率）+ 仅列 HIGH-risk 项
 
 ---
 
@@ -640,10 +658,100 @@ B5: Widget 测试 (flutter_test) + 集成测试 (Patrol / integration_test)
 ```
 .allforai/project-forge/sub-projects/
   {sub-project-name}/
-  ├── requirements.md        # Step 1 输出
-  ├── design.md              # Step 2 输出
-  └── tasks.md               # Step 3 输出
+  ├── requirements.md        # Step 1 输出（人类可读）
+  ├── requirements.json      # Step 1 输出（机器可读）
+  ├── design.md              # Step 2 输出（人类可读）
+  ├── design.json            # Step 2 输出（机器可读）
+  ├── tasks.md               # Step 3 输出（人类可读）
+  └── tasks.json             # Step 3 输出（机器可读）
 ```
+
+---
+
+## JSON 对应件（机器可读格式）
+
+每个 Markdown 规格文件同时生成 JSON 对应件，供下游技能（task-execute、product-verify、shared-utilities）直接解析，避免正则匹配 Markdown 的脆弱性。
+
+### requirements.json
+
+```json
+{
+  "sub_project": "backend",
+  "generated_at": "ISO8601",
+  "requirements": [
+    {
+      "id": "R-001",
+      "title": "用户注册",
+      "source_refs": ["T-001", "F-001"],
+      "priority": "high",
+      "acceptance_criteria": ["..."],
+      "constraints": ["CN-001"]
+    }
+  ]
+}
+```
+
+### design.json
+
+```json
+{
+  "sub_project": "backend",
+  "generated_at": "ISO8601",
+  "api_endpoints": [
+    {
+      "method": "POST",
+      "path": "/api/v1/users",
+      "requirement_ref": "R-001",
+      "request_schema": {},
+      "response_schema": {},
+      "error_codes": []
+    }
+  ],
+  "data_models": [
+    {
+      "name": "User",
+      "table": "users",
+      "fields": [],
+      "requirement_ref": "R-001",
+      "indexes": [],
+      "relations": []
+    }
+  ],
+  "architecture_layers": {}
+}
+```
+
+### tasks.json
+
+```json
+{
+  "sub_project": "backend",
+  "generated_at": "ISO8601",
+  "tasks": [
+    {
+      "id": "BE-T001",
+      "title": "实现用户注册 API",
+      "batch": "B2",
+      "files": ["internal/handler/user.go", "internal/service/user.go"],
+      "requirements_ref": ["R-001"],
+      "leverage": ["SU-001"],
+      "guardrails": ["输入校验", "密码加密"],
+      "risk": "low",
+      "estimated_lines": 120
+    }
+  ],
+  "batch_summary": {
+    "B0": { "count": 2, "description": "Monorepo 初始化" },
+    "B1": { "count": 5, "description": "共享工具库" },
+    "B2": { "count": 15, "description": "数据模型 + API" }
+  }
+}
+```
+
+**生成规则**：
+- JSON 和 Markdown 同步生成，JSON 为完整数据，Markdown 为人类摘要
+- 下游技能优先读取 JSON（存在时），回退到解析 Markdown（向后兼容）
+- JSON 文件路径：与 Markdown 同目录，仅扩展名不同（`requirements.md` → `requirements.json`）
 
 ---
 

@@ -120,6 +120,21 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
     use-case-tree.json 可选（dynamic 优先使用，否则自动推导）
     verify-decisions.json 存在则加载历史决策，已决策项自动跳过
   ↓
+前置: 创新保护感知
+  加载 task-inventory.json 检查 innovation_tasks 字段：
+    存在 → 提取所有 protection_level=core 的任务 ID 列表
+      在 S1-S5 静态验证和 D2-D3 动态验证中，core 创新任务视为 frequency=high，确保不被优先级降级
+      S5 成本控制中，core 创新任务始终包含在审查集中，不受 covered 数量阈值限制
+    不存在 → 跳过，按标准优先级处理
+  ↓
+前置: 上游过期检测
+  加载输入文件时，比较关键上游文件的修改时间与本技能上次输出的生成时间：
+  - product-map.json 在 verify-report.md 生成后被更新
+    → ⚠ 警告「product-map.json 在 verify-report.md 生成后被更新，数据可能过期，建议重新运行 product-map」
+  - requirements.md 在 verify-report.md 生成后被更新
+    → ⚠ 警告「requirements.md 在 verify-report.md 生成后被更新，数据可能过期，建议重新运行 design-to-spec」
+  - 仅警告不阻断，用户可选择继续或先刷新上游
+  ↓
 
 [Static 阶段]（static / full 模式）
   S1: Task → API 覆盖检查
@@ -289,6 +304,8 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 | 21-50 项 | 仅审查 frequency=高 + risk_level=高 的 covered 项 |
 | > 50 项 | 仅审查 frequency=高 的 covered 项（上限 30 项） |
 
+例外：`protection_level=core` 的创新任务始终纳入审查，不受数量阈值限制。
+
 **执行流程**：
 
 ```
@@ -441,7 +458,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 ├── static-report.json       # S1-S4: 静态覆盖状态
 ├── dynamic-report.json      # D2-D3: 动态测试结果
 ├── verify-tasks.json        # 待处理任务清单（IMPLEMENT / REMOVE_EXTRA / FIX_FAILING）
-├── verify-report.md         # 可读版报告
+├── verify-report.md         # 可读版报告（含 innovation_coverage）
 └── verify-decisions.json    # 用户决策日志（S4 EXTRA 归属 + D4 失败分类）
 ```
 
@@ -506,6 +523,11 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
       "agree": 10,
       "disagree": 2
     }
+  },
+  "innovation_coverage": {
+    "core_tasks_total": 0,
+    "core_tasks_verified": 0,
+    "coverage_rate": "100%"
   }
 }
 ```

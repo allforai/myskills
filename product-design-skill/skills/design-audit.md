@@ -105,6 +105,7 @@ product-map（锚点）
 | **Step 3 横向一致性确认** | AskUserQuestion 确认 | 自动确认，所有 CONFLICT / WARNING / BROKEN_REF 记入 `pipeline-decisions.json` |
 | **Step 3.5 保真门禁** | AskUserQuestion 确认 | 低于阈值 → WARNING 记入日志（不停），达到阈值 → PASS 自动继续 |
 | **Step 5 模式一致性** | AskUserQuestion 确认 | 自动执行（pattern-catalog.json 不存在 → 跳过），漂移问题记入日志 |
+| **Step 5.5 创新保真审计** | AskUserQuestion 确认 | 自动执行（adversarial-concepts.json 不存在或无 core 概念 → 跳过），稀释/不完整问题记入日志 |
 | **Step 6 报告确认** | AskUserQuestion 确认 | 自动确认 |
 
 **安全护栏**（自动模式下仍然停下来问用户）：
@@ -140,6 +141,9 @@ Step 3.5: 信息保真门禁（Fidelity）
       ↓ 用户确认
 Step 5: 模式一致性（Pattern Consistency）
       仅当 pattern-catalog.json 存在时执行
+      ↓ 自动
+Step 5.5: 创新保真审计（Innovation Fidelity）
+      仅当 adversarial-concepts.json 存在且含 core 概念时执行
       ↓ 自动
 Step 6: 汇总报告
       合并所有维度结果，输出 JSON + Markdown
@@ -258,6 +262,8 @@ Step 6: 汇总报告
 2. 逐条检查相邻层之间的一致性
 3. 向用户展示结果摘要，等待确认
 
+> **搜索驱动原则**：展示审计结果前，先 WebSearch 搜索「design audit checklist {产品类型}」和「cross-layer consistency verification best practices」，用搜索结果补充审计维度。
+
 **结果标记**：
 
 | 标记 | 含义 | 严重度 |
@@ -356,6 +362,56 @@ Step 6: 汇总报告
 
 ---
 
+### Step 5.5：创新保真审计（Innovation Fidelity）
+
+> 目标：验证 product-concept 阶段定义的核心创新概念是否在全链路中存活且未被稀释。
+> **前提**：`.allforai/product-concept/adversarial-concepts.json` 存在且含 `protection_level=core` 概念。不存在 → 跳过本步骤。
+
+#### 检测项
+
+**5.5a. 创新概念存活率**
+
+对每个 `protection_level=core` 的创新概念：
+- 在 `task-inventory.json` 中是否有 `innovation_task=true` 的对应任务？
+- 在 `prune-decisions.json` 中是否被标为 CORE（未被 CUT/DEFER）？
+- 在 `ui-design-spec.md/json` 中是否有专属设计节？
+- 缺失任一层 → `INNOVATION_DILUTED`
+
+**5.5b. 创新概念完整度**
+
+对每个存活的核心创新概念：
+- 其跨领域参考（adversarial_concept_ref）是否在 ui-design 中体现？
+- 其保护级别是否在 feature-prune 决策中被尊重？
+- 完整度不足 → `INNOVATION_INCOMPLETE`
+
+#### 输出格式
+
+```json
+{
+  "innovation_fidelity": {
+    "status": "pass | issues_found | skipped",
+    "core_concepts_total": 3,
+    "survived": 3,
+    "diluted": 0,
+    "incomplete": 1,
+    "issues": [
+      {
+        "type": "INNOVATION_DILUTED | INNOVATION_INCOMPLETE",
+        "concept_id": "IC001",
+        "concept_name": "...",
+        "missing_in": ["ui-design"],
+        "severity": "HIGH",
+        "recommendation": "在 ui-design 中补充 IC001 专属设计节"
+      }
+    ]
+  }
+}
+```
+
+**严重度**：核心创新被稀释 → HIGH（产品差异化风险）。
+
+---
+
 ### Step 6：汇总报告
 
 合并三个维度的校验结果，生成最终报告。
@@ -387,6 +443,13 @@ Step 6: 汇总报告
       "total_patterns_checked": 0,
       "clean_patterns": 0,
       "drift_patterns": 0
+    },
+    "innovation_fidelity": {
+      "status": "pass|issues_found|skipped",
+      "core_concepts_total": 0,
+      "survived": 0,
+      "diluted": 0,
+      "incomplete": 0
     }
   },
   "trace_issues": [
@@ -436,6 +499,7 @@ Step 6: 汇总报告
 - 横向一致性：X 项检查，X OK，X CONFLICT，X WARNING，X BROKEN_REF
 - 信息保真：追溯完整率 XX%（PASS/BELOW_THRESHOLD） · 视角覆盖率 XX%（PASS/BELOW_THRESHOLD）
 - 模式一致性：X 类模式检查，X 漂移（pass/issues_found/skipped）
+- 创新保真：X 核心概念，X 存活，X 稀释，X 不完整（pass/issues_found/skipped）
 
 ## 问题清单（按严重度排序）
 

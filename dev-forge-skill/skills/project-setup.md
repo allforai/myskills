@@ -84,6 +84,12 @@ product-map（产品长什么样）   project-setup（代码怎么组织）   de
       加载 .allforai/product-map/task-index.json（索引优先）
       若不存在 → 提示先运行 /product-map，终止
       ↓
+前置: 上游过期检测
+      加载输入文件时，比较关键上游文件的修改时间与本技能上次输出的生成时间：
+      - product-map.json 在 project-manifest.json 生成后被更新
+        → ⚠ 警告「product-map.json 在 project-manifest.json 生成后被更新，数据可能过期，建议重新运行 product-map」
+      - 仅警告不阻断，用户可选择继续或先刷新上游
+      ↓
 前置: Preflight 偏好检测
       读取 .allforai/project-forge/forge-decisions.json → preflight 字段
       若 preflight 存在且 confirmed_at 非空:

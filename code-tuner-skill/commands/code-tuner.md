@@ -101,6 +101,37 @@ Phase 0 是所有模式的必经阶段。执行前先检查项目中是否已存
 
 每个 Phase 完成后，将结果写入 `.allforai/code-tuner/` 目录下对应的 JSON 文件。
 
+## 决策日志
+
+每次用户通过 AskUserQuestion 确认决策时，追加记录到 `tuner-decisions.json`：
+
+```json
+{
+  "decisions": [
+    {
+      "step": "Phase 0",
+      "item_id": "tech-stack",
+      "decision": "confirmed",
+      "value": "...",
+      "decided_at": "ISO8601"
+    }
+  ]
+}
+```
+
+**输出路径**：`.allforai/code-tuner/tuner-decisions.json`
+
+**记录时机**：Phase 0 中的以下决策点：
+- `tech-stack` — 技术栈识别确认
+- `architecture-type` — 架构类型确认（三层/两层/DDD/混合）
+- `layer-mapping` — 层级映射确认（目录→逻辑角色）
+- `module-list` — 模块列表确认
+- `data-model` — 数据模型概况确认
+
+**resume 模式**：已有 decisions.json 时，已确认步骤自动跳过（展示一行摘要），从第一个无决策记录的步骤继续。
+
+---
+
 ## 报告输出要求（强制执行）
 
 分析完成后，必须做两件事：
@@ -110,6 +141,7 @@ Phase 0 是所有模式的必经阶段。执行前先检查项目中是否已存
 将完整报告写入 `.allforai/code-tuner/` 目录：
 - `tuner-report.md` — 综合报告
 - `tuner-tasks.json` — 重构任务清单
+- `tuner-decisions.json` — 决策日志
 
 ### 2. 在对话中直接输出报告摘要
 

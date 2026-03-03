@@ -416,13 +416,47 @@ Step 5: 生成多角色 HTML 预览
 
 ```
 .allforai/ui-design/
-├── ui-design-spec.md               # 高层设计规格
+├── ui-design-spec.md               # 高层设计规格（人类可读）
+├── ui-design-spec.json             # 设计规格（机器可读）
 ├── ui-design-decisions.json        # 用户决策日志（风格选择、Step 确认记录）
 └── preview/
     ├── index.html                  # 总导航
     ├── ui-role-{角色1}.html
     ├── ui-role-{角色2}.html
     └── ...
+```
+
+### JSON 对应件
+
+同步生成 `ui-design-spec.json`，供下游技能（design-audit、design-to-spec、product-verify）直接解析：
+
+```json
+{
+  "generated_at": "ISO8601",
+  "style": "Flat / Minimal",
+  "style_source": "URL",
+  "design_tokens": {
+    "colors": { "primary": "#111827", "background": "#FFFFFF", "success": "...", "warning": "...", "error": "..." },
+    "typography": { "h1": "28px/700", "h2": "22px/600", "body": "14px/400", "caption": "12px/400" },
+    "spacing": "8px grid",
+    "border_radius": "4px"
+  },
+  "screens": [
+    {
+      "screen_id": "S-05",
+      "name": "订单管理",
+      "role": "管理员",
+      "audience_type": "professional",
+      "layout": "侧边导航+内容区",
+      "sections": ["顶部操作栏", "数据表格", "分页器"],
+      "states": { "empty": "引导文案", "loading": "骨架屏", "error": "toast 提示" },
+      "task_refs": ["T-12", "T-13"],
+      "innovation_ui": false,
+      "_pattern": ["PT-CRUD"]
+    }
+  ],
+  "pattern_alignment": []
+}
 ```
 
 ---

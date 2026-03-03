@@ -51,6 +51,35 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 ---
 
+## 决策日志
+
+每次用户通过 AskUserQuestion 确认决策时，追加记录到 `deadhunt-decisions.json`：
+
+```json
+{
+  "decisions": [
+    {
+      "step": "Phase 0",
+      "item_id": "module-classification",
+      "decision": "confirmed",
+      "value": "...",
+      "decided_at": "ISO8601"
+    }
+  ]
+}
+```
+
+**输出路径**：`.allforai/deadhunt/deadhunt-decisions.json`
+
+**记录时机**：Phase 0 中的以下决策点：
+- `module-classification` — 模块分类确认
+- `crud-distribution` — CRUD 分布确认
+- `client-roles` — 客户端角色确认
+
+**resume 模式**：已有 decisions.json 时，已确认步骤自动跳过（展示一行摘要），从第一个无决策记录的步骤继续。
+
+---
+
 ## 报告输出要求（强制执行）
 
 验证完成后，你必须做两件事：
@@ -60,6 +89,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 将完整报告写入 `.allforai/deadhunt/output/` 目录：
 - `validation-report-{client}.md` — 各端详细报告
 - `fix-tasks.json` — 修复任务清单
+- `deadhunt-decisions.json` — 决策日志（位于 `.allforai/deadhunt/deadhunt-decisions.json`）
 
 ### 2. 在对话中直接输出报告摘要
 

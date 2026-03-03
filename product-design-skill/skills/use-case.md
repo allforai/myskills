@@ -313,6 +313,8 @@ Step 4: 端到端用例生成（需 business-flows.json，quick 模式跳过）
 | UC001 | 正常提交退款单 | happy_path |
 ```
 
+> **搜索驱动原则**：生成用例前，先 WebSearch 搜索「{产品类型} user scenario best practices」和「{产品类型} edge cases common mistakes」，用搜索结果补充容易遗漏的异常流和边界场景。
+
 **用户确认**：正常流步骤完整吗？预期结果有没有遗漏？
 
 ---

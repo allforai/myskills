@@ -364,6 +364,8 @@ Step 6: 状态机完整性检查（quick / journey 模式跳过）
 | ... | ... | ... |
 ```
 
+> **搜索驱动原则**：展示缺口分析结果前，先 WebSearch 搜索「{产品类型} feature completeness checklist」和「{行业} common missing features」，用搜索结果交叉验证缺口检测的覆盖面。
+
 **用户确认**：缺口优先级排序合理吗？有需要调整优先级或移除的缺口吗？
 
 ---

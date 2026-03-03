@@ -159,7 +159,7 @@ code-tuner 产出    → .allforai/code-tuner/
 
 每一层只回答自己该回答的问题，不越界。product-design 不碰代码，code-tuner 不评判产品。层间通过 `.allforai/` 目录的 JSON 文件解耦通信。
 
-### 12 条核心设计原则
+### 13 条核心设计原则
 
 #### 1. 双格式输出：JSON (机器) + Markdown (人类)
 
@@ -233,6 +233,10 @@ Phase 4-7 四个 Agent 并行执行，各自写分片文件（`pipeline-decision
 - **core** → 跳过频次过滤，强制保留
 - **defensible** → 需用户确认才能砍
 - **experimental** → 正常频次过滤
+
+#### 13. 前置收集，一次执行（Front-load Decisions）
+
+在流程起点（product-concept）一次性收集所有用户偏好和决策（`pipeline_preferences`），后续阶段自动消费这些决策，仅 ERROR 级问题才停顿。减少交互轮次，让流水线尽可能无人值守运行。
 
 ## License
 

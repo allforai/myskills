@@ -54,7 +54,46 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 所有产出写入 `.allforai/deadhunt/output/field-analysis/` 目录。
 
+决策日志写入 `.allforai/deadhunt/fieldcheck-decisions.json`。
+
 > **Flutter 项目注意**：当检测到 Flutter 客户端时，L1 提取会扫描 `.dart` Widget 文件，L2 提取会扫描 Dart 模型类（`fromJson`/`@JsonKey`）。同时启用 Flutter 特有问题类型检测（PLATFORM_GAP、SERIALIZE_MISMATCH、NULL_SAFETY）。详见 `${CLAUDE_PLUGIN_ROOT}/docs/fieldcheck/extractors.md`。
+
+---
+
+## 决策日志
+
+每次用户通过 AskUserQuestion 确认决策时，追加记录到 `fieldcheck-decisions.json`：
+
+```json
+{
+  "decisions": [
+    {
+      "step": "Step 0",
+      "item_id": "tech-stack",
+      "decision": "confirmed",
+      "value": "...",
+      "decided_at": "ISO8601"
+    }
+  ]
+}
+```
+
+**输出路径**：`.allforai/deadhunt/fieldcheck-decisions.json`
+
+**记录时机**：Step 0 中的以下决策点：
+- `tech-stack` — 技术栈确认
+- `module-list` — 模块列表确认
+
+**resume 模式**：已有 decisions.json 时，已确认步骤自动跳过（展示一行摘要），从第一个无决策记录的步骤继续。
+
+---
+
+### 规模自适应
+
+根据字段总数调整报告展示策略：
+- **小规模**（≤50 个字段）：逐条展示所有字段映射和问题
+- **中规模**（51-200 个字段）：按模块分组摘要，仅展开 SEMANTIC 和 MISSING 问题详情
+- **大规模**（>200 个字段）：统计概览（各层字段数、各类问题计数）+ 仅展示严重问题
 
 ---
 
