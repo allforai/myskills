@@ -100,6 +100,8 @@ manifest.json            requirements + design + tasks  实际文件和目录
 | 测试与实现对称 | Step 3 | 每个 B2 Service/API 任务必须对应 B5 测试任务。测试命名 `test_{行为}_{条件}_{预期}`，测试间无共享可变状态，每条测试独立可运行 |
 | 性能基线内建 | Step 2 | 列表 API 强制分页（默认 page_size ≤ 50），有外键关联的字段加数据库索引，禁止 N+1 查询（ORM eager loading 或 JOIN）。大数据量操作走异步任务 |
 | 写操作幂等 | Step 2 | 创建类 API 支持幂等键（`Idempotency-Key` header 或业务唯一约束），更新类 API 使用乐观锁（version 字段或 updated_at 条件更新），并发冲突返回 409 Conflict |
+| 前端 CRUD 套路一致 | Step 2 | 同类型子项目（如多个 admin 端）的列表/新建/编辑/删除/详情必须使用相同组件套路和数据流模式。详见「前端 CRUD 实现套路」章节 |
+| 多语言全覆盖 | Step 2, 3 | 所有用户可见文本必须通过 i18n 函数获取（禁止硬编码），新增文本必须同步所有语言文件。design.md 中标注 i18n 方案，tasks.md 中每个涉及 UI 文本的任务标注 `_i18n: sync all locales_` |
 
 ---
 
@@ -158,10 +160,11 @@ manifest.json            requirements + design + tasks  实际文件和目录
 | 维度 | 内容 |
 |------|------|
 | requirements 侧重 | CRUD 完整性、批量操作、权限矩阵 |
-| design 侧重 | 页面布局、组件树、表单验证规则 |
+| design 侧重 | 页面布局、组件树、表单验证规则、CRUD 套路（见「前端 CRUD 实现套路」） |
 | 非功能需求 | 角色权限矩阵、审计日志 |
 | 从 screen-map 取 | actions → CRUD 页面规格；states → 四态设计；on_failure + exception_flows → 错误反馈；validation_rules → 表单 Schema；requires_confirm → 确认弹窗 |
 | 从 ui-design 取 | 全量设计 token |
+| CRUD 套路 | design.md 必须包含「CRUD 实现套路」章节，指定列表/表单/删除/详情的组件选型和数据流（详见下方独立章节） |
 
 ### web-customer
 
@@ -193,6 +196,393 @@ manifest.json            requirements + design + tasks  实际文件和目录
 | 从 screen-map 取 | actions → Screen 组件规格（RN: Screen 组件 / Flutter: Screen Widget）；states → 四态设计（离线态额外处理）；on_failure + exception_flows → 原生错误提示；validation_rules → 表单验证 |
 | 从 ui-design 取 | 原生端设计 token（如有） |
 | 测试工具 | RN: Detox / Maestro / Flutter: Patrol / integration_test |
+
+---
+
+## 前端页面交互套路
+
+> 前端子项目的 design.md 必须为每个页面标注交互类型，并遵循对应的数据流模式。
+> 不同交互类型的页面使用不同的组件组合和数据流套路，**同类型页面必须使用相同套路**。
+> **existing 模式下**：先扫描已有代码提取实际套路，以已有套路为准。以下为默认套路。
+
+### 套路检测（existing 模式专用）
+
+existing 模式下，Step 2 生成 design.md 之前，先执行套路检测：
+
+1. **Request 层**：扫描 `src/utils/request*` 或 `src/requestConfig*`，识别 HTTP 客户端
+2. **列表组件**：扫描 pages 目录，识别列表组件（ProTable / Table / DataGrid）
+3. **表单组件**：扫描 `*Create*` / `*Edit*` / `*Form*`，识别表单模式
+4. **状态操作**：扫描 `approve` / `reject` / `suspend` / `ship` 等操作模式
+5. **删除确认**：扫描 `Modal.confirm` / `Popconfirm` 调用模式
+6. **编辑回填**：扫描 `setFieldsValue` / `initialValues` 使用模式
+7. **i18n**：扫描 `useIntl` / `useTranslations` / `t()` 调用模式
+8. **枚举管理**：扫描 `constants/enum*` / `valueEnum` 定义模式
+
+检测结果写入 design.md 的「页面交互套路」章节。
+
+### 页面交互类型分类
+
+> design.md 中每个页面必须标注为以下类型之一。design-to-spec 根据 screen-map 的 actions 自动推断类型。
+
+| 类型 | 判定条件 | 典型占比 |
+|------|---------|---------|
+| **A. 只读列表** | 仅有查看+筛选，无增删改操作 | ~55% |
+| **B. 完整 CRUD** | 有新建+编辑+删除+列表 | ~10% |
+| **C. 状态机驱动** | 无直接字段编辑，通过操作触发状态流转 | ~10% |
+| **D. 审批流** | 查看详情+批准/驳回（可选附加评语） | ~6% |
+| **E. 主从详情** | 主实体详情+嵌套子实体列表（Tabs） | ~6% |
+| **F. 树形管理** | 父子嵌套结构，支持层级 CRUD | ~2% |
+| **G. 仪表盘** | 统计卡片+图表，无数据变更 | ~3% |
+| **H. 配置页** | 单页表单编辑，无列表 | ~8% |
+
+**推断规则**（从 screen-map actions 自动判定）：
+
+```
+有 create/edit/delete actions → B. 完整 CRUD
+有 approve/reject actions → D. 审批流
+有 ship/cancel/suspend/restore/freeze actions 且无 edit → C. 状态机驱动
+有 子实体列表（tabs/nested table）→ E. 主从详情
+actions 仅有 view/filter/search → A. 只读列表
+screen 名含 dashboard/overview/报表 → G. 仪表盘
+screen 名含 settings/config/资料 且无 list → H. 配置页
+entities 有 parentId/children 字段 → F. 树形管理
+```
+
+---
+
+### 按技术栈的各类型套路
+
+#### UmiJS + Ant Design Pro（admin / merchant 类）
+
+##### 公共基础层
+
+**请求层**（所有类型共用）：
+
+| 层次 | 规范 |
+|------|------|
+| HTTP 客户端 | `@umijs/max` 的 `request` 函数，全局配置在 `requestConfig.ts` |
+| Token 管理 | requestConfig.ts 统一处理 Authorization header、token 刷新（mutex）、401 重定向 |
+| Service 文件 | 每个域一个文件（`src/services/products.ts`），函数按操作命名 |
+| 类型定义 | `src/services/typings.d.ts`，响应统一 `API.Response<T>` / `API.PageResponse<T>` |
+
+**枚举管理**（所有类型共用）：
+
+```
+定义: constants/enums.ts — 枚举值（数字或字符串常量）
+标签: constants/enumLabels.ts — 多语言标签 + 颜色/Tag 映射
+使用: 列表列 valueEnum + 表单 Select options + 详情页 Tag 共用同一套枚举
+```
+
+**字段→组件映射**（所有含表单的类型共用）：
+
+| 字段类型 | 组件 | 备注 |
+|---------|------|------|
+| 文本 | `Input` / `ProFormText` | |
+| 多行文本 | `Input.TextArea` / `ProFormTextArea` | rows ≥ 3 |
+| 枚举/状态 | `Select` / `ProFormSelect` | 选项来自 `constants/enums.ts`，禁止用 Input |
+| 数字 | `InputNumber` / `ProFormDigit` | 设置 min/max/precision |
+| 布尔 | `Switch` / `ProFormSwitch` | |
+| 日期 | `DatePicker` / `ProFormDatePicker` | |
+| 图片 | `Upload`（listType="picture-card"） | 限制数量和格式 |
+| 关联实体 | `Select`（动态从 API 获取 options） | 如「分类选择」 |
+
+---
+
+##### A. 只读列表（审计日志、积分历史、结算记录、通知列表等）
+
+```
+组件: ProTable<API.Entity> + useRef<ActionType>()
+数据源: request prop → service 函数 → { data, total, success }
+筛选: 列定义 valueType: 'select' + valueEnum，或 dateRange 搜索
+操作列: 仅「查看详情」Link 跳转，无编辑/删除按钮
+分页: params.current → page，defaultPageSize: 10/20
+搜索: search={{ labelWidth: 'auto' }}
+特征: 无 ModalForm、无 Modal.confirm、无 mutation API 调用
+```
+
+Service 层仅需 `getXList()` 函数，无 create/update/delete。
+
+---
+
+##### B. 完整 CRUD（商品、分类、角色、团队成员等）
+
+**列表页**：
+```
+组件: ProTable + ActionRef
+操作列: 编辑 + 删除（+ 可选的状态切换）
+工具栏: 新建按钮（toolBarRender）
+```
+
+**新建/编辑表单**：
+
+| 场景 | 组件 | 数据流 |
+|------|------|--------|
+| 简单实体（≤8 字段） | `ModalForm` + `ProForm*` 字段 | `onFinish` 返回 boolean → 成功关闭 → `actionRef.current?.reload()` |
+| 复杂实体（>8 字段 / 含嵌套） | 独立页面 `Form` | `useEffect` fetch → `form.setFieldsValue()` 回填 → 提交 → `history.push()` |
+
+**编辑回填（强制）**：
+- ModalForm：打开前 `form.setFieldsValue(record)` 或传 `initialValues`
+- 独立页面：`useEffect` 中 fetch → `form.setFieldsValue(res.data)`
+- 图片/文件：URL 转 `UploadFile[]`（`{ uid, name, status: 'done', url }`）
+
+**删除操作**：
+```
+确认: Modal.confirm({ title, content: 实体名, okType: 'danger' }) 或 Popconfirm
+执行: onOk → deleteX(id) → message.success → actionRef.current?.reload()
+```
+
+Service 层完整：`getXList()` / `getX(id)` / `createX()` / `updateX()` / `deleteX()`
+
+---
+
+##### C. 状态机驱动（订单、退款、商户状态、用户状态等）
+
+> 特征：实体有明确的状态流转图，用户通过「操作按钮」触发状态变更，不直接编辑字段。
+
+**列表页**：
+```
+组件: ProTable + 状态筛选（valueEnum 按状态着色）
+操作列: 根据当前状态动态显示可用操作按钮（条件渲染）
+  如: 待发货 → 显示「发货」；已发货 → 显示「查看物流」
+无: 编辑按钮、删除按钮
+```
+
+**状态操作**：
+```
+简单操作（无额外输入）:
+  Modal.confirm({ title: '确认发货？', onOk: () => shipOrder(id) })
+  → message.success → actionRef.current?.reload()
+
+带输入的操作（如拒绝需填理由）:
+  ModalForm({ title: '拒绝退款' })
+    → ProFormTextArea name="reason" rules=[{ required: true }]
+    → onFinish: rejectRefund(id, { reason }) → reload
+```
+
+**状态流转图**（design.md 必须包含 Mermaid stateDiagram）：
+```
+design.md 中为每个状态机实体生成:
+  stateDiagram-v2
+    [*] --> pending
+    pending --> approved : approve()
+    pending --> rejected : reject(reason)
+    approved --> suspended : suspend(reason)
+    suspended --> approved : restore()
+```
+
+Service 层：`getXList()` / `getX(id)` / `approveX(id)` / `rejectX(id, reason)` / `shipX(id, data)` 等操作函数，无 `updateX()` 通用编辑。
+
+---
+
+##### D. 审批流（商品审核、退款审批、广告审核、商户入驻审批等）
+
+> 特征：查看待审批项的详情 → 做出批准/驳回决策。是状态机的特化形式。
+
+**列表页**：
+```
+组件: ProTable，status 列默认筛选为「待审批」
+操作列: 「审核」Link 跳转到详情页
+可选: 批量审批（rowSelection + 工具栏批量操作按钮）
+```
+
+**审核详情页**：
+```
+布局:
+  Card(实体完整信息 — Descriptions / 只读展示，不可编辑)
+  Card(审核操作面板)
+    → 审核检查项（可选 Checkbox 清单）
+    → 批准按钮 (Filled, type="primary")
+    → 驳回按钮 (Outlined, danger)
+    → 驳回时弹出 ModalForm 填写驳回原因
+
+数据流:
+  批准: Modal.confirm → approveX(id) → message.success → history.push(列表)
+  驳回: ModalForm → rejectX(id, { reason, comment }) → history.push(列表)
+```
+
+Service 层：`getXList()` / `getXDetail(id)` / `approveX(id)` / `rejectX(id, reason)`，可选 `batchApproveX(ids[])`。
+
+---
+
+##### E. 主从详情（用户详情→订单/积分、商户详情→订单/结算、订单详情→商品项等）
+
+> 特征：一个主实体 + 多个关联子实体列表，通过 Tabs 组织。
+
+```
+路由: /entities/:id
+取数: useParams() → useEffect fetchEntity() → setState
+
+布局:
+  PageContainer
+    Card(头部 — Avatar/名称/关键指标 Statistic)
+    Card(基本信息 — Descriptions column={2})
+    Card(关联数据 — Tabs)
+      TabPane("订单") → ProTable + 独立 ActionRef（request 内带 entityId 筛选）
+      TabPane("积分") → ProTable + 独立 ActionRef
+      TabPane("日志") → ProTable（只读）
+
+内嵌操作:
+  主实体操作: 按钮 → ModalForm → fetchEntity() 刷新主信息
+  子实体操作: 子表操作列 → Modal.confirm → 子表 actionRef.current?.reload()
+```
+
+Service 层：`getX(id)` + `getXOrders(id, params)` + `getXPoints(id, params)` 等子实体查询。
+
+---
+
+##### F. 树形管理（分类管理等）
+
+> 特征：父子层级结构，支持在任意节点下 CRUD。
+
+```
+取数: useEffect fetchTree() → setState（一次加载全树，或懒加载子节点）
+
+布局:
+  左侧: Tree 组件展示层级
+  右侧/弹窗: 选中节点的编辑表单
+
+新建: 选中父节点 → 打开 ModalForm（带 parentId）→ createX({ ...values, parentId })
+编辑: 选中节点 → form.setFieldsValue(node.data) → updateX(id, values)
+删除: Popconfirm → deleteX(id)
+排序: 拖拽或 sort 字段编辑
+
+刷新: 所有操作后 fetchTree()（重建整棵树）
+```
+
+Service 层：`getXTree()` / `createX({ parentId })` / `updateX(id)` / `deleteX(id)` / 可选 `reorderX(id, sort)`。
+
+---
+
+##### G. 仪表盘（Dashboard / Overview）
+
+> 特征：纯展示，无数据变更操作。
+
+```
+取数: useEffect → 调用 getDashboard() / getStatistics() → setState
+布局:
+  Row + Col 网格:
+    Statistic 卡片（关键指标：总订单数、待处理、销售额）
+    图表（可选: @ant-design/charts — Line/Bar/Pie）
+    待办事项列表（Link 跳转到对应管理页）
+
+刷新: 无自动刷新（或可选定时轮询）
+```
+
+Service 层：`getDashboard()` / `getStatistics(params)` 聚合查询。
+
+---
+
+##### H. 配置页（系统设置、店铺资料、安全设置等）
+
+> 特征：单个实体的编辑表单，无列表页。
+
+```
+取数: useEffect → getSettings() → form.setFieldsValue(res.data)
+
+布局:
+  PageContainer
+    Card(表单)
+      Form + Form.Item（字段按业务分组，可用 Divider 分隔）
+      提交按钮（固定在底部或浮动）
+
+提交: form.validateFields() → updateSettings(values) → message.success
+特征: 无列表、无删除、无新建。只有「加载 → 编辑 → 保存」。
+```
+
+Service 层：`getSettings()` / `updateSettings(values)`，仅两个函数。
+
+---
+
+#### Next.js（web-customer 类）
+
+> C 端页面交互类型较少，主要是消费者浏览+操作场景。
+
+| 交互类型 | 套路 |
+|---------|------|
+| 商品列表/搜索 | Server Component 首屏 SSR + TanStack Query 客户端分页/筛选 |
+| 商品详情 | SSR + 客户端交互（加购/收藏/关注） |
+| 表单提交（下单/评价/工单） | React Hook Form / 原生 form → `useMutation` → 成功跳转 |
+| 用户中心列表（订单/收藏/积分） | TanStack Query `useInfiniteQuery` 无限滚动或分页 |
+| 状态操作（取消订单/申请退款） | 确认弹窗 → `useMutation` → `queryClient.invalidateQueries` |
+| 个人设置（地址/资料） | `useQuery` 加载 → 表单回填 → `useMutation` 保存 |
+| i18n | `useTranslations` hook（next-intl），翻译文件 `src/messages/{locale}.json` |
+| 状态管理 | Zustand store（全局状态）+ TanStack Query（服务端缓存） |
+
+#### Flutter（mobile-native 类）
+
+| 交互类型 | 套路 |
+|---------|------|
+| 列表浏览 | ListView.builder + Riverpod `AsyncNotifierProvider`（分页加载） |
+| 详情查看 | `FutureProvider` / `AsyncNotifier` → 单实体 fetch |
+| 表单提交 | Form + TextFormField + `controller.text = oldValue` 回填 |
+| 枚举选择 | `DropdownButtonFormField` |
+| 状态操作 | `showDialog` 确认 → API → `ref.invalidate()` |
+| 删除 | `showDialog` 确认 → API → `ref.invalidate()` / `context.pop()` |
+| 配置页 | `AsyncNotifier` 加载 → Form 回填 → 保存 |
+| i18n | flutter_localizations + `.arb` 文件 |
+
+---
+
+### 多语言实现规范
+
+> 以下规范适用于所有前端子项目，design.md 和 tasks.md 中必须体现。
+
+| 规范 | 具体要求 |
+|------|---------|
+| 文本获取 | 所有用户可见文本通过 i18n 函数获取，禁止硬编码字符串 |
+| 语言文件同步 | 新增任何文本时，必须同步更新所有语言文件（如 ja/en/zh-CN） |
+| Key 命名 | 按 `{模块}.{页面}.{元素}` 分层命名（如 `products.list.deleteConfirm`） |
+| 参数化 | 动态内容用参数插值（如 `确认删除 {name}？`），不拼接字符串 |
+| 枚举标签 | 枚举的显示文本同样走 i18n，不硬编码在枚举定义中 |
+| tasks.md 标注 | 每个涉及 UI 文本的任务附加 `_i18n: sync all locales_` 标注 |
+
+---
+
+### design.md 中的输出格式
+
+生成前端子项目的 design.md 时，在页面规格之前插入「页面交互套路」章节。每个页面规格中标注交互类型：
+
+~~~markdown
+## 页面交互套路
+
+> 本项目各页面按交互类型分类，同类型页面必须遵循相同的组件选型和数据流。
+
+### 请求层
+{从套路检测结果或默认套路填写}
+
+### 页面类型分布
+| 类型 | 页面数 | 代表页面 |
+|------|--------|---------|
+| A. 只读列表 | {N} | 审计日志、积分历史 |
+| B. 完整 CRUD | {N} | 商品管理、分类管理 |
+| C. 状态机驱动 | {N} | 订单管理 |
+| D. 审批流 | {N} | 商品审核 |
+| E. 主从详情 | {N} | 用户详情 |
+| F. 树形管理 | {N} | 分类管理 |
+| G. 仪表盘 | {N} | 首页 |
+| H. 配置页 | {N} | 店铺设置 |
+
+### 各类型标准数据流
+{按类型列出组件选型 + 数据流 + Service 函数签名}
+
+### 字段→组件映射
+{字段类型对照表}
+
+### 枚举管理
+{定义位置 + 使用方式}
+
+### 多语言
+{i18n 方案 + 语言文件位置 + 同步要求}
+~~~
+
+每个具体页面规格标注类型：
+~~~markdown
+#### 商品列表页 [类型: B-完整CRUD]
+#### 审计日志页 [类型: A-只读列表]
+#### 订单详情页 [类型: E-主从详情 + C-状态机驱动]
+~~~
+
+一个页面可以组合多个类型（如「订单详情」= 主从详情 + 状态机操作）。
 
 ---
 
