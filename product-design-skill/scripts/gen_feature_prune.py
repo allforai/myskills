@@ -112,7 +112,49 @@ for ft in freq_tier:
     is_revenue = any(kw in task["task_name"] for kw in revenue_keywords)
     has_business_rules = len(rules) >= 2 or len(exceptions) >= 1
     is_basic = category == "basic"
-    is_risk_protected = is_basic or (risk_level in ("高", "中")) or is_revenue or has_business_rules
+
+    # CRUD completeness: if sibling create/edit exists, delete/cancel must not be CUT
+    crud_create = {"创建", "添加", "新增", "注册", "申请", "发起", "提交", "撰写"}
+    crud_reverse = {"删除", "移除", "取消", "撤回", "撤销"}
+    task_name = task["task_name"]
+    is_crud_reverse = any(kw in task_name for kw in crud_reverse)
+    has_crud_sibling = False
+    if is_crud_reverse:
+        # Extract entity from reverse task by stripping the reverse keyword
+        reverse_entity = task_name
+        for kw in crud_reverse:
+            reverse_entity = reverse_entity.replace(kw, "")
+
+        # Check if any task in same role has a create/forward operation on same entity
+        role = task.get("owner_role", "")
+        for other_tid, other_task in tasks.items():
+            if other_tid == tid:
+                continue
+            if other_task.get("owner_role") == role:
+                other_name = other_task["task_name"]
+                if any(kw in other_name for kw in crud_create):
+                    # Method 1: share >=2 common chars at end (e.g. 宠物档案)
+                    for elen in range(4, 1, -1):
+                        if len(task_name) >= elen and len(other_name) >= elen:
+                            if task_name[-elen:] == other_name[-elen:]:
+                                has_crud_sibling = True
+                                break
+                    # Method 2: entity overlap — strip CRUD keywords, check >=2 char overlap
+                    if not has_crud_sibling and len(reverse_entity) >= 2:
+                        other_entity = other_name
+                        for kw in crud_create:
+                            other_entity = other_entity.replace(kw, "")
+                        if len(other_entity) >= 2:
+                            for elen in range(min(len(reverse_entity), len(other_entity)), 1, -1):
+                                if reverse_entity in other_entity or other_entity in reverse_entity:
+                                    has_crud_sibling = True
+                                    break
+                    if has_crud_sibling:
+                        break
+
+    is_crud_protected = is_crud_reverse and has_crud_sibling
+
+    is_risk_protected = is_basic or (risk_level in ("高", "中")) or is_revenue or has_business_rules or is_crud_protected
 
     # Preliminary decision based on scope_strategy
     if scope_strategy == "aggressive":
@@ -164,6 +206,8 @@ for ft in freq_tier:
             guardrail_reasons.append("营收相关")
         if has_business_rules:
             guardrail_reasons.append(f"rules={len(rules)},exceptions={len(exceptions)}")
+        if is_crud_protected:
+            guardrail_reasons.append("CRUD完整性(反向操作)")
         reason_parts.append(f"护栏保护({'+'.join(guardrail_reasons)})")
     reason_parts.append(f"策略={scope_strategy}")
 
