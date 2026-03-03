@@ -24,10 +24,40 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 ## 执行流程
 
 1. 参考已加载的 SKILL.md 中的目标定义和注意事项（技能触发时已自动加载，无需重复读取）
-2. 根据模式按需读取对应阶段的详细文档
-3. 按工作流执行
-4. **【强制】执行完毕后，必须在对话中直接输出完整的报告摘要（见下方"报告输出要求"）**
-5. **【强制】报告输出后，执行 Phase 5: 补充回归测试（见下方"回归测试要求"）**
+2. **Phase 0 前置：尝试消费上游决策**（见下方"上游消费链"）
+3. 根据模式按需读取对应阶段的详细文档
+4. 按工作流执行
+5. **【强制】执行完毕后，必须在对话中直接输出完整的报告摘要（见下方"报告输出要求"）**
+6. **【强制】报告输出后，执行 Phase 5: 补充回归测试（见下方"回归测试要求"）**
+
+### 上游消费链（Front-load Decisions）
+
+Phase 0 的 3 个决策项可从上游产物自动获取，**已从上游获取的决策直接采用（展示一行摘要），仅缺失或冲突项才询问用户**：
+
+```
+优先级 1: .allforai/deadhunt/deadhunt-decisions.json（自身 resume 缓存）
+    ↓ 不存在或过期
+优先级 2: .allforai/project-forge/project-manifest.json（project-setup 产出）
+    ↓ 不存在
+优先级 3: 自动检测（扫描代码推断）
+    ↓ 无法推断
+优先级 4: AskUserQuestion 询问用户
+```
+
+**字段映射表**：
+
+| Phase 0 决策项 | project-manifest.json 字段 |
+|---------------|--------------------------|
+| module-classification | `sub_projects[].modules[]`（按子项目分组的模块列表） |
+| crud-distribution | — （需自动扫描，但模块列表可缩小扫描范围） |
+| client-roles | `sub_projects[].tech_stack`（前端子项目 = 客户端角色） |
+
+**执行逻辑**：
+
+1. 尝试读取 `deadhunt-decisions.json` → 已有决策的步骤自动跳过
+2. 尝试读取 `project-manifest.json` → 存在则提取 `module-classification` 和 `client-roles`
+3. 自动填充的项展示「✓ module-classification: 12 个模块 — 来自 project-manifest」
+4. 仅 `crud-distribution`（必须扫描代码）和无法映射的项需要用户确认
 
 ## 详细文档（按需用 Read 工具加载）
 

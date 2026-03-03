@@ -81,10 +81,41 @@ code-tuner 专为服务端代码（Java/Go/Node.js/Python/.NET/Rust/PHP/Ruby 后
 
 ## Phase 0 执行要求
 
-Phase 0 是所有模式的必经阶段。执行前先检查项目中是否已存在 `.allforai/code-tuner/tuner-profile.json`：
+Phase 0 是所有模式的必经阶段。按以下优先级链获取画像信息，**已从上游获取的决策直接采用（展示一行摘要），仅缺失或冲突项才询问用户**：
 
-- **已存在** → 读取并展示给用户确认是否仍然有效，有效则跳过 Phase 0
-- **不存在** → 执行完整 Phase 0，生成画像后请用户确认
+### 上游消费链（Front-load Decisions）
+
+```
+优先级 1: .allforai/code-tuner/tuner-profile.json（自身缓存）
+    ↓ 不存在或过期
+优先级 2: .allforai/project-forge/project-manifest.json（project-setup 产出）
+    ↓ 不存在
+优先级 3: .allforai/project-forge/forge-decisions.json（project-setup 决策）
+    ↓ 不存在
+优先级 4: 自动检测（扫描代码推断）
+    ↓ 无法推断
+优先级 5: AskUserQuestion 询问用户
+```
+
+**字段映射表**：
+
+| Phase 0 决策项 | project-manifest.json 字段 | forge-decisions.json 字段 |
+|---------------|--------------------------|--------------------------|
+| tech-stack | `sub_projects[].tech_stack` | `tech_stack` |
+| architecture-type | — | `architecture_type` |
+| layer-mapping | — | `layer_mapping` |
+| module-list | `sub_projects[].modules[]` | — |
+| data-model | — | — |
+
+**执行逻辑**：
+
+1. 尝试读取 `tuner-profile.json` → 已存在且未过期 → 展示摘要，确认后跳过 Phase 0
+2. 不存在 → 尝试读取 `project-manifest.json` + `forge-decisions.json`
+3. 从上游提取可映射的决策项，自动填充（展示「✓ tech-stack: Go (Gin) — 来自 project-manifest」）
+4. 剩余缺失项通过自动检测或 AskUserQuestion 补齐
+5. 全部就绪后生成 `tuner-profile.json`
+
+**示例**：若 project-manifest.json 存在且包含 tech_stack=Go + modules=[user, order, product]，则 `tech-stack` 和 `module-list` 自动填充，仅 `architecture-type`、`layer-mapping`、`data-model` 需要检测或询问。
 
 画像确认内容：
 1. 技术栈识别结果
@@ -93,7 +124,7 @@ Phase 0 是所有模式的必经阶段。执行前先检查项目中是否已存
 4. 模块列表
 5. 数据模型概况（实体数、DTO/VO数、公共字段）
 
-**以上五项都必须用户确认后才能进入后续 Phase。**
+**已从上游获取的项展示来源标记，用户确认一次即可进入后续 Phase。**
 
 ## 各 Phase 执行要求
 

@@ -39,13 +39,46 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 ---
 
+## 上游消费链（Front-load Decisions）
+
+Step 0 的 2 个决策项可从上游产物自动获取，**已从上游获取的决策直接采用（展示一行摘要），仅缺失或冲突项才询问用户**：
+
+```
+优先级 1: .allforai/deadhunt/fieldcheck-decisions.json（自身 resume 缓存）
+    ↓ 不存在或过期
+优先级 2: .allforai/deadhunt/deadhunt-decisions.json（deadhunt 已确认的画像）
+    ↓ 不存在
+优先级 3: .allforai/project-forge/project-manifest.json（project-setup 产出）
+    ↓ 不存在
+优先级 4: 轻量探测（扫描代码推断）
+    ↓ 无法推断
+优先级 5: AskUserQuestion 询问用户
+```
+
+**字段映射表**：
+
+| Step 0 决策项 | deadhunt-decisions.json | project-manifest.json |
+|--------------|------------------------|----------------------|
+| tech-stack | `decisions[item_id=tech-stack].value`（若 deadhunt 已跑过） | `sub_projects[].tech_stack` |
+| module-list | `decisions[item_id=module-classification].value` | `sub_projects[].modules[]` |
+
+**执行逻辑**：
+
+1. 尝试读取 `fieldcheck-decisions.json` → 已有决策的步骤自动跳过
+2. 尝试读取 `deadhunt-decisions.json` → deadhunt 已确认的技术栈和模块可直接复用
+3. 尝试读取 `project-manifest.json` → 提取技术栈和模块列表
+4. 自动填充的项展示「✓ tech-stack: Go (Gin) — 来自 deadhunt-decisions」
+5. 仅无法映射的缺失项做轻量探测或询问用户
+
+---
+
 ## 执行步骤（详见 overview.md）
 
-注意：fieldcheck 不强制要求完整的 deadhunt Phase 0，无 validation-profile.json 时做轻量探测即可。
+注意：fieldcheck 不强制要求完整的 deadhunt Phase 0，优先从上游消费链获取画像，无上游时做轻量探测即可。
 
 | Step | 做什么 | 产出 |
 |------|-------|------|
-| Step 0 | 项目画像获取（检测/复用技术栈和模块列表） | 技术栈 + 模块确认 |
+| Step 0 | 项目画像获取（上游消费 → 检测/复用技术栈和模块列表） | 技术栈 + 模块确认 |
 | Step 1 | 字段提取 L4→L3→L2→L1 | `field-profile.json` |
 | Step 2 | 跨层映射（按模块分组智能匹配） | `field-mapping.json` |
 | Step 3 | 问题检测（GHOST/TYPO/GAP/STALE/SEMANTIC/TYPE） | `field-issues.json` |
