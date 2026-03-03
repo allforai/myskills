@@ -519,6 +519,54 @@ Service 层：`getSettings()` / `updateSettings(values)`，仅两个函数。
 | i18n | `useTranslations` hook（next-intl），翻译文件 `src/messages/{locale}.json` |
 | 状态管理 | Zustand store（全局状态）+ TanStack Query（服务端缓存） |
 
+##### 各类型详细套路（Next.js）
+
+###### CT1 Feed 流
+
+```
+数据获取: useInfiniteQuery({ queryKey, queryFn: ({ pageParam }) => fetchFeed(pageParam) })
+渲染: IntersectionObserver 监听末尾哨兵元素 → fetchNextPage()
+骨架屏: loading 状态下渲染 <SkeletonCard /> 列表
+互动: useMutation → optimistic update（like/follow 先更新本地，失败回滚）
+特征: 无分页器，纯滚动加载；Server Component 首屏 SSR，客户端接管后续分页
+```
+
+###### EC1 商品详情页
+
+```
+数据获取: generateStaticParams + revalidate（ISR，商品数据变化低频）
+SKU 矩阵状态:
+  const [selected, setSelected] = useState<Record<string, string>>({})
+  const currentSku = useMemo(() => skus.find(s => matchSpec(s.spec, selected)), [skus, selected])
+  → 联动价格/库存/图片展示，无效规格组合置灰
+加购: useMutation → POST /api/cart/items → queryClient.invalidateQueries(['cart'])
+图片: next/image + 主图轮播（swiper） + 缩放（react-medium-image-zoom）
+特征: 规格选择是核心状态，不同于普通详情页
+```
+
+###### EC2 购物车
+
+```
+本地状态: Zustand store（cartStore）← 离线缓存，持久化到 localStorage
+服务端同步: useQuery(['cart']) 拉取服务端最新（登录后合并本地 → 服务端）
+库存校验: 实时轮询或加购时后端返回最新库存，超库存行项标红
+数量操作: optimistic update（本地先改，debounce 500ms 后同步后端）
+结算: form → POST /api/orders → redirect to /checkout/[orderId]
+特征: 本地 state 与服务端 state 双轨并行，需明确 merge 策略
+```
+
+###### WK1 IM 对话
+
+```
+WebSocket: const ws = new WebSocket(url)，封装为 useChatSocket() hook
+消息列表: useInfiniteQuery 加载历史（反向分页）+ AppendOnlyStream 追加新消息
+  → 合并为单一消息数组，按 timestamp 排序
+自动滚底: useEffect(() => { listRef.current?.scrollToBottom() }, [messages])
+发送: useMutation → optimistic add（pending 气泡）→ 服务端确认 → 更新 id/status
+重连: useEffect cleanup 监听 ws.onclose → setTimeout 重连
+特征: 历史加载（反向无限滚动）+ 实时追加，两种数据流合并
+```
+
 #### Flutter（mobile-native 类）
 
 | 交互类型 | 套路 |
@@ -531,6 +579,50 @@ Service 层：`getSettings()` / `updateSettings(values)`，仅两个函数。
 | 删除 | `showDialog` 确认 → API → `ref.invalidate()` / `context.pop()` |
 | 配置页 | `AsyncNotifier` 加载 → Form 回填 → 保存 |
 | i18n | flutter_localizations + `.arb` 文件 |
+
+##### 各类型详细套路（Flutter）
+
+###### CT1 Feed 流
+
+```
+Provider: AsyncNotifierProvider<FeedNotifier, List<Post>>
+加载更多: ListView.builder + ScrollController → _controller.addListener(() {
+    if (_controller.position.pixels >= _controller.position.maxScrollExtent - 200) {
+      ref.read(feedProvider.notifier).loadMore();
+    }
+  })
+下拉刷新: RefreshIndicator → ref.read(feedProvider.notifier).refresh()
+互动: optimistic update → ref.read(feedProvider.notifier).toggleLike(postId)
+特征: Riverpod AsyncNotifier 管理分页游标，loading/error/data 三态
+```
+
+###### EC1 商品详情页
+
+```
+数据: FutureProvider.family<Product, String>((ref, id) => api.getProduct(id))
+SKU 状态: StateProvider<Map<String, String>>（规格选择） + 派生 Provider 计算当前 SKU
+  final currentSkuProvider = Provider((ref) {
+    final selected = ref.watch(selectedSpecProvider);
+    final product = ref.watch(productProvider(id)).value;
+    return product?.skus.firstWhere((s) => matchSpec(s.spec, selected));
+  });
+图片: PageView.builder + photo_view（缩放）
+加购: ref.read(cartProvider.notifier).add(skuId, quantity)
+特征: 派生 Provider 实现规格→价格/库存的响应式联动
+```
+
+###### WK1 IM 对话
+
+```
+WebSocket: web_socket_channel → StreamBuilder<WebSocketMessage>
+消息: StateNotifierProvider<ChatNotifier, ChatState>
+  → 历史消息: 首次加载 → state = ChatState(messages: history)
+  → 新消息: StreamBuilder 触发 notifier.append(msg)
+列表: ListView.builder(reverse: true) + ScrollController 自动滚底
+发送: notifier.sendMessage(text) → optimistic add → WS send → 确认后更新 id
+重连: StreamBuilder error → ElevatedButton("重新连接", onPressed: notifier.reconnect)
+特征: reverse ListView 实现聊天气泡自然布局，StreamBuilder 驱动实时更新
+```
 
 ---
 
