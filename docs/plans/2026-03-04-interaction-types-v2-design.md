@@ -480,19 +480,64 @@ screen-map 标注格式：
 
 ---
 
+## 行为原语层（Behavioral Primitives）
+
+交互类型之间存在共享的底层行为单元。**凡共享同一原语的类型，前端实现可共享组件或逻辑**。这一层是交互类型与代码抽象之间的桥接。
+
+### 原语目录
+
+| 原语 | 使用该原语的类型 |
+|------|----------------|
+| `VirtualList` / `PaginatedList` | MG1, MG2-L, CT7 |
+| `InfiniteScroll` | CT1, CT2（评论区）, WK1（历史消息反向加载）|
+| `PullToRefresh` | CT1, MG1, RT4（移动端） |
+| `HorizontalSwipe`（决策滑动） | CT4 |
+| `VerticalSwipe`（切换滑动） | CT8 |
+| `SwipeAction`（列表行侧滑） | MG1, WK1, RT4 |
+| `DragAndDrop`（跨容器拖拽） | WK5, WK6, WK7 |
+| `CanvasDrag`（坐标系拖拽） | WK4, EC1（图片缩放）, CT6 |
+| `StateMachine` | MG3, MG2-ST, SB1, CT5, RT1 |
+| `AppendOnlyStream`（实时追加） | WK1, RT2, TU3, RT4 |
+| `RealtimeSync`（协同同步） | WK1, WK2, WK3, WK4 |
+| `FormWithValidation` | MG2-C, MG2-E, MG8, SY2, SB1 |
+| `MultiStepWizard` | SY1, SY2 |
+| `TreeNavigation` | MG6, WK7 |
+| `MediaPlayer` | CT5, CT8, RT2 |
+| `ImageLightbox` | CT6, EC1 |
+| `Timeline`（时间线展示） | EC3, MG3（状态历史）, WK6 |
+| `BatchSelection`（批量选择） | MG1, MG2-L, MG4 |
+
+### 对 design-to-spec 的影响
+
+在生成逐页规格之前，新增**原语识别阶段**：
+
+```
+输入：screen-map.json（全部 interaction_type 标注）
+↓
+汇总项目中出现的所有类型
+↓
+按原语聚类 → 识别需要封装的共享组件
+↓
+输出：共享组件规划（哪些原语需要封装，被哪些页面复用）
+↓
+再进行逐页技术规格生成
+```
+
+---
+
 ## 实施影响
 
 | 文件 | 变更类型 | 说明 |
 |------|---------|------|
-| `product-design-skill/docs/interaction-types.md` | 全量重写 | 按本设计文档实施 |
+| `product-design-skill/docs/interaction-types.md` | 全量重写 | 按本设计文档实施，新增行为原语索引章节 |
 | `product-design-skill/skills/screen-map.md` | 更新引用 | 推断规则对应新编码（MG1-TU4） |
 | `product-design-skill/skills/ui-design.md` | 更新引用 | 按新类型代号生成视觉规格 |
-| `dev-forge-skill/skills/design-to-spec.md` | 更新引用 | 技术栈映射表使用新代号 |
+| `dev-forge-skill/skills/design-to-spec.md` | 更新引用 | 新增原语识别阶段 + 技术栈映射表使用新代号 |
 
 ---
 
-## 待决策
+## 已决策
 
-- [ ] 平台矩阵：是否需要为全部 37 种类型都写完整矩阵，还是只写高频的 15 种？
-- [ ] 上下文预设：产品类型预设是否包含完整的类型分布百分比？
-- [ ] v1 兼容：旧的 `A-H` 代号是否保留别名映射（`A` → `MG1`）？
+- [x] 平台矩阵：**全部 37 种类型都写完整矩阵**
+- [x] 上下文预设：包含类型分布参考区间（非精确百分比，使用高/中/低频标注）
+- [x] v1 兼容：**不保留别名映射**，直接切换到新编码体系
