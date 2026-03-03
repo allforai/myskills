@@ -16,13 +16,13 @@
   "plugins": [
     {
       "name": "product-design",
-      "version": "3.5.0",
+      "version": "3.5.1",
       "source": "./product-design-skill/",
       "description": "Product design suite: product-concept, product-map, screen-map, use-case, feature-gap, feature-prune, ui-design, design-audit. 产品设计套件：产品概念、功能地图、界面地图、用例集、功能查漏、功能剪枝、UI设计、设计审计。"
     },
     {
       "name": "dev-forge",
-      "version": "2.4.0",
+      "version": "2.4.1",
       "source": "./dev-forge-skill/",
       "description": "Development forge: project-setup, design-to-spec, project-scaffold, task-execute, e2e-verify, seed-forge, product-verify. 开发锻造套件：项目引导、设计转规格、脚手架生成、任务执行、跨端验证、种子数据锻造、产品验收。"
     },
