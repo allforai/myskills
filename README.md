@@ -2,26 +2,60 @@
 
 **Claude Code + OpenCode** 双平台插件集合，覆盖 **产品设计 → 开发锻造 → QA 验证 → 架构治理** 全链路。
 
-## ✨ 新增：创新保真 + 状态闭环机制（v3.2.0）
+## ✨ 新增：页面交互类型体系 v2（三轴模型）
+
+将 product-design 的交互类型从 8 种（A-H）全量升级为 **37 种 × 三轴模型**，覆盖全平台、全产品类型、全用户属性。
+
+### 三轴模型
+
+| 轴 | 内容 | 说明 |
+|---|---|---|
+| **第一轴** | 37 种交互类型（8 大分类） | 纯行为契约，不含任何 UI 描述 |
+| **第二轴** | 5 平台实现矩阵 | Web 桌面 / Mobile Web / iOS+Android / Windows / TUI |
+| **第三轴** | 上下文预设 | 8 种产品类型 × 3 种用户属性 → 高/中/低频类型分布 |
+
+**8 大分类（MG / CT / EC / WK / RT / SB / SY / TU）：**
+
+| 前缀 | 分类 | 典型类型 |
+|-----|------|---------|
+| MG | 管理/CRUD | 只读列表、CRUD 集群、状态机、审批流、主从详情、树形管理、仪表盘、配置页 |
+| CT | 内容消费 | Feed 流、内容阅读、Profile、卡片探索、媒体播放器、相册、搜索、Story |
+| EC | 电商交易 | 商品详情、购物车、订单追踪 |
+| WK | 协作办公 | IM 对话、频道、文档编辑、画布白板、看板、甘特图、文件管理 |
+| RT | 通讯实时 | 通话、直播间、邮件、通知中心 |
+| SB | 审核提交 | 审核型提交（提交方视角，与 MG4 审批流互为镜像） |
+| SY | 引导系统 | Onboarding 引导、向导多步表单 |
+| TU | TUI/CLI | 命令行、交互式菜单、日志流、进度任务流 |
+
+### 行为原语索引（Behavioral Primitives）
+
+交互类型之间共享底层行为单元。**凡共用同一原语的界面，前端实现可共享组件或逻辑。**
+
+18 种原语（`VirtualList` / `InfiniteScroll` / `PullToRefresh` / `SwipeAction` / `DragAndDrop` / `StateMachine` / `AppendOnlyStream` / `RealtimeSync` / `FormWithValidation` / `MultiStepWizard` / `TreeNavigation` / `MediaPlayer` / `BatchSelection` 等）记录在 `product-design-skill/docs/interaction-types.md`，并在 `design-to-spec` 阶段自动消费：
+
+**design-to-spec 新增 Step 2：行为原语识别 → 共享组件规划**
+- 汇总项目中所有 `interaction_type`，查原语索引，找出 ≥2 个界面共用的原语
+- 在逐页规格生成之前，先输出「共享组件规划表」（YAGNI：只出现 1 次的原语不封装）
+
+### 全链路代号升级
+
+`screen-map.md` / `ui-design.md` / `design-to-spec.md` 全部升级为新编码体系，旧 A-H 代号已清除，不保留向后兼容。
+
+---
+
+## 创新保真 + 状态闭环机制（v3.2.0）
 
 ### 创新保真机制
-确保 `product-concept` 阶段定义的创新概念在 downstream 各阶段不被稀释、不误解、不延后：
 
 - **screen-map**: 创新界面自动标记（`innovation_screen` + `adversarial_concept_ref`）
-- **ui-design**: 创新概念 UI 规格专节（跨领域参考，如"抖音无限滚动"、"游戏赛季制"）
-- **task-execute**: Round 优先级修正（core 级别创新任务 → Round 1 优先执行）
-- **use-case**: 创新用例类型（`innovation_mechanism` 专用验证用例）
-- **seed-forge**: 创新专用数据链路（core 级别创新概念优先灌入）
-- **information-fidelity**: 理论基础（4D+6V+XV 协议）
+- **ui-design**: 创新概念 UI 规格专节
+- **task-execute**: core 级别创新任务 → Round 1 优先执行
+- **seed-forge**: core 级别创新概念优先灌入
 
 ### 状态闭环机制
-确保状态从产生到流转形成完整闭环，不依赖特定行业，通用适用于任何领域：
 
-- **product-concept**: 创新概念状态机定义（初始状态 → 中间状态 → 终止状态）
-- **feature-gap**: 状态闭环验证（孤儿状态/幽灵状态/语义鸿沟检测）
-- **量化指标**: 状态闭环率 >= 95%，幽灵状态 = 0（零容忍）
-
-**通用性保障**：不预设行业术语（避免"订单"、"支付"等电商绑定），仅验证结构完整性，适用于电商/内容/教育/金融/医疗/SaaS 等任何领域。
+- **feature-gap**: 孤儿状态/幽灵状态/语义鸿沟检测
+- **量化指标**: 状态闭环率 ≥ 95%，幽灵状态 = 0（零容忍）
 
 ---
 
@@ -109,9 +143,9 @@ QA 层       deadhunt          死链→CRUD完整性→幽灵功能→字段一
 
 ### dev-forge (v1.0.0)
 
-2 个技能：
+8 个技能，覆盖从设计规格到验收的完整开发链路：
 
-`seed-forge`（种子数据锻造） + `product-verify`（静态+动态验收）
+`design-to-spec`（设计转实现规格）→ `project-setup`（环境初始化）→ `project-scaffold`（代码骨架生成）→ `task-execute`（任务执行）→ `e2e-verify`（端到端验证）→ `seed-forge`（种子数据锻造）→ `product-verify`（静态+动态验收）→ `shared-utilities`（公共工具）
 
 ### deadhunt (v1.9.0)
 
