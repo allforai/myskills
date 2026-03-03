@@ -169,7 +169,41 @@
 
 ---
 
-## 模式 G：用户中断部分保存（原则）
+## 模式 G：JSON .bak 自动恢复
+
+**触发条件**：写入任何 `.allforai/` 下的关键 JSON 产物时。
+
+**适用文件**：所有 `*-decisions.json`、`*-report.json`、`*-profile.json`、`*-plan.json` 等关键产物。
+
+**处理流程**：
+
+1. **写入前**：若目标文件已存在，复制为 `{filename}.bak`
+2. **写入完成**：保留 `.bak`（直到下次成功写入时覆盖）
+3. **加载时**：JSON 解析失败 → 尝试读取 `.bak` → 成功则恢复并警告「已从备份恢复」→ `.bak` 也失败 → 报错终止
+
+**与模式 A 的关系**：
+
+- 模式 A（JSON 加载校验）在解析失败时检查 `.bak` 是否存在并提示用户
+- 模式 G 确保 `.bak` 文件始终存在（每次成功写入前自动备份）
+- 两者配合形成完整的写入保护 + 加载恢复链路
+
+**示例**：
+
+```
+写入 prune-decisions.json:
+  1. 检测到已有 prune-decisions.json → 复制为 prune-decisions.json.bak
+  2. 写入新内容到 prune-decisions.json
+  3. 写入成功 → 保留 .bak 直到下次写入
+
+加载 prune-decisions.json:
+  1. JSON.parse 失败 → 尝试 prune-decisions.json.bak
+  2. .bak 解析成功 → 恢复到主文件 + 警告「⚠ prune-decisions.json 已从备份恢复，请检查上次写入是否中断」
+  3. .bak 也失败 → 报错终止「⚠ prune-decisions.json 及其备份均无法解析，请重新运行 /feature-prune」
+```
+
+---
+
+## 模式 H：用户中断部分保存（原则）
 
 **适用场景**：用户在多步骤流程中中途中断（如关闭对话、切换任务）。
 

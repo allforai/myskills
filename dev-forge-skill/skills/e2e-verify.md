@@ -97,6 +97,14 @@ product-verify（单端验收）   e2e-verify（跨端验证）
   business-flows.json（或 flow-index.json）→ 业务流列表
   use-case-tree.json（可选）→ E2E 级别用例
   ↓
+前置: 上游过期检测
+  加载输入文件时，比较关键上游文件的修改时间与本技能上次输出的生成时间：
+  - business-flows.json 在 e2e-report.json 生成后被更新
+    → ⚠ 警告「business-flows.json 在 e2e-report.json 生成后被更新，数据可能过期，建议重新运行 product-map」
+  - use-case-tree.json 在 e2e-report.json 生成后被更新
+    → ⚠ 警告「use-case-tree.json 在 e2e-report.json 生成后被更新，数据可能过期，建议重新运行 use-case」
+  - 仅警告不阻断，用户可选择继续或先刷新上游
+  ↓
 Step 0: 应用可达性检查
   逐子项目检查端口可访问:
     Bash curl -s -o /dev/null -w "%{http_code}" http://localhost:{port}/health
@@ -130,6 +138,14 @@ Step 1: 跨端场景推导
       → 消费者看到错误提示(customer-web)
       商户修改价格(merchant-admin) → 消费者刷新看到新价格(customer-web)
     use-case-tree.json 不存在 → 跳过负向场景，仅用正向场景
+  1-C 创新概念专属场景:
+    加载 task-inventory.json 检查 innovation_tasks 字段：
+    对每个 protection_level=core 的创新概念，若涉及跨子项目交互（如后端 API + 移动端 UI），自动生成专属 E2E 场景：
+      source: "innovation_concept"
+      priority: "critical"
+      concept_ref: "IC001"
+    创新专属场景在 Step 2 执行时优先运行
+    不存在 innovation_tasks → 跳过
   各端测试差异:
     admin → Playwright 桌面视口
     web-customer → Playwright 桌面 + 移动视口
@@ -197,6 +213,14 @@ Step 3: 自动分类 + 批量确认
     | E2E-001 | Step 2 | Element not found | FIX_REQUIRED | 元素缺失 |
 
     → 自动采纳全部建议分类（不停）
+
+  ### 规模自适应
+
+  根据场景总数调整 Step 3 展示策略：
+  - **小规模**（≤15 个场景）：逐条展示完整场景表
+  - **中规模**（16-40 个场景）：按流程类型分组，展示计数 + 失败项详情
+  - **大规模**（>40 个场景）：统计概览 + 仅展示失败和 critical 场景
+
   ↓
 Step 4: 报告生成
   写入:
@@ -351,6 +375,12 @@ Step 4: 报告生成
     "merchant-admin": { "involved_in": 4, "failures": 0 },
     "customer-web": { "involved_in": 3, "failures": 1 },
     "api-backend": { "involved_in": 2, "failures": 0 }
+  },
+  "innovation_scenarios": {
+    "total": 0,
+    "passed": 0,
+    "failed": 0,
+    "concept_refs": []
   }
 }
 ```
