@@ -109,7 +109,13 @@ product-concept → product-map → screen-map → ui-design
   screen-map.json 必须（不存在则自动运行 screen-map 生成）
   product-concept.json 可选（提取定位/价值主张用于配色基调）
   ui-design-decisions.json 存在则加载历史决策
-  
+
+  Pattern Catalog（可选读取）：
+    若 .allforai/design-pattern/pattern-catalog.json 存在，读取并作为设计约束使用：
+    - _pattern_group 相同的界面 → 必须使用相同的组件布局模板
+    - _pattern_template 字段 → 作为界面设计的首选方案参考
+    不存在 → 跳过，按标准流程设计
+
   Phase 2.8 — 加载创新概念清单（新增）：
     检查 .allforai/product-concept/adversarial-concepts.json：
       存在 → 加载 `concepts[]` 数组，标记 innovation_mode = "active"
@@ -312,6 +318,36 @@ Step 5: 生成多角色 HTML 预览
 
 **受众提示**：{针对 consumer/professional 的特殊设计要点}
 ```
+
+---
+
+## Step 4.5：Pattern Consistency Check（仅当 pattern-catalog.json 存在时触发）
+
+扫描本次已生成的所有界面设计：
+
+**检测 1**: 同 `_pattern_group` 的界面是否使用了一致的主布局（顶部栏/侧边栏/主内容区比例相同）
+  → 不一致 → 自动对齐到该 group 中最先生成的界面的布局
+  → 记录调整: `pattern_alignment: [screen_id → aligned to screen_id]`
+
+**检测 2**: 同一模式类型（如 PT-CRUD）的界面是否使用了相同的操作按钮位置（新建/编辑/删除）
+  → 不一致 → 自动统一到推荐位置（右上角主操作 + 行内次操作）
+  → 记录调整同上
+
+**检测 3**: 同一审批流（PT-APPROVAL）的状态标签颜色体系是否统一（待审=黄/通过=绿/拒绝=红）
+  → 不一致 → 标记为 WARNING，在 ui-design-spec.md 中备注「需统一颜色体系」
+
+结果追加到 ui-design-spec.md 末尾的「模式一致性记录」章节：
+
+```markdown
+## 模式一致性记录
+
+| Pattern Group | 对齐项目 | 调整说明 |
+|--------------|---------|---------|
+| orders-crud | 操作按钮位置 | 统一到右上角主操作 |
+| approval-flows | 状态标签颜色 | ⚠ 需在组件库中统一 |
+```
+
+不阻塞，自动继续输出最终 ui-design-spec.md。
 
 ---
 

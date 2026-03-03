@@ -21,6 +21,7 @@ version: "1.0.0"
 2. **覆盖洪泛（Coverage）** — 每个上游节点是否被下游完整消费？
 3. **横向一致性（Cross-check）** — 相邻层之间有无矛盾？
 4. **信息保真（Fidelity）** — 关键对象是否可追溯且具备多视角覆盖？
+5. **模式一致性（Pattern Consistency）** — 相同功能模式是否使用了一致的设计套路？（仅当 pattern-catalog.json 存在时激活）
 
 发现问题只报告，不修改任何上游产物。
 
@@ -36,6 +37,8 @@ product-map（锚点）
     task → screen → use-case → gap → prune → ui-design
     ↓ 横向一致性（相邻层对比）
     gap × prune / ui-design × prune / frequency × depth / use-case × screen
+    ↓ 模式一致性（仅当 pattern-catalog.json 存在）
+    pattern-catalog → ui-design-spec（_pattern_group 界面是否设计一致）
 ```
 
 **前提**：必须先运行 `product-map`，生成 `.allforai/product-map/product-map.json`。
@@ -49,6 +52,7 @@ product-map（锚点）
 /design-audit trace        # 仅逆向追溯
 /design-audit coverage     # 仅覆盖洪泛
 /design-audit cross        # 仅横向一致性
+/design-audit pattern        # 仅模式一致性检查（需 pattern-catalog.json 存在）
 /design-audit role 客服专员  # 指定角色全链路校验
 ```
 
@@ -100,7 +104,8 @@ product-map（锚点）
 | **Step 2 覆盖洪泛确认** | AskUserQuestion 确认 | 自动确认，所有 GAP 问题记入 `pipeline-decisions.json` |
 | **Step 3 横向一致性确认** | AskUserQuestion 确认 | 自动确认，所有 CONFLICT / WARNING / BROKEN_REF 记入 `pipeline-decisions.json` |
 | **Step 3.5 保真门禁** | AskUserQuestion 确认 | 低于阈值 → WARNING 记入日志（不停），达到阈值 → PASS 自动继续 |
-| **Step 4 报告确认** | AskUserQuestion 确认 | 自动确认 |
+| **Step 5 模式一致性** | AskUserQuestion 确认 | 自动执行（pattern-catalog.json 不存在 → 跳过），漂移问题记入日志 |
+| **Step 6 报告确认** | AskUserQuestion 确认 | 自动确认 |
 
 **安全护栏**（自动模式下仍然停下来问用户）：
 - ERROR 级验证失败（product-map.json 损坏、必须层缺失）
@@ -133,8 +138,11 @@ Step 3: 横向一致性（Cross-check）
 Step 3.5: 信息保真门禁（Fidelity）
       统计追溯完整率与视角覆盖率
       ↓ 用户确认
-Step 4: 汇总报告
-      合并三维度结果，输出 JSON + Markdown
+Step 5: 模式一致性（Pattern Consistency）
+      仅当 pattern-catalog.json 存在时执行
+      ↓ 自动
+Step 6: 汇总报告
+      合并所有维度结果，输出 JSON + Markdown
 ```
 
 ---
@@ -279,7 +287,76 @@ Step 4: 汇总报告
 
 ---
 
-### Step 4：汇总报告
+### Step 5：模式一致性审计（Pattern Consistency）
+
+> 目标：验证相同功能模式的界面/任务是否遵循了统一的设计套路。
+> **前提**：`.allforai/design-pattern/pattern-catalog.json` 存在。不存在 → 跳过本步骤。
+
+#### 检测项
+
+**5a. 界面模板一致性**
+
+对 pattern-catalog.json 中每个 `_pattern_group`：
+- 读取该 group 所有 screen_ids 在 ui-design-spec.md 中的设计描述
+- 检测主布局模板是否一致（操作栏位置、列表样式、表单入口方式）
+- 不一致 → `PATTERN_DRIFT`（模式漂移）
+
+**5b. 跨实体 CRUD 一致性**
+
+对所有 PT-CRUD 实例：
+- 检查「新建」按钮位置是否一致（统一右上角或统一行内）
+- 检查「删除」确认方式是否一致（统一弹窗确认或统一行内确认）
+- 不一致 → `CRUD_INCONSISTENCY`
+
+**5c. 审批流状态标签体系**
+
+对所有 PT-APPROVAL 实例：
+- 检查各流程的状态标签（待审/通过/拒绝）颜色语义是否统一
+- 不一致 → `APPROVAL_COLOR_DRIFT`
+
+**5d. 状态机操作按钮**
+
+对所有 PT-STATE 实例：
+- 检查状态转换操作按钮（如「通过」「拒绝」「归档」）的呈现位置是否一致（顶部操作栏/详情底部/行内）
+- 不一致 → `STATE_ACTION_DRIFT`
+
+#### 输出格式
+
+```json
+{
+  "pattern_consistency": {
+    "status": "pass | issues_found | skipped",
+    "issues": [
+      {
+        "type": "PATTERN_DRIFT | CRUD_INCONSISTENCY | APPROVAL_COLOR_DRIFT | STATE_ACTION_DRIFT",
+        "pattern_id": "PT-CRUD",
+        "pattern_group": "orders-crud",
+        "description": "orders 管理台用弹窗表单，但 users 管理台用侧边栏",
+        "affected_screens": ["S-05", "S-06", "S-11"],
+        "severity": "MEDIUM",
+        "recommendation": "统一使用弹窗表单（已在 Phase 3.5 确认选型）"
+      }
+    ],
+    "total_patterns_checked": 4,
+    "clean_patterns": 3,
+    "drift_patterns": 1
+  }
+}
+```
+
+**严重度分级**：
+- `HIGH`：核心路径（CRUD/审批流）出现漂移，用户认知成本高
+- `MEDIUM`：次要路径（导出/状态机）漂移，影响一致性感知
+- `LOW`：细节（按钮标签文本）差异，可接受
+
+**输出处理**：
+- 所有 issues 追加到 `audit-report.json` 的 `pattern_consistency` 字段
+- issues_found → 在 audit-report.md 中新增「模式一致性」章节展示漂移列表
+- 不阻塞流程，仅报告
+
+---
+
+### Step 6：汇总报告
 
 合并三个维度的校验结果，生成最终报告。
 
@@ -304,6 +381,12 @@ Step 4: 汇总报告
       "traceability_status": "PASS|BELOW_THRESHOLD",
       "viewpoint_coverage_rate": "0%",
       "viewpoint_status": "PASS|BELOW_THRESHOLD"
+    },
+    "pattern_consistency": {
+      "status": "pass|issues_found|skipped",
+      "total_patterns_checked": 0,
+      "clean_patterns": 0,
+      "drift_patterns": 0
     }
   },
   "trace_issues": [
@@ -352,6 +435,7 @@ Step 4: 汇总报告
 - 覆盖洪泛：X 项检查，X COVERED，X GAP，覆盖率 XX%
 - 横向一致性：X 项检查，X OK，X CONFLICT，X WARNING，X BROKEN_REF
 - 信息保真：追溯完整率 XX%（PASS/BELOW_THRESHOLD） · 视角覆盖率 XX%（PASS/BELOW_THRESHOLD）
+- 模式一致性：X 类模式检查，X 漂移（pass/issues_found/skipped）
 
 ## 问题清单（按严重度排序）
 

@@ -45,6 +45,9 @@ Phase 2: product-map
 Phase 3: screen-map
   加载并执行 skills/screen-map.md
   ↓ checkpoint + 轻量校验
+Phase 3.5: design-pattern（可选，有模式时执行）
+  加载并执行 skills/design-pattern.md
+  ↓ checkpoint
 Phase 4-7: 并行执行（4 个 Agent 同时启动）
   ┌─ Agent: use-case      → .allforai/use-case/
   ├─ Agent: feature-gap   → .allforai/feature-gap/
@@ -67,6 +70,7 @@ Phase 8: design-audit full（终审）
 | concept | `.allforai/product-concept/` 目录存在 |
 | product-map | `.allforai/product-map/task-inventory.json` 存在且 task 数 > 0 |
 | screen-map | `.allforai/screen-map/screen-map.json` 存在且 screen 数 > 0 |
+| design-pattern | `.allforai/design-pattern/pattern-catalog.json` 存在 |
 | use-case | `.allforai/use-case/use-case-tree.json` 存在 |
 | feature-gap | `.allforai/feature-gap/gap-tasks.json` 存在 |
 | feature-prune | `.allforai/feature-prune/prune-decisions.json` 存在 |
@@ -75,6 +79,8 @@ Phase 8: design-audit full（终审）
 
 **full 模式**：从 Phase 1（或 Phase 2 如果 skip concept）开始，逐阶段执行。
 **resume 模式**：从第一个未完成阶段开始。
+
+> **design-pattern**: 可选阶段，`pattern-catalog.json` 存在或 Phase 3.5 明确跳过，视为已完成。
 
 > **并行组**: use-case / feature-gap / feature-prune / ui-design 为并行执行组。
 > resume 模式下，仅当该组全部完成才视为"Phase 4-7 已完成"，否则补跑缺失的 skill。
@@ -200,6 +206,31 @@ concept 和 product-map 完成后，追加记录到 `.allforai/pipeline-decision
 ```
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_screen_map_split.py <BASE>
 ```
+
+---
+
+## Phase 3.5：设计模式分析（可选）
+
+### 执行方式
+用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/skills/design-pattern.md`，按其工作流执行。
+
+执行条件：
+- 自动模式下，screen-map 完成后立即执行
+- 若所有 8 类模式均未达阈值，技能自动输出跳过提示，无需用户操作
+
+### 质量门禁（pattern-catalog.json 存在时）
+
+| 条件 | 标准 |
+|------|------|
+| pattern-catalog.json | 存在（或明确跳过）|
+| tasks_tagged | 所有 _pattern 匹配任务已标注 |
+| screens_tagged | 所有 _pattern 匹配界面已标注 |
+
+PASS → 进入 Phase 4-7 并行组
+
+### resume 模式
+- `pattern-catalog.json` 存在 → 跳过 Phase 3.5
+- 文件不存在且 screen-map 已完成 → 补跑 Phase 3.5
 
 ---
 
