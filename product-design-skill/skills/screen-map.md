@@ -298,10 +298,12 @@ Step 3: 输出报告
 - 梳理每个界面时，读取对应任务的 `exceptions` 字段，要求用户为每个异常标注对应的界面处理方式（`exception_flows`）
 - 若任务的 `innovation_task=true`，自动标注 `innovation_screen: true` + `adversarial_concept_ref`
 - **功能-界面对齐检查**：对每个任务，检查是否有对应的界面操作（C/U/D 任务必须有按钮，R 任务必须有入口）
+- **交互类型推断**：按 `docs/interaction-types.md` 的推断规则，根据每个界面的 actions 自动标注 `interaction_type` 字段。组合类型用数组表示（如 `["master-detail", "state-machine"]`）。此字段供下游 ui-design 和 design-to-spec 使用
 
 #### 界面 Schema
 
 > 以下示例以虚构业务为背景，仅用于说明输出格式。实际内容由 screen-map 分析结果决定，不限行业。
+> **交互类型推断**：每个界面基于其 actions 自动推断 `interaction_type`，规则详见 `docs/interaction-types.md`。
 
 ```json
 {
@@ -310,6 +312,7 @@ Step 3: 输出报告
       "id": "S001",
       "name": "场景流首页",
       "description": "用户进入 APP 后直接开始场景对话，无课程概念",
+      "interaction_type": "readonly-list",
       "innovation_screen": true,
       "adversarial_concept_ref": "IC001",
       "innovation_direction": "去课程化学习",
@@ -372,6 +375,7 @@ Step 3: 输出报告
 
 | 字段 | 含义 |
 |------|------|
+| `interaction_type` | 页面交互类型：`readonly-list` / `full-crud` / `state-machine` / `approval` / `master-detail` / `tree-crud` / `dashboard` / `config-form`。由 actions 自动推断（规则见 `docs/interaction-types.md`），组合类型用数组表示。PM 可覆盖 |
 | `primary_purpose` | 这个页面最重要的目标（用户视角一句话） |
 | `primary_action` | 频次最高的操作，由帕累托分析自动推导，PM 可调整 |
 | `states` | 界面的各类状态：`empty`（空数据）/ `loading`（加载中）/ `error`（错误）/ `permission_denied`（无权限）等 |
@@ -484,6 +488,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_screen_map_split.py <BASE>
           "task_refs": ["T001"],
           "action_count": 2,
           "audience_type": "professional",
+          "interaction_type": "state-machine",
           "has_gaps": false
         }
       ]

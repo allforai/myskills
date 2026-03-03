@@ -242,6 +242,21 @@ Step 5: 生成多角色 HTML 预览
 
 **输出文件**：`.allforai/ui-design/ui-design-spec.md`
 
+**交互类型驱动**：读取 `screen-map.json` 中每个 screen 的 `interaction_type` 字段（由 screen-map Step 1 推断，类型定义见 `docs/interaction-types.md`），按类型选择推荐布局模式：
+
+| 交互类型 | 推荐布局模式 | 关键区域 |
+|---------|------------|---------|
+| `readonly-list` | 侧边导航 + 表格区（筛选栏 + 数据表 + 分页） | 筛选条件区、数据表格、分页器 |
+| `full-crud` | 侧边导航 + 表格区 + 工具栏 | 新建按钮、操作列（编辑/删除）、表单弹窗或独立页 |
+| `state-machine` | 侧边导航 + 表格区（状态筛选 Tab） | 状态 Tab、条件操作列、状态确认弹窗 |
+| `approval` | 列表页 + 审核详情页 | 待审筛选、信息展示卡、审核操作面板 |
+| `master-detail` | 头部信息区 + Tab 切换子表 | 主实体信息、关键指标、子实体 Tab 列表 |
+| `tree-crud` | 左右分栏（左树右编辑） | 树形组件、编辑面板/弹窗 |
+| `dashboard` | 网格布局（统计卡 + 图表区） | Statistic 卡片、图表、待办快捷入口 |
+| `config-form` | 居中单列表单 | 分组表单区、固定底部保存按钮 |
+
+**组合类型处理**：`interaction_type` 为数组时，主类型决定页面整体布局，次类型决定内嵌交互区域。如 `["master-detail", "state-machine"]` → 整体用 master-detail 布局，操作区域按 state-machine 模式设计。
+
 **内容结构**：
 
 ```markdown
@@ -306,11 +321,13 @@ Step 5: 生成多角色 HTML 预览
 
 ### {角色名} 的界面
 
-#### {界面名}（{audience_type}）
+#### {界面名}（{audience_type}）[类型: {interaction_type}]
 
 **界面目的**：{一句话}
 
-**布局模式**：{单列 / 双栏 / 侧边导航+内容区 / 仪表盘 / 表格页}
+**交互类型**：{interaction_type}（布局模式由交互类型驱动，见上方对照表）
+
+**布局模式**：{由 interaction_type 决定的推荐布局}
 
 **主要区域划分**：
 - 顶部：{导航栏/页头描述}
@@ -343,7 +360,14 @@ Step 5: 生成多角色 HTML 预览
 **检测 3**: 同一审批流（PT-APPROVAL）的状态标签颜色体系是否统一（待审=黄/通过=绿/拒绝=红）
   → 不一致 → 标记为 WARNING，在 ui-design-spec.md 中备注「需统一颜色体系」
 
-**检测 4**: 行为规范合规检查（仅当 behavioral-standards.json 存在时触发）
+**检测 4**: 同一 `interaction_type` 的界面布局一致性检查
+  检查所有 interaction_type 相同的界面：
+    → 布局模式是否一致（如所有 `readonly-list` 都使用 侧边导航+表格区）
+    → 关键区域划分是否一致（如所有 `full-crud` 的新建按钮位置统一）
+    → 不一致 → 自动对齐到该类型的推荐布局（见 `docs/interaction-types.md`）
+    → 记录调整同上
+
+**检测 5**: 行为规范合规检查（仅当 behavioral-standards.json 存在时触发）
   对每个有 `_behavioral_standards` 标签的界面：
     检查生成的设计是否匹配标准方案（如 BC-LOADING 标准为 skeleton，但设计中写了 spinner → 不匹配）
     不匹配 → `BEHAVIORAL_DRIFT` 告警，记录到模式一致性记录中
@@ -460,6 +484,7 @@ Step 5: 生成多角色 HTML 预览
       "name": "订单管理",
       "role": "管理员",
       "audience_type": "professional",
+      "interaction_type": "state-machine",
       "layout": "侧边导航+内容区",
       "sections": ["顶部操作栏", "数据表格", "分页器"],
       "states": { "empty": "引导文案", "loading": "骨架屏", "error": "toast 提示" },
