@@ -157,7 +157,7 @@ Step 1: 跨端场景推导
   ↓
 Step 1.5: 场景补全审查（OpenRouter 可用时）
   将 Step 1 场景列表摘要 + 业务流关键信息发给 Gemini
-  调用: mcp__openrouter__ask_model(task: "research_synthesis", model_family: "gemini", temperature: 0.5)
+  调用: mcp__plugin_product-design_openrouter__ask_model(task: "research_synthesis", model_family: "gemini", temperature: 0.5)
   Gemini 审查是否遗漏:
     - 并发/竞态场景（两用户同时操作同一资源）
     - 跨时区/跨地区数据一致性

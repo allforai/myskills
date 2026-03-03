@@ -31,7 +31,7 @@
 
 ## 三、跨模型增强（OpenRouter）
 
-通过 OpenRouter MCP (`mcp__openrouter__ask_model`) 调用不同模型家族，利用各模型专长增强特定阶段的产出质量。
+通过 OpenRouter MCP (`mcp__plugin_product-design_openrouter__ask_model`) 调用不同模型家族，利用各模型专长增强特定阶段的产出质量。
 
 ### 模型路由表
 
@@ -51,7 +51,7 @@
 ### 调用规范
 
 ```
-mcp__openrouter__ask_model(
+mcp__plugin_product-design_openrouter__ask_model(
   task: "{task 参数}",
   model_family: "{模型家族}",
   prompt: "{按下方模板构造}",

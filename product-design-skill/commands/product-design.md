@@ -92,7 +92,7 @@ Phase 8: design-audit full（终审）
 产物探测后，同步检测 XV 状态并展示：
 
 1. 检查 `OPENROUTER_API_KEY` 环境变量是否设置
-2. 检查 `mcp__openrouter__list_families` MCP 工具是否可用
+2. 检查 `mcp__plugin_product-design_openrouter__detect_region` MCP 工具是否可用
 
 按以下规则输出一行状态通知：
 

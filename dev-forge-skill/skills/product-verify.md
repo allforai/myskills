@@ -322,7 +322,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
        partial — handler 有部分逻辑但明显不完整（如只处理了 happy path，缺少错误处理）
      输出: { "verdict": "genuine|stub|partial", "reason": "一句话理由" }
   3. 调用 OpenRouter:
-     mcp__openrouter__ask_model(
+     mcp__plugin_product-design_openrouter__ask_model(
        task: "technical_validation",
        model_family: "deepseek",
        prompt: 上述 prompt

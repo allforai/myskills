@@ -82,13 +82,13 @@
 
 XV 验证完全自动、完全可选：
 
-- **工具检测**：每个阶段在指定 Step 完成后，检测 `mcp__openrouter__ask_model` 工具是否可用。
+- **工具检测**：每个阶段在指定 Step 完成后，检测 `mcp__plugin_product-design_openrouter__ask_model` 工具是否可用。
 - **可用时**：自动发起交叉验证调用，将结果写入产出的 `cross_model_review` 字段。不停下来询问用户。
 - **不可用或调用失败时**：自动跳过，不阻塞流程，不生成 `cross_model_review` 字段。产出与未启用 XV 时完全一致。
 
 ### 调用方式
 
-使用 `mcp__openrouter__ask_model` 工具，传入：
+使用 `mcp__plugin_product-design_openrouter__ask_model` 工具，传入：
 
 | 参数 | 说明 |
 |------|------|

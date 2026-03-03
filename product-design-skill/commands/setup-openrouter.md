@@ -49,8 +49,8 @@ XV 通过 OpenRouter 统一调用多家模型。需要一个 OpenRouter API Key 
 
 检测两个 XV 通道：
 
-1. **MCP 工具通道**：检查 `mcp__openrouter__list_families` 是否可用
-   - 可用 → 调用 `mcp__openrouter__list_families`，展示已支持的模型家族列表。MCP XV 就绪
+1. **MCP 工具通道**：检查 `mcp__plugin_product-design_openrouter__detect_region` 工具是否可用
+   - 可用 → 调用 `mcp__plugin_product-design_openrouter__detect_region`，展示模型路由策略。MCP XV 就绪
    - 不可用 → MCP XV 未就绪（可能需要重启 Claude Code）
 
 2. **脚本通道**：检查 `OPENROUTER_API_KEY` 环境变量

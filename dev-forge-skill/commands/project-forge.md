@@ -349,7 +349,7 @@ existing 模式下，Step 1 之前先扫描项目已有依赖文件（`package.j
 
 ### Step 2.5: 跨模型交叉验证（可选）
 
-若 OpenRouter MCP 可用（`mcp__openrouter__ask_model` 工具存在），对每个 spike 向不同模型发送验证请求：
+若 OpenRouter MCP 可用（`mcp__plugin_product-design_openrouter__ask_model` 工具存在），对每个 spike 向不同模型发送验证请求：
 
 **Prompt 模板**：
 ```
