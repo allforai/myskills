@@ -619,7 +619,7 @@ B5: Widget 测试 (flutter_test) + 集成测试 (Patrol / integration_test)
   - Files: `{file-path-1}`, `{file-path-2}`
   - 具体实现要点（2-4 条）
   - _Requirements: REQ-{id}_
-  - _Leverage: {existing-file-or-package}_
+  - _Leverage: {existing-file-or-package}_   ← 引用现有文件或三方包；Phase 5 完成后会自动追加 SU-xxx 引用，无需预填
   - _Guardrails: T001.rules[1,2], CN001_    ← 护栏溯源（from task.rules/exceptions/audit）
   - _Risk: HIGH | MEDIUM | LOW_              ← 风险标签（from task.risk_level）
 ```
