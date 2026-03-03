@@ -87,21 +87,21 @@ manifest.json            requirements + design + tasks  实际文件和目录
 
 | 原则 | 对应步骤 | 具体规则 |
 |------|---------|---------|
-| 分层依赖方向 | Step 3 | B1(数据模型) → B2(Service/API) → B3(UI页面) → B4(集成) 严格内→外。Controller 不直接调用 Repository，必须经过 Service |
-| 单一职责任务 | Step 3 | 每个原子任务 1-3 文件、15-30 分钟、单一可测结果。禁止出现"实现 XX 系统"这种宽泛任务 |
-| Service 隔离外部调用 | Step 2 | 外部 API/SDK 调用封装为独立 service 文件（如 `ai_client.py`、`speech_service.py`），业务层通过 service 接口调用，不直接 import SDK |
-| RESTful 端点设计 | Step 2 | 资源名用复数名词（`/users`），用 HTTP 动词表达操作（GET/POST/PUT/DELETE），统一错误码格式 `{ code, message, details }` |
-| 数据模型 3NF | Step 2 | 表结构遵循第三范式（消除传递依赖），冗余字段需在 design.md 中标注理由 |
+| 分层依赖方向 | Step 4 | B1(数据模型) → B2(Service/API) → B3(UI页面) → B4(集成) 严格内→外。Controller 不直接调用 Repository，必须经过 Service |
+| 单一职责任务 | Step 4 | 每个原子任务 1-3 文件、15-30 分钟、单一可测结果。禁止出现"实现 XX 系统"这种宽泛任务 |
+| Service 隔离外部调用 | Step 3 | 外部 API/SDK 调用封装为独立 service 文件（如 `ai_client.py`、`speech_service.py`），业务层通过 service 接口调用，不直接 import SDK |
+| RESTful 端点设计 | Step 3 | 资源名用复数名词（`/users`），用 HTTP 动词表达操作（GET/POST/PUT/DELETE），统一错误码格式 `{ code, message, details }` |
+| 数据模型 3NF | Step 3 | 表结构遵循第三范式（消除传递依赖），冗余字段需在 design.md 中标注理由 |
 | 用户故事按角色组织 | Step 1 | requirements.md 按角色分组（"As a {role}"），每组内按 frequency 排序（高频在前） |
-| API-First 生成顺序 | Step 2 | **先生成后端 design.md（表结构→API 端点），再生成前端 design.md（引用已定义的 API）**。前端 design 中 API 调用必须引用后端 design 中的端点 ID |
-| 设计分层展开 | Step 2 | design.md 从表结构开始，逐层展开到 API → 页面 → 组件。每层引用上一层定义 |
-| 输入验证在边界层 | Step 2 | 所有用户输入在 Controller/Handler 层统一验证（whitelist 模式）。SQL 参数化查询，HTML 输出转义。认证中间件在路由注册时声明，不在业务代码中手动检查 |
-| 统一错误处理 | Step 2 | 全局错误中间件捕获未处理异常，返回统一格式 `{ code, message, details }`。业务错误用自定义 Error 类（含 error_code），日志分级 ERROR/WARN/INFO，敏感信息不进日志 |
-| 测试与实现对称 | Step 3 | 每个 B2 Service/API 任务必须对应 B5 测试任务。测试命名 `test_{行为}_{条件}_{预期}`，测试间无共享可变状态，每条测试独立可运行 |
-| 性能基线内建 | Step 2 | 列表 API 强制分页（默认 page_size ≤ 50），有外键关联的字段加数据库索引，禁止 N+1 查询（ORM eager loading 或 JOIN）。大数据量操作走异步任务 |
-| 写操作幂等 | Step 2 | 创建类 API 支持幂等键（`Idempotency-Key` header 或业务唯一约束），更新类 API 使用乐观锁（version 字段或 updated_at 条件更新），并发冲突返回 409 Conflict |
-| 前端 CRUD 套路一致 | Step 2 | 同类型子项目（如多个 admin 端）的列表/新建/编辑/删除/详情必须使用相同组件套路和数据流模式。详见「前端 CRUD 实现套路」章节 |
-| 多语言全覆盖 | Step 2, 3 | 所有用户可见文本必须通过 i18n 函数获取（禁止硬编码），新增文本必须同步所有语言文件。design.md 中标注 i18n 方案，tasks.md 中每个涉及 UI 文本的任务标注 `_i18n: sync all locales_` |
+| API-First 生成顺序 | Step 3 | **先生成后端 design.md（表结构→API 端点），再生成前端 design.md（引用已定义的 API）**。前端 design 中 API 调用必须引用后端 design 中的端点 ID |
+| 设计分层展开 | Step 3 | design.md 从表结构开始，逐层展开到 API → 页面 → 组件。每层引用上一层定义 |
+| 输入验证在边界层 | Step 3 | 所有用户输入在 Controller/Handler 层统一验证（whitelist 模式）。SQL 参数化查询，HTML 输出转义。认证中间件在路由注册时声明，不在业务代码中手动检查 |
+| 统一错误处理 | Step 3 | 全局错误中间件捕获未处理异常，返回统一格式 `{ code, message, details }`。业务错误用自定义 Error 类（含 error_code），日志分级 ERROR/WARN/INFO，敏感信息不进日志 |
+| 测试与实现对称 | Step 4 | 每个 B2 Service/API 任务必须对应 B5 测试任务。测试命名 `test_{行为}_{条件}_{预期}`，测试间无共享可变状态，每条测试独立可运行 |
+| 性能基线内建 | Step 3 | 列表 API 强制分页（默认 page_size ≤ 50），有外键关联的字段加数据库索引，禁止 N+1 查询（ORM eager loading 或 JOIN）。大数据量操作走异步任务 |
+| 写操作幂等 | Step 3 | 创建类 API 支持幂等键（`Idempotency-Key` header 或业务唯一约束），更新类 API 使用乐观锁（version 字段或 updated_at 条件更新），并发冲突返回 409 Conflict |
+| 前端 CRUD 套路一致 | Step 3 | 同类型子项目（如多个 admin 端）的列表/新建/编辑/删除/详情必须使用相同组件套路和数据流模式。详见「前端 CRUD 实现套路」章节 |
+| 多语言全覆盖 | Step 3, 4 | 所有用户可见文本必须通过 i18n 函数获取（禁止硬编码），新增文本必须同步所有语言文件。design.md 中标注 i18n 方案，tasks.md 中每个涉及 UI 文本的任务标注 `_i18n: sync all locales_` |
 
 ---
 
@@ -207,7 +207,7 @@ manifest.json            requirements + design + tasks  实际文件和目录
 
 ### 套路检测（existing 模式专用）
 
-existing 模式下，Step 2 生成 design.md 之前，先执行套路检测：
+existing 模式下，Step 3 生成 design.md 之前，先执行套路检测：
 
 1. **Request 层**：扫描 `src/utils/request*` 或 `src/requestConfig*`，识别 HTTP 客户端
 2. **列表组件**：扫描 pages 目录，识别列表组件（ProTable / Table / DataGrid）
@@ -224,7 +224,6 @@ existing 模式下，Step 2 生成 design.md 之前，先执行套路检测：
 
 > **类型定义与推断规则**：见 `product-design-skill/docs/interaction-types.md`（单一事实来源）。
 > screen-map Step 1 已为每个 screen 标注 `interaction_type` 字段，design-to-spec 直接读取使用。
-> 若 screen-map.json 中无 `interaction_type` 字段（旧版兼容），按 `docs/interaction-types.md` 推断规则补充推断。
 
 八种类型速查：A. 只读列表 / B. 完整 CRUD / C. 状态机驱动 / D. 审批流 / E. 主从详情 / F. 树形管理 / G. 仪表盘 / H. 配置页
 
@@ -610,14 +609,14 @@ Step 0: 模块映射验证
     后端组: type = "backend"（通常 1 个）
     前端组: 其余所有子项目（admin/web-customer/web-mobile/mobile-native）
   Phase A — 后端 Agent（1 个 Agent 调用）:
-    Agent(backend): Step 1 → Step 2 → Step 2.5 → Step 3
+    Agent(backend): Step 1 → Step 2 → Step 3 → Step 3.5 → Step 4
     ↓ 完成后
   Phase B — 前端并行 Agent（单条消息发出 N 个 Agent 调用）:
-    ┌── Agent(前端1): Step 1 → Step 2 → Step 3
-    ├── Agent(前端2): Step 1 → Step 2 → Step 3
-    └── Agent(前端N): Step 1 → Step 2 → Step 3
+    ┌── Agent(前端1): Step 1 → Step 2 → Step 3 → Step 4
+    ├── Agent(前端2): Step 1 → Step 2 → Step 3 → Step 4
+    └── Agent(前端N): Step 1 → Step 2 → Step 3 → Step 4
     全部完成 ↓
-  以下 Step 1-3 描述每个 Agent 内部执行的步骤内容:
+  以下 Step 1-4 描述每个 Agent 内部执行的步骤内容:
   ↓
 Step 1: Requirements 生成
   每个 Agent 对其负责的子项目:
@@ -642,9 +641,34 @@ Step 1: Requirements 生成
        - _Source: T001, F001, CN001_（← E2 Provenance）
        注: 字段不存在或为空时省略对应节，不生成空占位
     → 写入 .allforai/project-forge/sub-projects/{name}/requirements.md
-    → 输出进度: 「{name}/requirements.md ✓ ({N} 需求项)」（不停，汇总到 Step 5）
+    → 输出进度: 「{name}/requirements.md ✓ ({N} 需求项)」（不停，汇总到 Step 6）
   ↓
-Step 2: Design 生成（API-first 策略）
+Step 2: 行为原语识别 → 共享组件规划
+  （仅前端子项目执行；后端子项目跳过此步直接进入 Step 3）
+
+### Step 2: 行为原语识别 → 共享组件规划
+
+**输入：** screen-map.json（全部 interaction_type 标注）
+
+**动作：**
+
+1. 从 screen-map.json 提取项目中出现的所有 interaction_type（去重）
+2. 查 `product-design-skill/docs/interaction-types.md` 的「行为原语索引」，找出被 ≥2 个界面共用的原语
+3. 按原语分组，输出共享组件规划表：
+
+| 原语 | 共用的界面 | 建议封装为 |
+|------|----------|-----------|
+| `VirtualList` | 商品列表、订单列表、通知列表 | `<DataList>` 组件 |
+| `AppendOnlyStream` | 消息列表、通知流 | `<StreamList>` 组件 |
+| `StateMachine` | 订单状态、商品状态 | `useStateMachine` hook |
+
+4. 将此规划写入 `design.md` 的「共享组件」章节
+
+**输出：** design.md 新增「共享组件规划」章节（先于各页面规格章节）
+
+**注意：** 仅出现一次的原语不必封装（YAGNI），出现 ≥2 次才列入共享规划。
+  ↓
+Step 3: Design 生成（API-first 策略）
   **原则: 先表结构、后 API、再展开**
   每个 Agent 对其子项目，基于 tech-profile 映射:
     所有端共通（最先生成）:
@@ -694,10 +718,10 @@ Step 2: Design 生成（API-first 策略）
         - Affected endpoints / components（根据子项目类型推导）
         - spike.status = "tbd" → 标注 [PENDING: 技术方案待定，后续确认后补充]
     → 写入 .allforai/project-forge/sub-projects/{name}/design.md
-    → 输出进度: 「{name}/design.md ✓ ({N} API端点, {M} 页面)」（不停，汇总到 Step 5）
+    → 输出进度: 「{name}/design.md ✓ ({N} API端点, {M} 页面)」（不停，汇总到 Step 6）
   **生成顺序**: 后端 Agent (Phase A) 先于前端 Agent (Phase B)，确保前端 design 可直接引用 API 端点定义
   ↓
-Step 2.5: Design 交叉审查（由后端 Agent 在 Phase A 内执行，OpenRouter 可用时）
+Step 3.5: Design 交叉审查（由后端 Agent 在 Phase A 内执行，OpenRouter 可用时）
   后端 design.md 生成后，触发两项交叉审查:
   审查 A — API 设计审查 (GPT):
     提取 design.md 中所有 API 端点（路径+方法+请求/响应 DTO）
@@ -712,10 +736,10 @@ Step 2.5: Design 交叉审查（由后端 Agent 在 Phase A 内执行，OpenRout
   结果处理:
     有问题 → 在 design.md 末尾追加 ## Review Notes 附录（按问题严重度排列）
     无问题 → 不追加
-    → 输出进度: 「Step 2.5 交叉审查 ✓ API {N} issues, Model {M} violations」
-  OpenRouter 不可用 → 跳过，输出: 「Step 2.5 ⊘ OpenRouter 不可用，跳过交叉审查」
+    → 输出进度: 「Step 3.5 交叉审查 ✓ API {N} issues, Model {M} violations」
+  OpenRouter 不可用 → 跳过，输出: 「Step 3.5 ⊘ OpenRouter 不可用，跳过交叉审查」
   ↓
-Step 3: Tasks 生成
+Step 4: Tasks 生成
   按开发层分 Batch，每任务遵循原子标准:
     - 1-3 文件，15-30 分钟，单一目的
     - 指明具体文件路径（基于技术栈 template 约定）
@@ -728,9 +752,9 @@ Step 3: Tasks 生成
     - 配置管理任务（从 config_items 聚合 → 配置表+端点+测试）
   → Batch 结构因子项目类型而异（见下文）
   → 写入 .allforai/project-forge/sub-projects/{name}/tasks.md
-  → 输出进度: 「{name}/tasks.md ✓ ({N} 任务, B0-B5)」（不停，汇总到 Step 5）
+  → 输出进度: 「{name}/tasks.md ✓ ({N} 任务, B0-B5)」（不停，汇总到 Step 6）
   ↓
-Step 4: 跨子项目依赖分析
+Step 5: 跨子项目依赖分析
   识别跨项目依赖:
     后端 API 端点 → 前端 API 客户端
     共享类型 → packages/shared-types
@@ -738,13 +762,13 @@ Step 4: 跨子项目依赖分析
   生成跨项目任务排序 → execution_order
   → 写入 `.allforai/project-forge/cross-project-dependencies.json`（依赖图 + execution_order）
   → **不修改** project-manifest.json（上游产物只读）
-  → 输出进度: 「跨项目依赖图 ✓ ({N} 条依赖)」（不停，汇总到 Step 5）
+  → 输出进度: 「跨项目依赖图 ✓ ({N} 条依赖)」（不停，汇总到 Step 6）
   ↓
-Step 5: 阶段末汇总确认
+Step 6: 阶段末汇总确认
   展示全部生成结果摘要:
 
   Phase A (后端):
-  | 子项目 | requirements | design | tasks | Step 2.5 审查 |
+  | 子项目 | requirements | design | tasks | Step 3.5 审查 |
   |--------|-------------|--------|-------|--------------|
   | {backend} | {N} 需求项 | {N} API端点 | {N} 任务 | API {N} issues, Model {M} violations |
 
@@ -764,7 +788,7 @@ Step 5: 阶段末汇总确认
 
 ### 规模自适应
 
-根据子项目任务数自动调整 Step 5 展示策略：
+根据子项目任务数自动调整 Step 6 展示策略：
 - **小规模**（≤30 tasks/子项目）：逐条展示完整任务列表
 - **中规模**（31-80 tasks/子项目）：按 Batch 分组摘要，仅展示 HIGH-risk 任务详情
 - **大规模**（>80 tasks/子项目）：统计概览（任务分布、风险分布、覆盖率）+ 仅列 HIGH-risk 项
@@ -773,8 +797,8 @@ Step 5: 阶段末汇总确认
 
 ## 并行执行编排
 
-> Step 1-3 由 Agent 并行执行，编排器负责分类、调度和聚合。
-> 本段描述 Agent 调度逻辑，Step 1-3 的具体内容见上方「工作流」段落。
+> Step 1-4 由 Agent 并行执行，编排器负责分类、调度和聚合。
+> 本段描述 Agent 调度逻辑，Step 1-4 的具体内容见上方「工作流」段落。
 
 ### 子项目分类
 
@@ -787,29 +811,29 @@ Step 5: 阶段末汇总确认
 
 ### Phase A — 后端 Agent
 
-启动 1 个 Agent 处理后端子项目，完整执行 Step 1 → Step 2 → Step 2.5 → Step 3。
+启动 1 个 Agent 处理后端子项目，完整执行 Step 1 → Step 3 → Step 3.5 → Step 4（跳过 Step 2 原语识别）。
 
 Agent 产出：
 ```
 .allforai/project-forge/sub-projects/{backend-name}/
 ├── requirements.md    # Step 1
-├── design.md          # Step 2 + Step 2.5 审查结果
-└── tasks.md           # Step 3
+├── design.md          # Step 3 + Step 3.5 审查结果
+└── tasks.md           # Step 4
 ```
 
 ### Phase B — 前端并行 Agent
 
 后端 Agent 完成后，用**单条消息发出 N 个 Agent tool 调用**并行执行。
-Agent tool 的屏障同步机制保证所有前端 Agent 完成后才继续到 Step 4。
+Agent tool 的屏障同步机制保证所有前端 Agent 完成后才继续到 Step 5。
 
-每个前端 Agent 完整执行 Step 1 → Step 2 → Step 3（不执行 Step 2.5）。
+每个前端 Agent 完整执行 Step 1 → Step 2 → Step 3 → Step 4（不执行 Step 3.5）。
 
 每个 Agent 产出：
 ```
 .allforai/project-forge/sub-projects/{frontend-name}/
 ├── requirements.md    # Step 1
-├── design.md          # Step 2
-└── tasks.md           # Step 3
+├── design.md          # Step 2 (原语识别) + Step 3
+└── tasks.md           # Step 4
 ```
 
 ### Agent prompt 模板
@@ -821,7 +845,7 @@ Agent tool 的屏障同步机制保证所有前端 Agent 完成后才继续到 S
 
 执行步骤:
 1. 用 Read 工具加载 ${CLAUDE_PLUGIN_ROOT}/skills/design-to-spec.md（仅参考规则和模板，不重复全局步骤）
-2. 按 Step 1 (requirements) → Step 2 (design) [→ Step 2.5 仅后端] → Step 3 (tasks) 执行
+2. 按 Step 1 (requirements) → Step 2 (原语识别, 仅前端) → Step 3 (design) [→ Step 3.5 仅后端] → Step 4 (tasks) 执行
 3. 产出写入 .allforai/project-forge/sub-projects/{sub-project-name}/
 
 子项目信息:
@@ -849,10 +873,10 @@ Agent 调用参数：
 
 | Agent | Phase | 子项目类型 | 执行步骤 | 产出目录 |
 |-------|-------|-----------|---------|---------|
-| 后端 Agent | A | backend | Step 1→2→2.5→3 | `.allforai/project-forge/sub-projects/{backend}/` |
-| 前端 Agent 1 | B | admin | Step 1→2→3 | `.allforai/project-forge/sub-projects/{admin}/` |
-| 前端 Agent 2 | B | web-customer | Step 1→2→3 | `.allforai/project-forge/sub-projects/{web}/` |
-| 前端 Agent N | B | mobile-native | Step 1→2→3 | `.allforai/project-forge/sub-projects/{mobile}/` |
+| 后端 Agent | A | backend | Step 1→3→3.5→4 | `.allforai/project-forge/sub-projects/{backend}/` |
+| 前端 Agent 1 | B | admin | Step 1→2→3→4 | `.allforai/project-forge/sub-projects/{admin}/` |
+| 前端 Agent 2 | B | web-customer | Step 1→2→3→4 | `.allforai/project-forge/sub-projects/{web}/` |
+| 前端 Agent N | B | mobile-native | Step 1→2→3→4 | `.allforai/project-forge/sub-projects/{mobile}/` |
 
 ### 错误处理
 
@@ -865,7 +889,7 @@ Phase A (后端 Agent):
     注: 后端失败不可跳过（前端依赖后端 design.md）
 
 Phase B (前端 Agent 并行):
-  全部成功 → 进入 Step 4
+  全部成功 → 进入 Step 5
   部分失败 →
     成功的 Agent: 正常收集产出
     失败的 Agent: 记录错误信息
@@ -876,7 +900,7 @@ Phase B (前端 Agent 并行):
        ✓ mobile: 完成 (requirements: N, design: N 页面, tasks: N)"
     询问:
       1. 重试失败的子项目（仅重跑失败的 Agent）
-      2. 跳过继续到 Step 4（依赖分析标注缺失子项目）
+      2. 跳过继续到 Step 5（依赖分析标注缺失子项目）
       3. 中止流程
   全部失败 →
     向用户报告所有错误
@@ -884,14 +908,14 @@ Phase B (前端 Agent 并行):
 
 自动模式:
   后端 Agent 失败 → ERROR（停）
-  前端 Agent 部分失败 → WARNING（记日志继续到 Step 4）
+  前端 Agent 部分失败 → WARNING（记日志继续到 Step 5）
   前端 Agent 全部失败 → ERROR（停）
 ~~~
 
 ### resume 模式下的并行处理
 
 ~~~
-resume 模式检测 Step 1-3 完成状态:
+resume 模式检测 Step 1-4 完成状态:
   检测方式: 检查 .allforai/project-forge/sub-projects/{name}/ 下三件套
     - requirements.md 存在
     - design.md 存在
@@ -899,7 +923,7 @@ resume 模式检测 Step 1-3 完成状态:
   三件全 → 该子项目已完成
 
   判定:
-    后端 + 所有前端三件套全存在 → 跳过 Step 1-3，进入 Step 4
+    后端 + 所有前端三件套全存在 → 跳过 Step 1-4，进入 Step 5
     后端三件套存在，部分前端缺失 → 跳过 Phase A，Phase B 仅启动缺失子项目的 Agent
     后端三件套缺失 → 从 Phase A 重新开始（全量执行）
 ~~~
@@ -1037,10 +1061,10 @@ B5: Widget 测试 (flutter_test) + 集成测试 (Patrol / integration_test)
   {sub-project-name}/
   ├── requirements.md        # Step 1 输出（人类可读）
   ├── requirements.json      # Step 1 输出（机器可读）
-  ├── design.md              # Step 2 输出（人类可读）
-  ├── design.json            # Step 2 输出（机器可读）
-  ├── tasks.md               # Step 3 输出（人类可读）
-  └── tasks.json             # Step 3 输出（机器可读）
+  ├── design.md              # Step 2+3 输出（人类可读）
+  ├── design.json            # Step 2+3 输出（机器可读）
+  ├── tasks.md               # Step 4 输出（人类可读）
+  └── tasks.json             # Step 4 输出（机器可读）
 ```
 
 ---
@@ -1152,7 +1176,7 @@ B5: Widget 测试 (flutter_test) + 集成测试 (Patrol / integration_test)
 
 ### 5. 跨项目依赖显式声明
 
-后端 B2 → 前端 B4 的依赖、共享类型的依赖，都在 Step 4 中显式声明并写入 execution_order。
+后端 B2 → 前端 B4 的依赖、共享类型的依赖，都在 Step 5 中显式声明并写入 execution_order。
 
 ### 6. 并行 Agent 产出隔离
 
