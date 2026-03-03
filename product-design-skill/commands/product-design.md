@@ -85,7 +85,26 @@ Phase 8: design-audit full（终审）
 > **并行组**: use-case / feature-gap / feature-prune / ui-design 为并行执行组。
 > resume 模式下，仅当该组全部完成才视为"Phase 4-7 已完成"，否则补跑缺失的 skill。
 
-向用户展示探测结果，确认执行计划后开始。
+向用户展示探测结果。
+
+### XV 跨模型交叉验证状态
+
+产物探测后，同步检测 XV 状态并展示：
+
+1. 检查 `OPENROUTER_API_KEY` 环境变量是否设置
+2. 检查 `mcp__openrouter__list_families` MCP 工具是否可用
+
+按以下规则输出一行状态通知：
+
+| Key | MCP | 输出 |
+|-----|-----|------|
+| ✓ | ✓ | `XV 跨模型交叉验证: 已启用（MCP + 脚本双通道）` |
+| ✓ | ✗ | `XV 跨模型交叉验证: 已启用（脚本通道）— MCP 工具未就绪，运行 /setup-openrouter 检查` |
+| ✗ | ✗ | `XV 跨模型交叉验证: 未启用 — 运行 /setup-openrouter 配置。流程不受影响。` |
+
+此通知仅为信息性输出，不阻塞任何流程。
+
+确认执行计划后开始。
 
 ---
 
