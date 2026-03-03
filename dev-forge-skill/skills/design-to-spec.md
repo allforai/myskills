@@ -220,6 +220,34 @@ existing 模式下，Step 3 生成 design.md 之前，先执行套路检测：
 
 检测结果写入 design.md 的「页面交互套路」章节。
 
+### 行为原语实现映射
+
+> Step 2 识别出项目使用的行为原语后，查此表确定各技术栈的具体实现选项。
+> 优先选用技术栈自带能力（零额外依赖），其次选生态标准库。
+
+| 原语 | UmiJS + AntD Pro | Next.js | Flutter | React Native |
+|------|-----------------|---------|---------|--------------|
+| `VirtualList` | ProTable 内置虚拟化（默认启用） | `react-virtual` / `@tanstack/react-virtual` | `ListView.builder`（原生懒渲染） | `FlatList`（原生懒渲染） |
+| `InfiniteScroll` | `ProList` + `onLoadMore` 回调 | `useInfiniteQuery`（TanStack Query）+ `IntersectionObserver` | `ListView.builder` + `onEndReached` | `FlatList` + `onEndReached` |
+| `PullToRefresh` | `ProTable` + `headerTitle` 刷新按钮（桌面无下拉） | `useSWR` mutate / `queryClient.invalidateQueries` | `RefreshIndicator` widget | `RefreshControl`（FlatList prop） |
+| `SwipeAction` | 无原生支持（桌面操作列按钮替代） | 无（桌面），移动端用 `react-swipeable` | `Dismissible` / `flutter_slidable` | `react-native-swipeable` |
+| `HorizontalSwipe` | N/A（桌面不适用） | `react-swipeable` / `framer-motion` | `PageView` + `GestureDetector` | `PanGestureHandler`（react-native-gesture-handler） |
+| `VerticalSwipe` | N/A（桌面不适用） | `framer-motion` 手势 | `PageView`（scrollDirection: vertical） | `FlatList`（vertical pagingEnabled） |
+| `DragAndDrop` | `@dnd-kit/core` + `@dnd-kit/sortable` | `@dnd-kit/core` | `ReorderableListView` / `flutter_reorderable_list` | `react-native-draggable-flatlist` |
+| `CanvasDrag` | `konva` / `react-flow` | `konva` / `react-flow` | `CustomPaint` + `GestureDetector` | `react-native-canvas` |
+| `StateMachine` | 自定义 `useStateMachine` hook（枚举 + 合法转换 Map） | `XState` / Zustand slice | Riverpod `StateNotifier` | Zustand slice |
+| `AppendOnlyStream` | Socket.io-client + `useRef` 消息数组 + `requestAnimationFrame` 滚动到底 | Socket.io-client / `EventSource`（SSE） | `StreamBuilder` + WebSocket（`web_socket_channel`） | Socket.io-client + `FlatList` inverted |
+| `RealtimeSync` | Socket.io-client + 乐观更新（本地先改，收到服务端确认再 reconcile） | Socket.io-client / Pusher + `useSyncExternalStore` | `web_socket_channel` + Riverpod | Socket.io-client + Zustand |
+| `FormWithValidation` | `ProForm` + `rules` 数组（antd 内置校验） | `react-hook-form` + `zod` resolver | `Form` + `TextFormField` + `validator` | `react-hook-form` |
+| `MultiStepWizard` | `Steps` 组件 + 分步 `ProForm`（`StepsForm`） | 自定义 step state + 条件渲染 | `Stepper` package / 自定义 `PageView` | `react-native-paper` Steps / 自定义 |
+| `TreeNavigation` | `Tree` 组件（AntD）+ 受控展开态 | `react-arborist` / 自定义递归组件 | `TreeView`（flutter_treeview） | `react-native-tree-select` |
+| `MediaPlayer` | `react-player` / HTML5 `<video>` | `react-player` / Next.js `<video>` | `video_player` package + `Chewie` | `react-native-video` |
+| `ImageLightbox` | `Image.PreviewGroup`（AntD 内置） | `yet-another-react-lightbox` | `photo_view` package | `react-native-image-viewing` |
+| `Timeline` | `Steps`（竖向）/ `Timeline`（AntD） | 自定义竖向列表 | `timeline_tile` package | 自定义 `FlatList` |
+| `BatchSelection` | `ProTable` + `rowSelection` + `toolBarRender` 批量操作栏 | 自定义 checkbox state + toolbar | `ListView` + `Checkbox` + `FloatingActionButton` | `FlatList` + `Checkbox` + bottom toolbar |
+
+---
+
 ### 页面交互类型分类
 
 > **类型定义与推断规则**：见 `product-design-skill/docs/interaction-types.md`（单一事实来源）。
