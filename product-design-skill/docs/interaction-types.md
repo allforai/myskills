@@ -1089,7 +1089,84 @@ MG2 实体集群由以下子屏组成，screen-map 可精确标注子类型：
 
 ## screen-map 推断规则
 
-[推断规则内容 — Task 8]
+> screen-map Step 1 梳理界面时，根据 screen 的 `actions` / `name` / `entities` 自动推断 `interaction_type`。
+> **优先级从高到低，命中即停止。**
+
+### 规则链
+
+**P1（最高优先级）— 特殊界面名称关键词：**
+- `screen.name` 含 `dashboard / overview / 报表 / 数据中心 / analytics` → **MG7**
+- `screen.name` 含 `onboarding / 引导 / 新手 / 欢迎 / welcome` → **SY1**
+- `screen.name` 含 `直播 / live / livestream / 开播` → **RT2**
+- `screen.name` 含 `通话 / call / video-call / 视频通话` → **RT1**
+
+**P2 — 实时通讯类型：**
+- 有 `send-message` + `manage-members / pin-message / create-channel` → **WK2**（频道/群组）
+- 有 `send-message / receive-message / typing-indicator` → **WK1**（对话/IM）
+
+**P3 — 审核相关：**
+- 有 `approve / reject / audit / review-content` actions → **MG4**（审批流）
+- 有 `submit-for-review / withdraw-submission` actions → **SB1**（审核型提交）
+
+**P4 — 电商特有：**
+- 有 `add-to-cart / select-sku / buy-now / purchase` actions → **EC1**（商品详情页）
+- 有 `update-quantity / apply-coupon / checkout / remove-from-cart` actions → **EC2**（购物车）
+- `screen.name` 含 `order-tracking / 物流 / 快递 / 配送追踪` 且 actions 无写操作 → **EC3**（订单追踪）
+
+**P5 — 创作/编辑类型：**
+- 有 `draw / connect-nodes / drag-canvas / add-shape` actions → **WK4**（画布/白板）
+- 有 `rich-text-edit / insert-block / collaborative-cursor / version-history` → **WK3**（文档编辑）
+- 有 `drag-card / move-column / change-card-status` actions → **WK5**（看板）
+- 有 `drag-timeline / set-dependency / adjust-duration` actions → **WK6**（甘特图）
+- 有 `upload-file / move-file / rename-file / create-folder` + 树形路径结构 → **WK7**（文件管理器）
+
+**P6 — 状态机 / CRUD 区分：**
+- entities 有 `parentId / children / treeData / parent_id` 字段 + 有 CRUD actions → **MG6**（树形管理）
+- 有 `ship / cancel / freeze / activate / suspend / deactivate` 等状态操作，且**无** `create / edit` 字段编辑 → **MG3**（状态机驱动）
+- 有 `create + edit + delete` actions → **MG2**（CRUD 实体集群）
+
+**P7 — 主从 / 配置 / 向导 / 审批：**
+- screen 内有嵌套子实体列表（Tabs / 子表 / nested-list） → **MG5**（主从详情）
+- `screen.name` 含 `settings / config / profile / 设置 / 配置 / 账户信息` 且无列表 actions → **MG8**（配置页）
+- 有 `next-step / prev-step / submit-wizard / save-draft-step` actions → **SY2**（向导多步表单）
+
+**P8 — 内容消费类：**
+- 有 `swipe-left / swipe-right / like-or-skip` actions → **CT4**（卡片探索）
+- 有 `play / pause / seek / change-quality` actions → **CT5**（媒体播放器）
+- 有 `view-story / next-story / swipe-up-story` actions → **CT8**（Story/短视频流）
+- 有 `follow / like / share / repost` actions + 数据为内容列表 → **CT1**（Feed 流）
+- 有 `follow / send-message` + 数据为单一用户信息 → **CT3**（个人主页）
+- `screen.name` 含 `search / 搜索` 且 actions 无写操作 → **CT7**（搜索结果页）
+- screen 为单篇文章/帖子详情，actions 仅有 `like / share / comment / collect` → **CT2**（内容阅读）
+- 有 `pinch-zoom / swipe-gallery / view-lightbox` actions → **CT6**（相册/图库）
+
+**P9 — 通讯实时（非 IM）：**
+- 有 `compose-email / reply-email / forward-email` actions → **RT3**（邮件收发）
+- 有 `mark-read / dismiss-notification / clear-all` actions → **RT4**（通知中心）
+
+**P10 — TUI 类（仅当 `platform = tui`）：**
+- 有菜单导航交互（方向键/回车选择） → **TU2**
+- 有实时日志流输出（tail/watch） → **TU3**
+- 有多步骤进度展示（install/build/deploy） → **TU4**
+- 默认 → **TU1**
+
+**P11（默认兜底）：**
+- actions 仅有 `view / filter / search / export / download` 只读操作 → **MG1**（只读列表）
+- 以上 P1-P10 均不命中 → **MG1**（只读列表，最终兜底）
+
+---
+
+### 组合类型处理
+
+一个 screen 可命中多个规则时，优先级最高的规则决定**主类型**，其余作为次要类型：
+
+```json
+{
+  "interaction_type": ["MG5", "MG3"]
+}
+```
+
+示例：订单详情页（有嵌套子表 P7 命中 MG5，又有发货/取消操作 P6 命中 MG3）→ `["MG5", "MG3"]`
 
 ---
 
