@@ -283,15 +283,16 @@ existing 模式下，Step 3 生成 design.md 之前，先执行套路检测：
 
 ### 图片字段处理规范
 
-> 适用于 MG2-C（新建表单）和 MG2-E（编辑表单）中包含图片上传字段的场景。
+> 适用于 MG2-C（新建表单）、MG2-E（编辑表单）、SB1（内容发布）中包含图片上传字段的场景。
 > 图片字段 = `FormWithValidation` + `FileUpload` 组合原语。
 
-#### 第一步：确定上传时机策略
+#### 第一步：确定上传策略
 
 | 策略 | 流程 | 适用条件 | 注意事项 |
 |------|------|---------|---------|
-| **预上传（Pre-upload）** | 选图 → 立即上传 CDN → 获得 URL → 表单提交只传 URL | 图片较大（>1MB）、用户可能反复换图、需实时预览 CDN 图 | 需处理孤儿文件：用户放弃表单时已上传图片需清理；可用 TTL 定期清理或提交时对比差异 |
-| **随表单提交（Multipart）** | 选图 → 暂存 File 对象 → 表单提交时 multipart 一起 POST | 图片小（<500KB）、简单场景、避免孤儿文件问题 | 自定义 `customRequest` 阻止组件自动上传；表单提交逻辑需处理 File 对象 |
+| **预签名 URL 直传 CDN**（推荐大图） | 请求服务端获取预签名 URL → 前端直接 PUT 到 CDN（OSS/S3）→ 获得图片 URL → 表单提交只传 URL | 图片 > 1MB、有 CDN/对象存储、需显示上传进度 | 服务端不承受图片流量；需配置 CORS；孤儿文件处理同预上传 |
+| **预上传至服务端** | 选图 → POST 到服务端 → 服务端转存 CDN → 返回 URL → 表单提交只传 URL | 图片中等大小、无直接访问对象存储权限 | 流量经过服务端；孤儿文件：用 TTL 定期清理或提交时对比差异 |
+| **随表单提交（Multipart）** | 选图 → 暂存 File 对象 → 表单提交时 multipart 一起 POST | 图片小（< 500KB）、简单场景、避免孤儿文件问题 | 自定义 `customRequest` 阻止组件自动上传；表单提交逻辑需处理 File 对象 |
 
 #### 第二步：编辑表单图片回填（各技术栈）
 
@@ -320,6 +321,19 @@ existing 模式下，Step 3 生成 design.md 之前，先执行套路检测：
 | **数量上限** | 达到 `maxCount` 时隐藏或禁用上传入口（不仅禁用，还要视觉上移除入口，避免用户困惑） |
 | **格式/大小校验** | 在 `beforeUpload` / `:before-upload` / `fileImporter` 回调中拦截，给出明确提示（"仅支持 JPG/PNG，最大 5MB"），不触发上传 |
 | **单图 vs 多图** | 头像/封面等单图场景用替换模式（选新图后旧图直接替换）；商品图等多图场景用追加+删除模式 |
+
+#### 第四步：移动端选图入口（原生平台专属）
+
+Web 端点击 `<input type="file" accept="image/*">` 即可；原生端需显式触发系统选图/拍照 API：
+
+| 平台 | 相册选图 | 相机拍照 | 备注 |
+|------|---------|---------|------|
+| iOS SwiftUI | `PHPickerViewController`（iOS 14+，无需权限申请） | `UIImagePickerController(sourceType: .camera)` + `NSCameraUsageDescription` | 多选用 `PHPickerConfiguration.selectionLimit` |
+| Android Kotlin/Compose | `ActivityResultContracts.GetContent("image/*")` 或 `PickVisualMedia` | `ActivityResultContracts.TakePicture()` + `CAMERA` 权限 | Android 13+ 用 Photo Picker，无需 READ_EXTERNAL_STORAGE |
+| Flutter | `image_picker` 插件：`ImagePicker().pickImage(source: ImageSource.gallery)` | `ImagePicker().pickImage(source: ImageSource.camera)` | 同时支持多图：`pickMultiImage()` |
+| React Native | `launchImageLibrary({ mediaType: 'photo' })`（`react-native-image-picker`） | `launchCamera({ mediaType: 'photo' })` | 需在 Info.plist / AndroidManifest 声明权限 |
+
+**选图后统一入上传队列**，走第一步选定的上传策略；拍照临时文件在上传完成或用户取消后及时清理。
 
 ---
 
