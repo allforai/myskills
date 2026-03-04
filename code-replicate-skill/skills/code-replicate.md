@@ -84,18 +84,7 @@ version: "1.0.0"
 
 高风险对象（涉及支付/权限/数据完整性）必须覆盖 6/6 视角；普通对象 4/6 视角即可。
 
-```json
-{
-  "viewpoints": {
-    "user": { "success": "...", "failure": "...", "edge": "..." },
-    "business": { "rule": "...", "enforcement": "..." },
-    "tech": { "current": "...", "target_equivalent": "...", "mapping_risk": "low|medium|high" },
-    "ux": { "impact": "...", "skip_if": "纯 API 项目" },
-    "data": { "creates": "...", "modifies": "...", "constraint": "..." },
-    "risk": { "if_wrong": "...", "severity": "low|medium|high|critical" }
-  }
-}
-```
+> 6V JSON 结构详见 `${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md`（6V 视角 JSON 结构）
 
 ### XV 跨模型验证
 
@@ -214,21 +203,9 @@ Step 5: 交接 dev-forge（最终汇总报告）
 
 ### 写入配置
 
-```json
-// .allforai/code-replicate/replicate-config.json
-{
-  "version": "1.0.0",
-  "created_at": "ISO8601",
-  "fidelity": "interface | functional | architecture | exact",
-  "source_path": "相对路径或绝对路径",
-  "scope": "full",
-  "target_stack": "go-gin | nestjs | ...",
-  "ambiguity_policy": "conservative | strict",
-  "bug_replicate_default": "replicate | fix | ask",
-  "steps_completed": [],
-  "last_updated": "ISO8601"
-}
-```
+写入 `.allforai/code-replicate/replicate-config.json`（含 fidelity, source_path, scope, target_stack, ambiguity_policy, bug_replicate_default, steps_completed 字段）。
+
+> 完整格式详见 `${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md`（replicate-config.json）
 
 输出「✅ Preflight 完成，开始分析（Steps 1-2 连续执行，不停顿）」，自动继续。
 
@@ -331,20 +308,9 @@ Step 1 完成后**先给出拆分建议**（加入 Step 3 汇总确认）：
 
 ### 1b. 模块树提取
 
-扫描目录结构，对每个模块生成：
-```json
-{
-  "id": "M001",
-  "name": "user",
-  "path": "src/modules/user",
-  "inferred_responsibility": "用户账户管理（注册/登录/资料）",
-  "confidence": "high | medium | low",
-  "evidence": "[CONFIRMED:src/modules/user/user.controller.ts]",
-  "key_files": ["user.controller.ts", "user.service.ts"]
-}
-```
+扫描目录结构，对每个模块生成条目（含 id, name, path, inferred_responsibility, confidence, evidence, key_files 字段）。模块职责无法确定时：标注 `"confidence": "low"` + `[INFERRED]`，加入歧义 log，**不停下询问**。
 
-模块职责无法确定时：标注 `"confidence": "low"` + `[INFERRED]`，加入歧义 log，**不停下询问**。
+> 模块条目格式详见 `${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md`（模块树条目）
 
 ### 1c. 代码规模评估
 
@@ -360,146 +326,39 @@ Step 1 完成后**先给出拆分建议**（加入 Step 3 汇总确认）：
 
 ### 所有模式：API 合约分析 → `api-contracts.json`
 
-对每个路由文件提取（含 4D 字段）：
-
-```json
-{
-  "endpoint_id": "EP001",
-  "method": "POST",
-  "path": "/api/v1/users/register",
-  "source_file": "src/modules/user/user.controller.ts",
-  "source_line": 42,
-  "auth_required": false,
-  "request": {
-    "body": {
-      "email": { "type": "string", "required": true, "format": "email" },
-      "password": { "type": "string", "required": true, "minLength": 8 }
-    }
-  },
-  "responses": [
-    { "status": 201, "description": "注册成功", "schema": { "token": "string" } },
-    { "status": 400, "description": "参数错误" },
-    { "status": 409, "description": "邮箱已存在" }
-  ],
-  "confidence": "confirmed | partial | code-only | inferred",
-  "source_refs": [
-    "[CONFIRMED:src/modules/user/user.controller.ts:42]",
-    "[CONFIRMED:src/modules/user/user.spec.ts:15]"
-  ],
-  "constraints": {
-    "business": ["邮箱全局唯一（DB unique index）"],
-    "technical": ["密码 bcrypt hash rounds=10（硬编码）"],
-    "risk": ["注册不限频次，无 rate limiting"]
-  },
-  "decision_rationale": "返回 409 而非 400 区分参数错误和冲突，符合 REST 语义 [INFERRED]",
-  "viewpoints": {
-    "user": { "success": "获得 JWT token，直接登录", "failure": "409 提示邮箱已存在" },
-    "business": { "rule": "一邮箱一账号", "enforcement": "DB 唯一约束 + 代码层 ConflictException" },
-    "tech": { "current": "NestJS + TypeORM", "target_equivalent": "待 Step 3 决策", "mapping_risk": "low" },
-    "data": { "creates": "users 表一行", "constraint": "email UNIQUE" },
-    "risk": { "if_wrong": "允许重复邮箱注册，账号系统混乱", "severity": "high" }
-  }
-}
-```
+对每个路由文件提取端点条目（含 4D + 6V 字段：endpoint_id, method, path, source_file, source_line, auth_required, request, responses, confidence, source_refs, constraints, decision_rationale, viewpoints）。
 
 若响应状态码与实际异常处理不一致 → 标注 `[CONFLICT]`，加入 ambiguity_log，**不停下**。
+
+> 完整端点 JSON 示例详见 `${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md`（api-contracts.json）
 
 ---
 
 ### functional 模式加：行为规格分析 → `behavior-specs.json`
 
-对每个 Service 函数提取业务逻辑路径（含 4D + 6V 字段）：
-
-```json
-{
-  "behavior_id": "BH001",
-  "name": "用户注册",
-  "source_file": "src/modules/user/user.service.ts",
-  "source_line": 15,
-  "flow": [
-    { "step": 1, "action": "检查邮箱是否已存在", "condition": "if exists → throw ConflictException" },
-    { "step": 2, "action": "密码 bcrypt hash（rounds=10）", "note": "hardcoded rounds [INFERRED:no config ref]" },
-    { "step": 3, "action": "写入数据库", "transaction": false },
-    { "step": 4, "action": "生成 JWT token", "detail": "expires 7d [CONFIRMED:auth.service.ts:23]" },
-    { "step": 5, "action": "发送欢迎邮件（异步，不阻塞）", "side_effect": true }
-  ],
-  "error_handling": [
-    { "error": "ConflictException", "trigger": "邮箱已存在", "http_status": 409 }
-  ],
-  "confidence": "confirmed",
-  "source_refs": [
-    "[CONFIRMED:src/modules/user/user.service.ts:15]",
-    "[CONFIRMED:src/modules/user/user.service.spec.ts:23]"
-  ],
-  "constraints": {
-    "business": ["邮箱不可重复注册"],
-    "technical": ["欢迎邮件异步发送，注册响应不等邮件结果"],
-    "risk": ["邮件失败不回滚注册（副作用与主流程解耦）"]
-  },
-  "decision_rationale": "邮件异步是有意设计，避免邮件服务不可用阻塞注册 [INFERRED:try-catch 包裹邮件调用]",
-  "viewpoints": {
-    "user": { "success": "收到欢迎邮件（最终一致）", "failure": "注册成功但邮件可能延迟/丢失" },
-    "business": { "rule": "注册即激活，不需邮件确认", "enforcement": "无邮件验证步骤" },
-    "tech": { "current": "nestjs-mailer 异步", "target_equivalent": "goroutine + 邮件 SDK [待 Step 3]", "mapping_risk": "low" },
-    "data": { "creates": "users 行 + email_log 行（异步）" },
-    "risk": { "if_wrong": "若目标栈同步发邮件，注册 P99 延迟暴增", "severity": "medium" }
-  }
-}
-```
+对每个 Service 函数提取业务逻辑路径（含 4D + 6V 字段：behavior_id, name, source_file, source_line, flow, error_handling, confidence, source_refs, constraints, decision_rationale, viewpoints）。
 
 无测试覆盖的行为 → 标注 `[UNTESTED]`，加入 ambiguity_log，继续。
+
+> 完整行为 JSON 示例详见 `${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md`（behavior-specs.json）
 
 ---
 
 ### architecture 模式加：架构地图 → `arch-map.json`
 
-```json
-{
-  "layers": [
-    { "name": "Controller", "path_pattern": "src/modules/*/controller.ts", "responsibility": "HTTP 处理、DTO 验证" },
-    { "name": "Service", "path_pattern": "src/modules/*/service.ts", "responsibility": "业务逻辑" },
-    { "name": "Repository", "path_pattern": "src/modules/*/repository.ts", "responsibility": "数据访问" }
-  ],
-  "patterns_detected": [
-    { "pattern": "Repository Pattern", "evidence": "[CONFIRMED:src/modules/*/repository.ts]" },
-    { "pattern": "DTO Validation", "evidence": "[CONFIRMED:class-validator decorators]" }
-  ],
-  "dependencies": [
-    { "from": "OrderService", "to": "UserService", "type": "constructor injection",
-      "concern": "跨模块依赖，可能有循环风险 [INFERRED]" }
-  ],
-  "cross_cutting": {
-    "logging": "winston，middleware 层统一注入 [CONFIRMED:src/middleware/logger.ts]",
-    "auth": "JWT Guard 装饰器，Controller 层 [CONFIRMED]",
-    "caching": "未检测到"
-  }
-}
-```
+提取分层结构（layers）、检测到的模式（patterns_detected）、模块依赖（dependencies）、横切关注点（cross_cutting: logging, auth, caching 等）。
 
 发现架构歧义（如：无法确定是否有多个入口点） → 若 `ambiguity_policy = strict` 且影响架构走向 → 即时停下询问；否则标注加入 log 继续。
+
+> 完整架构地图 JSON 示例详见 `${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md`（arch-map.json）
 
 ---
 
 ### exact 模式加：Bug 注册表 → `bug-registry.json`
 
-```json
-{
-  "bugs": [
-    {
-      "bug_id": "BUG001",
-      "type": "off-by-one",
-      "location": "src/modules/product/product.service.ts:87",
-      "description": "分页从 0 开始（page=0 返回第一页），API 文档说从 1 开始",
-      "evidence": "[CONFLICT:src/product.service.ts:87 vs swagger/openapi.yaml:134]",
-      "confidence": "confirmed",
-      "evidence_sources": ["code", "doc"],
-      "replicate_decision": "{从 replicate-config.bug_replicate_default 预填}"
-    }
-  ]
-}
-```
+逐一记录发现的 bug（含 bug_id, type, location, description, evidence, confidence, evidence_sources, replicate_decision 字段）。若 `bug_replicate_default = ask` → 将每个 bug 的决策加入 Step 3 的"待确认列表"，不即时停下。
 
-若 `bug_replicate_default = ask` → 将每个 bug 的决策加入 Step 3 的"待确认列表"，不即时停下。
+> 完整 bug 条目 JSON 示例详见 `${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md`（bug-registry.json）
 
 ### Step 2 完成
 
@@ -576,24 +435,9 @@ Step 1 完成后**先给出拆分建议**（加入 Step 3 汇总确认）：
 
 ### 写入决策
 
-将所有用户决策写入 `.allforai/code-replicate/stack-mapping-decisions.json`（持久化，下次重跑复用）：
+将所有用户决策写入 `.allforai/code-replicate/stack-mapping-decisions.json`（持久化，下次重跑复用；含 decisions 和 ambiguity_resolutions 数组）。
 
-```json
-{
-  "decisions": [
-    {
-      "source_construct": "Python Celery task queue",
-      "target_construct": "asynq",
-      "rationale": "用户选择 A",
-      "decided_at": "ISO8601",
-      "reusable": true
-    }
-  ],
-  "ambiguity_resolutions": [
-    { "ambiguity_id": "AMB001", "resolution": "以代码为准", "decided_at": "ISO8601" }
-  ]
-}
-```
+> 决策文件格式详见 `${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md`（stack-mapping-decisions.json）
 
 输出「Step 3 ✓ {N} 个映射决策，{N} 个歧义已处理，继续生成产物（不停顿）」，自动继续 Step 4。
 
@@ -605,27 +449,7 @@ Step 1 完成后**先给出拆分建议**（加入 Step 3 汇总确认）：
 
 ### 4a. `product-map/task-inventory.json`（所有模式）
 
-每个 API 端点 → 一个任务：
-
-```json
-{
-  "tasks": [
-    {
-      "task_id": "T001",
-      "task_name": "用户注册",
-      "module": "user",
-      "source_endpoint": "POST /api/v1/users/register",
-      "source_file": "src/modules/user/user.controller.ts:42",
-      "task_type": "CRUD",
-      "frequency": "high",
-      "risk_level": "medium",
-      "replicate_fidelity": "functional",
-      "api_contract_ref": "EP001",
-      "behavior_spec_ref": "BH001"
-    }
-  ]
-}
-```
+每个 API 端点 → 一个任务（含 task_id, task_name, module, source_endpoint, source_file, task_type, frequency, risk_level, replicate_fidelity, api_contract_ref, behavior_spec_ref）。
 
 ### 4b. `product-map/business-flows.json`（functional+ 模式）
 
@@ -637,86 +461,17 @@ Step 1 完成后**先给出拆分建议**（加入 Step 3 汇总确认）：
 
 ### 4d. `product-map/constraints.json`（exact 模式）
 
-将 `bug-registry.json` 中 `replicate_decision: "replicate"` 的 bug 转为约束：
-
-```json
-{
-  "constraints": [
-    {
-      "constraint_id": "CN001",
-      "source_bug": "BUG001",
-      "description": "分页从 0 开始（客户端依赖此行为，不可修改）",
-      "enforcement": "hard",
-      "affects": ["T003", "T007"]
-    }
-  ]
-}
-```
+将 `bug-registry.json` 中 `replicate_decision: "replicate"` 的 bug 转为约束（含 constraint_id, source_bug, description, enforcement, affects）。
 
 ### 4e. `code-replicate/stack-mapping.json`
 
-完整映射记录（自动映射 + 用户决策 + 架构决策）：
-
-```json
-{
-  "source_stack": "express-typescript",
-  "target_stack": "go-gin",
-  "auto_mapped": [
-    { "source_construct": "Express router.get()", "target_construct": "Gin r.GET()", "rule": "express-to-gin-route" }
-  ],
-  "user_decisions": [...],
-  "arch_decisions": [...],
-  "unmapped": [],
-  "created_at": "ISO8601"
-}
-```
+完整映射记录（source_stack, target_stack, auto_mapped, user_decisions, arch_decisions, unmapped）。
 
 ### 4f. `code-replicate/replicate-report.md`
 
-```markdown
-# 代码复刻报告
+Markdown 人类可读摘要（基本信息表、分析结果摘要、信息失真风险点表、跨栈映射决策、下一步指引）。
 
-## 基本信息
-
-| 项目 | 值 |
-|------|----|
-| 源码路径 | {source_path} |
-| 源技术栈 | {source_stack} |
-| 目标技术栈 | {target_stack} |
-| 信度等级 | {fidelity} |
-| 分析时间 | {datetime} |
-
-## 分析结果摘要
-
-- API 端点: {N} 个（confirmed: {N}, partial: {N}, code-only: {N}）
-- 业务行为: {N} 个（functional+ 模式）
-- 架构模式: {list}（architecture+ 模式）
-- 发现 bug: {N} 个，复刻: {N}，修复: {N}（exact 模式）
-
-## 信息失真风险点
-
-| 类型 | 位置 | 描述 | 处理方式 |
-|------|------|------|---------|
-| [CONFLICT] | ... | ... | 以代码为准 |
-| [INFERRED] | ... | ... | 标注，低置信度 |
-| [UNTESTED] | ... | ... | 标注，待补测试 |
-
-## 跨栈映射决策
-
-### 自动映射（{N} 项）
-...
-
-### 用户决策（{N} 项）
-...
-
-## 下一步
-
-已生成 {N} 个任务到 `.allforai/product-map/task-inventory.json`。
-
-使用 dev-forge 流水线继续：
-- `/design-to-spec`   ← 生成目标技术栈实现规格
-- `/task-execute`     ← 逐任务生成代码
-```
+> Step 4 所有产物的完整 JSON 格式和 report 模板详见 `${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md`（Step 4 产物格式）
 
 写入所有产物文件，更新 `replicate-config.json`，自动继续 Step 5。
 
