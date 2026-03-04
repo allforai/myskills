@@ -335,6 +335,51 @@ Web 端点击 `<input type="file" accept="image/*">` 即可；原生端需显式
 
 **选图后统一入上传队列**，走第一步选定的上传策略；拍照临时文件在上传完成或用户取消后及时清理。
 
+#### 第五步：图片显示尺寸规格（URL 参数等比缩放）
+
+> 同一张图在不同位置以不同尺寸展示，由**服务端 URL 参数**处理，不依赖 CDN 图片变换。
+> 规则：只传 `w`（限制最大宽度）或 `h`（限制最大高度），服务端等比缩放，不裁剪，不同时传两者。
+
+**常用规格约定：**
+
+| 使用场景 | 参数 | 说明 |
+|---------|------|------|
+| 列表缩略图 | `?w=200` | 横图/方图均适用 |
+| 头像 | `?w=128` | 含 2× Retina 缓冲（64px 显示位） |
+| 详情主图 | `?w=800` | 适配常规内容区宽度 |
+| 封面/Banner | `?w=1280` | 宽屏全宽图 |
+| 竖版图（海报等） | `?h=600` | 高度限制，宽自适应 |
+| 全屏 Lightbox | 不带参数 | 原图 |
+
+**各技术栈渲染写法（通用：拼接参数到 URL）：**
+
+| 技术栈 | 用法 |
+|--------|------|
+| UmiJS + AntD Pro | `<Image src={`${url}?w=200`} />`（列表列）；`<Image src={`${url}?w=800`} />`（详情） |
+| Vue 3 + Element Plus / Nuxt | `<el-image :src="`${url}?w=200`" />`；封装为 `useImageUrl(url, { w: 200 })` composable |
+| Next.js | 用普通 `<img src={`${url}?w=200`} />`（服务端自行处理，不走 next/image CDN 管道） |
+| Flutter | `CachedNetworkImage(imageUrl: '$url?w=200')` |
+| iOS SwiftUI | `AsyncImage(url: URL(string: "\(url)?w=200")!)` |
+| Android Kotlin/Compose | `AsyncImage(model = "$url?w=200", contentDescription = ...)` （Coil） |
+| React Native | `<Image source={{ uri: `${url}?w=200` }} />` |
+| Windows WPF | `BitmapImage` URI 拼参数；或 `IValueConverter` 统一处理 |
+| Windows Electron | `<img src={`${url}?w=200`} />` |
+
+**design.json 字段标注**：image 类型字段在 `data_models[].fields` 中加 `display_sizes`，描述各展示场景的规格参数：
+
+```json
+{
+  "name": "cover_image",
+  "type": "string",
+  "note": "存储原图 URL",
+  "display_sizes": {
+    "list": "?w=200",
+    "detail": "?w=800",
+    "lightbox": ""
+  }
+}
+```
+
 ---
 
 ### 视频字段处理规范
