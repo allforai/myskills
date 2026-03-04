@@ -1328,6 +1328,7 @@ MG2 实体集群由以下子屏组成，screen-map 可精确标注子类型：
 | 图片素材库管理 | `BatchSelection` + `ImageLightbox` + `FileUpload` |
 | 审批流表单 | `FormWithValidation` + `StateMachine` + `FileUpload`（附件材料） |
 | 表单含图片字段（新建/编辑） | `FormWithValidation` + `FileUpload`；编辑场景需图片回填（URL → 组件格式）；删除已有图片用标记删除 |
+| 表单含视频字段（新建/编辑） | `FileUpload` + `AsyncProcessing`；转码完成前禁用提交；编辑场景需视频回填（URL → 播放器组件）；封面图为独立图片字段 |
 | 多步骤上传向导 | `MultiStepWizard` + `FileUpload` + `AsyncProcessing` |
 
 ### 使用方式
