@@ -281,6 +281,48 @@ existing 模式下，Step 3 生成 design.md 之前，先执行套路检测：
 
 ---
 
+### 图片字段处理规范
+
+> 适用于 MG2-C（新建表单）和 MG2-E（编辑表单）中包含图片上传字段的场景。
+> 图片字段 = `FormWithValidation` + `FileUpload` 组合原语。
+
+#### 第一步：确定上传时机策略
+
+| 策略 | 流程 | 适用条件 | 注意事项 |
+|------|------|---------|---------|
+| **预上传（Pre-upload）** | 选图 → 立即上传 CDN → 获得 URL → 表单提交只传 URL | 图片较大（>1MB）、用户可能反复换图、需实时预览 CDN 图 | 需处理孤儿文件：用户放弃表单时已上传图片需清理；可用 TTL 定期清理或提交时对比差异 |
+| **随表单提交（Multipart）** | 选图 → 暂存 File 对象 → 表单提交时 multipart 一起 POST | 图片小（<500KB）、简单场景、避免孤儿文件问题 | 自定义 `customRequest` 阻止组件自动上传；表单提交逻辑需处理 File 对象 |
+
+#### 第二步：编辑表单图片回填（各技术栈）
+
+编辑场景必须将服务端返回的图片 URL 列表转换为各组件可识别的格式：
+
+| 技术栈 | 回填写法 |
+|--------|---------|
+| UmiJS + AntD Pro | `form.setFieldsValue({ images: urls.map((url, i) => ({ uid: String(i), name: url.split('/').pop(), status: 'done', url })) })` |
+| Vue 3 + Element Plus | `:file-list="existingUrls.map((url, i) => ({ uid: i, name: url.split('/').pop(), url, status: 'success' }))"` |
+| Next.js (react-hook-form) | `setValue('images', urls.map(url => ({ id: url, url, isExisting: true })))` → 渲染时区分已有图和新图 |
+| Nuxt (vue-query) | 同 Vue 3 + Element Plus，`useQuery` 加载后 `fileList.value = ...` |
+| Flutter | `final imageItems = existingUrls.map((url) => ImageItem(url: url, isLocal: false)).toList();` → 渲染 `NetworkImage` |
+| iOS SwiftUI | `@State var images: [ImageItem] = urls.map { ImageItem(remoteUrl: $0) }` → 显示 `AsyncImage` |
+| Android Kotlin/Compose | `val images = remember { mutableStateListOf(*urls.map { ImageItem(url = it, isLocal = false) }.toTypedArray()) }` |
+| React Native | `const [images, setImages] = useState(urls.map(url => ({ uri: url, isExisting: true })))` |
+| Windows WPF | `Images = new ObservableCollection<ImageItem>(urls.Select(url => new ImageItem { Url = url, IsUploaded = true }))` |
+| Windows Electron | `const [images, setImages] = useState(urls.map(url => ({ src: url, isExisting: true })))` |
+
+#### 第三步：多图管理行为规则
+
+| 场景 | 规则 |
+|------|------|
+| **删除已有图片** | 标记删除（本地记录 `deletedIds`），不立即调 DELETE API；提交表单时一并告知服务端（避免用户取消后图片已删） |
+| **删除新上传图片**（预上传策略） | 立即调 DELETE API 清理孤儿文件，或提交时对比原始列表与当前列表差异批量清理 |
+| **图片排序** | 维护本地 `order` 数组，提交时带上排序字段；不依赖上传顺序 |
+| **数量上限** | 达到 `maxCount` 时隐藏或禁用上传入口（不仅禁用，还要视觉上移除入口，避免用户困惑） |
+| **格式/大小校验** | 在 `beforeUpload` / `:before-upload` / `fileImporter` 回调中拦截，给出明确提示（"仅支持 JPG/PNG，最大 5MB"），不触发上传 |
+| **单图 vs 多图** | 头像/封面等单图场景用替换模式（选新图后旧图直接替换）；商品图等多图场景用追加+删除模式 |
+
+---
+
 ### 页面交互类型分类
 
 > **类型定义与推断规则**：见 `product-design-skill/docs/interaction-types.md`（单一事实来源）。

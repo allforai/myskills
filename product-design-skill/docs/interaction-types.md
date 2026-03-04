@@ -1242,7 +1242,7 @@ MG2 实体集群由以下子屏组成，screen-map 可精确标注子类型：
 | `StateMachine` | 有限状态集合 + 合法跳转规则 | MG3, MG2-ST, SB1, CT5, RT1 |
 | `AppendOnlyStream` | 实时追加新内容到列表尾部 | WK1, RT2, TU3, RT4 |
 | `RealtimeSync` | 多端实时协同，冲突合并 | WK1, WK2, WK3, WK4 |
-| `FormWithValidation` | 字段输入 + 实时/提交时校验 | MG2-C, MG2-E, MG8, SY2, SB1 |
+| `FormWithValidation` | 字段输入 + 实时/提交时校验；含图片字段时与 `FileUpload` 组合使用（见 design-to-spec.md 图片字段处理规范） | MG2-C, MG2-E, MG8, SY2, SB1 |
 | `MultiStepWizard` | 线性步骤，每步独立表单，支持前进/后退 | SY1, SY2 |
 | `TreeNavigation` | 父子层级结构，展开/折叠/选中 | MG6, WK7 |
 | `MediaPlayer` | 播放控制状态机 + 进度/缓冲管理 | CT5, CT8, RT2 |
@@ -1327,6 +1327,7 @@ MG2 实体集群由以下子屏组成，screen-map 可精确标注子类型：
 | 实时聊天（历史+新消息） | `InfiniteScroll`（历史反向加载）+ `AppendOnlyStream`（新消息追加） |
 | 图片素材库管理 | `BatchSelection` + `ImageLightbox` + `FileUpload` |
 | 审批流表单 | `FormWithValidation` + `StateMachine` + `FileUpload`（附件材料） |
+| 表单含图片字段（新建/编辑） | `FormWithValidation` + `FileUpload`；编辑场景需图片回填（URL → 组件格式）；删除已有图片用标记删除 |
 | 多步骤上传向导 | `MultiStepWizard` + `FileUpload` + `AsyncProcessing` |
 
 ### 使用方式
