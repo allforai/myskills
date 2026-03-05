@@ -1,12 +1,12 @@
 ---
-description: "配置外部服务 API Key：OpenRouter（跨模型交叉验证）+ Brave Search（媒体搜索+通用搜索增强）+ Google AI（生图/生视频/TTS）。检测状态、引导获取、验证连接、持久化。"
+description: "检测和配置所有外部能力：Playwright（UI 自动化）+ OpenRouter（跨模型 XV）+ Brave Search（媒体搜索）+ Google AI（生图/生视频）+ Stitch UI（视觉稿）。一站式状态仪表板 + 引导配置。"
 argument-hint: "[check|reset]"
 allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 ---
 
-> **升级提示**: 此命令是 `/setup-openrouter` 的超集，一站式配置所有外部服务。
+> **升级提示**: 此命令是 `/setup-openrouter` 的超集，一站式检测和配置所有外部能力。
 
-# Setup Services — 配置外部服务
+# Setup Services — 外部能力管理
 
 用户请求: $ARGUMENTS
 
@@ -17,20 +17,35 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 ## 模式路由
 
 - **无参数** → 完整引导：检测 → 获取 Key → 验证 → 持久化
-- **`check`** → 仅检测当前状态（三个 Key 是否已配置、MCP 工具是否可用）
+- **`check`** → 仅检测当前状态（全部外部能力的可用性仪表板）
 - **`reset`** → 清除已有配置，重新引导
 
-## 背景说明
+## 外部能力总览
 
-产品设计套件和演示锻造依赖三个外部服务，通过 API Key 启用增强功能：
+插件套件依赖以下外部能力，分为三类：
 
-| 服务 | 环境变量 | Key 格式 | 用途 |
+### MCP 工具（需安装插件）
+
+| 能力 | 探测方式 | 使用插件 | 用途 |
 |------|---------|---------|------|
-| OpenRouter | `OPENROUTER_API_KEY` | `sk-or-...` | 跨模型交叉验证（XV）— 用 GPT/Gemini/DeepSeek 等交叉审视产出 |
-| Brave Search | `BRAVE_API_KEY` | `BSA...` | 媒体搜索（图片/视频）+ 通用搜索增强（竞品分析、行业调研） |
-| Google AI | `GOOGLE_API_KEY` | `AIza...` | AI 生图（Imagen 3）+ 生视频（Veo 2）+ TTS（Cloud TTS） |
+| Playwright | `mcp__plugin_playwright_playwright__browser_navigate` 可用性 | demo-forge, dev-forge, deadhunt | UI 自动化：验证、E2E 测试、死链扫描 |
+| Stitch UI | `mcp__plugin_product-design_stitch__create_project` 可用性 | product-design (规划中) | 高保真 UI 视觉稿生成 |
 
-**三个服务均为可选 — 没有 Key 时所有技能正常运行，只是跳过对应增强功能。**
+### API Key 服务（需配置环境变量）
+
+| 能力 | 环境变量 | Key 格式 | 使用插件 | 用途 |
+|------|---------|---------|---------|------|
+| OpenRouter | `OPENROUTER_API_KEY` | `sk-or-...` | product-design, dev-forge | 跨模型交叉验证（XV） |
+| Brave Search | `BRAVE_API_KEY` | `BSA...` | demo-forge | 媒体搜索（图片/视频） |
+| Google AI | `GOOGLE_API_KEY` | `AIza...` | demo-forge | AI 生图（Imagen 3）+ 生视频（Veo 2）+ TTS |
+
+### 内置工具（始终可用）
+
+| 能力 | 使用插件 | 用途 |
+|------|---------|------|
+| WebSearch | product-design, demo-forge | 搜索驱动设计、媒体搜索降级 |
+
+**所有外部能力均为可选 — 未配置时技能正常运行，跳过对应增强功能或走降级链。**
 
 ## 执行流程
 
@@ -55,9 +70,15 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 ### Step 1: 检测当前状态
 
-检测三个服务的就绪状态：
+检测所有外部能力的就绪状态：
 
-#### 1a. OpenRouter
+#### 1a. Playwright MCP
+
+1. **检查 MCP 工具**：检查 `mcp__plugin_playwright_playwright__browser_navigate` 工具是否可用
+   - 可用 → Playwright 就绪
+   - 不可用 → Playwright 未就绪
+
+#### 1b. OpenRouter
 
 1. **MCP 工具通道**：检查 `mcp__plugin_product-design_openrouter__detect_region` 工具是否可用
    - 可用 → 调用 `mcp__plugin_product-design_openrouter__detect_region`，展示模型路由策略。MCP XV 就绪
@@ -77,37 +98,57 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
    - 已设置 → Brave 就绪
    - 未设置 → Brave 未就绪
 
-#### 1c. Google AI
+#### 1d. Google AI
 
 1. **环境变量**：检查 `GOOGLE_API_KEY` 环境变量
    - 已设置 → Google AI 就绪
    - 未设置 → Google AI 未就绪
 
-#### 状态表输出
+#### 1e. Stitch UI
 
-展示三个服务的状态汇总表：
+1. **检查 MCP 工具**：检查 `mcp__plugin_product-design_stitch__create_project` 工具是否可用
+   - 可用 → Stitch 就绪
+   - 不可用 → Stitch 未就绪（规划中功能）
+
+#### 状态仪表板输出
+
+展示所有外部能力的状态汇总：
 
 ```
-## 外部服务状态
+## 外部能力状态
 
-| 服务 | Key | MCP 工具 | 状态 |
-|------|-----|----------|------|
-| OpenRouter | {已配置/未配置} | {可用/不可用} | {就绪/未就绪} |
-| Brave Search | {已配置/未配置} | {可用/不可用} | {就绪/未就绪} |
-| Google AI | {已配置/未配置} | — | {就绪/未就绪} |
+| 能力 | 类型 | 状态 | 使用插件 | 用途 |
+|------|------|------|---------|------|
+| Playwright | MCP 工具 | {就绪/未就绪} | demo-forge, dev-forge, deadhunt | UI 自动化 |
+| OpenRouter (MCP) | MCP 工具 | {就绪/未就绪} | product-design, dev-forge | XV 交叉验证 |
+| OpenRouter (Script) | 环境变量 | {就绪/未就绪} | product-design 预置脚本 | XV 交叉验证 |
+| Brave Search | MCP/环境变量 | {就绪/未就绪} | demo-forge | 媒体搜索 |
+| Google AI | 环境变量 | {就绪/未就绪} | demo-forge | AI 生图/生视频/TTS |
+| Stitch UI | MCP 工具 | {就绪/未集成} | product-design (规划中) | UI 视觉稿 |
+| WebSearch | 内置 | 就绪 | product-design, demo-forge | 搜索 |
+| MCP 服务器 | 构建产物 | {已构建/未构建} | — | OpenRouter MCP 通道 |
+
+降级链:
+  Brave 不可用 → WebSearch → AI 生成
+  OpenRouter MCP 不可用 → OpenRouter Script → 跳过 XV
+  Google AI 不可用 → DALL-E → 本地 SD → 跳过
+  Playwright 不可用 → 无降级（提示安装）
 ```
 
 **模式分支**：
 
-- 三个服务均就绪：
-  - 若模式为 `check` → 输出状态报告后结束
+- 所有 API Key 服务均就绪：
+  - 若模式为 `check` → 输出状态仪表板后结束
   - 若模式为无参数 → 询问「所有外部服务已配置完毕，是否需要重新配置？」
     - 否 → 结束
     - 是 → 继续 Step 2
   - 若模式为 `reset` → 继续 Step 2
-- 至少一个服务未就绪：
-  - 若模式为 `check` → 输出状态报告后结束，附带提示
-  - 其他模式 → 继续 Step 2（仅引导未就绪的服务）
+- 至少一个 API Key 服务未就绪：
+  - 若模式为 `check` → 输出状态仪表板后结束，附带提示
+  - 其他模式 → 继续 Step 2（仅引导未就绪的 API Key 服务）
+- MCP 工具类（Playwright/Stitch）未就绪：
+  - `check` 模式在状态表后附带安装提示
+  - 其他模式不引导安装（MCP 工具需独立安装，不涉及 Key 配置）
 
 ### Step 2: 引导获取 Key
 
@@ -281,18 +322,26 @@ export GOOGLE_API_KEY="AIza..."
 ### check 模式报告
 
 ```
-## 外部服务状态检测
+## 外部能力状态
 
-| 服务 | Key | MCP 工具 | 状态 | 用途 |
-|------|-----|----------|------|------|
-| OpenRouter | {已配置/未配置} | {可用/不可用} | {就绪/未就绪} | 跨模型交叉验证 |
-| Brave Search | {已配置/未配置} | {可用/不可用} | {就绪/未就绪} | 媒体搜索 + 通用搜索 |
-| Google AI | {已配置/未配置} | — | {就绪/未就绪} | AI 生图/生视频/TTS |
-| MCP 服务器 | — | — | {已构建/未构建} | OpenRouter MCP 通道 |
+MCP 工具:
+  Playwright       {就绪/未就绪}   demo-forge, dev-forge, deadhunt — UI 自动化
+  Stitch UI        {就绪/未集成}   product-design (规划中) — UI 视觉稿
 
-{若有未配置的服务：运行 /setup-services 进行配置}
+API Key 服务:
+  OpenRouter (MCP)    {就绪/未就绪}   product-design, dev-forge — XV 交叉验证
+  OpenRouter (Script) {就绪/未就绪}   product-design 预置脚本 — XV 交叉验证
+  Brave Search        {就绪/未就绪}   demo-forge — 媒体搜索
+  Google AI           {就绪/未就绪}   demo-forge — AI 生图/生视频/TTS
+
+内置:
+  WebSearch           就绪           product-design, demo-forge — 搜索
+  MCP 服务器          {已构建/未构建}  — OpenRouter MCP 通道
+
+{若 Playwright 未就绪：安装: claude mcp add playwright -- npx @anthropic-ai/mcp-playwright}
+{若有未配置的 API Key：运行 /setup-services 进行配置}
 {若 MCP 已构建但工具不可用：需重启 Claude Code 加载 MCP 服务器}
-{注: 所有服务均为可选，未配置不影响核心功能}
+{注: 所有外部能力均为可选，未配置不影响核心功能}
 ```
 
 ### 完整配置报告
@@ -303,8 +352,12 @@ export GOOGLE_API_KEY="AIza..."
 | 服务 | Key | 状态 | 用途 |
 |------|-----|------|------|
 | OpenRouter | sk-or-...{后4位} | {已写入 {path} / 已跳过 / 已配置} | 跨模型交叉验证 |
-| Brave Search | BSA...{后4位} | {已写入 {path} / 已跳过 / 已配置} | 媒体搜索 + 通用搜索 |
+| Brave Search | BSA...{后4位} | {已写入 {path} / 已跳过 / 已配置} | 媒体搜索 |
 | Google AI | AIza...{后4位} | {已写入 {path} / 已跳过 / 已配置} | AI 生图/生视频/TTS |
+
+MCP 工具（需独立安装，不涉及 Key）:
+  Playwright  {就绪/未就绪}  {若未就绪: claude mcp add playwright -- npx @anthropic-ai/mcp-playwright}
+  Stitch UI   {就绪/未集成}  {若需启用: npx -y @_davideast/stitch-mcp init}
 
 下一步：重启 Claude Code 后运行 /setup-services check 验证连接。
 ```

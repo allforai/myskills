@@ -16,7 +16,22 @@
 
 ---
 
-## 二、工程保真增强（4E + 4V）
+## 二、外部能力探测协议
+
+> 统一探测、降级模式。完整注册表和规范见 `product-design-skill/docs/skill-commons.md`「外部能力探测协议」章节。
+
+dev-forge 涉及的外部能力：
+
+| 能力 | 使用技能 | 重要性 | 降级行为 |
+|------|---------|--------|---------|
+| `playwright` | e2e-verify, product-verify, seed-forge | 条件必需（验证阶段） | 阻塞，提示安装 |
+| `openrouter_mcp` | design-to-spec, project-scaffold, e2e-verify, product-verify | 可选 | 跳过 XV，输出提示 |
+
+**提示格式**：`{step_name} ⊘ {能力名} 不可用，{降级动作}`
+
+---
+
+## 三、工程保真增强（4E + 4V）
 
 执行任何阶段时，建议同步参考：`docs/engineering-fidelity.md`。
 
@@ -29,7 +44,7 @@
 
 ---
 
-## 三、跨模型增强（OpenRouter）
+## 四、跨模型增强（OpenRouter）
 
 通过 OpenRouter MCP (`mcp__plugin_product-design_openrouter__ask_model`) 调用不同模型家族，利用各模型专长增强特定阶段的产出质量。
 
