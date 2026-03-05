@@ -52,12 +52,15 @@
   "pipeline_preferences": {
     "ui_style": "material-design-3 | apple-hig | fluent-design | flat-minimal | glassmorphism | ant-design | shadcn-tailwind | undecided",
     "competitors": ["竞品A", "竞品B"],
-    "scope_strategy": "aggressive | balanced | conservative | undecided"
+    "scope_strategy": "aggressive | balanced | conservative | undecided",
+    "stitch_ui": true | false | "undecided"
   },
   "frameworks_referenced": ["Lean Canvas", "VPC", "JTBD", "Blue Ocean ERRC", "Kano Model", "Opportunity Solution Tree", "First Principles", "Mom Test", "Build Trap / Product Kata"],
   "search_sources": ["搜索过程中参考的 URL"]
 }
 ```
+
+> `stitch_ui` — 是否在 ui-design 阶段调用 Google Stitch 生成视觉稿。`true` 需要 Google Cloud OAuth 认证（`npx -y @_davideast/stitch-mcp init`）。
 
 ### `problem-domain.json`（Step 0 输出）
 
