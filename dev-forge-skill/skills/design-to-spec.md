@@ -510,6 +510,18 @@ Step 4: Tasks 生成
   → Batch 结构因子项目类型而异（见下文）
   → 写入 .allforai/project-forge/sub-projects/{name}/tasks.md
   → 输出进度: 「{name}/tasks.md ✓ ({N} 任务, B0-B5)」（不停，汇总到 Step 6）
+
+  当 component-spec.json 存在时，B3 任务分批调整：
+
+  **B3 Round 1**（共享组件优先）：
+  - 实现 component-spec.json 中的 shared_components
+  - 每个共享组件一个任务，含 variants + a11y 实现
+  - 任务元数据追加：`component_spec_ref: true`
+
+  **B3 Round 2+**（页面组件）：
+  - 页面级组件引用 Round 1 已实现的共享组件
+  - 如有 Stitch HTML → 任务追加 `stitch_ref: screen_id` + `stitch_html: 文件路径`
+
   ↓
 Step 5: 跨子项目依赖分析
   识别跨项目依赖:
