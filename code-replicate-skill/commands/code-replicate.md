@@ -1,6 +1,6 @@
 ---
 description: "代码复刻：逆向工程已有代码库 → 生成 allforai 产物 → 交还 dev-forge 流水线。模式: interface / functional / architecture / exact"
-argument-hint: "[mode: interface|functional|architecture|exact] [path]"
+argument-hint: "[mode] <path-or-url> [--type backend|frontend|fullstack|module] [--scope full|modules|feature]"
 allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion", "Agent", "WebSearch"]
 ---
 
@@ -14,18 +14,35 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion", "Age
 
 ## 执行方式
 
-用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/skills/code-replicate.md`，按其完整工作流执行。
+从 `$ARGUMENTS` 解析参数：
+- `mode`（interface/functional/architecture/exact）→ 预填信度等级
+- `path` 或 git URL → 预填源码地址
+- `--type backend|frontend` → 指定项目类型
 
-从 `$ARGUMENTS` 解析 `mode` 和 `path` 参数（如已提供），预填到 Step 0 Preflight。
+### 项目类型分发
+
+根据 `--type` 参数决定加载哪个技能文件，用 Read 加载后按其完整工作流执行：
+
+1. **`--type backend`** → 加载并执行 `${CLAUDE_PLUGIN_ROOT}/skills/cr-backend.md`
+2. **`--type frontend`** → 加载并执行 `${CLAUDE_PLUGIN_ROOT}/skills/cr-frontend.md`
+3. **`--type fullstack`** → 加载并执行 `${CLAUDE_PLUGIN_ROOT}/skills/cr-fullstack.md`
+4. **`--type module`** → 加载并执行 `${CLAUDE_PLUGIN_ROOT}/skills/cr-module.md`（需 `--module` 参数）
+5. **未指定 `--type`** → 默认加载并执行 `${CLAUDE_PLUGIN_ROOT}/skills/cr-backend.md`（Phase 2 技术栈识别时，若发现项目为前端项目，自动切换到 cr-frontend）
 
 ## 快速参考
 
 ```
-/code-replicate                          # 交互式选择信度等级
-/code-replicate interface ./src          # 仅复刻 API 合约
-/code-replicate functional ./src         # 复刻业务行为
-/code-replicate architecture ./src       # 复刻模块结构
-/code-replicate exact ./src              # 百分百复刻（含 bug）
+/code-replicate                                      # 交互式（默认后端）
+/code-replicate functional ./src                     # 后端复刻业务行为
+/code-replicate functional ./src --type frontend     # 前端复刻业务行为
+/code-replicate functional ./src --scope "用户注册和登录"  # 只复刻某个功能
+/code-replicate functional ./src --scope "src/user,src/auth" # 只复刻指定模块
+/code-replicate exact ./src                          # 百分百复刻（含 bug）
+/code-replicate functional https://github.com/org/repo.git  # 远程仓库
+/code-replicate functional https://github.com/org/repo#v2.0  # 指定 tag/分支
+/code-replicate functional git@github.com:org/repo.git       # SSH 地址
+/code-replicate functional ./project --type fullstack         # 全栈复刻（前后端交叉验证）
+/code-replicate functional ./src --type module --module src/modules/user  # 模块复刻
 ```
 
 ## 信度等级速查
@@ -36,6 +53,18 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion", "Age
 | `functional` | 技术栈迁移，保留业务逻辑（**推荐默认**） |
 | `architecture` | 大规模重构，保持架构决策 |
 | `exact` | 行为零容忍回归；监管合规（⚠️ 耗时最长） |
+
+## 专用命令
+
+| 命令 | 说明 |
+|------|------|
+| `/cr-backend` | 固定后端模式 |
+| `/cr-frontend` | 固定前端模式 |
+| `/cr-fullstack` | 全栈复刻（前后端交叉验证） |
+| `/cr-module` | 模块复刻（依赖边界处理） |
+| `/cr-interface` | 固定 interface 信度 |
+| `/cr-exact` | 固定 exact 信度 |
+| `/cr-status` | 查看分析进度 |
 
 ## 后续步骤
 

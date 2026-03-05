@@ -1,6 +1,6 @@
 ---
 description: "精准复刻：百分百复刻源代码行为，含已知 bug、边界用例、非显式行为。适用于行为零容忍回归或监管合规场景。"
-argument-hint: "[path]"
+argument-hint: "<path-or-url> [--type backend|frontend|fullstack] [--scope full|modules|feature]"
 allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion"]
 ---
 
@@ -17,16 +17,27 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion"]
 - 非关键模块建议使用 `functional` 或 `architecture` 模式
 - 分析前确认你真的需要行为百分百一致
 
+## 插件根目录
+
+所有文档路径基于插件安装目录: `${CLAUDE_PLUGIN_ROOT}`
+
 ## 执行方式
 
-固定 `fidelity = exact`，从 `$ARGUMENTS` 解析源码路径（若有），然后加载并执行：
+固定 `fidelity = exact`，从 `$ARGUMENTS` 解析源码地址和 `--type`（若有）。
 
-`${CLAUDE_PLUGIN_ROOT}/skills/code-replicate.md`
+### 项目类型分发
+
+根据 `--type` 参数决定加载哪个技能文件，用 Read 加载后按其完整工作流执行：
+
+1. **`--type backend`** → 加载并执行 `${CLAUDE_PLUGIN_ROOT}/skills/cr-backend.md`
+2. **`--type frontend`** → 加载并执行 `${CLAUDE_PLUGIN_ROOT}/skills/cr-frontend.md`
+3. **`--type fullstack`** → 加载并执行 `${CLAUDE_PLUGIN_ROOT}/skills/cr-fullstack.md`
+4. **未指定 `--type`** → 默认加载并执行 `${CLAUDE_PLUGIN_ROOT}/skills/cr-backend.md`（Phase 2 自动检测，若发现前端项目则切换）
 
 Preflight 时：
 - 信度等级已锁定为 `exact`，不询问
 - **额外询问**：bug 复刻默认策略（replicate / fix / ask 逐一决策）
-- 仅询问缺失的参数（源码路径、目标技术栈）
+- 仅询问缺失的参数（源码地址、目标技术栈）
 
 ## 适用场景
 

@@ -1,6 +1,6 @@
 # Schema Reference — 代码复刻产物 JSON 格式
 
-> 本文件供按需加载。skills/code-replicate.md 中以 `> 详见` 引用。
+> 本文件供按需加载。skills/code-replicate-core.md、cr-backend.md、cr-frontend.md、cr-fullstack.md、cr-module.md 中以 `> 详见` 引用。
 
 ---
 
@@ -28,14 +28,41 @@
 {
   "version": "1.0.0",
   "created_at": "ISO8601",
+  "project_type": "backend | frontend | fullstack",
   "fidelity": "interface | functional | architecture | exact",
-  "source_path": "相对路径或绝对路径",
-  "scope": "full",
+  "source_path": "相对路径或绝对路径（本地）",
+  "source_url": "远程 git URL（HTTPS/SSH，可追加 #branch/#tag/#sha；clone 后 source_path 指向临时目录）",
+  "source_ref": "分支/tag/commit（从 source_url 的 # 后解析，无则为默认分支）",
+  "clone_depth": "shallow | full（浅克隆或完整历史，按需升级）",
+  "scope": "full | modules | feature",
+  "scope_detail": "modules 时为目录列表 [\"src/user\", \"src/order\"]；feature 时为功能描述字符串",
+  "scope_filter": {
+    "included_modules": ["实际纳入分析的模块 ID 列表"],
+    "excluded_modules": ["排除的模块 ID 列表"],
+    "reason": "各模块纳入/排除原因"
+  },
+  "analysis_granularity": "fine | standard | coarse（由范围规模自动决定）",
+  "business_direction": "replicate | slim | extend（1:1复刻 / 精简 / 扩展）",
   "target_stack": "go-gin | nestjs | ...",
   "ambiguity_policy": "conservative | strict",
   "bug_replicate_default": "replicate | fix | ask",
   "steps_completed": [],
-  "last_updated": "ISO8601"
+  "last_updated": "ISO8601",
+
+  // fullstack 模式额外字段
+  "backend_path": "后端代码目录（相对于源码根目录，fullstack 模式）",
+  "frontend_path": "前端代码目录（相对于源码根目录，fullstack 模式）",
+  "backend_target_stack": "后端目标技术栈（fullstack 模式）",
+  "frontend_target_stack": "前端目标技术栈（fullstack 模式）",
+
+  // cr-module 模式额外字段
+  "module_boundary_decisions": [
+    {
+      "module": "外部模块名",
+      "decision": "include | external_interface | event_contract | prerequisite",
+      "reason": "决策原因"
+    }
+  ]
 }
 ```
 
@@ -94,7 +121,7 @@
   "viewpoints": {
     "user": { "success": "获得 JWT token，直接登录", "failure": "409 提示邮箱已存在" },
     "business": { "rule": "一邮箱一账号", "enforcement": "DB 唯一约束 + 代码层 ConflictException" },
-    "tech": { "current": "NestJS + TypeORM", "target_equivalent": "待 Step 3 决策", "mapping_risk": "low" },
+    "tech": { "current": "NestJS + TypeORM", "target_equivalent": "待 Phase 3 确认", "mapping_risk": "low" },
     "data": { "creates": "users 表一行", "constraint": "email UNIQUE" },
     "risk": { "if_wrong": "允许重复邮箱注册，账号系统混乱", "severity": "high" }
   }
@@ -139,7 +166,7 @@
   "viewpoints": {
     "user": { "success": "收到欢迎邮件（最终一致）", "failure": "注册成功但邮件可能延迟/丢失" },
     "business": { "rule": "注册即激活，不需邮件确认", "enforcement": "无邮件验证步骤" },
-    "tech": { "current": "nestjs-mailer 异步", "target_equivalent": "goroutine + 邮件 SDK [待 Step 3]", "mapping_risk": "low" },
+    "tech": { "current": "nestjs-mailer 异步", "target_equivalent": "goroutine + 邮件 SDK [待 Phase 3]", "mapping_risk": "low" },
     "data": { "creates": "users 行 + email_log 行（异步）" },
     "risk": { "if_wrong": "若目标栈同步发邮件，注册 P99 延迟暴增", "severity": "medium" }
   }
@@ -198,11 +225,11 @@
 }
 ```
 
-若 `bug_replicate_default = ask` → 将每个 bug 的决策加入 Step 3 的"待确认列表"，不即时停下。
+若 `bug_replicate_default = ask` → 将每个 bug 的决策加入 Phase 5 的"待确认列表"，不即时停下。
 
 ---
 
-## Step 4 产物格式
+## Phase 6 产物格式
 
 ### task-inventory.json（所有模式）
 
@@ -264,7 +291,7 @@
 }
 ```
 
-### stack-mapping-decisions.json（Step 3 决策持久化）
+### stack-mapping-decisions.json（Phase 5 决策持久化）
 
 ```json
 {
@@ -282,6 +309,322 @@
   ]
 }
 ```
+
+---
+
+## Fullstack 交叉验证产物（fullstack 模式）
+
+### api-bindings.json — API 绑定分析
+
+```json
+{
+  "bindings": [
+    {
+      "binding_id": "BIND001",
+      "frontend_call": {
+        "file": "src/services/userApi.ts",
+        "line": 23,
+        "method": "POST",
+        "url": "/api/v1/users/register",
+        "request_shape": { "email": "string", "password": "string" },
+        "response_shape": { "token": "string" }
+      },
+      "backend_endpoint": {
+        "endpoint_id": "EP001",
+        "file": "src/modules/user/user.controller.ts",
+        "line": 42,
+        "method": "POST",
+        "path": "/api/v1/users/register",
+        "request_shape": { "email": "string", "password": "string", "name": "string" },
+        "response_shape": { "token": "string", "user": "object" }
+      },
+      "status": "matched | unmatched_frontend | unmatched_backend",
+      "shape_mismatches": [
+        {
+          "direction": "request | response",
+          "field": "name",
+          "issue": "后端要求 name 字段（required），前端未发送",
+          "severity": "high | medium | low"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_frontend_calls": 0,
+    "total_backend_endpoints": 0,
+    "matched": 0,
+    "unmatched_frontend": 0,
+    "unmatched_backend": 0,
+    "shape_mismatches": 0
+  }
+}
+```
+
+### schema-alignment.json — 数据 Schema 对齐
+
+```json
+{
+  "alignments": [
+    {
+      "entity": "User",
+      "backend_source": {
+        "file": "src/entities/user.entity.ts",
+        "fields": [
+          { "name": "id", "type": "number", "nullable": false },
+          { "name": "email", "type": "string", "nullable": false },
+          { "name": "password_hash", "type": "string", "nullable": false },
+          { "name": "created_at", "type": "timestamp", "nullable": false }
+        ]
+      },
+      "frontend_source": {
+        "file": "src/types/user.ts",
+        "fields": [
+          { "name": "id", "type": "number" },
+          { "name": "email", "type": "string" },
+          { "name": "createdAt", "type": "number" }
+        ]
+      },
+      "field_alignment": [
+        { "backend": "id", "frontend": "id", "status": "aligned" },
+        { "backend": "email", "frontend": "email", "status": "aligned" },
+        { "backend": "password_hash", "frontend": null, "status": "backend_only", "note": "内部字段，不应暴露给前端" },
+        { "backend": "created_at", "frontend": "createdAt", "status": "type_mismatch", "issue": "后端 timestamp vs 前端 number；命名 snake_case vs camelCase" }
+      ]
+    }
+  ],
+  "summary": {
+    "total_entities": 0,
+    "total_fields": 0,
+    "aligned": 0,
+    "type_mismatch": 0,
+    "backend_only": 0,
+    "frontend_only": 0
+  }
+}
+```
+
+### constraint-reconciliation.json — 约束一致性
+
+```json
+{
+  "constraints": [
+    {
+      "constraint_id": "CR001",
+      "rule": "邮箱全局唯一",
+      "enforcement": {
+        "db": { "present": true, "detail": "users.email UNIQUE INDEX", "source": "migration/001_create_users.sql:5" },
+        "backend": { "present": true, "detail": "ConflictException on duplicate", "source": "user.service.ts:23" },
+        "frontend": { "present": true, "detail": "实时邮箱可用性检查", "source": "RegisterForm.tsx:45" }
+      },
+      "coverage": "full | partial | single_layer",
+      "gap_risk": "none | acceptable | risky",
+      "note": "全层覆盖，无缺口"
+    }
+  ],
+  "summary": {
+    "total_rules": 0,
+    "full_coverage": 0,
+    "partial_coverage": 0,
+    "single_layer": 0,
+    "risky_gaps": 0
+  }
+}
+```
+
+### auth-propagation.json — 认证流程追踪
+
+```json
+{
+  "auth_flow": {
+    "backend": {
+      "token_issue": {
+        "endpoint": "POST /api/auth/login",
+        "source": "auth.service.ts:15",
+        "token_type": "JWT",
+        "expiry": "7d",
+        "refresh_supported": true
+      },
+      "token_verify": {
+        "mechanism": "JWT Guard middleware",
+        "source": "auth.guard.ts:10",
+        "protected_routes": "所有 /api/* 路由（除 /auth/login, /auth/register）"
+      },
+      "token_refresh": {
+        "endpoint": "POST /api/auth/refresh",
+        "source": "auth.controller.ts:45",
+        "strategy": "refresh token rotation"
+      },
+      "token_revoke": {
+        "endpoint": "POST /api/auth/logout",
+        "source": "auth.controller.ts:60",
+        "strategy": "token blacklist（Redis TTL）"
+      }
+    },
+    "frontend": {
+      "token_store": {
+        "mechanism": "localStorage",
+        "source": "utils/auth.ts:8",
+        "security_note": "XSS 风险 — 建议改用 httpOnly cookie"
+      },
+      "token_inject": {
+        "mechanism": "Axios interceptor（Authorization: Bearer）",
+        "source": "services/api.ts:12"
+      },
+      "token_refresh": {
+        "mechanism": "401 拦截 → 自动调用 refresh → 重试原请求",
+        "source": "services/api.ts:25",
+        "implemented": true
+      },
+      "token_clear": {
+        "mechanism": "localStorage.removeItem on logout",
+        "source": "store/auth.ts:34"
+      }
+    },
+    "breakpoints": [
+      {
+        "location": "token 存储",
+        "issue": "前端使用 localStorage，后端未设置 httpOnly cookie",
+        "severity": "medium",
+        "recommendation": "迁移时考虑使用 httpOnly cookie + CSRF token"
+      }
+    ]
+  }
+}
+```
+
+### error-mapping.json — 错误处理对齐
+
+```json
+{
+  "mappings": [
+    {
+      "http_status": 409,
+      "backend_source": {
+        "exception": "ConflictException",
+        "triggers": ["邮箱已存在", "用户名已占用"],
+        "source_files": ["user.service.ts:23", "user.service.ts:45"]
+      },
+      "frontend_handling": {
+        "handled": true,
+        "handler": "catch block in RegisterForm",
+        "source": "RegisterForm.tsx:67",
+        "user_feedback": "显示'邮箱已被注册'提示"
+      },
+      "status": "handled | unhandled | no_backend_source"
+    }
+  ],
+  "summary": {
+    "total_error_codes": 0,
+    "handled": 0,
+    "unhandled": 0,
+    "no_backend_source": 0,
+    "has_generic_fallback": true
+  }
+}
+```
+
+### infrastructure.json — 基础设施行为
+
+```json
+{
+  "services": [
+    {
+      "name": "backend-api",
+      "source": "docker-compose.yml",
+      "image": "node:18-alpine",
+      "ports": ["3000:3000"],
+      "env_vars": ["DATABASE_URL", "JWT_SECRET", "REDIS_URL"],
+      "depends_on": ["postgres", "redis"],
+      "volumes": ["./backend:/app"]
+    }
+  ],
+  "reverse_proxy": {
+    "type": "nginx",
+    "source": "nginx.conf",
+    "routes": [
+      { "path": "/api/*", "upstream": "backend-api:3000" },
+      { "path": "/*", "upstream": "frontend:8080" }
+    ],
+    "cors_config": {
+      "origins": ["http://localhost:3000"],
+      "methods": ["GET", "POST", "PUT", "DELETE"],
+      "credentials": true
+    }
+  },
+  "cron_jobs": [
+    {
+      "schedule": "0 2 * * *",
+      "command": "node scripts/daily-report.js",
+      "source": "crontab",
+      "description": "每日凌晨2点生成报表"
+    }
+  ],
+  "env_vars": [
+    { "key": "DATABASE_URL", "usage": "PostgreSQL 连接字符串", "used_by": ["backend"] },
+    { "key": "JWT_SECRET", "usage": "JWT 签名密钥", "used_by": ["backend"] },
+    { "key": "NEXT_PUBLIC_API_URL", "usage": "前端 API 地址", "used_by": ["frontend"] }
+  ]
+}
+```
+
+---
+
+## Module 边界产物（cr-module 模式）
+
+### module-boundaries.json — 模块依赖边界
+
+```json
+{
+  "target_modules": ["user"],
+  "external_dependencies": [
+    {
+      "module": "auth",
+      "decision": "include | external_interface | event_contract | prerequisite",
+      "interfaces_used": [
+        {
+          "name": "AuthService.validateToken",
+          "signature": "(token: string) => Promise<User>",
+          "source_file": "src/modules/auth/auth.service.ts",
+          "source_line": 42
+        }
+      ]
+    }
+  ],
+  "event_contracts": [
+    {
+      "event": "UserCreated",
+      "direction": "publish | subscribe",
+      "source_file": "src/modules/user/user.service.ts",
+      "source_line": 67,
+      "payload_schema": {
+        "userId": "string",
+        "email": "string",
+        "createdAt": "ISO8601"
+      },
+      "consumers": ["order", "analytics", "notification"]
+    }
+  ],
+  "shared_dependencies": [
+    {
+      "name": "AuthGuard",
+      "type": "middleware | shared_type | config | database_relation",
+      "source_file": "src/common/guards/auth.guard.ts",
+      "decision": "include | prerequisite"
+    }
+  ],
+  "database_relations": [
+    {
+      "source_table": "users",
+      "target_table": "orders",
+      "relation_type": "one-to-many | many-to-many | one-to-one",
+      "foreign_key": "orders.user_id → users.id",
+      "decision": "document_relation"
+    }
+  ]
+}
+```
+
+---
 
 ### replicate-report.md 模板
 

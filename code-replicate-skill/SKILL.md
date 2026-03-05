@@ -4,10 +4,12 @@ description: >
   Code Replication Bridge: reverse-engineer existing codebases (any tech stack) into
   .allforai/ artifacts compatible with the dev-forge pipeline. 4 fidelity levels:
   interface (API contracts only), functional (business behavior), architecture (module
-  structure + patterns), exact (100% replicate including bugs). Hands off to
-  /design-to-spec → /task-execute for target-stack code generation.
-  代码复刻桥接：逆向工程已有代码库，生成 allforai 产物，交还 dev-forge 流水线
-  （/design-to-spec → /task-execute）生成目标技术栈代码。
+  structure + patterns), exact (100% replicate including bugs). Supports backend,
+  frontend, fullstack (cross-validation), and module-level (dependency boundary)
+  replication modes. Hands off to /design-to-spec → /task-execute for target-stack
+  code generation. 代码复刻桥接：逆向工程已有代码库，生成 allforai 产物，交还
+  dev-forge 流水线（/design-to-spec → /task-execute）生成目标技术栈代码。
+  支持后端、前端、全栈（交叉验证）、模块级（依赖边界）四种复刻模式。
 version: "1.0.0"
 ---
 
@@ -42,16 +44,54 @@ code-tuner（架构层）         合规→重复→抽象→评分
 ### `/code-replicate` — 主命令（推荐入口）
 
 ```
-/code-replicate                          # 交互式选择信度等级
-/code-replicate interface ./src          # 仅复刻 API 合约
-/code-replicate functional ./src         # 复刻业务行为（推荐默认）
-/code-replicate architecture ./src       # 复刻模块结构
-/code-replicate exact ./src              # 百分百复刻（含 bug）
+/code-replicate                                      # 交互式（默认后端）
+/code-replicate functional ./src                     # 后端复刻业务行为
+/code-replicate functional ./src --type frontend     # 前端复刻业务行为
+/code-replicate interface ./src                      # 仅复刻 API 合约
+/code-replicate architecture ./src                   # 复刻模块结构
+/code-replicate exact ./src                          # 百分百复刻（含 bug）
+/code-replicate functional https://github.com/org/repo.git  # 远程仓库
+```
+
+### `/cr-backend` — 后端复刻
+
+固定 `project_type = backend`，适合后端 API / 微服务项目。
+
+```
+/cr-backend functional ./src
+/cr-backend interface https://github.com/org/api-repo.git
+```
+
+### `/cr-frontend` — 前端复刻
+
+固定 `project_type = frontend`，适合前端 Web / 移动端项目。
+
+```
+/cr-frontend functional ./src
+/cr-frontend exact https://github.com/org/web-app.git
+```
+
+### `/cr-fullstack` — 全栈复刻
+
+固定 `project_type = fullstack`，前后端联合分析 + 交叉验证（API 绑定、Schema 对齐、认证传播、错误映射）。
+
+```
+/cr-fullstack functional ./project
+/cr-fullstack functional ./project --backend-path server --frontend-path client
+```
+
+### `/cr-module` — 模块复刻
+
+复刻指定模块并处理依赖边界（外部依赖、事件契约、共享层）。
+
+```
+/cr-module functional ./src --module src/modules/user
+/cr-module functional ./src --module src/modules/user --module src/modules/auth
 ```
 
 ### `/cr-interface` — 快捷接口复刻
 
-固定 `interface` 模式，适合"后端重写，前端不动"场景。
+固定 `interface` 模式，适合"后端重写，前端不动"或组件 Props 接口复刻场景。
 
 ### `/cr-exact` — 快捷精准复刻
 
@@ -61,11 +101,21 @@ code-tuner（架构层）         合规→重复→抽象→评分
 
 ### `/cr-status` — 查看进度
 
-读取 `.allforai/code-replicate/replicate-config.json`，展示当前步骤进度和产物状态。
+读取 `.allforai/code-replicate/replicate-config.json`，展示当前步骤进度和产物状态（含项目类型）。
 
 ## 技能详情
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/skills/code-replicate.md`
+本插件包含 5 个技能文件：
+
+| 技能 | 类型 | 说明 |
+|------|------|------|
+| `code-replicate-core.md` | 内部共享 | 4D/6V/XV 协议、Phase 1/3/5/6/7、铁律 |
+| `cr-backend.md` | 后端专用 | 后端 Phase 2/4/6：API 合约、Service 逻辑、ORM、微服务 |
+| `cr-frontend.md` | 前端专用 | 前端 Phase 2/4/6：组件树、路由、状态管理、移动端导航 |
+| `cr-fullstack.md` | 全栈专用 | 双栈 Phase 2/4 + 交叉验证层：API 绑定、Schema 对齐、认证传播 |
+| `cr-module.md` | 模块专用 | 依赖边界扫描：外部依赖、事件契约、共享层识别 |
+
+> cr-backend / cr-frontend / cr-fullstack / cr-module 各自加载 core 作为协议基础。
 
 ## 信度等级速查
 
@@ -78,29 +128,30 @@ code-tuner（架构层）         合规→重复→抽象→评分
 
 ## 增强协议（4D + 6V + XV）
 
-> 通用框架见 `docs/information-fidelity.md`，代码复刻方向定制见 `skills/code-replicate.md`
+> 通用框架见 `docs/information-fidelity.md`，代码复刻方向定制见 `skills/code-replicate-core.md`
 
 源码是信息，失真发生在读取→提取→映射三个环节。
 
 - **4D 信息卡**：每个行为/端点携带结论层（做什么）+ 证据层（代码位置引用）+ 约束层（内嵌业务/技术约束）+ 决策层（为什么这样实现）
 - **6V 视角矩阵**：高风险行为从 user/business/tech/ux/data/risk 六视角描述，重点是 `tech.mapping_risk`（跨栈映射风险）和 `risk.if_wrong`（复刻偏差后果）
-- **XV 跨模型验证**：Step 2 后自动执行（检测 `OPENROUTER_API_KEY`）— 行为遗漏检测 + 跨栈语义漂移风险；高严重度发现自动追加到产物，不问用户
-- **ONE-SHOT 决策**：所有歧义在 Step 3 汇总后一次性处理，不拦截分析流程
+- **XV 跨模型验证**：Phase 4 后自动执行（检测 `OPENROUTER_API_KEY`）— 行为遗漏检测 + 跨栈语义漂移风险；高严重度发现自动追加到产物，不问用户
+- **ONE-SHOT 决策**：所有歧义在 Phase 5 汇总后一次性处理，不拦截分析流程
 - **决策持久化**：跨 session 复用历史映射决策
 
 ## 项目类型感知
 
 本技能自动识别源码项目类型并调整分析策略：
 
-| 类型 | 检测特征 | 重点分析 |
-|------|---------|---------|
-| **后端 API** | routes/controllers/middleware | API 合约、业务逻辑、ORM 映射 |
-| **前端 Web** | components/pages/store/hooks | 组件树、路由、状态管理、API 调用 |
-| **前端移动** | screens/widgets/navigation | 导航结构、状态管理、原生调用 |
-| **微服务** | proto/queue/events/saga | 服务契约、消息格式、事件流 |
-| **混合单体** | 多类型混合 | 拆分建议 + 各部分独立分析 |
+| 类型 | 检测特征 | 重点分析 | 使用技能 |
+|------|---------|---------|---------|
+| **后端 API** | routes/controllers/middleware | API 合约、业务逻辑、ORM 映射 | cr-backend |
+| **微服务** | proto/queue/events/saga | 服务契约、消息格式、事件流 | cr-backend |
+| **前端 Web** | components/pages/store/hooks | 组件树、路由、状态管理、API 调用 | cr-frontend |
+| **前端移动** | screens/widgets/navigation | 导航结构、状态管理、原生调用 | cr-frontend |
+| **全栈项目** | 前后端代码共存（monorepo/全栈框架） | 双栈分析 + 交叉验证 | cr-fullstack |
+| **混合单体** | 多类型混合 | 拆分后分别用 cr-backend + cr-frontend | 两者 |
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/skills/code-replicate.md` 「项目类型感知分析」段落
+> **模块级复刻**不是项目类型，而是分析模式。使用 `/cr-module` 时，项目类型（后端/前端）从源码自动检测，额外增加依赖边界扫描。
 
 ## 输出目录
 
@@ -119,9 +170,19 @@ code-tuner（架构层）         合规→重复→抽象→评分
     ├── behavior-specs.json          ← functional+
     ├── arch-map.json                ← architecture+
     ├── bug-registry.json            ← exact
+    ├── module-boundaries.json       ← cr-module 模式
     ├── stack-mapping.json
     ├── stack-mapping-decisions.json ← 持久化决策
-    └── replicate-report.md
+    ├── replicate-report.md
+    ├── backend/                     ← fullstack 模式：后端产物
+    ├── frontend/                    ← fullstack 模式：前端产物
+    ├── api-bindings.json            ← fullstack 交叉验证
+    ├── schema-alignment.json        ← fullstack 交叉验证
+    ├── constraint-reconciliation.json ← fullstack 交叉验证
+    ├── auth-propagation.json        ← fullstack 交叉验证
+    ├── error-mapping.json           ← fullstack 交叉验证
+    ├── infrastructure.json          ← fullstack 基础设施
+    └── fullstack-report.md          ← fullstack 统一报告
 ```
 
 ## 文档
