@@ -82,17 +82,17 @@ claude plugin add /path/to/myskills/code-tuner-skill
 
 After remote install, update with: `~/.opencode/skills/myskills/update-skills.sh`
 
-## Key Dependency: mcp-openrouter
+## Key Dependency: mcp-ai-gateway
 
-`product-design-skill/` bundles a TypeScript MCP server at `mcp-openrouter/`. It must be built before the plugin can use multi-model queries:
+`product-design-skill/` bundles a unified AI Gateway MCP server at `mcp-ai-gateway/`. It provides OpenRouter (cross-model XV) + Google AI (Imagen 3 / Veo 2 / TTS) in a single process:
 
 ```bash
-cd product-design-skill/mcp-openrouter
+cd product-design-skill/mcp-ai-gateway
 npm install
 npm run build        # produces dist/index.js
 ```
 
-Requires `OPENROUTER_API_KEY` environment variable. Config in `.allforai/openrouter-config.yaml`.
+Requires `OPENROUTER_API_KEY` for cross-model queries. Optionally `GOOGLE_API_KEY` for AI image/video/TTS generation. Config in `.allforai/openrouter-config.yaml`.
 
 ## External Service Keys
 

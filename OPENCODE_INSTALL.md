@@ -39,7 +39,7 @@ OpenRouter MCP 服务器已配置在 `product-design-skill/.mcp.json`：
   "mcpServers": {
     "openrouter": {
       "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-openrouter/dist/index.js"],
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-ai-gateway/dist/index.js"],
       "env": {
         "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}"
       }
@@ -62,7 +62,7 @@ Opencode 支持 MCP 服务器，可以配置 OpenRouter：
 ### 测试 MCP 连接
 
 ```bash
-cd ~/Documents/myskills/product-design-skill/mcp-openrouter
+cd ~/Documents/myskills/product-design-skill/mcp-ai-gateway
 ./test-connection.sh
 ```
 
@@ -124,7 +124,7 @@ export OPENROUTER_API_KEY="sk-or-v1-YOUR_KEY"
 
 ```bash
 # 运行创新流程测试
-cd ~/Documents/myskills/product-design-skill/mcp-openrouter
+cd ~/Documents/myskills/product-design-skill/mcp-ai-gateway
 ./test-innovation-flow.sh
 
 # 查看输出

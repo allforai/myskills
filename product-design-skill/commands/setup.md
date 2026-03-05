@@ -34,9 +34,9 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 | 能力 | Key 格式 | 使用插件 | 用途 | 备注 |
 |------|---------|---------|------|------|
-| OpenRouter | `sk-or-...` | product-design, dev-forge | 跨模型交叉验证（XV） | MCP 服务器已内置，仅需配置 Key |
+| OpenRouter | `sk-or-...` | product-design, dev-forge | 跨模型交叉验证（XV） | Key 写入 ai-gateway MCP 服务器 env |
+| Google AI | `AIza...` | demo-forge | AI 生图（Imagen 3）+ 生视频（Veo 2）+ TTS | Key 写入 ai-gateway MCP 服务器 env |
 | Brave Search | `BSA...` | demo-forge | 媒体搜索（图片/视频） | 若 Step 1.5 已安装 Brave MCP 则跳过 |
-| Google AI | `AIza...` | demo-forge | AI 生图（Imagen 3）+ 生视频（Veo 2）+ TTS | 无 MCP 服务器，仅 Key |
 
 ### 内置工具（始终可用）
 
@@ -54,13 +54,13 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 1. **检查 dist/index.js 是否存在**：
    ```bash
-   ls ${CLAUDE_PLUGIN_ROOT}/mcp-openrouter/dist/index.js
+   ls ${CLAUDE_PLUGIN_ROOT}/mcp-ai-gateway/dist/index.js
    ```
 
 2. **不存在或文件 < 100 bytes** → 需要构建：
-   - 检查 node_modules 是否存在：`ls ${CLAUDE_PLUGIN_ROOT}/mcp-openrouter/node_modules/`
-   - 不存在 → 运行 `cd ${CLAUDE_PLUGIN_ROOT}/mcp-openrouter && npm install`
-   - 运行 `cd ${CLAUDE_PLUGIN_ROOT}/mcp-openrouter && npm run build`
+   - 检查 node_modules 是否存在：`ls ${CLAUDE_PLUGIN_ROOT}/mcp-ai-gateway/node_modules/`
+   - 不存在 → 运行 `cd ${CLAUDE_PLUGIN_ROOT}/mcp-ai-gateway && npm install`
+   - 运行 `cd ${CLAUDE_PLUGIN_ROOT}/mcp-ai-gateway && npm run build`
    - 验证 `dist/index.js` 已生成
    - 成功 → 报告「MCP 服务器构建成功」
    - 失败 → 报告错误，提示「MCP 构建失败，XV 的 MCP 工具不可用，但预置脚本 XV 不受影响」，继续执行
@@ -79,8 +79,8 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 #### 1b. OpenRouter
 
-1. **MCP 工具通道**：检查 `mcp__plugin_product-design_openrouter__detect_region` 工具是否可用
-   - 可用 → 调用 `mcp__plugin_product-design_openrouter__detect_region`，展示模型路由策略。MCP XV 就绪
+1. **MCP 工具通道**：检查 `mcp__plugin_product-design_ai-gateway__detect_region` 工具是否可用
+   - 可用 → 调用 `mcp__plugin_product-design_ai-gateway__detect_region`，展示模型路由策略。MCP XV 就绪
    - 不可用 → MCP XV 未就绪（可能需要重启 Claude Code）
 
 2. **脚本通道**：检查 `OPENROUTER_API_KEY` 环境变量
@@ -99,8 +99,12 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 #### 1d. Google AI
 
-1. **环境变量**：检查 `GOOGLE_API_KEY` 环境变量
-   - 已设置 → Google AI 就绪
+1. **MCP 工具通道**：检查 `mcp__plugin_product-design_ai-gateway__generate_image` 工具是否可用
+   - 可用 → Google AI MCP 就绪（ai-gateway 已加载且 GOOGLE_API_KEY 已配置）
+   - 不可用 → Google AI MCP 未就绪
+
+2. **环境变量**：检查 `GOOGLE_API_KEY` 环境变量
+   - 已设置 → Google AI Key 就绪（脚本可用）
    - 未设置 → Google AI 未就绪
 
 #### 1e. Stitch UI
@@ -123,9 +127,10 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 | Stitch UI | MCP 工具 | {就绪/未就绪} | product-design | UI 视觉稿 |
 | OpenRouter (MCP) | MCP 工具 | {就绪/未就绪} | product-design, dev-forge | XV 交叉验证 |
 | OpenRouter (Script) | Key | {就绪/未就绪} | product-design 预置脚本 | XV 交叉验证 |
-| Google AI | Key | {就绪/未就绪} | demo-forge | AI 生图/生视频/TTS |
+| Google AI (MCP) | MCP 工具 | {就绪/未就绪} | demo-forge | AI 生图/生视频/TTS |
+| Google AI (Key) | Key | {就绪/未就绪} | demo-forge 预置脚本 | AI 生图/生视频/TTS |
 | WebSearch | 内置 | 就绪 | product-design, demo-forge | 搜索 |
-| MCP 服务器 | 构建产物 | {已构建/未构建} | — | OpenRouter MCP 通道 |
+| MCP 服务器 | 构建产物 | {已构建/未构建} | — | AI Gateway（OpenRouter + Google AI） |
 
 降级链:
   Brave MCP 不可用 → WebSearch → AI 生成
@@ -450,17 +455,16 @@ Google AI API Key 获取步骤：
 
    | Key | 写入位置 |
    |-----|---------|
-   | `OPENROUTER_API_KEY` | `mcpServers.openrouter.env.OPENROUTER_API_KEY` |
-   | `BRAVE_API_KEY` | 新增 `mcpServers.brave-search.env.BRAVE_API_KEY`（若 brave-search 服务器不存在则仅记录，提示用户自行配置 Brave MCP） |
-   | `GOOGLE_API_KEY` | 新增 `mcpServers.google-ai.env.GOOGLE_API_KEY`（虚拟服务器条目，仅作 Key 存储，无 command） |
+   | `OPENROUTER_API_KEY` | `mcpServers.ai-gateway.env.OPENROUTER_API_KEY` |
+   | `GOOGLE_API_KEY` | `mcpServers.ai-gateway.env.GOOGLE_API_KEY` |
+   | `BRAVE_API_KEY` | `__keys.BRAVE_API_KEY`（Brave MCP 独立安装，Key 存储在 `__keys` 区） |
 
-   对于 OpenRouter：将 `"${OPENROUTER_API_KEY}"` 模板引用替换为实际值。
+   对于 ai-gateway：将 `"${OPENROUTER_API_KEY}"` 和 `"${GOOGLE_API_KEY}"` 模板引用替换为实际值。
 
-   对于无对应 MCP 服务器的 Key（Brave、Google AI）：在 `.mcp.json` 中新增一个 `__keys` 存储区：
+   对于无对应 MCP 服务器的 Key（Brave）：在 `.mcp.json` 中写入 `__keys` 存储区：
    ```json
    "__keys": {
-     "BRAVE_API_KEY": "BSA...",
-     "GOOGLE_API_KEY": "AIza..."
+     "BRAVE_API_KEY": "BSA..."
    }
    ```
    > `__keys` 是约定前缀，不会被 Claude Code 解析为 MCP 服务器。Python 脚本的 `_resolve_api_key()` 会读取此区。
@@ -470,9 +474,9 @@ Google AI API Key 获取步骤：
 ```
 将写入以下 Key 到 ${CLAUDE_PLUGIN_ROOT}/.mcp.json：
 
-  mcpServers.openrouter.env.OPENROUTER_API_KEY = "sk-or-...{后4位}"
+  mcpServers.ai-gateway.env.OPENROUTER_API_KEY = "sk-or-...{后4位}"
+  mcpServers.ai-gateway.env.GOOGLE_API_KEY = "AIza...{后4位}"
   __keys.BRAVE_API_KEY = "BSA...{后4位}"
-  __keys.GOOGLE_API_KEY = "AIza...{后4位}"
 
 Key 仅存储在插件配置中，不写入 shell 环境变量。
 确认写入？
@@ -480,7 +484,7 @@ Key 仅存储在插件配置中，不写入 shell 环境变量。
 
 4. **写入**：用 Write 工具更新 `.mcp.json`
 5. **生效方式**：
-   - OpenRouter MCP 工具：需**重启 Claude Code**（MCP 服务器启动时读取 env）
+   - AI Gateway MCP 工具（OpenRouter + Google AI）：需**重启 Claude Code**（MCP 服务器启动时读取 env）
    - Python 脚本 XV：**立即生效**（每次执行时读取 `.mcp.json`）
 
 ### Step 4: 验证与报告
@@ -492,9 +496,9 @@ Key 仅存储在插件配置中，不写入 shell 环境变量。
 
 | 服务 | Key | 存储位置 | 用途 |
 |------|-----|---------|------|
-| OpenRouter | sk-or-...{后4位} | .mcp.json → openrouter.env | 跨模型交叉验证 |
+| OpenRouter | sk-or-...{后4位} | .mcp.json → ai-gateway.env | 跨模型交叉验证 |
+| Google AI | AIza...{后4位} | .mcp.json → ai-gateway.env | AI 生图/生视频/TTS |
 | Brave Search | BSA...{后4位} | .mcp.json → __keys | 媒体搜索 |
-| Google AI | AIza...{后4位} | .mcp.json → __keys | AI 生图/生视频/TTS |
 
 下一步：重启 Claude Code 后运行 /setup check 验证连接。
 ```
@@ -513,11 +517,14 @@ MCP 工具:
   Playwright       {就绪/未就绪}   demo-forge, dev-forge, deadhunt — UI 自动化
   Brave Search     {就绪/未就绪}   demo-forge — 媒体搜索
   Stitch UI        {就绪/未就绪}   product-design — UI 视觉稿（Google Stitch）
+
+AI Gateway（统一 MCP 服务器）:
   OpenRouter       {就绪/未就绪}   product-design, dev-forge — XV 交叉验证
+  Google AI        {就绪/未就绪}   demo-forge — AI 生图/生视频/TTS
 
 API Key（脚本回退）:
   OpenRouter Key   {就绪/未就绪}   product-design 预置脚本 — XV 交叉验证
-  Google AI Key    {就绪/未就绪}   demo-forge — AI 生图/生视频/TTS
+  Google AI Key    {就绪/未就绪}   demo-forge 预置脚本 — AI 生图/生视频/TTS
 
 内置:
   WebSearch        就绪            product-design, demo-forge — 搜索

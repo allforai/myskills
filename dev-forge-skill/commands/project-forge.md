@@ -135,7 +135,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 | 能力 | 探测方式 | 重要性 | 降级行为 |
 |------|---------|--------|---------|
 | Playwright | `mcp__plugin_playwright_playwright__browser_navigate` 可用性 | Phase 8-9 必需 | 阻塞验证阶段，提示安装 |
-| OpenRouter (MCP) | `mcp__plugin_product-design_openrouter__detect_region` 可用性 | 可选 | 跳过 XV 交叉验证 |
+| OpenRouter (MCP) | `mcp__plugin_product-design_ai-gateway__detect_region` 可用性 | 可选 | 跳过 XV 交叉验证 |
 
 **输出格式**：
 
@@ -373,7 +373,7 @@ existing 模式下，Step 1 之前先扫描项目已有依赖文件（`package.j
 
 ### Step 2.5: 跨模型交叉验证（可选）
 
-若 OpenRouter MCP 可用（`mcp__plugin_product-design_openrouter__ask_model` 工具存在），对每个 spike 向不同模型发送验证请求：
+若 OpenRouter MCP 可用（`mcp__plugin_product-design_ai-gateway__ask_model` 工具存在），对每个 spike 向不同模型发送验证请求：
 
 **Prompt 模板**：
 ```

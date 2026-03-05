@@ -169,7 +169,7 @@ Step 3: 子项目骨架生成（逐子项目）
   ↓
 Step 3.5: 依赖交叉检查（OpenRouter 可用时）
   收集所有子项目 package.json / requirements.txt / go.mod / pubspec.yaml 的依赖列表
-  调用: mcp__plugin_product-design_openrouter__ask_model(task: "structured_output", model_family: "gpt", temperature: 0.1)
+  调用: mcp__plugin_product-design_ai-gateway__ask_model(task: "structured_output", model_family: "gpt", temperature: 0.1)
   审查: 弃用包、严重过时版本、已知兼容性冲突
   有问题 → 输出告警表:
     | 子项目 | 依赖 | 问题 | 建议 |

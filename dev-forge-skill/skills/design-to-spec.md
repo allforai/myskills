@@ -482,12 +482,12 @@ Step 3.5: Design 交叉审查（由后端 Agent 在 Phase A 内执行，OpenRout
   后端 design.md 生成后，触发两项交叉审查:
   审查 A — API 设计审查 (GPT):
     提取 design.md 中所有 API 端点（路径+方法+请求/响应 DTO）
-    调用: mcp__plugin_product-design_openrouter__ask_model(task: "structured_output", model_family: "gpt")
+    调用: mcp__plugin_product-design_ai-gateway__ask_model(task: "structured_output", model_family: "gpt")
     审查: RESTful 规范、DTO 一致性、缺失端点、错误码统一
     输出: issues[] + missing[]
   审查 B — 数据模型审查 (DeepSeek):
     提取 design.md 中 ER 设计（Mermaid + 字段定义）
-    调用: mcp__plugin_product-design_openrouter__ask_model(task: "technical_validation", model_family: "deepseek")
+    调用: mcp__plugin_product-design_ai-gateway__ask_model(task: "technical_validation", model_family: "deepseek")
     审查: 3NF 违反、缺失索引、外键漏洞、命名一致性
     输出: violations[]
   结果处理:

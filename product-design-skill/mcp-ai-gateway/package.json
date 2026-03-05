@@ -1,7 +1,7 @@
 {
-  "name": "mcp-openrouter",
-  "version": "1.0.0",
-  "description": "OpenRouter MCP Server for cross-model validation in product design",
+  "name": "mcp-ai-gateway",
+  "version": "2.0.0",
+  "description": "Unified AI Gateway MCP Server: OpenRouter (cross-model XV) + Google AI (Imagen 3 / Veo 2 / TTS)",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {

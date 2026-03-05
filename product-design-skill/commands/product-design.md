@@ -100,7 +100,7 @@ Phase 7: design-audit full（终审）
 
 | 能力 | 探测方式 | 重要性 |
 |------|---------|--------|
-| OpenRouter (MCP) | `mcp__plugin_product-design_openrouter__detect_region` 可用性 | 可选 |
+| OpenRouter (MCP) | `mcp__plugin_product-design_ai-gateway__detect_region` 可用性 | 可选 |
 | OpenRouter (Script) | `OPENROUTER_API_KEY` 环境变量 | 可选 |
 | Stitch UI | `mcp__plugin_product-design_stitch__create_project` 可用性 | 可选 |
 | WebSearch | 内置，始终可用 | 核心 |

@@ -22,7 +22,7 @@
   "mcp": {
     "openrouter": {
       "command": "node",
-      "args": ["../product-design-skill/mcp-openrouter/dist/index.js"],
+      "args": ["../product-design-skill/mcp-ai-gateway/dist/index.js"],
       "env": {
         "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}"
       }
