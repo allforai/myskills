@@ -300,13 +300,32 @@
       "source_construct": "Python Celery task queue",
       "target_construct": "asynq",
       "rationale": "用户选择 A",
+      "semantic_drift_risk": "low | medium | high",
+      "drift_details": "可选，XV 审查后补充的漂移说明",
       "decided_at": "ISO8601",
       "reusable": true
     }
   ],
   "ambiguity_resolutions": [
     { "ambiguity_id": "AMB001", "resolution": "以代码为准", "decided_at": "ISO8601" }
-  ]
+  ],
+  "cross_model_review": {
+    "mapping_decision_issues": [
+      {
+        "task_type": "mapping_decision_review",
+        "model": "deepseek",
+        "issues": [
+          {
+            "type": "suboptimal_choice | risk_underestimate | missing_mapping",
+            "target_decision": "对应的 source_construct（suboptimal/risk_underestimate 时）",
+            "description": "问题描述",
+            "action_taken": "[XV:risk_elevated] | [XV:added]"
+          }
+        ],
+        "reviewed_at": "ISO8601"
+      }
+    ]
+  }
 }
 ```
 

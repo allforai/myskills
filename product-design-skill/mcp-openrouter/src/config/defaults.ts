@@ -51,6 +51,11 @@ export const defaultRouting: Record<string, string> = {
   innovation_use_case_review: "qwen",  // 创新用例审查：use-case 阶段验证
   innovation_gap_review: "llama",      // 创新缺口审查：feature-gap 阶段验证
   
+  // === 代码复刻阶段 ===
+  behavior_completeness_review: "qwen",     // 行为完整性：生态广度好，识别框架隐式行为
+  cross_stack_risk_review: "deepseek",      // 跨栈风险：推理链强，语义漂移深度分析
+  mapping_decision_review: "deepseek",       // 映射决策审查：推理链强，擅长方案优劣的逻辑判断
+
   // === 设计审计阶段 ===
   cross_layer_validation: "deepseek",  // 跨层验证：深度推理
   coverage_analysis: "llama",          // 覆盖分析：系统性检查

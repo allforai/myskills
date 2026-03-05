@@ -506,23 +506,75 @@ Phase 3 锁定目标后的最后一个停顿点。将深度分析中发现的所
 
 > 决策文件格式详见 `${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md`（stack-mapping-decisions.json）
 
-输出「Phase 5 ✓ {N} 个映射决策，{N} 个歧义已处理，继续生成产物（不停顿）」，自动继续 Phase 6。
+输出「Phase 5 ✓ {N} 个映射决策，{N} 个歧义已处理，继续生成产物（不停顿）」，自动继续 Phase 5 附。
+
+---
+
+## Phase 5 附：映射决策 XV 验证（自动执行）
+
+检测 `OPENROUTER_API_KEY` 环境变量：
+- **存在** → 执行 1 次映射决策审查，自动继续
+- **不存在** → 静默跳过
+
+| # | task_type | 发送内容 | 写入字段 |
+|---|-----------|---------|---------|
+| 5 | `mapping_decision_review` | 源栈 + 目标栈 + 全部映射决策摘要 | `cross_model_review.mapping_decision_issues` |
+
+Prompt 模板：
+
+调用 5（映射决策审查）：
+```
+源栈: {source_stack}
+目标栈: {target_stack}
+映射决策数: {n}，决策摘要:
+{decisions_summary — 每条: source → selected, rationale, semantic_drift_risk}
+
+请审查：
+1. 是否有决策选了次优方案（存在更合适的选项未被选中）
+2. semantic_drift_risk 是否被低估（标为 low 但实际应为 high）
+3. 是否遗漏了该迁移方向的关键映射点（源栈有但未覆盖的构造）
+限 300 字。
+```
+
+**自动采纳规则**（不问用户）：
+- 次优方案警告 → 对应决策的 `semantic_drift_risk` 提升一级，rationale 追加 `[XV:risk_elevated]` 说明
+- 遗漏映射点 → 追加新决策到 decisions 数组，标注 `[XV:added]`，`selected` 留空待 Phase 6 使用默认推荐
+- 风险低估项 → 修正 `semantic_drift_risk` 字段 + 补充 `drift_details`，标注 `[XV:risk_elevated]`
+- 无问题 → `cross_model_review.mapping_decision_issues` 写入空数组
+- 所有修改回写 `stack-mapping-decisions.json`
+
+自动继续 Phase 6。
 
 ---
 
 ## Phase 6：生成 allforai 产物（共享部分）
 
+> **⚠️ 产物路径铁律 — 三个目录，不可混淆**
+>
+> 产物分布在 `.allforai/` 下的**三个独立目录**，写入时必须使用完整路径：
+>
+> | 产物 | 完整写入路径 | 生成条件 |
+> |------|------------|---------|
+> | task-inventory.json | **`.allforai/product-map/`**`task-inventory.json` | 所有模式 |
+> | business-flows.json | **`.allforai/product-map/`**`business-flows.json` | functional+ |
+> | constraints.json | **`.allforai/product-map/`**`constraints.json` | exact |
+> | use-case-tree.json | **`.allforai/use-case/`**`use-case-tree.json` | functional+ |
+> | 其余所有产物 | **`.allforai/code-replicate/`**`{filename}` | 按模式 |
+>
+> **错误示例**：写到 `.allforai/code-replicate/task-inventory.json` ❌
+> **正确示例**：写到 `.allforai/product-map/task-inventory.json` ✅
+
 以下产物由 core 统一生成，不区分前后端：
 
-### 6a. `product-map/task-inventory.json`（所有模式）
+### 6a. `.allforai/product-map/task-inventory.json`（所有模式）
 
 每个 API 端点/组件 → 一个任务（含 task_id, task_name, module, source_endpoint, source_file, task_type, frequency, risk_level, replicate_fidelity, api_contract_ref, behavior_spec_ref）。
 
-### 6e. `code-replicate/stack-mapping.json`
+### 6e. `.allforai/code-replicate/stack-mapping.json`
 
 完整映射记录（source_stack, target_stack, auto_mapped, user_decisions, arch_decisions, unmapped）。
 
-### 6f. `code-replicate/replicate-report.md`
+### 6f. `.allforai/code-replicate/replicate-report.md`
 
 Markdown 人类可读摘要（基本信息表、分析结果摘要、信息失真风险点表、跨栈映射决策、下一步指引）。
 
