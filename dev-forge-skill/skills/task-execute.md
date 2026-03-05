@@ -205,6 +205,23 @@ Step 1: 执行策略推断（每 Round 开始时）
   记录 round.execution_strategy + strategy_reason
   展示: "Round {N}: {任务数} 个任务，策略: {策略}（{reason}）"
   ↓
+Step 1.5: B3 前端 UI 上下文准备（Round 2 的 B3 任务执行前）
+  仅在当前 Round 包含 B3（前端 UI）任务时执行：
+
+  1. 读取 `<BASE>/ui-design/component-spec.json`（如存在）
+  2. B3 共享组件任务上下文追加：
+     - 「使用 CSS 变量 / theme token，不硬编码颜色值。
+       参考 ui-design-spec.md 的主题变体章节，确保 light/dark 切换。」
+     - 「实现 component-spec.json 中标注的所有 variants（size/state）。」
+     - 「注入 a11y 属性：按 component-spec.json 的 a11y.requirements 实现。」
+  3. 读取 `<BASE>/ui-design/stitch-index.json`（如存在）
+  4. 对关联了 Stitch HTML 的任务，注入：
+     - 读取 `stitch/{screen_id}-{name}.html`
+     - 「基于 Stitch 视觉稿结构，使用项目组件库和 design token 实现。
+       保留布局结构，用框架原生方式重写。
+       交互原语按 primitive-impl-map 实现：[primitives 列表]」
+  5. 无 component-spec.json 或 stitch-index.json → 跳过，正常执行
+  ↓
 Step 2: 逐任务执行
   subagent-driven-development 模式:
     按 id 顺序逐个执行
