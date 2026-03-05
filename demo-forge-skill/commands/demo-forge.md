@@ -82,8 +82,9 @@ product-map 产物必须存在：
 | 能力 | 探测方式 | 重要性 | 降级行为 |
 |------|---------|--------|---------|
 | Playwright | `mcp__plugin_playwright_playwright__browser_navigate` 可用性 | Phase 4 必需 | 阻塞 verify，提示安装 |
-| Brave Search | `mcp__brave-search__brave_web_search` 可用性 或 `BRAVE_API_KEY` | Phase 2 推荐 | 降级到 WebSearch |
-| Google AI | `GOOGLE_API_KEY` 环境变量 | Phase 2 可选 | 降级到 DALL-E / 跳过 AI 生成 |
+| Brave Search | `brave_web_search` 可用性 或 `BRAVE_API_KEY` | Phase 2 推荐 | 降级到 WebSearch |
+| AI 生图 | `generate_image` / `openrouter_generate_image` / `flux_generate_image` 任一可用 | Phase 2 可选 | Imagen 4 → GPT-5 Image → FLUX 2 Pro → 跳过 |
+| AI 生视频 | `generate_video` / `kling_generate_video` 任一可用 | Phase 2 可选 | Veo 3.1 → Kling → 跳过 |
 
 **输出格式**：
 
@@ -91,7 +92,8 @@ product-map 产物必须存在：
 外部能力:
   Playwright     ✓ 就绪     验证（Phase 4 必需）
   Brave Search   ✗ 未就绪   媒体搜索（降级到 WebSearch）
-  Google AI      ✗ 未就绪   AI 生图/生视频（降级到搜索补缺）
+  AI 生图        ✗ 未就绪   Imagen 4 / GPT-5 Image / FLUX 2 Pro（降级到搜索补缺）
+  AI 生视频      ✗ 未就绪   Veo 3.1 / Kling（降级到 Playwright 录屏）
 ```
 
 **交互式安装引导**（统一协议见 `product-design-skill/docs/skill-commons.md`）：

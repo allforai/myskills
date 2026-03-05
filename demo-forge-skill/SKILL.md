@@ -55,7 +55,7 @@ version: "1.0.0"
 
 > 详见 `${CLAUDE_PLUGIN_ROOT}/skills/media-forge.md`
 
-为 demo-plan 中的媒体字段采集、生成、加工、上传素材。搜索链路：Brave Search → WebSearch 兜底 → Google Imagen 3 / Veo 2 生成。后处理包括裁剪、压缩、格式转换。上传到应用服务器，确保零外部链接。
+为 demo-plan 中的媒体字段采集、生成、加工、上传素材。搜索链路：Brave Search → WebSearch 兜底 → AI 生成（生图：Imagen 4 / GPT-5 Image / FLUX 2 Pro；生视频：Veo 3.1 / Kling）。后处理包括裁剪、压缩、格式转换。上传到应用服务器，确保零外部链接。
 
 **核心产出**：`assets/` 目录（本地素材文件）、`assets-manifest.json`（素材清单）、`upload-mapping.json`（上传后 URL 映射）、`style-profile.json`（视觉风格画像）。
 

@@ -132,13 +132,13 @@ M2 搜索采集: 108/136 已满足，缺口 28
 
 **仅对 M2 未满足的缺口项执行**。已搜索到的素材不重复生成。
 
-**Google Vertex AI**（需 `GOOGLE_API_KEY`）：
+**AI 生成工具**（通过 ai-gateway MCP，按可用性自动选择）：
 
-| 媒体类型 | 模型 | API 调用方式 |
-|---------|------|-------------|
-| 图片 | Imagen 3 (`imagen-3.0-generate-002`) | REST API — `POST https://us-central1-aiplatform.googleapis.com/v1/projects/{PROJECT}/locations/us-central1/publishers/google/models/imagen-3.0-generate-002:predict` |
-| 视频 | Veo 2 (`veo-2.0-generate-exp`) | REST API — 同上路径替换模型名 |
-| 音频 | Google Cloud TTS | REST API — `POST https://texttospeech.googleapis.com/v1/text:synthesize` |
+| 媒体类型 | 可用工具（按优先级） | 所需 Key |
+|---------|---------------------|---------|
+| 图片 | `generate_image`（Google Imagen 4）→ `openrouter_generate_image`（GPT-5 Image）→ `flux_generate_image`（FLUX 2 Pro） | GOOGLE_API_KEY / OPENROUTER_API_KEY / FAL_KEY |
+| 视频 | `generate_video`（Google Veo 3.1）→ `kling_generate_video`（Kling 2.1） | GOOGLE_API_KEY / FAL_KEY |
+| 音频 | `text_to_speech`（Google Cloud TTS） | GOOGLE_API_KEY |
 
 **Prompt 构建**：从 `search_keywords` + `style_notes` + `dimensions` 组合：
 
@@ -153,15 +153,17 @@ Image prompt: "A {style_notes} of {search_keywords}, {dimensions} aspect ratio, 
 | 产品操作演示 | Playwright 录屏 | 免费，最真实——录制应用自身操作流程 |
 | 文档（PDF） | 模板填充生成 | 用 demo-plan 中的业务数据填充 PDF 模板 |
 
-**降级策略**：Google AI 不可用时 → DALL-E（需 `OPENAI_API_KEY`）→ 本地 Stable Diffusion（如已安装）
+**降级策略**：
+- 生图：Google Imagen 4 → OpenRouter GPT-5 Image（无额外 Key）→ FLUX 2 Pro → 跳过
+- 生视频：Google Veo 3.1 → Kling → Playwright 录屏 → 跳过
 
 **下载规范**：与 M2 相同的 `assets/{category}/` 目录和命名规则，紧接 M2 编号继续。
 
 ```
 M3 AI 生成: 28 项补缺完成
-  Imagen 3: 20 张图片
+  生图(Imagen 4/GPT-5/FLUX): 20 张图片
   PDF 模板: 5 份文档
-  Veo 2:    3 段视频
+  生视频(Veo 3.1/Kling):    3 段视频
 ```
 
 ---
@@ -377,9 +379,11 @@ M6 完整性确认:
 
 | 工具 | 用途 | 必需/可选 |
 |-----|------|----------|
-| `mcp__brave-search__brave_web_search` | 图片/视频搜索 | 推荐（`BRAVE_API_KEY`） |
+| `brave_web_search` / `brave_image_search` | 图片/视频搜索 | 推荐（`BRAVE_API_KEY`） |
 | WebSearch | 降级搜索 | 内置 |
-| Google Vertex AI | AI 生图/生视频/TTS | 可选（`GOOGLE_API_KEY`） |
+| `generate_image` / `openrouter_generate_image` / `flux_generate_image` | AI 生图 | 可选（任一 Key 即可） |
+| `generate_video` / `kling_generate_video` | AI 生视频 | 可选（任一 Key 即可） |
+| `text_to_speech` | TTS 语音生成 | 可选（`GOOGLE_API_KEY`） |
 | Playwright | 录屏、截图验证 | 可选 |
 | ffmpeg | 视频/图片加工 | 本地安装 |
 | cwebp | WebP 转换压缩 | 本地安装 |
