@@ -18,11 +18,21 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion", "Age
 
 加载并执行：`${CLAUDE_PLUGIN_ROOT}/skills/cr-module.md`
 
+### 参数缺失引导
+
+当 `$ARGUMENTS` 为空或缺少必要参数时，用 AskUserQuestion 逐步引导：
+
+1. **源码地址**（若缺失）：「要复刻的项目源码在哪里？」选项：当前目录 `.` / 输入本地路径 / 输入 Git URL
+2. **目标模块**（若缺失 `--module`）：先扫描源码目录结构，识别模块化目录（`modules/`、`packages/`、`services/` 等），然后列出发现的模块供用户选择（多选）：「要复刻哪些模块？」— 若未发现模块化结构，提示用户手动输入模块路径
+3. **信度等级**（若缺失）：「需要什么级别的复刻？」选项：interface（仅 API 合约）/ functional（业务逻辑，推荐）/ architecture（含架构分析）/ exact（百分百复刻含 bug）
+
+收集完毕后，按正常流程继续。
+
 Preflight 时：
-- `--module` 为必填参数（可多个）
+- `--module` 为必填参数（可多个，从引导或参数获取）
 - `scope` 自动设为 `modules`
 - 项目类型从源码自动检测，不询问
-- 仅询问缺失的参数（信度等级、源码地址、目标技术栈）
+- 仅询问缺失的参数（目标技术栈）
 
 ## 快速参考
 

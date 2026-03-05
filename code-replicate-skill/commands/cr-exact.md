@@ -25,6 +25,16 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion"]
 
 固定 `fidelity = exact`，从 `$ARGUMENTS` 解析源码地址和 `--type`（若有）。
 
+### 参数缺失引导
+
+当 `$ARGUMENTS` 为空或缺少必要参数时，用 AskUserQuestion 逐步引导：
+
+1. **源码地址**（若缺失）：「要精准复刻的源码在哪里？」选项：当前目录 `.` / 输入本地路径 / 输入 Git URL
+2. **项目类型**（若缺失且无法自动检测）：「这是什么类型的项目？」选项：backend / frontend / fullstack / 自动检测（推荐）
+3. **Bug 策略**：「发现已知 bug 时如何处理？」选项：replicate（原样复刻，推荐）/ fix（修复）/ ask（逐个决策）
+
+收集完毕后，按正常流程继续。
+
 ### 项目类型分发
 
 根据 `--type` 参数决定加载哪个技能文件，用 Read 加载后按其完整工作流执行：

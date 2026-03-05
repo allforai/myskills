@@ -19,6 +19,16 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion", "Age
 - `path` 或 git URL → 预填源码地址
 - `--type backend|frontend` → 指定项目类型
 
+### 参数缺失引导
+
+当 `$ARGUMENTS` 为空或缺少必要参数时，用 AskUserQuestion 逐步引导：
+
+1. **源码地址**（若缺失）：「要复刻的源码在哪里？」选项：当前目录 `.` / 输入本地路径 / 输入 Git URL
+2. **信度等级**（若缺失）：「需要什么级别的复刻？」选项：interface（仅 API 合约）/ functional（业务逻辑，推荐）/ architecture（含架构分析）/ exact（百分百复刻含 bug）
+3. **项目类型**（若缺失且无法自动检测）：「这是什么类型的项目？」选项：backend / frontend / fullstack / 自动检测（推荐）
+
+收集完毕后，按正常流程继续。
+
 ### 项目类型分发
 
 根据 `--type` 参数决定加载哪个技能文件，用 Read 加载后按其完整工作流执行：

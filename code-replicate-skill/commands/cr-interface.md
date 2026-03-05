@@ -16,6 +16,15 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion"]
 
 固定 `fidelity = interface`，从 `$ARGUMENTS` 解析源码地址和 `--type`（若有）。
 
+### 参数缺失引导
+
+当 `$ARGUMENTS` 为空或缺少必要参数时，用 AskUserQuestion 逐步引导：
+
+1. **源码地址**（若缺失）：「要复刻接口的源码在哪里？」选项：当前目录 `.` / 输入本地路径 / 输入 Git URL
+2. **项目类型**（若缺失且无法自动检测）：「这是什么类型的项目？」选项：backend（API 合约）/ frontend（组件 Props 合约）/ fullstack / 自动检测（推荐）
+
+收集完毕后，按正常流程继续。
+
 ### 项目类型分发
 
 根据 `--type` 参数决定加载哪个技能文件，用 Read 加载后按其完整工作流执行：
