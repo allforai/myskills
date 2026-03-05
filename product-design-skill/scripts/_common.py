@@ -345,7 +345,7 @@ def _resolve_api_key(key_name):
         try:
             with open(mcp_path, "r", encoding="utf-8") as f:
                 mcp_config = json.load(f)
-            # Check __keys storage block first (setup-services writes here)
+            # Check __keys storage block first (/setup writes here)
             keys_block = mcp_config.get("__keys", {})
             if key_name in keys_block and keys_block[key_name]:
                 return keys_block[key_name]
