@@ -27,7 +27,8 @@
 | `playwright` | 检查 `mcp__plugin_playwright_playwright__browser_navigate` 工具可用性 | demo-forge, dev-forge, deadhunt | 无降级 — 提示用户安装 |
 | `openrouter_mcp` | 调用 `mcp__plugin_product-design_ai-gateway__detect_region` | product-design, dev-forge | 跳过 MCP XV，脚本 XV 仍可用 |
 | `openrouter_script` | `_resolve_api_key("OPENROUTER_API_KEY")`：环境变量 → `.mcp.json` env/\_\_keys | product-design (预置脚本) | 静默跳过 XV |
-| `brave_search` | 检查 `mcp__brave-search__brave_web_search` 工具 或 `_resolve_api_key("BRAVE_API_KEY")` | demo-forge | Brave → WebSearch → AI 生成 |
+| `brave_search_mcp` | 检查 `mcp__plugin_product-design_ai-gateway__brave_web_search` 工具可用性 | demo-forge | 跳过 Brave MCP，脚本仍可用 |
+| `brave_search_script` | `_resolve_api_key("BRAVE_API_KEY")`：环境变量 → `.mcp.json` env/\_\_keys | demo-forge (预置脚本) | Brave → WebSearch → AI 生成 |
 | `google_ai_mcp` | 检查 `mcp__plugin_product-design_ai-gateway__generate_image` 工具可用性 | demo-forge | 跳过 MCP 生图，脚本仍可用 |
 | `google_ai_script` | `_resolve_api_key("GOOGLE_API_KEY")`：环境变量 → `.mcp.json` env/\_\_keys | demo-forge (预置脚本) | Google AI → DALL-E → 本地 SD → 报错 |
 | `stitch_ui` | 检查 `mcp__plugin_product-design_stitch__create_project` 工具 | product-design | 跳过视觉稿，使用文字规格 |
@@ -65,7 +66,7 @@
 |---------|---------|--------------|-------------------|
 | `playwright` | `claude mcp add playwright -- npx @anthropic-ai/mcp-playwright` | 首次需装浏览器: `npx @anthropic-ai/mcp-playwright --install` | 是 |
 | `openrouter_mcp` | `cd {PLUGIN_ROOT}/mcp-ai-gateway && npm install && npm run build` | 需配置 `OPENROUTER_API_KEY`（运行 `/setup`） | 是 |
-| `brave_search` | 需用户自行配置 Brave MCP 或设置 `BRAVE_API_KEY` | 运行 `/setup` | 视配置方式 |
+| `brave_search_mcp` | ai-gateway 已内置，仅需配置 `BRAVE_API_KEY`（运行 `/setup`） | Key 写入 `.mcp.json` ai-gateway env | 是 |
 | `google_ai_mcp` | ai-gateway 已内置，仅需配置 `GOOGLE_API_KEY`（运行 `/setup`） | Key 写入 `.mcp.json` ai-gateway env | 是 |
 | `stitch_ui` | `npx -y @_davideast/stitch-mcp init`（需完成 Google OAuth 认证） | 认证完成后在 `.mcp.json` 中配置 | 是 |
 

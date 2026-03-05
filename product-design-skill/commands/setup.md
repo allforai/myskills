@@ -27,7 +27,6 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 | 能力 | 探测方式 | 使用插件 | 用途 |
 |------|---------|---------|------|
 | Playwright | `mcp__plugin_playwright_playwright__browser_navigate` 可用性 | demo-forge, dev-forge, deadhunt | UI 自动化：验证、E2E 测试、死链扫描 |
-| Brave Search | `mcp__brave-search__brave_web_search` 可用性 | demo-forge | 媒体搜索（图片/视频） |
 | Stitch UI | `mcp__plugin_product-design_stitch__create_project` 可用性 | product-design | 高保真 UI 视觉稿生成（Google Stitch） |
 
 ### API Key 服务（需配置密钥）
@@ -36,7 +35,7 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 |------|---------|---------|------|------|
 | OpenRouter | `sk-or-...` | product-design, dev-forge | 跨模型交叉验证（XV） | Key 写入 ai-gateway MCP 服务器 env |
 | Google AI | `AIza...` | demo-forge | AI 生图（Imagen 3）+ 生视频（Veo 2）+ TTS | Key 写入 ai-gateway MCP 服务器 env |
-| Brave Search | `BSA...` | demo-forge | 媒体搜索（图片/视频） | 若 Step 1.5 已安装 Brave MCP 则跳过 |
+| Brave Search | `BSA...` | demo-forge | 媒体搜索（网页/图片/视频） | Key 写入 ai-gateway MCP 服务器 env |
 
 ### 内置工具（始终可用）
 
@@ -89,13 +88,13 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 #### 1c. Brave Search
 
-1. **MCP 工具通道**：检查 `mcp__brave-search__brave_web_search` 工具是否可用
-   - 可用 → Brave MCP 就绪（Key 已内嵌在 MCP 服务器 env 中）
+1. **MCP 工具通道**：检查 `mcp__plugin_product-design_ai-gateway__brave_web_search` 工具是否可用
+   - 可用 → Brave MCP 就绪（ai-gateway 已加载且 BRAVE_API_KEY 已配置）
    - 不可用 → Brave MCP 未就绪
 
-2. **`__keys` 回退**：若 MCP 不可用，检查 `.mcp.json` 的 `__keys.BRAVE_API_KEY` 或 `BRAVE_API_KEY` 环境变量
-   - 已设置 → Brave Key 就绪（脚本可用，但无 MCP 工具）
-   - 未设置 → Brave 完全未就绪
+2. **环境变量**：检查 `BRAVE_API_KEY` 环境变量
+   - 已设置 → Brave Key 就绪（脚本可用）
+   - 未设置 → Brave 未就绪
 
 #### 1d. Google AI
 
@@ -123,17 +122,18 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 | 能力 | 类型 | 状态 | 使用插件 | 用途 |
 |------|------|------|---------|------|
 | Playwright | MCP 工具 | {就绪/未就绪} | demo-forge, dev-forge, deadhunt | UI 自动化 |
-| Brave Search | MCP 工具 | {就绪/未就绪} | demo-forge | 媒体搜索 |
 | Stitch UI | MCP 工具 | {就绪/未就绪} | product-design | UI 视觉稿 |
-| OpenRouter (MCP) | MCP 工具 | {就绪/未就绪} | product-design, dev-forge | XV 交叉验证 |
+| OpenRouter (MCP) | AI Gateway | {就绪/未就绪} | product-design, dev-forge | XV 交叉验证 |
+| Google AI (MCP) | AI Gateway | {就绪/未就绪} | demo-forge | AI 生图/生视频/TTS |
+| Brave Search (MCP) | AI Gateway | {就绪/未就绪} | demo-forge | 媒体搜索（网页/图片/视频） |
 | OpenRouter (Script) | Key | {就绪/未就绪} | product-design 预置脚本 | XV 交叉验证 |
-| Google AI (MCP) | MCP 工具 | {就绪/未就绪} | demo-forge | AI 生图/生视频/TTS |
 | Google AI (Key) | Key | {就绪/未就绪} | demo-forge 预置脚本 | AI 生图/生视频/TTS |
+| Brave Search (Key) | Key | {就绪/未就绪} | demo-forge 预置脚本 | 媒体搜索 |
 | WebSearch | 内置 | 就绪 | product-design, demo-forge | 搜索 |
-| MCP 服务器 | 构建产物 | {已构建/未构建} | — | AI Gateway（OpenRouter + Google AI） |
+| MCP 服务器 | 构建产物 | {已构建/未构建} | — | AI Gateway（OpenRouter + Google AI + Brave） |
 
 降级链:
-  Brave MCP 不可用 → WebSearch → AI 生成
+  Brave 不可用 → WebSearch → AI 生成
   OpenRouter MCP 不可用 → OpenRouter Script → 跳过 XV
   Google AI 不可用 → 跳过 AI 生成媒体
   Playwright 不可用 → 无降级（提示安装）
@@ -200,61 +200,7 @@ Playwright MCP 安装步骤：
 - deadhunt deep/full: 动态死链扫描
 ```
 
-#### 1.5b. Brave Search MCP（若未就绪）
-
-使用 AskUserQuestion 询问：
-
-**「Brave Search MCP 未就绪，用于 demo-forge 媒体搜索（图片/视频采集）。是否安装？」**
-
-选项：
-- **安装** — 立即安装 Brave Search MCP（需提供 API Key）
-- **跳过** — 暂不安装（媒体搜索将降级到 WebSearch）
-- **查看详情** — 展示安装步骤
-
-##### 选择「安装」时：
-
-使用 AskUserQuestion 询问「请粘贴你的 Brave Search API Key（以 BSA 开头）」。
-
-> 若用户还没有 Key，展示注册步骤：
-> 1. 访问 https://brave.com/search/api/
-> 2. 注册并创建 API Key（免费 2000 queries/month）
-
-获取 Key 后执行安装命令：
-
-```bash
-claude mcp add brave-search -e BRAVE_API_KEY={用户提供的Key} -- npx -y @modelcontextprotocol/server-brave-search
-```
-
-安装成功后提示：
-
-```
-Brave Search MCP 已安装，API Key 已内嵌。
-需重启 Claude Code 后生效。
-```
-
-> **注意**：Brave MCP 安装时 Key 已嵌入 MCP 服务器 env，Step 2 中 Brave API Key 配置将自动跳过。
-
-##### 选择「查看详情」时：
-
-展示完整安装步骤后回到选择。
-
-```
-Brave Search MCP 安装步骤：
-
-1. 获取 API Key:
-   访问 https://brave.com/search/api/ 注册（免费 2000 queries/month）
-
-2. 安装 MCP 服务器（Key 嵌入 env）:
-   claude mcp add brave-search -e BRAVE_API_KEY=BSA... -- npx -y @modelcontextprotocol/server-brave-search
-
-3. 重启 Claude Code
-
-用途：
-- demo-forge media: 搜索采集图片/视频素材
-- 降级链: Brave → WebSearch → AI 生成
-```
-
-#### 1.5c. Stitch UI（若未就绪）
+#### 1.5b. Stitch UI（若未就绪）
 
 使用 AskUserQuestion 询问：
 
@@ -349,10 +295,7 @@ OpenRouter 注册步骤：
 
 记录跳过，继续下一个服务。
 
-#### 2b. Brave Search（若 Step 1.5b 已安装 Brave MCP 则跳过）
-
-> 若 Step 1.5b 中用户已安装 Brave Search MCP（Key 已嵌入 MCP env），此步自动跳过。
-> 此步仅在用户跳过了 MCP 安装、但仍希望通过 `__keys` 存储 Key 供脚本使用时触发。
+#### 2b. Brave Search
 
 使用 AskUserQuestion 询问：
 
@@ -457,17 +400,9 @@ Google AI API Key 获取步骤：
    |-----|---------|
    | `OPENROUTER_API_KEY` | `mcpServers.ai-gateway.env.OPENROUTER_API_KEY` |
    | `GOOGLE_API_KEY` | `mcpServers.ai-gateway.env.GOOGLE_API_KEY` |
-   | `BRAVE_API_KEY` | `__keys.BRAVE_API_KEY`（Brave MCP 独立安装，Key 存储在 `__keys` 区） |
+   | `BRAVE_API_KEY` | `mcpServers.ai-gateway.env.BRAVE_API_KEY` |
 
-   对于 ai-gateway：将 `"${OPENROUTER_API_KEY}"` 和 `"${GOOGLE_API_KEY}"` 模板引用替换为实际值。
-
-   对于无对应 MCP 服务器的 Key（Brave）：在 `.mcp.json` 中写入 `__keys` 存储区：
-   ```json
-   "__keys": {
-     "BRAVE_API_KEY": "BSA..."
-   }
-   ```
-   > `__keys` 是约定前缀，不会被 Claude Code 解析为 MCP 服务器。Python 脚本的 `_resolve_api_key()` 会读取此区。
+   对于 ai-gateway：将 `"${OPENROUTER_API_KEY}"`、`"${GOOGLE_API_KEY}"`、`"${BRAVE_API_KEY}"` 模板引用替换为实际值。所有 Key 统一存储在 ai-gateway 服务器的 env 块中。
 
 3. **使用 AskUserQuestion 确认**：展示将要写入的内容，请用户确认：
 
@@ -476,7 +411,7 @@ Google AI API Key 获取步骤：
 
   mcpServers.ai-gateway.env.OPENROUTER_API_KEY = "sk-or-...{后4位}"
   mcpServers.ai-gateway.env.GOOGLE_API_KEY = "AIza...{后4位}"
-  __keys.BRAVE_API_KEY = "BSA...{后4位}"
+  mcpServers.ai-gateway.env.BRAVE_API_KEY = "BSA...{后4位}"
 
 Key 仅存储在插件配置中，不写入 shell 环境变量。
 确认写入？
@@ -484,7 +419,7 @@ Key 仅存储在插件配置中，不写入 shell 环境变量。
 
 4. **写入**：用 Write 工具更新 `.mcp.json`
 5. **生效方式**：
-   - AI Gateway MCP 工具（OpenRouter + Google AI）：需**重启 Claude Code**（MCP 服务器启动时读取 env）
+   - AI Gateway MCP 工具（OpenRouter + Google AI + Brave）：需**重启 Claude Code**（MCP 服务器启动时读取 env）
    - Python 脚本 XV：**立即生效**（每次执行时读取 `.mcp.json`）
 
 ### Step 4: 验证与报告
@@ -498,7 +433,7 @@ Key 仅存储在插件配置中，不写入 shell 环境变量。
 |------|-----|---------|------|
 | OpenRouter | sk-or-...{后4位} | .mcp.json → ai-gateway.env | 跨模型交叉验证 |
 | Google AI | AIza...{后4位} | .mcp.json → ai-gateway.env | AI 生图/生视频/TTS |
-| Brave Search | BSA...{后4位} | .mcp.json → __keys | 媒体搜索 |
+| Brave Search | BSA...{后4位} | .mcp.json → ai-gateway.env | 媒体搜索 |
 
 下一步：重启 Claude Code 后运行 /setup check 验证连接。
 ```
@@ -515,16 +450,17 @@ Key 仅存储在插件配置中，不写入 shell 环境变量。
 
 MCP 工具:
   Playwright       {就绪/未就绪}   demo-forge, dev-forge, deadhunt — UI 自动化
-  Brave Search     {就绪/未就绪}   demo-forge — 媒体搜索
   Stitch UI        {就绪/未就绪}   product-design — UI 视觉稿（Google Stitch）
 
 AI Gateway（统一 MCP 服务器）:
   OpenRouter       {就绪/未就绪}   product-design, dev-forge — XV 交叉验证
   Google AI        {就绪/未就绪}   demo-forge — AI 生图/生视频/TTS
+  Brave Search     {就绪/未就绪}   demo-forge — 媒体搜索（网页/图片/视频）
 
 API Key（脚本回退）:
   OpenRouter Key   {就绪/未就绪}   product-design 预置脚本 — XV 交叉验证
   Google AI Key    {就绪/未就绪}   demo-forge 预置脚本 — AI 生图/生视频/TTS
+  Brave Key        {就绪/未就绪}   demo-forge 预置脚本 — 媒体搜索
 
 内置:
   WebSearch        就绪            product-design, demo-forge — 搜索
@@ -541,13 +477,12 @@ API Key（脚本回退）:
 
 | 服务 | Key | 状态 | 用途 |
 |------|-----|------|------|
-| OpenRouter | sk-or-...{后4位} | {已写入 {path} / 已跳过 / 已配置} | 跨模型交叉验证 |
-| Brave Search | BSA...{后4位} | {已写入 {path} / 已跳过 / 已配置} | 媒体搜索 |
-| Google AI | AIza...{后4位} | {已写入 {path} / 已跳过 / 已配置} | AI 生图/生视频/TTS |
+| OpenRouter | sk-or-...{后4位} | {已写入 ai-gateway.env / 已跳过 / 已配置} | 跨模型交叉验证 |
+| Google AI | AIza...{后4位} | {已写入 ai-gateway.env / 已跳过 / 已配置} | AI 生图/生视频/TTS |
+| Brave Search | BSA...{后4位} | {已写入 ai-gateway.env / 已跳过 / 已配置} | 媒体搜索 |
 
 MCP 工具（Step 1.5 已引导安装）:
   Playwright     {已安装/已跳过/之前已就绪}  demo-forge, dev-forge, deadhunt — UI 自动化
-  Brave Search   {已安装/已跳过/之前已就绪}  demo-forge — 媒体搜索
   Stitch UI      {已安装/已跳过/之前已就绪}  product-design — UI 视觉稿
 
 下一步：重启 Claude Code 后运行 /setup check 验证连接。
