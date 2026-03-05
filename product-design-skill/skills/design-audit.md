@@ -23,6 +23,7 @@ version: "1.0.0"
 4. **信息保真（Fidelity）** — 关键对象是否可追溯且具备多视角覆盖？
 5. **模式一致性（Pattern Consistency）** — 相同功能模式是否使用了一致的设计套路？（仅当 pattern-catalog.json 存在时激活）
 6. **行为一致性（Behavioral Consistency）** — 跨界面行为是否遵循已确认的行为规范？（仅当 behavioral-standards.json 存在时激活）
+7. **交互类型一致性（Interaction Type Consistency）** — 相同交互类型的界面是否遵循统一的布局约束？（仅当 screen-map 含 interaction_type 时激活）
 
 发现问题只报告，不修改任何上游产物。
 
@@ -111,6 +112,7 @@ product-map（锚点）
 | **Step 5 模式一致性** | AskUserQuestion 确认 | 自动执行（pattern-catalog.json 不存在 → 跳过），漂移问题记入日志 |
 | **Step 5.5 创新保真审计** | AskUserQuestion 确认 | 自动执行（adversarial-concepts.json 不存在或无 core 概念 → 跳过），稀释/不完整问题记入日志 |
 | **Step 5.6 行为一致性审计** | AskUserQuestion 确认 | 自动执行（behavioral-standards.json 不存在 → 跳过），漂移/违规问题记入日志 |
+| **Step 5.7 交互类型一致性审计** | AskUserQuestion 确认 | 自动执行（前置条件不满足 → 提示用户重跑上游），布局漂移/类型不匹配问题记入日志 |
 | **Step 6 报告确认** | AskUserQuestion 确认 | 自动确认 |
 
 **安全护栏**（自动模式下仍然停下来问用户）：
@@ -152,6 +154,9 @@ Step 5.5: 创新保真审计（Innovation Fidelity）
       ↓ 自动
 Step 5.6: 行为一致性审计（Behavioral Consistency）
       仅当 behavioral-standards.json 存在时执行
+      ↓ 自动
+Step 5.7: 交互类型一致性审计（Interaction Type Consistency）
+      仅当 screen-map 含 interaction_type 字段时执行
       ↓ 自动
 Step 6: 汇总报告
       合并所有维度结果，输出 JSON + Markdown
@@ -476,6 +481,226 @@ Step 6: 汇总报告
 
 ---
 
+### Step 5.7：交互类型一致性审计（Interaction Type Consistency）
+
+> 目标：验证相同交互类型的界面是否遵循统一的布局约束和行为模式。
+
+**前置检查**：
+1. `.allforai/screen-map/screen-map.json` 是否存在
+   - 不存在 → 提示「请先运行 /screen-map 生成界面地图」，终止
+2. screen-map 中每个 screen 是否含 `interaction_type` 字段
+   - 缺失 → 提示「screen-map 未标注 interaction_type，请运行 /screen-map refresh 重新生成」，终止
+
+---
+
+#### 检测项
+
+**5.7a. 同类型界面布局一致性**
+
+从 `${CLAUDE_PLUGIN_ROOT}/docs/interaction-types.md` 提取布局约束：
+
+| 类型 | 布局约束 | 禁止项 |
+|------|----------|--------|
+| **MG1 只读列表** | 列表/表格/网格 | 表单、向导 |
+| **MG2-L 列表** | 列表/表格 | 内嵌表单（新建应在独立页/弹窗） |
+| **MG2-C 新建** | 表单页/弹窗 | — |
+| **MG2-E 编辑** | 表单页/弹窗，必须回填旧值 | — |
+| **MG3 状态机** | 状态标签（专用列）+ 操作下拉/Swipe | — |
+| **MG5 主从详情** | 主实体区 + 子实体Tab | 无子实体的单层详情 |
+| **MG6 树形管理** | 树形组件 + 编辑区联动 | — |
+| **EC1 商品详情** | 图片轮播 + 规格选择 + 底部操作栏 | 无规格选择 |
+| **EC2 购物车** | 列表 + 底部汇总区 | — |
+| **WK1 对话/IM** | 消息流 + 底部输入框 | — |
+| **WK5 看板** | 水平多列 + 卡片 | 单列列表 |
+
+完整约束见 `interaction-types.md` 第 107-950 行各类型的「平台矩阵」。
+
+**检测逻辑**：
+
+```python
+def check_layout_consistency(screens, layout_constraints):
+    issues = []
+    
+    # 按 interaction_type 分组
+    by_type = group_by(screens, 'interaction_type')
+    
+    for type_key, type_screens in by_type.items():
+        constraints = layout_constraints.get(type_key, {})
+        
+        # 检查布局模式
+        allowed_layouts = constraints.get('allowed_layouts', [])
+        forbidden_layouts = constraints.get('forbidden_layouts', [])
+        
+        for screen in type_screens:
+            layout = detect_layout_type(screen)  # 从 screen 结构推断
+            
+            # 检查禁止项
+            if layout in forbidden_layouts:
+                issues.append({
+                    'type': 'LAYOUT_FORBIDDEN',
+                    'screen_id': screen['id'],
+                    'screen_name': screen['name'],
+                    'interaction_type': type_key,
+                    'layout': layout,
+                    'forbidden': forbidden_layouts,
+                    'severity': 'HIGH',
+                    'recommendation': f'{type_key} 不应使用 {layout} 布局'
+                })
+            
+            # 检查允许项（可选，宽松模式）
+            elif allowed_layouts and layout not in allowed_layouts:
+                issues.append({
+                    'type': 'LAYOUT_DRIFT',
+                    'screen_id': screen['id'],
+                    'screen_name': screen['name'],
+                    'interaction_type': type_key,
+                    'layout': layout,
+                    'allowed': allowed_layouts,
+                    'severity': 'MEDIUM',
+                    'recommendation': f'建议使用 {allowed_layouts} 之一'
+                })
+    
+    return issues
+```
+
+---
+
+**5.7b. 同类型界面布局偏差检测**
+
+对同一 `interaction_type` 的多个 screen，检测布局偏差：
+
+```python
+def detect_layout_drift(type_screens):
+    """检测同类界面的布局偏差"""
+    layouts = [(s['id'], detect_layout_type(s)) for s in type_screens]
+    
+    # 所有布局是否一致
+    unique_layouts = set(l[1] for l in layouts)
+    
+    if len(unique_layouts) > 1:
+        return {
+            'type': 'INCONSISTENT_LAYOUT',
+            'screens': [l[0] for l in layouts],
+            'layouts': list(unique_layouts),
+            'severity': 'MEDIUM',
+            'recommendation': '同类型界面应使用统一布局模式'
+        }
+    
+    return None
+```
+
+示例：
+- `MG2-L` 类型有 5 个 screen，其中 4 个用表格，1 个用卡片 → **LAYOUT_DRIFT**
+
+---
+
+**5.7c. 类型-上下文匹配度验证**
+
+验证每个 screen 的 `interaction_type` 是否匹配「产品类型 × 用户属性 × 平台」的预设频率：
+
+| 匹配度 | 检测 |
+|--------|------|
+| `excluded` 类型出现 | **TYPE_CONTEXT_MISMATCH**（该类型不应出现在此上下文） |
+| `low` 类型占比过高 | **LOW_TYPE_OVERREPRESENTED**（低频类型超过 30%） |
+
+```python
+def check_type_context_match(screens, product_type, audience, platform):
+    preset = load_type_preset(product_type, audience, platform)
+    
+    issues = []
+    type_counts = Counter(s.get('interaction_type', '') for s in screens)
+    total = len(screens)
+    
+    # 检查 excluded 类型
+    for itype in preset.get('excluded', []):
+        if type_counts.get(itype, 0) > 0:
+            issues.append({
+                'type': 'TYPE_CONTEXT_MISMATCH',
+                'interaction_type': itype,
+                'count': type_counts[itype],
+                'severity': 'HIGH',
+                'recommendation': f'{itype} 在 {product_type}/{audience}/{platform} 上下文中不应出现'
+            })
+    
+    # 检查低频类型占比
+    low_types = preset.get('低频', [])
+    low_count = sum(type_counts.get(t, 0) for t in low_types)
+    low_ratio = low_count / total if total > 0 else 0
+    
+    if low_ratio > 0.3:
+        issues.append({
+            'type': 'LOW_TYPE_OVERREPRESENTED',
+            'low_type_ratio': f'{low_ratio:.1%}',
+            'threshold': '30%',
+            'severity': 'MEDIUM',
+            'recommendation': '低频类型占比过高，考虑精简'
+        })
+    
+    return issues
+```
+
+---
+
+#### 输出格式
+
+```json
+{
+  "interaction_type_consistency": {
+    "status": "pass | issues_found | skipped",
+    "total_types_checked": 12,
+    "consistent_types": 10,
+    "drift_types": 2,
+    "issues": [
+      {
+        "type": "LAYOUT_FORBIDDEN",
+        "screen_id": "S015",
+        "screen_name": "商品管理",
+        "interaction_type": "MG1",
+        "layout": "form",
+        "forbidden": ["form", "wizard"],
+        "severity": "HIGH",
+        "recommendation": "MG1 只读列表不应使用表单布局"
+      },
+      {
+        "type": "INCONSISTENT_LAYOUT",
+        "interaction_type": "MG2-L",
+        "screens": ["S010", "S011", "S012", "S013", "S014"],
+        "layouts": ["table", "card"],
+        "severity": "MEDIUM",
+        "recommendation": "MG2-L 类型界面应统一布局（建议 table）"
+      },
+      {
+        "type": "TYPE_CONTEXT_MISMATCH",
+        "interaction_type": "MG4",
+        "count": 3,
+        "severity": "HIGH",
+        "recommendation": "MG4(审批) 在 C端消费者/Mobile App 上下文中不应出现"
+      }
+    ]
+  }
+}
+```
+
+---
+
+#### 严重度分级
+
+| 严重度 | 问题类型 | 影响 |
+|--------|----------|------|
+| `HIGH` | LAYOUT_FORBIDDEN / TYPE_CONTEXT_MISMATCH | 用户认知混乱或上下文不匹配 |
+| `MEDIUM` | INCONSISTENT_LAYOUT / LAYOUT_DRIFT | 一致性体验受损 |
+| `LOW` | LOW_TYPE_OVERREPRESENTED | 可优化但不阻塞 |
+
+---
+
+#### 输出处理
+
+- 所有 issues 追加到 `audit-report.json` 的 `interaction_type_consistency` 字段
+- issues_found → 在 audit-report.md 中新增「交互类型一致性」章节展示问题列表
+- 不阻塞流程，仅报告
+
+---
+
 ### Step 6：汇总报告
 
 合并三个维度的校验结果，生成最终报告。
@@ -520,6 +745,12 @@ Step 6: 汇总报告
       "total_categories_checked": 0,
       "compliant_screens": 0,
       "violating_screens": 0
+    },
+    "interaction_type_consistency": {
+      "status": "pass|issues_found|skipped",
+      "total_types_checked": 0,
+      "consistent_types": 0,
+      "drift_types": 0
     }
   },
   "trace_issues": [
@@ -571,6 +802,7 @@ Step 6: 汇总报告
 - 模式一致性：X 类模式检查，X 漂移（pass/issues_found/skipped）
 - 创新保真：X 核心概念，X 存活，X 稀释，X 不完整（pass/issues_found/skipped）
 - 行为一致性：X 类别检查，X 合规界面，X 违规界面（pass/issues_found/skipped）
+- 交互类型一致性：X 种类型检查，X 漂移（pass/issues_found/skipped）
 
 ## 问题清单（按严重度排序）
 
@@ -598,6 +830,16 @@ Step 6: 汇总报告
 | # | 检查项 | 来源 | 说明 |
 |---|--------|------|------|
 | ... | ... | ... | ... |
+
+### LAYOUT_DRIFT（布局漂移）
+| # | 类型 | 界面 | 布局偏差 | 建议 |
+|---|------|------|----------|------|
+| ... | ... | ... | ... | ... |
+
+### TYPE_CONTEXT_MISMATCH（类型上下文不匹配）
+| # | 类型 | 出现次数 | 上下文 | 建议 |
+|---|------|----------|--------|------|
+| ... | ... | ... | ... | ... |
 ```
 
 ---

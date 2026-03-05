@@ -185,9 +185,13 @@ Step 5: 生成剪枝任务清单
 
 ---
 
-### Step 1：频次过滤（帕累托）
+### Step 1：频次过滤（帕累托）+ 类型频率预设
 
 **数据加载**：若 `task-index.json` 存在，直接读取索引中每个任务的 `frequency` 字段完成分层（索引已含 frequency，无需加载 50KB+ 的 task-inventory.json）。若索引不存在，回退到读取 `task-inventory.json`。若 `screen-map.json` 存在，同时读取按钮级别的频次数据；若不存在，仅按任务级别分层。
+
+---
+
+#### 1a. 任务级频次分层
 
 按频次分层：
 
@@ -198,6 +202,148 @@ Step 5: 生成剪枝任务清单
 | 低频 | ~50% 的功能 | 重点剪枝候选 |
 
 **低频功能自动进入剪枝候选名单**，但不自动标记 CUT，等待 Step 2 场景对齐验证。
+
+---
+
+#### 1b. 交互类型频率预设（v2.4.0+）
+
+**目标**：基于 `interaction-types.md` 的「产品类型 × 用户属性 × 平台」上下文预设，自动识别不应出现或低频的交互类型。
+
+**前置检查**：
+1. `.allforai/screen-map/screen-map.json` 是否存在
+   - 不存在 → 提示「请先运行 /screen-map 生成界面地图」，终止
+2. screen-map 中每个 screen 是否含 `interaction_type` 字段
+   - 缺失 → 提示「screen-map 未标注 interaction_type，请运行 /screen-map refresh 重新生成」，终止
+3. `.allforai/product-concept/product-concept.json` 是否存在且含 `product_type` + `audience_type` + `platform` 字段
+   - 缺失 → 提示「product-concept 缺少产品类型/用户属性/平台字段，请运行 /product-concept 补充」，终止
+
+---
+
+##### 类型频率矩阵
+
+从 `${CLAUDE_PLUGIN_ROOT}/docs/interaction-types.md` 的「第三轴：上下文预设」章节提取：
+
+```
+电商平台 / C端消费者 / Mobile App:
+  高频: CT1(Feed流), EC1(商品详情)
+  中频: CT7(搜索), EC2(购物车), EC3(订单追踪)
+  低频: CT3(Profile), MG1(订单列表), SY1(Onboarding)
+  不需要: MG4(审批), MG6(树形), MG8(配置), RT1(通话)
+
+电商平台 / B端商户 / Web后台:
+  高频: MG2(CRUD集群), SB1(审核提交)
+  中频: MG3(状态机), SY2(向导), MG1(只读列表)
+  低频: MG4(审批), MG7(仪表盘), MG8(配置)
+  不需要: CT4(卡片探索), CT8(短视频), CT5(媒体播放)
+```
+
+完整矩阵见 `interaction-types.md` 第 951-1087 行。
+
+---
+
+##### 检测逻辑
+
+```python
+def apply_type_frequency_preset(screens, product_type, audience, platform):
+    """根据上下文预设标记类型频率"""
+    preset = load_type_preset(product_type, audience, platform)
+    
+    type_tier = []
+    for screen in screens:
+        itype = screen.get('interaction_type', '')
+        
+        # 处理组合类型（数组），取主类型
+        if isinstance(itype, list):
+            itype = itype[0] if itype else ''
+        
+        # 查表
+        if itype in preset.get('excluded', []):
+            type_tier.append({
+                'screen_id': screen['id'],
+                'screen_name': screen['name'],
+                'interaction_type': itype,
+                'type_frequency': 'excluded',
+                'tier': 'cut_candidate',
+                'reason': f'{product_type}/{audience}/{platform} 不需要 {itype}'
+            })
+        elif itype in preset.get('低频', []):
+            type_tier.append({
+                'screen_id': screen['id'],
+                'screen_name': screen['name'],
+                'interaction_type': itype,
+                'type_frequency': 'low',
+                'tier': 'candidate',
+                'reason': f'{itype} 在该组合为低频'
+            })
+        elif itype in preset.get('高频', []):
+            type_tier.append({
+                'screen_id': screen['id'],
+                'screen_name': screen['name'],
+                'interaction_type': itype,
+                'type_frequency': 'high',
+                'tier': 'protected',
+                'reason': f'{itype} 在该组合为高频'
+            })
+        else:
+            # 中频或未知类型，待评估
+            type_tier.append({
+                'screen_id': screen['id'],
+                'screen_name': screen['name'],
+                'interaction_type': itype,
+                'type_frequency': 'medium',
+                'tier': 'review',
+                'reason': '类型频率未在预设中明确定义'
+            })
+    
+    return type_tier
+```
+
+---
+
+##### 输出格式
+
+在 `frequency-tier.json` 中增加 `type_frequency` 和 `type_tier` 字段：
+
+```json
+[
+  {
+    "task_id": "T001",
+    "task_name": "商品审核",
+    "frequency": "低",
+    "tier": "candidate",
+    "type_frequency": "excluded",
+    "type_tier": "cut_candidate",
+    "interaction_type": "MG4",
+    "reason": "电商平台/C端消费者/Mobile App 不需要 MG4(审批)"
+  },
+  {
+    "task_id": "T002",
+    "task_name": "新手引导",
+    "frequency": "低",
+    "tier": "candidate",
+    "type_frequency": "low",
+    "type_tier": "candidate",
+    "interaction_type": "SY1",
+    "reason": "SY1 在该组合为低频，建议推迟"
+  }
+]
+```
+
+---
+
+##### 自动裁剪规则
+
+| type_frequency | 自动操作 | 用户确认 |
+|----------------|----------|----------|
+| `excluded` | 自动标记 **CUT** | 不需要（除非该任务被业务流引用） |
+| `low` | 标记 **candidate** | Step 4 用户确认 |
+| `medium` | 标记 **review** | Step 4 用户确认 |
+| `high` | 标记 **protected** | 跳过剪枝 |
+
+**excluded 类型的安全护栏**：
+- 若 excluded 类型的 screen 被业务流（`business-flows.json`）引用 → **停下来问用户**：「界面 {screen_id} 的类型 {interaction_type} 在当前上下文预设中被标记为「不需要」，但被业务流 {flow_name} 引用。请确认是否保留。」
+
+---
 
 输出：`.allforai/feature-prune/frequency-tier.json`
 
@@ -395,13 +541,31 @@ Step 5: 生成剪枝任务清单
 
 ```
 .allforai/feature-prune/
-├── frequency-tier.json      # Step 1: 频次分层结果
+├── frequency-tier.json      # Step 1: 频次分层结果（含 type_frequency 字段）
 ├── scenario-alignment.json  # Step 2: 场景对齐结果
 ├── competitive-ref.json     # Step 3: 竞品参考（可选）
 ├── prune-decisions.json     # Step 4: 用户分类决策日志
 ├── prune-tasks.json         # Step 5: 剪枝任务清单
 └── prune-report.md          # 可读报告
 ```
+
+**frequency-tier.json 字段说明**（v2.4.0+）：
+
+```json
+{
+  "task_id": "T001",
+  "task_name": "任务名",
+  "frequency": "高 | 中 | 低",
+  "tier": "protected | candidate | review",
+  "type_frequency": "high | medium | low | excluded",
+  "type_tier": "protected | candidate | review | cut_candidate",
+  "interaction_type": "MG2",
+  "reason": "类型频率判定依据"
+}
+```
+
+- `frequency` / `tier`：任务级频次（原有）
+- `type_frequency` / `type_tier`：交互类型级频次（新增，需 screen-map 含 interaction_type）
 
 ### decisions.json 通用格式
 
