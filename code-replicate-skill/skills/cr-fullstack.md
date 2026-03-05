@@ -34,10 +34,10 @@ Phase 2 完成双栈识别后，确认项目结构属于以下类型之一：
 ### 仅检测到{backend/frontend}代码
 
 路径: {path}（{stack}）
-建议：运行 `/cr-backend` 或 `/cr-frontend` 替代。
+建议：运行 `/code-replicate --type backend` 或 `/code-replicate --type frontend` 替代。
 
 若确实包含前后端代码，请手动指定路径：
-`/cr-fullstack ./src --backend-path server --frontend-path client`
+`/code-replicate functional ./src --type fullstack --backend-path server --frontend-path client`
 ```
 
 ---
@@ -56,7 +56,7 @@ Phase 2 完成双栈识别后，确认项目结构属于以下类型之一：
 **自动检测逻辑**：
 - 扫描根目录结构，匹配常见 monorepo 模式
 - 单目录全栈项目（如 Next.js）→ 按文件类型分区（`app/api/`=后端，其余=前端）
-- 若只发现一端 → 提示用户确认，或降级为 `/cr-backend` / `/cr-frontend`
+- 若只发现一端 → 提示用户确认，或降级为 `/code-replicate --type backend` / `/code-replicate --type frontend`
 
 写入 `replicate-config.json`，`project_type = fullstack`，新增 `backend_path`、`frontend_path`、`backend_target_stack`、`frontend_target_stack` 字段。
 

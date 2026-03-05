@@ -39,69 +39,22 @@ code-tuner（架构层）         合规→重复→抽象→评分
 /task-execute                      # 逐任务生成代码
 ```
 
-## 命令列表
+## 命令
 
-### `/code-replicate` — 主命令（推荐入口）
-
-```
-/code-replicate                                      # 交互式（默认后端）
-/code-replicate functional ./src                     # 后端复刻业务行为
-/code-replicate functional ./src --type frontend     # 前端复刻业务行为
-/code-replicate interface ./src                      # 仅复刻 API 合约
-/code-replicate architecture ./src                   # 复刻模块结构
-/code-replicate exact ./src                          # 百分百复刻（含 bug）
-/code-replicate functional https://github.com/org/repo.git  # 远程仓库
-```
-
-### `/cr-backend` — 后端复刻
-
-固定 `project_type = backend`，适合后端 API / 微服务项目。
+只有一个入口：`/code-replicate`。通过参数控制信度等级、项目类型和范围。
 
 ```
-/cr-backend functional ./src
-/cr-backend interface https://github.com/org/api-repo.git
+/code-replicate                                                  # 交互式引导
+/code-replicate functional ./src                                 # 后端复刻（自动检测类型）
+/code-replicate functional ./src --type frontend                 # 前端复刻
+/code-replicate functional ./src --type fullstack                # 全栈（前后端交叉验证）
+/code-replicate functional ./src --type module --module src/user # 模块级复刻
+/code-replicate interface ./src                                  # 仅复刻 API 合约
+/code-replicate architecture ./src                               # 复刻模块结构
+/code-replicate exact ./src                                      # 百分百复刻（含 bug）
+/code-replicate functional https://github.com/org/repo.git       # 远程仓库
+/code-replicate status                                           # 查看进度
 ```
-
-### `/cr-frontend` — 前端复刻
-
-固定 `project_type = frontend`，适合前端 Web / 移动端项目。
-
-```
-/cr-frontend functional ./src
-/cr-frontend exact https://github.com/org/web-app.git
-```
-
-### `/cr-fullstack` — 全栈复刻
-
-固定 `project_type = fullstack`，前后端联合分析 + 交叉验证（API 绑定、Schema 对齐、认证传播、错误映射）。
-
-```
-/cr-fullstack functional ./project
-/cr-fullstack functional ./project --backend-path server --frontend-path client
-```
-
-### `/cr-module` — 模块复刻
-
-复刻指定模块并处理依赖边界（外部依赖、事件契约、共享层）。
-
-```
-/cr-module functional ./src --module src/modules/user
-/cr-module functional ./src --module src/modules/user --module src/modules/auth
-```
-
-### `/cr-interface` — 快捷接口复刻
-
-固定 `interface` 模式，适合"后端重写，前端不动"或组件 Props 接口复刻场景。
-
-### `/cr-exact` — 快捷精准复刻
-
-固定 `exact` 模式，适合行为零容忍回归或监管合规场景。
-
-> ⚠️ 此模式耗时最长，建议仅用于关键模块。
-
-### `/cr-status` — 查看进度
-
-读取 `.allforai/code-replicate/replicate-config.json`，展示当前步骤进度和产物状态（含项目类型）。
 
 ## 技能详情
 
@@ -151,7 +104,7 @@ code-tuner（架构层）         合规→重复→抽象→评分
 | **全栈项目** | 前后端代码共存（monorepo/全栈框架） | 双栈分析 + 交叉验证 | cr-fullstack |
 | **混合单体** | 多类型混合 | 拆分后分别用 cr-backend + cr-frontend | 两者 |
 
-> **模块级复刻**不是项目类型，而是分析模式。使用 `/cr-module` 时，项目类型（后端/前端）从源码自动检测，额外增加依赖边界扫描。
+> **模块级复刻**不是项目类型，而是分析模式。使用 `--type module` 时，项目类型（后端/前端）从源码自动检测，额外增加依赖边界扫描。
 
 ## 输出目录
 

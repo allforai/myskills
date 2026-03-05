@@ -30,7 +30,7 @@ version: "1.0.0"
 /demo-forge execute          # 仅生成+灌入演示数据
 /demo-forge verify           # 仅 Playwright 验证
 /demo-forge clean            # 清理已灌入的演示数据
-/df-status                   # 查看当前进度和产物状态
+/demo-forge status           # 查看当前进度和产物状态
 ```
 
 完整流程按 `design → media → execute → verify` 顺序执行，verify 失败时自动进入修复轮次（最多 3 轮），直到通过率达到 95%。

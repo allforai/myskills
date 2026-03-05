@@ -33,7 +33,7 @@ Phase 2 完成技术栈识别后，确认项目属于以下类型之一：
 ### 检测到混合单体项目
 
 前端部分: {path}（{frontend_stack}）
-建议：对前端部分单独运行 `/cr-frontend` 分析。
+建议：对前端部分单独运行 `/code-replicate --type frontend` 分析。
 ```
 
 ---

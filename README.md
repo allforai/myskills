@@ -105,7 +105,7 @@ claude plugin add /path/to/myskills/code-tuner-skill
 /product-map
 
 # 4) 需要全链路时，直接执行
-/full-pipeline
+/product-design full
 ```
 
 ---
@@ -118,7 +118,7 @@ claude plugin add /path/to/myskills/code-tuner-skill
 | 生成高质量测试数据并验收实现 | dev-forge | `/seed-forge` / `/product-verify` |
 | 查死链、CRUD 缺口、幽灵功能 | deadhunt | `/deadhunt` |
 | 分析后端架构质量并给重构任务 | code-tuner | `/code-tuner full` |
-| 一次跑完整链路 | full-pipeline（在 product-design 内） | `/full-pipeline` |
+| 一次跑完整链路 | product-design full 模式 | `/product-design full` |
 
 ---
 

@@ -237,7 +237,7 @@ your-project/
 ### 全链路一键执行
 
 ```bash
-/full-pipeline  # 在 product-design 技能中
+/product-design full  # 全流程编排
 ```
 
 ---

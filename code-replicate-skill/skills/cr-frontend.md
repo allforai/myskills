@@ -34,7 +34,7 @@ Phase 2 完成技术栈识别后，确认项目属于以下类型之一：
 ### 检测到混合单体项目
 
 后端部分: {path}（{backend_stack}）
-建议：对后端部分单独运行 `/cr-backend` 分析。
+建议：对后端部分单独运行 `/code-replicate --type backend` 分析。
 ```
 
 ---
