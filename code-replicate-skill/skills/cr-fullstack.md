@@ -316,6 +316,8 @@ Prompt 模板：
 
 ## Phase 7：交接
 
+> fullstack 模式生成 `fullstack-report.md` **替代**标准模式的 `replicate-report.md`。不重复生成两份报告。
+
 统一报告（单份 `fullstack-report.md`），包含后端 + 前端 + 交叉验证三部分摘要。
 
 `task-inventory.json` 中的任务分为三类：

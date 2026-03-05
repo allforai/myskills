@@ -19,16 +19,18 @@ allowed-tools: ["Read", "Glob"]
 
 逐一检查以下文件是否存在：
 
+> **fullstack 模式路径替换**：当 `project_type = fullstack` 时，Phase 2 检查 `backend/source-analysis.json` + `frontend/source-analysis.json`（不检查根级 `source-analysis.json`）；Phase 4 检查 `backend/api-contracts.json` + `frontend/api-contracts.json`（不检查根级 `api-contracts.json`、`behavior-specs.json`）；Phase 7 检查 `fullstack-report.md`（不检查 `replicate-report.md`）。
+
 | 产物文件 | 对应阶段 |
 |---------|---------|
-| `.allforai/code-replicate/source-analysis.json` | Phase 2 完成 |
-| `.allforai/code-replicate/api-contracts.json` | Phase 4 完成（interface+） |
-| `.allforai/code-replicate/behavior-specs.json` | Phase 4 完成（functional+） |
+| `.allforai/code-replicate/source-analysis.json` | Phase 2 完成（非 fullstack） |
+| `.allforai/code-replicate/api-contracts.json` | Phase 4 完成（interface+，非 fullstack） |
+| `.allforai/code-replicate/behavior-specs.json` | Phase 4 完成（functional+，非 fullstack） |
 | `.allforai/code-replicate/arch-map.json` | Phase 4 完成（architecture+） |
 | `.allforai/code-replicate/bug-registry.json` | Phase 4 完成（exact） |
 | `.allforai/code-replicate/stack-mapping-decisions.json` | Phase 5 完成 |
 | `.allforai/product-map/task-inventory.json` | Phase 6 完成 |
-| `.allforai/code-replicate/replicate-report.md` | Phase 7 完成 |
+| `.allforai/code-replicate/replicate-report.md` | Phase 7 完成（非 fullstack） |
 
 **fullstack 模式额外检查**（`project_type = fullstack` 时）：
 
@@ -77,7 +79,7 @@ allowed-tools: ["Read", "Glob"]
 | 4 | 深度分析 | ✅ / ⏳ / ❌ | api-contracts.json 等 |
 | 5 | 汇总确认 | ✅ / ⏳ / ❌ | stack-mapping-decisions.json |
 | 6 | 生成产物 | ✅ / ⏳ / ❌ | task-inventory.json, business-flows.json 等 |
-| 7 | 交接完成 | ✅ / ⏳ | replicate-report.md |
+| 7 | 交接完成 | ✅ / ⏳ | fullstack-report.md（fullstack）/ replicate-report.md（其他） |
 
 **fullstack 模式展示**（`project_type = fullstack`）：
 
