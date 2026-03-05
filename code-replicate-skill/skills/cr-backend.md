@@ -161,15 +161,53 @@ config/ | settings/                   → 配置层
 
 ### Phase 4 完成
 
-写入所有 JSON 文件，更新 `replicate-config.json`，输出进度「Phase 4 ✓ {N} 端点 | {N} 行为 | {N} 歧义待确认」，自动继续 Phase 4 XV（或 Phase 5）。
+写入所有 JSON 文件，更新 `replicate-config.json`。
+
+#### Phase 4 产物自检（写入后、继续前执行）
+
+对已写入的产物执行三项一致性校验，结果写入 `source-analysis.json` 顶层 `self_check` 字段：
+
+**① 端点覆盖率**
+- 比对 `api-contracts.json` 实际端点数 vs Phase 2 路由扫描估算数（`source-analysis.json` 中记录的路由数量）
+- 偏差 >20% → 状态 `warn`，写入 `self_check.endpoint_coverage`
+
+**② 模块覆盖率**
+- 检查 `scope_filter.included_modules` 中每个模块是否在 `api-contracts.json` 或 `behavior-specs.json` 中有至少 1 个条目
+- 零产出模块 → 状态 `warn`，对该模块**重新执行 Phase 4 分析**（仅该模块），追加到现有产物中
+
+**③ 高风险 6V 完整性**
+- 筛选所有 `risk_level: high` 或 `risk.severity: high|critical` 的端点/行为
+- 检查其 `viewpoints` 是否包含全部 6 个视角（user, business, tech, ux, data, risk）
+- 缺失视角 → 自动补全（标注 `[SELF_CHECK:补全]`），状态 `补全`
+
+**自检结果写入格式**（`source-analysis.json` 顶层）：
+
+```json
+{
+  "self_check": {
+    "endpoint_coverage": { "expected": 50, "actual": 45, "ratio": 0.90, "status": "pass|warn" },
+    "module_coverage": { "included": 8, "with_output": 8, "zero_output": [], "status": "pass|warn" },
+    "high_risk_6v": { "total_high_risk": 12, "complete_6v": 10, "补全": 2, "status": "pass|补全" },
+    "checked_at": "ISO8601"
+  }
+}
+```
+
+**输出格式**：
+
+- 全部通过：`Phase 4 自检 ✓ 端点覆盖 {ratio}% | 模块 {with_output}/{included} | 高风险 6V {complete}/{total}`
+- 有警告：`Phase 4 自检 ⚠ 端点覆盖 {ratio}%（预期 {expected}，实际 {actual}，偏差 >20%）| 模块 {with_output}/{included}（{module} 零产出，回补中...）| 高风险 6V {complete}/{total}（{N} 项已补全）`
+
+自检完成后，自动继续 Phase 4 XV（或 Phase 5）。
 
 ---
 
 ## Phase 6：生成 allforai 产物（后端专有部分）
 
 > 6a/6e/6f 由 core 统一生成，以下为后端特有产物。
+> **注意路径**：6b/6d 写到 `.allforai/product-map/`，6c 写到 `.allforai/use-case/`，不是 `.allforai/code-replicate/`。
 
-### 6b. `product-map/business-flows.json`（functional+ 模式）
+### 6b. `.allforai/product-map/business-flows.json`（functional+ 模式）
 
 从 `behavior-specs.json` 中的 Service 调用链提取，转换为 product-map 兼容格式（与 `/product-map` 产出结构一致）。
 
@@ -178,7 +216,7 @@ config/ | settings/                   → 配置层
 - 中间件链作为横切流程
 - 事务边界标注（原子操作范围）
 
-### 6c. `use-case/use-case-tree.json`（functional+ 模式）
+### 6c. `.allforai/use-case/use-case-tree.json`（functional+ 模式）
 
 从业务行为生成用例树，格式兼容 product-design `use-case/` 目录。
 
@@ -187,6 +225,6 @@ config/ | settings/                   → 配置层
 - Service 内部的条件分支 → 用例的备选流
 - 错误处理 → 异常流
 
-### 6d. `product-map/constraints.json`（exact 模式）
+### 6d. `.allforai/product-map/constraints.json`（exact 模式）
 
 将 `bug-registry.json` 中 `replicate_decision: "replicate"` 的 bug 转为约束（含 constraint_id, source_bug, description, enforcement, affects）。

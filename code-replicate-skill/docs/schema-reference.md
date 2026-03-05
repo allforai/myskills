@@ -86,6 +86,59 @@
 
 ---
 
+## source-analysis.json — self_check 字段（Phase 4 产物自检）
+
+Phase 4 完成后写入 `source-analysis.json` 顶层，记录产物一致性校验结果：
+
+```json
+{
+  "self_check": {
+    "endpoint_coverage": {
+      "expected": 50,
+      "actual": 45,
+      "ratio": 0.90,
+      "status": "pass | warn"
+    },
+    "component_coverage": {
+      "expected": 80,
+      "actual": 75,
+      "ratio": 0.94,
+      "status": "pass | warn"
+    },
+    "page_coverage": {
+      "expected": 20,
+      "actual": 18,
+      "ratio": 0.90,
+      "status": "pass | warn"
+    },
+    "module_coverage": {
+      "included": 8,
+      "with_output": 8,
+      "zero_output": [],
+      "status": "pass | warn"
+    },
+    "high_risk_6v": {
+      "total_high_risk": 12,
+      "complete_6v": 10,
+      "补全": 2,
+      "status": "pass | 补全"
+    },
+    "checked_at": "ISO8601"
+  }
+}
+```
+
+字段说明：
+- **endpoint_coverage**（后端）：`api-contracts.json` 端点数 vs Phase 2 路由扫描估算数，偏差 >20% 为 `warn`
+- **component_coverage**（前端）：`api-contracts.json` 组件数 vs Phase 2 组件扫描估算数，偏差 >20% 为 `warn`
+- **page_coverage**（前端）：已分析页面数 vs Phase 2 路由/页面估算数，偏差 >20% 为 `warn`
+- **module_coverage**（通用）：`scope_filter.included_modules` 中每个模块是否有产出，零产出模块触发回补分析
+- **high_risk_6v**（通用）：`risk_level: high` 项是否有完整 6 视角，缺失视角自动补全并标注 `[SELF_CHECK:补全]`
+
+> 后端使用 `endpoint_coverage` + `module_coverage` + `high_risk_6v`；前端使用 `component_coverage` + `page_coverage` + `module_coverage` + `high_risk_6v`。
+
+---
+
 ## api-contracts.json — 端点条目（含 4D + 6V）
 
 ```json
