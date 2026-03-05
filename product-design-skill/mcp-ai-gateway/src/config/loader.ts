@@ -11,7 +11,6 @@ interface UserConfig {
 }
 
 let cachedRegion: "china" | "global" | "unknown" | null = null;
-let cachedFamilyMap: Record<string, string> | null = null;
 
 export async function loadRouting(): Promise<Record<string, string>> {
   // 这个函数保留向后兼容，返回家族映射
