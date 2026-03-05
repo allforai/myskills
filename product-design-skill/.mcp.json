@@ -6,6 +6,11 @@
       "env": {
         "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}"
       }
+    },
+    "stitch": {
+      "command": "npx",
+      "args": ["-y", "@_davideast/stitch-mcp", "proxy"],
+      "env": {}
     }
   }
 }
