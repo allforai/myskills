@@ -399,6 +399,32 @@ Step 1: Requirements 生成
 Step 2: 行为原语识别 → 共享组件规划
   （仅前端子项目执行；后端子项目跳过此步直接进入 Step 3）
   ↓
+Step 2.5: 组件规格导入（component-spec.json 存在时执行）
+  **触发条件**：`<BASE>/ui-design/component-spec.json` 存在
+  **跳过**：文件不存在 → 直接进入 Step 3（向后兼容）
+
+  **Layer 1（通用，始终执行）**：
+  1. 读取 `component-spec.json` 的 `shared_components`
+  2. 对每个共享组件：
+     a. 从 `primitive-impl-map.md` 查找当前技术栈的 primitives 实现
+     b. 写入 design.md 的 `## 共享组件` 章节：
+        - 组件名、出现屏幕、Props 接口
+        - 交互原语 + 技术栈实现方案
+        - 变体矩阵（size/state）
+        - a11y 要求（role、aria 属性、键盘导航）
+  3. 对 `screen_components` 中的每个屏幕：
+     将 used_shared + page_specific 写入对应页面规格
+  4. 生成键盘导航矩阵写入 design.md
+
+  **Layer 2（Stitch 增强，`stitch-index.json` 存在且有 success 屏幕时）**：
+  5. 读取 `stitch-index.json`
+  6. 对每个 `status=success` 的屏幕：
+     a. 读取 `stitch/*.html`，提取精确 DOM 结构
+     b. 提取内联样式 → design token 映射
+     c. 补充 design.md 的组件结构（增强 Layer 1 的推断）
+  7. 记录 pipeline-decision
+
+  ↓
 Step 3: Design 生成（API-first 策略）
   **原则: 先表结构、后 API、再展开**
   每个 Agent 对其子项目，基于 tech-profile 映射:
