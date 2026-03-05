@@ -145,7 +145,7 @@ PHP 是解释型语言，Go 是编译型语言，并发模型完全不同。
 
 ## 使用说明
 
-Step 3 跨栈映射时，从本文档查询对应映射类型：
+Phase 5 跨栈映射时，从本文档查询对应映射类型：
 - **直接等价** → 自动映射，写入 `stack-mapping.json` 的 `auto_mapped` 数组
 - **多方案可选** → 触发 `AskUserQuestion`，用户选择后写入 `user_decisions` 数组
 - **架构性差异** → 详细解释后 `AskUserQuestion` 确认，写入 `arch_decisions` 数组

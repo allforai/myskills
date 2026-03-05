@@ -221,6 +221,8 @@ Prompt 模板：
 
 ## Phase 6：生成产物（增强）
 
+> **⚠️ 路径提醒**：fullstack 模式下，除 `code-replicate/` 产物外，还要写入 `.allforai/product-map/`（task-inventory、business-flows、constraints）和 `.allforai/use-case/`（use-case-tree）。task-inventory 中的任务使用 `backend:`、`frontend:`、`fullstack:` 前缀。
+
 除后端/前端各自产物外，新增 fullstack 专有产物：
 
 | 产物 | 路径 | 说明 |
@@ -233,32 +235,39 @@ Prompt 模板：
 | 基础设施 | `code-replicate/infrastructure.json` | 非代码行为（cron/nginx/docker） |
 | 综合报告 | `code-replicate/fullstack-report.md` | 统一报告（替代两份独立报告） |
 
-### 产物存储：前后端分命名空间
+### 产物存储：完整路径清单
 
 ```
-.allforai/code-replicate/
-├── backend/
-│   ├── source-analysis.json
-│   ├── api-contracts.json
-│   ├── behavior-specs.json          ← functional+
-│   ├── arch-map.json                ← architecture+
-│   └── bug-registry.json            ← exact
-├── frontend/
-│   ├── source-analysis.json
-│   ├── api-contracts.json
-│   ├── behavior-specs.json          ← functional+
-│   ├── arch-map.json                ← architecture+
-│   └── bug-registry.json            ← exact
-├── api-bindings.json                ← fullstack 交叉层
-├── schema-alignment.json
-├── constraint-reconciliation.json
-├── auth-propagation.json
-├── error-mapping.json
-├── infrastructure.json
-├── replicate-config.json
-├── stack-mapping.json
-├── stack-mapping-decisions.json
-└── fullstack-report.md
+.allforai/
+├── product-map/                       ← ⚠️ 注意：不是 code-replicate/ 下
+│   ├── task-inventory.json            ← 所有模式（含 backend:/frontend:/fullstack: 前缀任务）
+│   ├── business-flows.json            ← functional+
+│   └── constraints.json               ← exact
+├── use-case/                          ← ⚠️ 注意：不是 code-replicate/ 下
+│   └── use-case-tree.json             ← functional+
+└── code-replicate/
+    ├── backend/
+    │   ├── source-analysis.json
+    │   ├── api-contracts.json
+    │   ├── behavior-specs.json        ← functional+
+    │   ├── arch-map.json              ← architecture+
+    │   └── bug-registry.json          ← exact
+    ├── frontend/
+    │   ├── source-analysis.json
+    │   ├── api-contracts.json
+    │   ├── behavior-specs.json        ← functional+
+    │   ├── arch-map.json              ← architecture+
+    │   └── bug-registry.json          ← exact
+    ├── api-bindings.json              ← fullstack 交叉层
+    ├── schema-alignment.json
+    ├── constraint-reconciliation.json
+    ├── auth-propagation.json
+    ├── error-mapping.json
+    ├── infrastructure.json
+    ├── replicate-config.json
+    ├── stack-mapping.json
+    ├── stack-mapping-decisions.json
+    └── fullstack-report.md            ← 替代 replicate-report.md
 ```
 
 ### fullstack-report.md 模板
