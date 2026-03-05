@@ -146,7 +146,112 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
   - 其他模式 → 继续 Step 2（仅引导未就绪的 API Key 服务）
 - MCP 工具类（Playwright/Stitch）未就绪：
   - `check` 模式在状态表后附带安装提示
-  - 其他模式不引导安装（MCP 工具需独立安装，不涉及 Key 配置）
+  - 其他模式 → 继续 Step 1.5（引导安装未就绪的 MCP 工具）
+
+### Step 1.5: MCP 工具安装引导
+
+对每个未就绪的 MCP 工具，按顺序引导安装。**已就绪的跳过。**
+
+#### 1.5a. Playwright（若未就绪）
+
+使用 AskUserQuestion 询问：
+
+**「Playwright 未就绪，用于 UI 自动化验证（demo-forge/dev-forge/deadhunt）。是否安装？」**
+
+选项：
+- **安装** — 立即安装 Playwright MCP
+- **跳过** — 暂不安装（Playwright 无降级链，依赖它的功能将不可用）
+- **查看详情** — 展示安装步骤
+
+##### 选择「安装」时：
+
+执行安装命令：
+
+```bash
+claude mcp add playwright -- npx @anthropic-ai/mcp-playwright
+```
+
+安装成功后提示：
+
+```
+Playwright MCP 已安装。
+首次使用前需安装浏览器: npx playwright install chromium
+需重启 Claude Code 后生效。
+```
+
+##### 选择「查看详情」时：
+
+展示完整安装步骤后回到选择。
+
+```
+Playwright MCP 安装步骤：
+
+1. 安装 MCP 服务器:
+   claude mcp add playwright -- npx @anthropic-ai/mcp-playwright
+
+2. 安装浏览器（首次）:
+   npx playwright install chromium
+
+3. 重启 Claude Code
+
+用途：
+- demo-forge verify: Playwright 验证灌入数据
+- dev-forge e2e-verify: 端到端测试
+- deadhunt deep/full: 动态死链扫描
+```
+
+#### 1.5b. Stitch UI（若未就绪）
+
+使用 AskUserQuestion 询问：
+
+**「Stitch UI 未就绪，用于生成高保真 UI 视觉稿（product-design ui-design 阶段）。是否安装？」**
+
+选项：
+- **安装** — 立即初始化 Stitch（需完成 Google OAuth 认证）
+- **跳过** — 暂不安装（ui-design 将只生成文字规格，跳过视觉稿）
+- **查看详情** — 展示安装步骤
+
+##### 选择「安装」时：
+
+执行初始化命令：
+
+```bash
+npx -y @_davideast/stitch-mcp init
+```
+
+> **注意**：此命令会打开浏览器进行 Google OAuth 认证。认证完成后，OAuth 凭证存储在 `~/.stitch-mcp/`。
+
+认证成功后提示：
+
+```
+Stitch UI 认证完成。
+MCP 服务器配置已在插件 .mcp.json 中就绪。
+需重启 Claude Code 后生效。
+```
+
+##### 选择「查看详情」时：
+
+展示完整安装步骤后回到选择。
+
+```
+Stitch UI（Google Stitch）安装步骤：
+
+1. 初始化并完成 Google OAuth 认证:
+   npx -y @_davideast/stitch-mcp init
+   （会打开浏览器，用 Google 账号授权）
+
+2. 认证完成后 OAuth 凭证自动存储在 ~/.stitch-mcp/
+
+3. 重启 Claude Code
+
+前提：
+- 需要 Google 账号
+- MCP 服务器配置已在插件 .mcp.json 中预置（无需额外配置）
+
+用途：
+- product-design ui-design Step 5.5: 生成高保真 UI 视觉稿
+- 产出 HTML + 截图，供 dev-forge 参考实现
+```
 
 ### Step 2: 引导获取 Key
 
