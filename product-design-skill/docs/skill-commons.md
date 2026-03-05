@@ -63,9 +63,9 @@
 | 能力 ID | 安装命令 | 安装后追加步骤 | 需重启 Claude Code |
 |---------|---------|--------------|-------------------|
 | `playwright` | `claude mcp add playwright -- npx @anthropic-ai/mcp-playwright` | 首次需装浏览器: `npx @anthropic-ai/mcp-playwright --install` | 是 |
-| `openrouter_mcp` | `cd {PLUGIN_ROOT}/mcp-openrouter && npm install && npm run build` | 需配置 `OPENROUTER_API_KEY`（运行 `/setup-services`） | 是 |
-| `brave_search` | 需用户自行配置 Brave MCP 或设置 `BRAVE_API_KEY` | 运行 `/setup-services` | 视配置方式 |
-| `google_ai` | 仅需 `GOOGLE_API_KEY` 环境变量 | 运行 `/setup-services` | 否（source 配置文件即可） |
+| `openrouter_mcp` | `cd {PLUGIN_ROOT}/mcp-openrouter && npm install && npm run build` | 需配置 `OPENROUTER_API_KEY`（运行 `/setup`） | 是 |
+| `brave_search` | 需用户自行配置 Brave MCP 或设置 `BRAVE_API_KEY` | 运行 `/setup` | 视配置方式 |
+| `google_ai` | 仅需 `GOOGLE_API_KEY` 环境变量 | 运行 `/setup` | 否（source 配置文件即可） |
 | `stitch_ui` | `npx -y @_davideast/stitch-mcp init`（需完成 Google OAuth 认证） | 认证完成后在 `.mcp.json` 中配置 | 是 |
 
 #### 引导流程（编排命令的 Phase 0 使用）
@@ -114,7 +114,7 @@
 
 ### 全局状态检测
 
-运行 `/setup-services check` 可一次性查看所有外部能力状态。
+运行 `/setup check` 可一次性查看所有外部能力状态。
 
 ---
 

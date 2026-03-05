@@ -98,7 +98,7 @@ product-map 产物必须存在：
 
 - **Playwright 未就绪 + full/verify 模式**：用 AskUserQuestion 提供一键安装选项（「是，帮我安装」/「跳过」/「查看详情」）
 - **Playwright 未就绪 + design/media/execute 模式**：仅输出一行提示，不阻塞
-- **Brave/Google AI 未就绪**：提示运行 `/setup-services` 配置（Key 存储在插件 `.mcp.json`，不污染 shell 环境变量）
+- **Brave/Google AI 未就绪**：提示运行 `/setup` 配置（Key 存储在插件 `.mcp.json`，不污染 shell 环境变量）
 
 ### 0-E 初始化
 

@@ -111,13 +111,13 @@ Phase 7: design-audit full（终审）
 外部能力:
   OpenRouter (MCP)    ✓ 就绪          XV 交叉验证（MCP 通道）
   OpenRouter (Script) ✓ 就绪          XV 交叉验证（脚本通道）
-  Stitch UI           ✗ 未就绪        UI 视觉稿（可选，/setup-services check 查看详情）
+  Stitch UI           ✗ 未就绪        UI 视觉稿（可选，/setup check 查看详情）
   WebSearch           ✓ 内置          搜索驱动设计
 ```
 
 此通知仅为信息性输出，不阻塞任何流程。未就绪的可选能力自动跳过，提示格式统一为 `{step} ⊘ {能力} 不可用，{降级动作}`。
 
-未配置 API Key 的服务提示运行 `/setup-services` 配置（Key 存储在插件 `.mcp.json`，不污染 shell 环境变量）。
+未配置 API Key 的服务提示运行 `/setup` 配置（Key 存储在插件 `.mcp.json`，不污染 shell 环境变量）。
 
 确认执行计划后开始。
 

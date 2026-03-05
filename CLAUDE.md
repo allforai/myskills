@@ -96,7 +96,7 @@ Requires `OPENROUTER_API_KEY` environment variable. Config in `.allforai/openrou
 
 ## External Service Keys
 
-Three optional API keys enhance plugin capabilities. Configure all at once with `/setup-services`:
+Three optional API keys enhance plugin capabilities. Configure all at once with `/setup`:
 
 | Service | Env Variable | Used By | Purpose |
 |---------|-------------|---------|---------|

@@ -4,9 +4,7 @@ argument-hint: "[check|reset]"
 allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 ---
 
-> **升级提示**: 此命令是 `/setup-openrouter` 的超集，一站式检测和配置所有外部能力。
-
-# Setup Services — 外部能力管理
+# Setup — 外部能力管理
 
 用户请求: $ARGUMENTS
 
@@ -341,7 +339,7 @@ Key 仅存储在插件配置中，不写入 shell 环境变量。
 | Brave Search | BSA...{后4位} | .mcp.json → __keys | 媒体搜索 |
 | Google AI | AIza...{后4位} | .mcp.json → __keys | AI 生图/生视频/TTS |
 
-下一步：重启 Claude Code 后运行 /setup-services check 验证连接。
+下一步：重启 Claude Code 后运行 /setup check 验证连接。
 ```
 
 对于跳过的服务，状态列显示「已跳过（可选）」。
@@ -369,7 +367,7 @@ API Key 服务:
   MCP 服务器          {已构建/未构建}  — OpenRouter MCP 通道
 
 {若 Playwright 未就绪：安装: claude mcp add playwright -- npx @anthropic-ai/mcp-playwright}
-{若有未配置的 API Key：运行 /setup-services 进行配置}
+{若有未配置的 API Key：运行 /setup 进行配置}
 {若 MCP 已构建但工具不可用：需重启 Claude Code 加载 MCP 服务器}
 {注: 所有外部能力均为可选，未配置不影响核心功能}
 ```
@@ -389,7 +387,7 @@ MCP 工具（需独立安装，不涉及 Key）:
   Playwright  {就绪/未就绪}  {若未就绪: claude mcp add playwright -- npx @anthropic-ai/mcp-playwright}
   Stitch UI   {就绪/未集成}  {若需启用: npx -y @_davideast/stitch-mcp init}
 
-下一步：重启 Claude Code 后运行 /setup-services check 验证连接。
+下一步：重启 Claude Code 后运行 /setup check 验证连接。
 ```
 
 ## 铁律（强制执行）

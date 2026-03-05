@@ -174,8 +174,7 @@ version: "3.7.0"
 ## 工具配置
 
 ```
-/setup-services            # 一站式配置外部服务（OpenRouter + Brave + Google AI）
-/setup-openrouter          # 仅配置 OpenRouter（已升级为 /setup-services）
+/setup                     # 一站式检测和配置所有外部能力
 ```
 
 ## 定位

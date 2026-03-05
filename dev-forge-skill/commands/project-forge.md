@@ -148,7 +148,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 **交互式安装引导**（统一协议见 `product-design-skill/docs/skill-commons.md`）：
 
 - **Playwright 未就绪**：Phase 0 输出提示，不阻塞 Phase 1-7。进入 Phase 8 前用 AskUserQuestion 提供一键安装选项（「是，帮我安装」/「跳过」/「查看详情」）
-- **OpenRouter 未就绪**：提示运行 `/setup-services` 配置（Key 存储在插件 `.mcp.json`，不污染 shell 环境变量），不阻塞
+- **OpenRouter 未就绪**：提示运行 `/setup` 配置（Key 存储在插件 `.mcp.json`，不污染 shell 环境变量），不阻塞
 
 ### 初始化决策追踪
 
