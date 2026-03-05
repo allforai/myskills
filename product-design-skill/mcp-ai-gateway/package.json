@@ -1,7 +1,7 @@
 {
   "name": "mcp-ai-gateway",
-  "version": "2.0.0",
-  "description": "Unified AI Gateway MCP Server: OpenRouter (cross-model XV) + Google AI (Imagen 3 / Veo 2 / TTS)",
+  "version": "3.0.0",
+  "description": "Unified AI Gateway MCP Server: OpenRouter + Google AI + OpenAI + FLUX + Kling + Brave Search",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {

@@ -1,10 +1,19 @@
-const IMAGEN_BASE = "https://us-central1-aiplatform.googleapis.com/v1";
+const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta";
 const TTS_BASE = "https://texttospeech.googleapis.com/v1";
+const VIDEO_POLL_INTERVAL_MS = 10000;
+const VIDEO_MAX_POLL_ATTEMPTS = 60; // 10 min max
 
 function getApiKey(): string {
   const key = process.env.GOOGLE_API_KEY;
   if (!key) throw new Error("GOOGLE_API_KEY environment variable is not set");
   return key;
+}
+
+function geminiHeaders(): Record<string, string> {
+  return {
+    "Content-Type": "application/json",
+    "x-goog-api-key": getApiKey(),
+  };
 }
 
 export interface ImageResult {
@@ -13,8 +22,7 @@ export interface ImageResult {
 }
 
 export interface VideoResult {
-  base64: string;
-  mimeType: string;
+  videoUrl: string;
 }
 
 export interface TTSResult {
@@ -23,27 +31,22 @@ export interface TTSResult {
 }
 
 /**
- * Generate image using Imagen 3
+ * Generate image using Imagen 4 via Gemini API
  */
 export async function generateImage(
   prompt: string,
   options: {
     aspectRatio?: string;     // "1:1" | "16:9" | "9:16" | "4:3" | "3:4"
     numberOfImages?: number;  // 1-4
-    projectId?: string;
+    model?: string;           // imagen-4.0-generate-001 (default) | imagen-4.0-fast-generate-001
   } = {},
 ): Promise<ImageResult[]> {
-  const apiKey = getApiKey();
-  const projectId = options.projectId || process.env.GOOGLE_CLOUD_PROJECT || "default";
-  const model = "imagen-3.0-generate-002";
-  const url = `${IMAGEN_BASE}/projects/${projectId}/locations/us-central1/publishers/google/models/${model}:predict`;
+  const model = options.model ?? "imagen-4.0-generate-001";
+  const url = `${GEMINI_BASE}/models/${model}:predict`;
 
   const res = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
+    headers: geminiHeaders(),
     body: JSON.stringify({
       instances: [{ prompt }],
       parameters: {
@@ -55,7 +58,7 @@ export async function generateImage(
 
   if (!res.ok) {
     const errorBody = await res.text();
-    throw new Error(`Imagen 3 failed: ${res.status} ${res.statusText}\n${errorBody}`);
+    throw new Error(`Imagen 4 failed: ${res.status} ${res.statusText}\n${errorBody}`);
   }
 
   const body = (await res.json()) as {
@@ -69,52 +72,72 @@ export async function generateImage(
 }
 
 /**
- * Generate video using Veo 2
+ * Generate video using Veo 3.1 via Gemini API (async with polling)
  */
 export async function generateVideo(
   prompt: string,
   options: {
-    durationSeconds?: number; // 5-10
+    durationSeconds?: number; // 4 | 6 | 8
     aspectRatio?: string;     // "16:9" | "9:16"
-    projectId?: string;
+    resolution?: string;      // "720p" | "1080p" | "4k"
+    model?: string;           // veo-3.1-generate-preview (default)
   } = {},
 ): Promise<VideoResult> {
-  const apiKey = getApiKey();
-  const projectId = options.projectId || process.env.GOOGLE_CLOUD_PROJECT || "default";
-  const model = "veo-2.0-generate-exp";
-  const url = `${IMAGEN_BASE}/projects/${projectId}/locations/us-central1/publishers/google/models/${model}:predict`;
+  const model = options.model ?? "veo-3.1-generate-preview";
+  const url = `${GEMINI_BASE}/models/${model}:predictLongRunning`;
 
   const res = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
+    headers: geminiHeaders(),
     body: JSON.stringify({
       instances: [{ prompt }],
       parameters: {
-        durationSeconds: options.durationSeconds ?? 5,
         aspectRatio: options.aspectRatio ?? "16:9",
+        durationSeconds: options.durationSeconds ?? 8,
+        resolution: options.resolution ?? "720p",
       },
     }),
   });
 
   if (!res.ok) {
     const errorBody = await res.text();
-    throw new Error(`Veo 2 failed: ${res.status} ${res.statusText}\n${errorBody}`);
+    throw new Error(`Veo 3.1 failed: ${res.status} ${res.statusText}\n${errorBody}`);
   }
 
-  const body = (await res.json()) as {
-    predictions: Array<{ bytesBase64Encoded: string; mimeType: string }>;
-  };
+  const initBody = (await res.json()) as { name: string };
+  const operationName = initBody.name;
 
-  const prediction = body.predictions?.[0];
-  if (!prediction) throw new Error("Veo 2 returned no predictions");
+  // Poll for completion
+  for (let i = 0; i < VIDEO_MAX_POLL_ATTEMPTS; i++) {
+    await new Promise((r) => setTimeout(r, VIDEO_POLL_INTERVAL_MS));
 
-  return {
-    base64: prediction.bytesBase64Encoded,
-    mimeType: prediction.mimeType || "video/mp4",
-  };
+    const pollRes = await fetch(`${GEMINI_BASE}/${operationName}`, {
+      headers: geminiHeaders(),
+    });
+
+    if (!pollRes.ok) {
+      const errorBody = await pollRes.text();
+      throw new Error(`Veo poll failed: ${pollRes.status} ${pollRes.statusText}\n${errorBody}`);
+    }
+
+    const pollBody = (await pollRes.json()) as {
+      done?: boolean;
+      response?: {
+        generateVideoResponse?: {
+          generatedSamples?: Array<{ video?: { uri?: string } }>;
+        };
+      };
+    };
+
+    if (pollBody.done) {
+      const videoUri =
+        pollBody.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri;
+      if (!videoUri) throw new Error("Veo 3.1 completed but returned no video URI");
+      return { videoUrl: videoUri };
+    }
+  }
+
+  throw new Error(`Veo 3.1 timed out after ${(VIDEO_MAX_POLL_ATTEMPTS * VIDEO_POLL_INTERVAL_MS) / 1000}s`);
 }
 
 /**

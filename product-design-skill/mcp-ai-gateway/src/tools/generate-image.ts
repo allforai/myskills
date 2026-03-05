@@ -21,23 +21,18 @@ export const generateImageSchema = {
     .string()
     .optional()
     .describe("Optional file path to save the image (e.g. ./assets/avatar.png)"),
-  project_id: z
-    .string()
-    .optional()
-    .describe("Google Cloud project ID (uses GOOGLE_CLOUD_PROJECT env if not set)"),
 };
 
 export function registerGenerateImage(server: McpServer): void {
   server.tool(
     "generate_image",
-    "Generate an image using Google Imagen 3. Returns base64 data; optionally saves to file.",
+    "Generate an image using Google Imagen 4. Returns base64 data; optionally saves to file.",
     generateImageSchema,
     async (params) => {
       try {
         const results = await generateImage(params.prompt, {
           aspectRatio: params.aspect_ratio,
           numberOfImages: params.count,
-          projectId: params.project_id,
         });
 
         const saved: string[] = [];

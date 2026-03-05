@@ -16,7 +16,7 @@ let cachedFamilyMap: Record<string, string> | null = null;
 export async function loadRouting(): Promise<Record<string, string>> {
   // 这个函数保留向后兼容，返回家族映射
   const region = await getRegion();
-  return getModelFamilyMap(region);
+  return await getModelFamilyMap(region);
 }
 
 export async function getRegion(): Promise<"china" | "global" | "unknown"> {
@@ -49,12 +49,12 @@ export async function getModelIdForTask(task: string, familyOverride?: string): 
   
   // 用户指定家族优先
   if (familyOverride) {
-    const familyMap = getModelFamilyMap(region);
+    const familyMap = await getModelFamilyMap(region);
     return familyMap[familyOverride] || familyMap.qwen;
   }
   
   // 否则根据任务特性选择
-  return getModelForTask(task, region);
+  return await getModelForTask(task, region);
 }
 
 export function resolveFamily(

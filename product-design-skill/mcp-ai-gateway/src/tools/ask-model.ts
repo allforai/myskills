@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { getModelIdForTask, getRegion, getTaskFamilyMap } from "../config/loader.js";
+import { getModelIdForTask, getRegion, getTaskFamilyMap, getModelFamilyMap } from "../config/loader.js";
+import { refreshModels } from "../config/region-detector.js";
 import { chatCompletion } from "../openrouter/client.js";
 
 export const askModelSchema = {
@@ -56,12 +57,14 @@ export function registerAskModel(server: McpServer): void {
     }
   });
 
-  // 区域检测工具
-  server.tool("detect_region", "Detect available region and show model routing strategy", {}, async () => {
+  // 刷新模型缓存 + 显示区域和路由信息
+  server.tool("refresh_models", "Refresh model cache from OpenRouter API (normally cached 24h) and show current region/routing", {}, async () => {
     try {
+      const familyMap = await refreshModels();
       const region = await getRegion();
+      const regionMap = await getModelFamilyMap(region);
       const taskMap = getTaskFamilyMap();
-      
+
       return {
         content: [
           {
@@ -69,12 +72,9 @@ export function registerAskModel(server: McpServer): void {
             text: JSON.stringify(
               {
                 region,
-                task_routing: taskMap,
-                message: region === "china" 
-                  ? "中国区模式：Qwen(中文理解) + DeepSeek(推理) + Llama(严谨)" 
-                  : region === "global"
-                  ? "国际区模式：GPT(通用) + Gemini(发散) + Claude(严谨)"
-                  : "未知区域：使用保守路由",
+                latest_models: familyMap,
+                active_routing: regionMap,
+                task_family_map: taskMap,
               },
               null,
               2,

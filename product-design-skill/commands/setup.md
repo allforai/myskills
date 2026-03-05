@@ -33,9 +33,10 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 | 能力 | Key 格式 | 使用插件 | 用途 | 备注 |
 |------|---------|---------|------|------|
-| OpenRouter | `sk-or-...` | product-design, dev-forge | 跨模型交叉验证（XV） | Key 写入 ai-gateway MCP 服务器 env |
-| Google AI | `AIza...` | demo-forge | AI 生图（Imagen 3）+ 生视频（Veo 2）+ TTS | Key 写入 ai-gateway MCP 服务器 env |
-| Brave Search | `BSA...` | demo-forge | 媒体搜索（网页/图片/视频） | Key 写入 ai-gateway MCP 服务器 env |
+| OpenRouter | `sk-or-...` | product-design, dev-forge, demo-forge | XV 交叉验证 + GPT-5/Gemini 生图 | Key 写入 ai-gateway env |
+| Google AI | `AIza...` | demo-forge | Imagen 4 生图 + Veo 3.1 生视频 + TTS | Key 写入 ai-gateway env |
+| fal.ai | fal key | demo-forge | FLUX 2 Pro 生图 + Kling 生视频 | Key 写入 ai-gateway env |
+| Brave Search | `BSA...` | demo-forge | 媒体搜索（网页/图片/视频） | Key 写入 ai-gateway env |
 
 ### 内置工具（始终可用）
 
@@ -78,8 +79,8 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 #### 1b. OpenRouter
 
-1. **MCP 工具通道**：检查 `mcp__plugin_product-design_ai-gateway__detect_region` 工具是否可用
-   - 可用 → 调用 `mcp__plugin_product-design_ai-gateway__detect_region`，展示模型路由策略。MCP XV 就绪
+1. **MCP 工具通道**：检查 `mcp__plugin_product-design_ai-gateway__ask_model` 工具是否可用
+   - 可用 → MCP XV 就绪
    - 不可用 → MCP XV 未就绪（可能需要重启 Claude Code）
 
 2. **脚本通道**：检查 `OPENROUTER_API_KEY` 环境变量
@@ -106,7 +107,17 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
    - 已设置 → Google AI Key 就绪（脚本可用）
    - 未设置 → Google AI 未就绪
 
-#### 1e. Stitch UI
+#### 1e. fal.ai (FLUX + Kling)
+
+1. **MCP 工具通道**：检查 `mcp__plugin_product-design_ai-gateway__flux_generate_image` 工具是否可用
+   - 可用 → fal.ai MCP 就绪
+   - 不可用 → fal.ai MCP 未就绪
+
+2. **环境变量**：检查 `FAL_KEY` 环境变量
+   - 已设置 → fal.ai Key 就绪
+   - 未设置 → fal.ai 未就绪
+
+#### 1f. Stitch UI
 
 1. **检查 MCP 工具**：检查 `mcp__plugin_product-design_stitch__create_project` 工具是否可用
    - 可用 → Stitch 就绪
@@ -126,6 +137,8 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 | OpenRouter (MCP) | AI Gateway | {就绪/未就绪} | product-design, dev-forge | XV 交叉验证 |
 | Google AI (MCP) | AI Gateway | {就绪/未就绪} | demo-forge | AI 生图/生视频/TTS |
 | Brave Search (MCP) | AI Gateway | {就绪/未就绪} | demo-forge | 媒体搜索（网页/图片/视频） |
+| OpenRouter Image | AI Gateway | 就绪（随 OpenRouter） | demo-forge | GPT-5/Gemini 生图（无额外 Key） |
+| fal.ai (MCP) | AI Gateway | {就绪/未就绪} | demo-forge | FLUX 2 Pro 生图 + Kling 生视频 |
 | OpenRouter (Script) | Key | {就绪/未就绪} | product-design 预置脚本 | XV 交叉验证 |
 | Google AI (Key) | Key | {就绪/未就绪} | demo-forge 预置脚本 | AI 生图/生视频/TTS |
 | Brave Search (Key) | Key | {就绪/未就绪} | demo-forge 预置脚本 | 媒体搜索 |
@@ -135,7 +148,8 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 降级链:
   Brave 不可用 → WebSearch → AI 生成
   OpenRouter MCP 不可用 → OpenRouter Script → 跳过 XV
-  Google AI 不可用 → 跳过 AI 生成媒体
+  生图: Google Imagen 4 → OpenAI GPT Image → FLUX 2 Pro → 跳过
+  生视频: Google Veo 3.1 → Kling → 跳过
   Playwright 不可用 → 无降级（提示安装）
   Stitch 不可用 → 跳过视觉稿，使用文字规格
 ```
@@ -374,6 +388,45 @@ Google AI API Key 获取步骤：
 
 ##### 选择「跳过」时：
 
+记录跳过，继续下一个服务。
+
+#### 2d. fal.ai (FLUX 2 Pro + Kling)
+
+使用 AskUserQuestion 询问：
+
+**「你是否已有 fal.ai API Key？」**
+
+选项：
+- **已有 Key** — 我已经有 fal.ai Key，直接配置
+- **需要注册** — 带我去获取一个
+- **跳过** — 暂不配置 fal.ai
+
+##### 选择「需要注册」时：
+
+展示注册步骤：
+
+```
+fal.ai API Key 获取步骤：
+
+1. 访问 https://fal.ai/dashboard
+2. 注册账号（GitHub 登录）
+3. 进入 Keys 页面创建 API Key
+4. 复制 Key
+
+提示：
+- FLUX 2 Pro: $0.055/张（质量 Elo 最高）
+- Kling 视频: ~$0.03/秒（性价比最高的视频生成）
+- 按量计费，无月费
+```
+
+然后使用 AskUserQuestion 询问「请粘贴你的 fal.ai Key」（提供"其他"输入框让用户粘贴）。
+
+##### 选择「已有 Key」时：
+
+使用 AskUserQuestion 询问「请粘贴你的 fal.ai Key」。
+
+##### 选择「跳过」时：
+
 记录跳过。
 
 ### Step 3: 持久化 Key
@@ -400,9 +453,10 @@ Google AI API Key 获取步骤：
    |-----|---------|
    | `OPENROUTER_API_KEY` | `mcpServers.ai-gateway.env.OPENROUTER_API_KEY` |
    | `GOOGLE_API_KEY` | `mcpServers.ai-gateway.env.GOOGLE_API_KEY` |
+   | `FAL_KEY` | `mcpServers.ai-gateway.env.FAL_KEY` |
    | `BRAVE_API_KEY` | `mcpServers.ai-gateway.env.BRAVE_API_KEY` |
 
-   对于 ai-gateway：将 `"${OPENROUTER_API_KEY}"`、`"${GOOGLE_API_KEY}"`、`"${BRAVE_API_KEY}"` 模板引用替换为实际值。所有 Key 统一存储在 ai-gateway 服务器的 env 块中。
+   所有 Key 统一存储在 ai-gateway 服务器的 env 块中。将模板引用替换为实际值。
 
 3. **使用 AskUserQuestion 确认**：展示将要写入的内容，请用户确认：
 
@@ -411,6 +465,7 @@ Google AI API Key 获取步骤：
 
   mcpServers.ai-gateway.env.OPENROUTER_API_KEY = "sk-or-...{后4位}"
   mcpServers.ai-gateway.env.GOOGLE_API_KEY = "AIza...{后4位}"
+  mcpServers.ai-gateway.env.FAL_KEY = "...{后4位}"
   mcpServers.ai-gateway.env.BRAVE_API_KEY = "BSA...{后4位}"
 
 Key 仅存储在插件配置中，不写入 shell 环境变量。
@@ -431,8 +486,9 @@ Key 仅存储在插件配置中，不写入 shell 环境变量。
 
 | 服务 | Key | 存储位置 | 用途 |
 |------|-----|---------|------|
-| OpenRouter | sk-or-...{后4位} | .mcp.json → ai-gateway.env | 跨模型交叉验证 |
-| Google AI | AIza...{后4位} | .mcp.json → ai-gateway.env | AI 生图/生视频/TTS |
+| OpenRouter | sk-or-...{后4位} | .mcp.json → ai-gateway.env | XV + GPT-5/Gemini 生图 |
+| Google AI | AIza...{后4位} | .mcp.json → ai-gateway.env | Imagen 4 + Veo 3.1 + TTS |
+| fal.ai | ...{后4位} | .mcp.json → ai-gateway.env | FLUX 2 Pro + Kling 生视频 |
 | Brave Search | BSA...{后4位} | .mcp.json → ai-gateway.env | 媒体搜索 |
 
 下一步：重启 Claude Code 后运行 /setup check 验证连接。
@@ -453,8 +509,9 @@ MCP 工具:
   Stitch UI        {就绪/未就绪}   product-design — UI 视觉稿（Google Stitch）
 
 AI Gateway（统一 MCP 服务器）:
-  OpenRouter       {就绪/未就绪}   product-design, dev-forge — XV 交叉验证
-  Google AI        {就绪/未就绪}   demo-forge — AI 生图/生视频/TTS
+  OpenRouter       {就绪/未就绪}   product-design, dev-forge — XV + GPT-5/Gemini 生图
+  Google AI        {就绪/未就绪}   demo-forge — Imagen 4 + Veo 3.1 + TTS
+  fal.ai           {就绪/未就绪}   demo-forge — FLUX 2 Pro + Kling 生视频
   Brave Search     {就绪/未就绪}   demo-forge — 媒体搜索（网页/图片/视频）
 
 API Key（脚本回退）:
@@ -477,8 +534,9 @@ API Key（脚本回退）:
 
 | 服务 | Key | 状态 | 用途 |
 |------|-----|------|------|
-| OpenRouter | sk-or-...{后4位} | {已写入 ai-gateway.env / 已跳过 / 已配置} | 跨模型交叉验证 |
-| Google AI | AIza...{后4位} | {已写入 ai-gateway.env / 已跳过 / 已配置} | AI 生图/生视频/TTS |
+| OpenRouter | sk-or-...{后4位} | {已写入 ai-gateway.env / 已跳过 / 已配置} | XV + GPT-5/Gemini 生图 |
+| Google AI | AIza...{后4位} | {已写入 ai-gateway.env / 已跳过 / 已配置} | Imagen 4 + Veo 3.1 + TTS |
+| fal.ai | ...{后4位} | {已写入 ai-gateway.env / 已跳过 / 已配置} | FLUX 2 Pro + Kling 生视频 |
 | Brave Search | BSA...{后4位} | {已写入 ai-gateway.env / 已跳过 / 已配置} | 媒体搜索 |
 
 MCP 工具（Step 1.5 已引导安装）:
