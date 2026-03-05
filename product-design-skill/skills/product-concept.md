@@ -549,15 +549,33 @@ AskUserQuestion（单选）：
 | 3 | 保守保全 | 尽量保留，只砍明确无用的 |
 | 4 | 暂不确定 | 下游 feature-prune 阶段再交互决策 |
 
+**Q4（可选）— 高质量 UI 视觉稿**
+
+检测 Stitch MCP 可用性：
+- 检查 MCP 工具 `mcp__plugin_product-design_stitch__create_project` 是否可用
+- 可用 → 提示「Stitch 已就绪（Google 认证有效）」
+- 不可用 → 提示「Stitch 未配置。如需启用，运行 `npx -y @_davideast/stitch-mcp init` 完成 Google 认证。现在可跳过，后续在 ui-design 阶段仍可启用。」
+
+AskUserQuestion（单选）：
+
+问题：「是否在 UI 设计阶段使用 Google Stitch 生成高质量视觉稿？」
+
+| 编号 | 选项 | 说明 |
+|------|------|------|
+| 1 | 是，启用 Stitch（推荐） | 自动为核心界面生成视觉 UI（HTML/CSS + 截图），需 Google 认证 |
+| 2 | 否，使用文字规格 | 生成 ui-design-spec.md + HTML 预览 + 组件规格，不调用 Stitch |
+| 3 | 暂不确定 | 下游 ui-design 阶段再决定 |
+
 **写入 `product-concept.json`**：
 
-三个问题回答完毕后，将偏好写入 `pipeline_preferences` 字段：
+四个问题回答完毕后，将偏好写入 `pipeline_preferences` 字段：
 
 ```json
 "pipeline_preferences": {
   "ui_style": "material-design-3 | apple-hig | fluent-design | flat-minimal | glassmorphism | ant-design | shadcn-tailwind | undecided",
   "competitors": ["竞品A", "竞品B"] | [],
-  "scope_strategy": "aggressive | balanced | conservative | undecided"
+  "scope_strategy": "aggressive | balanced | conservative | undecided",
+  "stitch_ui": true | false | "undecided"
 }
 ```
 
