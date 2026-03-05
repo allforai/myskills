@@ -168,6 +168,21 @@ Step 1.5: 场景补全审查（OpenRouter 可用时）
   → 输出进度: 「Step 1.5 场景补全 ✓ +{N} 建议场景」
   OpenRouter 不可用 → 跳过
   ↓
+Step 1.7: 视觉回归基准准备（stitch-index.json 存在时）
+  跳过条件：`<BASE>/ui-design/stitch-index.json` 不存在
+  1. 读取 stitch-index.json，获取 status=success 的屏幕 + route_path
+  2. 将 stitch/*.png 复制到 `.allforai/product-verify/visual-regression/baseline/`
+  3. 在 Step 2（Playwright 场景执行）中，对每个有基准的路由：
+     a. 导航到 route_path
+     b. 截取实际渲染截图 → `visual-regression/actual/`
+     c. 像素级对比（pixelmatch，阈值参考）：
+        ≤5% → PASS（字体渲染差异）
+        5-15% → INFO（轻微偏差）
+        15-30% → WARNING（明显偏差）
+        >30% → FAIL（还原度不合格）
+  4. 输出 `visual-regression/visual-regression-report.json`
+  5. 无基准截图 → 跳过，不影响其他 E2E 场景
+  ↓
 Step 2: 场景执行（Playwright）
   逐场景、逐步骤执行（不停，输出进度）:
     → 输出进度: 「E2E-001 ✓ / E2E-002 ✗ Step 2 / ...」
