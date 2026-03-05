@@ -81,7 +81,7 @@
 ## 改进后的测试流程
 
 ```bash
-cd mcp-openrouter
+cd mcp-ai-gateway
 ./test-innovation-flow.sh
 ```
 

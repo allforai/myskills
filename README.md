@@ -135,13 +135,13 @@ QA 层       deadhunt          死链→CRUD完整性→幽灵功能→字段一
 
 ## 插件概览
 
-### product-design (v3.1.0)
+### product-design (v3.8.0)
 
 8 个技能，核心是先建图再分析：
 
 `product-concept / product-map / screen-map / use-case / feature-gap / feature-prune / ui-design / design-audit`
 
-### dev-forge (v1.0.0)
+### dev-forge (v2.5.0)
 
 8 个技能，覆盖从设计规格到验收的完整开发链路：
 

@@ -30,7 +30,9 @@
 | `brave_search_mcp` | 检查 `mcp__plugin_product-design_ai-gateway__brave_web_search` 工具可用性 | demo-forge | 跳过 Brave MCP，脚本仍可用 |
 | `brave_search_script` | `_resolve_api_key("BRAVE_API_KEY")`：环境变量 → `.mcp.json` env/\_\_keys | demo-forge (预置脚本) | Brave → WebSearch → AI 生成 |
 | `google_ai_mcp` | 检查 `mcp__plugin_product-design_ai-gateway__generate_image` 工具可用性 | demo-forge | 跳过 MCP 生图，脚本仍可用 |
-| `google_ai_script` | `_resolve_api_key("GOOGLE_API_KEY")`：环境变量 → `.mcp.json` env/\_\_keys | demo-forge (预置脚本) | Google AI → DALL-E → 本地 SD → 报错 |
+| `google_ai_script` | `_resolve_api_key("GOOGLE_API_KEY")`：环境变量 → `.mcp.json` env/\_\_keys | demo-forge (预置脚本) | Imagen 4 → GPT-5 Image → FLUX 2 Pro → 跳过 |
+| `fal_ai_mcp` | 检查 `mcp__plugin_product-design_ai-gateway__flux_generate_image` 工具可用性 | demo-forge | 跳过 fal.ai MCP 生图/生视频 |
+| `fal_ai_script` | `_resolve_api_key("FAL_KEY")`：环境变量 → `.mcp.json` env/\_\_keys | demo-forge (预置脚本) | FLUX 2 Pro（生图）+ Kling（生视频） |
 | `stitch_ui` | 检查 `mcp__plugin_product-design_stitch__create_project` 工具 | product-design | 跳过视觉稿，使用文字规格 |
 | `websearch` | 内置工具，始终可用 | product-design, demo-forge | 无需降级 |
 

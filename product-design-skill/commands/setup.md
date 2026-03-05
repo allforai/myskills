@@ -376,7 +376,7 @@ Google AI API Key 获取步骤：
 
 提示：
 - 需要 Google Cloud 账号（有免费额度）
-- 一个 Key 覆盖: Imagen 3（生图）+ Veo 2（生视频）+ Cloud TTS（语音）
+- 一个 Key 覆盖: Imagen 4（生图）+ Veo 3.1（生视频）+ Cloud TTS（语音）
 - 建议限制 Key 仅允许 Vertex AI API 调用
 ```
 

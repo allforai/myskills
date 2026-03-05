@@ -84,7 +84,7 @@ After remote install, update with: `~/.opencode/skills/myskills/update-skills.sh
 
 ## Key Dependency: mcp-ai-gateway
 
-`product-design-skill/` bundles a unified AI Gateway MCP server at `mcp-ai-gateway/`. It provides OpenRouter (cross-model XV) + Google AI (Imagen 3 / Veo 2 / TTS) in a single process:
+`product-design-skill/` bundles a unified AI Gateway MCP server at `mcp-ai-gateway/`. It provides OpenRouter (cross-model XV + image gen) + Google AI (Imagen 4 / Veo 3.1 / TTS) + fal.ai (FLUX 2 Pro / Kling) in a single process:
 
 ```bash
 cd product-design-skill/mcp-ai-gateway
@@ -92,17 +92,20 @@ npm install
 npm run build        # produces dist/index.js
 ```
 
-Requires `OPENROUTER_API_KEY` for cross-model queries. Optionally `GOOGLE_API_KEY` for AI image/video/TTS generation. Config in `.allforai/openrouter-config.yaml`.
+Requires `OPENROUTER_API_KEY` for cross-model queries and image generation. Optionally `GOOGLE_API_KEY` for Imagen 4/Veo 3.1/TTS, `FAL_KEY` for FLUX 2 Pro/Kling. Config in `.allforai/openrouter-config.yaml`.
 
 ## External Service Keys
 
-Three optional API keys enhance plugin capabilities. Configure all at once with `/setup`:
+Four optional API keys enhance plugin capabilities. Configure all at once with `/setup`:
 
 | Service | Env Variable | Used By | Purpose |
 |---------|-------------|---------|---------|
-| OpenRouter | `OPENROUTER_API_KEY` | product-design | Cross-model verification (XV) |
+| OpenRouter | `OPENROUTER_API_KEY` | product-design, demo-forge | Cross-model XV + image generation (GPT-5 Image) |
 | Brave Search | `BRAVE_API_KEY` | demo-forge | Media search (images/videos) |
-| Google AI | `GOOGLE_API_KEY` | demo-forge | AI image generation (Imagen 3) + video (Veo 2) |
+| Google AI | `GOOGLE_API_KEY` | demo-forge | Imagen 4 (image) + Veo 3.1 (video) + TTS |
+| fal.ai | `FAL_KEY` | demo-forge | FLUX 2 Pro (image) + Kling (video) |
+
+Degradation chains: Image: Imagen 4 → GPT-5 Image → FLUX 2 Pro → skip. Video: Veo 3.1 → Kling → skip.
 
 All services are optional — plugins work without them, skipping enhanced features.
 
