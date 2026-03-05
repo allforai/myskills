@@ -275,28 +275,58 @@ Google AI API Key 获取步骤：
 
 ### Step 3: 持久化 Key
 
-对 Step 2 中获取到的每个 Key 执行持久化（跳过的服务不处理）：
+对 Step 2 中获取到的每个 Key 执行持久化（跳过的服务不处理）。
 
-1. **检测用户 shell**：读取 `$SHELL` 环境变量判断是 bash 还是 zsh
-2. **确定配置文件**：
-   - zsh → `~/.zshrc`
-   - bash → `~/.bashrc`
-3. **检查是否已有旧配置**：用 Grep 检查配置文件中是否已有对应环境变量名
-   - 已有 → 告知用户将替换旧值
-4. **使用 AskUserQuestion 确认**：展示将要追加的所有内容和目标文件，请用户确认。一次性展示所有待写入的 Key（而非逐个确认），例如：
+**存储位置**：插件 `.mcp.json` 的 `env` 块（不污染 shell 环境变量）。
+
+**原理**：
+- MCP 工具路径：Claude Code 启动 MCP 服务器时自动注入 `.mcp.json` 中的 `env` 变量
+- Python 脚本路径：`_common.py` 的 `_resolve_api_key()` 先查环境变量，再 fallback 解析 `.mcp.json` 的 `env` 块
+- 两条路径都能读到 Key，无需在 `~/.zshrc` 或 `~/.bashrc` 中 export
+
+**操作流程**：
+
+1. **读取当前 `.mcp.json`**：
+   ```
+   Read ${CLAUDE_PLUGIN_ROOT}/.mcp.json
+   ```
+
+2. **合并 Key 到 env 块**：
+
+   | Key | 写入位置 |
+   |-----|---------|
+   | `OPENROUTER_API_KEY` | `mcpServers.openrouter.env.OPENROUTER_API_KEY` |
+   | `BRAVE_API_KEY` | 新增 `mcpServers.brave-search.env.BRAVE_API_KEY`（若 brave-search 服务器不存在则仅记录，提示用户自行配置 Brave MCP） |
+   | `GOOGLE_API_KEY` | 新增 `mcpServers.google-ai.env.GOOGLE_API_KEY`（虚拟服务器条目，仅作 Key 存储，无 command） |
+
+   对于 OpenRouter：将 `"${OPENROUTER_API_KEY}"` 模板引用替换为实际值。
+
+   对于无对应 MCP 服务器的 Key（Brave、Google AI）：在 `.mcp.json` 中新增一个 `__keys` 存储区：
+   ```json
+   "__keys": {
+     "BRAVE_API_KEY": "BSA...",
+     "GOOGLE_API_KEY": "AIza..."
+   }
+   ```
+   > `__keys` 是约定前缀，不会被 Claude Code 解析为 MCP 服务器。Python 脚本的 `_resolve_api_key()` 会读取此区。
+
+3. **使用 AskUserQuestion 确认**：展示将要写入的内容，请用户确认：
 
 ```
-将写入以下内容到 ~/.zshrc：
+将写入以下 Key 到 ${CLAUDE_PLUGIN_ROOT}/.mcp.json：
 
-export OPENROUTER_API_KEY="sk-or-..."
-export BRAVE_API_KEY="BSA..."
-export GOOGLE_API_KEY="AIza..."
+  mcpServers.openrouter.env.OPENROUTER_API_KEY = "sk-or-...{后4位}"
+  __keys.BRAVE_API_KEY = "BSA...{后4位}"
+  __keys.GOOGLE_API_KEY = "AIza...{后4位}"
 
+Key 仅存储在插件配置中，不写入 shell 环境变量。
 确认写入？
 ```
 
-5. **写入**：用 Bash 追加对应 `export` 行到配置文件
-6. **立即生效**：提示用户需要**重启 Claude Code**（或新开终端后重新启动），因为 MCP 服务器在启动时读取环境变量
+4. **写入**：用 Write 工具更新 `.mcp.json`
+5. **生效方式**：
+   - OpenRouter MCP 工具：需**重启 Claude Code**（MCP 服务器启动时读取 env）
+   - Python 脚本 XV：**立即生效**（每次执行时读取 `.mcp.json`）
 
 ### Step 4: 验证与报告
 
@@ -305,11 +335,11 @@ export GOOGLE_API_KEY="AIza..."
 ```
 ## 外部服务配置完成
 
-| 服务 | Key | 状态 | 用途 |
-|------|-----|------|------|
-| OpenRouter | sk-or-...{后4位} | 已写入 {path} | 跨模型交叉验证 |
-| Brave Search | BSA...{后4位} | 已写入 {path} | 媒体搜索 + 通用搜索 |
-| Google AI | AIza...{后4位} | 已写入 {path} | AI 生图/生视频/TTS |
+| 服务 | Key | 存储位置 | 用途 |
+|------|-----|---------|------|
+| OpenRouter | sk-or-...{后4位} | .mcp.json → openrouter.env | 跨模型交叉验证 |
+| Brave Search | BSA...{后4位} | .mcp.json → __keys | 媒体搜索 |
+| Google AI | AIza...{后4位} | .mcp.json → __keys | AI 生图/生视频/TTS |
 
 下一步：重启 Claude Code 后运行 /setup-services check 验证连接。
 ```
@@ -364,6 +394,7 @@ MCP 工具（需独立安装，不涉及 Key）:
 
 ## 铁律（强制执行）
 
-1. **Key 不落日志** — API Key 不得写入 `.allforai/` 或任何项目目录下的文件。只写入用户 shell 配置文件（`~/.zshrc` 或 `~/.bashrc`）
-2. **不自动写入** — 写入 shell 配置文件前必须展示内容并获得用户确认
+1. **Key 不落项目目录** — API Key 不得写入 `.allforai/` 或任何用户项目目录下的文件。只写入插件自身的 `.mcp.json`（插件安装目录，非项目目录）
+2. **不自动写入** — 写入配置文件前必须展示内容并获得用户确认
 3. **不阻塞主流程** — 本命令仅配置增强功能。未配置任何服务不影响技能的核心功能
+4. **不污染 shell** — 不向 `~/.zshrc`、`~/.bashrc` 等 shell 配置文件写入 export 语句。Key 统一存储在插件 `.mcp.json` 中

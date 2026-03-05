@@ -73,7 +73,34 @@ product-map 产物必须存在：
 - 用户确认 → resume 模式，从最后未完成阶段继续
 - 用户拒绝 → 询问是否从头开始（会清空历史）
 
-### 0-D 初始化
+### 0-D 外部能力快检
+
+> 统一协议见 `product-design-skill/docs/skill-commons.md`「外部能力探测协议」。
+
+检测本流水线涉及的外部能力并输出状态：
+
+| 能力 | 探测方式 | 重要性 | 降级行为 |
+|------|---------|--------|---------|
+| Playwright | `mcp__plugin_playwright_playwright__browser_navigate` 可用性 | Phase 4 必需 | 阻塞 verify，提示安装 |
+| Brave Search | `mcp__brave-search__brave_web_search` 可用性 或 `BRAVE_API_KEY` | Phase 2 推荐 | 降级到 WebSearch |
+| Google AI | `GOOGLE_API_KEY` 环境变量 | Phase 2 可选 | 降级到 DALL-E / 跳过 AI 生成 |
+
+**输出格式**：
+
+```
+外部能力:
+  Playwright     ✓ 就绪     验证（Phase 4 必需）
+  Brave Search   ✗ 未就绪   媒体搜索（降级到 WebSearch）
+  Google AI      ✗ 未就绪   AI 生图/生视频（降级到搜索补缺）
+```
+
+**交互式安装引导**（统一协议见 `product-design-skill/docs/skill-commons.md`）：
+
+- **Playwright 未就绪 + full/verify 模式**：用 AskUserQuestion 提供一键安装选项（「是，帮我安装」/「跳过」/「查看详情」）
+- **Playwright 未就绪 + design/media/execute 模式**：仅输出一行提示，不阻塞
+- **Brave/Google AI 未就绪**：提示运行 `/setup-services` 配置（Key 存储在插件 `.mcp.json`，不污染 shell 环境变量）
+
+### 0-E 初始化
 
 - 确保 `.allforai/demo-forge/` 目录存在
 - 初始化或更新 `round-history.json`（若不存在则创建空结构）

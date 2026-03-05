@@ -316,9 +316,55 @@ _XV_CACHE_FILE = os.path.join(os.environ.get("TMPDIR", "/tmp"), "xv-model-cache.
 _XV_CACHE_TTL = 86400  # 24 hours
 
 
+def _resolve_api_key(key_name):
+    """Resolve an API key from multiple sources (priority order).
+
+    1. Environment variable (e.g. OPENROUTER_API_KEY)
+    2. Plugin .mcp.json env blocks (Claude Code plugin config)
+    3. Project .mcp.json env blocks (project-level config)
+
+    Returns the key string or empty string if not found.
+    """
+    # Priority 1: environment variable
+    val = os.environ.get(key_name, "")
+    if val:
+        return val
+
+    # Priority 2-3: .mcp.json files (plugin-level, then project-level)
+    mcp_paths = []
+    # Plugin .mcp.json (relative to this script's location)
+    plugin_mcp = os.path.join(os.path.dirname(__file__), "..", ".mcp.json")
+    if os.path.isfile(plugin_mcp):
+        mcp_paths.append(plugin_mcp)
+    # Project .mcp.json (current working directory)
+    project_mcp = os.path.join(os.getcwd(), ".mcp.json")
+    if os.path.isfile(project_mcp) and os.path.abspath(project_mcp) != os.path.abspath(plugin_mcp):
+        mcp_paths.append(project_mcp)
+
+    for mcp_path in mcp_paths:
+        try:
+            with open(mcp_path, "r", encoding="utf-8") as f:
+                mcp_config = json.load(f)
+            # Check __keys storage block first (setup-services writes here)
+            keys_block = mcp_config.get("__keys", {})
+            if key_name in keys_block and keys_block[key_name]:
+                return keys_block[key_name]
+            # Then check each MCP server's env block
+            for _name, server in mcp_config.get("mcpServers", {}).items():
+                env_block = server.get("env", {})
+                raw = env_block.get(key_name, "")
+                # Skip template references like "${OPENROUTER_API_KEY}"
+                if raw and not raw.startswith("${"):
+                    return raw
+        except (json.JSONDecodeError, OSError):
+            continue
+
+    return ""
+
+
 def xv_available():
-    """Check if OPENROUTER_API_KEY environment variable is set."""
-    return bool(os.environ.get("OPENROUTER_API_KEY"))
+    """Check if OPENROUTER_API_KEY is available (env var or .mcp.json)."""
+    return bool(_resolve_api_key("OPENROUTER_API_KEY"))
 
 
 def xv_call(task_type, prompt, system_prompt=None, temperature=0.3):
@@ -329,9 +375,9 @@ def xv_call(task_type, prompt, system_prompt=None, temperature=0.3):
     Returns dict: {response, model_used, family, task_type}.
     429 → sleep 3s → retry once → raise on failure.
     """
-    api_key = os.environ.get("OPENROUTER_API_KEY", "")
+    api_key = _resolve_api_key("OPENROUTER_API_KEY")
     if not api_key:
-        raise RuntimeError("OPENROUTER_API_KEY not set")
+        raise RuntimeError("OPENROUTER_API_KEY not found (checked env var and .mcp.json)")
 
     family = XV_ROUTING.get(task_type, "gpt")
     model = _resolve_model(family, api_key)

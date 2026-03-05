@@ -26,9 +26,9 @@
 |---------|---------|---------|---------|
 | `playwright` | 检查 `mcp__plugin_playwright_playwright__browser_navigate` 工具可用性 | demo-forge, dev-forge, deadhunt | 无降级 — 提示用户安装 |
 | `openrouter_mcp` | 调用 `mcp__plugin_product-design_openrouter__detect_region` | product-design, dev-forge | 跳过 MCP XV，脚本 XV 仍可用 |
-| `openrouter_script` | 检查 `OPENROUTER_API_KEY` 环境变量 | product-design (预置脚本) | 静默跳过 XV |
-| `brave_search` | 检查 `mcp__brave-search__brave_web_search` 工具 或 `BRAVE_API_KEY` | demo-forge | Brave → WebSearch → AI 生成 |
-| `google_ai` | 检查 `GOOGLE_API_KEY` 环境变量 | demo-forge | Google AI → DALL-E → 本地 SD → 报错 |
+| `openrouter_script` | `_resolve_api_key("OPENROUTER_API_KEY")`：环境变量 → `.mcp.json` env/\_\_keys | product-design (预置脚本) | 静默跳过 XV |
+| `brave_search` | 检查 `mcp__brave-search__brave_web_search` 工具 或 `_resolve_api_key("BRAVE_API_KEY")` | demo-forge | Brave → WebSearch → AI 生成 |
+| `google_ai` | `_resolve_api_key("GOOGLE_API_KEY")`：环境变量 → `.mcp.json` \_\_keys | demo-forge | Google AI → DALL-E → 本地 SD → 报错 |
 | `stitch_ui` | 检查 `mcp__plugin_product-design_stitch__create_project` 工具 | product-design (规划中) | 跳过视觉稿，使用文字规格 |
 | `websearch` | 内置工具，始终可用 | product-design, demo-forge | 无需降级 |
 
@@ -39,7 +39,8 @@
 ```
 探测 → 可用：正常使用
      → 不可用 + 有降级链：走降级链，输出一行提示
-     → 不可用 + 无降级链：提示用户安装/配置，阻塞或跳过（视能力重要性）
+     → 不可用 + 无降级链 + 重要性=必需：触发交互式安装引导
+     → 不可用 + 无降级链 + 重要性=可选：跳过，输出一行提示
 ```
 
 **提示格式统一**：
@@ -51,7 +52,52 @@
 示例：
 - `M2 搜索采集 ⊘ Brave Search 不可用，降级到 WebSearch`
 - `XV 交叉验证 ⊘ OpenRouter 不可用，跳过交叉验证`
-- `V1 登录验证 ⊘ Playwright 不可用，请安装: claude mcp add playwright -- npx @anthropic-ai/mcp-playwright`
+- `V1 登录验证 ⊘ Playwright 不可用` → 触发安装引导
+
+### 交互式安装引导
+
+当「重要性=必需」的能力未就绪时，用 AskUserQuestion 提供一键安装选项。**不静默安装，始终先问。**
+
+#### 安装注册表
+
+| 能力 ID | 安装命令 | 安装后追加步骤 | 需重启 Claude Code |
+|---------|---------|--------------|-------------------|
+| `playwright` | `claude mcp add playwright -- npx @anthropic-ai/mcp-playwright` | 首次需装浏览器: `npx @anthropic-ai/mcp-playwright --install` | 是 |
+| `openrouter_mcp` | `cd {PLUGIN_ROOT}/mcp-openrouter && npm install && npm run build` | 需配置 `OPENROUTER_API_KEY`（运行 `/setup-services`） | 是 |
+| `brave_search` | 需用户自行配置 Brave MCP 或设置 `BRAVE_API_KEY` | 运行 `/setup-services` | 视配置方式 |
+| `google_ai` | 仅需 `GOOGLE_API_KEY` 环境变量 | 运行 `/setup-services` | 否（source 配置文件即可） |
+| `stitch_ui` | `npx -y @_davideast/stitch-mcp init`（需完成 Google OAuth 认证） | 认证完成后在 `.mcp.json` 中配置 | 是 |
+
+#### 引导流程（编排命令的 Phase 0 使用）
+
+当 Phase 0 外部能力快检发现「重要性=必需」的能力未就绪时：
+
+```
+1. AskUserQuestion:
+   「{能力名} 未就绪，后续 {phase_name} 需要此工具。是否立即安装？」
+   选项:
+     1. 是，帮我安装
+     2. 跳过，我稍后自行安装
+     3. 查看安装详情
+
+2. 选择「是，帮我安装」→ 执行安装命令（Bash）→ 安装后追加步骤 → 报告结果
+   - 成功 → 提示「安装成功。需重启 Claude Code 生效。现在重启还是继续当前流程？」
+   - 失败 → 展示错误信息 + 手动安装命令，继续流程（降级或跳过该阶段）
+
+3. 选择「跳过」→ 记录跳过，按降级策略处理
+   - 有降级链 → 走降级链
+   - 无降级链 → 跳过依赖此能力的阶段，在最终报告中标注
+
+4. 选择「查看安装详情」→ 展示完整安装步骤 + 前置要求 → 回到步骤 1
+```
+
+#### 单技能内的探测（非编排命令）
+
+单独运行技能时（如直接 `/demo-verify`），不做完整引导，只输出一行提示 + 安装命令：
+
+```
+⊘ Playwright 不可用。安装: claude mcp add playwright -- npx @anthropic-ai/mcp-playwright（安装后需重启 Claude Code）
+```
 
 ### 技能声明规范
 
@@ -86,9 +132,9 @@
 
 ## 四、跨模型交叉验证 XV（自动闭环）
 
-预置脚本通过 `OPENROUTER_API_KEY` 环境变量检测可用性，直连 OpenRouter API（Python `urllib.request`），不依赖 MCP 工具：
+预置脚本通过 `_resolve_api_key("OPENROUTER_API_KEY")` 检测可用性，直连 OpenRouter API（Python `urllib.request`），不依赖 MCP 工具：
 
-- **自动检测**：检查 `OPENROUTER_API_KEY` 环境变量是否存在
+- **自动检测**：`_resolve_api_key()` 按优先级查找：环境变量 → 插件 `.mcp.json` 的 `__keys` → `.mcp.json` 各 MCP 服务器的 `env` 块
 - **直连 API**：脚本使用 `urllib.request` 直连 `https://openrouter.ai/api/v1/chat/completions`，task→model 路由硬编码于 `_common.py`（与 `defaults.ts` 保持一致）
 - **自动采纳**：高严重度发现自动修正数据（追加缺口/用例、调整优先级、标记弱项），不问用户
 - **结果写入**：写入产出的 `cross_model_review` 字段

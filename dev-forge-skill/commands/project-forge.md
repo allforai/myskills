@@ -126,6 +126,30 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 **full existing**：Phase 2 的 project-setup 以 existing 模式运行（扫描代码）。
 **resume 模式**：从第一个未完成阶段开始。
 
+### 外部能力快检
+
+> 统一协议见 `product-design-skill/docs/skill-commons.md`「外部能力探测协议」。
+
+检测本流水线涉及的外部能力并输出状态：
+
+| 能力 | 探测方式 | 重要性 | 降级行为 |
+|------|---------|--------|---------|
+| Playwright | `mcp__plugin_playwright_playwright__browser_navigate` 可用性 | Phase 8-9 必需 | 阻塞验证阶段，提示安装 |
+| OpenRouter (MCP) | `mcp__plugin_product-design_openrouter__detect_region` 可用性 | 可选 | 跳过 XV 交叉验证 |
+
+**输出格式**：
+
+```
+外部能力:
+  Playwright        ✓ 就绪     E2E 验证 + 产品验收（Phase 8-9）
+  OpenRouter (MCP)  ✗ 未就绪   XV 交叉验证（可选，跳过）
+```
+
+**交互式安装引导**（统一协议见 `product-design-skill/docs/skill-commons.md`）：
+
+- **Playwright 未就绪**：Phase 0 输出提示，不阻塞 Phase 1-7。进入 Phase 8 前用 AskUserQuestion 提供一键安装选项（「是，帮我安装」/「跳过」/「查看详情」）
+- **OpenRouter 未就绪**：提示运行 `/setup-services` 配置（Key 存储在插件 `.mcp.json`，不污染 shell 环境变量），不阻塞
+
 ### 初始化决策追踪
 
 创建/更新 `.allforai/project-forge/forge-decisions.json`：

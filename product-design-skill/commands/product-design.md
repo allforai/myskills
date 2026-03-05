@@ -92,22 +92,32 @@ Phase 7: design-audit full（终审）
 
 向用户展示探测结果。
 
-### XV 跨模型交叉验证状态
+### 外部能力快检
 
-产物探测后，同步检测 XV 状态并展示：
+> 统一协议见 `${CLAUDE_PLUGIN_ROOT}/docs/skill-commons.md`「外部能力探测协议」。
 
-1. 检查 `OPENROUTER_API_KEY` 环境变量是否设置
-2. 检查 `mcp__plugin_product-design_openrouter__detect_region` MCP 工具是否可用
+产物探测后，检测本流水线涉及的外部能力并输出状态：
 
-按以下规则输出一行状态通知：
+| 能力 | 探测方式 | 重要性 |
+|------|---------|--------|
+| OpenRouter (MCP) | `mcp__plugin_product-design_openrouter__detect_region` 可用性 | 可选 |
+| OpenRouter (Script) | `OPENROUTER_API_KEY` 环境变量 | 可选 |
+| Stitch UI | `mcp__plugin_product-design_stitch__create_project` 可用性 | 可选 |
+| WebSearch | 内置，始终可用 | 核心 |
 
-| Key | MCP | 输出 |
-|-----|-----|------|
-| ✓ | ✓ | `XV 跨模型交叉验证: 已启用（MCP + 脚本双通道）` |
-| ✓ | ✗ | `XV 跨模型交叉验证: 已启用（脚本通道）— MCP 工具未就绪，运行 /setup-openrouter 检查` |
-| ✗ | ✗ | `XV 跨模型交叉验证: 未启用 — 运行 /setup-openrouter 配置。流程不受影响。` |
+**输出格式**（每行一个能力）：
 
-此通知仅为信息性输出，不阻塞任何流程。
+```
+外部能力:
+  OpenRouter (MCP)    ✓ 就绪          XV 交叉验证（MCP 通道）
+  OpenRouter (Script) ✓ 就绪          XV 交叉验证（脚本通道）
+  Stitch UI           ✗ 未就绪        UI 视觉稿（可选，/setup-services check 查看详情）
+  WebSearch           ✓ 内置          搜索驱动设计
+```
+
+此通知仅为信息性输出，不阻塞任何流程。未就绪的可选能力自动跳过，提示格式统一为 `{step} ⊘ {能力} 不可用，{降级动作}`。
+
+未配置 API Key 的服务提示运行 `/setup-services` 配置（Key 存储在插件 `.mcp.json`，不污染 shell 环境变量）。
 
 确认执行计划后开始。
 
