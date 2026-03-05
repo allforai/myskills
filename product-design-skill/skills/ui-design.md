@@ -316,6 +316,103 @@ Step 5: 生成多角色 HTML 预览
 - 首选：{库名} — {理由}
 - 备选：{库名} — {适用场景}
 
+### 响应式策略
+
+断点定义（从 product-concept 推断 platform_type）：
+- mobile_app → 不需要断点（原生布局系统）
+- web_app / responsive →
+  | 断点 | 宽度 | 布局变化 |
+  |------|------|----------|
+  | sm   | <640px  | 单列，BottomNav，全宽卡片 |
+  | md   | 640-1024px | 双列网格，侧边导航可折叠 |
+  | lg   | >1024px | 三列网格，固定侧边栏 |
+
+容器策略：max-width: 1280px, 居中
+组件适配规则：
+- Card grid: 1col(sm) → 2col(md) → 3-4col(lg)
+- Navigation: BottomNav(sm) → SideNav(md+)
+- Table: 横滚(sm) → 完整显示(md+)
+
+### 间距标度
+
+基础单位：4px
+标度：
+| token | 值 | 用途 |
+|-------|-----|------|
+| --space-1 | 4px | 图标与文字间距 |
+| --space-2 | 8px | 组件内边距（紧凑） |
+| --space-3 | 12px | 组件内边距（默认） |
+| --space-4 | 16px | 卡片内边距、列表项间距 |
+| --space-6 | 24px | 区块间距 |
+| --space-8 | 32px | 页面区域间距 |
+| --space-12 | 48px | 大区块分隔 |
+
+### 排版标度
+
+| token | 字号 | 行高 | 字重 | 字间距 | 用途 |
+|-------|------|------|------|--------|------|
+| --text-display | 36px | 1.2 | 700 | -0.5px | 首屏标题 |
+| --text-h1 | 28px | 1.3 | 700 | -0.25px | 页面标题 |
+| --text-h2 | 22px | 1.35 | 600 | 0 | 区块标题 |
+| --text-h3 | 18px | 1.4 | 600 | 0 | 卡片标题 |
+| --text-body | 16px | 1.5 | 400 | 0 | 正文 |
+| --text-body-sm | 14px | 1.45 | 400 | 0.1px | 辅助文字 |
+| --text-caption | 12px | 1.4 | 400 | 0.2px | 标注、时间戳 |
+
+### 动效规范
+
+| token | 值 | 用途 |
+|-------|-----|------|
+| --duration-fast | 150ms | 按钮反馈、开关切换 |
+| --duration-normal | 250ms | 页面转场、模态弹出 |
+| --duration-slow | 400ms | 复杂动画、展开收起 |
+| --easing-standard | cubic-bezier(0.4, 0, 0.2, 1) | 大部分转场 |
+| --easing-decelerate | cubic-bezier(0, 0, 0.2, 1) | 进入屏幕 |
+| --easing-accelerate | cubic-bezier(0.4, 0, 1, 1) | 离开屏幕 |
+
+原则：
+- prefers-reduced-motion 时所有动画降为 0ms
+- 交互反馈（按钮、开关）使用 fast
+- 布局变化（展开、折叠、页面切换）使用 normal
+- 首次加载动画使用 slow
+
+### 图标规范
+
+图标库选型（根据 ui_style 推断）：
+| ui_style | 推荐图标库 | 备选 |
+|----------|-----------|------|
+| material-design-3 | Material Symbols | Phosphor |
+| apple-hig | SF Symbols (iOS) / Lucide (Web) | Heroicons |
+| fluent-design | Fluent UI Icons | — |
+| ant-design | Ant Design Icons | — |
+| shadcn-tailwind | Lucide | Radix Icons |
+| 其他 | Lucide（通用性最好） | Phosphor |
+
+尺寸标度：
+| 用途 | 尺寸 | 示例 |
+|------|------|------|
+| 内联（按钮图标） | 16px / 20px | 编辑、删除按钮 |
+| 标准（列表、导航） | 24px | 导航栏图标 |
+| 特征（空状态、引导） | 48px / 64px | 空列表提示图 |
+
+### 主题变体
+
+默认生成 light theme token。dark theme 通过语义映射自动派生：
+| 语义 token | light 值 | dark 值（自动派生规则） |
+|------------|----------|------------------------|
+| --surface | #FFFFFF | #1C1B1F |
+| --on-surface | #1C1B1F | #E6E1E5 |
+| --surface-container | #F3EDF7 | #2B2930 |
+| --primary | 保持不变 | 保持不变 |
+| --on-primary | 保持不变 | 保持不变 |
+| --elevation-1 | shadow | lighter surface-container |
+
+派生规则：
+- 背景色：反转亮度（HSL L 通道取反）
+- 前景色：反转亮度
+- 品牌色（primary/secondary）：保持不变
+- 阴影：dark 模式下用 surface 层级差异替代阴影
+
 ---
 
 ## 界面规格
