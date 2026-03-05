@@ -442,6 +442,92 @@ Step 5: 生成多角色 HTML 预览
 
 ---
 
+### Step 5.3：组件规格生成（始终执行）
+
+运行组件分析脚本：
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_ui_components.py <BASE> --mode auto
+```
+
+输出：`ui-design/component-spec.json`
+- 共享组件识别（跨屏幕复用模式）
+- 交互原语关联（interaction_type → behavioral primitives）
+- 组件变体推断（size/state）
+- a11y 规格标注（按组件类型自动注入）
+- 屏幕→组件映射
+
+**此步骤不依赖任何外部服务，始终执行。**
+component-spec.json 是 dev-forge 的核心输入，用于生成共享组件规格、注入 a11y、关联交互原语实现方案。
+
+---
+
+### Step 5.5：Stitch 视觉生成（条件执行）
+
+**跳过条件**：`pipeline_preferences.stitch_ui ≠ true`
+
+**补充入口**：如果 `stitch_ui` 字段不存在（用户单独跑了 /product-concept）
+且 Stitch MCP 工具可用 → 主动询问是否启用，写入 pipeline_preferences
+
+**执行流程**：
+
+1. 运行 prompt 构建脚本：
+   ```
+   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_ui_stitch.py <BASE> --mode auto
+   ```
+   输出：`ui-design/stitch-prompts.json`（最多 10 个屏幕的结构化 prompt）
+
+2. 检测 Stitch MCP 可用性：
+   - 检查 MCP 工具 `mcp__plugin_product-design_stitch__create_project` 是否可用
+   - 不可用 → 跳转 3b
+
+3a. **可用** → 执行 Stitch 两阶段生成流程：
+
+   **阶段 A：锚点屏生成**
+   i.    调用 `create_project(title="产品名-ui-design")` → 获得 projectId
+   ii.   从 stitch-prompts.json 取 anchor_screen（P0 第一个，最复杂的屏幕）
+   iii.  调用 `generate_screen_from_text(projectId, anchor_prompt, deviceType)`
+         - 此屏幕建立整个项目的视觉语言
+         - 注意：可能需要几分钟，不要重试
+   iv.   获取锚点屏结果：
+         - `get_screen_code(projectId, screenId)` → HTML
+         - `get_screen_image(projectId, screenId)` → 截图
+   v.    写入 `ui-design/stitch/` 并记录 stitch-index.json
+
+   **阶段 B：后续屏幕生成（引用锚点）**
+   vi.   对 stitch-prompts.json 中剩余屏幕，按 generation_order 逐个生成：
+         - 每个 prompt 已包含 component_vocabulary + 锚点屏引用指令
+         - 调用 `generate_screen_from_text(projectId, prompt, deviceType)`
+         - 同一 projectId 下生成，Stitch 自动维持项目级一致性
+   vii.  逐个获取 HTML + 截图，写入 `ui-design/stitch/`
+
+   **阶段 C：一致性检查与修正**
+   viii. 对所有生成的 HTML 做快速一致性检查：
+         - 比较各屏幕中 component_vocabulary 引用组件的 CSS 类名/结构
+         - 如果发现明显偏差（如 ProductCard 在不同屏幕结构不同）：
+           调用 `edit_screens(projectId, screenId, "Make the ProductCard
+           component match the style from screen [anchor_screen_name]:
+           same border-radius, same shadow, same padding, same image ratio")`
+         - 重新获取修正后的 HTML
+   ix.   最终更新 `ui-design/stitch-index.json`，增加一致性检查结果：
+         `consistency_check: { passed: true/false, corrections: [...] }`
+
+3b. **不可用** → 仅输出 prompts，展示手动使用说明：
+   ```
+   Stitch MCP 未配置，已生成 stitch-prompts.json。
+   手动使用：
+   1. 运行 `npx -y @_davideast/stitch-mcp init` 完成 Google 认证
+   2. 访问 stitch.withgoogle.com，粘贴各屏幕 prompt 生成视觉稿
+   3. 或重新运行 /ui-design 自动调用 Stitch
+   ```
+
+**输出文件**：
+  - `ui-design/component-spec.json`（Step 5.3 始终生成，通用）
+  - `ui-design/stitch-prompts.json`（Step 5.5 始终生成）
+  - `ui-design/stitch/`（Stitch MCP 可用时）
+  - `ui-design/stitch-index.json`（Stitch MCP 可用时）
+
+---
+
 ## 预置脚本（优先使用）
 
 检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_ui_design.py` 是否存在：
