@@ -4,6 +4,9 @@ argument-hint: "[check|reset]"
 allowed-tools: ["Read", "Bash", "AskUserQuestion"]
 ---
 
+> **升级提示**: 此命令已升级为 `/setup-services`，同时配置 OpenRouter + Brave Search + Google AI。
+> 运行 `/setup-services` 获取完整配置流程。单独运行 `/setup-openrouter` 仍可仅配置 OpenRouter。
+
 # Setup OpenRouter — 配置跨模型交叉验证
 
 用户请求: $ARGUMENTS

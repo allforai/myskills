@@ -14,6 +14,9 @@ description: >
 version: "2.5.0"
 ---
 
+> **DEPRECATED**: 本技能已迁移至独立插件 `demo-forge-skill/`。
+> 请使用 `/demo-forge` 代替。本文件将在未来版本中移除。
+
 # Seed Forge — 种子数据锻造
 
 > 让产品看起来像有真实用户在真实使用

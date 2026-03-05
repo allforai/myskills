@@ -171,6 +171,13 @@ version: "3.7.0"
 
 流程：concept → product-map → screen-map → use-case → feature-gap → feature-prune → ui-design → design-audit，每阶段间插入检查点验证产出完整性。
 
+## 工具配置
+
+```
+/setup-services            # 一站式配置外部服务（OpenRouter + Brave + Google AI）
+/setup-openrouter          # 仅配置 OpenRouter（已升级为 /setup-services）
+```
+
 ## 定位
 
 ```

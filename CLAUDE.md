@@ -6,18 +6,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is **myskills** — a Claude Code + OpenCode dual-platform plugin collection covering the full pipeline from product design → development forge → QA validation → architecture governance. It is a **plugin development repository**, not a product codebase. The plugins are applied to external user projects.
 
-## Four-Layer Architecture
+## Five-Layer Architecture
 
 ```
 Layer         Plugin            Coverage
 ────────────  ────────────────  ─────────────────────────────────────────────
 Product       product-design    concept→map→screens→ui→use-cases→gaps→prune→audit
 Development   dev-forge         setup→spec→scaffold→execute→e2e→seed→verify
+Demo          demo-forge        design→media→execute→verify→iterate
 QA            deadhunt          dead links→CRUD completeness→ghost features→field consistency
 Architecture  code-tuner        compliance→duplication→abstraction→scoring
 ```
 
-Each plugin lives in its own subdirectory (`product-design-skill/`, `dev-forge-skill/`, `deadhunt-skill/`, `code-tuner-skill/`) and is independently installable.
+Each plugin lives in its own subdirectory (`product-design-skill/`, `dev-forge-skill/`, `demo-forge-skill/`, `deadhunt-skill/`, `code-tuner-skill/`) and is independently installable.
 
 ## Plugin Structure (per plugin)
 
@@ -49,7 +50,8 @@ All plugins read/write to a project-local `.allforai/` directory. This is the in
 ├── feature-prune/           # frequency-tier, prune-decisions, prune-tasks, prune-report
 ├── design-audit/            # audit-report (JSON + Markdown)
 ├── ui-design/               # ui-design-spec.md + preview/*.html (per-role HTML previews)
-├── seed-forge/              # seed-plan, forge-data, assets/
+├── seed-forge/              # seed-plan, forge-data, assets/ (dev seed data)
+├── demo-forge/              # demo-plan, forge-data, assets/, verify-report, round-history
 ├── product-verify/          # static-report, dynamic-report, verify-report
 ├── deadhunt/                # validation-profile, static-analysis/, tests/, fix-tasks
 └── code-tuner/              # tuner-profile, phase1-4 JSONs, tuner-report, tuner-tasks
@@ -63,6 +65,7 @@ All plugins read/write to a project-local `.allforai/` directory. This is the in
 ```bash
 claude plugin add /path/to/myskills/product-design-skill
 claude plugin add /path/to/myskills/dev-forge-skill
+claude plugin add /path/to/myskills/demo-forge-skill
 claude plugin add /path/to/myskills/deadhunt-skill
 claude plugin add /path/to/myskills/code-tuner-skill
 ```
@@ -90,6 +93,18 @@ npm run build        # produces dist/index.js
 ```
 
 Requires `OPENROUTER_API_KEY` environment variable. Config in `.allforai/openrouter-config.yaml`.
+
+## External Service Keys
+
+Three optional API keys enhance plugin capabilities. Configure all at once with `/setup-services`:
+
+| Service | Env Variable | Used By | Purpose |
+|---------|-------------|---------|---------|
+| OpenRouter | `OPENROUTER_API_KEY` | product-design | Cross-model verification (XV) |
+| Brave Search | `BRAVE_API_KEY` | demo-forge | Media search (images/videos) |
+| Google AI | `GOOGLE_API_KEY` | demo-forge | AI image generation (Imagen 3) + video (Veo 2) |
+
+All services are optional — plugins work without them, skipping enhanced features.
 
 ## Prebuilt Python Scripts (product-design)
 
@@ -135,10 +150,14 @@ When indexes don't exist, skills fall back to full data loading (backward compat
 /project-scaffold         # Generate project skeleton
 /task-execute             # Execute tasks with progress tracking
     ↓
-/seed-forge               # Generate seed data
+/seed-forge               # Generate dev seed data (minimal, for development)
 /product-verify           # Static + dynamic acceptance
+    ↓
+/demo-forge               # Demo-ready data: design→media→execute→verify→iterate
+/demo-forge verify        # Playwright verification with multi-round iteration
+    ↓
 /deadhunt                 # Dead link and CRUD completeness check
 /code-tuner               # Architecture quality analysis
 ```
 
-Or run `/product-design full` / `/project-forge full` for automated end-to-end orchestration.
+Or run `/product-design full` / `/project-forge full` / `/demo-forge` for automated end-to-end orchestration.

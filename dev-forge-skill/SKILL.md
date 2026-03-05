@@ -6,9 +6,9 @@ description: >
   project-scaffold (template-based project skeleton + mock server),
   task-execute (systematic task execution with progress tracking + incremental verification),
   e2e-verify (cross-project Playwright/Patrol E2E),
-  seed-forge (realistic seed data), product-verify (static + dynamic acceptance).
+  product-verify (static + dynamic acceptance).
   Full pipeline: /project-forge. Theory-backed decisions (Unix Philosophy, Clean Architecture, etc.).
-  开发锻造套件：项目引导、设计转规格、脚手架生成、任务执行、跨端验证、种子数据锻造、产品验收。
+  开发锻造套件：项目引导、设计转规格、脚手架生成、任务执行、跨端验证、产品验收。
 version: "2.1.0"
 ---
 
@@ -89,17 +89,19 @@ version: "2.1.0"
 /e2e-verify run             # 加载已有场景并执行
 ```
 
-### 6. seed-forge — 种子数据锻造
+### 6. demo-forge — 演示锻造（独立插件）
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/skills/seed-forge.md`
+> 已独立为 `demo-forge-skill/` 插件。详见该插件文档。
 
-按产品地图生成有业务逻辑、有人物关系、有时间分布的真实感种子数据。
+按产品地图生成有业务逻辑、有人物关系、有时间分布的真实感演示数据，配合富媒体采集+加工+上传，Playwright 验证，多轮迭代打磨至演示级品质。
 
 ```
-/seed-forge                 # 完整流程
-/seed-forge plan            # 只设计方案，不灌入
-/seed-forge fill            # 加载已有方案，直接灌入
-/seed-forge clean           # 清理已灌入的种子数据
+/demo-forge              # 全流程
+/demo-forge design       # 只设计方案
+/demo-forge media        # 富媒体采集+上传
+/demo-forge execute      # 数据灌入
+/demo-forge verify       # 验证
+/demo-forge clean        # 清理
 ```
 
 ### 7. product-verify — 产品验收
@@ -118,7 +120,7 @@ version: "2.1.0"
 
 ```
 product-design（产品层）  概念→定义→交互→视觉→用例→查漏→剪枝
-dev-forge（开发层）       引导→规格→脚手架→执行→验证闭环→种子→验收 ← 你在这里
+dev-forge（开发层）       引导→规格→脚手架→执行→验证→验收 ← 你在这里
 deadhunt（QA 层）         死链→CRUD完整性→幽灵功能→字段一致性
 code-tuner（架构层）      合规→重复→抽象→评分
 ```
@@ -154,10 +156,7 @@ your-project/
     │   ├── e2e-report.md               # E2E 结果
     │   ├── forge-decisions.json        # 全程决策
     │   └── trend-sources.json          # 趋势搜索记录
-    ├── seed-forge/
-    │   ├── seed-plan.json              # 种子方案
-    │   ├── forge-data.json             # 已创建数据
-    │   └── assets/                     # 图片素材
+    ├── demo-forge/              # → 独立插件 demo-forge-skill 管理
     └── product-verify/
         ├── static-report.json          # 静态结果
         ├── dynamic-report.json         # 动态结果

@@ -14,7 +14,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 > **跨插件调用约定**：本命令是「导航员」。
 > - Phase 2-6, 9 在本插件内执行，通过 `${CLAUDE_PLUGIN_ROOT}/skills/` 路径加载技能。
-> - Phase 4（seed-forge）为本插件内已有命令。
+> - Phase 4（demo-forge）为独立插件 `demo-forge-skill/`，提示用户运行 `/demo-forge design`。
 > - Phase 7（任务执行）调用 `task-execute` skill，自动编排 superpowers 技能。
 > - Phase 8（验证闭环）产品验收 + E2E 验证 → 修复任务 → 回归。
 > - 各阶段产物通过 `.allforai/` 目录作为层间合约。
@@ -29,7 +29,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 | 1 | _(内嵌本文)_ | 技术风险调研 | `forge-decisions.json` 有 `technical_spikes` |
 | 2 | `skills/project-setup.md` | 拆子项目 + 选技术栈 | `project-manifest.json` 存在 |
 | 3 | `skills/design-to-spec.md` | 产品设计 → 规格文档 | 每子项目有 `requirements.md` + `design.md` + `tasks.md` |
-| 4 | `skills/seed-forge.md` | 种子数据方案 | `seed-plan.json` 存在 |
+| 4 | _(外部: demo-forge 插件)_ | 演示数据方案 | `demo-plan.json` 存在 |
 | **5** | **`skills/shared-utilities.md`** | **共享工具分析 + 任务注入** | **`shared-utilities-plan.json` 存在** |
 | 6 | `skills/project-scaffold.md` | 脚手架生成 | `scaffold-manifest.json` 存在 + mock 可启动 |
 | **7** | **`skills/task-execute.md`** | **按 tasks.md 逐任务写业务代码** | **`build-log.json` 存在且 CORE 任务 completed** |
@@ -66,10 +66,10 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 │    读产品设计产物 → 按子项目生成 spec                        │
 │    输出: requirements.md + design.md + tasks.md              │
 │  ↓ 质量门禁: 每子项目 3 份 spec 完整                        │
-│  Phase 4: 种子数据方案                                       │
-│    提示用户运行 /seed-forge plan                             │
-│    输出: seed-plan.json                                      │
-│  ↓ 质量门禁: seed-plan.json 存在                            │
+│  Phase 4: 演示数据方案                                       │
+│    提示用户运行 /demo-forge design                           │
+│    输出: demo-plan.json                                      │
+│  ↓ 质量门禁: demo-plan.json 存在                            │
 │  Phase 5: 共享工具分析 (shared-utilities)                   │
 │    扫描现有代码 → 跨任务模式分析 → 三方库调研 → 注入 B1     │
 │    输出: shared-utilities-plan.json                          │
@@ -108,7 +108,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 | technical-spike | `forge-decisions.json` 存在且 `technical_spikes` 数组长度 > 0 |
 | project-setup | `.allforai/project-forge/project-manifest.json` 存在 |
 | design-to-spec | `.allforai/project-forge/sub-projects/*/tasks.md` 存在 |
-| seed-forge plan | `.allforai/seed-forge/seed-plan.json` 存在 |
+| demo-forge design | `.allforai/demo-forge/demo-plan.json` 存在 |
 | shared-utilities | `.allforai/project-forge/shared-utilities-plan.json` 存在 |
 | project-scaffold | `.allforai/project-forge/sub-projects/*/scaffold-manifest.json` 存在 |
 | task-execution | `.allforai/project-forge/build-log.json` 存在 |
@@ -507,20 +507,19 @@ design-to-spec 内部使用 Agent tool 并行加速：后端子项目先完成 s
 
 ---
 
-## Phase 4：种子数据方案
+## Phase 4：演示数据方案
 
 ### 执行方式
 
-用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/skills/seed-forge.md`，按 plan 模式执行。
+提示用户运行 `/demo-forge design` 完成演示数据方案设计。
 
-seed-forge plan 内部完成后（含汇总确认）→ 验证 seed-plan.json 存在 → 继续。
-用户在汇总确认时选择"跳过" → 记录决策，mock-server 将使用最小占位数据。
+> 注: demo-forge 已独立为 `demo-forge-skill/` 插件。本阶段仅做 plan 设计，完整灌入（media + execute + verify）在 Phase 8 代码稳定后运行 `/demo-forge`。
 
 ### 质量门禁
 
 | 条件 | 标准 |
 |------|------|
-| seed-plan.json | 存在（或用户选择跳过） |
+| demo-plan.json | 存在于 `.allforai/demo-forge/`（或用户选择跳过） |
 
 ---
 
@@ -732,7 +731,7 @@ Phase 9 需要所有子项目应用正在运行。请确认以下服务已启动
 | Phase 1: 技术调研 | 完成/跳过 | PASS/SKIP | {N} 项 spike 决策 |
 | Phase 2: 项目引导 | 完成 | PASS | project-manifest.json |
 | Phase 3: 设计转规格 | 完成 | PASS | {N} 子项目 × 3 份 spec |
-| Phase 4: 种子方案 | 完成/跳过 | PASS/SKIP | seed-plan.json |
+| Phase 4: 演示方案 | 完成/跳过 | PASS/SKIP | demo-plan.json |
 | Phase 5: 共享工具分析 | 完成/跳过 | PASS/SKIP | 复用 {M} 现有 + 新建 {K} 共享工具 |
 | Phase 6: 脚手架生成 | 完成 | PASS | {N} 文件 + mock-server |
 | Phase 7: 任务执行 | 完成 | PASS | {N}/{M} 任务完成 |
@@ -759,7 +758,7 @@ Phase 9 需要所有子项目应用正在运行。请确认以下服务已启动
 
 1. [ ] 处理 DEFER 任务
 2. [ ] 修复 E2E 失败项
-3. [ ] 运行 /seed-forge fill 灌入真实数据
+3. [ ] 运行 /demo-forge 灌入演示数据
 4. [ ] 运行 /product-verify full 完整验收
 5. [ ] 运行 /deadhunt full 链路验证
 6. [ ] 运行 /code-tuner full 架构分析
