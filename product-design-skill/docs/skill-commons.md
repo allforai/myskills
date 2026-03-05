@@ -29,7 +29,7 @@
 | `openrouter_script` | `_resolve_api_key("OPENROUTER_API_KEY")`：环境变量 → `.mcp.json` env/\_\_keys | product-design (预置脚本) | 静默跳过 XV |
 | `brave_search` | 检查 `mcp__brave-search__brave_web_search` 工具 或 `_resolve_api_key("BRAVE_API_KEY")` | demo-forge | Brave → WebSearch → AI 生成 |
 | `google_ai` | `_resolve_api_key("GOOGLE_API_KEY")`：环境变量 → `.mcp.json` \_\_keys | demo-forge | Google AI → DALL-E → 本地 SD → 报错 |
-| `stitch_ui` | 检查 `mcp__plugin_product-design_stitch__create_project` 工具 | product-design (规划中) | 跳过视觉稿，使用文字规格 |
+| `stitch_ui` | 检查 `mcp__plugin_product-design_stitch__create_project` 工具 | product-design | 跳过视觉稿，使用文字规格 |
 | `websearch` | 内置工具，始终可用 | product-design, demo-forge | 无需降级 |
 
 ### 统一探测模式

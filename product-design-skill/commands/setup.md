@@ -27,7 +27,7 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 | 能力 | 探测方式 | 使用插件 | 用途 |
 |------|---------|---------|------|
 | Playwright | `mcp__plugin_playwright_playwright__browser_navigate` 可用性 | demo-forge, dev-forge, deadhunt | UI 自动化：验证、E2E 测试、死链扫描 |
-| Stitch UI | `mcp__plugin_product-design_stitch__create_project` 可用性 | product-design (规划中) | 高保真 UI 视觉稿生成 |
+| Stitch UI | `mcp__plugin_product-design_stitch__create_project` 可用性 | product-design | 高保真 UI 视觉稿生成（Google Stitch） |
 
 ### API Key 服务（需配置环境变量）
 
@@ -106,7 +106,7 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 1. **检查 MCP 工具**：检查 `mcp__plugin_product-design_stitch__create_project` 工具是否可用
    - 可用 → Stitch 就绪
-   - 不可用 → Stitch 未就绪（规划中功能）
+   - 不可用 → Stitch 未就绪（需运行 `npx -y @_davideast/stitch-mcp init` 完成 Google OAuth 认证）
 
 #### 状态仪表板输出
 
@@ -122,7 +122,7 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 | OpenRouter (Script) | 环境变量 | {就绪/未就绪} | product-design 预置脚本 | XV 交叉验证 |
 | Brave Search | MCP/环境变量 | {就绪/未就绪} | demo-forge | 媒体搜索 |
 | Google AI | 环境变量 | {就绪/未就绪} | demo-forge | AI 生图/生视频/TTS |
-| Stitch UI | MCP 工具 | {就绪/未集成} | product-design (规划中) | UI 视觉稿 |
+| Stitch UI | MCP 工具 | {就绪/未就绪} | product-design | UI 视觉稿 |
 | WebSearch | 内置 | 就绪 | product-design, demo-forge | 搜索 |
 | MCP 服务器 | 构建产物 | {已构建/未构建} | — | OpenRouter MCP 通道 |
 
@@ -354,7 +354,7 @@ Key 仅存储在插件配置中，不写入 shell 环境变量。
 
 MCP 工具:
   Playwright       {就绪/未就绪}   demo-forge, dev-forge, deadhunt — UI 自动化
-  Stitch UI        {就绪/未集成}   product-design (规划中) — UI 视觉稿
+  Stitch UI        {就绪/未就绪}   product-design — UI 视觉稿（Google Stitch）
 
 API Key 服务:
   OpenRouter (MCP)    {就绪/未就绪}   product-design, dev-forge — XV 交叉验证
@@ -385,7 +385,7 @@ API Key 服务:
 
 MCP 工具（需独立安装，不涉及 Key）:
   Playwright  {就绪/未就绪}  {若未就绪: claude mcp add playwright -- npx @anthropic-ai/mcp-playwright}
-  Stitch UI   {就绪/未集成}  {若需启用: npx -y @_davideast/stitch-mcp init}
+  Stitch UI   {就绪/未就绪}  {若未就绪: npx -y @_davideast/stitch-mcp init（完成 Google OAuth 认证）}
 
 下一步：重启 Claude Code 后运行 /setup check 验证连接。
 ```
