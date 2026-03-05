@@ -149,3 +149,123 @@ Phase 5 跨栈映射时，从本文档查询对应映射类型：
 - **直接等价** → 自动映射，写入 `stack-mapping.json` 的 `auto_mapped` 数组
 - **多方案可选** → 触发 `AskUserQuestion`，用户选择后写入 `user_decisions` 数组
 - **架构性差异** → 详细解释后 `AskUserQuestion` 确认，写入 `arch_decisions` 数组
+
+---
+
+## 框架内置能力速查表
+
+> Phase 5 步骤 5a-0 使用。根据 `target_stack` 查询此表，识别源码中手写实现可被目标框架内置能力替代的部分。
+
+### 参数校验 (Validation)
+
+| 框架 | 内置能力 | 说明 |
+|------|---------|------|
+| NestJS | class-validator + ValidationPipe | 装饰器声明式校验，自动 400 响应 |
+| Go Gin | binding tags (`binding:"required"`) | struct tag 校验，ShouldBind 自动触发 |
+| Django | Forms / Serializer validation | ModelForm 自动校验，DRF Serializer |
+| Laravel | FormRequest + Validator | 声明式规则，自动 422 响应 |
+| Spring Boot | @Valid + Hibernate Validator | JSR-380 注解校验 |
+| FastAPI | Pydantic models | 类型+约束自动校验 |
+| Express | — | 无内置，需 joi / zod / express-validator |
+
+### 认证授权 (Auth)
+
+| 框架 | 内置能力 | 说明 |
+|------|---------|------|
+| NestJS | Guards + Passport + CASL | @UseGuards 装饰器，角色/权限控制 |
+| Go Gin | — | 无内置，需 casbin / jwt-go 中间件 |
+| Django | django.contrib.auth + DRF permissions | 内置用户模型、权限系统、认证后端 |
+| Laravel | Gates + Policies + Spatie Permission | 声明式授权，内置 Auth scaffolding |
+| Spring Boot | Spring Security | 过滤器链、角色、方法级安全注解 |
+| FastAPI | Depends + OAuth2PasswordBearer | 依赖注入式认证 |
+
+### 分页 (Pagination)
+
+| 框架 | 内置能力 | 说明 |
+|------|---------|------|
+| NestJS | @nestjs/common 无内置 / nestjs-paginate | 社区包，需配合 TypeORM/Prisma |
+| Go Gin | — | 无内置，需手写或用 gorm scopes |
+| Django | Paginator + DRF PageNumberPagination | 内置完整分页（偏移/游标） |
+| Laravel | ->paginate() | Eloquent 内置，自动生成分页元数据 |
+| Spring Boot | Pageable + Page<T> | Spring Data 内置分页参数绑定 |
+| FastAPI | — | 无内置，需 fastapi-pagination |
+
+### 缓存 (Cache)
+
+| 框架 | 内置能力 | 说明 |
+|------|---------|------|
+| NestJS | @nestjs/cache-manager + CacheInterceptor | 装饰器 @CacheKey/@CacheTTL |
+| Go Gin | — | 无内置，需 go-cache / redis |
+| Django | django.core.cache | 多后端（memcached/redis/file/db） |
+| Laravel | Cache facade + cache() helper | 多驱动，支持 tags |
+| Spring Boot | @Cacheable / @CacheEvict | 注解式缓存，多后端 |
+
+### 日志 (Logging)
+
+| 框架 | 内置能力 | 说明 |
+|------|---------|------|
+| NestJS | @nestjs/common Logger | 内置 Logger 类，支持 scope 注入 |
+| Go Gin | gin.Logger() 中间件 | 内置请求日志中间件 |
+| Django | django.utils.log + logging config | 内置 logging 配置集成 |
+| Laravel | Log facade (Monolog) | 多 channel（stack/daily/slack） |
+| Spring Boot | spring-boot-starter-logging | Logback 默认集成 |
+
+### 错误处理 (Error Handling)
+
+| 框架 | 内置能力 | 说明 |
+|------|---------|------|
+| NestJS | ExceptionFilter + HttpException | @Catch 装饰器，全局/控制器级过滤 |
+| Go Gin | gin.Recovery() + CustomRecovery | panic 恢复中间件 |
+| Django | Middleware exception handling | 内置 handler400/403/404/500 |
+| Laravel | App\Exceptions\Handler | 集中异常处理，render/report |
+| Spring Boot | @ControllerAdvice + @ExceptionHandler | 全局异常处理注解 |
+| Express | error middleware (err, req, res, next) | 约定式错误中间件 |
+
+### 文件上传 (File Upload)
+
+| 框架 | 内置能力 | 说明 |
+|------|---------|------|
+| NestJS | @UseInterceptors(FileInterceptor) + Multer | 装饰器集成 Multer |
+| Go Gin | c.FormFile() / c.MultipartForm() | 内置 multipart 解析 |
+| Django | request.FILES + FileField | 内置文件处理 |
+| Laravel | $request->file() + Storage facade | 内置文件存储抽象 |
+| Spring Boot | @RequestParam MultipartFile | 内置 multipart 解析 |
+
+### 定时任务 (Scheduling)
+
+| 框架 | 内置能力 | 说明 |
+|------|---------|------|
+| NestJS | @nestjs/schedule + @Cron() | 装饰器声明式 cron |
+| Go Gin | — | 无内置，需 robfig/cron |
+| Django | — | 无内置，需 django-celery-beat / APScheduler |
+| Laravel | Console\Kernel schedule() | 内置任务调度器 |
+| Spring Boot | @Scheduled | 注解式定时任务 |
+
+### CORS
+
+| 框架 | 内置能力 | 说明 |
+|------|---------|------|
+| NestJS | app.enableCors() | 一行配置 |
+| Go Gin | — | 需 gin-contrib/cors |
+| Django | — | 需 django-cors-headers |
+| Laravel | config/cors.php | 内置 CORS 配置 |
+| Spring Boot | @CrossOrigin / WebMvcConfigurer | 注解或全局配置 |
+| Express | — | 需 cors 包 |
+
+### 序列化 (Serialization)
+
+| 框架 | 内置能力 | 说明 |
+|------|---------|------|
+| NestJS | class-transformer + @Exclude/@Expose | 装饰器控制序列化字段 |
+| Go Gin | struct json tags | `json:"name,omitempty"` |
+| Django | DRF Serializers | 声明式序列化 + 嵌套支持 |
+| Laravel | API Resources + JsonResource | 声明式 API 资源转换 |
+| Spring Boot | Jackson @JsonIgnore/@JsonProperty | 注解控制 JSON 序列化 |
+
+### 使用方式
+
+5a-0 步骤中：
+1. 根据 `target_stack` 找到对应框架行，收集所有「有内置能力」的分类
+2. 扫描源码产物，识别源码中手写实现了这些分类功能的部分
+3. 匹配项标记为 `framework_builtin: true`，推荐使用内置方案
+4. 标注「—」的分类表示该框架无内置能力，源码手写实现需保留或选择第三方库

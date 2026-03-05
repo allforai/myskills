@@ -1,7 +1,7 @@
 ---
 description: "接口复刻：仅复刻 API 合约（路由/参数/响应/状态码），不分析业务逻辑。后端重写时保持前端代码不变的首选。"
 argument-hint: "<path-or-url> [--type backend|frontend|fullstack] [--scope full|modules|feature]"
-allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion"]
+allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion", "Agent"]
 ---
 
 # CR Interface — 接口复刻

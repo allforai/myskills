@@ -12,6 +12,8 @@ version: "1.0.0"
 
 > 先加载协议基础: `${CLAUDE_PLUGIN_ROOT}/skills/code-replicate-core.md`
 
+> **Phase 委托**：本技能覆盖 Phase 2/4/6 后端特有部分。Phase 1/3/5/7 由 core 协议处理。
+
 后端专用逆向分析：API 合约、Service 业务逻辑、ORM 映射、中间件链、微服务契约。
 
 ---

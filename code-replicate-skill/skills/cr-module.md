@@ -12,6 +12,8 @@ version: "1.0.0"
 
 > 先加载协议基础: `${CLAUDE_PLUGIN_ROOT}/skills/code-replicate-core.md`
 
+> **Phase 委托**：本技能覆盖 Phase 1/2/3/4/6 的模块特有部分（依赖边界扫描与决策）。Phase 1/3/5/7 的基础流程由 core 协议处理。Phase 4 根据项目类型复用 cr-backend 或 cr-frontend 逻辑。
+
 模块级逆向分析：在标准模块分析基础上，**主动扫描并展示外部依赖** — 代码依赖、事件/消息依赖、共享层依赖。解决"模块边界不干净"的问题。
 
 ---
@@ -125,12 +127,12 @@ version: "1.0.0"
 
 对每个外部依赖，用 `AskUserQuestion` 收集决策（合并到 Phase 3 确认中）：
 
-| 决策 | 含义 | 复刻时处理 |
-|------|------|-----------|
-| **纳入** | 将该模块也加入分析范围 | Phase 4 一并分析 |
-| **标记为外部接口** | 只记录接口签名，不分析实现 | 复刻时作为 mock/stub |
-| **标记为事件契约** | 只记录事件 schema | 不纳入生产/消费逻辑 |
-| **标记为前置依赖** | 记录依赖关系，复刻时必须先满足 | 生成前置条件清单 |
+| 决策 | schema key | 含义 | 复刻时处理 |
+|------|-----------|------|-----------|
+| **纳入** (include) | `include` | 将该模块也加入分析范围 | Phase 4 一并分析 |
+| **标记为外部接口** (external_interface) | `external_interface` | 只记录接口签名，不分析实现 | 复刻时作为 mock/stub |
+| **标记为事件契约** (event_contract) | `event_contract` | 只记录事件 schema | 不纳入生产/消费逻辑 |
+| **标记为前置依赖** (prerequisite) | `prerequisite` | 记录依赖关系，复刻时必须先满足 | 生成前置条件清单 |
 
 决策写入 `replicate-config.json` 的 `module_boundary_decisions` 字段。
 

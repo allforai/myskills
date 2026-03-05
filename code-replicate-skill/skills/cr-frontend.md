@@ -13,6 +13,8 @@ version: "1.0.0"
 
 > 先加载协议基础: `${CLAUDE_PLUGIN_ROOT}/skills/code-replicate-core.md`
 
+> **Phase 委托**：本技能覆盖 Phase 2/4/6 前端特有部分。Phase 1/3/5/7 由 core 协议处理。
+
 前端专用逆向分析：组件树、路由结构、状态管理、API 调用层、UI 状态机、移动端导航。
 
 ---

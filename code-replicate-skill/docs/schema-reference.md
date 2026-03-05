@@ -46,7 +46,8 @@
   "target_stack": "go-gin | nestjs | ...",
   "ambiguity_policy": "conservative | strict",
   "bug_replicate_default": "replicate | fix | ask",
-  "steps_completed": [],
+  "expected_outputs": ["product-map/task-inventory.json", "code-replicate/api-contracts.json", "...（根据信度等级和项目类型自动生成的产物路径列表）"],
+  "steps_completed": ["Phase 1", "Phase 2", "...（已完成的 Phase 名称字符串数组）"],
   "last_updated": "ISO8601",
 
   // fullstack 模式额外字段
@@ -272,7 +273,7 @@ Phase 4 完成后写入 `source-analysis.json` 顶层，记录产物一致性校
       "evidence": "[CONFLICT:src/product.service.ts:87 vs swagger/openapi.yaml:134]",
       "confidence": "confirmed",
       "evidence_sources": ["code", "doc"],
-      "replicate_decision": "{从 replicate-config.bug_replicate_default 预填}"
+      "replicate_decision": "replicate | fix | ask（从 replicate-config.bug_replicate_default 预填）"
     }
   ]
 }
@@ -357,6 +358,16 @@ Phase 4 完成后写入 `source-analysis.json` 顶层，记录产物一致性校
       "drift_details": "可选，XV 审查后补充的漂移说明",
       "decided_at": "ISO8601",
       "reusable": true
+    }
+  ],
+  "framework_builtins": [
+    {
+      "source_impl": "手写分页逻辑",
+      "source_refs": ["src/utils/paginate.ts:15"],
+      "target_builtin": "NestJS @nestjs/common Pagination + class-transformer",
+      "category": "pagination",
+      "decision": "use_builtin | keep_custom | hybrid",
+      "rationale": "框架内置方案覆盖需求，无需手写"
     }
   ],
   "ambiguity_resolutions": [

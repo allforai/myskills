@@ -1,7 +1,7 @@
 ---
 description: "精准复刻：百分百复刻源代码行为，含已知 bug、边界用例、非显式行为。适用于行为零容忍回归或监管合规场景。"
 argument-hint: "<path-or-url> [--type backend|frontend|fullstack] [--scope full|modules|feature]"
-allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion"]
+allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion", "Agent"]
 ---
 
 # CR Exact — 精准复刻

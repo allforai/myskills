@@ -128,7 +128,7 @@ code-tuner（架构层）         合规→重复→抽象→评分
 
 ## 增强协议（4D + 6V + XV）
 
-> 通用框架见 `docs/information-fidelity.md`，代码复刻方向定制见 `skills/code-replicate-core.md`
+> 代码复刻方向的 4D/6V/XV 定制协议见 `skills/code-replicate-core.md`
 
 源码是信息，失真发生在读取→提取→映射三个环节。
 
