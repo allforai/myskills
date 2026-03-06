@@ -141,6 +141,17 @@ version: "3.7.0"
 /ui-design refresh       # 重新生成
 ```
 
+### 7.5 ui-review — UI 审核迭代
+
+> 详见 `${CLAUDE_PLUGIN_ROOT}/commands/ui-review.md`
+
+启动本地审核服务器，浏览所有界面设计、标注 pin 评论，提交反馈后局部迭代。
+
+```
+/ui-review               # 启动审核服务器（localhost:3200）
+/ui-review process       # 读取反馈，重跑需修改的界面
+```
+
 ### 8. design-audit — 设计审计
 
 > 详见 `${CLAUDE_PLUGIN_ROOT}/skills/design-audit.md`
