@@ -66,7 +66,7 @@
 
 | 能力 ID | 安装命令 | 安装后追加步骤 | 需重启 Claude Code |
 |---------|---------|--------------|-------------------|
-| `playwright` | `claude mcp add playwright -- npx @anthropic-ai/mcp-playwright` | 首次需装浏览器: `npx @anthropic-ai/mcp-playwright --install` | 是 |
+| `playwright` | 已内置于 product-design 插件 `.mcp.json`（`@playwright/mcp`） | 无追加步骤（浏览器按需自动下载）。若未就绪，尝试重启 Claude Code | 否（随插件加载） |
 | `openrouter_mcp` | `cd {PLUGIN_ROOT}/mcp-ai-gateway && npm install && npm run build` | 需配置 `OPENROUTER_API_KEY`（运行 `/setup`） | 是 |
 | `brave_search_mcp` | ai-gateway 已内置，仅需配置 `BRAVE_API_KEY`（运行 `/setup`） | Key 写入 `.mcp.json` ai-gateway env | 是 |
 | `google_ai_mcp` | ai-gateway 已内置，仅需配置 `GOOGLE_API_KEY`（运行 `/setup`） | Key 写入 `.mcp.json` ai-gateway env | 是 |
@@ -100,7 +100,7 @@
 单独运行技能时（如直接 `/demo-verify`），不做完整引导，只输出一行提示 + 安装命令：
 
 ```
-⊘ Playwright 不可用。安装: claude mcp add playwright -- npx @anthropic-ai/mcp-playwright（安装后需重启 Claude Code）
+⊘ Playwright 不可用。已内置于插件 .mcp.json，请重启 Claude Code 加载。若仍不可用: claude plugin add playwright
 ```
 
 ### 技能声明规范

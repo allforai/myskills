@@ -10,6 +10,10 @@
         "FAL_KEY": "${FAL_KEY}"
       }
     },
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"]
+    },
     "stitch": {
       "command": "npx",
       "args": ["-y", "@_davideast/stitch-mcp", "proxy"],

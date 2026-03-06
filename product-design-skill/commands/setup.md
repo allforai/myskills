@@ -71,11 +71,11 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 检测所有外部能力的就绪状态：
 
-#### 1a. Playwright MCP
+#### 1a. Playwright MCP（已内置于 .mcp.json）
 
-1. **检查 MCP 工具**：检查 `mcp__plugin_playwright_playwright__browser_navigate` 工具是否可用
+1. **检查 MCP 工具**：检查 `mcp__plugin_product-design_playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 工具是否可用（内置版或独立插件版均可）
    - 可用 → Playwright 就绪
-   - 不可用 → Playwright 未就绪
+   - 不可用 → Playwright 未就绪（可能需要重启 Claude Code 加载 .mcp.json 中的内置配置）
 
 #### 1b. OpenRouter
 
@@ -168,51 +168,24 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 #### 1.5a. Playwright（若未就绪）
 
+Playwright MCP 已内置于 product-design 插件的 `.mcp.json`（`@playwright/mcp@latest`），正常情况下随插件自动加载。
+
+**若检测到未就绪**，说明 MCP 服务器可能未成功启动。提示：
+
+```
+Playwright MCP 已内置于插件配置，但当前未就绪。
+可能原因：首次加载需要下载 @playwright/mcp 包。
+建议：重启 Claude Code 后重新检测。
+```
+
 使用 AskUserQuestion 询问：
 
-**「Playwright 未就绪，用于 UI 自动化验证（demo-forge/dev-forge/deadhunt）。是否安装？」**
+**「Playwright 未就绪（已内置于插件 .mcp.json）。如何处理？」**
 
 选项：
-- **安装** — 立即安装 Playwright MCP
-- **跳过** — 暂不安装（Playwright 无降级链，依赖它的功能将不可用）
-- **查看详情** — 展示安装步骤
-
-##### 选择「安装」时：
-
-执行安装命令：
-
-```bash
-claude mcp add playwright -- npx @anthropic-ai/mcp-playwright
-```
-
-安装成功后提示：
-
-```
-Playwright MCP 已安装。
-首次使用前需安装浏览器: npx playwright install chromium
-需重启 Claude Code 后生效。
-```
-
-##### 选择「查看详情」时：
-
-展示完整安装步骤后回到选择。
-
-```
-Playwright MCP 安装步骤：
-
-1. 安装 MCP 服务器:
-   claude mcp add playwright -- npx @anthropic-ai/mcp-playwright
-
-2. 安装浏览器（首次）:
-   npx playwright install chromium
-
-3. 重启 Claude Code
-
-用途：
-- demo-forge verify: Playwright 验证灌入数据
-- dev-forge e2e-verify: 端到端测试
-- deadhunt deep/full: 动态死链扫描
-```
+- **重启后重试** — 我稍后重启 Claude Code，Playwright 会自动加载
+- **独立安装** — 使用 `claude plugin add playwright` 安装官方独立插件
+- **跳过** — 暂不处理（Playwright 无降级链，依赖它的功能将不可用）
 
 #### 1.5b. Stitch UI（若未就绪）
 
