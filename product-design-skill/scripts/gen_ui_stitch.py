@@ -55,7 +55,7 @@ def select_priority_screens(screens, limit=10, explicit=None):
     """Dynamically select priority screens based on metadata."""
     if explicit:
         explicit_ids = set(explicit.split(","))
-        return [s for s in screens if s["screen_id"] in explicit_ids]
+        return [s for s in screens if s["id"] in explicit_ids]
 
     scored = []
     for s in screens:
@@ -76,7 +76,7 @@ def select_priority_screens(screens, limit=10, explicit=None):
         if len(s.get("actions", [])) >= 3:
             score += 1
 
-        scored.append((score, s["screen_id"], s))
+        scored.append((score, s["id"], s))
 
     scored.sort(key=lambda x: -x[0])
     selected = scored[:limit]
@@ -92,8 +92,8 @@ def select_priority_screens(screens, limit=10, explicit=None):
 
 def build_prompt(screen, concept, component_spec, device_type, is_anchor):
     """Build a layered Stitch prompt for a screen."""
-    sid = screen["screen_id"]
-    name = screen.get("screen_name", sid)
+    sid = screen["id"]
+    name = screen.get("name", sid)
     it = screen.get("interaction_type", "MG1")
     actions = screen.get("actions", [])
     states = screen.get("states", {})
@@ -164,19 +164,19 @@ def main():
         print("ERROR: no screens selected", file=sys.stderr)
         sys.exit(1)
 
-    anchor_id = selected[0]["screen_id"]
+    anchor_id = selected[0]["id"]
     prompt_entries = []
     for i, s in enumerate(selected):
         prompt = build_prompt(s, concept, comp_spec, device_type, is_anchor=(i == 0))
         prompt_entries.append({
-            "screen_id": s["screen_id"],
-            "screen_name": s.get("screen_name", s["screen_id"]),
+            "screen_id": s["id"],
+            "screen_name": s.get("name", s["id"]),
             "priority": s.get("priority", "P1"),
             "generation_order": i,
             "prompt": prompt,
             "device_type": device_type,
             "model_id": "GEMINI_3_PRO",
-            "referenced_components": comp_spec.get("screen_components", {}).get(s["screen_id"], {}).get("used_shared", []),
+            "referenced_components": comp_spec.get("screen_components", {}).get(s["id"], {}).get("used_shared", []),
             "selection_reason": s.get("selection_score", 0),
         })
 

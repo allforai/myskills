@@ -158,7 +158,7 @@ def identify_shared_components(screens):
     # AppShell: if >50% screens share navigation pattern
     if len(screens) >= 2:
         shared["AppShell"] = {
-            "screens": [s["screen_id"] for s in screens],
+            "screens": [s["id"] for s in screens],
             "inferred_from": "所有屏幕共有的导航结构",
             "structure": "TopBar + Content + BottomNav",
             "props": ["title", "showBack", "showSearch", "activeTab"],
@@ -178,7 +178,7 @@ def identify_shared_components(screens):
             card_name = _infer_component_name(ss, "Card")
 
             shared[list_name] = {
-                "screens": [s["screen_id"] for s in ss],
+                "screens": [s["id"] for s in ss],
                 "inferred_from": f"同一 interaction_type:{itype} 列表容器",
                 "props": ["items", "onLoadMore", "onRefresh"],
                 "primitives": get_primitives(itype),
@@ -186,7 +186,7 @@ def identify_shared_components(screens):
                 "a11y": infer_a11y(list_name),
             }
             shared[card_name] = {
-                "screens": [s["screen_id"] for s in ss],
+                "screens": [s["id"] for s in ss],
                 "inferred_from": f"同一 interaction_type:{itype} 列表项",
                 "props": _infer_card_props(ss),
                 "primitives": [],
@@ -197,7 +197,7 @@ def identify_shared_components(screens):
         if itype in ("MG2-C", "MG2-E", "MG8", "SY2", "SB1"):
             form_name = _infer_component_name(ss, "Form")
             shared[form_name] = {
-                "screens": [s["screen_id"] for s in ss],
+                "screens": [s["id"] for s in ss],
                 "inferred_from": f"同一 interaction_type:{itype} 表单",
                 "props": ["fields", "onSubmit", "onValidate"],
                 "primitives": get_primitives(itype),
@@ -213,7 +213,7 @@ def identify_shared_components(screens):
     ]
     if len(search_screens) >= 2:
         shared["SearchBar"] = {
-            "screens": [s["screen_id"] for s in search_screens],
+            "screens": [s["id"] for s in search_screens],
             "inferred_from": "多个屏幕包含搜索操作",
             "props": ["placeholder", "onSearch", "onClear"],
             "primitives": [],
@@ -248,7 +248,7 @@ def build_screen_components(screens, shared_components):
     """Build per-screen component usage map."""
     mapping = {}
     for s in screens:
-        sid = s["screen_id"]
+        sid = s["id"]
         it = s.get("interaction_type", "MG1")
         used_shared = [
             name for name, comp in shared_components.items()

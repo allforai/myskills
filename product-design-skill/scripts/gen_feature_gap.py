@@ -133,7 +133,7 @@ for s in screens:
 for tid in tasks:
     if tid not in task_screen_map:
         screen_gaps.append({
-            "screen_id": "N/A",
+            "id": "N/A",
             "screen_name": f"(任务 {tid} 无对应界面)",
             "gaps": ["NO_SCREEN"],
             "details": [{
@@ -208,7 +208,7 @@ for s in screens:
                 seen.add(g)
                 unique_gaps.append(g)
         screen_gaps.append({
-            "screen_id": s["id"],
+            "id": s["id"],
             "screen_name": s.get("name", ""),
             "gaps": unique_gaps,
             "details": details_list
@@ -527,7 +527,7 @@ for sg in screen_gaps:
             "priority": prio,
             "affected_roles": [],
             "affected_tasks": detail.get("affected_tasks", []),
-            "affected_screens": [sg["screen_id"]],
+            "affected_screens": [sg["id"]],
             "description": detail["description"],
             "frequency_impact": f"{freq}频相关",
             "_sort": priority_rank(freq, flag)

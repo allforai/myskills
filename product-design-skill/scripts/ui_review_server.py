@@ -36,12 +36,11 @@ def load_spec():
     """Load ui-design-spec.json and normalize screens to list format."""
     raw = C.load_json(os.path.join(UI_DIR, "ui-design-spec.json")) or {}
     screens = raw.get("screens", [])
-    # If screens is a dict (keyed by screen_id), convert to list
+    # If screens is a dict (keyed by id), convert to list
     if isinstance(screens, dict):
         normalized = []
         for sid, sdata in screens.items():
             if isinstance(sdata, dict):
-                sdata["screen_id"] = sid
                 if "id" not in sdata:
                     sdata["id"] = sid
                 normalized.append(sdata)
@@ -102,7 +101,7 @@ def get_preview_html(screen_id, spec):
     # Fallback: generate skeleton from spec
     screen_spec = None
     for s in spec.get("screens", []):
-        if s.get("screen_id") == screen_id or s.get("id") == screen_id:
+        if s.get("id") == screen_id:
             screen_spec = s
             break
     if not screen_spec:
@@ -149,9 +148,9 @@ def render_dashboard(spec, sm, feedback):
     product = spec.get("product", spec.get("product_name", "Product"))
     total = len(screens)
     reviewed = sum(1 for s in screens
-                   if feedback.get("screens", {}).get(s.get("screen_id", s.get("id", "")), {}).get("status") in ("approved", "revision"))
+                   if feedback.get("screens", {}).get(s.get("id", ""), {}).get("status") in ("approved", "revision"))
     revision_count = sum(1 for s in screens
-                         if feedback.get("screens", {}).get(s.get("screen_id", s.get("id", "")), {}).get("status") == "revision")
+                         if feedback.get("screens", {}).get(s.get("id", ""), {}).get("status") == "revision")
 
     # Collect roles for filter tabs
     roles = sorted(set(s.get("role", "") for s in screens if s.get("role")))
@@ -162,7 +161,7 @@ def render_dashboard(spec, sm, feedback):
 
     cards = ""
     for s in screens:
-        sid = s.get("screen_id", s.get("id", ""))
+        sid = s.get("id", "")
         name = s.get("name", "")
         role = s.get("role", "")
         itype = s.get("interaction_type", "")
@@ -302,7 +301,7 @@ def render_screen_detail(screen_id, spec, sm, feedback):
     screen = None
     screen_idx = -1
     for i, s in enumerate(screens):
-        sid = s.get("screen_id", s.get("id", ""))
+        sid = s.get("id", "")
         if sid == screen_id:
             screen = s
             screen_idx = i
@@ -310,7 +309,7 @@ def render_screen_detail(screen_id, spec, sm, feedback):
     if not screen:
         return "<h1>Screen not found</h1>"
 
-    sid = screen.get("screen_id", screen.get("id", ""))
+    sid = screen.get("id", "")
     name = screen.get("name", "")
     role = screen.get("role", "")
     itype = screen.get("interaction_type", "")
@@ -331,8 +330,8 @@ def render_screen_detail(screen_id, spec, sm, feedback):
     pins = fb.get("pins", [])
 
     # Navigation
-    prev_id = screens[screen_idx - 1].get("screen_id", screens[screen_idx - 1].get("id", "")) if screen_idx > 0 else ""
-    next_id = screens[screen_idx + 1].get("screen_id", screens[screen_idx + 1].get("id", "")) if screen_idx < len(screens) - 1 else ""
+    prev_id = screens[screen_idx - 1].get("id", "") if screen_idx > 0 else ""
+    next_id = screens[screen_idx + 1].get("id", "") if screen_idx < len(screens) - 1 else ""
 
     prev_btn = f'<a href="/screen/{prev_id}" class="nav-btn">Prev</a>' if prev_id else '<span class="nav-btn disabled">Prev</span>'
     next_btn = f'<a href="/screen/{next_id}" class="nav-btn">Next</a>' if next_id else '<span class="nav-btn disabled">Next</span>'
