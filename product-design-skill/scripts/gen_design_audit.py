@@ -60,9 +60,13 @@ if uc:
     for role in uc.get("roles", []):
         for fa in role.get("feature_areas", []):
             for t_data in fa.get("tasks", []):
-                tid = t_data["id"]
+                raw_tid = t_data["id"]
+                # Handle composite task IDs like "T014_T015"
+                parts = raw_tid.split("_") if "_" in raw_tid else [raw_tid]
+                tids = parts if all(p.upper().startswith("T") for p in parts) else [raw_tid]
                 for ucase in t_data.get("use_cases", []):
-                    uc_task_map.setdefault(tid, []).append(ucase["id"])
+                    for tid in tids:
+                        uc_task_map.setdefault(tid, []).append(ucase["id"])
                     if ucase.get("screen_ref"):
                         uc_screen_refs[ucase["id"]] = ucase["screen_ref"]
 
@@ -72,8 +76,12 @@ gap_task_ids = set()
 if gap:
     available_layers.append("feature-gap")
     for g in gap:
-        for tid in g.get("affected_tasks", []):
-            gap_task_ids.add(tid)
+        affected = g.get("affected_tasks", [])
+        if affected:
+            for tid in affected:
+                gap_task_ids.add(tid)
+        elif "task_id" in g:
+            gap_task_ids.add(g["task_id"])
 
 # Also load task-gaps for per-task check
 task_gaps_data = C.load_json(os.path.join(BASE, "feature-gap/task-gaps.json"))
@@ -142,21 +150,26 @@ if "use-case" in available_layers:
             trace_pass += 1
 
 # T3: use-case screen_ref -> screen-map
+# screen_ref may be comma-separated (e.g. "S005,S006") or single ID
 if "use-case" in available_layers and "screen-map" in available_layers:
     for ucid, sref in uc_screen_refs.items():
-        trace_total += 1
-        if sref and sref not in screens:
-            trace_issues.append({
-                "check_id": "T3",
-                "type": "ORPHAN",
-                "source": "use-case",
-                "item_id": ucid,
-                "item_name": f"use-case {ucid}",
-                "missing_ref": sref,
-                "detail": f"use-case {ucid} 的 screen_ref {sref} 在 screen-map 中不存在"
-            })
-        else:
-            trace_pass += 1
+        if not sref:
+            continue
+        refs = [r.strip() for r in sref.split(",")] if "," in sref else [sref]
+        for ref in refs:
+            trace_total += 1
+            if ref not in screens:
+                trace_issues.append({
+                    "check_id": "T3",
+                    "type": "ORPHAN",
+                    "source": "use-case",
+                    "item_id": ucid,
+                    "item_name": f"use-case {ucid}",
+                    "missing_ref": ref,
+                    "detail": f"use-case {ucid} 的 screen_ref {ref} 在 screen-map 中不存在"
+                })
+            else:
+                trace_pass += 1
 
 # T5: prune-decision -> task
 if "feature-prune" in available_layers:
