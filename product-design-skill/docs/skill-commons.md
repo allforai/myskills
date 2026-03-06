@@ -66,11 +66,11 @@
 
 | 能力 ID | 安装命令 | 安装后追加步骤 | 需重启 Claude Code |
 |---------|---------|--------------|-------------------|
-| `playwright` | 已内置于 product-design 插件 `.mcp.json`（`@playwright/mcp`） | 无追加步骤（浏览器按需自动下载）。若未就绪，尝试重启 Claude Code | 否（随插件加载） |
+| `playwright` | `claude mcp add -s user playwright -- npx -y @playwright/mcp@latest` | 无追加步骤（浏览器按需自动下载） | 是 |
 | `openrouter_mcp` | `cd {PLUGIN_ROOT}/mcp-ai-gateway && npm install && npm run build` | 需配置 `OPENROUTER_API_KEY`（运行 `/setup`） | 是 |
 | `brave_search_mcp` | ai-gateway 已内置，仅需配置 `BRAVE_API_KEY`（运行 `/setup`） | Key 写入 `.mcp.json` ai-gateway env | 是 |
 | `google_ai_mcp` | ai-gateway 已内置，仅需配置 `GOOGLE_API_KEY`（运行 `/setup`） | Key 写入 `.mcp.json` ai-gateway env | 是 |
-| `stitch_ui` | `npx -y @_davideast/stitch-mcp init`（需完成 Google OAuth 认证） | 认证完成后在 `.mcp.json` 中配置 | 是 |
+| `stitch_ui` | `claude mcp add -s user stitch -- npx -y @_davideast/stitch-mcp proxy` | 首次需 OAuth: `npx -y @_davideast/stitch-mcp init` | 是 |
 
 #### 引导流程（编排命令的 Phase 0 使用）
 
@@ -100,7 +100,7 @@
 单独运行技能时（如直接 `/demo-verify`），不做完整引导，只输出一行提示 + 安装命令：
 
 ```
-⊘ Playwright 不可用。已内置于插件 .mcp.json，请重启 Claude Code 加载。若仍不可用: claude plugin add playwright
+⊘ Playwright 不可用。安装: claude mcp add -s user playwright -- npx -y @playwright/mcp@latest（安装后需重启 Claude Code）
 ```
 
 ### 技能声明规范

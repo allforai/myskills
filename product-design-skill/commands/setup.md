@@ -71,14 +71,11 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 检测所有外部能力的就绪状态：
 
-#### 1a. Playwright MCP（已内置于 .mcp.json）
+#### 1a. Playwright MCP
 
-1. **检查 MCP 工具**：检查 `mcp__plugin_product-design_playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 工具是否可用（内置版或独立插件版均可）
+1. **检查 MCP 工具**：检查 `mcp__plugin_playwright_playwright__browser_navigate` 工具是否可用
    - 可用 → **✅ 就绪**
-   - 不可用 → 进入辅助判断：
-     - 检查插件 `.mcp.json` 中是否已配置 playwright 服务器（已内置 → 配置存在）
-     - 配置存在 → **⚠️ 已配置但本次会话未加载**（提示：重启 Claude Code 即可）
-     - 配置不存在 → **❌ 未配置**（提示：安装 product-design 插件或运行 `claude plugin add playwright`）
+   - 不可用 → **❌ 未安装**（提示：`claude mcp add -s user playwright -- npx -y @playwright/mcp@latest`，安装后重启 Claude Code）
 
 #### 1b. OpenRouter
 
@@ -122,12 +119,11 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 #### 1f. Stitch UI
 
-1. **检查 MCP 工具**：检查 `mcp__plugin_product-design_stitch__create_project` 工具是否可用
+1. **检查 MCP 工具**：检查 `mcp__stitch__create_project` 工具是否可用（用户级 MCP）
    - 可用 → **✅ 就绪**
-   - 不可用 → 进入辅助判断：
-     - 检查 `~/.stitch-mcp/config` 文件是否存在（OAuth 凭证）
-     - 存在 → **⚠️ 已配置但本次会话未加载**（OAuth 已完成，提示：重启 Claude Code 即可）
-     - 不存在 → **❌ 未配置**（需运行 `npx -y @_davideast/stitch-mcp init` 完成 Google OAuth 认证）
+   - 不可用 → 检查 `~/.stitch-mcp/config/application_default_credentials.json` 是否存在
+     - 凭证存在 → **⚠️ OAuth 已完成但 MCP 未注册**（提示：`claude mcp add -s user stitch -- npx -y @_davideast/stitch-mcp proxy`，然后重启）
+     - 凭证不存在 → **❌ 未配置**（需先完成 OAuth: 终端运行 `npx -y @_davideast/stitch-mcp init`，然后注册 MCP: `claude mcp add -s user stitch -- npx -y @_davideast/stitch-mcp proxy`）
 
 #### 状态仪表板输出
 
@@ -138,8 +134,8 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 | 能力 | 类型 | 状态 | 使用插件 | 用途 |
 |------|------|------|---------|------|
-| Playwright | MCP 工具 | {✅ 就绪 / ⚠️ 已配置未加载 / ❌ 未配置} | demo-forge, dev-forge, deadhunt | UI 自动化 |
-| Stitch UI | MCP 工具 | {✅ 就绪 / ⚠️ 已配置未加载 / ❌ 未配置} | product-design | UI 视觉稿 |
+| Playwright | 用户级 MCP | {✅ 就绪 / ❌ 未安装} | demo-forge, dev-forge, deadhunt | UI 自动化 |
+| Stitch UI | 用户级 MCP | {✅ 就绪 / ⚠️ 缺 OAuth / ❌ 未安装} | product-design | UI 视觉稿 |
 | OpenRouter (MCP) | AI Gateway | {就绪/未就绪} | product-design, dev-forge | XV 交叉验证 |
 | Google AI (MCP) | AI Gateway | {就绪/未就绪} | demo-forge | AI 生图/生视频/TTS |
 | Brave Search (MCP) | AI Gateway | {就绪/未就绪} | demo-forge | 媒体搜索（网页/图片/视频） |
@@ -174,76 +170,50 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 #### 1.5a. Playwright（若未就绪）
 
-Playwright MCP 已内置于 product-design 插件的 `.mcp.json`（`@playwright/mcp@latest`），正常情况下随插件自动加载。
+执行安装命令：
 
-**若检测到未就绪**，说明 MCP 服务器可能未成功启动。提示：
-
-```
-Playwright MCP 已内置于插件配置，但当前未就绪。
-可能原因：首次加载需要下载 @playwright/mcp 包。
-建议：重启 Claude Code 后重新检测。
+```bash
+claude mcp add -s user playwright -- npx -y @playwright/mcp@latest
 ```
 
-使用 AskUserQuestion 询问：
+安装成功后提示：
 
-**「Playwright 未就绪（已内置于插件 .mcp.json）。如何处理？」**
-
-选项：
-- **重启后重试** — 我稍后重启 Claude Code，Playwright 会自动加载
-- **独立安装** — 使用 `claude plugin add playwright` 安装官方独立插件
-- **跳过** — 暂不处理（Playwright 无降级链，依赖它的功能将不可用）
+```
+Playwright MCP 已注册到用户级配置。需重启 Claude Code 后生效。
+```
 
 #### 1.5b. Stitch UI（若未就绪）
 
 使用 AskUserQuestion 询问：
 
-**「Stitch UI 未就绪，用于生成高保真 UI 视觉稿（product-design ui-design 阶段）。是否安装？」**
+**「Stitch UI 未就绪，用于生成高保真 UI 视觉稿。是否安装？」**
 
 选项：
-- **安装** — 立即初始化 Stitch（需完成 Google OAuth 认证）
+- **安装** — 注册 MCP + 引导 OAuth
 - **跳过** — 暂不安装（ui-design 将只生成文字规格，跳过视觉稿）
-- **查看详情** — 展示安装步骤
 
 ##### 选择「安装」时：
 
-执行初始化命令：
+**Step 1: 注册 MCP 服务器**
 
 ```bash
-npx -y @_davideast/stitch-mcp init
+claude mcp add -s user stitch -- npx -y @_davideast/stitch-mcp proxy
 ```
 
-> **注意**：此命令会打开浏览器进行 Google OAuth 认证。认证完成后，OAuth 凭证存储在 `~/.stitch-mcp/`。
+**Step 2: 检查 OAuth 凭证**
 
-认证成功后提示：
-
-```
-Stitch UI 认证完成。
-MCP 服务器配置已在插件 .mcp.json 中就绪。
-需重启 Claude Code 后生效。
-```
-
-##### 选择「查看详情」时：
-
-展示完整安装步骤后回到选择。
+检查 `~/.stitch-mcp/config/application_default_credentials.json` 是否存在：
+- 存在 → OAuth 已完成，提示重启 Claude Code 即可
+- 不存在 → 提示用户在终端手动运行 OAuth 初始化：
 
 ```
-Stitch UI（Google Stitch）安装步骤：
+Stitch MCP 已注册。还需完成一次 Google OAuth 认证。
+请在终端（非 Claude Code）运行：
 
-1. 初始化并完成 Google OAuth 认证:
-   npx -y @_davideast/stitch-mcp init
-   （会打开浏览器，用 Google 账号授权）
+  npx -y @_davideast/stitch-mcp init
 
-2. 认证完成后 OAuth 凭证自动存储在 ~/.stitch-mcp/
-
-3. 重启 Claude Code
-
-前提：
-- 需要 Google 账号
-- MCP 服务器配置已在插件 .mcp.json 中预置（无需额外配置）
-
-用途：
-- product-design ui-design Step 5.5: 生成高保真 UI 视觉稿
-- 产出 HTML + 截图，供 dev-forge 参考实现
+选择 Claude Code → 浏览器授权 → 完成后重启 Claude Code。
+OAuth 凭证长期有效，只需做一次。
 ```
 
 ### Step 2: 引导获取 Key
@@ -483,9 +453,9 @@ Key 仅存储在插件配置中，不写入 shell 环境变量。
 ```
 ## 外部能力状态
 
-MCP 工具:
-  Playwright       {✅ 就绪 / ⚠️ 已配置未加载（重启即可） / ❌ 未配置}   demo-forge, dev-forge, deadhunt — UI 自动化
-  Stitch UI        {✅ 就绪 / ⚠️ 已配置未加载（重启即可） / ❌ 未配置}   product-design — UI 视觉稿（Google Stitch）
+MCP 工具（用户级 claude mcp add -s user）:
+  Playwright       {✅ 就绪 / ❌ 未安装}   demo-forge, dev-forge, deadhunt — UI 自动化
+  Stitch UI        {✅ 就绪 / ⚠️ MCP 已注册但缺 OAuth / ❌ 未安装}   product-design — UI 视觉稿（Google Stitch）
 
 AI Gateway（统一 MCP 服务器）:
   OpenRouter       {就绪/未就绪}   product-design, dev-forge — XV + GPT-5/Gemini 生图
