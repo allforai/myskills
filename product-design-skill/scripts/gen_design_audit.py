@@ -77,6 +77,8 @@ if gap:
     available_layers.append("feature-gap")
     for g in gap:
         affected = g.get("affected_tasks", [])
+        if isinstance(affected, str):
+            affected = [affected]
         if affected:
             for tid in affected:
                 gap_task_ids.add(tid)
@@ -88,7 +90,9 @@ task_gaps_data = C.load_json(os.path.join(BASE, "feature-gap/task-gaps.json"))
 gap_checked_tasks = set()
 if task_gaps_data:
     for tg in task_gaps_data:
-        gap_checked_tasks.add(tg["task_id"])
+        tid = tg.get("task_id", tg.get("id", ""))
+        if tid:
+            gap_checked_tasks.add(tid)
 
 # feature-prune (optional)
 prune = C.load_json(os.path.join(BASE, "feature-prune/prune-decisions.json"))
