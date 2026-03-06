@@ -35,6 +35,28 @@ def get_flow_nodes(flow):
     return flow.get(FLOW_NODES_FIELD, [])
 
 
+def ensure_list(data, *keys):
+    """Extract a list from data that may be a list or a dict wrapping one.
+
+    If data is already a list, return it directly.
+    If data is a dict, try each key in order, returning the first list found.
+    Otherwise return [].
+    """
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):
+        for k in keys:
+            v = data.get(k)
+            if isinstance(v, list):
+                return v
+        # If dict has no matching key, try common wrapper patterns
+        for k in ("items", "data", "results", "tasks", "gaps", "decisions"):
+            v = data.get(k)
+            if isinstance(v, list):
+                return v
+    return []
+
+
 # ── Timestamp ─────────────────────────────────────────────────────────────────
 
 def now_iso():

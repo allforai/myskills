@@ -71,11 +71,14 @@ if uc:
                         uc_screen_refs[ucase["id"]] = ucase["screen_ref"]
 
 # feature-gap (optional)
-gap = C.load_json(os.path.join(BASE, "feature-gap/gap-tasks.json"))
+_gap_raw = C.load_json(os.path.join(BASE, "feature-gap/gap-tasks.json"))
+gap = C.ensure_list(_gap_raw, "gap_tasks", "gaps") if _gap_raw else []
 gap_task_ids = set()
 if gap:
     available_layers.append("feature-gap")
     for g in gap:
+        if not isinstance(g, dict):
+            continue
         affected = g.get("affected_tasks", [])
         if isinstance(affected, str):
             affected = [affected]
@@ -86,22 +89,28 @@ if gap:
             gap_task_ids.add(g["task_id"])
 
 # Also load task-gaps for per-task check
-task_gaps_data = C.load_json(os.path.join(BASE, "feature-gap/task-gaps.json"))
+_tg_raw = C.load_json(os.path.join(BASE, "feature-gap/task-gaps.json"))
+task_gaps_data = C.ensure_list(_tg_raw, "task_gaps", "tasks") if _tg_raw else []
 gap_checked_tasks = set()
-if task_gaps_data:
-    for tg in task_gaps_data:
-        tid = tg.get("task_id", tg.get("id", ""))
-        if tid:
-            gap_checked_tasks.add(tid)
+for tg in task_gaps_data:
+    if not isinstance(tg, dict):
+        continue
+    tid = tg.get("task_id", tg.get("id", ""))
+    if tid:
+        gap_checked_tasks.add(tid)
 
 # feature-prune (optional)
-prune = C.load_json(os.path.join(BASE, "feature-prune/prune-decisions.json"))
+_prune_raw = C.load_json(os.path.join(BASE, "feature-prune/prune-decisions.json"))
+prune = C.ensure_list(_prune_raw, "prune_decisions", "decisions") if _prune_raw else []
 prune_map = {}  # task_id -> decision
 if prune:
     available_layers.append("feature-prune")
     for d in prune:
+        if not isinstance(d, dict):
+            continue
         tid = d.get("task_id", d.get("item_id"))
-        prune_map[tid] = d["decision"]
+        if tid:
+            prune_map[tid] = d.get("decision", "")
 
 # ui-design (optional)
 ui_spec_path = os.path.join(BASE, "ui-design/ui-design-spec.md")
