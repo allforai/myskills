@@ -221,6 +221,8 @@ concept 和 product-map 完成后，追加记录到 `.allforai/pipeline-decision
 
 ## Phase 3：screen-map
 
+> **注意**：screen-map 没有预置生成脚本（不存在 `gen_screen_map.py`）。主体 JSON 由 LLM 按 skill 工作流直接生成。仅拆分步骤使用预置脚本 `gen_screen_map_split.py`。不要打印"回退 LLM 生成"之类的提示。
+
 **执行**：
 1. 用 Read 工具加载 `${CLAUDE_PLUGIN_ROOT}/skills/screen-map.md`
 2. 按 screen-map 技能的完整工作流执行
