@@ -74,8 +74,11 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 #### 1a. Playwright MCP（已内置于 .mcp.json）
 
 1. **检查 MCP 工具**：检查 `mcp__plugin_product-design_playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 工具是否可用（内置版或独立插件版均可）
-   - 可用 → Playwright 就绪
-   - 不可用 → Playwright 未就绪（可能需要重启 Claude Code 加载 .mcp.json 中的内置配置）
+   - 可用 → **✅ 就绪**
+   - 不可用 → 进入辅助判断：
+     - 检查插件 `.mcp.json` 中是否已配置 playwright 服务器（已内置 → 配置存在）
+     - 配置存在 → **⚠️ 已配置但本次会话未加载**（提示：重启 Claude Code 即可）
+     - 配置不存在 → **❌ 未配置**（提示：安装 product-design 插件或运行 `claude plugin add playwright`）
 
 #### 1b. OpenRouter
 
@@ -120,8 +123,11 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 #### 1f. Stitch UI
 
 1. **检查 MCP 工具**：检查 `mcp__plugin_product-design_stitch__create_project` 工具是否可用
-   - 可用 → Stitch 就绪
-   - 不可用 → Stitch 未就绪（需运行 `npx -y @_davideast/stitch-mcp init` 完成 Google OAuth 认证）
+   - 可用 → **✅ 就绪**
+   - 不可用 → 进入辅助判断：
+     - 检查 `~/.stitch-mcp/config` 文件是否存在（OAuth 凭证）
+     - 存在 → **⚠️ 已配置但本次会话未加载**（OAuth 已完成，提示：重启 Claude Code 即可）
+     - 不存在 → **❌ 未配置**（需运行 `npx -y @_davideast/stitch-mcp init` 完成 Google OAuth 认证）
 
 #### 状态仪表板输出
 
@@ -132,8 +138,8 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 | 能力 | 类型 | 状态 | 使用插件 | 用途 |
 |------|------|------|---------|------|
-| Playwright | MCP 工具 | {就绪/未就绪} | demo-forge, dev-forge, deadhunt | UI 自动化 |
-| Stitch UI | MCP 工具 | {就绪/未就绪} | product-design | UI 视觉稿 |
+| Playwright | MCP 工具 | {✅ 就绪 / ⚠️ 已配置未加载 / ❌ 未配置} | demo-forge, dev-forge, deadhunt | UI 自动化 |
+| Stitch UI | MCP 工具 | {✅ 就绪 / ⚠️ 已配置未加载 / ❌ 未配置} | product-design | UI 视觉稿 |
 | OpenRouter (MCP) | AI Gateway | {就绪/未就绪} | product-design, dev-forge | XV 交叉验证 |
 | Google AI (MCP) | AI Gateway | {就绪/未就绪} | demo-forge | AI 生图/生视频/TTS |
 | Brave Search (MCP) | AI Gateway | {就绪/未就绪} | demo-forge | 媒体搜索（网页/图片/视频） |
@@ -478,8 +484,8 @@ Key 仅存储在插件配置中，不写入 shell 环境变量。
 ## 外部能力状态
 
 MCP 工具:
-  Playwright       {就绪/未就绪}   demo-forge, dev-forge, deadhunt — UI 自动化
-  Stitch UI        {就绪/未就绪}   product-design — UI 视觉稿（Google Stitch）
+  Playwright       {✅ 就绪 / ⚠️ 已配置未加载（重启即可） / ❌ 未配置}   demo-forge, dev-forge, deadhunt — UI 自动化
+  Stitch UI        {✅ 就绪 / ⚠️ 已配置未加载（重启即可） / ❌ 未配置}   product-design — UI 视觉稿（Google Stitch）
 
 AI Gateway（统一 MCP 服务器）:
   OpenRouter       {就绪/未就绪}   product-design, dev-forge — XV + GPT-5/Gemini 生图
