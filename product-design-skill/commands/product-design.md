@@ -221,9 +221,15 @@ concept 和 product-map 完成后，追加记录到 `.allforai/pipeline-decision
 
 ## Phase 3：screen-map
 
-> **注意**：screen-map 没有预置生成脚本（不存在 `gen_screen_map.py`）。主体 JSON 由 LLM 按 skill 工作流直接生成。仅拆分步骤使用预置脚本 `gen_screen_map_split.py`。不要打印"回退 LLM 生成"之类的提示。
+**预置脚本优先**：
 
-**执行**：
+```
+检查 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_screen_map.py 是否存在：
+  存在 → python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_screen_map.py <BASE> --mode auto --shard screen-map
+  不存在 → 用 Read 工具加载 skills/screen-map.md，按 skill 工作流执行
+```
+
+**执行**（脚本不存在时的回退路径）：
 1. 用 Read 工具加载 `${CLAUDE_PLUGIN_ROOT}/skills/screen-map.md`
 2. 按 screen-map 技能的完整工作流执行
 
@@ -232,10 +238,10 @@ concept 和 product-map 完成后，追加记录到 `.allforai/pipeline-decision
 - screen 数量 > 0
 
 **轻量校验**：
-- 每个 screen 的 `task_refs` 中的 task_id 在 `task-inventory.json` 中存在
+- 每个 screen 的 `tasks` 中的 task_id 在 `task-inventory.json` 中存在
 - 发现问题 → 列出不一致项，询问用户是否继续
 
-**自动模式检查点**：screen 数 = 0 → ERROR（停）；task_refs 引用断裂 → ERROR（停）；其余不一致 → WARNING 记日志继续。
+**自动模式检查点**：screen 数 = 0 → ERROR（停）；tasks 引用断裂 → ERROR（停）；其余不一致 → WARNING 记日志继续。
 
 **角色拆分**：检查点通过后，运行预置脚本生成按角色拆分文件（供设计师按角色查阅）：
 

@@ -117,7 +117,7 @@ Phases 4–8 of product-design have prebuilt transform scripts in `product-desig
 python3 product-design-skill/scripts/gen_xxx.py <BASE_PATH> [--mode auto]
 ```
 
-Scripts: `gen_use_cases.py`, `gen_feature_gap.py`, `gen_feature_prune.py`, `gen_ui_design.py`, `gen_design_audit.py`, `gen_screen_map_split.py`. Shared utilities in `_common.py`.
+Scripts: `gen_screen_map.py`, `gen_use_cases.py`, `gen_feature_gap.py`, `gen_feature_prune.py`, `gen_ui_design.py`, `gen_design_audit.py`, `gen_screen_map_split.py`. Shared utilities in `_common.py`.
 
 ## Skill Development Conventions
 
