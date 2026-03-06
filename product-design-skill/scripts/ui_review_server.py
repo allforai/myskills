@@ -33,8 +33,20 @@ FEEDBACK_PATH = os.path.join(UI_DIR, "review-feedback.json")
 # ── Load data ─────────────────────────────────────────────────────────────────
 
 def load_spec():
-    """Load ui-design-spec.json."""
-    return C.load_json(os.path.join(UI_DIR, "ui-design-spec.json")) or {}
+    """Load ui-design-spec.json and normalize screens to list format."""
+    raw = C.load_json(os.path.join(UI_DIR, "ui-design-spec.json")) or {}
+    screens = raw.get("screens", [])
+    # If screens is a dict (keyed by screen_id), convert to list
+    if isinstance(screens, dict):
+        normalized = []
+        for sid, sdata in screens.items():
+            if isinstance(sdata, dict):
+                sdata["screen_id"] = sid
+                if "id" not in sdata:
+                    sdata["id"] = sid
+                normalized.append(sdata)
+        raw["screens"] = normalized
+    return raw
 
 def load_screen_map():
     """Load screen-map.json for design rationale."""
@@ -133,8 +145,8 @@ body{{margin:0;padding:24px;font-family:-apple-system,system-ui,sans-serif;backg
 def render_dashboard(spec, sm, feedback):
     """Render the main dashboard page."""
     screens = spec.get("screens", [])
-    style = spec.get("style", "Unknown")
-    product = spec.get("product_name", "Product")
+    style = spec.get("design_style", spec.get("style", "Unknown"))
+    product = spec.get("product", spec.get("product_name", "Product"))
     total = len(screens)
     reviewed = sum(1 for s in screens
                    if feedback.get("screens", {}).get(s.get("screen_id", s.get("id", "")), {}).get("status") in ("approved", "revision"))

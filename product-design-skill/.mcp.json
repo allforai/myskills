@@ -17,7 +17,9 @@
     "stitch": {
       "command": "stitch-mcp",
       "args": ["proxy"],
-      "env": {}
+      "env": {
+        "GOOGLE_CLOUD_PROJECT": "gen-lang-client-0851699964"
+      }
     }
   }
 }
