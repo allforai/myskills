@@ -123,7 +123,7 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
    - 可用 → **✅ 就绪**
    - 不可用 → 检查 `~/.stitch-mcp/config/application_default_credentials.json` 是否存在
      - 凭证存在 → **⚠️ OAuth 已完成但 MCP 未注册**（提示：`claude mcp add -s user stitch -- npx -y @_davideast/stitch-mcp proxy`，然后重启）
-     - 凭证不存在 → **❌ 未配置**（需先完成 OAuth: 终端运行 `npx -y @_davideast/stitch-mcp init`，然后注册 MCP: `claude mcp add -s user stitch -- npx -y @_davideast/stitch-mcp proxy`）
+     - 凭证不存在 → **❌ 未配置**（需先完成 OAuth: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/stitch_oauth.py`，然后注册 MCP: `claude mcp add -s user stitch -- npx -y @_davideast/stitch-mcp proxy`）
 
 #### 状态仪表板输出
 
@@ -204,17 +204,21 @@ claude mcp add -s user stitch -- npx -y @_davideast/stitch-mcp proxy
 
 检查 `~/.stitch-mcp/config/application_default_credentials.json` 是否存在：
 - 存在 → OAuth 已完成，提示重启 Claude Code 即可
-- 不存在 → 提示用户在终端手动运行 OAuth 初始化：
+- 不存在 → 使用内置 Python 脚本完成 OAuth：
 
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/stitch_oauth.py
 ```
-Stitch MCP 已注册。还需完成一次 Google OAuth 认证。
-请在终端（非 Claude Code）运行：
 
-  npx -y @_davideast/stitch-mcp init
+脚本会自动打开浏览器完成 Google OAuth。如果浏览器无法打开（如远程服务器），使用手动模式：
 
-选择 Claude Code → 浏览器授权 → 完成后重启 Claude Code。
-OAuth 凭证长期有效，只需做一次。
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/stitch_oauth.py --manual
 ```
+
+手动模式会打印一个 URL，用户在任意浏览器打开授权后，将验证码粘贴回终端。
+
+OAuth 凭证长期有效（以年计），只需做一次。
 
 ### Step 2: 引导获取 Key
 
