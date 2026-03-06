@@ -259,7 +259,7 @@ def apply_type_frequency_preset(screens, product_type, audience, platform):
         # 查表
         if itype in preset.get('excluded', []):
             type_tier.append({
-                'screen_id': screen['id'],
+                'id': screen['id'],
                 'screen_name': screen['name'],
                 'interaction_type': itype,
                 'type_frequency': 'excluded',
@@ -268,7 +268,7 @@ def apply_type_frequency_preset(screens, product_type, audience, platform):
             })
         elif itype in preset.get('低频', []):
             type_tier.append({
-                'screen_id': screen['id'],
+                'id': screen['id'],
                 'screen_name': screen['name'],
                 'interaction_type': itype,
                 'type_frequency': 'low',
@@ -277,7 +277,7 @@ def apply_type_frequency_preset(screens, product_type, audience, platform):
             })
         elif itype in preset.get('高频', []):
             type_tier.append({
-                'screen_id': screen['id'],
+                'id': screen['id'],
                 'screen_name': screen['name'],
                 'interaction_type': itype,
                 'type_frequency': 'high',
@@ -287,7 +287,7 @@ def apply_type_frequency_preset(screens, product_type, audience, platform):
         else:
             # 中频或未知类型，待评估
             type_tier.append({
-                'screen_id': screen['id'],
+                'id': screen['id'],
                 'screen_name': screen['name'],
                 'interaction_type': itype,
                 'type_frequency': 'medium',

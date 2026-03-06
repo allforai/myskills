@@ -112,7 +112,7 @@
 
 ## `screen-index.json` Schema
 
-从 `screen-map.json` 提取关键字段，按模块分组。模块归组：按关联任务的 `task_name` 语义聚类，与 `task-index.json` 的模块一致。
+从 `screen-map.json` 提取关键字段，按模块分组。模块归组：按关联任务的 `name` 语义聚类，与 `task-index.json` 的模块一致。
 
 ```json
 {

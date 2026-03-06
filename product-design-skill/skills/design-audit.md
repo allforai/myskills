@@ -458,7 +458,7 @@ Step 6: 汇总报告
       {
         "type": "BEHAVIORAL_DRIFT | BEHAVIORAL_VIOLATION",
         "category_id": "BC-DELETE-CONFIRM",
-        "screen_id": "S-05",
+        "id": "S-05",
         "expected": "modal_confirm",
         "actual": "no_confirm",
         "severity": "MEDIUM",
@@ -538,7 +538,7 @@ def check_layout_consistency(screens, layout_constraints):
             if layout in forbidden_layouts:
                 issues.append({
                     'type': 'LAYOUT_FORBIDDEN',
-                    'screen_id': screen['id'],
+                    'id': screen['id'],
                     'screen_name': screen['name'],
                     'interaction_type': type_key,
                     'layout': layout,
@@ -551,7 +551,7 @@ def check_layout_consistency(screens, layout_constraints):
             elif allowed_layouts and layout not in allowed_layouts:
                 issues.append({
                     'type': 'LAYOUT_DRIFT',
-                    'screen_id': screen['id'],
+                    'id': screen['id'],
                     'screen_name': screen['name'],
                     'interaction_type': type_key,
                     'layout': layout,
@@ -653,7 +653,7 @@ def check_type_context_match(screens, product_type, audience, platform):
     "issues": [
       {
         "type": "LAYOUT_FORBIDDEN",
-        "screen_id": "S015",
+        "id": "S015",
         "screen_name": "商品管理",
         "interaction_type": "MG1",
         "layout": "form",

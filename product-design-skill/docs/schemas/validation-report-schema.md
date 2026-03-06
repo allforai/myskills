@@ -15,7 +15,7 @@
   "completeness": [
     {
       "task_id": "T001",
-      "task_name": "创建并提交退款单",
+      "name": "创建并提交退款单",
       "level": "WARNING",
       "flags": ["THIN_AC"],
       "detail": "acceptance_criteria 只有 2 条，建议补充到 3 条以上",

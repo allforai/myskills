@@ -820,7 +820,7 @@ def select_priority_screens(screens, limit=10):
         if len(s.get("actions", [])) >= 3:
             score += 1
 
-        scored.append((score, s["screen_id"], s))
+        scored.append((score, s["id"], s))
 
     scored.sort(key=lambda x: -x[0])
     selected = scored[:limit]

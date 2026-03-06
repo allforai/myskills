@@ -246,7 +246,7 @@ Step 7: 状态机完整性检查（quick / journey 模式跳过）
 ```json
 [
   {
-    "screen_id": "S001",
+    "id": "S001",
     "screen_name": "{界面名}",
     "gaps": ["NO_PRIMARY", "SILENT_FAILURE"],
     "details": [

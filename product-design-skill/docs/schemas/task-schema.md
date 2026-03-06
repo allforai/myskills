@@ -7,7 +7,7 @@
   "tasks": [
     {
       "id": "T001",
-      "task_name": "创建并提交退款单",
+      "name": "创建并提交退款单",
       "value": "把退款申请从线下表格改为系统闭环，减少漏审与重复退款",
       "owner_role": "R001",
       "approver_role": "R002",
@@ -74,7 +74,7 @@
 | 字段 | 层级 | 说明 |
 |------|------|------|
 | `id` | required | 全局唯一任务标识（如 T001） |
-| `task_name` | required | 动词 + 对象 + 结果（可操作动作，不用空词） |
+| `name` | required | 动词 + 对象 + 结果（可操作动作，不用空词） |
 | `owner_role` | required | 主操作角色 |
 | `frequency` | required | 高/中/低 |
 | `risk_level` | required | 高/中/低 |
