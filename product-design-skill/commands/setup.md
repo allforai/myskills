@@ -75,7 +75,7 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 1. **检查 MCP 工具**：检查 `mcp__plugin_playwright_playwright__browser_navigate` 工具是否可用
    - 可用 → **✅ 就绪**
-   - 不可用 → **❌ 未安装**（提示：`claude mcp add -s user playwright -- npx -y @playwright/mcp@latest`，安装后重启 Claude Code）
+   - 不可用 → **❌ 未安装**（提示安装 Playwright MCP，见 Step 1.5a）
 
 #### 1b. OpenRouter
 
@@ -85,7 +85,9 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 2. **脚本通道**：检查 `OPENROUTER_API_KEY` 环境变量
    - 已设置 → 脚本 XV 就绪
-   - 未设置 → 脚本 XV 未就绪
+   - 未设置 → **fallback 检查** `.mcp.json` 的 `mcpServers.ai-gateway.env.OPENROUTER_API_KEY`：
+     - 值存在且非模板引用（不以 `${` 开头）→ 脚本 XV 就绪（via .mcp.json）
+     - 否则 → 脚本 XV 未就绪
 
 #### 1c. Brave Search
 
@@ -93,9 +95,11 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
    - 可用 → Brave MCP 就绪（ai-gateway 已加载且 BRAVE_API_KEY 已配置）
    - 不可用 → Brave MCP 未就绪
 
-2. **环境变量**：检查 `BRAVE_API_KEY` 环境变量
-   - 已设置 → Brave Key 就绪（脚本可用）
-   - 未设置 → Brave 未就绪
+2. **脚本通道**：检查 `BRAVE_API_KEY` 环境变量
+   - 已设置 → Brave Key 就绪
+   - 未设置 → **fallback 检查** `.mcp.json` 的 `mcpServers.ai-gateway.env.BRAVE_API_KEY`：
+     - 值存在且非模板引用 → Brave Key 就绪（via .mcp.json）
+     - 否则 → Brave 未就绪
 
 #### 1d. Google AI
 
@@ -103,9 +107,11 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
    - 可用 → Google AI MCP 就绪（ai-gateway 已加载且 GOOGLE_API_KEY 已配置）
    - 不可用 → Google AI MCP 未就绪
 
-2. **环境变量**：检查 `GOOGLE_API_KEY` 环境变量
-   - 已设置 → Google AI Key 就绪（脚本可用）
-   - 未设置 → Google AI 未就绪
+2. **脚本通道**：检查 `GOOGLE_API_KEY` 环境变量
+   - 已设置 → Google AI Key 就绪
+   - 未设置 → **fallback 检查** `.mcp.json` 的 `mcpServers.ai-gateway.env.GOOGLE_API_KEY`：
+     - 值存在且非模板引用 → Google AI Key 就绪（via .mcp.json）
+     - 否则 → Google AI 未就绪
 
 #### 1e. fal.ai (FLUX + Kling)
 
@@ -113,17 +119,21 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
    - 可用 → fal.ai MCP 就绪
    - 不可用 → fal.ai MCP 未就绪
 
-2. **环境变量**：检查 `FAL_KEY` 环境变量
+2. **脚本通道**：检查 `FAL_KEY` 环境变量
    - 已设置 → fal.ai Key 就绪
-   - 未设置 → fal.ai 未就绪
+   - 未设置 → **fallback 检查** `.mcp.json` 的 `mcpServers.ai-gateway.env.FAL_KEY`：
+     - 值存在且非模板引用 → fal.ai Key 就绪（via .mcp.json）
+     - 否则 → fal.ai 未就绪
 
 #### 1f. Stitch UI
 
-1. **检查 MCP 工具**：检查 `mcp__stitch__create_project` 工具是否可用（用户级 MCP）
+1. **检查 MCP 工具**：检查 `mcp__plugin_product-design_stitch__create_project` 或 `mcp__stitch__create_project` 工具是否可用
    - 可用 → **✅ 就绪**
    - 不可用 → 检查 `~/.stitch-mcp/config/application_default_credentials.json` 是否存在
-     - 凭证存在 → **⚠️ OAuth 已完成但 MCP 未注册**（提示：`claude mcp add -s user stitch -- npx -y @_davideast/stitch-mcp proxy`，然后重启）
-     - 凭证不存在 → **❌ 未配置**（需先完成 OAuth: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/stitch_oauth.py`，然后注册 MCP: `claude mcp add -s user stitch -- npx -y @_davideast/stitch-mcp proxy`）
+     - 凭证存在 → 检查是否包含 `quota_project_id` 字段：
+       - 有 → **⚠️ OAuth 已完成但 MCP 未加载**（可能需要重启 Claude Code）
+       - 无 → **⚠️ OAuth 已完成但缺少 quota project**（需运行 Step 1.5b 补充配置）
+     - 凭证不存在 → **❌ 未配置**（需先完成 OAuth 和 quota project 配置）
 
 #### 状态仪表板输出
 
@@ -194,16 +204,21 @@ Playwright MCP 已注册到用户级配置。需重启 Claude Code 后生效。
 
 ##### 选择「安装」时：
 
-**Step 1: 注册 MCP 服务器**
+**Step 1: 安装 stitch-mcp**
 
+检查 `stitch-mcp` 是否已全局安装：
 ```bash
-claude mcp add -s user stitch -- npx -y @_davideast/stitch-mcp proxy
+which stitch-mcp
 ```
+- 已安装 → 跳过
+- 未安装 → 安装：`npm install -g @_davideast/stitch-mcp`
+
+> **注意**: 不要用 `npx -y @_davideast/stitch-mcp proxy` 启动 Stitch MCP。npx 启动太慢会导致 MCP 握手超时。必须全局安装后用 `stitch-mcp proxy` 直接启动。
 
 **Step 2: 检查 OAuth 凭证**
 
 检查 `~/.stitch-mcp/config/application_default_credentials.json` 是否存在：
-- 存在 → OAuth 已完成，提示重启 Claude Code 即可
+- 存在 → 继续 Step 3
 - 不存在 → 使用内置 Python 脚本完成 OAuth：
 
 ```bash
@@ -219,6 +234,45 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/stitch_oauth.py --manual
 手动模式会打印一个 URL，用户在任意浏览器打开授权后，将验证码粘贴回终端。
 
 OAuth 凭证长期有效（以年计），只需做一次。
+
+**Step 3: 配置 quota project**
+
+读取 `~/.stitch-mcp/config/application_default_credentials.json`，检查是否包含 `quota_project_id` 字段：
+- 已有 → 跳过
+- 缺失 → 需要配置。使用 ADC 的 refresh_token 调用 Google API 列出用户的 GCP 项目：
+
+```python
+# 用 refresh_token 换取 access_token，然后调用 cloudresourcemanager API
+GET https://cloudresourcemanager.googleapis.com/v1/projects?pageSize=10
+Authorization: Bearer {access_token}
+```
+
+展示项目列表，让用户选择一个（优先推荐名称含 "Gemini" 或 "AI" 的项目）。然后将选中的 project ID 写入 ADC 文件的 `quota_project_id` 字段。
+
+如果用户没有任何 GCP 项目，提示：
+```
+需要一个 Google Cloud 项目作为 Stitch API 的计费项目。
+1. 访问 https://console.cloud.google.com/projectcreate
+2. 创建一个项目（名称随意）
+3. 重新运行 /setup
+```
+
+**Step 4: 确认 MCP 已在插件 .mcp.json 中注册**
+
+检查 `${CLAUDE_PLUGIN_ROOT}/.mcp.json` 是否包含 `stitch` 服务器配置：
+- 已有 → 跳过
+- 缺失 → 添加到 `.mcp.json`：
+```json
+"stitch": {
+  "command": "stitch-mcp",
+  "args": ["proxy"],
+  "env": {
+    "GOOGLE_CLOUD_PROJECT": "{选中的 project ID}"
+  }
+}
+```
+
+提示重启 Claude Code 后生效。
 
 ### Step 2: 引导获取 Key
 
@@ -467,10 +521,11 @@ AI Gateway（统一 MCP 服务器）:
   fal.ai           {就绪/未就绪}   demo-forge — FLUX 2 Pro + Kling 生视频
   Brave Search     {就绪/未就绪}   demo-forge — 媒体搜索（网页/图片/视频）
 
-API Key（脚本回退）:
-  OpenRouter Key   {就绪/未就绪}   product-design 预置脚本 — XV 交叉验证
-  Google AI Key    {就绪/未就绪}   demo-forge 预置脚本 — AI 生图/生视频/TTS
-  Brave Key        {就绪/未就绪}   demo-forge 预置脚本 — 媒体搜索
+API Key（脚本回退，检查 env var → fallback .mcp.json）:
+  OpenRouter Key   {就绪/就绪 via .mcp.json/未就绪}   product-design 预置脚本 — XV 交叉验证
+  Google AI Key    {就绪/就绪 via .mcp.json/未就绪}   demo-forge 预置脚本 — AI 生图/生视频/TTS
+  Brave Key        {就绪/就绪 via .mcp.json/未就绪}   demo-forge 预置脚本 — 媒体搜索
+  fal.ai Key       {就绪/就绪 via .mcp.json/未就绪}   demo-forge 预置脚本 — FLUX 2 Pro + Kling
 
 内置:
   WebSearch        就绪            product-design, demo-forge — 搜索
