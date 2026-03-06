@@ -79,27 +79,27 @@ def gen_happy(task):
     prio = calc_priority(task)
     given = task.get("prerequisites", [])
     if not given:
-        given = ["用户已登录", f"具备{task['task_name']}的操作权限"]
+        given = ["用户已登录", f"具备{task['name']}的操作权限"]
     when_steps = task.get("main_flow", [])
     if not when_steps:
-        when_steps = [task["task_name"]]
+        when_steps = [task["name"]]
     then_steps = []
     outputs = task.get("outputs", {})
     if isinstance(outputs, dict):
         then_steps.extend(outputs.get("states", []))
         then_steps.extend(outputs.get("messages", []))
     if not then_steps:
-        then_steps = [f"{task['task_name']}操作成功", "页面展示操作成功提示"]
+        then_steps = [f"{task['name']}操作成功", "页面展示操作成功提示"]
     return {
         "id": next_uc(),
-        "title": f"{task['task_name']}_正常流",
+        "title": f"{task['name']}_正常流",
         "type": "happy_path",
         "priority": prio,
         "given": given,
         "when": when_steps,
         "then": then_steps,
         "screen_ref": get_screen_ref(tid),
-        "action_ref": task["task_name"],
+        "action_ref": task["name"],
         "exception_source": None,
         "flags": []
     }
@@ -115,28 +115,28 @@ def gen_exceptions(task):
         response = parts[1].strip() if len(parts) > 1 else "系统提示异常"
         cases.append({
             "id": next_uc(),
-            "title": f"{task['task_name']}_{trigger}",
+            "title": f"{task['name']}_{trigger}",
             "type": "exception",
             "priority": prio,
-            "given": ["用户已登录", f"正在执行{task['task_name']}"],
+            "given": ["用户已登录", f"正在执行{task['name']}"],
             "when": [trigger],
             "then": [response],
             "screen_ref": get_screen_ref(tid),
-            "action_ref": task["task_name"],
+            "action_ref": task["name"],
             "exception_source": f"task.exceptions[{i}]",
             "flags": []
         })
     if not excs:
         cases.append({
             "id": next_uc(),
-            "title": f"{task['task_name']}_无异常定义",
+            "title": f"{task['name']}_无异常定义",
             "type": "exception",
             "priority": "低",
             "given": [],
             "when": [],
             "then": [],
             "screen_ref": get_screen_ref(tid),
-            "action_ref": task["task_name"],
+            "action_ref": task["name"],
             "exception_source": None,
             "flags": ["NO_EXCEPTION_CASES"]
         })
@@ -153,14 +153,14 @@ def gen_boundary(task):
         if any(kw in rule for kw in boundary_keywords):
             cases.append({
                 "id": next_uc(),
-                "title": f"{task['task_name']}_边界_{rule[:20]}",
+                "title": f"{task['name']}_边界_{rule[:20]}",
                 "type": "boundary",
                 "priority": prio,
-                "given": ["用户已登录", f"正在执行{task['task_name']}"],
+                "given": ["用户已登录", f"正在执行{task['name']}"],
                 "when": [f"触发边界条件: {rule}"],
                 "then": [f"系统按规则处理: {rule}"],
                 "screen_ref": get_screen_ref(tid),
-                "action_ref": task["task_name"],
+                "action_ref": task["name"],
                 "rule_source": f"task.rules[{i}]",
                 "flags": []
             })
@@ -177,14 +177,14 @@ def gen_validation(task):
             for vr in act.get("validation_rules", []):
                 cases.append({
                     "id": next_uc(),
-                    "title": f"{task['task_name']}_校验_{vr[:20]}",
+                    "title": f"{task['name']}_校验_{vr[:20]}",
                     "type": "validation",
                     "priority": prio,
-                    "given": ["用户已登录", f"正在执行{task['task_name']}"],
+                    "given": ["用户已登录", f"正在执行{task['name']}"],
                     "when": [f"违反校验规则: {vr}"],
                     "then": [f"系统提示校验失败: {vr}"],
                     "screen_ref": s.get("id"),
-                    "action_ref": act.get("label", task["task_name"]),
+                    "action_ref": act.get("label", task["name"]),
                     "validation_rule": vr,
                     "flags": []
                 })
@@ -231,7 +231,7 @@ def _apply_edge_case_findings(data, roles_tree, tasks_by_id, uc_counter):
             "when": [mc.get("title", "")],
             "then": [],
             "screen_ref": None,
-            "action_ref": t_data.get("task_name", ""),
+            "action_ref": t_data.get("name", ""),
             "exception_source": None,
             "flags": ["XV_EDGE_CASE"],
             "xv_source": "edge_case_generation",
@@ -287,7 +287,7 @@ for fa in feature_areas:
 
         role_fas[rid][fa["id"]]["tasks"].append({
             "id": tid,
-            "task_name": task["task_name"],
+            "name": task["name"],
             "category": task.get("category", ""),
             "use_cases": ucs
         })
@@ -312,7 +312,7 @@ for flow in flows:
         if isinstance(node, dict):
             task_ref = node.get("task_ref", "")
             t = tasks_by_id.get(task_ref, {})
-            task_name = t.get("task_name", node.get("name", str(task_ref)))
+            task_name = t.get("name", node.get("name", str(task_ref)))
             steps_list.append({
                 "seq": node.get("seq", len(steps_list) + 1),
                 "task_ref": task_ref,
@@ -322,7 +322,7 @@ for flow in flows:
             steps_list.append({
                 "seq": len(steps_list) + 1,
                 "task_ref": node,
-                "action": tasks_by_id[node]["task_name"]
+                "action": tasks_by_id[node]["name"]
             })
     e2e_cases.append({
         "id": f"E2E-{fid}-01",
@@ -665,7 +665,7 @@ for role_entry in roles_tree:
         lines.append(f"\n### {fa_data['name']}\n")
         for t_data in fa_data["tasks"]:
             uc_count = len(t_data["use_cases"])
-            lines.append(f"\n**{t_data['id']} {t_data['task_name']}**（{uc_count} 条用例）\n")
+            lines.append(f"\n**{t_data['id']} {t_data['name']}**（{uc_count} 条用例）\n")
             lines.append("| ID | 标题 | 类型 | 优先级 |")
             lines.append("|----|------|------|--------|")
             for uc in t_data["use_cases"]:

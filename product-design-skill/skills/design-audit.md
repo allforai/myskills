@@ -254,7 +254,7 @@ Step 6: 汇总报告
 | `COVERED` | 任务被下游层完整消费 |
 | `GAP` | 任务未被某下游层消费 |
 
-每个 gap 项列出：check_id、task_id、task_name、missing_in（缺失的下游层）。
+每个 gap 项列出：check_id、task_id、name、missing_in（缺失的下游层）。
 
 ---
 
@@ -769,7 +769,7 @@ def check_type_context_match(screens, product_type, audience, platform):
       "check_id": "C2",
       "type": "GAP",
       "task_id": "T015",
-      "task_name": "任务名",
+      "name": "任务名",
       "missing_in": "use-case",
       "detail": "任务 T015 没有对应的用例"
     }
@@ -779,7 +779,7 @@ def check_type_context_match(screens, product_type, audience, platform):
       "check_id": "X1",
       "type": "CONFLICT",
       "task_id": "T008",
-      "task_name": "任务名",
+      "name": "任务名",
       "detail": "feature-gap 报此任务有缺口，但 feature-prune 标为 CUT"
     }
   ]

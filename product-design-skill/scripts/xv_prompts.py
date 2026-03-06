@@ -94,7 +94,7 @@ def edge_case_prompt(roles_tree):
             for t in fa.get("tasks", [])[:5]:
                 area["tasks"].append({
                     "task_id": t["id"],
-                    "task_name": t["task_name"],
+                    "name": t["name"],
                     "use_case_titles": [uc.get("title", "") for uc in t.get("use_cases", [])[:5]]
                 })
             role_info["areas"].append(area)
@@ -190,7 +190,7 @@ def pruning_second_opinion_prompt(decisions, tasks_dict, flow_task_refs):
         task = tasks_dict.get(tid, {})
         summary.append({
             "task_id": tid,
-            "task_name": d["item_name"],
+            "name": d["item_name"],
             "decision": d["decision"],
             "frequency": task.get("frequency", "?"),
             "category": task.get("category", "?"),
@@ -239,7 +239,7 @@ def competitive_benchmark_prompt(comp_ref, decisions):
         tid = feat.get("task_id", "")
         summary.append({
             "task_id": tid,
-            "task_name": feat.get("task_name", ""),
+            "name": feat.get("name", ""),
             "competitor_coverage": feat.get("competitor_coverage", "unknown"),
             "prune_decision": decision_map.get(tid, "?"),
         })
@@ -253,8 +253,8 @@ def competitive_benchmark_prompt(comp_ref, decisions):
         "(potential differentiators worth highlighting)\n\n"
         "Respond with ONLY valid JSON, no markdown fences, no explanation.\n"
         "Schema:\n"
-        '{"competitive_risks": [{"task_id": str, "task_name": str, "coverage": str, "risk": str}], '
-        '"differentiators": [{"task_id": str, "task_name": str, "opportunity": str}]}'
+        '{"competitive_risks": [{"task_id": str, "name": str, "coverage": str, "risk": str}], '
+        '"differentiators": [{"task_id": str, "name": str, "opportunity": str}]}'
     )
 
     user = (
@@ -411,7 +411,7 @@ def coverage_analysis_prompt(coverage_issues, task_count, layer_count):
         layer = ci.get("missing_in", "unknown")
         by_layer.setdefault(layer, []).append({
             "task_id": ci["task_id"],
-            "task_name": ci["task_name"],
+            "name": ci["name"],
         })
 
     system = (
@@ -422,7 +422,7 @@ def coverage_analysis_prompt(coverage_issues, task_count, layer_count):
         "3. Patterns — systematic coverage failures that suggest a process issue\n\n"
         "Respond with ONLY valid JSON, no markdown fences, no explanation.\n"
         "Schema:\n"
-        '{"critical_gaps": [{"task_id": str, "task_name": str, "missing_in": str, "risk": str}], '
+        '{"critical_gaps": [{"task_id": str, "name": str, "missing_in": str, "risk": str}], '
         '"acceptable_gaps": [{"task_id": str, "reason": str}], '
         '"patterns": [{"pattern": str, "affected_count": int, "suggestion": str}]}'
     )

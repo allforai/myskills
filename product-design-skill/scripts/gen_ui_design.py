@@ -332,7 +332,7 @@ for role in roles:
     rscreens = role_screens.get(rid, [])
     screen_count = len(rscreens)
     role_tasks = [t for t in inv["tasks"] if t["owner_role"] == rid and t.get("frequency") == "高"]
-    top3 = [t["task_name"] for t in role_tasks[:3]]
+    top3 = [t["name"] for t in role_tasks[:3]]
     safe_name = rname.replace("/", "-").replace(" ", "-")
     badge_class = "badge-consumer" if at == "consumer" else "badge-professional"
     index_cards.append(f"""

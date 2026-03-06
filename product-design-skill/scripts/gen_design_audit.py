@@ -190,9 +190,9 @@ for tid in task_ids:
                 "check_id": "C1",
                 "type": "GAP",
                 "task_id": tid,
-                "task_name": tasks[tid]["task_name"],
+                "name": tasks[tid]["name"],
                 "missing_in": "screen-map",
-                "detail": f"任务 {tid} ({tasks[tid]['task_name']}) 在 screen-map 中无对应界面"
+                "detail": f"任务 {tid} ({tasks[tid]['name']}) 在 screen-map 中无对应界面"
             })
 
     if "use-case" in available_layers:
@@ -204,9 +204,9 @@ for tid in task_ids:
                 "check_id": "C2",
                 "type": "GAP",
                 "task_id": tid,
-                "task_name": tasks[tid]["task_name"],
+                "name": tasks[tid]["name"],
                 "missing_in": "use-case",
-                "detail": f"任务 {tid} ({tasks[tid]['task_name']}) 无对应用例"
+                "detail": f"任务 {tid} ({tasks[tid]['name']}) 无对应用例"
             })
 
     if "feature-gap" in available_layers:
@@ -218,9 +218,9 @@ for tid in task_ids:
                 "check_id": "C3",
                 "type": "GAP",
                 "task_id": tid,
-                "task_name": tasks[tid]["task_name"],
+                "name": tasks[tid]["name"],
                 "missing_in": "feature-gap",
-                "detail": f"任务 {tid} ({tasks[tid]['task_name']}) 未被 feature-gap 检查"
+                "detail": f"任务 {tid} ({tasks[tid]['name']}) 未被 feature-gap 检查"
             })
 
     if "feature-prune" in available_layers:
@@ -232,9 +232,9 @@ for tid in task_ids:
                 "check_id": "C4",
                 "type": "GAP",
                 "task_id": tid,
-                "task_name": tasks[tid]["task_name"],
+                "name": tasks[tid]["name"],
                 "missing_in": "feature-prune",
-                "detail": f"任务 {tid} ({tasks[tid]['task_name']}) 无 prune 决策"
+                "detail": f"任务 {tid} ({tasks[tid]['name']}) 无 prune 决策"
             })
 
 coverage_rate = f"{coverage_covered / coverage_total * 100:.0f}%" if coverage_total > 0 else "N/A"
@@ -254,7 +254,7 @@ if "feature-gap" in available_layers and "feature-prune" in available_layers:
                     "check_id": "X1",
                     "type": "CONFLICT",
                     "task_id": tid,
-                    "task_name": tasks.get(tid, {}).get("task_name", "?"),
+                    "name": tasks.get(tid, {}).get("name", "?"),
                     "detail": f"feature-gap 报 {tid} 有缺口，但 feature-prune 标为 CUT — 矛盾"
                 })
             else:
@@ -265,13 +265,13 @@ if "ui-design" in available_layers and "feature-prune" in available_layers:
     for tid, decision in prune_map.items():
         if decision == "CUT":
             cross_total += 1
-            tname = tasks.get(tid, {}).get("task_name", "")
+            tname = tasks.get(tid, {}).get("name", "")
             if tname and tname in ui_spec_text:
                 cross_issues.append({
                     "check_id": "X2",
                     "type": "CONFLICT",
                     "task_id": tid,
-                    "task_name": tname,
+                    "name": tname,
                     "detail": f"CUT 任务 {tid} ({tname}) 仍出现在 ui-design-spec.md 中"
                 })
             else:
@@ -291,7 +291,7 @@ if "screen-map" in available_layers:
                             "check_id": "X3",
                             "type": "WARNING",
                             "task_id": tid,
-                            "task_name": task["task_name"],
+                            "name": task["name"],
                             "detail": f"高频任务 {tid} 的操作 '{a.get('label', '')}' click_depth={a['click_depth']} ≥ 3（被埋深）"
                         })
 
@@ -303,7 +303,7 @@ if tasks_without_category:
         "check_id": "X4",
         "type": "WARNING",
         "task_id": ",".join(tasks_without_category[:5]),
-        "task_name": f"{len(tasks_without_category)} tasks missing category",
+        "name": f"{len(tasks_without_category)} tasks missing category",
         "detail": f"{len(tasks_without_category)} 个任务缺少 category 字段（basic/core），影响下游剪枝和优先级判定"
     })
 else:
@@ -320,8 +320,8 @@ if "feature-prune" in available_layers:
                 "check_id": "X5",
                 "type": "CONFLICT",
                 "task_id": tid,
-                "task_name": t.get("task_name", "?"),
-                "detail": f"基本功能 {tid} ({t.get('task_name','?')}) 被标为 CUT — basic 类任务不应被剪除"
+                "name": t.get("name", "?"),
+                "detail": f"基本功能 {tid} ({t.get('name','?')}) 被标为 CUT — basic 类任务不应被剪除"
             })
 
 # ── Fidelity ──────────────────────────────────────────────────────────────────
@@ -505,7 +505,7 @@ if conflicts:
     lines.append("| # | 检查项 | 任务 | 说明 |")
     lines.append("|---|--------|------|------|")
     for i, c in enumerate(conflicts, 1):
-        lines.append(f"| {i} | {c['check_id']} | {c.get('task_name', '')} | {c['detail']} |")
+        lines.append(f"| {i} | {c['check_id']} | {c.get('name', '')} | {c['detail']} |")
 
 if orphans:
     lines.append("\n## ORPHAN（无源头）\n")
@@ -519,7 +519,7 @@ if gaps:
     lines.append("| # | 检查项 | 任务 | 缺失层 | 说明 |")
     lines.append("|---|--------|------|--------|------|")
     for i, g in enumerate(gaps[:30], 1):
-        lines.append(f"| {i} | {g['check_id']} | {g['task_name']} | {g['missing_in']} | {g['detail'][:80]} |")
+        lines.append(f"| {i} | {g['check_id']} | {g['name']} | {g['missing_in']} | {g['detail'][:80]} |")
     if len(gaps) > 30:
         lines.append(f"\n... 及另外 {len(gaps) - 30} 个 GAP\n")
 
@@ -528,7 +528,7 @@ if warnings:
     lines.append("| # | 检查项 | 任务 | 说明 |")
     lines.append("|---|--------|------|------|")
     for i, w in enumerate(warnings, 1):
-        lines.append(f"| {i} | {w['check_id']} | {w.get('task_name', '')} | {w['detail']} |")
+        lines.append(f"| {i} | {w['check_id']} | {w.get('name', '')} | {w['detail']} |")
 
 with open(os.path.join(OUT, "audit-report.md"), "w", encoding="utf-8") as f:
     f.write("\n".join(lines) + "\n")

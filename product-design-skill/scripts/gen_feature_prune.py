@@ -55,7 +55,7 @@ for tid, task in tasks.items():
         tier = "review"
     freq_tier.append({
         "task_id": tid,
-        "task_name": task["task_name"],
+        "name": task["name"],
         "frequency": freq,
         "tier": tier,
         "data_points": f"frequency={freq}, risk={task.get('risk_level', '低')}"
@@ -109,14 +109,14 @@ for ft in freq_tier:
     risk_level = task.get("risk_level", "低")
     category = task.get("category", "")
     revenue_keywords = {"付费", "购买", "订阅", "支付", "充值", "续费"}
-    is_revenue = any(kw in task["task_name"] for kw in revenue_keywords)
+    is_revenue = any(kw in task["name"] for kw in revenue_keywords)
     has_business_rules = len(rules) >= 2 or len(exceptions) >= 1
     is_basic = category == "basic"
 
     # CRUD completeness: if sibling create/edit exists, delete/cancel must not be CUT
     crud_create = {"创建", "添加", "新增", "注册", "申请", "发起", "提交", "撰写"}
     crud_reverse = {"删除", "移除", "取消", "撤回", "撤销"}
-    task_name = task["task_name"]
+    task_name = task["name"]
     is_crud_reverse = any(kw in task_name for kw in crud_reverse)
     has_crud_sibling = False
     if is_crud_reverse:
@@ -131,7 +131,7 @@ for ft in freq_tier:
             if other_tid == tid:
                 continue
             if other_task.get("owner_role") == role:
-                other_name = other_task["task_name"]
+                other_name = other_task["name"]
                 if any(kw in other_name for kw in crud_create):
                     # Method 1: share >=2 common chars at end (e.g. 宠物档案)
                     for elen in range(4, 1, -1):
@@ -213,7 +213,7 @@ for ft in freq_tier:
 
     scenario_align.append({
         "task_id": tid,
-        "task_name": task["task_name"],
+        "name": task["name"],
         "tier": ft["tier"],
         "question_a": question_a,
         "question_b": question_b,
@@ -243,7 +243,7 @@ some_features = {
 }
 
 for tid, task in tasks.items():
-    tname = task["task_name"]
+    tname = task["name"]
     if tname in core_features_competitors_have:
         coverage = "all_have"
     elif tname in some_features:
@@ -252,7 +252,7 @@ for tid, task in tasks.items():
         coverage = "none_have"
     comp_ref["features"].append({
         "task_id": tid,
-        "task_name": tname,
+        "name": tname,
         "competitor_coverage": coverage,
         "notes": ""
     })
@@ -269,7 +269,7 @@ for ft in freq_tier:
             "step": "Step 4",
             "item_id": ft["task_id"],
             "task_id": ft["task_id"],
-            "item_name": ft["task_name"],
+            "item_name": ft["name"],
             "decision": "CORE",
             "reason": f"高频受保护（frequency=高）— 策略={scope_strategy}",
             "decided_at": NOW
@@ -281,7 +281,7 @@ for sa in scenario_align:
         "step": "Step 4",
         "item_id": sa["task_id"],
         "task_id": sa["task_id"],
-        "item_name": sa["task_name"],
+        "item_name": sa["name"],
         "decision": sa["preliminary_decision"],
         "reason": sa["reason"],
         "decided_at": NOW
@@ -427,7 +427,7 @@ for d in decisions:
 
         prune_tasks.append({
             "id": f"PRUNE-{prune_counter:03d}",
-            "title": f"{task.get('task_name', tid)} → {d['decision']}",
+            "title": f"{task.get('name', tid)} → {d['decision']}",
             "decision": d["decision"],
             "affected_tasks": [tid],
             "affected_screens": sids,

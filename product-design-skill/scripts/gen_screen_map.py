@@ -74,7 +74,7 @@ else:
         role_name = role_map.get(role_id, role_id)
         modules.append({
             "name": f"{role_name}管理",
-            "tasks": [{"id": t["id"], "task_name": t["task_name"]} for t in tasks]
+            "tasks": [{"id": t["id"], "name": t["name"]} for t in tasks]
         })
 
 # ── Audience type helpers ────────────────────────────────────────────────────
@@ -172,7 +172,7 @@ for mod in modules:
     mgmt_tasks = []
     read_tasks = []
     for t in mod_tasks:
-        crud = infer_crud(t["task_name"])
+        crud = infer_crud(t["name"])
         if crud in ("C", "U", "D"):
             mgmt_tasks.append((t, crud))
         else:
@@ -237,12 +237,12 @@ for mod in modules:
             elif crud == "U":
                 on_fail = "提示修改失败原因，保留已填内容"
             elif crud == "D":
-                on_fail = f"提示{task['task_name']}失败原因"
+                on_fail = f"提示{task['name']}失败原因"
             else:
                 on_fail = "提示加载失败，显示重试按钮"
 
             action = {
-                "label": task["task_name"],
+                "label": task["name"],
                 "crud": crud,
                 "frequency": freq,
                 "click_depth": depth,

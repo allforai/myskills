@@ -114,7 +114,7 @@ if gap_tasks and prune_decisions:
             task = tasks.get(tid, {})
             contradictions.append({
                 "task_id": tid,
-                "task_name": task.get("task_name", ""),
+                "name": task.get("name", ""),
                 "frequency": task.get("frequency", ""),
                 "category": task.get("category", ""),
                 "risk_level": task.get("risk_level", ""),
@@ -142,7 +142,7 @@ if prune_decisions:
         if task.get("frequency") == "高" and tid in flow_task_refs:
             safety_violations.append({
                 "task_id": tid,
-                "task_name": task.get("task_name", ""),
+                "name": task.get("name", ""),
                 "category": task.get("category", ""),
             })
 

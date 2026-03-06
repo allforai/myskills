@@ -81,7 +81,7 @@ task-inventory.json 为基础      以 task-inventory 为输入        读 scree
 
 > 本增强仅补充“为什么这样设计”的理论解释，不改变原有 flags 与输出结构。
 
-**scope 模式**：运行与 full 相同的 Step 序列，但仅处理 `task-inventory.json` 中 `task_name` 包含指定关键词的任务及其关联界面。
+**scope 模式**：运行与 full 相同的 Step 序列，但仅处理 `task-inventory.json` 中 `name` 包含指定关键词的任务及其关联界面。
 
 **refresh 模式**：将 `screen-map-decisions.json` 重命名为 `.bak` 备份，从 Step 1 开始完整重新运行，忽略所有已有决策缓存。
 
@@ -218,14 +218,14 @@ Step 3: 输出报告
 两阶段加载：
   Phase 1 — 加载索引：
     检查 .allforai/product-map/task-index.json
-      存在 → 加载索引（< 5KB），获取任务 id/task_name/frequency/owner_role/risk_level + 模块分组
+      存在 → 加载索引（< 5KB），获取任务 id/name/frequency/owner_role/risk_level + 模块分组
         scope 模式：从索引的 modules 中匹配指定模块名，仅加载该模块任务的完整数据
         其他模式：进入 Phase 2 加载完整数据
       不存在 → 回退到 Phase 2 全量加载
 
   Phase 2 — 加载完整数据：
     检查 .allforai/product-map/task-inventory.json：
-      存在 → 加载任务列表，提取每个任务的 task_name、exceptions、risk_level、main_flow
+      存在 → 加载任务列表，提取每个任务的 name、exceptions、risk_level、main_flow
       不存在 → 提示：「请先运行 /product-map 生成任务清单，再运行 /screen-map」，终止执行
 
   Phase 2.5 — 加载受众类型：
