@@ -304,9 +304,9 @@ MICRO_PRESETS = {
 }
 
 MICRO_OVERRIDES = {
-    "success": {"animation": "scale-bounce", "haptic": "impact-medium"},
-    "error": {"animation": "shake", "haptic": "notification-error"},
-    "loading": {"animation": "pulse", "haptic": "none"},
+    "success": {"animation": "scale-bounce", "duration_ms": 300, "easing": "cubic-bezier(0.34, 1.56, 0.64, 1)", "haptic": "impact-medium"},
+    "error": {"animation": "shake", "duration_ms": 400, "easing": "ease-out", "haptic": "notification-error"},
+    "loading": {"animation": "pulse", "duration_ms": 1000, "easing": "ease-in-out", "haptic": "none"},
 }
 
 
@@ -346,55 +346,47 @@ for s in screens:
         f"| {preset['duration_ms']}ms | {preset['easing']} | {preset['haptic']} |"
     )
 
+    # Detect CRUD types present on this screen
+    crud_set = {a.get("crud") for a in s.get("actions", [])}
+    has_mutating = crud_set & {"C", "U", "D"}
+
     # Success state override for C-type screens
-    has_create = any(a.get("crud") == "C" for a in s.get("actions", []))
-    if has_create:
-        success_micro = {
+    if "C" in crud_set:
+        ov = MICRO_OVERRIDES["success"]
+        screen_micros.append({
             "trigger": "create-success",
-            "animation": MICRO_OVERRIDES["success"]["animation"],
-            "duration_ms": 300,
-            "easing": "cubic-bezier(0.34, 1.56, 0.64, 1)",
-            "haptic": MICRO_OVERRIDES["success"]["haptic"],
+            **ov,
             "emotion_alignment": "satisfying confirmation",
-        }
-        screen_micros.append(success_micro)
+        })
         spec_lines.append(
-            f"| {s['name']} ({sid}) | create-success | scale-bounce "
-            f"| 300ms | spring overshoot | impact-medium |"
+            f"| {s['name']} ({sid}) | create-success | {ov['animation']} "
+            f"| {ov['duration_ms']}ms | {ov['easing']} | {ov['haptic']} |"
         )
 
-    # Error state override for D-type (destructive) screens
-    has_delete = any(a.get("crud") == "D" for a in s.get("actions", []))
-    if has_delete:
-        error_micro = {
+    # Error state override for any mutating screen (C/U/D)
+    if has_mutating:
+        ov = MICRO_OVERRIDES["error"]
+        screen_micros.append({
             "trigger": "error-feedback",
-            "animation": MICRO_OVERRIDES["error"]["animation"],
-            "duration_ms": 400,
-            "easing": "ease-out",
-            "haptic": MICRO_OVERRIDES["error"]["haptic"],
+            **ov,
             "emotion_alignment": "error alert",
-        }
-        screen_micros.append(error_micro)
+        })
         spec_lines.append(
-            f"| {s['name']} ({sid}) | error-feedback | shake "
-            f"| 400ms | ease-out | notification-error |"
+            f"| {s['name']} ({sid}) | error-feedback | {ov['animation']} "
+            f"| {ov['duration_ms']}ms | {ov['easing']} | {ov['haptic']} |"
         )
 
     # Loading state for screens with async operations (C/U/D)
-    has_async = any(a.get("crud") in ("C", "U", "D") for a in s.get("actions", []))
-    if has_async:
-        loading_micro = {
+    if has_mutating:
+        ov = MICRO_OVERRIDES["loading"]
+        screen_micros.append({
             "trigger": "async-loading",
-            "animation": MICRO_OVERRIDES["loading"]["animation"],
-            "duration_ms": 1000,
-            "easing": "ease-in-out",
-            "haptic": MICRO_OVERRIDES["loading"]["haptic"],
+            **ov,
             "emotion_alignment": "processing feedback",
-        }
-        screen_micros.append(loading_micro)
+        })
         spec_lines.append(
-            f"| {s['name']} ({sid}) | async-loading | pulse "
-            f"| 1000ms | ease-in-out | none |"
+            f"| {s['name']} ({sid}) | async-loading | {ov['animation']} "
+            f"| {ov['duration_ms']}ms | {ov['easing']} | {ov['haptic']} |"
         )
 
     micro_interactions_data.append({
