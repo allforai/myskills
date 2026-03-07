@@ -35,9 +35,18 @@ prefs = concept.get("pipeline_preferences", {}) if concept else {}
 scope_strategy = args.get("strategy", prefs.get("scope_strategy", "balanced"))
 competitors = prefs.get("competitors", [])
 
-# Load screen-map for scenario alignment
-screens, _ = C.load_screen_map(BASE)
-task_screen_map = C.build_task_screen_map(screens)
+# Load experience-map for scenario alignment
+op_lines, screen_index, em_loaded = C.load_experience_map(BASE)
+screens_by_id = C.build_screen_by_id_from_lines(op_lines)
+task_screen_map = C.build_task_screen_map_from_lines(op_lines)
+
+# Count operation lines per task (frequency signal)
+task_line_count = {}
+for ol in op_lines:
+    for node in ol.get("nodes", []):
+        for s in node.get("screens", []):
+            for tid in s.get("tasks", []):
+                task_line_count.setdefault(tid, set()).add(ol["id"])
 
 # Load business flows for CUT safety check
 flows = C.load_business_flows(BASE)
@@ -47,10 +56,13 @@ flow_task_refs = C.collect_flow_task_refs(flows)
 freq_tier = []
 for tid, task in tasks.items():
     freq = task.get("frequency", "低")
+    line_count = len(task_line_count.get(tid, set()))
     if freq == "高":
         tier = "protected"
-    elif freq == "低":
+    elif freq == "低" and line_count == 0:
         tier = "candidate"
+    elif freq == "低":
+        tier = "candidate" if line_count <= 1 else "review"
     else:
         tier = "review"
     freq_tier.append({
@@ -58,7 +70,8 @@ for tid, task in tasks.items():
         "name": task["name"],
         "frequency": freq,
         "tier": tier,
-        "data_points": f"frequency={freq}, risk={task.get('risk_level', '低')}"
+        "line_count": line_count,
+        "data_points": f"frequency={freq}, risk={task.get('risk_level', '低')}, lines={line_count}"
     })
 
 C.write_json(os.path.join(OUT, "frequency-tier.json"), freq_tier)
@@ -73,15 +86,18 @@ for ft in freq_tier:
     task = tasks[tid]
 
     # Question A: Core scenario?
-    screens_for_task = task_screen_map.get(tid, [])
-    if screens_for_task:
+    screen_ids_for_task = task_screen_map.get(tid, [])
+    line_count = len(task_line_count.get(tid, set()))
+    if screen_ids_for_task:
         is_high_freq_action = False
-        for s in screens_for_task:
-            for a in s.get("actions", []):
+        for sid in screen_ids_for_task:
+            scr = screens_by_id.get(sid, {})
+            for a in scr.get("actions", []):
                 if a.get("task_ref") == tid and a.get("frequency") == "高":
                     is_high_freq_action = True
                     break
-        question_a = "core" if is_high_freq_action else "secondary"
+        # Also consider high line count as a core signal
+        question_a = "core" if (is_high_freq_action or line_count >= 3) else "secondary"
     else:
         question_a = "none"
 
@@ -416,7 +432,7 @@ for d in decisions:
         prune_counter += 1
         tid = d["item_id"]
         task = tasks.get(tid, {})
-        sids = [s["id"] for s in task_screen_map.get(tid, [])]
+        sids = task_screen_map.get(tid, [])
 
         if d["decision"] == "DEFER":
             action = "从当前迭代移除，迁移到 backlog，3个月后重新评估"
