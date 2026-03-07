@@ -46,6 +46,7 @@
 | `actions` | array | Action objects with label, crud, frequency, task_ref |
 | `primary_action` | string | Primary action label |
 | `non_negotiable` | array | String array of design constraints |
+| `implementation_contract` | object | `{pattern, forbidden[], required_behaviors[]}` — design intent contract |
 
 ## continuity
 
@@ -66,3 +67,21 @@
   }
 }
 ```
+
+## implementation_contract
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `pattern` | string | UI pattern: `bottom-sheet`, `full-page`, `modal-picker`, `multi-step-form`, `standard-page` |
+| `forbidden` | array | Patterns that must NOT be used for this screen |
+| `required_behaviors` | array | Behaviors that must be implemented |
+
+### Pattern derivation rules
+
+| Condition | Pattern |
+|-----------|---------|
+| ux_intent contains "quick"/"overlay"/"confirm" | `bottom-sheet` |
+| ux_intent contains "detail"/"full" | `full-page` |
+| ux_intent contains "select"/"pick" | `modal-picker` |
+| CRUD "C" + emotion_intensity >= 7 | `multi-step-form` |
+| default | `standard-page` |
