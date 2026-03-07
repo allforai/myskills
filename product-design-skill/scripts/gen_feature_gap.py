@@ -4,7 +4,7 @@ flow-gaps, gap-tasks, gap-report, and decisions.
 
 Pre-built script for Phase 5 (feature-gap). Fixes:
 - Defensive checks for is_primary/on_failure field absence
-- Uses _common.get_screen_tasks() instead of hardcoded field names
+- Uses experience-map (operation_lines) instead of screen-map
 - Uses _common.get_flow_nodes() (nodes, not steps)
 - Pipeline-decisions dedup via _common.append_pipeline_decision()
 
@@ -29,8 +29,9 @@ tasks = C.load_task_inventory(BASE)
 tidx = C.load_task_index(BASE)
 role_map = C.load_role_profiles(BASE)
 
-screens, _ = C.load_screen_map(BASE)
-screens_by_id = C.build_screen_by_id(screens)
+op_lines, screen_index, em_loaded = C.load_experience_map(BASE)
+screens_by_id = C.build_screen_by_id_from_lines(op_lines)
+screens = list(screens_by_id.values())
 
 flows = C.load_business_flows(BASE)
 flow_idx = C.load_flow_index(BASE)
@@ -123,11 +124,7 @@ C.write_json(os.path.join(OUT, "task-gaps.json"), task_gaps)
 
 # ── Step 2: Screen & button completeness check ──────────────────────────────
 screen_gaps = []
-task_screen_map = {}  # task_id -> list of screen_ids
-for s in screens:
-    trefs = C.get_screen_tasks(s)
-    for tid in trefs:
-        task_screen_map.setdefault(tid, []).append(s["id"])
+task_screen_map = C.build_task_screen_map_from_lines(op_lines)
 
 # Check tasks without screens
 for tid in tasks:
@@ -138,7 +135,7 @@ for tid in tasks:
             "gaps": ["NO_SCREEN"],
             "details": [{
                 "flag": "NO_SCREEN",
-                "description": f"任务 {tid} ({tasks[tid]['name']}) 在 screen-map 中无对应界面",
+                "description": f"任务 {tid} ({tasks[tid]['name']}) 在 experience-map 中无对应界面",
                 "affected_tasks": [tid],
                 "severity": "高" if tasks[tid].get("frequency") == "高" else "中"
             }]
@@ -148,7 +145,7 @@ for s in screens:
     gaps = []
     details_list = []
     actions = s.get("actions", [])
-    trefs = C.get_screen_tasks(s)
+    trefs = s.get("tasks", [])
 
     # Check primary action exists (defensive: is_primary may not exist)
     has_primary = any(a.get("is_primary", False) for a in actions)
@@ -207,12 +204,18 @@ for s in screens:
             if g not in seen:
                 seen.add(g)
                 unique_gaps.append(g)
-        screen_gaps.append({
+        entry = {
             "id": s["id"],
             "screen_name": s.get("name", ""),
             "gaps": unique_gaps,
             "details": details_list
-        })
+        }
+        # Enrich with operation line context from screen_index
+        si_entry = screen_index.get(s["id"])
+        if si_entry:
+            entry["operation_line"] = si_entry.get("line", "")
+            entry["node_id"] = si_entry.get("node", "")
+        screen_gaps.append(entry)
 
 C.write_json(os.path.join(OUT, "screen-gaps.json"), screen_gaps)
 
