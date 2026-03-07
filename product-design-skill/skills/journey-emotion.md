@@ -79,6 +79,7 @@ Step 3: 逐条展示旅程线，用户审阅
       每条旅程线以表格形式展示：
       | 节点 | 角色 | 动作 | emotion | intensity | risk | design_hint |
       用户可逐行调整 emotion / intensity / risk / design_hint
+      情绪悬崖检测：相邻节点 intensity 差值 ≥ 4 → 标记 ⚠ WARNING「情绪悬崖：N01→N02 (8→3)」
       → 用户确认当前旅程线
       ↓
 Step 4: 记录用户调整到 decision_log
@@ -262,6 +263,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_journey_emotion.py <BASE>
 
 **安全护栏**（自动模式下仍然停下来问用户）：
 - ERROR 级验证失败（business-flows.json 解析失败、节点引用断裂）
+- **risk=critical 节点**：旅程线中含 `risk: "critical"` 的节点时，该旅程线必须停下展示并 AskUserQuestion 确认，不可 auto_confirmed（critical 节点涉及支付/删除/权限变更，情绪误判会级联传播到 micro-interactions 和设计约束）
 
 ---
 

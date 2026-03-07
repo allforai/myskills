@@ -281,6 +281,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
    - `multi-step-form` → 查找 Stepper / Steps / multi-step 模式
    - `full-page` → 查找独立页面路由
    - `standard-page` → 不检查（默认模式）
+   - 其他值 → ⚠ WARNING「未知 pattern: {value}，跳过验证」（product-design 可能新增了 pattern 但 S3.5 未同步）
 4. 检查 `forbidden` 列表中的模式是否出现
 5. 检查 `required_behaviors` 是否有对应实现
 
