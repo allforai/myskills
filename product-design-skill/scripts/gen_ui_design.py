@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Generate UI design spec, decisions, and HTML previews.
 
-Pre-built script for Phase 7 (ui-design). Fixes:
-- Uses _common.get_screen_tasks() instead of hardcoded field names
+Pre-built script for Phase 7 (ui-design).
+- Reads experience-map (operation_lines with emotion/intent/constraints)
+- Loads interaction-gate for quality-gate issues per node
+- Generates emotion-aware design spec with context fields
+- HTML previews include emotion indicator color bars
 - Style parameterized via --style argument
 - Pipeline-decisions dedup via _common.append_pipeline_decision()
 
@@ -33,10 +36,41 @@ roles = C.load_role_profiles_full(BASE)
 role_map = {r["id"]: r["name"] for r in roles}
 role_audience = {r["id"]: r.get("audience_type", "default") for r in roles}
 
-screens, _ = C.load_screen_map(BASE)
-if not screens:
-    print("ERROR: screen-map.json is required for ui-design", file=sys.stderr)
+op_lines, screen_index, em_loaded = C.load_experience_map(BASE)
+if not em_loaded:
+    print("ERROR: experience-map.json is required for ui-design", file=sys.stderr)
     sys.exit(1)
+
+# Flatten screens from operation lines
+screen_by_id = C.build_screen_by_id_from_lines(op_lines)
+screens = list(screen_by_id.values())
+
+# Load interaction gate for quality-gate issues
+gate = C.load_interaction_gate(BASE)
+gate_issues_by_node = {}
+if gate:
+    for lr in gate.get("lines", []):
+        for issue in lr.get("issues", []):
+            nid = issue.get("node", "")
+            gate_issues_by_node.setdefault(nid, []).append(issue)
+
+# Build screen context mapping (emotion, intent, constraints, continuity, gate issues)
+screen_context = {}
+for ol in op_lines:
+    for node in ol.get("nodes", []):
+        nid = node["id"]
+        for s in node.get("screens", []):
+            sid = s["id"]
+            screen_context[sid] = {
+                "emotion_state": node.get("emotion_state", "neutral"),
+                "emotion_intensity": node.get("emotion_intensity", 5),
+                "ux_intent": node.get("ux_intent", ""),
+                "non_negotiable": s.get("non_negotiable", []),
+                "operation_line": ol["id"],
+                "node_id": nid,
+                "continuity": ol.get("continuity", {}),
+                "gate_issues": gate_issues_by_node.get(nid, []),
+            }
 
 concept = C.load_product_concept(BASE)
 
@@ -81,7 +115,7 @@ STYLE = S["name"]
 # ── Build role -> screens mapping ─────────────────────────────────────────────
 role_screens = {}
 for s in screens:
-    screen_tasks = C.get_screen_tasks(s)
+    screen_tasks = s.get("tasks", [])
     screen_roles = set()
     for tid in screen_tasks:
         task = tasks.get(tid)
@@ -140,7 +174,8 @@ for s in screens:
 for mod, slist in module_screens.items():
     spec_lines.append(f"### 模块: {mod}\n")
     for s in slist:
-        screen_tasks = C.get_screen_tasks(s)
+        sid = s["id"]
+        screen_tasks = s.get("tasks", [])
         audience = "consumer"
         for tid in screen_tasks:
             task = tasks.get(tid)
@@ -169,7 +204,25 @@ for mod, slist in module_screens.items():
                 task_cats.add(t.get("category", ""))
         cat_label = "core" if "core" in task_cats else ("basic" if "basic" in task_cats else "")
 
-        spec_lines.append(f"#### {s['name']}（{s['id']}）[{audience}]{' [core]' if cat_label == 'core' else ''}\n")
+        spec_parts = []
+        # Emotion context from experience-map
+        ctx = screen_context.get(sid, {})
+        if ctx:
+            spec_parts.append(f"**Emotion Context**: {ctx['emotion_state']} ({ctx['emotion_intensity']}/10)")
+            if ctx['ux_intent']:
+                spec_parts.append(f"**Interaction Intent**: {ctx['ux_intent']}")
+            if ctx['non_negotiable']:
+                spec_parts.append(f"**Non-negotiable**: {', '.join(ctx['non_negotiable'])}")
+            if ctx['gate_issues']:
+                issues_str = "; ".join(i.get('detail', '') for i in ctx['gate_issues'])
+                spec_parts.append(f"**Quality Gate Issues**: {issues_str}")
+
+        spec_lines.append(f"#### {s['name']}（{sid}）[{audience}]{' [core]' if cat_label == 'core' else ''}\n")
+        # Prepend emotion context before layout/component content
+        for sp in spec_parts:
+            spec_lines.append(sp)
+        if spec_parts:
+            spec_lines.append("")
         spec_lines.append(f"**界面目的**: {s.get('notes', '支撑关联任务')}\n")
         spec_lines.append(f"**功能类别**: {'核心功能' if cat_label == 'core' else '基本功能'}\n")
         spec_lines.append(f"**布局模式**: {layout}\n")
@@ -295,6 +348,13 @@ if C.xv_available():
         print(f"  XV: all calls failed, primary output unchanged")
 
 
+# ── Emotion color mapping ────────────────────────────────────────────────────
+EMOTION_COLORS = {
+    "curious": "#4FC3F7", "anxious": "#FF8A65", "satisfied": "#81C784",
+    "frustrated": "#E57373", "neutral": "#B0BEC5", "exploring": "#64B5F6",
+    "confident": "#66BB6A", "confused": "#FFB74D",
+}
+
 # ── Generate HTML previews ───────────────────────────────────────────────────
 CSS = f"""
 body {{ font-family: {S['font']}; background: {S['bg']}; color: {S['on_surface']}; margin: 0; padding: 0; }}
@@ -391,11 +451,16 @@ for role in roles:
             for a in other_actions[:2]:
                 btns += f'<button class="btn-outlined">{html_escape(a["label"])}</button>\n'
 
-            task_count = len(C.get_screen_tasks(s))
+            task_count = len(s.get("tasks", []))
+            # Emotion indicator color
+            ctx = screen_context.get(s["id"], {})
+            emo_color = EMOTION_COLORS.get(ctx.get("emotion_state", ""), "#B0BEC5")
+            emo_label = ctx.get("emotion_state", "neutral") if ctx else "neutral"
             content += f"""
-  <div class="card">
+  <div class="card" style="border-top: 4px solid {emo_color};">
     <h3>{html_escape(s['name'])}</h3>
     <span class="badge badge-{'consumer' if at == 'consumer' else 'professional'}">{html_escape(at)}</span>
+    <span class="badge" style="background:{emo_color}33;color:{emo_color};margin-left:4px;">{html_escape(emo_label)}</span>
     <div class="subtitle">{html_escape(s.get('notes', ''))}</div>
     <div class="actions">{btns}</div>
     <div class="states">
