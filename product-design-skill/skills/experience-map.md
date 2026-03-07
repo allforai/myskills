@@ -131,7 +131,8 @@ Step 5: 输出 experience-map-report.md
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py <BASE>
 ```
 
-脚本读取 `journey-emotion-map.json` 和 `task-inventory.json`，生成 operation_lines > nodes > screens 结构：
+脚本读取 `journey-emotion-map.json` 和 `task-inventory.json`，生成 operation_lines > nodes > screens 三层结构。
+每个屏幕自动推导 `implementation_contract`（pattern + forbidden + required_behaviors），确保设计意图传递到代码层。
 
 ```json
 {
@@ -256,7 +257,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py <BASE>
 
 ```
 .allforai/experience-map/
-├── experience-map.json              # 机器可读：操作线 > 节点 > 屏幕完整结构
+├── experience-map.json              # 机器可读：操作线 > 节点 > 屏幕完整结构（含 implementation_contract）
 ├── experience-map-report.md         # 人类可读：体验地图摘要报告
 ├── journey-emotion-map.json         # 上游输入（由 journey-emotion 生成）
 └── journey-emotion-decisions.json   # 上游输入（由 journey-emotion 生成）
