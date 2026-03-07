@@ -39,7 +39,7 @@
 
 ### 全链路代号升级
 
-`screen-map.md` / `ui-design.md` / `design-to-spec.md` 全部升级为新编码体系，旧 A-H 代号已清除，不保留向后兼容。
+`experience-map.md` / `ui-design.md` / `design-to-spec.md` 全部升级为新编码体系，旧 A-H 代号已清除，不保留向后兼容。
 
 ---
 
@@ -47,7 +47,7 @@
 
 ### 创新保真机制
 
-- **screen-map**: 创新界面自动标记（`innovation_screen` + `adversarial_concept_ref`）
+- **experience-map**: 创新界面自动标记（`innovation_screen` + `adversarial_concept_ref`）
 - **ui-design**: 创新概念 UI 规格专节
 - **task-execute**: core 级别创新任务 → Round 1 优先执行
 - **seed-forge**: core 级别创新概念优先灌入
@@ -139,7 +139,7 @@ QA 层       deadhunt          死链→CRUD完整性→幽灵功能→字段一
 
 8 个技能，核心是先建图再分析：
 
-`product-concept / product-map / screen-map / use-case / feature-gap / feature-prune / ui-design / design-audit`
+`product-concept / product-map / journey-emotion / experience-map / interaction-gate / use-case / feature-gap / feature-prune / ui-design / design-audit`
 
 ### dev-forge (v2.5.0)
 
@@ -163,7 +163,7 @@ QA 层       deadhunt          死链→CRUD完整性→幽灵功能→字段一
 
 ```
 product-design 产出 → .allforai/product-map/
-                     .allforai/screen-map/
+                     .allforai/experience-map/
                      .allforai/use-case/
                      .allforai/feature-gap/
                      .allforai/feature-prune/

@@ -146,7 +146,7 @@ git pull origin main
 |------|------|
 | `/product-concept` | 产品概念设计 |
 | `/product-map` | 产品功能地图 |
-| `/screen-map` | 界面交互地图 |
+| `/experience-map` | 体验地图 |
 | `/ui-design` | UI 设计规范 |
 | `/use-case` | 测试用例集 |
 | `/feature-gap` | 功能缺口检测 |

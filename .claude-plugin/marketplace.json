@@ -18,7 +18,7 @@
       "name": "product-design",
       "version": "3.8.0",
       "source": "./product-design-skill/",
-      "description": "Product design suite: product-concept, product-map, screen-map, use-case, feature-gap, feature-prune, ui-design, design-audit. 产品设计套件：产品概念、功能地图、界面地图、用例集、功能查漏、功能剪枝、UI设计、设计审计。"
+      "description": "Product design suite: product-concept, product-map, journey-emotion, experience-map, interaction-gate, use-case, feature-gap, feature-prune, ui-design, design-audit. 产品设计套件：产品概念、功能地图、情绪旅程、体验地图、交互质量门禁、用例集、功能查漏、功能剪枝、UI设计、设计审计。"
     },
     {
       "name": "dev-forge",

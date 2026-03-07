@@ -23,7 +23,7 @@ claude plugin add ./code-tuner-skill
 # 2. 使用 skills
 /product-concept     # 产品概念
 /product-map         # 产品地图
-/screen-map          # 界面地图
+/experience-map      # 体验地图
 /use-case            # 用例集
 /feature-gap         # 功能查漏
 /feature-prune       # 功能剪枝
@@ -75,7 +75,7 @@ cd ~/Documents/myskills/product-design-skill/mcp-ai-gateway
 |------|------|
 | `/product-concept` | 产品概念发现（支持创新增强） |
 | `/product-map` | 产品功能地图 |
-| `/screen-map` | 界面地图 |
+| `/experience-map` | 体验地图 |
 | `/use-case` | 用例集生成 |
 | `/feature-gap` | 功能查漏 |
 | `/feature-prune` | 功能剪枝 |
