@@ -88,7 +88,7 @@ for tid, task in tasks.items():
 
     task_gaps.append({
         "task_id": tid,
-        "name": task["name"],
+        "name": task["task_name"],
         "frequency": task.get("frequency", "低"),
         "category": task.get("category", ""),
         "gaps": gaps if gaps else ["COMPLETE"],
@@ -135,7 +135,7 @@ for tid in tasks:
             "gaps": ["NO_SCREEN"],
             "details": [{
                 "flag": "NO_SCREEN",
-                "description": f"任务 {tid} ({tasks[tid]['name']}) 在 experience-map 中无对应界面",
+                "description": f"任务 {tid} ({tasks[tid]['task_name']}) 在 experience-map 中无对应界面",
                 "affected_tasks": [tid],
                 "severity": "高" if tasks[tid].get("frequency") == "高" else "中"
             }]
@@ -285,7 +285,7 @@ for tid, task in tasks.items():
         journey_gaps.append({
             "role": rname,
             "task_id": tid,
-            "name": task["name"],
+            "name": task["task_name"],
             "score": f"{score}/4",
             "breakpoints": breakpoints
         })
@@ -501,14 +501,14 @@ for tg in task_gaps:
         prio = "高" if freq == "高" or gap in ("SILENT_FAILURE", "HIGH_RISK_NO_CONFIRM") else ("中" if freq == "中" or cat == "core" else "低")
         gap_tasks_list.append({
             "id": next_gap(),
-            "title": f"{task['name']} — {gap}",
+            "title": f"{task['task_name']} — {gap}",
             "type": gap,
             "category": cat,
             "priority": prio,
             "affected_roles": [role_map.get(task["owner_role"], task["owner_role"])],
             "affected_tasks": [tid],
             "affected_screens": task_screen_map.get(tid, []),
-            "description": f"任务 {tid} ({task['name']}) 检测到 {gap}",
+            "description": f"任务 {tid} ({task['task_name']}) 检测到 {gap}",
             "frequency_impact": f"{freq}频任务",
             "_sort": priority_rank(freq, gap)
         })

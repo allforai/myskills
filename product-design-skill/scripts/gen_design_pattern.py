@@ -170,8 +170,8 @@ def tag_screen(sid, pattern_id, template, group_id=""):
 # ── PT-CRUD: CRUD management (threshold: ≥3 actions per entity, or "管理" verb) ─
 entity_crud_raw = defaultdict(list)
 for tid, task in tasks.items():
-    entity = extract_entity(task["name"])
-    action = classify_crud_action(task["name"])
+    entity = extract_entity(task["task_name"])
+    action = classify_crud_action(task["task_name"])
     if action:
         entity_crud_raw[entity].append({"task_id": tid, "action": action})
 
@@ -288,14 +288,14 @@ for flow in flows:
             # Bare task_id string — resolve to task name
             label = n.lower()
             if n in tasks:
-                label += " " + tasks[n]["name"].lower()
+                label += " " + tasks[n]["task_name"].lower()
             node_labels.append(label)
         elif isinstance(n, dict):
             label = (n.get("label", "") + " " + n.get("task_ref", "")).lower()
             # Also resolve task_ref to task name for keyword matching
             tref = n.get("task_ref", "")
             if tref in tasks:
-                label += " " + tasks[tref]["name"].lower()
+                label += " " + tasks[tref]["task_name"].lower()
             node_labels.append(label)
     flow_text = " ".join(node_labels)
     flow_name = flow.get("name", "").lower()
@@ -380,7 +380,7 @@ EXPORT_KW = {"export", "report", "download", "导出", "报表", "下载"}
 
 export_tasks = []
 for tid, task in tasks.items():
-    name = task["name"].lower()
+    name = task["task_name"].lower()
     actions_text = " ".join(
         a.get("label", "").lower()
         for sid in task_screen_map.get(tid, [])
@@ -464,9 +464,9 @@ else:
 # ── PT-PERMISSION: permission matrix (threshold: 1+ entity with 3+ roles) ───
 entity_role_actions = defaultdict(lambda: defaultdict(set))
 for tid, task in tasks.items():
-    entity = extract_entity(task["name"])
-    action = classify_crud_action(task["name"])
-    role = task.get("role", "")
+    entity = extract_entity(task["task_name"])
+    action = classify_crud_action(task["task_name"])
+    role = task.get("owner_role", "")
     if action and role:
         if action == "manage":
             entity_role_actions[entity][role].update({"create", "read", "update", "delete"})
@@ -519,7 +519,7 @@ TRANSITION_KW = {
 
 state_tasks = []
 for tid, task in tasks.items():
-    name = task["name"].lower()
+    name = task["task_name"].lower()
     desc = (task.get("description") or "").lower()
     combined = name + " " + desc
 

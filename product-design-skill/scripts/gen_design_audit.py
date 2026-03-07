@@ -218,9 +218,9 @@ for tid in task_ids:
                 "check_id": "C1",
                 "type": "GAP",
                 "task_id": tid,
-                "name": tasks[tid]["name"],
+                "name": tasks[tid]["task_name"],
                 "missing_in": "experience-map",
-                "detail": f"任务 {tid} ({tasks[tid]['name']}) 在 experience-map 中无对应界面"
+                "detail": f"任务 {tid} ({tasks[tid]['task_name']}) 在 experience-map 中无对应界面"
             })
 
     if "use-case" in available_layers:
@@ -232,9 +232,9 @@ for tid in task_ids:
                 "check_id": "C2",
                 "type": "GAP",
                 "task_id": tid,
-                "name": tasks[tid]["name"],
+                "name": tasks[tid]["task_name"],
                 "missing_in": "use-case",
-                "detail": f"任务 {tid} ({tasks[tid]['name']}) 无对应用例"
+                "detail": f"任务 {tid} ({tasks[tid]['task_name']}) 无对应用例"
             })
 
     if "feature-gap" in available_layers:
@@ -246,9 +246,9 @@ for tid in task_ids:
                 "check_id": "C3",
                 "type": "GAP",
                 "task_id": tid,
-                "name": tasks[tid]["name"],
+                "name": tasks[tid]["task_name"],
                 "missing_in": "feature-gap",
-                "detail": f"任务 {tid} ({tasks[tid]['name']}) 未被 feature-gap 检查"
+                "detail": f"任务 {tid} ({tasks[tid]['task_name']}) 未被 feature-gap 检查"
             })
 
     if "feature-prune" in available_layers:
@@ -260,9 +260,9 @@ for tid in task_ids:
                 "check_id": "C4",
                 "type": "GAP",
                 "task_id": tid,
-                "name": tasks[tid]["name"],
+                "name": tasks[tid]["task_name"],
                 "missing_in": "feature-prune",
-                "detail": f"任务 {tid} ({tasks[tid]['name']}) 无 prune 决策"
+                "detail": f"任务 {tid} ({tasks[tid]['task_name']}) 无 prune 决策"
             })
 
 coverage_rate = f"{coverage_covered / coverage_total * 100:.0f}%" if coverage_total > 0 else "N/A"
@@ -319,7 +319,7 @@ if "experience-map" in available_layers:
                             "check_id": "X3",
                             "type": "WARNING",
                             "task_id": tid,
-                            "name": task["name"],
+                            "name": task["task_name"],
                             "detail": f"高频任务 {tid} 的操作 '{a.get('label', '')}' click_depth={a['click_depth']} ≥ 3（被埋深）"
                         })
 

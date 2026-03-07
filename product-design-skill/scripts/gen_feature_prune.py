@@ -67,7 +67,7 @@ for tid, task in tasks.items():
         tier = "review"
     freq_tier.append({
         "task_id": tid,
-        "name": task["name"],
+        "name": task["task_name"],
         "frequency": freq,
         "tier": tier,
         "line_count": line_count,
@@ -125,14 +125,14 @@ for ft in freq_tier:
     risk_level = task.get("risk_level", "低")
     category = task.get("category", "")
     revenue_keywords = {"付费", "购买", "订阅", "支付", "充值", "续费"}
-    is_revenue = any(kw in task["name"] for kw in revenue_keywords)
+    is_revenue = any(kw in task["task_name"] for kw in revenue_keywords)
     has_business_rules = len(rules) >= 2 or len(exceptions) >= 1
     is_basic = category == "basic"
 
     # CRUD completeness: if sibling create/edit exists, delete/cancel must not be CUT
     crud_create = {"创建", "添加", "新增", "注册", "申请", "发起", "提交", "撰写"}
     crud_reverse = {"删除", "移除", "取消", "撤回", "撤销"}
-    task_name = task["name"]
+    task_name = task["task_name"]
     is_crud_reverse = any(kw in task_name for kw in crud_reverse)
     has_crud_sibling = False
     if is_crud_reverse:
@@ -147,7 +147,7 @@ for ft in freq_tier:
             if other_tid == tid:
                 continue
             if other_task.get("owner_role") == role:
-                other_name = other_task["name"]
+                other_name = other_task["task_name"]
                 if any(kw in other_name for kw in crud_create):
                     # Method 1: share >=2 common chars at end (e.g. 宠物档案)
                     for elen in range(4, 1, -1):
@@ -229,7 +229,7 @@ for ft in freq_tier:
 
     scenario_align.append({
         "task_id": tid,
-        "name": task["name"],
+        "name": task["task_name"],
         "tier": ft["tier"],
         "question_a": question_a,
         "question_b": question_b,
@@ -259,7 +259,7 @@ some_features = {
 }
 
 for tid, task in tasks.items():
-    tname = task["name"]
+    tname = task["task_name"]
     if tname in core_features_competitors_have:
         coverage = "all_have"
     elif tname in some_features:
