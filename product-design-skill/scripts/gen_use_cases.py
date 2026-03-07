@@ -2,7 +2,7 @@
 """Generate use-case-tree.json, use-case-report.md, and use-case-decisions.json.
 
 Pre-built script for Phase 4 (use-case). Reads task-inventory, task-index,
-role-profiles, screen-map (recommended, missing triggers WARNING), and business-flows (optional).
+role-profiles, experience-map (recommended, missing triggers WARNING), and business-flows (optional).
 
 Usage:
     python3 gen_use_cases.py <BASE_PATH> [--mode auto]
@@ -29,8 +29,9 @@ if idx is None:
     idx = {"modules": []}
 role_map = C.load_role_profiles(BASE)
 
-screens, screen_injected = C.load_screen_map(BASE)
-screens_by_task = C.build_task_screen_map(screens)
+op_lines, screen_index, em_loaded = C.load_experience_map(BASE)
+screen_by_id = C.build_screen_by_id_from_lines(op_lines) if em_loaded else {}
+task_screen_ids = C.build_task_screen_map_from_lines(op_lines) if em_loaded else {}
 
 flows = C.load_business_flows(BASE)
 
@@ -64,8 +65,15 @@ def calc_priority(task):
 
 # ── Screen ref helper ─────────────────────────────────────────────────────────
 def get_screen_ref(tid):
-    ss = screens_by_task.get(tid, [])
-    return ss[0].get("id") if ss else None
+    sids = task_screen_ids.get(tid, [])
+    return sids[0] if sids else None
+
+
+def get_operation_line_context(screen_id):
+    """Return operation line refs for a screen from screen_index."""
+    if screen_id and screen_id in screen_index:
+        return screen_index[screen_id].get("appears_in", [])
+    return []
 
 # ── Use case generation ──────────────────────────────────────────────────────
 uc_counter = [0]
@@ -167,14 +175,16 @@ def gen_boundary(task):
     return cases
 
 def gen_validation(task):
-    """Generate validation use cases from screen-map validation_rules."""
+    """Generate validation use cases from experience-map screen validation_rules."""
     cases = []
     tid = task["id"]
     prio = calc_priority(task)
-    slist = screens_by_task.get(tid, [])
-    for s in slist:
+    sids = task_screen_ids.get(tid, [])
+    for sid in sids:
+        s = screen_by_id.get(sid, {})
         for act in s.get("actions", []):
             for vr in act.get("validation_rules", []):
+                ol_context = get_operation_line_context(sid)
                 cases.append({
                     "id": next_uc(),
                     "title": f"{task['name']}_校验_{vr[:20]}",
@@ -183,8 +193,9 @@ def gen_validation(task):
                     "given": ["用户已登录", f"正在执行{task['name']}"],
                     "when": [f"违反校验规则: {vr}"],
                     "then": [f"系统提示校验失败: {vr}"],
-                    "screen_ref": s.get("id"),
+                    "screen_ref": sid,
                     "action_ref": act.get("label", task["name"]),
+                    "operation_lines": ol_context,
                     "validation_rule": vr,
                     "flags": []
                 })
@@ -536,7 +547,7 @@ tree = {
         "e2e_count": e2e_count,
         "ordering_issue_count": total_ordering_issues,
         "e2e_flags": sorted(all_e2e_flags),
-        "screen_map_injected": screen_injected
+        "experience_map_loaded": em_loaded
     },
     "feature_areas": feature_areas,
     "roles": roles_tree
@@ -770,5 +781,5 @@ print(f"  e2e:        {e2e_count}")
 print(f"  ordering_issues: {total_ordering_issues}")
 print(f"Feature areas: {len(feature_areas)}")
 print(f"Roles: {len(role_fas)}")
-print(f"Screen-map injected: {screen_injected}")
+print(f"Experience-map loaded: {em_loaded}")
 print(f"\nAll files written to {OUT}/")
