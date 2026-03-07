@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate stitch-prompts.json from component-spec.json + screen-map.
+"""Generate stitch-prompts.json from component-spec.json + experience-map.
 
 Reads the universal component-spec.json and builds Stitch-ready prompts
 with component vocabulary, consistency directives, and style tokens.
@@ -11,7 +11,8 @@ import os, sys, json, re
 
 sys.path.insert(0, os.path.dirname(__file__))
 from _common import (
-    parse_args, load_screen_map, load_product_concept,
+    parse_args, load_experience_map, build_screen_by_id_from_lines,
+    load_product_concept,
     write_json, ensure_dir, append_pipeline_decision, now_iso,
     load_json,
 )
@@ -90,7 +91,7 @@ def select_priority_screens(screens, limit=10, explicit=None):
     return result
 
 
-def build_prompt(screen, concept, component_spec, device_type, is_anchor):
+def build_prompt(screen, concept, component_spec, device_type, is_anchor, screen_context=None):
     """Build a layered Stitch prompt for a screen."""
     sid = screen["id"]
     name = screen.get("name", sid)
@@ -136,18 +137,40 @@ Actions: {', '.join(action_descs)}
     if not is_anchor:
         layer3 = "Maintain visual consistency with the first screen in this project. Use the same component styles, spacing, and color application.\n"
 
+    # Layer 4: Emotion / UX intent from experience-map
+    prompt_parts = []
+    if screen_context:
+        ctx = screen_context.get(sid, {})
+        if ctx.get("emotion_state"):
+            prompt_parts.append(f"Emotion context: {ctx['emotion_state']}")
+        if ctx.get("ux_intent"):
+            prompt_parts.append(f"UX intent: {ctx['ux_intent']}")
+    layer4 = "\n".join(prompt_parts) + "\n" if prompt_parts else ""
+
     # Layout hint
     layout = "Use flexible layouts (flexbox/grid) that can adapt to different screen sizes. Avoid fixed pixel widths on containers."
 
-    return f"{layer1}\n{layer2}\n{layer3}{layout}"
+    return f"{layer1}\n{layer2}\n{layer3}{layer4}{layout}"
 
 
 def main():
     base, args = parse_args()
-    screens, loaded = load_screen_map(base)
-    if not loaded:
-        print("ERROR: screen-map.json not found", file=sys.stderr)
+    op_lines, screen_index, em_loaded = load_experience_map(base)
+    if not em_loaded:
+        print("ERROR: experience-map.json not found", file=sys.stderr)
         sys.exit(1)
+
+    screens = list(build_screen_by_id_from_lines(op_lines).values())
+
+    # Build screen context from operation lines
+    screen_context = {}
+    for ol in op_lines:
+        for node in ol.get("nodes", []):
+            for s in node.get("screens", []):
+                screen_context[s["id"]] = {
+                    "emotion_state": node.get("emotion_state", "neutral"),
+                    "ux_intent": node.get("ux_intent", ""),
+                }
 
     concept = load_product_concept(base)
     comp_spec = load_component_spec(base)
@@ -167,7 +190,7 @@ def main():
     anchor_id = selected[0]["id"]
     prompt_entries = []
     for i, s in enumerate(selected):
-        prompt = build_prompt(s, concept, comp_spec, device_type, is_anchor=(i == 0))
+        prompt = build_prompt(s, concept, comp_spec, device_type, is_anchor=(i == 0), screen_context=screen_context)
         prompt_entries.append({
             "screen_id": s["id"],
             "screen_name": s.get("name", s["id"]),

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate component-spec.json from screen-map analysis.
+"""Generate component-spec.json from experience-map analysis.
 
 Universal component analysis: shared components, interaction primitives,
 variants, and a11y specs. Does NOT depend on Stitch or any external service.
@@ -12,7 +12,8 @@ from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(__file__))
 from _common import (
-    parse_args, load_screen_map, load_product_concept,
+    parse_args, load_experience_map, build_screen_by_id_from_lines,
+    load_product_concept,
     write_json, ensure_dir, append_pipeline_decision, now_iso,
 )
 
@@ -274,10 +275,21 @@ def build_primitive_mapping(shared_components):
 
 def main():
     base, args = parse_args()
-    screens, loaded = load_screen_map(base)
-    if not loaded or not screens:
-        print("ERROR: screen-map.json not found or empty", file=sys.stderr)
+    op_lines, screen_index, em_loaded = load_experience_map(base)
+    if not em_loaded or not op_lines:
+        print("ERROR: experience-map.json not found or empty", file=sys.stderr)
         sys.exit(1)
+
+    screens = list(build_screen_by_id_from_lines(op_lines).values())
+
+    # Build screen context for ux_intent reference
+    screen_context = {}
+    for ol in op_lines:
+        for node in ol.get("nodes", []):
+            for s in node.get("screens", []):
+                screen_context[s["id"]] = {
+                    "ux_intent": node.get("ux_intent", ""),
+                }
 
     shared = identify_shared_components(screens)
     screen_comps = build_screen_components(screens, shared)
@@ -285,7 +297,7 @@ def main():
 
     spec = {
         "generated_at": now_iso(),
-        "source": "screen-map",
+        "source": "experience-map",
         "total_screens": len(screens),
         "shared_components": shared,
         "screen_components": screen_comps,
