@@ -130,14 +130,15 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_journey_emotion.py <BASE>
 
 ```json
 {
-  "flow_id": "F001",
-  "flow_name": "售后退款流程",
-  "journey_nodes": [
+  "id": "JL01",
+  "name": "售后退款流程",
+  "role": "R001",
+  "source_flow": "F001",
+  "emotion_nodes": [
     {
-      "node_seq": 1,
-      "task_ref": "T001",
-      "actor": "买家",
+      "step": 1,
       "action": "提交退款申请",
+      "role": "R001",
       "emotion": "neutral",
       "intensity": 3,
       "risk": "low",
@@ -220,34 +221,28 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_journey_emotion.py <BASE>
 
 ```json
 {
-  "version": "1.0.0",
-  "generated_at": "...",
-  "summary": {
-    "flow_count": 5,
-    "total_nodes": 28,
-    "high_risk_nodes": 4,
-    "negative_emotion_nodes": 8,
-    "human_reviewed": true
-  },
-  "journeys": [
+  "journey_lines": [
     {
-      "flow_id": "F001",
-      "flow_name": "售后退款流程",
-      "journey_nodes": [
+      "id": "JL01",
+      "name": "售后退款流程",
+      "role": "R001",
+      "source_flow": "F001",
+      "emotion_nodes": [
         {
-          "node_seq": 1,
-          "task_ref": "T001",
-          "actor": "买家",
+          "step": 1,
           "action": "提交退款申请",
+          "role": "R001",
           "emotion": "frustrated",
           "intensity": 4,
           "risk": "medium",
           "design_hint": "简化退款表单，减少用户填写负担"
         }
-      ]
+      ],
+      "human_decision": true
     }
   ],
-  "decision_log_ref": "journey-emotion-decisions.json"
+  "decision_log": [],
+  "generated_at": "..."
 }
 ```
 

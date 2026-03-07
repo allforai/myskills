@@ -41,16 +41,21 @@ def main():
         nodes_raw = C.get_flow_nodes(flow)
         emotion_nodes = []
         for step_idx, node in enumerate(nodes_raw):
-            tid = node.get("task_id", node.get("id", ""))
+            # Support both task_ref (canonical) and task_id (legacy)
+            tid = node.get("task_ref", node.get("task_id", node.get("id", "")))
             task = tasks_inv.get(tid, {})
-            action = node.get("action", task.get("name", f"Step {step_idx+1}"))
+            # Extract action from node name, then task name, then placeholder
+            action = node.get("name", node.get("action", task.get("name", f"Step {step_idx+1}")))
+            # Extract role from node, then flow
+            node_role = node.get("role", frole)
 
             emotion_nodes.append({
                 "step": step_idx + 1,
                 "action": action,
+                "role": node_role,
                 "emotion": "neutral",
-                "intensity": 5,
-                "risk": "",
+                "intensity": 3,
+                "risk": "low",
                 "design_hint": "",
             })
 

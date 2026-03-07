@@ -134,7 +134,7 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter, ux_intent="", 
             "tasks": task_ids,
             "actions": actions,
             "primary_action": primary,
-            "non_negotiable": [],
+            "non_negotiable": contract["required_behaviors"][:2] if contract["required_behaviors"] else [],
             "implementation_contract": contract,
         })
 
@@ -181,7 +181,8 @@ def main():
 
             # Match to flow node for task references
             flow_node = flow_nodes[step - 1] if step - 1 < len(flow_nodes) else {}
-            node_task_id = flow_node.get("task_id", "")
+            # Support both task_ref (canonical) and task_id (legacy)
+            node_task_id = flow_node.get("task_ref", flow_node.get("task_id", ""))
             node_tasks = [node_task_id] if node_task_id and node_task_id in tasks_inv else []
 
             # Build screens for this node
@@ -242,6 +243,11 @@ def main():
 
     total_screens = len(screen_index)
     total_nodes = sum(len(ol["nodes"]) for ol in operation_lines)
+
+    if total_screens == 0:
+        print("ERROR: 0 screens generated — check that business-flows nodes have task_ref matching task-inventory IDs", file=sys.stderr)
+        sys.exit(1)
+
     print(f"OK: {out_path} ({len(operation_lines)} lines, {total_nodes} nodes, {total_screens} screens)")
 
     # ── generate report ──
