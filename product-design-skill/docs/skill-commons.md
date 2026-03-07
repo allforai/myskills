@@ -138,7 +138,7 @@
 
 预置脚本通过 `_resolve_api_key("OPENROUTER_API_KEY")` 检测可用性，直连 OpenRouter API（Python `urllib.request`），不依赖 MCP 工具：
 
-- **自动检测**：`_resolve_api_key()` 按优先级查找：环境变量 → 插件 `.mcp.json` 的 `__keys` → `.mcp.json` 各 MCP 服务器的 `env` 块
+- **自动检测**：`_resolve_api_key()` 从环境变量读取（用户在 `~/.zshrc` 或 `~/.bashrc` 中 export）
 - **直连 API**：脚本使用 `urllib.request` 直连 `https://openrouter.ai/api/v1/chat/completions`，task→model 路由硬编码于 `_common.py`（与 `defaults.ts` 保持一致）
 - **自动采纳**：高严重度发现自动修正数据（追加缺口/用例、调整优先级、标记弱项），不问用户
 - **结果写入**：写入产出的 `cross_model_review` 字段

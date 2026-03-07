@@ -85,9 +85,7 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 2. **脚本通道**：检查 `OPENROUTER_API_KEY` 环境变量
    - 已设置 → 脚本 XV 就绪
-   - 未设置 → **fallback 检查** `.mcp.json` 的 `mcpServers.ai-gateway.env.OPENROUTER_API_KEY`：
-     - 值存在且非模板引用（不以 `${` 开头）→ 脚本 XV 就绪（via .mcp.json）
-     - 否则 → 脚本 XV 未就绪
+   - 未设置 → 脚本 XV 未就绪
 
 #### 1c. Brave Search
 
@@ -97,9 +95,7 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 2. **脚本通道**：检查 `BRAVE_API_KEY` 环境变量
    - 已设置 → Brave Key 就绪
-   - 未设置 → **fallback 检查** `.mcp.json` 的 `mcpServers.ai-gateway.env.BRAVE_API_KEY`：
-     - 值存在且非模板引用 → Brave Key 就绪（via .mcp.json）
-     - 否则 → Brave 未就绪
+   - 未设置 → Brave 未就绪
 
 #### 1d. Google AI
 
@@ -109,9 +105,7 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 2. **脚本通道**：检查 `GOOGLE_API_KEY` 环境变量
    - 已设置 → Google AI Key 就绪
-   - 未设置 → **fallback 检查** `.mcp.json` 的 `mcpServers.ai-gateway.env.GOOGLE_API_KEY`：
-     - 值存在且非模板引用 → Google AI Key 就绪（via .mcp.json）
-     - 否则 → Google AI 未就绪
+   - 未设置 → Google AI 未就绪
 
 #### 1e. fal.ai (FLUX + Kling)
 
@@ -121,9 +115,7 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 2. **脚本通道**：检查 `FAL_KEY` 环境变量
    - 已设置 → fal.ai Key 就绪
-   - 未设置 → **fallback 检查** `.mcp.json` 的 `mcpServers.ai-gateway.env.FAL_KEY`：
-     - 值存在且非模板引用 → fal.ai Key 就绪（via .mcp.json）
-     - 否则 → fal.ai 未就绪
+   - 未设置 → fal.ai 未就绪
 
 #### 1f. Stitch UI
 
@@ -440,49 +432,50 @@ fal.ai API Key 获取步骤：
 
 对 Step 2 中获取到的每个 Key 执行持久化（跳过的服务不处理）。
 
-**存储位置**：插件 `.mcp.json` 的 `env` 块（不污染 shell 环境变量）。
+**存储位置**：用户 shell 配置文件（`~/.zshrc` 或 `~/.bashrc`）的 export 语句。
 
 **原理**：
-- MCP 工具路径：Claude Code 启动 MCP 服务器时自动注入 `.mcp.json` 中的 `env` 变量
-- Python 脚本路径：`_common.py` 的 `_resolve_api_key()` 先查环境变量，再 fallback 解析 `.mcp.json` 的 `env` 块
-- 两条路径都能读到 Key，无需在 `~/.zshrc` 或 `~/.bashrc` 中 export
+- MCP 工具路径：`.mcp.json` 的 env 块使用 `${VAR}` 引用，Claude Code 启动 MCP 服务器时从 shell 环境变量注入
+- Python 脚本路径：`_common.py` 的 `_resolve_api_key()` 直接读环境变量
+- 两条路径统一从环境变量读取，Key 不写入任何 JSON 文件，避免被插件更新/重装覆盖
 
 **操作流程**：
 
-1. **读取当前 `.mcp.json`**：
+1. **检测 shell 类型**：
+   ```bash
+   echo $SHELL
    ```
-   Read ${CLAUDE_PLUGIN_ROOT}/.mcp.json
+   - `/bin/zsh` → 配置文件 `~/.zshrc`
+   - `/bin/bash` → 配置文件 `~/.bashrc`
+
+2. **生成 export 语句**：
+
+   ```bash
+   # myskills API Keys
+   export OPENROUTER_API_KEY="sk-or-..."
+   export GOOGLE_API_KEY="AIza..."
+   export FAL_KEY="..."
+   export BRAVE_API_KEY="BSA..."
    ```
 
-2. **合并 Key 到 env 块**：
-
-   | Key | 写入位置 |
-   |-----|---------|
-   | `OPENROUTER_API_KEY` | `mcpServers.ai-gateway.env.OPENROUTER_API_KEY` |
-   | `GOOGLE_API_KEY` | `mcpServers.ai-gateway.env.GOOGLE_API_KEY` |
-   | `FAL_KEY` | `mcpServers.ai-gateway.env.FAL_KEY` |
-   | `BRAVE_API_KEY` | `mcpServers.ai-gateway.env.BRAVE_API_KEY` |
-
-   所有 Key 统一存储在 ai-gateway 服务器的 env 块中。将模板引用替换为实际值。
-
-3. **使用 AskUserQuestion 确认**：展示将要写入的内容，请用户确认：
+3. **使用 AskUserQuestion 确认**：展示将要追加的内容，请用户确认：
 
 ```
-将写入以下 Key 到 ${CLAUDE_PLUGIN_ROOT}/.mcp.json：
+将追加以下 export 到 {~/.zshrc 或 ~/.bashrc}：
 
-  mcpServers.ai-gateway.env.OPENROUTER_API_KEY = "sk-or-...{后4位}"
-  mcpServers.ai-gateway.env.GOOGLE_API_KEY = "AIza...{后4位}"
-  mcpServers.ai-gateway.env.FAL_KEY = "...{后4位}"
-  mcpServers.ai-gateway.env.BRAVE_API_KEY = "BSA...{后4位}"
+  export OPENROUTER_API_KEY="sk-or-...{后4位}"
+  export GOOGLE_API_KEY="AIza...{后4位}"
+  export FAL_KEY="...{后4位}"
+  export BRAVE_API_KEY="BSA...{后4位}"
 
-Key 仅存储在插件配置中，不写入 shell 环境变量。
 确认写入？
 ```
 
-4. **写入**：用 Write 工具更新 `.mcp.json`
+4. **写入**：追加到 shell 配置文件（检查是否已有同名 export，有则替换而非重复追加）
 5. **生效方式**：
-   - AI Gateway MCP 工具（OpenRouter + Google AI + Brave）：需**重启 Claude Code**（MCP 服务器启动时读取 env）
-   - Python 脚本 XV：**立即生效**（每次执行时读取 `.mcp.json`）
+   - 当前终端：运行 `source ~/.zshrc`（或 `~/.bashrc`）立即生效
+   - 新终端：自动生效
+   - MCP 服务器：需**重启 Claude Code**（重新加载环境变量）
 
 ### Step 4: 验证与报告
 
@@ -493,12 +486,12 @@ Key 仅存储在插件配置中，不写入 shell 环境变量。
 
 | 服务 | Key | 存储位置 | 用途 |
 |------|-----|---------|------|
-| OpenRouter | sk-or-...{后4位} | .mcp.json → ai-gateway.env | XV + GPT-5/Gemini 生图 |
-| Google AI | AIza...{后4位} | .mcp.json → ai-gateway.env | Imagen 4 + Veo 3.1 + TTS |
-| fal.ai | ...{后4位} | .mcp.json → ai-gateway.env | FLUX 2 Pro + Kling 生视频 |
-| Brave Search | BSA...{后4位} | .mcp.json → ai-gateway.env | 媒体搜索 |
+| OpenRouter | sk-or-...{后4位} | shell 环境变量 | XV + GPT-5/Gemini 生图 |
+| Google AI | AIza...{后4位} | shell 环境变量 | Imagen 4 + Veo 3.1 + TTS |
+| fal.ai | ...{后4位} | shell 环境变量 | FLUX 2 Pro + Kling 生视频 |
+| Brave Search | BSA...{后4位} | shell 环境变量 | 媒体搜索 |
 
-下一步：重启 Claude Code 后运行 /setup check 验证连接。
+下一步：运行 source ~/.zshrc 后重启 Claude Code，然后 /setup check 验证连接。
 ```
 
 对于跳过的服务，状态列显示「已跳过（可选）」。
@@ -521,11 +514,11 @@ AI Gateway（统一 MCP 服务器）:
   fal.ai           {就绪/未就绪}   demo-forge — FLUX 2 Pro + Kling 生视频
   Brave Search     {就绪/未就绪}   demo-forge — 媒体搜索（网页/图片/视频）
 
-API Key（脚本回退，检查 env var → fallback .mcp.json）:
-  OpenRouter Key   {就绪/就绪 via .mcp.json/未就绪}   product-design 预置脚本 — XV 交叉验证
-  Google AI Key    {就绪/就绪 via .mcp.json/未就绪}   demo-forge 预置脚本 — AI 生图/生视频/TTS
-  Brave Key        {就绪/就绪 via .mcp.json/未就绪}   demo-forge 预置脚本 — 媒体搜索
-  fal.ai Key       {就绪/就绪 via .mcp.json/未就绪}   demo-forge 预置脚本 — FLUX 2 Pro + Kling
+API Key（环境变量）:
+  OpenRouter Key   {就绪/未就绪}   product-design 预置脚本 — XV 交叉验证
+  Google AI Key    {就绪/未就绪}   demo-forge 预置脚本 — AI 生图/生视频/TTS
+  Brave Key        {就绪/未就绪}   demo-forge 预置脚本 — 媒体搜索
+  fal.ai Key       {就绪/未就绪}   demo-forge 预置脚本 — FLUX 2 Pro + Kling
 
 内置:
   WebSearch        就绪            product-design, demo-forge — 搜索
@@ -542,10 +535,10 @@ API Key（脚本回退，检查 env var → fallback .mcp.json）:
 
 | 服务 | Key | 状态 | 用途 |
 |------|-----|------|------|
-| OpenRouter | sk-or-...{后4位} | {已写入 ai-gateway.env / 已跳过 / 已配置} | XV + GPT-5/Gemini 生图 |
-| Google AI | AIza...{后4位} | {已写入 ai-gateway.env / 已跳过 / 已配置} | Imagen 4 + Veo 3.1 + TTS |
-| fal.ai | ...{后4位} | {已写入 ai-gateway.env / 已跳过 / 已配置} | FLUX 2 Pro + Kling 生视频 |
-| Brave Search | BSA...{后4位} | {已写入 ai-gateway.env / 已跳过 / 已配置} | 媒体搜索 |
+| OpenRouter | sk-or-...{后4位} | {已写入 shell / 已跳过 / 已配置} | XV + GPT-5/Gemini 生图 |
+| Google AI | AIza...{后4位} | {已写入 shell / 已跳过 / 已配置} | Imagen 4 + Veo 3.1 + TTS |
+| fal.ai | ...{后4位} | {已写入 shell / 已跳过 / 已配置} | FLUX 2 Pro + Kling 生视频 |
+| Brave Search | BSA...{后4位} | {已写入 shell / 已跳过 / 已配置} | 媒体搜索 |
 
 MCP 工具（Step 1.5 已引导安装）:
   Playwright     {已安装/已跳过/之前已就绪}  demo-forge, dev-forge, deadhunt — UI 自动化
@@ -556,7 +549,7 @@ MCP 工具（Step 1.5 已引导安装）:
 
 ## 铁律（强制执行）
 
-1. **Key 不落项目目录** — API Key 不得写入 `.allforai/` 或任何用户项目目录下的文件。只写入插件自身的 `.mcp.json`（插件安装目录，非项目目录）
-2. **不自动写入** — 写入配置文件前必须展示内容并获得用户确认
-3. **不阻塞主流程** — 本命令仅配置增强功能。未配置任何服务不影响技能的核心功能
-4. **不污染 shell** — 不向 `~/.zshrc`、`~/.bashrc` 等 shell 配置文件写入 export 语句。Key 统一存储在插件 `.mcp.json` 中
+1. **Key 不落项目目录** — API Key 不得写入 `.allforai/` 或任何用户项目目录下的文件
+2. **Key 不写入 JSON** — API Key 不写入 `.mcp.json` 或任何 JSON 配置文件。`.mcp.json` 仅使用 `${VAR}` 引用环境变量
+3. **不自动写入** — 写入 shell 配置前必须展示内容并获得用户确认
+4. **不阻塞主流程** — 本命令仅配置增强功能。未配置任何服务不影响技能的核心功能
