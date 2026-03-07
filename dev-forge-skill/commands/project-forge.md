@@ -263,7 +263,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 | 始终 | `backend` |
 | 有 consumer 类角色 | `web-customer` |
 | 有 producer / admin 类角色 | `admin` |
-| 有 mobile 标记 或 screen-map 中有 mobile 界面 | `mobile-native` |
+| 有 mobile 标记 或 experience-map 中有 mobile 界面 | `mobile-native` |
 
 读取 `${CLAUDE_PLUGIN_ROOT}/templates/stacks.json`，按端类型过滤可选技术栈。
 

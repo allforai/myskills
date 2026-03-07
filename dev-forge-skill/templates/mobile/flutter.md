@@ -68,7 +68,7 @@ apps/{sub-project-name}/
 │   │   ├── user.dart
 │   │   └── {entity}.dart               # ★ freezed 或手写 data class
 │   │
-│   ├── features/                        # ★ 业务功能模块 (按 screen-map 生成)
+│   ├── features/                        # ★ 业务功能模块 (按 experience-map 生成)
 │   │   └── {module}/
 │   │       ├── providers/
 │   │       │   └── {module}_provider.dart   # Riverpod Provider (API 调用 + 状态)
@@ -103,10 +103,10 @@ apps/{sub-project-name}/
 
 ## Screen 映射规则
 
-### 从 screen-map 到 Screen Widget
+### 从 experience-map 到 Screen Widget
 
 ```
-screen-map screen → Flutter Screen Widget
+experience-map screen → Flutter Screen Widget
 
 映射规则:
   screen (列表类) → ListView.builder / CustomScrollView + {entity}_card 组件
@@ -115,7 +115,7 @@ screen-map screen → Flutter Screen Widget
   screen (仪表盘) → SingleChildScrollView + 统计 Card + 图表
 
 Tab 分配:
-  screen-map 中频率最高的 3-5 个 screen → 底部 BottomNavigationBar / NavigationBar
+  experience-map 中频率最高的 3-5 个 screen → 底部 BottomNavigationBar / NavigationBar
   其余 screen → GoRouter push 导航 (从 Tab 页面进入)
 ```
 

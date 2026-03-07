@@ -41,7 +41,7 @@ apps/{sub-project-name}/
 │   │   │   └── RegisterPage.tsx
 │   │   ├── HomePage.tsx
 │   │   ├── NotFoundPage.tsx
-│   │   └── {module}/                    # ★ 业务页面（按 screen-map 生成）
+│   │   └── {module}/                    # ★ 业务页面（按 experience-map 生成）
 │   │       ├── {Entity}ListPage.tsx     # 列表页
 │   │       ├── {Entity}DetailPage.tsx   # 详情页
 │   │       ├── {Entity}CreatePage.tsx   # 创建页
@@ -106,7 +106,7 @@ apps/{sub-project-name}/
 
 **页面生成规则**:
 ```
-screen-map 每个 screen → 1 组页面:
+experience-map 每个 screen → 1 组页面:
   列表页: /pages/{module}/{Entity}ListPage.tsx      — DataTable 组件
   详情页: /pages/{module}/{Entity}DetailPage.tsx    — 只读展示
   创建页: /pages/{module}/{Entity}CreatePage.tsx    — 表单
@@ -150,7 +150,7 @@ export function AuthGuard({ children, roles }: { children: ReactNode; roles?: st
 
 **页面生成规则**:
 ```
-screen-map screen → SPA 页面 (CSR):
+experience-map screen → SPA 页面 (CSR):
   首页:      /pages/HomePage.tsx             — 静态内容 + 推荐列表
   列表页:    /pages/{module}/{Entity}ListPage.tsx — 带搜索/筛选
   详情页:    /pages/{module}/{Entity}DetailPage.tsx — 详情展示

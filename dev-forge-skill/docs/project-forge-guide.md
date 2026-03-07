@@ -19,7 +19,7 @@ Project Forge 是 dev-forge-skill 的核心能力，将产品设计产物（`.al
 
 必须先完成产品设计流程：
 ```
-/product-design full    # 生成 product-map, screen-map, use-case 等产物
+/product-design full    # 生成 product-map, experience-map, use-case 等产物
 ```
 
 ---

@@ -94,10 +94,10 @@ apps/{sub-project-name}/
 
 ## Screen 映射规则
 
-### 从 screen-map 到 Screen 组件
+### 从 experience-map 到 Screen 组件
 
 ```
-screen-map screen → React Native Screen
+experience-map screen → React Native Screen
 
 映射规则:
   screen (列表类) → FlatList + {entity}-card 组件
@@ -106,7 +106,7 @@ screen-map screen → React Native Screen
   screen (仪表盘) → ScrollView + 统计卡片 + 图表
 
 Tab 分配:
-  screen-map 中频率最高的 3-5 个 screen → 底部 Tab
+  experience-map 中频率最高的 3-5 个 screen → 底部 Tab
   其余 screen → Stack 导航 (从 Tab 页面进入)
 ```
 

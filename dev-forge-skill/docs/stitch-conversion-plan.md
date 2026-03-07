@@ -5,7 +5,7 @@
 product-design 的 ui-design Phase 6 产出两层数据：
 
 - **Layer 1（通用）**：`component-spec.json` — 共享组件、交互原语、变体、a11y 规格。
-  由 `gen_ui_components.py` 从 screen-map 分析生成，**始终存在**，不依赖 Stitch。
+  由 `gen_ui_components.py` 从 experience-map 分析生成，**始终存在**，不依赖 Stitch。
 - **Layer 2（增强）**：`stitch/` 目录 — Stitch 生成的 HTML/CSS + 截图。
   由 Stitch MCP 生成，**条件存在**（用户启用 Stitch 且认证通过时）。
 
@@ -38,7 +38,7 @@ product-design 的 ui-design Phase 6 产出两层数据：
 - dev-forge 通过 `primitive-impl-map.md` 查找技术栈实现
 
 ### `stitch-index.json`（增强输入，条件存在）
-- `screens[].screen_id` → 关联 `screen-map.json`
+- `screens[].screen_id` → 关联 `experience-map.json`
 - `screens[].local_files.html` → HTML 文件路径
 - `screens[].route_path` → 页面路由
 - `screens[].status` → success/failed/skipped
@@ -52,7 +52,7 @@ product-design 的 ui-design Phase 6 产出两层数据：
 
 ```
 design-to-spec (Phase B 前端)
-  Step 2: 读 screen-map → 生成 page routes + component specs → design.md
+  Step 2: 读 experience-map → 生成 page routes + component specs → design.md
   Step 3: 引用 ui-design-spec.md 的 design tokens
   Step 4: 生成 tasks.md（B0-B5 任务分批）
       ↓
@@ -116,7 +116,7 @@ Layer 2（增强，条件执行）：
    c. 写入 design.md 的 `## 共享组件` 章节（含 a11y、变体矩阵、原语实现）
 3. 对 `screen_components` 中的每个屏幕：
    a. 将 used_shared + page_specific 写入 design.md 对应页面规格
-   b. 关联 screen-map 的 screen_id → page route
+   b. 关联 experience-map 的 screen_id → page route
 
 **Layer 2 执行流程**（条件：`stitch-index.json` 存在且有 success 屏幕）：
 

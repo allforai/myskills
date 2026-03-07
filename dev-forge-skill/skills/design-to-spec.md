@@ -114,11 +114,11 @@ manifest.json            requirements + design + tasks  实际文件和目录
 | acceptance_criteria | requirements.md | 直接映射为验收条件 | E1 |
 | use-case-tree.json | requirements.md | Given/When/Then 丰富验收条件 | E1 |
 | constraints.json | requirements.md | 非功能需求（安全/性能/业务规则） | E3 |
-| screen-map.json | design.md | 每 screen = 1 页面/组件规格 | E1 |
+| experience-map.json | design.md | 每 screen = 1 页面/组件规格 | E1 |
 | screen.states | design.md | empty/loading/error/permission_denied → 界面四态设计 | E3 |
 | screen.actions | design.md | 每 action → 1 API 端点（后端）/ 1 交互规格（前端） | E1 |
 | action.on_failure | design.md | 操作失败 → UI 反馈设计（toast/banner/inline error） | E3 |
-| action.exception_flows | design.md | 任务异常 → UI 响应映射（1-to-1，from screen-map Step 2） | E3 |
+| action.exception_flows | design.md | 任务异常 → UI 响应映射（1-to-1，from experience-map Step 2） | E3 |
 | action.validation_rules | design.md | 前端验证规则 → 表单 Schema 设计 | E3 |
 | action.requires_confirm | design.md | 高风险操作 → 确认弹窗组件设计 | E3 |
 | screen-conflict.json | requirements.md | 异常缺口（SILENT_FAILURE 等）→ 补充 Error Scenarios | E3 |
@@ -152,7 +152,7 @@ manifest.json            requirements + design + tasks  实际文件和目录
 | requirements 侧重 | API 合约、并发、幂等、事务一致性 |
 | design 侧重 | 端点设计、数据模型（Entity + 关系）、中间件链 |
 | 非功能需求 | 吞吐量、事务一致性、错误码规范 |
-| 从 screen-map 取 | 不取（无 UI） |
+| 从 experience-map 取 | 不取（无 UI） |
 | 从 ui-design 取 | 不取 |
 
 ### admin
@@ -162,7 +162,7 @@ manifest.json            requirements + design + tasks  实际文件和目录
 | requirements 侧重 | CRUD 完整性、批量操作、权限矩阵 |
 | design 侧重 | 页面布局、组件树、表单验证规则、CRUD 套路（见「前端 CRUD 实现套路」） |
 | 非功能需求 | 角色权限矩阵、审计日志 |
-| 从 screen-map 取 | actions → CRUD 页面规格；states → 四态设计；on_failure + exception_flows → 错误反馈；validation_rules → 表单 Schema；requires_confirm → 确认弹窗 |
+| 从 experience-map 取 | actions → CRUD 页面规格；states → 四态设计；on_failure + exception_flows → 错误反馈；validation_rules → 表单 Schema；requires_confirm → 确认弹窗 |
 | 从 ui-design 取 | 全量设计 token |
 | CRUD 套路 | design.md 必须包含「CRUD 实现套路」章节，指定列表/表单/删除/详情的组件选型和数据流（详见下方独立章节） |
 
@@ -173,7 +173,7 @@ manifest.json            requirements + design + tasks  实际文件和目录
 | requirements 侧重 | SEO、加载速度、可访问性 |
 | design 侧重 | SSR/SSG 策略、meta 标签、结构化数据 |
 | 非功能需求 | Lighthouse 分数、Core Web Vitals |
-| 从 screen-map 取 | actions → 页面组件规格；states → 四态设计（empty 状态需 SEO 友好）；on_failure + exception_flows → 用户友好错误页；validation_rules → 表单 Schema |
+| 从 experience-map 取 | actions → 页面组件规格；states → 四态设计（empty 状态需 SEO 友好）；on_failure + exception_flows → 用户友好错误页；validation_rules → 表单 Schema |
 | 从 ui-design 取 | 全量设计 token + 性能约束 |
 
 ### web-mobile
@@ -183,7 +183,7 @@ manifest.json            requirements + design + tasks  实际文件和目录
 | requirements 侧重 | 触屏可用性、离线场景 |
 | design 侧重 | 移动优先布局、PWA 配置 |
 | 非功能需求 | 弱网容忍、Service Worker |
-| 从 screen-map 取 | actions → 触屏交互规格；states → 四态设计（loading 需骨架屏、error 需离线提示）；on_failure → 弱网重试 UI；validation_rules → 移动端表单验证 |
+| 从 experience-map 取 | actions → 触屏交互规格；states → 四态设计（loading 需骨架屏、error 需离线提示）；on_failure → 弱网重试 UI；validation_rules → 移动端表单验证 |
 | 从 ui-design 取 | 移动适配的设计 token |
 
 ### mobile-native (React Native / Flutter)
@@ -193,7 +193,7 @@ manifest.json            requirements + design + tasks  实际文件和目录
 | requirements 侧重 | 离线同步、推送、设备权限 |
 | design 侧重 | 导航栈（RN: React Navigation / Flutter: GoRouter）、原生组件、存储策略 |
 | 非功能需求 | 电池/流量优化、后台任务 |
-| 从 screen-map 取 | actions → Screen 组件规格（RN: Screen 组件 / Flutter: Screen Widget）；states → 四态设计（离线态额外处理）；on_failure + exception_flows → 原生错误提示；validation_rules → 表单验证 |
+| 从 experience-map 取 | actions → Screen 组件规格（RN: Screen 组件 / Flutter: Screen Widget）；states → 四态设计（离线态额外处理）；on_failure + exception_flows → 原生错误提示；validation_rules → 表单验证 |
 | 从 ui-design 取 | 原生端设计 token（如有） |
 | 测试工具 | RN: Detox / Maestro / Flutter: Patrol / integration_test |
 
@@ -238,9 +238,9 @@ existing 模式下，Step 3 生成 design.md 之前，先执行套路检测：
 ### 页面交互类型分类
 
 > **类型定义与推断规则**：见 `product-design-skill/docs/interaction-types.md`（单一事实来源）。
-> screen-map Step 1 已为每个 screen 标注 `interaction_type` 字段，design-to-spec 直接读取使用。
+> experience-map Step 1 已为每个 screen 标注 `interaction_type` 字段，design-to-spec 直接读取使用。
 
-37 种交互类型（MG/CT/EC/WK/RT/SB/SY/TU）完整定义见 `product-design-skill/docs/interaction-types.md`。screen-map Step 1 已为每个 screen 标注 `interaction_type` 字段，design-to-spec 直接读取使用。
+37 种交互类型（MG/CT/EC/WK/RT/SB/SY/TU）完整定义见 `product-design-skill/docs/interaction-types.md`。experience-map Step 1 已为每个 screen 标注 `interaction_type` 字段，design-to-spec 直接读取使用。
 
 ---
 
@@ -332,7 +332,7 @@ existing 模式下，Step 3 生成 design.md 之前，先执行套路检测：
   Phase 1 — 加载索引（< 5KB）:
     project-manifest.json → 子项目列表
     task-index.json → 任务 id/name/frequency/module
-    screen-index.json → 界面 id/name/action_count（可选）
+    experience-map.json → 界面 id/name/action_count（可选）
     flow-index.json → 业务流 id/name（可选）
   Phase 2 — 按需加载 full 数据（仅加载当前子项目需要的模块）
   若 project-manifest.json 不存在 → 提示先运行 /project-setup，终止
@@ -678,7 +678,7 @@ Step 6: 阶段末汇总确认
 
 **`shared_components`**（Step 2 产出，仅前端子项目）：
 - `primitive`：行为原语名（来自 `interaction-types.md` 行为原语索引）
-- `used_by_screens`：使用该原语的界面 ID 列表（`screen_id` from screen-map.json）
+- `used_by_screens`：使用该原语的界面 ID 列表（`screen_id` from experience-map.json）
 - `suggested_name`：建议的组件/hook 封装名称
 - `tech_stack_impl`：该技术栈下的具体实现方案（来自行为原语实现映射表）
 

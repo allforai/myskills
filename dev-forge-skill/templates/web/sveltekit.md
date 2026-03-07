@@ -37,7 +37,7 @@ apps/{sub-project-name}/
 │   │   └── (main)/                      # 主功能区（需要登录）
 │   │       ├── +layout.svelte           # 带侧边栏/导航的布局
 │   │       ├── +layout.server.ts        # 认证检查
-│   │       └── {module}/               # ★ 业务模块（按 screen-map 生成）
+│   │       └── {module}/               # ★ 业务模块（按 experience-map 生成）
 │   │           ├── +page.svelte         # 列表页
 │   │           ├── +page.server.ts      # 列表数据加载
 │   │           ├── [id]/+page.svelte    # 详情页
@@ -105,7 +105,7 @@ apps/{sub-project-name}/
 
 **页面生成规则**:
 ```
-screen-map 每个 screen → 1 组页面:
+experience-map 每个 screen → 1 组页面:
   列表页: /routes/(main)/{module}/+page.svelte          — DataTable 组件
   详情页: /routes/(main)/{module}/[id]/+page.svelte     — 只读展示
   创建页: /routes/(main)/{module}/new/+page.svelte      — 表单 (form action)
@@ -148,7 +148,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 
 **页面生成规则**:
 ```
-screen-map screen → SSR/SSG 页面:
+experience-map screen → SSR/SSG 页面:
   首页:      /routes/+page.svelte              — SSG (export const prerender = true)
   列表页:    /routes/{module}/+page.svelte     — SSR (带搜索/筛选)
   详情页:    /routes/{module}/[slug]/+page.svelte — SSG + entries()
@@ -181,7 +181,7 @@ screen-map screen → SSR/SSG 页面:
 
 **页面生成规则**:
 ```
-screen-map screen → 移动优先页面:
+experience-map screen → 移动优先页面:
   - 底部 Tab 导航（最多 5 个主入口）
   - 列表使用虚拟滚动或无限加载
   - 详情页全屏展示

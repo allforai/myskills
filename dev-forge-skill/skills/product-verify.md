@@ -7,7 +7,7 @@ description: >
   "find extra code not in product map", "产品验收", "静态验收", "动态验收",
   "代码是否实现了产品地图", "验证功能实现", "找漏实现的功能", "代码覆盖检查",
   or wants to prove code implements the product map features and flows.
-  Requires product-map to have been run first. Optionally uses screen-map and use-case.
+  Requires product-map to have been run first. Optionally uses experience-map and use-case.
 version: "1.3.0"
 ---
 
@@ -17,7 +17,7 @@ version: "1.3.0"
 
 ## 目标
 
-以 `product-map`（以及可选的 `screen-map`、`use-case`）为基准，回答两个问题：
+以 `product-map`（以及可选的 `experience-map`、`use-case`）为基准，回答两个问题：
 
 1. **静态：代码有没有？** — 每个任务是否有对应的 API 路由？每个界面是否有对应的组件？每条约束是否有对应的校验逻辑？
 2. **动态：行为对不对？** — 用 Playwright 运行实际应用，用例脚本跑得通吗？
@@ -110,13 +110,13 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 前置检查（两阶段加载）：
   Phase 1 — 加载索引（< 5KB）：
     检查 task-index.json → 获取任务 id/task_name/frequency/owner_role/risk_level + 模块分组
-    检查 screen-index.json → 获取界面 id/name/task_refs/action_count（S2 用）
+    检查 experience-map.json → 获取界面 id/name/task_refs/action_count（S2 用）
     任一索引不存在 → 对应数据回退到 Phase 2 全量加载（向后兼容）
   Phase 2 — 按需加载完整数据：
     加载 .allforai/product-map/product-map.json
     若 product-map.json 也不存在 → 提示用户先运行 /product-map，终止
   其他可选数据：
-    screen-map.json 必须（不存在则自动运行 screen-map 生成，然后启用 S2）
+    experience-map.json 必须（不存在则自动运行 experience-map 生成，然后启用 S2）
     use-case-tree.json 可选（dynamic 优先使用，否则自动推导）
     verify-decisions.json 存在则加载历史决策，已决策项自动跳过
   ↓
@@ -140,8 +140,8 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
   S1: Task → API 覆盖检查
       遍历 task-inventory.json，扫描代码路由，比对覆盖状态
       → 输出进度: 「S1 Task→API ✓ covered:{N} missing:{M} partial:{K}」
-  S2: Screen → 组件覆盖检查（screen-map.json 存在时）
-      遍历 screen-map.json，扫描页面组件，比对覆盖状态
+  S2: Screen → 组件覆盖检查（experience-map.json 存在时）
+      遍历 experience-map.json，扫描页面组件，比对覆盖状态
       → 输出进度: 「S2 Screen→组件 ✓ covered:{N} missing:{M}」（或 WARNING 跳过）
   S3: 约束 → 代码覆盖检查
       遍历 product-map constraints，Grep 校验/中间件逻辑
@@ -232,7 +232,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 ### S2：Screen → 组件覆盖检查
 
-**前提**：`.allforai/screen-map/screen-map.json` 存在；否则自动加载并执行 `${CLAUDE_PLUGIN_ROOT}/../product-design-skill/skills/screen-map.md` 的完整工作流生成界面地图，完成后继续 S2。
+**前提**：`.allforai/experience-map/experience-map.json` 存在；否则自动加载并执行 `${CLAUDE_PLUGIN_ROOT}/../product-design-skill/skills/experience-map.md` 的完整工作流生成体验地图，完成后继续 S2。
 
 **扫描策略**：
 1. Glob 前端页面/视图文件（pages/**, views/**, src/pages/**, app/**/page.**, 等）

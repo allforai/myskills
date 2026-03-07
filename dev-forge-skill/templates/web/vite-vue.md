@@ -36,7 +36,7 @@ apps/{sub-project-name}/
 │   │   │   └── RegisterView.vue
 │   │   ├── HomeView.vue
 │   │   ├── NotFoundView.vue
-│   │   └── {module}/                    # ★ 业务页面（按 screen-map 生成）
+│   │   └── {module}/                    # ★ 业务页面（按 experience-map 生成）
 │   │       ├── {Entity}ListView.vue     # 列表页
 │   │       ├── {Entity}DetailView.vue   # 详情页
 │   │       ├── {Entity}CreateView.vue   # 创建页
@@ -102,7 +102,7 @@ apps/{sub-project-name}/
 
 **页面生成规则**:
 ```
-screen-map 每个 screen → 1 组页面:
+experience-map 每个 screen → 1 组页面:
   列表页: /views/{module}/{Entity}ListView.vue      — UDataTable 组件
   详情页: /views/{module}/{Entity}DetailView.vue    — 只读展示
   创建页: /views/{module}/{Entity}CreateView.vue    — 表单
@@ -157,7 +157,7 @@ const visibleMenuItems = computed(() =>
 
 **页面生成规则**:
 ```
-screen-map screen → SPA 页面 (CSR):
+experience-map screen → SPA 页面 (CSR):
   首页:      /views/HomeView.vue                — 静态内容 + 推荐列表
   列表页:    /views/{module}/{Entity}ListView.vue — 带搜索/筛选
   详情页:    /views/{module}/{Entity}DetailView.vue — 详情展示

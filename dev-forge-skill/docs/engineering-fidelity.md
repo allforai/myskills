@@ -69,7 +69,7 @@ product-design 的 4D+6V 是产品视角，dev-forge 需要翻译为工程可执
 | 18 | constraints.code_status | requirements.md | hard 约束 → 验证中间件需求 | E3 |
 | 19 | use-case-tree | requirements.md | Given/When/Then 丰富验收条件 | E1 |
 | 20 | constraints | requirements.md | 非功能需求（安全/性能/业务规则） | E3 |
-| 21 | screen-map | design.md | 页面/组件规格 | E1 |
+| 21 | experience-map | design.md | 页面/组件规格 | E1 |
 | 22 | screen.states | design.md | empty/loading/error/permission_denied → 界面四态设计 | E3 |
 | 23 | screen.actions | design.md | API 端点 / 交互规格 | E1 |
 | 24 | action.on_failure | design.md | 操作失败 → UI 反馈设计 | E3 |

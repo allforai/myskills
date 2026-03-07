@@ -62,7 +62,7 @@ Agent tool 的屏障同步机制保证所有前端 Agent 完成后才继续到 S
 上下文:
 - project-manifest.json: .allforai/project-forge/project-manifest.json
 - forge-decisions.json: .allforai/project-forge/forge-decisions.json（technical_spikes + coding_principles）
-- 产品设计产物: .allforai/product-map/, .allforai/screen-map/ 等
+- 产品设计产物: .allforai/product-map/, .allforai/experience-map/ 等
 - 后端 design.md: .allforai/project-forge/sub-projects/{backend-name}/design.md（仅前端 Agent 引用）
 {自动模式标记: __orchestrator_auto: true（若自动模式激活）}
 

@@ -29,7 +29,7 @@ apps/{sub-project-name}/
 ├── pages/                              # 文件路由
 │   ├── index.vue                       # 首页
 │   ├── login.vue                       # 登录页
-│   └── {module}/                       # ★ 业务模块（按 screen-map 生成）
+│   └── {module}/                       # ★ 业务模块（按 experience-map 生成）
 │       ├── index.vue                   # 列表页
 │       ├── [id].vue                    # 详情页
 │       ├── new.vue                     # 创建页
@@ -105,7 +105,7 @@ apps/{sub-project-name}/
 
 **页面生成规则**:
 ```
-screen-map 每个 screen → 1 组页面:
+experience-map 每个 screen → 1 组页面:
   列表页: /pages/{module}/index.vue      — UDataTable 组件
   详情页: /pages/{module}/[id].vue       — 只读展示
   创建页: /pages/{module}/new.vue        — 表单
@@ -146,7 +146,7 @@ const visibleMenuItems = computed(() =>
 
 **页面生成规则**:
 ```
-screen-map screen → SSR/SSG 页面:
+experience-map screen → SSR/SSG 页面:
   首页:      /pages/index.vue              — SSG (routeRules: prerender)
   列表页:    /pages/{module}/index.vue     — SSR (带搜索/筛选)
   详情页:    /pages/{module}/[slug].vue    — ISR (routeRules: swr)
@@ -184,7 +184,7 @@ useHead({
 
 **页面生成规则**:
 ```
-screen-map screen → 移动优先页面:
+experience-map screen → 移动优先页面:
   - 底部 Tab 导航（最多 5 个主入口）
   - 列表使用虚拟滚动或无限加载
   - 详情页全屏展示

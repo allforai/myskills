@@ -31,7 +31,7 @@ apps/{sub-project-name}/
 │   │   │   └── layout.tsx
 │   │   └── (main)/                     # 主功能区（需要登录）
 │   │       ├── layout.tsx              # 带侧边栏/导航的布局
-│   │       └── {module}/              # ★ 业务模块（按 screen-map 生成）
+│   │       └── {module}/              # ★ 业务模块（按 experience-map 生成）
 │   │           ├── page.tsx            # 列表页
 │   │           ├── [id]/page.tsx       # 详情页
 │   │           ├── new/page.tsx        # 创建页
@@ -99,7 +99,7 @@ apps/{sub-project-name}/
 
 **页面生成规则**:
 ```
-screen-map 每个 screen → 1 组页面:
+experience-map 每个 screen → 1 组页面:
   列表页: /app/(main)/{module}/page.tsx       — DataTable 组件
   详情页: /app/(main)/{module}/[id]/page.tsx  — 只读展示
   创建页: /app/(main)/{module}/new/page.tsx   — 表单
@@ -133,7 +133,7 @@ const menuItems = allMenuItems.filter(item =>
 
 **页面生成规则**:
 ```
-screen-map screen → SSR/SSG 页面:
+experience-map screen → SSR/SSG 页面:
   首页:      /app/page.tsx              — SSG + revalidate
   列表页:    /app/{module}/page.tsx     — SSR (带搜索/筛选)
   详情页:    /app/{module}/[slug]/page.tsx — SSG + generateStaticParams
@@ -164,7 +164,7 @@ export async function generateMetadata({ params }): Promise<Metadata> {
 
 **页面生成规则**:
 ```
-screen-map screen → 移动优先页面:
+experience-map screen → 移动优先页面:
   - 底部 Tab 导航（最多 5 个主入口）
   - 列表使用虚拟滚动或无限加载
   - 详情页全屏展示

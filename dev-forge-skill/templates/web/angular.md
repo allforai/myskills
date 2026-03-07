@@ -120,7 +120,7 @@ apps/{sub-project-name}/
 
 **页面生成规则**:
 ```
-screen-map 每个 screen → 1 个 feature module:
+experience-map 每个 screen → 1 个 feature module:
   列表页: /{module}/             — mat-table + MatSort + MatPaginator
   详情页: /{module}/:id          — 只读展示 (mat-card)
   创建页: /{module}/new          — Reactive Form
@@ -162,7 +162,7 @@ export class AuthGuard implements CanActivate {
 
 **页面生成规则**:
 ```
-screen-map screen → Angular 页面 (CSR):
+experience-map screen → Angular 页面 (CSR):
   首页:      /                     — 静态内容 + 推荐列表
   列表页:    /{module}             — 带搜索/筛选的列表 (virtual scroll)
   详情页:    /{module}/:slug       — 详情展示 (mat-card)
