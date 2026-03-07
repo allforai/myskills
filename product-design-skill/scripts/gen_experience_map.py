@@ -40,7 +40,55 @@ def infer_frequency(task):
     return "低"
 
 
-def build_screens_for_node(node_tasks, tasks_inv, screen_counter):
+# ── Implementation contract presets ──────────────────────────────────────────
+CONTRACT_PATTERNS = {
+    "bottom-sheet": {
+        "forbidden": ["page-route", "full-screen-modal"],
+        "required_behaviors": ["swipe-to-dismiss", "backdrop-tap-close"],
+    },
+    "full-page": {
+        "forbidden": ["bottom-sheet", "inline-expand"],
+        "required_behaviors": ["back-navigation", "scroll-to-top"],
+    },
+    "modal-picker": {
+        "forbidden": ["page-route", "inline-expand"],
+        "required_behaviors": ["backdrop-tap-close", "keyboard-dismiss"],
+    },
+    "multi-step-form": {
+        "forbidden": ["single-submit", "inline-edit"],
+        "required_behaviors": ["step-indicator", "back-to-previous-step", "draft-save"],
+    },
+    "standard-page": {
+        "forbidden": [],
+        "required_behaviors": ["back-navigation"],
+    },
+}
+
+
+def infer_contract(ux_intent, crud_type, emotion_intensity):
+    """Infer implementation contract from UX intent, CRUD type, and emotion intensity."""
+    intent_lower = (ux_intent or "").lower()
+
+    if any(kw in intent_lower for kw in ["quick", "overlay", "confirm", "dismiss"]):
+        pattern = "bottom-sheet"
+    elif any(kw in intent_lower for kw in ["detail", "full", "comprehensive"]):
+        pattern = "full-page"
+    elif any(kw in intent_lower for kw in ["select", "pick", "choose"]):
+        pattern = "modal-picker"
+    elif crud_type == "C" and emotion_intensity >= 7:
+        pattern = "multi-step-form"
+    else:
+        pattern = "standard-page"
+
+    preset = CONTRACT_PATTERNS[pattern]
+    return {
+        "pattern": pattern,
+        "forbidden": preset["forbidden"],
+        "required_behaviors": preset["required_behaviors"],
+    }
+
+
+def build_screens_for_node(node_tasks, tasks_inv, screen_counter, ux_intent="", emotion_intensity=5):
     """Build screen objects from a list of task IDs. Returns (screens, updated_counter)."""
     if not node_tasks:
         return [], screen_counter
@@ -70,9 +118,13 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter):
             })
             task_ids.append(tid)
 
-        # Determine primary action
+        # Determine primary action and dominant CRUD
         primary = actions[0]["label"] if actions else module
+        dominant_crud = actions[0]["crud"] if actions else "R"
         screen_name = f"{module}_screen"
+
+        # Derive implementation contract
+        contract = infer_contract(ux_intent, dominant_crud, emotion_intensity)
 
         screens.append({
             "id": sid,
@@ -83,6 +135,7 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter):
             "actions": actions,
             "primary_action": primary,
             "non_negotiable": [],
+            "implementation_contract": contract,
         })
 
     return screens, screen_counter
@@ -133,7 +186,9 @@ def main():
 
             # Build screens for this node
             node_screens, screen_counter = build_screens_for_node(
-                node_tasks, tasks_inv, screen_counter
+                node_tasks, tasks_inv, screen_counter,
+                ux_intent=en.get("design_hint", ""),
+                emotion_intensity=en.get("intensity", 5),
             )
 
             node_id = f"N{jl_id[2:]}{step:02d}"  # e.g. N0101 for JL01 step 1
