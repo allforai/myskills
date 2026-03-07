@@ -410,6 +410,41 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 - 失败时记录：失败步骤、错误信息、截图路径
 - 超时阈值：单步 10 秒，单用例 60 秒（可配置）
 
+---
+
+### D3.5：LLM Cognitive Walkthrough（可发现性测试）
+
+**前提**：dynamic 或 full 模式 + Playwright 可用 + 应用已可达（D0 通过）。任一不满足 → 跳过。
+
+**目的**：验证用户能否**发现**功能，而非功能是否存在。E2E 测试知道组件 ID 直接点击；认知走查模拟真实用户只看界面内容。
+
+**执行流程**：
+
+1. 从 role-profiles.json 提取角色列表
+2. 从 experience-map.json 提取每个角色的核心操作线（取 frequency=高 的前 3 条）
+3. 对每条操作线构造认知走查任务:
+   - persona: "{角色名}，首次使用本系统"
+   - goal: 操作线的 name（如 "完成首次下单"）
+   - 期望步数: 操作线 continuity.total_steps
+   - 禁止提供: 路由名、组件 ID、导航提示
+4. 对每个任务:
+   a. browser_navigate 到首页
+   b. browser_snapshot 获取页面快照
+   c. 基于快照内容（纯文本，不看 HTML 结构），决定下一步点击
+   d. 记录每次点击的 ref 和原因
+   e. 重复 b-d 直到目标完成或达到 max_clicks（期望步数 x 3）
+   f. 记录: 完成/放弃、实际点击数、卡住点
+5. 输出 cognitive-walkthrough.json
+
+**卡住判定**：连续 2 次快照相同（点击无效果）或 3 次回退（找不到入口）。
+
+**输出**：`.allforai/product-verify/cognitive-walkthrough.json`
+
+`discoverability_score` = `expected_clicks / actual_clicks`（上限 1.0）。
+`overall_discoverability` = 所有走查分数的算术平均。
+
+**D4 汇总集成**：D3.5 结果在 D4 汇总中展示为独立段落，不影响 FIX_FAILING 分类。discoverability_score < 0.5 的走查标记为 WARNING。
+
 **结果分类**（每个用例）：
 - `pass` — 所有步骤成功
 - `fail` — 某步骤失败（记录原因）
