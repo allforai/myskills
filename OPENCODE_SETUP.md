@@ -111,9 +111,9 @@ EOF
 |------|------|------|------|
 | `/product-concept` | 产品概念设计 | 用户对话 | product-concept.json |
 | `/product-map` | 产品功能地图 | product-concept | product-map.json |
-| `/screen-map` | 界面交互地图 | product-map | screen-map.json |
-| `/ui-design` | UI 设计规范 | screen-map | ui-design-spec.md |
-| `/use-case` | 测试用例集 | product-map + screen-map | use-case-tree.json |
+| `/experience-map` | 体验地图 | product-map + journey-emotion | experience-map.json |
+| `/ui-design` | UI 设计规范 | experience-map | ui-design-spec.md |
+| `/use-case` | 测试用例集 | product-map + experience-map | use-case-tree.json |
 | `/feature-gap` | 功能缺口检测 | product-map + 代码 | gap-report.json |
 | `/feature-prune` | 功能优先级评估 | product-map | prune-report.json |
 | `/design-audit` | 设计审计 | 所有设计产物 | audit-report.json |
@@ -184,7 +184,7 @@ your-project/
 ├── .allforai/               # 技能输出目录
 │   ├── product-concept/
 │   ├── product-map/
-│   ├── screen-map/
+│   ├── experience-map/
 │   ├── use-case/
 │   ├── project-forge/
 │   └── ...
@@ -209,8 +209,8 @@ your-project/
 # 2. 产品功能地图
 /product-map
 
-# 3. 界面交互地图
-/screen-map
+# 3. 体验地图
+/experience-map
 
 # 4. UI 设计规范
 /ui-design
