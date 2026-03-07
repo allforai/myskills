@@ -17,7 +17,7 @@ version: "1.0.0"
 
 本插件依赖以下条件：
 
-1. **product-design 产物** — `.allforai/product-map/` 目录必须存在（角色画像、任务清单、业务流、界面地图）。请先运行 `/product-design full` 完成产品设计。
+1. **product-design 产物** — `.allforai/product-map/` 目录必须存在（角色画像、任务清单、业务流、体验地图）。请先运行 `/product-design full` 完成产品设计。
 2. **应用代码已完成** — dev-forge Phase 7+（任务执行完毕），核心功能可用。
 3. **应用正在运行** — demo-execute 和 demo-verify 需要可访问的应用实例（本地或远程）。
 
