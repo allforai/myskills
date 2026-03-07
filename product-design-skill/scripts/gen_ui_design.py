@@ -363,6 +363,40 @@ for s in screens:
             f"| 300ms | spring overshoot | impact-medium |"
         )
 
+    # Error state override for D-type (destructive) screens
+    has_delete = any(a.get("crud") == "D" for a in s.get("actions", []))
+    if has_delete:
+        error_micro = {
+            "trigger": "error-feedback",
+            "animation": MICRO_OVERRIDES["error"]["animation"],
+            "duration_ms": 400,
+            "easing": "ease-out",
+            "haptic": MICRO_OVERRIDES["error"]["haptic"],
+            "emotion_alignment": "error alert",
+        }
+        screen_micros.append(error_micro)
+        spec_lines.append(
+            f"| {s['name']} ({sid}) | error-feedback | shake "
+            f"| 400ms | ease-out | notification-error |"
+        )
+
+    # Loading state for screens with async operations (C/U/D)
+    has_async = any(a.get("crud") in ("C", "U", "D") for a in s.get("actions", []))
+    if has_async:
+        loading_micro = {
+            "trigger": "async-loading",
+            "animation": MICRO_OVERRIDES["loading"]["animation"],
+            "duration_ms": 1000,
+            "easing": "ease-in-out",
+            "haptic": MICRO_OVERRIDES["loading"]["haptic"],
+            "emotion_alignment": "processing feedback",
+        }
+        screen_micros.append(loading_micro)
+        spec_lines.append(
+            f"| {s['name']} ({sid}) | async-loading | pulse "
+            f"| 1000ms | ease-in-out | none |"
+        )
+
     micro_interactions_data.append({
         "screen_id": sid,
         "screen_name": s["name"],
