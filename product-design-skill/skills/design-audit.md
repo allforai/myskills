@@ -23,7 +23,7 @@ version: "1.0.0"
 4. **信息保真（Fidelity）** — 关键对象是否可追溯且具备多视角覆盖？
 5. **模式一致性（Pattern Consistency）** — 相同功能模式是否使用了一致的设计套路？（仅当 pattern-catalog.json 存在时激活）
 6. **行为一致性（Behavioral Consistency）** — 跨界面行为是否遵循已确认的行为规范？（仅当 behavioral-standards.json 存在时激活）
-7. **交互类型一致性（Interaction Type Consistency）** — 相同交互类型的界面是否遵循统一的布局约束？（仅当 screen-map 含 interaction_type 时激活）
+7. **交互类型一致性（Interaction Type Consistency）** — 相同交互类型的界面是否遵循统一的布局约束？（仅当 experience-map 含 interaction_type 时激活）
 
 发现问题只报告，不修改任何上游产物。
 
@@ -34,7 +34,7 @@ version: "1.0.0"
 ```
 product-map（锚点）
     ↓ 逆向追溯（从下往上）
-    screen-map ← use-case ← feature-gap ← feature-prune ← ui-design
+    experience-map ← use-case ← feature-gap ← feature-prune ← ui-design
     ↓ 覆盖洪泛（从上往下）
     task → screen → use-case → gap → prune → ui-design
     ↓ 横向一致性（相邻层对比）
@@ -127,7 +127,7 @@ product-map（锚点）
       Phase 1 — 加载索引：task-index / screen-index / flow-index
       Phase 2 — 探测已有产物：
         .allforai/product-map/   → 必须存在
-        .allforai/screen-map/    → 必须（不存在则自动运行 screen-map 生成）
+        .allforai/experience-map/    → 必须（不存在则自动运行 experience-map 生成）
         .allforai/use-case/      → 可选
         .allforai/feature-gap/   → 可选
         .allforai/feature-prune/ → 可选
@@ -156,7 +156,7 @@ Step 5.6: 行为一致性审计（Behavioral Consistency）
       仅当 behavioral-standards.json 存在时执行
       ↓ 自动
 Step 5.7: 交互类型一致性审计（Interaction Type Consistency）
-      仅当 screen-map 含 interaction_type 字段时执行
+      仅当 experience-map 含 interaction_type 字段时执行
       ↓ 自动
 Step 6: 汇总报告
       合并所有维度结果，输出 JSON + Markdown
@@ -171,7 +171,7 @@ Step 6: 汇总报告
 | 索引文件 | 路径 |
 |----------|------|
 | task-index | `.allforai/product-map/task-index.json` |
-| screen-index | `.allforai/screen-map/screen-index.json` |
+| screen-index | `.allforai/experience-map/screen-index.json` |
 | flow-index | `.allforai/product-map/flow-index.json` |
 
 任一索引存在 → 加载索引，按需决定是否加载完整数据。
@@ -184,7 +184,7 @@ Step 6: 汇总报告
 | 层 | 必须/可选 | 检测文件 |
 |----|----------|----------|
 | product-map | 必须 | `.allforai/product-map/product-map.json` |
-| screen-map | 必须（不存在则自动运行 screen-map） | `.allforai/screen-map/screen-map.json` |
+| experience-map | 必须（不存在则自动运行 experience-map） | `.allforai/experience-map/experience-map.json` |
 | use-case | 可选 | `.allforai/use-case/use-case-tree.json` |
 | feature-gap | 可选 | `.allforai/feature-gap/gap-tasks.json` |
 | feature-prune | 可选 | `.allforai/feature-prune/prune-decisions.json` |
@@ -203,9 +203,9 @@ Step 6: 汇总报告
 
 | # | 校验 | 条件 | 逻辑 |
 |---|------|------|------|
-| T1 | screen → task | screen-map 存在 | 每个 screen 的 `task_refs` 中的 task_id 必须在 task-inventory 中存在 |
+| T1 | screen → task | experience-map 存在 | 每个 screen 的 `task_refs` 中的 task_id 必须在 task-inventory 中存在 |
 | T2 | use-case → task | use-case 存在 | 每条 use-case 的 `task_id` 必须在 task-inventory 中存在 |
-| T3 | use-case → screen | use-case + screen-map 存在 | 每条 use-case 的 `screen_ref` 必须在 screen-map 中存在 |
+| T3 | use-case → screen | use-case + experience-map 存在 | 每条 use-case 的 `screen_ref` 必须在 experience-map 中存在 |
 | T4 | gap-finding → task | feature-gap 存在 | 每个 gap 的 `task_id` 必须在 task-inventory 中存在 |
 | T5 | prune-decision → task | feature-prune 存在 | 每个 prune 决策的 `task_id` 必须在 task-inventory 中存在 |
 
@@ -232,12 +232,12 @@ Step 6: 汇总报告
 
 | # | 校验 | 条件 | 逻辑 |
 |---|------|------|------|
-| C1 | task → screen | screen-map 存在 | 每个 task 至少有一个 screen 引用它（通过 screen 的 `task_refs` 反查） |
+| C1 | task → screen | experience-map 存在 | 每个 task 至少有一个 screen 引用它（通过 screen 的 `task_refs` 反查） |
 | C2 | task → use-case | use-case 存在 | 每个 task 至少有一条正常流用例 |
 | C3 | task → gap-checked | feature-gap 存在 | 每个 task 在 gap 报告中被检查过 |
 | C4 | task → prune-decided | feature-prune 存在 | 每个 task 有 prune 决策（CORE/DEFER/CUT） |
 | C5 | CORE task → ui-design | feature-prune + ui-design 存在 | 每个 CORE 任务在 UI 设计中有体现（检查 ui-design-spec.md 中是否提及该任务名或关联界面） |
-| C6 | role → full journey | screen-map + use-case 存在 | 按角色追踪：tasks → screens → use-cases，检测断链（某任务有 screen 但无 use-case，或反过来） |
+| C6 | role → full journey | experience-map + use-case 存在 | 按角色追踪：tasks → screens → use-cases，检测断链（某任务有 screen 但无 use-case，或反过来） |
 
 **执行逻辑**：
 
@@ -266,8 +266,8 @@ Step 6: 汇总报告
 |---|------|------|------|
 | X1 | gap × prune 矛盾 | gap + prune 存在 | gap 报缺口的 task 被 prune 标 CUT → CONFLICT（gap 说缺，prune 说砍，矛盾） |
 | X2 | ui-design × prune CUT | ui-design + prune 存在 | UI 包含 CUT 功能的界面 → CONFLICT（已砍的功能不应出现在 UI 设计中） |
-| X3 | 频次 × 点击深度 | product-map + screen-map 存在 | 高频任务（frequency=高）在 screen-map 中 click_depth ≥ 3 → WARNING（高频操作被埋深） |
-| X4 | use-case screen_ref | use-case + screen-map 存在 | 用例引用的 `screen_ref` 在 screen-map 中不存在 → BROKEN_REF |
+| X3 | 频次 × 点击深度 | product-map + experience-map 存在 | 高频任务（frequency=高）在 experience-map 中 click_depth ≥ 3 → WARNING（高频操作被埋深） |
+| X4 | use-case screen_ref | use-case + experience-map 存在 | 用例引用的 `screen_ref` 在 experience-map 中不存在 → BROKEN_REF |
 
 **执行逻辑**：
 
@@ -486,10 +486,10 @@ Step 6: 汇总报告
 > 目标：验证相同交互类型的界面是否遵循统一的布局约束和行为模式。
 
 **前置检查**：
-1. `.allforai/screen-map/screen-map.json` 是否存在
-   - 不存在 → 提示「请先运行 /screen-map 生成界面地图」，终止
-2. screen-map 中每个 screen 是否含 `interaction_type` 字段
-   - 缺失 → 提示「screen-map 未标注 interaction_type，请运行 /screen-map refresh 重新生成」，终止
+1. `.allforai/experience-map/experience-map.json` 是否存在
+   - 不存在 → 提示「请先运行 /experience-map 生成体验地图」，终止
+2. experience-map 中每个 screen 是否含 `interaction_type` 字段
+   - 缺失 → 提示「experience-map 未标注 interaction_type，请运行 /experience-map refresh 重新生成」，终止
 
 ---
 
@@ -701,6 +701,21 @@ def check_type_context_match(screens, product_type, audience, platform):
 
 ---
 
+### Step 3.7: 连贯性审计（Continuity Audit）
+
+从 `interaction-gate.json` 读取质量门禁结果，检查：
+
+| 指标 | 合格标准 |
+|------|---------|
+| 操作线步骤数 | ≤ 7 |
+| 上下文切换 | ≤ 2 |
+| 等待反馈覆盖率 | = 1.0 |
+| 拇指热区合规率 | ≥ 0.8 |
+
+不合格的操作线记入审计报告 `continuity_issues` 数组。
+
+---
+
 ### Step 6：汇总报告
 
 合并三个维度的校验结果，生成最终报告。
@@ -716,7 +731,7 @@ def check_type_context_match(screens, product_type, audience, platform):
   "generated_at": "ISO8601",
   "mode": "full|trace|coverage|cross|role",
   "role_filter": "角色名（仅 role 模式）",
-  "available_layers": ["product-map", "screen-map", "..."],
+  "available_layers": ["product-map", "experience-map", "..."],
   "summary": {
     "trace": { "total": 0, "pass": 0, "orphan": 0 },
     "coverage": { "total": 0, "covered": 0, "gap": 0, "rate": "0%" },
@@ -757,7 +772,7 @@ def check_type_context_match(screens, product_type, audience, platform):
     {
       "check_id": "T1",
       "type": "ORPHAN",
-      "source": "screen-map",
+      "source": "experience-map",
       "item_id": "S003",
       "item_name": "界面名",
       "missing_ref": "T999",
