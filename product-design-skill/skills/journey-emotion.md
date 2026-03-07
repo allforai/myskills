@@ -179,6 +179,12 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_journey_emotion.py <BASE>
 - **risk**：此节点是否存在流失/投诉风险？（例：审核超时节点 risk 应为 high）
 - **design_hint**：针对该情绪/风险，有什么设计建议？（例：「增加进度条缓解焦虑」「超时自动提醒」）
 
+**情绪悬崖检测**：展示表格后，检查相邻节点 intensity 差值。差值 ≥ 4 时标记 WARNING：
+
+```
+⚠ 情绪悬崖：节点 3→4 intensity 从 8 骤降到 3，体验可能断裂。请确认是否合理或需调整中间节点。
+```
+
 逐条旅程线确认，确认后进入下一条。
 
 ---
