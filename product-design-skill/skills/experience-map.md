@@ -1,0 +1,295 @@
+---
+name: experience-map
+description: >
+  Phase 4 — Experience Map Generation. Use when the user asks to "generate experience map",
+  "map experience", "operation lines", "experience-map", "体验地图", "操作线",
+  "体验线路", "节点屏幕", "operation line mapping",
+  or mentions generating operation lines from journey emotions,
+  mapping nodes to screens, building experience maps from journey-emotion-map.
+  Replaces the former screen-map skill with a richer experience-oriented structure.
+  Requires journey-emotion and product-map to have been run first.
+version: "1.0.0"
+---
+
+# Experience Map — 体验地图
+
+> 以旅程情绪图和任务清单为输入，生成操作线 > 节点 > 屏幕的完整体验地图
+
+## 目标
+
+以 `journey-emotion-map.json`（必须）和 `task-inventory.json`（必须）为输入，生成体验地图：
+
+- **JSON 机器版**：完整字段，operation_lines > nodes > screens 三层结构，供下游 ui-design 和自动化使用
+- **Markdown 人类版**：以可读摘要形式展示操作线、节点、屏幕统计
+
+> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/schemas/experience-map-schema.md
+
+---
+
+## 定位
+
+```
+journey-emotion（旅程情绪图）    experience-map（体验地图）       ui-design（界面设计）
+每个节点的情绪、风险、设计提示    操作线 > 节点 > 屏幕结构          基于体验地图生成设计规格
+情绪层语义（人工确认）           体验层语义（结构化映射）           视觉层语义
+```
+
+**前提**：必须先运行 `journey-emotion`，生成 `.allforai/experience-map/journey-emotion-map.json`；必须先运行 `product-map`，生成 `.allforai/product-map/task-inventory.json`。
+
+---
+
+## 快速开始
+
+```
+/experience-map              # 完整流程（Step 1-5）
+/experience-map refresh      # 清空缓存，从头重新运行
+```
+
+---
+
+## 预置脚本（优先使用）
+
+检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py` 是否存在：
+- **存在** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py <BASE>`
+- **不存在** → 回退到 LLM 生成（向后兼容）
+
+预置脚本从 journey-emotion-map + task-inventory 生成 operation_lines > nodes > screens 结构。
+
+---
+
+## 工作流
+
+```
+前置检查：
+  .allforai/experience-map/journey-emotion-map.json   必须存在，否则终止
+  .allforai/product-map/task-inventory.json            必须存在，否则终止
+  .allforai/product-map/role-profiles.json             可选加载（角色信息增强）
+  .allforai/product-map/business-flows.json            可选加载（业务流增强）
+
+Step 1: 加载前置数据
+      读取 journey-emotion-map.json（旅程情绪图）
+      读取 task-inventory.json（任务清单）
+      读取 role-profiles.json（角色列表，可选）
+      读取 business-flows.json（业务流，可选）
+      ↓
+Step 2: 运行 gen_experience_map.py 生成体验地图
+      脚本从旅程情绪图提取操作线，映射任务到节点和屏幕
+      生成 operation_lines > nodes > screens 三层结构
+      ↓
+Step 3: 向用户展示结果摘要，用户审阅
+      展示操作线列表、节点数、屏幕数统计
+      用户可调整操作线分组、节点归属、屏幕命名
+      → 用户确认
+      ↓
+Step 4: 自动触发 interaction-quality-gate（Phase 4.5）
+      体验地图生成完毕后，自动调用 interaction-quality-gate 技能
+      执行交互质量检查
+      ↓
+Step 5: 输出 experience-map-report.md
+      汇总体验地图数据，生成人类可读报告
+```
+
+**核心原则：Step 3 结束有用户确认，用户是权威。**
+
+---
+
+### 前置检查
+
+```
+检查 .allforai/experience-map/journey-emotion-map.json：
+  存在 → 加载旅程情绪图数据
+  不存在 → 提示：「请先运行 /journey-emotion 生成旅程情绪图，再运行 /experience-map」，终止
+
+检查 .allforai/product-map/task-inventory.json：
+  存在 → 加载任务清单数据
+  不存在 → 提示：「请先运行 /product-map 生成任务清单，再运行 /experience-map」，终止
+
+检查 .allforai/product-map/role-profiles.json：
+  存在 → 加载角色数据（增强操作线的角色信息）
+  不存在 → 跳过，不影响主流程
+
+检查 .allforai/product-map/business-flows.json：
+  存在 → 加载业务流数据（增强操作线的流程上下文）
+  不存在 → 跳过，不影响主流程
+```
+
+---
+
+### Step 1：加载前置数据
+
+读取 `journey-emotion-map.json` 获取旅程情绪图（旅程线、节点、情绪标注）。
+读取 `task-inventory.json` 获取任务清单（任务 ID、名称、CRUD 类型、模块归属）。
+可选读取 `role-profiles.json`（角色列表）和 `business-flows.json`（业务流）。
+
+**输出**：内存中的旅程-任务关联数据，用于 Step 2 脚本输入。
+
+---
+
+### Step 2：运行脚本生成体验地图
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py <BASE>
+```
+
+脚本读取 `journey-emotion-map.json` 和 `task-inventory.json`，生成 operation_lines > nodes > screens 结构：
+
+```json
+{
+  "version": "1.0.0",
+  "generated_at": "...",
+  "summary": {
+    "operation_line_count": 5,
+    "total_nodes": 18,
+    "total_screens": 32,
+    "high_risk_nodes": 4,
+    "negative_emotion_nodes": 6
+  },
+  "operation_lines": [
+    {
+      "line_id": "OL001",
+      "line_name": "售后退款操作线",
+      "flow_ref": "F001",
+      "actor": "买家",
+      "nodes": [
+        {
+          "node_id": "N001",
+          "node_seq": 1,
+          "task_ref": "T001",
+          "action": "提交退款申请",
+          "emotion": "frustrated",
+          "intensity": 4,
+          "risk": "medium",
+          "design_hint": "简化退款表单，减少用户填写负担",
+          "screens": [
+            {
+              "screen_id": "S001",
+              "screen_name": "退款申请页",
+              "purpose": "用户填写退款原因和上传凭证",
+              "interaction_type": "MG3"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+### Step 3：向用户展示结果摘要，用户审阅
+
+以可读形式展示体验地图摘要：
+
+> 以下示例以虚构业务为背景，仅用于说明输出格式。实际内容由 journey-emotion-map 分析结果决定，不限行业。
+
+```
+体验地图摘要
+
+操作线 5 条 · 节点 18 个 · 屏幕 32 个
+高风险节点 4 个 · 负面情绪节点 6 个
+
+操作线列表：
+| # | 操作线 | 角色 | 节点数 | 屏幕数 | 高风险 | 负面情绪 |
+|---|--------|------|--------|--------|--------|----------|
+| 1 | 售后退款操作线 | 买家 | 4 | 8 | 1 | 2 |
+| 2 | 订单管理操作线 | 商户 | 5 | 10 | 2 | 1 |
+| 3 | ... | ... | ... | ... | ... | ... |
+```
+
+**用户确认**：请审阅操作线划分是否合理，节点-屏幕映射是否完整。
+
+---
+
+### Step 4：自动触发 interaction-quality-gate
+
+体验地图生成并经用户确认后，自动调用 `interaction-quality-gate`（Phase 4.5）执行交互质量检查。
+
+---
+
+### Step 5：输出 experience-map-report.md
+
+汇总体验地图数据，生成人类可读报告：
+
+```
+# 体验地图报告
+
+操作线 X 条 · 节点 X 个 · 屏幕 X 个
+高风险节点 X 个 · 负面情绪节点 X 个
+
+## 操作线总览
+（按操作线展示节点和屏幕摘要）
+
+## 高风险节点
+（列出所有 risk=high/critical 的节点及其设计提示）
+
+## 负面情绪节点
+（列出所有 emotion 为 frustrated/anxious/angry 的节点）
+
+> 完整数据见 .allforai/experience-map/experience-map.json
+```
+
+输出：`.allforai/experience-map/experience-map-report.md`
+
+---
+
+## 全自动模式
+
+**激活条件**（同时满足）：
+1. `.allforai/product-concept/product-concept.json` 存在且含 `pipeline_preferences` 字段
+2. 上下文含 `__orchestrator_auto: true`（由 `/product-design full` 编排器传入）
+
+**未同时满足** → 保持标准交互模式（当前行为不变）。
+
+**行为变化**：
+
+| 步骤 | 标准模式 | 全自动模式 |
+|------|----------|-----------|
+| **Step 3 结果审阅** | AskUserQuestion 确认 | 自动确认，记入 decisions.json（`decision: "auto_confirmed"`） |
+
+**安全护栏**（自动模式下仍然停下来问用户）：
+- ERROR 级验证失败（journey-emotion-map.json 解析失败、task_refs 引用断裂）
+
+---
+
+## 输出文件结构
+
+```
+.allforai/experience-map/
+├── experience-map.json              # 机器可读：操作线 > 节点 > 屏幕完整结构
+├── experience-map-report.md         # 人类可读：体验地图摘要报告
+├── journey-emotion-map.json         # 上游输入（由 journey-emotion 生成）
+└── journey-emotion-decisions.json   # 上游输入（由 journey-emotion 生成）
+```
+
+---
+
+## 防御性规范
+
+### 加载校验
+- **`journey-emotion-map.json`**：前置加载时验证 JSON 合法性。解析失败 → 提示用户重新运行 `/journey-emotion`，终止执行。
+- **`task-inventory.json`**：前置加载时验证 JSON 合法性。解析失败 → 提示用户重新运行 `/product-map`，终止执行。
+
+### 零结果处理
+- **journey-emotion-map.json 无旅程线**：提示「旅程情绪图中未定义任何旅程线，请先运行 /journey-emotion 补充旅程数据」，终止。
+- **生成 0 个操作线**：标注警告「未能从旅程情绪图生成任何操作线，请检查 journey-emotion-map.json 数据完整性」，终止。
+
+### 上游过期检测
+- **`journey-emotion-map.json`**：加载时比较 `generated_at` 与已有 `experience-map.json` 的 `generated_at`。上游更新 → 警告「journey-emotion-map 在 experience-map 上次运行后被更新，建议重新运行 /experience-map refresh」。
+- 仅警告不阻断。
+
+---
+
+## 3 条铁律
+
+### 1. 以旅程情绪图为核心输入
+
+操作线的划分和节点的情绪/风险标注来自 journey-emotion-map.json，不凭空创造。发现遗漏旅程线，先更新 journey-emotion，再重跑 experience-map。
+
+### 2. 三层结构严格对齐
+
+operation_lines > nodes > screens 三层结构必须完整对齐。每个操作线至少有一个节点，每个节点至少有一个屏幕。不允许空操作线或空节点。
+
+### 3. 只生成不设计
+
+experience-map 只输出体验结构数据，不触发任何设计变更或代码生成。屏幕的具体设计由下游 ui-design 负责。
