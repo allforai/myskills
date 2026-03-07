@@ -24,7 +24,7 @@ export const defaultRouting: Record<string, string> = {
   conflict_detection: "qwen",          // 冲突检测：语义理解
   constraint_analysis: "deepseek",     // 约束分析：技术推理
   
-  // === 界面地图阶段 ===
+  // === 体验地图阶段 ===
   ux_review: "qwen",                   // UX 审查：用户体验理解
   accessibility_check: "llama",        // 无障碍检查：规范遵循
   
@@ -45,7 +45,7 @@ export const defaultRouting: Record<string, string> = {
   visual_consistency: "llama",         // 视觉一致性：细节观察
   
   // === 创新验证专用（新增） ===
-  innovation_review: "qwen",           // 创新特性审查：screen-map 阶段验证
+  innovation_review: "qwen",           // 创新特性审查：experience-map 阶段验证
   innovation_design_review: "llama",   // 创新设计审查：ui-design 阶段验证
   innovation_priority_review: "qwen",  // 创新优先级审查：task-execute 阶段验证
   innovation_use_case_review: "qwen",  // 创新用例审查：use-case 阶段验证

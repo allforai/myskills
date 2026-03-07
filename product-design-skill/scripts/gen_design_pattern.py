@@ -25,11 +25,13 @@ NOW = C.now_iso()
 
 # ── Load data ─────────────────────────────────────────────────────────────────
 tasks = C.load_task_inventory(BASE)
-screens, has_screens = C.load_screen_map(BASE)
+op_lines, screen_index, em_loaded = C.load_experience_map(BASE)
 flows = C.load_business_flows(BASE)
 
-screen_by_id = C.build_screen_by_id(screens)
-task_screen_map = C.build_task_screen_map(screens)
+screen_by_id = C.build_screen_by_id_from_lines(op_lines)
+task_screen_map = C.build_task_screen_map_from_lines(op_lines)
+# Flatten op_lines to a list of screen dicts for iteration
+screens = list(screen_by_id.values())
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -188,9 +190,9 @@ for entity, items in entity_crud_groups.items():
         tids = [item["task_id"] for item in items]
         sids = []
         for tid in tids:
-            for s in task_screen_map.get(tid, []):
-                if s["id"] not in sids:
-                    sids.append(s["id"])
+            for sid in task_screen_map.get(tid, []):
+                if sid not in sids:
+                    sids.append(sid)
         group_id = _slugify(entity) + "-crud"
         crud_instances.append({
             "group_id": group_id,
@@ -229,7 +231,7 @@ list_detail_pairs = []
 seen_pairs = set()
 for ls in list_screens_for_ld:
     ls_entity = _extract_screen_entity(ls.get("name", ""))
-    ls_tasks = set(C.get_screen_tasks(ls))
+    ls_tasks = set(ls.get("tasks", []))
     for ds in detail_screens_for_ld:
         if ls["id"] == ds["id"]:
             continue
@@ -243,7 +245,7 @@ for ls in list_screens_for_ld:
             (len(ds_entity) >= 2 and ds_entity in ls_entity)
         )
         # Also match by shared task refs
-        ds_tasks = set(C.get_screen_tasks(ds))
+        ds_tasks = set(ds.get("tasks", []))
         task_overlap = ls_tasks & ds_tasks
         if entity_match or task_overlap:
             seen_pairs.add(pair_key)
@@ -353,7 +355,7 @@ for s in screens:
 search_instances = []
 if len(search_screens) >= 2:
     for s in search_screens:
-        tids = C.get_screen_tasks(s)
+        tids = s.get("tasks", [])
         search_instances.append({
             "group_id": f"{s['id']}-search",
             "entity": s.get("name", ""),
@@ -381,8 +383,8 @@ for tid, task in tasks.items():
     name = task["name"].lower()
     actions_text = " ".join(
         a.get("label", "").lower()
-        for s in task_screen_map.get(tid, [])
-        for a in s.get("actions", [])
+        for sid in task_screen_map.get(tid, [])
+        for a in screen_by_id.get(sid, {}).get("actions", [])
     )
     if any(kw in name or kw in actions_text for kw in EXPORT_KW):
         export_tasks.append(tid)
@@ -390,9 +392,9 @@ for tid, task in tasks.items():
 if len(export_tasks) >= 2:
     sids = []
     for tid in export_tasks:
-        for s in task_screen_map.get(tid, []):
-            if s["id"] not in sids:
-                sids.append(s["id"])
+        for sid in task_screen_map.get(tid, []):
+            if sid not in sids:
+                sids.append(sid)
     patterns.append({
         "pattern_id": "PT-EXPORT",
         "name": "导出/报表",
@@ -525,8 +527,8 @@ for tid, task in tasks.items():
     has_transition = any(kw in combined for kw in TRANSITION_KW)
 
     if not has_transition and tid in task_screen_map:
-        for s in task_screen_map[tid]:
-            for a in s.get("actions", []):
+        for sid in task_screen_map[tid]:
+            for a in screen_by_id.get(sid, {}).get("actions", []):
                 if any(kw in a.get("label", "").lower() for kw in TRANSITION_KW):
                     has_transition = True
                     break
@@ -539,9 +541,9 @@ for tid, task in tasks.items():
 if len(state_tasks) >= 2:
     sids = []
     for tid in state_tasks:
-        for s in task_screen_map.get(tid, []):
-            if s["id"] not in sids:
-                sids.append(s["id"])
+        for sid in task_screen_map.get(tid, []):
+            if sid not in sids:
+                sids.append(sid)
     patterns.append({
         "pattern_id": "PT-STATE",
         "name": "状态机",

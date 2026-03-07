@@ -164,7 +164,7 @@ if "use-case" in available_layers:
         else:
             trace_pass += 1
 
-# T3: use-case screen_ref -> screen-map
+# T3: use-case screen_ref -> experience-map
 # screen_ref may be comma-separated (e.g. "S005,S006") or single ID
 if "use-case" in available_layers and "experience-map" in available_layers:
     for ucid, sref in uc_screen_refs.items():

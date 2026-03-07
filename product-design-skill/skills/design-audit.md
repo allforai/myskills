@@ -867,7 +867,7 @@ def check_type_context_match(screens, product_type, audience, platform):
 
 预置脚本保证 schema 一致性和零语法错误。关键修复：
 - 修复 `gaps[:30)` 语法错误（括号混用 → `gaps[:30]`）
-- 使用 `_common.get_screen_tasks()` 统一读取界面任务引用
+- 使用 `s.get("tasks", [])` 统一读取界面任务引用
 - pipeline-decisions 按 phase 去重，防止重跑产生重复条目
 
 ---

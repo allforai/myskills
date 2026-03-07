@@ -119,7 +119,7 @@ Full Pipeline 会自动检测跨层冲突并提供解决建议：
 
 - **gap × prune**: feature-gap 报缺口，但 feature-prune 标 CUT
 - **verify × prune**: CORE 任务未实现
-- **deadhunt × screen**: screen-map 中的界面链接死链
+- **deadhunt × screen**: experience-map 中的界面链接死链
 - **tuner × product**: 架构违规影响产品功能
 
 所有冲突都会记录在 `pipeline-report.json` 的 `cross_layer_conflicts` 字段中。

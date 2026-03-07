@@ -70,7 +70,7 @@
 |------|--------------|------------------------|
 | product-concept | 第一性原理、JTBD、VPC、Lean Canvas、Blue Ocean ERRC、Kano、Mom Test | Christensen et al. (2016); Osterwalder et al. (2014); Osterwalder & Pigneur (2010); Kim & Mauborgne (2005); Kano et al. (1984); Fitzpatrick (2013) |
 | product-map | Story Mapping、RACI、风险矩阵、DoR | Patton (2014); PMI (2013, RACI in PM practice) |
-| screen-map | Nielsen Heuristics、Service Blueprint、认知负荷理论 | Nielsen (1994); Shostack (1984); Sweller (1988) |
+| experience-map | Nielsen Heuristics、Service Blueprint、认知负荷理论 | Nielsen (1994); Shostack (1984); Sweller (1988) |
 | use-case | INVEST、DoD、风险驱动测试 | Cohn (2004); Schwaber & Sutherland (2020); Bach (1999) |
 | feature-gap | INVEST、DoR/DoD、服务蓝图、风险矩阵 | Cohn (2004); Schwaber & Sutherland (2020); Shostack (1984) |
 | feature-prune | RICE、MoSCoW、Kano、Cost of Delay | Intercom (2015, RICE); Clegg & Barker (1994, MoSCoW); Kano et al. (1984); Reinertsen (2009) |
@@ -101,7 +101,7 @@
 
 ### 中段（功能与交互建模层）
 
-**覆盖阶段**：`product-map`、`screen-map`、`use-case`、`feature-gap`、`feature-prune`
+**覆盖阶段**：`product-map`、`experience-map`、`use-case`、`feature-gap`、`feature-prune`
 
 **核心思想**：把战略意图转成可执行、可验证、可取舍的产品资产。
 
@@ -195,7 +195,7 @@
 
 ---
 
-## Phase 3：screen-map（交互与异常设计）
+## Phase 3-4：journey-emotion + experience-map（交互与异常设计）
 
 **核心问题**：任务在界面上如何完成，异常是否可感知、可恢复。
 
@@ -207,7 +207,7 @@
 
 **经典理论定位**：以 Nielsen 启发式和服务蓝图保障“可用 + 可恢复 + 可达”。
 
-**核心产出**：`screen-map.json`、`screen-conflict.json`、`screen-map-report.md`
+**核心产出**：`experience-map.json`、`screen-conflict.json`、`experience-map-report.md`
 
 ---
 

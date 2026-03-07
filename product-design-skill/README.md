@@ -1,6 +1,6 @@
 # product-design — 产品设计套件
 
-**版本：v3.1.0**
+**版本：v4.0.0**
 
 Claude Code 插件，以产品地图为基础，系统化地定义、查漏、剪枝、审计。
 
@@ -22,7 +22,7 @@ claude plugin add /path/to/product-design-skill
 | 场景 | 推荐命令 |
 |---|---|
 | 从代码反推产品并补齐业务语义 | `/product-concept` + `/product-map` |
-| 梳理界面与异常状态 | `/screen-map` |
+| 梳理界面与异常状态 | `/experience-map` |
 | 生成可执行用例（机器+人类双格式） | `/use-case` |
 | 做查漏/剪枝决策 | `/feature-gap` / `/feature-prune` |
 | 做全链路一致性终审 | `/design-audit` |
@@ -46,14 +46,14 @@ claude plugin add /path/to/product-design-skill
 product-map（建功能图）
     ↓ 输出 .allforai/product-map/product-map.json + task-inventory.json
     │
-    ├── screen-map（必须，建界面图）
-    │       ↓ 输出 .allforai/screen-map/screen-map.json
+    ├── experience-map（必须，建体验地图）
+    │       ↓ 输出 .allforai/experience-map/experience-map.json
     │
     ├── use-case（可选，生成用例集）
     │       ↓ 输出 .allforai/use-case/use-case-tree.json（机器）+ use-case-report.md（人类）
     │
-    ├── 功能查漏   — 地图说有的，现在有没有？（Step 2/3 需要 screen-map）
-    ├── 功能剪枝   — 地图里有的，该不该留？（Step 2 需要 screen-map）
+    ├── 功能查漏   — 地图说有的，现在有没有？（Step 2/3 需要 experience-map）
+    ├── 功能剪枝   — 地图里有的，该不该留？（Step 2 需要 experience-map）
     ├── ui-design  — 高层 UI 设计规格 + HTML 预览
     └── design-audit — 全链路一致性终审（基于全部已有产物）
 
@@ -79,7 +79,7 @@ product-map（建功能图）
 - **冲突检测**：发现任务级业务逻辑矛盾或 CRUD 缺口
 - **约束**：合规要求、不可逆操作、审批分级等业务规则
 
-### screen-map — 界面与异常状态地图
+### experience-map — 体验地图
 
 > 以产品地图为基础，梳理界面、按钮和异常状态，输出界面交互地图。
 
@@ -92,7 +92,7 @@ product-map（建功能图）
 
 ### use-case — 用例集
 
-> 以功能地图和界面地图为输入，推导完整用例，双格式输出。
+> 以功能地图和体验地图为输入，推导完整用例，双格式输出。
 
 - **树结构**：角色 → 功能区 → 任务 → 用例（4 层）
 - **JSON 机器版**：完整 Given/When/Then，含 screen_ref、逐条可验证的 then，供 AI agent 执行
@@ -108,13 +108,13 @@ product-map（建功能图）
 
 ### ui-design — UI 设计规格
 
-> 从产品地图 + 界面地图推导高层 UI 设计规格，结合风格选择和设计原则，输出设计规格文档 + 按角色拆分的 HTML 预览。
+> 从产品地图 + 体验地图推导高层 UI 设计规格，结合风格选择和设计原则，输出设计规格文档 + 按角色拆分的 HTML 预览。
 
 ### design-audit — 设计审计
 
 > 跨层校验产品设计全链路一致性：逆向追溯、覆盖洪泛、横向一致性。
 
-- **逆向追溯**：下游产物（screen-map、use-case、gap、prune）引用的 task_id 是否在 task-inventory 中存在
+- **逆向追溯**：下游产物（experience-map、use-case、gap、prune）引用的 task_id 是否在 task-inventory 中存在
 - **覆盖洪泛**：每个 task 是否被下游层完整消费（有 screen、有用例、有 gap 检查、有 prune 决策）
 - **横向一致性**：gap 报缺口 + prune 标 CUT = 矛盾；高频任务点击深度过深 = 警告
 
@@ -126,11 +126,11 @@ product-map（建功能图）
 product-design（产品层）
 ├── product-concept 想做什么产品？                       搜索+选择题引导
 ├── product-map     产品是什么？谁在用？做什么？          代码读现状 + PM 补业务视角
-├── screen-map      在哪做？怎么做？出错怎么办？          以 task-inventory 为输入（必须）
-├── use-case        推导完整用例，双格式输出               基于 product-map + screen-map
-├── feature-gap     地图说有的，有没有？                  基于 product-map + screen-map
-├── feature-prune   地图里有的，该不该留？                基于 product-map + screen-map
-├── ui-design       高层 UI 设计规格                     基于 product-map + screen-map
+├── experience-map  在哪做？怎么做？出错怎么办？          以 task-inventory 为输入（必须）
+├── use-case        推导完整用例，双格式输出               基于 product-map + experience-map
+├── feature-gap     地图说有的，有没有？                  基于 product-map + experience-map
+├── feature-prune   地图里有的，该不该留？                基于 product-map + experience-map
+├── ui-design       高层 UI 设计规格                     基于 product-map + experience-map
 └── design-audit    全链路一致性校验                      基于全部已有产物
 
 dev-forge（开发层）   种子数据 + 产品验收                 基于 product-map + API/Playwright
@@ -159,12 +159,12 @@ claude plugin add /path/to/product-design-skill
 /product-map scope 退款管理  # 只梳理指定模块
 ```
 
-### 第二步（可选）：建立界面地图
+### 第二步（可选）：建立体验地图
 
 ```bash
-/screen-map              # 完整流程（界面梳理+异常状态+冲突检测）
-/screen-map quick        # 只梳理界面和按钮，跳过冲突检测
-/screen-map scope 退款管理  # 只梳理指定模块的界面
+/experience-map              # 完整流程（界面梳理+异常状态+冲突检测）
+/experience-map quick        # 只梳理界面和按钮，跳过冲突检测
+/experience-map scope 退款管理  # 只梳理指定模块的界面
 ```
 
 ### 第三步（可选）：生成用例集
@@ -235,12 +235,11 @@ your-project/
     │   ├── validation-report.json      # 三合一校验结果（机器可读）
     │   ├── validation-report.md        # 校验摘要（人类可读）
     │   └── product-map-decisions.json  # 用户决策日志
-    ├── screen-map/
-    │   ├── screen-map.json             # 界面地图
-    │   ├── screen-index.json           # 界面索引
+    ├── experience-map/
+    │   ├── experience-map.json         # 体验地图
     │   ├── screen-conflict.json        # 界面级冲突
-    │   ├── screen-map-report.md        # 可读报告
-    │   └── screen-map-decisions.json   # 用户决策日志
+    │   ├── experience-map-report.md    # 可读报告
+    │   └── experience-map-decisions.json # 用户决策日志
     ├── use-case/
     │   ├── use-case-tree.json          # 机器可读
     │   ├── use-case-report.md          # 人类可读
@@ -270,7 +269,7 @@ your-project/
 ## 核心原则
 
 1. **product-map 是基础** — 其他技能都以产品地图为输入，先建图再分析
-2. **screen-map 是必须层** — 与 product-map 共同构成完整产品地图，feature-gap Step 2/3、use-case validation、feature-prune Step 2、ui-design 均依赖其数据
+2. **experience-map 是必须层** — 与 product-map 共同构成完整产品地图，feature-gap Step 2/3、use-case validation、feature-prune Step 2、ui-design 均依赖其数据
 3. **索引优先，按需加载** — 下游技能先加载轻量索引（< 5KB），按需再加载完整数据；索引不存在时自动回退全量加载
 4. **频次驱动一切** — 高频操作受保护不剪枝，缺口按频次排优先级，种子数据按频次分配数量
 5. **每步用户确认** — 所有分类和决策都需要用户确认，用户是权威

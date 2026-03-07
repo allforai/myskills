@@ -24,12 +24,14 @@ C.ensure_dir(OUT)
 NOW = C.now_iso()
 
 # ── Load data ─────────────────────────────────────────────────────────────────
-screens, has_screens = C.load_screen_map(BASE)
-if not has_screens or not screens:
-    print("ERROR: screen-map.json not found or empty", file=sys.stderr)
+op_lines, screen_index, em_loaded = C.load_experience_map(BASE)
+if not em_loaded or not op_lines:
+    print("ERROR: experience-map.json not found or empty", file=sys.stderr)
     sys.exit(1)
 
-screen_by_id = C.build_screen_by_id(screens)
+screen_by_id = C.build_screen_by_id_from_lines(op_lines)
+# Flatten to list of screen dicts for iteration
+screens = list(screen_by_id.values())
 
 # Optionally load pattern-catalog for enrichment
 pattern_catalog = C.load_json(os.path.join(BASE, "design-pattern/pattern-catalog.json"))

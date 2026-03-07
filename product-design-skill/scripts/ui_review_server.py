@@ -27,7 +27,7 @@ PORT = int(args.get("port", "3200"))
 HOST = args.get("host", "localhost")
 
 UI_DIR = os.path.join(BASE, "ui-design")
-SM_DIR = os.path.join(BASE, "screen-map")
+SM_DIR = os.path.join(BASE, "experience-map")
 FEEDBACK_PATH = os.path.join(UI_DIR, "review-feedback.json")
 
 # ── Load data ─────────────────────────────────────────────────────────────────
@@ -48,8 +48,8 @@ def load_spec():
     return raw
 
 def load_screen_map():
-    """Load screen-map.json for design rationale."""
-    sm = C.load_json(os.path.join(SM_DIR, "screen-map.json"))
+    """Load experience-map.json for design rationale."""
+    sm = C.load_json(os.path.join(SM_DIR, "experience-map.json"))
     if sm:
         return {s["id"]: s for s in sm.get("screens", [])}
     return {}

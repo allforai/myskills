@@ -67,7 +67,7 @@ Phase 6: ui-design
 
   Step 5.3: [NEW] 组件规格生成（始终执行，通用路径）
     └─ Python: gen_ui_components.py → component-spec.json
-       ├─ 从 screen-map 识别共享组件
+       ├─ 从 experience-map 识别共享组件
        ├─ interaction_type → primitives 映射
        ├─ 推断组件变体（size/state）
        └─ 标注 a11y 要求
@@ -136,18 +136,18 @@ AskUserQuestion:
 ---
 
 ### 3. `scripts/gen_ui_components.py`（新建 — 通用，始终执行）
-**职责**：从 screen-map 分析共享组件、交互原语、变体、a11y。不依赖 Stitch。
+**职责**：从 experience-map 分析共享组件、交互原语、变体、a11y。不依赖 Stitch。
 
 ```
 输入：
-  - .allforai/screen-map/screen-map.json（或 screen-index.json 轻量加载）
+  - .allforai/experience-map/experience-map.json（或 experience-map.json (screen_index embedded) 轻量加载）
   - .allforai/ui-design/ui-design-spec.md（style tokens）
   - .allforai/product-concept/product-concept.json（audience_type + platform_type）
 
 处理流程：
 
   1. 加载所有屏幕的 interaction_type + actions + states
-     索引优化：优先加载 screen-index.json（~3KB），不存在时回退 screen-map.json
+     索引优化：优先加载 experience-map.json (screen_index embedded)（~3KB），不存在时回退 experience-map.json
 
   2. 跨屏幕共享组件识别：
      - 扫描所有屏幕，按 interaction_type 分组
@@ -202,12 +202,12 @@ AskUserQuestion:
 ```
 输入：
   - .allforai/ui-design/component-spec.json（由 gen_ui_components.py 生成）
-  - .allforai/screen-map/screen-map.json
+  - .allforai/experience-map/experience-map.json
   - .allforai/ui-design/ui-design-spec.md（style tokens）
   - .allforai/product-concept/product-concept.json（mission + 风格 + target_market）
 
 屏幕优先级选择（动态，非硬编码）：
-  基于 screen-map 元数据自动选屏，上限 10 个：
+  基于 experience-map 元数据自动选屏，上限 10 个：
   P0（最多 5 个）：
     - 每个角色的入口屏（第一个 MG 类型的屏幕）
     - 核心表单屏（interaction_type 为 CT1/CT2 的屏幕）
@@ -234,9 +234,9 @@ AskUserQuestion:
       [vocabulary]. Same card style, same navigation, same button hierarchy."
 
   Layer 2 — 屏幕特定内容：
-    - Screen purpose + primary action（从 screen-map 提取）
+    - Screen purpose + primary action（从 experience-map 提取）
     - Actions（主操作/次操作）
-    - States（从 screen-map states 字段提取）
+    - States（从 experience-map states 字段提取）
     - 引用 vocabulary 中的组件：
       "This screen uses: AppShell, ProductCard(×N in grid), SearchBar"
 
@@ -397,7 +397,7 @@ python3 <SCRIPTS>/gen_ui_components.py <BASE> --mode auto
 ```json
 {
   "generated_at": "2026-03-05T10:00:00Z",
-  "source": "screen-map",
+  "source": "experience-map",
   "shared_components": {
     "AppShell": {
       "screens": ["S010","S020","S030"],
@@ -563,7 +563,7 @@ dev-forge 的 `task-execute` 阶段需新增 **Stitch 组件转换** 能力：
    - 组件文件（如 `HomePage.tsx`）
    - 样式文件（CSS Modules / Tailwind / styled-components，取决于项目配置）
    - 提取 Stitch 内联样式 → 对齐 `ui-design-spec.md` 的 design tokens
-4. **映射**：`stitch-index.json` 中的 `screen_id` 与 `screen-map.json` 的路由映射关联
+4. **映射**：`stitch-index.json` 中的 `screen_id` 与 `experience-map.json` 的路由映射关联
 
 > 注：dev-forge 侧的具体实现属于 dev-forge-skill 的改动范围，
 > 本计划只定义 product-design 侧的输出契约。
@@ -717,7 +717,7 @@ Layer 1 追加：
   }
 }
 ```
-变体维度从 screen-map 推断：
+变体维度从 experience-map 推断：
 - 同一组件在不同屏幕出现大小不同 → `size` variants
 - 组件关联的 actions 有 disabled/loading 状态 → `state` variants
 - 所有交互组件默认有 `["default", "disabled"]` 状态
@@ -734,7 +734,7 @@ Layer 1 追加：
 | Button | role="button", aria-label, :focus-visible outline, min 44×44px touch target |
 | Input/Form | <label> 关联, aria-required, aria-invalid + error message, autocomplete |
 | List | role="list" + role="listitem", aria-label for container |
-| Image | alt text (从 screen-map 的 screen_name 推断), decorative → alt="" |
+| Image | alt text (从 experience-map 的 screen_name 推断), decorative → alt="" |
 | Navigation | role="navigation", aria-current="page" for active |
 | Modal/Dialog | role="dialog", aria-modal, focus trap, Escape 关闭 |
 | Card (interactive) | role="article" 或 role="button"（可点击时）, tabindex="0" |
@@ -797,7 +797,7 @@ B3 共享组件任务需要实现所有标注的变体：
 
 ```python
 def select_priority_screens(screens, limit=10):
-    """基于 screen-map 元数据动态选择优先屏幕"""
+    """基于 experience-map 元数据动态选择优先屏幕"""
     scored = []
     for s in screens:
         score = 0
@@ -852,7 +852,7 @@ def select_priority_screens(screens, limit=10):
 
 - `_common.py: xv_available()` — 参考其检测模式（改为检测 MCP 工具可用性）
 - `_common.py: parse_args()` — 脚本参数解析（含 --mode auto）
-- `_common.py: load_screen_map()` — 读取 screen-map.json
+- `_common.py: load_experience_map()` — 读取 experience-map.json
 - `_common.py: load_product_concept()` — 读取 product-concept.json
 - `_common.py: write_json()` + `ensure_dir()` — 文件输出
 - `_common.py: append_pipeline_decision()` — 决策日志
@@ -866,7 +866,7 @@ def select_priority_screens(screens, limit=10):
 
 | # | 原方案问题 | 修订内容 |
 |---|-----------|----------|
-| 1 | 硬编码屏幕 ID（S010/S020 等特定产品） | 改为基于 screen-map 元数据动态选屏（interaction_type, primary_action, states） |
+| 1 | 硬编码屏幕 ID（S010/S020 等特定产品） | 改为基于 experience-map 元数据动态选屏（interaction_type, primary_action, states） |
 | 2 | 输出 schema 缺失（stitch-index.json 无定义） | 新增完整 stitch-prompts.json + stitch-index.json schema |
 | 3 | 认证方式错误（写 STITCH_API_KEY 环境变量） | 改为 Google Cloud OAuth，通过 `stitch-mcp init` 认证 |
 | 4 | 缺少 create_project 步骤 | 在 Step 5.5 执行流程中加入 create_project → projectId |
@@ -875,7 +875,7 @@ def select_priority_screens(screens, limit=10):
 | 7 | prompt 中硬编码业务知识（IC001、日文市场） | 改为从 product-concept.json 动态提取 mission/target_market/language |
 | 8 | `.mcp.json` 写法不对 | 改为 `proxy` 子命令，移除无效的 STITCH_API_KEY env |
 | 9 | MCP 输出格式不明（.{ext}） | 明确为 .html（代码）+ .png（截图 base64 解码） |
-| 10 | 大型项目索引优化未考虑 | gen_ui_stitch.py 优先加载 screen-index.json（~3KB） |
+| 10 | 大型项目索引优化未考虑 | gen_ui_stitch.py 优先加载 experience-map.json (screen_index embedded)（~3KB） |
 | 11 | Stitch 产出定位为「参考」 | 改为「设计源文件」，dev-forge 必须消费并转换为项目组件 |
 | 12 | stitch-index.json 缺少路由映射 | 新增 route_path/interaction_type/target_component 字段供 dev-forge 使用 |
 | 13 | dev-forge 对接未定义 | 新增 dev-forge 组件转换要求（检测→解析→转换→映射四步） |

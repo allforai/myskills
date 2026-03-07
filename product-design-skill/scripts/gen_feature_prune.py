@@ -3,7 +3,7 @@
 competitive-ref, prune-decisions, prune-tasks, and prune-report.
 
 Pre-built script for Phase 6 (feature-prune). Fixes:
-- Uses _common.get_screen_tasks() instead of hardcoded field names
+- Uses s.get("tasks", []) instead of hardcoded field names
 - Uses _common.collect_flow_task_refs() with 'nodes' field
 - Accepts --strategy parameter to override scope_strategy
 - Pipeline-decisions dedup via _common.append_pipeline_decision()

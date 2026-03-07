@@ -57,7 +57,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/ui_review_server.py <BASE> [--port 3200]
 3. 对每个 status="revision" 的界面：
    a. 收集该界面的所有 pin comments
    b. 读取现有 ui-design-spec.json 中该界面的当前设计
-   c. 读取 screen-map.json 中该界面的结构信息
+   c. 读取 experience-map.json 中该界面的结构信息
    d. 将 comments 作为修改指令，重新生成该界面的：
       - ui-design-spec.json 中的对应 screen 条目
       - ui-design-spec.md 中的对应段落

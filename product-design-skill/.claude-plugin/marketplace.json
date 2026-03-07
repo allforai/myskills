@@ -6,9 +6,9 @@
   "plugins": [
     {
       "name": "product-design",
-      "version": "3.8.0",
+      "version": "4.0.0",
       "source": "./",
-      "description": "Product design suite: product-concept, product-map, screen-map, use-case, feature-gap, feature-prune, ui-design, design-audit. 产品设计套件：产品概念、功能地图、界面地图、用例集、功能查漏、功能剪枝、UI设计、设计审计。"
+      "description": "Product design suite: product-concept, product-map, experience-map, use-case, feature-gap, feature-prune, ui-design, design-audit. 产品设计套件：产品概念、功能地图、体验地图、用例集、功能查漏、功能剪枝、UI设计、设计审计。"
     },
     {
       "name": "deadhunt",

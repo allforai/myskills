@@ -42,7 +42,7 @@
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
 │  Layer 1: Product Design (产品设计层)                        │
-│  ├── concept → product-map → screen-map → use-case          │
+│  ├── concept → product-map → experience-map → use-case       │
 │  ├── feature-gap → feature-prune → ui-design → audit        │
 │  └── ✓ 内部流程完整，有终审                                   │
 │                          ↓                                   │
@@ -137,7 +137,7 @@
   "T008": {
     "qa-layer": {
       "deadhunt_status": "ISSUE_FOUND",
-      "suggested_action": "建议从 screen-map 中移除死链界面"
+      "suggested_action": "建议从 experience-map 中移除死链界面"
     }
   }
 }
@@ -483,7 +483,7 @@ your-project/
     │   └── global-decisions.json         # 全局决策追踪
     ├── product-concept/                  # Layer 1
     ├── product-map/
-    ├── screen-map/
+    ├── experience-map/
     ├── use-case/
     ├── feature-gap/
     ├── feature-prune/

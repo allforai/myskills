@@ -74,7 +74,7 @@
 | 技能 | 计量对象 |
 |------|----------|
 | product-map | 任务数 |
-| screen-map | 界面数 |
+| experience-map | 界面数 |
 | use-case | 任务数（决定用例量） |
 | feature-gap | 任务数 |
 | feature-prune | 任务数 |
@@ -163,7 +163,7 @@
 ```
 ⚠ 引用完整性检查: 发现 2 个断裂引用
   - Step 3 旅程 J005 引用 task_id T999 → task-inventory 中不存在
-  - Step 2 用例 UC042 引用 screen_ref S088 → screen-map 中不存在
+  - Step 2 用例 UC042 引用 screen_ref S088 → experience-map 中不存在
   流程继续，但建议修复上游数据。
 ```
 

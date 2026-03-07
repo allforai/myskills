@@ -8,7 +8,7 @@
 ```
 docs/interaction-types.md（本文档 — 定义层）
   ↑ 引用
-  ├── screen-map.md     → Step 1 推断 interaction_type，写入 screen-map.json
+  ├── experience-map.md     → Step 1 推断 interaction_type，写入 experience-map.json
   ├── ui-design.md      → Step 4 按 interaction_type 生成视觉规格
   └── design-to-spec.md → Step 2 按 interaction_type 生成实现规格
 ```
@@ -76,7 +76,7 @@ docs/interaction-types.md（本文档 — 定义层）
 | SY | 引导系统 | 2 | SY1–SY2 |
 | TU | TUI/CLI | 4 | TU1–TU4 |
 
-### screen-map 标注格式
+### experience-map 标注格式
 
 单一类型：
 ```json
@@ -127,7 +127,7 @@ docs/interaction-types.md（本文档 — 定义层）
 
 **信息流向：** `GET list` / `GET detail(id)` / `POST create` / `PUT update(id)` / `DELETE(id)` / 状态操作 `POST action(id)`。
 
-MG2 实体集群由以下子屏组成，screen-map 可精确标注子类型：
+MG2 实体集群由以下子屏组成，experience-map 可精确标注子类型：
 
 | 子屏 | 代号 | 行为摘要 |
 |------|------|---------|
@@ -794,7 +794,7 @@ MG2 实体集群由以下子屏组成，screen-map 可精确标注子类型：
 
 **信息流向：** 提交操作 `POST submit(entityId)` → 写入 MG4 审批队列；审核结果通过推送/轮询通知提交方；驳回后实体状态回到可编辑；通过后实体生效上线。
 
-**与 MG4 的关系：** SB1（提交方视角）和 MG4（审核方视角）是**同一业务工作流的两端**。同一产品在 screen-map 中会出现两种标注——提交方界面标 SB1，审核方界面标 MG4。
+**与 MG4 的关系：** SB1（提交方视角）和 MG4（审核方视角）是**同一业务工作流的两端**。同一产品在 experience-map 中会出现两种标注——提交方界面标 SB1，审核方界面标 MG4。
 
 **典型场景：** 商品上架、内容发布、广告投放、商家入驻申请、提现申请、KYC 实名认证。
 
@@ -1087,9 +1087,9 @@ MG2 实体集群由以下子屏组成，screen-map 可精确标注子类型：
 
 ---
 
-## screen-map 推断规则
+## experience-map 推断规则
 
-> screen-map Step 1 梳理界面时，根据 screen 的 `actions` / `name` / `entities` 自动推断 `interaction_type`。
+> experience-map Step 1 梳理界面时，根据 screen 的 `actions` / `name` / `entities` 自动推断 `interaction_type`。
 > **优先级从高到低，命中即停止。**
 
 ### 规则链
@@ -1335,7 +1335,7 @@ MG2 实体集群由以下子屏组成，screen-map 可精确标注子类型：
 
 在 design-to-spec 阶段：
 
-1. 汇总 screen-map.json 中项目出现的所有 `interaction_type`（去重）
+1. 汇总 experience-map.json 中项目出现的所有 `interaction_type`（去重）
 2. 查本索引，找出被 **≥2 个界面**共用的原语
 3. 将这些原语列入「共享组件规划」，统一封装后供各页面复用（YAGNI：仅出现 1 次的原语不必封装）
 4. 再进行逐页技术规格生成
@@ -1349,11 +1349,11 @@ MG2 实体集群由以下子屏组成，screen-map 可精确标注子类型：
 
 ## 各阶段使用指南
 
-### screen-map 阶段
+### experience-map 阶段
 
 **输入：** task-inventory.json → `screen.actions` / `screen.name` / `entities`
-**动作：** 按上方「screen-map 推断规则」，为每个 screen 标注 `interaction_type`，写入 screen-map.json
-**输出：** screen-map.json 中每个 screen 增加 `interaction_type` 字段
+**动作：** 按上方「experience-map 推断规则」，为每个 screen 标注 `interaction_type`，写入 experience-map.json
+**输出：** experience-map.json 中每个 screen 增加 `interaction_type` 字段
 
 ```json
 {
@@ -1368,7 +1368,7 @@ MG2 实体集群由以下子屏组成，screen-map 可精确标注子类型：
 
 ### ui-design 阶段
 
-**输入：** screen-map.json（含 interaction_type）
+**输入：** experience-map.json（含 interaction_type）
 **动作：** 按 `interaction_type` 选择推荐布局模式（各类型布局模式详见 ui-design.md）
 **注意：** `interaction_type` 决定行为框架，具体视觉细节由「产品类型 + 用户属性」上下文预设决定
 
@@ -1376,7 +1376,7 @@ MG2 实体集群由以下子屏组成，screen-map 可精确标注子类型：
 
 ### design-to-spec 阶段
 
-**输入：** screen-map.json（含 interaction_type）+ project-manifest.json（技术栈）
+**输入：** experience-map.json（含 interaction_type）+ project-manifest.json（技术栈）
 
 **Step 1：行为原语识别 → 共享组件规划**
 1. 提取项目中出现的所有 `interaction_type`（去重）
