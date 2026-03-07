@@ -17,17 +17,9 @@ import urllib.error
 import time
 
 # ── Field Constants ───────────────────────────────────────────────────────────
-# screen-map.json uses "tasks", screen-index.json uses "task_refs"
-SCREEN_TASKS_FIELD = "tasks"
-SCREEN_INDEX_TASK_REFS_FIELD = "task_refs"
 
 # business-flows.json uses "nodes" (NOT "steps")
 FLOW_NODES_FIELD = "nodes"
-
-
-def get_screen_tasks(screen):
-    """Get task ID list from a screen object, supporting both field names."""
-    return screen.get(SCREEN_TASKS_FIELD, screen.get(SCREEN_INDEX_TASK_REFS_FIELD, []))
 
 
 def get_flow_nodes(flow):
@@ -138,14 +130,6 @@ def load_role_profiles_full(base):
     return roles["roles"]
 
 
-def load_screen_map(base):
-    """Load screen-map.json, return (screens_list, injected_bool)."""
-    sm = load_json(os.path.join(base, "screen-map/screen-map.json"))
-    if sm is None:
-        return [], False
-    return sm.get("screens", []), True
-
-
 def load_business_flows(base):
     """Load business-flows.json, return flows list."""
     fd = load_json(os.path.join(base, "product-map/business-flows.json"))
@@ -164,20 +148,64 @@ def load_product_concept(base):
     return load_json(os.path.join(base, "product-concept/product-concept.json"))
 
 
-# ── Screen-Task Mapping ──────────────────────────────────────────────────────
+# ── experience-map loaders ────────────────────────────────────────────────────
 
-def build_task_screen_map(screens):
-    """Build {task_id: [screen_objects]} mapping from screen list."""
+def load_journey_emotion(base):
+    """Load journey-emotion-map.json, return journey_lines list."""
+    data = load_json(os.path.join(base, "experience-map/journey-emotion-map.json"))
+    if data is None:
+        return []
+    return ensure_list(data, "journey_lines")
+
+
+def load_experience_map(base):
+    """Load experience-map.json, return (operation_lines list, screen_index dict, loaded bool)."""
+    data = load_json(os.path.join(base, "experience-map/experience-map.json"))
+    if data is None:
+        return [], {}, False
+    lines = ensure_list(data, "operation_lines")
+    index = data.get("screen_index", {}) if isinstance(data, dict) else {}
+    return lines, index, True
+
+
+def build_node_by_id(operation_lines):
+    """Build {node_id: node_object} mapping from operation_lines."""
     result = {}
-    for s in screens:
-        for tid in get_screen_tasks(s):
-            result.setdefault(tid, []).append(s)
+    for line in operation_lines:
+        for node in line.get("nodes", []):
+            result[node["id"]] = node
     return result
 
 
-def build_screen_by_id(screens):
-    """Build {screen_id: screen_object} mapping."""
-    return {s["id"]: s for s in screens}
+def build_screen_by_id_from_lines(operation_lines):
+    """Build {screen_id: screen_object} mapping from all nodes in all operation lines."""
+    result = {}
+    for line in operation_lines:
+        for node in line.get("nodes", []):
+            for s in node.get("screens", []):
+                result[s["id"]] = s
+    return result
+
+
+def build_task_screen_map_from_lines(operation_lines):
+    """Build {task_id: [screen_ids]} by collecting screen.tasks across all nodes."""
+    result = {}
+    for line in operation_lines:
+        for node in line.get("nodes", []):
+            for s in node.get("screens", []):
+                for tid in s.get("tasks", []):
+                    result.setdefault(tid, []).append(s["id"])
+    return result
+
+
+def get_node_screens(node):
+    """Return screen list from a node object."""
+    return node.get("screens", [])
+
+
+def load_interaction_gate(base):
+    """Load interaction-gate.json, return gate data dict or None."""
+    return load_json(os.path.join(base, "experience-map/interaction-gate.json"))
 
 
 # ── Flow-Task References ─────────────────────────────────────────────────────
@@ -699,7 +727,6 @@ def xv_parse_json(raw_text):
 
 if __name__ == "__main__":
     print("_common.py loaded successfully")
-    print(f"  SCREEN_TASKS_FIELD = {SCREEN_TASKS_FIELD!r}")
     print(f"  FLOW_NODES_FIELD = {FLOW_NODES_FIELD!r}")
     print(f"  now_iso() = {now_iso()}")
     print("All imports OK")
