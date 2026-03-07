@@ -8,7 +8,7 @@ description: >
   Run product-map first to build the foundation, then journey-emotion, then experience-map,
   then use other skills as needed. Use design-audit for cross-layer consistency checks.
   Use /product-design full to run the full pipeline with checkpoints.
-version: "3.7.0"
+version: "4.1.0"
 ---
 
 # Product Design — 产品设计套件
