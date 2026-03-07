@@ -330,6 +330,27 @@ PASS → 进入 Phase 5-7 并行组
 
 ---
 
+## Phase 4.7：Stitch 可用性决策点
+
+Phase 4.5/4.6 完成后、进入 Phase 5-7 并行执行前，检查 Stitch 可用性：
+
+```
+检查 mcp__plugin_product-design_stitch__create_project 是否可用:
+  可用 → 继续（Stitch 将在 Phase 7 ui-design 的 Step 5.5 中使用）
+  不可用 → AskUserQuestion（3 选 1）:
+    A) 上传设计稿 — 用户手动上传 mockup 到 .allforai/ui-design/mockups/
+    B) 跳过视觉验收 — 继续，但 forge-report 标注「Visual quality NOT verified」
+    C) 配置 Stitch — 中断，运行 /setup 配置后重新执行
+
+    用户选 B:
+      记录 pipeline-decisions: { decision: "stitch_skipped", reason: "user acknowledged" }
+      design-audit 将标记 stitch_skipped: true
+    用户选 C:
+      终止当前流程，提示运行 /setup
+```
+
+---
+
 ## Phase 5-8 预置脚本优先（自动模式）
 
 自动模式下，Phase 5-8 优先使用预置脚本（位于 `${CLAUDE_PLUGIN_ROOT}/scripts/`）：
