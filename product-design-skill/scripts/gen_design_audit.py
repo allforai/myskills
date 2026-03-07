@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Generate design audit: trace, coverage, cross-check, fidelity, and report.
+"""Generate design audit: trace, coverage, cross-check, continuity, fidelity, and report.
 
 Pre-built script for Phase 8 (design-audit). Fixes:
 - Fixed gaps[:30) syntax error → gaps[:30]
-- Uses _common.get_screen_tasks() instead of hardcoded field names
+- Uses experience-map (operation_lines) instead of screen-map
+- Adds continuity audit via interaction-gate
 - Pipeline-decisions dedup via _common.append_pipeline_decision()
 
 Usage:
@@ -36,20 +37,21 @@ inv = C.load_json(os.path.join(BASE, "product-map/task-inventory.json"))
 tasks = {t["id"]: t for t in inv["tasks"]} if inv else {}
 task_ids = set(tasks.keys())
 
-# screen-map (recommended — missing triggers WARNING)
-sm = C.load_json(os.path.join(BASE, "screen-map/screen-map.json"))
-screens = {}
+# experience-map (recommended — missing triggers WARNING)
+op_lines, screen_index_data, em_loaded = C.load_experience_map(BASE)
+screens = C.build_screen_by_id_from_lines(op_lines) if em_loaded else {}
 screen_task_map = {}  # screen_id -> [task_ids]
 task_screen_map = {}  # task_id -> [screen_ids]
-if sm:
-    available_layers.append("screen-map")
-    for s in sm.get("screens", []):
-        sid = s["id"]
-        screens[sid] = s
-        trefs = C.get_screen_tasks(s)
-        screen_task_map[sid] = trefs
-        for tid in trefs:
-            task_screen_map.setdefault(tid, []).append(sid)
+if em_loaded:
+    available_layers.append("experience-map")
+    for ol in op_lines:
+        for node in ol.get("nodes", []):
+            for s in node.get("screens", []):
+                sid = s["id"]
+                trefs = s.get("tasks", [])
+                screen_task_map[sid] = trefs
+                for tid in trefs:
+                    task_screen_map.setdefault(tid, []).append(sid)
 
 # use-case (optional)
 uc = C.load_json(os.path.join(BASE, "use-case/use-case-tree.json"))
@@ -128,7 +130,7 @@ trace_total = 0
 trace_pass = 0
 
 # T1: screen -> task
-if "screen-map" in available_layers:
+if "experience-map" in available_layers:
     for sid, trefs in screen_task_map.items():
         for tid in trefs:
             trace_total += 1
@@ -136,7 +138,7 @@ if "screen-map" in available_layers:
                 trace_issues.append({
                     "check_id": "T1",
                     "type": "ORPHAN",
-                    "source": "screen-map",
+                    "source": "experience-map",
                     "item_id": sid,
                     "item_name": screens[sid].get("name", ""),
                     "missing_ref": tid,
@@ -164,7 +166,7 @@ if "use-case" in available_layers:
 
 # T3: use-case screen_ref -> screen-map
 # screen_ref may be comma-separated (e.g. "S005,S006") or single ID
-if "use-case" in available_layers and "screen-map" in available_layers:
+if "use-case" in available_layers and "experience-map" in available_layers:
     for ucid, sref in uc_screen_refs.items():
         if not sref:
             continue
@@ -179,7 +181,7 @@ if "use-case" in available_layers and "screen-map" in available_layers:
                     "item_id": ucid,
                     "item_name": f"use-case {ucid}",
                     "missing_ref": ref,
-                    "detail": f"use-case {ucid} 的 screen_ref {ref} 在 screen-map 中不存在"
+                    "detail": f"use-case {ucid} 的 screen_ref {ref} 在 experience-map 中不存在"
                 })
             else:
                 trace_pass += 1
@@ -207,7 +209,7 @@ coverage_total = 0
 coverage_covered = 0
 
 for tid in task_ids:
-    if "screen-map" in available_layers:
+    if "experience-map" in available_layers:
         coverage_total += 1
         if tid in task_screen_map:
             coverage_covered += 1
@@ -217,8 +219,8 @@ for tid in task_ids:
                 "type": "GAP",
                 "task_id": tid,
                 "name": tasks[tid]["name"],
-                "missing_in": "screen-map",
-                "detail": f"任务 {tid} ({tasks[tid]['name']}) 在 screen-map 中无对应界面"
+                "missing_in": "experience-map",
+                "detail": f"任务 {tid} ({tasks[tid]['name']}) 在 experience-map 中无对应界面"
             })
 
     if "use-case" in available_layers:
@@ -304,7 +306,7 @@ if "ui-design" in available_layers and "feature-prune" in available_layers:
                 cross_ok += 1
 
 # X3: frequency x click_depth
-if "screen-map" in available_layers:
+if "experience-map" in available_layers:
     for tid, task in tasks.items():
         if task.get("frequency") == "高":
             sids = task_screen_map.get(tid, [])
@@ -350,6 +352,19 @@ if "feature-prune" in available_layers:
                 "detail": f"基本功能 {tid} ({t.get('name','?')}) 被标为 CUT — basic 类任务不应被剪除"
             })
 
+# ── Continuity Audit ─────────────────────────────────────────────────────────
+continuity_issues = []
+gate = C.load_interaction_gate(BASE)
+if gate:
+    available_layers.append("interaction-gate")
+    for lr in gate.get("lines", []):
+        if lr.get("score", 100) < gate.get("threshold", 70):
+            continuity_issues.append({
+                "line_id": lr["line_id"],
+                "score": lr["score"],
+                "issues": lr.get("issues", []),
+            })
+
 # ── Fidelity ──────────────────────────────────────────────────────────────────
 total_downstream = trace_total
 traceable = trace_pass
@@ -387,6 +402,8 @@ report = {
                   "conflict": sum(1 for i in cross_issues if i["type"] == "CONFLICT"),
                   "warning": sum(1 for i in cross_issues if i["type"] == "WARNING"),
                   "broken_ref": sum(1 for i in cross_issues if i["type"] == "BROKEN_REF")},
+        "continuity": {"total_lines": len(gate.get("lines", [])) if gate else 0,
+                       "failing": len(continuity_issues)},
         "fidelity": {
             "traceability_rate": traceability_rate,
             "traceability_status": traceability_status,
@@ -396,7 +413,8 @@ report = {
     },
     "trace_issues": trace_issues,
     "coverage_issues": coverage_issues,
-    "cross_issues": cross_issues
+    "cross_issues": cross_issues,
+    "continuity_issues": continuity_issues
 }
 
 C.write_json(os.path.join(OUT, "audit-report.json"), report)
@@ -518,6 +536,8 @@ lines.append(f"- 可用层: {', '.join(available_layers)}")
 lines.append(f"- 逆向追溯: {trace_total} 项检查, {trace_pass} PASS, {len(trace_issues)} ORPHAN")
 lines.append(f"- 覆盖洪泛: {coverage_total} 项检查, {coverage_covered} COVERED, {len(coverage_issues)} GAP, 覆盖率 {coverage_rate}")
 lines.append(f"- 横向一致性: {cross_total} 项检查, {cross_ok} OK, {report['summary']['cross']['conflict']} CONFLICT, {report['summary']['cross']['warning']} WARNING")
+cont_total = len(gate.get("lines", [])) if gate else 0
+lines.append(f"- 连续性: {cont_total} 条操作线, {len(continuity_issues)} 条未达标")
 lines.append(f"- 信息保真: 追溯完整率 {traceability_rate} ({traceability_status}) · 视角覆盖率 {vp_rate} ({vp_status})\n")
 
 conflicts = [i for i in cross_issues if i["type"] == "CONFLICT"]
@@ -556,6 +576,13 @@ if warnings:
     for i, w in enumerate(warnings, 1):
         lines.append(f"| {i} | {w['check_id']} | {w.get('name', '')} | {w['detail']} |")
 
+if continuity_issues:
+    lines.append("\n## CONTINUITY（连续性未达标）\n")
+    lines.append("| # | 操作线 | 得分 | 问题数 |")
+    lines.append("|---|--------|------|--------|")
+    for i, ci in enumerate(continuity_issues, 1):
+        lines.append(f"| {i} | {ci['line_id']} | {ci['score']} | {len(ci['issues'])} |")
+
 with open(os.path.join(OUT, "audit-report.md"), "w", encoding="utf-8") as f:
     f.write("\n".join(lines) + "\n")
 
@@ -567,6 +594,7 @@ C.append_pipeline_decision(
     f"coverage={coverage_rate}({len(coverage_issues)} gap), "
     f"cross={cross_total}({report['summary']['cross']['conflict']} conflict, "
     f"{report['summary']['cross']['warning']} warning), "
+    f"continuity={cont_total}({len(continuity_issues)} failing), "
     f"fidelity={traceability_rate}/{vp_rate}",
     shard=args.get("shard")
 )
@@ -576,5 +604,6 @@ print(f"Layers: {available_layers}")
 print(f"Trace: {trace_total} checks, {trace_pass} PASS, {len(trace_issues)} ORPHAN")
 print(f"Coverage: {coverage_total} checks, {coverage_covered} COVERED, {len(coverage_issues)} GAP, rate={coverage_rate}")
 print(f"Cross: {cross_total} checks, {cross_ok} OK, {report['summary']['cross']['conflict']} CONFLICT, {report['summary']['cross']['warning']} WARNING")
+print(f"Continuity: {cont_total} lines, {len(continuity_issues)} failing")
 print(f"Fidelity: traceability={traceability_rate} ({traceability_status}), viewpoint={vp_rate} ({vp_status})")
 print(f"\nAll files written to {OUT}/")
