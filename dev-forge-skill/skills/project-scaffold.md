@@ -147,6 +147,14 @@ Step 2: Monorepo 根配置生成
     .env.example
   生成 packages/shared-types/:
     从 design.md 的数据模型 → entities.ts + api-types.ts + enums.ts
+  Design Tokens 消费（tokens.json 存在时）:
+    检查 .allforai/ui-design/tokens.json 是否存在:
+      存在 → 从 tokens.json 自动生成框架配置:
+        Web (Tailwind): tailwind.config.ts 的 theme.extend（colors/spacing/borderRadius/fontSize）
+        Web (CSS): src/styles/tokens.css（CSS 自定义属性 --color-primary 等）
+        Flutter: lib/theme/app_theme.dart（ColorScheme + TextTheme）
+        React Native: src/theme/tokens.ts（对象常量导出）
+      不存在 → 跳过，使用框架默认值（向后兼容）
   → 写入文件 → 记入 scaffold-manifest.json
   → 输出进度: 「Step 2 Monorepo 根 ✓ {N} 文件」
   ↓
