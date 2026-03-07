@@ -1,3 +1,4 @@
 .worktrees/
 .allforai/
 __pycache__/
+.playwright-mcp/
