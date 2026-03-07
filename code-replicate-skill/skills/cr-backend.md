@@ -106,6 +106,8 @@ config/ | settings/                   → 配置层
 - **认证中间件链**（JWT/Session/OAuth 如何注入、哪些路由受保护）
 - **数据库事务边界**（哪些操作是原子的、嵌套事务策略）
 - **外部服务调用**（第三方 API、消息队列 publish、webhook）
+- **用户身份获取**：涉及当前用户信息获取（如 `req.user`、`ctx.state.user`、`@CurrentUser()`）时，**必须对照项目中已有模块的实现方式**，确认身份注入机制（中间件注入 / 装饰器 / Context）、字段来源（JWT payload / Session / DB 查询）、类型定义是否一致。不同模块用不同方式获取用户身份是常见 bug 来源
+- **Worker/Job 组件阻塞性**：发现 Worker、Job、Queue Consumer、定时任务等后台组件时，**显式检查 Execute/Process/Handle 方法是否真正阻塞**（同步等待 vs 异步非阻塞）。常见陷阱：源码 Execute 方法内部是阻塞调用（如同步 HTTP、阻塞 DB 查询），复刻到目标栈时若改为异步但未正确 await，会导致任务"成功"但实际未执行完
 
 ---
 
