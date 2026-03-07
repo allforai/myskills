@@ -268,6 +268,31 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 ---
 
+### S3.5：Implementation Contract 验证
+
+**前提**：`.allforai/experience-map/experience-map.json` 中 screens 含 `implementation_contract` 字段。字段不存在 → 跳过 S3.5。
+
+**扫描策略**：
+1. 遍历 experience-map 中每个 screen 的 `implementation_contract`
+2. 对每个 screen，Grep 前端代码找到对应组件
+3. 检查组件是否匹配 `pattern`：
+   - `bottom-sheet` → 查找 BottomSheet / Drawer / ActionSheet 组件
+   - `modal-picker` → 查找 Modal / Dialog / Picker 组件
+   - `multi-step-form` → 查找 Stepper / Steps / multi-step 模式
+   - `full-page` → 查找独立页面路由
+   - `standard-page` → 不检查（默认模式）
+4. 检查 `forbidden` 列表中的模式是否出现
+5. 检查 `required_behaviors` 是否有对应实现
+
+**覆盖状态**：
+- `compliant` — 组件匹配 pattern，无 forbidden 违规
+- `violation` — 使用了 forbidden 模式，或缺少 required_behaviors（→ FIX_CONTRACT 任务）
+- `unchecked` — 组件未找到（由 S2 处理）
+
+**输出**：写入 `static-report.json` 的 `contract_compliance` 字段。violation 项生成 `FIX_CONTRACT` 类型任务到 `verify-tasks.json`。
+
+---
+
 ### S4：Extra 代码扫描
 
 **策略**：反向扫描——提取代码中所有路由端点，与 task-inventory 中的任务做反向比对，找出**代码有但产品地图没有**的端点。
