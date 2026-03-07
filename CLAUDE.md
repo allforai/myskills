@@ -11,7 +11,7 @@ This is **myskills** — a Claude Code + OpenCode dual-platform plugin collectio
 ```
 Layer         Plugin            Coverage
 ────────────  ────────────────  ─────────────────────────────────────────────
-Product       product-design    concept→map→screens→ui→use-cases→gaps→prune→audit
+Product       product-design    concept→map→journey-emotion→experience-map→gate→ui→use-cases→gaps→prune→audit
 Development   dev-forge         setup→spec→scaffold→execute→e2e→seed→verify
 Demo          demo-forge        design→media→execute→verify→iterate
 QA            deadhunt          dead links→CRUD completeness→ghost features→field consistency
@@ -44,7 +44,7 @@ All plugins read/write to a project-local `.allforai/` directory. This is the in
 ```
 .allforai/
 ├── product-map/             # role-profiles, task-inventory, task-index, business-flows, constraints
-├── screen-map/              # screen-map, screen-index, screen-conflict
+├── experience-map/          # journey-emotion-map, experience-map, interaction-gate
 ├── use-case/                # use-case-tree (JSON, machine), use-case-report (Markdown, human)
 ├── feature-gap/             # task-gaps, screen-gaps, journey-gaps, gap-tasks, gap-report
 ├── feature-prune/           # frequency-tier, prune-decisions, prune-tasks, prune-report
@@ -111,13 +111,13 @@ All services are optional — plugins work without them, skipping enhanced featu
 
 ## Prebuilt Python Scripts (product-design)
 
-Phases 4–8 of product-design have prebuilt transform scripts in `product-design-skill/scripts/`. They are invoked automatically when available; Claude falls back to LLM generation if they don't exist.
+Phases 3–7 of product-design have prebuilt transform scripts in `product-design-skill/scripts/`. They are invoked automatically when available; Claude falls back to LLM generation if they don't exist.
 
 ```bash
 python3 product-design-skill/scripts/gen_xxx.py <BASE_PATH> [--mode auto]
 ```
 
-Scripts: `gen_screen_map.py`, `gen_use_cases.py`, `gen_feature_gap.py`, `gen_feature_prune.py`, `gen_ui_design.py`, `gen_design_audit.py`, `gen_screen_map_split.py`. Shared utilities in `_common.py`.
+Scripts: `gen_journey_emotion.py`, `gen_experience_map.py`, `gen_interaction_gate.py`, `gen_use_cases.py`, `gen_feature_gap.py`, `gen_feature_prune.py`, `gen_ui_design.py`, `gen_design_audit.py`. Shared utilities in `_common.py`.
 
 ## Skill Development Conventions
 
@@ -134,7 +134,7 @@ For large products (400+ tasks), full JSON loading is expensive. Three lightweig
 |-------|----------|------|
 | `task-index.json` | product-map Step 6 | ~4KB |
 | `flow-index.json` | product-map Step 6 | ~2KB |
-| `screen-index.json` | screen-map Step 1 | ~3KB |
+| `screen_index` (embedded) | experience-map Step 1 | ~3KB |
 
 When indexes don't exist, skills fall back to full data loading (backward compatible).
 
@@ -143,7 +143,9 @@ When indexes don't exist, skills fall back to full data loading (backward compat
 ```
 /product-map              # Always first
     ↓
-/screen-map               # Required before most downstream skills
+/journey-emotion          # Emotion journey mapping (human decision point)
+    ↓
+/experience-map           # Experience map (replaces screen-map)
     ↓
 /use-case / /feature-gap / /feature-prune / /ui-design   # Any order
     ↓

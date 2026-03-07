@@ -47,11 +47,11 @@ def load_spec():
         raw["screens"] = normalized
     return raw
 
-def load_screen_map():
+def load_experience_map():
     """Load experience-map.json for design rationale."""
-    sm = C.load_json(os.path.join(SM_DIR, "experience-map.json"))
-    if sm:
-        return {s["id"]: s for s in sm.get("screens", [])}
+    op_lines, screen_index, loaded = C.load_experience_map(BASE)
+    if loaded:
+        return C.build_screen_by_id_from_lines(op_lines)
     return {}
 
 def load_stitch_index():
@@ -568,7 +568,7 @@ class ReviewHandler(http.server.BaseHTTPRequestHandler):
 
         if path == "/":
             spec = load_spec()
-            sm = load_screen_map()
+            sm = load_experience_map()
             fb = load_feedback()
             html = render_dashboard(spec, sm, fb)
             self._html(html)
@@ -576,7 +576,7 @@ class ReviewHandler(http.server.BaseHTTPRequestHandler):
         elif path.startswith("/screen/"):
             screen_id = path.split("/screen/")[1]
             spec = load_spec()
-            sm = load_screen_map()
+            sm = load_experience_map()
             fb = load_feedback()
             html = render_screen_detail(screen_id, spec, sm, fb)
             self._html(html)
