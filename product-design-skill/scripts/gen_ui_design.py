@@ -242,6 +242,147 @@ for mod, slist in module_screens.items():
 with open(os.path.join(OUT, "ui-design-spec.md"), "w", encoding="utf-8") as f:
     f.write("\n".join(spec_lines) + "\n")
 
+# ── Generate tokens.json (single source of truth) ────────────────────────────
+tokens = {
+    "color": {
+        "primary": S["primary"],
+        "on_primary": S["on_primary"],
+        "secondary": S["secondary"],
+        "tertiary": S["tertiary"],
+        "background": S["bg"],
+        "surface": S["surface"],
+        "surface_variant": S["surface_variant"],
+        "on_surface": S["on_surface"],
+        "on_surface_variant": S["on_surface_variant"],
+        "error": S["error"],
+        "success": S["success"],
+        "warning": S["warning"],
+    },
+    "spacing": {
+        "unit": 4,
+        "scale": [4, 8, 12, 16, 24, 32],
+    },
+    "radius": {
+        "sm": 4,
+        "md": int(S["radius"].replace("px", "")),
+        "lg": 16,
+    },
+    "typography": {
+        "display": {"size": 57, "weight": 400},
+        "headline": {"size": 32, "weight": 400},
+        "title": {"size": 22, "weight": 500},
+        "body": {"size": 16, "weight": 400, "line_height": 24},
+        "label": {"size": 14, "weight": 500},
+    },
+    "font": S["font"],
+    "shadow": S["shadow"],
+    "style_name": S["name"],
+    "generated_at": NOW,
+}
+C.write_json(os.path.join(OUT, "tokens.json"), tokens)
+
+# ── Micro-interaction presets ────────────────────────────────────────────────
+MICRO_PRESETS = {
+    "calm": {
+        "animation": "fade",
+        "duration_ms": 200,
+        "easing": "ease-out",
+        "haptic": "none",
+    },
+    "moderate": {
+        "animation": "slide-fade",
+        "duration_ms": 250,
+        "easing": "ease-in-out",
+        "haptic": "light",
+    },
+    "intense": {
+        "animation": "scale-bounce",
+        "duration_ms": 300,
+        "easing": "cubic-bezier(0.34, 1.56, 0.64, 1)",
+        "haptic": "impact-medium",
+    },
+}
+
+MICRO_OVERRIDES = {
+    "success": {"animation": "scale-bounce", "haptic": "impact-medium"},
+    "error": {"animation": "shake", "haptic": "notification-error"},
+    "loading": {"animation": "pulse", "haptic": "none"},
+}
+
+
+def _intensity_tier(intensity):
+    if intensity <= 3:
+        return "calm"
+    elif intensity <= 6:
+        return "moderate"
+    return "intense"
+
+
+# Generate micro-interactions per screen
+micro_interactions_data = []
+spec_lines.append("\n---\n")
+spec_lines.append("## Micro-Interaction Specifications\n")
+spec_lines.append("| Screen | Trigger | Animation | Duration | Easing | Haptic |")
+spec_lines.append("|--------|---------|-----------|----------|--------|--------|")
+
+for s in screens:
+    sid = s["id"]
+    ctx = screen_context.get(sid, {})
+    intensity = ctx.get("emotion_intensity", 5)
+    tier = _intensity_tier(intensity)
+    preset = MICRO_PRESETS[tier]
+
+    screen_micros = []
+
+    # Primary action interaction
+    primary_micro = {
+        "trigger": "primary-action-tap",
+        **preset,
+        "emotion_alignment": f"{ctx.get('emotion_state', 'neutral')} ({tier})",
+    }
+    screen_micros.append(primary_micro)
+    spec_lines.append(
+        f"| {s['name']} ({sid}) | primary-action-tap | {preset['animation']} "
+        f"| {preset['duration_ms']}ms | {preset['easing']} | {preset['haptic']} |"
+    )
+
+    # Success state override for C-type screens
+    has_create = any(a.get("crud") == "C" for a in s.get("actions", []))
+    if has_create:
+        success_micro = {
+            "trigger": "create-success",
+            "animation": MICRO_OVERRIDES["success"]["animation"],
+            "duration_ms": 300,
+            "easing": "cubic-bezier(0.34, 1.56, 0.64, 1)",
+            "haptic": MICRO_OVERRIDES["success"]["haptic"],
+            "emotion_alignment": "satisfying confirmation",
+        }
+        screen_micros.append(success_micro)
+        spec_lines.append(
+            f"| {s['name']} ({sid}) | create-success | scale-bounce "
+            f"| 300ms | spring overshoot | impact-medium |"
+        )
+
+    micro_interactions_data.append({
+        "screen_id": sid,
+        "screen_name": s["name"],
+        "emotion_tier": tier,
+        "micro_interactions": screen_micros,
+    })
+
+spec_lines.append("")
+
+# Write micro-interactions.json
+C.write_json(os.path.join(OUT, "micro-interactions.json"), {
+    "generated_at": NOW,
+    "presets": MICRO_PRESETS,
+    "overrides": MICRO_OVERRIDES,
+    "screens": micro_interactions_data,
+})
+
+# Rewrite spec with micro-interactions appended
+with open(os.path.join(OUT, "ui-design-spec.md"), "w", encoding="utf-8") as f:
+    f.write("\n".join(spec_lines) + "\n")
 spec_text = "\n".join(spec_lines)
 
 
