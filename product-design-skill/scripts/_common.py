@@ -56,6 +56,7 @@ REVIEW_PORTS = {
     "product-map": 18901,
     "wireframe": 18902,
     "ui": 18903,
+    "data-model": 18904,
 }
 
 
@@ -263,6 +264,32 @@ def load_interaction_gate(base):
     return load_json(os.path.join(base, "experience-map/interaction-gate.json"))
 
 
+def load_entity_model(base):
+    """Load entity-model.json, return entities list and relationships list."""
+    data = load_json(os.path.join(base, "product-map/entity-model.json"))
+    if data is None:
+        return [], []
+    entities = data.get("entities", [])
+    relationships = data.get("relationships", [])
+    return entities, relationships
+
+
+def load_api_contracts(base):
+    """Load api-contracts.json, return endpoints list."""
+    data = load_json(os.path.join(base, "product-map/api-contracts.json"))
+    if data is None:
+        return []
+    return data.get("endpoints", [])
+
+
+def load_view_objects(base):
+    """Load view-objects.json, return view_objects list."""
+    data = load_json(os.path.join(base, "product-map/view-objects.json"))
+    if data is None:
+        return []
+    return data.get("view_objects", [])
+
+
 # ── Flow-Task References ─────────────────────────────────────────────────────
 
 def collect_flow_task_refs(flows):
@@ -403,6 +430,10 @@ XV_ROUTING = {
     # Phase 8 (design-audit)
     "cross_layer_validation": "deepseek",
     "coverage_analysis": "gpt",
+    # Wireframe XV
+    "wireframe_usability_review": "gemini",
+    "wireframe_completeness_check": "deepseek",
+    "wireframe_consistency_check": "gpt",
 }
 
 # Family search prefixes — used to find the latest model via OpenRouter API.
