@@ -697,6 +697,15 @@ def _render_card(s, feedback):
     pin_indicator = f'<span class="pin-count">{pin_count} pins</span>' if pin_count else ''
     gate_indicator = f'<span class="gate-warn">{gate_count} issues</span>' if gate_count else ''
 
+    xv_issues = _xv_results.get(sid, [])
+    xv_errors = sum(1 for i in xv_issues if i.get("severity") == "error")
+    xv_warnings = sum(1 for i in xv_issues if i.get("severity") == "warning")
+    xv_badge = ""
+    if xv_errors:
+        xv_badge = f'<span class="xv-error">{xv_errors} XV</span>'
+    elif xv_warnings:
+        xv_badge = f'<span class="xv-warn">{xv_warnings} XV</span>'
+
     return f"""
     <a href="/screen/{sid}" class="card" data-role="{_esc(role)}" data-status="{status}" data-journey="{_esc(journey)}">
       <div class="card-header">
@@ -708,6 +717,7 @@ def _render_card(s, feedback):
         <span class="emo-badge" style="background:{emo_color}22;color:{emo_color}">{_esc(emo)}</span>
         <span class="action-count">{action_summary}</span>
         {gate_indicator}
+        {xv_badge}
         {pin_indicator}
       </div>
       <div class="card-notes">{_esc(s.get('notes', '')[:60])}</div>
@@ -818,6 +828,8 @@ body{{font-family:-apple-system,system-ui,'Segoe UI',sans-serif;background:#f8f9
 .badge.approved{{background:#d3f9d8;color:#2b8a3e}}
 .badge.revision{{background:#fff3bf;color:#e67700}}
 .gate-warn{{background:#ffebee;color:#c62828;padding:2px 6px;border-radius:3px;font-size:11px}}
+.xv-error{{background:#ffebee;color:#c62828;padding:2px 6px;border-radius:3px;font-size:11px;font-weight:600}}
+.xv-warn{{background:#fff8e1;color:#f57f17;padding:2px 6px;border-radius:3px;font-size:11px;font-weight:600}}
 .pin-count{{color:#e67700;font-weight:500;font-size:11px}}
 .itype-badge{{font-size:10px;padding:2px 6px;border-radius:3px;background:#e8eaf6;color:#5c6bc0;font-weight:600}}
 .footer{{text-align:center;padding:32px}}
@@ -1237,6 +1249,60 @@ renderPins();
 _op_lines, _tasks, _roles, _role_map, _gate_issues, _vo_map, _api_map = load_data()
 _all_screens = build_screens_with_context(_op_lines, _tasks, _role_map, _gate_issues, _vo_map, _api_map)
 _screen_map = {s["id"]: s for s in _all_screens}
+
+# ── XV Cross-Validation ──────────────────────────────────────────────────
+_xv_results = {}  # screen_id → [issues]
+
+def _run_xv_checks():
+    """Run XV cross-validation if OPENROUTER_API_KEY available."""
+    global _xv_results
+    if not C.xv_available():
+        print("XV: OPENROUTER_API_KEY not set, skipping cross-validation")
+        return
+
+    # Build summary prompt of all screens
+    screen_summaries = []
+    for s in _all_screens:
+        summary = f"- {s['id']} \"{s['name']}\" type={s.get('interaction_type','')} fields={len(s.get('data_fields',[]))} actions={len(s.get('vo_actions',[])+s.get('actions',[]))}"
+        screen_summaries.append(summary)
+
+    screen_list = "\n".join(screen_summaries)
+    base_prompt = f"Analyze these wireframe screens for a product. Each screen has an interaction type, data fields, and actions.\n\nScreens:\n{screen_list}\n\n"
+
+    xv_checks = [
+        ("wireframe_usability_review", base_prompt + "Review each screen for usability issues. For each issue, output JSON: {\"screen_id\": \"...\", \"severity\": \"error|warning|info\", \"message\": \"...\"}. Output a JSON array."),
+        ("wireframe_completeness_check", base_prompt + "Check for missing screens, missing fields, or coverage gaps. For each gap, output JSON: {\"screen_id\": \"...\", \"severity\": \"error|warning|info\", \"message\": \"...\"}. Use screen_id=\"GLOBAL\" for cross-screen issues. Output a JSON array."),
+        ("wireframe_consistency_check", base_prompt + "Check naming and type consistency across screens. For each inconsistency, output JSON: {\"screen_id\": \"...\", \"severity\": \"error|warning|info\", \"message\": \"...\"}. Output a JSON array."),
+    ]
+
+    all_issues = []
+    for task_type, prompt in xv_checks:
+        try:
+            print(f"XV: Running {task_type}...")
+            result = C.xv_call(task_type, prompt)
+            response = result.get("response", "")
+            # Parse JSON array from response (may be wrapped in ```json blocks)
+            json_match = re.search(r'\[.*\]', response, re.DOTALL)
+            if json_match:
+                issues = json.loads(json_match.group())
+                all_issues.extend(issues)
+                print(f"XV: {task_type} found {len(issues)} issues")
+            else:
+                print(f"XV: {task_type} returned no parseable issues")
+        except Exception as e:
+            print(f"XV: {task_type} failed: {e}")
+
+    # Group by screen_id
+    for issue in all_issues:
+        sid = issue.get("screen_id", "GLOBAL")
+        _xv_results.setdefault(sid, []).append(issue)
+
+    # Save to xv-review.json
+    xv_path = os.path.join(WF_DIR, "xv-review.json")
+    C.write_json(xv_path, {"issues": all_issues, "by_screen": _xv_results})
+    print(f"XV: Total {len(all_issues)} issues saved to xv-review.json")
+
+_run_xv_checks()
 
 
 class WireframeHandler(http.server.BaseHTTPRequestHandler):
