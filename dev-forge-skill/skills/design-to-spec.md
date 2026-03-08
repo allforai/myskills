@@ -18,7 +18,7 @@ version: "1.3.0"
 以 `project-manifest.json` 和 product-design 产物为输入，为每个子项目生成三份开发规格文档：
 
 1. **requirements.md** — 用户故事 + 验收条件 + 非功能需求
-2. **design.md** — API 端点 / 页面路由 / 数据模型 / 组件架构 / 时序图
+2. **design.md** — 接口定义 / 页面路由 / 数据模型 / 组件架构 / 时序图
 3. **tasks.md** — 原子任务列表，按开发层分 Batch（B0-B5）
 
 ---
@@ -53,8 +53,8 @@ manifest.json            requirements + design + tasks  实际文件和目录
 
 **WebSearch 关键词**：
 - `"{framework} API design patterns {year}"`
-- `"{ORM} database schema design best practices"`
-- `"REST API naming conventions {year}"`
+- `"{database} schema design best practices"`
+- `"{protocol} interface naming conventions {year}"`（protocol = REST/GraphQL/gRPC/等）
 - `"clean architecture {language} example {year}"`
 
 **4E+4V 重点**（design-to-spec 是产品→工程的核心桥梁）：
@@ -64,18 +64,18 @@ manifest.json            requirements + design + tasks  实际文件和目录
 - **4V**: 高频+高风险任务的 design.md 至少覆盖 api + data + behavior 三个视角
 
 **OpenRouter 交叉审查**（design.md 是全链路咽喉，此处质量提升下游全受益）：
-- **`api_design_review`** (GPT) — 后端 design.md 生成后，发送 API 端点列表给 GPT 审查：
-  - RESTful 命名规范（资源复数、HTTP 动词语义）
-  - 请求/响应 DTO 字段与数据模型的一致性
-  - 缺失的常见端点（分页、批量操作、健康检查）
-  - 错误码格式统一性
-  - 输出: `{ "issues": [{ "endpoint", "type", "suggestion" }], "missing": [...] }`
-- **`data_model_review`** (DeepSeek) — ER 设计（Mermaid）生成后，发送给 DeepSeek 检查：
-  - 3NF 违反点（传递依赖、冗余字段）
-  - 缺失索引（外键字段、高频查询字段）
-  - 外键关系漏洞（孤立实体、循环依赖）
-  - 命名一致性（表名/字段名风格统一）
-  - 输出: `{ "violations": [{ "table", "field", "type", "fix" }] }`
+- **`interface_design_review`** (GPT) — 后端 design.md 生成后，发送接口定义给 GPT 审查：
+  - 接口命名是否遵循目标协议惯例（REST: 资源复数 + HTTP 动词；GraphQL: Query/Mutation 命名；gRPC: Service/RPC 命名）
+  - 请求/响应结构与数据模型的字段一致性
+  - 缺失的常见接口（列表查询、批量操作、健康检查/探针）
+  - 错误响应格式统一性
+  - 输出: `{ "issues": [{ "interface", "type", "suggestion" }], "missing": [...] }`
+- **`data_model_review`** (DeepSeek) — 数据模型设计生成后，发送给 DeepSeek 检查：
+  - 数据建模合理性（RDBMS: 范式与反范式权衡；Document DB: 嵌套 vs 引用；KV: key 设计与访问模式）
+  - 查询性能（缺失索引、N+1 风险、热点 key）
+  - 关联完整性（孤立实体、循环依赖、级联规则）
+  - 命名一致性（实体名/字段名风格统一）
+  - 输出: `{ "violations": [{ "entity", "field", "type", "fix" }] }`
 - 审查结果合并到 design.md 的 `## Review Notes` 附录（仅有问题时生成）
 - OpenRouter 不可用 → 跳过审查，不阻塞生成
 
@@ -87,20 +87,20 @@ manifest.json            requirements + design + tasks  实际文件和目录
 
 | 原则 | 对应步骤 | 具体规则 |
 |------|---------|---------|
-| 分层依赖方向 | Step 4 | B1(数据模型) → B2(Service/API) → B3(UI页面) → B4(集成) 严格内→外。Controller 不直接调用 Repository，必须经过 Service |
+| 分层依赖方向 | Step 4 | B1(数据模型) → B2(业务逻辑/接口) → B3(UI/展示层) → B4(集成) 严格内→外。展示层不直接访问数据层，必须经过业务逻辑层 |
 | 单一职责任务 | Step 4 | 每个原子任务 1-3 文件、15-30 分钟、单一可测结果。禁止出现"实现 XX 系统"这种宽泛任务 |
-| Service 隔离外部调用 | Step 3 | 外部 API/SDK 调用封装为独立 service 文件（如 `ai_client.py`、`speech_service.py`），业务层通过 service 接口调用，不直接 import SDK |
-| RESTful 端点设计 | Step 3 | 资源名用复数名词（`/users`），用 HTTP 动词表达操作（GET/POST/PUT/DELETE），统一错误码格式 `{ code, message, details }` |
-| 数据模型 3NF | Step 3 | 表结构遵循第三范式（消除传递依赖），冗余字段需在 design.md 中标注理由 |
+| 隔离外部调用 | Step 3 | 外部 API/SDK 调用封装为独立 service/adapter 文件，业务层通过接口调用，不直接 import SDK |
+| 接口设计遵循目标协议惯例 | Step 3 | REST: 资源复数 + HTTP 动词 + `{ code, message, details }` 错误格式；GraphQL: schema-first + Query/Mutation 分离；gRPC: proto-first + status code；其他协议按其社区最佳实践 |
+| 数据模型遵循存储引擎最佳实践 | Step 3 | RDBMS: 范式化设计（反范式需标注理由）；Document DB: 嵌套 vs 引用按访问模式决策；KV: key 结构按查询模式设计。design.md 中标注建模决策依据 |
 | 用户故事按角色组织 | Step 1 | requirements.md 按角色分组（"As a {role}"），每组内按 frequency 排序（高频在前） |
-| API-First 生成顺序 | Step 3 | **先生成后端 design.md（表结构→API 端点），再生成前端 design.md（引用已定义的 API）**。前端 design 中 API 调用必须引用后端 design 中的端点 ID |
-| 设计分层展开 | Step 3 | design.md 从表结构开始，逐层展开到 API → 页面 → 组件。每层引用上一层定义 |
-| 输入验证在边界层 | Step 3 | 所有用户输入在 Controller/Handler 层统一验证（whitelist 模式）。SQL 参数化查询，HTML 输出转义。认证中间件在路由注册时声明，不在业务代码中手动检查 |
-| 统一错误处理 | Step 3 | 全局错误中间件捕获未处理异常，返回统一格式 `{ code, message, details }`。业务错误用自定义 Error 类（含 error_code），日志分级 ERROR/WARN/INFO，敏感信息不进日志 |
-| 测试与实现对称 | Step 4 | 每个 B2 Service/API 任务必须对应 B5 测试任务。测试命名 `test_{行为}_{条件}_{预期}`，测试间无共享可变状态，每条测试独立可运行 |
-| 性能基线内建 | Step 3 | 列表 API 强制分页（默认 page_size ≤ 50），有外键关联的字段加数据库索引，禁止 N+1 查询（ORM eager loading 或 JOIN）。大数据量操作走异步任务 |
-| 写操作幂等 | Step 3 | 创建类 API 支持幂等键（`Idempotency-Key` header 或业务唯一约束），更新类 API 使用乐观锁（version 字段或 updated_at 条件更新），并发冲突返回 409 Conflict |
-| 前端 CRUD 套路一致 | Step 3 | 同类型子项目（如多个 admin 端）的列表/新建/编辑/删除/详情必须使用相同组件套路和数据流模式。详见「前端 CRUD 实现套路」章节 |
+| 后端优先生成顺序 | Step 3 | **先生成后端 design.md（数据模型→接口定义），再生成前端 design.md（引用已定义的接口）**。前端 design 中的接口调用必须引用后端 design 中的定义 |
+| 设计分层展开 | Step 3 | design.md 从数据模型开始，逐层展开到接口 → 页面 → 组件。每层引用上一层定义 |
+| 输入验证在边界层 | Step 3 | 所有外部输入在接入层统一验证（whitelist 模式）。防注入（参数化查询/转义/沙箱）。认证在接入层声明，不在业务代码中手动检查 |
+| 统一错误处理 | Step 3 | 全局错误拦截（中间件/拦截器/错误边界），返回统一格式。业务错误用自定义错误类型（含错误码），日志分级 ERROR/WARN/INFO，敏感信息不进日志 |
+| 测试与实现对称 | Step 4 | 每个 B2 业务逻辑/接口任务必须对应 B5 测试任务。测试间无共享可变状态，每条测试独立可运行 |
+| 性能基线内建 | Step 3 | 集合查询强制分页/游标（默认批次 ≤ 50 条），高频查询路径建索引，避免 N+1 问题。大数据量操作走异步任务 |
+| 写操作幂等 | Step 3 | 创建类操作支持幂等键（协议级 header 或业务唯一约束），更新类操作使用乐观锁（version 字段或条件更新），并发冲突返回对应协议的冲突状态 |
+| 前端 CRUD 套路一致 | Step 3 | 同类型子项目的列表/新建/编辑/删除/详情必须使用相同组件套路和数据流模式。详见「前端 CRUD 实现套路」章节 |
 | 多语言全覆盖 | Step 3, 4 | 所有用户可见文本必须通过 i18n 函数获取（禁止硬编码），新增文本必须同步所有语言文件。design.md 中标注 i18n 方案，tasks.md 中每个涉及 UI 文本的任务标注 `_i18n: sync all locales_` |
 
 ---
@@ -116,8 +116,8 @@ manifest.json            requirements + design + tasks  实际文件和目录
 | constraints.json | requirements.md | 非功能需求（安全/性能/业务规则） | E3 |
 | experience-map.json | design.md | 每 screen = 1 页面/组件规格 | E1 |
 | screen.states | design.md | empty/loading/error/permission_denied → 界面四态设计 | E3 |
-| screen.actions | design.md | 每 action → 1 API 端点（后端）/ 1 交互规格（前端） | E1 |
-| action.on_failure | design.md | 操作失败 → UI 反馈设计（toast/banner/inline error） | E3 |
+| screen.actions | design.md | 每 action → 1 接口定义（后端）/ 1 交互规格（前端） | E1 |
+| action.on_failure | design.md | 操作失败 → UI 反馈设计 | E3 |
 | action.exception_flows | design.md | 任务异常 → UI 响应映射（1-to-1，from experience-map Step 2） | E3 |
 | action.validation_rules | design.md | 前端验证规则 → 表单 Schema 设计 | E3 |
 | action.requires_confirm | design.md | 高风险操作 → 确认弹窗组件设计 | E3 |
@@ -132,7 +132,7 @@ manifest.json            requirements + design + tasks  实际文件和目录
 | task.config_items | requirements.md + design.md | 配置依赖节 + 配置端点/表设计 | E3 |
 | task.outputs | design.md | states → 状态机设计；notifications → 事件/通知设计 | E1 |
 | task.audit | requirements.md + design.md | 审计需求节 + 审计日志表/中间件设计 | E3 |
-| task.approver_role | requirements.md + design.md | 审批流需求 + 审批 API 端点 + 状态流转 | E3 |
+| task.approver_role | requirements.md + design.md | 审批流需求 + 审批接口 + 状态流转 | E3 |
 | task.cross_dept_roles | design.md | 跨部门交接 → webhook/集成点设计 | E1 |
 | task.value | requirements.md | 业务价值注释（E4 Context） | E4 |
 | task.risk_level | requirements.md + tasks.md | 风险标签 → review 优先级 | E4 |
@@ -149,9 +149,9 @@ manifest.json            requirements + design + tasks  实际文件和目录
 
 | 维度 | 内容 |
 |------|------|
-| requirements 侧重 | API 合约、并发、幂等、事务一致性 |
-| design 侧重 | 端点设计、数据模型（Entity + 关系）、中间件链 |
-| 非功能需求 | 吞吐量、事务一致性、错误码规范 |
+| requirements 侧重 | 接口合约、并发、幂等、事务一致性 |
+| design 侧重 | 接口设计、数据模型（Entity + 关系）、中间件/拦截器链 |
+| 非功能需求 | 吞吐量、事务一致性、错误响应规范 |
 | 从 experience-map 取 | 不取（无 UI） |
 | 从 ui-design 取 | 不取 |
 
@@ -270,7 +270,7 @@ existing 模式下，Step 3 生成 design.md 之前，先执行套路检测：
 
 **通用规则**（所有技术栈）：
 - 所有用户可见文本通过 i18n 函数获取，禁止硬编码
-- 新增文本必须同步所有语言文件（ja/en/zh-CN）
+- 新增文本必须同步所有语言文件
 - Key 按 `{模块}.{页面}.{元素}` 分层命名
 - tasks.md 中每个涉及 UI 文本的任务附加 `_i18n: sync all locales_` 标注
 
@@ -433,21 +433,21 @@ Step 3: Design 生成（API-first 策略）
       entity.fields → 字段类型 + 约束 + 索引
       entity.relations → 外键 + 关联关系
     backend（数据模型之后）:
-      tasks → API 端点设计（RESTful 路由、请求/响应 DTO）
-      约束冲突校验（每个端点生成后立即检查）:
-        对每个 API 端点，读取对应 task 的 rules + exceptions 字段:
+      tasks → 接口设计（按目标协议生成：REST 路由 / GraphQL schema / gRPC proto / 等）
+      约束冲突校验（每个接口生成后立即检查）:
+        对每个接口定义，读取对应 task 的 rules + exceptions 字段:
         - 若 rules 含「本地处理」「离线」「不存库」「客户端缓存」等关键词
-          → 该任务不应生成服务端 API 端点，标记 `[LOCAL_ONLY]` 并跳过
+          → 该任务不应生成服务端接口，标记 `[LOCAL_ONLY]` 并跳过
         - 若 rules 含分页/筛选约束（「每页」「分页」「筛选」「排序」「搜索」）
-          → 列表端点必须在 query params 中包含对应参数
-        - 若 exceptions 含特定错误场景 → 端点的 error_codes 必须覆盖
-      列表端点 query params 强制提取:
-        GET 列表类端点（资源复数路径）生成时，强制读取对应 task 的:
+          → 集合查询接口必须包含对应的分页/筛选参数
+        - 若 exceptions 含特定错误场景 → 接口的错误响应必须覆盖
+      集合查询参数强制提取:
+        集合查询类接口生成时，强制读取对应 task 的:
         - main_flow → 提取筛选/搜索/排序操作描述
-        - rules → 提取分页规则（默认页大小、最大页大小）、筛选字段、排序字段
-        - 生成完整 query params 文档（page, page_size, sort_by, sort_order, filter_*）
-        - 缺失时使用默认值: page=1, page_size=20, max_page_size=50
-      constraints → 中间件链设计
+        - rules → 提取分页规则（默认批次大小、最大批次）、筛选字段、排序字段
+        - 生成完整的查询参数文档（分页、排序、筛选）
+        - 缺失时使用默认值: 每批 ≤ 20 条, 上限 50 条
+      constraints → 中间件/拦截器链设计
       flows → 后端时序图
     前端类 (admin/web-customer/web-mobile):
       多后端服务连接推导:
@@ -459,7 +459,7 @@ Step 3: Design 生成（API-first 策略）
           tasks.md B1 中生成对应的客户端初始化任务
       screens → 页面路由 + 组件架构
       screen.states → 界面四态设计（empty/loading/error/permission_denied）
-      actions → 交互规格（引用已定义的 API 端点）
+      actions → 交互规格（引用已定义的后端接口）
       action.on_failure + exception_flows → 操作异常 UI 反馈设计
       action.validation_rules → 表单验证 Schema
       action.requires_confirm → 确认弹窗组件规格
@@ -468,7 +468,7 @@ Step 3: Design 生成（API-first 策略）
     mobile-native:
       screens → 导航栈 + Screen 组件规格
       screen.states → 界面四态设计（同上）
-      actions → 原生交互规格（引用已定义的 API 端点）
+      actions → 原生交互规格（引用已定义的后端接口）
       action.on_failure + exception_flows → 原生异常 UI 反馈设计
       action.validation_rules → 表单验证规则
     按需生成的 4E 增强章节（字段存在时才生成）:
@@ -495,25 +495,25 @@ Step 3: Design 生成（API-first 策略）
         - Affected endpoints / components（根据子项目类型推导）
         - spike.status = "tbd" → 标注 [PENDING: 技术方案待定，后续确认后补充]
     → 写入 .allforai/project-forge/sub-projects/{name}/design.md
-    → 输出进度: 「{name}/design.md ✓ ({N} API端点, {M} 页面)」（不停，汇总到 Step 6）
-  **生成顺序**: 后端 Agent (Phase A) 先于前端 Agent (Phase B)，确保前端 design 可直接引用 API 端点定义
+    → 输出进度: 「{name}/design.md ✓ ({N} 接口, {M} 页面)」（不停，汇总到 Step 6）
+  **生成顺序**: 后端 Agent (Phase A) 先于前端 Agent (Phase B)，确保前端 design 可直接引用后端接口定义
   ↓
 Step 3.5: Design 交叉审查（由后端 Agent 在 Phase A 内执行，OpenRouter 可用时）
   后端 design.md 生成后，触发两项交叉审查:
-  审查 A — API 设计审查 (GPT):
-    提取 design.md 中所有 API 端点（路径+方法+请求/响应 DTO）
+  审查 A — 接口设计审查 (GPT):
+    提取 design.md 中所有接口定义（签名+请求/响应结构）
     调用: mcp__plugin_product-design_ai-gateway__ask_model(task: "structured_output", model_family: "gpt")
-    审查: RESTful 规范、DTO 一致性、缺失端点、错误码统一
+    审查: 协议惯例、数据结构一致性、缺失接口、错误响应统一
     输出: issues[] + missing[]
   审查 B — 数据模型审查 (DeepSeek):
     提取 design.md 中 ER 设计（Mermaid + 字段定义）
     调用: mcp__plugin_product-design_ai-gateway__ask_model(task: "technical_validation", model_family: "deepseek")
-    审查: 3NF 违反、缺失索引、外键漏洞、命名一致性
+    审查: 建模合理性、查询性能、关联完整性、命名一致性
     输出: violations[]
   结果处理:
     有问题 → 在 design.md 末尾追加 ## Review Notes 附录（按问题严重度排列）
     无问题 → 不追加
-    → 输出进度: 「Step 3.5 交叉审查 ✓ API {N} issues, Model {M} violations」
+    → 输出进度: 「Step 3.5 交叉审查 ✓ 接口 {N} issues, 数据模型 {M} violations」
   OpenRouter 不可用 → 跳过，输出: 「Step 3.5 ⊘ OpenRouter 不可用，跳过交叉审查」
   ↓
 Step 4: Tasks 生成
@@ -545,9 +545,9 @@ Step 4: Tasks 生成
   ↓
 Step 5: 跨子项目依赖分析
   识别跨项目依赖:
-    后端 API 端点 → 前端 API 客户端
-    共享类型 → packages/shared-types
-    后端 B2 完成 → 前端 B4 才能开始（切换 mock → 真实后端）
+    后端接口定义 → 前端客户端
+    共享类型定义 → 公共类型包
+    后端 B2 完成 → 前端 B4 才能开始（切换开发桩 → 真实后端）
   生成跨项目任务排序 → execution_order
   → 写入 `.allforai/project-forge/cross-project-dependencies.json`（依赖图 + execution_order）
   → **不修改** project-manifest.json（上游产物只读）
@@ -559,7 +559,7 @@ Step 6: 阶段末汇总确认
   Phase A (后端):
   | 子项目 | requirements | design | tasks | Step 3.5 审查 |
   |--------|-------------|--------|-------|--------------|
-  | {backend} | {N} 需求项 | {N} API端点 | {N} 任务 | API {N} issues, Model {M} violations |
+  | {backend} | {N} 需求项 | {N} 接口 | {N} 任务 | 接口 {N} issues, 模型 {M} violations |
 
   Phase B (前端并行):
   | 子项目 | requirements | design | tasks | 状态 |
@@ -674,18 +674,19 @@ Step 6: 阶段末汇总确认
   ],
   "api_endpoints": [
     {
-      "method": "POST",
-      "path": "/api/v1/users",
+      "id": "EP-001",
+      "signature": "CreateUser",
       "requirement_ref": "R-001",
       "request_schema": {},
       "response_schema": {},
-      "error_codes": []
+      "error_responses": [],
+      "protocol_detail": {}
     }
   ],
   "data_models": [
     {
       "name": "User",
-      "table": "users",
+      "storage": "users",
       "fields": [],
       "requirement_ref": "R-001",
       "indexes": [],
@@ -713,9 +714,9 @@ Step 6: 阶段末汇总确认
   "tasks": [
     {
       "id": "BE-T001",
-      "title": "实现用户注册 API",
+      "title": "实现用户注册接口",
       "batch": "B2",
-      "files": ["internal/handler/user.go", "internal/service/user.go"],
+      "files": ["{按技术栈约定的接口层文件}", "{按技术栈约定的业务逻辑文件}"],
       "requirements_ref": ["R-001"],
       "leverage": ["SU-001"],
       "guardrails": ["输入校验", "密码加密"],
@@ -758,8 +759,8 @@ Step 6: 阶段末汇总确认
 
 ### 5. 跨项目依赖显式声明
 
-后端 B2 → 前端 B4 的依赖、共享类型的依赖，都在 Step 5 中显式声明并写入 execution_order。
+后端 B2 → 前端 B4 的依赖、共享类型定义的依赖，都在 Step 5 中显式声明并写入 execution_order。
 
 ### 6. 并行 Agent 产出隔离 + 类型契约传递
 
-Phase A/B 的并行 Agent 各自写入独立子项目目录（`.allforai/project-forge/sub-projects/{name}/`），不读写其他 Agent 的产出。跨 Agent 数据流严格单向：编排器从后端产物提取类型契约（data_models + request/response schema + interface 定义），注入前端 Agent prompt，确保 DTO 字段命名、类型 ID vs 名称等与后端完全一致。前端 Agent 不自行推断后端已定义的数据结构。
+Phase A/B 的并行 Agent 各自写入独立子项目目录（`.allforai/project-forge/sub-projects/{name}/`），不读写其他 Agent 的产出。跨 Agent 数据流严格单向：编排器从后端产物提取类型契约（data_models + request/response schema + 类型定义），注入前端 Agent prompt，确保数据结构字段命名、ID vs 名称等与后端完全一致。前端 Agent 不自行推断后端已定义的数据结构。

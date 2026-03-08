@@ -71,17 +71,17 @@ Agent tool 的屏障同步机制保证所有前端 Agent 完成后才继续到 S
   编排器在启动 Phase B 前，自动从后端产物提取类型契约，注入每个前端 Agent prompt:
   1. 从 design.json 提取 data_models（所有 Entity 的字段名、类型、关联关系）
   2. 从 design.json 提取 api_endpoints 的 request_schema / response_schema
-  3. 若后端子项目已生成 types/*.ts 或 shared-types/ → 提取 interface 定义原文
+  3. 若后端子项目已生成公共类型定义文件 → 提取类型定义原文
   4. 将以上内容作为「## 后端类型契约（只读参考）」章节注入前端 Agent prompt
-  这确保前端 Agent 对 DTO 字段命名、ID vs 名称、枚举值与后端完全一致，
+  这确保前端 Agent 对数据结构字段命名、ID vs 名称、枚举值与后端完全一致，
   而非各自推断导致 mismatch。
 
 重要:
 - 仅处理本子项目，不读写其他子项目的产出目录
 - 按端差异化规则生成（参考 design-to-spec.md 的「各端差异化 Spec 生成」表格）
 - 遵循两阶段加载（先 index 再 full data）
-- 前端 Agent: API 调用必须引用后端 design.md 中已定义的端点 ID
-- 前端 Agent: DTO 字段命名必须与注入的后端类型契约完全一致（不可自行推断字段名）
+- 前端 Agent: 接口调用必须引用后端 design.md 中已定义的接口 ID
+- 前端 Agent: 数据结构字段命名必须与注入的后端类型契约完全一致（不可自行推断字段名）
 - 预置脚本优先: 检查 ${CLAUDE_PLUGIN_ROOT}/scripts/ 是否有可用脚本
 ~~~
 
@@ -158,7 +158,7 @@ resume 模式检测 Step 1-4 完成状态:
 ## Batch 0: Monorepo Setup（全局，最先执行）
 - [ ] 0.1 配置 monorepo workspace + 根配置文件
 - [ ] 0.2 创建 packages/shared-types（从 product-map entities 生成）
-- [ ] 0.3 创建 mock-server（来自 seed-forge plan 数据）
+- [ ] 0.3 创建开发桩服务（来自 seed-forge plan 数据）
 
 ## Batch 1: Foundation（各子项目并行）
 - [ ] 1.1 [api-backend] 数据模型、迁移、配置
@@ -170,15 +170,15 @@ resume 模式检测 Step 1-4 完成状态:
 - [ ] 2.1 [api-backend] Controller + Service + DTO + 中间件
 ...
 
-## Batch 3: UI / Page（前端并行，连 mock-server）
-- [ ] 3.1 [merchant-admin] 页面组件（连 mock-server）
+## Batch 3: UI / Page（前端并行，连开发桩）
+- [ ] 3.1 [merchant-admin] 页面组件（连开发桩）
 - [ ] 3.2 [customer-web] 页面组件
 ...
 
 ## Batch 4: Integration（等 B2 完成）
-- [ ] 4.1 生成 packages/api-client（从后端 Swagger/OpenAPI）
-- [ ] 4.2 [merchant-admin] 切换 mock → 真实后端 API
-- [ ] 4.3 [customer-web] 切换 mock → 真实后端 API
+- [ ] 4.1 生成公共 API 客户端包（从后端接口定义）
+- [ ] 4.2 [merchant-admin] 切换开发桩 → 真实后端
+- [ ] 4.3 [customer-web] 切换开发桩 → 真实后端
 ...
 
 ## Batch 5: Testing
@@ -194,7 +194,7 @@ resume 模式检测 Step 1-4 完成状态:
 B1: 类型定义、Entity 文件、数据库迁移、config + common 搭建
 B2: Controller + Service + DTO + 中间件注册
 B3: —（无 UI 层，跳过）
-B4: Swagger 文档、健康检查、错误码统一、API 客户端导出
+B4: 接口文档生成、健康检查/探针、错误响应统一、客户端 SDK 导出
 B5: 单元测试 (entity+service) + API 集成测试 (supertest/pytest)
 ```
 
@@ -203,7 +203,7 @@ B5: 单元测试 (entity+service) + API 集成测试 (supertest/pytest)
 B1: 类型定义、API 客户端封装、根 layout + 侧边栏骨架、路由配置
 B2: —（无独立 API，跳过）
 B3: DataTable、Form 组件、页面组件、图表组件
-B4: 连接真实 API（替换 mock-server base URL）、路由守卫、状态管理
+B4: 连接真实后端（替换开发桩连接配置）、路由守卫、状态管理
 B5: 组件测试 (Jest + RTL) + Playwright E2E (桌面视口)
 ```
 
@@ -212,7 +212,7 @@ B5: 组件测试 (Jest + RTL) + Playwright E2E (桌面视口)
 B1: 类型定义、API 客户端、SEO meta 组件、SSR/SSG 基础配置
 B2: —（无独立 API，跳过）
 B3: 页面组件 (带 SSR metadata)、列表/详情/功能页
-B4: 连接真实 API、结构化数据 (JSON-LD)、Analytics 集成
+B4: 连接真实后端、结构化数据 (JSON-LD)、Analytics 集成
 B5: Playwright E2E (桌面+移动视口) + Lighthouse 性能检测
 ```
 
@@ -221,7 +221,7 @@ B5: Playwright E2E (桌面+移动视口) + Lighthouse 性能检测
 B1: 类型定义、PWA 配置、Service Worker、移动布局骨架
 B2: —（无独立 API，跳过）
 B3: 移动组件 (下拉刷新/无限滚动/手势)、页面、离线状态页
-B4: 连接真实 API、离线缓存同步、推送集成
+B4: 连接真实后端、离线缓存同步、推送集成
 B5: Playwright 移动视口测试 + Lighthouse 移动性能检测
 ```
 
@@ -230,7 +230,7 @@ B5: Playwright 移动视口测试 + Lighthouse 移动性能检测
 B1: 类型定义、导航栈配置 (React Navigation)、本地存储 schema (AsyncStorage)、权限声明、API 客户端 (Axios)
 B2: —（无独立 API，跳过）
 B3: Screen 组件 (FlatList/ScrollView/Form)、Tab 页面 (Bottom Tabs)、业务组件
-B4: API 集成 (切换 mock → 真实后端)、离线同步、推送 (Expo Notifications)、深度链接
+B4: 后端集成（切换开发桩 → 真实后端）、离线同步、推送 (Expo Notifications)、深度链接
 B5: Detox / Maestro 测试
 ```
 
@@ -239,6 +239,6 @@ B5: Detox / Maestro 测试
 B1: 数据模型 (Dart class)、GoRouter 导航配置、主题/常量、API 客户端 (Dio)、Riverpod 基础 Provider
 B2: —（无独立 API，跳过）
 B3: Screen Widget (ListView/SingleChildScrollView/Form)、底部 Tab (NavigationBar)、业务 Widget (Card/ListTile/Detail)
-B4: API 集成 (切换 mock → 真实后端)、离线同步 (connectivity_plus)、推送 (firebase_messaging)、深度链接
+B4: 后端集成（切换开发桩 → 真实后端）、离线同步 (connectivity_plus)、推送 (firebase_messaging)、深度链接
 B5: Widget 测试 (flutter_test) + 集成测试 (Patrol / integration_test)
 ```
