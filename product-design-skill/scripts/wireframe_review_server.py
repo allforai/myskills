@@ -19,6 +19,7 @@ Usage:
 import http.server
 import json
 import os
+import re
 import sys
 import urllib.parse
 
@@ -946,6 +947,66 @@ def render_screen_detail(screen, all_screens, feedback):
         gate_items = "".join(f"<li style='color:#c62828'>{_esc(i.get('detail', ''))}</li>" for i in gate_issues)
         rationale += f"<dt>Gate Issues</dt><dd><ul>{gate_items}</ul></dd>"
 
+    # ── 6V Tab Content ────────────────────────────────────────────────────
+    itype = screen.get("interaction_type", "")
+    data_fields = screen.get("data_fields", [])
+    states = screen.get("states", {})
+    flow_ctx = screen.get("flow_context", {})
+
+    # Structure tab — infer zones from interaction_type
+    ZONE_MAP = {
+        "MG1": ["header", "filter-chips", "read-only-list", "pagination"],
+        "MG2-L": ["header", "search-bar", "filter-chips", "table", "pagination", "action-bar"],
+        "MG2-C": ["header", "form-body", "field-group", "action-bar"],
+        "MG2-E": ["header", "form-body", "field-group", "action-bar"],
+        "MG2-D": ["header", "detail-fields", "action-bar"],
+    }
+    zones = ZONE_MAP.get(itype, ["header", "content", "action-bar"])
+    zones_html = "".join(f"<li class='zone-item'>{_esc(z)}</li>" for z in zones)
+    structure_tab = f"<div class='zone-label'>Interaction type: <b>{_esc(itype or 'unknown')}</b></div><ul class='zone-list'>{zones_html}</ul>"
+
+    # Behavior tab
+    BEHAVIOR_DESC = {
+        "MG1": ("Read-only List", "Displays a filterable, read-only collection. No create or edit actions. Optimized for scanning and lookup."),
+        "MG2-L": ("CRUD List", "Full CRUD list with search, filter, sortable table, pagination, and bulk actions."),
+        "MG2-C": ("Create Form", "Guided creation form with typed inputs, validation, and submit/cancel actions."),
+        "MG2-E": ("Edit Form", "Pre-filled edit form. Same layout as create but loads existing data for modification."),
+        "MG2-D": ("Detail View", "Read-focused detail layout with field-value pairs and contextual actions."),
+    }
+    bname, bdesc = BEHAVIOR_DESC.get(itype, (itype or "Custom", "Custom interaction pattern."))
+    behavior_tab = f"<div class='beh-name'>{_esc(bname)}</div><p class='beh-desc'>{_esc(bdesc)}</p>"
+    if itype:
+        behavior_tab += f"<div class='beh-code'>Code: <code>{_esc(itype)}</code></div>"
+
+    # Data tab — VO field table
+    if data_fields:
+        rows = ""
+        for df in data_fields:
+            mode = "input" if df.get("input_widget") else "display"
+            req = "Yes" if df.get("required") else ""
+            rows += f"<tr><td>{_esc(df.get('name',''))}</td><td>{_esc(df.get('label',''))}</td><td>{_esc(df.get('type',''))}</td><td>{mode}</td><td>{req}</td></tr>"
+        data_tab = f"<table class='field-tbl'><thead><tr><th>Name</th><th>Label</th><th>Type</th><th>Mode</th><th>Req</th></tr></thead><tbody>{rows}</tbody></table>"
+    else:
+        data_tab = "<p class='empty-hint'>No data fields defined for this screen.</p>"
+
+    # State tab — 4 states
+    state_tab = ""
+    for skey in ["empty", "loading", "error", "success"]:
+        sval = states.get(skey, "—")
+        state_tab += f"<div class='state-row'><span class='state-key'>{skey}</span><span class='state-val'>{_esc(str(sval))}</span></div>"
+
+    # Flow tab — prev/next + entry/exit
+    flow_prev = flow_ctx.get("prev", "—")
+    flow_next = flow_ctx.get("next", "—")
+    entry_pts = flow_ctx.get("entry_points", [])
+    exit_pts = flow_ctx.get("exit_points", [])
+    flow_tab = f"<div class='flow-row'><b>Prev:</b> {_esc(str(flow_prev))}</div>"
+    flow_tab += f"<div class='flow-row'><b>Next:</b> {_esc(str(flow_next))}</div>"
+    if entry_pts:
+        flow_tab += "<div class='flow-row'><b>Entry points:</b> " + ", ".join(_esc(str(e)) for e in entry_pts) + "</div>"
+    if exit_pts:
+        flow_tab += "<div class='flow-row'><b>Exit points:</b> " + ", ".join(_esc(str(e)) for e in exit_pts) + "</div>"
+
     pins_json = json.dumps(pins, ensure_ascii=False)
 
     return f"""<!DOCTYPE html>
@@ -995,6 +1056,29 @@ dd ul{{margin:4px 0 0 16px}}
 .pin-item .del-btn{{color:#adb5bd;cursor:pointer;font-size:16px;flex-shrink:0;margin-left:auto}}
 .pin-item .del-btn:hover{{color:#fa5252}}
 .add-hint{{text-align:center;color:#adb5bd;font-size:13px;padding:16px}}
+.tab-bar{{display:flex;gap:0;border-bottom:2px solid #dee2e6;padding:0 12px;background:#f8f9fa}}
+.tab-btn{{padding:8px 10px;border:none;background:none;font-size:11px;font-weight:600;color:#868e96;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}}
+.tab-btn:hover{{color:#495057}}
+.tab-btn.active{{color:#339af0;border-bottom-color:#339af0}}
+.tab-content{{padding:0}}
+.tab-pane{{display:none;padding:12px 16px;font-size:13px}}
+.tab-pane.active{{display:block}}
+.zone-label{{color:#495057;margin-bottom:8px}}
+.zone-list{{list-style:none;display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0}}
+.zone-item{{background:#e7f5ff;color:#1971c2;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500}}
+.beh-name{{font-size:15px;font-weight:600;color:#495057;margin-bottom:4px}}
+.beh-desc{{color:#868e96;margin:0 0 8px 0;line-height:1.5}}
+.beh-code{{font-size:12px;color:#adb5bd}}
+.beh-code code{{background:#f1f3f5;padding:2px 6px;border-radius:3px;color:#495057}}
+.field-tbl{{width:100%;border-collapse:collapse;font-size:12px}}
+.field-tbl th{{background:#f8f9fa;text-align:left;padding:6px 8px;border-bottom:1px solid #dee2e6;font-weight:600;color:#495057}}
+.field-tbl td{{padding:5px 8px;border-bottom:1px solid #f1f3f5;color:#495057}}
+.field-tbl tr:hover td{{background:#f8f9fa}}
+.empty-hint{{color:#adb5bd;font-style:italic;margin:8px 0}}
+.state-row{{display:flex;gap:12px;padding:6px 0;border-bottom:1px solid #f1f3f5}}
+.state-key{{font-weight:600;color:#495057;text-transform:capitalize;min-width:70px}}
+.state-val{{color:#868e96}}
+.flow-row{{padding:5px 0;color:#495057;line-height:1.5}}
 </style></head><body>
 <div class="topbar">
   <a href="/">Home</a>
@@ -1008,9 +1092,21 @@ dd ul{{margin:4px 0 0 16px}}
     </div>
   </div>
   <div class="side-panel">
-    <div class="section">
-      <div class="section-title">Screen Info</div>
-      <dl>{rationale}</dl>
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="structure" onclick="switchTab('structure',this)">Structure</button>
+      <button class="tab-btn" data-tab="behavior" onclick="switchTab('behavior',this)">Behavior</button>
+      <button class="tab-btn" data-tab="data" onclick="switchTab('data',this)">Data</button>
+      <button class="tab-btn" data-tab="state" onclick="switchTab('state',this)">State</button>
+      <button class="tab-btn" data-tab="flow" onclick="switchTab('flow',this)">Flow</button>
+      <button class="tab-btn" data-tab="emotion" onclick="switchTab('emotion',this)">Emotion</button>
+    </div>
+    <div class="tab-content">
+      <div class="tab-pane active" id="tab-structure">{structure_tab}</div>
+      <div class="tab-pane" id="tab-behavior">{behavior_tab}</div>
+      <div class="tab-pane" id="tab-data">{data_tab}</div>
+      <div class="tab-pane" id="tab-state">{state_tab}</div>
+      <div class="tab-pane" id="tab-flow">{flow_tab}</div>
+      <div class="tab-pane" id="tab-emotion"><dl>{rationale}</dl></div>
     </div>
     <div class="section review-section">
       <div class="section-title">Review</div>
@@ -1024,6 +1120,12 @@ dd ul{{margin:4px 0 0 16px}}
   </div>
 </div>
 <script>
+function switchTab(tabId,btn){{
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tabId).classList.add('active');
+  btn.classList.add('active');
+}}
 const SCREEN_ID="{sid}";
 let pins={pins_json};
 let status="{status}";
