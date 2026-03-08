@@ -10,7 +10,7 @@ description: >
   Pipeline: concept → concept-review → map → map-review → experience-map → wireframe-review (structure lock) →
   [use-case ∥ gap ∥ ui-design] → ui-review (visual) → audit.
   Use /product-design full to run the full pipeline with checkpoints.
-version: "4.5.0"
+version: "4.5.1"
 ---
 
 # Product Design — 产品设计套件
