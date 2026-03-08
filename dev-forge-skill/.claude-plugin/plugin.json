@@ -1,6 +1,6 @@
 {
   "name": "dev-forge",
   "description": "Development forge: project-setup, design-to-spec, project-scaffold, task-execute (systematic execution + progress tracking), e2e-verify (cross-project Playwright E2E), seed-forge (realistic seed data), product-verify (static + dynamic acceptance). Full pipeline: /project-forge. 开发锻造套件：项目引导、设计转规格、脚手架生成、任务执行、跨端验证、种子数据锻造、产品验收。全流程编排：/project-forge。",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "author": { "name": "dv" }
 }

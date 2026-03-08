@@ -49,7 +49,11 @@ product-concept → product-map → experience-map → ui-design
 ```
 /ui-design            # 完整流程（风格选择 → 检索 → 生成规格 → 生成 HTML）
 /ui-design refresh    # 清除决策缓存，重新选风格 + 完整重跑
+/ui-design --variants 3    # 生成 3 套视觉风格方案，对比后选择
 ```
+
+**参数**：
+- `--variants N`：生成 N 套不同的视觉风格方案（默认 1，最大 5）。N ≥ 2 时进入 variants 模式。
 
 ## 增强协议（WebSearch + 4D+6V + XV）
 
@@ -105,6 +109,7 @@ product-concept → product-map → experience-map → ui-design
 | **Step 4 规格确认** | AskUserQuestion 确认 | 自动确认 |
 | **Step 5 预览确认** | AskUserQuestion 确认 | 自动确认 |
 | **Step 5.5 Stitch 不可用** | AskUserQuestion 询问 | 自动降级到 Step 5.6（LLM 高保真预览） |
+| **--variants 模式** | 生成 N 套风格方案 → 视觉对比 → 用户选择 | 自动选择与 `pipeline_preferences.ui_style` 最匹配的方案，记入 decisions.json |
 
 **安全护栏**（自动模式下仍然停下来问用户）：
 - ERROR 级验证失败（无法推导任何界面、product-map 损坏）
@@ -211,6 +216,28 @@ Step 5.6: LLM 高保真 HTML 预览（Stitch 不可用时自动执行）
 - 不允许自动使用默认风格（例如固定 Flat / Minimal）
 - 不允许因历史缓存而跳过用户确认
 - 若用户未明确选择，本次流程停留在 Step 2，不进入 Step 3
+
+---
+
+### Variants 模式（--variants N）
+
+当指定 `--variants N`（N ≥ 2）时，在 Step 2（风格选择）阶段生成 N 套不同的视觉方案：
+
+**Step 2v: 多风格发散**
+- 不再让用户选单一风格，而是自动选 N 种风格组合
+- 使用 Agent 并发为每种风格生成：
+  - tokens.json（设计令牌）
+  - 2-3 个代表性界面的 hifi-preview HTML
+- 输出到 `.allforai/ui-design/variants/variant-{n}/`
+
+**Step 2v.1: 视觉对比**
+- 生成对比导航页 `variants/comparison.html`
+- 每个方案展示：风格名称 + 设计令牌摘要 + 2-3 个代表界面截图/链接
+- AskUserQuestion 让用户选择风格方向
+
+**Step 2v.2: 确认后执行**
+- 选中风格后，按正常流程（Step 3-5）完成全套界面
+- 记录选择到 ui-design-decisions.json
 
 ---
 
@@ -853,11 +880,19 @@ Step 5.6 ✓ LLM 高保真预览
 │   ├── index.html
 │   ├── ui-role-{角色1}.html
 │   └── ...
-└── hifi-preview/                   # 高保真预览（Step 5.6，Stitch 不可用时自动生成）
-    ├── _tokens.css                 # tokens.json → CSS 变量（所有页面共享）
-    ├── _design-system.html         # 共享组件视觉参考（锚点页面）
-    ├── {screen-id}.html            # 每屏一个高保真 HTML 页面
-    └── index.html                  # 导航页
+├── hifi-preview/                   # 高保真预览（Step 5.6，Stitch 不可用时自动生成）
+│   ├── _tokens.css                 # tokens.json → CSS 变量（所有页面共享）
+│   ├── _design-system.html         # 共享组件视觉参考（锚点页面）
+│   ├── {screen-id}.html            # 每屏一个高保真 HTML 页面
+│   └── index.html                  # 导航页
+└── variants/                       # --variants 模式
+    ├── variant-1/                  # 风格方案 A
+    │   ├── tokens.json
+    │   └── hifi-preview/           # 2-3 个代表性界面
+    ├── variant-2/                  # 风格方案 B
+    │   ├── tokens.json
+    │   └── hifi-preview/
+    └── comparison.html             # 对比导航页
 ```
 
 ### tokens.json (Design Token Single Source)

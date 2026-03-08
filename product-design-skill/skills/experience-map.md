@@ -43,7 +43,11 @@ journey-emotion（旅程情绪图）    experience-map（体验地图）       u
 ```
 /experience-map              # 完整流程（Step 1-5）
 /experience-map refresh      # 清空缓存，从头重新运行
+/experience-map --variants 3    # 生成 3 套信息架构方案，对比后选择
 ```
+
+**参数**：
+- `--variants N`：生成 N 套不同的信息架构方案（默认 1，最大 5）。N ≥ 2 时进入 variants 模式。
 
 ---
 
@@ -234,6 +238,37 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py <BASE>
 
 ---
 
+### Variants 模式（--variants N）
+
+当指定 `--variants N`（N ≥ 2）时，生成 N 套不同的信息架构方案：
+
+**Step 2v: 多方案发散**
+- 每套方案采用不同的信息架构策略：
+  - 方案 A：任务驱动型（按用户任务组织界面）
+  - 方案 B：对象驱动型（按数据实体组织界面）
+  - 方案 C：流程驱动型（按业务流程组织界面）
+  - 方案 D：角色驱动型（按角色工作台组织界面）
+  - 方案 E：混合型（高频任务前置 + 对象导航）
+- 使用 Agent 并发生成 N 套 experience-map
+- 每套方案输出到 `.allforai/experience-map/variants/variant-{n}/`
+
+**Step 2v.1: 对抗式评审**
+- 如果 OPENROUTER_API_KEY 可用，使用 ask_model 从 5 个视角评审每套方案：
+  - 用户视角：新手能否快速上手？
+  - 效率视角：高频操作路径是否最短？
+  - 扩展视角：新功能加入时架构是否稳定？
+  - 一致性视角：跨角色体验是否统一？
+  - 认知视角：信息层级是否符合心智模型？
+- 输出对比矩阵 + 推荐方案
+
+**Step 2v.2: 用户选择**
+- AskUserQuestion 展示对比矩阵
+- 用户选择一个方案（或混合多方案优点）
+- 选中方案复制到 `.allforai/experience-map/` 主目录
+- 记录选择到 experience-map-decisions.json
+
+---
+
 ## 全自动模式
 
 **激活条件**（同时满足）：
@@ -247,6 +282,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py <BASE>
 | 步骤 | 标准模式 | 全自动模式 |
 |------|----------|-----------|
 | **Step 3 结果审阅** | AskUserQuestion 确认 | 自动确认，记入 decisions.json（`decision: "auto_confirmed"`） |
+| **--variants 模式** | 生成 N 套方案 → 对抗式评审 → 用户选择 | 自动选择推荐方案（评审得分最高），记入 decisions.json |
 
 **安全护栏**（自动模式下仍然停下来问用户）：
 - ERROR 级验证失败（journey-emotion-map.json 解析失败、task_refs 引用断裂）
@@ -259,8 +295,15 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py <BASE>
 .allforai/experience-map/
 ├── experience-map.json              # 机器可读：操作线 > 节点 > 屏幕完整结构（含 implementation_contract）
 ├── experience-map-report.md         # 人类可读：体验地图摘要报告
+├── experience-map-decisions.json    # variants 模式选择记录
 ├── journey-emotion-map.json         # 上游输入（由 journey-emotion 生成）
-└── journey-emotion-decisions.json   # 上游输入（由 journey-emotion 生成）
+├── journey-emotion-decisions.json   # 上游输入（由 journey-emotion 生成）
+├── variants/                        # --variants 模式
+│   ├── variant-1/                   # 方案 A
+│   │   └── experience-map.json
+│   ├── variant-2/                   # 方案 B
+│   │   └── experience-map.json
+│   └── comparison-matrix.json       # 对比矩阵 + 评审结果
 ```
 
 ---

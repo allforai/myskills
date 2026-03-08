@@ -165,6 +165,11 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
       OpenRouter 不可用 → 跳过 S5，输出: 「S5 交叉验证 ⊘ OpenRouter 不可用，跳过」
       → 输出进度: 「S5 交叉验证 ✓ {N} 项审查, {M} 项分歧(REVIEW_NEEDED)」
   ↓
+  S6: 旅程级验证（use-case-tree.json 存在时）
+      逐用例验证端到端可达性，汇总 S1-S3 结果计算旅程完整度
+      use-case-tree.json 不存在 → 跳过 S6
+      → 输出进度: 「S6 旅程级 ✓ passed:{N} partial:{M} failed:{K}」
+  ↓
   静态汇总确认（单次交互）:
     展示覆盖率汇总表:
     | 检查项 | 已覆盖 | 缺失 | 部分 | 分歧 |
@@ -368,6 +373,98 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 ---
 
+### S6: 旅程级验证（Journey-Level Verification）
+
+逐用例验证端到端可达性，发现"任务都在但流程断裂"的问题。
+
+**前置**：use-case-tree.json（必须）+ static-report.json（S1-S5 产出）
+
+**如果 use-case-tree.json 不存在 → 跳过 S6**，输出提示："S6 ⊘ use-case-tree.json 不存在，跳过旅程级验证"
+
+**验证逻辑**：
+
+1. **加载用例树**：从 use-case-tree.json 提取所有用例，每个用例包含有序步骤序列
+
+2. **逐用例验证**：对每个用例的每个步骤：
+   - 查找步骤关联的 task_ref
+   - 从 S1 结果检查：该任务的 API/路由是否已覆盖？
+   - 从 S2 结果检查：该任务的界面/组件是否已覆盖？
+   - 从 S3 结果检查：该任务的约束是否已实现？
+   - 步骤状态：全部通过 → ✅ | 部分缺失 → ⚠️ | 完全缺失 → ❌
+
+3. **旅程完整度计算**：
+   ```
+   journey_completeness = 通过步骤数 / 总步骤数
+   ```
+   - ≥ 90% → PASS
+   - 70%-89% → PARTIAL（可上线但有缺口）
+   - < 70% → FAIL（旅程断裂，不可上线）
+
+4. **断裂点识别**：
+   - 连续 2+ 步骤缺失 → 标记为 CRITICAL_BREAK（用户流程中断）
+   - 单步缺失但前后完整 → 标记为 GAP（可绕过）
+   - 最后一步缺失 → 标记为 INCOMPLETE_ENDING（用户无法完成）
+
+5. **按用例优先级排序**：
+   - 关联 P0 需求的用例 → 必须 PASS
+   - 关联 P1 需求的用例 → 建议 PASS
+   - 关联 P2 需求的用例 → 允许 PARTIAL
+
+**输出追加到 static-report.json**：
+
+```json
+{
+  "journey_verification": {
+    "total_journeys": 12,
+    "passed": 8,
+    "partial": 3,
+    "failed": 1,
+    "journeys": [
+      {
+        "use_case_id": "UC-003",
+        "use_case_name": "用户下单流程",
+        "priority": "P0",
+        "steps": [
+          { "step": 1, "task_ref": "T-001", "label": "浏览商品", "api": "✅", "ui": "✅", "constraint": "✅", "status": "PASS" },
+          { "step": 2, "task_ref": "T-002", "label": "创建订单", "api": "✅", "ui": "✅", "constraint": "✅", "status": "PASS" },
+          { "step": 3, "task_ref": "T-003", "label": "支付确认", "api": "✅", "ui": "❌", "constraint": "N/A", "status": "PARTIAL" },
+          { "step": 4, "task_ref": "T-004", "label": "查看结果", "api": "✅", "ui": "✅", "constraint": "✅", "status": "PASS" }
+        ],
+        "completeness": 0.875,
+        "verdict": "PARTIAL",
+        "breaks": [
+          { "type": "GAP", "step": 3, "missing": ["ui"], "impact": "用户无法看到支付页面" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**verify-report.md 追加**：
+
+```markdown
+## 旅程级验证
+
+| 用例 | 优先级 | 完整度 | 结论 | 断裂点 |
+|------|--------|--------|------|--------|
+| 用户下单流程 | P0 | 87.5% | ⚠️ PARTIAL | Step 3 缺 UI |
+| 用户注册流程 | P0 | 100% | ✅ PASS | — |
+| 商品管理 | P1 | 60% | ❌ FAIL | Step 2-3 连续缺失 |
+
+### 关键发现
+- P0 旅程通过率：{N}/{M}
+- 关键断裂：{列出 CRITICAL_BREAK}
+- 建议：{优先修复 P0 FAIL 旅程}
+```
+
+**生成 IMPLEMENT 任务时的增强**：
+- 传统方式：`IMPLEMENT T-003`（孤立任务）
+- 旅程感知：`IMPLEMENT T-003 — 阻断「用户下单流程」Step 3/4，P0 优先级`
+- 断裂点任务自动提升优先级为 P0
+
+---
+
 ### D0：应用可达性预检
 
 **目的**：在启动 Playwright 测试前确认应用可访问，避免浪费时间。
@@ -506,6 +603,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 | S3: 约束 → 代码覆盖 | 仅检查 `--tasks` 关联的约束 | 增量：只验证本 Round 涉及的约束 |
 | S4: Extra 代码扫描 | **跳过** | 反向扫描需全量，增量无意义 |
 | S5: 交叉验证 | 仅审查 `--tasks` 中 covered 的项 | 增量：只交叉验证本 Round 的结果 |
+| S6: 旅程级验证 | 如 use-case-tree.json 存在，仅验证包含本 Round 任务的用例 | 增量：不全量验证，只检查涉及当前 Round 任务的旅程 |
 | Dynamic (D0-D4) | **跳过** | 动态测试留给 full 模式 |
 
 **输出**：结果追加到 `static-report.json`（不覆盖之前的全量结果），同时返回给调用方（task-execute）用于写入 build-log.json 的 `verification` 字段。
@@ -516,10 +614,10 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 ```
 .allforai/product-verify/
-├── static-report.json       # S1-S4: 静态覆盖状态
+├── static-report.json       # S1-S6: 静态覆盖状态（含 journey_verification）
 ├── dynamic-report.json      # D2-D3: 动态测试结果
 ├── verify-tasks.json        # 待处理任务清单（IMPLEMENT / REMOVE_EXTRA / FIX_FAILING）
-├── verify-report.md         # 可读版报告（含 innovation_coverage）
+├── verify-report.md         # 可读版报告（含 innovation_coverage + 旅程级验证）
 └── verify-decisions.json    # 用户决策日志（S4 EXTRA 归属 + D4 失败分类）
 ```
 
@@ -650,6 +748,8 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
   }
 ]
 ```
+
+旅程感知优先级提升：如 S6 发现某任务是旅程断裂点（CRITICAL_BREAK 或 INCOMPLETE_ENDING），该 IMPLEMENT 任务优先级自动提升为 P0，并附加断裂影响描述。
 
 ### verify-decisions.json
 

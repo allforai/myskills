@@ -1,14 +1,16 @@
 ---
 name: product-design
 description: >
-  Product design suite with twelve skills: product-concept (产品概念), product-map (产品地图), journey-emotion (情绪旅程),
-  experience-map (体验地图), interaction-gate (交互质量门禁),
+  Product design suite with thirteen skills: product-concept (产品概念), market-validate (市场验证),
+  product-map (产品地图), journey-emotion (情绪旅程),
+  experience-map (体验地图, 支持 --variants), interaction-gate (交互质量门禁),
   design-pattern (设计模式), behavioral-standards (行为规范), use-case (用例集),
-  feature-gap (功能查漏), feature-prune (功能剪枝), ui-design (UI设计规格), design-audit (设计审计).
-  Run product-map first to build the foundation, then journey-emotion, then experience-map,
-  then use other skills as needed. Use design-audit for cross-layer consistency checks.
+  feature-gap (功能查漏), feature-prune (功能剪枝), ui-design (UI设计规格, 支持 --variants), design-audit (设计审计).
+  Run product-concept then market-validate then product-map to build the foundation,
+  then journey-emotion, then experience-map, then use other skills as needed.
+  Use design-audit for cross-layer consistency checks.
   Use /product-design full to run the full pipeline with checkpoints.
-version: "4.1.0"
+version: "4.2.0"
 ---
 
 # Product Design — 产品设计套件
@@ -26,6 +28,21 @@ version: "4.1.0"
 ```
 /product-concept          # 完整流程
 /product-concept reverse  # 从已有产品反推概念
+```
+
+### 1.5. market-validate — 市场验证
+
+> 详见 `${CLAUDE_PLUGIN_ROOT}/skills/market-validate.md`
+
+在概念确认后、产品地图之前，用 Brave 搜索 + 跨模型验证来验证产品概念的市场可行性。
+
+- 市场趋势与竞品格局分析（至少 3 个直接竞品 + 2 个替代方案）
+- 角色与需求验证（每个角色的 viability_score）
+- 商业模式压力测试（定价基准 + 单位经济可行性）
+- 每条结论附带来源 URL
+
+```
+/market-validate          # 完整流程（需先完成 /product-concept）
 ```
 
 ### 2. product-map — 产品地图
@@ -201,7 +218,7 @@ version: "4.1.0"
 /product-design resume              # 从断点继续
 ```
 
-流程：concept → product-map → journey-emotion → experience-map → interaction-gate → **Stitch 决策点** → use-case → feature-gap → feature-prune → ui-design → design-audit，每阶段间插入检查点验证产出完整性。
+流程：concept → **market-validate** → product-map → journey-emotion → experience-map → interaction-gate → **Stitch 决策点** → use-case → feature-gap → feature-prune → ui-design → design-audit，每阶段间插入检查点验证产出完整性。
 
 > **Stitch 决策点**（Phase 4.7）：进入 Phase 5-7 并行执行前，检查 Stitch MCP 可用性。不可用时 AskUserQuestion 三选一（上传设计稿 / 跳过视觉验收 / 配置 Stitch）。选择跳过时记入 pipeline-decisions（`stitch_skipped`），design-audit 标记 `stitch_skipped: true`。详见 `/product-design full` 的 Phase 4.7 节。
 
@@ -215,8 +232,9 @@ version: "4.1.0"
 
 ```
 product-design（产品层）
-├── product-concept 想做什么产品？                       搜索+选择题引导
-├── product-map     产品是什么？谁在用？做什么？有何约束？ 代码读现状 + PM 补业务视角
+├── product-concept   想做什么产品？                       搜索+选择题引导
+├── market-validate   这个方向值得做吗？                   Brave搜索 + 跨模型验证
+├── product-map       产品是什么？谁在用？做什么？有何约束？ 代码读现状 + PM 补业务视角
 ├── journey-emotion 用户情绪在哪里起伏？                   基于 product-map
 ├── experience-map  在哪做？怎么做？出错怎么办？           基于 product-map + journey-emotion
 ├── interaction-gate 交互质量达标了吗？                    基于 experience-map（门禁）
@@ -285,13 +303,19 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_xxx.py <BASE_PATH> [--mode auto]
 ## 推荐工作流
 
 ```
+product-concept（可选，从 0 开始时必跑）
+    ↓ 输出 .allforai/product-concept/product-concept.json
+    │
+market-validate（可选，验证概念市场可行性）
+    ↓ 输出 .allforai/market-validate/market-validation.json
+    │
 product-map（必须先跑）
     ↓ 输出 .allforai/product-map/product-map.json + task-inventory.json
     │
     ├── journey-emotion（情绪旅程）
     │       ↓ 输出 .allforai/journey-emotion/
     │
-    ├── experience-map（必须）
+    ├── experience-map（必须，支持 --variants N 多方案发散）
     │       ↓ 输出 .allforai/experience-map/experience-map.json
     │
     ├── interaction-gate（交互质量门禁，基于 experience-map）
@@ -301,10 +325,10 @@ product-map（必须先跑）
     │
     ├── feature-gap（Step 1 基于 product-map，Step 2/3 需要 experience-map）
     ├── feature-prune（Step 1 基于 product-map，Step 2 需要 experience-map）
-    ├── ui-design（需 product-map + experience-map）
+    ├── ui-design（需 product-map + experience-map，支持 --variants N 多风格发散）
     └── design-audit（终审，基于全部已有产物）
 
-推荐流程：product-map → journey-emotion → experience-map → [use-case ∥ feature-gap ∥ ui-design] → design-audit
+推荐流程：[product-concept → market-validate →] product-map → journey-emotion → experience-map → [use-case ∥ feature-gap ∥ ui-design] → design-audit
 
 或使用 /product-design full 自动编排全流程（含阶段间检查点 + 终审）。
 ```
@@ -314,6 +338,10 @@ product-map（必须先跑）
 ```
 your-project/
 └── .allforai/
+    ├── market-validate/
+    │   ├── market-validation.json    # 市场验证全量结果（竞品、角色、商业模式）
+    │   ├── competitor-matrix.json    # 竞品矩阵（定位、定价、优劣势）
+    │   └── validation-report.md     # 可读报告
     ├── product-map/
     │   ├── role-profiles.json          # 角色画像（权限边界、KPI）
     │   ├── task-inventory.json         # 任务清单（频次、风险、SLA、异常、验收标准）
