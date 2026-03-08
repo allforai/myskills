@@ -428,7 +428,7 @@ experience-map + interaction-gate 完成后，**在视觉设计之前**进行低
    ```
    python3 ${CLAUDE_PLUGIN_ROOT}/scripts/wireframe_review_server.py <BASE> --port 18902
    ```
-   - 服务器自动打开浏览器，展示低保真线框（灰色区块 + 动作按钮 + 情感指示）
+   - 服务器启动后会自动打开浏览器，**禁止**再用 Playwright 或其他方式重复打开同一 URL
    - 界面按角色或情感旅程线分组
    - 用户点击线框添加 pin 评论，选择反馈类别（Flow/Structure → experience-map、Feature/Task → product-map、Concept → concept）
    - 审核完毕点击 "Submit Feedback"
@@ -658,7 +658,7 @@ ui-design 生成 HTML 预览 / Stitch 视觉稿后，必须经过用户审核确
    ```
    python3 ${CLAUDE_PLUGIN_ROOT}/scripts/ui_review_server.py <BASE> --port 18903
    ```
-   - 服务器自动打开浏览器，展示所有界面预览（线框 + hifi）
+   - 服务器启动后会自动打开浏览器，**禁止**再用 Playwright 或其他方式重复打开同一 URL
    - 用户点击界面任意位置添加 pin 评论
    - 审核完毕点击 "Submit Feedback" → 生成 `review-feedback.json`
 

@@ -32,7 +32,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/ui_review_server.py <BASE> [--port 18903]
 ```
 
 - `<BASE>` = `.allforai` 目录路径
-- 服务器自动打开浏览器
+- 服务器启动后会自动打开浏览器，**禁止**再用 Playwright `browser_navigate` 或其他方式重复打开同一 URL
 - 局域网访问：加 `--host 0.0.0.0`
 - 用户在浏览器中审核所有界面，点击预览任意位置添加 pin 评论
 - 审核完毕点击 "Submit Feedback" → 生成 `review-feedback.json` → 服务器自动关闭

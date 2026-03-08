@@ -31,6 +31,7 @@ arguments:
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/mindmap_review_server.py <BASE> --source concept --port 18900
 ```
 
+- 服务器启动后会自动打开浏览器，**禁止**再用 Playwright `browser_navigate` 或其他方式重复打开同一 URL
 - 脑图包含：产品定位、目标用户（角色+痛点+增益）、商业模式、产品机制、创新概念、流水线偏好
 - 点击任意节点展开/折叠子树
 - 点击节点添加评论，选择评论类别（General / Feature / Concept / Flow）

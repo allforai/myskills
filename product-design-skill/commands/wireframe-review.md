@@ -32,7 +32,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/wireframe_review_server.py <BASE> [--port 
 ```
 
 - `<BASE>` = `.allforai` 目录路径
-- 服务器自动打开浏览器
+- 服务器启动后会自动打开浏览器，**禁止**再用 Playwright `browser_navigate` 或其他方式重复打开同一 URL
 - 局域网访问：加 `--host 0.0.0.0`
 - 界面按**角色**或**情感旅程线**分组展示（By Role / By Journey 切换）
 - 每个界面显示低保真线框图（灰色区块 + 动作按钮 + 情感指示 + 约束条件）

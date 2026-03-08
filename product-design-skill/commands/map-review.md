@@ -31,6 +31,7 @@ arguments:
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/mindmap_review_server.py <BASE> --source product-map --port 18901
 ```
 
+- 服务器启动后会自动打开浏览器，**禁止**再用 Playwright `browser_navigate` 或其他方式重复打开同一 URL
 - 脑图包含：
   - 角色列表（audience type 标签）
   - 每个角色的核心任务 / 基本任务（频次 + 风险标签）
