@@ -12,6 +12,7 @@ Usage:
 import http.server
 import json
 import os
+import re
 import sys
 import urllib.parse
 
@@ -1216,8 +1217,1064 @@ def render_datamodel_page():
     return render_mindmap_page(tree, feedback, "数据模型", "data-model", categories, extra_css)
 
 
+# ── Wireframe Tab ─────────────────────────────────────────────────────────────
+
+WF_FEEDBACK_DIR = os.path.join(BASE, "wireframe-review")
+C.ensure_dir(WF_FEEDBACK_DIR)
+WF_FEEDBACK_PATH = os.path.join(WF_FEEDBACK_DIR, "review-feedback.json")
+
+EMOTION_COLORS = {
+    "curious": "#4FC3F7", "anxious": "#FF8A65", "satisfied": "#81C784",
+    "frustrated": "#E57373", "neutral": "#B0BEC5", "exploring": "#64B5F6",
+    "confident": "#66BB6A", "confused": "#FFB74D",
+}
+
+
+def load_wf_feedback():
+    fb = C.load_json(WF_FEEDBACK_PATH)
+    if fb:
+        return fb
+    return {"round": 1, "submitted_at": None, "screens": {}}
+
+
+def load_wireframe_data():
+    """Load all data for wireframe tab."""
+    op_lines, screen_index, loaded = C.load_experience_map(BASE)
+    if not loaded:
+        return [], {}, {}, {}, {}, {}
+
+    inv = C.load_json(os.path.join(BASE, "product-map/task-inventory.json"))
+    tasks = {t["id"]: t for t in (inv.get("tasks", []) if inv else [])}
+
+    roles = C.load_role_profiles_full(BASE)
+    role_map = {r["id"]: r["name"] for r in roles}
+
+    gate = C.load_interaction_gate(BASE)
+    gate_issues = {}
+    if gate:
+        for lr in gate.get("lines", []):
+            for issue in lr.get("issues", []):
+                nid = issue.get("node", "")
+                gate_issues.setdefault(nid, []).append(issue)
+
+    vos = C.load_view_objects(BASE)
+    vo_map = {v["id"]: v for v in vos} if vos else {}
+    apis = C.load_api_contracts(BASE)
+    api_map = {a["id"]: a for a in apis} if apis else {}
+
+    return op_lines, tasks, role_map, gate_issues, vo_map, api_map
+
+
+def build_screens_with_context(op_lines, tasks, role_map, gate_issues, vo_map=None, api_map=None):
+    """Build screen list with full context for wireframe rendering."""
+    if vo_map is None:
+        vo_map = {}
+    if api_map is None:
+        api_map = {}
+
+    screens = []
+    for ol in op_lines:
+        for node in ol.get("nodes", []):
+            nid = node["id"]
+            for s in node.get("screens", []):
+                sid = s["id"]
+                screen_role = ""
+                for tid in s.get("tasks", []):
+                    task = tasks.get(tid)
+                    if task and not screen_role:
+                        screen_role = role_map.get(task["owner_role"], "")
+
+                vo_ref = s.get("vo_ref", "")
+                vo = vo_map.get(vo_ref, {}) if vo_ref else {}
+                data_fields = s.get("data_fields", []) or vo.get("fields", [])
+                interaction_type = s.get("interaction_type", "") or vo.get("interaction_type", "")
+                vo_actions = s.get("vo_actions", []) or vo.get("actions", [])
+                states = s.get("states", {})
+                flow_context = s.get("flow_context", {})
+
+                screens.append({
+                    "id": sid,
+                    "name": s.get("name", ""),
+                    "module": s.get("module", ""),
+                    "notes": s.get("notes", ""),
+                    "description": s.get("description", ""),
+                    "tasks": s.get("tasks", []),
+                    "actions": s.get("actions", []),
+                    "vo_actions": vo_actions,
+                    "non_negotiable": s.get("non_negotiable", []),
+                    "role": screen_role,
+                    "operation_line": ol["id"],
+                    "operation_line_name": ol.get("name", ol["id"]),
+                    "node_id": nid,
+                    "emotion_state": node.get("emotion_state", "neutral"),
+                    "emotion_intensity": node.get("emotion_intensity", 5),
+                    "ux_intent": node.get("ux_intent", ""),
+                    "gate_issues": gate_issues.get(nid, []),
+                    "vo_ref": vo_ref,
+                    "api_ref": s.get("api_ref", "") or vo.get("api_ref", ""),
+                    "interaction_type": interaction_type,
+                    "data_fields": data_fields,
+                    "states": states,
+                    "flow_context": flow_context,
+                    "filters": vo.get("filters", []),
+                    "entity_name": vo.get("entity_name", ""),
+                })
+    return screens
+
+
+# ── Wireframe CSS ──────────────────────────────────────────────────────────
+
+WF_CSS = """
+body{margin:0;padding:24px;font-family:-apple-system,system-ui,sans-serif;background:#f8f9fa;color:#333}
+.wf-container{max-width:480px;margin:0 auto;background:#fff;border:2px solid #dee2e6;border-radius:4px;overflow:hidden}
+.wf-header{background:#e9ecef;padding:12px 16px;border-bottom:2px solid #dee2e6;display:flex;align-items:center;gap:8px}
+.wf-header-title{font-size:14px;font-weight:600;color:#495057;flex:1}
+.wf-emo{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
+.wf-itype{font-size:10px;padding:2px 6px;border-radius:3px;background:#e8eaf6;color:#5c6bc0;font-weight:600}
+.wf-body{padding:16px}
+.wf-purpose{font-size:13px;color:#6c757d;margin-bottom:16px;padding:8px;background:#f8f9fa;border-left:3px solid #adb5bd;border-radius:0 4px 4px 0}
+.wf-section{background:#f1f3f5;border:1px dashed #adb5bd;border-radius:4px;padding:16px;margin:8px 0;min-height:48px;display:flex;align-items:center;justify-content:center;color:#868e96;font-size:13px}
+.wf-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.wf-btn{padding:8px 16px;border-radius:4px;font-size:13px;cursor:default;display:flex;align-items:center;gap:6px;border:none}
+.wf-btn-primary{background:#dee2e6;color:#495057;font-weight:600;border:2px solid #adb5bd}
+.wf-btn-secondary{background:#f8f9fa;color:#6c757d;border:1px dashed #ced4da}
+.crud-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.wf-states{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
+.wf-state{font-size:11px;padding:4px 8px;border-radius:4px;background:#f8f9fa;color:#868e96;border:1px solid #e9ecef}
+.wf-tasks{font-size:11px;color:#adb5bd;margin-top:12px}
+.wf-constraints{font-size:12px;color:#e65100;background:#fff3e0;padding:8px;border-radius:4px;margin-top:8px}
+.wf-gate{margin-top:8px}
+.wf-gate-issue{font-size:12px;color:#c62828;background:#ffebee;padding:4px 8px;border-radius:4px;margin-top:4px}
+.wf-label{font-size:11px;font-weight:600;color:#666}
+.wf-intent{font-size:12px;color:#5c6bc0;background:#e8eaf6;padding:6px 8px;border-radius:4px;margin-bottom:12px}
+.wf-table{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0}
+.wf-table th{background:#e9ecef;color:#495057;font-weight:600;padding:6px 8px;text-align:left;border:1px solid #dee2e6}
+.wf-table td{padding:6px 8px;border:1px solid #dee2e6;color:#6c757d}
+.wf-table tr:nth-child(even) td{background:#f8f9fa}
+.wf-tag{display:inline-block;padding:1px 6px;border-radius:3px;background:#e8eaf6;color:#5c6bc0;font-size:10px}
+.wf-toolbar{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.wf-search{flex:1;padding:6px 10px;border:1px solid #dee2e6;border-radius:4px;background:#f8f9fa;color:#adb5bd;font-size:12px}
+.wf-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.wf-filter-chip{padding:3px 10px;border-radius:12px;background:#f1f3f5;color:#868e96;font-size:11px;border:1px solid #dee2e6}
+.wf-pagination{text-align:center;color:#adb5bd;font-size:12px;margin-top:8px}
+.wf-form-field{margin-bottom:12px}
+.wf-form-label{font-size:12px;color:#495057;font-weight:500;margin-bottom:4px;display:flex;align-items:center;gap:4px}
+.wf-form-required{color:#e53935;font-weight:700}
+.wf-form-input{width:100%;padding:6px 10px;border:1px solid #dee2e6;border-radius:4px;background:#f8f9fa;color:#adb5bd;font-size:12px;box-sizing:border-box}
+.wf-form-textarea{width:100%;padding:6px 10px;border:1px solid #dee2e6;border-radius:4px;background:#f8f9fa;color:#adb5bd;font-size:12px;min-height:60px;box-sizing:border-box}
+.wf-form-hint{font-size:10px;color:#adb5bd;margin-top:2px}
+.wf-form-buttons{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.wf-detail-row{display:flex;padding:6px 0;border-bottom:1px solid #f1f3f5;font-size:12px}
+.wf-detail-label{width:120px;flex-shrink:0;color:#495057;font-weight:500}
+.wf-detail-value{color:#6c757d;flex:1}
+.wf-detail-actions{margin-top:12px;padding-top:8px;border-top:1px solid #dee2e6}
+.wf-api-ref{font-size:10px;color:#adb5bd;margin-top:2px}
+.wf-state-tabs{display:flex;gap:0;margin-bottom:10px;border:1px solid #dee2e6;border-radius:4px;overflow:hidden}
+.wf-state-tab{padding:6px 12px;font-size:11px;background:#f8f9fa;color:#868e96;border-right:1px solid #dee2e6;flex:1;text-align:center}
+.wf-state-tab:last-child{border-right:none}
+.wf-state-tab.active{background:#495057;color:#fff}
+.wf-transition{font-size:10px;color:#7c3aed;margin-top:2px}
+.wf-approval-card{border:1px solid #dee2e6;border-radius:6px;padding:10px 12px;margin-bottom:8px;background:#fff}
+.wf-approval-card-header{font-size:12px;color:#495057;font-weight:500;margin-bottom:6px}
+.wf-approval-card-fields{font-size:11px;color:#868e96;margin-bottom:8px}
+.wf-approval-btns{display:flex;gap:8px;justify-content:flex-end}
+.wf-approval-reject{padding:4px 12px;border:1px solid #e57373;color:#e57373;border-radius:4px;background:#fff;font-size:11px}
+.wf-approval-approve{padding:4px 12px;border:1px solid #66BB6A;color:#fff;border-radius:4px;background:#66BB6A;font-size:11px}
+.wf-pending-badge{font-size:12px;color:#e65100;background:#fff3e0;padding:2px 8px;border-radius:4px}
+.wf-4d{margin-top:16px;background:#f8f9fa;border:1px solid #e9ecef;border-radius:4px;padding:8px 12px}
+.wf-4d-row{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px}
+.wf-4d-icon{font-size:14px;width:20px;text-align:center}
+.wf-4d-label{font-weight:600;color:#495057;width:48px;flex-shrink:0}
+.wf-4d-value{color:#6c757d;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+"""
+
+
+# ── 4D Panel ───────────────────────────────────────────────────────────────
+
+def _build_4d_panel(screen):
+    """Build the 4D information panel (Data, Action, State, Flow)."""
+    fields = screen.get("data_fields", [])
+    field_names = ", ".join(f.get("label", f.get("name", "")) for f in fields[:6])
+    if len(fields) > 6:
+        field_names += "..."
+    rw_count = sum(1 for f in fields if not f.get("readonly"))
+    ro_count = len(fields) - rw_count
+    rw_summary = f"{rw_count}rw/{ro_count}ro" if fields else ""
+    data_val = f"{field_names} ({len(fields)} fields, {rw_summary})" if fields else "No fields"
+
+    vo_actions = screen.get("vo_actions", [])
+    actions = screen.get("actions", [])
+    all_action_labels = [a.get("label", "") for a in vo_actions[:4]] or [a.get("label", "") for a in actions[:4]]
+    action_labels = ", ".join(al for al in all_action_labels if al)
+    api_refs = ", ".join(a.get("api_ref", "") for a in vo_actions if a.get("api_ref"))
+    action_val = f"{action_labels}" + (f" ({api_refs})" if api_refs else "") if action_labels else "No actions"
+
+    states = screen.get("states", {})
+    empty_desc = states.get("empty", "blank")
+    loading_desc = states.get("loading", "skeleton")
+    error_desc = states.get("error", "toast")
+    state_val = f"\u7a7a:{_esc(str(empty_desc))} | \u52a0\u8f7d:{_esc(str(loading_desc))} | \u9519\u8bef:{_esc(str(error_desc))}"
+
+    flow = screen.get("flow_context", {})
+    prev_ids = flow.get("prev", []) + flow.get("entry_points", [])
+    next_ids = flow.get("next", []) + flow.get("exit_points", [])
+    prev_str = ", ".join(str(p) for p in prev_ids[:3]) if prev_ids else "\u2013"
+    next_str = ", ".join(str(n) for n in next_ids[:3]) if next_ids else "\u2013"
+    flow_val = f"\u2190 {prev_str} \u2192 {next_str}"
+
+    return f"""<div class="wf-4d">
+  <div class="wf-4d-row"><span class="wf-4d-icon">\U0001f4ca</span><span class="wf-4d-label">Data</span><span class="wf-4d-value">{_esc(data_val)}</span></div>
+  <div class="wf-4d-row"><span class="wf-4d-icon">\u26a1</span><span class="wf-4d-label">Action</span><span class="wf-4d-value">{_esc(action_val)}</span></div>
+  <div class="wf-4d-row"><span class="wf-4d-icon">\U0001f504</span><span class="wf-4d-label">State</span><span class="wf-4d-value">{state_val}</span></div>
+  <div class="wf-4d-row"><span class="wf-4d-icon">\U0001f500</span><span class="wf-4d-label">Flow</span><span class="wf-4d-value">{_esc(flow_val)}</span></div>
+</div>"""
+
+
+# ── Sample data helpers ────────────────────────────────────────────────────
+
+_SAMPLE_VALUES = {
+    "string": "\u2591\u2591\u2591\u2591\u2591",
+    "text": "\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591",
+    "enum": "\u25cftag",
+    "number": "128",
+    "decimal": "\u00a5128.00",
+    "integer": "42",
+    "date": "2025-03-01",
+    "datetime": "2\u5206\u949f\u524d",
+    "boolean": "\u2713",
+    "file": "\U0001f4ce file.pdf",
+    "image": "\U0001f5bc\ufe0f img.png",
+}
+
+_INPUT_INDICATORS = {
+    "string": "[____]",
+    "text": "[====]",
+    "enum": "[\u25be]",
+    "number": "[###]",
+    "decimal": "[###.##]",
+    "integer": "[###]",
+    "date": "[\U0001f4c5]",
+    "datetime": "[\U0001f4c5]",
+    "boolean": "[\u2610]",
+    "file": "[\U0001f4ce]",
+    "image": "[\U0001f5bc\ufe0f]",
+}
+
+
+def _sample_val(field):
+    ftype = field.get("type", "string")
+    if field.get("display_format") == "currency" or ftype == "decimal":
+        return "\u00a5128.00"
+    return _SAMPLE_VALUES.get(ftype, "\u2591\u2591\u2591\u2591")
+
+
+def _input_indicator(field):
+    ftype = field.get("type", "string")
+    return _INPUT_INDICATORS.get(ftype, "[____]")
+
+
+# ── Type-specific wireframe templates ─────────────────────────────────────
+
+def _wf_table_headers(fields):
+    return "".join(f"<th>{_esc(f.get('label', f.get('name', '')))}</th>" for f in fields[:5])
+
+
+def _wf_table_row(fields):
+    tds = ""
+    for f in fields[:5]:
+        val = _sample_val(f)
+        ftype = f.get("type", "string")
+        if ftype == "enum":
+            tds += f'<td><span class="wf-tag">{_esc(val)}</span></td>'
+        else:
+            tds += f"<td>{_esc(val)}</td>"
+    return tds
+
+
+def _wf_readonly_list(screen):
+    """MG1: Read-only list."""
+    fields = screen.get("data_fields", [])
+    filters = screen.get("filters", [])
+    toolbar = '<div class="wf-toolbar"><div class="wf-search">\U0001f50d \u641c\u7d22...</div></div>'
+    filter_html = ""
+    if filters:
+        chips = "".join(f'<span class="wf-filter-chip">{_esc(fn)} \u25be</span>' for fn in filters[:4])
+        filter_html = f'<div class="wf-filters">{chips}</div>'
+    if fields:
+        headers = _wf_table_headers(fields)
+        rows = "".join(f"<tr>{_wf_table_row(fields)}</tr>" for _ in range(3))
+        table = f'<table class="wf-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table>'
+    else:
+        table = '<div class="wf-section">Read-only List</div>'
+    return toolbar + filter_html + table + '<div class="wf-pagination">\u2190 1  2  3  ... \u2192</div>'
+
+
+def _wf_crud_list(screen):
+    """MG2-L: CRUD list with search, filters, table, pagination."""
+    fields = screen.get("data_fields", [])
+    filters = screen.get("filters", [])
+    entity = screen.get("entity_name", "")
+    toolbar = f'<div class="wf-toolbar"><div class="wf-search">\U0001f50d \u641c\u7d22...</div><button class="wf-btn wf-btn-primary">+ \u65b0\u5efa{_esc(entity)}</button></div>'
+    filter_html = ""
+    if filters:
+        chips = "".join(f'<span class="wf-filter-chip">{_esc(fn)} \u25be</span>' for fn in filters[:4])
+        filter_html = f'<div class="wf-filters">{chips}</div>'
+    if fields:
+        headers = _wf_table_headers(fields) + "<th>\u64cd\u4f5c</th>"
+        rows = "".join(f"<tr>{_wf_table_row(fields)}<td>\u00b7\u00b7\u00b7</td></tr>" for _ in range(3))
+        table = f'<table class="wf-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table>'
+    else:
+        table = '<div class="wf-section">Table Content</div>'
+    return toolbar + filter_html + table + '<div class="wf-pagination">\u2190 1  2  3  ... \u2192</div>'
+
+
+def _wf_create_form(screen):
+    """MG2-C: Create form."""
+    fields = screen.get("data_fields", [])
+    entity = screen.get("entity_name", "")
+    form_fields = ""
+    for f in fields[:10]:
+        label = f.get("label", f.get("name", ""))
+        req_mark = '<span class="wf-form-required">\u2731</span>' if f.get("required") else ""
+        indicator = _input_indicator(f)
+        ftype = f.get("type", "string")
+        inp = f'<div class="wf-form-textarea">{indicator}</div>' if ftype == "text" else f'<div class="wf-form-input">{indicator}</div>'
+        form_fields += f'<div class="wf-form-field"><div class="wf-form-label">{_esc(label)} {req_mark}</div>{inp}</div>'
+    buttons = f'<div class="wf-form-buttons"><button class="wf-btn wf-btn-secondary">\u53d6\u6d88</button><button class="wf-btn wf-btn-primary">\u521b\u5efa{_esc(entity)}</button></div>'
+    return form_fields + buttons if fields else '<div class="wf-section">Create Form</div>'
+
+
+def _wf_edit_form(screen):
+    """MG2-E: Edit form."""
+    fields = screen.get("data_fields", [])
+    entity = screen.get("entity_name", "")
+    form_fields = ""
+    for f in fields[:10]:
+        label = f.get("label", f.get("name", ""))
+        req_mark = '<span class="wf-form-required">\u2731</span>' if f.get("required") else ""
+        indicator = _input_indicator(f)
+        ftype = f.get("type", "string")
+        hint = '<div class="wf-form-hint">(\u56de\u586b)</div>'
+        inp = (f'<div class="wf-form-textarea">{indicator}</div>{hint}' if ftype == "text"
+               else f'<div class="wf-form-input">{indicator}</div>{hint}')
+        form_fields += f'<div class="wf-form-field"><div class="wf-form-label">{_esc(label)} {req_mark}</div>{inp}</div>'
+    buttons = f'<div class="wf-form-buttons"><button class="wf-btn wf-btn-secondary">\u53d6\u6d88</button><button class="wf-btn wf-btn-primary">\u4fdd\u5b58{_esc(entity)}</button></div>'
+    return form_fields + buttons if fields else '<div class="wf-section">Edit Form</div>'
+
+
+def _wf_detail(screen):
+    """MG2-D: Detail view."""
+    fields = screen.get("data_fields", [])
+    vo_actions = screen.get("vo_actions", [])
+    rows = ""
+    for f in fields[:12]:
+        label = f.get("label", f.get("name", ""))
+        val = _sample_val(f)
+        rows += f'<div class="wf-detail-row"><span class="wf-detail-label">{_esc(label)}</span><span class="wf-detail-value">{_esc(val)}</span></div>'
+    action_html = ""
+    if vo_actions:
+        btns = ""
+        for a in vo_actions[:4]:
+            style = a.get("style", "ghost")
+            cls = "wf-btn-primary" if style == "primary" else "wf-btn wf-btn-secondary"
+            btns += f'<button class="wf-btn {cls}">{_esc(a.get("label", ""))}</button>'
+            api = a.get("api_ref", "")
+            if api:
+                btns += f'<div class="wf-api-ref">\u2193 API: {_esc(api)}</div>'
+        action_html = f'<div class="wf-detail-actions"><div class="wf-label">\u2500\u2500\u2500 Actions \u2500\u2500\u2500</div><div class="wf-actions">{btns}</div></div>'
+    return (rows + action_html) if fields else '<div class="wf-section">Detail View</div>'
+
+
+def _wf_state_machine(screen):
+    """MG3: State-machine list."""
+    fields = screen.get("data_fields", [])
+    states = screen.get("states", {})
+    vo_actions = screen.get("vo_actions", [])
+    state_names = []
+    if isinstance(states, dict):
+        for k, v in states.items():
+            if k not in ("empty", "loading", "error"):
+                state_names.append(str(v) if not isinstance(v, dict) else k)
+    if not state_names:
+        state_names = ["\u5168\u90e8", "\u5f85\u5904\u7406", "\u5df2\u5b8c\u6210"]
+    tabs = '<span class="wf-state-tab active">\u5168\u90e8</span>'
+    for sn in state_names[:5]:
+        tabs += f'<span class="wf-state-tab">{_esc(sn)}</span>'
+    state_tabs = f'<div class="wf-state-tabs">{tabs}</div>'
+    if fields:
+        headers = _wf_table_headers(fields) + "<th>\u64cd\u4f5c</th>"
+        rows = ""
+        for i in range(3):
+            action_cell = ""
+            for a in vo_actions[:2]:
+                alabel = a.get("label", "")
+                action_cell += f'<button class="wf-btn wf-btn-secondary" style="padding:2px 8px;font-size:10px">{_esc(alabel)}</button> '
+                api = a.get("api_ref", "")
+                if api:
+                    action_cell += f'<div class="wf-transition">\u2192 API: {_esc(api)}</div>'
+            if not action_cell:
+                action_cell = "\u00b7\u00b7\u00b7"
+            rows += f"<tr>{_wf_table_row(fields)}<td>{action_cell}</td></tr>"
+        table = f'<table class="wf-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table>'
+    else:
+        table = '<div class="wf-section">State Machine List</div>'
+    return state_tabs + table
+
+
+def _wf_approval(screen):
+    """MG4: Approval queue."""
+    fields = screen.get("data_fields", [])
+    pending_badge = '<div style="text-align:right;margin-bottom:8px"><span class="wf-pending-badge">\u5f85\u5ba1 3 \u4ef6</span></div>'
+    cards = ""
+    for i in range(2):
+        field_summary = ""
+        for f in fields[:3]:
+            label = f.get("label", f.get("name", ""))
+            val = _sample_val(f)
+            field_summary += f"{_esc(label)}: {_esc(val)}  "
+        placeholder = "\u2591\u2591\u2591 \u2591\u2591\u2591\u2591\u2591 \u2591\u2591"
+        card_num = i + 1001
+        card_fields = field_summary if field_summary else placeholder
+        cards += f"""<div class="wf-approval-card">
+  <div class="wf-approval-card-header">#{card_num}</div>
+  <div class="wf-approval-card-fields">{card_fields}</div>
+  <div class="wf-approval-btns">
+    <button class="wf-approval-reject">\u9a73\u56de</button>
+    <button class="wf-approval-approve">\u2713 \u901a\u8fc7</button>
+  </div>
+</div>"""
+    return pending_badge + cards
+
+
+def _wf_default(screen):
+    """Default wireframe."""
+    fields = screen.get("data_fields", [])
+    actions = screen.get("actions", [])
+    non_neg = screen.get("non_negotiable", [])
+    tasks = screen.get("tasks", [])
+    if fields:
+        headers = _wf_table_headers(fields)
+        rows = "".join(f"<tr>{_wf_table_row(fields)}</tr>" for _ in range(2))
+        content = f'<table class="wf-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table>'
+    else:
+        content = '<div class="wf-section">Content Area</div>'
+    high_actions = [a for a in actions if a.get("frequency") == "\u9ad8"]
+    other_actions = [a for a in actions if a.get("frequency") != "\u9ad8"]
+    primary_btns = ""
+    for a in high_actions[:4]:
+        crud = a.get("crud", "R")
+        crud_color = {"C": "#4CAF50", "U": "#FF9800", "D": "#F44336", "R": "#78909C"}.get(crud, "#78909C")
+        primary_btns += f'<button class="wf-btn wf-btn-primary"><span class="crud-dot" style="background:{crud_color}"></span>{_esc(a["label"])}</button>'
+    secondary_btns = ""
+    for a in other_actions[:4]:
+        crud = a.get("crud", "R")
+        crud_color = {"C": "#4CAF50", "U": "#FF9800", "D": "#F44336", "R": "#78909C"}.get(crud, "#78909C")
+        secondary_btns += f'<button class="wf-btn wf-btn-secondary"><span class="crud-dot" style="background:{crud_color}"></span>{_esc(a["label"])}</button>'
+    btns_html = ""
+    if primary_btns:
+        btns_html += f'<div class="wf-actions">{primary_btns}</div>'
+    if secondary_btns:
+        btns_html += f'<div class="wf-actions">{secondary_btns}</div>'
+    states_html = '<div class="wf-states"><span class="wf-state">Empty</span><span class="wf-state">Loading</span><span class="wf-state">Error</span><span class="wf-state">Success</span></div>'
+    constraints_html = ""
+    if non_neg:
+        constraints_html = '<div class="wf-constraints"><span class="wf-label">Non-negotiable:</span> ' + ", ".join(f"<b>{_esc(n)}</b>" for n in non_neg) + "</div>"
+    gate_html = ""
+    gate_issues = screen.get("gate_issues", [])
+    if gate_issues:
+        items = "".join(f'<div class="wf-gate-issue">{_esc(i.get("detail", ""))}</div>' for i in gate_issues[:3])
+        gate_html = f'<div class="wf-gate"><span class="wf-label">Quality Gate Issues:</span>{items}</div>'
+    return content + btns_html + states_html + constraints_html + gate_html + f'<div class="wf-tasks">{len(tasks)} tasks linked</div>'
+
+
+def _wf_page(screen, body_html):
+    """Wrap body with wireframe page structure."""
+    name = screen.get("name", "")
+    emo = screen.get("emotion_state", "neutral")
+    emo_color = EMOTION_COLORS.get(emo, "#B0BEC5")
+    itype = screen.get("interaction_type", "")
+    ux_intent = screen.get("ux_intent", "")
+    notes = screen.get("notes", "") or screen.get("description", "")
+    itype_badge = f'<span class="wf-itype">{_esc(itype)}</span>' if itype else ""
+    panel_4d = _build_4d_panel(screen)
+    return f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>{WF_CSS}</style></head><body>
+<div class="wf-container">
+  <div class="wf-header">
+    <div class="wf-header-title">{_esc(name)}</div>
+    {itype_badge}
+    <span class="wf-emo" style="background:{emo_color}22;color:{emo_color}">{_esc(emo)}</span>
+  </div>
+  <div class="wf-body">
+    {f'<div class="wf-intent">UX Intent: {_esc(ux_intent)}</div>' if ux_intent else ''}
+    <div class="wf-purpose">{_esc(notes) if notes else 'No description'}</div>
+    {body_html}
+    {panel_4d}
+  </div>
+</div>
+</body></html>"""
+
+
+def generate_wireframe(screen):
+    """Generate interaction-type-specific wireframe HTML."""
+    itype = screen.get("interaction_type", "")
+    if itype == "MG1":
+        body = _wf_readonly_list(screen)
+    elif itype == "MG2-L":
+        body = _wf_crud_list(screen)
+    elif itype == "MG2-C":
+        body = _wf_create_form(screen)
+    elif itype == "MG2-E":
+        body = _wf_edit_form(screen)
+    elif itype == "MG2-D":
+        body = _wf_detail(screen)
+    elif itype == "MG3":
+        body = _wf_state_machine(screen)
+    elif itype == "MG4":
+        body = _wf_approval(screen)
+    else:
+        body = _wf_default(screen)
+    return _wf_page(screen, body)
+
+
+# ── Wireframe 6V Tab builders ────────────────────────────────────────────
+
+ZONE_MAP = {
+    "MG1": ["header", "filter-chips", "read-only-list", "pagination"],
+    "MG2-L": ["header", "search-bar", "filter-chips", "table", "pagination", "action-bar"],
+    "MG2-C": ["header", "form-body", "field-group", "action-bar"],
+    "MG2-E": ["header", "form-body", "field-group", "action-bar"],
+    "MG2-D": ["header", "detail-fields", "action-bar"],
+}
+
+BEHAVIOR_DESC = {
+    "MG1": ("Read-only List", "Displays a filterable, read-only collection. No create or edit actions. Optimized for scanning and lookup."),
+    "MG2-L": ("CRUD List", "Full CRUD list with search, filter, sortable table, pagination, and bulk actions."),
+    "MG2-C": ("Create Form", "Guided creation form with typed inputs, validation, and submit/cancel actions."),
+    "MG2-E": ("Edit Form", "Pre-filled edit form. Same layout as create but loads existing data for modification."),
+    "MG2-D": ("Detail View", "Read-focused detail layout with field-value pairs and contextual actions."),
+}
+
+
+def _build_6v_tabs_json(screen):
+    """Return 6V tab content as a dict for JSON embedding in the page."""
+    itype = screen.get("interaction_type", "")
+    data_fields = screen.get("data_fields", [])
+    states = screen.get("states", {})
+    flow_ctx = screen.get("flow_context", {})
+    emo = screen.get("emotion_state", "neutral")
+    emo_color = EMOTION_COLORS.get(emo, "#B0BEC5")
+    ux_intent = screen.get("ux_intent", "")
+    emo_intensity = screen.get("emotion_intensity", 5)
+
+    # Structure
+    zones = ZONE_MAP.get(itype, ["header", "content", "action-bar"])
+    zones_html = "".join(f"<li class='wf-zone-item'>{_esc(z)}</li>" for z in zones)
+    structure = f"<div class='wf-zone-label'>Interaction type: <b>{_esc(itype or 'unknown')}</b></div><ul class='wf-zone-list'>{zones_html}</ul>"
+
+    # Behavior
+    bname, bdesc = BEHAVIOR_DESC.get(itype, (itype or "Custom", "Custom interaction pattern."))
+    behavior = f"<div class='wf-beh-name'>{_esc(bname)}</div><p class='wf-beh-desc'>{_esc(bdesc)}</p>"
+    if itype:
+        behavior += f"<div class='wf-beh-code'>Code: <code>{_esc(itype)}</code></div>"
+
+    # Data
+    if data_fields:
+        rows = ""
+        for df in data_fields:
+            mode = "input" if df.get("input_widget") else "display"
+            req = "Yes" if df.get("required") else ""
+            rows += f"<tr><td>{_esc(df.get('name',''))}</td><td>{_esc(df.get('label',''))}</td><td>{_esc(df.get('type',''))}</td><td>{mode}</td><td>{req}</td></tr>"
+        data = f"<table class='wf-field-tbl'><thead><tr><th>Name</th><th>Label</th><th>Type</th><th>Mode</th><th>Req</th></tr></thead><tbody>{rows}</tbody></table>"
+    else:
+        data = "<p class='wf-empty-hint'>No data fields defined for this screen.</p>"
+
+    # State
+    state = ""
+    for skey in ["empty", "loading", "error", "success"]:
+        sval = states.get(skey, "\u2014")
+        state += f"<div class='wf-state-row'><span class='wf-state-key'>{skey}</span><span class='wf-state-val'>{_esc(str(sval))}</span></div>"
+
+    # Flow
+    flow_prev = flow_ctx.get("prev", "\u2014")
+    flow_next = flow_ctx.get("next", "\u2014")
+    entry_pts = flow_ctx.get("entry_points", [])
+    exit_pts = flow_ctx.get("exit_points", [])
+    flow = f"<div class='wf-flow-row'><b>Prev:</b> {_esc(str(flow_prev))}</div>"
+    flow += f"<div class='wf-flow-row'><b>Next:</b> {_esc(str(flow_next))}</div>"
+    if entry_pts:
+        flow += "<div class='wf-flow-row'><b>Entry points:</b> " + ", ".join(_esc(str(e)) for e in entry_pts) + "</div>"
+    if exit_pts:
+        flow += "<div class='wf-flow-row'><b>Exit points:</b> " + ", ".join(_esc(str(e)) for e in exit_pts) + "</div>"
+
+    # Emotion
+    emotion = f"<div class='wf-emo-detail'>"
+    emotion += f"<div class='wf-emo-row'><b>State:</b> <span style='background:{emo_color}22;color:{emo_color};padding:2px 8px;border-radius:4px'>{_esc(emo)}</span></div>"
+    emotion += f"<div class='wf-emo-row'><b>Intensity:</b> {emo_intensity}/10</div>"
+    if ux_intent:
+        emotion += f"<div class='wf-emo-row'><b>UX Intent:</b> {_esc(ux_intent)}</div>"
+    # Design hints based on emotion
+    hints = {
+        "curious": "Use progressive disclosure. Reward exploration with rich previews.",
+        "anxious": "Show clear status. Minimize choices. Provide escape routes.",
+        "frustrated": "Simplify immediately. Show progress. Offer help.",
+        "satisfied": "Maintain momentum. Offer next steps.",
+        "confident": "Allow power-user shortcuts. Show advanced options.",
+        "confused": "Add contextual help. Use familiar patterns. Reduce cognitive load.",
+        "exploring": "Enable discovery. Show relationships. Provide breadcrumbs.",
+    }
+    hint = hints.get(emo, "")
+    if hint:
+        emotion += f"<div class='wf-emo-hint'>{_esc(hint)}</div>"
+    emotion += "</div>"
+
+    return {"structure": structure, "behavior": behavior, "data": data, "state": state, "flow": flow, "emotion": emotion}
+
+
+# ── XV Results (load from previous run if available) ──────────────────────
+
+def _load_xv_results():
+    xv_path = os.path.join(WF_FEEDBACK_DIR, "xv-review.json")
+    xv_data = C.load_json(xv_path)
+    if xv_data and "by_screen" in xv_data:
+        return xv_data["by_screen"]
+    return {}
+
+
+# ── Main wireframe page renderer ─────────────────────────────────────────
+
 def render_wireframe_page():
-    return _placeholder_page("wireframe", "线框 Review")
+    """Render the wireframe tab with tree + preview split layout."""
+    op_lines, tasks, role_map, gate_issues, vo_map, api_map = load_wireframe_data()
+    if not op_lines:
+        return _placeholder_page("wireframe", "\u7ebf\u6846 Review - No Data")
+
+    all_screens = build_screens_with_context(op_lines, tasks, role_map, gate_issues, vo_map, api_map)
+    if not all_screens:
+        return _placeholder_page("wireframe", "\u7ebf\u6846 Review - No Screens")
+
+    screen_map = {s["id"]: s for s in all_screens}
+    feedback = load_wf_feedback()
+    xv_results = _load_xv_results()
+
+    # Build tree data grouped by operation_line
+    tree_data = []
+    for ol in op_lines:
+        ol_id = ol["id"]
+        ol_name = ol.get("name", ol_id)
+        ol_screens = []
+        for node in ol.get("nodes", []):
+            for s in node.get("screens", []):
+                sid = s["id"]
+                sc = screen_map.get(sid, {})
+                fb_s = feedback.get("screens", {}).get(sid, {})
+                xv_issues = xv_results.get(sid, [])
+                xv_err = sum(1 for i in xv_issues if i.get("severity") == "error")
+                xv_warn = sum(1 for i in xv_issues if i.get("severity") == "warning")
+                ol_screens.append({
+                    "id": sid,
+                    "name": sc.get("name", s.get("name", sid)),
+                    "itype": sc.get("interaction_type", ""),
+                    "emotion": sc.get("emotion_state", "neutral"),
+                    "gate_count": len(sc.get("gate_issues", [])),
+                    "status": fb_s.get("status", "pending"),
+                    "pin_count": len(fb_s.get("pins", [])),
+                    "xv_err": xv_err,
+                    "xv_warn": xv_warn,
+                })
+        if ol_screens:
+            tree_data.append({"id": ol_id, "name": ol_name, "screens": ol_screens})
+
+    # Pre-build 6V tabs for all screens
+    all_6v = {}
+    for s in all_screens:
+        all_6v[s["id"]] = _build_6v_tabs_json(s)
+
+    # Screen data JSON for client-side rendering
+    screens_json = json.dumps({s["id"]: s for s in all_screens}, ensure_ascii=False, default=str)
+    tree_json = json.dumps(tree_data, ensure_ascii=False)
+    feedback_json = json.dumps(feedback, ensure_ascii=False)
+    sixv_json = json.dumps(all_6v, ensure_ascii=False)
+    emo_colors_json = json.dumps(EMOTION_COLORS, ensure_ascii=False)
+
+    total = len(all_screens)
+    fb_screens = feedback.get("screens", {})
+    reviewed = sum(1 for s in all_screens if fb_screens.get(s["id"], {}).get("status") in ("approved", "revision"))
+
+    nav = render_nav("wireframe")
+
+    return f"""<!DOCTYPE html>
+<html lang="zh"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>\u7ebf\u6846 Review - Review Hub</title>
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{font-family:-apple-system,system-ui,'Segoe UI',sans-serif;background:#f8fafc;height:100vh;overflow:hidden}}
+.wf-main-header{{background:#fff;border-bottom:1px solid #e2e8f0;padding:10px 24px;display:flex;align-items:center;gap:16px}}
+.wf-main-header h1{{font-size:16px;font-weight:600;color:#1e293b}}
+.wf-main-header .meta{{font-size:12px;color:#64748b}}
+.wf-progress{{width:120px;height:4px;background:#e2e8f0;border-radius:2px;overflow:hidden}}
+.wf-progress-bar{{height:100%;background:#10b981;border-radius:2px;transition:width .3s}}
+.wf-submit-btn{{margin-left:auto;padding:7px 20px;background:#334155;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;font-weight:500}}
+.wf-submit-btn:hover{{background:#1e293b}}
+.wf-submit-btn:disabled{{background:#94a3b8;cursor:not-allowed}}
+/* Layout */
+.wf-layout{{display:flex;height:calc(100vh - 104px)}}
+.wf-tree-panel{{width:300px;min-width:240px;max-width:400px;background:#fff;border-right:1px solid #e2e8f0;display:flex;flex-direction:column;overflow:hidden}}
+.wf-tree-search{{padding:8px 12px;border-bottom:1px solid #e2e8f0}}
+.wf-tree-search input{{width:100%;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;background:#f8fafc}}
+.wf-tree-body{{flex:1;overflow-y:auto;padding:4px 0}}
+.wf-tree-group{{margin-bottom:2px}}
+.wf-tree-group-header{{display:flex;align-items:center;gap:6px;padding:8px 12px;cursor:pointer;font-size:12px;font-weight:600;color:#475569;user-select:none}}
+.wf-tree-group-header:hover{{background:#f1f5f9}}
+.wf-tree-group-chevron{{font-size:10px;color:#94a3b8;transition:transform .15s}}
+.wf-tree-group.collapsed .wf-tree-group-chevron{{transform:rotate(-90deg)}}
+.wf-tree-group.collapsed .wf-tree-group-items{{display:none}}
+.wf-tree-item{{display:flex;align-items:center;gap:6px;padding:6px 12px 6px 28px;cursor:pointer;font-size:12px;color:#475569;transition:background .1s;border-left:3px solid transparent}}
+.wf-tree-item:hover{{background:#f1f5f9}}
+.wf-tree-item.active{{background:#eff6ff;border-left-color:#3b82f6;color:#1e40af;font-weight:500}}
+.wf-tree-item.status-approved{{border-left-color:#10b981}}
+.wf-tree-item.status-revision{{border-left-color:#f59e0b}}
+.wf-tree-itype{{font-size:9px;padding:1px 5px;border-radius:3px;background:#e8eaf6;color:#5c6bc0;font-weight:600;flex-shrink:0}}
+.wf-tree-emo{{width:8px;height:8px;border-radius:50%;flex-shrink:0}}
+.wf-tree-badges{{display:flex;gap:3px;margin-left:auto;flex-shrink:0}}
+.wf-tree-badge{{font-size:9px;padding:1px 4px;border-radius:3px;font-weight:600}}
+.wf-tree-badge.gate{{background:#ffebee;color:#c62828}}
+.wf-tree-badge.pins{{background:#fff3bf;color:#92400e}}
+.wf-tree-badge.xv-err{{background:#ffebee;color:#c62828}}
+.wf-tree-badge.xv-warn{{background:#fff8e1;color:#f57f17}}
+.wf-tree-name{{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+/* Preview panel */
+.wf-preview-panel{{flex:1;display:flex;flex-direction:column;overflow:hidden}}
+.wf-preview-empty{{display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:15px}}
+.wf-preview-content{{display:none;flex:1;flex-direction:column;overflow:hidden}}
+.wf-preview-content.visible{{display:flex}}
+.wf-preview-area{{flex:1;position:relative;background:#e9ecef;overflow:auto}}
+.wf-preview-area iframe{{width:100%;height:100%;border:none;min-height:500px}}
+.wf-pin{{position:absolute;width:22px;height:22px;background:#fbbf24;color:#1e293b;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;cursor:pointer;transform:translate(-50%,-50%);z-index:5;box-shadow:0 2px 4px rgba(0,0,0,.2)}}
+.wf-pin:hover{{transform:translate(-50%,-50%) scale(1.15)}}
+.wf-click-hint{{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);color:#fff;padding:4px 14px;border-radius:6px;font-size:11px;pointer-events:none;z-index:10}}
+/* Bottom panel: 6V tabs */
+.wf-bottom-panel{{border-top:1px solid #e2e8f0;background:#fff}}
+.wf-tab-bar{{display:flex;gap:0;border-bottom:1px solid #e2e8f0;padding:0 12px;background:#f8fafc}}
+.wf-tab-btn{{padding:7px 12px;border:none;background:none;font-size:11px;font-weight:600;color:#94a3b8;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}}
+.wf-tab-btn:hover{{color:#475569}}
+.wf-tab-btn.active{{color:#3b82f6;border-bottom-color:#3b82f6}}
+.wf-tab-pane{{display:none;padding:10px 14px;font-size:12px;max-height:200px;overflow-y:auto}}
+.wf-tab-pane.active{{display:block}}
+.wf-zone-label{{color:#475569;margin-bottom:6px}}
+.wf-zone-list{{list-style:none;display:flex;flex-wrap:wrap;gap:5px;margin:0;padding:0}}
+.wf-zone-item{{background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}}
+.wf-beh-name{{font-size:14px;font-weight:600;color:#475569;margin-bottom:4px}}
+.wf-beh-desc{{color:#64748b;margin:0 0 6px 0;line-height:1.4}}
+.wf-beh-code{{font-size:11px;color:#94a3b8}}
+.wf-beh-code code{{background:#f1f5f9;padding:1px 5px;border-radius:3px;color:#475569}}
+.wf-field-tbl{{width:100%;border-collapse:collapse;font-size:11px}}
+.wf-field-tbl th{{background:#f8fafc;text-align:left;padding:4px 6px;border-bottom:1px solid #e2e8f0;font-weight:600;color:#475569}}
+.wf-field-tbl td{{padding:3px 6px;border-bottom:1px solid #f1f5f9;color:#475569}}
+.wf-empty-hint{{color:#94a3b8;font-style:italic}}
+.wf-state-row{{display:flex;gap:10px;padding:4px 0;border-bottom:1px solid #f1f5f9}}
+.wf-state-key{{font-weight:600;color:#475569;text-transform:capitalize;min-width:60px}}
+.wf-state-val{{color:#64748b}}
+.wf-flow-row{{padding:4px 0;color:#475569;line-height:1.4}}
+.wf-emo-detail{{line-height:1.6}}
+.wf-emo-row{{padding:3px 0}}
+.wf-emo-hint{{margin-top:8px;padding:8px;background:#fdf4ff;border-radius:4px;color:#7c3aed;font-size:12px;line-height:1.4}}
+/* Side review panel */
+.wf-review-side{{width:320px;min-width:260px;border-left:1px solid #e2e8f0;background:#fff;display:flex;flex-direction:column;overflow:hidden}}
+.wf-review-side.hidden{{display:none}}
+.wf-review-header{{padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:13px;font-weight:600;color:#1e293b;display:flex;align-items:center;gap:8px}}
+.wf-review-header .sid{{font-size:11px;color:#64748b;font-weight:400}}
+.wf-status-toggle{{display:flex;gap:6px;padding:12px 16px;border-bottom:1px solid #f1f5f9}}
+.wf-status-btn{{flex:1;padding:8px;border:2px solid #e2e8f0;border-radius:6px;background:#fff;cursor:pointer;font-size:12px;text-align:center;transition:all .12s}}
+.wf-status-btn.approved.selected{{border-color:#10b981;background:#dcfce7;color:#065f46}}
+.wf-status-btn.revision.selected{{border-color:#f59e0b;background:#fef3c7;color:#92400e}}
+.wf-pins-list{{flex:1;overflow-y:auto;padding:8px 16px}}
+.wf-pin-item{{padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;margin-bottom:6px;font-size:12px}}
+.wf-pin-item-header{{display:flex;align-items:center;gap:6px;margin-bottom:4px}}
+.wf-pin-num{{width:18px;height:18px;background:#fbbf24;color:#1e293b;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}}
+.wf-pin-item textarea{{width:100%;border:1px solid #e2e8f0;border-radius:4px;padding:5px;font-size:12px;resize:vertical;min-height:36px;font-family:inherit}}
+.wf-pin-item select{{border:1px solid #e2e8f0;border-radius:4px;padding:3px 6px;font-size:11px;background:#fff}}
+.wf-pin-del{{color:#cbd5e1;cursor:pointer;font-size:14px;margin-left:auto}}
+.wf-pin-del:hover{{color:#ef4444}}
+.wf-add-hint{{text-align:center;color:#94a3b8;font-size:12px;padding:12px}}
+</style></head><body>
+{nav}
+<div class="wf-main-header">
+  <h1>\u7ebf\u6846 Review</h1>
+  <div class="meta">Round {feedback.get('round', 1)} &middot; {reviewed}/{total} reviewed</div>
+  <div class="wf-progress"><div class="wf-progress-bar" style="width:{reviewed/total*100 if total else 0:.0f}%"></div></div>
+  <button class="wf-submit-btn" id="wfSubmitBtn" onclick="wfSubmit()">Submit Feedback</button>
+</div>
+<div class="wf-layout">
+  <!-- Left: Screen Tree -->
+  <div class="wf-tree-panel">
+    <div class="wf-tree-search"><input type="text" id="wfTreeSearch" placeholder="Search screens..." oninput="wfFilterTree(this.value)"></div>
+    <div class="wf-tree-body" id="wfTreeBody"></div>
+  </div>
+  <!-- Center: Preview -->
+  <div class="wf-preview-panel">
+    <div class="wf-preview-empty" id="wfPreviewEmpty">Select a screen from the tree to preview</div>
+    <div class="wf-preview-content" id="wfPreviewContent">
+      <div class="wf-preview-area" id="wfPreviewArea">
+        <div class="wf-click-hint">Click to add feedback pin</div>
+      </div>
+      <div class="wf-bottom-panel">
+        <div class="wf-tab-bar" id="wfTabBar">
+          <button class="wf-tab-btn active" onclick="wfSwitchTab('structure',this)">Structure</button>
+          <button class="wf-tab-btn" onclick="wfSwitchTab('behavior',this)">Behavior</button>
+          <button class="wf-tab-btn" onclick="wfSwitchTab('data',this)">Data</button>
+          <button class="wf-tab-btn" onclick="wfSwitchTab('state',this)">State</button>
+          <button class="wf-tab-btn" onclick="wfSwitchTab('flow',this)">Flow</button>
+          <button class="wf-tab-btn" onclick="wfSwitchTab('emotion',this)">Emotion</button>
+        </div>
+        <div id="wf-tab-structure" class="wf-tab-pane active"></div>
+        <div id="wf-tab-behavior" class="wf-tab-pane"></div>
+        <div id="wf-tab-data" class="wf-tab-pane"></div>
+        <div id="wf-tab-state" class="wf-tab-pane"></div>
+        <div id="wf-tab-flow" class="wf-tab-pane"></div>
+        <div id="wf-tab-emotion" class="wf-tab-pane"></div>
+      </div>
+    </div>
+  </div>
+  <!-- Right: Review / Pins -->
+  <div class="wf-review-side hidden" id="wfReviewSide">
+    <div class="wf-review-header"><span id="wfReviewTitle">Review</span><span class="sid" id="wfReviewSid"></span></div>
+    <div class="wf-status-toggle">
+      <button class="wf-status-btn approved" id="wfBtnApproved" onclick="wfSetStatus('approved')">Approved</button>
+      <button class="wf-status-btn revision" id="wfBtnRevision" onclick="wfSetStatus('revision')">Revision</button>
+    </div>
+    <div class="wf-pins-list" id="wfPinsList"></div>
+    <div class="wf-add-hint">Click on wireframe to pin feedback</div>
+  </div>
+</div>
+<script>
+const TREE_DATA={tree_json};
+const ALL_SCREENS={screens_json};
+const SIXV={sixv_json};
+const EMO_COLORS={emo_colors_json};
+let feedback={feedback_json};
+let currentSid=null;
+
+// ── Tree rendering ──
+function wfRenderTree(filter){{
+  const body=document.getElementById('wfTreeBody');
+  body.innerHTML='';
+  const fl=(filter||'').toLowerCase();
+  TREE_DATA.forEach(ol=>{{
+    const screens=ol.screens.filter(s=>!fl||s.name.toLowerCase().includes(fl)||s.id.toLowerCase().includes(fl)||s.itype.toLowerCase().includes(fl));
+    if(!screens.length)return;
+    const group=document.createElement('div');
+    group.className='wf-tree-group';
+    const header=document.createElement('div');
+    header.className='wf-tree-group-header';
+    header.innerHTML='<span class="wf-tree-group-chevron">&#9662;</span>'+escH(ol.name)+' <span style="color:#94a3b8;font-weight:400;font-size:11px">('+screens.length+')</span>';
+    header.onclick=()=>group.classList.toggle('collapsed');
+    group.appendChild(header);
+    const items=document.createElement('div');
+    items.className='wf-tree-group-items';
+    screens.forEach(s=>{{
+      const item=document.createElement('div');
+      item.className='wf-tree-item'+(s.id===currentSid?' active':'')+(s.status!=='pending'?' status-'+s.status:'');
+      item.dataset.sid=s.id;
+      let badges='';
+      if(s.gate_count)badges+='<span class="wf-tree-badge gate">'+s.gate_count+'</span>';
+      if(s.xv_err)badges+='<span class="wf-tree-badge xv-err">'+s.xv_err+'XV</span>';
+      else if(s.xv_warn)badges+='<span class="wf-tree-badge xv-warn">'+s.xv_warn+'XV</span>';
+      if(s.pin_count)badges+='<span class="wf-tree-badge pins">'+s.pin_count+'</span>';
+      const emoColor=EMO_COLORS[s.emotion]||'#B0BEC5';
+      item.innerHTML='<span class="wf-tree-emo" style="background:'+emoColor+'"></span>'
+        +'<span class="wf-tree-name">'+escH(s.name)+'</span>'
+        +(s.itype?'<span class="wf-tree-itype">'+escH(s.itype)+'</span>':'')
+        +'<span class="wf-tree-badges">'+badges+'</span>';
+      item.onclick=()=>wfSelectScreen(s.id);
+      items.appendChild(item);
+    }});
+    group.appendChild(items);
+    body.appendChild(group);
+  }});
+}}
+
+function wfFilterTree(val){{wfRenderTree(val)}}
+
+function escH(s){{return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}}
+
+// ── Screen selection ──
+function wfSelectScreen(sid){{
+  currentSid=sid;
+  // Update tree highlights
+  document.querySelectorAll('.wf-tree-item').forEach(el=>{{
+    el.classList.toggle('active',el.dataset.sid===sid);
+  }});
+  // Show preview
+  document.getElementById('wfPreviewEmpty').style.display='none';
+  const content=document.getElementById('wfPreviewContent');
+  content.classList.add('visible');
+  // Load wireframe in iframe
+  const area=document.getElementById('wfPreviewArea');
+  area.querySelectorAll('iframe,.wf-pin').forEach(el=>el.remove());
+  const iframe=document.createElement('iframe');
+  iframe.src='/wireframe/screen/'+sid;
+  iframe.onload=()=>{{
+    try{{
+      iframe.style.height=iframe.contentDocument.documentElement.scrollHeight+'px';
+      iframe.contentDocument.addEventListener('click',(e)=>{{
+        const x=((e.pageX)/iframe.contentDocument.documentElement.scrollWidth*100).toFixed(1);
+        const y=((e.pageY)/iframe.contentDocument.documentElement.scrollHeight*100).toFixed(1);
+        wfAddPin(parseFloat(x),parseFloat(y));
+      }});
+      iframe.contentDocument.body.style.cursor='crosshair';
+    }}catch(err){{}}
+  }};
+  area.appendChild(iframe);
+  // Load 6V tabs
+  const sixv=SIXV[sid]||{{}};
+  ['structure','behavior','data','state','flow','emotion'].forEach(tab=>{{
+    document.getElementById('wf-tab-'+tab).innerHTML=sixv[tab]||'';
+  }});
+  // Reset to structure tab
+  document.querySelectorAll('.wf-tab-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+  document.querySelectorAll('.wf-tab-pane').forEach((p,i)=>p.classList.toggle('active',i===0));
+  // Show review panel
+  const side=document.getElementById('wfReviewSide');
+  side.classList.remove('hidden');
+  const sc=ALL_SCREENS[sid]||{{}};
+  document.getElementById('wfReviewTitle').textContent=sc.name||sid;
+  document.getElementById('wfReviewSid').textContent=sid;
+  // Load feedback
+  const fb=feedback.screens[sid]||{{status:'pending',pins:[]}};
+  wfCurrentStatus=fb.status;
+  wfCurrentPins=JSON.parse(JSON.stringify(fb.pins||[]));
+  wfRenderStatus();
+  wfRenderPins();
+}}
+
+let wfCurrentStatus='pending';
+let wfCurrentPins=[];
+
+function wfRenderStatus(){{
+  document.getElementById('wfBtnApproved').classList.toggle('selected',wfCurrentStatus==='approved');
+  document.getElementById('wfBtnRevision').classList.toggle('selected',wfCurrentStatus==='revision');
+}}
+
+function wfSetStatus(s){{
+  wfCurrentStatus=s;
+  wfRenderStatus();
+  wfSaveFeedback();
+}}
+
+function wfRenderPins(){{
+  // Dots on preview
+  const area=document.getElementById('wfPreviewArea');
+  area.querySelectorAll('.wf-pin').forEach(el=>el.remove());
+  wfCurrentPins.forEach((p,i)=>{{
+    const dot=document.createElement('div');
+    dot.className='wf-pin';
+    dot.textContent=i+1;
+    dot.style.left=p.x+'%';
+    dot.style.top=p.y+'%';
+    dot.onclick=(e)=>{{e.stopPropagation();wfHighlightPin(i)}};
+    area.appendChild(dot);
+  }});
+  // List
+  const list=document.getElementById('wfPinsList');
+  list.innerHTML='';
+  wfCurrentPins.forEach((p,i)=>{{
+    const div=document.createElement('div');
+    div.className='wf-pin-item';
+    div.id='wf-pin-item-'+i;
+    div.innerHTML='<div class="wf-pin-item-header">'
+      +'<span class="wf-pin-num">'+(i+1)+'</span>'
+      +'<select onchange="wfUpdateCategory('+i+',this.value)">'
+      +'<option value="experience-map"'+(p.category==='experience-map'?' selected':'')+'>Flow/Structure</option>'
+      +'<option value="product-map"'+(p.category==='product-map'?' selected':'')+'>Feature/Task</option>'
+      +'<option value="concept"'+(p.category==='concept'?' selected':'')+'>Concept</option>'
+      +'</select>'
+      +'<span class="wf-pin-del" onclick="wfDeletePin('+i+')">&times;</span>'
+      +'</div>'
+      +'<textarea placeholder="Describe the issue..." oninput="wfUpdateComment('+i+',this.value)">'+escH(p.comment||'')+'</textarea>';
+    list.appendChild(div);
+  }});
+}}
+
+function wfAddPin(x,y){{
+  wfCurrentPins.push({{id:Date.now(),x:x,y:y,comment:'',category:'experience-map'}});
+  if(wfCurrentStatus==='pending'||wfCurrentStatus==='approved')wfSetStatus('revision');
+  wfRenderPins();
+  wfSaveFeedback();
+  setTimeout(()=>{{
+    const items=document.querySelectorAll('.wf-pin-item textarea');
+    if(items.length)items[items.length-1].focus();
+  }},50);
+}}
+
+function wfUpdateComment(idx,comment){{wfCurrentPins[idx].comment=comment;wfSaveFeedback()}}
+function wfUpdateCategory(idx,cat){{wfCurrentPins[idx].category=cat;wfSaveFeedback()}}
+function wfDeletePin(idx){{
+  wfCurrentPins.splice(idx,1);
+  wfRenderPins();
+  wfSaveFeedback();
+  if(wfCurrentPins.length===0&&wfCurrentStatus==='revision')wfSetStatus('pending');
+}}
+function wfHighlightPin(idx){{
+  const el=document.getElementById('wf-pin-item-'+idx);
+  if(el){{el.scrollIntoView({{behavior:'smooth'}});el.style.background='#fef3c7';setTimeout(()=>el.style.background='',1200)}}
+}}
+
+let wfSaveTimer=null;
+function wfSaveFeedback(){{
+  if(!currentSid)return;
+  clearTimeout(wfSaveTimer);
+  wfSaveTimer=setTimeout(()=>{{
+    feedback.screens[currentSid]={{status:wfCurrentStatus,pins:wfCurrentPins}};
+    fetch('/api/wireframe/feedback',{{
+      method:'POST',
+      headers:{{'Content-Type':'application/json'}},
+      body:JSON.stringify({{screen_id:currentSid,status:wfCurrentStatus,pins:wfCurrentPins}})
+    }});
+    // Update tree item status
+    document.querySelectorAll('.wf-tree-item').forEach(el=>{{
+      if(el.dataset.sid===currentSid){{
+        el.classList.remove('status-approved','status-revision');
+        if(wfCurrentStatus!=='pending')el.classList.add('status-'+wfCurrentStatus);
+      }}
+    }});
+  }},300);
+}}
+
+function wfSwitchTab(tabId,btn){{
+  document.querySelectorAll('.wf-tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.wf-tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('wf-tab-'+tabId).classList.add('active');
+  btn.classList.add('active');
+}}
+
+function wfSubmit(){{
+  if(!confirm('Submit wireframe feedback?'))return;
+  fetch('/api/wireframe/submit',{{method:'POST'}}).then(r=>r.json()).then(d=>{{
+    if(d.ok){{
+      const btn=document.getElementById('wfSubmitBtn');
+      btn.disabled=true;btn.textContent='Submitted!';
+    }}
+  }});
+}}
+
+// Init
+wfRenderTree();
+</script></body></html>"""
+
+
+def render_wireframe_html(screen_id):
+    """Generate wireframe HTML for a single screen (used by iframe src)."""
+    op_lines, tasks, role_map, gate_issues, vo_map, api_map = load_wireframe_data()
+    if not op_lines:
+        return "<h2>No wireframe data</h2>"
+    all_screens = build_screens_with_context(op_lines, tasks, role_map, gate_issues, vo_map, api_map)
+    screen_map = {s["id"]: s for s in all_screens}
+    screen = screen_map.get(screen_id)
+    if not screen:
+        return "<h2>Screen not found</h2>"
+    return generate_wireframe(screen)
 
 
 def render_ui_page():
@@ -1243,6 +2300,9 @@ class ReviewHubHandler(http.server.BaseHTTPRequestHandler):
             self._respond(render_datamodel_page())
         elif path == "/wireframe":
             self._respond(render_wireframe_page())
+        elif path.startswith("/wireframe/screen/"):
+            screen_id = path.split("/wireframe/screen/")[1]
+            self._respond(render_wireframe_html(screen_id))
         elif path == "/ui":
             self._respond(render_ui_page())
         elif path == "/spec":
@@ -1285,6 +2345,21 @@ class ReviewHubHandler(http.server.BaseHTTPRequestHandler):
             fb = load_dm_feedback()
             fb["submitted_at"] = C.now_iso()
             C.write_json(DM_FEEDBACK_PATH, fb)
+            self._respond_json({"ok": True})
+        elif path == "/api/wireframe/feedback":
+            fb = load_wf_feedback()
+            sid = body.get("screen_id")
+            if sid:
+                fb["screens"][sid] = {
+                    "status": body.get("status", "pending"),
+                    "pins": body.get("pins", []),
+                }
+            C.write_json(WF_FEEDBACK_PATH, fb)
+            self._respond_json({"ok": True})
+        elif path == "/api/wireframe/submit":
+            fb = load_wf_feedback()
+            fb["submitted_at"] = C.now_iso()
+            C.write_json(WF_FEEDBACK_PATH, fb)
             self._respond_json({"ok": True})
         else:
             self._respond_404()
