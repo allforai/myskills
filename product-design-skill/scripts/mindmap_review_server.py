@@ -66,19 +66,35 @@ def load_concept_tree():
     if pd:
         children.append(_node("problem", "Problem Domain", "group", pd))
 
-    # Roles
-    roles = data.get("roles", [])
+    # Roles — handle both flat list [{role_id, role_name}] and grouped dict {"consumer": [...]}
+    raw_roles = data.get("roles", [])
+    roles = []
+    if isinstance(raw_roles, list):
+        roles = raw_roles
+    elif isinstance(raw_roles, dict):
+        # Grouped by role_type: {"consumer": [...], "producer": [...]}
+        for group_type, group_list in raw_roles.items():
+            if isinstance(group_list, list):
+                for r in group_list:
+                    if isinstance(r, dict):
+                        r.setdefault("role_type", group_type)
+                        roles.append(r)
     if roles:
         role_nodes = []
         for r in roles:
-            rid = r.get("id", "")
+            rid = r.get("role_id", r.get("id", ""))
+            rname = r.get("role_name", r.get("name", rid))
             role_detail = r.get("description", "")
             role_children = []
             if r.get("role_type"):
                 role_children.append(_node(f"{rid}-type", f"Type: {r['role_type']}", "info"))
             if r.get("impl_group"):
                 role_children.append(_node(f"{rid}-impl", f"Impl: {r['impl_group']}", "info"))
-            role_nodes.append(_node(rid, r.get("name", rid), "role", role_detail, role_children))
+            if r.get("jobs"):
+                for j, job in enumerate(r["jobs"][:5]):
+                    jtext = job.get("description", str(job)) if isinstance(job, dict) else str(job)
+                    role_children.append(_node(f"{rid}-job-{j}", jtext, "info"))
+            role_nodes.append(_node(rid, rname, "role", role_detail, role_children))
         children.append(_node("roles", f"Target Users ({len(roles)})", "group", children=role_nodes))
 
     # Business model
@@ -92,11 +108,26 @@ def load_concept_tree():
                 bm_children.append(_node(f"bm-metric-{i}", str(m), "metric"))
         children.append(_node("business-model", "Business Model", "group", children=bm_children))
 
-    # Mechanisms
-    mechs = data.get("mechanisms", data.get("product_mechanisms", []))
+    # Mechanisms — handle both list [{id, module, chosen}] and dict {"key": "value"}
+    raw_mechs = data.get("mechanisms", data.get("product_mechanisms", []))
+    mechs = []
+    if isinstance(raw_mechs, list):
+        mechs = raw_mechs
+    elif isinstance(raw_mechs, dict):
+        # Dict format: {"key": "value"} or {"key": {details}}
+        for k, v in raw_mechs.items():
+            if isinstance(v, dict):
+                v.setdefault("id", k)
+                mechs.append(v)
+            else:
+                mechs.append({"id": k, "module": k, "chosen": str(v)})
     if mechs:
-        mech_nodes = [_node(m.get("id", f"mec-{i}"), m.get("name", ""), "mechanism", m.get("description", ""))
-                      for i, m in enumerate(mechs)]
+        mech_nodes = []
+        for i, m in enumerate(mechs):
+            mid = m.get("id", f"mec-{i}")
+            mname = m.get("name", m.get("module", m.get("decision_point", mid)))
+            mdesc = m.get("description", m.get("chosen", ""))
+            mech_nodes.append(_node(mid, mname, "mechanism", mdesc))
         children.append(_node("mechanisms", f"Mechanisms ({len(mechs)})", "group", children=mech_nodes))
 
     # Innovation / adversarial concepts
