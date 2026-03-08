@@ -7,8 +7,9 @@ description: >
   design-pattern (设计模式), behavioral-standards (行为规范),
   wireframe-review (线框交互审核), use-case (用例集),
   feature-gap (功能查漏), feature-prune (功能剪枝), ui-design (UI设计规格, 支持 --variants), design-audit (设计审计).
-  Pipeline: concept → concept-review → map → map-review → experience-map → wireframe-review (structure lock, optional data-model-review) →
-  [use-case ∥ gap ∥ ui-design] → ui-review (visual) → audit.
+  Pipeline: concept → review(概念) → market-validate → map → review(地图) → journey-emotion → experience-map →
+  design-pattern → behavioral-standards → review(线框+数据模型) → [use-case ∥ gap ∥ ui-design] → review(UI) → audit.
+  Use /review to launch the unified review hub (one site, 6 tabs).
   Use /product-design full to run the full pipeline with checkpoints.
 version: "4.5.2"
 ---

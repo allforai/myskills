@@ -52,57 +52,44 @@ def ensure_list(data, *keys):
 # ── Review Server Ports ───────────────────────────────────────────────────────
 
 REVIEW_PORTS = {
-    "concept": 18900,
-    "product-map": 18901,
-    "wireframe": 18902,
-    "ui": 18903,
-    "data-model": 18904,
+    "review-hub": 18900,
 }
 
 
 def kill_other_review_servers(my_port):
-    """Kill any review servers running on other review ports.
+    """Kill any review server running on the review-hub port (18900).
 
-    Users only review one phase at a time, so old servers should be stopped
-    before starting a new one to avoid multiple browser windows.
+    Only one review-hub server should run at a time.
     """
     import signal
     import socket
 
-    other_ports = [p for p in REVIEW_PORTS.values() if p != my_port]
-    killed = []
+    port = REVIEW_PORTS["review-hub"]
+    if port == my_port:
+        return  # already running on the target port, nothing to kill
 
-    for port in other_ports:
-        # Check if port is in use
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            sock.settimeout(0.3)
-            result = sock.connect_ex(("localhost", port))
-            if result == 0:
-                # Port is in use — find and kill the process
-                try:
-                    import subprocess
-                    out = subprocess.check_output(
-                        ["lsof", "-ti", f":{port}"], text=True
-                    ).strip()
-                    for pid_str in out.split("\n"):
-                        pid = int(pid_str.strip())
-                        os.kill(pid, signal.SIGTERM)
-                        killed.append((port, pid))
-                except Exception:
-                    pass
-        except Exception:
-            pass
-        finally:
-            sock.close()
-
-    if killed:
-        import time as _t
-        _t.sleep(0.3)  # brief pause for cleanup
-        names = {v: k for k, v in REVIEW_PORTS.items()}
-        for port, pid in killed:
-            name = names.get(port, str(port))
-            print(f"  Stopped previous review server: {name} (port {port}, pid {pid})")
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.settimeout(0.3)
+        result = sock.connect_ex(("localhost", port))
+        if result == 0:
+            try:
+                import subprocess
+                out = subprocess.check_output(
+                    ["lsof", "-ti", f":{port}"], text=True
+                ).strip()
+                for pid_str in out.split("\n"):
+                    pid = int(pid_str.strip())
+                    os.kill(pid, signal.SIGTERM)
+                    print(f"  Stopped previous review-hub server (port {port}, pid {pid})")
+                import time as _t
+                _t.sleep(0.3)
+            except Exception:
+                pass
+    except Exception:
+        pass
+    finally:
+        sock.close()
 
 
 # ── Timestamp ─────────────────────────────────────────────────────────────────
