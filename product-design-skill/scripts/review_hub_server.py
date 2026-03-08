@@ -745,16 +745,475 @@ body{{font-family:-apple-system,system-ui,'Segoe UI',sans-serif;background:#f8fa
 </body></html>"""
 
 
+# ── Concept Tab ────────────────────────────────────────────────────────────────
+
+CONCEPT_FEEDBACK_DIR = os.path.join(BASE, "concept-review")
+C.ensure_dir(CONCEPT_FEEDBACK_DIR)
+CONCEPT_FEEDBACK_PATH = os.path.join(CONCEPT_FEEDBACK_DIR, "review-feedback.json")
+
+
+def load_concept_tree():
+    """Transform product-concept.json into a mind map tree."""
+    data = C.load_json(os.path.join(BASE, "product-concept/product-concept.json"))
+    if not data:
+        return _node("root", "No concept data", "error")
+
+    mission = data.get("mission", data.get("problem_domain", "Product"))
+    children = []
+
+    # Problem domain
+    pd = data.get("problem_domain", "")
+    if pd:
+        children.append(_node("problem", "Problem Domain", "group", pd))
+
+    # Roles — handle both flat list [{role_id, role_name}] and grouped dict {"consumer": [...]}
+    raw_roles = data.get("roles", [])
+    roles = []
+    if isinstance(raw_roles, list):
+        roles = raw_roles
+    elif isinstance(raw_roles, dict):
+        for group_type, group_list in raw_roles.items():
+            if isinstance(group_list, list):
+                for r in group_list:
+                    if isinstance(r, dict):
+                        r.setdefault("role_type", group_type)
+                        roles.append(r)
+    if roles:
+        role_nodes = []
+        for r in roles:
+            rid = r.get("role_id", r.get("id", ""))
+            rname = r.get("role_name", r.get("name", rid))
+            role_detail = r.get("description", "")
+            role_children = []
+            if r.get("role_type"):
+                role_children.append(_node(f"{rid}-type", f"Type: {r['role_type']}", "info"))
+            if r.get("impl_group"):
+                role_children.append(_node(f"{rid}-impl", f"Impl: {r['impl_group']}", "info"))
+            if r.get("jobs"):
+                for j, job in enumerate(r["jobs"][:5]):
+                    jtext = job.get("description", str(job)) if isinstance(job, dict) else str(job)
+                    role_children.append(_node(f"{rid}-job-{j}", jtext, "info"))
+            role_nodes.append(_node(rid, rname, "role", role_detail, role_children))
+        children.append(_node("roles", f"Target Users ({len(roles)})", "group", children=role_nodes))
+
+    # Business model
+    bm = data.get("business_model", {})
+    if bm:
+        bm_children = []
+        if bm.get("revenue_model"):
+            bm_children.append(_node("bm-rev", f"Revenue: {bm['revenue_model']}", "info"))
+        if bm.get("key_metrics"):
+            for i, m in enumerate(bm["key_metrics"][:5]):
+                bm_children.append(_node(f"bm-metric-{i}", str(m), "metric"))
+        children.append(_node("business-model", "Business Model", "group", children=bm_children))
+
+    # Mechanisms — handle both list [{id, module, chosen}] and dict {"key": "value"}
+    raw_mechs = data.get("mechanisms", data.get("product_mechanisms", []))
+    mechs = []
+    if isinstance(raw_mechs, list):
+        mechs = raw_mechs
+    elif isinstance(raw_mechs, dict):
+        for k, v in raw_mechs.items():
+            if isinstance(v, dict):
+                v.setdefault("id", k)
+                mechs.append(v)
+            else:
+                mechs.append({"id": k, "module": k, "chosen": str(v)})
+    if mechs:
+        mech_nodes = []
+        for i, m in enumerate(mechs):
+            mid = m.get("id", f"mec-{i}")
+            mname = m.get("name", m.get("module", m.get("decision_point", mid)))
+            mdesc = m.get("description", m.get("chosen", ""))
+            mech_nodes.append(_node(mid, mname, "mechanism", mdesc))
+        children.append(_node("mechanisms", f"Mechanisms ({len(mechs)})", "group", children=mech_nodes))
+
+    # Innovation / adversarial concepts
+    concepts = data.get("innovation_concepts", data.get("adversarial_concepts", []))
+    if concepts:
+        concept_nodes = []
+        for i, c in enumerate(concepts):
+            cid = c.get("id", "") or f"concept-{i}"
+            tags = []
+            if c.get("protection_level"):
+                tags.append(c["protection_level"])
+            if c.get("innovation_score"):
+                tags.append(f"innovation:{c['innovation_score']}")
+            concept_nodes.append(_node(cid, c.get("name", cid), "concept", c.get("description", ""), tags=tags))
+        children.append(_node("concepts", f"Innovation Concepts ({len(concepts)})", "group", children=concept_nodes))
+
+    # Pipeline preferences
+    prefs = data.get("pipeline_preferences", {})
+    if prefs:
+        pref_children = []
+        for k, v in prefs.items():
+            if v and v != "undecided":
+                pref_children.append(_node(f"pref-{k}", f"{k}: {v}", "config"))
+        if pref_children:
+            children.append(_node("prefs", "Pipeline Preferences", "group", children=pref_children))
+
+    return _node("root", mission, "root", children=children)
+
+
+def load_concept_feedback():
+    fb = C.load_json(CONCEPT_FEEDBACK_PATH)
+    return fb if fb else {"round": 1, "submitted_at": None, "nodes": {}}
+
+
 def render_concept_page():
-    return _placeholder_page("concept", "概念 Review")
+    tree = load_concept_tree()
+    feedback = load_concept_feedback()
+    categories = ["General", "Feature", "Concept", "Flow"]
+    return render_mindmap_page(tree, feedback, "产品概念", "concept", categories)
+
+
+# ── Map Tab ────────────────────────────────────────────────────────────────────
+
+MAP_FEEDBACK_DIR = os.path.join(BASE, "product-map-review")
+C.ensure_dir(MAP_FEEDBACK_DIR)
+MAP_FEEDBACK_PATH = os.path.join(MAP_FEEDBACK_DIR, "review-feedback.json")
+
+
+def load_product_map_tree():
+    """Transform product-map data into a mind map tree with shared patterns branch."""
+    roles_data = C.load_json(os.path.join(BASE, "product-map/role-profiles.json"))
+    inv_data = C.load_json(os.path.join(BASE, "product-map/task-inventory.json"))
+    flows_data = C.load_json(os.path.join(BASE, "product-map/business-flows.json"))
+    pm_data = C.load_json(os.path.join(BASE, "product-map/product-map.json"))
+
+    if not inv_data:
+        return _node("root", "No product-map data", "error")
+
+    project_name = ""
+    if pm_data:
+        project_name = pm_data.get("project_name", "")
+    if not project_name:
+        concept = C.load_product_concept(BASE)
+        project_name = concept.get("mission", "Product") if concept else "Product"
+
+    roles = roles_data.get("roles", []) if roles_data else []
+    tasks = inv_data.get("tasks", [])
+    flows = flows_data.get("flows", []) if flows_data else []
+
+    role_map = {r["id"]: r for r in roles}
+    tasks_by_role = {}
+    for t in tasks:
+        tasks_by_role.setdefault(t.get("owner_role", ""), []).append(t)
+
+    children = []
+
+    # Roles + tasks
+    for r in roles:
+        rid = r["id"]
+        rname = r.get("name", rid)
+        rtasks = tasks_by_role.get(rid, [])
+
+        core_tasks = [t for t in rtasks if t.get("category") == "core"]
+        basic_tasks = [t for t in rtasks if t.get("category") != "core"]
+
+        def _task_node(t, _rid=rid):
+            tid = t["id"]
+            tname = t.get("name", t.get("task_name", tid))
+            tags = []
+            freq = t.get("frequency", "")
+            if freq:
+                tags.append(freq)
+            risk = t.get("risk_level", "")
+            if risk and risk != "low":
+                tags.append(f"risk:{risk}")
+            detail = t.get("value", "")
+            return _node(tid, tname, "task", detail, tags=tags)
+
+        role_children = []
+        if core_tasks:
+            core_nodes = [_task_node(t) for t in core_tasks]
+            role_children.append(_node(f"{rid}-core", f"Core Tasks ({len(core_tasks)})", "task-group", children=core_nodes))
+        if basic_tasks:
+            basic_nodes = [_task_node(t) for t in basic_tasks]
+            role_children.append(_node(f"{rid}-basic", f"Basic Tasks ({len(basic_tasks)})", "task-group", children=basic_nodes))
+
+        at = r.get("audience_type", "")
+        tags = [at] if at else []
+        children.append(_node(rid, rname, "role", r.get("description", ""), role_children, tags))
+
+    # Business flows
+    if flows:
+        flow_nodes = []
+        for f in flows:
+            fid = f["id"]
+            fname = f.get("name", fid)
+            nodes = f.get("nodes", [])
+            step_nodes = []
+            for n in nodes[:8]:
+                task_ref = n.get("task_ref", "")
+                role = n.get("role", "")
+                gap = n.get("gap_type")
+                tags = [f"@{role}"] if role else []
+                if gap:
+                    tags.append(f"GAP:{gap}")
+                step_nodes.append(_node(f"{fid}-{n.get('seq', 0)}", task_ref, "flow-step", tags=tags))
+            flow_nodes.append(_node(fid, f"{fname} ({len(nodes)} steps)", "flow", f.get("description", ""), step_nodes))
+        children.append(_node("flows", f"Business Flows ({len(flows)})", "group", children=flow_nodes))
+
+    # Shared patterns branch (NEW)
+    patterns = C.load_json(os.path.join(BASE, "design-pattern/pattern-catalog.json"))
+    standards = C.load_json(os.path.join(BASE, "behavioral-standards/behavioral-standards.json"))
+
+    pattern_children = []
+    if patterns:
+        for p in patterns.get("patterns", []):
+            pattern_children.append(_node(p["id"], p.get("name", p["id"]), "concept", p.get("description", "")))
+    if standards:
+        for s in standards.get("standards", standards.get("behaviors", [])):
+            sid = s.get("id", "")
+            pattern_children.append(_node(f"bs_{sid}", s.get("name", sid), "mechanism", s.get("description", "")))
+    if pattern_children:
+        children.append(_node("patterns", "共性模式", "group", "", pattern_children))
+
+    return _node("root", project_name, "root", children=children)
+
+
+def load_map_feedback():
+    fb = C.load_json(MAP_FEEDBACK_PATH)
+    return fb if fb else {"round": 1, "submitted_at": None, "nodes": {}}
 
 
 def render_map_page():
-    return _placeholder_page("map", "地图 Review")
+    tree = load_product_map_tree()
+    feedback = load_map_feedback()
+    categories = ["General", "Role", "Task", "Flow", "Pattern"]
+    return render_mindmap_page(tree, feedback, "产品地图", "map", categories)
+
+
+# ── Data-Model Tab ─────────────────────────────────────────────────────────────
+
+DM_FEEDBACK_DIR = os.path.join(BASE, "data-model-review")
+C.ensure_dir(DM_FEEDBACK_DIR)
+DM_FEEDBACK_PATH = os.path.join(DM_FEEDBACK_DIR, "review-feedback.json")
+
+
+def load_datamodel_tree():
+    """Transform entity-model + api-contracts + view-objects into a mind map tree."""
+    entities, relationships = C.load_entity_model(BASE)
+    endpoints = C.load_api_contracts(BASE)
+    view_objects = C.load_view_objects(BASE)
+
+    if not entities and not endpoints and not view_objects:
+        return _node("root", "No data model data", "error")
+
+    # Build lookup maps
+    eps_by_entity = {}
+    for ep in endpoints:
+        eref = ep.get("entity_ref", "")
+        if eref:
+            eps_by_entity.setdefault(eref, []).append(ep)
+
+    vos_by_entity = {}
+    for vo in view_objects:
+        eref = vo.get("entity_ref", "")
+        if eref:
+            vos_by_entity.setdefault(eref, []).append(vo)
+
+    children = []
+
+    for entity in entities:
+        eid = entity.get("id", "")
+        ename_zh = entity.get("name_zh", entity.get("name", eid))
+        emodule = entity.get("module", "")
+        fields = entity.get("fields", [])
+        state_machine = entity.get("state_machine", None)
+
+        entity_children = []
+
+        # ── Fields group ──
+        if fields:
+            field_nodes = []
+            for f in fields:
+                fname = f.get("name", "")
+                ftype = f.get("type", "")
+                fpk = f.get("primary_key", False) or f.get("pk", False)
+                frequired = f.get("required", False)
+                constraints = f.get("constraints", [])
+
+                suffix = ""
+                if fpk:
+                    fnode_type = "field-pk"
+                    suffix = " (PK)"
+                elif frequired:
+                    fnode_type = "field-required"
+                    suffix = " ✱"
+                else:
+                    fnode_type = "field"
+
+                flabel = f"{fname}: {ftype}{suffix}"
+                fdetail = f"字段: {fname}\n类型: {ftype}\n必填: {'yes' if frequired else 'no'}"
+                if constraints:
+                    fdetail += f"\n约束: {constraints}"
+
+                field_nodes.append(_node(
+                    f"{eid}-f-{fname}", flabel, fnode_type, fdetail
+                ))
+            entity_children.append(_node(
+                f"{eid}-fields", "字段", "field-group", children=field_nodes
+            ))
+
+        # ── State machine group ──
+        if state_machine:
+            transitions = state_machine.get("transitions", [])
+            if transitions:
+                trans_nodes = []
+                for t in transitions:
+                    action = t.get("action", t.get("trigger", ""))
+                    target = t.get("to", t.get("target", ""))
+                    task_ref = t.get("task_ref", "")
+                    needs_input = t.get("needs_input", False)
+
+                    tlabel = f"{action} → {target}"
+                    tdetail = f"操作: {action}\n任务: {task_ref}\n需要输入: {'yes' if needs_input else 'no'}"
+                    trans_nodes.append(_node(
+                        f"{eid}-sm-{action}", tlabel, "transition", tdetail
+                    ))
+                entity_children.append(_node(
+                    f"{eid}-sm", "状态机", "state-machine", children=trans_nodes
+                ))
+
+        # ── API group ──
+        entity_eps = eps_by_entity.get(eid, [])
+        if entity_eps:
+            api_nodes = []
+            for ep in entity_eps:
+                method = ep.get("method", "GET")
+                path = ep.get("path", "")
+                ep_type = ep.get("type", "")
+                task_refs = ep.get("task_refs", [])
+                req_body = ep.get("request_body", ep.get("request_fields", []))
+
+                alabel = f"{method} {path}"
+                atags = [ep_type] if ep_type else []
+                adetail = f"接口: {method} {path}\n类型: {ep_type}\n来源任务: {task_refs}"
+                if req_body:
+                    adetail += f"\n请求体: {req_body}"
+
+                api_nodes.append(_node(
+                    f"{eid}-api-{method}-{path}", alabel, "api", adetail, tags=atags
+                ))
+            entity_children.append(_node(
+                f"{eid}-apis", "接口", "api-group", children=api_nodes
+            ))
+
+        # ── View objects group ──
+        entity_vos = vos_by_entity.get(eid, [])
+        if entity_vos:
+            vo_nodes = []
+            for vo in entity_vos:
+                void = vo.get("id", "")
+                voname = vo.get("name_zh", vo.get("name", void))
+                vo_itype = vo.get("interaction_type", "")
+                vo_fields = vo.get("fields", [])
+                vo_actions = vo.get("actions", [])
+
+                volabel = f"{voname} ({void})" if void else voname
+                votags = [void] if void else []
+                vodetail = (
+                    f"视图: {voname}\n交互类型: {vo_itype}"
+                    f"\n字段数: {len(vo_fields)}\n操作数: {len(vo_actions)}"
+                )
+
+                vo_children = []
+                for act in vo_actions:
+                    alabel_act = act.get("label", act.get("name", ""))
+                    atype = act.get("type", "")
+                    aapi_ref = act.get("api_ref", "")
+                    atrigger = act.get("trigger", "")
+                    aon_success = act.get("on_success", "")
+
+                    adetail = (
+                        f"按钮: {alabel_act}\n类型: {atype}\n接口: {aapi_ref}"
+                        f"\n触发: {atrigger}\n成功: {aon_success}"
+                    )
+                    vo_children.append(_node(
+                        f"{void}-act-{alabel_act}", alabel_act, "action", adetail
+                    ))
+
+                vo_nodes.append(_node(
+                    f"{eid}-vo-{void}", volabel, "vo", vodetail, vo_children, votags
+                ))
+            entity_children.append(_node(
+                f"{eid}-vos", "视图", "vo-group", children=vo_nodes
+            ))
+
+        # Entity detail
+        entity_api_count = len(entity_eps)
+        entity_field_count = len(fields)
+        crud_methods = set()
+        for ep in entity_eps:
+            m = ep.get("method", "").upper()
+            t = ep.get("type", "").lower()
+            if m == "POST" or t == "create":
+                crud_methods.add("C")
+            if m == "GET" or t in ("list", "detail", "read"):
+                crud_methods.add("R")
+            if m in ("PUT", "PATCH") or t == "update":
+                crud_methods.add("U")
+            if m == "DELETE" or t == "delete":
+                crud_methods.add("D")
+        crud_str = ",".join(sorted(crud_methods)) if crud_methods else "-"
+
+        edetail = (
+            f"实体: {ename_zh}\n来源模块: {emodule}"
+            f"\n字段数: {entity_field_count}\n接口数: {entity_api_count}"
+            f"\nCRUD: {crud_str}"
+        )
+
+        children.append(_node(
+            eid, f"{eid} {ename_zh}", "entity", edetail, entity_children
+        ))
+
+    # ── Relationships group ──
+    if relationships:
+        rel_nodes = []
+        for rel in relationships:
+            rfrom = rel.get("from", rel.get("source", ""))
+            rto = rel.get("to", rel.get("target", ""))
+            rtype = rel.get("type", rel.get("cardinality", ""))
+            rlabel = f"{rfrom} {rtype} {rto}"
+            rel_nodes.append(_node(
+                f"rel-{rfrom}-{rto}", rlabel, "relation", rlabel
+            ))
+        children.append(_node(
+            "relations", "关系", "relation-group", children=rel_nodes
+        ))
+
+    return _node("root", "数据模型", "root", children=children)
+
+
+def load_dm_feedback():
+    fb = C.load_json(DM_FEEDBACK_PATH)
+    return fb if fb else {"round": 1, "submitted_at": None, "nodes": {}}
 
 
 def render_datamodel_page():
-    return _placeholder_page("data-model", "数据模型 Review")
+    tree = load_datamodel_tree()
+    feedback = load_dm_feedback()
+    categories = ["Entity", "API", "VO", "Action", "State Machine", "Product Map"]
+    extra_css = """
+.mm-node[data-type="entity"] .label{background:#dbeafe;color:#1e40af;font-weight:600;border-color:#93c5fd}
+.mm-node[data-type="field-pk"] .label{background:#fef3c7;color:#92400e;font-weight:600}
+.mm-node[data-type="field-fk"] .label{background:#e0e7ff;color:#4338ca}
+.mm-node[data-type="field-required"] .label{background:#fff;color:#334155;font-weight:500}
+.mm-node[data-type="field-required"] .label::after{content:" ✱";color:#ef4444}
+.mm-node[data-type="state-machine"] .label{background:#f0fdfa;color:#115e59;border-color:#99f6e4}
+.mm-node[data-type="transition"] .label{background:#f0fdf4;color:#166534;font-size:12px}
+.mm-node[data-type="api-group"] .label{background:#eff6ff;color:#1d4ed8;font-weight:600}
+.mm-node[data-type="api"] .label{background:#eff6ff;color:#1d4ed8;font-size:12px}
+.mm-node[data-type="vo-group"] .label{background:#faf5ff;color:#7c3aed;font-weight:600}
+.mm-node[data-type="vo"] .label{background:#f5f3ff;color:#6d28d9;font-weight:500}
+.mm-node[data-type="vo-field"] .label{background:#fff;color:#64748b;font-size:12px}
+.mm-node[data-type="action"] .label{background:#fef2f2;color:#dc2626;font-size:12px}
+.mm-node[data-type="relation-group"] .label{background:#f1f5f9;color:#475569;font-weight:600}
+.mm-node[data-type="relation"] .label{background:#f8fafc;color:#64748b;font-size:12px}
+"""
+    return render_mindmap_page(tree, feedback, "数据模型", "data-model", categories, extra_css)
 
 
 def render_wireframe_page():
@@ -792,8 +1251,43 @@ class ReviewHubHandler(http.server.BaseHTTPRequestHandler):
             self._respond_404()
 
     def do_POST(self):
-        # Will be implemented in Task 8
-        pass
+        path = urllib.parse.urlparse(self.path).path.rstrip("/")
+        length = int(self.headers.get("Content-Length", 0))
+        body = json.loads(self.rfile.read(length)) if length else {}
+
+        # Feedback save: /api/<tab>/feedback
+        if path == "/api/concept/feedback":
+            fb = load_concept_feedback()
+            fb["nodes"] = body
+            C.write_json(CONCEPT_FEEDBACK_PATH, fb)
+            self._respond_json({"ok": True})
+        elif path == "/api/concept/submit":
+            fb = load_concept_feedback()
+            fb["submitted_at"] = C.now_iso()
+            C.write_json(CONCEPT_FEEDBACK_PATH, fb)
+            self._respond_json({"ok": True})
+        elif path == "/api/map/feedback":
+            fb = load_map_feedback()
+            fb["nodes"] = body
+            C.write_json(MAP_FEEDBACK_PATH, fb)
+            self._respond_json({"ok": True})
+        elif path == "/api/map/submit":
+            fb = load_map_feedback()
+            fb["submitted_at"] = C.now_iso()
+            C.write_json(MAP_FEEDBACK_PATH, fb)
+            self._respond_json({"ok": True})
+        elif path == "/api/data-model/feedback":
+            fb = load_dm_feedback()
+            fb["nodes"] = body
+            C.write_json(DM_FEEDBACK_PATH, fb)
+            self._respond_json({"ok": True})
+        elif path == "/api/data-model/submit":
+            fb = load_dm_feedback()
+            fb["submitted_at"] = C.now_iso()
+            C.write_json(DM_FEEDBACK_PATH, fb)
+            self._respond_json({"ok": True})
+        else:
+            self._respond_404()
 
     def _respond(self, html, code=200):
         data = html.encode("utf-8")
