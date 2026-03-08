@@ -67,7 +67,7 @@ Phase 3 深度测试依赖 Playwright（Web）或 Patrol（Flutter），Phase 0 
 
 | 能力 | 探测方式 | 重要性 | 降级行为 |
 |------|---------|--------|---------|
-| Playwright | `mcp__plugin_playwright_playwright__browser_navigate` 可用性 | deep/full 必需 | static 模式可跳过；deep/full 阻塞，提示安装 |
+| Playwright | `mcp__playwright__browser_navigate` 可用性 | deep/full 必需 | static 模式可跳过；deep/full 阻塞，提示安装 |
 
 **输出格式**：
 

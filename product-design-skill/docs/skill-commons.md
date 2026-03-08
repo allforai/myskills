@@ -24,7 +24,7 @@
 
 | 能力 ID | 探测方式 | 使用插件 | 降级策略 |
 |---------|---------|---------|---------|
-| `playwright` | 检查 `mcp__plugin_playwright_playwright__browser_navigate` 工具可用性 | demo-forge, dev-forge, deadhunt | 无降级 — 提示用户安装 |
+| `playwright` | 检查 `mcp__playwright__browser_navigate` 工具可用性 | demo-forge, dev-forge, deadhunt | 无降级 — 提示用户安装 |
 | `openrouter_mcp` | 检查 `mcp__plugin_product-design_ai-gateway__ask_model` 工具可用性 | product-design, dev-forge | 跳过 MCP XV，脚本 XV 仍可用 |
 | `openrouter_script` | `_resolve_api_key("OPENROUTER_API_KEY")`：环境变量 → `.mcp.json` env/\_\_keys | product-design (预置脚本) | 静默跳过 XV |
 | `brave_search_mcp` | 检查 `mcp__plugin_product-design_ai-gateway__brave_web_search` 工具可用性 | demo-forge | 跳过 Brave MCP，脚本仍可用 |

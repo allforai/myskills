@@ -26,7 +26,7 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 | 能力 | 探测方式 | 使用插件 | 用途 |
 |------|---------|---------|------|
-| Playwright | `mcp__plugin_playwright_playwright__browser_navigate` 可用性 | demo-forge, dev-forge, deadhunt | UI 自动化：验证、E2E 测试、死链扫描 |
+| Playwright | `mcp__playwright__browser_navigate` 可用性 | demo-forge, dev-forge, deadhunt | UI 自动化：验证、E2E 测试、死链扫描 |
 | Stitch UI | `mcp__plugin_product-design_stitch__create_project` 可用性 | product-design | 高保真 UI 视觉稿生成（Google Stitch） |
 
 ### API Key 服务（需配置密钥）
@@ -73,7 +73,7 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 #### 1a. Playwright MCP
 
-1. **检查 MCP 工具**：检查 `mcp__plugin_playwright_playwright__browser_navigate` 工具是否可用
+1. **检查 MCP 工具**：检查 `mcp__playwright__browser_navigate` 工具是否可用
    - 可用 → **✅ 就绪**
    - 不可用 → **❌ 未安装**（提示安装 Playwright MCP，见 Step 1.5a）
 

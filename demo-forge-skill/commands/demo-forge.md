@@ -81,7 +81,7 @@ product-map 产物必须存在：
 
 | 能力 | 探测方式 | 重要性 | 降级行为 |
 |------|---------|--------|---------|
-| Playwright | `mcp__plugin_playwright_playwright__browser_navigate` 可用性 | Phase 4 必需 | 阻塞 verify，提示安装 |
+| Playwright | `mcp__playwright__browser_navigate` 可用性 | Phase 4 必需 | 阻塞 verify，提示安装 |
 | Brave Search | `brave_web_search` 可用性 或 `BRAVE_API_KEY` | Phase 2 推荐 | 降级到 WebSearch |
 | AI 生图 | `generate_image` / `openrouter_generate_image` / `flux_generate_image` 任一可用 | Phase 2 可选 | Imagen 4 → GPT-5 Image → FLUX 2 Pro → 跳过 |
 | AI 生视频 | `generate_video` / `kling_generate_video` 任一可用 | Phase 2 可选 | Veo 3.1 → Kling → 跳过 |

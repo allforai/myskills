@@ -134,7 +134,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 | 能力 | 探测方式 | 重要性 | 降级行为 |
 |------|---------|--------|---------|
-| Playwright | `mcp__plugin_playwright_playwright__browser_navigate` 可用性 | Phase 8-9 必需 | 阻塞验证阶段，提示安装 |
+| Playwright | `mcp__playwright__browser_navigate` 可用性 | Phase 8-9 必需 | 阻塞验证阶段，提示安装 |
 | OpenRouter (MCP) | `mcp__plugin_product-design_ai-gateway__ask_model` 可用性 | 可选 | 跳过 XV 交叉验证 |
 
 **输出格式**：
