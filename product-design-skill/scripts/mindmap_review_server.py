@@ -770,7 +770,11 @@ function persistFeedback(){{
 }}
 function submitAll(){{
   if(!confirm('Submit mind map review feedback?'))return;
-  fetch('/api/submit',{{method:'POST'}}).then(()=>{{
+  // Flush latest feedback before submitting (cancel any pending debounce)
+  clearTimeout(saveTimer);
+  fetch('/api/feedback',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify(feedback)}})
+  .then(()=>fetch('/api/submit',{{method:'POST'}}))
+  .then(()=>{{
     const btn=document.getElementById('submitBtn');
     btn.disabled=true;
     btn.textContent='✓ Submitted';
@@ -778,7 +782,7 @@ function submitAll(){{
     // Show full-page success overlay
     const overlay=document.createElement('div');
     overlay.style.cssText='position:fixed;inset:0;background:rgba(255,255,255,.85);z-index:200;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;backdrop-filter:blur(4px)';
-    overlay.innerHTML='<div style="font-size:48px">✅</div><div style="font-size:20px;font-weight:600;color:#065f46">Feedback Submitted</div><div style="font-size:14px;color:#64748b">You can close this tab. Run <code>/{"concept-review" if SOURCE == "concept" else "map-review"} process</code> to apply.</div>';
+    overlay.innerHTML='<div style="font-size:48px">✅</div><div style="font-size:20px;font-weight:600;color:#065f46">Feedback Submitted</div><div style="font-size:14px;color:#64748b">Server is shutting down. Claude will automatically process the feedback.</div>';
     document.body.appendChild(overlay);
   }});
 }}
@@ -824,7 +828,26 @@ class MindmapHandler(http.server.BaseHTTPRequestHandler):
             fb["submitted_at"] = C.now_iso()
             save_feedback(fb)
             self._json({"ok": True})
-            print(f"\nFeedback submitted! Saved to {FEEDBACK_PATH}")
+            # Print feedback summary to stdout so Claude receives it
+            nodes = fb.get("nodes", {})
+            approved = [nid for nid, n in nodes.items() if n.get("status") == "approved"]
+            revision = [nid for nid, n in nodes.items() if n.get("status") == "revision"]
+            print(f"\n{'='*60}")
+            print(f"Feedback submitted! Saved to {FEEDBACK_PATH}")
+            print(f"  Round:    {fb.get('round', 1)}")
+            print(f"  Approved: {len(approved)}")
+            print(f"  Revision: {len(revision)}")
+            if revision:
+                print(f"\nNodes needing revision:")
+                for nid in revision:
+                    node = nodes[nid]
+                    comments = node.get("comments", [])
+                    print(f"  - {nid}: {len(comments)} comment(s)")
+                    for c in comments:
+                        print(f"      [{c.get('category','general')}] {c.get('text','')}")
+            print(f"{'='*60}")
+            print(f"\n>>> FEEDBACK_JSON_PATH={FEEDBACK_PATH}")
+            sys.stdout.flush()
             import threading
             threading.Timer(1.0, lambda: os._exit(0)).start()
         else:
@@ -852,6 +875,9 @@ class MindmapHandler(http.server.BaseHTTPRequestHandler):
 
 
 def main():
+    # Kill any other review servers to avoid multiple browser windows
+    C.kill_other_review_servers(PORT)
+
     server = http.server.HTTPServer((HOST, PORT), MindmapHandler)
     url = f"http://{HOST}:{PORT}"
     title = TITLES.get(SOURCE, SOURCE)

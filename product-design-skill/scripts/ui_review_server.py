@@ -380,7 +380,7 @@ function submitAll(){{
     document.getElementById('submitBtn').textContent='Submitted!';
     const overlay=document.createElement('div');
     overlay.style.cssText='position:fixed;inset:0;background:rgba(255,255,255,.85);z-index:200;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;backdrop-filter:blur(4px)';
-    overlay.innerHTML='<div style="font-size:48px">✅</div><div style="font-size:20px;font-weight:600;color:#065f46">Feedback Submitted</div><div style="font-size:14px;color:#64748b">You can close this tab. Run <code>/ui-review</code> to apply.</div>';
+    overlay.innerHTML='<div style="font-size:48px">✅</div><div style="font-size:20px;font-weight:600;color:#065f46">Feedback Submitted</div><div style="font-size:14px;color:#64748b">Server is shutting down. Claude will automatically process the feedback.</div>';
     document.body.appendChild(overlay);
   }});
 }}
@@ -739,9 +739,25 @@ class ReviewHandler(http.server.BaseHTTPRequestHandler):
             fb["submitted_at"] = C.now_iso()
             save_feedback(fb)
             self._json({"ok": True})
-            print(f"\nFeedback submitted! Saved to {FEEDBACK_PATH}")
-            print("Run /ui-review to process the feedback.")
-            # Shutdown after a brief delay
+            # Print feedback summary to stdout so Claude receives it
+            screens = fb.get("screens", {})
+            approved = [s for s, d in screens.items() if d.get("status") == "approved"]
+            revision = [s for s, d in screens.items() if d.get("status") == "revision"]
+            print(f"\n{'='*60}")
+            print(f"UI feedback submitted! Saved to {FEEDBACK_PATH}")
+            print(f"  Round:    {fb.get('round', 1)}")
+            print(f"  Approved: {len(approved)}")
+            print(f"  Revision: {len(revision)}")
+            if revision:
+                print(f"\nScreens needing revision:")
+                for sid in revision:
+                    pins = screens[sid].get("pins", [])
+                    print(f"  - {sid}: {len(pins)} pin(s)")
+                    for p in pins:
+                        print(f"      {p.get('comment','')}")
+            print(f"{'='*60}")
+            print(f"\n>>> FEEDBACK_JSON_PATH={FEEDBACK_PATH}")
+            sys.stdout.flush()
             import threading
             threading.Timer(1.0, lambda: os._exit(0)).start()
 
@@ -772,6 +788,9 @@ class ReviewHandler(http.server.BaseHTTPRequestHandler):
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
+    # Kill any other review servers to avoid multiple browser windows
+    C.kill_other_review_servers(PORT)
+
     server = http.server.HTTPServer((HOST, PORT), ReviewHandler)
     url = f"http://{HOST}:{PORT}"
     if HOST == "0.0.0.0":

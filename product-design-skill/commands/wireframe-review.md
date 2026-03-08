@@ -41,6 +41,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/wireframe_review_server.py <BASE> [--port 
   - **Feature/Task** → 路由到 product-map（功能缺失/多余、任务分解问题）
   - **Concept** → 路由到 product-concept（产品方向问题）
 - 审核完毕点击 "Submit Feedback" → 生成 `review-feedback.json` → 服务器自动关闭
+- **服务器退出后**：Bash 输出包含反馈摘要（approved/revision 数量及评论内容），**自动进入 process 模式**处理反馈，无需用户手动运行 `/wireframe-review process`
 
 ---
 

@@ -36,6 +36,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/ui_review_server.py <BASE> [--port 18903]
 - 局域网访问：加 `--host 0.0.0.0`
 - 用户在浏览器中审核所有界面，点击预览任意位置添加 pin 评论
 - 审核完毕点击 "Submit Feedback" → 生成 `review-feedback.json` → 服务器自动关闭
+- **服务器退出后**：Bash 输出包含反馈摘要（approved/revision 数量及评论内容），**自动进入 process 模式**处理反馈，无需用户手动运行 `/ui-review process`
 
 ---
 

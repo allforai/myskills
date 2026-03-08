@@ -36,7 +36,8 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/mindmap_review_server.py <BASE> --source c
 - 点击任意节点展开/折叠子树
 - 点击节点添加评论，选择评论类别（General / Feature / Concept / Flow）
 - 每个节点可标记 Approved 或 Needs Revision
-- 审核完毕点击 "Submit Feedback" → 生成反馈文件
+- 审核完毕点击 "Submit Feedback" → 生成反馈文件 → 服务器自动关闭
+- **服务器退出后**：Bash 输出包含反馈摘要（approved/revision 数量及评论内容），**自动进入 process 模式**处理反馈，无需用户手动运行 `/concept-review process`
 
 ---
 
