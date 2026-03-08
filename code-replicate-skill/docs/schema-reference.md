@@ -142,6 +142,8 @@ Phase 4 完成后写入 `source-analysis.json` 顶层，记录产物一致性校
 
 ## api-contracts.json — 端点条目（含 4D + 6V）
 
+> 以下以 REST/HTTP 为例。其他协议（gRPC/GraphQL/WebSocket）字段名不变，`method` 可为 `query`/`mutation`/`rpc`，`path` 可为 service method 全名，`responses` 中 `status` 可为协议对应的状态码或错误类型。
+
 ```json
 {
   "endpoint_id": "EP001",

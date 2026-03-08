@@ -150,6 +150,10 @@ version: "1.0.0"
 - 生成接口签名（函数名 + 参数类型 + 返回类型）
 - 不分析实现逻辑，标注 `[EXTERNAL_INTERFACE]`
 
+### Phase 4 产物自检
+
+复用 cr-backend（`endpoint_coverage` + `module_coverage` + `high_risk_6v`）或 cr-frontend（`component_coverage` + `page_coverage` + `module_coverage` + `high_risk_6v`）的自检逻辑，根据检测到的项目类型自动选择。自检范围仅覆盖目标模块 + 决策为"纳入"的模块，不含"外部接口"模块。
+
 ---
 
 ## Phase 6：生成产物（增强）

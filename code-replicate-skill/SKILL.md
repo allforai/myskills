@@ -53,6 +53,7 @@ code-tuner（架构层）         合规→重复→抽象→评分
 /code-replicate architecture ./src                               # 复刻模块结构
 /code-replicate exact ./src                                      # 百分百复刻（含 bug）
 /code-replicate functional https://github.com/org/repo.git       # 远程仓库
+/code-replicate --from-phase 4                                   # 从 Phase 4 重跑（源码更新后）
 /code-replicate status                                           # 查看进度
 ```
 

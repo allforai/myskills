@@ -8,19 +8,19 @@
 
 ## interface（接口级）
 
-**目标**：只复刻 API 合约 — 路由、参数、响应结构、状态码
+**目标**：只复刻 API 合约 — 端点定义、参数、响应结构、状态码
 
 **分析内容**：
-- HTTP 路由（GET /users/:id、POST /orders 等）
-- 请求参数（path / query / body 字段、类型、必填/可选）
-- 响应结构（JSON schema、嵌套关系）
-- HTTP 状态码（200/201/400/401/403/404/422/500 的触发条件）
-- 认证方式（JWT header / API Key / Cookie）
+- 接口端点（路由路径 + 操作方法，如 REST GET/POST、gRPC method、GraphQL query/mutation）
+- 请求参数（路径参数 / 查询参数 / 请求体字段、类型、必填/可选）
+- 响应结构（返回数据 schema、嵌套关系）
+- 状态码 / 错误码（成功/客户端错误/权限错误/冲突/服务端错误的触发条件）
+- 认证方式（Token / API Key / Session 等）
 
 **适用场景**：
 - 需要兼容现有客户端，不想改接口契约
 - 后端重写，前端代码不动
-- 从 REST 迁移到 GraphQL（保留语义，改传输协议）
+- 协议迁移（如 REST → GraphQL，保留语义，改传输协议）
 - 微服务拆分，对外接口不变
 
 **产出的 allforai 产物**：

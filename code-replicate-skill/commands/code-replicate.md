@@ -1,6 +1,6 @@
 ---
 description: "代码复刻：逆向工程已有代码库 → 生成 allforai 产物 → 交还 dev-forge 流水线。模式: interface / functional / architecture / exact"
-argument-hint: "[mode] <path-or-url> [--type backend|frontend|fullstack|module] [--scope full|modules|feature] [--module <path>]"
+argument-hint: "[mode] <path-or-url> [--type backend|frontend|fullstack|module] [--scope full|modules|feature] [--module <path>] [--from-phase N]"
 allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion", "Agent", "WebSearch"]
 ---
 
@@ -53,6 +53,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion", "Age
 /code-replicate functional git@github.com:org/repo.git       # SSH 地址
 /code-replicate functional ./project --type fullstack         # 全栈复刻（前后端交叉验证）
 /code-replicate functional ./src --type module --module src/modules/user  # 模块复刻
+/code-replicate --from-phase 4                                # 从 Phase 4 重跑（保留 Phase 1-3 配置）
 ```
 
 ## 信度等级速查
