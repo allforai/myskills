@@ -341,6 +341,7 @@ existing 模式下，Step 3 生成 design.md 之前，先执行套路检测：
   若 product-map.json 不存在 → 提示先运行 /product-map，终止
   加载 prune-decisions.json → 过滤: 仅 CORE 和 DEFER 任务进入范围
   加载 forge-decisions.json → 读取 technical_spikes + coding_principles（存在时）
+  Load: forge-decisions.json → dev_mode（如有：bypass 类型、策略、隔离方式）
   ↓
 前置: 上游过期检测
   加载输入文件时，比较关键上游文件的修改时间与本技能上次输出的生成时间：
@@ -364,12 +365,12 @@ Step 0: 模块映射验证
     后端组: type = "backend"（通常 1 个）
     前端组: 其余所有子项目（admin/web-customer/web-mobile/mobile-native）
   Phase A — 后端 Agent（1 个 Agent 调用）:
-    Agent(backend): Step 1 → Step 2 → Step 3 → Step 3.5 → Step 3.8 → Step 4 → Step 4.5
+    Agent(backend): Step 1 → Step 2 → Step 3 → Step 3.5 → Step 3.8 → Step 3.9 → Step 4 → Step 4.5
     ↓ 完成后
   Phase B — 前端并行 Agent（单条消息发出 N 个 Agent 调用）:
-    ┌── Agent(前端1): Step 1 → Step 2 → Step 3 → Step 3.8 → Step 4 → Step 4.5
-    ├── Agent(前端2): Step 1 → Step 2 → Step 3 → Step 3.8 → Step 4 → Step 4.5
-    └── Agent(前端N): Step 1 → Step 2 → Step 3 → Step 3.8 → Step 4 → Step 4.5
+    ┌── Agent(前端1): Step 1 → Step 2 → Step 3 → Step 3.8 → Step 3.9 → Step 4 → Step 4.5
+    ├── Agent(前端2): Step 1 → Step 2 → Step 3 → Step 3.8 → Step 3.9 → Step 4 → Step 4.5
+    └── Agent(前端N): Step 1 → Step 2 → Step 3 → Step 3.8 → Step 3.9 → Step 4 → Step 4.5
     全部完成 ↓
   以下 Step 1-4.5 描述每个 Agent 内部执行的步骤内容:
   ↓
@@ -612,6 +613,31 @@ Step 3.8: 埋点规格生成（Event Schema）
   → 写入 .allforai/project-forge/sub-projects/{name}/event-schema.json + event-schema.md
   → 输出进度: 「{name}/event-schema ✓ ({N} events, {M} funnels, {K} metrics)」（不停，汇总到 Step 6）
   ↓
+Step 3.9: Dev Bypass 接口设计
+  当 `forge-decisions.json` 中 `dev_mode.enabled = true` 时执行，否则跳过。
+
+  **生成规则**：
+
+  对 dev_mode.bypasses 中每项，在 design.md 中追加 `## Dev Mode Bypass` 章节：
+
+  1. **接口隔离设计**：
+     - 定义 bypass 接口（与生产接口相同签名）
+     - 标注隔离方式：Go build tag (`//go:build dev`) / TS 条件导入 (`process.env.NODE_ENV`)
+     - 文件命名约定：`{service}_dev.go` / `{service}.dev.ts`
+
+  2. **bypass 行为规格**：
+     - 每种策略的具体行为（magic_value 返回什么、auto_callback 延迟多少）
+     - 日志输出要求：每次 bypass 执行必须输出 `[DEV_BYPASS] {type}: {action}` 日志
+
+  3. **安全守卫设计**：
+     - 运行时守卫：非 development 环境加载 dev 文件时 panic/throw
+     - 构建时剔除：build tag / tree-shaking 配置
+     - CI 规则：扫描 `_dev\.(go|ts|tsx)$` 文件不被生产代码直接 import
+
+  输出追加到 design.md 的末尾章节。
+
+  Progress: "Dev bypass 接口设计 ✓ ({N} bypasses)"
+  ↓
 Step 4: Tasks 生成
   按开发层分 Batch，每任务遵循原子标准:
     - 1-3 文件，15-30 分钟，单一目的
@@ -623,6 +649,39 @@ Step 4: Tasks 生成
     - 审计日志任务（从 task.audit 聚合 → audit_logs 表+中间件+测试）
     - 审批流任务（从 task.approver_role 聚合 → 审批 API+状态机+测试）
     - 配置管理任务（从 config_items 聚合 → 配置表+端点+测试）
+  **Dev Bypass 任务（当 dev_mode.enabled = true）**：
+
+  在 B2（后端 API）之后、B3（UI）之前，插入 dev bypass 任务：
+
+  ```
+  B2.5: Dev Bypass 实现
+    - 每个 bypass → 1 个任务
+    - 任务标记 `[DEV_ONLY]`，构建时剔除
+    - 文件限定在 `*_dev.go` / `*.dev.ts`
+
+    示例：
+    - [ ] B2.5.1 [backend] [DEV_ONLY] 支付网关 dev bypass
+      Files: `services/payment/payment_dev.go`
+      行为：magic amount 映射（0.01→成功, 0.02→失败, 0.03→超时），延迟 1s 触发回调
+      守卫：`//go:build dev` + 运行时 env 检查
+      _Bypass: payment_gateway.auto_callback_
+
+    - [ ] B2.5.2 [backend] [DEV_ONLY] 短信验证 dev bypass
+      Files: `services/sms/sms_dev.go`
+      行为：13800000001-09 + "123456" 万能码
+      守卫：`//go:build dev` + 运行时 env 检查
+      _Bypass: sms_verification.magic_value_
+  ```
+
+  同时在 B5（测试）中追加：
+
+  ```
+    - [ ] B5.x [ci] [DEV_ONLY] Dev bypass 安全防线
+      Files: `.github/workflows/dev-mode-lint.yml`, `.husky/pre-commit`（或等效）
+      行为：CI 扫描 *_dev 文件不被生产代码 import；pre-commit hook 检查
+      _Bypass: ci_rules_
+  ```
+
   B5 中应包含埋点验证任务：验证关键事件是否正确触发、属性是否完整、漏斗是否连通。
   → Batch 结构因子项目类型而异（见下文）
   → 写入 .allforai/project-forge/sub-projects/{name}/tasks.md
@@ -777,6 +836,7 @@ Step 6: 阶段末汇总确认
   跨项目依赖: {N} 条
   执行顺序: B0 → B1(并行) → B2 → B3(并行) → B4 → B5
   总任务数: CORE {N} + DEFER {M}
+  dev-bypass: {N} tasks [DEV_ONLY]（仅 dev_mode.enabled = true 时显示）
 
   → 输出汇总进度「Phase 2 ✓ {N} 子项目 × 5 文档 (Phase A 串行 + Phase B 并行), CORE {M} 任务」（不停）
 ```

@@ -187,6 +187,54 @@ Step 3.5: 依赖交叉检查（OpenRouter 可用时）
   无问题 → 输出: 「Step 3.5 依赖检查 ✓ 无告警」
   OpenRouter 不可用 → 跳过，输出: 「Step 3.5 ⊘ 跳过」
   ↓
+Step 3.7: Dev Mode 基础设施（当 dev_mode.enabled = true）
+  从 forge-decisions.json 读取 dev_mode 配置，生成开发者模式基础设施。
+  当 dev_mode.enabled = false 或不存在 → 跳过
+  生成内容:
+    1. 环境配置:
+       .env.development — 所有 DEV_*_BYPASS=true 开关
+       .env.production — 所有 DEV_*_BYPASS 显式设为 false（防遗漏）
+       .env.example — 带注释的模板，标注哪些是 dev-only
+    2. Dev Bypass 接口骨架（按 dev_mode.bypasses 列表）:
+       Go 项目:
+         services/{type}/
+         ├── {type}.go           # 接口定义（interface）
+         ├── {type}_prod.go      # 生产实现骨架（//go:build !dev）
+         └── {type}_dev.go       # dev bypass 骨架（//go:build dev）
+         每个 _dev.go 包含:
+           - build tag 守卫: //go:build dev
+           - 运行时二次守卫: if os.Getenv("ENV") == "production" { panic("dev bypass loaded in production") }
+           - [DEV_BYPASS] 日志输出
+           - bypass 逻辑骨架（待 task-execute 填充具体实现）
+       TypeScript 项目:
+         src/services/{type}/
+         ├── index.ts            # 统一导出（根据 NODE_ENV 选择实现）
+         ├── {type}.prod.ts      # 生产实现骨架
+         └── {type}.dev.ts       # dev bypass 骨架
+         每个 .dev.ts 包含:
+           - 环境检查: if (process.env.NODE_ENV === 'production') throw new Error('Dev bypass in production!')
+           - console.warn [DEV_BYPASS] 日志
+           - bypass 逻辑骨架
+         index.ts 导出逻辑:
+           export const {service} = process.env.NODE_ENV === 'development'
+             ? require('./{type}.dev') : require('./{type}.prod')
+    3. CI 安全防线:
+       .github/workflows/dev-mode-lint.yml — Dev Mode Safety Check
+         on: [push, pull_request]
+         扫描非 _dev/_dev. 文件是否直接 import 了 _dev 文件
+         有违规 → CI 失败并输出违规列表
+       Pre-commit hook（如使用 husky/lefthook）:
+         检查 staged 文件中是否有非 dev 文件 import 了 dev bypass
+    4. Dev Mode 速查文档:
+       docs/dev-mode.md:
+         - 所有 magic values 速查表
+         - 各 bypass 的使用方式
+         - 如何添加新的 bypass
+         - 安全机制说明
+  → 写入文件 → 记入 scaffold-manifest.json
+  → 输出进度: 「Step 3.7 Dev mode 基础设施 ✓ ({N} bypass 骨架 + CI lint + .env)」
+  dev_mode 未启用 → 输出: 「Step 3.7 ⊘ 跳过（dev_mode 未启用）」
+  ↓
 Step 4: Mock 后端生成
   读取 templates/mock-server.md
   从后端子项目的 design.md 提取 API 端点列表
@@ -280,6 +328,13 @@ Step 6: 启动验证
 ├── {workspace-config}              # Step 2
 ├── tsconfig.base.json              # Step 2
 ├── .env.example                    # Step 2
+├── .env.development                # Step 3.7 dev mode 环境变量
+├── .env.production                 # Step 3.7 生产环境（bypass 显式 false）
+├── .github/
+│   └── workflows/
+│       └── dev-mode-lint.yml       # Step 3.7 CI 安全扫描
+├── docs/
+│   └── dev-mode.md                 # Step 3.7 dev mode 速查文档
 ├── apps/
 │   ├── {sub-project}/              # Step 3（每个子项目）
 │   └── mock-server/                # Step 4

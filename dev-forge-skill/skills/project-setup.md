@@ -138,12 +138,31 @@ Step 4: 基础配置
   自动选择 auth 策略: preflight.auth_strategy（有 preflight 时）或 JWT（不停）
   → 自动分配端口（不停，汇总到 Step 5）
   ↓
+Step 4.5: 开发者模式配置（Dev Mode）
+  从 Step 2 技术栈 + Step 3 模块分配中，自动检测外部依赖类型:
+    模块含"支付/payment/charge/billing"     → 支付网关 bypass（auto_callback）
+    模块含"验证码/sms/otp/phone"            → 短信验证 bypass（magic_value）
+    模块含"邮件验证/email_verify"            → 邮件验证 bypass（magic_value）
+    模块含"验证码/captcha/recaptcha/hcaptcha" → CAPTCHA bypass（always_pass）
+    模块含"oauth/social_login/wechat_login"  → OAuth bypass（test_account）
+    模块含"实名/kyc/identity/id_verify"      → 实名认证 bypass（always_pass）
+  不产生 bypass 的类型（功能本身需要测试）:
+    文件上传 → 用 MinIO / 本地存储
+    消息推送 → 用本地模拟器
+    消息队列 → 用 Docker compose 本地 Redis/RabbitMQ
+    数据库   → 用 Docker compose 本地实例
+  交互: 展示检测到的 bypass 列表，用户选择 A.全部接受 / B.逐项调整 / C.不启用
+  安全等级: 固定 strict（接口隔离 + 构建时剔除 + CI 拦截）
+  → 写入 forge-decisions.json#dev_mode（不停，汇总到 Step 5）
+  ↓
 Step 5: 生成 manifest + 汇总确认
   写入 project-manifest.json + project-manifest-report.md
   展示完整汇总表:
     | 子项目 | 类型 | 技术栈 | 模块 | 端口 |
     | 配置: Monorepo / Auth |
     | 模块覆盖率 |
+    | 开发者模式：✅ 已启用（{N} 项 bypass：支付、短信、CAPTCHA）| 安全等级：strict |
+    | （若未启用）开发者模式：❌ 未启用 |
   → 输出汇总进度「Phase 1 ✓ {N} 子项目, {M} 模块, 覆盖率 100%」（不停）
 ```
 
@@ -203,6 +222,7 @@ Step 5: 生成 manifest + 汇总确认
       "status": "pending"
     }
   ],
+  "dev_mode_ref": "forge-decisions.json#dev_mode",
   "decisions": []
 }
 ```
@@ -339,6 +359,94 @@ Step 0 扫描策略:
      - 未实现的模块 → 标记为缺口，需要新建或补充
   5. 输出检测结果，自动继续（不停）
 ```
+
+---
+
+## Step 4.5 详细说明：开发者模式配置（Dev Mode）
+
+识别项目中需要 dev bypass 的外部依赖，配置开发环境绕过策略。
+
+**自动扫描**：从 Step 2 选定的技术栈 + Step 3 模块分配中，自动检测以下外部依赖类型：
+
+| 依赖类型 | 检测特征 | 默认 bypass 策略 |
+|---------|---------|-----------------|
+| 支付网关 | 模块含"支付/payment/charge/billing" | `auto_callback` — magic amount 控制结果（0.01=成功, 0.02=失败, 0.03=超时） |
+| 短信验证 | 模块含"验证码/sms/otp/phone" | `magic_value` — 固定号段 + 万能验证码 "123456" |
+| 邮件验证 | 模块含"邮件验证/email_verify" | `magic_value` — 任意邮箱 + 万能验证码 "123456" |
+| CAPTCHA | 模块含"验证码/captcha/recaptcha/hcaptcha" | `always_pass` — dev 环境跳过验证 |
+| OAuth/第三方登录 | 模块含"oauth/social_login/wechat_login/google_login" | `test_account` — 预置测试账号，跳过跳转 |
+| 实名认证/KYC | 模块含"实名/kyc/identity/id_verify" | `always_pass` — dev 环境直接通过 |
+
+**交互**：
+
+```
+AskUserQuestion:
+检测到以下外部依赖需要 dev bypass：
+
+  1. ✅ 支付网关（auto_callback）
+  2. ✅ 短信验证（magic_value: 138xxxx + "123456"）
+  3. ✅ Google reCAPTCHA（always_pass）
+  4. ❌ 文件上传 OSS（无需 bypass，用 MinIO）
+
+选择：
+  A. 全部接受（推荐）
+  B. 逐项调整
+  C. 不启用 dev mode
+```
+
+**安全等级**（不问用户，固定为 strict）：
+- `strict`：接口隔离 + 构建时剔除 + CI 拦截（三重保护）
+
+**写入 forge-decisions.json**：
+
+```json
+{
+  "dev_mode": {
+    "enabled": true,
+    "safety_level": "strict",
+    "bypasses": [
+      {
+        "type": "payment_gateway",
+        "strategy": "auto_callback",
+        "config": {
+          "magic_amounts": { "0.01": "success", "0.02": "fail", "0.03": "timeout" },
+          "auto_callback_delay_ms": 1000,
+          "env_flag": "DEV_PAYMENT_BYPASS"
+        },
+        "isolation": {
+          "prod_file": "payment_alipay.go",
+          "dev_file": "payment_dev.go",
+          "guard": "build_tag"
+        }
+      },
+      {
+        "type": "sms_verification",
+        "strategy": "magic_value",
+        "config": {
+          "magic_numbers": ["13800000001-13800000009"],
+          "magic_code": "123456",
+          "env_flag": "DEV_SMS_BYPASS"
+        },
+        "isolation": {
+          "prod_file": "sms_aliyun.go",
+          "dev_file": "sms_dev.go",
+          "guard": "build_tag"
+        }
+      }
+    ],
+    "ci_rules": {
+      "block_bypass_in_prod_import": true,
+      "scan_pattern": "_dev\\.(go|ts|tsx)$"
+    }
+  }
+}
+```
+
+**不产生 bypass 的类型**（功能本身需要测试）：
+- 文件上传 → 用 MinIO / 本地存储
+- 消息推送 → 用本地模拟器
+- 消息队列 → 用 Docker compose 本地 Redis/RabbitMQ
+- 数据库 → 用 Docker compose 本地实例
 
 ---
 

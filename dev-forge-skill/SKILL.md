@@ -9,7 +9,7 @@ description: >
   product-verify (static + dynamic acceptance).
   Full pipeline: /project-forge. Theory-backed decisions (Unix Philosophy, Clean Architecture, etc.).
   开发锻造套件：项目引导、设计转规格、脚手架生成、任务执行、跨端验证、产品验收。
-version: "2.8.0"
+version: "2.9.0"
 ---
 
 # Dev Forge — 开发锻造套件
