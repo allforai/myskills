@@ -64,13 +64,24 @@ Agent tool 的屏障同步机制保证所有前端 Agent 完成后才继续到 S
 - forge-decisions.json: .allforai/project-forge/forge-decisions.json（technical_spikes + coding_principles）
 - 产品设计产物: .allforai/product-map/, .allforai/experience-map/ 等
 - 后端 design.md: .allforai/project-forge/sub-projects/{backend-name}/design.md（仅前端 Agent 引用）
+- 后端 design.json: .allforai/project-forge/sub-projects/{backend-name}/design.json（仅前端 Agent 引用）
 {自动模式标记: __orchestrator_auto: true（若自动模式激活）}
+
+类型契约注入（仅前端 Agent）:
+  编排器在启动 Phase B 前，自动从后端产物提取类型契约，注入每个前端 Agent prompt:
+  1. 从 design.json 提取 data_models（所有 Entity 的字段名、类型、关联关系）
+  2. 从 design.json 提取 api_endpoints 的 request_schema / response_schema
+  3. 若后端子项目已生成 types/*.ts 或 shared-types/ → 提取 interface 定义原文
+  4. 将以上内容作为「## 后端类型契约（只读参考）」章节注入前端 Agent prompt
+  这确保前端 Agent 对 DTO 字段命名、ID vs 名称、枚举值与后端完全一致，
+  而非各自推断导致 mismatch。
 
 重要:
 - 仅处理本子项目，不读写其他子项目的产出目录
 - 按端差异化规则生成（参考 design-to-spec.md 的「各端差异化 Spec 生成」表格）
 - 遵循两阶段加载（先 index 再 full data）
 - 前端 Agent: API 调用必须引用后端 design.md 中已定义的端点 ID
+- 前端 Agent: DTO 字段命名必须与注入的后端类型契约完全一致（不可自行推断字段名）
 - 预置脚本优先: 检查 ${CLAUDE_PLUGIN_ROOT}/scripts/ 是否有可用脚本
 ~~~
 

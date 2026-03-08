@@ -434,9 +434,29 @@ Step 3: Design 生成（API-first 策略）
       entity.relations → 外键 + 关联关系
     backend（数据模型之后）:
       tasks → API 端点设计（RESTful 路由、请求/响应 DTO）
+      约束冲突校验（每个端点生成后立即检查）:
+        对每个 API 端点，读取对应 task 的 rules + exceptions 字段:
+        - 若 rules 含「本地处理」「离线」「不存库」「客户端缓存」等关键词
+          → 该任务不应生成服务端 API 端点，标记 `[LOCAL_ONLY]` 并跳过
+        - 若 rules 含分页/筛选约束（「每页」「分页」「筛选」「排序」「搜索」）
+          → 列表端点必须在 query params 中包含对应参数
+        - 若 exceptions 含特定错误场景 → 端点的 error_codes 必须覆盖
+      列表端点 query params 强制提取:
+        GET 列表类端点（资源复数路径）生成时，强制读取对应 task 的:
+        - main_flow → 提取筛选/搜索/排序操作描述
+        - rules → 提取分页规则（默认页大小、最大页大小）、筛选字段、排序字段
+        - 生成完整 query params 文档（page, page_size, sort_by, sort_order, filter_*）
+        - 缺失时使用默认值: page=1, page_size=20, max_page_size=50
       constraints → 中间件链设计
       flows → 后端时序图
     前端类 (admin/web-customer/web-mobile):
+      多后端服务 baseURL 推导:
+        读取 manifest 中后端子项目/服务拓扑:
+        - 单后端服务 → 生成单一 HTTP 客户端实例 + 1 个 baseURL 常量
+        - 多后端服务（不同端口/域名/服务）→ 自动推导多实例架构:
+          每个后端服务 → 1 个独立 HTTP 客户端实例
+          在 design.md 的「请求层」章节写明各实例的 baseURL + 负责的端点前缀
+          tasks.md B1 中生成对应的 HTTP 客户端初始化任务
       screens → 页面路由 + 组件架构
       screen.states → 界面四态设计（empty/loading/error/permission_denied）
       actions → 交互规格（引用已定义的 API 端点）
@@ -740,6 +760,6 @@ Step 6: 阶段末汇总确认
 
 后端 B2 → 前端 B4 的依赖、共享类型的依赖，都在 Step 5 中显式声明并写入 execution_order。
 
-### 6. 并行 Agent 产出隔离
+### 6. 并行 Agent 产出隔离 + 类型契约传递
 
-Phase A/B 的并行 Agent 各自写入独立子项目目录（`.allforai/project-forge/sub-projects/{name}/`），不读写其他 Agent 的产出。唯一跨 Agent 引用：前端 Agent 只读后端 design.md（API 端点定义），不修改。
+Phase A/B 的并行 Agent 各自写入独立子项目目录（`.allforai/project-forge/sub-projects/{name}/`），不读写其他 Agent 的产出。跨 Agent 数据流严格单向：编排器从后端产物提取类型契约（data_models + request/response schema + interface 定义），注入前端 Agent prompt，确保 DTO 字段命名、类型 ID vs 名称等与后端完全一致。前端 Agent 不自行推断后端已定义的数据结构。
