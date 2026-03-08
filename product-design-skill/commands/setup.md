@@ -1,6 +1,6 @@
 ---
-description: "检测和配置所有外部能力：Playwright（UI 自动化）+ OpenRouter（跨模型 XV）+ Brave Search（媒体搜索）+ Google AI（生图/生视频）+ Stitch UI（视觉稿）。一站式状态仪表板 + 引导配置。"
-argument-hint: "[check|reset]"
+description: "检测和配置所有外部能力：Playwright（UI 自动化）+ OpenRouter（跨模型 XV）+ Brave Search（媒体搜索）+ Google AI（生图/生视频）+ Stitch UI（视觉稿）。一站式状态仪表板 + 引导配置 + 一键更新所有插件/MCP/技能。"
+argument-hint: "[check|reset|update]"
 allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 ---
 
@@ -17,6 +17,7 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 - **无参数** → 完整引导：检测 → 获取 Key → 验证 → 持久化
 - **`check`** → 仅检测当前状态（全部外部能力的可用性仪表板）
 - **`reset`** → 清除已有配置，重新引导
+- **`update`** → 更新所有已安装的插件、MCP 服务器和技能（见 Step 5）
 
 ## 外部能力总览
 
@@ -545,6 +546,80 @@ MCP 工具（Step 1.5 已引导安装）:
   Stitch UI      {已安装/已跳过/之前已就绪}  product-design — UI 视觉稿
 
 下一步：重启 Claude Code 后运行 /setup check 验证连接。
+```
+
+### Step 5: 更新已安装的插件和服务（仅 `update` 模式）
+
+`update` 模式跳过 Step 1-4，直接执行更新流程。
+
+#### 5a. 更新 Claude Code 插件
+
+1. **读取已安装插件列表**：
+   ```bash
+   cat ~/.claude/plugins/installed_plugins.json
+   ```
+
+2. **解析每个插件**，提取 `scope`（marketplace 名）和插件名：
+   - 每条记录有 `scope`（如 `myskills`）、`installPath`（安装目录）、`version`（当前版本）
+   - 从 `installPath` 的末级目录名提取插件名
+
+3. **逐个更新**：
+   ```bash
+   claude plugin update <plugin-name>@<scope>
+   ```
+   例如：`claude plugin update product-design@myskills`
+
+4. **汇总报告**：列出每个插件的更新前后版本
+
+#### 5b. 重建 MCP 服务器
+
+1. **读取 MCP 配置**：
+   ```bash
+   cat ~/.claude/settings.json
+   ```
+   提取 `mcpServers` 中的所有服务器
+
+2. **对每个 node 类型的 MCP 服务器**，检查其 `args` 中的入口文件路径，找到对应的 `package.json` 所在目录
+
+3. **重建**：
+   ```bash
+   cd <mcp-server-dir> && npm install && npm run build
+   ```
+
+4. **报告构建结果**
+
+#### 5c. 更新 OpenCode 技能（若已配置）
+
+1. **检查 OpenCode 技能仓库**：
+   ```bash
+   ls ~/.opencode/skills/myskills/update-skills.sh
+   ```
+
+2. **存在则执行更新脚本**：
+   ```bash
+   ~/.opencode/skills/myskills/update-skills.sh
+   ```
+
+3. **不存在则跳过**（用户未安装 OpenCode 技能）
+
+#### 更新报告
+
+```
+## 更新完成
+
+Claude Code 插件:
+  product-design    4.5.0 → 4.5.1  ✅
+  dev-forge         2.6.0 → 2.7.0  ✅
+  deadhunt          2.1.0 → 2.1.0  （无更新）
+  ...
+
+MCP 服务器:
+  ai-gateway        ✅ 重建成功
+
+OpenCode 技能:
+  {已更新 / 未安装，跳过}
+
+提示：MCP 服务器更新后需重启 Claude Code 生效。
 ```
 
 ## 铁律（强制执行）
