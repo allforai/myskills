@@ -4,6 +4,9 @@
 Replaces gen_screen_map.py. Organizes screens into operation lines with
 emotion context, ux intent, and continuity metrics.
 
+When view-objects.json is available, screens are enriched with real VO fields,
+interaction types, data_fields, actions, flow_context, and states.
+
 Usage:
     python3 gen_experience_map.py <BASE_PATH> [--mode auto]
 """
@@ -18,6 +21,34 @@ CRUD_KEYWORDS = {
     "U": ["修改", "编辑", "更新", "调整", "设置", "配置", "update", "edit", "modify", "configure", "set"],
     "D": ["删除", "移除", "撤销", "取消", "remove", "delete", "cancel", "revoke"],
     "R": ["查看", "浏览", "搜索", "筛选", "导出", "统计", "列表", "详情", "view", "list", "search", "filter", "export", "detail"],
+}
+
+# ── CRUD → preferred VO view_type mapping ─────────────────────────────────────
+CRUD_TO_VIEW_TYPE = {
+    "C": ["create_form"],
+    "R": ["list_item", "detail"],
+    "U": ["edit_form"],
+    "D": ["state_action", "list_item"],  # delete often on list or state_action
+}
+
+# ── View type → Chinese name suffix ──────────────────────────────────────────
+VIEW_TYPE_NAMES = {
+    "list_item": "列表",
+    "detail": "详情",
+    "create_form": "创建",
+    "edit_form": "编辑",
+    "state_action": "操作",
+}
+
+# ── Default states per interaction type ──────────────────────────────────────
+DEFAULT_STATES = {
+    "MG1": {"empty": "暂无数据，显示空态插图", "loading": "骨架屏占位", "error": "加载失败，显示重试按钮", "success": "数据列表正常展示"},
+    "MG2-L": {"empty": "暂无数据，引导创建", "loading": "骨架屏占位", "error": "加载失败，显示重试按钮", "success": "数据列表正常展示"},
+    "MG2-C": {"empty": "空表单，所有字段待填写", "loading": "提交中，按钮禁用+加载指示器", "error": "提交失败，字段标红+错误提示", "success": "创建成功，跳转或提示"},
+    "MG2-E": {"empty": "表单回填旧值", "loading": "提交中，按钮禁用", "error": "保存失败，字段标红", "success": "保存成功，返回"},
+    "MG2-D": {"empty": "数据不存在，显示404提示", "loading": "骨架屏占位", "error": "加载失败，显示重试", "success": "详情正常展示"},
+    "MG3": {"empty": "无待处理项", "loading": "操作执行中", "error": "操作失败，显示原因", "success": "状态变更成功，刷新列表"},
+    "MG4": {"empty": "无待审核项", "loading": "提交审批中", "error": "审批失败", "success": "审批完成"},
 }
 
 
@@ -88,8 +119,75 @@ def infer_contract(ux_intent, crud_type, emotion_intensity):
     }
 
 
-def build_screens_for_node(node_tasks, tasks_inv, screen_counter, ux_intent="", emotion_intensity=5):
-    """Build screen objects from a list of task IDs. Returns (screens, updated_counter)."""
+# ── VO matching helpers ──────────────────────────────────────────────────────
+
+def _build_vo_lookup(view_objects):
+    """Build {(entity_name, view_type): vo} lookup from view_objects list.
+
+    When multiple VOs share (entity_name, view_type), the first one wins.
+    """
+    lookup = {}
+    for vo in view_objects:
+        key = (vo.get("entity_name", ""), vo.get("view_type", ""))
+        if key not in lookup:
+            lookup[key] = vo
+    return lookup
+
+
+def _find_vo_for_task(task, crud_type, vo_lookup):
+    """Find the best matching VO for a task based on module and CRUD type.
+
+    Returns the VO dict or None if no match.
+    """
+    module = task.get("module", task.get("owner_role", ""))
+    preferred_types = CRUD_TO_VIEW_TYPE.get(crud_type, ["list_item"])
+
+    for vt in preferred_types:
+        vo = vo_lookup.get((module, vt))
+        if vo:
+            return vo
+    return None
+
+
+def _vo_screen_name(vo):
+    """Generate a human-readable screen name from a VO.
+
+    e.g. entity_name='order', view_type='list_item' → '订单列表'
+         entity_name='order', view_type='create_form' → '订单创建'
+    """
+    entity = vo.get("entity_name", "unknown")
+    vtype = vo.get("view_type", "")
+    suffix = VIEW_TYPE_NAMES.get(vtype, vtype)
+    # Use entity_name directly (Chinese names will come from VO if available)
+    return f"{entity}_{suffix}"
+
+
+def _vo_description(vo):
+    """Generate a description from VO fields and type."""
+    vtype = vo.get("view_type", "")
+    entity = vo.get("entity_name", "unknown")
+    fields = vo.get("fields", [])
+    field_names = [f.get("name", "") for f in fields[:5]]
+    field_str = ", ".join(field_names) if field_names else "no fields"
+
+    type_desc = {
+        "list_item": "列表视图",
+        "detail": "详情视图",
+        "create_form": "创建表单",
+        "edit_form": "编辑表单",
+        "state_action": "状态操作",
+    }
+    desc = type_desc.get(vtype, vtype)
+    return f"{entity} {desc} — fields: {field_str}"
+
+
+def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
+                           ux_intent="", emotion_intensity=5, vo_lookup=None):
+    """Build screen objects from a list of task IDs. Returns (screens, updated_counter).
+
+    When vo_lookup is provided, screens are enriched with VO data (name, fields,
+    interaction_type, actions, states). Falls back to generic names when no VO matches.
+    """
     if not node_tasks:
         return [], screen_counter
 
@@ -121,24 +219,128 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter, ux_intent="", 
         # Determine primary action and dominant CRUD
         primary = actions[0]["label"] if actions else module
         dominant_crud = actions[0]["crud"] if actions else "R"
-        screen_name = f"{module}_screen"
 
         # Derive implementation contract
         contract = infer_contract(ux_intent, dominant_crud, emotion_intensity)
 
-        screens.append({
-            "id": sid,
-            "name": screen_name,
-            "description": f"{module} operations",
-            "route_type": "push",
-            "tasks": task_ids,
-            "actions": actions,
-            "primary_action": primary,
-            "non_negotiable": contract["required_behaviors"][:2] if contract["required_behaviors"] else [],
-            "implementation_contract": contract,
-        })
+        # ── Try VO enrichment ──
+        matched_vo = None
+        if vo_lookup:
+            # Use the first task to find a matching VO
+            first_task = task_pairs[0][1] if task_pairs else {}
+            matched_vo = _find_vo_for_task(first_task, dominant_crud, vo_lookup)
+
+        if matched_vo:
+            # Enriched screen from VO
+            interaction_type = matched_vo.get("interaction_type", "")
+            screen_name = _vo_screen_name(matched_vo)
+            description = _vo_description(matched_vo)
+
+            # Override contract pattern from interaction_type when available
+            if interaction_type:
+                contract["interaction_type"] = interaction_type
+
+            # Build enriched actions from VO actions
+            vo_actions = matched_vo.get("actions", [])
+
+            screen = {
+                "id": sid,
+                "name": screen_name,
+                "description": description,
+                "route_type": "push",
+                "tasks": task_ids,
+                "actions": actions,
+                "vo_actions": vo_actions,
+                "primary_action": primary,
+                "vo_ref": matched_vo.get("id", ""),
+                "api_ref": matched_vo.get("api_ref", ""),
+                "interaction_type": interaction_type,
+                "data_fields": matched_vo.get("fields", []),
+                "states": DEFAULT_STATES.get(interaction_type, {}),
+                "non_negotiable": contract["required_behaviors"][:2] if contract["required_behaviors"] else [],
+                "implementation_contract": contract,
+            }
+        else:
+            # Fallback: generic screen (backward compatible)
+            screen = {
+                "id": sid,
+                "name": f"{module}_screen",
+                "description": f"{module} operations",
+                "route_type": "push",
+                "tasks": task_ids,
+                "actions": actions,
+                "primary_action": primary,
+                "non_negotiable": contract["required_behaviors"][:2] if contract["required_behaviors"] else [],
+                "implementation_contract": contract,
+            }
+
+        screens.append(screen)
 
     return screens, screen_counter
+
+
+def _compute_flow_context(operation_lines):
+    """Compute flow_context (prev/next/entry_points/exit_points) for each screen.
+
+    Iterates through operation_lines → nodes → screens in order and records
+    sequential prev/next relationships within each operation line.
+    Also infers entry_points and exit_points from VO navigate actions.
+    """
+    # Build screen_id → screen object mapping (for VO action cross-referencing)
+    all_screens = {}  # sid → screen
+    vo_to_screen = {}  # vo_ref → [screen_ids]
+
+    for ol in operation_lines:
+        for node in ol.get("nodes", []):
+            for s in node.get("screens", []):
+                all_screens[s["id"]] = s
+                vo_ref = s.get("vo_ref", "")
+                if vo_ref:
+                    vo_to_screen.setdefault(vo_ref, []).append(s["id"])
+
+    # For each operation line, compute sequential flow
+    for ol in operation_lines:
+        # Collect all screens in node order
+        ordered_screens = []
+        for node in ol.get("nodes", []):
+            for s in node.get("screens", []):
+                ordered_screens.append(s["id"])
+
+        for i, sid in enumerate(ordered_screens):
+            screen = all_screens.get(sid)
+            if not screen:
+                continue
+
+            prev_ids = [ordered_screens[i - 1]] if i > 0 else []
+            next_ids = [ordered_screens[i + 1]] if i < len(ordered_screens) - 1 else []
+
+            # Infer entry_points: find VO actions from OTHER screens that navigate to this screen's VO
+            entry_points = []
+            my_vo = screen.get("vo_ref", "")
+            if my_vo:
+                for other_sid, other_screen in all_screens.items():
+                    if other_sid == sid:
+                        continue
+                    for act in other_screen.get("vo_actions", []):
+                        if act.get("type") == "navigate" and act.get("target_vo") == my_vo:
+                            entry_points.append(other_sid)
+
+            # Infer exit_points: VO navigate actions from this screen
+            exit_points = []
+            for act in screen.get("vo_actions", []):
+                if act.get("type") == "navigate" and act.get("target_vo"):
+                    target_vo = act["target_vo"]
+                    target_sids = vo_to_screen.get(target_vo, [])
+                    exit_points.extend(target_sids)
+                elif act.get("type") == "navigate" and act.get("nav_mode") == "back":
+                    exit_points.extend(prev_ids)
+
+            screen["flow_context"] = {
+                "prev": prev_ids,
+                "next": next_ids,
+                "entry_points": list(set(entry_points)),
+                "exit_points": list(set(exit_points)),
+            }
 
 
 def main():
@@ -160,6 +362,12 @@ def main():
     if not tasks_inv:
         print("ERROR: task-inventory.json not found or empty. Run product-map first.")
         sys.exit(1)
+
+    # ── load view objects (optional enhancement) ──
+    view_objects = C.load_view_objects(BASE)
+    vo_lookup = _build_vo_lookup(view_objects) if view_objects else {}
+    if vo_lookup:
+        print(f"  VO: loaded {len(view_objects)} view objects, {len(vo_lookup)} unique (entity, type) keys")
 
     # ── build flow→tasks mapping ──
     flow_by_id = {f.get("id", ""): f for f in flows} if flows else {}
@@ -190,6 +398,7 @@ def main():
                 node_tasks, tasks_inv, screen_counter,
                 ux_intent=en.get("design_hint", ""),
                 emotion_intensity=en.get("intensity", 5),
+                vo_lookup=vo_lookup,
             )
 
             node_id = f"N{jl_id[2:]}{step:02d}"  # e.g. N0101 for JL01 step 1
@@ -228,6 +437,10 @@ def main():
         }
         operation_lines.append(ol)
 
+    # ── compute flow_context for all screens ──
+    if vo_lookup:
+        _compute_flow_context(operation_lines)
+
     result = {
         "operation_lines": operation_lines,
         "screen_index": screen_index,
@@ -243,12 +456,20 @@ def main():
 
     total_screens = len(screen_index)
     total_nodes = sum(len(ol["nodes"]) for ol in operation_lines)
+    vo_enriched = sum(1 for sid in screen_index if any(
+        s.get("vo_ref")
+        for ol in operation_lines
+        for n in ol.get("nodes", [])
+        for s in n.get("screens", [])
+        if s["id"] == sid
+    ))
 
     if total_screens == 0:
         print("ERROR: 0 screens generated — check that business-flows nodes have task_ref matching task-inventory IDs", file=sys.stderr)
         sys.exit(1)
 
-    print(f"OK: {out_path} ({len(operation_lines)} lines, {total_nodes} nodes, {total_screens} screens)")
+    vo_msg = f", {vo_enriched} VO-enriched" if vo_enriched else ""
+    print(f"OK: {out_path} ({len(operation_lines)} lines, {total_nodes} nodes, {total_screens} screens{vo_msg})")
 
     # ── generate report ──
     report_lines = [
@@ -257,9 +478,13 @@ def main():
         f"## Summary\n",
         f"- Operation lines: {len(operation_lines)}",
         f"- Total nodes: {total_nodes}",
-        f"- Total screens: {total_screens}\n",
-        "## Operation Lines\n",
+        f"- Total screens: {total_screens}",
     ]
+    if vo_enriched:
+        report_lines.append(f"- VO-enriched screens: {vo_enriched}")
+    report_lines.append("")
+    report_lines.append("## Operation Lines\n")
+
     for ol in operation_lines:
         report_lines.append(f"### {ol['id']} {ol['name']}")
         report_lines.append(f"- Role: {ol['role']}")
@@ -268,10 +493,14 @@ def main():
         report_lines.append("")
         for node in ol["nodes"]:
             screens_str = ", ".join(f"{s['id']}({s['name']})" for s in node["screens"])
+            vo_tags = ""
+            for s in node["screens"]:
+                if s.get("vo_ref"):
+                    vo_tags += f" [{s['vo_ref']}:{s.get('interaction_type', '')}]"
             report_lines.append(
                 f"  {node['seq']}. {node['action']} "
                 f"[{node['emotion_state']} {node['emotion_intensity']}/10] "
-                f"→ {screens_str or 'no screens'}"
+                f"→ {screens_str or 'no screens'}{vo_tags}"
             )
         report_lines.append("")
 
@@ -284,6 +513,7 @@ def main():
         "operation_line_count": len(operation_lines),
         "total_nodes": total_nodes,
         "total_screens": total_screens,
+        "vo_enriched_screens": vo_enriched,
     })
 
 
