@@ -450,13 +450,13 @@ Step 3: Design 生成（API-first 策略）
       constraints → 中间件链设计
       flows → 后端时序图
     前端类 (admin/web-customer/web-mobile):
-      多后端服务 baseURL 推导:
+      多后端服务连接推导:
         读取 manifest 中后端子项目/服务拓扑:
-        - 单后端服务 → 生成单一 HTTP 客户端实例 + 1 个 baseURL 常量
-        - 多后端服务（不同端口/域名/服务）→ 自动推导多实例架构:
-          每个后端服务 → 1 个独立 HTTP 客户端实例
-          在 design.md 的「请求层」章节写明各实例的 baseURL + 负责的端点前缀
-          tasks.md B1 中生成对应的 HTTP 客户端初始化任务
+        - 单后端服务 → 生成单一 API 客户端实例
+        - 多后端服务（不同地址/端口/协议）→ 自动推导多客户端架构:
+          每个后端服务 → 1 个独立客户端实例（按服务职责命名）
+          在 design.md 的「请求层」章节写明各实例的连接配置 + 负责的端点/接口范围
+          tasks.md B1 中生成对应的客户端初始化任务
       screens → 页面路由 + 组件架构
       screen.states → 界面四态设计（empty/loading/error/permission_denied）
       actions → 交互规格（引用已定义的 API 端点）
