@@ -569,7 +569,13 @@ MCP 工具（Step 1.5 已引导安装）:
    ```
    例如：`claude plugin update product-design@myskills`
 
-4. **汇总报告**：列出每个插件的更新前后版本
+4. **MCP 配置保护**：对每个更新的插件，对比更新前后的 `.mcp.json`：
+   - 更新前：读取 `<installPath>/.mcp.json` 保存为 `old_mcp`
+   - 更新后：读取新的 `.mcp.json` 保存为 `new_mcp`
+   - 如果 `old_mcp` 中存在的 server 条目在 `new_mcp` 中消失 → **警告用户并自动合并缺失条目**
+   - 输出：`⚠️ <plugin>: ai-gateway 条目在新版中缺失，已自动恢复`
+
+5. **汇总报告**：列出每个插件的更新前后版本
 
 #### 5b. 重建 MCP 服务器
 
