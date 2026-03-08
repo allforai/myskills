@@ -43,7 +43,7 @@ demo-forge 内部三阶段:
 |------|------|
 | forge-data.json 存在 | 数据已灌入，`.allforai/demo-forge/forge-data.json` |
 | 应用正在运行且可访问 | 能通过浏览器打开的 URL |
-| Playwright MCP 可用 | `mcp__playwright__*` 系列工具已就绪 |
+| Playwright MCP 可用 | `mcp__plugin_playwright_playwright__*` 系列工具已就绪 |
 
 如前提不满足，提示用户先运行 `demo-execute` 灌入数据、启动应用、或安装 Playwright MCP。
 
