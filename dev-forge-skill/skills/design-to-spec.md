@@ -365,12 +365,12 @@ Step 0: 模块映射验证
     后端组: type = "backend"（通常 1 个）
     前端组: 其余所有子项目（admin/web-customer/web-mobile/mobile-native）
   Phase A — 后端 Agent（1 个 Agent 调用）:
-    Agent(backend): Step 1 → Step 2 → Step 3 → Step 3.5 → Step 3.8 → Step 3.9 → Step 4 → Step 4.5
+    Agent(backend): Step 1 → Step 2 → Step 3a → Step 3b → Step 3.5 → Step 3.8 → Step 3.9 → Step 4 → Step 4.5
     ↓ 完成后
   Phase B — 前端并行 Agent（单条消息发出 N 个 Agent 调用）:
-    ┌── Agent(前端1): Step 1 → Step 2 → Step 3 → Step 3.8 → Step 3.9 → Step 4 → Step 4.5
-    ├── Agent(前端2): Step 1 → Step 2 → Step 3 → Step 3.8 → Step 3.9 → Step 4 → Step 4.5
-    └── Agent(前端N): Step 1 → Step 2 → Step 3 → Step 3.8 → Step 3.9 → Step 4 → Step 4.5
+    ┌── Agent(前端1): Step 1 → Step 2 → Step 3a → Step 3b → Step 3.8 → Step 3.9 → Step 4 → Step 4.5
+    ├── Agent(前端2): Step 1 → Step 2 → Step 3a → Step 3b → Step 3.8 → Step 3.9 → Step 4 → Step 4.5
+    └── Agent(前端N): Step 1 → Step 2 → Step 3a → Step 3b → Step 3.8 → Step 3.9 → Step 4 → Step 4.5
     全部完成 ↓
   以下 Step 1-4.5 描述每个 Agent 内部执行的步骤内容:
   ↓
@@ -428,7 +428,29 @@ Step 2.5: 组件规格导入（component-spec.json 存在时执行）
   7. 记录 pipeline-decision
 
   ↓
-Step 3: Design 生成（API-first 策略）
+Step 3a: 加载产品设计数据模型（可选增强）
+  检查 .allforai/product-map/ 下是否存在产品设计阶段的数据模型:
+    - entity-model.json → ER 设计起点（实体、字段、关系、状态机）
+    - api-contracts.json → API 设计起点（端点、请求/响应结构）
+    - view-objects.json → 前端组件规格起点（VO 字段、Action Binding）
+
+  **存在** → 作为 design 生成的基础输入:
+    - entities 从 entity-model.json 加载（而非从零推导）
+    - endpoints 从 api-contracts.json 加载（而非从零推导）
+    - 前端 screens 从 view-objects.json 提取字段定义和交互类型
+    - 每个节点保留 source_entity, source_api, source_vo 字段溯源到 product-design 原始 ID
+    - 输出进度: 「Step 3a ✓ 加载产品设计数据模型: {N} entities, {M} endpoints, {K} VOs」
+
+  **不存在** → 回退到 Step 3b 的从零推导（向后兼容）
+    - 输出进度: 「Step 3a ⊘ 无产品设计数据模型，从零推导」
+  ↓
+Step 3b: Design 生成 + 技术丰富（API-first 策略）
+  **当 Step 3a 有数据时**: 在产品设计基础上补充技术细节:
+    - 后端: + 索引策略 + 中间件链 + 错误响应结构 + 分页约束 + 幂等性设计
+    - 前端: + 组件架构 + 状态管理 + 路由守卫 + 表单验证 Schema
+    - 保持 source_* 字段溯源
+  **当 Step 3a 无数据时**: 完整的从零推导（当前 Step 3 行为不变）
+
   **原则: 先表结构、后 API、再展开**
   每个 Agent 对其子项目，基于 tech-profile 映射:
     所有端共通（最先生成）:
@@ -498,7 +520,63 @@ Step 3: Design 生成（API-first 策略）
         - Affected endpoints / components（根据子项目类型推导）
         - spike.status = "tbd" → 标注 [PENDING: 技术方案待定，后续确认后补充]
     → 写入 .allforai/project-forge/sub-projects/{name}/design.md
-    → 输出进度: 「{name}/design.md ✓ ({N} 接口, {M} 页面)」（不停，汇总到 Step 6）
+    → 同时写入 .allforai/project-forge/sub-projects/{name}/design.json
+    design.json 为 design.md 的结构化版本，供 Review Hub 规格 tab 渲染:
+    ```json
+    {
+      "sub_project": "{name}",
+      "type": "backend|frontend|mobile",
+      "data_models": [
+        {
+          "table": "orders",
+          "source_entity": "E001",
+          "fields": [
+            {"name": "id", "type": "uuid", "constraints": ["PK", "NOT NULL"], "required": true},
+            {"name": "status", "type": "enum", "constraints": ["NOT NULL"], "required": true, "values": ["pending", "paid", "shipped"]}
+          ],
+          "indexes": [{"name": "idx_status", "columns": ["status"], "type": "btree"}],
+          "state_machine": {
+            "field": "status",
+            "transitions": [
+              {"from": "pending", "to": "paid", "trigger": "payment_confirmed"},
+              {"from": "paid", "to": "shipped", "trigger": "ship_order"}
+            ]
+          }
+        }
+      ],
+      "endpoints": [
+        {
+          "source_api": "API001",
+          "method": "GET",
+          "path": "/orders",
+          "description": "列表查询",
+          "params": [{"name": "page", "type": "integer"}, {"name": "status", "type": "string"}],
+          "response": {"type": "paginated_list", "item_ref": "orders"},
+          "errors": [{"code": 400, "message": "Invalid parameters"}]
+        }
+      ],
+      "pages": [
+        {
+          "route": "/orders",
+          "name": "订单列表",
+          "source_vo": "VO001",
+          "components": ["DataTable", "SearchBar", "Pagination"],
+          "states": {"empty": "暂无订单", "loading": "加载中...", "error": "加载失败"}
+        }
+      ],
+      "middleware": [
+        {"name": "auth", "description": "JWT 认证"},
+        {"name": "audit", "description": "操作审计"}
+      ],
+      "tasks": [
+        {"id": "B1", "name": "项目初始化", "status": "pending"},
+        {"id": "B2", "name": "数据模型实现", "status": "pending"}
+      ]
+    }
+    ```
+    每个节点的 `source_*` 字段溯源到 product-design 的原始 ID（entity-model/api-contracts/view-objects 中的 ID）。
+    无 source 数据时（Step 3a 跳过），`source_*` 字段省略。
+    → 输出进度: 「{name}/design.md + design.json ✓ ({N} 接口, {M} 页面)」（不停，汇总到 Step 6）
   **生成顺序**: 后端 Agent (Phase A) 先于前端 Agent (Phase B)，确保前端 design 可直接引用后端接口定义
   ↓
 Step 3.5: Design 交叉审查（由后端 Agent 在 Phase A 内执行，OpenRouter 可用时）

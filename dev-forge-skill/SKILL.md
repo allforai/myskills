@@ -45,7 +45,7 @@ version: "2.9.0"
 
 > 详见 `${CLAUDE_PLUGIN_ROOT}/skills/design-to-spec.md`
 
-从产品设计产物自动生成按子项目划分的 requirements + design + tasks。API-First 策略：先表结构和 API 端点，再展开前端。
+从产品设计产物自动生成按子项目划分的 requirements + design + tasks。API-First 策略：先表结构和 API 端点，再展开前端。Step 3a 可选加载 product-design 数据模型（entity-model/api-contracts/view-objects）作为起点，Step 3b 在此基础上补充技术细节。同时输出 design.json 结构化版本供 Review Hub 渲染。
 
 ```
 /design-to-spec             # 全量生成
@@ -149,7 +149,8 @@ your-project/
     │   ├── project-manifest.json       # 总清单
     │   ├── sub-projects/{name}/
     │   │   ├── requirements.md         # 需求
-    │   │   ├── design.md               # 设计
+    │   │   ├── design.md               # 设计（人类可读）
+    │   │   ├── design.json             # 设计（机器可读，含 source_* 溯源）
     │   │   └── tasks.md                # 任务
     │   ├── build-log.json              # 任务执行进度
     │   ├── e2e-scenarios.json          # 跨端场景
