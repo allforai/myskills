@@ -115,6 +115,14 @@ Step 5: 输出 experience-map-report.md
 检查 .allforai/product-map/business-flows.json：
   存在 → 加载业务流数据（增强操作线的流程上下文）
   不存在 → 跳过，不影响主流程
+
+检查 .allforai/product-map/view-objects.json：
+  存在 → 加载 VO 数据（绑定真实字段，优先于任务名推导）
+  不存在 → 跳过，回退到任务名推导（向后兼容）
+
+检查 .allforai/product-map/entity-model.json：
+  存在 → 加载实体数据（增强屏幕名称和交互类型推导）
+  不存在 → 跳过，不影响主流程
 ```
 
 ---
@@ -124,6 +132,8 @@ Step 5: 输出 experience-map-report.md
 读取 `journey-emotion-map.json` 获取旅程情绪图（旅程线、节点、情绪标注）。
 读取 `task-inventory.json` 获取任务清单（任务 ID、名称、CRUD 类型、模块归属）。
 可选读取 `role-profiles.json`（角色列表）和 `business-flows.json`（业务流）。
+可选读取 `view-objects.json`（视图对象，优先使用 VO 绑定真实字段）
+可选读取 `entity-model.json`（实体模型）
 
 **输出**：内存中的旅程-任务关联数据，用于 Step 2 脚本输入。
 
@@ -137,6 +147,9 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py <BASE>
 
 脚本读取 `journey-emotion-map.json` 和 `task-inventory.json`，生成 operation_lines > nodes > screens 三层结构。
 每个屏幕自动推导 `implementation_contract`（pattern + forbidden + required_behaviors），确保设计意图传递到代码层。
+
+当 view-objects.json 存在时，脚本优先使用 VO 数据绑定屏幕字段（名称、交互类型、数据字段、操作按钮），
+无 VO 时回退到任务名推导（向后兼容）。
 
 ```json
 {
@@ -170,7 +183,12 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py <BASE>
               "screen_id": "S001",
               "screen_name": "退款申请页",
               "purpose": "用户填写退款原因和上传凭证",
-              "interaction_type": "MG3"
+              "interaction_type": "MG3-L",
+              "vo_ref": "VO001",
+              "api_ref": "API001",
+              "data_fields": ["refund_reason", "evidence_images", "order_id"],
+              "flow_context": {"prev": ["S000"], "next": ["S002"], "entry_points": ["订单详情"], "exit_points": ["退款进度"]},
+              "states": {"empty": "暂无退款记录", "loading": "加载中...", "error": "提交失败，请重试", "success": "退款申请已提交"}
             }
           ]
         }
