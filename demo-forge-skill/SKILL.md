@@ -6,7 +6,7 @@ description: >
   Includes demo-design (data planning), media-forge (media acquisition + processing + upload),
   demo-execute (data generation + population), demo-verify (Playwright verification + routing).
   演示锻造：设计→采集→灌入→验证，多轮迭代打磨至演示级品质。
-version: "1.0.0"
+version: "1.2.0"
 ---
 
 # Demo Forge — 演示锻造套件
