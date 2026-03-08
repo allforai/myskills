@@ -1,15 +1,5 @@
 {
   "mcpServers": {
-    "ai-gateway": {
-      "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-ai-gateway/dist/index.js"],
-      "env": {
-        "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}",
-        "GOOGLE_API_KEY": "${GOOGLE_API_KEY}",
-        "BRAVE_API_KEY": "${BRAVE_API_KEY}",
-        "FAL_KEY": "${FAL_KEY}"
-      }
-    },
     "playwright": {
       "command": "npx",
       "args": ["-y", "@playwright/mcp@latest"]
