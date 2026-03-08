@@ -8,7 +8,7 @@ at specific positions, and submit structured feedback.
 Feedback is saved to .allforai/ui-design/review-feedback.json.
 
 Usage:
-    python3 ui_review_server.py <BASE_PATH> [--port 3200] [--host localhost]
+    python3 ui_review_server.py <BASE_PATH> [--port 18903] [--host localhost]
     python3 ui_review_server.py <BASE_PATH> --host 0.0.0.0  # LAN access
 """
 
@@ -23,8 +23,9 @@ import _common as C
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
 BASE, args = C.parse_args()
-PORT = int(args.get("port", "3200"))
+PORT = int(args.get("port", "18903"))
 HOST = args.get("host", "localhost")
+NO_OPEN = args.get("no-open", "false").lower() in ("true", "1", "yes")
 
 UI_DIR = os.path.join(BASE, "ui-design")
 SM_DIR = os.path.join(BASE, "experience-map")
@@ -141,8 +142,64 @@ body{{margin:0;padding:24px;font-family:-apple-system,system-ui,sans-serif;backg
 
 # ── HTML Templates ────────────────────────────────────────────────────────────
 
+def _render_card(s, sm, feedback):
+    """Render a single screen card HTML."""
+    sid = s.get("id", "")
+    name = s.get("name", "")
+    role = s.get("role", "")
+    itype = s.get("interaction_type", "")
+    audience = s.get("audience_type", "default")
+    layout = s.get("layout", "")
+    sm_screen = sm.get(sid, {})
+    flags = sm_screen.get("flags", [])
+    emo = s.get("emotion_context", {})
+    emo_state = emo.get("state", "")
+    journey = emo.get("operation_line", "")
+
+    fb = feedback.get("screens", {}).get(sid, {})
+    status = fb.get("status", "pending")
+    pin_count = len(fb.get("pins", []))
+
+    has_stitch = os.path.exists(os.path.join(UI_DIR, "stitch", f"{sid}.html"))
+
+    status_badge = {
+        "pending": '<span class="badge pending">Pending</span>',
+        "approved": '<span class="badge approved">Approved</span>',
+        "revision": '<span class="badge revision">Revision</span>',
+    }.get(status, '<span class="badge pending">Pending</span>')
+
+    flags_html = "".join(f'<span class="flag">{f}</span>' for f in flags)
+    stitch_indicator = '<span class="stitch-dot" title="Stitch visual available"></span>' if has_stitch else ''
+    pin_indicator = f'<span class="pin-count">{pin_count} pins</span>' if pin_count else ''
+
+    emo_colors = {
+        "curious": "#4FC3F7", "anxious": "#FF8A65", "satisfied": "#81C784",
+        "frustrated": "#E57373", "neutral": "#B0BEC5", "exploring": "#64B5F6",
+        "confident": "#66BB6A", "confused": "#FFB74D",
+    }
+    emo_color = emo_colors.get(emo_state, "#B0BEC5")
+    emo_badge = f'<span class="emo-badge" style="background:{emo_color}20;color:{emo_color}">{emo_state}</span>' if emo_state else ''
+
+    return f"""
+    <a href="/screen/{sid}" class="card" data-role="{role}" data-status="{status}" data-journey="{journey}">
+      <div class="card-header">
+        <span class="card-title">{name}</span>
+        {stitch_indicator}
+        {status_badge}
+      </div>
+      <div class="card-meta">
+        <span class="itype">{itype}</span>
+        <span class="audience">{audience}</span>
+        {emo_badge}
+        {pin_indicator}
+      </div>
+      <div class="card-layout">{layout}</div>
+      <div class="card-flags">{flags_html}</div>
+    </a>"""
+
+
 def render_dashboard(spec, sm, feedback):
-    """Render the main dashboard page."""
+    """Render the main dashboard page grouped by role or journey."""
     screens = spec.get("screens", [])
     style = spec.get("design_style", spec.get("style", "Unknown"))
     product = spec.get("product", spec.get("product_name", "Product"))
@@ -152,55 +209,58 @@ def render_dashboard(spec, sm, feedback):
     revision_count = sum(1 for s in screens
                          if feedback.get("screens", {}).get(s.get("id", ""), {}).get("status") == "revision")
 
-    # Collect roles for filter tabs
-    roles = sorted(set(s.get("role", "") for s in screens if s.get("role")))
-
-    role_tabs = '<button class="tab active" data-role="all">All</button>'
-    for r in roles:
-        role_tabs += f'<button class="tab" data-role="{r}">{r}</button>'
-
-    cards = ""
+    # Group screens by role
+    roles_set = sorted(set(s.get("role", "") for s in screens if s.get("role")))
+    role_groups = {}
     for s in screens:
-        sid = s.get("id", "")
-        name = s.get("name", "")
-        role = s.get("role", "")
-        itype = s.get("interaction_type", "")
-        audience = s.get("audience_type", "default")
-        layout = s.get("layout", "")
-        sm_screen = sm.get(sid, {})
-        flags = sm_screen.get("flags", [])
+        role = s.get("role", "未分配")
+        role_groups.setdefault(role, []).append(s)
 
-        fb = feedback.get("screens", {}).get(sid, {})
-        status = fb.get("status", "pending")
-        pin_count = len(fb.get("pins", []))
+    # Group screens by journey (operation_line)
+    journey_groups = {}
+    for s in screens:
+        emo = s.get("emotion_context", {})
+        journey = emo.get("operation_line", "未关联")
+        journey_groups.setdefault(journey, []).append(s)
 
-        has_stitch = os.path.exists(os.path.join(UI_DIR, "stitch", f"{sid}.html"))
-
-        status_badge = {
-            "pending": '<span class="badge pending">Pending</span>',
-            "approved": '<span class="badge approved">Approved</span>',
-            "revision": '<span class="badge revision">Revision</span>',
-        }.get(status, '<span class="badge pending">Pending</span>')
-
-        flags_html = "".join(f'<span class="flag">{f}</span>' for f in flags)
-        stitch_indicator = '<span class="stitch-dot" title="Stitch visual available"></span>' if has_stitch else ''
-        pin_indicator = f'<span class="pin-count">{pin_count} pins</span>' if pin_count else ''
-
-        cards += f"""
-        <a href="/screen/{sid}" class="card" data-role="{role}" data-status="{status}">
-          <div class="card-header">
-            <span class="card-title">{name}</span>
-            {stitch_indicator}
-            {status_badge}
+    # Render role-grouped sections
+    role_sections = ""
+    for role in (roles_set if roles_set else ["未分配"]):
+        slist = role_groups.get(role, [])
+        if not slist:
+            continue
+        role_reviewed = sum(1 for s in slist
+                           if feedback.get("screens", {}).get(s.get("id", ""), {}).get("status") in ("approved", "revision"))
+        cards = "".join(_render_card(s, sm, feedback) for s in slist)
+        role_sections += f"""
+        <div class="group-section" data-group-type="role">
+          <div class="group-header" onclick="this.parentElement.classList.toggle('collapsed')">
+            <span class="group-title">{role}</span>
+            <span class="group-meta">{len(slist)} screens · {role_reviewed}/{len(slist)} reviewed</span>
+            <span class="group-chevron">▾</span>
           </div>
-          <div class="card-meta">
-            <span class="itype">{itype}</span>
-            <span class="audience">{audience}</span>
-            {pin_indicator}
+          <div class="group-grid">{cards}</div>
+        </div>"""
+
+    # Render journey-grouped sections
+    journey_sections = ""
+    for journey_id, slist in journey_groups.items():
+        # Get emotion flow summary for this journey
+        emo_states = [s.get("emotion_context", {}).get("state", "") for s in slist if s.get("emotion_context", {}).get("state")]
+        emo_flow = " → ".join(dict.fromkeys(emo_states)) if emo_states else ""
+        journey_reviewed = sum(1 for s in slist
+                               if feedback.get("screens", {}).get(s.get("id", ""), {}).get("status") in ("approved", "revision"))
+        cards = "".join(_render_card(s, sm, feedback) for s in slist)
+        journey_sections += f"""
+        <div class="group-section" data-group-type="journey">
+          <div class="group-header" onclick="this.parentElement.classList.toggle('collapsed')">
+            <span class="group-title">{journey_id}</span>
+            <span class="group-emo-flow">{emo_flow}</span>
+            <span class="group-meta">{len(slist)} screens · {journey_reviewed}/{len(slist)} reviewed</span>
+            <span class="group-chevron">▾</span>
           </div>
-          <div class="card-layout">{layout}</div>
-          <div class="card-flags">{flags_html}</div>
-        </a>"""
+          <div class="group-grid">{cards}</div>
+        </div>"""
 
     return f"""<!DOCTYPE html>
 <html lang="zh"><head>
@@ -215,21 +275,35 @@ body{{font-family:-apple-system,system-ui,'Segoe UI',sans-serif;background:#fafa
 .progress{{margin-top:12px;height:4px;background:#e5e7eb;border-radius:2px}}
 .progress-bar{{height:100%;background:#10b981;border-radius:2px;transition:width .3s}}
 .toolbar{{display:flex;gap:8px;padding:16px 32px;flex-wrap:wrap;align-items:center}}
-.tab{{padding:6px 16px;border-radius:6px;border:1px solid #e5e7eb;background:#fff;cursor:pointer;font-size:13px;color:#52525b}}
+.tab{{padding:6px 16px;border-radius:6px;border:1px solid #e5e7eb;background:#fff;cursor:pointer;font-size:13px;color:#52525b;transition:all .15s}}
 .tab.active{{background:#18181b;color:#fff;border-color:#18181b}}
+.view-toggle{{display:flex;gap:0;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden}}
+.view-btn{{padding:6px 16px;border:none;background:#fff;cursor:pointer;font-size:13px;color:#52525b;transition:all .15s}}
+.view-btn.active{{background:#18181b;color:#fff}}
 .status-filter{{margin-left:auto;display:flex;gap:6px}}
-.grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;padding:0 32px 32px}}
-.card{{display:block;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px;text-decoration:none;color:inherit;transition:box-shadow .15s,border-color .15s}}
+.content{{padding:0 32px 32px}}
+.group-section{{margin-bottom:24px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;overflow:hidden}}
+.group-header{{display:flex;align-items:center;gap:12px;padding:16px 20px;cursor:pointer;user-select:none;transition:background .15s}}
+.group-header:hover{{background:#f9fafb}}
+.group-title{{font-weight:600;font-size:16px}}
+.group-emo-flow{{font-size:12px;color:#7c3aed;background:#ede9fe;padding:2px 10px;border-radius:10px}}
+.group-meta{{font-size:12px;color:#71717a;margin-left:auto}}
+.group-chevron{{color:#a1a1aa;font-size:14px;transition:transform .2s}}
+.group-section.collapsed .group-chevron{{transform:rotate(-90deg)}}
+.group-section.collapsed .group-grid{{display:none}}
+.group-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;padding:0 16px 16px}}
+.card{{display:block;background:#fafafa;border:1px solid #e5e7eb;border-radius:8px;padding:14px;text-decoration:none;color:inherit;transition:box-shadow .15s,border-color .15s}}
 .card:hover{{box-shadow:0 4px 12px rgba(0,0,0,.08);border-color:#a1a1aa}}
 .card[data-status="approved"]{{border-left:3px solid #10b981}}
 .card[data-status="revision"]{{border-left:3px solid #f59e0b}}
-.card-header{{display:flex;align-items:center;gap:8px;margin-bottom:8px}}
-.card-title{{font-weight:600;font-size:15px;flex:1}}
-.card-meta{{display:flex;gap:8px;margin-bottom:6px;font-size:12px}}
-.card-layout{{font-size:12px;color:#71717a}}
-.card-flags{{margin-top:6px}}
+.card-header{{display:flex;align-items:center;gap:8px;margin-bottom:6px}}
+.card-title{{font-weight:600;font-size:14px;flex:1}}
+.card-meta{{display:flex;gap:6px;margin-bottom:4px;font-size:11px;flex-wrap:wrap}}
+.card-layout{{font-size:11px;color:#71717a}}
+.card-flags{{margin-top:4px}}
 .itype{{background:#ede9fe;color:#7c3aed;padding:2px 8px;border-radius:4px}}
 .audience{{background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:4px}}
+.emo-badge{{padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}}
 .badge{{padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}}
 .badge.pending{{background:#f4f4f5;color:#71717a}}
 .badge.approved{{background:#dcfce7;color:#15803d}}
@@ -248,7 +322,10 @@ body{{font-family:-apple-system,system-ui,'Segoe UI',sans-serif;background:#fafa
   <div class="progress"><div class="progress-bar" style="width:{reviewed/total*100 if total else 0:.0f}%"></div></div>
 </div>
 <div class="toolbar">
-  {role_tabs}
+  <div class="view-toggle">
+    <button class="view-btn active" data-view="role">By Role</button>
+    <button class="view-btn" data-view="journey">By Journey</button>
+  </div>
   <div class="status-filter">
     <button class="tab active" data-status="all">All</button>
     <button class="tab" data-status="pending">Pending</button>
@@ -256,18 +333,25 @@ body{{font-family:-apple-system,system-ui,'Segoe UI',sans-serif;background:#fafa
     <button class="tab" data-status="revision">Revision</button>
   </div>
 </div>
-<div class="grid">{cards}</div>
+<div class="content" id="content">
+  <div id="roleView">{role_sections}</div>
+  <div id="journeyView" style="display:none">{journey_sections}</div>
+</div>
 <div class="footer">
   <button class="submit-btn" onclick="submitAll()" id="submitBtn">Submit Feedback</button>
 </div>
 <script>
-document.querySelectorAll('.toolbar .tab[data-role]').forEach(t=>{{
-  t.onclick=()=>{{
-    document.querySelectorAll('.tab[data-role]').forEach(b=>b.classList.remove('active'));
-    t.classList.add('active');
-    filterCards();
+// View toggle
+document.querySelectorAll('.view-btn').forEach(btn=>{{
+  btn.onclick=()=>{{
+    document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const view=btn.dataset.view;
+    document.getElementById('roleView').style.display=view==='role'?'':'none';
+    document.getElementById('journeyView').style.display=view==='journey'?'':'none';
   }};
 }});
+// Status filter
 document.querySelectorAll('.tab[data-status]').forEach(t=>{{
   t.onclick=()=>{{
     document.querySelectorAll('.tab[data-status]').forEach(b=>b.classList.remove('active'));
@@ -276,12 +360,17 @@ document.querySelectorAll('.tab[data-status]').forEach(t=>{{
   }};
 }});
 function filterCards(){{
-  const role=document.querySelector('.tab[data-role].active')?.dataset.role||'all';
   const status=document.querySelector('.tab[data-status].active')?.dataset.status||'all';
   document.querySelectorAll('.card').forEach(c=>{{
-    const rMatch=role==='all'||c.dataset.role===role;
-    const sMatch=status==='all'||c.dataset.status===status;
-    c.style.display=(rMatch&&sMatch)?'':'none';
+    c.style.display=(status==='all'||c.dataset.status===status)?'':'none';
+  }});
+  // Hide empty groups
+  document.querySelectorAll('.group-section').forEach(g=>{{
+    const visible=g.querySelectorAll('.card[style=""], .card:not([style])').length
+      + Array.from(g.querySelectorAll('.card')).filter(c=>!c.style.display||c.style.display!=='none').length;
+    // Simplified: just check if any card is visible
+    const anyVisible=Array.from(g.querySelectorAll('.card')).some(c=>c.style.display!=='none');
+    g.style.display=anyVisible?'':'none';
   }});
 }}
 function submitAll(){{
@@ -289,7 +378,10 @@ function submitAll(){{
   fetch('/api/submit',{{method:'POST'}}).then(()=>{{
     document.getElementById('submitBtn').disabled=true;
     document.getElementById('submitBtn').textContent='Submitted!';
-    setTimeout(()=>window.close(),1000);
+    const overlay=document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(255,255,255,.85);z-index:200;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;backdrop-filter:blur(4px)';
+    overlay.innerHTML='<div style="font-size:48px">✅</div><div style="font-size:20px;font-weight:600;color:#065f46">Feedback Submitted</div><div style="font-size:14px;color:#64748b">You can close this tab. Run <code>/ui-review</code> to apply.</div>';
+    document.body.appendChild(overlay);
   }});
 }}
 </script></body></html>"""
@@ -694,8 +786,9 @@ def main():
     print(f"Feedback:     {FEEDBACK_PATH}")
     print(f"\nPress Ctrl+C to stop.\n")
 
-    import webbrowser
-    webbrowser.open(url)
+    if not NO_OPEN:
+        import webbrowser
+        webbrowser.open(url)
 
     try:
         server.serve_forever()

@@ -1000,6 +1000,6 @@ Step 5.6 ✓ LLM 高保真预览
 
 ## 下一步
 
-ui-design 完成后，运行 `/ui-review` 启动本地审核服务器（localhost:3200），在浏览器中浏览所有界面预览、标注 pin 评论。提交反馈后运行 `/ui-review process` 局部迭代修改的界面，循环直到全部通过。
+ui-design 完成后，运行 `/ui-review` 启动本地审核服务器（localhost:18903），在浏览器中浏览所有界面预览、标注 pin 评论。提交反馈后运行 `/ui-review process` 局部迭代修改的界面，循环直到全部通过。
 
 在 `/product-design full` 流程中，ui-review 作为 Phase 8 自动串入（Phase 5-7 并行完成后、Phase 9 终审前）。

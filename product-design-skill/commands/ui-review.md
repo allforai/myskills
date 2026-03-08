@@ -28,7 +28,7 @@ arguments:
 启动本地审核服务器，供用户浏览界面、标注意见。
 
 ```
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/ui_review_server.py <BASE> [--port 3200]
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/ui_review_server.py <BASE> [--port 18903]
 ```
 
 - `<BASE>` = `.allforai` 目录路径

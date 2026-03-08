@@ -242,6 +242,111 @@ for mod, slist in module_screens.items():
 with open(os.path.join(OUT, "ui-design-spec.md"), "w", encoding="utf-8") as f:
     f.write("\n".join(spec_lines) + "\n")
 
+# ── Generate ui-design-spec.json (for ui_review_server) ─────────────────────
+spec_json_screens = []
+for s in screens:
+    sid = s["id"]
+    screen_tasks = s.get("tasks", [])
+
+    # Determine audience type and role
+    audience = "consumer"
+    screen_role = ""
+    for tid in screen_tasks:
+        task = tasks.get(tid)
+        if task:
+            if not screen_role:
+                screen_role = role_map.get(task["owner_role"], "")
+            at = role_audience.get(task["owner_role"], "default")
+            if at == "professional":
+                audience = "professional"
+
+    # Determine layout
+    actions = s.get("actions", [])
+    if audience == "professional":
+        layout = "侧边导航 + 内容区（表格/列表导向）"
+    elif len(actions) > 5:
+        layout = "顶部导航 + 多区域卡片布局"
+    else:
+        layout = "单列卡片流"
+
+    # Determine sections from actions
+    primary_actions = [a["label"] for a in actions if a.get("frequency") == "高"]
+    secondary_actions = [a["label"] for a in actions if a.get("frequency") != "高"]
+    sections = []
+    if primary_actions:
+        sections.append("主操作区")
+    if secondary_actions:
+        sections.append("辅助操作区")
+    sections.append("内容区")
+
+    # Task categories
+    task_cats = set()
+    for tid in screen_tasks:
+        t = tasks.get(tid)
+        if t:
+            task_cats.add(t.get("category", ""))
+    interaction_type = "core" if "core" in task_cats else ("basic" if "basic" in task_cats else "auxiliary")
+
+    # Emotion context
+    ctx = screen_context.get(sid, {})
+
+    screen_entry = {
+        "id": sid,
+        "name": s.get("name", ""),
+        "role": screen_role,
+        "module": s.get("module", "其他"),
+        "audience_type": audience,
+        "interaction_type": interaction_type,
+        "layout": layout,
+        "sections": sections,
+        "states": {
+            "empty": "插图 + 引导文案 + CTA 按钮",
+            "loading": "骨架屏 (shimmer)",
+            "error": "Snackbar (错误色) + 重试按钮",
+        },
+        "task_refs": screen_tasks,
+        "notes": s.get("notes", ""),
+    }
+    if ctx:
+        screen_entry["emotion_context"] = {
+            "state": ctx.get("emotion_state", "neutral"),
+            "intensity": ctx.get("emotion_intensity", 5),
+            "ux_intent": ctx.get("ux_intent", ""),
+            "operation_line": ctx.get("operation_line", ""),
+        }
+
+    spec_json_screens.append(screen_entry)
+
+spec_json = {
+    "generated_at": NOW,
+    "style": STYLE,
+    "product": mission,
+    "design_tokens": {
+        "colors": {
+            "primary": S["primary"],
+            "secondary": S["secondary"],
+            "tertiary": S["tertiary"],
+            "background": S["bg"],
+            "surface": S["surface"],
+            "error": S["error"],
+            "success": S["success"],
+            "warning": S["warning"],
+        },
+        "typography": {
+            "font": S["font"],
+            "display": "57px / 400",
+            "headline": "32px / 400",
+            "title": "22px / 500",
+            "body": "16px / 400 / 行高 24px",
+            "label": "14px / 500",
+        },
+        "spacing": "4px 基准 (4/8/12/16/24/32)",
+        "border_radius": S["radius"],
+    },
+    "screens": spec_json_screens,
+}
+C.write_json(os.path.join(OUT, "ui-design-spec.json"), spec_json)
+
 # ── Generate tokens.json (single source of truth) ────────────────────────────
 tokens = {
     "color": {

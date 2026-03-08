@@ -1,16 +1,16 @@
 ---
 name: product-design
 description: >
-  Product design suite with thirteen skills: product-concept (产品概念), market-validate (市场验证),
-  product-map (产品地图), journey-emotion (情绪旅程),
+  Product design suite with sixteen skills: product-concept (产品概念), concept-review (概念审核), market-validate (市场验证),
+  product-map (产品地图), map-review (地图审核), journey-emotion (情绪旅程),
   experience-map (体验地图, 支持 --variants), interaction-gate (交互质量门禁),
-  design-pattern (设计模式), behavioral-standards (行为规范), use-case (用例集),
+  design-pattern (设计模式), behavioral-standards (行为规范),
+  wireframe-review (线框交互审核), use-case (用例集),
   feature-gap (功能查漏), feature-prune (功能剪枝), ui-design (UI设计规格, 支持 --variants), design-audit (设计审计).
-  Run product-concept then market-validate then product-map to build the foundation,
-  then journey-emotion, then experience-map, then use other skills as needed.
-  Use design-audit for cross-layer consistency checks.
+  Pipeline: concept → concept-review → map → map-review → experience-map → wireframe-review (structure lock) →
+  [use-case ∥ gap ∥ ui-design] → ui-review (visual) → audit.
   Use /product-design full to run the full pipeline with checkpoints.
-version: "4.3.0"
+version: "4.5.0"
 ---
 
 # Product Design — 产品设计套件
@@ -30,7 +30,18 @@ version: "4.3.0"
 /product-concept reverse  # 从已有产品反推概念
 ```
 
-### 1.5. market-validate — 市场验证
+### 1.5. concept-review — 概念脑图审核
+
+> 详见 `${CLAUDE_PLUGIN_ROOT}/commands/concept-review.md`
+
+concept 完成后，启动交互式脑图审核服务器，以树形结构展示产品概念（定位、角色、商业模式、机制、创新概念），用户可在节点上标注评论、标记通过或需修改。概念审核是必须环节。
+
+```
+/concept-review          # 启动脑图审核服务器（localhost:18900）
+/concept-review process  # 读取反馈，汇总修改建议
+```
+
+### 1.6. market-validate — 市场验证
 
 > 详见 `${CLAUDE_PLUGIN_ROOT}/skills/market-validate.md`
 
@@ -60,6 +71,17 @@ version: "4.3.0"
 /product-map quick        # 跳过冲突检测和约束识别
 /product-map refresh      # 忽略缓存，重新分析
 /product-map scope 退款管理  # 只梳理指定模块
+```
+
+### 2.5. map-review — 产品地图脑图审核
+
+> 详见 `${CLAUDE_PLUGIN_ROOT}/commands/map-review.md`
+
+product-map 完成后，启动交互式脑图审核服务器，以树形结构展示角色列表、核心/基本任务（频次+风险标签）、业务流（步骤+角色流转+GAP 标记），用户可在节点上标注评论。地图审核是必须环节。
+
+```
+/map-review              # 启动脑图审核服务器（localhost:18901）
+/map-review process      # 读取反馈，汇总修改建议
 ```
 
 ### 3. journey-emotion — 情绪旅程地图
@@ -114,6 +136,17 @@ version: "4.3.0"
 
 ```
 /behavioral-standards    # 完整流程
+```
+
+### 4d. wireframe-review — 线框交互审核
+
+> 详见 `${CLAUDE_PLUGIN_ROOT}/commands/wireframe-review.md`
+
+在 experience-map + interaction-gate 完成后、视觉设计之前，启动低保真线框审核服务器。验证 IA 结构、屏幕流转和功能完整性。反馈按类别路由到上游（product-map / experience-map / concept），审核通过后结构锁定。
+
+```
+/wireframe-review          # 启动线框审核服务器（localhost:18902）
+/wireframe-review process  # 读取反馈，汇总修复建议
 ```
 
 ### 5. use-case — 用例集
@@ -186,7 +219,7 @@ version: "4.3.0"
 启动本地审核服务器，浏览所有界面设计、标注 pin 评论，提交反馈后局部迭代。
 
 ```
-/ui-review               # 启动审核服务器（localhost:3200）
+/ui-review               # 启动审核服务器（localhost:18903）
 /ui-review process       # 读取反馈，重跑需修改的界面
 ```
 
@@ -218,9 +251,11 @@ version: "4.3.0"
 /product-design resume              # 从断点继续
 ```
 
-流程：concept → **market-validate** → product-map → journey-emotion → experience-map → interaction-gate → **Stitch 决策点** → use-case → feature-gap → feature-prune → ui-design → **ui-review（用户审核迭代）** → design-audit，每阶段间插入检查点验证产出完整性。
+流程：concept → **concept-review（概念审核）** → **market-validate** → product-map → **map-review（地图审核）** → journey-emotion → experience-map → interaction-gate → **wireframe-review（结构锁定门）** → **Stitch 决策点** → [use-case ∥ feature-gap ∥ ui-design] → **ui-review（视觉审核）** → design-audit，每阶段间插入检查点验证产出完整性。
 
-> **Stitch 决策点**（Phase 4.7）：进入 Phase 5-7 并行执行前，检查 Stitch MCP 可用性。不可用时 AskUserQuestion 三选一（上传设计稿 / 跳过视觉验收 / 配置 Stitch）。选择跳过时记入 pipeline-decisions（`stitch_skipped`），design-audit 标记 `stitch_skipped: true`。详见 `/product-design full` 的 Phase 4.7 节。
+> **wireframe-review**（Phase 5）：低保真线框审核，验证 IA/流程/功能。反馈路由到 product-map / experience-map / concept。通过后结构锁定，才进入视觉设计。
+
+> **Stitch 决策点**（Phase 5.5）：wireframe-review 通过后、进入 Phase 6-8 并行执行前，检查 Stitch MCP 可用性。不可用时 AskUserQuestion 三选一（上传设计稿 / 跳过视觉验收 / 配置 Stitch）。选择跳过时记入 pipeline-decisions（`stitch_skipped`），design-audit 标记 `stitch_skipped: true`。
 
 ## 工具配置
 
@@ -233,13 +268,16 @@ version: "4.3.0"
 ```
 product-design（产品层）
 ├── product-concept   想做什么产品？                       搜索+选择题引导
+├── concept-review    概念对不对？用户确认了吗？             脑图审核（必须）
 ├── market-validate   这个方向值得做吗？                   Brave搜索 + 跨模型验证
 ├── product-map       产品是什么？谁在用？做什么？有何约束？ 代码读现状 + PM 补业务视角
+├── map-review        地图对不对？角色/任务/流程确认了吗？   脑图审核（必须）
 ├── journey-emotion 用户情绪在哪里起伏？                   基于 product-map
 ├── experience-map  在哪做？怎么做？出错怎么办？           基于 product-map + journey-emotion
 ├── interaction-gate 交互质量达标了吗？                    基于 experience-map（门禁）
 ├── design-pattern  重复模式抽象                          基于 task-inventory + experience-map
 ├── behavioral-standards 跨界面行为一致性                  基于 experience-map
+├── wireframe-review 线框交互审核（结构锁定门）             基于 experience-map（低保真 review）
 ├── use-case        推导完整用例，双格式输出               基于 product-map + experience-map
 ├── feature-gap     地图说有的，有没有？旅程走得通吗？      基于 product-map + experience-map
 ├── feature-prune   地图里有的，该不该留？                 基于 product-map + experience-map
@@ -328,7 +366,7 @@ product-map（必须先跑）
     ├── ui-design（需 product-map + experience-map，支持 --variants N 多风格发散）
     └── design-audit（终审，基于全部已有产物）
 
-推荐流程：[product-concept → market-validate →] product-map → journey-emotion → experience-map → [use-case ∥ feature-gap ∥ ui-design] → ui-review → design-audit
+推荐流程：[product-concept → concept-review → market-validate →] product-map → map-review → journey-emotion → experience-map → wireframe-review → [use-case ∥ feature-gap ∥ ui-design] → ui-review → design-audit
 
 或使用 /product-design full 自动编排全流程（含阶段间检查点 + 终审）。
 ```
@@ -342,6 +380,8 @@ your-project/
     │   ├── market-validation.json    # 市场验证全量结果（竞品、角色、商业模式）
     │   ├── competitor-matrix.json    # 竞品矩阵（定位、定价、优劣势）
     │   └── validation-report.md     # 可读报告
+    ├── concept-review/
+    │   └── review-feedback.json        # 概念脑图审核反馈（nodes + status + comments）
     ├── product-map/
     │   ├── role-profiles.json          # 角色画像（权限边界、KPI）
     │   ├── task-inventory.json         # 任务清单（频次、风险、SLA、异常、验收标准）
@@ -359,6 +399,8 @@ your-project/
     │   ├── validation-report.json      # 三合一校验结果（机器可读）
     │   ├── validation-report.md        # 校验摘要（人类可读）
     │   └── product-map-decisions.json  # 用户决策日志
+    ├── product-map-review/
+    │   └── review-feedback.json        # 产品地图脑图审核反馈（nodes + status + comments）
     ├── journey-emotion/
     │   ├── journey-emotion.json        # 情绪旅程地图（触点情绪、低谷、高峰）
     │   └── journey-emotion-report.md   # 可读报告
@@ -371,6 +413,8 @@ your-project/
     ├── interaction-gate/
     │   ├── interaction-gate.json       # 交互质量门禁结果
     │   └── interaction-gate-report.md  # 可读报告
+    ├── wireframe-review/
+    │   └── review-feedback.json        # 线框审核反馈（pins + status + category）
     ├── use-case/
     │   ├── use-case-tree.json          # 机器可读：完整 4 层 JSON 树（Given/When/Then 全量）
     │   ├── use-case-report.md          # 人类可读：摘要级 Markdown（每条用例一行）

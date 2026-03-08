@@ -141,13 +141,23 @@ When indexes don't exist, skills fall back to full data loading (backward compat
 ## Recommended Workflow (for users of the plugins)
 
 ```
-/product-map              # Always first
+/product-concept          # Discover product vision (optional, from scratch)
+    ↓
+/concept-review           # Mind map review of product concept (mandatory)
+    ↓
+/product-map              # Build product map (always first if no concept)
+    ↓
+/map-review               # Mind map review of product map (mandatory)
     ↓
 /journey-emotion          # Emotion journey mapping (human decision point)
     ↓
 /experience-map           # Experience map (replaces screen-map)
     ↓
-/use-case / /feature-gap / /feature-prune / /ui-design   # Any order
+/wireframe-review         # Low-fi structural review (structure lock gate)
+    ↓
+/use-case / /feature-gap / /feature-prune / /ui-design   # Any order (after structure lock)
+    ↓
+/ui-review                # High-fi visual review
     ↓
 /design-audit             # Final cross-layer consistency check
     ↓
