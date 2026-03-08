@@ -61,11 +61,22 @@ def load_data():
                 nid = issue.get("node", "")
                 gate_issues.setdefault(nid, []).append(issue)
 
-    return op_lines, tasks, roles, role_map, gate_issues
+    # Load VOs and API contracts for interaction-type templates
+    vos = C.load_view_objects(BASE)
+    vo_map = {v["id"]: v for v in vos} if vos else {}
+    apis = C.load_api_contracts(BASE)
+    api_map = {a["id"]: a for a in apis} if apis else {}
+
+    return op_lines, tasks, roles, role_map, gate_issues, vo_map, api_map
 
 
-def build_screens_with_context(op_lines, tasks, role_map, gate_issues):
+def build_screens_with_context(op_lines, tasks, role_map, gate_issues, vo_map=None, api_map=None):
     """Build screen list with full context for wireframe rendering."""
+    if vo_map is None:
+        vo_map = {}
+    if api_map is None:
+        api_map = {}
+
     screens = []
     for ol in op_lines:
         for node in ol.get("nodes", []):
@@ -79,13 +90,24 @@ def build_screens_with_context(op_lines, tasks, role_map, gate_issues):
                     if task and not screen_role:
                         screen_role = role_map.get(task["owner_role"], "")
 
+                # VO enrichment
+                vo_ref = s.get("vo_ref", "")
+                vo = vo_map.get(vo_ref, {}) if vo_ref else {}
+                data_fields = s.get("data_fields", []) or vo.get("fields", [])
+                interaction_type = s.get("interaction_type", "") or vo.get("interaction_type", "")
+                vo_actions = s.get("vo_actions", []) or vo.get("actions", [])
+                states = s.get("states", {})
+                flow_context = s.get("flow_context", {})
+
                 screens.append({
                     "id": sid,
                     "name": s.get("name", ""),
                     "module": s.get("module", ""),
                     "notes": s.get("notes", ""),
+                    "description": s.get("description", ""),
                     "tasks": s.get("tasks", []),
                     "actions": s.get("actions", []),
+                    "vo_actions": vo_actions,
                     "non_negotiable": s.get("non_negotiable", []),
                     "role": screen_role,
                     "operation_line": ol["id"],
@@ -95,6 +117,14 @@ def build_screens_with_context(op_lines, tasks, role_map, gate_issues):
                     "emotion_intensity": node.get("emotion_intensity", 5),
                     "ux_intent": node.get("ux_intent", ""),
                     "gate_issues": gate_issues.get(nid, []),
+                    "vo_ref": vo_ref,
+                    "api_ref": s.get("api_ref", "") or vo.get("api_ref", ""),
+                    "interaction_type": interaction_type,
+                    "data_fields": data_fields,
+                    "states": states,
+                    "flow_context": flow_context,
+                    "filters": vo.get("filters", []),
+                    "entity_name": vo.get("entity_name", ""),
                 })
     return screens
 
@@ -119,21 +149,425 @@ EMOTION_COLORS = {
 }
 
 
-def generate_wireframe(screen):
-    """Generate a low-fidelity wireframe HTML for a screen."""
-    name = screen["name"]
+def _esc(s):
+    return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+
+# ── Wireframe CSS ──────────────────────────────────────────────────────────
+
+WF_CSS = """
+body{margin:0;padding:24px;font-family:-apple-system,system-ui,sans-serif;background:#f8f9fa;color:#333}
+.wf-container{max-width:480px;margin:0 auto;background:#fff;border:2px solid #dee2e6;border-radius:4px;overflow:hidden}
+.wf-header{background:#e9ecef;padding:12px 16px;border-bottom:2px solid #dee2e6;display:flex;align-items:center;gap:8px}
+.wf-header-title{font-size:14px;font-weight:600;color:#495057;flex:1}
+.wf-emo{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
+.wf-itype{font-size:10px;padding:2px 6px;border-radius:3px;background:#e8eaf6;color:#5c6bc0;font-weight:600}
+.wf-body{padding:16px}
+.wf-purpose{font-size:13px;color:#6c757d;margin-bottom:16px;padding:8px;background:#f8f9fa;border-left:3px solid #adb5bd;border-radius:0 4px 4px 0}
+.wf-section{background:#f1f3f5;border:1px dashed #adb5bd;border-radius:4px;padding:16px;margin:8px 0;min-height:48px;display:flex;align-items:center;justify-content:center;color:#868e96;font-size:13px}
+.wf-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.wf-btn{padding:8px 16px;border-radius:4px;font-size:13px;cursor:default;display:flex;align-items:center;gap:6px;border:none}
+.wf-btn-primary{background:#dee2e6;color:#495057;font-weight:600;border:2px solid #adb5bd}
+.wf-btn-secondary{background:#f8f9fa;color:#6c757d;border:1px dashed #ced4da}
+.crud-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.wf-states{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
+.wf-state{font-size:11px;padding:4px 8px;border-radius:4px;background:#f8f9fa;color:#868e96;border:1px solid #e9ecef}
+.wf-tasks{font-size:11px;color:#adb5bd;margin-top:12px}
+.wf-constraints{font-size:12px;color:#e65100;background:#fff3e0;padding:8px;border-radius:4px;margin-top:8px}
+.wf-gate{margin-top:8px}
+.wf-gate-issue{font-size:12px;color:#c62828;background:#ffebee;padding:4px 8px;border-radius:4px;margin-top:4px}
+.wf-label{font-size:11px;font-weight:600;color:#666}
+.wf-intent{font-size:12px;color:#5c6bc0;background:#e8eaf6;padding:6px 8px;border-radius:4px;margin-bottom:12px}
+/* Table */
+.wf-table{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0}
+.wf-table th{background:#e9ecef;color:#495057;font-weight:600;padding:6px 8px;text-align:left;border:1px solid #dee2e6}
+.wf-table td{padding:6px 8px;border:1px solid #dee2e6;color:#6c757d}
+.wf-table tr:nth-child(even) td{background:#f8f9fa}
+.wf-tag{display:inline-block;padding:1px 6px;border-radius:3px;background:#e8eaf6;color:#5c6bc0;font-size:10px}
+/* Search/toolbar */
+.wf-toolbar{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.wf-search{flex:1;padding:6px 10px;border:1px solid #dee2e6;border-radius:4px;background:#f8f9fa;color:#adb5bd;font-size:12px}
+.wf-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.wf-filter-chip{padding:3px 10px;border-radius:12px;background:#f1f3f5;color:#868e96;font-size:11px;border:1px solid #dee2e6}
+.wf-pagination{text-align:center;color:#adb5bd;font-size:12px;margin-top:8px}
+/* Form */
+.wf-form-field{margin-bottom:12px}
+.wf-form-label{font-size:12px;color:#495057;font-weight:500;margin-bottom:4px;display:flex;align-items:center;gap:4px}
+.wf-form-required{color:#e53935;font-weight:700}
+.wf-form-input{width:100%;padding:6px 10px;border:1px solid #dee2e6;border-radius:4px;background:#f8f9fa;color:#adb5bd;font-size:12px;box-sizing:border-box}
+.wf-form-textarea{width:100%;padding:6px 10px;border:1px solid #dee2e6;border-radius:4px;background:#f8f9fa;color:#adb5bd;font-size:12px;min-height:60px;box-sizing:border-box}
+.wf-form-hint{font-size:10px;color:#adb5bd;margin-top:2px}
+.wf-form-buttons{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+/* Detail */
+.wf-detail-row{display:flex;padding:6px 0;border-bottom:1px solid #f1f3f5;font-size:12px}
+.wf-detail-label{width:120px;flex-shrink:0;color:#495057;font-weight:500}
+.wf-detail-value{color:#6c757d;flex:1}
+.wf-detail-actions{margin-top:12px;padding-top:8px;border-top:1px solid #dee2e6}
+.wf-api-ref{font-size:10px;color:#adb5bd;margin-top:2px}
+/* State tabs */
+.wf-state-tabs{display:flex;gap:0;margin-bottom:10px;border:1px solid #dee2e6;border-radius:4px;overflow:hidden}
+.wf-state-tab{padding:6px 12px;font-size:11px;background:#f8f9fa;color:#868e96;border-right:1px solid #dee2e6;flex:1;text-align:center}
+.wf-state-tab:last-child{border-right:none}
+.wf-state-tab.active{background:#495057;color:#fff}
+.wf-transition{font-size:10px;color:#7c3aed;margin-top:2px}
+/* Approval */
+.wf-approval-card{border:1px solid #dee2e6;border-radius:6px;padding:10px 12px;margin-bottom:8px;background:#fff}
+.wf-approval-card-header{font-size:12px;color:#495057;font-weight:500;margin-bottom:6px}
+.wf-approval-card-fields{font-size:11px;color:#868e96;margin-bottom:8px}
+.wf-approval-btns{display:flex;gap:8px;justify-content:flex-end}
+.wf-approval-reject{padding:4px 12px;border:1px solid #e57373;color:#e57373;border-radius:4px;background:#fff;font-size:11px}
+.wf-approval-approve{padding:4px 12px;border:1px solid #66BB6A;color:#fff;border-radius:4px;background:#66BB6A;font-size:11px}
+.wf-pending-badge{font-size:12px;color:#e65100;background:#fff3e0;padding:2px 8px;border-radius:4px}
+/* 4D Panel */
+.wf-4d{margin-top:16px;background:#f8f9fa;border:1px solid #e9ecef;border-radius:4px;padding:8px 12px}
+.wf-4d-row{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px}
+.wf-4d-icon{font-size:14px;width:20px;text-align:center}
+.wf-4d-label{font-weight:600;color:#495057;width:48px;flex-shrink:0}
+.wf-4d-value{color:#6c757d;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+"""
+
+
+# ── 4D Panel ───────────────────────────────────────────────────────────────
+
+def _build_4d_panel(screen):
+    """Build the 4D information panel (Data, Action, State, Flow)."""
+    # Data dimension
+    fields = screen.get("data_fields", [])
+    field_names = ", ".join(f.get("label", f.get("name", "")) for f in fields[:6])
+    if len(fields) > 6:
+        field_names += "..."
+    rw_count = sum(1 for f in fields if not f.get("readonly"))
+    ro_count = len(fields) - rw_count
+    rw_summary = f"{rw_count}rw/{ro_count}ro" if fields else ""
+    data_val = f"{field_names} ({len(fields)} fields, {rw_summary})" if fields else "No fields"
+
+    # Action dimension
+    vo_actions = screen.get("vo_actions", [])
     actions = screen.get("actions", [])
-    notes = screen.get("notes", "")
-    emo = screen.get("emotion_state", "neutral")
-    emo_color = EMOTION_COLORS.get(emo, "#B0BEC5")
-    ux_intent = screen.get("ux_intent", "")
+    all_action_labels = [a.get("label", "") for a in vo_actions[:4]] or [a.get("label", "") for a in actions[:4]]
+    action_labels = ", ".join(al for al in all_action_labels if al)
+    api_refs = ", ".join(a.get("api_ref", "") for a in vo_actions if a.get("api_ref"))
+    action_val = f"{action_labels}" + (f" ({api_refs})" if api_refs else "") if action_labels else "No actions"
+
+    # State dimension
+    states = screen.get("states", {})
+    empty_desc = states.get("empty", "blank")
+    loading_desc = states.get("loading", "skeleton")
+    error_desc = states.get("error", "toast")
+    state_val = f"\u7a7a:{_esc(str(empty_desc))} | \u52a0\u8f7d:{_esc(str(loading_desc))} | \u9519\u8bef:{_esc(str(error_desc))}"
+
+    # Flow dimension
+    flow = screen.get("flow_context", {})
+    prev_ids = flow.get("prev", []) + flow.get("entry_points", [])
+    next_ids = flow.get("next", []) + flow.get("exit_points", [])
+    prev_str = ", ".join(prev_ids[:3]) if prev_ids else "\u2013"
+    next_str = ", ".join(next_ids[:3]) if next_ids else "\u2013"
+    flow_val = f"\u2190 {prev_str} \u2192 {next_str}"
+
+    return f"""<div class="wf-4d">
+  <div class="wf-4d-row"><span class="wf-4d-icon">\U0001f4ca</span><span class="wf-4d-label">Data</span><span class="wf-4d-value">{_esc(data_val)}</span></div>
+  <div class="wf-4d-row"><span class="wf-4d-icon">\u26a1</span><span class="wf-4d-label">Action</span><span class="wf-4d-value">{_esc(action_val)}</span></div>
+  <div class="wf-4d-row"><span class="wf-4d-icon">\U0001f504</span><span class="wf-4d-label">State</span><span class="wf-4d-value">{state_val}</span></div>
+  <div class="wf-4d-row"><span class="wf-4d-icon">\U0001f500</span><span class="wf-4d-label">Flow</span><span class="wf-4d-value">{_esc(flow_val)}</span></div>
+</div>"""
+
+
+# ── Sample data helpers ────────────────────────────────────────────────────
+
+_SAMPLE_VALUES = {
+    "string": "\u2591\u2591\u2591\u2591\u2591",
+    "text": "\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591",
+    "enum": "\u25cftag",
+    "number": "128",
+    "decimal": "\u00a5128.00",
+    "integer": "42",
+    "date": "2025-03-01",
+    "datetime": "2\u5206\u949f\u524d",
+    "boolean": "\u2713",
+    "file": "\U0001f4ce file.pdf",
+    "image": "\U0001f5bc\ufe0f img.png",
+}
+
+_INPUT_INDICATORS = {
+    "string": "[____]",
+    "text": "[====]",
+    "enum": "[\u25be]",
+    "number": "[###]",
+    "decimal": "[###.##]",
+    "integer": "[###]",
+    "date": "[\U0001f4c5]",
+    "datetime": "[\U0001f4c5]",
+    "boolean": "[\u2610]",
+    "file": "[\U0001f4ce]",
+    "image": "[\U0001f5bc\ufe0f]",
+}
+
+
+def _sample_val(field):
+    """Return a sample display value for a field based on its type."""
+    ftype = field.get("type", "string")
+    if field.get("display_format") == "currency" or ftype == "decimal":
+        return "\u00a5128.00"
+    return _SAMPLE_VALUES.get(ftype, "\u2591\u2591\u2591\u2591")
+
+
+def _input_indicator(field):
+    """Return an input type indicator for a form field."""
+    ftype = field.get("type", "string")
+    return _INPUT_INDICATORS.get(ftype, "[____]")
+
+
+# ── Type-specific template functions ───────────────────────────────────────
+
+def _wf_table_headers(fields):
+    """Build table header row from data_fields."""
+    ths = "".join(f"<th>{_esc(f.get('label', f.get('name', '')))}</th>" for f in fields[:5])
+    return ths
+
+
+def _wf_table_row(fields):
+    """Build a sample table row from data_fields."""
+    tds = ""
+    for f in fields[:5]:
+        val = _sample_val(f)
+        ftype = f.get("type", "string")
+        if ftype == "enum":
+            tds += f'<td><span class="wf-tag">{_esc(val)}</span></td>'
+        else:
+            tds += f"<td>{_esc(val)}</td>"
+    return tds
+
+
+def _wf_crud_list(screen):
+    """MG2-L: CRUD list with search, filters, table, pagination."""
+    fields = screen.get("data_fields", [])
+    filters = screen.get("filters", [])
+    entity = screen.get("entity_name", "")
+
+    # Toolbar
+    toolbar = f"""<div class="wf-toolbar">
+  <div class="wf-search">\U0001f50d \u641c\u7d22...</div>
+  <button class="wf-btn wf-btn-primary">+ \u65b0\u5efa{_esc(entity)}</button>
+</div>"""
+
+    # Filter chips
+    filter_html = ""
+    if filters:
+        chips = "".join(f'<span class="wf-filter-chip">{_esc(fn)} \u25be</span>' for fn in filters[:4])
+        filter_html = f'<div class="wf-filters">{chips}</div>'
+
+    # Table
+    if fields:
+        headers = _wf_table_headers(fields) + "<th>\u64cd\u4f5c</th>"
+        rows = ""
+        for _ in range(3):
+            rows += f"<tr>{_wf_table_row(fields)}<td>\u00b7\u00b7\u00b7</td></tr>"
+        table = f'<table class="wf-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table>'
+    else:
+        table = '<div class="wf-section">Table Content</div>'
+
+    pagination = '<div class="wf-pagination">\u2190 1  2  3  ... \u2192</div>'
+
+    return toolbar + filter_html + table + pagination
+
+
+def _wf_readonly_list(screen):
+    """MG1: Read-only list — no create button, no action column."""
+    fields = screen.get("data_fields", [])
+    filters = screen.get("filters", [])
+
+    toolbar = '<div class="wf-toolbar"><div class="wf-search">\U0001f50d \u641c\u7d22...</div></div>'
+
+    filter_html = ""
+    if filters:
+        chips = "".join(f'<span class="wf-filter-chip">{_esc(fn)} \u25be</span>' for fn in filters[:4])
+        filter_html = f'<div class="wf-filters">{chips}</div>'
+
+    if fields:
+        headers = _wf_table_headers(fields)
+        rows = ""
+        for _ in range(3):
+            rows += f"<tr>{_wf_table_row(fields)}</tr>"
+        table = f'<table class="wf-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table>'
+    else:
+        table = '<div class="wf-section">Read-only List</div>'
+
+    pagination = '<div class="wf-pagination">\u2190 1  2  3  ... \u2192</div>'
+    return toolbar + filter_html + table + pagination
+
+
+def _wf_create_form(screen):
+    """MG2-C: Create form with typed inputs."""
+    fields = screen.get("data_fields", [])
+    entity = screen.get("entity_name", "")
+    form_fields = ""
+    for f in fields[:10]:
+        label = f.get("label", f.get("name", ""))
+        required = f.get("required", False)
+        req_mark = '<span class="wf-form-required">\u2731</span>' if required else ""
+        indicator = _input_indicator(f)
+        ftype = f.get("type", "string")
+        if ftype == "text":
+            inp = f'<div class="wf-form-textarea">{indicator}</div>'
+        else:
+            inp = f'<div class="wf-form-input">{indicator}</div>'
+        form_fields += f"""<div class="wf-form-field">
+  <div class="wf-form-label">{_esc(label)} {req_mark}</div>
+  {inp}
+</div>"""
+
+    buttons = f"""<div class="wf-form-buttons">
+  <button class="wf-btn wf-btn-secondary">\u53d6\u6d88</button>
+  <button class="wf-btn wf-btn-primary">\u521b\u5efa{_esc(entity)}</button>
+</div>"""
+
+    return form_fields + buttons if fields else '<div class="wf-section">Create Form</div>'
+
+
+def _wf_edit_form(screen):
+    """MG2-E: Edit form — same as create but with pre-fill hint."""
+    fields = screen.get("data_fields", [])
+    entity = screen.get("entity_name", "")
+    form_fields = ""
+    for f in fields[:10]:
+        label = f.get("label", f.get("name", ""))
+        required = f.get("required", False)
+        req_mark = '<span class="wf-form-required">\u2731</span>' if required else ""
+        indicator = _input_indicator(f)
+        ftype = f.get("type", "string")
+        hint = '<div class="wf-form-hint">(\u56de\u586b)</div>'
+        if ftype == "text":
+            inp = f'<div class="wf-form-textarea">{indicator}</div>{hint}'
+        else:
+            inp = f'<div class="wf-form-input">{indicator}</div>{hint}'
+        form_fields += f"""<div class="wf-form-field">
+  <div class="wf-form-label">{_esc(label)} {req_mark}</div>
+  {inp}
+</div>"""
+
+    buttons = f"""<div class="wf-form-buttons">
+  <button class="wf-btn wf-btn-secondary">\u53d6\u6d88</button>
+  <button class="wf-btn wf-btn-primary">\u4fdd\u5b58{_esc(entity)}</button>
+</div>"""
+
+    return form_fields + buttons if fields else '<div class="wf-section">Edit Form</div>'
+
+
+def _wf_detail(screen):
+    """MG2-D: Detail view with field-value rows and actions."""
+    fields = screen.get("data_fields", [])
+    vo_actions = screen.get("vo_actions", [])
+
+    rows = ""
+    for f in fields[:12]:
+        label = f.get("label", f.get("name", ""))
+        val = _sample_val(f)
+        rows += f'<div class="wf-detail-row"><span class="wf-detail-label">{_esc(label)}</span><span class="wf-detail-value">{_esc(val)}</span></div>'
+
+    action_html = ""
+    if vo_actions:
+        btns = ""
+        for a in vo_actions[:4]:
+            style = a.get("style", "ghost")
+            cls = "wf-btn-primary" if style == "primary" else ("wf-btn wf-btn-secondary" if style != "danger" else "wf-btn wf-btn-secondary")
+            btns += f'<button class="wf-btn {cls}">{_esc(a.get("label", ""))}</button>'
+            api = a.get("api_ref", "")
+            if api:
+                btns += f'<div class="wf-api-ref">\u2193 API: {_esc(api)}</div>'
+        action_html = f'<div class="wf-detail-actions"><div class="wf-label">\u2500\u2500\u2500 Actions \u2500\u2500\u2500</div><div class="wf-actions">{btns}</div></div>'
+
+    return (rows + action_html) if fields else '<div class="wf-section">Detail View</div>'
+
+
+def _wf_state_machine(screen):
+    """MG3: State-machine list with state tabs and conditional actions."""
+    fields = screen.get("data_fields", [])
+    states = screen.get("states", {})
+    vo_actions = screen.get("vo_actions", [])
+
+    # State tabs
+    state_names = []
+    if isinstance(states, dict):
+        # states may be {empty, loading, error} or actual state machine states
+        for k, v in states.items():
+            if k not in ("empty", "loading", "error"):
+                state_names.append(str(v) if not isinstance(v, dict) else k)
+    if not state_names:
+        state_names = ["\u5168\u90e8", "\u5f85\u5904\u7406", "\u5df2\u5b8c\u6210"]
+
+    tabs = '<span class="wf-state-tab active">\u5168\u90e8</span>'
+    for sn in state_names[:5]:
+        tabs += f'<span class="wf-state-tab">{_esc(sn)}</span>'
+    state_tabs = f'<div class="wf-state-tabs">{tabs}</div>'
+
+    # Table with conditional action column
+    if fields:
+        headers = _wf_table_headers(fields) + "<th>\u64cd\u4f5c</th>"
+        rows = ""
+        for i in range(3):
+            action_cell = ""
+            for a in vo_actions[:2]:
+                alabel = a.get("label", "")
+                action_cell += f'<button class="wf-btn wf-btn-secondary" style="padding:2px 8px;font-size:10px">{_esc(alabel)}</button> '
+                api = a.get("api_ref", "")
+                if api:
+                    action_cell += f'<div class="wf-transition">\u2192 API: {_esc(api)}</div>'
+            if not action_cell:
+                action_cell = "\u00b7\u00b7\u00b7"
+            rows += f"<tr>{_wf_table_row(fields)}<td>{action_cell}</td></tr>"
+        table = f'<table class="wf-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table>'
+    else:
+        table = '<div class="wf-section">State Machine List</div>'
+
+    return state_tabs + table
+
+
+def _wf_approval(screen):
+    """MG4: Approval queue with cards."""
+    fields = screen.get("data_fields", [])
+
+    pending_badge = '<div style="text-align:right;margin-bottom:8px"><span class="wf-pending-badge">\u5f85\u5ba1 3 \u4ef6</span></div>'
+
+    cards = ""
+    for i in range(2):
+        field_summary = ""
+        for f in fields[:3]:
+            label = f.get("label", f.get("name", ""))
+            val = _sample_val(f)
+            field_summary += f"{_esc(label)}: {_esc(val)}  "
+        cards += f"""<div class="wf-approval-card">
+  <div class="wf-approval-card-header">#{i + 1001}</div>
+  <div class="wf-approval-card-fields">{field_summary if field_summary else "░░░ ░░░░░ ░░"}</div>
+  <div class="wf-approval-btns">
+    <button class="wf-approval-reject">\u9a73\u56de</button>
+    <button class="wf-approval-approve">\u2713 \u901a\u8fc7</button>
+  </div>
+</div>"""
+
+    return pending_badge + cards
+
+
+def _wf_default(screen):
+    """Default wireframe — enhanced version of original, uses data_fields if available."""
+    fields = screen.get("data_fields", [])
+    actions = screen.get("actions", [])
     non_neg = screen.get("non_negotiable", [])
     tasks = screen.get("tasks", [])
 
-    high_actions = [a for a in actions if a.get("frequency") == "高"]
-    other_actions = [a for a in actions if a.get("frequency") != "高"]
+    # Content: show field table if available, else placeholder
+    if fields:
+        headers = _wf_table_headers(fields)
+        rows = ""
+        for _ in range(2):
+            rows += f"<tr>{_wf_table_row(fields)}</tr>"
+        content = f'<table class="wf-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table>'
+    else:
+        content = '<div class="wf-section">Content Area</div>'
 
-    # Build action buttons (gray wireframe style)
+    # Action buttons
+    high_actions = [a for a in actions if a.get("frequency") == "\u9ad8"]
+    other_actions = [a for a in actions if a.get("frequency") != "\u9ad8"]
+
     primary_btns = ""
     for a in high_actions[:4]:
         crud = a.get("crud", "R")
@@ -146,7 +580,21 @@ def generate_wireframe(screen):
         crud_color = {"C": "#4CAF50", "U": "#FF9800", "D": "#F44336", "R": "#78909C"}.get(crud, "#78909C")
         secondary_btns += f'<button class="wf-btn wf-btn-secondary"><span class="crud-dot" style="background:{crud_color}"></span>{_esc(a["label"])}</button>'
 
-    # Non-negotiable constraints
+    btns_html = ""
+    if primary_btns:
+        btns_html += f'<div class="wf-actions">{primary_btns}</div>'
+    if secondary_btns:
+        btns_html += f'<div class="wf-actions">{secondary_btns}</div>'
+
+    # States
+    states_html = """<div class="wf-states">
+      <span class="wf-state">Empty</span>
+      <span class="wf-state">Loading</span>
+      <span class="wf-state">Error</span>
+      <span class="wf-state">Success</span>
+    </div>"""
+
+    # Constraints
     constraints_html = ""
     if non_neg:
         constraints_html = '<div class="wf-constraints"><span class="wf-label">Non-negotiable:</span> ' + ", ".join(f"<b>{_esc(n)}</b>" for n in non_neg) + "</div>"
@@ -158,57 +606,63 @@ def generate_wireframe(screen):
         items = "".join(f'<div class="wf-gate-issue">{_esc(i.get("detail", ""))}</div>' for i in gate_issues[:3])
         gate_html = f'<div class="wf-gate"><span class="wf-label">Quality Gate Issues:</span>{items}</div>'
 
+    return content + btns_html + states_html + constraints_html + gate_html + f'<div class="wf-tasks">{len(tasks)} tasks linked</div>'
+
+
+# ── Page Wrapper + Dispatcher ──────────────────────────────────────────────
+
+def _wf_page(screen, body_html):
+    """Wrap type-specific body with common page structure: header + body + 4D panel."""
+    name = screen.get("name", "")
+    emo = screen.get("emotion_state", "neutral")
+    emo_color = EMOTION_COLORS.get(emo, "#B0BEC5")
+    itype = screen.get("interaction_type", "")
+    ux_intent = screen.get("ux_intent", "")
+    notes = screen.get("notes", "") or screen.get("description", "")
+
+    itype_badge = f'<span class="wf-itype">{_esc(itype)}</span>' if itype else ""
+
+    panel_4d = _build_4d_panel(screen)
+
     return f"""<!DOCTYPE html>
-<html><head><meta charset="utf-8"><style>
-body{{margin:0;padding:24px;font-family:-apple-system,system-ui,sans-serif;background:#f8f9fa;color:#333}}
-.wf-container{{max-width:480px;margin:0 auto;background:#fff;border:2px solid #dee2e6;border-radius:4px;overflow:hidden}}
-.wf-header{{background:#e9ecef;padding:12px 16px;border-bottom:2px solid #dee2e6;display:flex;align-items:center;gap:8px}}
-.wf-header-title{{font-size:14px;font-weight:600;color:#495057;flex:1}}
-.wf-emo{{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}}
-.wf-body{{padding:16px}}
-.wf-purpose{{font-size:13px;color:#6c757d;margin-bottom:16px;padding:8px;background:#f8f9fa;border-left:3px solid #adb5bd;border-radius:0 4px 4px 0}}
-.wf-section{{background:#f1f3f5;border:1px dashed #adb5bd;border-radius:4px;padding:16px;margin:8px 0;min-height:48px;display:flex;align-items:center;justify-content:center;color:#868e96;font-size:13px}}
-.wf-actions{{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}}
-.wf-btn{{padding:8px 16px;border-radius:4px;font-size:13px;cursor:default;display:flex;align-items:center;gap:6px;border:none}}
-.wf-btn-primary{{background:#dee2e6;color:#495057;font-weight:600;border:2px solid #adb5bd}}
-.wf-btn-secondary{{background:#f8f9fa;color:#6c757d;border:1px dashed #ced4da}}
-.crud-dot{{width:8px;height:8px;border-radius:50%;flex-shrink:0}}
-.wf-states{{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}}
-.wf-state{{font-size:11px;padding:4px 8px;border-radius:4px;background:#f8f9fa;color:#868e96;border:1px solid #e9ecef}}
-.wf-tasks{{font-size:11px;color:#adb5bd;margin-top:12px}}
-.wf-constraints{{font-size:12px;color:#e65100;background:#fff3e0;padding:8px;border-radius:4px;margin-top:8px}}
-.wf-gate{{margin-top:8px}}
-.wf-gate-issue{{font-size:12px;color:#c62828;background:#ffebee;padding:4px 8px;border-radius:4px;margin-top:4px}}
-.wf-label{{font-size:11px;font-weight:600;color:#666}}
-.wf-intent{{font-size:12px;color:#5c6bc0;background:#e8eaf6;padding:6px 8px;border-radius:4px;margin-bottom:12px}}
-</style></head><body>
+<html><head><meta charset="utf-8"><style>{WF_CSS}</style></head><body>
 <div class="wf-container">
   <div class="wf-header">
     <div class="wf-header-title">{_esc(name)}</div>
+    {itype_badge}
     <span class="wf-emo" style="background:{emo_color}22;color:{emo_color}">{_esc(emo)}</span>
   </div>
   <div class="wf-body">
     {f'<div class="wf-intent">UX Intent: {_esc(ux_intent)}</div>' if ux_intent else ''}
     <div class="wf-purpose">{_esc(notes) if notes else 'No description'}</div>
-    <div class="wf-section">Content Area</div>
-    {f'<div class="wf-actions">{primary_btns}</div>' if primary_btns else ''}
-    {f'<div class="wf-actions">{secondary_btns}</div>' if secondary_btns else ''}
-    <div class="wf-states">
-      <span class="wf-state">Empty</span>
-      <span class="wf-state">Loading</span>
-      <span class="wf-state">Error</span>
-      <span class="wf-state">Success</span>
-    </div>
-    {constraints_html}
-    {gate_html}
-    <div class="wf-tasks">{len(tasks)} tasks linked</div>
+    {body_html}
+    {panel_4d}
   </div>
 </div>
 </body></html>"""
 
 
-def _esc(s):
-    return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+def generate_wireframe(screen):
+    """Generate interaction-type-specific wireframe HTML."""
+    itype = screen.get("interaction_type", "")
+    if itype == "MG1":
+        body = _wf_readonly_list(screen)
+    elif itype == "MG2-L":
+        body = _wf_crud_list(screen)
+    elif itype == "MG2-C":
+        body = _wf_create_form(screen)
+    elif itype == "MG2-E":
+        body = _wf_edit_form(screen)
+    elif itype == "MG2-D":
+        body = _wf_detail(screen)
+    elif itype == "MG3":
+        body = _wf_state_machine(screen)
+    elif itype == "MG4":
+        body = _wf_approval(screen)
+    else:
+        body = _wf_default(screen)
+
+    return _wf_page(screen, body)
 
 
 # ── Dashboard rendering ──────────────────────────────────────────────────────
@@ -235,6 +689,9 @@ def _render_card(s, feedback):
         "revision": '<span class="badge revision">Revision</span>',
     }.get(status, '<span class="badge pending">Pending</span>')
 
+    itype = s.get("interaction_type", "")
+    itype_badge = f'<span class="itype-badge">{_esc(itype)}</span>' if itype else ''
+
     action_summary = f"{len([a for a in actions if a.get('frequency') == '高'])}H + {len([a for a in actions if a.get('frequency') != '高'])}L"
     pin_indicator = f'<span class="pin-count">{pin_count} pins</span>' if pin_count else ''
     gate_indicator = f'<span class="gate-warn">{gate_count} issues</span>' if gate_count else ''
@@ -243,6 +700,7 @@ def _render_card(s, feedback):
     <a href="/screen/{sid}" class="card" data-role="{_esc(role)}" data-status="{status}" data-journey="{_esc(journey)}">
       <div class="card-header">
         <span class="card-title">{_esc(name)}</span>
+        {itype_badge}
         {status_badge}
       </div>
       <div class="card-meta">
@@ -360,6 +818,7 @@ body{{font-family:-apple-system,system-ui,'Segoe UI',sans-serif;background:#f8f9
 .badge.revision{{background:#fff3bf;color:#e67700}}
 .gate-warn{{background:#ffebee;color:#c62828;padding:2px 6px;border-radius:3px;font-size:11px}}
 .pin-count{{color:#e67700;font-weight:500;font-size:11px}}
+.itype-badge{{font-size:10px;padding:2px 6px;border-radius:3px;background:#e8eaf6;color:#5c6bc0;font-weight:600}}
 .footer{{text-align:center;padding:32px}}
 .submit-btn{{padding:12px 48px;background:#495057;color:#fff;border:none;border-radius:8px;font-size:15px;cursor:pointer;font-weight:500}}
 .submit-btn:hover{{background:#343a40}}
@@ -673,8 +1132,8 @@ renderPins();
 # ── HTTP Handler ──────────────────────────────────────────────────────────────
 
 # Load data once at startup
-_op_lines, _tasks, _roles, _role_map, _gate_issues = load_data()
-_all_screens = build_screens_with_context(_op_lines, _tasks, _role_map, _gate_issues)
+_op_lines, _tasks, _roles, _role_map, _gate_issues, _vo_map, _api_map = load_data()
+_all_screens = build_screens_with_context(_op_lines, _tasks, _role_map, _gate_issues, _vo_map, _api_map)
 _screen_map = {s["id"]: s for s in _all_screens}
 
 
