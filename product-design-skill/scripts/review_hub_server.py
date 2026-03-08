@@ -2277,12 +2277,614 @@ def render_wireframe_html(screen_id):
     return generate_wireframe(screen)
 
 
+# ── UI Tab ─────────────────────────────────────────────────────────────────────
+
+UI_DIR = os.path.join(BASE, "ui-design")
+UI_FEEDBACK_DIR = os.path.join(BASE, "ui-review")
+C.ensure_dir(UI_FEEDBACK_DIR)
+UI_FEEDBACK_PATH = os.path.join(UI_FEEDBACK_DIR, "review-feedback.json")
+
+
+def load_ui_spec():
+    """Load ui-design-spec.json and normalize screens to list format."""
+    raw = C.load_json(os.path.join(UI_DIR, "ui-design-spec.json")) or {}
+    screens = raw.get("screens", [])
+    if isinstance(screens, dict):
+        normalized = []
+        for sid, sdata in screens.items():
+            if isinstance(sdata, dict):
+                if "id" not in sdata:
+                    sdata["id"] = sid
+                normalized.append(sdata)
+        raw["screens"] = normalized
+    return raw
+
+
+def load_ui_experience_map():
+    """Load experience-map for design rationale."""
+    op_lines, screen_index, loaded = C.load_experience_map(BASE)
+    if loaded:
+        return C.build_screen_by_id_from_lines(op_lines)
+    return {}
+
+
+def load_ui_stitch_index():
+    return C.load_json(os.path.join(UI_DIR, "stitch-index.json")) or {}
+
+
+def load_ui_feedback():
+    fb = C.load_json(UI_FEEDBACK_PATH)
+    if fb:
+        return fb
+    return {"round": 1, "submitted_at": None, "screens": {}}
+
+
+def get_ui_stitch_html(screen_id):
+    """Read Stitch-generated HTML for a screen."""
+    path = os.path.join(UI_DIR, "stitch", f"{screen_id}.html")
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            return f.read()
+    return None
+
+
+def get_ui_preview_html(screen_id, spec):
+    """Extract preview HTML from preview/ files or generate skeleton."""
+    preview_dir = os.path.join(UI_DIR, "preview")
+    if os.path.isdir(preview_dir):
+        # Try exact match first
+        for fname in os.listdir(preview_dir):
+            if fname.endswith(".html") and fname != "index.html":
+                fpath = os.path.join(preview_dir, fname)
+                with open(fpath, encoding="utf-8") as f:
+                    content = f.read()
+                if screen_id in content:
+                    return content
+    # Fallback: generate skeleton from spec
+    screen_spec = None
+    for s in spec.get("screens", []):
+        if s.get("id") == screen_id:
+            screen_spec = s
+            break
+    if not screen_spec:
+        return None
+    return _generate_ui_skeleton(screen_spec, spec.get("design_tokens", {}))
+
+
+def _generate_ui_skeleton(screen, tokens):
+    """Generate a simple skeleton HTML from screen spec."""
+    primary = tokens.get("colors", {}).get("primary", "#111827")
+    bg = tokens.get("colors", {}).get("background", "#FFFFFF")
+    radius = tokens.get("border_radius", "6px")
+    name = screen.get("name", "Unknown")
+    sections = screen.get("sections", [])
+    layout = screen.get("layout", "")
+    states = screen.get("states", {})
+
+    section_html = ""
+    for sec in sections:
+        section_html += f'<div style="background:#f3f4f6;border-radius:{radius};padding:24px;margin:8px 0;min-height:60px;display:flex;align-items:center;justify-content:center;color:#6b7280;font-size:14px">{_esc(str(sec))}</div>'
+
+    states_html = ""
+    for state_name, state_desc in states.items():
+        color = "#10b981" if state_name == "empty" else "#f59e0b" if state_name == "loading" else "#ef4444"
+        states_html += f'<div style="display:inline-block;background:{color}20;color:{color};padding:4px 12px;border-radius:12px;font-size:12px;margin:4px">{_esc(str(state_name))}: {_esc(str(state_desc))}</div>'
+
+    return f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+body{{margin:0;padding:24px;font-family:-apple-system,system-ui,sans-serif;background:{bg}}}
+</style></head><body>
+<div style="max-width:800px;margin:0 auto">
+<div style="font-size:11px;color:#9ca3af;margin-bottom:8px">LAYOUT: {_esc(layout)}</div>
+<div style="font-size:20px;font-weight:600;color:{primary};margin-bottom:16px">{_esc(name)}</div>
+{section_html}
+<div style="margin-top:16px">{states_html}</div>
+</div>
+</body></html>"""
+
+
+def render_ui_screen_html(screen_id):
+    """Serve preview HTML for iframe embedding."""
+    spec = load_ui_spec()
+    stitch = get_ui_stitch_html(screen_id)
+    if stitch:
+        return stitch
+    preview = get_ui_preview_html(screen_id, spec)
+    if preview:
+        return preview
+    return "<h2>No preview available</h2>"
+
+
 def render_ui_page():
-    return _placeholder_page("ui", "UI Review")
+    """Render the UI tab with tree + preview split layout."""
+    spec = load_ui_spec()
+    screens = spec.get("screens", [])
+    if not screens:
+        return _placeholder_page("ui", "UI Review - No Data")
+
+    sm = load_ui_experience_map()
+    stitch_index = load_ui_stitch_index()
+    feedback = load_ui_feedback()
+    fb_screens = feedback.get("screens", {})
+
+    # Build tree data grouped by role
+    role_groups = {}
+    for s in screens:
+        role = s.get("role", "未分配")
+        role_groups.setdefault(role, []).append(s)
+
+    tree_data = []
+    for role in sorted(role_groups.keys()):
+        role_screens = []
+        for s in role_groups[role]:
+            sid = s.get("id", "")
+            fb_s = fb_screens.get(sid, {})
+            has_stitch = os.path.exists(os.path.join(UI_DIR, "stitch", f"{sid}.html"))
+            itype = s.get("interaction_type", "")
+            role_screens.append({
+                "id": sid,
+                "name": s.get("name", sid),
+                "itype": itype,
+                "status": fb_s.get("status", "pending"),
+                "pin_count": len(fb_s.get("pins", [])),
+                "has_stitch": has_stitch,
+            })
+        if role_screens:
+            tree_data.append({"id": role, "name": role, "screens": role_screens})
+
+    # Screen detail data for side panel
+    screen_details = {}
+    for s in screens:
+        sid = s.get("id", "")
+        sm_screen = sm.get(sid, {})
+        screen_details[sid] = {
+            "name": s.get("name", ""),
+            "role": s.get("role", ""),
+            "layout": s.get("layout", ""),
+            "interaction_type": s.get("interaction_type", ""),
+            "audience_type": s.get("audience_type", ""),
+            "sections": s.get("sections", []),
+            "states": s.get("states", {}),
+            "primary_purpose": sm_screen.get("primary_purpose", s.get("primary_purpose", "")),
+        }
+
+    total = len(screens)
+    reviewed = sum(1 for s in screens if fb_screens.get(s.get("id", ""), {}).get("status") in ("approved", "revision"))
+
+    tree_json = json.dumps(tree_data, ensure_ascii=False)
+    details_json = json.dumps(screen_details, ensure_ascii=False, default=str)
+    feedback_json = json.dumps(feedback, ensure_ascii=False)
+
+    nav = render_nav("ui")
+
+    return f"""<!DOCTYPE html>
+<html lang="zh"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UI Review - Review Hub</title>
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{font-family:-apple-system,system-ui,'Segoe UI',sans-serif;background:#f8fafc;height:100vh;overflow:hidden}}
+.ui-main-header{{background:#fff;border-bottom:1px solid #e2e8f0;padding:10px 24px;display:flex;align-items:center;gap:16px}}
+.ui-main-header h1{{font-size:16px;font-weight:600;color:#1e293b}}
+.ui-main-header .meta{{font-size:12px;color:#64748b}}
+.ui-progress{{width:120px;height:4px;background:#e2e8f0;border-radius:2px;overflow:hidden}}
+.ui-progress-bar{{height:100%;background:#10b981;border-radius:2px;transition:width .3s}}
+.ui-submit-btn{{margin-left:auto;padding:7px 20px;background:#334155;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;font-weight:500}}
+.ui-submit-btn:hover{{background:#1e293b}}
+.ui-submit-btn:disabled{{background:#94a3b8;cursor:not-allowed}}
+/* Layout */
+.ui-layout{{display:flex;height:calc(100vh - 104px)}}
+.ui-tree-panel{{width:300px;min-width:240px;max-width:400px;background:#fff;border-right:1px solid #e2e8f0;display:flex;flex-direction:column;overflow:hidden}}
+.ui-tree-search{{padding:8px 12px;border-bottom:1px solid #e2e8f0}}
+.ui-tree-search input{{width:100%;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;background:#f8fafc}}
+.ui-tree-body{{flex:1;overflow-y:auto;padding:4px 0}}
+.ui-tree-group{{margin-bottom:2px}}
+.ui-tree-group-header{{display:flex;align-items:center;gap:6px;padding:8px 12px;cursor:pointer;font-size:12px;font-weight:600;color:#475569;user-select:none}}
+.ui-tree-group-header:hover{{background:#f1f5f9}}
+.ui-tree-group-chevron{{font-size:10px;color:#94a3b8;transition:transform .15s}}
+.ui-tree-group.collapsed .ui-tree-group-chevron{{transform:rotate(-90deg)}}
+.ui-tree-group.collapsed .ui-tree-group-items{{display:none}}
+.ui-tree-item{{display:flex;align-items:center;gap:6px;padding:6px 12px 6px 28px;cursor:pointer;font-size:12px;color:#475569;transition:background .1s;border-left:3px solid transparent}}
+.ui-tree-item:hover{{background:#f1f5f9}}
+.ui-tree-item.active{{background:#eff6ff;border-left-color:#3b82f6;color:#1e40af;font-weight:500}}
+.ui-tree-item.status-approved{{border-left-color:#10b981}}
+.ui-tree-item.status-revision{{border-left-color:#f59e0b}}
+.ui-tree-itype{{font-size:9px;padding:1px 5px;border-radius:3px;background:#e8eaf6;color:#5c6bc0;font-weight:600;flex-shrink:0}}
+.ui-tree-badges{{display:flex;gap:3px;margin-left:auto;flex-shrink:0}}
+.ui-tree-badge{{font-size:9px;padding:1px 4px;border-radius:3px;font-weight:600}}
+.ui-tree-badge.pins{{background:#fff3bf;color:#92400e}}
+.ui-tree-badge.stitch{{background:#ede9fe;color:#7c3aed}}
+.ui-tree-name{{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+/* Preview panel */
+.ui-preview-panel{{flex:1;display:flex;flex-direction:column;overflow:hidden}}
+.ui-preview-empty{{display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:15px}}
+.ui-preview-content{{display:none;flex:1;flex-direction:column;overflow:hidden}}
+.ui-preview-content.visible{{display:flex}}
+.ui-preview-area{{flex:1;position:relative;background:#e9ecef;overflow:auto}}
+.ui-preview-area iframe{{width:100%;height:100%;border:none;min-height:500px}}
+.ui-pin{{position:absolute;width:22px;height:22px;background:#fbbf24;color:#1e293b;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;cursor:pointer;transform:translate(-50%,-50%);z-index:5;box-shadow:0 2px 4px rgba(0,0,0,.2)}}
+.ui-pin:hover{{transform:translate(-50%,-50%) scale(1.15)}}
+.ui-click-hint{{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);color:#fff;padding:4px 14px;border-radius:6px;font-size:11px;pointer-events:none;z-index:10}}
+/* Detail bar */
+.ui-detail-bar{{border-top:1px solid #e2e8f0;background:#fff;padding:10px 16px;font-size:12px;color:#475569;max-height:120px;overflow-y:auto}}
+.ui-detail-bar dt{{font-weight:600;color:#334155;display:inline}}
+.ui-detail-bar dd{{display:inline;margin:0 12px 0 4px;color:#64748b}}
+/* Side review panel */
+.ui-review-side{{width:320px;min-width:260px;border-left:1px solid #e2e8f0;background:#fff;display:flex;flex-direction:column;overflow:hidden}}
+.ui-review-side.hidden{{display:none}}
+.ui-review-header{{padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:13px;font-weight:600;color:#1e293b;display:flex;align-items:center;gap:8px}}
+.ui-review-header .sid{{font-size:11px;color:#64748b;font-weight:400}}
+.ui-status-toggle{{display:flex;gap:6px;padding:12px 16px;border-bottom:1px solid #f1f5f9}}
+.ui-status-btn{{flex:1;padding:8px;border:2px solid #e2e8f0;border-radius:6px;background:#fff;cursor:pointer;font-size:12px;text-align:center;transition:all .12s}}
+.ui-status-btn.approved.selected{{border-color:#10b981;background:#dcfce7;color:#065f46}}
+.ui-status-btn.revision.selected{{border-color:#f59e0b;background:#fef3c7;color:#92400e}}
+.ui-pins-list{{flex:1;overflow-y:auto;padding:8px 16px}}
+.ui-pin-item{{padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;margin-bottom:6px;font-size:12px}}
+.ui-pin-item-header{{display:flex;align-items:center;gap:6px;margin-bottom:4px}}
+.ui-pin-num{{width:18px;height:18px;background:#fbbf24;color:#1e293b;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}}
+.ui-pin-item textarea{{width:100%;border:1px solid #e2e8f0;border-radius:4px;padding:5px;font-size:12px;resize:vertical;min-height:36px;font-family:inherit}}
+.ui-pin-del{{color:#cbd5e1;cursor:pointer;font-size:14px;margin-left:auto}}
+.ui-pin-del:hover{{color:#ef4444}}
+.ui-add-hint{{text-align:center;color:#94a3b8;font-size:12px;padding:12px}}
+</style></head><body>
+{nav}
+<div class="ui-main-header">
+  <h1>UI Review</h1>
+  <div class="meta">Round {feedback.get('round', 1)} &middot; {reviewed}/{total} reviewed</div>
+  <div class="ui-progress"><div class="ui-progress-bar" style="width:{reviewed/total*100 if total else 0:.0f}%"></div></div>
+  <button class="ui-submit-btn" id="uiSubmitBtn" onclick="uiSubmit()">Submit Feedback</button>
+</div>
+<div class="ui-layout">
+  <!-- Left: Screen Tree -->
+  <div class="ui-tree-panel">
+    <div class="ui-tree-search"><input type="text" id="uiTreeSearch" placeholder="Search screens..." oninput="uiFilterTree(this.value)"></div>
+    <div class="ui-tree-body" id="uiTreeBody"></div>
+  </div>
+  <!-- Center: Preview -->
+  <div class="ui-preview-panel">
+    <div class="ui-preview-empty" id="uiPreviewEmpty">Select a screen from the tree to preview</div>
+    <div class="ui-preview-content" id="uiPreviewContent">
+      <div class="ui-preview-area" id="uiPreviewArea">
+        <div class="ui-click-hint">Click to add feedback pin</div>
+      </div>
+      <div class="ui-detail-bar" id="uiDetailBar"></div>
+    </div>
+  </div>
+  <!-- Right: Review / Pins -->
+  <div class="ui-review-side hidden" id="uiReviewSide">
+    <div class="ui-review-header"><span id="uiReviewTitle">Review</span><span class="sid" id="uiReviewSid"></span></div>
+    <div class="ui-status-toggle">
+      <button class="ui-status-btn approved" id="uiBtnApproved" onclick="uiSetStatus('approved')">Approved</button>
+      <button class="ui-status-btn revision" id="uiBtnRevision" onclick="uiSetStatus('revision')">Revision</button>
+    </div>
+    <div class="ui-pins-list" id="uiPinsList"></div>
+    <div class="ui-add-hint">Click on preview to pin feedback</div>
+  </div>
+</div>
+<script>
+const UI_TREE={tree_json};
+const UI_DETAILS={details_json};
+let uiFeedback={feedback_json};
+let uiCurrentSid=null;
+let uiCurrentStatus='pending';
+let uiCurrentPins=[];
+
+function uiEscH(s){{return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}}
+
+// ── Tree rendering ──
+function uiRenderTree(filter){{
+  const body=document.getElementById('uiTreeBody');
+  body.innerHTML='';
+  const fl=(filter||'').toLowerCase();
+  UI_TREE.forEach(role=>{{
+    const screens=role.screens.filter(s=>!fl||s.name.toLowerCase().includes(fl)||s.id.toLowerCase().includes(fl)||s.itype.toLowerCase().includes(fl));
+    if(!screens.length)return;
+    const group=document.createElement('div');
+    group.className='ui-tree-group';
+    const header=document.createElement('div');
+    header.className='ui-tree-group-header';
+    header.innerHTML='<span class="ui-tree-group-chevron">&#9662;</span>'+uiEscH(role.name)+' <span style="color:#94a3b8;font-weight:400;font-size:11px">('+screens.length+')</span>';
+    header.onclick=()=>group.classList.toggle('collapsed');
+    group.appendChild(header);
+    const items=document.createElement('div');
+    items.className='ui-tree-group-items';
+    screens.forEach(s=>{{
+      const item=document.createElement('div');
+      item.className='ui-tree-item'+(s.id===uiCurrentSid?' active':'')+(s.status!=='pending'?' status-'+s.status:'');
+      item.dataset.sid=s.id;
+      let badges='';
+      if(s.has_stitch)badges+='<span class="ui-tree-badge stitch">S</span>';
+      if(s.pin_count)badges+='<span class="ui-tree-badge pins">'+s.pin_count+'</span>';
+      item.innerHTML='<span class="ui-tree-name">'+uiEscH(s.name)+'</span>'
+        +(s.itype?'<span class="ui-tree-itype">'+uiEscH(s.itype)+'</span>':'')
+        +'<span class="ui-tree-badges">'+badges+'</span>';
+      item.onclick=()=>uiSelectScreen(s.id);
+      items.appendChild(item);
+    }});
+    group.appendChild(items);
+    body.appendChild(group);
+  }});
+}}
+
+function uiFilterTree(val){{uiRenderTree(val)}}
+
+// ── Screen selection ──
+function uiSelectScreen(sid){{
+  uiCurrentSid=sid;
+  document.querySelectorAll('.ui-tree-item').forEach(el=>{{
+    el.classList.toggle('active',el.dataset.sid===sid);
+  }});
+  document.getElementById('uiPreviewEmpty').style.display='none';
+  const content=document.getElementById('uiPreviewContent');
+  content.classList.add('visible');
+  // Load preview in iframe
+  const area=document.getElementById('uiPreviewArea');
+  area.querySelectorAll('iframe,.ui-pin').forEach(el=>el.remove());
+  const iframe=document.createElement('iframe');
+  iframe.src='/ui/screen/'+sid;
+  iframe.onload=()=>{{
+    try{{
+      iframe.style.height=iframe.contentDocument.documentElement.scrollHeight+'px';
+      iframe.contentDocument.addEventListener('click',(e)=>{{
+        const x=((e.pageX)/iframe.contentDocument.documentElement.scrollWidth*100).toFixed(1);
+        const y=((e.pageY)/iframe.contentDocument.documentElement.scrollHeight*100).toFixed(1);
+        uiAddPin(parseFloat(x),parseFloat(y));
+      }});
+      iframe.contentDocument.body.style.cursor='crosshair';
+    }}catch(err){{}}
+  }};
+  area.appendChild(iframe);
+  // Detail bar
+  const d=UI_DETAILS[sid]||{{}};
+  let detail='';
+  if(d.layout)detail+='<dt>Layout</dt><dd>'+uiEscH(d.layout)+'</dd>';
+  if(d.interaction_type)detail+='<dt>Type</dt><dd>'+uiEscH(d.interaction_type)+'</dd>';
+  if(d.audience_type)detail+='<dt>Audience</dt><dd>'+uiEscH(d.audience_type)+'</dd>';
+  if(d.primary_purpose)detail+='<dt>Purpose</dt><dd>'+uiEscH(d.primary_purpose)+'</dd>';
+  if(d.sections&&d.sections.length)detail+='<dt>Sections</dt><dd>'+d.sections.map(s=>uiEscH(s)).join(', ')+'</dd>';
+  document.getElementById('uiDetailBar').innerHTML=detail?'<dl>'+detail+'</dl>':'';
+  // Show review panel
+  const side=document.getElementById('uiReviewSide');
+  side.classList.remove('hidden');
+  document.getElementById('uiReviewTitle').textContent=d.name||sid;
+  document.getElementById('uiReviewSid').textContent=sid;
+  // Load feedback
+  const fb=(uiFeedback.screens||{{}})[sid]||{{status:'pending',pins:[]}};
+  uiCurrentStatus=fb.status;
+  uiCurrentPins=JSON.parse(JSON.stringify(fb.pins||[]));
+  uiRenderStatus();
+  uiRenderPins();
+}}
+
+function uiRenderStatus(){{
+  document.getElementById('uiBtnApproved').classList.toggle('selected',uiCurrentStatus==='approved');
+  document.getElementById('uiBtnRevision').classList.toggle('selected',uiCurrentStatus==='revision');
+}}
+
+function uiSetStatus(s){{
+  uiCurrentStatus=s;
+  uiRenderStatus();
+  uiSaveFeedback();
+}}
+
+function uiRenderPins(){{
+  const area=document.getElementById('uiPreviewArea');
+  area.querySelectorAll('.ui-pin').forEach(el=>el.remove());
+  uiCurrentPins.forEach((p,i)=>{{
+    const dot=document.createElement('div');
+    dot.className='ui-pin';
+    dot.textContent=i+1;
+    dot.style.left=p.x+'%';
+    dot.style.top=p.y+'%';
+    dot.onclick=(e)=>{{e.stopPropagation();uiHighlightPin(i)}};
+    area.appendChild(dot);
+  }});
+  const list=document.getElementById('uiPinsList');
+  list.innerHTML='';
+  uiCurrentPins.forEach((p,i)=>{{
+    const div=document.createElement('div');
+    div.className='ui-pin-item';
+    div.id='ui-pin-item-'+i;
+    div.innerHTML='<div class="ui-pin-item-header">'
+      +'<span class="ui-pin-num">'+(i+1)+'</span>'
+      +'<span class="ui-pin-del" onclick="uiDeletePin('+i+')">&times;</span>'
+      +'</div>'
+      +'<textarea placeholder="Describe the issue..." oninput="uiUpdateComment('+i+',this.value)">'+uiEscH(p.comment||'')+'</textarea>';
+    list.appendChild(div);
+  }});
+}}
+
+function uiAddPin(x,y){{
+  uiCurrentPins.push({{id:Date.now(),x:x,y:y,comment:''}});
+  if(uiCurrentStatus==='pending'||uiCurrentStatus==='approved')uiSetStatus('revision');
+  uiRenderPins();
+  uiSaveFeedback();
+  setTimeout(()=>{{
+    const items=document.querySelectorAll('.ui-pin-item textarea');
+    if(items.length)items[items.length-1].focus();
+  }},50);
+}}
+
+function uiUpdateComment(idx,comment){{uiCurrentPins[idx].comment=comment;uiSaveFeedback()}}
+function uiDeletePin(idx){{
+  uiCurrentPins.splice(idx,1);
+  uiRenderPins();
+  uiSaveFeedback();
+  if(uiCurrentPins.length===0&&uiCurrentStatus==='revision')uiSetStatus('pending');
+}}
+function uiHighlightPin(idx){{
+  const el=document.getElementById('ui-pin-item-'+idx);
+  if(el){{el.scrollIntoView({{behavior:'smooth'}});el.style.background='#fef3c7';setTimeout(()=>el.style.background='',1200)}}
+}}
+
+let uiSaveTimer=null;
+function uiSaveFeedback(){{
+  if(!uiCurrentSid)return;
+  clearTimeout(uiSaveTimer);
+  uiSaveTimer=setTimeout(()=>{{
+    if(!uiFeedback.screens)uiFeedback.screens={{}};
+    uiFeedback.screens[uiCurrentSid]={{status:uiCurrentStatus,pins:uiCurrentPins}};
+    fetch('/api/ui/feedback',{{
+      method:'POST',
+      headers:{{'Content-Type':'application/json'}},
+      body:JSON.stringify({{screen_id:uiCurrentSid,status:uiCurrentStatus,pins:uiCurrentPins}})
+    }});
+    document.querySelectorAll('.ui-tree-item').forEach(el=>{{
+      if(el.dataset.sid===uiCurrentSid){{
+        el.classList.remove('status-approved','status-revision');
+        if(uiCurrentStatus!=='pending')el.classList.add('status-'+uiCurrentStatus);
+      }}
+    }});
+  }},300);
+}}
+
+function uiSubmit(){{
+  if(!confirm('Submit UI feedback?'))return;
+  fetch('/api/ui/submit',{{method:'POST'}}).then(r=>r.json()).then(d=>{{
+    if(d.ok){{
+      const btn=document.getElementById('uiSubmitBtn');
+      btn.disabled=true;btn.textContent='Submitted!';
+    }}
+  }});
+}}
+
+// Init
+uiRenderTree();
+</script></body></html>"""
+
+
+# ── Spec Tab ───────────────────────────────────────────────────────────────────
+
+SPEC_FEEDBACK_DIR = os.path.join(BASE, "project-forge")
+C.ensure_dir(SPEC_FEEDBACK_DIR)
+SPEC_FEEDBACK_PATH = os.path.join(SPEC_FEEDBACK_DIR, "spec-review-feedback.json")
+
+
+def load_spec_feedback():
+    fb = C.load_json(SPEC_FEEDBACK_PATH)
+    return fb if fb else {"round": 1, "submitted_at": None, "nodes": {}}
+
+
+def load_spec_tree():
+    """Transform design.json files from project-forge into a mind map tree."""
+    forge_dir = os.path.join(BASE, "project-forge/sub-projects")
+    if not os.path.isdir(forge_dir):
+        return _node("root", "No spec data", "error")
+
+    sp_children = []
+
+    for name in sorted(os.listdir(forge_dir)):
+        design_path = os.path.join(forge_dir, name, "design.json")
+        design = C.load_json(design_path)
+        if not design:
+            continue
+
+        sp_type = design.get("type", "unknown")
+        sp_nodes = []
+
+        # Data models branch
+        dm_nodes = []
+        for dm in design.get("data_models", []):
+            table = dm.get("table", "unknown")
+            source = dm.get("source_entity", "")
+            field_nodes = []
+            for f in dm.get("fields", []):
+                fname = f.get("name", "")
+                ftype = f.get("type", "")
+                constraints = " ".join(f.get("constraints", []))
+                ntype = "field-pk" if "PK" in constraints or "PRIMARY" in constraints else "field-required" if f.get("required") else "default"
+                field_nodes.append(_node(f"f_{table}_{fname}", f"{fname}: {ftype}", ntype, constraints))
+
+            # State machine
+            sm = dm.get("state_machine", {})
+            if sm:
+                sm_nodes = []
+                for transition in sm.get("transitions", []):
+                    fr = transition.get("from", "")
+                    to = transition.get("to", "")
+                    trigger = transition.get("trigger", "")
+                    sm_nodes.append(_node(f"sm_{table}_{fr}_{to}", f"{fr} \u2192 {to}", "transition", trigger))
+                if sm_nodes:
+                    field_nodes.append(_node(f"sm_{table}", "\u72b6\u6001\u673a", "state-machine", "", sm_nodes))
+
+            # Indexes
+            for idx in dm.get("indexes", []):
+                idx_name = idx.get("name", "")
+                idx_cols = ", ".join(idx.get("columns", []))
+                field_nodes.append(_node(f"idx_{table}_{idx_name}", f"\u7d22\u5f15: {idx_cols}", "info"))
+
+            label = f"{table}" + (f" [{source}]" if source else "")
+            dm_nodes.append(_node(f"dm_{table}", label, "entity", "", field_nodes))
+
+        if dm_nodes:
+            sp_nodes.append(_node(f"dms_{name}", "\u6570\u636e\u6a21\u578b", "group", "", dm_nodes))
+
+        # Endpoints branch
+        ep_nodes = []
+        for ep in design.get("endpoints", []):
+            method = ep.get("method", "")
+            path = ep.get("path", "")
+            source = ep.get("source_api", "")
+            label = f"{method} {path}" + (f" [{source}]" if source else "")
+            ep_nodes.append(_node(f"ep_{name}_{method}_{path}", label, "api", ep.get("description", "")))
+
+        if ep_nodes:
+            sp_nodes.append(_node(f"eps_{name}", "API \u63a5\u53e3", "api-group", "", ep_nodes))
+
+        # Pages branch (frontend)
+        page_nodes = []
+        for pg in design.get("pages", []):
+            route = pg.get("route", "")
+            pg_name = pg.get("name", route)
+            page_nodes.append(_node(f"pg_{name}_{route}", pg_name, "concept", route))
+
+        if page_nodes:
+            sp_nodes.append(_node(f"pgs_{name}", "\u9875\u9762\u8def\u7531", "group", "", page_nodes))
+
+        # Middleware
+        mw_nodes = []
+        for mw in design.get("middleware", []):
+            mw_name = mw if isinstance(mw, str) else mw.get("name", "")
+            mw_nodes.append(_node(f"mw_{name}_{mw_name}", mw_name, "mechanism"))
+
+        if mw_nodes:
+            sp_nodes.append(_node(f"mws_{name}", "\u4e2d\u95f4\u4ef6", "group", "", mw_nodes))
+
+        # Tasks branch
+        task_nodes = []
+        for t in design.get("tasks", []):
+            tid = t.get("id", "")
+            tname = t.get("name", tid)
+            status = t.get("status", "pending")
+            tag = "\u25a1" if status == "pending" else "\u2713"
+            task_nodes.append(_node(f"t_{name}_{tid}", f"{tid} {tname} [{tag}]", "task"))
+
+        if task_nodes:
+            sp_nodes.append(_node(f"tasks_{name}", f"\u4efb\u52a1 ({len(task_nodes)})", "task-group", "", task_nodes))
+
+        type_label = {"backend": "\u540e\u7aef", "frontend": "\u524d\u7aef", "mobile": "\u79fb\u52a8\u7aef"}.get(sp_type, sp_type)
+        sp_children.append(_node(f"sp_{name}", f"{name} ({type_label})", "role", "", sp_nodes))
+
+    if not sp_children:
+        return _node("root", "No spec data", "error")
+
+    return _node("root", "\u5f00\u53d1\u89c4\u683c", "root", "", sp_children)
 
 
 def render_spec_page():
-    return _placeholder_page("spec", "规格 Review")
+    tree = load_spec_tree()
+    feedback = load_spec_feedback()
+    categories = ["Data Model", "API", "Task", "Dependency", "General"]
+    extra_css = """
+.mm-node[data-type="entity"] .label{background:#dbeafe;color:#1e40af;font-weight:600;border-color:#93c5fd}
+.mm-node[data-type="api-group"] .label{background:#eff6ff;color:#1d4ed8;font-weight:600}
+.mm-node[data-type="api"] .label{background:#eff6ff;color:#1d4ed8;font-size:12px}
+.mm-node[data-type="state-machine"] .label{background:#f0fdfa;color:#115e59;border-color:#99f6e4}
+.mm-node[data-type="transition"] .label{background:#f0fdf4;color:#166534;font-size:12px}
+.mm-node[data-type="field-pk"] .label{background:#fef3c7;color:#92400e;font-weight:600}
+.mm-node[data-type="field-required"] .label{background:#fff;color:#334155}
+"""
+    return render_mindmap_page(tree, feedback, "\u89c4\u683c", "spec", categories, extra_css)
 
 
 # ── URL Router ────────────────────────────────────────────────────────────────
@@ -2305,6 +2907,9 @@ class ReviewHubHandler(http.server.BaseHTTPRequestHandler):
             self._respond(render_wireframe_html(screen_id))
         elif path == "/ui":
             self._respond(render_ui_page())
+        elif path.startswith("/ui/screen/"):
+            screen_id = path.split("/ui/screen/")[1]
+            self._respond(render_ui_screen_html(screen_id))
         elif path == "/spec":
             self._respond(render_spec_page())
         else:
@@ -2360,6 +2965,31 @@ class ReviewHubHandler(http.server.BaseHTTPRequestHandler):
             fb = load_wf_feedback()
             fb["submitted_at"] = C.now_iso()
             C.write_json(WF_FEEDBACK_PATH, fb)
+            self._respond_json({"ok": True})
+        elif path == "/api/ui/feedback":
+            fb = load_ui_feedback()
+            sid = body.get("screen_id")
+            if sid:
+                fb["screens"][sid] = {
+                    "status": body.get("status", "pending"),
+                    "pins": body.get("pins", []),
+                }
+            C.write_json(UI_FEEDBACK_PATH, fb)
+            self._respond_json({"ok": True})
+        elif path == "/api/ui/submit":
+            fb = load_ui_feedback()
+            fb["submitted_at"] = C.now_iso()
+            C.write_json(UI_FEEDBACK_PATH, fb)
+            self._respond_json({"ok": True})
+        elif path == "/api/spec/feedback":
+            fb = load_spec_feedback()
+            fb["nodes"] = body
+            C.write_json(SPEC_FEEDBACK_PATH, fb)
+            self._respond_json({"ok": True})
+        elif path == "/api/spec/submit":
+            fb = load_spec_feedback()
+            fb["submitted_at"] = C.now_iso()
+            C.write_json(SPEC_FEEDBACK_PATH, fb)
             self._respond_json({"ok": True})
         else:
             self._respond_404()
