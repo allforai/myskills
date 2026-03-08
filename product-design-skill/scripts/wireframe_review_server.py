@@ -832,10 +832,12 @@ body{{font-family:-apple-system,system-ui,'Segoe UI',sans-serif;background:#f8f9
 .xv-warn{{background:#fff8e1;color:#f57f17;padding:2px 6px;border-radius:3px;font-size:11px;font-weight:600}}
 .pin-count{{color:#e67700;font-weight:500;font-size:11px}}
 .itype-badge{{font-size:10px;padding:2px 6px;border-radius:3px;background:#e8eaf6;color:#5c6bc0;font-weight:600}}
-.footer{{text-align:center;padding:32px}}
+.footer{{text-align:center;padding:32px;display:flex;justify-content:center;gap:16px;align-items:center}}
 .submit-btn{{padding:12px 48px;background:#495057;color:#fff;border:none;border-radius:8px;font-size:15px;cursor:pointer;font-weight:500}}
 .submit-btn:hover{{background:#343a40}}
 .submit-btn:disabled{{background:#adb5bd;cursor:not-allowed}}
+.dm-btn{{padding:10px 24px;background:#fff;color:#5c6bc0;border:2px solid #5c6bc0;border-radius:8px;font-size:14px;cursor:pointer;font-weight:500;text-decoration:none;display:inline-flex;align-items:center;gap:6px}}
+.dm-btn:hover{{background:#e8eaf6}}
 .legend{{padding:8px 32px;font-size:11px;color:#868e96;display:flex;gap:16px;flex-wrap:wrap}}
 .legend-item{{display:flex;align-items:center;gap:4px}}
 .legend-dot{{width:10px;height:10px;border-radius:50%}}
@@ -869,6 +871,7 @@ body{{font-family:-apple-system,system-ui,'Segoe UI',sans-serif;background:#f8f9
   <div id="journeyView" style="display:none">{journey_sections}</div>
 </div>
 <div class="footer">
+  {'<a class="dm-btn" href="javascript:void(0)" onclick="launchDataModel()">&#128269; Review Data Model</a>' if _vo_map else ''}
   <button class="submit-btn" onclick="submitAll()" id="submitBtn">Submit Feedback</button>
 </div>
 <script>
@@ -897,6 +900,12 @@ function filterCards(){{
     const anyVisible=Array.from(g.querySelectorAll('.card')).some(c=>c.style.display!=='none');
     g.style.display=anyVisible?'':'none';
   }});
+}}
+function launchDataModel(){{
+  fetch('/api/launch-datamodel',{{method:'POST'}}).then(r=>r.json()).then(d=>{{
+    if(d.ok)window.open('http://'+d.host+':'+d.port,'_blank');
+    else alert(d.error||'Failed to launch data model review');
+  }}).catch(()=>alert('Failed to launch data model review'));
 }}
 function submitAll(){{
   if(!confirm('Submit wireframe feedback?'))return;
@@ -1361,6 +1370,23 @@ class WireframeHandler(http.server.BaseHTTPRequestHandler):
                 }
             save_feedback(fb)
             self._json({"ok": True})
+
+        elif path == "/api/launch-datamodel":
+            # Launch data-model review server in a subprocess
+            dm_port = C.REVIEW_PORTS.get("data-model", 18904)
+            dm_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "datamodel_review_server.py")
+            if not os.path.exists(dm_script):
+                self._json({"ok": False, "error": "datamodel_review_server.py not found"})
+                return
+            try:
+                import subprocess
+                subprocess.Popen(
+                    [sys.executable, dm_script, BASE, "--port", str(dm_port), "--no-open", "true"],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                )
+                self._json({"ok": True, "host": HOST if HOST != "0.0.0.0" else "localhost", "port": dm_port})
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)})
 
         elif path == "/api/submit":
             fb = load_feedback()
