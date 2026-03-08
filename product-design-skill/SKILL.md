@@ -218,7 +218,7 @@ version: "4.2.0"
 /product-design resume              # 从断点继续
 ```
 
-流程：concept → **market-validate** → product-map → journey-emotion → experience-map → interaction-gate → **Stitch 决策点** → use-case → feature-gap → feature-prune → ui-design → design-audit，每阶段间插入检查点验证产出完整性。
+流程：concept → **market-validate** → product-map → journey-emotion → experience-map → interaction-gate → **Stitch 决策点** → use-case → feature-gap → feature-prune → ui-design → **ui-review（用户审核迭代）** → design-audit，每阶段间插入检查点验证产出完整性。
 
 > **Stitch 决策点**（Phase 4.7）：进入 Phase 5-7 并行执行前，检查 Stitch MCP 可用性。不可用时 AskUserQuestion 三选一（上传设计稿 / 跳过视觉验收 / 配置 Stitch）。选择跳过时记入 pipeline-decisions（`stitch_skipped`），design-audit 标记 `stitch_skipped: true`。详见 `/product-design full` 的 Phase 4.7 节。
 
@@ -328,7 +328,7 @@ product-map（必须先跑）
     ├── ui-design（需 product-map + experience-map，支持 --variants N 多风格发散）
     └── design-audit（终审，基于全部已有产物）
 
-推荐流程：[product-concept → market-validate →] product-map → journey-emotion → experience-map → [use-case ∥ feature-gap ∥ ui-design] → design-audit
+推荐流程：[product-concept → market-validate →] product-map → journey-emotion → experience-map → [use-case ∥ feature-gap ∥ ui-design] → ui-review → design-audit
 
 或使用 /product-design full 自动编排全流程（含阶段间检查点 + 终审）。
 ```
