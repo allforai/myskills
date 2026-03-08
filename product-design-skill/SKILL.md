@@ -10,7 +10,7 @@ description: >
   then journey-emotion, then experience-map, then use other skills as needed.
   Use design-audit for cross-layer consistency checks.
   Use /product-design full to run the full pipeline with checkpoints.
-version: "4.2.0"
+version: "4.3.0"
 ---
 
 # Product Design — 产品设计套件
