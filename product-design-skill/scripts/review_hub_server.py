@@ -1599,6 +1599,27 @@ body{margin:0;padding:24px;font-family:-apple-system,system-ui,sans-serif;backgr
 .wf-reader-states{margin-bottom:8px}
 .wf-reader-state{font-size:11px;color:#5c6bc0;padding:2px 0}
 .wf-reader-actions{display:flex;gap:8px;border-top:1px solid #e9ecef;padding-top:12px}
+.wf-reader-states{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}
+.wf-state-badge{font-size:10px;padding:2px 8px;border-radius:10px;background:#e8eaf6;color:#5c6bc0}
+/* CT2 Dialogue variant */
+.wf-dialogue{margin:8px 0}
+.wf-dialogue-scene{background:#f1f3f5;border:1px dashed #adb5bd;border-radius:8px;padding:32px 16px;text-align:center;color:#adb5bd;font-size:13px;margin-bottom:12px}
+.wf-dialogue-bubble{display:flex;margin-bottom:8px}
+.wf-dialogue-bubble.left{justify-content:flex-start}
+.wf-dialogue-bubble.right{justify-content:flex-end}
+.wf-bubble{max-width:75%;padding:8px 12px;border-radius:12px;font-size:12px;color:#333;line-height:1.5}
+.wf-dialogue-bubble.left .wf-bubble{background:#f1f3f5;border-bottom-left-radius:2px}
+.wf-dialogue-bubble.right .wf-bubble{background:#e3f2fd;border-bottom-right-radius:2px}
+.wf-audio-btn{cursor:default;font-size:11px;opacity:.6}
+.wf-dialogue-translation{text-align:center;font-size:11px;color:#adb5bd;padding:8px;border:1px dashed #dee2e6;border-radius:4px;margin-top:8px}
+/* CT2 Preview variant */
+.wf-preview{margin:8px 0}
+.wf-preview-cover{background:#f1f3f5;border:1px dashed #adb5bd;border-radius:8px;padding:48px 16px;text-align:center;color:#adb5bd;font-size:13px;margin-bottom:12px}
+.wf-preview-stats{display:flex;gap:16px;justify-content:center;margin-bottom:12px}
+.wf-stat{font-size:12px;color:#495057}
+.wf-preview-desc{font-size:13px;color:#6c757d;margin-bottom:12px;padding:8px;background:#fafafa;border-radius:4px}
+.wf-preview-sample{padding:8px;background:#f8f9fa;border-radius:4px;border-left:3px solid #adb5bd}
+.wf-preview-line{font-size:12px;color:#495057;padding:2px 0}
 /* ── CT3 Profile ── */
 .wf-profile{text-align:center;padding:8px}
 .wf-profile-header{margin-bottom:16px}
@@ -2048,7 +2069,13 @@ def _wf_content_feed(screen):
 
 
 def _wf_content_reader(screen):
-    """CT2: Content reading page (article/scene detail)."""
+    """CT2: Content reading page — adapts layout based on states.
+
+    Renders different body sections depending on the screen's custom states:
+    - States with keywords like 对话/气泡/句子 → dialogue/conversation layout
+    - States with keywords like 下载/预览 → preview/overview layout
+    - Default → generic article reading layout
+    """
     fields = screen.get("data_fields", [])
     field_meta = ""
     for f in fields[:5]:
@@ -2057,26 +2084,69 @@ def _wf_content_reader(screen):
         if f.get("name") in ("title", "name"):
             continue
         field_meta += f'<div class="wf-reader-meta">{_esc(label)}: {_esc(val)}</div>'
+
     states = screen.get("states", {})
+    custom_states = {k: v for k, v in states.items() if k not in ("empty", "loading", "error", "success")}
+
+    # Detect content variant from states
+    all_state_text = " ".join(str(v) for v in custom_states.values()).lower()
+    is_dialogue = any(kw in all_state_text for kw in ["对话", "气泡", "句子", "原文", "翻译", "音频", "跟读"])
+    is_preview = any(kw in all_state_text for kw in ["下载", "预览", "开始学习", "未下载"])
+
+    # Build variant-specific body
+    if is_dialogue:
+        body_html = """<div class="wf-dialogue">
+  <div class="wf-dialogue-scene">[ 连环画配图 ]</div>
+  <div class="wf-dialogue-bubble left">
+    <div class="wf-bubble">你好，请问这个怎么说？ <span class="wf-audio-btn">🔊</span></div>
+  </div>
+  <div class="wf-dialogue-bubble right">
+    <div class="wf-bubble">Sure, let me explain. <span class="wf-audio-btn">🔊</span></div>
+  </div>
+  <div class="wf-dialogue-bubble left">
+    <div class="wf-bubble">谢谢，我明白了。 <span class="wf-audio-btn">🔊</span></div>
+  </div>
+  <div class="wf-dialogue-translation">[点击句子查看翻译]</div>
+</div>"""
+    elif is_preview:
+        body_html = f"""<div class="wf-preview">
+  <div class="wf-preview-cover">[ 场景封面大图 ]</div>
+  <div class="wf-preview-stats">
+    <span class="wf-stat">📖 -- 对话</span>
+    <span class="wf-stat">📝 -- 词汇</span>
+    <span class="wf-stat">⏱ -- 分钟</span>
+  </div>
+  <div class="wf-preview-desc">场景简介和学习目标...</div>
+  <div class="wf-preview-sample">
+    <div class="wf-label">预览对话片段</div>
+    <div class="wf-preview-line">A: Hello, how can I help you?</div>
+    <div class="wf-preview-line">B: I'd like to order...</div>
+  </div>
+</div>"""
+    else:
+        body_html = """<div class="wf-reader-body">
+  <p>内容正文区域...</p>
+  <p>段落/对话/图文混排...</p>
+  <p>支持滚动阅读</p>
+</div>"""
+
+    # State badges
     state_html = ""
-    for k, v in states.items():
-        if k not in ("empty", "loading", "error", "success"):
-            state_html += f'<div class="wf-reader-state">{_esc(k)}: {_esc(str(v))}</div>'
+    if custom_states:
+        badges = "".join(f'<span class="wf-state-badge">{_esc(str(v))}</span>' for v in custom_states.values())
+        state_html = f'<div class="wf-reader-states">{badges}</div>'
+
     actions = screen.get("actions", [])
     action_btns = ""
     for a in actions[:4]:
         if isinstance(a, dict):
             action_btns += f'<button class="wf-btn wf-btn-secondary">{_esc(a.get("label", ""))}</button>'
+
     return f"""<div class="wf-reader">
-  <div class="wf-reader-cover">[ 封面图/配图区域 ]</div>
   <div class="wf-reader-title">{_esc(screen.get("name", "内容标题"))}</div>
   <div class="wf-reader-meta-row">{field_meta}</div>
-  <div class="wf-reader-body">
-    <p>内容正文区域...</p>
-    <p>段落/对话/图文混排...</p>
-    <p>支持滚动阅读</p>
-  </div>
-  {f'<div class="wf-reader-states">{state_html}</div>' if state_html else ''}
+  {body_html}
+  {state_html}
   <div class="wf-reader-actions">{action_btns}</div>
 </div>"""
 
