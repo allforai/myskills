@@ -143,21 +143,21 @@ When indexes don't exist, skills fall back to full data loading (backward compat
 ```
 /product-concept          # Discover product vision (optional, from scratch)
     ↓
-/concept-review           # Mind map review of product concept (mandatory)
+/review                   # Unified review hub (http://localhost:18900/) — concept tab
     ↓
 /product-map              # Build product map (always first if no concept)
     ↓
-/map-review               # Mind map review of product map (mandatory)
+/review                   # Review hub — map tab (+ data-model tab if available)
     ↓
 /journey-emotion          # Emotion journey mapping (human decision point)
     ↓
 /experience-map           # Experience map (replaces screen-map)
     ↓
-/wireframe-review         # Low-fi structural review (structure lock gate)
+/review                   # Review hub — wireframe tab (structure lock gate)
     ↓
 /use-case / /feature-gap / /feature-prune / /ui-design   # Any order (after structure lock)
     ↓
-/ui-review                # High-fi visual review
+/review                   # Review hub — UI tab (high-fi visual review)
     ↓
 /design-audit             # Final cross-layer consistency check
     ↓
