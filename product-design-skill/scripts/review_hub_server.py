@@ -1564,6 +1564,143 @@ body{margin:0;padding:24px;font-family:-apple-system,system-ui,sans-serif;backgr
 .wf-4d-icon{font-size:14px;width:20px;text-align:center}
 .wf-4d-label{font-weight:600;color:#495057;width:48px;flex-shrink:0}
 .wf-4d-value{color:#6c757d;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ── SY Onboarding / Wizard ── */
+.wf-onboarding{text-align:center;padding:16px}
+.wf-onboarding-illustration{background:#f1f3f5;border:1px dashed #adb5bd;border-radius:8px;padding:40px 16px;margin-bottom:16px;color:#868e96;font-size:13px}
+.wf-onboarding-title{font-size:16px;font-weight:600;color:#495057;margin-bottom:8px}
+.wf-onboarding-desc{font-size:13px;color:#868e96;margin-bottom:16px}
+.wf-onboarding-dots{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
+.wf-dot{width:24px;height:24px;border-radius:50%;border:2px solid #dee2e6;display:flex;align-items:center;justify-content:center;font-size:11px;color:#868e96}
+.wf-dot.active{background:#495057;color:#fff;border-color:#495057}
+.wf-wizard-progress{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:16px}
+.wf-wizard-step{width:28px;height:28px;border-radius:50%;border:2px solid #dee2e6;display:flex;align-items:center;justify-content:center;font-size:12px;color:#868e96;background:#fff}
+.wf-wizard-step.active{background:#495057;color:#fff;border-color:#495057}
+.wf-wizard-line{width:40px;height:2px;background:#dee2e6}
+/* ── CT Content Feed ── */
+.wf-search-bar{padding:8px 12px;border:1px solid #dee2e6;border-radius:8px;background:#f8f9fa;color:#adb5bd;font-size:13px;margin-bottom:8px}
+.wf-filter-chips{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.wf-chip{padding:4px 12px;border-radius:16px;background:#f1f3f5;color:#868e96;font-size:11px;border:1px solid #dee2e6}
+.wf-chip.active{background:#495057;color:#fff;border-color:#495057}
+.wf-badge{background:#e53935;color:#fff;border-radius:8px;padding:1px 5px;font-size:9px;margin-left:4px}
+.wf-feed-list{display:flex;flex-direction:column;gap:8px}
+.wf-feed-card{display:flex;gap:12px;padding:10px;border:1px solid #e9ecef;border-radius:8px;background:#fff}
+.wf-feed-thumb{width:64px;height:64px;background:#f1f3f5;border:1px dashed #adb5bd;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#adb5bd;font-size:11px;flex-shrink:0}
+.wf-feed-info{flex:1;min-width:0}
+.wf-feed-title{font-size:13px;font-weight:600;color:#495057;margin-bottom:4px}
+.wf-feed-meta-row{display:flex;gap:8px;flex-wrap:wrap}
+.wf-feed-meta{font-size:11px;color:#868e96}
+/* ── CT2 Content Reader ── */
+.wf-reader{padding:0}
+.wf-reader-cover{background:#f1f3f5;border:1px dashed #adb5bd;border-radius:6px;padding:48px 16px;text-align:center;color:#adb5bd;font-size:13px;margin-bottom:12px}
+.wf-reader-title{font-size:18px;font-weight:600;color:#333;margin-bottom:8px}
+.wf-reader-meta-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.wf-reader-meta{font-size:11px;color:#868e96;background:#f8f9fa;padding:2px 8px;border-radius:4px}
+.wf-reader-body{font-size:13px;color:#495057;line-height:1.8;margin-bottom:12px;padding:12px;background:#fafafa;border-radius:4px;border-left:3px solid #dee2e6}
+.wf-reader-states{margin-bottom:8px}
+.wf-reader-state{font-size:11px;color:#5c6bc0;padding:2px 0}
+.wf-reader-actions{display:flex;gap:8px;border-top:1px solid #e9ecef;padding-top:12px}
+/* ── CT3 Profile ── */
+.wf-profile{text-align:center;padding:8px}
+.wf-profile-header{margin-bottom:16px}
+.wf-avatar{width:64px;height:64px;border-radius:50%;background:#e9ecef;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:28px}
+.wf-profile-name{font-size:16px;font-weight:600;color:#333}
+.wf-profile-fields{text-align:left}
+.wf-profile-row{display:flex;padding:6px 0;border-bottom:1px solid #f1f3f5;font-size:12px}
+.wf-profile-label{width:100px;color:#495057;font-weight:500;flex-shrink:0}
+.wf-profile-value{color:#6c757d;flex:1}
+/* ── CT4 Card Swipe ── */
+.wf-card-swipe{text-align:center;padding:8px}
+.wf-card-progress{font-size:12px;color:#868e96;margin-bottom:8px}
+.wf-card-main{background:#f8f9fa;border:2px solid #dee2e6;border-radius:12px;padding:32px 16px;margin-bottom:12px;min-height:180px}
+.wf-card-content{font-size:24px;color:#495057;font-weight:600;margin-bottom:16px}
+.wf-card-field{font-size:12px;color:#868e96;margin:4px 0}
+.wf-card-hint{font-size:11px;color:#adb5bd;margin-top:12px}
+.wf-card-buttons{display:flex;gap:8px;justify-content:center}
+.wf-btn-danger{background:#ffebee;color:#e53935;border:1px solid #ef9a9a;padding:8px 16px;border-radius:4px;font-size:12px}
+.wf-btn-warning{background:#fff3e0;color:#ef6c00;border:1px solid #ffcc80;padding:8px 16px;border-radius:4px;font-size:12px}
+.wf-btn-success{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;padding:8px 16px;border-radius:4px;font-size:12px}
+/* ── CT5 Media Player ── */
+.wf-player{padding:8px}
+.wf-player-screen{background:#212121;color:#adb5bd;padding:64px 16px;text-align:center;border-radius:8px;font-size:24px;margin-bottom:8px}
+.wf-progress-bar{background:#e9ecef;height:4px;border-radius:2px;margin-bottom:4px}
+.wf-progress-fill{background:#495057;height:100%;border-radius:2px}
+.wf-progress-time{font-size:11px;color:#868e96;text-align:right}
+.wf-player-controls{display:flex;gap:8px;justify-content:center;margin-top:8px}
+/* ── CT6 Gallery ── */
+.wf-gallery{padding:8px}
+.wf-gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
+.wf-gallery-thumb{background:#f1f3f5;border:1px dashed #adb5bd;border-radius:4px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;color:#adb5bd;font-size:11px}
+/* ── CT7 Search Results ── */
+.wf-search-results{display:flex;flex-direction:column;gap:8px}
+.wf-search-result{padding:10px;border:1px solid #e9ecef;border-radius:4px}
+.wf-result-title{font-size:13px;font-weight:600;color:#495057;margin-bottom:4px}
+.wf-result-meta{font-size:11px;color:#868e96}
+/* ── EC1 Product Detail ── */
+.wf-product{padding:8px}
+.wf-product-image{background:#f1f3f5;border:1px dashed #adb5bd;border-radius:8px;padding:48px 16px;text-align:center;color:#adb5bd;font-size:13px;margin-bottom:12px}
+.wf-product-title{font-size:16px;font-weight:600;color:#333;margin-bottom:4px}
+.wf-product-price{font-size:20px;font-weight:700;color:#e53935;margin-bottom:12px}
+.wf-product-specs{margin-bottom:8px}
+.wf-product-spec{font-size:12px;color:#6c757d;padding:3px 0;border-bottom:1px solid #f1f3f5}
+.wf-product-features{margin-bottom:12px;font-size:12px;color:#2e7d32}
+.wf-product-features div{padding:2px 0}
+/* ── EC2 Checkout ── */
+.wf-checkout{padding:8px}
+.wf-checkout-items{margin-bottom:8px}
+.wf-checkout-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f3f5;font-size:13px}
+.wf-checkout-divider{border-top:2px solid #333;margin:8px 0}
+.wf-checkout-total{display:flex;justify-content:space-between;font-size:14px;font-weight:600;margin-bottom:12px}
+.wf-price{color:#e53935;font-size:18px}
+.wf-checkout-payment{display:flex;gap:8px;margin-bottom:12px}
+.wf-payment-option{padding:8px 16px;border:1px solid #dee2e6;border-radius:6px;font-size:12px;color:#495057}
+.wf-payment-option.active{border-color:#495057;background:#f1f3f5;font-weight:600}
+/* ── WK3 Editor ── */
+.wf-editor{padding:0}
+.wf-editor-toolbar{display:flex;gap:8px;padding:8px;background:#f8f9fa;border-bottom:1px solid #dee2e6}
+.wf-editor-fields{padding:8px;display:flex;gap:6px;flex-wrap:wrap}
+.wf-editor-field{font-size:11px;padding:2px 8px;background:#e8eaf6;color:#5c6bc0;border-radius:4px}
+.wf-editor-area{display:flex;gap:8px;padding:8px;min-height:120px}
+.wf-editor-content{flex:1;background:#fafafa;border:1px dashed #adb5bd;border-radius:4px;padding:12px;font-size:12px;color:#868e96}
+.wf-editor-preview{flex:1;background:#f1f3f5;border:1px dashed #adb5bd;border-radius:4px;padding:12px;font-size:12px;color:#adb5bd}
+.wf-editor-status{font-size:11px;color:#adb5bd;padding:4px 8px;text-align:right}
+/* ── MG7 Dashboard ── */
+.wf-dashboard{padding:8px}
+.wf-dashboard-kpi{display:flex;gap:8px;margin-bottom:12px}
+.wf-kpi-card{flex:1;background:#f8f9fa;border:1px solid #e9ecef;border-radius:8px;padding:12px;text-align:center}
+.wf-kpi-value{font-size:20px;font-weight:700;color:#333;margin-bottom:4px}
+.wf-kpi-label{font-size:11px;color:#868e96}
+.wf-dashboard-charts{display:flex;gap:8px;margin-bottom:12px}
+.wf-chart{flex:1;background:#f1f3f5;border:1px dashed #adb5bd;border-radius:6px;padding:32px 12px;text-align:center;color:#adb5bd;font-size:13px}
+.wf-dashboard-filters{display:flex;gap:6px}
+/* ── MG8 Config Page ── */
+.wf-config{padding:8px}
+.wf-config-section{margin-bottom:12px}
+.wf-config-section-title{font-size:14px;font-weight:600;color:#495057;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #e9ecef}
+.wf-config-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f3f5;font-size:12px}
+.wf-config-label{color:#495057;font-weight:500}
+.wf-toggle{color:#adb5bd;font-size:14px}
+.wf-select{padding:4px 8px;border:1px solid #dee2e6;border-radius:4px;font-size:11px}
+.wf-field{margin-bottom:10px}
+.wf-field-label{font-size:12px;color:#495057;font-weight:500;margin-bottom:4px;display:block}
+.wf-field-input{padding:6px 10px;border:1px solid #dee2e6;border-radius:4px;background:#f8f9fa;color:#adb5bd;font-size:12px}
+.wf-textarea{padding:6px 10px;border:1px solid #dee2e6;border-radius:4px;background:#f8f9fa;color:#adb5bd;font-size:12px;min-height:48px}
+/* ── MG6 Tree Manager ── */
+.wf-tree{padding:8px}
+.wf-tree-toolbar{margin-bottom:8px}
+.wf-tree-view{font-size:13px;font-family:monospace;color:#495057;line-height:1.8}
+.wf-tree-node{padding-left:0}
+.wf-tree-node.level-1{padding-left:20px}
+.wf-tree-node.level-2{padding-left:40px}
+/* ── SB1 Submission Form ── */
+.wf-submission{padding:8px}
+.wf-form{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+/* ── RT4 Notification ── */
+.wf-notification{padding:8px}
+.wf-notif-tabs{display:flex;gap:6px;margin-bottom:12px}
+.wf-notif-list{display:flex;flex-direction:column;gap:4px}
+.wf-notif-item{padding:10px;border:1px solid #e9ecef;border-radius:6px;font-size:12px;color:#495057;display:flex;align-items:center;gap:8px}
+.wf-notif-item.unread{background:#f3f0ff;border-color:#d1c4e9}
+.wf-notif-dot{width:8px;height:8px;border-radius:50%;background:#7c3aed;flex-shrink:0}
 """
 
 
@@ -1834,6 +1971,390 @@ def _wf_approval(screen):
     return pending_badge + cards
 
 
+# ── New interaction type wireframe templates (37-type system) ──────────────
+
+def _wf_onboarding(screen):
+    """SY1: Onboarding / guided tour."""
+    steps = screen.get("actions", [])
+    step_names = [a.get("label", f"Step {i+1}") for i, a in enumerate(steps[:4])] or ["欢迎", "功能介绍", "偏好设置", "完成"]
+    dots = "".join(f'<span class="wf-dot{"  active" if i == 0 else ""}">{i+1}</span>' for i in range(len(step_names)))
+    content = f"""
+<div class="wf-onboarding">
+  <div class="wf-onboarding-illustration">[ 🖼 引导插图 ]</div>
+  <div class="wf-onboarding-title">{_esc(step_names[0])}</div>
+  <div class="wf-onboarding-desc">在这里展示功能介绍或设置选项</div>
+  <div class="wf-onboarding-dots">{dots}</div>
+  <div class="wf-actions">
+    <button class="wf-btn wf-btn-secondary">跳过</button>
+    <button class="wf-btn wf-btn-primary">下一步</button>
+  </div>
+</div>"""
+    return content
+
+
+def _wf_wizard_form(screen):
+    """SY2: Multi-step wizard / registration form."""
+    fields = screen.get("data_fields", [])
+    steps = screen.get("actions", [])
+    step_count = max(len(steps), 3)
+    progress = '<div class="wf-wizard-progress">'
+    for i in range(min(step_count, 4)):
+        cls = " active" if i == 0 else ""
+        progress += f'<span class="wf-wizard-step{cls}">{i+1}</span>'
+        if i < min(step_count, 4) - 1:
+            progress += '<span class="wf-wizard-line"></span>'
+    progress += '</div>'
+    field_html = ""
+    for f in fields[:4]:
+        label = f.get("label", f.get("name", ""))
+        ftype = f.get("type", "string")
+        field_html += f'<div class="wf-field"><label class="wf-field-label">{_esc(label)}</label><div class="wf-field-input">{_esc(ftype)}</div></div>'
+    if not field_html:
+        field_html = '<div class="wf-field"><label class="wf-field-label">用户名/邮箱</label><div class="wf-field-input">text</div></div><div class="wf-field"><label class="wf-field-label">密码</label><div class="wf-field-input">password</div></div>'
+    return f"""{progress}
+<div class="wf-form">{field_html}</div>
+<div class="wf-actions">
+  <button class="wf-btn wf-btn-secondary">上一步</button>
+  <button class="wf-btn wf-btn-primary">下一步</button>
+</div>"""
+
+
+def _wf_content_feed(screen):
+    """CT1: Content feed / card list (mobile)."""
+    fields = screen.get("data_fields", [])
+    cards = ""
+    for i in range(3):
+        field_preview = ""
+        for f in fields[:3]:
+            label = f.get("label", f.get("name", ""))
+            val = _sample_val(f)
+            field_preview += f'<span class="wf-feed-meta">{_esc(label)}: {_esc(val)}</span>'
+        if not field_preview:
+            field_preview = '<span class="wf-feed-meta">标题 · 难度 · 词数</span>'
+        cards += f"""<div class="wf-feed-card">
+  <div class="wf-feed-thumb">[ 封面 ]</div>
+  <div class="wf-feed-info">
+    <div class="wf-feed-title">内容项 {i+1}</div>
+    <div class="wf-feed-meta-row">{field_preview}</div>
+  </div>
+</div>"""
+    return f"""<div class="wf-search-bar">🔍 搜索...</div>
+<div class="wf-filter-chips">
+  <span class="wf-chip active">全部</span>
+  <span class="wf-chip">热门</span>
+  <span class="wf-chip">最新</span>
+</div>
+<div class="wf-feed-list">{cards}</div>"""
+
+
+def _wf_content_reader(screen):
+    """CT2: Content reading page (article/scene detail)."""
+    fields = screen.get("data_fields", [])
+    field_meta = ""
+    for f in fields[:5]:
+        label = f.get("label", f.get("name", ""))
+        val = _sample_val(f)
+        if f.get("name") in ("title", "name"):
+            continue
+        field_meta += f'<div class="wf-reader-meta">{_esc(label)}: {_esc(val)}</div>'
+    states = screen.get("states", {})
+    state_html = ""
+    for k, v in states.items():
+        if k not in ("empty", "loading", "error", "success"):
+            state_html += f'<div class="wf-reader-state">{_esc(k)}: {_esc(str(v))}</div>'
+    actions = screen.get("actions", [])
+    action_btns = ""
+    for a in actions[:4]:
+        if isinstance(a, dict):
+            action_btns += f'<button class="wf-btn wf-btn-secondary">{_esc(a.get("label", ""))}</button>'
+    return f"""<div class="wf-reader">
+  <div class="wf-reader-cover">[ 封面图/配图区域 ]</div>
+  <div class="wf-reader-title">{_esc(screen.get("name", "内容标题"))}</div>
+  <div class="wf-reader-meta-row">{field_meta}</div>
+  <div class="wf-reader-body">
+    <p>内容正文区域...</p>
+    <p>段落/对话/图文混排...</p>
+    <p>支持滚动阅读</p>
+  </div>
+  {f'<div class="wf-reader-states">{state_html}</div>' if state_html else ''}
+  <div class="wf-reader-actions">{action_btns}</div>
+</div>"""
+
+
+def _wf_profile(screen):
+    """CT3: Profile / personal page."""
+    fields = screen.get("data_fields", [])
+    field_html = ""
+    for f in fields[:6]:
+        label = f.get("label", f.get("name", ""))
+        val = _sample_val(f)
+        field_html += f'<div class="wf-profile-row"><span class="wf-profile-label">{_esc(label)}</span><span class="wf-profile-value">{_esc(val)}</span></div>'
+    return f"""<div class="wf-profile">
+  <div class="wf-profile-header">
+    <div class="wf-avatar">👤</div>
+    <div class="wf-profile-name">{_esc(screen.get("name", "用户"))}</div>
+  </div>
+  <div class="wf-profile-fields">{field_html}</div>
+  <div class="wf-actions">
+    <button class="wf-btn wf-btn-primary">编辑资料</button>
+  </div>
+</div>"""
+
+
+def _wf_card_swipe(screen):
+    """CT4: Card swipe / flashcard interaction."""
+    fields = screen.get("data_fields", [])
+    field_preview = ""
+    for f in fields[:3]:
+        label = f.get("label", f.get("name", ""))
+        field_preview += f'<div class="wf-card-field">{_esc(label)}</div>'
+    actions = screen.get("actions", [])
+    action_label = actions[0].get("label", "练习") if actions and isinstance(actions[0], dict) else "练习"
+    return f"""<div class="wf-card-swipe">
+  <div class="wf-card-progress">1 / 20</div>
+  <div class="wf-card-main">
+    <div class="wf-card-front">
+      <div class="wf-card-content">[ 正面内容 ]</div>
+      {field_preview}
+    </div>
+    <div class="wf-card-hint">← 跳过 | 点击翻转 | 掌握 →</div>
+  </div>
+  <div class="wf-card-buttons">
+    <button class="wf-btn wf-btn-danger">忘记</button>
+    <button class="wf-btn wf-btn-warning">模糊</button>
+    <button class="wf-btn wf-btn-success">记得</button>
+    <button class="wf-btn wf-btn-primary">轻松</button>
+  </div>
+</div>"""
+
+
+def _wf_media_player(screen):
+    """CT5: Media player (audio/video)."""
+    return """<div class="wf-player">
+  <div class="wf-player-screen">[ ▶ 播放区域 ]</div>
+  <div class="wf-player-progress">
+    <div class="wf-progress-bar"><div class="wf-progress-fill" style="width:35%"></div></div>
+    <div class="wf-progress-time">1:23 / 3:45</div>
+  </div>
+  <div class="wf-player-controls">
+    <button class="wf-btn wf-btn-secondary">⏮</button>
+    <button class="wf-btn wf-btn-primary">⏸</button>
+    <button class="wf-btn wf-btn-secondary">⏭</button>
+  </div>
+</div>"""
+
+
+def _wf_gallery(screen):
+    """CT6: Gallery / image grid."""
+    return """<div class="wf-gallery">
+  <div class="wf-gallery-grid">
+    <div class="wf-gallery-thumb">[ 图1 ]</div>
+    <div class="wf-gallery-thumb">[ 图2 ]</div>
+    <div class="wf-gallery-thumb">[ 图3 ]</div>
+    <div class="wf-gallery-thumb">[ 图4 ]</div>
+    <div class="wf-gallery-thumb">[ 图5 ]</div>
+    <div class="wf-gallery-thumb">[ 图6 ]</div>
+  </div>
+  <div class="wf-actions">
+    <button class="wf-btn wf-btn-primary">生成更多</button>
+    <button class="wf-btn wf-btn-secondary">选择画风</button>
+  </div>
+</div>"""
+
+
+def _wf_search_results(screen):
+    """CT7: Search results page."""
+    fields = screen.get("data_fields", [])
+    results = ""
+    for i in range(3):
+        field_preview = ", ".join(_esc(f.get("label", f.get("name", ""))) + ": " + _esc(_sample_val(f)) for f in fields[:3])
+        results += f'<div class="wf-search-result"><div class="wf-result-title">结果 {i+1}</div><div class="wf-result-meta">{field_preview or "..."}</div></div>'
+    return f"""<div class="wf-search-bar">🔍 关键词</div>
+<div class="wf-filter-chips">
+  <span class="wf-chip">筛选条件 A</span>
+  <span class="wf-chip">筛选条件 B</span>
+</div>
+<div class="wf-search-results">{results}</div>
+<div class="wf-pagination">← 上一页 | 1 2 3 | 下一页 →</div>"""
+
+
+def _wf_product_detail(screen):
+    """EC1: Product / pricing detail page."""
+    fields = screen.get("data_fields", [])
+    field_html = ""
+    for f in fields[:6]:
+        label = f.get("label", f.get("name", ""))
+        val = _sample_val(f)
+        field_html += f'<div class="wf-product-spec">{_esc(label)}: {_esc(val)}</div>'
+    return f"""<div class="wf-product">
+  <div class="wf-product-image">[ 商品/方案图片 ]</div>
+  <div class="wf-product-title">{_esc(screen.get("name", "方案详情"))}</div>
+  <div class="wf-product-price">¥ --/月</div>
+  <div class="wf-product-specs">{field_html}</div>
+  <div class="wf-product-features">
+    <div>✓ 功能 A</div>
+    <div>✓ 功能 B</div>
+    <div>✓ 功能 C</div>
+  </div>
+  <div class="wf-actions">
+    <button class="wf-btn wf-btn-primary">立即订阅</button>
+    <button class="wf-btn wf-btn-secondary">对比方案</button>
+  </div>
+</div>"""
+
+
+def _wf_checkout(screen):
+    """EC2: Cart / checkout page."""
+    return """<div class="wf-checkout">
+  <div class="wf-checkout-items">
+    <div class="wf-checkout-item">
+      <span>方案名称</span>
+      <span>¥ --/月</span>
+    </div>
+  </div>
+  <div class="wf-checkout-divider"></div>
+  <div class="wf-checkout-total">
+    <span>合计</span>
+    <span class="wf-price">¥ --</span>
+  </div>
+  <div class="wf-checkout-payment">
+    <div class="wf-payment-option active">支付宝</div>
+    <div class="wf-payment-option">微信支付</div>
+    <div class="wf-payment-option">Apple Pay</div>
+  </div>
+  <div class="wf-actions">
+    <button class="wf-btn wf-btn-primary">确认支付</button>
+  </div>
+</div>"""
+
+
+def _wf_editor(screen):
+    """WK3: Document editor / content generation workspace."""
+    fields = screen.get("data_fields", [])
+    field_html = ""
+    for f in fields[:4]:
+        label = f.get("label", f.get("name", ""))
+        field_html += f'<div class="wf-editor-field">{_esc(label)}</div>'
+    return f"""<div class="wf-editor">
+  <div class="wf-editor-toolbar">
+    <button class="wf-btn wf-btn-secondary">保存</button>
+    <button class="wf-btn wf-btn-secondary">预览</button>
+    <button class="wf-btn wf-btn-primary">AI 生成</button>
+  </div>
+  <div class="wf-editor-fields">{field_html}</div>
+  <div class="wf-editor-area">
+    <div class="wf-editor-content">[ 编辑/生成内容区域 ]</div>
+    <div class="wf-editor-preview">[ 实时预览 ]</div>
+  </div>
+  <div class="wf-editor-status">草稿 · 未保存</div>
+</div>"""
+
+
+def _wf_dashboard(screen):
+    """MG7: Dashboard / statistics."""
+    return """<div class="wf-dashboard">
+  <div class="wf-dashboard-kpi">
+    <div class="wf-kpi-card"><div class="wf-kpi-value">--</div><div class="wf-kpi-label">指标 A</div></div>
+    <div class="wf-kpi-card"><div class="wf-kpi-value">--</div><div class="wf-kpi-label">指标 B</div></div>
+    <div class="wf-kpi-card"><div class="wf-kpi-value">--</div><div class="wf-kpi-label">指标 C</div></div>
+  </div>
+  <div class="wf-dashboard-charts">
+    <div class="wf-chart">[ 📊 趋势图表 ]</div>
+    <div class="wf-chart">[ 📈 分布图表 ]</div>
+  </div>
+  <div class="wf-dashboard-filters">
+    <span class="wf-chip active">今日</span>
+    <span class="wf-chip">本周</span>
+    <span class="wf-chip">本月</span>
+  </div>
+</div>"""
+
+
+def _wf_config_page(screen):
+    """MG8: Configuration / settings page."""
+    fields = screen.get("data_fields", [])
+    sections = ""
+    for f in fields[:8]:
+        label = f.get("label", f.get("name", ""))
+        ftype = f.get("type", "string")
+        if ftype == "boolean" or "开关" in label or "启用" in label:
+            control = '<div class="wf-toggle">○━━</div>'
+        elif ftype == "enum":
+            control = '<select class="wf-select"><option>选项 A</option></select>'
+        else:
+            control = f'<div class="wf-field-input">{_esc(_sample_val(f))}</div>'
+        sections += f'<div class="wf-config-row"><span class="wf-config-label">{_esc(label)}</span>{control}</div>'
+    if not sections:
+        sections = '<div class="wf-config-row"><span class="wf-config-label">配置项</span><div class="wf-field-input">值</div></div>'
+    return f"""<div class="wf-config">
+  <div class="wf-config-section">
+    <div class="wf-config-section-title">设置</div>
+    {sections}
+  </div>
+  <div class="wf-actions">
+    <button class="wf-btn wf-btn-secondary">恢复默认</button>
+    <button class="wf-btn wf-btn-primary">保存</button>
+  </div>
+</div>"""
+
+
+def _wf_tree_manager(screen):
+    """MG6: Tree / hierarchy manager."""
+    return """<div class="wf-tree">
+  <div class="wf-tree-toolbar">
+    <button class="wf-btn wf-btn-primary">+ 新建节点</button>
+  </div>
+  <div class="wf-tree-view">
+    <div class="wf-tree-node level-0">▼ 根节点 A
+      <div class="wf-tree-node level-1">├─ 子节点 A1</div>
+      <div class="wf-tree-node level-1">├─ 子节点 A2
+        <div class="wf-tree-node level-2">│  └─ 孙节点 A2a</div>
+      </div>
+      <div class="wf-tree-node level-1">└─ 子节点 A3</div>
+    </div>
+    <div class="wf-tree-node level-0">▶ 根节点 B (折叠)</div>
+  </div>
+</div>"""
+
+
+def _wf_submission(screen):
+    """SB1: Review submission / feedback form."""
+    fields = screen.get("data_fields", [])
+    field_html = ""
+    for f in fields[:5]:
+        label = f.get("label", f.get("name", ""))
+        ftype = f.get("type", "string")
+        if ftype in ("text", "textarea"):
+            field_html += f'<div class="wf-field"><label class="wf-field-label">{_esc(label)}</label><div class="wf-textarea">多行输入...</div></div>'
+        else:
+            field_html += f'<div class="wf-field"><label class="wf-field-label">{_esc(label)}</label><div class="wf-field-input">{_esc(ftype)}</div></div>'
+    if not field_html:
+        field_html = """<div class="wf-field"><label class="wf-field-label">反馈类型</label><div class="wf-field-input">enum</div></div>
+<div class="wf-field"><label class="wf-field-label">内容</label><div class="wf-textarea">请描述...</div></div>"""
+    return f"""<div class="wf-submission">
+  <div class="wf-form">{field_html}</div>
+  <div class="wf-actions">
+    <button class="wf-btn wf-btn-primary">提交</button>
+  </div>
+</div>"""
+
+
+def _wf_notification(screen):
+    """RT4: Notification center."""
+    return """<div class="wf-notification">
+  <div class="wf-notif-tabs">
+    <span class="wf-chip active">全部</span>
+    <span class="wf-chip">未读 <span class="wf-badge">3</span></span>
+    <span class="wf-chip">已读</span>
+  </div>
+  <div class="wf-notif-list">
+    <div class="wf-notif-item unread"><span class="wf-notif-dot"></span>通知内容 1 · 2分钟前</div>
+    <div class="wf-notif-item unread"><span class="wf-notif-dot"></span>通知内容 2 · 1小时前</div>
+    <div class="wf-notif-item">通知内容 3 · 昨天</div>
+  </div>
+</div>"""
+
+
 def _wf_default(screen):
     """Default wireframe."""
     fields = screen.get("data_fields", [])
@@ -1941,8 +2462,9 @@ def _wf_page(screen, body_html):
 
 
 def generate_wireframe(screen):
-    """Generate interaction-type-specific wireframe HTML."""
+    """Generate interaction-type-specific wireframe HTML (37-type system)."""
     itype = screen.get("interaction_type", "")
+    # MG 管理类
     if itype == "MG1":
         body = _wf_readonly_list(screen)
     elif itype == "MG2-L":
@@ -1951,12 +2473,52 @@ def generate_wireframe(screen):
         body = _wf_create_form(screen)
     elif itype == "MG2-E":
         body = _wf_edit_form(screen)
-    elif itype == "MG2-D":
+    elif itype in ("MG2-D", "MG2-ST", "MG5"):
         body = _wf_detail(screen)
     elif itype == "MG3":
         body = _wf_state_machine(screen)
     elif itype == "MG4":
         body = _wf_approval(screen)
+    elif itype == "MG6":
+        body = _wf_tree_manager(screen)
+    elif itype == "MG7":
+        body = _wf_dashboard(screen)
+    elif itype == "MG8":
+        body = _wf_config_page(screen)
+    # SY 引导系统
+    elif itype == "SY1":
+        body = _wf_onboarding(screen)
+    elif itype == "SY2":
+        body = _wf_wizard_form(screen)
+    # CT 内容消费
+    elif itype == "CT1":
+        body = _wf_content_feed(screen)
+    elif itype == "CT2":
+        body = _wf_content_reader(screen)
+    elif itype == "CT3":
+        body = _wf_profile(screen)
+    elif itype == "CT4":
+        body = _wf_card_swipe(screen)
+    elif itype == "CT5":
+        body = _wf_media_player(screen)
+    elif itype == "CT6":
+        body = _wf_gallery(screen)
+    elif itype == "CT7":
+        body = _wf_search_results(screen)
+    # EC 电商交易
+    elif itype == "EC1":
+        body = _wf_product_detail(screen)
+    elif itype == "EC2":
+        body = _wf_checkout(screen)
+    # WK 协作办公
+    elif itype == "WK3":
+        body = _wf_editor(screen)
+    # SB 审核提交
+    elif itype == "SB1":
+        body = _wf_submission(screen)
+    # RT 通讯实时
+    elif itype == "RT4":
+        body = _wf_notification(screen)
     else:
         body = _wf_default(screen)
     return _wf_page(screen, body)
@@ -1970,14 +2532,56 @@ ZONE_MAP = {
     "MG2-C": ["header", "form-body", "field-group", "action-bar"],
     "MG2-E": ["header", "form-body", "field-group", "action-bar"],
     "MG2-D": ["header", "detail-fields", "action-bar"],
+    "MG2-ST": ["header", "detail-fields", "state-badge", "action-bar"],
+    "MG3": ["header", "state-tabs", "table", "action-bar"],
+    "MG4": ["header", "pending-badge", "approval-cards", "action-bar"],
+    "MG5": ["header", "master-info", "sub-tabs", "sub-list"],
+    "MG6": ["header", "tree-toolbar", "tree-view"],
+    "MG7": ["header", "kpi-cards", "charts", "date-filter"],
+    "MG8": ["header", "config-sections", "save-bar"],
+    "SY1": ["illustration", "step-content", "dots", "action-bar"],
+    "SY2": ["progress-steps", "form-body", "action-bar"],
+    "CT1": ["search-bar", "filter-chips", "feed-cards"],
+    "CT2": ["cover-image", "title", "meta", "body-content", "action-bar"],
+    "CT3": ["avatar-header", "profile-fields", "action-bar"],
+    "CT4": ["progress", "card-main", "action-buttons"],
+    "CT5": ["player-screen", "progress-bar", "controls"],
+    "CT6": ["gallery-grid", "action-bar"],
+    "CT7": ["search-bar", "filter-chips", "results-list", "pagination"],
+    "EC1": ["product-image", "title-price", "specs", "features", "action-bar"],
+    "EC2": ["item-list", "total", "payment-options", "action-bar"],
+    "WK3": ["editor-toolbar", "editor-area", "preview", "status-bar"],
+    "SB1": ["form-body", "action-bar"],
+    "RT4": ["notif-tabs", "notif-list"],
 }
 
 BEHAVIOR_DESC = {
-    "MG1": ("Read-only List", "Displays a filterable, read-only collection. No create or edit actions. Optimized for scanning and lookup."),
+    "MG1": ("Read-only List", "Displays a filterable, read-only collection. No create or edit actions."),
     "MG2-L": ("CRUD List", "Full CRUD list with search, filter, sortable table, pagination, and bulk actions."),
     "MG2-C": ("Create Form", "Guided creation form with typed inputs, validation, and submit/cancel actions."),
     "MG2-E": ("Edit Form", "Pre-filled edit form. Same layout as create but loads existing data for modification."),
     "MG2-D": ("Detail View", "Read-focused detail layout with field-value pairs and contextual actions."),
+    "MG2-ST": ("State Transition", "Trigger predefined actions to move entity between states. No field editing."),
+    "MG3": ("State Machine", "Status-filtered list with state transition actions per row."),
+    "MG4": ("Approval Queue", "Pending review queue with approve/reject actions per card."),
+    "MG5": ("Master-Detail", "Primary entity info with multiple sub-entity tabs (lazy-loaded)."),
+    "MG6": ("Tree Manager", "Hierarchical CRUD with expand/collapse, add/move/delete nodes."),
+    "MG7": ("Dashboard", "KPI cards, charts, and date filters for data overview."),
+    "MG8": ("Config Page", "Grouped settings form with save/reset actions."),
+    "SY1": ("Onboarding", "Step-by-step guided tour with illustrations and skip option."),
+    "SY2": ("Wizard Form", "Multi-step form with progress indicator and back/next navigation."),
+    "CT1": ("Content Feed", "Scrollable content cards with search and filter chips."),
+    "CT2": ("Content Reader", "Full-page content reading with cover, metadata, and interaction bar."),
+    "CT3": ("Profile Page", "User info header with avatar, fields, and edit action."),
+    "CT4": ("Card Swipe", "Card-based interaction with swipe/tap decisions (flashcards, matching)."),
+    "CT5": ("Media Player", "Audio/video playback with progress bar and transport controls."),
+    "CT6": ("Gallery", "Image grid with thumbnail browsing and lightbox viewer."),
+    "CT7": ("Search Results", "Keyword search with filters, highlighted results, and pagination."),
+    "EC1": ("Product Detail", "Product/pricing page with image, specs, features, and purchase CTA."),
+    "EC2": ("Checkout", "Cart summary with payment method selection and confirm action."),
+    "WK3": ("Document Editor", "Split editor/preview with toolbar and auto-save status."),
+    "SB1": ("Submission Form", "Form for submitting feedback, reports, or review requests."),
+    "RT4": ("Notification Center", "Categorized notification list with read/unread badges."),
 }
 
 
