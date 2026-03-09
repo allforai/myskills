@@ -797,11 +797,11 @@ class FullContext:
     )
 
     def __init__(self):
-        self.tasks = None               # {task_id: task_dict} or None
-        self.roles = None               # {role_id: role_name} or None
-        self.roles_full = None           # [role_dict, ...] or None
+        self.tasks = {}                  # {task_id: task_dict}
+        self.roles = {}                  # {role_id: role_name}
+        self.roles_full = []             # [role_dict, ...]
         self.flows = []                  # [flow_dict, ...]
-        self.entity_model = None         # (entities, relationships) or None
+        self.entity_model = None         # full dict or None
         self.api_contracts = []          # [endpoint_dict, ...]
         self.view_objects = []           # [vo_dict, ...]
         self.experience_map = None       # raw data dict or None
@@ -817,9 +817,9 @@ class FullContext:
     # -- Filtered accessors ------------------------------------------------
 
     def get_constraints(self, target):
-        """Return constraints whose 'targets' list includes *target*."""
+        """Return constraints whose 'target' field matches *target*."""
         return [c for c in self.constraints
-                if target in c.get("targets", [])]
+                if c.get("target") == target]
 
     def get_xv_findings(self, source_phase):
         """Return XV findings originating from *source_phase*."""
@@ -877,7 +877,8 @@ def _collect_xv_findings(base):
 def _collect_constraints(base):
     """Load all .json files from ``<base>/constraints/`` directory.
 
-    Each file is one constraint object. Returns a flat list.
+    Each file wraps a list: ``{"source_tab": "...", "constraints": [...]}``.
+    The function flattens all constraint entries into a single list.
     """
     cdir = os.path.join(base, "constraints")
     results = []
@@ -887,7 +888,9 @@ def _collect_constraints(base):
         if fname.endswith(".json"):
             data = load_json(os.path.join(cdir, fname))
             if data is not None:
-                results.append(data)
+                constraints = data.get("constraints", [])
+                if isinstance(constraints, list):
+                    results.extend(constraints)
     return results
 
 
@@ -914,7 +917,7 @@ def load_full_context(base):
 
     em_data = load_json(os.path.join(base, "product-map/entity-model.json"))
     if em_data:
-        ctx.entity_model = (em_data.get("entities", []), em_data.get("relationships", []))
+        ctx.entity_model = em_data
 
     api_data = load_json(os.path.join(base, "product-map/api-contracts.json"))
     if api_data:
@@ -937,9 +940,9 @@ def load_full_context(base):
 
     # -- other artifacts --
     ctx.pattern_catalog = load_json(
-        os.path.join(base, "ui-design/pattern-catalog.json"))
+        os.path.join(base, "design-pattern/pattern-catalog.json"))
     ctx.behavioral_standards = load_json(
-        os.path.join(base, "ui-design/behavioral-standards.json"))
+        os.path.join(base, "behavioral-standards/behavioral-standards.json"))
     ctx.concept = load_json(
         os.path.join(base, "product-concept/product-concept.json"))
 

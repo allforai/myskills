@@ -20,9 +20,9 @@ class TestFullContextEmpty(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             ctx = load_full_context(tmp)
             self.assertIsInstance(ctx, FullContext)
-            self.assertIsNone(ctx.tasks)
-            self.assertIsNone(ctx.roles)
-            self.assertIsNone(ctx.roles_full)
+            self.assertEqual(ctx.tasks, {})
+            self.assertEqual(ctx.roles, {})
+            self.assertEqual(ctx.roles_full, [])
             self.assertEqual(ctx.flows, [])
             self.assertIsNone(ctx.entity_model)
             self.assertEqual(ctx.api_contracts, [])
@@ -93,11 +93,12 @@ class TestLoadsArtifacts(unittest.TestCase):
         self.assertIsNotNone(ctx.roles_full)
         self.assertEqual(len(ctx.roles_full), 2)
 
-        # entity model
+        # entity model — stored as full dict
         self.assertIsNotNone(ctx.entity_model)
-        entities, rels = ctx.entity_model
-        self.assertEqual(len(entities), 1)
-        self.assertEqual(len(rels), 1)
+        self.assertIsInstance(ctx.entity_model, dict)
+        self.assertIn("entities", ctx.entity_model)
+        self.assertEqual(len(ctx.entity_model["entities"]), 1)
+        self.assertEqual(len(ctx.entity_model["relationships"]), 1)
 
         # api contracts
         self.assertEqual(len(ctx.api_contracts), 1)
@@ -121,29 +122,33 @@ class TestConstraintsLoading(unittest.TestCase):
         os.makedirs(cdir)
 
         write(os.path.join(cdir, "wireframe.json"), {
-            "constraint_id": "C001",
-            "targets": ["ui-design", "experience-map"],
-            "rule": "No modal dialogs on mobile",
+            "source_tab": "wireframe",
+            "constraints": [
+                {"id": "C001", "target": "ui-design", "rule": "No modal dialogs on mobile"},
+                {"id": "C003", "target": "experience-map", "rule": "Max 3 clicks to goal"},
+            ]
         })
         write(os.path.join(cdir, "map.json"), {
-            "constraint_id": "C002",
-            "targets": ["product-map"],
-            "rule": "Max 50 tasks per role",
+            "source_tab": "map",
+            "constraints": [
+                {"id": "C002", "target": "product-map", "rule": "Max 50 tasks per role"},
+            ]
         })
 
     def test_constraints_loading(self):
         ctx = load_full_context(self.tmp)
-        self.assertEqual(len(ctx.constraints), 2)
+        # 2 from wireframe.json + 1 from map.json = 3 flattened
+        self.assertEqual(len(ctx.constraints), 3)
 
         # filter for ui-design
         ui_constraints = ctx.get_constraints("ui-design")
         self.assertEqual(len(ui_constraints), 1)
-        self.assertEqual(ui_constraints[0]["constraint_id"], "C001")
+        self.assertEqual(ui_constraints[0]["id"], "C001")
 
         # filter for product-map
         map_constraints = ctx.get_constraints("product-map")
         self.assertEqual(len(map_constraints), 1)
-        self.assertEqual(map_constraints[0]["constraint_id"], "C002")
+        self.assertEqual(map_constraints[0]["id"], "C002")
 
         # filter for nonexistent target
         self.assertEqual(ctx.get_constraints("nonexistent"), [])
