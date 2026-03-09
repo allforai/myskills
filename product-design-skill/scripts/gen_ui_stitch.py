@@ -17,6 +17,17 @@ from _common import (
     load_json,
 )
 
+# ── Interaction type → layout description mapping ────────────────────────────
+ITYPE_LAYOUT = {
+    "MG1": "Read-only list/grid view. Show data items with search/filter bar at top. Each item is a card or row. Tap opens detail.",
+    "MG2-L": "CRUD list with action toolbar. Search bar + '+ New' button at top. Each row has inline edit/delete actions. Bulk selection supported.",
+    "MG2-C": "Create form. Input fields stacked vertically with labels. Primary 'Submit/Create' button at bottom. Show validation states on fields.",
+    "MG2-E": "Edit form. Pre-filled input fields. 'Save' primary button + 'Cancel' secondary. Show changed field indicators.",
+    "MG2-D": "Detail view. Hero section at top with key info. Content sections below. Action buttons (edit/delete) in header or bottom bar.",
+    "MG3": "State machine / workflow view. Status tabs or progress indicator at top. List of items filtered by status. Action buttons change item state.",
+    "MG4": "Approval workflow. Pending count badge. Each item shows requester, content summary, timestamp. Approve/Reject action buttons per item.",
+}
+
 
 def load_component_spec(base):
     """Load component-spec.json."""
@@ -91,13 +102,18 @@ def select_priority_screens(screens, limit=10, explicit=None):
     return result
 
 
-def build_prompt(screen, concept, component_spec, device_type, is_anchor, screen_context=None):
+def build_prompt(screen, concept, component_spec, device_type, is_anchor,
+                 screen_context=None, wf_feedback=None):
     """Build a layered Stitch prompt for a screen."""
     sid = screen["id"]
     name = screen.get("name", sid)
-    it = screen.get("interaction_type", "MG1")
+    it = screen.get("interaction_type", "")
+    if isinstance(it, list):
+        it = it[0] if it else ""
     actions = screen.get("actions", [])
     states = screen.get("states", {})
+    data_fields = screen.get("data_fields", [])
+    non_negotiable = screen.get("non_negotiable", [])
 
     # Find which shared components this screen uses
     sc = component_spec.get("screen_components", {}).get(sid, {})
@@ -121,16 +137,41 @@ All screens belong to the same app and must share a consistent design language.
             comp_descs.append(f"- {comp_name}: props=[{', '.join(props)}]")
         layer1 += "Reuse these component patterns consistently:\n" + "\n".join(comp_descs) + "\n"
 
-    # Layer 2: Screen-specific content
-    action_descs = [a.get("label", "") for a in actions[:5]]
+    # Layer 2: Screen structure from interaction_type (wireframe → Stitch bridge)
+    layout_desc = ITYPE_LAYOUT.get(it, "")
+    action_descs = []
+    for a in actions[:5]:
+        label = a.get("label", "") if isinstance(a, dict) else str(a)
+        action_descs.append(label)
+
     layer2 = f"""Screen: {name}
 Purpose: {screen.get('primary_purpose', name)}
 Primary action: {screen.get('primary_action', action_descs[0] if action_descs else 'View')}
 Actions: {', '.join(action_descs)}
 """
-    if isinstance(states, dict):
+    if it and layout_desc:
+        layer2 += f"Screen type ({it}): {layout_desc}\n"
+
+    # Data fields → Stitch knows what real fields to render
+    if data_fields:
+        field_names = []
+        for f in data_fields[:10]:
+            if isinstance(f, dict):
+                fn = f.get("label", f.get("name", ""))
+            else:
+                fn = str(f)
+            if fn:
+                field_names.append(fn)
+        if field_names:
+            layer2 += f"Data fields to show: {', '.join(field_names)}\n"
+
+    if isinstance(states, dict) and states:
         state_descs = [f"{k}: {v}" for k, v in states.items()]
-        layer2 += f"States to consider: {'; '.join(state_descs)}\n"
+        layer2 += f"States: {'; '.join(state_descs)}\n"
+
+    # Non-negotiable constraints
+    if non_negotiable:
+        layer2 += f"Required: {', '.join(non_negotiable)}\n"
 
     # Layer 3: Anchor reference (non-anchor screens only)
     layer3 = ""
@@ -145,6 +186,16 @@ Actions: {', '.join(action_descs)}
             prompt_parts.append(f"Emotion context: {ctx['emotion_state']}")
         if ctx.get("ux_intent"):
             prompt_parts.append(f"UX intent: {ctx['ux_intent']}")
+
+    # Layer 5: Wireframe review feedback (human reviewer constraints)
+    if wf_feedback:
+        screen_fb = wf_feedback.get("screens", {}).get(sid, {})
+        pins = screen_fb.get("pins", [])
+        if pins:
+            comments = [p.get("comment", "") for p in pins if p.get("comment")]
+            if comments:
+                prompt_parts.append("Reviewer feedback: " + "; ".join(comments[:5]))
+
     layer4 = "\n".join(prompt_parts) + "\n" if prompt_parts else ""
 
     # Layout hint
@@ -178,6 +229,14 @@ def main():
         print("WARNING: component-spec.json not found. Run gen_ui_components.py first.", file=sys.stderr)
         comp_spec = {"shared_components": {}, "screen_components": {}}
 
+    # Load wireframe review feedback (optional — human reviewer constraints)
+    wf_feedback = load_json(os.path.join(base, "wireframe-review/review-feedback.json"))
+    if wf_feedback and wf_feedback.get("submitted_at"):
+        pin_count = sum(len(sc.get("pins", [])) for sc in wf_feedback.get("screens", {}).values())
+        print(f"  WF feedback: {pin_count} pins from wireframe review")
+    else:
+        wf_feedback = None
+
     limit = int(args.get("limit", "10"))
     explicit_screens = args.get("screens")
     device_type = infer_device_type(concept)
@@ -190,7 +249,8 @@ def main():
     anchor_id = selected[0]["id"]
     prompt_entries = []
     for i, s in enumerate(selected):
-        prompt = build_prompt(s, concept, comp_spec, device_type, is_anchor=(i == 0), screen_context=screen_context)
+        prompt = build_prompt(s, concept, comp_spec, device_type, is_anchor=(i == 0),
+                              screen_context=screen_context, wf_feedback=wf_feedback)
         prompt_entries.append({
             "screen_id": s["id"],
             "screen_name": s.get("name", s["id"]),

@@ -34,7 +34,7 @@ if not pm:
 available_layers.append("product-map")
 
 inv = C.load_json(os.path.join(BASE, "product-map/task-inventory.json"))
-tasks = {t["id"]: t for t in inv["tasks"]} if inv else {}
+tasks = {t["id"]: C._normalize_task(t) for t in inv["tasks"]} if inv else {}
 task_ids = set(tasks.keys())
 
 # experience-map (recommended — missing triggers WARNING)

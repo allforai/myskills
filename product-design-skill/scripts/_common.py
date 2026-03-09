@@ -133,6 +133,25 @@ def require_json(path, label="file"):
 
 # ── Data Loaders ──────────────────────────────────────────────────────────────
 
+def _normalize_task(task):
+    """Ensure task has both 'task_name' and 'name' fields (bidirectional sync).
+
+    Source data may use either 'name' or 'task_name'. This normalizer ensures
+    both fields exist so downstream code never hits KeyError regardless of
+    which field it accesses.
+    """
+    tn = task.get("task_name", "")
+    n = task.get("name", "")
+    if tn and not n:
+        task["name"] = tn
+    elif n and not tn:
+        task["task_name"] = n
+    elif not tn and not n:
+        task["task_name"] = task.get("id", "")
+        task["name"] = task.get("id", "")
+    return task
+
+
 def load_task_inventory(base, category=None):
     """Load task-inventory.json, return dict keyed by task ID.
 
@@ -147,7 +166,7 @@ def load_task_inventory(base, category=None):
     tasks = inv["tasks"]
     if category:
         tasks = [t for t in tasks if t.get("category") == category]
-    return {t["id"]: t for t in tasks}
+    return {t["id"]: _normalize_task(t) for t in tasks}
 
 
 def load_task_index(base):

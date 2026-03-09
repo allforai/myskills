@@ -434,7 +434,19 @@ def main():
         print(f"  VO: loaded {len(view_objects)} view objects, {len(vo_lookup)} unique (entity, type) keys")
 
     # ── build flow→tasks mapping ──
-    flow_by_id = {f.get("id", ""): f for f in flows} if flows else {}
+    # Support both "id" and "flow_id" fields, and normalize F1→F001 format
+    flow_by_id = {}
+    if flows:
+        for f in flows:
+            fid = f.get("id") or f.get("flow_id", "")
+            if fid:
+                flow_by_id[fid] = f
+                # Also register zero-padded variant: F1→F001, F2→F002
+                import re as _re
+                m = _re.match(r'^(F)(\d+)$', fid)
+                if m:
+                    padded = f"{m.group(1)}{int(m.group(2)):03d}"
+                    flow_by_id[padded] = f
 
     # ── generate operation lines ──
     operation_lines = []

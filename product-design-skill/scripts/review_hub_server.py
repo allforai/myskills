@@ -968,7 +968,7 @@ def load_product_map_tree():
         project_name = concept.get("mission", "Product") if concept else "Product"
 
     roles = roles_data.get("roles", []) if roles_data else []
-    tasks = inv_data.get("tasks", [])
+    tasks = [C._normalize_task(t) for t in inv_data.get("tasks", [])]
     flows = flows_data.get("flows", []) if flows_data else []
 
     role_map = {r["id"]: r for r in roles}
@@ -1324,7 +1324,7 @@ def load_wireframe_data():
         return [], {}, {}, {}, {}, {}
 
     inv = C.load_json(os.path.join(BASE, "product-map/task-inventory.json"))
-    tasks = {t["id"]: t for t in (inv.get("tasks", []) if inv else [])}
+    tasks = {t["id"]: C._normalize_task(t) for t in (inv.get("tasks", []) if inv else [])}
 
     roles = C.load_role_profiles_full(BASE)
     role_map = {r["id"]: r["name"] for r in roles}

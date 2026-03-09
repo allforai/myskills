@@ -37,7 +37,7 @@ inv_data = C.require_json(
     "task-inventory.json"
 )
 tasks = inv_data.get("tasks", [])
-tasks_by_id = {t["id"]: t for t in tasks}
+tasks_by_id = {t["id"]: C._normalize_task(t) for t in tasks}
 print(f"  Tasks: {len(tasks)}")
 
 flows_data = C.load_json(os.path.join(PM, "business-flows.json"))

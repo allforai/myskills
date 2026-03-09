@@ -31,7 +31,7 @@ inv = C.require_json(
     os.path.join(BASE, "product-map/task-inventory.json"),
     "task-inventory.json"
 )
-tasks = {t["id"]: t for t in inv["tasks"]}
+tasks = {t["id"]: C._normalize_task(t) for t in inv["tasks"]}
 roles = C.load_role_profiles_full(BASE)
 role_map = {r["id"]: r["name"] for r in roles}
 role_audience = {r["id"]: r.get("audience_type", "default") for r in roles}
@@ -285,7 +285,19 @@ for s in screens:
         t = tasks.get(tid)
         if t:
             task_cats.add(t.get("category", ""))
-    interaction_type = "core" if "core" in task_cats else ("basic" if "basic" in task_cats else "auxiliary")
+    task_priority = "core" if "core" in task_cats else ("basic" if "basic" in task_cats else "auxiliary")
+
+    # Preserve interaction_type from experience-map (MG1/MG2-C/MG3/MG4 etc.)
+    em_itype = s.get("interaction_type", "")
+
+    # Use real states from experience-map when available, else generic
+    em_states = s.get("states", {})
+    if not em_states or not isinstance(em_states, dict):
+        em_states = {
+            "empty": "插图 + 引导文案 + CTA 按钮",
+            "loading": "骨架屏 (shimmer)",
+            "error": "Snackbar (错误色) + 重试按钮",
+        }
 
     # Emotion context
     ctx = screen_context.get(sid, {})
@@ -296,14 +308,15 @@ for s in screens:
         "role": screen_role,
         "module": s.get("module", "其他"),
         "audience_type": audience,
-        "interaction_type": interaction_type,
+        "task_priority": task_priority,
+        "interaction_type": em_itype,
         "layout": layout,
         "sections": sections,
-        "states": {
-            "empty": "插图 + 引导文案 + CTA 按钮",
-            "loading": "骨架屏 (shimmer)",
-            "error": "Snackbar (错误色) + 重试按钮",
-        },
+        "states": em_states,
+        "actions": [{"label": a.get("label", ""), "crud": a.get("crud", "R"),
+                      "frequency": a.get("frequency", "")} for a in actions],
+        "data_fields": s.get("data_fields", []),
+        "non_negotiable": s.get("non_negotiable", []),
         "task_refs": screen_tasks,
         "notes": s.get("notes", ""),
     }
