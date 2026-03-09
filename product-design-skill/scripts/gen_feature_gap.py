@@ -26,6 +26,7 @@ NOW = C.now_iso()
 
 # ── Load data ─────────────────────────────────────────────────────────────────
 tasks = C.load_task_inventory(BASE)
+ctx = C.load_full_context(BASE)
 tidx = C.load_task_index(BASE)
 role_map = C.load_role_profiles(BASE)
 
@@ -465,6 +466,59 @@ if state_graph and "entities" in state_graph:
 
 C.write_json(os.path.join(OUT, "state-gaps.json"), state_gaps)
 
+# ── Entity field coverage gaps ──────────────────────────────────────────────
+entity_field_gaps = []
+if ctx.entity_model:
+    for entity in ctx.entity_model.get("entities", []):
+        eid = entity.get("id", "")
+        ename = entity.get("name", eid)
+        entity_fields = {f.get("name", "") for f in entity.get("fields", []) if f.get("name")}
+        # Find VOs referencing this entity
+        entity_vos = [vo for vo in ctx.view_objects if vo.get("entity_ref") == eid]
+        vo_fields = set()
+        for vo in entity_vos:
+            for f in vo.get("fields", []):
+                vo_fields.add(f.get("name", ""))
+        missing = entity_fields - vo_fields
+        if missing and vo_fields:  # Only flag if entity has SOME VO coverage
+            entity_field_gaps.append({
+                "entity_id": eid,
+                "entity_name": ename,
+                "total_fields": len(entity_fields),
+                "shown_fields": len(vo_fields),
+                "missing_fields": sorted(missing),
+                "gap_type": "ENTITY_FIELD_COVERAGE",
+            })
+if entity_field_gaps:
+    print(f"  Entity field gaps: {len(entity_field_gaps)}")
+
+# ── API endpoint coverage gaps ──────────────────────────────────────────────
+api_gaps = []
+if ctx.api_contracts:
+    referenced_apis = set()
+    for vo in ctx.view_objects:
+        for a in vo.get("actions", []):
+            api_ref = a.get("api_ref", "")
+            if api_ref:
+                referenced_apis.add(api_ref)
+    for ep in ctx.api_contracts:
+        epid = ep.get("id", "")
+        if epid and epid not in referenced_apis:
+            api_gaps.append({
+                "api_id": epid,
+                "path": ep.get("path", ""),
+                "method": ep.get("method", ""),
+                "gap_type": "UNREFERENCED_API",
+                "description": f"API {ep.get('method','')} {ep.get('path','')} ({epid}) not referenced by any VO",
+            })
+if api_gaps:
+    print(f"  API coverage gaps: {len(api_gaps)}")
+
+if entity_field_gaps:
+    C.write_json(os.path.join(OUT, "entity-field-gaps.json"), entity_field_gaps)
+if api_gaps:
+    C.write_json(os.path.join(OUT, "api-gaps.json"), api_gaps)
+
 # ── Step 4: Generate gap task list (prioritized) ─────────────────────────────
 gap_counter = [0]
 def next_gap():
@@ -486,6 +540,8 @@ def priority_rank(freq, flag):
         "ORPHAN_SCREEN": 4, "ORPHAN_ENTITY": 4,
         "NO_RULES": 3,
         "HIGH_FREQ_BURIED": 2,
+        "ENTITY_FIELD_COVERAGE": 3,
+        "UNREFERENCED_API": 3,
     }.get(flag, 5)
     return freq_rank * 10 + flag_rank
 
@@ -562,6 +618,36 @@ for sg in state_gaps:
             "frequency_impact": f"{freq}频相关",
             "_sort": priority_rank(freq, gap)
         })
+
+# From entity field gaps
+for eg in entity_field_gaps:
+    gap_tasks_list.append({
+        "id": next_gap(),
+        "title": f"实体「{eg['entity_name']}」— ENTITY_FIELD_COVERAGE",
+        "type": "ENTITY_FIELD_COVERAGE",
+        "priority": "中",
+        "affected_roles": [],
+        "affected_tasks": [],
+        "affected_screens": [],
+        "description": f"实体 {eg['entity_id']} ({eg['entity_name']}) 有 {len(eg['missing_fields'])} 个字段未被 VO 展示: {', '.join(eg['missing_fields'][:5])}",
+        "frequency_impact": "结构覆盖",
+        "_sort": priority_rank("低", "ENTITY_FIELD_COVERAGE")
+    })
+
+# From API gaps
+for ag in api_gaps:
+    gap_tasks_list.append({
+        "id": next_gap(),
+        "title": f"API {ag['method']} {ag['path']} — UNREFERENCED_API",
+        "type": "UNREFERENCED_API",
+        "priority": "中",
+        "affected_roles": [],
+        "affected_tasks": [],
+        "affected_screens": [],
+        "description": ag["description"],
+        "frequency_impact": "接口覆盖",
+        "_sort": priority_rank("低", "UNREFERENCED_API")
+    })
 
 gap_tasks_list.sort(key=lambda x: x["_sort"])
 for g in gap_tasks_list:
@@ -708,6 +794,8 @@ screen_gap_count = len(screen_gaps)
 journey_gap_count = len(journey_gaps)
 flow_gap_count = len(flow_gaps)
 state_gap_count = len(state_gaps)
+entity_field_gap_count = len(entity_field_gaps)
+api_gap_count = len(api_gaps)
 
 flag_stats = {}
 for tg in task_gaps:
@@ -735,7 +823,9 @@ lines.append(f"- 任务缺口: {task_gap_count} 个")
 lines.append(f"- 界面缺口: {screen_gap_count} 个")
 lines.append(f"- 旅程缺口: {journey_gap_count} 个")
 lines.append(f"- 业务流缺口: {flow_gap_count} 个")
-lines.append(f"- 状态机缺口: {state_gap_count} 个\n")
+lines.append(f"- 状态机缺口: {state_gap_count} 个")
+lines.append(f"- 实体字段覆盖缺口: {entity_field_gap_count} 个")
+lines.append(f"- API端点覆盖缺口: {api_gap_count} 个\n")
 
 lines.append("## Flag 统计\n")
 lines.append("| Flag | 数量 |")
@@ -787,7 +877,8 @@ C.append_pipeline_decision(
     "Phase 5 — feature-gap",
     f"task_gaps={task_gap_count}, screen_gaps={screen_gap_count}, "
     f"journey_gaps={journey_gap_count}, flow_gaps={flow_gap_count}, "
-    f"state_gaps={state_gap_count}, total_gap_tasks={len(gap_tasks_list)}",
+    f"state_gaps={state_gap_count}, entity_field_gaps={entity_field_gap_count}, "
+    f"api_gaps={api_gap_count}, total_gap_tasks={len(gap_tasks_list)}",
     shard=args.get("shard")
 )
 
@@ -797,6 +888,8 @@ print(f"Screen gaps: {screen_gap_count}")
 print(f"Journey gaps: {journey_gap_count}")
 print(f"Flow gaps: {flow_gap_count}")
 print(f"State machine gaps: {state_gap_count}")
+print(f"Entity field gaps: {entity_field_gap_count}")
+print(f"API coverage gaps: {api_gap_count}")
 print(f"Gap tasks generated: {len(gap_tasks_list)}")
 print(f"Flags: {dict(sorted(flag_stats.items(), key=lambda x: -x[1]))}")
 print(f"\nAll files written to {OUT}/")
