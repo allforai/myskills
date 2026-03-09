@@ -317,7 +317,7 @@ const TAB_ID='{_esc(tab_id)}';
 const TREE={tree_json};
 let feedback={feedback_json};
 let currentNodeId=null;
-let maxDepth=3;
+let maxDepth=4;
 const collapsedNodes=new Set();  // per-node collapse state
 
 // ── Branch colors (XMind style — each top-level branch gets a color) ──
