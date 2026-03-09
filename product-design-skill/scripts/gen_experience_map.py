@@ -173,11 +173,53 @@ CONTRACT_PATTERNS = {
         "forbidden": [],
         "required_behaviors": ["back-navigation"],
     },
+    # ── New patterns for 37-type interaction system ──
+    "card-swipe": {
+        "forbidden": ["page-route", "inline-edit"],
+        "required_behaviors": ["swipe-gesture", "progress-indicator", "undo-action"],
+    },
+    "content-feed": {
+        "forbidden": ["full-screen-modal"],
+        "required_behaviors": ["pull-to-refresh", "infinite-scroll", "skeleton-loading"],
+    },
+    "media-player": {
+        "forbidden": ["inline-expand"],
+        "required_behaviors": ["play-pause-toggle", "progress-seek", "background-playback"],
+    },
+    "inline-editor": {
+        "forbidden": ["page-route"],
+        "required_behaviors": ["auto-save", "undo-redo", "keyboard-shortcuts"],
+    },
+    "dashboard": {
+        "forbidden": ["bottom-sheet"],
+        "required_behaviors": ["date-range-filter", "auto-refresh"],
+    },
+    "onboarding-flow": {
+        "forbidden": ["back-navigation"],
+        "required_behaviors": ["step-indicator", "skip-option", "progress-persistence"],
+    },
+}
+
+# ── Interaction type → contract pattern mapping ──
+_ITYPE_TO_CONTRACT = {
+    "CT1": "content-feed", "CT4": "card-swipe", "CT5": "media-player",
+    "WK3": "inline-editor", "WK4": "inline-editor",
+    "MG7": "dashboard", "SY1": "onboarding-flow", "SY2": "multi-step-form",
 }
 
 
-def infer_contract(ux_intent, crud_type, emotion_intensity, audience_type=""):
-    """Infer implementation contract from UX intent, CRUD type, emotion intensity, and audience_type."""
+def infer_contract(ux_intent, crud_type, emotion_intensity, audience_type="", interaction_type=""):
+    """Infer implementation contract from UX intent, CRUD type, emotion intensity, audience_type, and interaction_type."""
+    # Interaction type takes priority when mapped
+    if interaction_type and interaction_type in _ITYPE_TO_CONTRACT:
+        pattern = _ITYPE_TO_CONTRACT[interaction_type]
+        preset = CONTRACT_PATTERNS[pattern]
+        return {
+            "pattern": pattern,
+            "forbidden": preset["forbidden"],
+            "required_behaviors": preset["required_behaviors"],
+        }
+
     intent_lower = (ux_intent or "").lower()
 
     # Platform-aware default pattern
@@ -372,8 +414,12 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
         primary = actions[0]["label"] if actions else module
         dominant_crud = actions[0]["crud"] if actions else "R"
 
-        # Derive implementation contract (platform-aware)
-        contract = infer_contract(ux_intent, dominant_crud, emotion_intensity, audience_type)
+        # ── Infer interaction_type from 37-type system ──
+        first_task = task_pairs[0][1] if task_pairs else {}
+        inferred_itype = C.infer_interaction_type(first_task, dominant_crud, audience_type)
+
+        # Derive implementation contract (platform + interaction-type aware)
+        contract = infer_contract(ux_intent, dominant_crud, emotion_intensity, audience_type, inferred_itype)
 
         # ── Platform metadata ──
         profile = _PLATFORM_PROFILES.get(audience_type, {})
@@ -382,10 +428,6 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
             "navigation": profile.get("navigation", ""),
             "layout": profile.get("layout", ""),
         } if profile else {}
-
-        # ── Infer interaction_type from 37-type system ──
-        first_task = task_pairs[0][1] if task_pairs else {}
-        inferred_itype = C.infer_interaction_type(first_task, dominant_crud, audience_type)
 
         # ── Try VO enrichment ──
         matched_vo = None
