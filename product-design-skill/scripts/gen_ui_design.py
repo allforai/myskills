@@ -75,7 +75,33 @@ for ol in op_lines:
 concept = C.load_product_concept(BASE)
 
 # ── Style configuration ──────────────────────────────────────────────────────
-style_name = args.get("style", "material-design-3")
+# Priority: CLI --style > product-concept pipeline_preferences.ui_style > default
+_UI_STYLE_ALIASES = {
+    "apple-hig": "ios-human-interface",
+    "apple": "ios-human-interface",
+    "ios": "ios-human-interface",
+    "hig": "ios-human-interface",
+    "material": "material-design-3",
+    "material-3": "material-design-3",
+    "md3": "material-design-3",
+}
+
+def _resolve_style(args, concept):
+    explicit = args.get("style", "")
+    if explicit:
+        return _UI_STYLE_ALIASES.get(explicit, explicit)
+    if concept:
+        prefs = concept.get("pipeline_preferences", {})
+        pref_style = prefs.get("ui_style", "")
+        if pref_style and pref_style != "undecided":
+            return _UI_STYLE_ALIASES.get(pref_style, pref_style)
+        # Infer from platform_type
+        platform = concept.get("platform_type", "") or ""
+        if any(kw in platform.lower() for kw in ("ios", "iphone", "ipad", "apple")):
+            return "ios-human-interface"
+    return "material-design-3"
+
+style_name = _resolve_style(args, concept)
 
 # Style presets
 STYLES = {

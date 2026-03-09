@@ -33,7 +33,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/review_hub_server.py <BASE> --port 18900
 
 - `<BASE>` = `.allforai` 目录路径
 - 服务器启动后打印 URL: `http://localhost:18900/`
-- **不自动弹浏览器** — 用户自行打开（或加 `--no-open false` 自动打开）
+- **自动弹浏览器**（加 `--no-open true` 可禁用）
 - 6 个 tab: 概念 / 地图 / 数据模型 / 线框 / UI / 规格
 - 没有产物的 tab 灰显不可点击
 - 每个 tab 独立保存反馈，提交后站点**不关闭**（可继续审核其他 tab）

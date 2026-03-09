@@ -96,7 +96,9 @@ Phase 10: design-audit full（终审）
 | map-review | `.allforai/product-map-review/review-feedback.json` 存在且 submitted_at 非空 |
 | journey-emotion | `.allforai/experience-map/journey-emotion-map.json` 存在 |
 | experience-map | `.allforai/experience-map/experience-map.json` 存在且 screen 数 > 0 |
-| interaction-gate | `.allforai/interaction-gate/gate-report.json` 存在 |
+| interaction-gate | `.allforai/experience-map/interaction-gate.json` 存在 |
+| data-model | `.allforai/product-map/entity-model.json` 存在 |
+| view-objects | `.allforai/product-map/view-objects.json` 存在 |
 | design-pattern | `.allforai/design-pattern/pattern-catalog.json` 存在 |
 | behavioral-standards | `.allforai/behavioral-standards/behavioral-standards.json` 存在 |
 | use-case | `.allforai/use-case/use-case-tree.json` 存在 |
