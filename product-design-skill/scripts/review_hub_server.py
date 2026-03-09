@@ -2150,51 +2150,119 @@ def _wf_profile(screen):
 
 
 def _wf_card_swipe(screen):
-    """CT4: Card swipe / flashcard interaction."""
+    """CT4: Card swipe / flashcard — adapts to quiz, flashcard, or practice variant."""
     fields = screen.get("data_fields", [])
-    field_preview = ""
-    for f in fields[:3]:
+    states = screen.get("states", {})
+    custom_states = {k: v for k, v in states.items() if k not in ("empty", "loading", "error", "success")}
+    all_state_text = " ".join(str(v) for v in custom_states.values()).lower()
+
+    # Variant detection
+    is_quiz = any(kw in all_state_text for kw in ["选项", "选择", "答案", "正确", "错误", "填空"])
+    is_practice = any(kw in all_state_text for kw in ["录音", "跟读", "波形", "回放"])
+
+    # Dynamic field display
+    field_html = ""
+    for f in fields[:4]:
         label = f.get("label", f.get("name", ""))
-        field_preview += f'<div class="wf-card-field">{_esc(label)}</div>'
-    actions = screen.get("actions", [])
-    action_label = actions[0].get("label", "练习") if actions and isinstance(actions[0], dict) else "练习"
-    return f"""<div class="wf-card-swipe">
-  <div class="wf-card-progress">1 / 20</div>
-  <div class="wf-card-main">
+        val = _sample_val(f)
+        field_html += f'<div class="wf-card-field">{_esc(label)}: {_esc(val)}</div>'
+
+    if is_quiz:
+        body = f"""<div class="wf-card-main">
+    <div class="wf-card-content">
+      {field_html or '<div class="wf-card-field">[ 题目内容 ]</div>'}
+    </div>
+    <div class="wf-card-options">
+      <div class="wf-option">A. ________</div>
+      <div class="wf-option">B. ________</div>
+      <div class="wf-option">C. ________</div>
+      <div class="wf-option">D. ________</div>
+    </div>
+  </div>"""
+    elif is_practice:
+        body = f"""<div class="wf-card-main">
+    <div class="wf-card-content">
+      {field_html or '<div class="wf-card-field">[ 练习内容 ]</div>'}
+    </div>
+    <div class="wf-card-record">
+      <div class="wf-waveform">〰〰〰〰〰</div>
+      <button class="wf-btn wf-btn-primary">● 录音</button>
+    </div>
+  </div>"""
+    else:
+        body = f"""<div class="wf-card-main">
     <div class="wf-card-front">
       <div class="wf-card-content">[ 正面内容 ]</div>
-      {field_preview}
+      {field_html}
     </div>
     <div class="wf-card-hint">← 跳过 | 点击翻转 | 掌握 →</div>
-  </div>
-  <div class="wf-card-buttons">
+  </div>"""
+
+    # Dynamic action buttons from screen data
+    actions = screen.get("actions", [])
+    if actions:
+        btns = ""
+        styles = ["wf-btn-danger", "wf-btn-warning", "wf-btn-success", "wf-btn-primary"]
+        for i, a in enumerate(actions[:4]):
+            label = a.get("label", "") if isinstance(a, dict) else str(a)
+            style = styles[i % len(styles)]
+            btns += f'<button class="wf-btn {style}">{_esc(label)}</button>'
+        action_html = f'<div class="wf-card-buttons">{btns}</div>'
+    else:
+        action_html = """<div class="wf-card-buttons">
     <button class="wf-btn wf-btn-danger">忘记</button>
     <button class="wf-btn wf-btn-warning">模糊</button>
     <button class="wf-btn wf-btn-success">记得</button>
     <button class="wf-btn wf-btn-primary">轻松</button>
-  </div>
+  </div>"""
+
+    return f"""<div class="wf-card-swipe">
+  <div class="wf-card-progress">1 / 20</div>
+  {body}
+  {action_html}
 </div>"""
 
 
 def _wf_media_player(screen):
-    """CT5: Media player (audio/video)."""
-    return """<div class="wf-player">
+    """CT5: Media player (audio/video) — renders data_fields and actions."""
+    fields = screen.get("data_fields", [])
+    field_html = ""
+    for f in fields[:3]:
+        label = f.get("label", f.get("name", ""))
+        if f.get("type") in ("audio", "video", "image"):
+            continue
+        field_html += f'<div class="wf-player-meta">{_esc(label)}</div>'
+
+    actions = screen.get("actions", [])
+    ctrl_btns = ""
+    for a in actions[:5]:
+        label = a.get("label", "") if isinstance(a, dict) else str(a)
+        ctrl_btns += f'<button class="wf-btn wf-btn-secondary">{_esc(label)}</button>'
+    if not ctrl_btns:
+        ctrl_btns = '<button class="wf-btn wf-btn-secondary">⏮</button><button class="wf-btn wf-btn-primary">⏸</button><button class="wf-btn wf-btn-secondary">⏭</button>'
+
+    return f"""<div class="wf-player">
   <div class="wf-player-screen">[ ▶ 播放区域 ]</div>
+  {field_html}
   <div class="wf-player-progress">
     <div class="wf-progress-bar"><div class="wf-progress-fill" style="width:35%"></div></div>
     <div class="wf-progress-time">1:23 / 3:45</div>
   </div>
-  <div class="wf-player-controls">
-    <button class="wf-btn wf-btn-secondary">⏮</button>
-    <button class="wf-btn wf-btn-primary">⏸</button>
-    <button class="wf-btn wf-btn-secondary">⏭</button>
-  </div>
+  <div class="wf-player-controls">{ctrl_btns}</div>
 </div>"""
 
 
 def _wf_gallery(screen):
-    """CT6: Gallery / image grid."""
-    return """<div class="wf-gallery">
+    """CT6: Gallery / image grid — renders dynamic actions."""
+    actions = screen.get("actions", [])
+    action_btns = ""
+    for a in actions[:3]:
+        label = a.get("label", "") if isinstance(a, dict) else str(a)
+        action_btns += f'<button class="wf-btn wf-btn-secondary">{_esc(label)}</button>'
+    if not action_btns:
+        action_btns = '<button class="wf-btn wf-btn-primary">查看更多</button>'
+
+    return f"""<div class="wf-gallery">
   <div class="wf-gallery-grid">
     <div class="wf-gallery-thumb">[ 图1 ]</div>
     <div class="wf-gallery-thumb">[ 图2 ]</div>
@@ -2203,10 +2271,7 @@ def _wf_gallery(screen):
     <div class="wf-gallery-thumb">[ 图5 ]</div>
     <div class="wf-gallery-thumb">[ 图6 ]</div>
   </div>
-  <div class="wf-actions">
-    <button class="wf-btn wf-btn-primary">生成更多</button>
-    <button class="wf-btn wf-btn-secondary">选择画风</button>
-  </div>
+  <div class="wf-actions">{action_btns}</div>
 </div>"""
 
 
@@ -2299,17 +2364,48 @@ def _wf_editor(screen):
 
 
 def _wf_dashboard(screen):
-    """MG7: Dashboard / statistics."""
-    return """<div class="wf-dashboard">
-  <div class="wf-dashboard-kpi">
-    <div class="wf-kpi-card"><div class="wf-kpi-value">--</div><div class="wf-kpi-label">指标 A</div></div>
+    """MG7: Dashboard / statistics — variant detection + dynamic fields."""
+    fields = screen.get("data_fields", [])
+    states = screen.get("states", {})
+    custom_states = {k: v for k, v in states.items() if k not in ("empty", "loading", "error", "success")}
+    all_state_text = " ".join(str(v) for v in custom_states.values()).lower()
+
+    # Variant detection
+    is_analytics = any(kw in all_state_text for kw in ["趋势", "图表", "分析", "报表"])
+    is_monitoring = any(kw in all_state_text for kw in ["实时", "告警", "监控", "警告"])
+
+    # Dynamic KPI cards from data_fields
+    kpi_html = ""
+    for f in fields[:4]:
+        label = f.get("label", f.get("name", ""))
+        val = _sample_val(f)
+        kpi_html += f'<div class="wf-kpi-card"><div class="wf-kpi-value">{_esc(val)}</div><div class="wf-kpi-label">{_esc(label)}</div></div>'
+    if not kpi_html:
+        kpi_html = """<div class="wf-kpi-card"><div class="wf-kpi-value">--</div><div class="wf-kpi-label">指标 A</div></div>
     <div class="wf-kpi-card"><div class="wf-kpi-value">--</div><div class="wf-kpi-label">指标 B</div></div>
-    <div class="wf-kpi-card"><div class="wf-kpi-value">--</div><div class="wf-kpi-label">指标 C</div></div>
+    <div class="wf-kpi-card"><div class="wf-kpi-value">--</div><div class="wf-kpi-label">指标 C</div></div>"""
+
+    if is_monitoring:
+        charts = """<div class="wf-dashboard-charts">
+    <div class="wf-chart">[ 实时监控面板 ]</div>
+    <div class="wf-chart wf-alert-list">[ 告警列表 ]</div>
+  </div>"""
+    elif is_analytics:
+        charts = """<div class="wf-dashboard-charts">
+    <div class="wf-chart">[ 趋势分析图 ]</div>
+    <div class="wf-chart">[ 数据报表 ]</div>
+  </div>"""
+    else:
+        charts = """<div class="wf-dashboard-charts">
+    <div class="wf-chart">[ 概览图表 ]</div>
+    <div class="wf-chart">[ 分布图表 ]</div>
+  </div>"""
+
+    return f"""<div class="wf-dashboard">
+  <div class="wf-dashboard-kpi">
+    {kpi_html}
   </div>
-  <div class="wf-dashboard-charts">
-    <div class="wf-chart">[ 📊 趋势图表 ]</div>
-    <div class="wf-chart">[ 📈 分布图表 ]</div>
-  </div>
+  {charts}
   <div class="wf-dashboard-filters">
     <span class="wf-chip active">今日</span>
     <span class="wf-chip">本周</span>
