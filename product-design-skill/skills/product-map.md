@@ -800,7 +800,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_view_objects.py <BASE>
 **输出**：
 - `.allforai/product-map/view-objects.json` — 视图对象（字段、Action Binding、interaction_type）
 
-**用户确认**：展示 VO 列表及类型分布，请用户审阅。如需审核数据模型全貌，可在后续 wireframe-review 中点击 "Review Data Model"，或手动运行 `/data-model-review`。
+**用户确认**：展示 VO 列表及类型分布，请用户审阅。如需审核数据模型全貌，可在 `/review` 统一审核站点的数据模型 tab 中查看。
 
 ---
 
