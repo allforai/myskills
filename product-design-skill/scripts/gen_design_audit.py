@@ -122,6 +122,8 @@ if os.path.exists(ui_spec_path):
     with open(ui_spec_path) as f:
         ui_spec_text = f.read()
 
+ctx = C.load_full_context(BASE)
+
 print(f"Available layers: {available_layers}")
 
 # ── Step 1: Trace (reverse) ──────────────────────────────────────────────────
@@ -416,6 +418,21 @@ report = {
     "cross_issues": cross_issues,
     "continuity_issues": continuity_issues
 }
+
+# ── Active constraint tracking ──
+if ctx.constraints:
+    report["active_constraints"] = {
+        "count": len(ctx.constraints),
+        "by_target": {},
+    }
+    for c in ctx.constraints:
+        target = c.get("target", "unknown")
+        report["active_constraints"]["by_target"].setdefault(target, []).append({
+            "id": c.get("id", ""),
+            "constraint": c.get("constraint", ""),
+            "severity": c.get("severity", "must"),
+        })
+    print(f"  Active constraints: {len(ctx.constraints)}")
 
 C.write_json(os.path.join(OUT, "audit-report.json"), report)
 

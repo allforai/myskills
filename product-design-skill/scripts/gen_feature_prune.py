@@ -29,6 +29,9 @@ tasks = C.load_task_inventory(BASE)
 tidx = C.load_task_index(BASE)
 role_map = C.load_role_profiles(BASE)
 
+ctx = C.load_full_context(BASE)
+prune_constraints = ctx.get_constraints("feature-prune")
+
 # Load pipeline preferences for scope_strategy and competitors
 concept = C.load_product_concept(BASE)
 prefs = concept.get("pipeline_preferences", {}) if concept else {}
@@ -275,6 +278,14 @@ for tid, task in tasks.items():
 
 C.write_json(os.path.join(OUT, "competitive-ref.json"), comp_ref)
 
+# ── Constraint sets from reviewer feedback ───────────────────────────────────
+# Tasks marked "defer" by reviewer get prune bias
+defer_task_ids = {c.get("task_id") for c in prune_constraints
+                  if any(kw in c.get("constraint", "") for kw in ["defer", "推迟", "不做", "v2"])}
+# Tasks marked "must keep" are protected
+keep_task_ids = {c.get("task_id") for c in prune_constraints
+                 if any(kw in c.get("constraint", "") for kw in ["keep", "必须", "保留", "must"])}
+
 # ── Step 4: Classification decisions ─────────────────────────────────────────
 decisions = []
 
@@ -302,6 +313,17 @@ for sa in scenario_align:
         "reason": sa["reason"],
         "decided_at": NOW
     })
+
+# Apply reviewer constraint bias
+for d in decisions:
+    tid = d["item_id"]
+    if tid in defer_task_ids:
+        if d["decision"] == "CORE":
+            d["decision"] = "DEFER"
+        d["reason"] += "；reviewer: defer to later version"
+    if tid in keep_task_ids:
+        d["decision"] = "CORE"
+        d["reason"] += "；reviewer: must keep"
 
 C.write_json(os.path.join(OUT, "prune-decisions.json"), decisions)
 
