@@ -242,7 +242,7 @@ for mod, slist in module_screens.items():
 with open(os.path.join(OUT, "ui-design-spec.md"), "w", encoding="utf-8") as f:
     f.write("\n".join(spec_lines) + "\n")
 
-# ── Generate ui-design-spec.json (for ui_review_server) ─────────────────────
+# ── Generate ui-design-spec.json (for review_hub_server UI tab) ──────────────
 spec_json_screens = []
 for s in screens:
     sid = s["id"]
