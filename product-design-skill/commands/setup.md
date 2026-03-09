@@ -72,15 +72,24 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 检测所有外部能力的就绪状态：
 
+#### 工具可用性检测方法（重要）
+
+Claude Code 使用**延迟加载（deferred tools）**机制：MCP 工具可能已注册但未激活到当前上下文。检测工具是否可用需要**同时检查两个来源**：
+
+1. **当前激活工具列表** — 已加载到上下文中的工具，可直接调用
+2. **`<available-deferred-tools>` 列表** — 会话开始时系统消息中列出的延迟加载工具名称
+
+**判定规则：工具名出现在任一列表中即为「可用」。** 不要因为工具仅在 deferred 列表中就误报为「未安装」。
+
 #### 1a. Playwright MCP
 
-1. **检查 MCP 工具**：检查 `mcp__playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 工具是否可用（任一前缀匹配即通过）
+1. **检查 MCP 工具**：在激活工具列表和 `<available-deferred-tools>` 中查找 `mcp__playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate`（任一前缀、任一列表匹配即通过）
    - 可用 → **✅ 就绪**
    - 不可用 → **❌ 未安装**（提示安装 Playwright MCP，见 Step 1.5a）
 
 #### 1b. OpenRouter
 
-1. **MCP 工具通道**：检查 `mcp__plugin_product-design_ai-gateway__ask_model` 工具是否可用
+1. **MCP 工具通道**：在激活工具列表和 `<available-deferred-tools>` 中查找 `mcp__plugin_product-design_ai-gateway__ask_model`
    - 可用 → MCP XV 就绪
    - 不可用 → MCP XV 未就绪（可能需要重启 Claude Code）
 
@@ -90,7 +99,7 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 #### 1c. Brave Search
 
-1. **MCP 工具通道**：检查 `mcp__plugin_product-design_ai-gateway__brave_web_search` 工具是否可用
+1. **MCP 工具通道**：在激活工具列表和 `<available-deferred-tools>` 中查找 `mcp__plugin_product-design_ai-gateway__brave_web_search`
    - 可用 → Brave MCP 就绪（ai-gateway 已加载且 BRAVE_API_KEY 已配置）
    - 不可用 → Brave MCP 未就绪
 
@@ -100,7 +109,7 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 #### 1d. Google AI
 
-1. **MCP 工具通道**：检查 `mcp__plugin_product-design_ai-gateway__generate_image` 工具是否可用
+1. **MCP 工具通道**：在激活工具列表和 `<available-deferred-tools>` 中查找 `mcp__plugin_product-design_ai-gateway__generate_image`
    - 可用 → Google AI MCP 就绪（ai-gateway 已加载且 GOOGLE_API_KEY 已配置）
    - 不可用 → Google AI MCP 未就绪
 
@@ -110,7 +119,7 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 #### 1e. fal.ai (FLUX + Kling)
 
-1. **MCP 工具通道**：检查 `mcp__plugin_product-design_ai-gateway__flux_generate_image` 工具是否可用
+1. **MCP 工具通道**：在激活工具列表和 `<available-deferred-tools>` 中查找 `mcp__plugin_product-design_ai-gateway__flux_generate_image`
    - 可用 → fal.ai MCP 就绪
    - 不可用 → fal.ai MCP 未就绪
 
@@ -120,7 +129,7 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 #### 1f. Stitch UI
 
-1. **检查 MCP 工具**：检查 `mcp__plugin_product-design_stitch__create_project` 或 `mcp__stitch__create_project` 工具是否可用
+1. **检查 MCP 工具**：在激活工具列表和 `<available-deferred-tools>` 中查找 `mcp__plugin_product-design_stitch__create_project` 或 `mcp__stitch__create_project`（任一前缀、任一列表匹配即通过）
    - 可用 → **✅ 就绪**
    - 不可用 → 检查 `~/.stitch-mcp/config/application_default_credentials.json` 是否存在
      - 凭证存在 → 检查是否包含 `quota_project_id` 字段：

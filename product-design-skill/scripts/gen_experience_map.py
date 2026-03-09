@@ -149,17 +149,76 @@ def _find_vo_for_task(task, crud_type, vo_lookup):
     return None
 
 
-def _vo_screen_name(vo):
-    """Generate a human-readable screen name from a VO.
+def _vo_screen_name(vo, task_pairs=None):
+    """Generate a human-readable screen name from a VO + task context.
 
-    e.g. entity_name='order', view_type='list_item' → '订单列表'
-         entity_name='order', view_type='create_form' → '订单创建'
+    Priority: VO display_name > task-derived Chinese name > entity_suffix fallback.
     """
+    # 1. VO itself may carry a display_name (best source)
+    if vo.get("display_name"):
+        return vo["display_name"]
+
     entity = vo.get("entity_name", "unknown")
     vtype = vo.get("view_type", "")
     suffix = VIEW_TYPE_NAMES.get(vtype, vtype)
-    # Use entity_name directly (Chinese names will come from VO if available)
+
+    # 2. Derive Chinese name from first task name (e.g. "查看订单列表" → "订单列表")
+    if task_pairs:
+        name = _derive_screen_name_from_tasks(task_pairs, suffix)
+        if name:
+            return name
+
+    # 3. Fallback: entity + suffix
     return f"{entity}_{suffix}"
+
+
+def _derive_screen_name_from_tasks(task_pairs, suffix_hint=""):
+    """Derive a meaningful Chinese screen name from task names.
+
+    Strips CRUD verb prefixes to get the core noun phrase.
+    e.g. "查看订单列表" → "订单列表"
+         "创建配送单"   → "创建配送单"   (C → keep verb as it's the screen purpose)
+         "修改用户信息" → "编辑用户信息"
+         "注册账户"     → "注册账户"     (short name, keep as-is)
+    """
+    if not task_pairs:
+        return ""
+
+    # Use first task name as primary source (task_name is canonical, name is legacy)
+    first_task = task_pairs[0][1] if task_pairs else {}
+    first_name = first_task.get("task_name", first_task.get("name", ""))
+    if not first_name:
+        return ""
+
+    # For short names (≤4 chars), keep as-is — they're already concise
+    if len(first_name) <= 4:
+        return first_name
+
+    # Strip READ verb prefixes to extract the core noun (read verbs are redundant for screen names)
+    read_prefixes = ["查看", "浏览", "搜索", "筛选", "导出", "统计"]
+    core = first_name
+    stripped = False
+    for prefix in read_prefixes:
+        if core.startswith(prefix):
+            core = core[len(prefix):]
+            stripped = True
+            break
+
+    # If no READ prefix stripped, return original name as-is
+    # (C/U/D verbs are meaningful for screen purpose: "创建订单", "编辑资料", "删除记录")
+    if not stripped:
+        return first_name
+
+    # For READ screens: if core already contains a view type word, don't append suffix
+    view_type_words = ["列表", "详情", "概览", "面板", "报表", "统计", "记录"]
+    if any(w in core for w in view_type_words):
+        return core
+
+    # Append suffix only if core is a bare noun (e.g. "订单" → "订单列表")
+    if suffix_hint and core:
+        return f"{core}{suffix_hint}"
+
+    return core or first_name
 
 
 def _vo_description(vo):
@@ -206,7 +265,7 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
         actions = []
         task_ids = []
         for tid, task in task_pairs:
-            tname = task.get("name", tid)
+            tname = task.get("task_name", task.get("name", tid))
             crud = infer_crud(tname)
             actions.append({
                 "label": tname,
@@ -233,7 +292,7 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
         if matched_vo:
             # Enriched screen from VO
             interaction_type = matched_vo.get("interaction_type", "")
-            screen_name = _vo_screen_name(matched_vo)
+            screen_name = _vo_screen_name(matched_vo, task_pairs)
             description = _vo_description(matched_vo)
 
             # Override contract pattern from interaction_type when available
@@ -261,11 +320,16 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
                 "implementation_contract": contract,
             }
         else:
-            # Fallback: generic screen (backward compatible)
+            # Fallback: derive name from tasks, then module
+            suffix = VIEW_TYPE_NAMES.get(
+                CRUD_TO_VIEW_TYPE.get(dominant_crud, ["list_item"])[0], ""
+            )
+            fallback_name = _derive_screen_name_from_tasks(task_pairs, suffix) or primary
+            fallback_desc = f"{fallback_name} — {', '.join(a['label'] for a in actions[:3])}"
             screen = {
                 "id": sid,
-                "name": f"{module}_screen",
-                "description": f"{module} operations",
+                "name": fallback_name,
+                "description": fallback_desc,
                 "route_type": "push",
                 "tasks": task_ids,
                 "actions": actions,
