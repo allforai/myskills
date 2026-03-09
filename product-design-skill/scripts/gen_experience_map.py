@@ -988,8 +988,11 @@ def main():
         sys.exit(1)
 
     # ── build role→audience_type mapping ──
+    # roles from C.load_role_profiles() is {role_id: role_name} dict
+    # Need full role objects for audience_type
+    roles_full = C.load_role_profiles_full(BASE) if hasattr(C, 'load_role_profiles_full') else []
     role_audience = {}
-    for r in (roles or []):
+    for r in roles_full:
         rid = r.get("id", r.get("role_id", ""))
         role_audience[rid] = r.get("audience_type", "professional")
     if role_audience:

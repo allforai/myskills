@@ -39,6 +39,13 @@ def main():
         frole = flow.get("role", flow.get("owner_role", ""))
 
         nodes_raw = C.get_flow_nodes(flow)
+
+        # Derive role from nodes if not on flow level
+        if not frole and nodes_raw:
+            from collections import Counter
+            node_roles = [n.get("role", "") for n in nodes_raw if n.get("role")]
+            if node_roles:
+                frole = Counter(node_roles).most_common(1)[0][0]
         emotion_nodes = []
         for step_idx, node in enumerate(nodes_raw):
             # Support both task_ref (canonical) and task_id (legacy)
