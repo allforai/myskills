@@ -35,6 +35,8 @@ task_screen_ids = C.build_task_screen_map_from_lines(op_lines) if em_loaded else
 
 flows = C.load_business_flows(BASE)
 
+ctx = C.load_full_context(BASE)
+
 # ── Step 0: Feature area grouping from task-index modules ─────────────────────
 feature_areas = []
 for i, mod in enumerate(idx.get("modules", []), 1):
@@ -199,6 +201,35 @@ def gen_validation(task):
                     "validation_rule": vr,
                     "flags": []
                 })
+        # ── Entity-model validation rules ──
+        if ctx and ctx.view_objects:
+            for vo in ctx.vo_for_screen(sid):
+                for f in vo.get("fields", []):
+                    constraints_f = f.get("constraints", {})
+                    if not constraints_f and not f.get("required"):
+                        continue
+                    rules = []
+                    if constraints_f.get("min_length"):
+                        rules.append(f"{f.get('name','')} 最少 {constraints_f['min_length']} 字符")
+                    if constraints_f.get("max_length"):
+                        rules.append(f"{f.get('name','')} 最多 {constraints_f['max_length']} 字符")
+                    if constraints_f.get("pattern"):
+                        rules.append(f"{f.get('name','')} 需要匹配格式: {constraints_f['pattern']}")
+                    if f.get("required"):
+                        rules.append(f"{f.get('name','')} 为必填字段")
+                    for rule in rules:
+                        cases.append({
+                            "id": next_uc(),
+                            "title": f"{task['task_name']}_校验_{rule[:20]}",
+                            "type": "validation",
+                            "priority": prio,
+                            "given": ["用户已登录", f"正在执行{task['task_name']}"],
+                            "when": [f"违反校验规则: {rule}"],
+                            "then": [f"系统提示校验失败: {rule}"],
+                            "screen_ref": sid,
+                            "validation_rule": rule,
+                            "source": "entity-model",
+                        })
     return cases
 
 # ── XV auto-apply helpers ────────────────────────────────────────────────────
