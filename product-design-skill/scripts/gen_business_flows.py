@@ -129,11 +129,12 @@ _FLOW_TEMPLATES = [
         "name": "内容创作发布流水线",
         "description": "管理员从创建内容到发布的完整生产链路",
         "trigger": "管理员决定制作新内容",
+        "role_filter": "R2",
         "keywords_ordered": [
             (("创建", "新建"), None),
             (("生成", "LLM", "AI生成"), None),
             (("审核",), None),
-            (("编辑", "修改"), None),
+            (("编辑场景", "编辑内容"), None),
             (("配图", "插图", "生图"), None),
             (("发布",), None),
         ],
@@ -178,6 +179,7 @@ def _generate_concept_guided_flows(tasks_dict, role_map_dict):
     for tmpl in _FLOW_TEMPLATES:
         nodes = []
         used_tids = set()
+        role_filter = tmpl.get("role_filter")
 
         for step_keywords, _hint_name in tmpl["keywords_ordered"]:
             # Find best matching task for this step
@@ -185,6 +187,9 @@ def _generate_concept_guided_flows(tasks_dict, role_map_dict):
             best_score = 0
             for tid, tname, t in task_list:
                 if tid in used_tids:
+                    continue
+                # Role filter: skip tasks from wrong role
+                if role_filter and t.get("owner_role", "") != role_filter:
                     continue
                 score = sum(1 for kw in step_keywords if kw in tname)
                 if score > best_score:
