@@ -778,6 +778,178 @@ def xv_parse_json(raw_text):
     return json.loads(cleaned)
 
 
+# ── Full Context ──────────────────────────────────────────────────────────────
+
+
+class FullContext:
+    """One-shot container for ALL .allforai artifacts.
+
+    Loaded by load_full_context(base). Each field is None or empty when the
+    corresponding artifact file is missing. Methods provide filtered views.
+    """
+
+    __slots__ = (
+        "tasks", "roles", "roles_full", "flows",
+        "entity_model", "api_contracts", "view_objects",
+        "experience_map", "screens", "task_screen_map",
+        "interaction_gate", "pattern_catalog", "behavioral_standards",
+        "concept", "xv_findings", "constraints",
+    )
+
+    def __init__(self):
+        self.tasks = None               # {task_id: task_dict} or None
+        self.roles = None               # {role_id: role_name} or None
+        self.roles_full = None           # [role_dict, ...] or None
+        self.flows = []                  # [flow_dict, ...]
+        self.entity_model = None         # (entities, relationships) or None
+        self.api_contracts = []          # [endpoint_dict, ...]
+        self.view_objects = []           # [vo_dict, ...]
+        self.experience_map = None       # raw data dict or None
+        self.screens = {}                # {screen_id: screen_dict}
+        self.task_screen_map = {}        # {task_id: [screen_ids]}
+        self.interaction_gate = None     # gate data dict or None
+        self.pattern_catalog = None      # pattern catalog data or None
+        self.behavioral_standards = None # behavioral standards data or None
+        self.concept = None              # product concept data or None
+        self.xv_findings = []            # [{source_phase, ...}, ...]
+        self.constraints = []            # [{constraint from file, ...}, ...]
+
+    # -- Filtered accessors ------------------------------------------------
+
+    def get_constraints(self, target):
+        """Return constraints whose 'targets' list includes *target*."""
+        return [c for c in self.constraints
+                if target in c.get("targets", [])]
+
+    def get_xv_findings(self, source_phase):
+        """Return XV findings originating from *source_phase*."""
+        return [f for f in self.xv_findings
+                if f.get("_source_phase") == source_phase]
+
+    def vo_for_screen(self, screen_id):
+        """Return view objects relevant to *screen_id* via task intersection."""
+        screen = self.screens.get(screen_id)
+        if not screen:
+            return []
+        screen_tasks = set(screen.get("tasks", []))
+        if not screen_tasks:
+            return []
+        return [vo for vo in self.view_objects
+                if screen_tasks & set(vo.get("task_refs", []))]
+
+    def api_for_screen(self, screen_id):
+        """Return API endpoints relevant to *screen_id* via task intersection."""
+        screen = self.screens.get(screen_id)
+        if not screen:
+            return []
+        screen_tasks = set(screen.get("tasks", []))
+        if not screen_tasks:
+            return []
+        return [ep for ep in self.api_contracts
+                if screen_tasks & set(ep.get("task_refs", []))]
+
+
+def _collect_xv_findings(base):
+    """Scan subdirs of *base* for \\*-xv-review.json files.
+
+    Each file is expected to have a ``reviews`` list. Every review entry
+    is tagged with ``_source_phase`` (the subdirectory name) so callers
+    can filter by origin.
+    """
+    findings = []
+    if not os.path.isdir(base):
+        return findings
+    for entry in sorted(os.listdir(base)):
+        subdir = os.path.join(base, entry)
+        if not os.path.isdir(subdir):
+            continue
+        for fname in sorted(os.listdir(subdir)):
+            if fname.endswith("-xv-review.json"):
+                data = load_json(os.path.join(subdir, fname))
+                if data and isinstance(data.get("reviews"), list):
+                    for review in data["reviews"]:
+                        tagged = dict(review)
+                        tagged["_source_phase"] = entry
+                        findings.append(tagged)
+    return findings
+
+
+def _collect_constraints(base):
+    """Load all .json files from ``<base>/constraints/`` directory.
+
+    Each file is one constraint object. Returns a flat list.
+    """
+    cdir = os.path.join(base, "constraints")
+    results = []
+    if not os.path.isdir(cdir):
+        return results
+    for fname in sorted(os.listdir(cdir)):
+        if fname.endswith(".json"):
+            data = load_json(os.path.join(cdir, fname))
+            if data is not None:
+                results.append(data)
+    return results
+
+
+def load_full_context(base):
+    """Create a FullContext by loading ALL artifacts from *base*.
+
+    Every load is defensive — missing files result in None or empty defaults.
+    """
+    ctx = FullContext()
+
+    # -- product-map artifacts --
+    inv_data = load_json(os.path.join(base, "product-map/task-inventory.json"))
+    if inv_data and isinstance(inv_data.get("tasks"), list):
+        ctx.tasks = {t["id"]: _normalize_task(t) for t in inv_data["tasks"]}
+
+    roles_data = load_json(os.path.join(base, "product-map/role-profiles.json"))
+    if roles_data and isinstance(roles_data.get("roles"), list):
+        ctx.roles = {r["id"]: r["name"] for r in roles_data["roles"]}
+        ctx.roles_full = roles_data["roles"]
+
+    flows_data = load_json(os.path.join(base, "product-map/business-flows.json"))
+    if flows_data:
+        ctx.flows = flows_data.get("flows", [])
+
+    em_data = load_json(os.path.join(base, "product-map/entity-model.json"))
+    if em_data:
+        ctx.entity_model = (em_data.get("entities", []), em_data.get("relationships", []))
+
+    api_data = load_json(os.path.join(base, "product-map/api-contracts.json"))
+    if api_data:
+        ctx.api_contracts = api_data.get("endpoints", [])
+
+    vo_data = load_json(os.path.join(base, "product-map/view-objects.json"))
+    if vo_data:
+        ctx.view_objects = vo_data.get("view_objects", [])
+
+    # -- experience-map artifacts --
+    exp_data = load_json(os.path.join(base, "experience-map/experience-map.json"))
+    if exp_data:
+        ctx.experience_map = exp_data
+        op_lines = ensure_list(exp_data, "operation_lines")
+        ctx.screens = build_screen_by_id_from_lines(op_lines)
+        ctx.task_screen_map = build_task_screen_map_from_lines(op_lines)
+
+    ctx.interaction_gate = load_json(
+        os.path.join(base, "experience-map/interaction-gate.json"))
+
+    # -- other artifacts --
+    ctx.pattern_catalog = load_json(
+        os.path.join(base, "ui-design/pattern-catalog.json"))
+    ctx.behavioral_standards = load_json(
+        os.path.join(base, "ui-design/behavioral-standards.json"))
+    ctx.concept = load_json(
+        os.path.join(base, "product-concept/product-concept.json"))
+
+    # -- cross-cutting --
+    ctx.xv_findings = _collect_xv_findings(base)
+    ctx.constraints = _collect_constraints(base)
+
+    return ctx
+
+
 # ── Self-test ─────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
