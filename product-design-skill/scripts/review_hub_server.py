@@ -885,7 +885,12 @@ def load_concept_tree():
     raw_mechs = data.get("mechanisms", data.get("product_mechanisms", []))
     mechs = []
     if isinstance(raw_mechs, list):
-        mechs = raw_mechs
+        # Normalize: strings become dicts, dicts pass through
+        for i, item in enumerate(raw_mechs):
+            if isinstance(item, str):
+                mechs.append({"id": f"mec-{i}", "name": item[:40], "description": item})
+            elif isinstance(item, dict):
+                mechs.append(item)
     elif isinstance(raw_mechs, dict):
         for k, v in raw_mechs.items():
             if isinstance(v, dict):
