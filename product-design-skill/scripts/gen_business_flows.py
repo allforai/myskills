@@ -82,6 +82,149 @@ def states_match(output_state, prereq):
     return False
 
 
+# ── Concept-guided flow generation (fallback) ─────────────────────────────────
+# When tasks lack outputs.states / prerequisites (concept-guided mode),
+# state-based edge detection produces 0 flows. This knowledge base defines
+# common flow templates that match tasks by module/name keywords.
+
+_FLOW_TEMPLATES = [
+    {
+        "name": "新用户注册与引导",
+        "description": "用户首次使用App到开始学习的完整流程",
+        "trigger": "用户下载App",
+        "keywords_ordered": [
+            (("注册",), "注册账号"),
+            (("登录",), "登录"),
+            (("新手引导", "引导"), "完成新手引导"),
+            (("浏览", "列表", "场景列表"), "浏览场景列表"),
+        ],
+    },
+    {
+        "name": "核心学习主流程",
+        "description": "从浏览内容到完成核心学习链路",
+        "trigger": "用户想学习新内容",
+        "keywords_ordered": [
+            (("浏览", "列表"), None),
+            (("详情", "查看"), None),
+            (("下载",), None),
+            (("阅读", "对话", "学习"), None),
+            (("练习", "句子"), None),
+            (("学习", "单词", "词汇"), None),
+            (("标记", "生词", "收藏"), None),
+        ],
+    },
+    {
+        "name": "复习流程",
+        "description": "基于记忆算法的日常复习循环",
+        "trigger": "复习提醒或用户主动打开复习",
+        "keywords_ordered": [
+            (("复习", "SRS", "调度"), None),
+            (("闪卡",), None),
+            (("填空",), None),
+            (("听音", "选词", "听力"), None),
+            (("拼写", "测试"), None),
+        ],
+    },
+    {
+        "name": "内容创作发布流水线",
+        "description": "管理员从创建内容到发布的完整生产链路",
+        "trigger": "管理员决定制作新内容",
+        "keywords_ordered": [
+            (("创建", "新建"), None),
+            (("生成", "LLM", "AI生成"), None),
+            (("审核",), None),
+            (("编辑", "修改"), None),
+            (("配图", "插图", "生图"), None),
+            (("发布",), None),
+        ],
+    },
+    {
+        "name": "订阅与付费流程",
+        "description": "用户从免费到付费的转化链路",
+        "trigger": "用户触达免费额度限制",
+        "keywords_ordered": [
+            (("订阅", "查看订阅", "订阅状态"), None),
+            (("升级", "变更", "付费", "购买"), None),
+        ],
+    },
+    {
+        "name": "数据分析与运营",
+        "description": "管理员查看数据并优化运营策略",
+        "trigger": "管理员打开后台",
+        "keywords_ordered": [
+            (("仪表盘", "数据", "统计", "分析"), None),
+            (("管理用户", "用户管理"), None),
+            (("配置", "系统配置"), None),
+        ],
+    },
+]
+
+
+def _generate_concept_guided_flows(tasks_dict, role_map_dict):
+    """Generate flows from concept knowledge base when state-based detection fails.
+
+    Matches tasks to flow templates by keyword matching on task names.
+    Returns list of flow dicts in the same format as state-based flows.
+    """
+    # Build task lookup by name keywords
+    task_list = []
+    for tid, t in tasks_dict.items():
+        tname = t.get("task_name", t.get("name", ""))
+        task_list.append((tid, tname, t))
+
+    concept_flows = []
+    flow_counter = 0
+
+    for tmpl in _FLOW_TEMPLATES:
+        nodes = []
+        used_tids = set()
+
+        for step_keywords, _hint_name in tmpl["keywords_ordered"]:
+            # Find best matching task for this step
+            best_tid = None
+            best_score = 0
+            for tid, tname, t in task_list:
+                if tid in used_tids:
+                    continue
+                score = sum(1 for kw in step_keywords if kw in tname)
+                if score > best_score:
+                    best_score = score
+                    best_tid = tid
+
+            if best_tid and best_score > 0:
+                used_tids.add(best_tid)
+                task = tasks_dict[best_tid]
+                nodes.append({
+                    "seq": len(nodes) + 1,
+                    "task_ref": best_tid,
+                    "task_name": task.get("task_name", task.get("name", "")),
+                    "role": task.get("owner_role", ""),
+                    "handoff": "",
+                    "gap_flags": []
+                })
+
+        # Only emit flow if at least 2 nodes matched
+        if len(nodes) >= 2:
+            flow_counter += 1
+            concept_flows.append({
+                "id": f"F{flow_counter:03d}",
+                "name": tmpl["name"],
+                "description": tmpl["description"],
+                "trigger": tmpl["trigger"],
+                "nodes": nodes,
+                "gap_flags": [],
+                "audit": {
+                    "handoff_breaks": 0,
+                    "orphan_states": [],
+                    "ghost_states": [],
+                    "missing_terminals": False
+                },
+                "source": "concept_guided"
+            })
+
+    return concept_flows
+
+
 # ── Step 1: Build state-based edges ──────────────────────────────────────────
 # edge = (task_A_id, task_B_id, matched_state, matched_prereq)
 
@@ -273,6 +416,16 @@ for comp in components:
         # Only if the task has both incoming and outgoing edges outside component
         # (already included via edge-based component — skip singles)
         pass
+
+# ── Step 4.5: Concept-guided fallback ────────────────────────────────────────
+# If state-based detection produced 0 flows (concept-guided tasks lack
+# outputs.states / prerequisites), fall back to knowledge-base matching.
+
+if not flows:
+    concept_flows = _generate_concept_guided_flows(tasks, role_map)
+    if concept_flows:
+        flows = concept_flows
+        print(f"State-based flows: 0 → concept-guided fallback: {len(flows)} flows")
 
 # ── Step 5: Flow Validation (self-audit) ─────────────────────────────────────
 
