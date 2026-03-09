@@ -10,6 +10,7 @@ Usage:
 import os, sys, json, re
 
 sys.path.insert(0, os.path.dirname(__file__))
+import _common as C
 from _common import (
     parse_args, load_experience_map, build_screen_by_id_from_lines,
     load_product_concept,
@@ -103,7 +104,7 @@ def select_priority_screens(screens, limit=10, explicit=None):
 
 
 def build_prompt(screen, concept, component_spec, device_type, is_anchor,
-                 screen_context=None, wf_feedback=None):
+                 screen_context=None, wf_feedback=None, ctx=None):
     """Build a layered Stitch prompt for a screen."""
     sid = screen["id"]
     name = screen.get("name", sid)
@@ -165,6 +166,26 @@ Actions: {', '.join(action_descs)}
         if field_names:
             layer2 += f"Data fields to show: {', '.join(field_names)}\n"
 
+    # ── VO-precision data fields ──
+    if ctx:
+        vos = ctx.vo_for_screen(sid)
+        if vos:
+            precise_fields = []
+            for vo in vos:
+                for f in vo.get("fields", []):
+                    fname = f.get("label", f.get("name", ""))
+                    ftype = f.get("type", "string")
+                    freq = "required" if f.get("required") else "optional"
+                    precise_fields.append(f"{fname}({ftype}, {freq})")
+            if precise_fields:
+                layer2 += f"Precise data fields: {', '.join(precise_fields)}\n"
+
+        # API binding context
+        apis = ctx.api_for_screen(sid)
+        if apis:
+            api_descs = [f"{ep.get('method', 'GET')} {ep.get('path', '')}" for ep in apis]
+            layer2 += f"API endpoints: {', '.join(api_descs)}\n"
+
     if isinstance(states, dict) and states:
         state_descs = [f"{k}: {v}" for k, v in states.items()]
         layer2 += f"States: {'; '.join(state_descs)}\n"
@@ -178,14 +199,28 @@ Actions: {', '.join(action_descs)}
     if not is_anchor:
         layer3 = "Maintain visual consistency with the first screen in this project. Use the same component styles, spacing, and color application.\n"
 
+    # ── Behavioral standards ──
+    bs_hint = ""
+    if ctx and ctx.behavioral_standards:
+        standards = ctx.behavioral_standards.get("standards", ctx.behavioral_standards.get("behaviors", []))
+        if isinstance(standards, list):
+            std_descs = []
+            for std in standards[:5]:
+                state = std.get("state", "")
+                behavior = std.get("behavior", std.get("description", ""))
+                if state and behavior:
+                    std_descs.append(f"{state}: {behavior}")
+            if std_descs:
+                bs_hint = "Behavioral standards: " + "; ".join(std_descs) + "\n"
+
     # Layer 4: Emotion / UX intent from experience-map
     prompt_parts = []
     if screen_context:
-        ctx = screen_context.get(sid, {})
-        if ctx.get("emotion_state"):
-            prompt_parts.append(f"Emotion context: {ctx['emotion_state']}")
-        if ctx.get("ux_intent"):
-            prompt_parts.append(f"UX intent: {ctx['ux_intent']}")
+        sc_ctx = screen_context.get(sid, {})
+        if sc_ctx.get("emotion_state"):
+            prompt_parts.append(f"Emotion context: {sc_ctx['emotion_state']}")
+        if sc_ctx.get("ux_intent"):
+            prompt_parts.append(f"UX intent: {sc_ctx['ux_intent']}")
 
     # Layer 5: Wireframe review feedback (human reviewer constraints)
     if wf_feedback:
@@ -201,7 +236,19 @@ Actions: {', '.join(action_descs)}
     # Layout hint
     layout = "Use flexible layouts (flexbox/grid) that can adapt to different screen sizes. Avoid fixed pixel widths on containers."
 
-    return f"{layer1}\n{layer2}\n{layer3}{layer4}{layout}"
+    # ── Constraint layer (highest priority) ──
+    constraint_hint = ""
+    if ctx:
+        screen_constraints = [c for c in ctx.get_constraints("ui-design")
+                              if c.get("screen_id") == sid or not c.get("screen_id")]
+        if screen_constraints:
+            lines = []
+            for c in screen_constraints:
+                prefix = "MUST" if c.get("severity") == "must" else "SHOULD"
+                lines.append(f"{prefix}: {c['constraint']}")
+            constraint_hint = "\n".join(lines) + "\n"
+
+    return f"{constraint_hint}{layer1}\n{bs_hint}{layer2}\n{layer3}{layer4}{layout}"
 
 
 def main():
@@ -225,6 +272,7 @@ def main():
 
     concept = load_product_concept(base)
     comp_spec = load_component_spec(base)
+    ctx = C.load_full_context(base)
     if not comp_spec:
         print("WARNING: component-spec.json not found. Run gen_ui_components.py first.", file=sys.stderr)
         comp_spec = {"shared_components": {}, "screen_components": {}}
@@ -250,7 +298,7 @@ def main():
     prompt_entries = []
     for i, s in enumerate(selected):
         prompt = build_prompt(s, concept, comp_spec, device_type, is_anchor=(i == 0),
-                              screen_context=screen_context, wf_feedback=wf_feedback)
+                              screen_context=screen_context, wf_feedback=wf_feedback, ctx=ctx)
         prompt_entries.append({
             "screen_id": s["id"],
             "screen_name": s.get("name", s["id"]),
