@@ -245,7 +245,7 @@ Actions: {', '.join(action_descs)}
             lines = []
             for c in screen_constraints:
                 prefix = "MUST" if c.get("severity") == "must" else "SHOULD"
-                lines.append(f"{prefix}: {c['constraint']}")
+                lines.append(f"{prefix}: {c.get('comment') or c.get('constraint', '')}")
             constraint_hint = "\n".join(lines) + "\n"
 
     return f"{constraint_hint}{layer1}\n{bs_hint}{layer2}\n{layer3}{layer4}{layout}"

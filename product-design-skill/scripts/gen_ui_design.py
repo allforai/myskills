@@ -406,7 +406,7 @@ for s in screens:
                           if c.get("screen_id") == sid or not c.get("screen_id")]
     if screen_constraints:
         screen_entry["review_constraints"] = [
-            {"constraint": c["constraint"], "severity": c.get("severity", "must")}
+            {"constraint": c.get("comment") or c.get("constraint", ""), "severity": c.get("severity", "must")}
             for c in screen_constraints
         ]
 

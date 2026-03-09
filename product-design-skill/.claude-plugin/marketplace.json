@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "product-design",
-      "version": "4.5.6",
+      "version": "4.6.0",
       "source": "./",
       "description": "Product design suite: product-concept, product-map, experience-map, use-case, feature-gap, feature-prune, ui-design, design-audit. 产品设计套件：产品概念、功能地图、体验地图、用例集、功能查漏、功能剪枝、UI设计、设计审计。"
     },

@@ -10,7 +10,7 @@ description: >
   design-pattern → behavioral-standards → review(线框+数据模型) → [use-case ∥ gap ∥ ui-design] → review(UI) → audit.
   Use /review to launch the unified review hub (one site, 6 tabs).
   Use /product-design full to run the full pipeline with checkpoints.
-version: "4.5.6"
+version: "4.6.0"
 ---
 
 # Product Design — 产品设计套件
