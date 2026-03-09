@@ -92,7 +92,8 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/review_hub_server.py <BASE> --port 18900
 
 2. 统计：N 个节点/界面已审核，M 通过，K 需修改
 
-3. K = 0 → 全部通过，tab 确认完成
+3. K = 0（全部 approved）→ 删除 `constraints/<tab>.json`（如果存在）
+   - 输出 "<tab> 审核全部通过，约束已清除"
 
 4. K > 0 → 按类别汇总修改建议：
    - 脑图 tab: 按节点分组展示 revision comments
@@ -101,9 +102,26 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/review_hub_server.py <BASE> --port 18900
      - category="experience-map" → 汇总为体验地图修改建议
      - category="concept" → 汇总为概念级问题
 
-5. 输出修复行动清单
+5. **生成约束文件** → `.allforai/constraints/<tab>.json`
+   - 每条 needs_revision / rejected 评论转为一个约束条目
+   - 约束 ID = `{tab}_{pin_id}` 或 `{tab}_{node_id}`（幂等，重复 process 不重复）
+   - target 推断规则：
+     - 脑图 tab: concept→product-concept, map→product-map, data-model→product-map, spec→dev-forge
+     - 预览 tab: pin 的 category 字段（"product-map" / "experience-map" / "ui"→"ui-design"）
+   - severity: 默认 "must"
+   - 约束文件格式：
+     ```json
+     {
+       "source_tab": "<tab>",
+       "created_at": "<ISO>",
+       "constraints": [...]
+     }
+     ```
+   - 输出提示："已写入 N 条约束到 constraints/<tab>.json，下次重跑相关脚本时自动生效"
 
-6. 更新 review-feedback.json: round += 1
+6. 输出修复行动清单
+
+7. 更新 review-feedback.json: round += 1
 ```
 
 ### 安全护栏
@@ -111,3 +129,11 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/review_hub_server.py <BASE> --port 18900
 - 不直接修改上游产物
 - 只输出修复建议，由用户决定是否执行上游重跑
 - 每轮审核记入 pipeline-decisions.json
+
+### 约束文件说明
+
+约束文件存储在 `.allforai/constraints/` 目录下，按 tab 分文件。所有 `gen_*.py` 脚本在运行时通过 `load_full_context()` 自动读取约束，作为硬约束注入生成结果。
+
+- 约束在对应 tab 全部通过审核后自动清除
+- 约束文件提交到 git，便于追踪审核历史
+- 同一条评论重复 process 不会产生重复约束（幂等 ID）
