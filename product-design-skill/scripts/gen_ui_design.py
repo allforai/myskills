@@ -73,6 +73,7 @@ for ol in op_lines:
             }
 
 concept = C.load_product_concept(BASE)
+fctx = C.load_full_context(BASE)
 
 # ── Style configuration ──────────────────────────────────────────────────────
 # Priority: CLI --style > product-concept pipeline_preferences.ui_style > default
@@ -353,6 +354,71 @@ for s in screens:
             "ux_intent": ctx.get("ux_intent", ""),
             "operation_line": ctx.get("operation_line", ""),
         }
+
+    # ── FullContext enrichment ────────────────────────────────────────────
+    # (a) VO-based field enrichment
+    vos = fctx.vo_for_screen(sid)
+    if vos and not screen_entry.get("data_fields"):
+        vo_fields = []
+        for vo in vos:
+            for f in vo.get("fields", []):
+                vo_fields.append({
+                    "name": f.get("name", ""),
+                    "type": f.get("type", "string"),
+                    "input_widget": f.get("input_widget", "text"),
+                    "required": f.get("required", False),
+                    "label": f.get("label", f.get("name", "")),
+                })
+        if vo_fields:
+            screen_entry["data_fields"] = vo_fields
+            screen_entry["data_fields_source"] = "view-objects"
+
+    # (b) API binding enrichment
+    apis = fctx.api_for_screen(sid)
+    if apis:
+        screen_entry["api_bindings"] = [
+            {"endpoint": ep.get("path", ""), "method": ep.get("method", ""), "api_id": ep.get("id", "")}
+            for ep in apis
+        ]
+
+    # (c) Behavioral standards injection
+    if fctx.behavioral_standards:
+        standards = fctx.behavioral_standards.get("standards", fctx.behavioral_standards.get("behaviors", []))
+        if isinstance(standards, list):
+            existing_states = screen_entry.get("states", {})
+            if isinstance(existing_states, dict):
+                for std in standards:
+                    state_key = std.get("state", "")
+                    if state_key and state_key not in existing_states:
+                        existing_states[state_key] = std.get("behavior", std.get("description", ""))
+                screen_entry["states"] = existing_states
+
+    # (d) Pattern catalog reference
+    if fctx.pattern_catalog:
+        itype = screen_entry.get("interaction_type", "")
+        patterns = fctx.pattern_catalog.get("patterns", [])
+        matched = [p for p in patterns if itype in p.get("interaction_types", [])]
+        if matched:
+            screen_entry["pattern_refs"] = [p.get("pattern_id", p.get("id", "")) for p in matched[:3]]
+
+    # (e) Constraint overrides
+    screen_constraints = [c for c in fctx.get_constraints("ui-design")
+                          if c.get("screen_id") == sid or not c.get("screen_id")]
+    if screen_constraints:
+        screen_entry["review_constraints"] = [
+            {"constraint": c["constraint"], "severity": c.get("severity", "must")}
+            for c in screen_constraints
+        ]
+
+    # (f) XV warnings
+    xv_ui = fctx.get_xv_findings("ui-design")
+    if xv_ui:
+        for xf in xv_ui:
+            raw = xf.get("raw_findings", {})
+            for issue in raw.get("issues", []):
+                desc = issue.get("description", "")
+                if sid in desc or not issue.get("screen_ref"):
+                    screen_entry.setdefault("xv_warnings", []).append(desc)
 
     spec_json_screens.append(screen_entry)
 
