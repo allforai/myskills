@@ -51,6 +51,49 @@ DEFAULT_STATES = {
     "MG4": {"empty": "无待审核项", "loading": "提交审批中", "error": "审批失败", "success": "审批完成"},
 }
 
+# ── Platform profiles by audience_type (cross-project) ────────────────────────
+# consumer → mobile app patterns; professional → desktop admin patterns.
+_PLATFORM_PROFILES = {
+    "consumer": {
+        "platform": "mobile",
+        "navigation": "bottom_tab",
+        "layout": "single_column",
+        "list_pattern": "card_list",
+        "detail_pattern": "full_screen",
+        "form_pattern": "bottom_sheet",
+        "action_pattern": "swipe_action",
+        "extra_states": {
+            "pull_refresh": "下拉刷新",
+            "skeleton": "骨架屏",
+        },
+        "contract_defaults": {
+            "C": "bottom-sheet",
+            "R": "full-page",
+            "U": "bottom-sheet",
+            "D": "bottom-sheet",
+        },
+    },
+    "professional": {
+        "platform": "desktop",
+        "navigation": "sidebar",
+        "layout": "master_detail",
+        "list_pattern": "data_table",
+        "detail_pattern": "side_panel",
+        "form_pattern": "modal",
+        "action_pattern": "toolbar",
+        "extra_states": {
+            "bulk_select": "批量选择",
+            "breadcrumb": "面包屑导航",
+        },
+        "contract_defaults": {
+            "C": "multi-step-form",
+            "R": "standard-page",
+            "U": "standard-page",
+            "D": "modal-picker",
+        },
+    },
+}
+
 
 def infer_crud(task_name):
     """Infer CRUD type from task name keywords."""
@@ -96,9 +139,13 @@ CONTRACT_PATTERNS = {
 }
 
 
-def infer_contract(ux_intent, crud_type, emotion_intensity):
-    """Infer implementation contract from UX intent, CRUD type, and emotion intensity."""
+def infer_contract(ux_intent, crud_type, emotion_intensity, audience_type=""):
+    """Infer implementation contract from UX intent, CRUD type, emotion intensity, and audience_type."""
     intent_lower = (ux_intent or "").lower()
+
+    # Platform-aware default pattern
+    profile = _PLATFORM_PROFILES.get(audience_type, {})
+    platform_default = profile.get("contract_defaults", {}).get(crud_type, "standard-page")
 
     if any(kw in intent_lower for kw in ["quick", "overlay", "confirm", "dismiss"]):
         pattern = "bottom-sheet"
@@ -108,6 +155,8 @@ def infer_contract(ux_intent, crud_type, emotion_intensity):
         pattern = "modal-picker"
     elif crud_type == "C" and emotion_intensity >= 7:
         pattern = "multi-step-form"
+    elif audience_type:
+        pattern = platform_default
     else:
         pattern = "standard-page"
 
@@ -241,11 +290,13 @@ def _vo_description(vo):
 
 
 def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
-                           ux_intent="", emotion_intensity=5, vo_lookup=None):
+                           ux_intent="", emotion_intensity=5, vo_lookup=None,
+                           audience_type=""):
     """Build screen objects from a list of task IDs. Returns (screens, updated_counter).
 
     When vo_lookup is provided, screens are enriched with VO data (name, fields,
     interaction_type, actions, states). Falls back to generic names when no VO matches.
+    audience_type: 'consumer' (mobile app) or 'professional' (desktop admin).
     """
     if not node_tasks:
         return [], screen_counter
@@ -279,8 +330,16 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
         primary = actions[0]["label"] if actions else module
         dominant_crud = actions[0]["crud"] if actions else "R"
 
-        # Derive implementation contract
-        contract = infer_contract(ux_intent, dominant_crud, emotion_intensity)
+        # Derive implementation contract (platform-aware)
+        contract = infer_contract(ux_intent, dominant_crud, emotion_intensity, audience_type)
+
+        # ── Platform metadata ──
+        profile = _PLATFORM_PROFILES.get(audience_type, {})
+        platform_meta = {
+            "platform": profile.get("platform", "unknown"),
+            "navigation": profile.get("navigation", ""),
+            "layout": profile.get("layout", ""),
+        } if profile else {}
 
         # ── Try VO enrichment ──
         matched_vo = None
@@ -307,6 +366,7 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
                 "name": screen_name,
                 "description": description,
                 "route_type": "push",
+                **platform_meta,
                 "tasks": task_ids,
                 "actions": actions,
                 "vo_actions": vo_actions,
@@ -331,6 +391,7 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
                 "name": fallback_name,
                 "description": fallback_desc,
                 "route_type": "push",
+                **platform_meta,
                 "tasks": task_ids,
                 "actions": actions,
                 "primary_action": primary,
@@ -926,6 +987,14 @@ def main():
         print("ERROR: task-inventory.json not found or empty. Run product-map first.")
         sys.exit(1)
 
+    # ── build role→audience_type mapping ──
+    role_audience = {}
+    for r in (roles or []):
+        rid = r.get("id", r.get("role_id", ""))
+        role_audience[rid] = r.get("audience_type", "professional")
+    if role_audience:
+        print(f"  Roles: {', '.join(f'{k}={v}' for k, v in role_audience.items())}")
+
     # ── load view objects (optional enhancement) ──
     view_objects = C.load_view_objects(BASE)
     vo_lookup = _build_vo_lookup(view_objects) if view_objects else {}
@@ -959,6 +1028,10 @@ def main():
         flow = flow_by_id.get(source_flow_id, {})
         flow_nodes = C.get_flow_nodes(flow) if flow else []
 
+        # Determine audience_type for this journey line's role
+        jl_role = jl.get("role", "")
+        jl_audience = role_audience.get(jl_role, "professional")
+
         nodes = []
         for en in jl.get("emotion_nodes", []):
             step = en["step"]
@@ -975,6 +1048,7 @@ def main():
                 ux_intent=en.get("design_hint", ""),
                 emotion_intensity=en.get("intensity", 5),
                 vo_lookup=vo_lookup,
+                audience_type=jl_audience,
             )
 
             node_id = f"N{jl_id[2:]}{step:02d}"  # e.g. N0101 for JL01 step 1

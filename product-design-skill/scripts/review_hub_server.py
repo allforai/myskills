@@ -1464,6 +1464,9 @@ def build_screens_with_context(op_lines, tasks, role_map, gate_issues, vo_map=No
                     "module": s.get("module", ""),
                     "notes": s.get("notes", ""),
                     "description": s.get("description", ""),
+                    "platform": s.get("platform", ""),
+                    "navigation": s.get("navigation", ""),
+                    "layout": s.get("layout", ""),
                     "tasks": s.get("tasks", []),
                     "actions": s.get("actions", []),
                     "vo_actions": vo_actions,
@@ -1493,6 +1496,15 @@ def build_screens_with_context(op_lines, tasks, role_map, gate_issues, vo_map=No
 WF_CSS = """
 body{margin:0;padding:24px;font-family:-apple-system,system-ui,sans-serif;background:#f8f9fa;color:#333}
 .wf-container{max-width:480px;margin:0 auto;background:#fff;border:2px solid #dee2e6;border-radius:4px;overflow:hidden}
+.wf-container.desktop{max-width:960px;border-radius:8px}
+.wf-platform-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;margin-left:auto}
+.wf-platform-badge.mobile{background:#e3f2fd;color:#1565c0}
+.wf-platform-badge.desktop{background:#fce4ec;color:#c62828}
+.wf-sidebar{display:flex;gap:0}
+.wf-sidebar-nav{width:180px;background:#f1f3f5;border-right:2px solid #dee2e6;padding:12px 0;flex-shrink:0}
+.wf-sidebar-nav .wf-nav-item{padding:8px 16px;font-size:12px;color:#868e96;cursor:default}
+.wf-sidebar-nav .wf-nav-item.active{color:#495057;font-weight:600;background:#e9ecef;border-left:3px solid #495057}
+.wf-sidebar-content{flex:1;padding:16px}
 .wf-header{background:#e9ecef;padding:12px 16px;border-bottom:2px solid #dee2e6;display:flex;align-items:center;gap:8px}
 .wf-header-title{font-size:14px;font-weight:600;color:#495057;flex:1}
 .wf-emo{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
@@ -1875,15 +1887,48 @@ def _wf_page(screen, body_html):
     itype = screen.get("interaction_type", "")
     ux_intent = screen.get("ux_intent", "")
     notes = screen.get("notes", "") or screen.get("description", "")
+    platform = screen.get("platform", "")
+    nav = screen.get("navigation", "")
     itype_badge = f'<span class="wf-itype">{_esc(itype)}</span>' if itype else ""
+    platform_cls = " desktop" if platform == "desktop" else " mobile" if platform == "mobile" else ""
+    platform_badge = f'<span class="wf-platform-badge{platform_cls}">{_esc(platform or "unknown")}</span>' if platform else ""
     panel_4d = _build_4d_panel(screen)
-    return f"""<!DOCTYPE html>
+
+    # Desktop screens with sidebar navigation get sidebar layout
+    if platform == "desktop" and nav == "sidebar":
+        return f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8"><style>{WF_CSS}</style></head><body>
-<div class="wf-container">
+<div class="wf-container desktop">
   <div class="wf-header">
     <div class="wf-header-title">{_esc(name)}</div>
     {itype_badge}
     <span class="wf-emo" style="background:{emo_color}22;color:{emo_color}">{_esc(emo)}</span>
+    {platform_badge}
+  </div>
+  <div class="wf-sidebar">
+    <div class="wf-sidebar-nav">
+      <div class="wf-nav-item active">{_esc(name)}</div>
+      <div class="wf-nav-item">Dashboard</div>
+      <div class="wf-nav-item">Settings</div>
+    </div>
+    <div class="wf-sidebar-content">
+      {f'<div class="wf-intent">UX Intent: {_esc(ux_intent)}</div>' if ux_intent else ''}
+      <div class="wf-purpose">{_esc(notes) if notes else 'No description'}</div>
+      {body_html}
+      {panel_4d}
+    </div>
+  </div>
+</div>
+</body></html>"""
+    else:
+        return f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>{WF_CSS}</style></head><body>
+<div class="wf-container{platform_cls}">
+  <div class="wf-header">
+    <div class="wf-header-title">{_esc(name)}</div>
+    {itype_badge}
+    <span class="wf-emo" style="background:{emo_color}22;color:{emo_color}">{_esc(emo)}</span>
+    {platform_badge}
   </div>
   <div class="wf-body">
     {f'<div class="wf-intent">UX Intent: {_esc(ux_intent)}</div>' if ux_intent else ''}
