@@ -1229,6 +1229,9 @@ def main():
     operation_lines = []
     screen_index = {}
     screen_counter = 0
+    # Dedup: map (task_id_tuple, audience_type) → existing screen list
+    # so the same task in different operation lines reuses the same screen
+    _screen_dedup = {}  # (frozenset(task_ids), audience_type) → [screen, ...]
 
     for jl in journey_lines:
         jl_id = jl["id"]
@@ -1250,14 +1253,21 @@ def main():
             node_task_id = flow_node.get("task_ref", flow_node.get("task_id", ""))
             node_tasks = [node_task_id] if node_task_id and node_task_id in tasks_inv else []
 
-            # Build screens for this node
-            node_screens, screen_counter = build_screens_for_node(
-                node_tasks, tasks_inv, screen_counter,
-                ux_intent=en.get("design_hint", ""),
-                emotion_intensity=en.get("intensity", 5),
-                vo_lookup=vo_lookup,
-                audience_type=jl_audience,
-            )
+            # Dedup: check if this exact task set already generated screens
+            dedup_key = (frozenset(node_tasks), jl_audience) if node_tasks else None
+            if dedup_key and dedup_key in _screen_dedup:
+                node_screens = _screen_dedup[dedup_key]
+            else:
+                # Build screens for this node
+                node_screens, screen_counter = build_screens_for_node(
+                    node_tasks, tasks_inv, screen_counter,
+                    ux_intent=en.get("design_hint", ""),
+                    emotion_intensity=en.get("intensity", 5),
+                    vo_lookup=vo_lookup,
+                    audience_type=jl_audience,
+                )
+                if dedup_key:
+                    _screen_dedup[dedup_key] = node_screens
 
             node_id = f"N{jl_id[2:]}{step:02d}"  # e.g. N0101 for JL01 step 1
             node = {
