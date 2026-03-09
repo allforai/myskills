@@ -2330,9 +2330,22 @@ def get_ui_stitch_html(screen_id):
 
 def get_ui_preview_html(screen_id, spec):
     """Extract preview HTML from preview/ files or generate skeleton."""
+    # Try stitch HTML first
+    stitch_dir = os.path.join(UI_DIR, "stitch")
+    if os.path.isdir(stitch_dir):
+        stitch_path = os.path.join(stitch_dir, f"{screen_id}.html")
+        if os.path.exists(stitch_path):
+            with open(stitch_path, encoding="utf-8") as f:
+                return f.read()
+    # Try preview directory
     preview_dir = os.path.join(UI_DIR, "preview")
     if os.path.isdir(preview_dir):
-        # Try exact match first
+        # Try filename match first (e.g., S001.html)
+        exact_path = os.path.join(preview_dir, f"{screen_id}.html")
+        if os.path.exists(exact_path):
+            with open(exact_path, encoding="utf-8") as f:
+                return f.read()
+        # Try content match
         for fname in os.listdir(preview_dir):
             if fname.endswith(".html") and fname != "index.html":
                 fpath = os.path.join(preview_dir, fname)
