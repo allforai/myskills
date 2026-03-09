@@ -963,7 +963,8 @@ def load_product_map_tree():
     pattern_children = []
     if patterns:
         for p in patterns.get("patterns", []):
-            pattern_children.append(_node(p["id"], p.get("name", p["id"]), "concept", p.get("description", "")))
+            pid = p.get("pattern_id", p.get("id", ""))
+            pattern_children.append(_node(pid, p.get("name", pid), "concept", p.get("description", "")))
     if standards:
         for s in standards.get("standards", standards.get("behaviors", [])):
             sid = s.get("id", "")
@@ -1265,6 +1266,67 @@ def load_wireframe_data():
     return op_lines, tasks, role_map, gate_issues, vo_map, api_map
 
 
+def _infer_interaction_type(screen, tasks):
+    """Infer interaction_type from CRUD and task names when VO is absent.
+
+    Returns MG* code: MG1 (readonly list), MG2-L (CRUD list), MG2-C (create form),
+    MG2-E (edit form), MG2-D (detail), MG3 (state machine), MG4 (approval).
+    """
+    actions = screen.get("actions", [])
+    if not actions:
+        return "MG1"
+
+    # Collect all CRUD types and task names
+    cruds = set()
+    all_names = []
+    for a in actions:
+        crud = a.get("crud", "R") if isinstance(a, dict) else "R"
+        cruds.add(crud)
+        label = a.get("label", "") if isinstance(a, dict) else str(a)
+        all_names.append(label)
+
+    # Also check original task names for richer keywords
+    for tid in screen.get("tasks", []):
+        task = tasks.get(tid, {})
+        tname = task.get("task_name", task.get("name", ""))
+        if tname:
+            all_names.append(tname)
+
+    joined = " ".join(all_names)
+
+    # Approval keywords → MG4
+    if any(kw in joined for kw in ["审核", "审批", "批准", "驳回", "approve", "reject"]):
+        return "MG4"
+
+    # State-change keywords → MG3
+    if any(kw in joined for kw in ["确认", "取消", "启用", "禁用", "上架", "下架", "发布",
+                                     "完成", "处理", "分配", "接单", "签收"]):
+        return "MG3"
+
+    # Create → MG2-C
+    if "C" in cruds:
+        return "MG2-C"
+
+    # Update → MG2-E
+    if "U" in cruds:
+        return "MG2-E"
+
+    # Delete → MG3 (state change / destructive action)
+    if "D" in cruds:
+        return "MG3"
+
+    # Read: detail vs list
+    if any(kw in joined for kw in ["详情", "detail", "查看", "信息"]):
+        return "MG2-D"
+
+    # Read with management keywords → MG2-L (CRUD list with actions)
+    if any(kw in joined for kw in ["管理", "列表", "搜索", "筛选", "导出"]):
+        return "MG2-L"
+
+    # Default: readonly list
+    return "MG1"
+
+
 def build_screens_with_context(op_lines, tasks, role_map, gate_issues, vo_map=None, api_map=None):
     """Build screen list with full context for wireframe rendering."""
     if vo_map is None:
@@ -1289,6 +1351,10 @@ def build_screens_with_context(op_lines, tasks, role_map, gate_issues, vo_map=No
                 data_fields = s.get("data_fields", []) or vo.get("fields", [])
                 interaction_type = s.get("interaction_type", "") or vo.get("interaction_type", "")
                 vo_actions = s.get("vo_actions", []) or vo.get("actions", [])
+
+                # Infer interaction_type from CRUD + screen name when absent
+                if not interaction_type:
+                    interaction_type = _infer_interaction_type(s, tasks)
                 states = s.get("states", {})
                 flow_context = s.get("flow_context", {})
 
