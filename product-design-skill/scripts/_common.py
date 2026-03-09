@@ -785,6 +785,155 @@ def xv_parse_json(raw_text):
     return json.loads(cleaned)
 
 
+# ── Interaction type inference (cross-project, shared by all scripts) ─────────
+# Priority: keyword match > CRUD-based fallback.
+# Each entry: (keywords_list, interaction_type, audience_filter)
+# audience_filter: None = any, "consumer" = mobile only, "professional" = desktop only
+INTERACTION_TYPE_RULES = [
+    # ── Disambiguation rules (highest priority — prevent false matches) ──
+    (["复习调度", "调度", "队列", "schedule", "queue"],                          "MG1", None),
+    (["llm生成", "ai生成", "生成内容", "prompt模板"],                             "WK3", "professional"),
+
+    # ── SY 引导系统（high priority — onboarding/wizard) ──
+    (["新手引导", "引导流程", "onboarding", "入门", "教程", "welcome"],        "SY1", None),
+    (["注册", "register", "signup", "多步表单", "向导", "登录", "login",
+     "signin"],                                                                "SY2", None),
+
+    # ── CT 内容消费（consumer-facing content patterns）──
+    (["feed", "动态流", "推荐流", "时间线", "信息流"],                            "CT1", "consumer"),
+    (["阅读", "详情阅读", "文章", "帖子", "长文"],                              "CT2", None),
+    (["查看详情", "内容详情"],                                                  "CT2", "consumer"),
+    (["个人资料", "个人主页", "profile", "我的", "个人信息",
+     "编辑个人"],                                                              "CT3", None),
+    (["闪卡", "swipe", "翻卡", "flashcard", "轮播"],                           "CT4", None),
+    (["播放", "播放器", "音频", "视频播放", "player"],                          "CT5", None),
+    (["相册", "图库", "gallery", "图片浏览"],                                   "CT6", None),
+    (["搜索结果", "search result"],                                            "CT7", None),
+    (["短视频", "story", "stories", "短视频流"],                                "CT8", None),
+
+    # ── EC 电商交易 ──
+    (["商品详情", "product detail", "订阅方案", "价格方案", "升级"],              "EC1", None),
+    (["购物车", "结算", "checkout", "cart", "付费", "购买"],                     "EC2", None),
+    (["物流", "订单追踪", "tracking", "时间线追踪", "进度追踪"],                  "EC3", None),
+
+    # ── WK 协作办公 ──
+    (["聊天", "对话", "IM", "消息", "chat"],                                   "WK1", None),
+    (["频道", "群组", "channel", "group"],                                     "WK2", None),
+    (["文档编辑", "编辑器", "editor", "rich text", "markdown编辑"],              "WK3", None),
+    (["画布", "白板", "canvas", "whiteboard"],                                 "WK4", None),
+    (["看板", "kanban", "board"],                                              "WK5", None),
+    (["甘特图", "gantt", "项目排期"],                                           "WK6", None),
+    (["文件管理", "file manager", "文件列表"],                                   "WK7", None),
+
+    # ── RT 通讯实时 ──
+    (["通话", "视频通话", "语音通话", "call"],                                   "RT1", None),
+    (["直播", "live", "直播间"],                                                "RT2", None),
+    (["邮件", "email", "收件箱"],                                               "RT3", None),
+    (["通知", "通知中心", "notification", "消息中心", "提醒"],                    "RT4", None),
+
+    # ── SB 审核提交 ──
+    (["反馈", "意见反馈", "feedback", "举报", "投诉", "提交审核"],               "SB1", None),
+
+    # ── Progress/download patterns ──
+    (["下载", "download", "同步", "sync", "进度"],                              "MG3", "consumer"),
+
+    # ── MG 管理类（lower priority — CRUD-based fallback handles most）──
+    (["审核", "审批", "approve", "review", "驳回"],                             "MG4", None),
+    (["状态流转", "上架", "下架", "冻结", "发布", "归档"],                       "MG3", None),
+    (["仪表盘", "dashboard", "数据面板", "统计", "数据概览", "数据分析"],        "MG7", None),
+    (["配置", "系统设置", "系统配置", "偏好设置", "setting"],                    "MG8", None),
+    (["分类管理", "标签管理", "树形", "层级", "目录管理"],                        "MG6", None),
+    (["主从", "订单详情+明细", "用户详情+关联"],                                  "MG5", None),
+    (["管理用户", "用户管理", "用户列表", "管理成员"],                             "MG2-L", None),
+]
+
+
+# ── Task name → view_type refinement keywords (cross-project) ────────────────
+_VIEW_TYPE_KEYWORDS = {
+    "detail": ["详情", "detail", "查看详情", "详细"],
+    "list_item": ["列表", "浏览", "搜索", "筛选", "list", "browse"],
+    "state_action": ["审核", "通过", "驳回", "approve", "reject", "发布", "publish"],
+    "create_form": ["生成", "generate", "新建"],
+}
+
+# ── CRUD → preferred VO view_type mapping ─────────────────────────────────────
+CRUD_TO_VIEW_TYPE = {
+    "C": ["create_form"],
+    "R": ["list_item", "detail"],
+    "U": ["edit_form"],
+    "D": ["state_action", "list_item"],
+}
+
+
+def refine_view_type(task, crud_type):
+    """Refine CRUD_TO_VIEW_TYPE preference based on task name keywords.
+
+    For "R" tasks, checks if the task name suggests detail vs list.
+    For other CRUDs, checks for state_action or generation patterns.
+    Returns refined preferred_types list.
+    """
+    tname = task.get("task_name", task.get("name", "")).lower()
+    base_types = CRUD_TO_VIEW_TYPE.get(crud_type, ["list_item"])
+
+    if crud_type == "R":
+        for kw in _VIEW_TYPE_KEYWORDS["detail"]:
+            if kw in tname:
+                return ["detail", "list_item"]
+        for kw in _VIEW_TYPE_KEYWORDS["list_item"]:
+            if kw in tname:
+                return ["list_item", "detail"]
+        if not any(kw in tname for kw in ["列表", "浏览", "搜索", "筛选"]):
+            return ["detail", "list_item"]
+
+    if crud_type in ("U", "D"):
+        for kw in _VIEW_TYPE_KEYWORDS["state_action"]:
+            if kw in tname:
+                return ["state_action"] + base_types
+
+    if crud_type == "C":
+        for kw in _VIEW_TYPE_KEYWORDS["create_form"]:
+            if kw in tname:
+                return base_types
+
+    return base_types
+
+
+def infer_interaction_type(task, crud_type, audience_type=""):
+    """Infer interaction_type from task name + module using the 37-type system.
+
+    Priority:
+    1. Keyword match from INTERACTION_TYPE_RULES (most specific wins)
+    2. CRUD-based MG fallback (MG1/MG2-*/MG3/MG4)
+
+    Returns interaction_type string (e.g. "CT4", "MG2-L", "SY1").
+    """
+    tname = task.get("task_name", task.get("name", "")).lower()
+    module = task.get("module", "").lower()
+    text = tname + " " + module
+
+    # 1. Keyword match
+    for keywords, itype, audience_filter in INTERACTION_TYPE_RULES:
+        if audience_filter and audience_filter != audience_type:
+            continue
+        for kw in keywords:
+            if kw.lower() in text:
+                return itype
+
+    # 2. CRUD-based MG fallback
+    if crud_type == "C":
+        return "MG2-C"
+    elif crud_type == "U":
+        return "MG2-E"
+    elif crud_type == "D":
+        return "MG3"
+    elif crud_type == "R":
+        preferred = refine_view_type(task, "R")
+        if preferred and preferred[0] == "detail":
+            return "MG2-D"
+        return "MG1"
+    return "MG1"
+
+
 # ── Full Context ──────────────────────────────────────────────────────────────
 
 

@@ -1367,64 +1367,42 @@ def load_wireframe_data():
 
 
 def _infer_interaction_type(screen, tasks):
-    """Infer interaction_type from CRUD and task names when VO is absent.
+    """Infer interaction_type using the shared 37-type system from _common.py.
 
-    Returns MG* code: MG1 (readonly list), MG2-L (CRUD list), MG2-C (create form),
-    MG2-E (edit form), MG2-D (detail), MG3 (state machine), MG4 (approval).
+    Bridges screen-level data to C.infer_interaction_type(task, crud_type, audience_type).
     """
-    actions = screen.get("actions", [])
-    if not actions:
-        return "MG1"
-
-    # Collect all CRUD types and task names
+    # Find dominant CRUD from screen actions
     cruds = set()
-    all_names = []
-    for a in actions:
+    for a in screen.get("actions", []):
         crud = a.get("crud", "R") if isinstance(a, dict) else "R"
         cruds.add(crud)
-        label = a.get("label", "") if isinstance(a, dict) else str(a)
-        all_names.append(label)
+    dominant_crud = "R"
+    for c in ("C", "U", "D"):
+        if c in cruds:
+            dominant_crud = c
+            break
 
-    # Also check original task names for richer keywords
+    # Build a synthetic task dict from the screen's first real task
+    first_task = {}
     for tid in screen.get("tasks", []):
-        task = tasks.get(tid, {})
-        tname = task.get("task_name", task.get("name", ""))
-        if tname:
-            all_names.append(tname)
+        t = tasks.get(tid, {})
+        if t:
+            first_task = t
+            break
 
-    joined = " ".join(all_names)
+    if not first_task:
+        # Fallback: use screen name as task name
+        first_task = {"name": screen.get("name", ""), "module": screen.get("module", "")}
 
-    # Approval keywords → MG4
-    if any(kw in joined for kw in ["审核", "审批", "批准", "驳回", "approve", "reject"]):
-        return "MG4"
+    # Determine audience_type from platform hint
+    platform = screen.get("platform", "")
+    audience_type = ""
+    if "mobile" in platform.lower():
+        audience_type = "consumer"
+    elif "desktop" in platform.lower():
+        audience_type = "professional"
 
-    # State-change keywords → MG3
-    if any(kw in joined for kw in ["确认", "取消", "启用", "禁用", "上架", "下架", "发布",
-                                     "完成", "处理", "分配", "接单", "签收"]):
-        return "MG3"
-
-    # Create → MG2-C
-    if "C" in cruds:
-        return "MG2-C"
-
-    # Update → MG2-E
-    if "U" in cruds:
-        return "MG2-E"
-
-    # Delete → MG3 (state change / destructive action)
-    if "D" in cruds:
-        return "MG3"
-
-    # Read: detail vs list
-    if any(kw in joined for kw in ["详情", "detail", "查看", "信息"]):
-        return "MG2-D"
-
-    # Read with management keywords → MG2-L (CRUD list with actions)
-    if any(kw in joined for kw in ["管理", "列表", "搜索", "筛选", "导出"]):
-        return "MG2-L"
-
-    # Default: readonly list
-    return "MG1"
+    return C.infer_interaction_type(first_task, dominant_crud, audience_type)
 
 
 def build_screens_with_context(op_lines, tasks, role_map, gate_issues, vo_map=None, api_map=None):

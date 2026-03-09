@@ -23,14 +23,6 @@ CRUD_KEYWORDS = {
     "R": ["查看", "浏览", "搜索", "筛选", "导出", "统计", "列表", "详情", "view", "list", "search", "filter", "export", "detail"],
 }
 
-# ── CRUD → preferred VO view_type mapping ─────────────────────────────────────
-CRUD_TO_VIEW_TYPE = {
-    "C": ["create_form"],
-    "R": ["list_item", "detail"],
-    "U": ["edit_form"],
-    "D": ["state_action", "list_item"],  # delete often on list or state_action
-}
-
 # ── View type → Chinese name suffix ──────────────────────────────────────────
 VIEW_TYPE_NAMES = {
     "list_item": "列表",
@@ -93,110 +85,8 @@ DEFAULT_STATES = {
     "TU4":    {"empty": "无任务", "loading": "执行中", "error": "任务失败", "success": "任务完成"},
 }
 
-# ── Interaction type inference (cross-project keyword matching) ────────────────
-# Priority: keyword match > CRUD-based fallback.
-# Each entry: (keywords_list, interaction_type, audience_filter)
-# audience_filter: None = any, "consumer" = mobile only, "professional" = desktop only
-_INTERACTION_TYPE_RULES = [
-    # ── Disambiguation rules (highest priority — prevent false matches) ──
-    (["复习调度", "调度", "队列", "schedule", "queue"],                          "MG1", None),
-    (["llm生成", "ai生成", "生成内容", "prompt模板"],                             "WK3", "professional"),
-
-    # ── SY 引导系统（high priority — onboarding/wizard) ──
-    (["新手引导", "引导流程", "onboarding", "入门", "教程", "welcome"],        "SY1", None),
-    (["注册", "register", "signup", "多步表单", "向导", "登录", "login",
-     "signin"],                                                                "SY2", None),
-
-    # ── CT 内容消费（consumer-facing content patterns）──
-    (["feed", "动态流", "推荐流", "时间线", "信息流",
-     "场景列表", "浏览列表", "内容列表", "课程列表"],                              "CT1", "consumer"),
-    (["阅读", "详情阅读", "文章", "帖子", "对话阅读", "长文"],                   "CT2", None),
-    (["场景详情", "查看详情", "内容详情"],                                       "CT2", "consumer"),
-    (["个人资料", "个人主页", "profile", "我的", "个人设置", "个人信息",
-     "编辑个人"],                                                              "CT3", None),
-    (["闪卡", "swipe", "翻卡", "flashcard", "轮播",
-     "闪卡复习", "填空练习", "听音选词", "拼写测试",
-     "练习关键", "学习核心", "标记生词",
-     "单词卡", "生词本"],                                                        "CT4", None),
-    (["播放", "播放器", "音频", "视频播放", "player", "发音"],                   "CT5", None),
-    (["相册", "图库", "gallery", "图片浏览", "配图"],                            "CT6", None),
-    (["搜索结果", "search result"],                                            "CT7", None),
-    (["短视频", "story", "stories", "短视频流"],                                "CT8", None),
-
-    # ── EC 电商交易 ──
-    (["商品详情", "product detail", "订阅方案", "价格方案", "升级"],              "EC1", None),
-    (["购物车", "结算", "checkout", "cart", "付费", "购买"],                     "EC2", None),
-    (["物流", "订单追踪", "tracking", "时间线追踪", "进度追踪"],                  "EC3", None),
-
-    # ── WK 协作办公 ──
-    (["聊天", "对话", "IM", "消息", "chat"],                                   "WK1", None),
-    (["频道", "群组", "channel", "group"],                                     "WK2", None),
-    (["文档编辑", "编辑器", "editor", "rich text", "markdown编辑"],              "WK3", None),
-    (["画布", "白板", "canvas", "whiteboard"],                                 "WK4", None),
-    (["看板", "kanban", "board"],                                              "WK5", None),
-    (["甘特图", "gantt", "项目排期"],                                           "WK6", None),
-    (["文件管理", "file manager", "文件列表"],                                   "WK7", None),
-
-    # ── RT 通讯实时 ──
-    (["通话", "视频通话", "语音通话", "call"],                                   "RT1", None),
-    (["直播", "live", "直播间"],                                                "RT2", None),
-    (["邮件", "email", "收件箱"],                                               "RT3", None),
-    (["通知", "通知中心", "notification", "消息中心", "提醒"],                    "RT4", None),
-
-    # ── SB 审核提交 ──
-    (["反馈", "意见反馈", "feedback", "举报", "投诉", "提交审核"],               "SB1", None),
-
-    # ── Progress/download patterns ──
-    (["下载", "download", "同步", "sync", "进度"],                              "MG3", "consumer"),
-
-    # ── MG 管理类（lower priority — CRUD-based fallback handles most）──
-    (["审核", "审批", "approve", "review", "驳回"],                             "MG4", None),
-    (["状态流转", "上架", "下架", "冻结", "发布", "归档"],                       "MG3", None),
-    (["仪表盘", "dashboard", "数据面板", "统计", "数据概览", "数据分析",
-     "学习统计"],                                                               "MG7", None),
-    (["配置", "系统设置", "系统配置", "偏好设置", "setting",
-     "学习目标", "目标设置"],                                                    "MG8", None),
-    (["分类管理", "标签管理", "树形", "层级", "目录管理"],                        "MG6", None),
-    (["主从", "订单详情+明细", "用户详情+关联"],                                  "MG5", None),
-    (["管理用户", "用户管理", "用户列表", "管理成员"],                             "MG2-L", None),
-]
-
-
-def _infer_interaction_type(task, crud_type, audience_type=""):
-    """Infer interaction_type from task name + module using the 37-type system.
-
-    Priority:
-    1. Keyword match from _INTERACTION_TYPE_RULES (most specific wins)
-    2. CRUD-based MG fallback (MG1/MG2-*/MG3/MG4)
-
-    Returns interaction_type string (e.g. "CT4", "MG2-L", "SY1").
-    """
-    tname = task.get("task_name", task.get("name", "")).lower()
-    module = task.get("module", "").lower()
-    text = tname + " " + module
-
-    # 1. Keyword match
-    for keywords, itype, audience_filter in _INTERACTION_TYPE_RULES:
-        if audience_filter and audience_filter != audience_type:
-            continue
-        for kw in keywords:
-            if kw.lower() in text:
-                return itype
-
-    # 2. CRUD-based MG fallback
-    if crud_type == "C":
-        return "MG2-C"
-    elif crud_type == "U":
-        return "MG2-E"
-    elif crud_type == "D":
-        return "MG3"
-    elif crud_type == "R":
-        # Use _refine_view_type to pick detail vs list
-        preferred = _refine_view_type(task, "R")
-        if preferred and preferred[0] == "detail":
-            return "MG2-D"
-        return "MG1"
-    return "MG1"
+# ── Interaction type inference — delegated to _common.py ──────────────────────
+# Use C.INTERACTION_TYPE_RULES, C.infer_interaction_type, C.refine_view_type
 
 # ── Platform profiles by audience_type (cross-project) ────────────────────────
 # consumer → mobile app patterns; professional → desktop admin patterns.
@@ -330,53 +220,8 @@ def _build_vo_lookup(view_objects):
     return lookup
 
 
-# ── Task name → view_type refinement keywords (cross-project) ────────────────
-# When CRUD is "R", disambiguate list vs detail vs other view types.
-_VIEW_TYPE_KEYWORDS = {
-    "detail": ["详情", "detail", "查看详情", "详细"],
-    "list_item": ["列表", "浏览", "搜索", "筛选", "list", "browse"],
-    "state_action": ["审核", "通过", "驳回", "approve", "reject", "发布", "publish"],
-    "create_form": ["生成", "generate", "新建"],
-}
-
-
-def _refine_view_type(task, crud_type):
-    """Refine CRUD_TO_VIEW_TYPE preference based on task name keywords.
-
-    For "R" tasks, checks if the task name suggests detail vs list.
-    For other CRUDs, checks for state_action or generation patterns.
-    Returns refined preferred_types list.
-    """
-    tname = task.get("task_name", task.get("name", "")).lower()
-    base_types = CRUD_TO_VIEW_TYPE.get(crud_type, ["list_item"])
-
-    # For "R" tasks: detail keywords should prioritize detail over list
-    if crud_type == "R":
-        for kw in _VIEW_TYPE_KEYWORDS["detail"]:
-            if kw in tname:
-                return ["detail", "list_item"]
-        for kw in _VIEW_TYPE_KEYWORDS["list_item"]:
-            if kw in tname:
-                return ["list_item", "detail"]
-        # Default: if task name doesn't have list keywords either,
-        # check if it's a standalone action (download, read, practice)
-        # — these are more like detail/full-screen than list
-        if not any(kw in tname for kw in ["列表", "浏览", "搜索", "筛选"]):
-            return ["detail", "list_item"]
-
-    # For state-like tasks mapped to U/D
-    if crud_type in ("U", "D"):
-        for kw in _VIEW_TYPE_KEYWORDS["state_action"]:
-            if kw in tname:
-                return ["state_action"] + base_types
-
-    # For C tasks that are actually "generate" actions
-    if crud_type == "C":
-        for kw in _VIEW_TYPE_KEYWORDS["create_form"]:
-            if kw in tname:
-                return base_types  # keep create_form first
-
-    return base_types
+# ── View type refinement — delegated to _common.py ───────────────────────────
+# Use C.refine_view_type, C.CRUD_TO_VIEW_TYPE
 
 
 def _find_vo_for_task(task, crud_type, vo_lookup):
@@ -386,7 +231,7 @@ def _find_vo_for_task(task, crud_type, vo_lookup):
     Returns the VO dict or None if no match.
     """
     module = task.get("module", task.get("owner_role", ""))
-    preferred_types = _refine_view_type(task, crud_type)
+    preferred_types = C.refine_view_type(task, crud_type)
 
     for vt in preferred_types:
         vo = vo_lookup.get((module, vt))
@@ -540,7 +385,7 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
 
         # ── Infer interaction_type from 37-type system ──
         first_task = task_pairs[0][1] if task_pairs else {}
-        inferred_itype = _infer_interaction_type(first_task, dominant_crud, audience_type)
+        inferred_itype = C.infer_interaction_type(first_task, dominant_crud, audience_type)
 
         # ── Try VO enrichment ──
         matched_vo = None
@@ -584,7 +429,7 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
             # Fallback: derive name from tasks, then module
             interaction_type = inferred_itype
             suffix = VIEW_TYPE_NAMES.get(
-                CRUD_TO_VIEW_TYPE.get(dominant_crud, ["list_item"])[0], ""
+                C.CRUD_TO_VIEW_TYPE.get(dominant_crud, ["list_item"])[0], ""
             )
             fallback_name = _derive_screen_name_from_tasks(task_pairs, suffix) or primary
             fallback_desc = f"{fallback_name} — {', '.join(a['label'] for a in actions[:3])}"
@@ -682,393 +527,63 @@ def _f(name, label, typ="string", widget="text", req=False, ro=False):
     return d
 
 
-# Task-name keyword → enrichment.  First match wins.
+# ── Cross-project enrichment patterns ─────────────────────────────────────────
+# Only universal patterns that apply to any product. Project-specific enrichments
+# come from view-objects.json at runtime, not hardcoded here.
 _ENRICHMENTS = [
-    # ── Auth ──
-    (("注册",), {
+    # ── Auth (universal) ──
+    (("注册", "register", "signup"), {
         "fields": [_f("email", "邮箱", widget="email", req=True), _f("password", "密码", widget="password", req=True),
-                   _f("confirm_password", "确认密码", widget="password", req=True), _f("nickname", "昵称")],
-        "actions": [{"label": "注册", "crud": "C", "frequency": "高"}, {"label": "已有账号？去登录", "crud": "R", "frequency": "中"},
-                    {"label": "第三方注册", "crud": "C", "frequency": "低"}],
-        "states": {"default": "空表单，所有字段待填写", "loading": "注册中，按钮禁用", "error": "注册失败（邮箱已存在/密码不符）", "success": "注册成功，进入引导"},
+                   _f("confirm_password", "确认密码", widget="password", req=True)],
+        "actions": [{"label": "注册", "crud": "C", "frequency": "高"}, {"label": "已有账号？去登录", "crud": "R", "frequency": "中"}],
+        "states": {"default": "空表单", "loading": "提交中", "error": "注册失败", "success": "注册成功"},
     }),
-    (("登录",), {
+    (("登录", "login", "signin"), {
         "fields": [_f("email", "邮箱/手机号", widget="email", req=True), _f("password", "密码", widget="password", req=True)],
-        "actions": [{"label": "登录", "crud": "R", "frequency": "高"}, {"label": "忘记密码", "crud": "R", "frequency": "低"},
-                    {"label": "第三方登录", "crud": "R", "frequency": "中"}],
-        "states": {"default": "空表单，待输入凭证", "loading": "验证中", "error": "账号或密码错误", "success": "登录成功，跳转首页"},
+        "actions": [{"label": "登录", "crud": "R", "frequency": "高"}, {"label": "忘记密码", "crud": "R", "frequency": "低"}],
+        "states": {"default": "空表单", "loading": "验证中", "error": "凭证错误", "success": "登录成功"},
     }),
-    (("重置密码",), {
-        "fields": [_f("email", "注册邮箱", widget="email", req=True), _f("code", "验证码", req=True), _f("new_password", "新密码", widget="password", req=True)],
+    (("重置密码", "reset password"), {
+        "fields": [_f("email", "注册邮箱", widget="email", req=True), _f("code", "验证码", req=True),
+                   _f("new_password", "新密码", widget="password", req=True)],
         "actions": [{"label": "发送验证码", "crud": "C", "frequency": "高"}, {"label": "确认重置", "crud": "U", "frequency": "高"}],
-        "states": {"default": "输入邮箱", "code_sent": "验证码已发送，倒计时60s", "error": "验证码错误/过期", "success": "密码已重置"},
+        "states": {"default": "输入邮箱", "code_sent": "验证码已发送", "error": "验证码错误", "success": "密码已重置"},
     }),
-    # ── Onboarding ──
-    (("新手引导", "引导"), {
+    # ── Onboarding (universal) ──
+    (("新手引导", "onboarding", "引导"), {
         "fields": [_f("step", "引导步骤", typ="int", ro=True), _f("illustration", "插图", typ="image", ro=True),
                    _f("title", "标题", ro=True), _f("description", "描述", ro=True)],
         "actions": [{"label": "下一步", "crud": "R", "frequency": "高"}, {"label": "跳过引导", "crud": "R", "frequency": "低"}],
-        "states": {"step_1": "欢迎页+产品介绍", "step_2": "核心功能演示", "step_3": "选择学习偏好", "complete": "引导完成，进入首页"},
+        "states": {"step_1": "欢迎页", "step_2": "核心功能", "step_3": "偏好设置", "complete": "引导完成"},
     }),
-    # ── Scene browsing ──
-    (("场景列表", "浏览场景"), {
-        "fields": [_f("title", "场景名称", ro=True), _f("category", "分类", typ="enum", ro=True),
-                   _f("thumbnail", "封面图", typ="image", ro=True), _f("difficulty", "难度", typ="enum", ro=True),
-                   _f("word_count", "单词数", typ="int", ro=True), _f("download_count", "下载量", typ="int", ro=True)],
-        "actions": [{"label": "搜索场景", "crud": "R", "frequency": "高"}, {"label": "按分类筛选", "crud": "R", "frequency": "高"},
-                    {"label": "按难度筛选", "crud": "R", "frequency": "中"}, {"label": "查看场景详情", "crud": "R", "frequency": "高"}],
-        "states": {"default": "场景卡片列表+分类标签", "empty": "暂无场景，引导探索", "loading": "骨架屏占位", "filtered": "筛选结果展示"},
-    }),
-    (("场景详情", "查看场景"), {
-        "fields": [_f("title", "场景名称", ro=True), _f("description", "场景描述", ro=True),
-                   _f("cover_image", "封面图", typ="image", ro=True), _f("difficulty", "难度", typ="enum", ro=True),
-                   _f("dialogue_count", "对话数", typ="int", ro=True), _f("word_count", "核心词汇数", typ="int", ro=True),
-                   _f("tags", "标签", typ="array", ro=True), _f("sample_dialogue", "对话预览", ro=True)],
-        "actions": [{"label": "下载场景包", "crud": "C", "frequency": "高"}, {"label": "预览对话", "crud": "R", "frequency": "中"},
-                    {"label": "分享场景", "crud": "R", "frequency": "低"}],
-        "states": {"default": "场景详情完整展示", "not_downloaded": "显示下载按钮+预览", "downloaded": "显示开始学习按钮", "loading": "骨架屏"},
-    }),
-    # ── Download ──
-    (("下载场景",), {
-        "fields": [_f("package_name", "场景包名称", ro=True), _f("file_size", "文件大小", typ="int", ro=True),
-                   _f("progress", "下载进度", typ="float", ro=True), _f("speed", "下载速度", ro=True),
-                   _f("status", "状态", typ="enum", ro=True)],
-        "actions": [{"label": "开始下载", "crud": "C", "frequency": "高"}, {"label": "暂停下载", "crud": "U", "frequency": "中"},
-                    {"label": "取消下载", "crud": "D", "frequency": "低"}],
-        "states": {"queued": "排队中", "downloading": "下载中+进度条+速度", "paused": "已暂停，可恢复", "complete": "下载完成，可开始学习", "error": "下载失败，可重试"},
-    }),
-    (("管理已下载",), {
-        "fields": [_f("package_name", "场景包名称", ro=True), _f("size", "占用空间", typ="int", ro=True),
-                   _f("downloaded_at", "下载日期", typ="date", ro=True), _f("last_studied", "上次学习", typ="date", ro=True),
-                   _f("progress_pct", "学习进度", typ="float", ro=True)],
-        "actions": [{"label": "继续学习", "crud": "R", "frequency": "高"}, {"label": "删除场景包", "crud": "D", "frequency": "低"},
-                    {"label": "检查更新", "crud": "R", "frequency": "低"}],
-        "states": {"default": "已下载场景列表+空间占用统计", "empty": "暂无下载，引导去场景市场", "storage_full": "存储空间不足警告"},
-    }),
-    # ── Dialogue / Reading ──
-    (("阅读场景对话", "场景对话"), {
-        "fields": [_f("speaker", "说话人", ro=True), _f("text", "原文", ro=True),
-                   _f("translation", "翻译", ro=True), _f("audio_url", "音频", typ="audio", ro=True),
-                   _f("scene_image", "场景连环画", typ="image", ro=True)],
-        "actions": [{"label": "播放音频", "crud": "R", "frequency": "高"}, {"label": "显示/隐藏翻译", "crud": "R", "frequency": "高"},
-                    {"label": "点击句子查看解析", "crud": "R", "frequency": "高"}, {"label": "下一段对话", "crud": "R", "frequency": "高"},
-                    {"label": "标记难句", "crud": "C", "frequency": "中"}],
-        "states": {"default": "气泡对话+连环画配图", "translation_hidden": "仅显示原文", "sentence_detail": "展开句子解析面板", "audio_playing": "音频播放中+高亮当前句"},
-    }),
-    # ── Sentence practice ──
-    (("练习关键句子", "练句子"), {
-        "fields": [_f("sentence", "句子原文", ro=True), _f("translation", "中文翻译", ro=True),
-                   _f("audio_url", "句子音频", typ="audio", ro=True), _f("key_phrase", "关键短语", ro=True),
-                   _f("context", "场景上下文", ro=True), _f("progress", "练习进度", typ="float", ro=True)],
-        "actions": [{"label": "播放音频", "crud": "R", "frequency": "高"}, {"label": "跟读录音", "crud": "C", "frequency": "高"},
-                    {"label": "下一句", "crud": "R", "frequency": "高"}, {"label": "上一句", "crud": "R", "frequency": "中"}],
-        "states": {"default": "句子卡片+音频+翻译", "recording": "录音中+波形显示", "playback": "回放录音vs原音对比", "complete": "本组句子练习完成"},
-    }),
-    # ── Word learning ──
-    (("学习核心单词",), {
-        "fields": [_f("word", "单词", ro=True), _f("phonetic", "音标", ro=True),
-                   _f("meaning", "释义", ro=True), _f("example", "例句", ro=True),
-                   _f("audio_url", "发音", typ="audio", ro=True), _f("image", "配图", typ="image", ro=True),
-                   _f("scene_context", "场景出处", ro=True)],
-        "actions": [{"label": "播放发音", "crud": "R", "frequency": "高"}, {"label": "标记为生词", "crud": "C", "frequency": "高"},
-                    {"label": "已掌握", "crud": "U", "frequency": "高"}, {"label": "下一个单词", "crud": "R", "frequency": "高"},
-                    {"label": "查看例句", "crud": "R", "frequency": "中"}],
-        "states": {"default": "单词卡片正面（词+音标+释义）", "expanded": "展开例句+配图+场景出处", "marked": "已标记为生词，加入复习队列"},
-    }),
-    (("标记生词",), {
-        "fields": [_f("word", "单词", ro=True), _f("phonetic", "音标", ro=True),
-                   _f("meaning", "释义", ro=True), _f("source_scene", "出处场景", ro=True),
-                   _f("note", "个人笔记", widget="textarea")],
-        "actions": [{"label": "确认标记", "crud": "C", "frequency": "高"}, {"label": "添加笔记", "crud": "U", "frequency": "中"},
-                    {"label": "取消标记", "crud": "D", "frequency": "低"}],
-        "states": {"default": "单词信息+标记确认", "with_note": "已添加笔记", "success": "已加入生词本"},
-    }),
-    # ── Vocabulary ──
-    (("生词本", "查看生词", "生词"), {
-        "fields": [_f("word", "单词", ro=True), _f("phonetic", "音标", ro=True),
-                   _f("meaning", "释义", ro=True), _f("mastery", "掌握度", typ="float", ro=True),
-                   _f("next_review", "下次复习", typ="date", ro=True), _f("added_at", "添加日期", typ="date", ro=True)],
-        "actions": [{"label": "搜索单词", "crud": "R", "frequency": "高"}, {"label": "按掌握度排序", "crud": "R", "frequency": "中"},
-                    {"label": "移除生词", "crud": "D", "frequency": "低"}, {"label": "开始复习", "crud": "R", "frequency": "高"}],
-        "states": {"default": "生词列表+掌握度指示", "empty": "暂无生词，引导去学习场景", "filtered": "按掌握度/日期筛选结果"},
-    }),
-    # ── Flashcard ──
-    (("闪卡复习", "闪卡"), {
-        "fields": [_f("word", "单词", ro=True), _f("phonetic", "音标", ro=True),
-                   _f("meaning", "释义", ro=True), _f("example", "例句", ro=True),
-                   _f("mastery", "掌握度", typ="float", ro=True), _f("progress", "本轮进度", typ="float", ro=True)],
-        "actions": [{"label": "认识", "crud": "U", "frequency": "高"}, {"label": "模糊", "crud": "U", "frequency": "高"},
-                    {"label": "不认识", "crud": "U", "frequency": "高"}, {"label": "播放发音", "crud": "R", "frequency": "高"}],
-        "states": {"front": "卡片正面：单词+音标", "back": "卡片背面：释义+例句+评分按钮", "result": "本轮结束统计", "empty": "无待复习卡片"},
-    }),
-    # ── Fill-in ──
-    (("填空练习", "填空"), {
-        "fields": [_f("sentence", "完整句子", ro=True), _f("blank_word", "空缺单词", ro=True),
-                   _f("options", "选项列表", typ="array", ro=True), _f("correct_answer", "正确答案", ro=True),
-                   _f("context_hint", "上下文提示", ro=True), _f("progress", "进度", typ="float", ro=True)],
-        "actions": [{"label": "选择答案", "crud": "U", "frequency": "高"}, {"label": "查看提示", "crud": "R", "frequency": "中"},
-                    {"label": "下一题", "crud": "R", "frequency": "高"}],
-        "states": {"default": "题目+选项", "selected": "已选答案待确认", "correct": "回答正确+绿色反馈", "wrong": "回答错误+红色+显示正确答案"},
-    }),
-    # ── Listening ──
-    (("听音选词", "听音"), {
-        "fields": [_f("audio_url", "音频", typ="audio", ro=True), _f("options", "候选单词", typ="array", ro=True),
-                   _f("correct_word", "正确单词", ro=True), _f("play_count", "播放次数", typ="int", ro=True),
-                   _f("progress", "进度", typ="float", ro=True)],
-        "actions": [{"label": "播放音频", "crud": "R", "frequency": "高"}, {"label": "再听一次", "crud": "R", "frequency": "高"},
-                    {"label": "选择单词", "crud": "U", "frequency": "高"}, {"label": "下一题", "crud": "R", "frequency": "高"}],
-        "states": {"default": "播放按钮+候选词列表", "playing": "音频播放中", "correct": "选对+发音+释义展示", "wrong": "选错+正确答案+再听"},
-    }),
-    # ── Spelling ──
-    (("拼写测试", "拼写"), {
-        "fields": [_f("meaning", "中文释义", ro=True), _f("phonetic", "音标提示", ro=True),
-                   _f("audio_url", "发音", typ="audio", ro=True), _f("input_letters", "已输入字母", ro=True),
-                   _f("hint_count", "提示次数", typ="int", ro=True), _f("progress", "进度", typ="float", ro=True)],
-        "actions": [{"label": "输入字母", "crud": "U", "frequency": "高"}, {"label": "播放发音", "crud": "R", "frequency": "高"},
-                    {"label": "获取提示", "crud": "R", "frequency": "中"}, {"label": "删除字母", "crud": "U", "frequency": "高"}],
-        "states": {"default": "释义+音标+字母键盘", "partial": "部分字母已输入", "correct": "拼写正确+完整单词展示", "wrong": "拼写错误+正确拼写+重试"},
-    }),
-    # ── SRS / Review schedule ──
-    (("SRS复习调度", "复习调度", "复习计划"), {
-        "fields": [_f("due_today", "今日待复习", typ="int", ro=True), _f("due_tomorrow", "明日待复习", typ="int", ro=True),
-                   _f("total_in_queue", "总队列数", typ="int", ro=True), _f("mastery_distribution", "掌握度分布", typ="object", ro=True),
-                   _f("streak_days", "连续天数", typ="int", ro=True), _f("next_review_time", "下次复习", typ="datetime", ro=True)],
-        "actions": [{"label": "开始今日复习", "crud": "R", "frequency": "高"}, {"label": "查看复习日历", "crud": "R", "frequency": "中"},
-                    {"label": "调整复习设置", "crud": "U", "frequency": "低"}],
-        "states": {"default": "今日待复习统计+日历预览", "all_done": "今日复习已完成+鼓励文案", "overdue": "有逾期未复习+提醒"},
-    }),
-    # ── Stats ──
-    (("学习统计", "统计"), {
-        "fields": [_f("words_learned", "已学单词", typ="int", ro=True), _f("words_mastered", "已掌握", typ="int", ro=True),
-                   _f("accuracy_rate", "正确率", typ="float", ro=True), _f("streak_days", "连续学习天数", typ="int", ro=True),
-                   _f("total_study_time", "总学习时长", typ="int", ro=True), _f("weekly_chart", "本周趋势", typ="object", ro=True),
-                   _f("scenes_completed", "已完成场景", typ="int", ro=True)],
-        "actions": [{"label": "切换周/月/年", "crud": "R", "frequency": "高"}, {"label": "分享成就", "crud": "R", "frequency": "低"}],
-        "states": {"default": "统计卡片+趋势图表", "empty": "暂无数据，引导开始学习", "milestone": "达成里程碑弹窗"},
-    }),
-    # ── Goal ──
-    (("学习目标", "目标"), {
-        "fields": [_f("daily_minutes", "每日目标(分钟)", typ="int", widget="slider"),
-                   _f("daily_words", "每日新词数", typ="int", widget="slider"),
-                   _f("reminder_time", "提醒时间", typ="time", widget="time_picker"),
-                   _f("rest_days", "休息日", typ="array", widget="multi_select")],
-        "actions": [{"label": "保存目标", "crud": "U", "frequency": "高"}, {"label": "重置为默认", "crud": "U", "frequency": "低"}],
-        "states": {"default": "当前目标设置+完成率环形图", "editing": "调整目标参数", "saved": "保存成功提示"},
-    }),
-    # ── Role play ──
-    (("角色扮演",), {
-        "fields": [_f("scene_title", "场景名称", ro=True), _f("role", "扮演角色", ro=True),
-                   _f("ai_message", "AI对话", ro=True), _f("user_input", "用户输入", widget="textarea"),
-                   _f("hint", "提示词", ro=True), _f("score", "表现评分", typ="float", ro=True)],
-        "actions": [{"label": "发送对话", "crud": "C", "frequency": "高"}, {"label": "获取提示", "crud": "R", "frequency": "中"},
-                    {"label": "重新开始", "crud": "U", "frequency": "低"}, {"label": "结束对话", "crud": "U", "frequency": "中"}],
-        "states": {"default": "AI对话气泡+输入框", "thinking": "AI思考中", "feedback": "AI纠错+建议", "complete": "对话结束+评分"},
-    }),
-    # ── Recommendation ──
-    (("预测式学习", "预测", "推荐"), {
-        "fields": [_f("recommended_scenes", "推荐场景", typ="array", ro=True),
-                   _f("reason", "推荐理由", ro=True), _f("difficulty_match", "难度匹配度", typ="float", ro=True),
-                   _f("estimated_time", "预估时长", typ="int", ro=True)],
-        "actions": [{"label": "开始学习", "crud": "R", "frequency": "高"}, {"label": "换一批", "crud": "R", "frequency": "中"},
-                    {"label": "不感兴趣", "crud": "U", "frequency": "低"}],
-        "states": {"default": "推荐卡片列表+理由标签", "loading": "AI分析中", "empty": "暂无推荐，继续学习解锁更多"},
-    }),
-    # ── Semantic graph ──
-    (("语义关联", "关联网络"), {
-        "fields": [_f("center_word", "中心词", ro=True), _f("related_words", "关联词汇", typ="array", ro=True),
-                   _f("relation_type", "关系类型", typ="enum", ro=True), _f("strength", "关联强度", typ="float", ro=True)],
-        "actions": [{"label": "点击词汇展开", "crud": "R", "frequency": "高"}, {"label": "缩放图谱", "crud": "R", "frequency": "中"},
-                    {"label": "切换关系类型", "crud": "R", "frequency": "中"}],
-        "states": {"default": "力导向图+词汇节点", "expanded": "展开词汇详情面板", "filtered": "按关系类型筛选"},
-    }),
-    # ── Offline ──
-    (("离线学习",), {
-        "fields": [_f("available_scenes", "可用场景包", typ="array", ro=True),
-                   _f("cached_audio", "已缓存音频", typ="bool", ro=True),
-                   _f("pending_sync", "待同步条数", typ="int", ro=True)],
-        "actions": [{"label": "继续学习", "crud": "R", "frequency": "高"}, {"label": "查看已缓存内容", "crud": "R", "frequency": "中"}],
-        "states": {"default": "离线模式标识+可用内容列表", "no_content": "无已下载内容，提示在线下载"},
-    }),
-    (("同步学习进度", "同步"), {
-        "fields": [_f("pending_items", "待同步条数", typ="int", ro=True), _f("last_sync", "上次同步", typ="datetime", ro=True),
-                   _f("sync_status", "同步状态", typ="enum", ro=True), _f("conflict_count", "冲突数", typ="int", ro=True)],
-        "actions": [{"label": "立即同步", "crud": "U", "frequency": "高"}, {"label": "查看冲突", "crud": "R", "frequency": "低"}],
-        "states": {"default": "同步状态+待同步数量", "syncing": "同步中+进度", "complete": "同步完成", "conflict": "存在冲突需处理", "offline": "无网络连接"},
-    }),
-    # ── Profile & Settings ──
-    (("编辑个人资料", "个人资料"), {
+    # ── Profile (universal) ──
+    (("个人资料", "profile", "个人信息"), {
         "fields": [_f("avatar", "头像", typ="image", widget="image_picker"), _f("nickname", "昵称", req=True),
-                   _f("email", "邮箱", widget="email", ro=True), _f("learning_language", "学习语言", typ="enum", widget="select"),
-                   _f("native_language", "母语", typ="enum", widget="select")],
-        "actions": [{"label": "保存修改", "crud": "U", "frequency": "高"}, {"label": "更换头像", "crud": "U", "frequency": "低"}],
-        "states": {"default": "表单回填当前信息", "editing": "字段修改中", "saved": "保存成功", "error": "保存失败"},
+                   _f("email", "邮箱", widget="email", ro=True)],
+        "actions": [{"label": "保存修改", "crud": "U", "frequency": "高"}],
+        "states": {"default": "表单回填", "editing": "修改中", "saved": "保存成功"},
     }),
-    (("管理通知设置", "通知设置"), {
-        "fields": [_f("daily_reminder", "每日学习提醒", typ="bool", widget="toggle"),
-                   _f("reminder_time", "提醒时间", typ="time", widget="time_picker"),
-                   _f("review_reminder", "复习到期提醒", typ="bool", widget="toggle"),
-                   _f("new_scene_alert", "新场景上线通知", typ="bool", widget="toggle"),
-                   _f("sound_enabled", "提示音", typ="bool", widget="toggle")],
-        "actions": [{"label": "保存设置", "crud": "U", "frequency": "高"}],
-        "states": {"default": "当前通知设置+开关", "saved": "设置已保存"},
-    }),
-    (("提交意见反馈", "意见反馈"), {
+    # ── Feedback (universal) ──
+    (("意见反馈", "feedback", "反馈"), {
         "fields": [_f("type", "反馈类型", typ="enum", widget="select", req=True),
                    _f("content", "详细描述", widget="textarea", req=True),
-                   _f("screenshot", "截图", typ="image", widget="image_picker"),
-                   _f("contact", "联系方式")],
-        "actions": [{"label": "提交反馈", "crud": "C", "frequency": "高"}, {"label": "添加截图", "crud": "C", "frequency": "中"}],
-        "states": {"default": "空表单", "submitting": "提交中", "success": "反馈已提交，感谢！", "error": "提交失败，请重试"},
+                   _f("screenshot", "截图", typ="image", widget="image_picker")],
+        "actions": [{"label": "提交反馈", "crud": "C", "frequency": "高"}],
+        "states": {"default": "空表单", "submitting": "提交中", "success": "反馈已提交"},
     }),
-    # ── Subscription ──
-    (("查看订阅", "订阅状态"), {
+    # ── Subscription (universal) ──
+    (("订阅", "subscription", "套餐"), {
         "fields": [_f("plan_name", "当前套餐", ro=True), _f("price", "价格", ro=True),
-                   _f("status", "订阅状态", typ="enum", ro=True), _f("expiry_date", "到期日", typ="date", ro=True),
-                   _f("download_quota", "剩余下载额度", typ="int", ro=True), _f("features", "套餐权益", typ="array", ro=True)],
+                   _f("status", "状态", typ="enum", ro=True), _f("expiry_date", "到期日", typ="date", ro=True)],
         "actions": [{"label": "升级套餐", "crud": "U", "frequency": "高"}, {"label": "查看所有套餐", "crud": "R", "frequency": "中"}],
-        "states": {"default": "当前套餐信息+权益列表", "expiring_soon": "即将到期提醒", "expired": "已过期，功能受限提示"},
+        "states": {"default": "套餐信息", "expiring": "即将到期", "expired": "已过期"},
     }),
-    (("升级", "变更订阅"), {
-        "fields": [_f("plans", "可选套餐", typ="array", ro=True), _f("current_plan", "当前套餐", ro=True),
-                   _f("price_diff", "差价", typ="float", ro=True), _f("payment_method", "支付方式", typ="enum", widget="select")],
-        "actions": [{"label": "确认升级", "crud": "U", "frequency": "高"}, {"label": "对比套餐", "crud": "R", "frequency": "中"}],
-        "states": {"default": "套餐对比卡片", "selected": "已选套餐+支付确认", "processing": "支付处理中", "success": "升级成功", "failed": "支付失败"},
-    }),
-    (("取消订阅",), {
-        "fields": [_f("current_plan", "当前套餐", ro=True), _f("expiry_date", "失效日期", typ="date", ro=True),
-                   _f("cancel_reason", "取消原因", typ="enum", widget="select"), _f("feedback", "改进建议", widget="textarea")],
-        "actions": [{"label": "确认取消", "crud": "D", "frequency": "高"}, {"label": "保留订阅", "crud": "R", "frequency": "高"}],
-        "states": {"default": "取消确认+挽留提示", "reason_selection": "选择取消原因", "confirmed": "已取消，月底失效", "retained": "用户选择保留"},
-    }),
-    # ── Admin: content creation ──
-    (("创建场景",), {
-        "fields": [_f("title", "场景标题", req=True), _f("category", "分类", typ="enum", widget="select", req=True),
-                   _f("difficulty", "难度", typ="enum", widget="select", req=True), _f("description", "场景描述", widget="textarea"),
-                   _f("target_words", "目标词汇量", typ="int"), _f("tags", "标签", typ="array", widget="tag_input")],
-        "actions": [{"label": "创建并生成内容", "crud": "C", "frequency": "高"}, {"label": "保存草稿", "crud": "C", "frequency": "中"}],
-        "states": {"default": "空表单", "draft": "草稿已保存", "submitting": "创建中", "success": "创建成功，进入内容生成"},
-    }),
-    (("LLM生成场景内容", "LLM生成", "生成场景内容"), {
-        "fields": [_f("scene_title", "场景标题", ro=True), _f("generation_status", "生成状态", typ="enum", ro=True),
-                   _f("dialogue_preview", "对话预览", ro=True), _f("word_list_preview", "词汇预览", typ="array", ro=True),
-                   _f("model_used", "使用模型", ro=True), _f("generation_time", "生成耗时", typ="int", ro=True)],
-        "actions": [{"label": "开始生成", "crud": "C", "frequency": "高"}, {"label": "重新生成", "crud": "U", "frequency": "中"},
-                    {"label": "调整参数", "crud": "U", "frequency": "低"}],
-        "states": {"generating": "AI生成中+进度(对话→句子→词汇→练习)", "preview": "生成完成，预览内容", "error": "生成失败，可重试", "accepted": "内容已确认"},
-    }),
-    (("审核场景内容", "审核场景"), {
-        "fields": [_f("scene_title", "场景标题", ro=True), _f("content_preview", "内容预览", ro=True),
-                   _f("quality_score", "质量评分", typ="float", ro=True), _f("issues", "问题列表", typ="array", ro=True),
-                   _f("reviewer_comment", "审核意见", widget="textarea")],
-        "actions": [{"label": "通过", "crud": "U", "frequency": "高"}, {"label": "驳回", "crud": "U", "frequency": "中"},
-                    {"label": "标记问题", "crud": "C", "frequency": "高"}],
-        "states": {"default": "内容详情+审核面板", "approved": "已通过", "rejected": "已驳回+原因", "needs_revision": "标记待修改"},
-    }),
-    (("编辑场景内容",), {
-        "fields": [_f("dialogue_text", "对话内容", widget="textarea", req=True), _f("vocabulary_list", "词汇列表", widget="textarea"),
-                   _f("exercise_config", "练习配置", widget="textarea"), _f("notes", "修改备注", widget="textarea")],
-        "actions": [{"label": "保存修改", "crud": "U", "frequency": "高"}, {"label": "预览效果", "crud": "R", "frequency": "中"},
-                    {"label": "重置为AI版本", "crud": "U", "frequency": "低"}],
-        "states": {"default": "富文本编辑器+内容回填", "modified": "有未保存修改", "saved": "保存成功", "preview": "预览模式"},
-    }),
-    (("AI生成连环画", "连环画"), {
-        "fields": [_f("scene_title", "场景标题", ro=True), _f("dialogue_panels", "分镜面板", typ="array", ro=True),
-                   _f("style", "画风", typ="enum", widget="select"), _f("generation_status", "生成状态", typ="enum", ro=True)],
-        "actions": [{"label": "开始生成配图", "crud": "C", "frequency": "高"}, {"label": "重新生成某帧", "crud": "U", "frequency": "中"},
-                    {"label": "调整画风", "crud": "U", "frequency": "低"}],
-        "states": {"generating": "逐帧生成中+进度", "preview": "配图预览网格", "editing": "选中某帧重新生成", "complete": "全部配图生成完成"},
-    }),
-    (("发布场景包",), {
-        "fields": [_f("scene_title", "场景标题", ro=True), _f("status", "当前状态", typ="enum", ro=True),
-                   _f("content_check", "内容检查", typ="bool", ro=True), _f("image_check", "配图检查", typ="bool", ro=True),
-                   _f("target_audience", "目标受众", typ="enum", widget="select")],
-        "actions": [{"label": "发布", "crud": "U", "frequency": "高"}, {"label": "预览", "crud": "R", "frequency": "中"},
-                    {"label": "返回编辑", "crud": "R", "frequency": "低"}],
-        "states": {"ready": "所有检查通过，可发布", "incomplete": "有未完成项，不可发布", "publishing": "发布中", "published": "已发布"},
-    }),
-    # ── Admin: management ──
-    (("管理员登录",), {
-        "fields": [_f("username", "管理员账号", req=True), _f("password", "密码", widget="password", req=True),
-                   _f("otp", "二次验证码")],
-        "actions": [{"label": "登录后台", "crud": "R", "frequency": "高"}],
-        "states": {"default": "登录表单", "otp_required": "需要二次验证", "error": "凭证错误", "success": "登录成功"},
-    }),
-    (("用户管理",), {
-        "fields": [_f("user_id", "用户ID", ro=True), _f("nickname", "昵称", ro=True),
-                   _f("email", "邮箱", ro=True), _f("subscription", "订阅状态", typ="enum", ro=True),
-                   _f("registered_at", "注册时间", typ="date", ro=True), _f("last_active", "最后活跃", typ="date", ro=True)],
-        "actions": [{"label": "搜索用户", "crud": "R", "frequency": "高"}, {"label": "查看详情", "crud": "R", "frequency": "高"},
-                    {"label": "禁用账号", "crud": "U", "frequency": "低"}, {"label": "导出用户列表", "crud": "R", "frequency": "低"}],
-        "states": {"default": "用户数据表格+搜索框", "detail": "用户详情侧边栏", "empty": "无搜索结果"},
-    }),
-    (("系统配置",), {
-        "fields": [_f("free_download_limit", "免费下载限制", typ="int"), _f("pro_price", "Pro套餐价格", typ="float"),
-                   _f("ai_model", "AI生成模型", typ="enum", widget="select"), _f("cache_ttl", "缓存有效期", typ="int"),
-                   _f("maintenance_mode", "维护模式", typ="bool", widget="toggle")],
-        "actions": [{"label": "保存配置", "crud": "U", "frequency": "高"}, {"label": "重置默认值", "crud": "U", "frequency": "低"}],
-        "states": {"default": "配置项列表+当前值", "modified": "有未保存更改", "saved": "配置已保存"},
-    }),
-    (("下架", "更新场景包"), {
-        "fields": [_f("scene_title", "场景名称", ro=True), _f("status", "当前状态", typ="enum", ro=True),
-                   _f("download_count", "下载量", typ="int", ro=True), _f("reason", "下架原因", widget="textarea")],
-        "actions": [{"label": "下架", "crud": "U", "frequency": "中"}, {"label": "重新上架", "crud": "U", "frequency": "中"},
-                    {"label": "推送更新", "crud": "U", "frequency": "中"}],
-        "states": {"default": "场景包状态+操作面板", "confirming": "下架确认弹窗", "archived": "已下架"},
-    }),
-    (("管理场景分类", "分类标签"), {
-        "fields": [_f("tag_name", "标签名称", req=True), _f("tag_icon", "图标", typ="image"),
-                   _f("scene_count", "关联场景数", typ="int", ro=True), _f("sort_order", "排序权重", typ="int")],
-        "actions": [{"label": "新建标签", "crud": "C", "frequency": "中"}, {"label": "编辑标签", "crud": "U", "frequency": "中"},
-                    {"label": "删除标签", "crud": "D", "frequency": "低"}, {"label": "拖拽排序", "crud": "U", "frequency": "中"}],
-        "states": {"default": "标签列表+关联数量", "editing": "编辑标签弹窗", "empty": "暂无标签，点击创建"},
-    }),
-    (("管理prompt", "prompt模板"), {
-        "fields": [_f("template_name", "模板名称", req=True), _f("prompt_text", "Prompt内容", widget="textarea", req=True),
-                   _f("model", "适用模型", typ="enum", widget="select"), _f("version", "版本号", typ="int", ro=True),
-                   _f("last_used", "最后使用", typ="date", ro=True)],
-        "actions": [{"label": "新建模板", "crud": "C", "frequency": "中"}, {"label": "编辑模板", "crud": "U", "frequency": "高"},
-                    {"label": "测试运行", "crud": "R", "frequency": "中"}, {"label": "查看历史版本", "crud": "R", "frequency": "低"}],
-        "states": {"default": "模板列表+搜索", "editing": "模板编辑器", "testing": "测试运行中+结果预览"},
-    }),
-    # ── Admin: analytics ──
-    (("学习数据仪表盘", "数据仪表盘"), {
-        "fields": [_f("dau", "日活用户", typ="int", ro=True), _f("mau", "月活用户", typ="int", ro=True),
-                   _f("avg_study_time", "平均学习时长", typ="float", ro=True), _f("retention_rate", "次日留存", typ="float", ro=True),
-                   _f("conversion_rate", "付费转化率", typ="float", ro=True), _f("revenue", "收入", typ="float", ro=True)],
-        "actions": [{"label": "切换时间范围", "crud": "R", "frequency": "高"}, {"label": "导出报告", "crud": "R", "frequency": "中"}],
-        "states": {"default": "关键指标卡片+趋势图", "loading": "数据加载中", "date_range": "自定义时间范围"},
-    }),
-    (("场景包使用热度", "场景包热度"), {
-        "fields": [_f("scene_title", "场景名称", ro=True), _f("download_count", "下载量", typ="int", ro=True),
-                   _f("completion_rate", "完成率", typ="float", ro=True), _f("avg_rating", "平均评分", typ="float", ro=True),
-                   _f("trend", "趋势", typ="enum", ro=True)],
-        "actions": [{"label": "按热度排序", "crud": "R", "frequency": "高"}, {"label": "按完成率排序", "crud": "R", "frequency": "中"},
-                    {"label": "导出数据", "crud": "R", "frequency": "低"}],
-        "states": {"default": "热度排行榜+趋势图", "detail": "单个场景详细数据"},
-    }),
-    (("查看用户反馈", "用户反馈"), {
-        "fields": [_f("user_name", "用户", ro=True), _f("feedback_type", "类型", typ="enum", ro=True),
-                   _f("content", "反馈内容", ro=True), _f("submitted_at", "提交时间", typ="date", ro=True),
-                   _f("status", "处理状态", typ="enum", ro=True), _f("reply", "回复", widget="textarea")],
-        "actions": [{"label": "回复反馈", "crud": "U", "frequency": "高"}, {"label": "标记已处理", "crud": "U", "frequency": "高"},
-                    {"label": "按类型筛选", "crud": "R", "frequency": "中"}],
-        "states": {"default": "反馈列表+状态标签", "detail": "反馈详情+回复框", "empty": "暂无待处理反馈"},
-    }),
-    (("导出数据报告",), {
-        "fields": [_f("report_type", "报告类型", typ="enum", widget="select", req=True),
-                   _f("date_range", "时间范围", typ="daterange", widget="date_range_picker", req=True),
-                   _f("format", "导出格式", typ="enum", widget="select"),
-                   _f("include_charts", "包含图表", typ="bool", widget="toggle")],
-        "actions": [{"label": "生成报告", "crud": "C", "frequency": "高"}, {"label": "下载报告", "crud": "R", "frequency": "高"}],
-        "states": {"default": "报告参数配置", "generating": "报告生成中", "ready": "报告已生成，可下载", "error": "生成失败"},
-    }),
-    (("批量生成场景包", "批量生成"), {
-        "fields": [_f("batch_count", "批量数量", typ="int", req=True), _f("category", "场景分类", typ="enum", widget="select"),
-                   _f("difficulty_range", "难度范围", typ="enum", widget="select"),
-                   _f("progress", "生成进度", typ="float", ro=True), _f("completed", "已完成数", typ="int", ro=True)],
-        "actions": [{"label": "开始批量生成", "crud": "C", "frequency": "高"}, {"label": "暂停", "crud": "U", "frequency": "中"},
-                    {"label": "查看已生成", "crud": "R", "frequency": "中"}],
-        "states": {"config": "参数配置+预估时间", "running": "批量生成中+进度条+实时日志", "paused": "已暂停", "complete": "全部完成+结果摘要"},
+    # ── Notification settings (universal) ──
+    (("通知设置", "notification settings"), {
+        "fields": [_f("push_enabled", "推送通知", typ="bool", widget="toggle"),
+                   _f("email_enabled", "邮件通知", typ="bool", widget="toggle")],
+        "actions": [{"label": "保存设置", "crud": "U", "frequency": "高"}],
+        "states": {"default": "当前设置", "saved": "设置已保存"},
     }),
 ]
 
