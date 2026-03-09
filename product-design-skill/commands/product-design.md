@@ -681,7 +681,7 @@ ui-design 生成 HTML 预览 / Stitch 视觉稿后，必须经过用户审核确
    - 审核完毕点击 "Submit Feedback" → 生成 `review-feedback.json`
 
 2. **读取反馈并迭代**：
-   - 读取 `.allforai/ui-design/review-feedback.json`
+   - 读取 `.allforai/ui-review/review-feedback.json`
    - 统计：N 个界面已审核，M 个通过，K 个需修改
    - K = 0 → 全部通过，进入 Phase 10
    - K > 0 → 对 status="revision" 的界面重新生成设计（局部重跑 ui-design）
