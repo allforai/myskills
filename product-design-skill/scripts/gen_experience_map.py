@@ -40,16 +40,163 @@ VIEW_TYPE_NAMES = {
     "state_action": "操作",
 }
 
-# ── Default states per interaction type ──────────────────────────────────────
+# ── Default states per interaction type (all 37 types from interaction-types.md) ──
 DEFAULT_STATES = {
-    "MG1": {"empty": "暂无数据，显示空态插图", "loading": "骨架屏占位", "error": "加载失败，显示重试按钮", "success": "数据列表正常展示"},
-    "MG2-L": {"empty": "暂无数据，引导创建", "loading": "骨架屏占位", "error": "加载失败，显示重试按钮", "success": "数据列表正常展示"},
-    "MG2-C": {"empty": "空表单，所有字段待填写", "loading": "提交中，按钮禁用+加载指示器", "error": "提交失败，字段标红+错误提示", "success": "创建成功，跳转或提示"},
-    "MG2-E": {"empty": "表单回填旧值", "loading": "提交中，按钮禁用", "error": "保存失败，字段标红", "success": "保存成功，返回"},
-    "MG2-D": {"empty": "数据不存在，显示404提示", "loading": "骨架屏占位", "error": "加载失败，显示重试", "success": "详情正常展示"},
-    "MG3": {"empty": "无待处理项", "loading": "操作执行中", "error": "操作失败，显示原因", "success": "状态变更成功，刷新列表"},
-    "MG4": {"empty": "无待审核项", "loading": "提交审批中", "error": "审批失败", "success": "审批完成"},
+    # MG 管理/CRUD 类
+    "MG1":    {"empty": "暂无数据，显示空态插图", "loading": "骨架屏占位", "error": "加载失败，显示重试按钮", "success": "数据列表正常展示"},
+    "MG2-L":  {"empty": "暂无数据，引导创建", "loading": "骨架屏占位", "error": "加载失败，显示重试按钮", "success": "数据列表正常展示"},
+    "MG2-C":  {"empty": "空表单，所有字段待填写", "loading": "提交中，按钮禁用+加载指示器", "error": "提交失败，字段标红+错误提示", "success": "创建成功，跳转或提示"},
+    "MG2-E":  {"empty": "表单回填旧值", "loading": "提交中，按钮禁用", "error": "保存失败，字段标红", "success": "保存成功，返回"},
+    "MG2-D":  {"empty": "数据不存在，显示404提示", "loading": "骨架屏占位", "error": "加载失败，显示重试", "success": "详情正常展示"},
+    "MG2-ST": {"empty": "无可操作项", "loading": "状态变更中", "error": "状态流转失败", "success": "状态已更新"},
+    "MG3":    {"empty": "无待处理项", "loading": "操作执行中", "error": "操作失败，显示原因", "success": "状态变更成功，刷新列表"},
+    "MG4":    {"empty": "无待审核项", "loading": "提交审批中", "error": "审批失败", "success": "审批完成"},
+    "MG5":    {"empty": "主实体不存在", "loading": "加载主从数据", "error": "主从数据加载失败", "success": "主从详情正常展示"},
+    "MG6":    {"empty": "空树，显示创建根节点引导", "loading": "加载树结构", "error": "加载失败", "success": "树结构正常展示"},
+    "MG7":    {"empty": "暂无数据", "loading": "加载统计数据", "error": "数据加载失败", "success": "仪表盘正常展示"},
+    "MG8":    {"empty": "加载默认配置", "loading": "保存配置中", "error": "保存失败", "success": "配置已保存"},
+    # CT 内容消费类
+    "CT1":    {"empty": "暂无内容，刷新或探索", "loading": "加载内容流", "error": "加载失败，下拉重试", "success": "内容流正常展示"},
+    "CT2":    {"empty": "内容不存在", "loading": "加载内容", "error": "加载失败", "success": "内容正常展示"},
+    "CT3":    {"empty": "用户不存在", "loading": "加载个人主页", "error": "加载失败", "success": "个人主页正常展示"},
+    "CT4":    {"empty": "队列已空，稍后再来", "loading": "加载卡片", "error": "加载失败", "success": "卡片展示中"},
+    "CT5":    {"empty": "无可播放媒体", "loading": "缓冲中", "error": "播放失败", "success": "播放中"},
+    "CT6":    {"empty": "暂无图片", "loading": "加载图片", "error": "加载失败", "success": "相册正常展示"},
+    "CT7":    {"empty": "未找到结果", "loading": "搜索中", "error": "搜索失败", "success": "搜索结果展示"},
+    "CT8":    {"empty": "无更多内容", "loading": "加载视频", "error": "播放失败", "success": "自动播放中"},
+    # EC 电商交易类
+    "EC1":    {"empty": "商品不存在", "loading": "加载商品详情", "error": "加载失败", "success": "商品详情正常展示"},
+    "EC2":    {"empty": "购物车为空", "loading": "结算中", "error": "结算失败", "success": "订单创建成功"},
+    "EC3":    {"empty": "无物流信息", "loading": "加载物流", "error": "查询失败", "success": "物流时间线展示"},
+    # WK 协作办公类
+    "WK1":    {"empty": "暂无消息", "loading": "加载消息", "error": "发送失败", "success": "消息已发送"},
+    "WK2":    {"empty": "暂无频道", "loading": "加载频道列表", "error": "加载失败", "success": "频道列表展示"},
+    "WK3":    {"empty": "空白文档", "loading": "加载文档", "error": "保存失败", "success": "文档已保存"},
+    "WK4":    {"empty": "空白画布", "loading": "加载画布", "error": "保存失败", "success": "画布已保存"},
+    "WK5":    {"empty": "无任务卡片", "loading": "加载看板", "error": "加载失败", "success": "看板正常展示"},
+    "WK6":    {"empty": "无任务", "loading": "加载甘特图", "error": "加载失败", "success": "甘特图正常展示"},
+    "WK7":    {"empty": "空目录", "loading": "加载文件列表", "error": "加载失败", "success": "文件列表展示"},
+    # RT 通讯实时类
+    "RT1":    {"empty": "无通话记录", "loading": "连接中", "error": "连接失败", "success": "通话中"},
+    "RT2":    {"empty": "直播未开始", "loading": "加载直播", "error": "连接失败", "success": "直播中"},
+    "RT3":    {"empty": "收件箱为空", "loading": "加载邮件", "error": "加载失败", "success": "邮件列表展示"},
+    "RT4":    {"empty": "暂无通知", "loading": "加载通知", "error": "加载失败", "success": "通知列表展示"},
+    # SB 审核提交类
+    "SB1":    {"empty": "空表单", "loading": "提交审核中", "error": "提交失败", "success": "已提交，等待审核"},
+    # SY 引导系统类
+    "SY1":    {"empty": "引导未开始", "loading": "加载引导", "error": "加载失败", "success": "引导进行中"},
+    "SY2":    {"empty": "表单待填写", "loading": "提交中", "error": "验证失败", "success": "完成提交"},
+    # TU TUI/CLI 类
+    "TU1":    {"empty": "等待输入", "loading": "执行中", "error": "命令执行失败", "success": "执行完成"},
+    "TU2":    {"empty": "无选项", "loading": "加载菜单", "error": "加载失败", "success": "菜单展示"},
+    "TU3":    {"empty": "无日志", "loading": "加载日志流", "error": "连接断开", "success": "日志流输出中"},
+    "TU4":    {"empty": "无任务", "loading": "执行中", "error": "任务失败", "success": "任务完成"},
 }
+
+# ── Interaction type inference (cross-project keyword matching) ────────────────
+# Priority: keyword match > CRUD-based fallback.
+# Each entry: (keywords_list, interaction_type, audience_filter)
+# audience_filter: None = any, "consumer" = mobile only, "professional" = desktop only
+_INTERACTION_TYPE_RULES = [
+    # ── Disambiguation rules (highest priority — prevent false matches) ──
+    (["复习调度", "调度", "队列", "schedule", "queue"],                          "MG1", None),
+    (["llm生成", "ai生成", "生成内容", "prompt模板"],                             "WK3", "professional"),
+
+    # ── SY 引导系统（high priority — onboarding/wizard) ──
+    (["新手引导", "引导流程", "onboarding", "入门", "教程", "welcome"],        "SY1", None),
+    (["注册", "register", "signup", "多步表单", "向导", "登录", "login",
+     "signin"],                                                                "SY2", None),
+
+    # ── CT 内容消费（consumer-facing content patterns）──
+    (["feed", "动态流", "推荐流", "时间线", "信息流",
+     "场景列表", "浏览列表", "内容列表", "课程列表"],                              "CT1", "consumer"),
+    (["阅读", "详情阅读", "文章", "帖子", "对话阅读", "长文"],                   "CT2", None),
+    (["场景详情", "查看详情", "内容详情"],                                       "CT2", "consumer"),
+    (["个人资料", "个人主页", "profile", "我的", "个人设置", "个人信息",
+     "编辑个人"],                                                              "CT3", None),
+    (["闪卡", "swipe", "翻卡", "flashcard", "轮播",
+     "闪卡复习", "填空练习", "听音选词", "拼写测试",
+     "练习关键", "学习核心", "标记生词",
+     "单词卡", "生词本"],                                                        "CT4", None),
+    (["播放", "播放器", "音频", "视频播放", "player", "发音"],                   "CT5", None),
+    (["相册", "图库", "gallery", "图片浏览", "配图"],                            "CT6", None),
+    (["搜索结果", "search result"],                                            "CT7", None),
+    (["短视频", "story", "stories", "短视频流"],                                "CT8", None),
+
+    # ── EC 电商交易 ──
+    (["商品详情", "product detail", "订阅方案", "价格方案", "升级"],              "EC1", None),
+    (["购物车", "结算", "checkout", "cart", "付费", "购买"],                     "EC2", None),
+    (["物流", "订单追踪", "tracking", "时间线追踪", "进度追踪"],                  "EC3", None),
+
+    # ── WK 协作办公 ──
+    (["聊天", "对话", "IM", "消息", "chat"],                                   "WK1", None),
+    (["频道", "群组", "channel", "group"],                                     "WK2", None),
+    (["文档编辑", "编辑器", "editor", "rich text", "markdown编辑"],              "WK3", None),
+    (["画布", "白板", "canvas", "whiteboard"],                                 "WK4", None),
+    (["看板", "kanban", "board"],                                              "WK5", None),
+    (["甘特图", "gantt", "项目排期"],                                           "WK6", None),
+    (["文件管理", "file manager", "文件列表"],                                   "WK7", None),
+
+    # ── RT 通讯实时 ──
+    (["通话", "视频通话", "语音通话", "call"],                                   "RT1", None),
+    (["直播", "live", "直播间"],                                                "RT2", None),
+    (["邮件", "email", "收件箱"],                                               "RT3", None),
+    (["通知", "通知中心", "notification", "消息中心", "提醒"],                    "RT4", None),
+
+    # ── SB 审核提交 ──
+    (["反馈", "意见反馈", "feedback", "举报", "投诉", "提交审核"],               "SB1", None),
+
+    # ── Progress/download patterns ──
+    (["下载", "download", "同步", "sync", "进度"],                              "MG3", "consumer"),
+
+    # ── MG 管理类（lower priority — CRUD-based fallback handles most）──
+    (["审核", "审批", "approve", "review", "驳回"],                             "MG4", None),
+    (["状态流转", "上架", "下架", "冻结", "发布", "归档"],                       "MG3", None),
+    (["仪表盘", "dashboard", "数据面板", "统计", "数据概览", "数据分析",
+     "学习统计"],                                                               "MG7", None),
+    (["配置", "系统设置", "系统配置", "偏好设置", "setting",
+     "学习目标", "目标设置"],                                                    "MG8", None),
+    (["分类管理", "标签管理", "树形", "层级", "目录管理"],                        "MG6", None),
+    (["主从", "订单详情+明细", "用户详情+关联"],                                  "MG5", None),
+    (["管理用户", "用户管理", "用户列表", "管理成员"],                             "MG2-L", None),
+]
+
+
+def _infer_interaction_type(task, crud_type, audience_type=""):
+    """Infer interaction_type from task name + module using the 37-type system.
+
+    Priority:
+    1. Keyword match from _INTERACTION_TYPE_RULES (most specific wins)
+    2. CRUD-based MG fallback (MG1/MG2-*/MG3/MG4)
+
+    Returns interaction_type string (e.g. "CT4", "MG2-L", "SY1").
+    """
+    tname = task.get("task_name", task.get("name", "")).lower()
+    module = task.get("module", "").lower()
+    text = tname + " " + module
+
+    # 1. Keyword match
+    for keywords, itype, audience_filter in _INTERACTION_TYPE_RULES:
+        if audience_filter and audience_filter != audience_type:
+            continue
+        for kw in keywords:
+            if kw.lower() in text:
+                return itype
+
+    # 2. CRUD-based MG fallback
+    if crud_type == "C":
+        return "MG2-C"
+    elif crud_type == "U":
+        return "MG2-E"
+    elif crud_type == "D":
+        return "MG3"
+    elif crud_type == "R":
+        # Use _refine_view_type to pick detail vs list
+        preferred = _refine_view_type(task, "R")
+        if preferred and preferred[0] == "detail":
+            return "MG2-D"
+        return "MG1"
+    return "MG1"
 
 # ── Platform profiles by audience_type (cross-project) ────────────────────────
 # consumer → mobile app patterns; professional → desktop admin patterns.
@@ -183,13 +330,63 @@ def _build_vo_lookup(view_objects):
     return lookup
 
 
+# ── Task name → view_type refinement keywords (cross-project) ────────────────
+# When CRUD is "R", disambiguate list vs detail vs other view types.
+_VIEW_TYPE_KEYWORDS = {
+    "detail": ["详情", "detail", "查看详情", "详细"],
+    "list_item": ["列表", "浏览", "搜索", "筛选", "list", "browse"],
+    "state_action": ["审核", "通过", "驳回", "approve", "reject", "发布", "publish"],
+    "create_form": ["生成", "generate", "新建"],
+}
+
+
+def _refine_view_type(task, crud_type):
+    """Refine CRUD_TO_VIEW_TYPE preference based on task name keywords.
+
+    For "R" tasks, checks if the task name suggests detail vs list.
+    For other CRUDs, checks for state_action or generation patterns.
+    Returns refined preferred_types list.
+    """
+    tname = task.get("task_name", task.get("name", "")).lower()
+    base_types = CRUD_TO_VIEW_TYPE.get(crud_type, ["list_item"])
+
+    # For "R" tasks: detail keywords should prioritize detail over list
+    if crud_type == "R":
+        for kw in _VIEW_TYPE_KEYWORDS["detail"]:
+            if kw in tname:
+                return ["detail", "list_item"]
+        for kw in _VIEW_TYPE_KEYWORDS["list_item"]:
+            if kw in tname:
+                return ["list_item", "detail"]
+        # Default: if task name doesn't have list keywords either,
+        # check if it's a standalone action (download, read, practice)
+        # — these are more like detail/full-screen than list
+        if not any(kw in tname for kw in ["列表", "浏览", "搜索", "筛选"]):
+            return ["detail", "list_item"]
+
+    # For state-like tasks mapped to U/D
+    if crud_type in ("U", "D"):
+        for kw in _VIEW_TYPE_KEYWORDS["state_action"]:
+            if kw in tname:
+                return ["state_action"] + base_types
+
+    # For C tasks that are actually "generate" actions
+    if crud_type == "C":
+        for kw in _VIEW_TYPE_KEYWORDS["create_form"]:
+            if kw in tname:
+                return base_types  # keep create_form first
+
+    return base_types
+
+
 def _find_vo_for_task(task, crud_type, vo_lookup):
     """Find the best matching VO for a task based on module and CRUD type.
 
+    Uses task name keywords to refine view_type preference.
     Returns the VO dict or None if no match.
     """
     module = task.get("module", task.get("owner_role", ""))
-    preferred_types = CRUD_TO_VIEW_TYPE.get(crud_type, ["list_item"])
+    preferred_types = _refine_view_type(task, crud_type)
 
     for vt in preferred_types:
         vo = vo_lookup.get((module, vt))
@@ -341,16 +538,20 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
             "layout": profile.get("layout", ""),
         } if profile else {}
 
+        # ── Infer interaction_type from 37-type system ──
+        first_task = task_pairs[0][1] if task_pairs else {}
+        inferred_itype = _infer_interaction_type(first_task, dominant_crud, audience_type)
+
         # ── Try VO enrichment ──
         matched_vo = None
         if vo_lookup:
-            # Use the first task to find a matching VO
-            first_task = task_pairs[0][1] if task_pairs else {}
             matched_vo = _find_vo_for_task(first_task, dominant_crud, vo_lookup)
 
         if matched_vo:
             # Enriched screen from VO
-            interaction_type = matched_vo.get("interaction_type", "")
+            # Prefer inferred type (37-type) over VO's type (often just MG)
+            vo_itype = matched_vo.get("interaction_type", "")
+            interaction_type = inferred_itype if inferred_itype else vo_itype
             screen_name = _vo_screen_name(matched_vo, task_pairs)
             description = _vo_description(matched_vo)
 
@@ -381,11 +582,13 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
             }
         else:
             # Fallback: derive name from tasks, then module
+            interaction_type = inferred_itype
             suffix = VIEW_TYPE_NAMES.get(
                 CRUD_TO_VIEW_TYPE.get(dominant_crud, ["list_item"])[0], ""
             )
             fallback_name = _derive_screen_name_from_tasks(task_pairs, suffix) or primary
             fallback_desc = f"{fallback_name} — {', '.join(a['label'] for a in actions[:3])}"
+            contract["interaction_type"] = interaction_type
             screen = {
                 "id": sid,
                 "name": fallback_name,
@@ -395,6 +598,8 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
                 "tasks": task_ids,
                 "actions": actions,
                 "primary_action": primary,
+                "interaction_type": interaction_type,
+                "states": DEFAULT_STATES.get(interaction_type, {}),
                 "non_negotiable": contract["required_behaviors"][:2] if contract["required_behaviors"] else [],
                 "implementation_contract": contract,
             }
