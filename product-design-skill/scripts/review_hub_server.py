@@ -76,6 +76,45 @@ def _node(nid, label, ntype="default", detail="", children=None, tags=None):
     return n
 
 
+def _auto_group_children(node, max_fanout=8):
+    """Recursively group children into sub-groups when fan-out exceeds max_fanout.
+
+    If a node has >max_fanout children, split them into groups of ~max_fanout
+    with auto-generated group labels based on first/last child labels.
+    """
+    children = node.get("children", [])
+    # Recurse first
+    for c in children:
+        _auto_group_children(c, max_fanout)
+
+    if len(children) <= max_fanout:
+        return
+
+    # Group by type if possible (different types get their own group)
+    type_groups = {}
+    for c in children:
+        t = c.get("type", "default")
+        type_groups.setdefault(t, []).append(c)
+
+    # If type grouping produces reasonable sizes, use it
+    if len(type_groups) > 1 and all(len(g) <= max_fanout for g in type_groups.values()):
+        return  # already manageable by type
+
+    # Otherwise chunk into groups of max_fanout
+    groups = []
+    for i in range(0, len(children), max_fanout):
+        chunk = children[i:i + max_fanout]
+        if len(chunk) == 1:
+            groups.append(chunk[0])
+        else:
+            first_label = chunk[0].get("label", "")[:6]
+            last_label = chunk[-1].get("label", "")[:6]
+            group_label = f"{first_label} … {last_label}"
+            gid = f"{node['id']}_g{i // max_fanout}"
+            groups.append(_node(gid, group_label, "group", children=chunk))
+    node["children"] = groups
+
+
 def collect_all_node_ids(node):
     ids = [node["id"]]
     for c in node.get("children", []):
@@ -170,7 +209,7 @@ body{{font-family:-apple-system,system-ui,'Segoe UI',sans-serif;background:#f8fa
 .toolbar button.primary{{background:#334155;color:#fff;border-color:#334155}}
 .toolbar button.primary:hover{{background:#1e293b}}
 .toolbar button.primary:disabled{{background:#94a3b8;cursor:not-allowed}}
-.zoom-info{{font-size:11px;color:#94a3b8;min-width:40px;text-align:center}}
+.zoom-info{{font-size:11px;color:#94a3b8;width:48px;text-align:center;border:1px solid transparent;border-radius:4px;padding:2px 4px;background:transparent;cursor:text}}.zoom-info:hover{{border-color:#475569}}.zoom-info:focus{{border-color:#3b82f6;outline:none;background:#1e293b}}
 /* ── Canvas ── */
 .canvas-wrap{{position:relative;width:100%;height:calc(100vh - 104px);overflow:hidden;cursor:grab}}
 .canvas-wrap.dragging{{cursor:grabbing}}
@@ -244,7 +283,7 @@ svg.lines{{position:absolute;top:0;left:0;overflow:visible;pointer-events:none}}
     <button onclick="setDepth(2)">Level 2</button>
     <button onclick="setDepth(3)">All</button>
     <button onclick="fitView()">Fit</button>
-    <span class="zoom-info" id="zoomInfo">100%</span>
+    <input type="text" class="zoom-info" id="zoomInfo" value="100%" onkeydown="if(event.key==='Enter')applyZoomInput(this)" onblur="applyZoomInput(this)">
     <button class="primary" onclick="submitAll()" id="submitBtn">Submit</button>
   </div>
 </div>
@@ -278,7 +317,8 @@ const TAB_ID='{_esc(tab_id)}';
 const TREE={tree_json};
 let feedback={feedback_json};
 let currentNodeId=null;
-let maxDepth=2;
+let maxDepth=3;
+const collapsedNodes=new Set();  // per-node collapse state
 
 // ── Branch colors (XMind style — each top-level branch gets a color) ──
 const BRANCH_COLORS=[
@@ -307,8 +347,12 @@ function nodeWidth(node){{
   return Math.max(tw,60);
 }}
 
+function isCollapsed(node,depth){{
+  return collapsedNodes.has(node.id)||(depth>=maxDepth);
+}}
+
 function countLeaves(node,depth){{
-  if(depth>=maxDepth||!node.children||!node.children.length)return 1;
+  if(isCollapsed(node,depth)||!node.children||!node.children.length)return 1;
   return node.children.reduce((s,c)=>s+countLeaves(c,depth+1),0);
 }}
 
@@ -316,8 +360,9 @@ function layoutSubtree(node,x,yStart,side,branchColor,depth){{
   node._depth=depth;
   const w=nodeWidth(node);
   const h=NODE_H;
-  const children=(depth<maxDepth&&node.children)?node.children:[];
-  const hasHiddenChildren=(!!(node.children&&node.children.length))&&(depth>=maxDepth);
+  const nodeCollapsed=isCollapsed(node,depth);
+  const children=(!nodeCollapsed&&node.children)?node.children:[];
+  const hasHiddenChildren=(!!(node.children&&node.children.length))&&nodeCollapsed;
 
   if(!children.length){{
     const y=yStart;
@@ -404,7 +449,7 @@ function renderMap(){{
 
   // Draw SVG curves
   function drawCurves(node,depth){{
-    if(depth>=maxDepth||!node.children)return;
+    if(isCollapsed(node,depth)||!node.children)return;
     const parent=nodePositions[node.id];
     if(!parent)return;
     const px=parent.x+offsetX;
@@ -484,17 +529,31 @@ function renderMap(){{
       }}
     }}
 
-    // Collapse dot for hidden children
-    if(p.collapsed){{
+    // Collapse/expand dot (per-node toggle, XMind style)
+    if(p.node.children&&p.node.children.length){{
       const dot=document.createElement('span');
       dot.className='collapse-dot';
-      dot.textContent=p.node.children.length;
+      if(p.collapsed){{
+        dot.textContent=p.node.children.length;
+        dot.title='展开 ('+p.node.children.length+' children)';
+      }}else{{
+        dot.textContent='−';
+        dot.title='折叠';
+        dot.style.opacity='0';
+        div.addEventListener('mouseenter',()=>{{dot.style.opacity='1';}});
+        div.addEventListener('mouseleave',()=>{{dot.style.opacity='0';}});
+      }}
       if(p.side==='right'||p.side==='center'){{
         dot.style.right='-24px';dot.style.top='50%';dot.style.transform='translateY(-50%)';
       }}else{{
         dot.style.left='-24px';dot.style.top='50%';dot.style.transform='translateY(-50%)';
       }}
-      dot.onclick=(e)=>{{e.stopPropagation();maxDepth++;renderMap();fitView();}};
+      dot.onclick=(e)=>{{
+        e.stopPropagation();
+        if(collapsedNodes.has(id))collapsedNodes.delete(id);
+        else collapsedNodes.add(id);
+        renderMap();
+      }};
       div.querySelector('.label').appendChild(dot);
     }}
 
@@ -519,7 +578,21 @@ const canvas=document.getElementById('canvas');
 
 function applyTransform(){{
   canvas.style.transform=`translate(${{panX}}px,${{panY}}px) scale(${{scale}})`;
-  document.getElementById('zoomInfo').textContent=Math.round(scale*100)+'%';
+  document.getElementById('zoomInfo').value=Math.round(scale*100)+'%';
+}}
+
+function applyZoomInput(el){{
+  const v=parseInt(el.value);
+  if(!isNaN(v)&&v>=15&&v<=300){{
+    const ww=wrap.clientWidth/2,wh=wrap.clientHeight/2;
+    const oldScale=scale;
+    scale=v/100;
+    panX=ww-(ww-panX)*(scale/oldScale);
+    panY=wh-(wh-panY)*(scale/oldScale);
+    applyTransform();
+  }}else{{
+    el.value=Math.round(scale*100)+'%';
+  }}
 }}
 
 wrap.addEventListener('wheel',(e)=>{{
@@ -558,7 +631,7 @@ function fitView(){{
   applyTransform();
 }}
 
-function setDepth(d){{maxDepth=d;renderMap();fitView();}}
+function setDepth(d){{maxDepth=d;collapsedNodes.clear();renderMap();fitView();}}
 
 // ── Comment panel ──
 function openPanel(nid){{
@@ -853,7 +926,9 @@ def load_concept_tree():
         if pref_children:
             children.append(_node("prefs", "Pipeline Preferences", "group", children=pref_children))
 
-    return _node("root", mission, "root", children=children)
+    tree = _node("root", mission, "root", children=children)
+    _auto_group_children(tree)
+    return tree
 
 
 def load_concept_feedback():
@@ -972,7 +1047,9 @@ def load_product_map_tree():
     if pattern_children:
         children.append(_node("patterns", "共性模式", "group", "", pattern_children))
 
-    return _node("root", project_name, "root", children=children)
+    tree = _node("root", project_name, "root", children=children)
+    _auto_group_children(tree)
+    return tree
 
 
 def load_map_feedback():
@@ -1186,7 +1263,9 @@ def load_datamodel_tree():
             "relations", "关系", "relation-group", children=rel_nodes
         ))
 
-    return _node("root", "数据模型", "root", children=children)
+    tree = _node("root", "数据模型", "root", children=children)
+    _auto_group_children(tree)
+    return tree
 
 
 def load_dm_feedback():
@@ -2961,7 +3040,9 @@ def load_spec_tree():
     if not sp_children:
         return _node("root", "No spec data", "error")
 
-    return _node("root", "\u5f00\u53d1\u89c4\u683c", "root", "", sp_children)
+    tree = _node("root", "\u5f00\u53d1\u89c4\u683c", "root", "", sp_children)
+    _auto_group_children(tree)
+    return tree
 
 
 def render_spec_page():
