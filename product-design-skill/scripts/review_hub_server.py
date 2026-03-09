@@ -1404,9 +1404,11 @@ def _build_4d_panel(screen):
 
     vo_actions = screen.get("vo_actions", [])
     actions = screen.get("actions", [])
-    all_action_labels = [a.get("label", "") for a in vo_actions[:4]] or [a.get("label", "") for a in actions[:4]]
+    all_action_labels = [a.get("label", "") for a in vo_actions[:4] if isinstance(a, dict)] or [
+        (a.get("label", "") if isinstance(a, dict) else str(a)) for a in actions[:4]
+    ]
     action_labels = ", ".join(al for al in all_action_labels if al)
-    api_refs = ", ".join(a.get("api_ref", "") for a in vo_actions if a.get("api_ref"))
+    api_refs = ", ".join(a.get("api_ref", "") for a in vo_actions if isinstance(a, dict) and a.get("api_ref"))
     action_val = f"{action_labels}" + (f" ({api_refs})" if api_refs else "") if action_labels else "No actions"
 
     states = screen.get("states", {})
@@ -1575,10 +1577,14 @@ def _wf_detail(screen):
     if vo_actions:
         btns = ""
         for a in vo_actions[:4]:
-            style = a.get("style", "ghost")
+            if isinstance(a, dict):
+                style = a.get("style", "ghost")
+                label = a.get("label", "")
+                api = a.get("api_ref", "")
+            else:
+                style, label, api = "ghost", str(a), ""
             cls = "wf-btn-primary" if style == "primary" else "wf-btn wf-btn-secondary"
-            btns += f'<button class="wf-btn {cls}">{_esc(a.get("label", ""))}</button>'
-            api = a.get("api_ref", "")
+            btns += f'<button class="wf-btn {cls}">{_esc(label)}</button>'
             if api:
                 btns += f'<div class="wf-api-ref">\u2193 API: {_esc(api)}</div>'
         action_html = f'<div class="wf-detail-actions"><div class="wf-label">\u2500\u2500\u2500 Actions \u2500\u2500\u2500</div><div class="wf-actions">{btns}</div></div>'
@@ -1607,9 +1613,13 @@ def _wf_state_machine(screen):
         for i in range(3):
             action_cell = ""
             for a in vo_actions[:2]:
-                alabel = a.get("label", "")
+                if isinstance(a, dict):
+                    alabel = a.get("label", "")
+                    api = a.get("api_ref", "")
+                else:
+                    alabel = str(a)
+                    api = ""
                 action_cell += f'<button class="wf-btn wf-btn-secondary" style="padding:2px 8px;font-size:10px">{_esc(alabel)}</button> '
-                api = a.get("api_ref", "")
                 if api:
                     action_cell += f'<div class="wf-transition">\u2192 API: {_esc(api)}</div>'
             if not action_cell:
@@ -1658,18 +1668,22 @@ def _wf_default(screen):
         content = f'<table class="wf-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table>'
     else:
         content = '<div class="wf-section">Content Area</div>'
-    high_actions = [a for a in actions if a.get("frequency") == "\u9ad8"]
-    other_actions = [a for a in actions if a.get("frequency") != "\u9ad8"]
+    high_actions = [a for a in actions if isinstance(a, dict) and a.get("frequency") == "\u9ad8"]
+    other_actions = [a for a in actions if not isinstance(a, dict) or a.get("frequency") != "\u9ad8"]
     primary_btns = ""
     for a in high_actions[:4]:
         crud = a.get("crud", "R")
         crud_color = {"C": "#4CAF50", "U": "#FF9800", "D": "#F44336", "R": "#78909C"}.get(crud, "#78909C")
-        primary_btns += f'<button class="wf-btn wf-btn-primary"><span class="crud-dot" style="background:{crud_color}"></span>{_esc(a["label"])}</button>'
+        primary_btns += f'<button class="wf-btn wf-btn-primary"><span class="crud-dot" style="background:{crud_color}"></span>{_esc(a.get("label", ""))}</button>'
     secondary_btns = ""
     for a in other_actions[:4]:
-        crud = a.get("crud", "R")
+        if isinstance(a, dict):
+            crud = a.get("crud", "R")
+            label = a.get("label", "")
+        else:
+            crud, label = "R", str(a)
         crud_color = {"C": "#4CAF50", "U": "#FF9800", "D": "#F44336", "R": "#78909C"}.get(crud, "#78909C")
-        secondary_btns += f'<button class="wf-btn wf-btn-secondary"><span class="crud-dot" style="background:{crud_color}"></span>{_esc(a["label"])}</button>'
+        secondary_btns += f'<button class="wf-btn wf-btn-secondary"><span class="crud-dot" style="background:{crud_color}"></span>{_esc(label)}</button>'
     btns_html = ""
     if primary_btns:
         btns_html += f'<div class="wf-actions">{primary_btns}</div>'
@@ -2925,6 +2939,9 @@ class ReviewHubHandler(http.server.BaseHTTPRequestHandler):
             self._respond(render_ui_screen_html(screen_id))
         elif path == "/spec":
             self._respond(render_spec_page())
+        elif path == "/favicon.ico":
+            self.send_response(204)
+            self.end_headers()
         else:
             self._respond_404()
 
