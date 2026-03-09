@@ -315,7 +315,7 @@ for fa in feature_areas:
         task = tasks_by_id.get(tid)
         if not task:
             continue
-        rid = task["owner_role"]
+        rid = task.get("owner_role") or task.get("role_id", "")
         if rid not in role_fas:
             role_fas[rid] = {}
         if fa["id"] not in role_fas[rid]:
@@ -337,14 +337,15 @@ for fa in feature_areas:
 # ── E2E use cases (uses 'nodes' not 'steps') ─────────────────────────────────
 e2e_cases = []
 for flow in flows:
-    fid = flow["id"]
+    fid = flow.get("id") or flow.get("flow_id", "")
+    fname = flow.get("name") or flow.get("flow_name", "")
     gap_count = flow.get("gap_count", 0)
     if gap_count > 0:
         e2e_cases.append({
             "id": f"E2E-{fid}-NOTE",
             "type": "e2e_gap",
             "flow_ref": fid,
-            "title": f"{flow['name']}_含{gap_count}个缺口，待修复后生成E2E用例",
+            "title": f"{fname}_含{gap_count}个缺口，待修复后生成E2E用例",
             "steps": [],
             "then": []
         })
@@ -370,10 +371,10 @@ for flow in flows:
         "id": f"E2E-{fid}-01",
         "type": "e2e",
         "flow_ref": fid,
-        "title": f"{flow['name']}_正常流",
-        "given": ["用户已登录", f"具备{flow['name']}相关操作权限"],
+        "title": f"{fname}_正常流",
+        "given": ["用户已登录", f"具备{fname}相关操作权限"],
         "steps": steps_list,
-        "then": [f"{flow['name']}全链路执行成功"]
+        "then": [f"{fname}全链路执行成功"]
     })
 
 # ── E2E ordering verification ─────────────────────────────────────────────────

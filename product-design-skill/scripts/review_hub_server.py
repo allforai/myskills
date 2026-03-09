@@ -1016,8 +1016,8 @@ def load_product_map_tree():
     if flows:
         flow_nodes = []
         for f in flows:
-            fid = f["id"]
-            fname = f.get("name", fid)
+            fid = f.get("id") or f.get("flow_id", "")
+            fname = f.get("name") or f.get("flow_name", fid)
             nodes = f.get("nodes", [])
             step_nodes = []
             for n in nodes[:8]:
@@ -1338,9 +1338,9 @@ def load_wireframe_data():
                 gate_issues.setdefault(nid, []).append(issue)
 
     vos = C.load_view_objects(BASE)
-    vo_map = {v["id"]: v for v in vos} if vos else {}
+    vo_map = {v.get("id") or v.get("vo_id", ""): v for v in vos} if vos else {}
     apis = C.load_api_contracts(BASE)
-    api_map = {a["id"]: a for a in apis} if apis else {}
+    api_map = {a.get("id") or a.get("api_id", ""): a for a in apis} if apis else {}
 
     return op_lines, tasks, role_map, gate_issues, vo_map, api_map
 
@@ -1423,7 +1423,7 @@ def build_screens_with_context(op_lines, tasks, role_map, gate_issues, vo_map=No
                 for tid in s.get("tasks", []):
                     task = tasks.get(tid)
                     if task and not screen_role:
-                        screen_role = role_map.get(task["owner_role"], "")
+                        screen_role = role_map.get(task.get("owner_role") or task.get("role_id", ""), "")
 
                 vo_ref = s.get("vo_ref", "")
                 vo = vo_map.get(vo_ref, {}) if vo_ref else {}

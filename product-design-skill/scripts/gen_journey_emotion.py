@@ -34,8 +34,8 @@ def main():
     # ── build journey lines from business flows ──
     journey_lines = []
     for i, flow in enumerate(flows):
-        fid = flow.get("id", f"F{i+1:02d}")
-        fname = flow.get("name", f"Flow {i+1}")
+        fid = flow.get("id") or flow.get("flow_id") or f"F{i+1:02d}"
+        fname = flow.get("name") or flow.get("flow_name") or f"Flow {i+1}"
         frole = flow.get("role", flow.get("owner_role", ""))
 
         nodes_raw = C.get_flow_nodes(flow)

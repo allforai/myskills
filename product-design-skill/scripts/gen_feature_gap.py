@@ -311,10 +311,10 @@ if orphan_tasks:
 for flow in flows:
     if flow.get("gap_count", 0) > 0:
         flow_gaps.append({
-            "flow_id": flow["id"],
-            "flow_name": flow.get("name", ""),
+            "flow_id": flow.get("id") or flow.get("flow_id", ""),
+            "flow_name": flow.get("name") or flow.get("flow_name", ""),
             "gap_type": "FLOW_GAP",
-            "description": f"业务流 {flow['id']} 含 {flow['gap_count']} 个缺口",
+            "description": f"业务流 {flow.get('id') or flow.get('flow_id', '')} 含 {flow['gap_count']} 个缺口",
             "affected_tasks": [
                 n.get("task_ref", "") if isinstance(n, dict) else n
                 for n in C.get_flow_nodes(flow)
@@ -561,7 +561,7 @@ for tg in task_gaps:
             "type": gap,
             "category": cat,
             "priority": prio,
-            "affected_roles": [role_map.get(task["owner_role"], task["owner_role"])],
+            "affected_roles": [role_map.get(task.get("owner_role") or task.get("role_id", ""), task.get("owner_role") or task.get("role_id", ""))],
             "affected_tasks": [tid],
             "affected_screens": task_screen_map.get(tid, []),
             "description": f"任务 {tid} ({task['task_name']}) 检测到 {gap}",

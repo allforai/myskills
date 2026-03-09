@@ -147,7 +147,7 @@ for s in screens:
     for tid in screen_tasks:
         task = tasks.get(tid)
         if task:
-            screen_roles.add(task["owner_role"])
+            screen_roles.add(task.get("owner_role") or task.get("role_id", ""))
     for rid in screen_roles:
         role_screens.setdefault(rid, []).append(s)
 
@@ -207,7 +207,7 @@ for mod, slist in module_screens.items():
         for tid in screen_tasks:
             task = tasks.get(tid)
             if task:
-                at = role_audience.get(task["owner_role"], "default")
+                at = role_audience.get(task.get("owner_role") or task.get("role_id", ""), "default")
                 if at == "professional":
                     audience = "professional"
                     break
@@ -282,8 +282,8 @@ for s in screens:
         task = tasks.get(tid)
         if task:
             if not screen_role:
-                screen_role = role_map.get(task["owner_role"], "")
-            at = role_audience.get(task["owner_role"], "default")
+                screen_role = role_map.get(task.get("owner_role") or task.get("role_id", ""), "")
+            at = role_audience.get(task.get("owner_role") or task.get("role_id", ""), "default")
             if at == "professional":
                 audience = "professional"
 
@@ -768,8 +768,8 @@ for role in roles:
     at = role.get("audience_type", "default")
     rscreens = role_screens.get(rid, [])
     screen_count = len(rscreens)
-    role_tasks = [t for t in inv["tasks"] if t["owner_role"] == rid and t.get("frequency") == "高"]
-    top3 = [t["task_name"] for t in role_tasks[:3]]
+    role_tasks = [t for t in inv["tasks"] if (t.get("owner_role") or t.get("role_id", "")) == rid and t.get("frequency") == "高"]
+    top3 = [t.get("task_name") or t.get("name", "") for t in role_tasks[:3]]
     safe_name = rname.replace("/", "-").replace(" ", "-")
     badge_class = "badge-consumer" if at == "consumer" else "badge-professional"
     index_cards.append(f"""

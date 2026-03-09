@@ -441,12 +441,13 @@ def main():
             fid = f.get("id") or f.get("flow_id", "")
             if fid:
                 flow_by_id[fid] = f
-                # Also register zero-padded variant: F1→F001, F2→F002
+                # Also register zero-padded variants: F1→F01, F1→F001
                 import re as _re
                 m = _re.match(r'^(F)(\d+)$', fid)
                 if m:
-                    padded = f"{m.group(1)}{int(m.group(2)):03d}"
-                    flow_by_id[padded] = f
+                    num = int(m.group(2))
+                    flow_by_id[f"{m.group(1)}{num:02d}"] = f
+                    flow_by_id[f"{m.group(1)}{num:03d}"] = f
 
     # ── generate operation lines ──
     operation_lines = []

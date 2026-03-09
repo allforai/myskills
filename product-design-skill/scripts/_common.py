@@ -134,12 +134,12 @@ def require_json(path, label="file"):
 # ── Data Loaders ──────────────────────────────────────────────────────────────
 
 def _normalize_task(task):
-    """Ensure task has both 'task_name' and 'name' fields (bidirectional sync).
+    """Ensure task has both 'task_name'/'name' and 'owner_role'/'role_id' fields.
 
-    Source data may use either 'name' or 'task_name'. This normalizer ensures
-    both fields exist so downstream code never hits KeyError regardless of
-    which field it accesses.
+    Source data may use either variant. This normalizer ensures both fields
+    exist so downstream code never hits KeyError regardless of which it accesses.
     """
+    # name ↔ task_name
     tn = task.get("task_name", "")
     n = task.get("name", "")
     if tn and not n:
@@ -149,6 +149,13 @@ def _normalize_task(task):
     elif not tn and not n:
         task["task_name"] = task.get("id", "")
         task["name"] = task.get("id", "")
+    # owner_role ↔ role_id
+    or_ = task.get("owner_role", "")
+    ri = task.get("role_id", "")
+    if or_ and not ri:
+        task["role_id"] = or_
+    elif ri and not or_:
+        task["owner_role"] = ri
     return task
 
 
@@ -827,7 +834,12 @@ class FullContext:
                 if f.get("_source_phase") == source_phase]
 
     def vo_for_screen(self, screen_id):
-        """Return view objects relevant to *screen_id* via task intersection."""
+        """Return view objects relevant to *screen_id* via screen_id match or task intersection."""
+        # Direct screen_id match (primary)
+        direct = [vo for vo in self.view_objects if vo.get("screen_id") == screen_id]
+        if direct:
+            return direct
+        # Fallback: task intersection
         screen = self.screens.get(screen_id)
         if not screen:
             return []
@@ -838,7 +850,20 @@ class FullContext:
                 if screen_tasks & set(vo.get("task_refs", []))]
 
     def api_for_screen(self, screen_id):
-        """Return API endpoints relevant to *screen_id* via task intersection."""
+        """Return API endpoints relevant to *screen_id* via VO api_ref or task intersection."""
+        # Via VO actions (primary — VOs link screen_id → api_ref → endpoint)
+        vos = self.vo_for_screen(screen_id)
+        if vos:
+            api_ids = set()
+            for vo in vos:
+                for act in vo.get("vo_actions", []):
+                    ref = act.get("api_ref", "")
+                    if ref:
+                        api_ids.add(ref)
+            if api_ids:
+                ep_map = {ep.get("api_id") or ep.get("id", ""): ep for ep in self.api_contracts}
+                return [ep_map[aid] for aid in api_ids if aid in ep_map]
+        # Fallback: task intersection
         screen = self.screens.get(screen_id)
         if not screen:
             return []
