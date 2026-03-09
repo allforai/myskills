@@ -1129,15 +1129,20 @@ def load_datamodel_tree():
                 else:
                     fnode_type = "field"
 
-                flabel = f"{fname}: {ftype}{suffix}"
-                fdetail = f"字段: {fname}\n类型: {ftype}\n必填: {'yes' if frequired else 'no'}"
+                fl = f.get("label", "")
+                flabel = f"{fname}({fl}): {ftype}{suffix}" if fl and fl != fname else f"{fname}: {ftype}{suffix}"
+                fdetail = f"字段: {fname}\n中文: {fl}\n类型: {ftype}\n必填: {'yes' if frequired else 'no'}"
                 if constraints:
                     fdetail += f"\n约束: {constraints}"
 
                 field_nodes.append(_node(
                     f"{eid}-f-{fname}", flabel, fnode_type, fdetail
                 ))
-            field_summary = ", ".join(f.get("name", "") for f in fields[:6])
+            field_summary = ", ".join(
+                f"{f.get('name', '')}({f.get('label', '')})" if f.get("label") and f.get("label") != f.get("name")
+                else f.get("name", "")
+                for f in fields[:6]
+            )
             if len(fields) > 6:
                 field_summary += f" +{len(fields) - 6}"
             entity_children.append(_node(
@@ -1201,7 +1206,11 @@ def load_datamodel_tree():
 
                 volabel = f"{voname} ({void})" if void else voname
                 votags = [void] if void else []
-                vo_field_names = ", ".join(f.get("name", "") for f in vo_fields[:6])
+                vo_field_names = ", ".join(
+                    f"{f.get('name', '')}({f.get('label', '')})" if f.get("label") and f.get("label") != f.get("name")
+                    else f.get("name", "")
+                    for f in vo_fields[:6]
+                )
                 if len(vo_fields) > 6:
                     vo_field_names += f" +{len(vo_fields) - 6}"
                 vodetail = (

@@ -65,140 +65,172 @@ FIELD_HINTS = {
 # ── Module-level domain field knowledge base ────────────────────────────────
 # Maps module-name keywords to realistic entity fields.
 # Each entry: (keywords_tuple, fields_list)
-# Fields format: (name, type, constraints_list)
+# Fields format: (name, type, constraints_list, label)
+# Labels are Chinese — co-located with domain knowledge for cross-project reuse.
 _MODULE_FIELDS = [
     # Auth / account
     (("账号", "认证", "auth", "account"), [
-        ("email", "string", ["unique"]), ("phone", "string", []),
-        ("password_hash", "string", ["not_null"]), ("nickname", "string", []),
-        ("avatar_url", "string", []), ("role", "enum", []),
-        ("last_login_at", "datetime", []), ("status", "enum", ["default:active"]),
+        ("email", "string", ["unique"], "邮箱"),
+        ("phone", "string", [], "手机号"),
+        ("password_hash", "string", ["not_null"], "密码哈希"),
+        ("nickname", "string", [], "昵称"),
+        ("avatar_url", "string", [], "头像"),
+        ("role", "enum", [], "角色"),
+        ("last_login_at", "datetime", [], "最后登录"),
+        ("status", "enum", ["default:active"], "状态"),
     ]),
     # Scene / content
     (("场景", "scene", "内容创作", "content"), [
-        ("title", "string", ["not_null"]), ("description", "text", []),
-        ("category", "enum", []), ("difficulty", "enum", []),
-        ("tags", "string[]", []), ("cover_image_url", "string", []),
-        ("language", "string", ["not_null"]), ("word_count", "integer", []),
-        ("dialogue_count", "integer", []), ("status", "enum", ["default:draft"]),
-        ("author_id", "uuid", ["FK:user"]), ("published_at", "datetime", []),
+        ("title", "string", ["not_null"], "标题"),
+        ("description", "text", [], "描述"),
+        ("category", "enum", [], "分类"),
+        ("difficulty", "enum", [], "难度"),
+        ("tags", "string[]", [], "标签"),
+        ("cover_image_url", "string", [], "封面图"),
+        ("language", "string", ["not_null"], "语言"),
+        ("word_count", "integer", [], "词汇量"),
+        ("dialogue_count", "integer", [], "对话数"),
+        ("status", "enum", ["default:draft"], "状态"),
+        ("author_id", "uuid", ["FK:user"], "作者"),
+        ("published_at", "datetime", [], "发布时间"),
     ]),
     # Dialogue / conversation
     (("对话", "dialogue"), [
-        ("scene_id", "uuid", ["FK:scene", "not_null"]),
-        ("seq", "integer", ["not_null"]), ("speaker", "string", []),
-        ("text", "text", ["not_null"]), ("translation", "text", []),
-        ("audio_url", "string", []), ("image_url", "string", []),
+        ("scene_id", "uuid", ["FK:scene", "not_null"], "场景"),
+        ("seq", "integer", ["not_null"], "序号"),
+        ("speaker", "string", [], "说话人"),
+        ("text", "text", ["not_null"], "文本"),
+        ("translation", "text", [], "翻译"),
+        ("audio_url", "string", [], "音频"),
+        ("image_url", "string", [], "图片"),
     ]),
     # Sentence practice
     (("句子", "sentence", "练习"), [
-        ("scene_id", "uuid", ["FK:scene"]), ("dialogue_id", "uuid", ["FK:dialogue"]),
-        ("text", "text", ["not_null"]), ("translation", "text", []),
-        ("audio_url", "string", []), ("key_phrase", "string", []),
-        ("context_hint", "text", []), ("difficulty", "enum", []),
+        ("scene_id", "uuid", ["FK:scene"], "场景"),
+        ("dialogue_id", "uuid", ["FK:dialogue"], "对话"),
+        ("text", "text", ["not_null"], "文本"),
+        ("translation", "text", [], "翻译"),
+        ("audio_url", "string", [], "音频"),
+        ("key_phrase", "string", [], "关键短语"),
+        ("context_hint", "text", [], "语境提示"),
+        ("difficulty", "enum", [], "难度"),
     ]),
     # Vocabulary / word
     (("词汇", "单词", "生词", "word", "vocabulary"), [
-        ("word", "string", ["not_null"]), ("phonetic", "string", []),
-        ("meaning", "text", ["not_null"]), ("pos", "enum", []),
-        ("example_sentence", "text", []), ("audio_url", "string", []),
-        ("scene_id", "uuid", ["FK:scene"]), ("difficulty", "integer", []),
+        ("word", "string", ["not_null"], "单词"),
+        ("phonetic", "string", [], "音标"),
+        ("meaning", "text", ["not_null"], "释义"),
+        ("pos", "enum", [], "词性"),
+        ("example_sentence", "text", [], "例句"),
+        ("audio_url", "string", [], "音频"),
+        ("scene_id", "uuid", ["FK:scene"], "场景"),
+        ("difficulty", "integer", [], "难度"),
     ]),
     # SRS / memory review
     (("记忆", "复习", "SRS", "review", "flashcard"), [
-        ("user_id", "uuid", ["FK:user", "not_null"]),
-        ("word_id", "uuid", ["FK:word", "not_null"]),
-        ("ease_factor", "decimal", ["default:2.5"]),
-        ("interval_days", "integer", ["default:1"]),
-        ("repetitions", "integer", ["default:0"]),
-        ("next_review_at", "datetime", ["not_null"]),
-        ("last_review_at", "datetime", []),
-        ("stability", "decimal", []), ("difficulty_param", "decimal", []),
+        ("user_id", "uuid", ["FK:user", "not_null"], "用户"),
+        ("word_id", "uuid", ["FK:word", "not_null"], "单词"),
+        ("ease_factor", "decimal", ["default:2.5"], "难度系数"),
+        ("interval_days", "integer", ["default:1"], "间隔天数"),
+        ("repetitions", "integer", ["default:0"], "重复次数"),
+        ("next_review_at", "datetime", ["not_null"], "下次复习"),
+        ("last_review_at", "datetime", [], "上次复习"),
+        ("stability", "decimal", [], "稳定性"),
+        ("difficulty_param", "decimal", [], "难度参数"),
     ]),
     # Learning stats
     (("学习统计", "统计", "stats"), [
-        ("user_id", "uuid", ["FK:user", "not_null"]),
-        ("date", "date", ["not_null"]),
-        ("new_words_count", "integer", ["default:0"]),
-        ("reviewed_count", "integer", ["default:0"]),
-        ("mastered_count", "integer", ["default:0"]),
-        ("study_duration_min", "integer", ["default:0"]),
-        ("retention_rate", "decimal", []),
-        ("streak_days", "integer", ["default:0"]),
+        ("user_id", "uuid", ["FK:user", "not_null"], "用户"),
+        ("date", "date", ["not_null"], "日期"),
+        ("new_words_count", "integer", ["default:0"], "新学数"),
+        ("reviewed_count", "integer", ["default:0"], "复习数"),
+        ("mastered_count", "integer", ["default:0"], "已掌握数"),
+        ("study_duration_min", "integer", ["default:0"], "学习时长(分)"),
+        ("retention_rate", "decimal", [], "记忆保持率"),
+        ("streak_days", "integer", ["default:0"], "连续天数"),
     ]),
     # Subscription / payment
     (("订阅", "付费", "subscription", "payment"), [
-        ("user_id", "uuid", ["FK:user", "not_null"]),
-        ("plan", "enum", ["not_null"]),
-        ("price", "decimal", ["min:0"]),
-        ("currency", "string", ["default:CNY"]),
-        ("started_at", "datetime", []),
-        ("expires_at", "datetime", []),
-        ("auto_renew", "boolean", ["default:true"]),
-        ("status", "enum", ["default:active"]),
-        ("payment_method", "string", []),
+        ("user_id", "uuid", ["FK:user", "not_null"], "用户"),
+        ("plan", "enum", ["not_null"], "方案"),
+        ("price", "decimal", ["min:0"], "价格"),
+        ("currency", "string", ["default:CNY"], "币种"),
+        ("started_at", "datetime", [], "开始时间"),
+        ("expires_at", "datetime", [], "到期时间"),
+        ("auto_renew", "boolean", ["default:true"], "自动续费"),
+        ("status", "enum", ["default:active"], "状态"),
+        ("payment_method", "string", [], "支付方式"),
     ]),
     # Offline / sync
     (("离线", "同步", "offline", "sync"), [
-        ("user_id", "uuid", ["FK:user", "not_null"]),
-        ("scene_id", "uuid", ["FK:scene"]),
-        ("download_status", "enum", ["default:pending"]),
-        ("file_size_bytes", "integer", []),
-        ("downloaded_at", "datetime", []),
-        ("last_sync_at", "datetime", []),
-        ("local_version", "integer", ["default:0"]),
-        ("server_version", "integer", ["default:0"]),
+        ("user_id", "uuid", ["FK:user", "not_null"], "用户"),
+        ("scene_id", "uuid", ["FK:scene"], "场景"),
+        ("download_status", "enum", ["default:pending"], "下载状态"),
+        ("file_size_bytes", "integer", [], "文件大小"),
+        ("downloaded_at", "datetime", [], "下载时间"),
+        ("last_sync_at", "datetime", [], "最后同步"),
+        ("local_version", "integer", ["default:0"], "本地版本"),
+        ("server_version", "integer", ["default:0"], "服务器版本"),
     ]),
     # Settings / profile
     (("个人设置", "设置", "settings", "profile"), [
-        ("user_id", "uuid", ["FK:user", "not_null"]),
-        ("daily_goal_words", "integer", ["default:10"]),
-        ("daily_goal_reviews", "integer", ["default:20"]),
-        ("notification_enabled", "boolean", ["default:true"]),
-        ("preferred_language", "string", []),
-        ("theme", "enum", ["default:system"]),
+        ("user_id", "uuid", ["FK:user", "not_null"], "用户"),
+        ("daily_goal_words", "integer", ["default:10"], "每日新词目标"),
+        ("daily_goal_reviews", "integer", ["default:20"], "每日复习目标"),
+        ("notification_enabled", "boolean", ["default:true"], "通知开关"),
+        ("preferred_language", "string", [], "偏好语言"),
+        ("theme", "enum", ["default:system"], "主题"),
     ]),
     # Feedback
     (("反馈", "feedback"), [
-        ("user_id", "uuid", ["FK:user"]),
-        ("type", "enum", ["not_null"]),
-        ("content", "text", ["not_null"]),
-        ("contact", "string", []),
-        ("status", "enum", ["default:pending"]),
+        ("user_id", "uuid", ["FK:user"], "用户"),
+        ("type", "enum", ["not_null"], "类型"),
+        ("content", "text", ["not_null"], "内容"),
+        ("contact", "string", [], "联系方式"),
+        ("status", "enum", ["default:pending"], "状态"),
     ]),
     # Data analytics / dashboard
     (("数据分析", "仪表盘", "analytics", "dashboard"), [
-        ("metric_name", "string", ["not_null"]),
-        ("metric_value", "decimal", []),
-        ("dimension", "string", []),
-        ("period", "enum", []),
-        ("recorded_at", "datetime", ["not_null"]),
+        ("metric_name", "string", ["not_null"], "指标名"),
+        ("metric_value", "decimal", [], "指标值"),
+        ("dimension", "string", [], "维度"),
+        ("period", "enum", [], "周期"),
+        ("recorded_at", "datetime", ["not_null"], "记录时间"),
     ]),
     # Admin: tags / categories
     (("标签", "分类", "tag", "category"), [
-        ("name", "string", ["not_null", "unique"]),
-        ("parent_id", "uuid", []),
-        ("sort_order", "integer", ["default:0"]),
-        ("icon", "string", []),
+        ("name", "string", ["not_null", "unique"], "名称"),
+        ("parent_id", "uuid", [], "父级"),
+        ("sort_order", "integer", ["default:0"], "排序"),
+        ("icon", "string", [], "图标"),
     ]),
     # Admin: prompt templates
     (("Prompt", "模板", "prompt", "template"), [
-        ("name", "string", ["not_null"]),
-        ("template_text", "text", ["not_null"]),
-        ("variables", "string[]", []),
-        ("model", "string", []),
-        ("temperature", "decimal", []),
-        ("max_tokens", "integer", []),
+        ("name", "string", ["not_null"], "名称"),
+        ("template_text", "text", ["not_null"], "模板内容"),
+        ("variables", "string[]", [], "变量"),
+        ("model", "string", [], "模型"),
+        ("temperature", "decimal", [], "温度"),
+        ("max_tokens", "integer", [], "最大token"),
     ]),
 ]
 
+# Common field labels for universal fields (id, timestamps, etc.)
+# Used as fallback when field doesn't come from _MODULE_FIELDS or FIELD_HINTS.
+_COMMON_LABELS = {
+    "id": "ID", "created_at": "创建时间", "updated_at": "更新时间",
+    "status": "状态", "name": "名称", "type": "类型",
+    "amount": "金额",
+}
+
 
 def _module_domain_fields(module_name, task_names_combined):
-    """Find domain-specific fields for a module using keyword matching."""
+    """Find domain-specific fields for a module using keyword matching.
+    Returns list of (name, type, constraints, label) tuples."""
     text = module_name + " " + task_names_combined
     for keywords, fields in _MODULE_FIELDS:
         if any(kw in text for kw in keywords):
-            return [(fname, ftype, fcons) for fname, ftype, fcons in fields]
+            return [(fname, ftype, fcons, flabel) for fname, ftype, fcons, flabel in fields]
     return []
 
 
@@ -320,23 +352,25 @@ for idx, (module, mod_tasks) in enumerate(sorted(module_tasks.items()), start=1)
     if crud_tasks["U"]:
         fields.append({"name": "updated_at", "type": "datetime", "constraints": ["auto"]})
 
-    # Scan task names for field hints
+    # Scan task names for field hints (keyword itself is Chinese → use as label)
     seen_fields = {"id", "created_at", "updated_at"}
     for t in mod_tasks:
         tname = t.get("name", "")
         for keyword, (fname, ftype) in FIELD_HINTS.items():
             if keyword in tname and fname not in seen_fields:
                 seen_fields.add(fname)
-                field_entry = {"name": fname, "type": ftype, "constraints": []}
+                field_entry = {"name": fname, "type": ftype, "constraints": [],
+                               "label": keyword}
                 fields.append(field_entry)
 
     # Domain-specific fields from module knowledge base
     combined_names = " ".join(t.get("name", "") for t in mod_tasks)
     domain_fields = _module_domain_fields(module, combined_names)
-    for fname, ftype, fcons in domain_fields:
+    for fname, ftype, fcons, flabel in domain_fields:
         if fname not in seen_fields:
             seen_fields.add(fname)
-            fields.append({"name": fname, "type": ftype, "constraints": fcons})
+            fields.append({"name": fname, "type": ftype, "constraints": fcons,
+                           "label": flabel})
 
     # Apply constraints from constraints.json
     module_constraints = [c for c in constraints_list
@@ -412,6 +446,11 @@ for idx, (module, mod_tasks) in enumerate(sorted(module_tasks.items()), start=1)
         role_map.get(t.get("owner_role", ""), t.get("owner_role", ""))
         for t in mod_tasks
     ))
+
+    # Inject Chinese labels (fallback: _COMMON_LABELS → field name as-is)
+    for f in fields:
+        if "label" not in f:
+            f["label"] = _COMMON_LABELS.get(f["name"], f["name"])
 
     entity = {
         "id": eid,
