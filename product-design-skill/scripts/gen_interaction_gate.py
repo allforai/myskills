@@ -17,7 +17,7 @@ MAX_STEPS_IDEAL = 7
 MAX_CONTEXT_SWITCHES = 2
 
 
-def evaluate_line(ol):
+def evaluate_line(ol, xv_findings=None):
     """Evaluate a single operation line, return score dict."""
     cont = ol.get("continuity", {})
     total_steps = cont.get("total_steps", len(ol.get("nodes", [])))
@@ -75,6 +75,24 @@ def evaluate_line(ol):
 
     score = step_score + ctx_score + wait_score + thumb_score
 
+    # ── XV finding penalties ──
+    if xv_findings:
+        screen_ids_in_line = {s["id"] for n in nodes for s in n.get("screens", [])}
+        for finding in xv_findings:
+            raw = finding.get("raw_findings", {})
+            if not isinstance(raw, dict):
+                continue
+            for iss in raw.get("issues", []):
+                sev = iss.get("severity", "low")
+                desc = iss.get("description", "")
+                # Check if this finding relates to any screen in this line
+                if any(sid in desc for sid in screen_ids_in_line):
+                    if sev == "high":
+                        score -= 5
+                    elif sev == "critical":
+                        score -= 10
+        score = max(0, score)
+
     return {
         "line_id": ol["id"],
         "steps": total_steps,
@@ -104,10 +122,13 @@ def main():
         print("ERROR: experience-map.json not found. Run experience-map first.")
         sys.exit(1)
 
+    # ── load full context (for XV findings) ──
+    ctx = C.load_full_context(BASE)
+
     # ── evaluate each line ──
     line_results = []
     for ol in op_lines:
-        line_results.append(evaluate_line(ol))
+        line_results.append(evaluate_line(ol, xv_findings=ctx.xv_findings))
 
     # ── determine overall result ──
     all_pass = all(lr["score"] >= threshold for lr in line_results)
