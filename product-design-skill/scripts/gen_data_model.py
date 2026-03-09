@@ -62,6 +62,146 @@ FIELD_HINTS = {
     "库存": ("stock", "integer"),
 }
 
+# ── Module-level domain field knowledge base ────────────────────────────────
+# Maps module-name keywords to realistic entity fields.
+# Each entry: (keywords_tuple, fields_list)
+# Fields format: (name, type, constraints_list)
+_MODULE_FIELDS = [
+    # Auth / account
+    (("账号", "认证", "auth", "account"), [
+        ("email", "string", ["unique"]), ("phone", "string", []),
+        ("password_hash", "string", ["not_null"]), ("nickname", "string", []),
+        ("avatar_url", "string", []), ("role", "enum", []),
+        ("last_login_at", "datetime", []), ("status", "enum", ["default:active"]),
+    ]),
+    # Scene / content
+    (("场景", "scene", "内容创作", "content"), [
+        ("title", "string", ["not_null"]), ("description", "text", []),
+        ("category", "enum", []), ("difficulty", "enum", []),
+        ("tags", "string[]", []), ("cover_image_url", "string", []),
+        ("language", "string", ["not_null"]), ("word_count", "integer", []),
+        ("dialogue_count", "integer", []), ("status", "enum", ["default:draft"]),
+        ("author_id", "uuid", ["FK:user"]), ("published_at", "datetime", []),
+    ]),
+    # Dialogue / conversation
+    (("对话", "dialogue"), [
+        ("scene_id", "uuid", ["FK:scene", "not_null"]),
+        ("seq", "integer", ["not_null"]), ("speaker", "string", []),
+        ("text", "text", ["not_null"]), ("translation", "text", []),
+        ("audio_url", "string", []), ("image_url", "string", []),
+    ]),
+    # Sentence practice
+    (("句子", "sentence", "练习"), [
+        ("scene_id", "uuid", ["FK:scene"]), ("dialogue_id", "uuid", ["FK:dialogue"]),
+        ("text", "text", ["not_null"]), ("translation", "text", []),
+        ("audio_url", "string", []), ("key_phrase", "string", []),
+        ("context_hint", "text", []), ("difficulty", "enum", []),
+    ]),
+    # Vocabulary / word
+    (("词汇", "单词", "生词", "word", "vocabulary"), [
+        ("word", "string", ["not_null"]), ("phonetic", "string", []),
+        ("meaning", "text", ["not_null"]), ("pos", "enum", []),
+        ("example_sentence", "text", []), ("audio_url", "string", []),
+        ("scene_id", "uuid", ["FK:scene"]), ("difficulty", "integer", []),
+    ]),
+    # SRS / memory review
+    (("记忆", "复习", "SRS", "review", "flashcard"), [
+        ("user_id", "uuid", ["FK:user", "not_null"]),
+        ("word_id", "uuid", ["FK:word", "not_null"]),
+        ("ease_factor", "decimal", ["default:2.5"]),
+        ("interval_days", "integer", ["default:1"]),
+        ("repetitions", "integer", ["default:0"]),
+        ("next_review_at", "datetime", ["not_null"]),
+        ("last_review_at", "datetime", []),
+        ("stability", "decimal", []), ("difficulty_param", "decimal", []),
+    ]),
+    # Learning stats
+    (("学习统计", "统计", "stats"), [
+        ("user_id", "uuid", ["FK:user", "not_null"]),
+        ("date", "date", ["not_null"]),
+        ("new_words_count", "integer", ["default:0"]),
+        ("reviewed_count", "integer", ["default:0"]),
+        ("mastered_count", "integer", ["default:0"]),
+        ("study_duration_min", "integer", ["default:0"]),
+        ("retention_rate", "decimal", []),
+        ("streak_days", "integer", ["default:0"]),
+    ]),
+    # Subscription / payment
+    (("订阅", "付费", "subscription", "payment"), [
+        ("user_id", "uuid", ["FK:user", "not_null"]),
+        ("plan", "enum", ["not_null"]),
+        ("price", "decimal", ["min:0"]),
+        ("currency", "string", ["default:CNY"]),
+        ("started_at", "datetime", []),
+        ("expires_at", "datetime", []),
+        ("auto_renew", "boolean", ["default:true"]),
+        ("status", "enum", ["default:active"]),
+        ("payment_method", "string", []),
+    ]),
+    # Offline / sync
+    (("离线", "同步", "offline", "sync"), [
+        ("user_id", "uuid", ["FK:user", "not_null"]),
+        ("scene_id", "uuid", ["FK:scene"]),
+        ("download_status", "enum", ["default:pending"]),
+        ("file_size_bytes", "integer", []),
+        ("downloaded_at", "datetime", []),
+        ("last_sync_at", "datetime", []),
+        ("local_version", "integer", ["default:0"]),
+        ("server_version", "integer", ["default:0"]),
+    ]),
+    # Settings / profile
+    (("个人设置", "设置", "settings", "profile"), [
+        ("user_id", "uuid", ["FK:user", "not_null"]),
+        ("daily_goal_words", "integer", ["default:10"]),
+        ("daily_goal_reviews", "integer", ["default:20"]),
+        ("notification_enabled", "boolean", ["default:true"]),
+        ("preferred_language", "string", []),
+        ("theme", "enum", ["default:system"]),
+    ]),
+    # Feedback
+    (("反馈", "feedback"), [
+        ("user_id", "uuid", ["FK:user"]),
+        ("type", "enum", ["not_null"]),
+        ("content", "text", ["not_null"]),
+        ("contact", "string", []),
+        ("status", "enum", ["default:pending"]),
+    ]),
+    # Data analytics / dashboard
+    (("数据分析", "仪表盘", "analytics", "dashboard"), [
+        ("metric_name", "string", ["not_null"]),
+        ("metric_value", "decimal", []),
+        ("dimension", "string", []),
+        ("period", "enum", []),
+        ("recorded_at", "datetime", ["not_null"]),
+    ]),
+    # Admin: tags / categories
+    (("标签", "分类", "tag", "category"), [
+        ("name", "string", ["not_null", "unique"]),
+        ("parent_id", "uuid", []),
+        ("sort_order", "integer", ["default:0"]),
+        ("icon", "string", []),
+    ]),
+    # Admin: prompt templates
+    (("Prompt", "模板", "prompt", "template"), [
+        ("name", "string", ["not_null"]),
+        ("template_text", "text", ["not_null"]),
+        ("variables", "string[]", []),
+        ("model", "string", []),
+        ("temperature", "decimal", []),
+        ("max_tokens", "integer", []),
+    ]),
+]
+
+
+def _module_domain_fields(module_name, task_names_combined):
+    """Find domain-specific fields for a module using keyword matching."""
+    text = module_name + " " + task_names_combined
+    for keywords, fields in _MODULE_FIELDS:
+        if any(kw in text for kw in keywords):
+            return [(fname, ftype, fcons) for fname, ftype, fcons in fields]
+    return []
+
+
 # ── State transition keywords ────────────────────────────────────────────────
 STATE_KEYWORDS = [
     "审核", "确认", "发货", "上架", "下架", "冻结", "解冻",
@@ -189,6 +329,14 @@ for idx, (module, mod_tasks) in enumerate(sorted(module_tasks.items()), start=1)
                 seen_fields.add(fname)
                 field_entry = {"name": fname, "type": ftype, "constraints": []}
                 fields.append(field_entry)
+
+    # Domain-specific fields from module knowledge base
+    combined_names = " ".join(t.get("name", "") for t in mod_tasks)
+    domain_fields = _module_domain_fields(module, combined_names)
+    for fname, ftype, fcons in domain_fields:
+        if fname not in seen_fields:
+            seen_fields.add(fname)
+            fields.append({"name": fname, "type": ftype, "constraints": fcons})
 
     # Apply constraints from constraints.json
     module_constraints = [c for c in constraints_list
