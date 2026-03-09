@@ -279,9 +279,9 @@ svg.lines{{position:absolute;top:0;left:0;overflow:visible;pointer-events:none}}
   <div class="header-meta">Round {feedback.get('round',1)} &middot; {reviewed}/{total} reviewed</div>
   <div class="progress"><div class="progress-bar" style="width:{reviewed/total*100 if total else 0:.0f}%"></div></div>
   <div class="toolbar">
-    <button onclick="setDepth(1)">Level 1</button>
     <button onclick="setDepth(2)">Level 2</button>
-    <button onclick="setDepth(3)">All</button>
+    <button onclick="setDepth(3)">Level 3</button>
+    <button onclick="setDepth(Infinity)">All</button>
     <button onclick="fitView()">Fit</button>
     <input type="text" class="zoom-info" id="zoomInfo" value="100%" onkeydown="if(event.key==='Enter')applyZoomInput(this)" onblur="applyZoomInput(this)">
     <button class="primary" onclick="submitAll()" id="submitBtn">Submit</button>
@@ -317,7 +317,7 @@ const TAB_ID='{_esc(tab_id)}';
 const TREE={tree_json};
 let feedback={feedback_json};
 let currentNodeId=null;
-let maxDepth=4;
+let maxDepth=Infinity;
 const collapsedNodes=new Set();  // per-node collapse state
 
 // ── Branch colors (XMind style — each top-level branch gets a color) ──
@@ -1137,8 +1137,11 @@ def load_datamodel_tree():
                 field_nodes.append(_node(
                     f"{eid}-f-{fname}", flabel, fnode_type, fdetail
                 ))
+            field_summary = ", ".join(f.get("name", "") for f in fields[:6])
+            if len(fields) > 6:
+                field_summary += f" +{len(fields) - 6}"
             entity_children.append(_node(
-                f"{eid}-fields", "字段", "field-group", children=field_nodes
+                f"{eid}-fields", f"字段({len(fields)}): {field_summary}", "field-group", children=field_nodes
             ))
 
         # ── State machine group ──
@@ -1198,9 +1201,13 @@ def load_datamodel_tree():
 
                 volabel = f"{voname} ({void})" if void else voname
                 votags = [void] if void else []
+                vo_field_names = ", ".join(f.get("name", "") for f in vo_fields[:6])
+                if len(vo_fields) > 6:
+                    vo_field_names += f" +{len(vo_fields) - 6}"
                 vodetail = (
                     f"视图: {voname}\n交互类型: {vo_itype}"
-                    f"\n字段数: {len(vo_fields)}\n操作数: {len(vo_actions)}"
+                    f"\n字段({len(vo_fields)}): {vo_field_names}"
+                    f"\n操作数: {len(vo_actions)}"
                 )
 
                 vo_children = []
