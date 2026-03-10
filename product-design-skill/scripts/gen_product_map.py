@@ -563,8 +563,24 @@ C.append_pipeline_decision(
     shard=args.get("shard"),
 )
 
+# ── Step 7-8: Chain data-model + view-objects generation ─────────────────────
+import subprocess
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+shard_args = ["--shard", args["shard"]] if args.get("shard") else []
+
+dm_script = os.path.join(script_dir, "gen_data_model.py")
+if os.path.exists(dm_script):
+    print("\n--- Step 7: Data Model ---")
+    subprocess.run([sys.executable, dm_script, BASE] + shard_args, check=True)
+
+vo_script = os.path.join(script_dir, "gen_view_objects.py")
+if os.path.exists(vo_script):
+    print("\n--- Step 8: View Objects ---")
+    subprocess.run([sys.executable, vo_script, BASE] + shard_args, check=True)
+
 # ── Summary ───────────────────────────────────────────────────────────────────
-print(f"\n=== Product Map Step 6 Complete ===")
+print(f"\n=== Product Map Steps 6-8 Complete ===")
 print(f"Roles: {len(roles)}")
 print(f"Tasks: {len(tasks)} (basic={basic_count}, core={core_count})")
 print(f"  High frequency: {high_freq_count}")
@@ -580,3 +596,5 @@ print(f"  product-map-report.md")
 print(f"  product-map-visual.svg")
 print(f"  task-index.json")
 print(f"  flow-index.json")
+print(f"  entity-model.json (Step 7)")
+print(f"  view-objects.json (Step 8)")

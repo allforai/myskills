@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-# Skeleton generator — LLM enrichment required after running
 """Phase 4: Generate experience-map from journey-emotion-map + task-inventory.
 
-Produces minimal screen skeletons organized into operation lines.
-LLM enrichment is required after running to fill in fields, actions,
-states, CRUD classification, and interaction types.
+Produces screen skeletons with heuristic interaction type assignment.
+Uses task characteristics (name, category, audience, CRUD indicators)
+to infer appropriate interaction types without LLM.
 
 Usage:
     python3 gen_experience_map.py <BASE_PATH> [--mode auto] [--shard NAME]
 """
-import sys, os, json, datetime
+import sys, os, json, datetime, re
 
 sys.path.insert(0, os.path.dirname(__file__))
 import _common as C
@@ -111,6 +110,15 @@ CONTRACT_PATTERNS = {
 }
 
 
+# ── Interaction type inference ────────────────────────────────────────────────
+# Heuristic rules based on task characteristics — no business-specific keywords.
+# Priority: first matching rule wins.
+
+def _infer_interaction_type(task, audience_type=""):
+    """Delegate to _common.infer_interaction_type (single source of truth)."""
+    return C.infer_interaction_type(task, audience_type=audience_type)
+
+
 # ── VO matching helpers ──────────────────────────────────────────────────────
 
 def _build_vo_lookup(view_objects):
@@ -123,15 +131,29 @@ def _build_vo_lookup(view_objects):
     return lookup
 
 
-def _find_vo_for_task(task, vo_lookup):
-    """Find matching VO for a task by module/entity reference.
+def _find_vo_for_task(task, vo_lookup, audience_type=""):
+    """Find matching VO for a task by module + CRUD-aligned view_type.
 
-    Uses entity_name matching against task module. Returns VO dict or None.
-    # LLM will fix CRUD classification and view_type matching
+    Uses infer_interaction_type to determine CRUD, then picks the VO
+    whose view_type matches the task's operation.
     """
     module = task.get("module", task.get("owner_role", ""))
+    _, crud = C.infer_interaction_type(task, audience_type=audience_type)
 
-    # Try each view_type for this module
+    # CRUD → preferred view_type order
+    crud_vt_order = {
+        "C": ("create_form", "detail", "list_item"),
+        "R": ("detail", "list_item"),
+        "U": ("edit_form", "state_action", "detail"),
+        "D": ("state_action", "detail", "list_item"),
+    }
+    preferred = crud_vt_order.get(crud, ("detail", "list_item"))
+
+    for vt in preferred:
+        vo = vo_lookup.get((module, vt))
+        if vo:
+            return vo
+    # Fallback: any VO for this module
     for vt in ("list_item", "detail", "create_form", "edit_form", "state_action"):
         vo = vo_lookup.get((module, vt))
         if vo:
@@ -189,11 +211,8 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
         first_task = task_pairs[0][1] if task_pairs else {}
         primary = first_task.get("task_name", first_task.get("name", module))
 
-        # Default CRUD to R — LLM will fix CRUD classification
-        crud_type = "R"
-
-        # Default interaction type — LLM will refine
-        interaction_type = "MG1"
+        # Infer interaction type from task characteristics
+        interaction_type, crud_type = _infer_interaction_type(first_task, audience_type)
 
         # Platform metadata
         profile = _PLATFORM_PROFILES.get(audience_type, {})
@@ -214,7 +233,7 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
         # Try VO matching by entity reference (ID-based, not keyword-based)
         matched_vo = None
         if vo_lookup:
-            matched_vo = _find_vo_for_task(first_task, vo_lookup)
+            matched_vo = _find_vo_for_task(first_task, vo_lookup, audience_type)
 
         if matched_vo:
             screen_name = _vo_screen_name(matched_vo, task_pairs)
@@ -222,7 +241,9 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
             data_fields = matched_vo.get("fields", [])
             vo_actions = matched_vo.get("actions", [])
             vo_ref = matched_vo.get("id", "")
-            interaction_type = matched_vo.get("interaction_type", "MG1")
+            # Task-inferred interaction_type takes priority (it's task-specific);
+            # VO interaction_type is entity-level fallback only
+            # interaction_type already set by _infer_interaction_type above
         else:
             screen_name = primary
             data_fields = []
@@ -479,8 +500,16 @@ def main():
         sys.exit(1)
 
     vo_msg = f", {vo_enriched} VO-enriched" if vo_enriched else ""
+    # Count interaction type distribution
+    itype_dist = {}
+    for ol in operation_lines:
+        for n in ol.get("nodes", []):
+            for s in n.get("screens", []):
+                it = s.get("interaction_type", "MG1")
+                itype_dist[it] = itype_dist.get(it, 0) + 1
+
     print(f"OK: {out_path} ({len(operation_lines)} lines, {total_nodes} nodes, {total_screens} screens{vo_msg})")
-    print("  NOTE: Screens are minimal skeletons. LLM enrichment required for fields, actions, states.")
+    print(f"  Interaction types: {dict(sorted(itype_dist.items()))}")
 
     # ── Report ──
     report_lines = [

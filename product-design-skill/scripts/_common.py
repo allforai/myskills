@@ -12,6 +12,7 @@ import json
 import os
 import datetime
 import sys
+import re
 import urllib.request
 import urllib.error
 import time
@@ -787,27 +788,106 @@ def xv_parse_json(raw_text):
     return json.loads(cleaned)
 
 
-# ── Interaction type inference — REMOVED in v5.0 ─────────────────────────────
-# Previously: 59 keyword rules + CRUD fallback heuristics.
-# Now: Claude Code assigns interaction_type directly during LLM enrichment.
-# Stubs kept for backward compatibility with review_hub_server.py fallback.
+# ── Interaction type inference ────────────────────────────────────────────────
+
+
+def infer_interaction_type(task, crud_type="", audience_type=""):
+    """Infer interaction_type from task name, category, and audience_type.
+
+    Returns (interaction_type, crud_type) tuple.
+    Uses generic keyword patterns applicable to any product domain.
+    The *crud_type* parameter is accepted for backward compat but ignored;
+    CRUD is inferred from keywords.
+    """
+    name = task.get("name", "").lower()
+    main_flow = task.get("main_flow", [])
+    main_flow_text = " ".join(str(s).lower() for s in main_flow)
+
+    # ── SY: System/Onboarding ──
+    if re.search(r"引导|onboard|welcome|tutorial", name):
+        return "SY1", "R"
+    if re.search(r"注册|signup|register", name):
+        return "SY2", "C"
+    if re.search(r"登录|登出|login|logout|sign.?in|sign.?out", name):
+        return "SY2", "R"
+    if re.search(r"重置密码|reset.?password|forgot", name):
+        return "SY2", "U"
+
+    # ── MG4: Approval/Review (before generic MG) ──
+    if re.search(r"审核|审批|approve|review|verify", name) and audience_type == "professional":
+        return "MG4", "U"
+
+    # ── MG7: Dashboard/Analytics/Monitoring ──
+    if re.search(r"统计|仪表|监控|数据|报表|分析|dashboard|analytics|monitor|stats|trend", name):
+        return "MG7", "R"
+
+    # ── MG8: Configuration/Settings ──
+    if re.search(r"配置|设置|设定|偏好|config|setting|preference", name):
+        return "MG8", "U"
+
+    # ── MG3: State management / publish / archive ──
+    if re.search(r"发布|上下架|归档|清理|处理.*异常|处理.*告警|publish|archive|cleanup", name):
+        return "MG3", "U"
+
+    # ── Consumer-specific patterns ──
+    if audience_type == "consumer":
+        if re.search(r"浏览|列表|推荐|发现|explore|browse|discover|feed|管理已下载", name):
+            return "CT1", "R"
+        if re.search(r"复习|测试|练习|闪卡|quiz|review|practice|flashcard|swipe", name):
+            return "CT4", "R"
+        if re.search(r"学习|阅读|查看.*详|沉浸|扮演|内容|read|learn|immerse|content|detail", name):
+            return "CT2", "R"
+        if re.search(r"付费|订阅|支付|购买|subscribe|pay|purchase|checkout", name):
+            return "EC2", "C"
+        if re.search(r"提交|反馈|submit|feedback|report", name):
+            return "MG2-C", "C"
+        if re.search(r"查看.*状态|查看.*账单|查看.*订阅|view.*status", name):
+            return "CT2", "R"
+        if re.search(r"管理|manage", name):
+            return "CT1", "R"
+        return "CT2", "R"
+
+    # ── Professional-specific patterns ──
+    if audience_type == "professional":
+        if re.search(r"生成|创建|新增|添加|create|generate|add|new", name):
+            return "MG2-C", "C"
+        if re.search(r"管理|列表|查看.*列表|list|manage|browse", name):
+            return "MG2-L", "R"
+        if re.search(r"日志|审计|log|audit", name):
+            return "MG2-L", "R"
+        if re.search(r"编辑|修改|更新|edit|update|modify", name):
+            return "MG2-E", "U"
+        if re.search(r"查看|详情|view|detail", name):
+            return "MG1", "R"
+        return "MG1", "R"
+
+    # ── Sync/background tasks ──
+    if re.search(r"同步|sync|background", name):
+        return "MG1", "R"
+
+    return "MG1", "R"
+
 
 def refine_view_type(task, crud_type):
-    """Deprecated: LLM enrichment assigns view types directly."""
-    return ["list_item"]
-
-def infer_interaction_type(task, crud_type, audience_type=""):
-    """Deprecated: LLM enrichment assigns interaction_type directly.
-
-    Fallback: return basic MG type based on CRUD letter only (no keyword matching).
-    """
-    if crud_type == "C":
-        return "MG2-C"
-    elif crud_type == "U":
-        return "MG2-E"
-    elif crud_type == "D":
-        return "MG3"
-    return "MG1"
+    """Infer view_types list from task and CRUD type."""
+    itype, _ = infer_interaction_type(task, crud_type)
+    view_type_map = {
+        "CT1": ["list_item"],
+        "CT2": ["detail"],
+        "CT4": ["list_item"],
+        "MG1": ["detail"],
+        "MG2-L": ["list_item"],
+        "MG2-C": ["create_form"],
+        "MG2-E": ["edit_form"],
+        "MG3": ["state_action"],
+        "MG4": ["detail", "state_action"],
+        "MG7": ["detail"],
+        "MG8": ["edit_form"],
+        "EC2": ["create_form"],
+        "SY1": ["detail"],
+        "SY2": ["create_form"],
+    }
+    return view_type_map.get(itype, ["list_item"])
 
 
 # ── Full Context ──────────────────────────────────────────────────────────────

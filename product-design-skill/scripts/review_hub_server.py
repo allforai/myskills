@@ -1781,8 +1781,15 @@ _INPUT_INDICATORS = {
 
 def _sample_val(field):
     ftype = field.get("type", "string")
-    if field.get("display_format") == "currency" or ftype == "decimal":
+    dfmt = field.get("display_format", "")
+    if dfmt == "currency":
         return "\u00a5128.00"
+    if dfmt == "percentage":
+        return "75%"
+    if dfmt == "rating":
+        return "\u2605 4.5"
+    if ftype == "decimal":
+        return "3.14"
     return _SAMPLE_VALUES.get(ftype, "\u2591\u2591\u2591\u2591")
 
 
