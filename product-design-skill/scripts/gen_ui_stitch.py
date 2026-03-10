@@ -18,18 +18,6 @@ from _common import (
     load_json,
 )
 
-# ── Interaction type → layout description mapping ────────────────────────────
-ITYPE_LAYOUT = {
-    "MG1": "Read-only list/grid view. Show data items with search/filter bar at top. Each item is a card or row. Tap opens detail.",
-    "MG2-L": "CRUD list with action toolbar. Search bar + '+ New' button at top. Each row has inline edit/delete actions. Bulk selection supported.",
-    "MG2-C": "Create form. Input fields stacked vertically with labels. Primary 'Submit/Create' button at bottom. Show validation states on fields.",
-    "MG2-E": "Edit form. Pre-filled input fields. 'Save' primary button + 'Cancel' secondary. Show changed field indicators.",
-    "MG2-D": "Detail view. Hero section at top with key info. Content sections below. Action buttons (edit/delete) in header or bottom bar.",
-    "MG3": "State machine / workflow view. Status tabs or progress indicator at top. List of items filtered by status. Action buttons change item state.",
-    "MG4": "Approval workflow. Pending count badge. Each item shows requester, content summary, timestamp. Approve/Reject action buttons per item.",
-}
-
-
 def load_component_spec(base):
     """Load component-spec.json."""
     return load_json(os.path.join(base, "ui-design/component-spec.json"))
@@ -65,42 +53,12 @@ def infer_device_type(concept):
 
 
 def select_priority_screens(screens, limit=10, explicit=None):
-    """Dynamically select priority screens based on metadata."""
+    """Select screens for Stitch generation. No scoring — LLM decides priority."""
     if explicit:
         explicit_ids = set(explicit.split(","))
         return [s for s in screens if s["id"] in explicit_ids]
-
-    scored = []
-    for s in screens:
-        score = 0
-        it = s.get("interaction_type", "")
-        if isinstance(it, list):
-            it = it[0] if it else ""
-
-        if it.startswith("MG"):
-            score += 10
-        if it in ("CT1", "CT2"):
-            score += 8
-        if s.get("primary_action"):
-            score += 3
-        states = s.get("states", {})
-        if isinstance(states, dict) and len(states) >= 3:
-            score += 2
-        if len(s.get("actions", [])) >= 3:
-            score += 1
-
-        scored.append((score, s["id"], s))
-
-    scored.sort(key=lambda x: -x[0])
-    selected = scored[:limit]
-
-    result = []
-    for i, (score, sid, s) in enumerate(selected):
-        s_copy = dict(s)
-        s_copy["priority"] = "P0" if i < 5 else "P1"
-        s_copy["selection_score"] = score
-        result.append(s_copy)
-    return result
+    # Return first `limit` screens; Claude Code reorders if needed
+    return screens[:limit]
 
 
 def build_prompt(screen, concept, component_spec, device_type, is_anchor,
@@ -139,7 +97,7 @@ All screens belong to the same app and must share a consistent design language.
         layer1 += "Reuse these component patterns consistently:\n" + "\n".join(comp_descs) + "\n"
 
     # Layer 2: Screen structure from interaction_type (wireframe → Stitch bridge)
-    layout_desc = ITYPE_LAYOUT.get(it, "")
+    layout_desc = ""
     action_descs = []
     for a in actions[:5]:
         label = a.get("label", "") if isinstance(a, dict) else str(a)

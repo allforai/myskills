@@ -120,40 +120,10 @@ C.write_json(os.path.join(PM, "product-map.json"), product_map)
 print("Writing task-index.json...")
 
 
-def _infer_module(task):
-    """Infer module name from task name using heuristic grouping.
-
-    Strategy: extract the noun phrase before common action verbs (管理/创建/查看/etc.),
-    or use the first 2-4 chars of the task name as the module name.
-    """
-    name = task.get("name", task.get("task_name", ""))
-
-    # Try to extract module from patterns like "XX管理", "XX创建", "查看XX"
-    action_suffixes = ["管理", "创建", "查看", "编辑", "删除", "审核", "审批",
-                       "配置", "设置", "导出", "导入", "分析", "统计", "发布",
-                       "提交", "撤回", "处理", "验证", "搜索", "查询"]
-    for suffix in action_suffixes:
-        if name.endswith(suffix) and len(name) > len(suffix):
-            return name[:-len(suffix)]
-
-    action_prefixes = ["查看", "管理", "创建", "编辑", "导出", "搜索", "查询"]
-    for prefix in action_prefixes:
-        if name.startswith(prefix) and len(name) > len(prefix):
-            return name[len(prefix):]
-
-    # Fallback: use first segment if name contains common delimiters
-    for delim in ["—", "-", "·", "/", "（"]:
-        if delim in name:
-            return name.split(delim)[0].strip()
-
-    # Last resort: use the name itself (truncated)
-    return name[:4] if len(name) > 4 else name
-
-
-# Group tasks by module
+# ── Group tasks by module (LLM-assigned, no keyword heuristics) ──
 module_map = {}  # module_name -> [task]
 for t in tasks:
-    mod = _infer_module(t)
+    mod = t.get("module", t.get("name", t.get("task_name", "unknown")))
     module_map.setdefault(mod, []).append(t)
 
 # Build category summary
