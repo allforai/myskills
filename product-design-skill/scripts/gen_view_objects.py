@@ -59,6 +59,8 @@ VIEW_TYPE_ITYPE = {
 
 # Fields to exclude from list views (too verbose)
 LIST_EXCLUDE = {"content", "config_json", "audio_url", "video_url"}
+# Additional fields to exclude from consumer list views
+CONSUMER_LIST_EXCLUDE = {"id", "version", "creator_id"}
 # Fields to exclude from create/edit forms (auto-managed)
 FORM_EXCLUDE = {"id", "created_at", "updated_at", "creator_id"}
 # Fields always shown in list (summary)
@@ -233,12 +235,22 @@ for entity in entities:
                     continue
                 if f["name"] in FORM_EXCLUDE and f["name"] != "id":
                     continue
+                # Exclude ID and config fields from consumer list views
+                if primary_audience == "consumer" and f["name"] in CONSUMER_LIST_EXCLUDE:
+                    continue
+                if "config" in f.get("constraints", []):
+                    continue
                 fields.append(_build_field_entry(f, read_only=True))
         elif view_type in ("create_form", "edit_form"):
-            # Show writable fields only
+            # Show writable fields only — exclude config_items (system-level params)
             fields = []
             for f in e_fields:
                 if f["name"] in FORM_EXCLUDE:
+                    continue
+                if "config" in f.get("constraints", []):
+                    continue
+                # Exclude status from create forms (auto-set on creation)
+                if view_type == "create_form" and f["name"] == "status":
                     continue
                 read_only = f["name"] in ("id",) or "auto" in f.get("constraints", [])
                 fields.append(_build_field_entry(f, read_only=read_only))

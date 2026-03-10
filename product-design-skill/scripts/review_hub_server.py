@@ -2057,10 +2057,22 @@ def _wf_wizard_form(screen):
 def _wf_content_feed(screen):
     """CT1: Content feed / card list (mobile)."""
     fields = screen.get("data_fields", [])
+    # Smart field selection for card preview: exclude metadata, prefer summary fields
+    _FEED_EXCLUDE = {"id", "created_at", "updated_at", "creator_id", "content", "config_json",
+                     "sort_order", "version", "audio_url", "video_url"}
+    _FEED_PRIORITY = {"status", "category", "difficulty_level", "language", "score", "progress",
+                      "tags", "item_count", "price"}
+    priority_fields = [f for f in fields if f.get("name", "") in _FEED_PRIORITY]
+    other_fields = [f for f in fields
+                    if f.get("name", "") not in _FEED_PRIORITY
+                    and f.get("name", "") not in _FEED_EXCLUDE
+                    and f.get("name", "") not in ("title", "name", "cover_image")
+                    and "config" not in (f.get("constraints") or [])]
+    card_fields = (priority_fields + other_fields)[:3]
     cards = ""
     for i in range(3):
         field_preview = ""
-        for f in fields[:3]:
+        for f in card_fields:
             label = f.get("label", f.get("name", ""))
             val = _sample_val(f)
             field_preview += f'<span class="wf-feed-meta">{_esc(label)}: {_esc(val)}</span>'
@@ -2196,9 +2208,19 @@ def _wf_card_swipe(screen):
     is_quiz = any(kw in all_state_text for kw in ["选项", "选择", "答案", "正确", "错误", "填空"])
     is_practice = any(kw in all_state_text for kw in ["录音", "跟读", "波形", "回放"])
 
+    # Smart field selection for cards: prefer content fields over metadata
+    _CARD_CONTENT_NAMES = {"title", "name", "content", "description", "tags", "category"}
+    _CARD_EXCLUDE_NAMES = {"id", "created_at", "updated_at", "creator_id", "sort_order", "version"}
+    content_fields = [f for f in fields if f.get("name", "") in _CARD_CONTENT_NAMES]
+    other_fields = [f for f in fields
+                    if f.get("name", "") not in _CARD_CONTENT_NAMES
+                    and f.get("name", "") not in _CARD_EXCLUDE_NAMES
+                    and "config" not in (f.get("constraints") or [])]
+    display_fields = (content_fields + other_fields)[:4]
+
     # Dynamic field display
     field_html = ""
-    for f in fields[:4]:
+    for f in display_fields:
         label = f.get("label", f.get("name", ""))
         val = _sample_val(f)
         field_html += f'<div class="wf-card-field">{_esc(label)}: {_esc(val)}</div>'
@@ -2410,9 +2432,24 @@ def _wf_dashboard(screen):
     is_analytics = any(kw in all_state_text for kw in ["趋势", "图表", "分析", "报表"])
     is_monitoring = any(kw in all_state_text for kw in ["实时", "告警", "监控", "警告"])
 
+    # Smart KPI selection: prefer numeric/score/progress fields as dashboard metrics
+    _KPI_TYPES = {"integer", "decimal"}
+    _KPI_NAMES = {"score", "progress", "item_count", "attempt_count", "price", "size_bytes"}
+    _KPI_EXCLUDE = {"id", "created_at", "updated_at", "creator_id", "sort_order"}
+    kpi_fields = [f for f in fields
+                  if (f.get("type", "") in _KPI_TYPES or f.get("name", "") in _KPI_NAMES)
+                  and f.get("name", "") not in _KPI_EXCLUDE
+                  and "config" not in (f.get("constraints") or [])]
+    non_kpi = [f for f in fields
+               if f not in kpi_fields
+               and f.get("name", "") not in _KPI_EXCLUDE
+               and f.get("type", "") != "datetime"
+               and "config" not in (f.get("constraints") or [])]
+    display_kpi = (kpi_fields + non_kpi)[:4]
+
     # Dynamic KPI cards from data_fields
     kpi_html = ""
-    for f in fields[:4]:
+    for f in display_kpi:
         label = f.get("label", f.get("name", ""))
         val = _sample_val(f)
         kpi_html += f'<div class="wf-kpi-card"><div class="wf-kpi-value">{_esc(val)}</div><div class="wf-kpi-label">{_esc(label)}</div></div>'

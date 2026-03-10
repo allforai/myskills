@@ -2,6 +2,8 @@
 
 > Output: `.allforai/experience-map/journey-emotion-map.json`
 
+**强制约束**：顶层 key 必须是 `journey_lines`（不可用 `journeys`），子节点 key 必须是 `emotion_nodes`（不可用 `nodes`），每个 journey_line 必须有 `source_flow` 字段引用 business-flow ID。`_common.py` 会尝试兼容变体格式，但脚本输出应遵循规范。
+
 ## Top-Level
 
 | Field | Type | Description |

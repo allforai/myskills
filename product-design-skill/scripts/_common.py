@@ -163,6 +163,9 @@ def _normalize_task(task):
 def load_task_inventory(base, category=None):
     """Load task-inventory.json, return dict keyed by task ID.
 
+    Handles both list format (canonical: [task, ...]) and dict format
+    ({task_id: task, ...}) that LLM-generated scripts sometimes produce.
+
     Args:
         base: .allforai base path
         category: None (all), "basic", or "core" — filter by task category
@@ -171,7 +174,17 @@ def load_task_inventory(base, category=None):
         os.path.join(base, "product-map/task-inventory.json"),
         "task-inventory.json"
     )
-    tasks = inv["tasks"]
+    raw_tasks = inv["tasks"]
+    # Normalize: dict-keyed format → list format
+    if isinstance(raw_tasks, dict):
+        tasks = []
+        for tid, t in raw_tasks.items():
+            if isinstance(t, dict):
+                if "id" not in t:
+                    t["id"] = tid
+                tasks.append(t)
+    else:
+        tasks = raw_tasks
     if category:
         tasks = [t for t in tasks if t.get("category") == category]
     return {t["id"]: _normalize_task(t) for t in tasks}
@@ -221,11 +234,35 @@ def load_product_concept(base):
 # ── experience-map loaders ────────────────────────────────────────────────────
 
 def load_journey_emotion(base):
-    """Load journey-emotion-map.json, return journey_lines list."""
+    """Load journey-emotion-map.json, return journey_lines list.
+
+    Handles schema variations:
+    - Canonical: {"journey_lines": [...]} with emotion_nodes/source_flow fields
+    - Variant:   {"journeys": [...]} with nodes/id fields (LLM-generated scripts)
+    Normalizes variant format to canonical on load.
+    """
     data = load_json(os.path.join(base, "experience-map/journey-emotion-map.json"))
     if data is None:
         return []
-    return ensure_list(data, "journey_lines")
+    # Try canonical key first, then variant
+    lines = ensure_list(data, "journey_lines")
+    if not lines:
+        lines = ensure_list(data, "journeys")
+    # Normalize variant fields to canonical schema
+    for line in lines:
+        # nodes → emotion_nodes
+        if "emotion_nodes" not in line and "nodes" in line:
+            line["emotion_nodes"] = line.pop("nodes")
+        # Ensure source_flow exists (use id as fallback)
+        if "source_flow" not in line:
+            line["source_flow"] = line.get("id", "")
+        # Normalize emotion_nodes entries: seq → step, task_name → action
+        for node in line.get("emotion_nodes", []):
+            if "step" not in node and "seq" in node:
+                node["step"] = node.pop("seq")
+            if "action" not in node and "task_name" in node:
+                node["action"] = node.get("task_name", "")
+    return lines
 
 
 def load_experience_map(base):
@@ -1033,8 +1070,19 @@ def load_full_context(base):
 
     # -- product-map artifacts --
     inv_data = load_json(os.path.join(base, "product-map/task-inventory.json"))
-    if inv_data and isinstance(inv_data.get("tasks"), list):
-        ctx.tasks = {t["id"]: _normalize_task(t) for t in inv_data["tasks"]}
+    if inv_data and inv_data.get("tasks"):
+        raw = inv_data["tasks"]
+        if isinstance(raw, dict):
+            # dict-keyed format → normalize to list
+            task_list = []
+            for tid, t in raw.items():
+                if isinstance(t, dict):
+                    if "id" not in t:
+                        t["id"] = tid
+                    task_list.append(t)
+        else:
+            task_list = raw
+        ctx.tasks = {t["id"]: _normalize_task(t) for t in task_list}
 
     roles_data = load_json(os.path.join(base, "product-map/role-profiles.json"))
     if roles_data and isinstance(roles_data.get("roles"), list):

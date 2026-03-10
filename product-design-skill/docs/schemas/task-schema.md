@@ -2,6 +2,8 @@
 
 > 以下示例以虚构业务为背景，仅用于说明输出格式。实际内容由 product-map 分析结果决定，不限行业。
 
+**强制约束**：`tasks` 字段必须是**数组**（`[task, ...]`），不可使用 `{task_id: task}` 的 dict 格式。下游所有脚本（`_common.py`、`gen_experience_map.py` 等）均以数组格式为规范输入。
+
 ```json
 {
   "tasks": [
