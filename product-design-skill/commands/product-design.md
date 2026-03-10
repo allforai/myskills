@@ -65,6 +65,9 @@ Phase 4.5: design-pattern（自动执行）
 Phase 4.6: behavioral-standards（自动执行）
   加载并执行 skills/behavioral-standards.md
   ↓ checkpoint
+Phase 4.7: playwright-verify（自动执行）
+  Playwright headless 验证线框渲染 → 自动修复 → 再验证（最多 3 轮）
+  ↓ checkpoint
 Phase 5: wireframe-review（线框交互审核 — 结构锁定门，必须）
   启动线框审核服务器 → 用户验证 IA/流程/功能完整性
   反馈路由到 product-map / experience-map / concept
@@ -101,6 +104,7 @@ Phase 10: design-audit full（终审）
 | view-objects | `.allforai/product-map/view-objects.json` 存在 |
 | design-pattern | `.allforai/design-pattern/pattern-catalog.json` 存在 |
 | behavioral-standards | `.allforai/behavioral-standards/behavioral-standards.json` 存在 |
+| playwright-verify | `.allforai/wireframe-verify/verification-report.json` 存在且 `overall` = "PASS" |
 | use-case | `.allforai/use-case/use-case-tree.json` 存在 |
 | feature-gap | `.allforai/feature-gap/gap-tasks.json` 存在 |
 | feature-prune | `.allforai/feature-prune/prune-decisions.json` 存在（可选，手动执行） |
@@ -131,6 +135,7 @@ Phase 10: design-audit full（终审）
 | OpenRouter (MCP) | `mcp__plugin_product-design_ai-gateway__ask_model` 可用性 | 可选 |
 | OpenRouter (Script) | `OPENROUTER_API_KEY` 环境变量 | 可选 |
 | Stitch UI | `mcp__plugin_product-design_stitch__create_project` 可用性 | 可选 |
+| Playwright | `mcp__playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 可用性 | 可选 |
 | WebSearch | 内置，始终可用 | 核心 |
 
 **输出格式**（每行一个能力）：
@@ -140,6 +145,7 @@ Phase 10: design-audit full（终审）
   OpenRouter (MCP)    ✓ 就绪          XV 交叉验证（MCP 通道）
   OpenRouter (Script) ✓ 就绪          XV 交叉验证（脚本通道）
   Stitch UI           ✗ 未就绪        UI 视觉稿（可选，/setup check 查看详情）
+  Playwright          ✓ 就绪          线框自动验证（Phase 4.7）
   WebSearch           ✓ 内置          搜索驱动设计
 ```
 
@@ -428,6 +434,96 @@ PASS → 进入 Phase 5-7 并行组
 ### resume 模式
 - `behavioral-standards.json` 存在 → 跳过 Phase 4.6
 - 文件不存在且 experience-map 已完成 → 补跑 Phase 4.6
+
+---
+
+## Phase 4.7：playwright-verify（线框自动验证）
+
+> 自动执行，无需用户干预。Playwright headless 验证 → 自动修复 → 再验证循环。
+
+### 前置条件
+
+- experience-map 已完成（screen 数 > 0）
+- Playwright MCP 可用（`mcp__playwright__browser_navigate` 在激活工具或 deferred tools 中）
+- Playwright 不可用 → 跳过本阶段，记录 `playwright_skipped`，继续进入 Phase 5
+
+### 执行方式
+
+**Step 1: 准备**
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify_wireframes.py <BASE>
+```
+
+脚本自动完成：
+- 从 experience-map.json 收集所有屏幕元数据
+- 启动 Review Hub（headless，--no-open）
+- 输出 `.allforai/wireframe-verify/screens-to-verify.json`
+
+**Step 2: Playwright 逐屏验证（Claude Code 执行）**
+
+读取 `screens-to-verify.json`，对每个屏幕执行：
+
+1. 导航到 Review Hub wireframe 页面
+2. 点击屏幕 → 捕获 accessibility snapshot
+3. 对比 snapshot 与屏幕元数据，判断：
+
+| 检查项 | 判断方式 | 严重级 |
+|--------|---------|--------|
+| 交互类型 vs 布局匹配 | snapshot 中的 layout slots 是否与 expected_layout 一致 | ERROR |
+| 数据字段渲染 | snapshot 中是否包含 data_fields 中的字段名 | ERROR |
+| 操作按钮存在 | snapshot 中是否包含 actions 中的按钮 | WARNING |
+| 文本语言一致性 | 中文产品不应出现英文 UI 文本（Dashboard/Settings 等） | WARNING |
+| 屏幕流转 | Flow 面板中 ← → 指向正确的上下游屏幕 | WARNING |
+| 状态定义 | State 面板中列出了状态机定义 | WARNING |
+
+4. 输出每个屏幕的验证结果：
+```json
+{
+  "screen_id": "S009",
+  "name": "学习核心单词",
+  "severity": "ERROR",
+  "issue": "CT3 渲染为 Profile card (avatar-header)，但业务是单词卡片学习，应为 CT4",
+  "fix_suggestion": "interaction_type: CT3 → CT4"
+}
+```
+
+5. 写入 `.allforai/wireframe-verify/verification-input.json`
+
+**Step 3: 自动修复（Claude Code 执行）**
+
+如果有 ERROR 级问题：
+1. 读取 verification-input.json 中的 ERROR 条目
+2. 根据 fix_suggestion 直接修改 experience-map.json
+3. 重启 Review Hub
+4. 回到 Step 2 重新验证修复的屏幕
+
+**Step 4: 生成报告**
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify_wireframes.py <BASE> --report
+```
+
+### 循环控制
+
+- 最多 3 轮（Step 2-3 循环）
+- 每轮只验证上一轮 ERROR 的屏幕（增量验证，不重复验证已通过的）
+- 3 轮后仍有 ERROR → WARNING 降级，记日志继续
+
+### 质量门禁
+
+| 条件 | 标准 |
+|------|------|
+| verification-report.json | 存在 |
+| overall | PASS（无 ERROR）或 3 轮后降级 |
+
+PASS → 进入 Phase 5（wireframe-review）
+
+### resume 模式
+
+- `verification-report.json` 存在且 `overall` = "PASS" → 跳过
+- 报告存在但 `overall` = "FAIL" → 重新执行 Step 2-4
+- 不存在 → 正常执行
 
 ---
 
