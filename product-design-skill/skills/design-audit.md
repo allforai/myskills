@@ -859,16 +859,11 @@ def check_type_context_match(screens, product_type, audience, platform):
 
 ---
 
-## 预置脚本（优先使用）
+## 生成方式
 
-检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_design_audit.py` 是否存在：
-- **存在** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_design_audit.py <BASE> --mode auto`
-- **不存在** → 回退到 LLM 生成脚本（向后兼容）
+LLM 对全流程产物执行三维审计（逆向追溯、覆盖洪泛、横向一致性）。终审需要跨阶段语义关联分析（如"concept 中的核心价值主张是否在 UI 中有体现"），脚本只能做字段引用检查。
 
-预置脚本保证 schema 一致性和零语法错误。关键修复：
-- 修复 `gaps[:30)` 语法错误（括号混用 → `gaps[:30]`）
-- 使用 `s.get("tasks", [])` 统一读取界面任务引用
-- pipeline-decisions 按 phase 去重，防止重跑产生重复条目
+可选辅助脚本：`${CLAUDE_PLUGIN_ROOT}/scripts/gen_design_audit.py`（用于机械性字段引用检查和覆盖率统计，LLM 必须在其上补充语义一致性分析和改进建议）。
 
 ---
 

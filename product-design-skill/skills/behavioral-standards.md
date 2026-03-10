@@ -214,13 +214,17 @@ Step 3: 写入产物（自动，不停顿）
 
 ---
 
-## 预置脚本（优先使用）
+## 生成方式
 
-检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_behavioral_standards.py` 是否存在：
-- **存在** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_behavioral_standards.py <BASE> --mode auto [--shard behavioral-standards]`
-- **不存在** → 回退到 LLM 生成（向后兼容）
+LLM 直接分析 experience-map.json 中的界面交互模式，识别行为规范（如确认弹窗、撤销保护、批量操作安全等）。行为规范需要理解用户操作的风险级别和心理预期，脚本无法判断"删除操作需要二次确认"这类语义规则。
 
-预置脚本保证 schema 一致性和零语法错误。支持 `--shard` 参数用于并行流水线集成。
+可选辅助脚本：`${CLAUDE_PLUGIN_ROOT}/scripts/gen_behavioral_standards.py`（用于生成结构化骨架，LLM 必须在其上补充行为规范的语义判断）。支持 `--shard` 参数用于并行流水线集成。
+
+**输出文件名约束**：主产物必须为 `behavioral-standards.json`，不可使用其他命名。
+
+### 执行失败保护
+
+- 任何步骤遇到不可恢复错误 → 写入 `.allforai/behavioral-standards/behavioral-standards-error.json`，包含 `{"error": "...", "step": "...", "timestamp": "..."}`。
 
 ---
 

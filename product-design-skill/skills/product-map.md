@@ -832,13 +832,11 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_view_objects.py <BASE>
 
 Step 6 完成后必须执行，所有模式均不可跳过。分三部分顺序执行，完成后统一展示，一次用户确认。
 
-#### 预置脚本（优先使用）
+#### 生成方式
 
-检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_validation_report.py` 是否存在：
-- **存在** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_validation_report.py <BASE>`
-- **不存在** → 回退到 LLM 生成（向后兼容）
+LLM 执行三部分验证：Part 1（完整性扫描）+ Part 2（冲突重扫）+ Part 3（竞品差异）。完整性检查中的 WARNING 级判断（如"高频任务是否需要 alternative_flow"）需要业务语义理解。
 
-预置脚本执行 Part 1（完整性扫描）和 Part 2（冲突重扫），输出 validation-report.json + .md。Part 3（竞品差异）需要 WebSearch，由 LLM 补充执行。
+可选辅助脚本：`${CLAUDE_PLUGIN_ROOT}/scripts/gen_validation_report.py`（用于 Part 1/2 的机械性字段检查，LLM 必须在其上补充 Part 3 竞品差异分析和语义完整性判断）。
 
 #### Part 1：完整性扫描
 

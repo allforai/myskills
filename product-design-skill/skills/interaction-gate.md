@@ -63,13 +63,17 @@ experience-map（体验地图）    interaction-gate（交互质量门）    ui-
 
 ---
 
-## 预置脚本（优先使用）
+## 生成方式
 
-检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_interaction_gate.py` 是否存在：
-- **存在** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_interaction_gate.py <BASE> [--threshold 70]`
-- **不存在** → 回退到 LLM 生成（向后兼容）
+LLM 直接分析 experience-map.json 中的所有操作线，对每条线执行四维评分（step_count / context_switches / wait_feedback / thumb_zone）。交互质量评估需要理解用户认知负荷、上下文切换的心理成本等语义因素，脚本只能做机械计数。
 
-预置脚本读取 experience-map.json，对每条操作线执行四维评分，输出 interaction-gate.json 并自动回填 quality_score 到 experience-map.json。
+可选辅助脚本：`${CLAUDE_PLUGIN_ROOT}/scripts/gen_interaction_gate.py`（用于生成评分骨架和回填 quality_score，LLM 必须在其上补充问题诊断和改进建议）。
+
+**输出文件名约束**：主产物必须为 `interaction-gate.json`（写入 `.allforai/experience-map/`），不可使用其他命名。
+
+### 执行失败保护
+
+- 任何步骤遇到不可恢复错误 → 写入 `.allforai/experience-map/interaction-gate-error.json`，包含 `{"error": "...", "step": "...", "timestamp": "..."}`。
 
 ---
 
@@ -82,8 +86,8 @@ experience-map（体验地图）    interaction-gate（交互质量门）    ui-
 Step 1: 加载体验地图数据
       读取 experience-map.json（所有操作线）
       ↓
-Step 2: 运行 gen_interaction_gate.py 评估所有操作线
-      脚本对每条操作线执行四维评分
+Step 2: LLM 评估所有操作线
+      对每条操作线执行四维评分
       ↓
 Step 3: 展示结果 — 逐线评分与问题表格
       以可读表格形式展示每条操作线的评分和问题
@@ -120,13 +124,9 @@ Step 6: 保存 interaction-gate.json
 
 ---
 
-### Step 2：运行脚本评估所有操作线
+### Step 2：LLM 评估所有操作线
 
-```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_interaction_gate.py <BASE> [--threshold 70]
-```
-
-脚本读取 `experience-map.json`，对每条操作线的四个维度独立评分：
+分析 `experience-map.json`，对每条操作线的四个维度独立评分：
 
 ```json
 {
@@ -190,7 +190,7 @@ OL002 商户审核流程（55 分，未达标）：
 
 ### Step 5：回填 quality_score 到 experience-map.json
 
-脚本自动将每条操作线的总分写入 `experience-map.json` 对应节点的 `quality_score` 字段。此步骤由 `gen_interaction_gate.py` 在 Step 2 执行时自动完成。
+将每条操作线的总分写入 `experience-map.json` 对应节点的 `quality_score` 字段。
 
 ---
 

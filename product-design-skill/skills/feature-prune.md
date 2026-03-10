@@ -527,13 +527,11 @@ def apply_type_frequency_preset(screens, product_type, audience, platform):
 
 ---
 
-## 预置脚本（优先使用）
+## 生成方式
 
-检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_feature_prune.py` 是否存在：
-- **存在** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_feature_prune.py <BASE> --mode auto [--strategy aggressive|balanced|conservative]`
-- **不存在** → 回退到 LLM 生成脚本（向后兼容）
+LLM 分析 task-inventory + product-concept（ERRC 矩阵、Kano 分类），结合频次/风险/场景对齐做剪枝决策。剪枝需要理解"哪些功能对产品定位是不可或缺的"这类战略判断，脚本只能按规则机械分类。
 
-预置脚本保证 schema 一致性和零语法错误。支持 `--strategy` 参数覆盖 `pipeline_preferences.scope_strategy`。
+可选辅助脚本：`${CLAUDE_PLUGIN_ROOT}/scripts/gen_feature_prune.py`（用于频次分层和结构化骨架，LLM 必须在其上补充战略判断和剪枝理由）。支持 `--strategy` 参数覆盖 `pipeline_preferences.scope_strategy`。
 
 ---
 
