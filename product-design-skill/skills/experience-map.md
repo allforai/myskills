@@ -8,21 +8,31 @@ description: >
   mapping nodes to screens, building experience maps from journey-emotion-map.
   Replaces the former screen-map skill with a richer experience-oriented structure.
   Requires journey-emotion and product-map to have been run first.
-version: "1.0.0"
+version: "2.0.0"
 ---
 
 # Experience Map — 体验地图
 
-> 以旅程情绪图和任务清单为输入，生成操作线 > 节点 > 屏幕的完整体验地图
+> LLM 理解产品语义后自由设计界面结构，再用验收规则 loop 修正
 
 ## 目标
 
-以 `journey-emotion-map.json`（必须）和 `task-inventory.json`（必须）为输入，生成体验地图：
+以产品地图（任务 + 数据模型 + 业务流）和旅程情绪图为输入，LLM 自由设计体验地图：
 
-- **JSON 机器版**：完整字段，operation_lines > nodes > screens 三层结构，供下游 ui-design 和自动化使用
-- **Markdown 人类版**：以可读摘要形式展示操作线、节点、屏幕统计
+- **设计阶段**：LLM 理解产品定位、用户角色、情绪弧线、数据结构后，自主决定每个界面的布局、组件、交互方式、状态流转
+- **验收阶段**：LLM 自审设计质量（任务覆盖率、业务流连续性、平台差异、情绪匹配），不通过的界面重新设计
+- **输出**：operation_lines > nodes > screens 三层结构 JSON + 人类可读报告
 
-> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/schemas/experience-map-schema.md
+---
+
+## 核心理念：LLM 设计 + 规则验收
+
+```
+旧模式（已废弃）：task → 匹配 37 种交互类型 → 填充模板
+新模式：LLM 理解产品语义 → 自由设计界面 → LLM 验收 → loop 修正
+```
+
+**交互类型不是生成入口**。LLM 根据产品上下文自主决定界面结构，交互类型仅作为标签词汇保留（方便下游引用和沟通），不限制设计自由度。
 
 ---
 
@@ -31,37 +41,83 @@ version: "1.0.0"
 ```
 journey-emotion（旅程情绪图）    experience-map（体验地图）       ui-design（界面设计）
 每个节点的情绪、风险、设计提示    操作线 > 节点 > 屏幕结构          基于体验地图生成设计规格
-情绪层语义（人工确认）           体验层语义（结构化映射）           视觉层语义
+情绪层语义（人工确认）           交互层语义（LLM 自由设计）         视觉层语义
 ```
-
-**前提**：必须先运行 `journey-emotion`，生成 `.allforai/experience-map/journey-emotion-map.json`；必须先运行 `product-map`，生成 `.allforai/product-map/task-inventory.json`。
 
 ---
 
 ## 快速开始
 
 ```
-/experience-map              # 完整流程（Step 1-5）
+/experience-map              # 完整流程（Step 1-4）
 /experience-map refresh      # 清空缓存，从头重新运行
-/experience-map --variants 3    # 生成 3 套信息架构方案，对比后选择
+/experience-map --variants 3 # 生成 3 套信息架构方案，对比后选择
 ```
-
-**参数**：
-- `--variants N`：生成 N 套不同的信息架构方案（默认 1，最大 5）。N ≥ 2 时进入 variants 模式。
 
 ---
 
 ## 生成方式
 
-LLM 直接分析 journey-emotion-map + task-inventory，理解交互场景语境后设计屏幕结构。
+LLM 直接分析全部上游产物，理解产品定位、用户角色、数据结构、业务流程、情绪弧线后，**自主设计**每个界面。
 
-可选辅助脚本：`${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py`（用于机械映射基础结构，LLM 可在其输出上增强）。
+**LLM 的设计输入**（全部加载到上下文）：
 
-**输出 schema 约束**（详见 `docs/schemas/experience-map-schema.md`）：
+| 输入 | 来源 | LLM 用途 |
+|------|------|---------|
+| 产品定位 | product-concept.json | 理解产品调性、创新概念、目标用户 |
+| 任务清单 | task-inventory.json | 知道每个角色要完成什么任务 |
+| 数据模型 | entity-model.json | 知道每个实体有哪些字段、关系、状态机 |
+| 业务流 | business-flows.json | 知道任务之间的流转顺序和交接关系 |
+| 视图对象 | view-objects.json | 知道每个界面需要展示/操作哪些数据 |
+| 旅程情绪 | journey-emotion-map.json | 知道用户在每个节点的情绪状态和设计提示 |
+| 角色画像 | role-profiles.json | 知道每个角色的平台、受众类型、KPI |
+
+**LLM 的设计自由度**：
+
+LLM 可以自主决定以下所有方面（不受预定义交互类型限制）：
+
+- **界面结构**：一个任务对应几个界面？是否需要分步向导？是否合并多个任务到一个界面？
+- **布局方式**：卡片堆叠、瀑布流、时间线、看板、树形、地图、全屏沉浸... LLM 根据内容类型和用户场景选择
+- **交互方式**：滑动翻页、拖拽排序、长按菜单、双击编辑、手势操作... LLM 根据平台和场景选择
+- **组件选择**：不限于标准 CRUD 表单/列表，可以设计对话式界面、游戏化界面、AI 辅助界面等
+- **状态设计**：空态、加载态、错误态、成功态的具体交互方式和文案
+- **微动效**：翻转、弹性、渐显、粒子效果... LLM 根据情绪弧线选择
+
+**唯一的硬约束**：
+
+| 约束 | 规则 | 原因 |
+|------|------|------|
+| 平台 | consumer 角色 → mobile-ios 单列布局；professional 角色 → desktop-web 侧边栏布局 | 物理设备差异 |
+| 任务覆盖 | 每个任务至少出现在一个界面中 | 功能完整性 |
+| 业务流连续 | 业务流中相邻任务的界面之间必须有导航路径 | 流程可达性 |
+
+---
+
+## 输出 schema
+
 - 顶层 key 必须是 `operation_lines`（数组）+ `screen_index`（对象）
 - 每个 operation_line 包含 `id`、`name`、`source_journey`、`role`、`nodes`
 - 每个 node 包含 `seq`、`id`、`action`、`screens`（screen 对象数组）
-- 每个 screen 包含 `id`、`name`、`interaction_type`、`tasks`、`actions`、`vo_actions`、`data_fields`
+- 每个 screen 必须包含：
+
+| 字段 | 必须 | 说明 |
+|------|------|------|
+| `id` | 是 | S001 格式 |
+| `name` | 是 | 界面名称（中文产品语言） |
+| `description` | 是 | 界面用途和设计意图（2-3 句话，说明为什么这样设计） |
+| `platform` | 是 | `mobile-ios` 或 `desktop-web` |
+| `layout_type` | 是 | LLM 自选布局（如 `single-column`、`sidebar-content`、`full-screen-immersive`、`card-stack`、`split-view`、`timeline` 等，不限于预定义列表） |
+| `tasks` | 是 | 引用的 task_id 数组 |
+| `actions` | 是 | 用户在此界面可执行的操作列表 |
+| `components` | 是 | **LLM 自由设计的组件清单**，每个组件包含 `type`（LLM 命名）、`purpose`、`behavior`、`data_source` |
+| `interaction_pattern` | 是 | **LLM 自由描述的交互模式**（1-2 句话，如"卡片堆叠+左右滑动评分，翻转显示释义"） |
+| `emotion_design` | 推荐 | 基于情绪弧线的设计决策（如"用户此处焦虑，减少信息密度，突出进度反馈"） |
+| `states` | 是 | 界面状态（empty/loading/error/success 及其具体交互） |
+| `flow_context` | 是 | 导航上下文（prev/next/entry_points/exit_points） |
+| `vo_ref` | 推荐 | 关联的视图对象 |
+| `api_ref` | 推荐 | 关联的 API 端点 |
+| `data_fields` | 是 | 界面展示/操作的数据字段 |
+| `interaction_type` | 推荐 | 后标注标签（从设计结果反推最接近的类型，如 CT2/MG1 等），仅供下游引用，不影响设计 |
 
 ---
 
@@ -69,200 +125,113 @@ LLM 直接分析 journey-emotion-map + task-inventory，理解交互场景语境
 
 ```
 前置检查：
-  .allforai/experience-map/journey-emotion-map.json   必须存在，否则终止
-  .allforai/product-map/task-inventory.json            必须存在，否则终止
-  .allforai/product-map/role-profiles.json             可选加载（角色信息增强）
-  .allforai/product-map/business-flows.json            可选加载（业务流增强）
+  .allforai/experience-map/journey-emotion-map.json   必须存在
+  .allforai/product-map/task-inventory.json            必须存在
+  .allforai/product-map/role-profiles.json             可选
+  .allforai/product-map/business-flows.json            可选
+  .allforai/product-map/view-objects.json              可选
+  .allforai/product-map/entity-model.json              可选
+  .allforai/product-concept/product-concept.json       可选
 
-Step 1: 加载前置数据
-      读取 journey-emotion-map.json（旅程情绪图）
-      读取 task-inventory.json（任务清单）
-      读取 role-profiles.json（角色列表，可选）
-      读取 business-flows.json（业务流，可选）
+Step 1: 加载全部上游数据
+      读取所有可用的前置数据到上下文
       ↓
-Step 2: 生成体验地图
-      LLM 从旅程情绪图提取操作线，理解交互语境后映射任务到节点和屏幕
-      生成 operation_lines > nodes > screens 三层结构（可选用辅助脚本加速基础映射）
+Step 2: LLM 自由设计体验地图
+      LLM 理解产品语义后，自主设计每个界面
+      按角色分组，每个角色的界面独立设计
       ↓
-Step 3: 向用户展示结果摘要，用户审阅
-      展示操作线列表、节点数、屏幕数统计
-      用户可调整操作线分组、节点归属、屏幕命名
-      → 用户确认
+Step 3: LLM 自审验收（loop）
+      验收规则检查，不通过的界面重新设计
+      最多 loop 3 轮
       ↓
-Step 4: 自动触发 interaction-quality-gate（Phase 4.5）
-      体验地图生成完毕后，自动调用 interaction-quality-gate 技能
-      执行交互质量检查
-      ↓
-Step 5: 输出 experience-map-report.md
-      汇总体验地图数据，生成人类可读报告
-```
-
-**核心原则：Step 3 结束有用户确认，用户是权威。**
-
----
-
-### 前置检查
-
-```
-检查 .allforai/experience-map/journey-emotion-map.json：
-  存在 → 加载旅程情绪图数据
-  不存在 → 提示：「请先运行 /journey-emotion 生成旅程情绪图，再运行 /experience-map」，终止
-
-检查 .allforai/product-map/task-inventory.json：
-  存在 → 加载任务清单数据
-  不存在 → 提示：「请先运行 /product-map 生成任务清单，再运行 /experience-map」，终止
-
-检查 .allforai/product-map/role-profiles.json：
-  存在 → 加载角色数据（增强操作线的角色信息）
-  不存在 → 跳过，不影响主流程
-
-检查 .allforai/product-map/business-flows.json：
-  存在 → 加载业务流数据（增强操作线的流程上下文）
-  不存在 → 跳过，不影响主流程
-
-检查 .allforai/product-map/view-objects.json：
-  存在 → 加载 VO 数据（绑定真实字段，优先于任务名推导）
-  不存在 → 跳过，回退到任务名推导（向后兼容）
-
-检查 .allforai/product-map/entity-model.json：
-  存在 → 加载实体数据（增强屏幕名称和交互类型推导）
-  不存在 → 跳过，不影响主流程
+Step 4: 输出
+      写入 experience-map.json + report
 ```
 
 ---
 
-### Step 1：加载前置数据
+### Step 1：加载全部上游数据
 
-读取 `journey-emotion-map.json` 获取旅程情绪图（旅程线、节点、情绪标注）。
-读取 `task-inventory.json` 获取任务清单（任务 ID、名称、CRUD 类型、模块归属）。
-可选读取 `role-profiles.json`（角色列表）和 `business-flows.json`（业务流）。
-可选读取 `view-objects.json`（视图对象，优先使用 VO 绑定真实字段）
-可选读取 `entity-model.json`（实体模型）
+加载所有可用的前置数据。LLM 需要充分理解：
 
-**输出**：内存中的旅程-任务关联数据，用于 Step 2 脚本输入。
+1. **产品是什么** — product-concept 的定位、创新概念、目标用户
+2. **用户要做什么** — task-inventory 的全部任务（区分 basic/core）
+3. **数据长什么样** — entity-model 的实体、字段、关系、状态机
+4. **流程怎么走** — business-flows 的业务流节点和交接关系
+5. **每步什么感受** — journey-emotion 的情绪弧线和设计提示
+6. **界面需要什么数据** — view-objects 的字段和操作绑定
 
 ---
 
-### Step 2：运行脚本生成体验地图
+### Step 2：LLM 自由设计体验地图
 
-```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py <BASE>
+LLM 基于 Step 1 的完整上下文，**像产品设计师一样思考**，为每个角色设计界面：
+
+**设计思路（LLM 内部推理）**：
+
+1. **从业务流出发**：每条业务流是一条操作线，流中的每个节点需要一个或多个界面
+2. **理解数据结构**：entity-model 告诉你每个界面需要展示什么字段、有哪些状态转换
+3. **匹配情绪弧线**：journey-emotion 告诉你用户在每个节点的情绪，指导交互密度和反馈方式
+4. **尊重平台差异**：
+   - consumer (mobile-ios)：单手操作、竖屏、底部导航、手势交互、沉浸体验
+   - professional (desktop-web)：大屏多列、鼠标键盘、侧边栏导航、批量操作、数据密集
+5. **创新界面**：product-concept 中的创新概念（如角色扮演、AI 即时生成）应该有独特的交互设计，不套用标准模板
+
+**设计输出**：对每个界面写出 `description`（设计意图）、`components`（组件清单）、`interaction_pattern`（交互模式描述），而不仅仅是一个交互类型标签。
+
+**大文件处理**：当 screen 数 > 30 时，使用 Python 脚本生成 JSON（避免 Write 工具超限），脚本中 LLM 的设计决策以数据结构形式编码。
+
+---
+
+### Step 3：LLM 自审验收（loop）
+
+设计完成后，LLM 切换到验收者视角，检查以下规则：
+
+**硬性规则（不通过 → 必须修正）**：
+
+| 验收项 | 规则 | 检查方法 |
+|--------|------|---------|
+| 任务覆盖率 | 每个 task_id 至少出现在一个 screen 的 `tasks` 中 | 遍历 task-inventory，检查未覆盖任务 |
+| 业务流连续性 | business-flows 中相邻节点对应的界面之间有 flow_context 连接 | 遍历每条流，检查 prev/next 链路 |
+| 平台一致性 | consumer 角色的界面全部 mobile-ios，professional 全部 desktop-web | 按角色检查 platform 字段 |
+| 界面非空 | 每个 screen 至少有 1 个 action 和 1 个 data_field | 遍历检查 |
+
+**软性规则（不通过 → 警告但不阻塞）**：
+
+| 验收项 | 规则 |
+|--------|------|
+| 情绪匹配 | 高焦虑节点的界面应有减压设计（进度反馈、简化操作） |
+| 状态完整 | 每个界面应定义 empty/error 状态 |
+| 导航可达 | 每个界面至少有一个 entry_point |
+| 创新覆盖 | product-concept 中的创新概念应有对应的独特界面 |
+
+**Loop 机制**：
+
 ```
-
-脚本读取 `journey-emotion-map.json` 和 `task-inventory.json`，生成 operation_lines > nodes > screens 三层结构。
-每个屏幕自动推导 `implementation_contract`（pattern + forbidden + required_behaviors），确保设计意图传递到代码层。
-
-当 view-objects.json 存在时，脚本优先使用 VO 数据绑定屏幕字段（名称、交互类型、数据字段、操作按钮），
-无 VO 时回退到任务名推导（向后兼容）。
-
-```json
-{
-  "version": "1.0.0",
-  "generated_at": "...",
-  "summary": {
-    "operation_line_count": 5,
-    "total_nodes": 18,
-    "total_screens": 32,
-    "high_risk_nodes": 4,
-    "negative_emotion_nodes": 6
-  },
-  "operation_lines": [
-    {
-      "line_id": "OL001",
-      "line_name": "售后退款操作线",
-      "flow_ref": "F001",
-      "actor": "买家",
-      "nodes": [
-        {
-          "node_id": "N001",
-          "node_seq": 1,
-          "task_ref": "T001",
-          "action": "提交退款申请",
-          "emotion": "frustrated",
-          "intensity": 4,
-          "risk": "medium",
-          "design_hint": "简化退款表单，减少用户填写负担",
-          "screens": [
-            {
-              "screen_id": "S001",
-              "screen_name": "退款申请页",
-              "purpose": "用户填写退款原因和上传凭证",
-              "interaction_type": "MG3-L",
-              "vo_ref": "VO001",
-              "api_ref": "API001",
-              "data_fields": ["refund_reason", "evidence_images", "order_id"],
-              "flow_context": {"prev": ["S000"], "next": ["S002"], "entry_points": ["订单详情"], "exit_points": ["退款进度"]},
-              "states": {"empty": "暂无退款记录", "loading": "加载中...", "error": "提交失败，请重试", "success": "退款申请已提交"}
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
+生成体验地图 → 验收检查
+  全部通过 → Step 4
+  硬性规则不通过 →
+    列出具体问题（哪些任务未覆盖、哪些流断裂）
+    LLM 修正对应界面
+    → 重新验收（最多 3 轮）
+  3 轮后仍不通过 → 记录剩余问题，WARNING 继续
 ```
 
 ---
 
-### Step 3：向用户展示结果摘要，用户审阅
+### Step 4：输出
 
-以可读形式展示体验地图摘要：
+写入最终产物：
 
-> 以下示例以虚构业务为背景，仅用于说明输出格式。实际内容由 journey-emotion-map 分析结果决定，不限行业。
-
-```
-体验地图摘要
-
-操作线 5 条 · 节点 18 个 · 屏幕 32 个
-高风险节点 4 个 · 负面情绪节点 6 个
-
-操作线列表：
-| # | 操作线 | 角色 | 节点数 | 屏幕数 | 高风险 | 负面情绪 |
-|---|--------|------|--------|--------|--------|----------|
-| 1 | 售后退款操作线 | 买家 | 4 | 8 | 1 | 2 |
-| 2 | 订单管理操作线 | 商户 | 5 | 10 | 2 | 1 |
-| 3 | ... | ... | ... | ... | ... | ... |
-```
-
-**用户确认**：请审阅操作线划分是否合理，节点-屏幕映射是否完整。
-
----
-
-### Step 4：自动触发 interaction-quality-gate
-
-体验地图生成并经用户确认后，自动调用 `interaction-quality-gate`（Phase 4.5）执行交互质量检查。
-
----
-
-### Step 5：输出 experience-map-report.md
-
-汇总体验地图数据，生成人类可读报告：
-
-```
-# 体验地图报告
-
-操作线 X 条 · 节点 X 个 · 屏幕 X 个
-高风险节点 X 个 · 负面情绪节点 X 个
-
-## 操作线总览
-（按操作线展示节点和屏幕摘要）
-
-## 高风险节点
-（列出所有 risk=high/critical 的节点及其设计提示）
-
-## 负面情绪节点
-（列出所有 emotion 为 frustrated/anxious/angry 的节点）
-
-> 完整数据见 .allforai/experience-map/experience-map.json
-```
-
-输出：`.allforai/experience-map/experience-map-report.md`
+- `experience-map.json` — 机器可读完整结构
+- `experience-map-report.md` — 人类可读报告（操作线总览 + 平台分布 + 高风险节点 + 验收结果）
+- `experience-map-decisions.json` — 决策记录
 
 ---
 
 ### Variants 模式（--variants N）
 
-当指定 `--variants N`（N ≥ 2）时，生成 N 套不同的信息架构方案：
+当指定 `--variants N`（N >= 2）时，生成 N 套不同的信息架构方案：
 
 **Step 2v: 多方案发散**
 - 每套方案采用不同的信息架构策略：
@@ -275,19 +244,12 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py <BASE>
 - 每套方案输出到 `.allforai/experience-map/variants/variant-{n}/`
 
 **Step 2v.1: 对抗式评审**
-- 如果 OPENROUTER_API_KEY 可用，使用 ask_model 从 5 个视角评审每套方案：
-  - 用户视角：新手能否快速上手？
-  - 效率视角：高频操作路径是否最短？
-  - 扩展视角：新功能加入时架构是否稳定？
-  - 一致性视角：跨角色体验是否统一？
-  - 认知视角：信息层级是否符合心智模型？
+- 如果 OPENROUTER_API_KEY 可用，使用 ask_model 从 5 个视角评审每套方案
 - 输出对比矩阵 + 推荐方案
 
 **Step 2v.2: 用户选择**
-- AskUserQuestion 展示对比矩阵
-- 用户选择一个方案（或混合多方案优点）
-- 选中方案复制到 `.allforai/experience-map/` 主目录
-- 记录选择到 experience-map-decisions.json
+- 展示对比矩阵，用户选择一个方案
+- 选中方案复制到主目录
 
 ---
 
@@ -295,19 +257,14 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py <BASE>
 
 **激活条件**（同时满足）：
 1. `.allforai/product-concept/product-concept.json` 存在且含 `pipeline_preferences` 字段
-2. 上下文含 `__orchestrator_auto: true`（由 `/product-design full` 编排器传入）
-
-**未同时满足** → 保持标准交互模式（当前行为不变）。
+2. 上下文含 `__orchestrator_auto: true`
 
 **行为变化**：
 
 | 步骤 | 标准模式 | 全自动模式 |
 |------|----------|-----------|
-| **Step 3 结果审阅** | AskUserQuestion 确认 | 自动确认，记入 decisions.json（`decision: "auto_confirmed"`） |
-| **--variants 模式** | 生成 N 套方案 → 对抗式评审 → 用户选择 | 自动选择推荐方案（评审得分最高），记入 decisions.json |
-
-**安全护栏**（自动模式下仍然停下来问用户）：
-- ERROR 级验证失败（journey-emotion-map.json 解析失败、task_refs 引用断裂）
+| **Step 3 验收** | 展示验收结果 → 用户确认 | 自动 loop 修正，仅 ERROR 级停 |
+| **--variants** | 用户选择方案 | 自动选择推荐方案 |
 
 ---
 
@@ -315,17 +272,15 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py <BASE>
 
 ```
 .allforai/experience-map/
-├── experience-map.json              # 机器可读：操作线 > 节点 > 屏幕完整结构（含 implementation_contract）
+├── experience-map.json              # 机器可读：操作线 > 节点 > 屏幕完整结构
 ├── experience-map-report.md         # 人类可读：体验地图摘要报告
-├── experience-map-decisions.json    # variants 模式选择记录
+├── experience-map-decisions.json    # 决策记录
 ├── journey-emotion-map.json         # 上游输入（由 journey-emotion 生成）
 ├── journey-emotion-decisions.json   # 上游输入（由 journey-emotion 生成）
 ├── variants/                        # --variants 模式
-│   ├── variant-1/                   # 方案 A
+│   ├── variant-1/
 │   │   └── experience-map.json
-│   ├── variant-2/                   # 方案 B
-│   │   └── experience-map.json
-│   └── comparison-matrix.json       # 对比矩阵 + 评审结果
+│   └── comparison-matrix.json
 ```
 
 ---
@@ -333,29 +288,28 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py <BASE>
 ## 防御性规范
 
 ### 加载校验
-- **`journey-emotion-map.json`**：前置加载时验证 JSON 合法性。解析失败 → 提示用户重新运行 `/journey-emotion`，终止执行。
-- **`task-inventory.json`**：前置加载时验证 JSON 合法性。解析失败 → 提示用户重新运行 `/product-map`，终止执行。
+- `journey-emotion-map.json`：解析失败 → 终止
+- `task-inventory.json`：解析失败 → 终止
 
 ### 零结果处理
-- **journey-emotion-map.json 无旅程线**：提示「旅程情绪图中未定义任何旅程线，请先运行 /journey-emotion 补充旅程数据」，终止。
-- **生成 0 个操作线**：标注警告「未能从旅程情绪图生成任何操作线，请检查 journey-emotion-map.json 数据完整性」，终止。
+- 生成 0 个操作线 → 终止
+- 生成 0 个屏幕 → 终止
 
-### 上游过期检测
-- **`journey-emotion-map.json`**：加载时比较 `generated_at` 与已有 `experience-map.json` 的 `generated_at`。上游更新 → 警告「journey-emotion-map 在 experience-map 上次运行后被更新，建议重新运行 /experience-map refresh」。
-- 仅警告不阻断。
+### 执行失败保护
+- 任何步骤遇到不可恢复错误 → 写入 `.allforai/experience-map/experience-map-error.json`，包含 `{"error": "...", "step": "...", "timestamp": "..."}`
 
 ---
 
 ## 3 条铁律
 
-### 1. 以旅程情绪图为核心输入
+### 1. LLM 自由设计，规则只做验收
 
-操作线的划分和节点的情绪/风险标注来自 journey-emotion-map.json，不凭空创造。发现遗漏旅程线，先更新 journey-emotion，再重跑 experience-map。
+LLM 根据产品语义自主设计界面结构、交互方式、组件选择。预定义的交互类型（MG1/CT2 等）仅作为后标注标签，不参与设计过程。验收规则检查硬性约束（覆盖率、连续性、平台），不评判设计风格。
 
-### 2. 三层结构严格对齐
+### 2. 三层结构完整对齐
 
-operation_lines > nodes > screens 三层结构必须完整对齐。每个操作线至少有一个节点，每个节点至少有一个屏幕。不允许空操作线或空节点。
+operation_lines > nodes > screens 三层结构必须完整。每个操作线至少一个节点，每个节点至少一个屏幕。
 
-### 3. 只生成不设计
+### 3. 平台差异不可忽略
 
-experience-map 只输出体验结构数据，不触发任何设计变更或代码生成。屏幕的具体设计由下游 ui-design 负责。
+consumer 角色和 professional 角色的界面必须在布局、导航、交互方式上有本质差异，不是换个宽度的同一套设计。
