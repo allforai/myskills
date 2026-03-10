@@ -1,13 +1,11 @@
+# Skeleton generator — LLM enrichment required after running
 #!/usr/bin/env python3
-"""Generate UI design spec, decisions, and HTML previews.
+"""Generate UI design spec skeleton with raw screen data.
 
-Pre-built script for Phase 7 (ui-design).
-- Reads experience-map (operation_lines with emotion/intent/constraints)
-- Loads interaction-gate for quality-gate issues per node
-- Generates emotion-aware design spec with context fields
-- HTML previews include emotion indicator color bars
-- Style parameterized via --style argument
-- Pipeline-decisions dedup via _common.append_pipeline_decision()
+Skeleton for Phase 7 (ui-design). For each screen, outputs basic UI spec
+using existing data (interaction_type, data_fields, actions, emotion context).
+No keyword-based screen type classification or layout inference.
+LLM enrichment is required for screen type, layout, and wireframe generation.
 
 Usage:
     python3 gen_ui_design.py <BASE_PATH> [--mode auto] [--style material-design-3]
@@ -41,7 +39,6 @@ if not em_loaded:
     print("ERROR: experience-map.json is required for ui-design", file=sys.stderr)
     sys.exit(1)
 
-# Flatten screens from operation lines
 screen_by_id = C.build_screen_by_id_from_lines(op_lines)
 screens = list(screen_by_id.values())
 
@@ -76,7 +73,6 @@ concept = C.load_product_concept(BASE)
 fctx = C.load_full_context(BASE)
 
 # ── Style configuration ──────────────────────────────────────────────────────
-# Priority: CLI --style > product-concept pipeline_preferences.ui_style > default
 _UI_STYLE_ALIASES = {
     "apple-hig": "ios-human-interface",
     "apple": "ios-human-interface",
@@ -87,6 +83,7 @@ _UI_STYLE_ALIASES = {
     "md3": "material-design-3",
 }
 
+
 def _resolve_style(args, concept):
     explicit = args.get("style", "")
     if explicit:
@@ -96,15 +93,11 @@ def _resolve_style(args, concept):
         pref_style = prefs.get("ui_style", "")
         if pref_style and pref_style != "undecided":
             return _UI_STYLE_ALIASES.get(pref_style, pref_style)
-        # Infer from platform_type
-        platform = concept.get("platform_type", "") or ""
-        if any(kw in platform.lower() for kw in ("ios", "iphone", "ipad", "apple")):
-            return "ios-human-interface"
     return "material-design-3"
+
 
 style_name = _resolve_style(args, concept)
 
-# Style presets
 STYLES = {
     "material-design-3": {
         "name": "Material Design 3",
@@ -148,7 +141,6 @@ for s in screens:
         task = tasks.get(tid)
         if task:
             raw_role = task.get("owner_role") or task.get("role_id", "")
-            # Split comma-separated role IDs (e.g. "R1,R2,R3")
             for r in raw_role.split(","):
                 r = r.strip()
                 if r:
@@ -156,77 +148,14 @@ for s in screens:
     for rid in screen_roles:
         role_screens.setdefault(rid, []).append(s)
 
+# ── Generate design spec (markdown) ──────────────────────────────────────────
+mission = concept.get("mission", "") if concept else ""
 
-# ── Screen type classification ───────────────────────────────────────────────
-
-def _screen_type(screen):
-    """Classify screen into a visual type for distinct wireframe rendering."""
-    name = screen.get("name", "")
-    itype = screen.get("interaction_type", "")
-    actions = screen.get("actions", [])
-    crud_set = {a.get("crud", "R") for a in actions}
-    data_fields = screen.get("data_fields", [])
-
-    # Name-keyword classification (most specific first)
-    _KW_MAP = [
-        (("登录", "注册", "重置密码"), "auth"),
-        (("统计", "仪表", "热度", "报告", "数据", "导出"), "dashboard"),
-        (("设置", "配置", "管理通知", "通知设置"), "settings"),
-        (("对话", "角色扮演", "聊天", "阅读场景"), "dialogue"),
-        (("闪卡",), "flashcard"),
-        (("填空",), "fillin"),
-        (("听音",), "listening"),
-        (("拼写",), "spelling"),
-        (("练习", "复习", "测试"), "exercise"),
-        (("单词", "生词", "词汇", "生词本"), "vocabulary"),
-        (("引导", "新手"), "onboarding"),
-        (("场景列表", "浏览场景", "场景市场", "管理已下载"), "gallery"),
-        (("场景详情", "查看场景"), "detail"),
-        (("下载场景", "同步"), "progress"),
-        (("反馈", "意见"), "feedback"),
-        (("订阅", "支付", "升级", "取消订阅"), "pricing"),
-        (("关联", "网络", "语义"), "graph"),
-        (("用户管理", "管理用户"), "table"),
-        (("编辑场景", "创建场景", "编辑"), "editor"),
-        (("审核",), "review"),
-        (("句子", "练习关键", "练句"), "sentence"),
-        (("SRS", "复习调度", "复习计划"), "schedule"),
-        (("学习目标", "目标"), "goal"),
-        (("推荐", "预测"), "recommendation"),
-        (("管理prompt", "prompt模板"), "template"),
-        (("LLM生成", "AI生成", "生成场景", "连环画"), "ai-generate"),
-        (("发布", "上架", "下架"), "publish"),
-        (("批量",), "batch"),
-        (("个人资料", "编辑个人"), "profile"),
-        (("管理场景分类", "标签", "分类标签"), "tag-manage"),
-        (("查看用户反馈",), "feedback-list"),
-    ]
-    for keywords, stype in _KW_MAP:
-        if any(kw in name for kw in keywords):
-            return stype
-
-    # Interaction-type fallback
-    if "MG2-C" in itype or ("C" in crud_set and data_fields):
-        return "form"
-    if "MG2-L" in itype:
-        return "list"
-    if "MG3" in itype:
-        return "detail"
-    if "MG4" in itype:
-        return "complex"
-    if crud_set <= {"R"}:
-        return "content"
-    if "C" in crud_set or "U" in crud_set:
-        return "form"
-    return "content"
-
-
-# ── Generate design spec ─────────────────────────────────────────────────────
 spec_lines = []
-spec_lines.append("# UI 设计规格\n")
+spec_lines.append("# UI 设计规格（骨架）\n")
+spec_lines.append("> LLM enrichment required: screen types and layouts pending\n")
 spec_lines.append(f"> 风格: {STYLE}")
 spec_lines.append(f"> 生成时间: {NOW}")
-mission = concept.get("mission", "") if concept else ""
 spec_lines.append(f"> 产品: {mission}\n")
 
 spec_lines.append("## 设计语言基础\n")
@@ -236,24 +165,11 @@ spec_lines.append(f"- 次色 (Secondary): {S['secondary']}")
 spec_lines.append(f"- 强调色 (Tertiary): {S['tertiary']}")
 spec_lines.append(f"- 背景: {S['bg']}")
 spec_lines.append(f"- 表面 (Surface): {S['surface']}")
-spec_lines.append(f"- 表面变体: {S['surface_variant']}")
 spec_lines.append(f"- 功能色: 成功 {S['success']} · 警告 {S['warning']} · 错误 {S['error']}\n")
 
 spec_lines.append("### 排版\n")
-spec_lines.append("- Display: 57px / 400")
-spec_lines.append("- Headline: 32px / 400")
-spec_lines.append("- Title: 22px / 500")
-spec_lines.append("- Body: 16px / 400 / 行高 24px")
-spec_lines.append("- Label: 14px / 500")
-spec_lines.append(f"- 字体推荐: {S['font']}\n")
-
-spec_lines.append("### 组件规范\n")
-spec_lines.append(f"- 圆角: {S['radius']}")
-spec_lines.append("- 间距系统: 4px 基准 (4/8/12/16/24/32)")
-spec_lines.append("- 按钮: Filled (主操作) / Outlined (次要) / Text (辅助)")
-spec_lines.append("- 卡片: Elevated (阴影) / Filled (填充) / Outlined (边框)")
-spec_lines.append("- 输入框: 默认 outlined，聚焦态主色边框")
-spec_lines.append("- 导航: Bottom navigation (C端) / Navigation rail (B端)\n")
+spec_lines.append(f"- 字体推荐: {S['font']}")
+spec_lines.append(f"- 圆角: {S['radius']}\n")
 
 spec_lines.append("### 推荐组件库\n")
 spec_lines.append(f"- 首选: {S['lib']}")
@@ -272,99 +188,38 @@ for mod, slist in module_screens.items():
     spec_lines.append(f"### 模块: {mod}\n")
     for s in slist:
         sid = s["id"]
-        screen_tasks = s.get("tasks", [])
-        audience = "consumer"
-        for tid in screen_tasks:
-            task = tasks.get(tid)
-            if task:
-                raw_role = task.get("owner_role") or task.get("role_id", "")
-                at = "default"
-                for _r in raw_role.split(","):
-                    _r = _r.strip()
-                    if _r:
-                        at = role_audience.get(_r, at)
-                if at == "professional":
-                    audience = "professional"
-                    break
-
         actions = s.get("actions", [])
         primary_actions = [a["label"] for a in actions if a.get("frequency") == "高"]
         secondary_actions = [a["label"] for a in actions if a.get("frequency") != "高"]
 
-        stype_spec = _screen_type(s)
-        _LAYOUT_MAP = {
-            "auth": "居中单卡片表单",
-            "form": "单列表单 + 底部操作栏", "editor": "单列表单 + 底部操作栏",
-            "list": "搜索栏 + 列表/卡片流", "gallery": "分类标签 + 网格/列表",
-            "detail": "封面图 + 字段列表 + 底部操作栏",
-            "dialogue": "气泡对话流 + 底部交互栏", "sentence": "卡片居中 + 底部导航",
-            "flashcard": "进度条 + 翻转卡片 + 评分按钮",
-            "fillin": "进度条 + 题目 + 选项网格", "listening": "进度条 + 播放器 + 选项",
-            "spelling": "进度条 + 提示 + 字母键盘", "exercise": "进度条 + 内容区 + 操作栏",
-            "vocabulary": "搜索栏 + 单词列表（音标+释义）",
-            "dashboard": "统计卡片行 + 图表区", "settings": "分组开关列表",
-            "pricing": "并排套餐卡片", "graph": "力导向节点图",
-            "table": "工具栏 + 数据表格", "onboarding": "插图 + 引导文案 + 指示点",
-            "progress": "居中进度指示 + 状态信息", "schedule": "日历视图 + 待复习列表",
-            "profile": "头像 + 表单字段", "feedback": "分类下拉 + 文本域",
-            "recommendation": "推荐卡片横滑", "review": "内容预览 + 审批操作栏",
-            "ai-generate": "AI进度指示 + 步骤流", "publish": "状态字段 + 发布操作",
-            "batch": "参数表单 + 批量进度", "template": "搜索 + 模板列表",
-            "tag-manage": "搜索 + 标签云", "feedback-list": "筛选 + 反馈列表",
-            "goal": "环形目标 + 选项",
-        }
-        if audience == "professional":
-            layout = "侧边导航 + " + _LAYOUT_MAP.get(stype_spec, "内容区（表格/列表导向）")
-        else:
-            layout = _LAYOUT_MAP.get(stype_spec, "单列卡片流")
-
-        # Determine if screen serves core or basic tasks
-        task_cats = set()
-        for tid in screen_tasks:
-            t = tasks.get(tid)
-            if t:
-                task_cats.add(t.get("category", ""))
-        cat_label = "core" if "core" in task_cats else ("basic" if "basic" in task_cats else "")
-
-        spec_parts = []
-        # Emotion context from experience-map
+        # Emotion context
         ctx = screen_context.get(sid, {})
+
+        spec_lines.append(f"#### {s['name']}（{sid}）\n")
         if ctx:
-            spec_parts.append(f"**Emotion Context**: {ctx['emotion_state']} ({ctx['emotion_intensity']}/10)")
+            spec_lines.append(f"**Emotion Context**: {ctx['emotion_state']} ({ctx['emotion_intensity']}/10)")
             if ctx['ux_intent']:
-                spec_parts.append(f"**Interaction Intent**: {ctx['ux_intent']}")
+                spec_lines.append(f"**Interaction Intent**: {ctx['ux_intent']}")
             if ctx['non_negotiable']:
-                spec_parts.append(f"**Non-negotiable**: {', '.join(ctx['non_negotiable'])}")
+                spec_lines.append(f"**Non-negotiable**: {', '.join(ctx['non_negotiable'])}")
             if ctx['gate_issues']:
                 issues_str = "; ".join(i.get('detail', '') for i in ctx['gate_issues'])
-                spec_parts.append(f"**Quality Gate Issues**: {issues_str}")
-
-        spec_lines.append(f"#### {s['name']}（{sid}）[{audience}]{' [core]' if cat_label == 'core' else ''}\n")
-        # Prepend emotion context before layout/component content
-        for sp in spec_parts:
-            spec_lines.append(sp)
-        if spec_parts:
+                spec_lines.append(f"**Quality Gate Issues**: {issues_str}")
             spec_lines.append("")
-        spec_lines.append(f"**界面目的**: {s.get('notes', '支撑关联任务')}\n")
-        spec_lines.append(f"**功能类别**: {'核心功能' if cat_label == 'core' else '基本功能'}\n")
-        spec_lines.append(f"**布局模式**: {layout}\n")
+
+        spec_lines.append(f"**界面目的**: {s.get('notes', '支撑关联任务')}")
+        spec_lines.append(f"**Interaction Type**: {s.get('interaction_type', 'pending')}")
         spec_lines.append("**主要操作**:")
         for a in primary_actions[:3]:
-            spec_lines.append(f"  - {a} (Filled Button)")
+            spec_lines.append(f"  - {a} (primary)")
         for a in secondary_actions[:3]:
-            spec_lines.append(f"  - {a} (Outlined Button)")
-        spec_lines.append("")
-        spec_lines.append("**关键状态设计**:")
-        spec_lines.append("  - 空态: 插图 + 引导文案 + CTA 按钮")
-        spec_lines.append("  - 加载中: 骨架屏 (shimmer)")
-        spec_lines.append("  - 错误: Snackbar (错误色) + 重试按钮")
-        spec_lines.append("  - 成功: Snackbar (成功色) / 页面跳转")
+            spec_lines.append(f"  - {a} (secondary)")
         spec_lines.append("")
 
 with open(os.path.join(OUT, "ui-design-spec.md"), "w", encoding="utf-8") as f:
     f.write("\n".join(spec_lines) + "\n")
 
-# ── Generate ui-design-spec.json (for review_hub_server UI tab) ──────────────
+# ── Generate ui-design-spec.json ──────────────────────────────────────────────
 spec_json_screens = []
 for s in screens:
     sid = s["id"]
@@ -385,33 +240,7 @@ for s in screens:
                 if _r and role_audience.get(_r, "default") == "professional":
                     audience = "professional"
 
-    # Determine layout
     actions = s.get("actions", [])
-    stype_json = _screen_type(s)
-    _LAYOUT_MAP_JSON = {
-        "auth": "居中单卡片表单", "form": "单列表单 + 底部操作栏", "editor": "单列表单 + 底部操作栏",
-        "list": "搜索栏 + 列表/卡片流", "gallery": "分类标签 + 网格/列表",
-        "detail": "封面图 + 字段列表 + 底部操作栏", "dialogue": "气泡对话流 + 底部交互栏",
-        "sentence": "卡片居中 + 底部导航", "flashcard": "进度条 + 翻转卡片 + 评分按钮",
-        "fillin": "进度条 + 题目 + 选项网格", "listening": "进度条 + 播放器 + 选项",
-        "spelling": "进度条 + 提示 + 字母键盘", "exercise": "进度条 + 内容区 + 操作栏",
-        "vocabulary": "搜索栏 + 单词列表", "dashboard": "统计卡片行 + 图表区",
-        "settings": "分组开关列表", "pricing": "并排套餐卡片", "graph": "力导向节点图",
-        "table": "工具栏 + 数据表格", "onboarding": "插图 + 引导文案 + 指示点",
-        "progress": "居中进度指示", "schedule": "日历 + 待复习列表",
-        "profile": "头像 + 表单", "feedback": "分类下拉 + 文本域",
-        "recommendation": "推荐卡片横滑", "review": "内容预览 + 审批操作",
-        "ai-generate": "AI进度 + 步骤流", "publish": "状态字段 + 发布操作",
-        "batch": "参数表单 + 进度", "template": "搜索 + 模板列表",
-        "tag-manage": "搜索 + 标签云", "feedback-list": "筛选 + 反馈列表",
-        "goal": "环形目标 + 选项",
-    }
-    if audience == "professional":
-        layout = "侧边导航 + " + _LAYOUT_MAP_JSON.get(stype_json, "内容区（表格/列表导向）")
-    else:
-        layout = _LAYOUT_MAP_JSON.get(stype_json, "单列卡片流")
-
-    # Determine sections from actions
     primary_actions = [a["label"] for a in actions if a.get("frequency") == "高"]
     secondary_actions = [a["label"] for a in actions if a.get("frequency") != "高"]
     sections = []
@@ -429,16 +258,13 @@ for s in screens:
             task_cats.add(t.get("category", ""))
     task_priority = "core" if "core" in task_cats else ("basic" if "basic" in task_cats else "auxiliary")
 
-    # Preserve interaction_type from experience-map (MG1/MG2-C/MG3/MG4 etc.)
-    em_itype = s.get("interaction_type", "")
-
     # Use real states from experience-map when available, else generic
     em_states = s.get("states", {})
     if not em_states or not isinstance(em_states, dict):
         em_states = {
-            "empty": "插图 + 引导文案 + CTA 按钮",
-            "loading": "骨架屏 (shimmer)",
-            "error": "Snackbar (错误色) + 重试按钮",
+            "empty": "pending_design",
+            "loading": "pending_design",
+            "error": "pending_design",
         }
 
     # Emotion context
@@ -451,8 +277,9 @@ for s in screens:
         "module": s.get("module", "其他"),
         "audience_type": audience,
         "task_priority": task_priority,
-        "interaction_type": em_itype,
-        "layout": layout,
+        "interaction_type": s.get("interaction_type", ""),
+        "screen_type": "pending_llm_classification",
+        "layout": "pending_llm_classification",
         "sections": sections,
         "states": em_states,
         "actions": [{"label": a.get("label", ""), "crud": a.get("crud", "R"),
@@ -525,16 +352,6 @@ for s in screens:
             for c in screen_constraints
         ]
 
-    # (f) XV warnings
-    xv_ui = fctx.get_xv_findings("ui-design")
-    if xv_ui:
-        for xf in xv_ui:
-            raw = xf.get("raw_findings", {})
-            for issue in raw.get("issues", []):
-                desc = issue.get("description", "")
-                if sid in desc or not issue.get("screen_ref"):
-                    screen_entry.setdefault("xv_warnings", []).append(desc)
-
     spec_json_screens.append(screen_entry)
 
 spec_json = {
@@ -564,10 +381,11 @@ spec_json = {
         "border_radius": S["radius"],
     },
     "screens": spec_json_screens,
+    "llm_enrichment_required": True,
 }
 C.write_json(os.path.join(OUT, "ui-design-spec.json"), spec_json)
 
-# ── Generate tokens.json (single source of truth) ────────────────────────────
+# ── Generate tokens.json ──────────────────────────────────────────────────────
 tokens = {
     "color": {
         "primary": S["primary"],
@@ -606,713 +424,23 @@ tokens = {
 }
 C.write_json(os.path.join(OUT, "tokens.json"), tokens)
 
-# ── Micro-interaction presets ────────────────────────────────────────────────
-MICRO_PRESETS = {
-    "calm": {
-        "animation": "fade",
-        "duration_ms": 200,
-        "easing": "ease-out",
-        "haptic": "none",
-    },
-    "moderate": {
-        "animation": "slide-fade",
-        "duration_ms": 250,
-        "easing": "ease-in-out",
-        "haptic": "light",
-    },
-    "intense": {
-        "animation": "scale-bounce",
-        "duration_ms": 300,
-        "easing": "cubic-bezier(0.34, 1.56, 0.64, 1)",
-        "haptic": "impact-medium",
-    },
-}
-
-MICRO_OVERRIDES = {
-    "success": {"animation": "scale-bounce", "duration_ms": 300, "easing": "cubic-bezier(0.34, 1.56, 0.64, 1)", "haptic": "impact-medium"},
-    "error": {"animation": "shake", "duration_ms": 400, "easing": "ease-out", "haptic": "notification-error"},
-    "loading": {"animation": "pulse", "duration_ms": 1000, "easing": "ease-in-out", "haptic": "none"},
-}
-
-
-def _intensity_tier(intensity):
-    if intensity <= 3:
-        return "calm"
-    elif intensity <= 6:
-        return "moderate"
-    return "intense"
-
-
-# Generate micro-interactions per screen
-micro_interactions_data = []
-spec_lines.append("\n---\n")
-spec_lines.append("## Micro-Interaction Specifications\n")
-spec_lines.append("| Screen | Trigger | Animation | Duration | Easing | Haptic |")
-spec_lines.append("|--------|---------|-----------|----------|--------|--------|")
-
-for s in screens:
-    sid = s["id"]
-    ctx = screen_context.get(sid, {})
-    intensity = ctx.get("emotion_intensity", 5)
-    tier = _intensity_tier(intensity)
-    preset = MICRO_PRESETS[tier]
-
-    screen_micros = []
-
-    # Primary action interaction
-    primary_micro = {
-        "trigger": "primary-action-tap",
-        **preset,
-        "emotion_alignment": f"{ctx.get('emotion_state', 'neutral')} ({tier})",
-    }
-    screen_micros.append(primary_micro)
-    spec_lines.append(
-        f"| {s['name']} ({sid}) | primary-action-tap | {preset['animation']} "
-        f"| {preset['duration_ms']}ms | {preset['easing']} | {preset['haptic']} |"
-    )
-
-    # Detect CRUD types present on this screen
-    crud_set = {a.get("crud") for a in s.get("actions", [])}
-    has_mutating = crud_set & {"C", "U", "D"}
-
-    # Success state override for C-type screens
-    if "C" in crud_set:
-        ov = MICRO_OVERRIDES["success"]
-        screen_micros.append({
-            "trigger": "create-success",
-            **ov,
-            "emotion_alignment": "satisfying confirmation",
-        })
-        spec_lines.append(
-            f"| {s['name']} ({sid}) | create-success | {ov['animation']} "
-            f"| {ov['duration_ms']}ms | {ov['easing']} | {ov['haptic']} |"
-        )
-
-    # Error state override for any mutating screen (C/U/D)
-    if has_mutating:
-        ov = MICRO_OVERRIDES["error"]
-        screen_micros.append({
-            "trigger": "error-feedback",
-            **ov,
-            "emotion_alignment": "error alert",
-        })
-        spec_lines.append(
-            f"| {s['name']} ({sid}) | error-feedback | {ov['animation']} "
-            f"| {ov['duration_ms']}ms | {ov['easing']} | {ov['haptic']} |"
-        )
-
-    # Loading state for screens with async operations (C/U/D)
-    if has_mutating:
-        ov = MICRO_OVERRIDES["loading"]
-        screen_micros.append({
-            "trigger": "async-loading",
-            **ov,
-            "emotion_alignment": "processing feedback",
-        })
-        spec_lines.append(
-            f"| {s['name']} ({sid}) | async-loading | {ov['animation']} "
-            f"| {ov['duration_ms']}ms | {ov['easing']} | {ov['haptic']} |"
-        )
-
-    micro_interactions_data.append({
-        "screen_id": sid,
-        "screen_name": s["name"],
-        "emotion_tier": tier,
-        "micro_interactions": screen_micros,
-    })
-
-spec_lines.append("")
-
-# Write micro-interactions.json
-C.write_json(os.path.join(OUT, "micro-interactions.json"), {
-    "generated_at": NOW,
-    "presets": MICRO_PRESETS,
-    "overrides": MICRO_OVERRIDES,
-    "screens": micro_interactions_data,
-})
-
-# Rewrite spec with micro-interactions appended
-with open(os.path.join(OUT, "ui-design-spec.md"), "w", encoding="utf-8") as f:
-    f.write("\n".join(spec_lines) + "\n")
-spec_text = "\n".join(spec_lines)
-
-
-# ── XV auto-apply helpers ────────────────────────────────────────────────────
-
-def _apply_design_review_findings(data, spec_lines):
-    """Apply design review: append high-severity usability issues as warnings in spec.
-
-    Returns issue_count.
-    """
-    issues = [i for i in data.get("usability_issues", []) if i.get("severity") == "high"]
-    if not issues:
-        return 0
-
-    spec_lines.append("\n---\n")
-    spec_lines.append("## XV 交叉验证：高严重度可用性问题\n")
-    spec_lines.append("| 位置 | 问题 | 建议 |")
-    spec_lines.append("|------|------|------|")
-    for issue in issues:
-        spec_lines.append(
-            f"| {issue.get('screen_or_section', '')} "
-            f"| {issue.get('issue', '')} "
-            f"| {issue.get('suggestion', '')} |"
-        )
-    return len(issues)
-
-
-def _apply_visual_consistency_findings(data, spec_lines):
-    """Apply visual consistency: append inconsistencies and token gaps to spec.
-
-    Returns finding_count.
-    """
-    items = data.get("inconsistencies", []) + data.get("token_gaps", [])
-    if not items:
-        return 0
-
-    spec_lines.append("\n## XV 交叉验证：设计一致性\n")
-    inconsistencies = data.get("inconsistencies", [])
-    if inconsistencies:
-        spec_lines.append("### 不一致问题\n")
-        for inc in inconsistencies:
-            screens_str = ", ".join(inc.get("screens", []))
-            spec_lines.append(f"- **{screens_str}**: {inc.get('issue', '')}")
-
-    token_gaps = data.get("token_gaps", [])
-    if token_gaps:
-        spec_lines.append("\n### 缺失设计令牌\n")
-        for tg in token_gaps:
-            spec_lines.append(f"- **{tg.get('token', '')}**: {tg.get('context', '')}")
-
-    return len(items)
-
-
-# ── XV Cross-model validation ────────────────────────────────────────────────
-xv_reviews = []
-
-if C.xv_available():
-    from xv_prompts import design_review_prompt, visual_consistency_prompt
-
-    # XV-1: design_review → gemini
-    try:
-        dr_prompt = design_review_prompt(spec_text, len(screens), len(roles))
-        dr_result = C.xv_call("design_review", dr_prompt["user"], dr_prompt["system"])
-        print(f"  XV design_review: model={dr_result['model_used']}")
-        dr_data = C.xv_parse_json(dr_result["response"])
-        issue_count = _apply_design_review_findings(dr_data, spec_lines)
-        xv_reviews.append({
-            "task_type": "design_review",
-            "model_used": dr_result["model_used"],
-            "family": dr_result["family"],
-            "auto_applied": {"high_severity_issues": issue_count},
-            "raw_findings": dr_data,
-        })
-        print(f"  XV design_review: {issue_count} high-severity issues appended")
-    except Exception as e:
-        print(f"  XV design_review failed: {e} (continuing without XV)", file=sys.stderr)
-
-    # XV-2: visual_consistency → gpt
-    try:
-        vc_prompt = visual_consistency_prompt(screens, S)
-        vc_result = C.xv_call("visual_consistency", vc_prompt["user"], vc_prompt["system"])
-        print(f"  XV visual_consistency: model={vc_result['model_used']}")
-        vc_data = C.xv_parse_json(vc_result["response"])
-        finding_count = _apply_visual_consistency_findings(vc_data, spec_lines)
-        xv_reviews.append({
-            "task_type": "visual_consistency",
-            "model_used": vc_result["model_used"],
-            "family": vc_result["family"],
-            "auto_applied": {"consistency_findings": finding_count},
-            "raw_findings": vc_data,
-        })
-        print(f"  XV visual_consistency: {finding_count} findings appended")
-    except Exception as e:
-        print(f"  XV visual_consistency failed: {e} (continuing without XV)", file=sys.stderr)
-
-    if xv_reviews:
-        # Rewrite spec with XV findings appended
-        with open(os.path.join(OUT, "ui-design-spec.md"), "w", encoding="utf-8") as f:
-            f.write("\n".join(spec_lines) + "\n")
-        # Write XV review to separate file
-        C.write_json(os.path.join(OUT, "ui-xv-review.json"), C.xv_review(xv_reviews))
-        print(f"  XV: ui-design-spec.md rewritten, ui-xv-review.json created")
-    else:
-        print(f"  XV: all calls failed, primary output unchanged")
-
-
-# ── Emotion color mapping ────────────────────────────────────────────────────
-EMOTION_COLORS = {
-    "curious": "#4FC3F7", "anxious": "#FF8A65", "satisfied": "#81C784",
-    "frustrated": "#E57373", "neutral": "#B0BEC5", "exploring": "#64B5F6",
-    "confident": "#66BB6A", "confused": "#FFB74D",
-}
-
-
-# ── Wireframe rendering helpers ──────────────────────────────────────────────
-
-def _render_wireframe(screen, S):
-    """Generate wireframe HTML that visually represents the screen's actual function."""
-    stype = _screen_type(screen)
-    name = screen.get("name", "")
-    actions = screen.get("actions", [])
-    data_fields = screen.get("data_fields", [])
-    hi = [a for a in actions if a.get("frequency") == "高"]
-    lo = [a for a in actions if a.get("frequency") != "高"]
-
-    def _btns(primary=None, secondary=None):
-        primary = primary or hi[:2]
-        secondary = secondary or lo[:2]
-        h = "".join(f'<span class="wf-btn-p">{html_escape(a["label"] if isinstance(a, dict) else a)}</span>' for a in primary)
-        s = "".join(f'<span class="wf-btn-s">{html_escape(a["label"] if isinstance(a, dict) else a)}</span>' for a in secondary)
-        return f'<div class="wf-bar">{h}{s}</div>' if h or s else ""
-
-    def _fields(fallback_labels=None, max_n=5):
-        fl = data_fields[:max_n] if data_fields else [{"label": l} for l in (fallback_labels or ["字段"])]
-        out = ""
-        for f in fl:
-            label = html_escape(f.get("label", f.get("name", "")))
-            w = f.get("input_widget", "text")
-            cls = "wf-textarea" if w == "textarea" else ("wf-select" if w == "select" else "")
-            suffix = " ▾" if w == "select" else ""
-            out += f'<div class="wf-input {cls}"><span class="wf-label">{label}{suffix}</span></div>\n'
-        return out
-
-    def _progress(pct=60):
-        return f'<div class="wf-progress"><div class="wf-progress-fill" style="width:{pct}%"></div></div>'
-
-    # ── Auth ──────────────────────────────────────────────────────────────
-    if stype == "auth":
-        fb = ["邮箱/手机号", "密码"] if "登录" in name else ["邮箱", "密码", "确认密码"]
-        btn_lbl = "注册" if "注册" in name else ("重置密码" if "重置" in name else "登录")
-        return f'<div class="wf wf-center">\n<div class="wf-logo">FlyDict</div>\n{_fields(fb)}<div class="wf-bar"><span class="wf-btn-p">{btn_lbl}</span></div>\n<div class="wf-hint">忘记密码? · 其他方式登录</div>\n</div>'
-
-    # ── Onboarding ────────────────────────────────────────────────────────
-    if stype == "onboarding":
-        return '<div class="wf wf-center">\n<div class="wf-illust"></div>\n<div class="wf-title">欢迎使用 FlyDict</div>\n<div class="wf-desc">场景化学习，让词汇活起来</div>\n<div class="wf-dots"><span class="active"></span><span></span><span></span></div>\n<div class="wf-bar"><span class="wf-btn-p">开始体验</span></div>\n</div>'
-
-    # ── Gallery / List ────────────────────────────────────────────────────
-    if stype in ("gallery", "list"):
-        items = ""
-        for _ in range(4):
-            items += '<div class="wf-li"><div class="wf-thumb"></div><div class="wf-li-body"><div class="wf-line"></div><div class="wf-line short"></div></div><span class="wf-chev">›</span></div>\n'
-        tabs = ""
-        if stype == "gallery":
-            tabs = '<div class="wf-tabs"><span class="active">全部</span><span>旅行</span><span>商务</span><span>日常</span></div>\n'
-        return f'<div class="wf">\n<div class="wf-search">🔍 搜索场景...</div>\n{tabs}{items}</div>'
-
-    # ── Detail ────────────────────────────────────────────────────────────
-    if stype == "detail":
-        rows = ""
-        for f in (data_fields or [])[:4]:
-            label = html_escape(f.get("label", f.get("name", "")))
-            rows += f'<div class="wf-kv"><span class="wf-k">{label}</span><span class="wf-v"></span></div>\n'
-        return f'<div class="wf">\n<div class="wf-hero"></div>\n{rows}<div class="wf-text"><div class="wf-line"></div><div class="wf-line"></div><div class="wf-line short"></div></div>\n{_btns()}\n</div>'
-
-    # ── Dialogue / Chat ───────────────────────────────────────────────────
-    if stype == "dialogue":
-        return '<div class="wf wf-chat">\n<div class="wf-bubble left"><div class="wf-line"></div><div class="wf-line short"></div><div class="wf-audio-sm">🔊</div></div>\n<div class="wf-bubble right"><div class="wf-line"></div></div>\n<div class="wf-bubble left"><div class="wf-line"></div><div class="wf-line"></div><div class="wf-audio-sm">🔊</div></div>\n<div class="wf-bubble right"><div class="wf-line short"></div></div>\n<div class="wf-chat-bar"><span>点击句子查看解析...</span></div>\n</div>'
-
-    # ── Sentence practice ─────────────────────────────────────────────────
-    if stype == "sentence":
-        return f'<div class="wf wf-center">\n{_progress(45)}\n<div class="wf-card-lg">\n<div class="wf-sent">"I\'d like to make a reservation."</div>\n<div class="wf-sent-zh">我想预约。</div>\n<div class="wf-audio-sm">🔊 跟读</div>\n</div>\n<div class="wf-bar"><span class="wf-btn-s">上一句</span><span class="wf-btn-p">下一句</span></div>\n</div>'
-
-    # ── Flashcard ─────────────────────────────────────────────────────────
-    if stype == "flashcard":
-        return f'<div class="wf wf-center">\n{_progress(60)}\n<div class="wf-flashcard">\n<div class="wf-flash-word">reservation</div>\n<div class="wf-flash-phonetic">/ˌrez.ɚˈveɪ.ʃən/</div>\n<div class="wf-flash-hint">点击翻转</div>\n</div>\n<div class="wf-bar"><span class="wf-btn-s">忘了</span><span class="wf-btn-s">模糊</span><span class="wf-btn-p">记住</span></div>\n</div>'
-
-    # ── Fill-in ───────────────────────────────────────────────────────────
-    if stype == "fillin":
-        return f'<div class="wf wf-center">\n{_progress(40)}\n<div class="wf-card-lg">\n<div class="wf-sent">I\'d like to ___ a reservation.</div>\n</div>\n<div class="wf-options"><span>make</span><span>do</span><span>take</span><span>have</span></div>\n</div>'
-
-    # ── Listening ─────────────────────────────────────────────────────────
-    if stype == "listening":
-        return f'<div class="wf wf-center">\n{_progress(30)}\n<div class="wf-audio-lg">🔊</div>\n<div class="wf-hint">听音频，选择正确的单词</div>\n<div class="wf-options"><span>reservation</span><span>conversation</span><span>destination</span></div>\n</div>'
-
-    # ── Spelling ──────────────────────────────────────────────────────────
-    if stype == "spelling":
-        return f'<div class="wf wf-center">\n{_progress(50)}\n<div class="wf-spell-prompt">预约; 保留</div>\n<div class="wf-spell-boxes">r e s e r v _ _ _ _ _</div>\n<div class="wf-keyboard"><span>a</span><span>b</span><span>c</span><span>i</span><span>o</span><span>n</span><span>t</span><span>⌫</span></div>\n</div>'
-
-    # ── Exercise (generic) ────────────────────────────────────────────────
-    if stype == "exercise":
-        return f'<div class="wf wf-center">\n{_progress(50)}\n<div class="wf-card-lg">\n<div class="wf-area">练习内容</div>\n</div>\n{_btns(["提交"], ["跳过"])}\n</div>'
-
-    # ── Vocabulary / Word list ────────────────────────────────────────────
-    if stype == "vocabulary":
-        return '<div class="wf">\n<div class="wf-search">🔍 搜索单词...</div>\n<div class="wf-word-row"><span class="wf-w">apple</span><span class="wf-ph">/ˈæp.əl/</span><span class="wf-zh">苹果</span><span class="wf-star">★</span></div>\n<div class="wf-word-row"><span class="wf-w">reservation</span><span class="wf-ph">/ˌrez.ɚˈveɪ.ʃən/</span><span class="wf-zh">预约</span><span class="wf-star">☆</span></div>\n<div class="wf-word-row"><span class="wf-w">destination</span><span class="wf-ph">/ˌdes.tɪˈneɪ.ʃən/</span><span class="wf-zh">目的地</span><span class="wf-star">★</span></div>\n</div>'
-
-    # ── Dashboard / Stats ─────────────────────────────────────────────────
-    if stype == "dashboard":
-        return '<div class="wf">\n<div class="wf-stats"><div class="wf-stat"><div class="wf-stat-n">128</div><div class="wf-stat-l">已学单词</div></div><div class="wf-stat"><div class="wf-stat-n">85%</div><div class="wf-stat-l">正确率</div></div><div class="wf-stat"><div class="wf-stat-n">7d</div><div class="wf-stat-l">连续天数</div></div></div>\n<div class="wf-chart"></div>\n</div>'
-
-    # ── Settings ──────────────────────────────────────────────────────────
-    if stype == "settings":
-        rows = ""
-        items = actions[:5] if actions else [{"label": "通知提醒"}, {"label": "深色模式"}, {"label": "学习提醒时间"}]
-        for i, a in enumerate(items):
-            lbl = html_escape(a["label"] if isinstance(a, dict) else a)
-            on = " on" if i % 2 == 0 else ""
-            rows += f'<div class="wf-setting"><span>{lbl}</span><span class="wf-toggle{on}"></span></div>\n'
-        return f'<div class="wf">\n{rows}</div>'
-
-    # ── Pricing / Subscription ────────────────────────────────────────────
-    if stype == "pricing":
-        return f'<div class="wf wf-pricing">\n<div class="wf-plan"><div class="wf-plan-h">免费版</div><div class="wf-plan-price">¥0</div><div class="wf-plan-feat">· 3个场景包<br>· 基础复习</div></div>\n<div class="wf-plan featured"><div class="wf-plan-badge">推荐</div><div class="wf-plan-h">Pro</div><div class="wf-plan-price">¥28/月</div><div class="wf-plan-feat">· 无限场景包<br>· AI角色扮演<br>· 离线全功能</div><div class="wf-bar"><span class="wf-btn-p">升级 Pro</span></div></div>\n</div>'
-
-    # ── Schedule / SRS ────────────────────────────────────────────────────
-    if stype == "schedule":
-        return '<div class="wf">\n<div class="wf-cal"><div class="wf-cal-head">3月</div><div class="wf-cal-grid"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span class="today">六</span><span>日</span></div></div>\n<div class="wf-li"><div class="wf-dot green"></div><div class="wf-li-body"><div class="wf-line"></div><div class="wf-line short"></div></div><span class="wf-badge-count">12</span></div>\n<div class="wf-li"><div class="wf-dot orange"></div><div class="wf-li-body"><div class="wf-line"></div><div class="wf-line short"></div></div><span class="wf-badge-count">5</span></div>\n</div>'
-
-    # ── Graph / Semantic network ──────────────────────────────────────────
-    if stype == "graph":
-        return '<div class="wf">\n<div class="wf-graph"><div class="wf-gnode" style="top:15%;left:40%">travel</div><div class="wf-gnode" style="top:40%;left:15%">hotel</div><div class="wf-gnode" style="top:40%;left:65%">flight</div><div class="wf-gnode" style="top:65%;left:30%">booking</div><div class="wf-gnode" style="top:65%;left:55%">passport</div><svg class="wf-edges"><line x1="50%" y1="25%" x2="25%" y2="50%"/><line x1="50%" y1="25%" x2="75%" y2="50%"/><line x1="25%" y1="50%" x2="40%" y2="75%"/><line x1="75%" y1="50%" x2="65%" y2="75%"/></svg></div>\n</div>'
-
-    # ── Table (admin) ─────────────────────────────────────────────────────
-    if stype == "table":
-        return '<div class="wf">\n<div class="wf-toolbar"><span class="wf-search" style="flex:1">🔍 搜索...</span><span class="wf-btn-p">+ 新增</span></div>\n<div class="wf-tbl-h"><span>ID</span><span>名称</span><span>状态</span><span>操作</span></div>\n<div class="wf-tbl-r"><span>#001</span><span class="wf-line" style="width:60px;display:inline-block"></span><span class="wf-badge-sm">活跃</span><span class="wf-link">编辑 | 删除</span></div>\n<div class="wf-tbl-r"><span>#002</span><span class="wf-line" style="width:50px;display:inline-block"></span><span class="wf-badge-sm warn">禁用</span><span class="wf-link">编辑 | 删除</span></div>\n</div>'
-
-    # ── Form (generic C/U) ────────────────────────────────────────────────
-    if stype in ("form", "editor", "feedback"):
-        fb = {"feedback": ["反馈类型", "详细描述", "联系方式"], "editor": ["标题", "内容", "标签"]}.get(stype, ["字段 1", "字段 2"])
-        return f'<div class="wf">\n{_fields(fb)}{_btns()}\n</div>'
-
-    # ── Profile ───────────────────────────────────────────────────────────
-    if stype == "profile":
-        return f'<div class="wf wf-center">\n<div class="wf-avatar"></div>\n{_fields(["昵称", "头像", "学习偏好"])}{_btns(["保存"])}\n</div>'
-
-    # ── Progress / Download ───────────────────────────────────────────────
-    if stype == "progress":
-        return f'<div class="wf wf-center">\n<div class="wf-dl-icon">⬇</div>\n<div class="wf-title">下载场景包...</div>\n{_progress(65)}\n<div class="wf-hint">32MB / 50MB · 剩余约 10s</div>\n</div>'
-
-    # ── Recommendation ────────────────────────────────────────────────────
-    if stype == "recommendation":
-        return '<div class="wf">\n<div class="wf-title">为你推荐</div>\n<div class="wf-rec-cards"><div class="wf-rec-card"><div class="wf-thumb"></div><div class="wf-line"></div></div><div class="wf-rec-card"><div class="wf-thumb"></div><div class="wf-line"></div></div></div>\n</div>'
-
-    # ── Review (admin) ────────────────────────────────────────────────────
-    if stype == "review":
-        return f'<div class="wf">\n<div class="wf-badge-sm">待审核</div>\n<div class="wf-area" style="height:80px">内容预览</div>\n{_btns(["通过"], ["驳回"])}\n</div>'
-
-    # ── AI Generate ───────────────────────────────────────────────────────
-    if stype == "ai-generate":
-        return f'<div class="wf wf-center">\n<div class="wf-ai-icon">✦</div>\n<div class="wf-title">AI 生成中...</div>\n{_progress(45)}\n<div class="wf-hint">正在生成场景内容</div>\n<div class="wf-steps"><span class="done">✓ 对话</span><span class="active">→ 句子</span><span>单词</span><span>配图</span></div>\n</div>'
-
-    # ── Publish ───────────────────────────────────────────────────────────
-    if stype == "publish":
-        return f'<div class="wf">\n<div class="wf-kv"><span class="wf-k">状态</span><span class="wf-badge-sm">草稿</span></div>\n<div class="wf-kv"><span class="wf-k">内容</span><span class="wf-v">已审核</span></div>\n<div class="wf-kv"><span class="wf-k">配图</span><span class="wf-v">已生成</span></div>\n{_btns(["发布"], ["预览"])}\n</div>'
-
-    # ── Batch ─────────────────────────────────────────────────────────────
-    if stype == "batch":
-        return f'<div class="wf">\n<div class="wf-input"><span class="wf-label">批量数量</span></div>\n<div class="wf-input wf-select"><span class="wf-label">场景分类 ▾</span></div>\n{_progress(0)}\n<div class="wf-hint">就绪: 0 / 0</div>\n{_btns(["开始批量生成"])}\n</div>'
-
-    # ── Template / Prompt management ──────────────────────────────────────
-    if stype == "template":
-        return '<div class="wf">\n<div class="wf-toolbar"><span class="wf-search" style="flex:1">🔍 搜索模板...</span><span class="wf-btn-p">+ 新建</span></div>\n<div class="wf-li"><div class="wf-li-body"><div class="wf-line"></div><div class="wf-line short"></div></div><span class="wf-badge-sm">活跃</span></div>\n<div class="wf-li"><div class="wf-li-body"><div class="wf-line"></div><div class="wf-line short"></div></div><span class="wf-badge-sm">草稿</span></div>\n</div>'
-
-    # ── Tag management ────────────────────────────────────────────────────
-    if stype == "tag-manage":
-        return '<div class="wf">\n<div class="wf-toolbar"><span class="wf-search" style="flex:1">🔍 搜索标签...</span><span class="wf-btn-p">+ 新标签</span></div>\n<div class="wf-tags"><span class="wf-tag">旅行</span><span class="wf-tag">商务</span><span class="wf-tag">日常</span><span class="wf-tag">餐饮</span><span class="wf-tag">医疗</span></div>\n</div>'
-
-    # ── Feedback list (admin) ─────────────────────────────────────────────
-    if stype == "feedback-list":
-        return '<div class="wf">\n<div class="wf-toolbar"><span class="wf-search" style="flex:1">🔍 搜索...</span><span class="wf-btn-s">筛选</span></div>\n<div class="wf-li"><div class="wf-dot orange"></div><div class="wf-li-body"><div class="wf-line"></div><div class="wf-line short"></div></div><span class="wf-badge-sm warn">待处理</span></div>\n<div class="wf-li"><div class="wf-dot green"></div><div class="wf-li-body"><div class="wf-line"></div><div class="wf-line short"></div></div><span class="wf-badge-sm">已回复</span></div>\n</div>'
-
-    # ── Goal setting ──────────────────────────────────────────────────────
-    if stype == "goal":
-        return f'<div class="wf wf-center">\n<div class="wf-title">每日学习目标</div>\n<div class="wf-goal-ring">15<br><small>分钟/天</small></div>\n<div class="wf-options"><span>10分钟</span><span class="active">15分钟</span><span>30分钟</span></div>\n{_btns(["保存目标"])}\n</div>'
-
-    # ── Default content ───────────────────────────────────────────────────
-    return f'<div class="wf">\n<div class="wf-text"><div class="wf-line"></div><div class="wf-line"></div><div class="wf-line short"></div></div>\n<div class="wf-area">主内容区</div>\n{_btns()}\n</div>'
-
-
-# ── Generate HTML previews ───────────────────────────────────────────────────
-CSS = f"""
-body {{ font-family: {S['font']}; background: {S['bg']}; color: {S['on_surface']}; margin: 0; padding: 0; }}
-.header {{ background: {S['primary']}; color: {S['on_primary']}; padding: 16px 24px; font-size: 22px; font-weight: 500; }}
-.header a {{ color: {S['on_primary']}; text-decoration: none; opacity: 0.8; font-size: 14px; }}
-.header a:hover {{ opacity: 1; }}
-.container {{ max-width: 1200px; margin: 0 auto; padding: 24px; }}
-.card-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }}
-.card {{ background: {S['surface']}; border-radius: {S['radius']}; box-shadow: {S['shadow']}; padding: 20px; transition: box-shadow 0.2s; }}
-.card:hover {{ box-shadow: 0 2px 6px 2px rgba(0,0,0,.15), 0 1px 2px rgba(0,0,0,.3); }}
-.card h3 {{ margin: 0 0 8px; font-size: 18px; color: {S['on_surface']}; }}
-.card .subtitle {{ font-size: 14px; color: {S['on_surface_variant']}; margin-bottom: 12px; }}
-.badge {{ display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 12px; font-weight: 500; }}
-.badge-consumer {{ background: #E8DEF8; color: {S['primary']}; }}
-.badge-professional {{ background: #D0BCFF; color: #21005D; }}
-.actions {{ display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }}
-.btn-filled {{ background: {S['primary']}; color: {S['on_primary']}; border: none; padding: 8px 16px; border-radius: 20px; font-size: 14px; cursor: pointer; }}
-.btn-outlined {{ background: transparent; color: {S['primary']}; border: 1px solid {S['primary']}; padding: 8px 16px; border-radius: 20px; font-size: 14px; cursor: pointer; }}
-.states {{ margin-top: 12px; font-size: 13px; color: {S['on_surface_variant']}; }}
-.states span {{ margin-right: 12px; }}
-.module-title {{ font-size: 20px; font-weight: 500; margin: 24px 0 12px; color: {S['primary']}; }}
-a.card-link {{ text-decoration: none; color: inherit; }}
-.task-count {{ font-size: 13px; color: {S['on_surface_variant']}; margin-top: 8px; }}
-.stype-badge {{ font-size: 11px; padding: 1px 6px; border-radius: 4px; background: {S['surface_variant']}; color: {S['on_surface_variant']}; margin-left: 4px; }}
-/* ── Wireframe styles ─────────────────────────────────────────────────── */
-.wf {{ background: {S['bg']}; border: 1px dashed {S['surface_variant']}; border-radius: 8px; padding: 12px; margin-top: 10px; font-size: 13px; position: relative; min-height: 120px; }}
-.wf-center {{ text-align: center; }}
-.wf-logo {{ font-size: 24px; font-weight: 700; color: {S['primary']}; margin-bottom: 12px; }}
-.wf-title {{ font-size: 16px; font-weight: 600; margin: 8px 0; }}
-.wf-desc {{ font-size: 13px; color: {S['on_surface_variant']}; margin-bottom: 8px; }}
-.wf-hint {{ font-size: 12px; color: {S['on_surface_variant']}; margin: 6px 0; }}
-.wf-input {{ background: {S['surface']}; border: 1px solid {S['surface_variant']}; border-radius: 6px; padding: 8px 10px; margin: 4px 0; }}
-.wf-input.wf-textarea {{ min-height: 48px; }}
-.wf-input.wf-select {{ position: relative; }}
-.wf-label {{ color: {S['on_surface_variant']}; font-size: 12px; }}
-.wf-bar {{ display: flex; gap: 6px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }}
-.wf-btn-p {{ background: {S['primary']}; color: {S['on_primary']}; border: none; padding: 6px 14px; border-radius: 16px; font-size: 12px; }}
-.wf-btn-s {{ background: transparent; color: {S['primary']}; border: 1px solid {S['primary']}; padding: 5px 14px; border-radius: 16px; font-size: 12px; }}
-.wf-search {{ background: {S['surface']}; border: 1px solid {S['surface_variant']}; border-radius: 20px; padding: 7px 12px; margin-bottom: 8px; color: {S['on_surface_variant']}; font-size: 13px; }}
-.wf-tabs {{ display: flex; gap: 12px; margin-bottom: 8px; font-size: 13px; color: {S['on_surface_variant']}; }}
-.wf-tabs span.active {{ color: {S['primary']}; border-bottom: 2px solid {S['primary']}; padding-bottom: 2px; }}
-.wf-li {{ display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid {S['surface_variant']}; gap: 8px; }}
-.wf-thumb {{ width: 40px; height: 40px; background: {S['surface_variant']}; border-radius: 6px; flex-shrink: 0; }}
-.wf-li-body {{ flex: 1; min-width: 0; }}
-.wf-line {{ height: 8px; background: {S['surface_variant']}; border-radius: 4px; margin: 3px 0; }}
-.wf-line.short {{ width: 60%; }}
-.wf-chev {{ color: {S['on_surface_variant']}; font-size: 16px; }}
-.wf-hero {{ height: 80px; background: linear-gradient(135deg, {S['surface_variant']}, {S['primary']}22); border-radius: 8px; margin-bottom: 8px; }}
-.wf-kv {{ display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid {S['surface_variant']}; font-size: 12px; }}
-.wf-k {{ color: {S['on_surface_variant']}; }}
-.wf-v {{ color: {S['on_surface']}; }}
-.wf-text {{ margin: 8px 0; }}
-.wf-area {{ background: {S['surface_variant']}44; border: 1px dashed {S['surface_variant']}; border-radius: 6px; padding: 16px; text-align: center; color: {S['on_surface_variant']}; font-size: 12px; }}
-/* Chat / Dialogue */
-.wf-chat {{ display: flex; flex-direction: column; gap: 6px; }}
-.wf-bubble {{ max-width: 70%; padding: 8px 10px; border-radius: 12px; }}
-.wf-bubble.left {{ background: {S['surface_variant']}; align-self: flex-start; border-bottom-left-radius: 2px; }}
-.wf-bubble.right {{ background: {S['primary']}22; align-self: flex-end; border-bottom-right-radius: 2px; }}
-.wf-audio-sm {{ font-size: 11px; margin-top: 2px; cursor: pointer; }}
-.wf-chat-bar {{ background: {S['surface']}; border: 1px solid {S['surface_variant']}; border-radius: 16px; padding: 6px 10px; font-size: 12px; color: {S['on_surface_variant']}; margin-top: 4px; }}
-/* Exercise / Learning */
-.wf-progress {{ height: 6px; background: {S['surface_variant']}; border-radius: 3px; margin: 8px 0; }}
-.wf-progress-fill {{ height: 100%; background: {S['primary']}; border-radius: 3px; }}
-.wf-card-lg {{ background: {S['surface']}; border-radius: 12px; padding: 16px; margin: 8px 0; box-shadow: {S['shadow']}; text-align: center; }}
-.wf-flashcard {{ background: {S['surface']}; border-radius: 12px; padding: 24px 16px; margin: 12px 0; box-shadow: {S['shadow']}; text-align: center; }}
-.wf-flash-word {{ font-size: 22px; font-weight: 600; }}
-.wf-flash-phonetic {{ font-size: 13px; color: {S['on_surface_variant']}; margin: 4px 0; }}
-.wf-flash-hint {{ font-size: 11px; color: {S['on_surface_variant']}; margin-top: 8px; }}
-.wf-sent {{ font-size: 16px; font-weight: 500; margin: 8px 0; }}
-.wf-sent-zh {{ font-size: 13px; color: {S['on_surface_variant']}; }}
-.wf-options {{ display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 8px 0; }}
-.wf-options span {{ background: {S['surface']}; border: 1px solid {S['surface_variant']}; border-radius: 16px; padding: 5px 12px; font-size: 12px; cursor: pointer; }}
-.wf-options span.active {{ border-color: {S['primary']}; color: {S['primary']}; background: {S['primary']}11; }}
-.wf-audio-lg {{ font-size: 48px; margin: 12px 0; }}
-.wf-spell-prompt {{ font-size: 16px; font-weight: 500; margin: 8px 0; }}
-.wf-spell-boxes {{ font-family: monospace; font-size: 18px; letter-spacing: 4px; margin: 8px 0; }}
-.wf-keyboard {{ display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }}
-.wf-keyboard span {{ background: {S['surface']}; border: 1px solid {S['surface_variant']}; border-radius: 4px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 13px; }}
-/* Vocabulary */
-.wf-word-row {{ display: flex; align-items: center; padding: 6px 0; border-bottom: 1px solid {S['surface_variant']}; gap: 8px; font-size: 13px; }}
-.wf-w {{ font-weight: 600; min-width: 80px; }}
-.wf-ph {{ color: {S['on_surface_variant']}; font-size: 11px; min-width: 80px; }}
-.wf-zh {{ flex: 1; }}
-.wf-star {{ color: {S['warning']}; cursor: pointer; }}
-/* Dashboard */
-.wf-stats {{ display: flex; gap: 8px; margin-bottom: 8px; }}
-.wf-stat {{ flex: 1; background: {S['surface']}; border-radius: 8px; padding: 10px; text-align: center; box-shadow: {S['shadow']}; }}
-.wf-stat-n {{ font-size: 20px; font-weight: 700; color: {S['primary']}; }}
-.wf-stat-l {{ font-size: 11px; color: {S['on_surface_variant']}; }}
-.wf-chart {{ height: 60px; background: linear-gradient(0deg, {S['primary']}11 0%, {S['primary']}33 40%, transparent 100%); border-radius: 8px; border-bottom: 1px solid {S['surface_variant']}; }}
-/* Settings */
-.wf-setting {{ display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid {S['surface_variant']}; font-size: 13px; }}
-.wf-toggle {{ width: 36px; height: 20px; background: {S['surface_variant']}; border-radius: 10px; position: relative; }}
-.wf-toggle::after {{ content: ''; width: 16px; height: 16px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 2px; }}
-.wf-toggle.on {{ background: {S['primary']}; }}
-.wf-toggle.on::after {{ left: 18px; }}
-/* Pricing */
-.wf-pricing {{ display: flex; gap: 8px; }}
-.wf-plan {{ flex: 1; background: {S['surface']}; border: 1px solid {S['surface_variant']}; border-radius: 10px; padding: 12px; text-align: center; }}
-.wf-plan.featured {{ border-color: {S['primary']}; position: relative; }}
-.wf-plan-badge {{ position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: {S['primary']}; color: {S['on_primary']}; font-size: 10px; padding: 1px 8px; border-radius: 8px; }}
-.wf-plan-h {{ font-weight: 600; margin-bottom: 4px; }}
-.wf-plan-price {{ font-size: 20px; font-weight: 700; color: {S['primary']}; margin: 4px 0; }}
-.wf-plan-feat {{ font-size: 11px; color: {S['on_surface_variant']}; text-align: left; }}
-/* Graph */
-.wf-graph {{ position: relative; height: 140px; }}
-.wf-gnode {{ position: absolute; background: {S['primary']}22; border: 1px solid {S['primary']}; border-radius: 16px; padding: 3px 10px; font-size: 11px; color: {S['primary']}; }}
-.wf-edges {{ position: absolute; inset: 0; pointer-events: none; }}
-.wf-edges line {{ stroke: {S['surface_variant']}; stroke-width: 1; }}
-/* Table (admin) */
-.wf-toolbar {{ display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }}
-.wf-tbl-h {{ display: grid; grid-template-columns: 50px 1fr 60px 80px; gap: 4px; padding: 6px 0; border-bottom: 2px solid {S['surface_variant']}; font-size: 12px; font-weight: 600; color: {S['on_surface_variant']}; }}
-.wf-tbl-r {{ display: grid; grid-template-columns: 50px 1fr 60px 80px; gap: 4px; padding: 6px 0; border-bottom: 1px solid {S['surface_variant']}; font-size: 12px; align-items: center; }}
-.wf-badge-sm {{ display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; background: {S['success']}22; color: {S['success']}; }}
-.wf-badge-sm.warn {{ background: {S['warning']}22; color: {S['warning']}; }}
-.wf-badge-count {{ background: {S['primary']}; color: {S['on_primary']}; font-size: 11px; border-radius: 10px; padding: 1px 6px; min-width: 20px; text-align: center; }}
-.wf-link {{ color: {S['primary']}; font-size: 11px; }}
-/* Calendar */
-.wf-cal {{ margin-bottom: 8px; }}
-.wf-cal-head {{ font-weight: 600; margin-bottom: 4px; }}
-.wf-cal-grid {{ display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; font-size: 11px; color: {S['on_surface_variant']}; }}
-.wf-cal-grid .today {{ background: {S['primary']}; color: {S['on_primary']}; border-radius: 50%; }}
-.wf-dot {{ width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }}
-.wf-dot.green {{ background: {S['success']}; }}
-.wf-dot.orange {{ background: {S['warning']}; }}
-/* Misc */
-.wf-dots {{ display: flex; gap: 6px; justify-content: center; margin: 8px 0; }}
-.wf-dots span {{ width: 6px; height: 6px; border-radius: 50%; background: {S['surface_variant']}; }}
-.wf-dots span.active {{ background: {S['primary']}; }}
-.wf-avatar {{ width: 60px; height: 60px; border-radius: 50%; background: {S['surface_variant']}; margin: 0 auto 8px; }}
-.wf-illust {{ width: 80px; height: 80px; border-radius: 16px; background: linear-gradient(135deg, {S['primary']}33, {S['tertiary']}33); margin: 0 auto 8px; }}
-.wf-dl-icon {{ font-size: 32px; margin: 8px 0; }}
-.wf-ai-icon {{ font-size: 32px; color: {S['primary']}; margin: 8px 0; }}
-.wf-steps {{ display: flex; gap: 8px; justify-content: center; font-size: 11px; color: {S['on_surface_variant']}; margin-top: 6px; }}
-.wf-steps span.done {{ color: {S['success']}; }}
-.wf-steps span.active {{ color: {S['primary']}; font-weight: 600; }}
-.wf-goal-ring {{ width: 80px; height: 80px; border: 4px solid {S['primary']}; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 12px auto; font-size: 20px; font-weight: 700; color: {S['primary']}; }}
-.wf-goal-ring small {{ font-size: 10px; font-weight: 400; color: {S['on_surface_variant']}; }}
-.wf-rec-cards {{ display: flex; gap: 8px; }}
-.wf-rec-card {{ flex: 1; background: {S['surface']}; border-radius: 8px; padding: 8px; box-shadow: {S['shadow']}; }}
-.wf-rec-card .wf-thumb {{ width: 100%; height: 50px; border-radius: 4px; margin-bottom: 4px; }}
-.wf-tags {{ display: flex; flex-wrap: wrap; gap: 6px; }}
-.wf-tag {{ background: {S['primary']}11; color: {S['primary']}; border: 1px solid {S['primary']}44; border-radius: 14px; padding: 4px 10px; font-size: 12px; }}
-"""
-
-def html_escape(s):
-    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
-
-# index.html
-index_cards = []
-for role in roles:
-    rid = role["id"]
-    rname = role["name"]
-    at = role.get("audience_type", "default")
-    rscreens = role_screens.get(rid, [])
-    screen_count = len(rscreens)
-    role_tasks = [t for t in inv["tasks"] if (t.get("owner_role") or t.get("role_id", "")) == rid and t.get("frequency") == "高"]
-    top3 = [t.get("task_name") or t.get("name", "") for t in role_tasks[:3]]
-    safe_name = rname.replace("/", "-").replace(" ", "-")
-    badge_class = "badge-consumer" if at == "consumer" else "badge-professional"
-    index_cards.append(f"""
-    <a href="ui-role-{html_escape(safe_name)}.html" class="card-link">
-      <div class="card">
-        <h3>{html_escape(rname)}</h3>
-        <span class="badge {badge_class}">{html_escape(at)}</span>
-        <div class="subtitle">{screen_count} 个界面</div>
-        <div class="states">{'<br>'.join(html_escape(t) for t in top3) if top3 else '无高频任务'}</div>
-      </div>
-    </a>""")
-
-index_html = f"""<!DOCTYPE html>
-<html lang="zh-CN">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>UI 设计预览 — {html_escape(mission[:40])}</title>
-<style>{CSS}</style></head>
-<body>
-<div class="header">{html_escape(mission[:50])} — UI 设计预览
-<div style="font-size:14px;opacity:0.8;margin-top:4px">风格: {STYLE} · {len(roles)} 角色 · {len(screens)} 界面</div>
-</div>
-<div class="container">
-<div class="card-grid">
-{''.join(index_cards)}
-</div>
-</div>
-</body></html>"""
-
-with open(os.path.join(PREVIEW, "index.html"), "w", encoding="utf-8") as f:
-    f.write(index_html)
-
-# Per-role HTML files
-for role in roles:
-    rid = role["id"]
-    rname = role["name"]
-    at = role.get("audience_type", "default")
-    safe_name = rname.replace("/", "-").replace(" ", "-")
-    rscreens = role_screens.get(rid, [])
-
-    mod_groups = {}
-    for s in rscreens:
-        mod = s.get("module", "其他")
-        mod_groups.setdefault(mod, []).append(s)
-
-    content = ""
-    for mod, slist in mod_groups.items():
-        content += f'<div class="module-title">{html_escape(mod)}</div>\n<div class="card-grid">\n'
-        for s in slist:
-            actions = s.get("actions", [])
-            high_actions = [a for a in actions if a.get("frequency") == "高"]
-            other_actions = [a for a in actions if a.get("frequency") != "高"]
-
-            btns = ""
-            for a in high_actions[:3]:
-                btns += f'<button class="btn-filled">{html_escape(a["label"])}</button>\n'
-            for a in other_actions[:2]:
-                btns += f'<button class="btn-outlined">{html_escape(a["label"])}</button>\n'
-
-            task_count = len(s.get("tasks", []))
-            # Emotion indicator color
-            ctx = screen_context.get(s["id"], {})
-            emo_color = EMOTION_COLORS.get(ctx.get("emotion_state", ""), "#B0BEC5")
-            emo_label = ctx.get("emotion_state", "neutral") if ctx else "neutral"
-            stype = _screen_type(s)
-            wf_html = _render_wireframe(s, S)
-            # Use actual states from experience-map
-            s_states = s.get("states", {})
-            if isinstance(s_states, dict) and s_states:
-                states_html = " ".join(
-                    f'<span>{html_escape(k)}: {html_escape(str(v)[:35])}</span>'
-                    for k, v in list(s_states.items())[:3]
-                )
-            else:
-                states_html = ""
-            content += f"""
-  <div class="card" style="border-top: 4px solid {emo_color};">
-    <h3>{html_escape(s['name'])}</h3>
-    <span class="badge badge-{'consumer' if at == 'consumer' else 'professional'}">{html_escape(at)}</span>
-    <span class="badge" style="background:{emo_color}33;color:{emo_color};margin-left:4px;">{html_escape(emo_label)}</span>
-    <span class="stype-badge">{html_escape(stype)}</span>
-    <div class="subtitle">{html_escape(s.get('notes', ''))}</div>
-    {wf_html}
-    <div class="states">{states_html}</div>
-    <div class="task-count">{task_count} 个关联任务</div>
-  </div>"""
-        content += "\n</div>\n"
-
-    role_html = f"""<!DOCTYPE html>
-<html lang="zh-CN">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{html_escape(rname)} — UI 设计预览</title>
-<style>{CSS}</style></head>
-<body>
-<div class="header">
-  <a href="index.html">← 返回总览</a> &nbsp;·&nbsp; {html_escape(rname)}
-  <div style="font-size:14px;opacity:0.8;margin-top:4px">风格: {STYLE} · {len(rscreens)} 个界面</div>
-</div>
-<div class="container">
-{content}
-</div>
-</body></html>"""
-
-    with open(os.path.join(PREVIEW, f"ui-role-{safe_name}.html"), "w", encoding="utf-8") as f:
-        f.write(role_html)
-
 # ── Decisions ─────────────────────────────────────────────────────────────────
 decisions = [
     {"step": "Step 1", "item_id": "profile", "decision": "auto_confirmed",
      "value": f"{len(roles)} roles, {len(screens)} screens", "decided_at": NOW},
     {"step": "Step 2", "item_id": "style", "decision": "auto_confirmed",
      "value": STYLE, "reason": f"style={style_name}", "decided_at": NOW},
-    {"step": "Step 3", "item_id": "principles", "decision": "auto_confirmed",
-     "value": "CSS variables applied", "decided_at": NOW},
-    {"step": "Step 4", "item_id": "spec", "decision": "auto_confirmed",
-     "value": "ui-design-spec.md generated", "decided_at": NOW},
-    {"step": "Step 5", "item_id": "preview", "decision": "auto_confirmed",
-     "value": f"index.html + {len(roles)} role HTML files", "decided_at": NOW},
+    {"step": "Step 3", "item_id": "spec", "decision": "auto_confirmed",
+     "value": "ui-design-spec.md + ui-design-spec.json generated (skeleton)", "decided_at": NOW},
 ]
-if xv_reviews:
-    xv_summary = ", ".join(f"{r['task_type']}({r['model_used']})" for r in xv_reviews)
-    decisions.append({
-        "step": "XV", "item_id": "cross_model_review", "decision": "auto_confirmed",
-        "value": xv_summary, "decided_at": C.now_iso(),
-    })
 C.write_json(os.path.join(OUT, "ui-design-decisions.json"), decisions)
 
 # ── Pipeline decisions ────────────────────────────────────────────────────────
-html_files = [f for f in os.listdir(PREVIEW) if f.endswith(".html")]
 C.append_pipeline_decision(
     BASE,
     "Phase 7 — ui-design",
-    f"style={STYLE}, roles={len(roles)}, screens={len(screens)}, html_files={len(html_files)}",
+    f"style={STYLE}, roles={len(roles)}, screens={len(screens)}, "
+    f"skeleton generated (LLM enrichment required for screen types, layouts, wireframes)",
     shard=args.get("shard")
 )
 
@@ -1320,6 +448,9 @@ C.append_pipeline_decision(
 print(f"Style: {STYLE}")
 print(f"Roles: {len(roles)}")
 print(f"Screens: {len(screens)}")
-print(f"HTML files: {len(html_files)}")
-print(f"Spec: ui-design-spec.md")
+print(f"Status: skeleton generated, LLM enrichment required")
+print(f"  - Screen type classification: pending")
+print(f"  - Layout inference: pending")
+print(f"  - Wireframe generation: pending")
+print(f"  - HTML previews: pending (requires screen types)")
 print(f"\nAll files written to {OUT}/")

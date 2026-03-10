@@ -447,6 +447,8 @@ XV_ROUTING = {
     "wireframe_usability_review": "gemini",
     "wireframe_completeness_check": "deepseek",
     "wireframe_consistency_check": "gpt",
+    # Experience map
+    "screen_enrichment": "gemini",
 }
 
 # Family search prefixes — used to find the latest model via OpenRouter API.
@@ -796,8 +798,8 @@ INTERACTION_TYPE_RULES = [
 
     # ── SY 引导系统（high priority — onboarding/wizard) ──
     (["新手引导", "引导流程", "onboarding", "入门", "教程", "welcome"],        "SY1", None),
-    (["注册", "register", "signup", "多步表单", "向导", "登录", "login",
-     "signin"],                                                                "SY2", None),
+    (["注册", "register", "signup", "多步表单", "向导"],                        "SY2", None),
+    (["登录", "login", "signin"],                                              "MG2-C", None),
 
     # ── CT 内容消费（consumer-facing content patterns）──
     (["feed", "动态流", "推荐流", "时间线", "信息流"],                            "CT1", "consumer"),
@@ -805,7 +807,9 @@ INTERACTION_TYPE_RULES = [
     (["查看详情", "内容详情"],                                                  "CT2", "consumer"),
     (["个人资料", "个人主页", "profile", "我的", "个人信息",
      "编辑个人"],                                                              "CT3", None),
-    (["闪卡", "swipe", "翻卡", "flashcard", "轮播"],                           "CT4", None),
+    (["闪卡", "swipe", "翻卡", "flashcard", "轮播",
+     "练习", "practice", "exercise", "quiz", "测试", "test",
+     "听音", "拼写", "spelling", "listening"],                                 "CT4", "consumer"),
     (["播放", "播放器", "音频", "视频播放", "player"],                          "CT5", None),
     (["相册", "图库", "gallery", "图片浏览"],                                   "CT6", None),
     (["搜索结果", "search result"],                                            "CT7", None),

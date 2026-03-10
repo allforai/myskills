@@ -1426,9 +1426,9 @@ def build_screens_with_context(op_lines, tasks, role_map, gate_issues, vo_map=No
 
                 vo_ref = s.get("vo_ref", "")
                 vo = vo_map.get(vo_ref, {}) if vo_ref else {}
-                data_fields = s.get("data_fields", []) or vo.get("fields", [])
+                data_fields = s.get("data_fields") if s.get("data_fields") is not None else vo.get("fields", [])
                 interaction_type = s.get("interaction_type", "") or vo.get("interaction_type", "")
-                vo_actions = s.get("vo_actions", []) or vo.get("actions", [])
+                vo_actions = s.get("vo_actions") if s.get("vo_actions") is not None else vo.get("actions", [])
 
                 # Infer interaction_type from CRUD + screen name when absent
                 if not interaction_type:
@@ -1463,7 +1463,7 @@ def build_screens_with_context(op_lines, tasks, role_map, gate_issues, vo_map=No
                     "data_fields": data_fields,
                     "states": states,
                     "flow_context": flow_context,
-                    "filters": vo.get("filters", []),
+                    "filters": s.get("filters") or vo.get("filters", []),
                     "entity_name": vo.get("entity_name", ""),
                 })
     return screens
@@ -1711,7 +1711,7 @@ def _build_4d_panel(screen):
     field_names = ", ".join(f.get("label", f.get("name", "")) for f in fields[:6])
     if len(fields) > 6:
         field_names += "..."
-    rw_count = sum(1 for f in fields if not f.get("readonly"))
+    rw_count = sum(1 for f in fields if not (f.get("readonly") or f.get("read_only")))
     ro_count = len(fields) - rw_count
     rw_summary = f"{rw_count}rw/{ro_count}ro" if fields else ""
     data_val = f"{field_names} ({len(fields)} fields, {rw_summary})" if fields else "No fields"
@@ -1726,10 +1726,12 @@ def _build_4d_panel(screen):
     action_val = f"{action_labels}" + (f" ({api_refs})" if api_refs else "") if action_labels else "No actions"
 
     states = screen.get("states", {})
-    empty_desc = states.get("empty", "blank")
-    loading_desc = states.get("loading", "skeleton")
-    error_desc = states.get("error", "toast")
-    state_val = f"\u7a7a:{_esc(str(empty_desc))} | \u52a0\u8f7d:{_esc(str(loading_desc))} | \u9519\u8bef:{_esc(str(error_desc))}"
+    if states:
+        # Show all state entries (up to 4)
+        state_pairs = [f"{_esc(str(k))}:{_esc(str(v))}" for k, v in list(states.items())[:4]]
+        state_val = " | ".join(state_pairs)
+    else:
+        state_val = "No states defined"
 
     flow = screen.get("flow_context", {})
     prev_ids = flow.get("prev", []) + flow.get("entry_points", [])
@@ -1830,7 +1832,13 @@ def _wf_crud_list(screen):
     fields = screen.get("data_fields", [])
     filters = screen.get("filters", [])
     entity = screen.get("entity_name", "")
-    toolbar = f'<div class="wf-toolbar"><div class="wf-search">\U0001f50d \u641c\u7d22...</div><button class="wf-btn wf-btn-primary">+ \u65b0\u5efa{_esc(entity)}</button></div>'
+    # Use first C/U action label from screen actions, or fallback to "新建{entity}"
+    create_label = f"+ \u65b0\u5efa{_esc(entity)}" if entity else "+ \u65b0\u5efa"
+    for a in screen.get("actions", []):
+        if isinstance(a, dict) and a.get("crud") in ("C", "U"):
+            create_label = _esc(a.get("label", create_label))
+            break
+    toolbar = f'<div class="wf-toolbar"><div class="wf-search">\U0001f50d \u641c\u7d22...</div><button class="wf-btn wf-btn-primary">{create_label}</button></div>'
     filter_html = ""
     if filters:
         chips = "".join(f'<span class="wf-filter-chip">{_esc(fn)} \u25be</span>' for fn in filters[:4])
@@ -1856,7 +1864,18 @@ def _wf_create_form(screen):
         ftype = f.get("type", "string")
         inp = f'<div class="wf-form-textarea">{indicator}</div>' if ftype == "text" else f'<div class="wf-form-input">{indicator}</div>'
         form_fields += f'<div class="wf-form-field"><div class="wf-form-label">{_esc(label)} {req_mark}</div>{inp}</div>'
-    buttons = f'<div class="wf-form-buttons"><button class="wf-btn wf-btn-secondary">\u53d6\u6d88</button><button class="wf-btn wf-btn-primary">\u521b\u5efa{_esc(entity)}</button></div>'
+    # Use actual action labels from screen data when available
+    actions = screen.get("actions", [])
+    if actions:
+        btn_html = ""
+        for a in actions:
+            label = a.get("label", "")
+            freq = a.get("frequency", "中")
+            cls = "wf-btn-primary" if freq == "高" else "wf-btn-secondary"
+            btn_html += f'<button class="wf-btn {cls}">{_esc(label)}</button>'
+        buttons = f'<div class="wf-form-buttons">{btn_html}</div>'
+    else:
+        buttons = f'<div class="wf-form-buttons"><button class="wf-btn wf-btn-secondary">\u53d6\u6d88</button><button class="wf-btn wf-btn-primary">\u521b\u5efa{_esc(entity)}</button></div>'
     return form_fields + buttons if fields else '<div class="wf-section">Create Form</div>'
 
 
@@ -1874,7 +1893,17 @@ def _wf_edit_form(screen):
         inp = (f'<div class="wf-form-textarea">{indicator}</div>{hint}' if ftype == "text"
                else f'<div class="wf-form-input">{indicator}</div>{hint}')
         form_fields += f'<div class="wf-form-field"><div class="wf-form-label">{_esc(label)} {req_mark}</div>{inp}</div>'
-    buttons = f'<div class="wf-form-buttons"><button class="wf-btn wf-btn-secondary">\u53d6\u6d88</button><button class="wf-btn wf-btn-primary">\u4fdd\u5b58{_esc(entity)}</button></div>'
+    actions = screen.get("actions", [])
+    if actions:
+        btn_html = ""
+        for a in actions:
+            label = a.get("label", "")
+            freq = a.get("frequency", "中")
+            cls = "wf-btn-primary" if freq == "高" else "wf-btn-secondary"
+            btn_html += f'<button class="wf-btn {cls}">{_esc(label)}</button>'
+        buttons = f'<div class="wf-form-buttons">{btn_html}</div>'
+    else:
+        buttons = f'<div class="wf-form-buttons"><button class="wf-btn wf-btn-secondary">\u53d6\u6d88</button><button class="wf-btn wf-btn-primary">\u4fdd\u5b58{_esc(entity)}</button></div>'
     return form_fields + buttons if fields else '<div class="wf-section">Edit Form</div>'
 
 
@@ -2573,8 +2602,8 @@ def _wf_page(screen, body_html):
   <div class="wf-sidebar">
     <div class="wf-sidebar-nav">
       <div class="wf-nav-item active">{_esc(name)}</div>
-      <div class="wf-nav-item">Dashboard</div>
-      <div class="wf-nav-item">Settings</div>
+      <div class="wf-nav-item">\u6982\u89c8</div>
+      <div class="wf-nav-item">\u8bbe\u7f6e</div>
     </div>
     <div class="wf-sidebar-content">
       {f'<div class="wf-intent">UX Intent: {_esc(ux_intent)}</div>' if ux_intent else ''}

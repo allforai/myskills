@@ -1,27 +1,18 @@
 #!/usr/bin/env python3
+# Skeleton generator — LLM enrichment required after running
 """Phase 4: Generate experience-map from journey-emotion-map + task-inventory.
 
-Replaces gen_screen_map.py. Organizes screens into operation lines with
-emotion context, ux intent, and continuity metrics.
-
-When view-objects.json is available, screens are enriched with real VO fields,
-interaction types, data_fields, actions, flow_context, and states.
+Produces minimal screen skeletons organized into operation lines.
+LLM enrichment is required after running to fill in fields, actions,
+states, CRUD classification, and interaction types.
 
 Usage:
-    python3 gen_experience_map.py <BASE_PATH> [--mode auto]
+    python3 gen_experience_map.py <BASE_PATH> [--mode auto] [--shard NAME]
 """
-import sys, os, json, datetime, re
+import sys, os, json, datetime
 
 sys.path.insert(0, os.path.dirname(__file__))
 import _common as C
-
-# ── CRUD keywords (same as old gen_screen_map.py) ──
-CRUD_KEYWORDS = {
-    "C": ["新增", "创建", "添加", "注册", "上传", "发布", "录入", "create", "add", "new", "register", "upload"],
-    "U": ["修改", "编辑", "更新", "调整", "设置", "配置", "update", "edit", "modify", "configure", "set"],
-    "D": ["删除", "移除", "撤销", "取消", "remove", "delete", "cancel", "revoke"],
-    "R": ["查看", "浏览", "搜索", "筛选", "导出", "统计", "列表", "详情", "view", "list", "search", "filter", "export", "detail"],
-}
 
 # ── View type → Chinese name suffix ──────────────────────────────────────────
 VIEW_TYPE_NAMES = {
@@ -38,35 +29,34 @@ DEFAULT_STATES = {
     "MG1":    {"empty": "暂无数据，显示空态插图", "loading": "骨架屏占位", "error": "加载失败，显示重试按钮", "success": "数据列表正常展示"},
     "MG2-L":  {"empty": "暂无数据，引导创建", "loading": "骨架屏占位", "error": "加载失败，显示重试按钮", "success": "数据列表正常展示"},
     "MG2-C":  {"empty": "空表单，所有字段待填写", "loading": "提交中，按钮禁用+加载指示器", "error": "提交失败，字段标红+错误提示", "success": "创建成功，跳转或提示"},
-    "MG2-E":  {"empty": "表单回填旧值", "loading": "提交中，按钮禁用", "error": "保存失败，字段标红", "success": "保存成功，返回"},
-    "MG2-D":  {"empty": "数据不存在，显示404提示", "loading": "骨架屏占位", "error": "加载失败，显示重试", "success": "详情正常展示"},
-    "MG2-ST": {"empty": "无可操作项", "loading": "状态变更中", "error": "状态流转失败", "success": "状态已更新"},
-    "MG3":    {"empty": "无待处理项", "loading": "操作执行中", "error": "操作失败，显示原因", "success": "状态变更成功，刷新列表"},
-    "MG4":    {"empty": "无待审核项", "loading": "提交审批中", "error": "审批失败", "success": "审批完成"},
-    "MG5":    {"empty": "主实体不存在", "loading": "加载主从数据", "error": "主从数据加载失败", "success": "主从详情正常展示"},
-    "MG6":    {"empty": "空树，显示创建根节点引导", "loading": "加载树结构", "error": "加载失败", "success": "树结构正常展示"},
-    "MG7":    {"empty": "暂无数据", "loading": "加载统计数据", "error": "数据加载失败", "success": "仪表盘正常展示"},
-    "MG8":    {"empty": "加载默认配置", "loading": "保存配置中", "error": "保存失败", "success": "配置已保存"},
+    "MG2-D":  {"empty": "数据不存在", "loading": "骨架屏占位", "error": "加载失败", "success": "详情正常展示"},
+    "MG2-E":  {"empty": "空表单", "loading": "保存中", "error": "保存失败", "success": "保存成功"},
+    "MG3":    {"empty": "无待操作项", "loading": "操作执行中", "error": "操作失败", "success": "操作成功，状态已变更"},
+    "MG4":    {"empty": "无待审核项", "loading": "提交中", "error": "审核操作失败", "success": "审核通过/驳回成功"},
+    "MG5":    {"empty": "暂无关联数据", "loading": "骨架屏占位", "error": "加载失败", "success": "主从数据正常展示"},
+    "MG6":    {"empty": "空分类树", "loading": "加载分类", "error": "加载失败", "success": "分类树正常展示"},
+    "MG7":    {"empty": "暂无数据", "loading": "加载图表", "error": "数据加载失败", "success": "仪表盘正常展示"},
+    "MG8":    {"empty": "默认配置", "loading": "保存中", "error": "保存失败", "success": "配置已保存"},
     # CT 内容消费类
-    "CT1":    {"empty": "暂无内容，刷新或探索", "loading": "加载内容流", "error": "加载失败，下拉重试", "success": "内容流正常展示"},
-    "CT2":    {"empty": "内容不存在", "loading": "加载内容", "error": "加载失败", "success": "内容正常展示"},
-    "CT3":    {"empty": "用户不存在", "loading": "加载个人主页", "error": "加载失败", "success": "个人主页正常展示"},
-    "CT4":    {"empty": "队列已空，稍后再来", "loading": "加载卡片", "error": "加载失败", "success": "卡片展示中"},
-    "CT5":    {"empty": "无可播放媒体", "loading": "缓冲中", "error": "播放失败", "success": "播放中"},
-    "CT6":    {"empty": "暂无图片", "loading": "加载图片", "error": "加载失败", "success": "相册正常展示"},
-    "CT7":    {"empty": "未找到结果", "loading": "搜索中", "error": "搜索失败", "success": "搜索结果展示"},
-    "CT8":    {"empty": "无更多内容", "loading": "加载视频", "error": "播放失败", "success": "自动播放中"},
+    "CT1":    {"empty": "暂无内容，引导关注", "loading": "骨架屏占位", "error": "加载失败", "success": "Feed流正常展示"},
+    "CT2":    {"empty": "内容不存在", "loading": "骨架屏占位", "error": "加载失败", "success": "内容正常展示"},
+    "CT3":    {"empty": "空个人资料", "loading": "加载中", "error": "加载失败", "success": "个人资料展示"},
+    "CT4":    {"empty": "无可翻阅内容", "loading": "加载卡片", "error": "加载失败", "success": "卡片正常展示"},
+    "CT5":    {"empty": "无可播放内容", "loading": "缓冲中", "error": "播放失败", "success": "播放中"},
+    "CT6":    {"empty": "无图片", "loading": "加载图库", "error": "加载失败", "success": "图库正常展示"},
+    "CT7":    {"empty": "无搜索结果", "loading": "搜索中", "error": "搜索失败", "success": "搜索结果展示"},
+    "CT8":    {"empty": "无短视频", "loading": "加载中", "error": "加载失败", "success": "短视频播放中"},
     # EC 电商交易类
-    "EC1":    {"empty": "商品不存在", "loading": "加载商品详情", "error": "加载失败", "success": "商品详情正常展示"},
-    "EC2":    {"empty": "购物车为空", "loading": "结算中", "error": "结算失败", "success": "订单创建成功"},
-    "EC3":    {"empty": "无物流信息", "loading": "加载物流", "error": "查询失败", "success": "物流时间线展示"},
+    "EC1":    {"empty": "商品不存在", "loading": "加载商品", "error": "加载失败", "success": "商品详情展示"},
+    "EC2":    {"empty": "购物车为空", "loading": "处理中", "error": "支付失败", "success": "支付成功"},
+    "EC3":    {"empty": "无物流信息", "loading": "查询物流", "error": "查询失败", "success": "物流信息展示"},
     # WK 协作办公类
-    "WK1":    {"empty": "暂无消息", "loading": "加载消息", "error": "发送失败", "success": "消息已发送"},
-    "WK2":    {"empty": "暂无频道", "loading": "加载频道列表", "error": "加载失败", "success": "频道列表展示"},
-    "WK3":    {"empty": "空白文档", "loading": "加载文档", "error": "保存失败", "success": "文档已保存"},
-    "WK4":    {"empty": "空白画布", "loading": "加载画布", "error": "保存失败", "success": "画布已保存"},
-    "WK5":    {"empty": "无任务卡片", "loading": "加载看板", "error": "加载失败", "success": "看板正常展示"},
-    "WK6":    {"empty": "无任务", "loading": "加载甘特图", "error": "加载失败", "success": "甘特图正常展示"},
+    "WK1":    {"empty": "暂无消息", "loading": "加载消息", "error": "加载失败", "success": "消息列表展示"},
+    "WK2":    {"empty": "暂无频道", "loading": "加载频道", "error": "加载失败", "success": "频道列表展示"},
+    "WK3":    {"empty": "空白文档", "loading": "加载文档", "error": "加载失败", "success": "编辑器就绪"},
+    "WK4":    {"empty": "空白画布", "loading": "加载画布", "error": "加载失败", "success": "画布就绪"},
+    "WK5":    {"empty": "空看板", "loading": "加载看板", "error": "加载失败", "success": "看板正常展示"},
+    "WK6":    {"empty": "无排期数据", "loading": "加载甘特图", "error": "加载失败", "success": "甘特图正常展示"},
     "WK7":    {"empty": "空目录", "loading": "加载文件列表", "error": "加载失败", "success": "文件列表展示"},
     # RT 通讯实时类
     "RT1":    {"empty": "无通话记录", "loading": "连接中", "error": "连接失败", "success": "通话中"},
@@ -85,175 +75,46 @@ DEFAULT_STATES = {
     "TU4":    {"empty": "无任务", "loading": "执行中", "error": "任务失败", "success": "任务完成"},
 }
 
-# ── Interaction type inference — delegated to _common.py ──────────────────────
-# Use C.INTERACTION_TYPE_RULES, C.infer_interaction_type, C.refine_view_type
-
-# ── Platform profiles by audience_type (cross-project) ────────────────────────
-# consumer → mobile app patterns; professional → desktop admin patterns.
+# ── Platform profiles by audience_type ────────────────────────────────────────
 _PLATFORM_PROFILES = {
     "consumer": {
         "platform": "mobile",
         "navigation": "bottom_tab",
         "layout": "single_column",
-        "list_pattern": "card_list",
-        "detail_pattern": "full_screen",
-        "form_pattern": "bottom_sheet",
-        "action_pattern": "swipe_action",
-        "extra_states": {
-            "pull_refresh": "下拉刷新",
-            "skeleton": "骨架屏",
-        },
-        "contract_defaults": {
-            "C": "bottom-sheet",
-            "R": "full-page",
-            "U": "bottom-sheet",
-            "D": "bottom-sheet",
-        },
     },
     "professional": {
         "platform": "desktop",
         "navigation": "sidebar",
         "layout": "master_detail",
-        "list_pattern": "data_table",
-        "detail_pattern": "side_panel",
-        "form_pattern": "modal",
-        "action_pattern": "toolbar",
-        "extra_states": {
-            "bulk_select": "批量选择",
-            "breadcrumb": "面包屑导航",
-        },
-        "contract_defaults": {
-            "C": "multi-step-form",
-            "R": "standard-page",
-            "U": "standard-page",
-            "D": "modal-picker",
-        },
     },
 }
 
-
-def infer_crud(task_name):
-    """Infer CRUD type from task name keywords."""
-    for crud, keywords in CRUD_KEYWORDS.items():
-        for kw in keywords:
-            if kw in task_name.lower():
-                return crud
-    return "R"
-
-
-def infer_frequency(task):
-    """Infer frequency tier from task metadata."""
-    cat = task.get("category", "")
-    if cat == "basic":
-        return "高"
-    elif cat == "core":
-        return "中"
-    return "低"
-
-
-# ── Implementation contract presets ──────────────────────────────────────────
+# ── Simplified contract patterns ──────────────────────────────────────────────
+# LLM will assign correct patterns; this is a minimal fallback.
 CONTRACT_PATTERNS = {
-    "bottom-sheet": {
-        "forbidden": ["page-route", "full-screen-modal"],
-        "required_behaviors": ["swipe-to-dismiss", "backdrop-tap-close"],
+    "standard-page": {
+        "forbidden": [],
+        "required_behaviors": ["back-navigation"],
     },
     "full-page": {
         "forbidden": ["bottom-sheet", "inline-expand"],
         "required_behaviors": ["back-navigation", "scroll-to-top"],
     },
+    "bottom-sheet": {
+        "forbidden": ["page-route", "full-screen-modal"],
+        "required_behaviors": ["swipe-to-dismiss", "backdrop-tap-close"],
+    },
     "modal-picker": {
         "forbidden": ["page-route", "inline-expand"],
         "required_behaviors": ["backdrop-tap-close", "keyboard-dismiss"],
     },
-    "multi-step-form": {
-        "forbidden": ["single-submit", "inline-edit"],
-        "required_behaviors": ["step-indicator", "back-to-previous-step", "draft-save"],
-    },
-    "standard-page": {
-        "forbidden": [],
-        "required_behaviors": ["back-navigation"],
-    },
-    # ── New patterns for 37-type interaction system ──
-    "card-swipe": {
-        "forbidden": ["page-route", "inline-edit"],
-        "required_behaviors": ["swipe-gesture", "progress-indicator", "undo-action"],
-    },
-    "content-feed": {
-        "forbidden": ["full-screen-modal"],
-        "required_behaviors": ["pull-to-refresh", "infinite-scroll", "skeleton-loading"],
-    },
-    "media-player": {
-        "forbidden": ["inline-expand"],
-        "required_behaviors": ["play-pause-toggle", "progress-seek", "background-playback"],
-    },
-    "inline-editor": {
-        "forbidden": ["page-route"],
-        "required_behaviors": ["auto-save", "undo-redo", "keyboard-shortcuts"],
-    },
-    "dashboard": {
-        "forbidden": ["bottom-sheet"],
-        "required_behaviors": ["date-range-filter", "auto-refresh"],
-    },
-    "onboarding-flow": {
-        "forbidden": ["back-navigation"],
-        "required_behaviors": ["step-indicator", "skip-option", "progress-persistence"],
-    },
 }
-
-# ── Interaction type → contract pattern mapping ──
-_ITYPE_TO_CONTRACT = {
-    "CT1": "content-feed", "CT4": "card-swipe", "CT5": "media-player",
-    "WK3": "inline-editor", "WK4": "inline-editor",
-    "MG7": "dashboard", "SY1": "onboarding-flow", "SY2": "multi-step-form",
-}
-
-
-def infer_contract(ux_intent, crud_type, emotion_intensity, audience_type="", interaction_type=""):
-    """Infer implementation contract from UX intent, CRUD type, emotion intensity, audience_type, and interaction_type."""
-    # Interaction type takes priority when mapped
-    if interaction_type and interaction_type in _ITYPE_TO_CONTRACT:
-        pattern = _ITYPE_TO_CONTRACT[interaction_type]
-        preset = CONTRACT_PATTERNS[pattern]
-        return {
-            "pattern": pattern,
-            "forbidden": preset["forbidden"],
-            "required_behaviors": preset["required_behaviors"],
-        }
-
-    intent_lower = (ux_intent or "").lower()
-
-    # Platform-aware default pattern
-    profile = _PLATFORM_PROFILES.get(audience_type, {})
-    platform_default = profile.get("contract_defaults", {}).get(crud_type, "standard-page")
-
-    if any(kw in intent_lower for kw in ["quick", "overlay", "confirm", "dismiss"]):
-        pattern = "bottom-sheet"
-    elif any(kw in intent_lower for kw in ["detail", "full", "comprehensive"]):
-        pattern = "full-page"
-    elif any(kw in intent_lower for kw in ["select", "pick", "choose"]):
-        pattern = "modal-picker"
-    elif crud_type == "C" and emotion_intensity >= 7:
-        pattern = "multi-step-form"
-    elif audience_type:
-        pattern = platform_default
-    else:
-        pattern = "standard-page"
-
-    preset = CONTRACT_PATTERNS[pattern]
-    return {
-        "pattern": pattern,
-        "forbidden": preset["forbidden"],
-        "required_behaviors": preset["required_behaviors"],
-    }
 
 
 # ── VO matching helpers ──────────────────────────────────────────────────────
 
 def _build_vo_lookup(view_objects):
-    """Build {(entity_name, view_type): vo} lookup from view_objects list.
-
-    When multiple VOs share (entity_name, view_type), the first one wins.
-    """
+    """Build {(entity_name, view_type): vo} lookup from view_objects list."""
     lookup = {}
     for vo in view_objects:
         key = (vo.get("entity_name", ""), vo.get("view_type", ""))
@@ -262,20 +123,16 @@ def _build_vo_lookup(view_objects):
     return lookup
 
 
-# ── View type refinement — delegated to _common.py ───────────────────────────
-# Use C.refine_view_type, C.CRUD_TO_VIEW_TYPE
+def _find_vo_for_task(task, vo_lookup):
+    """Find matching VO for a task by module/entity reference.
 
-
-def _find_vo_for_task(task, crud_type, vo_lookup):
-    """Find the best matching VO for a task based on module and CRUD type.
-
-    Uses task name keywords to refine view_type preference.
-    Returns the VO dict or None if no match.
+    Uses entity_name matching against task module. Returns VO dict or None.
+    # LLM will fix CRUD classification and view_type matching
     """
     module = task.get("module", task.get("owner_role", ""))
-    preferred_types = C.refine_view_type(task, crud_type)
 
-    for vt in preferred_types:
+    # Try each view_type for this module
+    for vt in ("list_item", "detail", "create_form", "edit_form", "state_action"):
         vo = vo_lookup.get((module, vt))
         if vo:
             return vo
@@ -283,11 +140,7 @@ def _find_vo_for_task(task, crud_type, vo_lookup):
 
 
 def _vo_screen_name(vo, task_pairs=None):
-    """Generate a human-readable screen name from a VO + task context.
-
-    Priority: VO display_name > task-derived Chinese name > entity_suffix fallback.
-    """
-    # 1. VO itself may carry a display_name (best source)
+    """Generate screen name from VO or task context."""
     if vo.get("display_name"):
         return vo["display_name"]
 
@@ -295,92 +148,25 @@ def _vo_screen_name(vo, task_pairs=None):
     vtype = vo.get("view_type", "")
     suffix = VIEW_TYPE_NAMES.get(vtype, vtype)
 
-    # 2. Derive Chinese name from first task name (e.g. "查看订单列表" → "订单列表")
+    # Use first task name if available
     if task_pairs:
-        name = _derive_screen_name_from_tasks(task_pairs, suffix)
+        first_task = task_pairs[0][1] if task_pairs else {}
+        name = first_task.get("task_name", first_task.get("name", ""))
         if name:
             return name
 
-    # 3. Fallback: entity + suffix
     return f"{entity}_{suffix}"
 
 
-def _derive_screen_name_from_tasks(task_pairs, suffix_hint=""):
-    """Derive a meaningful Chinese screen name from task names.
-
-    Strips CRUD verb prefixes to get the core noun phrase.
-    e.g. "查看订单列表" → "订单列表"
-         "创建配送单"   → "创建配送单"   (C → keep verb as it's the screen purpose)
-         "修改用户信息" → "编辑用户信息"
-         "注册账户"     → "注册账户"     (short name, keep as-is)
-    """
-    if not task_pairs:
-        return ""
-
-    # Use first task name as primary source (task_name is canonical, name is legacy)
-    first_task = task_pairs[0][1] if task_pairs else {}
-    first_name = first_task.get("task_name", first_task.get("name", ""))
-    if not first_name:
-        return ""
-
-    # For short names (≤4 chars), keep as-is — they're already concise
-    if len(first_name) <= 4:
-        return first_name
-
-    # Strip READ verb prefixes to extract the core noun (read verbs are redundant for screen names)
-    read_prefixes = ["查看", "浏览", "搜索", "筛选", "导出", "统计"]
-    core = first_name
-    stripped = False
-    for prefix in read_prefixes:
-        if core.startswith(prefix):
-            core = core[len(prefix):]
-            stripped = True
-            break
-
-    # If no READ prefix stripped, return original name as-is
-    # (C/U/D verbs are meaningful for screen purpose: "创建订单", "编辑资料", "删除记录")
-    if not stripped:
-        return first_name
-
-    # For READ screens: if core already contains a view type word, don't append suffix
-    view_type_words = ["列表", "详情", "概览", "面板", "报表", "统计", "记录"]
-    if any(w in core for w in view_type_words):
-        return core
-
-    # Append suffix only if core is a bare noun (e.g. "订单" → "订单列表")
-    if suffix_hint and core:
-        return f"{core}{suffix_hint}"
-
-    return core or first_name
-
-
-def _vo_description(vo):
-    """Generate a description from VO fields and type."""
-    vtype = vo.get("view_type", "")
-    entity = vo.get("entity_name", "unknown")
-    fields = vo.get("fields", [])
-    field_names = [f.get("name", "") for f in fields[:5]]
-    field_str = ", ".join(field_names) if field_names else "no fields"
-
-    type_desc = {
-        "list_item": "列表视图",
-        "detail": "详情视图",
-        "create_form": "创建表单",
-        "edit_form": "编辑表单",
-        "state_action": "状态操作",
-    }
-    desc = type_desc.get(vtype, vtype)
-    return f"{entity} {desc} — fields: {field_str}"
-
+# ── Screen builder ───────────────────────────────────────────────────────────
 
 def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
                            ux_intent="", emotion_intensity=5, vo_lookup=None,
                            audience_type=""):
-    """Build screen objects from a list of task IDs. Returns (screens, updated_counter).
+    """Build minimal screen skeletons from task IDs.
 
-    When vo_lookup is provided, screens are enriched with VO data (name, fields,
-    interaction_type, actions, states). Falls back to generic names when no VO matches.
-    audience_type: 'consumer' (mobile app) or 'professional' (desktop admin).
+    Returns (screens, updated_counter).
+    # LLM will enrich fields, actions, states
     """
     if not node_tasks:
         return [], screen_counter
@@ -397,31 +183,19 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
         screen_counter += 1
         sid = f"S{screen_counter:03d}"
 
-        actions = []
-        task_ids = []
-        for tid, task in task_pairs:
-            tname = task.get("task_name", task.get("name", tid))
-            crud = infer_crud(tname)
-            actions.append({
-                "label": tname,
-                "crud": crud,
-                "frequency": infer_frequency(task),
-                "task_ref": tid,
-            })
-            task_ids.append(tid)
+        task_ids = [tid for tid, _ in task_pairs]
 
-        # Determine primary action and dominant CRUD
-        primary = actions[0]["label"] if actions else module
-        dominant_crud = actions[0]["crud"] if actions else "R"
-
-        # ── Infer interaction_type from 37-type system ──
+        # Primary action = first task name
         first_task = task_pairs[0][1] if task_pairs else {}
-        inferred_itype = C.infer_interaction_type(first_task, dominant_crud, audience_type)
+        primary = first_task.get("task_name", first_task.get("name", module))
 
-        # Derive implementation contract (platform + interaction-type aware)
-        contract = infer_contract(ux_intent, dominant_crud, emotion_intensity, audience_type, inferred_itype)
+        # Default CRUD to R — LLM will fix CRUD classification
+        crud_type = "R"
 
-        # ── Platform metadata ──
+        # Default interaction type — LLM will refine
+        interaction_type = "MG1"
+
+        # Platform metadata
         profile = _PLATFORM_PROFILES.get(audience_type, {})
         platform_meta = {
             "platform": profile.get("platform", "unknown"),
@@ -429,67 +203,51 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
             "layout": profile.get("layout", ""),
         } if profile else {}
 
-        # ── Try VO enrichment ──
+        # Simple contract
+        contract = {
+            "pattern": "standard-page",
+            "forbidden": [],
+            "required_behaviors": ["back-navigation"],
+            "interaction_type": interaction_type,
+        }
+
+        # Try VO matching by entity reference (ID-based, not keyword-based)
         matched_vo = None
         if vo_lookup:
-            matched_vo = _find_vo_for_task(first_task, dominant_crud, vo_lookup)
+            matched_vo = _find_vo_for_task(first_task, vo_lookup)
 
         if matched_vo:
-            # Enriched screen from VO
-            # Prefer inferred type (37-type) over VO's type (often just MG)
-            vo_itype = matched_vo.get("interaction_type", "")
-            interaction_type = inferred_itype if inferred_itype else vo_itype
             screen_name = _vo_screen_name(matched_vo, task_pairs)
-            description = _vo_description(matched_vo)
-
-            # Override contract pattern from interaction_type when available
-            if interaction_type:
-                contract["interaction_type"] = interaction_type
-
-            # Build enriched actions from VO actions
+            # Include ALL VO fields without filtering
+            data_fields = matched_vo.get("fields", [])
             vo_actions = matched_vo.get("actions", [])
-
-            screen = {
-                "id": sid,
-                "name": screen_name,
-                "description": description,
-                "route_type": "push",
-                **platform_meta,
-                "tasks": task_ids,
-                "actions": actions,
-                "vo_actions": vo_actions,
-                "primary_action": primary,
-                "vo_ref": matched_vo.get("id", ""),
-                "api_ref": matched_vo.get("api_ref", ""),
-                "interaction_type": interaction_type,
-                "data_fields": matched_vo.get("fields", []),
-                "states": DEFAULT_STATES.get(interaction_type, {}),
-                "non_negotiable": contract["required_behaviors"][:2] if contract["required_behaviors"] else [],
-                "implementation_contract": contract,
-            }
+            vo_ref = matched_vo.get("id", "")
+            interaction_type = matched_vo.get("interaction_type", "MG1")
         else:
-            # Fallback: derive name from tasks, then module
-            interaction_type = inferred_itype
-            suffix = VIEW_TYPE_NAMES.get(
-                C.CRUD_TO_VIEW_TYPE.get(dominant_crud, ["list_item"])[0], ""
-            )
-            fallback_name = _derive_screen_name_from_tasks(task_pairs, suffix) or primary
-            fallback_desc = f"{fallback_name} — {', '.join(a['label'] for a in actions[:3])}"
-            contract["interaction_type"] = interaction_type
-            screen = {
-                "id": sid,
-                "name": fallback_name,
-                "description": fallback_desc,
-                "route_type": "push",
-                **platform_meta,
-                "tasks": task_ids,
-                "actions": actions,
-                "primary_action": primary,
-                "interaction_type": interaction_type,
-                "states": DEFAULT_STATES.get(interaction_type, {}),
-                "non_negotiable": contract["required_behaviors"][:2] if contract["required_behaviors"] else [],
-                "implementation_contract": contract,
-            }
+            screen_name = primary
+            data_fields = []
+            vo_actions = []
+            vo_ref = ""
+
+        # Minimal actions: just the task name as primary action
+        actions = [{"label": primary, "task_ref": task_ids[0] if task_ids else ""}]
+
+        screen = {
+            "id": sid,
+            "name": screen_name,
+            "description": primary,  # LLM will generate smart descriptions
+            "route_type": "push",
+            **platform_meta,
+            "tasks": task_ids,
+            "actions": actions,
+            "vo_actions": vo_actions,
+            "primary_action": primary,
+            "vo_ref": vo_ref,
+            "interaction_type": interaction_type,
+            "data_fields": data_fields,
+            "states": DEFAULT_STATES.get(interaction_type, {}),
+            "implementation_contract": contract,
+        }
 
         screens.append(screen)
 
@@ -499,13 +257,11 @@ def build_screens_for_node(node_tasks, tasks_inv, screen_counter,
 def _compute_flow_context(operation_lines):
     """Compute flow_context (prev/next/entry_points/exit_points) for each screen.
 
-    Iterates through operation_lines → nodes → screens in order and records
+    Iterates through operation_lines -> nodes -> screens in order and records
     sequential prev/next relationships within each operation line.
-    Also infers entry_points and exit_points from VO navigate actions.
     """
-    # Build screen_id → screen object mapping (for VO action cross-referencing)
-    all_screens = {}  # sid → screen
-    vo_to_screen = {}  # vo_ref → [screen_ids]
+    all_screens = {}
+    vo_to_screen = {}
 
     for ol in operation_lines:
         for node in ol.get("nodes", []):
@@ -515,9 +271,7 @@ def _compute_flow_context(operation_lines):
                 if vo_ref:
                     vo_to_screen.setdefault(vo_ref, []).append(s["id"])
 
-    # For each operation line, compute sequential flow
     for ol in operation_lines:
-        # Collect all screens in node order
         ordered_screens = []
         for node in ol.get("nodes", []):
             for s in node.get("screens", []):
@@ -531,7 +285,7 @@ def _compute_flow_context(operation_lines):
             prev_ids = [ordered_screens[i - 1]] if i > 0 else []
             next_ids = [ordered_screens[i + 1]] if i < len(ordered_screens) - 1 else []
 
-            # Infer entry_points: find VO actions from OTHER screens that navigate to this screen's VO
+            # Entry/exit points from VO navigate actions
             entry_points = []
             my_vo = screen.get("vo_ref", "")
             if my_vo:
@@ -542,12 +296,10 @@ def _compute_flow_context(operation_lines):
                         if act.get("type") == "navigate" and act.get("target_vo") == my_vo:
                             entry_points.append(other_sid)
 
-            # Infer exit_points: VO navigate actions from this screen
             exit_points = []
             for act in screen.get("vo_actions", []):
                 if act.get("type") == "navigate" and act.get("target_vo"):
-                    target_vo = act["target_vo"]
-                    target_sids = vo_to_screen.get(target_vo, [])
+                    target_sids = vo_to_screen.get(act["target_vo"], [])
                     exit_points.extend(target_sids)
                 elif act.get("type") == "navigate" and act.get("nav_mode") == "back":
                     exit_points.extend(prev_ids)
@@ -560,183 +312,28 @@ def _compute_flow_context(operation_lines):
             }
 
 
-# ── Screen enrichment (fills sparse VO/entity data) ─────────────────────────
-
-def _f(name, label, typ="string", widget="text", req=False, ro=False):
-    d = {"name": name, "type": typ, "input_widget": widget, "required": req, "label": label}
-    if ro:
-        d["read_only"] = True
-    return d
-
-
-# ── Cross-project enrichment patterns ─────────────────────────────────────────
-# Only universal patterns that apply to any product. Project-specific enrichments
-# come from view-objects.json at runtime, not hardcoded here.
-_ENRICHMENTS = [
-    # ── Auth (universal) ──
-    (("注册", "register", "signup"), {
-        "fields": [_f("email", "邮箱", widget="email", req=True), _f("password", "密码", widget="password", req=True),
-                   _f("confirm_password", "确认密码", widget="password", req=True)],
-        "actions": [{"label": "注册", "crud": "C", "frequency": "高"}, {"label": "已有账号？去登录", "crud": "R", "frequency": "中"}],
-        "states": {"default": "空表单", "loading": "提交中", "error": "注册失败", "success": "注册成功"},
-    }),
-    (("登录", "login", "signin"), {
-        "fields": [_f("email", "邮箱/手机号", widget="email", req=True), _f("password", "密码", widget="password", req=True)],
-        "actions": [{"label": "登录", "crud": "R", "frequency": "高"}, {"label": "忘记密码", "crud": "R", "frequency": "低"}],
-        "states": {"default": "空表单", "loading": "验证中", "error": "凭证错误", "success": "登录成功"},
-    }),
-    (("重置密码", "reset password"), {
-        "fields": [_f("email", "注册邮箱", widget="email", req=True), _f("code", "验证码", req=True),
-                   _f("new_password", "新密码", widget="password", req=True)],
-        "actions": [{"label": "发送验证码", "crud": "C", "frequency": "高"}, {"label": "确认重置", "crud": "U", "frequency": "高"}],
-        "states": {"default": "输入邮箱", "code_sent": "验证码已发送", "error": "验证码错误", "success": "密码已重置"},
-    }),
-    # ── Onboarding (universal) ──
-    (("新手引导", "onboarding", "引导"), {
-        "fields": [_f("step", "引导步骤", typ="int", ro=True), _f("illustration", "插图", typ="image", ro=True),
-                   _f("title", "标题", ro=True), _f("description", "描述", ro=True)],
-        "actions": [{"label": "下一步", "crud": "R", "frequency": "高"}, {"label": "跳过引导", "crud": "R", "frequency": "低"}],
-        "states": {"step_1": "欢迎页", "step_2": "核心功能", "step_3": "偏好设置", "complete": "引导完成"},
-    }),
-    # ── Profile (universal) ──
-    (("个人资料", "profile", "个人信息"), {
-        "fields": [_f("avatar", "头像", typ="image", widget="image_picker"), _f("nickname", "昵称", req=True),
-                   _f("email", "邮箱", widget="email", ro=True)],
-        "actions": [{"label": "保存修改", "crud": "U", "frequency": "高"}],
-        "states": {"default": "表单回填", "editing": "修改中", "saved": "保存成功"},
-    }),
-    # ── Feedback (universal) ──
-    (("意见反馈", "feedback", "反馈"), {
-        "fields": [_f("type", "反馈类型", typ="enum", widget="select", req=True),
-                   _f("content", "详细描述", widget="textarea", req=True),
-                   _f("screenshot", "截图", typ="image", widget="image_picker")],
-        "actions": [{"label": "提交反馈", "crud": "C", "frequency": "高"}],
-        "states": {"default": "空表单", "submitting": "提交中", "success": "反馈已提交"},
-    }),
-    # ── Subscription (universal) ──
-    (("订阅", "subscription", "套餐"), {
-        "fields": [_f("plan_name", "当前套餐", ro=True), _f("price", "价格", ro=True),
-                   _f("status", "状态", typ="enum", ro=True), _f("expiry_date", "到期日", typ="date", ro=True)],
-        "actions": [{"label": "升级套餐", "crud": "U", "frequency": "高"}, {"label": "查看所有套餐", "crud": "R", "frequency": "中"}],
-        "states": {"default": "套餐信息", "expiring": "即将到期", "expired": "已过期"},
-    }),
-    # ── Notification settings (universal) ──
-    (("通知设置", "notification settings"), {
-        "fields": [_f("push_enabled", "推送通知", typ="bool", widget="toggle"),
-                   _f("email_enabled", "邮件通知", typ="bool", widget="toggle")],
-        "actions": [{"label": "保存设置", "crud": "U", "frequency": "高"}],
-        "states": {"default": "当前设置", "saved": "设置已保存"},
-    }),
-]
-
-
-def _match_enrichment(task_name):
-    """Match task name against enrichment patterns. Returns enrichment dict or None."""
-    for keywords, enrichment in _ENRICHMENTS:
-        if any(kw in task_name for kw in keywords):
-            return enrichment
-    return None
-
-
-def _generic_crud_enrichment(crud_type, task_name):
-    """Fallback enrichment based on CRUD type when no keyword match."""
-    if crud_type == "C":
-        return {
-            "fields": [_f("title", "名称", req=True), _f("description", "描述", widget="textarea"),
-                       _f("category", "分类", typ="enum", widget="select")],
-            "actions": [{"label": "提交", "crud": "C", "frequency": "高"}, {"label": "取消", "crud": "R", "frequency": "中"}],
-            "states": {"default": "空表单", "loading": "提交中", "error": "提交失败", "success": "创建成功"},
-        }
-    elif crud_type == "U":
-        return {
-            "fields": [_f("title", "名称", req=True), _f("description", "描述", widget="textarea"),
-                       _f("status", "状态", typ="enum", ro=True)],
-            "actions": [{"label": "保存", "crud": "U", "frequency": "高"}, {"label": "取消", "crud": "R", "frequency": "中"}],
-            "states": {"default": "表单回填", "modified": "有修改", "saving": "保存中", "saved": "已保存"},
-        }
-    elif crud_type == "D":
-        return {
-            "fields": [_f("name", "名称", ro=True), _f("status", "状态", ro=True)],
-            "actions": [{"label": "确认删除", "crud": "D", "frequency": "高"}, {"label": "取消", "crud": "R", "frequency": "高"}],
-            "states": {"default": "删除确认", "deleting": "删除中", "deleted": "已删除"},
-        }
-    else:  # R
-        return {
-            "fields": [_f("title", "标题", ro=True), _f("description", "描述", ro=True),
-                       _f("status", "状态", typ="enum", ro=True), _f("updated_at", "更新时间", typ="date", ro=True)],
-            "actions": [{"label": "查看详情", "crud": "R", "frequency": "高"}, {"label": "搜索", "crud": "R", "frequency": "中"}],
-            "states": {"default": "数据列表", "empty": "暂无数据", "loading": "加载中", "error": "加载失败"},
-        }
-
-
-def _post_enrich_screens(operation_lines, tasks_inv):
-    """Post-process all screens: fill sparse data_fields, actions, states."""
-    for ol in operation_lines:
-        for node in ol.get("nodes", []):
-            for screen in node.get("screens", []):
-                _enrich_screen(screen, tasks_inv)
-
-
-def _enrich_screen(screen, tasks_inv):
-    """Enrich a single screen with realistic data if sparse."""
-    existing = screen.get("data_fields", [])
-    real = [f for f in existing if f.get("name") not in ("id", "updated_at", "created_at")]
-    fields_rich = len(real) >= 3
-    actions_rich = len(screen.get("actions", [])) >= 2
-
-    if fields_rich and actions_rich:
-        return
-
-    # Gather task names for matching
-    task_names = []
-    for tid in screen.get("tasks", []):
-        t = tasks_inv.get(tid, {})
-        task_names.append(t.get("task_name", t.get("name", "")))
-    combined = " ".join(task_names)
-    if not combined.strip():
-        return
-
-    # Try domain-specific match first, then generic CRUD
-    enrichment = _match_enrichment(combined)
-    if not enrichment:
-        crud = "R"
-        for a in screen.get("actions", []):
-            if a.get("crud", "R") != "R":
-                crud = a["crud"]
-                break
-        enrichment = _generic_crud_enrichment(crud, combined)
-
-    if not enrichment:
-        return
-
-    # Apply fields only if sparse
-    if not fields_rich and enrichment.get("fields"):
-        screen["data_fields"] = enrichment["fields"]
-
-    # Merge actions (keep existing task-based, add enrichment extras)
-    if enrichment.get("actions"):
-        existing_labels = {a.get("label") for a in screen.get("actions", [])}
-        merged = list(screen.get("actions", []))
-        for a in enrichment["actions"]:
-            if isinstance(a, str):
-                a = {"label": a, "crud": "R", "frequency": "中"}
-            if a["label"] not in existing_labels:
-                merged.append(a)
-        screen["actions"] = merged
-
-    # Apply states
-    if enrichment.get("states"):
-        screen["states"] = enrichment["states"]
-
+# ── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: gen_experience_map.py <BASE_PATH> [--mode auto]")
+        print("Usage: gen_experience_map.py <BASE_PATH> [--mode auto] [--shard NAME]")
         sys.exit(1)
 
     BASE = sys.argv[1]
 
-    # ── load inputs ──
+    # Parse optional args
+    args = {}
+    i = 2
+    while i < len(sys.argv):
+        if sys.argv[i].startswith("--") and i + 1 < len(sys.argv):
+            args[sys.argv[i][2:]] = sys.argv[i + 1]
+            i += 2
+        else:
+            i += 1
+
+    shard = args.get("shard")
+
+    # ── Load inputs ──
     journey_lines = C.load_journey_emotion(BASE)
     tasks_inv = C.load_task_inventory(BASE)
     roles = C.load_role_profiles(BASE)
@@ -749,9 +346,7 @@ def main():
         print("ERROR: task-inventory.json not found or empty. Run product-map first.")
         sys.exit(1)
 
-    # ── build role→audience_type mapping ──
-    # roles from C.load_role_profiles() is {role_id: role_name} dict
-    # Need full role objects for audience_type
+    # ── Build role -> audience_type mapping ──
     roles_full = C.load_role_profiles_full(BASE) if hasattr(C, 'load_role_profiles_full') else []
     role_audience = {}
     for r in roles_full:
@@ -760,35 +355,31 @@ def main():
     if role_audience:
         print(f"  Roles: {', '.join(f'{k}={v}' for k, v in role_audience.items())}")
 
-    # ── load view objects (optional enhancement) ──
+    # ── Load view objects (optional) ──
     view_objects = C.load_view_objects(BASE)
     vo_lookup = _build_vo_lookup(view_objects) if view_objects else {}
     if vo_lookup:
         print(f"  VO: loaded {len(view_objects)} view objects, {len(vo_lookup)} unique (entity, type) keys")
 
-    # ── build flow→tasks mapping ──
-    # Support both "id" and "flow_id" fields, and normalize F1→F001 format
+    # ── Build flow -> tasks mapping ──
+    import re as _re
     flow_by_id = {}
     if flows:
         for f in flows:
             fid = f.get("id") or f.get("flow_id", "")
             if fid:
                 flow_by_id[fid] = f
-                # Also register zero-padded variants: F1→F01, F1→F001
-                import re as _re
                 m = _re.match(r'^(F)(\d+)$', fid)
                 if m:
                     num = int(m.group(2))
                     flow_by_id[f"{m.group(1)}{num:02d}"] = f
                     flow_by_id[f"{m.group(1)}{num:03d}"] = f
 
-    # ── generate operation lines ──
+    # ── Generate operation lines ──
     operation_lines = []
     screen_index = {}
     screen_counter = 0
-    # Dedup: map (task_id_tuple, audience_type) → existing screen list
-    # so the same task in different operation lines reuses the same screen
-    _screen_dedup = {}  # (frozenset(task_ids), audience_type) → [screen, ...]
+    _screen_dedup = {}
 
     for jl in journey_lines:
         jl_id = jl["id"]
@@ -796,7 +387,6 @@ def main():
         flow = flow_by_id.get(source_flow_id, {})
         flow_nodes = C.get_flow_nodes(flow) if flow else []
 
-        # Determine audience_type for this journey line's role
         jl_role = jl.get("role", "")
         jl_audience = role_audience.get(jl_role, "professional")
 
@@ -804,18 +394,14 @@ def main():
         for en in jl.get("emotion_nodes", []):
             step = en["step"]
 
-            # Match to flow node for task references
             flow_node = flow_nodes[step - 1] if step - 1 < len(flow_nodes) else {}
-            # Support both task_ref (canonical) and task_id (legacy)
             node_task_id = flow_node.get("task_ref", flow_node.get("task_id", ""))
             node_tasks = [node_task_id] if node_task_id and node_task_id in tasks_inv else []
 
-            # Dedup: check if this exact task set already generated screens
             dedup_key = (frozenset(node_tasks), jl_audience) if node_tasks else None
             if dedup_key and dedup_key in _screen_dedup:
                 node_screens = _screen_dedup[dedup_key]
             else:
-                # Build screens for this node
                 node_screens, screen_counter = build_screens_for_node(
                     node_tasks, tasks_inv, screen_counter,
                     ux_intent=en.get("design_hint", ""),
@@ -826,7 +412,7 @@ def main():
                 if dedup_key:
                     _screen_dedup[dedup_key] = node_screens
 
-            node_id = f"N{jl_id[2:]}{step:02d}"  # e.g. N0101 for JL01 step 1
+            node_id = f"N{jl_id[2:]}{step:02d}"
             node = {
                 "seq": step,
                 "id": node_id,
@@ -839,7 +425,6 @@ def main():
             }
             nodes.append(node)
 
-            # Update screen_index
             ol_id = f"OL{jl_id[2:]}"
             for s in node_screens:
                 sid = s["id"]
@@ -862,10 +447,7 @@ def main():
         }
         operation_lines.append(ol)
 
-    # ── enrich screens with domain-specific data_fields/actions/states ──
-    _post_enrich_screens(operation_lines, tasks_inv)
-
-    # ── compute flow_context for all screens ──
+    # ── Compute flow_context for all screens ──
     if vo_lookup:
         _compute_flow_context(operation_lines)
 
@@ -875,13 +457,13 @@ def main():
         "generated_at": datetime.datetime.now().isoformat(),
     }
 
-    # ── write output ──
+    # ── Write output ──
     out_dir = os.path.join(BASE, "experience-map")
     os.makedirs(out_dir, exist_ok=True)
-
     out_path = os.path.join(out_dir, "experience-map.json")
     C.write_json(out_path, result)
 
+    # ── Summary ──
     total_screens = len(screen_index)
     total_nodes = sum(len(ol["nodes"]) for ol in operation_lines)
     vo_enriched = sum(1 for sid in screen_index if any(
@@ -898,8 +480,9 @@ def main():
 
     vo_msg = f", {vo_enriched} VO-enriched" if vo_enriched else ""
     print(f"OK: {out_path} ({len(operation_lines)} lines, {total_nodes} nodes, {total_screens} screens{vo_msg})")
+    print("  NOTE: Screens are minimal skeletons. LLM enrichment required for fields, actions, states.")
 
-    # ── generate report ──
+    # ── Report ──
     report_lines = [
         "# Experience Map Report\n",
         f"> Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}\n",
@@ -928,7 +511,7 @@ def main():
             report_lines.append(
                 f"  {node['seq']}. {node['action']} "
                 f"[{node['emotion_state']} {node['emotion_intensity']}/10] "
-                f"→ {screens_str or 'no screens'}{vo_tags}"
+                f"-> {screens_str or 'no screens'}{vo_tags}"
             )
         report_lines.append("")
 
@@ -936,13 +519,13 @@ def main():
     with open(report_path, "w", encoding="utf-8") as f:
         f.write("\n".join(report_lines))
 
-    # ── pipeline decision ──
+    # ── Pipeline decision ──
     C.append_pipeline_decision(BASE, "experience-map", {
         "operation_line_count": len(operation_lines),
         "total_nodes": total_nodes,
         "total_screens": total_screens,
         "vo_enriched_screens": vo_enriched,
-    })
+    }, shard=shard)
 
 
 if __name__ == "__main__":
