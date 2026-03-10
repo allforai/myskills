@@ -240,7 +240,7 @@ Step 3: 写入产物（自动，不停顿）
 
 ```
 .allforai/design-pattern/
-├── pattern-catalog.json          # 主产物（JSON 机器版，含 task/screen 标签映射）
+├── pattern-catalog.json          # 主产物（JSON 机器版，含 task/screen 标签映射）⚠️ 文件名必须为 pattern-catalog.json，不可使用其他命名（如 design-patterns.json）
 └── pattern-report.md             # 人类可读摘要
 ```
 

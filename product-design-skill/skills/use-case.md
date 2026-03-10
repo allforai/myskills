@@ -680,6 +680,9 @@ LLM 直接分析 task-inventory + experience-map + business-flows，生成结构
 - **`experience-map.json`**（若存在）：同理比较时间戳。上游更新 → ⚠ 警告「experience-map 已更新，validation 和 exception_flows 数据可能过期」。
 - 仅警告不阻断。
 
+### 执行失败保护
+- 任何步骤遇到不可恢复错误（JSON 解析失败、必须文件缺失、LLM 生成结果不合法）→ 写入 `.allforai/use-case/use-case-error.json`，包含 `{"error": "...", "step": "...", "timestamp": "..."}`，确保编排器能检测到失败而非静默空目录。
+
 ---
 
 ## 4 条铁律
