@@ -1718,7 +1718,7 @@ def _build_4d_panel(screen):
     field_names = ", ".join(f.get("label", f.get("name", "")) for f in fields[:6])
     if len(fields) > 6:
         field_names += "..."
-    rw_count = sum(1 for f in fields if not (f.get("readonly") or f.get("read_only")))
+    rw_count = sum(1 for f in fields if not (f.get("readonly") or f.get("read_only") or f.get("input_widget") == "readonly"))
     ro_count = len(fields) - rw_count
     rw_summary = f"{rw_count}rw/{ro_count}ro" if fields else ""
     data_val = f"{field_names} ({len(fields)} fields, {rw_summary})" if fields else "No fields"

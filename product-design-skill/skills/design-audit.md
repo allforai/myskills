@@ -103,67 +103,61 @@ product-map（锚点）
 
 **行为变化**：
 
-| 步骤 | 标准模式 | 全自动模式 |
+| 阶段 | 标准模式 | 全自动模式 |
 |------|----------|-----------|
-| **Step 1 逆向追溯确认** | AskUserQuestion 确认 | 自动确认，所有 ORPHAN 问题记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
-| **Step 2 覆盖洪泛确认** | AskUserQuestion 确认 | 自动确认，所有 GAP 问题记入 `pipeline-decisions.json` |
-| **Step 3 横向一致性确认** | AskUserQuestion 确认 | 自动确认，所有 CONFLICT / WARNING / BROKEN_REF 记入 `pipeline-decisions.json` |
-| **Step 3.5 保真门禁** | AskUserQuestion 确认 | 低于阈值 → WARNING 记入日志（不停），达到阈值 → PASS 自动继续 |
-| **Step 5 模式一致性** | AskUserQuestion 确认 | 自动执行（experience-map screen 无 _pattern* 字段 → 跳过），漂移问题记入日志 |
-| **Step 5.5 创新保真审计** | AskUserQuestion 确认 | 自动执行（adversarial-concepts.json 不存在或无 core 概念 → 跳过），稀释/不完整问题记入日志 |
-| **Step 5.6 行为一致性审计** | AskUserQuestion 确认 | 自动执行（experience-map screen 无 _behavioral* 字段 → 跳过），漂移/违规问题记入日志 |
-| **Step 5.7 交互类型一致性审计** | AskUserQuestion 确认 | 自动执行（前置条件不满足 → 提示用户重跑上游），布局漂移/类型不匹配问题记入日志 |
-| **Step 6 报告确认** | AskUserQuestion 确认 | 自动确认 |
+| **Phase A 脚本执行** | 脚本执行后，AskUserQuestion 确认 trace/coverage/cross 结果 | 脚本执行后自动确认，所有问题记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
+| **Phase B Agent 1: 模式+创新** | AskUserQuestion 确认 | 自动执行（前置条件不满足 → 跳过），问题记入分片 |
+| **Phase B Agent 2: 行为** | AskUserQuestion 确认 | 自动执行（前置条件不满足 → 跳过），问题记入分片 |
+| **Phase B Agent 3: 交互类型** | AskUserQuestion 确认 | 自动执行（前置条件不满足 → 跳过），问题记入分片 |
+| **Phase C 合并报告** | AskUserQuestion 确认 | 自动确认 |
 
 **安全护栏**（自动模式下仍然停下来问用户）：
 - ERROR 级验证失败（product-map.json 损坏、必须层缺失）
 
 ---
 
-## 工作流
+## 工作流（三阶段并行架构）
 
 ```
-前置：两阶段加载 + 产物探测
-      Phase 1 — 加载索引：task-index / screen-index / flow-index
-      Phase 2 — 探测已有产物：
-        .allforai/product-map/   → 必须存在
-        .allforai/experience-map/    → 必须（不存在则自动运行 experience-map 生成）
-        .allforai/use-case/      → 可选
-        .allforai/feature-gap/   → 可选
-        .allforai/ui-design/     → 可选
-      标记 available_layers[]，仅校验已有层
+Phase A（脚本，串行）: 确定性检查
+      gen_design_audit.py 执行：
+        前置：两阶段加载 + 产物探测
+        Step 1: 逆向追溯（Trace）
+        Step 2: 覆盖洪泛（Coverage）
+        Step 3: 横向一致性（Cross-check）
+        Step 3.5: 信息保真门禁（Fidelity）
+        Step 3.7: 连贯性审计（Continuity）
+        XV 交叉验证（如可用）
+      输出: audit-report.json（基线报告）+ audit-report.md
       ↓
-Step 1: 逆向追溯（Trace）
-      从下游往上游反查，每个产物是否有源头
-      ↓ 用户确认
-Step 2: 覆盖洪泛（Coverage）
-      从上游往下游洪泛，每个节点是否被完整消费
-      ↓ 用户确认
-Step 3: 横向一致性（Cross-check）
-      相邻层之间的矛盾检测
-      ↓ 用户确认
-Step 3.5: 信息保真门禁（Fidelity）
-      统计追溯完整率与视角覆盖率
-      ↓ 用户确认
-Step 5: 模式一致性（Pattern Consistency）
-      仅当 experience-map.json screen 含 _pattern* 字段时执行
-      ↓ 自动
-Step 5.5: 创新保真审计（Innovation Fidelity）
-      仅当 adversarial-concepts.json 存在且含 core 概念时执行
-      ↓ 自动
-Step 5.6: 行为一致性审计（Behavioral Consistency）
-      仅当 experience-map.json screen 含 _behavioral* 字段时执行
-      ↓ 自动
-Step 5.7: 交互类型一致性审计（Interaction Type Consistency）
-      仅当 experience-map 含 interaction_type 字段时执行
-      ↓ 自动
-Step 6: 汇总报告
-      合并所有维度结果，输出 JSON + Markdown
+Phase B（LLM，并行 3 Agent）: 语义审计
+      Agent 1: 模式一致性(Step 5) + 创新保真(Step 5.5)
+        → 写入 .allforai/design-audit/audit-shard-pattern.json
+      Agent 2: 行为一致性(Step 5.6)
+        → 写入 .allforai/design-audit/audit-shard-behavioral.json
+      Agent 3: 交互类型一致性(Step 5.7)
+        → 写入 .allforai/design-audit/audit-shard-interaction.json
+      ↓（屏障同步：3 Agent 全部完成后继续）
+Phase C（合并）: 汇总报告
+      读取 audit-report.json（Phase A 基线）
+      读取 3 个 audit-shard-*.json 分片
+      合并到 audit-report.json 最终版
+      重新生成 audit-report.md（含全部维度）
 ```
 
 ---
 
-### 前置：两阶段加载 + 产物探测
+### Phase A：确定性检查（脚本串行）
+
+**执行命令**：
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_design_audit.py <BASE> [--mode auto]
+```
+
+脚本自动完成以下所有步骤，输出 `audit-report.json`（基线报告）和 `audit-report.md`。
+
+#### 前置：两阶段加载 + 产物探测
 
 **Phase 1 — 加载索引**（始终安全，< 5KB）：
 
@@ -195,7 +189,7 @@ Step 6: 汇总报告
 
 ---
 
-### Step 1：逆向追溯（Trace）
+#### Step 1：逆向追溯（Trace）
 
 从下游产物往上游反查，验证每个产物项是否有合法的上游引用。
 
@@ -223,7 +217,7 @@ Step 6: 汇总报告
 
 ---
 
-### Step 2：覆盖洪泛（Coverage）
+#### Step 2：覆盖洪泛（Coverage）
 
 从上游 task-inventory 往下游洪泛，验证每个任务是否被下游层完整消费。
 
@@ -254,7 +248,7 @@ Step 6: 汇总报告
 
 ---
 
-### Step 3：横向一致性（Cross-check）
+#### Step 3：横向一致性（Cross-check）
 
 相邻层之间的矛盾和不一致检测。
 
@@ -282,7 +276,7 @@ Step 6: 汇总报告
 
 ---
 
-### Step 3.5：信息保真门禁（Fidelity）
+#### Step 3.5：信息保真门禁（Fidelity）
 
 在不改变现有主流程的前提下，补充两项统计门禁：
 
@@ -300,7 +294,63 @@ Step 6: 汇总报告
 
 ---
 
-### Step 5：模式一致性审计（Pattern Consistency）
+### Phase B：语义审计（LLM 并行 3 Agent）
+
+Phase A 脚本完成后，用**单条消息发出 3 个 Agent tool 调用**并行执行语义审计。
+
+每个 Agent 读取 Phase A 产出的 `audit-report.json` 作为上下文（只读），执行各自的审计维度，将结果写入独立的分片文件。
+
+**Agent 分工**：
+
+| Agent | 审计维度 | 分片输出 |
+|-------|---------|---------|
+| Agent 1 | Step 5 模式一致性 + Step 5.5 创新保真 | `.allforai/design-audit/audit-shard-pattern.json` |
+| Agent 2 | Step 5.6 行为一致性 | `.allforai/design-audit/audit-shard-behavioral.json` |
+| Agent 3 | Step 5.7 交互类型一致性 | `.allforai/design-audit/audit-shard-interaction.json` |
+
+**Agent prompt 模板**：
+
+~~~
+你是设计审计流水线的并行审计器。
+
+任务: 执行 {审计维度} 的完整检测流程。
+
+上下文:
+- 读取 .allforai/design-audit/audit-report.json（Phase A 基线报告，只读）
+- 读取 .allforai/experience-map/experience-map.json
+- 读取 .allforai/ui-design/ui-design-spec.md（如存在）
+- 读取 .allforai/product-concept/adversarial-concepts.json（仅 Agent 1 需要）
+- 读取 ${CLAUDE_PLUGIN_ROOT}/docs/interaction-types.md（仅 Agent 3 需要）
+
+执行:
+1. 按下方对应 Step 的检测项逐一执行
+2. 前置条件不满足 → 该维度 status="skipped"，仍写分片文件
+3. 结果写入分片文件: .allforai/design-audit/audit-shard-{shard_name}.json
+
+分片 JSON Schema:
+{
+  "shard": "{shard_name}",
+  "generated_at": "ISO8601",
+  "sections": {
+    "{section_key}": {
+      "status": "pass | issues_found | skipped",
+      ...维度特定字段...
+      "issues": [...]
+    }
+  }
+}
+
+重要:
+- 禁止修改 audit-report.json（Phase A 产出）
+- 禁止读写其他 Agent 的分片文件
+- 前置条件不满足时写 skipped 分片而非不写文件
+~~~
+
+**quick 模式**: 仅执行 Phase A 脚本，跳过 Phase B 并行 Agent（LLM 审计步骤全部跳过）。Phase C 直接以 Phase A 的 audit-report.json 为最终报告。
+
+---
+
+#### Step 5：模式一致性审计（Pattern Consistency）
 
 > 目标：验证相同功能模式的界面/任务是否遵循了统一的设计套路。
 > **前提**：experience-map.json 中至少有一个 screen 含 `_pattern` 字段（由 experience-map Step 3.6 写入）。无 _pattern 字段 → 跳过本步骤。
@@ -369,7 +419,7 @@ Step 6: 汇总报告
 
 ---
 
-### Step 5.5：创新保真审计（Innovation Fidelity）
+#### Step 5.5：创新保真审计（Innovation Fidelity）
 
 > 目标：验证 product-concept 阶段定义的核心创新概念是否在全链路中存活且未被稀释。
 > **前提**：`.allforai/product-concept/adversarial-concepts.json` 存在且含 `protection_level=core` 概念。不存在 → 跳过本步骤。
@@ -417,7 +467,7 @@ Step 6: 汇总报告
 
 ---
 
-### Step 5.6：行为一致性审计（Behavioral Consistency）
+#### Step 5.6：行为一致性审计（Behavioral Consistency）
 
 > 目标：验证所有界面是否遵循确认的行为规范。
 > **前提**：experience-map.json 中至少有一个 screen 含 `_behavioral` 字段（由 experience-map Step 3.6 写入）。无 _behavioral 字段 → 跳过本步骤。
@@ -473,7 +523,7 @@ Step 6: 汇总报告
 
 ---
 
-### Step 5.7：交互类型一致性审计（Interaction Type Consistency）
+#### Step 5.7：交互类型一致性审计（Interaction Type Consistency）
 
 > 目标：验证相同交互类型的界面是否遵循统一的布局约束和行为模式。
 
@@ -693,7 +743,7 @@ def check_type_context_match(screens, product_type, audience, platform):
 
 ---
 
-### Step 3.7: 连贯性审计（Continuity Audit）
+#### Step 3.7: 连贯性审计（Continuity Audit）
 
 从 `interaction-gate.json` 读取质量门禁结果，检查：
 
@@ -705,6 +755,46 @@ def check_type_context_match(screens, product_type, audience, platform):
 | 拇指热区合规率 | ≥ 0.8 |
 
 不合格的操作线记入审计报告 `continuity_issues` 数组。
+
+---
+
+### Phase C：合并分片报告
+
+3 个 Agent 全部完成后，编排器执行合并。
+
+**执行步骤**：
+
+1. 读取 Phase A 基线报告：`.allforai/design-audit/audit-report.json`
+2. 读取 3 个分片文件（缺失的分片视为 skipped）：
+   - `audit-shard-pattern.json` → 合并到 `pattern_consistency` + `innovation_fidelity`
+   - `audit-shard-behavioral.json` → 合并到 `behavioral_consistency`
+   - `audit-shard-interaction.json` → 合并到 `interaction_type_consistency`
+3. 将分片中的 `sections` 内容合并到 `audit-report.json` 的 `summary` 和顶层字段
+4. 重新生成 `audit-report.md`（包含全部维度的摘要和问题清单）
+5. 删除 `audit-shard-*.json` 分片文件（已合并到主报告）
+
+**合并逻辑**（伪代码）：
+
+```python
+report = load_json("audit-report.json")  # Phase A 基线
+
+for shard_name in ["pattern", "behavioral", "interaction"]:
+    shard_path = f"audit-shard-{shard_name}.json"
+    if not exists(shard_path):
+        continue
+    shard = load_json(shard_path)
+    for section_key, section_data in shard["sections"].items():
+        report["summary"][section_key] = {
+            k: v for k, v in section_data.items() if k != "issues"
+        }
+        report[f"{section_key}_issues"] = section_data.get("issues", [])
+
+write_json("audit-report.json", report)
+regenerate_markdown("audit-report.md", report)
+delete_shards()
+```
+
+**quick 模式**: 跳过合并（Phase B 未执行），Phase A 的 audit-report.json 即最终报告。
 
 ---
 

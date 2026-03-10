@@ -588,11 +588,62 @@ Playwright verify loop 通过后，**自动进入 Phase 8**（design-audit），
 
 ---
 
-## Phase 8：design-audit（终审）
+## Phase 8：design-audit（终审 — 三阶段并行架构）
 
 **执行**：
-1. 用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/skills/design-audit.md`，按 full 模式执行完整三合一校验
-2. LLM 对全流程产物做逆向追溯、覆盖洪泛、横向一致性三维审计
+1. 用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/skills/design-audit.md`
+
+**Phase A（脚本，串行）**：确定性检查
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_design_audit.py <BASE> [--mode auto]
+```
+
+脚本执行逆向追溯、覆盖洪泛、横向一致性、连贯性、信息保真、XV 交叉验证。
+输出 `.allforai/design-audit/audit-report.json`（基线报告）。
+
+**Phase B（LLM，并行 3 Agent）**：语义审计
+
+用**单条消息发出 3 个 Agent tool 调用**并行执行。Agent 屏障同步机制保证全部完成后才继续。
+
+每个 Agent 的 prompt 模板：
+
+~~~
+你是设计审计流水线的并行审计器。
+
+任务: 执行 {审计维度} 的完整检测流程。
+
+上下文:
+- 读取 .allforai/design-audit/audit-report.json（Phase A 基线报告，只读）
+- 读取 .allforai/experience-map/experience-map.json
+- 读取相关上游产物（见 design-audit.md 对应 Step 的前置条件）
+
+执行:
+1. 用 Read 加载 ${CLAUDE_PLUGIN_ROOT}/skills/design-audit.md
+2. 按对应 Step 的检测项逐一执行
+3. 前置条件不满足 → status="skipped"，仍写分片文件
+4. 结果写入: .allforai/design-audit/audit-shard-{shard_name}.json
+
+重要:
+- 禁止修改 audit-report.json（Phase A 产出）
+- 禁止读写其他 Agent 的分片文件
+~~~
+
+| Agent | 审计维度 | 对应 Step | 分片文件 |
+|-------|---------|----------|---------|
+| Agent 1 | 模式一致性 + 创新保真 | Step 5 + Step 5.5 | `audit-shard-pattern.json` |
+| Agent 2 | 行为一致性 | Step 5.6 | `audit-shard-behavioral.json` |
+| Agent 3 | 交互类型一致性 | Step 5.7 | `audit-shard-interaction.json` |
+
+**Phase C（合并）**：汇总报告
+
+3 个 Agent 全部返回后，编排器执行：
+1. 读取 `audit-report.json`（Phase A 基线）+ 3 个 `audit-shard-*.json` 分片
+2. 合并分片 sections 到主报告的 `summary` 和 issues 字段
+3. 重新生成 `audit-report.md`（含全部维度）
+4. 删除分片文件
+
+**quick 模式**：仅执行 Phase A 脚本，跳过 Phase B/C。
 
 **自动模式检查点**：审计正常执行，所有结果写入报告。CONFLICT 级问题在摘要中高亮标注。自动模式下终审不停，但摘要中列出所有积累的 WARNING 条目总数。
 

@@ -227,7 +227,12 @@ LLM 根据 entity-model 和 view-objects 中的字段语义自主选择合适的
 Step 1: 加载全部上游数据
       读取所有可用的前置数据到上下文
       ↓
+Step 1.5: 生成骨架（自动）
+      运行 gen_experience_map.py 生成 experience-map-skeleton.json
+      确定性字段预填（operation_lines、nodes、screens 结构、data_fields、interaction_type、flow_context）
+      ↓
 Step 2: LLM 自由设计体验地图
+      加载骨架，在此基础上填充 LLM 创意字段
       LLM 理解产品语义后，自主设计每个界面
       按角色分组，每个角色的界面独立设计
       ↓
@@ -262,17 +267,56 @@ Step 4: 输出
 
 ---
 
+### Step 1.5：生成骨架（自动）
+
+运行预构建脚本生成确定性骨架，减少 LLM token 消耗和幻觉：
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py <BASE_PATH> --mode auto --shard experience-map
+```
+
+**脚本输出**：`experience-map-skeleton.json`，包含：
+
+| 已填充（确定性） | LLM 待填充（占位空值） |
+|-----------------|---------------------|
+| operation_lines 结构（从 business-flows） | `name`（界面名称） |
+| nodes（从 flow nodes） | `description`（设计意图） |
+| screen.tasks（从 task_ref） | `components`（组件清单） |
+| screen.platform（从 role audience_type） | `interaction_pattern`（交互模式） |
+| screen.interaction_type（从 infer_interaction_type） | `emotion_design`（情绪设计） |
+| screen.data_fields（从 entity-model + view-objects） | `states`（界面状态） |
+| screen.vo_ref（从 view-objects 匹配） | `layout_type`（布局类型） |
+| screen.actions（从 CRUD 推断） | |
+| screen.flow_context（从操作线顺序） | |
+| screen 去重（同 task+role 复用） | |
+| 独立/孤儿任务的额外操作线 | |
+| _emotion_ref（从 journey-emotion 附加） | |
+
+**骨架加载**：Step 2 中 LLM 读取骨架文件，在已有结构上填充创意字段，而非从零构建整个 JSON。
+
+---
+
 ### Step 2：LLM 自由设计体验地图
 
-LLM 基于 Step 1 的完整上下文，**像产品设计师一样思考**，为每个角色设计界面：
+LLM 加载 `experience-map-skeleton.json`，在骨架基础上填充创意字段。骨架已提供了完整的 operation_lines > nodes > screens 结构、data_fields、interaction_type、flow_context，LLM 聚焦于设计决策：
 
-**设计思路（LLM 内部推理）**：
+**LLM 在骨架上的工作**：
+1. 填充 `name`：为每个界面命名（中文产品语言）
+2. 填充 `description`：说明设计意图（2-3 句话，回答 D1+D4）
+3. 填充 `components`：设计组件清单（每个含 type/purpose/behavior/data_source）
+4. 填充 `interaction_pattern`：描述交互模式（1-2 句话）
+5. 填充 `emotion_design`：基于 `_emotion_ref` 的情绪设计决策
+6. 填充 `states`：empty/loading/error/success 状态设计
+7. 填充 `layout_type`：选择布局方式
+8. **审查并可调整** `interaction_type`：骨架的推断可能不是最优，LLM 可根据产品语义调整（但必须从渲染器支持列表选择）
+9. **审查并可调整** `data_fields`：骨架从 entity-model 推断，LLM 可增删字段
+10. **可合并/拆分 screens**：骨架按 1 task = 1 screen 生成，LLM 可根据设计判断合并多任务到一个界面或拆分复杂任务
 
-1. **从业务流出发**：每条业务流是一条操作线（operation_line），流中的每个节点需要一个或多个界面
-2. **独立任务不遗漏**：business-flows.json 的 `summary.independent_operations` 和 `summary.orphan_tasks` 列出了不在任何业务流中的任务。**这些任务同样需要界面**。按角色分组，为每个角色的独立任务创建额外的操作线（如"学习者独立操作线""管理员独立操作线"），确保每个独立任务至少出现在一个操作线的节点中
-3. **理解数据结构**：entity-model 告诉你每个界面需要展示什么字段、有哪些状态转换
-4. **匹配情绪弧线**：journey-emotion 告诉你用户在每个节点的情绪，指导交互密度和反馈方式
-5. **尊重平台差异**：
+**额外的设计思考**（超越骨架）：
+
+1. **理解数据结构**：entity-model 告诉你每个界面需要展示什么字段、有哪些状态转换
+2. **匹配情绪弧线**：journey-emotion 告诉你用户在每个节点的情绪，指导交互密度和反馈方式
+3. **尊重平台差异**：
    - consumer (mobile-ios)：单手操作、竖屏、底部导航、手势交互、沉浸体验
    - professional (desktop-web)：大屏多列、鼠标键盘、侧边栏导航、批量操作、数据密集
 6. **创新界面**：product-concept 中的创新概念（如角色扮演、AI 即时生成）应该有独特的交互设计，不套用标准模板
@@ -397,31 +441,83 @@ for line in operation_lines:
 
 ---
 
-#### 3.5.2 逐屏渲染验证
+#### 3.5.2 批量渲染验证
 
-对每条操作线中的每个屏幕，逐一点击并验证渲染结果：
+优先使用 `browser_run_code` 批量提取验证数据（1 次导航 + 2 次 JS 执行），替代逐屏点击。
+
+**Step A — 批量提取页面内嵌数据**：
 
 ```
-对 /wireframe 页面树中的每个操作线：
-  展开操作线（若折叠）
-  对每个屏幕条目：
-    点击屏幕条目
-    等待 iframe 加载
-    browser_snapshot 获取 iframe 内容
-    执行渲染检查（见下表）
-    记录结果：PASS / FAIL + 原因
+1. browser_navigate 到 /wireframe
+2. browser_run_code 提取结构数据：
+
+(() => {
+  const results = {};
+  // ALL_SCREENS 是 {sid: screenObj} 的字典，TREE_DATA 是操作线树，SIXV 是 6V 标注
+  const sids = Object.keys(ALL_SCREENS);
+  for (const sid of sids) {
+    const sc = ALL_SCREENS[sid] || {};
+    const fc = sc.flow_context || {};
+    results[sid] = {
+      name: sc.name || '',
+      interaction_type: sc.interaction_type || '',
+      data_fields_count: Array.isArray(sc.data_fields) ? sc.data_fields.length : 0,
+      data_fields_valid: Array.isArray(sc.data_fields) && sc.data_fields.length > 0
+        && typeof sc.data_fields[0] === 'object',
+      actions_count: Array.isArray(sc.actions) ? sc.actions.length : 0,
+      flow_has_prev: Array.isArray(fc.prev) && fc.prev.length > 0,
+      flow_has_next: Array.isArray(fc.next) && fc.next.length > 0,
+    };
+  }
+  return {
+    screen_count: sids.length,
+    tree_op_line_count: TREE_DATA.length,
+    screens: results,
+  };
+})()
 ```
 
-**逐屏渲染检查规则**：
+**Step B — 批量 fetch 验证 iframe 渲染**：
 
-| 检查项 | 通过条件 | 失败原因分析 |
-|--------|---------|-------------|
-| iframe 加载 | iframe 内有可见内容（非空白） | node.screens 嵌入不完整，或 JSON 格式错误 |
-| 标题渲染 | iframe 内包含屏幕名称文字 | screen.name 字段缺失 |
-| 布局匹配 | iframe 结构面板显示的 interaction_type 对应正确的 slot 列表 | interaction_type 不在 ZONE_MAP 中 |
-| 数据字段 | 面板中 Data 区域列出字段（非空） | data_fields 为空数组或格式错误（字符串而非对象） |
-| 操作按钮 | 线框中有可见按钮 | actions 字段为空 |
-| Flow 连接 | Flow 面板显示 prev/next 信息 | flow_context 字段缺失或值为 null |
+```
+3. browser_run_code 批量 fetch 所有 screen 的渲染 HTML：
+
+(async () => {
+  const sids = Object.keys(ALL_SCREENS);
+  const results = {};
+  // 并发 fetch，每个 screen 的独立渲染页
+  const fetches = sids.map(async (sid) => {
+    try {
+      const resp = await fetch('/wireframe/screen/' + sid);
+      const html = await resp.text();
+      const name = (ALL_SCREENS[sid] || {}).name || '';
+      results[sid] = {
+        html_length: html.length,
+        not_blank: html.length > 200,
+        has_title: name ? html.includes(name) : null,
+        has_button: /<button[\s>]/i.test(html) || /class="[^"]*btn[^"]*"/i.test(html),
+      };
+    } catch (e) {
+      results[sid] = { error: e.message };
+    }
+  });
+  await Promise.all(fetches);
+  return results;
+})()
+```
+
+**Step C — LLM 分析批量结果**：
+
+将 Step A 和 Step B 的返回值合并，按以下检查规则逐屏判定 PASS / FAIL：
+
+| 检查项 | 通过条件 | 数据来源 | 失败原因分析 |
+|--------|---------|---------|-------------|
+| iframe 加载 | `not_blank === true`（HTML > 200 字符） | Step B | node.screens 嵌入不完整，或 JSON 格式错误 |
+| 标题渲染 | `has_title === true` | Step B | screen.name 字段缺失 |
+| 布局匹配 | `interaction_type` 在 ZONE_MAP 26 种合法类型内 | Step A | interaction_type 不在 ZONE_MAP 中 |
+| 数据字段 | `data_fields_count > 0` 且 `data_fields_valid === true` | Step A | data_fields 为空数组或格式错误（字符串而非对象） |
+| 操作按钮 | `actions_count > 0` 且 `has_button === true` | Step A + B | actions 字段为空 |
+| Flow 连接 | `flow_has_prev \|\| flow_has_next` 至少一个为 true（首屏可无 prev，末屏可无 next） | Step A | flow_context 字段缺失或值为 null |
 
 **常见渲染故障的自动修复**：
 
@@ -435,18 +531,18 @@ for line in operation_lines:
 **修复 → 重验循环**：
 
 ```
-逐屏验证 → 汇总失败项
+批量验证 → 汇总失败项
   全部 PASS → 进入 3.5.3 业务合理性判断
   有 FAIL →
     按故障类型分组（格式/数据/类型）
     执行对应自动修复
     重新写入 experience-map.json
     刷新 /wireframe 页面
-    → 重新逐屏验证（最多 2 轮）
+    → 重新执行 Step A + B + C 批量验证（最多 2 轮）
   2 轮后仍有 FAIL → 记录到报告，WARNING 继续
 ```
 
-> **效率提示**：如果屏幕数 > 20，可抽样验证（每条操作线首尾屏幕 + 随机 1-2 个中间屏幕），而非逐一点击全部屏幕。抽样失败的操作线再全量验证。
+> **Fallback**：若 `browser_run_code` 不可用（返回错误或超时），退回逐屏点击方式：对 /wireframe 页面树中的每个操作线展开后，逐一点击屏幕条目 → 等待 iframe 加载 → `browser_snapshot` 获取内容 → 按上表检查规则判定 PASS/FAIL。如果屏幕数 > 20，可抽样验证（每条操作线首尾屏幕 + 随机 1-2 个中间屏幕），抽样失败的操作线再全量验证。
 
 ---
 
@@ -468,6 +564,8 @@ for line in operation_lines:
 |--------|---------|-----------|
 | 功能密度 | 每屏 1-3 个核心任务 | 单屏 > 5 个任务（功能堆叠）或 0 个任务（空壳屏幕） |
 | 差异化 | 创新功能有独特交互 | AI 生成/角色扮演用普通表单（MG2-C）而非专用类型（SY2/CT2） |
+| 模板-组件一致性 | interaction_type 渲染模板与 components 描述的交互形态匹配 | components 描述了图谱/可视化/画布，但 interaction_type 用了列表/详情/表格模板（如力导向图用 CT2 渲染成文章页） |
+| 平台交互适配 | mobile 用触摸原生组件，desktop 用鼠标原生组件 | mobile 界面出现分页器（应为无限滚动）、右键菜单；desktop 出现滑动手势 |
 | 平台差异 | mobile 和 desktop 布局明显不同 | desktop 界面也是单列竖屏布局 |
 | actions 相关性 | 操作与屏幕业务场景匹配 | "订阅方案"的 actions 引用"浏览场景包列表"等不相关任务 |
 
