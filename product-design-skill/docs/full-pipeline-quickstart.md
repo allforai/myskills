@@ -117,8 +117,7 @@ cat .allforai/full-pipeline/pipeline-report.json | jq '.cross_layer_conflicts'
 
 Full Pipeline 会自动检测跨层冲突并提供解决建议：
 
-- **gap × prune**: feature-gap 报缺口，但 feature-prune 标 CUT
-- **verify × prune**: CORE 任务未实现
+- **verify × gap**: CORE 任务未实现
 - **deadhunt × screen**: experience-map 中的界面链接死链
 - **tuner × product**: 架构违规影响产品功能
 

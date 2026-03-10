@@ -1036,19 +1036,26 @@ def load_product_map_tree():
             flow_nodes.append(_node(fid, f"{fname} ({len(nodes)} steps)", "flow", f.get("description", ""), step_nodes))
         children.append(_node("flows", f"Business Flows ({len(flows)})", "group", children=flow_nodes))
 
-    # Shared patterns branch (NEW)
-    patterns = C.load_json(os.path.join(BASE, "design-pattern/pattern-catalog.json"))
-    standards = C.load_json(os.path.join(BASE, "behavioral-standards/behavioral-standards.json"))
-
+    # Shared patterns branch (read from experience-map screen nodes)
     pattern_children = []
-    if patterns:
-        for p in patterns.get("patterns", []):
-            pid = p.get("pattern_id", p.get("id", ""))
-            pattern_children.append(_node(pid, p.get("name", pid), "concept", p.get("description", "")))
-    if standards:
-        for s in standards.get("standards", standards.get("behaviors", [])):
-            sid = s.get("id", "")
-            pattern_children.append(_node(f"bs_{sid}", s.get("name", sid), "mechanism", s.get("description", "")))
+    op_lines, _si, em_loaded = C.load_experience_map(BASE)
+    if em_loaded:
+        # Collect unique _pattern entries from screen nodes
+        seen_patterns = set()
+        seen_behavioral = set()
+        for ol in op_lines:
+            for node in ol.get("nodes", []):
+                for s in node.get("screens", []):
+                    for p in s.get("_pattern", []):
+                        if p not in seen_patterns:
+                            seen_patterns.add(p)
+                            tmpl = s.get("_pattern_template", "")
+                            pattern_children.append(_node(p, p, "concept", tmpl))
+                    for b in s.get("_behavioral", []):
+                        if b not in seen_behavioral:
+                            seen_behavioral.add(b)
+                            std = s.get("_behavioral_standards", {}).get(b, "")
+                            pattern_children.append(_node(f"bs_{b}", b, "mechanism", std))
     if pattern_children:
         children.append(_node("patterns", "共性模式", "group", "", pattern_children))
 
@@ -1733,9 +1740,9 @@ def _build_4d_panel(screen):
     else:
         state_val = "No states defined"
 
-    flow = screen.get("flow_context", {})
-    prev_ids = flow.get("prev", []) + flow.get("entry_points", [])
-    next_ids = flow.get("next", []) + flow.get("exit_points", [])
+    flow = screen.get("flow_context") or {}
+    prev_ids = (flow.get("prev") or []) + (flow.get("entry_points") or [])
+    next_ids = (flow.get("next") or []) + (flow.get("exit_points") or [])
     prev_str = ", ".join(str(p) for p in prev_ids[:3]) if prev_ids else "\u2013"
     next_str = ", ".join(str(n) for n in next_ids[:3]) if next_ids else "\u2013"
     flow_val = f"\u2190 {prev_str} \u2192 {next_str}"
@@ -1876,8 +1883,8 @@ def _wf_create_form(screen):
     if actions:
         btn_html = ""
         for a in actions:
-            label = a.get("label", "")
-            freq = a.get("frequency", "中")
+            label = a.get("label", "") if isinstance(a, dict) else str(a)
+            freq = a.get("frequency", "中") if isinstance(a, dict) else "中"
             cls = "wf-btn-primary" if freq == "高" else "wf-btn-secondary"
             btn_html += f'<button class="wf-btn {cls}">{_esc(label)}</button>'
         buttons = f'<div class="wf-form-buttons">{btn_html}</div>'
@@ -1904,8 +1911,8 @@ def _wf_edit_form(screen):
     if actions:
         btn_html = ""
         for a in actions:
-            label = a.get("label", "")
-            freq = a.get("frequency", "中")
+            label = a.get("label", "") if isinstance(a, dict) else str(a)
+            freq = a.get("frequency", "中") if isinstance(a, dict) else "中"
             cls = "wf-btn-primary" if freq == "高" else "wf-btn-secondary"
             btn_html += f'<button class="wf-btn {cls}">{_esc(label)}</button>'
         buttons = f'<div class="wf-form-buttons">{btn_html}</div>'
@@ -2011,7 +2018,7 @@ def _wf_approval(screen):
 def _wf_onboarding(screen):
     """SY1: Onboarding / guided tour."""
     steps = screen.get("actions", [])
-    step_names = [a.get("label", f"Step {i+1}") for i, a in enumerate(steps[:4])] or ["欢迎", "功能介绍", "偏好设置", "完成"]
+    step_names = [(a.get("label", f"Step {i+1}") if isinstance(a, dict) else str(a)) for i, a in enumerate(steps[:4])] or ["欢迎", "功能介绍", "偏好设置", "完成"]
     dots = "".join(f'<span class="wf-dot{"  active" if i == 0 else ""}">{i+1}</span>' for i in range(len(step_names)))
     content = f"""
 <div class="wf-onboarding">
@@ -2165,8 +2172,9 @@ def _wf_content_reader(screen):
     actions = screen.get("actions", [])
     action_btns = ""
     for a in actions[:4]:
-        if isinstance(a, dict):
-            action_btns += f'<button class="wf-btn wf-btn-secondary">{_esc(a.get("label", ""))}</button>'
+        label = a.get("label", "") if isinstance(a, dict) else str(a)
+        if label:
+            action_btns += f'<button class="wf-btn wf-btn-secondary">{_esc(label)}</button>'
 
     return f"""<div class="wf-reader">
   <div class="wf-reader-title">{_esc(screen.get("name", "内容标题"))}</div>

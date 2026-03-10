@@ -101,19 +101,6 @@ for tg in task_gaps_data:
     if tid:
         gap_checked_tasks.add(tid)
 
-# feature-prune (optional)
-_prune_raw = C.load_json(os.path.join(BASE, "feature-prune/prune-decisions.json"))
-prune = C.ensure_list(_prune_raw, "prune_decisions", "decisions") if _prune_raw else []
-prune_map = {}  # task_id -> decision
-if prune:
-    available_layers.append("feature-prune")
-    for d in prune:
-        if not isinstance(d, dict):
-            continue
-        tid = d.get("task_id", d.get("item_id"))
-        if tid:
-            prune_map[tid] = d.get("decision", "")
-
 # ui-design (optional)
 ui_spec_path = os.path.join(BASE, "ui-design/ui-design-spec.md")
 ui_spec_text = ""
@@ -188,23 +175,6 @@ if "use-case" in available_layers and "experience-map" in available_layers:
             else:
                 trace_pass += 1
 
-# T5: prune-decision -> task
-if "feature-prune" in available_layers:
-    for tid in prune_map:
-        trace_total += 1
-        if tid not in task_ids:
-            trace_issues.append({
-                "check_id": "T5",
-                "type": "ORPHAN",
-                "source": "feature-prune",
-                "item_id": tid,
-                "item_name": f"prune decision for {tid}",
-                "missing_ref": tid,
-                "detail": f"prune 决策引用了不存在的 task {tid}"
-            })
-        else:
-            trace_pass += 1
-
 # ── Step 2: Coverage (flood) ─────────────────────────────────────────────────
 coverage_issues = []
 coverage_total = 0
@@ -253,20 +223,6 @@ for tid in task_ids:
                 "detail": f"任务 {tid} ({tasks[tid]['task_name']}) 未被 feature-gap 检查"
             })
 
-    if "feature-prune" in available_layers:
-        coverage_total += 1
-        if tid in prune_map:
-            coverage_covered += 1
-        else:
-            coverage_issues.append({
-                "check_id": "C4",
-                "type": "GAP",
-                "task_id": tid,
-                "name": tasks[tid]["task_name"],
-                "missing_in": "feature-prune",
-                "detail": f"任务 {tid} ({tasks[tid]['task_name']}) 无 prune 决策"
-            })
-
 coverage_rate = f"{coverage_covered / coverage_total * 100:.0f}%" if coverage_total > 0 else "N/A"
 
 # ── Step 3: Cross-check ──────────────────────────────────────────────────────
@@ -274,40 +230,7 @@ cross_issues = []
 cross_total = 0
 cross_ok = 0
 
-# X1: gap x prune conflict
-if "feature-gap" in available_layers and "feature-prune" in available_layers:
-    for tid in gap_task_ids:
-        if tid in prune_map:
-            cross_total += 1
-            if prune_map[tid] == "CUT":
-                cross_issues.append({
-                    "check_id": "X1",
-                    "type": "CONFLICT",
-                    "task_id": tid,
-                    "name": tasks.get(tid, {}).get("name", "?"),
-                    "detail": f"feature-gap 报 {tid} 有缺口，但 feature-prune 标为 CUT — 矛盾"
-                })
-            else:
-                cross_ok += 1
-
-# X2: ui-design x prune CUT
-if "ui-design" in available_layers and "feature-prune" in available_layers:
-    for tid, decision in prune_map.items():
-        if decision == "CUT":
-            cross_total += 1
-            tname = tasks.get(tid, {}).get("name", "")
-            if tname and tname in ui_spec_text:
-                cross_issues.append({
-                    "check_id": "X2",
-                    "type": "CONFLICT",
-                    "task_id": tid,
-                    "name": tname,
-                    "detail": f"CUT 任务 {tid} ({tname}) 仍出现在 ui-design-spec.md 中"
-                })
-            else:
-                cross_ok += 1
-
-# X3: frequency x click_depth
+# X1: frequency x click_depth
 if "experience-map" in available_layers:
     for tid, task in tasks.items():
         if task.get("frequency") == "高":
@@ -318,7 +241,7 @@ if "experience-map" in available_layers:
                     if a.get("task_ref") == tid and a.get("click_depth", 1) >= 3:
                         cross_total += 1
                         cross_issues.append({
-                            "check_id": "X3",
+                            "check_id": "X1",
                             "type": "WARNING",
                             "task_id": tid,
                             "name": task["task_name"],
@@ -330,7 +253,7 @@ tasks_without_category = [tid for tid, t in tasks.items() if not t.get("category
 if tasks_without_category:
     cross_total += 1
     cross_issues.append({
-        "check_id": "X4",
+        "check_id": "X2",
         "type": "WARNING",
         "task_id": ",".join(tasks_without_category[:5]),
         "name": f"{len(tasks_without_category)} tasks missing category",
@@ -339,20 +262,6 @@ if tasks_without_category:
 else:
     cross_total += 1
     cross_ok += 1
-
-# X5: basic category task should not be CUT
-if "feature-prune" in available_layers:
-    for tid, decision in prune_map.items():
-        t = tasks.get(tid, {})
-        if t.get("category") == "basic" and decision == "CUT":
-            cross_total += 1
-            cross_issues.append({
-                "check_id": "X5",
-                "type": "CONFLICT",
-                "task_id": tid,
-                "name": t.get("name", "?"),
-                "detail": f"基本功能 {tid} ({t.get('name','?')}) 被标为 CUT — basic 类任务不应被剪除"
-            })
 
 # ── Continuity Audit ─────────────────────────────────────────────────────────
 continuity_issues = []
@@ -383,9 +292,7 @@ for tid in task_ids:
         viewpoints += 1
     if tid in gap_checked_tasks:
         viewpoints += 1
-    if tid in prune_map:
-        viewpoints += 1
-    if viewpoints >= 4:
+    if viewpoints >= 3:
         vp_covered += 1
 vp_rate = f"{vp_covered / vp_total * 100:.0f}%" if vp_total > 0 else "N/A"
 vp_status = "PASS" if vp_total == 0 or (vp_covered / vp_total >= 0.90) else "BELOW_THRESHOLD"

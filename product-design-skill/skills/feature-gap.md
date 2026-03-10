@@ -30,9 +30,9 @@ version: "2.3.0"
 ## 定位
 
 ```
-product-map（现状+方向）   功能查漏（查缺口）          功能剪枝（查多余）
-产品应该长什么样           地图说有的，现在有没有        地图里有的，该不该留
-基础层                    基于 product-map           基于 product-map
+product-map（现状+方向）   功能查漏（查缺口）
+产品应该长什么样           地图说有的，现在有没有
+基础层                    基于 product-map
 ```
 
 **前提**：必须先运行 `product-map`，生成 `.allforai/product-map/product-map.json`。
@@ -756,7 +756,7 @@ def check_type_completeness(screens, interaction_types_def):
 
 LLM 直接分析 task-inventory + experience-map + business-flows，理解业务语义后检测功能缺口。缺口检测需要理解业务上下文（如"支付失败后用户应该能重试"是语义推理，脚本只能做字段存在性检查），因此由 LLM 主导。
 
-可选辅助脚本：`${CLAUDE_PLUGIN_ROOT}/scripts/gen_feature_gap.py`（用于生成结构化骨架，LLM 必须在其上补充语义分析、优先级判断和修复建议）。
+缺口检测完全由 LLM 执行：结构扫描、语义分析、优先级判断和修复建议均基于 LLM 对业务上下文的理解。
 
 **输出 schema 约束**：
 - `gap-tasks.json` 必须是 `{"gaps": [...], "summary": {...}}` 对象格式（不允许裸数组）

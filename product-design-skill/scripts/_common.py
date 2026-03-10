@@ -472,9 +472,6 @@ XV_ROUTING = {
     # Phase 5 (feature-gap)
     "journey_validation": "gemini",
     "gap_prioritization": "gpt",
-    # Phase 6 (feature-prune)
-    "pruning_second_opinion": "gemini",
-    "competitive_benchmark": "deepseek",
     # Phase 7 (ui-design)
     "design_review": "gemini",
     "visual_consistency": "gpt",
@@ -1116,11 +1113,9 @@ def load_full_context(base):
     ctx.interaction_gate = load_json(
         os.path.join(base, "experience-map/interaction-gate.json"))
 
-    # -- other artifacts --
-    ctx.pattern_catalog = load_json(
-        os.path.join(base, "design-pattern/pattern-catalog.json"))
-    ctx.behavioral_standards = load_json(
-        os.path.join(base, "behavioral-standards/behavioral-standards.json"))
+    # -- pattern & behavioral data (now read from experience-map screen nodes) --
+    ctx.pattern_catalog = None  # deprecated: merged into experience-map screen._pattern* fields
+    ctx.behavioral_standards = None  # deprecated: merged into experience-map screen._behavioral* fields
     ctx.concept = load_json(
         os.path.join(base, "product-concept/product-concept.json"))
 

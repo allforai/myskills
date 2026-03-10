@@ -43,7 +43,7 @@
 │                                                              │
 │  Layer 1: Product Design (产品设计层)                        │
 │  ├── concept → product-map → experience-map → use-case       │
-│  ├── feature-gap → feature-prune → ui-design → audit        │
+│  ├── feature-gap → ui-design → audit                        │
 │  └── ✓ 内部流程完整，有终审                                   │
 │                          ↓                                   │
 │  Layer 2: Dev Forge (开发层)                                 │
@@ -183,7 +183,7 @@
 ```json
 {
   "T008": {
-    "product-layer": {"prune": "DEFER", "reason": "场景优先级低"},
+    "product-layer": {"audit_status": "PASS"},
     "dev-layer": {"verify": "NOT_IMPLEMENTED", "reason": "Q2 推进"},
     "qa-layer": {"deadhunt": "N/A"},
     "code-layer": {"tuner": "N/A"},
@@ -229,11 +229,11 @@
 ```json
 {
   "conflict": {
-    "type": "gap × prune",
+    "type": "gap × coverage",
     "severity": "CONFLICT",
     "task_id": "T008",
-    "description": "feature-gap 报此任务有缺口，但 feature-prune 标为 CUT",
-    "suggested_action": "建议保留此功能，优先补齐实现",
+    "description": "feature-gap 报此任务有缺口但未实现",
+    "suggested_action": "建议优先补齐实现",
     "recommended_command": "/feature-gap task T008"
   }
 }
@@ -286,7 +286,6 @@
       "task_id": "T008",
       "name": "退款审核",
       "product-layer": {
-        "prune_decision": "CORE",
         "audit_status": "PASS"
       },
       "dev-layer": {
@@ -317,11 +316,11 @@
 {
   "cross_layer_conflicts": [
     {
-      "type": "gap × prune",
+      "type": "gap × coverage",
       "severity": "CONFLICT",
       "task_id": "T008",
-      "description": "feature-gap 报此任务有缺口，但 feature-prune 标为 CUT",
-      "suggested_action": "建议保留此功能，优先补齐实现"
+      "description": "feature-gap 报此任务有缺口但未实现",
+      "suggested_action": "建议优先补齐实现"
     }
   ]
 }
@@ -486,7 +485,6 @@ your-project/
     ├── experience-map/
     ├── use-case/
     ├── feature-gap/
-    ├── feature-prune/
     ├── ui-design/
     ├── design-audit/
     ├── seed-forge/                       # Layer 2

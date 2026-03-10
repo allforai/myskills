@@ -4,7 +4,7 @@
 
 ## 目标
 
-把 `product-design` 全流程（concept → map → screen → use-case → gap → prune → ui-design → audit）的设计理念说清楚：
+把 `product-design` 全流程（concept → map → screen → use-case → gap → ui-design → audit）的设计理念说清楚：
 
 1. 每个阶段解决什么问题
 2. 每个阶段依赖哪些方法论/管理框架
@@ -73,7 +73,6 @@
 | experience-map | Nielsen Heuristics、Service Blueprint、认知负荷理论 | Nielsen (1994); Shostack (1984); Sweller (1988) |
 | use-case | INVEST、DoD、风险驱动测试 | Cohn (2004); Schwaber & Sutherland (2020); Bach (1999) |
 | feature-gap | INVEST、DoR/DoD、服务蓝图、风险矩阵 | Cohn (2004); Schwaber & Sutherland (2020); Shostack (1984) |
-| feature-prune | RICE、MoSCoW、Kano、Cost of Delay | Intercom (2015, RICE); Clegg & Barker (1994, MoSCoW); Kano et al. (1984); Reinertsen (2009) |
 | ui-design | Design System、Atomic Design、WCAG、Gestalt | W3C (2018/2023, WCAG 2.1/2.2); Frost (2016); Wertheimer (1923) |
 | design-audit | Nielsen Heuristics、ISO 9241-11、WCAG、一致性原则 | Nielsen (1994); ISO 9241-11 (2018); W3C (2018/2023) |
 
@@ -101,7 +100,7 @@
 
 ### 中段（功能与交互建模层）
 
-**覆盖阶段**：`product-map`、`experience-map`、`use-case`、`feature-gap`、`feature-prune`
+**覆盖阶段**：`product-map`、`experience-map`、`use-case`、`feature-gap`
 
 **核心思想**：把战略意图转成可执行、可验证、可取舍的产品资产。
 
@@ -113,7 +112,6 @@
 - DoR / DoD（准入与完成门禁）
 - Service Blueprint（前后台链路）
 - Nielsen Heuristics（交互可用性）
-- RICE / MoSCoW / Kano / Cost of Delay（优先级与剪枝）
 
 ---
 
@@ -243,23 +241,7 @@
 
 ---
 
-## Phase 6：feature-prune（功能剪枝）
-
-**核心问题**：哪些功能必须保留，哪些可推迟或移除。
-
-**指导思想 / 框架**：
-- RICE（量化优先级）
-- MoSCoW（迭代沟通语义）
-- Kano（避免误砍高价值能力）
-- Cost of Delay（延迟成本）
-
-**经典理论定位**：以 Kano + RICE + Cost of Delay 平衡“用户价值、实现成本与时机”。
-
-**核心产出**：`prune-decisions.json`、`prune-tasks.json`
-
----
-
-## Phase 7：ui-design（UI 规格与预览）
+## Phase 6：ui-design（UI 规格与预览）
 
 **核心问题**：界面风格与视觉规范如何统一且可落地。
 
@@ -278,7 +260,7 @@
 
 ---
 
-## Phase 8：design-audit（终审）
+## Phase 7：design-audit（终审）
 
 **核心问题**：跨层产物是否一致、可追溯、可发布。
 

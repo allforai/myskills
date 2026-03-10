@@ -540,14 +540,13 @@ AskUserQuestion（开放文本 + 预设）：
 
 AskUserQuestion（单选）：
 
-问题：「功能剪枝的范围策略？」
+问题：「功能范围的取舍策略？」
 
 | 编号 | 选项 | 说明 |
 |------|------|------|
-| 1 | 激进精简 | 只保留高频核心，低频一律 DEFER/CUT |
+| 1 | 激进精简 | 只保留高频核心，低频一律推迟或移除 |
 | 2 | 平衡取舍 | 高频保留，低频按场景判断 |
 | 3 | 保守保全（推荐成熟产品） | 尽量保留，只砍明确无用的 |
-| 4 | 暂不确定 | 下游 feature-prune 阶段再交互决策 |
 
 **Q4（可选）— 高质量 UI 视觉稿**
 
@@ -598,11 +597,11 @@ AskUserQuestion（单选）：
 | `innovation_score` | 突破性创新潜力 | 0-10 |
 
 **保护级别**（AI 建议 + 用户确认）：
-| 级别 | 含义 | feature-prune 处理 |
-|------|------|-------------------|
-| `core` | 差异化核心功能 | 跳过频次过滤，直接保留 |
+| 级别 | 含义 | 处理 |
+|------|------|------|
+| `core` | 差异化核心功能 | 直接保留 |
 | `defensible` | 有防御价值 | 用户确认流程 |
-| `experimental` | 实验性功能 | 正常频次过滤 |
+| `experimental` | 实验性功能 | 可推迟 |
 
 **新增字段**：`innovation_preferences`（独立于 `pipeline_preferences`）
 
@@ -707,6 +706,10 @@ AskUserQuestion（单选）：
 
 ### 上游过期检测
 - **不适用**。product-concept 是链路起点，无上游依赖。
+
+### 执行失败保护
+
+- 任何步骤遇到不可恢复错误 → 写入 `.allforai/product-concept/product-concept-error.json`，包含 `{"error": "...", "step": "...", "timestamp": "..."}`。
 
 ---
 

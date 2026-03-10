@@ -72,9 +72,6 @@ const TASK_FAMILY_MAP: Record<string, string> = {
   // Feature gap
   journey_validation: "llama",
   gap_prioritization: "qwen",
-  // Feature prune
-  pruning_second_opinion: "deepseek",
-  competitive_benchmark: "qwen",
   // UI design
   design_review: "qwen",
   visual_consistency: "llama",

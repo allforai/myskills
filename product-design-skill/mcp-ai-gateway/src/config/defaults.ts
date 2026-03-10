@@ -36,10 +36,6 @@ export const defaultRouting: Record<string, string> = {
   journey_validation: "llama",         // 旅程验证：流程逻辑
   gap_prioritization: "qwen",          // 缺口优先级：业务理解
   
-  // === 功能剪枝阶段 ===
-  pruning_second_opinion: "deepseek",  // 剪枝二意见：客观分析
-  competitive_benchmark: "qwen",       // 竞品对比：中文竞品理解
-  
   // === UI 设计阶段 ===
   design_review: "qwen",               // 设计审查：审美理解
   visual_consistency: "llama",         // 视觉一致性：细节观察

@@ -293,7 +293,6 @@ lines.append("\n## 下一步建议\n")
 lines.append("- 运行 /experience-map 梳理界面、按钮和异常状态（必须，下游技能缺失时会自动运行）")
 lines.append("- 运行 /use-case 生成用例集（可选）")
 lines.append("- 运行 /feature-gap 检测功能缺口")
-lines.append("- 运行 /feature-prune 评估功能去留")
 lines.append("")
 lines.append("> 完整数据见 .allforai/product-map/product-map.json")
 

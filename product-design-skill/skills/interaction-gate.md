@@ -48,6 +48,14 @@ experience-map（体验地图）    interaction-gate（交互质量门）    ui-
 
 ---
 
+## 增强协议（4D+6V）
+
+> 详见 `${CLAUDE_PLUGIN_ROOT}/docs/skill-commons.md`「统一验收方法论」。
+
+**4D+6V 重点**：每条操作线的评分附带 D2 证据（screen 的 actions 数量、flow_context 切换次数等可追溯依据）和 D4 决策理由（为什么给这个分数而非更高/更低）；fail 操作线的 issues 覆盖至少 3/6 视角——user: 用户能顺畅完成吗？business: 会导致转化流失吗？ux: 认知负荷是否过重？tech: 有技术层面的等待瓶颈吗？
+
+---
+
 ## 评分维度
 
 | 维度 | 权重 | 说明 |
@@ -67,7 +75,7 @@ experience-map（体验地图）    interaction-gate（交互质量门）    ui-
 
 LLM 直接分析 experience-map.json 中的所有操作线，对每条线执行四维评分（step_count / context_switches / wait_feedback / thumb_zone）。交互质量评估需要理解用户认知负荷、上下文切换的心理成本等语义因素，脚本只能做机械计数。
 
-可选辅助脚本：`${CLAUDE_PLUGIN_ROOT}/scripts/gen_interaction_gate.py`（用于生成评分骨架和回填 quality_score，LLM 必须在其上补充问题诊断和改进建议）。
+交互质量评估完全由 LLM 执行：评分、问题诊断、改进建议均基于 LLM 对用户认知负荷和交互语义的理解。
 
 **输出文件名约束**：主产物必须为 `interaction-gate.json`（写入 `.allforai/experience-map/`），不可使用其他命名。
 
@@ -88,6 +96,10 @@ Step 1: 加载体验地图数据
       ↓
 Step 2: LLM 评估所有操作线
       对每条操作线执行四维评分
+      ↓
+Step 2.5: LLM 自审验证（Loop）
+      LLM 切换为审查者视角，用上游基线（experience-map）对照审查评分合理性
+      不通过 → 修正评分 → 重审（最多 2 轮）
       ↓
 Step 3: 展示结果 — 逐线评分与问题表格
       以可读表格形式展示每条操作线的评分和问题
@@ -145,6 +157,39 @@ Step 6: 保存 interaction-gate.json
 ```
 
 **result 取值**：`pass`（total_score >= threshold）/ `fail`（total_score < threshold）
+
+---
+
+### Step 2.5：LLM 自审验证（Loop）
+
+LLM 评分后，切换到审查者视角，用上游基线 + 自身一致性审查评分合理性。**所有验证由 LLM 判断。**
+
+**上游基线对照**（用 experience-map.json 验证评分）：
+
+LLM 同时持有 experience-map.json（上游，含 screens 的 components/actions/states 等设计细节）和评分结果（当前产出），对照审查：
+
+1. **评分与设计复杂度一致吗？** — 一个只有 2 个 screen、每个 screen 仅 1-2 个 action 的操作线，step_count 不应低于 25/30；反之一个 8 步、跨 4 个 screen 的操作线，step_count 不应高于 20/30
+2. **context_switches 与 flow_context 一致吗？** — 操作线中 screen 的 platform 切换、角色切换、模态弹窗数量应与 context_switches 评分对应
+3. **wait_feedback 与 states 一致吗？** — screen 定义了 loading/error 状态处理的操作线应比没有定义的评分更高
+4. **thumb_zone 与 platform 一致吗？** — desktop-web 操作线的 thumb_zone 权重应被合理调整（桌面端无拇指区约束）
+
+**自身一致性审查**：
+
+- 评分分布是否合理？不应出现所有操作线都是 85-90 的「安全区间聚集」
+- 同类操作线（如两条 CRUD 管理线）的评分差异是否有合理解释？
+- issues 列表是否与低分维度对应？（不应出现某维度扣分但 issues 中无相关问题的情况）
+
+**Loop 机制**：
+
+```
+LLM 评分 → 自审验证
+  通过 → Step 3
+  不通过 →
+    列出具体问题（哪些评分与设计不一致、哪些评分分布异常）
+    LLM 修正对应操作线的评分和 issues
+    → 重新自审（最多 2 轮）
+  2 轮后仍不通过 → 记录剩余问题，WARNING 继续
+```
 
 ---
 

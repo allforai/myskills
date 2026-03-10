@@ -77,7 +77,6 @@
 | experience-map | 界面数 |
 | use-case | 任务数（决定用例量） |
 | feature-gap | 任务数 |
-| feature-prune | 任务数 |
 | ui-design | 界面数（阈值 ≤15 / 16–40 / >40） |
 | design-audit | 任务数 |
 | product-concept | 不适用（概念层不分规模） |
@@ -190,15 +189,15 @@
 **示例**：
 
 ```
-写入 prune-decisions.json:
-  1. 检测到已有 prune-decisions.json → 复制为 prune-decisions.json.bak
-  2. 写入新内容到 prune-decisions.json
+写入 gap-tasks.json:
+  1. 检测到已有 gap-tasks.json → 复制为 gap-tasks.json.bak
+  2. 写入新内容到 gap-tasks.json
   3. 写入成功 → 保留 .bak 直到下次写入
 
-加载 prune-decisions.json:
-  1. JSON.parse 失败 → 尝试 prune-decisions.json.bak
-  2. .bak 解析成功 → 恢复到主文件 + 警告「⚠ prune-decisions.json 已从备份恢复，请检查上次写入是否中断」
-  3. .bak 也失败 → 报错终止「⚠ prune-decisions.json 及其备份均无法解析，请重新运行 /feature-prune」
+加载 gap-tasks.json:
+  1. JSON.parse 失败 → 尝试 gap-tasks.json.bak
+  2. .bak 解析成功 → 恢复到主文件 + 警告「⚠ gap-tasks.json 已从备份恢复，请检查上次写入是否中断」
+  3. .bak 也失败 → 报错终止「⚠ gap-tasks.json 及其备份均无法解析，请重新运行 /feature-gap」
 ```
 
 ---

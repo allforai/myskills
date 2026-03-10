@@ -24,7 +24,7 @@ claude plugin add /path/to/product-design-skill
 | 从代码反推产品并补齐业务语义 | `/product-concept` + `/product-map` |
 | 梳理界面与异常状态 | `/experience-map` |
 | 生成可执行用例（机器+人类双格式） | `/use-case` |
-| 做查漏/剪枝决策 | `/feature-gap` / `/feature-prune` |
+| 做查漏决策 | `/feature-gap` |
 | 做全链路一致性终审 | `/design-audit` |
 
 ## 设计思想与经典理论支持
@@ -53,7 +53,6 @@ product-map（建功能图）
     │       ↓ 输出 .allforai/use-case/use-case-tree.json（机器）+ use-case-report.md（人类）
     │
     ├── 功能查漏   — 地图说有的，现在有没有？（Step 2/3 需要 experience-map）
-    ├── 功能剪枝   — 地图里有的，该不该留？（Step 2 需要 experience-map）
     ├── ui-design  — 高层 UI 设计规格 + HTML 预览
     └── design-audit — 全链路一致性终审（基于全部已有产物）
 
@@ -102,10 +101,6 @@ product-map（建功能图）
 
 > 产品地图说应该有的，现在有没有？用户路径走得通吗？
 
-### feature-prune — 功能剪枝
-
-> 产品地图里有的，哪些该留、哪些推迟、哪些砍掉？
-
 ### ui-design — UI 设计规格
 
 > 从产品地图 + 体验地图推导高层 UI 设计规格，结合风格选择和设计原则，输出设计规格文档 + 按角色拆分的 HTML 预览。
@@ -114,9 +109,9 @@ product-map（建功能图）
 
 > 跨层校验产品设计全链路一致性：逆向追溯、覆盖洪泛、横向一致性。
 
-- **逆向追溯**：下游产物（experience-map、use-case、gap、prune）引用的 task_id 是否在 task-inventory 中存在
-- **覆盖洪泛**：每个 task 是否被下游层完整消费（有 screen、有用例、有 gap 检查、有 prune 决策）
-- **横向一致性**：gap 报缺口 + prune 标 CUT = 矛盾；高频任务点击深度过深 = 警告
+- **逆向追溯**：下游产物（experience-map、use-case、gap）引用的 task_id 是否在 task-inventory 中存在
+- **覆盖洪泛**：每个 task 是否被下游层完整消费（有 screen、有用例、有 gap 检查）
+- **横向一致性**：高频任务点击深度过深 = 警告
 
 ---
 
@@ -129,7 +124,6 @@ product-design（产品层）
 ├── experience-map  在哪做？怎么做？出错怎么办？          以 task-inventory 为输入（必须）
 ├── use-case        推导完整用例，双格式输出               基于 product-map + experience-map
 ├── feature-gap     地图说有的，有没有？                  基于 product-map + experience-map
-├── feature-prune   地图里有的，该不该留？                基于 product-map + experience-map
 ├── ui-design       高层 UI 设计规格                     基于 product-map + experience-map
 └── design-audit    全链路一致性校验                      基于全部已有产物
 
@@ -183,11 +177,6 @@ claude plugin add /path/to/product-design-skill
 /feature-gap quick      # 只查任务和 CRUD，跳过旅程验证
 /feature-gap journey    # 只验证用户旅程路径
 /feature-gap role 客服专员  # 只查指定角色的缺口
-
-# 功能剪枝 — 找多余
-/feature-prune            # 完整剪枝（频次+场景+竞品）
-/feature-prune quick      # 只看频次，跳过竞品参考
-/feature-prune scope 用户管理  # 只剪枝指定模块
 
 # UI 设计规格
 /ui-design               # 完整流程
@@ -252,13 +241,6 @@ your-project/
     │   ├── flow-gaps.json              # 业务流链路
     │   ├── gap-report.md               # 可读报告
     │   └── gap-decisions.json          # 用户确认记录
-    ├── feature-prune/
-    │   ├── frequency-tier.json         # 频次分层
-    │   ├── scenario-alignment.json     # 场景对齐
-    │   ├── competitive-ref.json        # 竞品参考
-    │   ├── prune-decisions.json        # 用户分类决策
-    │   ├── prune-tasks.json            # 剪枝任务清单
-    │   └── prune-report.md             # 可读报告
     └── design-audit/
         ├── audit-report.json           # 全量校验结果
         └── audit-report.md             # 可读摘要
@@ -269,7 +251,7 @@ your-project/
 ## 核心原则
 
 1. **product-map 是基础** — 其他技能都以产品地图为输入，先建图再分析
-2. **experience-map 是必须层** — 与 product-map 共同构成完整产品地图，feature-gap Step 2/3、use-case validation、feature-prune Step 2、ui-design 均依赖其数据
+2. **experience-map 是必须层** — 与 product-map 共同构成完整产品地图，feature-gap Step 2/3、use-case validation、ui-design 均依赖其数据
 3. **索引优先，按需加载** — 下游技能先加载轻量索引（< 5KB），按需再加载完整数据；索引不存在时自动回退全量加载
 4. **频次驱动一切** — 高频操作受保护不剪枝，缺口按频次排优先级，种子数据按频次分配数量
 5. **每步用户确认** — 所有分类和决策都需要用户确认，用户是权威

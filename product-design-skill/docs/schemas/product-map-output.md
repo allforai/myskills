@@ -30,7 +30,7 @@
 }
 ```
 
-`summary` 字段供下游技能（feature-gap、feature-prune、seed-forge）快速获取产品规模，无需遍历全部数组。
+`summary` 字段供下游技能（feature-gap、seed-forge）快速获取产品规模，无需遍历全部数组。
 
 下游技能以此文件为主输入，同时按需加载 `business-flows.json`（业务流数据独立存储）。
 
@@ -62,7 +62,7 @@
 - 运行 /experience-map 梳理界面、按钮和异常状态（必须，下游技能缺失时会自动运行）
 - 运行 /use-case 生成用例集（可选）
 - 运行 /feature-gap 检测功能缺口
-- 运行 /feature-prune 评估功能去留
+- 运行 /ui-design 生成 UI 设计规格
 
 > 完整数据见 .allforai/product-map/product-map.json
 ```

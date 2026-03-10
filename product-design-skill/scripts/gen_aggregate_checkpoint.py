@@ -7,9 +7,6 @@ Steps:
 1. Merge pipeline-decisions-*.json shards → pipeline-decisions.json (dedup, delete shards)
 2. Cross-skill conflict detection:
    - use-case coverage gaps
-   - gap×prune contradictions (task has gaps but marked CUT)
-   - UI CORE coverage (CORE task name missing from ui-design-spec.md)
-   - Safety violations (high-freq CUT + business-flow ref)
 3. Output aggregate-checkpoint.json with all findings
 
 Usage:
@@ -64,21 +61,6 @@ flows = C.load_business_flows(BASE)
 flow_task_refs = C.collect_flow_task_refs(flows)
 
 uc = C.load_json(os.path.join(BASE, "use-case/use-case-tree.json"))
-gap_tasks = C.load_json(os.path.join(BASE, "feature-gap/gap-tasks.json"))
-prune_decisions = C.load_json(os.path.join(BASE, "feature-prune/prune-decisions.json"))
-
-ui_spec_path = os.path.join(BASE, "ui-design/ui-design-spec.md")
-ui_spec_text = ""
-if os.path.exists(ui_spec_path):
-    with open(ui_spec_path, encoding="utf-8") as f:
-        ui_spec_text = f.read()
-
-# Build prune index
-prune_by_tid = {}
-if prune_decisions:
-    for d in prune_decisions:
-        tid = d.get("task_id", d.get("item_id"))
-        prune_by_tid[tid] = d
 
 # ── Check 1: Use-case coverage ───────────────────────────────────────────────
 uc_covered = set()
@@ -99,83 +81,6 @@ if uc_missing:
     print(f"  WARNING: {len(uc_missing)} tasks without use cases")
 else:
     print(f"  PASS: use-case coverage ({len(tasks)} tasks)")
-
-# ── Check 2: Gap×prune contradictions ────────────────────────────────────────
-if gap_tasks and prune_decisions:
-    gap_affected = set()
-    for g in gap_tasks:
-        for tid in g.get("affected_tasks", []):
-            gap_affected.add(tid)
-
-    contradictions = []
-    for tid in sorted(gap_affected):
-        d = prune_by_tid.get(tid)
-        if d and d["decision"] == "CUT":
-            task = tasks.get(tid, {})
-            contradictions.append({
-                "task_id": tid,
-                "name": task.get("name", ""),
-                "frequency": task.get("frequency", ""),
-                "category": task.get("category", ""),
-                "risk_level": task.get("risk_level", ""),
-                "in_flow": tid in flow_task_refs,
-            })
-
-    if contradictions:
-        findings.append({
-            "check": "gap-prune-contradiction",
-            "severity": "CONFLICT",
-            "detail": f"{len(contradictions)} tasks have gaps but marked CUT",
-            "tasks": contradictions,
-        })
-        print(f"  CONFLICT: {len(contradictions)} gap×prune contradictions")
-    else:
-        print(f"  PASS: gap×prune consistency")
-
-# ── Check 3: Safety — high-freq CUT + flow ref ──────────────────────────────
-if prune_decisions:
-    safety_violations = []
-    for tid, task in tasks.items():
-        d = prune_by_tid.get(tid)
-        if not d or d["decision"] != "CUT":
-            continue
-        if task.get("frequency") == "高" and tid in flow_task_refs:
-            safety_violations.append({
-                "task_id": tid,
-                "name": task.get("name", ""),
-                "category": task.get("category", ""),
-            })
-
-    if safety_violations:
-        findings.append({
-            "check": "safety-highfreq-cut-flow",
-            "severity": "ERROR",
-            "detail": f"{len(safety_violations)} high-freq tasks CUT but referenced by business flow",
-            "tasks": safety_violations,
-        })
-        print(f"  ERROR: {len(safety_violations)} safety violations (high-freq CUT + flow ref)")
-
-# ── Check 4: UI CORE coverage ───────────────────────────────────────────────
-if prune_decisions and ui_spec_text:
-    core_tasks = []
-    for d in prune_decisions:
-        if d["decision"] == "CORE":
-            tid = d.get("task_id", d.get("item_id"))
-            core_tasks.append((tid, d.get("item_name", "")))
-
-    ui_missing = [(tid, tname) for tid, tname in core_tasks
-                  if tname and tname not in ui_spec_text]
-    if ui_missing:
-        rate = (len(core_tasks) - len(ui_missing)) / len(core_tasks) * 100 if core_tasks else 0
-        findings.append({
-            "check": "ui-core-coverage",
-            "severity": "WARNING",
-            "detail": f"{len(ui_missing)}/{len(core_tasks)} CORE tasks not in ui-design-spec.md ({rate:.0f}% coverage)",
-            "task_ids": [tid for tid, _ in ui_missing],
-        })
-        print(f"  WARNING: UI CORE coverage {rate:.0f}%")
-    else:
-        print(f"  PASS: UI CORE coverage ({len(core_tasks)} tasks)")
 
 # ── Output ───────────────────────────────────────────────────────────────────
 has_error = any(f["severity"] == "ERROR" for f in findings)
