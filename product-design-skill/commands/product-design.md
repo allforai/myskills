@@ -39,12 +39,18 @@ Phase 0: 产物探测
 Phase 1: concept（可选）
   加载并执行 skills/product-concept.md
   ↓ checkpoint
+Phase 1.4: concept-pre-verify（自动执行）
+  JSON 结构校验 → 自动修复 → 再校验（无需 Playwright）
+  ↓ checkpoint
 Phase 1.5: concept-review（概念脑图审核，必须）
   启动脑图审核服务器 → 用户验证产品定位/角色/商业模式/机制
   反馈汇总修改建议，由用户决定是否重跑 concept
   ↓ 全部通过后进入 product-map
 Phase 2: product-map
   加载并执行 skills/product-map.md
+  ↓ checkpoint
+Phase 2.4: map-pre-verify（自动执行）
+  JSON 结构校验 → 自动修复 → 再校验（无需 Playwright）
   ↓ checkpoint
 Phase 2.5: map-review（产品地图脑图审核，必须）
   启动脑图审核服务器 → 用户验证角色/任务/业务流
@@ -77,6 +83,9 @@ Phase 6-8: 并行执行（3 个 Agent 同时启动）
   ├─ Agent: feature-gap   → .allforai/feature-gap/
   └─ Agent: ui-design     → .allforai/ui-design/
   全部完成 ↓ 聚合 checkpoint + pipeline-decisions 合并 + 轻量校验
+Phase 8.5: ui-pre-verify（自动执行）
+  Playwright headless 验证 UI 渲染 → 自动修复 → 再验证（最多 3 轮）
+  ↓ checkpoint
 Phase 9: ui-review（视觉审核迭代，必须）
   启动审核服务器 → 用户浏览标注 → 提交反馈 → 局部重跑 ui-design
   ↓ 循环直到用户确认全部通过
@@ -221,6 +230,32 @@ Phase 1（product-concept）执行完毕后，检测自动模式条件：
 
 ---
 
+## Phase 1.4：concept-pre-verify（概念自动校验）
+
+> 自动执行，无需 Playwright。直接校验 JSON 结构完整性。
+
+**执行**：
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify_review.py <BASE> --phase concept
+```
+
+脚本自动检查：
+- mission 非空
+- 每个角色有 jobs / pain_relievers / gain_creators
+- business_model.metrics ≥3 个且字段完整
+- mechanisms ≥5 个
+- pipeline_preferences 已设置 ui_style 和 scope_strategy
+
+**结果处理**：
+- 0 ERROR → PASS，进入 Phase 1.5
+- 有 ERROR → Claude Code 自动修复 product-concept.json → 重跑脚本（最多 3 轮）
+- WARNING → 记日志继续
+
+**输出**：`.allforai/concept-verify/verification-report.json`
+
+---
+
 ## Phase 1.5：concept-review（概念脑图审核）
 
 > **Review Hub 生命周期**: 审核站点在 Phase 1.5 首次启动，后续 Phase 2.5/5/9 复用同一进程。
@@ -288,6 +323,31 @@ concept 和 product-map 完成后，追加记录到 `.allforai/pipeline-decision
 检查点失败 → 向用户报告，询问是否继续（product-map 是后续所有阶段的基础，强烈建议修复）。
 
 **自动模式检查点**：task 数 = 0 → ERROR（停）；category 字段缺失 → WARNING（记日志继续）；task 数 > 0 且分类完整 → PASS。
+
+---
+
+## Phase 2.4：map-pre-verify（地图自动校验）
+
+> 自动执行，无需 Playwright。直接校验 JSON 结构完整性。
+
+**执行**：
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify_review.py <BASE> --phase map
+```
+
+脚本自动检查：
+- 每个角色至少有 1 个 core task
+- 频次标签（高/中/低）和风险标签是否完整
+- 业务流步骤 ≥2（不能太短）
+- 所有 core task 是否被至少一个业务流覆盖
+
+**结果处理**：
+- 0 ERROR → PASS，进入 Phase 2.5
+- 有 ERROR → Claude Code 自动修复 → 重跑（最多 3 轮）
+- WARNING → 记日志继续
+
+**输出**：`.allforai/map-verify/verification-report.json`
 
 ---
 
@@ -759,6 +819,33 @@ resume 模式检测 Phase 6-8 完成状态:
   全部不存在 → 正常启动 3 个并行 Agent
   注: feature-prune 产出不影响自动流程判断
 ~~~
+
+---
+
+## Phase 8.5：ui-pre-verify（UI 自动验证）
+
+> 自动执行，需要 Playwright。验证 UI 渲染质量。
+
+**前置条件**：Playwright MCP 可用。不可用 → 跳过，记录 `playwright_skipped`。
+
+**执行**：
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify_review.py <BASE> --phase ui
+```
+
+脚本准备 items 列表 + 启动 Review Hub。Claude Code 使用 Playwright：
+
+1. 导航到 /ui，逐屏 snapshot
+2. 检查：HTML 渲染正常、样式一致、中文标签、组件复用
+3. 输出 `ui-verify/verification-input.json`
+4. 有 ERROR → 自动修复 → 重新验证（最多 3 轮）
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify_review.py <BASE> --phase ui --report
+```
+
+**输出**：`.allforai/ui-verify/verification-report.json`
 
 ---
 
