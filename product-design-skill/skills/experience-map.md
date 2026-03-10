@@ -51,13 +51,17 @@ journey-emotion（旅程情绪图）    experience-map（体验地图）       u
 
 ---
 
-## 预置脚本（优先使用）
+## 生成方式
 
-检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py` 是否存在：
-- **存在** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py <BASE>`
-- **不存在** → 回退到 LLM 生成（向后兼容）
+LLM 直接分析 journey-emotion-map + task-inventory，理解交互场景语境后设计屏幕结构。
 
-预置脚本从 journey-emotion-map + task-inventory 生成 operation_lines > nodes > screens 结构。
+可选辅助脚本：`${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py`（用于机械映射基础结构，LLM 可在其输出上增强）。
+
+**输出 schema 约束**（详见 `docs/schemas/experience-map-schema.md`）：
+- 顶层 key 必须是 `operation_lines`（数组）+ `screen_index`（对象）
+- 每个 operation_line 包含 `id`、`name`、`source_journey`、`role`、`nodes`
+- 每个 node 包含 `seq`、`id`、`action`、`screens`（screen 对象数组）
+- 每个 screen 包含 `id`、`name`、`interaction_type`、`tasks`、`actions`、`vo_actions`、`data_fields`
 
 ---
 
@@ -76,9 +80,9 @@ Step 1: 加载前置数据
       读取 role-profiles.json（角色列表，可选）
       读取 business-flows.json（业务流，可选）
       ↓
-Step 2: 运行 gen_experience_map.py 生成体验地图
-      脚本从旅程情绪图提取操作线，映射任务到节点和屏幕
-      生成 operation_lines > nodes > screens 三层结构
+Step 2: 生成体验地图
+      LLM 从旅程情绪图提取操作线，理解交互语境后映射任务到节点和屏幕
+      生成 operation_lines > nodes > screens 三层结构（可选用辅助脚本加速基础映射）
       ↓
 Step 3: 向用户展示结果摘要，用户审阅
       展示操作线列表、节点数、屏幕数统计

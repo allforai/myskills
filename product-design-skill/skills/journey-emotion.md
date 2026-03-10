@@ -49,13 +49,17 @@ product-map（功能地图）    journey-emotion（旅程情绪图）    experie
 
 ---
 
-## 预置脚本（优先使用）
+## 生成方式
 
-检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_journey_emotion.py` 是否存在：
-- **存在** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_journey_emotion.py <BASE>`
-- **不存在** → 回退到 LLM 生成（向后兼容）
+LLM 直接分析业务流节点，理解每个步骤的用户心理状态后标注情绪。情绪推理需要理解场景语境（如"支付"常伴随焦虑，"完成学习"带来满足感），脚本只能产出全部 neutral 的默认值。
 
-预置脚本生成初始情绪图，所有节点默认为中性情绪（neutral / intensity=3）。**脚本输出仅为初始值，必须经用户审阅调整后才视为有效。**
+可选辅助脚本：`${CLAUDE_PLUGIN_ROOT}/scripts/gen_journey_emotion.py`（用于生成初始骨架，LLM 必须在其上修正情绪标注）。
+
+**输出 schema 约束**（详见 `docs/schemas/journey-emotion-schema.md`）：
+- 顶层 key 必须是 `journey_lines`（数组）
+- 子节点 key 必须是 `emotion_nodes`（数组）
+- 每个 journey_line 必须有 `source_flow` 字段
+- 情绪值应基于场景语境推理，不应全部为 neutral
 
 ---
 

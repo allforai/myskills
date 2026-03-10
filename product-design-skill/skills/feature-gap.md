@@ -752,16 +752,16 @@ def check_type_completeness(screens, interaction_types_def):
 
 ---
 
-## 预置脚本（优先使用）
+## 生成方式
 
-检查 `${CLAUDE_PLUGIN_ROOT}/scripts/gen_feature_gap.py` 是否存在：
-- **存在** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_feature_gap.py <BASE> --mode auto`
-- **不存在** → 回退到 LLM 生成脚本（向后兼容）
+**脚本做结构化检查 + LLM 做语义分析**，两者协作：
 
-预置脚本保证 schema 一致性和零语法错误。关键修复：
-- 防御性检查 `is_primary` / `on_failure` 字段缺失（不再假设字段存在）
-- 使用 `_common.load_experience_map()` 加载体验地图，通过 `operation_lines[].nodes[].screens[]` 提取界面，对每个 screen 使用 `s.get("tasks", [])` 读取任务引用
-- 使用 `_common.collect_flow_task_refs()` 和 `get_flow_nodes()` 读取业务流节点（`nodes` 字段，非 `steps`）
+1. 脚本（`${CLAUDE_PLUGIN_ROOT}/scripts/gen_feature_gap.py`）执行机械性缺口检测：异常路径缺失、屏幕覆盖缺口、业务流断点
+2. LLM 在脚本输出上增强：语义优先级判断、业务影响评估、修复建议生成
+
+**输出 schema 约束**：
+- `gap-tasks.json` 必须是 `{"gaps": [...], "summary": {...}}` 对象格式（不允许裸数组）
+- 每个 gap 必须有 `priority`（P0/P1/P2）、`gap_type`、`affected_tasks`
 
 **XV 交叉验证（v3.3.0+）**：脚本自动执行 XV 交叉验证（需 `OPENROUTER_API_KEY` 环境变量）。通过 Python `urllib.request` 直连 OpenRouter API，不依赖 MCP。高严重度发现自动修正数据（追加缺口任务 / 调整优先级 / 标记重复），结果写入 `gap-tasks.json` 的 `cross_model_review` 字段。无 API Key 时静默跳过。
 
