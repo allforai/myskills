@@ -11,12 +11,6 @@
       "description": "Product design suite: product-concept, product-map, experience-map, use-case, feature-gap, ui-design, design-audit. 产品设计套件：产品概念、功能地图、体验地图、用例集、功能查漏、UI设计、设计审计。"
     },
     {
-      "name": "deadhunt",
-      "version": "2.1.0",
-      "source": "./deadhunt-skill/",
-      "description": "Validate web products: find dead links, hunt ghost features, verify CRUD completeness, check field consistency. 猎杀死链，验证产品完整性，检查字段一致性。"
-    },
-    {
       "name": "code-tuner",
       "version": "1.1.0",
       "source": "./code-tuner-skill/",

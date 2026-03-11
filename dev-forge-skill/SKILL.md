@@ -5,10 +5,12 @@ description: >
   design-to-spec (LLM-driven Forge-Verify-Loop (4D/6V/XV) -> requirements + design + tasks),
   task-execute (systematic task execution with progress tracking + Incremental XV + Task-Level verification loops),
   e2e-verify (cross-project Playwright/Patrol E2E),
-  product-verify (static + dynamic acceptance).
+  product-verify (static + dynamic acceptance),
+  deadhunt (dead link hunting + CRUD completeness + ghost feature detection),
+  fieldcheck (UI/API/Entity/DB field consistency).
   Full pipeline: /project-forge. LLM-driven Forge-Verify-Loop (4D/6V/XV).
-  开发锻造套件：项目引导、设计转规格、任务执行、跨端验证、产品验收。基于 LLM 锻造-验证-闭环。
-version: "3.0.0"
+  开发锻造套件：项目引导、设计转规格、任务执行、跨端验证、产品验收、死链猎杀、字段一致性。
+version: "4.0.0"
 ---
 
 # Dev Forge — 开发锻造套件
@@ -27,7 +29,7 @@ version: "3.0.0"
 /project-forge resume        # 从上次中断处继续
 ```
 
-## 包含的技能（5 个 + 1 独立插件）
+## 包含的技能（7 个 + 1 独立插件）
 
 ### 1. project-setup — 项目引导
 
@@ -87,7 +89,29 @@ version: "3.0.0"
 /product-verify dynamic     # 只做动态验证
 ```
 
-### 6. demo-forge — 演示锻造（独立插件）
+### 6. deadhunt — 死链猎杀 + 完整性验证
+
+猎杀死链、幽灵功能、CRUD 缺口。6 Phase 流水线：项目分析→静态扫描→测试计划→深度测试→报告→补充测试。支持独立运行，不依赖 project-forge 流程。
+
+```
+/deadhunt                   # 完整验证（静态+深度）
+/deadhunt static            # 仅静态分析
+/deadhunt deep              # 仅深度测试（需 Playwright）
+/deadhunt incremental       # 增量验证（仅 git 改动涉及的模块）
+```
+
+### 7. fieldcheck — 字段一致性检查
+
+检查 UI↔API↔Entity↔DB 四层字段名一致性，发现幽灵字段、拼写错误、映射断裂。纯静态分析，不需要启动应用。
+
+```
+/fieldcheck                 # 全链路 L1↔L2↔L3↔L4
+/fieldcheck frontend        # 仅前端 L1↔L2
+/fieldcheck backend         # 仅后端 L2↔L3↔L4
+/fieldcheck endtoend        # 端到端 L1↔L4
+```
+
+### 8. demo-forge — 演示锻造（独立插件）
 
 > 已独立为 `demo-forge-skill/` 插件。详见该插件文档。
 
@@ -106,8 +130,7 @@ version: "3.0.0"
 
 ```
 product-design（产品层）  概念→定义→交互→视觉→用例→查漏→剪枝
-dev-forge（开发层）       引导→规格→执行→验证→验收 ← 你在这里
-deadhunt（QA 层）         死链→CRUD完整性→幽灵功能→字段一致性
+dev-forge（开发层）       引导→规格→执行→验证→验收→猎杀→字段 ← 你在这里
 code-tuner（架构层）      合规→重复→抽象→评分
 ```
 
@@ -145,8 +168,17 @@ your-project/
     │   ├── forge-decisions.json        # 全程决策
     │   └── trend-sources.json          # 趋势搜索记录
     ├── demo-forge/              # → 独立插件 demo-forge-skill 管理
-    └── product-verify/
-        ├── static-report.json          # 静态结果
-        ├── dynamic-report.json         # 动态结果
-        └── verify-report.md            # 可读报告
+    ├── product-verify/
+    │   ├── static-report.json          # 静态结果
+    │   ├── dynamic-report.json         # 动态结果
+    │   └── verify-report.md            # 可读报告
+    └── deadhunt/
+        ├── deadhunt-decisions.json     # 决策日志
+        ├── output/
+        │   ├── validation-profile.json # 项目画像
+        │   ├── static-analysis/        # 静态分析结果
+        │   ├── validation-report-*.md  # 各端报告
+        │   ├── fix-tasks.json          # 修复任务清单
+        │   └── field-analysis/         # 字段一致性分析
+        └── tests/                      # 生成的测试脚本
 ```

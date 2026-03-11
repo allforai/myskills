@@ -6,19 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is **myskills** — a Claude Code + OpenCode dual-platform plugin collection covering the full pipeline from product design → development forge → QA validation → architecture governance. It is a **plugin development repository**, not a product codebase. The plugins are applied to external user projects.
 
-## Five-Layer Architecture
+## Four-Layer Architecture
 
 ```
 Layer         Plugin            Coverage
 ────────────  ────────────────  ─────────────────────────────────────────────
 Product       product-design    concept→map→journey-emotion→experience-map→gate→ui→use-cases→gaps→prune→audit
-Development   dev-forge         setup→spec→scaffold→execute→e2e→seed→verify
+Development   dev-forge         setup→spec→execute→verify→deadhunt→fieldcheck→e2e
 Demo          demo-forge        design→media→execute→verify→iterate
-QA            deadhunt          dead links→CRUD completeness→ghost features→field consistency
 Architecture  code-tuner        compliance→duplication→abstraction→scoring
 ```
 
-Each plugin lives in its own subdirectory (`product-design-skill/`, `dev-forge-skill/`, `demo-forge-skill/`, `deadhunt-skill/`, `code-tuner-skill/`) and is independently installable.
+Each plugin lives in its own subdirectory (`product-design-skill/`, `dev-forge-skill/`, `demo-forge-skill/`, `code-tuner-skill/`) and is independently installable. `deadhunt-skill/` is deprecated (merged into dev-forge).
 
 ## Plugin Structure (per plugin)
 
@@ -66,7 +65,6 @@ All plugins read/write to a project-local `.allforai/` directory. This is the in
 claude plugin add /path/to/myskills/product-design-skill
 claude plugin add /path/to/myskills/dev-forge-skill
 claude plugin add /path/to/myskills/demo-forge-skill
-claude plugin add /path/to/myskills/deadhunt-skill
 claude plugin add /path/to/myskills/code-tuner-skill
 ```
 
@@ -171,7 +169,8 @@ When indexes don't exist, skills fall back to full data loading (backward compat
 /demo-forge               # Demo-ready data: design→media→execute→verify→iterate
 /demo-forge verify        # Playwright verification with multi-round iteration
     ↓
-/deadhunt                 # Dead link and CRUD completeness check
+/deadhunt                 # Dead link and CRUD completeness check (now part of dev-forge)
+/fieldcheck               # UI/API/Entity/DB field consistency (now part of dev-forge)
 /code-tuner               # Architecture quality analysis
 ```
 

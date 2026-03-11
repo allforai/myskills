@@ -6,9 +6,9 @@
   "plugins": [
     {
       "name": "dev-forge",
-      "version": "3.0.0",
+      "version": "4.0.0",
       "source": "./",
-      "description": "Development forge (LLM-driven Forge-Verify-Loop): project-setup, design-to-spec (FVL 4D/6V/XV), task-execute (XV + Contract Drift + DevSecOps), e2e-verify, product-verify. Full pipeline: /project-forge. 开发锻造套件（FVL闭环）：项目引导、设计转规格、任务执行、跨端验证、产品验收。"
+      "description": "Development forge (LLM-driven Forge-Verify-Loop): project-setup, design-to-spec (FVL 4D/6V/XV), task-execute (XV + Contract Drift + DevSecOps), e2e-verify, product-verify, deadhunt (dead links + CRUD + ghost features), fieldcheck (UI/API/Entity/DB field consistency). Full pipeline: /project-forge. 开发锻造套件（FVL闭环）：项目引导、设计转规格、任务执行、跨端验证、产品验收、死链猎杀、字段一致性。"
     }
   ]
 }
