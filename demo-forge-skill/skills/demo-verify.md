@@ -5,7 +5,7 @@ description: >
   "demo-verify", "验证演示数据", "检查演示效果", "demo check",
   or mentions demo verification, visual verification, demo quality check.
   Requires forge-data.json and a running application.
-version: "1.0.0"
+version: "1.1.0"
 ---
 
 # Demo Verify — 演示验证与问题路由
@@ -22,7 +22,8 @@ version: "1.0.0"
 4. **算得对** — Dashboard 汇总与明细一致、趋势图有多月数据
 5. **不崩溃** — 终态记录可查看、边界数据不报错
 6. **零外链** — DOM 中无外部媒体 URL（media-forge 铁律的最终校验）
-7. **问题路由** — 结构化问题清单，按类型路由回对应阶段或 dev-forge
+7. **全活性** — 每个界面每个按钮都有数据可操作，每种状态都有记录可展示，数据流因果链不断裂
+8. **问题路由** — 结构化问题清单，按类型路由回对应阶段或 dev-forge
 
 ---
 
@@ -243,13 +244,84 @@ return issues;
 
 ---
 
-### V7: 问题汇总 + 路由
+### V7: UI 活性 + 数据闭环验证
 
-**目标**: 汇总 V1-V6 全部失败项，分类定级，路由到对应阶段。
+**目标**: 从设计产物反向验证——experience-map 定义的每个 screen/action 是否都有数据支撑，让演示时每个界面都"活"着。
+
+#### V7-A: UI 活性保障 (UI Liveness Guarantee)
+
+**基准**: experience-map.json（必须）+ seed-plan.json / demo-plan.json
+
+**验证规则**（逐 screen 逐 action Playwright 检查）:
+
+| UI 元素类型 | 最低数据保障 | 检查方法 |
+|------------|------------|---------|
+| 列表页 | ≥ 2 条记录（能看到排序效果） | `browser_evaluate` 计数列表行/卡片 |
+| 详情页 | ≥ 1 条完整字段记录 | 检查无 null/undefined/空值/"—" 占位 |
+| 操作按钮 | ≥ 1 条可操作的目标数据 | 按钮非 disabled 且有目标记录 |
+| 搜索/筛选 | ≥ 2 条可区分记录 | 搜索后结果变化（非全量返回） |
+| 状态标签/徽章 | 每种状态至少 1 条 | 对照 `task.outputs.states` 逐状态验证 |
+| Dashboard/图表 | ≥ 1 个月跨度数据 | 图表渲染非空、数字非零 |
+| 空态页面 | 专门验证 empty state | 无数据时 empty state 正确展示（而非空白/报错） |
+
+**逆向验证链**:
+```
+experience-map.screen.actions[]
+  → 每个 action 需要什么前置数据？（如"审批"按钮需 PENDING 记录）
+  → demo-plan.json 是否规划了该数据？
+  → 运行时该数据是否真正存在？
+```
+
+**活性评分**: `有数据支撑的 action 数 / screen 总 action 数`
+- ≥ 90% → PASS
+- 70-89% → WARNING（部分演示受限）
+- < 70% → FAIL（严重影响演示效果）
+
+活性不足的 screen → route_to = "design"（补充 demo-plan 数据链路）
+
+#### V7-B: 状态全覆盖验证 (State Coverage for Demo)
+
+**目标**: 演示数据必须覆盖 task.outputs.states 的所有枚举值，否则演示时无法展示完整业务生命周期。
+
+**基准**: task-inventory.json 中每个实体的 `outputs.states`
+
+**验证矩阵**:
+| 实体 | 定义状态 | 列表页可见 | 详情页可访问 | 状态标签正确 |
+|------|---------|----------|------------|-----------|
+| Order | PENDING | ✅ 3 条 | ✅ | ✅ |
+| Order | PAID | ✅ 5 条 | ✅ | ✅ |
+| Order | REFUNDED | ❌ 0 条 | — | — |
+| Order | CANCELED | ✅ 1 条 | ✅ | ✅ |
+
+**重点检查终态和异常态**（最容易漏）:
+- REJECTED / CANCELED / EXPIRED / FAILED / CLOSED — 专门检查
+- 终态记录详情页不能报错或空白
+
+缺失状态 → route_to = "design"（demo-plan 补充该状态数据链路）
+
+#### V7-C: 数据流完整性追踪 (Data Flow Integrity)
+
+**目标**: 验证演示数据的业务逻辑链是否连贯——创建→流转→审批→完成的因果链不断裂。
+
+**验证方式**:
+1. 从 `demo-plan.json` 提取数据链路定义
+2. 对每条链路，逐节点 Playwright 验证:
+   - 用户 A 的操作记录 → 是否在用户 B 的待办中出现？
+   - 父实体的子实体列表 → 数量和状态是否一致？
+   - Dashboard 汇总 → 是否等于明细之和？
+3. 链路中任一节点数据断裂 → route_to = "execute"（灌入逻辑问题）
+
+→ 输出进度: 「V7 活性:{rate}% 状态覆盖:{n}/{m} 数据流:{pass}/{total}」
+
+---
+
+### V8: 问题汇总 + 路由
+
+**目标**: 汇总 V1-V7 全部失败项，分类定级，路由到对应阶段。
 
 **步骤**:
 
-1. **汇总**: 收集 V1-V6 所有检查结果
+1. **汇总**: 收集 V1-V7 所有检查结果
 2. **分类**: 对每个失败项判定 category + severity + route_to
 
 **路由规则**:
@@ -260,9 +332,22 @@ return issues;
 | 图片 broken、视频不播放、外链残留、占位图 | media | media | 404、拉伸、灰块 |
 | 外键断裂、派生不一致、灌入失败 | data_integrity | execute | Dashboard 汇总 != 明细之和 |
 | API 500、前端渲染 bug、SQL 错误、代码崩溃 | code_bug | dev_task | 应用代码 bug，非数据问题 |
+| UI 活性不足（列表空、按钮无目标、状态缺失） | liveness | design | screen action 无数据支撑 |
+| 数据流断裂（因果链不连贯、关联数据缺失） | data_flow | execute | 父实体有子列表为空 |
 | 纯样式偏好、与数据无关的 UI 微调 | style_preference | skip | 记录但不路由 |
 
-3. **输出**: 写入 verify-report.json（全量）+ verify-issues.json（失败项 + 路由）
+3. **6V 深度诊断**（针对 `code_bug` 和 `data_integrity` 类问题）:
+   - 对每个 high severity 的 `code_bug` / `data_integrity` 问题，用 LLM 从 6 个工程视角诊断根因：
+     - **V1 Contract**: API 签名/响应格式是否偏离了 `api-contracts.json`
+     - **V2 Conformance**: 数据是否违背了 `entity-model.json` 的约束（类型/外键/唯一性）
+     - **V3 Correctness**: 业务逻辑是否正确（如金额计算、状态流转规则）
+     - **V4 Consistency**: 同类操作在不同页面/角色下行为是否一致
+     - **V5 Capability**: 是否因数据量/并发触发了性能瓶颈
+     - **V6 Context**: 错误是否与特定用户角色/场景相关（权限/数据隔离问题）
+   - 诊断结果写入 issue 的 `diagnosis` 字段：`{ "viewpoint": "V2", "root_cause": "...", "fix_hint": "..." }`
+   - 这使得 dev_task 回流给 dev-forge 时携带精准修复线索，而非仅凭表面现象分类
+
+4. **输出**: 写入 verify-report.json（全量）+ verify-issues.json（失败项 + 路由 + 6V 诊断）
 
 ---
 
@@ -343,6 +428,32 @@ return issues;
       "aspect_ratio_issues": 0,
       "video_issues": 0,
       "duplicate_images": 0
+    },
+    "v7_data_completeness": {
+      "status": "passed | partial | failed",
+      "ui_liveness": {
+        "screens_checked": 15,
+        "alive_screens": 13,
+        "liveness_rate": "86.7%",
+        "dead_screens": [
+          { "screen": "退款审批", "missing_actions": ["审批通过", "审批拒绝"], "reason": "无 PENDING 退款记录" }
+        ]
+      },
+      "state_coverage": {
+        "entities_checked": 5,
+        "total_states": 18,
+        "covered_states": 15,
+        "missing_states": [
+          { "entity": "Order", "state": "REFUNDED", "impact": "无法演示退款流程" }
+        ]
+      },
+      "data_flow_integrity": {
+        "flows_checked": 4,
+        "intact_flows": 3,
+        "broken_flows": [
+          { "flow": "下单→支付→发货", "break_point": "发货节点无物流记录", "route_to": "execute" }
+        ]
+      }
     }
   },
   "summary": {

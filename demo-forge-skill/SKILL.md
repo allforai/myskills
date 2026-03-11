@@ -6,7 +6,7 @@ description: >
   Includes demo-design (data planning), media-forge (media acquisition + processing + upload),
   demo-execute (data generation + population), demo-verify (Playwright verification + routing).
   演示锻造：设计→采集→灌入→验证，多轮迭代打磨至演示级品质。
-version: "1.2.0"
+version: "1.3.0"
 ---
 
 # Demo Forge — 演示锻造套件
@@ -83,7 +83,7 @@ version: "1.2.0"
 
 > 详见 `${CLAUDE_PLUGIN_ROOT}/skills/demo-verify.md`
 
-使用 Playwright 对灌入后的应用执行 V1-V7 七层验证（页面加载、数据展示、图片加载、列表数量、详情正确性、业务流串联、交互功能）。验证失败的问题自动分类并路由到 5 条修复通道：
+使用 Playwright 对灌入后的应用执行 V1-V8 八层验证（页面加载、数据展示、图片加载、列表数量、详情正确性、业务流串联、媒体完整性、**UI 活性+状态全覆盖+数据流闭环**）。验证失败的问题自动分类并路由到 5 条修复通道：
 
 | 路由 | 目标 | 说明 |
 |------|------|------|
