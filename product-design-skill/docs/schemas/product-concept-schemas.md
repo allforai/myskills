@@ -50,7 +50,7 @@
     }
   },
   "pipeline_preferences": {
-    "ui_style": "material-design-3 | apple-hig | fluent-design | flat-minimal | glassmorphism | ant-design | shadcn-tailwind | undecided",
+    "ui_styles": { "web-customer": "apple-hig", "mobile-native": "material-design-3" },
     "competitors": ["竞品A", "竞品B"],
     "scope_strategy": "aggressive | balanced | conservative | undecided",
     "stitch_ui": true | false | "undecided",

@@ -508,11 +508,16 @@ product-concept（战略层）        product-map（运营层）
 
 **触发条件**：用户明确表示要执行完整产品设计流水线（如 `/product-design full`、「帮我跑一遍全流程」等）。
 
-**Q1 — UI 设计风格**
+**Q1 — UI 设计风格（仅消费者端）**
 
-AskUserQuestion（单选）：
+> 管理后台的视觉风格由组件库决定（Ant Design / Element Plus / Shadcn 等），无需单独选择。
+> Q1 仅对**消费者端**（Web/App/小程序）提问。若产品只有管理后台没有消费者端 → 跳过 Q1。
 
-问题：「产品的视觉风格偏好？」
+从 Step 1 识别的角色推断消费者端类型。若有多个消费者端（如 Web + Mobile），分别选择。
+
+对每个消费者端类型，AskUserQuestion（单选）：
+
+问题：「{消费者端名称} 的视觉风格偏好？」
 
 | 编号 | 选项 | 适用场景 |
 |------|------|----------|
@@ -521,9 +526,10 @@ AskUserQuestion（单选）：
 | 3 | Fluent Design | 微软风，适合企业/办公类 |
 | 4 | Flat / Minimal | 极简，适合信息/内容类 |
 | 5 | Glassmorphism | 玻璃拟态，适合时尚/社交类 |
-| 6 | Ant Design 企业风 | 适合后台/管理系统 |
-| 7 | Shadcn / Tailwind | 开发者友好，适合 SaaS/技术产品 |
-| 8 | 暂不确定 | 下游 ui-design 阶段再交互选择 |
+| 6 | Shadcn / Tailwind | 开发者友好，适合 SaaS/技术产品 |
+| 7 | 暂不确定 | 下游 ui-design 阶段再交互选择 |
+
+> 若只有一个消费者端，退化为单次提问。多端时合并为一次 AskUserQuestion 逐端选择。
 
 **Q2 — 竞品参考**
 
@@ -589,13 +595,18 @@ AskUserQuestion（多选，可多选 + 全不选）：
 
 ```json
 "pipeline_preferences": {
-  "ui_style": "material-design-3 | apple-hig | fluent-design | flat-minimal | glassmorphism | ant-design | shadcn-tailwind | undecided",
+  "ui_styles": {
+    "web-customer": "apple-hig",
+    "mobile-native": "material-design-3"
+  },
   "competitors": ["竞品A", "竞品B"] | [],
   "scope_strategy": "aggressive | balanced | conservative | undecided",
   "stitch_ui": true | false | "undecided",
   "infrastructure": ["dark-mode", "theme-switching", "i18n", "cross-platform", "a11y", "offline-pwa", "rtl"] | []
 }
 ```
+
+> `ui_styles` 仅包含消费者端类型（admin/后台不需要，风格由组件库决定）。单消费者端产品只有一个 key。下游 ui-design 按端类型读取对应风格。
 
 > `pipeline_preferences` 的存在是下游自动模式的激活条件之一。选择「暂不确定」的项标记为 `"undecided"`，下游对应技能回退到交互模式。
 

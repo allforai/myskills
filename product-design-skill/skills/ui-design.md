@@ -116,16 +116,16 @@ product-concept → product-map → experience-map → ui-design
 | 步骤 | 标准模式 | 全自动模式 |
 |------|----------|-----------|
 | **Step 1 画像确认** | AskUserQuestion 确认 | 自动确认，记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
-| **Step 2 风格选择** | AskUserQuestion 8 选 1 | 读 `pipeline_preferences.ui_style`：非 `"undecided"` → 直接使用预设风格，跳过 AskUserQuestion；`"undecided"` → **回退交互模式**（展示 8 种风格，用户选择） |
+| **Step 2 风格选择** | AskUserQuestion 8 选 1 | 读 `pipeline_preferences.ui_styles[当前端类型]`：非 `"undecided"` → 直接使用预设风格，跳过 AskUserQuestion；`"undecided"` → **回退交互模式**（展示 8 种风格，用户选择）。兼容旧版 `ui_style`（字符串） |
 | **Step 3 设计原则确认** | AskUserQuestion 确认 | 自动确认（WebSearch 照常执行，搜索结果自动采纳） |
 | **Step 4 规格确认** | AskUserQuestion 确认 | 自动确认 |
 | **Step 5 预览确认** | AskUserQuestion 确认 | 自动确认 |
 | **Step 5.5 Stitch 不可用** | AskUserQuestion 询问 | 自动降级到 Step 5.6（LLM 高保真预览） |
-| **--variants 模式** | 生成 N 套风格方案 → 视觉对比 → 用户选择 | 自动选择与 `pipeline_preferences.ui_style` 最匹配的方案，记入 decisions.json |
+| **--variants 模式** | 生成 N 套风格方案 → 视觉对比 → 用户选择 | 自动选择与 `pipeline_preferences.ui_styles[当前端类型]` 最匹配的方案，记入 decisions.json |
 
 **安全护栏**（自动模式下仍然停下来问用户）：
 - ERROR 级验证失败（无法推导任何界面、product-map 损坏）
-- `ui_style = "undecided"` 时 Step 2 回退交互模式（风格选择不可自动推断）
+- 当前端类型的 `ui_styles` 值为 `"undecided"` 时 Step 2 回退交互模式
 
 **基础设施偏好消费**：
 
@@ -436,7 +436,7 @@ Step 5.6: LLM 高保真 HTML 预览（Stitch 不可用时自动执行）
 
 ### 图标规范
 
-图标库选型（根据 ui_style 推断）：
+图标库选型（根据当前端类型的 ui_styles 推断）：
 | ui_style | 推荐图标库 | 备选 |
 |----------|-----------|------|
 | material-design-3 | Material Symbols | Phosphor |
