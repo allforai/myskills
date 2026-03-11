@@ -3,12 +3,14 @@ name: product-verify
 description: >
   Use when the user wants to "verify product implementation", "acceptance test",
   "validate code against product map", "check if features are implemented",
-  "static code coverage check", "dynamic browser testing", "find unimplemented tasks",
+  "static code coverage check", "dynamic browser testing", "Maestro mobile testing",
+  "find unimplemented tasks",
   "find extra code not in product map", "产品验收", "静态验收", "动态验收",
   "代码是否实现了产品地图", "验证功能实现", "找漏实现的功能", "代码覆盖检查",
+  "Maestro 移动端测试",
   or wants to prove code implements the product map features and flows.
   Requires product-map to have been run first. Optionally uses experience-map and use-case.
-version: "1.4.0"
+version: "1.5.0"
 ---
 
 # Product Verify — 产品验收
@@ -20,7 +22,7 @@ version: "1.4.0"
 以 `product-map`（以及可选的 `experience-map`、`use-case`）为基准，回答两个问题：
 
 1. **静态：代码有没有？** — 每个任务是否有对应的 API 路由？每个界面是否有对应的组件？每条约束是否有对应的校验逻辑？
-2. **动态：行为对不对？** — 用 Playwright 运行实际应用，用例脚本跑得通吗？
+2. **动态：行为对不对？** — 用 Playwright（Web）/ Maestro（移动原生）运行实际应用，用例脚本跑得通吗？
 
 发现差异，生成三类任务清单：
 - **IMPLEMENT** — 产品地图有但代码没有（漏实现）
@@ -35,7 +37,7 @@ version: "1.4.0"
 product-map（现状+方向）   feature-gap（功能查漏）    product-verify（验收）
 产品应该长什么样           地图说有的，现在有没有      代码实现了地图里的任务吗
 基础层                    产品层比对                 代码层比对 + 运行时验证
-不看代码                  不看代码                   扫描代码 + 跑浏览器
+不看代码                  不看代码                   扫描代码 + 跑浏览器 / 移动模拟器
 ```
 
 **与 feature-gap 的区别**：feature-gap 检查**产品地图自身**是否完整（CRUD 齐不齐、旅程通不通）；product-verify 检查**代码**是否实现了产品地图中的任务（路由有没有、组件在不在、行为对不对）。一个审产品设计，一个审代码实现。
@@ -670,6 +672,30 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 ---
 
+### 动态验证工具路由
+
+根据子项目类型自动选择动态验证工具：
+
+| 子项目类型 | 验证工具 | 说明 |
+|-----------|---------|------|
+| `admin` / `web-customer` / `web-mobile` | **Playwright** | MCP browser_* 工具执行用例 |
+| `mobile-native` (Flutter / Expo / RN) | **Maestro** | CLI `maestro test` 执行验证流 |
+| `backend` | **curl / HTTP** | API 路由 + 响应校验 |
+
+**Maestro 降级**：
+- Maestro CLI 不可用 → 跳过移动端动态验证，仅执行静态验收（S1-S4）
+- 标记所有移动端动态用例为 `DEFERRED_NATIVE`
+- 输出提示：「安装 Maestro（`curl -Ls https://get.maestro.mobile.dev | bash`）以启用移动端动态验证」
+
+**Maestro 用例执行**：
+1. 从 use-case 提取移动端用例步骤
+2. 生成 Maestro flow YAML（tapOn / assertVisible / takeScreenshot）
+3. 执行 `maestro test` 并收集 JUnit 结果
+4. 截图存储到 `.allforai/product-verify/screenshots/maestro/`
+5. 结果合并到统一的 verify-tasks.json（与 Playwright 结果同格式）
+
+---
+
 ### D1：加载/推导测试序列
 
 **use-case-tree.json 存在时**：
@@ -685,6 +711,8 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 ---
 
 ### D2/D3：Playwright 执行
+
+> **工具条件**：以下 D2-D3 步骤中的 Playwright 操作适用于 Web 端子项目。Mobile-native 子项目使用 Maestro 等效操作（见「动态验证工具路由」）。
 
 **执行方式**：使用 MCP Playwright 工具交互式测试，主要工具：
 - `browser_navigate` — 导航到目标页面

@@ -1,6 +1,6 @@
 {
   "name": "dev-forge",
   "description": "Development forge (LLM-driven Forge-Verify-Loop): project-setup (Conway's Law 6V arch audit), design-to-spec (FVL: Generate→4D/6V Audit→XV→Fix), task-execute (Incremental XV + Contract Drift Sync + DevSecOps), e2e-verify (6V failure diagnosis), product-verify (semantic LLM coverage audit). Full pipeline: /project-forge. 开发锻造套件（FVL闭环）：项目引导、设计转规格、任务执行、跨端验证、产品验收。",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "author": { "name": "dv" }
 }

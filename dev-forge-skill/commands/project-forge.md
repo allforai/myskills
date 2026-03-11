@@ -78,7 +78,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 │  ↓ 质量门禁: demo-plan.json 存在（或跳过）                  │
 │  Phase 7: 跨端验证 (e2e-verify) — 条件执行                   │
 │    仅当 Phase 5 被跳过时执行                                  │
-│    业务流 → 跨端场景 → Playwright                            │
+│    业务流 → 跨端场景 → Playwright / Maestro                   │
 │  ↓                                                          │
 │  Phase 8: 最终报告                                           │
 │                                                              │
@@ -116,6 +116,16 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 **full existing**：Phase 2 的 project-setup 以 existing 模式运行（扫描代码）。
 **resume 模式**：从第一个未完成阶段开始。
 
+### 交互模式检测
+
+读取 `.allforai/product-concept/product-concept.json` 中的 `__orchestrator_auto` 字段：
+- `__orchestrator_auto: true` → **自动模式**：推荐方案自动采纳，决策点零停顿
+- `__orchestrator_auto: false` 或字段不存在 → **交互模式**：每个决策点展示推荐后等待用户确认或调整
+
+> 注意：「Phase 转换零停顿」铁律仍然有效——Phase 之间不问"继续？"。交互模式只影响 **决策点**（技术选型、Spike 方案选择），不影响阶段流转。
+
+将检测结果写入 `forge-decisions.json` 的 `forge_run.interactive` 字段：`true`（交互）或 `false`（自动）。
+
 ### 外部能力快检
 
 > 统一协议见 `product-design-skill/docs/skill-commons.md`「外部能力探测协议」。
@@ -125,13 +135,15 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 | 能力 | 探测方式 | 重要性 | 降级行为 |
 |------|---------|--------|---------|
 | Playwright | `mcp__playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 可用性（任一可用即就绪） | Phase 5-7 必需 | 阻塞验证阶段，提示安装 |
+| Maestro | `which maestro` CLI 可用性（Bash 检测） | mobile-native 子项目必需 | Playwright 降级（仅测 Web 端点）|
 | OpenRouter (MCP) | `mcp__plugin_product-design_ai-gateway__ask_model` 可用性 | 可选 | 跳过 XV 交叉验证 |
 
 **输出格式**：
 
 ```
 外部能力:
-  Playwright        ✓ 就绪     E2E 验证 + 产品验收（Phase 5-7）
+  Playwright        ✓ 就绪     Web E2E 验证 + 产品验收（Phase 5-7）
+  Maestro           ✗ 未就绪   Mobile-native E2E 验证（Phase 5-7）
   OpenRouter (MCP)  ✗ 未就绪   XV 交叉验证（可选，跳过）
 ```
 
@@ -295,7 +307,8 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 | 认证策略 | {strategy} |
 ~~~
 
-自动采纳推荐配置，写入 forge-decisions.json，继续（不停）
+- **自动模式**：自动采纳推荐配置，写入 forge-decisions.json，继续（不停）
+- **交互模式**：展示推荐配置表，等待用户确认或调整。用户确认后写入 forge-decisions.json，继续
 
 **Step 2d: 写入 forge-decisions.json**
 
@@ -303,7 +316,9 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 ---
 
-输出探测结果 + 执行计划（含 preflight 结果摘要），自动开始（不停）。
+输出探测结果 + 执行计划（含 preflight 结果摘要）。
+- **自动模式**：自动开始（不停）
+- **交互模式**：等待用户确认后开始
 
 ---
 
@@ -414,9 +429,8 @@ WebSearch 找到的候选方案: {option_list}
 
 所有 spike 的对比表格一次性展示后：
 
-自动采纳全部推荐方案，写入 forge-decisions.json，继续（不停）
-
-用户也可对某项选择「TBD（待定）」→ 该 spike 的 `status` 标记为 `tbd`，不阻塞流程，但 design-to-spec 会在对应章节标注 `[PENDING: 技术方案待定]`。
+- **自动模式**：自动采纳全部推荐方案，写入 forge-decisions.json，继续（不停）
+- **交互模式**：等待用户逐项确认或调整。用户可对某项选择「TBD（待定）」→ 该 spike 的 `status` 标记为 `tbd`，不阻塞流程，但 design-to-spec 会在对应章节标注 `[PENDING: 技术方案待定]`。用户确认后继续。
 
 ### Step 5: 生成编码原则（两层）
 
@@ -455,7 +469,8 @@ WebSearch 找到的候选方案: {option_list}
 - [CN001] 免费用量限制在 middleware 层统一拦截
 ~~~
 
-自动确认，写入 forge-decisions.json，继续（不停）
+- **自动模式**：自动确认，写入 forge-decisions.json，继续（不停）
+- **交互模式**：展示编码原则，等待用户确认或补充。确认后写入 forge-decisions.json，继续
 
 ### Step 6: 写入 forge-decisions.json
 

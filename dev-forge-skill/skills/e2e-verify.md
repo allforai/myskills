@@ -6,12 +6,12 @@ description: >
   "跨子项目验证", "业务流程测试", "跨端 E2E",
   or needs to derive and execute cross-sub-project E2E test scenarios from business flows.
   Requires project-manifest.json and running sub-project applications.
-version: "1.3.0"
+version: "1.4.0"
 ---
 
 # E2E Verify — 跨端验证
 
-> 从业务流推导跨子项目场景，Playwright 跨端执行，验证业务完整性
+> 从业务流推导跨子项目场景，Playwright / Maestro 跨端执行，验证业务完整性
 
 ## 目标
 
@@ -19,7 +19,7 @@ version: "1.3.0"
 
 1. **场景推导** — 从 business-flows 提取跨角色/跨子项目流程
 2. **端点映射** — 每个流程步骤映射到具体子项目的 URL + 操作
-3. **Playwright 执行** — 跨子项目浏览器自动化测试
+3. **Playwright（Web 端）/ Maestro（移动原生端）执行** — 跨子项目浏览器自动化测试
 4. **失败分类** — 自动分类失败原因（代码缺陷 / 环境问题 / 暂缓）
 5. **报告输出** — 按子项目汇总结果 + 需修复的问题
 
@@ -30,7 +30,7 @@ version: "1.3.0"
 ```
 product-verify（单端验收）   e2e-verify（跨端验证）
 验证单个子项目的功能覆盖     验证跨子项目的业务流程完整性
-静态扫描 + 动态测试         仅动态测试（Playwright）
+静态扫描 + 动态测试         仅动态测试（Playwright + Maestro）
 不涉及跨项目               跨多个子项目 + 角色
 ```
 
@@ -38,6 +38,39 @@ product-verify（单端验收）   e2e-verify（跨端验证）
 - 必须有 `.allforai/project-forge/project-manifest.json`
 - 必须有 `.allforai/product-map/business-flows.json`（或 `flow-index.json`）
 - 各子项目应用必须正在运行
+
+### 测试工具路由
+
+根据子项目类型自动选择测试工具：
+
+| 子项目类型 | 测试工具 | 执行方式 |
+|-----------|---------|---------|
+| `admin` / `web-customer` / `web-mobile` | **Playwright** | MCP browser_* 工具 |
+| `mobile-native` (Flutter / Expo / RN) | **Maestro** | CLI `maestro test` |
+| `backend` | **curl / HTTP** | Bash API 调用 |
+
+**工具探测**：
+- Playwright: 检测 `mcp__playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 工具可用性
+- Maestro: 检测 `which maestro` CLI 可用性（Bash）
+- 移动端无 Maestro → 降级策略：仅测后端 API 层 + 记录 `DEFERRED_NATIVE`
+
+**Maestro 执行协议**：
+
+1. **YAML 生成**：为每个移动端场景生成 Maestro flow YAML：
+   ```yaml
+   appId: {bundle_id from project-manifest}
+   ---
+   - launchApp
+   - tapOn: "{element_text}"
+   - assertVisible: "{expected_text}"
+   - takeScreenshot: "{scenario_id}_{step}"
+   ```
+
+2. **执行**：`maestro test .allforai/project-forge/e2e-flows/{scenario_id}.yaml --format junit`
+
+3. **结果收集**：解析 JUnit XML → 统一结果格式（与 Playwright 结果合并）
+
+4. **截图**：Maestro 截图存储到 `.allforai/project-forge/e2e-screenshots/`
 
 ---
 
@@ -151,7 +184,7 @@ Step 1: 跨端场景推导
     admin → Playwright 桌面视口
     web-customer → Playwright 桌面 + 移动视口
     web-mobile → Playwright 移动视口模拟
-    mobile-native → 标记为需要 Detox/Maestro（Playwright 无法测）
+    mobile-native → 使用 Maestro 执行（见「测试工具路由」）
     backend → 作为 API 提供者，通过 API 调用验证
   → 输出进度: 「E2E 场景 ✓ 正向 {N} + 负向 {M}」（不停，场景列表在 Step 3 批量确认中展示）
   → 写入 .allforai/project-forge/e2e-scenarios.json
@@ -521,15 +554,14 @@ Step 4: 报告生成
 | admin | Playwright | 桌面 (1280x720) | 操作发起方（管理操作） |
 | web-customer | Playwright | 桌面 + 移动 | 消费方（浏览/购买） |
 | web-mobile | Playwright | 移动 (375x812) | 消费方（移动端交互） |
-| mobile-native (RN) | Detox / Maestro | 原生 | 消费方（原生应用视角） |
-| mobile-native (Flutter) | Patrol / integration_test | 原生 | 消费方（原生应用视角） |
+| mobile-native (RN) | **Maestro** | 原生 | 消费方（原生应用视角） |
+| mobile-native (Flutter) | **Maestro** | 原生 | 消费方（原生应用视角） |
 
 **混合场景处理**：
 - Web 端步骤 → Playwright 自动执行
 - API 步骤 → Bash curl 执行
-- Flutter 端步骤 → Patrol 脚本执行（Patrol 支持类 Playwright 的 native interaction API，可自动化原生 UI 测试），跨端数据一致性通过 API 层验证
-- React Native 端步骤 → Detox/Maestro 执行，跨端数据通过 API 层验证
-- 原生端工具不可用时 → 降级为手动验证点 + API 层验证
+- Flutter / RN 端步骤 → Maestro 执行（见「测试工具路由」），跨端数据一致性通过 API 层验证
+- Maestro 不可用时 → 降级为仅测后端 API 层 + 记录 `DEFERRED_NATIVE`
 
 ---
 
@@ -607,4 +639,4 @@ e2e/screenshots/                    # 失败截图
 
 ### 5. 原生端降级处理
 
-mobile-native 子项目的步骤在 Playwright 中无法执行。标记为手动验证点，通过 API 层验证数据一致性作为替代。
+mobile-native 子项目优先使用 Maestro 执行自动化测试。Maestro 不可用时，降级为仅测后端 API 层 + 记录 `DEFERRED_NATIVE`，通过 API 层验证数据一致性作为替代。
