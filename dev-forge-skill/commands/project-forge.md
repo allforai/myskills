@@ -1,5 +1,5 @@
 ---
-description: "项目锻造全流程：setup → spec → scaffold → build → verify。模式: full / existing / resume"
+description: "项目锻造全流程：setup → spec → build → verify。模式: full / existing / resume"
 argument-hint: "[mode: full|resume] [existing]"
 allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion", "Agent"]
 ---
@@ -13,29 +13,28 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 所有文档路径基于插件安装目录: `${CLAUDE_PLUGIN_ROOT}`
 
 > **跨插件调用约定**：本命令是「导航员」。
-> - Phase 2-6, 9 在本插件内执行，通过 `${CLAUDE_PLUGIN_ROOT}/skills/` 路径加载技能。
-> - Phase 4（demo-forge）为独立插件 `demo-forge-skill/`，提示用户运行 `/demo-forge design`。
-> - Phase 7（任务执行）调用 `task-execute` skill，自动编排 superpowers 技能。
-> - Phase 8（验证闭环）产品验收 + E2E 验证 → 修复任务 → 回归。
+> - Phase 1-6, 8-9 在本插件内执行，通过 `${CLAUDE_PLUGIN_ROOT}/skills/` 路径加载技能。
+> - Phase 7（demo-forge）为独立插件 `demo-forge-skill/`，提示用户运行 `/demo-forge design`。
+> - Phase 5（任务执行）调用 `task-execute` skill，自动编排 superpowers 技能。
+> - Phase 6（验证闭环）产品验收 + E2E 验证 → 修复任务 → 回归。
 > - 各阶段产物通过 `.allforai/` 目录作为层间合约。
 
 ### ⚠️ 阶段→技能速查（必看）
 
-> **Phase 7 是 task-execute（写代码），不是 product-verify（验收）。**
-> product-verify 属于 Phase 8。不要混淆！
+> **Phase 5 是 task-execute（写代码），不是 product-verify（验收）。**
+> product-verify 属于 Phase 6。不要混淆！
 
 | Phase | 技能文件 | 做什么 | 完成标志 |
 |-------|---------|--------|---------|
 | 1 | _(内嵌本文)_ | 技术风险调研 | `forge-decisions.json` 有 `technical_spikes` |
 | 2 | `skills/project-setup.md` | 拆子项目 + 选技术栈 | `project-manifest.json` 存在 |
 | 3 | `skills/design-to-spec.md` | 产品设计 → 规格文档 | 每子项目有 `requirements.md` + `design.md` + `tasks.md` |
-| 4 | _(外部: demo-forge 插件)_ | 演示数据方案 | `demo-plan.json` 存在 |
-| **5** | **`skills/shared-utilities.md`** | **共享工具分析 + 任务注入** | **`shared-utilities-plan.json` 存在** |
-| 6 | `skills/project-scaffold.md` | 脚手架生成 | `scaffold-manifest.json` 存在 + mock 可启动 |
-| **7** | **`skills/task-execute.md`** | **按 tasks.md 逐任务写业务代码** | **`build-log.json` 存在且 CORE 任务 completed** |
-| 8 | `skills/product-verify.md` + `skills/e2e-verify.md` | 验证闭环 + 修复回归 | `verify-tasks.json` 无 IMPLEMENT/FIX_FAILING |
-| 9 | `skills/e2e-verify.md` | 跨端验证（条件执行） | E2E 通过率 ≥ 80% |
-| 10 | _(内嵌本文)_ | 最终报告 | `forge-report.md` |
+| **4** | **`skills/shared-utilities.md`** | **共享工具分析 + 任务注入** | **`shared-utilities-plan.json` 存在** |
+| **5** | **`skills/task-execute.md`** | **按 tasks.md 逐任务写业务代码（R0 含项目初始化）** | **`build-log.json` 存在且 CORE 任务 completed** |
+| 6 | `skills/product-verify.md` + `skills/e2e-verify.md` | 验证闭环 + 修复回归 | `verify-tasks.json` 无 IMPLEMENT/FIX_FAILING |
+| 7 | _(外部: demo-forge 插件)_ | 演示数据方案 | `demo-plan.json` 存在 |
+| 8 | `skills/e2e-verify.md` | 跨端验证（条件执行） | E2E 通过率 ≥ 80% |
+| 9 | _(内嵌本文)_ | 最终报告 | `forge-report.md` |
 
 ## 模式路由
 
@@ -45,7 +44,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 - **`full existing`** → 已有项目，gap 模式（扫描代码 → 仅补缺）
 - **`resume`** → 检测已有产物，从第一个未完成阶段继续
 
-## 十阶段架构
+## 九阶段架构
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -66,30 +65,26 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 │    读产品设计产物 → 按子项目生成 spec                        │
 │    输出: requirements.md + design.md + tasks.md              │
 │  ↓ 质量门禁: 每子项目 3 份 spec 完整                        │
-│  Phase 4: 演示数据方案                                       │
-│    提示用户运行 /demo-forge design                           │
-│    输出: demo-plan.json                                      │
-│  ↓ 质量门禁: demo-plan.json 存在                            │
-│  Phase 5: 共享工具分析 (shared-utilities)                   │
+│  Phase 4: 共享工具分析 (shared-utilities)                   │
 │    扫描现有代码 → 跨任务模式分析 → 三方库调研 → 注入 B1     │
 │    输出: shared-utilities-plan.json                          │
 │  ↓ 质量门禁: shared-utilities-plan.json 存在                │
-│  Phase 6: 脚手架生成 (project-scaffold)                     │
-│    按模板 + mock-server                                      │
-│    输出: 项目骨架 + mock-server/                             │
-│  ↓ 质量门禁: 脚手架存在 + mock 可启动                       │
-│  Phase 7: 任务执行 (task-execute)                             │
+│  Phase 5: 任务执行 (task-execute)                             │
+│    R0 项目初始化 → R1 基础设施 → R2 业务 → R3 集成 → R4 测试│
 │    自动编排: 策略推断 → 委托执行 → 进度追踪 → 增量验证      │
-│    Round 0→1→2→3→4                                          │
 │  ↓ 质量门禁: CORE 任务完成，lint 通过                       │
-│  Phase 8: 验证闭环                                           │
+│  Phase 6: 验证闭环                                           │
 │    抽象门禁 + product-verify + e2e-verify → 修复 → 回归     │
 │  ↓ 质量门禁: 修复项 = 0 或记录为已知问题继续                │
-│  Phase 9: 跨端验证 (e2e-verify) — 条件执行                   │
-│    仅当 Phase 8 被跳过时执行                                  │
+│  Phase 7: 演示数据方案 (demo-forge design)                   │
+│    代码稳定后设计演示数据，提示运行 /demo-forge design       │
+│    输出: demo-plan.json                                      │
+│  ↓ 质量门禁: demo-plan.json 存在（或跳过）                  │
+│  Phase 8: 跨端验证 (e2e-verify) — 条件执行                   │
+│    仅当 Phase 6 被跳过时执行                                  │
 │    业务流 → 跨端场景 → Playwright                            │
 │  ↓                                                          │
-│  Phase 10: 最终报告                                          │
+│  Phase 9: 最终报告                                           │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -108,10 +103,10 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 | technical-spike | `forge-decisions.json` 存在且 `technical_spikes` 数组长度 > 0 |
 | project-setup | `.allforai/project-forge/project-manifest.json` 存在 |
 | design-to-spec | `.allforai/project-forge/sub-projects/*/tasks.md` 存在 |
-| demo-forge design | `.allforai/demo-forge/demo-plan.json` 存在 |
 | shared-utilities | `.allforai/project-forge/shared-utilities-plan.json` 存在 |
-| project-scaffold | `.allforai/project-forge/sub-projects/*/scaffold-manifest.json` 存在 |
 | task-execution | `.allforai/project-forge/build-log.json` 存在 |
+| product-verify | `.allforai/product-verify/verify-report.md` 存在 |
+| demo-forge design | `.allforai/demo-forge/demo-plan.json` 存在 |
 | e2e-verify | `.allforai/project-forge/e2e-report.json` 存在 |
 
 ### 前置检查
@@ -134,20 +129,20 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 | 能力 | 探测方式 | 重要性 | 降级行为 |
 |------|---------|--------|---------|
-| Playwright | `mcp__playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 可用性（任一可用即就绪） | Phase 8-9 必需 | 阻塞验证阶段，提示安装 |
+| Playwright | `mcp__playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 可用性（任一可用即就绪） | Phase 6-8 必需 | 阻塞验证阶段，提示安装 |
 | OpenRouter (MCP) | `mcp__plugin_product-design_ai-gateway__ask_model` 可用性 | 可选 | 跳过 XV 交叉验证 |
 
 **输出格式**：
 
 ```
 外部能力:
-  Playwright        ✓ 就绪     E2E 验证 + 产品验收（Phase 8-9）
+  Playwright        ✓ 就绪     E2E 验证 + 产品验收（Phase 6-8）
   OpenRouter (MCP)  ✗ 未就绪   XV 交叉验证（可选，跳过）
 ```
 
 **交互式安装引导**（统一协议见 `product-design-skill/docs/skill-commons.md`）：
 
-- **Playwright 未就绪**：Phase 0 输出提示，不阻塞 Phase 1-7。进入 Phase 8 前用 AskUserQuestion 提供一键安装选项（「是，帮我安装」/「跳过」/「查看详情」）
+- **Playwright 未就绪**：Phase 0 输出提示，不阻塞 Phase 1-5。进入 Phase 6 前用 AskUserQuestion 提供一键安装选项（「是，帮我安装」/「跳过」/「查看详情」）
 - **OpenRouter 未就绪**：提示运行 `/setup` 配置（Key 存储在插件 `.mcp.json`，不污染 shell 环境变量），不阻塞
 
 ### 初始化决策追踪
@@ -239,12 +234,12 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
     "phase_2": "pending | completed | skipped",
     "phase_3": "pending | completed | skipped",
     "phase_4": "pending | completed | skipped",
-    "phase_5": "pending | completed | skipped",
-    "phase_6": "pending | completed | skipped",
-    "phase_7": "pending | in_progress | completed",
-    "phase_8": "pending | in_progress | completed | skipped",
-    "phase_9": "pending | completed | skipped",
-    "phase_10": "pending | completed"
+    "phase_4": "pending | completed | skipped",
+    "phase_5": "pending | in_progress | completed",
+    "phase_6": "pending | in_progress | completed | skipped",
+    "phase_7": "pending | completed | skipped",
+    "phase_8": "pending | completed | skipped",
+    "phase_9": "pending | completed"
   },
   "decisions": []
 }
@@ -265,7 +260,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 | 有 producer / admin 类角色 | `admin` |
 | 有 mobile 标记 或 experience-map 中有 mobile 界面 | `mobile-native` |
 
-读取 `${CLAUDE_PLUGIN_ROOT}/templates/stacks.json`，按端类型过滤可选技术栈。
+按端类型过滤可选技术栈。
 
 **Step 2b: 生成推荐配置**
 
@@ -531,23 +526,7 @@ design-to-spec 内部使用 Agent tool 并行加速：后端子项目先完成 s
 
 ---
 
-## Phase 4：演示数据方案
-
-### 执行方式
-
-提示用户运行 `/demo-forge design` 完成演示数据方案设计。
-
-> 注: demo-forge 已独立为 `demo-forge-skill/` 插件。本阶段仅做 plan 设计，完整灌入（media + execute + verify）在 Phase 8 代码稳定后运行 `/demo-forge`。
-
-### 质量门禁
-
-| 条件 | 标准 |
-|------|------|
-| demo-plan.json | 存在于 `.allforai/demo-forge/`（或用户选择跳过） |
-
----
-
-## Phase 5：共享工具分析
+## Phase 4：共享工具分析
 
 ### 执行方式
 
@@ -564,37 +543,12 @@ design-to-spec 内部使用 Agent tool 并行加速：后端子项目先完成 s
 | B1 任务注入 | 所有 SU-xxx 有对应 B1 任务（`_SharedUtility: SU-xxx_` 标注） |
 | Leverage 更新 | affects_tasks 中的任务已有 SU-xxx 引用 |
 
-**PASS** → 进入 Phase 6（project-scaffold）
-**用户跳过** → 记录到 forge-decisions.json（`phase_5: "skipped"`），继续
+**PASS** → 进入 Phase 5（task-execute）
+**用户跳过** → 记录到 forge-decisions.json（`phase_4: "skipped"`），继续
 
 ---
 
-## Phase 6：脚手架生成
-
-### 执行方式
-
-用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/skills/project-scaffold.md`，按其工作流执行。
-
-### New vs Existing 差异
-
-- **new**：全量脚手架
-- **existing**：仅补缺文件，绝不覆盖已有
-
-### 质量门禁
-
-| 条件 | 标准 |
-|------|------|
-| 脚手架文件 | scaffold-manifest.json 存在且文件数 > 0 |
-| mock-server | apps/mock-server/server.js 存在 |
-| 依赖安装 | 自动执行 pnpm install，检查退出码 = 0 |
-| mock 启动 | 自动启动 mock-server，curl health check 返回 2xx |
-
-**PASS** → 进入 Phase 7（⚠️ Phase 7 = task-execute，加载 `${CLAUDE_PLUGIN_ROOT}/skills/task-execute.md`）
-**FAIL** → 记录问题到 forge-decisions.json，带问题继续（不停）
-
----
-
-## Phase 7：任务执行
+## Phase 5：任务执行
 
 ### 执行方式
 
@@ -615,22 +569,22 @@ task-execute 自动完成：
 | lint | 通过（或最后 Round 质量检查无 fail） |
 | test | 通过（或自动跳过并记录） |
 
-**PASS** → 进入 Phase 8
+**PASS** → 进入 Phase 6
 **FAIL** → 记录 failed/skipped 任务到 forge-decisions.json，带问题继续（不停）
 
 ---
 
-## Phase 8：验证闭环
+## Phase 6：验证闭环
 
-### 前置产物检查（防跳过 Phase 7）
+### 前置产物检查（防跳过 Phase 5）
 
 > ⚠️ **硬性前置条件**：`.allforai/project-forge/build-log.json` 必须存在且至少有一个 Round 状态为 `completed`。
-> 若 build-log.json 不存在 → **说明 Phase 7 (task-execute) 未执行，必须先回退执行 Phase 7。**
+> 若 build-log.json 不存在 → **说明 Phase 5 (task-execute) 未执行，必须先回退执行 Phase 5。**
 > 禁止绕过此检查直接进入验证。
 
 ### 执行方式
 
-Phase 7 完成后，运行完整验证并闭环修复：
+Phase 5 完成后，运行完整验证并闭环修复：
 
 ```
 Step 0.5: 抽象完整性检查（Abstraction Gate）
@@ -660,7 +614,7 @@ Step 2: 跨端验证
 Step 3: 判断是否需要修复
   汇总 verify-tasks.json 中 IMPLEMENT + FIX_FAILING 项
   汇总 e2e-report.json 中 FIX_REQUIRED 项
-  无修复项 → PASS，进入 Phase 9
+  无修复项 → PASS，进入 Phase 7
   有修复项 → Step 4
 
 Step 4: 生成修复任务
@@ -689,21 +643,40 @@ Step 6: 回归验证
 | verify-tasks.json | IMPLEMENT + FIX_FAILING = 0（或记录为已知问题） |
 | e2e-report.json | FIX_REQUIRED = 0（或记录为已知问题） |
 
-**PASS** → 进入 Phase 9
+**PASS** → 进入 Phase 7
 **FAIL** → 记录已知问题到 forge-decisions.json，继续（不停）
 
 ---
 
-## Phase 9：跨端验证（条件执行）
+## Phase 7：演示数据方案
+
+### 执行方式
+
+代码稳定后，提示用户运行 `/demo-forge design` 完成演示数据方案设计。
+
+> 注: demo-forge 已独立为 `demo-forge-skill/` 插件。本阶段仅做 plan 设计，完整灌入（media + execute + verify）在最终报告后运行 `/demo-forge`。
+
+### 质量门禁
+
+| 条件 | 标准 |
+|------|------|
+| demo-plan.json | 存在于 `.allforai/demo-forge/`（或用户选择跳过） |
+
+**PASS** → 进入 Phase 8
+**用户跳过** → 记录到 forge-decisions.json（`phase_7: "skipped"`），继续
+
+---
+
+## Phase 8：跨端验证（条件执行）
 
 ### 条件判断
 
-检查 Phase 8 状态：
-- Phase 8 **completed**（验证闭环已通过） → **跳过 Phase 9**，直接进入 Phase 10
-- Phase 8 **skipped**（用户跳过验证闭环） → 执行 Phase 9
-- Phase 8 中有 **DEFERRED** 项 → 自动跳过 Phase 9（不停）
+检查 Phase 6 状态：
+- Phase 6 **completed**（验证闭环已通过） → **跳过 Phase 8**，直接进入 Phase 9
+- Phase 6 **skipped**（用户跳过验证闭环） → 执行 Phase 8
+- Phase 6 中有 **DEFERRED** 项 → 自动跳过 Phase 8（不停）
 
-### 执行方式（仅 Phase 8 被跳过时）
+### 执行方式（仅 Phase 6 被跳过时）
 
 用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/skills/e2e-verify.md`，按其工作流执行。
 
@@ -711,7 +684,7 @@ Step 6: 回归验证
 
 所有子项目应用必须正在运行。提示用户启动：
 ```
-Phase 9 需要所有子项目应用正在运行。请确认以下服务已启动：
+Phase 8 需要所有子项目应用正在运行。请确认以下服务已启动：
 
 - api-backend: http://localhost:{port}
 - merchant-admin: http://localhost:{port}
@@ -727,7 +700,7 @@ Phase 9 需要所有子项目应用正在运行。请确认以下服务已启动
 
 ---
 
-## Phase 10：最终报告
+## Phase 9：最终报告
 
 ### 汇总所有阶段
 
@@ -755,12 +728,11 @@ Phase 9 需要所有子项目应用正在运行。请确认以下服务已启动
 | Phase 1: 技术调研 | 完成/跳过 | PASS/SKIP | {N} 项 spike 决策 |
 | Phase 2: 项目引导 | 完成 | PASS | project-manifest.json |
 | Phase 3: 设计转规格 | 完成 | PASS | {N} 子项目 × 3 份 spec |
-| Phase 4: 演示方案 | 完成/跳过 | PASS/SKIP | demo-plan.json |
-| Phase 5: 共享工具分析 | 完成/跳过 | PASS/SKIP | 复用 {M} 现有 + 新建 {K} 共享工具 |
-| Phase 6: 脚手架生成 | 完成 | PASS | {N} 文件 + mock-server |
-| Phase 7: 任务执行 | 完成 | PASS | {N}/{M} 任务完成 |
-| Phase 8: 验证闭环 | 完成 | PASS | 修复 {N} 项，回归通过 |
-| Phase 9: 跨端验证 | 完成/跳过 | PASS/SKIP | {N}/{M} 场景通过（Phase 8 已覆盖则跳过） |
+| Phase 4: 共享工具分析 | 完成/跳过 | PASS/SKIP | 复用 {M} 现有 + 新建 {K} 共享工具 |
+| Phase 5: 任务执行 | 完成 | PASS | {N}/{M} 任务完成 |
+| Phase 6: 验证闭环 | 完成 | PASS | 修复 {N} 项，回归通过 |
+| Phase 7: 演示方案 | 完成/跳过 | PASS/SKIP | demo-plan.json |
+| Phase 8: 跨端验证 | 完成/跳过 | PASS/SKIP | {N}/{M} 场景通过（Phase 6 已覆盖则跳过） |
 
 ## 各子项目状态
 
@@ -804,10 +776,9 @@ Phase 9 需要所有子项目应用正在运行。请确认以下服务已启动
 | Phase 1 | 全量调研 | 扫描代码已有依赖，仅调研缺失项 |
 | Phase 2 | 从空白引导拆分 | 扫描已有代码，提议拆分，识别缺口 |
 | Phase 3 | 全量 spec 生成 | 仅为缺失模块生成 spec |
-| Phase 5 | 跳过 Step 1，从 Step 2 开始 | 全量执行 Step 1（扫描已有工具库存）|
-| Phase 6 | 全量脚手架 | 仅补缺文件，绝不覆盖已有 |
-| Phase 7 | 全量任务执行 | 仅执行缺口任务 |
-| Phase 9 | 全量 E2E | 全量 E2E（无差异） |
+| Phase 4 | 跳过 Step 1，从 Step 2 开始 | 全量执行 Step 1（扫描已有工具库存）|
+| Phase 5 | 全量任务执行 | 仅执行缺口任务 |
+| Phase 8 | 全量 E2E | 全量 E2E（无差异） |
 
 ---
 

@@ -56,9 +56,6 @@ design-to-spec (Phase B 前端)
   Step 3: 引用 ui-design-spec.md 的 design tokens
   Step 4: 生成 tasks.md（B0-B5 任务分批）
       ↓
-project-scaffold
-  Step 3: 从 design.md 生成组件桩文件（类型定义，无样式）
-      ↓
 task-execute
   B3 Round: 前端 UI 任务（组件实现 + 样式 + 状态管理）
 ```
@@ -395,10 +392,8 @@ task-execute B3 共享组件任务指令：
 
 | 组件 | 是否改动 | 原因 |
 |------|----------|------|
-| project-scaffold | **不改** | scaffold 生成桩文件，Stitch 的价值在实现阶段，不在骨架阶段 |
 | e2e-verify | **改** | G10：新增视觉回归验证（Stitch 截图 vs 实际渲染对比） |
 | product-verify | **不改** | 验收标准不变 |
-| seed-forge | **不改** | 种子数据与 UI 无关 |
 | shared-utilities | **不改** | 共享组件识别已有独立机制 |
 | project-setup | **不改** | 子项目拆分与 Stitch 无关 |
 
