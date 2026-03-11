@@ -565,16 +565,35 @@ AskUserQuestion（单选）：
 | 2 | 否，使用文字规格 | 生成 ui-design-spec.md + HTML 预览 + 组件规格，不调用 Stitch |
 | 3 | 暂不确定 | 下游 ui-design 阶段再决定 |
 
+**Q5 — 基础设施偏好**
+
+AskUserQuestion（多选，可多选 + 全不选）：
+
+问题：「产品需要支持以下哪些基础能力？（多选，全不选则跳过）」
+
+| 编号 | 选项 | 影响范围 |
+|------|------|----------|
+| 1 | 暗色模式（Dark Mode） | UI token 需双色系、experience-map 增加主题切换入口 |
+| 2 | 主题/品牌切换 | UI token 需变量化、动态主题加载 |
+| 3 | 多语言 / i18n | 所有文案需 key 化、布局需适应文本长度变化 |
+| 4 | 跨平台（Web + App / 小程序） | experience-map 需多端界面、dev-forge 需多子项目 |
+| 5 | 无障碍 / Accessibility | 组件需 ARIA 标注、对比度达标、键盘导航 |
+| 6 | 离线支持 / PWA | 需 Service Worker / 本地缓存策略 |
+| 7 | RTL 布局（阿拉伯语/希伯来语） | CSS 需 logical properties、图标需镜像 |
+
+> 选中的项会影响下游所有阶段：experience-map（界面清单）、ui-design（token 体系）、dev-forge（技术选型 + 任务生成）。
+
 **写入 `product-concept.json`**：
 
-四个问题回答完毕后，将偏好写入 `pipeline_preferences` 字段：
+五个问题回答完毕后，将偏好写入 `pipeline_preferences` 字段：
 
 ```json
 "pipeline_preferences": {
   "ui_style": "material-design-3 | apple-hig | fluent-design | flat-minimal | glassmorphism | ant-design | shadcn-tailwind | undecided",
   "competitors": ["竞品A", "竞品B"] | [],
   "scope_strategy": "aggressive | balanced | conservative | undecided",
-  "stitch_ui": true | false | "undecided"
+  "stitch_ui": true | false | "undecided",
+  "infrastructure": ["dark-mode", "theme-switching", "i18n", "cross-platform", "a11y", "offline-pwa", "rtl"] | []
 }
 ```
 

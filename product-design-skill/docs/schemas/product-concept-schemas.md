@@ -53,7 +53,8 @@
     "ui_style": "material-design-3 | apple-hig | fluent-design | flat-minimal | glassmorphism | ant-design | shadcn-tailwind | undecided",
     "competitors": ["竞品A", "竞品B"],
     "scope_strategy": "aggressive | balanced | conservative | undecided",
-    "stitch_ui": true | false | "undecided"
+    "stitch_ui": true | false | "undecided",
+    "infrastructure": ["dark-mode", "theme-switching", "i18n", "cross-platform", "a11y", "offline-pwa", "rtl"]
   },
   "frameworks_referenced": ["Lean Canvas", "VPC", "JTBD", "Blue Ocean ERRC", "Kano Model", "Opportunity Solution Tree", "First Principles", "Mom Test", "Build Trap / Product Kata"],
   "search_sources": ["搜索过程中参考的 URL"]

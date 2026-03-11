@@ -394,6 +394,8 @@ Step 1: Requirements 生成
   每个 Agent 对其负责的子项目:
     a. 过滤该子项目的 assigned_modules → 获取模块内的任务列表
     b. 加载对应 full 数据（task-inventory + constraints + use-cases）
+    b2. 读取 product-concept.json 的 `pipeline_preferences.infrastructure`（如存在），
+        将基础设施需求（暗色模式/i18n/a11y 等）纳入需求和任务生成
     c. 按子项目类型（backend/admin/web-customer/web-mobile/mobile-native）
        应用差异化 requirements 模板
     d. 生成 requirements.md（4E 增强模板）:

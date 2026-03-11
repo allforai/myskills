@@ -127,6 +127,10 @@ product-concept → product-map → experience-map → ui-design
 - ERROR 级验证失败（无法推导任何界面、product-map 损坏）
 - `ui_style = "undecided"` 时 Step 2 回退交互模式（风格选择不可自动推断）
 
+**基础设施偏好消费**：
+
+读取 `pipeline_preferences.infrastructure` 数组，在 token 体系和组件规格中体现对应需求（如暗色模式需双色系 token、i18n 需文案 key 化、a11y 需对比度和 ARIA 规范等）。具体实现方式由 LLM 根据所选 UI 风格和技术栈判定。
+
 ---
 
 ## 工作流
