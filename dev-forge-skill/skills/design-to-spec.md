@@ -5,8 +5,9 @@ description: >
   "create tasks from design", "design to specification", "设计转规格", "生成需求文档",
   "生成任务列表", "从产品设计产物生成开发规格", "产物转换",
   or needs to transform product-design artifacts into per-sub-project requirements, design docs, and atomic task lists.
+  Also handles shared-utilities analysis (cross-task pattern resonance, third-party library selection, B1 task injection).
   Requires project-manifest.json (from project-setup) and product-map artifacts.
-version: "2.1.0"
+version: "3.0.0"
 ---
 
 # Design to Spec — 设计转规格
@@ -948,6 +949,11 @@ Step 6: 阶段末汇总确认
   dev-bypass: {N} tasks [DEV_ONLY]（仅 dev_mode.enabled = true 时显示）
 
   → 输出汇总进度「Phase 2 ✓ {N} 子项目 × 5 文档 (Phase A 串行 + Phase B 并行), CORE {M} 任务」（不停）
+  ↓
+Step 7: 共享层分析（Shared Utilities Analysis）
+  7a. 已有代码扫描（existing 模式执行） + 跨任务模式共振分析 + 三方库 WebSearch 选型 + 用户确认
+  7b. 注入 B1 任务 + _Leverage_ 补丁 → tasks-supplement.json + shared-utilities-plan.json
+  → 输出进度「Step 7 ✓ {N} 共享工具（复用 {M} 现有 + 新建 {K}）」
 ```
 
 ### 规模自适应
@@ -1003,13 +1009,18 @@ Step 6: 阶段末汇总确认
   ├── tasks.md               # Step 4 输出（人类可读）
   ├── tasks.json             # Step 4 输出（机器可读）
   └── task-context.json      # Step 4.5 输出（任务上下文预计算）
+
+.allforai/project-forge/
+  ├── shared-utilities-plan.json    # Step 7 主产物
+  ├── tasks-supplement.json         # Step 7 B1 任务 + _Leverage_ 补丁
+  └── existing-utilities-index.json # Step 7 已有工具清单（existing 模式）
 ```
 
 ---
 
 ## JSON 对应件（机器可读格式）
 
-每个 Markdown 规格文件同时生成 JSON 对应件，供下游技能（task-execute、product-verify、shared-utilities）直接解析，避免正则匹配 Markdown 的脆弱性。
+每个 Markdown 规格文件同时生成 JSON 对应件，供下游技能（task-execute、product-verify）直接解析，避免正则匹配 Markdown 的脆弱性。
 
 ### requirements.json
 
@@ -1070,3 +1081,178 @@ Step 6: 阶段末汇总确认
   ]
 }
 ```
+
+---
+
+## Step 7: 共享层分析（Shared Utilities Analysis）
+
+> 在所有子项目 spec 生成完毕后执行。扫描已有代码 + 跨任务模式共振分析 + 三方库选型 → 生成共享层 B1 任务注入。
+> 原 shared-utilities 独立技能合并于此，输出格式不变，task-execute 加载时合并 `tasks-supplement.json`。
+
+### 7a. 已有代码扫描 + 模式共振分析
+
+**已有代码扫描**（existing 模式执行，new 模式跳过）：
+
+扫描项目代码，提取工具库存。**扫描目标**（按优先级）：
+
+| 优先级 | 目标位置 | 识别内容 |
+|--------|---------|---------|
+| 1 | `utils/` `helpers/` `common/` `shared/` `pkg/` | 工具函数 |
+| 2 | `services/` | 外部服务封装（email、sms、storage…） |
+| 3 | `middleware/` `interceptors/` `guards/` | 横切关注点 |
+| 4 | `package.json` / `go.mod` / `requirements.txt` | 已有三方依赖 |
+
+每个已有工具记录为 EU-xxx（Existing Utility）：
+
+```json
+{
+  "id": "EU-001",
+  "type": "email-service | validator | http-client | pagination | logger | ...",
+  "location": "src/utils/email.ts",
+  "coverage": "发送模板邮件、HTML 邮件",
+  "quality": "good | needs-refactor | partial",
+  "usable_as_is": true
+}
+```
+
+质量评估标准：
+- `good`：有完整类型定义、有错误处理、无明显技术债
+- `needs-refactor`：功能可用但缺少类型/错误处理，或与项目规范不符
+- `partial`：仅覆盖部分场景，需要补充
+
+→ 写入 `.allforai/project-forge/existing-utilities-index.json`
+
+**模式共振分析**（Pattern Resonance Analysis）：
+
+Agent 分析所有子项目 `tasks.md`，识别跨任务的逻辑共振：
+
+1. **跨任务语义聚类**：对具有相似逻辑复杂度和技术挑战的任务进行聚类
+2. **抽象可行性评估**：评估抽象后的"认知成本降低"与"耦合风险"
+3. **共振识别指标**：
+   - **逻辑重叠度**：逻辑链条的重合程度
+   - **领域稳定性**：该业务逻辑在 `product-map` 中的变化频率（越稳定越值得抽象）
+   - **技术通用性**：是否属于目标技术栈中常见的共性问题
+
+**三方库选型**（WebSearch）：
+
+对识别出的 NEW 共享工具类型，WebSearch 调研推荐库。搜索词模板（基于 preflight 已选技术栈动态拼接）：
+
+```
+"{framework} {utility_type} best library {year}"
+```
+
+推荐方向参考（WebSearch 确认后使用）：
+
+| 类型 | Node.js/TS | Python | Go |
+|------|-----------|--------|-----|
+| 校验 | class-validator / zod | pydantic | go-playground/validator |
+| HTTP client | axios / got | httpx | resty |
+| 日期 | dayjs / date-fns | python-dateutil | carbon |
+| 日志 | pino / winston | loguru | zap |
+| 邮件 | nodemailer | fastapi-mail | gomail |
+| 文件上传 | multer | python-multipart | standard lib |
+| 分页 | 3行自实现 | 3行自实现 | 3行自实现 |
+| 缓存 | ioredis / node-cache | redis-py | go-redis |
+
+每个 NEW 类型给出 1-2 个推荐选项（含推荐理由）。
+
+**用户确认**：
+
+- 当 `__orchestrator_auto: true` 时，**自动采纳推荐选项（选项 A）**，不停顿。仅当检测到 ERROR 级冲突时才停顿。
+- 非 auto-mode：展示完整分析结果，一次性收集用户决策（ONE-SHOT）。
+- 已有代码（EU-xxx）无需确认，直接采用。
+
+### 7b. 共享层任务注入
+
+用户确认后（或 auto-mode 自动采纳后），自动执行以下操作：
+
+**生成共享工具 B1 任务**：
+
+为每个 SU-xxx 生成原子任务，写入 `.allforai/project-forge/tasks-supplement.json`（**不修改**原始 tasks.md，上游产物只读）：
+
+```json
+{
+  "created_at": "ISO8601",
+  "source": "shared-utilities",
+  "b1_tasks": [
+    {
+      "id": "1.x",
+      "sub_project": "api-backend",
+      "title": "创建 {utility_type} 共享工具",
+      "files": ["src/utils/{name}.ts", "src/utils/index.ts"],
+      "details": "封装 {library}，导出统一接口和类型定义",
+      "shared_utility_ref": "SU-001",
+      "risk": "MEDIUM"
+    }
+  ],
+  "leverage_patches": [
+    {
+      "task_id": "2.3",
+      "append_leverage": ["SU-001 (class-validator)", "SU-003 (ExceptionFilter)"]
+    }
+  ],
+  "refactor_tasks": [
+    {
+      "id": "1.x",
+      "sub_project": "api-backend",
+      "title": "重构 {utility_type}（EU-{id}）以符合项目规范",
+      "files": ["{existing_location}"],
+      "details": "补充类型定义和错误处理",
+      "shared_utility_ref": "EU-001",
+      "risk": "LOW"
+    }
+  ]
+}
+```
+
+**task-execute 加载时合并**：task-execute 启动时检查 `tasks-supplement.json` 是否存在，若存在则：
+- 将 `b1_tasks` 追加到后端子项目 tasks 的 Batch 1 末尾
+- 将 `leverage_patches` 中的引用合并到对应任务的 `_Leverage_` 字段
+- 将 `refactor_tasks` 追加到 Batch 1（EU-xxx 复用已有，quality=needs-refactor 时）
+
+**_Leverage_ 补丁**（写入 supplement，不修改原文件）：
+
+扫描所有子项目 tasks.md，找到 `affects_tasks` 中匹配的任务 ID，将 SU-xxx 引用记录到 `tasks-supplement.json` 的 `leverage_patches` 数组。
+
+**写入 `shared-utilities-plan.json`**：
+
+```json
+{
+  "created_at": "ISO8601",
+  "mode": "new | existing",
+  "existing_utilities": [
+    {
+      "id": "EU-001",
+      "type": "email-service",
+      "location": "src/utils/email.ts",
+      "quality": "good",
+      "action": "reuse | refactor"
+    }
+  ],
+  "shared_utilities": [
+    {
+      "id": "SU-001",
+      "type": "validator",
+      "library": "class-validator",
+      "decision": "use-third-party | self-implement",
+      "b1_task_id": "1.5",
+      "affects_tasks": ["2.3", "2.7", "3.1"]
+    }
+  ],
+  "tasks_updated": 24,
+  "b1_tasks_added": 4
+}
+```
+
+→ 输出进度: 「Step 7 ✓ {N} 共享工具（复用 {M} 现有 + 新建 {K}），{P} 个任务更新了 _Leverage_」
+
+### Step 7 输出文件
+
+```
+.allforai/project-forge/
+├── shared-utilities-plan.json          # 主产物，Step 7 完成标志
+├── tasks-supplement.json               # B1 任务 + _Leverage_ 补丁（task-execute 加载时合并）
+└── existing-utilities-index.json       # existing 模式下的已有工具清单
+```
+
+各子项目 tasks.md **不被修改**。B1 任务和 _Leverage_ 补丁写入 `tasks-supplement.json`，由 task-execute 在加载时动态合并。

@@ -254,9 +254,9 @@ Stitch HTML 提供额外的精确 DOM 结构和样式映射。
    - Stitch 参考：stitch/S030-商品列表页.html
    ```
 
-5. 与 shared-utilities.md（Phase 5）的关系：
+5. 与 design-to-spec Step 7 共享层分析的关系：
    - Step 2.5b 在 **design 阶段** 从上游 vocabulary 规划共享组件（含交互原语）
-   - shared-utilities Phase 5 在 **代码阶段** 验证实际代码的复用一致性
+   - Step 7 共享层分析在 **spec 阶段** 验证跨任务模式复用一致性
    - 两者互补：前者前置规划，后者后置验证
 ```
 
