@@ -8,7 +8,7 @@ description: >
   "代码是否实现了产品地图", "验证功能实现", "找漏实现的功能", "代码覆盖检查",
   or wants to prove code implements the product map features and flows.
   Requires product-map to have been run first. Optionally uses experience-map and use-case.
-version: "1.3.0"
+version: "1.4.0"
 ---
 
 # Product Verify — 产品验收
@@ -67,13 +67,15 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 - `"Playwright testing best practices {year}"`
 - `"Lighthouse CI performance budget {year}"`
 
-**4E+4V 重点**：
-- **E3 Guardrails**: 扩展 S3 约束检查范围：覆盖 task.rules（业务规则验证逻辑）+ task.audit（审计中间件）+ task.exceptions（异常处理逻辑）
-- **E2 Provenance**: 每条 verify-task 标注 `_Source: T001_`，可追溯到 product-map 任务
+**4D+6V 验收基准**：
+- **4D 覆盖度矩阵**: S1-S4 结果按 Data/Interface/Logic/UX 四维度聚合，每维度覆盖率 ≥ 85% 为 PASS
+- **6V 失败诊断**: D4 对动态失败进行 Contract/Conformance/Correctness/Consistency/Capability/Context 六维诊断
+- **闭环判定**: 静态 4D + 动态 4D 取 min，任一维度 < 80% 自动生成补充任务
 
-**OpenRouter 覆盖交叉验证**：
-- **`code_impl_review`** (DeepSeek) — S5 步骤，详见工作流中 S5 节
-- 审查 S1/S3 的 covered 判定是否存在假阳性（路由在但 handler 为空桩）
+**OpenRouter 专家矩阵覆盖**：
+- S1 covered（API/后端）→ DeepSeek 审计实现深度
+- S2 covered（UI/前端）→ Gemini 审计组件保真度
+- S3 covered（安全/规则）→ GPT-4o 审计护栏完整性
 
 ---
 
@@ -83,12 +85,13 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 | 原则 | 对应步骤 | 具体规则 |
 |------|---------|---------|
-| 先有条件再验证 | Step 1 静态 | 验收条件必须来自 use-case-tree.json 的 Given/When/Then，不自行编造验收标准 |
-| 可用性启发式检查 | Step 2 动态 | 每个页面检查：错误状态有提示、加载有反馈、操作可撤销、导航一致、权限拒绝有说明 |
-| 静态先行 | 整体时机 | 静态扫描（代码+路由+文件匹配）不需要启动应用，优先执行，尽早发现覆盖缺口 |
-| 从路由验证覆盖 | Step 1 路由扫描 | 扫描实际路由/端点文件，与 product-map 任务列表对照。路由存在 = 功能已暴露，路由缺失 = 功能未实现 |
-| E2E 只覆盖关键路径 | Step 2 动态 | 动态验收聚焦 business-flows 中的主路径，不重复验证已有单元测试覆盖的底层逻辑 |
-| 交叉验证降低盲区 | S5 交叉验证 | S1-S4 的 covered 判定基于模式匹配，可能存在假阳性（路由在但 handler 为空桩）。通过 OpenRouter 调用第二模型读实际代码片段独立判断，标记分歧项为 REVIEW_NEEDED |
+| 语义覆盖优于字符串匹配 | S1 语义审计 | LLM 读代码理解逻辑，不再依赖路由关键词匹配。4D 维度判定取代二元 covered/missing |
+| 先有条件再验证 | D1 动态 | 验收条件必须来自 use-case-tree.json 的 Given/When/Then，不自行编造验收标准 |
+| 可用性启发式检查 | D3.5 认知走查 | 每个页面检查：错误状态有提示、加载有反馈、操作可撤销、导航一致、权限拒绝有说明 |
+| 静态先行 | 整体时机 | 静态语义扫描不需要启动应用，优先执行，尽早发现覆盖缺口 |
+| 4D 覆盖度闭环 | 静态汇总 + D5 | 按 Data/Interface/Logic/UX 四维度聚合覆盖率，任一维度 < 85%（静态）/ 80%（动态）自动生成补充任务 |
+| XV 降低单模型盲区 | S5 XV | S1-S4 由 Claude 完成，S5 用专家模型矩阵二次审计，分歧项标记 REVIEW_NEEDED |
+| 6V 诊断取代规则分类 | D4 6V 诊断 | 动态失败不再按错误特征硬编码分类，LLM 从 6 个工程视角深度诊断根因 |
 
 ---
 
@@ -137,60 +140,119 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
   ↓
 
 [Static 阶段]（static / full 模式）
-  S1: Task → API 覆盖检查
-      遍历 task-inventory.json，扫描代码路由，比对覆盖状态
-      → 输出进度: 「S1 Task→API ✓ covered:{N} missing:{M} partial:{K}」
-  S2: Screen → 组件覆盖检查（experience-map.json 存在时）
-      遍历 experience-map.json，扫描页面组件，比对覆盖状态
-      → 输出进度: 「S2 Screen→组件 ✓ covered:{N} missing:{M}」（或 WARNING 跳过）
-  S3: 约束 → 代码覆盖检查
-      遍历 product-map constraints，Grep 校验/中间件逻辑
-      → 输出进度: 「S3 约束→代码 ✓ covered:{N} missing:{M}」
-  S4: Extra 代码扫描
-      反向：扫描代码路由，找出未在产品地图中出现的端点
-      → 输出进度: 「S4 Extra ✓ {N} 端点不在产品地图中」
+  **并行执行**：S1-S4 读取不同产物、零依赖，使用 Agent tool 单条消息发出 4 个并行 Agent：
+    ┌── Agent(S1): 语义化 Task 覆盖检查（读 task-inventory + 代码）
+    ├── Agent(S2): UI 组件保真度检查（读 experience-map + 前端代码）
+    ├── Agent(S3): 护栏逻辑覆盖审计（读 constraints + task.rules + 代码）
+    └── Agent(S4): Extra 代码 AI 研判（读代码路由 + task-inventory）
+  全部完成 → 聚合结果 → S5 XV 交叉验证
   ↓
-  S5: Cross-Model 交叉验证（OpenRouter 可用时）
-      目的: 降低 S1/S3 模式匹配的假阳性（路由在但 handler 为空桩/TODO）
-      输入: S1 中 status=covered 的任务 + S3 中 status=covered 的约束
-      流程:
-        1. 对每个 covered 项，Read 匹配文件的关键代码段（路由 handler ±15 行）
-        2. 调用 OpenRouter DeepSeek（task: "technical_validation"）:
-           prompt: 任务描述 + 代码片段 → 判断: genuine / stub / partial
-        3. DeepSeek 判定与 Claude 分歧的项 → 标记 REVIEW_NEEDED
-        4. 高频任务（frequency=高）优先审查，低频可跳过以控制成本
-      成本控制:
-        covered 项 ≤ 20 → 全量审查
-        covered 项 > 20 → 仅审查 frequency=高 + risk_level=高 的项
-      OpenRouter 不可用 → 跳过 S5，输出: 「S5 交叉验证 ⊘ OpenRouter 不可用，跳过」
-      → 输出进度: 「S5 交叉验证 ✓ {N} 项审查, {M} 项分歧(REVIEW_NEEDED)」
+  S1: 语义化 Task 覆盖检查 (LLM-driven)
+      LLM Agent 分析代码库，不再仅匹配路由字符串，而是理解代码逻辑是否真正闭环了 `task-inventory.json` 定义的功能。
+      **4D 审计基准**：
+      - **Data**: 任务涉及的实体/表是否有对应 ORM/Schema 定义？
+      - **Interface**: 任务的 CRUD 操作是否有完整的路由 handler（非空桩）？
+      - **Logic**: handler 内是否包含 `task.rules` 对应的业务判断逻辑？
+      - **UX**: 前端是否有对应页面/组件消费该 API？
+      **覆盖判定**（取代字符串匹配）：
+      - `genuine` — 4D 中至少 3 维有实质代码
+      - `partial` — 1-2 维有实质代码（标注缺失维度）
+      - `stub` — 仅有路由声明 / TODO / mock 返回
+      - `missing` — 无任何匹配代码
+      → 输出进度: 「S1 语义审计 ✓ genuine:{N} partial:{K} stub:{J} missing:{M}」
   ↓
-  S6: 旅程级验证（use-case-tree.json 存在时）
-      逐用例验证端到端可达性，汇总 S1-S3 结果计算旅程完整度
+  S2: UI 组件保真度检查 (LLM-driven)
+      Agent 扫描前端代码，以 `experience-map.json` 为真值验证组件实现保真度。
+      **6V 保真度维度**：
+      - **V1 Contract**: 组件 props 是否匹配 `screen.actions` 定义的交互？
+      - **V2 Conformance**: 组件是否使用了 `ui-design-spec.md` 指定的 Design Token？
+      - **V3 Correctness**: `screen.states`（empty/loading/error/permission_denied）四态是否全部实现？
+      - **V4 Consistency**: 同类页面（列表/详情/表单）是否使用相同组件套路？
+      - **V5 Capability**: 是否实现了 `implementation_contract.required_behaviors`？
+      - **V6 Context**: `emotion_context` 标注的焦虑/沮丧触点是否有对应 UI 反馈？
+      **保真度评分**：通过 V 数 / 6 = 保真度分（≥ 0.8 为 PASS）
+      → 输出进度: 「S2 UI 保真 ✓ pass:{N} warn:{M} fail:{K}（平均保真度 {score}）」
+  ↓
+  S3: 护栏逻辑覆盖审计 (LLM-driven)
+      Agent 深度 Grep + Read 代码，理解业务校验逻辑是否完整覆盖三级护栏。
+      **三级护栏基准**：
+      - **L1 constraints.json**: 全局业务约束（金额上限/不可逆状态/跨实体规则）
+      - **L2 task.rules**: 任务级业务规则（幂等窗口/阈值触发/校验逻辑）
+      - **L3 task.exceptions**: 异常处理逻辑（超时/冲突/权限不足/并发）
+      **审计方式**：Agent 逐条读取约束，Read 对应代码文件，判断逻辑是否语义等价（而非关键词匹配）。
+      → 输出进度: 「S3 护栏审计 ✓ L1:{a}/{b} L2:{c}/{d} L3:{e}/{f}」
+  ↓
+  S4: Extra 代码 AI 研判
+      Agent 自动研判地图外的端点，语义区分”基础设施”与”幽灵功能”。
+      **研判逻辑**：Agent 读取端点 handler 代码，理解其用途，分类为：
+      - `infra` — 健康检查/认证回调/文档/静态资源/框架内置（自动 ignore）
+      - `dev_support` — 调试端点/seed 数据/mock 路由（自动 ignore + 标注”生产前移除”）
+      - `ghost` — 无法归类到任何产品功能（建议 mark_remove）
+      - `undocumented` — 有实质业务逻辑但不在产品地图中（建议 add_to_map）
+      → 输出进度: 「S4 Extra ✓ infra:{N} dev:{M} ghost:{J} undocumented:{K}」
+  ↓
+  S5: Cross-Model 交叉验证 (XV)
+      **目的**：S1-S4 由 Claude 单模型完成，存在盲区。通过专家模型矩阵二次审计。
+      **模型路由**（遵循 `docs/skill-commons.md` 专家矩阵）：
+      - S1 covered 项（API/后端）→ DeepSeek 审计代码实现深度
+      - S2 covered 项（UI/前端）→ Gemini 审计组件保真度
+      - S3 covered 项（安全/规则）→ GPT-4o 审计护栏完整性
+      **审查范围**（成本控制）：
+        covered 总数 ≤ 20 → 全量审查
+        21-50 → 仅 frequency=高 + risk_level=高
+        > 50 → 仅 frequency=高（上限 30 项）
+        protection_level=core 的创新任务始终纳入，不受阈值限制
+      **审查方式**：
+        Read 匹配文件（handler ±15 行，上限 50 行）
+        构造审查 prompt（角色 + 任务描述 + 代码片段 + 4D 判断标准）
+        调用 OpenRouter 专家模型
+        比对结果：Claude 与专家模型一致 → 确认 | 分歧 → 标记 REVIEW_NEEDED
+      OpenRouter 不可用 → 跳过 S5，输出: 「S5 XV ⊘ OpenRouter 不可用，跳过」
+      → 输出进度: 「S5 XV ✓ {N} 项审查, {M} 项分歧(REVIEW_NEEDED)」
+  ↓
+  S6: 旅程级验证（Journey-Level Verification）
+      逐用例验证端到端可达性，汇总 S1-S5 结果计算旅程完整度。
       use-case-tree.json 不存在 → 跳过 S6
       → 输出进度: 「S6 旅程级 ✓ passed:{N} partial:{M} failed:{K}」
   ↓
-  静态汇总确认（单次交互）:
-    展示覆盖率汇总表:
-    | 检查项 | 已覆盖 | 缺失 | 部分 | 分歧 |
-    |--------|--------|------|------|------|
-    | S1 Task→API | {N} | {M} | {K} | {J} |
-    | S2 Screen→组件 | {N} | {M} | — | — |
-    | S3 约束→代码 | {N} | {M} | — | {J} |
+  S7: 种子数据↔测试场景覆盖矩阵 (Seed-Test Coverage Matrix)
+      **目的**：验证 seed-forge 生成的数据是否足以支撑 product-verify 和 e2e-verify 的所有测试场景。
+      **前提**：`.allforai/seed-forge/seed-plan.json` 存在；否则跳过。
+      **审计逻辑**：
+      1. 从 use-case-tree.json / D1 测试序列提取所有需要的前置数据状态
+      2. 从 seed-plan.json 提取已规划生成的实体 + 状态分布
+      3. 逐场景比对：
+         - 场景需要"已退款订单" → seed-plan 是否规划了 REFUNDED 状态记录？
+         - 场景需要"两个角色各自操作" → seed-plan 是否有两个角色的账号？
+         - 场景需要"筛选结果 ≥2 条" → seed-plan 的数据量是否满足？
+      **覆盖矩阵**：
+      | 测试场景 | 需要的数据状态 | seed-plan 覆盖 | 缺口 |
+      |---------|-------------|--------------|------|
+      | UC-001 创建订单 | 可购买商品 ≥1 | ✅ | — |
+      | UC-005 退款审批 | REFUNDED 订单 ≥1 | ❌ | SEED_GAP |
+      **闭环**：缺口项自动生成 SEED_SUPPLEMENT 任务，指示 seed-forge 补充缺失数据。
+      → 输出进度: 「S7 Seed 覆盖 ✓ covered:{N}/{M} gaps:{K}」
+  ↓
+  静态汇总 + 4D/6V 覆盖度闭环:
+    **覆盖度矩阵**（自动生成）：
+    | 检查项 | genuine | partial | stub | missing | XV 分歧 |
+    |--------|---------|---------|------|---------|---------|
+    | S1 Task 语义覆盖 | {N} | {K} | {J} | {M} | {D} |
+    | S2 UI 保真度 | {N} | — | — | {M} | {D} |
+    | S3 护栏覆盖 | {N} | — | — | {M} | {D} |
 
-    REVIEW_NEEDED 分歧项（S5 交叉验证发现）:
-    | 任务/约束 | Claude 判定 | DeepSeek 判定 | 代码位置 | 理由 |
-    |----------|------------|--------------|---------|------|
-    | T005 创建退款 | covered | stub | routes/refund.ts:23 | handler 仅返回 TODO 注释 |
+    **4D 维度覆盖热力图**：
+    | 维度 | 覆盖率 | 薄弱任务 |
+    |------|--------|---------|
+    | Data | {N}% | {列出 Data 维度缺失的任务} |
+    | Interface | {N}% | {列出 Interface 维度缺失的任务} |
+    | Logic | {N}% | {列出 Logic 维度缺失的任务} |
+    | UX | {N}% | {列出 UX 维度缺失的任务} |
 
-    IMPLEMENT 候选: {N} 项（按频次排序）
-    EXTRA 端点（自动建议）:
-    | 端点 | 建议 | 理由 |
-    |------|------|------|
-    | /api/legacy/export | ignore | 无匹配任务，可能历史遗留 |
-    | /api/internal/sync | ignore | 内部同步，不面向用户 |
-
-    → 自动采纳全部建议决策（不停）
+    **闭环判定**：
+    - 4D 每维度覆盖率均 ≥ 85% 且 XV 分歧率 ≤ 5% → STATIC_PASS
+    - 任一维度 < 85% 或分歧率 > 5% → 生成补充 IMPLEMENT 任务，标注缺失维度
+    → 自动采纳全部分类（不停）
 
 [Dynamic 阶段]（dynamic / full 模式）
   D0: 应用可达性预检
@@ -198,18 +260,148 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
       HTTP 请求验证可达性
       可达 → 继续（不停）
       不可达 → 记录为 ENV_ISSUE，跳过 dynamic 阶段（不停）
-  D1: 加载/推导测试序列
-      use-case-tree.json 存在 → 提取正常流 + E2E 用例
-      不存在 → 从 task-inventory.json 自动推导（高/中频任务）
-      自动推导测试序列（不停，汇总到 D4 批量确认）
-  D2: 执行正常流用例（Playwright）
-      → 输出进度: 「D2 正常流 ✓ pass:{N} fail:{M} skip:{K}」
-  D3: 执行 E2E 流用例（Playwright）
-      → 输出进度: 「D3 E2E流 ✓ pass:{N} fail:{M} skip:{K}」
-  D4: 自动分类 + 批量确认（单次交互）
-      基于错误特征自动建议分类（FIX_FAILING / ENV_ISSUE）
-      展示通过数 + 失败项汇总表（含自动建议分类及理由）
+  ↓
+  D1: LLM 驱动测试序列生成
+      **use-case-tree.json 存在时**：
+      - 提取正常流 + E2E 用例，按角色分组
+      - Agent 审查用例覆盖度：是否覆盖了 experience-map 中所有 frequency=高 的 screen？
+      - 覆盖不足 → Agent 自动补充遗漏路径的测试序列
+      **use-case-tree.json 不存在时**：
+      - Agent 从 task-inventory.json 自动推导（frequency=高/中 的任务）
+      - 按角色生成最简测试序列（登录 → 执行核心任务 → 验证结果）
+      → 自动推导/补充测试序列（不停，汇总到 D4 批量确认）
+  ↓
+  D2∥D3: 并行执行正常流 + E2E 流用例（独立 Playwright browser context）
+      ┌── Agent(D2): 正常流用例（独立 context，隔离 cookie/session）
+      └── Agent(D3): E2E 流用例（独立 context，隔离数据）
+      全部完成 → 聚合结果
+      → 输出进度: 「D2 正常流 ✓ pass:{N} fail:{M} | D3 E2E流 ✓ pass:{N} fail:{M}」
+  ↓
+  D3.5: LLM Cognitive Walkthrough（可发现性测试）
+      模拟真实用户视角，验证功能可发现性（详见下方 D3.5 章节）
+  ↓
+  D3.6: UI 活性验证 (UI Liveness Guarantee)
+      **目的**：experience-map 中每个 screen 的每个 action 都必须有数据让它"活"起来，否则验收时看到的是空壳。
+      **基准**：experience-map.json 的 screens + actions + states
+      **验证规则**（逐 screen 逐 action Playwright 检查）：
+      | UI 元素类型 | 最低数据保障 | 检查方法 |
+      |------------|------------|---------|
+      | 列表页 | ≥ 2 条记录 | `browser_evaluate` 计数列表行/卡片 |
+      | 详情页 | ≥ 1 条完整字段记录 | 检查无 null/undefined/空值 |
+      | 操作按钮 | ≥ 1 条可操作的目标数据 | 按钮非 disabled 且有目标记录 |
+      | 搜索/筛选 | ≥ 2 条可区分记录 | 搜索后结果变化 |
+      | 状态标签/徽章 | 每种状态至少 1 条 | 对照 task.outputs.states 逐状态验证 |
+      | Dashboard/图表 | ≥ 1 个月跨度数据 | 图表渲染非空 |
+      | 空态页面 | 专门验证 empty state | 新角色/空数据账号登录后 empty 页正确展示 |
+      **逆向验证链**：
+      experience-map.screen → 反推最低数据需求 → 对比 seed-plan.json → 缺口即 SEED_GAP
+      **输出**：
+      | screen | actions 总数 | 有数据支撑的 action | 活性率 |
+      |--------|------------|-------------------|-------|
+      | 订单列表 | 5 | 5 | 100% |
+      | 退款审批 | 3 | 1 | 33% ← 需补 REFUNDED 数据 |
+      活性率 < 80% 的 screen → 生成 SEED_SUPPLEMENT + IMPLEMENT 任务
+      → 输出进度: 「D3.6 UI 活性 ✓ alive:{N}/{M} screens（平均活性 {rate}%）」
+  ↓
+  D3.7: 数据流闭环追踪 (Data Flow Tracing)
+      **目的**：跟踪一条业务实体从创建→更新→流转→消费→终态的全生命周期，验证数据在每个节点的正确性。
+      **基准**：business-flows.json 的每条 flow = 一条数据流路径
+      **验证流程**：
+      1. 选取 frequency=高 的 flow（≤5 条）
+      2. 对每条 flow，用 Playwright + API 调用追踪数据全生命周期：
+         - 创建节点：API 创建实体 → 验证响应 + 数据库状态
+         - 流转节点：触发状态变更 → 验证前后端状态同步
+         - 消费节点：在下游页面验证数据正确展示
+         - 终态节点：实体到达终态后各关联实体是否正确更新
+      3. 每个节点验证：输入数据 = 上游输出数据（字段名/类型/精度一致）
+      **断裂检测**：
+      - 某节点数据丢失或字段值变异 → DATA_FLOW_BREAK
+      - 终态记录的关联数据不完整 → DATA_INTEGRITY_ISSUE
+      → 输出进度: 「D3.7 数据流 ✓ flows:{N} breaks:{M}」
+  ↓
+  D3.8: 状态机完备性验证 (State Machine Completeness)
+      **目的**：task.outputs.states 定义了 N 种状态，验证每种状态是否可达、有数据记录、UI 正确展示。
+      **基准**：task-inventory.json 中每个任务的 `outputs.states` + seed-plan.json
+      **验证矩阵**：
+      | 实体 | 定义状态 | 有数据 | UI 可见 | 可达路径 |
+      |------|---------|--------|---------|---------|
+      | Order | PENDING | ✅ | ✅ | 创建后默认 |
+      | Order | PAID | ✅ | ✅ | 支付成功 |
+      | Order | REFUNDED | ❌ | — | 退款审批通过 |
+      | Order | CANCELED | ✅ | ✅ | 用户取消 |
+      **死胡同检测**：
+      - 某状态有入口无出口（不可逆但未标注为终态） → STATE_DEAD_END
+      - 某状态无数据覆盖 → STATE_NO_DATA（SEED_SUPPLEMENT）
+      - 某状态有数据但 UI 未正确渲染状态标签 → STATE_UI_MISMATCH
+      → 输出进度: 「D3.8 状态机 ✓ {N}/{M} 状态有数据, 死胡同:{K}」
+  ↓
+  D3.9: 约束运行时穿透测试 (Constraint Penetration Test)
+      **目的**：S3 验证约束逻辑"代码有"，但运行时真的拦截了吗？用边界数据主动触发约束。
+      **前提**：seed-plan.json 中有边界数据（1-D 约束规则设计的产出）；否则跳过。
+      **测试策略**：
+      1. 从 constraints.json + task.rules 提取可运行时验证的约束（≤10 条，选 risk_level=高）
+      2. 对每条约束构造违规操作：
+         - 金额上限约束 → 尝试提交超限金额
+         - 不可逆状态约束 → 尝试回退已终结的记录
+         - 幂等约束 → 短时间内重复提交
+         - 权限约束 → 用低权限角色尝试高权限操作
+      3. 验证系统响应：
+         - 拦截成功 → CONSTRAINT_ENFORCED（预期的错误提示/拒绝）
+         - 未拦截 → CONSTRAINT_BYPASS（严重：约束未生效）
+         - 拦截但提示不友好 → CONSTRAINT_UX_ISSUE（有拦截但 UI 反馈差）
+      → 输出进度: 「D3.9 约束穿透 ✓ enforced:{N} bypass:{M} ux_issue:{K}」
+  ↓
+  D4: LLM 6V 失败诊断与分类
+      Agent 对 D2/D3 中所有失败用例进行 6V 视角深度诊断：
+      **6V 诊断维度**：
+      1. **Contract (V1)**: 失败是否源于前后端字段名/类型不一致（契约漂移）？
+         → 分类: CONTRACT_SYNC（需同步 design.json）
+      2. **Conformance (V2)**: 是否是环境不可达、超时或数据库连接问题？
+         → 分类: ENV_ISSUE
+      3. **Correctness (V3)**: 代码逻辑是否未按 `design.json` 规格实现？
+         → 分类: FIX_FAILING
+      4. **Consistency (V4)**: 是否与其他同类页面的行为不一致？
+         → 分类: FIX_FAILING（标注参照页面）
+      5. **Capability (V5)**: 是否是 SLA 性能不达标（超时/响应慢）导致的失败？
+         → 分类: FIX_FAILING（标注 SLA 基准）
+      6. **Context (V6)**: 失败点是否位于 `journey-emotion.json` 标注的高情感触点？
+         → 影响升级: 根据上下文判定是否提升优先级（不一律 P0）
+
+      **Agent 诊断流程**：
+      - Read 失败截图 + 错误日志 + 对应代码文件
+      - 比对 design.json 中的预期行为
+      - 输出: { “verdict”: “V1-V6 中的主因”, “classification”, “reason”, “fix_hint” }
+
+      **批量确认展示格式**：
+      ## 动态验收结果 (6V 诊断)
+
+      通过: {N}/{M} 用例
+
+      失败项（LLM 6V 诊断）:
+      | 用例 | 失败步骤 | 主因维度 | 诊断结论 | 分类 | 修复线索 |
+      |------|---------|---------|---------|------|---------|
+      | UC001 | Step 3 | V3 Correctness | handler 未处理空购物车 | FIX_FAILING | cart.controller:42 |
+      | UC005 | Step 1 | V2 Conformance | 连接拒绝 | ENV_ISSUE | 检查 port 3001 |
+      | UC008 | Step 2 | V1 Contract | 字段名 userName vs user_name | CONTRACT_SYNC | 同步 design.json |
+
       → 自动采纳全部建议分类（不停）
+  ↓
+  D5: 动态 4D 覆盖度闭环
+      **交叉比对 D2/D3 通过用例与 S1 语义覆盖**：
+      - S1 genuine + D2/D3 pass → 真正覆盖（最高置信）
+      - S1 genuine + D2/D3 fail → 静态有但运行时不通（FIX_FAILING 优先级提升）
+      - S1 missing + D 未覆盖 → 确认缺失
+      **4D 动态维度覆盖**：
+      | 维度 | 静态覆盖 | 动态验证 | 最终判定 |
+      |------|---------|---------|---------|
+      | Data | S1+S3 | D2/D3 数据操作成功率 | min(静态, 动态) |
+      | Interface | S1 | D2/D3 API 调用成功率 | min(静态, 动态) |
+      | Logic | S3 | D2/D3 业务流程通过率 | min(静态, 动态) |
+      | UX | S2 | D3.5 可发现性分数 | min(静态, 动态) |
+
+      **闭环判定**：
+      - 4D 每维度最终判定均 ≥ 80% → VERIFY_PASS
+      - 任一维度 < 80% → 生成针对性 IMPLEMENT/FIX 任务，标注缺失维度和修复线索
 
 生成输出文件：
   static-report.json / dynamic-report.json / verify-tasks.json / verify-report.md
@@ -406,9 +598,8 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
    - 最后一步缺失 → 标记为 INCOMPLETE_ENDING（用户无法完成）
 
 5. **按用例优先级排序**：
-   - 关联 P0 需求的用例 → 必须 PASS
-   - 关联 P1 需求的用例 → 建议 PASS
-   - 关联 P2 需求的用例 → 允许 PARTIAL
+   - 根据需求优先级和业务上下文判定每个用例的通过要求
+   - 核心业务旅程 → 必须 PASS；辅助功能 → 允许 PARTIAL
 
 **输出追加到 static-report.json**：
 
@@ -778,10 +969,12 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 ---
 
-## 5 条铁律
+## 7 条铁律
 
-1. **product-map 是验收基准** — 静态验收以 product-map.json 为唯一真值，不引入额外需求来源；有争议的功能先补充到产品地图，再重跑验收
+1. **上游产物是不可逾越的真值** — 静态验收以 product-map.json + experience-map.json + design.json 为真值基准，不引入额外需求来源；有争议的功能先补充到产品地图，再重跑验收
 2. **只报告不修改代码** — 发现缺口只标记到 verify-tasks.json，不自动生成、修改或删除任何实现代码
-3. **频次决定优先级** — IMPLEMENT 任务按 frequency 排序，高频漏实现优先于低频；低频漏实现仅列出不主动建议
-4. **EXTRA 自动建议归属** — EXTRA 代码由系统自动建议 keep/remove，写入决策日志
-5. **动态失败自动分类** — 基于错误特征自动建议分类（FIX_FAILING / ENV_ISSUE），自动采纳写入决策日志
+3. **4D 覆盖度闭环驱动** — 按 Data/Interface/Logic/UX 四维度聚合覆盖率，低于阈值自动生成针对性补充任务（标注缺失维度），直到闭环通过
+4. **设计反向驱动验收** — experience-map 的 screen/action 反推最低数据需求，验证种子数据覆盖度和 UI 活性，设计产物既是正向生成的输入也是逆向验收的基准
+5. **EXTRA 自动建议归属** — EXTRA 代码由 Agent 语义研判自动分类（infra/dev/ghost/undocumented），写入决策日志
+6. **6V 诊断取代规则分类** — 动态失败由 LLM 从 6 个工程视角深度诊断根因，输出分类 + 修复线索，自动采纳写入决策日志
+7. **全链路数据闭环** — 不只验证"代码有没有"，还验证数据流是否贯通、状态机是否完备、约束是否运行时生效

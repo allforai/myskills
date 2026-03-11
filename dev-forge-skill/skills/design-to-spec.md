@@ -6,7 +6,7 @@ description: >
   "生成任务列表", "从产品设计产物生成开发规格", "产物转换",
   or needs to transform product-design artifacts into per-sub-project requirements, design docs, and atomic task lists.
   Requires project-manifest.json (from project-setup) and product-map artifacts.
-version: "1.3.0"
+version: "2.1.0"
 ---
 
 # Design to Spec — 设计转规格
@@ -28,9 +28,9 @@ version: "1.3.0"
 ## 定位
 
 ```
-project-setup（架构层）   design-to-spec（规格层）   project-scaffold（实现层）
-拆子项目/选技术栈         生成 spec 文档/任务列表      生成代码骨架
-manifest.json            req + design + events + tasks  实际文件和目录
+project-setup（架构层）   design-to-spec（规格层）   task-execute（实现层）
+拆子项目/选技术栈         生成 spec 文档/任务列表      逐任务执行代码
+manifest.json            req + design + events + tasks  项目代码 + build-log
 ```
 
 **前提**：
@@ -83,65 +83,78 @@ manifest.json            req + design + events + tasks  实际文件和目录
 
 ---
 
-## 规格生成原则
+## 锻造-验证-闭环 (Forge-Verify-Loop, FVL)
 
-> 以下原则在各步骤中强制执行，生成的 spec 必须符合这些规则。
+> 本技能不再使用简单的规则映射，而是采用基于 LLM 的生成与审计闭环。**上游产物（Intermediate Artifacts）被视为不可逾越的「硬约束」 (Inviolable Constraints)。**
 
-| 原则 | 对应步骤 | 具体规则 |
-|------|---------|---------|
-| 分层依赖方向 | Step 4 | B1(数据模型) → B2(业务逻辑/接口) → B3(UI/展示层) → B4(集成) 严格内→外。展示层不直接访问数据层，必须经过业务逻辑层 |
-| 单一职责任务 | Step 4 | 每个原子任务 1-3 文件、15-30 分钟、单一可测结果。禁止出现"实现 XX 系统"这种宽泛任务 |
-| 隔离外部调用 | Step 3 | 外部 API/SDK 调用封装为独立 service/adapter 文件，业务层通过接口调用，不直接 import SDK |
-| 接口设计遵循目标协议惯例 | Step 3 | REST: 资源复数 + HTTP 动词 + `{ code, message, details }` 错误格式；GraphQL: schema-first + Query/Mutation 分离；gRPC: proto-first + status code；其他协议按其社区最佳实践 |
-| 数据模型遵循存储引擎最佳实践 | Step 3 | RDBMS: 范式化设计（反范式需标注理由）；Document DB: 嵌套 vs 引用按访问模式决策；KV: key 结构按查询模式设计。design.md 中标注建模决策依据 |
-| 用户故事按角色组织 | Step 1 | requirements.md 按角色分组（"As a {role}"），每组内按 frequency 排序（高频在前） |
-| 后端优先生成顺序 | Step 3 | **先生成后端 design.md（数据模型→接口定义），再生成前端 design.md（引用已定义的接口）**。前端 design 中的接口调用必须引用后端 design 中的定义 |
-| 设计分层展开 | Step 3 | design.md 从数据模型开始，逐层展开到接口 → 页面 → 组件。每层引用上一层定义 |
-| 输入验证在边界层 | Step 3 | 所有外部输入在接入层统一验证（whitelist 模式）。防注入（参数化查询/转义/沙箱）。认证在接入层声明，不在业务代码中手动检查 |
-| 统一错误处理 | Step 3 | 全局错误拦截（中间件/拦截器/错误边界），返回统一格式。业务错误用自定义错误类型（含错误码），日志分级 ERROR/WARN/INFO，敏感信息不进日志 |
-| 测试与实现对称 | Step 4 | 每个 B2 业务逻辑/接口任务必须对应 B5 测试任务。测试间无共享可变状态，每条测试独立可运行 |
-| 性能基线内建 | Step 3 | 集合查询强制分页/游标（默认批次 ≤ 50 条），高频查询路径建索引，避免 N+1 问题。大数据量操作走异步任务 |
-| 写操作幂等 | Step 3 | 创建类操作支持幂等键（协议级 header 或业务唯一约束），更新类操作使用乐观锁（version 字段或条件更新），并发冲突返回对应协议的冲突状态 |
-| 前端 CRUD 套路一致 | Step 3 | 同类型子项目的列表/新建/编辑/删除/详情必须使用相同组件套路和数据流模式。详见「前端 CRUD 实现套路」章节 |
-| 多语言全覆盖 | Step 3, 4 | 所有用户可见文本必须通过 i18n 函数获取（禁止硬编码），新增文本必须同步所有语言文件。design.md 中标注 i18n 方案，tasks.md 中每个涉及 UI 文本的任务标注 `_i18n: sync all locales_` |
+### 阶段 1：Agent 生成 (Generation)
+*   **输入**：`.allforai/` 全量 JSON（product-map, experience-map, ui-design-spec 等） + `project-manifest.json` + 技术栈模板。
+*   **核心约束**：Agent 必须严格遵守 `entity-model.json` 的字段定义、`api-contracts.json` 的结构约定以及 `constraints.json` 的业务规则。
+*   **动作**：生成 `requirements.md`, `design.md`, `tasks.md` 初稿。
+*   **要求**：必须覆盖 **4D 工程维度** (Data, Interface, Logic, UX)。
+
+### 阶段 2：4D/6V 审计 (Engineering Audit)
+*   **基准**：以上游 `experience-map.json` 和 `product-map.json` 为真值 (Ground Truth)。
+*   **硬约束检查**：
+    1.  **Contract (V1)**: 验证生成的 API 是否与 `api-contracts.json` 保持 100% 签名一致。
+    2.  **Schema (V2)**: 验证数据模型是否违背了 `entity-model.json` 中的关系与约束。
+    3.  **Rule Coverage (V3)**: 验证 `constraints.json` 中的每一条规则是否都有对应的工程落地设计。
+    4.  **Consistency (V4)**: 跨子项目命名规范、目录结构、模式选型是否统一（如 API 命名风格、错误码体系、DTO 命名模式），不一致项标注 `DRIFT`。
+    5.  **Capability (V5)**: 架构设计是否支撑 `task.sla`（响应时间/并发量）和 `task.audit`（审计日志/操作留痕）的非功能需求。对 `_Risk: HIGH_` 任务额外检查异常处理和降级方案。
+    6.  **Context (V6)**: 是否回应了 `emotion_context`（journey-emotion-map）揭示的用户情绪痛点，在 UX 维度设计中是否体现了缓解措施（加载提示、操作确认、进度反馈）。
+
+### 阶段 3：XV 交叉审查 (Cross-Verification)
+*   **模型路由**：遵循 `docs/skill-commons.md` 专家模型矩阵——API/架构审计 → GPT-4o，数据模型/算法 → DeepSeek，UI/视觉 → Gemini，安全/合规 → GPT-4o。
+*   **审查重点**：识别任何偏离上游设计产物的”私自改动”，除非具备极强的技术理由。
+*   **执行规则**：
+    1.  **Scope 限定**：XV 仅审查 Phase 2 标注 `DRIFT` 或 `WARN` 的条目 + 随机抽样 20% 通过项（成本控制）。
+    2.  **Prompt 模板**：向专家模型发送 `{上游产物片段} + {生成 Spec 片段} + {Phase 2 审计结果}`，要求输出 `CONFIRM | REJECT | SUGGEST` + 理由。
+    3.  **分歧处理**：若专家模型与 Phase 2 审计结论矛盾，以更严格的结论为准（宁可多修不可漏放）。
+    4.  **降级**：OpenRouter 不可用时跳过 XV，在输出中标注 `XV_SKIPPED`，Phase 2 审计结果直接生效。
+
+### 阶段 4：自动修正 (Auto-Fix)
+*   汇总 6V + XV 的失败项，由生成 Agent 重新执行，直到审计通过或达到最大轮次（默认 3 轮）。
 
 ---
 
-## 核心映射逻辑
+## 验证基准 (Verification Baseline)
 
-| 产品设计产物 | 目标 spec | 映射规则 | 4E |
-|---|---|---|---|
-| role-profiles.json | requirements.md | "As a {role}" 用户故事 | E1 |
-| task-inventory.json | requirements.md | 每任务 = 1 需求项，frequency → priority | E1 |
-| acceptance_criteria | requirements.md | 直接映射为验收条件 | E1 |
-| use-case-tree.json | requirements.md | Given/When/Then 丰富验收条件 | E1 |
-| constraints.json | requirements.md | 非功能需求（安全/性能/业务规则） | E3 |
-| experience-map.json | design.md | 每 screen = 1 页面/组件规格 | E1 |
-| screen.states | design.md | empty/loading/error/permission_denied → 界面四态设计 | E3 |
-| screen.actions | design.md | 每 action → 1 接口定义（后端）/ 1 交互规格（前端） | E1 |
-| action.on_failure | design.md | 操作失败 → UI 反馈设计 | E3 |
-| action.exception_flows | design.md | 任务异常 → UI 响应映射（1-to-1，from experience-map Step 2） | E3 |
-| action.validation_rules | design.md | 前端验证规则 → 表单 Schema 设计 | E3 |
-| action.requires_confirm | design.md | 高风险操作 → 确认弹窗组件设计 | E3 |
-| screen-conflict.json | requirements.md | 异常缺口（SILENT_FAILURE 等）→ 补充 Error Scenarios | E3 |
-| business-flows.json | design.md | flow → 时序图（Mermaid） | E1 |
-| ui-design-spec.md | design.md | 设计 token、组件库引用 | E1 |
-| prune-decisions.json | tasks.md | 仅 CORE 任务进入实施范围 | E4 |
-| task.rules | requirements.md | 每需求项的「Business Rules」节 | E3 |
-| task.exceptions | requirements.md | 每需求项的「Error Scenarios」节 | E3 |
-| task.sla | requirements.md | 每需求项的 SLA 标注 | E3 |
-| task.prerequisites | requirements.md | 每需求项的「Prerequisites」节 | E3 |
-| task.config_items | requirements.md + design.md | 配置依赖节 + 配置端点/表设计 | E3 |
-| task.outputs | design.md | states → 状态机设计；notifications → 事件/通知设计 | E1 |
-| task.audit | requirements.md + design.md | 审计需求节 + 审计日志表/中间件设计 | E3 |
-| task.approver_role | requirements.md + design.md | 审批流需求 + 审批接口 + 状态流转 | E3 |
-| task.cross_dept_roles | design.md | 跨部门交接 → webhook/集成点设计 | E1 |
-| task.value | requirements.md | 业务价值注释（E4 Context） | E4 |
-| task.risk_level | requirements.md + tasks.md | 风险标签 → review 优先级 | E4 |
-| constraints.code_status | requirements.md | hard 约束 → 验证中间件需求 | E3 |
-| forge-decisions.technical_spikes | design.md | spike.affected_tasks 匹配当前子项目任务 → 生成「Third-Party Integrations」章节 | E4 |
-| forge-decisions.coding_principles | design.md | universal + project_specific → 生成「Coding Principles」约束章节 | E4 |
-| spike.implementation_principles | design.md | 每个匹配 spike 的实现原则 → 写入对应集成章节 | E4 |
+> 审计 Agent 应参照以下基准验证生成的 Spec 质量。
+
+| 产品设计产物 | 验证基准（必须在 Spec 中体现） | 4E 标注要求 |
+|---|---|---|
+| role-profiles.json | requirements.md 按角色分组的用户故事 | E1 |
+| task-inventory.json | 任务优先级 (frequency) 与 风险等级 (risk_level) | E4 |
+| acceptance_criteria | requirements.md 中的验收条件字段 | E1 |
+| use-case-tree.json | 接口/UI 的 Given/When/Then 逻辑链 | E1 |
+| constraints.json | 非功能需求（安全/性能/业务规则） | E3 |
+| experience-map.json | 页面路由、Actions 接口映射、四态设计 (states) | E1/E3 |
+| ui-design-spec.md | Design Token 引用、组件库选型一致性 | E1 |
+| ui-design/screenshots/ | 视觉约束截图，生成后 Playwright 截图对比验证还原度 | — |
+| task.rules/exceptions | design.md 中的业务规则与异常处理章节 | E3 |
+| task.audit | design.md 中的审计中间件/日志表设计 | E3 |
+
+---
+
+## 规格生成原则 (FVL 强制执行)
+
+| 原则 | 具体规则 |
+|------|---------|
+| 分层依赖方向 | B1(数据模型) → B2(业务逻辑/接口) → B3(UI/展示层) → B4(集成) 严格内→外。展示层不直接访问数据层，必须经过业务逻辑层 |
+| 单一职责任务 | 每个原子任务 1-3 文件、15-30 分钟、单一可测结果。禁止出现"实现 XX 系统"这种宽泛任务 |
+| 隔离外部调用 | 外部 API/SDK 调用封装为独立 service/adapter 文件，业务层通过接口调用，不直接 import SDK |
+| 接口设计遵循目标协议惯例 | REST: 资源复数 + HTTP 动词 + `{ code, message, details }` 错误格式；GraphQL: schema-first + Query/Mutation 分离；gRPC: proto-first + status code；其他协议按其社区最佳实践 |
+| 数据模型遵循存储引擎最佳实践 | RDBMS: 范式化设计（反范式需标注理由）；Document DB: 嵌套 vs 引用按访问模式决策；KV: key 结构按查询模式设计。design.md 中标注建模决策依据 |
+| 用户故事按角色组织 | requirements.md 按角色分组（"As a {role}"），每组内按 frequency 排序（高频在前） |
+| 后端优先生成顺序 | **先生成后端 design.md（数据模型→接口定义），再生成前端 design.md（引用已定义的接口）**。前端 design 中的接口调用必须引用后端 design 中的定义 |
+| 设计分层展开 | design.md 从数据模型开始，逐层展开到接口 → 页面 → 组件。每层引用上一层定义 |
+| 输入验证在边界层 | 所有外部输入在接入层统一验证（whitelist 模式）。防注入（参数化查询/转义/沙箱）。认证在接入层声明，不在业务代码中手动检查 |
+| 统一错误处理 | 全局错误拦截（中间件/拦截器/错误边界），返回统一格式。业务错误用自定义错误类型（含错误码），日志分级 ERROR/WARN/INFO，敏感信息不进日志 |
+| 测试与实现对称 | 每个 B2 业务逻辑/接口任务必须对应 B5 测试任务。测试间无共享可变状态，每条测试独立可运行 |
+| 性能基线内建 | 集合查询强制分页/游标（默认批次 ≤ 50 条），高频查询路径建索引，避免 N+1 问题。大数据量操作走异步任务 |
+| 写操作幂等 | 创建类操作支持幂等键（协议级 header 或业务唯一约束），更新类操作使用乐观锁（version 字段或条件更新），并发冲突返回对应协议的冲突状态 |
+| 前端 CRUD 套路一致 | 同类型子项目的列表/新建/编辑/删除/详情必须使用相同组件套路和数据流模式。详见「前端 CRUD 实现套路」章节 |
+| 多语言全覆盖 | 所有用户可见文本必须通过 i18n 函数获取（禁止硬编码），新增文本必须同步所有语言文件。design.md 中标注 i18n 方案，tasks.md 中每个涉及 UI 文本的任务标注 `_i18n: sync all locales_` |
 
 ---
 
@@ -224,8 +237,8 @@ existing 模式下，Step 3 生成 design.md 之前，先执行套路检测：
 
 ### 行为原语实现映射
 
-> Step 2 识别出原语后，按需读取详细映射表：`${CLAUDE_PLUGIN_ROOT}/docs/primitive-impl-map.md`
-> 包含：22 种原语 × Web（UmiJS/Vue3/Next.js/Nuxt）+ 原生/桌面（iOS/Android/Flutter/RN/Windows）共 9 技术栈实现。
+> Step 2 识别出原语后，结合 context7 文档搜索和技术栈能力推导实现方案。
+> 可参考 `${CLAUDE_PLUGIN_ROOT}/docs/primitive-impl-map.md` 作为历史参考，但以项目实际技术栈为准。
 
 ---
 
@@ -280,7 +293,7 @@ existing 模式下，Step 3 生成 design.md 之前，先执行套路检测：
 
 ### design.md 中的输出格式
 
-生成前端子项目的 design.md 时，在页面规格之前插入「页面交互套路」章节。每个页面规格中标注交互类型：
+生成 frontend 子项目的 design.md 时，在页面规格之前插入「页面交互套路」章节。每个页面规格中标注交互类型：
 
 ~~~markdown
 ## 页面交互套路
@@ -358,15 +371,17 @@ Step 0: 模块映射验证
     → 自动分配到最匹配的子项目（按模块类型推断），记录决策（不停）
   → 写入 `.allforai/project-forge/module-assignment-supplement.json`（追加分配条目）
   → **不修改** project-manifest.json（上游产物只读）
-  → task-execute / project-scaffold 加载时自动合并 manifest + supplement
+  → task-execute 加载时自动合并 manifest + supplement
   ↓
 并行执行编排（详见「## 并行执行编排」段落）:
   子项目分类:
     后端组: type = "backend"（通常 1 个）
     前端组: 其余所有子项目（admin/web-customer/web-mobile/mobile-native）
   Phase A — 后端 Agent（1 个 Agent 调用）:
-    Agent(backend): Step 1 → Step 2 → Step 3a → Step 3b → Step 3.5 → Step 3.8 → Step 3.9 → Step 4 → Step 4.5
-    ↓ 完成后
+    Agent(backend): Step 1 → Step 2 → Step 3a → Step 3b
+    ↓ Step 3b 完成后（API 定义就绪），立即启动 Phase B，同时后端继续:
+    Agent(backend-continued): Step 3.5 → Step 3.8 → Step 3.9 → Step 4 → Step 4.5
+    ∥ 并行
   Phase B — 前端并行 Agent（单条消息发出 N 个 Agent 调用）:
     ┌── Agent(前端1): Step 1 → Step 2 → Step 3a → Step 3b → Step 3.8 → Step 3.9 → Step 4 → Step 4.5
     ├── Agent(前端2): Step 1 → Step 2 → Step 3a → Step 3b → Step 3.8 → Step 3.9 → Step 4 → Step 4.5
@@ -382,7 +397,7 @@ Step 1: Requirements 生成
        应用差异化 requirements 模板
     d. 生成 requirements.md（4E 增强模板）:
        每个需求项包含：
-       - 优先级 + 角色（frequency → P0/P1/P2 + owner_role）
+       - 优先级 + 角色（基于上游产物全局上下文判定优先级 + owner_role）
        - Value 注释（← E4 Context，from task.value）
        - 用户故事（As a {role}, I want... So that...）
        - 验收条件（Given/When/Then，来自 use-case-tree）
@@ -405,6 +420,13 @@ Step 2: 行为原语识别 → 共享组件规划
 Step 2.5: 组件规格导入（component-spec.json 存在时执行）
   **触发条件**：`<BASE>/ui-design/component-spec.json` 存在
   **跳过**：文件不存在 → 直接进入 Step 3（向后兼容）
+
+  **ui-design 产出消费方式**：
+  - `tokens.json` — 直接消费，生成 CSS 变量 / Tailwind theme / Flutter theme
+  - `component-spec.json` — 直接消费，task-execute 阶段实现共享组件
+  - `ui-design-spec.json` — 直接消费，屏幕布局、数据绑定、交互模式的确定性规格
+  - `screenshots/` — 视觉约束参考，读取 `<BASE>/ui-design/screenshots/` 目录下的截图，
+    dev-forge 生成页面后可用 Playwright 截图与设计截图做视觉对比验证还原度（辅助验证，不阻断）
 
   **Layer 1（通用，始终执行）**：
   1. 读取 `component-spec.json` 的 `shared_components`
@@ -497,9 +519,9 @@ Step 3b: Design 生成 + 技术丰富（API-first 策略）
       action.on_failure + exception_flows → 原生异常 UI 反馈设计
       action.validation_rules → 表单验证规则
     按需生成的 4E 增强章节（字段存在时才生成）:
-      task.rules（聚合）→ 验证规则设计（验证中间件/Schema 设计）
+      task.rules（聚合）→ 按规则语义选择最适合的工程实现方式
       task.outputs.states + task.exceptions → 状态机设计（Mermaid stateDiagram）
-      task.audit（聚合）→ 审计日志设计（audit_logs 表结构 + 中间件）
+      task.audit（聚合）→ 按审计需求选择最适合的工程实现方式
       task.outputs.notifications → 通知/事件设计（事件触发规则）
       task.approver_role → 审批流 API（审批端点 + 状态流转）
       task.config_items → 配置管理设计（配置端点/表）
@@ -575,9 +597,9 @@ Step 3b: Design 生成 + 技术丰富（API-first 策略）
     }
     ```
     每个节点的 `source_*` 字段溯源到 product-design 的原始 ID（entity-model/api-contracts/view-objects 中的 ID）。
-    无 source 数据时（Step 3a 跳过），`source_*` 字段省略。
+    无 source 数据时（Step 3a 加载失败），`source_*` 字段省略。
     → 输出进度: 「{name}/design.md + design.json ✓ ({N} 接口, {M} 页面)」（不停，汇总到 Step 6）
-  **生成顺序**: 后端 Agent (Phase A) 先于前端 Agent (Phase B)，确保前端 design 可直接引用后端接口定义
+  **生成顺序**: 后端 Step 3b 完成（API 定义就绪）后启动前端 Agent (Phase B)，与后端 Step 3.5-4.5 并行执行
   ↓
 Step 3.5: Design 交叉审查（由后端 Agent 在 Phase A 内执行，OpenRouter 可用时）
   后端 design.md 生成后，触发两项交叉审查:
@@ -608,13 +630,10 @@ Step 3.8: 埋点规格生成（Event Schema）
 
   **生成规则**：
 
-  1. **关键事件推导**：
-     - 每个 P0/P1 需求 → 至少 1 个核心事件
-     - 每个页面 → page_view 事件
-     - 每个表单提交 → form_submit 事件
-     - 每个关键 CTA → click 事件
-     - 每个 API 错误响应 → error 事件
-     - 每个异常流（on_failure） → failure 事件
+  1. **关键事件推导**（语义分析，非规则映射）：
+     - 从 requirements + design + experience-map 中识别值得追踪的用户行为和系统事件
+     - 按业务重要性筛选，不机械 1:1 映射（不是每个页面/按钮都需要事件）
+     - 事件粒度按产品实际分析需求决定
 
   2. **漏斗定义**：
      - 从 business-flows.json 提取核心流程
@@ -761,6 +780,18 @@ Step 4: Tasks 生成
   ```
 
   B5 中应包含埋点验证任务：验证关键事件是否正确触发、属性是否完整、漏斗是否连通。
+
+  **B5 视觉还原度验证**（当 `<BASE>/ui-design/screenshots/` 存在时）：
+  生成的前端页面可用 Playwright 截图，与 `ui-design/screenshots/{screen_id}.png` 中的设计截图做视觉对比。
+  视觉对比是辅助验证手段，不作为阻断门 — 用于发现明显的布局偏移、配色错误、组件缺失等问题。
+  在 B5 测试任务中追加：
+  ```
+    - [ ] B5.x [frontend] 视觉还原度验证
+      Files: `tests/visual/screenshot-compare.spec.ts`（或等效）
+      行为：Playwright 逐页截图 → 与 ui-design/screenshots/ 设计稿截图对比
+      阈值：根据组件重要性和视觉精度要求动态判定，记录差异报告
+      _Source: ui-design/screenshots/_
+  ```
   → Batch 结构因子项目类型而异（见下文）
   → 写入 .allforai/project-forge/sub-projects/{name}/tasks.md
   → 输出进度: 「{name}/tasks.md ✓ ({N} 任务, B0-B5)」（不停，汇总到 Step 4.5）
@@ -1034,80 +1065,8 @@ Step 6: 阶段末汇总确认
     {
       "name": "User",
       "storage": "users",
-      "fields": [],
-      "requirement_ref": "R-001",
-      "indexes": [],
-      "relations": []
+      "fields": []
     }
-  ],
-  "architecture_layers": {}
+  ]
 }
 ```
-
-**`shared_components`**（Step 2 产出，仅前端子项目）：
-- `primitive`：行为原语名（来自 `interaction-types.md` 行为原语索引）
-- `used_by_screens`：使用该原语的界面 ID 列表（`screen_id` from experience-map.json）
-- `suggested_name`：建议的组件/hook 封装名称
-- `tech_stack_impl`：该技术栈下的具体实现方案（来自行为原语实现映射表）
-
-> 后端子项目 `shared_components` 为空数组 `[]`（跳过 Step 2）。
-
-### tasks.json
-
-```json
-{
-  "sub_project": "backend",
-  "generated_at": "ISO8601",
-  "tasks": [
-    {
-      "id": "BE-T001",
-      "title": "实现用户注册接口",
-      "batch": "B2",
-      "files": ["{按技术栈约定的接口层文件}", "{按技术栈约定的业务逻辑文件}"],
-      "requirements_ref": ["R-001"],
-      "leverage": ["SU-001"],
-      "guardrails": ["输入校验", "密码加密"],
-      "risk": "low",
-      "estimated_lines": 120
-    }
-  ],
-  "batch_summary": {
-    "B0": { "count": 2, "description": "Monorepo 初始化" },
-    "B1": { "count": 5, "description": "共享工具库" },
-    "B2": { "count": 15, "description": "数据模型 + API" }
-  }
-}
-```
-
-**生成规则**：
-- JSON 和 Markdown 同步生成，JSON 为完整数据，Markdown 为人类摘要
-- 下游技能优先读取 JSON（存在时），回退到解析 Markdown（向后兼容）
-- JSON 文件路径：与 Markdown 同目录，仅扩展名不同（`requirements.md` → `requirements.json`）
-
----
-
-## 6 条铁律
-
-### 1. CORE 优先，DEFER 标记
-
-仅 CORE 任务进入 tasks.md 的主体。DEFER 任务在末尾单独列出（标记 `[DEFERRED]`），不进入执行计划。CUT 任务完全排除。
-
-### 2. 两阶段加载
-
-先读 index 文件（< 5KB）确定范围，再按需加载 full 数据。大型产品可节省 90%+ token。
-
-### 3. 按端差异化
-
-不同子项目类型的 spec 内容截然不同。后端无 UI 层，前端无 API 层。不生成不属于该端的内容。
-
-### 4. 任务必须原子
-
-每任务 1-3 文件、15-30 分钟、单一目的。不出现"实现 XX 系统"这样的宽泛任务。
-
-### 5. 跨项目依赖显式声明
-
-后端 B2 → 前端 B4 的依赖、共享类型定义的依赖，都在 Step 5 中显式声明并写入 execution_order。
-
-### 6. 并行 Agent 产出隔离 + 类型契约传递
-
-Phase A/B 的并行 Agent 各自写入独立子项目目录（`.allforai/project-forge/sub-projects/{name}/`），不读写其他 Agent 的产出。跨 Agent 数据流严格单向：编排器从后端产物提取类型契约（data_models + request/response schema + 类型定义），注入前端 Agent prompt，确保数据结构字段命名、ID vs 名称等与后端完全一致。前端 Agent 不自行推断后端已定义的数据结构。

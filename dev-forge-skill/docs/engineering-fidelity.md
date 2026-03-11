@@ -45,7 +45,28 @@ product-design 的 4D+6V 是产品视角，dev-forge 需要翻译为工程可执
 
 ---
 
-## 三、product-map → spec 字段映射表
+## 三、锻造-验证-闭环中的 4E+4V
+
+在 Forge-Verify-Loop (FVL) 体系中，4E+4V 不再仅仅是映射规则，而是 **Agent 审计证据 (Audit Evidence)**：
+
+1.  **4E 作为输入基准**：Agent 在生成 Spec 时，必须引用 4E 字段作为设计依据（E1: 做什么, E2: 溯源, E3: 边界, E4: 理由）。
+2.  **4V 作为审计维度**：审计 Agent 使用 4V 视角检查 Spec 是否漏掉关键工程细节（api: 接口, data: 数据, behavior: 行为, ops: 运维）。
+3.  **XV 作为保真门禁**：通过交叉验证 (XV) 确保 4E 信息在从产品到工程的传递中没有失真。
+
+---
+
+## 四、门禁指标
+
+| 指标 | 阈值 | 含义 |
+|------|------|------|
+| **Provenance 完整率** | >= 95% | spec 需求项可追溯到 product-map（task_id / flow_id / constraint_id） |
+| **Guardrails 覆盖率** | >= 90% | 高频+高风险任务的 rules / exceptions / audit 被映射到 spec |
+| **4V 视角覆盖** | 高频+高风险 >= 3V | 高频+高风险任务的 design.md 覆盖 api + data + behavior |
+| **XV 审计通过率** | 100% | 所有 CORE 任务必须通过第二模型的架构与逻辑审计 |
+
+---
+
+## 五、product-map → spec 字段映射表 (审计基准)
 
 | # | 产品设计字段 | 目标 spec 文件 | 目标章节 | 4E 分类 |
 |---|------------|--------------|---------|--------|
@@ -80,13 +101,3 @@ product-design 的 4D+6V 是产品视角，dev-forge 需要翻译为工程可执
 | 29 | business-flows | design.md | 时序图（Mermaid） | E1 |
 | 30 | ui-design-spec | design.md | 设计 token、组件库引用 | E1 |
 | 31 | prune-decisions | tasks.md | CORE 任务进入实施范围 | E4 |
-
----
-
-## 四、门禁指标
-
-| 指标 | 阈值 | 含义 |
-|------|------|------|
-| **Provenance 完整率** | >= 95% | spec 需求项可追溯到 product-map（task_id / flow_id / constraint_id） |
-| **Guardrails 覆盖率** | >= 90% | 高频+高风险任务的 rules / exceptions / audit 被映射到 spec |
-| **4V 视角覆盖** | 高频+高风险 >= 3V | 高频+高风险任务的 design.md 覆盖 api + data + behavior |

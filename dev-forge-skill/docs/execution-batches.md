@@ -133,10 +133,10 @@ Phase B (前端 Agent 并行):
 ~~~
 resume 模式检测 Step 1-4 完成状态:
   检测方式: 检查 .allforai/project-forge/sub-projects/{name}/ 下三件套
-    - requirements.md 存在
-    - design.md 存在
-    - tasks.md 存在
-  三件全 → 该子项目已完成
+    - requirements.md 存在且非空
+    - design.md 存在且非空
+    - tasks.md 存在且非空
+  三件全且非空 → 该子项目已完成（LLM 可进一步验证内容质量，但不阻断 resume）
 
   判定:
     后端 + 所有前端三件套全存在 → 跳过 Step 1-4，进入 Step 5
@@ -153,6 +153,8 @@ resume 模式检测 Step 1-4 完成状态:
 ## 任务 Batch 结构
 
 ### 全局 Batch（monorepo 视角）
+
+> **注意**：以下 B0-B5 结构为默认参考模板。LLM 会根据实际项目的任务依赖图动态调整层数和执行顺序，不强制所有项目遵循固定 6 层结构。GraphQL-first、组件库、微服务等项目形态可能产生不同的 Batch 划分。
 
 ```
 ## Batch 0: Monorepo Setup（全局，最先执行）

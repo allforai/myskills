@@ -12,8 +12,9 @@ Project Forge 是 dev-forge-skill 的核心能力，将产品设计产物（`.al
 |------|------|------|------|
 | **project-setup** | 拆子项目 + 选技术栈 | product-map | project-manifest.json |
 | **design-to-spec** | 生成 spec 文档 | manifest + product-map | requirements + design + tasks |
-| **project-scaffold** | 生成项目骨架 | manifest + design + templates | 代码文件 + mock-server |
+| **task-execute** | 逐任务执行代码（R0 含项目初始化） | manifest + design + tasks | 项目代码 + build-log |
 | **e2e-verify** | 跨端 E2E 测试 | manifest + business-flows | e2e-report |
+| **product-verify** | 静态+动态产品验收 | product-map + code | verify-report |
 
 ### 前提条件
 
@@ -39,10 +40,9 @@ Project Forge 是 dev-forge-skill 的核心能力，将产品设计产物（`.al
 ```
 /project-setup               # Step 1: 拆子项目 + 选技术栈
 /design-to-spec              # Step 2: 生成 spec 文档
-/seed-forge plan             # Step 2.5: 种子数据方案
-/project-scaffold            # Step 3: 生成项目骨架
-# Phase 4: 按 tasks.md 执行（使用 superpowers）
-/e2e-verify                  # Step 5: 跨端 E2E 验证
+/task-execute                # Step 3: 按 tasks.md 执行（R0 项目初始化 → R1-R4 业务实现）
+/e2e-verify                  # Step 4: 跨端 E2E 验证
+/product-verify              # Step 5: 产品验收（静态+动态）
 ```
 
 ---
@@ -55,32 +55,24 @@ Project Forge 是 dev-forge-skill 的核心能力，将产品设计产物（`.al
 Phase 0 ── 产物检测 + 模式路由
             ↓
 Phase 1 ── 项目引导 (project-setup)
-            交互式: 拆子项目 → 选技术栈 → 分模块
+            语义分析: 拆子项目 → 选技术栈 → 分模块
             输出: project-manifest.json
             ↓ 质量门禁
 Phase 2 ── 设计转规格 (design-to-spec)
-            product-design 产物 → spec 文档
-            输出: requirements.md + design.md + tasks.md
+            FVL: LLM 生成 → LLM 审计 → XV 交叉验证 → 自动修正
+            后端 Step 3b 完成后前端并行启动（与后端审计并行）
+            输出: requirements.md + design.md + design.json + tasks.md
             ↓ 质量门禁
-Phase 2.5 ── 种子数据方案
-            提示运行 /seed-forge plan
-            输出: seed-plan.json
-            ↓
-Phase 3 ── 脚手架生成 (project-scaffold)
-            模板 → 项目骨架 + mock-server
-            输出: 代码文件 + apps/mock-server/
+Phase 3 ── 任务执行 (task-execute)
+            分析依赖图动态生成 Round 结构（不固定 B0-B5）
+            质量检查三路并行（lint ∥ test ∥ security）
             ↓ 质量门禁
-Phase 4 ── 任务执行
-            按 Round 依赖顺序:
-            R0: Monorepo Setup
-            R1: Foundation (并行)
-            R2: Backend API ∥ Frontend UI (连 mock)
-            R3: api-client + Integration (切换真实后端)
-            R4: Testing
+Phase 4 ── 验证闭环 (product-verify + e2e-verify)
+            S1-S4 四路并行 Subagent + D2∥D3 并行 Playwright
+            静态+动态验收 → 修复 → 回归
             ↓ 质量门禁
-Phase 5 ── 跨端验证 (e2e-verify)
-            business-flows → E2E 场景 → Playwright
-            输出: e2e-report
+Phase 5 ── 演示数据方案 (demo-forge design)
+            代码稳定后设计演示数据
             ↓
 Phase 6 ── 最终报告
 ```
@@ -161,60 +153,10 @@ Phase 6 ── 最终报告
         ├── requirements.md         # 需求文档
         ├── design.md               # 设计文档
         ├── tasks.md                # 任务列表
-        ├── scaffold-manifest.json  # 脚手架清单
         └── build-log.json          # 构建日志
 ```
 
 ---
-
-## Mock 后端工作机制
-
-Phase 3 生成的 mock-server 让前端可以在后端 API 完成前开始开发：
-
-```
-前端 B3 阶段 ────→ mock-server (localhost:4000)
-                    ├── routes.json (API 映射)
-                    ├── fixtures/ (mock 数据)
-                    └── middleware/image-proxy (图片代理)
-
-后端 B2 完成后 ───→ 切换环境变量
-前端 B4 阶段 ────→ 真实后端 (localhost:3001)
-```
-
-**图片代理**：前端代码中使用 `/api/images/{id}`，mock-server 代理到网络图片 URL，切换到真实后端后路径不变。
-
----
-
-## 自定义模板指南
-
-### 模板文件结构
-
-每个技术栈模板是一个 `.md` 文件，包含以下章节：
-
-```markdown
-# {Framework} + {ORM} 模板
-
-## 目录结构
-## 数据模型生成规则（product-map entity → ORM model）
-## 路由生成规则（task → API route / page route）
-## 配置文件模板（package.json / tsconfig / 框架配置等）
-## 命名约定（文件名 / 变量名 / 表名）
-## Batch 结构（该技术栈的 B1-B5 内容）
-```
-
-### 添加新模板的步骤
-
-1. 在 `templates/backend/` 或 `templates/web/` 或 `templates/mobile/` 下创建 `.md` 文件
-2. 参考已有模板（如 `nestjs-typeorm.md`、`nextjs.md`）编写内容
-3. 在 `templates/stacks.json` 中注册新条目
-4. 测试：运行 `/project-scaffold` 验证模板生成效果
-
-### 模板编写原则
-
-- **具体文件路径**：模板中的目录结构和文件名必须是可直接创建的具体路径
-- **映射规则明确**：从 product-map entity/task/screen 到框架概念的映射必须有明确规则
-- **配置可用**：package.json 等配置文件必须包含正确的依赖版本
-- **命名一致**：文件名、类名、路由名的命名约定必须自洽
 
 ---
 
@@ -226,9 +168,8 @@ Dev Forge 的每个阶段都扎根于经典软件工程理论，并通过 WebSea
 |------|---------|
 | project-setup | Unix Philosophy（做一件事做好）、Conway's Law（架构映射组织）、DDD Bounded Context |
 | design-to-spec | Clean Architecture（依赖向内）、Hexagonal Architecture（端口与适配器）、API-First、C4 Model |
-| project-scaffold | Convention over Configuration、Worse is Better（简单优先）、Tracer Bullet（曳光弹）、YAGNI |
 | e2e-verify | Test Pyramid / Trophy、BDD（Given/When/Then）、Contract Testing |
-| seed-forge | Boundary Value Analysis、Equivalence Partitioning |
+| task-execute | Incremental XV、Contract Drift Sync、DevSecOps Shift-Left |
 | product-verify | ATDD、Heuristic Evaluation、Shift-Left Quality |
 
 每个 skill 执行时会通过 WebSearch 搜索最新趋势文章，搜索结果记录到 `trend-sources.json`，标注 ADOPT / REJECT / DEFER。
@@ -245,7 +186,7 @@ Dev Forge 的每个阶段都扎根于经典软件工程理论，并通过 WebSea
 /project-forge existing
 ```
 
-Phase 1 会扫描已有代码，自动检测技术栈和子项目结构。Phase 3 仅补缺文件，绝不覆盖已有代码。
+Phase 1 会扫描已有代码，自动检测技术栈和子项目结构。existing 模式下只执行缺口任务。
 
 ### Q: 如何跳过某个阶段？
 
@@ -253,10 +194,9 @@ Phase 1 会扫描已有代码，自动检测技术栈和子项目结构。Phase 
 
 ### Q: 如何添加不在列表中的技术栈？
 
-1. 创建模板文件并注册到 stacks.json
-2. 或者在 project-setup 中选择最接近的模板，Phase 3 后手动调整
+在 project-setup 中选择最接近的技术栈，task-execute 的 LLM 会根据 design.md + context7 文档搜索自动适配框架约定。
 
-### Q: Phase 4 选哪种执行方式？
+### Q: task-execute 选哪种执行方式？
 
 - **subagent-driven-development**：首次使用推荐，每个任务有审查环节
 - **dispatching-parallel-agents**：模块独立性好时推荐，速度快

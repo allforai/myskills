@@ -6,7 +6,7 @@ description: >
   "跨子项目验证", "业务流程测试", "跨端 E2E",
   or needs to derive and execute cross-sub-project E2E test scenarios from business flows.
   Requires project-manifest.json and running sub-project applications.
-version: "1.2.0"
+version: "1.3.0"
 ---
 
 # E2E Verify — 跨端验证
@@ -83,7 +83,8 @@ product-verify（单端验收）   e2e-verify（跨端验证）
 |------|---------|---------|
 | E2E 只覆盖关键业务路径 | 整体策略 | 仅验证 business-flows.json 中定义的跨端流程，不替代单元测试。每条 flow = 1 个 E2E 场景 |
 | 场景来自业务流+用例 | Step 1 | 正向场景从 business-flows.json 推导（flow 主路径），负向场景从 use-case-tree.json 的 exception/boundary 用例推导。禁止自行编造场景 |
-| API 契约一致性 | Step 2 | 前端调用的 API 路径/参数/响应格式必须与后端实际端点一致。不一致 = FIX_REQUIRED |
+| 6V 诊断取代规则分类 | Step 3 | 失败不再按错误特征硬编码分类，LLM 从 6 个工程视角深度诊断根因，输出分类 + 修复线索 |
+| 4D 跨端覆盖度闭环 | Step 3.5 | 按 Data/Interface/Logic/UX 四维度聚合跨端覆盖率，任一维度 < 85% 自动生成针对性修复任务 |
 | Given/When/Then 格式 | Step 1 | 场景步骤必须遵循 Given（前置状态）/When（用户操作）/Then（预期结果），每步对应一个可断言的行为 |
 | mock 阶段可先跑 | 整体时机 | mock-server 启动后即可运行前端 E2E（连 mock），不需要等后端完成。后端完成后切真实 API 重跑 |
 
@@ -176,14 +177,16 @@ Step 1.7: 视觉回归基准准备（stitch-index.json 存在时）
      a. 导航到 route_path
      b. 截取实际渲染截图 → `visual-regression/actual/`
      c. 像素级对比（pixelmatch，阈值参考）：
-        ≤5% → PASS（字体渲染差异）
-        5-15% → INFO（轻微偏差）
-        15-30% → WARNING（明显偏差）
-        >30% → FAIL（还原度不合格）
+        根据组件重要性和视觉精度要求动态判定阈值
   4. 输出 `visual-regression/visual-regression-report.json`
   5. 无基准截图 → 跳过，不影响其他 E2E 场景
   ↓
-Step 2: 场景执行（Playwright）
+Step 2: 场景执行（Playwright，并行调度）
+  **并行策略**：按数据隔离性分组，使用 Agent tool 并行执行：
+    - 数据无交叉的场景 → 分组到不同 Agent，每个 Agent 使用独立 browser context
+    - 共享数据的场景 → 分到同一 Agent 内串行
+    - 负向场景单独分组（避免污染正向场景数据）
+  调度方式：单条消息发出 N 个 Agent 调用（N = min(场景分组数, 4)）
   逐场景、逐步骤执行（不停，输出进度）:
     → 输出进度: 「E2E-001 ✓ / E2E-002 ✗ Step 2 / ...」
     browser_navigate → 子项目 A 的 URL
@@ -200,46 +203,140 @@ Step 2: 场景执行（Playwright）
     screenshot: 截图路径（失败时）
     duration_ms: 耗时
   ↓
-Step 3: 自动分类 + 批量确认
-  自动分类规则（同 product-verify D4）:
-    | 错误特征 | 自动建议 | 理由 |
-    |---------|---------|------|
-    | HTTP 5xx 响应 | FIX_REQUIRED | 服务端错误 = 代码缺陷 |
-    | 404 on expected route | FIX_REQUIRED | 路由未实现 |
-    | 元素未找到 / 断言失败 | FIX_REQUIRED | 页面实现不完整 |
-    | Connection refused / timeout | ENV_ISSUE | 服务未启动或网络问题 |
-    | Database error in response | ENV_ISSUE | 数据库未初始化 |
-    | Auth redirect (unexpected) | FIX_REQUIRED | 权限配置错误 |
-    | CORS error | ENV_ISSUE | 开发环境跨域配置 |
+Step 3: 6V 审计与自动分类
+  Agent 对执行失败的步骤进行 6V 深度诊断（以 design.json + experience-map.json 为审计基准）：
 
-  批量确认展示:
-    ## E2E 验证结果
+  **6V 诊断维度**：
+  1. **Contract (V1)**: 失败是否源于前后端字段名/类型/路径不一致（契约漂移）？
+     - 基准: design.json 中的 API 端点定义 + api-contracts.json
+     - 诊断: Read 前端调用代码 + 后端 handler 代码，比对字段名和请求格式
+     → 分类: `CONTRACT_SYNC`（需同步 design.json 并级联更新下游）
+  2. **Conformance (V2)**: 是否是环境不可达、超时或数据库连接问题？
+     - 诊断: 分析错误日志中的网络/连接/超时特征
+     → 分类: `ENV_ISSUE`
+  3. **Correctness (V3)**: 代码逻辑是否未按 design.json 规格实现？
+     - 基准: design.json 中对应功能的 business rules + 状态机设计
+     - 诊断: Read handler 代码，对比 task.rules 和 task.exceptions 是否落地
+     → 分类: `FIX_REQUIRED`
+  4. **Consistency (V4)**: 跨子项目的数据状态是否一致？
+     - 诊断: 前端展示的数据是否与后端 API 返回一致、子项目 A 写入的数据是否在子项目 B 正确展示
+     → 分类: `FIX_REQUIRED`（标注数据流断裂点）
+  5. **Capability (V5)**: 是否是性能/SLA 不达标导致的超时或渲染失败？
+     - 基准: task.sla 定义的响应时间
+     - 诊断: 分析 duration_ms 与 SLA 基准的偏差
+     → 分类: `FIX_REQUIRED`（标注 SLA 基准值）
+  6. **Context (V6)**: 失败点是否位于用户旅程的关键情感触点？
+     - 基准: journey-emotion.json 中的情感标注
+     - 诊断: 失败步骤是否对应焦虑/沮丧触点
+     → 影响: 根据上下文判定是否提升优先级（不一律 critical）
+
+  **Agent 诊断流程**（并行调度）：
+  失败步骤 ≥ 3 个时，使用 Agent tool 并行诊断（每个 Agent 处理 1-2 个失败项）：
+  对每个失败步骤:
+    1. Read 失败截图 + browser 错误日志
+    2. Read 对应子项目的代码文件（前端组件 / 后端 handler）
+    3. 加载 design.json 对应节点的规格定义
+    4. 诊断根因（6V 维度作为参考框架，不局限于预设分类），输出:
+       { "step_ref": "E2E-001.step2",
+         "primary_cause": "V1|V2|V3|V4|V5|V6",
+         "classification": "FIX_REQUIRED|ENV_ISSUE|CONTRACT_SYNC",
+         "diagnosis": "一句话诊断结论",
+         "evidence": "代码位置 + 规格引用",
+         "fix_hint": "修复方向建议",
+         "emotion_escalation": true|false }
+
+  **批量确认展示**:
+    ## E2E 验证结果 (6V 诊断)
 
     场景列表（Step 1 推导）:
-    | 场景 | 类型 | 来源 | 步骤数 |
-    |------|------|------|--------|
-    | {name} | 正向/负向 | BF-{id} / UC-{id} | {N} |
+    | 场景 | 类型 | 来源 | 步骤数 | 结果 |
+    |------|------|------|--------|------|
+    | {name} | 正向/负向 | BF-{id} / UC-{id} | {N} | ✓/✗ |
 
     通过: {N}/{M} 场景
 
-    失败项（自动建议分类）:
-    | 场景 | 失败步骤 | 错误 | 建议分类 | 理由 |
-    |------|---------|------|---------|------|
-    | E2E-001 | Step 2 | Element not found | FIX_REQUIRED | 元素缺失 |
+    失败项（6V 诊断详情）:
+    | 场景 | 失败步骤 | 主因维度 | 诊断结论 | 分类 | 修复线索 |
+    |------|---------|---------|---------|------|---------|
+    | E2E-001 | Step 2 | V1 Contract | 前端 userName ≠ 后端 user_name | CONTRACT_SYNC | customer-web/api.ts:15 |
+    | E2E-003 | Step 3 | V3 Correctness | 库存扣减未实现 | FIX_REQUIRED | api-backend/orders.ts:42 |
+    | E2E-N01 | Step 1 | V2 Conformance | 端口 3002 不可达 | ENV_ISSUE | 检查 customer-web 启动状态 |
 
     → 自动采纳全部建议分类（不停）
 
   ### 规模自适应
 
   根据场景总数调整 Step 3 展示策略：
-  - **小规模**（≤15 个场景）：逐条展示完整场景表
-  - **中规模**（16-40 个场景）：按流程类型分组，展示计数 + 失败项详情
-  - **大规模**（>40 个场景）：统计概览 + 仅展示失败和 critical 场景
+  - **小规模**（≤15 个场景）：逐条展示完整场景表 + 6V 诊断详情
+  - **中规模**（16-40 个场景）：按流程类型分组，展示计数 + 仅失败项 6V 详情
+  - **大规模**（>40 个场景）：统计概览 + 仅展示 FIX_REQUIRED 和 CONTRACT_SYNC 项
 
+  ↓
+Step 3.5: 跨端数据流闭环追踪 (Cross-Project Data Flow Tracing)
+  **目的**：跟踪业务实体在跨子项目流转中的数据完整性，验证每个环节的输入 = 上游输出。
+  **基准**：business-flows.json 中涉及跨子项目的 flow
+  **验证流程**：
+  对每条跨端 flow，在 Step 2 场景执行时同步追踪数据：
+  1. **写入端验证**：子项目 A 创建/修改实体 → API 调用获取返回数据快照
+  2. **传输验证**：等待数据同步（事件/API/轮询） → 验证中间状态
+  3. **消费端验证**：子项目 B 读取/展示该实体 → Playwright 截图 + API 验证
+  4. **一致性比对**：
+     - 字段名一致：A 端 `user_name` vs B 端 `userName` → CONTRACT_DRIFT
+     - 值精度一致：A 端金额 `100.50` vs B 端显示 `100.5` → PRECISION_LOSS
+     - 时间一致：A 端 `2024-01-15T10:30:00Z` vs B 端 `1 小时前` → DISPLAY_OK
+     - 关联数据完整：A 端创建的子实体在 B 端是否全部展示？
+  **断裂检测**：
+  - 某实体在 B 端查不到 → DATA_FLOW_BREAK（严重）
+  - 字段值不一致 → DATA_INCONSISTENCY（需排查同步机制）
+  - 关联数据缺失 → RELATION_BREAK（外键或嵌套数据丢失）
+  → 输出进度: 「Step 3.5a 跨端数据流 ✓ flows:{N} breaks:{M}」
+  ↓
+Step 3.6: 跨端状态机完备性验证 (Cross-Project State Machine Verification)
+  **目的**：验证跨子项目的状态流转链是否完整可达。
+  **基准**：business-flows.json 状态流转序列 + task.outputs.states
+  **验证逻辑**：
+  1. 提取所有跨端状态转换（如 A 端 PENDING → B 端 APPROVED → A 端 CONFIRMED）
+  2. 对每个转换链，验证：
+     - 触发条件在 A 端执行后，B 端是否收到状态变更？
+     - B 端操作后，A 端的状态是否同步更新？
+     - 终态记录在各端的展示是否一致？
+  3. 跨端死胡同检测：
+     - A 端发起审批 → B 端无审批入口 → CROSS_PROJECT_DEAD_END
+     - B 端审批通过 → A 端仍显示待审批 → STATE_SYNC_FAILURE
+  → 输出进度: 「Step 3.6 跨端状态 ✓ transitions:{N} failures:{M}」
+  ↓
+Step 3.7: 4D 跨端覆盖度闭环审计
+  **目的**：Step 2 执行完毕后，从 4D 维度审计跨端业务的完整度，发现场景级别无法暴露的系统性缺口。
+
+  **4D 跨端审计基准**：
+  - **Data (D1)**: 子项目 A 写入的数据是否在子项目 B 正确读取？实体关系是否跨端一致？
+    基准: entity-model.json 中的实体定义 + 关联关系
+  - **Interface (D2)**: 跨子项目 API 调用的请求/响应格式是否与 api-contracts.json 一致？
+    基准: design.json 中每个子项目的 API 端点列表
+  - **Logic (D3)**: 跨端业务流中的状态流转是否完整？（如：A 端创建 → B 端审批 → A 端确认）
+    基准: business-flows.json 中定义的状态流转序列
+  - **UX (D4)**: 跨端切换时用户体验是否连贯？（同一数据在不同端的展示是否一致）
+    基准: experience-map.json 中的跨端 screen 关联
+
+  **闭环逻辑**：
+  Agent 汇总 Step 2 所有场景的通过/失败结果，按 4D 维度聚合：
+  | 维度 | 覆盖率 | 薄弱环节 |
+  |------|--------|---------|
+  | Data | {N}% | {列出数据不一致的实体对} |
+  | Interface | {N}% | {列出契约不匹配的 API} |
+  | Logic | {N}% | {列出状态流转断裂的业务流} |
+  | UX | {N}% | {列出跨端展示不一致的界面} |
+
+  **闭环判定**：
+  - 4D 每维度 ≥ 85% → E2E_PASS
+  - 任一维度 < 85% → 生成针对性 FIX 任务（标注维度 + 涉及子项目 + 修复方向）
+  - CONTRACT_SYNC 类任务自动触发 design.json 同步建议
+
+  → 输出进度: 「Step 3.5 4D 闭环 ✓ D:{d}% I:{i}% L:{l}% U:{u}%」
   ↓
 Step 4: 报告生成
   写入:
-    .allforai/project-forge/e2e-report.json — 机器版
+    .allforai/project-forge/e2e-report.json — 机器版（含 6V 诊断 + 4D 覆盖度矩阵）
     .allforai/project-forge/e2e-report.md — 人类版
   按子项目汇总需修复的问题
 ```
@@ -382,6 +479,13 @@ Step 4: 报告生成
         { "seq": 4, "status": "skip", "reason": "前置步骤失败" }
       ],
       "failure_classification": "FIX_REQUIRED",
+      "six_v_diagnosis": {
+        "primary_cause": "V3",
+        "diagnosis": "商品列表查询未包含新上架商品（缺少 status=active 过滤）",
+        "evidence": "customer-web/src/api/products.ts:28 → 缺少 status 参数",
+        "fix_hint": "添加 ?status=active 查询参数或修改后端默认过滤逻辑",
+        "emotion_escalation": false
+      },
       "affected_sub_projects": ["customer-web", "api-backend"],
       "total_duration_ms": 8300
     }
@@ -396,6 +500,13 @@ Step 4: 报告生成
     "passed": 0,
     "failed": 0,
     "concept_refs": []
+  },
+  "four_d_coverage": {
+    "data": { "rate": 0.92, "weak_points": [] },
+    "interface": { "rate": 0.85, "weak_points": ["GET /api/products 缺少 status 过滤"] },
+    "logic": { "rate": 0.88, "weak_points": [] },
+    "ux": { "rate": 0.90, "weak_points": [] },
+    "verdict": "E2E_PASS"
   }
 }
 ```
@@ -486,9 +597,9 @@ e2e/screenshots/                    # 失败截图
 
 场景从 business-flows 推导，执行后与结果一并展示。自动确认场景列表（不停）。
 
-### 3. 失败自动分类
+### 3. 诊断驱动分类
 
-基于错误特征自动分类（FIX_REQUIRED / ENV_ISSUE / DEFERRED），写入决策日志。
+失败诊断以 6V 维度为参考框架，但不局限于预设分类。可识别跨维度问题和新类型根因。输出分类 + 修复线索，写入决策日志。
 
 ### 4. 不修改代码
 
