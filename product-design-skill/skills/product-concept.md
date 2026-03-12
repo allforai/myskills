@@ -308,7 +308,21 @@ product-concept（战略层）        product-map（运营层）
    ```
 9. **原则**：概念层的角色粒度服务于需求完整性，实现层的角色粒度服务于权限系统设计。product-map 生成任务时按 `impl_group` 归组，同一 `impl_group` 的角色共享一个后台界面，通过权限标签区分功能入口。
 
-10. 输出：`role-value-map.json`（消费侧 + 生产侧角色，含 `impl_group` 标注）
+10. 为每个实现角色添加 `app` 字段，标注该角色使用的**独立应用**（可部署单元）：
+    ```
+    impl_group → app 映射（问用户确认）
+    ─────────────────────────────
+    end_user       → website（或 mobile，若有独立 app）
+    merchant       → merchant（商户后台，独立部署）
+    admin          → admin（总后台，独立部署）
+    ```
+    **`app` 的含义**：一个独立部署的前端应用，有自己的代码仓库（或子目录）、端口、路由。不同于 `platform`（设备类型）或 `role`（用户身份），`app` 决定界面**在哪个系统中实现**。
+
+    同一个 `app` 内的多个角色通过权限区分功能入口；不同 `app` 之间的流转通过跨应用引用（而非同一界面）实现。
+
+    **AskUserQuestion**：展示推导出的 role→app 映射，让用户确认或修正。
+
+11. 输出：`role-value-map.json`（消费侧 + 生产侧角色，含 `impl_group` + `app` 标注）
 11. → 用户确认
 
 ---

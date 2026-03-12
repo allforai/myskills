@@ -1450,6 +1450,7 @@ def build_screens_with_context(op_lines, tasks, role_map, gate_issues, vo_map=No
                     "notes": s.get("notes", ""),
                     "description": s.get("description", ""),
                     "platform": s.get("platform", ""),
+                    "app": s.get("app", ""),
                     "navigation": s.get("navigation", ""),
                     "layout": s.get("layout", ""),
                     "tasks": s.get("tasks", []),
@@ -2634,10 +2635,14 @@ def _wf_page(screen, body_html):
     ux_intent = screen.get("ux_intent", "")
     notes = screen.get("notes", "") or screen.get("description", "")
     platform = screen.get("platform", "")
+    app = screen.get("app", "")
     nav = screen.get("navigation", "")
     itype_badge = f'<span class="wf-itype">{_esc(itype)}</span>' if itype else ""
     platform_cls = " desktop" if platform == "desktop" else " mobile" if platform == "mobile" else ""
     platform_badge = f'<span class="wf-platform-badge{platform_cls}">{_esc(platform or "unknown")}</span>' if platform else ""
+    app_colors = {"website": "#2e7d32", "merchant": "#e65100", "admin": "#c62828", "end_user": "#2e7d32"}
+    app_color = app_colors.get(app, "#546e7a")
+    app_badge = f'<span class="wf-platform-badge" style="background:{app_color}22;color:{app_color};border-color:{app_color}44">{_esc(app)}</span>' if app else ""
     panel_4d = _build_4d_panel(screen)
 
     # Desktop screens with sidebar navigation get sidebar layout
@@ -2649,6 +2654,7 @@ def _wf_page(screen, body_html):
     <div class="wf-header-title">{_esc(name)}</div>
     {itype_badge}
     <span class="wf-emo" style="background:{emo_color}22;color:{emo_color}">{_esc(emo)}</span>
+    {app_badge}
     {platform_badge}
   </div>
   <div class="wf-sidebar">
@@ -2674,6 +2680,7 @@ def _wf_page(screen, body_html):
     <div class="wf-header-title">{_esc(name)}</div>
     {itype_badge}
     <span class="wf-emo" style="background:{emo_color}22;color:{emo_color}">{_esc(emo)}</span>
+    {app_badge}
     {platform_badge}
   </div>
   <div class="wf-body">
@@ -2929,6 +2936,7 @@ def render_wireframe_page():
                     "id": sid,
                     "name": sc.get("name", s.get("name", sid)),
                     "itype": sc.get("interaction_type", ""),
+                    "app": sc.get("app", s.get("app", "")),
                     "emotion": sc.get("emotion_state", "neutral"),
                     "gate_count": len(sc.get("gate_issues", [])),
                     "status": fb_s.get("status", "pending"),
@@ -2990,6 +2998,11 @@ body{{font-family:-apple-system,system-ui,'Segoe UI',sans-serif;background:#f8fa
 .wf-tree-item.status-approved{{border-left-color:#10b981}}
 .wf-tree-item.status-revision{{border-left-color:#f59e0b}}
 .wf-tree-itype{{font-size:9px;padding:1px 5px;border-radius:3px;background:#e8eaf6;color:#5c6bc0;font-weight:600;flex-shrink:0}}
+.wf-tree-app{{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:600;flex-shrink:0}}
+.wf-tree-app.app-website{{background:#e8f5e9;color:#2e7d32}}
+.wf-tree-app.app-merchant{{background:#fff3e0;color:#e65100}}
+.wf-tree-app.app-admin{{background:#fce4ec;color:#c62828}}
+.wf-tree-app.app-end_user{{background:#e8f5e9;color:#2e7d32}}
 .wf-tree-emo{{width:8px;height:8px;border-radius:50%;flex-shrink:0}}
 .wf-tree-badges{{display:flex;gap:3px;margin-left:auto;flex-shrink:0}}
 .wf-tree-badge{{font-size:9px;padding:1px 4px;border-radius:3px;font-weight:600}}
@@ -3137,8 +3150,10 @@ function wfRenderTree(filter){{
       else if(s.xv_warn)badges+='<span class="wf-tree-badge xv-warn">'+s.xv_warn+'XV</span>';
       if(s.pin_count)badges+='<span class="wf-tree-badge pins">'+s.pin_count+'</span>';
       const emoColor=EMO_COLORS[s.emotion]||'#B0BEC5';
+      const appBadge=s.app?'<span class="wf-tree-app app-'+escH(s.app)+'">'+escH(s.app)+'</span>':'';
       item.innerHTML='<span class="wf-tree-emo" style="background:'+emoColor+'"></span>'
         +'<span class="wf-tree-name">'+escH(s.name)+'</span>'
+        +appBadge
         +(s.itype?'<span class="wf-tree-itype">'+escH(s.itype)+'</span>':'')
         +'<span class="wf-tree-badges">'+badges+'</span>';
       item.onclick=()=>wfSelectScreen(s.id);

@@ -40,12 +40,24 @@ roles_full = C.load_role_profiles_full(BASE)
 role_map = {r["id"]: r.get("name", r["id"]) for r in roles_full}
 audience_map = {}  # role_id → audience_type
 platform_map = {}  # role_id → platform
+app_map = {}       # role_id → app (deployable unit: website/merchant/admin/...)
 for r in roles_full:
     atype = r.get("audience_type", "")
     if not atype:
         atype = "professional" if r.get("role_type") == "producer" else "consumer"
     audience_map[r["id"]] = atype
     platform_map[r["id"]] = "mobile-ios" if atype == "consumer" else "desktop-web"
+    # Derive app from explicit field, impl_group, or audience_type
+    app = r.get("app", "")
+    if not app:
+        ig = r.get("impl_group", "")
+        if ig:
+            app = ig  # end_user→website, merchant→merchant, admin→admin
+        elif atype == "consumer":
+            app = "website"
+        else:
+            app = "admin"
+    app_map[r["id"]] = app
 
 entities_list, _ = C.load_entity_model(BASE)
 entity_by_name = {e["name"]: e for e in entities_list}
@@ -251,6 +263,7 @@ def _get_or_create_screen(task_id, role_id):
 
     audience = audience_map.get(role_id, "consumer")
     platform = platform_map.get(role_id, "mobile-ios")
+    app = app_map.get(role_id, "website")
 
     itype, crud = C.infer_interaction_type(task, audience_type=audience)
     entity = _infer_entity_for_task(task)
@@ -262,6 +275,7 @@ def _get_or_create_screen(task_id, role_id):
         "name": "",
         "description": "",
         "platform": platform,
+        "app": app,
         "layout_type": "",
         "tasks": [task_id],
         "interaction_type": itype,
