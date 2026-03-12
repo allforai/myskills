@@ -150,6 +150,13 @@ product-concept → product-map → experience-map → ui-design
     - 例：BC-LOADING 标准为 skeleton → 所有界面的 loading 状态均使用骨架屏
     - 例：BC-DELETE-CONFIRM 标准为 modal_confirm → 所有 crud=D 操作使用模态弹窗确认
 
+  视图模式数据（从 experience-map.json 读取）：
+    screen.view_modes 字段（由 experience-map Step 2 填充）：
+    - 后台屏幕（merchant/admin）的 view_modes 描述屏幕内的视图模式流转
+    - UI 设计时，每个 view_mode 需要独立的布局规格（组件可见性、区域占比、交互状态）
+    - 例：订单列表有 3 种 view_mode（全量列表 → 筛选列表 → 详情面板），UI 规格需为每种模式描述布局变化
+    - 无 view_modes 的屏幕（移动端单任务）按单一视图模式处理
+
   Phase 2.8 — 加载创新概念清单（新增）：
     检查 .allforai/product-concept/adversarial-concepts.json：
       存在 → 加载 `concepts[]` 数组，标记 innovation_mode = "active"
@@ -491,6 +498,11 @@ Step 5.6: LLM 高保真 HTML 预览（Stitch 不可用时自动执行）
 - 顶部：{导航栏/页头描述}
 - 主体：{主要内容区描述}
 - 操作区：{按钮/表单位置描述}
+
+**视图模式设计**（仅后台屏幕，有 view_modes 时）：
+- 模式 1 — {label}：{布局描述，组件可见性，区域占比}
+- 模式 2 — {label}：{布局变化，新增/隐藏的组件}
+- 模式切换动效：{过渡动画描述}
 
 **关键状态设计**：
 - 空态：{引导文案/插图建议}

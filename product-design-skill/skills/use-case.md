@@ -157,7 +157,15 @@ product-map（功能地图）    experience-map（体验地图）    use-case（
 前置检查：
   .allforai/product-map/task-inventory.json  必须存在，否则终止
   .allforai/experience-map/experience-map.json  必须（不存在则自动运行 experience-map 生成）
+  .allforai/product-concept/product-mechanisms.json  可选（读取 governance_styles 指导审核类用例生成）
   .allforai/use-case/use-case-decisions.json 若存在则加载，跳过已确认项
+
+  治理风格消费（governance_styles）：
+    product-mechanisms.json 的 governance_styles 字段（由 concept Phase A.5 写入）：
+    - 治理风格为"宽松高效"的业务流 → 不生成审核类 happy_path 用例，改为生成事后追究类用例（举报→处理→处罚）
+    - 治理风格为"严格管控"的业务流 → 必须生成完整审核链用例（提交→审核→通过/拒绝→申诉）
+    - system_boundary.external 中的功能 → 不生成 happy_path 用例，仅生成集成点 boundary 用例（外部服务超时/失败/不可用）
+    - 无 governance_styles → 默认按任务内容推断（兼容旧版 concept）
 
 Step 0: 功能区分组
       AI 按语义将任务分组为功能区（如「退款管理」「订单查询」）
