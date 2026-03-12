@@ -7,7 +7,7 @@ description: >
   or needs to transform product-design artifacts into per-sub-project requirements, design docs, and atomic task lists.
   Also handles shared-utilities analysis (cross-task pattern resonance, third-party library selection, B1 task injection).
   Requires project-manifest.json (from project-setup) and product-map artifacts.
-version: "3.0.0"
+version: "3.1.0"
 ---
 
 # Design to Spec — 设计转规格
@@ -301,6 +301,51 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
         - INFO — B2 任务无对应 B5 测试任务
 
         **修正方式**：V9 CRITICAL 发现由阶段 4（Auto-Fix）自动补充缺失的 B2/B3 任务到 tasks.md。
+
+    10. **Data Provenance (V10)**: 数据溯源闭环 — 验证**每个被读取的聚合/统计数据都有可追溯的写入路径**，防止"有消费无生产"的数据断裂。
+
+        > **核心问题**：V9 验证的是"功能是否有任务"，V10 验证的是"数据从哪来"。
+        > 典型漏网场景：广告系统有「查看展示/点击统计」端点，但没有「上报展示/点击」端点——读端存在但写端缺失。
+
+        **触发条件**：始终执行（V10 是强制审计维度）
+
+        **溯源检查流程**：
+
+        **V10.1 聚合字段溯源**（后端子项目）：
+        1. 扫描 `entity-model.json` 中所有聚合/统计类字段（命名模式：`*_count`, `*_total`, `impressions`, `clicks`, `views`, `rating`, `average_*`, `total_*`）
+        2. 扫描 `api-contracts.json` 中所有返回统计数据的 GET 端点（响应包含 stats/analytics/dashboard/overview 语义）
+        3. 对每个聚合字段/统计端点，LLM 判断写入来源属于以下哪类：
+           - **A) 用户操作端点**：存在对应的 POST/PUT/PATCH 端点直接写入（如 `POST /reviews` 写入评分 → 更新 `average_rating`）
+           - **B) 系统内部逻辑**：由其他业务操作的副作用产生（如下单时 `order_count += 1`）
+           - **C) 前端行为上报**：需要客户端主动上报的行为数据（如浏览量、广告展示/点击、搜索关键词）
+           - **D) 定时任务聚合**：由 cron/worker 定期计算（如日活统计、月度 GMV）
+        4. 类型 C 且**无对应上报端点** → `DATA_PROVENANCE_MISSING`
+        5. 类型 A/B 且**无可追溯的写入代码路径** → `DATA_PROVENANCE_WARNING`
+
+        **V10.2 跨角色数据链**（全子项目）：
+        1. 识别跨角色数据流：角色 A 的操作产生数据 → 角色 B 消费
+        2. 检查数据传递链路是否完整：
+           - 消费者行为 → 商户统计面板（如商品浏览量、广告点击）
+           - 商户操作 → Admin 监管面板（如商户销售额、广告花费）
+           - 系统事件 → 通知推送（如订单状态变更 → 通知用户）
+        3. 链路中任一环节缺失端点/任务 → `DATA_CHAIN_BROKEN`
+
+        **输出溯源矩阵**：
+
+        | 聚合字段/统计端点 | 数据来源类型 | 写入路径 | 状态 |
+        |----------------|-----------|---------|------|
+        | ad_campaigns.impressions | C) 前端行为上报 | — | ✗ DATA_PROVENANCE_MISSING |
+        | ad_campaigns.clicks | C) 前端行为上报 | — | ✗ DATA_PROVENANCE_MISSING |
+        | products.average_rating | A) 用户操作 | POST /reviews → 触发聚合 | ✓ TRACED |
+        | products.view_count | C) 前端行为上报 | — | ✗ DATA_PROVENANCE_MISSING |
+        | GET /admin/ad-stats | 依赖 impressions/clicks | — | ✗ DATA_CHAIN_BROKEN |
+
+        **严重度**：
+        - CRITICAL — 类型 C 数据无上报端点（功能完全断裂，统计数据永远为 0）
+        - WARNING — 类型 A/B 写入路径存在但未在 tasks.md 中体现为实现要点
+        - INFO — 类型 D 定时任务未定义但数据非关键
+
+        **修正方式**：V10 CRITICAL 发现由阶段 4（Auto-Fix）自动补充缺失的行为上报端点（B2 任务）和前端上报组件（B3 任务）到 tasks.md。
 
 ### 阶段 3：XV 交叉审查 (Cross-Verification)
 *   **模型路由**：遵循 `docs/skill-commons.md` 专家模型矩阵——API/架构审计 → GPT-4o，数据模型/算法 → DeepSeek，UI/视觉 → Gemini，安全/合规 → GPT-4o。
@@ -1067,7 +1112,7 @@ Step 4.3: Tasks 验证循环（4D/6V+V9/XV/闭环 — 强制）
   **验证循环架构**：
   ```
   大循环（最多 3 轮）:
-    ┌── 小循环 A: 4D/6V+V9 审计
+    ┌── 小循环 A: 4D/6V+V9+V10 审计
     │     每个子项目的 tasks.md 逐维度检查
     │     发现问题 → 自动修正 tasks.md → 重检该维度
     │     通过 → 进入小循环 B
@@ -1076,12 +1121,12 @@ Step 4.3: Tasks 验证循环（4D/6V+V9/XV/闭环 — 强制）
     │     分歧 → 以更严格结论为准 → 修正 → 重检
     │     通过 → 进入小循环 C
     └── 小循环 C: 闭环审计
-          检查 6 类闭环在任务层的完整度
+          检查 7 类闭环在任务层的完整度
           发现缺失 → 补充任务 → 重检
           通过 → 退出大循环
   ```
 
-  **小循环 A: 4D/6V+V9 任务审计**
+  **小循环 A: 4D/6V+V9+V10 任务审计**
 
   LLM 读取 tasks.md + design.md + requirements.md + task-inventory.json，执行以下审计：
 
@@ -1093,12 +1138,14 @@ Step 4.3: Tasks 验证循环（4D/6V+V9/XV/闭环 — 强制）
   | **D4 UX** | 每个 experience-map screen 是否有对应的 B3 页面任务？ | `TASK_UX_GAP` |
   | **V1-V8** | 已有审计维度在任务层的映射（同阶段 2） | 复用标记 |
   | **V9 Coverage** | **产品任务→B2 端点覆盖率**（见阶段 2 V9 定义） | `TASK_COVERAGE_CRITICAL/WARNING` |
+  | **V10 Provenance** | **数据溯源闭环**：返回聚合/统计数据的端点，其数据来源是否有写入路径？（见阶段 2 V10 定义） | `TASK_PROVENANCE_CRITICAL/WARNING` |
 
-  **V9 覆盖率是强制审计维度**，CRITICAL 级遗漏必须修复后才能退出循环。
+  **V9 覆盖率和 V10 溯源是强制审计维度**，CRITICAL 级遗漏必须修复后才能退出循环。
 
   **修正方式**：
   - `TASK_API_GAP` → 在 tasks.md 中补充缺失的 B2 端点任务（遵循端点级原子性规则）
   - `TASK_COVERAGE_CRITICAL` → 从 task-inventory.json 推导缺失的端点，补充 B2 + B3 + B5 任务
+  - `TASK_PROVENANCE_CRITICAL` → 补充行为上报端点（B2）+ 前端上报组件（B3），如 `POST /ads/:id/impression`、`POST /ads/:id/click`
   - `TASK_DATA_GAP` → 补充 B1 定义任务
   - `TASK_UX_GAP` → 补充 B3 页面任务
   - 修正后回到小循环 A 重检（最多 3 次内循环）
@@ -1130,17 +1177,19 @@ Step 4.3: Tasks 验证循环（4D/6V+V9/XV/闭环 — 强制）
   | 生命周期闭环 | 有状态机的实体是否有完整的状态变更端点任务？ | `TASK_CLOSURE_LIFECYCLE` |
   | 映射闭环 | 有关联关系的实体是否有级联操作任务？ | `TASK_CLOSURE_MAPPING` |
   | 导航闭环 | 每个前端页面是否有路由守卫 + 404 + 回退任务？ | `TASK_CLOSURE_NAVIGATION` |
+  | 数据溯源闭环 | 返回聚合/统计数据的 GET 端点，其数据源是否有对应的写入端点/任务？（V10 的任务层投影） | `TASK_CLOSURE_PROVENANCE` |
 
   修正 → 回到小循环 C 重检
 
   **退出条件**：
   - V9 Coverage CRITICAL = 0（所有 CORE 产品任务有对应 B2 任务）
+  - V10 Provenance CRITICAL = 0（所有聚合数据有可追溯的写入路径）
   - 4D 无 GAP（或已修复）
   - 闭环无 CRITICAL 缺失
 
   **大循环 3 轮后仍有问题** → 记录为已知问题到 `pipeline-decisions.json`，输出警告，继续（不停）
 
-  → 输出进度: 「Step 4.3 验证 ✓ V9 覆盖率: {X}%, 4D gaps: {N} fixed, 闭环: {M} fixed, XV: {status}」
+  → 输出进度: 「Step 4.3 验证 ✓ V9 覆盖率: {X}%, V10 溯源: {Y}%, 4D gaps: {N} fixed, 闭环: {M} fixed, XV: {status}」
   ↓
 Step 4.5: 任务上下文预计算（Task Context）
   为每个任务预计算完整上下文包，供 task-execute 消费，减少"概念→代码"失真。

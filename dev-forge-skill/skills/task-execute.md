@@ -486,9 +486,29 @@ Step 4: Round 增量验证（存在性 + 正确性）
          - INFO — 规则已实现但方式与设计不同（如用 Redis 而非数据库计数器）
       → 输出: 「CC4 规则 ✓ 规则:{N} 已落地:{M} 未落地:{K}」
 
+    **CC5: Spec 实现完整性验证**（B2 Round 完成时触发）
+      > **核心问题**：任务标记为 completed ≠ 任务 spec 中所有子端点都实现了。
+      > 历史案例：B2.110 spec 写了 `GET list + POST messages + PATCH assign` 三个子端点，
+      > 但实际只实现了 `GET list + PATCH status`，漏了 `POST messages`。任务仍被标记 completed。
+
+      LLM Agent 读取本 Round 每个 completed B2 任务的 tasks.md 描述和对应的 router/handler 代码，逐条核对：
+      - tasks.md 中描述的每个子端点（如 `GET list`, `POST :id/messages`, `PATCH :id/assign`）
+      - 是否在 router.go 中有对应路由注册？
+      - 是否在 handler 中有对应方法（非空壳）？
+
+      审查方式：
+      1. 从 tasks.md 提取任务描述中的端点列表（括号内的 HTTP 方法 + 路径模式）
+      2. 在 router.go 中搜索对应路由
+      3. 缺失 → `SPEC_NOT_IMPLEMENTED`
+
+      严重度：
+      - CRITICAL — 任务描述中的端点在 router 中完全不存在
+      - WARNING — 路由存在但 handler 是空壳（仅返回 501/TODO）
+      → 输出: 「CC5 实现完整性 ✓ 任务:{N} 子端点:{M} 已实现:{K} 缺失:{L}」
+
     === 正确性验证执行方式 ===
 
-    CC1-CC4 使用 Agent tool 并行执行（4 个 Agent），与存在性验证的 product-verify scope 串行。
+    CC1-CC5 使用 Agent tool 并行执行（5 个 Agent），与存在性验证的 product-verify scope 串行。
 
     每个 Agent 的 prompt 模板：
     ```
@@ -533,7 +553,7 @@ Step 4: Round 增量验证（存在性 + 正确性）
 
     === 正确性验证结果处理 ===
 
-    4 个 Agent 返回后，聚合结果：
+    5 个 Agent 返回后，聚合结果：
     - CRITICAL 数 = 0 → correctness_check.status = "pass"
     - CRITICAL 数 > 0 → correctness_check.status = "fix_required"
       → 自动生成 B-CC-FIX 修复任务，注入当前 Round 或追加为下一 Round
@@ -549,11 +569,12 @@ Step 4: Round 增量验证（存在性 + 正确性）
       "cc2_status_values": { "ok": N, "warning": M, "critical": K },
       "cc3_data_model": { "ok": N, "warning": M, "critical": K },
       "cc4_business_rules": { "ok": N, "warning": M, "critical": K },
+      "cc5_spec_completeness": { "tasks": N, "sub_endpoints": M, "implemented": K, "missing": L },
       "findings": [...],
       "fix_tasks_generated": [...]
     }
 
-    → 输出汇总: 「验证 ✓ 存在性: S1={N} S3={M} | 正确性: CC1={a} CC2={b} CC3={c} CC4={d} | CRITICAL:{total}」
+    → 输出汇总: 「验证 ✓ 存在性: S1={N} S3={M} | 正确性: CC1={a} CC2={b} CC3={c} CC4={d} CC5={e} | CRITICAL:{total}」
 
     === 存在性 + 正确性统一结果 ===
 
