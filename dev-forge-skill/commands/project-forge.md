@@ -31,8 +31,8 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 | 2 | `skills/project-setup.md` | 拆子项目 + 选技术栈 | `project-manifest.json` 存在 |
 | 3 | `skills/design-to-spec.md` | 产品设计 → 规格文档 + 共享工具分析 | 每子项目有 `requirements.md` + `design.md` + `tasks.md` + `shared-utilities-plan.json` 存在 |
 | **4** | **`skills/task-execute.md`** | **按 tasks.md 逐任务写业务代码（R0 含项目初始化）** | **`build-log.json` 存在且 CORE 任务 completed** |
-| 5 | `skills/product-verify.md` + `skills/e2e-verify.md` | 验证闭环 + 修复回归 | `verify-tasks.json` 无 IMPLEMENT/FIX_FAILING |
-| 6 | `commands/deadhunt.md` + `commands/fieldcheck.md` | 死链猎杀 + 字段一致性 | `validation-report-summary.md` + `field-report.md` 存在 |
+| 5 | `skills/product-verify.md` + `skills/e2e-verify.md` + `commands/deadhunt.md` + `commands/fieldcheck.md` | 4-Agent 并行扫描 + 统一修复回归 | `verify-tasks.json` 无 IMPLEMENT/FIX_FAILING + `validation-report-summary.md` + `field-report.md` 存在 |
+| 6 | _(已并入 Phase 5)_ | 仅 resume 旧版时补跑 | 同 Phase 5 |
 | 7 | _(外部: demo-forge 插件)_ | 演示数据方案 | `demo-plan.json` 存在 |
 | 8 | `skills/e2e-verify.md` | 跨端验证（条件执行） | E2E 通过率 ≥ 80% |
 | 9 | _(内嵌本文)_ | 最终报告 | `forge-report.md` |
@@ -71,13 +71,11 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 │    R0 项目初始化 → R1 基础设施 → R2 业务 → R3 集成 → R4 测试│
 │    自动编排: 策略推断 → 委托执行 → 进度追踪 → 增量验证      │
 │  ↓ 质量门禁: CORE 任务完成，lint 通过                       │
-│  Phase 5: 验证闭环                                           │
-│    抽象门禁 + product-verify + e2e-verify → 修复 → 回归     │
+│  Phase 5: 验证闭环 + 完整性（4-Agent 并行扫描）              │
+│    抽象门禁 → [product-verify ∥ e2e-verify ∥ deadhunt ∥      │
+│    fieldcheck] → 统一修复 → 回归                             │
 │  ↓ 质量门禁: 修复项 = 0 或记录为已知问题继续                │
-│  Phase 6: 完整性验证 (deadhunt + fieldcheck)                 │
-│    死链猎杀 + CRUD 完整性 + 字段一致性检查                   │
-│    输出: validation-report-summary.md + field-report.md       │
-│  ↓ 质量门禁: 严重问题已修复或记录                            │
+│  Phase 6: (已并入 Phase 5，仅 resume 旧版时补跑)             │
 │  Phase 7: 演示数据方案 (demo-forge design)                   │
 │    代码稳定后设计演示数据，提示运行 /demo-forge design       │
 │    输出: demo-plan.json                                      │
@@ -364,9 +362,28 @@ existing 模式下，Step 1 之前先扫描项目已有依赖文件（`package.j
 
 **去重合并**：多个 task 命中同一类别 → 合并为单个 spike 项，`affected_tasks` 列表汇总。
 
-### Step 2: WebSearch 调研
+### Step 2: WebSearch 调研（并行）
 
-对每个检测到的 spike 类别，执行 2-3 轮 WebSearch：
+各 spike 类别互不依赖，使用 **Agent tool 并行调研**。用**单条消息发出 N 个 Agent tool 调用**（N = 检测到的 spike 数量），每个 Agent 负责一个 spike 类别的 2-3 轮 WebSearch + 方案提炼。
+
+每个 Agent 的 prompt 模板：
+
+~~~
+你是技术调研代理。
+
+任务: 调研 {spike_category} 的技术方案
+项目技术栈: {backend_framework} + {mobile_framework}
+受影响任务: {affected_tasks_summary}
+
+执行:
+1. 用 WebSearch 执行 2-3 轮搜索（搜索词见下方）
+2. 从搜索结果提炼 2-3 个可行方案
+3. 返回每个方案的：名称、核心能力、与技术栈兼容性、SDK/库、集成复杂度、成本模型、优势（2-3条）、劣势（2-3条）、推荐理由
+
+搜索词: {对应类别的搜索词模板，替换变量后}
+~~~
+
+所有 Agent 返回后，编排器汇总各 spike 的方案数据，统一进入 Step 2.5（XV）和 Step 3（对比表）。
 
 **搜索词生成规则**（基于 preflight 已选技术栈动态拼接）：
 
@@ -577,7 +594,7 @@ task-execute 自动完成：
 
 ---
 
-## Phase 5：验证闭环
+## Phase 5：验证闭环 + 完整性验证（4-Agent 并行扫描）
 
 ### 前置产物检查（防跳过 Phase 5）
 
@@ -604,37 +621,59 @@ scope 限定在 build-log.json 中所有 files_modified 的并集（不扫全库
 
 输出：.allforai/project-forge/abstraction-report.json
 
-Step 1: 完整产品验收
-  用 Read 加载 ${CLAUDE_PLUGIN_ROOT}/skills/product-verify.md
-  执行 /product-verify full（静态 + 动态）
-  输出: verify-tasks.json（IMPLEMENT / REMOVE_EXTRA / FIX_FAILING）
+Step 1: 并行扫描（4 个 Agent）
 
-Step 2: 跨端验证
-  用 Read 加载 ${CLAUDE_PLUGIN_ROOT}/skills/e2e-verify.md
-  执行 /e2e-verify full
-  输出: e2e-report.json（FIX_REQUIRED 项）
+product-verify、e2e-verify、deadhunt、fieldcheck 四项扫描均为只读代码分析，
+互不影响，使用 **单条消息发出 4 个 Agent tool 调用** 并行执行：
 
-Step 3: 判断是否需要修复
+  Agent 1: 完整产品验收
+    用 Read 加载 ${CLAUDE_PLUGIN_ROOT}/skills/product-verify.md
+    执行 /product-verify full（静态 + 动态）
+    输出: verify-tasks.json（IMPLEMENT / REMOVE_EXTRA / FIX_FAILING）
+
+  Agent 2: 跨端验证
+    用 Read 加载 ${CLAUDE_PLUGIN_ROOT}/skills/e2e-verify.md
+    执行 /e2e-verify full
+    输出: e2e-report.json（FIX_REQUIRED 项）
+
+  Agent 3: 死链猎杀
+    用 Read 加载 ${CLAUDE_PLUGIN_ROOT}/commands/deadhunt.md
+    执行 /deadhunt static（静态分析）
+    若应用已运行 → 执行 /deadhunt full（含深度测试）
+    输出: validation-report-summary.md + fix-tasks.json
+
+  Agent 4: 字段一致性检查
+    用 Read 加载 ${CLAUDE_PLUGIN_ROOT}/commands/fieldcheck.md
+    执行 /fieldcheck full
+    输出: field-report.md + field-issues.json
+
+4 个 Agent 全部返回后，进入 Step 2。
+
+Step 2: 汇总判断
   汇总 verify-tasks.json 中 IMPLEMENT + FIX_FAILING 项
   汇总 e2e-report.json 中 FIX_REQUIRED 项
-  无修复项 → PASS，进入 Phase 6（完整性验证）
-  有修复项 → Step 4
+  汇总 deadhunt fix-tasks.json 中 severity=critical 项
+  汇总 fieldcheck field-issues.json 中 severity=critical 项
+  无修复项 → PASS，Phase 5+6 质量门禁通过
+  有修复项 → Step 3
 
-Step 4: 生成修复任务
-  将验证发现转为原子任务，格式与 tasks.md 一致:
+Step 3: 生成修复任务
+  将所有验证发现转为原子任务，格式与 tasks.md 一致:
     - IMPLEMENT → 新增实现任务
     - FIX_FAILING → 修复任务（含失败截图/日志引用）
     - FIX_REQUIRED → 跨端修复任务
+    - deadhunt critical → 死链修复任务
+    - fieldcheck critical → 字段修复任务
   追加到对应子项目 tasks.md 的 Fix Round（B-FIX）
-  → 输出: 「修复任务 ✓ IMPLEMENT:{N} FIX_FAILING:{M} FIX_REQUIRED:{K}」
+  → 输出: 「修复任务 ✓ IMPLEMENT:{N} FIX_FAILING:{M} FIX_REQUIRED:{K} DEADHUNT:{D} FIELD:{F}」
   → 直接执行（不停，来源是已经用户批量确认过的验证结果，无需二次确认）
 
-Step 5: 执行修复
+Step 4: 执行修复
   调用 /task-execute 执行 Fix Round
   build-log.json 追加 fix round 记录
 
-Step 6: 回归验证
-  重跑 Step 1-2（仅 scope 模式，覆盖修复涉及的 task_ids）
+Step 5: 回归验证
+  重跑 Step 1（仅 scope 模式，覆盖修复涉及的 task_ids）
   仍有失败 → 记录为已知问题，继续（不停）
   全部通过 → PASS
 ```
@@ -645,32 +684,43 @@ Step 6: 回归验证
 |------|------|
 | verify-tasks.json | IMPLEMENT + FIX_FAILING = 0（或记录为已知问题） |
 | e2e-report.json | FIX_REQUIRED = 0（或记录为已知问题） |
+| deadhunt | 无 critical 死链（或已修复） |
+| fieldcheck | 无 critical 字段不一致（或已修复） |
 
-**PASS** → 进入 Phase 6（完整性验证）
+**PASS** → 跳过 Phase 6（已并入），进入 Phase 7（演示数据方案）
 **FAIL** → 记录已知问题到 forge-decisions.json，继续（不停）
 
 ---
 
-## Phase 6：完整性验证（deadhunt + fieldcheck）
+## Phase 6：完整性验证（已并入 Phase 5 并行扫描）
 
-### 执行方式
+> **v4.5.0 起，deadhunt + fieldcheck 已并入 Phase 5 的 4-Agent 并行扫描。**
+> Phase 6 仅在 resume 模式下、Phase 5 为旧版（不含 deadhunt/fieldcheck 产物）时独立执行。
 
-Phase 5 验证闭环通过后，执行完整性扫描：
+### 跳过条件
+
+检查 Phase 5 并行扫描产物：
+- `.allforai/deadhunt/output/validation-report-summary.md` **且** `.allforai/deadhunt/output/field-analysis/field-report.md` 均存在
+  → Phase 5 已覆盖，**跳过 Phase 6**
+- 任一不存在 → 补跑缺失项（deadhunt 和 fieldcheck 仍可并行 Agent 执行）
+
+### 补跑执行方式
 
 ```
-Step 1: 死链猎杀
-  执行 /deadhunt static（静态分析，不需要应用运行）
-  若应用已运行 → 执行 /deadhunt full（含深度测试）
+用单条消息发出 Agent tool 调用，并行执行缺失项：
+
+Agent A（若 deadhunt 产物缺失）:
+  用 Read 加载 ${CLAUDE_PLUGIN_ROOT}/commands/deadhunt.md
+  执行 /deadhunt static
   输出: validation-report-summary.md + fix-tasks.json
 
-Step 2: 字段一致性检查
+Agent B（若 fieldcheck 产物缺失）:
+  用 Read 加载 ${CLAUDE_PLUGIN_ROOT}/commands/fieldcheck.md
   执行 /fieldcheck full
   输出: field-report.md + field-issues.json
 
-Step 3: 汇总修复
-  deadhunt fix-tasks.json 中 severity=critical 的项 → 生成修复任务
-  fieldcheck field-issues.json 中 severity=critical 的项 → 生成修复任务
-  有修复项 → 调用 /task-execute 执行，再重跑 Step 1-2 回归
+汇总修复:
+  severity=critical 的项 → 生成修复任务 → task-execute → 回归
   无修复项 → PASS
 ```
 

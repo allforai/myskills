@@ -10,7 +10,7 @@ description: >
   fieldcheck (UI/API/Entity/DB field consistency).
   Full pipeline: /project-forge. LLM-driven Forge-Verify-Loop (4D/6V/XV).
   开发锻造套件：项目引导、设计转规格、任务执行、跨端验证、产品验收、死链猎杀、字段一致性。
-version: "4.4.0"
+version: "4.6.0"
 ---
 
 # Dev Forge — 开发锻造套件
