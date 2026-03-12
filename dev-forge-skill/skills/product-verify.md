@@ -228,14 +228,14 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
       1. 从 use-case-tree.json / D1 测试序列提取所有需要的前置数据状态
       2. 从 seed-plan.json 提取已规划生成的实体 + 状态分布
       3. 逐场景比对：
-         - 场景需要"已退款订单" → seed-plan 是否规划了 REFUNDED 状态记录？
+         - 场景需要"已撤销记录" → seed-plan 是否规划了 REVOKED 状态记录？
          - 场景需要"两个角色各自操作" → seed-plan 是否有两个角色的账号？
          - 场景需要"筛选结果 ≥2 条" → seed-plan 的数据量是否满足？
       **覆盖矩阵**：
       | 测试场景 | 需要的数据状态 | seed-plan 覆盖 | 缺口 |
       |---------|-------------|--------------|------|
-      | UC-001 创建订单 | 可购买商品 ≥1 | ✅ | — |
-      | UC-005 退款审批 | REFUNDED 订单 ≥1 | ❌ | SEED_GAP |
+      | UC-001 创建工单 | 可用条目 ≥1 | ✅ | — |
+      | UC-005 撤销审批 | REVOKED 记录 ≥1 | ❌ | SEED_GAP |
       **闭环**：缺口项自动生成 SEED_SUPPLEMENT 任务，指示 seed-forge 补充缺失数据。
       → 输出进度: 「S7 Seed 覆盖 ✓ covered:{N}/{M} gaps:{K}」
   ↓
@@ -304,8 +304,8 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
       **输出**：
       | screen | actions 总数 | 有数据支撑的 action | 活性率 |
       |--------|------------|-------------------|-------|
-      | 订单列表 | 5 | 5 | 100% |
-      | 退款审批 | 3 | 1 | 33% ← 需补 REFUNDED 数据 |
+      | 工单列表 | 5 | 5 | 100% |
+      | 撤销审批 | 3 | 1 | 33% ← 需补 REVOKED 数据 |
       活性率 < 80% 的 screen → 生成 SEED_SUPPLEMENT + IMPLEMENT 任务
       → 输出进度: 「D3.6 UI 活性 ✓ alive:{N}/{M} screens（平均活性 {rate}%）」
   ↓
@@ -331,10 +331,10 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
       **验证矩阵**：
       | 实体 | 定义状态 | 有数据 | UI 可见 | 可达路径 |
       |------|---------|--------|---------|---------|
-      | Order | PENDING | ✅ | ✅ | 创建后默认 |
-      | Order | PAID | ✅ | ✅ | 支付成功 |
-      | Order | REFUNDED | ❌ | — | 退款审批通过 |
-      | Order | CANCELED | ✅ | ✅ | 用户取消 |
+      | Record | PENDING | ✅ | ✅ | 创建后默认 |
+      | Record | CONFIRMED | ✅ | ✅ | 审核通过 |
+      | Record | REVOKED | ❌ | — | 撤销审批通过 |
+      | Record | CANCELED | ✅ | ✅ | 用户取消 |
       **死胡同检测**：
       - 某状态有入口无出口（不可逆但未标注为终态） → STATE_DEAD_END
       - 某状态无数据覆盖 → STATE_NO_DATA（SEED_SUPPLEMENT）
@@ -386,7 +386,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
       失败项（LLM 6V 诊断）:
       | 用例 | 失败步骤 | 主因维度 | 诊断结论 | 分类 | 修复线索 |
       |------|---------|---------|---------|------|---------|
-      | UC001 | Step 3 | V3 Correctness | handler 未处理空购物车 | FIX_FAILING | cart.controller:42 |
+      | UC001 | Step 3 | V3 Correctness | handler 未处理空待处理列表 | FIX_FAILING | pending.controller:42 |
       | UC005 | Step 1 | V2 Conformance | 连接拒绝 | ENV_ISSUE | 检查 port 3001 |
       | UC008 | Step 2 | V1 Contract | 字段名 userName vs user_name | CONTRACT_SYNC | 同步 design.json |
 
@@ -619,18 +619,18 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
     "journeys": [
       {
         "use_case_id": "UC-003",
-        "use_case_name": "用户下单流程",
+        "use_case_name": "用户提交流程",
         "priority": "P0",
         "steps": [
-          { "step": 1, "task_ref": "T-001", "label": "浏览商品", "api": "✅", "ui": "✅", "constraint": "✅", "status": "PASS" },
-          { "step": 2, "task_ref": "T-002", "label": "创建订单", "api": "✅", "ui": "✅", "constraint": "✅", "status": "PASS" },
-          { "step": 3, "task_ref": "T-003", "label": "支付确认", "api": "✅", "ui": "❌", "constraint": "N/A", "status": "PARTIAL" },
+          { "step": 1, "task_ref": "T-001", "label": "浏览条目", "api": "✅", "ui": "✅", "constraint": "✅", "status": "PASS" },
+          { "step": 2, "task_ref": "T-002", "label": "创建工单", "api": "✅", "ui": "✅", "constraint": "✅", "status": "PASS" },
+          { "step": 3, "task_ref": "T-003", "label": "审批确认", "api": "✅", "ui": "❌", "constraint": "N/A", "status": "PARTIAL" },
           { "step": 4, "task_ref": "T-004", "label": "查看结果", "api": "✅", "ui": "✅", "constraint": "✅", "status": "PASS" }
         ],
         "completeness": 0.875,
         "verdict": "PARTIAL",
         "breaks": [
-          { "type": "GAP", "step": 3, "missing": ["ui"], "impact": "用户无法看到支付页面" }
+          { "type": "GAP", "step": 3, "missing": ["ui"], "impact": "用户无法看到审批页面" }
         ]
       }
     ]
@@ -645,9 +645,9 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 | 用例 | 优先级 | 完整度 | 结论 | 断裂点 |
 |------|--------|--------|------|--------|
-| 用户下单流程 | P0 | 87.5% | ⚠️ PARTIAL | Step 3 缺 UI |
+| 用户提交流程 | P0 | 87.5% | ⚠️ PARTIAL | Step 3 缺 UI |
 | 用户注册流程 | P0 | 100% | ✅ PASS | — |
-| 商品管理 | P1 | 60% | ❌ FAIL | Step 2-3 连续缺失 |
+| 内容管理 | P1 | 60% | ❌ FAIL | Step 2-3 连续缺失 |
 
 ### 关键发现
 - P0 旅程通过率：{N}/{M}
@@ -657,7 +657,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 **生成 IMPLEMENT 任务时的增强**：
 - 传统方式：`IMPLEMENT T-003`（孤立任务）
-- 旅程感知：`IMPLEMENT T-003 — 阻断「用户下单流程」Step 3/4，P0 优先级`
+- 旅程感知：`IMPLEMENT T-003 — 阻断「用户提交流程」Step 3/4，P0 优先级`
 - 断裂点任务自动提升优先级为 P0
 
 ---
@@ -805,7 +805,7 @@ mobile-native 子项目:
 2. 从 experience-map.json 提取每个角色的核心操作线（取 frequency=高 的前 3 条）
 3. 对每条操作线构造认知走查任务:
    - persona: "{角色名}，首次使用本系统"
-   - goal: 操作线的 name（如 "完成首次下单"）
+   - goal: 操作线的 name（如 "完成首次提交"）
    - 期望步数: 操作线 continuity.total_steps
    - 禁止提供: 路由名、组件 ID、导航提示
 4. 对每个任务:
@@ -858,7 +858,7 @@ mobile-native 子项目:
 失败项（自动建议分类）:
 | 用例 | 失败步骤 | 错误 | 建议分类 | 理由 |
 |------|---------|------|---------|------|
-| UC001 创建订单 | Step 3 | 500 Internal Error | FIX_FAILING | HTTP 5xx |
+| UC001 创建工单 | Step 3 | 500 Internal Error | FIX_FAILING | HTTP 5xx |
 | UC005 导出报表 | Step 1 | Connection refused | ENV_ISSUE | 连接拒绝 |
 | UC008 批量删除 | Step 2 | Element not found | FIX_FAILING | 元素缺失 |
 
@@ -916,7 +916,7 @@ mobile-native 子项目:
       "frequency": "高 | 中 | 低",
       "owner_role": "{角色名}",
       "status": "covered | missing_api | partial",
-      "matched_routes": ["/api/orders POST"],
+      "matched_routes": ["/api/tickets POST"],
       "notes": "缺少角色鉴权中间件"
     }
   ],
@@ -925,7 +925,7 @@ mobile-native 子项目:
       "screen_id": "S001",
       "screen_name": "{界面名}",
       "status": "covered | missing_screen",
-      "matched_components": ["src/pages/orders/index.tsx"],
+      "matched_components": ["src/pages/tickets/index.tsx"],
       "notes": ""
     }
   ],
@@ -953,11 +953,11 @@ mobile-native 子项目:
       {
         "source_step": "S1",
         "item_id": "T005",
-        "item_name": "创建退款",
+        "item_name": "创建撤销",
         "claude_verdict": "covered",
         "deepseek_verdict": "stub",
-        "deepseek_reason": "handler 仅包含 // TODO: implement refund logic",
-        "matched_file": "src/routes/refund.ts:23",
+        "deepseek_reason": "handler 仅包含 // TODO: implement revoke logic",
+        "matched_file": "src/routes/revoke.ts:23",
         "resolution": "downgrade | keep | partial | pending"
       }
     ],
@@ -1025,9 +1025,9 @@ mobile-native 子项目:
     "frequency": "高 | 中 | 低",
     "priority": "P0 | P1 | P2",
     "source_step": "S1 | S2 | S3 | S4 | D4",
-    "description": "「创建订单」任务无对应 API 路由",
-    "affected_roles": ["客服专员"],
-    "suggested_action": "实现 POST /api/orders 端点"
+    "description": "「创建工单」任务无对应 API 路由",
+    "affected_roles": ["运营专员"],
+    "suggested_action": "实现 POST /api/tickets 端点"
   }
 ]
 ```
@@ -1049,7 +1049,7 @@ mobile-native 子项目:
   {
     "step": "D4",
     "item_id": "UC003",
-    "item_name": "客服创建退款用例失败",
+    "item_name": "运营创建撤销工单用例失败",
     "decision": "FIX_FAILING | ENV_ISSUE | DEFERRED",
     "reason": "数据库连接超时，非代码问题",
     "decided_at": "2024-01-15T11:15:00Z"

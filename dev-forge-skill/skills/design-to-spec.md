@@ -104,15 +104,27 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 *   **输入**：阶段 1 生成的初稿 + 上游 task.exceptions + action.on_failure + concept-baseline.governance_styles
 *   **推导维度**（对每个接口/页面/状态机逐一审查）：
 
+    **单体维度**（对每个接口/页面/状态机逐一审查）：
+
     | 维度 | 推导方法 | 示例 |
     |------|---------|------|
-    | **网络异常** | 每个 API 调用 → 超时/断连/重试/降级 | 订单提交超时 → 幂等重试 + 客户端防重 |
-    | **并发竞态** | 每个写操作 → 乐观锁/悲观锁/幂等键 | 同一订单并发支付 → 分布式锁 + 状态校验 |
-    | **数据边界** | 每个输入字段 → 空值/极值/非法格式/注入 | 价格字段 → 负数/零/超大值/小数精度 |
-    | **权限变更** | 每个角色操作 → 操作中途权限被撤销 | 商户编辑商品中途被禁用 → 提交时校验 |
-    | **外部服务** | 每个第三方依赖 → 不可用/超时/数据不一致 | 支付网关超时 → 异步回调 + 补偿查询 |
-    | **状态不一致** | 每个状态流转 → 非法状态转换/孤儿数据 | 已取消订单收到支付回调 → 自动退款 |
+    | **网络异常** | 每个 API 调用 → 超时/断连/重试/降级 | 表单提交超时 → 幂等重试 + 客户端防重 |
+    | **并发竞态** | 每个写操作 → 乐观锁/悲观锁/幂等键 | 同一记录并发修改 → 乐观锁 + 冲突提示 |
+    | **数据边界** | 每个输入字段 → 空值/极值/非法格式/注入 | 数值字段 → 负数/零/超大值/精度溢出 |
+    | **权限变更** | 每个角色操作 → 操作中途权限被撤销 | 用户编辑内容中途被禁用 → 提交时校验 |
+    | **外部服务** | 每个第三方依赖 → 不可用/超时/数据不一致 | 外部网关超时 → 异步回调 + 补偿查询 |
+    | **状态不一致** | 每个状态流转 → 非法状态转换/孤儿数据 | 已取消记录收到异步回调 → 自动回滚 |
     | **资源耗尽** | 每个批量/列表操作 → 分页上限/内存溢出/存储满 | 导出 10 万条 → 流式导出 + 进度条 |
+
+    **关系维度**（跨实体/跨时间/跨角色审查）：
+
+    | 维度 | 推导方法 | 示例 |
+    |------|---------|------|
+    | **跨实体级联** | 读取 entity-model.json 的 `invariants`，对每个不变量 → 验证 spec 中有对应的 enforcement 代码 | 撤销操作→关联资源退回、删除主记录→子记录清理、禁用账户→未完成任务处理 |
+    | **时间窗口** | 每个异步/跨时间操作 → 操作期间可能发生的状态变化 | 活动截止前提交、截止后处理→以提交时规则为准；异步回调延迟→主记录已超时取消 |
+    | **业务变体** | 读取 entity-model.json 的 `flow_variants`，对每个变体 → 验证 spec 中有对应的分支设计 | 部分处理→多批次追踪；部分撤销→资源分摊；拆分操作→各子集独立处理 |
+    | **业务滥用** | 每个面向用户的操作 → 如果被批量/自动化/恶意使用会怎样 | 频率限制、行为检测、上限约束、人机验证 |
+    | **冷启动** | 系统从零开始 → 无数据/无用户/无内容时的体验 | 空列表引导、默认数据、新手引导流程 |
 
 *   **输出分两类**：
 
@@ -121,7 +133,7 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
     示例：登录 API → `[DERIVED] 密码错误 5 次锁定 30 分钟`
 
     **B 类：缺失的支撑功能**（量少但影响大，需完整规格）
-    推导过程中发现某个核心功能缺少**独立的支撑功能/恢复机制**时（如认证 → 密码恢复、订单 → 退款流程、支付 → 对账机制），这些不是异常处理，而是**完整的新功能**，需要独立的屏幕、API、数据模型。
+    推导过程中发现某个核心功能缺少**独立的支撑功能/恢复机制**时（如认证 → 凭证恢复、提交 → 操作撤销、异步操作 → 对账机制），这些不是异常处理，而是**完整的新功能**，需要独立的屏幕、API、数据模型。
 
     B 类发现的处理流程：
     1. 记录到 `.allforai/project-forge/negative-space-supplement.json`
@@ -136,20 +148,27 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
       "discoveries": [
         {
           "id": "NS-001",
-          "trigger": "认证模块 — 凭证丢失恢复",
-          "derived_from": "登录功能（T0xx）的能力级闭环推导",
+          "trigger": "模块名 — 闭环缺失描述",
+          "derived_from": "任务名（T0xx）的能力级闭环推导",
+          "derivation_ring": 1,
           "severity": "MUST",
-          "description": "密码恢复流程：忘记密码→邮件验证→重置密码",
+          "description": "缺失功能描述：触发条件→处理流程→恢复状态",
           "scope": {
-            "screens": ["密码恢复请求页", "密码重置页"],
-            "apis": ["POST /auth/forgot-password", "POST /auth/reset-password"],
-            "entities": ["password_reset_token"],
-            "external_services": ["邮件服务"]
+            "screens": ["相关页面列表"],
+            "apis": ["相关接口列表"],
+            "entities": ["相关实体列表"],
+            "external_services": ["相关外部服务"]
           },
           "tasks_generated": ["SN-001", "SN-002", "SN-003"],
-          "design_section": "design.md ## 认证模块 — 密码恢复"
+          "design_section": "design.md ## 模块名 — 功能名"
         }
       ],
+      "convergence": {
+        "ring_0_tasks": "N（核心任务数）",
+        "ring_1_discoveries": "M（一阶推导发现数）",
+        "ring_2_deferred": "K（二阶推导，标记移交开发实现级）",
+        "stopped_reason": "zero_output | all_deferred | scale_reversal"
+      },
       "summary": {
         "total": 1,
         "must": 1,
@@ -164,10 +183,34 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
     | 追问 | 示例 |
     |------|------|
     | 凭证/权限丢失 → 恢复机制？ | 忘记密码、会话过期重登、权限申请 |
-    | 操作失败 → 补偿/撤销机制？ | 退款、订单取消、库存回滚 |
-    | 数据不一致 → 对账/修复机制？ | 支付对账、库存盘点、数据同步 |
+    | 操作失败 → 补偿/撤销机制？ | 操作回滚、提交撤销、资源释放 |
+    | 数据不一致 → 对账/修复机制？ | 异步对账、数据盘点、状态同步 |
     | 批量操作 → 进度/中断恢复？ | 批量导入中断后续传、导出进度查询 |
     | 通知送达 → 失败重试/替代通道？ | 邮件退信→短信、推送失败→站内信 |
+
+    **B 类逆向补漏**（见 `product-design-skill/docs/skill-commons.md` §五「逆向补漏协议」）：
+
+    下游是用来补上游的漏，不是用来开新战线的。B 类发现必须先判定：是上游的漏还是全新领域？
+    - 能从已有任务/实体的闭环推导出 → **回补上游**：直接追加到 task-inventory.json、experience-map.json、use-case-tree.json（标注 `_backfill: true`），然后基于完整的上游数据正向生成 spec
+    - 推导不出来 → **不补**，记入 `_uncertainty.unexplored_areas`
+
+    回补流程：
+    1. 追加任务到 `task-inventory.json`（标注 `_backfill`，含 `derivation_ring`）
+    2. 追加屏幕到 `experience-map.json`（标注 `_backfill`）
+    3. 追加用例到 `use-case-tree.json`（标注 `_backfill`）
+    4. 基于已回补的上游，正常生成 requirements + design + tasks
+    5. 记录到 `negative-space-supplement.json`（留痕，含 `convergence` 收敛记录）
+
+    **收敛控制**（见 `product-design-skill/docs/skill-commons.md` §五「回补收敛原则」）：
+    - 一阶推导（Ring 1）：从核心任务闭环推导 → 正常回补
+    - 二阶推导（Ring 2）：从回补任务闭环推导 → 仅标记，移交实现级闭环处理
+    - 规模反转：某个补漏比父任务还大 → 判定为新领域，不补
+    - 收敛过程记录在 `negative-space-supplement.json` 的 `convergence` 字段
+
+    **不变量验证**：
+    读取 entity-model.json 的 `invariants` 字段（产品设计阶段 Step 7 产出）。
+    对每个不变量，验证 spec 中是否有对应的 enforcement 设计。
+    无 enforcement → 标记 `INVARIANT_UNCOVERED`，在 design.md 中补充。
 
 *   **闭环完整度**：对六类闭环逐一检查覆盖度（见下方阶段 2 V7）。
 
@@ -356,11 +399,11 @@ existing 模式下，Step 3 生成 design.md 之前，先执行套路检测：
 #### Next.js（web-customer 类）
 
 > 详见 `${CLAUDE_PLUGIN_ROOT}/docs/tech-stack-patterns/nextjs.md`
-> 包含：C端页面套路概览 + CT1 Feed流 / EC1商品详情 / EC2购物车 / WK1 IM 详细实现。
+> 包含：C端页面套路概览 + CT1 Feed流 / EC1 详情页 / EC2 收藏夹 / WK1 IM 详细实现。
 #### Flutter（mobile-native 类）
 
 > 详见 `${CLAUDE_PLUGIN_ROOT}/docs/tech-stack-patterns/flutter.md`
-> 包含：移动端套路概览 + CT1 Feed流 / EC1商品详情 / WK1 IM 详细实现。
+> 包含：移动端套路概览 + CT1 Feed流 / EC1 详情页 / WK1 IM 详细实现。
 ### 多语言实现规范
 
 > 通用规范见 `docs/interaction-types.md`。以下为各技术栈的实现差异。
@@ -395,14 +438,14 @@ existing 模式下，Step 3 生成 design.md 之前，先执行套路检测：
 | 类型 | 页面数 | 代表页面 |
 |------|--------|---------|
 | MG1 只读列表 | {N} | 审计日志、积分历史 |
-| MG2 CRUD 集群 | {N} | 商品管理、分类管理 |
-| MG3 状态机驱动 | {N} | 订单管理 |
-| MG4 审批流 | {N} | 商品审核 |
+| MG2 CRUD 集群 | {N} | 内容管理、分类管理 |
+| MG3 状态机驱动 | {N} | 流程管理 |
+| MG4 审批流 | {N} | 内容审核 |
 | MG5 主从详情 | {N} | 用户详情 |
 | MG6 树形管理 | {N} | 分类管理 |
 | MG7 仪表盘 | {N} | 首页 |
-| MG8 配置页 | {N} | 店铺设置 |
-| CT/EC/WK/RT/SB/SY | {N} | Feed流、商品详情、IM等 |
+| MG8 配置页 | {N} | 系统设置 |
+| CT/EC/WK/RT/SB/SY | {N} | Feed流、详情页、IM等 |
 
 ### 各类型标准数据流
 {按类型列出组件选型 + 数据流 + Service 函数签名}
@@ -419,12 +462,12 @@ existing 模式下，Step 3 生成 design.md 之前，先执行套路检测：
 
 每个具体页面规格标注类型：
 ~~~markdown
-#### 商品列表页 [类型: MG2-完整CRUD]
+#### 内容列表页 [类型: MG2-完整CRUD]
 #### 审计日志页 [类型: MG1-只读列表]
-#### 订单详情页 [类型: MG5-主从详情 + MG3-状态机驱动]
+#### 任务详情页 [类型: MG5-主从详情 + MG3-状态机驱动]
 ~~~
 
-一个页面可以组合多个类型（如「订单详情」= 主从详情 + 状态机操作）。
+一个页面可以组合多个类型（如「任务详情」= 主从详情 + 状态机操作）。
 
 ---
 
@@ -679,11 +722,11 @@ Step 3b: Design 生成 + 技术丰富（API-first 策略）
       ],
       "pages": [
         {
-          "route": "/orders",
-          "name": "订单列表",
+          "route": "/records",
+          "name": "记录列表",
           "source_vo": "VO001",
           "components": ["DataTable", "SearchBar", "Pagination"],
-          "states": {"empty": "暂无订单", "loading": "加载中...", "error": "加载失败"}
+          "states": {"empty": "暂无记录", "loading": "加载中...", "error": "加载失败"}
         }
       ],
       "middleware": [
@@ -857,11 +900,11 @@ Step 4: Tasks 生成
     - 文件限定在 `*_dev.go` / `*.dev.ts`
 
     示例：
-    - [ ] B2.5.1 [backend] [DEV_ONLY] 支付网关 dev bypass
-      Files: `services/payment/payment_dev.go`
-      行为：magic amount 映射（0.01→成功, 0.02→失败, 0.03→超时），延迟 1s 触发回调
+    - [ ] B2.5.1 [backend] [DEV_ONLY] 外部网关 dev bypass
+      Files: `services/gateway/gateway_dev.go`
+      行为：magic value 映射（test_ok→成功, test_fail→失败, test_timeout→超时），延迟 1s 触发回调
       守卫：`//go:build dev` + 运行时 env 检查
-      _Bypass: payment_gateway.auto_callback_
+      _Bypass: external_gateway.auto_callback_
 
     - [ ] B2.5.2 [backend] [DEV_ONLY] 短信验证 dev bypass
       Files: `services/sms/sms_dev.go`
@@ -991,20 +1034,20 @@ Step 4.5: 任务上下文预计算（Task Context）
             "rule_text": "确认后不可变",
             "constraint_refs": [
               { "id": "CN-005", "name": "GDPR 合规", "reason": "审计追踪完整性", "severity": "critical" },
-              { "id": "CN-008", "name": "反欺诈", "reason": "防止订单篡改", "severity": "high" }
+              { "id": "CN-008", "name": "反欺诈", "reason": "防止数据篡改", "severity": "high" }
             ]
           }
         ],
         "consumers": [
-          { "sub_project": "web-customer", "screen_id": "S-003", "usage_description": "订单创建表单提交" },
-          { "sub_project": "mobile-app", "screen_id": "S-M012", "usage_description": "移动端下单" }
+          { "sub_project": "web-customer", "screen_id": "S-003", "usage_description": "核心业务表单提交" },
+          { "sub_project": "mobile-app", "screen_id": "S-M012", "usage_description": "移动端提交" }
         ],
         "frequency_weight": "critical",
         "risk_level": "high",
         "verification_hint": "integration_test + load_test",
         "flow_position": {
           "flow_id": "F-002",
-          "flow_name": "订单处理流程",
+          "flow_name": "核心业务处理流程",
           "position_in_flow": 2,
           "upstream_tasks": ["BE-T000"],
           "downstream_tasks": ["BE-T002", "BE-T005"]

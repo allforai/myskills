@@ -166,13 +166,13 @@ product-concept（战略层）        product-map（运营层）
 ├─────────────────────────────────────────────────────┤
 │  模型 A (gpt, temp=1.0): 挑战者                      │
 │    → 列出该领域 5-10 条"行业共识"                      │
-│    → 示例："电商必须有购物车"、"社交产品必须有好友系统"│
+│    → 示例："协作工具必须有文件夹"、"社交产品必须有好友系统"│
 │    → 输出：industry_assumptions[]                   │
 │                                                     │
 │  模型 B (gemini, temp=0.5): 守护者                   │
 │    → 逐一质疑：这是物理定律还是人为约定？             │
 │    → 物理定律 → 必须遵守（如网络延迟、信息熵）        │
-│    → 人为约定 → 可以挑战（如购物车、好友列表）        │
+│    → 人为约定 → 可以挑战（如文件夹、好友列表）        │
 │    → 输出：constraint_classification[]              │
 └─────────────────────────────────────────────────────┘
           ↓
@@ -230,8 +230,8 @@ product-concept（战略层）        product-map（运营层）
 ```
 
 **搜索关键词示例**：
-- `"eliminate shopping cart" + "checkout innovation"`
-- `"frictionless ecommerce" + "one-click purchase"`
+- `"eliminate folder structure" + "content organization innovation"`
+- `"frictionless onboarding" + "one-click setup"`
 - `"alternative to friend list" + "social connection"`
 
 **输出文件**：`.allforai/product-concept/innovation-opportunities.json`
@@ -288,7 +288,7 @@ product-concept（战略层）        product-map（运营层）
    - 成本项"内容制作" → 谁来创建内容？（内容运营/编辑）
    - 成本项"运营成本" → 谁来管理系统？（系统管理员）
    - 关键指标需要有人监控 → 谁来看数据？（数据分析/运营）
-   - 付费模式需要管理 → 谁来处理订阅/退款？（客服/财务）
+   - 付费模式需要管理 → 谁来处理订阅/撤销？（客服/财务）
 7. **AskUserQuestion** 选择题：
    - "产品运营需要哪些后台角色？"（基于反推结果生成选项，多选）
    - 对每个选中角色：简化版 VPC（Jobs + 核心工具需求，不需要 Pains/Gains 深度展开）
@@ -313,7 +313,7 @@ product-concept（战略层）        product-map（运营层）
     impl_group → app 映射（问用户确认）
     ─────────────────────────────
     end_user       → website（或 mobile，若有独立 app）
-    merchant       → merchant（商户后台，独立部署）
+    provider       → provider（服务提供者后台，独立部署）
     admin          → admin（总后台，独立部署）
     ```
     **`app` 的含义**：一个独立部署的前端应用，有自己的代码仓库（或子目录）、端口、路由。不同于 `platform`（设备类型）或 `role`（用户身份），`app` 决定界面**在哪个系统中实现**。
@@ -332,9 +332,9 @@ product-concept（战略层）        product-map（运营层）
 
     | 角色特征 | 操作频度模型 | 屏幕粒度指导 |
     |---------|-------------|-------------|
-    | 消费者端 (end_user) + mobile | 高频少操作，注意力短，单手操作 | 每屏聚焦单一任务，纵深导航，减少跳转层级 |
-    | 消费者端 (end_user) + desktop | 中频中操作，多标签浏览 | 适度聚合相关功能，侧边栏辅助导航 |
-    | 商户后台 (merchant) + desktop | 中频多操作，日常运营，效率优先 | **同页多功能**：列表+详情+操作在同一视图，减少页面跳转。常用操作前置，低频操作折叠 |
+    | 终端用户端 (end_user) + mobile | 高频少操作，注意力短，单手操作 | 每屏聚焦单一任务，纵深导航，减少跳转层级 |
+    | 终端用户端 (end_user) + desktop | 中频中操作，多标签浏览 | 适度聚合相关功能，侧边栏辅助导航 |
+    | 服务提供者后台 (provider) + desktop | 中频多操作，日常运营，效率优先 | **同页多功能**：列表+详情+操作在同一视图，减少页面跳转。常用操作前置，低频操作折叠 |
     | 管理后台 (admin) + desktop | 低频重操作，审核/配置/监控为主 | **仪表盘+工作台**模式：KPI 总览 + 待办队列 + 批量操作。配置类可深层嵌套 |
 
     **二八原则应用**：每个角色识别 top 20% 高频操作（从角色核心 jobs + 日常操作场景推导），这些操作必须在 1-2 次点击内可达。下游 product-map 生成 business-flows 后可进一步验证和细化。
@@ -346,14 +346,14 @@ product-concept（战略层）        product-map（运营层）
     ```json
     {
       "role_id": "R2",
-      "role_name": "商户后台用户",
-      "impl_group": "merchant",
-      "app": "merchant",
+      "role_name": "服务提供者后台用户",
+      "impl_group": "provider",
+      "app": "provider",
       "operation_profile": {
         "frequency": "medium",
         "density": "high",
         "screen_granularity": "multi_function_per_page",
-        "high_frequency_tasks": ["订单处理", "库存管理", "消息回复"],
+        "high_frequency_tasks": ["工单处理", "资源管理", "消息回复"],
         "design_principle": "同页多功能，常用操作前置，列表+详情+操作在同一视图"
       }
     }
@@ -411,8 +411,8 @@ product-concept（战略层）        product-map（运营层）
 不同的业务流需要不同的治理策略。治理风格决定了下游界面是否需要审核环节、表单复杂度、系统边界划分。这不是全局统一的——同一个产品中，资金相关流程可能需要严格审核，而内容发布可能允许先发后审。
 
 7. **识别需要治理决策的业务流**：从 Step 0-2 的功能模块中，找出涉及以下场景的业务流：
-   - 内容发布（商品上架、评价发布、广告投放等）
-   - 资金操作（支付、提现、退款等）
+   - 内容发布（条目上架、评价发布、广告投放等）
+   - 资金操作（支付、提现、撤销等）
    - 身份准入（注册、入驻、认证等）
    - 权限变更（角色分配、权限调整等）
 
@@ -437,12 +437,12 @@ product-concept（战略层）        product-map（运营层）
     ```json
     "governance_styles": [
       {
-        "flow_domain": "商品上架",
+        "flow_domain": "条目上架",
         "style": "auto_review",
         "rationale": "首次人工审核，信誉积累后自动通过",
         "downstream_implications": ["需要信誉评分系统", "需要自动审核规则配置"],
         "system_boundary": {
-          "in_scope": ["商品信息填写", "审核状态展示"],
+          "in_scope": ["条目信息填写", "审核状态展示"],
           "external": ["实名认证（第三方KYC）"]
         }
       }
@@ -603,16 +603,16 @@ product-concept（战略层）        product-map（运营层）
 
 **触发条件**：用户明确表示要执行完整产品设计流水线（如 `/product-design full`、「帮我跑一遍全流程」等）。
 
-**Q1 — UI 设计风格（仅消费者端）**
+**Q1 — UI 设计风格（仅终端用户端）**
 
 > 管理后台的视觉风格由组件库决定（Ant Design / Element Plus / Shadcn 等），无需单独选择。
-> Q1 仅对**消费者端**（Web/App/小程序）提问。若产品只有管理后台没有消费者端 → 跳过 Q1。
+> Q1 仅对**终端用户端**（Web/App/小程序）提问。若产品只有管理后台没有终端用户端 → 跳过 Q1。
 
-从 Step 1 识别的角色推断消费者端类型。若有多个消费者端（如 Web + Mobile），分别选择。
+从 Step 1 识别的角色推断终端用户端类型。若有多个终端用户端（如 Web + Mobile），分别选择。
 
-对每个消费者端类型，AskUserQuestion（单选）：
+对每个终端用户端类型，AskUserQuestion（单选）：
 
-问题：「{消费者端名称} 的视觉风格偏好？」
+问题：「{终端用户端名称} 的视觉风格偏好？」
 
 | 编号 | 选项 | 适用场景 |
 |------|------|----------|
@@ -624,7 +624,7 @@ product-concept（战略层）        product-map（运营层）
 | 6 | Shadcn / Tailwind | 开发者友好，适合 SaaS/技术产品 |
 | 7 | 暂不确定 | 下游 ui-design 阶段再交互选择 |
 
-> 若只有一个消费者端，退化为单次提问。多端时合并为一次 AskUserQuestion 逐端选择。
+> 若只有一个终端用户端，退化为单次提问。多端时合并为一次 AskUserQuestion 逐端选择。
 
 **Q2 — 竞品参考**
 
@@ -701,7 +701,7 @@ AskUserQuestion（多选，可多选 + 全不选）：
 }
 ```
 
-> `ui_styles` 仅包含消费者端类型（admin/后台不需要，风格由组件库决定）。单消费者端产品只有一个 key。下游 ui-design 按端类型读取对应风格。
+> `ui_styles` 仅包含终端用户端类型（admin/后台不需要，风格由组件库决定）。单终端用户端产品只有一个 key。下游 ui-design 按端类型读取对应风格。
 
 > `pipeline_preferences` 的存在是下游自动模式的激活条件之一。选择「暂不确定」的项标记为 `"undecided"`，下游对应技能回退到交互模式。
 

@@ -211,10 +211,10 @@ Step 1: 跨端场景推导
         { sub_project, role, action, url, input, expected_result }
       ]
     示例:
-      商户上架商品(merchant-admin)
-      → 消费者浏览(customer-web)
-      → 消费者下单(customer-web + api-backend)
-      → 商户查看订单(merchant-admin)
+      服务提供者发布内容(provider-admin)
+      → 用户浏览(user-web)
+      → 用户提交工单(user-web + api-backend)
+      → 服务提供者查看工单(provider-admin)
   1-B 负向场景（从 use-case-tree.json）:
     加载 use-case-tree.json（可选）
     提取 type = "exception" 和 "boundary" 的用例
@@ -224,9 +224,9 @@ Step 1: 跨端场景推导
       priority: use_case.priority（exception 默认 high）
       步骤序列: 正常流前置步骤 + 触发异常的操作 + 验证错误处理
     示例:
-      消费者下单(customer-web) → 库存不足(api-backend 返回 409)
-      → 消费者看到错误提示(customer-web)
-      商户修改价格(merchant-admin) → 消费者刷新看到新价格(customer-web)
+      用户提交工单(user-web) → 配额不足(api-backend 返回 409)
+      → 用户看到错误提示(user-web)
+      服务提供者修改配置(provider-admin) → 用户刷新看到新配置(user-web)
     use-case-tree.json 不存在 → 跳过负向场景，仅用正向场景
   1-C 创新概念专属场景:
     加载 task-inventory.json 检查 innovation_tasks 字段：
@@ -350,7 +350,7 @@ Step 3: 6V 审计与自动分类
     | 场景 | 失败步骤 | 主因维度 | 诊断结论 | 分类 | 修复线索 |
     |------|---------|---------|---------|------|---------|
     | E2E-001 | Step 2 | V1 Contract | 前端 userName ≠ 后端 user_name | CONTRACT_SYNC | customer-web/api.ts:15 |
-    | E2E-003 | Step 3 | V3 Correctness | 库存扣减未实现 | FIX_REQUIRED | api-backend/orders.ts:42 |
+    | E2E-003 | Step 3 | V3 Correctness | 配额扣减未实现 | FIX_REQUIRED | api-backend/tickets.ts:42 |
     | E2E-N01 | Step 1 | V2 Conformance | 端口 3002 不可达 | ENV_ISSUE | 检查 customer-web 启动状态 |
 
     → 自动采纳全部建议分类（不停）
@@ -443,7 +443,7 @@ Step 4: 报告生成
   "scenarios": [
     {
       "id": "E2E-001",
-      "name": "商户上架 → 消费者购买 → 商户查看订单",
+      "name": "服务提供者发布内容 → 用户提交工单 → 服务提供者查看工单",
       "type": "positive",
       "flow_ref": "BF-003",
       "use_case_ref": null,
@@ -451,65 +451,65 @@ Step 4: 报告生成
       "steps": [
         {
           "seq": 1,
-          "sub_project": "merchant-admin",
-          "role": "merchant",
+          "sub_project": "provider-admin",
+          "role": "provider",
           "viewport": "desktop",
-          "action": "登录并进入商品管理",
-          "url": "http://localhost:3000/products",
+          "action": "登录并进入内容管理",
+          "url": "http://localhost:3000/contents",
           "operations": [
             { "type": "navigate", "url": "http://localhost:3000/login" },
-            { "type": "fill", "selector": "[name=email]", "value": "merchant@test.com" },
+            { "type": "fill", "selector": "[name=email]", "value": "provider@test.com" },
             { "type": "fill", "selector": "[name=password]", "value": "SeedForge2024!" },
             { "type": "click", "selector": "button[type=submit]" },
-            { "type": "navigate", "url": "http://localhost:3000/products/new" },
-            { "type": "fill", "selector": "[name=name]", "value": "E2E 测试商品" },
+            { "type": "navigate", "url": "http://localhost:3000/contents/new" },
+            { "type": "fill", "selector": "[name=name]", "value": "E2E 测试内容" },
             { "type": "click", "selector": "button[type=submit]" }
           ],
-          "expected": "商品创建成功，跳转到商品列表"
+          "expected": "内容创建成功，跳转到内容列表"
         },
         {
           "seq": 2,
-          "sub_project": "customer-web",
-          "role": "consumer",
+          "sub_project": "user-web",
+          "role": "user",
           "viewport": "desktop",
-          "action": "浏览并购买商品",
-          "url": "http://localhost:3002/products",
+          "action": "浏览并提交工单",
+          "url": "http://localhost:3002/contents",
           "operations": [
-            { "type": "navigate", "url": "http://localhost:3002/products" },
-            { "type": "snapshot", "verify": "页面包含 E2E 测试商品" },
-            { "type": "click", "selector": "text=E2E 测试商品" },
-            { "type": "click", "selector": "text=购买" }
+            { "type": "navigate", "url": "http://localhost:3002/contents" },
+            { "type": "snapshot", "verify": "页面包含 E2E 测试内容" },
+            { "type": "click", "selector": "text=E2E 测试内容" },
+            { "type": "click", "selector": "text=提交" }
           ],
-          "expected": "订单创建成功"
+          "expected": "工单创建成功"
         },
         {
           "seq": 3,
           "sub_project": "api-backend",
           "role": "system",
-          "action": "API 验证订单数据一致性",
+          "action": "API 验证工单数据一致性",
           "operations": [
-            { "type": "api_call", "method": "GET", "url": "http://localhost:3001/api/orders?latest=true" }
+            { "type": "api_call", "method": "GET", "url": "http://localhost:3001/api/tickets?latest=true" }
           ],
-          "expected": "最新订单包含 E2E 测试商品"
+          "expected": "最新工单包含 E2E 测试内容"
         },
         {
           "seq": 4,
-          "sub_project": "merchant-admin",
-          "role": "merchant",
+          "sub_project": "provider-admin",
+          "role": "provider",
           "viewport": "desktop",
-          "action": "查看新订单",
-          "url": "http://localhost:3000/orders",
+          "action": "查看新工单",
+          "url": "http://localhost:3000/tickets",
           "operations": [
-            { "type": "navigate", "url": "http://localhost:3000/orders" },
-            { "type": "snapshot", "verify": "订单列表包含 E2E 测试商品" }
+            { "type": "navigate", "url": "http://localhost:3000/tickets" },
+            { "type": "snapshot", "verify": "工单列表包含 E2E 测试内容" }
           ],
-          "expected": "商户可以看到消费者的订单"
+          "expected": "服务提供者可以看到用户的工单"
         }
       ]
     },
     {
       "id": "E2E-N01",
-      "name": "[负向] 消费者购买库存不足商品 → 错误提示",
+      "name": "[负向] 用户提交配额不足条目的工单 → 错误提示",
       "type": "negative",
       "flow_ref": null,
       "use_case_ref": "UC-EXC-003",
@@ -517,26 +517,26 @@ Step 4: 报告生成
       "steps": [
         {
           "seq": 1,
-          "sub_project": "customer-web",
-          "role": "consumer",
+          "sub_project": "user-web",
+          "role": "user",
           "viewport": "desktop",
-          "action": "尝试购买库存为 0 的商品",
-          "url": "http://localhost:3002/products/out-of-stock",
+          "action": "尝试提交配额为 0 的条目",
+          "url": "http://localhost:3002/contents/no-quota",
           "operations": [
-            { "type": "navigate", "url": "http://localhost:3002/products/out-of-stock" },
-            { "type": "click", "selector": "text=购买" }
+            { "type": "navigate", "url": "http://localhost:3002/contents/no-quota" },
+            { "type": "click", "selector": "text=提交" }
           ],
-          "expected": "显示库存不足错误提示，不创建订单"
+          "expected": "显示配额不足错误提示，不创建工单"
         },
         {
           "seq": 2,
           "sub_project": "api-backend",
           "role": "system",
-          "action": "API 验证未创建订单",
+          "action": "API 验证未创建工单",
           "operations": [
-            { "type": "api_call", "method": "GET", "url": "http://localhost:3001/api/orders?latest=true" }
+            { "type": "api_call", "method": "GET", "url": "http://localhost:3001/api/tickets?latest=true" }
           ],
-          "expected": "最新订单不包含库存不足商品"
+          "expected": "最新工单不包含配额不足条目"
         }
       ]
     }
@@ -561,18 +561,18 @@ Step 4: 报告生成
   "results": [
     {
       "scenario_id": "E2E-001",
-      "scenario_name": "商户上架 → 消费者购买",
+      "scenario_name": "服务提供者发布 → 用户提交",
       "status": "fail",
       "steps": [
         { "seq": 1, "status": "pass", "duration_ms": 3200 },
-        { "seq": 2, "status": "fail", "error": "商品未出现在列表中", "screenshot": "e2e/screenshots/E2E-001-step2.png", "duration_ms": 5100 },
+        { "seq": 2, "status": "fail", "error": "内容未出现在列表中", "screenshot": "e2e/screenshots/E2E-001-step2.png", "duration_ms": 5100 },
         { "seq": 3, "status": "skip", "reason": "前置步骤失败" },
         { "seq": 4, "status": "skip", "reason": "前置步骤失败" }
       ],
       "failure_classification": "FIX_REQUIRED",
       "six_v_diagnosis": {
         "primary_cause": "V3",
-        "diagnosis": "商品列表查询未包含新上架商品（缺少 status=active 过滤）",
+        "diagnosis": "内容列表查询未包含新发布内容（缺少 status=active 过滤）",
         "evidence": "customer-web/src/api/products.ts:28 → 缺少 status 参数",
         "fix_hint": "添加 ?status=active 查询参数或修改后端默认过滤逻辑",
         "emotion_escalation": false
@@ -610,12 +610,12 @@ Step 4: 报告生成
 |-----------|---------|------|---------------|
 | backend | curl / HTTP client | — | API 提供者，通过 API 验证数据 |
 | admin | Playwright | 桌面 (1280x720) | 操作发起方（管理操作） |
-| web-customer | Playwright | 桌面 + 移动 | 消费方（浏览/购买） |
-| web-mobile | Playwright | 移动 (375x812) | 消费方（移动端交互） |
-| mobile-native (iOS Swift/SwiftUI) | **XCUITest** | 原生 | 消费方（原生应用视角） |
-| mobile-native (Android Kotlin/Java) | **Maestro** | 原生 | 消费方（原生应用视角） |
-| mobile-native (RN) | **Maestro** | 原生 | 消费方（原生应用视角） |
-| mobile-native (Flutter) | **Maestro** | 原生 | 消费方（原生应用视角） |
+| web-customer | Playwright | 桌面 + 移动 | 用户方（浏览/提交） |
+| web-mobile | Playwright | 移动 (375x812) | 用户方（移动端交互） |
+| mobile-native (iOS Swift/SwiftUI) | **XCUITest** | 原生 | 用户方（原生应用视角） |
+| mobile-native (Android Kotlin/Java) | **Maestro** | 原生 | 用户方（原生应用视角） |
+| mobile-native (RN) | **Maestro** | 原生 | 用户方（原生应用视角） |
+| mobile-native (Flutter) | **Maestro** | 原生 | 用户方（原生应用视角） |
 
 **混合场景处理**：
 - Web 端步骤 → Playwright 自动执行

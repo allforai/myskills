@@ -115,12 +115,12 @@
   ],
   "modules": [
     {
-      "name": "退款管理",
+      "name": "撤销管理",
       "task_ids": ["T001"],
       "tasks": [
         {
           "id": "T001",
-          "name": "创建并提交退款单",
+          "name": "创建并提交撤销工单",
           "frequency": "高",
           "owner_role": "R001",
           "risk_level": "高",
@@ -144,10 +144,10 @@
   "flows": [
     {
       "id": "F001",
-      "name": "售后全链路",
+      "name": "异常处理全链路",
       "node_count": 4,
       "gap_count": 1,
-      "roles": ["买家", "商户"]
+      "roles": ["终端用户", "服务提供者"]
     }
   ]
 }

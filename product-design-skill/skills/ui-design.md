@@ -161,7 +161,7 @@ product-concept → product-map → experience-map → ui-design
     screen.view_modes 字段（由 experience-map Step 2 填充）：
     - 后台屏幕（merchant/admin）的 view_modes 描述屏幕内的视图模式流转
     - UI 设计时，每个 view_mode 需要独立的布局规格（组件可见性、区域占比、交互状态）
-    - 例：订单列表有 3 种 view_mode（全量列表 → 筛选列表 → 详情面板），UI 规格需为每种模式描述布局变化
+    - 例：工单列表有 3 种 view_mode（全量列表 → 筛选列表 → 详情面板），UI 规格需为每种模式描述布局变化
     - 无 view_modes 的屏幕（移动端单任务）按单一视图模式处理
 
   Phase 2.8 — 加载创新概念清单（新增）：
@@ -565,7 +565,7 @@ Step 5.6: LLM 高保真 HTML 预览（Stitch 不可用时自动执行）
 
 | Pattern Group | 对齐项目 | 调整说明 |
 |--------------|---------|---------|
-| orders-crud | 操作按钮位置 | 统一到右上角主操作 |
+| records-crud | 操作按钮位置 | 统一到右上角主操作 |
 | approval-flows | 状态标签颜色 | ⚠ 需在组件库中统一 |
 ```
 
@@ -1034,7 +1034,7 @@ LLM 生成 UI 设计后，追问闭环完整性：
   "screens": [
     {
       "id": "S-05",
-      "name": "订单管理",
+      "name": "工单管理",
       "role": "管理员",
       "audience_type": "professional",
       "interaction_type": "MG3",

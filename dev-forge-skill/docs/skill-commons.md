@@ -55,6 +55,8 @@ dev-forge 的所有阶段（design-to-spec、task-execute、product-verify）均
 
 **推导出的异常标注 `[DERIVED]`**，以区分产品设计原始标记和开发推导。
 
+**推导收敛**：见 `product-design-skill/docs/skill-commons.md` §五「回补收敛原则」。开发阶段负责 Ring 2+，但同样遵循收敛三条件（概念定边界、推导半径递减、规模反转即停）。negative-space-supplement.json 的 `convergence` 字段记录推导收敛过程。
+
 ---
 
 ## 五、工程保真增强（4E + 4V）

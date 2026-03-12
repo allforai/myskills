@@ -262,20 +262,20 @@ LLM 生成情绪标注 → 自审验证
 > 以下示例以虚构业务为背景，仅用于说明输出格式。实际内容由 product-map 分析结果决定，不限行业。
 
 ```
-旅程线：F001 售后退款流程
+旅程线：F001 异常处理流程
 
 | # | 角色 | 动作 | emotion | intensity | risk | design_hint |
 |---|------|------|---------|-----------|------|-------------|
-| 1 | 买家 | 提交退款申请 | neutral | 3 | low | |
-| 2 | 商户 | 收到退款通知 | neutral | 3 | low | |
-| 3 | 商户 | 审核退款申请 | neutral | 3 | low | |
-| 4 | 买家 | 查看退款结果 | neutral | 3 | low | |
+| 1 | 用户 | 提交撤销申请 | neutral | 3 | low | |
+| 2 | 管理员 | 收到撤销通知 | neutral | 3 | low | |
+| 3 | 管理员 | 审核撤销申请 | neutral | 3 | low | |
+| 4 | 用户 | 查看撤销结果 | neutral | 3 | low | |
 ```
 
 **用户确认**：请审阅每个节点的情绪标注，根据实际业务场景调整：
 
-- **emotion**：用户在此节点的真实情绪是什么？（例：等待退款结果时用户通常是 anxious 而非 neutral）
-- **intensity**：情绪强度是否准确？（例：被拒绝退款时 intensity 应为 4-5）
+- **emotion**：用户在此节点的真实情绪是什么？（例：等待撤销结果时用户通常是 anxious 而非 neutral）
+- **intensity**：情绪强度是否准确？（例：被拒绝撤销时 intensity 应为 4-5）
 - **risk**：此节点是否存在流失/投诉风险？（例：审核超时节点 risk 应为 high）
 - **design_hint**：针对该情绪/风险，有什么设计建议？（例：「增加进度条缓解焦虑」「超时自动提醒」）
 
@@ -298,13 +298,13 @@ LLM 生成情绪标注 → 自审验证
   {
     "step": "Step 3",
     "flow_id": "F001",
-    "flow_name": "售后退款流程",
+    "flow_name": "异常处理流程",
     "node_seq": 4,
     "field": "emotion",
     "original_value": "neutral",
     "new_value": "anxious",
     "decision": "modified",
-    "reason": "用户等待退款结果时通常焦虑",
+    "reason": "用户等待撤销结果时通常焦虑",
     "decided_at": "2026-03-07T10:30:00Z"
   }
 ]
@@ -323,18 +323,18 @@ LLM 生成情绪标注 → 自审验证
   "journey_lines": [
     {
       "id": "JL01",
-      "name": "售后退款流程",
+      "name": "异常处理流程",
       "role": "R001",
       "source_flow": "F001",
       "emotion_nodes": [
         {
           "step": 1,
-          "action": "提交退款申请",
+          "action": "提交撤销申请",
           "role": "R001",
           "emotion": "frustrated",
           "intensity": 4,
           "risk": "medium",
-          "design_hint": "简化退款表单，减少用户填写负担"
+          "design_hint": "简化撤销表单，减少用户填写负担"
         }
       ],
       "human_decision": true

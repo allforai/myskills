@@ -471,7 +471,7 @@ python3 <SCRIPTS>/gen_ui_components.py <BASE> --mode auto
   "screens": [
     {
       "screen_id": "S010",
-      "screen_name": "买家首页",
+      "screen_name": "用户首页",
       "priority": "P0",
       "selection_reason": "role_entry:R01 + interaction_type:MG1",
       "prompt": "Design a mobile home screen for...",
@@ -503,13 +503,13 @@ python3 <SCRIPTS>/gen_ui_components.py <BASE> --mode auto
   "screens": [
     {
       "screen_id": "S010",
-      "screen_name": "买家首页",
+      "screen_name": "用户首页",
       "priority": "P0",
       "status": "success",
       "stitch_screen_id": "abc123",
       "local_files": {
-        "html": "stitch/S010-买家首页.html",
-        "screenshot": "stitch/S010-买家首页.png"
+        "html": "stitch/S010-用户首页.html",
+        "screenshot": "stitch/S010-用户首页.png"
       },
       "route_path": "/home",
       "interaction_type": "MG1",

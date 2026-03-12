@@ -84,7 +84,7 @@ Twelve-Factor App             "Flutter state management trends"
 | 理论/框架 | 核心主张 | 在 project-setup 中的落地 |
 |-----------|---------|-------------------------|
 | **Unix Philosophy** (McIlroy, 1978) | "做一件事，做好它"；程序应该小而专注，通过组合解决复杂问题 | 每个子项目只承担一个职责（API / Admin / Consumer）；子项目间通过 API 组合 |
-| **Conway's Law** (Conway, 1968) | 系统架构不可避免地映射组织的沟通结构 | 子项目拆分参照角色边界（商户团队 → merchant-admin，消费者团队 → customer-web） |
+| **Conway's Law** (Conway, 1968) | 系统架构不可避免地映射组织的沟通结构 | 子项目拆分参照角色边界（服务提供者团队 → provider-admin，终端用户团队 → customer-web） |
 | **Bounded Context** (Evans, 2003) | 每个限界上下文有独立的领域模型和语言 | 模块分配时，同一业务概念在不同端可有不同视角 |
 | **Twelve-Factor App** (Wiggins, 2011) | 配置外置、端口绑定、依赖显式声明等 12 条准则 | 每子项目端口配置、.env 管理、依赖隔离 |
 | **Microservices Patterns** (Richardson, 2018) | 服务拆分策略：按业务能力 / 按子域 | 子项目拆分策略参考（按角色 vs 按业务域 vs 按技术栈） |

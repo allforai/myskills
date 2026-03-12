@@ -145,7 +145,7 @@ Step 6: 保存 interaction-gate.json
 ```json
 {
   "line_id": "OL001",
-  "line_name": "买家下单流程",
+  "line_name": "用户提交任务流程",
   "scores": {
     "step_count": 28,
     "context_switches": 20,
@@ -206,15 +206,15 @@ LLM 评分 → 自审验证
 
 | 操作线 | step_count (30) | context_switches (25) | wait_feedback (25) | thumb_zone (20) | 总分 | 结果 |
 |--------|----------------|-----------------------|--------------------|-----------------|------|------|
-| OL001 买家下单流程 | 28 | 20 | 22 | 18 | 88 | PASS |
-| OL002 商户审核流程 | 18 | 15 | 10 | 12 | 55 | FAIL |
-| OL003 退款申请流程 | 25 | 22 | 20 | 16 | 83 | PASS |
+| OL001 用户提交任务流程 | 28 | 20 | 22 | 18 | 88 | PASS |
+| OL002 管理员审核流程 | 18 | 15 | 10 | 12 | 55 | FAIL |
+| OL003 撤销申请流程 | 25 | 22 | 20 | 16 | 83 | PASS |
 ```
 
 对于 `FAIL` 的操作线，展示具体问题：
 
 ```
-OL002 商户审核流程（55 分，未达标）：
+OL002 管理员审核流程（55 分，未达标）：
   - [wait_feedback] 审核等待无进度反馈，用户无法感知处理状态
   - [step_count] 审核需 8 步操作，建议合并为 5 步以内
   - [context_switches] 审核过程中切换 3 个不同页面，建议减少为 1 次切换
@@ -261,7 +261,7 @@ OL002 商户审核流程（55 分，未达标）：
   "lines": [
     {
       "line_id": "OL001",
-      "line_name": "买家下单流程",
+      "line_name": "用户提交任务流程",
       "scores": {
         "step_count": 28,
         "context_switches": 20,
@@ -274,7 +274,7 @@ OL002 商户审核流程（55 分，未达标）：
     },
     {
       "line_id": "OL002",
-      "line_name": "商户审核流程",
+      "line_name": "管理员审核流程",
       "scores": {
         "step_count": 18,
         "context_switches": 15,

@@ -26,8 +26,8 @@ product-design 的 ui-design Phase 6 产出两层数据：
 ├── stitch-prompts.json        # [Stitch] prompt 记录
 ├── stitch-index.json          # [Stitch] 屏幕→文件映射 + 一致性检查
 └── stitch/                    # [Stitch] 条件存在
-    ├── S010-买家首页.html      # Stitch 生成的 HTML/CSS
-    ├── S010-买家首页.png       # 截图
+    ├── S010-用户首页.html      # Stitch 生成的 HTML/CSS
+    ├── S010-用户首页.png       # 截图
     └── ...
 ```
 
@@ -130,7 +130,7 @@ Layer 2（增强，条件执行）：
    ```markdown
    ### /home — 首页
 
-   **组件结构**（来源：component-spec.json + stitch/S010-买家首页.html）
+   **组件结构**（来源：component-spec.json + stitch/S010-用户首页.html）
    ```
    AppShell
    ├── TopAppBar [title, search_action, notification_action]
@@ -188,7 +188,7 @@ Layer 2（增强，条件执行）：
 
 每个前端页面任务追加：
 - `stitch_ref`: screen_id（如 "S010"）
-- `stitch_html`: 文件路径（如 "stitch/S010-买家首页.html"）
+- `stitch_html`: 文件路径（如 "stitch/S010-用户首页.html"）
 - `component_tree`: Step 2.5 提取的组件层级（简化版）
 
 这让 task-execute 阶段可以精确加载对应的 Stitch HTML。
@@ -242,7 +242,7 @@ Stitch HTML 提供额外的精确 DOM 结构和样式映射。
      article.card > img.card-image + div.card-body > (h3 + span.price + div.rating) + button.cart-btn
    - 样式映射：border-radius → var(--shape-medium), box-shadow → var(--elevation-1)
    - 交互原语：无（纯展示组件）
-   - Stitch 参考：stitch/S010-买家首页.html
+   - Stitch 参考：stitch/S010-用户首页.html
 
    ### ProductList
    - 来源：stitch-index.json component_vocabulary
@@ -251,7 +251,7 @@ Stitch HTML 提供额外的精确 DOM 结构和样式映射。
    - DOM 结构：div.list-container > ProductCard[] + div.load-more-indicator
    - 交互原语：VirtualList, InfiniteScroll, PullToRefresh
    - 技术栈实现（React）：@tanstack/react-virtual + IntersectionObserver + pull-to-refresh hook
-   - Stitch 参考：stitch/S030-商品列表页.html
+   - Stitch 参考：stitch/S030-内容列表页.html
    ```
 
 5. 与 design-to-spec Step 7 共享层分析的关系：

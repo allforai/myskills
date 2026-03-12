@@ -45,7 +45,7 @@ product-map（现状+方向）   功能查漏（查缺口）
 /feature-gap           # 完整查漏（任务+界面+旅程）
 /feature-gap quick     # 只查任务和 CRUD，跳过旅程验证
 /feature-gap journey   # 只验证用户旅程路径
-/feature-gap role 客服专员  # 只查指定角色的功能缺口
+/feature-gap role 运营专员  # 只查指定角色的功能缺口
 /feature-gap refresh    # 清除决策缓存，完整重跑
 ```
 
@@ -335,14 +335,14 @@ Step 7: 状态机完整性检查（quick / journey 模式跳过）
 ```json
 {
   "id": "GAP-001",
-  "title": "退款申请页「提交」按钮无失败反馈（SILENT_FAILURE）",
+  "title": "工单提交页「提交」按钮无失败反馈（SILENT_FAILURE）",
   "type": "SILENT_FAILURE",
   "priority": "高",
-  "affected_roles": ["客服专员"],
+  "affected_roles": ["运营专员"],
   "affected_tasks": ["T001"],
   "affected_screens": ["S001"],
-  "description": "「提交退款申请」按钮 on_failure 未定义，提交失败时用户无任何错误提示",
-  "frequency_impact": "高频任务，影响所有客服日常工作"
+  "description": "「提交工单」按钮 on_failure 未定义，提交失败时用户无任何错误提示",
+  "frequency_impact": "高频任务，影响所有运营专员日常工作"
 }
 ```
 
@@ -443,8 +443,8 @@ Step 7: 状态机完整性检查（quick / journey 模式跳过）
 | **MG4 审批流** | 待审队列 + 详情 + 批准 + 驳回 | 必须有 approve + reject 操作 |
 | **MG5 主从详情** | 主实体 + ≥1个子实体Tab | screen 必须有嵌套子实体列表 |
 | **MG6 树形管理** | 树结构 + 新建(含父节点) + 删除(含子节点处理) | 必须有 tree 相关操作 |
-| **EC1 商品详情** | 图片浏览 + 规格选择 + 加购/购买 | 必须有 select-sku + add-to-cart/buy-now |
-| **EC2 购物车** | 数量修改 + 删除 + 结算 | 必须有 update-quantity + remove + checkout |
+| **EC1 内容详情** | 图片浏览 + 规格选择 + 收藏/获取 | 必须有 select-variant + add-to-collection/acquire |
+| **EC2 待处理列表** | 数量修改 + 删除 + 确认提交 | 必须有 update-quantity + remove + submit |
 | **WK1 对话/IM** | 发送消息 + 历史加载 | 必须有 send-message + load-history |
 | **WK3 文档编辑** | 协同编辑 + 版本历史 | 必须有 collaborative + version-history |
 | **WK5 看板** | 卡片创建 + 跨列拖拽 + 列管理 | 必须有 create-card + drag-card |
@@ -509,22 +509,22 @@ def check_type_completeness(screens, interaction_types_def):
                         'severity': 'medium'
                     })
         
-        # EC1 商品详情完整性
+        # EC1 内容详情完整性
         elif type_key == 'EC1':
             for screen in type_screens:
                 actions = [a.get('action') for a in screen.get('actions', [])]
-                if 'select-sku' not in actions:
+                if 'select-variant' not in actions:
                     gaps.append({
                         'type': 'EC1',
                         'screen': screen['id'],
-                        'missing': '规格选择(select-sku)',
+                        'missing': '规格选择(select-variant)',
                         'severity': 'high'
                     })
-                if 'add-to-cart' not in actions and 'buy-now' not in actions:
+                if 'add-to-collection' not in actions and 'acquire' not in actions:
                     gaps.append({
                         'type': 'EC1',
                         'screen': screen['id'],
-                        'missing': '加购/购买操作',
+                        'missing': '收藏/获取操作',
                         'severity': 'high'
                     })
     
@@ -546,7 +546,7 @@ def check_type_completeness(screens, interaction_types_def):
   "gaps": [
     {
       "type": "MG2",
-      "entity": "商品",
+      "entity": "内容条目",
       "existing_screens": ["MG2-L(列表)", "MG2-D(详情)"],
       "missing": ["MG2-C(新建)", "MG2-E(编辑)"],
       "severity": "high",
@@ -554,7 +554,7 @@ def check_type_completeness(screens, interaction_types_def):
     },
     {
       "type": "MG3",
-      "entity": "订单",
+      "entity": "工单",
       "screen": "S015",
       "missing": ["pending→processing 的触发操作"],
       "severity": "medium",
@@ -563,9 +563,9 @@ def check_type_completeness(screens, interaction_types_def):
     {
       "type": "EC1",
       "screen": "S020",
-      "missing": ["规格选择(select-sku)"],
+      "missing": ["规格选择(select-variant)"],
       "severity": "high",
-      "recommendation": "商品详情页缺少规格选择功能，无法完成购买决策"
+      "recommendation": "内容详情页缺少规格选择功能，无法完成选择决策"
     }
   ]
 }
@@ -698,15 +698,15 @@ def check_type_completeness(screens, interaction_types_def):
 {
   "generated_at": "ISO8601",
   "entities": {
-    "退款单": {
-      "name": "退款单",
+    "工单": {
+      "name": "工单",
       "source_tasks": ["T034"],
-      "states": ["待审核", "审核中", "已退款", "已拒绝"],
+      "states": ["待审核", "审核中", "已完成", "已拒绝"],
       "transitions": [
         {"from": "待审核", "to": "审核中", "trigger": "开始审核", "source_task": "T034"}
       ],
       "initial_state": "待审核",
-      "terminal_states": ["已退款"]
+      "terminal_states": ["已完成"]
     }
   }
 }
@@ -736,7 +736,7 @@ def check_type_completeness(screens, interaction_types_def):
 ```json
 [
   {
-    "entity": "退款单",
+    "entity": "工单",
     "gaps": ["NO_REVERSE_TRANSITION"],
     "state_count": 4,
     "transition_count": 3,
@@ -759,7 +759,7 @@ def check_type_completeness(screens, interaction_types_def):
 
 ## 生成方式
 
-LLM 直接分析 task-inventory + experience-map + business-flows，理解业务语义后检测功能缺口。缺口检测需要理解业务上下文（如"支付失败后用户应该能重试"是语义推理，脚本只能做字段存在性检查），因此由 LLM 主导。
+LLM 直接分析 task-inventory + experience-map + business-flows，理解业务语义后检测功能缺口。缺口检测需要理解业务上下文（如"操作失败后用户应该能重试"是语义推理，脚本只能做字段存在性检查），因此由 LLM 主导。
 
 缺口检测完全由 LLM 执行：结构扫描、语义分析、优先级判断和修复建议均基于 LLM 对业务上下文的理解。
 
