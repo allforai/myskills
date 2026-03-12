@@ -7,7 +7,7 @@ description: >
   "find unimplemented tasks",
   "find extra code not in product map", "产品验收", "静态验收", "动态验收",
   "代码是否实现了产品地图", "验证功能实现", "找漏实现的功能", "代码覆盖检查",
-  "Maestro 移动端测试",
+  "Maestro 移动端测试", "XCUITest iOS 测试",
   or wants to prove code implements the product map features and flows.
   Requires product-map to have been run first. Optionally uses experience-map and use-case.
 version: "1.5.0"
@@ -22,7 +22,7 @@ version: "1.5.0"
 以 `product-map`（以及可选的 `experience-map`、`use-case`）为基准，回答两个问题：
 
 1. **静态：代码有没有？** — 每个任务是否有对应的 API 路由？每个界面是否有对应的组件？每条约束是否有对应的校验逻辑？
-2. **动态：行为对不对？** — 用 Playwright（Web）/ Maestro（移动原生）运行实际应用，用例脚本跑得通吗？
+2. **动态：行为对不对？** — 用 Playwright（Web）/ XCUITest（iOS 原生）/ Maestro（Flutter/RN 原生）运行实际应用，用例脚本跑得通吗？
 
 发现差异，生成三类任务清单：
 - **IMPLEMENT** — 产品地图有但代码没有（漏实现）
@@ -679,13 +679,33 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 | 子项目类型 | 验证工具 | 说明 |
 |-----------|---------|------|
 | `admin` / `web-customer` / `web-mobile` | **Playwright** | MCP browser_* 工具执行用例 |
+| `mobile-native` (iOS Swift/SwiftUI) | **XCUITest** | `xcodebuild test` 执行原生 UI 测试 |
+| `mobile-native` (Android Kotlin/Java) | **Maestro** | CLI `maestro test` 执行验证流 |
 | `mobile-native` (Flutter / Expo / RN) | **Maestro** | CLI `maestro test` 执行验证流 |
 | `backend` | **curl / HTTP** | API 路由 + 响应校验 |
 
+**工具探测**：
+- Playwright: 检测 `mcp__playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 工具可用性
+- Maestro: 检测 `which maestro` CLI 可用性（Bash）
+- XCUITest: 检测 `which xcodebuild` CLI 可用性（Bash）
+
+**移动端工具选择逻辑**：
+```
+mobile-native 子项目:
+  tech_stack = Swift / SwiftUI   → XCUITest
+  tech_stack = Kotlin / Java     → Maestro（降级 → Espresso）
+  tech_stack = Flutter           → Maestro（降级 → Patrol）
+  tech_stack = RN / Expo         → Maestro（降级 → Detox）
+```
+
 **Maestro 降级**：
-- Maestro CLI 不可用 → 跳过移动端动态验证，仅执行静态验收（S1-S4）
-- 标记所有移动端动态用例为 `DEFERRED_NATIVE`
+- Maestro CLI 不可用 → Android 降级为 Espresso，Flutter 降级为 Patrol，RN 降级为 Detox
+- 均不可用 → 标记为 `DEFERRED_NATIVE`（仅测 API 层）
 - 输出提示：「安装 Maestro（`curl -Ls https://get.maestro.mobile.dev | bash`）以启用移动端动态验证」
+
+**XCUITest 降级**：
+- `xcodebuild` 不可用（非 macOS / 无 Xcode）→ 标记为 `DEFERRED_NATIVE`（仅测 API 层）
+- 输出提示：「XCUITest 需要 macOS + Xcode，当前环境不支持」
 
 **Maestro 用例执行**：
 1. 从 use-case 提取移动端用例步骤
@@ -693,6 +713,46 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 3. 执行 `maestro test` 并收集 JUnit 结果
 4. 截图存储到 `.allforai/product-verify/screenshots/maestro/`
 5. 结果合并到统一的 verify-tasks.json（与 Playwright 结果同格式）
+
+**XCUITest 用例执行**：
+1. 从 use-case 提取 iOS 端用例步骤
+2. 生成 XCUITest Swift 测试文件：
+   ```swift
+   import XCTest
+
+   final class ProductVerify_{scenario_id}Tests: XCTestCase {
+       let app = XCUIApplication()
+
+       override func setUpWithError() throws {
+           continueAfterFailure = false
+           app.launch()
+       }
+
+       func test_{step_name}() throws {
+           // 导航到目标页面
+           app.buttons["{element_label}"].tap()
+           // 断言预期结果
+           XCTAssertTrue(app.staticTexts["{expected_text}"].waitForExistence(timeout: 5))
+           // 截图
+           let screenshot = app.screenshot()
+           let attachment = XCTAttachment(screenshot: screenshot)
+           attachment.name = "{scenario_id}_{step}"
+           attachment.lifetime = .keepAlways
+           add(attachment)
+       }
+   }
+   ```
+3. 执行测试：
+   ```bash
+   xcodebuild test \
+     -project {project_path} \
+     -scheme {scheme_name} \
+     -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+     -resultBundlePath .allforai/product-verify/xcuitest-results \
+     | xcpretty --report junit --output .allforai/product-verify/xcuitest-junit.xml
+   ```
+4. 截图存储到 `.allforai/product-verify/screenshots/xcuitest/`
+5. 结果解析 JUnit XML → 统一格式，合并到 verify-tasks.json（与 Playwright/Maestro 结果同格式）
 
 ---
 

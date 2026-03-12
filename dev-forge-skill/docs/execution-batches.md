@@ -244,3 +244,21 @@ B3: Screen Widget (ListView/SingleChildScrollView/Form)、底部 Tab (Navigation
 B4: 后端集成（切换开发桩 → 真实后端）、离线同步 (connectivity_plus)、推送 (firebase_messaging)、深度链接
 B5: Widget 测试 (flutter_test) + 集成测试 (Patrol / integration_test)
 ```
+
+**mobile-native (Android Kotlin/Java)**:
+```
+B1: 数据模型 (data class)、导航配置 (Jetpack Navigation)、常量/主题、API 客户端 (Retrofit/OkHttp)、Hilt DI 基础
+B2: —（无独立 API，跳过）
+B3: Screen (Compose Screen / Fragment)、BottomNavigation、业务组件 (LazyColumn/Card/Detail)
+B4: 后端集成（切换开发桩 → 真实后端）、推送 (FCM)、深度链接 (App Links)
+B5: Maestro 测试 + Espresso UI 测试 + JUnit 单元测试
+```
+
+**mobile-native (iOS Swift/SwiftUI)**:
+```
+B1: 数据模型 (Codable struct)、导航配置 (NavigationStack)、常量/主题、API 客户端 (URLSession/Alamofire)
+B2: —（无独立 API，跳过）
+B3: Screen View (List/Form/NavigationLink)、TabView、业务组件
+B4: 后端集成（切换开发桩 → 真实后端）、推送 (APNs)、深度链接 (Universal Links)
+B5: XCUITest UI 测试 + XCTest 单元测试
+```

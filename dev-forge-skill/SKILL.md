@@ -10,7 +10,7 @@ description: >
   fieldcheck (UI/API/Entity/DB field consistency).
   Full pipeline: /project-forge. LLM-driven Forge-Verify-Loop (4D/6V/XV).
   开发锻造套件：项目引导、设计转规格、任务执行、跨端验证、产品验收、死链猎杀、字段一致性。
-version: "4.0.0"
+version: "4.1.0"
 ---
 
 # Dev Forge — 开发锻造套件
@@ -69,7 +69,7 @@ version: "4.0.0"
 
 > 详见 `${CLAUDE_PLUGIN_ROOT}/skills/e2e-verify.md`
 
-从 business-flows 推导跨端场景，Playwright（Web）/ Patrol（Flutter）/ Detox（RN）跨子项目执行。
+从 business-flows 推导跨端场景，Playwright（Web）/ XCUITest（iOS）/ Maestro（Flutter/RN）跨子项目执行。
 
 ```
 /e2e-verify                 # 推导场景 + 执行全部

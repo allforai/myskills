@@ -19,7 +19,7 @@ version: "1.4.0"
 
 1. **场景推导** — 从 business-flows 提取跨角色/跨子项目流程
 2. **端点映射** — 每个流程步骤映射到具体子项目的 URL + 操作
-3. **Playwright（Web 端）/ Maestro（移动原生端）执行** — 跨子项目浏览器自动化测试
+3. **Playwright（Web 端）/ XCUITest（iOS 原生）/ Maestro（Flutter/RN 原生）执行** — 跨子项目自动化测试
 4. **失败分类** — 自动分类失败原因（代码缺陷 / 环境问题 / 暂缓）
 5. **报告输出** — 按子项目汇总结果 + 需修复的问题
 
@@ -46,13 +46,29 @@ product-verify（单端验收）   e2e-verify（跨端验证）
 | 子项目类型 | 测试工具 | 执行方式 |
 |-----------|---------|---------|
 | `admin` / `web-customer` / `web-mobile` | **Playwright** | MCP browser_* 工具 |
+| `mobile-native` (iOS Swift/SwiftUI) | **XCUITest** | `xcodebuild test` |
+| `mobile-native` (Android Kotlin/Java) | **Maestro** | CLI `maestro test` |
 | `mobile-native` (Flutter / Expo / RN) | **Maestro** | CLI `maestro test` |
 | `backend` | **curl / HTTP** | Bash API 调用 |
 
 **工具探测**：
 - Playwright: 检测 `mcp__playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 工具可用性
 - Maestro: 检测 `which maestro` CLI 可用性（Bash）
-- 移动端无 Maestro → 降级策略：仅测后端 API 层 + 记录 `DEFERRED_NATIVE`
+- XCUITest: 检测 `which xcodebuild` CLI 可用性（Bash）
+
+**移动端工具选择逻辑**：
+```
+mobile-native 子项目:
+  tech_stack = Swift / SwiftUI   → XCUITest
+  tech_stack = Kotlin / Java     → Maestro（降级 → Espresso）
+  tech_stack = Flutter           → Maestro（降级 → Patrol）
+  tech_stack = RN / Expo         → Maestro（降级 → Detox）
+```
+
+**降级策略**：
+- Maestro 不可用 → Android 降级为 Espresso，Flutter 降级为 Patrol，RN 降级为 Detox
+- XCUITest 不可用（非 macOS / 无 Xcode）→ `DEFERRED_NATIVE`（仅测 API 层）
+- 均不可用 → `DEFERRED_NATIVE`（仅测后端 API 层）
 
 **Maestro 执行协议**：
 
@@ -71,6 +87,46 @@ product-verify（单端验收）   e2e-verify（跨端验证）
 3. **结果收集**：解析 JUnit XML → 统一结果格式（与 Playwright 结果合并）
 
 4. **截图**：Maestro 截图存储到 `.allforai/project-forge/e2e-screenshots/`
+
+**XCUITest 执行协议**：
+
+1. **Swift 测试文件生成**：为每个 iOS 端场景生成 XCUITest Swift 文件：
+   ```swift
+   import XCTest
+
+   final class E2E_{scenario_id}Tests: XCTestCase {
+       let app = XCUIApplication()
+
+       override func setUpWithError() throws {
+           continueAfterFailure = false
+           app.launch()
+       }
+
+       func test_{step_name}() throws {
+           app.buttons["{element_label}"].tap()
+           XCTAssertTrue(app.staticTexts["{expected_text}"].waitForExistence(timeout: 5))
+           let screenshot = app.screenshot()
+           let attachment = XCTAttachment(screenshot: screenshot)
+           attachment.name = "{scenario_id}_{step}"
+           attachment.lifetime = .keepAlways
+           add(attachment)
+       }
+   }
+   ```
+
+2. **执行**：
+   ```bash
+   xcodebuild test \
+     -project {project_path} \
+     -scheme {scheme_name} \
+     -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+     -resultBundlePath .allforai/project-forge/e2e-xcuitest-results \
+     | xcpretty --report junit --output .allforai/project-forge/e2e-xcuitest-junit.xml
+   ```
+
+3. **结果收集**：解析 JUnit XML → 统一结果格式（与 Playwright/Maestro 结果合并）
+
+4. **截图**：XCUITest 截图存储到 `.allforai/project-forge/e2e-screenshots/xcuitest/`
 
 ---
 
@@ -184,7 +240,9 @@ Step 1: 跨端场景推导
     admin → Playwright 桌面视口
     web-customer → Playwright 桌面 + 移动视口
     web-mobile → Playwright 移动视口模拟
-    mobile-native → 使用 Maestro 执行（见「测试工具路由」）
+    mobile-native (iOS Swift/SwiftUI) → 使用 XCUITest 执行（见「测试工具路由」）
+    mobile-native (Android Kotlin/Java) → 使用 Maestro 执行（见「测试工具路由」）
+    mobile-native (Flutter / RN) → 使用 Maestro 执行（见「测试工具路由」）
     backend → 作为 API 提供者，通过 API 调用验证
   → 输出进度: 「E2E 场景 ✓ 正向 {N} + 负向 {M}」（不停，场景列表在 Step 3 批量确认中展示）
   → 写入 .allforai/project-forge/e2e-scenarios.json
@@ -554,13 +612,18 @@ Step 4: 报告生成
 | admin | Playwright | 桌面 (1280x720) | 操作发起方（管理操作） |
 | web-customer | Playwright | 桌面 + 移动 | 消费方（浏览/购买） |
 | web-mobile | Playwright | 移动 (375x812) | 消费方（移动端交互） |
+| mobile-native (iOS Swift/SwiftUI) | **XCUITest** | 原生 | 消费方（原生应用视角） |
+| mobile-native (Android Kotlin/Java) | **Maestro** | 原生 | 消费方（原生应用视角） |
 | mobile-native (RN) | **Maestro** | 原生 | 消费方（原生应用视角） |
 | mobile-native (Flutter) | **Maestro** | 原生 | 消费方（原生应用视角） |
 
 **混合场景处理**：
 - Web 端步骤 → Playwright 自动执行
 - API 步骤 → Bash curl 执行
+- iOS Swift/SwiftUI 端步骤 → XCUITest 执行（见「测试工具路由」），跨端数据一致性通过 API 层验证
+- Android Kotlin/Java 端步骤 → Maestro 执行（见「测试工具路由」），跨端数据一致性通过 API 层验证
 - Flutter / RN 端步骤 → Maestro 执行（见「测试工具路由」），跨端数据一致性通过 API 层验证
+- XCUITest 不可用时 → 降级为仅测后端 API 层 + 记录 `DEFERRED_NATIVE`
 - Maestro 不可用时 → 降级为仅测后端 API 层 + 记录 `DEFERRED_NATIVE`
 
 ---
@@ -637,6 +700,6 @@ e2e/screenshots/                    # 失败截图
 
 发现问题只记录到报告，不自动修复。按子项目汇总需修复的问题供后续处理。
 
-### 5. 原生端降级处理
+### 5. 原生端工具选择与降级
 
-mobile-native 子项目优先使用 Maestro 执行自动化测试。Maestro 不可用时，降级为仅测后端 API 层 + 记录 `DEFERRED_NATIVE`，通过 API 层验证数据一致性作为替代。
+mobile-native 子项目按技术栈选择测试工具：iOS Swift/SwiftUI → XCUITest，Flutter/RN → Maestro。对应工具不可用时，降级为仅测后端 API 层 + 记录 `DEFERRED_NATIVE`，通过 API 层验证数据一致性作为替代。

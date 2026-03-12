@@ -211,7 +211,7 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 | 非功能需求 | 电池/流量优化、后台任务 |
 | 从 experience-map 取 | actions → Screen 组件规格（RN: Screen 组件 / Flutter: Screen Widget）；states → 四态设计（离线态额外处理）；on_failure + exception_flows → 原生错误提示；validation_rules → 表单验证 |
 | 从 ui-design 取 | 原生端设计 token（如有） |
-| 测试工具 | RN: Detox / Maestro / Flutter: Patrol / integration_test |
+| 测试工具 | iOS: XCUITest / Android: Maestro (Espresso) / RN: Detox / Maestro / Flutter: Patrol / integration_test |
 
 ---
 
