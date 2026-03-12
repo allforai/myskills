@@ -9,7 +9,7 @@ description: >
   review(线框+数据模型) → [use-case ∥ gap ∥ ui-design] → review(UI) → audit.
   Use /review to launch the unified review hub (one site, 6 tabs).
   Use /product-design full to run the full pipeline with checkpoints.
-version: "4.8.2"
+version: "4.14.0"
 ---
 
 # Product Design — 产品设计套件
