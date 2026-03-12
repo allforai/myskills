@@ -8,7 +8,7 @@ description: >
   Supports innovation boost mode with multi-model collaboration (OpenRouter MCP):
   assumption zeroing, innovation exploration, adversarial generation (disruptor/guardian/archaeologist/alchemist).
   从模糊想法到结构化产品概念：搜索 + 选择题引导，多模型协作创新（假设清零/创新探索/对抗性生成）。
-version: "2.0.0"
+version: "2.1.0"
 ---
 
 # Product Concept — 产品概念发现
@@ -322,8 +322,44 @@ product-concept（战略层）        product-map（运营层）
 
     **AskUserQuestion**：展示推导出的 role→app 映射，让用户确认或修正。
 
-11. 输出：`role-value-map.json`（消费侧 + 生产侧角色，含 `impl_group` + `app` 标注）
-11. → 用户确认
+**Phase D — 角色操作频度分析与屏幕粒度指导**
+
+概念层完成角色定义后，为下游界面设计建立操作频度模型和屏幕粒度指导思想。这些不是"偏好"，而是从角色特征推导出的设计原则。
+
+11. **操作频度分析**（每个实现角色）：
+
+    基于角色的 `impl_group`、`app`、`platforms` 推导操作特征：
+
+    | 角色特征 | 操作频度模型 | 屏幕粒度指导 |
+    |---------|-------------|-------------|
+    | 消费者端 (end_user) + mobile | 高频少操作，注意力短，单手操作 | 每屏聚焦单一任务，纵深导航，减少跳转层级 |
+    | 消费者端 (end_user) + desktop | 中频中操作，多标签浏览 | 适度聚合相关功能，侧边栏辅助导航 |
+    | 商户后台 (merchant) + desktop | 中频多操作，日常运营，效率优先 | **同页多功能**：列表+详情+操作在同一视图，减少页面跳转。常用操作前置，低频操作折叠 |
+    | 管理后台 (admin) + desktop | 低频重操作，审核/配置/监控为主 | **仪表盘+工作台**模式：KPI 总览 + 待办队列 + 批量操作。配置类可深层嵌套 |
+
+    **二八原则应用**：每个角色识别 top 20% 高频任务（从 business-flows 中出现频次 + 角色核心 jobs 推导），这些任务必须在 1-2 次点击内可达。
+
+12. **AskUserQuestion**（多选确认）：展示每个角色的操作频度分析和屏幕粒度建议，让用户确认或调整。
+
+13. 输出：`role-value-map.json`（消费侧 + 生产侧角色，含 `impl_group` + `app` + `operation_profile` 标注）
+
+    ```json
+    {
+      "role_id": "R2",
+      "role_name": "商户后台用户",
+      "impl_group": "merchant",
+      "app": "merchant",
+      "operation_profile": {
+        "frequency": "medium",
+        "density": "high",
+        "screen_granularity": "multi_function_per_page",
+        "high_frequency_tasks": ["订单处理", "库存管理", "消息回复"],
+        "design_principle": "同页多功能，常用操作前置，列表+详情+操作在同一视图"
+      }
+    }
+    ```
+
+14. → 用户确认
 
 ---
 
@@ -369,6 +405,51 @@ product-concept（战略层）        product-map（运营层）
    - 选择 X → R4（内容运营）的工作量增大/减小
 5. 输出：`product-mechanisms.json`
 6. → 用户确认
+
+**Phase A.5 — 产品治理风格（按业务流分级）**
+
+不同的业务流需要不同的治理策略。治理风格决定了下游界面是否需要审核环节、表单复杂度、系统边界划分。这不是全局统一的——同一个产品中，资金相关流程可能需要严格审核，而内容发布可能允许先发后审。
+
+7. **识别需要治理决策的业务流**：从 Step 0-2 的功能模块中，找出涉及以下场景的业务流：
+   - 内容发布（商品上架、评价发布、广告投放等）
+   - 资金操作（支付、提现、退款等）
+   - 身份准入（注册、入驻、认证等）
+   - 权限变更（角色分配、权限调整等）
+
+8. **对每个业务流，AskUserQuestion 选择题**：
+
+   问题：「{业务流名称} 的治理风格？」
+
+   | 编号 | 选项 | 说明 | 下游影响 |
+   |------|------|------|---------|
+   | 1 | 严格管控（事前审核） | 操作前必须经过审核/审批才能生效 | 需要审核队列屏幕、审核状态跟踪、审核员角色 |
+   | 2 | 宽松高效（事后追究） | 操作直接生效，出问题后处理 | 需要举报/申诉通道、违规记录、自动监控 |
+   | 3 | 分级管控 | 首次严格审核，信誉积累后自动通过 | 需要信誉体系、分级规则配置 |
+   | 4 | 自动审核 | AI/规则自动判断，异常才人工介入 | 需要规则引擎配置、异常队列 |
+
+9. **推导系统边界**：治理风格决定哪些功能在系统内、哪些是外部依赖：
+   - 严格管控 → 准入流程在系统内完整实现（如注册时就收集完整资质信息）
+   - 宽松高效 → 准入流程极简（如注册只需邀请码+基本信息），复杂认证交给外部系统或后续补充
+   - **AskUserQuestion** 确认：「以下功能是在本系统内实现还是依赖外部系统？」（基于治理风格推导的边界建议）
+
+10. 输出：追加到 `product-mechanisms.json` 的 `governance_styles` 字段
+
+    ```json
+    "governance_styles": [
+      {
+        "flow_domain": "商品上架",
+        "style": "auto_review",
+        "rationale": "首次人工审核，信誉积累后自动通过",
+        "downstream_implications": ["需要信誉评分系统", "需要自动审核规则配置"],
+        "system_boundary": {
+          "in_scope": ["商品信息填写", "审核状态展示"],
+          "external": ["实名认证（第三方KYC）"]
+        }
+      }
+    ]
+    ```
+
+11. → 用户确认
 
 **Phase B — 对抗性生成（多模型并行，新增）**
 
