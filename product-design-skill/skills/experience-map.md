@@ -319,15 +319,25 @@ LLM 根据 entity-model 和 view-objects 中的字段语义自主选择合适的
 
 ```
 前置检查：
-  .allforai/experience-map/journey-emotion-map.json   必须存在
-  .allforai/product-map/task-inventory.json            必须存在
-  .allforai/product-map/role-profiles.json             可选
-  .allforai/product-map/business-flows.json            可选
-  .allforai/product-map/view-objects.json              可选
-  .allforai/product-map/entity-model.json              可选
-  .allforai/product-concept/product-concept.json       可选
+  .allforai/product-concept/concept-baseline.json      自动加载（推拉协议 §三.A）→ 不存在则 WARNING，不阻塞
+  .allforai/experience-map/journey-emotion-map.json    必须存在
+  .allforai/product-map/task-inventory.json             必须存在
+  .allforai/product-map/role-profiles.json              可选
+  .allforai/product-map/business-flows.json             可选
+  .allforai/product-map/view-objects.json               可选
+  .allforai/product-map/entity-model.json               可选
+  .allforai/product-concept/product-concept.json        可选（跨级拉取源）
+
+  跨级原始数据拉取（按需，推拉协议 §三.B）：
+    product-mechanisms.json:
+      - governance_styles[].downstream_implications  → 决定是否生成审核队列/状态屏幕
+      - governance_styles[].rationale                → 验收时判断治理设计是否合理
+    role-value-map.json:
+      - roles[].operation_profile.density            → 决定后台屏幕的 view_modes 复杂度
 
 Step 1: 加载全部上游数据
+      读取 concept-baseline.json（产品定位、角色粒度、治理风格 — 背景知识）
+      读取跨级拉取字段（downstream_implications, density）
       读取所有可用的前置数据到上下文
       ↓
 Step 1.5: 生成骨架（自动）

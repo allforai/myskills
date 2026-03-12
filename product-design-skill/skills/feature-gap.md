@@ -118,7 +118,10 @@ product-map（现状+方向）   功能查漏（查缺口）
 ## 工作流
 
 ```
-前置：两阶段加载
+前置：
+      概念蒸馏基线（推拉协议 §三.A）：
+        .allforai/product-concept/concept-baseline.json → 自动加载，不存在则 WARNING
+      两阶段数据加载：
       Phase 1 — 加载索引（< 5KB）：
         检查 task-index.json → 获取任务 id/name/frequency/owner_role/risk_level + 模块分组
         检查 screen-index（embedded in experience-map.json） → 获取界面 id/name/task_refs/action_count/has_gaps + 模块分组
@@ -208,9 +211,11 @@ Step 7: 状态机完整性检查（quick / journey 模式跳过）
 
 ### Step 2：界面与按钮完整性检查
 
-**前置检查**：`.allforai/experience-map/experience-map.json` 是否存在
-- 不存在 → 自动加载并执行 `${CLAUDE_PLUGIN_ROOT}/skills/experience-map.md` 的完整工作流生成体验地图，完成后继续 Step 2
-- 存在 → 直接进入检查
+**前置检查**：
+- `.allforai/product-concept/concept-baseline.json` 自动加载（推拉协议 §三.A）→ 不存在则 WARNING，不阻塞
+- `.allforai/experience-map/experience-map.json` 是否存在
+  - 不存在 → 自动加载并执行 `${CLAUDE_PLUGIN_ROOT}/skills/experience-map.md` 的完整工作流生成体验地图，完成后继续 Step 2
+  - 存在 → 直接进入检查
 - 从 `operation_lines[].nodes[].screens[]` 提取界面，遍历每个界面，检查以下项目
 
 | 检查项 | 说明 |

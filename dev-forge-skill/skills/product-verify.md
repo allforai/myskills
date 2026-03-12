@@ -112,7 +112,11 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 ## 工作流
 
 ```
-前置检查（两阶段加载）：
+前置检查：
+  概念蒸馏基线（推拉协议 — 见 product-design-skill/docs/skill-commons.md §三.A）：
+    .allforai/product-concept/concept-baseline.json → 自动加载，不存在则 WARNING
+    → 验证时以产品定位和治理风格为基准判断功能正确性
+  两阶段数据加载：
   Phase 1 — 加载索引（< 5KB）：
     检查 task-index.json → 获取任务 id/task_name/frequency/owner_role/risk_level + 模块分组
     检查 experience-map.json → 获取界面 id/name/task_refs/action_count（S2 用）

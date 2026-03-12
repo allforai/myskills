@@ -155,10 +155,17 @@ product-map（功能地图）    experience-map（体验地图）    use-case（
 
 ```
 前置检查：
+  .allforai/product-concept/concept-baseline.json  自动加载（推拉协议 §三.A）→ 不存在则 WARNING，不阻塞
   .allforai/product-map/task-inventory.json  必须存在，否则终止
   .allforai/experience-map/experience-map.json  必须（不存在则自动运行 experience-map 生成）
-  .allforai/product-concept/product-mechanisms.json  可选（读取 governance_styles 指导审核类用例生成）
+  .allforai/product-concept/product-mechanisms.json  可选（跨级拉取源）
   .allforai/use-case/use-case-decisions.json 若存在则加载，跳过已确认项
+
+  跨级原始数据拉取（按需，推拉协议 §三.B）：
+    product-concept.json:
+      - roles[].jobs[].pain_relievers  → 生成 sad path 用例的来源
+    product-mechanisms.json:
+      - governance_styles（完整）       → 指导审核类用例生成（见下方消费规则）
 
   治理风格消费（governance_styles）：
     product-mechanisms.json 的 governance_styles 字段（由 concept Phase A.5 写入）：

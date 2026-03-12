@@ -95,6 +95,7 @@ loop (max 3 rounds):
 | Phase | 阶段 | 完成标志 |
 |-------|------|----------|
 | 1 | concept | `.allforai/product-concept/` 存在 |
+| 1.5 | concept-baseline | `.allforai/product-concept/concept-baseline.json` 存在（推拉协议的推侧） |
 | 2 | product-map | `.allforai/product-map/task-inventory.json` 存在且 task 数 > 0 |
 | 3 | journey-emotion | `.allforai/experience-map/journey-emotion-map.json` 存在 |
 | 4 | experience-map | `.allforai/experience-map/experience-map.json` 存在且 screen 数 > 0 |
@@ -223,7 +224,25 @@ Phase 1（product-concept）执行完毕后，检测自动模式条件：
 
 ---
 
-verify loop 通过后直接进入 Phase 2，不弹出人工审核。用户可随时通过 `/review` 命令手动启动 Review Hub 查看任意阶段产物。
+verify loop 通过后直接进入 Phase 1 — Step 3。用户可随时通过 `/review` 命令手动启动 Review Hub 查看任意阶段产物。
+
+---
+
+## Phase 1 — Step 3：生成概念蒸馏基线
+
+> 推拉协议的「推」侧。详见 `skill-commons.md` §三.A。
+
+verify loop 通过后，编排器自动从概念产物中提取紧凑基线：
+
+1. 读取 `.allforai/product-concept/product-concept.json` + `role-value-map.json` + `product-mechanisms.json`
+2. LLM 按 `skill-commons.md` §三.A 的固定 schema 提取字段，生成 `.allforai/product-concept/concept-baseline.json`
+3. 控制文件大小在 2KB 以内
+
+**检查点**：`concept-baseline.json` 存在且包含 `mission`、`roles`、`governance_styles` 字段。
+
+**自动模式**：直接生成，PASS 后继续。文件过大（>3KB）→ WARNING，记日志继续。
+
+生成完成后直接进入 Phase 2，不弹出人工审核。
 
 ---
 

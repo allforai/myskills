@@ -119,6 +119,10 @@ product-map（锚点）
 ## 工作流（三阶段并行架构）
 
 ```
+前置：
+      概念蒸馏基线（推拉协议 §三.A）：
+        .allforai/product-concept/concept-baseline.json → 自动加载，不存在则 WARNING
+      ↓
 Phase A（脚本，串行）: 确定性检查
       gen_design_audit.py 执行：
         前置：两阶段加载 + 产物探测

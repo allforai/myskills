@@ -137,10 +137,17 @@ product-concept → product-map → experience-map → ui-design
 
 ```
 前置检查：
+  concept-baseline.json 自动加载（推拉协议 §三.A）→ 不存在则 WARNING，不阻塞
   product-map.json 必须存在（否则终止）
   experience-map.json 必须（不存在则自动运行 experience-map 生成）
-  product-concept.json 可选（提取定位/价值主张用于配色基调）
+  product-concept.json 可选（跨级拉取源：定位/价值主张用于配色基调）
   ui-design-decisions.json 存在则加载历史决策
+
+  跨级原始数据拉取（按需，推拉协议 §三.B）：
+    role-value-map.json:
+      - roles[].operation_profile.density  → 决定缓存策略和预加载行为
+    product-concept.json:
+      - value_propositions                 → 配色基调和品牌感知
 
   Pattern & Behavioral 数据（从 experience-map.json 读取）：
     experience-map.json 的 screen 节点已包含 _pattern*、_behavioral* 字段（由 experience-map Step 3.6 写入）：

@@ -94,6 +94,83 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 *   **动作**：生成 `requirements.md`, `design.md`, `tasks.md` 初稿。
 *   **要求**：必须覆盖 **4D 工程维度** (Data, Interface, Logic, UX)。
 
+### 阶段 1.5：负空间推导 (Negative Space Derivation)
+
+> 产品设计是「正空间」——关注正常流程；开发必须补全「负空间」——穷举所有异常。
+> 见 `product-design-skill/docs/skill-commons.md` §3.E「阶段转换思维」。
+
+产品设计的 exceptions/on_failure 是**线索而非完整清单**。LLM 以正常流程为输入，系统性推导负空间：
+
+*   **输入**：阶段 1 生成的初稿 + 上游 task.exceptions + action.on_failure + concept-baseline.governance_styles
+*   **推导维度**（对每个接口/页面/状态机逐一审查）：
+
+    | 维度 | 推导方法 | 示例 |
+    |------|---------|------|
+    | **网络异常** | 每个 API 调用 → 超时/断连/重试/降级 | 订单提交超时 → 幂等重试 + 客户端防重 |
+    | **并发竞态** | 每个写操作 → 乐观锁/悲观锁/幂等键 | 同一订单并发支付 → 分布式锁 + 状态校验 |
+    | **数据边界** | 每个输入字段 → 空值/极值/非法格式/注入 | 价格字段 → 负数/零/超大值/小数精度 |
+    | **权限变更** | 每个角色操作 → 操作中途权限被撤销 | 商户编辑商品中途被禁用 → 提交时校验 |
+    | **外部服务** | 每个第三方依赖 → 不可用/超时/数据不一致 | 支付网关超时 → 异步回调 + 补偿查询 |
+    | **状态不一致** | 每个状态流转 → 非法状态转换/孤儿数据 | 已取消订单收到支付回调 → 自动退款 |
+    | **资源耗尽** | 每个批量/列表操作 → 分页上限/内存溢出/存储满 | 导出 10 万条 → 流式导出 + 进度条 |
+
+*   **输出分两类**：
+
+    **A 类：已有功能的异常补全**（量大，直接补）
+    将推导出的异常路径补充到 design.md 对应章节（Error Scenarios / 降级策略 / 边界处理），标注 `[DERIVED]` 以区分产品设计原始标记和开发推导。
+    示例：登录 API → `[DERIVED] 密码错误 5 次锁定 30 分钟`
+
+    **B 类：缺失的支撑功能**（量少但影响大，需完整规格）
+    推导过程中发现某个核心功能缺少**独立的支撑功能/恢复机制**时（如认证 → 密码恢复、订单 → 退款流程、支付 → 对账机制），这些不是异常处理，而是**完整的新功能**，需要独立的屏幕、API、数据模型。
+
+    B 类发现的处理流程：
+    1. 记录到 `.allforai/project-forge/negative-space-supplement.json`
+    2. 为每个 B 类发现生成完整规格（requirements + design + tasks），标注 `[NEGATIVE-SPACE]`
+    3. 生成的任务追加到 `tasks-supplement.json`（复用已有补充机制）
+    4. 与 `tasks-supplement.json` 的其他补充任务一样，task-execute 加载时动态合并
+
+    **negative-space-supplement.json 结构**：
+    ```json
+    {
+      "created_at": "ISO8601",
+      "discoveries": [
+        {
+          "id": "NS-001",
+          "trigger": "认证模块 — 凭证丢失恢复",
+          "derived_from": "登录功能（T0xx）的能力级闭环推导",
+          "severity": "MUST",
+          "description": "密码恢复流程：忘记密码→邮件验证→重置密码",
+          "scope": {
+            "screens": ["密码恢复请求页", "密码重置页"],
+            "apis": ["POST /auth/forgot-password", "POST /auth/reset-password"],
+            "entities": ["password_reset_token"],
+            "external_services": ["邮件服务"]
+          },
+          "tasks_generated": ["SN-001", "SN-002", "SN-003"],
+          "design_section": "design.md ## 认证模块 — 密码恢复"
+        }
+      ],
+      "summary": {
+        "total": 1,
+        "must": 1,
+        "should": 0,
+        "product_design_gap": "产品设计阶段关注主流程（正确），开发阶段补全支撑功能"
+      }
+    }
+    ```
+
+    **B 类推导维度**（对每个核心功能追问能力级闭环）：
+
+    | 追问 | 示例 |
+    |------|------|
+    | 凭证/权限丢失 → 恢复机制？ | 忘记密码、会话过期重登、权限申请 |
+    | 操作失败 → 补偿/撤销机制？ | 退款、订单取消、库存回滚 |
+    | 数据不一致 → 对账/修复机制？ | 支付对账、库存盘点、数据同步 |
+    | 批量操作 → 进度/中断恢复？ | 批量导入中断后续传、导出进度查询 |
+    | 通知送达 → 失败重试/替代通道？ | 邮件退信→短信、推送失败→站内信 |
+
+*   **闭环完整度**：对六类闭环逐一检查覆盖度（见下方阶段 2 V7）。
+
 ### 阶段 2：4D/6V 审计 (Engineering Audit)
 *   **基准**：以上游 `experience-map.json` 和 `product-map.json` 为真值 (Ground Truth)。
 *   **硬约束检查**：
@@ -103,6 +180,16 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
     4.  **Consistency (V4)**: 跨子项目命名规范、目录结构、模式选型是否统一（如 API 命名风格、错误码体系、DTO 命名模式），不一致项标注 `DRIFT`。
     5.  **Capability (V5)**: 架构设计是否支撑 `task.sla`（响应时间/并发量）和 `task.audit`（审计日志/操作留痕）的非功能需求。对 `_Risk: HIGH_` 任务额外检查异常处理和降级方案。
     6.  **Context (V6)**: 是否回应了 `emotion_context`（journey-emotion-map）揭示的用户情绪痛点，在 UX 维度设计中是否体现了缓解措施（加载提示、操作确认、进度反馈）。
+    7.  **Closure (V7)**: 六类闭环实现级完整度审计（阶段转换思维落地）。对每个模块/接口/页面逐一检查：
+
+        | 闭环类型 | 审计问题 | 不通过标记 |
+        |---------|---------|----------|
+        | 配置闭环 | 可配置项有配置端点/表 + 默认值 + 热更新机制吗？ | `CLOSURE_CONFIG` |
+        | 监控闭环 | 关键操作有埋点 + 告警规则 + 可观测性设计吗？ | `CLOSURE_MONITOR` |
+        | 异常闭环 | 每个 API/操作的异常路径都有处理 + 用户提示 + 恢复策略吗？ | `CLOSURE_EXCEPTION` |
+        | 生命周期闭环 | 创建的数据有 TTL/归档/级联删除策略吗？ | `CLOSURE_LIFECYCLE` |
+        | 映射闭环 | A↔B 关系有外键/索引 + 一致性校验 + 孤儿检测吗？ | `CLOSURE_MAPPING` |
+        | 导航闭环 | 页面路由有守卫 + 404 + 回退 + 深链接吗？ | `CLOSURE_NAVIGATION` |
 
 ### 阶段 3：XV 交叉审查 (Cross-Verification)
 *   **模型路由**：遵循 `docs/skill-commons.md` 专家模型矩阵——API/架构审计 → GPT-4o，数据模型/算法 → DeepSeek，UI/视觉 → Gemini，安全/合规 → GPT-4o。
@@ -344,7 +431,17 @@ existing 模式下，Step 3 生成 design.md 之前，先执行套路检测：
 ## 工作流
 
 ```
-前置: 两阶段加载
+前置: 概念蒸馏基线 + 两阶段加载
+  概念蒸馏基线（推拉协议 — 见 product-design-skill/docs/skill-commons.md §三.A）:
+    .allforai/product-concept/concept-baseline.json → 自动加载，不存在则 WARNING
+    → 提供产品定位、角色粒度、治理风格、ERRC 要点作为全局背景知识
+    → 指导 requirements/design/tasks 生成时的业务判断
+  跨级原始数据拉取（推拉协议 §三.B）:
+    product-mechanisms.json:
+      - governance_styles[].downstream_implications → 决定是否生成审核模块/队列
+      - governance_styles[].system_boundary         → 决定哪些功能只写集成接口
+    role-value-map.json:
+      - roles[].operation_profile                   → 决定路由策略、缓存策略、批量操作设计
   Phase 1 — 加载索引（< 5KB）:
     project-manifest.json → 子项目列表
     task-index.json → 任务 id/name/frequency/module
@@ -1013,9 +1110,10 @@ Step 7: 共享层分析（Shared Utilities Analysis）
   └── task-context.json      # Step 4.5 输出（任务上下文预计算）
 
 .allforai/project-forge/
-  ├── shared-utilities-plan.json    # Step 7 主产物
-  ├── tasks-supplement.json         # Step 7 B1 任务 + _Leverage_ 补丁
-  └── existing-utilities-index.json # Step 7 已有工具清单（existing 模式）
+  ├── negative-space-supplement.json # 阶段 1.5 负空间推导发现的缺失支撑功能（B 类）
+  ├── shared-utilities-plan.json     # Step 7 主产物
+  ├── tasks-supplement.json          # Step 7 B1 任务 + 阶段 1.5 SN 任务 + _Leverage_ 补丁
+  └── existing-utilities-index.json  # Step 7 已有工具清单（existing 模式）
 ```
 
 ---

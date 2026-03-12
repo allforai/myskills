@@ -31,7 +31,33 @@ dev-forge 涉及的外部能力：
 
 ---
 
-## 三、工程保真增强（4E + 4V）
+## 三、多级上下文协议（Push-Pull）
+
+> 完整定义见 `product-design-skill/docs/skill-commons.md`「三、多级上下文协议」。
+
+dev-forge 的所有阶段（design-to-spec、task-execute、product-verify）均自动加载概念蒸馏基线（`.allforai/product-concept/concept-baseline.json`），确保产品设计阶段的核心决策（产品定位、角色粒度、治理风格、ERRC 要点）在开发阶段不丢失。
+
+**推（Push）**：concept-baseline.json 自动加载，提供全局业务判断背景。
+**拉（Pull）**：各阶段按需从 product-mechanisms.json、role-value-map.json 拉取具体字段（如 governance_styles.downstream_implications → 决定是否生成审核模块）。
+
+---
+
+## 四、开发阶段 FVL 使命：补全负空间
+
+> 完整理论见 `product-design-skill/docs/skill-commons.md` §4.4「产品设计 vs 开发」。
+
+产品设计阶段的 verify loop 关注「正空间」——正常流程是否正确、完整。开发阶段的 FVL 使命根本不同：**补全负空间，实现 100% 闭环**。
+
+**核心区别**：产品设计标记的 exceptions/on_failure 是**线索**，不是完整清单。开发阶段必须：
+1. 以正常流程为输入，**主动推导**所有异常路径（网络异常、并发竞态、数据边界、权限变更、外部服务降级、状态不一致、资源耗尽）
+2. 对六类闭环做**实现级**而非发现级审计（配置→有端点+默认值+热更新；监控→有埋点+告警+仪表盘；异常→穷举+重试+降级+提示）
+3. FVL 阶段 2 的 V7 (Closure) 检查每个模块的闭环完整度，不通过标记 `CLOSURE_*`
+
+**推导出的异常标注 `[DERIVED]`**，以区分产品设计原始标记和开发推导。
+
+---
+
+## 五、工程保真增强（4E + 4V）
 
 执行任何阶段时，建议同步参考：`docs/engineering-fidelity.md`。
 
@@ -44,7 +70,7 @@ dev-forge 涉及的外部能力：
 
 ---
 
-## 四、跨模型增强（OpenRouter）
+## 六、跨模型增强（OpenRouter）
 
 通过 OpenRouter MCP (`mcp__plugin_product-design_ai-gateway__ask_model`) 调用不同模型家族，利用各模型专长增强特定阶段的产出质量。
 
@@ -70,4 +96,4 @@ dev-forge 涉及的外部能力：
 
 ---
 
-## 五、优雅降级与成本控制
+## 七、优雅降级与成本控制
