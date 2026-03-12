@@ -234,6 +234,74 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
         | 映射闭环 | A↔B 关系有外键/索引 + 一致性校验 + 孤儿检测吗？ | `CLOSURE_MAPPING` |
         | 导航闭环 | 页面路由有守卫 + 404 + 回退 + 深链接吗？ | `CLOSURE_NAVIGATION` |
 
+    8.  **Cross-Sub-Project Correctness (V8)**: 跨子项目正确性审计 — 验证多个子项目的 spec **彼此是否一致**（V1-V7 检查的是 spec vs 上游产物，V8 检查的是 spec A vs spec B）。
+
+        > **核心问题**：design-to-spec 为每个子项目独立生成 spec，但子项目之间有隐含契约（server 的 API 响应结构必须与前端的类型定义一致）。V8 验证这些隐含契约。
+
+        **触发条件**：子项目数 ≥ 2 且包含 backend + 至少一个 frontend
+
+        **核心原则：LLM 语义判断优先，不依赖固定规则**
+        > V8 的本质是让 LLM 像资深全栈工程师一样，同时阅读多个子项目的 spec，判断它们连接时是否会断裂。
+        > 以下维度是 LLM 的「审查视角」指引，帮助 LLM 知道从哪些角度去看，而不是机械式检查清单。
+        > 不同项目类型的隐含契约不同，LLM 需结合业务上下文自主判断哪些不一致是致命的、哪些是可接受的。
+
+        **V8 审计视角**（LLM 语义驱动，读取多子项目 spec 综合判断）：
+
+        LLM Agent 同时读取所有子项目的 design.md（重点关注 API 章节 + 数据模型章节），以 backend spec 为基准，用全栈工程师的视角判断各子项目 spec 之间是否存在「连接时会断裂」的不一致。
+
+        **审查视角**（非穷举，LLM 可根据项目特点扩展）：
+        - API 契约：路由路径、HTTP method、请求/响应结构是否对齐
+        - 数据契约：字段名映射、嵌套结构、类型（特别是 i18n 等特殊字段）是否一致
+        - 状态/枚举：server 定义的状态值 vs 前端渲染/过滤使用的值是否完全覆盖
+        - 认证机制：token 管理方案（单/双 token、刷新流程、字段名）是否统一
+        - 通用格式：分页响应、错误码体系等跨接口共用格式是否匹配
+
+        同类前端子项目之间也应比对（如 admin vs merchant 对同一实体的处理是否一致）。
+
+        **严重度由 LLM 判断**：
+        - CRITICAL — LLM 认为连接时必然断裂（如结构性不匹配、无自动转换）
+        - WARNING — LLM 认为可能不匹配但项目中有 fallback 机制（如 axios 自动命名转换）
+
+        **修正方式**：V8 发现的不一致由阶段 4（Auto-Fix）统一修正 — 以 backend spec 为权威源，修正各前端 spec。
+
+    9.  **Coverage (V9)**: 产品任务 → 端点任务覆盖率审计 — 验证**每个产品任务都有对应的实现任务**，防止功能遗漏。
+
+        > **核心问题**：V1-V8 验证的是「已生成内容的正确性」，V9 验证的是「是否遗漏了内容」。
+        > 这是历史上最常见的质量缺陷来源——spec 内容正确但不完整，导致实现阶段漏掉整个功能。
+
+        **触发条件**：始终执行（V9 是强制审计维度）
+
+        **覆盖率检查流程**：
+
+        **V9.1 产品任务 → B2 端点覆盖**（后端子项目）：
+        1. 读取 `task-inventory.json` 的全量任务列表（T001-T{N}）
+        2. 读取 `tasks.md` 的全部 B2 任务
+        3. 对每个产品任务，LLM 语义判断：
+           - 该任务涉及的**每个独立业务操作**是否都有对应的 B2 端点任务？
+           - 不是 1:1 映射（一个产品任务可能需要多个端点），而是语义覆盖
+        4. 输出覆盖率矩阵：
+
+        | 产品任务 | 需要的端点 | 已有 B2 任务 | 状态 |
+        |---------|-----------|-------------|------|
+        | T071 生成邀请码 | POST /invite-codes, GET /invite-codes, DELETE /invite-codes/:id | — | ✗ MISSING |
+        | T058 充值广告余额 | POST /merchant/ad-balance/topup | — | ✗ MISSING |
+        | T018 提交订单 | POST /consumer/orders | B2.15 | ✓ COVERED |
+
+        **V9.2 产品任务 → B3 页面覆盖**（前端子项目）：
+        1. 对分配给该子项目的产品任务，检查 B3 任务是否覆盖了所有需要的页面/组件
+        2. 特别关注：admin/merchant 的审核、统计、详情页是否遗漏
+
+        **V9.3 B2→B5 测试覆盖**：
+        1. 每个 B2 端点任务是否有对应的 B5 测试任务
+        2. 高风险（_Risk: HIGH_）任务必须有集成测试
+
+        **严重度**：
+        - CRITICAL — 产品 CORE 任务无对应 B2/B3 任务（功能完全缺失）
+        - WARNING — 产品 BASIC 任务无对应 B2/B3 任务（可 DEFER）
+        - INFO — B2 任务无对应 B5 测试任务
+
+        **修正方式**：V9 CRITICAL 发现由阶段 4（Auto-Fix）自动补充缺失的 B2/B3 任务到 tasks.md。
+
 ### 阶段 3：XV 交叉审查 (Cross-Verification)
 *   **模型路由**：遵循 `docs/skill-commons.md` 专家模型矩阵——API/架构审计 → GPT-4o，数据模型/算法 → DeepSeek，UI/视觉 → Gemini，安全/合规 → GPT-4o。
 *   **审查重点**：识别任何偏离上游设计产物的”私自改动”，除非具备极强的技术理由。
@@ -885,6 +953,47 @@ Step 4: Tasks 生成
     - 标注 _Requirements_ 和 _Leverage_ 引用
     - 标注 _Guardrails_（← E3，溯源 task.rules/exceptions/audit ID）
     - 标注 _Risk_（← E4，from task.risk_level，HIGH 任务优先 review）
+
+  **⚠️ 后端 B2 端点级原子性规则（强制）**：
+  > 后端 B2 任务必须按**端点组**拆分，不允许按 controller 级别合并。
+  > 违反此规则是 design-to-spec 历史上最常见的质量缺陷——controller 级任务导致
+  > 执行 agent 只实现"最显眼"的端点，漏掉子功能（如只做 GET list，漏 approve/reject/stats）。
+
+  **拆分粒度规则**：
+  | 场景 | 拆分方式 | 示例 |
+  |------|---------|------|
+  | 同一实体的标准 CRUD | 可合并为 1 个任务（增删改查紧耦合） | `B2.x 用户 CRUD (GET list + GET detail + POST + PUT + DELETE)` |
+  | 独立业务逻辑端点 | 必须拆为独立任务 | `B2.x 商户审批 (POST /merchants/:id/approval)` |
+  | 状态变更端点 | 每个状态变更 = 1 个任务 | `B2.x 广告审核通过`, `B2.y 广告审核驳回` |
+  | 聚合/统计端点 | 独立任务 | `B2.x 广告统计数据 (GET /ad-campaigns/:id/stats)` |
+  | 关联操作端点 | 独立任务 | `B2.x 邀请码生成 (POST /invite-codes)` |
+
+  **反模式（禁止）**：
+  ```
+  ✗ B2.45 [backend] Admin ad management controller
+    - 实现广告管理控制器（列表、审核、统计）
+    → 太粗！agent 只会实现列表，漏掉审核和统计
+
+  ✓ B2.45 [backend] Admin 广告活动列表
+    Files: handler/admin_ad_handler.go, service/ad_service.go
+    - GET /admin/ad-campaigns（分页、筛选）
+  ✓ B2.46 [backend] Admin 广告活动审核（approve/reject）
+    Files: handler/admin_ad_handler.go, service/ad_service.go
+    - POST /admin/ad-campaigns/:id/approve
+    - POST /admin/ad-campaigns/:id/reject
+    - 审核需更新状态 + 通知商户
+  ✓ B2.47 [backend] Admin 广告统计数据
+    Files: handler/admin_ad_handler.go, service/ad_stats_service.go
+    - GET /admin/ad-campaigns/:id/stats
+    - 聚合展示/点击/消费数据
+  ```
+
+  **自检规则**（Step 4 生成完毕后立即执行）：
+  对每个后端 B2 任务，检查任务描述中包含的端点数量：
+  - 标准 CRUD (GET list + GET detail + POST + PUT + DELETE) → OK（最多 5 端点）
+  - 非 CRUD 端点 > 2 个且业务逻辑独立 → **必须拆分**
+  - 任务标题包含"管理"/"controller"/"全部" → **高危信号，LLM 重新检查是否应拆分**
+
   按需在 tasks.md 末尾生成专用任务批次（从聚合字段推导）：
     - 审计日志任务（从 task.audit 聚合 → audit_logs 表+中间件+测试）
     - 审批流任务（从 task.approver_role 聚合 → 审批 API+状态机+测试）
@@ -950,6 +1059,88 @@ Step 4: Tasks 生成
   - 页面级组件引用 Round 1 已实现的共享组件
   - 如有 Stitch HTML → 任务追加 `stitch_ref: screen_id` + `stitch_html: 文件路径`
 
+  ↓
+Step 4.3: Tasks 验证循环（4D/6V+V9/XV/闭环 — 强制）
+  > 本步骤对 Step 4 生成的 tasks.md 执行完整的验证闭环，确保任务列表的正确性**和完整性**。
+  > 这是 design-to-spec 流水线中最关键的质量门禁——tasks.md 的质量直接决定实现阶段的完整度。
+
+  **验证循环架构**：
+  ```
+  大循环（最多 3 轮）:
+    ┌── 小循环 A: 4D/6V+V9 审计
+    │     每个子项目的 tasks.md 逐维度检查
+    │     发现问题 → 自动修正 tasks.md → 重检该维度
+    │     通过 → 进入小循环 B
+    ├── 小循环 B: XV 交叉审查（可选，OpenRouter 可用时）
+    │     专家模型审查任务完整性和原子性
+    │     分歧 → 以更严格结论为准 → 修正 → 重检
+    │     通过 → 进入小循环 C
+    └── 小循环 C: 闭环审计
+          检查 6 类闭环在任务层的完整度
+          发现缺失 → 补充任务 → 重检
+          通过 → 退出大循环
+  ```
+
+  **小循环 A: 4D/6V+V9 任务审计**
+
+  LLM 读取 tasks.md + design.md + requirements.md + task-inventory.json，执行以下审计：
+
+  | 维度 | 审计内容 | 不通过标记 |
+  |------|---------|----------|
+  | **D1 Data** | 每个数据模型（entity）是否有 B1 定义任务 + B2 CRUD 任务？ | `TASK_DATA_GAP` |
+  | **D2 Interface** | 每个 design.md 中的 API 端点是否有对应的 B2 任务？ | `TASK_API_GAP` |
+  | **D3 Logic** | 每个业务规则（task.rules）是否在某个 B2 任务的 _Guardrails_ 中被引用？ | `TASK_RULE_GAP` |
+  | **D4 UX** | 每个 experience-map screen 是否有对应的 B3 页面任务？ | `TASK_UX_GAP` |
+  | **V1-V8** | 已有审计维度在任务层的映射（同阶段 2） | 复用标记 |
+  | **V9 Coverage** | **产品任务→B2 端点覆盖率**（见阶段 2 V9 定义） | `TASK_COVERAGE_CRITICAL/WARNING` |
+
+  **V9 覆盖率是强制审计维度**，CRITICAL 级遗漏必须修复后才能退出循环。
+
+  **修正方式**：
+  - `TASK_API_GAP` → 在 tasks.md 中补充缺失的 B2 端点任务（遵循端点级原子性规则）
+  - `TASK_COVERAGE_CRITICAL` → 从 task-inventory.json 推导缺失的端点，补充 B2 + B3 + B5 任务
+  - `TASK_DATA_GAP` → 补充 B1 定义任务
+  - `TASK_UX_GAP` → 补充 B3 页面任务
+  - 修正后回到小循环 A 重检（最多 3 次内循环）
+
+  **小循环 B: XV 交叉审查**（OpenRouter 可用时执行，否则跳过）
+
+  向专家模型发送：
+  ```
+  {task-inventory.json 摘要} + {tasks.md 任务列表} + {小循环 A 审计结果}
+  要求：
+  1. 检查是否有产品功能在任务列表中完全缺失
+  2. 检查 B2 任务粒度是否合理（是否有 controller 级别的粗粒度任务）
+  3. 检查任务间依赖是否合理
+  输出：CONFIRM | REJECT(缺失列表) | SUGGEST(优化建议)
+  ```
+
+  REJECT → 按缺失列表补充任务 → 重检
+  SUGGEST → 记录建议，不阻塞
+
+  **小循环 C: 闭环审计**
+
+  对 tasks.md 中每个模块/功能域检查 6 类闭环：
+
+  | 闭环类型 | 任务层审计问题 | 不通过标记 |
+  |---------|-------------|----------|
+  | 配置闭环 | 有 config_items 的功能是否有 B2 配置端点任务？ | `TASK_CLOSURE_CONFIG` |
+  | 监控闭环 | 有 audit 的功能是否有 B2 审计中间件任务？ | `TASK_CLOSURE_MONITOR` |
+  | 异常闭环 | 有 exceptions 的功能是否在 B2 任务的实现要点中提到？ | `TASK_CLOSURE_EXCEPTION` |
+  | 生命周期闭环 | 有状态机的实体是否有完整的状态变更端点任务？ | `TASK_CLOSURE_LIFECYCLE` |
+  | 映射闭环 | 有关联关系的实体是否有级联操作任务？ | `TASK_CLOSURE_MAPPING` |
+  | 导航闭环 | 每个前端页面是否有路由守卫 + 404 + 回退任务？ | `TASK_CLOSURE_NAVIGATION` |
+
+  修正 → 回到小循环 C 重检
+
+  **退出条件**：
+  - V9 Coverage CRITICAL = 0（所有 CORE 产品任务有对应 B2 任务）
+  - 4D 无 GAP（或已修复）
+  - 闭环无 CRITICAL 缺失
+
+  **大循环 3 轮后仍有问题** → 记录为已知问题到 `pipeline-decisions.json`，输出警告，继续（不停）
+
+  → 输出进度: 「Step 4.3 验证 ✓ V9 覆盖率: {X}%, 4D gaps: {N} fixed, 闭环: {M} fixed, XV: {status}」
   ↓
 Step 4.5: 任务上下文预计算（Task Context）
   为每个任务预计算完整上下文包，供 task-execute 消费，减少"概念→代码"失真。

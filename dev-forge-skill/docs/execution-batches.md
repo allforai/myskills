@@ -194,7 +194,19 @@ resume 模式检测 Step 1-4 完成状态:
 **backend**:
 ```
 B1: 类型定义、Entity 文件、数据库迁移、config + common 搭建
-B2: Controller + Service + DTO + 中间件注册
+B2: 端点级任务（⚠️ 必须按端点组拆分，禁止按 controller 合并）
+    拆分规则：
+    - 同一实体标准 CRUD → 可合为 1 个任务（GET list + detail + POST + PUT + DELETE）
+    - 独立业务逻辑端点 → 独立任务（如审核 approve/reject、统计 stats、充值 topup）
+    - 状态变更端点 → 独立任务（如 ship、confirm、cancel）
+    - 聚合/分析端点 → 独立任务
+    示例：
+    ✓ B2.1  Auth CRUD（register + login + refresh）
+    ✓ B2.2  Auth 密码重置（forgot-password + reset-password）← 独立业务逻辑
+    ✓ B2.10 商户审批（POST /merchants/:id/approval）← 状态变更
+    ✓ B2.11 商户暂停（POST /merchants/:id/suspend）← 状态变更
+    ✓ B2.12 邀请码 CRUD（POST + GET + DELETE /invite-codes）← 关联功能
+    ✗ B2.10 Admin 商户管理 controller（审批+暂停+邀请码+列表）← 太粗，禁止
 B3: —（无 UI 层，跳过）
 B4: 接口文档生成、健康检查/探针、错误响应统一、客户端 SDK 导出
 B5: 单元测试 (entity+service) + API 集成测试 (supertest/pytest)
