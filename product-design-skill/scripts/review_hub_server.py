@@ -1453,6 +1453,10 @@ def build_screens_with_context(op_lines, tasks, role_map, gate_issues, vo_map=No
                     "app": s.get("app", ""),
                     "navigation": s.get("navigation", ""),
                     "layout": s.get("layout", ""),
+                    "layout_type": s.get("layout_type", ""),
+                    "layout_description": s.get("layout_description", ""),
+                    "components": s.get("components", []),
+                    "interaction_pattern": s.get("interaction_pattern", ""),
                     "tasks": s.get("tasks", []),
                     "actions": s.get("actions", []),
                     "vo_actions": vo_actions,
@@ -1708,6 +1712,22 @@ body{margin:0;padding:24px;font-family:-apple-system,system-ui,sans-serif;backgr
 .wf-notif-item{padding:10px;border:1px solid #e9ecef;border-radius:6px;font-size:12px;color:#495057;display:flex;align-items:center;gap:8px}
 .wf-notif-item.unread{background:#f3f0ff;border-color:#d1c4e9}
 .wf-notif-dot{width:8px;height:8px;border-radius:50%;background:#7c3aed;flex-shrink:0}
+/* ── Dynamic component renderer ── */
+.wf-layout-desc{font-size:12px;color:#5c6bc0;background:#e8eaf6;padding:8px 10px;border-radius:4px;margin-bottom:12px;line-height:1.5}
+.wf-component{background:#fff;border:1px dashed #b0bec5;border-radius:6px;padding:10px 12px;margin:8px 0}
+.wf-comp-header{font-size:11px;font-weight:700;color:#37474f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid #eceff1}
+.wf-comp-purpose{font-size:12px;color:#546e7a;margin-bottom:2px}
+.wf-comp-behavior{font-size:11px;color:#90a4ae;font-style:italic}
+.wf-split-layout{display:flex;gap:12px}
+.wf-split-left{flex:2;display:flex;flex-direction:column}
+.wf-split-right{flex:3;display:flex;flex-direction:column}
+.wf-grid-layout{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
+.wf-tab-bar{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.wf-tab-content{min-height:80px}
+.wf-fields-block{margin:8px 0}
+.wf-field-row{display:flex;justify-content:space-between;padding:4px 8px;border-bottom:1px solid #f1f3f5;font-size:12px}
+.wf-field-label{color:#495057;font-weight:500}
+.wf-field-val{color:#90a4ae}
 """
 
 
@@ -1806,824 +1826,7 @@ def _input_indicator(field):
     return _INPUT_INDICATORS.get(ftype, "[____]")
 
 
-# ── Type-specific wireframe templates ─────────────────────────────────────
-
-def _wf_table_headers(fields):
-    return "".join(f"<th>{_esc(f.get('label', f.get('name', '')))}</th>" for f in fields[:5])
-
-
-def _wf_table_row(fields):
-    tds = ""
-    for f in fields[:5]:
-        val = _sample_val(f)
-        ftype = f.get("type", "string")
-        if ftype == "enum":
-            tds += f'<td><span class="wf-tag">{_esc(val)}</span></td>'
-        else:
-            tds += f"<td>{_esc(val)}</td>"
-    return tds
-
-
-def _wf_readonly_list(screen):
-    """MG1: Read-only list."""
-    fields = screen.get("data_fields", [])
-    filters = screen.get("filters", [])
-    toolbar = '<div class="wf-toolbar"><div class="wf-search">\U0001f50d \u641c\u7d22...</div></div>'
-    filter_html = ""
-    if filters:
-        chips = "".join(f'<span class="wf-filter-chip">{_esc(fn)} \u25be</span>' for fn in filters[:4])
-        filter_html = f'<div class="wf-filters">{chips}</div>'
-    if fields:
-        headers = _wf_table_headers(fields)
-        rows = "".join(f"<tr>{_wf_table_row(fields)}</tr>" for _ in range(3))
-        table = f'<table class="wf-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table>'
-    else:
-        table = '<div class="wf-section">Read-only List</div>'
-    return toolbar + filter_html + table + '<div class="wf-pagination">\u2190 1  2  3  ... \u2192</div>'
-
-
-def _wf_crud_list(screen):
-    """MG2-L: CRUD list with search, filters, table, pagination."""
-    fields = screen.get("data_fields", [])
-    filters = screen.get("filters", [])
-    entity = screen.get("entity_name", "")
-    # Use first C/U action label from screen actions, or fallback to "新建{entity}"
-    create_label = f"+ \u65b0\u5efa{_esc(entity)}" if entity else "+ \u65b0\u5efa"
-    for a in screen.get("actions", []):
-        if isinstance(a, dict) and a.get("crud") in ("C", "U"):
-            create_label = _esc(a.get("label", create_label))
-            break
-    toolbar = f'<div class="wf-toolbar"><div class="wf-search">\U0001f50d \u641c\u7d22...</div><button class="wf-btn wf-btn-primary">{create_label}</button></div>'
-    filter_html = ""
-    if filters:
-        chips = "".join(f'<span class="wf-filter-chip">{_esc(fn)} \u25be</span>' for fn in filters[:4])
-        filter_html = f'<div class="wf-filters">{chips}</div>'
-    if fields:
-        headers = _wf_table_headers(fields) + "<th>\u64cd\u4f5c</th>"
-        rows = "".join(f"<tr>{_wf_table_row(fields)}<td>\u00b7\u00b7\u00b7</td></tr>" for _ in range(3))
-        table = f'<table class="wf-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table>'
-    else:
-        table = '<div class="wf-section">Table Content</div>'
-    return toolbar + filter_html + table + '<div class="wf-pagination">\u2190 1  2  3  ... \u2192</div>'
-
-
-def _wf_create_form(screen):
-    """MG2-C: Create form."""
-    fields = screen.get("data_fields", [])
-    entity = screen.get("entity_name", "")
-    form_fields = ""
-    for f in fields[:10]:
-        label = f.get("label", f.get("name", ""))
-        req_mark = '<span class="wf-form-required">\u2731</span>' if f.get("required") else ""
-        indicator = _input_indicator(f)
-        ftype = f.get("type", "string")
-        inp = f'<div class="wf-form-textarea">{indicator}</div>' if ftype == "text" else f'<div class="wf-form-input">{indicator}</div>'
-        form_fields += f'<div class="wf-form-field"><div class="wf-form-label">{_esc(label)} {req_mark}</div>{inp}</div>'
-    # Use actual action labels from screen data when available
-    actions = screen.get("actions", [])
-    if actions:
-        btn_html = ""
-        for a in actions:
-            label = a.get("label", "") if isinstance(a, dict) else str(a)
-            freq = a.get("frequency", "中") if isinstance(a, dict) else "中"
-            cls = "wf-btn-primary" if freq == "高" else "wf-btn-secondary"
-            btn_html += f'<button class="wf-btn {cls}">{_esc(label)}</button>'
-        buttons = f'<div class="wf-form-buttons">{btn_html}</div>'
-    else:
-        buttons = f'<div class="wf-form-buttons"><button class="wf-btn wf-btn-secondary">\u53d6\u6d88</button><button class="wf-btn wf-btn-primary">\u521b\u5efa{_esc(entity)}</button></div>'
-    return form_fields + buttons if fields else '<div class="wf-section">Create Form</div>'
-
-
-def _wf_edit_form(screen):
-    """MG2-E: Edit form."""
-    fields = screen.get("data_fields", [])
-    entity = screen.get("entity_name", "")
-    form_fields = ""
-    for f in fields[:10]:
-        label = f.get("label", f.get("name", ""))
-        req_mark = '<span class="wf-form-required">\u2731</span>' if f.get("required") else ""
-        indicator = _input_indicator(f)
-        ftype = f.get("type", "string")
-        hint = '<div class="wf-form-hint">(\u56de\u586b)</div>'
-        inp = (f'<div class="wf-form-textarea">{indicator}</div>{hint}' if ftype == "text"
-               else f'<div class="wf-form-input">{indicator}</div>{hint}')
-        form_fields += f'<div class="wf-form-field"><div class="wf-form-label">{_esc(label)} {req_mark}</div>{inp}</div>'
-    actions = screen.get("actions", [])
-    if actions:
-        btn_html = ""
-        for a in actions:
-            label = a.get("label", "") if isinstance(a, dict) else str(a)
-            freq = a.get("frequency", "中") if isinstance(a, dict) else "中"
-            cls = "wf-btn-primary" if freq == "高" else "wf-btn-secondary"
-            btn_html += f'<button class="wf-btn {cls}">{_esc(label)}</button>'
-        buttons = f'<div class="wf-form-buttons">{btn_html}</div>'
-    else:
-        buttons = f'<div class="wf-form-buttons"><button class="wf-btn wf-btn-secondary">\u53d6\u6d88</button><button class="wf-btn wf-btn-primary">\u4fdd\u5b58{_esc(entity)}</button></div>'
-    return form_fields + buttons if fields else '<div class="wf-section">Edit Form</div>'
-
-
-def _wf_detail(screen):
-    """MG2-D: Detail view."""
-    fields = screen.get("data_fields", [])
-    vo_actions = screen.get("vo_actions", [])
-    rows = ""
-    for f in fields[:12]:
-        label = f.get("label", f.get("name", ""))
-        val = _sample_val(f)
-        rows += f'<div class="wf-detail-row"><span class="wf-detail-label">{_esc(label)}</span><span class="wf-detail-value">{_esc(val)}</span></div>'
-    action_html = ""
-    if vo_actions:
-        btns = ""
-        for a in vo_actions[:4]:
-            if isinstance(a, dict):
-                style = a.get("style", "ghost")
-                label = a.get("label", "")
-                api = a.get("api_ref", "")
-            else:
-                style, label, api = "ghost", str(a), ""
-            cls = "wf-btn-primary" if style == "primary" else "wf-btn wf-btn-secondary"
-            btns += f'<button class="wf-btn {cls}">{_esc(label)}</button>'
-            if api:
-                btns += f'<div class="wf-api-ref">\u2193 API: {_esc(api)}</div>'
-        action_html = f'<div class="wf-detail-actions"><div class="wf-label">\u2500\u2500\u2500 Actions \u2500\u2500\u2500</div><div class="wf-actions">{btns}</div></div>'
-    return (rows + action_html) if fields else '<div class="wf-section">Detail View</div>'
-
-
-def _wf_state_machine(screen):
-    """MG3: State-machine list."""
-    fields = screen.get("data_fields", [])
-    states = screen.get("states", {})
-    vo_actions = screen.get("vo_actions", [])
-    state_names = []
-    if isinstance(states, dict):
-        for k, v in states.items():
-            if k not in ("empty", "loading", "error"):
-                state_names.append(str(v) if not isinstance(v, dict) else k)
-    if not state_names:
-        state_names = ["\u5168\u90e8", "\u5f85\u5904\u7406", "\u5df2\u5b8c\u6210"]
-    tabs = '<span class="wf-state-tab active">\u5168\u90e8</span>'
-    for sn in state_names[:5]:
-        tabs += f'<span class="wf-state-tab">{_esc(sn)}</span>'
-    state_tabs = f'<div class="wf-state-tabs">{tabs}</div>'
-    if fields:
-        headers = _wf_table_headers(fields) + "<th>\u64cd\u4f5c</th>"
-        rows = ""
-        for i in range(3):
-            action_cell = ""
-            for a in vo_actions[:2]:
-                if isinstance(a, dict):
-                    alabel = a.get("label", "")
-                    api = a.get("api_ref", "")
-                else:
-                    alabel = str(a)
-                    api = ""
-                action_cell += f'<button class="wf-btn wf-btn-secondary" style="padding:2px 8px;font-size:10px">{_esc(alabel)}</button> '
-                if api:
-                    action_cell += f'<div class="wf-transition">\u2192 API: {_esc(api)}</div>'
-            if not action_cell:
-                action_cell = "\u00b7\u00b7\u00b7"
-            rows += f"<tr>{_wf_table_row(fields)}<td>{action_cell}</td></tr>"
-        table = f'<table class="wf-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table>'
-    else:
-        table = '<div class="wf-section">State Machine List</div>'
-    return state_tabs + table
-
-
-def _wf_approval(screen):
-    """MG4: Approval queue."""
-    fields = screen.get("data_fields", [])
-    pending_badge = '<div style="text-align:right;margin-bottom:8px"><span class="wf-pending-badge">\u5f85\u5ba1 3 \u4ef6</span></div>'
-    cards = ""
-    for i in range(2):
-        field_summary = ""
-        for f in fields[:3]:
-            label = f.get("label", f.get("name", ""))
-            val = _sample_val(f)
-            field_summary += f"{_esc(label)}: {_esc(val)}  "
-        placeholder = "\u2591\u2591\u2591 \u2591\u2591\u2591\u2591\u2591 \u2591\u2591"
-        card_num = i + 1001
-        card_fields = field_summary if field_summary else placeholder
-        cards += f"""<div class="wf-approval-card">
-  <div class="wf-approval-card-header">#{card_num}</div>
-  <div class="wf-approval-card-fields">{card_fields}</div>
-  <div class="wf-approval-btns">
-    <button class="wf-approval-reject">\u9a73\u56de</button>
-    <button class="wf-approval-approve">\u2713 \u901a\u8fc7</button>
-  </div>
-</div>"""
-    return pending_badge + cards
-
-
-# ── New interaction type wireframe templates (37-type system) ──────────────
-
-def _wf_onboarding(screen):
-    """SY1: Onboarding / guided tour."""
-    steps = screen.get("actions", [])
-    step_names = [(a.get("label", f"Step {i+1}") if isinstance(a, dict) else str(a)) for i, a in enumerate(steps[:4])] or ["欢迎", "功能介绍", "偏好设置", "完成"]
-    dots = "".join(f'<span class="wf-dot{"  active" if i == 0 else ""}">{i+1}</span>' for i in range(len(step_names)))
-    content = f"""
-<div class="wf-onboarding">
-  <div class="wf-onboarding-illustration">[ 🖼 引导插图 ]</div>
-  <div class="wf-onboarding-title">{_esc(step_names[0])}</div>
-  <div class="wf-onboarding-desc">在这里展示功能介绍或设置选项</div>
-  <div class="wf-onboarding-dots">{dots}</div>
-  <div class="wf-actions">
-    <button class="wf-btn wf-btn-secondary">跳过</button>
-    <button class="wf-btn wf-btn-primary">下一步</button>
-  </div>
-</div>"""
-    return content
-
-
-def _wf_wizard_form(screen):
-    """SY2: Multi-step wizard / registration form."""
-    fields = screen.get("data_fields", [])
-    steps = screen.get("actions", [])
-    step_count = max(len(steps), 3)
-    progress = '<div class="wf-wizard-progress">'
-    for i in range(min(step_count, 4)):
-        cls = " active" if i == 0 else ""
-        progress += f'<span class="wf-wizard-step{cls}">{i+1}</span>'
-        if i < min(step_count, 4) - 1:
-            progress += '<span class="wf-wizard-line"></span>'
-    progress += '</div>'
-    field_html = ""
-    for f in fields[:4]:
-        label = f.get("label", f.get("name", ""))
-        ftype = f.get("type", "string")
-        field_html += f'<div class="wf-field"><label class="wf-field-label">{_esc(label)}</label><div class="wf-field-input">{_esc(ftype)}</div></div>'
-    if not field_html:
-        field_html = '<div class="wf-field"><label class="wf-field-label">用户名/邮箱</label><div class="wf-field-input">text</div></div><div class="wf-field"><label class="wf-field-label">密码</label><div class="wf-field-input">password</div></div>'
-    return f"""{progress}
-<div class="wf-form">{field_html}</div>
-<div class="wf-actions">
-  <button class="wf-btn wf-btn-secondary">上一步</button>
-  <button class="wf-btn wf-btn-primary">下一步</button>
-</div>"""
-
-
-def _wf_content_feed(screen):
-    """CT1: Content feed / card list (mobile)."""
-    fields = screen.get("data_fields", [])
-    # Smart field selection for card preview: exclude metadata, prefer summary fields
-    _FEED_EXCLUDE = {"id", "created_at", "updated_at", "creator_id", "content", "config_json",
-                     "sort_order", "version", "audio_url", "video_url"}
-    _FEED_PRIORITY = {"status", "category", "difficulty_level", "language", "score", "progress",
-                      "tags", "item_count", "price"}
-    priority_fields = [f for f in fields if f.get("name", "") in _FEED_PRIORITY]
-    other_fields = [f for f in fields
-                    if f.get("name", "") not in _FEED_PRIORITY
-                    and f.get("name", "") not in _FEED_EXCLUDE
-                    and f.get("name", "") not in ("title", "name", "cover_image")
-                    and "config" not in (f.get("constraints") or [])]
-    card_fields = (priority_fields + other_fields)[:3]
-    cards = ""
-    for i in range(3):
-        field_preview = ""
-        for f in card_fields:
-            label = f.get("label", f.get("name", ""))
-            val = _sample_val(f)
-            field_preview += f'<span class="wf-feed-meta">{_esc(label)}: {_esc(val)}</span>'
-        if not field_preview:
-            field_preview = '<span class="wf-feed-meta">标题 · 难度 · 词数</span>'
-        cards += f"""<div class="wf-feed-card">
-  <div class="wf-feed-thumb">[ 封面 ]</div>
-  <div class="wf-feed-info">
-    <div class="wf-feed-title">内容项 {i+1}</div>
-    <div class="wf-feed-meta-row">{field_preview}</div>
-  </div>
-</div>"""
-    return f"""<div class="wf-search-bar">🔍 搜索...</div>
-<div class="wf-filter-chips">
-  <span class="wf-chip active">全部</span>
-  <span class="wf-chip">热门</span>
-  <span class="wf-chip">最新</span>
-</div>
-<div class="wf-feed-list">{cards}</div>"""
-
-
-def _wf_content_reader(screen):
-    """CT2: Content reading page — adapts layout based on states.
-
-    Renders different body sections depending on the screen's custom states:
-    - States with keywords like 对话/气泡/句子 → dialogue/conversation layout
-    - States with keywords like 下载/预览 → preview/overview layout
-    - Default → generic article reading layout
-    """
-    fields = screen.get("data_fields", [])
-    field_meta = ""
-    for f in fields[:5]:
-        label = f.get("label", f.get("name", ""))
-        val = _sample_val(f)
-        if f.get("name") in ("title", "name"):
-            continue
-        field_meta += f'<div class="wf-reader-meta">{_esc(label)}: {_esc(val)}</div>'
-
-    states = screen.get("states", {})
-    custom_states = {k: v for k, v in states.items() if k not in ("empty", "loading", "error", "success")}
-
-    # Detect content variant from states
-    all_state_text = " ".join(str(v) for v in custom_states.values()).lower()
-    is_dialogue = any(kw in all_state_text for kw in ["对话", "气泡", "句子", "原文", "翻译", "音频", "跟读"])
-    is_preview = any(kw in all_state_text for kw in ["下载", "预览", "开始学习", "未下载"])
-
-    # Build variant-specific body
-    if is_dialogue:
-        body_html = """<div class="wf-dialogue">
-  <div class="wf-dialogue-scene">[ 连环画配图 ]</div>
-  <div class="wf-dialogue-bubble left">
-    <div class="wf-bubble">你好，请问这个怎么说？ <span class="wf-audio-btn">🔊</span></div>
-  </div>
-  <div class="wf-dialogue-bubble right">
-    <div class="wf-bubble">Sure, let me explain. <span class="wf-audio-btn">🔊</span></div>
-  </div>
-  <div class="wf-dialogue-bubble left">
-    <div class="wf-bubble">谢谢，我明白了。 <span class="wf-audio-btn">🔊</span></div>
-  </div>
-  <div class="wf-dialogue-translation">[点击句子查看翻译]</div>
-</div>"""
-    elif is_preview:
-        body_html = f"""<div class="wf-preview">
-  <div class="wf-preview-cover">[ 场景封面大图 ]</div>
-  <div class="wf-preview-stats">
-    <span class="wf-stat">📖 -- 对话</span>
-    <span class="wf-stat">📝 -- 词汇</span>
-    <span class="wf-stat">⏱ -- 分钟</span>
-  </div>
-  <div class="wf-preview-desc">场景简介和学习目标...</div>
-  <div class="wf-preview-sample">
-    <div class="wf-label">预览对话片段</div>
-    <div class="wf-preview-line">A: Hello, how can I help you?</div>
-    <div class="wf-preview-line">B: I'd like to order...</div>
-  </div>
-</div>"""
-    else:
-        body_html = """<div class="wf-reader-body">
-  <p>内容正文区域...</p>
-  <p>段落/对话/图文混排...</p>
-  <p>支持滚动阅读</p>
-</div>"""
-
-    # State badges
-    state_html = ""
-    if custom_states:
-        badges = "".join(f'<span class="wf-state-badge">{_esc(str(v))}</span>' for v in custom_states.values())
-        state_html = f'<div class="wf-reader-states">{badges}</div>'
-
-    actions = screen.get("actions", [])
-    action_btns = ""
-    for a in actions[:4]:
-        label = a.get("label", "") if isinstance(a, dict) else str(a)
-        if label:
-            action_btns += f'<button class="wf-btn wf-btn-secondary">{_esc(label)}</button>'
-
-    return f"""<div class="wf-reader">
-  <div class="wf-reader-title">{_esc(screen.get("name", "内容标题"))}</div>
-  <div class="wf-reader-meta-row">{field_meta}</div>
-  {body_html}
-  {state_html}
-  <div class="wf-reader-actions">{action_btns}</div>
-</div>"""
-
-
-def _wf_profile(screen):
-    """CT3: Profile / personal page."""
-    fields = screen.get("data_fields", [])
-    field_html = ""
-    for f in fields[:6]:
-        label = f.get("label", f.get("name", ""))
-        val = _sample_val(f)
-        field_html += f'<div class="wf-profile-row"><span class="wf-profile-label">{_esc(label)}</span><span class="wf-profile-value">{_esc(val)}</span></div>'
-    return f"""<div class="wf-profile">
-  <div class="wf-profile-header">
-    <div class="wf-avatar">👤</div>
-    <div class="wf-profile-name">{_esc(screen.get("name", "用户"))}</div>
-  </div>
-  <div class="wf-profile-fields">{field_html}</div>
-  <div class="wf-actions">
-    <button class="wf-btn wf-btn-primary">编辑资料</button>
-  </div>
-</div>"""
-
-
-def _wf_card_swipe(screen):
-    """CT4: Card swipe / flashcard — adapts to quiz, flashcard, or practice variant."""
-    fields = screen.get("data_fields", [])
-    states = screen.get("states", {})
-    custom_states = {k: v for k, v in states.items() if k not in ("empty", "loading", "error", "success")}
-    all_state_text = " ".join(str(v) for v in custom_states.values()).lower()
-
-    # Variant detection
-    is_quiz = any(kw in all_state_text for kw in ["选项", "选择", "答案", "正确", "错误", "填空"])
-    is_practice = any(kw in all_state_text for kw in ["录音", "跟读", "波形", "回放"])
-
-    # Smart field selection for cards: prefer content fields over metadata
-    _CARD_CONTENT_NAMES = {"title", "name", "content", "description", "tags", "category"}
-    _CARD_EXCLUDE_NAMES = {"id", "created_at", "updated_at", "creator_id", "sort_order", "version"}
-    content_fields = [f for f in fields if f.get("name", "") in _CARD_CONTENT_NAMES]
-    other_fields = [f for f in fields
-                    if f.get("name", "") not in _CARD_CONTENT_NAMES
-                    and f.get("name", "") not in _CARD_EXCLUDE_NAMES
-                    and "config" not in (f.get("constraints") or [])]
-    display_fields = (content_fields + other_fields)[:4]
-
-    # Dynamic field display
-    field_html = ""
-    for f in display_fields:
-        label = f.get("label", f.get("name", ""))
-        val = _sample_val(f)
-        field_html += f'<div class="wf-card-field">{_esc(label)}: {_esc(val)}</div>'
-
-    if is_quiz:
-        body = f"""<div class="wf-card-main">
-    <div class="wf-card-content">
-      {field_html or '<div class="wf-card-field">[ 题目内容 ]</div>'}
-    </div>
-    <div class="wf-card-options">
-      <div class="wf-option">A. ________</div>
-      <div class="wf-option">B. ________</div>
-      <div class="wf-option">C. ________</div>
-      <div class="wf-option">D. ________</div>
-    </div>
-  </div>"""
-    elif is_practice:
-        body = f"""<div class="wf-card-main">
-    <div class="wf-card-content">
-      {field_html or '<div class="wf-card-field">[ 练习内容 ]</div>'}
-    </div>
-    <div class="wf-card-record">
-      <div class="wf-waveform">〰〰〰〰〰</div>
-      <button class="wf-btn wf-btn-primary">● 录音</button>
-    </div>
-  </div>"""
-    else:
-        body = f"""<div class="wf-card-main">
-    <div class="wf-card-front">
-      <div class="wf-card-content">[ 正面内容 ]</div>
-      {field_html}
-    </div>
-    <div class="wf-card-hint">← 跳过 | 点击翻转 | 掌握 →</div>
-  </div>"""
-
-    # Dynamic action buttons from screen data
-    actions = screen.get("actions", [])
-    if actions:
-        btns = ""
-        styles = ["wf-btn-danger", "wf-btn-warning", "wf-btn-success", "wf-btn-primary"]
-        for i, a in enumerate(actions[:4]):
-            label = a.get("label", "") if isinstance(a, dict) else str(a)
-            style = styles[i % len(styles)]
-            btns += f'<button class="wf-btn {style}">{_esc(label)}</button>'
-        action_html = f'<div class="wf-card-buttons">{btns}</div>'
-    else:
-        action_html = """<div class="wf-card-buttons">
-    <button class="wf-btn wf-btn-danger">忘记</button>
-    <button class="wf-btn wf-btn-warning">模糊</button>
-    <button class="wf-btn wf-btn-success">记得</button>
-    <button class="wf-btn wf-btn-primary">轻松</button>
-  </div>"""
-
-    return f"""<div class="wf-card-swipe">
-  <div class="wf-card-progress">1 / 20</div>
-  {body}
-  {action_html}
-</div>"""
-
-
-def _wf_media_player(screen):
-    """CT5: Media player (audio/video) — renders data_fields and actions."""
-    fields = screen.get("data_fields", [])
-    field_html = ""
-    for f in fields[:3]:
-        label = f.get("label", f.get("name", ""))
-        if f.get("type") in ("audio", "video", "image"):
-            continue
-        field_html += f'<div class="wf-player-meta">{_esc(label)}</div>'
-
-    actions = screen.get("actions", [])
-    ctrl_btns = ""
-    for a in actions[:5]:
-        label = a.get("label", "") if isinstance(a, dict) else str(a)
-        ctrl_btns += f'<button class="wf-btn wf-btn-secondary">{_esc(label)}</button>'
-    if not ctrl_btns:
-        ctrl_btns = '<button class="wf-btn wf-btn-secondary">⏮</button><button class="wf-btn wf-btn-primary">⏸</button><button class="wf-btn wf-btn-secondary">⏭</button>'
-
-    return f"""<div class="wf-player">
-  <div class="wf-player-screen">[ ▶ 播放区域 ]</div>
-  {field_html}
-  <div class="wf-player-progress">
-    <div class="wf-progress-bar"><div class="wf-progress-fill" style="width:35%"></div></div>
-    <div class="wf-progress-time">1:23 / 3:45</div>
-  </div>
-  <div class="wf-player-controls">{ctrl_btns}</div>
-</div>"""
-
-
-def _wf_gallery(screen):
-    """CT6: Gallery / image grid — renders dynamic actions."""
-    actions = screen.get("actions", [])
-    action_btns = ""
-    for a in actions[:3]:
-        label = a.get("label", "") if isinstance(a, dict) else str(a)
-        action_btns += f'<button class="wf-btn wf-btn-secondary">{_esc(label)}</button>'
-    if not action_btns:
-        action_btns = '<button class="wf-btn wf-btn-primary">查看更多</button>'
-
-    return f"""<div class="wf-gallery">
-  <div class="wf-gallery-grid">
-    <div class="wf-gallery-thumb">[ 图1 ]</div>
-    <div class="wf-gallery-thumb">[ 图2 ]</div>
-    <div class="wf-gallery-thumb">[ 图3 ]</div>
-    <div class="wf-gallery-thumb">[ 图4 ]</div>
-    <div class="wf-gallery-thumb">[ 图5 ]</div>
-    <div class="wf-gallery-thumb">[ 图6 ]</div>
-  </div>
-  <div class="wf-actions">{action_btns}</div>
-</div>"""
-
-
-def _wf_search_results(screen):
-    """CT7: Search results page."""
-    fields = screen.get("data_fields", [])
-    results = ""
-    for i in range(3):
-        field_preview = ", ".join(_esc(f.get("label", f.get("name", ""))) + ": " + _esc(_sample_val(f)) for f in fields[:3])
-        results += f'<div class="wf-search-result"><div class="wf-result-title">结果 {i+1}</div><div class="wf-result-meta">{field_preview or "..."}</div></div>'
-    return f"""<div class="wf-search-bar">🔍 关键词</div>
-<div class="wf-filter-chips">
-  <span class="wf-chip">筛选条件 A</span>
-  <span class="wf-chip">筛选条件 B</span>
-</div>
-<div class="wf-search-results">{results}</div>
-<div class="wf-pagination">← 上一页 | 1 2 3 | 下一页 →</div>"""
-
-
-def _wf_product_detail(screen):
-    """EC1: Product / pricing detail page."""
-    fields = screen.get("data_fields", [])
-    field_html = ""
-    for f in fields[:6]:
-        label = f.get("label", f.get("name", ""))
-        val = _sample_val(f)
-        field_html += f'<div class="wf-product-spec">{_esc(label)}: {_esc(val)}</div>'
-    return f"""<div class="wf-product">
-  <div class="wf-product-image">[ 商品/方案图片 ]</div>
-  <div class="wf-product-title">{_esc(screen.get("name", "方案详情"))}</div>
-  <div class="wf-product-price">¥ --/月</div>
-  <div class="wf-product-specs">{field_html}</div>
-  <div class="wf-product-features">
-    <div>✓ 功能 A</div>
-    <div>✓ 功能 B</div>
-    <div>✓ 功能 C</div>
-  </div>
-  <div class="wf-actions">
-    <button class="wf-btn wf-btn-primary">立即订阅</button>
-    <button class="wf-btn wf-btn-secondary">对比方案</button>
-  </div>
-</div>"""
-
-
-def _wf_checkout(screen):
-    """EC2: Cart / checkout page."""
-    return """<div class="wf-checkout">
-  <div class="wf-checkout-items">
-    <div class="wf-checkout-item">
-      <span>方案名称</span>
-      <span>¥ --/月</span>
-    </div>
-  </div>
-  <div class="wf-checkout-divider"></div>
-  <div class="wf-checkout-total">
-    <span>合计</span>
-    <span class="wf-price">¥ --</span>
-  </div>
-  <div class="wf-checkout-payment">
-    <div class="wf-payment-option active">支付宝</div>
-    <div class="wf-payment-option">微信支付</div>
-    <div class="wf-payment-option">Apple Pay</div>
-  </div>
-  <div class="wf-actions">
-    <button class="wf-btn wf-btn-primary">确认支付</button>
-  </div>
-</div>"""
-
-
-def _wf_editor(screen):
-    """WK3: Document editor / content generation workspace."""
-    fields = screen.get("data_fields", [])
-    field_html = ""
-    for f in fields[:4]:
-        label = f.get("label", f.get("name", ""))
-        field_html += f'<div class="wf-editor-field">{_esc(label)}</div>'
-    return f"""<div class="wf-editor">
-  <div class="wf-editor-toolbar">
-    <button class="wf-btn wf-btn-secondary">保存</button>
-    <button class="wf-btn wf-btn-secondary">预览</button>
-    <button class="wf-btn wf-btn-primary">AI 生成</button>
-  </div>
-  <div class="wf-editor-fields">{field_html}</div>
-  <div class="wf-editor-area">
-    <div class="wf-editor-content">[ 编辑/生成内容区域 ]</div>
-    <div class="wf-editor-preview">[ 实时预览 ]</div>
-  </div>
-  <div class="wf-editor-status">草稿 · 未保存</div>
-</div>"""
-
-
-def _wf_dashboard(screen):
-    """MG7: Dashboard / statistics — variant detection + dynamic fields."""
-    fields = screen.get("data_fields", [])
-    states = screen.get("states", {})
-    custom_states = {k: v for k, v in states.items() if k not in ("empty", "loading", "error", "success")}
-    all_state_text = " ".join(str(v) for v in custom_states.values()).lower()
-
-    # Variant detection
-    is_analytics = any(kw in all_state_text for kw in ["趋势", "图表", "分析", "报表"])
-    is_monitoring = any(kw in all_state_text for kw in ["实时", "告警", "监控", "警告"])
-
-    # Smart KPI selection: prefer numeric/score/progress fields as dashboard metrics
-    _KPI_TYPES = {"integer", "decimal"}
-    _KPI_NAMES = {"score", "progress", "item_count", "attempt_count", "price", "size_bytes"}
-    _KPI_EXCLUDE = {"id", "created_at", "updated_at", "creator_id", "sort_order"}
-    kpi_fields = [f for f in fields
-                  if (f.get("type", "") in _KPI_TYPES or f.get("name", "") in _KPI_NAMES)
-                  and f.get("name", "") not in _KPI_EXCLUDE
-                  and "config" not in (f.get("constraints") or [])]
-    non_kpi = [f for f in fields
-               if f not in kpi_fields
-               and f.get("name", "") not in _KPI_EXCLUDE
-               and f.get("type", "") != "datetime"
-               and "config" not in (f.get("constraints") or [])]
-    display_kpi = (kpi_fields + non_kpi)[:4]
-
-    # Dynamic KPI cards from data_fields
-    kpi_html = ""
-    for f in display_kpi:
-        label = f.get("label", f.get("name", ""))
-        val = _sample_val(f)
-        kpi_html += f'<div class="wf-kpi-card"><div class="wf-kpi-value">{_esc(val)}</div><div class="wf-kpi-label">{_esc(label)}</div></div>'
-    if not kpi_html:
-        kpi_html = """<div class="wf-kpi-card"><div class="wf-kpi-value">--</div><div class="wf-kpi-label">指标 A</div></div>
-    <div class="wf-kpi-card"><div class="wf-kpi-value">--</div><div class="wf-kpi-label">指标 B</div></div>
-    <div class="wf-kpi-card"><div class="wf-kpi-value">--</div><div class="wf-kpi-label">指标 C</div></div>"""
-
-    if is_monitoring:
-        charts = """<div class="wf-dashboard-charts">
-    <div class="wf-chart">[ 实时监控面板 ]</div>
-    <div class="wf-chart wf-alert-list">[ 告警列表 ]</div>
-  </div>"""
-    elif is_analytics:
-        charts = """<div class="wf-dashboard-charts">
-    <div class="wf-chart">[ 趋势分析图 ]</div>
-    <div class="wf-chart">[ 数据报表 ]</div>
-  </div>"""
-    else:
-        charts = """<div class="wf-dashboard-charts">
-    <div class="wf-chart">[ 概览图表 ]</div>
-    <div class="wf-chart">[ 分布图表 ]</div>
-  </div>"""
-
-    return f"""<div class="wf-dashboard">
-  <div class="wf-dashboard-kpi">
-    {kpi_html}
-  </div>
-  {charts}
-  <div class="wf-dashboard-filters">
-    <span class="wf-chip active">今日</span>
-    <span class="wf-chip">本周</span>
-    <span class="wf-chip">本月</span>
-  </div>
-</div>"""
-
-
-def _wf_config_page(screen):
-    """MG8: Configuration / settings page."""
-    fields = screen.get("data_fields", [])
-    sections = ""
-    for f in fields[:8]:
-        label = f.get("label", f.get("name", ""))
-        ftype = f.get("type", "string")
-        if ftype == "boolean" or "开关" in label or "启用" in label:
-            control = '<div class="wf-toggle">○━━</div>'
-        elif ftype == "enum":
-            control = '<select class="wf-select"><option>选项 A</option></select>'
-        else:
-            control = f'<div class="wf-field-input">{_esc(_sample_val(f))}</div>'
-        sections += f'<div class="wf-config-row"><span class="wf-config-label">{_esc(label)}</span>{control}</div>'
-    if not sections:
-        sections = '<div class="wf-config-row"><span class="wf-config-label">配置项</span><div class="wf-field-input">值</div></div>'
-    return f"""<div class="wf-config">
-  <div class="wf-config-section">
-    <div class="wf-config-section-title">设置</div>
-    {sections}
-  </div>
-  <div class="wf-actions">
-    <button class="wf-btn wf-btn-secondary">恢复默认</button>
-    <button class="wf-btn wf-btn-primary">保存</button>
-  </div>
-</div>"""
-
-
-def _wf_tree_manager(screen):
-    """MG6: Tree / hierarchy manager."""
-    return """<div class="wf-tree">
-  <div class="wf-tree-toolbar">
-    <button class="wf-btn wf-btn-primary">+ 新建节点</button>
-  </div>
-  <div class="wf-tree-view">
-    <div class="wf-tree-node level-0">▼ 根节点 A
-      <div class="wf-tree-node level-1">├─ 子节点 A1</div>
-      <div class="wf-tree-node level-1">├─ 子节点 A2
-        <div class="wf-tree-node level-2">│  └─ 孙节点 A2a</div>
-      </div>
-      <div class="wf-tree-node level-1">└─ 子节点 A3</div>
-    </div>
-    <div class="wf-tree-node level-0">▶ 根节点 B (折叠)</div>
-  </div>
-</div>"""
-
-
-def _wf_submission(screen):
-    """SB1: Review submission / feedback form."""
-    fields = screen.get("data_fields", [])
-    field_html = ""
-    for f in fields[:5]:
-        label = f.get("label", f.get("name", ""))
-        ftype = f.get("type", "string")
-        if ftype in ("text", "textarea"):
-            field_html += f'<div class="wf-field"><label class="wf-field-label">{_esc(label)}</label><div class="wf-textarea">多行输入...</div></div>'
-        else:
-            field_html += f'<div class="wf-field"><label class="wf-field-label">{_esc(label)}</label><div class="wf-field-input">{_esc(ftype)}</div></div>'
-    if not field_html:
-        field_html = """<div class="wf-field"><label class="wf-field-label">反馈类型</label><div class="wf-field-input">enum</div></div>
-<div class="wf-field"><label class="wf-field-label">内容</label><div class="wf-textarea">请描述...</div></div>"""
-    return f"""<div class="wf-submission">
-  <div class="wf-form">{field_html}</div>
-  <div class="wf-actions">
-    <button class="wf-btn wf-btn-primary">提交</button>
-  </div>
-</div>"""
-
-
-def _wf_notification(screen):
-    """RT4: Notification center."""
-    return """<div class="wf-notification">
-  <div class="wf-notif-tabs">
-    <span class="wf-chip active">全部</span>
-    <span class="wf-chip">未读 <span class="wf-badge">3</span></span>
-    <span class="wf-chip">已读</span>
-  </div>
-  <div class="wf-notif-list">
-    <div class="wf-notif-item unread"><span class="wf-notif-dot"></span>通知内容 1 · 2分钟前</div>
-    <div class="wf-notif-item unread"><span class="wf-notif-dot"></span>通知内容 2 · 1小时前</div>
-    <div class="wf-notif-item">通知内容 3 · 昨天</div>
-  </div>
-</div>"""
-
-
-def _wf_default(screen):
-    """Default wireframe."""
-    fields = screen.get("data_fields", [])
-    actions = screen.get("actions", [])
-    non_neg = screen.get("non_negotiable", [])
-    tasks = screen.get("tasks", [])
-    if fields:
-        headers = _wf_table_headers(fields)
-        rows = "".join(f"<tr>{_wf_table_row(fields)}</tr>" for _ in range(2))
-        content = f'<table class="wf-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table>'
-    else:
-        content = '<div class="wf-section">Content Area</div>'
-    high_actions = [a for a in actions if isinstance(a, dict) and a.get("frequency") == "\u9ad8"]
-    other_actions = [a for a in actions if not isinstance(a, dict) or a.get("frequency") != "\u9ad8"]
-    primary_btns = ""
-    for a in high_actions[:4]:
-        crud = a.get("crud", "R")
-        crud_color = {"C": "#4CAF50", "U": "#FF9800", "D": "#F44336", "R": "#78909C"}.get(crud, "#78909C")
-        primary_btns += f'<button class="wf-btn wf-btn-primary"><span class="crud-dot" style="background:{crud_color}"></span>{_esc(a.get("label", ""))}</button>'
-    secondary_btns = ""
-    for a in other_actions[:4]:
-        if isinstance(a, dict):
-            crud = a.get("crud", "R")
-            label = a.get("label", "")
-        else:
-            crud, label = "R", str(a)
-        crud_color = {"C": "#4CAF50", "U": "#FF9800", "D": "#F44336", "R": "#78909C"}.get(crud, "#78909C")
-        secondary_btns += f'<button class="wf-btn wf-btn-secondary"><span class="crud-dot" style="background:{crud_color}"></span>{_esc(label)}</button>'
-    btns_html = ""
-    if primary_btns:
-        btns_html += f'<div class="wf-actions">{primary_btns}</div>'
-    if secondary_btns:
-        btns_html += f'<div class="wf-actions">{secondary_btns}</div>'
-    states_html = '<div class="wf-states"><span class="wf-state">Empty</span><span class="wf-state">Loading</span><span class="wf-state">Error</span><span class="wf-state">Success</span></div>'
-    constraints_html = ""
-    if non_neg:
-        constraints_html = '<div class="wf-constraints"><span class="wf-label">Non-negotiable:</span> ' + ", ".join(f"<b>{_esc(n)}</b>" for n in non_neg) + "</div>"
-    gate_html = ""
-    gate_issues = screen.get("gate_issues", [])
-    if gate_issues:
-        items = "".join(f'<div class="wf-gate-issue">{_esc(i.get("detail", ""))}</div>' for i in gate_issues[:3])
-        gate_html = f'<div class="wf-gate"><span class="wf-label">Quality Gate Issues:</span>{items}</div>'
-    return content + btns_html + states_html + constraints_html + gate_html + f'<div class="wf-tasks">{len(tasks)} tasks linked</div>'
+# ── Wireframe page wrapper ────────────────────────────────────────────────
 
 
 def _wf_page(screen, body_html):
@@ -2631,13 +1834,13 @@ def _wf_page(screen, body_html):
     name = screen.get("name", "")
     emo = screen.get("emotion_state", "neutral")
     emo_color = EMOTION_COLORS.get(emo, "#B0BEC5")
-    itype = screen.get("interaction_type", "")
+    layout_type = screen.get("layout_type", "")
     ux_intent = screen.get("ux_intent", "")
     notes = screen.get("notes", "") or screen.get("description", "")
     platform = screen.get("platform", "")
     app = screen.get("app", "")
     nav = screen.get("navigation", "")
-    itype_badge = f'<span class="wf-itype">{_esc(itype)}</span>' if itype else ""
+    layout_badge = f'<span class="wf-itype">{_esc(layout_type)}</span>' if layout_type else ""
     platform_cls = " desktop" if platform == "desktop" else " mobile" if platform == "mobile" else ""
     platform_badge = f'<span class="wf-platform-badge{platform_cls}">{_esc(platform or "unknown")}</span>' if platform else ""
     app_colors = {"website": "#2e7d32", "merchant": "#e65100", "admin": "#c62828", "end_user": "#2e7d32"}
@@ -2652,7 +1855,7 @@ def _wf_page(screen, body_html):
 <div class="wf-container desktop">
   <div class="wf-header">
     <div class="wf-header-title">{_esc(name)}</div>
-    {itype_badge}
+    {layout_badge}
     <span class="wf-emo" style="background:{emo_color}22;color:{emo_color}">{_esc(emo)}</span>
     {app_badge}
     {platform_badge}
@@ -2678,7 +1881,7 @@ def _wf_page(screen, body_html):
 <div class="wf-container{platform_cls}">
   <div class="wf-header">
     <div class="wf-header-title">{_esc(name)}</div>
-    {itype_badge}
+    {layout_badge}
     <span class="wf-emo" style="background:{emo_color}22;color:{emo_color}">{_esc(emo)}</span>
     {app_badge}
     {platform_badge}
@@ -2693,134 +1896,167 @@ def _wf_page(screen, body_html):
 </body></html>"""
 
 
+# ── Dynamic wireframe renderer ────────────────────────────────────────────
+
+
+def _render_component_box(comp):
+    """Render a single component as a wireframe box."""
+    ctype = comp.get("type", "unknown")
+    purpose = comp.get("purpose", "")
+    behavior = comp.get("behavior", "")
+    return f"""<div class="wf-component">
+  <div class="wf-comp-header">{_esc(ctype)}</div>
+  <div class="wf-comp-purpose">{_esc(purpose)}</div>
+  {f'<div class="wf-comp-behavior">{_esc(behavior)}</div>' if behavior else ''}
+</div>"""
+
+
+def _detect_layout_structure(layout_desc):
+    """Detect spatial layout from layout_description text."""
+    if not layout_desc:
+        return "vertical"
+    ld = layout_desc.lower()
+    if any(kw in ld for kw in ["左右分栏", "左侧", "左面板", "左右", "left-right", "master-detail"]):
+        return "split-lr"
+    if any(kw in ld for kw in ["标签页", "tab", "タブ"]):
+        return "tabbed"
+    if any(kw in ld for kw in ["网格", "grid", "カード"]):
+        return "grid"
+    return "vertical"
+
+
+def _render_actions_bar(screen):
+    """Render action buttons from screen's actions list."""
+    actions = screen.get("actions", [])
+    if not actions:
+        return ""
+    btns = ""
+    for a in actions[:6]:
+        if isinstance(a, dict):
+            label = a.get("label", "")
+            crud = a.get("crud", "R")
+            freq = a.get("frequency", "")
+        else:
+            label, crud, freq = str(a), "R", ""
+        crud_color = {"C": "#4CAF50", "U": "#FF9800", "D": "#F44336", "R": "#78909C"}.get(crud, "#78909C")
+        btn_cls = "wf-btn-primary" if freq == "\u9ad8" else "wf-btn-secondary"
+        btns += f'<button class="wf-btn {btn_cls}"><span class="crud-dot" style="background:{crud_color}"></span>{_esc(label)}</button>'
+    return f'<div class="wf-actions">{btns}</div>'
+
+
+def _render_data_fields(screen):
+    """Render data_fields as a compact field list."""
+    fields = screen.get("data_fields", [])
+    if not fields:
+        return ""
+    rows = ""
+    for f in fields[:8]:
+        label = f.get("label", f.get("name", ""))
+        ftype = f.get("type", "string")
+        mode = "input" if f.get("input_widget") else "display"
+        val = _sample_val(f)
+        indicator = _input_indicator(f) if mode == "input" else _esc(val)
+        rows += f'<div class="wf-field-row"><span class="wf-field-label">{_esc(label)}</span><span class="wf-field-val">{indicator}</span></div>'
+    return f'<div class="wf-fields-block">{rows}</div>'
+
+
+def _render_states_bar(screen):
+    """Render states as small badges."""
+    states = screen.get("states", {})
+    if not states:
+        return ""
+    badges = ""
+    for key in list(states.keys())[:6]:
+        badges += f'<span class="wf-state">{_esc(key)}</span>'
+    return f'<div class="wf-states">{badges}</div>'
+
+
+def _render_constraints(screen):
+    """Render non-negotiable constraints."""
+    non_neg = screen.get("non_negotiable", [])
+    if not non_neg:
+        return ""
+    return '<div class="wf-constraints"><span class="wf-label">Non-negotiable:</span> ' + ", ".join(f"<b>{_esc(n)}</b>" for n in non_neg) + "</div>"
+
+
+def _render_gate_issues(screen):
+    """Render quality gate issues."""
+    gate_issues = screen.get("gate_issues", [])
+    if not gate_issues:
+        return ""
+    items = "".join(f'<div class="wf-gate-issue">{_esc(i.get("detail", ""))}</div>' for i in gate_issues[:3])
+    return f'<div class="wf-gate"><span class="wf-label">Quality Gate Issues:</span>{items}</div>'
+
+
 def generate_wireframe(screen):
-    """Generate interaction-type-specific wireframe HTML (37-type system)."""
-    itype = screen.get("interaction_type", "")
-    # MG 管理类
-    if itype == "MG1":
-        body = _wf_readonly_list(screen)
-    elif itype == "MG2-L":
-        body = _wf_crud_list(screen)
-    elif itype == "MG2-C":
-        body = _wf_create_form(screen)
-    elif itype == "MG2-E":
-        body = _wf_edit_form(screen)
-    elif itype in ("MG2-D", "MG2-ST", "MG5"):
-        body = _wf_detail(screen)
-    elif itype == "MG3":
-        body = _wf_state_machine(screen)
-    elif itype == "MG4":
-        body = _wf_approval(screen)
-    elif itype == "MG6":
-        body = _wf_tree_manager(screen)
-    elif itype == "MG7":
-        body = _wf_dashboard(screen)
-    elif itype == "MG8":
-        body = _wf_config_page(screen)
-    # SY 引导系统
-    elif itype == "SY1":
-        body = _wf_onboarding(screen)
-    elif itype == "SY2":
-        body = _wf_wizard_form(screen)
-    # CT 内容消费
-    elif itype == "CT1":
-        body = _wf_content_feed(screen)
-    elif itype == "CT2":
-        body = _wf_content_reader(screen)
-    elif itype == "CT3":
-        body = _wf_profile(screen)
-    elif itype == "CT4":
-        body = _wf_card_swipe(screen)
-    elif itype == "CT5":
-        body = _wf_media_player(screen)
-    elif itype == "CT6":
-        body = _wf_gallery(screen)
-    elif itype == "CT7":
-        body = _wf_search_results(screen)
-    # EC 电商交易
-    elif itype == "EC1":
-        body = _wf_product_detail(screen)
-    elif itype == "EC2":
-        body = _wf_checkout(screen)
-    # WK 协作办公
-    elif itype == "WK3":
-        body = _wf_editor(screen)
-    # SB 审核提交
-    elif itype == "SB1":
-        body = _wf_submission(screen)
-    # RT 通讯实时
-    elif itype == "RT4":
-        body = _wf_notification(screen)
+    """Generate wireframe HTML dynamically from layout_description + components.
+
+    No pattern matching — each screen's wireframe is unique, driven by its own
+    layout_description and components list.
+    """
+    layout_desc = screen.get("layout_description", "")
+    components = screen.get("components", [])
+    layout_structure = _detect_layout_structure(layout_desc)
+
+    # Layout description banner
+    desc_html = ""
+    if layout_desc:
+        desc_html = f'<div class="wf-layout-desc">{_esc(layout_desc)}</div>'
+
+    # Render components
+    if not components:
+        # Fallback: render data_fields + actions directly
+        body = desc_html + _render_data_fields(screen) + _render_actions_bar(screen)
+    elif layout_structure == "split-lr":
+        # Split layout: first component(s) on left, rest on right
+        mid = max(1, len(components) // 2)
+        left_comps = "".join(_render_component_box(c) for c in components[:mid])
+        right_comps = "".join(_render_component_box(c) for c in components[mid:])
+        body = f"""{desc_html}
+<div class="wf-split-layout">
+  <div class="wf-split-left">{left_comps}</div>
+  <div class="wf-split-right">{right_comps}</div>
+</div>"""
+    elif layout_structure == "grid":
+        grid_items = "".join(_render_component_box(c) for c in components)
+        body = f"""{desc_html}
+<div class="wf-grid-layout">{grid_items}</div>"""
+    elif layout_structure == "tabbed":
+        tabs = "".join(f'<span class="wf-chip{" active" if i == 0 else ""}">{_esc(c.get("type", "Tab"))}</span>' for i, c in enumerate(components[:5]))
+        first_detail = _render_component_box(components[0]) if components else ""
+        body = f"""{desc_html}
+<div class="wf-tab-bar">{tabs}</div>
+<div class="wf-tab-content">{first_detail}</div>"""
     else:
-        body = _wf_default(screen)
+        # Vertical stack (default)
+        comp_html = "".join(_render_component_box(c) for c in components)
+        body = f"{desc_html}{comp_html}"
+
+    # Append data_fields, actions, states, constraints, gate issues
+    body += _render_data_fields(screen)
+    body += _render_actions_bar(screen)
+    body += _render_states_bar(screen)
+    body += _render_constraints(screen)
+    body += _render_gate_issues(screen)
+
+    tasks = screen.get("tasks", [])
+    body += f'<div class="wf-tasks">{len(tasks)} tasks linked</div>'
+
     return _wf_page(screen, body)
 
 
-# ── Wireframe 6V Tab builders ────────────────────────────────────────────
-
-ZONE_MAP = {
-    "MG1": ["header", "filter-chips", "read-only-list", "pagination"],
-    "MG2-L": ["header", "search-bar", "filter-chips", "table", "pagination", "action-bar"],
-    "MG2-C": ["header", "form-body", "field-group", "action-bar"],
-    "MG2-E": ["header", "form-body", "field-group", "action-bar"],
-    "MG2-D": ["header", "detail-fields", "action-bar"],
-    "MG2-ST": ["header", "detail-fields", "state-badge", "action-bar"],
-    "MG3": ["header", "state-tabs", "table", "action-bar"],
-    "MG4": ["header", "pending-badge", "approval-cards", "action-bar"],
-    "MG5": ["header", "master-info", "sub-tabs", "sub-list"],
-    "MG6": ["header", "tree-toolbar", "tree-view"],
-    "MG7": ["header", "kpi-cards", "charts", "date-filter"],
-    "MG8": ["header", "config-sections", "save-bar"],
-    "SY1": ["illustration", "step-content", "dots", "action-bar"],
-    "SY2": ["progress-steps", "form-body", "action-bar"],
-    "CT1": ["search-bar", "filter-chips", "feed-cards"],
-    "CT2": ["cover-image", "title", "meta", "body-content", "action-bar"],
-    "CT3": ["avatar-header", "profile-fields", "action-bar"],
-    "CT4": ["progress", "card-main", "action-buttons"],
-    "CT5": ["player-screen", "progress-bar", "controls"],
-    "CT6": ["gallery-grid", "action-bar"],
-    "CT7": ["search-bar", "filter-chips", "results-list", "pagination"],
-    "EC1": ["product-image", "title-price", "specs", "features", "action-bar"],
-    "EC2": ["item-list", "total", "payment-options", "action-bar"],
-    "WK3": ["editor-toolbar", "editor-area", "preview", "status-bar"],
-    "SB1": ["form-body", "action-bar"],
-    "RT4": ["notif-tabs", "notif-list"],
-}
-
-BEHAVIOR_DESC = {
-    "MG1": ("Read-only List", "Displays a filterable, read-only collection. No create or edit actions."),
-    "MG2-L": ("CRUD List", "Full CRUD list with search, filter, sortable table, pagination, and bulk actions."),
-    "MG2-C": ("Create Form", "Guided creation form with typed inputs, validation, and submit/cancel actions."),
-    "MG2-E": ("Edit Form", "Pre-filled edit form. Same layout as create but loads existing data for modification."),
-    "MG2-D": ("Detail View", "Read-focused detail layout with field-value pairs and contextual actions."),
-    "MG2-ST": ("State Transition", "Trigger predefined actions to move entity between states. No field editing."),
-    "MG3": ("State Machine", "Status-filtered list with state transition actions per row."),
-    "MG4": ("Approval Queue", "Pending review queue with approve/reject actions per card."),
-    "MG5": ("Master-Detail", "Primary entity info with multiple sub-entity tabs (lazy-loaded)."),
-    "MG6": ("Tree Manager", "Hierarchical CRUD with expand/collapse, add/move/delete nodes."),
-    "MG7": ("Dashboard", "KPI cards, charts, and date filters for data overview."),
-    "MG8": ("Config Page", "Grouped settings form with save/reset actions."),
-    "SY1": ("Onboarding", "Step-by-step guided tour with illustrations and skip option."),
-    "SY2": ("Wizard Form", "Multi-step form with progress indicator and back/next navigation."),
-    "CT1": ("Content Feed", "Scrollable content cards with search and filter chips."),
-    "CT2": ("Content Reader", "Full-page content reading with cover, metadata, and interaction bar."),
-    "CT3": ("Profile Page", "User info header with avatar, fields, and edit action."),
-    "CT4": ("Card Swipe", "Card-based interaction with swipe/tap decisions (flashcards, matching)."),
-    "CT5": ("Media Player", "Audio/video playback with progress bar and transport controls."),
-    "CT6": ("Gallery", "Image grid with thumbnail browsing and lightbox viewer."),
-    "CT7": ("Search Results", "Keyword search with filters, highlighted results, and pagination."),
-    "EC1": ("Product Detail", "Product/pricing page with image, specs, features, and purchase CTA."),
-    "EC2": ("Checkout", "Cart summary with payment method selection and confirm action."),
-    "WK3": ("Document Editor", "Split editor/preview with toolbar and auto-save status."),
-    "SB1": ("Submission Form", "Form for submitting feedback, reports, or review requests."),
-    "RT4": ("Notification Center", "Categorized notification list with read/unread badges."),
-}
 
 
 def _build_6v_tabs_json(screen):
-    """Return 6V tab content as a dict for JSON embedding in the page."""
-    itype = screen.get("interaction_type", "")
+    """Return 6V tab content as a dict for JSON embedding in the page.
+
+    Uses screen's own components and layout_description — no pattern matching.
+    """
     data_fields = screen.get("data_fields", [])
+    components = screen.get("components", [])
+    layout_type = screen.get("layout_type", "")
+    layout_desc = screen.get("layout_description", "")
+    interaction_pattern = screen.get("interaction_pattern", "")
     states = screen.get("states", {})
     flow_ctx = screen.get("flow_context", {})
     emo = screen.get("emotion_state", "neutral")
@@ -2828,16 +2064,23 @@ def _build_6v_tabs_json(screen):
     ux_intent = screen.get("ux_intent", "")
     emo_intensity = screen.get("emotion_intensity", 5)
 
-    # Structure
-    zones = ZONE_MAP.get(itype, ["header", "content", "action-bar"])
-    zones_html = "".join(f"<li class='wf-zone-item'>{_esc(z)}</li>" for z in zones)
-    structure = f"<div class='wf-zone-label'>Interaction type: <b>{_esc(itype or 'unknown')}</b></div><ul class='wf-zone-list'>{zones_html}</ul>"
+    # Structure — from components, not ZONE_MAP
+    if components:
+        comp_items = "".join(f"<li class='wf-zone-item'>{_esc(c.get('type', ''))}: {_esc(c.get('purpose', ''))}</li>" for c in components)
+    else:
+        comp_items = "<li class='wf-zone-item'>No components defined</li>"
+    structure = f"<div class='wf-zone-label'>Layout: <b>{_esc(layout_type or 'custom')}</b></div>"
+    if layout_desc:
+        structure += f"<p class='wf-beh-desc'>{_esc(layout_desc)}</p>"
+    structure += f"<ul class='wf-zone-list'>{comp_items}</ul>"
 
-    # Behavior
-    bname, bdesc = BEHAVIOR_DESC.get(itype, (itype or "Custom", "Custom interaction pattern."))
-    behavior = f"<div class='wf-beh-name'>{_esc(bname)}</div><p class='wf-beh-desc'>{_esc(bdesc)}</p>"
-    if itype:
-        behavior += f"<div class='wf-beh-code'>Code: <code>{_esc(itype)}</code></div>"
+    # Behavior — from interaction_pattern, not BEHAVIOR_DESC
+    desc = screen.get("description", "") or screen.get("notes", "")
+    behavior = f"<div class='wf-beh-name'>{_esc(layout_type or screen.get('name', ''))}</div>"
+    if interaction_pattern:
+        behavior += f"<p class='wf-beh-desc'>{_esc(interaction_pattern)}</p>"
+    elif desc:
+        behavior += f"<p class='wf-beh-desc'>{_esc(desc[:200])}</p>"
 
     # Data
     if data_fields:
@@ -2874,19 +2117,6 @@ def _build_6v_tabs_json(screen):
     emotion += f"<div class='wf-emo-row'><b>Intensity:</b> {emo_intensity}/10</div>"
     if ux_intent:
         emotion += f"<div class='wf-emo-row'><b>UX Intent:</b> {_esc(ux_intent)}</div>"
-    # Design hints based on emotion
-    hints = {
-        "curious": "Use progressive disclosure. Reward exploration with rich previews.",
-        "anxious": "Show clear status. Minimize choices. Provide escape routes.",
-        "frustrated": "Simplify immediately. Show progress. Offer help.",
-        "satisfied": "Maintain momentum. Offer next steps.",
-        "confident": "Allow power-user shortcuts. Show advanced options.",
-        "confused": "Add contextual help. Use familiar patterns. Reduce cognitive load.",
-        "exploring": "Enable discovery. Show relationships. Provide breadcrumbs.",
-    }
-    hint = hints.get(emo, "")
-    if hint:
-        emotion += f"<div class='wf-emo-hint'>{_esc(hint)}</div>"
     emotion += "</div>"
 
     return {"structure": structure, "behavior": behavior, "data": data, "state": state, "flow": flow, "emotion": emotion}
