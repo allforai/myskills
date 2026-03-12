@@ -1715,9 +1715,63 @@ body{margin:0;padding:24px;font-family:-apple-system,system-ui,sans-serif;backgr
 /* ── Dynamic component renderer ── */
 .wf-layout-desc{font-size:12px;color:#5c6bc0;background:#e8eaf6;padding:8px 10px;border-radius:4px;margin-bottom:12px;line-height:1.5}
 .wf-component{background:#fff;border:1px dashed #b0bec5;border-radius:6px;padding:10px 12px;margin:8px 0}
-.wf-comp-header{font-size:11px;font-weight:700;color:#37474f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid #eceff1}
-.wf-comp-purpose{font-size:12px;color:#546e7a;margin-bottom:2px}
+.wf-comp-header{font-size:10px;font-weight:700;color:#78909c;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid #eceff1}
+.wf-comp-purpose{font-size:11px;color:#546e7a;margin-bottom:6px}
 .wf-comp-behavior{font-size:11px;color:#90a4ae;font-style:italic}
+/* List/Table */
+.wf-comp-list{border-color:#90caf9}
+.wf-comp-table{margin-top:6px}
+.wf-comp-row{display:flex;gap:8px;padding:4px 6px;border-bottom:1px solid #e0e0e0;font-size:11px;color:#757575}
+.wf-comp-row span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wf-comp-row-head{font-weight:600;color:#37474f;background:#f5f5f5;border-radius:3px 3px 0 0}
+.wf-comp-pagination{text-align:center;font-size:10px;color:#9e9e9e;margin-top:6px}
+/* Form */
+.wf-comp-form{border-color:#a5d6a7}
+.wf-comp-field{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:11px}
+.wf-comp-flabel{width:70px;color:#495057;font-weight:500;flex-shrink:0}
+.wf-comp-finput{flex:1;padding:3px 6px;border:1px solid #ccc;border-radius:3px;color:#9e9e9e;background:#fafafa;font-size:11px}
+.wf-comp-fselect{flex:1;padding:3px 6px;border:1px solid #ccc;border-radius:3px;color:#9e9e9e;background:#fafafa;font-size:11px}
+/* Detail */
+.wf-comp-detail{border-color:#ce93d8}
+.wf-comp-dl{display:flex;padding:3px 0;border-bottom:1px solid #f5f5f5;font-size:11px}
+.wf-comp-dt{width:80px;flex-shrink:0;color:#495057;font-weight:500}
+.wf-comp-dd{color:#757575;flex:1}
+/* Chart */
+.wf-comp-chart{border-color:#ffcc80}
+.wf-comp-chart-area{display:flex;align-items:flex-end;gap:6px;height:60px;padding:8px 0;border-bottom:1px solid #e0e0e0}
+.wf-comp-bar{flex:1;background:#90caf9;border-radius:2px 2px 0 0;min-height:10px}
+/* Filter/Search */
+.wf-comp-filter{border-color:#80cbc4}
+.wf-comp-search-box{padding:5px 8px;border:1px solid #ccc;border-radius:4px;color:#9e9e9e;font-size:11px;margin-bottom:6px;background:#fafafa}
+.wf-comp-chips{display:flex;gap:4px;flex-wrap:wrap}
+/* Action */
+.wf-comp-action{border-color:#ef9a9a;padding:6px 12px}
+.wf-comp-btn-row{display:flex;gap:8px;margin-top:4px}
+/* Tabs */
+.wf-comp-tabs{border-color:#b39ddb;padding:6px 12px}
+.wf-comp-tab-bar{display:flex;gap:4px;margin-top:4px}
+/* Media */
+.wf-comp-media{border-color:#ffab91}
+.wf-comp-media-grid{display:flex;gap:6px;margin-top:6px}
+.wf-comp-media-thumb{width:56px;height:56px;border:1px dashed #bdbdbd;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#bdbdbd;font-size:16px;background:#fafafa}
+/* Card */
+.wf-comp-card{border-color:#a1887f}
+.wf-comp-card-grid{display:flex;gap:8px;margin-top:6px}
+.wf-comp-card-item{border:1px solid #e0e0e0;border-radius:4px;overflow:hidden;flex:1}
+.wf-comp-card-img{height:40px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;color:#bdbdbd;font-size:14px}
+.wf-comp-card-text{padding:4px 6px;font-size:10px;color:#757575}
+/* Tree */
+.wf-comp-tree{border-color:#81c784}
+.wf-comp-tree-view{margin-top:4px}
+.wf-comp-tree-node{font-size:11px;color:#495057;padding:2px 0}
+/* Timeline */
+.wf-comp-timeline{border-color:#4fc3f7}
+.wf-comp-tl{display:flex;gap:0;margin-top:6px}
+.wf-comp-tl-item{flex:1;display:flex;align-items:center;gap:4px;font-size:10px;color:#757575}
+.wf-comp-tl-dot{width:12px;height:12px;border-radius:50%;border:2px solid #bdbdbd;flex-shrink:0}
+.wf-comp-tl-dot.done{background:#81c784;border-color:#81c784}
+.wf-comp-tl-dot.active{background:#42a5f5;border-color:#42a5f5}
+/* Layout */
 .wf-split-layout{display:flex;gap:12px}
 .wf-split-left{flex:2;display:flex;flex-direction:column}
 .wf-split-right{flex:3;display:flex;flex-direction:column}
@@ -1900,14 +1954,145 @@ def _wf_page(screen, body_html):
 
 
 def _render_component_box(comp):
-    """Render a single component as a wireframe box."""
+    """Render a component using its LLM-assigned render_as field.
+
+    No keyword matching — render_as is decided by the LLM during
+    experience-map generation, the renderer just follows it.
+    """
     ctype = comp.get("type", "unknown")
     purpose = comp.get("purpose", "")
     behavior = comp.get("behavior", "")
+    kind = comp.get("render_as", "text_block")
+    label = f'<div class="wf-comp-header">{_esc(ctype)}</div>'
+    note = f'<div class="wf-comp-purpose">{_esc(purpose)}</div>' if purpose else ""
+
+    # Extract action verbs from behavior for button rendering
+    action_btns = ""
+    if behavior:
+        import re as _re
+        actions_found = _re.findall(r'[\u70b9\u51fb\u652f\u6301\u53ef\u4ee5].*?[\u3001\u3002\uff0c,]|(?:click|tap|submit|save|delete|approve|reject)', behavior[:200])
+        for a in actions_found[:3]:
+            action_btns += f'<button class="wf-btn wf-btn-secondary">{_esc(a.strip("、。，, "))}</button>'
+
+    if kind == "data_table":
+        return f"""<div class="wf-component wf-comp-list">
+  {label}{note}
+  <div class="wf-comp-table">
+    <div class="wf-comp-row wf-comp-row-head"><span>Column A</span><span>Column B</span><span>Column C</span><span>Status</span></div>
+    <div class="wf-comp-row"><span>\u2591\u2591\u2591</span><span>\u2591\u2591\u2591</span><span>\u2591\u2591</span><span class="wf-tag">\u2591\u2591</span></div>
+    <div class="wf-comp-row"><span>\u2591\u2591\u2591</span><span>\u2591\u2591\u2591</span><span>\u2591\u2591</span><span class="wf-tag">\u2591\u2591</span></div>
+    <div class="wf-comp-row"><span>\u2591\u2591\u2591</span><span>\u2591\u2591\u2591</span><span>\u2591\u2591</span><span class="wf-tag">\u2591\u2591</span></div>
+  </div>
+  <div class="wf-comp-pagination">\u25c0 1 2 3 \u25b6</div>
+  {f'<div class="wf-comp-btn-row">{action_btns}</div>' if action_btns else ''}
+</div>"""
+
+    if kind == "input_form":
+        return f"""<div class="wf-component wf-comp-form">
+  {label}{note}
+  <div class="wf-comp-field"><span class="wf-comp-flabel">Field 1</span><span class="wf-comp-finput">[__________]</span></div>
+  <div class="wf-comp-field"><span class="wf-comp-flabel">Field 2</span><span class="wf-comp-finput">[__________]</span></div>
+  <div class="wf-comp-field"><span class="wf-comp-flabel">Field 3</span><span class="wf-comp-fselect">[\u25be Select]</span></div>
+  <div class="wf-comp-field"><span class="wf-comp-flabel">Field 4</span><span class="wf-comp-finput">[__________]</span></div>
+  {f'<div class="wf-comp-btn-row">{action_btns}</div>' if action_btns else '<div class="wf-comp-btn-row"><button class="wf-btn wf-btn-primary">Submit</button><button class="wf-btn wf-btn-secondary">Cancel</button></div>'}
+</div>"""
+
+    if kind == "key_value":
+        return f"""<div class="wf-component wf-comp-detail">
+  {label}{note}
+  <div class="wf-comp-dl"><span class="wf-comp-dt">Label A</span><span class="wf-comp-dd">\u2591\u2591\u2591\u2591</span></div>
+  <div class="wf-comp-dl"><span class="wf-comp-dt">Label B</span><span class="wf-comp-dd">\u2591\u2591\u2591\u2591\u2591</span></div>
+  <div class="wf-comp-dl"><span class="wf-comp-dt">Label C</span><span class="wf-comp-dd">\u2591\u2591\u2591</span></div>
+  {f'<div class="wf-comp-btn-row">{action_btns}</div>' if action_btns else ''}
+</div>"""
+
+    if kind == "bar_chart":
+        return f"""<div class="wf-component wf-comp-chart">
+  {label}{note}
+  <div class="wf-comp-chart-area">
+    <div class="wf-comp-bar" style="height:60%"></div>
+    <div class="wf-comp-bar" style="height:85%"></div>
+    <div class="wf-comp-bar" style="height:45%"></div>
+    <div class="wf-comp-bar" style="height:70%"></div>
+    <div class="wf-comp-bar" style="height:90%"></div>
+  </div>
+</div>"""
+
+    if kind == "search_filter":
+        return f"""<div class="wf-component wf-comp-filter">
+  {label}{note}
+  <div class="wf-comp-search-box">\U0001f50d Search...</div>
+  <div class="wf-comp-chips">
+    <span class="wf-chip active">All</span>
+    <span class="wf-chip">Filter A</span>
+    <span class="wf-chip">Filter B</span>
+  </div>
+</div>"""
+
+    if kind == "action_bar":
+        return f"""<div class="wf-component wf-comp-action">
+  {label}
+  <div class="wf-comp-btn-row">
+    <button class="wf-btn wf-btn-primary">{_esc(purpose[:20]) if purpose else 'Primary'}</button>
+    <button class="wf-btn wf-btn-secondary">Cancel</button>
+  </div>
+</div>"""
+
+    if kind == "tab_nav":
+        return f"""<div class="wf-component wf-comp-tabs">
+  {label}
+  <div class="wf-comp-tab-bar">
+    <span class="wf-chip active">Tab 1</span>
+    <span class="wf-chip">Tab 2</span>
+    <span class="wf-chip">Tab 3</span>
+  </div>
+</div>"""
+
+    if kind == "media_grid":
+        return f"""<div class="wf-component wf-comp-media">
+  {label}{note}
+  <div class="wf-comp-media-grid">
+    <div class="wf-comp-media-thumb">[\U0001f5bc]</div>
+    <div class="wf-comp-media-thumb">[\U0001f5bc]</div>
+    <div class="wf-comp-media-thumb">[\U0001f5bc]</div>
+  </div>
+</div>"""
+
+    if kind == "card_grid":
+        return f"""<div class="wf-component wf-comp-card">
+  {label}{note}
+  <div class="wf-comp-card-grid">
+    <div class="wf-comp-card-item"><div class="wf-comp-card-img">[\U0001f5bc]</div><div class="wf-comp-card-text">\u2591\u2591\u2591</div></div>
+    <div class="wf-comp-card-item"><div class="wf-comp-card-img">[\U0001f5bc]</div><div class="wf-comp-card-text">\u2591\u2591\u2591</div></div>
+  </div>
+</div>"""
+
+    if kind == "tree_view":
+        return f"""<div class="wf-component wf-comp-tree">
+  {label}{note}
+  <div class="wf-comp-tree-view">
+    <div class="wf-comp-tree-node">\u25bc Root A</div>
+    <div class="wf-comp-tree-node" style="padding-left:16px">\u251c\u2500 Child A1</div>
+    <div class="wf-comp-tree-node" style="padding-left:16px">\u2514\u2500 Child A2</div>
+    <div class="wf-comp-tree-node">\u25b6 Root B</div>
+  </div>
+</div>"""
+
+    if kind == "timeline":
+        return f"""<div class="wf-component wf-comp-timeline">
+  {label}{note}
+  <div class="wf-comp-tl">
+    <div class="wf-comp-tl-item"><span class="wf-comp-tl-dot done"></span><span>Step 1</span></div>
+    <div class="wf-comp-tl-item"><span class="wf-comp-tl-dot active"></span><span>Step 2</span></div>
+    <div class="wf-comp-tl-item"><span class="wf-comp-tl-dot"></span><span>Step 3</span></div>
+  </div>
+</div>"""
+
+    # generic fallback (text_block or unknown render_as)
     return f"""<div class="wf-component">
-  <div class="wf-comp-header">{_esc(ctype)}</div>
-  <div class="wf-comp-purpose">{_esc(purpose)}</div>
+  {label}{note}
   {f'<div class="wf-comp-behavior">{_esc(behavior)}</div>' if behavior else ''}
+  {f'<div class="wf-comp-btn-row">{action_btns}</div>' if action_btns else ''}
 </div>"""
 
 
@@ -2022,11 +2207,24 @@ def generate_wireframe(screen):
         body = f"""{desc_html}
 <div class="wf-grid-layout">{grid_items}</div>"""
     elif layout_structure == "tabbed":
-        tabs = "".join(f'<span class="wf-chip{" active" if i == 0 else ""}">{_esc(c.get("type", "Tab"))}</span>' for i, c in enumerate(components[:5]))
-        first_detail = _render_component_box(components[0]) if components else ""
+        # Render tab headers + ALL tab panes (first visible, rest hidden)
+        tabs = "".join(
+            f'<span class="wf-chip{" active" if i == 0 else ""}" '
+            f'onclick="this.parentNode.querySelectorAll(\'.wf-chip\').forEach(c=>c.classList.remove(\'active\'));'
+            f'this.classList.add(\'active\');'
+            f'this.closest(\'.wf-tabbed-container\').querySelectorAll(\'.wf-tab-pane\').forEach((p,j)=>p.style.display=j==={i}?\'block\':\'none\')"'
+            f'>{_esc(c.get("type", "Tab"))}</span>'
+            for i, c in enumerate(components[:8])
+        )
+        panes = "".join(
+            f'<div class="wf-tab-pane" style="display:{"block" if i == 0 else "none"}">{_render_component_box(c)}</div>'
+            for i, c in enumerate(components[:8])
+        )
         body = f"""{desc_html}
+<div class="wf-tabbed-container">
 <div class="wf-tab-bar">{tabs}</div>
-<div class="wf-tab-content">{first_detail}</div>"""
+{panes}
+</div>"""
     else:
         # Vertical stack (default)
         comp_html = "".join(_render_component_box(c) for c in components)

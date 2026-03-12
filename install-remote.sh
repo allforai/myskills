@@ -163,16 +163,36 @@ echo "✓ 项目模板已创建：$PROJECT_TEMPLATE"
 UPDATE_SCRIPT="$INSTALL_DIR/update-skills.sh"
 cat > "$UPDATE_SCRIPT" << 'EOF'
 #!/bin/bash
-# MySkills 更新脚本
+# MySkills 更新脚本（OpenCode + Claude Code 双通道）
 
 INSTALL_DIR="$HOME/.opencode/skills/myskills"
+CC_MARKETPLACE_DIR="$HOME/.claude/plugins/marketplaces"
 
-echo "🔄 更新 MySkills..."
-cd "$INSTALL_DIR"
-git pull origin main
-echo "✓ 更新完成"
+# 1. 更新 OpenCode 技能仓库
+if [ -d "$INSTALL_DIR/.git" ]; then
+    echo "🔄 更新 OpenCode 技能..."
+    cd "$INSTALL_DIR"
+    git pull origin main
+    echo "✓ OpenCode 技能已更新"
+else
+    echo "⏭️  OpenCode 技能未安装，跳过"
+fi
 
-# 更新时间戳
+# 2. 更新 Claude Code marketplace 缓存
+if [ -d "$CC_MARKETPLACE_DIR" ]; then
+    for dir in "$CC_MARKETPLACE_DIR"/*/; do
+        if [ -d "$dir/.git" ]; then
+            name=$(basename "$dir")
+            echo "🔄 更新 Claude Code marketplace 缓存: $name"
+            git -C "$dir" pull origin main 2>/dev/null || git -C "$dir" pull 2>/dev/null || echo "⚠️  $name 同步失败"
+        fi
+    done
+    echo "✓ Claude Code marketplace 缓存已更新"
+else
+    echo "⏭️  Claude Code 插件未安装，跳过"
+fi
+
+# 3. 更新 OpenCode 时间戳
 SKILLS_CONFIG="$HOME/.config/opencode/skills.json"
 if [ -f "$SKILLS_CONFIG" ]; then
     echo "📝 更新时间戳..."

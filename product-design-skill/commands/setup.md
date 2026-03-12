@@ -563,28 +563,42 @@ MCP 工具（Step 1.5 已引导安装）:
 
 #### 5a. 更新 Claude Code 插件
 
-1. **读取已安装插件列表**：
+1. **同步 marketplace git 缓存**（关键步骤）：
+
+   Claude Code 在 `~/.claude/plugins/marketplaces/` 下为每个 marketplace 维护独立的 git clone。`claude plugin update` 依赖此缓存，若缓存过旧则拉不到新版本。
+
+   ```bash
+   # 遍历所有 marketplace 缓存目录，逐个 git pull
+   for dir in ~/.claude/plugins/marketplaces/*/; do
+     if [ -d "$dir/.git" ]; then
+       echo "🔄 同步 marketplace 缓存: $(basename $dir)"
+       git -C "$dir" pull origin main 2>/dev/null || git -C "$dir" pull 2>/dev/null || echo "⚠️ $(basename $dir) 同步失败，跳过"
+     fi
+   done
+   ```
+
+2. **读取已安装插件列表**：
    ```bash
    cat ~/.claude/plugins/installed_plugins.json
    ```
 
-2. **解析每个插件**，提取 `scope`（marketplace 名）和插件名：
+3. **解析每个插件**，提取 `scope`（marketplace 名）和插件名：
    - 每条记录有 `scope`（如 `myskills`）、`installPath`（安装目录）、`version`（当前版本）
    - 从 `installPath` 的末级目录名提取插件名
 
-3. **逐个更新**：
+4. **逐个更新**：
    ```bash
    claude plugin update <plugin-name>@<scope>
    ```
    例如：`claude plugin update product-design@myskills`
 
-4. **MCP 配置保护**：对每个更新的插件，对比更新前后的 `.mcp.json`：
+5. **MCP 配置保护**：对每个更新的插件，对比更新前后的 `.mcp.json`：
    - 更新前：读取 `<installPath>/.mcp.json` 保存为 `old_mcp`
    - 更新后：读取新的 `.mcp.json` 保存为 `new_mcp`
    - 如果 `old_mcp` 中存在的 server 条目在 `new_mcp` 中消失 → **警告用户并自动合并缺失条目**
    - 输出：`⚠️ <plugin>: ai-gateway 条目在新版中缺失，已自动恢复`
 
-5. **汇总报告**：列出每个插件的更新前后版本
+6. **汇总报告**：列出每个插件的更新前后版本
 
 #### 5b. 重建 MCP 服务器
 
