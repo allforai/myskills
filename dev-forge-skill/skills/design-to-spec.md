@@ -7,7 +7,7 @@ description: >
   or needs to transform product-design artifacts into per-sub-project requirements, design docs, and atomic task lists.
   Also handles shared-utilities analysis (cross-task pattern resonance, third-party library selection, B1 task injection).
   Requires project-manifest.json (from project-setup) and product-map artifacts.
-version: "3.2.0"
+version: "3.3.0"
 ---
 
 # Design to Spec — 设计转规格
@@ -998,6 +998,39 @@ Step 4: Tasks 生成
     - 标注 _Requirements_ 和 _Leverage_ 引用
     - 标注 _Guardrails_（← E3，溯源 task.rules/exceptions/audit ID）
     - 标注 _Risk_（← E4，from task.risk_level，HIGH 任务优先 review）
+    - 标注 _Acceptance_（← 验收条件，每个 B2 任务必须包含，见下方「验收条件规范」）
+
+  **⚠️ 验收条件规范（B2 任务强制）**：
+  > 每个 B2 端点任务必须包含 `_Acceptance_` 字段，列出可执行的验收条件。
+  > 验收条件是 Phase 5 product-verify 的判定基准 — 没有验收条件的任务等于没有完成标准。
+  > 这是防止「代码有但行为不对」和「功能缺失漏到 Phase 5 才发现」的核心防线。
+
+  **验收条件格式**：
+  ```
+  _Acceptance_:
+  - `METHOD /path` → expected_status, response_assertion
+  - `METHOD /path` (edge_case) → expected_status, "error_message"
+  ```
+
+  **验收条件粒度规则**：
+  | 任务风险 | 最低验收条件数 | 必须覆盖 |
+  |---------|-------------|---------|
+  | _Risk: HIGH_ | ≥ 4 条 | happy path + 权限拒绝 + 边界条件 + 幂等/并发 |
+  | _Risk: MEDIUM_ | ≥ 3 条 | happy path + 权限拒绝 + 一个异常路径 |
+  | _Risk: LOW_ | ≥ 2 条 | happy path + 一个异常路径 |
+
+  **验收条件来源优先级**：
+  1. `use-case-tree.json` 的 Given/When/Then（最权威）
+  2. `task-inventory.json` 的 exceptions / rules（业务规则）
+  3. LLM 基于 API 语义推导的边界条件（兜底）
+
+  **B3 前端任务的验收条件**（推荐但非强制）：
+  ```
+  _Acceptance_:
+  - 页面加载后显示列表数据
+  - 点击操作按钮 → 弹出确认对话框
+  - 操作成功后列表自动刷新
+  ```
 
   **⚠️ 后端 B2 端点级原子性规则（强制）**：
   > 后端 B2 任务必须按**端点组**拆分，不允许按 controller 级别合并。
@@ -1139,13 +1172,24 @@ Step 4.3: Tasks 验证循环（4D/6V+V9/XV/闭环 — 强制）
   | **V1-V8** | 已有审计维度在任务层的映射（同阶段 2） | 复用标记 |
   | **V9 Coverage** | **产品任务→B2 端点覆盖率**（见阶段 2 V9 定义） | `TASK_COVERAGE_CRITICAL/WARNING` |
   | **V10 Provenance** | **数据溯源闭环**：返回聚合/统计数据的端点，其数据来源是否有写入路径？（见阶段 2 V10 定义） | `TASK_PROVENANCE_CRITICAL/WARNING` |
+  | **V11 Acceptance** | **B2 任务验收条件完整性**（见下方 V11 定义） | `TASK_ACCEPTANCE_MISSING/INSUFFICIENT` |
 
-  **V9 覆盖率和 V10 溯源是强制审计维度**，CRITICAL 级遗漏必须修复后才能退出循环。
+  **V9 覆盖率、V10 溯源、V11 验收条件是强制审计维度**，CRITICAL 级遗漏必须修复后才能退出循环。
+
+  **V11 验收条件完整性**（B2 任务强制）：
+  > V9 回答"有没有对应的任务"，V10 回答"数据从哪来"，V11 回答"任务有没有可执行的验收标准"。
+  > 没有验收条件的任务 = 没有完成标准 = Phase 5 验收时才发现「代码有但行为不对」。
+
+  **V11.1 存在性检查**：每个 B2 任务是否有 `_Acceptance_` 字段？缺失 → `TASK_ACCEPTANCE_MISSING`（CRITICAL）
+  **V11.2 粒度检查**：验收条件数量是否达到 `_Risk_` 级别要求？不达标 → `TASK_ACCEPTANCE_INSUFFICIENT`（WARNING）
+  **V11.3 可执行性检查**：每条验收条件是否包含可验证断言（HTTP 方法 + 路径 → 状态码 / 响应字段 / 副作用）？模糊描述 → `TASK_ACCEPTANCE_INSUFFICIENT`（WARNING）
 
   **修正方式**：
+  - `TASK_ACCEPTANCE_MISSING` → 基于 task-inventory 的 main_flow / exceptions / rules 自动生成 `_Acceptance_` 条件
+  - `TASK_ACCEPTANCE_INSUFFICIENT` → 补充缺失的异常路径 / 边界条件
   - `TASK_API_GAP` → 在 tasks.md 中补充缺失的 B2 端点任务（遵循端点级原子性规则）
   - `TASK_COVERAGE_CRITICAL` → 从 task-inventory.json 推导缺失的端点，补充 B2 + B3 + B5 任务
-  - `TASK_PROVENANCE_CRITICAL` → 补充行为上报端点（B2）+ 前端上报组件（B3），如 `POST /ads/:id/impression`、`POST /ads/:id/click`
+  - `TASK_PROVENANCE_CRITICAL` → 补充行为上报端点（B2）+ 前端上报组件（B3）
   - `TASK_DATA_GAP` → 补充 B1 定义任务
   - `TASK_UX_GAP` → 补充 B3 页面任务
   - 修正后回到小循环 A 重检（最多 3 次内循环）
@@ -1184,12 +1228,13 @@ Step 4.3: Tasks 验证循环（4D/6V+V9/XV/闭环 — 强制）
   **退出条件**：
   - V9 Coverage CRITICAL = 0（所有 CORE 产品任务有对应 B2 任务）
   - V10 Provenance CRITICAL = 0（所有聚合数据有可追溯的写入路径）
+  - V11 Acceptance MISSING = 0（所有 B2 任务有验收条件）
   - 4D 无 GAP（或已修复）
   - 闭环无 CRITICAL 缺失
 
   **大循环 3 轮后仍有问题** → 记录为已知问题到 `pipeline-decisions.json`，输出警告，继续（不停）
 
-  → 输出进度: 「Step 4.3 验证 ✓ V9 覆盖率: {X}%, V10 溯源: {Y}%, 4D gaps: {N} fixed, 闭环: {M} fixed, XV: {status}」
+  → 输出进度: 「Step 4.3 验证 ✓ V9 覆盖率: {X}%, V10 溯源: {Y}%, V11 验收: {Z}% 达标, 4D gaps: {N} fixed, 闭环: {M} fixed, XV: {status}」
   ↓
 Step 4.5: 任务上下文预计算（Task Context）
   为每个任务预计算完整上下文包，供 task-execute 消费，减少"概念→代码"失真。

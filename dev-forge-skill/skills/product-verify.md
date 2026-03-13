@@ -10,7 +10,7 @@ description: >
   "Maestro 移动端测试", "XCUITest iOS 测试",
   or wants to prove code implements the product map features and flows.
   Requires product-map to have been run first. Optionally uses experience-map and use-case.
-version: "1.5.0"
+version: "1.6.0"
 ---
 
 # Product Verify — 产品验收
@@ -146,12 +146,60 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
   ↓
 
 [Static 阶段]（static / full 模式）
-  **并行执行**：S1-S4 读取不同产物、零依赖，使用 Agent tool 单条消息发出 4 个并行 Agent：
-    ┌── Agent(S1): 语义化 Task 覆盖检查（读 task-inventory + 代码）
+  **并行执行**：S0-S4 读取不同产物、零依赖，使用 Agent tool 单条消息发出 5 个并行 Agent：
+    ┌── Agent(S0): 双向追溯矩阵（读 task-inventory + tasks.md + 代码路由）
+    ├── Agent(S1): 语义化 Task 覆盖检查（读 task-inventory + 代码）
     ├── Agent(S2): UI 组件保真度检查（读 experience-map + 前端代码）
     ├── Agent(S3): 护栏逻辑覆盖审计（读 constraints + task.rules + 代码）
     └── Agent(S4): Extra 代码 AI 研判（读代码路由 + task-inventory）
   全部完成 → 聚合结果 → S5 XV 交叉验证
+  ↓
+  S0: 双向追溯矩阵 (Bidirectional Traceability Matrix)
+      > S1 用 LLM 语义判断"代码有没有实现功能"，S0 用结构化匹配建立"任务↔端点"的形式化映射。
+      > 两者互补：S0 捕获结构性遗漏（快、确定性高），S1 捕获语义性缺陷（深、理解力强）。
+
+      **输入**：
+      - `task-inventory.json`（产品任务列表，每个任务有 task_name / main_flow / api_hint 等）
+      - `tasks.md`（B2 端点任务列表，每个任务有端点路径 + _Acceptance_ 条件）
+      - 代码中实际注册的路由/端点（从 router 文件、controller 装饰器、路由配置等提取）
+
+      **正向追溯（Forward: 产品任务 → 代码端点）**：
+      1. 遍历 task-inventory.json 的每个 CORE 任务
+      2. 查找 tasks.md 中是否有对应的 B2 任务（通过 _Source_ 字段或语义匹配）
+      3. 查找代码中是否有对应的路由注册
+      4. 产出矩阵行：`| T001 | 创建订单 | B2.15 POST /orders | router.go:42 | ✓ TRACED |`
+      5. 无 B2 任务 → `FORWARD_ORPHAN`（spec 遗漏）
+      6. 有 B2 但无代码路由 → `FORWARD_UNIMPLEMENTED`（实现遗漏）
+
+      **逆向追溯（Reverse: 代码端点 → 产品任务）**：
+      1. 遍历代码中所有注册的路由/端点
+      2. 查找 tasks.md 中是否有对应的 B2 任务
+      3. 查找 task-inventory.json 中是否有对应的产品任务
+      4. 产出矩阵行：`| GET /admin/stats | B2.42 | T089 | ✓ TRACED |`
+      5. 无 B2 任务且无产品任务 → `REVERSE_ORPHAN`（幽灵端点，可能是遗留代码或未记录功能）
+      6. 有 B2 但无产品任务 → `REVERSE_SPEC_ORPHAN`（实现超出规格，需确认是否合理）
+
+      **验收条件追溯（Acceptance Trace，有 _Acceptance_ 时执行）**：
+      1. 对有 `_Acceptance_` 字段的 B2 任务，检查每条验收条件中的端点是否在代码路由中存在
+      2. 验收条件的端点不存在 → `ACCEPTANCE_UNIMPLEMENTED`（验收标准无法执行）
+
+      **严重级定义**：
+      | 标记 | 严重级 | 含义 |
+      |------|--------|------|
+      | `FORWARD_ORPHAN` | CRITICAL | 产品任务无对应 spec 任务（spec 生成遗漏） |
+      | `FORWARD_UNIMPLEMENTED` | CRITICAL | spec 有但代码没实现 |
+      | `ACCEPTANCE_UNIMPLEMENTED` | CRITICAL | 验收条件引用的端点未实现 |
+      | `REVERSE_ORPHAN` | WARNING | 代码端点无对应产品任务（可能是基础设施端点，需人工确认） |
+      | `REVERSE_SPEC_ORPHAN` | INFO | 实现超出规格（记录，不阻塞） |
+
+      **输出**：
+      - `traceability-matrix.json`：完整的双向映射矩阵
+      - 汇总：`「S0 追溯矩阵 ✓ 正向: {N} traced / {M} orphan / {K} unimpl, 逆向: {P} traced / {Q} orphan」`
+
+      **与 S1 的关系**：
+      - S0 FORWARD_UNIMPLEMENTED + S1 missing → 高置信缺失（两条证据链）
+      - S0 FORWARD_UNIMPLEMENTED + S1 genuine → S0 可能匹配错误，以 S1 语义判断为准
+      - S0 TRACED + S1 stub → 路由存在但实现为空壳，以 S1 判断为准
   ↓
   S1: 语义化 Task 覆盖检查 (LLM-driven)
       LLM Agent 分析代码库，不再仅匹配路由字符串，而是理解代码逻辑是否真正闭环了 `task-inventory.json` 定义的功能。
@@ -243,6 +291,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
     **覆盖度矩阵**（自动生成）：
     | 检查项 | genuine | partial | stub | missing | XV 分歧 |
     |--------|---------|---------|------|---------|---------|
+    | S0 双向追溯 | traced:{N} | — | — | fwd_orphan:{M} fwd_unimpl:{K} | rev_orphan:{Q} |
     | S1 Task 语义覆盖 | {N} | {K} | {J} | {M} | {D} |
     | S2 UI 保真度 | {N} | — | — | {M} | {D} |
     | S3 护栏覆盖 | {N} | — | — | {M} | {D} |
@@ -897,6 +946,7 @@ mobile-native 子项目:
 
 ```
 .allforai/product-verify/
+├── traceability-matrix.json # S0: 双向追溯矩阵（task↔endpoint 形式化映射）
 ├── static-report.json       # S1-S6: 静态覆盖状态（含 journey_verification）
 ├── dynamic-report.json      # D2-D3: 动态测试结果
 ├── verify-tasks.json        # 待处理任务清单（IMPLEMENT / REMOVE_EXTRA / FIX_FAILING）
