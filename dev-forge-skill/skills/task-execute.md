@@ -7,7 +7,7 @@ description: >
   or needs to systematically execute atomic tasks from tasks.md with progress tracking,
   automatic execution strategy selection, and per-round incremental verification.
   Requires tasks.md (from design-to-spec) and project-manifest.json (from project-setup).
-version: "1.2.0"
+version: "1.3.0"
 ---
 
 # Task Execute — 任务执行与追踪
@@ -299,6 +299,43 @@ Step 1.5: B3 前端 UI 上下文准备（Round 2 的 B3 任务执行前）
        保留布局结构，用框架原生方式重写。
        交互原语按 primitive-impl-map 实现：[primitives 列表]」
   5. 无 component-spec.json 或 stitch-index.json → 跳过，正常执行
+  ↓
+Step 1.7: CC6 API 契约绑定（Frontend → Server Contract Binding）
+  仅在当前 Round 包含前端/移动端子项目任务时执行。
+
+  **问题根因**：前端 agent 按 tasks.md 实现 API 调用时，会根据业务逻辑自行推断端点路径，
+  但 server 可能未实现该端点（CRUD 只做了 3/5、admin 能审批但不能浏览等），导致 404。
+  Server-first 执行顺序是必要条件但不充分 — 前端 agent 必须知道 server 实际注册了哪些路由。
+
+  **执行方式**：
+  1. 读取 server 路由注册文件（如 `server/internal/router/router.go`），提取已注册路由列表
+  2. 将路由列表作为上下文注入每个前端/移动端任务的 agent prompt：
+
+  ```
+  ───── API 契约（来自 server router.go）─────
+  以下是 server 已注册的全部路由。你的 API 调用**只能使用这些路由**。
+  如果业务需要但路由不存在，你必须：
+  1. 先在 server 端补充端点（router + handler + service）
+  2. 然后再在前端写 API 调用
+  禁止调用不存在的端点、禁止写 TODO 占位的 API 调用。
+
+  {已注册路由列表，按 group 分组}
+  ──────────────────────────────────────────
+  ```
+
+  3. 路由列表格式：按权限分组（public / consumer / merchant / admin），每行一条 `METHOD /path`
+  4. 每个前端 Round 开始时重新读取 router.go（因为前序 Round 可能已新增路由）
+
+  **补端点规则**：
+  - 前端 agent 发现需要但不存在的端点时，直接在 server 端补充完整链路（router → handler → service → repository）
+  - 补充的端点遵循 server 已有的代码模式
+  - 补充后将新路由追加到路由列表上下文中（后续任务可用）
+  - 记录到 build-log.json 的 `round.server_supplements[]`：
+    ```json
+    { "task_id": "B3.15", "method": "GET", "path": "/admin/products/:id", "reason": "admin 产品详情页需要" }
+    ```
+
+  **跳过条件**：当前 Round 仅包含 server 子项目任务 → 跳过
   ↓
 Step 1.8: 上下文注入（Context Injection）
   当 `task-context.json` 存在时，为当前 Round 的每个任务注入上下文摘要。

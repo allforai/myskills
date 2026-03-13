@@ -98,4 +98,61 @@ dev-forge 的所有阶段（design-to-spec、task-execute、product-verify）均
 
 ---
 
-## 七、优雅降级与成本控制
+## 七、横向 FVL — 兄弟产物交叉验证
+
+> **原则：凡是 pipeline 产生了 N >= 2 个同层产物（兄弟），必须加横向 FVL。**
+
+### 问题根因
+
+现有 FVL 只做**纵向验证**（当前产物 ↔ 上游产物），缺少**横向验证**（同层兄弟产物之间的一致性）。导致各子项目 spec 内部自洽但跨项目 API 契约断裂。
+
+历史教训：admin/merchant 前端调用了 ~49 个 server 未实现的端点，直到 Phase 5 deadhunt 才发现。根因是 design-to-spec 各子项目 tasks.md 独立生成、独立验证，没有横向交叉检查。
+
+### 通用框架
+
+```
+1. 识别兄弟关系：哪些产物是同一阶段生成的对等产物？
+2. 定义横向闭环：兄弟之间应该满足什么一致性约束？
+3. 执行交叉验证：用 4D/6V/闭环框架验证这些约束
+4. 自动修复：CRITICAL 缺口自动补全，WARNING 记录
+```
+
+### 横向 FVL 注册表
+
+| # | 阶段 | 兄弟产物 | 横向验证内容 | 实现位置 |
+|---|------|---------|------------|---------|
+| H1 | product-map | tasks[] ↔ flows[] ↔ entities[] | entity→flow 映射（flow 引用的 entity 存在？）、flow→task 反向映射 | product-map verify loop |
+| H2 | experience-map | screens(role-A) ↔ screens(role-B) | 跨角色交互闭环：触发事件的目标角色有接收屏幕？ | experience-map verify loop |
+| H3 | Phase 6 聚合 | use-case ↔ feature-gap ↔ ui-design | 覆盖性验证：每个 screen 被 use-case 覆盖？gap-task 有 UI？ | aggregation checkpoint |
+| H4 | design-to-spec | server/tasks ↔ frontend/tasks | API 契约闭环（7 类）：调用/消费/角色CRUD/数据流/字段/权限/路径 | design-to-spec Step 6.5 |
+| H5 | task-execute | Round N 代码 ↔ Round N+1 代码 | 跨 Round 回归：后续 Round 是否破坏前序 Round 功能？ | task-execute CC7 |
+| H6 | Phase 5 扫描 | verify ↔ deadhunt ↔ fieldcheck | 交叉去重：同一问题的多个发现合并为单个修复任务 | Phase 5 Step 2 聚合 |
+
+### 横向闭环类型定义
+
+跨项目契约闭环（H4 详细定义，其他 H* 参照此模式）：
+
+| 闭环类型 | 验证问题 | 不通过标记 |
+|---------|---------|----------|
+| 调用闭环 | 前端 API 调用 → server 有对应端点？ | `CONTRACT_CALL_MISSING` |
+| 消费闭环 | server 端点 → 至少被一个前端消费？ | `CONTRACT_ORPHAN_ENDPOINT` |
+| 角色 CRUD 闭环 | 实体 × 角色 → 该角色需要的操作完整？ | `CONTRACT_CRUD_GAP` |
+| 数据流闭环 | 前端展示的聚合数据 → server 有写入路径？ | `CONTRACT_PROVENANCE_GAP` |
+| 字段闭环 | server 返回字段名 ↔ 前端引用字段名一致？ | `CONTRACT_FIELD_MISMATCH` |
+| 权限闭环 | 端点权限组 ↔ 前端 auth 上下文匹配？ | `CONTRACT_AUTH_MISMATCH` |
+| 路径闭环 | URL 前缀 ↔ server 路由分组一致？ | `CONTRACT_PREFIX_MISMATCH` |
+
+### 与纵向 FVL 的关系
+
+```
+纵向 FVL（深度）：产物 ↔ 上游基准 — "生成的对不对？"
+横向 FVL（广度）：产物 ↔ 兄弟产物 — "兄弟之间一致吗？"
+
+两者互补，缺一不可：
+- 纵向确保每个产物忠于上游意图
+- 横向确保同层产物之间不矛盾、不遗漏
+```
+
+---
+
+## 八、优雅降级与成本控制

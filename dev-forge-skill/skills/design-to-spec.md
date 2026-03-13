@@ -7,7 +7,7 @@ description: >
   or needs to transform product-design artifacts into per-sub-project requirements, design docs, and atomic task lists.
   Also handles shared-utilities analysis (cross-task pattern resonance, third-party library selection, B1 task injection).
   Requires project-manifest.json (from project-setup) and product-map artifacts.
-version: "3.1.0"
+version: "3.2.0"
 ---
 
 # Design to Spec — 设计转规格
@@ -1176,7 +1176,7 @@ Step 4.3: Tasks 验证循环（4D/6V+V9/XV/闭环 — 强制）
   | 异常闭环 | 有 exceptions 的功能是否在 B2 任务的实现要点中提到？ | `TASK_CLOSURE_EXCEPTION` |
   | 生命周期闭环 | 有状态机的实体是否有完整的状态变更端点任务？ | `TASK_CLOSURE_LIFECYCLE` |
   | 映射闭环 | 有关联关系的实体是否有级联操作任务？ | `TASK_CLOSURE_MAPPING` |
-  | 导航闭环 | 每个前端页面是否有路由守卫 + 404 + 回退任务？ | `TASK_CLOSURE_NAVIGATION` |
+  | 导航闭环 | 每个前端页面是否有路由守卫 + 404 + 回退任务？layout 组件（header/footer/sidebar）中的链接目标是否在 pages/ 有对应页面任务？ | `TASK_CLOSURE_NAVIGATION` |
   | 数据溯源闭环 | 返回聚合/统计数据的 GET 端点，其数据源是否有对应的写入端点/任务？（V10 的任务层投影） | `TASK_CLOSURE_PROVENANCE` |
 
   修正 → 回到小循环 C 重检
@@ -1331,6 +1331,76 @@ Step 6: 阶段末汇总确认
   dev-bypass: {N} tasks [DEV_ONLY]（仅 dev_mode.enabled = true 时显示）
 
   → 输出汇总进度「Phase 2 ✓ {N} 子项目 × 5 文档 (Phase A 串行 + Phase B 并行), CORE {M} 任务」（不停）
+  ↓
+Step 6.5: 跨子项目 API 契约闭环审计（Cross-Project Contract Audit）
+  > **问题根因**：各子项目 spec 独立生成，前端 tasks.md 中的 API 调用和 server tasks.md 中的端点可能不一致。
+  > 此步骤在所有子项目 spec 生成完毕后、进入 Phase 4 之前，用 4D/6V/闭环框架交叉验证跨子项目 API 契约。
+  > 历史教训：曾有 admin/merchant 前端调用了 ~49 个 server 未实现的端点，直到 Phase 5 deadhunt 才发现。
+
+  **输入**：所有子项目的 tasks.md + design.md（已在 Step 1-6 生成完毕）
+
+  **审计维度**（7 类闭环 + 4D + 6V 交叉验证）：
+
+  === 闭环审计 ===
+
+  | 闭环类型 | 审计方法 | 不通过标记 |
+  |---------|---------|----------|
+  | **调用闭环** | 前端 tasks.md 每个 API 调用路径 → server tasks.md 有对应端点？ | `CONTRACT_CALL_MISSING` |
+  | **消费闭环** | server tasks.md 每个端点 → 至少被一个前端 tasks.md 引用？ | `CONTRACT_ORPHAN_ENDPOINT`（WARNING） |
+  | **角色 CRUD 闭环** | 每个实体 × 每个角色（consumer/merchant/admin）→ 该角色需要的 CRUD 操作是否完整？ | `CONTRACT_CRUD_GAP` |
+  | **数据流闭环** | 前端展示的聚合/统计数据 → server 有写入路径？（V10 跨项目投影） | `CONTRACT_PROVENANCE_GAP` |
+  | **字段闭环** | server API 返回的字段名 → 前端 tasks.md 引用的字段名一致？ | `CONTRACT_FIELD_MISMATCH` |
+  | **权限闭环** | 端点在 server design.md 的权限组 → 前端调用时在正确的 auth 上下文？ | `CONTRACT_AUTH_MISMATCH` |
+  | **路径闭环** | 前端引用的 URL 路径前缀（/consumer/, /merchant/, /admin/）→ 与 server 路由分组一致？ | `CONTRACT_PREFIX_MISMATCH` |
+
+  === 4D 审计 ===
+
+  | 维度 | 审计问题 |
+  |------|---------|
+  | D1 结论正确 | "admin 可以管理产品" → tasks.md 里真的有 admin 的 list + detail + approve 端点？ |
+  | D2 有证据 | 每个声称的能力 → 在 tasks.md 中有具体 task（不是笼统描述）？ |
+  | D3 约束识别 | 角色权限边界 → 端点是否在正确的权限组（consumer 端点不能出现在 admin 组）？ |
+  | D4 决策有据 | admin 只有 approve 没有 browse → 有意设计（记录 rationale）还是遗漏？ |
+
+  === 6V 审计 ===
+
+  | 视角 | 审计问题 |
+  |------|---------|
+  | User | 用户能端到端完成任务吗？（如：admin 审核产品 → 需要先浏览产品列表 → 需要 list 端点） |
+  | Tech | 所有 API 调用路径能解析到 server 路由吗？HTTP method + path 完全匹配？ |
+  | UX | 每个列表页有对应的详情页吗？每个详情页的数据字段 server 都返回了吗？ |
+  | Data | 前端表单字段 → API request body → server model 字段 → DB column 全链路可达？ |
+  | Business | 业务流中每个步骤的 API 调用在 server 都有实现？ |
+  | Risk | 高频/高风险操作（支付/删除/权限变更）在 server 有对应的审计/确认机制？ |
+
+  **执行方式**：
+
+  1. 提取 server tasks.md 中所有 B2 端点（HTTP method + path + 权限组）→ 构建 `server_endpoints[]`
+  2. 提取每个前端 tasks.md 中所有 API 调用（B3/B4 任务描述中的端点引用）→ 构建 `frontend_calls[sub_project][]`
+  3. 提取 server design.md 中每个实体的字段定义 → 构建 `entity_fields[]`
+  4. 逐条交叉验证（7 闭环 + 4D + 6V）
+  5. 汇总结果
+
+  **结果处理**：
+
+  | 严重度 | 处理 |
+  |--------|------|
+  | CRITICAL（调用闭环/CRUD 缺口/数据流断裂） | 自动补全：在 server tasks.md 追加缺失的 B2 端点任务，在前端 tasks.md 修正错误路径 |
+  | WARNING（孤儿端点/字段命名不一致） | 记录到 forge-decisions.json，不阻塞 |
+  | INFO（权限建议/路径前缀建议） | 记录，不处理 |
+
+  **自动补全规则**：
+  - 缺失的 server 端点 → 按已有 B2 任务格式追加到 server/tasks.md 的对应 Batch
+  - 前端引用了错误路径 → 修正 tasks.md 中的路径描述
+  - CRUD 缺口 → 只补必要操作（admin 对产品需要 list + detail，不需要 create/delete）
+  - 补全的任务标注 `[CONTRACT-FIX]`，便于追溯
+
+  **输出**：
+  - `.allforai/project-forge/contract-audit.json`（审计结果，含每条 finding）
+  - 修改过的 tasks.md 文件（已补全缺失端点）
+  - 修改过的 design.md 文件（已补全缺失接口定义）
+
+  → 输出进度: 「Step 6.5 契约审计 ✓ 调用闭环: {N}/{M} 匹配, CRUD 闭环: {K} 缺口已补, 字段闭环: {L} 不一致」
   ↓
 Step 7: 共享层分析（Shared Utilities Analysis）
   7a. 已有代码扫描（existing 模式执行） + 跨任务模式共振分析 + 三方库 WebSearch 选型 + 用户确认
