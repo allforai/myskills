@@ -4,12 +4,11 @@ description: >
   Product design suite: product-concept (产品概念), review (统一审核站点, 6 tabs),
   product-map (产品地图), journey-emotion (情绪旅程),
   experience-map (体验地图, 支持 --variants, 含模式扫描+行为规范), interaction-gate (交互质量门禁),
-  use-case (用例集), feature-gap (功能查漏), ui-design (UI设计规格, 支持 --variants), design-audit (设计审计).
-  Pipeline: concept → review(概念) → map → review(地图) → journey-emotion → experience-map →
-  review(线框+数据模型) → [use-case ∥ gap ∥ ui-design] → review(UI) → audit.
+  feature-gap (功能查漏), design-audit (设计审计).
+  Pipeline: concept → map → journey-emotion → experience-map → feature-gap → audit.
   Use /review to launch the unified review hub (one site, 6 tabs).
   Use /product-design full to run the full pipeline with checkpoints.
-version: "4.14.0"
+version: "4.16.0"
 ---
 
 # Product Design — 产品设计套件

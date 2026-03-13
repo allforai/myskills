@@ -1,6 +1,6 @@
 {
   "name": "product-design",
   "description": "Product design suite: product-concept (discover product vision through guided search + multiple-choice dialogue), product-map (build product map), experience-map (map screens and exception states), use-case (generate use case tree, JSON for machines + Markdown for humans), feature-gap (detect feature gaps), ui-design (generate UI design spec and role-based HTML preview from product map and experience map), design-audit (cross-layer consistency audit: trace / coverage / cross-check). 产品设计套件：产品概念发现、建立产品地图、体验地图、用例集（双格式）、功能查漏、UI设计规格生成、设计审计（跨层一致性校验）。",
-  "version": "4.15.0",
+  "version": "4.16.0",
   "author": { "name": "dv" }
 }
