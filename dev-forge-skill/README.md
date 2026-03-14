@@ -1,6 +1,6 @@
 # dev-forge — 开发锻造套件
 
-**版本：v3.0.0**
+**版本：v4.9.0**
 
 Claude Code 插件，从产品设计产物到可运行项目的全流程自动化锻造。LLM 驱动的 Forge-Verify-Loop (4D/6V/XV) 闭环架构。
 
@@ -17,8 +17,8 @@ claude plugin add /path/to/dev-forge-skill
 /project-setup              # 拆子项目 + 选技术栈
 /design-to-spec             # 产物 → 需求 + 设计 + 任务
 /task-execute               # 按 tasks.md 逐任务执行代码
-/e2e-verify                 # 跨端 E2E 验证
 /product-verify             # 产品验收
+/testforge                  # 测试锻造（全金字塔 + E2E 链）
 ```
 
 ## 适用场景
@@ -30,8 +30,8 @@ claude plugin add /path/to/dev-forge-skill
 | 拆分子项目 + 选技术栈 | `/project-setup` |
 | 生成 spec 文档 | `/design-to-spec` |
 | 按任务列表执行代码 | `/task-execute` |
-| 跨端业务 E2E 测试 | `/e2e-verify` |
 | 对照产品地图验证实现 | `/product-verify` |
+| 测试锻造（审计+补测试+E2E链） | `/testforge` |
 
 ## 前置依赖
 
@@ -39,7 +39,7 @@ claude plugin add /path/to/dev-forge-skill
 
 ---
 
-## 包含的技能（5 个）
+## 包含的技能（7 个 + 1 独立插件）
 
 ### project-setup — 项目引导
 交互式拆分子项目、选择技术栈、分配模块、配置 monorepo。Conway's Law 6V 架构审计。
@@ -50,11 +50,20 @@ FVL：LLM 生成 → 4D/6V 审计 → XV 交叉验证 → 自动修正。API-Fir
 ### task-execute — 任务执行
 R0 项目初始化 → R1-R4 业务实现。增量 XV 审计 + 契约漂移同步 + DevSecOps 左移。支持断点续作。
 
-### e2e-verify — 跨端验证
-从 business-flows 推导跨子项目场景，Playwright / Patrol / Detox 自动执行。6V 失败诊断。
-
 ### product-verify — 产品验收
 静态扫描代码覆盖率 + 动态 Playwright 验证行为合规性，输出差异任务清单。
+
+### deadhunt — 死链猎杀 + 完整性验证
+猎杀死链、幽灵功能、CRUD 缺口。6 Phase 流水线。
+
+### fieldcheck — 字段一致性检查
+检查 UI↔API↔Entity↔DB 四层字段名一致性。
+
+### testforge — 测试锻造
+FVL 三维验证发现缺口，覆盖全测试金字塔（unit/component/integration/e2e-chain/mobile）。从 business-flows 推导跨站 E2E 链并生成可执行测试脚本。补测试、修 bug，循环至全绿。
+
+### demo-forge — 演示锻造（独立插件）
+生成真实感演示数据，配合富媒体采集+上传，Playwright 验证。
 
 ---
 

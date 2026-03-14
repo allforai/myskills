@@ -4,13 +4,13 @@ description: >
   Development forge: project-setup (interactive sub-project splitting + tech stack selection),
   design-to-spec (LLM-driven Forge-Verify-Loop (4D/6V/XV) -> requirements + design + tasks),
   task-execute (systematic task execution with progress tracking + Incremental XV + Task-Level verification loops),
-  e2e-verify (cross-project Playwright/Patrol E2E),
   product-verify (static + dynamic acceptance),
   deadhunt (dead link hunting + CRUD completeness + ghost feature detection),
-  fieldcheck (UI/API/Entity/DB field consistency).
+  fieldcheck (UI/API/Entity/DB field consistency),
+  testforge (test-driven quality forging: full test pyramid — unit/component/integration/e2e-chain/mobile — audit + generate + fix → converge).
   Full pipeline: /project-forge. LLM-driven Forge-Verify-Loop (4D/6V/XV).
-  开发锻造套件：项目引导、设计转规格、任务执行、跨端验证、产品验收、死链猎杀、字段一致性。
-version: "4.7.0"
+  开发锻造套件：项目引导、设计转规格、任务执行、产品验收、死链猎杀、字段一致性、测试锻造。
+version: "4.9.0"
 ---
 
 # Dev Forge — 开发锻造套件
@@ -65,19 +65,7 @@ version: "4.7.0"
 /task-execute resume       # 从 build-log.json 断点续作
 ```
 
-### 4. e2e-verify — 跨端验证
-
-> 详见 `${CLAUDE_PLUGIN_ROOT}/skills/e2e-verify.md`
-
-从 business-flows 推导跨端场景，Playwright（Web）/ XCUITest（iOS）/ Maestro（Flutter/RN）跨子项目执行。
-
-```
-/e2e-verify                 # 推导场景 + 执行全部
-/e2e-verify plan            # 仅推导场景，不执行
-/e2e-verify run             # 加载已有场景并执行
-```
-
-### 5. product-verify — 产品验收
+### 4. product-verify — 产品验收
 
 > 详见 `${CLAUDE_PLUGIN_ROOT}/skills/product-verify.md`
 
@@ -89,7 +77,7 @@ version: "4.7.0"
 /product-verify dynamic     # 只做动态验证
 ```
 
-### 6. deadhunt — 死链猎杀 + 完整性验证
+### 5. deadhunt — 死链猎杀 + 完整性验证
 
 猎杀死链、幽灵功能、CRUD 缺口。6 Phase 流水线：项目分析→静态扫描→测试计划→深度测试→报告→补充测试。支持独立运行，不依赖 project-forge 流程。
 
@@ -100,7 +88,7 @@ version: "4.7.0"
 /deadhunt incremental       # 增量验证（仅 git 改动涉及的模块）
 ```
 
-### 7. fieldcheck — 字段一致性检查
+### 6. fieldcheck — 字段一致性检查
 
 检查 UI↔API↔Entity↔DB 四层字段名一致性，发现幽灵字段、拼写错误、映射断裂。纯静态分析，不需要启动应用。
 
@@ -109,6 +97,16 @@ version: "4.7.0"
 /fieldcheck frontend        # 仅前端 L1↔L2
 /fieldcheck backend         # 仅后端 L2↔L3↔L4
 /fieldcheck endtoend        # 端到端 L1↔L4
+```
+
+### 7. testforge — 测试锻造
+
+审查项目自身测试代码的质量和覆盖率，用 FVL 三维验证（纵向审计 + 横向交叉 + 负空间推导）发现缺口。覆盖测试金字塔全层级：unit / component / integration / e2e-chain / mobile。从 business-flows 自动推导跨站 E2E 链并生成可执行测试脚本。补测试、修 bug，循环至全绿。
+
+```
+/testforge                  # 完整锻造（审计+补测试+修bug+报告）
+/testforge analyze          # 仅审计（不补测试不修代码）
+/testforge fix              # 仅锻造（用已有分析结果）
 ```
 
 ### 8. demo-forge — 演示锻造（独立插件）
@@ -130,7 +128,7 @@ version: "4.7.0"
 
 ```
 product-design（产品层）  概念→定义→交互→视觉→用例→查漏→剪枝
-dev-forge（开发层）       引导→规格→执行→验证→验收→猎杀→字段 ← 你在这里
+dev-forge（开发层）       引导→规格→执行→验收→猎杀→字段→测试锻造 ← 你在这里
 code-tuner（架构层）      合规→重复→抽象→评分
 ```
 
@@ -146,7 +144,7 @@ code-tuner（架构层）      合规→重复→抽象→评分
 | Clean Architecture | design-to-spec：Batch 依赖方向 |
 | Worse is Better / Tracer Bullet | task-execute R0：先能跑再完善 |
 | Hexagonal Architecture | task-execute：mock↔真实后端只是换适配器 |
-| Test Pyramid / BDD | e2e-verify：场景来自业务流 |
+| Test Pyramid / BDD | testforge：场景来自业务流，覆盖全测试金字塔 |
 
 > 详见 `${CLAUDE_PLUGIN_ROOT}/docs/dev-forge-principles.md`
 
@@ -163,8 +161,6 @@ your-project/
     │   │   ├── design.json             # 设计（机器可读，含 source_* 溯源）
     │   │   └── tasks.md                # 任务
     │   ├── build-log.json              # 任务执行进度
-    │   ├── e2e-scenarios.json          # 跨端场景
-    │   ├── e2e-report.md               # E2E 结果
     │   ├── forge-decisions.json        # 全程决策
     │   └── trend-sources.json          # 趋势搜索记录
     ├── demo-forge/              # → 独立插件 demo-forge-skill 管理
@@ -172,13 +168,19 @@ your-project/
     │   ├── static-report.json          # 静态结果
     │   ├── dynamic-report.json         # 动态结果
     │   └── verify-report.md            # 可读报告
-    └── deadhunt/
-        ├── deadhunt-decisions.json     # 决策日志
-        ├── output/
-        │   ├── validation-profile.json # 项目画像
-        │   ├── static-analysis/        # 静态分析结果
-        │   ├── validation-report-*.md  # 各端报告
-        │   ├── fix-tasks.json          # 修复任务清单
-        │   └── field-analysis/         # 字段一致性分析
-        └── tests/                      # 生成的测试脚本
+    ├── deadhunt/
+    │   ├── deadhunt-decisions.json     # 决策日志
+    │   ├── output/
+    │   │   ├── validation-profile.json # 项目画像
+    │   │   ├── static-analysis/        # 静态分析结果
+    │   │   ├── validation-report-*.md  # 各端报告
+    │   │   ├── fix-tasks.json          # 修复任务清单
+    │   │   └── field-analysis/         # 字段一致性分析
+    │   └── tests/                      # 生成的测试脚本
+    └── testforge/
+        ├── testforge-decisions.json    # 决策日志
+        ├── test-profile.json           # 测试画像
+        ├── testforge-analysis.json     # 审计分析（4D 缺口 + 横向 + 负空间）
+        ├── testforge-fixes.json        # 修复记录
+        └── testforge-report.md         # 可读报告
 ```

@@ -28,8 +28,8 @@ version: "1.3.0"
 ## 定位
 
 ```
-design-to-spec（规格层）   task-execute（执行层）   e2e-verify（验证层）
-生成 tasks.md 任务列表     逐 Round 执行 + 追踪     跨端业务流验证
+design-to-spec（规格层）   task-execute（执行层）   testforge（验证层）
+生成 tasks.md 任务列表     逐 Round 执行 + 追踪     全金字塔测试锻造
 文档                      代码                     测试
 ```
 

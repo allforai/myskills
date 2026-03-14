@@ -270,7 +270,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
       → 输出进度: 「S6 旅程级 ✓ passed:{N} partial:{M} failed:{K}」
   ↓
   S7: 种子数据↔测试场景覆盖矩阵 (Seed-Test Coverage Matrix)
-      **目的**：验证 seed-forge 生成的数据是否足以支撑 product-verify 和 e2e-verify 的所有测试场景。
+      **目的**：验证 seed-forge 生成的数据是否足以支撑 product-verify 和 testforge 的所有测试场景。
       **前提**：`.allforai/seed-forge/seed-plan.json` 存在；否则跳过。
       **审计逻辑**：
       1. 从 use-case-tree.json / D1 测试序列提取所有需要的前置数据状态
