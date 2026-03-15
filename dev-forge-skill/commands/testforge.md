@@ -598,6 +598,10 @@ dimension Logic > Interface > Data > UX（业务规则最先）
      - 提取涉及的角色（role-profiles 映射）和子项目
      - 跨 ≥2 个子项目的 flow → 标记为 E2E 链候选
      - 单子项目 flow → 跳过（已由单元/集成测试覆盖）
+     - **等价子项目展开**：同一角色有多个 app（如 R001 同时分配 website 和 mobile），
+       则该角色的每个 app 都必须独立参与 E2E 链测试。
+       例如买家操作在 website 上测一遍，还要在 mobile 上测一遍（如环境可用）。
+       不得仅测一端就声称该角色已覆盖。
 
 2. 分解链路步骤
    对每条候选链，按 flow 的步骤序列：
@@ -649,10 +653,16 @@ dimension Logic > Interface > Data > UX（业务规则最先）
 | RN | iOS | **Maestro** | `maestro test` |
 
 降级策略：
-- Playwright MCP 不可用 → 降级为 Playwright CLI（`npx playwright test`）
+- Playwright MCP headed 模式失败（无 X Server）→ 加 `--headless` 参数重试，**不得降级为 curl**
+- Playwright MCP 不可用 → 降级为 Playwright CLI（`npx playwright test --headed=false`）
 - Maestro 不可用 → Flutter 降级为 `flutter test integration_test/`，RN 降级为 Detox
 - 模拟器/真机不可用 → 跳过该平台 UI 测试，生成脚本标记 `PLAN_ONLY`
 - 全部不可用 → 仅生成脚本 + 主机测试（unit/widget）
+
+**铁律：UI 类测试（E2E 链的 Web 步骤、Platform UI）严禁降级为 curl/HTTP API 调用。**
+必须使用浏览器自动化工具（Playwright/Cypress/Maestro）执行。
+API 验证仅用于后端步骤（无 UI 的纯 API 端点验证）。
+如果浏览器自动化环境不可用，必须先解决环境问题（安装 xvfb、配置 headless），不得跳过。
 
 **E2E 链执行**：
 
