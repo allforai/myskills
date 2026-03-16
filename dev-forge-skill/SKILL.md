@@ -145,6 +145,22 @@ code-tuner（架构层）      合规→重复→抽象→评分
 | Worse is Better / Tracer Bullet | task-execute R0：先能跑再完善 |
 | Hexagonal Architecture | task-execute：mock↔真实后端只是换适配器 |
 | Test Pyramid / BDD | testforge：场景来自业务流，覆盖全测试金字塔 |
+| **Understand-then-Scan** | fieldcheck/deadhunt/testforge：LLM 先理解项目规则（拦截器、ORM 模式、路由注册方式），再用理解扫描全项目。不硬编码 grep 模式。 |
+
+### Understand-then-Scan 原则
+
+> **LLM 驱动的检测 = 先理解项目的"规则"，再用理解去扫描。**
+
+所有 skill 中涉及"检测项目特定模式"的逻辑，分两类执行方式：
+
+| 执行方式 | 适用场景 | 做法 |
+|---------|---------|------|
+| **LLM 驱动** | 项目特定的逻辑模式（拦截器、ORM 查询、路由注册、响应格式） | LLM 先 Read 关键文件理解项目规则，推导出检测标准，再批量扫描 |
+| **结构化比对** | 跨层标识符匹配（字段名、枚举值、URL 路径、i18n 键） | 提取两端数据集，diff 比对 |
+
+**核心区别**：结构化比对只需要"提取 + 比较"，LLM 驱动需要"读代码 → 理解意图 → 推导规则 → 再扫描"。
+
+**效率优化**：LLM 驱动的理解步骤每个项目只需做一次（Phase 0 / Step 0），理解结果缓存后，后续扫描步骤可以批量执行。
 
 > 详见 `${CLAUDE_PLUGIN_ROOT}/docs/dev-forge-principles.md`
 
