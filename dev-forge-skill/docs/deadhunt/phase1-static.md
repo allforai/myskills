@@ -181,23 +181,13 @@ Step 3: 差集分析
 
 > 路由注册了，但界面上没有任何入口（菜单、按钮、链接）能到达。
 
-```bash
-# 已注册路由
-ROUTES=$(grep -rn "path:" --include="*.ts" src/router/ | grep -oP "path:\s*['\"]([^'\"]+)" | sed "s/path:\s*['\"]//")
-
-# 菜单中引用的路由
-MENU_REFS=$(grep -rn "path\|href\|to" --include="*.ts" --include="*.json" src/config/menu* src/layout/ | \
-  grep -oP "['\"]/([\w/-]+)['\"]" | sort -u)
-
-# 代码中所有 navigate/push/Link 跳转目标
-CODE_REFS=$(grep -rn "navigate\|push\|to=" --include="*.tsx" --include="*.vue" src/ | \
-  grep -oP "['\"]/([\w/-]+)['\"]" | sort -u)
-
-# 合并为 UI 层可以到达的路由
-ALL_UI_REFS=$(echo -e "$MENU_REFS\n$CODE_REFS" | sort -u)
-
-# 路由存在但 UI 层不可达的 = 幽灵路由
-comm -23 <(echo "$ROUTES" | sort) <(echo "$ALL_UI_REFS" | sort)
+```
+扫描策略（按 Phase 0 确认的技术栈选择文件类型和路由 API）：
+1. 从路由配置/文件路由中提取所有已注册路由
+2. 从菜单/导航配置中提取所有菜单引用的路由
+3. 从代码中提取所有编程式导航目标（navigate/push/replace/go 等）
+4. 合并 2+3 = UI 层可到达的路由集合
+5. 差集：已注册但 UI 层不可达 = 幽灵路由（orphan route）
 ```
 
 输出：`static-analysis/unreachable-routes.json`
@@ -228,21 +218,12 @@ comm -23 <(echo "$ROUTES" | sort) <(echo "$ALL_UI_REFS" | sort)
 
 > 如果有数据库 schema，检查是否有数据表/模型完全没有对应的管理界面。
 
-```bash
-# 从后端 ORM 模型提取实体列表
-# Prisma
-grep -r "^model " prisma/schema.prisma | awk '{print $2}'
-
-# TypeORM
-grep -rn "@Entity" --include="*.ts" server/src/ | grep -oP "name:\s*['\"](\w+)" | sed "s/name:\s*['\"]//g"
-
-# Sequelize
-grep -rn "sequelize.define\|Model.init" --include="*.ts" --include="*.js" server/ | grep -oP "['\"](\w+)['\"]" | head -1
-
-# Django
-grep -rn "class.*models.Model" --include="*.py" | grep -oP "class\s+(\w+)" | awk '{print $2}'
-
-# 对比前端模块列表，找出没有管理界面的数据实体
+```
+扫描策略（按 Phase 0 确认的 ORM/框架选择提取方式）：
+1. 从后端 ORM model 定义中提取所有数据实体名称
+   （识别方式取决于 ORM：装饰器、schema 文件、struct tag、Model 子类等）
+2. 从前端路由/页面列表中提取所有业务模块
+3. 差集：后端有实体但前端无管理界面 = 未覆盖模型（uncovered model）
 ```
 
 输出：`static-analysis/model-coverage.json`
@@ -384,15 +365,81 @@ grep -rn "GetxController\|\.obs\|Obx(\|GetBuilder" \
 
 如果项目有权限系统，分析哪些功能被权限控制：
 
-```bash
-# 常见权限控制模式
-grep -rn "permission\|authorize\|role\|access\|v-permission\|v-auth\|hasPermission\|checkPermission" \
-  --include="*.tsx" --include="*.ts" --include="*.vue" --include="*.jsx" src/ | head -50
+```
+扫描策略（按 Phase 0 确认的技术栈选择文件类型）：
+→ 在前端源码中搜索权限相关代码模式：
+  permission / authorize / role / access / hasPermission / checkPermission /
+  canAccess / guard / middleware 等
+→ 仅扫描 Phase 0 确认的前端文件类型
+→ 产出：权限控制点列表 + 哪些路由/功能被权限保护
 ```
 
-### 1.8 双向分析汇总
+### 1.8 接缝检查（Seam Analysis）
 
-所有静态分析完成后，生成汇总矩阵 `static-analysis/bidirectional-matrix.json`：
+> 以下检查发现"两端各自正确但接缝不匹配"的问题。
+> 这类问题是 E2E 测试中最高频的根因，但完全可以在静态分析阶段秒级检出。
+> 作为 Round 1 基线扫描的最后一步执行，发现的问题纳入收敛循环。
+
+#### 1.8.1 文件路由冲突检测
+
+基于文件系统的路由框架中，动态路由文件和同名目录共存会导致路由冲突。
+
+```
+检测逻辑（技术栈无关）：
+1. 识别项目使用的文件路由框架（Phase 0 已探测）
+   （适用于所有文件式路由框架，不限于特定框架）
+2. 扫描路由目录（pages/ / app/ / routes/ 等）
+3. 检测模式：同一目录下同时存在
+   - 动态路由文件（带参数占位符的文件，如 [param] / :param / $param 等命名模式）
+   - 同名目录（该参数名的目录下有子路由文件）
+4. 如果动态路由文件没有嵌套路由出口（框架对应的子路由渲染组件），
+   则子路由无法渲染 → ROUTE_CONFLICT
+
+产出: { parent_file, child_files[], has_outlet: bool, severity }
+```
+
+#### 1.8.2 权限/RBAC 通配符检查
+
+前端权限检查代码常用精确匹配，但后端可能分配通配符权限。精确匹配无法识别通配符 → 管理员看不到菜单。
+
+```
+检测逻辑（技术栈无关）：
+1. 扫描前端权限检查代码
+   - Grep: hasPermission / checkPermission / canAccess / includes(permission) 等
+   - 提取权限检查函数体
+2. 分析是否处理了通配符模式：
+   - 是否有 "*" 或 "admin:*" 等通配符匹配逻辑
+   - 是否只做精确字符串匹配
+3. 扫描后端角色定义
+   - 是否存在 permissions: ["*"] 或类似通配符分配
+4. 前端无通配符处理 + 后端有通配符分配 → RBAC_WILDCARD_MISS
+
+产出: { frontend_file, check_function, backend_role, wildcard_pattern, severity }
+```
+
+#### 1.8.3 API 端点路径前后端一致性
+
+前端 API client 调用的 URL 路径与后端 router 注册的路径必须完全匹配（含 HTTP method）。
+
+```
+检测逻辑（技术栈无关）：
+1. 提取前端 API 调用的完整路径（method + path）
+   - 来源：API client 文件、service 文件、store 文件
+2. 提取后端路由注册的完整路径（method + path）
+   - 来源：router 定义文件
+3. 逐条比对：
+   - 前端调用的路径在后端路由中不存在 → DEAD_ENDPOINT（已有）
+   - 前端路径与后端路径相似但不完全匹配（如多/少一级路径段）→ PATH_DRIFT
+   - 前端 method 与后端 method 不匹配 → METHOD_MISMATCH
+
+产出: { frontend_file, frontend_path, backend_file, backend_path, diff_type }
+```
+
+---
+
+### 1.9 双向分析汇总
+
+所有静态分析完成后（含接缝检查），生成汇总矩阵 `static-analysis/bidirectional-matrix.json`：
 
 ```json
 {
@@ -432,7 +479,7 @@ grep -rn "permission\|authorize\|role\|access\|v-permission\|v-auth\|hasPermissi
 ### 收敛循环结构
 
 ```
-Round 1 (基础扫描):  执行上述 1.1 - 1.8 全部步骤，建立 baseline
+Round 1 (基础扫描):  执行上述 1.1 - 1.9 全部步骤（含接缝检查），建立 baseline
                       记录 findings 数量 = count_r1
         ↓
 Round 2 (模式学习):  从 Round 1 结果提取模式 → 用新模式搜同类问题
@@ -459,7 +506,7 @@ Round 4 (扩散搜索):  对问题模块的关联模块做排查
 
 ---
 
-### 1.9 Round 2: 模式学习
+### 1.10 Round 2: 模式学习
 
 > 从上轮 findings 中提取模式，用新模式搜索同类问题。
 > **只搜索上轮没覆盖到的范围，不重复已检查的内容。**
@@ -498,7 +545,7 @@ Round 4 (扩散搜索):  对问题模块的关联模块做排查
 
 ---
 
-### 1.10 Round 3: 交叉验证
+### 1.11 Round 3: 交叉验证
 
 > 方向 A（界面→数据）和方向 B（数据→界面）的结果互相审查，找出对方的盲区。
 
@@ -549,7 +596,7 @@ Round 4 (扩散搜索):  对问题模块的关联模块做排查
 
 ---
 
-### 1.11 Round 4: 扩散搜索
+### 1.12 Round 4: 扩散搜索
 
 > 问题会扎堆。一个模块有问题，它的邻居大概率也有。
 > 从已知问题点向关联模块扩散排查，**只扩散一层，不递归**。
@@ -601,7 +648,7 @@ Round 4 (扩散搜索):  对问题模块的关联模块做排查
 
 ---
 
-### 1.12 收敛追踪
+### 1.13 收敛追踪
 
 每轮执行完毕后，记录收敛数据到 `static-analysis/convergence.json`：
 
@@ -642,63 +689,3 @@ Round 4 (扩散搜索):  对问题模块的关联模块做排查
 }
 ```
 
----
-
-### 1.8 接缝检查（Seam Analysis）
-
-> 以下检查发现"两端各自正确但接缝不匹配"的问题。
-> 这类问题是 E2E 测试中最高频的根因，但完全可以在静态分析阶段秒级检出。
-
-#### 1.8.1 文件路由冲突检测
-
-基于文件系统的路由框架（Nuxt、Next.js、Remix、SvelteKit 等）中，动态路由文件和同名目录共存会导致路由冲突。
-
-```
-检测逻辑（技术栈无关）：
-1. 识别项目使用的文件路由框架（Phase 0 已探测）
-2. 扫描 pages/ / app/ 目录
-3. 检测模式：同一目录下同时存在
-   - 动态路由文件（如 [id].vue / [id].tsx / [slug].svelte）
-   - 同名目录（如 [id]/ 目录下有子路由文件）
-4. 如果动态路由文件没有嵌套路由出口（<NuxtPage>/<Outlet>/<slot>），
-   则子路由无法渲染 → ROUTE_CONFLICT
-
-产出: { parent_file, child_files[], has_outlet: bool, severity }
-```
-
-#### 1.8.2 权限/RBAC 通配符检查
-
-前端权限检查代码常用精确匹配（`includes`/`indexOf`/`===`），但后端可能分配通配符权限（`*`、`admin:*`）。精确匹配无法识别通配符 → 管理员看不到菜单。
-
-```
-检测逻辑（技术栈无关）：
-1. 扫描前端权限检查代码
-   - Grep: hasPermission / checkPermission / canAccess / includes(permission)
-   - 提取权限检查函数体
-2. 分析是否处理了通配符模式：
-   - 是否有 "*" 或 "admin:*" 等通配符匹配逻辑
-   - 是否只做精确字符串匹配
-3. 扫描后端角色定义
-   - 是否存在 permissions: ["*"] 或类似通配符分配
-4. 前端无通配符处理 + 后端有通配符分配 → RBAC_WILDCARD_MISS
-
-产出: { frontend_file, check_function, backend_role, wildcard_pattern, severity }
-```
-
-#### 1.8.3 API 端点路径前后端一致性
-
-前端 API client 调用的 URL 路径与后端 router 注册的路径必须完全匹配（含 HTTP method）。
-
-```
-检测逻辑（技术栈无关）：
-1. 提取前端 API 调用的完整路径（method + path）
-   - 来源：API client 文件、service 文件、store 文件
-2. 提取后端路由注册的完整路径（method + path）
-   - 来源：router 定义文件
-3. 逐条比对：
-   - 前端调用的路径在后端路由中不存在 → DEAD_ENDPOINT（已有）
-   - 前端路径与后端路径相似但不完全匹配（如多/少一级路径段）→ PATH_DRIFT
-   - 前端 method 与后端 method 不匹配 → METHOD_MISMATCH
-
-产出: { frontend_file, frontend_path, backend_file, backend_path, diff_type }
-```

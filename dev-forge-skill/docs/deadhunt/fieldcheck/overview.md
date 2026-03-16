@@ -10,8 +10,9 @@ Layer 1: UI 显示层        Layer 2: API 接口层       Layer 3: 实体层    
 ─────────────────        ─────────────────        ─────────────────       ─────────────────
 前端组件中绑定的字段       请求/响应的 JSON 字段      后端 Entity/Model        表列名/Schema
 
-Vue:  {{ item.userName }}  POST body: { userName }  class User { userName }  column: user_name
-React: data.userName       GET resp: { userName }   @Column userName         user_name VARCHAR
+Web:    {{ item.userName }}   POST body: { userName }  class User { userName }  column: user_name
+Mobile: Text(user.userName)  GET resp: { userName }   @JsonKey userName        user_name VARCHAR
+（示例为通用概念，适用于任意前端框架 + 后端框架 + ORM + DB 组合）
 
 检查方向（双向）：
   L1 ←→ L2: 前端用的字段，API 返回了吗？API 返回的字段，前端展示了吗？
