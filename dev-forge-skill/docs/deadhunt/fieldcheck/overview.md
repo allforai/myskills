@@ -36,6 +36,11 @@ Mobile: Text(user.userName)  GET resp: { userName }   @JsonKey userName        u
 | **Model-Migration 列不同步** (Schema Desync) | SCHEMA_DESYNC | 🔴 Critical | ORM model 有字段但 DB schema/migration 无对应列（反之亦然） | INSERT/UPDATE 500 |
 | **Raw SQL 标识符拼写** (SQL Identifier Typo) | SQL_TYPO | 🔴 Critical | 手写 SQL 中的表名/列名与 DB schema 定义不匹配 | 查询/JOIN 失败 |
 | **实时通道 URL 不匹配** (Realtime URL Mismatch) | RT_MISMATCH | 🔴 Critical | 前端 WebSocket/SSE/gRPC-stream 连接 URL ≠ 后端注册的路由路径 | 连接 404 |
+| **i18n 键缺失** (i18n Missing Key) | I18N_MISSING | 🔴 Critical | 代码引用的 i18n 键在语言文件中不存在 | 页面显示原始键名 |
+| **表单缺必填字段** (Form Field Missing) | FORM_FIELD_MISSING | 🔴 Critical | 前端表单未包含后端 DTO required 字段 | 提交必然 400/422 |
+| **序列化格式不匹配** (Format Mismatch) | FORMAT_MISMATCH | 🔴 Critical | 前后端对同一字段的序列化格式不同（日期/枚举/数值） | 解析失败 |
+| **ORM Preload 缺失** (Preload Missing) | ORM_PRELOAD_MISSING | 🟡 Warning | DTO 引用关联实体字段但查询未 Preload/JOIN | 返回空值 |
+| **Null 安全风险** (Null Safety Risk) | NULL_SAFETY_RISK | 🟡 Warning | 前端声明非 nullable 但后端可返回 null | 运行时 TypeError |
 
 ---
 
@@ -158,6 +163,123 @@ Mobile: Text(user.userName)  GET resp: { userName }   @JsonKey userName        u
 3. 比对路径：前端路径 ≠ 后端路由 → RT_MISMATCH
 
 产出: { frontend_file, frontend_url, backend_file, backend_route, channel_type }
+```
+
+#### SC-6: i18n 键完整性检查
+
+```
+原理：
+  前端模板/代码中引用的 i18n 键必须在所有语言文件中存在。
+  缺少键 → 页面显示原始键名（如 "status.paid"）而非翻译文本。
+  这是 E2E 测试中最高频的 bug 类型（占 21%），但完全可以静态检出。
+
+检测逻辑（技术栈无关）：
+1. 提取所有 i18n 键引用
+   - 模板：$t('key') / t('key') / {{ $t('key') }} / i18n.t('key') / l10n.key 等
+   - 代码：useTranslations / useI18n / AppLocalizations / getString 等
+
+2. 提取所有语言文件定义的键
+   - JSON 文件（.json）/ YAML / ARB (.arb) / properties / .ts 导出对象
+   - 按项目支持的语言数，确认每种语言都有定义
+
+3. 比对：
+   - 代码引用但语言文件无 → I18N_MISSING（Critical）
+   - 语言文件有但代码未引用 → I18N_UNUSED（Warning）
+   - 某种语言有但其他语言缺 → I18N_INCOMPLETE（Critical）
+
+产出: { file, line, key, missing_in_locales[], type }
+```
+
+#### SC-7: 表单字段 ↔ 后端 required 标注比对
+
+```
+原理：
+  前端表单的输入字段集合必须覆盖后端 DTO 的所有 required 字段。
+  表单缺少必填字段 → 提交必然 400/422。
+  SC-2 比对字段名是否匹配，SC-7 进一步检查 required 字段是否被遗漏。
+
+检测逻辑（技术栈无关）：
+1. 提取后端 DTO 的 required 字段
+   - Go: binding:"required" / validate:"required"
+   - Java: @NotNull / @NotBlank / @NotEmpty
+   - Python: Field(required=True) / 无 Optional 标注
+   - Dart: required 关键字
+
+2. 提取前端表单的字段集合
+   - 表单组件的 name/v-model/formControlName 属性
+   - FormData 构建代码中的键
+   - API 调用时构建的 request body 键
+
+3. 比对：
+   - 后端 required 但前端表单无对应输入 → FORM_FIELD_MISSING（Critical）
+
+产出: { frontend_form_file, backend_dto_file, missing_fields[], dto_name }
+```
+
+#### SC-8: 序列化格式一致性
+
+```
+原理：
+  前端和后端对同一字段的序列化格式必须一致。
+  常见不匹配：日期格式（YYYY-MM-DD vs ISO8601）、数值（string vs number）、
+  枚举值（"active" vs 1）、JSON 字符串 vs 对象。
+
+检测逻辑（技术栈无关）：
+1. 提取前端序列化/格式化代码
+   - 日期：format('YYYY-MM-DD') / toISOString() / value-format 属性
+   - 数值：parseInt / Number() / .toString()
+
+2. 提取后端反序列化约束
+   - 日期：time.RFC3339 / @DateTimeFormat / @JsonFormat
+   - 枚举：binding:"oneof=..." / @Enum
+
+3. 比对格式规范：
+   - 前端日期格式 ≠ 后端期望格式 → FORMAT_MISMATCH（Critical）
+   - 前端发送 string 但后端期望 number → TYPE_SERIAL_MISMATCH（Critical）
+
+产出: { frontend_file, backend_file, field, frontend_format, backend_format }
+```
+
+#### SC-9: ORM 查询完整性（Preload / JOIN 检查）
+
+```
+原理：
+  API 响应类型包含关联实体的字段（如 product_name, customer_email），
+  但 ORM 查询没有 Preload/Include/Join 这些关联 → 返回 null/零值。
+  前端收到空数据 → 显示空白列。
+
+检测逻辑（技术栈无关）：
+1. 提取 API 响应类型/DTO 中引用了关联实体的字段
+   - 判定依据：字段名含其他实体名（如 ProductName, MerchantEmail, UserAvatar）
+   - 或 DTO 嵌套了其他 model（如 Product Product, User User）
+
+2. 检查对应的 repository/service 查询代码
+   - 是否有 Preload("Product") / Include(x => x.Product) / .select_related()
+   - 是否有 JOIN 语句加载关联数据
+
+3. DTO 引用了关联字段但查询无 Preload/JOIN → ORM_PRELOAD_MISSING（Warning）
+
+产出: { dto_file, dto_field, repo_file, query_method, missing_preload }
+```
+
+#### SC-10: 前端 Prop/参数 null 安全检查
+
+```
+原理：
+  前端组件声明 prop 类型为 T[]（非 nullable），但 API 可能返回 null。
+  组件内直接调用 .length / .map() → 运行时 TypeError。
+
+检测逻辑（技术栈无关）：
+1. 提取前端组件的 prop/参数类型声明
+   - 识别数组类型（string[], T[], Array<T>）和对象类型
+   - 检查是否标注了 nullable（T[] | null, Optional<T[]>）
+
+2. 检查对应 API 响应字段在后端 model 中的定义
+   - 后端字段是指针/nullable（*[]string, NullableField）→ API 可能返回 null
+
+3. 前端声明非 nullable 但后端可返回 null → NULL_SAFETY_RISK（Warning）
+
+产出: { component_file, prop_name, declared_type, backend_field, nullable_in_backend }
 ```
 
 ---
