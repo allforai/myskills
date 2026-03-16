@@ -1,0 +1,50 @@
+{
+    "families": {
+        "gpt": {
+            "provider": "openai",
+            "id_prefixes": ["openai/gpt-", "openai/o1-", "openai/o3-", "openai/codex-"],
+            "display_name": "GPT / O1 / O3 / Codex (OpenAI)",
+            "strengths": ["信息综合", "结构化推理", "指令遵循"],
+            "best_for": ["competitive_analysis", "structured_output"]
+        },
+        "gemini": {
+            "provider": "google",
+            "id_prefixes": ["google/gemini-"],
+            "display_name": "Gemini (Google)",
+            "strengths": ["发散思维", "多模态", "长上下文"],
+            "best_for": ["market_research", "research_synthesis"],
+            "exclude_prefixes": ["google/gemini-2.0-flash-exp-image"]
+        },
+        "claude": {
+            "provider": "anthropic",
+            "id_prefixes": ["anthropic/claude-"],
+            "display_name": "Claude (Anthropic)",
+            "strengths": ["结构化分析", "严谨推理", "长文写作"],
+            "best_for": ["design_review", "risk_analysis"]
+        },
+        "deepseek": {
+            "provider": "deepseek",
+            "id_prefixes": ["deepseek/deepseek-", "deepseek/deepseek-r1"],
+            "display_name": "DeepSeek / R1",
+            "strengths": ["推理链", "技术分析", "性价比"],
+            "best_for": ["technical_validation", "cost_sensitive_tasks"]
+        },
+        "llama": {
+            "provider": "meta-llama",
+            "id_prefixes": ["meta-llama/llama-3", "meta-llama/llama-4", "meta-llama/llama-3.3"],
+            "display_name": "Llama 3 / 3.3 / 4 (Meta)",
+            "strengths": ["通用推理", "多语言", "开源可控"],
+            "best_for": ["general_validation"],
+            "exclude_prefixes": ["meta-llama/llama-guard"]
+        },
+        "qwen": {
+            "provider": "qwen",
+            "id_prefixes": ["qwen/qwen3-", "qwen/qwen-3", "qwen/qwen2.5-", "qwen/qwen2-", "qwen/qwen-", "qwen/Qwen-"],
+            "display_name": "Qwen / Qwen2 / Qwen2.5 / Qwen3 (Alibaba)",
+            "strengths": ["中文理解", "双语推理", "性价比"],
+            "best_for": ["chinese_market_analysis", "bilingual_tasks"],
+            "exclude_prefixes": ["qwen/qwen-vl-", "qwen/qwen2.5-vl-", "qwen/qwen3-vl-"],
+            "exclude_suffixes": [":thinking", ":free", ":extended"]
+        }
+    }
+}
