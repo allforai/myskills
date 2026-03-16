@@ -2,6 +2,10 @@
 
 > 不运行应用，仅通过代码分析发现问题。
 > **核心原则：双向分析**
+>
+> **技术栈适配规则**：本文档中的 grep/find 命令均为**参考示例**，展示检测思路。
+> 执行时必须根据 Phase 0 探测到的实际技术栈（前端框架、后端框架、文件扩展名、目录结构）
+> 选择对应的提取方式。不得对所有框架的示例命令全部执行。
 
 ```
 方向 A: 界面 → 数据 (Forward)          方向 B: 数据 → 界面 (Reverse)
@@ -26,21 +30,22 @@
 
 **目标**：找出所有注册的路由，与菜单/导航配置做交叉对比。
 
-```bash
-# 策略根据框架不同而异，以下是通用模式：
+**重要**：根据 Phase 0 探测到的技术栈，**仅执行对应框架的提取策略**。以下是各框架的参考模式（不是全部执行）：
 
-# React Router (v6)
-grep -rn "path:" --include="*.tsx" --include="*.ts" --include="*.jsx" src/
-grep -rn "<Route" --include="*.tsx" --include="*.jsx" src/
+```
+路由提取策略（按 Phase 0 探测到的框架选择执行）：
 
-# Vue Router
-grep -rn "path:" --include="*.ts" --include="*.js" src/router/
+配置式路由（React Router / Vue Router / Angular Router）：
+  → 扫描路由配置文件中的 path 定义
 
-# Next.js (file-based routing)
-find app/ pages/ -name "page.tsx" -o -name "page.jsx" -o -name "*.tsx" -path "*/pages/*" 2>/dev/null
+文件式路由（Nuxt / Next.js / Remix / SvelteKit）：
+  → 扫描 pages/ 或 app/ 目录的文件结构推导路由
 
-# Angular
-grep -rn "path:" --include="*.ts" -l src/app/ | xargs grep "path:"
+原生移动端（Flutter GoRouter / RN Navigation）：
+  → 扫描路由配置类/文件
+
+后端路由（Express / Gin / Spring / Django）：
+  → 扫描路由注册语句
 ```
 
 输出：`static-analysis/routes.json`
@@ -65,12 +70,11 @@ grep -rn "path:" --include="*.ts" -l src/app/ | xargs grep "path:"
 
 ### 1.2 方向 A（界面→数据）: 链接目标有效性
 
-```bash
-# 找出代码中所有的路由跳转目标
-grep -rn "navigate\|push\|replace\|href\|to=" --include="*.tsx" --include="*.ts" --include="*.vue" --include="*.jsx" src/ | \
-  grep -oP "(to|href|navigate\(|push\()[\s\"'=]*[\"'](/[^\"']+)[\"']" | sort -u
-
-# 与注册路由做对比，找出跳转目标不存在的死链
+```
+扫描策略（按技术栈选择文件类型和导航 API）：
+  → 提取代码中所有路由跳转目标（navigate/push/replace/href/to/Link/router.go 等）
+  → 仅扫描 Phase 0 确认的前端文件类型（.vue/.tsx/.jsx/.svelte/.dart 等）
+  → 与注册路由做对比，找出跳转目标不存在的死链
 ```
 
 输出：`static-analysis/link-targets.json`
@@ -87,18 +91,14 @@ grep -rn "navigate\|push\|replace\|href\|to=" --include="*.tsx" --include="*.ts"
 | Update (编辑) | 编辑按钮、`/xxx/:id/edit` 路由或编辑弹窗、`PUT/PATCH /api/xxx/:id` |
 | Delete (删除) | 删除按钮/确认框、`DELETE /api/xxx/:id` |
 
-```bash
-# 对每个模块搜索代码中的 CRUD 模式
-MODULE="user"
-
-# 检查新增入口
-grep -rn "新增\|添加\|create\|Create\|Add\|add" --include="*.tsx" --include="*.vue" src/ | grep -i "$MODULE"
-
-# 检查删除入口
-grep -rn "删除\|delete\|Delete\|remove\|Remove" --include="*.tsx" --include="*.vue" src/ | grep -i "$MODULE"
-
-# 检查 API 调用
-grep -rn "POST\|PUT\|PATCH\|DELETE" --include="*.ts" --include="*.js" src/ | grep -i "$MODULE"
+```
+扫描策略（按技术栈选择文件类型）：
+  对每个模块，在前端源码中搜索 CRUD 相关模式：
+  → Create: 新增/添加/create/Add 相关 UI 元素 + POST API 调用
+  → Read:   列表/详情页面 + GET API 调用
+  → Update: 编辑/修改 UI + PUT/PATCH API 调用
+  → Delete: 删除按钮/确认框 + DELETE API 调用
+  仅扫描 Phase 0 确认的前端文件类型
 ```
 
 输出：`static-analysis/crud-coverage.json`
@@ -108,45 +108,25 @@ grep -rn "POST\|PUT\|PATCH\|DELETE" --include="*.ts" --include="*.js" src/ | gre
 > **这是发现"幽灵功能"的关键步骤。**
 > 后端已经提供了 API，但前端没有任何地方调用它 → 要么是前端漏做了，要么是废弃 API。
 
-```bash
-# ============================================
-# Step 1: 提取后端所有 API 端点
-# ============================================
+```
+提取策略（根据 Phase 0 探测到的技术栈选择）：
 
-# 从 Swagger/OpenAPI 文档
-cat swagger.json | jq -r '.paths | to_entries[] | "\(.value | keys[]) \(.key)"' | sort
+Step 1: 提取后端所有 API 端点
+  来源优先级：
+  a. OpenAPI/Swagger 文档（最权威，如有）
+  b. 后端路由注册代码（按框架选择提取模式：
+     装饰器模式 / 链式注册 / 配置文件 / 文件路由 等）
+  c. Controller/Handler 文件中的路由注解
 
-# 从 NestJS 后端代码
-grep -rn "@Get\|@Post\|@Put\|@Patch\|@Delete" --include="*.ts" \
-  server/src/ 2>/dev/null | \
-  grep -oP "@(Get|Post|Put|Patch|Delete)\(['\"]([^'\"]*)['\"]" | sort -u
+Step 2: 提取前端所有 API 调用
+  来源：
+  a. API client / service 层文件（集中定义的 HTTP 调用）
+  b. 自动生成的 API 代码（OpenAPI codegen 等）
+  c. 分散在组件/页面中的直接调用
 
-# 从 Express 后端代码
-grep -rn "router\.\(get\|post\|put\|patch\|delete\)" --include="*.ts" --include="*.js" \
-  server/ 2>/dev/null | \
-  grep -oP "\.(get|post|put|patch|delete)\(['\"]([^'\"]*)['\"]" | sort -u
-
-# 从 Spring Boot
-grep -rn "@GetMapping\|@PostMapping\|@PutMapping\|@DeleteMapping" --include="*.java" \
-  server/src/ 2>/dev/null | \
-  grep -oP "@\w+Mapping\(['\"]([^'\"]*)['\"]" | sort -u
-
-# ============================================
-# Step 2: 提取前端所有 API 调用
-# ============================================
-
-# 从前端 API 定义文件（通常集中在 src/api/ 或 src/services/）
-grep -rn "get(\|post(\|put(\|patch(\|delete(" --include="*.ts" --include="*.js" \
-  src/api/ src/services/ 2>/dev/null | \
-  grep -oP "(get|post|put|patch|delete)\(['\"]([^'\"]*)['\"]" | sort -u
-
-# 如果前端代码是 OpenAPI generator / swagger-codegen，直接找生成的文件
-find src/ -name "*.api.ts" -o -name "*Api.ts" -o -name "*Service.ts" 2>/dev/null
-
-# ============================================
-# Step 3: 差集 = 后端有但前端没调用的 API
-# ============================================
-# backend_apis.txt - frontend_apis.txt = ghost_apis.txt
+Step 3: 差集分析
+  后端有但前端没调用 = ghost API（幽灵功能）
+  前端调用但后端没注册 = dead endpoint（死链）
 ```
 
 输出：`static-analysis/api-reverse-coverage.json`
