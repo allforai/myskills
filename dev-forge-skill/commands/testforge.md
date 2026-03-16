@@ -454,7 +454,26 @@ LLM 读业务流和已有 E2E 链，推导跨站异常场景：
 
 > "补测试 → 跑测试 → 修 bug → 重跑 → 收敛"
 
-### Step 4.0: 基础设施补全 + ENV_ISSUE 子项目处理
+### Step 4.0: 静态接缝预检（deadhunt + fieldcheck）
+
+> **在写任何测试之前，先用静态分析秒级扫除接缝问题。**
+> 实战数据：单元测试发现 0 个 bug，E2E 发现 51 个 bug，其中 35 个（69%）是 fieldcheck/deadhunt 能秒级检出的接缝问题。
+> 前置静态检查可以避免大量无效的 E2E 修复轮次。
+
+并行执行 2 个 Agent：
+  Agent 1: 用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/commands/deadhunt.md`
+           执行 /deadhunt static（死链 + CRUD 缺口 + 幽灵功能 + 接缝检查）
+  Agent 2: 用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/commands/fieldcheck.md`
+           执行 /fieldcheck full（UI↔API↔Entity↔DB 字段一致性 + 接缝检查 SC-1~SC-5）
+
+汇总结果：
+  severity=critical 的问题 → 直接修复（不消耗 CG-1 轮次）
+  severity=warning → 记录到报告，不阻塞
+  修复后 → 运行构建验证（npm run build / go build）确保修复未破坏编译
+
+---
+
+### Step 4.1: 基础设施补全 + ENV_ISSUE 子项目处理
 
 **ENV_ISSUE 子项目**（Phase 0 基线标记为 ENV_ISSUE 的子项目）：
 - 仍然生成测试代码（代码审查有价值）
@@ -481,6 +500,11 @@ dimension Logic > Interface > Data > UX（业务规则最先）
 
 ```
 路径 A: Unit + Component（单元/组件测试）
+  **仅对有业务逻辑的代码生成单元测试**：
+  ✓ 补测试：状态机、业务规则、权限判断、金额计算、cron job、验证逻辑、数据转换
+  ✗ 不补测试：纯 CRUD wrapper、API client 透传函数、纯 re-export、常量定义
+  理由：纯透传代码的 bug 在接缝层（fieldcheck 已检出），单元测试 mock 掉了接缝反而测不出问题
+
   每批 5-8 个缺口（同模块、同层优先分组）
   依赖关系：service 层先于 page/component 层
   --module 过滤：仅保留属于指定模块的缺口
@@ -501,7 +525,7 @@ dimension Logic > Interface > Data > UX（业务规则最先）
   依赖关系：Path A/D/C 完成后再锻造链
 ```
 
-**执行顺序**：A → D → C → B（金字塔从底到顶：单元 → 集成 → 平台 UI → E2E 链）
+**执行顺序**：Step 4.0(静态接缝预检) → A(仅逻辑层) → D → C → B(E2E 链)
 
 **跨子项目并行**：同一路径内，不同子项目互相独立，使用 Agent tool 并行执行。例如 Path A 中 website 和 admin 的单元测试可同时锻造。Path B 除外（E2E 链天然跨子项目，按链串行）。
 
@@ -667,23 +691,7 @@ API 验证仅用于后端步骤（无 UI 的纯 API 端点验证）。
 **E2E 链执行**：
 
 ```
-Step B.0: 静态预检（deadhunt + fieldcheck）
-  在启动 E2E 链之前，先用静态分析扫除确定性问题：
-
-  并行执行 2 个 Agent：
-    Agent 1: 用 Read 加载 ${CLAUDE_PLUGIN_ROOT}/commands/deadhunt.md
-             执行 /deadhunt static（死链 + CRUD 缺口 + 幽灵功能）
-    Agent 2: 用 Read 加载 ${CLAUDE_PLUGIN_ROOT}/commands/fieldcheck.md
-             执行 /fieldcheck full（UI↔API↔Entity↔DB 字段一致性）
-
-  汇总结果：
-    severity=critical 的问题 → 直接修复（不消耗 CG-1 轮次）
-    severity=warning → 记录到报告，不阻塞
-    修复后 → 运行构建验证（npm run build / go build）确保修复未破坏编译
-    构建通过 → 进入 B.1
-    构建失败 → 修复构建错误后再进入 B.1
-
-  目的：避免字段名不匹配、路由不存在等低级问题浪费 E2E 修复轮次
+（Step B.0 静态预检已前置到 Step 4.0，在所有 Path 之前执行）
 
 Step B.1: 应用可达性检查
   逐子项目检查端口: curl -s -o /dev/null -w "%{http_code}" http://localhost:{port}
@@ -923,7 +931,7 @@ Step B.7: 4D 跨端覆盖度闭环
 |--------|------|---------|---------|--------|----------|----------------------|
 | ... | Flutter/RN | android,ios,web | web ✓ android ✗ ios ✗ | {N} | {pass}/{fail} | {N} |
 
-### 静态预检修复（B.0 deadhunt + fieldcheck） [full/fix]
+### 静态接缝预检修复（Step 4.0 deadhunt + fieldcheck） [full/fix]
 
 | 工具 | 扫描结果 | Critical 修复 | Warning 记录 |
 |------|---------|--------------|-------------|
