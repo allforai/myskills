@@ -53,35 +53,51 @@ Mobile: Text(user.userName)  GET resp: { userName }   @JsonKey userName        u
 > fieldcheck 通过纯静态代码分析秒级检出。
 >
 > 规则为通用规则，不特化任何技术栈。执行时根据 Step 0 探测到的技术栈选择对应的提取方式。
+>
+> **执行方式分类**：
+> - **LLM 驱动**（SC-1, SC-9, SC-12）：需要 LLM 读代码理解项目特定的逻辑后推导检测规则，不能硬编码 grep
+> - **结构化比对**（SC-2~SC-8, SC-10, SC-11）：可通过提取 + 比对字段/标识符集合完成，LLM 辅助匹配
 
-#### SC-1: Response Envelope 双重解包检测
+#### SC-1: Response Envelope 解包一致性检测
 
 ```
 原理：
-  多数项目在 HTTP client 层统一解包 API 返回的 envelope（如 {code, data, message}）。
+  多数项目在 HTTP client 层统一解包 API 返回的 envelope。
   解包后，调用侧拿到的已经是 payload。
-  但部分调用侧仍用 response.data.data / response.body.data 等多一层访问 → undefined。
+  但调用侧可能按"未解包结构"访问，导致多余的一层访问 → undefined。
 
-检测逻辑（技术栈无关）：
-1. 定位 HTTP client 配置文件（Phase 0 已识别）
-   - 扫描 response interceptor / middleware / wrapper 函数
-   - 判定是否存在 envelope 解包：将 response body 的某个内层字段赋给 response.data 或直接 return
+  **每个项目的拦截器写法不同、嵌套层数不同、解包策略不同。
+  不能硬编码 grep 模式。必须用 LLM 理解拦截器代码后，针对该项目推导检测规则。**
 
-2. 如果存在解包逻辑 →
-   - 记录解包模式（解包后 response.data 等于原始 body 的哪个字段）
-   - Grep 全项目调用侧代码，查找多余的一层访问
-   - 模式举例（不限于）：
-     response.data.data / res.body.data / result.data.data / resp.Data.Data
-   - **泛化检测**：还要查找 response.data.{entity}（如 response.data.product,
-     response.data.order, response.data.refund 等）。
-     判定方法：解包后 response.data 本身就是 entity 对象，
-     如果 service 层又按"未解包结构"取 .product/.order/.refund 子字段 → 同样是 DOUBLE_UNWRAP。
-     检测：grep `response\.data\.\w+` 排除已知合法字段（.items, .total, .meta 等分页字段），
-     剩余的逐个检查是否是冗余解包。
+检测逻辑（LLM 驱动，非 grep 硬编码）：
 
-3. 每个命中 = DOUBLE_UNWRAP
+Step 1: 理解项目的解包逻辑
+   - Read HTTP client 配置文件（Phase 0 已识别位置）
+   - LLM 分析 response interceptor / middleware / wrapper 的代码逻辑
+   - 推导：经过拦截器后，调用侧拿到的 response.data 的实际形状是什么？
+   - 记录解包规则，例如：
+     "拦截器将 { code, data, meta } 的 data 字段赋给 response.data。
+      如果有 meta，则 response.data = { items: data, ...meta }。
+      如果无 meta，则 response.data = data 本身。"
 
-产出: { file, line, access_pattern, interceptor_file, interceptor_line, unwrap_pattern }
+Step 2: 扫描所有调用侧
+   - 对每个 service/store/page 文件中调用 API client 的代码
+   - LLM 读代码，判断调用侧的访问路径是否与 Step 1 推导的实际形状一致
+   - 判定标准：
+     a. 调用侧访问了拦截器已剥离的层级（如拦截器已剥 .data，调用侧又 .data）→ DOUBLE_UNWRAP
+     b. 调用侧按"原始 API 嵌套结构"取子字段（如 .product/.order），但拦截器已将
+        该实体提升到顶层 → DOUBLE_UNWRAP
+     c. 调用侧直接使用 response.data 且与实际形状一致 → OK
+
+Step 3: 对比后端 API 的实际响应
+   - 如果 Step 2 无法确定（前端代码两种写法都有），
+     则 Read 对应的后端 handler，确认该 API 实际返回的结构
+   - 结合拦截器规则 + 后端实际返回 → 确定调用侧应该怎么写
+
+产出: { file, line, access_pattern, expected_pattern, interceptor_file, diagnosis }
+
+关键：这不是 grep 模式匹配，是 LLM 代码理解。
+每个项目只需 Step 1 做一次（理解拦截器），Step 2 批量扫描所有调用侧。
 ```
 
 #### SC-2: 前端请求/响应类型 ↔ 后端 DTO 逐字段比对
