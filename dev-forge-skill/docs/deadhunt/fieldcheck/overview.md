@@ -41,6 +41,8 @@ Mobile: Text(user.userName)  GET resp: { userName }   @JsonKey userName        u
 | **序列化格式不匹配** (Format Mismatch) | FORMAT_MISMATCH | 🔴 Critical | 前后端对同一字段的序列化格式不同（日期/枚举/数值） | 解析失败 |
 | **ORM Preload 缺失** (Preload Missing) | ORM_PRELOAD_MISSING | 🟡 Warning | DTO 引用关联实体字段但查询未 Preload/JOIN | 返回空值 |
 | **Null 安全风险** (Null Safety Risk) | NULL_SAFETY_RISK | 🟡 Warning | 前端声明非 nullable 但后端可返回 null | 运行时 TypeError |
+| **枚举值不匹配** (Enum Mismatch) | ENUM_MISMATCH | 🔴 Critical | 前端使用的枚举值 ≠ 后端合法枚举值 | 过滤/提交静默失效 |
+| **响应结构形状不匹配** (Shape Mismatch) | SHAPE_MISMATCH | 🔴 Critical | List API 返回数组但前端期望分页对象（或反之） | 数据渲染失败 |
 
 ---
 
@@ -70,6 +72,12 @@ Mobile: Text(user.userName)  GET resp: { userName }   @JsonKey userName        u
    - Grep 全项目调用侧代码，查找多余的一层访问
    - 模式举例（不限于）：
      response.data.data / res.body.data / result.data.data / resp.Data.Data
+   - **泛化检测**：还要查找 response.data.{entity}（如 response.data.product,
+     response.data.order, response.data.refund 等）。
+     判定方法：解包后 response.data 本身就是 entity 对象，
+     如果 service 层又按"未解包结构"取 .product/.order/.refund 子字段 → 同样是 DOUBLE_UNWRAP。
+     检测：grep `response\.data\.\w+` 排除已知合法字段（.items, .total, .meta 等分页字段），
+     剩余的逐个检查是否是冗余解包。
 
 3. 每个命中 = DOUBLE_UNWRAP
 
@@ -280,6 +288,59 @@ Mobile: Text(user.userName)  GET resp: { userName }   @JsonKey userName        u
 3. 前端声明非 nullable 但后端可返回 null → NULL_SAFETY_RISK（Warning）
 
 产出: { component_file, prop_name, declared_type, backend_field, nullable_in_backend }
+```
+
+#### SC-11: 枚举值一致性检查
+
+```
+原理：
+  前端 UI 中使用的枚举值（dropdown 选项、filter 值、status badge 映射）
+  必须与后端定义的枚举值完全匹配。
+  常见 drift：前端用 "pending" 但后端定义 "pending_review"，
+  或前端用 "approve" 但后端期望 "approve_refund"。
+  字段名匹配（SC-2 检查），但值不匹配 → 功能静默失效。
+
+检测逻辑（技术栈无关）：
+1. 提取后端枚举定义
+   - binding:"oneof=active pending_review draft" / const 块 / enum 类型
+   - 提取每个字段的合法值集合
+
+2. 提取前端使用的枚举值
+   - Select/Dropdown 的 option value
+   - Filter/query 参数的硬编码值
+   - Status badge / switch-case 的 case 值
+   - API 调用时传入的字符串常量
+
+3. 比对：
+   - 前端值不在后端合法集合中 → ENUM_MISMATCH（Critical）
+   - 后端有值但前端无对应处理 → ENUM_UNHANDLED（Warning）
+
+产出: { frontend_file, frontend_value, backend_file, backend_enum, valid_values[] }
+```
+
+#### SC-12: API 响应结构形状一致性
+
+```
+原理：
+  同一项目中，list 类 API 的响应结构应该统一。
+  混用两种格式（数组 [] vs 分页对象 {items, total}）
+  会导致前端类型定义只覆盖一种格式，碰到另一种就崩。
+
+检测逻辑（技术栈无关）：
+1. 提取所有 list 类 API 的响应结构
+   - 后端：扫描 handler/controller 中 list 方法的返回格式
+   - 判定是否返回分页对象（含 items + total/meta）还是裸数组
+
+2. 提取前端对应的类型期望
+   - 前端 service/store 中如何访问 list 响应：
+     response.data.items（期望分页对象）vs response.data（期望数组）
+
+3. 比对：
+   - 后端返回数组但前端期望 .items → SHAPE_MISMATCH（Critical）
+   - 后端返回分页对象但前端直接当数组用 → SHAPE_MISMATCH（Critical）
+   - 同一项目内不同 list API 格式不统一 → SHAPE_INCONSISTENT（Warning）
+
+产出: { endpoint, backend_shape: "array"|"paginated", frontend_access, file }
 ```
 
 ---
