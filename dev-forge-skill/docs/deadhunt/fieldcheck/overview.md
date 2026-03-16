@@ -30,6 +30,134 @@ React: data.userName       GET resp: { userName }   @Column userName         use
 | **废弃字段** (Stale Field) | STALE | 🟡 Warning | API 返回了字段，但前端没有任何地方使用 | 冗余传输 |
 | **语义歧义** (Semantic Ambiguity) | SEMANTIC | 🟡 Warning | 不同层用不同名字指代可能相同的数据 | 混淆，需人工确认 |
 | **类型不一致** (Type Mismatch) | TYPE | 🟡 Warning | 字段名一致但类型不同，如前端期望 string 但 API 返回 number | 显示格式问题 |
+| **Envelope 双重解包** (Double Unwrap) | DOUBLE_UNWRAP | 🔴 Critical | HTTP client 拦截器/wrapper 已解包 API response envelope，但调用侧仍多访问一层 | 全站数据渲染失败 |
+| **DTO 字段名不匹配** (DTO Mismatch) | DTO_MISMATCH | 🔴 Critical | 前端请求/响应类型定义的字段名 ≠ 后端 DTO 序列化字段名 | 400/422 或数据丢失 |
+| **Model-Migration 列不同步** (Schema Desync) | SCHEMA_DESYNC | 🔴 Critical | ORM model 有字段但 DB schema/migration 无对应列（反之亦然） | INSERT/UPDATE 500 |
+| **Raw SQL 标识符拼写** (SQL Identifier Typo) | SQL_TYPO | 🔴 Critical | 手写 SQL 中的表名/列名与 DB schema 定义不匹配 | 查询/JOIN 失败 |
+| **实时通道 URL 不匹配** (Realtime URL Mismatch) | RT_MISMATCH | 🔴 Critical | 前端 WebSocket/SSE/gRPC-stream 连接 URL ≠ 后端注册的路由路径 | 连接 404 |
+
+---
+
+### 接缝检查规则（Seam Checks）
+
+> 以下检查专门针对"两端各自正确但接缝不匹配"的系统性问题。
+> 这类问题**单元测试因 mock 边界无法发现，E2E 测试成本高且发现晚**。
+> fieldcheck 通过纯静态代码分析秒级检出。
+>
+> 规则为通用规则，不特化任何技术栈。执行时根据 Step 0 探测到的技术栈选择对应的提取方式。
+
+#### SC-1: Response Envelope 双重解包检测
+
+```
+原理：
+  多数项目在 HTTP client 层统一解包 API 返回的 envelope（如 {code, data, message}）。
+  解包后，调用侧拿到的已经是 payload。
+  但部分调用侧仍用 response.data.data / response.body.data 等多一层访问 → undefined。
+
+检测逻辑（技术栈无关）：
+1. 定位 HTTP client 配置文件（Phase 0 已识别）
+   - 扫描 response interceptor / middleware / wrapper 函数
+   - 判定是否存在 envelope 解包：将 response body 的某个内层字段赋给 response.data 或直接 return
+
+2. 如果存在解包逻辑 →
+   - 记录解包模式（解包后 response.data 等于原始 body 的哪个字段）
+   - Grep 全项目调用侧代码，查找多余的一层访问
+   - 模式举例（不限于）：
+     response.data.data / res.body.data / result.data.data / resp.Data.Data
+
+3. 每个命中 = DOUBLE_UNWRAP
+
+产出: { file, line, access_pattern, interceptor_file, interceptor_line, unwrap_pattern }
+```
+
+#### SC-2: 前端请求/响应类型 ↔ 后端 DTO 逐字段比对
+
+```
+原理：
+  前端定义了 TypeScript interface / Dart class / Kotlin data class 描述请求/响应结构。
+  后端定义了 DTO/VO struct/class 并通过序列化 tag（json/JsonProperty/JsonKey）映射字段。
+  两端独立维护，字段名 drift 是高频 bug。
+
+检测逻辑（技术栈无关）：
+1. 提取前端类型定义
+   - 识别命名模式：*Request, *Response, *Params, *Payload, *DTO
+   - 提取字段名列表（规范化为统一 case）
+
+2. 提取后端 DTO 定义
+   - 识别命名模式：*Request, *Response, *DTO, *VO
+   - 提取序列化字段名（json tag / @JsonProperty / @JsonKey / @SerializedName）
+   - 规范化为统一 case
+
+3. 按类型名匹配同语义 DTO 对（如 CreateOrderRequest 前后端各一个）
+
+4. 逐字段比对：
+   - 前端有 fieldA 但后端无 → GHOST（前端发了但后端忽略）
+   - 后端有 fieldB 但前端无 → GAP（后端返回但前端没取）
+   - 名称相近但不同（编辑距离 ≤ 2）→ DTO_MISMATCH
+
+产出: { frontend_type, frontend_file, backend_type, backend_file, mismatched_fields[] }
+```
+
+#### SC-3: ORM Model ↔ DB Schema 列同步
+
+```
+原理：
+  ORM model 定义的字段与 DB schema（migration/DDL）的列必须一一对应。
+  新加 model 字段忘了加 migration、或 migration 加了列但 model 没更新 → 运行时 500。
+
+检测逻辑（技术栈无关）：
+1. 提取 ORM model 字段
+   - 识别 model 文件（按项目约定：model/, entity/, domain/ 目录）
+   - 提取字段名 + 列名映射（ORM column tag / 命名策略推断）
+   - 排除标记为忽略的字段（gorm:"-" / @Transient / @JsonIgnore 等）
+
+2. 提取 DB schema 列
+   - 来源优先级：migration 文件 > schema.sql > ORM auto-migrate 记录
+   - 解析 CREATE TABLE / ALTER TABLE ADD COLUMN 语句
+
+3. 对每个 model-table 对，比对列集合：
+   - model 有但 schema 无 → SCHEMA_DESYNC（Critical）
+   - schema 有但 model 无 → 可能 STALE（Warning）
+
+产出: { model_file, field, expected_column, schema_file, status }
+```
+
+#### SC-4: 手写 SQL 标识符验证
+
+```
+原理：
+  ORM 的 raw SQL / 自定义查询中的表名和列名是硬编码字符串，不受 ORM 约束。
+  ORM 可能用复数表名（User → users）但手写 SQL 用单数（user），导致查询失败。
+
+检测逻辑（技术栈无关）：
+1. Grep 后端代码中的 raw SQL（常见 pattern：Raw(, Exec(, Query(, queryRow(, @Query 等）
+2. 用简单 SQL 解析提取引用的表名（FROM/JOIN/INTO/UPDATE 后的标识符）和列名
+3. 与 DB schema 的表名和列名集合比对
+4. 不在 schema 中 → SQL_TYPO
+
+产出: { file, line, identifier, type: "table"|"column", closest_match, schema_source }
+```
+
+#### SC-5: 实时通道 URL 一致性
+
+```
+原理：
+  WebSocket / SSE / gRPC-stream 等实时通道的 URL 路径前后端独立定义。
+  前端常量文件定义连接地址，后端路由注册监听地址。两者不匹配 → 连接失败。
+
+检测逻辑（技术栈无关）：
+1. 提取前端实时通道连接 URL
+   - Grep: WebSocket / EventSource / gRPC stream 连接代码
+   - 提取 URL 路径部分（去掉 host:port）
+
+2. 提取后端实时通道路由
+   - Grep: WebSocket upgrade handler / SSE endpoint / stream endpoint 注册
+   - 提取路由路径
+
+3. 比对路径：前端路径 ≠ 后端路由 → RT_MISMATCH
+
+产出: { frontend_file, frontend_url, backend_file, backend_route, channel_type }
+```
 
 ---
 

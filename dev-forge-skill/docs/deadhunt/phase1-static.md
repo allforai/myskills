@@ -661,3 +661,64 @@ Round 4 (扩散搜索):  对问题模块的关联模块做排查
   }
 }
 ```
+
+---
+
+### 1.8 接缝检查（Seam Analysis）
+
+> 以下检查发现"两端各自正确但接缝不匹配"的问题。
+> 这类问题是 E2E 测试中最高频的根因，但完全可以在静态分析阶段秒级检出。
+
+#### 1.8.1 文件路由冲突检测
+
+基于文件系统的路由框架（Nuxt、Next.js、Remix、SvelteKit 等）中，动态路由文件和同名目录共存会导致路由冲突。
+
+```
+检测逻辑（技术栈无关）：
+1. 识别项目使用的文件路由框架（Phase 0 已探测）
+2. 扫描 pages/ / app/ 目录
+3. 检测模式：同一目录下同时存在
+   - 动态路由文件（如 [id].vue / [id].tsx / [slug].svelte）
+   - 同名目录（如 [id]/ 目录下有子路由文件）
+4. 如果动态路由文件没有嵌套路由出口（<NuxtPage>/<Outlet>/<slot>），
+   则子路由无法渲染 → ROUTE_CONFLICT
+
+产出: { parent_file, child_files[], has_outlet: bool, severity }
+```
+
+#### 1.8.2 权限/RBAC 通配符检查
+
+前端权限检查代码常用精确匹配（`includes`/`indexOf`/`===`），但后端可能分配通配符权限（`*`、`admin:*`）。精确匹配无法识别通配符 → 管理员看不到菜单。
+
+```
+检测逻辑（技术栈无关）：
+1. 扫描前端权限检查代码
+   - Grep: hasPermission / checkPermission / canAccess / includes(permission)
+   - 提取权限检查函数体
+2. 分析是否处理了通配符模式：
+   - 是否有 "*" 或 "admin:*" 等通配符匹配逻辑
+   - 是否只做精确字符串匹配
+3. 扫描后端角色定义
+   - 是否存在 permissions: ["*"] 或类似通配符分配
+4. 前端无通配符处理 + 后端有通配符分配 → RBAC_WILDCARD_MISS
+
+产出: { frontend_file, check_function, backend_role, wildcard_pattern, severity }
+```
+
+#### 1.8.3 API 端点路径前后端一致性
+
+前端 API client 调用的 URL 路径与后端 router 注册的路径必须完全匹配（含 HTTP method）。
+
+```
+检测逻辑（技术栈无关）：
+1. 提取前端 API 调用的完整路径（method + path）
+   - 来源：API client 文件、service 文件、store 文件
+2. 提取后端路由注册的完整路径（method + path）
+   - 来源：router 定义文件
+3. 逐条比对：
+   - 前端调用的路径在后端路由中不存在 → DEAD_ENDPOINT（已有）
+   - 前端路径与后端路径相似但不完全匹配（如多/少一级路径段）→ PATH_DRIFT
+   - 前端 method 与后端 method 不匹配 → METHOD_MISMATCH
+
+产出: { frontend_file, frontend_path, backend_file, backend_path, diff_type }
+```
