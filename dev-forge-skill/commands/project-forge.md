@@ -612,18 +612,30 @@ Step 4.5.3: 修复 critical 问题
   severity=critical → 直接修复代码
   修复后重启受影响的 dev server
 
-Step 4.5.4: 接缝冒烟
+Step 4.5.4: 接缝冒烟 + UI 性能基线
   对每个前端子项目的核心页面：
   1. 启动浏览器（Playwright headless）
   2. 真实登录（不 bypass）
   3. 访问核心页面 → 验证页面有数据（强断言：具体数据可见，不只是"不是空白"）
-  4. 有问题 → 修复 → 重验
+  4. **测量页面加载性能**（用户感知的慢 = UI 层面慢，不只是 API 响应快）：
+     - 页面完全加载时间（从 navigate 到内容渲染完成）
+     - 首屏数据可见时间（从 navigate 到第一条业务数据出现）
+     - 方式: Playwright `page.goto()` 的 `waitUntil: 'networkidle'` 计时
+       + 等待具体数据元素出现的计时
+     - 记录到 `seam-gate-report.json`:
+       ```json
+       {"page": "/users", "load_ms": 1200, "data_visible_ms": 2800, "status": "pass"}
+       ```
+     - 阈值: 首屏数据可见 > 5s → WARNING（标记为性能问题）
+              首屏数据可见 > 10s → 需排查（SSR hydration 问题？每请求查 DB？N+1？）
+  5. 有问题 → 修复 → 重验
 ```
 
 **质量门禁**：
 - deadhunt critical = 0
 - fieldcheck critical = 0
 - 核心页面接缝冒烟全通过
+- 核心页面首屏数据可见 < 5s（WARNING 不阻塞，记录到报告）
 
 **PASS** → 进入 Phase 5
 **FAIL** → 修复后重跑（最多 3 轮）
