@@ -1026,6 +1026,13 @@ Step 4: Tasks 生成
   2. `task-inventory.json` 的 exceptions / rules（业务规则）
   3. LLM 基于 API 语义推导的边界条件（兜底）
 
+  **B3 前端任务必须引用后端端点（强制）**：
+  > 每个 B3 前端任务的描述中必须明确列出它应调用的后端 B2 端点。
+  > 格式：`_Backend_: POST /api/v1/consumer/orders (B2.15), GET /api/v1/consumer/addresses (B2.08)`
+  > 这确保执行 agent 知道后端已有什么，不会因为"不确定后端有没有"而留空回调。
+  >
+  > **实战数据**：未标注后端端点的前端任务，80% 的交互回调会被留为空壳。
+
   **B3 前端任务的验收条件**（推荐但非强制）：
   ```
   _Acceptance_:
