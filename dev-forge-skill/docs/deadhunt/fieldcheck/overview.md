@@ -53,11 +53,51 @@ Mobile: Text(user.userName)  GET resp: { userName }   @JsonKey userName        u
 > 以下检查专门针对"两端各自正确但接缝不匹配"的系统性问题。
 > 这类问题**单元测试因 mock 边界无法发现，E2E 测试成本高且发现晚**。
 > fieldcheck 通过纯静态代码分析秒级检出。
->
-> 规则为通用规则，不特化任何技术栈。执行时根据 Step 0 探测到的技术栈选择对应的提取方式。
->
+
+#### 两层规则架构
+
+```
+Layer 1: 内置规则（SC-1 ~ SC-14）
+  跨项目通用的高频接缝模式，适用于大多数全栈项目。
+  由 skill 预定义，每次执行都检查。
+
+Layer 2: 项目派生规则（SC-P-xxx）
+  LLM 在 Step 0 分析项目架构后，自动推导该项目特有的接缝风险点。
+  每个项目不同，每次执行时动态生成。
+
+  推导流程（在 Step 0 项目画像完成后执行）：
+  1. LLM 读取项目的关键架构文件：
+     - HTTP client / API 网关 / 代理配置
+     - ORM 配置 / 数据库连接 / migration
+     - 认证/授权中间件
+     - 构建配置 / monorepo 共享包
+     - 微服务间通信（gRPC proto / OpenAPI / event schema）
+
+  2. LLM 推导该项目特有的接缝点：
+     - "这个项目用了 XXX 模式，这里可能出现 YYY 不一致"
+     - 例如：
+       · monorepo 共享类型包 → 检查各子项目是否用同一版本
+       · gRPC proto 文件 → 检查 proto 与实现是否同步
+       · GraphQL schema → 检查 resolver 是否覆盖所有 field
+       · 多数据库 → 检查 migration 是否在所有库都执行
+       · Feature flag → 检查前后端 flag 名是否一致
+       · 环境变量 → 检查 .env.example 与代码引用是否匹配
+
+  3. 每个推导出的规则记录为 SC-P-001, SC-P-002, ...
+     格式同内置规则：{ id, name, 原理, 检测逻辑, 产出 }
+
+  4. 产出写入 .allforai/deadhunt/output/field-analysis/project-seam-rules.json
+     下次执行时作为 resume 缓存复用（项目架构不变则规则不变）
+
+  5. 报告中单独列出："项目派生规则" 章节
+```
+
+> **为什么需要两层**：内置规则覆盖 80% 的通用接缝，但每个项目都有独特的架构决策
+> （消息队列、缓存层、CDN 配置、第三方 SDK 集成等）产生独特的接缝点。
+> 只靠预设规则会遗漏项目特有的风险；只靠 LLM 推导没有基线保障。两层互补。
+
 > **执行方式分类**：
-> - **LLM 驱动**（SC-1, SC-9, SC-12, SC-13, SC-14）：需要 LLM 读代码理解项目特定的逻辑后推导检测规则
+> - **LLM 驱动**（SC-1, SC-9, SC-12, SC-13, SC-14, 所有 SC-P-xxx）：需要 LLM 读代码理解项目特定的逻辑后推导检测规则
 > - **结构化比对**（SC-2~SC-8, SC-10, SC-11）：可通过提取 + 比对字段/标识符集合完成，LLM 辅助匹配
 
 #### SC-1: Response Envelope 解包一致性检测
