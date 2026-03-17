@@ -589,8 +589,44 @@ task-execute 自动完成：
 | lint | 通过（或最后 Round 质量检查无 fail） |
 | test | 通过（或自动跳过并记录） |
 
-**PASS** → 进入 Phase 5
+**PASS** → 进入 Phase 4.5（接缝门禁）
 **FAIL** → 记录 failed/skipped 任务到 forge-decisions.json，带问题继续（不停）
+
+---
+
+## Phase 4.5：接缝门禁（Seam Gate）— 不可跳过
+
+> **Phase 4（代码生成）和 Phase 5（测试验证）之间必须经过接缝门禁。**
+> 不验证接缝就进入测试 = 在错误的连接上写测试 = 假绿。
+
+Phase 4 写完所有代码后，立即执行 deadhunt static + fieldcheck full：
+
+```
+Step 4.5.1: 启动所有子项目的 dev server
+
+Step 4.5.2: 并行执行 2 个 Agent
+  Agent 1: /deadhunt static — 死链 + CRUD 缺口 + API 路径匹配
+  Agent 2: /fieldcheck full — UI↔API↔Entity 字段名一致性
+
+Step 4.5.3: 修复 critical 问题
+  severity=critical → 直接修复代码
+  修复后重启受影响的 dev server
+
+Step 4.5.4: 接缝冒烟
+  对每个前端子项目的核心页面：
+  1. 启动浏览器（Playwright headless）
+  2. 真实登录（不 bypass）
+  3. 访问核心页面 → 验证页面有数据（强断言：具体数据可见，不只是"不是空白"）
+  4. 有问题 → 修复 → 重验
+```
+
+**质量门禁**：
+- deadhunt critical = 0
+- fieldcheck critical = 0
+- 核心页面接缝冒烟全通过
+
+**PASS** → 进入 Phase 5
+**FAIL** → 修复后重跑（最多 3 轮）
 
 ---
 

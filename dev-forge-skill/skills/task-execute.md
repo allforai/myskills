@@ -681,6 +681,15 @@ Step 4: Round 增量验证（存在性 + 正确性）
   Round 结束:
     round.status = completed
     summary 更新: completed 计数, current_round++
+
+  Round 结束后接缝冒烟（R1+ 含前后端代码的 Round 必须执行）:
+    当本 Round 同时包含后端 + 前端任务（或后端 Round 完成后紧接前端 Round 开始前）：
+    1. 启动后端 dev server（如果未运行）
+    2. 对前端生成的 API 调用路径，用 curl 验证后端能响应（200，非 404/405）
+    3. 对比前端代码中读取的字段名与后端 API 实际返回的字段名
+    4. 有不匹配 → 立即修复（不等到 testforge Phase 才发现）
+    目的: 在代码生成阶段就捕获接缝问题，不留到测试阶段
+
   → 进入下一 Round 的 Step 1
 ```
 
