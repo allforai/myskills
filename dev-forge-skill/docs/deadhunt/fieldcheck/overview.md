@@ -43,6 +43,8 @@ Mobile: Text(user.userName)  GET resp: { userName }   @JsonKey userName        u
 | **Null 安全风险** (Null Safety Risk) | NULL_SAFETY_RISK | 🟡 Warning | 前端声明非 nullable 但后端可返回 null | 运行时 TypeError |
 | **枚举值不匹配** (Enum Mismatch) | ENUM_MISMATCH | 🔴 Critical | 前端使用的枚举值 ≠ 后端合法枚举值 | 过滤/提交静默失效 |
 | **响应结构形状不匹配** (Shape Mismatch) | SHAPE_MISMATCH | 🔴 Critical | List API 返回数组但前端期望分页对象（或反之） | 数据渲染失败 |
+| **平台 API 缺守卫** (Platform Guard Missing) | PLATFORM_GUARD_MISSING | 🔴 Critical | 跨平台代码使用平台特定 API 未做平台检查 | 新平台启动即崩溃 |
+| **跨客户端 Envelope 不一致** (Envelope Inconsistent) | ENVELOPE_INCONSISTENT | 🔴 Critical | 同项目不同 client 的 response 解包方式不同 | 某端数据访问必崩 |
 
 ---
 
@@ -55,7 +57,7 @@ Mobile: Text(user.userName)  GET resp: { userName }   @JsonKey userName        u
 > 规则为通用规则，不特化任何技术栈。执行时根据 Step 0 探测到的技术栈选择对应的提取方式。
 >
 > **执行方式分类**：
-> - **LLM 驱动**（SC-1, SC-9, SC-12）：需要 LLM 读代码理解项目特定的逻辑后推导检测规则，不能硬编码 grep
+> - **LLM 驱动**（SC-1, SC-9, SC-12, SC-13, SC-14）：需要 LLM 读代码理解项目特定的逻辑后推导检测规则
 > - **结构化比对**（SC-2~SC-8, SC-10, SC-11）：可通过提取 + 比对字段/标识符集合完成，LLM 辅助匹配
 
 #### SC-1: Response Envelope 解包一致性检测
@@ -357,6 +359,53 @@ Step 3: 对比后端 API 的实际响应
    - 同一项目内不同 list API 格式不统一 → SHAPE_INCONSISTENT（Warning）
 
 产出: { endpoint, backend_shape: "array"|"paginated", frontend_access, file }
+```
+
+#### SC-13: 平台特定 API 守卫检查（跨平台项目专用）
+
+```
+原理：
+  跨平台代码（Flutter/RN/KMP）中使用平台特定 API（dart:io、NativeModules 等）
+  在不支持的平台上会崩溃。必须用平台守卫（kIsWeb、Platform.OS）保护。
+  这是给已有项目添加新平台时最常见的崩溃原因。
+
+检测逻辑（LLM 驱动，仅跨平台项目触发）：
+1. Phase 0 已识别跨平台框架和目标平台
+2. 扫描代码中的平台特定 import 和 API 调用：
+   - Flutter: import 'dart:io'（Platform.isAndroid/isIOS/...）
+   - Flutter: import 'dart:html'（仅 web 可用）
+   - RN: import { NativeModules, Platform } from 'react-native'
+   - KMP: expect/actual 声明中的平台实现
+3. 对每个调用点，LLM 检查是否有前置平台守卫：
+   - kIsWeb / !kIsWeb 在 dart:io 调用之前
+   - Platform.OS !== 'web' 在 NativeModules 调用之前
+4. 无守卫 → PLATFORM_GUARD_MISSING（Critical）
+5. 守卫条件不完整（如只判 isAndroid 但没防 web）→ PLATFORM_GUARD_INCOMPLETE（Warning）
+
+产出: { file, line, api_call, missing_guard, target_platforms_affected[] }
+```
+
+#### SC-14: 跨客户端 Envelope 处理一致性
+
+```
+原理：
+  同一项目的多个 API client（如 website 的 axios、admin 的 axios、mobile 的 Dio）
+  对 API 响应 envelope 的处理方式可能不同。
+  有的有拦截器自动解包，有的没有。
+  共享的 service 层代码模式（如 response.data.xxx）在不同 client 下行为不同 → 某端必崩。
+
+检测逻辑（LLM 驱动）：
+1. Phase 0 已识别每个子项目的 HTTP client 类型
+2. 对每个 client，LLM 分析 envelope 处理方式（复用 SC-1 Step 1）：
+   - 记录：client_name, has_unwrap_interceptor, unwrap_result_shape
+3. 比对所有 client 的处理方式：
+   - 全部一致（都解包或都不解包）→ OK
+   - 不一致 → ENVELOPE_INCONSISTENT（Critical）
+4. 对不一致的 client，检查其 service/调用层是否适配了差异：
+   - 是否做了 `(body['data'] ?? body)` 等兼容处理
+   - 无兼容处理 → ENVELOPE_ACCESS_BUG（Critical）
+
+产出: { clients: [{ name, type, has_unwrap }], inconsistent: bool, affected_files[] }
 ```
 
 ---

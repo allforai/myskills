@@ -436,6 +436,29 @@ grep -rn "GetxController\|\.obs\|Obx(\|GetBuilder" \
 产出: { frontend_file, frontend_path, backend_file, backend_path, diff_type }
 ```
 
+#### 1.8.4 基础设施配置 ↔ 子项目一致性
+
+后端的跨域（CORS）、内容安全策略（CSP）、代理配置等必须包含所有子项目的端口/域名。新增子项目或平台时容易遗漏。
+
+```
+检测逻辑（结构化比对）：
+1. 从 Phase 0 提取所有子项目的端口和域名
+   - 开发环境：localhost:{port}
+   - 生产环境：子项目域名（如有配置）
+
+2. 提取后端基础设施配置：
+   - CORS allowed origins（中间件/配置文件）
+   - CSP 白名单（如有）
+   - 反向代理配置（nginx/caddy 等）
+
+3. 比对：
+   - 子项目端口不在 CORS origins → CORS_ORIGIN_MISSING（Critical）
+   - 子项目域名不在 CSP → CSP_MISSING（Warning）
+   - 子项目没有代理规则 → PROXY_MISSING（Warning）
+
+产出: { sub_project, port, config_type, config_file, status }
+```
+
 ---
 
 ### 1.9 双向分析汇总
