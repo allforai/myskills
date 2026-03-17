@@ -243,8 +243,6 @@ cat ~/.config/opencode/skills.json | grep last_updated
 │   ├── skills/
 │   ├── commands/
 │   └── .mcp.json
-├── deadhunt-skill/
-│   └── skills/
 ├── code-tuner-skill/
 │   └── skills/
 ├── install-remote.sh     # 安装脚本

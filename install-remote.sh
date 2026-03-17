@@ -85,17 +85,6 @@ cat > "$SKILLS_CONFIG" << EOF
       }
     },
     {
-      "name": "deadhunt",
-      "path": "$INSTALL_DIR/deadhunt-skill/skills",
-      "description": "死链猎杀 + 产品完整性验证",
-      "source": {
-        "type": "git",
-        "repo": "$REPO_USE",
-        "branch": "main",
-        "subPath": "deadhunt-skill"
-      }
-    },
-    {
       "name": "code-tuner",
       "path": "$INSTALL_DIR/code-tuner-skill/skills",
       "description": "代码架构质量分析：合规检查、重复检测、抽象分析",

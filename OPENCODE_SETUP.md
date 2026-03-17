@@ -67,11 +67,6 @@ cat > ~/.config/opencode/skills.json << 'EOF'
       "description": "开发锻造套件"
     },
     {
-      "name": "deadhunt",
-      "path": "/home/hello/Documents/myskills/deadhunt-skill/skills",
-      "description": "死链猎杀"
-    },
-    {
       "name": "code-tuner",
       "path": "/home/hello/Documents/myskills/code-tuner-skill/skills",
       "description": "代码架构调优"

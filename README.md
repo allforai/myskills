@@ -95,7 +95,6 @@ cd /path/to/myskills
 # 1) 安装四个插件（统一使用 add）
 claude plugin add /path/to/myskills/product-design-skill
 claude plugin add /path/to/myskills/dev-forge-skill
-claude plugin add /path/to/myskills/deadhunt-skill
 claude plugin add /path/to/myskills/code-tuner-skill
 
 # 2) 启用插件（~/.claude/settings.json）

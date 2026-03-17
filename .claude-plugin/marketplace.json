@@ -27,12 +27,6 @@
       "description": "Development forge: project-setup, design-to-spec, project-scaffold, task-execute, e2e-verify, seed-forge, product-verify. 开发锻造套件：项目引导、设计转规格、脚手架生成、任务执行、跨端验证、种子数据锻造、产品验收。"
     },
     {
-      "name": "deadhunt",
-      "version": "2.1.0",
-      "source": "./deadhunt-skill/",
-      "description": "Validate web products: find dead links, hunt ghost features, verify CRUD completeness, check field consistency. 猎杀死链，验证产品完整性，检查字段一致性。"
-    },
-    {
       "name": "code-tuner",
       "version": "1.1.0",
       "source": "./code-tuner-skill/",

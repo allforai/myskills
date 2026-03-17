@@ -33,11 +33,6 @@ cat > "$OPENCODE_CONFIG_DIR/skills.json" << EOF
       "description": "开发锻造套件：项目引导、设计转规格、脚手架生成、任务执行、种子数据锻造、产品验收"
     },
     {
-      "name": "deadhunt",
-      "path": "$SCRIPT_DIR/deadhunt-skill/skills",
-      "description": "死链猎杀 + 产品完整性验证"
-    },
-    {
       "name": "code-tuner",
       "path": "$SCRIPT_DIR/code-tuner-skill/skills",
       "description": "代码架构质量分析：合规检查、重复检测、抽象分析"

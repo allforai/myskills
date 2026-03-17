@@ -1,6 +1,0 @@
-{
-  "name": "deadhunt",
-  "description": "Find dead links, hunt ghost features, verify CRUD completeness, check field consistency across UI/API/Entity/DB layers. Supports multi-client architectures with bidirectional analysis. Works with React, Vue, Angular, Next.js, Flutter, React Native.",
-  "version": "2.1.0",
-  "author": { "name": "dv", "url": "https://github.com/dv" }
-}

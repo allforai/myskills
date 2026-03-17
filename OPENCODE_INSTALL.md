@@ -17,7 +17,6 @@
 cd ~/Documents/myskills
 claude plugin add ./product-design-skill
 claude plugin add ./dev-forge-skill
-claude plugin add ./deadhunt-skill
 claude plugin add ./code-tuner-skill
 
 # 2. 使用 skills

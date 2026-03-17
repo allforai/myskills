@@ -466,7 +466,7 @@ cat .allforai/code-tuner/tuner-report.md
 | `product-design-skill/commands/full-pipeline.md` | 全流程编排命令 | ✅ 已创建 |
 | `product-design-skill/commands/product-design.md` | 产品设计层编排 | ✅ 已存在 |
 | `product-design-skill/skills/design-audit.md` | 设计审计技能 | ✅ 已存在 |
-| `deadhunt-skill/SKILL.md` | QA 层主技能 | ✅ 已存在 |
+| `dev-forge-skill/commands/deadhunt.md` | QA 层（已合并入 dev-forge） | ✅ 已存在 |
 | `dev-forge-skill/skills/seed-forge.md` | 种子数据技能 | ✅ 已存在 |
 | `dev-forge-skill/skills/product-verify.md` | 产品验收技能 | ✅ 已存在 |
 | `code-tuner-skill/SKILL.md` | 架构层主技能 | ✅ 已存在 |

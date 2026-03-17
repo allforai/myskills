@@ -11,10 +11,6 @@
       "commands": "../dev-forge-skill/commands"
     },
     {
-      "name": "deadhunt",
-      "path": "../deadhunt-skill/skills"
-    },
-    {
       "name": "code-tuner",
       "path": "../code-tuner-skill/skills"
     }

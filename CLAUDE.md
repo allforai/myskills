@@ -17,7 +17,7 @@ Demo          demo-forge        design→media→execute→verify→iterate
 Architecture  code-tuner        compliance→duplication→abstraction→scoring
 ```
 
-Each plugin lives in its own subdirectory (`product-design-skill/`, `dev-forge-skill/`, `demo-forge-skill/`, `code-tuner-skill/`) and is independently installable. `deadhunt-skill/` is deprecated (merged into dev-forge).
+Each plugin lives in its own subdirectory (`product-design-skill/`, `dev-forge-skill/`, `demo-forge-skill/`, `code-tuner-skill/`, `code-replicate-skill/`) and is independently installable. deadhunt/fieldcheck 已合并入 dev-forge。
 
 ## Plugin Structure (per plugin)
 
