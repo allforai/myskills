@@ -272,6 +272,57 @@ Step 0: 初始化
     从第一个非 completed Round 继续
   确定起始 Round → 展示执行计划
   ↓
+Step 0.5: 环境配置自动生成（首次执行或 .env 缺失时）
+
+  **所有子项目的 .env 必须在写代码之前就绑好。** 不能等到 E2E 测试阶段才发现 .env 缺失。
+  代码跑不起来的第一个原因往往是 .env 没配。
+
+  **执行方式：LLM 分析项目 → 推导所需环境变量 → 从可用来源填充**
+
+  Step 0.5.1: 项目环境检测（LLM 分析，不硬编码）
+
+    对每个子项目，LLM 读取以下文件理解项目需要什么：
+    - `.env.example` / `.env.sample` — 最权威的变量清单
+    - `config.py` / `config.ts` / `nuxt.config.ts` / `app.config.dart` — 代码中读取了哪些环境变量
+    - `docker-compose.yml` — 依赖了哪些服务（DB/Redis/MQ）
+    - `package.json` / `requirements.txt` / `pubspec.yaml` — 依赖了哪些 SDK（推断需要哪些 API Key）
+    - `forge-decisions.json` 的 `technical_spikes` — 已决策的三方服务
+
+    LLM 从代码中提取所需环境变量清单，分类为：
+    | 类型 | 示例 | 填充来源 |
+    |------|------|---------|
+    | 数据库连接 | DATABASE_URL | 本地服务检测（docker ps / pg_isready / mysql --ping / mongosh --eval） |
+    | 认证服务 | 认证 URL/Key（因项目而异） | 本地服务检测（BaaS CLI status）+ forge-decisions |
+    | API Key（LLM/搜索/支付等） | OPENROUTER_API_KEY, SERPER_API_KEY | shell 环境变量（$VARNAME）+ forge-decisions |
+    | 内部服务地址 | API_BASE_URL, BACKEND_URL | 从 project-manifest 的 port 推导 |
+    | 功能开关 | DEV_LLM_MOCK, DEBUG | 开发模式合理默认值 |
+    | 其他 | 项目特有的变量 | 标注 TODO，留给用户手动填 |
+
+  Step 0.5.2: 环境变量来源自动探测
+
+    按优先级从高到低尝试填充每个变量：
+    1. shell 环境变量（`echo $VARNAME`）— 用户已配置的全局变量
+    2. 本地服务状态探测（LLM 根据项目依赖决定执行哪些）：
+       - `docker ps` → 正在运行的 DB/Redis/MQ 端口
+       - 数据库探测：`pg_isready`(PostgreSQL) / `mysql --ping`(MySQL) / `mongosh --eval`(MongoDB)
+       - 缓存探测：`redis-cli ping`(Redis) / `memcached` 端口检测
+       - BaaS CLI：若项目依赖 BaaS（如 Supabase/Firebase/Appwrite），执行对应 CLI status 命令获取连接信息
+    3. forge-decisions.json → technical_spikes 中已确认的 vendor/sdk
+    4. project-manifest.json → 各子项目的 port 配置
+    5. 同项目其他子项目的 .env（如后端 .env 有 DB_URL，前端也可能需要 API_URL）
+    6. `.env.example` 中的默认值（非敏感项）
+    7. 无法推导 → 标注 `# TODO: 请手动填入`
+
+  Step 0.5.3: 生成 .env 并验证
+
+    - 有 `.env.example` → 基于它生成 `.env`（保留注释结构，填入推导值）
+    - 无 `.env.example` → 基于 LLM 分析结果从零生成
+    - 生成后立即验证：尝试启动子项目（`uvicorn` / `pnpm dev` / `flutter run`），
+      如果启动失败且错误信息含 "missing" / "required" / "undefined" 环境变量名
+      → 识别缺失变量 → 尝试从其他来源补充 → 重新生成
+    - 验证通过 → 记录到 build-log.json（`env_configured: true`）
+
+  ↓
 Step 1: 执行策略推断（每 Round 开始时）
   解析当前 Round 全部任务的 Files 字段
   构建 file → [task_id] 映射

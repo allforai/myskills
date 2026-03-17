@@ -748,11 +748,12 @@ Step B.1.5: 环境配置验证 + 真实登录冒烟测试
   只能用于**非认证相关**的页面测试。认证链路本身必须走真实登录。
 
   1. **环境变量检查**
-     对每个前端子项目，检查 `.env` 是否存在且包含必要变量：
-     - 认证相关：Auth URL / Auth Key（如 SUPABASE_URL、FIREBASE_CONFIG 等）
-     - API 地址：后端 base URL
-     - 缺失 → 自动从 project-manifest 或已知本地服务（如 `npx supabase status`）生成 `.env`
-     - 生成后重启该子项目的 dev server
+     对**每个子项目**（不只前端），LLM 读取代码推导所需环境变量：
+     - 读 `.env.example` / config 文件 / 依赖清单 → 提取变量清单
+     - 比对 `.env` 实际内容 → 识别缺失项
+     - 自动填充来源：shell 环境变量 → 本地服务检测（docker ps / BaaS CLI status）→ forge-decisions → project-manifest 端口推导
+     - 无法推导的变量标注 TODO 并警告
+     - 缺失 → 自动生成 `.env` 并重启 dev server
 
   2. **真实登录冒烟测试**（Chain 0，在所有业务链之前执行）
      对每个有登录页的前端子项目，用 Playwright 执行真实登录：
@@ -771,12 +772,44 @@ Step B.1.5: 环境配置验证 + 真实登录冒烟测试
 
      **此步骤不可跳过、不可 bypass。** 如果真实登录跑不通，后续所有 E2E 链都无意义。
 
-  3. **登录态复用**
-     Chain 0 登录成功后，保存浏览器 storage state（cookies + localStorage）：
+  3. **跨浏览器/跨域接缝验证**（Chain 0 的子步骤，真实登录成功后立即执行）
+
+     真实登录验证了认证流程，但还需验证浏览器环境下的接缝问题：
+
+     a. **CORS 验证**：登录后从前端调后端 API（如 GET /users/me），确认不被 CORS 拦截
+        - 监听 browser console error，过滤 `CORS` / `Access-Control` 关键词
+        - 有 CORS 错误 → 检查后端 CORS 中间件注册顺序（必须在认证中间件之外层）
+
+     b. **认证链路端到端**：验证 token 从前端发到后端能被正确验证
+        - 前端获取认证 token（从认证服务获取 JWT/session）→ 附加到 API 请求 → 后端验证 → 返回 200
+        - 常见断裂：JWT 签名算法不匹配（ES256 vs HS256）、secret 配置错误、token 格式不兼容
+
+     c. **SSR + 客户端状态同步**：SSR 框架（Nuxt/Next）登录后导航时，
+        服务端渲染请求不带客户端 localStorage/cookie，导致 SSR middleware 判断未认证而重定向回登录页
+        - 验证：登录后 `navigateTo('/')` 是否成功到达目标页，还是被重定向回 `/login`
+        - 修复方向：登录成功后设置 cookie（SSR 可读），或用 `window.location.href` 强制全页刷新
+
+     d. **浏览器 console 零错误验证**：登录成功到达首页后，检查 browser console 是否有 error 级别日志
+        - 有 error → 记录并分类（CORS / JS runtime / API 404 等），阻塞后续链
+
+  4. **登录态复用**
+     Chain 0 全部验证通过后，保存浏览器 storage state（cookies + localStorage）：
      ```
      await page.context().storageState({ path: 'e2e/.auth-state.json' })
      ```
      后续业务链的 E2E 测试复用此 state 跳过重复登录（这不是 bypass，是复用已验证的真实登录态）。
+
+  5. **用户视角冒烟测试**（可选但推荐，X Server 可用时执行）
+
+     所有自动化 E2E 通过后，用 headed 模式运行一遍核心链路，让用户在真实浏览器窗口中观察：
+     ```
+     检测 DISPLAY 环境变量：
+       有值（X Server 可用）→ 用 --headed 模式重跑 Chain 0 + 核心业务链
+       无值 → 跳过，输出提示「建议手动在浏览器打开 {URL} 验证」
+     ```
+     目的：headless 和 headed 在 99% 场景行为一致，但剩余 1%（如 WebGL、字体渲染、
+     输入法交互、hover 样式）只有 headed 能暴露。用户看到浏览器在自动操作，
+     确认和自己手动使用一致，才是真正的信心来源。
 
 Step B.2: 场景推导
   正向场景：从 business-flows 提取跨 ≥2 子项目的 flow → E2E 链
@@ -1167,11 +1200,65 @@ E2E 链的步骤定义基于上游 business-flows 动态推导，不硬编码任
 ### 15. 路由模式必须探测
 Flutter Web 默认 hash routing，SPA 框架可能用 hash 或 history。E2E 测试生成前必须探测路由模式（Phase 0 Step 2.5），hash 模式下所有 URL 加 `/#` 前缀。不探测路由模式直接写 URL = 必然 404。
 
-### 16. E2E 必须走真实登录
-E2E 认证链路严禁用 cookie inject / localStorage inject / bypass 插件绕过。必须用真实账号密码走完登录流程（Step B.1.5 Chain 0）。登录跑不通 = 后续所有链无意义。bypass 仅允许用于**已验证登录态的复用**（storageState），不允许用于跳过登录本身。
+### 16. E2E = 模拟用户，不是测试代码
 
-### 17. 前端 .env 必须验证
-E2E 启动前检查每个前端子项目的 .env 是否包含必要的认证和 API 配置。缺失 → 自动生成（从 project-manifest / supabase status / 已知本地服务推导）。.env 缺失是"一上来就报错"的头号原因。
+E2E 的本质不是"测试代码逻辑"，而是"模拟一个真实用户从打开浏览器到完成操作的全过程"。
+用户做什么，测试做什么，一步不少，一步不绕。
 
-### 18. WebGL 不稳定环境降级
+**这意味着 E2E 严禁做以下任何事（哪怕"只是为了方便"）：**
+
+| 严禁 | 为什么 | 用户会怎样 |
+|------|--------|-----------|
+| cookie/localStorage inject 跳过登录 | 用户必须点登录按钮 | 登录表单提交不了也测不出来 |
+| 直接设置 Pinia/Redux store 状态 | 用户不会手动改 store | SSR hydration 不一致测不出来 |
+| 绕过 CORS（后端直调代替浏览器调） | 用户的浏览器会发 preflight | CORS 中间件顺序错误测不出来 |
+| 用 mock JWT 替代真实认证 token | 用户用 Supabase/Firebase 真实 JWT | JWT 算法不匹配（ES256 vs HS256）测不出来 |
+| 跳过 .env 配置直接注入变量 | 用户首次拉代码必须配 .env | 缺 .env 导致的页面白屏/500 测不出来 |
+| 用 API 调用替代 UI 操作 | 用户点按钮不是发 curl | 按钮 click handler 没绑定测不出来 |
+
+**唯一允许的"捷径"**：Chain 0 真实登录验证通过后，保存 storageState 供后续链复用（这不是 bypass，是复用已验证的真实登录态）。
+
+### 17. E2E Chain 0 是一切的前提
+
+Chain 0（真实登录冒烟测试）必须在所有业务链之前执行，且不可跳过。它验证的不只是"能不能登录"，而是整条接缝链：
+
+```
+Chain 0 验证清单（全部通过才能继续）：
+  ✓ .env 存在且含必要变量（认证 URL/Key + API 地址）
+  ✓ 前端页面能渲染（非白屏、非 500、非 "Missing config"）
+  ✓ 登录表单能交互（输入框可填、按钮可点、click handler 触发）
+  ✓ 认证服务可达（Supabase/Firebase 返回 JWT）
+  ✓ 后端 API 可达（无 CORS 拦截，JWT 验证通过，返回 200）
+  ✓ 登录后成功跳转（不被 SSR middleware 重定向回 login）
+  ✓ 跳转后页面可用（仪表盘/首页正常渲染）
+  ✓ browser console 无 error 级日志
+
+任何一项失败 → 停止所有后续 E2E 链 → 诊断修复 → 重跑 Chain 0
+```
+
+### 18. .env 必须存在且完整
+
+E2E 启动前检查**每个子项目**（不只前端）的 .env：
+
+检查方式：LLM 读取 `.env.example` + 代码中的 config 文件 → 提取所需变量清单 → 比对 `.env` 实际内容。
+- 完整 → 继续
+- 缺失或不完整 → 按 task-execute Step 0.5 的逻辑自动推导生成
+  （从 shell 环境变量、本地服务状态、forge-decisions、project-manifest 推导）
+- 生成后重启受影响的 dev server
+
+.env 缺失是"用户一打开就报错"的头号原因。测试全绿但 .env 没配 = 假绿。
+
+### 19. WebGL 不稳定环境降级
 WSL2/CI 等无 GPU 环境下，Flutter Web CanvasKit (WebGL) 渲染不稳定。探测到 `WEBGL_UNSTABLE` 时必须：用 `--web-renderer html` 构建，Playwright 加 `retries: 3` + `workers: 1`，不因 WebGL 崩溃标记为业务 bug。
+
+### 20. 接缝层是 bug 密度最高的地方
+
+实践数据：单元测试发现 0 个真实 bug，E2E 发现的 bug 中 70% 是接缝问题：
+- 前后端字段名不一致
+- CORS 中间件注册顺序（必须在认证中间件外层）
+- JWT 签名算法前后端不匹配
+- SSR framework 客户端状态 vs 服务端状态不同步
+- 表单 submit 事件被 UI 框架组件吞掉
+
+**testforge 的优先级应该是：Chain 0 接缝验证 > 业务链 E2E > 集成测试 > 单元测试。**
+先确保用户能打开页面、能登录、能看到数据，再去测边界条件和异常路径。

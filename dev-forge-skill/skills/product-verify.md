@@ -1029,7 +1029,7 @@ mobile-native 子项目:
 ```json
 {
   "generated_at": "2024-01-15T11:00:00Z",
-  "app_url": "http://localhost:3000",
+  "app_url": "http://localhost:{port}",
   "test_sequences": [
     {
       "case_id": "UC001",
