@@ -690,6 +690,14 @@ Step 4: Round 增量验证（存在性 + 正确性）
     4. 有不匹配 → 立即修复（不等到 testforge Phase 才发现）
     目的: 在代码生成阶段就捕获接缝问题，不留到测试阶段
 
+  前后端字段自动比对（多子项目项目必须执行）:
+    当后端 + 前端代码都已生成时，LLM 自动执行：
+    1. 从后端代码提取 API 响应字段名（读 DTO/serializer/response model）
+    2. 从前端代码提取 API 消费字段名（读 model.fromJson / column key / template 绑定）
+    3. 同一端点的字段名逐一对比
+    4. 不一致 → 修前端（以后端为准，后端是 source of truth）
+    此步骤替代手动跑 fieldcheck — 在代码生成阶段就对齐，不留到验证阶段
+
   → 进入下一 Round 的 Step 1
 ```
 

@@ -612,6 +612,14 @@ Step 4.5.3: 修复 critical 问题
   severity=critical → 直接修复代码
   修复后重启受影响的 dev server
 
+Step 4.5.3.5: 认证链路端到端验证
+  若项目有认证功能（登录/注册），验证完整认证链路：
+  1. 用认证服务 SDK/API 登录测试账号 → 获取 token
+  2. 检查 token 格式/算法（LLM 解析 token header 确认签名算法）
+  3. 用该 token 调后端受保护 API → 必须返回 200（不是 401/403）
+  4. 若后端返回认证错误 → 诊断：token 算法不匹配？secret 配置错误？中间件顺序错误？
+  目的: 认证是所有 API 调用的前提，认证链路断 = 全部功能不可用
+
 Step 4.5.4: 接缝冒烟 + UI 性能基线
   对每个前端子项目的核心页面：
   1. 启动浏览器（Playwright headless）

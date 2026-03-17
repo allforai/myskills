@@ -1229,6 +1229,8 @@ Step B.7: 4D 跨端覆盖度闭环
 5. **一个测试一个断言意图** — 可以有多个 expect/assert，但必须验证同一个行为
 6. **错误路径必测** — 每个 catch/error return/throw 至少一个测试
 7. **E2E 链数据自给自足** — 每条链在测试内创建所需数据，不依赖外部 seed 或其他链
+8. **导航路径封装** — E2E/Integration test 中反复出现的导航操作（登录→首页→议题详情→会议室）必须抽取为 helper 函数或 Page Object 类。每个测试直接调 `loginAndGoToHome()` / `navigateToTopic(id)`，不在每个测试里重复写 find/tap 导航代码。导航路径变化时只改一处
+9. **认证状态复用** — 多个测试共享同一登录态时，第一个测试执行真实登录并保存状态，后续测试复用（Flutter: 共享 app 实例；Web: storageState）。不每个测试都重新登录（太慢）
 
 ---
 
