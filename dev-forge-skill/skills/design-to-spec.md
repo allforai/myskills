@@ -1055,6 +1055,21 @@ Step 4: Tasks 生成
   | 聚合/统计端点 | 独立任务 | `B2.x 广告统计数据 (GET /ad-campaigns/:id/stats)` |
   | 关联操作端点 | 独立任务 | `B2.x 邀请码生成 (POST /invite-codes)` |
 
+  **⚠️ 集成任务分级标签（强制）**：
+  > 每个任务必须标注 `_Integration_` 字段，分为三级：
+  >
+  > | 级别 | 含义 | 示例 | task-execute 行为 |
+  > |------|------|------|-----------------|
+  > | `none` | 纯代码，无外部依赖 | 商品列表页、订单详情页 | 正常执行 |
+  > | `sdk` | 需要第三方 SDK 但可 mock | Stripe SDK、图片上传 SDK | 实现完整代码 + 可切换的 mock adapter |
+  > | `config` | 需要外部账号/配置才能运行 | Apple OAuth、FCM 推送、Stripe webhook | 实现完整代码 + 配置检查 + 缺配置时显示"请配置 XXX" |
+  >
+  > **为什么需要**：task-execute 对 `none` 任务可以直接跑通验证。
+  > 对 `sdk`/`config` 任务，如果留空壳 `() {}`，product-verify 会误判为 genuine。
+  > 标注后，task-execute 知道该写 mock adapter 而非空回调，product-verify 知道该按 `integration_pending` 判定而非 genuine。
+  >
+  > **格式**：`_Integration_: sdk (Stripe SDK — payment processing)` 或 `_Integration_: none`
+
   **反模式（禁止）**：
   ```
   ✗ B2.45 [backend] Admin ad management controller

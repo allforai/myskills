@@ -87,6 +87,9 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 | 原则 | 对应步骤 | 具体规则 |
 |------|---------|---------|
+| **概念意图验证** | S1 语义审计 | 不只检查"代码有没有"，还检查"代码是否还原了产品概念的意图"。LLM 读 product-concept.json 中的创新点描述，对比代码实际做了什么。实现了 30% 的意图（如只有文字没有对比照片）→ partial，不是 genuine |
+| **集成任务分级** | S1/S4 | 区分"纯代码任务"和"需要外部配置的集成任务"（OAuth SDK、支付网关、推送服务、文件存储）。集成任务如果只有 coming soon / mock → 标记为 `integration_pending`（独立分类，不算 genuine 也不算 missing） |
+| **Mock 回退检测** | S1 语义审计 | 检测 catch 块中返回硬编码假数据的模式。provider/service 的 error fallback 如果返回 mock 列表而非 throw → 标记为 `mock_masked`（Warning：功能看似正常但数据是假的） |
 | 语义覆盖优于字符串匹配 | S1 语义审计 | LLM 读代码理解逻辑，不再依赖路由关键词匹配。4D 维度判定取代二元 covered/missing |
 | 先有条件再验证 | D1 动态 | 验收条件必须来自 use-case-tree.json 的 Given/When/Then，不自行编造验收标准 |
 | 可用性启发式检查 | D3.5 认知走查 | 每个页面检查：错误状态有提示、加载有反馈、操作可撤销、导航一致、权限拒绝有说明 |
