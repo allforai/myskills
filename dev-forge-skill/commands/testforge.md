@@ -1251,7 +1251,16 @@ E2E 启动前检查**每个子项目**（不只前端）的 .env：
 ### 19. WebGL 不稳定环境降级
 WSL2/CI 等无 GPU 环境下，Flutter Web CanvasKit (WebGL) 渲染不稳定。探测到 `WEBGL_UNSTABLE` 时必须：用 `--web-renderer html` 构建，Playwright 加 `retries: 3` + `workers: 1`，不因 WebGL 崩溃标记为业务 bug。
 
-### 20. 接缝层是 bug 密度最高的地方
+### 20. Mock 数据必须反映真实格式
+
+测试中的 mock/fixture 数据必须和真实服务返回的数据格式一致。常见陷阱：
+- **JWT mock**：手动构造 `{"role": "admin"}` 但真实认证服务（Supabase/Firebase/Auth0）的 JWT 用不同字段名或不同值（如 Supabase 的 `role` 是 `"authenticated"` 不是业务角色）
+- **API response mock**：前端 mock 了 `{data: [...]}` 但后端实际返回 `{code: 0, data: {items: [...], total: N}}`
+- **时间格式**：mock 用 `"2024-01-01"` 但实际返回 ISO8601 `"2024-01-01T00:00:00Z"`
+
+**验证方式**：Chain 0 真实登录成功后，把真实 JWT decode 一次，和 unit test 中 mock JWT 的结构对比。字段名/值不一致 = 测试结果不可信。
+
+### 21. 接缝层是 bug 密度最高的地方
 
 实践数据：单元测试发现 0 个真实 bug，E2E 发现的 bug 中 70% 是接缝问题：
 - 前后端字段名不一致
