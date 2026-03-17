@@ -594,10 +594,15 @@ task-execute 自动完成：
 
 ---
 
-## Phase 4.5：接缝门禁（Seam Gate）— 不可跳过
+## Phase 4.5：接缝门禁 + 功能深度审计（Seam Gate + Depth Audit）— 不可跳过
 
-> **Phase 4（代码生成）和 Phase 5（测试验证）之间必须经过接缝门禁。**
-> 不验证接缝就进入测试 = 在错误的连接上写测试 = 假绿。
+> **Phase 4（代码生成）和 Phase 5（测试验证）之间必须经过两道门禁。**
+> 接缝门禁：前后端连接是否对齐。
+> 深度审计：每个 UI 元素是否真的能用（不是空壳）。
+>
+> **为什么需要深度审计**：代码生成 Agent 在一次性处理大量任务时，倾向于生成"骨架完整但回调为空"的代码。
+> 文件存在 ≠ 功能可用。编译通过 ≠ 按钮能点。Widget 渲染 ≠ 数据能加载。
+> 深度审计在测试之前发现这些"空壳"，避免测试覆盖了一个不能用的功能还标绿。
 
 Phase 4 写完所有代码后，立即执行 deadhunt static + fieldcheck full：
 
@@ -639,11 +644,40 @@ Step 4.5.4: 接缝冒烟 + UI 性能基线
   5. 有问题 → 修复 → 重验
 ```
 
+Step 4.5.5: 功能深度审计（Depth Audit）
+
+  **代码生成 Agent 倾向于产出"骨架完整但回调为空"的代码。深度审计检查每个功能是否真的能用。**
+
+  LLM 读取产品概念中的核心功能列表（从 product-concept.json 的 core_mechanisms + innovation_concepts），
+  对每个核心功能在代码中逐项验证：
+
+  1. **回调连通性**：UI 元素（按钮/输入框/手势）的事件回调是否连接到业务逻辑？
+     - 扫描前端代码中的 onPressed / onClick / onTap / onSubmit
+     - 回调为 null / 空函数 / TODO 注释 → 标记为 `HOLLOW_CALLBACK`
+     - 回调连接到 provider/service 但 provider 未实现 → 标记为 `STUB_LOGIC`
+
+  2. **数据绑定完整性**：页面展示的数据是否来自真实 API？
+     - 扫描前端代码中的 API 调用和数据绑定
+     - 使用硬编码 mock 数据 → 标记为 `MOCK_DATA`
+     - API 调用存在但响应未解析/绑定到 UI → 标记为 `UNBOUND_DATA`
+
+  3. **核心功能对照**：
+     - 从 product-concept 提取核心功能（如"多媒体输入支持5种格式"）
+     - 在代码中逐项验证（如：文字✅ 图片❌空回调 语音❌空回调 文件❌空回调 链接❌不存在）
+     - 实现度 < 80% 的核心功能 → 标记为 `INCOMPLETE_CORE`
+
+  修复策略：
+  - HOLLOW_CALLBACK → 补全回调实现
+  - STUB_LOGIC → 补全 provider/service 逻辑
+  - MOCK_DATA → 接入真实 API
+  - INCOMPLETE_CORE → 拆分为更细粒度的任务，补全缺失部分
+
 **质量门禁**：
 - deadhunt critical = 0
 - fieldcheck critical = 0
 - 核心页面接缝冒烟全通过
 - 核心页面首屏数据可见 < 5s（WARNING 不阻塞，记录到报告）
+- 核心功能无 INCOMPLETE_CORE（WARNING 不阻塞，记录到报告）
 
 **PASS** → 进入 Phase 5
 **FAIL** → 修复后重跑（最多 3 轮）
