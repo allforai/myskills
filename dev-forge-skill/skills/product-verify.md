@@ -22,7 +22,7 @@ version: "1.6.0"
 以 `product-map`（以及可选的 `experience-map`、`use-case`）为基准，回答两个问题：
 
 1. **静态：代码有没有？** — 每个任务是否有对应的 API 路由？每个界面是否有对应的组件？每条约束是否有对应的校验逻辑？
-2. **动态：行为对不对？** — 用 Playwright（Web）/ XCUITest（iOS 原生）/ Maestro（Flutter/RN 原生）运行实际应用，用例脚本跑得通吗？
+2. **动态：行为对不对？** — 用 Playwright（Web）/ XCUITest（iOS 原生）/ Patrol（Flutter）/ Maestro（RN 原生）运行实际应用，用例脚本跑得通吗？
 
 发现差异，生成三类任务清单：
 - **IMPLEMENT** — 产品地图有但代码没有（漏实现）
@@ -208,10 +208,20 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
       - **Interface**: 任务的 CRUD 操作是否有完整的路由 handler（非空桩）？
       - **Logic**: handler 内是否包含 `task.rules` 对应的业务判断逻辑？
       - **UX**: 前端是否有对应页面/组件消费该 API？
+      **空壳检测（Hollow Shell Detection）**：
+      UI 文件存在 ≠ 功能实现。LLM 必须检查以下空壳模式：
+      - 事件回调为空：`onPressed: () {}`, `onClick={() => {}}`, `@click=""`
+      - 回调仅做无意义操作：`onPressed: () { textController.clear(); }` 但不发 API
+      - 硬编码假数据：组件内直接写死 mock 列表（非来自 API/Provider/Store）
+      - TODO/FIXME 标注：`// TODO: implement`, `// FIXME`
+      - 按钮存在但未接通后端：有 UI 但 onSubmit 不调用任何 service/API
+      任何一个交互元素命中以上模式 → 该维度（UX 或 Logic）降级为未覆盖。
+      整个任务如果关键交互是空壳 → 降级为 `stub`（不是 genuine）。
+
       **覆盖判定**（取代字符串匹配）：
-      - `genuine` — 4D 中至少 3 维有实质代码
-      - `partial` — 1-2 维有实质代码（标注缺失维度）
-      - `stub` — 仅有路由声明 / TODO / mock 返回
+      - `genuine` — 4D 中至少 3 维有实质代码，且无关键交互空壳
+      - `partial` — 1-2 维有实质代码，或有空壳交互（标注缺失维度 + 空壳清单）
+      - `stub` — 仅有路由声明 / TODO / mock 返回 / 关键交互全部为空壳
       - `missing` — 无任何匹配代码
       → 输出进度: 「S1 语义审计 ✓ genuine:{N} partial:{K} stub:{J} missing:{M}」
   ↓
@@ -734,11 +744,13 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 | `admin` / `web-customer` / `web-mobile` | **Playwright** | MCP browser_* 工具执行用例 |
 | `mobile-native` (iOS Swift/SwiftUI) | **XCUITest** | `xcodebuild test` 执行原生 UI 测试 |
 | `mobile-native` (Android Kotlin/Java) | **Maestro** | CLI `maestro test` 执行验证流 |
-| `mobile-native` (Flutter / Expo / RN) | **Maestro** | CLI `maestro test` 执行验证流 |
+| `mobile-native` (Flutter) | **Patrol** | `patrol test` 执行 Flutter 原生 UI 测试 |
+| `mobile-native` (Expo / RN) | **Maestro** | CLI `maestro test` 执行验证流 |
 | `backend` | **curl / HTTP** | API 路由 + 响应校验 |
 
 **工具探测**：
 - Playwright: 检测 `mcp__playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 工具可用性
+- Patrol: 检测 `which patrol` CLI 可用性（Bash）或项目 `pubspec.yaml` 含 `patrol` 依赖
 - Maestro: 检测 `which maestro` CLI 可用性（Bash）
 - XCUITest: 检测 `which xcodebuild` CLI 可用性（Bash）
 
@@ -747,12 +759,13 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 mobile-native 子项目:
   tech_stack = Swift / SwiftUI   → XCUITest
   tech_stack = Kotlin / Java     → Maestro（降级 → Espresso）
-  tech_stack = Flutter           → Maestro（降级 → Patrol）
+  tech_stack = Flutter           → Patrol（降级 → Maestro → integration_test）
   tech_stack = RN / Expo         → Maestro（降级 → Detox）
 ```
 
 **Maestro 降级**：
-- Maestro CLI 不可用 → Android 降级为 Espresso，Flutter 降级为 Patrol，RN 降级为 Detox
+- Patrol CLI 不可用（Flutter）→ 降级为 Maestro，再降级为 `flutter test integration_test/`
+- Maestro CLI 不可用 → Android 降级为 Espresso，RN 降级为 Detox
 - 均不可用 → 标记为 `DEFERRED_NATIVE`（仅测 API 层）
 - 输出提示：「安装 Maestro（`curl -Ls https://get.maestro.mobile.dev | bash`）以启用移动端动态验证」
 

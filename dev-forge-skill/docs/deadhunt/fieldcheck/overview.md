@@ -45,6 +45,8 @@ Mobile: Text(user.userName)  GET resp: { userName }   @JsonKey userName        u
 | **响应结构形状不匹配** (Shape Mismatch) | SHAPE_MISMATCH | 🔴 Critical | List API 返回数组但前端期望分页对象（或反之） | 数据渲染失败 |
 | **平台 API 缺守卫** (Platform Guard Missing) | PLATFORM_GUARD_MISSING | 🔴 Critical | 跨平台代码使用平台特定 API 未做平台检查 | 新平台启动即崩溃 |
 | **跨客户端 Envelope 不一致** (Envelope Inconsistent) | ENVELOPE_INCONSISTENT | 🔴 Critical | 同项目不同 client 的 response 解包方式不同 | 某端数据访问必崩 |
+| **空壳交互** (Hollow Shell) | EMPTY_HANDLER | 🔴 Critical | UI 交互回调为空或无实质逻辑 | 按钮可见但点击无反应 |
+| **硬编码假数据** (Hardcoded Mock) | HARDCODED_MOCK | 🟠 High | 组件内直接写死 mock 列表用于渲染 | 显示假数据，误导用户 |
 
 ---
 
@@ -97,7 +99,7 @@ Layer 2: 项目派生规则（SC-P-xxx）
 > 只靠预设规则会遗漏项目特有的风险；只靠 LLM 推导没有基线保障。两层互补。
 
 > **执行方式分类**：
-> - **LLM 驱动**（SC-1, SC-9, SC-12, SC-13, SC-14, 所有 SC-P-xxx）：需要 LLM 读代码理解项目特定的逻辑后推导检测规则
+> - **LLM 驱动**（SC-1, SC-9, SC-12, SC-13, SC-14, SC-15, 所有 SC-P-xxx）：需要 LLM 读代码理解项目特定的逻辑后推导检测规则
 > - **结构化比对**（SC-2~SC-8, SC-10, SC-11）：可通过提取 + 比对字段/标识符集合完成，LLM 辅助匹配
 
 #### SC-1: Response Envelope 解包一致性检测
@@ -446,6 +448,39 @@ Step 3: 对比后端 API 的实际响应
    - 无兼容处理 → ENVELOPE_ACCESS_BUG（Critical）
 
 产出: { clients: [{ name, type, has_unwrap }], inconsistent: bool, affected_files[] }
+```
+
+#### SC-15: 空壳交互检测（Hollow Shell Detection）
+
+```
+原理：
+  UI 代码中的交互元素（按钮、表单、手势）如果事件处理器为空，
+  用户看到按钮但点击无反应 → 最差的用户体验。
+  这类问题 product-verify 的文件级检查容易漏过（"文件存在"≠"功能实现"），
+  必须深入到事件回调级别检测。
+
+  **为什么会产生空壳**：
+  task-execute 遇到需要第三方集成（OAuth SDK、文件上传、WebSocket 发送、
+  支付 SDK 等）的功能时，倾向于先搭 UI 壳，把集成逻辑留空。
+  这在开发中很常见，但后续没人回来补。
+
+检测逻辑（LLM 驱动）：
+1. 扫描所有 UI 组件文件（.vue / .tsx / .jsx / .dart / .svelte）
+2. LLM 读代码，识别所有交互回调：
+   - Flutter: onPressed / onTap / onSubmit / onChanged / onLongPress
+   - Vue/React: @click / onClick / @submit / onSubmit / @change
+   - 表单: onSubmit / handleSubmit
+3. 对每个回调，LLM 判断是否有实质逻辑：
+   - () {} 或 () => {} → EMPTY_HANDLER (Critical)
+   - 仅 print/log/console.log → EMPTY_HANDLER (Critical)
+   - 仅 clear/reset 输入但不调 API → HOLLOW_HANDLER (High)
+   - 调用了 service/API/store mutation → OK
+   - 导航到其他页面 → OK
+4. 同时检测硬编码假数据：
+   - 组件内直接定义 mock 列表（非来自 API/Provider/Store/props）
+   - 且该数据用于渲染核心业务内容 → HARDCODED_MOCK (High)
+
+产出: { file, line, element, handler_code, classification, task_ref }
 ```
 
 ---

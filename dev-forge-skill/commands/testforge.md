@@ -711,9 +711,9 @@ dimension Logic > Interface > Data > UX（业务规则最先）
 | 框架 | 平台 | 测试工具 | 执行方式 |
 |------|------|---------|---------|
 | Flutter | Web | **Playwright** | `flutter run -d chrome` + Playwright 测试 |
-| Flutter | Android | **Maestro** 或 `flutter test integration_test/ -d emulator` | Maestro yaml 或 Dart integration test |
-| Flutter | iOS | **Maestro** 或 `flutter test integration_test/ -d simulator` | Maestro yaml 或 Dart integration test |
-| Flutter | macOS/Linux | `flutter test integration_test/ -d {platform}` | Dart integration test |
+| Flutter | Android | **Patrol** 或 `flutter test integration_test/ -d emulator` | Patrol dart 或 Dart integration test |
+| Flutter | iOS | **Patrol** 或 `flutter test integration_test/ -d simulator` | Patrol dart 或 Dart integration test |
+| Flutter | macOS/Linux/Windows | `flutter test integration_test/ -d {platform}` | Dart integration test |
 | RN | Web | **Playwright**（需 react-native-web） | Playwright .spec.ts |
 | RN | Android | **Maestro** | `maestro test` |
 | RN | iOS | **Maestro** | `maestro test` |
@@ -721,7 +721,8 @@ dimension Logic > Interface > Data > UX（业务规则最先）
 降级策略：
 - Playwright MCP headed 模式失败（无 X Server）→ 加 `--headless` 参数重试，**不得降级为 curl**
 - Playwright MCP 不可用 → 降级为 Playwright CLI（`npx playwright test --headed=false`）
-- Maestro 不可用 → Flutter 降级为 `flutter test integration_test/`，RN 降级为 Detox
+- Patrol 不可用（Flutter）→ 降级为 Maestro，再降级为 `flutter test integration_test/`
+- Maestro 不可用 → RN 降级为 Detox
 - 模拟器/真机不可用 → 跳过该平台 UI 测试，生成脚本标记 `PLAN_ONLY`
 - 全部不可用 → 仅生成脚本 + 主机测试（unit/widget）
 

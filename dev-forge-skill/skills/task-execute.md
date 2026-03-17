@@ -469,6 +469,21 @@ Step 2: 逐任务执行
      ```
   3. 不生成额外任务（异常处理随端点一起实现）
 
+  空壳追踪（Hollow Shell Tracking）:
+    执行 agent 遇到需要第三方集成（OAuth SDK、支付 SDK、文件上传服务、
+    WebSocket 实际发送、推送 SDK 等）但无法在当前任务内完成时：
+    **严禁静默留空壳（onPressed: () {}）。** 必须：
+    1. 在回调内写 TODO 注释说明缺什么：`// TODO: integrate Apple OAuth SDK`
+    2. 记录到 build-log.json 的 `round.hollow_shells[]`：
+       ```json
+       { "task_id": "B3.05", "file": "login_screen.dart", "line": 42,
+         "element": "Apple Sign-In button", "reason": "requires Apple Developer account setup",
+         "integration_type": "oauth" }
+       ```
+    3. 在 Round 质量检查时汇总空壳数量，输出警告：
+       「⚠ 本 Round 留下 {N} 个空壳交互，需后续集成任务补完」
+    Phase 5 product-verify 和 fieldcheck SC-15 会检测这些空壳并生成修复任务。
+
   失败处理:
     单任务失败 → 记录 error，继续同 Round 其他无依赖任务
     后续任务依赖失败任务的产出文件 → status = skipped
