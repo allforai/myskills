@@ -21,16 +21,27 @@ from _common import (
 
 
 def _count_use_cases(uc_data):
-    """Count total use cases across all roles and features."""
+    """Count total use cases across all roles and features.
+
+    Supports both tree formats:
+    - 4-layer: tree[].feature_areas[].tasks[].use_cases[]
+    - flat:    roles[].features[].use_cases[]
+    """
     if not uc_data:
         return 0
-    roles = ensure_list(uc_data, "roles")
+    roles = ensure_list(uc_data, "tree", "roles")
     total = 0
     for role in roles:
-        features = ensure_list(role, "features")
+        features = ensure_list(role, "feature_areas", "features")
         for feature in features:
-            use_cases = ensure_list(feature, "use_cases")
-            total += len(use_cases)
+            # 4-layer: use cases nested under tasks
+            tasks = ensure_list(feature, "tasks")
+            if tasks:
+                for task in tasks:
+                    total += len(ensure_list(task, "use_cases"))
+            else:
+                # Flat: use cases directly under feature
+                total += len(ensure_list(feature, "use_cases"))
     return total
 
 

@@ -24,7 +24,8 @@ def generate_usecase_report(base_path):
     uc_dir = os.path.join(base_path, ".allforai", "use-case")
     tree_data = require_json(os.path.join(uc_dir, "use-case-tree.json"), "use-case-tree")
 
-    roles = ensure_list(tree_data, "roles")
+    # Support both tree formats: "tree" (4-layer) and "roles" (flat)
+    roles = ensure_list(tree_data, "tree", "roles")
 
     lines = []
     lines.append("# Use Case Report")
@@ -37,8 +38,9 @@ def generate_usecase_report(base_path):
     area_set = set()
 
     for role in roles:
-        role_name = role.get("role_name", role.get("name", "Unknown"))
-        features = ensure_list(role, "features")
+        role_name = role.get("role_name", role.get("role", role.get("name", "Unknown")))
+        # Support both "feature_areas" (4-layer tree) and "features" (flat)
+        features = ensure_list(role, "feature_areas", "features")
         if not features and not role_name:
             continue
         role_count += 1
@@ -49,7 +51,17 @@ def generate_usecase_report(base_path):
         for feature in features:
             area = feature.get("area", feature.get("name", "Unknown"))
             area_set.add(area)
-            use_cases = ensure_list(feature, "use_cases")
+            # In 4-layer tree, use cases are nested under tasks
+            tasks = ensure_list(feature, "tasks")
+            if tasks:
+                # 4-layer: feature_area > task > use_cases
+                all_ucs = []
+                for task in tasks:
+                    all_ucs.extend(ensure_list(task, "use_cases"))
+                use_cases = all_ucs
+            else:
+                # Flat: feature > use_cases
+                use_cases = ensure_list(feature, "use_cases")
 
             lines.append(f"### {area}")
             lines.append("")
