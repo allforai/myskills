@@ -321,7 +321,9 @@ Agent 以产品总监视角分析：
 - 交互模式：展示差异化契约表，用户确认或调整 protection_level
 - 自动模式：自动确认（DIFF 数 = 0 → WARNING 停下来，可能 concept-baseline 太空）
 
-**质量门禁**：
-- differentiators 数量 >= 3（每个产品至少有 3 个差异点）
+**质量门禁**（按规模弹性）：
+- differentiators 数量 >= 1（必须有至少 1 个差异点，否则产品没有存在理由）
+  - 标准/大型项目（模块 > 5）：建议 >= 3，不足时 WARNING 不阻塞
+  - 小型项目（模块 ≤ 5）：>= 1 即可
 - 每个 core 级 DIFF 至少有 1 个 visual_contract
-- 有 >= 1 个 ceremony_moment
+- ceremony_moment >= 1（小型产品如无自然的 ceremony 可标注 `none_identified`，不阻塞）
