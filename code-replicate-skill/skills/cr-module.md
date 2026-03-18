@@ -8,205 +8,124 @@ description: >
 version: "1.0.0"
 ---
 
-# CR Module — 模块级复刻（依赖边界处理）
+# 模块复刻分析视角
 
-> 先加载协议基础: `${CLAUDE_PLUGIN_ROOT}/skills/code-replicate-core.md`
+## 概述
 
-> **Phase 委托**：本技能覆盖 Phase 1/2/3/4/6 的模块特有部分（依赖边界扫描与决策）。Phase 1/3/5/7 的基础流程由 core 协议处理。Phase 4 根据项目类型复用 cr-backend 或 cr-frontend 逻辑。
-
-模块级逆向分析：在标准模块分析基础上，**主动扫描并展示外部依赖** — 代码依赖、事件/消息依赖、共享层依赖。解决"模块边界不干净"的问题。
+模块复刻分析指定模块并主动扫描其外部依赖边界。与 scope=modules 的区别：cr-module 不仅分析目标模块本身，还主动发现、展示并帮助用户决策所有依赖关系，解决"模块边界不干净"的问题。
 
 ---
 
-## 与 scope=modules 的区别
+## 分析视角
 
-| 维度 | scope=modules（现有） | cr-module（本技能） |
-|------|---------------------|-------------------|
-| 依赖边界 | 不处理，只分析指定目录 | **主动扫描并展示外部依赖** |
-| 事件驱动 | 不追踪 | **扫描 emit/publish/subscribe 模式** |
-| 共享层 | 不处理 | **列出共享中间件/类型/数据表** |
-| Phase 3 | 确认纳入模块 | **确认纳入模块 + 依赖边界决策** |
-| 产物 | 标准产物 | 标准产物 + `module-boundaries.json` |
+模块复刻根据目标模块类型，复用 cr-backend 或 cr-frontend 的分析视角。在此基础上额外关注：
 
----
+### 依赖边界视角
 
-## Phase 1 Preflight
+模块与外部世界的连接点：
 
-在 core Preflight 基础上，额外收集：
+- **代码依赖**：import/require 其他模块的代码（函数、类、常量、类型）
+- **事件依赖**：emit/publish/dispatch 的事件被哪些模块消费，subscribe/listen 了哪些外部事件
+- **共享层依赖**：使用的共享基础设施（认证、日志、配置、数据库表、类型定义）
+- **数据依赖**：读写其他模块"拥有"的数据表或缓存键
+- **接口依赖**：实现或调用其他模块定义的接口/协议
 
-| 配置项 | 值 | 说明 |
-|--------|-----|------|
-| 目标模块路径 | {module_path} | 必填，要复刻的模块目录（如 `src/modules/user`） |
-| 项目类型 | {project_type} | Phase 2 自动检测（后端/前端） |
-
-**`--module` 参数**为必填，指定要复刻的模块路径。可指定多个：`--module src/user --module src/auth`。
-
-写入 `replicate-config.json`，`scope = modules`，`scope_detail` 为模块路径列表。
+> 边界视角回答的问题：这个模块如果被"拔出来"，哪些连接会断？
 
 ---
 
-## Phase 2：源码解构 + 依赖边界扫描
+## Phase 2 增强
 
-### 2a-2c. 标准扫描
+在 core 的 Phase 2 基础上增加以下模块特有步骤：
 
-根据检测到的项目类型，复用 cr-backend 或 cr-frontend 的 Phase 2 逻辑，**扫描整个项目**（需要全局上下文）。
+### 2a. 全项目扫描
 
-### 2d. 外部依赖扫描（cr-module 独有）
+- 需要全局视角以发现依赖关系，因此先扫描整个项目结构
+- 但 `key_files` 只深读目标模块内的文件（控制分析成本）
+- 其他模块只读入口文件和导出定义（足以识别依赖接口）
 
-对目标模块的每个文件，扫描 import/require 语句：
+### 2b. 依赖边界扫描
 
-- 引用目标模块内部文件 → **内部依赖**（正常，不记录）
-- 引用目标模块外部文件 → **外部依赖**，记录到 `external_dependencies`
+系统性扫描三类依赖：
 
-分类规则：
-- 第三方包（node_modules / pip packages）→ 标记为 `third_party`，不视为模块依赖
-- 项目内其他模块 → 标记为 `module_dependency`
-- 项目共享层（utils/common/shared）→ 标记为 `shared_dependency`
+**代码依赖**
+- 目标模块 import/require 了哪些外部模块的代码
+- 外部模块 import/require 了目标模块的哪些导出
 
-### 2e. 事件/消息依赖扫描（cr-module 独有）
+**事件依赖**
+- 目标模块 emit/publish/dispatch 的事件 → 哪些外部模块在消费
+- 目标模块 subscribe/listen 的事件 → 来自哪些外部模块
 
-搜索以下模式：
-
-```
-发出事件: emit|publish|dispatch|fire|trigger|send + 事件名
-监听事件: on|subscribe|listen|handle|consume + 事件名
-```
-
-对每个匹配：
-- 记录事件名 + 方向（publish/subscribe）
-- 追踪事件在其他模块中的 publish/subscribe 对应方，确定关联模块
-
-### 2f. 共享层识别（cr-module 独有）
-
-扫描目标模块引用的：
-
-| 共享资源类型 | 检测方式 |
-|------------|---------|
-| 共享中间件 | auth guard、logger、error handler — 从 middleware/guard 目录或装饰器引用 |
-| 共享类型/DTO/enum | 从 `shared/`、`common/`、`types/` 目录引用的类型定义 |
-| 共享数据库表 | ORM 关联（外键、join 查询、relation 装饰器） |
-| 共享配置 | 环境变量引用、feature flag、全局配置 |
-
-输出进度「Phase 2 ✓ 目标模块: {module_names} | 外部依赖: {N} 个模块 | 事件: {N} publish / {N} subscribe | 共享层: {N} 项」。
+**共享层依赖**
+- 共享的认证/授权机制
+- 共享的日志/配置基础设施
+- 共享的类型定义/接口
+- 共享的数据库表（多个模块读写同一张表）
 
 ---
 
-## Phase 3：目标确认 + 依赖边界决策（增强）
+## Phase 2d 增强
 
-在 core Phase 3 基础上，额外展示依赖边界信息并收集决策：
+### 依赖矩阵展示
 
-```markdown
-### 模块依赖边界
+向用户展示依赖矩阵，格式：
 
-目标模块: {module_name}（{module_path}）
+```
+目标模块: [module-name]
 
-#### 直接代码依赖（import）
+代码依赖:
+  → module-A: 调用 3 个函数, 使用 2 个类型
+  → module-B: 调用 1 个函数
+  ← module-C: 被调用 2 个导出函数
 
-| 外部模块 | 引用方式 | 建议 |
-|---------|---------|------|
-| auth | UserService → AuthService.validateToken() | 纳入 / 标记为外部接口 |
-| notification | UserService → NotificationService.sendEmail() | 纳入 / 标记为外部接口 |
+事件依赖:
+  → event:order.created → module-D 消费
+  ← event:payment.completed ← module-E 发布
 
-#### 事件依赖（异步）
-
-| 事件 | 方向 | 关联模块 | 建议 |
-|------|------|---------|------|
-| UserCreated | publish | order, analytics, notification | 记录事件契约，不纳入消费者 |
-| PaymentCompleted | subscribe | payment | 记录事件契约 |
-
-#### 共享层依赖
-
-| 共享资源 | 类型 | 建议 |
-|---------|------|------|
-| AuthGuard | 中间件 | 标记为前置依赖 |
-| BaseEntity | 共享类型 | 纳入 |
-| users 表 ↔ orders 表 (FK) | 数据关联 | 标记外键关系 |
+共享层依赖:
+  ↔ shared/auth: 使用认证中间件
+  ↔ shared/db: 共享 users 表
 ```
 
-### 依赖边界决策选项
+### 依赖决策收集
 
-对每个外部依赖，用 `AskUserQuestion` 收集决策（合并到 Phase 3 确认中）：
+对每个外部依赖，收集用户决策（或基于规则自动推荐）：
 
-| 决策 | schema key | 含义 | 复刻时处理 |
-|------|-----------|------|-----------|
-| **纳入** (include) | `include` | 将该模块也加入分析范围 | Phase 4 一并分析 |
-| **标记为外部接口** (external_interface) | `external_interface` | 只记录接口签名，不分析实现 | 复刻时作为 mock/stub |
-| **标记为事件契约** (event_contract) | `event_contract` | 只记录事件 schema | 不纳入生产/消费逻辑 |
-| **标记为前置依赖** (prerequisite) | `prerequisite` | 记录依赖关系，复刻时必须先满足 | 生成前置条件清单 |
+| 决策类型 | 含义 | 处理方式 |
+|---------|------|---------|
+| `include` | 一起分析和复刻 | 纳入目标模块范围，完整分析 |
+| `external_interface` | 只记录签名 | 记录函数签名/类型定义，不分析实现 |
+| `event_contract` | 只记录事件 Schema | 记录事件名称和数据格式 |
+| `prerequisite` | 标记为前置条件 | 记录为 task.prerequisites，不分析 |
 
-决策写入 `replicate-config.json` 的 `module_boundary_decisions` 字段。
+### source-summary.json 增强
+
+模块级增强字段写入 modules[] 内：
+
+```
+modules[target].dependencies: [
+  {
+    "target": "module-A",
+    "type": "code|event|shared",
+    "direction": "outbound|inbound|bidirectional",
+    "details": "调用 getUserById, formatDate",
+    "boundary_decision": "include|external_interface|event_contract|prerequisite"
+  }
+]
+```
 
 ---
 
-## Phase 4：深度分析
+## Phase 3 策略
 
-根据项目类型复用 cr-backend 或 cr-frontend 的 Phase 4 逻辑，分析范围包括：
-- 目标模块（必须）
-- Phase 3 决策为"纳入"的外部模块
-- Phase 3 决策为"外部接口"的模块 → 仅提取接口签名
-
-对"外部接口"的模块：
-- 只扫描目标模块实际调用的方法/函数
-- 生成接口签名（函数名 + 参数类型 + 返回类型）
-- 不分析实现逻辑，标注 `[EXTERNAL_INTERFACE]`
-
-### Phase 4 产物自检
-
-复用 cr-backend（`endpoint_coverage` + `module_coverage` + `high_risk_6v`）或 cr-frontend（`component_coverage` + `page_coverage` + `module_coverage` + `high_risk_6v`）的自检逻辑，根据检测到的项目类型自动选择。自检范围仅覆盖目标模块 + 决策为"纳入"的模块，不含"外部接口"模块。
+- 只为目标模块 + `include` 决策的模块生成完整产物
+- `external_interface` 依赖：以 `[EXTERNAL] module-A.getUserById(id: string): User` 格式记录在相关 task 的 `prerequisites` 字段中
+- `event_contract` 依赖：以 `[EVENT] order.created { orderId, amount, userId }` 格式记录
+- `prerequisite` 依赖：以 `[PREREQUISITE] module-B 必须先部署` 格式记录
+- task-inventory 中与外部依赖相关的 task 增加 `external_deps` 字段列出依赖清单
 
 ---
 
-## Phase 6：生成产物（增强）
+## 加载核心协议
 
-除标准产物外，新增 `module-boundaries.json`。
-
-> 完整 module-boundaries.json 格式详见 `${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md`（Module 边界产物）
-```
-
-### 产物目录
-
-```
-.allforai/
-├── product-map/
-│   ├── task-inventory.json
-│   ├── business-flows.json          ← functional+
-│   └── constraints.json             ← exact
-├── use-case/
-│   └── use-case-tree.json           ← functional+
-└── code-replicate/
-    ├── replicate-config.json
-    ├── source-analysis.json
-    ├── api-contracts.json
-    ├── behavior-specs.json          ← functional+
-    ├── arch-map.json                ← architecture+
-    ├── bug-registry.json            ← exact
-    ├── module-boundaries.json       ← cr-module 独有
-    ├── stack-mapping.json
-    ├── stack-mapping-decisions.json
-    └── replicate-report.md
-```
-
-### replicate-report.md 模块专有部分
-
-在标准报告基础上追加模块边界摘要：
-
-```markdown
-## 模块边界摘要
-
-| 维度 | 数量 |
-|------|------|
-| 目标模块 | {N} |
-| 外部依赖（纳入） | {N} |
-| 外部依赖（接口） | {N} 个接口签名 |
-| 事件契约 | {N} publish / {N} subscribe |
-| 共享依赖 | {N} |
-| 数据关联 | {N} 表间关系 |
-
-### 复刻前置条件
-
-以下依赖必须在目标项目中先满足：
-
-1. **AuthGuard** — 认证中间件（目标栈等价物需先实现）
-2. **users 表** — 数据库表结构（含外键关系）
-3. **PaymentCompleted 事件** — 需订阅此事件（来自 payment 模块）
-```
+> 核心协议详见 ${CLAUDE_PLUGIN_ROOT}/skills/code-replicate-core.md

@@ -8,227 +8,117 @@ description: >
 version: "1.0.0"
 ---
 
-# CR Backend — 后端复刻
+# 后端复刻分析视角
 
-> 先加载协议基础: `${CLAUDE_PLUGIN_ROOT}/skills/code-replicate-core.md`
+## 概述
 
-> **Phase 委托**：本技能覆盖 Phase 2/4/6 后端特有部分。Phase 1/3/5/7 由 core 协议处理。
-
-后端专用逆向分析：API 合约、Service 业务逻辑、ORM 映射、中间件链、微服务契约。
+后端复刻专注于从服务端代码中提取完整的业务行为描述。分析目标是理解"系统做了什么"而非"用了什么框架"，确保迁移到任何目标技术栈时业务逻辑零丢失。
 
 ---
 
-## 项目类型检测表
+## 分析视角
 
-Phase 2 完成技术栈识别后，确认项目属于以下类型之一：
+### 入口层
 
-| 类型 | 检测特征 | 分析重心 |
-|------|---------|---------|
-| **后端 API** | `routes/`、`controllers/`、`middleware/`、`services/`、ORM 配置、`main.go/app.py/index.ts` 入口 | API 合约、业务逻辑、ORM 映射、中间件链 |
-| **微服务** | `.proto` 文件、消息队列 consumer/producer、`saga/`、事件定义文件 | 服务契约（proto/schema）、消息格式、事件流、幂等性 |
+接收外部请求的边界 — 系统与外界的所有接触点：
 
-**混合单体检测**：若发现前端代码（`components/`、`pages/`、`store/`、`hooks/`、路由配置文件）→ 输出提示：
+- **HTTP 路由**：路径、方法、参数绑定、请求/响应格式
+- **RPC 定义**：服务接口声明、方法签名、序列化协议
+- **消息消费者**：队列/主题订阅、消息格式、消费确认机制
+- **CLI 命令**：命令名称、参数定义、输出格式
+- **定时任务入口**：调度规则、触发条件、任务参数
 
-```markdown
-### 检测到混合单体项目
+> 入口层回答的问题：系统对外暴露了哪些能力？每个能力的输入输出契约是什么？
 
-前端部分: {path}（{frontend_stack}）
-建议：对前端部分单独运行 `/code-replicate --type frontend` 分析。
+### 服务层
+
+业务逻辑编排 — 系统的核心决策和协调逻辑：
+
+- **事务边界**：哪些操作必须原子执行、回滚策略
+- **外部服务调用**：调用了哪些第三方/内部服务、调用参数、响应处理
+- **异步任务发起**：哪些操作被异步化、任务参数、完成回调
+- **重试策略**：失败时的重试逻辑、退避策略、最大重试次数
+- **业务规则**：条件判断、状态流转、计算逻辑
+
+> 服务层回答的问题：每个入口背后的业务逻辑是什么？决策链条如何流转？
+
+### 数据层
+
+持久化操作 — 系统如何存储和检索数据：
+
+- **实体定义**：数据模型、字段类型、关系映射、约束条件
+- **查询模式**：常用查询的形状（过滤、排序、分页、聚合）
+- **迁移脚本**：Schema 演进历史、数据迁移逻辑
+- **缓存策略**：缓存对象、失效规则、缓存穿透处理
+
+> 数据层回答的问题：系统持久化了什么数据？数据之间的关系是什么？
+
+### 横切层
+
+贯穿所有层的基础设施关注点：
+
+- **认证/授权链**：身份验证方式、权限检查逻辑、角色定义
+- **中间件管道**：请求处理管道的顺序和职责
+- **错误处理策略**：错误分类、错误码定义、错误响应格式
+- **日志策略**：日志级别、结构化日志字段、审计日志
+- **配置管理**：环境变量、配置文件、Feature Flag
+
+> 横切层回答的问题：系统的安全边界在哪？错误如何传播？运行时行为如何控制？
+
+---
+
+## Phase 2b 补充指令
+
+模块摘要（source-summary.json 的 modules[]）时，额外提取以下后端特有信息：
+
+### API 端点清单
+```
+每个端点记录：
+- method: HTTP 方法（GET/POST/PUT/DELETE 等）
+- path: 路由路径（含路径参数）
+- auth: 是否需要认证（yes/no/optional）
+- summary: 一句话描述端点用途
+```
+
+### 数据实体清单
+```
+每个实体记录：
+- name: 实体名称
+- key_fields: 关键字段列表（名称+类型）
+- relations: 与其他实体的关系（1:N, N:M 等）
+```
+
+### 认证机制摘要
+```
+记录：
+- auth_type: 认证方式（JWT/Session/OAuth/API Key 等）
+- role_model: 角色模型描述
+- permission_granularity: 权限粒度（API 级/资源级/字段级）
 ```
 
 ---
 
-## Phase 2：源码解构（后端版，自动执行，不停顿）
+## Phase 3 推断策略
 
-### 1a. 技术栈识别
+从后端源码推断标准产物时，按以下策略映射：
 
-扫描以下文件识别技术栈（优先顺序：依赖文件 > 目录结构 > 文件扩展名）：
+| 产物 | 从什么推断 |
+|------|-----------|
+| role-profiles | 认证/授权代码中的角色定义、权限检查、RBAC 配置。每个角色的权限范围→responsibilities，可访问端点→task 关联 |
+| task-inventory | 入口层的每个端点/命令 → 一个 task。参数→inputs，响应→outputs，错误处理→exceptions，中间件→prerequisites |
+| business-flows | 服务层的调用链 → flow。跨服务调用序列→主线步骤，中间件→横切流，事务边界→原子步骤组 |
+| use-case-tree | 入口层的条件分支→boundary，错误路径→exception，正常流→happy_path。HTTP 状态码 2xx→成功场景，4xx→边界，5xx→异常 |
+| constraints | 硬编码的业务规则→exact 模式约束。校验逻辑（长度/格式/范围）→输入约束，限流规则→性能约束，权限规则→安全约束 |
 
-| 文件 | 技术栈 |
-|------|--------|
-| `package.json` | Node.js；框架从 dependencies 推断（Express/NestJS/Fastify/Koa） |
-| `requirements.txt` / `pyproject.toml` | Python；框架从依赖推断（Django/FastAPI/Flask） |
-| `go.mod` | Go；框架从 import 路径推断（Gin/Echo/Fiber） |
-| `pom.xml` / `build.gradle` | Java/Kotlin（Spring Boot/Ktor） |
-| `composer.json` | PHP（Laravel/Symfony） |
-| `Gemfile` | Ruby（Rails/Sinatra） |
-| `Cargo.toml` | Rust（Actix/Axum） |
-| `.csproj` / `.sln` | C#（ASP.NET Core） |
+### 后端特有推断注意事项
 
-记录到 `source_analysis.json` 的 `source_stack` 字段，附证据 `[CONFIRMED:file]`。
-
-### 1b. 模块树提取
-
-扫描目录结构，识别后端典型模块模式：
-
-```
-controllers/ | routes/ | handlers/    → 路由/控制器层
-services/ | usecases/ | domain/       → 业务逻辑层
-repositories/ | models/ | entities/   → 数据访问层
-middleware/ | guards/ | interceptors/ → 中间件层
-config/ | settings/                   → 配置层
-```
-
-对每个模块生成条目（含 id, name, path, inferred_responsibility, confidence, evidence, key_files 字段）。模块职责无法确定时：标注 `"confidence": "low"` + `[INFERRED]`，加入歧义 log，**不停下询问**。
-
-> 模块条目格式详见 `${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md`（模块树条目）
-
-### 1c. 代码规模评估
-
-统计：总文件数、代码行数（估算）、路由数量（估算）、模块数量。
-
-写入 `.allforai/code-replicate/source-analysis.json`，输出进度「Phase 2 ✓ {N} 模块 | {N}± 路由 | {source_stack} | 类型: 后端」。
-
-**下一步**：进入 Phase 3 目标确认（见 core 协议）— 展示源码全貌，让用户确认复刻范围、目标技术栈、业务方向，确认后自动继续 Phase 4。
+- **异步操作**：队列消费者和定时任务也是 task，不要遗漏
+- **隐式流程**：中间件链构成的隐式业务流（如：认证→限流→日志→处理→审计）需要显式记录
+- **数据约束**：数据库 Schema 中的约束（NOT NULL、UNIQUE、CHECK）是 constraints 的重要来源
+- **错误码体系**：错误码定义暗示了所有可能的异常场景，是 use-case exception 的补充来源
 
 ---
 
-## Phase 4：信度专项分析 — 后端 API 项目
+## 加载核心协议
 
-按信度等级叠加执行（每个模式包含上一级全部内容）。所有歧义收集到内部 `ambiguity_log`，不停下询问。
-
-### 粒度适配
-
-根据 Phase 3 确定的 `analysis_granularity`（scope=full 时按代码规模自动判定）：
-- **fine**：逐个端点完整分析（4D + 6V），逐个 Service 函数追踪完整 flow 步骤
-- **standard**：逐个端点分析，高风险项完整 6V，普通项省略 ux/risk 视角
-- **coarse**：按模块聚合，仅高频/高风险端点做完整分析，其余提取签名 + 关键约束（省略 flow 步骤和低优先级视角）
-
-### 所有模式：API 合约分析 → `api-contracts.json`
-
-对每个路由文件提取端点条目（含 4D + 6V 字段：endpoint_id, method, path, source_file, source_line, auth_required, request, responses, confidence, source_refs, constraints, decision_rationale, viewpoints）。
-
-若响应状态码与实际异常处理不一致 → 标注 `[CONFLICT]`，加入 ambiguity_log，**不停下**。
-
-> 完整端点 JSON 示例详见 `${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md`（api-contracts.json）
-
-额外关注：
-- **认证中间件链**（JWT/Session/OAuth 如何注入、哪些路由受保护）
-- **数据库事务边界**（哪些操作是原子的、嵌套事务策略）
-- **外部服务调用**（第三方 API、消息队列 publish、webhook）
-- **用户身份获取**：涉及当前用户信息获取（如 `req.user`、`ctx.state.user`、`@CurrentUser()`）时，**必须对照项目中已有模块的实现方式**，确认身份注入机制（中间件注入 / 装饰器 / Context）、字段来源（JWT payload / Session / DB 查询）、类型定义是否一致。不同模块用不同方式获取用户身份是常见 bug 来源
-- **Worker/Job 组件阻塞性**：发现 Worker、Job、Queue Consumer、定时任务等后台组件时，**显式检查 Execute/Process/Handle 方法是否真正阻塞**（同步等待 vs 异步非阻塞）。常见陷阱：源码 Execute 方法内部是阻塞调用（如同步 HTTP、阻塞 DB 查询），复刻到目标栈时若改为异步但未正确 await，会导致任务"成功"但实际未执行完
-
----
-
-### functional 模式加：行为规格分析 → `behavior-specs.json`
-
-对每个 Service 函数提取业务逻辑路径（含 4D + 6V 字段：behavior_id, name, source_file, source_line, flow, error_handling, confidence, source_refs, constraints, decision_rationale, viewpoints）。
-
-无测试覆盖的行为 → 标注 `[UNTESTED]`，加入 ambiguity_log，继续。
-
-> 完整行为 JSON 示例详见 `${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md`（behavior-specs.json）
-
----
-
-### architecture 模式加：架构地图 → `arch-map.json`
-
-提取分层结构（layers）、检测到的模式（patterns_detected）、模块依赖（dependencies）、横切关注点（cross_cutting: logging, auth, caching 等）。
-
-发现架构歧义（如：无法确定是否有多个入口点） → 若 `ambiguity_policy = strict` 且影响架构走向 → 即时停下询问；否则标注加入 log 继续。
-
-> 完整架构地图 JSON 示例详见 `${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md`（arch-map.json）
-
----
-
-### exact 模式加：Bug 注册表 → `bug-registry.json`
-
-逐一记录发现的 bug（含 bug_id, type, location, description, evidence, confidence, evidence_sources, replicate_decision 字段）。
-
-**后端典型 bug 类型**（重点扫描）：
-- 竞态条件（并发写入无锁保护）
-- 事务遗漏（多步操作非原子）
-- 认证绕过（路由遗漏 auth guard）
-- SQL 注入 / ORM 不安全查询
-- 分页 off-by-one
-- 时区处理不一致
-
-若 `bug_replicate_default = ask` → 将每个 bug 的决策加入 Phase 5 的"待确认列表"，不即时停下。
-
-> 完整 bug 条目 JSON 示例详见 `${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md`（bug-registry.json）
-
----
-
-## Phase 4（微服务项目）：服务契约分析
-
-若 Phase 2 检测到微服务类型，Phase 4 替换为服务契约分析：
-
-| 维度 | 分析内容 | 对应产物 |
-|------|---------|---------|
-| **服务契约** | gRPC proto 定义 / REST API / GraphQL schema | `api-contracts.json`（服务间接口） |
-| **消息格式** | 消息队列 payload 结构、topic 命名、序列化格式 | `behavior-specs.json` 消息流 |
-| **事件定义** | 领域事件 schema、事件版本、消费者清单 | `arch-map.json` 事件流 |
-| **幂等性** | 哪些操作有幂等保障，幂等键策略 | `behavior-specs.json` |
-| **服务依赖图** | 服务间调用关系、循环依赖检测 | `arch-map.json` |
-
----
-
-### Phase 4 完成
-
-写入所有 JSON 文件，更新 `replicate-config.json`。
-
-#### Phase 4 产物自检（写入后、继续前执行）
-
-对已写入的产物执行三项一致性校验，结果写入 `source-analysis.json` 顶层 `self_check` 字段：
-
-**① 端点覆盖率**
-- 比对 `api-contracts.json` 实际端点数 vs Phase 2 路由扫描估算数（`source-analysis.json` 中记录的路由数量）
-- 偏差 >20% → 状态 `warn`，写入 `self_check.endpoint_coverage`
-
-**② 模块覆盖率**
-- 检查 `scope_filter.included_modules` 中每个模块是否在 `api-contracts.json` 或 `behavior-specs.json` 中有至少 1 个条目
-- 零产出模块 → 状态 `warn`，对该模块**重新执行 Phase 4 分析**（仅该模块），追加到现有产物中
-
-**③ 高风险 6V 完整性**
-- 筛选所有 `risk_level: high` 或 `risk.severity: high|critical` 的端点/行为
-- 检查其 `viewpoints` 是否包含全部 6 个视角（user, business, tech, ux, data, risk）
-- 缺失视角 → 自动补全（标注 `[SELF_CHECK:补全]`），状态 `补全`
-
-**自检结果写入格式**（`source-analysis.json` 顶层）：
-
-```json
-{
-  "self_check": {
-    "endpoint_coverage": { "expected": 50, "actual": 45, "ratio": 0.90, "status": "pass|warn" },
-    "module_coverage": { "included": 8, "with_output": 8, "zero_output": [], "status": "pass|warn" },
-    "high_risk_6v": { "total_high_risk": 12, "complete_6v": 10, "补全": 2, "status": "pass|补全" },
-    "checked_at": "ISO8601"
-  }
-}
-```
-
-**输出格式**：
-
-- 全部通过：`Phase 4 自检 ✓ 端点覆盖 {ratio}% | 模块 {with_output}/{included} | 高风险 6V {complete}/{total}`
-- 有警告：`Phase 4 自检 ⚠ 端点覆盖 {ratio}%（预期 {expected}，实际 {actual}，偏差 >20%）| 模块 {with_output}/{included}（{module} 零产出，回补中...）| 高风险 6V {complete}/{total}（{N} 项已补全）`
-
-自检完成后，自动继续 Phase 4 XV（或 Phase 5）。
-
----
-
-## Phase 6：生成 allforai 产物（后端专有部分）
-
-> 6a/6e/6f 由 core 统一生成，以下为后端特有产物。
-> **注意路径**：6b/6d 写到 `.allforai/product-map/`，6c 写到 `.allforai/use-case/`，不是 `.allforai/code-replicate/`。
-
-### 6b. `.allforai/product-map/business-flows.json`（functional+ 模式）
-
-从 `behavior-specs.json` 中的 Service 调用链提取，转换为 product-map 兼容格式（与 `/product-map` 产出结构一致）。
-
-重点：
-- Service → Service 调用链作为业务流程主线
-- 中间件链作为横切流程
-- 事务边界标注（原子操作范围）
-
-### 6c. `.allforai/use-case/use-case-tree.json`（functional+ 模式）
-
-从业务行为生成用例树，格式兼容 product-design `use-case/` 目录。
-
-后端用例来源：
-- 每个 API 端点 → 一个用例
-- Service 内部的条件分支 → 用例的备选流
-- 错误处理 → 异常流
-
-### 6d. `.allforai/product-map/constraints.json`（exact 模式）
-
-将 `bug-registry.json` 中 `replicate_decision: "replicate"` 的 bug 转为约束（含 constraint_id, source_bug, description, enforcement, affects）。
+> 核心协议详见 ${CLAUDE_PLUGIN_ROOT}/skills/code-replicate-core.md

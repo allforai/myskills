@@ -8,330 +8,122 @@ description: >
 version: "1.0.0"
 ---
 
-# CR Fullstack — 综合复刻（前后端交叉验证）
+# 全栈复刻分析视角
 
-> 先加载协议基础: `${CLAUDE_PLUGIN_ROOT}/skills/code-replicate-core.md`
+## 概述
 
-> **Phase 委托**：本技能覆盖 Phase 1（增强）/2/3（增强）/4/6/7 的 fullstack 特有部分。Phase 1/3/5/7 的基础流程由 core 协议处理，本技能在其基础上增强（额外收集双栈路径、额外展示交叉验证信息等）。
-
-综合逆向分析：在后端 + 前端**各自**分析的基础上，增加**交叉验证层** — API 绑定、Schema 对齐、约束一致性、认证传播、错误映射。不是"跑两遍"，而是单次分析 + 交叉验证。
+全栈复刻委派 cr-backend + cr-frontend 分别扫描各自层，在此基础上额外执行交叉验证和基础设施扫描。目标不是"跑两遍"，而是单次协调分析 + 跨层一致性保障。
 
 ---
 
-## 项目类型检测
+## 分析视角
 
-Phase 2 完成双栈识别后，确认项目结构属于以下类型之一：
+全栈复刻继承后端四视角（入口层/服务层/数据层/横切层）和前端四视角（页面路由层/组件层/状态层/交互层），额外增加：
 
-| 类型 | 检测特征 | 处理方式 |
-|------|---------|---------|
-| **Monorepo** | 根目录下 `backend/`/`server/`/`api/` + `frontend/`/`client/`/`web/`/`app/` | 自动识别前后端路径 |
-| **单目录全栈** | Next.js（`app/api/` + `app/`）、Nuxt（`server/` + `pages/`） | 按文件类型分区 |
-| **多仓库** | 用户指定两个路径或 URL | 分别 clone/读取 |
+### 交叉验证视角
 
-**降级检测**：若只发现一端（仅后端或仅前端）→ 输出提示：
+前后端之间的契约和一致性：
 
-```markdown
-### 仅检测到{backend/frontend}代码
+- **API 契约对齐**：前端调用的端点 vs 后端暴露的端点（路径/方法/参数/响应）
+- **数据类型对齐**：前端类型定义 vs 后端实体字段（名称/类型/可选性）
+- **认证传播**：后端的认证要求 vs 前端的 Token 管理和路由守卫
+- **错误映射**：后端错误码/错误格式 vs 前端错误处理逻辑
+- **实时通信**：WebSocket/SSE 的前后端事件名称和数据格式对齐
 
-路径: {path}（{stack}）
-建议：运行 `/code-replicate --type backend` 或 `/code-replicate --type frontend` 替代。
+### 基础设施视角
 
-若确实包含前后端代码，请手动指定路径：
-`/code-replicate functional ./src --type fullstack --backend-path server --frontend-path client`
-```
+支撑前后端运行的基础设施：
 
----
-
-## Phase 1 Preflight（增强）
-
-在 core Preflight 基础上，额外收集：
-
-| 配置项 | 值 | 说明 |
-|--------|-----|------|
-| 后端路径 | {backend_path} | 后端代码目录（相对于源码根目录） |
-| 前端路径 | {frontend_path} | 前端代码目录（相对于源码根目录） |
-| 后端目标技术栈 | {backend_target_stack} | 后端用什么技术栈重写 |
-| 前端目标技术栈 | {frontend_target_stack} | 前端用什么技术栈重写 |
-
-**自动检测逻辑**：
-- 扫描根目录结构，匹配常见 monorepo 模式
-- 单目录全栈项目（如 Next.js）→ 按文件类型分区（`app/api/`=后端，其余=前端）
-- 若只发现一端 → 提示用户确认，或降级为 `/code-replicate --type backend` / `/code-replicate --type frontend`
-
-写入 `replicate-config.json`，`project_type = fullstack`，新增 `backend_path`、`frontend_path`、`backend_target_stack`、`frontend_target_stack` 字段。
+- **容器编排**：Docker 配置、服务间网络、构建流水线
+- **反向代理**：API 网关、路径转发、CORS 配置
+- **环境变量**：前后端各自的环境配置、共享配置
+- **定时任务**：Cron 配置、调度系统
+- **部署清单**：K8s/Compose 配置、服务依赖关系
 
 ---
 
-## Phase 2：双栈源码解构（自动执行，不停顿）
+## Phase 2 增强
 
-### 2a. 后端扫描
+在 core 的 Phase 2 基础上增加以下全栈特有步骤：
 
-复用 cr-backend Phase 2 逻辑（技术栈识别 + 模块树 + 代码规模），结果写入 `backend/source-analysis.json`。
+### 2a. 项目结构检测
 
-### 2b. 前端扫描
+自动检测项目类型：
+- **Monorepo 模式**：检测 backend/ + frontend/（或 server/ + client/ 等变体）分离目录
+- **单目录全栈模式**：前后端同目录（如 pages/ + api/ 共存的全栈框架）
+- 记录检测结果到 source-summary.json 的 `project_structure` 字段
 
-复用 cr-frontend Phase 2 逻辑（技术栈识别 + 组件树 + 代码规模），结果写入 `frontend/source-analysis.json`。
+### 2b. 委派分层扫描
 
-### 2c. 基础设施扫描（fullstack 独有）
+- 委派 cr-backend 的 Phase 2b 指令扫描后端部分
+- 委派 cr-frontend 的 Phase 2b 指令扫描前端部分
+- 两次扫描的模块摘要分别写入 source-summary.json
 
-扫描以下非代码文件，提取基础设施行为：
+### 2c. 基础设施扫描
 
-| 文件 | 提取内容 |
-|------|---------|
-| `docker-compose.yml` / `docker-compose.*.yml` | 服务依赖图、端口映射、环境变量、卷挂载 |
-| `nginx.conf` / `Caddyfile` / `traefik.yml` | 反向代理路由、重写规则、CORS 配置 |
-| `crontab` / `*.cron` / 代码中的 cron 表达式 | 定时任务清单 |
-| `.env` / `.env.example` | 环境变量清单（不含值，只列 key + 用途推断） |
-| `Makefile` / `Procfile` | 进程管理、启动命令 |
-| k8s manifests（若有） | 服务拓扑、资源配额、健康检查 |
+额外扫描并记录：
+- Docker/容器编排配置
+- 反向代理/API 网关配置
+- 环境变量清单（前后端各自 + 共享）
+- 定时任务配置
+- CI/CD 流水线配置
 
-写入 `.allforai/code-replicate/infrastructure.json`。
+### 2d. source-summary.json 增强字段
 
-输出进度「Phase 2 ✓ 后端: {N} 模块 | {backend_stack} | 前端: {N} 模块 | {frontend_stack} | 基础设施: {N} 项」。
-
----
-
-## Phase 3：目标确认（增强）
-
-在 core Phase 3 基础上，额外展示：
-
-```markdown
-### 双栈概览
-
-| 维度 | 后端 | 前端 |
-|------|------|------|
-| 源技术栈 | {backend_stack} | {frontend_stack} |
-| 模块数 | {N} | {N} |
-| 路由/端点数 | {N}± | 页面数 {N}± |
-| 目标技术栈 | {backend_target 或 待定} | {frontend_target 或 待定} |
-
-### 初步 API 绑定
-
-前端调用的后端端点（快速扫描，Phase 4 会深入分析）：
-
-| 前端调用 | 后端端点 | 状态 |
-|---------|---------|------|
-| userApi.login() | POST /api/auth/login | ✅ matched |
-| orderApi.list() | GET /api/orders | ✅ matched |
-| reportApi.export() | GET /api/reports/export | ⚠️ 后端无此端点 |
-
-### 基础设施概览
-
-| 组件 | 用途 | 复刻建议 |
-|------|------|---------|
-| Docker Compose | 开发环境编排 | 生成等价配置 |
-| Nginx | 反向代理 + CORS | 记录路由规则 |
-| Cron | 每日报表生成 | 转为目标栈定时任务 |
 ```
-
-用户确认：后端目标技术栈 + 前端目标技术栈 + 业务方向 + 复刻范围。
-
----
-
-## Phase 4：深度分析（分层执行）
-
-### 4a. 后端深度分析
-
-复用 cr-backend Phase 4 逻辑（API 合约、行为规格、架构地图、Bug 注册表），产物写入 `backend/` 命名空间。
-
-### 4b. 前端深度分析
-
-复用 cr-frontend Phase 4 逻辑（组件与 API 合约、行为规格、架构地图、Bug 注册表），产物写入 `frontend/` 命名空间。
-
-### 4c. 交叉验证层（fullstack 核心价值）
-
-**4c-1. API 绑定分析 → `api-bindings.json`**
-
-匹配前端 API 调用与后端端点：
-- 从 `frontend/api-contracts.json` 提取所有 API 调用点（URL + method）
-- 从 `backend/api-contracts.json` 提取所有端点（path + method）
-- 自动匹配，标注状态：
-  - `matched` — 前后端对应
-  - `unmatched_frontend` — 前端调了但后端无此端点
-  - `unmatched_backend` — 后端有但前端从不调用
-- 对已匹配的：比对 request shape 和 response shape，标注 `shape_mismatch`
-
-**4c-2. 数据 Schema 对齐 → `schema-alignment.json`**
-
-从后端 ORM entity 和前端 TypeScript 类型/Props 提取字段：
-- 自动匹配同名字段
-- 标注不一致：类型不匹配（timestamp vs number）、后端有前端无（internal）、前端期望后端不返回
-
-**4c-3. 约束一致性 → `constraint-reconciliation.json`**
-
-对每条业务规则，检查在哪些层执行：
-- **DB 层**：唯一约束、外键、check constraint
-- **后端代码层**：validation、guard、exception
-- **前端 UI 层**：form validation、disabled state
-- 标注缺口：前端无校验但后端有 → 可接受（服务端兜底）；后端无但前端有 → 风险（可绕过）
-
-**4c-4. 认证流程追踪 → `auth-propagation.json`**
-
-追踪完整 token 生命周期：
-- **后端**：签发（login）→ 验证（guard/middleware）→ 刷新（refresh endpoint）→ 注销（blacklist）
-- **前端**：存储（localStorage/cookie）→ 注入（interceptor/header）→ 刷新（401 retry）→ 清除（logout）
-- 标注断裂点（如：后端支持 refresh 但前端未实现自动刷新）
-
-**4c-5. 错误处理对齐 → `error-mapping.json`**
-
-匹配后端异常与前端 catch 处理：
-- 后端返回 409 ConflictException → 前端是否处理 409？
-- 后端返回 500 → 前端是否有通用错误兜底？
-- 前端处理了 422 → 后端是否会抛 422？
-- 标注：`handled` / `unhandled` / `no_backend_source`
-
-### 4d. XV 跨模型验证（fullstack 增强）
-
-先执行 core XV 的调用 1（行为遗漏检测）和调用 2（跨栈语义漂移风险），再执行以下 2 次 fullstack 专用调用：
-
-| # | task_type | 发送内容 |
-|---|-----------|---------|
-| 3 | `api_binding_completeness` | 后端端点列表 + 前端 API 调用列表 + 已匹配绑定 |
-| 4 | `schema_alignment_review` | 后端 entity 定义 + 前端类型定义 + 已匹配字段 |
-
-Prompt 模板：
-
-调用 3（API 绑定完整性）：
-```
-后端端点: {backend_endpoints_summary}
-前端调用: {frontend_api_calls_summary}
-已匹配: {matched_bindings}
-未匹配: {unmatched_list}
-
-请识别：
-1. 未匹配项中是否有"间接调用"（如通过 WebSocket/SSE 而非 REST）
-2. 是否有动态构造的 URL 被遗漏
-3. 未匹配的后端端点是否可能被第三方/移动端调用
-限 300 字。
-```
-
-调用 4（Schema 对齐审查）：
-```
-后端 Entity: {entity_fields_summary}
-前端类型: {frontend_types_summary}
-已对齐字段: {aligned_fields}
-不一致项: {mismatches}
-
-请识别：
-1. 字段名不同但语义相同的漏匹配（如 created_at vs createdAt）
-2. 嵌套对象/数组的深层 Schema 不一致
-3. 枚举值集合是否前后端一致
-限 300 字。
+增加以下顶层字段：
+- infrastructure: 基础设施配置摘要
+- api_call_map: 前端→后端的 API 调用映射
+  - frontend_component: 调用方组件
+  - backend_endpoint: 被调方端点
+  - data_shape: 请求/响应数据结构
+  - auth_required: 是否需要认证
 ```
 
 ---
 
-## Phase 6：生成产物（增强）
+## Phase 3 增强
 
-> **⚠️ 路径提醒**：fullstack 模式下，除 `code-replicate/` 产物外，还要写入 `.allforai/product-map/`（task-inventory、business-flows、constraints）和 `.allforai/use-case/`（use-case-tree）。task-inventory 中的任务使用 `backend:`、`frontend:`、`fullstack:` 前缀。
+在 core 的 Phase 3 基础上增加以下全栈特有推断：
 
-除后端/前端各自产物外，新增 fullstack 专有产物：
+### task-inventory 增强
 
-| 产物 | 路径 | 说明 |
-|------|------|------|
-| API 绑定 | `code-replicate/api-bindings.json` | 前端调用 ↔ 后端端点映射 |
-| Schema 对齐 | `code-replicate/schema-alignment.json` | 数据模型前后端一致性 |
-| 约束一致性 | `code-replicate/constraint-reconciliation.json` | 业务规则执行覆盖 |
-| 认证传播 | `code-replicate/auth-propagation.json` | 完整 token 生命周期 |
-| 错误映射 | `code-replicate/error-mapping.json` | 异常处理前后端对齐 |
-| 基础设施 | `code-replicate/infrastructure.json` | 非代码行为（cron/nginx/docker） |
-| 综合报告 | `code-replicate/fullstack-report.md` | 统一报告（替代两份独立报告） |
+- 合并前后端 task，消除重复（同一业务操作的前后端 task 合并为一个）
+- 每个 task 增加 `layer` 字段：
+  - `backend` — 纯后端 task（定时任务、队列消费等）
+  - `frontend` — 纯前端 task（纯 UI 交互、本地计算等）
+  - `fullstack` — 跨前后端 task（用户操作→API→处理→响应→UI 更新）
 
-### 产物存储：完整路径清单
+### business-flows 增强
 
-```
-.allforai/
-├── product-map/                       ← ⚠️ 注意：不是 code-replicate/ 下
-│   ├── task-inventory.json            ← 所有模式（含 backend:/frontend:/fullstack: 前缀任务）
-│   ├── business-flows.json            ← functional+
-│   └── constraints.json               ← exact
-├── use-case/                          ← ⚠️ 注意：不是 code-replicate/ 下
-│   └── use-case-tree.json             ← functional+
-└── code-replicate/
-    ├── backend/
-    │   ├── source-analysis.json
-    │   ├── api-contracts.json
-    │   ├── behavior-specs.json        ← functional+
-    │   ├── arch-map.json              ← architecture+
-    │   └── bug-registry.json          ← exact
-    ├── frontend/
-    │   ├── source-analysis.json
-    │   ├── api-contracts.json
-    │   ├── behavior-specs.json        ← functional+
-    │   ├── arch-map.json              ← architecture+
-    │   └── bug-registry.json          ← exact
-    ├── api-bindings.json              ← fullstack 交叉层
-    ├── schema-alignment.json
-    ├── constraint-reconciliation.json
-    ├── auth-propagation.json
-    ├── error-mapping.json
-    ├── infrastructure.json
-    ├── replicate-config.json
-    ├── stack-mapping.json
-    ├── stack-mapping-decisions.json
-    └── fullstack-report.md            ← 替代 replicate-report.md
-```
+- 构建跨前后端的完整用户流程：
+  - 前端交互 → API 调用 → 后端处理 → 数据持久化 → 响应返回 → 前端状态更新 → UI 刷新
+- 每个 flow step 标注 layer（frontend/backend）
 
-### fullstack-report.md 模板
+### 交叉一致性检查
 
-```markdown
-# 全栈复刻报告
+检测到的不一致写入 task/flow 的 `flags` 字段：
 
-## 基本信息
-
-| 项目 | 值 |
-|------|----|
-| 后端源技术栈 | {backend_stack} |
-| 前端源技术栈 | {frontend_stack} |
-| 后端目标技术栈 | {backend_target_stack} |
-| 前端目标技术栈 | {frontend_target_stack} |
-| 信度等级 | {fidelity} |
-| 分析时间 | {datetime} |
-
-## 后端分析摘要
-
-- API 端点: {N} 个
-- 业务行为: {N} 个（functional+）
-- 架构模式: {list}（architecture+）
-
-## 前端分析摘要
-
-- 组件: {N} 个
-- 页面/路由: {N} 个
-- API 调用点: {N} 个
-
-## 交叉验证摘要
-
-| 维度 | 总数 | 一致 | 不一致 | 缺口 |
-|------|------|------|--------|------|
-| API 绑定 | {N} | {N} matched | {N} mismatch | {N} unmatched |
-| Schema 对齐 | {N} fields | {N} aligned | {N} type_mismatch | {N} missing |
-| 约束一致性 | {N} rules | {N} 全层覆盖 | {N} 部分覆盖 | {N} 单层仅有 |
-| 认证传播 | {N} steps | {N} 完整 | {N} 断裂 | - |
-| 错误处理 | {N} codes | {N} handled | {N} unhandled | - |
-
-## 信息失真风险点
-
-| 类型 | 位置 | 描述 | 处理方式 |
-|------|------|------|---------|
-| ... | | | |
-
-## 下一步
-
-使用 dev-forge 流水线继续：
-- `/design-to-spec`   ← 生成目标技术栈实现规格
-- `/task-execute`     ← 逐任务生成代码
-```
+| Flag | 含义 |
+|------|------|
+| API_SHAPE_MISMATCH | 前端调用参数与后端期望不匹配 |
+| AUTH_GAP | 后端要求认证但前端未传递凭证 |
+| FIELD_TYPE_MISMATCH | 前后端同名字段类型不一致 |
+| ENDPOINT_ORPHAN | 后端有端点但前端未调用（或反之） |
+| ERROR_UNHANDLED | 后端可能返回的错误码前端未处理 |
 
 ---
 
-## Phase 7：交接
+## Phase 4 增强
 
-> fullstack 模式生成 `fullstack-report.md` **替代**标准模式的 `replicate-report.md`。不重复生成两份报告。
+- 验证脚本使用 `--fullstack` 标志运行
+- 额外检查指标：
+  - **API 调用匹配度**：前端调用的端点在后端是否都存在（及反向）
+  - **字段对齐度**：跨前后端的同名数据结构字段是否一致
+  - 匹配度/对齐度结果写入验证报告的 `cross_layer_validation` 节
 
-统一报告（单份 `fullstack-report.md`），包含后端 + 前端 + 交叉验证三部分摘要。
+---
 
-`task-inventory.json` 中的任务分为三类：
-- `backend:` 前缀 — 后端任务
-- `frontend:` 前缀 — 前端任务
-- `fullstack:` 前缀 — 交叉层发现的对齐任务（如"修复 API 绑定不一致"）
+## 加载核心协议
+
+> 核心协议详见 ${CLAUDE_PLUGIN_ROOT}/skills/code-replicate-core.md
