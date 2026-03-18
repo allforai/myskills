@@ -664,10 +664,33 @@ dimension Logic > Interface > Data > UX（业务规则最先）
      - 提取涉及的角色（role-profiles 映射）和子项目
      - 跨 ≥2 个子项目的 flow → 标记为 E2E 链候选
      - 单子项目 flow → 跳过（已由单元/集成测试覆盖）
-     - **等价子项目展开**：同一角色有多个 app（如 R001 同时分配 website 和 mobile），
-       则该角色的每个 app 都必须独立参与 E2E 链测试。
-       例如买家操作在 website 上测一遍，还要在 mobile 上测一遍（如环境可用）。
-       不得仅测一端就声称该角色已覆盖。
+     - **等价子项目展开**：同一角色有多个功能等价的 app（如 R001 同时有 consumer-web 和 consumer-app），
+       必须在所有等价端上测试该角色的操作。不得仅测一端就声称该角色已覆盖。
+
+       **等价端识别**：从 project-manifest.json 中 assigned_roles 相同的子项目 → 功能等价端。
+       例如 consumer-web 和 consumer-app 都分配了 R001 → 等价端。
+
+       **展开策略（效率优化）**：
+       不是每条链完整跑 N 遍（大量重复），而是拆分为「平台差异段」和「共享段」：
+
+       ```
+       原始链: 用户(R001)下单 → 商户(R002)确认 → 骑手(R003)配送
+
+       展开为:
+         Chain-1-web:    consumer-web 下单(Playwright)
+         Chain-1-mobile: consumer-app 下单(integration_test)
+           → 两端各自验证下单结果（API 层断言: 订单已创建、状态正确）
+         Chain-1-shared: 商户确认(Playwright) → 骑手配送 → 仅跑一次
+       ```
+
+       **具体规则**：
+       1. 等价端的步骤 → 每个端独立执行（平台差异段）
+       2. 非等价端的步骤 → 只跑一次（共享段）
+       3. 每个平台差异段结束后用 API 断言验证结果一致（两端操作后数据库状态相同）
+       4. 平台差异段发现的 bug 标注是哪个端的（`FIX_REQUIRED [consumer-web]` vs `FIX_REQUIRED [consumer-app]`）
+
+       **注意**：等价 ≠ 完全相同。移动端可能有手势操作、推送流程、离线场景是 Web 没有的。
+       这些差异通过 B5.PLATFORM 测试覆盖，不在 E2E 链展开中处理。
 
 2. 分解链路步骤
    对每条候选链，按 flow 的步骤序列：
