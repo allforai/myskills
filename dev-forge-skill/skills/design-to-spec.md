@@ -218,8 +218,9 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 - **Enricher Agent**: Read `${CLAUDE_PLUGIN_ROOT}/docs/design-to-spec/enricher-steps.md`
 
 **子项目分类**:
-  后端组: type = "backend"（通常 1 个）
+  后端组: type = "backend"（可能 1 个或多个微服务）
   前端组: 其余所有子项目（admin/web-customer/web-mobile/mobile-native）
+  > 多后端子项目时，每个后端独立走 Phase A 流程（可并行）。
 
 **项目规模自适应**（所有角色统一规则，防止任何 Agent 超载）：
 
