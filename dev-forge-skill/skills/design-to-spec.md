@@ -230,8 +230,8 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
     → 发现问题 → 修正 requirements/design/tasks → 重检（最多 3 轮）
   Stage 3b: Agent(backend-auditor-enrich): 质量子任务补充（加载 auditor-enrich.md）
     → 补充 HARDEN/DNA/POLISH/i18n/测试子任务 → 重检补充结果
-  ∥ 与 Stage 2 并行: Agent(backend-enricher-a): Step 3.8 + Step 3.9（event-schema）
-  → Stage 2 完成后: Agent(backend-enricher-b): Step 4.5（task-context）
+  ∥ 与 Stage 2 并行: Agent(backend-enricher-a): Step 3.8 + Step 3.9（event-schema — 只需 design.md）
+  → Stage 3b 完成后: Agent(backend-enricher-b): Step 4.5（task-context — 需要完整 tasks.md，含 Auditor 补充的子任务）
 
 **Phase B — 前端并行（每个子项目内部同样 4 角色）**:
   ┌── 子项目 1:

@@ -2,6 +2,16 @@
 
 **Claude Code + OpenCode** 双平台插件集合，覆盖 **产品设计 → 开发锻造 → QA 验证 → 架构治理** 全链路。
 
+## ✨ 新增：UI Forge（实现后 UI 锻造）
+
+`ui-forge` 是从 `frontend-design` 思路 fork 出来的独立插件，但定位更收敛：
+
+- 不负责首次实现功能
+- 不替代 `dev-forge`
+- 专门处理功能完成后的界面增强与设计还原
+
+适合专业研发团队在真实代码库中做 post-implementation UI refinement。
+
 ## ✨ 新增：页面交互类型体系 v2（三轴模型）
 
 将 product-design 的交互类型从 8 种（A-H）全量升级为 **37 种 × 三轴模型**，覆盖全平台、全产品类型、全用户属性。
@@ -79,6 +89,7 @@ cp ~/.opencode/skills/myskills/.opencode.template your-project/.opencode/config.
 /product-map              # 产品功能地图
 /design-to-spec           # 设计转规格
 /project-scaffold         # 生成代码脚手架
+/ui-forge                 # 功能完成后做 UI 增强 / 设计还原
 ```
 
 ### OpenCode（本地路径安装，开发测试用）
@@ -153,6 +164,10 @@ QA 层       deadhunt          死链→CRUD完整性→幽灵功能→字段一
 ### code-tuner (v1.0.0)
 
 服务端架构分析：合规检查、重复检测、抽象机会、综合评分（0-100）。
+
+### ui-forge (v0.1.0)
+
+实现后 UI 锻造：在页面功能完成后，做界面 polish 或 design restore。
 
 ---
 

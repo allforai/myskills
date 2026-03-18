@@ -1,0 +1,23 @@
+{
+  "skill_name": "ui-forge",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "This dashboard page is fully functional, but it still looks flat and unfinished. Please polish the UI without changing routing, data flow, or API usage. Improve hierarchy, spacing, states, and responsive behavior.",
+      "expected_output": "Chooses polish mode, keeps product behavior unchanged, and improves real implementation quality rather than proposing a redesign.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "The page works, but it no longer matches our ui-design tokens and the latest screenshots under .allforai/ui-design/screenshots. Restore it so the implementation is closer to the design contract without rewriting business logic.",
+      "expected_output": "Chooses restore mode, uses available design artifacts, and focuses on fidelity recovery rather than freeform aesthetic invention.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Do not build a new feature. Review this already-implemented settings screen and tighten the UI like a senior frontend engineer would: clearer primary action, cleaner visual grouping, better empty/loading/error states, same behavior.",
+      "expected_output": "Behaves like a post-implementation UI refinement skill, names concrete improvements, and respects the existing feature boundary.",
+      "files": []
+    }
+  ]
+}

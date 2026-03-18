@@ -36,6 +36,12 @@ cat > "$OPENCODE_CONFIG_DIR/skills.json" << EOF
       "name": "code-tuner",
       "path": "$SCRIPT_DIR/code-tuner-skill/skills",
       "description": "代码架构质量分析：合规检查、重复检测、抽象分析"
+    },
+    {
+      "name": "ui-forge",
+      "path": "$SCRIPT_DIR/ui-forge-skill/skills",
+      "commands": "$SCRIPT_DIR/ui-forge-skill/commands",
+      "description": "UI 锻造：功能完成后的界面增强与设计还原，面向专业研发团队"
     }
   ],
   "auto_load": true,
@@ -96,6 +102,7 @@ echo "   /ui-design          /design-audit"
 echo "   /design-to-spec     /project-scaffold  /project-setup"
 echo "   /seed-forge         /task-execute      /e2e-verify"
 echo "   /product-verify     /deadhunt          /code-tuner"
+echo "   /ui-forge"
 echo ""
 echo "📂 配置文件位置："
 echo "   全局配置：$OPENCODE_CONFIG_DIR/skills.json"

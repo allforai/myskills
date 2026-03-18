@@ -94,6 +94,18 @@ cat > "$SKILLS_CONFIG" << EOF
         "branch": "main",
         "subPath": "code-tuner-skill"
       }
+    },
+    {
+      "name": "ui-forge",
+      "path": "$INSTALL_DIR/ui-forge-skill/skills",
+      "commands": "$INSTALL_DIR/ui-forge-skill/commands",
+      "description": "UI 锻造：功能完成后的界面增强与设计还原，面向专业研发团队",
+      "source": {
+        "type": "git",
+        "repo": "$REPO_USE",
+        "branch": "main",
+        "subPath": "ui-forge-skill"
+      }
     }
   ],
   "auto_load": true,
@@ -123,6 +135,12 @@ if [ -f "$SKILLS_CONFIG" ]; then
         echo "✓ dev-forge 技能目录存在"
     else
         echo "⚠️  dev-forge 技能目录不存在"
+    fi
+
+    if [ -d "$INSTALL_DIR/ui-forge-skill/skills" ]; then
+        echo "✓ ui-forge 技能目录存在"
+    else
+        echo "⚠️  ui-forge 技能目录不存在"
     fi
 else
     echo "❌ skills.json 创建失败"
@@ -220,6 +238,7 @@ echo "   测试用例：/use-case  /feature-gap  /feature-prune  /design-audit"
 echo "   开发锻造：/design-to-spec  /project-scaffold  /project-setup  /task-execute"
 echo "   数据验证：/seed-forge  /product-verify  /e2e-verify"
 echo "   架构分析：/deadhunt  /code-tuner"
+echo "   UI后处理：/ui-forge"
 echo ""
 echo "📂 配置文件位置："
 echo "   全局配置：$SKILLS_CONFIG"

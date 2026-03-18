@@ -98,6 +98,11 @@ cd ~/Documents/myskills/product-design-skill/mcp-ai-gateway
 |------|------|
 | `/code-tuner` | 代码架构质量分析 |
 
+### UI Forge (v0.1.0)
+| 命令 | 功能 |
+|------|------|
+| `/ui-forge` | 功能完成后的界面增强与设计还原 |
+
 ---
 
 ## 创新增强功能
