@@ -775,7 +775,7 @@ Step 5: 回归验证
 | 条件 | 标准 |
 |------|------|
 | verify-tasks.json | IMPLEMENT + FIX_FAILING = 0（或记录为已知问题） |
-| testforge E2E chain | FIX_REQUIRED = 0（或记录为已知问题） |
+| testforge E2E chain | FIX_REQUIRED = 0（或记录为已知问题）；NOT_TESTED > 0 时标记 `PASS_WITH_UNTESTED`（不阻塞但报告醒目提示） |
 | deadhunt | 无 critical 死链（或已修复） |
 | fieldcheck | 无 critical 字段不一致（或已修复） |
 

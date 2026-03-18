@@ -117,21 +117,20 @@
    | 键盘行为 | integration_test -d simulator | integration_test -d emulator | 输入框聚焦 → 键盘弹出 → 页面适配 |
 
    ```
-   - [ ] B5.PLATFORM.{seq} [mobile-app] {Feature} iOS 原生测试
-     - Files: `ios/RunnerTests/{feature}_test.swift` 或 `integration_test/{feature}_ios_test.dart`（Patrol）
-     - 工具: XCUITest / Patrol（优先 Patrol，降级 XCUITest）
-     - 前置: iOS Simulator 可用
-     - 降级: DEFERRED_TO_DEVICE
-
-   - [ ] B5.PLATFORM.{seq} [mobile-app] {Feature} Android 原生测试
-     - Files: `maestro/{feature}.yaml` 或 `integration_test/{feature}_android_test.dart`（Patrol）
-     - 工具: Maestro / Patrol（优先 Patrol，降级 Maestro）
-     - 前置: Android Emulator 可用
-     - 降级: DEFERRED_TO_DEVICE
+   - [ ] B5.PLATFORM.{seq} [mobile-app] {Feature} 平台原生测试
+     - Files: 由 task-execute Agent 根据工具可用性决定:
+       Patrol 可用 → `integration_test/{feature}_platform_test.dart`（一套代码双平台）
+       仅 iOS → `ios/RunnerTests/{feature}_test.swift`（XCUITest）
+       仅 Android → `maestro/{feature}.yaml`（Maestro）
+     - 执行前检测: `which patrol` / `which maestro` / `which xcodebuild`
+     - 工具不可用 → 提醒用户安装，不写空壳测试脚本
    ```
 
-   **工具优先级**：
-   - Patrol（Flutter 原生，一套代码两平台）→ Maestro（Android）/ XCUITest（iOS）→ DEFERRED_TO_DEVICE
+   **工具选择由 task-execute Agent 在写代码时检测**（不在 spec 阶段硬编码）：
+   - `which patrol` → 优先写 Patrol 测试（跨平台，一套代码）
+   - 无 Patrol → `which xcodebuild` → 写 XCUITest（iOS only）
+   - 无 Patrol → `which maestro` → 写 Maestro YAML（Android only）
+   - 什么都没有 → 提醒用户安装测试工具，**不写空壳脚本**
    - Auditor 检查 `which patrol` / `which maestro` / `which xcodebuild` 决定使用哪个
 
    **Flutter 测试覆盖目标（更新）**：
