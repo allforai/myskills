@@ -8,8 +8,8 @@
 
 ## Step 4: Tasks 生成（由 Decomposer Agent 执行）
 
-> Decomposer 读 Architect 产出的 design.md → 拆分为原子任务。
-> 包括功能任务（B0-B5）和注意力分离任务（B2.HARDEN / B3.DNA / B3.POLISH / B3.i18n）。
+> Decomposer 读 Architect 产出的 design.md → 拆分为 B0-B5 平铺功能任务。
+> 质量子任务（B2.HARDEN / B3.DNA / B3.POLISH / B3.i18n 等）由 Auditor 在 Step 4.3 补充，不是 Decomposer 的职责。
 
 按开发层分 Batch，每任务遵循原子标准:
   - 1-3 文件，15-30 分钟，单一目的
