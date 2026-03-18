@@ -754,39 +754,49 @@ Step B.1.2: 移动端设备准备（mobile-native 子项目存在时执行）
   > Web E2E 只需 Playwright（无头浏览器），但移动端需要模拟器/真机 + App 安装。
   > 此步骤在 B.1 应用可达性检查之后、B.1.5 环境配置之前执行。
 
-  **设备检测**：
+  **设备检测**（严格模式，不降级，缺什么报什么）：
   ```
   Flutter 子项目:
     1. `flutter devices` → 列出可用设备
-    2. 有 Chrome → Web 降级可用（`flutter run -d chrome` + Playwright 测）
-    3. 有 iOS Simulator → `flutter build ios --simulator` → 安装到模拟器
-    4. 有 Android Emulator → `flutter build apk --debug` → `adb install`
-    5. 无任何设备 → 尝试启动: `flutter emulators --launch {name}` 或提示用户
+    2. 检查 iOS Simulator → 可用？
+    3. 检查 Android Emulator → 可用？
+    4. 检查 Patrol/Maestro/XCUITest → 可用？
 
   RN/Expo 子项目:
     1. `adb devices` → Android 可用？
     2. `xcrun simctl list` → iOS Simulator 可用？
-    3. 无设备 → 提示用户
+    3. Maestro/Detox → 可用？
   ```
 
-  **结果写入**：
+  **结果写入 + 缺失立即报告**：
   ```
   mobile_test_env:
-    flutter_web: available | not_available
-    ios_simulator: available | not_available | not_macos
-    android_emulator: available | not_available
-    chosen_strategy: web_fallback | ios_sim | android_emu | device_test | plan_only
+    ios_simulator: available | MISSING
+    android_emulator: available | MISSING
+    patrol_cli: available | MISSING
+    maestro_cli: available | MISSING
+    issues: ["iOS Simulator 不可用", "Patrol 未安装"]
   ```
 
-  **降级策略**：
-  | 可用环境 | 测试策略 |
-  |---------|---------|
-  | Chrome + Playwright | `flutter run -d chrome` → Playwright E2E（覆盖 Flutter 层） |
-  | iOS Simulator | `flutter test integration_test/ -d simulator` + Patrol/XCUITest |
-  | Android Emulator | `flutter test integration_test/ -d emulator` + Patrol/Maestro |
-  | 全部不可用 | PLAN_ONLY（生成测试脚本但不执行，标记 `DEFERRED_TO_DEVICE`） |
+  **不降级，不跳过，缺什么提醒什么**：
+  > 移动端测试不能用 Web 降级——Web 模式测不到原生行为（推送/IAP/手势/键盘/权限），
+  > 而这些恰恰是移动端最容易出 bug 的地方。静默降级 = 假装测过了。
 
-  **Web 降级是移动端测试的安全网**：Flutter Web 模式可以测大部分 Flutter 层逻辑（路由、状态管理、API 调用、UI 渲染），只有原生特性（推送/IAP/生物识别）无法通过 Web 测试。
+  检测到缺失时用 AskUserQuestion 明确提醒：
+  ```
+  移动端测试环境缺失：
+  {缺失列表，如: iOS Simulator 不可用、Patrol 未安装}
+
+  这些环境是移动端 E2E 测试必需的。缺失意味着以下测试无法执行：
+  {受影响的测试列表}
+
+  请选择：
+  (1) 帮我安装缺失工具（Patrol: dart pub global activate patrol_cli）
+  (2) 帮我启动模拟器（flutter emulators --launch {name}）
+  (3) 跳过移动端 E2E 测试，记录为未完成（NOT_TESTED）
+  ```
+
+  用户选 (3) 时：**不标记为 PASS，标记为 `NOT_TESTED`**，最终报告中明确列出"移动端 E2E 未执行"。
 
 Step B.1.5: 环境配置验证 + 真实登录冒烟测试
 
@@ -893,15 +903,14 @@ Step B.3: 并行执行
   逐链、逐步执行：
   - **Web 步骤**：browser_navigate → browser_snapshot → browser_fill/click → browser_snapshot
   - **API 步骤**：Bash curl → 验证响应
-  - **Flutter Web 降级步骤**（mobile_test_env.chosen_strategy = web_fallback）：
-    确保 `flutter run -d chrome` 已启动 → Playwright 操作 Flutter Web 页面
-    （和 Web 步骤相同的 Playwright 工具，只是目标是 Flutter Web App 的 URL）
-  - **Flutter 原生步骤**（mobile_test_env 有 ios_sim 或 android_emu）：
+  - **Flutter 原生步骤**（iOS Simulator 或 Android Emulator 可用时）：
     `flutter test integration_test/{chain_test}.dart -d {device}` → 收集结果
     平台原生测试（推送/IAP/OAuth）：`patrol test` 或 `maestro test {flow}.yaml`
+    **设备不可用 → 不执行该步骤，标记 `NOT_TESTED`，不伪装为通过**
   - **跨子项目切换**：Web → navigate URL；Mobile → 切换到对应 App 的测试脚本
   - **跨端链路**（如"用户在 mobile 下单 → 商户在 Web 确认"）：
     Mobile 步骤和 Web 步骤交替执行，通过 API 层验证数据一致性
+    Mobile 端不可用时 → 该跨端链路标记 `NOT_TESTED`（不用 Web 替代 Mobile 步骤）
 
 Step B.4: 6V 诊断与失败分类
   对每个失败步骤，LLM 从 6 个工程视角深度诊断根因：
