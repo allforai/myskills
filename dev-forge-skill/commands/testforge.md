@@ -901,6 +901,7 @@ Step B.1.5: 环境配置验证 + 真实登录冒烟测试
      - OAuth 回调失败（移动端常见）→ deep link scheme 或 redirect URI 配置
 
      **此步骤不可跳过、不可 bypass。** 没通过 Chain 0 的端，后续所有 E2E 链都标记 `BLOCKED_BY_LOGIN`，不伪装为 PASS。
+     **设备不可用（Step B.1.2 标记 NOT_TESTED）的端除外**——无法执行 Chain 0 ≠ 登录失败，标记为 `NOT_TESTED` 而非 `BLOCKED_BY_LOGIN`。
 
   3. **跨浏览器/跨域接缝验证**（Chain 0 的子步骤，真实登录成功后立即执行）
 
