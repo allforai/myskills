@@ -221,24 +221,56 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
   后端组: type = "backend"（通常 1 个）
   前端组: 其余所有子项目（admin/web-customer/web-mobile/mobile-native）
 
-**Phase A — 后端（3 阶段串行 + 1 并行）**:
-  Stage 1: Agent(backend-architect): Step 0 → Step 1 → Step 2 → Step 2.5 → Step 3a → Step 3b → Step 3.5
-    → 产出 requirements.md + design.md
-  ↓ design.md 完成后，启动 Phase B（前端并行），同时后端继续：
-  Stage 2: Agent(backend-decomposer): Step 4（读 design.md → 生成 tasks.md）
-  Stage 3a: Agent(backend-auditor-validate): V1-V12 验证（审查者 ≠ 作者，加载 auditor-validate.md）
-    → 发现问题 → 修正 requirements/design/tasks → 重检（最多 3 轮）
-  Stage 3b: Agent(backend-auditor-enrich): 质量子任务补充（加载 auditor-enrich.md）
-    → 补充 HARDEN/DNA/POLISH/i18n/测试子任务 → 重检补充结果
-  ∥ 与 Stage 2 并行: Agent(backend-enricher-a): Step 3.8 + Step 3.9（event-schema — 只需 design.md）
-  → Stage 3b 完成后: Agent(backend-enricher-b): Step 4.5（task-context — 需要完整 tasks.md，含 Auditor 补充的子任务）
+**大型项目自适应**（防止产出文件压垮下游 Agent）：
 
-**Phase B — 前端并行（每个子项目内部同样 4 角色）**:
+  > **问题**：大型后端（>10 模块，>100 端点）的 design.md 可能 3000+ 行，Decomposer/Auditor 读不完。
+  > **方案**：Architect 按模块分批写入 design.md（已有），Decomposer/Auditor 也按模块分批处理。
+  > **判定**：从 project-manifest.json 的 assigned_modules 数量判断规模。
+
+  | 规模 | 模块数 | Decomposer 策略 | Auditor 策略 |
+  |------|--------|----------------|-------------|
+  | 小 | ≤ 5 | 单 Agent 读全量 design.md | 单 Agent 验证全量 |
+  | 中 | 6-10 | 单 Agent 读全量（design.md ≤ 1500 行） | 单 Agent 验证全量 |
+  | **大** | **> 10** | **按模块组分批**（每批 3-5 模块） | **按模块组分批验证** |
+
+  **大型项目模块分批规则**：
+  1. 从 project-manifest.json 读取 assigned_modules 列表
+  2. 按业务相关性分组（如 auth+users 一组、courses+classroom 一组、payment+subscription 一组）
+  3. 每组 3-5 个模块 → 1 个 Decomposer Agent（只读对应模块的 design.md 段落）
+  4. 每组 → 1 个 Auditor-Validate Agent（只验证对应模块的 tasks）
+  5. Auditor-Enrich 在所有模块验证完后统一执行（需要全局视角补充跨模块子任务）
+
+  **Architect 分批输出格式**（大型项目）：
+  design.md 中每个模块用 `## Module: {module_name}` 明确分隔，
+  让下游 Agent 能按模块名定位段落，不需要读全文。
+
+**Phase A — 后端**:
+
+  Stage 1: Agent(backend-architect): Step 0 → Step 1 → Step 2 → Step 2.5 → Step 3a → Step 3b（按模块分批）→ Step 3.5
+    → 产出 requirements.md + design.md（大型项目按模块分节）
+  ↓ design.md 完成后，启动 Phase B（前端并行），同时后端继续：
+
+  Stage 2（小/中型项目）: 单个 Agent(backend-decomposer): 读全量 design.md → 生成 tasks.md
+  Stage 2（大型项目）: 按模块组并行 → 每组 1 个 Agent(decomposer-{group}): 读对应模块段落 → 生成该组 tasks
+    → 全部完成后合并为统一 tasks.md
+
+  Stage 3a（小/中型）: 单个 Agent(backend-auditor-validate): V1-V12 全量验证
+  Stage 3a（大型）: 按模块组并行 → 每组 1 个 Agent(auditor-validate-{group}): 验证该组 tasks
+    → 全部完成后汇总 findings
+
+  Stage 3b: Agent(backend-auditor-enrich): 质量子任务补充（始终单 Agent，需要全局视角）
+    → 补充 HARDEN/DNA/POLISH/i18n/测试子任务 → 重检补充结果
+
+  ∥ 与 Stage 2 并行: Agent(backend-enricher-a): Step 3.8 + Step 3.9（event-schema）
+  → Stage 3b 完成后: Agent(backend-enricher-b): Step 4.5（task-context）
+
+**Phase B — 前端并行（每个子项目内部同样适用大型项目自适应）**:
   ┌── 子项目 1:
   │     Agent(architect):   Step 1 → Step 3a → Step 3b → 产出 requirements + design
-  │     Agent(decomposer):  Step 4 → 产出 tasks.md
-  │     Agent(auditor):     Step 4.3 → V1-V12 验证（独立 agent，非 architect 也非 decomposer）
-  │     Agent(enricher):    Step 3.8 + Step 4.5（并行）
+  │     Agent(decomposer):  Step 4 → 产出 tasks.md（大型前端同样按模块分批）
+  │     Agent(auditor-validate): V1-V12 验证
+  │     Agent(auditor-enrich): 质量子任务补充
+  │     Agent(enricher):    Step 3.8 + Step 4.5
   ├── 子项目 2: 同上
   └── 子项目 N: 同上
   全部完成 ↓

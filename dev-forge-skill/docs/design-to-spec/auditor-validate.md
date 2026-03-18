@@ -3,6 +3,9 @@
 > This file is loaded by the Auditor Agent for **validation only** (V1-V12 + closedness + XV).
 > Auditor is a SEPARATE agent — reviewer ≠ author.
 > After validation, the orchestrator loads `auditor-enrich.md` for quality enrichment (fresh agent call).
+>
+> **大型项目模块分批模式**：当编排器指定了模块组时，Auditor 只验证该模块组的 tasks + design 段落。
+> 跨模块维度（V4 一致性、V8 跨子项目、V12 DNA）在所有模块组验证完后由 Auditor-Enrich 统一检查。
 
 ---
 

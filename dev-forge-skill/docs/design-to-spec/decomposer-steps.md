@@ -10,6 +10,11 @@
 
 > Decomposer 读 Architect 产出的 design.md → 拆分为 B0-B5 平铺功能任务。
 > 质量子任务（B2.HARDEN / B3.DNA / B3.POLISH / B3.i18n 等）由 Auditor 在 Step 4.3 补充，不是 Decomposer 的职责。
+>
+> **大型项目模块分批模式**：当编排器指定了模块组（如"只处理 auth+users 模块"）时，
+> Decomposer 只读 design.md 中对应的 `## Module: {name}` 段落，只为这些模块生成任务。
+> 数据模型部分（B1）仍需读完整实体列表（跨模块共用），但 B2 端点只处理指定模块。
+> 未指定模块组时（小/中型项目），正常读全量 design.md。
 
 按开发层分 Batch，每任务遵循原子标准:
   - 1-3 文件，15-30 分钟，单一目的
