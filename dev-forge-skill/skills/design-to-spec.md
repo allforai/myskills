@@ -76,7 +76,7 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 
 ## 锻造-验证-闭环 (FVL) 概览
 
-> 详细的 FVL 阶段定义（阶段 1-4、V1-V12、负空间推导、XV 交叉审查）见 `${CLAUDE_PLUGIN_ROOT}/docs/design-to-spec/auditor-steps.md`。
+> 详细的 FVL 阶段定义（阶段 1-4、V1-V12、负空间推导、XV 交叉审查）见 `${CLAUDE_PLUGIN_ROOT}/docs/design-to-spec/auditor-validate.md`。
 
 本技能采用基于 LLM 的生成与审计闭环。上游产物是不可逾越的硬约束。
 - **阶段 1**: Agent 生成初稿（4D 工程维度覆盖）
@@ -213,7 +213,8 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 
 - **Architect Agent**: Read `${CLAUDE_PLUGIN_ROOT}/docs/design-to-spec/architect-steps.md`
 - **Decomposer Agent**: Read `${CLAUDE_PLUGIN_ROOT}/docs/design-to-spec/decomposer-steps.md`
-- **Auditor Agent**: Read `${CLAUDE_PLUGIN_ROOT}/docs/design-to-spec/auditor-steps.md`
+- **Auditor-Validate Agent**: Read `${CLAUDE_PLUGIN_ROOT}/docs/design-to-spec/auditor-validate.md`（V1-V12 验证 + 闭环 + XV）
+- **Auditor-Enrich Agent**: Read `${CLAUDE_PLUGIN_ROOT}/docs/design-to-spec/auditor-enrich.md`（质量子任务补充，在 Validate 之后执行）
 - **Enricher Agent**: Read `${CLAUDE_PLUGIN_ROOT}/docs/design-to-spec/enricher-steps.md`
 
 **子项目分类**:
@@ -225,10 +226,12 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
     → 产出 requirements.md + design.md
   ↓ design.md 完成后，启动 Phase B（前端并行），同时后端继续：
   Stage 2: Agent(backend-decomposer): Step 4（读 design.md → 生成 tasks.md）
-  Stage 3: Agent(backend-auditor): Step 4.3（V1-V12 验证，审查者 ≠ 作者）
+  Stage 3a: Agent(backend-auditor-validate): V1-V12 验证（审查者 ≠ 作者，加载 auditor-validate.md）
     → 发现问题 → 修正 requirements/design/tasks → 重检（最多 3 轮）
-  ∥ 与 Stage 2 并行: Agent(backend-enricher-a): Step 3.8 + Step 3.9（event-schema — 只需 design.md，不需 tasks.md）
-  → Stage 2 完成后: Agent(backend-enricher-b): Step 4.5（task-context — 需要 tasks.md 作为输入）
+  Stage 3b: Agent(backend-auditor-enrich): 质量子任务补充（加载 auditor-enrich.md）
+    → 补充 HARDEN/DNA/POLISH/i18n/测试子任务 → 重检补充结果
+  ∥ 与 Stage 2 并行: Agent(backend-enricher-a): Step 3.8 + Step 3.9（event-schema）
+  → Stage 2 完成后: Agent(backend-enricher-b): Step 4.5（task-context）
 
 **Phase B — 前端并行（每个子项目内部同样 4 角色）**:
   ┌── 子项目 1:
