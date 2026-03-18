@@ -90,7 +90,7 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 
 ### 阶段 1：Agent 生成 (Generation)
 *   **输入**：`.allforai/` 全量 JSON（product-map, experience-map, ui-design-spec 等） + `project-manifest.json` + 技术栈模板。
-*   **核心约束**：Agent 必须严格遵守 `entity-model.json` 的字段定义、`api-contracts.json` 的结构约定以及 `constraints.json` 的业务规则。
+*   **核心约束**：Agent 必须严格遵守 `entity-model.json` 的字段定义、`api-contracts.json` 的结构约定、`constraints.json` 的业务规则，以及 `experience-dna.json` 的体验差异化契约（DIFF-xxx 视觉规格）。
 *   **动作**：生成 `requirements.md`, `design.md`, `tasks.md` 初稿。
 *   **要求**：必须覆盖 **4D 工程维度** (Data, Interface, Logic, UX)。
 
@@ -264,6 +264,19 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 
         **修正方式**：V8 发现的不一致由阶段 4（Auto-Fix）统一修正 — 以 backend spec 为权威源，修正各前端 spec。
 
+    11. **Experience DNA Coverage (V12)**: 验证前端子项目 design.md 页面规格是否覆盖 experience-dna.json 的差异化契约。
+
+        LLM Agent 读取 experience-dna.json 的 differentiators 列表和各前端子项目的 design.md pages 章节，判断：
+        每个 DIFF 的 visual_contracts 中指定的 component，在对应 placement 屏幕的 page spec 中是否有具体组件规格？
+
+        - CRITICAL — protection_level=core 的 DIFF，其 visual_contract 未出现在任何前端 page spec 中
+        - WARNING — protection_level=defensible 的 DIFF 未覆盖
+        - OK — nice_to_have 或已覆盖
+
+        **跳过条件**：experience-dna.json 不存在 → 跳过 V12（向后兼容）
+
+        **修正方式**：在对应前端子项目的 design.md page spec 中补充「体验差异化」章节
+
     9.  **Coverage (V9)**: 产品任务 → 端点任务覆盖率审计 — 验证**每个产品任务都有对应的实现任务**，防止功能遗漏。
 
         > **核心问题**：V1-V8 验证的是「已生成内容的正确性」，V9 验证的是「是否遗漏了内容」。
@@ -391,8 +404,6 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 | 数据模型遵循存储引擎最佳实践 | RDBMS: 范式化设计（反范式需标注理由）；Document DB: 嵌套 vs 引用按访问模式决策；KV: key 结构按查询模式设计。design.md 中标注建模决策依据 |
 | 用户故事按角色组织 | requirements.md 按角色分组（"As a {role}"），每组内按 frequency 排序（高频在前） |
 | 后端优先生成顺序 | **先生成后端 design.md（数据模型→接口定义），再生成前端 design.md（引用已定义的接口）**。前端 design 中的接口调用必须引用后端 design 中的定义 |
-| 前后端 API 契约精确匹配 | 前端 design.md 必须包含**精确 API URL**（含后端实际注册的路由前缀）+ **精确响应 JSON 结构**（字段名、嵌套层级、分页格式）。不允许抽象描述（如"调用用户列表"），必须写明精确的 method + path + 请求参数 + 响应结构。字段名必须与后端 DTO 一致（若前后端命名风格不同如 camelCase vs snake_case，则在设计中标注映射规则）。**前后端独立生成后，必须用 XV 交叉验证接口签名一致性（Step 3.5）** |
-| 前端 spec 从后端产物读取 | 前端 design.md 生成时，LLM 必须先读取已生成的后端 design.json（API 端点列表），**直接引用**后端定义的 URL 和响应结构，不允许凭记忆或猜测重新描述。若后端有路由前缀分组（如按角色/模块分组），前端必须使用完整前缀。LLM 发现后端 design.json 不存在时 → 报错要求先生成后端 spec |
 | 设计分层展开 | design.md 从数据模型开始，逐层展开到接口 → 页面 → 组件。每层引用上一层定义 |
 | 输入验证在边界层 | 所有外部输入在接入层统一验证（whitelist 模式）。防注入（参数化查询/转义/沙箱）。认证在接入层声明，不在业务代码中手动检查 |
 | 统一错误处理 | 全局错误拦截（中间件/拦截器/错误边界），返回统一格式。业务错误用自定义错误类型（含错误码），日志分级 ERROR/WARN/INFO，敏感信息不进日志 |
@@ -629,21 +640,48 @@ Step 0: 模块映射验证
   → **不修改** project-manifest.json（上游产物只读）
   → task-execute 加载时自动合并 manifest + supplement
   ↓
-并行执行编排（详见「## 并行执行编排」段落）:
+并行执行编排（角色分离架构）:
+
+  > **核心原则**：一个 Agent 同时戴 7 顶帽子 → 后期步骤质量衰减 + 自己审自己效果差。
+  > 按「角色」拆分，不按「文件」拆分。每个角色做一件事，审查者 ≠ 作者。
+
+  **四种角色**：
+  | 角色 | 职责 | 输入 | 输出 |
+  |------|------|------|------|
+  | **Architect** | 理解产品 → 设计架构 | product-map + entity-model + experience-dna | requirements.md + design.md |
+  | **Decomposer** | 读设计 → 拆原子任务 | design.md + requirements.md | tasks.md（含 B2.HARDEN / B3.DNA / B3.POLISH / B3.i18n） |
+  | **Auditor** | 读全部产出 → 找遗漏 | requirements + design + tasks + product-map | validation findings → 修正 specs |
+  | **Enricher** | 补充元数据 | design + tasks + product-map | event-schema + task-context |
+
   子项目分类:
     后端组: type = "backend"（通常 1 个）
     前端组: 其余所有子项目（admin/web-customer/web-mobile/mobile-native）
-  Phase A — 后端 Agent（1 个 Agent 调用）:
-    Agent(backend): Step 1 → Step 2 → Step 3a → Step 3b
-    ↓ Step 3b 完成后（API 定义就绪），立即启动 Phase B，同时后端继续:
-    Agent(backend-continued): Step 3.5 → Step 3.8 → Step 3.9 → Step 4 → Step 4.5
-    ∥ 并行
-  Phase B — 前端并行 Agent（单条消息发出 N 个 Agent 调用）:
-    ┌── Agent(前端1): Step 1 → Step 2 → Step 3a → Step 3b → Step 3.8 → Step 3.9 → Step 4 → Step 4.5
-    ├── Agent(前端2): Step 1 → Step 2 → Step 3a → Step 3b → Step 3.8 → Step 3.9 → Step 4 → Step 4.5
-    └── Agent(前端N): Step 1 → Step 2 → Step 3a → Step 3b → Step 3.8 → Step 3.9 → Step 4 → Step 4.5
+
+  Phase A — 后端（3 阶段串行 + 1 并行）:
+    Stage 1: Agent(backend-architect): Step 1 → Step 2 → Step 3a → Step 3b → Step 3.5
+      → 产出 requirements.md + design.md
+    ↓ design.md 完成后，启动 Phase B（前端并行），同时后端继续：
+    Stage 2: Agent(backend-decomposer): Step 4（读 design.md → 生成 tasks.md）
+    Stage 3: Agent(backend-auditor): Step 4.3（V1-V12 验证，审查者 ≠ 作者）
+      → 发现问题 → 修正 requirements/design/tasks → 重检（最多 3 轮）
+    ∥ 并行: Agent(backend-enricher): Step 3.8 + Step 3.9 + Step 4.5（event-schema + task-context）
+
+  Phase B — 前端并行（每个子项目内部同样 4 角色）:
+    ┌── 子项目 1:
+    │     Agent(architect):   Step 1 → Step 3a → Step 3b → 产出 requirements + design
+    │     Agent(decomposer):  Step 4 → 产出 tasks.md
+    │     Agent(auditor):     Step 4.3 → V1-V12 验证（独立 agent，非 architect 也非 decomposer）
+    │     Agent(enricher):    Step 3.8 + Step 4.5（并行）
+    ├── 子项目 2: 同上
+    └── 子项目 N: 同上
     全部完成 ↓
-  以下 Step 1-4.5 描述每个 Agent 内部执行的步骤内容:
+
+  **角色隔离规则**：
+  - Auditor Agent **禁止**和 Architect/Decomposer 是同一个 Agent 调用（必须是独立的 Agent tool 调用）
+  - Auditor 只读产出文件做审查，不参与生成过程
+  - Enricher 和 Architect/Decomposer 无依赖，可以并行
+
+  以下 Step 1-4.5 描述每个角色内部执行的步骤内容:
   ↓
 Step 1: Requirements 生成
   每个 Agent 对其负责的子项目:
@@ -713,11 +751,13 @@ Step 3a: 加载产品设计数据模型（可选增强）
     - entity-model.json → ER 设计起点（实体、字段、关系、状态机）
     - api-contracts.json → API 设计起点（端点、请求/响应结构）
     - view-objects.json → 前端组件规格起点（VO 字段、Action Binding）
+    - experience-dna.json → 体验差异化契约（DIFF-xxx 视觉规格，每个差异点的 widget_type/behavior/placement）
 
   **存在** → 作为 design 生成的基础输入:
     - entities 从 entity-model.json 加载（而非从零推导）
     - endpoints 从 api-contracts.json 加载（而非从零推导）
     - 前端 screens 从 view-objects.json 提取字段定义和交互类型
+    - 前端 screens 从 experience-dna.json 匹配 affected_screens/placement 含当前 screen 的 DIFF 项，注入页面规格的「体验差异化」子章节
     - 每个节点保留 source_entity, source_api, source_vo 字段溯源到 product-design 原始 ID
     - 输出进度: 「Step 3a ✓ 加载产品设计数据模型: {N} entities, {M} endpoints, {K} VOs」
 
@@ -763,6 +803,60 @@ Step 3b: Design 生成 + 技术丰富（API-first 策略）
           在 design.md 的「请求层」章节写明各实例的连接配置 + 负责的端点/接口范围
           tasks.md B1 中生成对应的客户端初始化任务
       screens → 页面路由 + 组件架构
+      diff_contracts → 从 experience-dna.json 语义匹配当前 screen 的 DIFF 项（placement 前缀匹配 screen 名称），
+        **不嵌入页面主规格**（避免分散页面任务的注意力），而是：
+          1. 在 design.md 末尾生成独立的「## Experience DNA 组件规格」章节，列出每个 DIFF 的完整 visual_contract
+          2. 在 tasks.md 中生成 **B3.DNA 独立任务**（在 B3 页面任务之后），每个 DIFF 一个原子任务：
+             ```
+             - [ ] B3.DNA.{seq} [{sub-project}] [DNA-CRITICAL] {DIFF.name}
+               - Files: `{页面文件}`, `{组件文件}`
+               - Component: {visual_contract.component}
+               - Placement: {visual_contract.placement}
+               - Spec: {visual_contract.spec}
+               - Behavior: {visual_contract.behavior}
+               - Must NOT: {visual_contract.must_not}
+               - _DNA: DIFF-{id}_
+               - _Risk: HIGH_
+             ```
+          3. B3.DNA 任务在 B3 页面任务完成后执行（页面先存在，再加灵魂）
+          4. ceremony_moments → 同样生成独立的 B3.DNA 任务（过渡仪式实现）
+
+        > 原则：页面任务只管功能正确，DNA 任务只管体验差异化。分离注意力，各管一件事。
+
+      **注意力分离 Round 生成原则**（适用于所有前端子项目）：
+      > 一个 Agent 同时管 N 件事，N > 3 时第 4 件注意力指数衰减。
+      > 解法：把第 4 件事变成另一个 Agent 的第 1 件事。
+      > B3 页面任务只管「功能正确 + loaded 状态」，以下关注点各有专属 Round：
+
+      **B3.POLISH — 四态补全 Round**（B3 页面任务之后）：
+        扫描每个已生成的 B3 页面任务，为缺失的界面状态生成独立补全任务：
+        ```
+        - [ ] B3.POLISH.{seq} [{sub-project}] {PageName} empty + error 状态补全
+          - Files: `{页面文件}`
+          - 实现 empty state：{具体的空状态 UI 规格，含图标+文案+引导操作}
+          - 实现 error state：{具体的错误 UI 规格，含重试按钮+错误信息}
+          - 确保 permission_denied state（如适用）
+          - _Risk: LOW_
+        ```
+        生成规则：
+        - 每个 B3 页面 → 1 个 POLISH 任务（只管 empty/error/permission_denied，不碰功能）
+        - B3 页面任务的 Acceptance 只验证 loaded 状态，POLISH 任务验证其他 3 态
+        - POLISH Agent 的全部注意力集中在"这个页面没数据/出错/没权限时长什么样"
+
+      **B3.i18n — 翻译完整性 Round**（B3 + B3.DNA + B3.POLISH 之后）：
+        对每个前端子项目生成 1 个翻译完整性任务：
+        ```
+        - [ ] B3.i18n.1 [{sub-project}] 翻译完整性扫描 + 补全
+          - 扫描所有 pages/ 和 components/ 中的硬编码字符串 → 提取为 i18n key
+          - 检查所有 i18n key 在每种语言文件中都有翻译
+          - 补全缺失翻译
+          - _Risk: LOW_
+        ```
+        生成规则：
+        - 每个前端子项目 → 1 个 i18n 任务（不是每个页面一个）
+        - B3 页面任务允许用 i18n 函数但不强求翻译完整（减轻页面任务负担）
+        - i18n Agent 的全部注意力集中在"所有用户可见文本是否已翻译"
+
       screen.states → 界面四态设计（empty/loading/error/permission_denied）
       actions → 交互规格（引用已定义的后端接口）
       action.on_failure + exception_flows → 操作异常 UI 反馈设计
@@ -841,7 +935,8 @@ Step 3b: Design 生成 + 技术丰富（API-first 策略）
           "name": "记录列表",
           "source_vo": "VO001",
           "components": ["DataTable", "SearchBar", "Pagination"],
-          "states": {"empty": "暂无记录", "loading": "加载中...", "error": "加载失败"}
+          "states": {"empty": "暂无记录", "loading": "加载中...", "error": "加载失败"},
+          "diff_contracts": ["DIFF-001"]
         }
       ],
       "middleware": [
@@ -1026,13 +1121,6 @@ Step 4: Tasks 生成
   2. `task-inventory.json` 的 exceptions / rules（业务规则）
   3. LLM 基于 API 语义推导的边界条件（兜底）
 
-  **B3 前端任务必须引用后端端点（强制）**：
-  > 每个 B3 前端任务的描述中必须明确列出它应调用的后端 B2 端点。
-  > 格式：`_Backend_: POST /api/v1/consumer/orders (B2.15), GET /api/v1/consumer/addresses (B2.08)`
-  > 这确保执行 agent 知道后端已有什么，不会因为"不确定后端有没有"而留空回调。
-  >
-  > **实战数据**：未标注后端端点的前端任务，80% 的交互回调会被留为空壳。
-
   **B3 前端任务的验收条件**（推荐但非强制）：
   ```
   _Acceptance_:
@@ -1054,21 +1142,6 @@ Step 4: Tasks 生成
   | 状态变更端点 | 每个状态变更 = 1 个任务 | `B2.x 广告审核通过`, `B2.y 广告审核驳回` |
   | 聚合/统计端点 | 独立任务 | `B2.x 广告统计数据 (GET /ad-campaigns/:id/stats)` |
   | 关联操作端点 | 独立任务 | `B2.x 邀请码生成 (POST /invite-codes)` |
-
-  **⚠️ 集成任务分级标签（强制）**：
-  > 每个任务必须标注 `_Integration_` 字段，分为三级：
-  >
-  > | 级别 | 含义 | 示例 | task-execute 行为 |
-  > |------|------|------|-----------------|
-  > | `none` | 纯代码，无外部依赖 | 商品列表页、订单详情页 | 正常执行 |
-  > | `sdk` | 需要第三方 SDK 但可 mock | Stripe SDK、图片上传 SDK | 实现完整代码 + 可切换的 mock adapter |
-  > | `config` | 需要外部账号/配置才能运行 | Apple OAuth、FCM 推送、Stripe webhook | 实现完整代码 + 配置检查 + 缺配置时显示"请配置 XXX" |
-  >
-  > **为什么需要**：task-execute 对 `none` 任务可以直接跑通验证。
-  > 对 `sdk`/`config` 任务，如果留空壳 `() {}`，product-verify 会误判为 genuine。
-  > 标注后，task-execute 知道该写 mock adapter 而非空回调，product-verify 知道该按 `integration_pending` 判定而非 genuine。
-  >
-  > **格式**：`_Integration_: sdk (Stripe SDK — payment processing)` 或 `_Integration_: none`
 
   **反模式（禁止）**：
   ```
@@ -1133,6 +1206,27 @@ Step 4: Tasks 生成
       _Bypass: ci_rules_
   ```
 
+  **B2.HARDEN — 异常加固 Round**（B2 端点任务全部完成后）：
+  > B2 任务只管 happy path + design.md 明确标注的异常。负空间（边界值、并发竞态、外部服务降级等）
+  > 由专门的 HARDEN Round 处理，Agent 全部注意力集中在"这个端点还会怎么坏"。
+
+  对每个 _Risk: HIGH_ 或 _Risk: MEDIUM_ 的 B2 端点任务，生成独立加固任务：
+  ```
+  - [ ] B2.HARDEN.{seq} [backend] {endpoint} 异常加固
+    - Files: `{service文件}`, `{handler文件}`
+    - 输入边界：{该端点的参数边界检查清单}
+    - 并发竞态：{该端点的幂等/乐观锁需求}
+    - 外部依赖降级：{该端点调用的外部服务的降级方案}
+    - 状态非法转换：{该端点涉及的状态机非法路径}
+    - _Guardrails: {关联的 constraints + task.exceptions}_
+    - _Risk: HIGH_
+  ```
+  生成规则：
+  - HIGH risk 端点 → 必须有 HARDEN 任务（含 4 个维度：边界/并发/降级/状态）
+  - MEDIUM risk 端点 → 生成 HARDEN 任务（含 2 个维度：边界/状态）
+  - LOW risk 端点 → 不生成（靠 B2 任务自身的基本校验）
+  - 每个 HARDEN 任务只加固 1 个端点，Agent 全部注意力在"这个端点的异常路径"
+
   B5 中应包含埋点验证任务：验证关键事件是否正确触发、属性是否完整、漏斗是否连通。
 
   **B5 视觉还原度验证**（当 `<BASE>/ui-design/screenshots/` 存在时）：
@@ -1162,8 +1256,10 @@ Step 4: Tasks 生成
   - 如有 Stitch HTML → 任务追加 `stitch_ref: screen_id` + `stitch_html: 文件路径`
 
   ↓
-Step 4.3: Tasks 验证循环（4D/6V+V9/XV/闭环 — 强制）
-  > 本步骤对 Step 4 生成的 tasks.md 执行完整的验证闭环，确保任务列表的正确性**和完整性**。
+Step 4.3: Tasks 验证循环（4D/6V+V9/XV/闭环 — 由 Auditor Agent 执行）
+  > **执行者：独立的 Auditor Agent**（不是 Architect 或 Decomposer Agent）。
+  > 审查者 ≠ 作者，这是防止"自己审自己"的核心机制。
+  > Auditor 以全新的上下文读取 requirements + design + tasks，不带生成时的偏见。
   > 这是 design-to-spec 流水线中最关键的质量门禁——tasks.md 的质量直接决定实现阶段的完整度。
 
   **验证循环架构**：
@@ -1197,8 +1293,9 @@ Step 4.3: Tasks 验证循环（4D/6V+V9/XV/闭环 — 强制）
   | **V9 Coverage** | **产品任务→B2 端点覆盖率**（见阶段 2 V9 定义） | `TASK_COVERAGE_CRITICAL/WARNING` |
   | **V10 Provenance** | **数据溯源闭环**：返回聚合/统计数据的端点，其数据来源是否有写入路径？（见阶段 2 V10 定义） | `TASK_PROVENANCE_CRITICAL/WARNING` |
   | **V11 Acceptance** | **B2 任务验收条件完整性**（见下方 V11 定义） | `TASK_ACCEPTANCE_MISSING/INSUFFICIENT` |
+  | **V12 Experience DNA** | **体验差异化任务完整度**：experience-dna.json 中每个 core/defensible DIFF 是否有对应的独立 B3.DNA 原子任务？该任务是否包含完整的 visual_contract（component + spec + behavior + must_not）？ | `TASK_DIFF_MISSING` / `TASK_DIFF_UNDERSPECIFIED` |
 
-  **V9 覆盖率、V10 溯源、V11 验收条件是强制审计维度**，CRITICAL 级遗漏必须修复后才能退出循环。
+  **V9 覆盖率、V10 溯源、V11 验收条件、V12 体验差异化是强制审计维度**，CRITICAL 级遗漏必须修复后才能退出循环。
 
   **V11 验收条件完整性**（B2 任务强制）：
   > V9 回答"有没有对应的任务"，V10 回答"数据从哪来"，V11 回答"任务有没有可执行的验收标准"。
@@ -1211,6 +1308,9 @@ Step 4.3: Tasks 验证循环（4D/6V+V9/XV/闭环 — 强制）
   **修正方式**：
   - `TASK_ACCEPTANCE_MISSING` → 基于 task-inventory 的 main_flow / exceptions / rules 自动生成 `_Acceptance_` 条件
   - `TASK_ACCEPTANCE_INSUFFICIENT` → 补充缺失的异常路径 / 边界条件
+  - `TASK_DIFF_MISSING`（core）→ CRITICAL — 在对应前端子项目 tasks.md 补充 B3 任务，实现 DIFF 视觉契约指定的组件
+  - `TASK_DIFF_MISSING`（defensible）→ WARNING — 记录但不阻塞
+  - `TASK_DIFF_UNDERSPECIFIED` → WARNING — 补充 DIFF 的完整 visual_contract 规格到任务描述中（从 experience-dna.json 复制 spec+behavior+must_not）
   - `TASK_API_GAP` → 在 tasks.md 中补充缺失的 B2 端点任务（遵循端点级原子性规则）
   - `TASK_COVERAGE_CRITICAL` → 从 task-inventory.json 推导缺失的端点，补充 B2 + B3 + B5 任务
   - `TASK_PROVENANCE_CRITICAL` → 补充行为上报端点（B2）+ 前端上报组件（B3）
@@ -1255,10 +1355,11 @@ Step 4.3: Tasks 验证循环（4D/6V+V9/XV/闭环 — 强制）
   - V11 Acceptance MISSING = 0（所有 B2 任务有验收条件）
   - 4D 无 GAP（或已修复）
   - 闭环无 CRITICAL 缺失
+  - V12 DIFF CRITICAL = 0（所有 core 级体验差异化契约在前端页面中有对应实现任务）
 
   **大循环 3 轮后仍有问题** → 记录为已知问题到 `pipeline-decisions.json`，输出警告，继续（不停）
 
-  → 输出进度: 「Step 4.3 验证 ✓ V9 覆盖率: {X}%, V10 溯源: {Y}%, V11 验收: {Z}% 达标, 4D gaps: {N} fixed, 闭环: {M} fixed, XV: {status}」
+  → 输出进度: 「Step 4.3 验证 ✓ V9 覆盖率: {X}%, V10 溯源: {Y}%, V11 验收: {Z}% 达标, V12 DNA: {W}% 覆盖, 4D gaps: {N} fixed, 闭环: {M} fixed, XV: {status}」
   ↓
 Step 4.5: 任务上下文预计算（Task Context）
   为每个任务预计算完整上下文包，供 task-execute 消费，减少"概念→代码"失真。
