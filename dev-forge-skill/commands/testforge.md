@@ -855,22 +855,52 @@ Step B.1.5: 环境配置验证 + 真实登录冒烟测试
      - 无法推导的变量标注 TODO 并警告
      - 缺失 → 自动生成 `.env` 并重启 dev server
 
-  2. **真实登录冒烟测试**（Chain 0，在所有业务链之前执行）
-     对每个有登录页的前端子项目，用 Playwright 执行真实登录：
+  2. **真实登录冒烟测试**（Chain 0，在所有业务链之前执行，**每个端都必须通过**）
+
+     > E2E 测试最大的笑话：所有 case PASS，但用户登录不了。
+     > Chain 0 是全流程的前提——任何端登录失败 → 立即停止该端的所有后续测试。
+
+     **Web 端**（每个有登录页的 Web 子项目）：
      a. browser_navigate → 登录页 URL
-     b. browser_snapshot → 确认登录表单渲染（非空白页、非错误页）
-     c. browser_fill_form → 输入测试账号密码（从 demo seed 或 .env 读取）
+     b. browser_snapshot → 确认登录表单渲染
+     c. browser_fill_form → 输入测试账号密码
      d. browser_click → 点击登录按钮
-     e. 等待跳转 → 验证登录后页面（如仪表盘、首页）
+     e. 等待跳转 → 验证登录后页面
      f. browser_snapshot → 确认已登录状态
 
-     登录失败 → 分类诊断：
-     - 页面报错（Missing config / 500）→ ENV_ISSUE，修复环境变量
-     - 表单提交但认证失败（401/403）→ 检查测试账号是否存在、密码是否正确
-     - 页面空白 → 检查前端构建、JS 错误
-     - 登录成功但跳转错误 → 检查路由守卫配置
+     **Flutter 移动端**（iOS Simulator / Android Emulator 可用时）：
+     a. 启动 App（`flutter run -d {device}`）
+     b. 等待启动完成 → 验证登录页渲染
+     c. 输入测试账号密码（`tester.enterText` / Patrol `$.fill`）
+     d. 点击登录按钮
+     e. 等待跳转 → 验证登录后首页
+     f. 截图确认已登录状态
 
-     **此步骤不可跳过、不可 bypass。** 如果真实登录跑不通，后续所有 E2E 链都无意义。
+     **原生 iOS (Swift)**：
+     a. XCUITest 启动 App
+     b. 验证登录页 → 输入凭据 → 点击登录 → 验证首页
+
+     **原生 Android (Kotlin)**：
+     a. Maestro 启动 App
+     b. `maestro test chain0-login.yaml`（输入凭据 → 点击 → 验证首页）
+
+     **Electron 桌面端**：
+     a. Playwright electron.launch → 验证登录窗口
+     b. 输入凭据 → 登录 → 验证主界面
+
+     **每个端的 Chain 0 独立判定**：
+     - Web 端登录失败 → 该 Web 子项目所有后续 E2E 标记 `BLOCKED_BY_LOGIN`
+     - Mobile 端登录失败 → 该 Mobile 子项目所有后续 E2E 标记 `BLOCKED_BY_LOGIN`
+     - **不是一个端失败全停**——其他能登录的端继续测，但报告明确标出哪些端被阻塞
+
+     登录失败诊断（所有端通用）：
+     - 页面/App 报错 → ENV_ISSUE
+     - 认证失败（401/403）→ 测试账号不存在或密码错误
+     - 页面/App 空白 → 构建问题
+     - 登录成功但跳转错误 → 路由/导航配置
+     - OAuth 回调失败（移动端常见）→ deep link scheme 或 redirect URI 配置
+
+     **此步骤不可跳过、不可 bypass。** 没通过 Chain 0 的端，后续所有 E2E 链都标记 `BLOCKED_BY_LOGIN`，不伪装为 PASS。
 
   3. **跨浏览器/跨域接缝验证**（Chain 0 的子步骤，真实登录成功后立即执行）
 
