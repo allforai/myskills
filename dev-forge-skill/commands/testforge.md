@@ -916,14 +916,25 @@ Step B.3: 并行执行
   逐链、逐步执行：
   - **Web 步骤**：browser_navigate → browser_snapshot → browser_fill/click → browser_snapshot
   - **API 步骤**：Bash curl → 验证响应
-  - **Flutter 原生步骤**（iOS Simulator 或 Android Emulator 可用时）：
-    `flutter test integration_test/{chain_test}.dart -d {device}` → 收集结果
-    平台原生测试（推送/IAP/OAuth）：`patrol test` 或 `maestro test {flow}.yaml`
+  - **Mobile 原生步骤**（iOS Simulator 或 Android Emulator 可用时）：
+    Flutter: `flutter test integration_test/{chain_test}.dart -d {device}`
+    RN: `detox test` 或 `maestro test {flow}.yaml`
+    平台原生测试（推送/IAP/OAuth）：`patrol test` / `maestro test`
     **设备不可用 → 不执行该步骤，标记 `NOT_TESTED`，不伪装为通过**
-  - **跨子项目切换**：Web → navigate URL；Mobile → 切换到对应 App 的测试脚本
-  - **跨端链路**（如"用户在 mobile 下单 → 商户在 Web 确认"）：
-    Mobile 步骤和 Web 步骤交替执行，通过 API 层验证数据一致性
-    Mobile 端不可用时 → 该跨端链路标记 `NOT_TESTED`（不用 Web 替代 Mobile 步骤）
+
+  - **移动端串行规则**（重要）：
+    > iOS Simulator / Android Emulator 同一时间只能运行 1 个 App。
+    > 移动端子项目的 E2E 测试 **必须串行执行**，不能并行。
+    > Web 子项目可以并行（多个 Playwright 实例），但 Mobile 不行。
+    多个移动端子项目 → 按优先级串行：先 consumer → 再 rider → 再 warehouse
+
+  - **跨子项目切换**：Web → navigate URL；Mobile → 卸载当前 App → 安装下一个 → 继续
+  - **跨端链路**：
+    Web ↔ Mobile：Web 步骤用 Playwright，Mobile 步骤用 integration_test/Patrol/Maestro
+    **Mobile ↔ Mobile**（如 consumer 下单 → rider 接单）：
+      同一设备上交替执行 — consumer App 操作 → 卸载 → 安装 rider App → rider 操作
+      或用 API 层验证替代第二个 Mobile 步骤（curl 检查订单状态变化）
+    Mobile 端不可用时 → 该链路标记 `NOT_TESTED`
 
 Step B.4: 6V 诊断与失败分类
   对每个失败步骤，LLM 从 6 个工程视角深度诊断根因：

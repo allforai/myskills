@@ -147,7 +147,34 @@
    |------|---------|----------|
    | Widget | 所有屏幕 | ✅ 是 |
    | Provider | 所有 Provider | ✅ 是 |
-   | E2E | 核心业务流 | ⚠️ 需要模拟器或 Web 降级 |
+   | E2E | 核心业务流 | ⚠️ 需设备 |
+
+   **React Native / Expo 子项目（同样 3 层策略）**：
+   > RN 和 Flutter 类似但工具链不同。Auditor 根据 tech_stack 选择对应工具。
+
+   **层 1: B5.COMPONENT — 组件测试（Jest + RNTL，无需设备，CI 可跑）**
+   - 每个屏幕 → 1 个 `__tests__/{screen}.test.tsx`
+   - 工具: Jest + @testing-library/react-native
+   - Mock: MSW (Mock Service Worker) 拦截 API
+
+   **层 2: B5.HOOK — Hook/状态测试（Jest，无需设备）**
+   - 每个 custom hook / store → 1 个 test 文件
+   - 工具: @testing-library/react-hooks 或 renderHook
+
+   **层 3a: B5.E2E — Detox E2E（需设备）**
+   - 核心业务流 → Detox test spec
+   - 工具: Detox（优先）或 Maestro
+   - 无设备 → NOT_TESTED
+
+   **层 3b: B5.PLATFORM — 平台原生（同 Flutter）**
+   - Maestro YAML（Android）/ Detox（iOS）
+
+   | 层级 | 覆盖目标 | CI 可跑？ | 工具 |
+   |------|---------|----------|------|
+   | Component | 所有屏幕 | ✅ | Jest + RNTL |
+   | Hook/Store | 所有 hooks | ✅ | Jest |
+   | E2E | 核心业务流 | ⚠️ 需设备 | Detox / Maestro |
+   | Platform | 原生集成点 | ⚠️ 需设备 | Maestro |
 
 5. **补充后重检**：
    新增的子任务也需要通过 V9-V12 验证（确保子任务本身的质量）。
