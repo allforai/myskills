@@ -44,10 +44,111 @@
    Auditor 可按项目特点创建新维度（如离线同步、动效等），不限于此表。
 
 4. **测试任务细化**（所有子项目）：
-   - 每个 B2 _Acceptance_ 条件 → 确保有对应的 B5 测试断言
+
+   **后端子项目**：
+   - 每个 B2 _Acceptance_ 条件 → 确保有对应的 B5 测试断言（pytest）
    - 每个 B2.HARDEN 异常 → 生成 B5.HARDEN 测试
-   - 每个 B3.DNA spec → 生成 B5.DNA 行为测试
-   - 粗粒度的 B5 模块测试保留（覆盖集成场景），细粒度断言作为补充
+
+   **Web 前端子项目（Nuxt/Next/React）**：
+   - 每个 B3 页面 → 确保有 B5 组件测试（vitest/jest）
+   - 每个 B3.DNA → 生成 B5.DNA 行为测试
+   - 粗粒度 E2E 测试保留（Playwright）
+
+   **Flutter 移动端子项目（3 层测试策略）**：
+   > Flutter 测试是当前短板。Auditor 必须为 Flutter 子项目生成 3 层测试任务：
+
+   **层 1: B5.WIDGET — Widget 测试（`flutter test`，无需模拟器，CI 可跑）**
+   - 每个 B3 屏幕 → 1 个 `test/screens/{screen}_test.dart`
+   - 验证：组件渲染、状态切换（loading/loaded/error/empty）、用户交互响应
+   - Mock API 层（MockApiClient），不需要真实后端
+   - 覆盖目标：**所有屏幕**，不只是共享 widget
+   ```
+   - [ ] B5.WIDGET.{seq} [mobile-app] {ScreenName} Widget 测试
+     - Files: `test/screens/{screen_name}_test.dart`
+     - 测试 loaded 状态渲染正确的 Widget 树
+     - 测试 loading 状态显示 LoadingIndicator
+     - 测试 error 状态显示 ErrorView + 重试按钮
+     - 测试关键用户交互（按钮点击、表单提交）
+     - Mock: ApiClient, AuthService
+   ```
+
+   **层 2: B5.PROVIDER — Provider 测试（`flutter test`，无需模拟器）**
+   - 每个 Riverpod Provider → 1 个测试文件
+   - 验证：API 调用 → state 变化 → 正确通知 UI
+   - Mock HTTP 层（MockDio），验证请求参数和响应处理
+   ```
+   - [ ] B5.PROVIDER.{seq} [mobile-app] {ProviderName} Provider 测试
+     - Files: `test/providers/{provider_name}_test.dart`
+     - 测试 load → success state
+     - 测试 load → error state
+     - 测试 mutation → optimistic update → server confirm
+   ```
+
+   **层 3: B5.E2E — 集成测试（Flutter 层 + 平台原生层）**
+
+   > Flutter/RN 等跨平台框架在不同平台上行为不同。
+   > `integration_test` 只测 Flutter 层，测不到原生层的集成（权限弹窗/推送/IAP/深链接/键盘）。
+   > 所以层 3 分两个子层：
+
+   **层 3a: Flutter 层集成测试（`integration_test`）**
+   - 每条核心业务流 → 1 个 `integration_test/{flow_name}_test.dart`
+   - 用 `flutter test integration_test/ -d {device}` 运行
+   - 测试 Flutter 内的完整用户旅程（UI 交互 + API 调用 + 状态流转）
+   - 不涉及原生平台特性
+   ```
+   - [ ] B5.E2E.{seq} [mobile-app] {FlowName} Flutter 集成测试
+     - Files: `integration_test/{flow_name}_test.dart`
+     - 设备: chrome(Web降级) / emulator / simulator
+     - 测试完整用户旅程（登录→核心操作→结果验证）
+   ```
+
+   **层 3b: 平台原生集成测试（Platform-Specific）**
+   - 仅当项目使用了平台原生特性时生成
+   - Auditor 扫描 pubspec.yaml + ios/ + android/ 代码，识别原生集成点
+
+   | 原生特性 | iOS 测试方式 | Android 测试方式 | 测试内容 |
+   |---------|-------------|-----------------|---------|
+   | 推送通知 | XCUITest / Patrol | Maestro / Patrol | 权限弹窗 → 授权 → 收到推送 → 点击跳转 |
+   | IAP 支付 | XCUITest + StoreKit sandbox | Maestro + Google Play test track | 购买流程 → 回调 → 状态更新 |
+   | OAuth 登录 | XCUITest（Safari WebView 交互） | Maestro（Chrome Custom Tab） | 跳转 → 授权 → 回调 → token |
+   | 深链接 | XCUITest（Universal Links） | Maestro（App Links） | 链接打开 → 正确页面 |
+   | 相机/相册 | XCUITest（权限 + 模拟选图） | Maestro | 权限弹窗 → 选图 → 上传 |
+   | 生物识别 | XCUITest（模拟 FaceID/TouchID） | Maestro | 解锁流程 |
+   | 键盘行为 | integration_test -d simulator | integration_test -d emulator | 输入框聚焦 → 键盘弹出 → 页面适配 |
+
+   ```
+   - [ ] B5.PLATFORM.{seq} [mobile-app] {Feature} iOS 原生测试
+     - Files: `ios/RunnerTests/{feature}_test.swift` 或 `integration_test/{feature}_ios_test.dart`（Patrol）
+     - 工具: XCUITest / Patrol（优先 Patrol，降级 XCUITest）
+     - 前置: iOS Simulator 可用
+     - 降级: DEFERRED_TO_DEVICE
+
+   - [ ] B5.PLATFORM.{seq} [mobile-app] {Feature} Android 原生测试
+     - Files: `maestro/{feature}.yaml` 或 `integration_test/{feature}_android_test.dart`（Patrol）
+     - 工具: Maestro / Patrol（优先 Patrol，降级 Maestro）
+     - 前置: Android Emulator 可用
+     - 降级: DEFERRED_TO_DEVICE
+   ```
+
+   **工具优先级**：
+   - Patrol（Flutter 原生，一套代码两平台）→ Maestro（Android）/ XCUITest（iOS）→ DEFERRED_TO_DEVICE
+   - Auditor 检查 `which patrol` / `which maestro` / `which xcodebuild` 决定使用哪个
+
+   **Flutter 测试覆盖目标（更新）**：
+   | 层级 | 覆盖目标 | CI 可跑？ | 工具 |
+   |------|---------|----------|------|
+   | Widget | 所有屏幕 | ✅ | `flutter test` |
+   | Provider | 所有 Provider | ✅ | `flutter test` |
+   | Flutter E2E | 核心业务流 | ⚠️ 需设备 | `integration_test` |
+   | iOS 原生 | 原生集成点 | ⚠️ 需 Simulator | Patrol / XCUITest |
+   | Android 原生 | 原生集成点 | ⚠️ 需 Emulator | Patrol / Maestro |
+
+   **Flutter 测试覆盖目标**：
+   | 层级 | 覆盖目标 | CI 可跑？ |
+   |------|---------|----------|
+   | Widget | 所有屏幕 | ✅ 是 |
+   | Provider | 所有 Provider | ✅ 是 |
+   | E2E | 核心业务流 | ⚠️ 需要模拟器或 Web 降级 |
 
 5. **补充后重检**：
    新增的子任务也需要通过 V9-V12 验证（确保子任务本身的质量）。
