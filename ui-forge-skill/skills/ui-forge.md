@@ -31,6 +31,16 @@ Do not treat this as a greenfield UI generation skill.
 If the page is not functionally complete, stop and tell the user the work should
 return to implementation flow first.
 
+Treat the screen as **not functionally complete** when any of these are true:
+
+- the main route or entry point does not render correctly
+- the primary user task cannot be completed end-to-end
+- real or mocked data flow is still broken
+- loading / empty / error states are missing for the main path
+- core actions exist visually but are not wired to real behavior
+
+Do not use UI refinement to hide unfinished implementation.
+
 ## Refinement Mindset
 
 Before changing code, form a fast opinion on all four layers:
@@ -71,6 +81,11 @@ Questions to answer:
 
 If drift is material, choose `restore`.
 If alignment is already good enough, choose `polish`.
+
+If drift is mixed, use a two-phase execution:
+
+1. restore the meaningful fidelity gaps first
+2. apply only limited polish that does not re-open drift
 
 ### Mode: polish
 
@@ -129,7 +144,20 @@ Quickly determine:
 - whether a trusted design baseline exists
 - which files are the real implementation surface
 
-State the chosen mode briefly before editing.
+Before editing, ALWAYS report this triage block:
+
+```text
+Baseline: present | absent
+Functional Completeness: complete | incomplete
+Drift Assessment: low | medium | high
+Chosen Mode: restore | polish | stop
+```
+
+Rules:
+
+- `stop` when functional completeness is not there yet
+- `restore` when drift is medium or high and a trusted baseline exists
+- `polish` only when completeness is present and drift is low, or when no trusted baseline exists
 
 Also state the guardrail in one line:
 
@@ -144,6 +172,12 @@ If a baseline exists, compare the implementation against it at four levels:
 - component language and density
 - token usage and styling rules
 - state presentation and interaction cues
+
+Translate the result into a simple severity:
+
+- `low` -> mostly finish quality issues
+- `medium` -> visible system drift, but structure is still recoverable in place
+- `high` -> obvious mismatch against spec/tokens/screenshots across multiple layers
 
 Do not jump straight into beautification when the implementation is still off-baseline.
 
@@ -196,6 +230,14 @@ Execution priority:
 3. improve state clarity
 4. polish finish and motion
 
+When using the two-phase path, say so explicitly and keep the sequence visible in
+your work:
+
+- Phase A: restore
+- Phase B: polish
+
+Do not let Phase B introduce fresh divergence from the baseline.
+
 ### Step 5: Preserve product intent
 
 Do not change:
@@ -238,12 +280,13 @@ Use concrete heuristics when deciding whether the work is done.
 
 When completing a refinement task, report in this shape:
 
-1. chosen mode and why
-2. fidelity check result
+1. triage block
+2. chosen mode and why
 3. files changed
-4. main UI improvements
-5. constraints respected
-6. any remaining gap or tradeoff
+4. restore work completed, if any
+5. polish work completed, if any
+6. constraints respected
+7. any remaining gap or tradeoff
 
 ## Quality Standard
 
