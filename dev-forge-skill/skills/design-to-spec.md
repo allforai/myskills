@@ -649,7 +649,7 @@ Step 0: 模块映射验证
   | 角色 | 职责 | 输入 | 输出 |
   |------|------|------|------|
   | **Architect** | 理解产品 → 设计架构 | product-map + entity-model + experience-dna | requirements.md + design.md |
-  | **Decomposer** | 读设计 → 拆原子任务 | design.md + requirements.md | tasks.md（含 B2.HARDEN / B3.DNA / B3.POLISH / B3.i18n） |
+  | **Decomposer** | 读设计 → 拆功能任务 | design.md + requirements.md | tasks.md（B0-B5 平铺功能任务） |
   | **Auditor** | 读全部产出 → 找遗漏 | requirements + design + tasks + product-map | validation findings → 修正 specs |
   | **Enricher** | 补充元数据 | design + tasks + product-map | event-schema + task-context |
 

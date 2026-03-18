@@ -444,11 +444,11 @@ Step 1.8: 上下文注入（Context Injection）
 
   **注意力分离执行原则**：
   > 主任务（B2/B3）只管功能正确性（happy path + `[DERIVED]` 异常 + 基本校验）。
-  > 额外关注维度由 Decomposer 在 tasks.md 中拆成独立子任务（如 B2.HARDEN / B3.DNA / B3.POLISH 等）。
+  > 额外关注维度由 Auditor 在 design-to-spec Step 4.3 补充为独立子任务（如 B2.HARDEN / B3.DNA / B3.POLISH 等）。
   > task-execute 按 tasks.md 的 batch id 排序执行——主任务先、子任务后，自然保证依赖顺序。
   >
   > 如果 tasks.md 中只有主任务没有子任务（旧版兼容），task-execute 仍然正常执行。
-  > 注意力分离由 Decomposer 在 spec 阶段决定，task-execute 只负责按顺序执行。
+  > task-execute 不关心子任务由谁生成，只按 batch id 排序执行。
   ↓
 Step 2: 逐任务执行
   subagent-driven-development 模式:
