@@ -171,9 +171,7 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 > - 图片字段: `${CLAUDE_PLUGIN_ROOT}/docs/field-specs/image-field.md`
 > - 视频字段: `${CLAUDE_PLUGIN_ROOT}/docs/field-specs/video-field.md`
 > - 页面交互类型分类（37 种）: `product-design-skill/docs/interaction-types.md`
-> - UmiJS + Ant Design Pro 套路: `${CLAUDE_PLUGIN_ROOT}/docs/tech-stack-patterns/umijs.md`
-> - Next.js 套路: `${CLAUDE_PLUGIN_ROOT}/docs/tech-stack-patterns/nextjs.md`
-> - Flutter 套路: `${CLAUDE_PLUGIN_ROOT}/docs/tech-stack-patterns/flutter.md`
+> - 技术栈套路（如存在）: `${CLAUDE_PLUGIN_ROOT}/docs/tech-stack-patterns/{stack}.md`（不存在时由 LLM 基于技术栈常识推导）
 > - 行为原语实现映射: `${CLAUDE_PLUGIN_ROOT}/docs/primitive-impl-map.md`
 
 **套路检测（existing 模式专用）**：existing 模式下，Step 3 生成 design.md 之前，先扫描已有代码提取实际套路（Request 层、列表/表单/状态操作/删除确认/编辑回填/i18n/枚举管理模式）。
