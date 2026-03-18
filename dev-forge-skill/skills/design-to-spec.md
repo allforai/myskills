@@ -804,27 +804,13 @@ Step 3b: Design 生成 + 技术丰富（API-first 策略）
           在 design.md 的「请求层」章节写明各实例的连接配置 + 负责的端点/接口范围
           tasks.md B1 中生成对应的客户端初始化任务
       screens → 页面路由 + 组件架构
-      diff_contracts → 从 experience-dna.json 语义匹配当前 screen 的 DIFF 项（placement 前缀匹配 screen 名称），
-        **不嵌入页面主规格**（避免分散页面任务的注意力），而是：
-          1. 在 design.md 末尾生成独立的「## Experience DNA 组件规格」章节，列出每个 DIFF 的完整 visual_contract
-          2. 在 tasks.md 中生成 **B3.DNA 独立任务**（在 B3 页面任务之后），每个 DIFF 一个原子任务：
-             ```
-             - [ ] B3.DNA.{seq} [{sub-project}] [DNA-CRITICAL] {DIFF.name}
-               - Files: `{页面文件}`, `{组件文件}`
-               - Component: {visual_contract.component}
-               - Placement: {visual_contract.placement}
-               - Spec: {visual_contract.spec}
-               - Behavior: {visual_contract.behavior}
-               - Must NOT: {visual_contract.must_not}
-               - _DNA: DIFF-{id}_
-               - _Risk: HIGH_
-             ```
-          3. B3.DNA 任务在 B3 页面任务完成后执行（页面先存在，再加灵魂）
-          4. ceremony_moments → 同样生成独立的 B3.DNA 任务（过渡仪式实现）
+      diff_contracts（Architect 只标注，不拆任务）→ 从 experience-dna.json 语义匹配当前 screen 的 DIFF 项，
+        在 design.md 中做两件事（仅此两件，不生成 tasks）：
+          1. 每个页面规格末尾追加「关联 DIFF」标注行：`_DIFF: DIFF-001 StageProgressIndicator, DIFF-002 TypingIndicator_`
+          2. 在 design.md 末尾生成独立的「## Experience DNA 组件规格」章节，列出每个 DIFF 的完整 visual_contract（供 Decomposer 读取）
 
-        > 原则：页面任务只管功能正确，DNA 任务只管体验差异化。分离注意力，各管一件事。
-        > **角色分工**：Architect 在 design.md 中标注每个页面关联的 DIFF（只标注不拆任务），
-        > Decomposer 在 Step 4 读 design.md 的 DIFF 标注 + experience-dna.json → 生成 B3.DNA 任务。
+        > **Architect 禁止生成 B3.DNA 任务**——任务拆分是 Decomposer 的职责（Step 4）。
+        > Architect 的 design.md 是信息源，Decomposer 读它来拆任务。
 
       **注意力分离 Round 生成原则**（适用于所有前端子项目）：
       > 一个 Agent 同时管 N 件事，N > 3 时第 4 件注意力指数衰减。
@@ -1091,7 +1077,10 @@ Step 3.9: Dev Bypass 接口设计
 
   Progress: "Dev bypass 接口设计 ✓ ({N} bypasses)"
   ↓
-Step 4: Tasks 生成
+Step 4: Tasks 生成（由 Decomposer Agent 执行）
+  > Decomposer 读 Architect 产出的 design.md → 拆分为原子任务。
+  > 包括功能任务（B0-B5）和注意力分离任务（B2.HARDEN / B3.DNA / B3.POLISH / B3.i18n）。
+
   按开发层分 Batch，每任务遵循原子标准:
     - 1-3 文件，15-30 分钟，单一目的
     - 指明具体文件路径（基于技术栈 template 约定）
@@ -1099,6 +1088,24 @@ Step 4: Tasks 生成
     - 标注 _Guardrails_（← E3，溯源 task.rules/exceptions/audit ID）
     - 标注 _Risk_（← E4，from task.risk_level，HIGH 任务优先 review）
     - 标注 _Acceptance_（← 验收条件，每个 B2 任务必须包含，见下方「验收条件规范」）
+
+  **B3.DNA 任务生成**（前端子项目，experience-dna.json 存在时）：
+  读取 design.md 页面规格中的 `_DIFF:` 标注 + experience-dna.json 的完整 visual_contract，
+  为每个 core/defensible DIFF 生成独立的 B3.DNA 原子任务：
+  ```
+  - [ ] B3.DNA.{seq} [{sub-project}] [DNA-CRITICAL] {DIFF.name}
+    - Files: `{页面文件}`, `{新组件文件}`
+    - Component: {visual_contract.component}
+    - Placement: {visual_contract.placement}
+    - Spec: {visual_contract.spec}
+    - Behavior: {visual_contract.behavior}
+    - Must NOT: {visual_contract.must_not}
+    - _DNA: DIFF-{id}_
+    - _Risk: HIGH_
+  ```
+  B3.DNA 任务在 B3 页面任务之后执行（页面先存在，再加灵魂）。
+  ceremony_moments → 同样生成独立的 B3.DNA 任务（过渡仪式实现）。
+  experience-dna.json 不存在 → 跳过（向后兼容）。
 
   **⚠️ 验收条件规范（B2 任务强制）**：
   > 每个 B2 端点任务必须包含 `_Acceptance_` 字段，列出可执行的验收条件。

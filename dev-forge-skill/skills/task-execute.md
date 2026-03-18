@@ -375,8 +375,9 @@ Step 1.7: CC6 API 契约绑定（Frontend → Server Contract Binding）
   ```
 
   2.5. 读取 `.allforai/product-map/experience-dna.json`（如存在），
-       提取当前任务关联页面的 DIFF 契约列表（从 DIFF.visual_contracts.placement 匹配任务的 screen），
-       作为上下文追加注入每个前端/移动端任务的 agent prompt：
+       **仅对 B3.DNA 任务**（任务 id 匹配 `B3.DNA.*` 或描述含 `_DNA: DIFF-`）注入 DIFF 契约。
+       B3 页面任务 **不注入** DIFF 上下文（页面任务只管功能，避免注意力分散）。
+       提取当前 DNA 任务对应的 DIFF visual_contract，作为上下文注入 agent prompt：
 
   ```
   ───── 体验差异化契约（来自 experience-dna.json）─────
