@@ -1,0 +1,11 @@
+{
+  "project": {"name": "mock-api", "detected_stacks": ["go", "gin"], "total_files": 25, "total_lines": 3000},
+  "modules": [
+    {"id": "M001", "path": "internal/auth", "responsibility": "Authentication", "exposed_interfaces": ["POST /login", "POST /register"], "dependencies": ["M002:user"], "key_files": ["handler.go", "service.go"], "file_count": 5, "line_count": 800, "confidence": "confirmed"},
+    {"id": "M002", "path": "internal/user", "responsibility": "User Management", "exposed_interfaces": ["GET /users", "GET /users/:id", "PUT /users/:id"], "dependencies": [], "key_files": ["handler.go", "service.go", "repo.go"], "file_count": 6, "line_count": 1200, "confidence": "confirmed"}
+  ],
+  "cross_cutting": ["jwt-auth", "error-handler"],
+  "data_entities": [{"name": "User", "module": "M001", "fields_summary": "id, email, role, created_at"}],
+  "infrastructure": {},
+  "api_call_map": {}
+}
