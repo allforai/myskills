@@ -684,10 +684,12 @@ dimension Logic > Interface > Data > UX（业务规则最先）
        ```
 
        **具体规则**：
-       1. 等价端的步骤 → 每个端独立执行（平台差异段）
-       2. 非等价端的步骤 → 只跑一次（共享段）
-       3. 每个平台差异段结束后用 API 断言验证结果一致（两端操作后数据库状态相同）
-       4. 平台差异段发现的 bug 标注是哪个端的（`FIX_REQUIRED [consumer-web]` vs `FIX_REQUIRED [consumer-app]`）
+       1. 等价端 **作为写入端** 的步骤 → 每个端独立执行（写入差异段）
+       2. 等价端 **作为消费端接收反向穿透** 的步骤 → 每个端独立验证（验证差异段）
+          例：merchant 确认订单后，consumer-web 和 consumer-app 都要验证 status=confirmed
+       3. 非等价端的步骤 → 只跑一次（共享段）
+       4. 每个差异段结束后用 API 断言验证结果一致（两端操作后数据库状态相同）
+       5. 差异段发现的 bug 标注是哪个端的（`FIX_REQUIRED [consumer-web]` vs `FIX_REQUIRED [consumer-app]`）
 
        **注意**：等价 ≠ 完全相同。移动端可能有手势操作、推送流程、离线场景是 Web 没有的。
        这些差异通过 B5.PLATFORM 测试覆盖，不在 E2E 链展开中处理。
@@ -1042,6 +1044,13 @@ Step B.5: 跨端数据流穿透验证
      E2E 链的前置数据（如：下单需要商品已存在）**用 API 直接创建**（curl / httpx），不走 UI。
      原因：Given 是准备条件不是测试目标，走 UI 太慢且容易因 UI bug 导致 Given 失败 → 整条链崩溃。
      仅 When（被测操作）和 Then（验证）走 UI/真实操作。
+
+     **API 认证获取**（Given 的 curl 需要 Bearer token）：
+     - 优先从 Step B.1.5 登录冒烟时获取：`curl POST /auth/login` → 保存各角色 token
+     - 或从 Playwright 浏览器提取：`page.evaluate(() => localStorage.getItem('access_token'))`
+     - 或项目有 DEV_AUTH_MOCK → `Bearer mock`
+     - 各角色 token 缓存到 test context，所有 Given curl 调用复用
+     **不可跳过认证**——即使是 Given 准备数据，也必须带合法 token，验证 API 权限链路。
 
   **1. 写入端操作 + 记录唯一标识**
      在写入端子项目执行写操作，记录数据唯一标识：
