@@ -641,7 +641,9 @@ Step 4: Round 增量验证（存在性 + 正确性）
 
     === 正确性验证执行方式 ===
 
-    CC1-CC5 + CC7 使用 Agent tool 并行执行（最多 6 个 Agent，CC7 仅前端 Round 且 experience-dna.json 存在时触发），与存在性验证的 product-verify scope 串行。
+    CC1-CC5 + CC7 使用 Agent tool 并行执行，与存在性验证的 product-verify scope 串行。
+    CC7 仅前端 Round 且 experience-dna.json 存在时触发。
+    **大型项目自适应**：CC7 检查的 DIFF 数 > 20 时，按子项目拆成多个 CC7 Agent 并行（每个只检查该子项目的 DNA 实现）。
 
     每个 Agent 的 prompt 模板：
     ```

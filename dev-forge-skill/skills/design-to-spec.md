@@ -221,26 +221,40 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
   后端组: type = "backend"（通常 1 个）
   前端组: 其余所有子项目（admin/web-customer/web-mobile/mobile-native）
 
-**大型项目自适应**（防止产出文件压垮下游 Agent）：
+**项目规模自适应**（所有角色统一规则，防止任何 Agent 超载）：
 
-  > **问题**：大型后端（>10 模块，>100 端点）的 design.md 可能 3000+ 行，Decomposer/Auditor 读不完。
-  > **方案**：Architect 按模块分批写入 design.md（已有），Decomposer/Auditor 也按模块分批处理。
-  > **判定**：从 project-manifest.json 的 assigned_modules 数量判断规模。
+  > **核心原则**：不管项目多大，每个 Agent 单次处理的模块数 ≤ 5，产出/输入 ≤ 1500 行。
+  > 超过此限的项目自动拆成模块组并行处理。
+  > **判定**：从 project-manifest.json 的 assigned_modules 数量判断。
 
-  | 规模 | 模块数 | Decomposer 策略 | Auditor 策略 |
-  |------|--------|----------------|-------------|
-  | 小 | ≤ 5 | 单 Agent 读全量 design.md | 单 Agent 验证全量 |
-  | 中 | 6-10 | 单 Agent 读全量（design.md ≤ 1500 行） | 单 Agent 验证全量 |
-  | **大** | **> 10** | **按模块组分批**（每批 3-5 模块） | **按模块组分批验证** |
+  | 规模 | 模块数 | 所有角色策略 |
+  |------|--------|------------|
+  | 小 | ≤ 5 | 单 Agent 全量处理 |
+  | 中 | 6-10 | 单 Agent 全量处理（产出通常 ≤ 1500 行） |
+  | 大 | 11-20 | 按模块组分批（每批 3-5 模块），所有角色均并行分批 |
+  | **超大** | **> 20** | **同"大"规则，但模块分组数更多；数据模型也需分批（>30 实体时）** |
 
-  **大型项目模块分批规则**：
+  **模块分组规则**（大/超大项目）：
   1. 从 project-manifest.json 读取 assigned_modules 列表
   2. 按业务相关性分组（如 auth+users 一组、courses+classroom 一组、payment+subscription 一组）
-  3. 每组 3-5 个模块 → 1 个 Decomposer Agent（只读对应模块的 design.md 段落）
-  4. 每组 → 1 个 Auditor-Validate Agent（只验证对应模块的 tasks）
-  5. Auditor-Enrich 在所有模块验证完后统一执行（需要全局视角补充跨模块子任务）
+  3. 每组 3-5 个模块
 
-  **Architect 分批输出格式**（大型项目）：
+  **各角色分批方式**：
+  | 角色 | 小/中型 | 大/超大型 |
+  |------|--------|----------|
+  | **Architect** | 单 Agent 全量 | 数据模型单 Agent（共享）→ API 设计**按模块组并行多 Agent** |
+  | **Decomposer** | 单 Agent 全量 | 按模块组并行（每组只读 `## Module:` 对应段落） |
+  | **Auditor-Validate** | 单 Agent 全量 | 按模块组并行验证 |
+  | **Auditor-Enrich** | 单 Agent | 始终单 Agent（需要全局视角补充跨模块子任务） |
+  | **Enricher** | 单 Agent | 单 Agent（event-schema + task-context 不按模块拆） |
+
+  **Architect 超大型分批**：
+  - **数据模型（实体 ≤ 30）**：单 Architect Agent 一次性生成（共享基础）
+  - **数据模型（实体 > 30）**：按领域拆分（如 用户域/商品域/订单域/物流域），每域 1 个 Agent
+  - **API 设计**：每模块组 1 个 Architect Agent 并行（读共享数据模型 + 生成该组端点）
+  - 每个 Architect Agent 输出独立的 `## Module:` 段落，最终合并到 design.md
+
+  **Architect 分批输出格式**（大/超大型项目强制）：
   design.md 中每个模块用 `## Module: {module_name}` 明确分隔，
   让下游 Agent 能按模块名定位段落，不需要读全文。
 
