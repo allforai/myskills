@@ -279,7 +279,7 @@ cd /tmp/test-project
 - **GitHub**: https://github.com/allforai/myskills
 - **SSH**: git@github.com:allforai/myskills.git
 - **分支**: main（稳定版）
-- **版本**: v3.3.0+
+- **版本**: rolling current plugin versions from repository manifests
 
 ---
 

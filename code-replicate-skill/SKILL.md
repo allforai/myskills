@@ -10,7 +10,7 @@ description: >
   code generation. 代码复刻桥接：逆向工程已有代码库，生成 allforai 产物，交还
   dev-forge 流水线（/design-to-spec → /task-execute）生成目标技术栈代码。
   支持后端、前端、全栈（交叉验证）、模块级（依赖边界）四种复刻模式。
-version: "1.1.0"
+version: "1.1.1"
 ---
 
 # Code Replicate — 代码复刻插件

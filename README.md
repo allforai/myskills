@@ -145,27 +145,27 @@ QA 层       deadhunt          死链→CRUD完整性→幽灵功能→字段一
 
 ## 插件概览
 
-### product-design (v3.8.0)
+### product-design (v4.16.1)
 
 8 个技能，核心是先建图再分析：
 
 `product-concept / product-map / journey-emotion / experience-map / interaction-gate / use-case / feature-gap / feature-prune / ui-design / design-audit`
 
-### dev-forge (v2.5.0)
+### dev-forge (v5.8.1)
 
 8 个技能，覆盖从设计规格到验收的完整开发链路：
 
 `design-to-spec`（设计转实现规格）→ `project-setup`（环境初始化）→ `project-scaffold`（代码骨架生成）→ `task-execute`（任务执行）→ `e2e-verify`（端到端验证）→ `seed-forge`（种子数据锻造）→ `product-verify`（静态+动态验收）→ `shared-utilities`（公共工具）
 
-### deadhunt (v1.9.0)
+### deadhunt (merged into dev-forge)
 
-死链猎杀 + 流程验证：死链、CRUD 完整性、幽灵功能、字段一致性。
+死链猎杀能力已并入 `dev-forge` 主流程与相关命令体系。
 
-### code-tuner (v1.0.0)
+### code-tuner (v1.1.1)
 
 服务端架构分析：合规检查、重复检测、抽象机会、综合评分（0-100）。
 
-### ui-forge (v0.1.0)
+### ui-forge (v0.1.2)
 
 实现后 UI 锻造：在页面功能完成后，做界面 polish 或 design restore。
 

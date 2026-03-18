@@ -69,7 +69,7 @@ cd ~/Documents/myskills/product-design-skill/mcp-ai-gateway
 
 ## 可用 Skills 列表
 
-### Product Design Suite (v3.3.0)
+### Product Design Suite (v4.16.1)
 | 命令 | 功能 |
 |------|------|
 | `/product-concept` | 产品概念发现（支持创新增强） |
@@ -81,24 +81,24 @@ cd ~/Documents/myskills/product-design-skill/mcp-ai-gateway
 | `/ui-design` | UI 设计 |
 | `/design-audit` | 设计审计 |
 
-### Dev Forge Suite (v2.3.0)
+### Dev Forge Suite (v5.8.1)
 | 命令 | 功能 |
 |------|------|
 | `/project-forge` | 项目锻造全流程 |
 | `/seed-forge` | 种子数据锻造 |
 | `/product-verify` | 产品验收 |
 
-### Deadhunt (v1.9.0)
+### Deadhunt
 | 命令 | 功能 |
 |------|------|
 | `/deadhunt` | 死链猎杀 + 产品完整性验证 |
 
-### Code Tuner (v1.0.0)
+### Code Tuner (v1.1.1)
 | 命令 | 功能 |
 |------|------|
 | `/code-tuner` | 代码架构质量分析 |
 
-### UI Forge (v0.1.0)
+### UI Forge (v0.1.2)
 | 命令 | 功能 |
 |------|------|
 | `/ui-forge` | 功能完成后的界面增强与设计还原 |
