@@ -664,7 +664,8 @@ Step 0: 模块映射验证
     Stage 2: Agent(backend-decomposer): Step 4（读 design.md → 生成 tasks.md）
     Stage 3: Agent(backend-auditor): Step 4.3（V1-V12 验证，审查者 ≠ 作者）
       → 发现问题 → 修正 requirements/design/tasks → 重检（最多 3 轮）
-    ∥ 并行: Agent(backend-enricher): Step 3.8 + Step 3.9 + Step 4.5（event-schema + task-context）
+    ∥ 与 Stage 2 并行: Agent(backend-enricher-a): Step 3.8 + Step 3.9（event-schema — 只需 design.md，不需 tasks.md）
+    → Stage 2 完成后: Agent(backend-enricher-b): Step 4.5（task-context — 需要 tasks.md 作为输入）
 
   Phase B — 前端并行（每个子项目内部同样 4 角色）:
     ┌── 子项目 1:
@@ -822,6 +823,8 @@ Step 3b: Design 生成 + 技术丰富（API-first 策略）
           4. ceremony_moments → 同样生成独立的 B3.DNA 任务（过渡仪式实现）
 
         > 原则：页面任务只管功能正确，DNA 任务只管体验差异化。分离注意力，各管一件事。
+        > **角色分工**：Architect 在 design.md 中标注每个页面关联的 DIFF（只标注不拆任务），
+        > Decomposer 在 Step 4 读 design.md 的 DIFF 标注 + experience-dna.json → 生成 B3.DNA 任务。
 
       **注意力分离 Round 生成原则**（适用于所有前端子项目）：
       > 一个 Agent 同时管 N 件事，N > 3 时第 4 件注意力指数衰减。
