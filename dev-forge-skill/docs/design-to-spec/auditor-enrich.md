@@ -176,6 +176,40 @@
    | E2E | 核心业务流 | ⚠️ 需设备 | Detox / Maestro |
    | Platform | 原生集成点 | ⚠️ 需设备 | Maestro |
 
+   **纯原生 iOS 子项目（Swift / SwiftUI）**：
+
+   | 层级 | 工具 | CI 可跑？ | 说明 |
+   |------|------|----------|------|
+   | Unit | XCTest | ✅ | `xcodebuild test` 无需设备 |
+   | UI/Screen | XCUITest | ⚠️ 需 Simulator | 每个屏幕 1 个 UI test |
+   | E2E | XCUITest | ⚠️ 需 Simulator | 业务流端到端 |
+   | Snapshot | swift-snapshot-testing | ✅ | 视觉回归（可选） |
+
+   **纯原生 Android 子项目（Kotlin / Java）**：
+
+   | 层级 | 工具 | CI 可跑？ | 说明 |
+   |------|------|----------|------|
+   | Unit | JUnit + Mockito | ✅ | 纯 JVM 测试 |
+   | UI/Screen | Espresso 或 Maestro | ⚠️ 需 Emulator | 每个屏幕 1 个 UI test |
+   | E2E | Maestro | ⚠️ 需 Emulator | YAML 脚本，易写易维护 |
+   | Snapshot | Paparazzi | ✅ | 视觉回归（可选） |
+
+   **桌面端子项目（Windows / macOS / Linux）**：
+
+   | 平台 | 层级 | 工具 | 说明 |
+   |------|------|------|------|
+   | macOS (SwiftUI/AppKit) | Unit | XCTest | `xcodebuild test` |
+   | macOS | UI | XCUITest | 需 macOS 运行环境 |
+   | Windows (WinUI/.NET) | Unit | MSTest / xUnit | `dotnet test` |
+   | Windows | UI | WinAppDriver 或 Playwright | 需 Windows 运行环境 |
+   | Linux (GTK/Qt) | Unit | 语言原生测试框架 | `make test` |
+   | Linux | UI | Playwright（如有 Web 界面）或 dogtail | 需 X11/Wayland |
+   | **Electron / Tauri** | Unit | Jest / Vitest | ✅ CI 可跑 |
+   | **Electron / Tauri** | E2E | **Playwright** | ✅ Playwright 原生支持 Electron |
+
+   > 桌面端测试策略因平台差异大，Auditor 根据 tech_stack 从上表选择对应工具。
+   > 工具不可用 → 提醒用户，标记 NOT_TESTED（和移动端同样原则）。
+
 5. **补充后重检**：
    新增的子任务也需要通过 V9-V12 验证（确保子任务本身的质量）。
    这在 Auditor 的验证循环内自然完成（最多 3 轮）。

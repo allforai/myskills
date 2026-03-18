@@ -704,6 +704,9 @@ dimension Logic > Interface > Data > UX（业务规则最先）
 | Web 前端（管理台/用户端） | **Playwright** | MCP browser_* 工具 或 CLI |
 | 原生 iOS（Swift/SwiftUI） | **XCUITest** | `xcodebuild test` |
 | 原生 Android（Kotlin/Java） | **Maestro** | CLI `maestro test` |
+| macOS 桌面（SwiftUI/AppKit） | **XCUITest** | `xcodebuild test` |
+| Windows 桌面（WinUI/.NET） | **WinAppDriver** 或 **Playwright** | `dotnet test` + WinAppDriver |
+| Electron / Tauri | **Playwright** | Playwright 原生支持 Electron |
 | 后端 | **curl / HTTP** | Bash API 调用验证 |
 
 **跨平台项目**（同一代码库多平台）：
@@ -932,8 +935,11 @@ Step B.3: 并行执行
   - **跨端链路**：
     Web ↔ Mobile：Web 步骤用 Playwright，Mobile 步骤用 integration_test/Patrol/Maestro
     **Mobile ↔ Mobile**（如 consumer 下单 → rider 接单）：
-      同一设备上交替执行 — consumer App 操作 → 卸载 → 安装 rider App → rider 操作
-      或用 API 层验证替代第二个 Mobile 步骤（curl 检查订单状态变化）
+      选择策略（LLM 根据链路结构判断）：
+      - **同一 App 在链路中只出现一次** → 可用交替安装（卸载A → 装B → 操作B）
+      - **同一 App 出现多次**（如 consumer 下单...中间步骤...consumer 确认收货）
+        → **优先用 API 验证**中间步骤（curl 检查状态变化），只在首尾做 Mobile UI 操作
+        → 因为交替安装会丢失本地状态（登录 session / 缓存），重装后需重新登录
     Mobile 端不可用时 → 该链路标记 `NOT_TESTED`
 
 Step B.4: 6V 诊断与失败分类
