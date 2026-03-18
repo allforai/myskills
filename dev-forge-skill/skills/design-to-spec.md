@@ -246,7 +246,7 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
   | **Architect** | 单 Agent 全量 | 数据模型单 Agent（共享）→ API 设计**按模块组并行多 Agent** |
   | **Decomposer** | 单 Agent 全量 | 按模块组并行（每组只读 `## Module:` 对应段落） |
   | **Auditor-Validate** | 单 Agent 全量 | 按模块组并行验证 |
-  | **Auditor-Enrich** | 单 Agent | 始终单 Agent（需要全局视角补充跨模块子任务） |
+  | **Auditor-Enrich** | 单 Agent | DIFF ≤ 30: 单 Agent; DIFF > 30: 按子项目分批（DNA/HARDEN/POLISH），再一个全局 Agent 补充 i18n/a11y/测试 |
   | **Enricher** | 单 Agent | 单 Agent（event-schema + task-context 不按模块拆） |
 
   **Architect 超大型分批**：
@@ -273,7 +273,9 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
   Stage 3a（大型）: 按模块组并行 → 每组 1 个 Agent(auditor-validate-{group}): 验证该组 tasks
     → 全部完成后汇总 findings
 
-  Stage 3b: Agent(backend-auditor-enrich): 质量子任务补充（始终单 Agent，需要全局视角）
+  Stage 3b: Agent(backend-auditor-enrich): 质量子任务补充
+    → DIFF ≤ 30: 单 Agent 全量补充
+    → DIFF > 30: 按子项目分批补充 DNA/HARDEN/POLISH，再全局 Agent 补 i18n/a11y/测试
     → 补充 HARDEN/DNA/POLISH/i18n/测试子任务 → 重检补充结果
 
   ∥ 与 Stage 2 并行: Agent(backend-enricher-a): Step 3.8 + Step 3.9（event-schema）

@@ -112,6 +112,14 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 - 检查 `.allforai/product-map/product-map.json`
 - 不存在 → 输出「请先完成产品设计流程（/product-design full），再运行项目锻造」，终止
 
+### 规模提醒
+
+产物探测时顺便检查规模（从 task-inventory.json 的 task 数 + project-manifest.json 的 sub_project 数）：
+- task 数 > 200 或 sub_project 数 > 6 → 输出「项目规模较大，design-to-spec 将自动启用模块分批处理」
+- task 数 > 500 → 输出「超大型项目。如未在 product-design 阶段拆分，建议先拆分再继续」
+
+仅提醒不阻断。
+
 ### 模式处理
 
 **full 模式**：从 Phase 1 开始，逐阶段执行。
