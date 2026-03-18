@@ -222,7 +222,7 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
   前端组: 其余所有子项目（admin/web-customer/web-mobile/mobile-native）
 
 **Phase A — 后端（3 阶段串行 + 1 并行）**:
-  Stage 1: Agent(backend-architect): Step 1 → Step 2 → Step 3a → Step 3b → Step 3.5
+  Stage 1: Agent(backend-architect): Step 0 → Step 1 → Step 2 → Step 2.5 → Step 3a → Step 3b → Step 3.5
     → 产出 requirements.md + design.md
   ↓ design.md 完成后，启动 Phase B（前端并行），同时后端继续：
   Stage 2: Agent(backend-decomposer): Step 4（读 design.md → 生成 tasks.md）
