@@ -782,18 +782,28 @@ Step B.1.2: 移动端设备准备（mobile-native 子项目存在时执行）
   > 移动端测试不能用 Web 降级——Web 模式测不到原生行为（推送/IAP/手势/键盘/权限），
   > 而这些恰恰是移动端最容易出 bug 的地方。静默降级 = 假装测过了。
 
-  检测到缺失时用 AskUserQuestion 明确提醒：
-  ```
-  移动端测试环境缺失：
-  {缺失列表，如: iOS Simulator 不可用、Patrol 未安装}
+  检测到缺失时，先尝试自动修复能修复的，再提醒用户剩余问题：
 
-  这些环境是移动端 E2E 测试必需的。缺失意味着以下测试无法执行：
-  {受影响的测试列表}
+  **自动修复**（不需要问用户，直接尝试）：
+  - Patrol CLI 未安装 → `dart pub global activate patrol_cli`
+  - 模拟器已安装但未启动 → `flutter emulators --launch {name}` 或 `xcrun simctl boot {id}`
+  - adb 可用但模拟器未启动 → `emulator -avd {name} &`
+
+  **自动修复后重新检测**。仍有缺失时用 AskUserQuestion 提醒：
+  ```
+  移动端测试环境仍有缺失（已自动修复的: {已修复列表}）：
+
+  {缺失列表}，缺失原因：
+  - iOS Simulator: 需要 macOS + Xcode（当前系统: {os}）
+  - Android Emulator: 需要 Android SDK + AVD（请先安装 Android Studio）
+  - Patrol: 自动安装失败（{错误信息}）
+
+  受影响的测试：
+  {受影响列表}
 
   请选择：
-  (1) 帮我安装缺失工具（Patrol: dart pub global activate patrol_cli）
-  (2) 帮我启动模拟器（flutter emulators --launch {name}）
-  (3) 跳过移动端 E2E 测试，记录为未完成（NOT_TESTED）
+  (1) 我手动解决后重试
+  (2) 跳过这些测试，记录为 NOT_TESTED
   ```
 
   用户选 (3) 时：**不标记为 PASS，标记为 `NOT_TESTED`**，最终报告中明确列出"移动端 E2E 未执行"。
@@ -1152,6 +1162,11 @@ Step B.7: 4D 跨端覆盖度闭环
 | 修复业务 bug 数 | {N} |
 | 负空间中发现真实 bug | {M} |
 | 锻造轮次 | {N} |
+| **未测试项 (NOT_TESTED)** | **{N}**（{原因列表}） |
+
+> NOT_TESTED 项必须在报告中醒目展示。这些不是"通过"也不是"失败"——是"没有测到"。
+> 常见原因：移动端模拟器不可用、Patrol/Maestro 未安装、非 macOS 无法测 iOS。
+> 每个 NOT_TESTED 项列出：测试名称 + 原因 + 需要的环境。
 | 最终测试通过率 | {N}% |
 
 ### 测试金字塔覆盖 [full/fix]
