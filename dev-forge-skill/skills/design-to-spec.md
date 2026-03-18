@@ -812,39 +812,54 @@ Step 3b: Design 生成 + 技术丰富（API-first 策略）
         > **Architect 禁止生成 B3.DNA 任务**——任务拆分是 Decomposer 的职责（Step 4）。
         > Architect 的 design.md 是信息源，Decomposer 读它来拆任务。
 
-      **注意力分离 Round 生成原则**（适用于所有前端子项目）：
-      > 一个 Agent 同时管 N 件事，N > 3 时第 4 件注意力指数衰减。
-      > 解法：把第 4 件事变成另一个 Agent 的第 1 件事。
-      > B3 页面任务只管「功能正确 + loaded 状态」，以下关注点各有专属 Round：
+      **注意力分离元规则**（Decomposer 在 Step 4 强制执行）：
 
-      **B3.POLISH — 四态补全 Round**（B3 页面任务之后）：
-        扫描每个已生成的 B3 页面任务，为缺失的界面状态生成独立补全任务：
-        ```
-        - [ ] B3.POLISH.{seq} [{sub-project}] {PageName} empty + error 状态补全
-          - Files: `{页面文件}`
-          - 实现 empty state：{具体的空状态 UI 规格，含图标+文案+引导操作}
-          - 实现 error state：{具体的错误 UI 规格，含重试按钮+错误信息}
-          - 确保 permission_denied state（如适用）
-          - _Risk: LOW_
-        ```
-        生成规则：
-        - 每个 B3 页面 → 1 个 POLISH 任务（只管 empty/error/permission_denied，不碰功能）
-        - B3 页面任务的 Acceptance 只验证 loaded 状态，POLISH 任务验证其他 3 态
-        - POLISH Agent 的全部注意力集中在"这个页面没数据/出错/没权限时长什么样"
+      > **核心规则：一个任务的「关注维度」> 3 时，必须拆成子任务。**
+      > 不要等 skill 告诉你哪些维度需要分离——Decomposer 自己判断。
+      > 以下是常见的关注维度（非穷举，Decomposer 可按项目特点扩展）：
 
-      **B3.i18n — 翻译完整性 Round**（B3 + B3.DNA + B3.POLISH 之后）：
-        对每个前端子项目生成 1 个翻译完整性任务：
-        ```
-        - [ ] B3.i18n.1 [{sub-project}] 翻译完整性扫描 + 补全
-          - 扫描所有 pages/ 和 components/ 中的硬编码字符串 → 提取为 i18n key
-          - 检查所有 i18n key 在每种语言文件中都有翻译
-          - 补全缺失翻译
-          - _Risk: LOW_
-        ```
-        生成规则：
-        - 每个前端子项目 → 1 个 i18n 任务（不是每个页面一个）
-        - B3 页面任务允许用 i18n 函数但不强求翻译完整（减轻页面任务负担）
-        - i18n Agent 的全部注意力集中在"所有用户可见文本是否已翻译"
+      | 关注维度 | 说明 | 常见 Round 名 |
+      |---------|------|-------------|
+      | 功能正确性 | happy path + 基本校验 | B2 / B3（主任务） |
+      | 异常加固 | 边界值/并发/降级/状态非法 | B2.HARDEN |
+      | 体验差异化 | experience-dna.json 的 DIFF 组件 | B3.DNA |
+      | 界面状态完整 | empty/error/permission_denied | B3.POLISH |
+      | 国际化 | 硬编码字符串扫描 + 翻译补全 | B3.i18n |
+      | 无障碍 | a11y 标签/键盘导航/屏幕阅读器 | B3.a11y |
+      | 性能 | 长列表虚拟化/图片懒加载/缓存 | B3.PERF |
+      | 动效 | 过渡动画/手势反馈 | B3.ANIM |
+      | 测试 | Acceptance 条件验证 | B5（见下方测试元规则） |
+
+      **拆分判断流程**：
+      1. Decomposer 为每个 B2/B3 主任务列出涉及的关注维度
+      2. 维度 ≤ 3 → 保持为一个任务（功能+基本校验+一个额外维度）
+      3. 维度 > 3 → 拆出额外维度为独立子任务（`{Batch}.{维度}.{seq}`）
+      4. 子任务在主任务之后执行（先有功能，再加质量层）
+
+      **常见示例**（Decomposer 参考，不是硬编码清单）：
+
+      ```
+      B3.5 MeetingRoomScreen          ← 主任务：功能 + loaded 状态（维度 1-2）
+        ↓ 完成后
+      B3.DNA.1 StageProgressIndicator  ← 体验差异化（维度 3）
+      B3.DNA.2 TypingIndicator         ← 体验差异化（维度 3）
+      B3.POLISH.5 MeetingRoom 四态     ← 界面状态（维度 4）
+      ```
+
+      ```
+      B2.11 DELETE /topics/{id}        ← 主任务：happy path + [DERIVED] 异常（维度 1-2）
+        ↓ 完成后
+      B2.HARDEN.11 异常加固            ← 并发竞态 + 级联检查（维度 3）
+      ```
+
+      **翻译和无障碍等全局维度**：
+      - 不按页面拆（避免任务爆炸），而是每个前端子项目生成 1 个扫描任务
+      - 示例：`B3.i18n.1 [mobile-app] 翻译完整性扫描`、`B3.a11y.1 [admin-web] 无障碍审查`
+
+      **Decomposer 超越示例的判断**：
+      如果项目有示例未列出的关注维度（如：离线同步、实时协作、动效规范），
+      Decomposer 应自行创建对应的分离 Round，命名为 `{Batch}.{维度缩写}.{seq}`。
+      不需要等 skill 更新——元规则已授权 Decomposer 自主拆分。
 
       screen.states → 界面四态设计（empty/loading/error/permission_denied）
       actions → 交互规格（引用已定义的后端接口）
@@ -1216,28 +1231,55 @@ Step 4: Tasks 生成（由 Decomposer Agent 执行）
       _Bypass: ci_rules_
   ```
 
-  **B2.HARDEN — 异常加固 Round**（B2 端点任务全部完成后）：
-  > B2 任务只管 happy path + design.md 明确标注的异常。负空间（边界值、并发竞态、外部服务降级等）
-  > 由专门的 HARDEN Round 处理，Agent 全部注意力集中在"这个端点还会怎么坏"。
+  **B2 注意力分离**（同样遵循注意力分离元规则）：
+  B2 主任务只管 happy path + `[DERIVED]` 异常。其余维度由 Decomposer 按元规则拆分。
+  常见示例：`B2.HARDEN.{seq}` 异常加固（HIGH/MEDIUM risk 端点）。
 
-  对每个 _Risk: HIGH_ 或 _Risk: MEDIUM_ 的 B2 端点任务，生成独立加固任务：
-  ```
-  - [ ] B2.HARDEN.{seq} [backend] {endpoint} 异常加固
-    - Files: `{service文件}`, `{handler文件}`
-    - 输入边界：{该端点的参数边界检查清单}
-    - 并发竞态：{该端点的幂等/乐观锁需求}
-    - 外部依赖降级：{该端点调用的外部服务的降级方案}
-    - 状态非法转换：{该端点涉及的状态机非法路径}
-    - _Guardrails: {关联的 constraints + task.exceptions}_
-    - _Risk: HIGH_
-  ```
-  生成规则：
-  - HIGH risk 端点 → 必须有 HARDEN 任务（含 4 个维度：边界/并发/降级/状态）
-  - MEDIUM risk 端点 → 生成 HARDEN 任务（含 2 个维度：边界/状态）
-  - LOW risk 端点 → 不生成（靠 B2 任务自身的基本校验）
-  - 每个 HARDEN 任务只加固 1 个端点，Agent 全部注意力在"这个端点的异常路径"
+  **测试任务元规则**（Decomposer 强制执行）：
 
-  B5 中应包含埋点验证任务：验证关键事件是否正确触发、属性是否完整、漏斗是否连通。
+  > **核心规则：测试任务从 _Acceptance_ 条件自动派生，不按模块合并。**
+  > 每个 B2 任务的 `_Acceptance_` 条件 → 自动生成对应的测试断言。
+  > 测试任务和实现任务 1:1 对应，不是"一个模块一个测试文件"。
+
+  **派生流程**：
+  1. 每个 B2 主任务有 N 条 `_Acceptance_` → 生成 1 个 B5 测试任务，包含 N 个具体断言
+  2. 每个 B2.HARDEN 任务的异常清单 → 生成 1 个 B5.HARDEN 测试任务
+  3. 每个 B3.DNA 任务的 spec/behavior → 生成 1 个 B5.DNA 测试任务
+  4. 全局维度（i18n/a11y）→ 各生成 1 个扫描型测试任务
+
+  **示例**：
+  ```
+  B2.11 DELETE /topics/{id}
+    _Acceptance_:
+    - (no active session) → 200
+    - (active session) → 40903
+    - (has share links) → invalidated
+                                          自动派生:
+                                          B5.11 test DELETE /topics/{id}
+                                            - assert: no session → 200 ✓
+                                            - assert: active session → 40903 ✓
+                                            - assert: share links invalidated ✓
+
+  B2.HARDEN.11 异常加固
+    - 并发删除幂等
+    - topic_id 非法格式
+                                          自动派生:
+                                          B5.HARDEN.11 异常测试
+                                            - assert: concurrent delete → idempotent
+                                            - assert: invalid UUID → 400
+
+  B3.DNA.1 StageProgressIndicator
+    - Spec: 5阶段进度条 + 当前阶段高亮
+                                          自动派生:
+                                          B5.DNA.1 widget test
+                                            - assert: renders 5 stages
+                                            - assert: current stage highlighted
+  ```
+
+  **上下文拉取**：B5 测试任务的描述中直接包含 _Acceptance_ 条件全文（从 B2 复制），
+  Agent 写测试时 **不需要回头读 B2 任务** — 所有信息就在当前任务描述里。
+
+  B5 中还应包含埋点验证任务：验证关键事件是否正确触发、属性是否完整、漏斗是否连通。
 
   **B5 视觉还原度验证**（当 `<BASE>/ui-design/screenshots/` 存在时）：
   生成的前端页面可用 Playwright 截图，与 `ui-design/screenshots/{screen_id}.png` 中的设计截图做视觉对比。

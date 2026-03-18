@@ -442,22 +442,13 @@ Step 1.8: 上下文注入（Context Injection）
   4. **实现阶段最多注入 3 行**（约束+消费者+风险），超过 3 条时按 risk_level 优先
   5. 并行执行时，每个 Agent 只注入自己负责的任务上下文
 
-  **负空间补全（注意力分离策略）**：
-  > B2 任务只管 happy path + design.md 中 `[DERIVED]` 标注的异常。
-  > 深度异常加固（边界值/并发竞态/外部降级/状态非法转换）由 **B2.HARDEN Round** 集中处理。
-  > 原因：一个 Agent 同时写业务逻辑 + 5 种异常，注意力分散导致异常处理粗糙。
-  > 分离后：B2 Agent 全力做业务逻辑，HARDEN Agent 全力做异常加固。
-
-  B2 任务内仍需实现：
-  - design.md 中 `[DERIVED]` 标注的异常（已明确的异常路径）
-  - 基本输入校验（Pydantic schema 自动处理）
-  - 权限检查（middleware 自动处理）
-
-  B2.HARDEN Round 负责（每个端点独立任务）：
-  - 输入边界（极值/空值/注入）
-  - 并发竞态（乐观锁/幂等键）
-  - 外部依赖降级（断路器/回退）
-  - 状态非法转换拦截
+  **注意力分离执行原则**：
+  > 主任务（B2/B3）只管功能正确性（happy path + `[DERIVED]` 异常 + 基本校验）。
+  > 额外关注维度由 Decomposer 在 tasks.md 中拆成独立子任务（如 B2.HARDEN / B3.DNA / B3.POLISH 等）。
+  > task-execute 按 tasks.md 的 batch id 排序执行——主任务先、子任务后，自然保证依赖顺序。
+  >
+  > 如果 tasks.md 中只有主任务没有子任务（旧版兼容），task-execute 仍然正常执行。
+  > 注意力分离由 Decomposer 在 spec 阶段决定，task-execute 只负责按顺序执行。
   ↓
 Step 2: 逐任务执行
   subagent-driven-development 模式:
