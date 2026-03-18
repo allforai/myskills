@@ -59,3 +59,4 @@ version: "0.1.0"
 
 - 定位说明：`${CLAUDE_PLUGIN_ROOT}/docs/positioning.md`
 - 输入与边界：`${CLAUDE_PLUGIN_ROOT}/docs/input-contract.md`
+- 还原度检查清单：`${CLAUDE_PLUGIN_ROOT}/docs/fidelity-checklist.md`
