@@ -749,6 +749,45 @@ Step B.1: 应用可达性检查
     用户选 3 → 等待用户确认后重新检查端口
   全部不可达 → 同上提示
 
+Step B.1.2: 移动端设备准备（mobile-native 子项目存在时执行）
+
+  > Web E2E 只需 Playwright（无头浏览器），但移动端需要模拟器/真机 + App 安装。
+  > 此步骤在 B.1 应用可达性检查之后、B.1.5 环境配置之前执行。
+
+  **设备检测**：
+  ```
+  Flutter 子项目:
+    1. `flutter devices` → 列出可用设备
+    2. 有 Chrome → Web 降级可用（`flutter run -d chrome` + Playwright 测）
+    3. 有 iOS Simulator → `flutter build ios --simulator` → 安装到模拟器
+    4. 有 Android Emulator → `flutter build apk --debug` → `adb install`
+    5. 无任何设备 → 尝试启动: `flutter emulators --launch {name}` 或提示用户
+
+  RN/Expo 子项目:
+    1. `adb devices` → Android 可用？
+    2. `xcrun simctl list` → iOS Simulator 可用？
+    3. 无设备 → 提示用户
+  ```
+
+  **结果写入**：
+  ```
+  mobile_test_env:
+    flutter_web: available | not_available
+    ios_simulator: available | not_available | not_macos
+    android_emulator: available | not_available
+    chosen_strategy: web_fallback | ios_sim | android_emu | device_test | plan_only
+  ```
+
+  **降级策略**：
+  | 可用环境 | 测试策略 |
+  |---------|---------|
+  | Chrome + Playwright | `flutter run -d chrome` → Playwright E2E（覆盖 Flutter 层） |
+  | iOS Simulator | `flutter test integration_test/ -d simulator` + Patrol/XCUITest |
+  | Android Emulator | `flutter test integration_test/ -d emulator` + Patrol/Maestro |
+  | 全部不可用 | PLAN_ONLY（生成测试脚本但不执行，标记 `DEFERRED_TO_DEVICE`） |
+
+  **Web 降级是移动端测试的安全网**：Flutter Web 模式可以测大部分 Flutter 层逻辑（路由、状态管理、API 调用、UI 渲染），只有原生特性（推送/IAP/生物识别）无法通过 Web 测试。
+
 Step B.1.5: 环境配置验证 + 真实登录冒烟测试
 
   **铁律：E2E 测试严禁绕过真实认证流程。** cookie inject / localStorage inject / auth bypass 插件
@@ -852,10 +891,17 @@ Step B.3: 并行执行
   - 负向链单独分组（避免污染正向链数据）
 
   逐链、逐步执行：
-  - Web 步骤：browser_navigate → browser_snapshot → browser_fill/click → browser_snapshot
-  - API 步骤：Bash curl → 验证响应
-  - 平台 UI 步骤：按工具路由执行
-  - 跨子项目切换：navigate 到不同子项目 URL
+  - **Web 步骤**：browser_navigate → browser_snapshot → browser_fill/click → browser_snapshot
+  - **API 步骤**：Bash curl → 验证响应
+  - **Flutter Web 降级步骤**（mobile_test_env.chosen_strategy = web_fallback）：
+    确保 `flutter run -d chrome` 已启动 → Playwright 操作 Flutter Web 页面
+    （和 Web 步骤相同的 Playwright 工具，只是目标是 Flutter Web App 的 URL）
+  - **Flutter 原生步骤**（mobile_test_env 有 ios_sim 或 android_emu）：
+    `flutter test integration_test/{chain_test}.dart -d {device}` → 收集结果
+    平台原生测试（推送/IAP/OAuth）：`patrol test` 或 `maestro test {flow}.yaml`
+  - **跨子项目切换**：Web → navigate URL；Mobile → 切换到对应 App 的测试脚本
+  - **跨端链路**（如"用户在 mobile 下单 → 商户在 Web 确认"）：
+    Mobile 步骤和 Web 步骤交替执行，通过 API 层验证数据一致性
 
 Step B.4: 6V 诊断与失败分类
   对每个失败步骤，LLM 从 6 个工程视角深度诊断根因：
