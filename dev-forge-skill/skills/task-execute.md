@@ -2,8 +2,8 @@
 name: task-execute
 description: >
   Use when the user wants to "execute tasks from tasks.md", "run implementation round",
-  "start coding from task list", "execute batch tasks", "resume implementation",
-  "任务执行", "执行开发任务", "按任务列表写代码", "继续实现", "断点续作",
+  "start coding from task list", "execute batch tasks",
+  "任务执行", "执行开发任务", "按任务列表写代码",
   or needs to systematically execute atomic tasks from tasks.md with progress tracking,
   automatic execution strategy selection, and per-round incremental verification.
   Requires tasks.md (from design-to-spec) and project-manifest.json (from project-setup).
@@ -20,7 +20,7 @@ version: "1.3.0"
 
 1. **自动编排** — 按 Round 结构分组任务，自动推断执行策略
 2. **委托执行** — 将实际代码编写委托给 superpowers skill
-3. **进度追踪** — 实时更新 build-log.json，支持断点续作
+3. **进度追踪** — 实时更新 build-log.json
 4. **增量验证** — 每 Round 完成后自动触发 lint/test + 增量 product-verify
 
 ---
@@ -55,9 +55,8 @@ design-to-spec（规格层）   task-execute（执行层）   testforge（验证
 ## 快速开始
 
 ```
-/task-execute              # 从 Round 0 开始（或从 build-log 断点续作）
+/task-execute              # 从 Round 0 开始
 /task-execute round 2      # 仅执行指定 Round
-/task-execute resume       # 从 build-log.json 断点续作（同无参数）
 ```
 
 ---
@@ -201,7 +200,6 @@ design-to-spec（规格层）   task-execute（执行层）   testforge（验证
     → 提供产品定位、角色粒度、治理风格作为编码时的业务判断背景
   各子项目 tasks.md → 解析全部任务（id / sub_project / files / batch）
   project-manifest.json → 子项目列表 + 类型
-  build-log.json（若存在 → resume 模式）
   task-context.json（如有）— 任务上下文预计算，含旅程位置、情绪上下文、约束溯源、消费者清单、验证建议
 
   ### 两阶段加载
@@ -226,7 +224,6 @@ design-to-spec（规格层）   task-execute（执行层）   testforge（验证
   - 仅警告不阻断，用户可选择继续或先刷新上游
   ↓
 Step 0: 初始化
-  build-log.json 不存在 → 初始化:
     **Step 0.1: 按子项目分组加载**
     读取各子项目的 tasks.md，按子项目维度组织：
     - 每个子项目的任务独立追踪
@@ -261,16 +258,7 @@ Step 0: 初始化
     **子 Round 间顺序**：同子项目内串行，不同子项目间并行
 
     写入 build-log.json（全部 pending）
-
-  build-log.json 已存在 → resume:
-    读取 summary.current_round
-    增量检测: 重新解析各子项目 tasks.md，对比 build-log.json 已有 Round:
-      发现新批次（如 B-FIX）不在 build-log.json 中
-        → 追加为新 Round（round = max_round + 1）
-        → 写入 build-log.json（新 Round 全部 pending）
-      无新批次 → 跳过
-    从第一个非 completed Round 继续
-  确定起始 Round → 展示执行计划
+  展示执行计划
   ↓
 Step 0.5: 环境配置自动生成（首次执行或 .env 缺失时）
 
@@ -744,39 +732,6 @@ Step 4: Round 增量验证（存在性 + 正确性）
 
 ---
 
-## Resume 语义
-
-```
-/task-execute resume 行为:
-
-读取 build-log.json
-增量检测（修复轮次发现）:
-  重新解析各子项目 tasks.md
-  对比 build-log.json 中已有 Round 的任务 id 集合
-  tasks.md 中存在 build-log 未收录的批次（如 Phase 4.5 追加的 B-FIX）
-    → 追加为新 Round（round = max_round + 1, status = pending）
-    → 更新 build-log.json + summary.total_tasks
-  无新批次 → 跳过
-
-找到 summary.current_round
-检查该 Round:
-  round.status = in_progress
-    → 从第一个非 completed 任务继续
-  round.status = failed
-    → 重试 failed 任务（跳过已 completed 的）
-  round.status = completed
-    → 推进到下一 Round
-
-任务级判定:
-  status = completed + files_modified 非空 → 跳过（已完成）
-  status = failed → 重新执行
-  status = skipped → 检查依赖任务是否已修复，是则重新执行
-  status = in_progress → 视为中断，重新执行
-  status = pending → 正常执行
-```
-
----
-
 ## 执行策略推断规则
 
 | 条件 | 策略 | 理由 |
@@ -809,7 +764,7 @@ task-execute 是编排层，实际代码编写委托给 superpowers skill（suba
 
 ### 2. build-log 实时更新
 
-每个任务状态变更立即写入 build-log.json，不等 Round 结束。中断后可精确 resume。
+每个任务状态变更立即写入 build-log.json，不等 Round 结束。
 
 ### 3. 策略自动推断，不问用户
 

@@ -1,6 +1,6 @@
 ---
-description: "项目锻造全流程：setup → spec → build → verify。模式: full / existing / resume"
-argument-hint: "[mode: full|resume] [existing]"
+description: "项目锻造全流程：setup → spec → build → verify。模式: full / existing"
+argument-hint: "[mode: full] [existing]"
 allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion", "Agent"]
 ---
 
@@ -13,11 +13,10 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 所有文档路径基于插件安装目录: `${CLAUDE_PLUGIN_ROOT}`
 
 > **跨插件调用约定**：本命令是「导航员」。
-> - Phase 1-6, 8-9 在本插件内执行，通过 `${CLAUDE_PLUGIN_ROOT}/skills/` 或 `${CLAUDE_PLUGIN_ROOT}/commands/` 路径加载。
-> - Phase 7（demo-forge）为独立插件 `demo-forge-skill/`，提示用户运行 `/demo-forge design`。
+> - Phase 1-5, 7-8 在本插件内执行，通过 `${CLAUDE_PLUGIN_ROOT}/skills/` 或 `${CLAUDE_PLUGIN_ROOT}/commands/` 路径加载。
+> - Phase 6（demo-forge）为独立插件 `demo-forge-skill/`，提示用户运行 `/demo-forge design`。
 > - Phase 4（任务执行）调用 `task-execute` skill，自动编排 superpowers 技能。
-> - Phase 5（验证闭环）产品验收 + testforge E2E 链验证 → 修复任务 → 回归。
-> - Phase 6（完整性验证）deadhunt + fieldcheck → 死链猎杀 + 字段一致性。
+> - Phase 5（验证闭环）产品验收 + testforge E2E 链验证 + deadhunt + fieldcheck → 修复任务 → 回归。
 > - 各阶段产物通过 `.allforai/` 目录作为层间合约。
 
 ### ⚠️ 阶段→技能速查（必看）
@@ -32,10 +31,9 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 | 3 | `skills/design-to-spec.md` | 产品设计 → 规格文档 + 共享工具分析 | 每子项目有 `requirements.md` + `design.md` + `tasks.md` + `shared-utilities-plan.json` 存在 |
 | **4** | **`skills/task-execute.md`** | **按 tasks.md 逐任务写业务代码（R0 含项目初始化）** | **`build-log.json` 存在且 CORE 任务 completed** |
 | 5 | `skills/product-verify.md` + `commands/testforge.md` + `commands/deadhunt.md` + `commands/fieldcheck.md` | 4-Agent 并行扫描 + 统一修复回归 | `verify-tasks.json` 无 IMPLEMENT/FIX_FAILING + `validation-report-summary.md` + `field-report.md` 存在 |
-| 6 | _(已并入 Phase 5)_ | 仅 resume 旧版时补跑 | 同 Phase 5 |
-| 7 | _(外部: demo-forge 插件)_ | 演示数据方案 | `demo-plan.json` 存在 |
-| 8 | `commands/testforge.md` | 跨端验证（条件执行） | E2E 通过率 ≥ 80% |
-| 9 | _(内嵌本文)_ | 最终报告 | `forge-report.md` |
+| 6 | _(外部: demo-forge 插件)_ | 演示数据方案 | `demo-plan.json` 存在 |
+| 7 | `commands/testforge.md` | 跨端验证（条件执行） | E2E 通过率 ≥ 80% |
+| 8 | _(内嵌本文)_ | 最终报告 | `forge-report.md` |
 
 ## 模式路由
 
@@ -43,9 +41,8 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 - **无参数 或 `full`** → 新项目，从头执行全流程
 - **`full existing`** → 已有项目，gap 模式（扫描代码 → 仅补缺）
-- **`resume`** → 检测已有产物，从第一个未完成阶段继续
 
-## 九阶段架构
+## 八阶段架构
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -75,16 +72,15 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 │    抽象门禁 → [product-verify ∥ testforge ∥ deadhunt ∥       │
 │    fieldcheck] → 统一修复 → 回归                             │
 │  ↓ 质量门禁: 修复项 = 0 或记录为已知问题继续                │
-│  Phase 6: (已并入 Phase 5，仅 resume 旧版时补跑)             │
-│  Phase 7: 演示数据方案 (demo-forge design)                   │
+│  Phase 6: 演示数据方案 (demo-forge design)                   │
 │    代码稳定后设计演示数据，提示运行 /demo-forge design       │
 │    输出: demo-plan.json                                      │
 │  ↓ 质量门禁: demo-plan.json 存在（或跳过）                  │
-│  Phase 8: 跨端验证 (testforge) — 条件执行                    │
+│  Phase 7: 跨端验证 (testforge) — 条件执行                    │
 │    仅当 Phase 5 被跳过时执行                                  │
 │    业务流 → 跨端场景 → Playwright / Maestro                   │
 │  ↓                                                          │
-│  Phase 9: 最终报告                                           │
+│  Phase 8: 最终报告                                           │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -95,7 +91,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 ### 产物探测
 
-扫描以下目录，判断进度：
+扫描以下目录，判断前置条件和已有产物：
 
 | 阶段 | 完成标志 |
 |------|----------|
@@ -118,9 +114,8 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 ### 模式处理
 
-**full 模式**：从 Phase 2 开始，逐阶段执行。
+**full 模式**：从 Phase 1 开始，逐阶段执行。
 **full existing**：Phase 2 的 project-setup 以 existing 模式运行（扫描代码）。
-**resume 模式**：从第一个未完成阶段开始。
 
 ### 交互模式检测
 
@@ -165,7 +160,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 ```json
 {
   "forge_run": {
-    "mode": "full | existing | resume",
+    "mode": "full | existing",
     "started_at": "ISO8601",
     "product_source": ".allforai/product-map/product-map.json"
   },
@@ -248,10 +243,9 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
     "phase_3": "pending | completed | skipped",
     "phase_4": "pending | in_progress | completed",
     "phase_5": "pending | in_progress | completed | skipped",
-    "phase_6": "pending | in_progress | completed | skipped",
+    "phase_6": "pending | completed | skipped",
     "phase_7": "pending | completed | skipped",
-    "phase_8": "pending | completed | skipped",
-    "phase_9": "pending | completed"
+    "phase_8": "pending | completed"
   },
   "decisions": []
 }
@@ -744,7 +738,7 @@ Step 2: 汇总判断
   汇总 testforge-report.md 中 FIX_REQUIRED 项
   汇总 deadhunt fix-tasks.json 中 severity=critical 项
   汇总 fieldcheck field-issues.json 中 severity=critical 项
-  无修复项 → PASS，Phase 5+6 质量门禁通过
+  无修复项 → PASS，Phase 5 质量门禁通过
   有修复项 → Step 3
 
 Step 3: 生成修复任务
@@ -777,56 +771,12 @@ Step 5: 回归验证
 | deadhunt | 无 critical 死链（或已修复） |
 | fieldcheck | 无 critical 字段不一致（或已修复） |
 
-**PASS** → 跳过 Phase 6（已并入），进入 Phase 7（演示数据方案）
+**PASS** → 进入 Phase 6（演示数据方案）
 **FAIL** → 记录已知问题到 forge-decisions.json，继续（不停）
 
 ---
 
-## Phase 6：完整性验证（已并入 Phase 5 并行扫描）
-
-> **v4.5.0 起，deadhunt + fieldcheck 已并入 Phase 5 的 4-Agent 并行扫描。**
-> Phase 6 仅在 resume 模式下、Phase 5 为旧版（不含 deadhunt/fieldcheck 产物）时独立执行。
-
-### 跳过条件
-
-检查 Phase 5 并行扫描产物：
-- `.allforai/deadhunt/output/validation-report-summary.md` **且** `.allforai/deadhunt/output/field-analysis/field-report.md` 均存在
-  → Phase 5 已覆盖，**跳过 Phase 6**
-- 任一不存在 → 补跑缺失项（deadhunt 和 fieldcheck 仍可并行 Agent 执行）
-
-### 补跑执行方式
-
-```
-用单条消息发出 Agent tool 调用，并行执行缺失项：
-
-Agent A（若 deadhunt 产物缺失）:
-  用 Read 加载 ${CLAUDE_PLUGIN_ROOT}/commands/deadhunt.md
-  执行 /deadhunt static
-  输出: validation-report-summary.md + fix-tasks.json
-
-Agent B（若 fieldcheck 产物缺失）:
-  用 Read 加载 ${CLAUDE_PLUGIN_ROOT}/commands/fieldcheck.md
-  执行 /fieldcheck full
-  输出: field-report.md + field-issues.json
-
-汇总修复:
-  severity=critical 的项 → 生成修复任务 → task-execute → 回归
-  无修复项 → PASS
-```
-
-### 质量门禁
-
-| 条件 | 标准 |
-|------|------|
-| deadhunt | 无 critical 死链（或已修复） |
-| fieldcheck | 无 critical 字段不一致（或已修复） |
-
-**PASS** → 进入 Phase 7（演示数据方案）
-**FAIL** → 记录已知问题到 forge-decisions.json，继续（不停）
-
----
-
-## Phase 7：演示数据方案
+## Phase 6：演示数据方案
 
 ### 执行方式
 
@@ -840,23 +790,25 @@ Agent B（若 fieldcheck 产物缺失）:
 |------|------|
 | demo-plan.json | 存在于 `.allforai/demo-forge/`（或用户选择跳过） |
 
-**PASS** → 进入 Phase 8
-**用户跳过** → 记录到 forge-decisions.json（`phase_7: "skipped"`），继续
+**PASS** → 进入 Phase 7
+**用户跳过** → 记录到 forge-decisions.json（`phase_6: "skipped"`），继续
 
 ---
 
-## Phase 8：跨端验证（条件执行）
+## Phase 7：跨端验证（条件执行）
 
 ### 条件判断
 
 检查 Phase 5 状态：
-- Phase 5 **completed**（验证闭环已通过） → **跳过 Phase 8**，直接进入 Phase 9
-- Phase 5 **skipped**（用户跳过验证闭环） → 执行 Phase 8
-- Phase 5 中有 **DEFERRED** 项 → 自动跳过 Phase 8（不停）
+- Phase 5 **completed**（验证闭环已通过） → **跳过 Phase 7**，直接进入 Phase 8
+- Phase 5 **skipped**（用户跳过验证闭环） → 执行 Phase 7
+- Phase 5 中有 **DEFERRED** 项 → 自动跳过 Phase 7（不停）
 
 ### 执行方式（仅 Phase 5 被跳过时）
 
 用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/commands/testforge.md`，执行 Phase 4 Path B（E2E chain forge）。
+
+**PASS** → 进入 Phase 8（最终报告）
 
 ### 前置
 
@@ -878,7 +830,7 @@ Agent B（若 fieldcheck 产物缺失）:
 
 ---
 
-## Phase 9：最终报告
+## Phase 8：最终报告
 
 ### 汇总所有阶段
 
@@ -895,7 +847,7 @@ Agent B（若 fieldcheck 产物缺失）:
 
 ## 执行摘要
 
-- 执行模式: {full/existing/resume}
+- 执行模式: {full/existing}
 - 子项目数: {N}
 - 总任务数: {N} (CORE: {N}, DEFER: {N})
 
@@ -907,10 +859,9 @@ Agent B（若 fieldcheck 产物缺失）:
 | Phase 2: 项目引导 | 完成 | PASS | project-manifest.json |
 | Phase 3: 设计转规格+共享层 | 完成 | PASS | {N} 子项目 × 3 份 spec + 复用 {M} 现有 + 新建 {K} 共享工具 + 负空间补全 {J} 项 |
 | Phase 4: 任务执行 | 完成 | PASS | {N}/{M} 任务完成 |
-| Phase 5: 验证闭环 | 完成 | PASS | 修复 {N} 项，回归通过 |
-| Phase 6: 完整性验证 | 完成 | PASS | deadhunt: {N} 问题，fieldcheck: {M} 问题 |
-| Phase 7: 演示方案 | 完成/跳过 | PASS/SKIP | demo-plan.json |
-| Phase 8: 跨端验证 | 完成/跳过 | PASS/SKIP | {N}/{M} 场景通过（Phase 5 已覆盖则跳过） |
+| Phase 5: 验证闭环+完整性 | 完成 | PASS | 修复 {N} 项，回归通过；deadhunt: {D} 问题，fieldcheck: {F} 问题 |
+| Phase 6: 演示方案 | 完成/跳过 | PASS/SKIP | demo-plan.json |
+| Phase 7: 跨端验证 | 完成/跳过 | PASS/SKIP | {N}/{M} 场景通过（Phase 5 已覆盖则跳过） |
 
 ## 各子项目状态
 
@@ -962,8 +913,8 @@ Agent B（若 fieldcheck 产物缺失）:
 | Phase 2 | 从空白引导拆分 | 扫描已有代码，提议拆分，识别缺口 |
 | Phase 3 | 全量 spec 生成 + 共享层分析（跳过已有代码扫描） | 仅为缺失模块生成 spec + 共享层全量执行（含已有工具库存扫描） |
 | Phase 4 | 全量任务执行 | 仅执行缺口任务 |
-| Phase 6 | 全量 deadhunt + fieldcheck | 全量（无差异） |
-| Phase 8 | 全量 E2E | 全量 E2E（无差异） |
+| Phase 5 | 全量 4-Agent 并行扫描（含 deadhunt + fieldcheck） | 全量（无差异） |
+| Phase 7 | 全量 E2E | 全量 E2E（无差异） |
 
 ---
 
@@ -975,7 +926,7 @@ Agent B（若 fieldcheck 产物缺失）:
 
 ### 2. 用户可在任意阶段中止
 
-保存已有产出，输出部分摘要。resume 模式可从中断处继续。
+保存已有产出，输出部分摘要。如需重新执行，运行 `full` 模式从头开始。
 
 ### 3. 编排命令是导航员
 

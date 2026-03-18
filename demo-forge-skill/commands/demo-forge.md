@@ -1,6 +1,7 @@
 ---
 description: "演示锻造全流程：design → media → execute → verify，多轮迭代至 95% 通过率。模式: full / design / media / execute / verify / clean"
 argument-hint: "[mode: full|design|media|execute|verify|clean]"
+
 allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Agent", "AskUserQuestion"]
 ---
 
@@ -16,7 +17,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Agent", "AskUserQuesti
 > - Phase 1-4 通过 `${CLAUDE_PLUGIN_ROOT}/skills/` 路径加载技能，不直接实现具体逻辑。
 > - 各阶段产物通过 `.allforai/demo-forge/` 目录作为层间合约。
 > - 质量门禁不可跳过，不达标则阻塞。
-> - 用户可在任意阶段中止，`resume` 模式可从断点续行。
+> - 用户可在任意阶段中止。如需重新执行，运行 `full` 模式从头开始。
 
 ### 阶段→技能速查表
 
@@ -39,7 +40,6 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Agent", "AskUserQuesti
 - **`execute`** → 仅 Phase 3（数据生成 + 灌入）
 - **`verify`** → 仅 Phase 4（验证）
 - **`clean`** → 加载 `demo-execute.md` clean 模式，清理已灌入数据
-- **`resume`** → 检测已有产物，从第一个未完成阶段继续
 
 ---
 
@@ -65,15 +65,7 @@ product-map 产物必须存在：
 | `forge-data.json` | Phase 3 Execute | 文件存在且 records 数组非空 |
 | `verify-report.json` | Phase 4 Verify | 文件存在 |
 
-### 0-C 续行判断
-
-如果 `round-history.json` 存在：
-- 读取最后一轮的 `final_status`
-- 若为 `in_progress` → 提示用户：「检测到未完成的迭代（Round N），是否继续？」
-- 用户确认 → resume 模式，从最后未完成阶段继续
-- 用户拒绝 → 询问是否从头开始（会清空历史）
-
-### 0-D 外部能力快检
+### 0-C 外部能力快检
 
 > 统一协议见 `product-design-skill/docs/skill-commons.md`「外部能力探测协议」。
 
@@ -102,12 +94,13 @@ product-map 产物必须存在：
 - **Playwright 未就绪 + design/media/execute 模式**：仅输出一行提示，不阻塞
 - **Brave/Google AI 未就绪**：提示运行 `/setup` 配置（Key 存储在插件 `.mcp.json`，不污染 shell 环境变量）
 
-### 0-E 初始化
+### 0-D 初始化
 
 - 确保 `.allforai/demo-forge/` 目录存在
 - 初始化或更新 `round-history.json`（若不存在则创建空结构）
 
 ### 0-E 运行信息收集
+
 
 对于 `execute` / `verify` / `full` 模式，需要收集：
 - **应用 URL**：`AskUserQuestion` 询问应用访问地址（如 `http://localhost:3000`）
@@ -352,5 +345,5 @@ DEFERRED_TO_DEV 任务：{dev_task_count} 项
 1. **质量门禁不跳过** — 每个 Phase 的完成标志必须满足才能进入下一阶段
 2. **编排命令是导航员** — 加载 skill 文件，不直接实现具体逻辑
 3. **`.allforai/` 是层间合约** — 所有产物读写通过 `.allforai/demo-forge/` 目录
-4. **用户可在任意阶段中止** — `resume` 模式可从断点续行
+4. **用户可在任意阶段中止** — 如需重新执行，运行 `full` 模式从头开始
 5. **`dev_task` 不阻塞自身迭代** — 代码问题路由到 dev-forge，demo-forge 继续自身迭代闭环
