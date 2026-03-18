@@ -12,14 +12,31 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion", "Age
 
 所有文档路径基于插件安装目录: `${CLAUDE_PLUGIN_ROOT}`
 
-## 执行方式
+## 参数解析
 
-从 `$ARGUMENTS` 解析参数：
-- `mode`（interface/functional/architecture/exact）→ 预填信度等级
-- `path` 或 git URL → 预填源码地址
-- `--type backend|frontend` → 指定项目类型
+从 `$ARGUMENTS` 解析：
 
-### 参数缺失引导
+| 参数 | 格式 | 说明 |
+|------|------|------|
+| `mode` | 位置参数 #1 | interface / functional / architecture / exact |
+| `path` | 位置参数 #2 | 本地路径或 Git URL |
+| `--type` | backend / frontend / fullstack / module | 项目类型（缺省自动检测） |
+| `--scope` | full / modules / feature / 自由文本 | 分析范围 |
+| `--module` | 路径 | 模块级复刻时指定模块路径 |
+| `--from-phase` | 1-4 | 从指定阶段重跑（保留之前产物） |
+
+### Git URL 支持
+
+支持以下格式，可选 `#branch` 后缀指定分支/tag：
+
+- HTTPS: `https://github.com/org/repo.git`
+- SSH: `git@github.com:org/repo.git`
+- GitHub 短语法: `org/repo`（自动展开为 `https://github.com/org/repo.git`）
+- 分支/Tag: `https://github.com/org/repo#v2.0`
+
+检测到 Git URL 时，clone 到临时目录后继续分析。
+
+## 参数缺失引导
 
 当 `$ARGUMENTS` 为空或缺少必要参数时，用 AskUserQuestion 逐步引导：
 
@@ -29,31 +46,54 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion", "Age
 
 收集完毕后，按正常流程继续。
 
-### 项目类型分发
+## 项目类型自动检测
 
-根据 `--type` 参数决定加载哪个技能文件，用 Read 加载后按其完整工作流执行：
+当 `--type` 未指定时，扫描代码库判断项目类型：
 
-1. **`--type backend`** → 加载并执行 `${CLAUDE_PLUGIN_ROOT}/skills/cr-backend.md`
-2. **`--type frontend`** → 加载并执行 `${CLAUDE_PLUGIN_ROOT}/skills/cr-frontend.md`
-3. **`--type fullstack`** → 加载并执行 `${CLAUDE_PLUGIN_ROOT}/skills/cr-fullstack.md`
-4. **`--type module`** → 加载并执行 `${CLAUDE_PLUGIN_ROOT}/skills/cr-module.md`（需 `--module` 参数）
-5. **未指定 `--type`** → 默认加载并执行 `${CLAUDE_PLUGIN_ROOT}/skills/cr-backend.md`（Phase 2 技术栈识别时，若发现项目为前端项目，自动切换到 cr-frontend）
+- **backend**: routes/controllers/middleware/models 目录或文件
+- **frontend**: components/pages/store/hooks/screens 目录或文件
+- **fullstack**: 前后端代码共存（monorepo 或全栈框架）
+- **module**: 需显式 `--type module --module <path>` 指定
+
+## 技能分发
+
+根据项目类型加载对应技能文件，用 Read 加载后按其完整工作流执行：
+
+1. **`--type backend`**（或自动检测为后端）→ 加载 `${CLAUDE_PLUGIN_ROOT}/skills/cr-backend.md`
+2. **`--type frontend`**（或自动检测为前端）→ 加载 `${CLAUDE_PLUGIN_ROOT}/skills/cr-frontend.md`
+3. **`--type fullstack`**（或自动检测为全栈）→ 加载 `${CLAUDE_PLUGIN_ROOT}/skills/cr-fullstack.md`
+4. **`--type module`** → 加载 `${CLAUDE_PLUGIN_ROOT}/skills/cr-module.md`（需 `--module` 参数）
+
+所有技能文件内部加载 `${CLAUDE_PLUGIN_ROOT}/skills/code-replicate-core.md` 作为 4 阶段协议基础。
+
+## 快捷命令
+
+| 命令 | 等效 |
+|------|------|
+| `/cr-backend` | `/code-replicate --type backend` |
+| `/cr-frontend` | `/code-replicate --type frontend` |
+| `/cr-fullstack` | `/code-replicate --type fullstack` |
+| `/cr-module` | `/code-replicate --type module` |
+| `/cr-interface` | `/code-replicate interface` |
+| `/cr-exact` | `/code-replicate exact` |
+| `/cr-status` | 查看当前分析进度 |
 
 ## 快速参考
 
 ```
-/code-replicate                                      # 交互式（默认后端）
-/code-replicate functional ./src                     # 后端复刻业务行为
+/code-replicate                                      # 交互式引导
+/code-replicate functional ./src                     # 后端复刻业务行为（自动检测类型）
 /code-replicate functional ./src --type frontend     # 前端复刻业务行为
+/code-replicate functional ./src --type fullstack    # 全栈复刻（前后端交叉验证）
 /code-replicate functional ./src --scope "用户注册和登录"  # 只复刻某个功能
-/code-replicate functional ./src --scope "src/user,src/auth" # 只复刻指定模块
+/code-replicate interface ./src                      # 仅复刻 API 合约
 /code-replicate exact ./src                          # 百分百复刻（含 bug）
-/code-replicate functional https://github.com/org/repo.git  # 远程仓库
-/code-replicate functional https://github.com/org/repo#v2.0  # 指定 tag/分支
-/code-replicate functional git@github.com:org/repo.git       # SSH 地址
-/code-replicate functional ./project --type fullstack         # 全栈复刻（前后端交叉验证）
-/code-replicate functional ./src --type module --module src/modules/user  # 模块复刻
-/code-replicate --from-phase 4                                # 从 Phase 4 重跑（保留 Phase 1-3 配置）
+/code-replicate functional https://github.com/org/repo.git      # 远程仓库
+/code-replicate functional https://github.com/org/repo#v2.0     # 指定分支/tag
+/code-replicate functional git@github.com:org/repo.git           # SSH 地址
+/code-replicate functional org/repo                              # GitHub 短语法
+/code-replicate functional ./src --type module --module src/user # 模块复刻
+/code-replicate --from-phase 3                                   # 从 Phase 3 重跑
 ```
 
 ## 信度等级速查
@@ -63,25 +103,18 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion", "Age
 | `interface` | 后端重写，前端不动；API 兼容迁移 |
 | `functional` | 技术栈迁移，保留业务逻辑（**推荐默认**） |
 | `architecture` | 大规模重构，保持架构决策 |
-| `exact` | 行为零容忍回归；监管合规（⚠️ 耗时最长） |
-
-## 专用命令
-
-| 命令 | 说明 |
-|------|------|
-| `/cr-backend` | 固定后端模式 |
-| `/cr-frontend` | 固定前端模式 |
-| `/cr-fullstack` | 全栈复刻（前后端交叉验证） |
-| `/cr-module` | 模块复刻（依赖边界处理） |
-| `/cr-interface` | 固定 interface 信度 |
-| `/cr-exact` | 固定 exact 信度 |
-| `/cr-status` | 查看分析进度 |
+| `exact` | 行为零容忍回归；监管合规 |
 
 ## 后续步骤
 
 复刻分析完成后，继续 dev-forge 流水线：
 
 ```
-/design-to-spec   ← 生成目标技术栈实现规格
-/task-execute     ← 逐任务生成代码
+/code-replicate   →  逆向分析，生成 .allforai/ 产物
+    ↓
+/project-setup    →  基于产物初始化目标项目
+    ↓
+/design-to-spec   →  生成目标技术栈实现规格
+    ↓
+/task-execute     →  逐任务生成代码
 ```
