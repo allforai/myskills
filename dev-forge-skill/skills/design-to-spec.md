@@ -166,7 +166,7 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 | 从 experience-map 取 | actions → Screen 组件规格（RN: Screen 组件 / Flutter: Screen Widget）；states → 四态设计（离线态额外处理）；on_failure + exception_flows → 原生错误提示；validation_rules → 表单验证 |
 | 从 ui-design 取 | 原生端设计 token（如有） |
 | 测试工具 | iOS: XCUITest / Android: Maestro (Espresso) / RN: Detox / Maestro / Flutter: Patrol / integration_test |
-| 用户端增强 | requirements/design/tasks 必须覆盖持续关系（进度、提醒、历史、通知）、状态反馈和产品节奏，禁止只生成“功能入口型壳子” |
+| 用户端增强 | **仅 consumer_apps**：requirements/design/tasks 必须覆盖持续关系（进度、提醒、历史、通知）、状态反馈和产品节奏，禁止只生成”功能入口型壳子”。merchant/admin 类 mobile-native 子项目不适用此行 |
 
 ---
 
@@ -199,7 +199,7 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 
 生成 frontend 子项目的 design.md 时，在页面规格之前插入「页面交互套路」章节。每个页面规格中标注交互类型。一个页面可以组合多个类型（如「任务详情」= 主从详情 + 状态机操作）。
 
-若 `experience_priority.mode = consumer` 或 `mixed`，还必须插入「用户端成熟度要求」章节，至少列出：
+若 `experience_priority.mode = consumer` 或 `mixed` **且当前子项目属于 consumer_apps**，还必须插入「用户端成熟度要求」章节，至少列出：
 
 - 主线任务闭环
 - 状态系统（loading / empty / error / success / progress）
@@ -221,13 +221,32 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 | **Auditor** | 读全部产出 → 找遗漏 | requirements + design + tasks + product-map | validation findings → 修正 specs |
 | **Enricher** | 补充元数据 | design + tasks + product-map | event-schema + task-context |
 
-### 用户端专项检查点（Architect / Decomposer / Auditor 必做）
+### 用户端子项目识别（design-to-spec 初始化时执行）
 
-当 `experience_priority.mode = consumer` 或 `mixed` 时：
+当 `experience_priority.mode = consumer` 或 `mixed` 时，从 `project-manifest.json` 的子项目列表中推导子项目的**体验等级**：
 
-- Architect 不得只生成“页面清单”，必须在 design.md 中写出用户端主线与持续关系
-- Decomposer 不得只拆功能实现任务，必须补充产品化任务（状态、反馈、提醒、历史、通知、推荐等相关项）
+| 体验等级 | 判定规则 | consumer 检查 | 多模型共创 | 典型示例 |
+|---------|---------|-------------|-----------|---------|
+| **consumer** | type=web-customer/web-mobile，或 mobile-native 面向终端消费者 | 全部适用 | 发用户视角 prompt | 买家 App、C 端 Web |
+| **creator** | mobile-native/web 面向创作者/达人/服务提供者，但用户体验标准接近 consumer（高频使用、需要留存） | 适用（但"连续激励""进度可视"按创作者视角解读） | 发创作者视角 prompt | 达人 App、司机 App、自由职业者 App |
+| **tool** | 面向商家/运营的专业工具，低频或桌面为主 | 不适用 | 不发 | 商家后台、运营工具 |
+| **admin** | type=admin/backend | 不适用 | 不发 | 管理后台、纯后端 |
+
+`consumer_apps` = 体验等级为 consumer 或 creator 的子项目列表。
+
+**判定方式**：LLM 读取 project-manifest.json 的子项目描述 + role-profiles.json 中面向的角色特征，推断体验等级。关键判据：**该端用户是否需要被留存？** 需要留存→consumer/creator，不需要→tool/admin。
+
+将推导结果写入 forge-decisions.json 的 `consumer_apps` 字段（含体验等级标注），供下游角色使用。
+
+### 用户端专项检查点（仅对 consumer_apps 中的子项目生效）
+
+当 `experience_priority.mode = consumer` 或 `mixed` 时，**仅对 consumer_apps 中的子项目**：
+
+- Architect 不得只生成”页面清单”，必须在 design.md 中写出该子项目在用户端主线中的角色与持续关系
+- Decomposer 拆功能任务时，必须把 design.md 中的产品化设计（状态系统、反馈机制、提醒、历史、通知、推荐）也拆为对应的功能实现任务，不得只拆 CRUD 端点而忽略这些
 - Auditor 必须检查前端任务是否只有功能实现，没有用户端成熟度任务；发现则判为缺口
+
+> 非 consumer_apps 的前端子项目（如 admin、merchant 工具端）不受此检查约束，按各自端类型的标准验收。
 
 **角色步骤加载指令**：
 
@@ -316,6 +335,14 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 - Auditor Agent **禁止**和 Architect/Decomposer 是同一个 Agent 调用（必须是独立的 Agent tool 调用）
 - Auditor 只读产出文件做审查，不参与生成过程
 - Enricher 和 Architect/Decomposer 无依赖，可以并行
+
+**结构性 consumer 缺口回退**（Phase B 全部完成后检查）：
+若 pipeline-decisions.json 中存在 `CONSUMER_MATURITY_GAP_STRUCTURAL` 标记，说明 consumer_apps 缺少整类 screen（如无引导流/无进度页/无通知中心），这不是 design.md 能修补的问题。编排器应：
+1. 输出缺失项清单
+2. 检查 task-inventory.json 中是否已有对应的产品任务（如缺少引导流 screen，但 task-inventory 有"首次引导"任务）
+   - **task-inventory 已有** → 只需回退到 experience-map（`/product-design resume` 从 experience-map 恢复），重新为已有任务设计 screen
+   - **task-inventory 也缺失** → 需要回退到 product-map（`/product-design resume` 从 product-map 恢复），先补厚任务定义再重跑 experience-map
+3. 回退补充后重新执行 design-to-spec 的对应 consumer 子项目
 
 ---
 

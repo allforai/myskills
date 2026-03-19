@@ -264,16 +264,19 @@ Step 0: 初始化
 
     **Step 0.4: 用户端执行偏置（新增）**
 
-当 `experience_priority.mode = consumer` 或 `mixed` 且当前 Round 涉及 `web-mobile`、`mobile-native`、`web-customer` 时：
+当 `experience_priority.mode = consumer` 或 `mixed` 且当前 Round 涉及的子项目属于 `consumer_apps`（由 design-to-spec 初始化推导，通常为 `web-customer`、`web-mobile`、面向消费者的 `mobile-native`，不含 merchant/admin 类子项目）时：
 
 - 不接受“页面能打开 + API 通了”作为完成标准
 - 必须关注主线是否顺、核心动作是否突出、状态反馈是否完整
 - 若 tasks.md 已包含产品化任务（提醒、历史、通知、进度、推荐、回访机制），按同等优先级执行，不得视作可选美化
 - 若实现结果明显像后台页面压缩版，应在本轮内修正，不要留给最终验收兜底
 
-    **Step 0.4.1: 用户端 Round 检查点（前端 Round 完成后）**
+    **Step 0.4.1: 用户端 Round 检查点（consumer_apps 的最后一个前端 B2 Round 完成后触发）**
 
-对用户端项目，Round 结束时额外自检：
+> **触发时机**：不在每个前端 Round 后触发（分批执行时，首页/持续关系可能在后续 Round）。
+> 仅在 consumer_apps 中某子项目的**最后一个 B2 前端 Round** 完成后，对该子项目做一次全局 consumer 自检。
+
+对 consumer_apps 中的子项目，最后一个前端 Round 结束时全局自检：
 
 - 首页是否存在明确主线和下一步引导？
 - 核心页面是否具备 loading / empty / error / success / progress 等必要状态？

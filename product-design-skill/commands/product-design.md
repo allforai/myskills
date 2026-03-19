@@ -311,10 +311,11 @@ concept 和 product-map 完成后，追加记录到 `.allforai/pipeline-decision
 - task 数量 > 0
 - `task-inventory-basic.json` 和 `task-inventory-core.json` 存在
 - 每个 task 有 `category` 字段（basic 或 core）
+- `product-map.json` 存在且包含 `experience_priority` 字段（若产品有用户端/移动端主界面）
 
 检查点失败 → 向用户报告，询问是否继续（product-map 是后续所有阶段的基础，强烈建议修复）。
 
-**自动模式检查点**：task 数 = 0 → ERROR（停）；category 字段缺失 → WARNING（记日志继续）；task 数 > 0 且分类完整 → PASS。
+**自动模式检查点**：task 数 = 0 → ERROR（停）；category 字段缺失 → WARNING（记日志继续）；`experience_priority` 缺失且产品含用户端 → ERROR（停，此字段影响全部下游 14 个技能的 consumer 增强分支）；task 数 > 0 且分类完整 → PASS。
 
 ---
 
@@ -326,6 +327,18 @@ concept 和 product-map 完成后，追加记录到 `.allforai/pipeline-decision
 - 四类闭环审计：每个功能任务的配置/监控/异常/生命周期闭环是否完整
 - mechanism→task 映射：concept 里的每个产品机制是否都有对应任务
 - task→flow 映射：高频任务是否至少出现在一条业务流中
+
+**用户端成熟度审计（当 `experience_priority.mode = consumer` 或 `mixed` 时追加）**：
+
+自审清单（LLM 逐条回答 是/否）：
+- 用户端任务是否只有"浏览/提交/查看"，没有首次引导、持续关系、进度追踪、智能推荐、激励机制中的任何一项？
+- 核心对象（如"训练""订单""课程"）是否只有 CRUD，没有生命周期流转（草稿→进行中→完成→复盘→归档）？
+- 是否缺少通知/提醒/历史/回访触发点？
+- 业务流是否只有 happy path，没有"中断恢复""失败重试""等待反馈"等体验节点？
+
+> 注：如果 product-map Step 2 已执行"多模型 Consumer 体验补全"，此处自审通常能通过（因为第二模型已在生成阶段补厚了任务）。自审仍为必做，作为兜底确认。
+
+发现以上问题 → 判定为 verify loop 失败，LLM 在 task-inventory 和 business-flows 中补厚后重验。
 
 ---
 

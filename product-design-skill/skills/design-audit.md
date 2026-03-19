@@ -33,6 +33,7 @@ version: "1.1.0"
 5. **模式一致性（Pattern Consistency）** — 相同功能模式是否使用了一致的设计套路？（仅当 experience-map.json screen 节点含 _pattern* 字段时激活）
 6. **行为一致性（Behavioral Consistency）** — 跨界面行为是否遵循已确认的行为规范？（仅当 experience-map.json screen 节点含 _behavioral* 字段时激活）
 7. **交互类型一致性（Interaction Type Consistency）** — 相同交互类型的界面是否遵循统一的布局约束？（仅当 experience-map 含 interaction_type 时激活）
+8. **用户端成熟度一致性（Consumer Maturity Consistency）** — 若 `experience_priority = consumer|mixed`，下游产物是否持续保持用户端成熟产品标准，而非回落成后台式或概念式表达
 
 发现问题只报告，不修改任何上游产物。
 
@@ -55,6 +56,8 @@ product-map（锚点）
 ```
 
 **前提**：必须先运行 `product-map`，生成 `.allforai/product-map/product-map.json`。
+
+若 `product-map.json` 含 `experience_priority`，design-audit 必须把它作为全链路审计基线之一。
 
 ---
 
@@ -87,6 +90,7 @@ Phase A（脚本，串行）: 确定性检查
         Step 3: 横向一致性（Cross-check）
         Step 3.5: 信息保真门禁（Fidelity）
         Step 3.7: 连贯性审计（Continuity）
+        Step 3.8: 用户端成熟度审计（当 `experience_priority = consumer|mixed`）
         XV 交叉验证（如可用）
       输出: audit-report.json（基线报告）+ audit-report.md
       ↓
@@ -107,6 +111,15 @@ Phase C（合并）: 汇总报告
 
 > 详细步骤定义见 `docs/design-audit/audit-dimensions.md`。
 > 增强协议、全自动模式、防御性规范见 `docs/design-audit/fix-rules.md`。
+
+若 `experience_priority.mode = consumer` 或 `mixed`，design-audit 额外检查：
+
+- product-map 是否定义了主线闭环与持续关系
+- experience-map 是否保留了首页主线、下一步引导、状态系统
+- ui-design 是否把这些要求落实为视觉与交互规格
+- feature-gap / use-case 是否仍能识别用户端成熟度缺口
+
+若链路中任一层把用户端退化成“功能入口拼盘”“后台页面压缩版”或“概念 demo 页面集合”，应记为一致性问题。
 
 ---
 

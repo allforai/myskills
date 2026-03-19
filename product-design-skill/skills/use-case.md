@@ -22,6 +22,8 @@ version: "2.4.0"
 - **JSON 机器版**：完整字段，逐条可执行，供 AI agent 和自动化测试直接使用
 - **Markdown 人类版**：摘要级，每条用例一行（ID + 标题 + 类型），供 PM / QA / 开发快速浏览
 
+当 `product-map.json` 中的 `experience_priority.mode = consumer` 或 `mixed` 时，用例还必须覆盖成熟用户产品体验，不得只覆盖功能动作本身。
+
 ---
 
 ## 定位
@@ -33,6 +35,8 @@ product-map（功能地图）    experience-map（体验地图）    use-case（
 ```
 
 **前提**：必须先运行 `product-map`，生成 `.allforai/product-map/task-inventory.json`。
+
+若 `product-map.json` 含 `experience_priority`，use-case 必须继承该字段，切换不同的用例生成重心。
 
 ---
 
@@ -127,6 +131,13 @@ product-map（功能地图）    experience-map（体验地图）    use-case（
 | `boundary` | `task.rules` 中含边界语义（≥ / ≤ / 幂等 / 超时）的条目 | 按规则提取 |
 | `validation` | `screen.action.validation_rules`（需 experience-map） | 按校验规则提取 |
 
+当 `experience_priority.mode = consumer` 或 `mixed` 时，还应额外补充以下用例倾向：
+
+- `journey_guidance`：完成动作后是否知道下一步
+- `result_visibility`：动作结果是否回流到列表/首页/历史
+- `continuity`：提醒/通知/进度/最近活动等持续关系链路是否成立
+- `entry_clarity`：首页主线是否可发现，而非入口拼盘
+
 ---
 
 ## 全自动模式
@@ -158,6 +169,7 @@ product-map（功能地图）    experience-map（体验地图）    use-case（
   .allforai/product-concept/concept-baseline.json  自动加载（推拉协议 §三.A）→ 不存在则 WARNING，不阻塞
   .allforai/product-map/task-inventory.json  必须存在，否则终止
   .allforai/experience-map/experience-map.json  必须（不存在则自动运行 experience-map 生成）
+  .allforai/product-map/product-map.json  若存在且含 `experience_priority.mode = consumer|mixed` → 启用用户端成熟度用例补强
   .allforai/product-concept/product-mechanisms.json  可选（跨级拉取源）
   .allforai/use-case/use-case-decisions.json 若存在则加载，跳过已确认项
 
@@ -183,6 +195,7 @@ Step 1: 正常流用例生成
       Given ← task.prerequisites
       When  ← task.main_flow（逐步展开）
       Then  ← task.outputs.states + outputs.messages + outputs.notifications + audit.recorded_actions
+      若 `experience_priority.mode = consumer|mixed`：Then 还必须尽量包含“结果回流 / 下一步引导 / 用户可感知反馈”
       → 用户确认，可补充/修改
       ↓
 Step 2: 异常流 + 边界用例生成（quick 模式跳过）
@@ -190,6 +203,7 @@ Step 2: 异常流 + 边界用例生成（quick 模式跳过）
       task.rules 含边界语义 → boundary 用例
       screen.action.validation_rules → validation 用例（需 experience-map）
       screen.action.exception_flows 注入对应 exception 用例的 then 字段
+      若 `experience_priority.mode = consumer|mixed`：额外补“完成后不知道下一步”“首页无主线”“持续关系断裂”“结果未回流”等体验型异常/边界用例
       → 用户确认，可标记 DEFERRED（不重要的异常暂不生成用例）
       ↓
 Step 3: 双格式输出

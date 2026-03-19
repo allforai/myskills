@@ -487,13 +487,14 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
       - 4D 每维度最终判定均 ≥ 80% → VERIFY_PASS
       - 任一维度 < 80% → 生成针对性 IMPLEMENT/FIX 任务，标注缺失维度和修复线索
 
-      若 `experience_priority.mode = consumer` 或 `mixed`，还需额外满足：
+      若 `experience_priority.mode = consumer` 或 `mixed`，**仅对 consumer_apps 中的子项目**还需额外满足：
       - 用户端主线可发现
       - 关键状态可感知
       - 完成后知道下一步
       - 至少存在一条持续关系链路（历史/提醒/通知/进度/订阅/推荐中的相关项）
 
       否则即使基础 4D 达标，也应标记为 `VERIFY_WARN` 并生成补充任务。
+      > consumer_apps 由 design-to-spec 初始化推导并记录在 forge-decisions.json 中。admin/merchant 子项目不受此附加约束。
 
 生成输出文件：
   static-report.json / dynamic-report.json / verify-tasks.json / verify-report.md

@@ -124,6 +124,8 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 若 `product-map.json` 中存在 `experience_priority`，Phase 0 需要把它写入 `forge-decisions.json`，作为后续 Phase 的执行偏置来源。
 
+若 `experience_priority.mode = consumer` 或 `mixed` 且 `project-manifest.json` 已存在，Phase 0 还需推导 `consumer_apps` 列表（从 sub_projects 中筛选面向终端用户的子项目：type=web-customer/web-mobile 直接归入；type=mobile-native 按面向角色判断，consumer→归入，merchant/admin→排除），写入 `forge-decisions.json` 的 `consumer_apps` 字段。若 project-manifest 尚未生成（Phase 2 才产出），则 design-to-spec 初始化时推导并回写。
+
 ### 规模提醒
 
 产物探测时顺便检查规模（从 task-inventory.json 的 task 数 + project-manifest.json 的 sub_project 数）：

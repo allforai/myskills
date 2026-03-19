@@ -73,13 +73,46 @@ LLM 同时加载 journey-emotion-map.json（情绪基线）和 experience-map.js
 | 导航可达 | 每个界面至少有一个 entry_point |
 | 创新覆盖 | product-concept 中的创新概念应有对应的独特界面 |
 
+**用户端成熟度规则（当 `experience_priority.mode = consumer` 或 `mixed` 时为硬性，否则跳过）**：
+
+> 读取 `.allforai/product-map/product-map.json` 的 `experience_priority` 字段。若不存在或 `mode = admin` → 跳过本段全部检查。
+>
+> **scope 限定**：仅检查用户端 app 的 screen（app 字段为 website/consumer/mobile 等面向终端用户的应用，排除 app=admin/merchant/backoffice）。mixed 模式下后台端 screen 不受这些规则约束。
+
+| 验收项 | 规则 | 检查方法 |
+|--------|------|---------|
+| 主线清晰 | 用户端首页（home/dashboard/feed）必须有 1 条明确主线（而非功能入口拼盘），actions 中包含核心动作且标注为 primary | LLM 审查用户端 app 首页 screen 的 actions 和 components，判断是否存在单一核心路径 |
+| 下一步引导 | 每个核心操作完成后的 screen 必须有"下一步"提示（actions 中含 navigate/continue/recommend 类动作） | 遍历用户端 app 中核心 task 对应的操作线末端 screen，检查 actions 是否包含引导性动作 |
+| 状态系统统一 | 用户端 app 全部 screen 的 `states` 中的同类状态（empty/error/loading/success）设计响应必须一致 | 按用户端 app 分组，检查同名 state 的 description 是否表达一致的设计语言 |
+| 回访理由 | 用户端 app 至少有 1 个 screen 包含持续使用触发点（进度/历史/提醒/推荐/订阅相关的 data_field 或 component） | 遍历用户端 app screens，检查是否存在 progress/history/reminder/recommendation 相关字段 |
+| 移动端节奏 | platform=mobile 的 screen，actions 数量 ≤ 5（单手可达），核心动作居于视觉焦点位置。**例外**：支付/结算/表单提交类 screen（interaction_type 含 checkout/payment/form-wizard）允许 ≤ 8，因合规和安全需要较多确认步骤 | 遍历 mobile screen，按 interaction_type 区分阈值后检查 actions 数量 |
+
+**XV Consumer Screen 评审（OpenRouter 可用 且 experience_priority = consumer/mixed 时，在 Loop 第 1 轮验收后触发）**：
+
+向第二模型发送 consumer_apps 的 screen 名称列表 + 首页 actions 摘要（控制在 500 token 内），prompt：
+
+```
+你是 {产品类型} 的重度用户。以下是这个 App 的全部屏幕名称：
+{screen_names}
+首页内容：{home_screen_actions}
+
+以用户身份判断：这像一个你会每天打开的成熟产品，还是像一个开发中的原型？
+列出最关键的 3 个缺失体验（不给解决方案，只说"作为用户我缺什么"）。
+回复 JSON: {"verdict": "mature|prototype|crud", "missing_as_user": ["...", ...]}
+```
+
+- verdict = "crud" → missing_as_user 作为 Loop 修正方向
+- verdict != "crud" → 记录 missing_as_user，不阻塞
+- OpenRouter 不可用 → 跳过（`XV ⊘`）
+
 **Loop 机制**：
 
 ```
 生成体验地图 → 硬性规则检查 + 设计质量规则 + 上游基线验收（LLM 判断）
+  → consumer/mixed 时追加 XV consumer 评审
   全部通过 → Step 3.1 质量提升 loop
   不通过 →
-    列出具体问题（哪些任务未覆盖、哪些情绪意图未落地、哪些高风险节点缺保护）
+    列出具体问题（哪些任务未覆盖、哪些情绪意图未落地、哪些高风险节点缺保护 + XV missing_as_user）
     LLM 修正对应界面
     → 重新验收（最多 3 轮）
   3 轮后仍不通过 → 记录剩余问题，WARNING 继续

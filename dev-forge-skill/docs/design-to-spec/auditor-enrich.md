@@ -307,6 +307,7 @@ SUGGEST → 记录建议，不阻塞
 - 4D 无 GAP（或已修复）
 - 闭环无 CRITICAL 缺失
 - V12 DIFF CRITICAL = 0（所有 core 级体验差异化契约在前端页面中有对应实现任务）
+- V12 Consumer Maturity CRITICAL = 0（当 experience_priority=consumer/mixed 时，consumer_apps 的 design.md 覆盖状态系统/反馈/引导/持续触发）
 - Auditor 补充完成：HIGH risk 任务的子任务已补充，Acceptance 测试已派生
 
 **大循环 3 轮后仍有问题** → 记录为已知问题到 `pipeline-decisions.json`，输出警告，继续（不停）

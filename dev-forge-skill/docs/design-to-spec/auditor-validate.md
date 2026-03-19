@@ -370,6 +370,25 @@ LLM 读取 tasks.md + design.md + requirements.md + task-inventory.json，执行
 
 **V9 覆盖率、V10 溯源、V11 验收条件、V12 体验差异化是强制审计维度**，CRITICAL 级遗漏必须修复后才能退出循环。
 
+**Consumer 产品化完整性检查（V12 附加，当 experience_priority.mode = consumer 或 mixed 时触发）**：
+
+> 若 experience_priority 不存在或 mode=admin → 跳过。
+> **scope 限定**：仅检查 consumer_apps 中的前端子项目（由 design-to-spec 初始化时推导）。admin/merchant 类子项目不受此检查约束。
+> **执行时机**：与 V12 DNA 相同——分批模式下延迟到所有模块组验证完后统一执行。
+
+检查 consumer_apps 中的前端子项目 design.md 是否只有 CRUD 页面/端点，缺少产品化模块设计。LLM 对照以下清单判断 design.md 是否覆盖：
+
+- 状态系统（空态/加载/错误/成功的统一设计方案）
+- 反馈机制（操作后可感知的反馈，不只是 toast）
+- 下一步引导（核心流程完成后的衔接）
+- 持续使用触发（进度/历史/通知/推荐，至少 1 项）
+
+每项缺失 → `CONSUMER_MATURITY_GAP`（CRITICAL）。
+
+修正方式（分级）：
+- **design.md 已有对应 screen 但缺少产品化设计** → Auditor 在 design.md 页面规格中补充缺失的状态系统/反馈/引导设计，Decomposer 重跑该子项目的 tasks 生成
+- **design.md 缺少整类 screen（如无引导流、无进度页、无通知中心）** → 标记为 `CONSUMER_MATURITY_GAP_STRUCTURAL`，记录到 pipeline-decisions.json。编排器在 design-to-spec 完成后、task-execute 之前检查此标记：若存在，提示需要回退到 experience-map 补充缺失的 screen 设计（`/product-design resume` 从 experience-map 阶段恢复），然后重新执行 design-to-spec 对应子项目
+
 ---
 ---
 
