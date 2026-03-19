@@ -855,7 +855,37 @@ Step B.1.5: 环境配置验证 + 真实登录冒烟测试
      - 无法推导的变量标注 TODO 并警告
      - 缺失 → 自动生成 `.env` 并重启 dev server
 
-  2. **真实登录冒烟测试**（Chain 0，在所有业务链之前执行，**每个端都必须通过**）
+  2. **外部服务冒烟测试**（Chain 0 的第一步，在登录之前执行）
+
+     > Mock 测试全过但真实 App 按钮无反应——因为外部 SDK 没初始化/Key 错误/sandbox 没配。
+     > 在跑任何业务链之前，先验证所有外部服务"能连通"。
+
+     **数据来源**：读取 `forge-decisions.json` 的 `technical_spikes[]`，
+     每个 confirmed spike 的外部服务 → 1 个冒烟测试。
+
+     **LLM 根据 spike 决策动态生成冒烟方式**（不硬编码具体服务）：
+
+     对每个 technical_spike，LLM 判断最轻量的验证方式：
+     - SDK 类（IAP/Auth/Push）→ 调用 SDK 的初始化或最基本的 query 方法
+     - API 类（搜索/LLM/存储）→ curl 调一次最基本的端点，验证非 401/500
+     - 后端内部服务 → 通过后端 health endpoint 的扩展字段验证
+
+     示例（LLM 根据项目 spike 动态生成，以下只是参考）：
+     ```
+     spike TS001 (LLM) → curl POST /api/v1/health/llm → 200 且返回 available models
+     spike TS002 (搜索) → curl POST /api/v1/health/search → 200 且返回 provider status
+     spike TS003 (IAP) → App 启动后 RevenueCat.getOfferings() 不抛异常
+     spike TS004 (存储) → curl POST /api/v1/uploads/presign → 200 且返回 URL
+     spike TS005 (Auth) → 已被登录冒烟覆盖，跳过
+     ```
+
+     **结果处理**：
+     - 服务可达 → PASS，继续
+     - 服务不可达 → 报告具体错误（Key 无效/URL 错误/SDK 版本不兼容）
+       → 对应 spike 的业务链标记 `BLOCKED_BY_SERVICE`（不是全部停，只停依赖该服务的链）
+     - DEV mock 模式 → mock 服务冒烟通过即可（mock 是有意为之，不是 bug）
+
+  3. **真实登录冒烟测试**（Chain 0 登录，在外部服务冒烟之后执行，**每个端都必须通过**）
 
      > E2E 测试最大的笑话：所有 case PASS，但用户登录不了。
      > Chain 0 是全流程的前提——任何端登录失败 → 立即停止该端的所有后续测试。
