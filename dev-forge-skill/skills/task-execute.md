@@ -23,6 +23,8 @@ version: "1.3.0"
 3. **进度追踪** — 实时更新 build-log.json
 4. **增量验证** — 每 Round 完成后自动触发 lint/test + 增量 product-verify
 
+对于用户端主导项目，task-execute 不只负责把前端“做通”，还要确保它不会停留在概念映射或 demo 级完成度。
+
 ---
 
 ## 定位
@@ -201,6 +203,7 @@ design-to-spec（规格层）   task-execute（执行层）   testforge（验证
   各子项目 tasks.md → 解析全部任务（id / sub_project / files / batch）
   project-manifest.json → 子项目列表 + 类型
   task-context.json（如有）— 任务上下文预计算，含旅程位置、情绪上下文、约束溯源、消费者清单、验证建议
+  product-map.json / task-context.json 中的 `experience_priority`（如有）→ 判断当前 Round 是否按用户端标准执行
 
   ### 两阶段加载
 
@@ -258,6 +261,26 @@ Step 0: 初始化
     **子 Round 间顺序**：同子项目内串行，不同子项目间并行
 
     写入 build-log.json（全部 pending）
+
+    **Step 0.4: 用户端执行偏置（新增）**
+
+当 `experience_priority.mode = consumer` 或 `mixed` 且当前 Round 涉及 `web-mobile`、`mobile-native`、`web-customer` 时：
+
+- 不接受“页面能打开 + API 通了”作为完成标准
+- 必须关注主线是否顺、核心动作是否突出、状态反馈是否完整
+- 若 tasks.md 已包含产品化任务（提醒、历史、通知、进度、推荐、回访机制），按同等优先级执行，不得视作可选美化
+- 若实现结果明显像后台页面压缩版，应在本轮内修正，不要留给最终验收兜底
+
+    **Step 0.4.1: 用户端 Round 检查点（前端 Round 完成后）**
+
+对用户端项目，Round 结束时额外自检：
+
+- 首页是否存在明确主线和下一步引导？
+- 核心页面是否具备 loading / empty / error / success / progress 等必要状态？
+- 是否存在持续关系触点（历史、提醒、通知、订阅、推荐、最近活动中的相关项）？
+- 页面是否仍然像概念 demo，而不是成熟产品？
+
+若以上任一答案为否，生成修复任务继续执行，而不是直接视为前端完成。
   展示执行计划
   ↓
 Step 0.5: 环境配置自动生成（首次执行或 .env 缺失时）

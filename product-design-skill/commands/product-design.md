@@ -32,6 +32,8 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 每个生成阶段遵循统一模式：**LLM 生成 → 4D/6V/闭环 verify loop（以上一级产物为基准验证）→ 自动修正 → 继续下一阶段**。
 
+新增全局原则：如果 `product-map` 判定当前产品为 `consumer` 或 `mixed`，则后续 Phase 2-6 的 verify loop 必须按“用户端成熟度”收紧，而不能只验证结构存在和功能覆盖。
+
 **无强制人工审核门**。所有阶段仅靠 verify loop 自动验证。用户随时可通过 `/review` 命令启动 Review Hub，审核任意阶段产物（概念/地图/数据模型/线框/UI 等），收集反馈并迭代修改。
 
 > **设计决策**：线框审核在 AI pipeline 中价值有限——低保真渲染无法有效审核 UX，结构正确性已被 Playwright verify loop 覆盖，代码自动生成后直接看运行产品反馈质量更高。因此降级为可选。
@@ -103,6 +105,16 @@ loop (max 3 rounds):
 > resume 模式下，feature-gap 已完成则跳过。
 
 向用户展示探测结果。
+
+### 用户端体验重心探测（新增）
+
+在 Phase 2（product-map）完成后，后续阶段默认读取 `product-map.json` 中的 `experience_priority`：
+
+- `consumer` → 用户端/移动端作为主价值面，后续设计和规格按成熟产品标准推进
+- `admin` → 维持后台/专业端优先标准
+- `mixed` → 两端都做，但用户端仍必须经过成熟度检查
+
+这不是单独新增一个 Phase，而是让 Phase 3-6 自动切换评价标准。
 
 ### 产品规模前置检测
 

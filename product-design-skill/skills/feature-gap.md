@@ -25,6 +25,10 @@ version: "2.3.0"
 
 发现缺口，生成任务清单。不建议添加任何不在产品地图中的功能。
 
+当 `product-map.json` 中的 `experience_priority.mode = consumer` 或 `mixed` 时，还要额外回答第三个问题：
+
+3. **像成熟用户产品吗？** — 用户端是否只有概念映射和功能壳子，还是已经具备主线、反馈、状态系统和持续关系
+
 ---
 
 ## 定位
@@ -36,6 +40,8 @@ product-map（现状+方向）   功能查漏（查缺口）
 ```
 
 **前提**：必须先运行 `product-map`，生成 `.allforai/product-map/product-map.json`。
+
+若 `product-map.json` 含 `experience_priority`，feature-gap 必须继承该字段，切换不同的查漏标准。
 
 ---
 
@@ -133,6 +139,8 @@ product-map（现状+方向）   功能查漏（查缺口）
       ↓
 Step 1: 任务完整性检查
       基于 .allforai/product-map/task-inventory.json
+      若 product-map.json 的 `experience_priority.mode = consumer|mixed`
+      → 额外开启用户端成熟度缺口扫描
       role 模式：从 task-index.json 筛选指定角色的任务 ID，仅加载这些任务的完整数据
       ↓ 用户确认
 Step 2: 界面与按钮完整性检查
@@ -175,6 +183,8 @@ Step 7: 状态机完整性检查（quick / journey 模式跳过）
 | main_flow CRUD 完整 | 同一任务下的 `main_flow` 步骤，增删改查是否齐全（根据任务性质判断应该有哪些） |
 | 高频可达 | `frequency=高` 的任务，`prerequisites` 是否过于复杂，是否可达 |
 | 规则完整性 | `rules` 字段是否有覆盖任务的核心约束 |
+| 用户端闭环（consumer/mixed） | 用户端核心任务是否只描述一次性动作，没有反馈、结果可见、下一步引导 |
+| 持续关系（consumer/mixed） | 用户端核心任务是否完全缺少历史、提醒、进度、通知、订阅、推荐等持续关系线索 |
 
 分类结果：
 
@@ -186,6 +196,8 @@ Step 7: 状态机完整性检查（quick / journey 模式跳过）
 | `NO_ACCEPTANCE_CRITERIA` | `acceptance_criteria` 为空，验收标准缺失 |
 | `HIGH_FREQ_BURIED` | 高频任务前置条件过于复杂，可达性存疑 |
 | `NO_RULES` | `rules` 为空，任务约束未定义 |
+| `NO_USER_LOOP` | 用户端任务只有动作，没有反馈闭环或下一步引导 |
+| `NO_CONTINUITY_HOOK` | 用户端任务缺少回访/持续关系触点 |
 
 输出：`.allforai/feature-gap/task-gaps.json`
 
@@ -229,6 +241,9 @@ Step 7: 状态机完整性检查（quick / journey 模式跳过）
 | 表单有校验规则 | 表单提交按钮的 `validation_rules` 是否为空（`MISSING_VALIDATION` 检测） |
 | 列表有空状态 | 列表/表格界面的 `states.empty` 是否已定义（`NO_EMPTY_STATE` 检测） |
 | 异常有界面响应 | task.exceptions 中每条异常，`exception_flows` 是否有对应（`UNHANDLED_EXCEPTION` 检测） |
+| 用户端首页主线（consumer/mixed） | 首页/入口页是否只有功能入口拼盘，没有明确主线任务或状态总览 |
+| 用户端下一步引导（consumer/mixed） | 核心界面是否缺少“下一步做什么”的明确引导 |
+| 用户端持续关系入口（consumer/mixed） | 是否缺少历史/提醒/通知/最近活动/进度等相关入口 |
 
 分类结果：
 
@@ -245,6 +260,9 @@ Step 7: 状态机完整性检查（quick / journey 模式跳过）
 | `UNHANDLED_EXCEPTION` | task.exceptions 中有异常，但界面无对应 `exception_flows` |
 | `NO_SCREEN` | 任务在 task-inventory 中存在，但 experience-map 中无对应界面 |
 | `ENTRY_BROKEN` | 界面存在但从主导航无法到达（入口链路断裂） |
+| `NO_PRIMARY_JOURNEY` | 用户端首页缺少明确主线任务或状态总览 |
+| `NO_NEXT_STEP_GUIDANCE` | 核心界面缺少下一步引导，用户做完动作后容易失焦 |
+| `NO_CONTINUITY_ENTRY` | 用户端缺少历史/提醒/通知/最近活动/进度等持续关系入口 |
 
 输出：`.allforai/feature-gap/screen-gaps.json`
 
@@ -293,6 +311,12 @@ Step 7: 状态机完整性检查（quick / journey 模式跳过）
 
 **旅程验证新增节点**：Step 3 中「操作有反馈」节点现检查 `on_failure` 是否定义，而非仅检查成功提示。若 `on_failure` 缺失，旅程在此节点断开。
 
+若 `experience_priority.mode = consumer` 或 `mixed`，还需额外判断：
+
+- 完成核心动作后，用户是否知道接下来做什么
+- 结果是否可见，且能回到后续使用链路
+- 旅程是否只停在“一次完成”，没有任何持续关系
+
 输出：`.allforai/feature-gap/journey-gaps.json`
 
 ```json
@@ -325,8 +349,9 @@ Step 7: 状态机完整性检查（quick / journey 模式跳过）
 3. `SILENT_FAILURE` / `UNHANDLED_EXCEPTION` / `DEAD_END_STATE` / `NO_ERROR_RECOVERY`（操作失败无反馈 / 用户卡住 / 异常无恢复）
 4. `HIGH_RISK_NO_CONFIRM`（安全问题）
 5. `CRUD_INCOMPLETE` / `NO_EXCEPTIONS` / `NO_ACCEPTANCE_CRITERIA` / `UNREACHABLE_STATE`
-6. `NO_REVERSE_TRANSITION` / 孤儿界面清理
-7. `ORPHAN_ENTITY`（建模不充分，低优先级）
+6. `NO_USER_LOOP` / `NO_CONTINUITY_HOOK` / `NO_PRIMARY_JOURNEY` / `NO_NEXT_STEP_GUIDANCE` / `NO_CONTINUITY_ENTRY`
+7. `NO_REVERSE_TRANSITION` / 孤儿界面清理
+8. `ORPHAN_ENTITY`（建模不充分，低优先级）
 
 每条任务格式：
 
@@ -383,6 +408,11 @@ Step 7: 状态机完整性检查（quick / journey 模式跳过）
 > **搜索驱动原则**：展示缺口分析结果前，先 WebSearch 搜索「{产品类型} feature completeness checklist」和「{行业} common missing features」，用搜索结果交叉验证缺口检测的覆盖面。
 
 **用户确认**：缺口优先级排序合理吗？有需要调整优先级或移除的缺口吗？
+
+若 `experience_priority.mode = consumer` 或 `mixed`，必须额外确认：
+
+- 用户端缺口是否停留在“功能存在性”视角，遗漏了成熟度缺口
+- 是否已经识别出首页主线、持续关系、下一步引导、结果反馈相关缺口
 
 ---
 
@@ -857,6 +887,8 @@ LLM 直接分析 task-inventory + experience-map + business-flows，理解业务
 ### 1. 以产品地图为唯一基准
 
 只检查 `product-map` 中已定义的任务。不引入产品地图之外的期望。发现产品地图之外的问题，先去更新产品地图，再重跑查漏。
+
+但当 `experience_priority.mode = consumer` 或 `mixed` 时，必须把“成熟度缺口”视为产品地图内生要求，而不是额外加戏：如果 product-map 已经判定用户端是主价值面，就必须检查它是否仍然只是概念壳子。
 
 ### 2. 频次+类别决定优先级
 

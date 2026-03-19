@@ -22,6 +22,16 @@
     "validation_issues": 5,
     "competitor_gaps": 3
   },
+  "experience_priority": {
+    "mode": "consumer",
+    "consumer_surface": true,
+    "consumer_core": true,
+    "primary_experience": "mobile",
+    "reasoning": [
+      "核心价值主要通过用户端持续使用获得",
+      "后台主要承担配置、审核、运营支撑"
+    ]
+  },
   "roles": [...],        // 来自 role-profiles.json
   "tasks": [...],        // 来自 task-inventory.json
   "conflicts": [...],    // 来自 conflict-report.json（quick 模式为空数组）
@@ -31,6 +41,20 @@
 ```
 
 `summary` 字段供下游技能（feature-gap、seed-forge）快速获取产品规模，无需遍历全部数组。
+
+`experience_priority` 是用户端导向的全局契约字段，供 `experience-map`、`ui-design`、`design-to-spec`、`task-execute` 等下游技能切换评价标准：
+
+- `mode = consumer`：用户端是主价值面，按成熟产品标准推进
+- `mode = admin`：后台/专业端是主价值面，按效率与准确性优先
+- `mode = mixed`：两端都重要，但用户端仍需通过成熟度检查
+
+字段要求：
+
+- `mode`：必填，枚举 `consumer | admin | mixed`
+- `consumer_surface`：必填，布尔；是否存在用户端/移动端主界面
+- `consumer_core`：必填，布尔；用户端是否承载核心价值而非仅承担辅助入口
+- `primary_experience`：必填，枚举 `mobile | web-customer | admin | mixed`
+- `reasoning`：必填，字符串数组；记录判定依据，供下游 explainability 使用
 
 下游技能以此文件为主输入，同时按需加载 `business-flows.json`（业务流数据独立存储）。
 

@@ -233,6 +233,16 @@ Claude 分析 `task-inventory.json`，寻找任务间的状态衔接关系：若
 
 LLM 聚合前序步骤的所有已确认数据（role-profiles + task-inventory + business-flows + 冲突报告 + 约束），生成 product-map.json + report + task-index + flow-index + SVG。
 
+此处必须同时写入 `experience_priority`，作为下游统一消费的全局判定契约，而不是只在文字报告里提及。
+
+写入规则：
+
+- 若存在用户端/移动端主界面，必须显式输出 `experience_priority`
+- 若后台是主价值面，`mode = admin`
+- 若用户端是主价值面，`mode = consumer`
+- 若两端都重要，`mode = mixed`
+- `reasoning` 至少写 2 条可解释依据，禁止只给枚举不给理由
+
 **重要**：不得覆盖已存在的上游产物（如 entity-model.json、business-flows.json）。仅生成本步骤的新文件。
 
 ### `product-map.json` / 报告 / SVG / 索引
@@ -242,6 +252,15 @@ LLM 聚合前序步骤的所有已确认数据（role-profiles + task-inventory 
 输出：`.allforai/product-map/product-map.json`、`.allforai/product-map/product-map-report.md`、`.allforai/product-map/product-map-visual.svg`
 
 写入 `.allforai/product-map/task-index.json`、`.allforai/product-map/flow-index.json`
+
+其中 `.allforai/product-map/product-map.json` 必须包含：
+
+- `summary`
+- `experience_priority`
+- `roles`
+- `tasks`
+- `conflicts`
+- `constraints`
 
 ---
 

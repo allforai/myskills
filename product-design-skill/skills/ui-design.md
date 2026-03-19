@@ -21,6 +21,8 @@ version: "1.1.0"
 1. **`ui-design-spec.md`** — 高层 UI 设计规格：每个界面的布局模式、配色语义、组件建议、交互状态
 2. **按角色拆分的 HTML 预览** — 每个角色一个 HTML 文件，展示该角色可见的所有界面卡片；`index.html` 做总导航
 
+当上游判定为 `consumer` 或 `mixed` 时，UI 设计的目标不是把页面“画出来”，而是把用户端做出成熟产品感。
+
 ---
 
 ## 定位
@@ -51,6 +53,7 @@ product-concept → product-map → experience-map → ui-design
 | `non_negotiable` | experience-map 每个 screen | 作为设计约束写入 spec |
 | `continuity` | experience-map 每条 line | 指导转场动效和导航模式 |
 | `quality_gate.issues` | interaction-gate.json | 标记需要特别处理的交互问题 |
+| `experience_priority` | product-map.json | 判断是否需要按用户端产品化标准生成 UI 规格 |
 
 ---
 
@@ -191,7 +194,7 @@ product-concept → product-map → experience-map → ui-design
       不存在 → innovation_mode = "none"
   ↓
 Step 1: 产品画像推导                          ← design-steps.md
-  读取 task-inventory + role-profiles + experience-map + innovation_tasks
+  读取 task-inventory + role-profiles + experience-map + innovation_tasks + experience_priority
   推导：B端/C端、角色列表、各角色高频任务、界面总数
   向用户展示，确认
   ↓
@@ -218,6 +221,25 @@ Step 5: 生成多角色 HTML 线框预览              ← design-steps.md
   ↓
 Step 5.6: LLM 高保真 HTML 预览               ← design-steps.md
   tokens.json → CSS 变量 → Tailwind + 真实内容 → 高保真页面
+
+## 用户端产品化设计原则（新增）
+
+当 `experience_priority.mode = consumer` 或 `mixed` 时，ui-design 必须额外满足：
+
+- 首页不是入口拼盘，而是主线任务与状态总览
+- 列表/卡片/详情形成明确层级节奏，而不是同质化页面堆叠
+- 主操作、次操作、反馈信息、风险操作有清晰视觉优先级
+- 空态/加载态/错误态/成功态有统一设计语言
+- 页面要支持回访与持续关系，而不是一次性完成即结束
+
+对用户端移动应用，优先考虑：
+
+- 首屏情绪和品牌感
+- 单手操作路径
+- 低注意力场景下的下一步引导
+- 系统反馈的即时性
+
+禁止把用户端 UI 退化成“后台组件换皮”。
 ```
 
 > **强制规则**：Step 2「风格选择」不可跳过。即使存在历史决策，也必须向用户展示当前风格并请求确认（可沿用历史风格或改选），不得静默默认。

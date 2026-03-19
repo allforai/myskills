@@ -42,6 +42,16 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 - **无参数 或 `full`** → 新项目，从头执行全流程
 - **`full existing`** → 已有项目，gap 模式（扫描代码 → 仅补缺）
 
+## 用户端导向继承（新增）
+
+若上游 `product-map.json` 含 `experience_priority.mode = consumer | mixed`，则本编排器在 Phase 3-5 自动切换到用户端优先标准：
+
+- Phase 3 (`design-to-spec`) 不得只生成“页面 + API + 表单”任务
+- Phase 4 (`task-execute`) 不得把“页面能开 + API 通”当作完成
+- Phase 5（验证闭环）需要关注用户端是否仍像概念 demo，而不是成熟产品
+
+这不是新增分叉流水线，而是对同一条主流程施加不同的完成标准。
+
 ## 八阶段架构
 
 ```
@@ -111,6 +121,8 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 **product-design 产物必须存在**：
 - 检查 `.allforai/product-map/product-map.json`
 - 不存在 → 输出「请先完成产品设计流程（/product-design full），再运行项目锻造」，终止
+
+若 `product-map.json` 中存在 `experience_priority`，Phase 0 需要把它写入 `forge-decisions.json`，作为后续 Phase 的执行偏置来源。
 
 ### 规模提醒
 

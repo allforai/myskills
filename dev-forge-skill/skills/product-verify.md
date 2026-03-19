@@ -24,6 +24,10 @@ version: "1.6.0"
 1. **静态：代码有没有？** — 每个任务是否有对应的 API 路由？每个界面是否有对应的组件？每条约束是否有对应的校验逻辑？
 2. **动态：行为对不对？** — 用 Playwright（Web）/ XCUITest（iOS 原生）/ Patrol（Flutter）/ Maestro（RN 原生）运行实际应用，用例脚本跑得通吗？
 
+当 `product-map.json` 中的 `experience_priority.mode = consumer` 或 `mixed` 时，还要额外回答第三个问题：
+
+3. **像成熟用户产品吗？** — 用户端是否只有功能壳子和概念映射，还是已经具备主线、反馈、状态系统、持续关系与移动端产品感
+
 发现差异，生成三类任务清单：
 - **IMPLEMENT** — 产品地图有但代码没有（漏实现）
 - **REMOVE_EXTRA** — 代码有但产品地图没有（多余代码，自动建议 keep/remove）
@@ -43,6 +47,8 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 **与 feature-gap 的区别**：feature-gap 检查**产品地图自身**是否完整（CRUD 齐不齐、旅程通不通）；product-verify 检查**代码**是否实现了产品地图中的任务（路由有没有、组件在不在、行为对不对）。一个审产品设计，一个审代码实现。
 
 **前提**：必须先运行 `product-map`，生成 `.allforai/product-map/product-map.json`。
+
+若 `product-map.json` 含 `experience_priority`，product-verify 必须继承该字段，切换不同的验收标准。
 
 ---
 
@@ -127,6 +133,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
   Phase 2 — 按需加载完整数据：
     加载 .allforai/product-map/product-map.json
     若 product-map.json 也不存在 → 提示用户先运行 /product-map，终止
+    若存在 `experience_priority.mode = consumer|mixed` → 启用用户端成熟度验收附加规则
   其他可选数据：
     experience-map.json 必须（不存在则自动运行 experience-map 生成，然后启用 S2）
     use-case-tree.json 可选（dynamic 优先使用，否则自动推导）
@@ -238,6 +245,11 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
       - **V5 Capability**: 是否实现了 `implementation_contract.required_behaviors`？
       - **V6 Context**: `emotion_context` 标注的焦虑/沮丧触点是否有对应 UI 反馈？
       **保真度评分**：通过 V 数 / 6 = 保真度分（≥ 0.8 为 PASS）
+      **用户端附加规则（consumer/mixed）**：
+      - 首页不能只是入口拼盘，必须能识别主线任务或状态总览
+      - 核心界面不能只可点击，还要能看出下一步引导
+      - 历史/提醒/通知/进度/最近活动等持续关系入口若设计基线要求存在，则必须验收
+      - 若整体观感仍像后台页面压缩版或概念 demo，S2 至少记为 `warn`
       → 输出进度: 「S2 UI 保真 ✓ pass:{N} warn:{M} fail:{K}（平均保真度 {score}）」
   ↓
   S3: 护栏逻辑覆盖审计 (LLM-driven)
@@ -361,6 +373,10 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
       | 状态标签/徽章 | 每种状态至少 1 条 | 对照 task.outputs.states 逐状态验证 |
       | Dashboard/图表 | ≥ 1 个月跨度数据 | 图表渲染非空 |
       | 空态页面 | 专门验证 empty state | 新角色/空数据账号登录后 empty 页正确展示 |
+      **用户端附加活性（consumer/mixed）**：
+      - 首页主线卡片/主 CTA 必须有真实数据或明确状态驱动
+      - 历史/通知/进度/最近活动等持续关系模块不能全部空壳占位
+      - 完成动作后，结果页或列表回流必须可见
       **逆向验证链**：
       experience-map.screen → 反推最低数据需求 → 对比 seed-plan.json → 缺口即 SEED_GAP
       **输出**：
@@ -470,6 +486,14 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
       **闭环判定**：
       - 4D 每维度最终判定均 ≥ 80% → VERIFY_PASS
       - 任一维度 < 80% → 生成针对性 IMPLEMENT/FIX 任务，标注缺失维度和修复线索
+
+      若 `experience_priority.mode = consumer` 或 `mixed`，还需额外满足：
+      - 用户端主线可发现
+      - 关键状态可感知
+      - 完成后知道下一步
+      - 至少存在一条持续关系链路（历史/提醒/通知/进度/订阅/推荐中的相关项）
+
+      否则即使基础 4D 达标，也应标记为 `VERIFY_WARN` 并生成补充任务。
 
 生成输出文件：
   static-report.json / dynamic-report.json / verify-tasks.json / verify-report.md
@@ -1133,6 +1157,7 @@ mobile-native 子项目:
 2. **只报告不修改代码** — 发现缺口只标记到 verify-tasks.json，不自动生成、修改或删除任何实现代码
 3. **4D 覆盖度闭环驱动** — 按 Data/Interface/Logic/UX 四维度聚合覆盖率，低于阈值自动生成针对性补充任务（标注缺失维度），直到闭环通过
 4. **设计反向驱动验收** — experience-map 的 screen/action 反推最低数据需求，验证种子数据覆盖度和 UI 活性，设计产物既是正向生成的输入也是逆向验收的基准
+5. **用户端主价值面从严验收** — 若 `experience_priority = consumer|mixed`，验收不能停留在“功能存在 + 测试能跑通”，还要验证是否达到成熟用户产品的基本体验门槛
 5. **EXTRA 自动建议归属** — EXTRA 代码由 Agent 语义研判自动分类（infra/dev/ghost/undocumented），写入决策日志
 6. **6V 诊断取代规则分类** — 动态失败由 LLM 从 6 个工程视角深度诊断根因，输出分类 + 修复线索，自动采纳写入决策日志
 7. **全链路数据闭环** — 不只验证"代码有没有"，还验证数据流是否贯通、状态机是否完备、约束是否运行时生效

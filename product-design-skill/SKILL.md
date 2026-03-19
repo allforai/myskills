@@ -15,6 +15,16 @@ version: "4.16.1"
 
 > 以产品地图为基础，系统化地定义、查漏、剪枝、审计。
 
+## 全局指导思想（新增）
+
+当产品包含用户端/移动端时，本套件不再只按“功能是否存在”来设计，而会先判断 `experience_priority`：
+
+- `consumer`：用户端是主价值载体，按成熟产品标准设计
+- `admin`：后台/专业端是主价值载体，按效率与准确性优先
+- `mixed`：两端都重要，但用户端仍需单独做成熟度检查
+
+这不是新增一条独立流程，而是让 `product-map → experience-map → ui-design` 全链路在遇到用户端时自动切换评价标准。
+
 ## 包含的技能
 
 ### 1. product-concept — 产品概念发现
@@ -56,6 +66,7 @@ version: "4.16.1"
 - 识别所有用户角色，明确权限边界和 KPI
 - 按角色展开任务（频次、风险、SLA、异常列表、验收标准）
 - 冲突检测：发现任务级业务逻辑矛盾或 CRUD 缺口
+- 显式判断 `experience_priority`，为下游注入用户端或后台端不同的指导思想
 
 ```
 /product-map              # 完整流程
@@ -86,6 +97,7 @@ version: "4.16.1"
 - 按钮级异常流程：每个操作的 on_failure、validation_rules、exception_flows
 - 界面级冲突：冗余入口、高风险无确认、异常覆盖缺口
 - 当 product-map Step 8 生成了 view-objects.json 时，体验地图优先使用 VO 绑定真实字段和交互类型。
+- 若 `experience_priority = consumer|mixed`，额外检查首页主线、下一步引导、回访理由、移动端节奏和状态体系
 
 ```
 /experience-map              # 完整流程（界面梳理+冲突检测）
@@ -144,6 +156,8 @@ version: "4.16.1"
 
 从产品地图 + 体验地图推导高层 UI 设计规格，结合风格选择和设计原则，输出设计规格文档 + 按角色拆分的 HTML 预览。
 
+若 `experience_priority = consumer|mixed`，UI 设计目标从“有页面”提升到“有成熟产品感”。
+
 ```
 /ui-design               # 完整流程
 /ui-design refresh       # 重新生成
@@ -178,6 +192,8 @@ version: "4.16.1"
 ```
 
 流程：concept → **review（概念 tab）** → product-map → **review（地图 tab）** → journey-emotion → experience-map（含模式扫描+行为规范 Step 3.6） → interaction-gate → **review（线框+数据模型 tab）** → **Stitch 决策点** → [use-case ∥ feature-gap ∥ ui-design] → **review（UI tab）** → design-audit，每阶段间插入检查点验证产出完整性。
+
+若上游判定为 `consumer` 或 `mixed`，全流程默认附加一条隐式门禁：用户端不能只做到“概念映射 + 页面存在”，而必须逐步收敛到成熟产品级体验。
 
 > **review（Phase 5）**：线框+数据模型审核，验证 IA/流程/功能/数据结构。反馈路由到 product-map / experience-map / concept。通过后结构锁定，才进入视觉设计。
 
@@ -274,6 +290,7 @@ product-concept（可选，从 0 开始时必跑）
     │
 product-map（必须先跑）
     ↓ 输出 .allforai/product-map/product-map.json + task-inventory.json
+    │        其中 product-map.json 必含 experience_priority（consumer/admin/mixed）
     │
     ├── journey-emotion（情绪旅程）
     │       ↓ 输出 .allforai/journey-emotion/
@@ -312,7 +329,7 @@ your-project/
     │   ├── business-flows-visual.svg   # 业务流泳道图（可视化）
     │   ├── conflict-report.json        # 任务级冲突与 CRUD 缺口
     │   ├── constraints.json            # 业务约束清单
-    │   ├── product-map.json            # 汇总文件（供其他技能加载）
+    │   ├── product-map.json            # 汇总文件（供其他技能加载，含 experience_priority）
     │   ├── product-map-report.md       # 可读报告
     │   ├── product-map-visual.svg      # 角色-任务树（可视化）
     │   ├── competitor-profile.json     # 竞品功能概况（Step 0 草稿→Step 7 补全）

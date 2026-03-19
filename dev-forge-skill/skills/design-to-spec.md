@@ -24,6 +24,8 @@ version: "4.0.0"
 4. **tasks.md** — 原子任务列表，按开发层分 Batch（B0-B5）
 5. **task-context.json** — 任务上下文预计算（旅程位置 / 情绪 / 约束溯源 / 消费者 / 验证建议）
 
+如果上游判定项目为 `consumer` 或 `mixed`，design-to-spec 还必须把“用户端成熟度要求”翻译成可执行规格与任务，而不是只输出页面实现任务。
+
 ---
 
 ## 定位
@@ -106,6 +108,7 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 | 写操作幂等 | 创建类操作支持幂等键（协议级 header 或业务唯一约束），更新类操作使用乐观锁（version 字段或条件更新），并发冲突返回对应协议的冲突状态 |
 | 前端 CRUD 套路一致 | 同类型子项目的列表/新建/编辑/删除/详情必须使用相同组件套路和数据流模式。详见「前端 CRUD 实现套路」章节 |
 | 多语言全覆盖 | 所有用户可见文本必须通过 i18n 函数获取（禁止硬编码），新增文本必须同步所有语言文件。design.md 中标注 i18n 方案，tasks.md 中每个涉及 UI 文本的任务标注 `_i18n: sync all locales_` |
+| 用户端优先级继承 | 若 `experience_priority.mode = consumer` 或 `mixed`，前端 requirements/design/tasks 必须包含主线闭环、状态系统、反馈机制、回访理由，不得只拆“页面 + 接口 + 表单” |
 
 ---
 
@@ -151,6 +154,7 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 | 非功能需求 | 弱网容忍、Service Worker |
 | 从 experience-map 取 | actions → 触屏交互规格；states → 四态设计（loading 需骨架屏、error 需离线提示）；on_failure → 弱网重试 UI；validation_rules → 移动端表单验证 |
 | 从 ui-design 取 | 移动适配的设计 token |
+| 用户端增强 | requirements/design/tasks 必须显式覆盖首页主线、空错成系统、提醒/历史/进度/回访触发点、移动端弱网和低注意力场景 |
 
 ### mobile-native (React Native / Flutter)
 
@@ -162,6 +166,7 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 | 从 experience-map 取 | actions → Screen 组件规格（RN: Screen 组件 / Flutter: Screen Widget）；states → 四态设计（离线态额外处理）；on_failure + exception_flows → 原生错误提示；validation_rules → 表单验证 |
 | 从 ui-design 取 | 原生端设计 token（如有） |
 | 测试工具 | iOS: XCUITest / Android: Maestro (Espresso) / RN: Detox / Maestro / Flutter: Patrol / integration_test |
+| 用户端增强 | requirements/design/tasks 必须覆盖持续关系（进度、提醒、历史、通知）、状态反馈和产品节奏，禁止只生成“功能入口型壳子” |
 
 ---
 
@@ -194,6 +199,13 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 
 生成 frontend 子项目的 design.md 时，在页面规格之前插入「页面交互套路」章节。每个页面规格中标注交互类型。一个页面可以组合多个类型（如「任务详情」= 主从详情 + 状态机操作）。
 
+若 `experience_priority.mode = consumer` 或 `mixed`，还必须插入「用户端成熟度要求」章节，至少列出：
+
+- 主线任务闭环
+- 状态系统（loading / empty / error / success / progress）
+- 回访触发点（history / reminder / subscription / recommendation / notification 中至少相关项）
+- 移动端低注意力交互原则
+
 ---
 
 ## 工作流 — 并行执行编排（角色分离架构）
@@ -208,6 +220,14 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 | **Decomposer** | 读设计 → 拆功能任务 | design.md + requirements.md | tasks.md（B0-B5 平铺功能任务） |
 | **Auditor** | 读全部产出 → 找遗漏 | requirements + design + tasks + product-map | validation findings → 修正 specs |
 | **Enricher** | 补充元数据 | design + tasks + product-map | event-schema + task-context |
+
+### 用户端专项检查点（Architect / Decomposer / Auditor 必做）
+
+当 `experience_priority.mode = consumer` 或 `mixed` 时：
+
+- Architect 不得只生成“页面清单”，必须在 design.md 中写出用户端主线与持续关系
+- Decomposer 不得只拆功能实现任务，必须补充产品化任务（状态、反馈、提醒、历史、通知、推荐等相关项）
+- Auditor 必须检查前端任务是否只有功能实现，没有用户端成熟度任务；发现则判为缺口
 
 **角色步骤加载指令**：
 

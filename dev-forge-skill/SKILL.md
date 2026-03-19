@@ -17,6 +17,14 @@ version: "5.8.1"
 
 > 从产品设计产物到可运行项目：AI 驱动的「锻造-验证-闭环」全流程自动化。
 
+## 全局指导思想（新增）
+
+当上游 `product-map` 判定 `experience_priority = consumer | mixed` 时，dev-forge 不再只以“功能实现完成”作为前端成功标准，而会自动切换到用户端优先标准：
+
+- requirements / design / tasks 必须包含主线闭环、状态系统、反馈机制、回访理由
+- task-execute 不能把“页面能打开 + API 通了”视为前端完成
+- 用户端实现如果仍像概念 demo，需要在执行期继续修正，而不是等最终验收兜底
+
 ## 前置依赖
 
 本插件依赖 `product-design` 插件生成的 `.allforai/` 输出。请先运行 `/product-design full` 完成产品设计。
@@ -48,6 +56,8 @@ version: "5.8.1"
 
 **Forge-Verify-Loop (FVL)**：LLM 生成初稿 → 4D/6V 审计 → XV 交叉验证 → 自动修正。API-First 策略，生成 requirements + design + events + tasks。
 
+若项目为 `consumer` 或 `mixed`，会把“用户端成熟度要求”一起翻译为前端规格与任务，而不是只翻译成路由/接口/页面壳。
+
 ```
 /design-to-spec             # 全量生成
 /design-to-spec sp-001      # 仅指定子项目
@@ -58,6 +68,8 @@ version: "5.8.1"
 > 详见 `${CLAUDE_PLUGIN_ROOT}/skills/task-execute.md`
 
 **R0 项目初始化**（Monorepo 配置 + 目录结构 + 依赖安装）→ **R1-R4 业务实现**（逐任务执行 + 增量 XV 审计 + 契约漂移同步 + DevSecOps 左移）。支持 build-log.json 进度追踪与断点续作。
+
+若当前 Round 涉及用户端子项目，任务执行会额外检查主线是否顺、状态是否齐、是否具备持续关系，而不是只检查功能是否可点通。
 
 ```
 /task-execute              # 从 Round 0 开始（或断点续作）
