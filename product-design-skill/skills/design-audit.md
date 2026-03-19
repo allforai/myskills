@@ -6,7 +6,7 @@ description: >
   "设计校验", "链路一致性", "覆盖率检查", "逆向追溯", "洪泛验证",
   or mentions cross-layer verification, design traceability, artifact consistency.
   Requires product-map to have been run first.
-version: "1.1.0"
+version: "1.2.0"
 ---
 
 # Design Audit — 设计审计

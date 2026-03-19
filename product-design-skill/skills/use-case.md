@@ -8,7 +8,7 @@ description: >
   or mentions generating Given/When/Then scenarios, deriving test cases from requirements,
   creating use case documents for QA or AI agent execution.
   Requires product-map to have been run first.
-version: "2.4.0"
+version: "2.5.0"
 ---
 
 # Use Case — 用例集
@@ -452,7 +452,7 @@ Step 4: 端到端用例生成（需 business-flows.json，quick 模式跳过）
 
 ```json
 {
-  "version": "2.4.0",
+  "version": "2.5.0",
   "generated_at": "...",
   "summary": {
     "role_count": 3,

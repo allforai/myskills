@@ -8,7 +8,7 @@ description: >
   mapping nodes to screens, building experience maps from journey-emotion-map.
   Replaces the former screen-map skill with a richer experience-oriented structure.
   Requires journey-emotion and product-map to have been run first.
-version: "2.7.0"
+version: "2.8.0"
 ---
 
 # Experience Map — 体验地图

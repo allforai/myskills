@@ -7,7 +7,7 @@ description: >
   or needs to systematically execute atomic tasks from tasks.md with progress tracking,
   automatic execution strategy selection, and per-round incremental verification.
   Requires tasks.md (from design-to-spec) and project-manifest.json (from project-setup).
-version: "1.3.0"
+version: "1.4.0"
 ---
 
 # Task Execute — 任务执行与追踪

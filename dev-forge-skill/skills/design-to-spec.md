@@ -7,7 +7,7 @@ description: >
   or needs to transform product-design artifacts into per-sub-project requirements, design docs, and atomic task lists.
   Also handles shared-utilities analysis (cross-task pattern resonance, third-party library selection, B1 task injection).
   Requires project-manifest.json (from project-setup) and product-map artifacts.
-version: "4.0.0"
+version: "4.1.0"
 ---
 
 # Design to Spec — 设计转规格

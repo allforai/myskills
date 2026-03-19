@@ -7,7 +7,7 @@ description: >
   or mentions evaluating interaction quality of operation lines,
   scoring usability dimensions, or running a quality gate before UI design.
   Requires experience-map to have been run first.
-version: "1.0.0"
+version: "1.1.0"
 ---
 
 # Interaction Gate — 交互质量门
@@ -265,7 +265,7 @@ OL002 管理员审核流程（55 分，未达标）：
 
 ```json
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "generated_at": "...",
   "threshold": 70,
   "summary": {

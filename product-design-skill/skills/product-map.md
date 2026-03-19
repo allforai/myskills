@@ -9,7 +9,7 @@ description: >
   understanding what a product does, mapping features by user role, doing an initial product inventory,
   or building a foundation for feature gap detection, pruning, or seed data generation.
   Supports innovation boost mode: reads adversarial-concepts.json and marks innovation tasks with protection levels.
-version: "2.7.0"
+version: "2.8.0"
 ---
 
 # Product Map — 产品地图梳理

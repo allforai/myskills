@@ -10,7 +10,7 @@ description: >
   "Maestro 移动端测试", "XCUITest iOS 测试",
   or wants to prove code implements the product map features and flows.
   Requires product-map to have been run first. Optionally uses experience-map and use-case.
-version: "1.6.0"
+version: "1.7.0"
 ---
 
 # Product Verify — 产品验收
