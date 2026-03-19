@@ -883,7 +883,9 @@ Step B.1.5: 环境配置验证 + 真实登录冒烟测试
      - 服务可达 → PASS，继续
      - 服务不可达 → 报告具体错误（Key 无效/URL 错误/SDK 版本不兼容）
        → 对应 spike 的业务链标记 `BLOCKED_BY_SERVICE`（不是全部停，只停依赖该服务的链）
-     - DEV mock 模式 → mock 服务冒烟通过即可（mock 是有意为之，不是 bug）
+     - **E2E 层禁止 mock**。读取 forge-decisions.json 的 `service_credentials`：
+       `credentials_provided=true` → 用真实凭据测试
+       `credentials_provided=false` → 标记 `NOT_VERIFIED`（不是 mock 通过，是诚实说"没测到"）
 
   3. **真实登录冒烟测试**（Chain 0 登录，在外部服务冒烟之后执行，**每个端都必须通过**）
 

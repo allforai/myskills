@@ -460,6 +460,66 @@ WebSearch 找到的候选方案: {option_list}
 - **自动模式**：自动采纳全部推荐方案，写入 forge-decisions.json，继续（不停）
 - **交互模式**：等待用户逐项确认或调整。用户可对某项选择「TBD（待定）」→ 该 spike 的 `status` 标记为 `tbd`，不阻塞流程，但 design-to-spec 会在对应章节标注 `[PENDING: 技术方案待定]`。用户确认后继续。
 
+### Step 4.5: 外部服务凭据收集（spike 决策确认后立即执行）
+
+> **E2E 测试必须完全仿真**——mock 只用于单元测试，E2E 必须打真实 sandbox。
+> 凭据在 spike 决策时就收集，不要等到测试阶段才发现"Key 没配"。
+
+对每个 confirmed spike，LLM 判断需要什么凭据，用 AskUserQuestion 一次性收集：
+
+```
+您选择了以下外部服务，E2E 测试需要真实/sandbox 凭据才能验证功能。
+请提供（留空 = 该服务的 E2E 测试标记为 NOT_VERIFIED）：
+
+| 服务 | 需要的凭据 | 用途 | 您的值 |
+|------|-----------|------|--------|
+| {spike.vendor} | {LLM 推导的凭据字段} | sandbox 测试 | ______ |
+| ... | ... | ... | ______ |
+
+提示：
+- 这些凭据仅用于 sandbox/测试环境，不用于生产
+- 留空不阻塞开发，但 E2E 测试无法验证该服务的功能
+- 可以稍后补充（运行 /project-forge credentials 更新）
+```
+
+**LLM 根据 spike 决策动态推导需要的凭据**（不硬编码具体服务）：
+- IAP 类 → sandbox API Key / 测试账号
+- Auth 类 → OAuth Client ID + Secret / 测试用户
+- 搜索/LLM API 类 → API Key（通常有免费额度）
+- 存储类 → Bucket + Access Key（或使用本地替代）
+- 推送类 → FCM Server Key / APNs Certificate
+
+**收集结果写入 forge-decisions.json 的 `service_credentials` 字段**：
+```json
+{
+  "service_credentials": [
+    {
+      "spike_ref": "TS001",
+      "service": "LiteLLM/OpenAI",
+      "credentials_provided": true,
+      "env_vars": {"OPENAI_API_KEY": "sk-..."},
+      "test_mode": "real_sandbox"
+    },
+    {
+      "spike_ref": "TS003",
+      "service": "RevenueCat",
+      "credentials_provided": false,
+      "test_mode": "not_verified",
+      "user_note": "稍后补充"
+    }
+  ]
+}
+```
+
+**`test_mode` 三种状态**：
+- `real_sandbox` — 用户提供了真实 sandbox 凭据 → E2E 完全仿真
+- `not_verified` — 用户明确说"暂不提供" → E2E 该服务标记 NOT_VERIFIED（诚实）
+- ~~`mock`~~ — **E2E 层禁止 mock**。Mock 只用于 B5 单元/组件测试
+
+**凭据流入 .env**：
+Step 0.5（环境配置）时读取 `service_credentials` → 写入各子项目 .env。
+`credentials_provided=false` 的服务 → .env 中该变量标注 `# NOT_PROVIDED — E2E will be NOT_VERIFIED`。
+
 ### Step 5: 生成编码原则（两层）
 
 基于 spike 决策 + 项目约束，生成两层编码原则：
