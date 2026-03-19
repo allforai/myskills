@@ -45,12 +45,36 @@
 
 4. **测试任务细化**（所有子项目）：
 
+   **核心原则：B3 前端任务也需要 Acceptance 条件**
+   > B2 后端任务有 Acceptance（"POST /sessions → 200, status=in_progress"）→ 测试有据可依。
+   > B3 前端任务没有 Acceptance → 测试不知道"验证什么" → 只测渲染不测行为 → bug 漏网。
+   >
+   > Auditor 为每个 B3 页面的交互控件（按钮/开关/表单/导航链接）生成**交互级 Acceptance**：
+   > 描述"用户操作 X → 应该发生 Y"，供 B5 测试直接引用。
+
+   **B3 交互级 Acceptance 生成方法**（LLM 语义推导）：
+   Auditor 读取每个 B3 页面的 design.md 规格，对页面中每个用户可交互的控件：
+   - 按钮 → "点击后应该：调 API / 导航到页面 / 弹出对话框 / 改变状态"
+   - 开关/选择器 → "切换后应该：本地状态变化 + 视觉反馈 + (可选)保存到后端"
+   - 表单 → "提交后应该：验证 → 调 API → 成功提示/导航 / 失败提示"
+   - 列表项 → "点击后应该：导航到详情页"
+
+   示例：
+   ```
+   B3 SettingsScreen _Acceptance_:
+   - 切换 dark mode 开关 → app 主题立即切换为深色/浅色（不只是保存到后端）
+   - 切换语言下拉框 → app 界面语言立即切换（不只是保存到后端）
+   - 点击"订阅" → 导航到 /subscription
+   - 点击"退出登录" → 清除 session → 跳转到 /login
+   - 点击"删除账号" → 导航到确认页
+   ```
+
    **后端子项目**：
-   - 每个 B2 _Acceptance_ 条件 → 确保有对应的 B5 测试断言（pytest）
+   - 每个 B2 _Acceptance_ 条件 → 确保有对应的 B5 测试断言
    - 每个 B2.HARDEN 异常 → 生成 B5.HARDEN 测试
 
    **Web 前端子项目（Nuxt/Next/React）**：
-   - 每个 B3 页面 → 确保有 B5 组件测试（vitest/jest）
+   - 每个 B3 页面 → Auditor 生成交互级 Acceptance → B5 测试验证每条 Acceptance
    - 每个 B3.DNA → 生成 B5.DNA 行为测试
    - 粗粒度 E2E 测试保留（Playwright）
 
