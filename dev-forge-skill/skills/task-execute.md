@@ -494,48 +494,47 @@ Step 3: Round 质量检查（三路并行）
     全部完成 → 聚合结果
 
   **test_quality_check（仅 B5 Round 触发）**:
-    > 194 个测试全 PASS 但 3 个明显 bug 漏了——因为测试只验证"有没有"不验证"对不对"。
-    > TQ Agent 读测试代码 + 被测代码 → 判断"测试是否真正验证了功能"。
+    > 测试全 PASS ≠ 功能正确。测试代码本身可能有 bug（只测渲染不测行为）。
+    > TQ Agent 像资深 QA 一样审查：测试有没有在"骗你"。
 
     Agent(test-quality): 并行于 lint/test/security，**仅在 B5 Round 触发**。
 
-    LLM Agent 对本 Round 每个 B5 测试文件执行：
+    **审查方法**（LLM 语义驱动，不是固定检查清单）：
 
-    **TQ1: 交互验证**（不是"存在"而是"行为"）
-      读测试代码，检查：
-      - 每个被测按钮/表单是否在 test 中被 `tap()`/`enterText()`/`submit()`？
-      - 只 `find.byType(Button)` 不 `tester.tap()` → `TEST_NO_INTERACTION`
-      - 按钮的 onPressed 有 if/else 分支 → 两个分支是否都有测试？
-        只测一个分支 → `TEST_BRANCH_MISSING`
+    LLM Agent 同时读取**每个测试文件 + 其对应的被测代码文件 + B2 的 _Acceptance_ 条件**，
+    以资深 QA 工程师的视角回答三个问题：
 
-    **TQ2: 断言强度**（不是"页面有东西"而是"有正确的东西"）
-      检查 expect 断言：
-      - `expect(find.byType(ListView), findsOneWidget)` → 弱断言（只证存在）
-      - `expect(find.text(specificData), findsOneWidget)` → 强断言（证明数据正确）
-      - B5 测试的断言应该对应 B2 的 _Acceptance_ 条件
-      - Acceptance 说"返回 status=active"但测试没验证 → `TEST_ASSERTION_WEAK`
+    **问题 1: "这个测试真的在测功能吗？"**
+      LLM 对比测试代码和被测代码，判断：
+      - 测试是否触发了被测代码的**核心行为**（API 调用/状态变更/页面导航）？
+        还是只验证了 UI 元素存在（渲染测试）？
+      - 被测代码有条件分支（if/else/switch）→ 测试是否覆盖了主要分支？
+        只测 happy path 不测 error path → 测试有盲区
+      - 被测代码有副作用（网络请求/数据库写入/导航跳转）→ 测试是否验证了副作用发生？
+        只 mock 掉副作用不验证 → 测试在自欺欺人
 
-    **TQ3: 导航闭环**（不是"路由存在"而是"用户可达"）
-      读路由表 + 所有页面代码：
-      - 每个注册的路由是否在某个页面的 onTap/onPressed 中被 push/go？
-      - 路由存在但无 UI 入口 → `TEST_DEAD_ROUTE`（页面死了用户到不了）
+    **问题 2: "测试断言验证的是正确的东西吗？"**
+      LLM 对比测试的 assert/expect 和 B2 的 _Acceptance_ 条件：
+      - Acceptance 说"返回 X 且 Y 字段 = Z"→ 测试是否验证了 X **和** Y=Z？
+        只验证状态码不验证返回数据 → 断言太弱
+      - 前端测试只检查"页面有数据"还是检查"页面显示的是正确的数据"？
+        `expect(list.length > 0)` vs `expect(list.contains(specificItem))` → 前者无意义
 
-    **TQ4: i18n 实际使用**（不是"key 数量"而是"代码中有没有硬编码"）
-      grep 所有前端代码中的字符串字面量：
-      - `Text('...')` 或 `'...'` 中包含用户可见文本（排除 API 路径/变量名）→ `TEST_HARDCODED_STRING`
-      - 检查语言切换是否有测试：在 Locale('en') 下渲染 → 验证英文文本出现
+    **问题 3: "用户旅程中有死角吗？"**
+      LLM 读取路由/导航配置 + 所有页面代码：
+      - 是否有注册了但用户无法到达的页面？（路由存在但无 UI 入口）
+      - 是否有用户可见文本没有经过 i18n 处理？（硬编码字符串）
+      - 是否有按钮/链接点击后无响应？（onPressed 为空或条件分支遗漏）
 
-    **TQ5: Acceptance 对齐**（不是"测试存在"而是"测试验证了 Acceptance"）
-      读 B2 任务的 _Acceptance_ 条件 + 对应的 B5 测试代码：
-      - 每条 Acceptance 条件是否在测试中有对应的 expect 断言？
-      - Acceptance 说"POST /sessions → 200, data.status=in_progress"
-        但测试只 expect(response.statusCode, 200) 不检查 data.status → `TEST_ACCEPTANCE_PARTIAL`
+    **LLM 自主扩展**：以上三个问题是审查方向，不是穷举。LLM 根据具体项目的技术栈和业务逻辑，
+    自主识别其他测试质量问题（如：异步操作未 await、mock 数据和真实 schema 不一致、
+    测试间共享状态导致顺序依赖等）。
 
-    **结果处理**：
-    - `TEST_NO_INTERACTION` / `TEST_BRANCH_MISSING` → CRITICAL → 生成 B-TEST-FIX 任务
-    - `TEST_ASSERTION_WEAK` / `TEST_ACCEPTANCE_PARTIAL` → WARNING → 记录
-    - `TEST_DEAD_ROUTE` → CRITICAL → 生成 B-NAV-FIX 任务（补导航入口）
-    - `TEST_HARDCODED_STRING` → WARNING → 生成 B-I18N-FIX 任务
+    **结果分级**（LLM 判断严重度）：
+    - CRITICAL — 测试声称覆盖但实际未触发核心行为（假覆盖）→ 生成 B-TEST-FIX 任务
+    - HIGH — Acceptance 条件在测试中只部分验证 → 生成 B-TEST-FIX 任务
+    - WARNING — 断言可以更强、分支可以更全 → 记录到 build-log
+    - 同时发现的**非测试问题**（死路由/硬编码字符串/按钮无响应）→ 生成对应 B-FIX 任务
 
   abstraction_check（仅 B2 / B3 Round 触发，B0/B1/B4/B5 跳过）:
     检查 shared-utilities-plan.json 是否存在（不存在则跳过整个 check）
