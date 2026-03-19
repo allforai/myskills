@@ -493,6 +493,50 @@ Step 3: Round 质量检查（三路并行）
           - 严重问题 (HIGH/CRITICAL) → 自动生成 B-FIX 修复任务
     全部完成 → 聚合结果
 
+  **test_quality_check（仅 B5 Round 触发）**:
+    > 194 个测试全 PASS 但 3 个明显 bug 漏了——因为测试只验证"有没有"不验证"对不对"。
+    > TQ Agent 读测试代码 + 被测代码 → 判断"测试是否真正验证了功能"。
+
+    Agent(test-quality): 并行于 lint/test/security，**仅在 B5 Round 触发**。
+
+    LLM Agent 对本 Round 每个 B5 测试文件执行：
+
+    **TQ1: 交互验证**（不是"存在"而是"行为"）
+      读测试代码，检查：
+      - 每个被测按钮/表单是否在 test 中被 `tap()`/`enterText()`/`submit()`？
+      - 只 `find.byType(Button)` 不 `tester.tap()` → `TEST_NO_INTERACTION`
+      - 按钮的 onPressed 有 if/else 分支 → 两个分支是否都有测试？
+        只测一个分支 → `TEST_BRANCH_MISSING`
+
+    **TQ2: 断言强度**（不是"页面有东西"而是"有正确的东西"）
+      检查 expect 断言：
+      - `expect(find.byType(ListView), findsOneWidget)` → 弱断言（只证存在）
+      - `expect(find.text(specificData), findsOneWidget)` → 强断言（证明数据正确）
+      - B5 测试的断言应该对应 B2 的 _Acceptance_ 条件
+      - Acceptance 说"返回 status=active"但测试没验证 → `TEST_ASSERTION_WEAK`
+
+    **TQ3: 导航闭环**（不是"路由存在"而是"用户可达"）
+      读路由表 + 所有页面代码：
+      - 每个注册的路由是否在某个页面的 onTap/onPressed 中被 push/go？
+      - 路由存在但无 UI 入口 → `TEST_DEAD_ROUTE`（页面死了用户到不了）
+
+    **TQ4: i18n 实际使用**（不是"key 数量"而是"代码中有没有硬编码"）
+      grep 所有前端代码中的字符串字面量：
+      - `Text('...')` 或 `'...'` 中包含用户可见文本（排除 API 路径/变量名）→ `TEST_HARDCODED_STRING`
+      - 检查语言切换是否有测试：在 Locale('en') 下渲染 → 验证英文文本出现
+
+    **TQ5: Acceptance 对齐**（不是"测试存在"而是"测试验证了 Acceptance"）
+      读 B2 任务的 _Acceptance_ 条件 + 对应的 B5 测试代码：
+      - 每条 Acceptance 条件是否在测试中有对应的 expect 断言？
+      - Acceptance 说"POST /sessions → 200, data.status=in_progress"
+        但测试只 expect(response.statusCode, 200) 不检查 data.status → `TEST_ACCEPTANCE_PARTIAL`
+
+    **结果处理**：
+    - `TEST_NO_INTERACTION` / `TEST_BRANCH_MISSING` → CRITICAL → 生成 B-TEST-FIX 任务
+    - `TEST_ASSERTION_WEAK` / `TEST_ACCEPTANCE_PARTIAL` → WARNING → 记录
+    - `TEST_DEAD_ROUTE` → CRITICAL → 生成 B-NAV-FIX 任务（补导航入口）
+    - `TEST_HARDCODED_STRING` → WARNING → 生成 B-I18N-FIX 任务
+
   abstraction_check（仅 B2 / B3 Round 触发，B0/B1/B4/B5 跳过）:
     检查 shared-utilities-plan.json 是否存在（不存在则跳过整个 check）
     扫描本 Round 的 files_modified:
