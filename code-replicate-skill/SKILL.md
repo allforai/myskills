@@ -46,6 +46,7 @@ Code Replicate 将已有代码库逆向解构为标准 `.allforai/` 产物，直
 | `skills/cr-frontend.md` | 前端分析视角：页面 / 组件 / 状态 / 交互 |
 | `skills/cr-fullstack.md` | 全栈：双栈分析 + 交叉验证 + 基础设施扫描 |
 | `skills/cr-module.md` | 模块：依赖边界扫描 + 外部接口记录 |
+| `skills/cr-fidelity.md` | 还原度验证：源码 vs 目标代码多维对比 + 闭环修复 |
 
 ## 输出目录
 
@@ -57,13 +58,17 @@ Code Replicate 将已有代码库逆向解构为标准 `.allforai/` 产物，直
 ├── use-case/             ← use-case-tree, use-case-report
 └── code-replicate/       ← replicate-config, source-summary,
                             discovery-profile, extraction-plan,
-                            stack-mapping, replicate-report
+                            stack-mapping, replicate-report,
+                            fidelity-report
 ```
 
 ## 工作流衔接
 
 ```
-/code-replicate → /project-setup → /design-to-spec → /task-execute
+/code-replicate → /project-setup → /design-to-spec → /task-execute → /cr-fidelity
+                                                                         ↓
+                                                               达标(≥90) → /product-verify
+                                                               不达标 → 分析→修复→重测闭环
 ```
 
 ## 文档
