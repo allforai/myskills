@@ -1,6 +1,6 @@
 # dev-forge — 开发锻造套件
 
-**版本：v5.8.1**
+**版本：v5.9.1**
 
 Claude Code 插件，从产品设计产物到可运行项目的全流程自动化锻造。LLM 驱动的 Forge-Verify-Loop (4D/6V/XV) 闭环架构。
 

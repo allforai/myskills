@@ -81,7 +81,7 @@ cd ~/Documents/myskills/product-design-skill/mcp-ai-gateway
 | `/ui-design` | UI 设计 |
 | `/design-audit` | 设计审计 |
 
-### Dev Forge Suite (v5.8.1)
+### Dev Forge Suite (v5.9.1)
 | 命令 | 功能 |
 |------|------|
 | `/project-forge` | 项目锻造全流程 |

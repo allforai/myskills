@@ -151,7 +151,7 @@ QA 层       deadhunt          死链→CRUD完整性→幽灵功能→字段一
 
 `product-concept / product-map / journey-emotion / experience-map / interaction-gate / use-case / feature-gap / feature-prune / ui-design / design-audit`
 
-### dev-forge (v5.8.1)
+### dev-forge (v5.9.1)
 
 8 个技能，覆盖从设计规格到验收的完整开发链路：
 

@@ -22,7 +22,7 @@
     },
     {
       "name": "dev-forge",
-      "version": "5.8.1",
+      "version": "5.9.1",
       "source": "./dev-forge-skill/",
       "description": "Development forge: project-setup, design-to-spec, project-scaffold, task-execute, e2e-verify, seed-forge, product-verify. 开发锻造套件：项目引导、设计转规格、脚手架生成、任务执行、跨端验证、种子数据锻造、产品验收。"
     },
