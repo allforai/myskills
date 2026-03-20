@@ -113,23 +113,21 @@ EOF
 | `/feature-prune` | 功能优先级评估 | product-map | prune-report.json |
 | `/design-audit` | 设计审计 | 所有设计产物 | audit-report.json |
 
-### Dev Forge Suite (7 个)
+### Dev Forge Suite (6 个)
 
 | 命令 | 功能 | 输入 | 输出 |
 |------|------|------|------|
 | `/project-setup` | 项目结构设计 | product-map | project-manifest.json |
 | `/design-to-spec` | 设计转技术规格 | product-map + project-manifest | requirements.md + design.md + tasks.md |
-| `/project-scaffold` | 生成代码脚手架 | design-to-spec | 实际代码文件 |
 | `/task-execute` | 执行编码任务 | tasks.md | 代码实现 |
 | `/seed-forge` | 生成演示数据 | product-map + 代码 | 种子数据 |
 | `/product-verify` | 产品验收验证 | product-map + 代码 | verify-report.json |
-| `/e2e-verify` | E2E 测试验证 | 运行中的应用 | e2e-report.json |
+| `/testforge` | 测试锻造 | 代码 + 上游设计产物 | testforge-analysis.json |
 
-### QA & Architecture (2 个)
+### QA & Architecture (1 个)
 
 | 命令 | 功能 | 输出 |
 |------|------|------|
-| `/deadhunt` | 死链猎杀 + 产品完整性验证 | deadhunt-report.json |
 | `/code-tuner` | 代码架构质量分析 | tuner-report.json (含评分 0-100) |
 
 ---
@@ -216,16 +214,13 @@ your-project/
 # 6. 设计转规格
 /design-to-spec
 
-# 7. 生成代码脚手架
-/project-scaffold
-
-# 8. 开始编码实现
+# 7. 开始编码实现
 /task-execute
 
-# 9. 生成演示数据
+# 8. 生成演示数据
 /seed-forge
 
-# 10. 产品验收
+# 9. 产品验收
 /product-verify
 ```
 

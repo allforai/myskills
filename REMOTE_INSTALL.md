@@ -45,7 +45,7 @@ git clone https://github.com/allforai/myskills.git ~/.opencode/skills/myskills
 cd any-new-project
 /product-map          # 直接使用，无需配置
 /design-to-spec       # 直接使用，无需配置
-/project-scaffold     # 直接使用，无需配置
+/task-execute         # 直接使用，无需配置
 ```
 
 ---
@@ -85,7 +85,7 @@ cd any-new-project
 ```json
 {
   "skills": {
-    "disable": ["deadhunt", "code-tuner"]
+    "disable": ["code-tuner", "ui-forge"]
   }
 }
 ```
@@ -153,23 +153,21 @@ git pull origin main
 | `/feature-prune` | 功能优先级评估 |
 | `/design-audit` | 设计审计 |
 
-### Dev Forge Suite (7 个)
+### Dev Forge Suite (6 个)
 
 | 命令 | 功能 |
 |------|------|
 | `/project-setup` | 项目结构设计 |
 | `/design-to-spec` | 设计转技术规格 |
-| `/project-scaffold` | 生成代码脚手架 |
 | `/task-execute` | 执行编码任务 |
 | `/seed-forge` | 生成演示数据 |
 | `/product-verify` | 产品验收验证 |
-| `/e2e-verify` | E2E 测试验证 |
+| `/testforge` | 测试锻造 |
 
-### QA & Architecture (2 个)
+### QA & Architecture (1 个)
 
 | 命令 | 功能 |
 |------|------|
-| `/deadhunt` | 死链猎杀 + 产品完整性验证 |
 | `/code-tuner` | 代码架构质量分析 |
 
 ---

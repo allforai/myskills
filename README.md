@@ -88,7 +88,7 @@ cp ~/.opencode/skills/myskills/.opencode.template your-project/.opencode/config.
 # 3) 开始使用
 /product-map              # 产品功能地图
 /design-to-spec           # 设计转规格
-/project-scaffold         # 生成代码脚手架
+/task-execute             # 执行开发任务
 /ui-forge                 # 功能完成后做 UI 增强 / 设计还原
 ```
 
@@ -126,7 +126,7 @@ claude plugin add /path/to/myskills/code-tuner-skill
 |---|---|---|
 | 梳理产品功能、角色、任务 | product-design | `/product-map` |
 | 生成高质量测试数据并验收实现 | dev-forge | `/seed-forge` / `/product-verify` |
-| 查死链、CRUD 缺口、幽灵功能 | deadhunt | `/deadhunt` |
+| 做产品验收与测试锻造 | dev-forge | `/product-verify` / `/testforge` |
 | 分析后端架构质量并给重构任务 | code-tuner | `/code-tuner full` |
 | 一次跑完整链路 | product-design full 模式 | `/product-design full` |
 
@@ -139,7 +139,7 @@ claude plugin add /path/to/myskills/code-tuner-skill
 ─────────  ────────────────  ─────────────────────────────────────────────
 产品层      product-design    概念→定义→交互→视觉→用例→查漏→剪枝→审计
 开发层      dev-forge         种子数据锻造→产品验收（seed-forge / product-verify）
-QA 层       deadhunt          死链→CRUD完整性→幽灵功能→字段一致性
+QA 层       dev-forge         产品验收→测试锻造→完整性扫描
 架构层      code-tuner        合规→重复→抽象→评分
 ```
 
@@ -155,11 +155,7 @@ QA 层       deadhunt          死链→CRUD完整性→幽灵功能→字段一
 
 8 个技能，覆盖从设计规格到验收的完整开发链路：
 
-`design-to-spec`（设计转实现规格）→ `project-setup`（环境初始化）→ `project-scaffold`（代码骨架生成）→ `task-execute`（任务执行）→ `e2e-verify`（端到端验证）→ `seed-forge`（种子数据锻造）→ `product-verify`（静态+动态验收）→ `shared-utilities`（公共工具）
-
-### deadhunt (merged into dev-forge)
-
-死链猎杀能力已并入 `dev-forge` 主流程与相关命令体系。
+`design-to-spec`（设计转实现规格）→ `project-setup`（环境初始化）→ `task-execute`（任务执行）→ `seed-forge`（种子数据锻造）→ `product-verify`（静态+动态验收）→ `testforge`（测试锻造）→ `shared-utilities`（公共工具）
 
 ### code-tuner (v1.1.1)
 
@@ -185,12 +181,11 @@ product-design 产出 → .allforai/product-map/
 
 dev-forge 产出     → .allforai/seed-forge/
                      .allforai/product-verify/
-
-deadhunt 产出      → .allforai/deadhunt/
-code-tuner 产出    → .allforai/code-tuner/
+                     .allforai/deadhunt/
+                     code-tuner 产出    → .allforai/code-tuner/
 ```
 
-> 建议：先跑 product-design，再跑 dev-forge / deadhunt / code-tuner。
+> 建议：先跑 product-design，再跑 dev-forge / code-tuner。
 
 ---
 
