@@ -687,6 +687,21 @@ dimension Logic > Interface > Data > UX（业务规则最先）
    | Linux | 原生桌面 | `flutter test integration_test/ -d linux` | _test.dart |
    | Android/iOS 降级 | 桌面原生 + 手机分辨率 | `flutter test integration_test/ -d {当前OS桌面设备}` | _test.dart（标记 DESKTOP_SUBSTITUTE） |
 
+3.5 **测试深度要求（Path C 继承 Path B 的原则）**
+
+   > Path C 和 Path B 的区别只是**测试工具不同**（Playwright vs Flutter integration_test vs Maestro），
+   > **测试深度要求相同**。不能因为换了工具就降低标准。
+
+   Platform UI 测试必须满足以下深度（与 Path B E2E Chain 一致）：
+
+   - **真实认证**：测试必须走真实登录流程（输入凭证→提交→验证跳转），不能跳过认证直接进入页面
+   - **数据加载验证**：登录后的页面必须验证**真实 API 数据出现在界面上**（强断言），不能只验证空壳 UI 渲染
+   - **核心业务流走通**：至少覆盖一条完整业务链（如：登录→看帖子列表→进入帖子→看到楼层回帖→发帖→验证新帖出现）
+   - **三层级**：进程（app 不崩溃）+ 连接（API 数据到达）+ 数据（用户看到正确内容）
+
+   如果认证服务（如 Supabase）在测试环境不可用，必须通过后端 API 登录获取 token 后注入，
+   **不能跳过登录说"login will likely fail"然后只测空壳**。
+
 4. 跨平台差异记录
    同一场景在 A 平台通过但 B 平台失败 → 标记为 PLATFORM_SPECIFIC_BUG
    场景示例：Web 上按钮可点击但 Android 上被键盘遮挡
