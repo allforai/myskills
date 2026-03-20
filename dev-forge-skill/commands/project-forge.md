@@ -48,7 +48,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 - Phase 3 (`design-to-spec`) 不得只生成“页面 + API + 表单”任务
 - Phase 4 (`task-execute`) 不得把“页面能开 + API 通”当作完成
-- Phase 5（验证闭环）需要关注用户端是否仍像概念 demo，而不是成熟产品
+- Phase 5（验证闭环）需要优先拦截明显的运行时空壳、接缝断裂和 demo 级假完成；完整的用户端成熟度验收仍由 `product-verify` / `testforge` 承担
 
 这不是新增分叉流水线，而是对同一条主流程施加不同的完成标准。
 

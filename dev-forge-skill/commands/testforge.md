@@ -523,12 +523,14 @@ LLM 读业务流和已有 E2E 链，推导跨站异常场景：
 >
 > **Step 4.0 的产出是后续所有测试的前提。接缝不对，测试全是假绿。**
 
-若 `experience_priority.mode = consumer | mixed`，Step 4 之后生成/修复的测试不能只验证“功能做了”，还必须优先覆盖用户端成熟度节点：
+若 `experience_priority.mode = consumer | mixed`，**Step 4 后续生成/修复测试时** 不能只验证“功能做了”，还必须优先覆盖用户端成熟度节点：
 
 - 首页主线可发现
 - 核心状态可感知
 - 完成后知道下一步
 - 持续关系链路不空壳
+
+> 这不是 Step 4.0 静态接缝预检本身的职责。Step 4.0 只负责发现接缝层假绿；上述节点用于指导 Step 4 后续测试锻造优先级。
 
 并行执行 2 个 Agent：
   Agent 1: 用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/commands/deadhunt.md`
