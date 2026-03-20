@@ -74,40 +74,105 @@ Do you need the API interface contract preserved exactly?
 
 All levels produce the same standard allforai artifacts. Fidelity controls which fields are populated.
 
+### product-map/product-map.json
+
+| Field | interface | functional | architecture | exact |
+|-------|-----------|------------|--------------|-------|
+| experience_priority | Y | Y | Y | Y |
+| summary | Y | Y | Y | Y |
+| roles, tasks (embedded) | Y | Y | Y | Y |
+| conflicts | - | - | Y | Y |
+| constraints | - | - | - | Y |
+
+`experience_priority` is **always generated** — dev-forge reads `mode` to control consumer maturity checks across design-to-spec, task-execute, and product-verify.
+
 ### product-map/task-inventory.json
 
 | Field | interface | functional | architecture | exact |
 |-------|-----------|------------|--------------|-------|
-| id, name, owner_role | Y | Y | Y | Y |
-| inputs, outputs | Y | Y | Y | Y |
+| id, name, owner_role, category | Y | Y | Y | Y |
+| inputs (structured), outputs (structured) | Y | Y | Y | Y |
+| value, protection_level | Y | Y | Y | Y |
 | main_flow | - | Y | Y | Y |
-| exceptions | - | Y | Y | Y |
-| rules | - | Y | Y | Y |
+| exceptions, rules | - | Y | Y | Y |
 | acceptance_criteria | - | Y | Y | Y |
+| config_items, audit | - | Y | Y | Y |
 | module, prerequisites | - | - | Y | Y |
 | cross_dept | - | - | Y | Y |
 | flags (bug_replicate, edge_case) | - | - | - | Y |
 
+**New fields (v2.1+):**
+- `protection_level` — `core` / `defensible` / `nice_to_have` — dev-forge XV audit routing depends on this
+- `inputs` — structured object: `{fields: [], defaults: {}}`
+- `outputs` — structured object: `{states: [], messages: [], records: [], notifications: []}`
+- `audit` — `{recorded_actions: [], fields_logged: []}`
+- `config_items` — array of `{param, current, config_level}`
+- `value` — business value description
+
 ### product-map/role-profiles.json
 
-All fidelity levels produce role-profiles. `interface` includes basic role names and permissions. `functional+` adds detailed permission matrices and role hierarchies.
+| Field | interface | functional | architecture | exact |
+|-------|-----------|------------|--------------|-------|
+| id, name, audience_type | Y | Y | Y | Y |
+| permission_boundary, kpi | Y | Y | Y | Y |
+| operation_profile | - | Y | Y | Y |
+
+**New fields (v2.1+):**
+- `audience_type` — `consumer` / `professional` — dev-forge consumer_apps identification depends on this
+- `operation_profile` — `{frequency, density, screen_granularity, high_frequency_tasks, design_principle}` (optional, inferred from source code patterns)
 
 ### product-map/business-flows.json
 
 | Field | interface | functional | architecture | exact |
 |-------|-----------|------------|--------------|-------|
-| flow_id, name, steps | - | Y | Y | Y |
-| trigger, outcome | - | Y | Y | Y |
-| handoff detail (system, role, data) | - | - | Y | Y |
+| flow_id, name, description | - | Y | Y | Y |
+| nodes (task_ref, role, seq) | - | Y | Y | Y |
+| node handoff (mechanism, data) | - | - | Y | Y |
+| systems, confirmed, gap_count | - | Y | Y | Y |
+
+**New fields (v2.1+):**
+- `systems` — `{current, linked[]}` — identifies system boundaries
+- `description` — 2-3 sentence flow description
+- `confirmed` — boolean user confirmation flag
+- `gap_count` — count of gap nodes per flow
+- `node.handoff` — `{mechanism, data}` or null for cross-role transitions
 
 ### use-case/use-case-tree.json
 
 | Field | interface | functional | architecture | exact |
 |-------|-----------|------------|--------------|-------|
-| use_case_id, name, actor | - | Y | Y | Y |
-| preconditions, main_flow | - | Y | Y | Y |
-| alternative_flows | - | Y | Y | Y |
-| exception_flows | - | - | Y | Y |
+| id, role_id, task_id, type | - | Y | Y | Y |
+| given, when, then (array) | - | Y | Y | Y |
+| functional_area_id/name | - | Y | Y | Y |
+| innovation_use_case | - | - | Y | Y |
+
+**Format change (v2.5.0+):** Output is now a **flat `use_cases` array** (not nested tree). Each entry has explicit `role_id`, `functional_area_id`, `functional_area_name`, `task_id`, `task_name` fields. `then` is always an array of assertion strings.
+
+**Type enum expanded:** `happy_path` / `exception` / `boundary` / `validation` / `journey_guidance` / `result_visibility` / `continuity` / `entry_clarity` / `innovation_mechanism` / `innovation_boundary` / `state_transition` / `state_timeout` / `state_compensation`
+
+### experience-map/experience-map.json (frontend/fullstack stub)
+
+| Field | interface | functional | architecture | exact |
+|-------|-----------|------------|--------------|-------|
+| operation_lines > nodes > screens | Y (stub) | Y (stub) | Y (stub) | Y (stub) |
+| components[].render_as | Y | Y | Y | Y |
+| layout_type, layout_description | Y | Y | Y | Y |
+| states (structured dict) | Y | Y | Y | Y |
+| data_fields (structured objects) | Y | Y | Y | Y |
+| emotion_design | - | - | - | - |
+| view_modes | - | - | - | - |
+| screen_index | Y | Y | Y | Y |
+
+**New fields (v2.1+):**
+- `components[]` — structured array with `type`, `purpose`, `behavior`, `data_source`, `render_as` (12-value enum)
+- `render_as` — `data_table` / `input_form` / `key_value` / `bar_chart` / `search_filter` / `action_bar` / `tab_nav` / `media_grid` / `card_grid` / `tree_view` / `timeline` / `text_block`
+- `layout_type` + `layout_description` — semantic layout names (not generic)
+- `states` — structured dict: `{empty, loading, error, success, ...business_states}`
+- `data_fields[]` — structured objects: `{name, label, type, input_widget, required}`
+- `flow_context` — `{prev, next}` screen navigation
+- `screen_index` — top-level quick lookup index
+
+Note: `emotion_design` and `view_modes` are **not generated** by code-replicate (design-side fields). LLM fragments may include them if detected in source code; otherwise they are left as null.
 
 ### product-map/constraints.json
 

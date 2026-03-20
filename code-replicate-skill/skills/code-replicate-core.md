@@ -5,7 +5,7 @@ description: >
   loaded by cr-backend.md, cr-frontend.md, cr-fullstack.md, or cr-module.md.
 ---
 
-# Code Replicate Core Protocol v2.0
+# Code Replicate Core Protocol v2.1
 
 ## Overview
 
@@ -41,14 +41,47 @@ Code Replicate 是逆向工程桥梁：读取已有代码库，生成标准 `.al
 
 ### Phase 2: Discovery + Confirm
 
-**Step 2a** — 运行 `cr_discover.py` → source-summary.json 骨架
-- 自动识别：语言、框架、目录结构、模块边界、入口文件
+**Step 2a-pre** — LLM 生成 `discovery-profile.json`（项目专属发现规则）
+
+LLM 读取以下信息（context 极小，~2-5KB）：
+1. 项目根目录文件列表（`ls -la`，1 层）
+2. 关键清单文件内容（package.json / .sln / go.mod / Cargo.toml 等，只读顶层）
+3. 前 2 层目录树（`find . -maxdepth 2 -type d`）
+
+基于以上信息，LLM 生成 `discovery-profile.json` 写入 `.allforai/code-replicate/`：
+
+```json
+{
+  "source_roots": ["packages", "src"],
+  "skip_dirs": ["node_modules", ".git", "dist", "build", "__pycache__"],
+  "code_extensions": [".ts", ".tsx", ".cs"],
+  "entry_patterns": ["main", "index", "app", "program", "startup"],
+  "module_boundaries": ["package.json", ".csproj"],
+  "module_paths": [
+    {"path": "src/ERP.Modules.Sales", "atomic": true},
+    {"path": "src/ERP.Modules.Inventory", "atomic": true},
+    {"path": "packages/api/src/modules/user", "atomic": true},
+    {"path": "packages/api/src/modules/product", "atomic": true}
+  ],
+  "mega_threshold": 50
+}
+```
+
+**生成规则**：
+- `module_paths` 是**最高优先级** — LLM 直接列出所有业务模块的相对路径
+- `module_boundaries` 标记项目清单文件 — 含此文件的目录是原子模块，不可按大小拆分
+- `source_roots` / `skip_dirs` / `code_extensions` 只在 `module_paths` 为空时作为 fallback
+- LLM **必须**基于对项目结构的理解生成，不可套用模板
+
+**Step 2a** — 运行 `cr_discover.py --profile discovery-profile.json` → source-summary.json 骨架
+- 优先使用 profile 中的 `module_paths`（LLM 直接指定的模块列表）
+- 无 profile 时 fallback 到内置启发式（SOURCE_ROOTS + 文件数阈值）
 - 输出包含 modules 列表（每个含 path, language, key_files, file_count）
 
 **Step 2b** — LLM 逐模块摘要（读 key_files → responsibility / interfaces / entities）
 - 每个模块读取 cr_discover.py 标记的 key_files（入口、路由、模型、配置）
 - 输出：模块 responsibility 单句描述 + 暴露 interfaces 列表 + 核心 entities
-- 大模块（>50 文件）只分析 key_files，不全量读取
+- 大模块（>50 文件）优先分析 key_files，再根据目录结构判断是否需要深入扫描子目录
 > 分析原则详见 ${CLAUDE_PLUGIN_ROOT}/docs/analysis-principles.md
 
 **Step 2c** — LLM 全局补充（cross_cutting + 隐含依赖 + 架构风格）
@@ -71,22 +104,74 @@ Code Replicate 是逆向工程桥梁：读取已有代码库，生成标准 `.al
 
 ### Phase 3: Generate（静默执行）
 
-按顺序，每步：LLM 分模块生成 JSON 片段 → 脚本合并 → 标准产物。
+**Step 3-pre** — LLM 生成 `extraction-plan.json`（项目专属提取规则）
+
+LLM 读取 source-summary.json（已有模块清单、技术栈、key_files），针对**当前项目**生成提取计划，写入 `.allforai/code-replicate/extraction-plan.json`：
+
+```json
+{
+  "role_sources": [
+    {"module": "M003", "file": "internal/middleware/auth.go", "how": "RoleType enum 定义了 4 种角色"},
+    {"module": "M003", "file": "config/permissions.yaml", "how": "RBAC 权限矩阵"}
+  ],
+  "task_sources": [
+    {"module": "M001", "file": "cmd/api/handlers/*.go", "how": "每个导出 handler 函数 = 一个 task"},
+    {"module": "M005", "file": "internal/cron/jobs.go", "how": "每个 cron job = 一个 task"}
+  ],
+  "flow_sources": [
+    {"module": "M002", "file": "internal/service/order_service.go", "how": "CreateOrder 方法调用链 = 一个完整 flow"}
+  ],
+  "screen_sources": [
+    {"module": "M010", "file": "src/app/*/page.tsx", "how": "每个 page.tsx = 一个 screen，同目录下 layout.tsx 提供布局信息"}
+  ],
+  "usecase_sources": [
+    {"module": "M001", "file": "cmd/api/handlers/*.go", "how": "handler 中的 if/switch 分支 = boundary/exception use case"}
+  ],
+  "constraint_sources": [
+    {"module": "M004", "file": "internal/model/*.go", "how": "struct tag 中的 validate 标签 = 输入约束"}
+  ],
+  "cross_cutting": [
+    {"concern": "认证", "files": ["internal/middleware/auth.go"], "applies_to": ["M001", "M002"]},
+    {"concern": "日志", "files": ["internal/logger/logger.go"], "applies_to": "all"}
+  ]
+}
+```
+
+**生成原则**：
+- LLM **必须**读 source-summary.json 中每个模块的 key_files 才能生成
+- 每个 source 条目的 `how` 字段描述**该项目**的具体提取方式，不套用框架模板
+- 如果 source-summary 模块数多（>20），可以按类聚合（`"file": "internal/service/*.go"`）
+- extraction-plan 决定 Phase 3 每个 Step 读哪些文件、用什么逻辑提取，替代 specialist skill 中的硬编码映射表
+
+---
+
+按顺序，每步：LLM 按 extraction-plan 读指定文件 → 生成 JSON 片段 → 脚本合并 → 标准产物。
 
 **Step 3.1** — role-profiles → `cr_merge_roles.py` → `product-map/role-profiles.json`
+- LLM 按 extraction-plan.role_sources 读指定文件提取角色
+- **LLM 片段必须输出 `audience_type`**（consumer / professional）— 基于角色在源码中的实际行为判断，不依赖名称关键词
+- 可选：`operation_profile`（frequency/density/screen_granularity）
 
 **Step 3.1.5** — experience-map stub（仅 frontend/fullstack）→ `cr_merge_screens.py` → `experience-map/experience-map.json`
+- LLM 按 extraction-plan.screen_sources 读指定页面文件提取屏幕信息
+- **LLM 片段必须输出每个 component 的 `render_as`**（12 值枚举）— 基于组件在页面中的实际用途判断
+- **LLM 片段应输出 `layout_type`**（语义化布局名，如 auth_card、priority_queue，不用通用名如 "form"）
 
 **Step 3.2** — task-inventory（两轮）→ `cr_merge_tasks.py` → `product-map/task-inventory.json`
-- 第一轮：骨架（id, title, module, type, role_id）
+- LLM 按 extraction-plan.task_sources 读指定文件提取任务
+- 第一轮：骨架（id, title, module, type, role_id, category, protection_level）
 - 第二轮：深层字段（acceptance_criteria, api_endpoint, prerequisites — 仅 functional+）
+- **LLM 片段必须输出 `protection_level`**（core / defensible / nice_to_have）— 基于源码中该功能的业务重要性判断
+- **LLM 片段必须输出结构化 `inputs`/`outputs`** — `inputs: {fields: [], defaults: {}}`，`outputs: {states: [], messages: [], records: [], notifications: []}`
 
 **Step 3.3** — business-flows（functional+）→ `cr_merge_flows.py` → `product-map/business-flows.json`
-- 从源码控制器/路由追踪完整业务流程
+- LLM 按 extraction-plan.flow_sources 读指定文件追踪完整业务流程
 - 每个 flow 引用 task_id 列表（来自 Step 3.2 产物）
 
 **Step 3.4** — use-case-tree + report（functional+）→ `cr_merge_usecases.py` + `cr_gen_usecase_report.py`
-- use-case 按角色分组，引用 role_id 和 task_id
+- 输出为**扁平 `use_cases` 数组**（v2.5.0+），每条包含显式 role_id、task_id、functional_area_name
+- `then` 字段必须是**数组**（不是字符串）
+- type 枚举已扩展至 13 种（含 journey_guidance, state_transition 等）
 - report 由 gen 脚本从 JSON 自动生成，LLM 不直接写 Markdown
 
 **Step 3.5** — constraints（exact only）→ `cr_merge_constraints.py` → `product-map/constraints.json`
@@ -96,7 +181,8 @@ Code Replicate 是逆向工程桥梁：读取已有代码库，生成标准 `.al
 **Step 3.6** — 索引 + 汇总 → `cr_gen_indexes.py` + `cr_gen_product_map.py`
 - task-index.json：轻量索引供下游按需加载
 - flow-index.json：业务流索引
-- product-map.json：全局汇总（统计 + 元信息）
+- product-map.json：全局汇总（统计 + 元信息 + **experience_priority**）
+- `experience_priority` 从角色 audience_type 和任务分布自动推断 — dev-forge 全链路依赖此字段
 
 **生成顺序有依赖**：role-profiles → task-inventory → business-flows → use-case-tree → constraints。
 后续产物引用前序产物的 ID。
@@ -138,6 +224,10 @@ Code Replicate 是逆向工程桥梁：读取已有代码库，生成标准 `.al
 5. **标准产物路径** — task-inventory / business-flows / role-profiles → `product-map/`，use-case-tree → `use-case/`，CR 过程文件 → `code-replicate/`
 6. **片段文件不是最终产物** — fragments/ 下的临时 JSON 仅供 merge 脚本消费，不交给 dev-forge
 7. **业务意图优先** — 提取"做什么"，不复制"怎么做"；实现决策由目标生态填充
+8. **下游必填字段** — `experience_priority`（product-map）、`protection_level`（task）、`audience_type`（role）、`render_as`（component）必须生成，dev-forge 全链路依赖
+9. **结构化字段** — `inputs`/`outputs`/`audit` 必须使用对象格式（非简单数组），`then`（use-case）必须是数组
+10. **LLM 直出优先** — `audience_type`、`protection_level`、`render_as` 等语义字段必须由 LLM 在片段中直接输出（基于源码语义理解），脚本仅做 fallback 兜底。禁止依赖名称关键词模式匹配作为主要判断逻辑
+11. **extraction-plan 驱动** — Phase 3 的每个 Step 必须按 extraction-plan.json 中指定的文件和提取方式工作，不套用框架模板。extraction-plan 本身由 LLM 基于 source-summary 生成，确保适配任何技术栈和项目结构
 
 ---
 
@@ -147,9 +237,9 @@ Code Replicate 是逆向工程桥梁：读取已有代码库，生成标准 `.al
 
 | 级别 | 分析深度 | 产物输出 |
 |------|---------|---------|
-| interface | 只看入口层签名 | task-inventory(精简) + role-profiles |
-| functional | 读函数体，追踪逻辑 | 上 + business-flows + use-case-tree + task 字段补全 |
-| architecture | 额外分析模块依赖 | 上 + task 增加 module/prerequisites/cross_dept |
+| interface | 只看入口层签名 | task-inventory(精简) + role-profiles（含 audience_type）+ product-map（含 experience_priority） |
+| functional | 读函数体，追踪逻辑 | 上 + business-flows（含 systems/handoff）+ use-case-tree（扁平数组）+ task 结构化字段补全 |
+| architecture | 额外分析模块依赖 | 上 + task 增加 module/prerequisites/cross_dept + innovation_use_case |
 | exact | 额外标记 bug/约束 | 上 + constraints.json + task.flags |
 
 > 完整说明详见 ${CLAUDE_PLUGIN_ROOT}/docs/fidelity-guide.md
@@ -196,7 +286,7 @@ replicate-config.json 的 `progress` 字段追踪：`current_phase`, `current_st
 - `.allforai/use-case/`: use-case-tree.json, use-case-report.md
 
 **CR 专属过程文件**：
-- `.allforai/code-replicate/`: replicate-config.json, source-summary.json, stack-mapping.json, replicate-report.md
+- `.allforai/code-replicate/`: replicate-config.json, source-summary.json, discovery-profile.json, extraction-plan.json, stack-mapping.json, replicate-report.md
 - `.allforai/code-replicate/fragments/`: 中间片段（合并后可删除）
 
 ---
@@ -206,8 +296,8 @@ replicate-config.json 的 `progress` 字段追踪：`current_phase`, `current_st
 所有脚本位于 `${CLAUDE_PLUGIN_ROOT}/scripts/`：
 
 ```bash
-# Phase 2: Discovery
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/cr_discover.py <source_path> <output_path>
+# Phase 2: Discovery (with optional LLM-generated profile)
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/cr_discover.py <source_path> <output_path> [--profile <profile_path>]
 
 # Phase 3: Merge scripts
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/cr_merge_roles.py <base_path> <fragments_dir>
@@ -240,3 +330,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/cr_gen_report.py <base_path>
 - 每次 LLM 调用输出一个模块的 JSON 片段
 - 片段使用临时 ID（如 `TMP-001`），merge 脚本统一重编号
 - 跨模块引用使用 `$ref:module_name:tmp_id` 占位符，merge 脚本解析替换
+- **片段必须包含语义字段**（不可省略让脚本猜测）：
+  - role 片段：`audience_type`（consumer / professional）
+  - task 片段：`protection_level`（core / defensible / nice_to_have）、结构化 `inputs`/`outputs`
+  - screen 片段：每个 component 的 `render_as`（12 值枚举）、`layout_type`（语义名称）

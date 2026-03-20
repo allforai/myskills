@@ -21,28 +21,70 @@ from _common import (
 
 
 def _count_use_cases(uc_data):
-    """Count total use cases across all roles and features.
+    """Count total use cases.
 
-    Supports both tree formats:
-    - 4-layer: tree[].feature_areas[].tasks[].use_cases[]
-    - flat:    roles[].features[].use_cases[]
+    Supports formats:
+    - v2.5.0+ flat: use_cases[] (top-level array)
+    - 4-layer tree: tree[].feature_areas[].tasks[].use_cases[]
+    - flat roles:   roles[].features[].use_cases[]
     """
     if not uc_data:
         return 0
+    # v2.5.0+ flat format
+    flat = uc_data.get("use_cases")
+    if flat and isinstance(flat, list):
+        return len(flat)
+    # Legacy tree formats
     roles = ensure_list(uc_data, "tree", "roles")
     total = 0
     for role in roles:
         features = ensure_list(role, "feature_areas", "features")
         for feature in features:
-            # 4-layer: use cases nested under tasks
             tasks = ensure_list(feature, "tasks")
             if tasks:
                 for task in tasks:
                     total += len(ensure_list(task, "use_cases"))
             else:
-                # Flat: use cases directly under feature
                 total += len(ensure_list(feature, "use_cases"))
     return total
+
+
+def _coverage_warnings(module_count, file_count, task_count, role_count, flow_count):
+    """Detect suspiciously sparse extraction for large codebases.
+
+    Returns list of warning strings when extraction density is too low.
+    """
+    warnings = []
+
+    if file_count <= 0:
+        return warnings
+
+    # Heuristic: expect roughly 1 task per 10-30 code files
+    expected_tasks_low = file_count // 30
+    if expected_tasks_low > 20 and task_count < expected_tasks_low:
+        warnings.append(
+            f"⚠️ Low task density: {task_count} tasks extracted from {file_count} code files "
+            f"(expected ≥{expected_tasks_low}). Module discovery may have missed inner modules — "
+            f"consider re-running with `--from-phase 2` after verifying source-summary.json"
+        )
+
+    # Heuristic: expect roughly 1 role per 100-200 code files
+    expected_roles_low = max(2, file_count // 200)
+    if expected_roles_low > 5 and role_count < expected_roles_low:
+        warnings.append(
+            f"⚠️ Low role density: {role_count} roles extracted from {file_count} code files "
+            f"(expected ≥{expected_roles_low}). Auth/RBAC modules may not have been scanned"
+        )
+
+    # Heuristic: modules too few relative to files → likely mega-modules not split
+    if module_count > 0 and file_count / module_count > 200:
+        avg = file_count // module_count
+        warnings.append(
+            f"⚠️ Large average module size: {avg} files/module ({module_count} modules, {file_count} files). "
+            f"Inner sub-modules may have been merged — check source-summary.json for accuracy"
+        )
+
+    return warnings
 
 
 def generate_report(base_path):
@@ -106,11 +148,15 @@ def generate_report(base_path):
     lines.append(f"| Use Cases | use-case/use-case-tree.json | {uc_count} |")
     lines.append("")
 
+    # Coverage analysis
+    cov_warnings = _coverage_warnings(module_count, file_count, task_count, role_count, flow_count)
+
     # Warnings
     lines.append("## Warnings")
     lines.append("")
-    if warnings:
-        for w in warnings:
+    all_warnings = list(warnings) + cov_warnings
+    if all_warnings:
+        for w in all_warnings:
             lines.append(f"- {w}")
     else:
         lines.append("No warnings.")

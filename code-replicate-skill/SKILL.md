@@ -7,7 +7,7 @@ description: >
   exact (including bugs). Supports cross-stack migration.
 ---
 
-# Code Replicate v2.0 — 代码复刻插件
+# Code Replicate v2.1 — 代码复刻插件
 
 > 逆向工程桥梁层：已有代码 → 标准 `.allforai/` 产物 → dev-forge 流水线
 
@@ -30,8 +30,8 @@ Code Replicate 将已有代码库逆向解构为标准 `.allforai/` 产物，直
 
 | 等级 | 分析深度 | 标准产物输出 |
 |------|---------|-------------|
-| `interface` | 只看入口层签名 | task-inventory（精简）+ role-profiles |
-| `functional` | 读函数体，追踪逻辑 | 上 + business-flows + use-case-tree + task 字段补全 |
+| `interface` | 只看入口层签名 | task-inventory（精简）+ role-profiles（含 audience_type）+ product-map（含 experience_priority） |
+| `functional` | 读函数体，追踪逻辑 | 上 + business-flows（含 systems/handoff）+ use-case-tree（扁平数组）+ task 结构化字段 |
 | `architecture` | 额外分析模块依赖 | 上 + task 增加 module/prerequisites/cross_dept |
 | `exact` | 额外标记 bug/约束 | 上 + constraints.json + task.flags |
 
@@ -56,6 +56,7 @@ Code Replicate 将已有代码库逆向解构为标准 `.allforai/` 产物，直
 ├── experience-map/       ← experience-map.json（frontend/fullstack stub）
 ├── use-case/             ← use-case-tree, use-case-report
 └── code-replicate/       ← replicate-config, source-summary,
+                            discovery-profile, extraction-plan,
                             stack-mapping, replicate-report
 ```
 

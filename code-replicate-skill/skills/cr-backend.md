@@ -98,24 +98,31 @@ version: "1.0.0"
 
 ---
 
-## Phase 3 推断策略
+## Phase 3-pre: 生成 extraction-plan
 
-从后端源码推断标准产物时，按以下策略映射：
+LLM 读取 source-summary.json，基于对**当前后端项目**的理解，生成 extraction-plan.json：
 
-| 产物 | 从什么推断 |
-|------|-----------|
-| role-profiles | 认证/授权代码中的角色定义、权限检查、RBAC 配置。每个角色的权限范围→responsibilities，可访问端点→task 关联 |
-| task-inventory | 入口层的每个端点/命令 → 一个 task。参数→inputs，响应→outputs，错误处理→exceptions，中间件→prerequisites |
-| business-flows | 服务层的调用链 → flow。跨服务调用序列→主线步骤，中间件→横切流，事务边界→原子步骤组 |
-| use-case-tree | 入口层的条件分支→boundary，错误路径→exception，正常流→happy_path。HTTP 状态码 2xx→成功场景，4xx→边界，5xx→异常 |
-| constraints | 硬编码的业务规则→exact 模式约束。校验逻辑（长度/格式/范围）→输入约束，限流规则→性能约束，权限规则→安全约束 |
+- `role_sources`：哪些文件定义了角色/权限？（可能是 RBAC 配置、中间件、Decorator、Annotation...取决于项目）
+- `task_sources`：哪些文件定义了业务入口？（可能是 Controller、Handler、gRPC Service、CLI Command、Cron Job...取决于项目）
+- `flow_sources`：哪些文件包含业务编排逻辑？（可能是 Service 方法、Saga、Pipeline...取决于项目）
+- `usecase_sources`：哪些文件包含条件分支和错误处理？（同 task_sources 的深层分析）
+- `constraint_sources`：哪些文件包含校验规则和硬约束？（可能是 Validator、Schema、Middleware...取决于项目）
+- `cross_cutting`：跨模块关注点（认证、日志、错误处理）在哪些文件中？
 
-### 后端特有推断注意事项
+**禁止套用框架模板** — 必须从 source-summary 的实际模块结构、key_files 中推断。
 
-- **异步操作**：队列消费者和定时任务也是 task，不要遗漏
-- **隐式流程**：中间件链构成的隐式业务流（如：认证→限流→日志→处理→审计）需要显式记录
-- **数据约束**：数据库 Schema 中的约束（NOT NULL、UNIQUE、CHECK）是 constraints 的重要来源
-- **错误码体系**：错误码定义暗示了所有可能的异常场景，是 use-case exception 的补充来源
+## Phase 3: 按 extraction-plan 生成片段
+
+按 extraction-plan 中指定的文件和提取方式，逐模块生成 JSON 片段。
+
+### 后端分析要点
+
+以下是后端项目常见但**不一定存在**的模式。LLM 应在 extraction-plan 中标注本项目实际使用的模式，而非假设所有项目都有：
+
+- **异步操作**：队列消费者和定时任务可能是独立 task — 如果项目有异步机制，extraction-plan 中应标注
+- **隐式流程**：中间件链可能构成隐式业务流 — 如果项目使用中间件管道，extraction-plan.cross_cutting 中应记录
+- **数据约束**：数据库 Schema 约束可能是 constraints 来源 — 如果项目有 ORM/迁移脚本，extraction-plan.constraint_sources 中应指向
+- **错误码体系**：错误码定义可能暗示异常场景 — 如果项目有统一错误码，extraction-plan.usecase_sources 中应包含
 
 ---
 

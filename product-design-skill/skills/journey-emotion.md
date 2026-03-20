@@ -86,10 +86,17 @@ LLM 同时持有两份数据 — journey-emotion-map.json（情绪基线）和 e
 
 LLM 直接分析业务流节点，理解每个步骤的用户心理状态后标注情绪。情绪推理需要理解场景语境（如"支付"常伴随焦虑，"完成学习"带来满足感），这是 LLM 的语义理解能力，不适合用规则脚本。
 
+**跨角色流拆分规则**：每条 journey_line 属于单一角色（`role` 字段为单值）。当业务流类型为 `cross_role` 时，按参与角色拆分为多条 journey_line，每条只包含该角色作为 actor 的节点。例如 F001（R2 生成→R2 审核→R2 发布→R1 浏览）拆为：
+- JL01a (role=R2, source_flow=F001): 生成→审核→发布
+- JL01b (role=R1, source_flow=F001): 浏览新场景包
+
+拆分后各线独立评估情绪弧线和 Peak-End Rule。`source_flow` 相同但 `role` 不同，下游可按 `source_flow` 关联回原始跨角色流。
+
 **输出 schema 约束**（详见 `docs/schemas/journey-emotion-schema.md`）：
 - 顶层 key 必须是 `journey_lines`（数组）
 - 子节点 key 必须是 `emotion_nodes`（数组）
 - 每个 journey_line 必须有 `source_flow` 字段
+- 每条 journey_line 的所有 emotion_nodes 必须属于同一角色（与 `role` 字段一致）
 - 情绪值应基于场景语境推理，不应全部为 neutral
 
 ---

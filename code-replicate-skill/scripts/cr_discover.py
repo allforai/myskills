@@ -1,39 +1,111 @@
 #!/usr/bin/env python3
-"""Phase 2a: Pure deterministic directory scanning for code-replicate.
+"""Phase 2a: Directory scanning for code-replicate.
 
-CLI: python3 cr_discover.py <source_path> <output_path>
+CLI: python3 cr_discover.py <source_path> <output_path> [--profile <profile_path>]
 
-Scans a source project directory and produces a source-summary.json skeleton.
-NO LLM calls — only filesystem analysis and import parsing.
+If --profile is provided, reads a LLM-generated discovery-profile.json that
+describes the project's module structure. This eliminates hardcoded heuristics.
+
+Without --profile, falls back to built-in heuristics (SOURCE_ROOTS, manifests, etc.).
 """
 
 import os
 import re
 import sys
 
-from _common import write_json, assign_ids
+from _common import write_json, load_json, assign_ids
 
-# ── Constants ─────────────────────────────────────────────────────────────────
+# ── Fallback Constants (used only when no discovery-profile.json) ─────────────
 
-SKIP_DIRS = {
+_DEFAULT_SKIP_DIRS = {
     ".", "node_modules", "vendor", ".git", "__pycache__",
     "dist", "build", ".next", ".nuxt", "target", "bin", "obj",
 }
 
-SOURCE_ROOTS = {
+_DEFAULT_SOURCE_ROOTS = {
     "src", "internal", "app", "lib", "packages", "pkg", "cmd",
     "components", "pages", "views", "features", "modules",
 }
 
-CODE_EXTENSIONS = {
+_DEFAULT_CODE_EXTENSIONS = {
     ".go", ".py", ".js", ".ts", ".tsx", ".jsx",
     ".rs", ".java", ".php", ".rb", ".dart", ".cs",
 }
 
-ENTRY_POINT_PATTERNS = re.compile(
+_DEFAULT_ENTRY_POINT_PATTERNS = re.compile(
     r"^(main|index|app|handler|controller|service|router|routes|server|manage)\.",
     re.IGNORECASE,
 )
+
+# Active config — initialized from profile or defaults
+SKIP_DIRS = set(_DEFAULT_SKIP_DIRS)
+SOURCE_ROOTS = set(_DEFAULT_SOURCE_ROOTS)
+CODE_EXTENSIONS = set(_DEFAULT_CODE_EXTENSIONS)
+ENTRY_POINT_PATTERNS = _DEFAULT_ENTRY_POINT_PATTERNS
+
+
+def _load_profile(profile_path):
+    """Load LLM-generated discovery-profile.json and override active config.
+
+    Profile schema:
+    {
+      "source_roots": ["src", "packages"],           // override SOURCE_ROOTS
+      "skip_dirs": ["node_modules", ".git", ...],    // override SKIP_DIRS
+      "code_extensions": [".go", ".py", ...],        // override CODE_EXTENSIONS
+      "entry_patterns": ["main", "index", ...],      // override ENTRY_POINT_PATTERNS
+      "module_boundaries": [".csproj", "package.json", ...],  // project manifest files/extensions
+      "module_paths": [                               // explicit module list (highest priority)
+        {"path": "src/ERP.Modules.Sales", "atomic": true},
+        {"path": "packages/api/src/modules/user", "atomic": true},
+        ...
+      ],
+      "mega_threshold": 50                            // override _MEGA_MODULE_THRESHOLD
+    }
+
+    All fields are optional. Missing fields keep defaults.
+    """
+    global SKIP_DIRS, SOURCE_ROOTS, CODE_EXTENSIONS, ENTRY_POINT_PATTERNS
+    global _MEGA_MODULE_THRESHOLD, _PROJECT_MANIFESTS
+
+    data = load_json(profile_path)
+    if not data:
+        print(f"WARN: discovery-profile not found or invalid: {profile_path}", file=sys.stderr)
+        return None
+
+    if "source_roots" in data:
+        SOURCE_ROOTS.clear()
+        SOURCE_ROOTS.update(data["source_roots"])
+
+    if "skip_dirs" in data:
+        SKIP_DIRS.clear()
+        SKIP_DIRS.update(data["skip_dirs"])
+
+    if "code_extensions" in data:
+        CODE_EXTENSIONS.clear()
+        CODE_EXTENSIONS.update(data["code_extensions"])
+
+    if "entry_patterns" in data:
+        patterns = data["entry_patterns"]
+        if patterns:
+            ENTRY_POINT_PATTERNS = re.compile(
+                r"^(" + "|".join(re.escape(p) for p in patterns) + r")\.",
+                re.IGNORECASE,
+            )
+
+    if "module_boundaries" in data:
+        _PROJECT_MANIFESTS.clear()
+        for item in data["module_boundaries"]:
+            if item.startswith("."):
+                # Extension-based: stored separately, handled in _has_project_manifest
+                pass  # extensions already handled by endswith check
+            else:
+                _PROJECT_MANIFESTS.add(item)
+
+    if "mega_threshold" in data:
+        _MEGA_MODULE_THRESHOLD = data["mega_threshold"]
+
+    print(f"Loaded discovery profile: {profile_path}", file=sys.stderr)
+    return data
 
 
 # ── Stack Detection ───────────────────────────────────────────────────────────
@@ -230,14 +302,170 @@ def _count_lines(filepath):
 
 # ── Module Discovery ──────────────────────────────────────────────────────────
 
-def _find_module_dirs(source_path):
-    """Find module directories under standard source roots.
+# Maximum code files before a directory is considered a mega-module and split further
+_MEGA_MODULE_THRESHOLD = 50
+
+# Project manifest files — if a directory contains one, it's an atomic project unit.
+# Size-based splitting is BLOCKED for directories with a manifest (but nested
+# SOURCE_ROOT traversal still applies, because monorepo sub-projects like
+# packages/api/ have package.json AND contain nested src/modules/).
+_PROJECT_MANIFESTS = {
+    "package.json", "go.mod", "Cargo.toml", "pubspec.yaml",
+    "pom.xml", "build.gradle", "build.gradle.kts",
+    "pyproject.toml", "setup.py", "Pipfile",
+}
+# .csproj/.fsproj/.vbproj are matched by extension, not exact name
+
+
+def _has_project_manifest(dirpath):
+    """Check if directory contains a project manifest file.
+
+    This signals the directory is an atomic project unit — its internal
+    sub-directories are architectural layers, not independent modules.
+    """
+    try:
+        for f in os.listdir(dirpath):
+            if f in _PROJECT_MANIFESTS:
+                return True
+            # C#/.NET project files: *.csproj, *.fsproj, *.vbproj
+            if f.endswith((".csproj", ".fsproj", ".vbproj", ".sln")):
+                return True
+    except OSError:
+        pass
+    return False
+
+
+def _count_code_files_shallow(dirpath):
+    """Count code files in a directory (non-recursive, direct children only)."""
+    count = 0
+    try:
+        for f in os.listdir(dirpath):
+            if os.path.isfile(os.path.join(dirpath, f)) and _is_code_file(f):
+                count += 1
+    except OSError:
+        pass
+    return count
+
+
+def _has_sub_modules(dirpath):
+    """Check if a directory has sub-directories that look like modules.
+
+    Returns True if the directory has ≥2 sub-dirs each containing code files.
+    """
+    sub_count = 0
+    try:
+        for entry in os.listdir(dirpath):
+            entry_path = os.path.join(dirpath, entry)
+            if os.path.isdir(entry_path) and not _should_skip(entry):
+                if _count_code_files_shallow(entry_path) > 0 or _has_nested_code(entry_path):
+                    sub_count += 1
+                    if sub_count >= 2:
+                        return True
+    except OSError:
+        pass
+    return False
+
+
+def _has_nested_code(dirpath, max_depth=2):
+    """Check if a directory has code files within max_depth levels."""
+    if max_depth <= 0:
+        return False
+    try:
+        for entry in os.listdir(dirpath):
+            fp = os.path.join(dirpath, entry)
+            if os.path.isfile(fp) and _is_code_file(entry):
+                return True
+            if os.path.isdir(fp) and not _should_skip(entry):
+                if _has_nested_code(fp, max_depth - 1):
+                    return True
+    except OSError:
+        pass
+    return False
+
+
+def _split_mega_module(rel_path, abs_path, source_path):
+    """Recursively split a mega-module into finer-grained sub-modules.
+
+    Pure data-driven strategy (NO hardcoded directory name lists):
+    1. If the directory contains a nested SOURCE_ROOT (e.g., src/ or modules/),
+       always recurse through it. This handles monorepo chains like
+       packages/api/src/modules/user/.
+    2. If the directory exceeds the file threshold AND has no project manifest
+       (.csproj, package.json, etc.) AND has sub-dirs that look like modules,
+       split into children.
+    3. If the directory HAS a project manifest, it's an atomic project unit —
+       never split by size (its sub-dirs are architectural layers, not modules).
+    4. Otherwise keep as-is — it's a leaf module.
 
     Returns list of (relative_path, absolute_path) tuples.
     """
+    # Strategy 1: nested SOURCE_ROOTS — always recurse.
+    # This is the only place that uses the SOURCE_ROOTS name list, which is
+    # acceptable because it's filesystem-structural (not semantic guessing).
+    for root_name in SOURCE_ROOTS:
+        nested_root = os.path.join(abs_path, root_name)
+        if os.path.isdir(nested_root):
+            results = []
+            try:
+                entries = sorted(os.listdir(nested_root))
+            except OSError:
+                continue
+            for entry in entries:
+                entry_path = os.path.join(nested_root, entry)
+                if os.path.isdir(entry_path) and not _should_skip(entry):
+                    child_rel = os.path.join(rel_path, root_name, entry)
+                    results.extend(_split_mega_module(child_rel, entry_path, source_path))
+            if results:
+                return results
+
+    # Strategy 2: size-based split — BLOCKED if project manifest exists.
+    # A directory with .csproj / package.json / go.mod is an atomic project.
+    # Its internal Views/ViewModels/Models are layers, not independent modules.
+    if _has_project_manifest(abs_path):
+        return [(rel_path, abs_path)]
+
+    # No manifest: split if file count exceeds threshold and has sub-modules
+    file_count = len(_collect_module_files(abs_path))
+    if file_count > _MEGA_MODULE_THRESHOLD and _has_sub_modules(abs_path):
+        results = []
+        for entry in sorted(os.listdir(abs_path)):
+            entry_path = os.path.join(abs_path, entry)
+            if os.path.isdir(entry_path) and not _should_skip(entry):
+                child_rel = os.path.join(rel_path, entry)
+                results.extend(_split_mega_module(child_rel, entry_path, source_path))
+        if results:
+            return results
+
+    # Leaf module
+    return [(rel_path, abs_path)]
+
+
+def _find_module_dirs(source_path, profile=None):
+    """Find module directories.
+
+    If profile contains explicit module_paths, use them directly (LLM-guided).
+    Otherwise fall back to SOURCE_ROOT scanning + mega-module splitting.
+
+    Returns list of (relative_path, absolute_path) tuples.
+    """
+    # ── Priority 1: LLM-generated explicit module list ────────────────────
+    if profile and profile.get("module_paths"):
+        modules = []
+        for entry in profile["module_paths"]:
+            rel = entry["path"] if isinstance(entry, dict) else entry
+            abs_path = os.path.join(source_path, rel)
+            if os.path.isdir(abs_path):
+                modules.append((rel, abs_path))
+            else:
+                print(f"WARN: profile module_path not found: {rel}", file=sys.stderr)
+        if modules:
+            print(f"Using {len(modules)} modules from discovery profile", file=sys.stderr)
+            return modules
+        # Fall through if all paths invalid
+
+    # ── Priority 2: SOURCE_ROOT scanning + splitting ──────────────────────
     modules = []
 
-    # Check for standard source roots
     found_roots = []
     for root_name in SOURCE_ROOTS:
         root_path = os.path.join(source_path, root_name)
@@ -250,13 +478,12 @@ def _find_module_dirs(source_path):
                 entry_path = os.path.join(root_path, entry)
                 if os.path.isdir(entry_path) and not _should_skip(entry):
                     rel = os.path.join(root_name, entry)
-                    modules.append((rel, entry_path))
+                    modules.extend(_split_mega_module(rel, entry_path, source_path))
     else:
-        # Fallback: use top-level directories
         for entry in sorted(os.listdir(source_path)):
             entry_path = os.path.join(source_path, entry)
             if os.path.isdir(entry_path) and not _should_skip(entry):
-                modules.append((entry, entry_path))
+                modules.extend(_split_mega_module(entry, entry_path, source_path))
 
     return modules
 
@@ -400,12 +627,22 @@ def _resolve_import_to_module(imp, module_map, source_path, stacks):
 
 # ── Main Scanner ──────────────────────────────────────────────────────────────
 
-def scan_project(source_path):
+def scan_project(source_path, profile_path=None):
     """Scan source project directory and return source-summary skeleton.
+
+    Args:
+        source_path: Root directory of source project.
+        profile_path: Optional path to LLM-generated discovery-profile.json.
+                      If provided, overrides hardcoded heuristics.
 
     Returns a dict with project info, modules, and empty fields for LLM phases.
     """
     source_path = os.path.abspath(source_path)
+
+    # Load profile if provided
+    profile = None
+    if profile_path:
+        profile = _load_profile(profile_path)
 
     # Detect project name from directory or manifest
     project_name = os.path.basename(source_path)
@@ -413,8 +650,8 @@ def scan_project(source_path):
     # Detect stacks
     stacks = _detect_stacks(source_path)
 
-    # Find modules
-    module_dirs = _find_module_dirs(source_path)
+    # Find modules (profile-guided or fallback heuristics)
+    module_dirs = _find_module_dirs(source_path, profile=profile)
 
     # Build modules
     modules = []
@@ -430,16 +667,26 @@ def scan_project(source_path):
         file_count = len(code_files)
         line_count = sum(_count_lines(fp) for _, fp in code_files)
 
-        # Identify key files
+        # Identify key files — scan ALL levels, not just top-level
         key_files = []
         for rel_file, _ in code_files:
             basename = os.path.basename(rel_file)
             if _is_key_file(basename):
                 key_files.append(rel_file)
 
-        # If no entry-point key files found, take top-level files
+        # If no entry-point pattern match, use heuristics:
         if not key_files:
-            key_files = [rf for rf, _ in code_files if os.sep not in rf and "/" not in rf][:3]
+            # 1. Try top-level files first
+            top_files = [rf for rf, _ in code_files if os.sep not in rf and "/" not in rf]
+            if top_files:
+                key_files = top_files[:5]
+            else:
+                # 2. Deepest-nested entry points (e.g., src/modules/user/user.controller.ts)
+                key_files = [rf for rf, _ in code_files[:10]]
+
+        # Cap key_files to avoid overwhelming LLM context
+        if len(key_files) > 10:
+            key_files = key_files[:10]
 
         module = {
             "id": "",  # assigned below
@@ -513,19 +760,28 @@ def scan_project(source_path):
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("Usage: python3 cr_discover.py <source_path> <output_path>", file=sys.stderr)
+        print("Usage: python3 cr_discover.py <source_path> <output_path> [--profile <profile_path>]", file=sys.stderr)
         sys.exit(1)
 
     source = sys.argv[1]
     output = sys.argv[2]
 
+    # Optional --profile flag
+    profile_path = None
+    if "--profile" in sys.argv:
+        idx = sys.argv.index("--profile")
+        if idx + 1 < len(sys.argv):
+            profile_path = sys.argv[idx + 1]
+
     if not os.path.isdir(source):
         print(f"ERROR: source path does not exist: {source}", file=sys.stderr)
         sys.exit(1)
 
-    result = scan_project(source)
+    result = scan_project(source, profile_path=profile_path)
     write_json(output, result)
     print(f"Source summary written to {output}")
+    if profile_path:
+        print(f"  Profile: {profile_path}")
     print(f"  Project: {result['project']['name']}")
     print(f"  Stacks: {result['project']['detected_stacks']}")
     print(f"  Modules: {len(result['modules'])}")

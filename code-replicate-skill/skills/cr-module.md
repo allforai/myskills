@@ -116,12 +116,19 @@ modules[target].dependencies: [
 
 ---
 
-## Phase 3 策略
+## Phase 3-pre: 生成 extraction-plan（模块增强）
+
+除了 cr-backend/cr-frontend 的标准 extraction-plan 字段，模块模式额外生成：
+
+- `boundary_interfaces`：目标模块对外暴露的接口清单（来自 Phase 2d 依赖矩阵）
+- `external_deps_mapping`：每个外部依赖的处理决策（include / external_interface / event_contract / prerequisite）
+
+## Phase 3: 按 extraction-plan 生成片段
 
 - 只为目标模块 + `include` 决策的模块生成完整产物
-- `external_interface` 依赖：以 `[EXTERNAL] module-A.getUserById(id: string): User` 格式记录在相关 task 的 `prerequisites` 字段中
-- `event_contract` 依赖：以 `[EVENT] order.created { orderId, amount, userId }` 格式记录
-- `prerequisite` 依赖：以 `[PREREQUISITE] module-B 必须先部署` 格式记录
+- `external_interface` 依赖：记录在相关 task 的 `prerequisites` 字段中
+- `event_contract` 依赖：记录事件名称和数据格式
+- `prerequisite` 依赖：记录为前置条件
 - task-inventory 中与外部依赖相关的 task 增加 `external_deps` 字段列出依赖清单
 
 ---

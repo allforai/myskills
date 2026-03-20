@@ -55,11 +55,28 @@ def merge_flows(base_path, fragments_dir):
         if FLOW_NODES_FIELD not in flow or not isinstance(flow[FLOW_NODES_FIELD], list):
             flow[FLOW_NODES_FIELD] = []
             print(f"WARNING: flow '{flow.get('name')}' missing {FLOW_NODES_FIELD}, set to []", file=sys.stderr)
+        # Ensure description exists
+        if "description" not in flow:
+            flow["description"] = ""
+        # Ensure confirmed flag
+        if "confirmed" not in flow:
+            flow["confirmed"] = False
+        # Ensure gap_count
+        gap_count = 0
         for node in flow[FLOW_NODES_FIELD]:
             for field in ("task_ref", "role", "seq"):
                 if field not in node:
                     node[field] = "[INFERRED]"
                     print(f"WARNING: node in flow '{flow.get('name')}' missing '{field}'", file=sys.stderr)
+            # Ensure handoff structure for cross-role transitions
+            if "handoff" not in node:
+                node["handoff"] = None
+            # Ensure gap flag
+            if "gap" not in node:
+                node["gap"] = False
+            if node.get("gap"):
+                gap_count += 1
+        flow["gap_count"] = gap_count
 
     # Cross-reference with task-inventory.json
     task_inv_path = os.path.join(base_path, ".allforai", "product-map", "task-inventory.json")
@@ -91,10 +108,14 @@ def merge_flows(base_path, fragments_dir):
     output = {
         "generated_at": now_iso(),
         "source": "code-replicate",
+        "systems": {"current": "replicated-system", "linked": []},
         "flows": deduped,
         "orphan_tasks": orphan_tasks,
         "summary": {
             "flow_count": len(deduped),
+            "flow_gaps": sum(f.get("gap_count", 0) for f in deduped),
+            "orphan_tasks": orphan_tasks,
+            "independent_operations": [],
             "orphan_count": len(orphan_tasks),
         },
     }

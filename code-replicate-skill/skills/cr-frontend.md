@@ -103,24 +103,31 @@ version: "1.0.0"
 
 ---
 
-## Phase 3 推断策略
+## Phase 3-pre: 生成 extraction-plan
 
-从前端源码推断标准产物时，按以下策略映射：
+LLM 读取 source-summary.json，基于对**当前前端项目**的理解，生成 extraction-plan.json：
 
-| 产物 | 从什么推断 |
-|------|-----------|
-| role-profiles | 路由守卫/权限组件中的角色判断、条件渲染的权限检查、菜单可见性控制 |
-| experience-map | 路由分组→operation_lines，页面→nodes，交互组件→screens，导航结构→flow_links |
-| task-inventory | 每个页面/视图的核心用户操作 → task。表单提交→写操作 task，列表页→查询 task，详情页→查看 task |
-| business-flows | 用户交互链 → flow。点击→状态变化→UI 更新→API 调用→响应处理→导航/提示 |
-| use-case-tree | 页面交互场景：正常操作→happy_path，输入校验/空状态→boundary，网络错误/权限不足→exception |
+- `role_sources`：哪些文件定义了权限控制？（可能是路由守卫、权限组件、菜单配置...取决于项目）
+- `screen_sources`：哪些文件定义了页面/视图？（可能是 pages/、app/、screens/、routes 配置...取决于项目和框架）
+- `task_sources`：哪些文件包含用户操作入口？（可能是表单组件、Action 处理器、事件 Handler...取决于项目）
+- `flow_sources`：哪些文件包含用户交互链？（可能是页面间导航逻辑、状态机、Store Action...取决于项目）
+- `usecase_sources`：哪些文件包含条件分支？（同 screen_sources + 错误处理组件）
+- `cross_cutting`：跨页面共享的机制（认证、国际化、主题、Toast...）在哪些文件中？
 
-### 前端特有推断注意事项
+**禁止套用框架模板** — 必须从 source-summary 的实际模块结构、key_files 中推断。
 
-- **空状态和加载状态**：每个数据展示页面的空状态、加载中、错误状态都是 use-case 场景
-- **响应式布局**：不同屏幕尺寸下的布局变化暗示了 experience-map 的多设备支持需求
-- **离线行为**：离线缓存、离线表单暂存等逻辑是 constraints 的来源
-- **无障碍支持**：ARIA 标签、键盘导航、屏幕阅读器支持反映了 UI 约束
+## Phase 3: 按 extraction-plan 生成片段
+
+按 extraction-plan 中指定的文件和提取方式，逐模块生成 JSON 片段。
+
+### 前端分析要点
+
+以下是前端项目常见但**不一定存在**的模式。LLM 应在 extraction-plan 中标注本项目实际使用的模式：
+
+- **空状态和加载状态**：如果项目有数据展示页面，它们的空/加载/错误状态可能是 use-case 场景
+- **响应式布局**：如果项目有多端适配逻辑，extraction-plan.screen_sources 应标注相关配置
+- **离线行为**：如果项目有 Service Worker 或本地缓存，extraction-plan.constraint_sources 中应记录
+- **无障碍支持**：如果项目有 ARIA/a11y 实现，extraction-plan.cross_cutting 中应标注
 
 ---
 

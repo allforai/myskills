@@ -125,10 +125,13 @@ def load_fragments(fragments_dir, prefix=""):
 def assign_ids(items, prefix="T", start=1):
     """Assign sequential IDs like T001, T002 to items.
 
+    Uses 3-digit padding for ≤999 items, auto-expands for larger sets.
     Modifies items in-place and returns them.
     """
+    total = start + len(items) - 1
+    width = max(3, len(str(total)))
     for i, item in enumerate(items, start=start):
-        item["id"] = f"{prefix}{i:03d}"
+        item["id"] = f"{prefix}{i:0{width}d}"
     return items
 
 

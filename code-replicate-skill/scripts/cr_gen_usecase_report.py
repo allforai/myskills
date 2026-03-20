@@ -24,9 +24,6 @@ def generate_usecase_report(base_path):
     uc_dir = os.path.join(base_path, ".allforai", "use-case")
     tree_data = require_json(os.path.join(uc_dir, "use-case-tree.json"), "use-case-tree")
 
-    # Support both tree formats: "tree" (4-layer) and "roles" (flat)
-    roles = ensure_list(tree_data, "tree", "roles")
-
     lines = []
     lines.append("# Use Case Report")
     lines.append("")
@@ -34,53 +31,73 @@ def generate_usecase_report(base_path):
     lines.append("")
 
     total_count = 0
-    role_count = 0
+    role_set = set()
     area_set = set()
 
-    for role in roles:
-        role_name = role.get("role_name", role.get("role", role.get("name", "Unknown")))
-        # Support both "feature_areas" (4-layer tree) and "features" (flat)
-        features = ensure_list(role, "feature_areas", "features")
-        if not features and not role_name:
-            continue
-        role_count += 1
+    # v2.5.0+ flat format: top-level "use_cases" array
+    flat_ucs = tree_data.get("use_cases")
+    if flat_ucs and isinstance(flat_ucs, list):
+        # Group by role_id → functional_area_name for display
+        from collections import OrderedDict
+        role_map = OrderedDict()
+        for uc in flat_ucs:
+            role_id = uc.get("role_id", "UNKNOWN")
+            role_name = uc.get("role_name", role_id)
+            area = uc.get("functional_area_name", "General")
+            if role_id not in role_map:
+                role_map[role_id] = {"name": role_name, "areas": OrderedDict()}
+            if area not in role_map[role_id]["areas"]:
+                role_map[role_id]["areas"][area] = []
+            role_map[role_id]["areas"][area].append(uc)
 
-        lines.append(f"## {role_name}")
-        lines.append("")
-
-        for feature in features:
-            area = feature.get("area", feature.get("name", "Unknown"))
-            area_set.add(area)
-            # In 4-layer tree, use cases are nested under tasks
-            tasks = ensure_list(feature, "tasks")
-            if tasks:
-                # 4-layer: feature_area > task > use_cases
-                all_ucs = []
-                for task in tasks:
-                    all_ucs.extend(ensure_list(task, "use_cases"))
-                use_cases = all_ucs
-            else:
-                # Flat: feature > use_cases
-                use_cases = ensure_list(feature, "use_cases")
-
-            lines.append(f"### {area}")
+        for role_id, role_data in role_map.items():
+            role_set.add(role_id)
+            lines.append(f"## {role_data['name']}")
             lines.append("")
-            lines.append("| ID | Title | Type | Priority |")
-            lines.append("|----|-------|------|----------|")
-
-            for uc in use_cases:
-                uc_id = uc.get("id", "")
-                title = uc.get("title", "")
-                uc_type = uc.get("type", "")
-                priority = uc.get("priority", "")
-                lines.append(f"| {uc_id} | {title} | {uc_type} | {priority} |")
-                total_count += 1
-
+            for area, ucs in role_data["areas"].items():
+                area_set.add(area)
+                lines.append(f"### {area}")
+                lines.append("")
+                lines.append("| ID | Title | Type | Priority |")
+                lines.append("|----|-------|------|----------|")
+                for uc in ucs:
+                    lines.append(f"| {uc.get('id', '')} | {uc.get('title', '')} | {uc.get('type', '')} | {uc.get('priority', '')} |")
+                    total_count += 1
+                lines.append("")
+    else:
+        # Legacy tree format: "tree" (4-layer) or "roles" (flat)
+        roles = ensure_list(tree_data, "tree", "roles")
+        for role in roles:
+            role_name = role.get("role_name", role.get("role", role.get("name", "Unknown")))
+            features = ensure_list(role, "feature_areas", "features")
+            if not features and not role_name:
+                continue
+            role_set.add(role_name)
+            lines.append(f"## {role_name}")
             lines.append("")
+            for feature in features:
+                area = feature.get("area", feature.get("name", "Unknown"))
+                area_set.add(area)
+                tasks = ensure_list(feature, "tasks")
+                if tasks:
+                    all_ucs = []
+                    for task in tasks:
+                        all_ucs.extend(ensure_list(task, "use_cases"))
+                    use_cases = all_ucs
+                else:
+                    use_cases = ensure_list(feature, "use_cases")
+                lines.append(f"### {area}")
+                lines.append("")
+                lines.append("| ID | Title | Type | Priority |")
+                lines.append("|----|-------|------|----------|")
+                for uc in use_cases:
+                    lines.append(f"| {uc.get('id', '')} | {uc.get('title', '')} | {uc.get('type', '')} | {uc.get('priority', '')} |")
+                    total_count += 1
+                lines.append("")
 
     lines.append("---")
     lines.append("")
-    lines.append(f"**Summary:** {total_count} use cases across {role_count} roles, {len(area_set)} feature areas")
+    lines.append(f"**Summary:** {total_count} use cases across {len(role_set)} roles, {len(area_set)} feature areas")
     lines.append("")
 
     content = "\n".join(lines)

@@ -22,6 +22,78 @@ from _common import (
 )
 
 
+def _infer_experience_priority(roles, tasks):
+    """Infer experience_priority from role audience_type and task distribution.
+
+    Returns a dict matching the product-design experience_priority schema.
+    """
+    consumer_roles = [r for r in roles if r.get("audience_type") == "consumer"]
+    professional_roles = [r for r in roles if r.get("audience_type") == "professional"]
+
+    has_consumer = len(consumer_roles) > 0
+    has_professional = len(professional_roles) > 0
+
+    # Count tasks owned by consumer vs professional roles
+    consumer_role_ids = {r.get("id") for r in consumer_roles}
+    consumer_task_count = sum(1 for t in tasks if t.get("owner_role") in consumer_role_ids)
+    total_tasks = len(tasks)
+
+    consumer_ratio = consumer_task_count / total_tasks if total_tasks > 0 else 0
+
+    reasoning = []
+    if not has_consumer and not has_professional:
+        # No roles with audience_type — cannot determine, default to mixed
+        mode = "mixed"
+        primary = "mixed"
+        reasoning = [
+            "No roles with audience_type detected — defaulting to mixed mode",
+            "LLM fragments should include audience_type for accurate inference",
+        ]
+    elif has_consumer and not has_professional:
+        mode = "consumer"
+        primary = "web-customer"
+        reasoning = [
+            "All roles are consumer-facing — no professional/admin roles detected",
+            "Source code analysis shows only end-user interfaces",
+        ]
+    elif not has_consumer and has_professional:
+        mode = "admin"
+        primary = "admin"
+        reasoning = [
+            "All roles are professional/admin — no consumer-facing roles detected",
+            "Source code analysis shows only back-office/management interfaces",
+        ]
+    elif consumer_ratio > 0.6:
+        mode = "consumer"
+        primary = "web-customer"
+        reasoning = [
+            f"Consumer roles own {consumer_task_count}/{total_tasks} tasks ({consumer_ratio:.0%})",
+            "Consumer-facing functionality dominates the product surface",
+        ]
+    elif consumer_ratio < 0.3:
+        mode = "admin"
+        primary = "admin"
+        reasoning = [
+            f"Professional roles own majority of tasks ({1-consumer_ratio:.0%})",
+            "Administrative/management functionality dominates the product surface",
+        ]
+    else:
+        mode = "mixed"
+        primary = "mixed"
+        reasoning = [
+            f"Both consumer ({consumer_ratio:.0%}) and professional ({1-consumer_ratio:.0%}) roles are significant",
+            "Product serves both end-users and operators with substantial task coverage",
+        ]
+
+    return {
+        "mode": mode,
+        "consumer_surface": has_consumer,
+        "consumer_core": has_consumer and consumer_ratio > 0.4,
+        "primary_experience": primary,
+        "reasoning": reasoning,
+    }
+
+
 def generate_product_map(base_path):
     """Generate product-map.json summary."""
     pm_dir = os.path.join(base_path, ".allforai", "product-map")
@@ -62,7 +134,7 @@ def generate_product_map(base_path):
         nodes = get_flow_nodes(flow)
         flow_gaps += sum(1 for n in nodes if n.get("gap"))
         for n in nodes:
-            tid = n.get("task_id")
+            tid = n.get("task_id") or n.get("task_ref")
             if tid:
                 referenced_task_ids.add(tid)
 
@@ -70,12 +142,16 @@ def generate_product_map(base_path):
     all_task_ids = {t.get("id", "") for t in tasks}
     orphan_task_count = len(all_task_ids - referenced_task_ids)
 
+    # Experience priority (P0 — dev-forge reads this to control consumer maturity checks)
+    experience_priority = _infer_experience_priority(roles, tasks)
+
     output = {
         "generated_at": now_iso(),
         "version": "2.6.0",
         "source": "code-replicate",
         "scope": "full",
         "scale": scale,
+        "experience_priority": experience_priority,
         "summary": {
             "role_count": len(roles),
             "task_count": task_count,

@@ -82,9 +82,14 @@ version: "1.0.0"
 
 ---
 
-## Phase 3 增强
+## Phase 3-pre: 生成 extraction-plan（全栈增强）
 
-在 core 的 Phase 3 基础上增加以下全栈特有推断：
+除了 cr-backend 和 cr-frontend 各自的 extraction-plan 字段，全栈模式额外生成：
+
+- `api_contract_files`：前后端 API 契约文件（OpenAPI spec、GraphQL schema、tRPC router、或手写类型定义）
+- `cross_layer_mapping`：前端调用文件 ↔ 后端处理文件的对应关系（LLM 从 source-summary.api_call_map 推断）
+
+## Phase 3: 全栈增强
 
 ### task-inventory 增强
 
@@ -96,21 +101,20 @@ version: "1.0.0"
 
 ### business-flows 增强
 
-- 构建跨前后端的完整用户流程：
-  - 前端交互 → API 调用 → 后端处理 → 数据持久化 → 响应返回 → 前端状态更新 → UI 刷新
+- 构建跨前后端的完整用户流程
 - 每个 flow step 标注 layer（frontend/backend）
 
 ### 交叉一致性检查
 
-检测到的不一致写入 task/flow 的 `flags` 字段：
+LLM 基于 extraction-plan.cross_layer_mapping 检测实际不一致，写入 task/flow 的 `flags` 字段。常见但**不一定存在**的不一致类型：
 
-| Flag | 含义 |
-|------|------|
-| API_SHAPE_MISMATCH | 前端调用参数与后端期望不匹配 |
-| AUTH_GAP | 后端要求认证但前端未传递凭证 |
-| FIELD_TYPE_MISMATCH | 前后端同名字段类型不一致 |
-| ENDPOINT_ORPHAN | 后端有端点但前端未调用（或反之） |
-| ERROR_UNHANDLED | 后端可能返回的错误码前端未处理 |
+- API 参数/响应不匹配
+- 认证传播断裂
+- 字段类型不一致
+- 孤立端点（一端有、另一端未调用）
+- 未处理的错误码
+
+> **注意**：不假设所有项目都存在以上问题。LLM 根据实际代码判断。
 
 ---
 

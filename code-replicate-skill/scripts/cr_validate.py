@@ -20,7 +20,7 @@ from _common import FLOW_NODES_FIELD, load_json, ensure_list
 # ── Required fields ──────────────────────────────────────────────────────────
 
 TASK_REQUIRED_FIELDS = ("id", "name", "owner_role", "frequency", "risk_level", "main_flow", "status", "category")
-ROLE_REQUIRED_FIELDS = ("id", "name")
+ROLE_REQUIRED_FIELDS = ("id", "name", "audience_type")
 NODE_REQUIRED_FIELDS = ("task_ref", "role", "seq")
 USE_CASE_REQUIRED_FIELDS = ("id", "title", "type", "given", "when", "then")
 CONSTRAINT_REQUIRED_FIELDS = ("id", "description", "enforcement")
@@ -169,43 +169,65 @@ def validate(base_path, fullstack=False):
     use_case_count = 0
 
     if uc_data is not None:
-        tree = ensure_list(uc_data, "tree")
-        for ti, entry in enumerate(tree):
-            feature_areas = entry.get("feature_areas")
-            if not isinstance(feature_areas, list):
-                errors.append({
-                    "file": "use-case-tree.json",
-                    "path": f"tree[{ti}]",
-                    "issue": "missing or invalid feature_areas (must be array)"
-                })
-                continue
-            for fi, fa in enumerate(feature_areas):
-                tasks = fa.get("tasks")
-                if not isinstance(tasks, list):
-                    errors.append({
-                        "file": "use-case-tree.json",
-                        "path": f"tree[{ti}].feature_areas[{fi}]",
-                        "issue": "missing or invalid tasks (must be array)"
-                    })
-                    continue
-                for tki, task in enumerate(tasks):
-                    use_cases = task.get("use_cases")
-                    if not isinstance(use_cases, list):
+        # v2.5.0+ flat format: top-level "use_cases" array
+        flat_ucs = uc_data.get("use_cases")
+        if flat_ucs and isinstance(flat_ucs, list):
+            for ui, uc in enumerate(flat_ucs):
+                use_case_count += 1
+                for field in USE_CASE_REQUIRED_FIELDS:
+                    if field not in uc:
                         errors.append({
                             "file": "use-case-tree.json",
-                            "path": f"tree[{ti}].feature_areas[{fi}].tasks[{tki}]",
-                            "issue": "missing or invalid use_cases (must be array)"
+                            "path": f"use_cases[{ui}]",
+                            "issue": f"missing required field: {field}"
+                        })
+                # then must be array
+                then_val = uc.get("then")
+                if then_val is not None and not isinstance(then_val, list):
+                    errors.append({
+                        "file": "use-case-tree.json",
+                        "path": f"use_cases[{ui}]",
+                        "issue": "then field must be an array"
+                    })
+        else:
+            # Legacy tree format
+            tree = ensure_list(uc_data, "tree")
+            for ti, entry in enumerate(tree):
+                feature_areas = entry.get("feature_areas")
+                if not isinstance(feature_areas, list):
+                    errors.append({
+                        "file": "use-case-tree.json",
+                        "path": f"tree[{ti}]",
+                        "issue": "missing or invalid feature_areas (must be array)"
+                    })
+                    continue
+                for fi, fa in enumerate(feature_areas):
+                    tasks = fa.get("tasks")
+                    if not isinstance(tasks, list):
+                        errors.append({
+                            "file": "use-case-tree.json",
+                            "path": f"tree[{ti}].feature_areas[{fi}]",
+                            "issue": "missing or invalid tasks (must be array)"
                         })
                         continue
-                    for ui, uc in enumerate(use_cases):
-                        use_case_count += 1
-                        for field in USE_CASE_REQUIRED_FIELDS:
-                            if field not in uc:
-                                errors.append({
-                                    "file": "use-case-tree.json",
-                                    "path": f"tree[{ti}].feature_areas[{fi}].tasks[{tki}].use_cases[{ui}]",
-                                    "issue": f"missing required field: {field}"
-                                })
+                    for tki, task in enumerate(tasks):
+                        use_cases = task.get("use_cases")
+                        if not isinstance(use_cases, list):
+                            errors.append({
+                                "file": "use-case-tree.json",
+                                "path": f"tree[{ti}].feature_areas[{fi}].tasks[{tki}]",
+                                "issue": "missing or invalid use_cases (must be array)"
+                            })
+                            continue
+                        for ui, uc in enumerate(use_cases):
+                            use_case_count += 1
+                            for field in USE_CASE_REQUIRED_FIELDS:
+                                if field not in uc:
+                                    errors.append({
+                                        "file": "use-case-tree.json",
+                                        "path": f"tree[{ti}].feature_areas[{fi}].tasks[{tki}].use_cases[{ui}]",
+                                        "issue": f"missing required field: {field}"
+                                    })
 
     stats["use_cases"] = use_case_count
 
@@ -243,14 +265,36 @@ def validate(base_path, fullstack=False):
                 "issue": "missing or invalid operation_lines (must be array)"
             })
 
-    # ── 7. Cross-reference coverage ──────────────────────────────────────────
+    # ── 7. product-map.json experience_priority ─────────────────────────────
+
+    pm_path = os.path.join(pm_dir, "product-map.json")
+    pm_data = load_json(pm_path)
+
+    if pm_data is not None:
+        ep = pm_data.get("experience_priority")
+        if ep is None:
+            errors.append({
+                "file": "product-map.json",
+                "path": "experience_priority",
+                "issue": "missing experience_priority (dev-forge requires this field)"
+            })
+        elif isinstance(ep, dict):
+            for ep_field in ("mode", "consumer_surface", "consumer_core", "primary_experience", "reasoning"):
+                if ep_field not in ep:
+                    errors.append({
+                        "file": "product-map.json",
+                        "path": f"experience_priority.{ep_field}",
+                        "issue": f"missing required field: {ep_field}"
+                    })
+
+    # ── 8. Cross-reference coverage ──────────────────────────────────────────
 
     if stats["tasks"] > 0:
         stats["task_ref_coverage"] = round(len(referenced_task_ids & task_ids) / stats["tasks"], 2)
     else:
         stats["task_ref_coverage"] = 0.0
 
-    # ── 8. Fullstack mode ────────────────────────────────────────────────────
+    # ── 9. Fullstack mode ────────────────────────────────────────────────────
 
     if fullstack:
         ss_path = os.path.join(cr_dir, "source-summary.json")

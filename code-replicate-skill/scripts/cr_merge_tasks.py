@@ -8,6 +8,7 @@ Loads all <fragments_dir>/tasks/*.json, merges, dedups by
 fields, and writes to <base_path>/.allforai/product-map/task-inventory.json.
 """
 
+import copy
 import os
 import sys
 
@@ -25,8 +26,19 @@ from _common import (
 REQUIRED_FIELDS = ("name", "owner_role", "frequency", "risk_level", "main_flow", "status", "category")
 
 # Recommended fields — filled with defaults if missing
-RECOMMENDED_STRING_FIELDS = ("exceptions", "rules", "sla")
-RECOMMENDED_ARRAY_FIELDS = ("acceptance_criteria", "inputs", "outputs", "prerequisites", "cross_dept")
+RECOMMENDED_STRING_FIELDS = ("exceptions", "rules", "sla", "value")
+RECOMMENDED_ARRAY_FIELDS = ("acceptance_criteria", "prerequisites", "cross_dept")
+
+# Structured object fields — filled with proper structure if missing
+STRUCTURED_DEFAULTS = {
+    "inputs": {"fields": [], "defaults": {}},
+    "outputs": {"states": [], "messages": [], "records": [], "notifications": []},
+    "audit": {"recorded_actions": [], "fields_logged": []},
+    "config_items": [],
+}
+
+# protection_level default (dev-forge XV audit routing depends on this)
+DEFAULT_PROTECTION_LEVEL = "defensible"
 
 
 def merge_tasks(base_path, fragments_dir):
@@ -68,6 +80,20 @@ def merge_tasks(base_path, fragments_dir):
         for field in RECOMMENDED_ARRAY_FIELDS:
             if field not in task:
                 task[field] = []
+        # Fill structured object fields with proper schema
+        for field, default in STRUCTURED_DEFAULTS.items():
+            if field not in task:
+                task[field] = copy.deepcopy(default)
+            elif isinstance(task[field], list) and isinstance(default, dict):
+                # Migrate legacy array format to structured object
+                old_val = task[field]
+                task[field] = dict(default)
+                if old_val:
+                    first_key = next(iter(default))
+                    task[field][first_key] = old_val
+        # protection_level — dev-forge XV audit routing depends on this
+        if "protection_level" not in task:
+            task["protection_level"] = DEFAULT_PROTECTION_LEVEL
 
     # Hard constraint: tasks MUST be an array
     assert isinstance(deduped, list), "tasks must be an array"
