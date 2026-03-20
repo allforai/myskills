@@ -225,6 +225,8 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
       - 硬编码假数据：组件内直接写死 mock 列表（非来自 API/Provider/Store）
       - TODO/FIXME 标注：`// TODO: implement`, `// FIXME`
       - 按钮存在但未接通后端：有 UI 但 onSubmit 不调用任何 service/API
+      - Placeholder 渲染：组件只显示图标+文字占位（如"思维导图"图标+标题），不消费任何 API 数据或 Provider 状态。展示层组件必须从数据源读取并渲染结构化内容
+      - 任务要求的文件未创建：tasks.md 指定了具体文件路径，但执行时合并到其他文件中。LLM 对比 tasks.md 的 Files 列表与实际文件系统，缺失文件 → 该任务降级
       任何一个交互元素命中以上模式 → 该维度（UX 或 Logic）降级为未覆盖。
       整个任务如果关键交互是空壳 → 降级为 `stub`（不是 genuine）。
 
