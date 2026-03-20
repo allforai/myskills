@@ -219,16 +219,21 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
       - **Logic**: handler 内是否包含 `task.rules` 对应的业务判断逻辑？
       - **UX**: 前端是否有对应页面/组件消费该 API？
       **空壳检测（Hollow Shell Detection）**：
-      UI 文件存在 ≠ 功能实现。LLM 必须检查以下空壳模式：
-      - 事件回调为空：`onPressed: () {}`, `onClick={() => {}}`, `@click=""`
-      - 回调仅做无意义操作：`onPressed: () { textController.clear(); }` 但不发 API
-      - 硬编码假数据：组件内直接写死 mock 列表（非来自 API/Provider/Store）
-      - TODO/FIXME 标注：`// TODO: implement`, `// FIXME`
-      - 按钮存在但未接通后端：有 UI 但 onSubmit 不调用任何 service/API
-      - Placeholder 渲染：组件只显示图标+文字占位（如"思维导图"图标+标题），不消费任何 API 数据或 Provider 状态。展示层组件必须从数据源读取并渲染结构化内容
-      - 任务要求的文件未创建：tasks.md 指定了具体文件路径，但执行时合并到其他文件中。LLM 对比 tasks.md 的 Files 列表与实际文件系统，缺失文件 → 该任务降级
-      任何一个交互元素命中以上模式 → 该维度（UX 或 Logic）降级为未覆盖。
-      整个任务如果关键交互是空壳 → 降级为 `stub`（不是 genuine）。
+
+      > **必须由 LLM 语义判断，禁止退化为模式匹配。**
+      > 不要 grep `() {}` 或 `TODO` 来判断空壳——聪明的空壳不会写 TODO，
+      > 它会有看似合理的代码结构但不产生真实业务效果。
+
+      UI 文件存在 ≠ 功能实现。LLM 读每个文件的代码，以"如果用户真的使用这个功能，会得到什么结果？"为判断标准：
+
+      - **用户点了按钮会发生什么？** LLM 追踪事件回调的调用链——如果最终没有到达 API 调用或状态变更，就是空壳
+      - **页面展示的数据从哪来？** LLM 判断数据是来自 API/Provider/Store 还是硬编码在组件内。展示层组件必须消费外部数据源
+      - **这个组件的 tasks.md 验收条件满足了吗？** LLM 读对应任务的 Acceptance 条件，逐条判断代码是否满足
+      - **tasks.md 指定的文件是否都创建了？** 对比 Files 列表与实际文件系统，缺失 → 降级
+
+      判定不是靠匹配代码模式，而是 LLM 理解代码意图后回答：
+      **"如果一个真实用户使用这个功能，能得到有价值的结果吗？"**
+      能 → genuine。不能但有部分逻辑 → partial。完全不能 → stub/hollow。
 
       **覆盖判定**（取代字符串匹配）：
       - `genuine` — 4D 中至少 3 维有实质代码，且无关键交互空壳
