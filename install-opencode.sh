@@ -24,13 +24,13 @@ cat > "$OPENCODE_CONFIG_DIR/skills.json" << EOF
       "name": "product-design",
       "path": "$SCRIPT_DIR/product-design-skill/skills",
       "commands": "$SCRIPT_DIR/product-design-skill/commands",
-      "description": "产品设计套件：产品概念、功能地图、界面地图、用例集、功能查漏、功能剪枝、UI 设计、设计审计"
+      "description": "产品设计套件：产品概念、产品地图、体验地图、用例集、功能查漏、功能剪枝、UI 设计、设计审计"
     },
     {
       "name": "dev-forge",
       "path": "$SCRIPT_DIR/dev-forge-skill/skills",
       "commands": "$SCRIPT_DIR/dev-forge-skill/commands",
-      "description": "开发锻造套件：项目引导、设计转规格、脚手架生成、任务执行、种子数据锻造、产品验收"
+      "description": "开发锻造套件：项目引导、设计转规格、任务执行、种子数据锻造、产品验收、测试锻造"
     },
     {
       "name": "code-tuner",
@@ -96,12 +96,12 @@ echo '     "mcp": { "inherit": true }'
 echo '   }'
 echo ""
 echo "3. 现在可以在任何项目中使用以下命令："
-echo "   /product-concept    /product-map       /screen-map"
+echo "   /product-concept    /product-map       /experience-map"
 echo "   /use-case           /feature-gap       /feature-prune"
 echo "   /ui-design          /design-audit"
-echo "   /design-to-spec     /project-scaffold  /project-setup"
-echo "   /seed-forge         /task-execute      /e2e-verify"
-echo "   /product-verify     /deadhunt          /code-tuner"
+echo "   /design-to-spec     /project-setup     /task-execute"
+echo "   /seed-forge         /product-verify    /testforge"
+echo "   /code-tuner"
 echo "   /ui-forge"
 echo ""
 echo "📂 配置文件位置："

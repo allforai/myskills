@@ -64,7 +64,7 @@ cat > "$SKILLS_CONFIG" << EOF
       "name": "product-design",
       "path": "$INSTALL_DIR/product-design-skill/skills",
       "commands": "$INSTALL_DIR/product-design-skill/commands",
-      "description": "产品设计套件：产品概念、功能地图、界面地图、用例集、功能查漏、功能剪枝、UI 设计、设计审计",
+      "description": "产品设计套件：产品概念、产品地图、体验地图、用例集、功能查漏、功能剪枝、UI 设计、设计审计",
       "source": {
         "type": "git",
         "repo": "$REPO_USE",
@@ -76,7 +76,7 @@ cat > "$SKILLS_CONFIG" << EOF
       "name": "dev-forge",
       "path": "$INSTALL_DIR/dev-forge-skill/skills",
       "commands": "$INSTALL_DIR/dev-forge-skill/commands",
-      "description": "开发锻造套件：项目引导、设计转规格、脚手架生成、任务执行、种子数据锻造、产品验收",
+      "description": "开发锻造套件：项目引导、设计转规格、任务执行、种子数据锻造、产品验收、测试锻造",
       "source": {
         "type": "git",
         "repo": "$REPO_USE",
@@ -233,11 +233,11 @@ echo '     "mcp": { "inherit": true }'
 echo '   }'
 echo ""
 echo "现在可以在任何项目中使用以下命令："
-echo "   产品设计：/product-concept  /product-map  /screen-map  /ui-design"
+echo "   产品设计：/product-concept  /product-map  /experience-map  /ui-design"
 echo "   测试用例：/use-case  /feature-gap  /feature-prune  /design-audit"
-echo "   开发锻造：/design-to-spec  /project-scaffold  /project-setup  /task-execute"
-echo "   数据验证：/seed-forge  /product-verify  /e2e-verify"
-echo "   架构分析：/deadhunt  /code-tuner"
+echo "   开发锻造：/design-to-spec  /project-setup  /task-execute  /testforge"
+echo "   数据验证：/seed-forge  /product-verify"
+echo "   架构分析：/code-tuner"
 echo "   UI后处理：/ui-forge"
 echo ""
 echo "📂 配置文件位置："
