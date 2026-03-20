@@ -34,6 +34,10 @@ Code Replicate 是逆向工程桥梁：读取已有代码库，生成标准 `.al
    - scope（full / modules / feature）
    - 目标技术栈（同栈 or 跨栈 + 目标名称）
    - 业务方向（replicate / slim / extend）
+   > **闭环输入审计**（见 product-design-skill/docs/skill-commons.md §八）：
+   > 用户回答后检查**意图闭环**（代码做了什么 vs 用户想要什么一致吗？）
+   > 和**边界闭环**（代码处理了正常路径，用户期望的异常处理呢？）。
+   > MUST 级缺失以选择题形式追问。
 5. 写 replicate-config.json → `.allforai/code-replicate/`
 6. 创建 fragments 目录结构：`.allforai/code-replicate/fragments/{roles,screens,tasks,flows,usecases,constraints}/`
 

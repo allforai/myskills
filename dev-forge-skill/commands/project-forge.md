@@ -149,6 +149,12 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 将检测结果写入 `forge-decisions.json` 的 `forge_run.interactive` 字段：`true`（交互）或 `false`（自动）。
 
+### 闭环输入审计
+
+> 见 `product-design-skill/docs/skill-commons.md`「§八 闭环输入审计」。
+
+交互模式下收集用户决策（技术选型、Spike 方案、Preflight 偏好）时，每个确认后执行闭环审计。重点关注**技术闭环**（选了技术栈，运维/监控/部署谁管？）和**凭证闭环**（需要外部服务，Key 从哪来？sandbox 怎么配？）。
+
 ### 外部能力快检
 
 > 统一协议见 `product-design-skill/docs/skill-commons.md`「外部能力探测协议」。

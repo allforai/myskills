@@ -124,9 +124,11 @@ product-concept（战略层）        product-map（运营层）
 /product-concept reverse      # 提炼模式（从现有代码/地图反推）
 ```
 
-## 增强协议（WebSearch + 4D+6V + XV）
+## 增强协议（WebSearch + 4D+6V + XV + 闭环输入审计）
 
 > 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
+
+**闭环输入审计**（见 `docs/skill-commons.md` §八）：本技能每个 Step 的用户确认后执行闭环审计。重点关注**角色闭环**（有消费就有生产）和**商业闭环**（有收入就有成本）。发现 MUST 级缺失时，在下一轮提问中以选择题形式补问。
 
 **WebSearch 关键词**：`”JTBD” + 行业词 + “case study” + 2025`、`”problem discovery” + 产品类型 + “user research”`、`”Blue Ocean” + 行业词 + “competitive landscape”`
 

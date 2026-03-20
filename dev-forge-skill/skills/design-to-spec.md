@@ -52,9 +52,11 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 
 ---
 
-## 增强协议（WebSearch + 4E+4V + OpenRouter）
+## 增强协议（WebSearch + 4E+4V + OpenRouter + 闭环输入审计）
 
 > 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
+
+**闭环输入审计**（见 `product-design-skill/docs/skill-commons.md` §八）：Architect 生成 design.md 后，审查每个任务是否有**验收闭环**（"完成"标准是什么？谁验收？）。缺失验收条件 → Auditor V11 标记。
 
 **WebSearch 关键词**：
 - `"{framework} API design patterns {year}"`
