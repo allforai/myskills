@@ -123,11 +123,31 @@ Step 2: 检测平台测试环境可用性
 |------|---------|------------|
 | **主机**（unit/widget） | 始终可用 | — |
 | **Web** | Playwright 可用（MCP 或 CLI） | 生成脚本 PLAN_ONLY |
-| **Android** | `which adb` + 设备/模拟器在线（`adb devices`） | 跳过 Android 集成测试 |
-| **iOS** | macOS + `which xcodebuild` + 模拟器可用 | 跳过 iOS 集成测试 |
+| **Android** | `which adb` + 设备/模拟器在线（`adb devices`） | 降级到桌面原生（见下方） |
+| **iOS** | macOS + `which xcodebuild` + 模拟器可用 | 降级到桌面原生（见下方） |
 | **macOS** | macOS + 项目有 macos/ 目标 | 跳过 macOS 测试 |
-| **Linux** | Linux + 项目有 linux/ 目标 | 跳过 Linux 测试 |
+| **Linux** | Linux + 项目有 linux/ 目标 | — （Linux 环境下始终可用） |
 | **Windows** | Windows + 项目有 windows/ 目标 | 跳过 Windows 测试 |
+
+**移动端降级到桌面原生**（Flutter / RN 等跨平台框架专用）：
+
+当 Android/iOS 模拟器或真机不可用时，如果当前操作系统有对应的桌面目标（Linux 有 `linux/`、macOS 有 `macos/`、Windows 有 `windows/`），降级为桌面原生运行 + 手机分辨率窗口：
+
+1. **检测桌面目标**：`flutter devices` 列出可用设备，选择当前操作系统的桌面设备
+2. **设置手机分辨率**：在桌面平台的窗口配置中设置为手机尺寸（如 393x852 或 414x896）
+   - Flutter Linux: 修改 `linux/runner/my_application.cc` 中的 `gtk_window_set_default_size`
+   - Flutter macOS: 修改 `macos/Runner/MainFlutterWindow.swift` 中的 window frame
+   - Flutter Windows: 修改 `windows/runner/main.cpp` 中的窗口尺寸
+3. **运行集成测试**：`flutter test integration_test/ -d linux`（或 macos/windows）
+4. **标记为降级测试**：报告中标注 `DESKTOP_SUBSTITUTE`，说明"在 {desktop} 上以 {resolution} 手机分辨率运行，替代 {android/ios} 测试"
+
+> **这不等同于真机测试**——桌面原生不测手势、推送、传感器、权限弹窗等移动端特有行为。
+> 但它**能测到**：路由导航、状态管理、API 调用、数据渲染、业务逻辑——覆盖了 80% 的 E2E 价值。
+> 比 NOT_TESTED 好得多。
+
+降级优先级：桌面原生（手机分辨率）> PLAN_ONLY > NOT_TESTED
+
+> **Flutter Web (`-d chrome`) 不是有效的移动端降级**。Flutter Web 用的是 Web 渲染引擎（HTML/CanvasKit），跟原生 UI 框架完全不同——Widget 行为、手势处理、平台通道全部不一样。在 Chrome 上测通过不代表原生端没问题。桌面原生（`-d linux`/`-d macos`）虽然也不是移动端，但至少用的是同一套 Flutter 原生渲染管线。
 
 Step 2.5: Web 应用路由模式和渲染模式探测
 
@@ -663,8 +683,9 @@ dimension Logic > Interface > Data > UX（业务规则最先）
    | Web | Playwright | browser_navigate/click/snapshot 或 `npx playwright test` | .spec.ts |
    | Android | Maestro | `maestro test` | .yaml |
    | iOS | Maestro 或 XCUITest | `maestro test` 或 `xcodebuild test` | .yaml / .swift |
-   | macOS | Playwright(Flutter Web 模式) 或 原生 | `flutter test integration_test/ -d macos` | _test.dart |
-   | Linux | Playwright(Flutter Web 模式) 或 原生 | `flutter test integration_test/ -d linux` | _test.dart |
+   | macOS | 原生桌面 | `flutter test integration_test/ -d macos` | _test.dart |
+   | Linux | 原生桌面 | `flutter test integration_test/ -d linux` | _test.dart |
+   | Android/iOS 降级 | 桌面原生 + 手机分辨率 | `flutter test integration_test/ -d {当前OS桌面设备}` | _test.dart（标记 DESKTOP_SUBSTITUTE） |
 
 4. 跨平台差异记录
    同一场景在 A 平台通过但 B 平台失败 → 标记为 PLATFORM_SPECIFIC_BUG
@@ -772,20 +793,19 @@ dimension Logic > Interface > Data > UX（业务规则最先）
 
 | 框架 | 平台 | 测试工具 | 执行方式 |
 |------|------|---------|---------|
-| Flutter | Web | **Playwright** | `flutter run -d chrome` + Playwright 测试 |
 | Flutter | Android | **Patrol** 或 `flutter test integration_test/ -d emulator` | Patrol dart 或 Dart integration test |
 | Flutter | iOS | **Patrol** 或 `flutter test integration_test/ -d simulator` | Patrol dart 或 Dart integration test |
 | Flutter | macOS/Linux/Windows | `flutter test integration_test/ -d {platform}` | Dart integration test |
-| RN | Web | **Playwright**（需 react-native-web） | Playwright .spec.ts |
 | RN | Android | **Maestro** | `maestro test` |
 | RN | iOS | **Maestro** | `maestro test` |
 
+> **Flutter Web (`-d chrome`) 不作为移动端 E2E 测试目标**。Flutter Web 使用完全不同的渲染管线（HTML/CanvasKit），测试结果不能代表原生端行为。如果产品本身有 Web 端部署需求，Web 测试走 Nuxt/Next 等 Web 子项目的 Playwright 路径，不走 Flutter Web。
+
 降级策略：
-- Playwright MCP headed 模式失败（无 X Server）→ 加 `--headless` 参数重试，**不得降级为 curl**
-- Playwright MCP 不可用 → 降级为 Playwright CLI（`npx playwright test --headed=false`）
 - Patrol 不可用（Flutter）→ 降级为 Maestro，再降级为 `flutter test integration_test/`
 - Maestro 不可用 → RN 降级为 Detox
-- 模拟器/真机不可用 → 跳过该平台 UI 测试，生成脚本标记 `PLAN_ONLY`
+- 模拟器/真机不可用 → **降级为桌面原生 + 手机分辨率**（见 Phase 0 Step 2「移动端降级到桌面原生」）
+- 当前 OS 无桌面目标 → 生成脚本标记 `PLAN_ONLY`
 - 全部不可用 → 仅生成脚本 + 主机测试（unit/widget）
 
 **铁律：UI 类测试（E2E 链的 Web 步骤、Platform UI）严禁降级为 curl/HTTP API 调用。**
