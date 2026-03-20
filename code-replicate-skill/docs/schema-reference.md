@@ -68,6 +68,7 @@ LLM-generated project-specific extraction rules for Phase 3 fragment generation.
 - Each `*_sources` entry tells the LLM exactly which file(s) to read and how to extract artifacts from them
 - `how` field describes the extraction logic **specific to this project** — not a framework template
 - `cross_cutting` lists concerns that span multiple modules (auth, logging, error handling, etc.)
+- `abstraction_sources` — points to the implementation files of reuse patterns discovered in source-summary.abstractions. During Phase 3 fragment generation, LLM reads these files to understand the reuse contract, ensuring generated task/flow artifacts reference shared abstractions instead of inlining repeated logic
 - Fullstack mode adds: `api_contract_files`, `cross_layer_mapping`
 - Module mode adds: `boundary_interfaces`, `external_deps_mapping`
 
@@ -162,7 +163,25 @@ Global context carrier produced by Phase 2b analysis. Stored at `.allforai/code-
     "external": [
       { "target": "https://api.stripe.com", "used_by": "M002", "purpose": "payment processing" }
     ]
-  }
+  },
+  "abstractions": [
+    {
+      "name": "BaseBloc",
+      "source_file": "lib/core/base_bloc.dart",
+      "consumers": ["M003", "M004", "M005", "M006"],
+      "consumer_count": 15,
+      "what_it_provides": "统一的 loading/error state 处理 + 自动 analytics 埋点",
+      "reuse_mechanism": "LLM 自由描述：继承、mixin、组合、装饰器、代码生成..."
+    },
+    {
+      "name": "ApiService",
+      "source_file": "lib/core/network/api_service.dart",
+      "consumers": ["M003", "M004", "M005"],
+      "consumer_count": 15,
+      "what_it_provides": "统一 HTTP 封装：token 注入、错误拦截、自动重试",
+      "reuse_mechanism": "依赖注入 — 所有 feature service 通过构造函数接收 ApiService 实例"
+    }
+  ]
 }
 ```
 
@@ -170,6 +189,13 @@ Global context carrier produced by Phase 2b analysis. Stored at `.allforai/code-
 - `modules[].confidence` — `high` means clear boundary and cohesive naming; `low` means inferred from file structure alone
 - `cross_cutting` — behaviors applied across modules (middleware, decorators, base classes)
 - `api_call_map.internal` — inter-module dependencies; `external` — third-party API calls
+- `abstractions` — **LLM-discovered** reuse patterns in source code. LLM decides what qualifies as a "reuse pattern" based on reading the actual code. Fields:
+  - `name` — LLM-assigned name for this abstraction
+  - `source_file` — where the abstraction is defined
+  - `consumers` — which modules use it (module IDs)
+  - `consumer_count` — how many modules depend on it (signals importance)
+  - `what_it_provides` — what behavior/contract this abstraction encapsulates
+  - `reuse_mechanism` — how consumers use it (inheritance, composition, DI, mixin, etc.) — LLM describes freely, no enum
 
 ---
 
@@ -207,6 +233,28 @@ Cross-stack mapping decisions produced by Phase 2d. Stored at `.allforai/code-re
     }
   ],
   "unmapped": [],
+  "abstraction_mapping": [
+    {
+      "source_abstraction": "BaseBloc",
+      "source_file": "lib/core/base_bloc.dart",
+      "what_it_provides": "统一的 loading/error state 处理 + 自动 analytics 埋点",
+      "source_mechanism": "Dart class inheritance (extends Bloc<E,S>)",
+      "target_equivalent": "BaseViewModel : ObservableObject",
+      "target_mechanism": "C# class inheritance + CommunityToolkit.Mvvm source generators",
+      "migration_notes": "Bloc 的 event→state 模型变为 Command→Property 模型；loading/error 状态从 sealed class 变为 ObservableProperty<bool>",
+      "semantic_drift_risk": "medium"
+    },
+    {
+      "source_abstraction": "ApiService",
+      "source_file": "lib/core/network/api_service.dart",
+      "what_it_provides": "统一 HTTP 封装：token 注入、错误拦截、自动重试",
+      "source_mechanism": "Dio interceptors + DI",
+      "target_equivalent": "HttpClient + DelegatingHandler pipeline",
+      "target_mechanism": "ASP.NET HttpClientFactory + Polly retry policies",
+      "migration_notes": "Dio interceptor chain → DelegatingHandler chain；概念对等但 API 完全不同",
+      "semantic_drift_risk": "low"
+    }
+  ],
   "created_at": "ISO8601"
 }
 ```
@@ -216,3 +264,10 @@ Cross-stack mapping decisions produced by Phase 2d. Stored at `.allforai/code-re
 - `user_decisions` — multi-option scenarios where the user chose a target construct
 - `framework_builtins` — source hand-written code replaceable by target framework built-ins
 - `unmapped` — constructs that could not be mapped (require manual resolution)
+- `abstraction_mapping` — maps source code's reuse patterns to target stack equivalents. LLM generates this based on source-summary.abstractions + understanding of the target stack. Fields:
+  - `source_abstraction` — name from source-summary.abstractions
+  - `what_it_provides` — the behavior contract (stack-agnostic)
+  - `source_mechanism` / `target_mechanism` — how reuse is implemented in each stack
+  - `target_equivalent` — what the LLM recommends in the target stack
+  - `migration_notes` — key differences that may cause semantic drift
+  - `semantic_drift_risk` — LLM's assessment of how much behavior may change
