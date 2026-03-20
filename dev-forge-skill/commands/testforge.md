@@ -273,10 +273,11 @@ Step 2.5: Web 应用路由模式和渲染模式探测
 
 1. **覆盖映射**：将已有测试文件与源文件配对（按项目实际的测试目录结构匹配）
 2. **标记状态**：
-   - `COVERED` — 有对应测试文件且测试函数 ≥ 1
+   - `COVERED` — 有对应测试文件且测试函数 ≥ 1，且源文件有实质逻辑
    - `PARTIAL` — 有测试文件但覆盖不足（分支覆盖 < 50%）
    - `UNCOVERED` — 无对应测试文件
    - `TRIVIAL` — 文件太简单不需要测试（纯类型定义、常量、re-export）
+   - `HOLLOW` — 源文件本身是空壳实现（只渲染 placeholder 不消费数据、只有 TODO、关键函数体为空）。即使有测试文件也标为 HOLLOW——测试覆盖空壳代码没有价值。HOLLOW 文件应优先作为 Phase 4 的修复目标而非测试目标
 3. **分支分析**：对 COVERED 和 PARTIAL 文件，LLM 读源码提取：
    - if/switch/ternary 分支 → 测试覆盖了哪些分支？
    - error return / catch / throw → 错误路径有测试吗？
