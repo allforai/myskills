@@ -751,6 +751,12 @@ grep -rn "json\['" --include="*.dart" lib/ 2>/dev/null
 | Text | `Text(item['user_name'])` | `user_name` | — |
 | ListTile | `ListTile(title: Text(item.name), subtitle: Text(item.email))` | `name`, `email` | — |
 
+#### 前端 API Service 层响应字段
+
+> 前端 API service/client 函数中，对 HTTP 响应的字段访问路径。
+> 纳入 L1 字段集合（component type = `api_service`），参与 L1↔L2 比对。
+> LLM 驱动提取 — 读 service 函数代码，结合 SC-1 的拦截器解包规则推算字段路径。
+
 #### L1 输出格式
 
 ```json

@@ -14,8 +14,14 @@ Web:    {{ item.userName }}   POST body: { userName }  class User { userName }  
 Mobile: Text(user.userName)  GET resp: { userName }   @JsonKey userName        user_name VARCHAR
 （示例为通用概念，适用于任意前端框架 + 后端框架 + ORM + DB 组合）
 
+L1 的提取范围（两部分）：
+  a. UI 组件绑定字段 — 模板/JSX/Widget 中引用的字段名
+  b. API service 层响应字段 — service 函数解析后端响应时访问的字段路径
+  两者都必须提取。b 是 UI 和 API 之间的翻译层，翻译错了 UI 拿到 undefined 但 a↔L2 比对看不出来。
+
 检查方向（双向）：
   L1 ←→ L2: 前端用的字段，API 返回了吗？API 返回的字段，前端展示了吗？
+             （含 API service 层访问的响应字段路径 ←→ L2 响应字段）
   L2 ←→ L3: DTO/VO 字段和 Entity 字段对应吗？
   L3 ←→ L4: Entity 字段和数据库列名映射正确吗？
   L1 ←→ L4: 跨层端到端，前端显示的字段最终能映射到数据库列吗？
