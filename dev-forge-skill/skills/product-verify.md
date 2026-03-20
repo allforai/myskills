@@ -235,7 +235,45 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
       - `partial` — 1-2 维有实质代码，或有空壳交互（标注缺失维度 + 空壳清单）
       - `stub` — 仅有路由声明 / TODO / mock 返回 / 关键交互全部为空壳
       - `missing` — 无任何匹配代码
-      → 输出进度: 「S1 语义审计 ✓ genuine:{N} partial:{K} stub:{J} missing:{M}」
+      → 输出进度: 「S1 语义审计 ✓ genuine:{N} partial:{K} stub:{J} missing:{M} hollow:{H}」
+  ↓
+  S1.5: 功能深度验收 (LLM-driven, concept-baseline 存在时执行)
+
+      > S1 检查"代码存在吗"和"是不是空壳"，但不检查"实现深度够不够"。
+      > 一个 methodology_engine.py 有 200 行代码、不是 placeholder、也不是 TODO——
+      > 但如果概念说"阶段驱动讨论"，而代码只做"关键词匹配选方法论名字"，这就是**深度不足**。
+      > S1.5 解决的是：代码实现的行为是否达到了产品概念描述的意图。
+
+      **输入**：
+      - `concept-baseline.json` 的 `core_mechanisms`（核心机制描述）
+      - `product-concept.json` 的 `innovation_concepts`（创新概念 + 行为描述）
+      - `product-concept.json` 的 `product_mechanisms`（方法论引擎、搜索引擎、AI 工具等详细行为定义）
+      - 对应的源代码文件
+
+      **LLM 审计方式**：
+      对每个核心机制和创新概念，LLM 做两件事：
+      1. **提取概念意图**：从概念文件中提取该机制"应该做什么"的行为描述（不是功能名，是具体行为）
+      2. **比对代码行为**：读对应源代码，判断代码实现的行为是否匹配概念意图
+
+      **判定标准**：
+      - `FULL` — 代码行为完整覆盖概念描述的意图
+      - `SHALLOW` — 代码有相关逻辑但深度不足（如概念说"阶段驱动"但代码只做"选名字"）
+      - `STUB` — 代码只有接口/壳子，核心逻辑缺失或 mock
+      - `MISSING` — 完全没有对应代码
+
+      **SHALLOW 的典型模式**（LLM 判断，不硬编码）：
+      - 概念说"自动搜索并引用"→ 代码有搜索函数但返回硬编码结果
+      - 概念说"按阶段引导讨论"→ 代码能选方法论但没有阶段推进逻辑
+      - 概念说"生成结构化输出（导图/表格）"→ 代码有 Tab 切换但渲染器是 placeholder
+      - 概念说"跨域类比"→ 代码调了 LLM 但 prompt 里没有跨域搜索指令
+
+      **修复方向**：
+      - SHALLOW/STUB 项 → 生成 `DEEPEN` 类型的修复任务（不是新建功能，是加深已有实现）
+      - DEEPEN 任务比 IMPLEMENT 任务优先级低但比 FIX 高
+
+      **无 concept-baseline 时**：跳过 S1.5，输出 `S1.5 ⊘ 无概念基线`
+
+      → 输出进度: 「S1.5 深度验收 ✓ full:{N} shallow:{K} stub:{J} missing:{M}」
   ↓
   S2: UI 组件保真度检查 (LLM-driven)
       Agent 扫描前端代码，以 `experience-map.json` 为真值验证组件实现保真度。
