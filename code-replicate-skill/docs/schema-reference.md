@@ -67,7 +67,8 @@ LLM-generated project-specific extraction rules for Phase 3 fragment generation.
 **Field notes:**
 - Each `*_sources` entry tells the LLM exactly which file(s) to read and how to extract artifacts from them
 - `how` field describes the extraction logic **specific to this project** — not a framework template
-- `cross_cutting` lists concerns that span multiple modules (auth, logging, error handling, etc.)
+- `module` field: module ID (e.g., "M001") or `null` for root-level files (e.g., nginx.conf, routes.yaml, OpenAPI specs). Root-level config files often contain routing, permission, or infrastructure definitions that are critical for task/role/flow extraction
+- `cross_cutting` — each entry may include `phase` field to describe execution ordering (e.g., OpenResty's access/content/log phases, Express middleware ordering). This helps stack-mapping translate phase-based middleware to chain-based middleware
 - `abstraction_sources` — points to the implementation files of reuse patterns discovered in source-summary.abstractions. During Phase 3 fragment generation, LLM reads these files to understand the reuse contract, ensuring generated task/flow artifacts reference shared abstractions instead of inlining repeated logic
 - Fullstack mode adds: `api_contract_files`, `cross_layer_mapping`
 - Module mode adds: `boundary_interfaces`, `external_deps_mapping`
@@ -154,7 +155,13 @@ Global context carrier produced by Phase 2b analysis. Stored at `.allforai/code-
     "cache": "redis",
     "queue": "bull",
     "storage": "local",
-    "containerization": "docker-compose"
+    "containerization": "docker-compose",
+    "upstream_services": [
+      {"name": "user-service", "endpoints": ["10.0.1.1:8080"], "protocol": "http", "health_check": true}
+    ],
+    "shared_memory": [
+      {"name": "rate_limit_counter", "mechanism": "ngx.shared.DICT", "size": "10m", "migration_note": "需要 Redis 替代"}
+    ]
   },
   "api_call_map": {
     "internal": [

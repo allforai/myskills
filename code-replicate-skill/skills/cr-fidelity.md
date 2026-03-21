@@ -95,6 +95,7 @@ LLM 从以下维度逐一对比，**每个维度独立评分 0-100**。
 - 每个 task 是否有对应的端点/handler/controller？
 - 输入参数（字段名、类型、必填性）是否一致？
 - 输出响应（字段名、类型、状态码）是否一致？
+- **路由模型一致性**：如果源码使用配置式路由（如 nginx.conf location 块），目标使用代码式路由（如 Gin router），检查路由优先级和路径参数映射是否等价。路由冲突（源码无冲突但目标有冲突）标记为 gap
 - 如果 `platform_adaptation.skip_source_features` 存在，排除相关 task 后再计分
 - 评分 = 匹配 task 数 / 有效 task 数 × 100
 

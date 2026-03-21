@@ -86,6 +86,7 @@ LLM 读取以下信息（context 极小，~2-5KB）：
 - 每个模块读取 cr_discover.py 标记的 key_files（入口、路由、模型、配置）
 - 输出：模块 responsibility 单句描述 + 暴露 interfaces 列表 + 核心 entities
 - 大模块（>50 文件）优先分析 key_files，再根据目录结构判断是否需要深入扫描子目录
+- **非代码配置文件也可能含业务逻辑**：路由配置（nginx.conf, routes.yaml）、API 定义（OpenAPI spec）、权限矩阵（rbac.yaml）等。LLM 应在 discovery-profile 或 extraction-plan 中将这些文件标注为 task/role/flow 来源。引用项目根目录文件时使用 `"module": null`
 > 分析原则详见 ${CLAUDE_PLUGIN_ROOT}/docs/analysis-principles.md
 
 **Step 2c** — LLM 全局补充（cross_cutting + 隐含依赖 + 架构风格 + **abstractions**）
@@ -342,6 +343,7 @@ OL-D4 角色完整性:
 15. **内循环收敛** — Phase 4a 修复循环遵循 CG-1：最多 3 轮、单调递减、违反则停止。防止无限修复循环
 16. **外循环意图保真** — Phase 4d 回到 source-summary 原点验证提取覆盖度，遵循 CG-3：追加缺口 ≤ 总条目 20%、最多 1 轮。防止提取产物偏离源码业务意图
 17. **跨平台适配** — 当源平台和目标平台交互模型不同（mobile↔desktop）时，必须生成 `platform_adaptation`。产物中的 UX 模式（布局、手势、导航、注意力阈值）不可原样传递到不同平台的目标代码。cr-fidelity 评估时使用适配后的阈值和排除列表
+18. **配置即代码** — 非代码配置文件（nginx.conf, routes.yaml, OpenAPI spec, rbac.yaml, upstream.conf 等）可能包含路由定义、权限规则、基础设施配置等业务逻辑。extraction-plan 必须将这些文件纳入 task/role/flow 来源，使用 `"module": null` 引用根目录文件。source-summary.infrastructure 必须记录上游服务、共享内存、负载均衡等基础设施依赖
 
 ---
 
