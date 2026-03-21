@@ -76,6 +76,7 @@ LLM-generated infrastructure inventory. Stored at `.allforai/code-replicate/infr
 - `is_standard` — false for custom/proprietary implementations that have no standard library equivalent
 - `cannot_substitute` — true when the component MUST be precisely replicated, not approximated. Critical for: encryption algorithms (wire format compatibility), custom protocols (client compatibility), native SDKs (vendor-specific)
 - `migration_risk_reason` — LLM explains WHY this risk level, not just what level
+- `protocol_spec` — **required for custom protocol/encryption/serialization components**. Structured specification: frame_format (field offsets, lengths, encodings), state_machine (transitions), test_vectors (verifiable input/output pairs). Enables target code verification without access to source runtime
 - Cross-cutting components (e.g., communication + encryption in one layer) should be listed as a **single component** to preserve the coupling semantics
 
 ---
@@ -353,8 +354,8 @@ Cross-stack mapping decisions produced by Phase 2d. Stored at `.allforai/code-re
 ```
 
 **Field notes:**
-- `auto_mapped` — direct equivalences that need no user input
-- `user_decisions` — multi-option scenarios where the user chose a target construct
+- `auto_mapped` — direct equivalences that need no user input. Each entry has `compatibility`: `flexible` (design choice, freely replaceable) or `exact` (protocol-level, must preserve wire behavior). Components communicating with existing servers default to `exact`
+- `user_decisions` — multi-option scenarios where the user chose a target construct. Also has `compatibility` field
 - `framework_builtins` — source hand-written code replaceable by target framework built-ins
 - `unmapped` — constructs that could not be mapped (require manual resolution)
 - `infrastructure_mapping[]` — **LLM-generated** mapping of each infrastructure-profile component to target stack equivalent. Fields:
@@ -377,6 +378,38 @@ Cross-stack mapping decisions produced by Phase 2d. Stored at `.allforai/code-re
   - `target_equivalent` — what the LLM recommends in the target stack
   - `migration_notes` — key differences that may cause semantic drift
   - `semantic_drift_risk` — LLM's assessment of how much behavior may change
+
+---
+
+## test-vectors.json
+
+Verifiable input/output pairs extracted from source code for critical infrastructure components. Stored at `.allforai/code-replicate/test-vectors.json`. Generated in Phase 3 Step 3.5.5.
+
+```json
+{
+  "generated_at": "ISO8601",
+  "vectors": [
+    {
+      "component": "Rabbit cipher",
+      "source_file": "lib/crypto/rabbit.dart",
+      "cases": [
+        {
+          "input": "base64 encoded plaintext",
+          "key": "base64 encoded key",
+          "expected_output": "base64 encoded ciphertext",
+          "description": "encrypt 'hello world' with test key"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Field notes:**
+- Only generated for components with `cannot_substitute: true` or `compatibility: exact`
+- Test cases extracted from: source unit tests (priority 1), source constants/fixtures (priority 2), LLM-constructed from algorithm understanding (priority 3)
+- cr-fidelity R3 uses these vectors to verify target implementation produces identical outputs
+- dev-forge testforge can consume these to generate unit tests with known-good assertions (solves the "designing tests from answers" problem — these answers come from SOURCE code, not target)
 
 ---
 
@@ -410,8 +443,10 @@ Fidelity verification results from `/cr-fidelity`. Stored at `.allforai/code-rep
 ```
 
 **Field notes:**
-- `dimensions` — each F1-F7 dimension has independent score, counts, and gap details
-- `F7_constraint` — null for non-exact fidelity levels (only applicable when constraints.json exists)
+- `dimensions` — each F1-F8 dimension has independent score, counts, and gap details
+- `runtime` — R1-R4 runtime verification results: `R1_build`, `R2_smoke`, `R3_test_vectors`, `R4_protocol`. Each has `score`, `passed`, `detail`
+- `F7_constraint` — null for non-exact fidelity levels
+- `F8_infrastructure` — null when no infrastructure-profile exists
 - `gaps[]` — each gap has `type` (CODE_FIX / ARTIFACT_GAP / DESIGN_DECISION), `description`, `affected_artifact`, `fix_status`
 - `history` — score progression across rounds (for convergence tracking)
 - `passed` — true when `overall_score >= threshold`
