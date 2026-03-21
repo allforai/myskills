@@ -12,10 +12,13 @@ description: >
 
 ## 定位
 
-cr-fidelity 验证**代码级**还原度（产物 vs 目标代码）。
-cr-visual 验证**视觉级**还原度（源 App 界面 vs 目标 App 界面）。
+cr-visual 是复刻流程的**最后一步** — 在 cr-fidelity + product-verify + testforge 全部通过后执行。
 
-两者独立：cr-fidelity 满分但 cr-visual 不通过 = 代码正确但 UI 长得不对。
+```
+/cr-fidelity → /product-verify → /testforge → /cr-visual（这里）
+```
+
+**前置条件**：测试全绿，App 能稳定运行。截图对比需要 App 正常工作。
 
 ---
 

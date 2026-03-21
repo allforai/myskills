@@ -120,18 +120,18 @@ LLM 按阶段 0 选中的维度逐一评分。
 code-replicate 路径（复刻）：
   /code-replicate → /design-to-spec → /task-execute
       ↓
-  /cr-fidelity（复刻还原度 — 不是测试）
+  /cr-fidelity（代码级还原度 — 复刻专属，不是测试）
       ↓
-    达标 → /product-verify（功能验收 — 两条路径共用）
+  /product-verify（功能验收 — 两条路径共用）
       ↓
-           /testforge（测试质量 — 两条路径共用）
+  /testforge（测试质量 — 两条路径共用）
+      ↓
+  /cr-visual（视觉还原度 — 测试全绿后，App 稳定运行时截图对比）
 
 product-design 路径（创建）：
   /product-design → /design-to-spec → /task-execute
       ↓
-  /product-verify（功能验收）
-      ↓
-  /testforge（测试质量）
+  /product-verify → /testforge
 ```
 
 **cr-fidelity 是复刻路径的专属环节**，验证"目标代码是否还原了源码"。
