@@ -43,28 +43,17 @@ LLM-generated infrastructure inventory. Stored at `.allforai/code-replicate/infr
   "generated_at": "ISO8601",
   "components": [
     {
-      "name": "WebSocket Tunnel + Rabbit Encryption",
-      "category": "communication_encryption",
-      "files": ["lib/net/ws_tunnel.dart", "lib/crypto/rabbit.dart"],
-      "what_it_does": "Establishes encrypted tunnel over WebSocket for real-time data sync",
-      "how_it_works": "Custom binary framing (4-byte header + Rabbit-encrypted payload + CRC32). NOT standard WebSocket messages.",
-      "is_standard": false,
-      "standard_equivalent": "Closest: TLS over WebSocket, but uses non-standard Rabbit cipher",
-      "cannot_substitute": true,
-      "migration_risk": "critical",
-      "migration_risk_reason": "Rabbit cipher has no native Go/Swift implementation; substituting AES-CTR changes the wire format and breaks backward compatibility with existing clients"
-    },
-    {
-      "name": "CDN Acceleration SDK",
-      "category": "native_sdk",
-      "files": ["native/ios/CDNSDK.framework", "native/android/libs/cdnsdk.aar"],
-      "what_it_does": "Hardware-accelerated content delivery for media streaming",
-      "how_it_works": "Precompiled binary, no source code. Provides C API via FFI/MethodChannel",
-      "is_standard": false,
-      "standard_equivalent": null,
-      "cannot_substitute": true,
-      "migration_risk": "high",
-      "migration_risk_reason": "Binary-only SDK, must obtain target-platform build from vendor"
+      "name": "LLM 自命名（描述该组件的作用）",
+      "category": "LLM 自分类（不限定枚举）",
+      "files": ["该组件的实现文件路径"],
+      "what_it_does": "LLM 描述该组件做了什么",
+      "how_it_works": "LLM 描述实现机制",
+      "is_standard": true | false,
+      "standard_equivalent": "最接近的标准技术 | null",
+      "cannot_substitute": true | false,
+      "migration_risk": "critical | high | medium | low",
+      "migration_risk_reason": "LLM 解释为什么是这个风险等级",
+      "protocol_spec": { "...（自定义协议/加密/序列化组件必填）" }
     }
   ]
 }
@@ -390,14 +379,13 @@ Verifiable input/output pairs extracted from source code for critical infrastruc
   "generated_at": "ISO8601",
   "vectors": [
     {
-      "component": "Rabbit cipher",
-      "source_file": "lib/crypto/rabbit.dart",
+      "component": "LLM 自命名",
+      "source_file": "组件实现文件路径",
       "cases": [
         {
-          "input": "base64 encoded plaintext",
-          "key": "base64 encoded key",
-          "expected_output": "base64 encoded ciphertext",
-          "description": "encrypt 'hello world' with test key"
+          "input": "测试输入数据",
+          "expected_output": "期望的输出数据",
+          "description": "LLM 从源码测试/常量中提取的用例描述"
         }
       ]
     }
