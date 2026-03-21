@@ -57,3 +57,16 @@
 - 每个 action（按钮点击、表单提交、手势操作）是否有对应的事件处理？
 - 跨平台时：如果 `platform_adaptation.ux_transformations` 将 touch gesture 映射为 keyboard shortcut，按映射后的期望评估
 - 评分 = 已实现交互数 / 总定义交互数 × 100
+
+## U7 — 素材还原
+
+**适用条件**：asset-inventory.json 存在
+
+对比 asset-inventory 与目标代码中的静态资源：
+
+- **copy 类**：源文件是否已复制到目标项目？引用路径是否更新？
+- **transform 类**：主题变量是否映射到目标框架？i18n 文案是否保留完整？
+- **replace 类**：SVG 组件/图标库是否转换为目标框架格式？
+- **代码引用完整性**：asset-inventory.code_refs 中的每个引用，在目标代码中是否有等价引用且路径正确？（缺失引用 → 运行时碎图/缺字体/key 显示）
+- **主题一致性**：如果 asset-inventory.theme_system 存在，目标项目的主题变量数量是否覆盖源项目？（变量丢失 → 部分 UI 用框架默认样式）
+- 评分 = 已还原素材类目数 / 总素材类目数 × 100

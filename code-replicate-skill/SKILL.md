@@ -59,8 +59,9 @@ Code Replicate 将已有代码库逆向解构为标准 `.allforai/` 产物，直
 ├── use-case/             ← use-case-tree, use-case-report
 └── code-replicate/       ← replicate-config, source-summary,
                             discovery-profile, infrastructure-profile,
-                            extraction-plan, stack-mapping,
-                            replicate-report, fidelity-report
+                            asset-inventory, extraction-plan,
+                            stack-mapping, replicate-report,
+                            fidelity-report
 ```
 
 ## 工作流衔接
