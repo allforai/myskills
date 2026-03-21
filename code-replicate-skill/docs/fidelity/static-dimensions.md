@@ -79,14 +79,11 @@
 - 每个硬约束是否有代码执行？
 - 评分 = 已实现约束数 / 总 hard 约束数 × 100
 
-## F8 — 基础设施还原
+## F8 — 基础设施还原（flexible 组件）
 
-**适用条件**：infrastructure-profile.json 存在
+**适用条件**：infrastructure-profile.json 存在且含 `cannot_substitute: false` 的组件
 
-对比 infrastructure-profile 与目标代码中的基础设施实现：
-- `cannot_substitute: true` 的组件是否被精确复制？
-- `is_standard: false` 的自研组件是否有等价实现？
-- 耦合组件是否作为整体迁移？
-- 代码生成产物是否用同工具生成？
-- `migration_risk: critical` 被近似替代 → 直接标记为 gap
-- 评分 = 已正确还原的组件数 / 总组件数 × 100
+仅评估**可替代**（`cannot_substitute: false`）的基础设施组件：
+- 缓存框架、日志系统、ORM、DI 框架等设计选型类组件
+- 是否有功能等价的目标实现？（不要求 API 一致，只要求能力覆盖）
+- 评分 = 已还原的 flexible 组件数 / 总 flexible 组件数 × 100
