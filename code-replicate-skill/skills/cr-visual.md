@@ -68,23 +68,24 @@ cr-visual 需要知道怎么启动和导航源 App。信息来源（优先级）
 
 ## Step 2: 源 App 截图
 
-**方式 A — 源 App 可运行（Web）**：
-- 用 source_app.start_command 启动源 App（如果未运行）
-- 等待 source_app.url 可达
-- 如果有 login 凭证 → 先登录
-- Playwright browser_navigate 到每个 screen 的 route → browser_take_screenshot
-- 保存到 `.allforai/code-replicate/visual/source/`
+**方式 A（首选）— Phase 2 已采集**：
+- 检查 `.allforai/code-replicate/visual/source/` 是否已有截图
+- 已有 → 直接复用（Phase 2c-visual 在复刻早期已自动采集，此时源项目环境可能已不在）
 
-**方式 B — 源 App 可运行（移动端）**：
-- 如果 Maestro 可用 → 启动 App → `maestro screenshot` 逐屏截图
-- 如果不可用 → 提示用户手动截图并提供目录
-
-**方式 C — 用户提供截图目录**：
+**方式 B — 用户提供截图目录**：
 - 读取 `--screenshots` 目录中的图片文件
 - LLM 将图片文件名与 experience-map screen name 配对
 
-**方式 D — 源 App 已在 Phase 2 时截过图**：
-- 如果 `.allforai/code-replicate/visual/source/` 已存在 → 直接复用
+**方式 C — 源 App 仍可运行（Web）**：
+- 用 source_app.start_command 启动源 App
+- 等待 source_app.url 可达 → 登录 → 逐屏截图
+- 保存到 `.allforai/code-replicate/visual/source/`
+
+**方式 D — 源 App 仍可运行（移动端）**：
+- Maestro 可用 → `maestro screenshot` 逐屏截图
+- 不可用 → 提示用户手动截图并提供目录
+
+**无截图可用** → 报错退出：「源 App 截图不可用。请提供 --screenshots 目录，或确保源 App 可启动」
 
 ---
 

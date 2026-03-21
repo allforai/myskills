@@ -146,6 +146,25 @@ LLM 自行判断什么构成"基础设施" — 可能是通信协议、加密算
 - 标记架构风格：monolith / microservice / modular-monolith / serverless
 - **提取源码复用模式**：LLM 读 key_files 时观察到的代码复用方式，写入 source-summary.json 的 `abstractions` 字段。LLM 自行判断什么构成"复用模式"——可能是基类继承、mixin 组合、高阶函数、装饰器、依赖注入、代码生成宏等，完全由源码决定
 
+**Step 2c-visual** — 源 App 截图采集（仅 frontend/fullstack 且源 App 可运行时执行）
+
+如果源 App 能启动（replicate-config.source_app 有 start_command 和 url），在 Phase 2 阶段就完成截图采集 — **不等到流程末尾**，因为源项目环境可能在后续步骤中被清理。
+
+```
+1. 启动源 App（用 source_app.start_command）
+2. 等待 source_app.url 可达
+3. 如果有 login 凭证 → 先登录
+4. 按 experience-map screens 逐屏导航 + 截图（Playwright/Maestro）
+   - Web: browser_navigate → browser_take_screenshot
+   - 移动端: maestro screenshot（如果可用）
+5. 保存到 .allforai/code-replicate/visual/source/{screen_name}.png
+6. 停止源 App
+```
+
+如果源 App 无法启动（无 start_command 或启动失败）→ 跳过，标记 `SOURCE_SCREENSHOTS_SKIPPED`。用户可以在 `/cr-visual` 时通过 `--screenshots` 手动提供。
+
+截图一旦保存，后续即使源项目环境被清理，`/cr-visual` 仍能使用。
+
 **Step 2d** — 展示发现 + 一次性确认（AskUserQuestion，**最后一次**）
 - 展示：模块清单、技术栈、粒度推荐、跨栈映射决策点
 - **展示 infrastructure-profile 中 `migration_risk = critical | high` 的组件** — 用户需要确认这些组件的迁移策略
