@@ -59,18 +59,30 @@ uc_task_map = {}  # task_id -> [use_case_ids]
 uc_screen_refs = {}  # uc_id -> screen_ref
 if uc:
     available_layers.append("use-case")
-    for role in uc.get("roles", []):
-        for fa in role.get("feature_areas", []):
-            for t_data in fa.get("tasks", []):
-                raw_tid = t_data["id"]
-                # Handle composite task IDs like "T014_T015"
-                parts = raw_tid.split("_") if "_" in raw_tid else [raw_tid]
-                tids = parts if all(p.upper().startswith("T") for p in parts) else [raw_tid]
-                for ucase in t_data.get("use_cases", []):
-                    for tid in tids:
-                        uc_task_map.setdefault(tid, []).append(ucase["id"])
-                    if ucase.get("screen_ref"):
-                        uc_screen_refs[ucase["id"]] = ucase["screen_ref"]
+    # v2.5.0+ flat format: top-level "use_cases" array
+    flat_ucs = uc.get("use_cases")
+    if flat_ucs and isinstance(flat_ucs, list):
+        for ucase in flat_ucs:
+            raw_tid = ucase.get("task_id", ucase.get("id", ""))
+            parts = raw_tid.split("_") if "_" in raw_tid else [raw_tid]
+            tids = parts if all(p.upper().startswith("T") for p in parts) else [raw_tid]
+            for tid in tids:
+                uc_task_map.setdefault(tid, []).append(ucase.get("id", ""))
+            if ucase.get("screen_ref"):
+                uc_screen_refs[ucase["id"]] = ucase["screen_ref"]
+    else:
+        # Legacy nested format: roles[] → feature_areas[] → tasks[] → use_cases[]
+        for role in uc.get("roles", []):
+            for fa in role.get("feature_areas", []):
+                for t_data in fa.get("tasks", []):
+                    raw_tid = t_data["id"]
+                    parts = raw_tid.split("_") if "_" in raw_tid else [raw_tid]
+                    tids = parts if all(p.upper().startswith("T") for p in parts) else [raw_tid]
+                    for ucase in t_data.get("use_cases", []):
+                        for tid in tids:
+                            uc_task_map.setdefault(tid, []).append(ucase["id"])
+                        if ucase.get("screen_ref"):
+                            uc_screen_refs[ucase["id"]] = ucase["screen_ref"]
 
 # feature-gap (optional)
 _gap_raw = C.load_json(os.path.join(BASE, "feature-gap/gap-tasks.json"))

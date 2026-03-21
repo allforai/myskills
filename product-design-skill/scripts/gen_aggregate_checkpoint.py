@@ -65,10 +65,19 @@ uc = C.load_json(os.path.join(BASE, "use-case/use-case-tree.json"))
 # ── Check 1: Use-case coverage ───────────────────────────────────────────────
 uc_covered = set()
 if uc:
-    for role in uc.get("roles", []):
-        for fa in role.get("feature_areas", []):
-            for t_data in fa.get("tasks", []):
-                uc_covered.add(t_data["id"])
+    # v2.5.0+ flat format
+    flat_ucs = uc.get("use_cases")
+    if flat_ucs and isinstance(flat_ucs, list):
+        for ucase in flat_ucs:
+            tid = ucase.get("task_id", "")
+            if tid:
+                uc_covered.add(tid)
+    else:
+        # Legacy nested format
+        for role in uc.get("roles", []):
+            for fa in role.get("feature_areas", []):
+                for t_data in fa.get("tasks", []):
+                    uc_covered.add(t_data["id"])
 
 uc_missing = [tid for tid in tasks if tid not in uc_covered]
 if uc_missing:
