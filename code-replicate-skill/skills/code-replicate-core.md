@@ -206,6 +206,34 @@ LLM 对每个素材分类迁移方式：
 
 **cr-fidelity 消费**：asset-inventory 存在时启用 U 维度中的素材覆盖检查
 
+**Step 2b-seed** — 基础数据盘点 → `seed-data-inventory.json`（仅 backend/fullstack）
+
+LLM 读源码的 seed 脚本（prisma/seed.ts, db/seeds/, fixtures/ 等）和数据库迁移文件，提取系统运行所需的**基础数据清单**。
+
+基础数据 = 没有它系统能启动但业务不能用的数据（不是用户生成的业务数据）。
+
+LLM 读 seed 脚本 → 提取每条基础数据的内容和用途：
+
+```json
+{
+  "generated_at": "ISO8601",
+  "seed_sources": ["LLM 找到的 seed 脚本/fixture 文件路径"],
+  "data": [
+    {
+      "category": "LLM 自分类",
+      "table": "对应的数据库表/集合",
+      "records": "LLM 从 seed 脚本中提取的具体数据（JSON 数组）",
+      "purpose": "LLM 描述这组数据的业务用途",
+      "required": true
+    }
+  ]
+}
+```
+
+**Phase 3 消费**：dev-forge 读 seed-data-inventory → 为目标栈生成等价的 seed 脚本（如 Prisma seed.ts → GORM seed.go），数据内容来自产物而非源码 seed 脚本。
+
+**cr-fidelity 消费**：验证目标项目的 seed 脚本是否覆盖了所有 `required: true` 的基础数据。
+
 **Step 2c** — LLM 全局补充（cross_cutting + 隐含依赖 + 架构风格 + **abstractions**）
 - 识别跨模块关注点：认证、日志、错误处理、国际化
 - 补充隐含依赖：消息队列、缓存、外部 API
