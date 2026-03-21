@@ -234,6 +234,96 @@ LLM 读 seed 脚本 → 提取每条基础数据的内容和用途：
 
 **cr-fidelity 消费**：验证目标项目的 seed 脚本是否覆盖了所有 `required: true` 的基础数据。
 
+**Step 2b-env** — 环境配置清单 → `env-inventory.json`
+
+LLM 读源码的 `.env.example` / `.env.sample` / 代码中的 `process.env.XXX` / `os.Getenv("XXX")` 引用，提取所有环境变量：
+
+```json
+{
+  "generated_at": "ISO8601",
+  "env_sources": ["LLM 找到的 .env 文件和代码中环境变量引用"],
+  "variables": [
+    {
+      "key": "变量名",
+      "purpose": "LLM 描述用途",
+      "category": "LLM 自分类（database / cache / auth / storage / third_party / app_config / ...）",
+      "secret": true,
+      "default_value": "非敏感变量的默认值 | null（敏感变量不记录值）",
+      "required": true,
+      "used_by": ["引用该变量的代码文件"]
+    }
+  ]
+}
+```
+
+**目的**：目标项目的 `.env.example` 可以从此产物直接生成。dev-forge 不需要猜"需要哪些环境变量"。
+
+**Step 2b-errors** — 错误码体系 → `error-catalog.json`（仅 backend/fullstack）
+
+LLM 读源码中的错误定义（错误枚举、错误常量、HTTP 状态码映射、错误响应格式），提取结构化错误码清单：
+
+```json
+{
+  "generated_at": "ISO8601",
+  "error_format": "LLM 描述错误响应的统一格式（如 {code: number, message: string, detail?: any}）",
+  "errors": [
+    {
+      "code": "错误码（数字或字符串）",
+      "http_status": 400,
+      "message": "错误消息",
+      "category": "LLM 自分类",
+      "source_file": "定义该错误码的文件"
+    }
+  ]
+}
+```
+
+**目的**：前端依赖后端错误码做条件处理（`if (error.code === 1001) showLoginDialog()`）。错误码变了 → 前端错误处理全部断裂。目标项目必须使用**相同的错误码数值和格式**。
+
+**Step 2b-cron** — 定时任务清单 → `cron-inventory.json`（仅 backend/fullstack）
+
+LLM 读源码中的定时任务定义（cron 配置、@Cron 装饰器、scheduler 注册、celery beat、Bull repeat jobs 等），提取任务清单：
+
+```json
+{
+  "generated_at": "ISO8601",
+  "cron_sources": ["LLM 找到的定时任务定义文件"],
+  "jobs": [
+    {
+      "name": "任务名称",
+      "schedule": "cron 表达式或间隔描述",
+      "handler": "执行函数/方法",
+      "purpose": "LLM 描述任务做什么",
+      "retry_policy": "LLM 描述重试策略（如有）",
+      "source_file": "定义文件路径"
+    }
+  ]
+}
+```
+
+**Step 2b-services** — 第三方服务清单 → `third-party-services.json`
+
+LLM 读源码中的外部服务调用（SDK 初始化、API 客户端配置、webhook 注册），提取服务清单：
+
+```json
+{
+  "generated_at": "ISO8601",
+  "services": [
+    {
+      "name": "LLM 识别的服务名称",
+      "purpose": "LLM 描述用途",
+      "integration_type": "LLM 描述集成方式（SDK / REST API / webhook / OAuth / ...）",
+      "config_env_vars": ["相关的环境变量名（引用 env-inventory）"],
+      "source_files": ["集成代码文件"],
+      "has_sandbox": "LLM 判断是否有测试/沙箱环境",
+      "migration_note": "LLM 描述目标栈的集成方式（可能需要不同 SDK）"
+    }
+  ]
+}
+```
+
+**与 infrastructure-profile 的关系**：infrastructure-profile 记录**自研基础设施**（协议、加密、自研组件）。third-party-services 记录**外部第三方服务**（Stripe、SendGrid、AWS S3 等）。两者互补。
+
 **Step 2c** — LLM 全局补充（cross_cutting + 隐含依赖 + 架构风格 + **abstractions**）
 - 识别跨模块关注点：认证、日志、错误处理、国际化
 - 补充隐含依赖：消息队列、缓存、外部 API
