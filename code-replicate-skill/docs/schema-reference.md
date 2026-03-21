@@ -34,6 +34,52 @@ LLM-generated project-specific discovery rules. Stored at `.allforai/code-replic
 
 ---
 
+## infrastructure-profile.json
+
+LLM-generated infrastructure inventory. Stored at `.allforai/code-replicate/infrastructure-profile.json`. Generated in Phase 2b-infra by LLM reading source code (not dependency manifests).
+
+```json
+{
+  "generated_at": "ISO8601",
+  "components": [
+    {
+      "name": "WebSocket Tunnel + Rabbit Encryption",
+      "category": "communication_encryption",
+      "files": ["lib/net/ws_tunnel.dart", "lib/crypto/rabbit.dart"],
+      "what_it_does": "Establishes encrypted tunnel over WebSocket for real-time data sync",
+      "how_it_works": "Custom binary framing (4-byte header + Rabbit-encrypted payload + CRC32). NOT standard WebSocket messages.",
+      "is_standard": false,
+      "standard_equivalent": "Closest: TLS over WebSocket, but uses non-standard Rabbit cipher",
+      "cannot_substitute": true,
+      "migration_risk": "critical",
+      "migration_risk_reason": "Rabbit cipher has no native Go/Swift implementation; substituting AES-CTR changes the wire format and breaks backward compatibility with existing clients"
+    },
+    {
+      "name": "CDN Acceleration SDK",
+      "category": "native_sdk",
+      "files": ["native/ios/CDNSDK.framework", "native/android/libs/cdnsdk.aar"],
+      "what_it_does": "Hardware-accelerated content delivery for media streaming",
+      "how_it_works": "Precompiled binary, no source code. Provides C API via FFI/MethodChannel",
+      "is_standard": false,
+      "standard_equivalent": null,
+      "cannot_substitute": true,
+      "migration_risk": "high",
+      "migration_risk_reason": "Binary-only SDK, must obtain target-platform build from vendor"
+    }
+  ]
+}
+```
+
+**Field notes:**
+- `components[]` — LLM-discovered infrastructure components. LLM decides what qualifies as "infrastructure" based on reading the actual code, not matching package names
+- `category` — LLM-assigned, free-form. Not limited to a fixed enum. Examples: communication, encryption, communication_encryption (cross-cutting), storage, cache, protocol, native_sdk, code_generation, state_management, search, queue, scheduling, distributed_lock, etc.
+- `is_standard` — false for custom/proprietary implementations that have no standard library equivalent
+- `cannot_substitute` — true when the component MUST be precisely replicated, not approximated. Critical for: encryption algorithms (wire format compatibility), custom protocols (client compatibility), native SDKs (vendor-specific)
+- `migration_risk_reason` — LLM explains WHY this risk level, not just what level
+- Cross-cutting components (e.g., communication + encryption in one layer) should be listed as a **single component** to preserve the coupling semantics
+
+---
+
 ## extraction-plan.json
 
 LLM-generated project-specific extraction rules for Phase 3 fragment generation. Stored at `.allforai/code-replicate/extraction-plan.json`. Generated in Phase 3-pre, consumed by LLM during Phase 3 Steps 3.1–3.5.
@@ -311,6 +357,13 @@ Cross-stack mapping decisions produced by Phase 2d. Stored at `.allforai/code-re
 - `user_decisions` — multi-option scenarios where the user chose a target construct
 - `framework_builtins` — source hand-written code replaceable by target framework built-ins
 - `unmapped` — constructs that could not be mapped (require manual resolution)
+- `infrastructure_mapping[]` — **LLM-generated** mapping of each infrastructure-profile component to target stack equivalent. Fields:
+  - `source` — component from infrastructure-profile (name + category)
+  - `target` — target stack equivalent (or "需要重新实现" for custom components)
+  - `cannot_substitute` — if true, must preserve exact behavior (e.g., custom encryption cannot be swapped for a "similar" algorithm)
+  - `is_standard` — if false, no off-the-shelf library exists in target stack
+  - `risk` — critical/high/medium/low
+  - `migration_plan` — LLM's recommended approach (port source code / find equivalent library / rewrite to spec)
 - `platform_adaptation` — **LLM-generated** when source and target platforms have different interaction models (mobile→desktop, desktop→mobile, web→native). Fields:
   - `source_platform` / `target_platform` — platform category (mobile / desktop / web / native)
   - `experience_priority_override` — overrides the source-inferred experience_priority for the target platform. dev-forge and cr-fidelity read this to adjust consumer maturity rules

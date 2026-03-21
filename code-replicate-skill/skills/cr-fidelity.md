@@ -142,6 +142,17 @@ LLM 从以下维度逐一对比，**每个维度独立评分 0-100**。
 - 每个 enforcement=hard 的约束是否有代码执行？
 - 评分 = 已实现约束数 / 总 hard 约束数 × 100
 
+#### F8 — 基础设施还原
+
+对比 infrastructure-profile.json 与目标代码中的基础设施实现：
+- 每个 `cannot_substitute: true` 的组件是否被精确复制（不是近似替代）？
+- 每个 `is_standard: false` 的自研组件是否在目标代码中有等价实现？
+- 通信协议+加密的交叉组件是否作为整体迁移（不是拆开分别用标准库替代）？
+- 代码生成产物（protobuf/thrift）是否用同工具生成（不是手写实体）？
+- 原生 SDK（.a/.dll/.framework）是否获取了目标平台的版本？
+- 评分 = 已正确还原的基础设施组件数 / 总组件数 × 100
+- `migration_risk: critical` 的组件如果被近似替代 → 直接标记为 gap（不算"部分匹配"）
+
 ### 注意力还原（仅 consumer/mixed 模式）
 
 如果 experience_priority.mode = consumer 或 mixed，额外检查注意力负载。
@@ -156,10 +167,11 @@ LLM 从以下维度逐一对比，**每个维度独立评分 0-100**。
 ### 综合评分
 
 ```
-总分 = (F1 + F2 + F3 + F4 + F5 + F6 + F7) / 有效维度数
+总分 = (F1 + F2 + F3 + F4 + F5 + F6 + F7 + F8) / 有效维度数
 ```
 
-- F7 仅 exact 模式有效；非 exact 模式有效维度 = 6
+- F7 仅 exact 模式有效
+- F8 仅当 infrastructure-profile.json 存在时有效
 - 注意力还原不计入总分，但列入 warnings
 
 ### 输出

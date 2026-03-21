@@ -20,7 +20,7 @@ Code Replicate 将已有代码库逆向解构为标准 `.allforai/` 产物，直
 | Phase | 名称 | 说明 | 交互 |
 |-------|------|------|------|
 | 1 | Preflight | 参数收集 + Git clone | 用户交互点 1 |
-| 2 | Discovery + Confirm | 源码扫描 + 模块摘要 + 抽象模式提取 + 用户确认 | 用户交互点 2（最后一次） |
+| 2 | Discovery + Confirm | 源码扫描 + 模块摘要 + **基础设施盘点** + 抽象提取 + 用户确认 | 用户交互点 2（最后一次） |
 | 3 | Generate | LLM 按 extraction-plan 分模块生成片段 → 脚本合并 → 标准产物 | 静默 |
 | 4 | Verify & Handoff | schema 校验 + XV 验证 + 报告 | 静默 |
 
@@ -57,9 +57,9 @@ Code Replicate 将已有代码库逆向解构为标准 `.allforai/` 产物，直
 ├── experience-map/       ← experience-map.json（frontend/fullstack stub）
 ├── use-case/             ← use-case-tree, use-case-report
 └── code-replicate/       ← replicate-config, source-summary,
-                            discovery-profile, extraction-plan,
-                            stack-mapping, replicate-report,
-                            fidelity-report
+                            discovery-profile, infrastructure-profile,
+                            extraction-plan, stack-mapping,
+                            replicate-report, fidelity-report
 ```
 
 ## 工作流衔接
