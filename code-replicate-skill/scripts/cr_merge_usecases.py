@@ -86,6 +86,7 @@ def _build_flat_list(use_cases):
 
         entry = {
             "id": uc["id"],
+            "title": uc["title"],
             "role_id": uc.get("role", "UNKNOWN"),
             "role_name": uc.get("role_name", ""),
             "functional_area_id": uc.get("functional_area_id", ""),

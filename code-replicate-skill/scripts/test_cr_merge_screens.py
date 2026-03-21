@@ -112,12 +112,19 @@ class TestMergeScreens(unittest.TestCase):
         out = self._read_output()
 
         scr = out["operation_lines"][0]["nodes"][0]["screens"][0]
-        self.assertEqual(scr["actions"], actions)
-        self.assertEqual(scr["states"], states)
-        self.assertEqual(scr["data_fields"], fields)
+        # actions are preserved but may have render_as added via component migration
+        self.assertEqual(len(scr["actions"]), len(actions))
+        self.assertEqual(scr["actions"][0]["name"], actions[0]["name"])
+        # states are now structured dict (migrated from list)
+        self.assertIsInstance(scr["states"], dict)
+        self.assertIn("empty", scr["states"])
+        # data_fields are now structured objects (migrated from strings)
+        self.assertIsInstance(scr["data_fields"], list)
+        self.assertEqual(len(scr["data_fields"]), 2)
+        self.assertEqual(scr["data_fields"][0]["name"], "username")
 
-    def test_no_design_fields(self):
-        """Stub should NOT contain design-side fields."""
+    def test_structured_screen_fields(self):
+        """v2.1+ screens have components, layout_type, flow_context, screen_index."""
         self._write_fragment("mod.json", {
             "screens": [self._make_screen()]
         })
@@ -125,7 +132,29 @@ class TestMergeScreens(unittest.TestCase):
         out = self._read_output()
 
         scr = out["operation_lines"][0]["nodes"][0]["screens"][0]
-        for field in ("emotion_design", "ux_intent", "non_negotiable", "continuity"):
+        # New structured fields
+        self.assertIn("components", scr)
+        self.assertIn("layout_type", scr)
+        self.assertIn("flow_context", scr)
+        self.assertIn("name", scr)
+        self.assertIsInstance(scr["components"], list)
+        # screen_index at top level
+        self.assertIn("screen_index", out)
+
+    def test_no_design_fields_unless_provided(self):
+        """emotion_design and view_modes are None/null unless LLM fragment provides them."""
+        self._write_fragment("mod.json", {
+            "screens": [self._make_screen()]
+        })
+        merge_screens(self.base_path, self.fragments_dir)
+        out = self._read_output()
+
+        scr = out["operation_lines"][0]["nodes"][0]["screens"][0]
+        # These fields exist but are None (not absent)
+        self.assertIsNone(scr.get("emotion_design"))
+        self.assertIsNone(scr.get("view_modes"))
+        # These old fields should not exist
+        for field in ("ux_intent", "non_negotiable", "continuity"):
             self.assertNotIn(field, scr)
 
     def test_empty_fragments_dir(self):

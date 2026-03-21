@@ -51,10 +51,10 @@ class TestMergeUsecases(unittest.TestCase):
 
         self.assertEqual(out["source"], "code-replicate")
         self.assertIn("generated_at", out)
-        self.assertIsInstance(out["tree"], list)
-        # Both under same role
-        self.assertEqual(len(out["tree"]), 1)
-        self.assertEqual(out["tree"][0]["role"], "R001")
+        self.assertEqual(out["version"], "2.5.0")
+        # v2.5.0+ flat format
+        self.assertIsInstance(out["use_cases"], list)
+        self.assertEqual(len(out["use_cases"]), 2)
 
     def test_id_assignment(self):
         self._write_fragment("mod.json", {
@@ -67,17 +67,11 @@ class TestMergeUsecases(unittest.TestCase):
         merge_usecases(self.base_path, self.fragments_dir)
         out = self._read_output()
 
-        # Flatten use cases from tree
-        ucs = []
-        for role_node in out["tree"]:
-            for fa in role_node["feature_areas"]:
-                for task in fa["tasks"]:
-                    ucs.extend(task["use_cases"])
-        ids = [uc["id"] for uc in ucs]
+        ids = [uc["id"] for uc in out["use_cases"]]
         self.assertEqual(ids, ["UC001", "UC002", "UC003"])
 
-    def test_tree_structure(self):
-        """Verify 4-layer tree: role > feature_area > task > use_case."""
+    def test_flat_structure(self):
+        """Verify flat use_cases array with explicit role/area/task fields."""
         self._write_fragment("mod.json", {
             "use_cases": [
                 self._make_uc(title="Login", role="R001", feature_area="Auth", task_ref="T001"),
@@ -88,16 +82,41 @@ class TestMergeUsecases(unittest.TestCase):
         merge_usecases(self.base_path, self.fragments_dir)
         out = self._read_output()
 
-        self.assertEqual(len(out["tree"]), 2)  # 2 roles
-        r001 = out["tree"][0]
-        self.assertEqual(r001["role"], "R001")
-        self.assertEqual(len(r001["feature_areas"]), 1)  # Auth
-        self.assertEqual(r001["feature_areas"][0]["name"], "Auth")
-        self.assertEqual(len(r001["feature_areas"][0]["tasks"]), 2)  # T001, T002
+        self.assertEqual(len(out["use_cases"]), 3)
 
-        r002 = out["tree"][1]
-        self.assertEqual(r002["role"], "R002")
-        self.assertEqual(len(r002["feature_areas"]), 1)  # Dashboard
+        uc0 = out["use_cases"][0]
+        self.assertEqual(uc0["role_id"], "R001")
+        self.assertEqual(uc0["functional_area_name"], "Auth")
+        self.assertEqual(uc0["task_id"], "T001")
+        self.assertIn("role_name", uc0)
+        self.assertIn("functional_area_id", uc0)
+
+        # Third UC should have different role
+        uc2 = out["use_cases"][2]
+        self.assertEqual(uc2["role_id"], "R002")
+        self.assertEqual(uc2["functional_area_name"], "Dashboard")
+
+    def test_then_is_array(self):
+        """then field must be an array, even if source is string."""
+        self._write_fragment("mod.json", {
+            "use_cases": [self._make_uc(title="String Then", then="single assertion")]
+        })
+        merge_usecases(self.base_path, self.fragments_dir)
+        out = self._read_output()
+
+        uc = out["use_cases"][0]
+        self.assertIsInstance(uc["then"], list)
+        self.assertEqual(uc["then"], ["single assertion"])
+
+    def test_then_array_preserved(self):
+        """then as array should be preserved as-is."""
+        self._write_fragment("mod.json", {
+            "use_cases": [self._make_uc(title="Array Then", then=["a1", "a2", "a3"])]
+        })
+        merge_usecases(self.base_path, self.fragments_dir)
+        out = self._read_output()
+
+        self.assertEqual(out["use_cases"][0]["then"], ["a1", "a2", "a3"])
 
     def test_invalid_type_skipped(self):
         self._write_fragment("mod.json", {
@@ -109,55 +128,58 @@ class TestMergeUsecases(unittest.TestCase):
         merge_usecases(self.base_path, self.fragments_dir)
         out = self._read_output()
 
-        ucs = []
-        for r in out["tree"]:
-            for fa in r["feature_areas"]:
-                for t in fa["tasks"]:
-                    ucs.extend(t["use_cases"])
-        self.assertEqual(len(ucs), 1)
-        self.assertEqual(ucs[0]["title"], "Good")
+        self.assertEqual(len(out["use_cases"]), 1)
+        self.assertEqual(out["use_cases"][0]["title"], "Good")
+
+    def test_extended_types_accepted(self):
+        """v2.5.0+ type enum includes 13 types."""
+        extended_types = [
+            "happy_path", "exception", "boundary", "validation",
+            "journey_guidance", "result_visibility", "continuity", "entry_clarity",
+            "innovation_mechanism", "innovation_boundary",
+            "state_transition", "state_timeout", "state_compensation",
+        ]
+        ucs = [self._make_uc(title=f"UC_{t}", uc_type=t) for t in extended_types]
+        self._write_fragment("mod.json", {"use_cases": ucs})
+        merge_usecases(self.base_path, self.fragments_dir)
+        out = self._read_output()
+
+        self.assertEqual(len(out["use_cases"]), 13)
 
     def test_missing_required_fields_skipped(self):
         self._write_fragment("mod.json", {
             "use_cases": [
                 self._make_uc(title="Complete"),
-                {"title": "No given", "type": "happy_path", "when": "x", "then": "y"},  # missing given
-                {"type": "happy_path", "given": "x", "when": "y", "then": "z"},  # missing title
+                {"title": "No given", "type": "happy_path", "when": "x", "then": "y"},
+                {"type": "happy_path", "given": "x", "when": "y", "then": "z"},
             ]
         })
         merge_usecases(self.base_path, self.fragments_dir)
         out = self._read_output()
 
-        ucs = []
-        for r in out["tree"]:
-            for fa in r["feature_areas"]:
-                for t in fa["tasks"]:
-                    ucs.extend(t["use_cases"])
-        self.assertEqual(len(ucs), 1)
-        self.assertEqual(ucs[0]["title"], "Complete")
+        self.assertEqual(len(out["use_cases"]), 1)
+        self.assertEqual(out["use_cases"][0]["title"], "Complete")
 
-    def test_all_valid_types_accepted(self):
-        ucs = [
-            self._make_uc(title="Happy", uc_type="happy_path"),
-            self._make_uc(title="Exception", uc_type="exception"),
-            self._make_uc(title="Boundary", uc_type="boundary"),
-            self._make_uc(title="Validation", uc_type="validation"),
-        ]
-        self._write_fragment("mod.json", {"use_cases": ucs})
+    def test_innovation_use_case_field(self):
+        uc = self._make_uc(title="Innovation")
+        uc["innovation_use_case"] = True
+        self._write_fragment("mod.json", {"use_cases": [uc]})
         merge_usecases(self.base_path, self.fragments_dir)
         out = self._read_output()
 
-        all_ucs = []
-        for r in out["tree"]:
-            for fa in r["feature_areas"]:
-                for t in fa["tasks"]:
-                    all_ucs.extend(t["use_cases"])
-        self.assertEqual(len(all_ucs), 4)
+        self.assertTrue(out["use_cases"][0]["innovation_use_case"])
+
+    def test_innovation_default_false(self):
+        self._write_fragment("mod.json", {"use_cases": [self._make_uc()]})
+        merge_usecases(self.base_path, self.fragments_dir)
+        out = self._read_output()
+
+        self.assertFalse(out["use_cases"][0]["innovation_use_case"])
 
     def test_empty_fragments_dir(self):
         merge_usecases(self.base_path, self.fragments_dir)
         out = self._read_output()
-        self.assertEqual(out["tree"], [])
+        self.assertEqual(out["use_cases"], [])
 
     def test_output_path_correct(self):
         self._write_fragment("mod.json", {"use_cases": [self._make_uc()]})
@@ -173,12 +195,7 @@ class TestMergeUsecases(unittest.TestCase):
         merge_usecases(self.base_path, self.fragments_dir)
         out = self._read_output()
 
-        all_ucs = []
-        for r in out["tree"]:
-            for fa in r["feature_areas"]:
-                for t in fa["tasks"]:
-                    all_ucs.extend(t["use_cases"])
-        self.assertEqual(all_ucs[0]["priority"], "medium")
+        self.assertEqual(out["use_cases"][0]["priority"], "medium")
 
     def test_nonexistent_usecases_subdir(self):
         """If usecases/ subdir doesn't exist, should produce empty output."""
@@ -186,7 +203,7 @@ class TestMergeUsecases(unittest.TestCase):
         shutil.rmtree(os.path.join(self.fragments_dir, "usecases"))
         merge_usecases(self.base_path, self.fragments_dir)
         out = self._read_output()
-        self.assertEqual(out["tree"], [])
+        self.assertEqual(out["use_cases"], [])
 
 
 if __name__ == "__main__":

@@ -31,9 +31,36 @@ def _make_task(tid, **overrides):
 
 
 def _make_role(rid, **overrides):
-    base = {"id": rid, "name": f"Role {rid}"}
+    base = {"id": rid, "name": f"Role {rid}", "audience_type": "consumer"}
     base.update(overrides)
     return base
+
+
+def _make_product_map(roles=None, tasks=None):
+    """Create a minimal valid product-map.json with experience_priority."""
+    return {
+        "generated_at": "2026-01-01T00:00:00Z",
+        "version": "2.6.0",
+        "source": "code-replicate",
+        "scope": "full",
+        "scale": "small",
+        "experience_priority": {
+            "mode": "consumer",
+            "consumer_surface": True,
+            "consumer_core": True,
+            "primary_experience": "mobile",
+            "reasoning": ["test reason 1", "test reason 2"],
+        },
+        "summary": {"role_count": 0, "task_count": 0, "flow_count": 0,
+                     "flow_gaps": 0, "orphan_task_count": 0, "basic_count": 0,
+                     "core_count": 0, "high_freq_count": 0, "high_risk_count": 0,
+                     "conflict_count": 0, "constraint_count": 0,
+                     "validation_issues": 0, "competitor_gaps": 0},
+        "roles": roles or [],
+        "tasks": tasks or [],
+        "conflicts": [],
+        "constraints": [],
+    }
 
 
 def _make_flow(name, nodes):
@@ -54,18 +81,17 @@ class TestValidateAllValid(unittest.TestCase):
             json.dump(data, f)
 
     def _setup_valid(self):
-        self._write("task-inventory.json", {
-            "tasks": [_make_task("T001"), _make_task("T002")]
-        })
-        self._write("role-profiles.json", {
-            "roles": [_make_role("R001"), _make_role("R002")]
-        })
+        tasks = [_make_task("T001"), _make_task("T002")]
+        roles = [_make_role("R001"), _make_role("R002")]
+        self._write("task-inventory.json", {"tasks": tasks})
+        self._write("role-profiles.json", {"roles": roles})
         self._write("business-flows.json", {
             "flows": [_make_flow("Registration", [
                 {"task_ref": "T001", "role": "R001", "seq": 1},
                 {"task_ref": "T002", "role": "R002", "seq": 2},
             ])]
         })
+        self._write("product-map.json", _make_product_map(roles=roles, tasks=tasks))
 
     def test_all_valid(self):
         self._setup_valid()
@@ -79,8 +105,11 @@ class TestValidateAllValid(unittest.TestCase):
 
     def test_minimal_valid_no_optional(self):
         """Only required files present → valid with warnings."""
-        self._write("task-inventory.json", {"tasks": [_make_task("T001")]})
-        self._write("role-profiles.json", {"roles": [_make_role("R001")]})
+        tasks = [_make_task("T001")]
+        roles = [_make_role("R001")]
+        self._write("task-inventory.json", {"tasks": tasks})
+        self._write("role-profiles.json", {"roles": roles})
+        self._write("product-map.json", _make_product_map(roles=roles, tasks=tasks))
         result = validate(self.base, fullstack=False)
         self.assertTrue(result["valid"])
         self.assertEqual(result["stats"]["flows"], 0)
