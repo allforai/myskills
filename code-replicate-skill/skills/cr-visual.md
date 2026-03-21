@@ -34,12 +34,18 @@ Step 5: 输出差异报告
 
 ---
 
-## Step 1: Screen 列表
+## Step 1: Screen 列表 + 路由映射
 
-从 `.allforai/experience-map/experience-map.json` 提取所有 screen：
-- 每个 screen 的 name、route（如有）、layout_type
-- 按 operation_line 分组
-- 跳过没有 route 或无法导航到的 screen
+从 `.allforai/experience-map/experience-map.json` 提取所有 screen，建立路由映射：
+
+```
+1. 从 experience-map 提取每个 screen 的 name、route（如有）、layout_type
+2. 读 .allforai/code-replicate/visual/route-map.json（Phase 2c-visual 生成的路由→截图映射）
+3. 建立配对：screen name ↔ route path ↔ 源截图文件名
+   - experience-map screen 有 route → 直接匹配 route-map
+   - experience-map screen 无 route → LLM 按 screen name 和 route-map 的语义相似度匹配
+4. 跳过无法配对的 screen
+```
 
 ---
 
@@ -91,8 +97,17 @@ cr-visual 需要知道怎么启动和导航源 App。信息来源（优先级）
 
 ## Step 3: 目标 App 截图
 
-同 Step 2 的逻辑，但对目标 App 执行。
-保存到 `.allforai/code-replicate/visual/target/`
+**Web 目标**：Playwright browser_navigate → browser_take_screenshot → 保存到 `visual/target/`
+
+**移动端目标**：Maestro navigate → screenshot → 保存到 `visual/target/`
+
+**桌面端目标（WPF/MAUI/Electron）**：
+- Electron → 有 Web 内核，Playwright 可用 ✓
+- WPF/WinForms/MAUI native → Playwright 不可用：
+  - 尝试：用 Bash 启动 App → 等待窗口 → 系统截图工具（如 `screencapture` macOS / `nircmd` Windows）
+  - 但无法自动导航到各屏幕 — 只能截启动画面
+  - **降级**：提示用户手动导航目标 App 并截图到 `visual/target/`，标记 `MANUAL_CAPTURE`
+  - 报告中注明：「桌面 App 自动截图受限，{N} 个 screen 需要手动提供」
 
 ---
 

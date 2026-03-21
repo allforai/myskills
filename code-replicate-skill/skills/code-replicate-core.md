@@ -148,22 +148,30 @@ LLM 自行判断什么构成"基础设施" — 可能是通信协议、加密算
 
 **Step 2c-visual** — 源 App 截图采集（仅 frontend/fullstack 且源 App 可运行时执行）
 
-如果源 App 能启动（replicate-config.source_app 有 start_command 和 url），在 Phase 2 阶段就完成截图采集 — **不等到流程末尾**，因为源项目环境可能在后续步骤中被清理。
+如果源 App 能启动（replicate-config.source_app 有 start_command），在 Phase 2 阶段就完成截图采集 — **不等到流程末尾**，因为源项目环境可能在后续步骤中被清理。
+
+> 注意：此时 experience-map 尚未生成（Phase 3 才有）。截图导航基于**源码的路由配置**（GoRouter / React Router / nginx.conf 等），不依赖 experience-map。
 
 ```
-1. 启动源 App（用 source_app.start_command）
-2. 等待 source_app.url 可达
-3. 如果有 login 凭证 → 先登录
-4. 按 experience-map screens 逐屏导航 + 截图（Playwright/Maestro）
-   - Web: browser_navigate → browser_take_screenshot
-   - 移动端: maestro screenshot（如果可用）
-5. 保存到 .allforai/code-replicate/visual/source/{screen_name}.png
-6. 停止源 App
+1. 从 source-summary.modules 的 key_files 中找到路由配置文件
+2. LLM 读路由配置 → 提取所有可导航路由列表
+3. 启动源 App（用 source_app.start_command）
+4. 等待可达（Web: HTTP 200; 移动端: 进程存活; 桌面: 窗口出现）
+5. 如果有 login 凭证 → 先登录
+6. 逐路由截图：
+   - Web: Playwright browser_navigate → browser_take_screenshot
+   - 移动端: Maestro navigate → screenshot（如果可用）
+   - 桌面: 用户手动截图 或 系统截图工具（桌面 App 无自动化导航工具）
+7. 保存到 .allforai/code-replicate/visual/source/{route_path}.png
+8. 同时写入 visual/route-map.json：[{route: "/appointments", file: "appointments.png"}, ...]
+9. 停止源 App
 ```
 
-如果源 App 无法启动（无 start_command 或启动失败）→ 跳过，标记 `SOURCE_SCREENSHOTS_SKIPPED`。用户可以在 `/cr-visual` 时通过 `--screenshots` 手动提供。
+**桌面 App 限制**：Playwright/Maestro 不支持桌面窗口导航。桌面源 App 截图需要用户手动提供（`/cr-visual --screenshots`）或使用平台特定的自动化工具。
 
-截图一旦保存，后续即使源项目环境被清理，`/cr-visual` 仍能使用。
+如果源 App 无法启动或截图失败 → 标记 `SOURCE_SCREENSHOTS_SKIPPED`。
+
+截图 + route-map.json 一旦保存，后续 `/cr-visual` 通过 route-map 将路由截图与 experience-map screen 配对。
 
 **Step 2d** — 展示发现 + 一次性确认（AskUserQuestion，**最后一次**）
 - 展示：模块清单、技术栈、粒度推荐、跨栈映射决策点
