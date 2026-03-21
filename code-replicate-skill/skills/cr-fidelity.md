@@ -117,14 +117,26 @@ LLM 按阶段 0 选中的维度逐一评分。
 ## 与上下游的关系
 
 ```
-/code-replicate  → .allforai/ 产物
-    ↓
-/design-to-spec → /task-execute → 目标代码
-    ↓
-/cr-fidelity    → 还原度闭环
-    ↓
-  达标 → /product-verify
+code-replicate 路径（复刻）：
+  /code-replicate → /design-to-spec → /task-execute
+      ↓
+  /cr-fidelity（复刻还原度 — 不是测试）
+      ↓
+    达标 → /product-verify（功能验收 — 两条路径共用）
+      ↓
+           /testforge（测试质量 — 两条路径共用）
+
+product-design 路径（创建）：
+  /product-design → /design-to-spec → /task-execute
+      ↓
+  /product-verify（功能验收）
+      ↓
+  /testforge（测试质量）
 ```
+
+**cr-fidelity 是复刻路径的专属环节**，验证"目标代码是否还原了源码"。
+product-verify 和 testforge 是**两条路径共用的**，不关心产物来源。
+cr-fidelity **不做测试** — 修复后的验证是重新评分（re-score），不是跑测试。
 
 ---
 

@@ -65,11 +65,15 @@ Code Replicate 将已有代码库逆向解构为标准 `.allforai/` 产物，直
 ## 工作流衔接
 
 ```
-/code-replicate → /project-setup → /design-to-spec → /task-execute → /cr-fidelity
-                                                                         ↓
-                                                               达标(≥90) → /product-verify
-                                                               不达标 → 分析→修复→重测闭环
+/code-replicate → /design-to-spec → /task-execute → /cr-fidelity（复刻还原度）
+                                                          ↓
+                                                   达标 → /product-verify（功能验收，与创建路径共用）
+                                                          ↓
+                                                        /testforge（测试质量，与创建路径共用）
 ```
+
+cr-fidelity 是复刻路径专属 — 验证还原度，不做测试。
+product-verify 和 testforge 不关心产物来源（复刻 or 创建）。
 
 ## 文档
 
