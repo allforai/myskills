@@ -69,6 +69,12 @@ LLM-generated project-specific extraction rules for Phase 3 fragment generation.
 - `how` field describes the extraction logic **specific to this project** — not a framework template
 - `module` field: module ID (e.g., "M001") or `null` for root-level files (e.g., nginx.conf, routes.yaml, OpenAPI specs). Root-level config files often contain routing, permission, or infrastructure definitions that are critical for task/role/flow extraction
 - `cross_cutting` — each entry may include `phase` field to describe execution ordering (e.g., OpenResty's access/content/log phases, Express middleware ordering). This helps stack-mapping translate phase-based middleware to chain-based middleware
+- `dependency_map[]` — **LLM-generated** module dependency graph. Replaces cr_discover.py's mechanical import parsing, which only supports Go/JS/Python. LLM reads key_files and understands any language's import syntax (Lua require, Rust use, C# using, nginx include, etc.). Each entry:
+  - `from` — source module ID
+  - `to` — target module ID (or `null` for external/shared-state dependencies)
+  - `via` — the actual import/require statement or reference mechanism
+  - `type` — `direct_call` / `middleware` / `event` / `shared_state` / `config_ref`
+  Phase 4 outer loop OL-D3 reads this field for cross-cutting coverage verification
 - `abstraction_sources` — points to the implementation files of reuse patterns discovered in source-summary.abstractions. During Phase 3 fragment generation, LLM reads these files to understand the reuse contract, ensuring generated task/flow artifacts reference shared abstractions instead of inlining repeated logic
 - Fullstack mode adds: `api_contract_files`, `cross_layer_mapping`
 - Module mode adds: `boundary_interfaces`, `external_deps_mapping`
