@@ -1,5 +1,5 @@
 ---
-description: "还原度验证：对比源码 vs 目标代码，按多维度评分，不达标则分析→修复→重测闭环。模式: full / analyze / fix"
+description: "还原度验证：对比源码 vs 目标代码，按多维度评分，不达标则分析→修复→重评闭环。模式: full / analyze / fix"
 argument-hint: "[mode] [--target <target-path>] [--threshold 90]"
 allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion", "Agent"]
 ---
