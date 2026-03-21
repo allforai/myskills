@@ -51,351 +51,50 @@ Code Replicate 是逆向工程桥梁：读取已有代码库，生成标准 `.al
 
 ### Phase 2: Discovery + Confirm
 
-**Step 2a-pre** — LLM 生成 `discovery-profile.json`（项目专属发现规则）
+Phase 2 分 4 个阶段，共 15 步。每个阶段的详细协议按需加载。
 
-LLM 读取以下信息（context 极小，~2-5KB）：
-1. 项目根目录文件列表（`ls -la`，1 层）
-2. 关键清单文件内容（package.json / .sln / go.mod / Cargo.toml 等，只读顶层）
-3. 前 2 层目录树（`find . -maxdepth 2 -type d`）
+#### Stage A — 结构发现（项目长什么样）
 
-基于以上信息，LLM 生成 `discovery-profile.json` 写入 `.allforai/code-replicate/`：
+| Step | 产出 | 做什么 |
+|------|------|--------|
+| 2.1 | discovery-profile.json | LLM 读根目录 → 生成模块发现规则 |
+| 2.2 | source-summary.json 骨架 | cr_discover.py 扫描文件 |
+| 2.3 | source-summary.json 完整 | LLM 逐模块读 key_files → 摘要 |
+| 2.4 | project_archetype | LLM 识别项目核心价值类型 |
 
-```json
-{
-  "source_roots": ["packages", "src"],
-  "skip_dirs": ["node_modules", ".git", "dist", "build", "__pycache__"],
-  "code_extensions": [".ts", ".tsx", ".cs"],
-  "entry_patterns": ["main", "index", "app", "program", "startup"],
-  "module_boundaries": ["package.json", ".csproj"],
-  "module_paths": [
-    {"path": "src/ERP.Modules.Sales", "atomic": true},
-    {"path": "src/ERP.Modules.Inventory", "atomic": true},
-    {"path": "packages/api/src/modules/user", "atomic": true},
-    {"path": "packages/api/src/modules/product", "atomic": true}
-  ],
-  "mega_threshold": 50
-}
-```
+> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/phase2/stage-a-structure.md
 
-**生成规则**：
-- `module_paths` 是**最高优先级** — LLM 直接列出所有业务模块的相对路径
-- `module_boundaries` 标记项目清单文件 — 含此文件的目录是原子模块，不可按大小拆分
-- `source_roots` / `skip_dirs` / `code_extensions` 只在 `module_paths` 为空时作为 fallback
-- LLM **必须**基于对项目结构的理解生成，不可套用模板
+#### Stage B — 运行基础发现（项目靠什么跑）
 
-**Step 2a** — 运行 `cr_discover.py --profile discovery-profile.json` → source-summary.json 骨架
-- 优先使用 profile 中的 `module_paths`（LLM 直接指定的模块列表）
-- 无 profile 时 fallback 到内置启发式（SOURCE_ROOTS + 文件数阈值）
-- 输出包含 modules 列表（每个含 path, language, key_files, file_count）
+| Step | 产出 | 做什么 |
+|------|------|--------|
+| 2.5 | infrastructure-profile.json | 自研基础设施盘点 |
+| 2.6 | env-inventory.json | 环境变量清单 |
+| 2.7 | third-party-services.json | 第三方服务清单 |
+| 2.8 | cron-inventory.json | 定时任务清单 |
+| 2.9 | error-catalog.json | 错误码体系 |
 
-**Step 2b** — LLM 逐模块摘要（读 key_files → responsibility / interfaces / entities）
-- 每个模块读取 cr_discover.py 标记的 key_files（入口、路由、模型、配置）
-- 输出：模块 responsibility 单句描述 + 暴露 interfaces 列表 + 核心 entities
-- 大模块（>50 文件）优先分析 key_files，再根据目录结构判断是否需要深入扫描子目录
-- **非代码配置文件也可能含业务逻辑**：路由配置（nginx.conf, routes.yaml）、API 定义（OpenAPI spec）、权限矩阵（rbac.yaml）等。LLM 应在 discovery-profile 或 extraction-plan 中将这些文件标注为 task/role/flow 来源。引用项目根目录文件时使用 `"module": null`
-> 分析原则详见 ${CLAUDE_PLUGIN_ROOT}/docs/analysis-principles.md
+> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/phase2/stage-b-runtime.md
 
-**Step 2b-arch** — LLM 项目特征识别 → `replicate-config.json` 追加 `project_archetype`
+#### Stage C — 资源发现（项目带什么素材/数据）
 
-LLM 基于 source-summary（模块结构、技术栈、key_files）判断项目的**核心价值类型**：
+| Step | 产出 | 做什么 |
+|------|------|--------|
+| 2.10 | asset-inventory.json | 前端素材盘点 |
+| 2.11 | seed-data-inventory.json | 后端基础数据 |
+| 2.12 | abstractions + cross_cutting | 复用模式 + 横切关注 |
+| 2.13 | visual/source/ + route-map.json | 源 App 截图存档 |
 
-```
-LLM 自问：这个项目的核心价值是什么？
-  - "用户通过界面完成业务操作"  → 标准产物模型（task-inventory + flows）
-  - "算法的正确性是产品生命线"  → 需要形式化规格 + 多角色测试向量
-  - "对外暴露的 API/ABI 契约"  → 需要签名精确复制 + 内存模型 + 集成验证
-  - 以上的混合                  → LLM 标注哪些模块属于哪种类型
-```
+> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/phase2/stage-c-resources.md
 
-写入 `replicate-config.json` 的 `project_archetype` 字段（LLM 自由描述，不限定枚举）。
+#### Stage D — 确认 + 映射
 
-**该字段影响后续所有阶段**：
-- Phase 3 extraction-plan：LLM 根据 archetype 决定生成什么格式的产物
-- Phase 3.5.5 test-vectors：LLM 根据 archetype 选择向量模型（单步/多步/多角色）
-- cr-fidelity：LLM 根据 archetype 决定加载哪些验证维度文档
+| Step | 产出 | 做什么 |
+|------|------|--------|
+| 2.14 | 用户确认 | 展示发现 → 最后一次交互 |
+| 2.15 | stack-mapping.json | 跨栈映射 |
 
-**不限定 archetype 分类** — LLM 可能写 "CRDT 实时协作引擎"、"跨平台 FFI 支付 SDK"、"标准全栈电商" 等任意描述。下游由 LLM 读 archetype 描述后自行决定行为。
-
-**Step 2b-infra** — LLM 基础设施盘点 → `infrastructure-profile.json`
-
-LLM 读源码（不是读依赖清单的名称），理解项目**实际使用了什么基础设施**，写入 `.allforai/code-replicate/infrastructure-profile.json`。
-
-**盘点方式**：LLM 读每个模块的 key_files + 项目根目录的配置文件，**从代码行为中推断**基础设施用途。不靠包名/库名匹配 — 自研基础设施没有已知包名。
-
-**LLM 核心问题**：对每个模块的代码，问"这段代码在业务逻辑之下依赖了什么技术基础设施？"
-
-LLM 自行判断什么构成"基础设施" — 可能是通信协议、加密算法、存储机制、状态管理、二进制依赖、代码生成、路径构建规则，也可能是项目特有的其他类别。不限定维度，LLM 根据实际代码决定。
-
-**产出 schema**（LLM 自由填充，不限定维度名称）：
-
-```json
-{
-  "generated_at": "ISO8601",
-  "components": [
-    {
-      "name": "LLM 自命名（如 WebSocket Tunnel Layer）",
-      "category": "LLM 自分类（如 communication / encryption / storage / protocol / native_sdk / code_generation / state / cache / queue / search / scheduling / ...）",
-      "files": ["具体文件路径"],
-      "what_it_does": "LLM 用 2-3 句话描述这个组件做了什么",
-      "how_it_works": "LLM 描述实现机制（如：自定义二进制帧协议，4字节头+payload+CRC32校验）",
-      "is_standard": false,
-      "standard_equivalent": "最接近的标准技术（如：类似 gRPC 但自研协议）或 null",
-      "cannot_substitute": true,
-      "migration_risk": "critical / high / medium / low",
-      "migration_risk_reason": "为什么这个风险等级"
-    }
-  ]
-}
-```
-
-**关键字段**：
-- `is_standard: false` — 自研组件，目标栈不可能有现成等价物
-- `cannot_substitute: true` — 不能用"接近的"标准技术替代（如自研加密算法不能随便换成 AES）
-- `category` — LLM 自由分类，不限定枚举。可能出现项目特有的类别
-- `protocol_spec` — **对自定义协议/加密/序列化组件必填**。LLM 读源码中的协议实现代码，输出结构化规格：
-
-```json
-"protocol_spec": {
-  "frame_format": "LLM 描述帧结构（字段偏移、长度、编码方式）",
-  "state_machine": "LLM 描述状态转换（如有）",
-  "test_vectors": [
-    {"input": "...", "expected_output": "...", "description": "LLM 从源码测试/常量中提取的验证用例"}
-  ]
-}
-```
-
-`protocol_spec` 是**可验证的结构化规格**，不是文本描述。LLM 根据源码实际的协议实现生成，格式由 LLM 自行决定（帧协议用 field offset 格式，状态机用 state transition 格式，加密用 input/output 对格式）。`test_vectors` 从源码的单元测试或常量中提取，供目标代码验证行为一致性
-
-**Step 2b-assets** — 素材盘点 → `asset-inventory.json`（仅 frontend/fullstack）
-
-LLM 扫描源码的静态资源目录（`public/`, `assets/`, `static/`, `resources/` 等），盘点所有与代码有引用关系的素材。
-
-LLM 对每个素材分类迁移方式：
-- `copy` — 文件直接复制到目标项目（图片、字体、音视频、Lottie JSON）
-- `transform` — 需要格式转换或重新映射（主题变量、图标组件化、i18n key 格式）
-- `replace` — 源框架专属，目标框架需用等价替代（React SVG 组件 → Vue SFC 组件）
-
-产出 `.allforai/code-replicate/asset-inventory.json`：
-
-```json
-{
-  "generated_at": "ISO8601",
-  "assets": [
-    {
-      "category": "LLM 自分类（icons / images / fonts / animations / theme / i18n / audio_video / ...）",
-      "source_path": "素材所在目录或文件",
-      "file_count": 0,
-      "migration": "copy | transform | replace",
-      "migration_detail": "LLM 描述具体迁移方式",
-      "code_refs": "哪些代码文件引用了这些素材（import/require/url()）"
-    }
-  ],
-  "theme_system": {
-    "mechanism": "LLM 描述主题系统实现方式（CSS Variables / Tailwind / Design Token / ...）",
-    "source_files": ["主题定义文件路径"],
-    "variables_count": 0,
-    "migration_note": "LLM 描述如何映射到目标框架的主题系统"
-  }
-}
-```
-
-**Phase 3 消费**：
-- `copy` 类素材 → Phase 3 直接复制到目标项目对应目录，更新引用路径
-- `transform` 类素材 → Phase 3 LLM 读源主题文件 → 生成目标框架的主题配置
-- `replace` 类素材 → Phase 3 LLM 按 stack-mapping 转换格式
-
-**cr-fidelity 消费**：asset-inventory 存在时启用 U 维度中的素材覆盖检查
-
-**Step 2b-seed** — 基础数据盘点 → `seed-data-inventory.json`（仅 backend/fullstack）
-
-LLM 读源码的 seed 脚本（prisma/seed.ts, db/seeds/, fixtures/ 等）和数据库迁移文件，提取系统运行所需的**基础数据清单**。
-
-基础数据 = 没有它系统能启动但业务不能用的数据（不是用户生成的业务数据）。
-
-LLM 读 seed 脚本 → 提取每条基础数据的内容和用途：
-
-```json
-{
-  "generated_at": "ISO8601",
-  "seed_sources": ["LLM 找到的 seed 脚本/fixture 文件路径"],
-  "data": [
-    {
-      "category": "LLM 自分类",
-      "table": "对应的数据库表/集合",
-      "records": "LLM 从 seed 脚本中提取的具体数据（JSON 数组）",
-      "purpose": "LLM 描述这组数据的业务用途",
-      "required": true
-    }
-  ]
-}
-```
-
-**Phase 3 消费**：dev-forge 读 seed-data-inventory → 为目标栈生成等价的 seed 脚本（如 Prisma seed.ts → GORM seed.go），数据内容来自产物而非源码 seed 脚本。
-
-**cr-fidelity 消费**：验证目标项目的 seed 脚本是否覆盖了所有 `required: true` 的基础数据。
-
-**Step 2b-env** — 环境配置清单 → `env-inventory.json`
-
-LLM 读源码的 `.env.example` / `.env.sample` / 代码中的 `process.env.XXX` / `os.Getenv("XXX")` 引用，提取所有环境变量：
-
-```json
-{
-  "generated_at": "ISO8601",
-  "env_sources": ["LLM 找到的 .env 文件和代码中环境变量引用"],
-  "variables": [
-    {
-      "key": "变量名",
-      "purpose": "LLM 描述用途",
-      "category": "LLM 自分类（database / cache / auth / storage / third_party / app_config / ...）",
-      "secret": true,
-      "default_value": "非敏感变量的默认值 | null（敏感变量不记录值）",
-      "required": true,
-      "used_by": ["引用该变量的代码文件"]
-    }
-  ]
-}
-```
-
-**目的**：目标项目的 `.env.example` 可以从此产物直接生成。dev-forge 不需要猜"需要哪些环境变量"。
-
-**Step 2b-errors** — 错误码体系 → `error-catalog.json`（仅 backend/fullstack）
-
-LLM 读源码中的错误定义（错误枚举、错误常量、HTTP 状态码映射、错误响应格式），提取结构化错误码清单：
-
-```json
-{
-  "generated_at": "ISO8601",
-  "error_format": "LLM 描述错误响应的统一格式（如 {code: number, message: string, detail?: any}）",
-  "errors": [
-    {
-      "code": "错误码（数字或字符串）",
-      "http_status": 400,
-      "message": "错误消息",
-      "category": "LLM 自分类",
-      "source_file": "定义该错误码的文件"
-    }
-  ]
-}
-```
-
-**目的**：前端依赖后端错误码做条件处理（`if (error.code === 1001) showLoginDialog()`）。错误码变了 → 前端错误处理全部断裂。目标项目必须使用**相同的错误码数值和格式**。
-
-**Step 2b-cron** — 定时任务清单 → `cron-inventory.json`（仅 backend/fullstack）
-
-LLM 读源码中的定时任务定义（cron 配置、@Cron 装饰器、scheduler 注册、celery beat、Bull repeat jobs 等），提取任务清单：
-
-```json
-{
-  "generated_at": "ISO8601",
-  "cron_sources": ["LLM 找到的定时任务定义文件"],
-  "jobs": [
-    {
-      "name": "任务名称",
-      "schedule": "cron 表达式或间隔描述",
-      "handler": "执行函数/方法",
-      "purpose": "LLM 描述任务做什么",
-      "retry_policy": "LLM 描述重试策略（如有）",
-      "source_file": "定义文件路径"
-    }
-  ]
-}
-```
-
-**Step 2b-services** — 第三方服务清单 → `third-party-services.json`
-
-LLM 读源码中的外部服务调用（SDK 初始化、API 客户端配置、webhook 注册），提取服务清单：
-
-```json
-{
-  "generated_at": "ISO8601",
-  "services": [
-    {
-      "name": "LLM 识别的服务名称",
-      "purpose": "LLM 描述用途",
-      "integration_type": "LLM 描述集成方式（SDK / REST API / webhook / OAuth / ...）",
-      "config_env_vars": ["相关的环境变量名（引用 env-inventory）"],
-      "source_files": ["集成代码文件"],
-      "has_sandbox": "LLM 判断是否有测试/沙箱环境",
-      "migration_note": "LLM 描述目标栈的集成方式（可能需要不同 SDK）"
-    }
-  ]
-}
-```
-
-**与 infrastructure-profile 的关系**：infrastructure-profile 记录**自研基础设施**（协议、加密、自研组件）。third-party-services 记录**外部第三方服务**（Stripe、SendGrid、AWS S3 等）。两者互补。
-
-**Step 2c** — LLM 全局补充（cross_cutting + 隐含依赖 + 架构风格 + **abstractions**）
-- 识别跨模块关注点：认证、日志、错误处理、国际化
-- 补充隐含依赖：消息队列、缓存、外部 API
-- 标记架构风格：monolith / microservice / modular-monolith / serverless
-- **提取源码复用模式**：LLM 读 key_files 时观察到的代码复用方式，写入 source-summary.json 的 `abstractions` 字段。LLM 自行判断什么构成"复用模式"——可能是基类继承、mixin 组合、高阶函数、装饰器、依赖注入、代码生成宏等，完全由源码决定
-
-**Step 2c-visual** — 源 App 截图采集（仅 frontend/fullstack 且源 App 可运行时执行）
-
-如果源 App 能启动（replicate-config.source_app 有 start_command），在 Phase 2 阶段就完成截图采集 — **不等到流程末尾**，因为源项目环境可能在后续步骤中被清理。
-
-> 注意：此时 experience-map 尚未生成（Phase 3 才有）。截图导航基于**源码的路由配置**（GoRouter / React Router / nginx.conf 等），不依赖 experience-map。
-
-```
-0. 环境准备（全部必须成功才能开始截图）
-   a. 启动后端（如果 source_app 有 backend_start_command）→ 等待后端可达
-      没有后端 → 前端截图全是错误页面 → 不启动截图流程
-   b. 执行数据准备（如果 source_app 有 seed_command）→ 等待完成
-      空数据库 → 所有列表页都是"暂无数据" → 截图无意义
-   c. 启动前端（source_app.start_command）→ 等待前端可达
-
-1. 登录
-   a. 导航到登录页
-   b. 用 source_app.login 凭证登录
-   c. 如果登录需要 2FA/验证码 → 用 source_app.login.bypass_command 执行绕过
-      （如：关闭验证码的 env 变量、测试模式 API、直接注入 token）
-   d. 登录失败 → 停止截图流程，标记原因
-
-2. 提取路由列表
-   a. 从 source-summary.modules 的 key_files 中找到路由配置文件
-   b. LLM 读路由配置 → 提取所有可导航路由
-   c. 参数化路由（/users/:id）→ LLM 从页面或 API 获取一个真实 ID 填入
-      （如：登录后访问用户列表 → 取第一条的 ID → /users/123）
-   d. 非 URL 直达的页面（模态框、嵌套导航）→ LLM 记录导航步骤：
-      [{action: "click", selector: "...", then_screenshot: "modal_name.png"}]
-
-3. 逐路由截图
-   - URL 直达路由：Playwright browser_navigate → browser_take_screenshot
-   - 参数化路由：用 Step 2c 获取的真实 ID 导航
-   - 非 URL 页面：按导航步骤执行（click → wait → screenshot）
-   - 移动端：Maestro navigate → screenshot（如果可用）
-   - 桌面：用户手动截图
-
-4. 保存
-   - 截图 → .allforai/code-replicate/visual/source/{route_or_name}.png
-   - 路由映射 → visual/route-map.json：
-     [{route: "/appointments", file: "appointments.png", type: "url_direct"},
-      {route: null, name: "新建预约弹窗", file: "create_appointment_modal.png", type: "navigation_steps",
-       steps: [{action: "click", selector: "#btn-new"}]}]
-
-5. 清理
-   - 停止前端、后端
-```
-
-**前置条件全部是硬性的**：后端不可用、数据库为空、登录失败 → 不截图，不降级。截图要么正确要么不截。
-
-**Step 2d** — 展示发现 + 一次性确认（AskUserQuestion，**最后一次**）
-- 展示：模块清单、技术栈、粒度推荐、跨栈映射决策点
-- **展示 infrastructure-profile 中 `migration_risk = critical | high` 的组件** — 用户需要确认这些组件的迁移策略
-- **特别关注通信+加密的交叉点**：通信协议内嵌的加密层（如 WebSocket Tunnel 内的自研加密）容易被拆分看待而遗漏整体语义
-- 收集：模块范围调整、映射决策、粒度确认、**基础设施迁移决策**
-  > 栈映射参考详见 ${CLAUDE_PLUGIN_ROOT}/docs/stack-mappings.md
-
-**Step 2e** — 写入 replicate-config.json 更新 + stack-mapping.json（仅跨栈）
-- 跨栈时 stack-mapping.json 记录：源概念 → 目标概念映射
-- **每条映射必须标注 `compatibility`**：
-  - `flexible` — 设计选型可替代（如状态管理框架、UI 组件库、DI 框架）
-  - `exact` — 协议层不可替代（如加密算法、通信协议、序列化格式）— 与现有服务端通信的组件**默认 exact**
-  - LLM 根据 infrastructure-profile 的 `cannot_substitute` 字段判断。与服务端通信的组件（API client、WebSocket、gRPC）必须标 exact
-- 跨栈时额外生成 `abstraction_mapping`：LLM 将 Step 2c 发现的源码复用模式映射到目标栈的等价复用机制
-- **跨栈时额外生成 `infrastructure_mapping`**：LLM 将 infrastructure-profile 中每个组件映射到目标栈的等价实现。`cannot_substitute: true` 的组件必须标注精确迁移方案（不可用"类似的"替代），`is_standard: false` 的自研组件需要标注"目标栈需要重新实现"
-- **跨平台时额外生成 `platform_adaptation`**：当源平台和目标平台的交互模型不同（mobile↔desktop, web↔native）时，LLM 生成 UX 转换规则、注意力阈值覆盖、不适用功能列表。dev-forge 和 cr-fidelity 读此字段调整行为
-- 同栈时不生成 stack-mapping.json（但 source-summary.abstractions 和 infrastructure-profile 仍然生成，供 dev-forge 直接使用）
+> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/phase2/stage-d-confirm.md
 
 > **=== Phase 2 结束后不再问任何配置问题 ===**
 
