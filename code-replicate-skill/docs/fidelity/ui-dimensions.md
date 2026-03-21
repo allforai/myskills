@@ -30,10 +30,10 @@
 ## U3 — 组件覆盖
 
 对比 experience-map screens 中的 components[] 与目标代码的 UI 组件：
-- 每个 component 是否有对应的目标组件实现？
-- component.render_as 是否与目标组件的实际渲染方式一致？
+- **框架标准组件**（在 stack-mapping.auto_mapped 中有映射的，如 Ant Design Button → Element Plus el-button）→ 视为已覆盖，不逐个验证实现
+- **自定义组件**（项目自建的共享组件，在 source-summary.abstractions 中记录的）→ 逐个验证：目标代码有等价实现吗？Props/Events API 是否等价？
 - 共享组件（出现在多个 screen 中）是否被抽取为独立组件（而非每个页面内联实现）？
-- 评分 = 已实现组件数 / 总组件数 × 100
+- 评分 = (框架映射组件数 + 已实现自定义组件数) / 总组件数 × 100
 
 ## U4 — 布局结构
 
