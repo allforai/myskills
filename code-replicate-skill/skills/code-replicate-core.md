@@ -484,20 +484,113 @@ OL-D4 角色完整性:
 
 ## 断点续跑
 
-replicate-config.json 的 `progress` 字段追踪：`current_phase`, `current_step`, `completed_steps`, `fragments`。
+replicate-config.json 的 `progress` 字段追踪每一步的完成状态：
 
-- 检测到 config 且 `progress.current_phase > 1` → 跳到对应阶段
-- `--from-phase N` → 强制重跑（清除该阶段及之后的 progress）
-- 已生成的标准产物重跑时先删除再重新合并
-- fragments/ 目录在对应阶段重跑时清空
+```json
+"progress": {
+  "current_phase": 2,
+  "current_step": "2.8",
+  "completed_steps": ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7"],
+  "completed_artifacts": ["discovery-profile.json", "source-summary.json", "infrastructure-profile.json", "env-inventory.json", "third-party-services.json"]
+}
+```
 
-断点续跑流程：
-1. Phase 1 检测到 replicate-config.json 存在
-2. 读取 `progress.current_phase` 和 `progress.current_step`
-3. 跳过已完成步骤，从中断点继续
-4. 用户可用 `--from-phase 3` 强制从 Phase 3 重新开始
+**每完成一个 Step**，LLM 立即更新 `progress`（写 replicate-config.json）。崩溃后重启 → 从 `current_step` 继续。
 
-> Schema 详见 ${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md
+- Phase 2 的 15 步精确到 `"2.1"` ~ `"2.15"`
+- Phase 3 的每个 artifact 精确到 `"3.task-inventory"` / `"3.system-spec"` 等
+- `--from-step 2.5` → 从 Step 2.5 重新开始（清除 2.5 及之后的 progress + 产物）
+- `--from-phase 3` → 从 Phase 3 重新开始（保留 Phase 2 全部产物）
+
+## 增量复刻
+
+源码修改后，不需要重跑整个 pipeline：
+
+```
+/code-replicate --incremental
+```
+
+**增量检测**：
+1. 比对源码当前 git hash vs `replicate-config.progress.source_hash`
+2. `git diff` 找出修改的文件列表
+3. 映射修改文件 → 受影响的模块（source-summary.modules）
+4. 仅对受影响模块重新执行：
+   - Stage B: 如果修改了基础设施代码 → 重跑 2.5-2.9
+   - Stage C: 如果修改了素材/seed → 重跑 2.10-2.11
+   - Phase 3: 仅重新生成受影响模块的片段 → 重新 merge
+   - Phase 4: 重新 validate
+
+不受影响的模块和产物保持不变。
+
+## 跳过模块
+
+source_path 中的某些模块不需要复刻（已经是目标栈、或不在迁移范围内）：
+
+```
+/code-replicate --skip payment-service,legacy-tool
+```
+
+或在 discovery-profile.json 中标注：
+
+```json
+"module_paths": [
+  {"path": "payment-service", "skip": true, "reason": "已经是 Go，不需要复刻"},
+  {"path": "user-service", "atomic": true}
+]
+```
+
+skip 的模块：
+- Phase 2: 不分析（不出现在 source-summary.modules 中）
+- Phase 3: 不生成任何产物
+- Phase 4: 不验证
+- 但在 dependency_map 中仍然作为**外部依赖**记录（其他模块可能调用它）
+
+## 并行化
+
+Phase 2 Stage B 的 5 步（2.5-2.9）互相独立 → 可以用 Agent tool 并行执行：
+
+```
+Stage B 并行:
+  Agent 1: 2.5 infrastructure-profile
+  Agent 2: 2.6 env-inventory + 2.7 third-party-services（共享 .env 文件读取）
+  Agent 3: 2.8 cron-inventory + 2.9 error-catalog
+```
+
+Phase 3 的模块片段生成也可以并行（不同模块互不依赖）。
+
+LLM 自行决定是否并行 — 小项目串行更简单，大项目并行更快。
+
+## 进度可见
+
+每完成一个 Step，LLM 输出一行进度：
+
+```
+Phase 2 ▸ Stage A [████████████████████] 4/4 ✓
+Phase 2 ▸ Stage B [████████████░░░░░░░░] 3/5 ⟳ 2.8 cron-inventory...
+```
+
+进度信息同时写入 `replicate-config.progress`（断点续跑用）和对话输出（用户可见）。
+
+## 数据库 Schema 迁移
+
+Phase 2 Stage C 的 seed-data-inventory 记录了**数据内容**，但没有记录**表结构**。
+
+LLM 在 Step 2.11 同时提取 Schema 信息 → 写入 `seed-data-inventory.json` 的扩展字段：
+
+```json
+"schema": [
+  {
+    "table": "表名",
+    "columns": [{"name": "...", "type": "...", "nullable": true, "default": "..."}],
+    "indexes": [{"name": "...", "columns": ["..."], "unique": true}],
+    "foreign_keys": [{"column": "...", "references": "其他表.字段"}]
+  }
+]
+```
+
+**来源**：Prisma schema / Django models.py / SQLAlchemy models / 迁移文件 / CREATE TABLE SQL。
+
+dev-forge 读此 schema → 为目标栈生成等价的数据库迁移（如 GORM AutoMigrate / Prisma schema / SQL 迁移脚本）。
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 description: "代码复刻：逆向工程已有代码库 → 生成 allforai 产物 → 交还 dev-forge 流水线。模式: interface / functional / architecture / exact"
-argument-hint: "[mode] <path-or-url> [--type backend|frontend|fullstack|module] [--scope full|modules|feature] [--module <path>] [--from-phase N]"
+argument-hint: "[mode] <path-or-url> [--type backend|frontend|fullstack|module] [--scope full|modules|feature] [--module <path>] [--skip <modules>] [--from-phase N] [--from-step N.N] [--incremental]"
 allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion", "Agent", "WebSearch"]
 ---
 
