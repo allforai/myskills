@@ -56,13 +56,22 @@ cr-visual 需要知道怎么启动和导航源 App。信息来源（优先级）
 1. **replicate-config.json 的 `source_app` 字段**（code-replicate Phase 1 收集）：
    ```json
    "source_app": {
-     "start_command": "cd ./source-project && npm run dev",
+     "start_command": "npm run dev",
+     "backend_start_command": "cd server && npm start",
+     "seed_command": "npm run db:seed",
      "url": "http://localhost:3000",
-     "login": {"username": "test@example.com", "password": "test123"},
+     "login": {
+       "username": "test@example.com",
+       "password": "test123",
+       "bypass_command": "设置环境变量/API调用来绕过2FA（如有）"
+     },
      "platform": "web | mobile | desktop"
    }
    ```
-   Phase 1 Preflight 时 LLM 应向用户询问：「源 App 如何启动？需要登录凭证吗？」
+   Phase 1 Preflight 时 LLM 应向用户询问：
+   - 源 App 如何启动？需要先启动后端吗？
+   - 有测试数据吗？seed 命令是什么？
+   - 需要登录吗？有验证码/2FA 吗？怎么绕过？
 
 2. **用户通过 `--source` 参数直接提供 URL**
 
@@ -82,16 +91,11 @@ cr-visual 需要知道怎么启动和导航源 App。信息来源（优先级）
 - 读取 `--screenshots` 目录中的图片文件
 - LLM 将图片文件名与 experience-map screen name 配对
 
-**方式 C — 源 App 仍可运行（Web）**：
-- 用 source_app.start_command 启动源 App
-- 等待 source_app.url 可达 → 登录 → 逐屏截图
-- 保存到 `.allforai/code-replicate/visual/source/`
+**方式 C — 源 App 仍可运行**：
+- 按 Phase 2c-visual 的完整协议执行（启动后端 → seed 数据 → 启动前端 → 登录 → 截图）
+- 任何前置条件失败（后端不可用、数据库为空、登录失败）→ 不截图，报具体失败原因
 
-**方式 D — 源 App 仍可运行（移动端）**：
-- Maestro 可用 → `maestro screenshot` 逐屏截图
-- 不可用 → 提示用户手动截图并提供目录
-
-**无截图可用** → 报错退出：「源 App 截图不可用。请提供 --screenshots 目录，或确保源 App 可启动」
+**无截图可用** → 报错退出：「源 App 截图不可用。请提供 --screenshots 目录，或确保源 App 环境完整（后端 + 数据 + 登录凭证）」
 
 ---
 

@@ -34,7 +34,12 @@ Code Replicate 是逆向工程桥梁：读取已有代码库，生成标准 `.al
    - scope（full / modules / feature）
    - 目标技术栈（同栈 or 跨栈 + 目标名称）
    - 业务方向（replicate / slim / extend）
-   - 源 App 运行信息（可选，供 `/cr-visual` 使用）：启动命令、URL、登录凭证、平台类型
+   - 源 App 运行信息（供 Phase 2c-visual + `/cr-visual` 使用）：
+     · 启动命令（前端 + 后端，后端必须运行前端才能展示数据）
+     · URL
+     · 登录凭证（如有 2FA/验证码，需要提供绕过方式或测试模式命令）
+     · 测试数据准备命令（seed 脚本或 demo 账号，空库截图无意义）
+     · 平台类型
    > **闭环输入审计**（见 product-design-skill/docs/skill-commons.md §八）：
    > 用户回答后检查**意图闭环**（代码做了什么 vs 用户想要什么一致吗？）
    > 和**边界闭环**（代码处理了正常路径，用户期望的异常处理呢？）。
@@ -174,25 +179,47 @@ LLM 自行判断什么构成"基础设施" — 可能是通信协议、加密算
 > 注意：此时 experience-map 尚未生成（Phase 3 才有）。截图导航基于**源码的路由配置**（GoRouter / React Router / nginx.conf 等），不依赖 experience-map。
 
 ```
-1. 从 source-summary.modules 的 key_files 中找到路由配置文件
-2. LLM 读路由配置 → 提取所有可导航路由列表
-3. 启动源 App（用 source_app.start_command）
-4. 等待可达（Web: HTTP 200; 移动端: 进程存活; 桌面: 窗口出现）
-5. 如果有 login 凭证 → 先登录
-6. 逐路由截图：
-   - Web: Playwright browser_navigate → browser_take_screenshot
-   - 移动端: Maestro navigate → screenshot（如果可用）
-   - 桌面: 用户手动截图 或 系统截图工具（桌面 App 无自动化导航工具）
-7. 保存到 .allforai/code-replicate/visual/source/{route_path}.png
-8. 同时写入 visual/route-map.json：[{route: "/appointments", file: "appointments.png"}, ...]
-9. 停止源 App
+0. 环境准备（全部必须成功才能开始截图）
+   a. 启动后端（如果 source_app 有 backend_start_command）→ 等待后端可达
+      没有后端 → 前端截图全是错误页面 → 不启动截图流程
+   b. 执行数据准备（如果 source_app 有 seed_command）→ 等待完成
+      空数据库 → 所有列表页都是"暂无数据" → 截图无意义
+   c. 启动前端（source_app.start_command）→ 等待前端可达
+
+1. 登录
+   a. 导航到登录页
+   b. 用 source_app.login 凭证登录
+   c. 如果登录需要 2FA/验证码 → 用 source_app.login.bypass_command 执行绕过
+      （如：关闭验证码的 env 变量、测试模式 API、直接注入 token）
+   d. 登录失败 → 停止截图流程，标记原因
+
+2. 提取路由列表
+   a. 从 source-summary.modules 的 key_files 中找到路由配置文件
+   b. LLM 读路由配置 → 提取所有可导航路由
+   c. 参数化路由（/users/:id）→ LLM 从页面或 API 获取一个真实 ID 填入
+      （如：登录后访问用户列表 → 取第一条的 ID → /users/123）
+   d. 非 URL 直达的页面（模态框、嵌套导航）→ LLM 记录导航步骤：
+      [{action: "click", selector: "...", then_screenshot: "modal_name.png"}]
+
+3. 逐路由截图
+   - URL 直达路由：Playwright browser_navigate → browser_take_screenshot
+   - 参数化路由：用 Step 2c 获取的真实 ID 导航
+   - 非 URL 页面：按导航步骤执行（click → wait → screenshot）
+   - 移动端：Maestro navigate → screenshot（如果可用）
+   - 桌面：用户手动截图
+
+4. 保存
+   - 截图 → .allforai/code-replicate/visual/source/{route_or_name}.png
+   - 路由映射 → visual/route-map.json：
+     [{route: "/appointments", file: "appointments.png", type: "url_direct"},
+      {route: null, name: "新建预约弹窗", file: "create_appointment_modal.png", type: "navigation_steps",
+       steps: [{action: "click", selector: "#btn-new"}]}]
+
+5. 清理
+   - 停止前端、后端
 ```
 
-**桌面 App 限制**：Playwright/Maestro 不支持桌面窗口导航。桌面源 App 截图需要用户手动提供（`/cr-visual --screenshots`）或使用平台特定的自动化工具。
-
-如果源 App 无法启动或截图失败 → 标记 `SOURCE_SCREENSHOTS_SKIPPED`。
-
-截图 + route-map.json 一旦保存，后续 `/cr-visual` 通过 route-map 将路由截图与 experience-map screen 配对。
+**前置条件全部是硬性的**：后端不可用、数据库为空、登录失败 → 不截图，不降级。截图要么正确要么不截。
 
 **Step 2d** — 展示发现 + 一次性确认（AskUserQuestion，**最后一次**）
 - 展示：模块清单、技术栈、粒度推荐、跨栈映射决策点
