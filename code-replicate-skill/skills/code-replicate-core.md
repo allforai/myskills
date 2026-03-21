@@ -102,6 +102,7 @@ LLM 读取以下信息（context 极小，~2-5KB）：
 **Step 2e** — 写入 replicate-config.json 更新 + stack-mapping.json（仅跨栈）
 - 跨栈时 stack-mapping.json 记录：源概念 → 目标概念映射（如 ORM → ORM、MQ → MQ）
 - 跨栈时额外生成 `abstraction_mapping`：LLM 将 Step 2c 发现的源码复用模式映射到目标栈的等价复用机制
+- **跨平台时额外生成 `platform_adaptation`**：当源平台和目标平台的交互模型不同（mobile↔desktop, web↔native）时，LLM 生成 UX 转换规则、注意力阈值覆盖、不适用功能列表。dev-forge 和 cr-fidelity 读此字段调整行为
 - 同栈时不生成 stack-mapping.json（但 source-summary.abstractions 仍然生成，供 dev-forge 直接使用）
 
 > **=== Phase 2 结束后不再问任何配置问题 ===**
@@ -340,6 +341,7 @@ OL-D4 角色完整性:
 14. **6V 多维审计** — Phase 4 必须从 user/business/tech/data/ux/risk 六个视角审查产物，防止单维盲区
 15. **内循环收敛** — Phase 4a 修复循环遵循 CG-1：最多 3 轮、单调递减、违反则停止。防止无限修复循环
 16. **外循环意图保真** — Phase 4d 回到 source-summary 原点验证提取覆盖度，遵循 CG-3：追加缺口 ≤ 总条目 20%、最多 1 轮。防止提取产物偏离源码业务意图
+17. **跨平台适配** — 当源平台和目标平台交互模型不同（mobile↔desktop）时，必须生成 `platform_adaptation`。产物中的 UX 模式（布局、手势、导航、注意力阈值）不可原样传递到不同平台的目标代码。cr-fidelity 评估时使用适配后的阈值和排除列表
 
 ---
 

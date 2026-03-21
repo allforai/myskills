@@ -233,6 +233,40 @@ Cross-stack mapping decisions produced by Phase 2d. Stored at `.allforai/code-re
     }
   ],
   "unmapped": [],
+  "platform_adaptation": {
+    "source_platform": "mobile",
+    "target_platform": "desktop",
+    "experience_priority_override": {
+      "primary_experience": "desktop-web",
+      "reasoning": ["Target is hospital WPF workstation, primary users are doctors/nurses"]
+    },
+    "ux_transformations": [
+      {
+        "source_pattern": "single_task_focus screens",
+        "target_pattern": "multi_panel master-detail layout",
+        "affected_screens": "all list+detail screen pairs"
+      },
+      {
+        "source_pattern": "touch gestures (swipe, pull-to-refresh)",
+        "target_pattern": "keyboard shortcuts + context menu + toolbar",
+        "affected_screens": "all"
+      },
+      {
+        "source_pattern": "full-screen page navigation",
+        "target_pattern": "region-based navigation (e.g., Prism RegionManager)",
+        "affected_screens": "all flow transitions"
+      }
+    ],
+    "attention_threshold_override": {
+      "max_steps_per_screen": 15,
+      "context_switch_limit": 6,
+      "reasoning": "Desktop users have higher sustained attention than mobile users"
+    },
+    "skip_source_features": [
+      {"feature": "offline_cache", "reason": "Desktop has stable network"},
+      {"feature": "gps_location", "reason": "Desktop has no GPS"}
+    ]
+  },
   "abstraction_mapping": [
     {
       "source_abstraction": "BaseBloc",
@@ -264,6 +298,12 @@ Cross-stack mapping decisions produced by Phase 2d. Stored at `.allforai/code-re
 - `user_decisions` — multi-option scenarios where the user chose a target construct
 - `framework_builtins` — source hand-written code replaceable by target framework built-ins
 - `unmapped` — constructs that could not be mapped (require manual resolution)
+- `platform_adaptation` — **LLM-generated** when source and target platforms have different interaction models (mobile→desktop, desktop→mobile, web→native). Fields:
+  - `source_platform` / `target_platform` — platform category (mobile / desktop / web / native)
+  - `experience_priority_override` — overrides the source-inferred experience_priority for the target platform. dev-forge and cr-fidelity read this to adjust consumer maturity rules
+  - `ux_transformations[]` — maps source UX patterns to target equivalents. dev-forge design-to-spec reads this to transform screen specs. Each entry has `source_pattern`, `target_pattern`, `affected_screens`
+  - `attention_threshold_override` — adjusts attention management thresholds for target platform (desktop allows more steps/switches than mobile)
+  - `skip_source_features[]` — source features that don't apply to target platform (e.g., GPS on desktop, offline cache on stable-network desktop). cr-fidelity excludes these from scoring
 - `abstraction_mapping` — maps source code's reuse patterns to target stack equivalents. LLM generates this based on source-summary.abstractions + understanding of the target stack. Fields:
   - `source_abstraction` — name from source-summary.abstractions
   - `what_it_provides` — the behavior contract (stack-agnostic)
