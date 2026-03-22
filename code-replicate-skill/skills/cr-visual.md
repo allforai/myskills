@@ -191,38 +191,54 @@ cr-visual 需要知道怎么启动和导航源 App。信息来源（优先级）
 
 ---
 
-## Step 6: 修复差异（full/fix 模式）
+## Step 6+7: 修复闭环 — 调用 ralph-loop
 
-LLM 读 visual-report 中 match_level = low 或 mismatch 的 screen，分类修复：
+视觉还原追求 **100% 一致**，不是"差不多就行"。使用 ralph-loop 持续修复直到完美。
 
-| 差异类型 | 修复方式 | LLM 操作 |
-|---------|---------|---------|
-| 布局结构不同 | 修改模板/CSS | Read 目标页面代码 → Edit 布局结构 |
-| 组件缺失 | 补组件 | 在目标页面添加缺失的 UI 组件 |
-| 主题色/变量不对 | 改主题配置 | 对比 asset-inventory.theme_system → 修正变量值 |
-| 图标/图片缺失 | 补素材 | 从 visual/source/ 截图识别缺失素材 → 补到目标 |
-| 动画缺失 | 补 CSS transition / 动画库 | 读源录像识别动画类型 → 在目标代码中添加 |
-| 框架视觉风格差异 | 不修 — DESIGN_DECISION | Ant Design → Element Plus 的固有差异，不是 bug |
-
-**修复范围控制**：
-- 每轮最多修复 **10 个 screen** 的差异
-- 超出按 score 排序，优先修最低分的
-- DESIGN_DECISION 不计入修复额度
-- **修复后重新构建**（`npm run build` / 对应框架命令）确保不破坏编译
-
-## Step 7: 重新对比（full 模式闭环）
+**启动 ralph-loop**：
 
 ```
-收敛控制 (CG-V):
-  修复后 → 重新截图/录像（仅修改的 screen）→ 重新对比 → 更新评分
+/ralph-loop 启动视觉还原修复循环
 
-  达标: overall_score ≥ 85 → 输出终报，退出
-  最多 3 轮
-  每轮 score 必须 > 上一轮
-  第 3 轮仍未达标 → 输出报告 + 剩余差异，标注 DESIGN_DECISION
+每轮执行:
+  1. 读 visual-report.json → 找到 match_level ≠ high 的 screen
+  2. 按 score 从低到高排序 → 取最低分的 1 个 screen
+  3. 读源截图/录像 + 目标截图/录像 → 识别具体差异
+  4. 修复目标代码：
+     - 布局结构 → 改模板/CSS
+     - 组件缺失 → 补组件
+     - 主题变量 → 修正变量值
+     - 素材缺失 → 补图标/图片/字体
+     - 动画缺失 → 补 CSS transition / 动画代码
+     - 数据展示差异 → 检查数据获取逻辑
+  5. 构建验证（确保不破坏编译）
+  6. 对修复的 screen 重新截图/录像
+  7. 重新对比 → 更新 visual-report.json
+  8. 该 screen 达到 high → 下一个 screen
+     仍未 high → 继续修该 screen（不同角度的差异）
+
+退出条件:
+  - 所有 screen match_level = high → 100% 达成
+  - 或达到 30 轮上限
 ```
 
-**增量重拍**：只对修改了的 screen 重新截图/录像，未修改的保留上轮结果。
+**关键要求**：
+
+**必须使用真实数据和真实服务**：
+- 截图时目标 App 必须连接**真实后端**（不是 mock server）
+- 页面展示的必须是**真实业务数据**（不是 seed 的采样数据）
+- 如果源 App 截图时用的是真实数据 → 目标 App 截图时也必须用同样的数据源
+- 数据差异导致的界面差异不是视觉 bug — 但**空数据 vs 有数据**的差异是 bug
+
+**每轮只修 1 个 screen**：
+- 聚焦一个问题修到完美，不跳来跳去
+- 修完一个 screen（high）再修下一个
+- 避免"改了 A 破了 B"的来回
+
+**30 轮不是上限而是最低保证**：
+- 60 个页面 × 可能每个页面需要 1-3 轮 → 需要足够多的轮次
+- 如果 30 轮后还有 screen 未达 high → 继续（ralph-loop 不限轮次）
+- 只有当所有 screen 都 high 或用户手动终止时才停
 
 ---
 
