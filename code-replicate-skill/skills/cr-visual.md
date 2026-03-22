@@ -20,7 +20,13 @@ cr-visual 是复刻流程的**最后一步** — 在 cr-fidelity + product-verif
 
 **前置条件**：测试全绿，App 能稳定运行。截图对比需要 App 正常工作。
 
-**多角色对比**：如果 `role-view-matrix.json` 存在 → 逐角色截图并分别对比（管理员视角 vs 管理员视角，运营视角 vs 运营视角）。不同角色看到不同界面 — 只用管理员截图会遗漏其他角色的 UI 差异。
+**多角色对比**：如果 `role-view-matrix.json` 存在 → 逐角色截图并分别对比。
+
+**动态效果对比**：如果 `interaction-recordings.json` 存在 → 源 App 的录像已在 Phase 2.13 采集。cr-visual 对目标 App 执行同样的操作录制 → LLM 观看两段录像对比：
+- 动画类型是否一致（淡入淡出 vs 滑动 vs 无动画）
+- 动画时长是否接近
+- 交互反馈是否等价（拖拽排序的视觉反馈、hover 状态变化）
+- match_level: high / medium / low / mismatch
 
 ---
 
