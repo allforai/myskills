@@ -22,11 +22,18 @@ cr-visual 是复刻流程的**最后一步** — 在 cr-fidelity + product-verif
 
 **多角色对比**：如果 `role-view-matrix.json` 存在 → 逐角色截图并分别对比。
 
-**动态效果对比**：如果 `interaction-recordings.json` 存在 → 源 App 的录像已在 Phase 2.13 采集。cr-visual 对目标 App 执行同样的操作录制 → LLM 观看两段录像对比：
-- 动画类型是否一致（淡入淡出 vs 滑动 vs 无动画）
-- 动画时长是否接近
-- 交互反馈是否等价（拖拽排序的视觉反馈、hover 状态变化）
-- match_level: high / medium / low / mismatch
+**交互行为对比**：如果 `interaction-recordings.json` 存在 → 源 App 的证据已在 Phase 2.13 采集。cr-visual 对目标 App 执行**同样的操作步骤**：
+
+三层验证：
+1. **视觉效果**（visual_effect）：源录像 vs 目标录像 → 动画类型/时长/反馈是否一致
+2. **操作结果**（functional_action）：
+   - before 截图对比 → 操作前界面一致吗？
+   - 执行同样的 steps（click/type/submit）
+   - after 截图对比 → 操作后界面一致吗？
+   - result.json 对比 → 跳转目标一致吗？提示内容一致吗？UI 变化一致吗？
+3. **综合**：同样的按钮 → 同样的点击 → 同样的结果 = high
+
+每个交互输出 match_level: high / medium / low / mismatch
 
 ---
 
