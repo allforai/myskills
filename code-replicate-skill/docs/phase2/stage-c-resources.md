@@ -15,6 +15,14 @@ LLM 扫描静态资源目录，盘点所有与代码有引用关系的素材。
 
 含 `theme_system` 子结构（主题实现方式、变量数量、迁移方式）。
 
+**音效触发映射**：如果项目有音效文件，LLM 额外提取 `sound_triggers`：
+```json
+"sound_triggers": [
+  {"sound_file": "音效文件路径", "trigger": "LLM 描述什么操作触发", "source_code_ref": "调用音效的源码位置"}
+]
+```
+Phase 3 迁移音效文件时同步迁移触发代码。cr-visual 交互验证时通过 `expected_result.sound` 检查目标 App 是否在同样操作时触发音效。
+
 ## 2.11 seed-data-inventory.json — 后端基础数据（仅 backend/fullstack）
 
 LLM 读 seed 脚本 / fixture 文件 / 数据库迁移 → 提取系统运行所需的基础数据。
@@ -82,7 +90,8 @@ LLM 读源码中的**所有用户交互行为**（不只是动画效果），标
         "screenshot_after": "操作完成后应该看到什么（LLM 描述）",
         "ui_changes": ["哪些 UI 元素应该变化（出现/消失/更新/移动）"],
         "navigation": "是否跳转（跳到哪个页面/路由）",
-        "feedback": "用户反馈（成功提示/错误提示/loading 状态）"
+        "feedback": "用户反馈（成功提示/错误提示/loading 状态）",
+        "sound": "该操作是否触发音效（LLM 从源码中搜索 playSound/Audio/beep 调用。null=无音效）"
       },
       "source_file": "交互逻辑定义的源码文件"
     }
