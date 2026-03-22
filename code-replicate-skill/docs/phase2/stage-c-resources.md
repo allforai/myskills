@@ -148,10 +148,36 @@ LLM 读源码中的**所有用户交互行为**（不只是动画效果），标
         "ui_changes": ["实际变化的元素"], "console_errors": []}
 ```
 
-**三种证据**：
+**四种证据**：
 - **before/after 截图** → 证明操作前后 UI 变化正确
 - **操作录像** → 证明操作过程流畅（动画/过渡）
-- **结果 JSON** → 结构化记录实际行为（供 cr-visual 精确对比）
+- **结果 JSON** → 结构化记录实际 UI 行为（跳转/提示/元素变化）
+- **API 日志** → 该操作触发的所有网络请求和响应（供接口级对比）
+
+### API 日志采集
+
+每个 functional_action 执行期间，Playwright 同时抓取网络请求：
+
+```
+对每个 functional_action:
+  1. 启动 Playwright network 拦截（page.on('request') + page.on('response')）
+  2. 执行操作步骤（click/submit/drag）
+  3. 等待操作完成
+  4. 停止拦截 → 保存该操作触发的所有请求：
+     interactions/{screen}_{interaction}_api.json:
+     [
+       {
+         "method": "POST",
+         "url": "/api/orders",
+         "request_body": {"amount": 100, "items": [...]},
+         "status": 201,
+         "response_body": {"id": "ORD-001", "status": "created"},
+         "timing_ms": 234
+       }
+     ]
+```
+
+**只记录业务 API**（过滤掉静态资源、analytics、CDN 请求）。LLM 根据 URL 模式判断哪些是业务请求。
 
 ### 保存
 
@@ -167,8 +193,10 @@ visual/source/
   │   ├── users_create_before.png
   │   ├── users_create_after.png
   │   ├── users_create_result.json
+  │   ├── users_create_api.json     ← API 日志
   │   ├── orders_delete_before.png
   │   ├── orders_delete_after.png
-  │   └── orders_delete_result.json
+  │   ├── orders_delete_result.json
+  │   └── orders_delete_api.json    ← API 日志
   └── route-map.json
 ```

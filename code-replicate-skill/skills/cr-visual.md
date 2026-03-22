@@ -24,14 +24,20 @@ cr-visual 是复刻流程的**最后一步** — 在 cr-fidelity + product-verif
 
 **交互行为对比**：如果 `interaction-recordings.json` 存在 → 源 App 的证据已在 Phase 2.13 采集。cr-visual 对目标 App 执行**同样的操作步骤**：
 
-三层验证：
+四层验证：
 1. **视觉效果**（visual_effect）：源录像 vs 目标录像 → 动画类型/时长/反馈是否一致
 2. **操作结果**（functional_action）：
    - before 截图对比 → 操作前界面一致吗？
    - 执行同样的 steps（click/type/submit）
    - after 截图对比 → 操作后界面一致吗？
    - result.json 对比 → 跳转目标一致吗？提示内容一致吗？UI 变化一致吗？
-3. **综合**：同样的按钮 → 同样的点击 → 同样的结果 = high
+3. **API 日志**（functional_action）：
+   - 源 api.json vs 目标 api.json → 同样的操作触发了同样的 API 请求吗？
+   - 请求 URL/方法一致？参数结构一致？
+   - 响应状态码一致？响应体结构一致？
+   - 多了请求？少了请求？顺序不同？
+   - API 不一致 → 根因可能在后端/接口层，触发根因升级
+4. **综合**：同样的按钮 → 同样的点击 → 同样的界面变化 + 同样的 API 调用 = high
 
 每个交互输出 match_level: high / medium / low / mismatch
 
