@@ -30,6 +30,38 @@ LLM 读 key_files → 提取：
 - **cross_cutting**：跨模块关注点（认证、日志、错误处理），含 `phase` 字段（如有阶段式中间件）
 - **架构风格**：monolith / microservice / modular-monolith / serverless
 
+## 2.12.5 角色-界面差异矩阵 → `role-view-matrix.json`（仅 frontend/fullstack）
+
+LLM 读源码中的权限控制逻辑（路由守卫、v-if/v-show 权限判断、按钮级 RBAC、数据范围过滤），提取**不同角色在同一页面看到的差异**：
+
+```json
+{
+  "generated_at": "ISO8601",
+  "roles_with_credentials": [
+    {"role_id": "R001", "login": {"username": "admin@demo.com", "password": "admin123"}},
+    {"role_id": "R002", "login": {"username": "ops@demo.com", "password": "ops123"}}
+  ],
+  "differences": [
+    {
+      "screen": "用户管理页",
+      "route": "/admin/users",
+      "by_role": {
+        "R001": {"visible": true, "actions": ["查看", "编辑", "删除", "导出"], "data_scope": "全部"},
+        "R002": {"visible": true, "actions": ["查看", "编辑"], "data_scope": "本部门"},
+        "R003": {"visible": false}
+      }
+    }
+  ]
+}
+```
+
+**Phase 1 补充**：`source_app.login` 扩展为**多角色凭证列表**（不是单一账号）。LLM 在 Phase 1 向用户收集每个角色的测试账号。
+
+**用途**：
+- Phase 2.13 截图：按每个角色分别登录截图（不只用管理员截一遍）
+- cr-visual：按角色对比（管理员视角 vs 管理员视角，运营视角 vs 运营视角）
+- cr-fidelity F4：验证权限控制的精确还原
+
 ## 2.13 源 App 截图（仅 frontend/fullstack 且源 App 可运行）
 
 在 Phase 2 阶段采集源 App 截图 — 不等到流程末尾（源项目环境可能被清理）。
@@ -38,6 +70,13 @@ LLM 读 key_files → 提取：
 - 后端运行（backend_start_command）
 - 数据就绪（seed_command）
 - 登录成功（login + bypass_command）
+
+**多角色截图**：如果 `role-view-matrix.json` 存在且 `roles_with_credentials` 有多个角色：
+- 逐角色登录 → 截该角色可见的所有页面
+- 保存到 `visual/source/{role_id}/{route}.png`
+- route-map.json 按角色分组
+
+**单角色截图**（无角色矩阵时）：用最高权限账号截全量页面。
 
 截图基于**源码路由配置**（此时 experience-map 尚未生成），支持：
 - URL 直达路由

@@ -34,11 +34,11 @@ Code Replicate 是逆向工程桥梁：读取已有代码库，生成标准 `.al
    - scope（full / modules / feature）
    - 目标技术栈（同栈 or 跨栈 + 目标名称）
    - 业务方向（replicate / slim / extend）
-   - 源 App 运行信息（供 Phase 2c-visual + `/cr-visual` 使用）：
-     · 启动命令（前端 + 后端，后端必须运行前端才能展示数据）
+   - 源 App 运行信息（供 Phase 2 截图 + `/cr-visual` 使用）：
+     · 启动命令（前端 + 后端）
      · URL
-     · 登录凭证（如有 2FA/验证码，需要提供绕过方式或测试模式命令）
-     · 测试数据准备命令（seed 脚本或 demo 账号，空库截图无意义）
+     · 登录凭证（**多角色**：每个需要截图的角色一组凭证，如有 2FA 需提供绕过方式）
+     · 测试数据准备命令（seed 脚本或 demo 账号）
      · 平台类型
    > **闭环输入审计**（见 product-design-skill/docs/skill-commons.md §八）：
    > 用户回答后检查**意图闭环**（代码做了什么 vs 用户想要什么一致吗？）
