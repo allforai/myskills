@@ -204,18 +204,36 @@ cr-visual 需要知道怎么启动和导航源 App。信息来源（优先级）
   1. 读 visual-report.json → 找到 match_level ≠ high 的 screen
   2. 按 score 从低到高排序 → 取最低分的 1 个 screen
   3. 读源截图/录像 + 目标截图/录像 → 识别具体差异
-  4. 修复目标代码：
-     - 布局结构 → 改模板/CSS
-     - 组件缺失 → 补组件
-     - 主题变量 → 修正变量值
-     - 素材缺失 → 补图标/图片/字体
-     - 动画缺失 → 补 CSS transition / 动画代码
-     - 数据展示差异 → 检查数据获取逻辑
-  5. 构建验证（确保不破坏编译）
-  6. 对修复的 screen 重新截图/录像
-  7. 重新对比 → 更新 visual-report.json
-  8. 该 screen 达到 high → 下一个 screen
-     仍未 high → 继续修该 screen（不同角度的差异）
+  4. 诊断根因层级：
+     LLM 看截图/录像差异 → 判断根因在哪一层：
+
+     UI 层（直接修）:
+       - 布局结构 → 改模板/CSS
+       - 组件缺失 → 补组件
+       - 主题变量 → 修正变量值
+       - 素材缺失 → 补图标/图片/字体
+       - 动画缺失 → 补 CSS transition / 动画代码
+
+     非 UI 层（根因升级 → 修完回来）:
+       - 列表为空/数据错 → 检查 API 调用 → 可能是后端字段不一致 → 修后端代码
+       - 权限按钮未隐藏 → 检查 RBAC 逻辑 → 可能是 role-view-matrix 未还原 → 修权限代码
+       - 请求报错 → 检查错误码 → 可能是 error-catalog 不一致 → 修错误定义
+       - 图标/字体碎裂 → 检查 asset 引用 → 可能是 asset 迁移遗漏 → 补 asset
+       - 基础设施差异 → 检查 infrastructure-profile → 可能是协议/加密层问题
+
+  5. 执行修复：
+     UI 层 → 直接 Edit 目标代码
+     非 UI 层 → 根因升级：
+       a. 标记当前 screen 为 BLOCKED（等待上游修复）
+       b. 直接修复上游代码（后端/API/权限/asset/基础设施）
+       c. 修复后重新构建前后端
+       d. 回到当前 screen 继续视觉修复
+
+  6. 构建验证（确保不破坏编译）
+  7. 对修复的 screen 重新截图/录像
+  8. 重新对比 → 更新 visual-report.json
+  9. 该 screen 达到 high → 下一个 screen
+     仍未 high → 继续修该 screen（可能有多层差异）
 
 退出条件:
   - 所有 screen match_level = high → 100% 达成
