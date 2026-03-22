@@ -20,6 +20,8 @@ cr-visual 是复刻流程的**最后一步** — 在 cr-fidelity + product-verif
 
 **前置条件**：测试全绿，App 能稳定运行。截图对比需要 App 正常工作。
 
+**平台差异自动排除**：如果 `stack-mapping.json` 含 `platform_adaptation` → cr-visual 启动时自动加载转换规则。符合 platform_adaptation 的差异（如移动端底部导航 → 桌面端侧边栏）自动标记为 `not_a_gap`，LLM 对比时直接跳过不扣分，不需要用户手动提示。
+
 **多角色对比**：如果 `role-view-matrix.json` 存在 → 逐角色截图并分别对比。
 
 **交互行为对比**：如果 `interaction-recordings.json` 存在 → 源 App 的证据已在 Phase 2.13 采集。cr-visual 对目标 App 执行**同样的操作步骤**：

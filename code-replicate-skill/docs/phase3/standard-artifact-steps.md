@@ -31,6 +31,7 @@ LLM 按 extraction-plan.asset_sources 处理每类素材：
 - 第二轮：深层字段（acceptance_criteria, api_endpoint, prerequisites — 仅 functional+）
 - **LLM 片段必须输出 `protection_level`**（core / defensible / nice_to_have）— 基于源码中该功能的业务重要性判断
 - **LLM 片段必须输出结构化 `inputs`/`outputs`** — `inputs: {fields: [], defaults: {}}`，`outputs: {states: [], messages: [], records: [], notifications: []}`
+- **LLM 片段应输出 `data_source`**（如果该 task 涉及数据加载）— 描述数据从哪来、缓存策略、离线行为。不区分"数据来源"会导致目标代码把本地优先读取的操作实现为纯 API 调用
 
 **Step 3.3** — business-flows（functional+）→ `cr_merge_flows.py` → `product-map/business-flows.json`
 - LLM 按 extraction-plan.flow_sources 读指定文件追踪完整业务流程

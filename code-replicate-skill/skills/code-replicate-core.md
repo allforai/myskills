@@ -298,8 +298,12 @@ replicate-config.json 的 `progress` 字段追踪每一步的完成状态：
 "progress": {
   "current_phase": 2,
   "current_step": "2.8",
-  "completed_steps": ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7"],
-  "completed_artifacts": ["discovery-profile.json", "source-summary.json", "infrastructure-profile.json", "env-inventory.json", "third-party-services.json"]
+  "completed_steps": [
+    {"step": "2.1", "duration_ms": 12000},
+    {"step": "2.2", "duration_ms": 8000},
+    {"step": "2.3", "duration_ms": 45000}
+  ],
+  "completed_artifacts": ["discovery-profile.json", "source-summary.json", "infrastructure-profile.json"]
 }
 ```
 
