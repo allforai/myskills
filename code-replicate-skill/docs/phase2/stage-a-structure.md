@@ -25,17 +25,53 @@ LLM **必须**基于对项目结构的理解生成，不可套用模板。
 - 无 profile 时 fallback 到内置启发式
 - 输出 modules 列表（path, key_files, file_count）
 
-## 2.3 source-summary.json — 模块摘要
+## 2.3 source-summary.json — 模块摘要（初步）
 
-LLM 逐模块读 key_files → 输出：
+LLM 逐模块读 key_files → 输出初步摘要：
 - responsibility 单句描述
 - exposed_interfaces 列表
 - 核心 entities
-- 大模块（>50 文件）优先分析 key_files
 
 **非代码配置文件也可能含业务逻辑**（nginx.conf, routes.yaml, OpenAPI spec 等）。引用根目录文件时使用 `"module": null`。
 
 > 分析原则详见 ${CLAUDE_PLUGIN_ROOT}/docs/analysis-principles.md
+
+## 2.3.5 文件覆盖扫描 — 防偷懒
+
+> **LLM 最大的风险不是"不知道该查什么"，而是"没认真读文件就按文件名猜测跳过"。**
+> 不靠硬编码"必须查 X 功能"来覆盖（项目千变万化），靠确保 LLM 不跳过文件（对所有项目适用）。
+
+**Step 1: 覆盖率统计**
+
+LLM 对每个模块记录：
+```json
+{
+  "file_count": 22,
+  "files_read": ["encrypt.dart", "http_tunnel.dart", "api_executor.dart", "auto_conn.dart"],
+  "files_read_count": 4,
+  "files_skipped": ["secure_file.dart", "media_cache.dart", ...],
+  "coverage": "18%"
+}
+```
+
+**Step 2: 头部扫描**
+
+对 `files_skipped` 中的**每个文件**，LLM 至少读取前 20-30 行（class 定义、import、关键常量）。成本极低（每文件 ~500 token），但能发现绝大多数"被文件名误导"的遗漏。
+
+20 行足以判断：
+- 看到 class 定义 + 加密相关字段 → 不是工具类，是核心协议
+- 看到 Server.bind / Isolate.spawn → 不是简单缓存，是独立服务
+- 看到 mixin + insertXxx / updateXxx → 不是数据类，是持久化层
+
+**Step 3: 发现重要文件 → 补读**
+
+头部扫描发现重要组件 → 加入 key_files → 完整读取 → 更新模块摘要。
+
+**Step 4: 写入覆盖率**
+
+最终 source-summary 中每个模块带 `coverage` 字段。Phase 2.14 用户确认时展示覆盖率 — 用户看到"网络模块覆盖率 18%"就会要求补读。
+
+**底线**：coverage < 50% 的模块必须补读到 ≥ 50%。不允许"22 个文件只读了 4 个就声称理解了这个模块"。
 
 ## 2.4 project_archetype — 项目特征识别
 
