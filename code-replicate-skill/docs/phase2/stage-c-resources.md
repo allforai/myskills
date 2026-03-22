@@ -201,3 +201,48 @@ visual/source/
   │   └── orders_delete_api.json    ← API 日志
   └── route-map.json
 ```
+
+### 采集闭环验证
+
+截图和录像采集完成后，LLM 自检覆盖度 — 漏了的重试，直到全覆盖：
+
+```
+检查 1: 角色覆盖
+  role-view-matrix 中的每个角色都成功登录并截图了吗？
+  → 某角色登录失败 → 重试登录（不同方式）→ 仍失败 → 标记原因，不跳过
+
+检查 2: 页面覆盖
+  路由列表中每个页面都有对应截图吗？
+  → 缺失 → 重新导航截图
+  → 导航失败（404/权限不足）→ 记录原因
+
+检查 3: 交互覆盖
+  interaction-recordings 中每个 action 都执行了吗？
+  → 缺失 → 重试操作
+  → 操作失败（按钮不可用/页面变了）→ 记录原因
+
+检查 4: API 日志覆盖
+  每个 functional_action 都有 api.json 吗？
+  → 缺失 → 重新采集
+
+检查 5: 截图质量
+  LLM 查看每张截图 → 是否为空白页/错误页/纯 loading 状态？
+  → 质量差 → 等待页面加载完成 → 重新截图
+
+检查 6: 录像质量
+  LLM 查看每段录像 → 是否黑屏/卡住/未完成操作？
+  → 质量差 → 重新录制
+
+汇总: 输出 visual/source/capture-report.json
+  {
+    "total_screens": 60,
+    "captured": 58,
+    "failed": 2,
+    "failed_reasons": [...],
+    "total_interactions": 7,
+    "recorded": 7,
+    "quality_issues": 0
+  }
+```
+
+**不降级** — 能采集的必须采集成功。采集失败的记录原因但不假装成功。
