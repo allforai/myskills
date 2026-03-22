@@ -154,30 +154,31 @@ LLM 读源码中的**所有用户交互行为**（不只是动画效果），标
 - **结果 JSON** → 结构化记录实际 UI 行为（跳转/提示/元素变化）
 - **API 日志** → 该操作触发的所有网络请求和响应（供接口级对比）
 
-### API 日志采集
+### 通信日志采集（HTTP + WebSocket）
 
-每个 functional_action 执行期间，Playwright 同时抓取网络请求：
+每个 functional_action 执行期间，Playwright 同时抓取**所有通信**：
 
 ```
 对每个 functional_action:
-  1. 启动 Playwright network 拦截（page.on('request') + page.on('response')）
-  2. 执行操作步骤（click/submit/drag）
-  3. 等待操作完成
-  4. 停止拦截 → 保存该操作触发的所有请求：
+  1. 启动 HTTP 拦截（page.on('request') + page.on('response')）
+  2. 启动 WebSocket 拦截（page.on('websocket') → ws.on('framereceived') + ws.on('framesent')）
+  3. 执行操作步骤（click/submit/drag）
+  4. 等待操作完成
+  5. 停止拦截 → 保存：
      interactions/{screen}_{interaction}_api.json:
-     [
-       {
-         "method": "POST",
-         "url": "/api/orders",
-         "request_body": {"amount": 100, "items": [...]},
-         "status": 201,
-         "response_body": {"id": "ORD-001", "status": "created"},
-         "timing_ms": 234
-       }
-     ]
+     {
+       "http": [
+         {"method": "POST", "url": "/api/orders", "request_body": {...}, "status": 201, "response_body": {...}}
+       ],
+       "websocket": [
+         {"direction": "received", "data": {"event": "inventory:updated", "payload": {...}}}
+       ]
+     }
 ```
 
-**只记录业务 API**（过滤掉静态资源、analytics、CDN 请求）。LLM 根据 URL 模式判断哪些是业务请求。
+**HTTP + WebSocket 都记录** — 有些操作触发 HTTP 请求同时收到 WebSocket 推送（如下单后库存实时更新）。只记录 HTTP 会遗漏推送消息。
+
+**只记录业务通信**（过滤掉静态资源、analytics、CDN、WebSocket 心跳）。LLM 判断哪些是业务消息。
 
 ### 保存
 

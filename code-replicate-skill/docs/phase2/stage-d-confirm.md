@@ -19,6 +19,12 @@
 - 粒度确认
 - 基础设施迁移决策
 
+**extend 模式**（`replicate-config.business_direction = "extend"` 时）：
+- LLM 额外询问：「目标项目需要哪些源码没有的新能力？」
+- 用户回答（如"需要离线下单能力"）→ LLM 将新能力写入 `replicate-config.extensions[]`
+- Phase 3 的 extraction-plan.artifacts 除了从源码提取的产物外，额外生成 `extension-spec`（新能力规格）
+- cr-fidelity 不验证 extension（新能力不在源码中，无对比基准）— 由 product-verify 验证
+
 > **=== Phase 2 结束后不再问任何配置问题 ===**
 
 ## 2.15 stack-mapping.json（仅跨栈）
