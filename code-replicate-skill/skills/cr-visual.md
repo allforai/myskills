@@ -130,17 +130,9 @@ cr-visual 需要知道怎么启动和导航源 App。信息来源（优先级）
 
 **截图工具由 LLM 根据目标技术栈自行决定**。LLM 读项目技术栈 → 选择合适的自动化工具 → 用 Bash 执行截图命令。
 
-LLM 自行判断，不限定工具列表。以下仅为常见场景的参考（LLM 不受此限制）：
-- Web → Playwright MCP 工具
-- 移动端 → Maestro / Appium
-- Electron → Playwright（有 Web 内核）
-- WPF/WinForms → FlaUI / WinAppDriver / UI Automation
-- MAUI → Appium
-- Qt → Squish / qt-quick-test
-- JavaFX → TestFX
-- 其他 → LLM 搜索该技术栈的 UI 自动化方案
+LLM 读目标项目的技术栈 → 自行搜索并选择适合该技术栈的 UI 自动化工具 → 用 Bash 执行截图命令。不限定工具列表。
 
-**如果 LLM 找不到可用的自动化工具**（如极冷门框架）→ 提示用户手动截图到 `visual/target/`。这是最后兜底，不是默认行为。
+**如果 LLM 找不到可用的自动化工具** → 提示用户手动截图到 `visual/target/`。这是最后兜底，不是默认行为。
 
 ---
 
@@ -279,7 +271,7 @@ LLM 自行判断，不限定工具列表。以下仅为常见场景的参考（L
 
 - LLM 的视觉对比是**主观的** — 报告附截图路径，用户应复核
 - 需要 App 能运行且可导航到各页面（需要测试账号/数据）
-- 移动端截图依赖 Maestro 或用户手动截图
+- 移动端截图依赖平台对应的 UI 自动化工具或用户手动截图
 - 不覆盖交互行为（只能看静态截图，不能验证点击/滑动）
 
 ---

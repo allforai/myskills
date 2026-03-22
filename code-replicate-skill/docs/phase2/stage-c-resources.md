@@ -131,7 +131,7 @@ LLM 读源码中的**所有用户交互行为**（不只是动画效果），标
 对每个 recording:
   type = visual_effect:
     1. 导航到对应页面
-    2. 启动 Playwright video 录制
+    2. 启动 video 录制（LLM 选择适合当前平台的录制工具）
     3. 执行 steps 中的操作
     4. 停止录制 → 保存 recordings/{screen}_{interaction}.mp4
 
@@ -156,12 +156,12 @@ LLM 读源码中的**所有用户交互行为**（不只是动画效果），标
 
 ### 通信日志采集（HTTP + WebSocket）
 
-每个 functional_action 执行期间，Playwright 同时抓取**所有通信**：
+每个 functional_action 执行期间，LLM 同时抓取**所有通信**（HTTP + WebSocket）：
 
 ```
 对每个 functional_action:
-  1. 启动 HTTP 拦截（page.on('request') + page.on('response')）
-  2. 启动 WebSocket 拦截（page.on('websocket') → ws.on('framereceived') + ws.on('framesent')）
+  1. 启动 HTTP 拦截（LLM 用适合当前平台的网络拦截方式）
+  2. 启动 WebSocket 拦截（捕获发送和接收的消息帧）
   3. 执行操作步骤（click/submit/drag）
   4. 等待操作完成
   5. 停止拦截 → 保存：

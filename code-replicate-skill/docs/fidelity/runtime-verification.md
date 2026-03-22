@@ -16,7 +16,7 @@
 
 尝试启动目标应用（如果项目可独立启动）。LLM 根据项目类型选择验证方式：
 - **Web 后端**：启动 server → 检查 health endpoint 返回 200
-- **Web 前端**：启动 dev server → Playwright 检查首页可访问
+- **Web 前端**：启动 dev server → 检查首页可访问
 - **移动端**：在模拟器/设备上启动 → 检查进程存活 >5 秒
 - **桌面端（WPF/MAUI/Electron）**：启动 exe → 检查进程存活 >5 秒 + 不输出 fatal 错误日志
 - 启动失败（进程立即退出或报错）→ 标记 gap，附错误日志
