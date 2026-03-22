@@ -128,17 +128,19 @@ cr-visual 需要知道怎么启动和导航源 App。信息来源（优先级）
 
 ## Step 3: 目标 App 截图
 
-**Web 目标**：Playwright browser_navigate → browser_take_screenshot → 保存到 `visual/target/`
+**截图工具由 LLM 根据目标技术栈自行决定**。LLM 读项目技术栈 → 选择合适的自动化工具 → 用 Bash 执行截图命令。
 
-**移动端目标**：Maestro navigate → screenshot → 保存到 `visual/target/`
+LLM 自行判断，不限定工具列表。以下仅为常见场景的参考（LLM 不受此限制）：
+- Web → Playwright MCP 工具
+- 移动端 → Maestro / Appium
+- Electron → Playwright（有 Web 内核）
+- WPF/WinForms → FlaUI / WinAppDriver / UI Automation
+- MAUI → Appium
+- Qt → Squish / qt-quick-test
+- JavaFX → TestFX
+- 其他 → LLM 搜索该技术栈的 UI 自动化方案
 
-**桌面端目标（WPF/MAUI/Electron）**：
-- Electron → 有 Web 内核，Playwright 可用 ✓
-- WPF/WinForms/MAUI native → Playwright 不可用：
-  - 尝试：用 Bash 启动 App → 等待窗口 → 系统截图工具（如 `screencapture` macOS / `nircmd` Windows）
-  - 但无法自动导航到各屏幕 — 只能截启动画面
-  - **降级**：提示用户手动导航目标 App 并截图到 `visual/target/`，标记 `MANUAL_CAPTURE`
-  - 报告中注明：「桌面 App 自动截图受限，{N} 个 screen 需要手动提供」
+**如果 LLM 找不到可用的自动化工具**（如极冷门框架）→ 提示用户手动截图到 `visual/target/`。这是最后兜底，不是默认行为。
 
 ---
 
