@@ -1,6 +1,6 @@
 ---
-description: "视觉还原度：截图对比源 App vs 目标 App 的 UI 还原程度。需要两个 App 都能运行，或提供源 App 截图"
-argument-hint: "[--source <url-or-path>] [--target <url-or-path>] [--screenshots <path>]"
+description: "视觉还原度：截图+录像对比 → 修复差异 → 重新对比 → 直到视觉一致。模式: full / analyze / fix"
+argument-hint: "[mode: full|analyze|fix] [--source <url-or-path>] [--target <url-or-path>] [--screenshots <path>]"
 allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "AskUserQuestion", "Agent", "mcp__plugin_playwright_playwright__browser_navigate", "mcp__plugin_playwright_playwright__browser_take_screenshot", "mcp__plugin_playwright_playwright__browser_snapshot"]
 ---
 

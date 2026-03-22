@@ -8,7 +8,7 @@ description: >
 
 # 视觉还原度 — CR Visual v1.0
 
-> 源 App vs 目标 App 逐屏截图 → 结构级对比 → 差异报告
+> 源 App vs 目标 App 逐屏截图/录像 → 对比 → 修复 → 重新对比 → 直到视觉一致
 
 ## 定位
 
@@ -34,11 +34,17 @@ cr-visual 是复刻流程的**最后一步** — 在 cr-fidelity + product-verif
 
 ```
 Step 1: 获取 screen 列表（从 experience-map）
-Step 2: 获取源 App 截图（运行截图 or 用户提供）
-Step 3: 获取目标 App 截图（Playwright/Maestro 截图）
-Step 4: LLM 逐屏对比（结构级，不是像素级）
-Step 5: 输出差异报告
+Step 2: 获取源 App 截图/录像（Phase 2 已采集 or 现场采集）
+Step 3: 获取目标 App 截图/录像
+Step 4: LLM 逐屏对比（结构级 + 动态效果）
+Step 5: 差异报告 + 评分
+Step 6: 修复差异（LLM 修改目标代码）
+Step 7: 重新截图/录像 → 重新对比 → 达标退出
 ```
+
+`full` 模式 = Step 1-7 闭环（最多 3 轮）
+`analyze` 模式 = Step 1-5 仅出报告
+`fix` 模式 = Step 6-7 基于上次报告修复
 
 ---
 
@@ -181,7 +187,42 @@ cr-visual 需要知道怎么启动和导航源 App。信息来源（优先级）
 - 每个 screen 的截图路径对（用户可直接查看）
 - 差异描述
 - 整体评分
-- 低分 screen 的改进建议
+- 低分 screen 的修复方案
+
+---
+
+## Step 6: 修复差异（full/fix 模式）
+
+LLM 读 visual-report 中 match_level = low 或 mismatch 的 screen，分类修复：
+
+| 差异类型 | 修复方式 | LLM 操作 |
+|---------|---------|---------|
+| 布局结构不同 | 修改模板/CSS | Read 目标页面代码 → Edit 布局结构 |
+| 组件缺失 | 补组件 | 在目标页面添加缺失的 UI 组件 |
+| 主题色/变量不对 | 改主题配置 | 对比 asset-inventory.theme_system → 修正变量值 |
+| 图标/图片缺失 | 补素材 | 从 visual/source/ 截图识别缺失素材 → 补到目标 |
+| 动画缺失 | 补 CSS transition / 动画库 | 读源录像识别动画类型 → 在目标代码中添加 |
+| 框架视觉风格差异 | 不修 — DESIGN_DECISION | Ant Design → Element Plus 的固有差异，不是 bug |
+
+**修复范围控制**：
+- 每轮最多修复 **10 个 screen** 的差异
+- 超出按 score 排序，优先修最低分的
+- DESIGN_DECISION 不计入修复额度
+- **修复后重新构建**（`npm run build` / 对应框架命令）确保不破坏编译
+
+## Step 7: 重新对比（full 模式闭环）
+
+```
+收敛控制 (CG-V):
+  修复后 → 重新截图/录像（仅修改的 screen）→ 重新对比 → 更新评分
+
+  达标: overall_score ≥ 85 → 输出终报，退出
+  最多 3 轮
+  每轮 score 必须 > 上一轮
+  第 3 轮仍未达标 → 输出报告 + 剩余差异，标注 DESIGN_DECISION
+```
+
+**增量重拍**：只对修改了的 screen 重新截图/录像，未修改的保留上轮结果。
 
 ---
 
