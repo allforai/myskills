@@ -189,32 +189,69 @@ LLM 读每个页面/组件的源码 → 找出所有绑定了事件处理的 UI 
 
 ### 交互行为采集
 
-如果 `interaction-recordings.json` 存在 → 按清单逐项执行并采集：
+如果 `interaction-recordings.json` 存在 → 按流程链逐步执行并采集：
 
+**铁律（iron law 27）：禁止用 `page.evaluate()` 修改 DOM 或 View 控件状态。`page.evaluate()` 仅允许用于：(1) `vm_call` 调用 ViewModel/Store/Bloc 方法，(2) 读取状态用于断言。违反 = 伪造截图 = 无价值。**
+
+**三级执行策略**：
+
+| 优先级 | 策略 | 适用场景 | Playwright API |
+|--------|------|---------|----------------|
+| Tier 1 | 用户交互 | 正向业务流程 | page.click / page.fill / page.type 等 |
+| Tier 2 | ViewModel 调用 | UI 交互无法到达的状态 | page.evaluate() 调用 Store/Bloc 方法 |
+| Tier 3 | 网络 Mock | 异常/错误状态 | page.route() 拦截 + Mock 响应 |
+
+**Tier 选择规则**：
 ```
-对每个 recording:
-  type = visual_effect:
-    1. 导航到对应页面
-    2. 启动 video 录制（LLM 选择适合当前平台的录制工具）
-    3. 执行 steps 中的操作
-    4. 停止录制 → 保存 recordings/{screen}_{interaction}.mp4
-
-  type = functional_action:
-    1. 导航到对应页面
-    2. 截图（操作前状态）→ 保存 interactions/{screen}_{interaction}_before.png
-    3. 启动 video 录制
-    4. 逐步执行 steps（click/type/submit/drag）
-    5. 等待 expected_result 的条件满足
-    6. 截图（操作后状态）→ 保存 interactions/{screen}_{interaction}_after.png
-    7. 停止录制 → 保存 recordings/{screen}_{interaction}.mp4
-    8. 记录实际结果 → interactions/{screen}_{interaction}_result.json:
-       {"navigation": "实际跳转目标", "feedback": "实际提示内容",
-        "ui_changes": ["实际变化的元素"], "console_errors": []}
+用户交互能到达？→ YES → Tier 1（包括客户端校验错误 — 提交不完整表单即可）
+  → NO → ViewModel 调用能到达？→ YES → Tier 2（vm_call）
+    → NO → 是网络/错误状态？→ YES → Tier 3（mock_route）
+      → NO → 标记 UNREACHABLE
 ```
 
-**四种证据**：
-- **before/after 截图** → 证明操作前后 UI 变化正确
-- **操作录像** → 证明操作过程流畅（动画/过渡）
+**Tier 2 说明**：LLM 必须从 Phase 2 源码分析中确定具体的调用表达式，不依赖已知框架模式。源 App 须在开发模式运行（生产构建可能移除调试入口）。`vm_call` 后须等待 UI 更新完成再截图。
+
+**执行流程**：
+```
+对每个 flow:
+  current_role = null
+  for each step in flow.steps:
+    if step.role != current_role:
+      清除 cookies + localStorage
+      导航到登录页
+      用 step.role 凭证登录（来自 role-view-matrix）
+      current_role = step.role
+
+    执行 step.action:
+      login      → 清除 session + 登录
+      navigate   → page.goto(target)
+      click      → page.click(resolved_selector)  [Tier 1]
+      fill       → page.fill(resolved_selector, data)  [Tier 1]
+      type       → page.type(resolved_selector, value)  [Tier 1]
+      select     → page.selectOption(resolved_selector, value)  [Tier 1]
+      drag       → page.dragAndDrop(resolved_source, resolved_target)  [Tier 1]
+      hover      → page.hover(resolved_selector)  [Tier 1]
+      wait       → page.waitForSelector / waitForURL / 自定义条件
+      screenshot → page.screenshot() → 保存到 visual/source/interactions/
+      vm_call    → page.evaluate(() => expr(args)) + wait_after  [Tier 2]
+      mock_route → page.route(url, handler)  [Tier 3]
+      clear_mock → page.unroute('**')  [Tier 3]
+
+    step 失败时:
+      重试 1 次
+      仍失败:
+        记录失败原因
+        非 screenshot 步骤 → 跳到下一个 screenshot 里程碑
+        screenshot 步骤 → 标记失败，继续
+      绝对不伪造状态
+
+  flow 失败（登录失败/环境不可用）→ 中止该 flow，记录原因，继续下一个 flow
+  3+ flow 因同一环境问题失败 → 中止所有剩余 flow
+```
+
+**四种证据**（每个 screenshot 里程碑采集）：
+- **截图** → 证明操作后 UI 状态正确
+- **操作录像**（visual_effect flow）→ 证明操作过程流畅
 - **结果 JSON** → 结构化记录实际 UI 行为（跳转/提示/元素变化）
 - **API 日志** → 该操作触发的所有网络请求和响应（供接口级对比）
 
