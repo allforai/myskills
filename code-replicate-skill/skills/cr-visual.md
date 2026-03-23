@@ -24,23 +24,19 @@ cr-visual 是复刻流程的**最后一步** — 在 cr-fidelity + product-verif
 
 **多角色对比**：如果 `role-view-matrix.json` 存在 → 逐角色截图并分别对比。
 
-**交互行为对比**：如果 `interaction-recordings.json` 存在 → 源 App 的证据已在 Phase 2.13 采集。cr-visual 对目标 App 执行**同样的操作步骤**：
+**交互行为对比**：如果 `interaction-recordings.json` 存在 → 源 App 的证据已在 Phase 2.13 采集。cr-visual 对目标 App 执行**同样的业务流程链**：
+
+逐 flow 执行（按 interaction-recordings.json 的 flows 结构）：
+1. 按 flow.steps 在目标 App 上执行同样的操作序列（角色切换、填表、点击、等待）
+2. 在每个 screenshot 里程碑截图 → 与源 App 的对应截图对比
+3. 同时采集目标 App 的 API 日志 → 与源 App 的 api.json 对比
 
 五层验证：
 1. **静态页面**：源截图 vs 目标截图 → 布局/组件/数据展示一致吗？
-2. **CRUD 全状态**：对目标 App 执行同样的 CRUD 操作链 → 逐状态截图对比：
-   - 空状态截图一致？（无数据时的引导/提示）
-   - 创建表单一致？（字段/必填标记/布局）
-   - 创建成功反馈一致？（提示/跳转）
-   - 编辑表单一致？（预填数据/可编辑字段）
-   - 删除确认一致？（弹窗样式/文案）
-   - 删除后列表更新一致？
-3. **动态效果**（visual_effect）：源录像 vs 目标录像 → 动画/过渡一致吗？
-4. **API 日志**（functional_action）：
-   - 源 api.json vs 目标 api.json → 同样的 CRUD 操作触发了同样的 API 请求吗？
-   - 创建: POST 参数一致？编辑: PUT 参数一致？删除: DELETE 路径一致？
-   - API 不一致 → 根因升级
-5. **综合**：同样的实体 → 同样的 CRUD 全流程 → 每一步界面 + API 都一致 = high
+2. **CRUD 全状态**：flow 链自然覆盖 CRUD 生命周期 → 逐里程碑截图对比
+3. **动态效果**（type=visual_effect 的 flow）：源录像 vs 目标录像 → 动画/过渡一致吗？
+4. **API 日志**：源 api.json vs 目标 api.json → 同样的操作触发了同样的请求吗？
+5. **综合**：同一 flow → 每个里程碑截图 + API 都一致 = high
 
 每个交互输出 match_level: high / medium / low / mismatch
 
@@ -275,7 +271,7 @@ LLM 读目标项目的技术栈 → 自行搜索并选择适合该技术栈的 U
 - LLM 的视觉对比是**主观的** — 报告附截图路径，用户应复核
 - 需要 App 能运行且可导航到各页面（需要测试账号/数据）
 - 移动端截图依赖平台对应的 UI 自动化工具或用户手动截图
-- 不覆盖交互行为（只能看静态截图，不能验证点击/滑动）
+- 交互行为对比依赖 `interaction-recordings.json` 的 flows 结构 — 无此文件时仅做静态截图对比
 
 ---
 
