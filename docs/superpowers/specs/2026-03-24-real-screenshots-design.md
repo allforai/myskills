@@ -11,7 +11,7 @@ Root causes:
 
 ## Solution
 
-Two changes to `stage-c-resources.md`:
+Changes to `stage-c-resources.md` and related files:
 
 1. **Section 2.12.8**: Redesign `interaction-recordings.json` from independent operations to business flow chains
 2. **Section 2.13**: Add three-tier execution strategy + iron law prohibiting DOM manipulation
@@ -64,15 +64,25 @@ Problem: "审批订单" is an independent recording. To reach "审批" state, th
         {"role": "R001", "action": "fill", "target": "订单表单", "data": {"name": "测试订单", "amount": 1000}},
         {"role": "R001", "action": "click", "target": "提交按钮"},
         {"role": "R001", "action": "wait", "condition": "成功提示出现"},
-        {"role": "R001", "action": "screenshot", "name": "order_created", "expected": "订单创建成功，状态为待审批"},
+        {"role": "R001", "action": "screenshot", "name": "order_created", "expected_result": {
+          "screenshot_after": "订单创建成功，状态为待审批",
+          "ui_changes": ["订单列表新增一条记录", "成功提示出现"],
+          "navigation": "/orders",
+          "feedback": "创建成功"
+        }},
 
         {"role": "R002", "action": "login"},
         {"role": "R002", "action": "navigate", "target": "/orders"},
         {"role": "R002", "action": "click", "target": "刚创建的订单"},
         {"role": "R002", "action": "click", "target": "审批按钮"},
         {"role": "R002", "action": "wait", "condition": "审批成功提示"},
-        {"role": "R002", "action": "screenshot", "name": "order_approved", "expected": "订单状态变为已审批"}
-      ]
+        {"role": "R002", "action": "screenshot", "name": "order_approved", "expected_result": {
+          "screenshot_after": "订单状态变为已审批",
+          "ui_changes": ["状态标签从'待审批'变为'已审批'", "审批按钮消失"],
+          "feedback": "审批成功"
+        }}
+      ],
+      "source_files": ["src/handlers/order_handler.go", "src/services/order_service.go"]
     },
     {
       "name": "order_validation_errors",
@@ -82,8 +92,13 @@ Problem: "审批订单" is an independent recording. To reach "审批" state, th
         {"role": "R001", "action": "navigate", "target": "/orders/new"},
         {"role": "R001", "action": "click", "target": "提交按钮"},
         {"role": "R001", "action": "wait", "condition": "校验错误出现"},
-        {"role": "R001", "action": "screenshot", "name": "order_validation_error", "expected": "必填字段校验错误提示"}
-      ]
+        {"role": "R001", "action": "screenshot", "name": "order_validation_error", "expected_result": {
+          "screenshot_after": "必填字段校验错误提示",
+          "ui_changes": ["名称字段显示红色边框", "金额字段显示'必填'提示"],
+          "feedback": "请填写必填字段"
+        }}
+      ],
+      "source_files": ["src/components/OrderForm.tsx"]
     },
     {
       "name": "order_server_error",
@@ -95,9 +110,14 @@ Problem: "审批订单" is an independent recording. To reach "审批" state, th
         {"role": "R001", "action": "fill", "target": "订单表单", "data": {"name": "测试订单", "amount": 1000}},
         {"role": "R001", "action": "click", "target": "提交按钮"},
         {"role": "R001", "action": "wait", "condition": "错误提示出现"},
-        {"role": "R001", "action": "screenshot", "name": "order_server_error", "expected": "服务端错误提示"},
+        {"role": "R001", "action": "screenshot", "name": "order_server_error", "expected_result": {
+          "screenshot_after": "服务端错误提示",
+          "ui_changes": ["错误提示 toast 出现"],
+          "feedback": "服务器错误，请稍后重试"
+        }},
         {"role": "R001", "action": "clear_mock"}
-      ]
+      ],
+      "source_files": ["src/components/OrderForm.tsx"]
     }
   ],
   "unreachable": [
@@ -114,50 +134,52 @@ Problem: "审批订单" is an independent recording. To reach "审批" state, th
 
 **Flow-based, not operation-based.** Each flow is a complete business scenario. Steps within a flow are sequential — each step's result is the next step's precondition. Screenshots are milestones within the flow.
 
-**Role-aware steps.** Each step has a `role` field. When role changes between consecutive steps, the LLM automatically logs out and re-logs in with the new role's credentials (from `role-view-matrix.json`).
+**Role-aware steps.** Each step has a `role` field. When role changes between consecutive steps, the LLM automatically switches sessions: clear cookies/localStorage → navigate to login page → login with new role's credentials (from `role-view-matrix.json`). This works even for apps without an explicit logout endpoint.
+
+**Structured `expected_result` preserved.** The `screenshot` action carries the same structured `expected_result` object as the old format (`screenshot_after`, `ui_changes`, `navigation`, `feedback`, `sound`). This maintains compatibility with cr-visual and Phase 3 sound migration.
+
+**`source_files` per flow.** Each flow links to the source code files that implement the business logic being tested, preserving traceability for Phase 3 migration.
 
 **Step action types:**
 
-| Action | Description |
-|--------|-------------|
-| `login` | Login with the step's role credentials |
-| `navigate` | Go to URL/route |
-| `click` | Click a UI element (user-level Playwright click) |
-| `fill` | Fill a form field (user-level Playwright fill) |
-| `type` | Type text keystroke by keystroke |
-| `select` | Select dropdown option |
-| `drag` | Drag element |
-| `hover` | Hover over element |
-| `wait` | Wait for condition (element visible, text appears, navigation) |
-| `screenshot` | Take screenshot at this milestone |
-| `vm_call` | Call ViewModel/Store method (Tier 2 fallback — see execution strategy) |
-| `mock_route` | Mock an API route response (Tier 3 — for error states) |
-| `clear_mock` | Remove route mocks |
+| Action | Fields | Description |
+|--------|--------|-------------|
+| `login` | role | Login with the step's role credentials |
+| `navigate` | target (URL/route) | Go to URL/route |
+| `click` | target (natural-language description, LLM resolves to Playwright selector at execution time) | Click a UI element |
+| `fill` | target, data | Fill form fields |
+| `type` | target, value | Type text keystroke by keystroke |
+| `select` | target, value | Select dropdown option |
+| `drag` | source, target | Drag element |
+| `hover` | target | Hover over element |
+| `wait` | condition | Wait for condition (element visible, text appears, navigation) |
+| `screenshot` | name, expected_result | Take screenshot at this milestone |
+| `vm_call` | method (JS expression to evaluate), args (optional object), wait_after (optional condition) | Call ViewModel/Store method (Tier 2 fallback) |
+| `mock_route` | url (method + path), response (status, body) | Mock an API route response (Tier 3) |
+| `clear_mock` | (none) | Remove all route mocks |
+
+**`target` fields are natural-language descriptions** (e.g., "提交按钮", "订单表单"), not CSS selectors. The LLM resolves them to Playwright selectors at execution time using source code analysis and runtime DOM inspection.
+
+**Flow `type` field.** Optional, defaults to `functional_action`. Set to `visual_effect` for animation/transition flows — these trigger video recording instead of before/after screenshots.
 
 **`unreachable` array.** States that cannot be reached through any of the three tiers. Each entry documents what state, why it's unreachable, and which source file handles it. This replaces faking — if you can't reach it honestly, document it instead.
 
-**LLM generation guidance.** When generating flows, LLM should:
+**LLM generation guidance — exhaustive extraction.** When generating flows, LLM must:
+- **Exhaust all UI-change-triggering event handlers in source code** (same principle as existing 2.12.8: every event handler that causes UI change = at least one screenshot). Do not hand-pick, exhaust.
 - Design flows around business entities and their lifecycle (create → read → update → delete)
 - Include role switches for approval/review/permission-dependent states
-- Use `mock_route` for error states (server errors, timeouts, rate limits)
+- Use `mock_route` for server error states (500, timeout, rate limit). Client-side validation errors are Tier 1 — just interact incorrectly (e.g., submit empty form)
 - Use `vm_call` only when user interaction cannot reach a state (e.g., background job completion, external system callback)
 - Mark truly unreachable states in `unreachable` array with clear reasons
 
-**Visual effects.** The current `visual_effect` type (animations, transitions) remains as-is — these are simple single-step recordings that don't need flow chains. They become single-step flows:
+**Delete safety.** Within CRUD flows, use freshly created test data for Delete operations (self-produced, self-consumed). If data cannot be safely deleted → only screenshot the confirmation dialog, mark step as `DELETE_SKIPPED_SAFETY`.
 
-```json
-{
-  "name": "kanban_drag_reorder",
-  "description": "看板拖拽排序动画",
-  "type": "visual_effect",
-  "steps": [
-    {"role": "R001", "action": "login"},
-    {"role": "R001", "action": "navigate", "target": "/kanban"},
-    {"role": "R001", "action": "drag", "source": "任务卡片", "target": "目标列"},
-    {"role": "R001", "action": "screenshot", "name": "kanban_after_drag", "expected": "卡片移动到目标列"}
-  ]
-}
-```
+**Flow ordering and parallelism.** Flows are independent unless explicitly noted. Cross-flow data dependencies should be avoided — each flow creates its own test data. For large projects (100+ screenshots), flows targeting different modules can run in parallel via separate Agent instances. Steps within a single flow are always sequential.
+
+**Failure strategy:**
+- **Step failure**: retry once. If still failed, record reason. If the failed step is a non-screenshot step (click, fill, navigate), skip to the next `screenshot` step in the flow (attempt to salvage partial results). If a `screenshot` step itself fails, mark it failed and continue.
+- **Flow failure**: if login fails or environment is broken (app not running, seed data missing), abort the entire flow, record reason, move to next flow.
+- **Environment failure**: if 3+ flows fail due to the same environment issue, abort all remaining flows.
 
 ## Change 2: Phase 2.13 Execution — Three-Tier Strategy
 
@@ -167,7 +189,7 @@ The current doc describes executing `interaction-recordings.json` entries one by
 
 ### New execution: Three tiers + iron law
 
-**Iron law: NEVER use `page.evaluate()` to modify DOM or View control state. Only permitted uses of `page.evaluate()` are: (1) calling ViewModel/Store/Bloc methods (`vm_call` action), (2) reading state for assertions. Violation = faked screenshot = worthless.**
+**Iron law 27: NEVER use `page.evaluate()` to modify DOM or View control state. Only permitted uses of `page.evaluate()` are: (1) calling ViewModel/Store/Bloc methods via `vm_call` action, (2) reading state for assertions. Violation = faked screenshot = worthless.**
 
 **Tier 1 — User Interaction (default):**
 - Actions: login, navigate, click, fill, type, select, drag, hover, wait, screenshot
@@ -180,26 +202,21 @@ The current doc describes executing `interaction-recordings.json` entries one by
 - Used when a state cannot be reached through user interaction alone
 - Examples: background job completion, external webhook callback, admin-only server action, timer-triggered state change
 - Executed via `page.evaluate()` calling into the app's state management layer
-- LLM must specify the exact ViewModel/Store/Bloc method from source code analysis
-- Framework-specific — LLM determines the call based on Phase 2 source code understanding:
-  - Vue: `window.__vue_app__...store.dispatch('action', payload)`
-  - React: access store via `window.__REDUX_STORE__` or component ref
-  - Angular: `ng.getComponent(el).method()`
-  - Svelte: access store via module-scoped variables
-  - Non-web (Flutter/Native): use platform integration test driver to call methods
-- After `vm_call`, wait for UI to settle before screenshot
+- LLM must determine the exact call expression from Phase 2 source code analysis — not from known framework patterns
+- Requires the source app to be running in development mode (production builds may strip debug accessors)
+- After `vm_call`, wait for UI to settle (use `wait_after` field) before screenshot
 
 **Tier 3 — Network Mock (for error/exception states):**
 - Actions: `mock_route`, `clear_mock`
 - Used to simulate server errors, timeouts, rate limits, malformed responses
 - Executed via Playwright's `page.route()` API to intercept and mock network responses
 - After setting up mock, proceed with normal Tier 1 user interaction (fill form, click submit) — the error state appears naturally because the server "returned" an error
-- Always `clear_mock` after capturing the error state screenshot
+- `clear_mock` removes all active mocks. Place after the error screenshot to prevent mock leaking into subsequent steps
 
 **Tier selection rule:**
 ```
 Can this state be reached by clicking/typing/navigating?
-  → YES → Tier 1
+  → YES → Tier 1 (including client-side validation errors — just interact incorrectly)
   → NO → Can it be reached by calling a ViewModel method?
     → YES → Tier 2 (vm_call)
     → NO → Is it an error/network state?
@@ -214,28 +231,32 @@ For each flow in interaction-recordings.json:
   current_role = null
   for each step in flow.steps:
     if step.role != current_role:
-      logout current session (if any)
+      clear cookies + localStorage
+      navigate to login page
       login with step.role credentials (from role-view-matrix)
       current_role = step.role
 
     execute step.action:
-      login    → Playwright login flow with role credentials
-      navigate → page.goto(target)
-      click    → page.click(target)  [Tier 1]
-      fill     → page.fill(target, data)  [Tier 1]
-      type     → page.type(target, value)  [Tier 1]
-      select   → page.selectOption(target, value)  [Tier 1]
-      drag     → page.dragAndDrop(source, target)  [Tier 1]
-      hover    → page.hover(target)  [Tier 1]
-      wait     → page.waitForSelector/waitForURL/custom condition
+      login      → clear session + login flow with role credentials
+      navigate   → page.goto(target)
+      click      → page.click(resolved_selector)  [Tier 1]
+      fill       → page.fill(resolved_selector, data)  [Tier 1]
+      type       → page.type(resolved_selector, value)  [Tier 1]
+      select     → page.selectOption(resolved_selector, value)  [Tier 1]
+      drag       → page.dragAndDrop(resolved_source, resolved_target)  [Tier 1]
+      hover      → page.hover(resolved_selector)  [Tier 1]
+      wait       → page.waitForSelector/waitForURL/custom condition
       screenshot → page.screenshot() → save to visual/source/interactions/
-      vm_call  → page.evaluate(() => store.method(args))  [Tier 2]
+      vm_call    → page.evaluate(() => expr(args)) + wait_after  [Tier 2]
       mock_route → page.route(url, handler)  [Tier 3]
-      clear_mock → page.unroute(url)  [Tier 3]
+      clear_mock → page.unroute('**')  [Tier 3]
 
     if step failed:
       retry once
-      if still failed → record failure reason, continue to next step
+      if still failed:
+        record failure reason
+        if non-screenshot step → skip to next screenshot milestone
+        if screenshot step → mark failed, continue
       DO NOT fake the state to make it work
 ```
 
@@ -248,6 +269,7 @@ Everything else in the current 2.13 stays:
 - before/after screenshots for functional actions
 - Capture report (capture-report.json)
 - Quality checks (blank page, error page, loading state detection)
+- Capture closure verification (6 checks)
 
 The only change is HOW interactions are executed (flow chains instead of independent operations) and the three-tier restriction on what Playwright APIs are allowed.
 
@@ -256,5 +278,5 @@ The only change is HOW interactions are executed (flow chains instead of indepen
 | File | Change |
 |------|--------|
 | `code-replicate-skill/docs/phase2/stage-c-resources.md` | Rewrite 2.12.8 (flow-based recordings) + update 2.13 (three-tier execution + iron law) |
-
-No other files need changes.
+| `code-replicate-skill/skills/code-replicate-core.md` | Update 2.12.8 description in Stage C table + add iron law 27 |
+| `code-replicate-skill/skills/cr-visual.md` | Update references from `recordings[]` to `flows[]` structure |
