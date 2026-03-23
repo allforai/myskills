@@ -435,7 +435,7 @@ File-level structured knowledge base produced by Phase 2 Step 2.3.7. Stored at `
 - `path` — relative file path from source root
 - `module` — module ID (M001, M002, ...) from source-summary. `null` for root-level config files (nginx.conf, routes.yaml) per iron law 18
 - `kind` — LLM-judged file role. Free-form, no controlled vocabulary. Examples: controller, service, repository, model, middleware, util, config, test, view, component, hook, store, migration, script, proto. Phase 3 consumers MUST NOT branch logic on specific `kind` values
-- `symbols[]` — public functions/classes/methods. Each has: name, type (function/class/method/interface/type/enum/constant), signature, business_intent
+- `symbols[]` — public functions/classes/methods **with business significance**. Skip pure boilerplate (getter/setter/toString/hashCode/equals). Each has: name, type (function/class/method/interface/type/enum/constant), signature, business_intent
 - `dependencies` — files this file imports/depends on, format: `module_id/relative_path` where relative_path is relative to the module's root directory (e.g., `M_SHARED/src/types/order.ts`, not just `M_SHARED/order.ts`). For root-level files (module: null), use the path from source root directly
 - `business_summary` — one-sentence summary of the file's business purpose
 - `is_abstraction` — true if shared abstraction consumed by multiple modules (per iron law 12). Default: false
