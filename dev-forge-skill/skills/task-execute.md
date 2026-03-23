@@ -464,10 +464,26 @@ Step 1.8: 上下文注入（Context Injection）
   > 如果 tasks.md 中只有主任务没有子任务（旧版兼容），task-execute 仍然正常执行。
   > task-execute 不关心子任务由谁生成，只按 batch id 排序执行。
   ↓
+Step 1.9: 先读后写（Read-before-Write）
+  **每个任务执行前，Agent 必须先读懂相关代码，再开始写代码。读和写是两个独立动作，不允许边读边写。**
+
+  对每个任务：
+  1. **读**：Agent 读取该任务涉及的所有现有代码文件（tasks.md 中标注的 Files 字段 + 依赖文件）
+  2. **理解摘要**：Agent 输出 1-3 句话总结"现有代码做了什么、我要改/加什么、会影响哪些地方"
+  3. **写**：基于理解摘要开始编写代码
+
+  **为什么不能跳过**：
+  - 不读现有代码 → 写的新代码和现有架构冲突（重复实现/风格不一致/破坏已有功能）
+  - 边读边写 → LLM 为了效率只读了一半就开始猜测性编码
+  - 理解摘要是"证明读了" → 没有摘要 = 没读 = 不允许写
+
+  **成本可控**：理解摘要只是 1-3 句话（~100 token），不是完整的代码审查报告。
+  ↓
 Step 2: 逐任务执行
   subagent-driven-development 模式:
     按 id 顺序逐个执行
     每任务:
+      执行 Step 1.9（先读后写）→ 确认理解摘要
       task.status = in_progress, started_at = now
       调用 /subagent-driven-development 执行该任务
       成功 → task.status = completed, files_modified 从 git diff 提取
