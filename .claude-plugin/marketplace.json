@@ -3,20 +3,10 @@
   "owner": {
     "name": "dv"
   },
-  "platforms": {
-    "claude-code": {
-      "installCommand": "claude plugin add /home/hello/Documents/myskills/{plugin-name}",
-      "configFile": "~/.claude/settings.json"
-    },
-    "opencode": {
-      "configFile": "~/.config/opencode/skills.json",
-      "inheritConfig": ".opencode/config.json"
-    }
-  },
   "plugins": [
     {
       "name": "product-design",
-      "version": "4.16.1",
+      "version": "4.17.1",
       "source": "./product-design-skill/",
       "description": "Product design suite: product-concept, product-map, journey-emotion, experience-map, interaction-gate, use-case, feature-gap, feature-prune, ui-design, design-audit. 产品设计套件：产品概念、功能地图、情绪旅程、体验地图、交互质量门禁、用例集、功能查漏、功能剪枝、UI设计、设计审计。"
     },
@@ -28,19 +18,19 @@
     },
     {
       "name": "code-tuner",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "source": "./code-tuner-skill/",
       "description": "Code architecture tuner: compliance check, duplication detection, abstraction analysis. 代码架构调优：规范检查、重复检测、抽象分析。"
     },
     {
       "name": "code-replicate",
-      "version": "1.1.1",
+      "version": "4.0.0",
       "source": "./code-replicate-skill/",
       "description": "Code replication bridge: reverse-engineer existing codebases into .allforai/ artifacts, then use dev-forge pipeline to generate target stack code. 代码复刻桥接：逆向工程已有代码库，生成 allforai 产物，交还 dev-forge 流水线。"
     },
     {
       "name": "demo-forge",
-      "version": "1.3.1",
+      "version": "1.3.2",
       "source": "./demo-forge-skill/",
       "description": "Demo Forge: prepare production-ready demo environments with realistic data, rich media, and iterative quality verification. 演示锻造：设计演示数据方案、采集加工上传富媒体、灌入数据、Playwright 验证，多轮迭代至 95% 通过率。"
     },

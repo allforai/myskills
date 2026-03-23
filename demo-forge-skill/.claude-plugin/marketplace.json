@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "demo-forge",
-      "version": "1.3.1",
+      "version": "1.3.2",
       "source": "./",
       "description": "Demo Forge: prepare production-ready demo environments with realistic data, rich media, and iterative quality verification. 演示锻造：设计演示数据方案、采集加工上传富媒体、灌入数据、Playwright 验证，多轮迭代至 95% 通过率。"
     }
