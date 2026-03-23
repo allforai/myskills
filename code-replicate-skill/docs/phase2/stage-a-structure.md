@@ -36,6 +36,30 @@ LLM 逐模块读 key_files → 输出初步摘要：
 
 > 分析原则详见 ${CLAUDE_PLUGIN_ROOT}/docs/analysis-principles.md
 
+**文件卡片生成**：读完每个 key_file 后，LLM 立即输出该文件的结构化卡片（JSON），包含 path、module、kind、symbols、dependencies、business_summary。卡片在读文件时注意力最集中的时刻生成，确保信息完整。
+
+卡片生成后立即执行 **Quiz 验证**（自答 3 题）：
+1. 这个文件的入口函数/导出接口是什么？
+2. 它依赖哪些外部服务/模块？
+3. 它处理的核心业务场景是什么？
+
+答案与卡片不一致 → 重读文件 → 重新生成卡片。最多重试 2 次，仍不一致则标记 `"confidence": "low"` 继续。
+
+**Quiz 示例**：
+```
+文件: order_service.go
+卡片: symbols=[CreateOrder, GetOrder], dependencies=[user_service, order_repo]
+Quiz: Q1=CreateOrder, CancelOrder, GetOrder  ← CancelOrder 不在卡片中！
+      Q2=user_service, order_repo, payment_api ← payment_api 不在卡片中！
+→ 不一致 → 重读 → 重新生成
+```
+
+模块摘要（responsibility、exposed_interfaces 等）在该模块所有文件卡片生成完毕后再总结，确保摘要与卡片一致。
+
+source-summary.abstractions 中的文件，其卡片须标记 `is_abstraction: true` 和 `abstraction_consumers`（iron law 12）。
+
+> 卡片 Schema 详见 ${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md#file-catalog
+
 ## 2.3.5 文件覆盖扫描 — 防偷懒
 
 > **LLM 最大的风险不是"不知道该查什么"，而是"没认真读文件就按文件名猜测跳过"。**
@@ -76,11 +100,34 @@ LLM 自行决定采样位置和数量。目标是用最少的阅读量判断"这
 
 头部扫描发现重要组件 → 加入 key_files → 完整读取 → 更新模块摘要。
 
+补读的文件也按 2.3 相同流程生成卡片 + Quiz 验证。
+
 **Step 4: 写入覆盖率**
 
 最终 source-summary 中每个模块带 `coverage` 字段。Phase 2.14 用户确认时展示覆盖率 — 用户看到"网络模块覆盖率 18%"就会要求补读。
 
 **底线**：coverage < 50% 的模块必须补读到 ≥ 50%。不允许"22 个文件只读了 4 个就声称理解了这个模块"。
+
+## 2.3.7 知识库构建
+
+Step 2.3 和 2.3.5 生成的所有文件卡片，在此步骤汇总为结构化知识库：
+
+**a. 组装 file-catalog.json**
+- 收集所有文件卡片 → 写入 `.allforai/code-replicate/file-catalog.json`
+- 同时按模块拆分为切片文件：`file-catalog-M001.json`、`file-catalog-M002.json`、...
+- 根级文件（`module: null`）写入 `file-catalog-root.json`
+- file-catalog.json 原子写入 — 文件存在即代表 2.3.7 完成。崩溃后重启时，若 file-catalog.json 不存在则从 2.3 最后完成的模块继续
+
+**b. 构建 code-index.json**
+- 从所有卡片的 business_intent + business_summary 提取业务概念 → `concepts` 倒排索引
+- 从 source-summary.data_entities 提取实体 + 从卡片补充 `used_by` → `entities` 索引
+- 从卡片中 kind=controller/handler 的 symbols 提取 API 端点 → `api_surface` 索引
+- 写入 `.allforai/code-replicate/code-index.json`
+
+**c. 更新进度**
+- 写入 replicate-config.progress step `"2.3.7"`
+
+> Schema 详见 ${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md#file-catalog 和 #code-index
 
 ## 2.4 project_archetype — 项目特征识别
 
