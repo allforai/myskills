@@ -436,12 +436,12 @@ File-level structured knowledge base produced by Phase 2 Step 2.3.7. Stored at `
 - `module` — module ID (M001, M002, ...) from source-summary. `null` for root-level config files (nginx.conf, routes.yaml) per iron law 18
 - `kind` — LLM-judged file role. Free-form, no controlled vocabulary. Examples: controller, service, repository, model, middleware, util, config, test, view, component, hook, store, migration, script, proto. Phase 3 consumers MUST NOT branch logic on specific `kind` values
 - `symbols[]` — public functions/classes/methods. Each has: name, type (function/class/method/interface/type/enum/constant), signature, business_intent
-- `dependencies` — files this file imports/depends on (module/filename format)
+- `dependencies` — files this file imports/depends on, format: `module_id/relative_path` where relative_path is relative to the module's root directory (e.g., `M_SHARED/src/types/order.ts`, not just `M_SHARED/order.ts`). For root-level files (module: null), use the path from source root directly
 - `business_summary` — one-sentence summary of the file's business purpose
 - `is_abstraction` — true if shared abstraction consumed by multiple modules (per iron law 12). Default: false
 - `abstraction_consumers` — module IDs consuming this abstraction. Only present when `is_abstraction: true`
 - `confidence` — `high` (default) or `low` (quiz verification failed after max retries)
-- Per-module slice files: `file-catalog-M001.json`, `file-catalog-root.json` (for module: null files)
+- Per-module slice files: `file-catalog-M001.json`, `file-catalog-root.json` (for module: null files). For large modules (>100 files), a slice may reach ~30KB — this is expected and acceptable since structured card data is more efficiently consumed by LLM than raw source code of equivalent size
 
 ---
 
