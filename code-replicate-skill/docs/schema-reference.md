@@ -477,7 +477,7 @@ Inverted indexes for cross-module querying, built from file-catalog cards. Store
 **Field notes:**
 - `concepts` — business concept keyword → file paths. LLM-generated, advisory — for navigation, not programmatic querying
 - `entities` — entity/model name → `{definition, fields, used_by}`. Query-optimized view; `source-summary.data_entities` remains the source of truth for entity schemas and relations
-- `api_surface` — API endpoint → handler chain. Key format adapts to project type: `"POST /api/orders"` (HTTP), `"gRPC OrderService.CreateOrder"` (gRPC), `"WS /chat"` (WebSocket), `"GraphQL mutation createOrder"` (GraphQL), `"Event order.created"` (event-driven)
+- `api_surface` — API endpoint → handler chain. Key format adapts to project type: `"POST /api/orders"` (HTTP), `"gRPC OrderService.CreateOrder"` (gRPC), `"WS /chat"` (WebSocket), `"GraphQL mutation createOrder"` (GraphQL), `"Event order.created"` (event-driven). For events with multiple consumers, disambiguate keys with role: `"Event order.created [publish]"`, `"Event order.created [consume:M_PAYMENT]"`, `"Event order.created [consume:M_NOTIFY]"` — JSON keys must be unique
 
 ---
 
