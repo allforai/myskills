@@ -114,9 +114,24 @@ LLM 可以在同一个 test-vectors.json 中混合使用多种模型。
 
 **每次 LLM 调用的上下文**：
 - source-summary.json（~4-8 KB，常驻全局视角）
-- 当前模块源码（~10-30 KB）
+- code-index.json（~5-10 KB，常驻全局视角 — iron law 26）
+- file-catalog 模块切片（~3-8 KB，按 extraction-plan 模块引用加载 file-catalog-M001.json）
 - 目标 schema 定义（~2-4 KB，按需加载）
 - replicate-config 摘要（~1 KB）
+
+**定向回读源码**（fallback）：
+- 卡片提供 symbols + business_intent → 大部分场景足够
+- 需要精确实现细节时（边界条件、算法逻辑、exact 模式）→ 定向读源文件中的具体函数（~20 行），不盲读整个文件
+- exact 模式下卡片作为导航图，频繁定向回读
+
+**按保真度回读**：
+- interface / functional：卡片 symbols + business_intent 通常足够，极少回读
+- architecture：卡片 + code-index 全景，跨切关注需要细节时回读
+- exact：卡片作为导航图，频繁定向回读具体函数
+
+**4D 自检适配**：
+- D2（证据）追溯链：产物声明 → 卡片 symbol/business_intent → （可选）源码具体行
+- 卡片证据充分时无需回读源码；D2 要求精确实现细节时触发定向回读
 
 ---
 
