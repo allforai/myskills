@@ -276,7 +276,7 @@ Phase 3 生成产物时，LLM 不只读源码，**同时参考 Phase 2.13 采集
 22. **项目特征驱动 + 产物自由化** — LLM 在 Phase 2.4 识别 project_archetype，在 Phase 3-pre 的 extraction-plan.artifacts 中自由决定输出什么产物、用什么 schema。标准 Web 应用自然选择 task-inventory + flows；游戏选择 system-spec + config-schema；数据管道选择 dag-spec + transform-catalog。不硬编码产物列表 — LLM 根据 archetype 自行决定
 23. **素材即代码** — 前端/全栈项目的静态资源（图标、图片、字体、动画、主题变量、i18n 文案）是代码的组成部分，缺失则运行时碎图/缺字体/key 显示。Phase 2b-assets 必须盘点所有与代码有引用关系的素材，Phase 3.1.8 按 copy/transform/replace 三种方式迁移。cr-fidelity U7 验证素材完整性
 24. **UI 驱动闭环** — Phase 3 提取产物时，LLM 不只读源码，同时参考 Phase 2.13 采集的截图/录像/API 日志。从 UI 表象反推完整业务模型（LLM 根据观察到的操作和请求，推导同一实体/资源应有的互补操作集）。截图上看到的才是用户实际在用的，代码中的死代码不应提取
-25. **不跳过文件** — LLM 不能根据文件名猜测重要性后跳过文件。Phase 2.3.5 要求对每个模块的未读文件扫描到**第一个 class/function/const 定义**（跳过 import 行，通常在第 30-80 行），发现重要组件后完整读取。每个模块的文件覆盖率必须 ≥ 50%。source-summary 中记录 coverage + files_skipped，用户确认时可见
+25. **不跳过文件** — LLM 不能根据文件名猜测重要性后跳过文件。Phase 2.3.5 要求对未读文件**采样阅读**（前面看定义 + 中间看方法签名），快速判断文件价值后决定是否完整读取。每个模块的文件覆盖率必须 ≥ 50%。source-summary 中记录 coverage + files_skipped，用户确认时可见
 
 ---
 
