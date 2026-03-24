@@ -217,8 +217,8 @@ No symlinks. Direct relative path references.
 1. Create directories: `claude/`, `codex/`, `opencode/`, `shared/`
 2. Move Claude plugins: `mv {plugin}-skill/ claude/`
 3. Update Claude internal path references (plugin.json, marketplace.json source paths, SKILL.md)
-4. Extract shared assets: product-design-skill/scripts/ → `shared/scripts/product-design/`, code-replicate-skill/scripts/ → `shared/scripts/code-replicate/`, product-design-skill/mcp-ai-gateway/ → `shared/mcp-ai-gateway/`
-5. Claude skills reference shared/ via relative paths; update mcp-ai-gateway build path in install script
+4. **Copy** (not move) shared assets: product-design-skill/scripts/ → `shared/scripts/product-design/`, code-replicate-skill/scripts/ → `shared/scripts/code-replicate/`, product-design-skill/mcp-ai-gateway/ → `shared/mcp-ai-gateway/`. Claude plugins **keep their originals** — `${CLAUDE_PLUGIN_ROOT}` resolves to plugin cache, not repo source, so scripts must stay co-located.
+5. Claude skill files remain unchanged (no path updates needed). shared/ is referenced only by codex/ and opencode/.
 6. Copy `claude/` to `codex/` and `opencode/`
 7. Remove `.claude-plugin/` from codex/ and opencode/
 
