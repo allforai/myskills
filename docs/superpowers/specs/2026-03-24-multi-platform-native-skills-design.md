@@ -86,7 +86,8 @@ myskills/
 │   │       ├── cr_discover.py
 │   │       ├── cr_gen_*.py
 │   │       ├── cr_merge_*.py
-│   │       └── cr_validate.py
+│   │       ├── cr_validate.py
+│   │       └── test_*.py           # Tests co-located with source scripts
 │   ├── mcp-ai-gateway/             # Unified MCP gateway (Node service, requires npm build)
 │   └── schemas/                    # .allforai/ JSON schema definitions (new work, Phase D)
 │
