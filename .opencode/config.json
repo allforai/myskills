@@ -2,17 +2,33 @@
   "skills": [
     {
       "name": "product-design",
-      "path": "../product-design-skill/skills",
-      "commands": "../product-design-skill/commands"
+      "path": "../opencode-native/product-design-skill/skills",
+      "commands": "../opencode-native/product-design-skill/commands"
     },
     {
       "name": "dev-forge",
-      "path": "../dev-forge-skill/skills",
-      "commands": "../dev-forge-skill/commands"
+      "path": "../opencode-native/dev-forge-skill/skills",
+      "commands": "../opencode-native/dev-forge-skill/commands"
     },
     {
       "name": "code-tuner",
-      "path": "../code-tuner-skill/skills"
+      "path": "../opencode-native/code-tuner-skill/skills",
+      "commands": "../opencode-native/code-tuner-skill/commands"
+    },
+    {
+      "name": "demo-forge",
+      "path": "../opencode-native/demo-forge-skill/skills",
+      "commands": "../opencode-native/demo-forge-skill/commands"
+    },
+    {
+      "name": "ui-forge",
+      "path": "../opencode-native/ui-forge-skill/skills",
+      "commands": "../opencode-native/ui-forge-skill/commands"
+    },
+    {
+      "name": "code-replicate",
+      "path": "../opencode-native/code-replicate-skill/skills",
+      "commands": "../opencode-native/code-replicate-skill/commands"
     }
   ],
   "mcp": {

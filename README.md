@@ -1,5 +1,27 @@
 # myskills
 
+## Compatibility Layers
+
+This repository now includes incremental compatibility layers under
+`codex-native/` and `opencode-native/`.
+
+- Existing Claude Code plugin directories remain unchanged.
+- Codex support is added in parallel through native `SKILL.md` entry points
+  under `codex-native/`.
+- OpenCode support is added in parallel through wrapper `skills/` and
+  `commands/` entry points under `opencode-native/`.
+- The current approach is intentionally non-breaking: original plugin paths stay
+  stable while native adapters evolve separately.
+- Coverage docs:
+  - `codex-native/README.md`
+  - `codex-native/migration-status.md`
+  - `codex-native/completion-matrix.md`
+  - `codex-native/retirement-criteria.md`
+  - `opencode-native/README.md`
+  - `opencode-native/inventory.md`
+  - `opencode-native/plugin-matrix.md`
+  - `opencode-native/runtime-gaps.md`
+
 **Claude Code + OpenCode** 双平台插件集合，覆盖 **产品设计 → 开发锻造 → QA 验证 → 架构治理** 全链路。
 
 ## ✨ 新增：UI Forge（实现后 UI 锻造）
