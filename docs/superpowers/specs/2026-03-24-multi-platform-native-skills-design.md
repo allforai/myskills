@@ -65,18 +65,30 @@ myskills/
 │   └── ui-forge-skill/
 │
 ├── shared/                         # Platform-agnostic assets only
-│   ├── scripts/                    # Python data transform scripts
-│   │   ├── _common.py
-│   │   ├── gen_journey_emotion.py
-│   │   ├── gen_experience_map.py
-│   │   ├── gen_interaction_gate.py
-│   │   ├── gen_use_cases.py
-│   │   ├── gen_feature_gap.py
-│   │   ├── gen_feature_prune.py
-│   │   ├── gen_ui_design.py
-│   │   └── gen_design_audit.py
-│   ├── mcp-ai-gateway/             # Unified MCP gateway (Node service)
-│   └── schemas/                    # .allforai/ JSON schema definitions
+│   ├── scripts/
+│   │   ├── product-design/         # From product-design-skill/scripts/
+│   │   │   ├── _common.py
+│   │   │   ├── gen_aggregate_checkpoint.py
+│   │   │   ├── gen_business_flows.py
+│   │   │   ├── gen_data_model.py
+│   │   │   ├── gen_design_audit.py
+│   │   │   ├── gen_experience_map.py
+│   │   │   ├── gen_product_map.py
+│   │   │   ├── gen_validation_report.py
+│   │   │   ├── gen_view_objects.py
+│   │   │   ├── review_hub_server.py
+│   │   │   ├── stitch_oauth.py
+│   │   │   ├── verify_review.py
+│   │   │   ├── verify_wireframes.py
+│   │   │   └── xv_prompts.py
+│   │   └── code-replicate/         # From code-replicate-skill/scripts/
+│   │       ├── _common.py
+│   │       ├── cr_discover.py
+│   │       ├── cr_gen_*.py
+│   │       ├── cr_merge_*.py
+│   │       └── cr_validate.py
+│   ├── mcp-ai-gateway/             # Unified MCP gateway (Node service, requires npm build)
+│   └── schemas/                    # .allforai/ JSON schema definitions (new work, Phase D)
 │
 ├── CLAUDE.md                       # Project instructions (path refs updated)
 └── MIGRATION.md                    # One-time migration guide
@@ -165,7 +177,7 @@ Additional: execution-playbook must be more detailed about phase transition logi
 ### Unchanged Across All Platforms
 
 - `.allforai/` output structure and JSON schemas
-- Python script invocation: `python3 ../../shared/scripts/gen_xxx.py <BASE_PATH>`
+- Python script invocation: `python3 ../../shared/scripts/product-design/gen_xxx.py <BASE_PATH>` (relative path valid only from `{platform}/{plugin}-skill/` level)
 - Domain logic semantics (phase steps, quality standards, completion conditions)
 - Pure domain knowledge documents (no platform semantics)
 
@@ -173,9 +185,10 @@ Additional: execution-playbook must be more detailed about phase transition logi
 
 ### Included (platform-agnostic, zero-loss sharing)
 
-- `scripts/` — Python data transform scripts (from product-design-skill/scripts/)
-- `mcp-ai-gateway/` — Node MCP gateway service (from product-design-skill/mcp-ai-gateway/)
-- `schemas/` — `.allforai/` JSON schema definitions (extracted from skill files)
+- `scripts/product-design/` — Python data transform scripts (from product-design-skill/scripts/)
+- `scripts/code-replicate/` — Python reverse-engineering scripts (from code-replicate-skill/scripts/)
+- `mcp-ai-gateway/` — Node MCP gateway service (from product-design-skill/mcp-ai-gateway/); each platform's install script must handle `npm install && npm run build` at `shared/mcp-ai-gateway/`
+- `schemas/` — `.allforai/` JSON schema definitions (new work, deferred to Phase D to keep migration scope bounded)
 
 ### Excluded (platform-specific, each platform maintains its own)
 
@@ -202,11 +215,15 @@ No symlinks. Direct relative path references.
 
 1. Create directories: `claude/`, `codex/`, `opencode/`, `shared/`
 2. Move Claude plugins: `mv {plugin}-skill/ claude/`
-3. Update Claude internal path references (plugin.json, SKILL.md)
-4. Extract shared assets: scripts/, mcp-ai-gateway/ → `shared/`
-5. Claude skills reference shared/ via relative paths
+3. Update Claude internal path references (plugin.json, marketplace.json source paths, SKILL.md)
+4. Extract shared assets: product-design-skill/scripts/ → `shared/scripts/product-design/`, code-replicate-skill/scripts/ → `shared/scripts/code-replicate/`, product-design-skill/mcp-ai-gateway/ → `shared/mcp-ai-gateway/`
+5. Claude skills reference shared/ via relative paths; update mcp-ai-gateway build path in install script
 6. Copy `claude/` to `codex/` and `opencode/`
 7. Remove `.claude-plugin/` from codex/ and opencode/
+
+**Rollback**: Tag `pre-restructure` before Step 2. If anything breaks, `git reset --hard pre-restructure`.
+
+**Note**: deadhunt and fieldcheck are subcommands of dev-forge, not separate plugins. Do not create separate directories for them.
 
 **Phase B — Codex Nativization (per-plugin rewrite)**
 
@@ -241,7 +258,7 @@ Per plugin:
 1. Write `claude/install.sh`, `codex/install.sh`, `opencode/install.sh`
 2. Write `MIGRATION.md` (path changes, re-install steps per platform)
 3. Update `CLAUDE.md` (all path references)
-4. Major version bump all plugins (e.g., product-design 3.7.0 → 4.0.0)
+4. Major version bump all plugins (see Version Bump section)
 5. Delete old files: `codex-native/`, `opencode-native/`, `install-opencode.sh`, `install-remote.sh`, root `.opencode/`
 6. Commit and tag
 
@@ -256,13 +273,13 @@ Per plugin:
 
 ### Version Bump
 
-All plugins get major version bump:
-- product-design: 3.7.0 → 4.0.0
-- dev-forge: 2.4.1 → 3.0.0
-- demo-forge → 2.0.0
-- code-tuner: 1.1.0 → 2.0.0
-- code-replicate: 1.0.0 → 2.0.0
-- ui-forge → 2.0.0
+All plugins get major version bump (next major above current):
+- product-design: 4.17.1 → 5.0.0
+- dev-forge: 5.9.1 → 6.0.0
+- demo-forge: 1.3.2 → 2.0.0
+- code-tuner: 1.1.2 → 2.0.0
+- code-replicate: 4.0.0 → 5.0.0
+- ui-forge: 0.1.2 → 1.0.0
 
 ## Platform Comparison Matrix
 
