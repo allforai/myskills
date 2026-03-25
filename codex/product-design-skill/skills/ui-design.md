@@ -118,12 +118,12 @@ product-concept → product-map → experience-map → ui-design
 
 | 步骤 | 标准模式 | 全自动模式 |
 |------|----------|-----------|
-| **Step 1 画像确认** | AskUserQuestion 确认 | 自动确认，记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
-| **Step 2 风格选择** | AskUserQuestion 8 选 1 | 读 `pipeline_preferences.ui_styles[当前端类型]`：非 `"undecided"` → 直接使用预设风格，跳过 AskUserQuestion；`"undecided"` → **回退交互模式**（展示 8 种风格，用户选择）。兼容旧版 `ui_style`（字符串） |
-| **Step 3 设计原则确认** | AskUserQuestion 确认 | 自动确认（WebSearch 照常执行，搜索结果自动采纳） |
-| **Step 4 规格确认** | AskUserQuestion 确认 | 自动确认 |
-| **Step 5 预览确认** | AskUserQuestion 确认 | 自动确认 |
-| **Step 5.5 Stitch 不可用** | AskUserQuestion 询问 | 自动降级到 Step 5.6（LLM 高保真预览） |
+| **Step 1 画像确认** | confirm with user | 自动确认，记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
+| **Step 2 风格选择** | present 8 style options for user to choose | 读 `pipeline_preferences.ui_styles[当前端类型]`：非 `"undecided"` → 直接使用预设风格，skip user confirmation；`"undecided"` → **回退交互模式**（展示 8 种风格，用户选择）。兼容旧版 `ui_style`（字符串） |
+| **Step 3 设计原则确认** | confirm with user | 自动确认（WebSearch 照常执行，搜索结果自动采纳） |
+| **Step 4 规格确认** | confirm with user | 自动确认 |
+| **Step 5 预览确认** | confirm with user | 自动确认 |
+| **Step 5.5 Stitch 不可用** | ask the user | 自动降级到 Step 5.6（LLM 高保真预览） |
 | **--variants 模式** | 生成 N 套风格方案 → 视觉对比 → 用户选择 | 自动选择与 `pipeline_preferences.ui_styles[当前端类型]` 最匹配的方案，记入 decisions.json |
 
 **安全护栏**（自动模式下仍然停下来问用户）：
@@ -142,13 +142,13 @@ product-concept → product-map → experience-map → ui-design
 
 ### 设计步骤（生成阶段）
 
-**加载**：`Read ${CLAUDE_PLUGIN_ROOT}/docs/ui-design/design-steps.md`
+**加载**：`Read ./docs/ui-design/design-steps.md`
 
 包含：Step 1（产品画像推导）、Step 2（风格选择 + Variants 模式）、Step 3（检索设计原则）、Step 4（生成设计规格）、Step 5（HTML 线框预览）、Step 5.3（组件规格）、Step 5.5（Stitch 视觉生成）、Step 5.6（LLM 高保真预览）、生成方式说明。
 
 ### 验证步骤（审计阶段）
 
-**加载**：`Read ${CLAUDE_PLUGIN_ROOT}/docs/ui-design/validation-steps.md`
+**加载**：`Read ./docs/ui-design/validation-steps.md`
 
 包含：Step 4.5（Pattern Consistency Check）、Step 4.7（LLM 自审验证 Loop）、闭环审计、防御性规范（加载校验、零结果处理、规模自适应、WebSearch 故障、上游过期检测、执行失败保护）。
 
@@ -198,7 +198,7 @@ Step 1: 产品画像推导                          ← design-steps.md
   推导：B端/C端、角色列表、各角色高频任务、界面总数
   向用户展示，确认
   ↓
-Step 2: 风格选择（AskUserQuestion 单选）      ← design-steps.md
+Step 2: 风格选择（confirm with user 单选）      ← design-steps.md
   展示 8 种主流风格
   用户选定后，记录到 ui-design-decisions.json
   ↓

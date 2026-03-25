@@ -22,7 +22,7 @@ version: "1.0.0"
 - **JSON 机器版**：完整字段，每条旅程线的每个节点含 emotion / intensity / risk / design_hint，供下游 experience-map 和自动化使用
 - **人类确认**：以可读表格形式展示，供用户逐条审阅并调整
 
-> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/schemas/journey-emotion-schema.md
+> 详见 ./docs/schemas/journey-emotion-schema.md
 
 ---
 
@@ -51,7 +51,7 @@ product-map（功能地图）    journey-emotion（旅程情绪图）    experie
 
 ## 增强协议（WebSearch + 4D+6V + XV）
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/docs/skill-commons.md`「统一验收方法论」。
+> 详见 `./docs/skill-commons.md`「统一验收方法论」。
 
 **WebSearch**：Step 2 生成情绪标注时，对 risk=high/critical 节点搜索同类产品的用户体验研究，作为情绪推理的 D2 证据（如搜索「payment anxiety UX research」「form abandonment rate」），结果写入 `source_refs`。
 
@@ -63,7 +63,7 @@ product-map（功能地图）    journey-emotion（旅程情绪图）    experie
 
 ## 下游基线定义
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/docs/skill-commons.md`「上游基线验收」。
+> 详见 `./docs/skill-commons.md`「上游基线验收」。
 
 journey-emotion 的产出同时是 experience-map 的**验收基线**。experience-map 生成后，LLM 加载 journey-emotion-map.json 作为上下文，**以 LLM 判断力（而非机械规则）**审查下游产物是否忠实反映了情绪意图。
 
@@ -366,11 +366,11 @@ LLM 生成情绪标注 → 自审验证
 
 | 步骤 | 标准模式 | 全自动模式 |
 |------|----------|-----------|
-| **Step 3 旅程线审阅** | 逐条展示，AskUserQuestion 确认 | 自动确认，记入 decisions.json（`decision: "auto_confirmed"`） |
+| **Step 3 旅程线审阅** | 逐条展示，向用户确认 | 自动确认，记入 decisions.json（`decision: "auto_confirmed"`） |
 
 **安全护栏**（自动模式下仍然停下来问用户）：
 - ERROR 级验证失败（business-flows.json 解析失败、节点引用断裂）
-- **risk=critical 节点**：旅程线中含 `risk: "critical"` 的节点时，该旅程线必须停下展示并 AskUserQuestion 确认，不可 auto_confirmed（critical 节点涉及支付/删除/权限变更，情绪误判会级联传播到 micro-interactions 和设计约束）
+- **risk=critical 节点**：旅程线中含 `risk: "critical"` 的节点时，该旅程线必须停下展示并 向用户确认，不可 auto_confirmed（critical 节点涉及支付/删除/权限变更，情绪误判会级联传播到 micro-interactions 和设计约束）
 
 ---
 

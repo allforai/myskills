@@ -108,13 +108,13 @@ product-map（现状+方向）   功能查漏（查缺口）
 
 | 步骤 | 标准模式 | 全自动模式 |
 |------|----------|-----------|
-| **Step 1 任务完整性确认** | AskUserQuestion 确认 | 自动确认，记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
-| **Step 2 界面完整性确认** | AskUserQuestion 确认 | 自动确认 |
-| **Step 3 旅程验证确认** | AskUserQuestion 确认 | 自动确认 |
-| **Step 4 缺口清单确认** | AskUserQuestion 确认 | 自动确认（缺口任务自动生成，不等用户调整优先级） |
-| **Step 5 业务流确认** | AskUserQuestion 确认 | 自动确认 |
-| **Step 6 交互类型完整性确认** | AskUserQuestion 确认 | 自动确认（前置条件不满足 → 提示用户重跑上游） |
-| **Step 7 状态机确认** | AskUserQuestion 确认 | 自动确认 |
+| **Step 1 任务完整性确认** | confirm with user | 自动确认，记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
+| **Step 2 界面完整性确认** | confirm with user | 自动确认 |
+| **Step 3 旅程验证确认** | confirm with user | 自动确认 |
+| **Step 4 缺口清单确认** | confirm with user | 自动确认（缺口任务自动生成，不等用户调整优先级） |
+| **Step 5 业务流确认** | confirm with user | 自动确认 |
+| **Step 6 交互类型完整性确认** | confirm with user | 自动确认（前置条件不满足 → 提示用户重跑上游） |
+| **Step 7 状态机确认** | confirm with user | 自动确认 |
 
 **安全护栏**（自动模式下仍然停下来问用户）：
 - ERROR 级验证失败（必须文件不存在、引用断裂）
@@ -226,7 +226,7 @@ Step 7: 状态机完整性检查（quick / journey 模式跳过）
 **前置检查**：
 - `.allforai/product-concept/concept-baseline.json` 自动加载（推拉协议 §三.A）→ 不存在则 WARNING，不阻塞
 - `.allforai/experience-map/experience-map.json` 是否存在
-  - 不存在 → 自动加载并执行 `${CLAUDE_PLUGIN_ROOT}/skills/experience-map.md` 的完整工作流生成体验地图，完成后继续 Step 2
+  - 不存在 → 自动加载并执行 `./skills/experience-map.md` 的完整工作流生成体验地图，完成后继续 Step 2
   - 存在 → 直接进入检查
 - 从 `operation_lines[].nodes[].screens[]` 提取界面，遍历每个界面，检查以下项目
 
@@ -289,7 +289,7 @@ Step 7: 状态机完整性检查（quick / journey 模式跳过）
 ### Step 3：用户旅程验证
 
 **前置检查**：`.allforai/experience-map/experience-map.json` 是否存在
-- 不存在 → 自动加载并执行 `${CLAUDE_PLUGIN_ROOT}/skills/experience-map.md` 的完整工作流生成体验地图（若 Step 2 已触发自动运行，此处 experience-map 必已存在）
+- 不存在 → 自动加载并执行 `./skills/experience-map.md` 的完整工作流生成体验地图（若 Step 2 已触发自动运行，此处 experience-map 必已存在）
 - 存在 → 按角色逐一走完整路径，验证四个节点
 
 ```
@@ -463,7 +463,7 @@ Step 7: 状态机完整性检查（quick / journey 模式跳过）
 
 #### 类型完整性规则
 
-从 `${CLAUDE_PLUGIN_ROOT}/docs/interaction-types.md` 提取以下规则：
+从 `./docs/interaction-types.md` 提取以下规则：
 
 | 类型 | 必须具备 | 检测逻辑 |
 |------|----------|----------|

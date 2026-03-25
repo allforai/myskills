@@ -28,7 +28,7 @@ arguments:
 启动统一审核站点，一个端口覆盖 6 个 tab。
 
 ```
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/review_hub_server.py <BASE> --port 18900
+python3 ../../shared/scripts/product-design/review_hub_server.py <BASE> --port 18900
 ```
 
 - `<BASE>` = `.allforai` 目录路径

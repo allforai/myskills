@@ -26,7 +26,7 @@ product-design-skill/mcp-ai-gateway/
   "mcpServers": {
     "ai-gateway": {
       "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-ai-gateway/dist/index.js"],
+      "args": ["../../shared/mcp-ai-gateway/dist/index.js"],
       "env": {
         "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}",
         "GOOGLE_API_KEY": "${GOOGLE_API_KEY}",

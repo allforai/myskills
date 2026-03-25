@@ -62,7 +62,7 @@ Step 2: LLM 自由设计体验地图
 运行预构建脚本生成确定性骨架，减少 LLM token 消耗和幻觉：
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_experience_map.py <BASE_PATH> --mode auto --shard experience-map
+python3 ../../shared/scripts/product-design/gen_experience_map.py <BASE_PATH> --mode auto --shard experience-map
 ```
 
 **脚本输出**：`experience-map-skeleton.json`，包含：
@@ -130,7 +130,7 @@ LLM 加载 `experience-map-skeleton.json`，在骨架基础上进行设计。骨
 回复 JSON: {"app": "{app名}", "patterns": [{"id": 1, "verdict": "✅|⚠️|❌", "note": "..."}, ...]}
 ```
 
-调用：`mcp__plugin_product-design_ai-gateway__ask_model(task: "pattern_selection_{app}", prompt: 上述)`
+调用：`OpenRouter MCP ask_model(task: "pattern_selection_{app}", prompt: 上述)`
 
 **结果注入**：Claude 将第二模型的 pattern 判断写入当前 app 的设计上下文：
 - ✅ 的模式 → Phase B 设计时主动考虑

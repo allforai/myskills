@@ -24,16 +24,16 @@
 
 | 能力 ID | 探测方式 | 使用插件 | 降级策略 |
 |---------|---------|---------|---------|
-| `playwright` | 检查 `mcp__playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 工具可用性（任一可用即就绪） | demo-forge, dev-forge, deadhunt | 无降级 — 提示用户安装 |
-| `openrouter_mcp` | 检查 `mcp__plugin_product-design_ai-gateway__ask_model` 工具可用性 | product-design, dev-forge | 跳过 MCP XV，脚本 XV 仍可用 |
+| `playwright` | 检查 Playwright MCP `browser_navigate` 工具可用性 | demo-forge, dev-forge, deadhunt | 无降级 — 提示用户安装 |
+| `openrouter_mcp` | 检查 `OpenRouter MCP ask_model` 工具可用性 | product-design, dev-forge | 跳过 MCP XV，脚本 XV 仍可用 |
 | `openrouter_script` | `_resolve_api_key("OPENROUTER_API_KEY")`：环境变量 → `.mcp.json` env/\_\_keys | product-design (预置脚本) | 静默跳过 XV |
-| `brave_search_mcp` | 检查 `mcp__plugin_product-design_ai-gateway__brave_web_search` 工具可用性 | demo-forge | 跳过 Brave MCP，脚本仍可用 |
+| `brave_search_mcp` | 检查 `AI Gateway Brave search` 工具可用性 | demo-forge | 跳过 Brave MCP，脚本仍可用 |
 | `brave_search_script` | `_resolve_api_key("BRAVE_API_KEY")`：环境变量 → `.mcp.json` env/\_\_keys | demo-forge (预置脚本) | Brave → WebSearch → AI 生成 |
-| `google_ai_mcp` | 检查 `mcp__plugin_product-design_ai-gateway__generate_image` 工具可用性 | demo-forge | 跳过 MCP 生图，脚本仍可用 |
+| `google_ai_mcp` | 检查 `AI Gateway image generation` 工具可用性 | demo-forge | 跳过 MCP 生图，脚本仍可用 |
 | `google_ai_script` | `_resolve_api_key("GOOGLE_API_KEY")`：环境变量 → `.mcp.json` env/\_\_keys | demo-forge (预置脚本) | Imagen 4 → GPT-5 Image → FLUX 2 Pro → 跳过 |
-| `fal_ai_mcp` | 检查 `mcp__plugin_product-design_ai-gateway__flux_generate_image` 工具可用性 | demo-forge | 跳过 fal.ai MCP 生图/生视频 |
+| `fal_ai_mcp` | 检查 `AI Gateway FLUX image generation` 工具可用性 | demo-forge | 跳过 fal.ai MCP 生图/生视频 |
 | `fal_ai_script` | `_resolve_api_key("FAL_KEY")`：环境变量 → `.mcp.json` env/\_\_keys | demo-forge (预置脚本) | FLUX 2 Pro（生图）+ Kling（生视频） |
-| `stitch_ui` | 检查 `mcp__plugin_product-design_stitch__create_project` 工具 | product-design | 跳过视觉稿，使用文字规格 |
+| `stitch_ui` | 检查 `Stitch MCP create_project` 工具 | product-design | 跳过视觉稿，使用文字规格 |
 | `websearch` | 内置工具，始终可用 | product-design, demo-forge | 无需降级 |
 
 ### 统一探测模式
@@ -60,7 +60,7 @@
 
 ### 交互式安装引导
 
-当「重要性=必需」的能力未就绪时，用 AskUserQuestion 提供一键安装选项。**不静默安装，始终先问。**
+当「重要性=必需」的能力未就绪时，present options 提供一键安装选项。**不静默安装，始终先问。**
 
 #### 安装注册表
 
@@ -77,7 +77,7 @@
 当 Phase 0 外部能力快检发现「重要性=必需」的能力未就绪时：
 
 ```
-1. AskUserQuestion:
+1. confirm with user:
    「{能力名} 未就绪，后续 {phase_name} 需要此工具。是否立即安装？」
    选项:
      1. 是，帮我安装
@@ -696,7 +696,7 @@ XV 是统一验收方法论中 Loop 的可选增强。实现细节：
 
 ### 适用场景
 
-任何 skill 在通过 AskUserQuestion 或对话收集用户输入时——产品概念发现、代码复刻理解、技术决策、业务规则确认——都必须在记录用户回答后执行闭环审计。
+任何 skill 在通过 confirm with user 或对话收集用户输入时——产品概念发现、代码复刻理解、技术决策、业务规则确认——都必须在记录用户回答后执行闭环审计。
 
 ### 审计方法
 

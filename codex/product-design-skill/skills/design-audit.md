@@ -17,8 +17,8 @@ version: "1.2.0"
 
 执行本技能前，**必须加载以下补充文档**（完整审计维度和规则定义）：
 
-1. `${CLAUDE_PLUGIN_ROOT}/docs/design-audit/audit-dimensions.md` — 所有审计维度定义（Phase A/B/C 步骤、检测项、输出格式、JSON Schema、Markdown 报告结构）
-2. `${CLAUDE_PLUGIN_ROOT}/docs/design-audit/fix-rules.md` — 增强协议、全自动模式、防御性规范、铁律
+1. `./docs/design-audit/audit-dimensions.md` — 所有审计维度定义（Phase A/B/C 步骤、检测项、输出格式、JSON Schema、Markdown 报告结构）
+2. `./docs/design-audit/fix-rules.md` — 增强协议、全自动模式、防御性规范、铁律
 
 ---
 
@@ -94,14 +94,14 @@ Phase A（脚本，串行）: 确定性检查
         XV 交叉验证（如可用）
       输出: audit-report.json（基线报告）+ audit-report.md
       ↓
-Phase B（LLM，并行 3 Agent）: 语义审计
+Phase B（LLM，3 个审计任务并行执行）: 语义审计
       Agent 1: 模式一致性(Step 5) + 创新保真(Step 5.5)
         → 写入 .allforai/design-audit/audit-shard-pattern.json
       Agent 2: 行为一致性(Step 5.6)
         → 写入 .allforai/design-audit/audit-shard-behavioral.json
       Agent 3: 交互类型一致性(Step 5.7)
         → 写入 .allforai/design-audit/audit-shard-interaction.json
-      ↓（屏障同步：3 Agent 全部完成后继续）
+      ↓（屏障同步：3 个并行任务全部完成后继续）
 Phase C（合并）: 汇总报告
       读取 audit-report.json（Phase A 基线）
       读取 3 个 audit-shard-*.json 分片

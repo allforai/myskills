@@ -1,22 +1,21 @@
 ---
 description: "产品设计全流程编排：concept → map → journey → experience → feature-gap → audit。模式: full / resume"
 argument-hint: "[mode: full|resume] [skip: concept]"
-allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion", "WebSearch", "Agent"]
 ---
 
 # Product Design Full — 产品设计全流程编排
 
-用户请求: $ARGUMENTS
+（根据用户请求的模式/参数执行）
 
 ## 插件根目录
 
-所有文档路径基于插件安装目录: `${CLAUDE_PLUGIN_ROOT}`
+所有文档路径基于技能根目录（相对路径）
 
 ## 设计思想入口（建议先读）
 
 执行全流程前，建议先阅读：
 
-- `${CLAUDE_PLUGIN_ROOT}/docs/product-design-principles.md`
+- `./docs/product-design-principles.md`
 
 该文档汇总前段/中段/尾段的经典理论支持（如第一性原理、JTBD、Kano、Nielsen、ISO 9241-11、WCAG）及参考文献。
 
@@ -60,7 +59,7 @@ Phase 6: design-audit（终审）
 
 ```
 loop (max 3 rounds):
-  1. python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify_review.py <BASE> --phase <PHASE> [--xv]
+  1. python3 ../../shared/scripts/product-design/verify_review.py <BASE> --phase <PHASE> [--xv]
      → stdout JSON: 产出上下文 + 4D/6V/闭环审查问题 [+ XV 跨模型意见]
   2. LLM 读取输出，以上一级产物为基准审查：
      - 4D: 结论正确(D1)？有证据(D2)？约束识别(D3)？决策有依据(D4)？
@@ -131,7 +130,7 @@ loop (max 3 rounds):
 |------|--------|-----------|---------|
 | 标准 | ≤ 4 | ≤ 15 | 正常执行全流程 |
 | 大型 | 5-8 | 16-30 | 提醒用户"项目较大"，正常执行（skill 内部自动分批） |
-| **超大** | **> 8** | **> 30** | **建议拆分**：用 AskUserQuestion 询问用户是否拆成 2-3 个独立产品分批设计 |
+| **超大** | **> 8** | **> 30** | **建议拆分**：用 向用户询问用户是否拆成 2-3 个独立产品分批设计 |
 
 **超大型产品拆分建议**：
 ```
@@ -157,16 +156,16 @@ loop (max 3 rounds):
 
 ### 外部能力快检
 
-> 统一协议见 `${CLAUDE_PLUGIN_ROOT}/docs/skill-commons.md`「外部能力探测协议」。
+> 统一协议见 `./docs/skill-commons.md`「外部能力探测协议」。
 
 产物探测后，检测本流水线涉及的外部能力并输出状态：
 
 | 能力 | 探测方式 | 重要性 |
 |------|---------|--------|
-| OpenRouter (MCP) | `mcp__plugin_product-design_ai-gateway__ask_model` 可用性 | 可选 |
+| OpenRouter (MCP) | `mcp__openrouter__ask_model` 可用性 | 可选 |
 | OpenRouter (Script) | `OPENROUTER_API_KEY` 环境变量 | 可选 |
-| Stitch UI | `mcp__plugin_product-design_stitch__create_project` 可用性 | 可选 |
-| Playwright | `mcp__playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 可用性 | 可选 |
+| Stitch UI | `mcp__stitch__create_project` 可用性 | 可选 |
+| Playwright | `mcp__playwright__browser_navigate` 或 `mcp__playwright__browser_navigate` 可用性 | 可选 |
 | WebSearch | 内置，始终可用 | 核心 |
 
 **输出格式**（每行一个能力）：
@@ -193,7 +192,7 @@ loop (max 3 rounds):
 **跳过条件**：用户指定 `skip: concept`，或 resume 模式下已完成。
 
 **执行**：
-1. 用 Read 工具加载 `${CLAUDE_PLUGIN_ROOT}/skills/product-concept.md`
+1. 用 Read 工具加载 `./skills/product-concept.md`
 2. 按 product-concept 技能的完整工作流执行
 
 **检查点**：concept 产出目录存在。
@@ -302,7 +301,7 @@ concept 和 product-map 完成后，追加记录到 `.allforai/pipeline-decision
 ## Phase 2：product-map
 
 **执行**：
-1. 用 Read 工具加载 `${CLAUDE_PLUGIN_ROOT}/skills/product-map.md`
+1. 用 Read 工具加载 `./skills/product-map.md`
 2. 按 product-map 技能的完整工作流执行
 3. 完成后追加 pipeline-decisions 记录（自动模式下）
 
@@ -349,7 +348,7 @@ verify loop 通过后直接进入 Phase 3，不弹出人工审核。
 ## Phase 3：journey-emotion
 
 **Step 1: 生成**
-1. 用 Read 工具加载 `${CLAUDE_PLUGIN_ROOT}/skills/journey-emotion.md`
+1. 用 Read 工具加载 `./skills/journey-emotion.md`
 2. 按 journey-emotion 技能的完整工作流执行
 
 **Step 2: verify loop**（`--phase journey`）
@@ -365,7 +364,7 @@ verify loop 通过后直接进入 Phase 3，不弹出人工审核。
 
 **Step 1: 生成**
 
-用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/skills/experience-map.md`，按 skill 工作流执行。LLM 主导屏幕设计。
+用 Read 加载 `./skills/experience-map.md`，按 skill 工作流执行。LLM 主导屏幕设计。
 
 **Step 1.5: verify loop**（`--phase experience`）
 
@@ -380,7 +379,7 @@ verify loop 通过后直接进入 Phase 3，不弹出人工审核。
 ## Phase 4 — Step 2：interaction-gate
 
 **执行**：
-1. 用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/skills/interaction-gate.md`，按其工作流执行
+1. 用 Read 加载 `./skills/interaction-gate.md`，按其工作流执行
 2. LLM 分析 experience-map + task-inventory，识别交互风险点并生成门禁报告
 
 **检查点**：
@@ -391,7 +390,7 @@ verify loop 通过后直接进入 Phase 3，不弹出人工审核。
 ## Phase 5：feature-gap（缺口分析）
 
 **执行**：
-1. 用 Read 工具加载 `${CLAUDE_PLUGIN_ROOT}/skills/feature-gap.md`
+1. 用 Read 工具加载 `./skills/feature-gap.md`
 2. 按 feature-gap 技能的完整工作流执行
 3. 产出写入 `.allforai/feature-gap/` 目录
 
@@ -412,12 +411,12 @@ verify loop 通过后直接进入 Phase 3，不弹出人工审核。
 > 精简原则：只保留发现真实产品缺口的阶段，去掉格式转换和低价值验证。
 
 **执行**：
-1. 用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/skills/design-audit.md`
+1. 用 Read 加载 `./skills/design-audit.md`
 
 **Phase A（脚本，串行）**：确定性检查
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_design_audit.py <BASE> [--mode auto]
+python3 ../../shared/scripts/product-design/gen_design_audit.py <BASE> [--mode auto]
 ```
 
 脚本执行逆向追溯、覆盖洪泛、横向一致性、连贯性、信息保真、XV 交叉验证。
@@ -440,7 +439,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_design_audit.py <BASE> [--mode auto]
 - 读取相关上游产物（见 design-audit.md 对应 Step 的前置条件）
 
 执行:
-1. 用 Read 加载 ${CLAUDE_PLUGIN_ROOT}/skills/design-audit.md
+1. 用 Read 加载 ./skills/design-audit.md
 2. 按对应 Step 的检测项逐一执行
 3. 前置条件不满足 → status="skipped"，仍写分片文件
 4. 结果写入: .allforai/design-audit/audit-shard-{shard_name}.json

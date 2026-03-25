@@ -50,11 +50,11 @@
 
 | 阶段 | 标准模式 | 全自动模式 |
 |------|----------|-----------|
-| **Phase A 脚本执行** | 脚本执行后，AskUserQuestion 确认 trace/coverage/cross 结果 | 脚本执行后自动确认，所有问题记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
-| **Phase B Agent 1: 模式+创新** | AskUserQuestion 确认 | 自动执行（前置条件不满足 → 跳过），问题记入分片 |
-| **Phase B Agent 2: 行为** | AskUserQuestion 确认 | 自动执行（前置条件不满足 → 跳过），问题记入分片 |
-| **Phase B Agent 3: 交互类型** | AskUserQuestion 确认 | 自动执行（前置条件不满足 → 跳过），问题记入分片 |
-| **Phase C 合并报告** | AskUserQuestion 确认 | 自动确认 |
+| **Phase A 脚本执行** | 脚本执行后，向用户确认 trace/coverage/cross 结果 | 脚本执行后自动确认，所有问题记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
+| **Phase B Agent 1: 模式+创新** | 向用户确认 | 自动执行（前置条件不满足 → 跳过），问题记入分片 |
+| **Phase B Agent 2: 行为** | 向用户确认 | 自动执行（前置条件不满足 → 跳过），问题记入分片 |
+| **Phase B Agent 3: 交互类型** | 向用户确认 | 自动执行（前置条件不满足 → 跳过），问题记入分片 |
+| **Phase C 合并报告** | 向用户确认 | 自动确认 |
 
 **安全护栏**（自动模式下仍然停下来问用户）：
 - ERROR 级验证失败（product-map.json 损坏、必须层缺失）
@@ -65,7 +65,7 @@
 
 LLM 对全流程产物执行三维审计（逆向追溯、覆盖洪泛、横向一致性）。终审需要跨阶段语义关联分析（如"concept 中的核心价值主张是否在 UI 中有体现"），脚本只能做字段引用检查。
 
-可选辅助脚本：`${CLAUDE_PLUGIN_ROOT}/scripts/gen_design_audit.py`（用于机械性字段引用检查和覆盖率统计，LLM 必须在其上补充语义一致性分析和改进建议）。
+可选辅助脚本：`../../shared/scripts/product-design/gen_design_audit.py`（用于机械性字段引用检查和覆盖率统计，LLM 必须在其上补充语义一致性分析和改进建议）。
 
 ---
 

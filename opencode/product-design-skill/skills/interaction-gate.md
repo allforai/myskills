@@ -23,7 +23,7 @@ version: "1.1.0"
 
 当 `product-map.json` 中的 `experience_priority.mode = consumer` 或 `mixed` 时，interaction-gate 还必须额外评估：这些操作线是否已经达到成熟用户产品所需的主线清晰度、下一步引导、反馈完整性与低注意力可用性。
 
-> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/schemas/interaction-gate-schema.md
+> 详见 ./docs/schemas/interaction-gate-schema.md
 
 ---
 
@@ -54,7 +54,7 @@ experience-map（体验地图）    interaction-gate（交互质量门）    ui-
 
 ## 增强协议（4D+6V）
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/docs/skill-commons.md`「统一验收方法论」。
+> 详见 `./docs/skill-commons.md`「统一验收方法论」。
 
 **4D+6V 重点**：每条操作线的评分附带 D2 证据（screen 的 actions 数量、flow_context 切换次数等可追溯依据）和 D4 决策理由（为什么给这个分数而非更高/更低）；fail 操作线的 issues 覆盖至少 3/6 视角——user: 用户能顺畅完成吗？business: 会导致转化流失吗？ux: 认知负荷是否过重？tech: 有技术层面的等待瓶颈吗？
 
@@ -328,11 +328,11 @@ OL002 管理员审核流程（55 分，未达标）：
 
 | 步骤 | 标准模式 | 全自动模式 |
 |------|----------|-----------|
-| **Step 4 不达标线讨论** | 逐条展示，AskUserQuestion 确认 | 自动接受所有不达标线（`disposition: "auto_accepted"`） |
+| **Step 4 不达标线讨论** | 逐条展示，向用户确认 | 自动接受所有不达标线（`disposition: "auto_accepted"`） |
 
 **安全护栏**（自动模式下仍然停下来问用户）：
 - ERROR 级验证失败（experience-map.json 解析失败、操作线引用断裂）
-- **评分 < 50 的操作线**：总分低于 50 意味着至少两个维度接近零分，属于严重 UX 缺陷，必须停下展示并 AskUserQuestion 确认处置方式，不可 auto_accepted
+- **评分 < 50 的操作线**：总分低于 50 意味着至少两个维度接近零分，属于严重 UX 缺陷，必须停下展示并 向用户确认处置方式，不可 auto_accepted
 
 ---
 

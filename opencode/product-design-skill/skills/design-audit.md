@@ -17,8 +17,8 @@ version: "1.2.0"
 
 执行本技能前，**必须加载以下补充文档**（完整审计维度和规则定义）：
 
-1. `${CLAUDE_PLUGIN_ROOT}/docs/design-audit/audit-dimensions.md` — 所有审计维度定义（Phase A/B/C 步骤、检测项、输出格式、JSON Schema、Markdown 报告结构）
-2. `${CLAUDE_PLUGIN_ROOT}/docs/design-audit/fix-rules.md` — 增强协议、全自动模式、防御性规范、铁律
+1. `./docs/design-audit/audit-dimensions.md` — 所有审计维度定义（Phase A/B/C 步骤、检测项、输出格式、JSON Schema、Markdown 报告结构）
+2. `./docs/design-audit/fix-rules.md` — 增强协议、全自动模式、防御性规范、铁律
 
 ---
 

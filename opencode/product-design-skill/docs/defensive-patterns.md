@@ -105,7 +105,7 @@
 
 **情况 2：工具本身报错/不可用**
 - 告知用户：「⚠ WebSearch 暂不可用（{错误信息}）」
-- 提供选项（AskUserQuestion）：
+- 提供选项（向用户提问）：
   - (a) 跳过搜索，继续流程（使用 AI 已有知识 + 用户输入）
   - (b) 用户手动提供参考资料/URL
 - 标注 `search_status: "tool_unavailable"`

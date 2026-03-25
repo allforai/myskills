@@ -24,7 +24,7 @@
 
 **上游基线验收（硬性，LLM 判断）**：
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/docs/skill-commons.md`「上游基线验收」。
+> 详见 `./docs/skill-commons.md`「上游基线验收」。
 
 LLM 同时加载 journey-emotion-map.json（情绪基线）和 experience-map.json（当前产出），逐条操作线对照审查：
 
@@ -225,7 +225,7 @@ Quality Round 3: avg 4.3→4.4, unified 3 pattern groups
 
 ### Step 3.5：Playwright 线框验证（loop）
 
-> 需要 Playwright MCP 可用（`mcp__playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate`）。不可用时跳过此步骤，在报告中标注 `playwright_verified: false`。
+> 需要 Playwright MCP 可用（Playwright MCP `browser_navigate`）。不可用时跳过此步骤，在报告中标注 `playwright_verified: false`。
 
 experience-map.json 写入后，使用 Playwright 自动化浏览器验证 Review Hub 线框渲染质量。此步骤分三轮检查：**结构验证 → 逐屏渲染验证 → 业务合理性判断**。
 
@@ -235,7 +235,7 @@ experience-map.json 写入后，使用 Playwright 自动化浏览器验证 Revie
 
 ```
 1. 确保 Review Hub 服务器运行中（http://localhost:18900/）
-   不可达 → 启动: python3 ${CLAUDE_PLUGIN_ROOT}/scripts/review_hub_server.py <BASE> --port 18900
+   不可达 → 启动: python3 ../../shared/scripts/product-design/review_hub_server.py <BASE> --port 18900
 2. 导航到 /wireframe 页面
 3. browser_snapshot 获取完整页面快照
 4. 从快照中提取操作线树结构，执行结构验证

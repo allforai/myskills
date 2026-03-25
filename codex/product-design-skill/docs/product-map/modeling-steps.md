@@ -87,7 +87,7 @@ Claude 分析 `task-inventory.json`，寻找任务间的状态衔接关系：若
 
 ### `business-flows.json` Schema
 
-> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/schemas/business-flows-schema.md
+> 详见 ./docs/schemas/business-flows-schema.md
 
 输出：`.allforai/product-map/business-flows.json`、`.allforai/product-map/business-flows-report.md`
 
@@ -247,7 +247,7 @@ LLM 聚合前序步骤的所有已确认数据（role-profiles + task-inventory 
 
 ### `product-map.json` / 报告 / SVG / 索引
 
-> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/schemas/product-map-output.md
+> 详见 ./docs/schemas/product-map-output.md
 
 输出：`.allforai/product-map/product-map.json`、`.allforai/product-map/product-map-report.md`、`.allforai/product-map/product-map-visual.svg`
 
