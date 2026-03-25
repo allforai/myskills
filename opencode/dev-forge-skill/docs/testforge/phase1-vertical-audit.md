@@ -1,0 +1,129 @@
+## Phase 1：纵向审计 — tests ↔ 上游基准
+
+> "每个该测的点，有测试守护吗？"
+
+**跨子项目并行**：各子项目的审计互相独立，并行执行。
+
+### 验证基准链（从浅到深）
+
+**Layer 0: tests ↔ 源代码**（始终执行）
+
+对每个子项目的每个可测试源文件：
+
+1. **覆盖映射**：将已有测试文件与源文件配对（按项目实际的测试目录结构匹配）
+2. **标记状态**：
+   - `COVERED` — 有对应测试文件且测试函数 ≥ 1，且源文件有实质逻辑
+   - `PARTIAL` — 有测试文件但覆盖不足（分支覆盖 < 50%）
+   - `UNCOVERED` — 无对应测试文件
+   - `TRIVIAL` — 文件太简单不需要测试（纯类型定义、常量、re-export）
+   - `HOLLOW` — 源文件本身是空壳实现。LLM 读代码后判断："如果用户真的使用这个功能，能得到有价值的结果吗？"不能 → HOLLOW。不要靠匹配 `TODO`/`() {}`等模式判断——要理解代码意图。即使有测试文件也标为 HOLLOW——测试覆盖空壳代码没有价值。HOLLOW 文件应优先作为 Phase 4 的修复目标而非测试目标
+3. **分支分析**：对 COVERED 和 PARTIAL 文件，LLM 读源码提取：
+   - if/switch/ternary 分支 → 测试覆盖了哪些分支？
+   - error return / catch / throw → 错误路径有测试吗？
+   - 边界条件（空值、零值、极值）→ 有边界测试吗？
+4. **测试类型标注**：对每个缺口标注应在金字塔哪层测试：
+
+```
+test_type 分类逻辑（通用规则，不特化任何框架）：
+├── unit        — 纯函数、工具函数、验证逻辑、状态管理、服务层、数据模型
+├── component   — UI 组件渲染 + 用户交互 + 事件触发（含 Flutter widget test，主机运行无需设备）
+├── integration — 多模块协作（API client + 状态管理 + 组件联动）
+├── e2e_chain   — 跨 ≥2 个子项目的业务流（需要浏览器自动化或 API 串联）
+└── platform_ui — 跨平台 UI 自动化测试（同一场景在每个可用平台各跑一遍）
+                  Flutter/RN widget test 不属于此类（它们在主机运行，归入 component）
+                  此类仅限需要真实平台环境的 UI 自动化：浏览器、模拟器、真机
+```
+
+**Layer 1: tests ↔ design.md**（有 design.md 时执行）
+
+LLM 读 design.md / design.json，提取：
+- API 端点定义 → 每个端点的正常响应 + 错误码有测试吗？
+- 状态机定义 → 每个状态转换有测试覆盖吗？
+- 数据模型关联 → 级联操作（删除父记录时子记录？）有测试吗？
+
+**Layer 2: tests ↔ tasks.md**（有 tasks.md 时执行）
+
+LLM 读 tasks.md，对每个 task 提取：
+- `exceptions` → 每个异常路径有对应测试？
+- `rules` → 每个业务规则有测试验证？
+- `_Acceptance_` → 验收条件有对应断言？
+
+**Layer 3: tests ↔ product-map**（有 product-map 时执行）
+
+LLM 读 product-map，提取：
+- `business-flows` 的关键节点 → 有测试守护该节点的逻辑？
+- `constraints` 中 `enforcement: "hard"` → 有测试穿透验证约束生效？
+- `use-case-tree` 的验收用例 → 有对应集成测试？
+- **跨子项目业务流** → 有 E2E 链测试覆盖完整流程吗？（无 → 标为 `e2e_chain` 缺口）
+
+若 `experience_priority.mode = consumer | mixed`，还必须追加：
+- 首页主线/主 CTA 是否有测试守护？
+- loading / empty / error / success / progress 等关键状态是否有测试守护？
+- 下一步引导、结果回流、持续关系入口（历史/提醒/通知/进度/最近活动）是否至少有相关测试覆盖？
+- 若用户端只测“页面存在”和“按钮可点”，未测成熟度关键节点 → 标记为 UX 维度缺口
+
+### 4D 维度聚合
+
+将所有 Layer 的缺口按 4D 维度归类：
+
+| 维度 | 审计问题 | 基准来源 |
+|------|---------|---------|
+| **Data** | 数据操作（CRUD、关联、级联）有测试吗？ | design.md entities + tasks.md |
+| **Interface** | API 正常/异常响应有测试吗？参数校验有测试吗？ | design.md endpoints + tasks.md rules |
+| **Logic** | 业务规则、状态流转、权限判断有测试吗？ | tasks.md rules/exceptions + constraints |
+| **UX** | 组件渲染、交互、错误提示、loading 状态有测试吗？ | experience-map screens/actions |
+
+若 `experience_priority.mode = consumer | mixed`，UX 维度还必须覆盖：
+
+- 首页主线与主 CTA
+- 核心状态系统（loading/empty/error/success/progress）
+- 下一步引导与结果回流
+- 持续关系入口（history/reminder/notification/progress/recent activity 等相关项）
+
+### 输出
+
+写入 `.allforai/testforge/testforge-analysis.json`：
+
+```json
+{
+  "analyzed_at": "ISO8601",
+  "sub_projects": [{
+    "name": "...",
+    "source_files": 120,
+    "test_files": 52,
+    "file_coverage": { "COVERED": 45, "PARTIAL": 12, "UNCOVERED": 55, "TRIVIAL": 8 },
+    "gaps": [
+      {
+        "id": "TG-001",
+        "dimension": "Logic",
+        "layer": 0,
+        "source_file": "src/services/order.ts",
+        "upstream_ref": null,
+        "description": "订单服务 — 无测试覆盖",
+        "severity": "CRITICAL",
+        "test_type": "unit"
+      },
+      {
+        "id": "TG-050",
+        "dimension": "Logic",
+        "layer": 3,
+        "source_file": null,
+        "upstream_ref": "business-flows.json#F003",
+        "description": "交易闭环业务流 — 无跨端 E2E 链测试",
+        "severity": "HIGH",
+        "test_type": "e2e_chain"
+      }
+    ],
+    "coverage_by_4d": {
+      "Data": { "covered": 45, "gaps": 12, "rate": "78.9%" },
+      "Interface": { "covered": 38, "gaps": 8, "rate": "82.6%" },
+      "Logic": { "covered": 30, "gaps": 18, "rate": "62.5%" },
+      "UX": { "covered": 25, "gaps": 15, "rate": "62.5%" }
+    }
+  }]
+}
+```
+
+→ 输出进度：「Phase 1 纵向审计 ✓ L0:{a} L1:{b} L2:{c} L3:{d} 缺口（unit:{u} component:{c} integration:{i} platform_ui:{p} e2e:{e}）」
+
+---

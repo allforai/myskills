@@ -1,0 +1,68 @@
+{
+  "generated_at": "2026-02-17T10:30:00Z",
+  "lifecycle": "pre-launch",
+  "total_score": 59.8,
+  "dimension_scores": {
+    "architecture": 50,
+    "duplication": 50,
+    "abstraction": 69,
+    "validation": 71,
+    "data_model": 69
+  },
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "phase": "phase1",
+      "rule": "T-01",
+      "severity": "critical",
+      "title": "修复 OrderService 对 Controller 的反向依赖",
+      "description": "OrderService.java:12 import 了 OrderController，违反三层架构依赖方向",
+      "files": [
+        "src/main/java/com/example/service/OrderService.java:12",
+        "src/main/java/com/example/controller/OrderController.java"
+      ],
+      "effort": "medium",
+      "estimated_lines_reduced": 0,
+      "suggestion": {
+        "pre-launch": "移除 Service 对 Controller 的依赖，通过接口或事件解耦",
+        "maintenance": "记录为 TECH-DEBT，下次迭代重构时解耦"
+      }
+    },
+    {
+      "id": "TASK-002",
+      "phase": "phase2",
+      "rule": "DUP-001",
+      "severity": "warning",
+      "title": "UserService 和 OrderService 的 CRUD 方法重复",
+      "description": "两处 create 方法结构签名相似度 93%，可抽取泛型基类",
+      "files": [
+        "src/main/java/com/example/service/UserService.java:23-35",
+        "src/main/java/com/example/service/OrderService.java:18-30"
+      ],
+      "effort": "medium",
+      "estimated_lines_reduced": 40,
+      "suggestion": {
+        "pre-launch": "创建 BaseCrudService<E, D, V> 泛型基类，将 CRUD 模板方法统一",
+        "maintenance": "新建 BaseCrudService，原方法改为委托调用，逐步替换"
+      }
+    },
+    {
+      "id": "TASK-003",
+      "phase": "phase3",
+      "rule": "VAL-001",
+      "severity": "warning",
+      "title": "手机号格式校验应从 OrderService 移到 OrderController",
+      "description": "OrderService.java:45 包含手机号正则校验，这是格式验证，应在入口层完成",
+      "files": [
+        "src/main/java/com/example/service/OrderService.java:45",
+        "src/main/java/com/example/controller/OrderController.java"
+      ],
+      "effort": "low",
+      "estimated_lines_reduced": 5,
+      "suggestion": {
+        "pre-launch": "在 OrderCreateDTO 的 phone 字段添加 @Pattern 注解，删除 Service 中的手动校验",
+        "maintenance": "在 Controller 中添加校验，Service 中暂时保留，标记 @Deprecated"
+      }
+    }
+  ]
+}

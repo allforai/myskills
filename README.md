@@ -1,28 +1,16 @@
 # myskills
 
-## Compatibility Layers
+## Multi-Platform Layout
 
-This repository now includes incremental compatibility layers under
-`codex-native/` and `opencode-native/`.
+This repository is organized as three native platform directories:
 
-- Existing Claude Code plugin directories remain unchanged.
-- Codex support is added in parallel through native `SKILL.md` entry points
-  under `codex-native/`.
-- OpenCode support is added in parallel through wrapper `skills/` and
-  `commands/` entry points under `opencode-native/`.
-- The current approach is intentionally non-breaking: original plugin paths stay
-  stable while native adapters evolve separately.
-- Coverage docs:
-  - `codex-native/README.md`
-  - `codex-native/migration-status.md`
-  - `codex-native/completion-matrix.md`
-  - `codex-native/retirement-criteria.md`
-  - `opencode-native/README.md`
-  - `opencode-native/inventory.md`
-  - `opencode-native/plugin-matrix.md`
-  - `opencode-native/runtime-gaps.md`
+- `claude/` for Claude Code plugins
+- `codex/` for Codex-native skills discovered through `AGENTS.md`
+- `opencode/` for OpenCode-native skills discovered through `SKILL.md`
 
-**Claude Code + OpenCode** 双平台插件集合，覆盖 **产品设计 → 开发锻造 → QA 验证 → 架构治理** 全链路。
+Shared scripts and MCP services live under `shared/`.
+
+**Claude Code + Codex + OpenCode** 三平台插件集合，覆盖 **产品设计 → 开发锻造 → QA 验证 → 架构治理** 全链路。
 
 ## ✨ 新增：UI Forge（实现后 UI 锻造）
 
@@ -138,6 +126,20 @@ claude plugin add /path/to/myskills/code-tuner-skill
 
 # 4) 需要全链路时，直接执行
 /product-design full
+```
+
+### Codex（原生目录发现）
+
+```bash
+# 1) 安装共享依赖
+cd /path/to/myskills
+bash codex/install.sh
+
+# 2) 将 Codex 指向 codex/ 目录
+# Codex 会自动发现每个插件下的 AGENTS.md 入口
+
+# 3) 开始使用对应工作流
+# 例如先执行 product-design，再进入 dev-forge 或 code-tuner
 ```
 
 ---

@@ -1,0 +1,69 @@
+{
+  "duplicate_pairs": [
+    {
+      "id": "DUP-001",
+      "type": "business-layer",
+      "similarity": 93,
+      "file_a": {
+        "path": "src/main/java/com/example/service/UserService.java",
+        "method": "create",
+        "line_start": 23,
+        "line_end": 35
+      },
+      "file_b": {
+        "path": "src/main/java/com/example/service/OrderService.java",
+        "method": "create",
+        "line_start": 18,
+        "line_end": 30
+      },
+      "structural_signature": "(CreateDTO) -> [validate, toEntity, setDefaults, repo.save, toVO] -> (VO)",
+      "suggestion": {
+        "pre-launch": "抽取 BaseCrudService<E, D, V> 泛型基类，统一 CRUD 模板方法",
+        "maintenance": "新建 BaseCrudService，原方法改为委托调用，逐步迁移"
+      }
+    },
+    {
+      "id": "DUP-002",
+      "type": "entry-layer",
+      "similarity": 85,
+      "file_a": {
+        "path": "src/main/java/com/example/controller/UserController.java",
+        "method": "exportUsers",
+        "line_start": 45,
+        "line_end": 52
+      },
+      "file_b": {
+        "path": "src/main/java/com/example/controller/OrderController.java",
+        "method": "exportOrders",
+        "line_start": 38,
+        "line_end": 45
+      },
+      "structural_signature": "(Query, Response) -> [service.list, stream.map, ExcelUtil.write] -> (void)",
+      "suggestion": {
+        "pre-launch": "合并为通用 ExportController，接收 module 参数路由到对应 Service",
+        "maintenance": "提取 exportTemplate() 方法至 BaseController，逐步替换"
+      }
+    }
+  ],
+  "passthrough_services": [
+    {
+      "service_file": "src/main/java/com/example/service/ProductService.java",
+      "method": "getById",
+      "delegates_to": "productRepository.findById",
+      "suggestion": "Remove passthrough, let Entry call Data directly"
+    }
+  ],
+  "dto_overlaps": [
+    {
+      "dto_a": "src/main/java/com/example/dto/UserDTO.java",
+      "dto_b": "src/main/java/com/example/dto/UserVO.java",
+      "overlap_percentage": 80,
+      "shared_fields": ["id", "name", "email", "phone", "status", "createdAt", "updatedAt", "avatar"],
+      "suggestion": "提取共享字段为 UserBase，UserDTO 和 UserVO 分别继承"
+    }
+  ],
+  "summary": {
+    "total_pairs": 2,
+    "by_layer": { "entry": 1, "business": 1, "data": 0, "utility": 0 }
+  }
+}

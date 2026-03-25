@@ -1,0 +1,46 @@
+{
+  "architecture": "three-tier",
+  "detectedLayers": ["entry", "business", "data"],
+  "violations": [
+    {
+      "rule": "T-01",
+      "severity": "critical",
+      "file": "src/main/java/com/example/service/OrderService.java",
+      "line": 12,
+      "description": "Service 反向依赖 Controller：OrderService import 了 OrderController",
+      "evidence": "import com.example.controller.OrderController;",
+      "label": "MUST-FIX",
+      "suggestion": {
+        "pre-launch": "移除 Service 对 Controller 的依赖，通过接口或事件解耦",
+        "maintenance": "记录为 TECH-DEBT，下次迭代重构时解耦"
+      }
+    },
+    {
+      "rule": "T-02",
+      "severity": "warning",
+      "file": "src/main/java/com/example/controller/OrderController.java",
+      "line": 34,
+      "description": "入口层包含业务逻辑：Controller 中存在库存判断",
+      "evidence": "if (product.getInventory() < req.getQuantity())",
+      "label": "MUST-FIX",
+      "suggestion": {
+        "pre-launch": "将库存判断逻辑移至 OrderService",
+        "maintenance": "新建 OrderService.checkInventory() 方法，Controller 改为调用 Service"
+      }
+    },
+    {
+      "rule": "G-02",
+      "severity": "info",
+      "file": "src/main/java/com/example/entity/",
+      "line": 0,
+      "description": "5 个 Entity 各自定义 id/createTime/updateTime 字段，未抽取 BaseEntity",
+      "evidence": "User.java, Order.java, Product.java, Payment.java, Category.java 均含相同字段",
+      "label": "TECH-DEBT",
+      "suggestion": {
+        "pre-launch": "创建 BaseEntity 基类，包含 id/createTime/updateTime/isDeleted，各实体继承",
+        "maintenance": "标记为改进机会，下次修改实体时顺便抽取"
+      }
+    }
+  ],
+  "summary": { "critical": 1, "warning": 1, "info": 1 }
+}

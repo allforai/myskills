@@ -4,7 +4,41 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Purpose
 
-This is **myskills** — a Claude Code + OpenCode dual-platform plugin collection covering the full pipeline from product design → development forge → QA validation → architecture governance. It is a **plugin development repository**, not a product codebase. The plugins are applied to external user projects.
+This is **myskills** — a tri-platform (Claude Code / Codex / OpenCode) plugin collection covering the full pipeline from product design → development forge → QA validation → architecture governance. It is a **plugin development repository**, not a product codebase. The plugins are applied to external user projects.
+
+## Directory Structure
+
+```
+myskills/
+├── claude/                   # Claude Code platform (canonical)
+│   ├── product-design-skill/
+│   ├── dev-forge-skill/
+│   ├── demo-forge-skill/
+│   ├── code-tuner-skill/
+│   ├── code-replicate-skill/
+│   ├── ui-forge-skill/
+│   ├── .claude-plugin/       # Marketplace manifest
+│   └── install.sh
+│
+├── codex/                    # Codex platform (fully native)
+│   ├── product-design-skill/ # AGENTS.md entry + execution-playbook
+│   ├── ...
+│   └── install.sh
+│
+├── opencode/                 # OpenCode platform (fully native)
+│   ├── product-design-skill/ # SKILL.md entry + execution-playbook
+│   ├── ...
+│   └── install.sh
+│
+├── shared/                   # Platform-agnostic assets
+│   ├── scripts/
+│   │   ├── product-design/   # Python data transform scripts
+│   │   └── code-replicate/   # Python reverse-engineering scripts
+│   └── mcp-ai-gateway/       # Unified MCP gateway (Node)
+│
+├── CLAUDE.md                 # This file
+└── MIGRATION.md              # Migration guide from old structure
+```
 
 ## Four-Layer Architecture
 
@@ -17,20 +51,20 @@ Demo          demo-forge        design→media→execute→verify→iterate
 Architecture  code-tuner        compliance→duplication→abstraction→scoring
 ```
 
-Each plugin lives in its own subdirectory (`product-design-skill/`, `dev-forge-skill/`, `demo-forge-skill/`, `code-tuner-skill/`, `code-replicate-skill/`) and is independently installable. deadhunt/fieldcheck 已合并入 dev-forge。
+Additional: `code-replicate-skill` (reverse-engineering bridge), `ui-forge-skill` (post-implementation UI refinement). deadhunt/fieldcheck are subcommands of dev-forge.
 
-## Plugin Structure (per plugin)
+## Claude Plugin Structure (per plugin)
 
 ```
-{plugin}-skill/
+claude/{plugin}-skill/
 ├── .claude-plugin/
 │   ├── plugin.json          # Plugin manifest (name, version, description)
 │   └── marketplace.json     # Marketplace listing
 ├── skills/                  # Skill definition files (*.md) — loaded by Claude on invocation
 ├── commands/                # Slash command definitions (*.md) — user-invocable
 ├── docs/                    # Design principles, guides, reference docs
-├── templates/               # Tech stack templates (dev-forge only)
-├── scripts/                 # Pre-built Python scripts for data transforms (product-design only)
+├── scripts/                 # Pre-built Python scripts (product-design, code-replicate)
+├── mcp-ai-gateway/          # MCP server (product-design only)
 └── SKILL.md                 # Root skill loaded when plugin is invoked
 ```
 
@@ -60,37 +94,28 @@ All plugins read/write to a project-local `.allforai/` directory. This is the in
 
 ## Installing Plugins
 
-**Claude Code:**
 ```bash
-claude plugin add /path/to/myskills/product-design-skill
-claude plugin add /path/to/myskills/dev-forge-skill
-claude plugin add /path/to/myskills/demo-forge-skill
-claude plugin add /path/to/myskills/code-tuner-skill
-```
+# Claude Code
+bash claude/install.sh
 
-**OpenCode (local dev):**
-```bash
-./install-opencode.sh   # writes ~/.config/opencode/skills.json
-```
+# Codex
+bash codex/install.sh
 
-**OpenCode (remote/production):**
-```bash
-./install-remote.sh     # clones to ~/.opencode/skills/myskills and configures globally
+# OpenCode
+bash opencode/install.sh
 ```
-
-After remote install, update with: `~/.opencode/skills/myskills/update-skills.sh`
 
 ## Key Dependency: mcp-ai-gateway
 
-`product-design-skill/` bundles a unified AI Gateway MCP server at `mcp-ai-gateway/`. It provides OpenRouter (cross-model XV + image gen) + Google AI (Imagen 4 / Veo 3.1 / TTS) + fal.ai (FLUX 2 Pro / Kling) in a single process:
+`shared/mcp-ai-gateway/` provides OpenRouter (cross-model XV + image gen) + Google AI (Imagen 4 / Veo 3.1 / TTS) + fal.ai (FLUX 2 Pro / Kling) in a single process:
 
 ```bash
-cd product-design-skill/mcp-ai-gateway
+cd shared/mcp-ai-gateway
 npm install
 npm run build        # produces dist/index.js
 ```
 
-Requires `OPENROUTER_API_KEY` for cross-model queries and image generation. Optionally `GOOGLE_API_KEY` for Imagen 4/Veo 3.1/TTS, `FAL_KEY` for FLUX 2 Pro/Kling. Config in `.allforai/openrouter-config.yaml`.
+Requires `OPENROUTER_API_KEY` for cross-model queries and image generation. Optionally `GOOGLE_API_KEY` for Imagen 4/Veo 3.1/TTS, `FAL_KEY` for FLUX 2 Pro/Kling.
 
 ## External Service Keys
 
@@ -103,38 +128,32 @@ Four optional API keys enhance plugin capabilities. Configure all at once with `
 | Google AI | `GOOGLE_API_KEY` | demo-forge | Imagen 4 (image) + Veo 3.1 (video) + TTS |
 | fal.ai | `FAL_KEY` | demo-forge | FLUX 2 Pro (image) + Kling (video) |
 
-Degradation chains: Image: Imagen 4 → GPT-5 Image → FLUX 2 Pro → skip. Video: Veo 3.1 → Kling → skip.
-
 All services are optional — plugins work without them, skipping enhanced features.
 
-## Prebuilt Python Scripts (product-design)
+## Prebuilt Python Scripts
 
-Phases 3–7 of product-design have prebuilt transform scripts in `product-design-skill/scripts/`. They are invoked automatically when available; Claude falls back to LLM generation if they don't exist.
+Scripts in `shared/scripts/` are platform-agnostic data transform tools:
 
-```bash
-python3 product-design-skill/scripts/gen_xxx.py <BASE_PATH> [--mode auto]
-```
+- `shared/scripts/product-design/` — product-map generation, experience-map, design-audit, etc.
+- `shared/scripts/code-replicate/` — reverse-engineering discovery, merge, validation
 
-Scripts: `gen_journey_emotion.py`, `gen_experience_map.py`, `gen_interaction_gate.py`, `gen_use_cases.py`, `gen_feature_gap.py`, `gen_feature_prune.py`, `gen_ui_design.py`, `gen_design_audit.py`. Shared utilities in `_common.py`.
+Claude plugins also keep a copy in their own `scripts/` directory (since `${CLAUDE_PLUGIN_ROOT}` resolves to the plugin cache, not the repo source).
 
 ## Skill Development Conventions
 
 - **Skill files** (`skills/*.md`) use YAML frontmatter with `name:` and `description:` fields. The description is the trigger text that determines when Claude invokes the skill.
 - **Command files** (`commands/*.md`) define slash commands. They support YAML frontmatter for arguments and can include `AskUserQuestion` patterns for interactive flows.
-- **`${CLAUDE_PLUGIN_ROOT}`** is the runtime variable resolving to the plugin's root directory. Use it in skill files to reference sibling files.
+- **`${CLAUDE_PLUGIN_ROOT}`** is the runtime variable resolving to the plugin's root directory. Use it in Claude skill files to reference sibling files.
 - Skills reference sub-documents with `> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/xxx.md` — these are loaded on demand, not eagerly.
 
-## Two-Phase Index Loading (product-design)
+## Platform-Specific Notes
 
-For large products (400+ tasks), full JSON loading is expensive. Three lightweight index files enable on-demand loading:
-
-| Index | Producer | Size |
-|-------|----------|------|
-| `task-index.json` | product-map Step 6 | ~4KB |
-| `flow-index.json` | product-map Step 6 | ~2KB |
-| `screen_index` (embedded) | experience-map Step 1 | ~3KB |
-
-When indexes don't exist, skills fall back to full data loading (backward compatible).
+| Aspect | Claude Code | Codex | OpenCode |
+|--------|------------|-------|----------|
+| Entry point | SKILL.md (plugin auto-load) | AGENTS.md | skills.json → SKILL.md |
+| Interaction | AskUserQuestion (structured) | Assume + declare | Natural conversation |
+| Tools | `${CLAUDE_PLUGIN_ROOT}` paths | Relative paths | Relative paths |
+| MCP naming | `mcp__plugin_{name}_{server}__*` | Generic descriptions | `mcp__{server}__*` |
 
 ## Recommended Workflow (for users of the plugins)
 
@@ -145,33 +164,20 @@ When indexes don't exist, skills fall back to full data loading (backward compat
     ↓
 /product-map              # Build product map (always first if no concept)
     ↓
-/review                   # Review hub — map tab (+ data-model tab if available)
-    ↓
 /journey-emotion          # Emotion journey mapping (human decision point)
     ↓
-/experience-map           # Experience map (replaces screen-map)
+/experience-map           # Experience map
     ↓
-/review                   # Review hub — wireframe tab (structure lock gate)
-    ↓
-/use-case / /feature-gap / /feature-prune / /ui-design   # Any order (after structure lock)
-    ↓
-/review                   # Review hub — UI tab (high-fi visual review)
+/use-case / /feature-gap / /feature-prune / /ui-design   # Any order
     ↓
 /design-audit             # Final cross-layer consistency check
     ↓
 /design-to-spec           # Convert design artifacts to dev specs
-/project-scaffold         # Generate project skeleton
 /task-execute             # Execute tasks with progress tracking
     ↓
-/seed-forge               # Generate dev seed data (minimal, for development)
-/product-verify           # Static + dynamic acceptance
+/demo-forge               # Demo-ready data with multi-round iteration
     ↓
-/demo-forge               # Demo-ready data: design→media→execute→verify→iterate
-/demo-forge verify        # Playwright verification with multi-round iteration
-    ↓
-/deadhunt                 # Dead link and CRUD completeness check (now part of dev-forge)
-/fieldcheck               # UI/API/Entity/DB field consistency (now part of dev-forge)
-/code-tuner               # Architecture quality analysis
+/deadhunt / /fieldcheck / /code-tuner   # Quality checks
 ```
 
 Or run `/product-design full` / `/project-forge full` / `/demo-forge` for automated end-to-end orchestration.

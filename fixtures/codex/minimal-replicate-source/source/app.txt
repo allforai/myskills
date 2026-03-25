@@ -1,0 +1,3 @@
+route: /login -> sign in
+route: /dashboard -> view dashboard
+route: /queue -> review queue

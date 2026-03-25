@@ -1,0 +1,38 @@
+{
+  "tech_stack": {
+    "language": "java",
+    "framework": "spring-boot",
+    "build": "maven",
+    "language_version": "17",
+    "framework_version": "3.2.0"
+  },
+  "architecture": "three-tier",
+  "lifecycle": "pre-launch",
+  "layer_mapping": {
+    "src/main/java/com/example/controller": "entry",
+    "src/main/java/com/example/service": "business",
+    "src/main/java/com/example/service/impl": "business",
+    "src/main/java/com/example/repository": "data",
+    "src/main/java/com/example/mapper": "data",
+    "src/main/java/com/example/entity": "data",
+    "src/main/java/com/example/config": "utility",
+    "src/main/java/com/example/common": "utility",
+    "src/main/java/com/example/dto": "utility"
+  },
+  "modules": ["user", "order", "product", "payment"],
+  "data_model": {
+    "entities": [
+      { "name": "User", "table": "t_user", "fields": 12, "path": "src/main/java/com/example/entity/User.java" },
+      { "name": "Order", "table": "t_order", "fields": 15, "path": "src/main/java/com/example/entity/Order.java" },
+      { "name": "Product", "table": "t_product", "fields": 10, "path": "src/main/java/com/example/entity/Product.java" }
+    ],
+    "dto_vo_count": 18,
+    "common_base_fields": ["id", "createTime", "updateTime", "isDeleted"],
+    "base_entity_class": "BaseEntity",
+    "relationships": [
+      { "from": "Order", "to": "User", "type": "many-to-one" },
+      { "from": "Order", "to": "Product", "type": "many-to-many" }
+    ]
+  },
+  "scale": { "files": 156, "lines": 23400, "modules": 4, "entities": 12 }
+}

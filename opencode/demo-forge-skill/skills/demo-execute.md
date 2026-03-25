@@ -1,0 +1,201 @@
+---
+name: demo-execute
+description: >
+  Use when the user asks to "populate demo data", "fill demo environment",
+  "demo-execute", "demo populate", or mentions data population,
+  demo data generation, database seeding for demos.
+  Requires demo-plan.json + style-profile.json + upload-mapping.json.
+  Requires a running application for data population.
+version: "1.0.0"
+---
+
+# Demo Execute — Data Generation and Population
+
+> Turn the design plan into real data inside the application.
+
+## Positioning
+
+```
+demo-forge internal stages:
+  demo-design            →  media-forge + demo-execute (this skill)  →  demo-verify
+  Plan what data to generate   Acquire assets + populate data              Verify each item
+  Pure design, no execution    Consume the design plan                     Route issues back
+```
+
+**This skill's responsibility**: consume demo-plan + style-profile + upload-mapping, generate concrete data records and populate the running application.
+
+---
+
+## Prerequisites
+
+| Condition | Source | Description |
+|-----------|--------|-------------|
+| `demo-plan.json` | demo-design | Demo data plan (entities, chains, constraints, enums, time distribution) |
+| `style-profile.json` | demo-design | Industry style + text templates |
+| `upload-mapping.json` | media-forge | Local asset → server URL/ID mapping |
+| Application running | User | API accessible, database connectable |
+
+All four required. Missing any → terminate and tell user to complete the prerequisite.
+
+---
+
+## Workflow
+
+### E1: Data Generation (deterministic)
+
+Read `demo-plan.json` + `style-profile.json` + `upload-mapping.json`, generate records per scenario chain.
+
+**Field generation strategy**:
+
+| Field type | Generation method |
+|-----------|-------------------|
+| Text fields | Random select from style-profile templates, no adjacent repeats |
+| Numeric fields | Values within constraint range + include boundary values |
+| Time fields | Weighted sampling (recent-dense distribution + work hours + monthly +-15% fluctuation) |
+| Status fields | Allocate by enum coverage requirement, ensure each value has records (including terminal/exception states) |
+| Media fields | Read server_url / server_id directly from upload-mapping.json |
+| Foreign key fields | Auto-link by chain dependency (parent → child generation order, child references parent's temp ID) |
+| Derived fields | Mathematical calculation (sum = detail total, count = actual record count) |
+
+**Behavior distribution**:
+
+```
+10% heavy users → produce ~50% of data
+30% regular users → produce ~35% of data
+60% light users → produce ~15% of data
+```
+
+**Output**: `forge-data-draft.json` (all records use temporary IDs like TEMP-001, TEMP-002).
+
+---
+
+### E2: Pre-flight Self-Check
+
+Verify data quality item-by-item. Issues fall into two categories:
+
+```
+□ Entity completeness — no zero-record entities (every entity has at least one record)
+□ Enum coverage   — every status field has all values represented (including REJECTED/CANCELED/EXPIRED/FAILED)
+□ Foreign key integrity — every foreign key ID has a corresponding record in the dataset
+□ Derived consistency — aggregate fields = detail sums, count fields = actual record counts
+□ Time logic   — created_at < updated_at, parent entity time earlier than child
+□ Media linkage   — all media fields reference upload-mapping entries (no external URLs)
+□ Behavior distribution   — heavy users produce approximately 50% of data
+□ Text dedup   — no adjacent records with identical text
+```
+
+**Handling**:
+- Mathematical issues (derived mismatch, count error): **auto-fix**
+- Other issues: mark as `PREFLIGHT_ISSUE`, report to user
+
+`--dry-run` mode stops after E2, does not enter E3.
+
+---
+
+### E3: Data Population
+
+**Population order follows scenario chains** (not alphabetical by entity), ensuring foreign key correctness:
+
+```
+1. DB population: config tables, dictionary tables, API_GAP entities (no-logic base data)
+2. API population: user accounts (all scenario chains depend on users)
+3. Mixed population: by scenario priority (high → medium → low frequency)
+   - Within each scenario, follow chain order: parent → child → related entity
+   - Each entity uses API or DB per demo-plan Step 1-C-2 annotation
+```
+
+**DB population notes**:
+- Direct writes skip business logic (triggers, callbacks), derived fields need E4 manual fix
+- ORM `created_at` / `updated_at` auto-fill won't work, must specify explicitly
+- DB-populated records also written to `forge-data.json`, deleted directly by clean mode
+
+**Failure handling**:
+- **Independent entity failure**: log it, continue populating others
+- **Parent entity failure**: skip all children in that chain (avoid dangling foreign keys), mark entire chain `CHAIN_FAILED`
+- **End of population**: summarize failed chain count and reasons, prompt user to investigate
+
+**Output**:
+- `forge-data.json` — created data inventory (temp IDs replaced with real server IDs)
+- `forge-log.json` — population log (operation status per record)
+
+---
+
+### E4: Derived Data Correction (post-DB population)
+
+DB direct writes skip business logic, so derived fields need manual correction:
+
+| Correction type | Operation |
+|----------------|-----------|
+| Aggregate fields | `SELECT SUM(amount) FROM details WHERE parent_id=?` → `UPDATE parent SET total=?` |
+| Count fields | `SELECT COUNT(*) FROM children WHERE parent_id=?` → `UPDATE parent SET count=?` |
+| Balances/inventory | Calculate final value from all transaction records |
+| Search indexes | Trigger reindex if full-text search exists |
+
+**Output**: update `forge-log.json`, append E4 correction records.
+
+---
+
+## forge-data-draft.json vs forge-data.json
+
+| File | Stage | ID type | Purpose |
+|------|-------|---------|---------|
+| `forge-data-draft.json` | After E1 | Temporary (TEMP-001) | Data blueprint, reusable after clean |
+| `forge-data.json` | After E3 | Real server IDs | Basis for clean and verify |
+
+Draft is preserved — after clean, can re-populate without regenerating data.
+
+---
+
+## Clean Mode
+
+Clean mode reads `forge-data.json` and deletes all populated data in reverse order.
+
+**Cleanup order** (reverse of population, to respect foreign key constraints):
+
+```
+1. Child entities → parent entities (reverse of forge-data.json population order)
+2. User accounts (last — other entities may reference user_id)
+3. DB-populated base data (config tables, dictionaries)
+```
+
+**Cleanup method**:
+- Unified database DELETE (not API — faster, batch-capable)
+- DELETE by `id` and `table` recorded in `forge-data.json`
+- If cascade delete configured, only delete top-level parents; otherwise delete layer by layer
+
+**Cleanup scope**:
+- Clear `forge-data.json`, `forge-log.json`
+- **Keep** `demo-plan.json`, `style-profile.json`, `assets/`, `upload-mapping.json` (design + assets preserved for reuse)
+- **Keep** `forge-data-draft.json` (can re-populate directly)
+
+---
+
+## Reentry Mode
+
+When `verify-issues.json` contains `route_to="execute"` issues, enter reentry mode — fix only problems, do not re-populate everything:
+
+| Issue type | Handling |
+|-----------|----------|
+| Foreign key broken | Check forge-data.json, supplement missing parent records or fix FK references |
+| CHAIN_FAILED | Retry full chain population |
+| Derived inconsistency | Rerun E4 derived data correction |
+
+---
+
+## Output Files
+
+| File | Path | Description |
+|------|------|-------------|
+| `forge-data-draft.json` | `.allforai/demo-forge/` | E1 generated dataset (temporary IDs) |
+| `forge-data.json` | `.allforai/demo-forge/` | E3 populated data inventory (real IDs) |
+| `forge-log.json` | `.allforai/demo-forge/` | Population log (operation status + E4 corrections) |
+
+---
+
+## Iron Rules
+
+1. **Prefer API, use DB when needed** — API population triggers full business logic, DB direct write only for unsupported scenarios
+2. **Derived fields must be mathematically calculated, not LLM-estimated** — SUM/COUNT/balances all from deterministic queries
+3. **Chain-order population, parent before child** — any child entity population requires its parent to already exist
+4. **Failures are never silent, chain failures explicitly marked** — independent failures logged and continue, parent failure marks entire chain CHAIN_FAILED
+5. **Verify usability immediately after population** — user accounts verified with auth API right after creation (don't wait for demo-verify to discover wrong password); data relationships queried to confirm chain integrity. Population verification failure → fix and retry, never silently skip

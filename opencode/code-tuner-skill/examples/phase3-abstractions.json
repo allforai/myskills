@@ -1,0 +1,58 @@
+{
+  "vertical_abstractions": [
+    {
+      "id": "ABS-V-001",
+      "candidates": ["UserService", "OrderService", "ProductService"],
+      "overlap_percentage": 75,
+      "overlapping_methods": ["create", "update", "delete", "getById", "page"],
+      "diverging_methods": ["UserService.resetPassword", "OrderService.cancelOrder"],
+      "suggested_base": "BaseService<E, D, V>",
+      "estimated_reduction_lines": 120,
+      "suggestion": {
+        "pre-launch": "抽取 BaseService<E, D, V> 基类，子类只实现 validate/toEntity/toVO。预计减少 120 行重复代码。",
+        "maintenance": "标记为重构机会。当下次修改任一 Service 时同步抽取基类。"
+      }
+    }
+  ],
+  "horizontal_abstractions": [
+    {
+      "id": "ABS-H-001",
+      "pattern": "Excel export logic",
+      "occurrences": [
+        { "file": "UserController.java", "line": 45, "method": "exportUsers" },
+        { "file": "OrderController.java", "line": 38, "method": "exportOrders" },
+        { "file": "ProductController.java", "line": 32, "method": "exportProducts" }
+      ],
+      "similarity_percentage": 85,
+      "suggested_extraction": "ExcelExportService.export(queryFn, columnDefs, rowMapper)",
+      "estimated_reduction_lines": 90,
+      "suggestion": {
+        "pre-launch": "抽取 ExcelExportService，参数化查询函数、列定义、行映射。",
+        "maintenance": "抽取 ExcelExportService，原调用点改为委托。不改变外部行为，风险低。"
+      }
+    }
+  ],
+  "api_consolidations": [],
+  "validation_issues": [
+    {
+      "id": "VAL-001",
+      "type": "wrong-layer",
+      "subtype": "format-in-business",
+      "file": "OrderService.java",
+      "line": 45,
+      "code_snippet": "if (!phone.matches(\"^1[3-9]\\\\d{9}$\")) throw new IllegalArgumentException(\"手机号格式错误\");",
+      "description": "格式校验（手机号正则）出现在 Business 层。应移至 Entry 层。",
+      "suggestion": "在 OrderCreateDTO 的 phone 字段添加 @Pattern 注解，删除 Service 中的手动校验。"
+    }
+  ],
+  "over_abstractions": [
+    {
+      "id": "OVER-001",
+      "type": "single-impl-interface",
+      "file": "UserServiceImpl.java",
+      "interface_file": "IUserService.java",
+      "description": "IUserService 接口只有 UserServiceImpl 一个实现，且不属于 DDD 依赖倒置场景。",
+      "suggestion": "删除 IUserService 接口，直接使用 UserService 具体类。"
+    }
+  ]
+}
