@@ -103,7 +103,7 @@ cr-visual 需要知道怎么启动和导航源 App。信息来源（优先级）
 
 3. **用户通过 `--screenshots` 提供已有截图**
 
-如果 replicate-config 没有 `source_app` 且用户未传参 → ask the user for source app details (this is required to proceed).
+如果 replicate-config 没有 `source_app` 且用户未传参 → 询问用户源应用信息（这是继续执行的必需条件）。
 
 ---
 

@@ -67,9 +67,9 @@
 | 能力 ID | 安装命令 | 安装后追加步骤 | 需重启编码助手 |
 |---------|---------|--------------|-------------------|
 | `playwright` | `MCP 注册命令（参见平台文档）: playwright -- npx -y @playwright/mcp@latest` | 无追加步骤（浏览器按需自动下载） | 是 |
-| `openrouter_mcp` | `cd {PLUGIN_ROOT}/mcp-ai-gateway && npm install && npm run build` | 需配置 `OPENROUTER_API_KEY`（运行 `/setup`） | 是 |
-| `brave_search_mcp` | ai-gateway 已内置，仅需配置 `BRAVE_API_KEY`（运行 `/setup`） | Key 写入 MCP 配置 ai-gateway env | 是 |
-| `google_ai_mcp` | ai-gateway 已内置，仅需配置 `GOOGLE_API_KEY`（运行 `/setup`） | Key 写入 MCP 配置 ai-gateway env | 是 |
+| `openrouter_mcp` | `cd {PLUGIN_ROOT}/mcp-ai-gateway && npm install && npm run build` | 需配置 `OPENROUTER_API_KEY`（执行 `setup`） | 是 |
+| `brave_search_mcp` | ai-gateway 已内置，仅需配置 `BRAVE_API_KEY`（执行 `setup`） | Key 写入 MCP 配置 ai-gateway env | 是 |
+| `google_ai_mcp` | ai-gateway 已内置，仅需配置 `GOOGLE_API_KEY`（执行 `setup`） | Key 写入 MCP 配置 ai-gateway env | 是 |
 | `stitch_ui` | `MCP 注册命令（参见平台文档）: stitch -- npx -y @_davideast/stitch-mcp proxy` | 首次需 OAuth: `python3 {PLUGIN_ROOT}/scripts/stitch_oauth.py` | 是 |
 
 #### 引导流程（编排命令的 Phase 0 使用）
@@ -77,7 +77,7 @@
 当 Phase 0 外部能力快检发现「重要性=必需」的能力未就绪时：
 
 ```
-1. confirm with user:
+1. 向用户确认：
    「{能力名} 未就绪，后续 {phase_name} 需要此工具。是否立即安装？」
    选项:
      1. 是，帮我安装
@@ -733,4 +733,3 @@ XV 是统一验收方法论中 Loop 的可选增强。实现细节：
 | code-replicate | 意图闭环（代码做了什么 vs 用户想要什么）、边界闭环（代码处理了正常路径，异常路径呢） |
 | project-forge | 技术闭环（选了技术栈，运维谁管？监控谁看？）、凭证闭环（需要外部服务，Key 从哪来？） |
 | design-to-spec | 验收闭环（每个任务的"完成"标准是什么？谁说了算？） |
-

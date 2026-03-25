@@ -27,11 +27,11 @@ A simple Go REST API for task management:
 
 **Expected output (reverse-engineered artifacts):**
 ```
-.allforai/product-map/role-profiles.json      (1 role: user)
-.allforai/product-map/task-inventory.json     (8 tasks from endpoints)
-.allforai/product-map/task-index.json         (2 modules: tasks, auth)
-.allforai/product-map/business-flows.json     (2 flows: task CRUD, auth)
-.allforai/use-case/use-case-tree.json         (10 use cases)
+.allforai/product-map/role-profiles.json      (at least 1 role: user)
+.allforai/product-map/task-inventory.json     (at least 8 tasks from endpoints)
+.allforai/product-map/task-index.json         (at least 2 modules: tasks, auth)
+.allforai/product-map/business-flows.json     (at least 2 flows: task CRUD, auth)
+.allforai/use-case/use-case-tree.json         (at least 10 use cases)
 .allforai/use-case/use-case-report.md         (summary)
 ```
 
@@ -48,7 +48,7 @@ Using the reverse-engineered .allforai/ artifacts from Task 1, generate a Flutte
 **Execute:**
 1. forge-decisions: Flutter-only, backend exists at localhost:8080
 2. project-manifest: 1 sub-project (flutter-app)
-3. Spec generation: requirements, design (8 screens, navigation, API integration), tasks (12 tasks)
+3. Spec generation: requirements, design (about 8 screens, navigation, API integration), tasks (at least 12 tasks)
 
 **Expected output:**
 ```

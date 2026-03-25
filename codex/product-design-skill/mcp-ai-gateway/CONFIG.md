@@ -2,7 +2,7 @@
 
 ## 环境变量
 
-API Key 配置在插件 MCP 配置的 `env` 块中（通过 `/setup` 命令管理）：
+API Key 配置在插件 MCP 配置的 `env` 块中（通过 `setup` 工作流管理）：
 
 | 变量 | 用途 | 必需 |
 |------|------|------|
@@ -92,7 +92,7 @@ npm run build
 ## 故障排查
 
 ### 1. API Key 无效
-运行 `/setup check` 查看所有外部能力状态。
+执行 `setup check` 查看所有外部能力状态。
 
 ### 2. 模型不可用（区域限制）
 `refresh_models` 工具会自动检测区域并路由到可用模型。中国区自动降级到 qwen/deepseek。

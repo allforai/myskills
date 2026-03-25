@@ -108,13 +108,13 @@ product-map（现状+方向）   功能查漏（查缺口）
 
 | 步骤 | 标准模式 | 全自动模式 |
 |------|----------|-----------|
-| **Step 1 任务完整性确认** | confirm with user | 自动确认，记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
-| **Step 2 界面完整性确认** | confirm with user | 自动确认 |
-| **Step 3 旅程验证确认** | confirm with user | 自动确认 |
-| **Step 4 缺口清单确认** | confirm with user | 自动确认（缺口任务自动生成，不等用户调整优先级） |
-| **Step 5 业务流确认** | confirm with user | 自动确认 |
-| **Step 6 交互类型完整性确认** | confirm with user | 自动确认（前置条件不满足 → 提示用户重跑上游） |
-| **Step 7 状态机确认** | confirm with user | 自动确认 |
+| **Step 1 任务完整性确认** | 向用户确认 | 自动确认，记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
+| **Step 2 界面完整性确认** | 向用户确认 | 自动确认 |
+| **Step 3 旅程验证确认** | 向用户确认 | 自动确认 |
+| **Step 4 缺口清单确认** | 向用户确认 | 自动确认（缺口任务自动生成，不等用户调整优先级） |
+| **Step 5 业务流确认** | 向用户确认 | 自动确认 |
+| **Step 6 交互类型完整性确认** | 向用户确认 | 自动确认（前置条件不满足 → 提示用户重跑上游） |
+| **Step 7 状态机确认** | 向用户确认 | 自动确认 |
 
 **安全护栏**（自动模式下仍然停下来问用户）：
 - ERROR 级验证失败（必须文件不存在、引用断裂）
@@ -420,7 +420,7 @@ Step 7: 状态机完整性检查（quick / journey 模式跳过）
 
 **快速预检（索引优化）**：若 `flow-index.json` 存在，先检查所有流的 `gap_count`。若所有流 `gap_count == 0`，可跳过全量加载 `business-flows.json`，直接报告「索引显示无流级缺口，跳过全量检查」。若存在 `gap_count > 0` 的流，继续加载完整数据做详细检查。
 
-**前置检查：** 若 `.allforai/product-map/business-flows.json` 不存在（且 `flow-index.json` 也不存在），跳过此步骤，提示先运行 `/product-map`。
+**前置检查：** 若 `.allforai/product-map/business-flows.json` 不存在（且 `flow-index.json` 也不存在），跳过此步骤，提示先执行 `product-map` 工作流。
 
 读取 `business-flows.json`，执行两项检查：
 
@@ -852,7 +852,7 @@ LLM 直接分析 task-inventory + experience-map + business-flows，理解业务
 > 通用模式定义见 `docs/defensive-patterns.md`，以下为本技能的具体应用。
 
 ### 加载校验
-- **`gap-decisions.json`**：加载时用 `python -m json.tool` 验证 JSON 合法性。解析失败 → 检查 `.bak` → 提示恢复或重新运行 `/feature-gap refresh`。
+- **`gap-decisions.json`**：加载时用 `python -m json.tool` 验证 JSON 合法性。解析失败 → 检查 `.bak` → 提示恢复或重新执行 `feature-gap refresh`。
 - **两个索引文件**（`task-index.json`、`flow-index.json`）+ **screen-index（embedded in experience-map.json）**：加载时验证 JSON 合法性。单个索引解析失败 → 该索引回退到全量加载对应完整文件，其余索引不受影响。
 
 ### 零结果处理

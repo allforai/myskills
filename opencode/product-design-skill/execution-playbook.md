@@ -248,7 +248,7 @@ Load `./skills/experience-map.md`, execute per skill workflow. LLM leads screen 
 1. Load `./skills/interaction-gate.md`, execute per workflow
 2. LLM analyzes experience-map + task-inventory, identifies interaction risks, generates gate report
 
-**Checkpoint**: `gate-report.json` exists.
+**Checkpoint**: `.allforai/experience-map/interaction-gate.json` exists.
 
 ---
 

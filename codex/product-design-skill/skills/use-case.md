@@ -152,10 +152,10 @@ product-map（功能地图）    experience-map（体验地图）    use-case（
 
 | 步骤 | 标准模式 | 全自动模式 |
 |------|----------|-----------|
-| **Step 0 功能区分组确认** | confirm with user | 自动确认，记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
-| **Step 1 正常流确认** | confirm with user | 自动确认 |
-| **Step 2 异常/边界确认** | confirm with user | 自动确认（所有用例自动生成，DEFERRED 标记不触发） |
-| **Step 4 E2E 确认** | confirm with user | 自动确认 |
+| **Step 0 功能区分组确认** | 向用户确认 | 自动确认，记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
+| **Step 1 正常流确认** | 向用户确认 | 自动确认 |
+| **Step 2 异常/边界确认** | 向用户确认 | 自动确认（所有用例自动生成，DEFERRED 标记不触发） |
+| **Step 4 E2E 确认** | 向用户确认 | 自动确认 |
 
 **安全护栏**（自动模式下仍然停下来问用户）：
 - ERROR 级验证失败（use-case-tree.json 生成失败、task 引用断裂）
@@ -699,11 +699,11 @@ LLM 生成用例后，追问闭环完整性：
 > 通用模式定义见 `docs/defensive-patterns.md`，以下为本技能的具体应用。
 
 ### 加载校验
-- **`use-case-decisions.json`**：加载时用 `python -m json.tool` 验证 JSON 合法性。解析失败 → 检查 `.bak` → 提示恢复或重新运行 `/use-case refresh`。
-- **`task-inventory.json`**：前置加载时验证 JSON 合法性。解析失败 → 提示用户重新运行 `/product-map`，终止执行。
+- **`use-case-decisions.json`**：加载时用 `python -m json.tool` 验证 JSON 合法性。解析失败 → 检查 `.bak` → 提示恢复或重新执行 `use-case refresh`。
+- **`task-inventory.json`**：前置加载时验证 JSON 合法性。解析失败 → 提示用户重新执行 `product-map` 工作流，终止执行。
 
 ### 零结果处理
-- **某任务生成 0 用例**：⚠ 标注「任务 {task_id} ({name}) 的 main_flow 为空，无法生成用例，建议补充 /product-map 中该任务的 main_flow」，不静默跳过。
+- **某任务生成 0 用例**：⚠ 标注「任务 {task_id} ({name}) 的 main_flow 为空，无法生成用例，建议在 `product-map` 中补充该任务的 main_flow」，不静默跳过。
 - **Step 2 某任务 0 异常用例**：若 task.exceptions 为空 → ⚠ 标注「任务 {task_id} 无异常定义，无法生成异常用例」；若全部被 DEFERRED → 标记 `NO_EXCEPTION_CASES` flag。
 - **scope 模式匹配 0 任务**：明确告知「功能区 "{名称}" 未匹配任何任务」，列出现有功能区名称供参考。
 
@@ -740,7 +740,7 @@ JSON 完整字段，无省略，逐条可执行。Markdown 摘要级，每条用
 
 异常用例不必一次全做。用户可标记 DEFERRED，不进入本次用例集，记录在 decisions.json 供后续补充。
 
-用户确认结果写入 `use-case-decisions.json`：已确认的功能区分组（Step 0）、被标记为 DEFERRED 的用例（含 id 和原因）。下次运行自动加载，跳过已确认项，不重复询问。`/use-case refresh` 清空缓存重跑。
+用户确认结果写入 `use-case-decisions.json`：已确认的功能区分组（Step 0）、被标记为 DEFERRED 的用例（含 id 和原因）。下次运行自动加载，跳过已确认项，不重复询问。`use-case refresh` 可清空缓存并完整重跑。
 
 ### 4. 只生成不执行
 

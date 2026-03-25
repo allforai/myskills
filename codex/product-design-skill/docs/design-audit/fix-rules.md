@@ -50,11 +50,11 @@
 
 | 阶段 | 标准模式 | 全自动模式 |
 |------|----------|-----------|
-| **Phase A 脚本执行** | 脚本执行后，confirm with user trace/coverage/cross 结果 | 脚本执行后自动确认，所有问题记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
-| **Phase B Agent 1: 模式+创新** | confirm with user | 自动执行（前置条件不满足 → 跳过），问题记入分片 |
-| **Phase B Agent 2: 行为** | confirm with user | 自动执行（前置条件不满足 → 跳过），问题记入分片 |
-| **Phase B Agent 3: 交互类型** | confirm with user | 自动执行（前置条件不满足 → 跳过），问题记入分片 |
-| **Phase C 合并报告** | confirm with user | 自动确认 |
+| **Phase A 脚本执行** | 脚本执行后，向用户确认 trace/coverage/cross 结果 | 脚本执行后自动确认，所有问题记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
+| **Phase B Agent 1: 模式+创新** | 向用户确认 | 自动执行（前置条件不满足 → 跳过），问题记入分片 |
+| **Phase B Agent 2: 行为** | 向用户确认 | 自动执行（前置条件不满足 → 跳过），问题记入分片 |
+| **Phase B Agent 3: 交互类型** | 向用户确认 | 自动执行（前置条件不满足 → 跳过），问题记入分片 |
+| **Phase C 合并报告** | 向用户确认 | 自动确认 |
 
 **安全护栏**（自动模式下仍然停下来问用户）：
 - ERROR 级验证失败（product-map.json 损坏、必须层缺失）

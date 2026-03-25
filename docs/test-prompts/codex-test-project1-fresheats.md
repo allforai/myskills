@@ -21,13 +21,13 @@ Then execute the full product-design pipeline for a **FreshEats food delivery ap
 
 **Execute phases in order:**
 1. Phase 1: Product Concept — define problem, roles, value proposition
-2. Phase 2: Product Map — 3 roles, 20+ tasks, 3 business flows, task index, flow index
-3. Phase 3: Journey Emotion — emotional journey per role per flow
-4. Phase 4: Experience Map — screens, operation lines, interaction gate scoring
-5. Phase 5: Use Cases + Feature Gap (parallel) — 40+ use cases, gap analysis
-6. Phase 6: Feature Prune — classify CORE/DEFER/CUT
-7. Phase 7: UI Design — design spec with tokens and component guidelines
-8. Phase 8: Design Audit — multi-dimensional audit with scoring
+2. Phase 1.5: Concept Baseline — compact upstream baseline for downstream phases
+3. Phase 2: Product Map — 3 roles, 20+ tasks, 3 business flows, task index, flow index
+4. Phase 3: Journey Emotion — emotional journey per role per flow
+5. Phase 4: Experience Map — screens, operation lines, interaction gate scoring
+6. Phase 5: Stitch decision point — record visual tooling decision if Stitch is unavailable
+7. Phase 6-8: Use Cases + Feature Gap + UI Design (parallel)
+8. Phase 9: Design Audit — multi-dimensional audit with scoring
 
 **All output goes to:** `test-fresheats/.allforai/`
 
@@ -45,11 +45,10 @@ Then execute the full product-design pipeline for a **FreshEats food delivery ap
 ├── experience-map/interaction-gate.json
 ├── use-case/use-case-tree.json
 ├── use-case/use-case-report.md
-├── feature-gap/gap-report.json
+├── feature-gap/gap-tasks.json
 ├── feature-gap/gap-report.md
-├── feature-prune/prune-decisions.json
-├── feature-prune/prune-report.md
-├── ui-design/ui-design-spec.md
+├── ui-design/ui-design-spec.json
+├── ui-design/tokens.json
 ├── design-audit/audit-report.json
 └── design-audit/audit-report.md
 ```
@@ -60,15 +59,15 @@ Then execute the full product-design pipeline for a **FreshEats food delivery ap
 - task-inventory: 20+ tasks
 - business-flows: 3+ flows
 - use-case-tree: 40+ use cases
-- audit score: documented with 5-dimension breakdown
+- audit report: documented with multi-dimension breakdown
 
 ---
 
-## Task 2: Dev Forge Full Pipeline
+## Task 2: Dev Forge Partial Pipeline Smoke Test
 
 Read `codex/dev-forge-skill/AGENTS.md` and `codex/dev-forge-skill/execution-playbook.md`.
 
-Using the product-design output from Task 1, execute project-forge full:
+Using the product-design output from Task 1, execute the early `project-forge` phases as a smoke test:
 
 **Tech decisions:**
 - Backend: Go (Gin) three-tier architecture, PostgreSQL
@@ -80,6 +79,7 @@ Using the product-design output from Task 1, execute project-forge full:
 2. Phase 2: Project setup — 2 sub-projects with tech stack assignment
 3. Phase 3: Design to spec — generate requirements.md, design.md, tasks.md for go-api
 4. Phase 4: Simulated build progress
+5. Stop after `build-log.json` is generated. Do not require the final `forge-report.md` in this smoke test.
 
 **Expected output:**
 ```
@@ -133,7 +133,7 @@ After all 3 tasks, verify:
 ```bash
 # File count
 find test-fresheats/.allforai/ -type f | wc -l
-# Expected: 26+ files
+# Expected: 18+ files
 
 # JSON validation
 find test-fresheats/.allforai/ -name "*.json" -exec python3 -m json.tool {} > /dev/null \;

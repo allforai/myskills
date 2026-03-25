@@ -317,7 +317,7 @@ LLM 生成情绪标注 → 自审验证
 ]
 ```
 
-**加载逻辑**：每次运行 Step 3 前检查 decisions.json，已 `confirmed` 的旅程线跳过确认直接沿用。`/journey-emotion refresh` 清空缓存重跑。
+**加载逻辑**：每次运行 Step 3 前检查 decisions.json，已 `confirmed` 的旅程线跳过确认直接沿用。`journey-emotion refresh` 可清空缓存并重跑。
 
 ---
 
@@ -366,11 +366,11 @@ LLM 生成情绪标注 → 自审验证
 
 | 步骤 | 标准模式 | 全自动模式 |
 |------|----------|-----------|
-| **Step 3 旅程线审阅** | 逐条展示，confirm with user | 自动确认，记入 decisions.json（`decision: "auto_confirmed"`） |
+| **Step 3 旅程线审阅** | 逐条展示并向用户确认 | 自动确认，记入 decisions.json（`decision: "auto_confirmed"`） |
 
 **安全护栏**（自动模式下仍然停下来问用户）：
 - ERROR 级验证失败（business-flows.json 解析失败、节点引用断裂）
-- **risk=critical 节点**：旅程线中含 `risk: "critical"` 的节点时，该旅程线必须停下展示并 confirm with user，不可 auto_confirmed（critical 节点涉及支付/删除/权限变更，情绪误判会级联传播到 micro-interactions 和设计约束）
+- **risk=critical 节点**：旅程线中含 `risk: "critical"` 的节点时，该旅程线必须停下展示并向用户确认，不可 auto_confirmed（critical 节点涉及支付/删除/权限变更，情绪误判会级联传播到 micro-interactions 和设计约束）
 
 ---
 
@@ -387,9 +387,9 @@ LLM 生成情绪标注 → 自审验证
 ## 防御性规范
 
 ### 加载校验
-- **`business-flows.json`**：前置加载时验证 JSON 合法性。解析失败 → 提示用户重新运行 `/product-map`，终止执行。
-- **`role-profiles.json`**：前置加载时验证 JSON 合法性。解析失败 → 提示用户重新运行 `/product-map`，终止执行。
-- **`journey-emotion-decisions.json`**：加载时验证 JSON 合法性。解析失败 → 检查 `.bak` → 提示恢复或重新运行 `/journey-emotion refresh`。
+- **`business-flows.json`**：前置加载时验证 JSON 合法性。解析失败 → 提示用户重新执行 `product-map` 工作流，终止执行。
+- **`role-profiles.json`**：前置加载时验证 JSON 合法性。解析失败 → 提示用户重新执行 `product-map` 工作流，终止执行。
+- **`journey-emotion-decisions.json`**：加载时验证 JSON 合法性。解析失败 → 检查 `.bak` → 提示恢复或重新执行 `journey-emotion refresh`。
 
 ### 执行失败保护
 

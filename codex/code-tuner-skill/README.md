@@ -1,6 +1,6 @@
 # code-tuner
 
-A Claude Code plugin skill that analyzes server-side code for architectural violations, cross-layer duplication, abstraction opportunities, and validation issues. Outputs a comprehensive score (0-100) and actionable refactoring task list. Supports three-tier, two-tier, and DDD architectures across Java, Go, Node.js, Python, .NET, Rust, PHP, and Ruby.
+A Codex-native skill that analyzes server-side code for architectural violations, cross-layer duplication, abstraction opportunities, and validation issues. Outputs a comprehensive score (0-100) and actionable refactoring task list. Supports three-tier, two-tier, and DDD architectures across Java, Go, Node.js, Python, .NET, Rust, PHP, and Ruby.
 
 ## 30-second start
 
@@ -9,18 +9,18 @@ A Claude Code plugin skill that analyzes server-side code for architectural viol
 bash codex/install.sh
 
 # 2) Run full analysis
-/code-tuner full
+Run the `code-tuner full` workflow
 ```
 
 ## Common scenarios
 
-| Scenario | Recommended command |
+| Scenario | Recommended workflow |
 |---|---|
-| Full architecture assessment (default) | `/code-tuner full` |
-| Check architecture compliance only | `/code-tuner compliance` |
-| Hunt duplicated logic across layers | `/code-tuner duplication` |
-| Find abstraction/refactor opportunities | `/code-tuner abstraction` |
-| Regenerate report from existing outputs | `/code-tuner report` |
+| Full architecture assessment (default) | `code-tuner full` |
+| Check architecture compliance only | `code-tuner compliance` |
+| Hunt duplicated logic across layers | `code-tuner duplication` |
+| Find abstraction/refactor opportunities | `code-tuner abstraction` |
+| Regenerate report from existing outputs | `code-tuner report` |
 
 ## Installation
 
@@ -31,11 +31,11 @@ bash codex/install.sh
 ## Usage
 
 ```
-/code-tuner full
-/code-tuner compliance
-/code-tuner duplication
-/code-tuner abstraction
-/code-tuner report
+code-tuner full
+code-tuner compliance
+code-tuner duplication
+code-tuner abstraction
+code-tuner report
 ```
 
 Or use natural language:

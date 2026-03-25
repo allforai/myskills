@@ -170,6 +170,18 @@ Read `./docs/experience-map/validation-steps.md`
 
 包含：自审验收 loop（Step 3）、质量提升 loop（Step 3.1）、Playwright 线框验证（Step 3.5）、模式扫描 + 行为规范（Step 3.6）、最终输出（Step 4）。
 
+### Step 3.6：模式扫描 + 行为规范（自动，不停顿）
+
+> 详见 `./docs/experience-map/validation-steps.md#step-36`
+
+Step 3.6 在 Playwright 验证通过后自动执行，无需用户交互。
+
+**3.6.1 功能模式识别**：LLM 扫描 task-inventory + experience-map，检测 8 类功能模式（CRUD 管理台 / 列表+详情对 / 审批流 / 搜索+筛选+分页 / 导出报表 / 通知触发 / 权限矩阵 / 状态机），将 `_pattern` 和 `_pattern_group` 标签写入 screen 节点。模式标签供下游 ui-design 参考布局选型，**不替代 LLM 自主设计决策**。
+
+**3.6.2 行为规范检测**：扫描所有 screen 的 states/actions/on_failure/validation_rules，检测 9 类行为不一致（破坏性操作确认 / 空状态展示 / 加载模式 / 错误展示 / 表单校验反馈 / 成功反馈 / 权限不足 / 分页行为 / 未保存变更守卫）。不一致率 > 30% 且影响 >= 3 个界面时，将 `_behavioral_standards` 写入 screen 节点，下游 ui-design 必须遵守。
+
+**输出**：screen 节点原地更新（添加 `_pattern`、`_pattern_group`、`_behavioral`、`_behavioral_standards` 字段），不生成独立文件。全自动模式下自动完成，不停顿。
+
 ---
 
 ## Variants 模式（--variants N）
@@ -207,6 +219,7 @@ Read `./docs/experience-map/validation-steps.md`
 | 步骤 | 标准模式 | 全自动模式 |
 |------|----------|-----------|
 | **Step 3 验收** | 展示验收结果 → 用户确认 | 自动 loop 修正，仅 ERROR 级停 |
+| **Step 3.6 模式扫描** | 可选（标准模式可跳过） | 自动执行，标签写入 screen |
 | **--variants** | 用户选择方案 | 自动选择推荐方案 |
 
 **基础设施偏好消费**：

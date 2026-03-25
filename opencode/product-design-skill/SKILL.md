@@ -293,7 +293,7 @@ product-map（必须先跑）
     │        其中 product-map.json 必含 experience_priority（consumer/admin/mixed）
     │
     ├── journey-emotion（情绪旅程）
-    │       ↓ 输出 .allforai/journey-emotion/
+    │       ↓ 输出 .allforai/experience-map/journey-emotion-map.json
     │
     ├── experience-map（必须，支持 --variants N 多方案发散）
     │       ↓ 输出 .allforai/experience-map/experience-map.json
@@ -338,18 +338,16 @@ your-project/
     │   └── product-map-decisions.json  # 用户决策日志
     ├── product-map-review/
     │   └── review-feedback.json        # 产品地图脑图审核反馈（nodes + status + comments）
-    ├── journey-emotion/
-    │   ├── journey-emotion.json        # 情绪旅程地图（触点情绪、低谷、高峰）
-    │   └── journey-emotion-report.md   # 可读报告
     ├── experience-map/
-    │   ├── experience-map.json         # 体验地图（含 states、on_failure、exception_flows）
-    │   ├── screen-index.json           # 界面索引（轻量，供下游两阶段加载）
-    │   ├── screen-conflict.json        # 界面级冲突 + 异常覆盖缺口
-    │   ├── experience-map-report.md    # 可读报告
-    │   └── experience-map-decisions.json # 用户决策日志
-    ├── interaction-gate/
-    │   ├── interaction-gate.json       # 交互质量门禁结果
-    │   └── interaction-gate-report.md  # 可读报告
+    │   ├── journey-emotion-map.json       # 情绪旅程地图（触点情绪、低谷、高峰）
+    │   ├── journey-emotion-decisions.json # 旅程情绪用户决策日志
+    │   ├── experience-map.json            # 体验地图（含 states、on_failure、exception_flows）
+    │   ├── screen-index.json              # 界面索引（轻量，供下游两阶段加载）
+    │   ├── screen-conflict.json           # 界面级冲突 + 异常覆盖缺口
+    │   ├── experience-map-report.md       # 可读报告
+    │   ├── experience-map-decisions.json  # 用户决策日志
+    │   ├── interaction-gate.json          # 交互质量门评估结果
+    │   └── interaction-gate-error.json    # 错误日志（执行失败时写入）
     ├── wireframe-review/
     │   └── review-feedback.json        # 线框审核反馈（pins + status + category）
     ├── use-case/

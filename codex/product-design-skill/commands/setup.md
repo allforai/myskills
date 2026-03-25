@@ -192,7 +192,7 @@ Playwright MCP 已注册到用户级配置。需重启编码助手 后生效。
 
 #### 1.5b. Stitch UI（若未就绪）
 
-使用 ask the user：
+询问用户：
 
 **「Stitch UI 未就绪，用于生成高保真 UI 视觉稿。是否安装？」**
 
@@ -278,7 +278,7 @@ Authorization: Bearer {access_token}
 
 #### 2a. OpenRouter
 
-使用 ask the user：
+询问用户：
 
 **「你是否已有 OpenRouter API Key？」**
 
@@ -304,11 +304,11 @@ OpenRouter 注册步骤：
 - 建议先充值 $5 试用，足够运行数十次完整产品设计流程
 ```
 
-然后使用 ask the user「请粘贴你的 OpenRouter API Key」（提供"其他"输入框让用户粘贴）。
+然后询问用户「请粘贴你的 OpenRouter API Key」（提供"其他"输入框让用户粘贴）。
 
 ##### 选择「已有 Key」时：
 
-使用 ask the user「请粘贴你的 OpenRouter API Key」。
+询问用户「请粘贴你的 OpenRouter API Key」。
 
 ##### 选择「跳过」时：
 
@@ -316,7 +316,7 @@ OpenRouter 注册步骤：
 
 #### 2b. Brave Search
 
-使用 ask the user：
+询问用户：
 
 **「你是否已有 Brave Search API Key？」**
 
@@ -342,11 +342,11 @@ Brave Search API 注册步骤：
 - 足够运行多轮 demo-forge 媒体搜索
 ```
 
-然后使用 ask the user「请粘贴你的 Brave Search API Key」（提供"其他"输入框让用户粘贴）。
+然后询问用户「请粘贴你的 Brave Search API Key」（提供"其他"输入框让用户粘贴）。
 
 ##### 选择「已有 Key」时：
 
-使用 ask the user「请粘贴你的 Brave Search API Key」。
+询问用户「请粘贴你的 Brave Search API Key」。
 
 ##### 选择「跳过」时：
 
@@ -354,7 +354,7 @@ Brave Search API 注册步骤：
 
 #### 2c. Google AI
 
-使用 ask the user：
+询问用户：
 
 **「你是否已有 Google AI API Key？」**
 
@@ -385,11 +385,11 @@ Google AI API Key 获取步骤：
 - 建议限制 Key 仅允许 Vertex AI API 调用
 ```
 
-然后使用 ask the user「请粘贴你的 Google AI API Key」（提供"其他"输入框让用户粘贴）。
+然后询问用户「请粘贴你的 Google AI API Key」（提供"其他"输入框让用户粘贴）。
 
 ##### 选择「已有 Key」时：
 
-使用 ask the user「请粘贴你的 Google AI API Key」。
+询问用户「请粘贴你的 Google AI API Key」。
 
 ##### 选择「跳过」时：
 
@@ -397,7 +397,7 @@ Google AI API Key 获取步骤：
 
 #### 2d. fal.ai (FLUX 2 Pro + Kling)
 
-使用 ask the user：
+询问用户：
 
 **「你是否已有 fal.ai API Key？」**
 
@@ -424,11 +424,11 @@ fal.ai API Key 获取步骤：
 - 按量计费，无月费
 ```
 
-然后使用 ask the user「请粘贴你的 fal.ai Key」（提供"其他"输入框让用户粘贴）。
+然后询问用户「请粘贴你的 fal.ai Key」（提供"其他"输入框让用户粘贴）。
 
 ##### 选择「已有 Key」时：
 
-使用 ask the user「请粘贴你的 fal.ai Key」。
+询问用户「请粘贴你的 fal.ai Key」。
 
 ##### 选择「跳过」时：
 
@@ -464,7 +464,7 @@ fal.ai API Key 获取步骤：
    export BRAVE_API_KEY="BSA..."
    ```
 
-3. **使用 confirm with user**：展示将要追加的内容，请用户确认：
+3. **向用户确认**：展示将要追加的内容，请用户确认：
 
 ```
 将追加以下 export 到 {~/.zshrc 或 ~/.bashrc}：
@@ -497,7 +497,7 @@ fal.ai API Key 获取步骤：
 | fal.ai | ...{后4位} | shell 环境变量 | FLUX 2 Pro + Kling 生视频 |
 | Brave Search | BSA...{后4位} | shell 环境变量 | 媒体搜索 |
 
-下一步：运行 source ~/.zshrc 后重启编码助手，然后 /setup check 验证连接。
+下一步：运行 source ~/.zshrc 后重启编码助手，然后执行 `setup check` 验证连接。
 ```
 
 对于跳过的服务，状态列显示「已跳过（可选）」。

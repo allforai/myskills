@@ -8,7 +8,7 @@ description: >
   deadhunt (dead link hunting + CRUD completeness + ghost feature detection),
   fieldcheck (UI/API/Entity/DB field consistency),
   testforge (test-driven quality forging: full test pyramid — unit/component/integration/e2e-chain/mobile — audit + generate + fix → converge).
-  Full pipeline: /project-forge. LLM-driven Forge-Verify-Loop (4D/6V/XV).
+  Full pipeline: `project-forge`. LLM-driven Forge-Verify-Loop (4D/6V/XV).
   开发锻造套件：项目引导、设计转规格、任务执行、产品验收、死链猎杀、字段一致性、测试锻造。
 version: "6.0.0"
 ---
@@ -27,14 +27,14 @@ version: "6.0.0"
 
 ## 前置依赖
 
-本插件依赖 `product-design` 插件生成的 `.allforai/` 输出。请先运行 `/product-design full` 完成产品设计。
+本插件依赖 `product-design` 插件生成的 `.allforai/` 输出。请先执行 `product-design full` 工作流完成产品设计。
 
 ## 全流程编排
 
 ```
-/project-forge full          # 新项目，开启 FVL 全流程
-/project-forge existing      # 已有项目，gap 模式 + 6V 审计
-/project-forge resume        # 从上次中断处继续
+project-forge full          # 新项目，开启 FVL 全流程
+project-forge existing      # 已有项目，gap 模式 + 6V 审计
+project-forge resume        # 从上次中断处继续
 ```
 
 ## 包含的技能（7 个 + 1 独立插件）
@@ -46,8 +46,8 @@ version: "6.0.0"
 交互式引导用户拆分子项目、选择技术栈、分配模块。LLM 验证架构合理性 (Conway's Law)。
 
 ```
-/project-setup              # 新项目，从空白开始
-/project-setup existing     # 已有项目，扫描代码 → 识别缺口
+project-setup              # 新项目，从空白开始
+project-setup existing     # 已有项目，扫描代码 → 识别缺口
 ```
 
 ### 2. design-to-spec — 设计转规格
@@ -59,8 +59,8 @@ version: "6.0.0"
 若项目为 `consumer` 或 `mixed`，会把“用户端成熟度要求”一起翻译为前端规格与任务，而不是只翻译成路由/接口/页面壳。
 
 ```
-/design-to-spec             # 全量生成
-/design-to-spec sp-001      # 仅指定子项目
+design-to-spec             # 全量生成
+design-to-spec sp-001      # 仅指定子项目
 ```
 
 ### 3. task-execute — 任务执行
@@ -72,9 +72,9 @@ version: "6.0.0"
 若当前 Round 涉及用户端子项目，任务执行会额外检查主线是否顺、状态是否齐、是否具备持续关系，而不是只检查功能是否可点通。
 
 ```
-/task-execute              # 从 Round 0 开始（或断点续作）
-/task-execute round 2      # 仅执行指定 Round
-/task-execute resume       # 从 build-log.json 断点续作
+task-execute              # 从 Round 0 开始（或断点续作）
+task-execute round 2      # 仅执行指定 Round
+task-execute resume       # 从 build-log.json 断点续作
 ```
 
 ### 4. product-verify — 产品验收
@@ -84,9 +84,9 @@ version: "6.0.0"
 静态扫描代码覆盖率 + 动态 Playwright 验证行为合规性，输出差异任务清单。
 
 ```
-/product-verify             # 完整验收（静态+动态）
-/product-verify static      # 只做静态扫描
-/product-verify dynamic     # 只做动态验证
+product-verify             # 完整验收（静态+动态）
+product-verify static      # 只做静态扫描
+product-verify dynamic     # 只做动态验证
 ```
 
 ### 5. deadhunt — 死链猎杀 + 完整性验证
@@ -94,10 +94,10 @@ version: "6.0.0"
 猎杀死链、幽灵功能、CRUD 缺口。6 Phase 流水线：项目分析→静态扫描→测试计划→深度测试→报告→补充测试。支持独立运行，不依赖 project-forge 流程。
 
 ```
-/deadhunt                   # 完整验证（静态+深度）
-/deadhunt static            # 仅静态分析
-/deadhunt deep              # 仅深度测试（需 Playwright）
-/deadhunt incremental       # 增量验证（仅 git 改动涉及的模块）
+deadhunt                   # 完整验证（静态+深度）
+deadhunt static            # 仅静态分析
+deadhunt deep              # 仅深度测试（需 Playwright）
+deadhunt incremental       # 增量验证（仅 git 改动涉及的模块）
 ```
 
 ### 6. fieldcheck — 字段一致性检查
@@ -105,10 +105,10 @@ version: "6.0.0"
 检查 UI↔API↔Entity↔DB 四层字段名一致性，发现幽灵字段、拼写错误、映射断裂。纯静态分析，不需要启动应用。
 
 ```
-/fieldcheck                 # 全链路 L1↔L2↔L3↔L4
-/fieldcheck frontend        # 仅前端 L1↔L2
-/fieldcheck backend         # 仅后端 L2↔L3↔L4
-/fieldcheck endtoend        # 端到端 L1↔L4
+fieldcheck                 # 全链路 L1↔L2↔L3↔L4
+fieldcheck frontend        # 仅前端 L1↔L2
+fieldcheck backend         # 仅后端 L2↔L3↔L4
+fieldcheck endtoend        # 端到端 L1↔L4
 ```
 
 ### 7. testforge — 测试锻造
@@ -116,9 +116,9 @@ version: "6.0.0"
 审查项目自身测试代码的质量和覆盖率，用 FVL 三维验证（纵向审计 + 横向交叉 + 负空间推导）发现缺口。覆盖测试金字塔全层级：unit / component / integration / e2e-chain / mobile。从 business-flows 自动推导跨站 E2E 链并生成可执行测试脚本。补测试、修 bug，循环至全绿。
 
 ```
-/testforge                  # 完整锻造（审计+补测试+修bug+报告）
-/testforge analyze          # 仅审计（不补测试不修代码）
-/testforge fix              # 仅锻造（用已有分析结果）
+testforge                  # 完整锻造（审计+补测试+修bug+报告）
+testforge analyze          # 仅审计（不补测试不修代码）
+testforge fix              # 仅锻造（用已有分析结果）
 ```
 
 ### 8. demo-forge — 演示锻造（独立插件）
@@ -128,12 +128,12 @@ version: "6.0.0"
 按产品地图生成有业务逻辑、有人物关系、有时间分布的真实感演示数据，配合富媒体采集+加工+上传，Playwright 验证，多轮迭代打磨至演示级品质。
 
 ```
-/demo-forge              # 全流程
-/demo-forge design       # 只设计方案
-/demo-forge media        # 富媒体采集+上传
-/demo-forge execute      # 数据灌入
-/demo-forge verify       # 验证
-/demo-forge clean        # 清理
+demo-forge              # 全流程
+demo-forge design       # 只设计方案
+demo-forge media        # 富媒体采集+上传
+demo-forge execute      # 数据灌入
+demo-forge verify       # 验证
+demo-forge clean        # 清理
 ```
 
 ## 定位

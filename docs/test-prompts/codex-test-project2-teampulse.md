@@ -6,7 +6,7 @@ You are testing the myskills plugin suite on the Codex platform. Plugins at `/pa
 
 Test project directory: `test-teampulse/`
 
-## Task 1: Dev Forge (no product-design — start from manual requirements)
+## Task 1: Bootstrap Product Map + Dev Forge
 
 Read `codex/dev-forge-skill/AGENTS.md` and `codex/dev-forge-skill/execution-playbook.md`.
 
@@ -18,17 +18,26 @@ Read `codex/dev-forge-skill/AGENTS.md` and `codex/dev-forge-skill/execution-play
 - 4 modules: auth, team, project, analytics
 - RBAC: admin, manager, member roles
 
-**Execute project-forge full:**
-1. Generate forge-decisions.json (Go Gin + React, 2 sub-projects)
-2. Generate project-manifest.json
-3. Generate go-api specs: requirements.md (15 requirements), design.md (35+ endpoints, 7 DB tables), tasks.md (30 tasks)
-4. Generate build-log.json (all tasks completed — simulating finished codebase)
+Before running `project-forge`, create a minimal `.allforai/product-map/` bootstrap that satisfies current Codex dev-forge prerequisites:
+
+1. Generate `.allforai/product-map/product-map.json`
+2. Generate `.allforai/product-map/task-inventory.json`
+3. Generate `.allforai/product-map/role-profiles.json`
+
+Then execute the early `project-forge` phases:
+
+4. Generate `forge-decisions.json` (Go Gin + React, 2 sub-projects)
+5. Generate `project-manifest.json`
+6. Generate go-api specs: `requirements.md` (15+ requirements), `design.md` (35+ endpoints, 7+ DB tables), `tasks.md` (30+ tasks)
+7. Generate `build-log.json` (all tasks completed — simulating finished codebase)
 
 **Expected output:**
 ```
 .allforai/project-forge/forge-decisions.json
 .allforai/project-forge/project-manifest.json
 .allforai/project-forge/build-log.json
+.allforai/product-map/product-map.json
+.allforai/product-map/task-inventory.json
 go-api/requirements.md
 go-api/design.md
 go-api/tasks.md
@@ -82,7 +91,7 @@ Run code-tuner full analysis on the TeamPulse go-api (simulated — use the desi
 
 ```bash
 find test-teampulse/.allforai/ -type f | wc -l
-# Expected: 10+ files
+# Expected: 12+ files
 
 find test-teampulse/.allforai/ -name "*.json" -exec python3 -m json.tool {} > /dev/null \;
 

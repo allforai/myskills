@@ -174,7 +174,7 @@ Phase 3 深度测试依赖 Playwright（Web）或 Patrol（Flutter），Phase 0 
 ### 下一步建议
 1. 优先修复 🔴 严重问题
 2. 对 ❓ 项逐个确认后告诉我
-3. 修复后可以跑 `/deadhunt:deadhunt incremental` 做回归验证
+3. 修复后可以执行 `deadhunt incremental` 工作流做回归验证
 
 > 完整报告已保存至: `.allforai/deadhunt/output/xxx`
 ```

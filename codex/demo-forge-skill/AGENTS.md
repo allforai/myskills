@@ -40,7 +40,8 @@ Brave Search -> web search -> AI generation (above chains)
 
 ## Multi-Round Iteration
 
-Target: **95% pass rate** (excluding DEFERRED_TO_DEV items).
+Target: **95% pass rate** (excluding `DEFERRED_TO_DEV` items) when runtime and verification capabilities are available.
+If optional capabilities are missing, report the achieved pass rate, deferred items, and untestable scope explicitly instead of pretending full verification happened.
 
 ```
 Round 0: design -> media -> execute -> verify

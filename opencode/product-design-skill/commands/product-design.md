@@ -150,8 +150,44 @@ loop (max 3 rounds):
 先完成最核心的产品，再依次扩展。
 ```
 
-用户选择拆分 → 记录拆分决策到 `.allforai/product-concept/scope-decisions.json`，然后只对第一个子产品执行 Phase 1。
+用户选择拆分 → 记录拆分决策到 `.allforai/product-concept/scope-decisions.json`（格式见下方结构定义），然后只对第一个子产品执行 Phase 1。
 用户选择不拆 → 记录决策，正常执行（skill 内部自动分批处理大规模）。
+
+**阈值关联说明**：Phase 0 拆分阈值（角色数/模块数）与 product-map 分批阈值（任务数）是两个独立维度，无自动关联：
+- Phase 0 基于**产品范围**判断是否需要拆分（角色/模块维度）
+- product-map 基于**任务密度**决定交互策略（任务数量：≤30 逐项确认 / >30 摘要确认 + 自审计）
+
+若 Phase 0 判定为"超大"但用户选择不拆，product-map 会按实际任务数量自适应处理。两者独立运行，无需人工对齐。
+
+**「零停顿」铁律例外说明**：Phase 0 的产品范围拆分决策是**产品元级选择**，不是流程确认询问。此处向用户询问是必要的隐含停顿点，不受「Phase 转换零停顿」铁律约束。确认范围后，后续 Phase 1-6 严格零停顿。
+
+### scope-decisions.json 结构定义
+
+拆分决策记录到 `.allforai/product-concept/scope-decisions.json`：
+
+```json
+{
+  "split_strategy": "by-domain | by-delivery-priority",
+  "products": [
+    {
+      "id": 1,
+      "name": "{产品名称}",
+      "scope": "{描述涵盖哪些模块/角色}",
+      "modules": ["module-a", "module-b"],
+      "roles": ["R1", "R2"]
+    },
+    {
+      "id": 2,
+      "name": "{产品名称}",
+      "scope": "{描述涵盖哪些模块/角色}",
+      "modules": ["module-c"],
+      "roles": ["R3"]
+    }
+  ],
+  "decided_at": "ISO timestamp",
+  "decided_by": "user | auto_continued"
+}
+```
 
 ### 外部能力快检
 
@@ -382,7 +418,7 @@ verify loop 通过后直接进入 Phase 3，不弹出人工审核。
 2. LLM 分析 experience-map + task-inventory，识别交互风险点并生成门禁报告
 
 **检查点**：
-- `gate-report.json` 存在
+- `.allforai/experience-map/interaction-gate.json` 存在
 
 ---
 
@@ -425,6 +461,8 @@ python3 ../../shared/scripts/product-design/gen_design_audit.py <BASE> [--mode a
 
 **并行执行以下 3 个任务**。并行任务全部完成后才继续。
 
+**并行执行说明**：使用 OpenCode Task tool 将 3 个 Agent 并发启动（各自独立的 task_id），主流程用 `task_id` 跟踪完成状态。若平台将并发请求串行化执行，**正确性不受影响**，仅性能约降低至 1/3（3 个 Agent 串行 vs 并行）。
+
 每个 Agent 的 prompt 模板：
 
 ~~~
@@ -456,7 +494,7 @@ python3 ../../shared/scripts/product-design/gen_design_audit.py <BASE> [--mode a
 
 **Phase C（合并）**：汇总报告
 
-2 个 Agent 全部返回后，编排器执行：
+3 个 Agent 全部返回后，编排器执行：
 1. 读取 `audit-report.json`（Phase A 基线）+ 3 个 `audit-shard-*.json` 分片
 2. 合并分片 sections 到主报告的 `summary` 和 issues 字段
 3. 重新生成 `audit-report.md`（含全部维度）

@@ -5,8 +5,22 @@
 
 ## Prerequisites
 
-All workflows require `.allforai/product-map/product-map.json` to exist.
+Default upstream prerequisite:
+- `project-forge`
+- `project-setup`
+- `design-to-spec`
+- `product-verify`
+
+These workflows require `.allforai/product-map/product-map.json` to exist.
 Run the product-design pipeline first if this artifact is missing.
+
+Reduced-context workflows:
+- `testforge`
+- `deadhunt`
+- `fieldcheck`
+- `task-execute` on an already prepared project
+
+These workflows can still run when `product-map` is missing, but they lose upstream truth sources and must report reduced coverage or downgraded certainty explicitly.
 
 ---
 

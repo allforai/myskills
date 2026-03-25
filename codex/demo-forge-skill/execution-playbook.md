@@ -1,6 +1,7 @@
 # Demo Forge — Execution Playbook
 
-Phase orchestration for the demo forge pipeline. Target: **95% verification pass rate**.
+Phase orchestration for the demo forge pipeline. Target: **95% verification pass rate** when runtime access and verification tooling are available.
+When they are not, the workflow must record reduced coverage and unresolved runtime-dependent scope explicitly.
 
 ---
 
@@ -117,7 +118,8 @@ Execute full verification (V1 -> V8).
 
 **Quality Gate:**
 - `verify-report.json` exists
-- `pass_rate >= 95%` (excluding DEFERRED_TO_DEV)
+- Target `pass_rate >= 95%` (excluding `DEFERRED_TO_DEV`) when verify coverage is available
+- If verify coverage is reduced by missing runtime or optional tooling, record achieved pass rate plus untestable scope explicitly
 
 PASS -> Phase 5 | FAIL -> Phase 4.5
 
@@ -169,6 +171,7 @@ Update `round-history.json` with phases executed, issues addressed, verify resul
 Iteration rounds: {total_rounds}
 Pass rate trend: Round 0 ({rate_0}%) -> ... -> Round N ({rate_n}%)
 Final pass rate: {final_rate}% (excluding DEFERRED_TO_DEV)
+Untestable scope: {untestable_scope_count}
 DEFERRED_TO_DEV tasks: {dev_task_count}
 Known issues (unresolved): {known_issue_count}
 ```
@@ -221,7 +224,7 @@ Write final status: `passed | passed_with_known_issues | max_rounds_reached`.
 
 ## Iron Rules
 
-1. **Quality gates are mandatory** — each phase must pass before the next begins
+1. **Quality gates are mandatory** — each phase must pass before the next begins, or report why a runtime-dependent gate could not be fully exercised
 2. **Orchestrator is navigator** — load skill files, do not implement logic directly
 3. **`.allforai/` is the contract** — all artifacts read/write through `.allforai/demo-forge/`
 4. **User can abort at any phase** — re-run `full` mode to restart

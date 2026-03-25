@@ -197,14 +197,14 @@ version: "5.0.0"
 
 > **review（Phase 5）**：线框+数据模型审核，验证 IA/流程/功能/数据结构。反馈路由到 product-map / experience-map / concept。通过后结构锁定，才进入视觉设计。
 
-> **Stitch 决策点**（Phase 5.5）：review 线框 tab 通过后、进入 Phase 6-8 并行执行前，检查 Stitch MCP 可用性。不可用时 confirm with user 三选一（上传设计稿 / 跳过视觉验收 / 配置 Stitch）。选择跳过时记入 pipeline-decisions（`stitch_skipped`），design-audit 标记 `stitch_skipped: true`。
+> **Stitch 决策点**（Phase 5.5）：review 线框 tab 通过后、进入 Phase 6-8 并行执行前，检查 Stitch MCP 可用性。不可用时向用户确认三选一（上传设计稿 / 跳过视觉验收 / 配置 Stitch）。选择跳过时记入 pipeline-decisions（`stitch_skipped`），design-audit 标记 `stitch_skipped: true`。
 
 ## 工具配置
 
 ```
-/setup                     # 一站式检测和配置所有外部能力
-/setup update              # 更新所有已安装的插件、MCP 服务器和技能
-/setup check               # 仅查看当前状态仪表板
+setup                      # 一站式检测和配置所有外部能力
+setup update               # 更新所有已安装的插件、MCP 服务器和技能
+setup check                # 仅查看当前状态仪表板
 ```
 
 ## 定位

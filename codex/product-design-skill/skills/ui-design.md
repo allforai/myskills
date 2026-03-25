@@ -118,12 +118,12 @@ product-concept → product-map → experience-map → ui-design
 
 | 步骤 | 标准模式 | 全自动模式 |
 |------|----------|-----------|
-| **Step 1 画像确认** | confirm with user | 自动确认，记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
-| **Step 2 风格选择** | present 8 style options for user to choose | 读 `pipeline_preferences.ui_styles[当前端类型]`：非 `"undecided"` → 直接使用预设风格，skip user confirmation；`"undecided"` → **回退交互模式**（展示 8 种风格，用户选择）。兼容旧版 `ui_style`（字符串） |
-| **Step 3 设计原则确认** | confirm with user | 自动确认（网络搜索照常执行，搜索结果自动采纳） |
-| **Step 4 规格确认** | confirm with user | 自动确认 |
-| **Step 5 预览确认** | confirm with user | 自动确认 |
-| **Step 5.5 Stitch 不可用** | ask the user | 自动降级到 Step 5.6（LLM 高保真预览） |
+| **Step 1 画像确认** | 向用户确认 | 自动确认，记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
+| **Step 2 风格选择** | 向用户展示 8 种风格并要求选择 | 读 `pipeline_preferences.ui_styles[当前端类型]`：非 `"undecided"` → 直接使用预设风格，跳过确认；`"undecided"` → **回退交互模式**（展示 8 种风格，用户选择）。兼容旧版 `ui_style`（字符串） |
+| **Step 3 设计原则确认** | 向用户确认 | 自动确认（网络搜索照常执行，搜索结果自动采纳） |
+| **Step 4 规格确认** | 向用户确认 | 自动确认 |
+| **Step 5 预览确认** | 向用户确认 | 自动确认 |
+| **Step 5.5 Stitch 不可用** | 询问用户 | 自动降级到 Step 5.6（LLM 高保真预览） |
 | **--variants 模式** | 生成 N 套风格方案 → 视觉对比 → 用户选择 | 自动选择与 `pipeline_preferences.ui_styles[当前端类型]` 最匹配的方案，记入 decisions.json |
 
 **安全护栏**（自动模式下仍然停下来问用户）：
@@ -198,7 +198,7 @@ Step 1: 产品画像推导                          ← design-steps.md
   推导：B端/C端、角色列表、各角色高频任务、界面总数
   向用户展示，确认
   ↓
-Step 2: 风格选择（confirm with user 单选）      ← design-steps.md
+Step 2: 风格选择（向用户确认，单选）      ← design-steps.md
   展示 8 种主流风格
   用户选定后，记录到 ui-design-decisions.json
   ↓
@@ -350,6 +350,6 @@ Step 5.6: LLM 高保真 HTML 预览               ← design-steps.md
 
 ## 下一步
 
-ui-design 完成后，运行 `/review` 启动统一审核站点（http://localhost:18900/），在 UI tab 中浏览所有界面预览、标注 pin 评论。提交反馈后运行 `/review process ui` 局部迭代修改的界面，循环直到全部通过。
+ui-design 完成后，执行 `review` 工作流启动统一审核站点（http://localhost:18900/），在 UI tab 中浏览所有界面预览、标注 pin 评论。提交反馈后执行 `review process ui` 做局部迭代，循环直到全部通过。
 
-在 `/product-design full` 流程中，UI 审核作为 Phase 8 自动串入（Phase 5-7 并行完成后、Phase 9 终审前）。
+在 `product-design full` 流程中，UI 审核作为 Phase 8 自动串入（Phase 5-7 并行完成后、Phase 9 终审前）。
