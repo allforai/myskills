@@ -49,7 +49,7 @@ Agent tool 的屏障同步机制保证所有前端 Agent 完成后才继续到 S
 任务: 为子项目 {sub-project-name} 生成完整的 spec 文档。
 
 执行步骤:
-1. 用 Read 工具加载 ${CLAUDE_PLUGIN_ROOT}/skills/design-to-spec.md（仅参考规则和模板，不重复全局步骤）
+1. 用 Read 工具加载 skills/design-to-spec.md（仅参考规则和模板，不重复全局步骤）
 2. 按 Step 1 (requirements) → Step 2 (原语识别, 仅前端) → Step 3 (design) [→ Step 3.5 仅后端] → Step 4 (tasks) 执行
 3. 产出写入 .allforai/project-forge/sub-projects/{sub-project-name}/
 
@@ -82,7 +82,7 @@ Agent tool 的屏障同步机制保证所有前端 Agent 完成后才继续到 S
 - 遵循两阶段加载（先 index 再 full data）
 - 前端 Agent: 接口调用必须引用后端 design.md 中已定义的接口 ID
 - 前端 Agent: 数据结构字段命名必须与注入的后端类型契约完全一致（不可自行推断字段名）
-- 预置脚本优先: 检查 ${CLAUDE_PLUGIN_ROOT}/scripts/ 是否有可用脚本
+- 预置脚本优先: 检查 scripts/ 是否有可用脚本
 ~~~
 
 Agent 调用参数：

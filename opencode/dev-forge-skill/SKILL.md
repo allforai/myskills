@@ -41,7 +41,7 @@ version: "5.9.1"
 
 ### 1. project-setup — 项目引导
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/skills/project-setup.md`
+> 详见 `skills/project-setup.md`
 
 交互式引导用户拆分子项目、选择技术栈、分配模块。LLM 验证架构合理性 (Conway's Law)。
 
@@ -52,7 +52,7 @@ version: "5.9.1"
 
 ### 2. design-to-spec — 设计转规格
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/skills/design-to-spec.md`
+> 详见 `skills/design-to-spec.md`
 
 **Forge-Verify-Loop (FVL)**：LLM 生成初稿 → 4D/6V 审计 → XV 交叉验证 → 自动修正。API-First 策略，生成 requirements + design + events + tasks。
 
@@ -65,7 +65,7 @@ version: "5.9.1"
 
 ### 3. task-execute — 任务执行
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/skills/task-execute.md`
+> 详见 `skills/task-execute.md`
 
 **R0 项目初始化**（Monorepo 配置 + 目录结构 + 依赖安装）→ **R1-R4 业务实现**（逐任务执行 + 增量 XV 审计 + 契约漂移同步 + DevSecOps 左移）。支持 build-log.json 进度追踪与断点续作。
 
@@ -79,7 +79,7 @@ version: "5.9.1"
 
 ### 4. product-verify — 产品验收
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/skills/product-verify.md`
+> 详见 `skills/product-verify.md`
 
 静态扫描代码覆盖率 + 动态 Playwright 验证行为合规性，输出差异任务清单。
 
@@ -174,7 +174,7 @@ code-tuner（架构层）      合规→重复→抽象→评分
 
 **效率优化**：LLM 驱动的理解步骤每个项目只需做一次（Phase 0 / Step 0），理解结果缓存后，后续扫描步骤可以批量执行。
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/docs/dev-forge-principles.md`
+> 详见 `docs/dev-forge-principles.md`
 
 ## 输出
 

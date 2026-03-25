@@ -617,7 +617,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 ### S2：Screen → 组件覆盖检查
 
-**前提**：`.allforai/experience-map/experience-map.json` 存在；否则自动加载并执行 `${CLAUDE_PLUGIN_ROOT}/../product-design-skill/skills/experience-map.md` 的完整工作流生成体验地图，完成后继续 S2。
+**前提**：`.allforai/experience-map/experience-map.json` 存在；否则自动加载并执行 `../product-design-skill/skills/experience-map.md` 的完整工作流生成体验地图，完成后继续 S2。
 
 **扫描策略**：
 1. Glob 前端页面/视图文件（pages/**, views/**, src/pages/**, app/**/page.**, 等）
@@ -733,7 +733,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
        partial — handler 有部分逻辑但明显不完整（如只处理了 happy path，缺少错误处理）
      输出: { "verdict": "genuine|stub|partial", "reason": "一句话理由" }
   3. 调用 OpenRouter:
-     mcp__plugin_product-design_ai-gateway__ask_model(
+     mcp__ai-gateway__ask_model(
        task: "technical_validation",
        model_family: "deepseek",
        prompt: 上述 prompt
@@ -872,7 +872,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 | `backend` | **curl / HTTP** | API 路由 + 响应校验 |
 
 **工具探测**：
-- Playwright: 检测 `mcp__playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 工具可用性
+- Playwright: 检测 `mcp__playwright__browser_navigate` 或 `mcp__playwright__browser_navigate` 工具可用性
 - Patrol: 检测 `which patrol` CLI 可用性（Bash）或项目 `pubspec.yaml` 含 `patrol` 依赖
 - Maestro: 检测 `which maestro` CLI 可用性（Bash）
 - XCUITest: 检测 `which xcodebuild` CLI 可用性（Bash）

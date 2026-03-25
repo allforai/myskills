@@ -1,19 +1,13 @@
 ---
 description: "项目锻造全流程：setup → spec → build → verify。模式: full / existing"
-argument-hint: "[mode: full] [existing]"
-allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion", "Agent"]
 ---
 
 # Project Forge — 项目锻造全流程编排
 
-用户请求: $ARGUMENTS
 
-## 插件根目录
-
-所有文档路径基于插件安装目录: `${CLAUDE_PLUGIN_ROOT}`
 
 > **跨插件调用约定**：本命令是「导航员」。
-> - Phase 1-5, 7-8 在本插件内执行，通过 `${CLAUDE_PLUGIN_ROOT}/skills/` 或 `${CLAUDE_PLUGIN_ROOT}/commands/` 路径加载。
+> - Phase 1-5, 7-8 在本插件内执行，通过 `./skills/` 或 `./commands/` 路径加载。
 > - Phase 6（demo-forge）为独立插件 `demo-forge-skill/`，提示用户运行 `/demo-forge design`。
 > - Phase 4（任务执行）调用 `task-execute` skill，自动编排 superpowers 技能。
 > - Phase 5（验证闭环）产品验收 + testforge E2E 链验证 + deadhunt + fieldcheck → 修复任务 → 回归。
@@ -163,9 +157,9 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 | 能力 | 探测方式 | 重要性 | 降级行为 |
 |------|---------|--------|---------|
-| Playwright | `mcp__playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 可用性（任一可用即就绪） | Phase 5-8 必需 | 阻塞验证阶段，提示安装 |
+| Playwright | Playwright browser automation 可用性（任一可用即就绪） | Phase 5-8 必需 | 阻塞验证阶段，提示安装 |
 | Maestro | `which maestro` CLI 可用性（Bash 检测） | mobile-native 子项目必需 | Playwright 降级（仅测 Web 端点）|
-| OpenRouter (MCP) | `mcp__plugin_product-design_ai-gateway__ask_model` 可用性 | 可选 | 跳过 XV 交叉验证 |
+| OpenRouter (MCP) | `cross-model API (e.g., OpenRouter)` 可用性 | 可选 | 跳过 XV 交叉验证 |
 
 **输出格式**：
 
@@ -178,7 +172,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 **交互式安装引导**（统一协议见 `product-design-skill/docs/skill-commons.md`）：
 
-- **Playwright 未就绪**：Phase 0 输出提示，不阻塞 Phase 1-4。进入 Phase 5 前用 AskUserQuestion 提供一键安装选项（「是，帮我安装」/「跳过」/「查看详情」）
+- **Playwright 未就绪**：Phase 0 输出提示，不阻塞 Phase 1-4。进入 Phase 5 前输出安装提示并声明推荐选项（「是，帮我安装」/「跳过」/「查看详情」）
 - **OpenRouter 未就绪**：提示运行 `/setup` 配置（Key 存储在插件 `.mcp.json`，不污染 shell 环境变量），不阻塞
 
 ### 初始化决策追踪
@@ -386,7 +380,7 @@ existing 模式下，Step 1 之前先扫描项目已有依赖文件（`package.j
 
 ### Step 2: WebSearch 调研（并行）
 
-各 spike 类别互不依赖，使用 **Agent tool 并行调研**。用**单条消息发出 N 个 Agent tool 调用**（N = 检测到的 spike 数量），每个 Agent 负责一个 spike 类别的 2-3 轮 WebSearch + 方案提炼。
+各 spike 类别互不依赖，execute parallel research。dispatch N parallel agents（N = 检测到的 spike 数量），每个 Agent 负责一个 spike 类别的 2-3 轮 WebSearch + 方案提炼。
 
 每个 Agent 的 prompt 模板：
 
@@ -424,7 +418,7 @@ existing 模式下，Step 1 之前先扫描项目已有依赖文件（`package.j
 
 ### Step 2.5: 跨模型交叉验证（可选）
 
-若 OpenRouter MCP 可用（`mcp__plugin_product-design_ai-gateway__ask_model` 工具存在），对每个 spike 向不同模型发送验证请求：
+若 OpenRouter MCP 可用（`cross-model API (e.g., OpenRouter)` 工具存在），对每个 spike 向不同模型发送验证请求：
 
 **Prompt 模板**：
 ```
@@ -485,7 +479,7 @@ WebSearch 找到的候选方案: {option_list}
 > **E2E 测试必须完全仿真**——mock 只用于单元测试，E2E 必须打真实 sandbox。
 > 凭据在 spike 决策时就收集，不要等到测试阶段才发现"Key 没配"。
 
-对每个 confirmed spike，LLM 判断需要什么凭据，用 AskUserQuestion 一次性收集：
+对每个 confirmed spike，LLM 判断需要什么凭据，声明所需凭据并假设合理默认值（仅在阻塞时才询问用户）：
 
 ```
 您选择了以下外部服务，E2E 测试需要真实/sandbox 凭据才能验证功能。
@@ -603,7 +597,7 @@ Step 0.5（环境配置）时读取 `service_credentials` → 写入各子项目
 
 ### 执行方式
 
-用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/skills/project-setup.md`，按其工作流执行。
+用 Read 加载 `./skills/project-setup.md`，按其工作流执行。
 
 - full 模式 → project-setup new
 - existing 模式 → project-setup existing
@@ -625,9 +619,9 @@ Step 0.5（环境配置）时读取 `service_credentials` → 写入各子项目
 
 ### 执行方式
 
-用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/skills/design-to-spec.md`，按其工作流执行（Step 1-6 规格生成 + Step 7 共享层分析）。
+用 Read 加载 `./skills/design-to-spec.md`，按其工作流执行（Step 1-6 规格生成 + Step 7 共享层分析）。
 
-design-to-spec 内部使用 Agent tool 并行加速：后端子项目先完成 spec，然后多个前端子项目并行生成 spec。详见 design-to-spec.md 的「并行执行编排」段落。
+design-to-spec 内部使用 parallel execution加速：后端子项目先完成 spec，然后多个前端子项目并行生成 spec。详见 design-to-spec.md 的「并行执行编排」段落。
 
 Step 7（共享层分析）在所有子项目 spec 生成完毕后执行：
 - new 模式 → 跳过已有代码扫描，从模式共振分析开始
@@ -672,7 +666,7 @@ Step 7（共享层分析）在所有子项目 spec 生成完毕后执行：
 
 ### 执行方式
 
-用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/skills/task-execute.md`，按其工作流执行。
+用 Read 加载 `./skills/task-execute.md`，按其工作流执行。
 
 task-execute 自动完成：
 - 加载各子项目 tasks.md + project-manifest.json
@@ -814,26 +808,26 @@ scope 限定在 build-log.json 中所有 files_modified 的并集（不扫全库
 Step 1: 并行扫描（4 个 Agent）
 
 product-verify、testforge（E2E chain）、deadhunt、fieldcheck 四项扫描均为只读代码分析，
-互不影响，使用 **单条消息发出 4 个 Agent tool 调用** 并行执行：
+互不影响，dispatch parallel agents 并行执行：
 
   Agent 1: 完整产品验收
-    用 Read 加载 ${CLAUDE_PLUGIN_ROOT}/skills/product-verify.md
+    用 Read 加载 ./skills/product-verify.md
     执行 /product-verify full（静态 + 动态）
     输出: verify-tasks.json（IMPLEMENT / REMOVE_EXTRA / FIX_FAILING）
 
   Agent 2: 跨端验证（测试锻造 E2E 链）
-    用 Read 加载 ${CLAUDE_PLUGIN_ROOT}/commands/testforge.md
+    用 Read 加载 ./commands/testforge.md
     执行 /testforge（Phase 4 Path B: E2E chain forge）
     输出: testforge-report.md（E2E chain 结果）
 
   Agent 3: 死链猎杀
-    用 Read 加载 ${CLAUDE_PLUGIN_ROOT}/commands/deadhunt.md
+    用 Read 加载 ./commands/deadhunt.md
     执行 /deadhunt static（静态分析）
     若应用已运行 → 执行 /deadhunt full（含深度测试）
     输出: validation-report-summary.md + fix-tasks.json
 
   Agent 4: 字段一致性检查
-    用 Read 加载 ${CLAUDE_PLUGIN_ROOT}/commands/fieldcheck.md
+    用 Read 加载 ./commands/fieldcheck.md
     执行 /fieldcheck full
     输出: field-report.md + field-issues.json
 
@@ -989,7 +983,7 @@ Step 5: 回归验证
 
 ### 执行方式（Phase 5 不是 completed 时）
 
-用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/commands/testforge.md`，执行 Phase 4 Path B（E2E chain forge）。
+用 Read 加载 `./commands/testforge.md`，执行 Phase 4 Path B（E2E chain forge）。
 
 **PASS** → 进入 Phase 8（最终报告）
 

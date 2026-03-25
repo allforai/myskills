@@ -80,7 +80,7 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 
 ## 锻造-验证-闭环 (FVL) 概览
 
-> 详细的 FVL 阶段定义（阶段 1-4、V1-V12、负空间推导、XV 交叉审查）见 `${CLAUDE_PLUGIN_ROOT}/docs/design-to-spec/auditor-validate.md`。
+> 详细的 FVL 阶段定义（阶段 1-4、V1-V12、负空间推导、XV 交叉审查）见 `docs/design-to-spec/auditor-validate.md`。
 
 本技能采用基于 LLM 的生成与审计闭环。上游产物是不可逾越的硬约束。
 - **阶段 1**: Agent 生成初稿（4D 工程维度覆盖）
@@ -175,11 +175,11 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 ## 前端页面交互套路
 
 > 详见以下文档:
-> - 图片字段: `${CLAUDE_PLUGIN_ROOT}/docs/field-specs/image-field.md`
-> - 视频字段: `${CLAUDE_PLUGIN_ROOT}/docs/field-specs/video-field.md`
+> - 图片字段: `docs/field-specs/image-field.md`
+> - 视频字段: `docs/field-specs/video-field.md`
 > - 页面交互类型分类（37 种）: `product-design-skill/docs/interaction-types.md`
-> - 技术栈套路（如存在）: `${CLAUDE_PLUGIN_ROOT}/docs/tech-stack-patterns/{stack}.md`（不存在时由 LLM 基于技术栈常识推导）
-> - 行为原语实现映射: `${CLAUDE_PLUGIN_ROOT}/docs/primitive-impl-map.md`
+> - 技术栈套路（如存在）: `docs/tech-stack-patterns/{stack}.md`（不存在时由 LLM 基于技术栈常识推导）
+> - 行为原语实现映射: `docs/primitive-impl-map.md`
 
 **套路检测（existing 模式专用）**：existing 模式下，Step 3 生成 design.md 之前，先扫描已有代码提取实际套路（Request 层、列表/表单/状态操作/删除确认/编辑回填/i18n/枚举管理模式）。
 
@@ -252,11 +252,11 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 
 **角色步骤加载指令**：
 
-- **Architect Agent**: Read `${CLAUDE_PLUGIN_ROOT}/docs/design-to-spec/architect-steps.md`
-- **Decomposer Agent**: Read `${CLAUDE_PLUGIN_ROOT}/docs/design-to-spec/decomposer-steps.md`
-- **Auditor-Validate Agent**: Read `${CLAUDE_PLUGIN_ROOT}/docs/design-to-spec/auditor-validate.md`（V1-V12 验证 + 闭环 + XV）
-- **Auditor-Enrich Agent**: Read `${CLAUDE_PLUGIN_ROOT}/docs/design-to-spec/auditor-enrich.md`（质量子任务补充，在 Validate 之后执行）
-- **Enricher Agent**: Read `${CLAUDE_PLUGIN_ROOT}/docs/design-to-spec/enricher-steps.md`
+- **Architect Agent**: Read `docs/design-to-spec/architect-steps.md`
+- **Decomposer Agent**: Read `docs/design-to-spec/decomposer-steps.md`
+- **Auditor-Validate Agent**: Read `docs/design-to-spec/auditor-validate.md`（V1-V12 验证 + 闭环 + XV）
+- **Auditor-Enrich Agent**: Read `docs/design-to-spec/auditor-enrich.md`（质量子任务补充，在 Validate 之后执行）
+- **Enricher Agent**: Read `docs/design-to-spec/enricher-steps.md`
 
 **子项目分类**:
   后端组: type = "backend"（可能 1 个或多个微服务）
@@ -350,7 +350,7 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 
 ## 并行执行编排 & 任务 Batch 结构
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/docs/execution-batches.md`
+> 详见 `docs/execution-batches.md`
 > 包含：子项目分类（后端/前端组）、Phase A/B Agent 编排、Agent prompt 模板、错误处理、resume 模式、Batch 0-5 结构、各端 Batch 内容差异。
 
 ---

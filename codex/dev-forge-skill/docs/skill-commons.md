@@ -74,7 +74,7 @@ dev-forge 的所有阶段（design-to-spec、task-execute、product-verify）均
 
 ## 六、跨模型增强（OpenRouter）
 
-通过 OpenRouter MCP (`mcp__plugin_product-design_ai-gateway__ask_model`) 调用不同模型家族，利用各模型专长增强特定阶段的产出质量。
+通过 cross-model API (e.g., OpenRouter) 调用不同模型家族，利用各模型专长增强特定阶段的产出质量。
 
 ### 专家模型路由矩阵 (The Expert Matrix)
 

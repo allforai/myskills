@@ -522,7 +522,7 @@ Step 2: 逐任务执行
     后续任务依赖失败任务的产出文件 → status = skipped
   ↓
 Step 3: Round 质量检查（三路并行）
-  Round 全部任务完成（或部分 failed/skipped）后，使用 Agent tool 并行执行三项检查：
+  Round 全部任务完成（或部分 failed/skipped）后，使用 execute in parallel三项检查：
     ┌── Agent(lint): 运行 lint → quality_checks.lint 更新
     │     lint 失败 → agent 自动修复 → 重跑
     ├── Agent(test): 运行 test → quality_checks.test 更新
@@ -537,10 +537,10 @@ Step 3: Round 质量检查（三路并行）
 
   **test_quality_check（仅 B5 Round 触发）**:
     > 测试全 PASS ≠ 功能正确。测试代码本身可能有 bug（只测渲染不测行为）。
-    > TQ Agent 审查"测试有没有在骗你"。详见 `${CLAUDE_PLUGIN_ROOT}/docs/test-quality-review.md`。
+    > TQ Agent 审查"测试有没有在骗你"。详见 `./docs/test-quality-review.md`。
 
     Agent(test-quality): 并行于 lint/test/security。
-    加载 `${CLAUDE_PLUGIN_ROOT}/docs/test-quality-review.md` 执行审查。
+    加载 `./docs/test-quality-review.md` 执行审查。
     结果: CRITICAL → 生成 B-TEST-FIX 任务，WARNING → 记录到 build-log。
 
   abstraction_check（仅 B2 / B3 Round 触发，B0/B1/B4/B5 跳过）:
@@ -691,7 +691,7 @@ Step 4: Round 增量验证（存在性 + 正确性）
 
     === 正确性验证执行方式 ===
 
-    CC1-CC5 + CC7 使用 Agent tool 并行执行，与存在性验证的 product-verify scope 串行。
+    CC1-CC5 + CC7 使用 execute in parallel，与存在性验证的 product-verify scope 串行。
     CC7 仅前端 Round 且 experience-dna.json 存在时触发。
     **大型项目自适应**：CC7 检查的 DIFF 数 > 20 时，按子项目拆成多个 CC7 Agent 并行（每个只检查该子项目的 DNA 实现）。
 

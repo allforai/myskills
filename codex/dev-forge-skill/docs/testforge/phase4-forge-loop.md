@@ -24,9 +24,9 @@
 > 这不是 Step 4.0 静态接缝预检本身的职责。Step 4.0 只负责发现接缝层假绿；上述节点用于指导 Step 4 后续测试锻造优先级。
 
 并行执行 2 个 Agent：
-  Agent 1: 用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/commands/deadhunt.md`
+  Agent 1: 用 Read 加载 `./commands/deadhunt.md`
            执行 /deadhunt static（死链 + CRUD 缺口 + 幽灵功能 + 接缝检查）
-  Agent 2: 用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/commands/fieldcheck.md`
+  Agent 2: 用 Read 加载 `./commands/fieldcheck.md`
            执行 /fieldcheck full（UI↔API↔Entity↔DB 字段一致性 + 接缝检查 SC-1~SC-5）
 
 汇总结果：
@@ -135,7 +135,7 @@ dimension Logic > Interface > Data > UX（业务规则最先）
 
 **执行顺序**：Step 4.0(静态接缝预检) → **Step 4.0.5(Chain 0 冒烟 — 跑起来验证)** → Step 4.1(基础设施) → Step 4.2(批次规划) → Step 4.3 路径 A(仅逻辑层) → D → C → B(完整 E2E 链，复用 Chain 0 登录态) → Step 4.4(构建验证)
 
-**跨子项目并行**：同一路径内，不同子项目互相独立，使用 Agent tool 并行执行。例如 Path A 中 website 和 admin 的单元测试可同时锻造。Path B 除外（E2E 链天然跨子项目，按链串行）。
+**跨子项目并行**：同一路径内，不同子项目互相独立，使用 execute in parallel。例如 Path A 中 website 和 admin 的单元测试可同时锻造。Path B 除外（E2E 链天然跨子项目，按链串行）。
 
 ## Step 4.3: 逐批锻造（内循环）
 
@@ -224,7 +224,7 @@ Step 3: 验证断言不是同义反复
 
 > 同一套业务场景，在每个可用平台各跑一遍 UI 自动化测试。
 
-> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/testforge/path-c-platform-ui.md（如存在）
+> 详见 ./docs/testforge/path-c-platform-ui.md（如存在）
 > 如不存在，按以下协议执行：
 
 **前置条件**：Path A（unit/component）和 Path D（integration）中该子项目的测试已通过。

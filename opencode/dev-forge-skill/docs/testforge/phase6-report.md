@@ -143,7 +143,7 @@
 
 ## 决策日志
 
-每次用户通过 AskUserQuestion 确认决策时，追加记录到 `testforge-decisions.json`：
+每次用户确认决策时，追加记录到 `testforge-decisions.json`：
 
 ```json
 {

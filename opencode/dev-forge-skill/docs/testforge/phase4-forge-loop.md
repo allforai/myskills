@@ -24,9 +24,9 @@
 > 这不是 Step 4.0 静态接缝预检本身的职责。Step 4.0 只负责发现接缝层假绿；上述节点用于指导 Step 4 后续测试锻造优先级。
 
 并行执行 2 个 Agent：
-  Agent 1: 用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/commands/deadhunt.md`
+  Agent 1: 用 Read 加载 `commands/deadhunt.md`
            执行 /deadhunt static（死链 + CRUD 缺口 + 幽灵功能 + 接缝检查）
-  Agent 2: 用 Read 加载 `${CLAUDE_PLUGIN_ROOT}/commands/fieldcheck.md`
+  Agent 2: 用 Read 加载 `commands/fieldcheck.md`
            执行 /fieldcheck full（UI↔API↔Entity↔DB 字段一致性 + 接缝检查 SC-1~SC-5）
 
 汇总结果：
@@ -224,7 +224,7 @@ Step 3: 验证断言不是同义反复
 
 > 同一套业务场景，在每个可用平台各跑一遍 UI 自动化测试。
 
-> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/testforge/path-c-platform-ui.md（如存在）
+> 详见 docs/testforge/path-c-platform-ui.md（如存在）
 > 如不存在，按以下协议执行：
 
 **前置条件**：Path A（unit/component）和 Path D（integration）中该子项目的测试已通过。

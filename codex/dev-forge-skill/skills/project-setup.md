@@ -383,7 +383,7 @@ Step 0 扫描策略:
 **交互**：
 
 ```
-AskUserQuestion:
+**决策点（假设推荐值，仅阻塞时询问用户）**:
 检测到以下外部依赖需要 dev bypass：
 
   1. ✅ 支付网关（auto_callback）

@@ -537,10 +537,10 @@ Step 3: Round 质量检查（三路并行）
 
   **test_quality_check（仅 B5 Round 触发）**:
     > 测试全 PASS ≠ 功能正确。测试代码本身可能有 bug（只测渲染不测行为）。
-    > TQ Agent 审查"测试有没有在骗你"。详见 `${CLAUDE_PLUGIN_ROOT}/docs/test-quality-review.md`。
+    > TQ Agent 审查"测试有没有在骗你"。详见 `docs/test-quality-review.md`。
 
     Agent(test-quality): 并行于 lint/test/security。
-    加载 `${CLAUDE_PLUGIN_ROOT}/docs/test-quality-review.md` 执行审查。
+    加载 `docs/test-quality-review.md` 执行审查。
     结果: CRITICAL → 生成 B-TEST-FIX 任务，WARNING → 记录到 build-log。
 
   abstraction_check（仅 B2 / B3 Round 触发，B0/B1/B4/B5 跳过）:
