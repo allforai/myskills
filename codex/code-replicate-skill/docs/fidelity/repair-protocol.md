@@ -33,21 +33,21 @@ LLM 将 gaps 分为三类：
 
 ### ARTIFACT_GAP 修复
 
-cr-fidelity 内部处理，**不要求用户退出重跑 `/code-replicate`**：
+cr-fidelity 内部处理，**不要求用户退出重跑 code-replicate**：
 
 1. LLM 读 extraction-plan.json 定位遗漏来源
 2. LLM 读源码对应文件，生成补充片段 → 写入 fragments/
 3. 调用 merge 脚本重新合并对应产物
 4. 调用 `cr_validate.py` 校验补充后的产物
 5. 少量（≤3 个新条目）→ cr-fidelity 直接在目标代码中补充实现
-6. 大量（>3 个新条目）→ 标记为 `DESIGN_DECISION`，建议用户重跑 `/design-to-spec`
+6. 大量（>3 个新条目）→ 标记为 `DESIGN_DECISION`，建议用户重跑 design-to-spec
 
 ### DESIGN_DECISION 处理
 
 不自动修复，但记录足够信息让用户决策：
 - 具体的差异描述
 - 推荐的解决方向
-- 用户决策后执行 `/cr-fidelity fix` 重新评分
+- 用户决策后执行 cr-fidelity fix 重新评分
 
 ### 修复范围控制
 
@@ -97,5 +97,5 @@ cr-fidelity 内部处理，**不要求用户退出重跑 `/code-replicate`**：
 - 未修复的 gaps（DESIGN_DECISION + 超限项 + 连锁回滚项）
 - 各轮修复记录
 - **下一步建议**：
-  - 达标 → `/product-verify` 验证功能完整性 → `testforge` 补测试
-  - 未达标 → 人工处理 DESIGN_DECISION 后重跑 `/cr-fidelity fix`
+  - 达标 → product-verify 验证功能完整性 → testforge 补测试
+  - 未达标 → 人工处理 DESIGN_DECISION 后重跑 cr-fidelity fix

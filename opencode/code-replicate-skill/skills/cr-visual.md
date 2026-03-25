@@ -1,85 +1,86 @@
 ---
 name: cr-visual
 description: >
-  Use when user wants to "compare UI visually", "视觉还原", "截图对比",
-  "UI 还原度", "看看界面像不像", "visual comparison", "screenshot diff",
+  Use when user wants to "compare UI visually", "visual fidelity", "screenshot comparison",
+  "UI fidelity", "visual comparison", "screenshot diff",
   or mentions comparing source and target app screenshots for UI fidelity.
+version: "1.0.0"
 ---
 
-# 视觉还原度 — CR Visual v1.0
+# Visual Fidelity — CR Visual v1.0
 
-> 源 App vs 目标 App 逐屏截图/录像 → 对比 → 修复 → 重新对比 → 直到视觉一致
+> Source App vs Target App screen-by-screen screenshot/recording -> compare -> fix -> re-compare -> until visually consistent
 
-## 定位
+## Positioning
 
-cr-visual 是复刻流程的**最后一步** — 在 cr-fidelity + product-verify + testforge 全部通过后执行。
-
-```
-/cr-fidelity → /product-verify → /testforge → /cr-visual（这里）
-```
-
-**前置条件**：测试全绿，App 能稳定运行。截图对比需要 App 正常工作。
-
-**平台差异自动排除**：如果 `stack-mapping.json` 含 `platform_adaptation` → cr-visual 启动时自动加载转换规则。符合 platform_adaptation 的差异（如移动端底部导航 → 桌面端侧边栏）自动标记为 `not_a_gap`，LLM 对比时直接跳过不扣分，不需要用户手动提示。
-
-**多角色对比**：如果 `role-view-matrix.json` 存在 → 逐角色截图并分别对比。
-
-**交互行为对比**：如果 `interaction-recordings.json` 存在 → 源 App 的证据已在 Phase 2.13 采集。cr-visual 对目标 App 执行**同样的业务流程链**：
-
-逐 flow 执行（按 interaction-recordings.json 的 flows 结构）：
-1. 按 flow.steps 在目标 App 上执行同样的操作序列（角色切换、填表、点击、等待）
-2. 在每个 screenshot 里程碑截图 → 与源 App 的对应截图对比
-3. 同时采集目标 App 的 API 日志 → 与源 App 的 api.json 对比
-
-五层验证：
-1. **静态页面**：源截图 vs 目标截图 → 布局/组件/数据展示一致吗？
-2. **CRUD 全状态**：flow 链自然覆盖 CRUD 生命周期 → 逐里程碑截图对比
-3. **动态效果**（type=visual_effect 的 flow）：源录像 vs 目标录像 → 动画/过渡一致吗？
-4. **API 日志**：源 api.json vs 目标 api.json → 同样的操作触发了同样的请求吗？
-5. **综合**：同一 flow → 每个里程碑截图 + API 都一致 = high
-
-每个交互输出 match_level: high / medium / low / mismatch
-
----
-
-## 流程
+cr-visual is the **last step** in the replication flow — executed after cr-fidelity + product-verify + testforge all pass.
 
 ```
-Step 1: 获取 screen 列表（从 experience-map）
-Step 2: 获取源 App 截图/录像（Phase 2 已采集 or 现场采集）
-Step 3: 获取目标 App 截图/录像
-Step 4: LLM 逐屏对比（结构级 + 动态效果）
-Step 5: 差异报告 + 评分
-Step 6: 修复差异（LLM 修改目标代码）
-Step 7: 重新截图/录像 → 重新对比 → 达标退出
+cr-fidelity -> product-verify -> testforge -> cr-visual (here)
 ```
 
-`full` 模式 = Step 1-7 闭环（最多 3 轮）
-`analyze` 模式 = Step 1-5 仅出报告
-`fix` 模式 = Step 6-7 基于上次报告修复
+**Prerequisite**: tests all green, App can run stably. Screenshot comparison requires a working App.
+
+**Platform difference auto-exclusion**: If `stack-mapping.json` has `platform_adaptation` -> cr-visual auto-loads transformation rules at startup. Differences matching platform_adaptation (e.g., mobile bottom nav -> desktop sidebar) are auto-marked as `not_a_gap`, LLM comparison skips them without deducting points.
+
+**Multi-role comparison**: If `role-view-matrix.json` exists -> screenshot per role and compare separately.
+
+**Interaction behavior comparison**: If `interaction-recordings.json` exists -> source App evidence was collected in Phase 2.13. cr-visual executes **the same business flow chains** on the target App:
+
+Per flow execution (following interaction-recordings.json flows structure):
+1. Execute same operation sequence on target App per flow.steps (role switch, form fill, click, wait)
+2. Screenshot at each screenshot milestone -> compare with source App's corresponding screenshot
+3. Simultaneously capture target App's API logs -> compare with source App's api.json
+
+Five-layer verification:
+1. **Static pages**: source screenshot vs target screenshot -> layout/component/data display consistent?
+2. **CRUD full state**: flow chain naturally covers CRUD lifecycle -> per-milestone screenshot comparison
+3. **Dynamic effects** (type=visual_effect flows): source recording vs target recording -> animation/transition consistent?
+4. **API logs**: source api.json vs target api.json -> same operations trigger same requests?
+5. **Combined**: same flow -> every milestone screenshot + API all consistent = high
+
+Each interaction outputs match_level: high / medium / low / mismatch
 
 ---
 
-## Step 1: Screen 列表 + 路由映射
-
-从 `.allforai/experience-map/experience-map.json` 提取所有 screen，建立路由映射：
+## Flow
 
 ```
-1. 从 experience-map 提取每个 screen 的 name、route（如有）、layout_type
-2. 读 .allforai/code-replicate/visual/route-map.json（Phase 2c-visual 生成的路由→截图映射）
-3. 建立配对：screen name ↔ route path ↔ 源截图文件名
-   - experience-map screen 有 route → 直接匹配 route-map
-   - experience-map screen 无 route → LLM 按 screen name 和 route-map 的语义相似度匹配
-4. 跳过无法配对的 screen
+Step 1: Get screen list (from experience-map)
+Step 2: Get source App screenshots/recordings (Phase 2 collected or live capture)
+Step 3: Get target App screenshots/recordings
+Step 4: LLM per-screen comparison (structural + dynamic effects)
+Step 5: Difference report + scoring
+Step 6: Fix differences (LLM modifies target code)
+Step 7: Re-screenshot/record -> re-compare -> exit when passing
+```
+
+`full` mode = Step 1-7 loop (max 3 rounds)
+`analyze` mode = Step 1-5 report only
+`fix` mode = Step 6-7 fix based on last report
+
+---
+
+## Step 1: Screen List + Route Mapping
+
+From `.allforai/experience-map/experience-map.json` extract all screens, build route mapping:
+
+```
+1. Extract each screen's name, route (if any), layout_type from experience-map
+2. Read .allforai/code-replicate/visual/route-map.json (Phase 2c-visual generated route->screenshot mapping)
+3. Build pairing: screen name <-> route path <-> source screenshot filename
+   - experience-map screen has route -> direct match route-map
+   - experience-map screen has no route -> LLM matches by semantic similarity between screen name and route-map
+4. Skip unpaired screens
 ```
 
 ---
 
-## Step 1.5: 源 App 启动信息
+## Step 1.5: Source App Startup Info
 
-cr-visual 需要知道怎么启动和导航源 App。信息来源（优先级）：
+cr-visual needs to know how to start and navigate the source App. Information sources (priority):
 
-1. **replicate-config.json 的 `source_app` 字段**（code-replicate Phase 1 收集）：
+1. **replicate-config.json `source_app` field** (collected in code-replicate Phase 1):
    ```json
    "source_app": {
      "start_command": "npm run dev",
@@ -89,81 +90,81 @@ cr-visual 需要知道怎么启动和导航源 App。信息来源（优先级）
      "login": {
        "username": "test@example.com",
        "password": "test123",
-       "bypass_command": "设置环境变量/API调用来绕过2FA（如有）"
+       "bypass_command": "env var/API call to bypass 2FA (if any)"
      },
      "platform": "web | mobile | desktop"
    }
    ```
-   Phase 1 Preflight 时 LLM 应向用户询问：
-   - 源 App 如何启动？需要先启动后端吗？
-   - 有测试数据吗？seed 命令是什么？
-   - 需要登录吗？有验证码/2FA 吗？怎么绕过？
+   Phase 1 Preflight should ask the user:
+   - How to start the source App? Need to start backend first?
+   - Is there test data? What's the seed command?
+   - Need to login? Has CAPTCHA/2FA? How to bypass?
 
-2. **用户通过 `--source` 参数直接提供 URL**
+2. **User provides URL directly via `--source` parameter**
 
-3. **用户通过 `--screenshots` 提供已有截图**
+3. **User provides existing screenshots via `--screenshots`**
 
-如果 replicate-config 没有 `source_app` 且用户未传参 → AskUserQuestion 引导。
-
----
-
-## Step 2: 源 App 截图
-
-**方式 A（首选）— Phase 2 已采集**：
-- 检查 `.allforai/code-replicate/visual/source/` 是否已有截图
-- 已有 → 直接复用（Phase 2c-visual 在复刻早期已自动采集，此时源项目环境可能已不在）
-
-**方式 B — 用户提供截图目录**：
-- 读取 `--screenshots` 目录中的图片文件
-- LLM 将图片文件名与 experience-map screen name 配对
-
-**方式 C — 源 App 仍可运行**：
-- 按 Phase 2c-visual 的完整协议执行（启动后端 → seed 数据 → 启动前端 → 登录 → 截图）
-- 任何前置条件失败（后端不可用、数据库为空、登录失败）→ 不截图，报具体失败原因
-
-**无截图可用** → 报错退出：「源 App 截图不可用。请提供 --screenshots 目录，或确保源 App 环境完整（后端 + 数据 + 登录凭证）」
+If replicate-config has no `source_app` and user didn't pass parameters -> ask the user naturally.
 
 ---
 
-## Step 3: 目标 App 截图
+## Step 2: Source App Screenshots
 
-**截图工具由 LLM 根据目标技术栈自行决定**。LLM 读项目技术栈 → 选择合适的自动化工具 → 用 Bash 执行截图命令。
+**Method A (preferred) — Phase 2 already collected**:
+- Check if `.allforai/code-replicate/visual/source/` already has screenshots
+- Already has -> reuse directly (Phase 2c-visual collected early in replication, source project env may no longer exist)
 
-LLM 读目标项目的技术栈 → 自行搜索并选择适合该技术栈的 UI 自动化工具 → 用 Bash 执行截图命令。不限定工具列表。
+**Method B — User provides screenshot directory**:
+- Read image files from `--screenshots` directory
+- LLM matches image filenames with experience-map screen names
 
-**如果 LLM 找不到可用的自动化工具** → 提示用户手动截图到 `visual/target/`。这是最后兜底，不是默认行为。
+**Method C — Source App still runnable**:
+- Follow Phase 2c-visual full protocol (start backend -> seed data -> start frontend -> login -> screenshot)
+- Any precondition failure (backend unavailable, database empty, login failed) -> don't screenshot, report specific failure reason
+
+**No screenshots available** -> error exit: "Source App screenshots unavailable. Provide --screenshots directory, or ensure source App environment is complete (backend + data + login credentials)."
 
 ---
 
-## Step 4: LLM 逐屏对比
+## Step 3: Target App Screenshots
 
-对每对截图（source/screen_name.png vs target/screen_name.png），LLM 用 Read 查看两张图片，评估：
+**Screenshot tool is decided by LLM based on target tech stack**. LLM reads project tech stack -> selects suitable UI automation tool -> executes screenshot commands via Bash.
 
-**结构级对比（做）**：
-- 区域划分是否等价？（头部/内容/底部/侧边栏）
-- 关键 UI 元素是否存在？（按钮、输入框、列表、卡片）
-- 数据展示区域的位置是否合理？
-- 导航入口是否可见？（菜单、Tab、返回按钮）
-- 信息层级是否一致？（标题 > 副标题 > 正文的层次感）
+LLM reads target project tech stack -> searches for and selects appropriate UI automation tools -> executes via Bash. No fixed tool list.
 
-**不做**：
-- 像素级颜色对比（目标可以换主题色）
-- 字体/字号精确匹配（目标可以用不同字体）
-- 间距/留白精确匹配（目标可以重新设计间距）
-- 动画/过渡效果（截图看不到）
+**If LLM cannot find a usable automation tool** -> prompt user to manually screenshot to `visual/target/`. This is last resort, not default behavior.
 
-**跨平台调整**：
-- 如果 stack-mapping 有 `platform_adaptation.ux_transformations`
-- 按转换期望评估：mobile 单列 → desktop 多面板不算 gap
-- mobile 底部导航 → desktop 侧边栏不算 gap
+---
 
-**每个 screen 输出**：
+## Step 4: LLM Per-Screen Comparison
+
+For each screenshot pair (source/screen_name.png vs target/screen_name.png), LLM views both images:
+
+**Structural comparison (do)**:
+- Are region divisions equivalent? (header/content/footer/sidebar)
+- Are key UI elements present? (buttons, inputs, lists, cards)
+- Is data display area positioned reasonably?
+- Are navigation entries visible? (menus, tabs, back buttons)
+- Is information hierarchy consistent? (title > subtitle > body hierarchy)
+
+**Don't do**:
+- Pixel-level color comparison (target can change theme)
+- Exact font/size matching (target can use different fonts)
+- Exact spacing/whitespace matching (target can redesign spacing)
+- Animation/transition effects (screenshots can't show these)
+
+**Cross-platform adjustments**:
+- If stack-mapping has `platform_adaptation.ux_transformations`
+- Evaluate per transformation expectations: mobile single column -> desktop multi-panel is not a gap
+- Mobile bottom nav -> desktop sidebar is not a gap
+
+**Each screen output**:
 ```json
 {
   "screen": "screen name",
   "match_level": "high | medium | low | mismatch",
   "score": 100 | 70 | 40 | 0,
-  "differences": "LLM 自由描述差异",
+  "differences": "LLM free description of differences",
   "source_screenshot": "visual/source/xxx.png",
   "target_screenshot": "visual/target/xxx.png"
 }
@@ -171,9 +172,9 @@ LLM 读目标项目的技术栈 → 自行搜索并选择适合该技术栈的 U
 
 ---
 
-## Step 5: 报告
+## Step 5: Report
 
-写入 `.allforai/code-replicate/visual-report.json` + `visual-report.md`：
+Written to `.allforai/code-replicate/visual-report.json` + `visual-report.md`:
 
 ```json
 {
@@ -183,98 +184,96 @@ LLM 读目标项目的技术栈 → 自行搜索并选择适合该技术栈的 U
   "skipped": 2,
   "overall_score": 82,
   "screens": [
-    {"screen": "...", "match_level": "high", "score": 100, "differences": "无明显差异"},
-    {"screen": "...", "match_level": "low", "score": 40, "differences": "列表布局从卡片式变成了表格式，缺少筛选栏"}
+    {"screen": "...", "match_level": "high", "score": 100, "differences": "No notable differences"},
+    {"screen": "...", "match_level": "low", "score": 40, "differences": "List layout changed from cards to table, missing filter bar"}
   ]
 }
 ```
 
-`visual-report.md` 包含：
-- 每个 screen 的截图路径对（用户可直接查看）
-- 差异描述
-- 整体评分
-- 低分 screen 的修复方案
+`visual-report.md` includes:
+- Each screen's screenshot path pair (user can view directly)
+- Difference descriptions
+- Overall score
+- Fix recommendations for low-scoring screens
 
 ---
 
-## Step 6+7: 修复闭环 — 调用 ralph-loop
+## Steps 6+7: Repair Loop
 
-视觉还原追求 **100% 一致**，不是"差不多就行"。使用 ralph-loop 持续修复直到完美。
+Visual fidelity aims for **100% consistency**, not "close enough". Continuously fix until perfect.
 
-**启动 ralph-loop**：
+**Repair loop**:
 
 ```
-/ralph-loop 启动视觉还原修复循环
+Each round:
+  1. Read visual-report.json -> find screens with match_level != high
+  2. Sort by score ascending -> take the lowest scored 1 screen
+  3. Read source screenshot/recording + target screenshot/recording -> identify specific differences
+  4. Diagnose root cause layer:
+     LLM views screenshot/recording differences -> judge which layer the root cause is in:
 
-每轮执行:
-  1. 读 visual-report.json → 找到 match_level ≠ high 的 screen
-  2. 按 score 从低到高排序 → 取最低分的 1 个 screen
-  3. 读源截图/录像 + 目标截图/录像 → 识别具体差异
-  4. 诊断根因层级：
-     LLM 看截图/录像差异 → 判断根因在哪一层：
+     UI layer (fix directly):
+       - Layout structure -> modify template/CSS
+       - Missing component -> add component
+       - Theme variables -> correct variable values
+       - Missing assets -> add icons/images/fonts
+       - Missing animation -> add CSS transition / animation code
 
-     UI 层（直接修）:
-       - 布局结构 → 改模板/CSS
-       - 组件缺失 → 补组件
-       - 主题变量 → 修正变量值
-       - 素材缺失 → 补图标/图片/字体
-       - 动画缺失 → 补 CSS transition / 动画代码
+     Non-UI layer (root cause escalation -> fix then come back):
+       - Empty list/wrong data -> check API call -> maybe backend field mismatch -> fix backend code
+       - Permission button not hidden -> check RBAC logic -> maybe role-view-matrix not restored -> fix permission code
+       - Request error -> check error code -> maybe error-catalog inconsistent -> fix error definitions
+       - Broken icons/fonts -> check asset references -> maybe asset migration missed -> add assets
+       - Infrastructure differences -> check infrastructure-profile -> maybe protocol/encryption layer issue
 
-     非 UI 层（根因升级 → 修完回来）:
-       - 列表为空/数据错 → 检查 API 调用 → 可能是后端字段不一致 → 修后端代码
-       - 权限按钮未隐藏 → 检查 RBAC 逻辑 → 可能是 role-view-matrix 未还原 → 修权限代码
-       - 请求报错 → 检查错误码 → 可能是 error-catalog 不一致 → 修错误定义
-       - 图标/字体碎裂 → 检查 asset 引用 → 可能是 asset 迁移遗漏 → 补 asset
-       - 基础设施差异 → 检查 infrastructure-profile → 可能是协议/加密层问题
+  5. Execute fix:
+     UI layer -> directly Edit target code
+     Non-UI layer -> root cause escalation:
+       a. Mark current screen as BLOCKED (waiting for upstream fix)
+       b. Directly fix upstream code (backend/API/permissions/assets/infrastructure)
+       c. Rebuild frontend and backend after fix
+       d. Return to current screen to continue visual fixing
 
-  5. 执行修复：
-     UI 层 → 直接 Edit 目标代码
-     非 UI 层 → 根因升级：
-       a. 标记当前 screen 为 BLOCKED（等待上游修复）
-       b. 直接修复上游代码（后端/API/权限/asset/基础设施）
-       c. 修复后重新构建前后端
-       d. 回到当前 screen 继续视觉修复
+  6. Build verification (ensure compilation not broken)
+  7. Re-screenshot/record the fixed screen
+  8. Re-compare -> update visual-report.json
+  9. Screen reaches high -> next screen
+     Still not high -> continue fixing this screen (may have multi-layer differences)
 
-  6. 构建验证（确保不破坏编译）
-  7. 对修复的 screen 重新截图/录像
-  8. 重新对比 → 更新 visual-report.json
-  9. 该 screen 达到 high → 下一个 screen
-     仍未 high → 继续修该 screen（可能有多层差异）
-
-退出条件:
-  - 所有 screen match_level = high → 100% 达成
-  - 或达到 30 轮上限
+Exit conditions:
+  - All screens match_level = high -> 100% achieved
+  - Or reach 30 round limit
 ```
 
-**关键要求**：
+**Key requirements**:
 
-**必须使用真实数据和真实服务**：
-- 截图时目标 App 必须连接**真实后端**（不是 mock server）
-- 页面展示的必须是**真实业务数据**（不是 seed 的采样数据）
-- 如果源 App 截图时用的是真实数据 → 目标 App 截图时也必须用同样的数据源
-- 数据差异导致的界面差异不是视觉 bug — 但**空数据 vs 有数据**的差异是 bug
+**Must use real data and real services**:
+- Target App must connect to **real backend** when screenshotting (not mock server)
+- Pages must show **real business data** (not sampled seed data)
+- If source App screenshots used real data -> target App screenshots must use same data source
+- Data differences causing UI differences are not visual bugs — but **empty data vs has data** differences are bugs
 
-**每轮只修 1 个 screen**：
-- 聚焦一个问题修到完美，不跳来跳去
-- 修完一个 screen（high）再修下一个
-- 避免"改了 A 破了 B"的来回
+**Fix 1 screen per round**:
+- Focus on one problem until perfect, don't jump around
+- Fix one screen (high) then next
+- Avoid "fixed A broke B" back-and-forth
 
-**30 轮不是上限而是最低保证**：
-- 60 个页面 × 可能每个页面需要 1-3 轮 → 需要足够多的轮次
-- 如果 30 轮后还有 screen 未达 high → 继续（ralph-loop 不限轮次）
-- 只有当所有 screen 都 high 或用户手动终止时才停
-
----
-
-## 局限性
-
-- LLM 的视觉对比是**主观的** — 报告附截图路径，用户应复核
-- 需要 App 能运行且可导航到各页面（需要测试账号/数据）
-- 移动端截图依赖平台对应的 UI 自动化工具或用户手动截图
-- 交互行为对比依赖 `interaction-recordings.json` 的 flows 结构 — 无此文件时仅做静态截图对比
+**30 rounds is minimum guarantee, not upper limit**:
+- 60 pages x possibly 1-3 rounds each -> need enough rounds
+- If still screens not high after 30 rounds -> continue
+- Only stop when all screens are high or user manually terminates
 
 ---
 
-## 加载核心协议
+## Limitations
 
-> 核心协议详见 ${CLAUDE_PLUGIN_ROOT}/skills/code-replicate-core.md
+- LLM visual comparison is **subjective** — report includes screenshot paths, user should review
+- Requires App to run and be navigable to each page (needs test accounts/data)
+- Mobile screenshots depend on platform-specific UI automation tools or user manual screenshots
+- Interaction behavior comparison depends on `interaction-recordings.json` flows structure — without this file, only static screenshot comparison
+
+---
+
+## Load Core Protocol
+
+> Core protocol details: `./skills/code-replicate-core.md`

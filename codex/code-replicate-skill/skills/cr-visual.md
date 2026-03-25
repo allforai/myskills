@@ -15,7 +15,7 @@ description: >
 cr-visual 是复刻流程的**最后一步** — 在 cr-fidelity + product-verify + testforge 全部通过后执行。
 
 ```
-/cr-fidelity → /product-verify → /testforge → /cr-visual（这里）
+cr-fidelity → product-verify → testforge → cr-visual（这里）
 ```
 
 **前置条件**：测试全绿，App 能稳定运行。截图对比需要 App 正常工作。
@@ -103,7 +103,7 @@ cr-visual 需要知道怎么启动和导航源 App。信息来源（优先级）
 
 3. **用户通过 `--screenshots` 提供已有截图**
 
-如果 replicate-config 没有 `source_app` 且用户未传参 → AskUserQuestion 引导。
+如果 replicate-config 没有 `source_app` 且用户未传参 → ask the user for source app details (this is required to proceed).
 
 ---
 
@@ -204,7 +204,7 @@ LLM 读目标项目的技术栈 → 自行搜索并选择适合该技术栈的 U
 **启动 ralph-loop**：
 
 ```
-/ralph-loop 启动视觉还原修复循环
+启动视觉还原修复循环（ralph-loop pattern）
 
 每轮执行:
   1. 读 visual-report.json → 找到 match_level ≠ high 的 screen
@@ -277,4 +277,4 @@ LLM 读目标项目的技术栈 → 自行搜索并选择适合该技术栈的 U
 
 ## 加载核心协议
 
-> 核心协议详见 ${CLAUDE_PLUGIN_ROOT}/skills/code-replicate-core.md
+> 核心协议详见 ./skills/code-replicate-core.md

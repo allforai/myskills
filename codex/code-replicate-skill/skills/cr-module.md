@@ -135,4 +135,4 @@ modules[target].dependencies: [
 
 ## 加载核心协议
 
-> 核心协议详见 ${CLAUDE_PLUGIN_ROOT}/skills/code-replicate-core.md
+> 核心协议详见 ./skills/code-replicate-core.md

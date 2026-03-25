@@ -24,7 +24,7 @@ Code Replicate 将已有代码库逆向解构为标准 `.allforai/` 产物，直
 | 3 | Generate | LLM 按 extraction-plan 分模块生成片段 → 脚本合并 → 标准产物 | 静默 |
 | 4 | Verify & Handoff | schema 校验 + XV 验证 + 报告 | 静默 |
 
-> 完整协议见 `${CLAUDE_PLUGIN_ROOT}/skills/code-replicate-core.md`
+> 完整协议见 `./skills/code-replicate-core.md`
 
 ## 保真度
 
@@ -35,7 +35,7 @@ Code Replicate 将已有代码库逆向解构为标准 `.allforai/` 产物，直
 | `architecture` | 额外分析模块依赖 | 上 + task 增加 module/prerequisites/cross_dept |
 | `exact` | 额外标记 bug/约束 | 上 + constraints.json + task.flags |
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/docs/fidelity-guide.md`
+> 详见 `./docs/fidelity-guide.md`
 
 ## 子技能
 
@@ -67,15 +67,15 @@ Code Replicate 将已有代码库逆向解构为标准 `.allforai/` 产物，直
 ## 工作流衔接
 
 ```
-/code-replicate → /design-to-spec → /task-execute
+code-replicate → design-to-spec → task-execute
     ↓
-/cr-fidelity（代码级还原度 — 复刻专属）
+cr-fidelity（代码级还原度 — 复刻专属）
     ↓
-/product-verify（功能验收 — 与创建路径共用）
+product-verify（功能验收 — 与创建路径共用）
     ↓
-/testforge（测试质量 — 与创建路径共用）
+testforge（测试质量 — 与创建路径共用）
     ↓
-/cr-visual（视觉还原度 — 测试全绿后，App 稳定运行时执行）
+cr-visual（视觉还原度 — 测试全绿后，App 稳定运行时执行）
 ```
 
 cr-fidelity 验证代码还原，product-verify 和 testforge 与创建路径共用。
@@ -83,7 +83,7 @@ cr-visual 最后执行 — 需要 App 稳定运行才能截图对比。
 
 ## 文档
 
-- `${CLAUDE_PLUGIN_ROOT}/docs/fidelity-guide.md` — 保真度等级详解
-- `${CLAUDE_PLUGIN_ROOT}/docs/analysis-principles.md` — 通用分析指导原则
-- `${CLAUDE_PLUGIN_ROOT}/docs/stack-mappings.md` — 跨栈映射参考
-- `${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md` — CR 专属 schema 定义
+- `./docs/fidelity-guide.md` — 保真度等级详解
+- `./docs/analysis-principles.md` — 通用分析指导原则
+- `./docs/stack-mappings.md` — 跨栈映射参考
+- `./docs/schema-reference.md` — CR 专属 schema 定义

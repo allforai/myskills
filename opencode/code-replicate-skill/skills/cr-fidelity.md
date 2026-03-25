@@ -1,168 +1,169 @@
 ---
 name: cr-fidelity
 description: >
-  Use when user wants to "verify replication fidelity", "还原度验证", "检查复刻质量",
-  "compare source vs target", "fidelity check", "复刻对比", "还原度不够",
-  "check if migration is complete", or mentions verifying that target code
-  faithfully reproduces source code behavior after code-replicate + dev-forge.
+  Use when user wants to "verify replication fidelity", "check replication quality",
+  "compare source vs target", "fidelity check", "check if migration is complete",
+  or mentions verifying that target code faithfully reproduces source code behavior
+  after code-replicate + dev-forge.
+version: "2.0.0"
 ---
 
-# 还原度验证 — CR Fidelity v2.0
+# Fidelity Verification — CR Fidelity v2.0
 
-> 源码 vs 目标代码的还原度闭环验证。自适应维度 — 有什么产物就验什么。
+> Source vs target code fidelity closed-loop verification. Adaptive dimensions — verify whatever artifacts exist.
 
-## 流程
+## Flow
 
-| 阶段 | 名称 | 说明 |
-|------|------|------|
-| 0 | 准备 | 构建追溯索引 + 自适应维度选择 |
-| A | 静态分析 | 按选中维度逐一评分 |
-| A2 | 运行时验证 | 构建 → 冒烟 → 测试向量 → 协议兼容 |
-| B | 修复 | 按差距清单修复（运行时优先） |
-| C | 重测 | 重新评分，不达标回到 B |
+| Stage | Name | Description |
+|-------|------|-------------|
+| 0 | Preparation | Build traceability index + adaptive dimension selection |
+| A | Static Analysis | Score per selected dimensions |
+| A2 | Runtime Verification | Build -> smoke -> test vectors -> protocol compatibility |
+| B | Repair | Fix per gap list (runtime priority) |
+| C | Re-score | Re-evaluate scores, if below threshold return to B |
 
-`full` = 0 → A → A2 → B → C 闭环（最多 3 轮）
-`analyze` = 0 → A → A2
-`fix` = B → C（基于上次分析）
+`full` = 0 -> A -> A2 -> B -> C loop (max 3 rounds)
+`analyze` = 0 -> A -> A2
+`fix` = B -> C (based on last analysis)
 
 ---
 
-## 阶段 0: 准备
+## Stage 0: Preparation
 
-### 构建追溯索引
+### Build Traceability Index
 
-> 同之前定义：读 dev-forge 追溯文件 → fidelity-index.json + 抽象继承链索引
+> As previously defined: read dev-forge trace files -> fidelity-index.json + abstraction inheritance chain index
 
-### 自适应维度选择
+### Adaptive Dimension Selection
 
-LLM 扫描 `.allforai/` 产物，根据**实际存在的产物**决定启用哪些验证维度：
+LLM scans `.allforai/` artifacts, decides which verification dimensions to enable based on **actually existing artifacts**:
 
 ```
-检查 task-inventory.json     → 存在? → Read static-dimensions.md → 启用 F1
-检查 source-summary.data_entities → 非空? → 启用 F2
-检查 business-flows.json     → 存在? → 启用 F3
-检查 role-profiles.json      → 存在? → 启用 F4
-检查 use-case-tree.json      → 存在? → 启用 F5
-检查 source-summary.abstractions → 非空? → 启用 F6
-检查 constraints.json        → 存在? → 启用 F7
-检查 infrastructure-profile.json → 存在? → 启用 F8
+Check task-inventory.json     -> exists? -> Read static-dimensions.md -> enable F1
+Check source-summary.data_entities -> non-empty? -> enable F2
+Check business-flows.json     -> exists? -> enable F3
+Check role-profiles.json      -> exists? -> enable F4
+Check use-case-tree.json      -> exists? -> enable F5
+Check source-summary.abstractions -> non-empty? -> enable F6
+Check constraints.json        -> exists? -> enable F7
+Check infrastructure-profile.json -> exists? -> enable F8
 
-检查 experience-map.json     → 存在? → Read ui-dimensions.md → 启用 U1-U6
+Check experience-map.json     -> exists? -> Read ui-dimensions.md -> enable U1-U6
 
-检查 目标项目可构建?         → Read runtime-verification.md → 启用 R1
-检查 test-vectors.json       → 存在? → 启用 R3
-检查 stack-mapping compatibility: exact → 启用 R4
-检查 infrastructure-profile 含数据持久化? → 启用 R5 行为场景
+Check target project buildable?         -> Read runtime-verification.md -> enable R1
+Check test-vectors.json       -> exists? -> enable R3
+Check stack-mapping compatibility: exact -> enable R4
+Check infrastructure-profile has data persistence? -> enable R5 behavior scenarios
 
-检查 infrastructure-profile 含事件总线? → F9 事件覆盖启用
-检查 infrastructure-profile 含数据持久化? → F10 启用（在 static-dimensions.md 中）
-检查 infrastructure-profile 含 cannot_substitute? → Read infra-critical-dimensions.md → 启用 I1-I5
-检查 project_archetype 含核心算法? → Read algorithm-dimensions.md → 启用 A1-A3
-检查 project_archetype 含 ABI 兼容? → Read abi-dimensions.md → 启用 B1-B4
+Check infrastructure-profile has event bus? -> F9 event coverage enabled
+Check infrastructure-profile has data persistence? -> F10 enabled (in static-dimensions.md)
+Check infrastructure-profile has cannot_substitute? -> Read infra-critical-dimensions.md -> enable I1-I5
+Check project_archetype has core algorithms? -> Read algorithm-dimensions.md -> enable A1-A3
+Check project_archetype has ABI compatibility? -> Read abi-dimensions.md -> enable B1-B4
 ```
 
-**archetype 判断由 LLM 语义理解** — 读 `replicate-config.project_archetype` 的自由文本描述，判断是否涉及算法/ABI。不靠关键词匹配。
+**archetype judgment is LLM semantic understanding** — read `replicate-config.project_archetype` free-text description, judge whether algorithms/ABI are involved. Not keyword matching.
 
-**不硬编码"前端用 U 维度、后端用 F 维度"** — 纯粹按产物存在性决定。一个有 experience-map 的后端 BFF 项目也会启用 U 维度。一个有本地数据库的前端 App 也会启用 F2。
+**Don't hardcode "frontend uses U dimensions, backend uses F dimensions"** — purely decided by artifact existence. A backend BFF project with experience-map will enable U dimensions. A frontend App with local database will enable F2.
 
-### 输入（三层加载）
+### Input (Three-Layer Loading)
 
-**常驻层**（~30KB）：source-summary 摘要, product-map summary, stack-mapping platform_adaptation, fidelity-index, fidelity-report
+**Resident layer** (~30KB): source-summary summary, product-map summary, stack-mapping platform_adaptation, fidelity-index, fidelity-report
 
-**维度层**（按需拉取）：
-> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/fidelity/static-dimensions.md
-> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/fidelity/ui-dimensions.md
-> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/fidelity/runtime-verification.md
+**Dimension layer** (loaded on demand):
+> Details: `./docs/fidelity/static-dimensions.md`
+> Details: `./docs/fidelity/ui-dimensions.md`
+> Details: `./docs/fidelity/runtime-verification.md`
 
-**目标代码层**：通过 fidelity-index 精准读取，不全量扫描
-
----
-
-## 阶段 A: 静态分析
-
-LLM 按阶段 0 选中的维度逐一评分。
-
-**F 维度**（代码/业务层）：
-> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/fidelity/static-dimensions.md
-
-**U 维度**（UI 层，仅 experience-map 存在时）：
-> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/fidelity/ui-dimensions.md
-
-**A 维度**（算法一致性，仅 archetype 含核心算法时）：
-> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/fidelity/algorithm-dimensions.md
-
-**I 维度**（关键基础设施，仅 infrastructure-profile 含 cannot_substitute 组件时）：
-> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/fidelity/infra-critical-dimensions.md
-
-**B 维度**（ABI 兼容性，仅 archetype 为 SDK/Library 时）：
-> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/fidelity/abi-dimensions.md
-
-**注意力还原**（仅 consumer/mixed 且 experience-map 存在时）：
-- 如果 `platform_adaptation` 存在 → 使用 `attention_threshold_override`
-- 否则使用默认阈值
-- 不计入总分，列入 warnings
+**Target code layer**: precisely read via fidelity-index, no full scan
 
 ---
 
-## 阶段 A2: 运行时验证
+## Stage A: Static Analysis
 
-> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/fidelity/runtime-verification.md
+LLM scores per Stage 0 selected dimensions.
+
+**F dimensions** (code/business layer):
+> Details: `./docs/fidelity/static-dimensions.md`
+
+**U dimensions** (UI layer, only when experience-map exists):
+> Details: `./docs/fidelity/ui-dimensions.md`
+
+**A dimensions** (algorithm consistency, only when archetype contains core algorithms):
+> Details: `./docs/fidelity/algorithm-dimensions.md`
+
+**I dimensions** (critical infrastructure, only when infrastructure-profile has cannot_substitute components):
+> Details: `./docs/fidelity/infra-critical-dimensions.md`
+
+**B dimensions** (ABI compatibility, only when archetype is SDK/Library):
+> Details: `./docs/fidelity/abi-dimensions.md`
+
+**Attention restoration** (only consumer/mixed and experience-map exists):
+- If `platform_adaptation` exists -> use `attention_threshold_override`
+- Otherwise use default thresholds
+- Not counted in overall score, listed in warnings
 
 ---
 
-## 阶段 B + C: 修复闭环
+## Stage A2: Runtime Verification
 
-> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/fidelity/repair-protocol.md
+> Details: `./docs/fidelity/runtime-verification.md`
 
 ---
 
-## 综合评分
+## Stages B + C: Repair Loop
+
+> Details: `./docs/fidelity/repair-protocol.md`
+
+---
+
+## Overall Scoring
 
 ```
-静态分 = (有效 F* + 有效 U* + 有效 I* + 有效 A* + 有效 B* 之和) / 有效维度数
-运行时分 = (有效 R* 之和) / 有效运行时维度数
-综合分 = 静态分 × 0.5 + 运行时分 × 0.5
+Static score = (valid F* + valid U* + valid I* + valid A* + valid B* sum) / valid dimension count
+Runtime score = (valid R* sum) / valid runtime dimension count
+Overall score = static score x 0.5 + runtime score x 0.5
 
-特殊规则：I 维度（关键基础设施）有任何一个评 0 分
-  → 综合分标记为 CRITICAL_INFRA_FAILURE
-  → 不管其他维度多高分，报告首行标红警告
-  → 修复阶段优先处理 I 维度的 gap
+Special rule: I dimension (critical infrastructure) has any one scored 0
+  -> Overall score marked as CRITICAL_INFRA_FAILURE
+  -> Regardless of how high other dimensions score, report first line shows red warning
+  -> Repair stage prioritizes I dimension gaps
 ```
 
 ---
 
-## 输出
+## Output
 
-写入 `.allforai/code-replicate/fidelity-report.json` + `fidelity-report.md`
-
----
-
-## 与上下游的关系
-
-```
-code-replicate 路径（复刻）：
-  /code-replicate → /design-to-spec → /task-execute
-      ↓
-  /cr-fidelity（代码级还原度 — 复刻专属，不是测试）
-      ↓
-  /product-verify（功能验收 — 两条路径共用）
-      ↓
-  /testforge（测试质量 — 两条路径共用）
-      ↓
-  /cr-visual（视觉还原度 — 测试全绿后，App 稳定运行时截图对比）
-
-product-design 路径（创建）：
-  /product-design → /design-to-spec → /task-execute
-      ↓
-  /product-verify → /testforge
-```
-
-**cr-fidelity 是复刻路径的专属环节**，验证"目标代码是否还原了源码"。
-product-verify 和 testforge 是**两条路径共用的**，不关心产物来源。
-cr-fidelity **不做测试** — 修复后的验证是重新评分（re-score），不是跑测试。
+Written to `.allforai/code-replicate/fidelity-report.json` + `fidelity-report.md`
 
 ---
 
-## 加载核心协议
+## Relationship with Upstream/Downstream
 
-> 核心协议详见 ${CLAUDE_PLUGIN_ROOT}/skills/code-replicate-core.md
+```
+code-replicate path (replication):
+  code-replicate -> design-to-spec -> task-execute
+      |
+  cr-fidelity (code-level fidelity — replication-specific, not testing)
+      |
+  product-verify (functional acceptance — shared by both paths)
+      |
+  testforge (test quality — shared by both paths)
+      |
+  cr-visual (visual fidelity — after tests pass, App stable for screenshots)
+
+product-design path (creation):
+  product-design -> design-to-spec -> task-execute
+      |
+  product-verify -> testforge
+```
+
+**cr-fidelity is replication path specific**, verifying "does target code reproduce source code".
+product-verify and testforge are **shared by both paths**, artifact-source agnostic.
+cr-fidelity **does not do testing** — post-repair verification is re-scoring, not running tests.
+
+---
+
+## Load Core Protocol
+
+> Core protocol details: `./skills/code-replicate-core.md`

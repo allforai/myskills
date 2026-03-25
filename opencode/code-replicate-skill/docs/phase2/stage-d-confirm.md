@@ -4,7 +4,7 @@
 
 ---
 
-## 2.14 用户确认（AskUserQuestion — 最后一次交互）
+## 2.14 User Confirmation (Last Interaction)
 
 展示：
 - 模块清单 + 技术栈 + 粒度推荐

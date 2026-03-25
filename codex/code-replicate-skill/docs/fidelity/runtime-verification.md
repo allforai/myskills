@@ -87,4 +87,4 @@ LLM 根据 infrastructure-profile 的数据持久化组件 + task-inventory 的 
 - 有效 = 产物存在且总数 > 0
 - N/A 维度不计入分母
 - **综合分 < threshold 时，优先修运行时问题**（R1 失败 = 代码不能编译 = 一切白费）
-- 视觉还原度由独立命令 `/cr-visual` 处理，不在 cr-fidelity 中
+- 视觉还原度由独立工作流 cr-visual 处理，不在 cr-fidelity 中

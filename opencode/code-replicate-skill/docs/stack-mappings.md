@@ -153,6 +153,6 @@
 ## Usage in Phase 2d
 
 1. **Direct equivalence** — auto-map, write to `stack-mapping.json` `auto_mapped` array
-2. **Multi-option** — present options to user via `AskUserQuestion`, write choice to `user_decisions`
+2. **Multi-option** — present options to the user naturally, write choice to `user_decisions`
 3. **Architectural difference** — explain implications, confirm with user, write to `user_decisions` with `semantic_drift_risk`
 4. **Framework built-ins** — scan source for hand-written implementations of categories where target has built-in support; mark as `framework_builtin: true`

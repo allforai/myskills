@@ -5,85 +5,144 @@ description: >
   .allforai/ artifacts compatible with the dev-forge pipeline. 4 fidelity levels:
   interface (API contracts), functional (business behavior), architecture (patterns),
   exact (including bugs). Supports cross-stack migration.
+version: "2.1.0"
 ---
 
-# Code Replicate v2.1 — 代码复刻插件
+# Code Replicate v2.1 — Code Replication Plugin
 
-> 逆向工程桥梁层：已有代码 → 标准 `.allforai/` 产物 → dev-forge 流水线
+> Reverse-engineering bridge: existing code -> standard `.allforai/` artifacts -> dev-forge pipeline
 
-## 定位
+## Overview
 
-Code Replicate 将已有代码库逆向解构为标准 `.allforai/` 产物，直接接入 dev-forge 流水线。不生成代码，只生成产物。行业和技术栈无关。
+Code Replicate reverse-engineers existing codebases into standard `.allforai/` artifacts that feed directly into the dev-forge pipeline. It does not generate code — only artifacts. Industry and tech stack agnostic.
 
-## 4 阶段工作流
+## Available Workflows
 
-| Phase | 名称 | 说明 | 交互 |
-|-------|------|------|------|
-| 1 | Preflight | 参数收集 + Git clone | 用户交互点 1 |
-| 2 | Discovery + Confirm | 源码扫描 + 模块摘要 + **基础设施盘点** + 抽象提取 + 用户确认 | 用户交互点 2（最后一次） |
-| 3 | Generate | LLM 按 extraction-plan 分模块生成片段 → 脚本合并 → 标准产物 | 静默 |
-| 4 | Verify & Handoff | schema 校验 + XV 验证 + 报告 | 静默 |
+| Mode | Description |
+|------|-------------|
+| `code-replicate` | Full reverse-engineering pipeline (interactive guided) |
+| `code-replicate functional ./src` | Replicate business behavior from local source |
+| `code-replicate interface ./src` | Replicate API contracts only |
+| `code-replicate exact ./src` | 100% fidelity replication including bugs |
+| `code-replicate functional https://github.com/org/repo` | Replicate from remote repo |
+| `cr-fidelity` | Verify replication fidelity (source vs target code) |
+| `cr-visual` | Visual fidelity comparison (screenshot-based) |
 
-> 完整协议见 `${CLAUDE_PLUGIN_ROOT}/skills/code-replicate-core.md`
+## 4-Phase Pipeline
 
-## 保真度
+| Phase | Name | Description | Interaction |
+|-------|------|-------------|-------------|
+| 1 | Preflight | Parameter collection + Git clone | User interaction point 1 |
+| 2 | Discovery + Confirm | Source scan + module summary + infrastructure inventory + abstraction extraction + user confirmation | User interaction point 2 (last) |
+| 3 | Generate | LLM generates fragments per extraction-plan -> script merge -> standard artifacts | Silent |
+| 4 | Verify & Handoff | Schema validation + XV verification + report | Silent |
 
-| 等级 | 分析深度 | 标准产物输出 |
-|------|---------|-------------|
-| `interface` | 只看入口层签名 | task-inventory（精简）+ role-profiles（含 audience_type）+ product-map（含 experience_priority） |
-| `functional` | 读函数体，追踪逻辑 | 上 + business-flows（含 systems/handoff）+ use-case-tree（扁平数组）+ task 结构化字段 |
-| `architecture` | 额外分析模块依赖 | 上 + task 增加 module/prerequisites/cross_dept |
-| `exact` | 额外标记 bug/约束 | 上 + constraints.json + task.flags |
+> Full protocol: `./skills/code-replicate-core.md`
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/docs/fidelity-guide.md`
+## Fidelity Levels
 
-## 子技能
+| Level | Analysis Depth | Standard Artifact Output |
+|-------|---------------|------------------------|
+| `interface` | Entry-layer signatures only | task-inventory (slim) + role-profiles (with audience_type) + product-map (with experience_priority) |
+| `functional` | Read function bodies, trace logic | Above + business-flows (with systems/handoff) + use-case-tree (flat array) + task structured fields |
+| `architecture` | Additional module dependency analysis | Above + task adds module/prerequisites/cross_dept |
+| `exact` | Additional bug/constraint marking | Above + constraints.json + task.flags |
 
-| 技能文件 | 用途 |
-|---------|------|
-| `skills/code-replicate-core.md` | 4 阶段协议 + 铁律 + 脚本调用参考 |
-| `skills/cr-backend.md` | 后端分析视角：入口层 / 服务层 / 数据层 / 横切层 |
-| `skills/cr-frontend.md` | 前端分析视角：页面 / 组件 / 状态 / 交互 |
-| `skills/cr-fullstack.md` | 全栈：双栈分析 + 交叉验证 + 基础设施扫描 |
-| `skills/cr-module.md` | 模块：依赖边界扫描 + 外部接口记录 |
-| `skills/cr-fidelity.md` | 还原度验证：源码 vs 目标代码多维对比 + 闭环修复 |
-| `skills/cr-visual.md` | 视觉还原度：源 App vs 目标 App 截图结构级对比 |
+> Details: `./docs/fidelity-guide.md`
 
-## 输出目录
+## Sub-Skills
+
+| Skill File | Purpose |
+|-----------|--------|
+| `skills/code-replicate-core.md` | 4-phase protocol + iron laws + script reference |
+| `skills/cr-backend.md` | Backend analysis: entry / service / data / cross-cutting layers |
+| `skills/cr-frontend.md` | Frontend analysis: pages / components / state / interactions |
+| `skills/cr-fullstack.md` | Fullstack: dual-stack analysis + cross-validation + infrastructure scan |
+| `skills/cr-module.md` | Module: dependency boundary scan + external interface recording |
+| `skills/cr-fidelity.md` | Fidelity verification: source vs target multi-dimensional comparison + repair loop |
+| `skills/cr-visual.md` | Visual fidelity: source vs target screenshot structural comparison |
+
+## Project Type Detection
+
+When `--type` is not specified, scan the codebase to determine project type:
+
+- **backend**: routes/controllers/middleware/models directories or files
+- **frontend**: components/pages/store/hooks/screens directories or files
+- **fullstack**: frontend and backend code coexist (monorepo or fullstack framework)
+- **module**: requires explicit `--type module --module <path>`
+
+## Skill Dispatch
+
+Based on project type, load the corresponding skill file and execute its full workflow:
+
+1. **backend** (or auto-detected as backend) -> load `./skills/cr-backend.md`
+2. **frontend** (or auto-detected as frontend) -> load `./skills/cr-frontend.md`
+3. **fullstack** (or auto-detected as fullstack) -> load `./skills/cr-fullstack.md`
+4. **module** -> load `./skills/cr-module.md` (requires `--module` parameter)
+
+All skill files internally load `./skills/code-replicate-core.md` as the 4-phase protocol foundation.
+
+## Output Directory
 
 ```
 .allforai/
-├── product-map/          ← product-map, task-inventory, role-profiles,
+├── product-map/          <- product-map, task-inventory, role-profiles,
 │                           business-flows, constraints, indexes
-├── experience-map/       ← experience-map.json（frontend/fullstack stub）
-├── use-case/             ← use-case-tree, use-case-report
-└── code-replicate/       ← replicate-config, source-summary,
+├── experience-map/       <- experience-map.json (frontend/fullstack stub)
+├── use-case/             <- use-case-tree, use-case-report
+└── code-replicate/       <- replicate-config, source-summary,
                             discovery-profile, infrastructure-profile,
                             asset-inventory, extraction-plan,
                             stack-mapping, replicate-report,
                             fidelity-report
 ```
 
-## 工作流衔接
+## Workflow Integration
 
 ```
-/code-replicate → /design-to-spec → /task-execute
-    ↓
-/cr-fidelity（代码级还原度 — 复刻专属）
-    ↓
-/product-verify（功能验收 — 与创建路径共用）
-    ↓
-/testforge（测试质量 — 与创建路径共用）
-    ↓
-/cr-visual（视觉还原度 — 测试全绿后，App 稳定运行时执行）
+code-replicate -> design-to-spec -> task-execute
+    |
+cr-fidelity (code-level fidelity — replicate-specific)
+    |
+product-verify (functional acceptance — shared with creation path)
+    |
+testforge (test quality — shared with creation path)
+    |
+cr-visual (visual fidelity — run after tests pass, App stable)
 ```
 
-cr-fidelity 验证代码还原，product-verify 和 testforge 与创建路径共用。
-cr-visual 最后执行 — 需要 App 稳定运行才能截图对比。
+cr-fidelity verifies code replication. product-verify and testforge are shared with the creation path.
+cr-visual runs last — requires a stable running App for screenshot comparison.
 
-## 文档
+## Usage Examples
 
-- `${CLAUDE_PLUGIN_ROOT}/docs/fidelity-guide.md` — 保真度等级详解
-- `${CLAUDE_PLUGIN_ROOT}/docs/analysis-principles.md` — 通用分析指导原则
-- `${CLAUDE_PLUGIN_ROOT}/docs/stack-mappings.md` — 跨栈映射参考
-- `${CLAUDE_PLUGIN_ROOT}/docs/schema-reference.md` — CR 专属 schema 定义
+```
+# Interactive guided mode
+Tell the AI: "replicate this codebase"
+
+# Replicate with specific fidelity
+Tell the AI: "replicate functional ./src"
+Tell the AI: "replicate exact ./src --type backend"
+
+# Remote repository
+Tell the AI: "replicate functional https://github.com/org/repo"
+Tell the AI: "replicate functional org/repo#v2.0"
+
+# Resume from specific phase
+Tell the AI: "resume code-replicate from phase 3"
+
+# After replication, verify fidelity
+Tell the AI: "check replication fidelity"
+Tell the AI: "compare visual fidelity"
+```
+
+## Documents
+
+- `./docs/fidelity-guide.md` — Fidelity level details
+- `./docs/analysis-principles.md` — General analysis guidance principles
+- `./docs/stack-mappings.md` — Cross-stack mapping reference
+- `./docs/schema-reference.md` — CR-specific schema definitions
+
+## Orchestration
+
+> Details: `./execution-playbook.md`

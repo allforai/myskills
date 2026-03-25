@@ -96,7 +96,7 @@ OL-D4 角色完整性:
 
 **Step 4f** — Handoff
 - 输出产物清单（路径 + 文件大小）
-- 推荐下一步：`/project-setup` → `/design-to-spec` → `/task-execute`
+- 推荐下一步：project-setup → design-to-spec → task-execute
 - 跨栈复刻额外提示：检查 stack-mapping.json 中的手动决策点
 - KNOWN_GAP 列表（内循环未修复 + 外循环超 20% 的遗漏项）
 

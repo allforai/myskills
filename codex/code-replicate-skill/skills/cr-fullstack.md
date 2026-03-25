@@ -130,4 +130,4 @@ LLM 基于 extraction-plan.cross_layer_mapping 检测实际不一致，写入 ta
 
 ## 加载核心协议
 
-> 核心协议详见 ${CLAUDE_PLUGIN_ROOT}/skills/code-replicate-core.md
+> 核心协议详见 ./skills/code-replicate-core.md
