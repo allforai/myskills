@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "ui-forge",
-      "version": "0.1.2",
+      "version": "1.0.0",
       "source": "./",
       "description": "UI Forge: post-implementation UI refinement for technical teams. Forked from frontend-design and adapted to consume product specs, tokens, and screenshots without taking over feature implementation."
     }
