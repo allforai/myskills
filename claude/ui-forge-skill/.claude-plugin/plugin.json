@@ -1,6 +1,6 @@
 {
   "name": "ui-forge",
   "description": "UI Forge: implementation-stage UI refinement plugin forked from frontend-design and adapted for technical teams. Focuses on polishing or restoring already-implemented frontend screens using product constraints, design tokens, screenshots, and real code context. UI 锻造插件：面向专业研发团队，在功能完成后做界面增强或设计还原。",
-  "version": "0.1.2",
+  "version": "1.0.0",
   "author": { "name": "dv" }
 }
