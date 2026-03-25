@@ -606,7 +606,7 @@ User            # → Data + Entity
 }
 ```
 
-> 完整的跨语言目录名称 → 逻辑角色对照表见 `${CLAUDE_PLUGIN_ROOT}/references/layer-mapping.md`。该表作为初始猜测的参考，最终映射仍需依据实际依赖分析结果。
+> 完整的跨语言目录名称 → 逻辑角色对照表见 `./references/layer-mapping.md`。该表作为初始猜测的参考，最终映射仍需依据实际依赖分析结果。
 
 ---
 

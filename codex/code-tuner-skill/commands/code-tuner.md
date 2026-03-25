@@ -1,140 +1,127 @@
 ---
-description: "服务端代码调优：架构合规、重复检测、抽象分析、验证规范。模式: full / compliance / duplication / abstraction / report"
-argument-hint: "[mode: full|compliance|duplication|abstraction|report] [--lifecycle pre-launch|maintenance]"
-allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestion"]
+name: code-tuner
+description: "Server-side code tuning: architecture compliance, duplication detection, abstraction analysis, validation standards. Modes: full / compliance / duplication / abstraction / report"
 ---
 
-# Code-Tuner — 服务端代码调优
+# Code-Tuner -- Server-Side Code Tuning
 
-用户请求: $ARGUMENTS
+## Mode Routing
 
-## 插件根目录
+Determine execution mode from the user's request:
 
-所有文档路径基于插件安装目录: `${CLAUDE_PLUGIN_ROOT}`
+- **No mode specified or "full"** -> Complete analysis: Phase 0 > Phase 1 > Phase 2 > Phase 3 > Phase 4
+- **"compliance"** -> Architecture compliance only: Phase 0 > Phase 1 > Phase 4
+- **"duplication"** -> Duplication detection only: Phase 0 > Phase 2 > Phase 4
+- **"abstraction"** -> Abstraction analysis only: Phase 0 > Phase 3 > Phase 4
+- **"report"** -> Regenerate report: read existing phase outputs, regenerate Phase 4
 
-## 模式路由
+## Lifecycle Mode
 
-根据用户参数决定执行模式：
+Determine from user context:
 
-- **无参数 或 `full`** → 完整分析：Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4
-- **`compliance`** → 仅架构合规：Phase 0 → Phase 1 → Phase 4
-- **`duplication`** → 仅重复检测：Phase 0 → Phase 2 → Phase 4
-- **`abstraction`** → 仅抽象分析：Phase 0 → Phase 3 → Phase 4
-- **`report`** → 重新生成报告：读取已有的 phase 输出，重新生成 Phase 4
+- **`pre-launch` (default)** -> Aggressive optimization suggestions
+- **`maintenance`** -> Conservative optimization suggestions
 
-## 生命周期模式
+If the user does not specify, assume pre-launch. Only ask when the answer is
+genuinely ambiguous and would change the analysis approach.
 
-从参数中解析 `--lifecycle`：
+## Pre-flight Check: Project Type Validation (mandatory)
 
-- **`pre-launch`（默认）** → 未上线模式，激进优化建议
-- **`maintenance`** → 维护期模式，保守优化建议
+Before any analysis, verify the target is a server-side code project.
 
-如果用户未指定，询问用户项目状态。
-
-## 前置检查：项目类型验证（强制执行）
-
-在执行任何分析之前，必须先验证目标项目是否为服务端代码项目。
-
-**检测方法：** 在项目根目录扫描以下配置文件是否存在至少一个：
+**Detection method:** Scan project root for at least one of:
 - `pom.xml`, `build.gradle`, `build.gradle.kts` (Java)
 - `go.mod` (Go)
-- `package.json` (Node.js) — 需含后端框架依赖（express, nestjs, koa, fastify 等）
+- `package.json` with backend framework deps -- express, nestjs, koa, fastify, etc. (Node.js)
 - `requirements.txt`, `pyproject.toml`, `setup.py`, `manage.py` (Python)
 - `*.csproj`, `*.sln` (C#/.NET)
 - `Cargo.toml` (Rust)
 - `composer.json` (PHP)
 - `Gemfile` (Ruby)
 
-**如果找不到任何服务端技术栈配置文件：**
+**If no server-side config found:** Inform the user and stop. Do not proceed with any Phase.
 
-直接告知用户并终止，不执行后续任何 Phase：
-
-```
-code-tuner 专为服务端代码（Java/Go/Node.js/Python/.NET/Rust/PHP/Ruby 后端项目）设计。
-
-当前项目未检测到服务端技术栈配置文件，不是 code-tuner 的最佳分析对象。
-
-如需分析此项目，可考虑其他工具。
-```
-
-**不要勉强分析非服务端项目。** 对前端项目、纯 Markdown 项目、配置仓库、文档仓库等，code-tuner 的规则体系不适用，分析结果无意义。
+Do not force-analyze non-backend projects. For frontend, Markdown, documentation,
+or config-only repositories, the rule system does not apply and results would be meaningless.
 
 ---
 
-## 执行流程
+## Execution Flow
 
-1. **【强制】执行前置检查**（见上方"项目类型验证"），不通过则终止
-2. 用 Read 工具读取 `${CLAUDE_PLUGIN_ROOT}/SKILL.md` 获取完整目标定义和关键原则
-3. 根据模式按需读取对应阶段的详细文档
-4. 按工作流执行
-5. **【强制】执行完毕后，必须在对话中直接输出完整的报告摘要（见下方"报告输出要求"）**
+1. **Run pre-flight check** (see above); abort if it fails
+2. Read `./SKILL.md` for complete domain knowledge and key principles
+3. Read the reference document for each phase as needed
+4. Execute phases according to the selected mode
+5. **After completion, output a full report summary in the conversation** (see "Report Output Requirements" below)
 
-## 详细文档（按需用 Read 工具加载）
+## Reference Documents (load as needed per phase)
 
-- `${CLAUDE_PLUGIN_ROOT}/SKILL.md` — 目标、关键原则、工作流总览
-- `${CLAUDE_PLUGIN_ROOT}/references/phase0-profile.md` — Phase 0: 项目画像详解
-- `${CLAUDE_PLUGIN_ROOT}/references/phase1-compliance.md` — Phase 1: 架构合规规则
-- `${CLAUDE_PLUGIN_ROOT}/references/phase2-duplicates.md` — Phase 2: 重复检测方法
-- `${CLAUDE_PLUGIN_ROOT}/references/phase3-abstractions.md` — Phase 3: 抽象机会分析
-- `${CLAUDE_PLUGIN_ROOT}/references/phase4-report.md` — Phase 4: 评分与报告生成
-- `${CLAUDE_PLUGIN_ROOT}/references/layer-mapping.md` — 跨语言层级映射速查
+- `./SKILL.md` -- Goals, key principles, workflow overview
+- `./references/phase0-profile.md` -- Phase 0: Project profile details
+- `./references/phase1-compliance.md` -- Phase 1: Architecture compliance rules
+- `./references/phase2-duplicates.md` -- Phase 2: Duplication detection methods
+- `./references/phase3-abstractions.md` -- Phase 3: Abstraction opportunity analysis
+- `./references/phase4-report.md` -- Phase 4: Scoring and report generation
+- `./references/layer-mapping.md` -- Cross-language layer mapping reference
 
-## Phase 0 执行要求
+## Phase 0 Execution Requirements
 
-Phase 0 是所有模式的必经阶段。按以下优先级链获取画像信息，**已从上游获取的决策直接采用（展示一行摘要），仅缺失或冲突项才询问用户**：
+Phase 0 is required for all modes. Use the following priority chain to obtain profile
+information. Decisions already available from upstream sources are adopted directly
+(show a one-line summary); only missing or conflicting items require further action.
 
-### 上游消费链（Front-load Decisions）
+### Upstream Consumption Chain (Front-load Decisions)
 
 ```
-优先级 1: .allforai/code-tuner/tuner-profile.json（自身缓存）
-    ↓ 不存在或过期
-优先级 2: .allforai/project-forge/project-manifest.json（project-setup 产出）
-    ↓ 不存在
-优先级 3: .allforai/project-forge/forge-decisions.json（project-setup 决策）
-    ↓ 不存在
-优先级 4: 自动检测（扫描代码推断）
-    ↓ 无法推断
-优先级 5: AskUserQuestion 询问用户
+Priority 1: .allforai/code-tuner/tuner-profile.json (own cache)
+    | not found or stale
+Priority 2: .allforai/project-forge/project-manifest.json (from project-setup)
+    | not found
+Priority 3: .allforai/project-forge/forge-decisions.json (from project-setup)
+    | not found
+Priority 4: Auto-detection (scan code to infer)
+    | cannot infer
+Priority 5: Ask the user (only when the answer would materially affect analysis)
 ```
 
-**字段映射表**：
+**Field mapping:**
 
-| Phase 0 决策项 | project-manifest.json 字段 | forge-decisions.json 字段 |
-|---------------|--------------------------|--------------------------|
+| Phase 0 Decision | project-manifest.json field | forge-decisions.json field |
+|-------------------|----------------------------|---------------------------|
 | tech-stack | `sub_projects[].tech_stack` | `tech_stack` |
-| architecture-type | — | `architecture_type` |
-| layer-mapping | — | `layer_mapping` |
-| module-list | `sub_projects[].modules[]` | — |
-| data-model | — | — |
+| architecture-type | -- | `architecture_type` |
+| layer-mapping | -- | `layer_mapping` |
+| module-list | `sub_projects[].modules[]` | -- |
+| data-model | -- | -- |
 
-**执行逻辑**：
+**Execution logic:**
 
-1. 尝试读取 `tuner-profile.json` → 已存在且未过期 → 展示摘要，确认后跳过 Phase 0
-2. 不存在 → 尝试读取 `project-manifest.json` + `forge-decisions.json`
-3. 从上游提取可映射的决策项，自动填充（展示「✓ tech-stack: Go (Gin) — 来自 project-manifest」）
-4. 剩余缺失项通过自动检测或 AskUserQuestion 补齐
-5. 全部就绪后生成 `tuner-profile.json`
+1. Try reading `tuner-profile.json` -> exists and not stale -> show summary, skip Phase 0
+2. Not found -> try `project-manifest.json` + `forge-decisions.json`
+3. Extract mappable decisions from upstream, auto-fill (show source attribution)
+4. Fill remaining gaps through auto-detection or asking the user
+5. Once complete, write `tuner-profile.json`
 
-**示例**：若 project-manifest.json 存在且包含 tech_stack=Go + modules=[user, order, product]，则 `tech-stack` 和 `module-list` 自动填充，仅 `architecture-type`、`layer-mapping`、`data-model` 需要检测或询问。
+Profile confirmation items:
+1. Tech stack identification
+2. Architecture type (three-tier / two-tier / DDD / mixed)
+3. Layer mapping (actual directory -> logical role)
+4. Module list
+5. Data model overview (entity count, DTO/VO count, common fields)
 
-画像确认内容：
-1. 技术栈识别结果
-2. 架构类型（三层 / 两层 / DDD / 混合）
-3. 层级映射（实际目录 → 逻辑角色）
-4. 模块列表
-5. 数据模型概况（实体数、DTO/VO数、公共字段）
+Items obtained from upstream show source attribution. Confirm with user only if
+architecture type is ambiguous or auto-detection confidence is low.
 
-**已从上游获取的项展示来源标记，用户确认一次即可进入后续 Phase。**
+## Per-Phase Execution
 
-## 各 Phase 执行要求
+For each phase, load the corresponding reference document for detailed rules and
+detection methods. After each phase completes, write results to the corresponding
+JSON file in `.allforai/code-tuner/`.
 
-每个 Phase 执行前，用 Read 工具加载对应的 reference 文档获取详细规则和检测方法。
+## Decision Log
 
-每个 Phase 完成后，将结果写入 `.allforai/code-tuner/` 目录下对应的 JSON 文件。
-
-## 决策日志
-
-每次用户通过 AskUserQuestion 确认决策时，追加记录到 `tuner-decisions.json`：
+When decisions are confirmed (either from upstream or user input), append to
+`tuner-decisions.json`:
 
 ```json
 {
@@ -150,77 +137,75 @@ Phase 0 是所有模式的必经阶段。按以下优先级链获取画像信息
 }
 ```
 
-**输出路径**：`.allforai/code-tuner/tuner-decisions.json`
+**Output path:** `.allforai/code-tuner/tuner-decisions.json`
 
-**记录时机**：Phase 0 中的以下决策点：
-- `tech-stack` — 技术栈识别确认
-- `architecture-type` — 架构类型确认（三层/两层/DDD/混合）
-- `layer-mapping` — 层级映射确认（目录→逻辑角色）
-- `module-list` — 模块列表确认
-- `data-model` — 数据模型概况确认
+**Decision points:** tech-stack, architecture-type, layer-mapping, module-list, data-model
 
-**resume 模式**：已有 decisions.json 时，已确认步骤自动跳过（展示一行摘要），从第一个无决策记录的步骤继续。
+**Resume mode:** When decisions.json exists, confirmed steps are skipped (show one-line
+summary). Resume from the first step without a decision record.
 
 ---
 
-## 报告输出要求（强制执行）
+## Report Output Requirements (mandatory)
 
-分析完成后，必须做两件事：
+After analysis, two things must happen:
 
-### 1. 保存报告文件
+### 1. Save Report Files
 
-将完整报告写入 `.allforai/code-tuner/` 目录：
-- `tuner-report.md` — 综合报告
-- `tuner-tasks.json` — 重构任务清单
-- `tuner-decisions.json` — 决策日志
+Write complete reports to `.allforai/code-tuner/`:
+- `tuner-report.md` -- Comprehensive report
+- `tuner-tasks.json` -- Refactoring task list
+- `tuner-decisions.json` -- Decision log
 
-### 2. 在对话中直接输出报告摘要
+### 2. Output Report Summary in Conversation
 
-**不要只说"报告已完成"或"报告已保存"。必须在对话中直接展示以下内容：**
+Do not just say "report complete" or "report saved". Present the following directly:
 
 ```
-## 代码调优报告摘要
+## Code Tuner Report Summary
 
-> 分析时间: {时间}
-> 分析模式: {full/compliance/duplication/abstraction}
-> 生命周期: {pre-launch/maintenance}
-> 项目规模: {文件数} 文件 / {代码行数} 行 / {模块数} 个模块
+> Analysis time: {time}
+> Analysis mode: {full/compliance/duplication/abstraction}
+> Lifecycle: {pre-launch/maintenance}
+> Project scale: {files} files / {lines} lines / {modules} modules
 
-### 综合评分
+### Overall Score
 
-| 维度 | 得分 | 权重 | 加权分 |
-|------|------|------|--------|
-| 架构合规度 | XX/100 | 25% | XX |
-| 代码重复率 | XX/100 | 25% | XX |
-| 抽象合理度 | XX/100 | 20% | XX |
-| 验证规范度 | XX/100 | 15% | XX |
-| 数据模型规范度 | XX/100 | 15% | XX |
-| **综合评分** | | | **XX/100** |
+| Dimension | Score | Weight | Weighted |
+|-----------|-------|--------|----------|
+| Architecture compliance | XX/100 | 25% | XX |
+| Code duplication rate | XX/100 | 25% | XX |
+| Abstraction quality | XX/100 | 20% | XX |
+| Validation standards | XX/100 | 15% | XX |
+| Data model quality | XX/100 | 15% | XX |
+| **Total** | | | **XX/100** |
 
-### 问题总览
+### Issue Overview
 
-| 级别 | 数量 |
-|------|------|
-| 🔴 Critical (必须修复) | X |
-| 🟡 Warning (建议修复) | X |
-| 🔵 Info (参考) | X |
+| Severity | Count |
+|----------|-------|
+| Critical (must fix) | X |
+| Warning (should fix) | X |
+| Info (reference) | X |
 
-### 🔴 Critical 问题列表
-(逐条列出：规则ID、位置、问题描述、修复建议)
+### Critical Issues
+(List each: rule ID, location, description, fix suggestion)
 
-### 🟡 Warning 问题列表
-(逐条列出)
+### Warning Issues
+(List each)
 
-### 重复热力图
-(哪些模块之间重复最多)
+### Duplication Heatmap
+(Which modules have the most duplication between them)
 
-### 下一步建议
-1. 优先修复 🔴 Critical 问题
-2. 按 tuner-tasks.json 中的任务顺序逐步执行
-3. 修复后可以重新运行 `/code-tuner report` 查看分数变化
+### Next Steps
+1. Fix Critical issues first
+2. Follow task order in tuner-tasks.json
+3. Re-run code-tuner report mode after fixes to check score changes
 
-> 完整报告已保存至: `.allforai/code-tuner/tuner-report.md`
-> 重构任务清单: `.allforai/code-tuner/tuner-tasks.json`
+> Full report saved to: `.allforai/code-tuner/tuner-report.md`
+> Task list: `.allforai/code-tuner/tuner-tasks.json`
 ```
 
-**关键：摘要必须包含具体的问题列表和修复建议，不能只给统计数字。用户看完摘要就能知道出了什么问题、在哪里、怎么修。**
+**Key: The summary must include specific issue lists and fix suggestions, not just
+statistics. The user should know what went wrong, where, and how to fix it after
+reading the summary.**

@@ -1,7 +1,7 @@
 ---
 name: code-tuner
 description: >
-  This skill should be used when the user asks to "analyze server code quality",
+  Use this skill when the user asks to "analyze server code quality",
   "check architecture compliance", "find duplicate code", "detect code duplication",
   "review backend architecture", "optimize server code", "code tuning",
   "refactor my backend", "audit code architecture", "code quality review",
@@ -10,200 +10,199 @@ description: >
   or mentions server-side code optimization, backend refactoring,
   architectural violations, layered architecture review, or technical debt assessment.
   Supports three-tier, two-tier, and DDD architectures across any language.
-  服务端代码调优，架构合规检查，重复代码检测，抽象机会分析，验证逻辑规范，技术债评估。
 version: "1.1.1"
 ---
 
-# Code-Tuner — 服务端代码调优
+# Code-Tuner -- Server-Side Code Tuning
 
-## 核心理念
+## Core Philosophy
 
-相同功能，代码越少质量越高。通过五个维度衡量：
+Same functionality, less code = higher quality. Measured across five dimensions:
 
-- **重复率** — 相似代码段的数量和分布
-- **抽象层次** — 完成同一功能所需的函数/类/文件数量
-- **跨层调用深度** — 一个请求穿越多少层才到达逻辑
-- **文件分散度** — 相关逻辑分散在多少个文件中
-- **验证规范度** — 验证逻辑是否在正确的层、是否统一
+- **Duplication rate** -- quantity and distribution of similar code segments
+- **Abstraction level** -- number of functions/classes/files needed for a single feature
+- **Cross-layer call depth** -- how many layers a request traverses to reach logic
+- **File dispersion** -- how many files contain related logic
+- **Validation standards** -- whether validation logic is in the correct layer and unified
 
-仅分析后端代码。覆盖入口层(Entry/API)、业务层(Business/Service)、数据层(Data/Repository)、工具层(Utility)。
+Analyzes backend code only. Covers Entry (API), Business (Service), Data (Repository), and Utility layers.
 
 ---
 
-## 两种运行模式
+## Two Lifecycle Modes
 
-| | 未上线 (pre-launch) | 维护期 (maintenance) |
+| | Pre-launch | Maintenance |
 |---|---|---|
-| 重构建议 | 激进：重写、合并、重新组织目录 | 保守：抽取公共方法、提取接口，不动现有结构 |
-| 架构违规 | 标记为 `MUST-FIX` | 标记为 `TECH-DEBT`，附风险评估 |
-| 重复代码 | 建议合并到一处 | 建议抽取共用方法，保留原调用点 |
-| 任务排序 | 按代码质量影响（大的先做） | 按变更风险（安全的先做） |
+| Refactoring advice | Aggressive: rewrite, merge, reorganize directories | Conservative: extract shared methods, extract interfaces, keep existing structure |
+| Architecture violations | Label as `MUST-FIX` | Label as `TECH-DEBT` with risk assessment |
+| Duplicated code | Suggest merging into one place | Suggest extracting shared method, keep original call sites |
+| Task ordering | By code quality impact (biggest first) | By change risk (safest first) |
 
 ---
 
-## 工作流总览
+## Workflow Overview
 
 ```
-Phase 0: 项目画像 ──→ 用户确认
-     ↓
-Phase 1: 架构合规检查
-     ↓
-Phase 2: 重复检测
-     ↓
-Phase 3: 抽象机会分析
-     ↓
-Phase 4: 综合评分 + 报告 + 重构任务清单
+Phase 0: Project Profile --> confirm/infer
+     |
+Phase 1: Architecture Compliance Check
+     |
+Phase 2: Duplication Detection
+     |
+Phase 3: Abstraction Opportunity Analysis
+     |
+Phase 4: Scoring + Report + Refactoring Task List
 ```
 
 ---
 
-### Phase 0: 项目画像
+### Phase 0: Project Profile
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/references/phase0-profile.md`
+> See `./references/phase0-profile.md`
 
-识别技术栈、推断架构类型、映射层级、识别模块、扫描数据模型。
+Identify tech stack, infer architecture type, map layers, identify modules, scan data model.
 
-**关键原则**：层级映射基于逻辑角色（Entry / Business / Data / Utility），不依赖目录名。通过分析依赖方向和代码职责来判断每个目录属于哪一层。不同项目命名各不相同，名称不重要，职责和依赖方向才重要。
+**Key principle:** Layer mapping is based on logical roles (Entry / Business / Data / Utility), not directory names. Analyze dependency direction and code responsibilities to determine which layer each directory belongs to. Different projects use different names -- names do not matter, responsibilities and dependency direction do.
 
-实体类和数据库表结构是服务端最重要的信息，扫描所有实体、关系、DTO/VO 分布。
+Entity classes and database table structures are the most important server-side information. Scan all entities, relationships, DTO/VO distribution.
 
-输出 `tuner-profile.json`。架构类型 + 层级映射 + 模块列表 + 数据模型必须经用户确认。
+Output `tuner-profile.json`. Architecture type + layer mapping + module list + data model must be confirmed. Confirm with user only if architecture type cannot be reliably inferred from code analysis.
 
-> 跨语言目录映射速查见 `${CLAUDE_PLUGIN_ROOT}/references/layer-mapping.md`
-
----
-
-### Phase 1: 架构合规检查
-
-> 详见 `${CLAUDE_PLUGIN_ROOT}/references/phase1-compliance.md`
-
-按架构类型加载规则，检查依赖方向、层级职责、验证位置。
-
-**规则类别：**
-- **T-01~T-06** — 三层架构规则
-- **W-01~W-03** — 两层架构规则
-- **D-01~D-04** — DDD 规则
-- **G-01~G-06** — 通用规则（所有架构）
-
-**特殊规则：**
-- **T-03**：入口层直接访问数据层时，判断是否合理。简单 CRUD（无业务判断、无组合调用、无事务要求）→ 合理，不报违规。包含业务逻辑 → 违规，应下沉到业务层。
-- **G-04/G-05/G-06**：分层验证原则（宽进严出）。格式校验在入口层做掉（因为业务层可被多个入口组合调用）。业务规则验证在业务层。数据层不做业务验证。
-
-输出 `phase1-compliance.json`。
+> Cross-language directory mapping reference: `./references/layer-mapping.md`
 
 ---
 
-### Phase 2: 重复检测
+### Phase 1: Architecture Compliance Check
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/references/phase2-duplicates.md`
+> See `./references/phase1-compliance.md`
 
-四个扫描维度：
+Load rules by architecture type, check dependency direction, layer responsibilities, validation placement.
 
-1. **API/入口层重复** — 多个端点做高度相似的事（导出、分页、CRUD）
-2. **业务层重复** — Service 之间相似方法、复制粘贴后只改实体名
-3. **数据层重复** — 相似查询、重复分页逻辑、DTO/VO 字段重叠 >70%
-4. **工具类重复** — 功能相同的工具方法、重新实现已有库的功能
+**Rule categories:**
+- **T-01 to T-06** -- Three-tier architecture rules
+- **W-01 to W-03** -- Two-tier architecture rules
+- **D-01 to D-04** -- DDD rules
+- **G-01 to G-06** -- Universal rules (all architectures)
 
-检测方法：提取方法的结构签名（参数类型 → 操作序列 → 返回类型），相似度 >70% 标记为候选重复。
+**Special rules:**
+- **T-03**: When Entry layer directly accesses Data layer, determine if reasonable. Simple CRUD (no business logic, no composite calls, no transaction requirements) = OK, not a violation. Contains business logic = violation, should be in Business layer.
+- **G-04/G-05/G-06**: Layered validation principle (lenient-in, strict-out). Format validation in Entry layer (because Business layer can be called by multiple entries). Business rule validation in Business layer. Data layer does no business validation.
 
-如果 Service 方法只是透传到 Repository（无业务逻辑），建议删除该 Service 方法，让入口层直接调数据层。
-
-输出 `phase2-duplicates.json`。
-
----
-
-### Phase 3: 抽象机会分析
-
-> 详见 `${CLAUDE_PLUGIN_ROOT}/references/phase3-abstractions.md`
-
-五类分析：
-
-1. **垂直抽象** — 多个类结构高度相似 → 抽取基类
-2. **横向抽象** — 散落各处的相似代码片段 → 抽取公共方法
-3. **接口合并** — 多个 API 逻辑相同只是实体不同 → 参数化
-4. **验证逻辑** — 验证位置、验证重复、宽进严出、错误响应一致性
-5. **过度抽象检测（反向检查）** — 只有 1 个实现的接口、只调用 1 次的工具方法、层层透传无增值、过深继承链
-
-输出 `phase3-abstractions.json`。
+Output `phase1-compliance.json`.
 
 ---
 
-### Phase 4: 综合评分 + 报告
+### Phase 2: Duplication Detection
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/references/phase4-report.md`
+> See `./references/phase2-duplicates.md`
 
-**五维评分（各 0-100，加权总分）：**
+Four scanning dimensions:
 
-| 维度 | 权重 |
-|------|------|
-| 架构合规度 | 25% |
-| 代码重复率 | 25% |
-| 抽象合理度 | 20% |
-| 验证规范度 | 15% |
-| 数据模型规范度 | 15% |
+1. **API/Entry layer duplication** -- multiple endpoints doing highly similar things (export, pagination, CRUD)
+2. **Business layer duplication** -- similar methods across Services, copy-paste with only entity name changed
+3. **Data layer duplication** -- similar queries, repeated pagination logic, DTO/VO field overlap > 70%
+4. **Utility duplication** -- functionally identical tool methods, reimplementing existing library capabilities
 
-输出 `tuner-report.md`（摘要 + 问题列表 + 热力图 + 详细发现）和 `tuner-tasks.json`（可执行的重构任务清单）。
+Detection method: Extract structural signatures (param types > operation sequence > return type), mark as candidate duplicate when similarity > 70%.
+
+If a Service method only passes through to Repository (no business logic), suggest removing it and having Entry call Data directly.
+
+Output `phase2-duplicates.json`.
 
 ---
 
-## 文件结构
+### Phase 3: Abstraction Opportunity Analysis
+
+> See `./references/phase3-abstractions.md`
+
+Five analysis types:
+
+1. **Vertical abstraction** -- multiple classes with highly similar structure > extract base class
+2. **Horizontal abstraction** -- similar code fragments scattered across files > extract shared method
+3. **Interface consolidation** -- multiple APIs with same logic but different entities > parameterize
+4. **Validation logic** -- validation placement, duplication, lenient-in/strict-out, error response consistency
+5. **Over-abstraction detection (reverse check)** -- interfaces with only 1 implementation, utility methods called only once, layer-by-layer passthrough with no added value, excessively deep inheritance
+
+Output `phase3-abstractions.json`.
+
+---
+
+### Phase 4: Scoring + Report
+
+> See `./references/phase4-report.md`
+
+**Five-dimension scoring (each 0-100, weighted total):**
+
+| Dimension | Weight |
+|-----------|--------|
+| Architecture compliance | 25% |
+| Code duplication rate | 25% |
+| Abstraction quality | 20% |
+| Validation standards | 15% |
+| Data model quality | 15% |
+
+Output `tuner-report.md` (summary + problem list + heatmap + detailed findings) and `tuner-tasks.json` (actionable refactoring task list).
+
+---
+
+## File Structure
 
 ```
 your-project/
-└── .allforai/code-tuner/
-    ├── tuner-profile.json        # Phase 0: 项目画像
-    ├── phase1-compliance.json    # Phase 1: 架构违规列表
-    ├── phase2-duplicates.json    # Phase 2: 重复检测结果
-    ├── phase3-abstractions.json  # Phase 3: 抽象机会
-    ├── tuner-report.md           # Phase 4: 综合报告
-    └── tuner-tasks.json          # Phase 4: 重构任务清单
++-- .allforai/code-tuner/
+    +-- tuner-profile.json        # Phase 0: Project profile
+    +-- phase1-compliance.json    # Phase 1: Architecture violations
+    +-- phase2-duplicates.json    # Phase 2: Duplication results
+    +-- phase3-abstractions.json  # Phase 3: Abstraction opportunities
+    +-- tuner-report.md           # Phase 4: Comprehensive report
+    +-- tuner-tasks.json          # Phase 4: Refactoring task list
 ```
 
 ---
 
-## 关键原则
+## Key Principles
 
-1. **仅分析服务端项目** — 非服务端项目（前端、Markdown、文档仓库等）直接告知用户不适用，不执行分析
-2. **Phase 0 必须用户确认** — 架构类型判错，后续全错
-3. **不自动重构** — 只输出报告和任务清单，由用户决定执行
-4. **两种模式贯穿始终** — 每条发现都给出两种模式下的不同建议
-5. **宽进严出** — 格式校验在入口层，业务校验在业务层，数据层不越界
-6. **简单透传可跳层** — 纯 CRUD 无业务逻辑时，入口层可直接调数据层
-7. **不过度抽象** — 同时检测"该抽象没抽象"和"不该抽象却抽象了"
-8. **名称不重要，职责才重要** — 通过依赖模式识别层级，不靠目录名
+1. **Backend projects only** -- Non-backend projects (frontend, Markdown, documentation repos, etc.) are not suitable; inform the user and do not analyze
+2. **Phase 0 profile must be confirmed** -- Getting architecture type wrong invalidates all subsequent analysis
+3. **No auto-refactoring** -- Only output reports and task lists; user decides what to execute
+4. **Two modes throughout** -- Every finding provides different suggestions for both modes
+5. **Lenient-in, strict-out** -- Format validation in Entry layer, business validation in Business layer, Data layer does not cross boundaries
+6. **Simple passthrough can skip layers** -- Pure CRUD with no business logic allows Entry to call Data directly
+7. **No over-abstraction** -- Simultaneously detect "should abstract but did not" and "should not abstract but did"
+8. **Names do not matter, responsibilities do** -- Identify layers by dependency patterns, not directory names
 
 ---
 
-## 使用方式
+## Usage Examples
 
-### 场景 1: 新项目完整分析
-
-```
-请用 code-tuner 技能分析我的项目。
-项目路径是 /path/to/project。
-项目状态是未上线。
-```
-
-### 场景 2: 维护期项目
+### Scenario 1: New project full analysis
 
 ```
-请用 code-tuner 分析我的项目。
-项目路径是 /path/to/project。
-项目状态是维护期。
+Analyze my project with code-tuner.
+Project path: /path/to/project.
+Project status: pre-launch.
 ```
 
-### 场景 3: 只跑单个阶段
+### Scenario 2: Maintenance project
 
 ```
-请用 code-tuner 只做重复检测。
-项目路径是 /path/to/project。
-画像文件在 .allforai/code-tuner/tuner-profile.json。
+Run code-tuner on my project.
+Project path: /path/to/project.
+Project is in maintenance/production.
 ```
 
-### 场景 4: 指定模块分析
+### Scenario 3: Single phase only
 
 ```
-请用 code-tuner 分析订单模块。
-项目路径是 /path/to/project。
-只看 src/modules/order 目录。
+Run code-tuner duplication detection only.
+Project path: /path/to/project.
+Profile is at .allforai/code-tuner/tuner-profile.json.
+```
+
+### Scenario 4: Specific module analysis
+
+```
+Run code-tuner on the order module only.
+Project path: /path/to/project.
+Only scan src/modules/order directory.
 ```
