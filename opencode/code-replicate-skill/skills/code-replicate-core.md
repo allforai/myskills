@@ -3,10 +3,10 @@ name: code-replicate-core
 description: >
   Internal shared protocol for code replication. Do NOT invoke directly —
   loaded by cr-backend.md, cr-frontend.md, cr-fullstack.md, or cr-module.md.
-version: "2.1.0"
+version: "5.0.0"
 ---
 
-# Code Replicate Core Protocol v2.1
+# Code Replicate Core Protocol v5.0.0
 
 ## Overview
 

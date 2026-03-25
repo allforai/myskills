@@ -10,7 +10,7 @@ description: >
   or mentions server-side code optimization, backend refactoring,
   architectural violations, layered architecture review, or technical debt assessment.
   Supports three-tier, two-tier, and DDD architectures across any language.
-version: "1.1.1"
+version: "2.0.0"
 ---
 
 # Code-Tuner -- Server-Side Code Tuning

@@ -1,5 +1,6 @@
 ---
 name: code-replicate
+version: "5.0.0"
 description: >
   Code Replication Bridge: reverse-engineer existing codebases (any tech stack) into
   .allforai/ artifacts compatible with the dev-forge pipeline. 4 fidelity levels:
@@ -7,7 +8,7 @@ description: >
   exact (including bugs). Supports cross-stack migration.
 ---
 
-# Code Replicate v2.1 — 代码复刻插件
+# Code Replicate v5.0.0 — 代码复刻插件
 
 > 逆向工程桥梁层：已有代码 → 标准 `.allforai/` 产物 → dev-forge 流水线
 

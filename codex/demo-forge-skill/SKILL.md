@@ -5,7 +5,7 @@ description: >
   rich media (images/videos/documents), and iterative quality verification.
   Includes demo-design (data planning), media-forge (media acquisition + processing + upload),
   demo-execute (data generation + population), demo-verify (Playwright verification + routing).
-version: "1.3.1"
+version: "2.0.0"
 ---
 
 # Demo Forge — Demo Environment Suite

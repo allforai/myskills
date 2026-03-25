@@ -5,10 +5,10 @@ description: >
   .allforai/ artifacts compatible with the dev-forge pipeline. 4 fidelity levels:
   interface (API contracts), functional (business behavior), architecture (patterns),
   exact (including bugs). Supports cross-stack migration.
-version: "2.1.0"
+version: "5.0.0"
 ---
 
-# Code Replicate v2.1 — Code Replication Plugin
+# Code Replicate v5.0.0 — Code Replication Plugin
 
 > Reverse-engineering bridge: existing code -> standard `.allforai/` artifacts -> dev-forge pipeline
 
