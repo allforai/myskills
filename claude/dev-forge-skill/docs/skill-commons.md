@@ -24,8 +24,8 @@ dev-forge 涉及的外部能力：
 
 | 能力 | 使用技能 | 重要性 | 降级行为 |
 |------|---------|--------|---------|
-| `playwright` | e2e-verify, product-verify | 条件必需（验证阶段） | 阻塞，提示安装 |
-| `openrouter_mcp` | design-to-spec, task-execute, e2e-verify, product-verify | 可选 | 跳过 XV，输出提示 |
+| `playwright` | testforge, product-verify | 条件必需（验证阶段） | 阻塞，提示安装 |
+| `openrouter_mcp` | design-to-spec, task-execute, testforge, product-verify | 可选 | 跳过 XV，输出提示 |
 
 **提示格式**：`{step_name} ⊘ {能力名} 不可用，{降级动作}`
 

@@ -82,7 +82,7 @@ Agent tool 的屏障同步机制保证所有前端 Agent 完成后才继续到 S
 - 遵循两阶段加载（先 index 再 full data）
 - 前端 Agent: 接口调用必须引用后端 design.md 中已定义的接口 ID
 - 前端 Agent: 数据结构字段命名必须与注入的后端类型契约完全一致（不可自行推断字段名）
-- 预置脚本优先: 检查 ${CLAUDE_PLUGIN_ROOT}/scripts/ 是否有可用脚本
+- 注意: dev-forge 没有预置脚本（不同于 product-design），所有生成均由 LLM 驱动
 ~~~
 
 Agent 调用参数：

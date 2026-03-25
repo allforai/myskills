@@ -129,7 +129,7 @@ Step 1.5: 架构 6V 审计 (Conway's Law Agent)
   ↓
 Step 2: 技术栈选择（逐子项目）
   对每个子项目:
-    读取 templates/stacks.json → 过滤匹配 type 的模板
+    过滤匹配 type 的技术栈模板（LLM 基于主流框架知识生成选项，无预置 stacks.json）
     自动选择: preflight.tech_preferences[子项目type].template_id（有 preflight 时）或推荐值（不停）
     → 记录选择到 tech-profile.json
   ↓

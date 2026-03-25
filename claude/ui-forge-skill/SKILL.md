@@ -7,7 +7,7 @@ description: >
   to match design specs, tokens, or screenshots. Prioritize design fidelity
   before aesthetic enhancement. Forked from frontend-design, but constrained for
   real product codebases and post-implementation use.
-version: "0.1.2"
+version: "1.0.0"
 ---
 
 # UI Forge — 实现阶段 UI 锻造

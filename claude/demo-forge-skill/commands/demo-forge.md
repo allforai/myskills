@@ -67,14 +67,14 @@ product-map 产物必须存在：
 
 ### 0-C 外部能力快检
 
-> 统一协议见 `product-design-skill/docs/skill-commons.md`「外部能力探测协议」。
+> 统一协议见 `${CLAUDE_PLUGIN_ROOT}/../product-design-skill/docs/skill-commons.md`「外部能力探测协议」。
 
 检测本流水线涉及的外部能力并输出状态：
 
 | 能力 | 探测方式 | 重要性 | 降级行为 |
 |------|---------|--------|---------|
 | Playwright | `mcp__playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 可用性（任一可用即就绪） | Phase 4 必需 | 阻塞 verify，提示安装 |
-| Brave Search | `brave_web_search` 可用性 或 `BRAVE_API_KEY` | Phase 2 推荐 | 降级到 WebSearch |
+| Brave Search | `mcp__brave-search__brave_web_search` 可用性 或 `BRAVE_API_KEY` | Phase 2 推荐 | 降级到 WebSearch |
 | AI 生图 | `generate_image` / `openrouter_generate_image` / `flux_generate_image` 任一可用 | Phase 2 可选 | Imagen 4 → GPT-5 Image → FLUX 2 Pro → 跳过 |
 | AI 生视频 | `generate_video` / `kling_generate_video` 任一可用 | Phase 2 可选 | Veo 3.1 → Kling → 跳过 |
 
@@ -88,7 +88,7 @@ product-map 产物必须存在：
   AI 生视频      ✗ 未就绪   Veo 3.1 / Kling（降级到 Playwright 录屏）
 ```
 
-**交互式安装引导**（统一协议见 `product-design-skill/docs/skill-commons.md`）：
+**交互式安装引导**（统一协议见 `${CLAUDE_PLUGIN_ROOT}/../product-design-skill/docs/skill-commons.md`）：
 
 - **Playwright 未就绪 + full/verify 模式**：用 AskUserQuestion 提供一键安装选项（「是，帮我安装」/「跳过」/「查看详情」）
 - **Playwright 未就绪 + design/media/execute 模式**：仅输出一行提示，不阻塞

@@ -384,7 +384,7 @@ verify loop 通过后直接进入 Phase 3，不弹出人工审核。
 2. LLM 分析 experience-map + task-inventory，识别交互风险点并生成门禁报告
 
 **检查点**：
-- `gate-report.json` 存在
+- `interaction-gate.json` 存在
 
 ---
 

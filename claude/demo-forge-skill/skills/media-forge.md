@@ -379,7 +379,7 @@ M6 完整性确认:
 
 | 工具 | 用途 | 必需/可选 |
 |-----|------|----------|
-| `brave_web_search` / `brave_image_search` | 图片/视频搜索 | 推荐（`BRAVE_API_KEY`） |
+| `mcp__brave-search__brave_web_search` / `mcp__brave-search__brave_image_search` | 图片/视频搜索 | 推荐（`BRAVE_API_KEY`） |
 | WebSearch | 降级搜索 | 内置 |
 | `generate_image` / `openrouter_generate_image` / `flux_generate_image` | AI 生图 | 可选（任一 Key 即可） |
 | `generate_video` / `kling_generate_video` | AI 生视频 | 可选（任一 Key 即可） |

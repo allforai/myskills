@@ -10,7 +10,7 @@ description: >
   testforge (test-driven quality forging: full test pyramid — unit/component/integration/e2e-chain/mobile — audit + generate + fix → converge).
   Full pipeline: /project-forge. LLM-driven Forge-Verify-Loop (4D/6V/XV).
   开发锻造套件：项目引导、设计转规格、任务执行、产品验收、死链猎杀、字段一致性、测试锻造。
-version: "5.9.1"
+version: "6.0.0"
 ---
 
 # Dev Forge — 开发锻造套件
@@ -174,7 +174,7 @@ code-tuner（架构层）      合规→重复→抽象→评分
 
 **效率优化**：LLM 驱动的理解步骤每个项目只需做一次（Phase 0 / Step 0），理解结果缓存后，后续扫描步骤可以批量执行。
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/docs/dev-forge-principles.md`
+> 以上两类执行方式已涵盖 dev-forge 的核心检测原则。fieldcheck/deadhunt/testforge 各自在 skill 文件中定义具体检测规则。
 
 ## 输出
 

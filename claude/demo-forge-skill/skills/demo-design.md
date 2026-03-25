@@ -57,7 +57,7 @@ demo-forge 内部三阶段:
 
 ## 增强协议（WebSearch + 4E+4V + OpenRouter）
 
-> 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
+> 通用框架见 `${CLAUDE_PLUGIN_ROOT}/../product-design-skill/docs/skill-commons.md`，以下仅列本技能定制。
 
 **WebSearch 关键词**：
 - `"{ORM} seed data strategies {year}"`

@@ -5,7 +5,7 @@ description: >
   loaded by cr-backend.md, cr-frontend.md, cr-fullstack.md, or cr-module.md.
 ---
 
-# Code Replicate Core Protocol v2.1
+# Code Replicate Core Protocol v5.0.0
 
 ## Overview
 
