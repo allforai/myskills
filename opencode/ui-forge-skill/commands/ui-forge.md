@@ -4,15 +4,11 @@ description: >
   Refine an already-implemented frontend UI. Use for post-implementation polish
   or design restoration, with fidelity restoration checked before polish. Not
   for initial feature implementation.
-arguments:
-  - name: target
-    description: "Optional target page, route, component, or file hint"
-    required: false
 ---
 
 # UI Forge Command
 
-用户请求: $ARGUMENTS
+Infer the target page, route, component, or file from the user's natural language request.
 
 ## 命令定位
 
@@ -23,7 +19,7 @@ arguments:
 
 ## 执行规则
 
-1. 先读取 `${CLAUDE_PLUGIN_ROOT}/skills/ui-forge.md`
+1. 先读取 `skills/ui-forge.md`
 2. 识别目标界面或组件
 3. 先做 `fidelity-check`
 4. 判断模式：`restore` 或 `polish`

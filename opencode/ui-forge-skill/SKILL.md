@@ -33,7 +33,7 @@ version: "0.1.2"
 
 ### 1. ui-forge — 单入口技能
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/skills/ui-forge.md`
+> 详见 `skills/ui-forge.md`
 
 统一入口，内部先判断设计偏差，再决定动作：
 
@@ -43,7 +43,7 @@ version: "0.1.2"
 
 ### 2. /ui-forge — 单命令入口
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/commands/ui-forge.md`
+> 详见 `commands/ui-forge.md`
 
 手动触发执行。当前版本不接入 `dev-forge` 自动编排。
 
@@ -57,6 +57,6 @@ version: "0.1.2"
 
 ## 参考文档
 
-- 定位说明：`${CLAUDE_PLUGIN_ROOT}/docs/positioning.md`
-- 输入与边界：`${CLAUDE_PLUGIN_ROOT}/docs/input-contract.md`
-- 还原度检查清单：`${CLAUDE_PLUGIN_ROOT}/docs/fidelity-checklist.md`
+- 定位说明：`docs/positioning.md`
+- 输入与边界：`docs/input-contract.md`
+- 还原度检查清单：`docs/fidelity-checklist.md`

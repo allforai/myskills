@@ -69,7 +69,7 @@ Check for:
 - `screenshots/`
 - code-level evidence of token drift or component drift
 
-Read `${CLAUDE_PLUGIN_ROOT}/docs/fidelity-checklist.md` when a design baseline exists
+Read `docs/fidelity-checklist.md` when a design baseline exists
 or when the correct mode is not immediately obvious.
 
 Questions to answer:
