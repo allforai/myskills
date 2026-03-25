@@ -2,210 +2,200 @@
 name: demo-execute
 description: >
   Use when the user asks to "populate demo data", "fill demo environment",
-  "demo-execute", "灌入演示数据", "生成演示数据", "demo populate",
-  or mentions data population, demo data generation, database seeding.
+  "demo-execute", "demo populate", or mentions data population,
+  demo data generation, database seeding for demos.
   Requires demo-plan.json + style-profile.json + upload-mapping.json.
   Requires a running application for data population.
 version: "1.0.0"
 ---
 
-# Demo Execute — 数据生成与灌入
+# Demo Execute — Data Generation and Population
 
-> 把设计方案变成应用里的真实数据。
+> Turn the design plan into real data inside the application.
 
-## 定位
+## Positioning
 
 ```
-demo-forge 内部三阶段:
-  demo-design            →  media-forge + demo-execute（本技能）  →  demo-verify
-  规划该生成什么数据          采集素材 + 灌入数据                       打开产品逐项验证
-  纯设计不执行               消费设计方案                             产出问题清单路由回修
+demo-forge internal stages:
+  demo-design            →  media-forge + demo-execute (this skill)  →  demo-verify
+  Plan what data to generate   Acquire assets + populate data              Verify each item
+  Pure design, no execution    Consume the design plan                     Route issues back
 ```
 
-**本技能职责**：消费 demo-plan + style-profile + upload-mapping，生成具体数据记录并灌入运行中的应用。
+**This skill's responsibility**: consume demo-plan + style-profile + upload-mapping, generate concrete data records and populate the running application.
 
 ---
 
-## 前提
+## Prerequisites
 
-| 条件 | 来源 | 说明 |
-|------|------|------|
-| `demo-plan.json` | demo-design | 演示数据方案（实体、链路、约束、枚举、时间分布） |
-| `style-profile.json` | demo-design | 行业风格 + 文本模板 |
-| `upload-mapping.json` | media-forge | 本地素材 -> 服务端 URL/ID 映射 |
-| 应用运行中 | 用户 | API 可访问、数据库可连接 |
+| Condition | Source | Description |
+|-----------|--------|-------------|
+| `demo-plan.json` | demo-design | Demo data plan (entities, chains, constraints, enums, time distribution) |
+| `style-profile.json` | demo-design | Industry style + text templates |
+| `upload-mapping.json` | media-forge | Local asset → server URL/ID mapping |
+| Application running | User | API accessible, database connectable |
 
-四项缺任何一项则终止并提示用户补齐。
-
----
-
-## 快速开始
-
-```
-/demo-forge execute            # 完整流程（E1-E4）
-/demo-forge execute --dry-run  # 仅生成数据，不灌入（只跑 E1-E2）
-/demo-forge clean              # 清理已灌入数据
-```
+All four required. Missing any → terminate and tell user to complete the prerequisite.
 
 ---
 
-## 工作流
+## Workflow
 
-### E1: 数据生成（确定性为主）
+### E1: Data Generation (deterministic)
 
-读取 `demo-plan.json` + `style-profile.json` + `upload-mapping.json`，按场景链路逐条生成记录。
+Read `demo-plan.json` + `style-profile.json` + `upload-mapping.json`, generate records per scenario chain.
 
-**字段生成策略**：
+**Field generation strategy**:
 
-| 字段类型 | 生成方式 |
-|---------|---------|
-| 文本字段 | 从 style-profile 模板随机选取，相邻记录不重复 |
-| 数值字段 | 在约束范围内取值 + 包含边界值 |
-| 时间字段 | 加权采样（近密远疏分布 + 工作时间集中 + 月度波动 ±15%） |
-| 状态字段 | 按枚举覆盖需求分配，确保每个值都有记录（含终态/异常态） |
-| 媒体字段 | 直接读 upload-mapping.json 的 server_url / server_id |
-| 外键字段 | 链路依赖自动关联（父 -> 子顺序生成，子引用父的临时 ID） |
-| 派生字段 | 数学计算（汇总 = 明细之和，计数 = 实际记录数） |
+| Field type | Generation method |
+|-----------|-------------------|
+| Text fields | Random select from style-profile templates, no adjacent repeats |
+| Numeric fields | Values within constraint range + include boundary values |
+| Time fields | Weighted sampling (recent-dense distribution + work hours + monthly +-15% fluctuation) |
+| Status fields | Allocate by enum coverage requirement, ensure each value has records (including terminal/exception states) |
+| Media fields | Read server_url / server_id directly from upload-mapping.json |
+| Foreign key fields | Auto-link by chain dependency (parent → child generation order, child references parent's temp ID) |
+| Derived fields | Mathematical calculation (sum = detail total, count = actual record count) |
 
-**行为分布**：
+**Behavior distribution**:
 
 ```
-10% 重度用户 -> 产生 ~50% 的数据
-30% 普通用户 -> 产生 ~35% 的数据
-60% 轻度用户 -> 产生 ~15% 的数据
+10% heavy users → produce ~50% of data
+30% regular users → produce ~35% of data
+60% light users → produce ~15% of data
 ```
 
-**输出**：`forge-data-draft.json`（所有记录使用临时 ID，如 TEMP-001、TEMP-002）。
+**Output**: `forge-data-draft.json` (all records use temporary IDs like TEMP-001, TEMP-002).
 
 ---
 
-### E2: 灌入前自检
+### E2: Pre-flight Self-Check
 
-逐项确认数据质量，发现问题分两类处理：
+Verify data quality item-by-item. Issues fall into two categories:
 
 ```
-□ 实体完整性 — 无零记录实体（每个实体至少有一条数据）
-□ 枚举覆盖   — 每个状态字段所有值都有记录（包括终态/异常态 REJECTED/CANCELED/EXPIRED/FAILED）
-□ 外键完整性 — 每个外键 ID 在数据集中都有对应记录
-□ 派生一致性 — 汇总字段 = 明细之和，计数字段 = 实际记录数
-□ 时间逻辑   — created_at < updated_at，父实体时间早于子实体
-□ 媒体关联   — 所有媒体字段引用 upload-mapping 条目（无外部 URL）
-□ 行为分布   — 重度用户产生约 50% 的数据
-□ 文本去重   — 无相邻记录使用完全相同的文本
+□ Entity completeness — no zero-record entities (every entity has at least one record)
+□ Enum coverage   — every status field has all values represented (including REJECTED/CANCELED/EXPIRED/FAILED)
+□ Foreign key integrity — every foreign key ID has a corresponding record in the dataset
+□ Derived consistency — aggregate fields = detail sums, count fields = actual record counts
+□ Time logic   — created_at < updated_at, parent entity time earlier than child
+□ Media linkage   — all media fields reference upload-mapping entries (no external URLs)
+□ Behavior distribution   — heavy users produce approximately 50% of data
+□ Text dedup   — no adjacent records with identical text
 ```
 
-**处理方式**：
-- 数学类问题（派生不一致、计数错误）：**自动修正**
-- 其他问题：标记为 `PREFLIGHT_ISSUE`，汇报给用户
+**Handling**:
+- Mathematical issues (derived mismatch, count error): **auto-fix**
+- Other issues: mark as `PREFLIGHT_ISSUE`, report to user
 
-`--dry-run` 模式在 E2 完成后停止，不进入 E3。
+`--dry-run` mode stops after E2, does not enter E3.
 
 ---
 
-### E3: 数据灌入
+### E3: Data Population
 
-**灌入顺序由场景链路决定**（不是按实体字母顺序），确保外键依赖正确：
+**Population order follows scenario chains** (not alphabetical by entity), ensuring foreign key correctness:
 
 ```
-1. DB 灌入：配置表、字典表、API_GAP 实体（无业务逻辑的基础数据）
-2. API 灌入：用户账号（所有场景链路依赖用户）
-3. 混合灌入：按场景优先级（高频 → 中频 → 低频）
-   - 每个场景内按链路顺序：父实体 → 子实体 → 关联实体
-   - 每个实体按 demo-plan Step 1-C-2 标注的方式选择 API 或 DB
+1. DB population: config tables, dictionary tables, API_GAP entities (no-logic base data)
+2. API population: user accounts (all scenario chains depend on users)
+3. Mixed population: by scenario priority (high → medium → low frequency)
+   - Within each scenario, follow chain order: parent → child → related entity
+   - Each entity uses API or DB per demo-plan Step 1-C-2 annotation
 ```
 
-**DB 灌入注意事项**：
-- 直接写入跳过业务逻辑（触发器、回调），派生字段需 E4 手动补写
-- ORM 的 `created_at` / `updated_at` 自动填充不生效，需显式指定
-- DB 灌入的记录同样写入 `forge-data.json`，clean 时直接 DELETE
+**DB population notes**:
+- Direct writes skip business logic (triggers, callbacks), derived fields need E4 manual fix
+- ORM `created_at` / `updated_at` auto-fill won't work, must specify explicitly
+- DB-populated records also written to `forge-data.json`, deleted directly by clean mode
 
-**失败处理策略**：
-- **独立实体失败**：写入日志，继续灌入其他实体
-- **父实体失败**：跳过该链路下所有子实体（避免外键悬空），整条链路标记为 `CHAIN_FAILED`
-- **灌入结束**：汇总失败链路数量和原因，提示用户排查后可重试
+**Failure handling**:
+- **Independent entity failure**: log it, continue populating others
+- **Parent entity failure**: skip all children in that chain (avoid dangling foreign keys), mark entire chain `CHAIN_FAILED`
+- **End of population**: summarize failed chain count and reasons, prompt user to investigate
 
-**输出**：
-- `forge-data.json` — 已创建数据清单（临时 ID 替换为真实服务端 ID）
-- `forge-log.json` — 灌入日志（每条记录的操作状态）
+**Output**:
+- `forge-data.json` — created data inventory (temp IDs replaced with real server IDs)
+- `forge-log.json` — population log (operation status per record)
 
 ---
 
-### E4: 派生数据修正（DB 灌入后）
+### E4: Derived Data Correction (post-DB population)
 
-DB 直写跳过业务逻辑，需手动修正派生字段：
+DB direct writes skip business logic, so derived fields need manual correction:
 
-| 修正类型 | 操作 |
-|---------|------|
-| 聚合字段 | `SELECT SUM(amount) FROM details WHERE parent_id=?` → `UPDATE parent SET total=?` |
-| 计数字段 | `SELECT COUNT(*) FROM children WHERE parent_id=?` → `UPDATE parent SET count=?` |
-| 余额/库存 | 按全部流水记录正向计算最终值 |
-| 搜索索引 | 若存在全文搜索，触发 reindex |
+| Correction type | Operation |
+|----------------|-----------|
+| Aggregate fields | `SELECT SUM(amount) FROM details WHERE parent_id=?` → `UPDATE parent SET total=?` |
+| Count fields | `SELECT COUNT(*) FROM children WHERE parent_id=?` → `UPDATE parent SET count=?` |
+| Balances/inventory | Calculate final value from all transaction records |
+| Search indexes | Trigger reindex if full-text search exists |
 
-**输出**：更新 `forge-log.json`，追加 E4 修正记录。
+**Output**: update `forge-log.json`, append E4 correction records.
 
 ---
 
 ## forge-data-draft.json vs forge-data.json
 
-| 文件 | 产出阶段 | ID 类型 | 用途 |
-|------|---------|---------|------|
-| `forge-data-draft.json` | E1 生成后 | 临时占位（TEMP-001） | 数据蓝图，clean 后可复用 |
-| `forge-data.json` | E3 灌入后 | 真实服务端 ID | clean 和 verify 的依据 |
+| File | Stage | ID type | Purpose |
+|------|-------|---------|---------|
+| `forge-data-draft.json` | After E1 | Temporary (TEMP-001) | Data blueprint, reusable after clean |
+| `forge-data.json` | After E3 | Real server IDs | Basis for clean and verify |
 
-draft 保留不删，clean 后可直接重灌不必重新生成数据。
+Draft is preserved — after clean, can re-populate without regenerating data.
 
 ---
 
-## Clean 模式
+## Clean Mode
 
-`/demo-forge clean` 读取 `forge-data.json`，按灌入逆序删除所有已灌入数据。
+Clean mode reads `forge-data.json` and deletes all populated data in reverse order.
 
-**清理顺序**（与灌入相反，确保外键约束不报错）：
+**Cleanup order** (reverse of population, to respect foreign key constraints):
 
 ```
-1. 子实体 → 父实体（按 forge-data.json 记录的灌入顺序逆序）
-2. 用户账号（最后删除，其他实体可能引用 user_id）
-3. DB 灌入的基础数据（配置表、字典表）
+1. Child entities → parent entities (reverse of forge-data.json population order)
+2. User accounts (last — other entities may reference user_id)
+3. DB-populated base data (config tables, dictionaries)
 ```
 
-**清理方式**：
-- 统一走数据库 DELETE（不走 API，速度快且可批量删除）
-- 按 `forge-data.json` 中记录的 `id` 和 `table` 逐条或批量 DELETE
-- 若有 cascade delete 配置，只需删除顶层父实体；若无，严格按逆序逐层删除
+**Cleanup method**:
+- Unified database DELETE (not API — faster, batch-capable)
+- DELETE by `id` and `table` recorded in `forge-data.json`
+- If cascade delete configured, only delete top-level parents; otherwise delete layer by layer
 
-**清理范围**：
-- 清空 `forge-data.json`、`forge-log.json`
-- **保留** `demo-plan.json`、`style-profile.json`、`assets/`、`upload-mapping.json`（设计方案 + 素材不删，方便复用）
-- **保留** `forge-data-draft.json`（可直接重灌）
-
----
-
-## 重入模式
-
-当 `verify-issues.json` 中存在 `route_to="execute"` 的问题项时，进入重入模式——只修复问题，不全量重灌：
-
-| 问题类型 | 处理方式 |
-|---------|---------|
-| 外键断裂 | 检查 forge-data.json，补灌缺失的父记录或修正外键指向 |
-| CHAIN_FAILED | 重试该链路的完整灌入 |
-| 派生不一致 | 重跑 E4 派生数据修正 |
+**Cleanup scope**:
+- Clear `forge-data.json`, `forge-log.json`
+- **Keep** `demo-plan.json`, `style-profile.json`, `assets/`, `upload-mapping.json` (design + assets preserved for reuse)
+- **Keep** `forge-data-draft.json` (can re-populate directly)
 
 ---
 
-## 输出文件
+## Reentry Mode
 
-| 文件 | 路径 | 说明 |
-|------|------|------|
-| `forge-data-draft.json` | `.allforai/demo-forge/` | E1 生成的完整数据集（临时 ID） |
-| `forge-data.json` | `.allforai/demo-forge/` | E3 灌入后的数据清单（真实 ID） |
-| `forge-log.json` | `.allforai/demo-forge/` | 灌入日志（操作状态 + E4 修正记录） |
+When `verify-issues.json` contains `route_to="execute"` issues, enter reentry mode — fix only problems, do not re-populate everything:
+
+| Issue type | Handling |
+|-----------|----------|
+| Foreign key broken | Check forge-data.json, supplement missing parent records or fix FK references |
+| CHAIN_FAILED | Retry full chain population |
+| Derived inconsistency | Rerun E4 derived data correction |
 
 ---
 
-## 铁律
+## Output Files
 
-1. **优先 API，按需直写数据库** — API 灌入触发完整业务逻辑，DB 直写仅用于 API 不支持的场景
-2. **派生字段必须数学计算，不靠 LLM 估算** — SUM/COUNT/余额全部由确定性查询得出
-3. **链路顺序灌入，父先于子** — 任何子实体灌入前其父实体必须已存在
-4. **失败不静默，链路失败显式标记** — 独立失败记日志继续，父失败则整条链路标记 CHAIN_FAILED
-5. **灌入后立即验证可用性** — 用户账号创建后立即用认证 API 验证登录（不留到 demo-verify 才发现密码不对）；数据关联创建后查询确认链路完整（父→子关系可查到）。灌入验证失败 → 修正后重试，不静默跳过
+| File | Path | Description |
+|------|------|-------------|
+| `forge-data-draft.json` | `.allforai/demo-forge/` | E1 generated dataset (temporary IDs) |
+| `forge-data.json` | `.allforai/demo-forge/` | E3 populated data inventory (real IDs) |
+| `forge-log.json` | `.allforai/demo-forge/` | Population log (operation status + E4 corrections) |
+
+---
+
+## Iron Rules
+
+1. **Prefer API, use DB when needed** — API population triggers full business logic, DB direct write only for unsupported scenarios
+2. **Derived fields must be mathematically calculated, not LLM-estimated** — SUM/COUNT/balances all from deterministic queries
+3. **Chain-order population, parent before child** — any child entity population requires its parent to already exist
+4. **Failures are never silent, chain failures explicitly marked** — independent failures logged and continue, parent failure marks entire chain CHAIN_FAILED
+5. **Verify usability immediately after population** — user accounts verified with auth API right after creation (don't wait for demo-verify to discover wrong password); data relationships queried to confirm chain integrity. Population verification failure → fix and retry, never silently skip

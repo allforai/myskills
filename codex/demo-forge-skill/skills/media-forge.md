@@ -2,265 +2,218 @@
 name: media-forge
 description: >
   Use when the user asks to "collect media", "find images for demo",
-  "upload demo images", "media-forge", "富媒体采集", "采集图片",
-  "上传素材", "媒体锻造", "demo images", "demo videos",
+  "upload demo images", "media-forge", "demo images", "demo videos",
   or mentions media acquisition, image collection, video sourcing for demos.
   Requires demo-plan.json with Step 1-M media field annotations.
 version: "1.0.0"
 ---
 
-# Media Forge — 富媒体锻造
+# Media Forge — Rich Media Pipeline
 
-> 搜索优先、AI 补缺、本地存储、应用上传——零外部链接的演示级素材管线。
+> Search first, AI fill gaps, local storage, app upload — zero external links.
 
-## 铁律（4 条，强制执行）
+## Iron Rules (4, mandatory)
 
-1. **所有素材必须下载到本地 `assets/`，零外链** — 不得引用任何外部图床、CDN 或第三方 URL
-2. **灌入时必须走应用上传 API，数据库只存服务端地址** — `server_url` 必须是应用自身域名路径
-3. **Brave 搜索优先，WebSearch 降级，AI 生成兜底，禁止占位符** — 任何 placeholder / lorem ipsum 图片均视为失败
-4. **`upload-mapping.json` 中 `external_url_count` 必须为 0（硬校验）** — 完成时扫描全部 `server_url`，含外部域名即报错
-
----
-
-## 定位
-
-```
-demo-forge 内部三阶段 + 独立媒体管线:
-  demo-design（规划）  →  media-forge（本技能）+ demo-execute（灌入）  →  demo-verify（验证）
-  规划该生成什么数据       采集/生成/加工/上传素材       灌入业务数据              打开产品逐项验证
-  纯设计不执行            独立可运行                  消费设计+素材             产出问题清单路由回修
-```
-
-**独立可运行**：可被 `demo-forge` 编排调用，也可单独使用（只要 `demo-plan.json` 存在）。
-
-**前提**：必须先运行 `demo-design`，生成 `.allforai/demo-forge/demo-plan.json`（含 Step 1-M 媒体字段标注）。
+1. **All assets must be downloaded to local `assets/`, zero external links** — no external image hosts, CDNs, or third-party URLs
+2. **Population must use app upload API, database stores only server addresses** — `server_url` must be app's own domain path
+3. **Brave search first, WebSearch fallback, AI generation backstop, no placeholders** — any placeholder / lorem ipsum image is a failure
+4. **`upload-mapping.json` `external_url_count` must be 0 (hard validation)** — scan all `server_url` on completion, any external domain triggers error
 
 ---
 
-## 快速开始
+## Position
 
 ```
-/demo-forge media              # 完整管线（M1 → M6）
-/demo-forge media --type image # 仅处理图片类素材
-/demo-forge media --reentry    # 从 verify-issues 重入，只处理问题项
+demo-forge internal stages + independent media pipeline:
+  demo-design (planning)  ->  media-forge (this skill) + demo-execute (population)  ->  demo-verify
+  Plan what data to generate    Acquire/generate/process/upload media    Populate business data     Verify
+  Pure design, no execution     Independently runnable                  Consumes design + media     Route issues back
 ```
 
-**重入模式**：当 `demo-verify` 产出 `verify-issues.json` 且其中有 `route_to="media"` 的问题时，编排器会回调本技能。此时不全量重做，而是按问题类型回到对应步骤处理。详见「重入模式」章节。
+**Independently runnable**: Can be called by demo-forge orchestration or used standalone (as long as `demo-plan.json` exists).
+
+**Prerequisite**: demo-design must have run first, generating `.allforai/demo-forge/demo-plan.json` (with Step 1-M media field annotations).
 
 ---
 
-## 工作流
+## Workflow
 
-### M1: 需求盘点
+### M1: Requirements Inventory
 
-读取 `demo-plan.json` 中 Step 1-M 的 `media_fields` 数组，建立完整需求清单。
+Read `demo-plan.json` Step 1-M `media_fields` array, build complete requirements list.
 
-**操作**：
+1. Parse each `media_fields` record: `entity`, `field`, `media_type`, `purpose`, `dimensions`, `count`, `search_keywords`, `style_notes`, `upload_endpoint`
+2. Group by `media_type` (image / video / document / audio)
+3. Sub-group by `purpose` (avatars, covers, details, banners, etc.)
+4. Summarize per-group demand
 
-1. 解析每条 `media_fields` 记录：`entity`, `field`, `media_type`, `purpose`, `dimensions`, `count`, `search_keywords`, `style_notes`, `upload_endpoint`
-2. 按 `media_type` 分组（image / video / document / audio）
-3. 按 `purpose` 子分组（头像、封面、详情图、Banner 等）
-4. 汇总每组需求量
-
-**输出**：进度摘要表
+**Output**: Progress summary table
 
 ```
-媒体需求盘点:
-  image:    120 项（头像 30 | 封面 50 | 详情图 30 | Banner 10）
-  video:      8 项（产品视频 5 | 教程 3）
-  document:   5 项（合同模板 5）
-  audio:      3 项（语音消息 3）
+Media requirements inventory:
+  image:    120 items (avatars 30 | covers 50 | details 30 | banners 10)
+  video:      8 items (product videos 5 | tutorials 3)
+  document:   5 items (contract templates 5)
+  audio:      3 items (voice messages 3)
   ────────────────
-  总计:     136 项
+  Total:    136 items
 ```
 
 ---
 
-### M2: 搜索采集（主力）
+### M2: Search Acquisition (primary)
 
-对 M1 盘点的每组需求，按优先级搜索并下载素材。
+For each M1 requirement group, search and download assets by priority.
 
-**搜索优先级**：
+**Search priority**:
 
-1. **Brave Search MCP**（首选）— `mcp__brave-search__brave_web_search`
-2. **WebSearch 工具**（Brave 不可用或配额耗尽时降级）
+1. **Brave Search MCP** (preferred)
+2. **WebSearch** (when Brave unavailable or quota exhausted)
 
-**关键词构建**：
+**Keyword construction**:
 
-- 基础词：`search_keywords` 数组中的关键词
-- 修饰词：从 `style_notes` 提取风格要求（如"白底"、"电商风格"）
-- 组合策略：`"{keyword} {style} high resolution free stock"` / `"{keyword} {style} 高清 免费素材"`
-- **同一 `purpose` 组使用同一组关键词**，保证风格一致性
+- Base keywords: from `search_keywords` array
+- Modifiers: from `style_notes` (e.g., "white background", "e-commerce style")
+- Strategy: `"{keyword} {style} high resolution free stock"` / `"{keyword} {style} high-res free stock"`
+- **Same `purpose` group uses same keyword set** for style consistency
 
-**图片搜索**：
+**Download conventions**:
 
-```
-关键词: "{search_keywords} {style_notes} high resolution"
-示例:  "家居用品 白底产品图 电商风格 high resolution free stock photo"
-```
-
-**视频搜索**：
-
-```
-关键词: "{search_keywords} {style_notes} video footage"
-示例:  "厨房电器 产品展示 short video clip"
-```
-
-**下载规范**：
-
-- 目标目录：`assets/{category}/`（category 由 purpose 映射：头像→avatars、封面→covers、详情图→details、横幅→banners、视频→videos）
-- 文件命名：`{TYPE}-{NNN}.{ext}`
-  - 图片：`IMG-001.webp`, `IMG-002.webp`
-  - 视频：`VID-001.mp4`, `VID-002.mp4`
-  - 文档：`DOC-001.pdf`
-  - 音频：`AUD-001.mp3`
-- 每个搜索结果立即下载到本地，不保留外部链接
-
-**进度跟踪**：
-
-```
-M2 搜索采集: 108/136 已满足，缺口 28
-  image:  100/120（缺口 20 — 详情图风格不符被跳过）
-  video:    5/8  （缺口 3 — 短视频资源不足）
-  document: 0/5  （搜索不适用，全部交 M3）
-  audio:    3/3  （全部满足）
-```
+- Target directory: `assets/{category}/` (category mapped from purpose: avatars, covers, details, banners, videos)
+- File naming: `{TYPE}-{NNN}.{ext}`
+  - Images: `IMG-001.webp`, `IMG-002.webp`
+  - Videos: `VID-001.mp4`, `VID-002.mp4`
+  - Documents: `DOC-001.pdf`
+  - Audio: `AUD-001.mp3`
+- Every search result downloaded to local immediately, no external links retained
 
 ---
 
-### M3: AI 生成补缺
+### M3: AI Generation (gap filling)
 
-**仅对 M2 未满足的缺口项执行**。已搜索到的素材不重复生成。
+**Only for M2 unfulfilled gaps**. Already-acquired assets are not regenerated.
 
-**AI 生成工具**（通过 ai-gateway MCP，按可用性自动选择）：
+**AI generation tools** (via ai-gateway MCP, auto-select by availability):
 
-| 媒体类型 | 可用工具（按优先级） | 所需 Key |
-|---------|---------------------|---------|
-| 图片 | `generate_image`（Google Imagen 4）→ `openrouter_generate_image`（GPT-5 Image）→ `flux_generate_image`（FLUX 2 Pro） | GOOGLE_API_KEY / OPENROUTER_API_KEY / FAL_KEY |
-| 视频 | `generate_video`（Google Veo 3.1）→ `kling_generate_video`（Kling 2.1） | GOOGLE_API_KEY / FAL_KEY |
-| 音频 | `text_to_speech`（Google Cloud TTS） | GOOGLE_API_KEY |
+| Media Type | Available Tools (by priority) | Required Key |
+|-----------|------------------------------|-------------|
+| Image | Imagen 4 (Google) -> GPT-5 Image (OpenRouter) -> FLUX 2 Pro (fal.ai) | GOOGLE_API_KEY / OPENROUTER_API_KEY / FAL_KEY |
+| Video | Veo 3.1 (Google) -> Kling 2.1 (fal.ai) | GOOGLE_API_KEY / FAL_KEY |
+| Audio | Google Cloud TTS | GOOGLE_API_KEY |
 
-**Prompt 构建**：从 `search_keywords` + `style_notes` + `dimensions` 组合：
+**Prompt construction**: Combine `search_keywords` + `style_notes` + `dimensions`:
 
 ```
 Image prompt: "A {style_notes} of {search_keywords}, {dimensions} aspect ratio, professional quality, no text overlay"
 ```
 
-**其他类型**：
+**Other types**:
 
-| 媒体类型 | 生成方式 | 说明 |
-|---------|---------|------|
-| 产品操作演示 | Playwright 录屏 | 免费，最真实——录制应用自身操作流程 |
-| 文档（PDF） | 模板填充生成 | 用 demo-plan 中的业务数据填充 PDF 模板 |
+| Media Type | Generation Method | Notes |
+|-----------|------------------|-------|
+| Product operation demos | Playwright screen recording | Free, most realistic — record app's own operation flow |
+| Documents (PDF) | Template fill generation | Fill PDF templates with demo-plan business data |
 
-**降级策略**：
-- 生图：Google Imagen 4 → OpenRouter GPT-5 Image（无额外 Key）→ FLUX 2 Pro → 跳过
-- 生视频：Google Veo 3.1 → Kling → Playwright 录屏 → 跳过
+**Degradation chain**:
+- Image: Imagen 4 -> GPT-5 Image (OpenRouter) -> FLUX 2 Pro -> skip
+- Video: Veo 3.1 -> Kling -> Playwright screen recording -> skip
 
-**下载规范**：与 M2 相同的 `assets/{category}/` 目录和命名规则，紧接 M2 编号继续。
+**Download conventions**: Same `assets/{category}/` directory and naming rules as M2, continuing M2 numbering.
+
+---
+
+### M3.5: Asset Processing (on demand)
+
+**Trigger**: M4 quality check finds non-compliant items, or pre-check after M2/M3 download.
+
+**Processing operations and commands**:
+
+| Issue | Operation | Command |
+|-------|-----------|---------|
+| Low resolution | AI upscale (2x/4x) | `realesrgan-ncnn-vulkan -i input.jpg -o output.png -s 2` |
+| Wrong aspect ratio | Smart crop (preserve subject) | `ffmpeg -i input.jpg -vf "crop=w:h:x:y" output.jpg` |
+| File too large | WebP compression | `cwebp -q 85 input.png -o output.webp` |
+| Wrong format | Format conversion | `ffmpeg -i input.png output.webp` or `cwebp` |
+| Video too long | Trim key segment | `ffmpeg -i input.mp4 -ss 00:00:05 -t 00:00:30 -c copy output.mp4` |
+| Inconsistent style | Color/brightness unification | `ffmpeg -i input.jpg -vf "eq=brightness=0.06:saturation=1.2" output.jpg` |
+
+> Detailed command reference: `docs/media-processing.md`
+
+**After processing**: overwrite original file (keep `.orig` backup), update `assets-manifest.json` dimensions/size info, append to `processing_applied` array.
+
+---
+
+### M4: Quality Check
+
+Item-by-item check. All must pass before marking `verified: true`.
+
+**Checklist**:
+
+- [ ] **Resolution** >= UI render size x2 (Retina) — target 400x400 means asset needs >= 800x800
+- [ ] **Aspect ratio** matches target container — compare against `demo-plan.json` `aspect_ratio`
+- [ ] **File size** compliant — images <= 2MB, avatars <= 200KB, video reasonable by duration
+- [ ] **Same-group style consistent** — same `purpose` assets have unified color tone, composition, style
+- [ ] **No adjacent duplicates** — same list does not show visually identical assets
+- [ ] **No watermarks/copyright marks** — search-downloaded images free of watermark remnants
+- [ ] **AI images clean** — no extra fingers, garbled text, abnormal textures
+- [ ] **Video playable** — correct encoding, reasonable duration (5s-60s), no black/corrupt screens
+
+**Non-compliant handling**:
+
+- Mark `verified: false`, record failure reason
+- Route back to M2 (replace) / M3 (regenerate) / M3.5 (process), depending on issue type
+- Loop until item passes or marked `NEEDS_MANUAL`
+
+**Output**: `assets-manifest.json`
+
+---
+
+### M5: Upload to Application Server
+
+Upload all `verified: true` assets through the application's own upload API.
+
+**Flow**:
+
+1. Read `upload_endpoint` from each `media_fields` entry in `demo-plan.json`
+2. For each verified asset:
+   - `POST` multipart/form-data to `upload_endpoint`
+   - Parse response for `server_url` (server storage path) and `server_id` (server file ID)
+3. Write to `upload-mapping.json`
+
+**Failure handling**:
+- Upload failure -> retry 2x (2s interval)
+- Still failing -> mark `status: "UPLOAD_FAILED"`, record error
+- `upload_endpoint` does not exist -> mark `API_GAP`, append to `api-gaps.json`
+
+**Output**: `upload-mapping.json`
+
+---
+
+### M6: Integrity Confirmation
+
+Final hard validation ensuring pipeline output meets iron rules.
+
+**Validation items**:
+
+1. **Full coverage**: all `verified: true` assets have corresponding entries in `upload-mapping.json`
+2. **Zero failures**: no `UPLOAD_FAILED` status remaining
+3. **Zero external links (hard validation)**: scan all `server_url` values:
+   - Must start with `/` (relative path) or match app's own domain
+   - Any external domain (`http://`, `https://` not matching app domain) -> **immediate error, cannot proceed**
+   - `external_url_count` must be `0`
 
 ```
-M3 AI 生成: 28 项补缺完成
-  生图(Imagen 4/GPT-5/FLUX): 20 张图片
-  PDF 模板: 5 份文档
-  生视频(Veo 3.1/Kling):    3 段视频
-```
-
----
-
-### M3.5: 素材加工（按需）
-
-**触发条件**：M4 质量验收发现不达标项时回到此步加工。首轮也可在 M2/M3 下载后预检触发。
-
-**加工操作与命令**：
-
-| 问题 | 操作 | 命令 |
-|-----|------|------|
-| 分辨率不足 | AI 超分辨率（2x/4x） | `realesrgan-ncnn-vulkan -i input.jpg -o output.png -s 2` |
-| 宽高比不匹配 | 智能裁剪（保留主体） | `ffmpeg -i input.jpg -vf "crop=w:h:x:y" output.jpg` |
-| 文件过大 | WebP 压缩 | `cwebp -q 85 input.png -o output.webp` |
-| 格式不对 | 格式转换 | `ffmpeg -i input.png output.webp` 或 `cwebp` |
-| 视频过长 | 裁剪关键片段 | `ffmpeg -i input.mp4 -ss 00:00:05 -t 00:00:30 -c copy output.mp4` |
-| 风格不一致 | 色调/亮度统一 | `ffmpeg -i input.jpg -vf "eq=brightness=0.06:saturation=1.2" output.jpg` |
-
-> 详细命令参考：`${CLAUDE_PLUGIN_ROOT}/docs/media-processing.md`
-
-**加工后**：覆盖原文件（保留备份 `.orig`），更新 `assets-manifest.json` 中的尺寸/大小信息，`processing_applied` 数组追加操作记录。
-
----
-
-### M4: 质量验收
-
-逐项检查每个素材，全部通过才标记 `verified: true`。
-
-**检查清单**：
-
-- [ ] **分辨率** >= UI 渲染尺寸 x2（Retina 适配）— 如目标 400x400 则素材需 >= 800x800
-- [ ] **宽高比**与目标容器匹配 — 对比 `demo-plan.json` 中的 `aspect_ratio` 字段
-- [ ] **文件大小**合规 — 图片 <= 2MB，头像 <= 200KB，视频按时长合理
-- [ ] **同组风格一致** — 同 `purpose` 的素材色调、构图、风格统一
-- [ ] **无相邻重复** — 同一列表中不出现视觉相同的素材
-- [ ] **无水印/版权标记** — 搜索下载的图片不含水印残留
-- [ ] **AI 图片无瑕疵** — 无多余手指、乱码文字、异常纹理等常见 AI 生成问题
-- [ ] **视频可播放** — 编码正确、时长合理（5s-60s）、无黑屏/花屏
-
-**不合格处理**：
-
-- 标记 `verified: false`，记录失败原因
-- 回到 M2（替换素材）/ M3（重新生成）/ M3.5（加工修正），取决于问题性质
-- 循环直到该项通过或标记为 `NEEDS_MANUAL`
-
-**输出**：`assets-manifest.json`
-
----
-
-### M5: 上传到应用服务器
-
-将所有 `verified: true` 的素材通过应用自身的上传 API 传到服务器。
-
-**操作流程**：
-
-1. 从 `demo-plan.json` 每个 `media_fields` 条目读取 `upload_endpoint`
-2. 对每个已验收素材：
-   - `POST` multipart/form-data 上传到 `upload_endpoint`
-   - 解析响应获取 `server_url`（服务端存储路径）和 `server_id`（服务端文件 ID）
-3. 写入 `upload-mapping.json`
-
-**失败处理**：
-
-- 上传失败 → 重试 2 次（间隔 2s）
-- 仍失败 → 标记 `status: "UPLOAD_FAILED"`，记录错误信息
-- `upload_endpoint` 不存在 → 标记 `API_GAP`，追加到 `api-gaps.json`
-
-**输出**：`upload-mapping.json`
-
----
-
-### M6: 完整性确认
-
-最终硬校验，确保管线产出符合铁律。
-
-**校验项**：
-
-1. **全量覆盖**：所有 `verified: true` 的素材在 `upload-mapping.json` 中都有对应条目
-2. **零失败**：无 `UPLOAD_FAILED` 状态残留（有则报错，需人工介入或重试）
-3. **零外链（硬校验）**：扫描所有 `server_url` 值，逐一验证：
-   - 必须以 `/` 开头（相对路径）或匹配应用自身域名
-   - 包含任何外部域名（`http://`, `https://` 且非应用域名）→ **立即报错，不允许继续**
-   - `external_url_count` 必须为 `0`
-
-```
-M6 完整性确认:
-  已上传:        132/136
-  UPLOAD_FAILED:   0
-  API_GAP:         4（已记录到 api-gaps.json）
-  external_url_count: 0 ✓
-  状态: PASSED
+M6 Integrity confirmation:
+  Uploaded:          132/136
+  UPLOAD_FAILED:       0
+  API_GAP:             4 (recorded in api-gaps.json)
+  external_url_count:  0
+  Status: PASSED
 ```
 
 ---
 
-## 输出文件
+## Output Files
 
 ### assets-manifest.json
 
@@ -323,68 +276,62 @@ M6 完整性确认:
 }
 ```
 
-### 目录结构
+### Directory Structure
 
 ```
 .allforai/demo-forge/
 ├── assets/
-│   ├── avatars/      # 头像（IMG-001 ~ IMG-030）
-│   ├── covers/       # 封面（IMG-031 ~ IMG-080）
-│   ├── details/      # 详情图（IMG-081 ~ IMG-110）
-│   ├── banners/      # 横幅（IMG-111 ~ IMG-120）
-│   └── videos/       # 视频（VID-001 ~ VID-008）
+│   ├── avatars/      # Avatars (IMG-001 ~ IMG-030)
+│   ├── covers/       # Covers (IMG-031 ~ IMG-080)
+│   ├── details/      # Detail images (IMG-081 ~ IMG-110)
+│   ├── banners/      # Banners (IMG-111 ~ IMG-120)
+│   └── videos/       # Videos (VID-001 ~ VID-008)
 ├── assets-manifest.json
 └── upload-mapping.json
 ```
 
 ---
 
-## 重入模式
+## Re-entry Mode
 
-当 `verify-issues.json` 中存在 `route_to="media"` 的问题时触发。
+Triggered when `verify-issues.json` contains `route_to="media"` issues.
 
-**处理流程**：
+**Flow**:
 
-1. 读取 `verify-issues.json`，筛选 `route_to="media"` 的条目
-2. 按问题类型分类并路由到对应步骤：
+1. Read `verify-issues.json`, filter `route_to="media"` entries
+2. Classify by issue type and route to corresponding step:
 
-| 问题类型 | 路由目标 | 处理方式 |
-|---------|---------|---------|
-| Broken image / 图片 404 | M2 | 重新搜索替换素材 |
-| 尺寸/分辨率不符 | M3.5 | 加工处理（超分/裁剪） |
-| 外部 URL 残留 | M2 + M5 | 下载到本地 + 重新上传 |
-| 风格不一致 | M3.5 | 色调统一加工 |
-| 上传失败 | M5 | 重试上传 |
-| 占位图残留 | M2/M3 | 搜索或生成替换 |
+| Issue Type | Route Target | Handling |
+|-----------|-------------|---------|
+| Broken image / 404 | M2 | Re-search replacement asset |
+| Size/resolution mismatch | M3.5 | Process (upscale/crop) |
+| External URL remaining | M2 + M5 | Download to local + re-upload |
+| Style inconsistency | M3.5 | Color unification processing |
+| Upload failure | M5 | Retry upload |
+| Placeholder remaining | M2/M3 | Search or generate replacement |
 
-3. **只处理问题项**，已通过的素材不动
-4. 处理完成后重新执行 M4（仅验收问题项）→ M6
+3. **Only process problem items**, verified assets untouched
+4. After processing, re-run M4 (verify problem items only) -> M6
 
 ---
 
-## 增强协议
+## Enhancement Protocol
 
-**WebSearch 关键词**（Brave 不可用时降级搜索）：
+**WebSearch keywords** (when Brave unavailable):
 
 - `"free stock photos {category} high resolution {year}"`
-- `"免费商用图片 {category} 高清"`
 - `"stock video footage {category} short clip"`
 
-**4E+4V 重点**：
+**Tool dependencies**:
 
-- **E3 Guardrails**: 素材版权合规——优先 CC0/Unsplash License 来源；AI 生成素材标注来源
-- **behavior 视角**: 同一列表相邻记录的素材视觉差异度 >= 30%（避免"复制粘贴"感）
-
-**工具依赖**：
-
-| 工具 | 用途 | 必需/可选 |
-|-----|------|----------|
-| `brave_web_search` / `brave_image_search` | 图片/视频搜索 | 推荐（`BRAVE_API_KEY`） |
-| WebSearch | 降级搜索 | 内置 |
-| `generate_image` / `openrouter_generate_image` / `flux_generate_image` | AI 生图 | 可选（任一 Key 即可） |
-| `generate_video` / `kling_generate_video` | AI 生视频 | 可选（任一 Key 即可） |
-| `text_to_speech` | TTS 语音生成 | 可选（`GOOGLE_API_KEY`） |
-| Playwright | 录屏、截图验证 | 可选 |
-| ffmpeg | 视频/图片加工 | 本地安装 |
-| cwebp | WebP 转换压缩 | 本地安装 |
-| realesrgan-ncnn-vulkan | AI 超分辨率 | 本地安装，可选 |
+| Tool | Purpose | Required/Optional |
+|------|---------|-------------------|
+| Brave Search | Image/video search | Recommended (BRAVE_API_KEY) |
+| WebSearch | Fallback search | Built-in |
+| OpenRouter MCP tools | AI image generation | Optional |
+| Google AI generation tools | Imagen 4, Veo 3.1, TTS | Optional (GOOGLE_API_KEY) |
+| fal.ai generation tools | FLUX 2 Pro, Kling | Optional (FAL_KEY) |
+| Playwright | Screen recording, screenshot verification | Optional |
+| ffmpeg | Video/image processing | Local install |
+| cwebp | WebP conversion/compression | Local install |
+| realesrgan-ncnn-vulkan | AI super-resolution | Local install, optional |

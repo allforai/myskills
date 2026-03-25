@@ -5,157 +5,130 @@ description: >
   rich media (images/videos/documents), and iterative quality verification.
   Includes demo-design (data planning), media-forge (media acquisition + processing + upload),
   demo-execute (data generation + population), demo-verify (Playwright verification + routing).
-  演示锻造：设计→采集→灌入→验证，多轮迭代打磨至演示级品质。
 version: "1.3.1"
 ---
 
-# Demo Forge — 演示锻造套件
+# Demo Forge — Demo Environment Suite
 
-> 让产品看起来像有真实用户在真实使用。
+> Make the product look like real users are really using it.
 
-## 前置依赖
+## Prerequisites
 
-本插件依赖以下条件：
+1. **product-design artifacts** — `.allforai/product-map/` must exist (role profiles, task inventory, business flows, experience map). Run product-design first.
+2. **Application code complete** — dev-forge Phase 7+ (task execution done), core features working.
+3. **Application running** — demo-execute and demo-verify need an accessible application instance (local or remote).
 
-1. **product-design 产物** — `.allforai/product-map/` 目录必须存在（角色画像、任务清单、业务流、体验地图）。请先运行 `/product-design full` 完成产品设计。
-2. **应用代码已完成** — dev-forge Phase 7+（任务执行完毕），核心功能可用。
-3. **应用正在运行** — demo-execute 和 demo-verify 需要可访问的应用实例（本地或远程）。
-
-## 全流程编排
+## Workflow Modes
 
 ```
-/demo-forge                  # 完整流程：设计→采集→灌入→验证→迭代
-/demo-forge design           # 仅设计演示数据方案
-/demo-forge media            # 仅采集+加工+上传媒体素材
-/demo-forge execute          # 仅生成+灌入演示数据
-/demo-forge verify           # 仅 Playwright 验证
-/demo-forge clean            # 清理已灌入的演示数据
-/demo-forge status           # 查看当前进度和产物状态
+full                     # Full pipeline: design -> media -> execute -> verify -> iterate
+design                   # Design only: data scheme planning
+media                    # Media only: acquisition + processing + upload
+execute                  # Execute only: data generation + population
+verify                   # Verify only: Playwright verification
+clean                    # Clean: remove populated demo data
+status                   # Status: check progress and artifact state
 ```
 
-完整流程按 `design → media → execute → verify` 顺序执行，verify 失败时自动进入修复轮次（最多 3 轮），直到通过率达到 95%。
+The full pipeline runs `design -> media -> execute -> verify` in sequence. When verify fails, it enters fix rounds (up to 3) until 95% pass rate is reached.
 
-## 包含的技能（4 个）
+## Skills (4)
 
-### 1. demo-design — 演示数据方案设计
+### 1. demo-design — Demo Data Scheme Design
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/skills/demo-design.md`
+> See `skills/demo-design.md`
 
-从 product-map 蓝图出发，规划演示环境所需的全部数据：账号体系、数据量级、业务链条、枚举覆盖、时间分布、行为模式、媒体字段、约束条件。
+From the product-map blueprint, plan all data needed for the demo environment: account system, data volume, business chains, enum coverage, time distribution, behavior patterns, media fields, constraints.
 
-**核心产出**：`demo-plan.json`（完整数据方案）、`model-mapping.json`（模型与 API 映射）、`api-gaps.json`（缺失 API 清单）。
+**Core output**: `demo-plan.json` (full data scheme), `model-mapping.json` (model-to-API mapping), `api-gaps.json` (missing API list).
 
-```
-/demo-forge design                    # 分析 product-map + 应用代码，生成数据方案
-/demo-forge design --accounts 20      # 指定账号数量
-/demo-forge design --focus role:admin  # 聚焦特定角色
-```
+### 2. media-forge — Rich Media Pipeline
 
-### 2. media-forge — 媒体素材锻造
+> See `skills/media-forge.md`
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/skills/media-forge.md`
+Acquire, generate, process, and upload media for demo-plan media fields. Search chain: Brave Search -> WebSearch fallback -> AI generation (Image: Imagen 4 / GPT-5 Image / FLUX 2 Pro; Video: Veo 3.1 / Kling). Post-processing includes crop, compress, format conversion. Upload to app server ensuring zero external links.
 
-为 demo-plan 中的媒体字段采集、生成、加工、上传素材。搜索链路：Brave Search → WebSearch 兜底 → AI 生成（生图：Imagen 4 / GPT-5 Image / FLUX 2 Pro；生视频：Veo 3.1 / Kling）。后处理包括裁剪、压缩、格式转换。上传到应用服务器，确保零外部链接。
+**Core output**: `assets/` directory (local media files), `assets-manifest.json` (asset inventory), `upload-mapping.json` (upload URL mapping), `style-profile.json` (visual style profile).
 
-**核心产出**：`assets/` 目录（本地素材文件）、`assets-manifest.json`（素材清单）、`upload-mapping.json`（上传后 URL 映射）、`style-profile.json`（视觉风格画像）。
+### 3. demo-execute — Data Generation and Population
 
-```
-/demo-forge media                     # 按 demo-plan 采集全部媒体
-/demo-forge media --type avatars      # 仅采集头像
-/demo-forge media --regenerate        # 重新生成所有素材
-```
+> See `skills/demo-execute.md`
 
-### 3. demo-execute — 数据生成与灌入
+Generate deterministic data from demo-plan and populate the application via API/DB hybrid strategy. Handle field dependency ordering, associations, derived field correction.
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/skills/demo-execute.md`
+**Core output**: `forge-data-draft.json` (raw generated data), `forge-data.json` (populated data with server IDs), `forge-log.json` (population log).
 
-根据 demo-plan 生成确定性数据，通过 API / DB 混合策略灌入应用。处理字段依赖顺序、关联关系、派生字段修正。
+### 4. demo-verify — Playwright Verification and Issue Routing
 
-**核心产出**：`forge-data-draft.json`（生成的原始数据）、`forge-data.json`（灌入后的实际数据，含服务端生成 ID）、`forge-log.json`（灌入日志）。
+> See `skills/demo-verify.md`
 
-```
-/demo-forge execute                   # 按 demo-plan 灌入全部数据
-/demo-forge execute --dry-run         # 仅生成数据，不灌入
-/demo-forge execute --model User      # 仅灌入指定模型
-```
+Use Playwright to run V1-V8 eight-layer verification (page load, data display, image load, list counts, detail correctness, business flow chains, media integrity, UI liveness + state coverage + data flow integrity). Failed checks are auto-classified and routed to 5 fix channels:
 
-### 4. demo-verify — Playwright 验证与问题路由
+| Route | Target | Description |
+|-------|--------|-------------|
+| `design` | demo-design | Data scheme defects (missing fields, incomplete enums) |
+| `media` | media-forge | Media issues (image 404, size mismatch) |
+| `execute` | demo-execute | Population issues (missing data, broken associations) |
+| `dev_task` | dev-forge | App bugs (API errors, UI rendering issues) |
+| `skip` | Skip | Non-critical issues, do not block pass |
 
-> 详见 `${CLAUDE_PLUGIN_ROOT}/skills/demo-verify.md`
-
-使用 Playwright 对灌入后的应用执行 V1-V8 八层验证（页面加载、数据展示、图片加载、列表数量、详情正确性、业务流串联、媒体完整性、**UI 活性+状态全覆盖+数据流闭环**）。验证失败的问题自动分类并路由到 5 条修复通道：
-
-| 路由 | 目标 | 说明 |
-|------|------|------|
-| `design` | demo-design | 数据方案缺陷（字段缺失、枚举不全） |
-| `media` | media-forge | 媒体问题（图片 404、尺寸错误） |
-| `execute` | demo-execute | 灌入问题（数据缺失、关联断裂） |
-| `dev_task` | dev-forge | 应用 bug（API 报错、UI 渲染异常） |
-| `skip` | 跳过 | 非关键问题，不阻塞通过 |
+## Position
 
 ```
-/demo-forge verify                    # 执行全部验证
-/demo-forge verify --screen S-001     # 仅验证指定界面
-/demo-forge verify --level V1-V3      # 仅执行指定层级
+product-design (product)  concept -> map -> screens -> use-cases -> gaps -> prune
+dev-forge (development)   setup -> spec -> scaffold -> execute -> verify -> accept
+demo-forge (demo)         design -> media -> execute -> verify -> iterate  <- you are here
+deadhunt (QA)             dead links -> CRUD completeness -> field consistency
+code-tuner (architecture) compliance -> duplication -> abstraction -> scoring
 ```
 
-## 定位
+**Key insight**: dev-forge's seed-forge generates development seed data (minimal, functional verification). demo-forge generates demo-grade data (rich, realistic, visually impactful). They complement, not replace each other.
+
+## Multi-Round Iteration
 
 ```
-product-design（产品层）  概念→地图→界面→用例→查漏→剪枝
-dev-forge（开发层）       引导→规格→脚手架→执行→验证→验收
-demo-forge（演示层）      设计→采集→灌入→验证→迭代 ← 你在这里
-deadhunt（QA 层）         死链→CRUD完整性→字段一致性
-code-tuner（架构层）      合规→重复→抽象→评分
+Round 0 (initial)
+  design -> media -> execute -> verify
+      |
+  pass_rate >= 95%?  -> done
+      | no
+Round 1 (fix round)
+  Route by verify-issues:
+    design type  -> re-run design (incremental) -> media -> execute -> verify
+    media type   -> re-run media (incremental) -> execute -> verify
+    execute type -> re-run execute (incremental) -> verify
+    dev_task type -> generate fix tasks -> hand to dev-forge
+      |
+  pass_rate >= 95%?  -> done
+      | no
+Round 2 -> Round 3 (max 3 fix rounds)
+      |
+  After 3 rounds still below target -> output final report + unresolved issues list
 ```
 
-**核心洞察**：dev-forge 的 seed-forge 生成的是开发用种子数据（少量、功能验证），demo-forge 生成的是演示级数据（丰富、有真实感、有视觉冲击力）。两者互补而非替代。
+Each round's results and fix actions are recorded in `round-history.json`, supporting resume from breakpoint.
 
-## 多轮迭代模型
-
-```
-Round 0（首轮）
-  design → media → execute → verify
-      ↓
-  通过率 >= 95%?  → 完成
-      ↓ 否
-Round 1（修复轮）
-  按 verify-issues 路由：
-    design 类 → 重跑 design（增量）→ media → execute → verify
-    media 类  → 重跑 media（增量）→ execute → verify
-    execute 类 → 重跑 execute（增量）→ verify
-    dev_task 类 → 生成修复任务 → 交给 dev-forge /task-execute
-      ↓
-  通过率 >= 95%?  → 完成
-      ↓ 否
-Round 2 → Round 3（最多 3 轮修复）
-      ↓
-  3 轮后仍未达标 → 输出最终报告 + 未解决问题清单
-```
-
-每轮的验证结果和修复动作记录在 `round-history.json`，支持断点续作。
-
-## 输出
+## Output
 
 ```
 .allforai/demo-forge/
-├── model-mapping.json          # 应用模型 ↔ API 端点映射
-├── api-gaps.json               # 缺失 API 清单（需 dev-forge 补建）
-├── demo-plan.json              # 完整数据方案（账号+数据量+链条+约束）
-├── style-profile.json          # 视觉风格画像（配色+图片风格+品牌调性）
-├── assets/                     # 本地媒体素材
-│   ├── avatars/                # 用户头像
-│   ├── covers/                 # 封面图
-│   ├── details/                # 详情图
-│   ├── banners/                # 横幅广告
-│   └── videos/                 # 视频素材
-├── assets-manifest.json        # 素材清单（文件名+尺寸+用途+来源）
-├── upload-mapping.json         # 上传后 URL 映射（本地路径→服务端 URL）
-├── forge-data-draft.json       # 生成的原始数据（灌入前）
-├── forge-data.json             # 灌入后的实际数据（含服务端 ID）
-├── forge-log.json              # 灌入日志（成功/失败/重试）
-├── verify-report.json          # 验证报告（V1-V7 结果汇总）
-├── verify-issues.json          # 验证失败问题（含路由分类）
-├── screenshots/                # 验证截图
-└── round-history.json          # 多轮迭代历史（每轮结果+修复动作）
+├── model-mapping.json          # App model <-> API endpoint mapping
+├── api-gaps.json               # Missing API list (need dev-forge to build)
+├── demo-plan.json              # Full data scheme (accounts + volume + chains + constraints)
+├── style-profile.json          # Visual style profile (colors + image style + brand tone)
+├── assets/                     # Local media assets
+│   ├── avatars/                # User avatars
+│   ├── covers/                 # Cover images
+│   ├── details/                # Detail images
+│   ├── banners/                # Banner ads
+│   └── videos/                 # Video assets
+├── assets-manifest.json        # Asset inventory (filename + size + purpose + source)
+├── upload-mapping.json         # Upload URL mapping (local path -> server URL)
+├── forge-data-draft.json       # Generated raw data (pre-population)
+├── forge-data.json             # Populated actual data (with server IDs)
+├── forge-log.json              # Population log (success/failure/retry)
+├── verify-report.json          # Verification report (V1-V7 results summary)
+├── verify-issues.json          # Failed checks (with routing classification)
+├── screenshots/                # Verification screenshots
+└── round-history.json          # Multi-round iteration history (per-round results + fix actions)
 ```
