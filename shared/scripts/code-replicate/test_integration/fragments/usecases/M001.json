@@ -1,0 +1,6 @@
+{"use_cases": [
+  {"title": "Login with valid credentials", "role": "R001", "feature_area": "Authentication", "task_ref": "T001", "type": "happy_path", "given": "User has valid account", "when": "Enters correct credentials", "then": "Receives auth token", "priority": "high"},
+  {"title": "Login with invalid password", "role": "R001", "feature_area": "Authentication", "task_ref": "T001", "type": "exception", "given": "User has valid account", "when": "Enters wrong password", "then": "Gets error message", "priority": "high"},
+  {"title": "Register new user", "role": "R001", "feature_area": "Authentication", "task_ref": "T002", "type": "happy_path", "given": "Email not taken", "when": "Submits registration form", "then": "Account created", "priority": "high"},
+  {"title": "Register with existing email", "role": "R001", "feature_area": "Authentication", "task_ref": "T002", "type": "boundary", "given": "Email already taken", "when": "Submits registration form", "then": "Gets duplicate email error", "priority": "medium"}
+]}
