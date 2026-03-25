@@ -50,7 +50,7 @@ From the product-map blueprint, plan all data needed for the demo environment: a
 
 > Details: `./skills/media-forge.md`
 
-Acquire, generate, process, and upload media assets for all media fields in demo-plan. Search chain: Brave Search → WebSearch fallback → AI generation (Imagen 4 / GPT-5 Image / FLUX 2 Pro for images; Veo 3.1 / Kling for videos). Post-processing includes crop, compress, format conversion. Upload to application server — zero external links.
+Acquire, generate, process, and upload media assets for all media fields in demo-plan. Search chain: Brave Search → 网络搜索 fallback → AI generation (Imagen 4 / GPT-5 Image / FLUX 2 Pro for images; Veo 3.1 / Kling for videos). Post-processing includes crop, compress, format conversion. Upload to application server — zero external links.
 
 **Key outputs**: `assets/` directory (local media files), `assets-manifest.json` (asset inventory), `upload-mapping.json` (uploaded URL mapping), `style-profile.json` (visual style profile).
 

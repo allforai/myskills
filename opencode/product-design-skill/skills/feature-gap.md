@@ -39,7 +39,7 @@ product-map（现状+方向）   功能查漏（查缺口）
 基础层                    基于 product-map
 ```
 
-**前提**：必须先运行 `product-map`，生成 `.allforai/product-map/product-map.json`。
+**前提**：必须先执行 `product-map`，生成 `.allforai/product-map/product-map.json`。
 
 若 `product-map.json` 含 `experience_priority`，feature-gap 必须继承该字段，切换不同的查漏标准。
 
@@ -55,11 +55,11 @@ product-map（现状+方向）   功能查漏（查缺口）
 /feature-gap refresh    # 清除决策缓存，完整重跑
 ```
 
-## 增强协议（WebSearch + 4D+6V + XV）
+## 增强协议（网络搜索 + 4D+6V + XV）
 
 > 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
 
-**WebSearch 关键词**：`”user journey gap analysis” + 行业词 + 2025`、`”service blueprint” + “failure recovery” + 产品类型`
+**搜索关键词**：`”user journey gap analysis” + 行业词 + 2025`、`”service blueprint” + “failure recovery” + 产品类型`
 
 **4D+6V 重点**：缺口附带频次+来源；按 6 视角归类（`user/business/tech/ux/data/risk`），避免只按技术表象分组；高优先级缺口明确”哪一层信息丢失/失真”及其上游来源。
 
@@ -92,7 +92,7 @@ product-map（现状+方向）   功能查漏（查缺口）
 
 **quick 模式**：Step 1 → Step 4（跳过 Step 2 界面检查、Step 3 旅程验证、Step 5 业务流检查、Step 6 状态机检查）。
 
-**refresh 模式**：将 `gap-decisions.json` 重命名为 `.bak` 备份，从 Step 1 开始完整重新运行，忽略所有已有决策缓存。
+**refresh 模式**：将 `gap-decisions.json` 重命名为 `.bak` 备份，从 Step 1 开始完整重新执行，忽略所有已有决策缓存。
 
 ---
 
@@ -135,7 +135,7 @@ product-map（现状+方向）   功能查漏（查缺口）
         任一索引不存在 → 对应数据回退到 Phase 2 全量加载（向后兼容）
       Phase 2 — 按需加载完整数据：
         加载 .allforai/product-map/product-map.json
-        若 product-map.json 也不存在 → 提示用户先运行 /product-map，终止
+        若 product-map.json 也不存在 → 提示用户先执行 product-map 工作流，终止
       ↓
 Step 1: 任务完整性检查
       基于 .allforai/product-map/task-inventory.json
@@ -156,7 +156,7 @@ Step 4: 生成缺口任务清单
 Step 5: 业务流链路完整性检查
       flow-index.json 存在且所有流的 gap_count == 0 → 跳过全量加载，直接报告「无流级缺口」
       否则加载 .allforai/product-map/business-flows.json
-      若 business-flows.json 不存在 → 跳过 Step 5，提示用户运行 /product-map
+      若 business-flows.json 不存在 → 跳过 Step 5，提示用户执行 product-map 工作流
       ↓ 用户确认
 Step 6: 交互类型完整性检查
       基于 experience-map.json 的 interaction_type 字段
@@ -405,7 +405,7 @@ Step 7: 状态机完整性检查（quick / journey 模式跳过）
 | ... | ... | ... | ... |
 ```
 
-> **搜索驱动原则**：展示缺口分析结果前，先 WebSearch 搜索「{产品类型} feature completeness checklist」和「{行业} common missing features」，用搜索结果交叉验证缺口检测的覆盖面。
+> **搜索驱动原则**：展示缺口分析结果前，先 网络搜索「{产品类型} feature completeness checklist」和「{行业} common missing features」，用搜索结果交叉验证缺口检测的覆盖面。
 
 **用户确认**：缺口优先级排序合理吗？有需要调整优先级或移除的缺口吗？
 
@@ -420,7 +420,7 @@ Step 7: 状态机完整性检查（quick / journey 模式跳过）
 
 **快速预检（索引优化）**：若 `flow-index.json` 存在，先检查所有流的 `gap_count`。若所有流 `gap_count == 0`，可跳过全量加载 `business-flows.json`，直接报告「索引显示无流级缺口，跳过全量检查」。若存在 `gap_count > 0` 的流，继续加载完整数据做详细检查。
 
-**前置检查：** 若 `.allforai/product-map/business-flows.json` 不存在（且 `flow-index.json` 也不存在），跳过此步骤，提示先运行 `/product-map`。
+**前置检查：** 若 `.allforai/product-map/business-flows.json` 不存在（且 `flow-index.json` 也不存在），跳过此步骤，提示先执行 `/product-map`。
 
 读取 `business-flows.json`，执行两项检查：
 
@@ -455,9 +455,9 @@ Step 7: 状态机完整性检查（quick / journey 模式跳过）
 
 **前置检查**：
 1. `.allforai/experience-map/experience-map.json` 是否存在
-   - 不存在 → 提示「请先运行 /experience-map 生成体验地图」，终止
+   - 不存在 → 提示「请先执行 experience-map 工作流 生成体验地图」，终止
 2. experience-map 中每个 screen（`operation_lines[].nodes[].screens[]`）是否含 `interaction_type` 字段
-   - 缺失 → 提示「experience-map 未标注 interaction_type，请运行 /experience-map refresh 重新生成」，终止
+   - 缺失 → 提示「experience-map 未标注 interaction_type，请执行 experience-map 工作流 refresh 重新生成」，终止
 
 ---
 
@@ -866,7 +866,7 @@ LLM 直接分析 task-inventory + experience-map + business-flows，理解业务
 - **medium**（31–80 任务）：按模块摘要展示，仅展开有缺口项。
 - **large**（>80 任务）：统计总览 + 仅展开高频/高风险缺口。
 
-### WebSearch 故障
+### 网络搜索不可用
 - **趋势搜索**（动态趋势补充）：工具不可用或无有用结果 → 跳过趋势补充，不影响缺口检测主流程。
 
 ### 上游过期检测

@@ -83,10 +83,10 @@
 - CN001 描述（硬约束）
 
 ## 下一步建议
-- 运行 /experience-map 梳理界面、按钮和异常状态（必须，下游技能缺失时会自动运行）
-- 运行 /use-case 生成用例集（可选）
-- 运行 /feature-gap 检测功能缺口
-- 运行 /ui-design 生成 UI 设计规格
+- 执行 experience-map 工作流 梳理界面、按钮和异常状态（必须，下游技能缺失时会自动运行）
+- 执行 use-case 工作流 生成用例集（可选）
+- 执行 feature-gap 工作流 检测功能缺口
+- 执行 ui-design 工作流 生成 UI 设计规格
 
 > 完整数据见 .allforai/product-map/product-map.json
 ```

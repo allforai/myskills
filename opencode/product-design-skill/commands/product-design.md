@@ -165,7 +165,7 @@ loop (max 3 rounds):
 | OpenRouter (Script) | `OPENROUTER_API_KEY` 环境变量 | 可选 |
 | Stitch UI | `mcp__stitch__create_project` 可用性 | 可选 |
 | Playwright | `mcp__playwright__browser_navigate` 或 `mcp__playwright__browser_navigate` 可用性 | 可选 |
-| WebSearch | 内置，始终可用 | 核心 |
+| 网络搜索 | 内置，始终可用 | 核心 |
 
 **输出格式**（每行一个能力）：
 
@@ -175,7 +175,7 @@ loop (max 3 rounds):
   OpenRouter (Script) ✓ 就绪          XV 交叉验证（脚本通道）
   Stitch UI           ✗ 未就绪        UI 视觉稿（可选，/setup check 查看详情）
   Playwright          ✓ 就绪          线框自动验证（Phase 4.7）
-  WebSearch           ✓ 内置          搜索驱动设计
+  网络搜索           ✓ 内置          搜索驱动设计
 ```
 
 此通知仅为信息性输出，不阻塞任何流程。未就绪的可选能力自动跳过，提示格式统一为 `{step} ⊘ {能力} 不可用，{降级动作}`。
@@ -191,7 +191,7 @@ loop (max 3 rounds):
 **跳过条件**：用户指定 `skip: concept`，或 resume 模式下已完成。
 
 **执行**：
-1. 用 Read 工具加载 `./skills/product-concept.md`
+1. 加载 `./skills/product-concept.md`
 2. 按 product-concept 技能的完整工作流执行
 
 **检查点**：concept 产出目录存在。
@@ -300,7 +300,7 @@ concept 和 product-map 完成后，追加记录到 `.allforai/pipeline-decision
 ## Phase 2：product-map
 
 **执行**：
-1. 用 Read 工具加载 `./skills/product-map.md`
+1. 加载 `./skills/product-map.md`
 2. 按 product-map 技能的完整工作流执行
 3. 完成后追加 pipeline-decisions 记录（自动模式下）
 
@@ -347,7 +347,7 @@ verify loop 通过后直接进入 Phase 3，不弹出人工审核。
 ## Phase 3：journey-emotion
 
 **Step 1: 生成**
-1. 用 Read 工具加载 `./skills/journey-emotion.md`
+1. 加载 `./skills/journey-emotion.md`
 2. 按 journey-emotion 技能的完整工作流执行
 
 **Step 2: verify loop**（`--phase journey`）
@@ -389,7 +389,7 @@ verify loop 通过后直接进入 Phase 3，不弹出人工审核。
 ## Phase 5：feature-gap（缺口分析）
 
 **执行**：
-1. 用 Read 工具加载 `./skills/feature-gap.md`
+1. 加载 `./skills/feature-gap.md`
 2. 按 feature-gap 技能的完整工作流执行
 3. 产出写入 `.allforai/feature-gap/` 目录
 
@@ -423,7 +423,7 @@ python3 ../../shared/scripts/product-design/gen_design_audit.py <BASE> [--mode a
 
 **Phase B（LLM，并行 3 Agent）**：语义审计
 
-用**单条消息发出 3 个 Agent tool 调用**并行执行。Agent 屏障同步机制保证全部完成后才继续。
+**并行执行以下 3 个任务**。并行任务全部完成后才继续。
 
 每个 Agent 的 prompt 模板：
 

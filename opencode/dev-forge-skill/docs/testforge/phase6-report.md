@@ -131,8 +131,8 @@
 ### 下一步建议（条件化输出，仅列出实际需要的项）
 
 (若有 KNOWN_FAILURE) 1. 处理 KNOWN_FAILURE 项
-(若 Path B 未执行，如 analyze 模式) 2. 运行 /testforge fix 执行锻造（含 E2E 链）
-(若有 deadhunt/fieldcheck 修复) 3. 运行 /deadhunt incremental 回归验证
+(若 Path B 未执行，如 analyze 模式) 2. 执行 testforge fix 工作流进行锻造（含 E2E 链）
+(若有 deadhunt/fieldcheck 修复) 3. 执行 deadhunt incremental 工作流回归验证
 (若无 CI 覆盖率门禁) 4. 考虑配置 CI 覆盖率门禁
 (若有 PRE_EXISTING_FAILURE) 5. 修复基线中已存在的 {N} 个失败测试
 ```

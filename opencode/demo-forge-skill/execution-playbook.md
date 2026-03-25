@@ -71,7 +71,7 @@ Detect external capabilities and output status:
 | Capability | Detection | Importance | Degradation |
 |------------|-----------|------------|-------------|
 | Playwright | `mcp__playwright__browser_navigate` tool available | Phase 4 required | Block verify, prompt install |
-| Brave Search | `brave_web_search` available or `BRAVE_API_KEY` set | Phase 2 recommended | Degrade to WebSearch |
+| Brave Search | `brave_web_search` available or `BRAVE_API_KEY` set | Phase 2 recommended | Degrade to 网络搜索 |
 | AI Image Gen | `generate_image` / `openrouter_generate_image` / `flux_generate_image` any available | Phase 2 optional | Imagen 4 → GPT-5 Image → FLUX 2 Pro → skip |
 | AI Video Gen | `generate_video` / `kling_generate_video` any available | Phase 2 optional | Veo 3.1 → Kling → skip |
 
@@ -79,7 +79,7 @@ Output format:
 ```
 External capabilities:
   Playwright     ✓ ready     Verification (Phase 4 required)
-  Brave Search   ✗ not ready Media search (degrade to WebSearch)
+  Brave Search   ✗ not ready Media search (degrade to 网络搜索)
   AI Image Gen   ✗ not ready Imagen 4 / GPT-5 Image / FLUX 2 Pro (degrade to search)
   AI Video Gen   ✗ not ready Veo 3.1 / Kling (degrade to Playwright recording)
 ```

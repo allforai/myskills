@@ -52,17 +52,17 @@ journey-emotion（旅程情绪图）    experience-map（体验地图）       u
 
 ```
 /experience-map              # 完整流程（Step 1-4）
-/experience-map refresh      # 清空缓存，从头重新运行
+/experience-map refresh      # 清空缓存，从头重新执行
 /experience-map --variants 3 # 生成 3 套信息架构方案，对比后选择
 ```
 
 ---
 
-## 增强协议（WebSearch + 4D+6V + XV）
+## 增强协议（网络搜索 + 4D+6V + XV）
 
 > 详见 `./docs/skill-commons.md`「统一验收方法论」。
 
-**WebSearch**：Step 2 设计界面时，对创新功能（如 AI 生成、角色扮演、沉浸式学习）搜索同类产品的交互设计案例，作为设计参考和 D2 证据（如搜索「immersive language learning app UX」「AI content generation interface patterns」），写入 screen 的 `source_refs`。
+**网络搜索**：Step 2 设计界面时，对创新功能（如 AI 生成、角色扮演、沉浸式学习）搜索同类产品的交互设计案例，作为设计参考和 D2 证据（如搜索「immersive language learning app UX」「AI content generation interface patterns」），写入 screen 的 `source_refs`。
 
 **4D+6V 重点**：每个 screen 的 `description` 回答 D1（是什么设计）+ D4（为什么这样设计而非其他方案）；`emotion_design` 回答 D2（基于 journey-emotion 的什么证据）；核心界面（承载 core 任务的 screen）覆盖至少 4/6 视角审查——user: 能完成任务吗？business: 支撑核心指标吗？tech: 可实现吗？ux: 交互一致吗？data: 可观测吗？risk: 有安全风险吗？
 
@@ -246,7 +246,7 @@ Read `./docs/experience-map/validation-steps.md`
 - 任何步骤遇到不可恢复错误 → 写入 `.allforai/experience-map/experience-map-error.json`，包含 `{"error": "...", "step": "...", "timestamp": "..."}`
 
 ### 上游过期检测
-- **`journey-emotion-map.json`**：加载时比较 `generated_at` 与已有 `experience-map.json` 的 `generated_at`。上游更新 → 警告「journey-emotion 在 experience-map 上次运行后被更新，建议重新运行 /experience-map」。
+- **`journey-emotion-map.json`**：加载时比较 `generated_at` 与已有 `experience-map.json` 的 `generated_at`。上游更新 → 警告「journey-emotion 在 experience-map 上次运行后被更新，建议重新执行 experience-map 工作流」。
 - **`task-inventory.json`**：加载时比较 `generated_at`。上游更新 → 警告「task-inventory 在 experience-map 上次运行后被更新」。
 - **`business-flows.json`**：同上。
 - 仅警告不阻断。

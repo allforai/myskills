@@ -87,7 +87,7 @@ python3 ../../shared/scripts/product-design/review_hub_server.py <BASE> --port 1
 
 ```
 1. 读取指定（或全部）反馈文件
-   - 不存在 → 提示先运行 /review start 并在站点上审核
+   - 不存在 → 提示先执行 review start 工作流 并在站点上审核
    - submitted_at = null → 提示先在站点上提交反馈
 
 2. 统计：N 个节点/界面已审核，M 通过，K 需修改

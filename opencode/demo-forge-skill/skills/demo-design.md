@@ -38,9 +38,9 @@ demo-forge internal stages:
 
 ---
 
-## Enhancement Protocol (WebSearch + OpenRouter)
+## Enhancement Protocol (网络搜索 + OpenRouter)
 
-**WebSearch keywords**:
+**网络搜索 keywords**:
 - `"{ORM} seed data strategies {year}"`
 - `"realistic test data generation {language}"`
 - `"faker.js alternatives {year}"`
@@ -299,8 +299,8 @@ Traverse all entity field definitions, generate acquisition list for each media 
 
 | media_type | Typical scenario | Strategy |
 |-----------|-----------------|----------|
-| image | Avatars, covers, detail images, banners | Brave Search → WebSearch fallback → AI gen (Imagen 4 / GPT-5 Image / FLUX 2 Pro) |
-| video | Product videos, tutorials, promos | Brave Video Search → WebSearch → AI gen (Veo 3.1 / Kling) / Playwright recording |
+| image | Avatars, covers, detail images, banners | Brave Search → 网络搜索 fallback → AI gen (Imagen 4 / GPT-5 Image / FLUX 2 Pro) |
+| video | Product videos, tutorials, promos | Brave Video Search → 网络搜索 → AI gen (Veo 3.1 / Kling) / Playwright recording |
 | document | PDF attachments, contract scans | Template fill generation |
 | audio | Voice messages, audio courses | Google Cloud TTS |
 
@@ -310,7 +310,7 @@ Output: `.allforai/demo-forge/demo-plan.json`
 
 ### Step 2: Industry Style and Text Template Setup
 
-Based on industry keywords (from user or inferred from product-map), research industry data style via WebSearch:
+Based on industry keywords (from user or inferred from product-map), research industry data style via 网络搜索:
 
 **Base style**: name conventions, amount ranges, currency format, category naming.
 

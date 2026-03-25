@@ -55,7 +55,7 @@ product-map（锚点）
     experience-map screen._behavioral* → ui-design-spec（界面是否遵循行为规范）
 ```
 
-**前提**：必须先运行 `product-map`，生成 `.allforai/product-map/product-map.json`。
+**前提**：必须先执行 `product-map`，生成 `.allforai/product-map/product-map.json`。
 
 若 `product-map.json` 含 `experience_priority`，design-audit 必须把它作为全链路审计基线之一。
 

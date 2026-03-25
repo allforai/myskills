@@ -34,7 +34,7 @@ product-map（功能地图）    experience-map（体验地图）    use-case（
 任务层语义                 界面层语义                    基于两者，机器可执行
 ```
 
-**前提**：必须先运行 `product-map`，生成 `.allforai/product-map/task-inventory.json`。
+**前提**：必须先执行 `product-map`，生成 `.allforai/product-map/task-inventory.json`。
 
 若 `product-map.json` 含 `experience_priority`，use-case 必须继承该字段，切换不同的用例生成重心。
 
@@ -48,11 +48,11 @@ product-map（功能地图）    experience-map（体验地图）    use-case（
 /use-case scope 异常处理  # 只生成指定功能区的用例
 ```
 
-## 增强协议（WebSearch + 4D+6V + XV）
+## 增强协议（网络搜索 + 4D+6V + XV）
 
 > 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
 
-**WebSearch 关键词**：`”risk based testing” + 产品类型 + “case study” + 2025`、`”INVEST user stories” + “real project”`
+**搜索关键词**：`”risk based testing” + 产品类型 + “case study” + 2025`、`”INVEST user stories” + “real project”`
 
 **4D+6V 重点**：`then` 覆盖三重成功定义（业务成功 + 技术成功 + 体验成功）；高频/高风险用例覆盖至少 4/6 视角，减少”可执行但不可解释”。
 
@@ -84,7 +84,7 @@ product-map（功能地图）    experience-map（体验地图）    use-case（
 
 **scope 模式**：scope 模式运行完整 Step 序列，但 Step 0 跳过 AI 分组，直接使用用户指定的功能区名称作为过滤条件，仅为匹配该功能区的任务生成用例。
 
-**refresh 模式**：将 `use-case-decisions.json` 重命名为 `.bak` 备份，从 Step 0 开始完整重新运行，忽略所有已有决策缓存。
+**refresh 模式**：将 `use-case-decisions.json` 重命名为 `.bak` 备份，从 Step 0 开始完整重新执行，忽略所有已有决策缓存。
 
 ---
 
@@ -235,7 +235,7 @@ Step 4: 端到端用例生成（需 business-flows.json，quick 模式跳过）
   Phase 2 — 按需加载完整数据：
     检查 .allforai/product-map/task-inventory.json
       存在 → 加载任务和角色数据
-      不存在 → 提示：「请先运行 /product-map 生成功能地图，再运行 /use-case」，终止
+      不存在 → 提示：「请先执行 product-map 工作流生成功能地图，再执行 use-case 工作流」，终止
 
 检查 .allforai/experience-map/experience-map.json：
   - 存在 → 加载界面数据（从 operation_lines[].nodes[].screens[] 提取），标注「已注入界面上下文」
@@ -342,7 +342,7 @@ Step 4: 端到端用例生成（需 business-flows.json，quick 模式跳过）
 | UC001 | 正常提交工单 | happy_path |
 ```
 
-> **搜索驱动原则**：生成用例前，先 WebSearch 搜索「{产品类型} user scenario best practices」和「{产品类型} edge cases common mistakes」，用搜索结果补充容易遗漏的异常流和边界场景。
+> **搜索驱动原则**：生成用例前，先 网络搜索「{产品类型} user scenario best practices」和「{产品类型} edge cases common mistakes」，用搜索结果补充容易遗漏的异常流和边界场景。
 
 **用户确认**：正常流步骤完整吗？预期结果有没有遗漏？
 
@@ -713,11 +713,11 @@ LLM 生成用例后，追问闭环完整性：
 - **medium**（31–80 任务）：按功能区分组展示摘要，确认功能区级。
 - **large**（>80 任务）：脚本生成 `use-case-tree.json`，仅展示统计摘要 + 有 flag 的用例。
 
-### WebSearch 故障
+### 网络搜索不可用
 - **趋势搜索**（动态趋势补充）：工具不可用或无有用结果 → 跳过趋势补充，不影响用例生成主流程。
 
 ### 上游过期检测
-- **`task-inventory.json`**：加载时比较 `generated_at` 与 `use-case-decisions.json` 最新 `decided_at`。上游更新 → ⚠ 警告「task-inventory 在 use-case 上次运行后被更新，建议重新运行 /use-case refresh」。
+- **`task-inventory.json`**：加载时比较 `generated_at` 与 `use-case-decisions.json` 最新 `decided_at`。上游更新 → ⚠ 警告「task-inventory 在 use-case 上次运行后被更新，建议重新执行 use-case 工作流 refresh」。
 - **`experience-map.json`**（若存在）：同理比较时间戳。上游更新 → ⚠ 警告「experience-map 已更新，validation 和 exception_flows 数据可能过期」。
 - 仅警告不阻断。
 

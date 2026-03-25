@@ -17,12 +17,12 @@ description: "检查前后端字段名的全链路一致性。支持范围: full
 
 ## 执行流程
 
-1. 用 Read 工具读取 `docs/deadhunt/fieldcheck/overview.md` 获取完整执行流程和注意事项
+1. 读取 `docs/deadhunt/fieldcheck/overview.md` 获取完整执行流程和注意事项
 2. 根据 scope 按需读取对应的详细文档
 3. 按 Step 0 → Step 1 → Step 2 → Step 3 → Step 3.5 → Step 4 执行
 4. **【强制】执行完毕后，必须在对话中直接输出完整的报告摘要**
 
-## 详细文档（按需用 Read 工具加载）
+## 详细文档（按需加载）
 
 - `docs/deadhunt/fieldcheck/overview.md` — 执行流程总览、问题分类、注意事项
 - `docs/deadhunt/fieldcheck/extractors.md` — 各层字段提取方法详解（含所有技术栈）

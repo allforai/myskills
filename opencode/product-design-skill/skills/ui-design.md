@@ -32,7 +32,7 @@ product-concept → product-map → experience-map → ui-design
 （方向）          （任务）       （界面结构）  （视觉规格 + 预览）
 ```
 
-**前提**：必须先运行 `product-map`。`experience-map` 不存在时自动运行生成体验地图。
+**前提**：必须先执行 `product-map`。`experience-map` 不存在时自动运行生成体验地图。
 
 **下游消费边界**（dev-forge 如何消费 ui-design 产出）：
 
@@ -68,11 +68,11 @@ product-concept → product-map → experience-map → ui-design
 **参数**：
 - `--variants N`：生成 N 套不同的视觉风格方案（默认 1，最大 5）。N ≥ 2 时进入 variants 模式。
 
-## 增强协议（WebSearch + 4D+6V + XV）
+## 增强协议（网络搜索 + 4D+6V + XV）
 
 > 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
 
-**WebSearch 关键词**：`"design system" + 行业词 + "case study" + 2025`、`"WCAG 2.2" + 组件类型 + "accessibility"`、`"dashboard UI" + "information density" + "best practices"`
+**搜索关键词**：`"design system" + 行业词 + "case study" + 2025`、`"WCAG 2.2" + 组件类型 + "accessibility"`、`"dashboard UI" + "information density" + "best practices"`
 
 **4D+6V 重点**：
 - 读取 `task-inventory.json` 中的 `innovation_tasks` 字段，对 `innovation_task=true` 的界面标注 `innovation_ui: true`
@@ -120,7 +120,7 @@ product-concept → product-map → experience-map → ui-design
 |------|----------|-----------|
 | **Step 1 画像确认** | 向用户确认 | 自动确认，记入 `pipeline-decisions.json`（`decision: "auto_confirmed"`） |
 | **Step 2 风格选择** | 向用户提问 8 选 1 | 读 `pipeline_preferences.ui_styles[当前端类型]`：非 `"undecided"` → 直接使用预设风格，跳过 向用户提问；`"undecided"` → **回退交互模式**（展示 8 种风格，用户选择）。兼容旧版 `ui_style`（字符串） |
-| **Step 3 设计原则确认** | 向用户确认 | 自动确认（WebSearch 照常执行，搜索结果自动采纳） |
+| **Step 3 设计原则确认** | 向用户确认 | 自动确认（网络搜索照常执行，搜索结果自动采纳） |
 | **Step 4 规格确认** | 向用户确认 | 自动确认 |
 | **Step 5 预览确认** | 向用户确认 | 自动确认 |
 | **Step 5.5 Stitch 不可用** | 向用户询问 | 自动降级到 Step 5.6（LLM 高保真预览） |
@@ -150,7 +150,7 @@ product-concept → product-map → experience-map → ui-design
 
 **加载**：`Read ./docs/ui-design/validation-steps.md`
 
-包含：Step 4.5（Pattern Consistency Check）、Step 4.7（LLM 自审验证 Loop）、闭环审计、防御性规范（加载校验、零结果处理、规模自适应、WebSearch 故障、上游过期检测、执行失败保护）。
+包含：Step 4.5（Pattern Consistency Check）、Step 4.7（LLM 自审验证 Loop）、闭环审计、防御性规范（加载校验、零结果处理、规模自适应、网络搜索不可用、上游过期检测、执行失败保护）。
 
 ---
 
@@ -202,7 +202,7 @@ Step 2: 风格选择（向用户提问（单选））      ← design-steps.md
   展示 8 种主流风格
   用户选定后，记录到 ui-design-decisions.json
   ↓
-Step 3: 检索设计原则（WebSearch）             ← design-steps.md
+Step 3: 检索设计原则（网络搜索）             ← design-steps.md
   根据所选风格搜索官方设计系统文档和核心原则文章
   提取：配色逻辑、排版规范、组件偏好、交互原则
   摘要展示，用户确认后才应用
@@ -342,7 +342,7 @@ Step 5.6: LLM 高保真 HTML 预览               ← design-steps.md
 
 2. **experience-map 优先，缺席则推导** — 有 experience-map 按界面生成规格（每个 experience-map 界面对应一节规格）；没有 experience-map 则从 task-inventory 中的高频任务自动推导主要界面结构（每个高/中频任务 → 一个推导界面）。界面规格标注其关联任务的 `category`（core/basic）+ `innovation_ui`（true/false），便于团队区分核心功能界面、基础设施界面和创新概念界面
 
-3. **WebSearch 摘要展示，用户确认后才应用** — 检索到的设计原则必须以摘要形式展示给用户并等待确认，不自动静默应用；用户有权跳过检索（输入「跳过」）并手动指定设计参数
+3. **网络搜索摘要展示，用户确认后才应用** — 检索到的设计原则必须以摘要形式展示给用户并等待确认，不自动静默应用；用户有权跳过检索（输入「跳过」）并手动指定设计参数
 
 4. **风格选择不可省略** — 设计风格属于用户偏好决策，必须在 Step 2 由用户明确选择或确认沿用历史风格；未确认风格前不得生成规格和预览
 

@@ -110,7 +110,7 @@ Output a single status line at each transition: `Phase N ✓ → Phase N+1`
 
 1. **Auto-detect** — scan task-inventory.json for 8 categories (ai_llm, speech, payment, push, algorithm, realtime, file_storage, oauth)
 
-2. **Parallel WebSearch** — launch N parallel agents (one per spike category), each performing 2-3 rounds of WebSearch
+2. **Parallel web search** — launch N parallel agents (one per spike category), each performing 2-3 rounds of web search
 
 3. **XV cross-validation** (optional) — if OpenRouter available, send each spike to a different model for validation
 

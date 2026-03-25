@@ -47,11 +47,11 @@ product-map（产品长什么样）   project-setup（代码怎么组织）   de
 
 ---
 
-## 增强协议（WebSearch + 4E+4V）
+## 增强协议（网络搜索 + 4E+4V）
 
 > 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
 
-**WebSearch 关键词**：
+**网络搜索关键词**：
 - `"{tech-stack} project structure best practices {year}"`
 - `"monorepo vs polyrepo {language} {year}"`
 - `"{framework} clean architecture layout {year}"`
@@ -82,7 +82,7 @@ product-map（产品长什么样）   project-setup（代码怎么组织）   de
 ```
 前置: 加载 .allforai/product-map/product-map.json
       加载 .allforai/product-map/task-index.json（索引优先）
-      若不存在 → 提示先运行 /product-map，终止
+      若不存在 → 提示先执行 product-map 工作流，终止
       ↓
 前置: 上游过期检测
       加载输入文件时，比较关键上游文件的修改时间与本技能上次输出的生成时间：

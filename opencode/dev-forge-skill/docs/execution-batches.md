@@ -28,8 +28,8 @@ Agent 产出：
 
 ### Phase B — 前端并行 Agent
 
-后端 Agent 完成后，用**单条消息发出 N 个 Agent tool 调用**并行执行。
-Agent tool 的屏障同步机制保证所有前端 Agent 完成后才继续到 Step 5。
+后端 Agent 完成后，**并行执行以下 N 个任务**。
+并行任务全部完成后才继续到 Step 5。
 
 每个前端 Agent 完整执行 Step 1 → Step 2 → Step 3 → Step 4（不执行 Step 3.5）。
 
@@ -49,7 +49,7 @@ Agent tool 的屏障同步机制保证所有前端 Agent 完成后才继续到 S
 任务: 为子项目 {sub-project-name} 生成完整的 spec 文档。
 
 执行步骤:
-1. 用 Read 工具加载 skills/design-to-spec.md（仅参考规则和模板，不重复全局步骤）
+1. 加载 skills/design-to-spec.md（仅参考规则和模板，不重复全局步骤）
 2. 按 Step 1 (requirements) → Step 2 (原语识别, 仅前端) → Step 3 (design) [→ Step 3.5 仅后端] → Step 4 (tasks) 执行
 3. 产出写入 .allforai/project-forge/sub-projects/{sub-project-name}/
 

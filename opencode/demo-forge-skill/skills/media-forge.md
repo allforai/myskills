@@ -16,7 +16,7 @@ version: "1.0.0"
 
 1. **All assets must download to local `assets/`, zero external links** — no external CDN, image host, or third-party URL references
 2. **Population must go through app upload API, database stores only server addresses** — `server_url` must be the app's own domain path
-3. **Brave search first, WebSearch fallback, AI generation last, no placeholders** — any placeholder / lorem ipsum image is a failure
+3. **Brave search first, 网络搜索 fallback, AI generation last, no placeholders** — any placeholder / lorem ipsum image is a failure
 4. **`upload-mapping.json` `external_url_count` must be 0 (hard check)** — scan all `server_url` on completion, external domain = error
 
 ---
@@ -70,7 +70,7 @@ For each M1 group, search and download assets by priority.
 **Search priority**:
 
 1. **Brave Search MCP** (preferred) — `mcp__brave-search__brave_web_search`
-2. **WebSearch tool** (fallback when Brave unavailable or quota exhausted)
+2. **网络搜索** (fallback when Brave unavailable or quota exhausted)
 
 **Keyword construction**:
 
@@ -312,7 +312,7 @@ When `verify-issues.json` contains `route_to="media"` issues.
 
 ## Enhancement Protocol
 
-**WebSearch keywords** (when Brave unavailable):
+**网络搜索 keywords** (when Brave unavailable):
 
 - `"free stock photos {category} high resolution {year}"`
 - `"stock video footage {category} short clip"`
@@ -322,7 +322,7 @@ When `verify-issues.json` contains `route_to="media"` issues.
 | Tool | Purpose | Required/Optional |
 |------|---------|-------------------|
 | `brave_web_search` / `brave_image_search` | Image/video search | Recommended (`BRAVE_API_KEY`) |
-| WebSearch | Fallback search | Built-in |
+| 网络搜索 | Fallback search | Built-in |
 | `mcp__ai-gateway__generate_image` / `mcp__ai-gateway__openrouter_generate_image` / `mcp__ai-gateway__flux_generate_image` | AI image generation | Optional (any Key) |
 | `mcp__ai-gateway__generate_video` / `mcp__ai-gateway__kling_generate_video` | AI video generation | Optional (any Key) |
 | `mcp__ai-gateway__text_to_speech` | TTS voice generation | Optional (`GOOGLE_API_KEY`) |

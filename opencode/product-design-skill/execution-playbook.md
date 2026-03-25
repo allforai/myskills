@@ -75,7 +75,7 @@ Detect availability of external services. This is informational only — never b
 | OpenRouter (Script) | `OPENROUTER_API_KEY` env var | Optional |
 | Stitch UI | `mcp__stitch__create_project` availability | Optional |
 | Playwright | `mcp__playwright__browser_navigate` availability | Optional |
-| WebSearch | Built-in, always available | Core |
+| 网络搜索 | Built-in, always available | Core |
 
 Output a one-line-per-capability status table, then confirm execution plan.
 

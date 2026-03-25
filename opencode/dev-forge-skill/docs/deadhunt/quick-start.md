@@ -21,8 +21,8 @@ curl --version     # 用于 API 探测，大多数系统自带
 ### 安装
 
 ```bash
-# Claude Code 插件安装
-claude plugin add dv/dev-forge-skill  # deadhunt 已合并入 dev-forge
+# 安装
+bash opencode/install.sh  # deadhunt 已合并入 dev-forge
 ```
 
 安装后，Claude 会在首次运行验证时自动在你的项目中创建 `.allforai/deadhunt/` 目录，包括：

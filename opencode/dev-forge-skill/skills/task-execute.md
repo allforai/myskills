@@ -63,11 +63,11 @@ design-to-spec（规格层）   task-execute（执行层）   testforge（验证
 
 ---
 
-## 增强协议（WebSearch + 4E+4V）
+## 增强协议（网络搜索 + 4E+4V）
 
 > 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
 
-**WebSearch 关键词**：
+**网络搜索关键词**：
 - `"{framework} implementation patterns {year}"`
 - `"{language} project structure conventions {year}"`
 
@@ -522,7 +522,7 @@ Step 2: 逐任务执行
     后续任务依赖失败任务的产出文件 → status = skipped
   ↓
 Step 3: Round 质量检查（三路并行）
-  Round 全部任务完成（或部分 failed/skipped）后，使用 Agent tool 并行执行三项检查：
+  Round 全部任务完成（或部分 failed/skipped）后，并行执行三项检查：
     ┌── Agent(lint): 运行 lint → quality_checks.lint 更新
     │     lint 失败 → agent 自动修复 → 重跑
     ├── Agent(test): 运行 test → quality_checks.test 更新
@@ -691,7 +691,7 @@ Step 4: Round 增量验证（存在性 + 正确性）
 
     === 正确性验证执行方式 ===
 
-    CC1-CC5 + CC7 使用 Agent tool 并行执行，与存在性验证的 product-verify scope 串行。
+    CC1-CC5 + CC7 并行执行，与存在性验证的 product-verify scope 串行。
     CC7 仅前端 Round 且 experience-dna.json 存在时触发。
     **大型项目自适应**：CC7 检查的 DIFF 数 > 20 时，按子项目拆成多个 CC7 Agent 并行（每个只检查该子项目的 DNA 实现）。
 

@@ -4,7 +4,7 @@
 
 ---
 
-## 一、动态趋势补充（WebSearch）
+## 一、动态趋势补充（网络搜索）
 
 执行任何技能时，除经典理论外，建议补充近 12–24 个月的实践文章与案例：
 
@@ -101,7 +101,7 @@ dev-forge 的所有阶段（design-to-spec、task-execute、product-verify）均
 ## 七、FVL 三维验证架构（共享理论）
 
 > 完整 FVL 理论框架已提取到共享文件，跨 product-design 和 dev-forge 两个 pipeline 共用。
-> 执行时用 Read 加载：`/Users/aa/Documents/myskills/docs/fvl-architecture.md`
+> 执行时加载：`/Users/aa/Documents/myskills/docs/fvl-architecture.md`
 >
 > 包含：
 > - §一 三维概览（纵向/横向/内外循环）

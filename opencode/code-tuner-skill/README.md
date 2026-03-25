@@ -5,8 +5,8 @@ A Claude Code plugin skill that analyzes server-side code for architectural viol
 ## 30-second start
 
 ```bash
-# 1) Install (aligned with other plugins)
-claude plugin add /path/to/code-tuner-skill
+# 1) Install via OpenCode skills config
+# Add code-tuner-skill path to ~/.config/opencode/skills.json
 
 # 2) Run full analysis
 /code-tuner full
@@ -24,9 +24,7 @@ claude plugin add /path/to/code-tuner-skill
 
 ## Installation
 
-```bash
-claude plugin add /path/to/code-tuner-skill
-```
+Add `code-tuner-skill` path to `~/.config/opencode/skills.json` or run `./install-opencode.sh`.
 
 ## Usage
 
