@@ -1,6 +1,5 @@
 ---
 description: "产品设计全流程编排：concept → map → journey → experience → feature-gap → audit。模式: full / resume"
-argument-hint: "[mode: full|resume] [skip: concept]"
 ---
 
 # Product Design Full — 产品设计全流程编排

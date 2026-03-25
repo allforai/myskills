@@ -1,6 +1,5 @@
 ---
 description: "检测和配置所有外部能力：Playwright（UI 自动化）+ OpenRouter（跨模型 XV）+ Brave Search（媒体搜索）+ Google AI（生图/生视频）+ Stitch UI（视觉稿）。一站式状态仪表板 + 引导配置 + 一键更新所有插件/MCP/技能。"
-argument-hint: "[check|reset|update]"
 ---
 
 # Setup — 外部能力管理
