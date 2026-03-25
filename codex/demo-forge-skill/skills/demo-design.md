@@ -38,9 +38,9 @@ demo-forge internal stages:
 
 ---
 
-## Enhancement Protocol (WebSearch + OpenRouter)
+## Enhancement Protocol (web search + OpenRouter)
 
-**WebSearch keywords**:
+**Web search keywords**:
 - `"{ORM} seed data strategies {year}"`
 - `"realistic test data generation {language}"`
 

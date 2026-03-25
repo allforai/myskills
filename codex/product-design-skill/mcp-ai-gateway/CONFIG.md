@@ -2,7 +2,7 @@
 
 ## 环境变量
 
-API Key 配置在插件 `.mcp.json` 的 `env` 块中（通过 `/setup` 命令管理）：
+API Key 配置在插件 MCP 配置的 `env` 块中（通过 `/setup` 命令管理）：
 
 | 变量 | 用途 | 必需 |
 |------|------|------|
@@ -20,7 +20,7 @@ product-design-skill/mcp-ai-gateway/
 ## 配置文件
 
 ### 1. MCP 服务器配置
-`product-design-skill/.mcp.json`
+`product-design-skill/` MCP 配置文件
 ```json
 {
   "mcpServers": {
@@ -78,7 +78,7 @@ product-design-skill/mcp-ai-gateway/
 ```
 生图: Imagen 4 -> GPT-5 Image -> FLUX 2 Pro -> 跳过
 生视频: Veo 3.1 -> Kling -> 跳过
-搜索: Brave Search -> WebSearch -> AI 生成
+搜索: Brave Search -> 网络搜索 -> AI 生成
 ```
 
 ## 测试连接
@@ -86,7 +86,7 @@ product-design-skill/mcp-ai-gateway/
 ```bash
 cd product-design-skill/mcp-ai-gateway
 npm run build
-# 重启 Claude Code 后工具自动可用
+# 重启编码助手 后工具自动可用
 ```
 
 ## 故障排查

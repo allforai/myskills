@@ -16,7 +16,7 @@ version: "1.0.0"
 
 1. **All assets must be downloaded to local `assets/`, zero external links** — no external image hosts, CDNs, or third-party URLs
 2. **Population must use app upload API, database stores only server addresses** — `server_url` must be app's own domain path
-3. **Brave search first, WebSearch fallback, AI generation backstop, no placeholders** — any placeholder / lorem ipsum image is a failure
+3. **Brave search first, web search fallback, AI generation backstop, no placeholders** — any placeholder / lorem ipsum image is a failure
 4. **`upload-mapping.json` `external_url_count` must be 0 (hard validation)** — scan all `server_url` on completion, any external domain triggers error
 
 ---
@@ -68,7 +68,7 @@ For each M1 requirement group, search and download assets by priority.
 **Search priority**:
 
 1. **Brave Search MCP** (preferred)
-2. **WebSearch** (when Brave unavailable or quota exhausted)
+2. **Web search** (when Brave unavailable or quota exhausted)
 
 **Keyword construction**:
 
@@ -317,7 +317,7 @@ Triggered when `verify-issues.json` contains `route_to="media"` issues.
 
 ## Enhancement Protocol
 
-**WebSearch keywords** (when Brave unavailable):
+**Web search keywords** (when Brave unavailable):
 
 - `"free stock photos {category} high resolution {year}"`
 - `"stock video footage {category} short clip"`
@@ -327,7 +327,7 @@ Triggered when `verify-issues.json` contains `route_to="media"` issues.
 | Tool | Purpose | Required/Optional |
 |------|---------|-------------------|
 | Brave Search | Image/video search | Recommended (BRAVE_API_KEY) |
-| WebSearch | Fallback search | Built-in |
+| Web search | Fallback search | Built-in |
 | OpenRouter MCP tools | AI image generation | Optional |
 | Google AI generation tools | Imagen 4, Veo 3.1, TTS | Optional (GOOGLE_API_KEY) |
 | fal.ai generation tools | FLUX 2 Pro, Kling | Optional (FAL_KEY) |

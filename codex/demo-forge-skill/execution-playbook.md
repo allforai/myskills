@@ -31,7 +31,7 @@ Scan `.allforai/demo-forge/` to determine phase completion:
 | Capability | Importance | Degradation |
 |-----------|------------|-------------|
 | Playwright | Phase 4 required | Block verify, prompt install |
-| Brave Search | Phase 2 recommended | Degrade to WebSearch |
+| Brave Search | Phase 2 recommended | Degrade to web search |
 | AI Image Gen | Phase 2 optional | Imagen 4 -> GPT-5 Image -> FLUX 2 Pro -> skip |
 | AI Video Gen | Phase 2 optional | Veo 3.1 -> Kling -> skip |
 

@@ -39,7 +39,7 @@ python3 ../../shared/scripts/product-design/gen_design_audit.py <BASE> [--mode a
 | feature-gap | 可选 | `.allforai/feature-gap/gap-tasks.json` |
 | ui-design | 可选 | `.allforai/ui-design/ui-design-spec.md` |
 
-- `product-map` 不存在 → 输出「请先运行 /product-map 建立产品地图」，**立即终止**
+- `product-map` 不存在 → 输出「请先执行 product-map 工作流建立产品地图」，**立即终止**
 - 可选层不存在 → 跳过相关校验项，在报告中标注「层缺失，已跳过」
 
 **`role` 模式额外处理**：从 `task-index.json` 按 `owner_role` 筛选匹配任务 ID 列表，后续所有校验仅涉及这些任务及其关联产物。
@@ -120,7 +120,7 @@ python3 ../../shared/scripts/product-design/gen_design_audit.py <BASE> [--mode a
 2. 逐条检查相邻层之间的一致性
 3. 向用户展示结果摘要，等待确认
 
-> **搜索驱动原则**：展示审计结果前，先 WebSearch 搜索「design audit checklist {产品类型}」和「cross-layer consistency verification best practices」，用搜索结果补充审计维度。
+> **搜索驱动原则**：展示审计结果前，先 网络搜索「design audit checklist {产品类型}」和「cross-layer consistency verification best practices」，用搜索结果补充审计维度。
 
 **结果标记**：
 
@@ -401,9 +401,9 @@ Phase A 脚本完成后，以下 3 个语义审计任务并行执行。
 
 **前置检查**：
 1. `.allforai/experience-map/experience-map.json` 是否存在
-   - 不存在 → 提示「请先运行 /experience-map 生成体验地图」，终止
+   - 不存在 → 提示「请先执行 experience-map 工作流生成体验地图」，终止
 2. experience-map 中每个 screen 是否含 `interaction_type` 字段
-   - 缺失 → 提示「experience-map 未标注 interaction_type，请运行 /experience-map refresh 重新生成」，终止
+   - 缺失 → 提示「experience-map 未标注 interaction_type，请执行 experience-map refresh 重新生成」，终止
 
 ---
 

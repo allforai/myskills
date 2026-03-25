@@ -63,11 +63,11 @@ design-to-spec（规格层）   task-execute（执行层）   testforge（验证
 
 ---
 
-## 增强协议（WebSearch + 4E+4V）
+## 增强协议（网络搜索 + 4E+4V）
 
 > 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
 
-**WebSearch 关键词**：
+**网络搜索关键词**：
 - `"{framework} implementation patterns {year}"`
 - `"{language} project structure conventions {year}"`
 

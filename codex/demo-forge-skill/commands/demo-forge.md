@@ -61,7 +61,7 @@ Scan `.allforai/demo-forge/` for existing artifacts to determine phase completio
 | Capability | Detection | Importance | Degradation |
 |-----------|-----------|------------|-------------|
 | Playwright | Playwright MCP tools available | Phase 4 required | Block verify, prompt install |
-| Brave Search | `brave_web_search` available or `BRAVE_API_KEY` set | Phase 2 recommended | Degrade to WebSearch |
+| Brave Search | `brave_web_search` available or `BRAVE_API_KEY` set | Phase 2 recommended | Degrade to web search |
 | AI Image Gen | OpenRouter MCP tools or Google/fal.ai generation tools available | Phase 2 optional | Imagen 4 -> GPT-5 Image -> FLUX 2 Pro -> skip |
 | AI Video Gen | Google/fal.ai video generation tools available | Phase 2 optional | Veo 3.1 -> Kling -> skip |
 
@@ -70,7 +70,7 @@ Scan `.allforai/demo-forge/` for existing artifacts to determine phase completio
 ```
 External capabilities:
   Playwright     OK       Verification (Phase 4 required)
-  Brave Search   MISSING  Media search (degrade to WebSearch)
+  Brave Search   MISSING  Media search (degrade to web search)
   AI Image Gen   MISSING  Imagen 4 / GPT-5 Image / FLUX 2 Pro (degrade to search only)
   AI Video Gen   MISSING  Veo 3.1 / Kling (degrade to Playwright screen recording)
 ```

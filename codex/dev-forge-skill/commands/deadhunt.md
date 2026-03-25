@@ -77,7 +77,7 @@ Phase 3 深度测试依赖 Playwright（Web）或 Patrol（Flutter），Phase 0 
 
 ---
 
-## 详细文档（按需用 Read 工具加载）
+## 详细文档（按需加载）
 
 - `./docs/deadhunt/quick-start.md` — 快速开始
 - `./docs/deadhunt/workflow.md` — 工作流详解

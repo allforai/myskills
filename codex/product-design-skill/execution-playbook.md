@@ -30,7 +30,7 @@ Phase 9:  design-audit (trace + coverage + cross-check + pattern + behavioral + 
 
 Scan `.allforai/` to determine completion status of each phase. Also:
 - Detect product scale (standard / large / super-large) by estimated roles and modules
-- Probe external capabilities (OpenRouter, Stitch, Playwright, WebSearch)
+- Probe external capabilities (OpenRouter, Stitch, Playwright, 网络搜索)
 - Output status dashboard
 
 ### Phase 1: product-concept

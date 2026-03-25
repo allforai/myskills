@@ -105,7 +105,7 @@ LLM 生成 UI 设计后，追问闭环完整性：
 - **`product-map.json` / `task-inventory.json`**：前置加载时验证 JSON 合法性。解析失败 → 提示用户重新运行 `/product-map`，终止执行。
 
 ### 零结果处理
-- **无 experience-map 且无高/中频任务**：⚠ 明确告知「无法推导界面列表 — experience-map 不存在，且 task-inventory 中无高/中频任务可用于推导界面。请先运行 /experience-map 或 /product-map 补充任务频次」，**终止执行**（不生成空规格）。
+- **无 experience-map 且无高/中频任务**：⚠ 明确告知「无法推导界面列表 — experience-map 不存在，且 task-inventory 中无高/中频任务可用于推导界面。请先执行 experience-map 或 /product-map 补充任务频次」，**终止执行**（不生成空规格）。
 - **Step 1 推导 0 界面**：同上处理。
 - **Step 3 搜索 0 设计原则**：若搜索正常但无有用结果 → 告知用户，提供选项：(a) 使用所选风格的默认 CSS 变量 (b) 用户手动提供设计参考。
 
@@ -115,13 +115,13 @@ LLM 生成 UI 设计后，追问闭环完整性：
 - **medium**（16–40 界面）：按模块分组生成规格，摘要确认。
 - **large**（>40 界面）：脚本生成规格文件 + 仅展示高频界面预览。
 
-### WebSearch 故障
+### 网络搜索不可用
 - **Step 3 设计原则搜索**：
-  - 工具不可用 → 告知用户「⚠ WebSearch 暂不可用」→ 提供选项：(a) 跳过搜索，使用风格默认 CSS 变量参数 (b) 用户手动提供设计参考 URL。
+  - 工具不可用 → 告知用户「⚠ 网络搜索暂不可用」→ 提供选项：(a) 跳过搜索，使用风格默认 CSS 变量参数 (b) 用户手动提供设计参考 URL。
   - **品牌定制风（Brand Custom）+ 搜索无结果**：回退到 Flat/Minimal 风格的默认 CSS 变量 + ⚠ 警告「品牌定制风搜索无结果，已回退到 Flat/Minimal 默认参数，建议用户后续提供品牌设计规范」。
 
 ### 上游过期检测
-- **`experience-map.json`**（若存在）：加载时比较 `generated_at` 与 `ui-design-decisions.json` 最新 `decided_at`。上游更新 → ⚠ 警告「experience-map 在 ui-design 上次运行后被更新，界面列表可能过期，建议重新运行 /ui-design refresh」。
+- **`experience-map.json`**（若存在）：加载时比较 `generated_at` 与 `ui-design-decisions.json` 最新 `decided_at`。上游更新 → ⚠ 警告「experience-map 在 ui-design 上次运行后被更新，界面列表可能过期，建议重新执行 ui-design refresh」。
 - **`task-inventory.json`**：同理检查时间戳。
 - 仅警告不阻断。
 

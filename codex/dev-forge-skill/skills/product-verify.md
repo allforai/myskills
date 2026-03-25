@@ -66,11 +66,11 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 
 ---
 
-## 增强协议（WebSearch + 4E+4V + OpenRouter）
+## 增强协议（网络搜索 + 4E+4V + OpenRouter）
 
 > 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
 
-**WebSearch 关键词**：
+**网络搜索关键词**：
 - `"automated acceptance testing {framework} {year}"`
 - `"Playwright testing best practices {year}"`
 - `"Lighthouse CI performance budget {year}"`
@@ -132,7 +132,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
     任一索引不存在 → 对应数据回退到 Phase 2 全量加载（向后兼容）
   Phase 2 — 按需加载完整数据：
     加载 .allforai/product-map/product-map.json
-    若 product-map.json 也不存在 → 提示用户先运行 /product-map，终止
+    若 product-map.json 也不存在 → 提示用户先执行 product-map 工作流，终止
     若存在 `experience_priority.mode = consumer|mixed` → 启用用户端成熟度验收附加规则
   其他可选数据：
     experience-map.json 必须（不存在则自动运行 experience-map 生成，然后启用 S2）

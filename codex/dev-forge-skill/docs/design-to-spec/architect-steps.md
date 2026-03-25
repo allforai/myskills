@@ -25,8 +25,8 @@ Phase 1 — 加载索引（< 5KB）:
   experience-map.json → 界面 id/name/action_count（可选）
   flow-index.json → 业务流 id/name（可选）
 Phase 2 — 按需加载 full 数据（仅加载当前子项目需要的模块）
-若 project-manifest.json 不存在 → 提示先运行 /project-setup，终止
-若 product-map.json 不存在 → 提示先运行 /product-map，终止
+若 project-manifest.json 不存在 → 提示先执行 project-setup 工作流，终止
+若 product-map.json 不存在 → 提示先执行 product-map 工作流，终止
 加载 prune-decisions.json → 过滤: 仅 CORE 和 DEFER 任务进入范围
 加载 forge-decisions.json → 读取 technical_spikes + coding_principles（存在时）
 Load: forge-decisions.json → dev_mode（如有：bypass 类型、策略、隔离方式）

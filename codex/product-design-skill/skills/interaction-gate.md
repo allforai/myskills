@@ -137,7 +137,7 @@ Step 6: 保存 interaction-gate.json
 ```
 检查 .allforai/experience-map/experience-map.json：
   存在 → 加载操作线数据
-  不存在 → 提示：「请先运行 /experience-map 生成体验地图，再运行 /interaction-gate」，终止
+  不存在 → 提示：「请先执行 experience-map 工作流生成体验地图，再执行 interaction-gate 工作流」，终止
 ```
 
 ---
@@ -352,10 +352,10 @@ OL002 管理员审核流程（55 分，未达标）：
 - **`experience-map.json`**：前置加载时验证 JSON 合法性。解析失败 → 提示用户重新运行 `/experience-map`，终止执行。
 
 ### 零结果处理
-- **experience-map.json 无操作线**：提示「体验地图中未定义操作线，请先运行 /experience-map 补充操作线」，终止。
+- **experience-map.json 无操作线**：提示「体验地图中未定义操作线，请先执行 experience-map 工作流补充操作线」，终止。
 
 ### 上游过期检测
-- **`experience-map.json`**：加载时比较 `generated_at` 与已有 `interaction-gate.json` 的 `generated_at`。上游更新 → 警告「experience-map 在 interaction-gate 上次运行后被更新，建议重新运行 /interaction-gate」。
+- **`experience-map.json`**：加载时比较 `generated_at` 与已有 `interaction-gate.json` 的 `generated_at`。上游更新 → 警告「experience-map 在 interaction-gate 上次运行后被更新，建议重新执行 interaction-gate」。
 - 仅警告不阻断。
 
 ---

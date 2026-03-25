@@ -6,7 +6,7 @@ A Claude Code plugin skill that analyzes server-side code for architectural viol
 
 ```bash
 # 1) Install (aligned with other plugins)
-claude plugin add /path/to/code-tuner-skill
+bash codex/install.sh
 
 # 2) Run full analysis
 /code-tuner full
@@ -25,7 +25,7 @@ claude plugin add /path/to/code-tuner-skill
 ## Installation
 
 ```bash
-claude plugin add /path/to/code-tuner-skill
+bash codex/install.sh
 ```
 
 ## Usage

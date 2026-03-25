@@ -52,13 +52,13 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 
 ---
 
-## 增强协议（WebSearch + 4E+4V + OpenRouter + 闭环输入审计）
+## 增强协议（网络搜索 + 4E+4V + OpenRouter + 闭环输入审计）
 
 > 通用框架见 `docs/skill-commons.md`，以下仅列本技能定制。
 
 **闭环输入审计**（见 `product-design-skill/docs/skill-commons.md` §八）：Architect 生成 design.md 后，审查每个任务是否有**验收闭环**（"完成"标准是什么？谁验收？）。缺失验收条件 → Auditor V11 标记。
 
-**WebSearch 关键词**：
+**网络搜索关键词**：
 - `"{framework} API design patterns {year}"`
 - `"{database} schema design best practices"`
 - `"{protocol} interface naming conventions {year}"`（protocol = REST/GraphQL/gRPC/等）
@@ -334,7 +334,7 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
   全部完成 ↓
 
 **角色隔离规则**：
-- Auditor Agent **禁止**和 Architect/Decomposer 是同一个 Agent 调用（必须是独立的 Agent tool 调用）
+- Auditor Agent **禁止**和 Architect/Decomposer 是同一个调用（必须是独立的子任务）
 - Auditor 只读产出文件做审查，不参与生成过程
 - Enricher 和 Architect/Decomposer 无依赖，可以并行
 
@@ -637,15 +637,15 @@ Agent 分析所有子项目 `tasks.md`，识别跨任务的逻辑共振：
    - **领域稳定性**：该业务逻辑在 `product-map` 中的变化频率（越稳定越值得抽象）
    - **技术通用性**：是否属于目标技术栈中常见的共性问题
 
-**三方库选型**（WebSearch）：
+**三方库选型**（网络搜索）：
 
-对识别出的 NEW 共享工具类型，WebSearch 调研推荐库。搜索词模板（基于 preflight 已选技术栈动态拼接）：
+对识别出的 NEW 共享工具类型，通过网络搜索调研推荐库。搜索词模板（基于 preflight 已选技术栈动态拼接）：
 
 ```
 "{framework} {utility_type} best library {year}"
 ```
 
-推荐方向参考（WebSearch 确认后使用）：
+推荐方向参考（网络搜索确认后使用）：
 
 | 类型 | Node.js/TS | Python | Go |
 |------|-----------|--------|-----|

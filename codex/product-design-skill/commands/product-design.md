@@ -163,7 +163,7 @@ loop (max 3 rounds):
 | OpenRouter (Script) | `OPENROUTER_API_KEY` 环境变量 | 可选 |
 | Stitch UI | `Stitch MCP create_project` 可用性 | 可选 |
 | Playwright | Playwright MCP `browser_navigate` 可用性 | 可选 |
-| WebSearch | 内置，始终可用 | 核心 |
+| 网络搜索 | 内置，始终可用 | 核心 |
 
 **输出格式**（每行一个能力）：
 
@@ -173,7 +173,7 @@ loop (max 3 rounds):
   OpenRouter (Script) ✓ 就绪          XV 交叉验证（脚本通道）
   Stitch UI           ✗ 未就绪        UI 视觉稿（可选，/setup check 查看详情）
   Playwright          ✓ 就绪          线框自动验证（Phase 4.7）
-  WebSearch           ✓ 内置          搜索驱动设计
+  网络搜索           ✓ 内置          搜索驱动设计
 ```
 
 此通知仅为信息性输出，不阻塞任何流程。未就绪的可选能力自动跳过，提示格式统一为 `{step} ⊘ {能力} 不可用，{降级动作}`。
@@ -189,7 +189,7 @@ loop (max 3 rounds):
 **跳过条件**：用户指定 `skip: concept`，或 resume 模式下已完成。
 
 **执行**：
-1. 用 Read 工具加载 `./skills/product-concept.md`
+1. 加载 `./skills/product-concept.md`
 2. 按 product-concept 技能的完整工作流执行
 
 **检查点**：concept 产出目录存在。
@@ -298,7 +298,7 @@ concept 和 product-map 完成后，追加记录到 `.allforai/pipeline-decision
 ## Phase 2：product-map
 
 **执行**：
-1. 用 Read 工具加载 `./skills/product-map.md`
+1. 加载 `./skills/product-map.md`
 2. 按 product-map 技能的完整工作流执行
 3. 完成后追加 pipeline-decisions 记录（自动模式下）
 
@@ -345,7 +345,7 @@ verify loop 通过后直接进入 Phase 3，不弹出人工审核。
 ## Phase 3：journey-emotion
 
 **Step 1: 生成**
-1. 用 Read 工具加载 `./skills/journey-emotion.md`
+1. 加载 `./skills/journey-emotion.md`
 2. 按 journey-emotion 技能的完整工作流执行
 
 **Step 2: verify loop**（`--phase journey`）
@@ -361,7 +361,7 @@ verify loop 通过后直接进入 Phase 3，不弹出人工审核。
 
 **Step 1: 生成**
 
-用 Read 加载 `./skills/experience-map.md`，按 skill 工作流执行。LLM 主导屏幕设计。
+加载 `./skills/experience-map.md`，按 skill 工作流执行。LLM 主导屏幕设计。
 
 **Step 1.5: verify loop**（`--phase experience`）
 
@@ -376,7 +376,7 @@ verify loop 通过后直接进入 Phase 3，不弹出人工审核。
 ## Phase 4 — Step 2：interaction-gate
 
 **执行**：
-1. 用 Read 加载 `./skills/interaction-gate.md`，按其工作流执行
+1. 加载 `./skills/interaction-gate.md`，按其工作流执行
 2. LLM 分析 experience-map + task-inventory，识别交互风险点并生成门禁报告
 
 **检查点**：
@@ -387,7 +387,7 @@ verify loop 通过后直接进入 Phase 3，不弹出人工审核。
 ## Phase 5：feature-gap（缺口分析）
 
 **执行**：
-1. 用 Read 工具加载 `./skills/feature-gap.md`
+1. 加载 `./skills/feature-gap.md`
 2. 按 feature-gap 技能的完整工作流执行
 3. 产出写入 `.allforai/feature-gap/` 目录
 
@@ -408,7 +408,7 @@ verify loop 通过后直接进入 Phase 3，不弹出人工审核。
 > 精简原则：只保留发现真实产品缺口的阶段，去掉格式转换和低价值验证。
 
 **执行**：
-1. 用 Read 加载 `./skills/design-audit.md`
+1. 加载 `./skills/design-audit.md`
 
 **Phase A（脚本，串行）**：确定性检查
 
@@ -436,7 +436,7 @@ python3 ../../shared/scripts/product-design/gen_design_audit.py <BASE> [--mode a
 - 读取相关上游产物（见 design-audit.md 对应 Step 的前置条件）
 
 执行:
-1. 用 Read 加载 ./skills/design-audit.md
+1. 加载 ./skills/design-audit.md
 2. 按对应 Step 的检测项逐一执行
 3. 前置条件不满足 → status="skipped"，仍写分片文件
 4. 结果写入: .allforai/design-audit/audit-shard-{shard_name}.json

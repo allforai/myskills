@@ -4,7 +4,7 @@
 
 ---
 
-## 一、动态趋势补充（WebSearch）
+## 一、动态趋势补充（网络搜索）
 
 执行任何技能时，除经典理论外，建议补充近 12–24 个月的实践文章与案例：
 
@@ -26,13 +26,13 @@
 |---------|---------|---------|---------|
 | `playwright` | 检查 Playwright MCP `browser_navigate` 工具可用性 | demo-forge, dev-forge, deadhunt | 无降级 — 提示用户安装 |
 | `openrouter_mcp` | 检查 `OpenRouter MCP ask_model` 工具可用性 | product-design, dev-forge | 跳过 MCP XV，脚本 XV 仍可用 |
-| `openrouter_script` | `_resolve_api_key("OPENROUTER_API_KEY")`：环境变量 → `.mcp.json` env/\_\_keys | product-design (预置脚本) | 静默跳过 XV |
+| `openrouter_script` | `_resolve_api_key("OPENROUTER_API_KEY")`：环境变量 → MCP 配置 env | product-design (预置脚本) | 静默跳过 XV |
 | `brave_search_mcp` | 检查 `AI Gateway Brave search` 工具可用性 | demo-forge | 跳过 Brave MCP，脚本仍可用 |
-| `brave_search_script` | `_resolve_api_key("BRAVE_API_KEY")`：环境变量 → `.mcp.json` env/\_\_keys | demo-forge (预置脚本) | Brave → WebSearch → AI 生成 |
+| `brave_search_script` | `_resolve_api_key("BRAVE_API_KEY")`：环境变量 → MCP 配置 env | demo-forge (预置脚本) | Brave → 网络搜索 → AI 生成 |
 | `google_ai_mcp` | 检查 `AI Gateway image generation` 工具可用性 | demo-forge | 跳过 MCP 生图，脚本仍可用 |
-| `google_ai_script` | `_resolve_api_key("GOOGLE_API_KEY")`：环境变量 → `.mcp.json` env/\_\_keys | demo-forge (预置脚本) | Imagen 4 → GPT-5 Image → FLUX 2 Pro → 跳过 |
+| `google_ai_script` | `_resolve_api_key("GOOGLE_API_KEY")`：环境变量 → MCP 配置 env | demo-forge (预置脚本) | Imagen 4 → GPT-5 Image → FLUX 2 Pro → 跳过 |
 | `fal_ai_mcp` | 检查 `AI Gateway FLUX image generation` 工具可用性 | demo-forge | 跳过 fal.ai MCP 生图/生视频 |
-| `fal_ai_script` | `_resolve_api_key("FAL_KEY")`：环境变量 → `.mcp.json` env/\_\_keys | demo-forge (预置脚本) | FLUX 2 Pro（生图）+ Kling（生视频） |
+| `fal_ai_script` | `_resolve_api_key("FAL_KEY")`：环境变量 → MCP 配置 env | demo-forge (预置脚本) | FLUX 2 Pro（生图）+ Kling（生视频） |
 | `stitch_ui` | 检查 `Stitch MCP create_project` 工具 | product-design | 跳过视觉稿，使用文字规格 |
 | `websearch` | 内置工具，始终可用 | product-design, demo-forge | 无需降级 |
 
@@ -54,7 +54,7 @@
 ```
 
 示例：
-- `M2 搜索采集 ⊘ Brave Search 不可用，降级到 WebSearch`
+- `M2 搜索采集 ⊘ Brave Search 不可用，降级到网络搜索`
 - `XV 交叉验证 ⊘ OpenRouter 不可用，跳过交叉验证`
 - `V1 登录验证 ⊘ Playwright 不可用` → 触发安装引导
 
@@ -64,13 +64,13 @@
 
 #### 安装注册表
 
-| 能力 ID | 安装命令 | 安装后追加步骤 | 需重启 Claude Code |
+| 能力 ID | 安装命令 | 安装后追加步骤 | 需重启编码助手 |
 |---------|---------|--------------|-------------------|
-| `playwright` | `claude mcp add -s user playwright -- npx -y @playwright/mcp@latest` | 无追加步骤（浏览器按需自动下载） | 是 |
+| `playwright` | `MCP 注册命令（参见平台文档）: playwright -- npx -y @playwright/mcp@latest` | 无追加步骤（浏览器按需自动下载） | 是 |
 | `openrouter_mcp` | `cd {PLUGIN_ROOT}/mcp-ai-gateway && npm install && npm run build` | 需配置 `OPENROUTER_API_KEY`（运行 `/setup`） | 是 |
-| `brave_search_mcp` | ai-gateway 已内置，仅需配置 `BRAVE_API_KEY`（运行 `/setup`） | Key 写入 `.mcp.json` ai-gateway env | 是 |
-| `google_ai_mcp` | ai-gateway 已内置，仅需配置 `GOOGLE_API_KEY`（运行 `/setup`） | Key 写入 `.mcp.json` ai-gateway env | 是 |
-| `stitch_ui` | `claude mcp add -s user stitch -- npx -y @_davideast/stitch-mcp proxy` | 首次需 OAuth: `python3 {PLUGIN_ROOT}/scripts/stitch_oauth.py` | 是 |
+| `brave_search_mcp` | ai-gateway 已内置，仅需配置 `BRAVE_API_KEY`（运行 `/setup`） | Key 写入 MCP 配置 ai-gateway env | 是 |
+| `google_ai_mcp` | ai-gateway 已内置，仅需配置 `GOOGLE_API_KEY`（运行 `/setup`） | Key 写入 MCP 配置 ai-gateway env | 是 |
+| `stitch_ui` | `MCP 注册命令（参见平台文档）: stitch -- npx -y @_davideast/stitch-mcp proxy` | 首次需 OAuth: `python3 {PLUGIN_ROOT}/scripts/stitch_oauth.py` | 是 |
 
 #### 引导流程（编排命令的 Phase 0 使用）
 
@@ -85,7 +85,7 @@
      3. 查看安装详情
 
 2. 选择「是，帮我安装」→ 执行安装命令（Bash）→ 安装后追加步骤 → 报告结果
-   - 成功 → 提示「安装成功。需重启 Claude Code 生效。现在重启还是继续当前流程？」
+   - 成功 → 提示「安装成功。需重启编码助手 生效。现在重启还是继续当前流程？」
    - 失败 → 展示错误信息 + 手动安装命令，继续流程（降级或跳过该阶段）
 
 3. 选择「跳过」→ 记录跳过，按降级策略处理
@@ -100,7 +100,7 @@
 单独运行技能时（如直接 `/demo-verify`），不做完整引导，只输出一行提示 + 安装命令：
 
 ```
-⊘ Playwright 不可用。安装: claude mcp add -s user playwright -- npx -y @playwright/mcp@latest（安装后需重启 Claude Code）
+⊘ Playwright 不可用。安装: MCP 注册命令（参见平台文档）: playwright -- npx -y @playwright/mcp@latest（安装后需重启编码助手）
 ```
 
 ### 技能声明规范
@@ -391,7 +391,7 @@ concept → map → experience-map → ui-design → dev-forge
 ```
 脚本收集上下文 + 审查问题 → stdout JSON
     ↓
-Claude Code 用 4D + 6V + 闭环思维审查
+编码助手用 4D + 6V + 闭环思维审查
     ↓
 发现问题 → 修改源文件 → 重新运行脚本 → 再审
     ↓

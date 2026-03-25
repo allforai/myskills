@@ -66,7 +66,7 @@ Phase 8: Final Report
 
 **Steps**:
 1. Scan task-inventory.json for spike keywords (AI/speech/payment/push/algorithm/realtime/storage/OAuth)
-2. Execute parallel research agents (one per spike category) using WebSearch
+2. Execute parallel research agents (one per spike category) using web search
 3. Optional: cross-model validation via OpenRouter
 4. Present comparison tables (2-3 options per spike)
 5. Auto-mode: adopt recommended options; Interactive-mode: wait for user selection

@@ -35,7 +35,7 @@ Veo 3.1 (Google) -> Kling (fal.ai) -> Playwright screen recording -> skip
 
 Search fallback:
 ```
-Brave Search -> WebSearch -> AI generation (above chains)
+Brave Search -> web search -> AI generation (above chains)
 ```
 
 ## Multi-Round Iteration
