@@ -204,7 +204,17 @@ Step 3: 验证断言不是同义反复
      c. Read 已有测试（避免重复）
      d. Read 已有 helpers/factories（复用）
      e. 合成完整测试代码（断言来自 Step a，调用方式来自 Step b-d）
-     f. 跑单个测试文件验证语法通过
+     f. 断言深度自检（Rule 28 — 反惰性断言）：
+        对生成的每个 expect/assert 语句标注深度 Level 0-3：
+          Level 0: 存在性（toBeVisible, toBeDefined, toBeTruthy）
+          Level 1: 量化性（length > 0, status == 200）
+          Level 2: 结构性（toHaveProperty, toContainKey）
+          Level 3: 值正确性（toBe(具体值), toEqual(预期对象)，期望值来自 upstream_ref）
+        检查：
+          - unit/integration 测试 → Level 3 占比 ≥ 60%，否则重写低级断言
+          - 全 Level 0/1 → 直接拒绝，从 upstream_ref 重新推导 Level 3 断言
+          - 关键路径（CRUD 核心、支付、审批）→ 必须有 Level 3，无例外
+     g. 跑单个测试文件验证语法通过
 
 2. 跑全量测试
    根据子项目类型选择运行命令：
