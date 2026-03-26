@@ -33,7 +33,7 @@ cat > "$SKILLS_JSON" << JSONEOF
     },
     {
       "name": "code-tuner",
-      "path": "$SCRIPT_DIR/code-tuner-skill/skills",
+      "path": "$SCRIPT_DIR/code-tuner-skill/references",
       "commands": "$SCRIPT_DIR/code-tuner-skill/commands",
       "description": "Code architecture tuner: compliance, duplication, abstraction analysis"
     },
