@@ -27,7 +27,7 @@
 | 审计缺口总数 | {N}（unit:{u} component:{c} integration:{i} platform_ui:{p} e2e_chain:{e}） |
 | 负空间推导场景数 | {N} |
 | 基线测试 | 总数:{N} 通过:{pass} 失败:{fail} PRE_EXISTING_FAILURE:{N} |
-| 4D 覆盖率 | D:{d}% I:{i}% L:{l}% U:{u}% |
+| 4D+1 覆盖率 | D:{d}% I:{i}% L:{l}% U:{u}% DB:{db}% |
 
 ### 锻造总览 [full/fix]
 
@@ -55,7 +55,7 @@
 | E2E Chain | {N} chains | {N} chains | +{delta} |
 | Platform UI | {N} tests × {P} platforms | {N} tests × {P} platforms | +{delta} |
 
-### 覆盖率变化（4D） [full/fix]
+### 覆盖率变化（4D+1） [full/fix]
 
 | 维度 | 锻造前 | 锻造后 | 变化 |
 |------|--------|--------|------|
@@ -63,6 +63,7 @@
 | Interface | {before}% | {after}% | +{delta}% |
 | Logic | {before}% | {after}% | +{delta}% |
 | UX | {before}% | {after}% | +{delta}% |
+| DataBinding | {before}% | {after}% | +{delta}% |
 
 ### E2E 链清单 [full/fix]
 
@@ -97,7 +98,7 @@
 |--------|------|
 | 数据流完整性 | flows:{N} breaks:{M} |
 | 状态机完备性 | transitions:{N} failures:{M} |
-| 4D 跨端覆盖 | D:{d}% I:{i}% L:{l}% U:{u}% → {E2E_PASS/FAIL} |
+| 4D+1 跨端覆盖 | D:{d}% I:{i}% L:{l}% U:{u}% DB:{db}% → {E2E_PASS/FAIL} |
 
 ### 修复的业务 Bug 清单 [full/fix]
 

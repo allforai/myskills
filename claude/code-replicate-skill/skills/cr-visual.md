@@ -6,7 +6,7 @@ description: >
   or mentions comparing source and target app screenshots for UI fidelity.
 ---
 
-# 视觉还原度 — CR Visual v1.0
+# 视觉还原度 — CR Visual v1.1
 
 > 源 App vs 目标 App 逐屏截图/录像 → 对比 → 修复 → 重新对比 → 直到视觉一致
 
@@ -49,6 +49,7 @@ Step 1: 获取 screen 列表（从 experience-map）
 Step 2: 获取源 App 截图/录像（Phase 2 已采集 or 现场采集）
 Step 3: 获取目标 App 截图/录像
 Step 4: LLM 逐屏对比（结构级 + 动态效果）
+Step 4.5: 控件数据完整性审计（空控件溯源 + 评分修正）
 Step 5: 差异报告 + 评分
 Step 6: 修复差异（LLM 修改目标代码）
 Step 7: 重新截图/录像 → 重新对比 → 达标退出
@@ -161,9 +162,97 @@ LLM 读目标项目的技术栈 → 自行搜索并选择适合该技术栈的 U
 ```json
 {
   "screen": "screen name",
-  "match_level": "high | medium | low | mismatch",
-  "score": 100 | 70 | 40 | 0,
+  "structural_match": "high | medium | low | mismatch",
+  "structural_score": 100 | 70 | 40 | 0,
   "differences": "LLM 自由描述差异",
+  "source_screenshot": "visual/source/xxx.png",
+  "target_screenshot": "visual/target/xxx.png"
+}
+```
+
+> 注意：此阶段仅输出 `structural_match` / `structural_score`，最终的 `match_level` / `score` 在 Step 4.5 之后合并计算。
+
+---
+
+## Step 4.5: 控件数据完整性审计
+
+> Step 4 检查的是"控件在不在"，Step 4.5 检查的是"控件里有没有数据"。两步缺一不可。
+
+对每个 screen 的目标截图，LLM 逐一扫描以下控件类型，对照源截图判断数据完整性：
+
+**1. 数据容器类**：DataGrid / Table / List / Tree / TreeView
+- 源截图有 N 行数据 → 目标必须有 ≥1 行真实数据（不要求行数完全一致）
+- 表头/列字段是否与源一致？
+- Tree 展开后是否有子节点？
+
+**2. 选择器类**：ComboBox / Select / Dropdown / RadioGroup / Checkbox Group
+- 源截图有可选项 → 目标不能为 0 个选项
+- 如有可能，自动化点击/展开选择器 → 截图验证选项列表非空
+
+**3. 显示绑定类**：TextInput / Label / Badge / Counter / Chip / Tag
+- 源截图显示了绑定值（如 "John Doe"、"¥128.00"）→ 目标不能是空白、"undefined"、"null"、"NaN"
+- placeholder 不算绑定值
+
+**4. 可视化类**：Chart / Graph / Dashboard Widget / ProgressBar / Sparkline
+- 源截图有数据渲染 → 目标不能是空坐标轴/空饼图/进度条为 0
+
+**对每个空控件，强制溯源**：
+
+```
+1. 标记为 data_integrity_gap，记录控件类型 + screen + 控件位置描述
+2. 读目标代码 → 找该控件的数据来源：
+   a. API 接口？→ 检查接口 URL 是否正确、是否被调用、响应是否为空、字段映射是否正确
+   b. 静态数据/枚举？→ 检查是否缺少初始化数据或枚举定义
+   c. 计算/派生值？→ 检查计算逻辑是否有 null/undefined 路径
+   d. 状态管理？→ 检查 store/state 是否正确初始化和订阅
+3. 记录溯源结果：{ control_type, location, data_source, root_cause }
+```
+
+**评分修正**：
+
+```
+每个 data_integrity_gap 的扣分：
+  - 空数据容器（Table/List/Tree 零行）      → -15 分
+  - 空选择器（ComboBox/Select 零选项）       → -10 分
+  - 空绑定值（Label/Badge 显示空白/undefined）→ -5 分
+  - 空可视化（Chart 无数据渲染）             → -15 分
+
+合并计算最终分数：
+  final_score = structural_score - sum(data_integrity_penalties)
+  final_score = max(0, final_score)  // 不低于 0
+
+match_level 由 final_score 决定：
+  ≥ 90 → high | ≥ 60 → medium | ≥ 30 → low | < 30 → mismatch
+```
+
+**禁止项**：
+
+- ❌ **不得用硬编码假数据修复**（如在前端写死 `["选项1", "选项2"]` 或 `[{name: "测试"}]`）
+- ❌ **不得用 mock server 替代真实 API**
+- ❌ **不得仅在截图前临时注入数据**（如 `localStorage.setItem` 塞假数据）
+- ✅ **必须修复真实数据链路**：前端组件 → API 调用 → 后端逻辑 → 数据库查询
+- ✅ **修复后重新截图验证**该控件确实有真实数据显示
+
+**每个 screen 最终输出**（合并 Step 4 + 4.5）：
+```json
+{
+  "screen": "screen name",
+  "match_level": "high | medium | low | mismatch",
+  "score": 85,
+  "structural_score": 100,
+  "data_integrity_score": 85,
+  "differences": "结构完整，但订单列表 DataGrid 为空（0行），状态筛选 ComboBox 无选项",
+  "data_integrity_gaps": [
+    {
+      "control_type": "DataGrid",
+      "location": "页面中部-订单列表区域",
+      "expected": "源截图有 8 行订单数据",
+      "actual": "目标截图表头存在但 0 行数据",
+      "data_source": "API: GET /api/orders",
+      "root_cause": "前端调用了 /api/order（少了 s），404 后静默失败",
+      "penalty": -15
+    }
+  ],
   "source_screenshot": "visual/source/xxx.png",
   "target_screenshot": "visual/target/xxx.png"
 }
@@ -181,19 +270,34 @@ LLM 读目标项目的技术栈 → 自行搜索并选择适合该技术栈的 U
   "total_screens": 20,
   "compared": 18,
   "skipped": 2,
-  "overall_score": 82,
+  "overall_score": 72,
+  "structural_avg_score": 82,
+  "data_integrity_avg_score": 65,
+  "total_data_integrity_gaps": 7,
   "screens": [
-    {"screen": "...", "match_level": "high", "score": 100, "differences": "无明显差异"},
-    {"screen": "...", "match_level": "low", "score": 40, "differences": "列表布局从卡片式变成了表格式，缺少筛选栏"}
+    {
+      "screen": "...", "match_level": "high", "score": 100,
+      "structural_score": 100, "data_integrity_score": 100,
+      "differences": "无明显差异", "data_integrity_gaps": []
+    },
+    {
+      "screen": "...", "match_level": "low", "score": 40,
+      "structural_score": 70, "data_integrity_score": 55,
+      "differences": "列表布局从卡片式变成了表格式，缺少筛选栏",
+      "data_integrity_gaps": [
+        {"control_type": "DataGrid", "location": "...", "root_cause": "...", "penalty": -15}
+      ]
+    }
   ]
 }
 ```
 
 `visual-report.md` 包含：
 - 每个 screen 的截图路径对（用户可直接查看）
-- 差异描述
-- 整体评分
-- 低分 screen 的修复方案
+- 结构差异描述
+- **数据完整性审计结果**（空控件清单 + 溯源结论）
+- 整体评分（结构分 + 数据完整性分 = 综合分）
+- 低分 screen 的修复方案（区分结构修复 vs 数据链路修复）
 
 ---
 
@@ -219,8 +323,15 @@ LLM 读目标项目的技术栈 → 自行搜索并选择适合该技术栈的 U
      - 素材缺失 → 补图标/图片/字体
      - 动画缺失 → 补 CSS transition / 动画代码
 
+   数据完整性层（Step 4.5 标记的 data_integrity_gap → 按溯源结果修）:
+     - API 未调用/URL 错误 → 修前端 API 调用代码
+     - API 返回空 → 检查后端查询逻辑/数据库是否有数据 → 修后端或补 seed
+     - 字段映射错误 → 修前端数据绑定（如 response.data vs response.result）
+     - 枚举/静态选项缺失 → 补枚举定义（禁止硬编码假数据，必须来自配置或 API）
+     - Store/State 未初始化 → 修状态管理初始化逻辑
+     ⚠️ 禁止用硬编码假数据蒙混：前端写死选项/行数据 = 修复无效，必须走真实数据链路
+
    非 UI 层（根因升级 → 修完回来）:
-     - 列表为空/数据错 → 检查 API 调用 → 可能是后端字段不一致 → 修后端代码
      - 权限按钮未隐藏 → 检查 RBAC 逻辑 → 可能是 role-view-matrix 未还原 → 修权限代码
      - 请求报错 → 检查错误码 → 可能是 error-catalog 不一致 → 修错误定义
      - 图标/字体碎裂 → 检查 asset 引用 → 可能是 asset 迁移遗漏 → 补 asset
@@ -228,6 +339,7 @@ LLM 读目标项目的技术栈 → 自行搜索并选择适合该技术栈的 U
 
 5. 执行修复：
    UI 层 → 直接 Edit 目标代码
+   数据完整性层 → 按 data_integrity_gap.root_cause 修复真实数据链路
    非 UI 层 → 根因升级：
      a. 标记当前 screen 为 BLOCKED（等待上游修复）
      b. 直接修复上游代码（后端/API/权限/asset/基础设施）

@@ -62,9 +62,9 @@ LLM 读 product-map，提取：
 - 下一步引导、结果回流、持续关系入口（历史/提醒/通知/进度/最近活动）是否至少有相关测试覆盖？
 - 若用户端只测“页面存在”和“按钮可点”，未测成熟度关键节点 → 标记为 UX 维度缺口
 
-### 4D 维度聚合
+### 4D+1 维度聚合
 
-将所有 Layer 的缺口按 4D 维度归类：
+将所有 Layer 的缺口按 4D+1 维度归类：
 
 | 维度 | 审计问题 | 基准来源 |
 |------|---------|---------|
@@ -72,6 +72,29 @@ LLM 读 product-map，提取：
 | **Interface** | API 正常/异常响应有测试吗？参数校验有测试吗？ | design.md endpoints + tasks.md rules |
 | **Logic** | 业务规则、状态流转、权限判断有测试吗？ | tasks.md rules/exceptions + constraints |
 | **UX** | 组件渲染、交互、错误提示、loading 状态有测试吗？ | experience-map screens/actions |
+| **DataBinding** | 数据绑定控件是否有数据完整性测试？ | experience-map screens + design.md endpoints |
+
+**DataBinding 维度**（与 UX 维度互补：UX 检查"控件能渲染能交互"，DataBinding 检查"控件里有没有真实数据"）：
+
+LLM 扫描前端源代码中的数据绑定控件，对每个控件审计：
+
+```
+数据容器类（Table / DataGrid / List / Tree / TreeView）:
+  → 有测试验证该控件在正常 API 响应下显示 ≥1 行数据吗？
+  → 有测试验证该控件在空响应下显示空状态提示（非白屏）吗？
+
+选择器类（ComboBox / Select / Dropdown / RadioGroup）:
+  → 有测试验证选项列表从 API/配置加载后非空吗？
+  → 有测试验证默认选中值正确吗？
+
+显示绑定类（Label / Badge / Counter / Chip 绑定了变量的）:
+  → 有测试验证绑定值在 API 返回后正确显示（非 undefined/null/NaN）吗？
+
+可视化类（Chart / Graph / ProgressBar）:
+  → 有测试验证图表在正常数据下有渲染输出吗？
+```
+
+缺少上述测试的控件 → 标记为 `DATABINDING_GAP`，`test_type` 根据复杂度标注为 `component`（单控件）或 `platform_ui`（需真实 API）。
 
 若 `experience_priority.mode = consumer | mixed`，UX 维度还必须覆盖：
 
@@ -114,11 +137,12 @@ LLM 读 product-map，提取：
         "test_type": "e2e_chain"
       }
     ],
-    "coverage_by_4d": {
+    "coverage_by_dimension": {
       "Data": { "covered": 45, "gaps": 12, "rate": "78.9%" },
       "Interface": { "covered": 38, "gaps": 8, "rate": "82.6%" },
       "Logic": { "covered": 30, "gaps": 18, "rate": "62.5%" },
-      "UX": { "covered": 25, "gaps": 15, "rate": "62.5%" }
+      "UX": { "covered": 25, "gaps": 15, "rate": "62.5%" },
+      "DataBinding": { "covered": 18, "gaps": 9, "rate": "66.7%" }
     }
   }]
 }

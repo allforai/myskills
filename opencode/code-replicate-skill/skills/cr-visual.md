@@ -7,7 +7,7 @@ description: >
 version: "1.0.0"
 ---
 
-# Visual Fidelity — CR Visual v1.0
+# Visual Fidelity — CR Visual v1.1
 
 > Source App vs Target App screen-by-screen screenshot/recording -> compare -> fix -> re-compare -> until visually consistent
 
@@ -50,6 +50,7 @@ Step 1: Get screen list (from experience-map)
 Step 2: Get source App screenshots/recordings (Phase 2 collected or live capture)
 Step 3: Get target App screenshots/recordings
 Step 4: LLM per-screen comparison (structural + dynamic effects)
+Step 4.5: Control data integrity audit (empty control tracing + score correction)
 Step 5: Difference report + scoring
 Step 6: Fix differences (LLM modifies target code)
 Step 7: Re-screenshot/record -> re-compare -> exit when passing
@@ -162,9 +163,97 @@ For each screenshot pair (source/screen_name.png vs target/screen_name.png), LLM
 ```json
 {
   "screen": "screen name",
-  "match_level": "high | medium | low | mismatch",
-  "score": 100 | 70 | 40 | 0,
+  "structural_match": "high | medium | low | mismatch",
+  "structural_score": 100 | 70 | 40 | 0,
   "differences": "LLM free description of differences",
+  "source_screenshot": "visual/source/xxx.png",
+  "target_screenshot": "visual/target/xxx.png"
+}
+```
+
+> Note: This step only outputs `structural_match` / `structural_score`. Final `match_level` / `score` are computed after Step 4.5.
+
+---
+
+## Step 4.5: Control Data Integrity Audit
+
+> Step 4 checks "does the control exist?", Step 4.5 checks "does the control have data?". Both steps are required.
+
+For each screen's target screenshot, LLM scans the following control types and compares against source screenshot for data completeness:
+
+**1. Data Containers**: DataGrid / Table / List / Tree / TreeView
+- Source has N data rows -> target must have >= 1 row of real data (exact row count match not required)
+- Are table headers/columns consistent with source?
+- Does tree have child nodes when expanded?
+
+**2. Selectors**: ComboBox / Select / Dropdown / RadioGroup / Checkbox Group
+- Source has selectable options -> target cannot have 0 options
+- If possible, automate click/expand selector -> screenshot to verify option list is non-empty
+
+**3. Display Bindings**: TextInput / Label / Badge / Counter / Chip / Tag
+- Source shows bound values (e.g., "John Doe", "$128.00") -> target cannot be blank, "undefined", "null", "NaN"
+- Placeholder text does not count as a bound value
+
+**4. Visualizations**: Chart / Graph / Dashboard Widget / ProgressBar / Sparkline
+- Source has rendered data -> target cannot show empty axes/empty pie chart/progress bar at 0
+
+**For each empty control, mandatory root cause tracing**:
+
+```
+1. Mark as data_integrity_gap, record control_type + screen + control location description
+2. Read target code -> find the control's data source:
+   a. API endpoint? -> Check if URL is correct, if it's being called, if response is empty, if field mapping is correct
+   b. Static data/enums? -> Check if initialization data or enum definitions are missing
+   c. Computed/derived value? -> Check if computation logic has null/undefined paths
+   d. State management? -> Check if store/state is correctly initialized and subscribed
+3. Record trace result: { control_type, location, data_source, root_cause }
+```
+
+**Score correction**:
+
+```
+Penalty per data_integrity_gap:
+  - Empty data container (Table/List/Tree zero rows)         -> -15 points
+  - Empty selector (ComboBox/Select zero options)            -> -10 points
+  - Empty binding (Label/Badge showing blank/undefined)      -> -5 points
+  - Empty visualization (Chart with no data rendered)        -> -15 points
+
+Final score calculation:
+  final_score = structural_score - sum(data_integrity_penalties)
+  final_score = max(0, final_score)  // floor at 0
+
+match_level determined by final_score:
+  >= 90 -> high | >= 60 -> medium | >= 30 -> low | < 30 -> mismatch
+```
+
+**Prohibited**:
+
+- NO hardcoded fake data fixes (e.g., hardcoding `["Option1", "Option2"]` or `[{name: "Test"}]` in frontend)
+- NO mock servers replacing real APIs
+- NO temporary data injection before screenshots (e.g., `localStorage.setItem` with fake data)
+- MUST fix the real data pipeline: frontend component -> API call -> backend logic -> database query
+- MUST re-screenshot after fix to verify the control shows real data
+
+**Each screen final output** (merged Step 4 + 4.5):
+```json
+{
+  "screen": "screen name",
+  "match_level": "high | medium | low | mismatch",
+  "score": 85,
+  "structural_score": 100,
+  "data_integrity_score": 85,
+  "differences": "Structure intact, but order list DataGrid is empty (0 rows), status filter ComboBox has no options",
+  "data_integrity_gaps": [
+    {
+      "control_type": "DataGrid",
+      "location": "center-page order list area",
+      "expected": "Source screenshot has 8 order rows",
+      "actual": "Target screenshot has header but 0 data rows",
+      "data_source": "API: GET /api/orders",
+      "root_cause": "Frontend calls /api/order (missing 's'), silently fails on 404",
+      "penalty": -15
+    }
+  ],
   "source_screenshot": "visual/source/xxx.png",
   "target_screenshot": "visual/target/xxx.png"
 }
@@ -182,19 +271,34 @@ Written to `.allforai/code-replicate/visual-report.json` + `visual-report.md`:
   "total_screens": 20,
   "compared": 18,
   "skipped": 2,
-  "overall_score": 82,
+  "overall_score": 72,
+  "structural_avg_score": 82,
+  "data_integrity_avg_score": 65,
+  "total_data_integrity_gaps": 7,
   "screens": [
-    {"screen": "...", "match_level": "high", "score": 100, "differences": "No notable differences"},
-    {"screen": "...", "match_level": "low", "score": 40, "differences": "List layout changed from cards to table, missing filter bar"}
+    {
+      "screen": "...", "match_level": "high", "score": 100,
+      "structural_score": 100, "data_integrity_score": 100,
+      "differences": "No notable differences", "data_integrity_gaps": []
+    },
+    {
+      "screen": "...", "match_level": "low", "score": 40,
+      "structural_score": 70, "data_integrity_score": 55,
+      "differences": "List layout changed from cards to table, missing filter bar",
+      "data_integrity_gaps": [
+        {"control_type": "DataGrid", "location": "...", "root_cause": "...", "penalty": -15}
+      ]
+    }
   ]
 }
 ```
 
 `visual-report.md` includes:
 - Each screen's screenshot path pair (user can view directly)
-- Difference descriptions
-- Overall score
-- Fix recommendations for low-scoring screens
+- Structural difference descriptions
+- **Data integrity audit results** (empty control list + trace conclusions)
+- Overall score (structural score + data integrity score = combined score)
+- Fix recommendations for low-scoring screens (distinguishing structural fixes vs data pipeline fixes)
 
 ---
 
@@ -219,8 +323,15 @@ Each round:
        - Missing assets -> add icons/images/fonts
        - Missing animation -> add CSS transition / animation code
 
+     Data integrity layer (Step 4.5 marked data_integrity_gap -> fix per trace results):
+       - API not called/wrong URL -> fix frontend API call code
+       - API returns empty -> check backend query logic/database has data -> fix backend or add seed
+       - Field mapping error -> fix frontend data binding (e.g., response.data vs response.result)
+       - Missing enum/static options -> add enum definitions (NO hardcoded fake data, must come from config or API)
+       - Store/State not initialized -> fix state management initialization logic
+       WARNING: Hardcoded fake data = invalid fix. Must use real data pipeline.
+
      Non-UI layer (root cause escalation -> fix then come back):
-       - Empty list/wrong data -> check API call -> maybe backend field mismatch -> fix backend code
        - Permission button not hidden -> check RBAC logic -> maybe role-view-matrix not restored -> fix permission code
        - Request error -> check error code -> maybe error-catalog inconsistent -> fix error definitions
        - Broken icons/fonts -> check asset references -> maybe asset migration missed -> add assets
@@ -228,6 +339,7 @@ Each round:
 
   5. Execute fix:
      UI layer -> directly Edit target code
+     Data integrity layer -> fix real data pipeline per data_integrity_gap.root_cause
      Non-UI layer -> root cause escalation:
        a. Mark current screen as BLOCKED (waiting for upstream fix)
        b. Directly fix upstream code (backend/API/permissions/assets/infrastructure)

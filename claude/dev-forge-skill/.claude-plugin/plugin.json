@@ -1,6 +1,6 @@
 {
   "name": "dev-forge",
   "description": "Development forge (LLM-driven Forge-Verify-Loop): project-setup, design-to-spec (FVL 4D/6V/XV), task-execute (XV + Contract Drift + DevSecOps), product-verify, deadhunt (dead links + CRUD completeness + ghost features), fieldcheck (UI/API/Entity/DB field consistency), testforge (full test pyramid forging: unit/component/integration/e2e-chain/mobile — audit + generate + fix → converge). Full pipeline: /project-forge. 开发锻造套件（FVL闭环）：项目引导、设计转规格、任务执行、产品验收、死链猎杀、字段一致性、测试锻造。",
-  "version": "6.0.0",
+  "version": "6.1.0",
   "author": { "name": "dv" }
 }
