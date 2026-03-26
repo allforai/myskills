@@ -51,6 +51,7 @@ Step 2: Get source App screenshots/recordings (Phase 2 collected or live capture
 Step 3: Get target App screenshots/recordings
 Step 4: LLM per-screen comparison (structural + dynamic effects)
 Step 4.5: Control data integrity audit (empty control tracing + score correction)
+Step 4.6: Control linkage verification (executed when interaction-recordings has linkage_verify)
 Step 5: Difference report + scoring
 Step 6: Fix differences (LLM modifies target code)
 Step 7: Re-screenshot/record -> re-compare -> exit when passing
@@ -261,6 +262,88 @@ match_level determined by final_score:
 
 ---
 
+## Step 4.6: Control Linkage Verification
+
+> **Prerequisite**: `interaction-recordings.json` exists and contains `linkage_verify` steps. No such file or no linkage steps -> skip.
+
+Step 4/4.5 check static state (what the screenshot shows), Step 4.6 checks **dynamic causality** (does action A -> B respond correctly).
+
+**Execution protocol**:
+
+For each `linkage_verify` step in interaction-recordings:
+
+```
+1. Execute trigger_action on target App (e.g., select "Guangdong Province")
+2. Wait for linkage response (brief wait, typically 500ms-2s)
+3. Verify each expected_effect:
+
+   options_update (cascade selection):
+     -> Expand downstream selector -> screenshot -> option list is non-empty and content relates to trigger value
+     -> Compare with source App's same-step screenshot
+
+   visibility_toggle (conditional show/hide):
+     -> Check target control's visible state change
+     -> Screenshot verify: control appears/disappears consistent with source App
+
+   enabled_toggle (conditional enable/disable):
+     -> Check target control's disabled/enabled state
+     -> Screenshot comparison or DOM attribute check
+
+   value_update (auto-calculation):
+     -> Read target control's displayed value
+     -> Compare with source App's corresponding value (or verify correctness based on known formula)
+     -> Pay special attention: NaN, 0, blank = calculation chain broken
+
+   data_filter (linked filtering):
+     -> Screenshot after switching -> table/list content correctly filtered?
+     -> Row count change reasonable (not full set, not zero rows)
+
+   detail_load (master-detail linkage):
+     -> Click a row in master control -> screenshot detail area
+     -> Detail content corresponds to clicked row's data (strong assertion: field values match)
+
+   reset (linkage reset):
+     -> After parent changes -> child correctly cleared/restored to default
+
+4. Each linkage checkpoint outputs:
+   - linkage_result: pass / fail / partial
+   - On failure record: trigger_control, target_control, effect_type, expected, actual
+```
+
+**Score impact**:
+
+```
+Each linkage checkpoint result:
+  pass    -> no penalty
+  partial -> -5 points (linkage triggered but result not fully correct, e.g., options exist but content wrong)
+  fail    -> -10 points (linkage completely ineffective, downstream control unresponsive)
+
+Linkage score computed independently, appended to screen's final_score:
+  final_score = structural_score - data_integrity_penalties - linkage_penalties
+```
+
+**Each screen final output adds linkage fields**:
+```json
+{
+  "linkage_results": [
+    {
+      "trigger_control": "Province dropdown",
+      "trigger_action": "select Guangdong",
+      "target_control": "City dropdown",
+      "effect_type": "options_update",
+      "result": "fail",
+      "expected": "Options update to Guangdong cities",
+      "actual": "Option list still empty",
+      "root_cause": "onChange does not call fetchCities(), event binding lost",
+      "penalty": -10
+    }
+  ],
+  "linkage_score": 90
+}
+```
+
+---
+
 ## Step 5: Report
 
 Written to `.allforai/code-replicate/visual-report.json` + `visual-report.md`:
@@ -271,22 +354,27 @@ Written to `.allforai/code-replicate/visual-report.json` + `visual-report.md`:
   "total_screens": 20,
   "compared": 18,
   "skipped": 2,
-  "overall_score": 72,
+  "overall_score": 68,
   "structural_avg_score": 82,
   "data_integrity_avg_score": 65,
+  "linkage_avg_score": 75,
   "total_data_integrity_gaps": 7,
+  "total_linkage_failures": 3,
   "screens": [
     {
       "screen": "...", "match_level": "high", "score": 100,
-      "structural_score": 100, "data_integrity_score": 100,
-      "differences": "No notable differences", "data_integrity_gaps": []
+      "structural_score": 100, "data_integrity_score": 100, "linkage_score": 100,
+      "differences": "No notable differences", "data_integrity_gaps": [], "linkage_results": []
     },
     {
-      "screen": "...", "match_level": "low", "score": 40,
-      "structural_score": 70, "data_integrity_score": 55,
+      "screen": "...", "match_level": "low", "score": 35,
+      "structural_score": 70, "data_integrity_score": 55, "linkage_score": 80,
       "differences": "List layout changed from cards to table, missing filter bar",
       "data_integrity_gaps": [
         {"control_type": "DataGrid", "location": "...", "root_cause": "...", "penalty": -15}
+      ],
+      "linkage_results": [
+        {"trigger_control": "...", "target_control": "...", "effect_type": "options_update", "result": "fail", "penalty": -10}
       ]
     }
   ]
@@ -297,8 +385,9 @@ Written to `.allforai/code-replicate/visual-report.json` + `visual-report.md`:
 - Each screen's screenshot path pair (user can view directly)
 - Structural difference descriptions
 - **Data integrity audit results** (empty control list + trace conclusions)
-- Overall score (structural score + data integrity score = combined score)
-- Fix recommendations for low-scoring screens (distinguishing structural fixes vs data pipeline fixes)
+- **Control linkage verification results** (linkage checkpoint list + failure root causes)
+- Overall score (structural score + data integrity score + linkage score = combined score)
+- Fix recommendations for low-scoring screens (distinguishing structural fixes / data pipeline fixes / linkage fixes)
 
 ---
 
@@ -331,6 +420,16 @@ Each round:
        - Store/State not initialized -> fix state management initialization logic
        WARNING: Hardcoded fake data = invalid fix. Must use real data pipeline.
 
+     Linkage layer (Step 4.6 marked linkage fail/partial -> fix per linkage type):
+       - Event binding lost -> add onChange/onSelect/onClick binding to correct handler function
+       - Linkage API not called -> fix event handler, add downstream data fetch logic
+       - Linkage state not propagated -> fix setState/dispatch/emit, ensure downstream controls subscribe to correct data source
+       - Missing computed/watch -> add reactive computation chain (e.g., quantity x price -> total)
+       - Missing conditional visibility logic -> add v-if/v-show/visible binding condition
+       - Missing conditional enable/disable logic -> add disabled binding condition
+       - Missing linkage reset -> reset downstream control values and options when parent changes
+       WARNING: After fix, must re-execute linkage_verify to confirm linkage restored
+
      Non-UI layer (root cause escalation -> fix then come back):
        - Permission button not hidden -> check RBAC logic -> maybe role-view-matrix not restored -> fix permission code
        - Request error -> check error code -> maybe error-catalog inconsistent -> fix error definitions
@@ -340,6 +439,7 @@ Each round:
   5. Execute fix:
      UI layer -> directly Edit target code
      Data integrity layer -> fix real data pipeline per data_integrity_gap.root_cause
+     Linkage layer -> fix event binding/state propagation/reactive computation chain -> re-run linkage_verify to verify
      Non-UI layer -> root cause escalation:
        a. Mark current screen as BLOCKED (waiting for upstream fix)
        b. Directly fix upstream code (backend/API/permissions/assets/infrastructure)

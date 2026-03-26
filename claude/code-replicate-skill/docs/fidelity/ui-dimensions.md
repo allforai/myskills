@@ -51,12 +51,33 @@
 - 基类/共享组件提供的状态处理算作覆盖
 - 评分 = 已处理状态数 / 总定义状态数 × 100
 
-## U6 — 交互模式
+## U6 — 交互模式 + 控件联动
 
 对比 experience-map screens 的 actions[] + interaction_pattern 与目标代码的事件处理：
 - 每个 action（按钮点击、表单提交、手势操作）是否有对应的事件处理？
 - 跨平台时：如果 `platform_adaptation.ux_transformations` 将 touch gesture 映射为 keyboard shortcut，按映射后的期望评估
-- 评分 = 已实现交互数 / 总定义交互数 × 100
+
+**控件联动链验证**（interaction-recordings.json 存在时执行）：
+
+对 interaction-recordings 中每个 `linkage_verify` 步骤，在源码和目标代码中分别追踪联动链：
+
+```
+源码联动链：triggerControl.onChange → API call / setState → targetControl.data 更新
+目标联动链：是否有等价的触发→响应→更新链路？
+
+检查项：
+1. 触发端：事件处理函数是否存在且绑定到正确的控件？
+2. 传递层：联动是通过 API 调用、状态管理、还是 computed/watch 传递的？目标代码用了等价机制吗？
+3. 响应端：下游控件是否订阅/监听了正确的数据源？
+4. 联动类型保真：源码是级联选择 → 目标也是级联（不是硬编码全量选项然后前端过滤）
+```
+
+- 联动链完整 = 覆盖
+- 触发端存在但传递层断裂 = `LINKAGE_BROKEN`
+- 触发端存在但响应端缺失 = `LINKAGE_PARTIAL`
+- 整条链缺失 = gap
+
+评分 = (已实现交互数 + 已保留联动链数) / (总定义交互数 + 总联动链数) × 100
 
 ## U7 — 素材还原
 

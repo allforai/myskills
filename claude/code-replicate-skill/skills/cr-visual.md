@@ -50,6 +50,7 @@ Step 2: 获取源 App 截图/录像（Phase 2 已采集 or 现场采集）
 Step 3: 获取目标 App 截图/录像
 Step 4: LLM 逐屏对比（结构级 + 动态效果）
 Step 4.5: 控件数据完整性审计（空控件溯源 + 评分修正）
+Step 4.6: 控件联动验证（interaction-recordings 有 linkage_verify 时执行）
 Step 5: 差异报告 + 评分
 Step 6: 修复差异（LLM 修改目标代码）
 Step 7: 重新截图/录像 → 重新对比 → 达标退出
@@ -260,6 +261,88 @@ match_level 由 final_score 决定：
 
 ---
 
+## Step 4.6: 控件联动验证
+
+> **前置条件**：`interaction-recordings.json` 存在且含 `linkage_verify` 步骤。无此文件或无联动步骤 → 跳过。
+
+Step 4/4.5 检查的是静态状态（截图里看到什么），Step 4.6 检查的是**动态因果**（操作 A → B 是否正确响应）。
+
+**执行协议**：
+
+对 interaction-recordings 中每个 `linkage_verify` 步骤：
+
+```
+1. 在目标 App 上执行 trigger_action（如 select "广东省"）
+2. 等待联动响应（短暂 wait，通常 500ms-2s）
+3. 逐个验证 expected_effects：
+
+   options_update（级联选择）：
+     → 展开下游选择器 → 截图 → 选项列表非空且内容与触发值关联
+     → 与源 App 同步骤截图对比
+
+   visibility_toggle（条件显隐）：
+     → 检查目标控件的 visible 状态变化
+     → 截图验证：控件出现/消失与源 App 一致
+
+   enabled_toggle（条件启禁）：
+     → 检查目标控件的 disabled/enabled 状态
+     → 截图对比或 DOM 属性检查
+
+   value_update（自动计算）：
+     → 读取目标控件的显示值
+     → 与源 App 的对应值对比（或根据已知公式验证正确性）
+     → 特别关注：NaN、0、空白 = 计算链路断裂
+
+   data_filter（联动筛选）：
+     → 切换后截图 → 表格/列表内容是否正确过滤
+     → 行数变化是否合理（不是全量也不是零行）
+
+   detail_load（主从联动）：
+     → 点击主控件某行 → 截图详情区域
+     → 详情内容是否对应被点击行的数据（强断言：字段值匹配）
+
+   reset（联动重置）：
+     → 上级变化后 → 下级是否正确清空/恢复默认
+
+4. 每个联动检查点输出：
+   - linkage_result: pass / fail / partial
+   - 失败时记录：trigger_control、target_control、effect_type、expected、actual
+```
+
+**评分影响**：
+
+```
+每个联动检查点的结果：
+  pass    → 不扣分
+  partial → -5 分（联动触发了但结果不完全正确，如选项有但内容不对）
+  fail    → -10 分（联动完全无效，下游控件无响应）
+
+联动分独立计算，追加到 screen 的 final_score：
+  final_score = structural_score - data_integrity_penalties - linkage_penalties
+```
+
+**每个 screen 最终输出增加 linkage 字段**：
+```json
+{
+  "linkage_results": [
+    {
+      "trigger_control": "省份下拉框",
+      "trigger_action": "select 广东省",
+      "target_control": "城市下拉框",
+      "effect_type": "options_update",
+      "result": "fail",
+      "expected": "选项更新为广东省城市",
+      "actual": "选项列表仍为空",
+      "root_cause": "onChange 未调用 fetchCities()，事件绑定丢失",
+      "penalty": -10
+    }
+  ],
+  "linkage_score": 90
+}
+```
+
+---
+
 ## Step 5: 报告
 
 写入 `.allforai/code-replicate/visual-report.json` + `visual-report.md`：
@@ -270,22 +353,27 @@ match_level 由 final_score 决定：
   "total_screens": 20,
   "compared": 18,
   "skipped": 2,
-  "overall_score": 72,
+  "overall_score": 68,
   "structural_avg_score": 82,
   "data_integrity_avg_score": 65,
+  "linkage_avg_score": 75,
   "total_data_integrity_gaps": 7,
+  "total_linkage_failures": 3,
   "screens": [
     {
       "screen": "...", "match_level": "high", "score": 100,
-      "structural_score": 100, "data_integrity_score": 100,
-      "differences": "无明显差异", "data_integrity_gaps": []
+      "structural_score": 100, "data_integrity_score": 100, "linkage_score": 100,
+      "differences": "无明显差异", "data_integrity_gaps": [], "linkage_results": []
     },
     {
-      "screen": "...", "match_level": "low", "score": 40,
-      "structural_score": 70, "data_integrity_score": 55,
+      "screen": "...", "match_level": "low", "score": 35,
+      "structural_score": 70, "data_integrity_score": 55, "linkage_score": 80,
       "differences": "列表布局从卡片式变成了表格式，缺少筛选栏",
       "data_integrity_gaps": [
         {"control_type": "DataGrid", "location": "...", "root_cause": "...", "penalty": -15}
+      ],
+      "linkage_results": [
+        {"trigger_control": "...", "target_control": "...", "effect_type": "options_update", "result": "fail", "penalty": -10}
       ]
     }
   ]
@@ -296,8 +384,9 @@ match_level 由 final_score 决定：
 - 每个 screen 的截图路径对（用户可直接查看）
 - 结构差异描述
 - **数据完整性审计结果**（空控件清单 + 溯源结论）
-- 整体评分（结构分 + 数据完整性分 = 综合分）
-- 低分 screen 的修复方案（区分结构修复 vs 数据链路修复）
+- **控件联动验证结果**（联动检查点清单 + 失败根因）
+- 整体评分（结构分 + 数据完整性分 + 联动分 = 综合分）
+- 低分 screen 的修复方案（区分结构修复 / 数据链路修复 / 联动修复）
 
 ---
 
@@ -331,6 +420,16 @@ match_level 由 final_score 决定：
      - Store/State 未初始化 → 修状态管理初始化逻辑
      ⚠️ 禁止用硬编码假数据蒙混：前端写死选项/行数据 = 修复无效，必须走真实数据链路
 
+   联动层（Step 4.6 标记的 linkage fail/partial → 按联动类型修）:
+     - 事件绑定丢失 → 补 onChange/onSelect/onClick 绑定到正确的处理函数
+     - 联动 API 未调用 → 修事件处理函数，补调用下游数据获取逻辑
+     - 联动状态未传递 → 修 setState/dispatch/emit，确保下游控件订阅了正确的数据源
+     - computed/watch 缺失 → 补响应式计算链（如 quantity × price → total）
+     - 条件显隐逻辑缺失 → 补 v-if/v-show/visible 绑定条件
+     - 条件启禁逻辑缺失 → 补 disabled 绑定条件
+     - 联动重置缺失 → 上级变化时 reset 下级控件的值和选项
+     ⚠️ 修复后必须重新执行 linkage_verify 验证联动恢复正常
+
    非 UI 层（根因升级 → 修完回来）:
      - 权限按钮未隐藏 → 检查 RBAC 逻辑 → 可能是 role-view-matrix 未还原 → 修权限代码
      - 请求报错 → 检查错误码 → 可能是 error-catalog 不一致 → 修错误定义
@@ -340,6 +439,7 @@ match_level 由 final_score 决定：
 5. 执行修复：
    UI 层 → 直接 Edit 目标代码
    数据完整性层 → 按 data_integrity_gap.root_cause 修复真实数据链路
+   联动层 → 修复事件绑定/状态传递/响应式计算链 → 重跑 linkage_verify 验证
    非 UI 层 → 根因升级：
      a. 标记当前 screen 为 BLOCKED（等待上游修复）
      b. 直接修复上游代码（后端/API/权限/asset/基础设施）

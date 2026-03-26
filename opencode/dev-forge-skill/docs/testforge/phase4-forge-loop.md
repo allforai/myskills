@@ -302,6 +302,57 @@ Step 3: 验证断言不是同义反复
    不得在前端代码中硬编码 `["选项1", "选项2"]` 或 `[{name: "测试数据"}]` 来让测试通过。
    硬编码假数据 = BIZ_BUG 而非 TEST_BUG。
 
+3.7 **控件联动测试（Linkage 缺口）**
+
+   > 此步骤专门处理 Phase 1 标记为 `LINKAGE_GAP` 的缺口。
+   > 与 Step 3.6 的区别：3.6 验证"控件有数据"，3.7 验证"操作 A 后控件 B 正确响应"。
+
+   对每个 LINKAGE_GAP 缺口，生成 component 或 platform_ui 测试：
+
+   ```
+   级联选择（select A → select B 选项更新）：
+     - 渲染包含联动控件的组件/页面
+     - 选择 A 的某个值 → 等待响应
+     - 断言：B 的选项列表更新（options.length >= 1）
+     - 断言：B 的选项内容与 A 的值关联（非全量静态选项）
+     - 选择 A 的另一个值 → 断言 B 的选项再次变化
+     - 选择 A 后：断言下游控件（如 C）被重置
+
+   条件显隐（checkbox/radio → 控件出现/消失）：
+     - 初始状态：断言目标控件不可见
+     - 勾选/选中触发条件 → 断言目标控件可见
+     - 取消勾选 → 断言目标控件再次不可见
+     - 双向验证：出现和消失都必须测
+
+   条件启禁（表单状态 → 按钮 disabled/enabled）：
+     - 初始空表单：断言提交按钮 disabled
+     - 填写必填字段 → 断言按钮 enabled
+     - 清空某必填字段 → 断言按钮回到 disabled
+     - 检查 DOM 属性（disabled/aria-disabled），不只看视觉样式
+
+   自动计算（input × input → computed label）：
+     - 输入值 A=10, B=5 → 断言 C=50（精确值，不只是"非空"）
+     - 修改 A=20 → 断言 C=100（验证响应式更新）
+     - 边界：A=0 → 断言 C=0（不是 NaN/undefined）
+     - 断言公式来源：从上游文档或源码注释中提取计算规则
+
+   联动筛选（tab/filter → 列表变化）：
+     - 全部 Tab 下：记录行数 N
+     - 切换到筛选 Tab → 断言行数 < N（不是全量）
+     - 切换回全部 → 断言行数恢复为 N
+
+   主从联动（list click → detail panel）：
+     - 点击第 1 行 → 断言详情面板显示第 1 行的唯一标识字段
+     - 点击第 2 行 → 断言详情面板更新为第 2 行数据（不是还停留在第 1 行）
+   ```
+
+   **联动测试的失败分类**：
+   - 事件绑定丢失（onClick/onChange 未绑定）→ BIZ_BUG
+   - 状态传递断裂（dispatch/emit 丢失）→ BIZ_BUG
+   - API 联动未实现（onChange 未调 API）→ BIZ_BUG
+   - 计算公式错误（结果不对）→ BIZ_BUG
+   - 全部归为 BIZ_BUG（不是 TEST_BUG），因为联动是核心交互行为。
+
 4. 跨平台差异记录
    同一场景在 A 平台通过但 B 平台失败 → 标记为 PLATFORM_SPECIFIC_BUG
    场景示例：Web 上按钮可点击但 Android 上被键盘遮挡

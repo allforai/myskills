@@ -96,6 +96,32 @@ LLM 扫描前端源代码中的数据绑定控件，对每个控件审计：
 
 缺少上述测试的控件 → 标记为 `DATABINDING_GAP`，`test_type` 根据复杂度标注为 `component`（单控件）或 `platform_ui`（需真实 API）。
 
+**Linkage 子维度**（DataBinding 的延伸：DataBinding 检查"有没有数据"，Linkage 检查"操作 A 后 B 有没有正确变化"）：
+
+LLM 扫描前端源代码中的控件联动关系（onChange/onSelect → setState/dispatch/emit/computed），对每组联动审计：
+
+```
+级联选择（select A → select B 选项更新）:
+  → 有测试先选 A 再验证 B 的选项列表变化吗？
+
+条件显隐（checkbox/radio → 控件 visible/hidden）:
+  → 有测试切换条件后验证目标控件出现/消失吗？
+
+条件启禁（表单状态 → 按钮 disabled/enabled）:
+  → 有测试验证在不同表单状态下按钮的 disabled 属性吗？
+
+自动计算（input A × input B → label C）:
+  → 有测试修改输入值后验证计算结果正确吗？（不只是"有值"，还要"值对"）
+
+联动筛选（tab/filter → 列表数据变化）:
+  → 有测试切换筛选条件后验证列表内容变化吗？
+
+主从联动（list click → detail panel）:
+  → 有测试点击不同行后验证详情面板显示对应行数据吗？
+```
+
+缺少上述测试的联动对 → 标记为 `LINKAGE_GAP`，`test_type` 根据复杂度标注为 `component`（纯前端状态联动）或 `platform_ui`（联动涉及 API 调用）。
+
 若 `experience_priority.mode = consumer | mixed`，UX 维度还必须覆盖：
 
 - 首页主线与主 CTA
