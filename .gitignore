@@ -3,6 +3,6 @@
 __pycache__/
 node_modules/
 .playwright-mcp/
-gemini-*.md
-2026-*.md
+/gemini-*.md
+/2026-*.md
 product-design-skill/
