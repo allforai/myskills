@@ -258,7 +258,7 @@ public class OrderAppService {
 
 ---
 
-## 通用规则 (G-01 ~ G-06)
+## 通用规则 (G-01 ~ G-08)
 
 适用于所有架构模式。
 

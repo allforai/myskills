@@ -311,6 +311,98 @@ public class OrderAppService {
 - **严重级别**: warning
 - **检测方法**: 在 Data 层文件中检测 if/else 条件语句。排除以下合法情况：null/empty 防御性编程、数据库异常处理、分页参数处理。剩余的条件分支标记为疑似业务逻辑。
 
+### G-07: 事务边界内禁止外部 IO（Transaction Boundary Audit）
+
+- **规则**: 数据库事务（`@Transactional`、`BEGIN...COMMIT`、`transaction do`）内部不得包含外部网络 IO（HTTP 调用、RPC、消息队列发送、邮件发送）或长耗时操作（文件上传、大文件处理）。事务内的外部 IO 一旦超时，会长时间持有数据库连接 → 连接池耗尽 → 全系统不可用。
+- **严重级别**: critical
+- **检测方法**:
+
+```
+1. 定位所有事务边界：
+   Java/Kotlin: @Transactional 注解的方法
+   Go: 调用 tx.Begin() 到 tx.Commit()/tx.Rollback() 之间的代码
+   Python: with transaction.atomic(): 块内
+   Node.js: prisma.$transaction() / sequelize.transaction() / knex.transaction() 回调内
+   Ruby: ActiveRecord::Base.transaction do ... end
+
+2. 在事务边界内扫描以下外部 IO 调用：
+   HTTP 请求: fetch, axios, http.get, requests.post, HttpClient, RestTemplate
+   RPC 调用: grpc 客户端调用, Dubbo 调用
+   消息队列: kafka.send, rabbitmq.publish, redis.publish, SQS.sendMessage
+   邮件发送: sendMail, smtp.send, ses.sendEmail
+   文件 IO: fs.writeFile (大文件), uploadToS3, multipart upload
+   外部 SDK: 第三方支付 SDK 调用, SMS 发送
+
+3. 检测间接调用：事务方法调用了 serviceB.method()，serviceB.method() 内部有 HTTP 调用
+   → 需要追踪 1 层调用链（LLM 读被调方法的实现）
+
+4. 合法例外（不报错）：
+   - 事务提交后的异步通知（@TransactionalEventListener / after_commit 回调）
+   - 读取缓存（Redis GET）— 只读且快速
+   - 日志写入（同步日志到本地文件）
+```
+
+- **违规示例 (Java)**:
+```java
+@Transactional
+public void createOrder(OrderDTO dto) {
+    Order order = orderRepo.save(dto.toEntity());
+    // G-07 violation: 事务内调用外部支付 API
+    paymentClient.charge(order.getAmount()); // HTTP 调用，若超时 → DB 连接被占 30s
+    inventoryService.deduct(order.getItems()); // 可能内部也有 HTTP 调用
+    emailService.sendConfirmation(order); // SMTP 发送，若邮件服务器慢 → 连接池灾难
+}
+```
+
+- **修复建议**: 将外部 IO 提取到事务之外，使用事件驱动或补偿事务：
+```java
+@Transactional
+public Order createOrder(OrderDTO dto) {
+    Order order = orderRepo.save(dto.toEntity());
+    inventoryRepo.deduct(order.getItems()); // 数据库操作，OK
+    return order; // 事务结束
+}
+
+@TransactionalEventListener(phase = AFTER_COMMIT)
+public void onOrderCreated(OrderCreatedEvent event) {
+    paymentClient.charge(event.getAmount()); // 事务外，不占 DB 连接
+    emailService.sendConfirmation(event);
+}
+```
+
+### G-08: 事务内并发操作需有锁保护
+
+- **规则**: 事务内的"先查后写"模式（如查库存 → 扣库存）必须有并发保护（悲观锁 `SELECT FOR UPDATE`、乐观锁 `version` 字段、或数据库唯一约束）。无保护的先查后写在并发下会导致超卖/超扣/重复创建。
+- **严重级别**: warning
+- **检测方法**:
+
+```
+1. 在事务边界内找到"先查后写"模式：
+   - findById() 后跟 save()/update()
+   - SELECT 后跟 UPDATE（同一表，同一条件）
+   - get() 后跟 set() + save()
+
+2. 检查是否有并发保护：
+   悲观锁: SELECT ... FOR UPDATE / @Lock(PESSIMISTIC_WRITE) / .with_for_update()
+   乐观锁: @Version 字段 / WHERE version = ? / optimistic_lock_version
+   唯一约束: UNIQUE INDEX 覆盖业务唯一键
+   原子操作: UPDATE SET count = count - 1 WHERE count > 0（直接在 SQL 中保证）
+
+3. 无上述任何保护 → 标记违规
+```
+
+- **违规示例**:
+```java
+@Transactional
+public void purchaseItem(Long itemId, int quantity) {
+    Item item = itemRepo.findById(itemId); // 查
+    if (item.getStock() >= quantity) {
+        item.setStock(item.getStock() - quantity); // 写 — G-08: 无锁保护，并发下超卖
+        itemRepo.save(item);
+    }
+}
+```
+
 ---
 
 ## 分层验证原则（宽进严出）

@@ -10,7 +10,7 @@ description: >
   testforge (test-driven quality forging: full test pyramid — unit/component/integration/e2e-chain/mobile — audit + generate + fix → converge).
   Full pipeline: /project-forge. LLM-driven Forge-Verify-Loop (4D/6V/XV).
   开发锻造套件：项目引导、设计转规格、任务执行、产品验收、死链猎杀、字段一致性、测试锻造。
-version: "6.3.0"
+version: "6.4.0"
 ---
 
 # Dev Forge — 开发锻造套件

@@ -11,7 +11,7 @@ description: >
   architectural violations, layered architecture review, or technical debt assessment.
   Supports three-tier, two-tier, and DDD architectures across any language.
   服务端代码调优，架构合规检查，重复代码检测，抽象机会分析，验证逻辑规范，技术债评估。
-version: "2.0.0"
+version: "2.1.0"
 ---
 
 # Code-Tuner — 服务端代码调优

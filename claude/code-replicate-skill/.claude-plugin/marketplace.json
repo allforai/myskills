@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "code-replicate",
-      "version": "5.3.0",
+      "version": "5.4.0",
       "source": "./",
       "description": "Code Replication Bridge: reverse-engineer existing codebases into .allforai/ artifacts, then hand off to dev-forge (/design-to-spec → /task-execute) to generate target-stack code. 4 fidelity levels: interface / functional / architecture / exact. 代码复刻桥接插件。"
     }
