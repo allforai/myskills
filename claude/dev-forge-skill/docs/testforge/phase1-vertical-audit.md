@@ -169,11 +169,42 @@ LLM 扫描前端源代码中的控件联动关系（onChange/onSelect → setSta
       "Logic": { "covered": 30, "gaps": 18, "rate": "62.5%" },
       "UX": { "covered": 25, "gaps": 15, "rate": "62.5%" },
       "DataBinding": { "covered": 18, "gaps": 9, "rate": "66.7%" }
-    }
+    },
+    "control_inventory": [
+      {
+        "source_file": "src/pages/OrderList.vue",
+        "screen": "订单管理",
+        "controls": [
+          {"control_type": "DataGrid", "control_id": "订单列表", "data_source": "GET /api/orders", "has_test": false},
+          {"control_type": "ComboBox", "control_id": "状态筛选", "data_source": "GET /api/order-statuses", "has_test": false}
+        ],
+        "linkages": [
+          {"trigger": "状态筛选.onChange", "target": "订单列表", "effect_type": "data_filter", "has_test": false}
+        ]
+      }
+    ]
   }]
 }
 ```
 
-→ 输出进度：「Phase 1 纵向审计 ✓ L0:{a} L1:{b} L2:{c} L3:{d} 缺口（unit:{u} component:{c} integration:{i} platform_ui:{p} e2e:{e}）」
+**`control_inventory` 字段**（DataBinding + Linkage 维度的细粒度任务清单）：
+
+Phase 1 审计时，LLM 不只标记"这个文件有 DATABINDING_GAP"，还要**逐控件枚举**：
+
+```
+对每个前端页面/组件源文件：
+1. 扫描所有数据绑定控件 → 记录 control_type + control_id + data_source + has_test
+2. 扫描所有联动关系 → 记录 trigger + target + effect_type + has_test
+3. 写入 control_inventory（与 gaps 平行的字段）
+```
+
+Phase 4 的 Path C agent 读 `control_inventory` 作为任务清单：
+- 逐 control 生成测试（不靠 agent 自己判断"该检查哪些控件"）
+- 逐 linkage 生成测试（不靠 agent 自己发现联动关系）
+- 每完成一个 control/linkage 的测试 → 更新 has_test → true
+
+**验收**：Phase 4 结束后检查 control_inventory — has_test = false 的项 = 遗漏 → 补执行。
+
+→ 输出进度：「Phase 1 纵向审计 ✓ L0:{a} L1:{b} L2:{c} L3:{d} 缺口（unit:{u} component:{c} integration:{i} platform_ui:{p} e2e:{e}）控件清单：{N} controls + {M} linkages」
 
 ---

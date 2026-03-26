@@ -1,5 +1,14 @@
 ## 铁律
 
+> **注意力管理**：本文件是完整参考。实际执行时，每条路径的 Agent 只加载对应的规则组文件（`rules/*.md`），不加载本文件。
+>
+> | 规则组文件 | 包含规则 | 适用 Agent |
+> |-----------|---------|-----------|
+> | `rules/base.md` | 1-4, 10, 12, 24 | 所有 |
+> | `rules/convergence.md` | 5-9, 11, 13 | Forge agents |
+> | `rules/e2e.md` | 14-23 | Path B/C |
+> | `rules/data-linkage.md` | 25-26 | Path C + cr-visual |
+
 ### 1. 测试质量优于数量
 不生成 snapshot-only / `expect(true).toBe(true)` 占位测试。每个测试验证一个有意义的行为。
 

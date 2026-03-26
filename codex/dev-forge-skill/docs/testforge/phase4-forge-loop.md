@@ -105,6 +105,17 @@ dimension Logic > Interface > Data > UX（业务规则最先）
 负空间 [DERIVED] 排在同 severity 的文档缺口之后
 ```
 
+**铁律按需加载**（每条路径只加载它需要的规则组，降低注意力负荷）：
+
+| 路径 | 加载的规则文件 |
+|------|--------------|
+| Path A | `rules/base.md` + `rules/convergence.md` |
+| Path D | `rules/base.md` + `rules/convergence.md` |
+| Path C | `rules/base.md` + `rules/convergence.md` + `rules/e2e.md` + `rules/data-linkage.md` |
+| Path B | `rules/base.md` + `rules/convergence.md` + `rules/e2e.md` |
+
+> 路径文件位于 `./docs/testforge/rules/`。每个路径 Agent 启动时只 Read 自己需要的规则文件，不加载全量 iron-rules.md。
+
 ```
 路径 A: Unit + Component（单元/组件测试）
   **仅对有业务逻辑的代码生成单元测试**（Understand-then-Scan：LLM 读源文件判断是否有逻辑）：
@@ -374,3 +385,20 @@ Step 3: 验证断言不是同义反复
 - npm run build / go build / flutter build 等
 - 构建失败 → 分析原因，修复后重试
 - 确保测试代码不引入编译错误
+
+## Step 4.5: 任务清单验收（防遗漏）
+
+> 所有路径完成后，回头检查 Phase 1 的 control_inventory — 有没有遗漏。
+
+```
+1. 读 testforge-analysis.json → control_inventory
+2. 统计 has_test 状态：
+   - has_test = true → 已覆盖
+   - has_test = false → 遗漏（Path C agent 没处理到）
+3. 遗漏项 > 0 → 为每个遗漏项补生成测试（不消耗 CG-1 轮次）
+4. 补生成后重跑测试 → 更新 has_test
+5. 输出进度：「Step 4.5 验收 ✓ 控件覆盖 {covered}/{total}，联动覆盖 {covered}/{total}，补测试 {N} 个」
+```
+
+**为什么需要这一步**：Path C agent 可能因为注意力不足跳过了某些控件。
+任务清单验收是最后的安全网 — 确保 Phase 1 枚举的每个控件和联动都有测试守护。
