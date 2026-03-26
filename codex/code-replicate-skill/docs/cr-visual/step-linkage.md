@@ -14,8 +14,20 @@ Step 4/4.5 检查的是静态状态（截图里看到什么），本步骤检查
 
 ```
 1. 在目标 App 上执行 trigger_action（如 select "广东省"）
-2. 等待联动响应（短暂 wait，通常 500ms-2s）
-3. 逐个验证 expected_effects：
+
+2. 联动过程审计（trigger 后立即检查，在最终结果出来之前）：
+   a. 下游控件是否进入了 loading/disabled 状态？
+      → 是 = 正确（防止用户在加载中误操作）→ 标记 loading_lock: true
+      → 否且联动涉及 API 调用 = 缺失加载态锁定 → 标记 loading_lock_missing
+   b. 如果下游控件在加载中仍然可点击/可选择 → 标记 INTERACTIVE_DURING_LOAD（用户可能选到旧数据）
+
+3. 等待联动响应：
+   → 首选：等待 network idle（捕获联动 API 完成）
+   → 降级：等待目标控件内容变化（DOM mutation）
+   → 兜底：最长等待 5s
+   → 超时仍无变化 → retry 1 次（再等 5s）→ 仍无变化才判定 fail
+
+4. 逐个验证 expected_effects：
 
    options_update（级联选择）：
      → 展开下游选择器 → 截图 → 选项列表非空且内容与触发值关联
@@ -45,7 +57,7 @@ Step 4/4.5 检查的是静态状态（截图里看到什么），本步骤检查
    reset（联动重置）：
      → 上级变化后 → 下级是否正确清空/恢复默认
 
-4. 每个联动检查点输出：
+5. 每个联动检查点输出：
    - linkage_result: pass / fail / partial
    - 失败时记录：trigger_control、target_control、effect_type、expected、actual
 ```
@@ -57,6 +69,10 @@ Step 4/4.5 检查的是静态状态（截图里看到什么），本步骤检查
   pass    → 不扣分
   partial → -5 分（联动触发了但结果不完全正确，如选项有但内容不对）
   fail    → -10 分（联动完全无效，下游控件无响应）
+
+联动过程问题的额外扣分：
+  loading_lock_missing   → -3 分（联动涉及 API 但下游控件未禁用/未显示 loading）
+  INTERACTIVE_DURING_LOAD → -5 分（用户可在加载中操作旧数据 — UX 风险）
 ```
 
 ## 输出

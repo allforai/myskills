@@ -64,6 +64,39 @@ LLM 读目标项目的技术栈 → 自行搜索并选择适合该技术栈的 U
 
 **如果 LLM 找不到可用的自动化工具** → 提示用户手动截图到 `visual/target/`。
 
+### 截图稳定性协议（所有截图必须遵守）
+
+```
+每次截图前：
+1. 等待 network idle（无 pending 请求 ≥ 500ms）
+2. 等待 DOM stable（无 DOM mutation ≥ 300ms）
+3. 如果页面有 skeleton/spinner → 额外等待直到消失
+4. 截图后检查：页面是否包含 "Loading..."/"加载中" 文字 → 是则重试
+
+目的：防止异步加载未完成时截图 → 空数据误判
+```
+
+### 过渡态采集（关键页面）
+
+对以下页面，除最终截图外，额外采集**过渡帧**（导航后 0.5s 和 1s 各截一帧）：
+
+```
+关键页面判定：
+- 登录后首次跳转的页面（仪表盘/首页）
+- 需要认证才能访问的数据页面（列表页、详情页）
+- business-flows 中的第一个 screen
+
+过渡帧用途：
+- 检查是否有错误内容闪现（如 "Unauthorized"、"403"、空白页 flash）
+- 检查布局抖动（content layout shift）
+- 过渡帧保存到 visual/target/{screen}_transition_{0.5s|1s}.png
+
+过渡帧中出现以下内容 = transition_issue：
+- "Unauthorized"、"403"、"401"、"Not Found"
+- 完全白屏（非 loading skeleton）
+- 与最终截图布局结构完全不同（layout shift > 30%）
+```
+
 ## 输出
 
 返回给 orchestrator 的 JSON：
@@ -73,7 +106,9 @@ LLM 读目标项目的技术栈 → 自行搜索并选择适合该技术栈的 U
     {
       "name": "screen name",
       "source_screenshot": "visual/source/xxx.png",
-      "target_screenshot": "visual/target/xxx.png"
+      "target_screenshot": "visual/target/xxx.png",
+      "transition_frames": ["visual/target/xxx_transition_0.5s.png", "visual/target/xxx_transition_1s.png"],
+      "transition_issues": []
     }
   ],
   "skipped": ["screen_name_1"],
