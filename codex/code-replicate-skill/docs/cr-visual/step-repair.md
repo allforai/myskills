@@ -4,6 +4,15 @@
 > 职责：逐 screen 修复差异，重新截图验证，循环至全部 high。
 > **本 agent 专注修复**，每轮只修 1 个 screen。
 
+## 输入
+
+- `visual-report.json` — 对比结果（score、gaps、linkage_results）
+- `visual-task-plan.json` — 任务清单（subtask id + status）
+
+**双文件协同**：从 report 找"什么分低"，从 task-plan 找"哪些 subtask failed"，修完后更新两个文件：
+- visual-report.json → 更新 score/match_level
+- visual-task-plan.json → 更新 subtask status → completed
+
 ## 核心要求
 
 视觉还原追求 **100% 一致**，不是"差不多就行"。

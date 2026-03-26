@@ -179,7 +179,7 @@ LLM 扫描前端源代码中的控件联动关系（onChange/onSelect → setSta
           {"control_type": "ComboBox", "control_id": "状态筛选", "data_source": "GET /api/order-statuses", "has_test": false}
         ],
         "linkages": [
-          {"trigger": "状态筛选.onChange", "target": "订单列表", "effect_type": "data_filter", "has_test": false}
+          {"trigger": "状态筛选.onChange", "target": "订单列表", "effect_type": "data_filter", "data_source": "local_filter | GET /api/orders?status=", "has_test": false}
         ]
       }
     ]

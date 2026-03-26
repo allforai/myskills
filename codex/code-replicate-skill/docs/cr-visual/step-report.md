@@ -3,6 +3,13 @@
 > 本文档由 cr-visual orchestrator 派遣的 **report agent** 加载。
 > 职责：合并 structural / data-integrity / linkage 三个 agent 的结果，计算最终评分，生成报告。
 
+## 输入
+
+- **structural agent 输出**：每个 screen 的 structural_score + differences
+- **data-integrity agent 输出**：每个 screen 的 data_integrity_score + data_integrity_gaps[]
+- **linkage agent 输出**：每个 screen 的 linkage_score + linkage_results[]
+- **visual-task-plan.json**：任务清单，用于统计完成率
+
 ## 评分合并公式
 
 ```
