@@ -133,9 +133,72 @@
 
 (仍失败的测试，附原因和建议)
 
-### ⚠️ 人工测试清单（HUMAN_REQUIRED）— 自动化无法覆盖的验证点
+### ⚠️ 上游产物覆盖矩阵（UPSTREAM_COVERAGE）— 哪些业务要求被验证了，哪些没有
 
-> **这是报告中最重要的部分之一。** 自动化测试全绿不等于产品没问题。以下是 LLM/自动化工具**无法可靠验证**的维度，必须由人类手动测试。每个项目的清单内容不同 — LLM 根据项目特征动态生成。
+> **这是报告中最重要的部分。** 自动化测试全绿 ≠ 产品没问题。如果 business-flows 里有 10 条流程但只有 6 条被 E2E 覆盖，那 4 条未覆盖的就是产品的验收盲区。
+
+**生成规则**：逐个读取 `.allforai/` 中的上游产物，对每个条目检查"有没有自动化测试覆盖它"。未覆盖的条目 = 人工必验项。
+
+```
+## Business Flows 覆盖（读 business-flows.json）
+
+对每条 business-flow：
+  - 有 E2E chain 测试覆盖 → ✅ 自动化已验证
+  - 仅有 unit/integration 测试覆盖 → ⚠️ 部分覆盖（自动化验了逻辑，人工需走通端到端）
+  - 无任何测试覆盖 → ❌ HUMAN_REQUIRED — 附具体步骤：「以角色 X 登录 → 执行步骤 1/2/3 → 验证结果」
+
+| Flow | 描述 | 自动化覆盖 | 人工验证 |
+|------|------|-----------|---------|
+| F001 | {flow_name} | ✅ E2E Chain 1 | — |
+| F002 | {flow_name} | ⚠️ unit only | □ 以 {role} 身份端到端走通 |
+| F003 | {flow_name} | ❌ 无 | □ 完整执行：{step1} → {step2} → {step3} → 验证 {expected_result} |
+
+## Constraints 覆盖（读 constraints.json）
+
+对每条 enforcement: "hard" 的约束：
+  - 有穿透测试（unit/integration 直接验证约束条件）→ ✅
+  - 无测试 → ❌ HUMAN_REQUIRED — 附具体步骤：「尝试违反此约束，验证系统是否拒绝」
+
+| Constraint | 描述 | 自动化覆盖 | 人工验证 |
+|------------|------|-----------|---------|
+| C001 | {constraint_text} | ✅ unit test TG-xxx | — |
+| C003 | {constraint_text} | ❌ 无 | □ 尝试：{violation_action} → 预期：系统拒绝并提示 {error_msg} |
+
+## Use Cases 覆盖（读 use-case-tree.json）
+
+对每个 use-case 的 acceptance_criteria：
+  - 有对应断言 → ✅
+  - 无对应测试 → ❌ HUMAN_REQUIRED — 附验收条件原文
+
+| Use Case | 验收条件 | 自动化覆盖 | 人工验证 |
+|----------|---------|-----------|---------|
+| UC-001 | {acceptance} | ✅ | — |
+| UC-007 | {acceptance} | ❌ | □ 验证：{acceptance_criteria_原文} |
+
+## Role Permissions 覆盖（读 role-profiles.json）
+
+对每个角色的权限边界：
+  - 有正向测试（角色能做该做的事）→ ✅
+  - 有反向测试（角色不能做不该做的事）→ ✅
+  - 缺反向测试 → ❌ HUMAN_REQUIRED — 附越权测试步骤
+
+| 角色 | 权限项 | 正向测试 | 反向测试 | 人工验证 |
+|------|--------|---------|---------|---------|
+| R001 管理员 | 删除用户 | ✅ | ✅ | — |
+| R002 普通用户 | 删除用户 | — | ❌ | □ 用 R002 账号尝试调 DELETE /api/users/{id} → 预期 403 |
+
+## Experience Map Screens 覆盖（读 experience-map.json，cr-visual 未执行时）
+
+对每个 screen：
+  - 有 platform_ui 或 E2E 测试覆盖 → ✅
+  - 无测试 → ❌ HUMAN_REQUIRED — 附访问路径
+
+> 如果上游产物（business-flows/constraints/use-case-tree/role-profiles）不存在 → 该维度跳过，但在报告中醒目标注：「⚠️ 无 {artifact_name}，无法评估业务覆盖率，建议补充上游产物后重新审计」
+```
+
+### ⚠️ 人工测试清单（HUMAN_REQUIRED）— 自动化无法覆盖的技术验证点
+
+> 除上述业务覆盖盲区外，以下是 LLM/自动化工具在**技术层面**无法可靠验证的维度。LLM 根据项目特征动态生成。
 
 ```
 ## 感知质量（LLM 无法判断"感觉好不好"）

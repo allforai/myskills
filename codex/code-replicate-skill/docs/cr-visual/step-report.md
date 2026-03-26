@@ -61,6 +61,25 @@
 - 整体评分（结构分 + 数据完整性分 + 联动分 = 综合分）
 - 低分 screen 的修复方案（区分结构修复 / 数据链路修复 / 联动修复）
 
+### ⚠️ Experience Map 覆盖矩阵（SCREEN_COVERAGE）
+
+> 逐 screen 对账：experience-map 定义了 N 个 screen，cr-visual 对比了几个？哪些被跳过了？
+
+```
+对 experience-map.json 中每个 screen：
+  - 有源+目标截图且已对比 → ✅ compared（附 score）
+  - 有截图但被跳过（无法配对）→ ⚠️ skipped（附原因）
+  - 无截图（capture agent 未采集到）→ ❌ HUMAN_REQUIRED — 人工打开该 screen 对比
+
+| Screen | Route | 状态 | Score | 人工验证 |
+|--------|-------|------|-------|---------|
+| 订单管理 | /orders | ✅ compared | 92 | — |
+| 用户详情 | /users/:id | ⚠️ skipped | — | □ 手动打开，对比源截图 visual/source/user_detail.png |
+| 系统设置 | /settings | ❌ 未采集 | — | □ 源+目标都手动截图对比 |
+
+同时检查：experience-map 有但 route-map 没有的 screen → 可能是新增页面未被 Phase 2 采集
+```
+
 ### ⚠️ 人工视觉验收清单（HUMAN_VISUAL_REQUIRED）
 
 > 自动化视觉对比有天然盲区。以下维度 LLM 截图对比**无法可靠覆盖**，必须人工打开目标 App 逐项确认。
