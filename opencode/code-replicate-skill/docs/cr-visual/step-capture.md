@@ -64,6 +64,30 @@ LLM 读目标项目的技术栈 → 自行搜索并选择适合该技术栈的 U
 
 **如果 LLM 找不到可用的自动化工具** → 提示用户手动截图到 `visual/target/`。
 
+### 多媒体防欺骗协议（截图前强制执行）
+
+```
+1. 资源加载完整性检查 — 相信网络，不信眼睛
+   截图前注入全局网络监听（Playwright page.on('response')）：
+   - 所有 .png/.jpg/.webp/.svg/.mp4/.webm 请求 → 记录状态码
+   - 任何媒体资源返回 404/403/500 → 标记 BROKEN_MEDIA
+   - BROKEN_MEDIA 的 screen → 不截图，直接判定 mismatch（占位图/破图不是"视觉差异"，是资源缺失）
+
+2. 流媒体状态机验证
+   截图前对所有 <video> 和 <audio> 标签执行 page.evaluate()：
+   - readyState >= 3（HAVE_FUTURE_DATA）→ 资源已加载
+   - !paused 且 currentTime > 0 → 真在播放（非卡在第一帧）
+   - networkState !== 3 → 无解码错误
+   任一条件不满足 → 标记 DEAD_MEDIA（视频/音频名义上存在但实际不工作）
+
+3. 懒加载波浪式触发
+   对长页面（高度 > 2 个视口）：
+   - 截图前执行波浪式滚动：每次滚 500px → 停 500ms → 继续
+   - 目的：触发所有 Intersection Observer 和 loading="lazy" 资源
+   - 滚动完毕 → 回到顶部 → 等 network idle → 再截图
+   - 不执行波浪滚动 = 页面下半部分可能全是占位符/loading 态
+```
+
 ### 截图稳定性协议（所有截图必须遵守）
 
 ```
