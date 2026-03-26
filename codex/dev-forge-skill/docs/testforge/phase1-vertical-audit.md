@@ -122,6 +122,43 @@ LLM 扫描前端源代码中的控件联动关系（onChange/onSelect → setSta
 
 缺少上述测试的联动对 → 标记为 `LINKAGE_GAP`，`test_type` 根据复杂度标注为 `component`（纯前端状态联动）或 `platform_ui`（联动涉及 API 调用）。
 
+**Pagination 子维度**（DataBinding 的延伸：DataBinding 检查"首屏有没有数据"，Pagination 检查"翻页/滚动加载时数据链路是否正确"）：
+
+LLM 扫描前端源代码中的分页/无限滚动控件，对每个分页点审计：
+
+```
+分页控件识别（不限框架，按语义理解）：
+  - 显式分页：Pagination 组件、页码按钮、"上一页/下一页"
+  - 无限滚动：InfiniteScroll、onReachBottom、Intersection Observer、scroll listener + loadMore
+  - 游标分页：cursor-based pagination（hasNextPage + endCursor）
+  - 加载更多按钮："Load More"、"查看更多"
+
+对每个分页控件审计：
+
+1. 翻页数据正确性：
+   → 有测试加载第 2 页后验证数据与第 1 页不重复吗？
+   → 有测试验证第 2 页的数据确实是下一批（非第 1 页的副本）吗？
+
+2. 并发翻页安全：
+   → 有测试快速连续翻页（page=2 和 page=3 几乎同时请求）后数据顺序正确吗？
+   → 有测试翻页中途切换筛选条件 → 分页是否重置为第 1 页吗？
+
+3. 边界状态：
+   → 有测试加载到最后一页后"加载更多"按钮消失或禁用吗？
+   → 有测试空结果页（筛选后 0 条）的 Empty State 吗？
+   → 有测试只有 1 条数据时分页组件是否正确隐藏吗？
+
+4. 翻页 + 排序交互：
+   → 有测试切换排序后分页是否重置吗？
+   → 有测试排序后第 2 页的数据是否按新排序规则排列吗？
+
+5. 翻页加载态：
+   → 有测试翻页时是否显示 loading 指示（skeleton/spinner）吗？
+   → 有测试翻页 loading 中是否禁止重复触发吗？（防抖/节流）
+```
+
+缺少上述测试的分页点 → 标记为 `PAGINATION_GAP`，`test_type` 标注为 `platform_ui`（需要真实 API 和滚动交互）。
+
 若 `experience_priority.mode = consumer | mixed`，UX 维度还必须覆盖：
 
 - 首页主线与主 CTA
@@ -180,6 +217,9 @@ LLM 扫描前端源代码中的控件联动关系（onChange/onSelect → setSta
         ],
         "linkages": [
           {"trigger": "状态筛选.onChange", "target": "订单列表", "effect_type": "data_filter", "data_source": "local_filter | GET /api/orders?status=", "has_test": false}
+        ],
+        "paginations": [
+          {"control_id": "订单列表", "type": "offset", "api": "GET /api/orders?page=&size=", "has_test": false}
         ]
       }
     ]
