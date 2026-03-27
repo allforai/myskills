@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # MySkills global installer for OpenCode
-# Registers the OpenCode native wrappers in ~/.config/opencode/
+# Registers the current OpenCode skills in ~/.config/opencode/
 
 set -e
 
@@ -22,39 +22,39 @@ cat > "$OPENCODE_CONFIG_DIR/skills.json" << EOF
   "skills": [
     {
       "name": "product-design",
-      "path": "$SCRIPT_DIR/opencode-native/product-design-skill/skills",
-      "commands": "$SCRIPT_DIR/opencode-native/product-design-skill/commands",
-      "description": "OpenCode native wrapper: product concept, map, journey, experience, gap, UI, audit"
+      "path": "$SCRIPT_DIR/opencode/product-design-skill/skills",
+      "commands": "$SCRIPT_DIR/opencode/product-design-skill/commands",
+      "description": "Product design suite: concept, map, journey, experience-map, use-case, feature-gap, feature-prune, ui-design, design-audit"
     },
     {
       "name": "dev-forge",
-      "path": "$SCRIPT_DIR/opencode-native/dev-forge-skill/skills",
-      "commands": "$SCRIPT_DIR/opencode-native/dev-forge-skill/commands",
-      "description": "OpenCode native wrapper: project setup, spec, task execution, verification"
+      "path": "$SCRIPT_DIR/opencode/dev-forge-skill/skills",
+      "commands": "$SCRIPT_DIR/opencode/dev-forge-skill/commands",
+      "description": "Development forge: setup, design-to-spec, scaffold, task-execute, testforge, deadhunt, fieldcheck, seed-forge, product-verify"
     },
     {
       "name": "code-tuner",
-      "path": "$SCRIPT_DIR/opencode-native/code-tuner-skill/skills",
-      "commands": "$SCRIPT_DIR/opencode-native/code-tuner-skill/commands",
-      "description": "OpenCode native wrapper: backend architecture analysis and scoring"
+      "path": "$SCRIPT_DIR/opencode/code-tuner-skill/references",
+      "commands": "$SCRIPT_DIR/opencode/code-tuner-skill/commands",
+      "description": "Code architecture tuner: compliance, duplication, abstraction analysis"
     },
     {
       "name": "demo-forge",
-      "path": "$SCRIPT_DIR/opencode-native/demo-forge-skill/skills",
-      "commands": "$SCRIPT_DIR/opencode-native/demo-forge-skill/commands",
-      "description": "OpenCode native wrapper: demo design, media, execute, verify"
+      "path": "$SCRIPT_DIR/opencode/demo-forge-skill/skills",
+      "commands": "$SCRIPT_DIR/opencode/demo-forge-skill/commands",
+      "description": "Demo forge: design, media, execute, verify with multi-round iteration"
     },
     {
       "name": "ui-forge",
-      "path": "$SCRIPT_DIR/opencode-native/ui-forge-skill/skills",
-      "commands": "$SCRIPT_DIR/opencode-native/ui-forge-skill/commands",
-      "description": "OpenCode native wrapper: post-implementation UI restore and polish"
+      "path": "$SCRIPT_DIR/opencode/ui-forge-skill/skills",
+      "commands": "$SCRIPT_DIR/opencode/ui-forge-skill/commands",
+      "description": "UI forge: post-implementation fidelity restore and polish"
     },
     {
       "name": "code-replicate",
-      "path": "$SCRIPT_DIR/opencode-native/code-replicate-skill/skills",
-      "commands": "$SCRIPT_DIR/opencode-native/code-replicate-skill/commands",
-      "description": "OpenCode native wrapper: reverse existing code into .allforai artifacts"
+      "path": "$SCRIPT_DIR/opencode/code-replicate-skill/skills",
+      "commands": "$SCRIPT_DIR/opencode/code-replicate-skill/commands",
+      "description": "Code replication bridge: reverse-engineer codebases into .allforai artifacts"
     }
   ],
   "auto_load": true,

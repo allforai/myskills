@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # MySkills remote installer for OpenCode
-# Clones the repo and registers the OpenCode native wrappers globally
+# Clones the repo and registers the current OpenCode skills globally
 
 set -e
 
@@ -62,74 +62,74 @@ cat > "$SKILLS_CONFIG" << EOF
   "skills": [
     {
       "name": "product-design",
-      "path": "$INSTALL_DIR/opencode-native/product-design-skill/skills",
-      "commands": "$INSTALL_DIR/opencode-native/product-design-skill/commands",
-      "description": "OpenCode native wrapper: product concept, map, journey, experience, gap, UI, audit",
+      "path": "$INSTALL_DIR/opencode/product-design-skill/skills",
+      "commands": "$INSTALL_DIR/opencode/product-design-skill/commands",
+      "description": "Product design suite: concept, map, journey, experience-map, use-case, feature-gap, feature-prune, ui-design, design-audit",
       "source": {
         "type": "git",
         "repo": "$REPO_USE",
         "branch": "main",
-        "subPath": "opencode-native/product-design-skill"
+        "subPath": "opencode/product-design-skill"
       }
     },
     {
       "name": "dev-forge",
-      "path": "$INSTALL_DIR/opencode-native/dev-forge-skill/skills",
-      "commands": "$INSTALL_DIR/opencode-native/dev-forge-skill/commands",
-      "description": "OpenCode native wrapper: project setup, spec, task execution, verification",
+      "path": "$INSTALL_DIR/opencode/dev-forge-skill/skills",
+      "commands": "$INSTALL_DIR/opencode/dev-forge-skill/commands",
+      "description": "Development forge: setup, design-to-spec, scaffold, task-execute, testforge, deadhunt, fieldcheck, seed-forge, product-verify",
       "source": {
         "type": "git",
         "repo": "$REPO_USE",
         "branch": "main",
-        "subPath": "opencode-native/dev-forge-skill"
+        "subPath": "opencode/dev-forge-skill"
       }
     },
     {
       "name": "code-tuner",
-      "path": "$INSTALL_DIR/opencode-native/code-tuner-skill/skills",
-      "commands": "$INSTALL_DIR/opencode-native/code-tuner-skill/commands",
-      "description": "OpenCode native wrapper: backend architecture analysis and scoring",
+      "path": "$INSTALL_DIR/opencode/code-tuner-skill/references",
+      "commands": "$INSTALL_DIR/opencode/code-tuner-skill/commands",
+      "description": "Code architecture tuner: compliance, duplication, abstraction analysis",
       "source": {
         "type": "git",
         "repo": "$REPO_USE",
         "branch": "main",
-        "subPath": "opencode-native/code-tuner-skill"
+        "subPath": "opencode/code-tuner-skill"
       }
     },
     {
       "name": "demo-forge",
-      "path": "$INSTALL_DIR/opencode-native/demo-forge-skill/skills",
-      "commands": "$INSTALL_DIR/opencode-native/demo-forge-skill/commands",
-      "description": "OpenCode native wrapper: demo design, media, execute, verify",
+      "path": "$INSTALL_DIR/opencode/demo-forge-skill/skills",
+      "commands": "$INSTALL_DIR/opencode/demo-forge-skill/commands",
+      "description": "Demo forge: design, media, execute, verify with multi-round iteration",
       "source": {
         "type": "git",
         "repo": "$REPO_USE",
         "branch": "main",
-        "subPath": "opencode-native/demo-forge-skill"
+        "subPath": "opencode/demo-forge-skill"
       }
     },
     {
       "name": "ui-forge",
-      "path": "$INSTALL_DIR/opencode-native/ui-forge-skill/skills",
-      "commands": "$INSTALL_DIR/opencode-native/ui-forge-skill/commands",
-      "description": "OpenCode native wrapper: post-implementation UI restore and polish",
+      "path": "$INSTALL_DIR/opencode/ui-forge-skill/skills",
+      "commands": "$INSTALL_DIR/opencode/ui-forge-skill/commands",
+      "description": "UI forge: post-implementation fidelity restore and polish",
       "source": {
         "type": "git",
         "repo": "$REPO_USE",
         "branch": "main",
-        "subPath": "opencode-native/ui-forge-skill"
+        "subPath": "opencode/ui-forge-skill"
       }
     },
     {
       "name": "code-replicate",
-      "path": "$INSTALL_DIR/opencode-native/code-replicate-skill/skills",
-      "commands": "$INSTALL_DIR/opencode-native/code-replicate-skill/commands",
-      "description": "OpenCode native wrapper: reverse existing code into .allforai artifacts",
+      "path": "$INSTALL_DIR/opencode/code-replicate-skill/skills",
+      "commands": "$INSTALL_DIR/opencode/code-replicate-skill/commands",
+      "description": "Code replication bridge: reverse-engineer codebases into .allforai/ artifacts",
       "source": {
         "type": "git",
         "repo": "$REPO_USE",
         "branch": "main",
-        "subPath": "opencode-native/code-replicate-skill"
+        "subPath": "opencode/code-replicate-skill"
       }
     }
   ],
@@ -149,22 +149,22 @@ echo "Validating config..."
 if [ -f "$SKILLS_CONFIG" ]; then
     echo "skills.json present"
     
-    if [ -d "$INSTALL_DIR/opencode-native/product-design-skill/skills" ]; then
-        echo "product-design wrappers present"
+    if [ -d "$INSTALL_DIR/opencode/product-design-skill/skills" ]; then
+        echo "product-design skill present"
     else
-        echo "warning: product-design wrappers missing"
+        echo "warning: product-design skill missing"
     fi
 
-    if [ -d "$INSTALL_DIR/opencode-native/dev-forge-skill/skills" ]; then
-        echo "dev-forge wrappers present"
+    if [ -d "$INSTALL_DIR/opencode/dev-forge-skill/skills" ]; then
+        echo "dev-forge skill present"
     else
-        echo "warning: dev-forge wrappers missing"
+        echo "warning: dev-forge skill missing"
     fi
 
-    if [ -d "$INSTALL_DIR/opencode-native/ui-forge-skill/skills" ]; then
-        echo "ui-forge wrappers present"
+    if [ -d "$INSTALL_DIR/opencode/ui-forge-skill/skills" ]; then
+        echo "ui-forge skill present"
     else
-        echo "warning: ui-forge wrappers missing"
+        echo "warning: ui-forge skill missing"
     fi
 else
     echo "Failed to create skills.json"
