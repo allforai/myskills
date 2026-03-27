@@ -190,6 +190,11 @@ cat > "$PROJECT_TEMPLATE" << EOF
 EOF
 echo "Project template created: $PROJECT_TEMPLATE"
 
+# 7.5 Make scripts executable
+echo "Making Python scripts executable..."
+find "$INSTALL_DIR" -type d -name "scripts" -exec find {} -name "*.py" -exec chmod +x {} \; \;
+echo "Permissions updated"
+
 # 8. Create update script
 UPDATE_SCRIPT="$INSTALL_DIR/update-skills.sh"
 cat > "$UPDATE_SCRIPT" << 'EOF'
@@ -235,6 +240,11 @@ if [ -f "$SKILLS_CONFIG" ]; then
     fi
     echo "Timestamp updated"
 fi
+
+# 4. Make scripts executable again after update
+echo "Making Python scripts executable..."
+find "$INSTALL_DIR" -type d -name "scripts" -exec find {} -name "*.py" -exec chmod +x {} \; \;
+echo "Permissions updated"
 
 echo "Update complete"
 EOF
