@@ -6,7 +6,7 @@
 > - Path E 在**单个前端子项目**内测试完整 CRUD 操作链路（不跨站）
 > - Path B 测试**跨 ≥2 个子项目**的业务流（需要角色切换）
 > - Path E 排在 Chain 0 之后**立即执行**（最高优先级）
-> - Path B 排在 Path A/D/C 之后执行
+> - Path B 排在 Path D/C 之后执行
 
 ## 为什么需要 Path E
 
@@ -31,7 +31,7 @@ UI 操作（test body）：真实模拟用户操作，测接缝层
 - 后端 API 运行中
 - 前端 dev server 运行中
 
-**不依赖** Path A/D/C 的完成。Path E 和 Path A 可并行执行。
+**不依赖** Path D/C 的完成。Path E 仅依赖 Chain 0 通过。
 
 ## E.2 测试基础设施要求
 
@@ -209,7 +209,7 @@ await expect(toastRegion.getByText(/cannot delete/i)).toBeVisible({ timeout: 500
 Path E（单站操作链）        Path B（跨站业务链）
 ├─ 单个前端子项目内         ├─ 跨 ≥2 个子项目
 ├─ API 种子 + UI 操作       ├─ UI 种子 + UI 操作（或 API 种子在 beforeAll）
-├─ Chain 0 后立即执行       ├─ Path A/D/C 完成后执行
+├─ Chain 0 后立即执行       ├─ Path D/C 完成后执行
 ├─ 测单个 CRUD 操作链路     ├─ 测完整业务流跨端流转
 ├─ 正向+负向配对            ├─ 正向链+负向链
 └─ 发现：接缝 bug、错误处理  └─ 发现：数据穿透、角色越权

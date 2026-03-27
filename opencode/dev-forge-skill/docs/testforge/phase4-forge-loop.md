@@ -32,7 +32,7 @@
 汇总结果：
   severity=critical 的问题 → 直接修复（不消耗 CG-1 轮次）
   severity=warning → 记录到报告，不阻塞
-  修复后 → 运行构建验证（npm run build / go build）确保修复未破坏编译
+  修复后 → 运行项目的构建命令验证，确保修复未破坏编译
 
 ---
 
@@ -70,11 +70,11 @@
 
 **与 Path B Chain 0 的关系**：
 - Step 4.0.5 是 Chain 0 的**前置执行**（在测试生成之前跑，发现致命接缝问题）
-- Path B 是 Chain 0 + 完整业务链（在所有单元/集成测试之后跑）
+- Path B 是 Chain 0 + 完整业务链（在所有集成测试之后跑）
 - Step 4.0.5 通过后，Path B 可以复用 Chain 0 的登录态，不需要重新跑
 
 **为什么不等到 Path B 才跑 Chain 0**：
-- Path B 排在 Path A/D/C 之后，可能要几个小时才执行到
+- Path B 排在 Path D/C 之后，可能要几个小时才执行到
 - 如果接缝断裂（登录不了、首页白屏），这几个小时写的所有测试都基于错误的假设
 - 5 分钟的 Chain 0 冒烟能提前发现 90% 的致命 bug，省下后续几小时的无效工作
 
@@ -97,7 +97,7 @@
 
 ## Step 4.2: 批次规划 + 分路
 
-将 Phase 1-3 的所有缺口按 `test_type` 分为 4 条锻造路径，每条路径内按优先级排序：
+将 Phase 1-3 的所有缺口按 `test_type` 分为 3 条锻造路径，每条路径内按优先级排序：
 
 ```
 severity CRITICAL > HIGH > MEDIUM
@@ -109,7 +109,6 @@ dimension Logic > Interface > Data > UX（业务规则最先）
 
 | 路径 | 加载的规则文件 |
 |------|--------------|
-| Path A | `rules/base.md` + `rules/convergence.md` |
 | Path D | `rules/base.md` + `rules/convergence.md` |
 | Path C | `rules/base.md` + `rules/convergence.md` + `rules/e2e.md` + `rules/data-linkage.md` |
 | Path B | `rules/base.md` + `rules/convergence.md` + `rules/e2e.md` |
@@ -117,36 +116,25 @@ dimension Logic > Interface > Data > UX（业务规则最先）
 > 路径文件位于 `${CLAUDE_PLUGIN_ROOT}/docs/testforge/rules/`。每个路径 Agent 启动时只 Read 自己需要的规则文件，不加载全量 iron-rules.md。
 
 ```
-路径 A: Unit + Component（单元/组件测试）
-  **仅对有业务逻辑的代码生成单元测试**（Understand-then-Scan：LLM 读源文件判断是否有逻辑）：
-  ✓ 补测试：状态机、业务规则、权限判断、金额计算、cron job、验证逻辑、数据转换
-  ✗ 不补测试：纯 CRUD wrapper、API client 透传函数、纯 re-export、常量定义
-  判定方式：LLM 读源代码，理解函数做了什么，判断是否包含分支/计算/状态转换。不靠文件名或目录推断。
-  理由：纯透传代码的 bug 在接缝层（fieldcheck 已检出），单元测试 mock 掉了接缝反而测不出问题
-
-  每批 5-8 个缺口（同模块、同层优先分组）
-  依赖关系：service 层先于 page/component 层
-  --module 过滤：仅保留属于指定模块的缺口
-
 路径 D: Integration（集成测试）
   每批 3-5 个缺口
-  依赖关系：单元测试通过后再做集成
+  --module 过滤：仅保留属于指定模块的缺口
 
 路径 C: Platform UI（跨平台 UI 测试）
   对跨平台框架（Flutter/RN/MAUI 等），按可用平台逐个执行 UI 自动化测试：
   - 每个可用平台独立一批，使用对应工具
   - 同一套业务场景在每个平台各跑一遍
-  依赖关系：unit/component（Path A）+ integration（Path D）先通过，再跑平台 UI
+  依赖关系：integration（Path D）先通过，再跑平台 UI
   非跨平台项目 → 此路径为空，自动跳过
 
 路径 B: E2E Chain（跨站业务链测试）
   每批 1-2 条链（每条链是完整业务流）
-  依赖关系：Path A/D/C 完成后再锻造链
+  依赖关系：Path D/C 完成后再锻造链
 ```
 
-**执行顺序**：Step 4.0(静态接缝预检) → **Step 4.0.5(Chain 0 冒烟 — 跑起来验证)** → Step 4.1(基础设施) → Step 4.2(批次规划) → Step 4.3 路径 A(仅逻辑层) → D → C → B(完整 E2E 链，复用 Chain 0 登录态) → Step 4.4(构建验证)
+**执行顺序**：Step 4.0(静态接缝预检) → **Step 4.0.5(Chain 0 冒烟 — 跑起来验证)** → Step 4.1(基础设施) → Step 4.2(批次规划) → Step 4.3 路径 D → C → B(完整 E2E 链，复用 Chain 0 登录态) → Step 4.4(构建验证)
 
-**跨子项目并行**：同一路径内，不同子项目互相独立，使用 Agent tool 并行执行。例如 Path A 中 website 和 admin 的单元测试可同时锻造。Path B 除外（E2E 链天然跨子项目，按链串行）。
+**跨子项目并行**：同一路径内，不同子项目互相独立，使用 Agent tool 并行执行。例如 Path D 中 website 和 admin 的集成测试可同时锻造。Path B 除外（E2E 链天然跨子项目，按链串行）。
 
 ## Step 4.3: 逐批锻造（内循环）
 
@@ -192,7 +180,7 @@ Step 3: 验证断言不是同义反复
 - Layer 0 缺口（无 design/tasks）→ 允许从代码逻辑推导断言，标注 `_assertion_source: "code"`
 - 报告中统计 `code-derived` vs `upstream-derived` 断言比例 — 比例过高（>80%）→ 建议用户补充上游文档
 
-### 路径 A/D: 单元 / 组件 / 集成测试
+### 路径 D: 集成测试
 
 对每批：
 
@@ -217,11 +205,7 @@ Step 3: 验证断言不是同义反复
      g. 跑单个测试文件验证语法通过
 
 2. 跑全量测试
-   根据子项目类型选择运行命令：
-   - 检测 package.json scripts.test → npm run test
-   - 检测 go.mod → go test ./...
-   - 检测 pubspec.yaml → flutter test（unit + widget，主机运行）
-   - 检测 pytest / setup.py → pytest
+   使用 Phase 0 探测到的测试命令运行（从项目配置中读取，不硬编码具体命令）
 
 3. 分类失败
    TEST_BUG  — 测试写错了（mock 不对、断言错误）→ 修测试
@@ -248,7 +232,7 @@ Step 3: 验证断言不是同义反复
 > 详见 ${CLAUDE_PLUGIN_ROOT}/docs/testforge/path-c-platform-ui.md（如存在）
 > 如不存在，按以下协议执行：
 
-**前置条件**：Path A（unit/component）和 Path D（integration）中该子项目的测试已通过。
+**前置条件**：Path D（integration）中该子项目的测试已通过。
 
 **执行协议**：
 
@@ -257,25 +241,24 @@ Step 3: 验证断言不是同义反复
 
 2. 推导 UI 测试场景
    来源（按优先级）：
-   a. 已有平台测试脚本（Glob integration_test/ / e2e/ / maestro/）
+   a. 已有平台测试脚本（Glob 项目中已有的 E2E/集成测试目录）
    b. business-flows 中属于该子项目的用户操作流
    c. Phase 1 中 test_type=platform_ui 的缺口
    d. 从页面路由表推导关键页面的 UI 测试（导航、表单、列表）
 
 3. 逐平台执行（可用平台并行）
 
-   | 平台 | 工具 | 执行方式 | 场景格式 |
-   |------|------|---------|---------|
-   | Web | Playwright | browser_navigate/click/snapshot 或 `npx playwright test` | .spec.ts |
-   | Android | Maestro | `maestro test` | .yaml |
-   | iOS | Maestro 或 XCUITest | `maestro test` 或 `xcodebuild test` | .yaml / .swift |
-   | macOS | 原生桌面 | `flutter test integration_test/ -d macos` | _test.dart |
-   | Linux | 原生桌面 | `flutter test integration_test/ -d linux` | _test.dart |
-   | Android/iOS 降级 | 桌面原生 + 手机分辨率 | `flutter test integration_test/ -d {当前OS桌面设备}` | _test.dart（标记 DESKTOP_SUBSTITUTE） |
+   **LLM 自行推理**：根据 Phase 0 探测到的 target_platforms[] 和 e2e_tools_available，
+   为每个平台选择最合适的测试工具和执行方式。不硬编码平台→工具映射。
+
+   原则：
+   - 使用 Phase 0 已探测到的可用工具
+   - 桌面平台可用框架内置测试能力（如 `flutter test integration_test/ -d {platform}`）
+   - 移动端模拟器/真机不可用时，降级到桌面原生 + 手机分辨率（标记 DESKTOP_SUBSTITUTE）
 
 3.5 **测试深度要求（Path C 继承 Path B 的原则）**
 
-   > Path C 和 Path B 的区别只是**测试工具不同**（Playwright vs Flutter integration_test vs Maestro），
+   > Path C 和 Path B 的区别只是**测试工具不同**，
    > **测试深度要求相同**。不能因为换了工具就降低标准。
 
    Platform UI 测试必须满足以下深度（与 Path B E2E Chain 一致）：
@@ -427,14 +410,14 @@ Step 3: 验证断言不是同义反复
 6. 收敛（CG-1 同样适用，按平台独立计数）
 ```
 
-### 路径 B: E2E 链锻造
+### 路径 B: E2E 链锻造（操作驱动）
 
-> 详见 testforge.md 中 路径 B 部分（保留在主文件中或独立拆出）
+> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/testforge/path-b-e2e-chain.md
 
 ## Step 4.4: 构建验证
 
 所有路径锻造完成后，运行项目配置的构建命令验证：
-- npm run build / go build / flutter build 等
+- 使用项目配置的构建命令（从 package.json scripts.build / Makefile / 框架 CLI 等读取）
 - 构建失败 → 分析原因，修复后重试
 - 确保测试代码不引入编译错误
 

@@ -8,7 +8,7 @@
 > **违反此步骤 = 后续所有测试结果不可信。**
 >
 > 原因：接缝层问题（API URL 不匹配、字段名不一致、分页参数格式不兼容）是测试"假绿"的头号原因。
-> 单元测试 mock 掉了接缝所以测不出，E2E 测试用弱断言也测不出，
+> E2E 测试用弱断言也测不出，
 > 但 deadhunt/fieldcheck 的纯静态分析能在秒级检出这些问题。
 > 先修接缝再写测试，否则测试建立在错误的连接上，全是假绿。
 >
@@ -70,11 +70,11 @@
 
 **与 Path B Chain 0 的关系**：
 - Step 4.0.5 是 Chain 0 的**前置执行**（在测试生成之前跑，发现致命接缝问题）
-- Path B 是 Chain 0 + 完整业务链（在所有单元/集成测试之后跑）
+- Path B 是 Chain 0 + 完整业务链（在集成测试之后跑）
 - Step 4.0.5 通过后，Path B 可以复用 Chain 0 的登录态，不需要重新跑
 
 **为什么不等到 Path B 才跑 Chain 0**：
-- Path B 排在 Path A/D/C 之后，可能要几个小时才执行到
+- Path B 排在 Path D/C 之后，可能要几个小时才执行到
 - 如果接缝断裂（登录不了、首页白屏），这几个小时写的所有测试都基于错误的假设
 - 5 分钟的 Chain 0 冒烟能提前发现 90% 的致命 bug，省下后续几小时的无效工作
 
@@ -105,7 +105,7 @@
 
 ## Step 4.2: 批次规划 + 分路
 
-将 Phase 1-3 的所有缺口按 `test_type` 分为 4 条锻造路径，每条路径内按优先级排序：
+将 Phase 1-3 的所有缺口按 `test_type` 分为 3 条锻造路径，每条路径内按优先级排序：
 
 ```
 severity CRITICAL > HIGH > MEDIUM
@@ -117,54 +117,43 @@ dimension Logic > Interface > Data > UX（业务规则最先）
 
 | 路径 | 加载的规则文件 |
 |------|--------------|
-| Path A | `rules/base.md` + `rules/convergence.md` |
 | Path D | `rules/base.md` + `rules/convergence.md` |
 | Path C | `rules/base.md` + `rules/convergence.md` + `rules/e2e.md` + `rules/data-linkage.md` |
 | Path B | `rules/base.md` + `rules/convergence.md` + `rules/e2e.md` |
 
 > 路径文件位于 `${CLAUDE_PLUGIN_ROOT}/docs/testforge/rules/`。每个路径 Agent 启动时只 Read 自己需要的规则文件，不加载全量 iron-rules.md。
+>
+> **Path A（单元/组件测试）已移除**：实战数据证明 LLM 生成的代码中 bug 集中在接缝层（前后端字段不一致、CORS、JWT、状态同步），不在单个函数内部。400 个 unit 测试发现 0 个真实 bug，而接缝层 E2E 测试 ROI 远高于 unit 测试。
 
 ```
-路径 A: Unit + Component（单元/组件测试）
-  **仅对有业务逻辑的代码生成单元测试**（Understand-then-Scan：LLM 读源文件判断是否有逻辑）：
-  ✓ 补测试：状态机、业务规则、权限判断、金额计算、cron job、验证逻辑、数据转换
-  ✗ 不补测试：纯 CRUD wrapper、API client 透传函数、纯 re-export、常量定义
-  判定方式：LLM 读源代码，理解函数做了什么，判断是否包含分支/计算/状态转换。不靠文件名或目录推断。
-  理由：纯透传代码的 bug 在接缝层（fieldcheck 已检出），单元测试 mock 掉了接缝反而测不出问题
-
-  每批 5-8 个缺口（同模块、同层优先分组）
-  依赖关系：service 层先于 page/component 层
-  --module 过滤：仅保留属于指定模块的缺口
-
 路径 D: Integration（集成测试）
   每批 3-5 个缺口
-  依赖关系：单元测试通过后再做集成
+  多模块协作测试，验证模块间的真实交互
 
 路径 C: Platform UI（跨平台 UI 测试）
   对跨平台框架（Flutter/RN/MAUI 等），按可用平台逐个执行 UI 自动化测试：
   - 每个可用平台独立一批，使用对应工具
   - 同一套业务场景在每个平台各跑一遍
-  依赖关系：unit/component（Path A）+ integration（Path D）先通过，再跑平台 UI
+  依赖关系：integration（Path D）先通过，再跑平台 UI
   非跨平台项目 → 此路径为空，自动跳过
 
 路径 B: E2E Chain（跨站业务链测试）
   每批 1-2 条链（每条链是完整业务流）
-  依赖关系：Path A/D/C 完成后再锻造链
+  依赖关系：Path D/C 完成后再锻造链
 
-路径 E: E2E 操作链（单站操作驱动测试）— 新路径，最高优先级
+路径 E: E2E 操作链（单站操作驱动测试）— 最高优先级
   对每个前端子项目，基于 business-flows 生成操作驱动的 E2E 链
   数据通过 API 种子（beforeAll），操作通过 UI 执行，结果跨页面验证
   每个 CRUD 操作必须测正向+负向
   依赖关系：仅依赖 Chain 0 通过，不依赖任何其他路径
 ```
 
-**执行顺序**：Step 4.0(静态接缝预检) → **Step 4.0.5(Chain 0 冒烟)** → **Step 4.2.5 路径 E(E2E 操作链 — 紧跟 Chain 0)** → Step 4.1(基础设施) → Step 4.2(批次规划) → Step 4.3 路径 A → D → C → B → Step 4.4(构建验证)
+**执行顺序**：Step 4.0(静态接缝预检) → **Step 4.0.5(Chain 0 冒烟)** → **Step 4.2.5 路径 E(E2E 操作链 — 紧跟 Chain 0)** → Step 4.1(基础设施) → Step 4.2(批次规划) → Step 4.3 路径 D → C → B → Step 4.4(构建验证)
 
-> **为什么 E2E 操作链排在 unit 测试之前**（铁律 #30）：
-> E2E 操作链发现的 bug（接缝层、UI 交互、错误处理）和 unit 测试发现的 bug 完全不重叠。
+> **为什么不生成单元测试**（铁律 #30）：
 > 实战数据：400 个 unit 测试全绿，但"删除有关联数据的实体"这种真实用户操作的前端报错 — unit 测试不覆盖此层。
+> LLM 生成的代码中，bug 集中在接缝层，不在单个函数内部。单元测试 mock 掉了接缝，恰恰测不到真正有 bug 的地方。
 > 一条 E2E 操作链 5 分钟能发现接缝层 bug，50 个 unit 测试发现 0 个。
-> Chain 0 通过后立即锻造 E2E 操作链，不等 unit 测试完成。Path E 和 Path A 可并行。
 
 **跨子项目并行**：同一路径内，不同子项目互相独立，使用 Agent tool 并行执行。Path E 按前端子项目并行。Path B 除外（E2E 链天然跨子项目，按链串行）。
 
@@ -212,7 +201,7 @@ Step 3: 验证断言不是同义反复
 - Layer 0 缺口（无 design/tasks）→ 允许从代码逻辑推导断言，标注 `_assertion_source: "code"`
 - 报告中统计 `code-derived` vs `upstream-derived` 断言比例 — 比例过高（>80%）→ 建议用户补充上游文档
 
-### 路径 A/D: 单元 / 组件 / 集成测试
+### 路径 D: 集成测试
 
 对每批：
 
@@ -220,7 +209,7 @@ Step 3: 验证断言不是同义反复
 1. 生成测试代码
    对每个缺口：
      a. 断言先行：读 upstream_ref → 提取业务期望 → 写断言伪代码
-     b. Read 源代码 → 理解函数签名和依赖
+     b. Read 源代码 → 理解模块交互和依赖
      c. Read 已有测试（避免重复）
      d. Read 已有 helpers/factories（复用）
      e. 合成完整测试代码（断言来自 Step a，调用方式来自 Step b-d）
@@ -231,7 +220,7 @@ Step 3: 验证断言不是同义反复
           Level 2: 结构性（toHaveProperty, toContainKey）
           Level 3: 值正确性（toBe(具体值), toEqual(预期对象)，期望值来自 upstream_ref）
         检查：
-          - unit/integration 测试 → Level 3 占比 ≥ 60%，否则重写低级断言
+          - integration 测试 → Level 3 占比 ≥ 60%，否则重写低级断言
           - 全 Level 0/1 → 直接拒绝，从 upstream_ref 重新推导 Level 3 断言
           - 关键路径（CRUD 核心、支付、审批）→ 必须有 Level 3，无例外
      g. 跑单个测试文件验证语法通过
@@ -240,7 +229,7 @@ Step 3: 验证断言不是同义反复
    使用 Phase 0 探测到的测试命令运行（从项目配置中读取，不硬编码具体命令）
 
 3. 分类失败
-   TEST_BUG  — 测试写错了（mock 不对、断言错误）→ 修测试
+   TEST_BUG  — 测试写错了（断言错误）→ 修测试
    BIZ_BUG   — 业务代码有 bug → 修业务代码
    ENV_ISSUE — 环境问题（DB/Redis 不可用等）→ 记录跳过
 
@@ -264,7 +253,7 @@ Step 3: 验证断言不是同义反复
 > 详见 ${CLAUDE_PLUGIN_ROOT}/docs/testforge/path-c-platform-ui.md（如存在）
 > 如不存在，按以下协议执行：
 
-**前置条件**：Path A（unit/component）和 Path D（integration）中该子项目的测试已通过。
+**前置条件**：Path D（integration）中该子项目的测试已通过。
 
 **执行协议**：
 

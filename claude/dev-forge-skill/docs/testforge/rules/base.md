@@ -16,7 +16,7 @@
 新测试不得导致已有测试失败。每批完成后全量运行验证。
 
 ### 12. 金字塔分层
-缺口放到正确的测试层级：纯逻辑用 unit，UI 交互用 component，跨子项目用 e2e_chain。不在 unit 层写 E2E 逻辑，不在 E2E 层测纯函数。
+缺口放到正确的测试层级：多模块协作用 integration，UI 交互用 platform_ui，单站操作用 e2e_operation（Path E），跨子项目用 e2e_chain。不生成 unit/component 测试（Path A 已移除 — LLM 代码的 bug 在接缝层不在函数内部）。
 
 ### 29. 禁止 Mock — 真实依赖或不测（No Mock, Real Dependencies or No Test）
 
@@ -96,9 +96,8 @@ Level 3 — 值正确性（目标水平）:
 ```
 1. 标注：给每个断言标注 Level 0/1/2/3
 2. 检查：
-   - 业务逻辑测试（unit/integration）：Level 3 断言占比 ≥ 60%，否则重写
+   - 业务逻辑测试（integration）：Level 3 断言占比 ≥ 60%，否则重写
    - E2E/platform_ui 测试：Level 3 断言占比 ≥ 40%，Level 2+ 占比 ≥ 80%
-   - 组件渲染测试（component）：Level 2+ 占比 ≥ 50%
 3. 拒绝：
    - 一个测试全是 Level 0/1 断言 → 直接拒绝，重新生成
    - 关键业务路径（CRUD、支付、审批）的测试没有 Level 3 → 拒绝
@@ -115,8 +114,8 @@ Level 3 — 值正确性（目标水平）:
 | `expect(component).toMatchSnapshot()` | `expect(screen.getByText('John')).toBeVisible()` | 验证"长这样" vs 验证"内容对" |
 | `expect(select.options.length).toBe(3)` | `expect(select.options).toContain('广东省')` | 验证"有3个" vs 验证"包含对的" |
 
-### 30. E2E 操作链优先于 Unit 测试（Operation-First）
+### 30. E2E 操作链最高优先级（Operation-First, No Unit Tests）
 
-E2E 操作链（Path E）排在 Chain 0 之后**立即执行**，不等 unit 测试完成。Path E 和 Path A 可并行。
+E2E 操作链（Path E）排在 Chain 0 之后**立即执行**。不生成单元/组件测试（Path A 已移除）。
 
-原因：E2E 操作链发现的 bug（接缝层、错误处理链路）和 unit 测试发现的 bug 完全不重叠。先发现接缝 bug 再补 unit = 高效。
+原因：实战数据证明 400 个 unit 测试发现 0 个真实 bug，而 1 条 E2E 操作链 5 分钟发现接缝层 bug。LLM 代码的 bug 集中在接缝层，不在单个函数内部。
