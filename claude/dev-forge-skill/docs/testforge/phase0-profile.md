@@ -10,46 +10,42 @@
 
 | 维度 | 探测方式 | 产出 |
 |------|---------|------|
-| 单元测试框架 | Glob `**/vitest.config.*` `**/jest.config.*` + `go.mod` + `pubspec.yaml` | unit_framework |
-| 测试配置 | Read 配置文件 → 提取 environment, setupFiles, include patterns | config_summary |
+| 单元测试框架 | 扫描项目配置文件和依赖声明，推理出使用的单元测试框架 | unit_framework |
+| 测试配置 | Read 测试框架配置文件 → 提取 environment, setupFiles, include patterns | config_summary |
 | Setup 文件 | Read setupFiles 路径 → 提取 mock 列表和 plugin 注册 | setup_summary |
-| Test Helpers | Glob `**/__tests__/{render,helpers,utils,factories}.*` `**/test/helpers/**` | helpers_list |
-| Factories | Glob `**/__tests__/factories/**` `**/test/factories/**` | factory_list |
-| 现有单元测试 | Glob `**/*.test.{ts,tsx}` `**/*_test.go` `**/*_test.dart` | existing_unit_tests[] |
-| 测试脚本 | Read package.json → scripts.test / scripts.test:coverage | test_commands |
-| E2E 框架 | Glob `**/playwright.config.*` `**/cypress.config.*` `**/maestro/**` | e2e_framework |
-| 现有 E2E 测试 | Glob `**/e2e/**/*.spec.{ts,js}` `**/*.e2e.{ts,js}` | existing_e2e_tests[] |
-| 前端路由表 | Glob `**/pages/**/*.{vue,tsx,jsx}` `**/views/**/*.{vue,tsx,jsx}` + 读路由配置文件 | page_routes[] |
-| API 路由表 | Grep 后端路由注册模式（`router.GET/POST/PUT/DELETE` / `app.use` 等） | api_endpoints[] |
+| Test Helpers | Glob 常见测试辅助目录（`**/test/helpers/**` `**/__tests__/{render,helpers,utils,factories}.*` 等） | helpers_list |
+| Factories | Glob 常见 factory 目录 | factory_list |
+| 现有单元测试 | Glob 项目中已有的单元测试文件（按语言和框架惯例匹配） | existing_unit_tests[] |
+| 测试脚本 | Read 项目配置（package.json / Makefile / pubspec.yaml 等）→ 提取测试命令 | test_commands |
+| E2E 框架 | 扫描项目中已有的 E2E 测试配置和目录（LLM 自行推理，不限定具体框架）。**必须同时检查平台/框架内建测试能力**（如 Android Espresso、iOS XCUITest、Flutter integration_test），不能只看第三方依赖 | e2e_framework |
+| 现有 E2E 测试 | Glob 项目中已有的 E2E 测试文件 | existing_e2e_tests[] |
+| 前端路由表 | 根据项目框架扫描路由文件（pages 目录 / 路由配置文件等） | page_routes[] |
+| API 路由表 | Grep 后端路由注册模式（根据项目语言和框架推理） | api_endpoints[] |
 | 子项目端口 | 读 .env / project-manifest / 配置文件中的 port 定义 | ports_map |
-| E2E 工具可用性 | 检测 Playwright MCP 工具 / `which maestro` / `which xcodebuild` | e2e_tools_available |
+| E2E 工具可用性 | **LLM 推理**：根据项目平台和技术栈，检测可用的 E2E 测试工具（平台内建工具 + MCP 工具列表 + `which` CLI 探测 + 项目依赖声明）。探测顺序：① 平台/框架内建 → ② 项目已安装的第三方 → ③ 环境中的 CLI 工具 | e2e_tools_available |
 | 跨平台目标 | 见下方「跨平台探测」 | target_platforms[] |
 | 平台测试环境 | 见下方「跨平台探测」 | available_platforms[] |
 
-**跨平台探测**（Flutter / React Native / .NET MAUI / KMP 等跨平台框架）：
+**跨平台探测**（任何跨平台框架）：
 
 跨平台框架一份代码编译到多个平台。testforge 的原则是**能测几个平台就测几个平台**。
 
 Step 1: 识别目标平台
 
-| 框架 | 探测方式 | 可能的目标平台 |
-|------|---------|--------------|
-| Flutter | `pubspec.yaml` 存在 + Glob `android/` `ios/` `web/` `macos/` `linux/` `windows/` | 存在的目录 = 目标平台 |
-| React Native | `react-native` in package.json + Glob `android/` `ios/` + 检查 `react-native-web` 依赖 | android, ios, web(如有) |
-| .NET MAUI | `*.csproj` 含 `<TargetFrameworks>` | 解析 TargetFrameworks |
-| KMP | `build.gradle.kts` 含 `kotlin("multiplatform")` | 解析 targets |
+**LLM 自行推理**：扫描项目根目录的配置文件、依赖声明和目录结构，推理出：
+- 使用的跨平台框架（Flutter / React Native / .NET MAUI / KMP / Tauri / Electron / 等）
+- 目标平台列表（从目录结构、构建配置、target 声明中推断）
+
+> 不硬编码框架清单。LLM 根据项目实际配置文件推理，新框架出现时自动适配。
 
 Step 2: 检测平台测试环境可用性
 
-| 平台 | 可用条件 | 不可用时降级 |
-|------|---------|------------|
-| **主机**（unit/widget） | 始终可用 | — |
-| **Web** | Playwright 可用（MCP 或 CLI） | 生成脚本 PLAN_ONLY |
-| **Android** | `which adb` + 设备/模拟器在线（`adb devices`） | 降级到桌面原生（见下方） |
-| **iOS** | macOS + `which xcodebuild` + 模拟器可用 | 降级到桌面原生（见下方） |
-| **macOS** | macOS + 项目有 macos/ 目标 | 跳过 macOS 测试 |
-| **Linux** | Linux + 项目有 linux/ 目标 | — （Linux 环境下始终可用） |
-| **Windows** | Windows + 项目有 windows/ 目标 | 跳过 Windows 测试 |
+**LLM 自行推理**：根据识别出的目标平台，逐一检测当前环境是否支持该平台的测试：
+- **主机测试**（unit/widget）：始终可用
+- **Web E2E**：检测可用的浏览器自动化工具（MCP 工具列表 + CLI 探测）
+- **移动端**：检测模拟器/真机可用性（`adb devices` / Simulator 等）
+- **桌面端**：检测当前 OS 是否匹配目标平台
+- **工具不可用时**：记录降级方案（见下方）
 
 **移动端降级到桌面原生**（Flutter / RN 等跨平台框架专用）：
 
@@ -122,10 +118,9 @@ Step 2.5: Web 应用路由模式和渲染模式探测
 
 ```
 逐子项目运行（可并行，各子项目互不影响）：
-  - 前端：npm run test / npx vitest run
-  - 后端：go test ./... / pytest
-  - 跨平台：flutter test
-  - E2E：npx playwright test / maestro test（仅已有脚本，不生成新的）
+  - 从项目配置中读取测试命令（package.json scripts.test / Makefile test target / 框架 CLI 等）
+  - LLM 根据探测到的技术栈推理正确的测试运行命令，不硬编码
+  - E2E：使用项目已有的 E2E 测试命令运行（仅已有脚本，不生成新的）
         ⚠ E2E 基线需要应用运行；先检查端口可达性，不可达则跳过，标记 E2E_BASELINE_SKIPPED
 
 记录：

@@ -130,47 +130,26 @@
    - 仅当项目使用了平台原生特性时生成
    - Auditor 扫描 pubspec.yaml + ios/ + android/ 代码，识别原生集成点
 
-   | 原生特性 | iOS 测试方式 | Android 测试方式 | 测试内容 |
-   |---------|-------------|-----------------|---------|
-   | 推送通知 | XCUITest / Patrol | Maestro / Patrol | 权限弹窗 → 授权 → 收到推送 → 点击跳转 |
-   | IAP 支付 | XCUITest + StoreKit sandbox | Maestro + Google Play test track | 购买流程 → 回调 → 状态更新 |
-   | OAuth 登录 | XCUITest（Safari WebView 交互） | Maestro（Chrome Custom Tab） | 跳转 → 授权 → 回调 → token |
-   | 深链接 | XCUITest（Universal Links） | Maestro（App Links） | 链接打开 → 正确页面 |
-   | 相机/相册 | XCUITest（权限 + 模拟选图） | Maestro | 权限弹窗 → 选图 → 上传 |
-   | 生物识别 | XCUITest（模拟 FaceID/TouchID） | Maestro | 解锁流程 |
-   | 键盘行为 | integration_test -d simulator | integration_test -d emulator | 输入框聚焦 → 键盘弹出 → 页面适配 |
+   **原生特性测试**：LLM 根据项目技术栈和已安装工具，为每个原生特性（推送通知、IAP 支付、OAuth 登录、深链接、相机/相册、生物识别、键盘行为等）选择最合适的测试方式。
 
    ```
    - [ ] B5.PLATFORM.{seq} [mobile-app] {Feature} 平台原生测试
-     - Files: 由 task-execute Agent 根据工具可用性决定:
-       Patrol 可用 → `integration_test/{feature}_platform_test.dart`（一套代码双平台）
-       仅 iOS → `ios/RunnerTests/{feature}_test.swift`（XCUITest）
-       仅 Android → `maestro/{feature}.yaml`（Maestro）
-     - 执行前检测: `which patrol` / `which maestro` / `which xcodebuild`
+     - Files: 由 task-execute Agent 根据工具可用性决定（LLM 推理）
+     - 执行前检测: 平台/框架内建工具 + `which` 探测 + 项目依赖声明，确定可用的测试工具
      - 工具不可用 → 提醒用户安装，不写空壳测试脚本
    ```
 
    **工具选择由 task-execute Agent 在写代码时检测**（不在 spec 阶段硬编码）：
-   - `which patrol` → 优先写 Patrol 测试（跨平台，一套代码）
-   - 无 Patrol → `which xcodebuild` → 写 XCUITest（iOS only）
-   - 无 Patrol → `which maestro` → 写 Maestro YAML（Android only）
+   - LLM 根据项目技术栈和已安装工具自行推理最合适的测试工具
+   - 优先选择跨平台工具（一套代码双平台）
+   - 无跨平台工具 → 按平台分别选择已安装的原生测试工具
    - 什么都没有 → 提醒用户安装测试工具，**不写空壳脚本**
-   - Auditor 检查 `which patrol` / `which maestro` / `which xcodebuild` 决定使用哪个
 
-   **Flutter 测试覆盖目标（更新）**：
-   | 层级 | 覆盖目标 | CI 可跑？ | 工具 |
-   |------|---------|----------|------|
-   | Widget | 所有屏幕 | ✅ | `flutter test` |
-   | Provider | 所有 Provider | ✅ | `flutter test` |
-   | Flutter E2E | 核心业务流 | ⚠️ 需设备 | `integration_test` |
-   | iOS 原生 | 原生集成点 | ⚠️ 需 Simulator | Patrol / XCUITest |
-   | Android 原生 | 原生集成点 | ⚠️ 需 Emulator | Patrol / Maestro |
-
-   **Flutter 测试覆盖目标**：
+   **测试覆盖目标**（按项目技术栈动态调整）：
    | 层级 | 覆盖目标 | CI 可跑？ |
    |------|---------|----------|
-   | Widget | 所有屏幕 | ✅ 是 |
-   | Provider | 所有 Provider | ✅ 是 |
+   | 组件/Widget | 所有屏幕 | ✅ 是 |
+   | 状态管理 | 所有状态逻辑 | ✅ 是 |
    | E2E | 核心业务流 | ⚠️ 需设备 |
 
    **React Native / Expo 子项目（同样 3 层策略）**：
@@ -185,53 +164,43 @@
    - 每个 custom hook / store → 1 个 test 文件
    - 工具: @testing-library/react-hooks 或 renderHook
 
-   **层 3a: B5.E2E — Detox E2E（需设备）**
-   - 核心业务流 → Detox test spec
-   - 工具: Detox（优先）或 Maestro
+   **层 3a: B5.E2E — E2E（需设备）**
+   - 核心业务流 → E2E test spec
+   - 工具: LLM 根据项目技术栈推理（优先使用项目已集成的框架）
    - 无设备 → NOT_TESTED
 
-   **层 3b: B5.PLATFORM — 平台原生（同 Flutter）**
-   - Maestro YAML（Android）/ Detox（iOS）
+   **层 3b: B5.PLATFORM — 平台原生**
+   - LLM 根据平台选择对应的原生测试工具
 
    | 层级 | 覆盖目标 | CI 可跑？ | 工具 |
    |------|---------|----------|------|
-   | Component | 所有屏幕 | ✅ | Jest + RNTL |
-   | Hook/Store | 所有 hooks | ✅ | Jest |
-   | E2E | 核心业务流 | ⚠️ 需设备 | Detox / Maestro |
-   | Platform | 原生集成点 | ⚠️ 需设备 | Maestro |
+   | Component | 所有屏幕 | ✅ | 项目已有的组件测试框架 |
+   | Hook/Store | 所有 hooks | ✅ | 项目已有的单元测试框架 |
+   | E2E | 核心业务流 | ⚠️ 需设备 | LLM 推理选择 |
+   | Platform | 原生集成点 | ⚠️ 需设备 | LLM 推理选择 |
 
-   **纯原生 iOS 子项目（Swift / SwiftUI）**：
+   **纯原生子项目（iOS / Android / 其他）**：
 
-   | 层级 | 工具 | CI 可跑？ | 说明 |
-   |------|------|----------|------|
-   | Unit | XCTest | ✅ | `xcodebuild test` 无需设备 |
-   | UI/Screen | XCUITest | ⚠️ 需 Simulator | 每个屏幕 1 个 UI test |
-   | E2E | XCUITest | ⚠️ 需 Simulator | 业务流端到端 |
-   | Snapshot | swift-snapshot-testing | ✅ | 视觉回归（可选） |
+   LLM 根据项目技术栈推理每个层级的最合适测试工具。通用分层：
 
-   **纯原生 Android 子项目（Kotlin / Java）**：
-
-   | 层级 | 工具 | CI 可跑？ | 说明 |
-   |------|------|----------|------|
-   | Unit | JUnit + Mockito | ✅ | 纯 JVM 测试 |
-   | UI/Screen | Espresso 或 Maestro | ⚠️ 需 Emulator | 每个屏幕 1 个 UI test |
-   | E2E | Maestro | ⚠️ 需 Emulator | YAML 脚本，易写易维护 |
-   | Snapshot | Paparazzi | ✅ | 视觉回归（可选） |
+   | 层级 | 覆盖目标 | CI 可跑？ | 说明 |
+   |------|---------|----------|------|
+   | Unit | 业务逻辑 | ✅ | 平台原生单元测试框架 |
+   | UI/Screen | 每个屏幕 | ⚠️ 需设备/模拟器 | 平台原生 UI 测试框架 |
+   | E2E | 核心业务流 | ⚠️ 需设备/模拟器 | LLM 推理选择最合适的工具 |
+   | Snapshot | 视觉回归 | ✅ | 可选，按平台选择快照工具 |
 
    **桌面端子项目（Windows / macOS / Linux）**：
 
-   | 平台 | 层级 | 工具 | 说明 |
-   |------|------|------|------|
-   | macOS (SwiftUI/AppKit) | Unit | XCTest | `xcodebuild test` |
-   | macOS | UI | XCUITest | 需 macOS 运行环境 |
-   | Windows (WinUI/.NET) | Unit | MSTest / xUnit | `dotnet test` |
-   | Windows | UI | WinAppDriver 或 Playwright | 需 Windows 运行环境 |
-   | Linux (GTK/Qt) | Unit | 语言原生测试框架 | `make test` |
-   | Linux | UI | Playwright（如有 Web 界面）或 dogtail | 需 X11/Wayland |
-   | **Electron / Tauri** | Unit | Jest / Vitest | ✅ CI 可跑 |
-   | **Electron / Tauri** | E2E | **Playwright** | ✅ Playwright 原生支持 Electron |
+   LLM 根据桌面平台和技术栈推理每个层级的最合适测试工具。通用分层：
 
-   > 桌面端测试策略因平台差异大，Auditor 根据 tech_stack 从上表选择对应工具。
+   | 层级 | 覆盖目标 | CI 可跑？ | 说明 |
+   |------|---------|----------|------|
+   | Unit | 业务逻辑 | ✅ | 平台/语言原生单元测试框架 |
+   | UI | 界面交互 | ⚠️ 需对应 OS | LLM 推理选择桌面 UI 测试工具 |
+   | E2E | 核心业务流 | ⚠️ 需对应 OS | LLM 推理选择（Web 壳应用可用浏览器自动化工具） |
+
+   > 桌面端测试策略因平台差异大，Auditor 根据 tech_stack 推理选择工具。
    > 工具不可用 → 提醒用户，标记 NOT_TESTED（和移动端同样原则）。
 
 5. **补充后重检**：
@@ -292,6 +261,28 @@ SUGGEST → 记录建议，不阻塞
 | 异常闭环 | 有 exceptions 的功能是否在 B2 任务的实现要点中提到？ | `TASK_CLOSURE_EXCEPTION` |
 | 生命周期闭环 | 有状态机的实体是否有完整的状态变更端点任务？ | `TASK_CLOSURE_LIFECYCLE` |
 | 映射闭环 | 有关联关系的实体是否有级联操作任务？ | `TASK_CLOSURE_MAPPING` |
+| 导航闭环 | 每个前端页面是否有路由守卫 + 404 + 回退任务？layout 组件（header/footer/sidebar）中的链接目标是否在 pages/ 有对应页面任务？ | `TASK_CLOSURE_NAVIGATION` |
+| 数据溯源闭环 | 返回聚合/统计数据的 GET 端点，其数据源是否有对应的写入端点/任务？（V10 的任务层投影） | `TASK_CLOSURE_PROVENANCE` |
+
+修正 → 回到小循环 C 重检
+
+---
+
+### 退出条件
+
+- V9 Coverage CRITICAL = 0（所有 CORE 产品任务有对应 B2 任务）
+- V10 Provenance CRITICAL = 0（所有聚合数据有可追溯的写入路径）
+- V11 Acceptance MISSING = 0（所有 B2 任务有验收条件）
+- 4D 无 GAP（或已修复）
+- 闭环无 CRITICAL 缺失
+- V12 DIFF CRITICAL = 0（所有 core 级体验差异化契约在前端页面中有对应实现任务）
+- V12 Consumer Maturity CRITICAL = 0（当 experience_priority=consumer/mixed 时，consumer_apps 的 design.md 覆盖状态系统/反馈/引导/持续触发）
+- Auditor 补充完成：HIGH risk 任务的子任务已补充，Acceptance 测试已派生
+
+**大循环 3 轮后仍有问题** → 记录为已知问题到 `pipeline-decisions.json`，输出警告，继续（不停）
+
+→ 输出进度: 「Step 4.3 验证 ✓ V9:{X}% V10:{Y}% V11:{Z}% V12 DNA:{W}% | 补充: HARDEN:{H} DNA:{D} POLISH:{P} 测试:{T} | gaps:{N} fixed | XV:{status}」
+�体是否有级联操作任务？ | `TASK_CLOSURE_MAPPING` |
 | 导航闭环 | 每个前端页面是否有路由守卫 + 404 + 回退任务？layout 组件（header/footer/sidebar）中的链接目标是否在 pages/ 有对应页面任务？ | `TASK_CLOSURE_NAVIGATION` |
 | 数据溯源闭环 | 返回聚合/统计数据的 GET 端点，其数据源是否有对应的写入端点/任务？（V10 的任务层投影） | `TASK_CLOSURE_PROVENANCE` |
 

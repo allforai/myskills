@@ -32,7 +32,7 @@
 汇总结果：
   severity=critical 的问题 → 直接修复（不消耗 CG-1 轮次）
   severity=warning → 记录到报告，不阻塞
-  修复后 → 运行构建验证（npm run build / go build）确保修复未破坏编译
+  修复后 → 运行项目的构建命令验证，确保修复未破坏编译
 
 ---
 
@@ -217,11 +217,7 @@ Step 3: 验证断言不是同义反复
      g. 跑单个测试文件验证语法通过
 
 2. 跑全量测试
-   根据子项目类型选择运行命令：
-   - 检测 package.json scripts.test → npm run test
-   - 检测 go.mod → go test ./...
-   - 检测 pubspec.yaml → flutter test（unit + widget，主机运行）
-   - 检测 pytest / setup.py → pytest
+   使用 Phase 0 探测到的测试命令运行（从项目配置中读取，不硬编码具体命令）
 
 3. 分类失败
    TEST_BUG  — 测试写错了（mock 不对、断言错误）→ 修测试
@@ -257,25 +253,24 @@ Step 3: 验证断言不是同义反复
 
 2. 推导 UI 测试场景
    来源（按优先级）：
-   a. 已有平台测试脚本（Glob integration_test/ / e2e/ / maestro/）
+   a. 已有平台测试脚本（Glob 项目中已有的 E2E/集成测试目录）
    b. business-flows 中属于该子项目的用户操作流
    c. Phase 1 中 test_type=platform_ui 的缺口
    d. 从页面路由表推导关键页面的 UI 测试（导航、表单、列表）
 
 3. 逐平台执行（可用平台并行）
 
-   | 平台 | 工具 | 执行方式 | 场景格式 |
-   |------|------|---------|---------|
-   | Web | Playwright | browser_navigate/click/snapshot 或 `npx playwright test` | .spec.ts |
-   | Android | Maestro | `maestro test` | .yaml |
-   | iOS | Maestro 或 XCUITest | `maestro test` 或 `xcodebuild test` | .yaml / .swift |
-   | macOS | 原生桌面 | `flutter test integration_test/ -d macos` | _test.dart |
-   | Linux | 原生桌面 | `flutter test integration_test/ -d linux` | _test.dart |
-   | Android/iOS 降级 | 桌面原生 + 手机分辨率 | `flutter test integration_test/ -d {当前OS桌面设备}` | _test.dart（标记 DESKTOP_SUBSTITUTE） |
+   **LLM 自行推理**：根据 Phase 0 探测到的 target_platforms[] 和 e2e_tools_available，
+   为每个平台选择最合适的测试工具和执行方式。不硬编码平台→工具映射。
+
+   原则：
+   - 使用 Phase 0 已探测到的可用工具
+   - 桌面平台可用框架内置测试能力（如 `flutter test integration_test/ -d {platform}`）
+   - 移动端模拟器/真机不可用时，降级到桌面原生 + 手机分辨率（标记 DESKTOP_SUBSTITUTE）
 
 3.5 **测试深度要求（Path C 继承 Path B 的原则）**
 
-   > Path C 和 Path B 的区别只是**测试工具不同**（Playwright vs Flutter integration_test vs Maestro），
+   > Path C 和 Path B 的区别只是**测试工具不同**，
    > **测试深度要求相同**。不能因为换了工具就降低标准。
 
    Platform UI 测试必须满足以下深度（与 Path B E2E Chain 一致）：
@@ -434,7 +429,7 @@ Step 3: 验证断言不是同义反复
 ## Step 4.4: 构建验证
 
 所有路径锻造完成后，运行项目配置的构建命令验证：
-- npm run build / go build / flutter build 等
+- 使用项目配置的构建命令（从 package.json scripts.build / Makefile / 框架 CLI 等读取）
 - 构建失败 → 分析原因，修复后重试
 - 确保测试代码不引入编译错误
 

@@ -3,6 +3,13 @@
 > 本文档定义了 4 层字段模型中每一层的字段提取方法。
 > 每一层均提供：搜索命令、提取模式、输出 JSON 格式。
 > Agent 应按 L4 → L3 → L2 → L1 的顺序逐层提取，最后进行跨层比对。
+>
+> **⚠ 以下 ORM / UI 框架的 grep 模式为常见参考，非封闭清单。**
+> 如果项目使用的框架不在列表中（如 Eloquent、ActiveRecord、Mongoose、SQLAlchemy 等），
+> LLM 应根据该框架的 schema 定义模式自行推理提取策略，遵循同样的输出格式。
+>
+> **搜索路径不硬编码**：下方示例中的 `src/pages/`、`src/views/` 等路径仅为常见示例。
+> Agent 应先通过 Phase 0 探测到的项目目录结构确定实际搜索路径。
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -225,6 +232,15 @@ grep -n "CREATE TABLE\|ALTER TABLE\|ADD COLUMN\|DROP COLUMN" \
 
 > **提取优先级**：ORM schema 定义 > SQL migration（因为 migration 可能包含已回滚的变更）。
 > 当两者都存在时，以 ORM 为准，migration 用于交叉验证。
+
+#### 通用兜底：未列出的 ORM / NoSQL
+
+> 以上 ORM 列表为常见参考。如果项目使用未列出的 ORM（如 Eloquent / ActiveRecord / Mongoose / SQLAlchemy 等）或 NoSQL 数据库：
+
+1. **识别 schema 定义模式**：读取 ORM 的 model/schema 文件，找到字段声明的语法模式
+2. **推理提取策略**：根据字段声明模式构造 grep 命令或 AST 分析
+3. **NoSQL（MongoDB / DynamoDB 等）**：从 Mongoose Schema / DynamoDB AttributeDefinitions / 应用代码中的类型定义提取字段
+4. **输出格式不变**：无论何种 ORM，输出统一为下方 L4 JSON 格式
 
 #### L4 输出格式
 
@@ -756,6 +772,15 @@ grep -rn "json\['" --include="*.dart" lib/ 2>/dev/null
 > 前端 API service/client 函数中，对 HTTP 响应的字段访问路径。
 > 纳入 L1 字段集合（component type = `api_service`），参与 L1↔L2 比对。
 > LLM 驱动提取 — 读 service 函数代码，结合 SC-1 的拦截器解包规则推算字段路径。
+
+#### 通用兜底：未列出的 UI 框架
+
+> 以上 UI 框架提取规则为常见参考。如果项目使用未列出的框架（如 shadcn/ui、Mantine、Chakra UI、DaisyUI、Vuetify、PrimeVue、Flutter Widget 等）：
+
+1. **识别表格/列表组件模式**：读取 2-3 个页面文件，找到表格列定义的语法模式（column config / prop binding）
+2. **识别表单组件模式**：找到表单字段的命名和绑定语法
+3. **构造提取策略**：根据识别到的模式，构造 grep 或读文件提取
+4. **搜索路径**：使用 Phase 0 探测到的项目前端目录结构，不硬编码 `src/pages/` 等路径
 
 #### L1 输出格式
 

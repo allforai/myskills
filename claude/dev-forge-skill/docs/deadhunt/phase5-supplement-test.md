@@ -8,25 +8,27 @@
 
 先探测项目用了什么测试框架，**按项目现有模式来写测试**：
 
-1. **单元测试框架检测**（按优先级）：
-   - 检查 `package.json` 的 devDependencies: `vitest`, `jest`, `mocha`, `ava`
-   - 检查配置文件: `vitest.config.*`, `jest.config.*`, `.mocharc.*`
-   - 检查现有测试文件位置: `__tests__/`, `*.test.*`, `*.spec.*`
+1. **单元测试框架检测**：
+   - 平台/框架内建：Go `testing`、Rust `#[test]`、Python `unittest`、Flutter `flutter_test`、XCTest 等
+   - 第三方依赖：`vitest`, `jest`, `mocha`, `ava`, `pytest` 等（从依赖声明中读取）
+   - 配置文件：`vitest.config.*`, `jest.config.*`, `.mocharc.*` 等
+   - 现有测试文件位置：`__tests__/`, `*.test.*`, `*.spec.*`, `test/`, `*_test.go` 等
 
 2. **E2E 测试框架检测**：
-   - 检查 devDependencies: `playwright`, `cypress`
-   - 检查配置文件: `playwright.config.*`, `cypress.config.*`
-   - 检查现有 E2E 测试位置: `e2e/`, `tests/`, `cypress/`
+   - 平台/框架内建：Android Espresso/UI Automator（`androidTest/`）、iOS XCUITest（Xcode UITest target）、Flutter `integration_test`
+   - 第三方依赖：`playwright`, `cypress`, `detox`, `patrol` 等
+   - 配置文件：`playwright.config.*`, `cypress.config.*` 等
+   - 现有 E2E 测试位置：`e2e/`, `tests/`, `cypress/`, `integration_test/`, `androidTest/`
+   > "依赖声明中没有第三方框架" ≠ "没有测试能力"。先查平台内建，再查第三方。
 
 3. **确定测试风格**：
    - 读取 2-3 个现有测试文件，学习项目的命名风格、断言方式、组织结构
    - 跟随项目约定（describe/it 风格 vs test 风格，中文描述 vs 英文描述，等）
 
-4. **Flutter 测试框架检测**（当 Phase 0 检测到 Flutter 客户端时）：
-   - 检查 `pubspec.yaml` 的 dev_dependencies: `patrol`, `flutter_test`, `integration_test`
-   - 检查现有测试位置: `test/`, `integration_test/`, `test_driver/`
-   - 检查 Patrol 配置: `patrol.yaml` 或 `pubspec.yaml` 中的 `patrol` 配置
-   - 读取 2-3 个现有 `.dart` 测试文件，学习项目的测试风格
+4. **平台特定测试框架检测**（非 Web 子项目时）：
+   - 检查项目依赖声明中的测试框架
+   - 检查现有测试目录结构
+   - 读取 2-3 个现有测试文件，学习项目的测试风格
 
 ### 5.2 分析现有测试覆盖盲区
 
@@ -52,15 +54,14 @@
 
 根据检测到的框架，为**覆盖盲区 + 发现的问题**生成对应类型的测试：
 
-| 项目现有框架 | 生成的测试类型 | 测试内容 |
-|------------|-------------|---------|
-| 有单元测试 (vitest/jest) | 单元测试 | 路由配置完整性、菜单配置正确性、组件是否存在、未覆盖模块的基础测试 |
-| 有 Playwright E2E | Playwright 测试 | 页面可访问性、导航链接有效性、CRUD 流程、未覆盖的关键流程 |
-| 有 Cypress E2E | Cypress 测试 | 同上，用 Cypress 语法 |
-| 两种都有 | 两种都写 | 单元测试覆盖配置层和逻辑层，E2E 覆盖运行时和关键流程 |
-| 有 Patrol (Flutter) | Patrol 测试 | Flutter 端页面可达性、导航有效性、CRUD 流程、错误状态检测 |
-| 有 flutter_test | flutter_test 单元测试 | 路由配置完整性、模型序列化、Widget 存在性 |
-| 都没有 | 跳过，在报告中建议用户建立测试体系 | — |
+**LLM 根据项目已有的测试框架生成对应类型的测试**：
+
+- 有单元测试框架 → 补充单元测试（路由配置完整性、组件存在性、未覆盖模块的基础测试）
+- 有 E2E 测试框架 → 补充 E2E 测试（页面可访问性、导航链接有效性、CRUD 流程、未覆盖的关键流程）
+- 两种都有 → 两种都写（单元覆盖配置层和逻辑层，E2E 覆盖运行时和关键流程）
+- 都没有 → 跳过，在报告中建议用户建立测试体系
+
+> 不硬编码具体框架名。LLM 根据 Phase 0 探测结果，使用项目已有的框架语法生成测试。
 
 ### 5.4 测试生成规则
 
@@ -115,7 +116,7 @@ test.describe('DeadHunt 覆盖补全 - 订单流程 E2E', () => {
 })
 ```
 
-**Patrol 回归测试**（Flutter 端发现的问题）：
+**移动端回归测试示例**（以 Flutter Patrol 为例，实际工具由 LLM 推理决定）：
 ```dart
 // deadhunt-regression.patrol_test.dart
 import 'package:patrol/patrol.dart';
@@ -135,7 +136,7 @@ void main() {
 }
 ```
 
-**Patrol 覆盖补全**（Flutter 端现有测试缺失的部分）：
+**移动端覆盖补全示例**（以 Flutter Patrol 为例，实际工具由 LLM 推理决定）：
 ```dart
 // deadhunt-coverage.patrol_test.dart
 import 'package:patrol/patrol.dart';
@@ -200,7 +201,7 @@ void main() {
 
 > 运行: `npm test` / `npx playwright test`
 
-#### Flutter 端测试（Patrol）
+#### 移动端/其他平台测试（LLM 根据技术栈选择框架）
 | 测试文件 | 框架 | 用例数 | 覆盖内容 |
 |---------|------|-------|---------|
 | integration_test/deadhunt-regression.patrol_test.dart | patrol | 3 | FIX-001, FIX-002, FIX-005 |

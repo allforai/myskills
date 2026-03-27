@@ -88,7 +88,7 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 │  ↓ 质量门禁: demo-plan.json 存在（或跳过）                  │
 │  Phase 7: 跨端验证 (testforge) — 条件执行                    │
 │    仅当 Phase 5 被跳过时执行                                  │
-│    业务流 → 跨端场景 → Playwright / Maestro                   │
+│    业务流 → 跨端场景 → E2E 工具（LLM 按平台推理）             │
 │  ↓                                                          │
 │  Phase 8: 最终报告                                           │
 │                                                              │
@@ -163,22 +163,28 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 | 能力 | 探测方式 | 重要性 | 降级行为 |
 |------|---------|--------|---------|
-| Playwright | `mcp__playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 可用性（任一可用即就绪） | Phase 5-8 必需 | 阻塞验证阶段，提示安装 |
-| Maestro | `which maestro` CLI 可用性（Bash 检测） | mobile-native 子项目必需 | Playwright 降级（仅测 Web 端点）|
+| E2E 测试工具 | **LLM 推理**：根据项目平台和技术栈，自动检测可用的 E2E 工具（MCP 工具列表 + `which` CLI 探测 + 项目依赖声明） | Phase 5-8 必需 | 无可用工具时阻塞验证阶段，提示安装适合项目的工具 |
 | OpenRouter (MCP) | `mcp__plugin_product-design_ai-gateway__ask_model` 可用性 | 可选 | 跳过 XV 交叉验证 |
+
+**E2E 工具探测策略**：
+
+不硬编码具体工具名。LLM 根据项目实际情况推理：
+1. 扫描项目配置文件和依赖声明，识别已集成的 E2E 框架
+2. 检查 MCP 工具列表中可用的浏览器自动化工具
+3. 通过 `which` 命令探测本机已安装的测试 CLI
+4. 综合以上信息，输出可用工具列表和对应平台覆盖
 
 **输出格式**：
 
 ```
 外部能力:
-  Playwright        ✓ 就绪     Web E2E 验证 + 产品验收（Phase 5-8）
-  Maestro           ✗ 未就绪   Mobile-native E2E 验证（Phase 5-8）
-  OpenRouter (MCP)  ✗ 未就绪   XV 交叉验证（可选，跳过）
+  E2E 工具          {✓/✗} {工具名}    {覆盖平台}（Phase 5-8）
+  OpenRouter (MCP)  ✗ 未就绪           XV 交叉验证（可选，跳过）
 ```
 
 **交互式安装引导**（统一协议见 `product-design-skill/docs/skill-commons.md`）：
 
-- **Playwright 未就绪**：Phase 0 输出提示，不阻塞 Phase 1-4。进入 Phase 5 前用 AskUserQuestion 提供一键安装选项（「是，帮我安装」/「跳过」/「查看详情」）
+- **E2E 工具未就绪**：Phase 0 输出提示，不阻塞 Phase 1-4。进入 Phase 5 前用 AskUserQuestion 提供安装建议（根据项目技术栈推荐最合适的工具）
 - **OpenRouter 未就绪**：提示运行 `/setup` 配置（Key 存储在插件 `.mcp.json`，不污染 shell 环境变量），不阻塞
 
 ### 初始化决策追踪
@@ -302,15 +308,15 @@ allowed-tools: ["Read", "Write", "Grep", "Glob", "Bash", "Task", "AskUserQuestio
 
 | 配置项 | 推荐规则 |
 |--------|---------|
-| 后端技术栈 | 用户偏好（如 MEMORY 记录 Go+Gin → `go-gin`）> stacks.json 中 type=backend 第一个 |
+| 后端技术栈 | 用户偏好（MEMORY / preflight）> LLM 根据项目需求推理（语言生态、团队熟悉度、性能需求） |
 | 后端架构 | product-map 聚合根 > 5 或跨域交互多 → DDD；否则 → 三层架构 |
 | DDD 时 CQRS | 默认 false |
-| 前端技术栈 (admin/consumer) | 后端选 Vue 系 → Nuxt；否则 → Next.js |
-| 移动端技术栈 | 用户偏好（如 Flutter）> flutter（默认） |
-| Monorepo 工具 | 全 TS → pnpm-workspace；混合语言 → manual；子项目 > 4 → turborepo |
-| 状态管理 | React 系 → Zustand；Vue 系 → Pinia；Angular → 跳过 |
-| 服务端缓存 | TanStack Query（React / Vue 通用） |
-| 认证策略 | 多角色权限 → JWT；简单场景 → Session |
+| 前端技术栈 (admin/consumer) | 用户偏好 > LLM 根据项目需求推理（SSR 需求、生态匹配、团队经验） |
+| 移动端技术栈 | 用户偏好 > LLM 根据项目需求推理（跨平台 vs 原生、性能需求、平台特性依赖） |
+| Monorepo 工具 | LLM 根据语言组合、子项目数量、CI 需求推理（pnpm-workspace / turborepo / nx / yarn workspaces / manual 等） |
+| 状态管理 | LLM 根据选定的前端框架生态推理最主流方案 |
+| 服务端缓存 | LLM 根据前端框架推理（TanStack Query / SWR / Apollo / 框架内建等） |
+| 认证策略 | LLM 根据角色复杂度和安全需求推理（JWT / Session / OAuth / API Key 等） |
 
 **Step 2c: 展示推荐配置 + 自动确认**
 

@@ -96,10 +96,10 @@ product-map（产品长什么样）   project-setup（代码怎么组织）   de
         → 直接读取 preflight 值，跳过所有偏好选择（不停）
         → 输出: 「检测到 Preflight 偏好配置，以下选择将自动应用: {摘要}」
       若 preflight 不存在:
-        → 自动采用推荐值（不停）：后端 Go+Gin、前端 Next.js、移动端 Flutter、Monorepo manual、Auth JWT
+        → LLM 根据项目需求推理推荐值（不停）：综合考虑产品地图角色/模块复杂度、团队偏好、性能需求
       ↓
 Step 0: 模式识别
-  existing 模式: 扫描工作目录下的 package.json / requirements.txt / go.mod / pom.xml 等
+  existing 模式: 扫描工作目录下的项目清单文件（package.json / requirements.txt / go.mod / pom.xml / Cargo.toml / pubspec.yaml / Gemfile / mix.exs 等，LLM 按实际语言生态推理）
     → 自动检测已有子项目和技术栈
     → 与 product-map 模块对照，识别缺口
   new 模式: 从空白开始

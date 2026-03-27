@@ -24,8 +24,18 @@ dev-forge 涉及的外部能力：
 
 | 能力 | 使用技能 | 重要性 | 降级行为 |
 |------|---------|--------|---------|
-| `playwright` | testforge, product-verify | 条件必需（验证阶段） | 阻塞，提示安装 |
+| E2E 测试工具 | testforge, product-verify, deadhunt | 条件必需（验证阶段） | 无可用工具时阻塞，提示安装适合项目的工具 |
 | `openrouter_mcp` | design-to-spec, task-execute, testforge, product-verify | 可选 | 跳过 XV，输出提示 |
+
+> **E2E 测试工具不硬编码具体工具名**。Phase 0 通过 LLM 推理探测项目技术栈和已安装工具，自动选择最合适的 E2E 工具。
+>
+> **探测范围必须包含平台/框架内建测试能力**，不能只看第三方依赖声明。常见例子：
+> - Android SDK 内建 Espresso + UI Automator（`androidTest/` 目录 + `androidx.test.*`）
+> - iOS/macOS 内建 XCTest + XCUITest（Xcode test target）
+> - Flutter 内建 `integration_test`（无需第三方依赖，`flutter test integration_test/`）
+> - Go 内建 `testing`（`*_test.go`）、Rust 内建 `#[test]`、Python 内建 `unittest`
+>
+> "项目依赖声明中没有第三方测试框架" ≠ "没有测试能力"。先查平台内建，再查第三方。
 
 **提示格式**：`{step_name} ⊘ {能力名} 不可用，{降级动作}`
 
