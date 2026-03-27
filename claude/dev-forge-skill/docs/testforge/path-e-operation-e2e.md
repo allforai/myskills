@@ -68,14 +68,51 @@ export async function deleteXxx(token: string, id: string): Promise<void>
 // 4. 用于 beforeAll 种子数据 + afterAll 清理
 ```
 
-## E.3 操作链推导
+## E.3 CRUD 完整性审计 + 操作链推导
 
-从 Phase 1 的 operation_inventory（见下方 Phase 1 新增维度）推导：
+> **核心原则：每个有 admin CRUD 端点的实体，都必须有完整的 增/删/改/查 E2E 链。没有例外。**
+
+### Step 1: 枚举所有可写实体
+
+从后端 API 路由表（router.go）扫描所有 admin 写端点，按实体分组：
 
 ```
-对每个前端页面的每个 mutation 操作（按钮/表单/确认框）：
-  → 生成一条 E2E 操作链 test case
+对每个 admin 实体（Category, ScenePack, PromptTemplate, StyleTemplate,
+AIService, User, Feedback, ContentReport, SystemConfig, GenTask...）：
 
+  检查是否有完整的 CRUD E2E 链覆盖：
+    C - Create: 通过 UI 表单创建 → 验证出现
+    R - Read:   列表可见 + 详情可查看
+    U - Update: 通过 UI 编辑 → 验证变化
+    D - Delete: 通过 UI 删除 → 验证消失
+
+  产出：entity_crud_matrix
+    { entity: "AIService", create: false, read: false, update: false, delete: false }
+    { entity: "Category", create: true, read: true, update: true, delete: true }
+```
+
+### Step 2: 为每个缺失 CRUD 的实体生成操作链
+
+**每个实体一条链，链内覆盖完整的增删改查生命周期**：
+
+```
+chain-{entity}-crud.spec.ts:
+  beforeAll: API 登录获取 token
+  test 1: CREATE — 通过 UI 表单创建实体 → 验证在列表/页面出现
+  test 2: READ   — 验证创建的实体详情正确展示
+  test 3: UPDATE — 通过 UI 编辑实体 → 验证值变化
+  test 4: DELETE — 通过 UI 删除实体 → 验证消失
+  test 5: DELETE 负向 — 删除有关联数据的实体 → 验证拒绝（如适用）
+  test 6: 审计日志验证 — 所有操作在审计日志中有记录
+  afterAll: API 清理残留数据
+```
+
+**不能特化**：不是"挑几个重要的实体测"，而是"所有实体都必须覆盖"。
+AI Config 页面空着 = 没测过创建操作 = CRUD 缺口。
+
+### Step 3: 操作分类
+
+```
 操作分类：
   CREATE  — 通过表单创建实体
   UPDATE  — 编辑已有实体
