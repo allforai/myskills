@@ -192,7 +192,7 @@ echo "Project template created: $PROJECT_TEMPLATE"
 
 # 7.5 Make scripts executable
 echo "Making Python scripts executable..."
-find "$INSTALL_DIR" -type d -name "scripts" -exec find {} -name "*.py" -exec chmod +x {} \; \;
+find "$INSTALL_DIR" -type f -path "*/scripts/*.py" -exec chmod +x {} \;
 echo "Permissions updated"
 
 # 8. Create update script
@@ -243,7 +243,7 @@ fi
 
 # 4. Make scripts executable again after update
 echo "Making Python scripts executable..."
-find "$INSTALL_DIR" -type d -name "scripts" -exec find {} -name "*.py" -exec chmod +x {} \; \;
+find "$INSTALL_DIR" -type f -path "*/scripts/*.py" -exec chmod +x {} \;
 echo "Permissions updated"
 
 echo "Update complete"
