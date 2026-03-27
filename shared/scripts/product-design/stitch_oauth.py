@@ -59,7 +59,7 @@ def check_credentials():
     """Check if valid credentials exist with quota_project_id."""
     if os.path.exists(ADC_PATH):
         try:
-            with open(ADC_PATH) as f:
+            with open(ADC_PATH, encoding="utf-8") as f:
                 data = json.load(f)
             if data.get("refresh_token"):
                 qp = data.get("quota_project_id")
@@ -103,8 +103,8 @@ def save_credentials(token_data):
         "refresh_token": token_data["refresh_token"],
         "type": "authorized_user",
     }
-    with open(ADC_PATH, "w") as f:
-        json.dump(adc, f, indent=2)
+    with open(ADC_PATH, "w", encoding="utf-8") as f:
+        json.dump(adc, f, indent=2, ensure_ascii=False)
     os.chmod(ADC_PATH, 0o600)
     print(f"Credentials saved to: {ADC_PATH}")
 
@@ -139,7 +139,7 @@ def setup_quota_project():
     """Auto-configure quota_project_id in ADC. No gcloud CLI needed."""
     if not os.path.exists(ADC_PATH):
         return
-    with open(ADC_PATH) as f:
+    with open(ADC_PATH, encoding="utf-8") as f:
         adc = json.load(f)
     if adc.get("quota_project_id"):
         print(f"Quota project already set: {adc['quota_project_id']}")
@@ -188,8 +188,8 @@ def setup_quota_project():
 
     # Write quota_project_id to ADC
     adc["quota_project_id"] = project_id
-    with open(ADC_PATH, "w") as f:
-        json.dump(adc, f, indent=2)
+    with open(ADC_PATH, "w", encoding="utf-8") as f:
+        json.dump(adc, f, indent=2, ensure_ascii=False)
     os.chmod(ADC_PATH, 0o600)
     print(f"Quota project set: {project_id}")
     return project_id
@@ -303,8 +303,8 @@ def mode_generate_url():
         "redirect_uri": redirect_uri,
         "port": port,
     }
-    with open(PKCE_TEMP_PATH, "w") as f:
-        json.dump(pkce_data, f)
+    with open(PKCE_TEMP_PATH, "w", encoding="utf-8") as f:
+        json.dump(pkce_data, f, ensure_ascii=False)
 
     print(f"AUTH_URL={auth_url}")
     print(f"\nPKCE params saved to {PKCE_TEMP_PATH}")
@@ -318,7 +318,7 @@ def mode_listen():
         print("Run --generate-url first.")
         sys.exit(1)
 
-    with open(PKCE_TEMP_PATH) as f:
+    with open(PKCE_TEMP_PATH, encoding="utf-8") as f:
         pkce_data = json.load(f)
 
     port = pkce_data["port"]
@@ -365,7 +365,7 @@ def mode_exchange(code):
         print("Run --generate-url first.")
         sys.exit(1)
 
-    with open(PKCE_TEMP_PATH) as f:
+    with open(PKCE_TEMP_PATH, encoding="utf-8") as f:
         pkce_data = json.load(f)
 
     print("Exchanging code for tokens...")

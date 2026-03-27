@@ -23,12 +23,12 @@ class TestGenerateUsecaseReport(unittest.TestCase):
     def _write_artifact(self, rel_path, data):
         path = os.path.join(self.base_path, ".allforai", rel_path)
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w") as f:
-            json.dump(data, f)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
 
     def _read_output(self):
         path = os.path.join(self.uc_dir, "use-case-report.md")
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             return f.read()
 
     def test_basic_report(self):

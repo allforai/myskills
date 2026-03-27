@@ -118,7 +118,7 @@ ui_spec_path = os.path.join(BASE, "ui-design/ui-design-spec.md")
 ui_spec_text = ""
 if os.path.exists(ui_spec_path):
     available_layers.append("ui-design")
-    with open(ui_spec_path) as f:
+    with open(ui_spec_path, encoding="utf-8") as f:
         ui_spec_text = f.read()
 
 ctx = C.load_full_context(BASE)

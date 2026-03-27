@@ -22,12 +22,12 @@ class TestMergeTasks(unittest.TestCase):
 
     def _write_fragment(self, name, data):
         path = os.path.join(self.fragments_dir, "tasks", name)
-        with open(path, "w") as f:
-            json.dump(data, f)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
 
     def _read_output(self):
         path = os.path.join(self.base_path, ".allforai", "product-map", "task-inventory.json")
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
 
     def test_basic_merge(self):

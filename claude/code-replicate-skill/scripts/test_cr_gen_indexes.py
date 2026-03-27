@@ -22,12 +22,12 @@ class TestGenerateIndexes(unittest.TestCase):
 
     def _write_artifact(self, name, data):
         path = os.path.join(self.pm_dir, name)
-        with open(path, "w") as f:
-            json.dump(data, f)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
 
     def _read_output(self, name):
         path = os.path.join(self.pm_dir, name)
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
 
     def test_task_index_groups_by_category(self):

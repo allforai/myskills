@@ -208,23 +208,23 @@ class TestHasProjectManifest(unittest.TestCase):
         shutil.rmtree(self.tmpdir)
 
     def test_package_json(self):
-        open(os.path.join(self.tmpdir, "package.json"), "w").write("{}")
+        open(os.path.join(self.tmpdir, "package.json"), "w", encoding="utf-8").write("{}")
         self.assertTrue(_has_project_manifest(self.tmpdir))
 
     def test_csproj(self):
-        open(os.path.join(self.tmpdir, "MyApp.csproj"), "w").write("")
+        open(os.path.join(self.tmpdir, "MyApp.csproj"), "w", encoding="utf-8").write("")
         self.assertTrue(_has_project_manifest(self.tmpdir))
 
     def test_go_mod(self):
-        open(os.path.join(self.tmpdir, "go.mod"), "w").write("")
+        open(os.path.join(self.tmpdir, "go.mod"), "w", encoding="utf-8").write("")
         self.assertTrue(_has_project_manifest(self.tmpdir))
 
     def test_pubspec(self):
-        open(os.path.join(self.tmpdir, "pubspec.yaml"), "w").write("")
+        open(os.path.join(self.tmpdir, "pubspec.yaml"), "w", encoding="utf-8").write("")
         self.assertTrue(_has_project_manifest(self.tmpdir))
 
     def test_no_manifest(self):
-        open(os.path.join(self.tmpdir, "main.go"), "w").write("")
+        open(os.path.join(self.tmpdir, "main.go"), "w", encoding="utf-8").write("")
         self.assertFalse(_has_project_manifest(self.tmpdir))
 
     def test_empty_dir(self):
@@ -365,8 +365,8 @@ class TestLoadProfile(unittest.TestCase):
 
     def test_valid_profile(self):
         pp = os.path.join(self.tmpdir, "profile.json")
-        with open(pp, "w") as f:
-            json.dump({"mega_threshold": 100}, f)
+        with open(pp, "w", encoding="utf-8") as f:
+            json.dump({"mega_threshold": 100}, f, ensure_ascii=False)
         result = _load_profile(pp)
         self.assertIsNotNone(result)
         self.assertEqual(result["mega_threshold"], 100)
@@ -377,7 +377,7 @@ class TestLoadProfile(unittest.TestCase):
 
     def test_invalid_json(self):
         pp = os.path.join(self.tmpdir, "bad.json")
-        with open(pp, "w") as f:
+        with open(pp, "w", encoding="utf-8") as f:
             f.write("not json")
         result = _load_profile(pp)
         self.assertIsNone(result)
@@ -422,11 +422,11 @@ class TestMergeTasksNewFields(unittest.TestCase):
         shutil.rmtree(self.tmpdir)
 
     def _write_fragment(self, name, data):
-        with open(os.path.join(self.fragments_dir, "tasks", name), "w") as f:
-            json.dump(data, f)
+        with open(os.path.join(self.fragments_dir, "tasks", name), "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
 
     def _read_output(self):
-        with open(os.path.join(self.base_path, ".allforai", "product-map", "task-inventory.json")) as f:
+        with open(os.path.join(self.base_path, ".allforai", "product-map", "task-inventory.json"), encoding="utf-8") as f:
             return json.load(f)
 
     def test_protection_level_default(self):

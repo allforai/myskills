@@ -68,7 +68,7 @@ def write_json(path, data):
 def load_json(path):
     """Load JSON from path, return None if file not found or invalid."""
     try:
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return None

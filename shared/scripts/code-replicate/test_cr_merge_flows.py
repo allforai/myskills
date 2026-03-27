@@ -23,19 +23,19 @@ class TestMergeFlows(unittest.TestCase):
 
     def _write_fragment(self, name, data):
         path = os.path.join(self.fragments_dir, "flows", name)
-        with open(path, "w") as f:
-            json.dump(data, f)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
 
     def _write_task_inventory(self, tasks):
         """Write a task-inventory.json so cross-referencing works."""
         path = os.path.join(self.base_path, ".allforai", "product-map", "task-inventory.json")
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w") as f:
-            json.dump({"tasks": tasks}, f)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"tasks": tasks}, f, ensure_ascii=False)
 
     def _read_output(self):
         path = os.path.join(self.base_path, ".allforai", "product-map", "business-flows.json")
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
 
     def test_basic_merge(self):

@@ -77,8 +77,8 @@ class TestValidateAllValid(unittest.TestCase):
         os.makedirs(self.pm, exist_ok=True)
 
     def _write(self, name, data):
-        with open(os.path.join(self.pm, name), "w") as f:
-            json.dump(data, f)
+        with open(os.path.join(self.pm, name), "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
 
     def _setup_valid(self):
         tasks = [_make_task("T001"), _make_task("T002")]
@@ -125,8 +125,8 @@ class TestTaskInventoryValidation(unittest.TestCase):
         os.makedirs(self.pm, exist_ok=True)
 
     def _write(self, name, data):
-        with open(os.path.join(self.pm, name), "w") as f:
-            json.dump(data, f)
+        with open(os.path.join(self.pm, name), "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
 
     def _write_roles(self):
         self._write("role-profiles.json", {"roles": [_make_role("R001")]})
@@ -172,8 +172,8 @@ class TestRoleProfilesValidation(unittest.TestCase):
         os.makedirs(self.pm, exist_ok=True)
 
     def _write(self, name, data):
-        with open(os.path.join(self.pm, name), "w") as f:
-            json.dump(data, f)
+        with open(os.path.join(self.pm, name), "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
 
     def test_missing_role_profiles(self):
         self._write("task-inventory.json", {"tasks": [_make_task("T001")]})
@@ -200,8 +200,8 @@ class TestBusinessFlowsValidation(unittest.TestCase):
         os.makedirs(self.pm, exist_ok=True)
 
     def _write(self, name, data):
-        with open(os.path.join(self.pm, name), "w") as f:
-            json.dump(data, f)
+        with open(os.path.join(self.pm, name), "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
 
     def _setup_base(self):
         self._write("task-inventory.json", {
@@ -265,8 +265,8 @@ class TestUseCaseTreeValidation(unittest.TestCase):
         os.makedirs(self.uc, exist_ok=True)
 
     def _write(self, dir_path, name, data):
-        with open(os.path.join(dir_path, name), "w") as f:
-            json.dump(data, f)
+        with open(os.path.join(dir_path, name), "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
 
     def _setup_base(self):
         self._write(self.pm, "task-inventory.json", {"tasks": [_make_task("T001")]})
@@ -329,8 +329,8 @@ class TestConstraintsValidation(unittest.TestCase):
         os.makedirs(self.pm, exist_ok=True)
 
     def _write(self, name, data):
-        with open(os.path.join(self.pm, name), "w") as f:
-            json.dump(data, f)
+        with open(os.path.join(self.pm, name), "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
 
     def _setup_base(self):
         self._write("task-inventory.json", {"tasks": [_make_task("T001")]})
@@ -362,8 +362,8 @@ class TestExperienceMapValidation(unittest.TestCase):
         os.makedirs(self.em, exist_ok=True)
 
     def _write(self, dir_path, name, data):
-        with open(os.path.join(dir_path, name), "w") as f:
-            json.dump(data, f)
+        with open(os.path.join(dir_path, name), "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
 
     def _setup_base(self):
         self._write(self.pm, "task-inventory.json", {"tasks": [_make_task("T001")]})
@@ -393,8 +393,8 @@ class TestCrossRefCoverage(unittest.TestCase):
         os.makedirs(self.pm, exist_ok=True)
 
     def _write(self, name, data):
-        with open(os.path.join(self.pm, name), "w") as f:
-            json.dump(data, f)
+        with open(os.path.join(self.pm, name), "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
 
     def test_partial_coverage(self):
         self._write("task-inventory.json", {
@@ -423,8 +423,8 @@ class TestFullstackMode(unittest.TestCase):
         os.makedirs(self.cr, exist_ok=True)
 
     def _write(self, dir_path, name, data):
-        with open(os.path.join(dir_path, name), "w") as f:
-            json.dump(data, f)
+        with open(os.path.join(dir_path, name), "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
 
     def _setup_base(self):
         self._write(self.pm, "task-inventory.json", {
@@ -474,8 +474,8 @@ class TestCLI(unittest.TestCase):
         self.script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cr_validate.py")
 
     def _write(self, name, data):
-        with open(os.path.join(self.pm, name), "w") as f:
-            json.dump(data, f)
+        with open(os.path.join(self.pm, name), "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
 
     def test_cli_exit_0_on_valid(self):
         self._write("task-inventory.json", {"tasks": [_make_task("T001")]})

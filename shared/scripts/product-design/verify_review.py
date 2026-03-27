@@ -389,7 +389,7 @@ def collect_uidesign(base):
     spec_path = os.path.join(base, "ui-design", "ui-design-spec.md")
     if not os.path.exists(spec_path):
         return None
-    with open(spec_path) as f:
+    with open(spec_path, encoding="utf-8") as f:
         spec_text = f.read()
 
     lines, index, loaded = load_experience_map(base)

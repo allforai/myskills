@@ -23,12 +23,12 @@ class TestGenerateProductMap(unittest.TestCase):
     def _write_artifact(self, rel_path, data):
         path = os.path.join(self.base_path, ".allforai", rel_path)
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w") as f:
-            json.dump(data, f)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
 
     def _read_output(self):
         path = os.path.join(self.pm_dir, "product-map.json")
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
 
     def _setup_basic(self, tasks=None, roles=None, flows=None):

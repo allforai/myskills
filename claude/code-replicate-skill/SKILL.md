@@ -5,7 +5,7 @@ description: >
   .allforai/ artifacts compatible with the dev-forge pipeline. 4 fidelity levels:
   interface (API contracts), functional (business behavior), architecture (patterns),
   exact (including bugs). Supports cross-stack migration.
-version: "5.5.0"
+version: "5.5.1"
 ---
 
 # Code Replicate v5.0.0 — 代码复刻插件

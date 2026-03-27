@@ -45,26 +45,26 @@ class TestE2EDiscoverToValidate(unittest.TestCase):
         """Create a small synthetic Go project for cr_discover."""
         src = os.path.join(self.tmpdir, "source")
         os.makedirs(src)
-        open(os.path.join(src, "go.mod"), "w").write("module github.com/test/mock-api")
+        open(os.path.join(src, "go.mod"), "w", encoding="utf-8").write("module github.com/test/mock-api")
 
         # internal/auth/
         auth = os.path.join(src, "internal", "auth")
         os.makedirs(auth)
-        open(os.path.join(auth, "handler.go"), "w").write("package auth\nfunc Login() {}")
-        open(os.path.join(auth, "service.go"), "w").write("package auth\nfunc Validate() {}")
-        open(os.path.join(auth, "middleware.go"), "w").write("package auth\nfunc JWTMiddleware() {}")
+        open(os.path.join(auth, "handler.go"), "w", encoding="utf-8").write("package auth\nfunc Login() {}")
+        open(os.path.join(auth, "service.go"), "w", encoding="utf-8").write("package auth\nfunc Validate() {}")
+        open(os.path.join(auth, "middleware.go"), "w", encoding="utf-8").write("package auth\nfunc JWTMiddleware() {}")
 
         # internal/user/
         user = os.path.join(src, "internal", "user")
         os.makedirs(user)
-        open(os.path.join(user, "handler.go"), "w").write("package user\nfunc GetUser() {}")
-        open(os.path.join(user, "service.go"), "w").write("package user\nfunc FindByID() {}")
-        open(os.path.join(user, "repo.go"), "w").write("package user\nfunc Save() {}")
+        open(os.path.join(user, "handler.go"), "w", encoding="utf-8").write("package user\nfunc GetUser() {}")
+        open(os.path.join(user, "service.go"), "w", encoding="utf-8").write("package user\nfunc FindByID() {}")
+        open(os.path.join(user, "repo.go"), "w", encoding="utf-8").write("package user\nfunc Save() {}")
 
         # cmd/api/
         cmd = os.path.join(src, "cmd", "api")
         os.makedirs(cmd)
-        open(os.path.join(cmd, "main.go"), "w").write("package main\nfunc main() {}")
+        open(os.path.join(cmd, "main.go"), "w", encoding="utf-8").write("package main\nfunc main() {}")
 
         return src
 
@@ -133,7 +133,7 @@ class TestE2EDiscoverToValidate(unittest.TestCase):
 
         path = os.path.join(self.base_path, ".allforai", "product-map", "role-profiles.json")
         self.assertTrue(os.path.exists(path))
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
         self.assertGreater(len(data["roles"]), 0)
         # All roles should have audience_type
@@ -146,7 +146,7 @@ class TestE2EDiscoverToValidate(unittest.TestCase):
         merge_tasks(self.base_path, frag)
 
         path = os.path.join(self.base_path, ".allforai", "product-map", "task-inventory.json")
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
         self.assertGreater(len(data["tasks"]), 0)
         for task in data["tasks"]:
@@ -163,7 +163,7 @@ class TestE2EDiscoverToValidate(unittest.TestCase):
         merge_flows(self.base_path, frag)
 
         path = os.path.join(self.base_path, ".allforai", "product-map", "business-flows.json")
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
         self.assertGreater(len(data["flows"]), 0)
         self.assertIn("systems", data)
@@ -179,7 +179,7 @@ class TestE2EDiscoverToValidate(unittest.TestCase):
         merge_usecases(self.base_path, frag)
 
         path = os.path.join(self.base_path, ".allforai", "use-case", "use-case-tree.json")
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
         # v2.5.0+ flat format
         self.assertIn("use_cases", data)
@@ -205,7 +205,7 @@ class TestE2EDiscoverToValidate(unittest.TestCase):
         generate_product_map(self.base_path)
 
         path = os.path.join(self.base_path, ".allforai", "product-map", "product-map.json")
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
 
         # Must have experience_priority
@@ -230,7 +230,7 @@ class TestE2EDiscoverToValidate(unittest.TestCase):
 
         path = os.path.join(self.base_path, ".allforai", "use-case", "use-case-report.md")
         self.assertTrue(os.path.exists(path))
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             content = f.read()
         self.assertIn("Use Case Report", content)
         self.assertIn("Login", content)
@@ -288,7 +288,7 @@ class TestE2EDiscoverToValidate(unittest.TestCase):
         merge_roles(self.base_path, frag)
 
         path = os.path.join(self.base_path, ".allforai", "product-map", "role-profiles.json")
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
 
         names = {r["name"] for r in data["roles"]}
@@ -302,7 +302,7 @@ class TestE2EDiscoverToValidate(unittest.TestCase):
         merge_tasks(self.base_path, frag)
 
         path = os.path.join(self.base_path, ".allforai", "product-map", "task-inventory.json")
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
         self.assertGreaterEqual(len(data["tasks"]), 2)
 
@@ -313,7 +313,7 @@ class TestE2EDiscoverToValidate(unittest.TestCase):
         merge_usecases(self.base_path, frag)
 
         path = os.path.join(self.base_path, ".allforai", "use-case", "use-case-tree.json")
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
 
         types = {uc["type"] for uc in data["use_cases"]}

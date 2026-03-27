@@ -154,7 +154,7 @@ def ensure_hub_running(base, port=None):
 
 def generate_report(base, input_file):
     """Read Claude Code's verification results and generate final report."""
-    with open(input_file) as f:
+    with open(input_file, encoding="utf-8") as f:
         results = json.load(f)
 
     errors = [r for r in results if r.get("severity") == "ERROR"]

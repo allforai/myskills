@@ -22,12 +22,12 @@ class TestMergeUsecases(unittest.TestCase):
 
     def _write_fragment(self, name, data):
         path = os.path.join(self.fragments_dir, "usecases", name)
-        with open(path, "w") as f:
-            json.dump(data, f)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
 
     def _read_output(self):
         path = os.path.join(self.base_path, ".allforai", "use-case", "use-case-tree.json")
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
 
     def _make_uc(self, title="Login", role="R001", feature_area="Auth", task_ref="T001",

@@ -117,7 +117,7 @@ def write_json(path, data):
 def load_json(path):
     """Load JSON from path, return None if file not found or invalid."""
     try:
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return None
@@ -372,7 +372,7 @@ def append_pipeline_decision(base, phase, detail, decision="auto_confirmed", sha
     pipe = []
     if os.path.exists(pipe_path):
         try:
-            with open(pipe_path) as f:
+            with open(pipe_path, encoding="utf-8") as f:
                 pipe = json.load(f)
         except (json.JSONDecodeError, IOError):
             pipe = []
@@ -626,7 +626,7 @@ def _load_file_cache():
         age = time.time() - os.path.getmtime(_XV_CACHE_FILE)
         if age > _XV_CACHE_TTL:
             return  # expired
-        with open(_XV_CACHE_FILE) as f:
+        with open(_XV_CACHE_FILE, encoding="utf-8") as f:
             cached = json.load(f)
         if isinstance(cached, dict) and cached:
             _xv_model_cache.update(cached)
@@ -639,8 +639,8 @@ def _load_file_cache():
 def _save_file_cache():
     """Persist model cache to disk."""
     try:
-        with open(_XV_CACHE_FILE, "w") as f:
-            json.dump(_xv_model_cache, f)
+        with open(_XV_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(_xv_model_cache, f, ensure_ascii=False)
     except Exception:
         pass
 

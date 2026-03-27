@@ -126,7 +126,7 @@ class TestJsonRoundtrip(unittest.TestCase):
 
     def test_load_invalid_json(self):
         path = os.path.join(self.tmpdir, "bad.json")
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write("{invalid json}")
         result = load_json(path)
         self.assertIsNone(result)
@@ -184,7 +184,7 @@ class TestLoadFragments(unittest.TestCase):
 
     def test_skip_non_json(self):
         write_json(os.path.join(self.tmpdir, "M001.json"), {"ok": True})
-        with open(os.path.join(self.tmpdir, "readme.txt"), "w") as f:
+        with open(os.path.join(self.tmpdir, "readme.txt"), "w", encoding="utf-8") as f:
             f.write("not json")
         result = load_fragments(self.tmpdir)
         self.assertEqual(len(result), 1)

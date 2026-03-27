@@ -15,7 +15,7 @@ class TestScanGoProject(unittest.TestCase):
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
         # go.mod
-        with open(os.path.join(self.tmpdir, "go.mod"), "w") as f:
+        with open(os.path.join(self.tmpdir, "go.mod"), "w", encoding="utf-8") as f:
             f.write('module example.com/myapp\n\ngo 1.21\n\n'
                     'require (\n'
                     '\tgithub.com/gin-gonic/gin v1.9.0\n'
@@ -25,7 +25,7 @@ class TestScanGoProject(unittest.TestCase):
         # internal/auth
         auth_dir = os.path.join(self.tmpdir, "internal", "auth")
         os.makedirs(auth_dir)
-        with open(os.path.join(auth_dir, "handler.go"), "w") as f:
+        with open(os.path.join(auth_dir, "handler.go"), "w", encoding="utf-8") as f:
             f.write('package auth\n\n'
                     'import (\n'
                     '\t"example.com/myapp/internal/user"\n'
@@ -37,11 +37,11 @@ class TestScanGoProject(unittest.TestCase):
         # internal/user
         user_dir = os.path.join(self.tmpdir, "internal", "user")
         os.makedirs(user_dir)
-        with open(os.path.join(user_dir, "service.go"), "w") as f:
+        with open(os.path.join(user_dir, "service.go"), "w", encoding="utf-8") as f:
             f.write('package user\n\n'
                     'func GetByID(id int) {\n'
                     '}\n')
-        with open(os.path.join(user_dir, "model.go"), "w") as f:
+        with open(os.path.join(user_dir, "model.go"), "w", encoding="utf-8") as f:
             f.write('package user\n\n'
                     'type User struct {\n'
                     '\tID   int\n'
@@ -110,13 +110,13 @@ class TestScanNodeProject(unittest.TestCase):
                 "mongoose": "^7.0.0"
             }
         }
-        with open(os.path.join(self.tmpdir, "package.json"), "w") as f:
-            json.dump(pkg, f)
+        with open(os.path.join(self.tmpdir, "package.json"), "w", encoding="utf-8") as f:
+            json.dump(pkg, f, ensure_ascii=False)
 
         # src/routes
         routes_dir = os.path.join(self.tmpdir, "src", "routes")
         os.makedirs(routes_dir)
-        with open(os.path.join(routes_dir, "index.js"), "w") as f:
+        with open(os.path.join(routes_dir, "index.js"), "w", encoding="utf-8") as f:
             f.write('const express = require("express");\n'
                     'const users = require("../controllers/userController");\n'
                     'module.exports = router;\n')
@@ -124,14 +124,14 @@ class TestScanNodeProject(unittest.TestCase):
         # src/controllers
         ctrl_dir = os.path.join(self.tmpdir, "src", "controllers")
         os.makedirs(ctrl_dir)
-        with open(os.path.join(ctrl_dir, "userController.js"), "w") as f:
+        with open(os.path.join(ctrl_dir, "userController.js"), "w", encoding="utf-8") as f:
             f.write('const UserService = require("../services/userService");\n'
                     'exports.getUser = (req, res) => {};\n')
 
         # src/services
         svc_dir = os.path.join(self.tmpdir, "src", "services")
         os.makedirs(svc_dir)
-        with open(os.path.join(svc_dir, "userService.js"), "w") as f:
+        with open(os.path.join(svc_dir, "userService.js"), "w", encoding="utf-8") as f:
             f.write('class UserService {}\n'
                     'module.exports = UserService;\n')
 
@@ -161,13 +161,13 @@ class TestScanPythonProject(unittest.TestCase):
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
         # requirements.txt
-        with open(os.path.join(self.tmpdir, "requirements.txt"), "w") as f:
+        with open(os.path.join(self.tmpdir, "requirements.txt"), "w", encoding="utf-8") as f:
             f.write("django==4.2\ncelery==5.3\nredis==5.0\n")
 
         # app/models
         models_dir = os.path.join(self.tmpdir, "app", "models")
         os.makedirs(models_dir)
-        with open(os.path.join(models_dir, "user.py"), "w") as f:
+        with open(os.path.join(models_dir, "user.py"), "w", encoding="utf-8") as f:
             f.write('from app.services import auth_service\n\n'
                     'class User:\n'
                     '    pass\n')
@@ -175,7 +175,7 @@ class TestScanPythonProject(unittest.TestCase):
         # app/services
         svc_dir = os.path.join(self.tmpdir, "app", "services")
         os.makedirs(svc_dir)
-        with open(os.path.join(svc_dir, "auth_service.py"), "w") as f:
+        with open(os.path.join(svc_dir, "auth_service.py"), "w", encoding="utf-8") as f:
             f.write('def authenticate(user, password):\n'
                     '    pass\n')
 
@@ -198,11 +198,11 @@ class TestModuleFields(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
-        with open(os.path.join(self.tmpdir, "go.mod"), "w") as f:
+        with open(os.path.join(self.tmpdir, "go.mod"), "w", encoding="utf-8") as f:
             f.write("module example.com/test\n\ngo 1.21\n")
         src_dir = os.path.join(self.tmpdir, "internal", "core")
         os.makedirs(src_dir)
-        with open(os.path.join(src_dir, "main.go"), "w") as f:
+        with open(os.path.join(src_dir, "main.go"), "w", encoding="utf-8") as f:
             f.write("package core\n\nfunc Main() {}\n")
 
     def test_required_fields(self):
@@ -241,18 +241,18 @@ class TestSkipDirs(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
-        with open(os.path.join(self.tmpdir, "go.mod"), "w") as f:
+        with open(os.path.join(self.tmpdir, "go.mod"), "w", encoding="utf-8") as f:
             f.write("module test\n\ngo 1.21\n")
         # Create a real module
         real_dir = os.path.join(self.tmpdir, "internal", "real")
         os.makedirs(real_dir)
-        with open(os.path.join(real_dir, "main.go"), "w") as f:
+        with open(os.path.join(real_dir, "main.go"), "w", encoding="utf-8") as f:
             f.write("package real\n")
         # Create dirs that should be skipped
         for skip in [".git", "node_modules", "vendor", "__pycache__"]:
             skip_dir = os.path.join(self.tmpdir, skip)
             os.makedirs(skip_dir)
-            with open(os.path.join(skip_dir, "file.go"), "w") as f:
+            with open(os.path.join(skip_dir, "file.go"), "w", encoding="utf-8") as f:
                 f.write("package skip\n")
 
     def test_skip_dirs_excluded(self):
@@ -271,7 +271,7 @@ class TestFallbackTopLevel(unittest.TestCase):
         for name in ["api", "web"]:
             d = os.path.join(self.tmpdir, name)
             os.makedirs(d)
-            with open(os.path.join(d, "main.py"), "w") as f:
+            with open(os.path.join(d, "main.py"), "w", encoding="utf-8") as f:
                 f.write("# module\n")
 
     def test_top_level_dirs_as_modules(self):
