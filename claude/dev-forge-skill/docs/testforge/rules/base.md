@@ -18,35 +18,43 @@
 ### 12. 金字塔分层
 缺口放到正确的测试层级：纯逻辑用 unit，UI 交互用 component，跨子项目用 e2e_chain。不在 unit 层写 E2E 逻辑，不在 E2E 层测纯函数。
 
-### 29. 禁止 Mock API 响应 — 真实后端或不测（No Mock, Real Backend or No Test）
+### 29. 禁止 Mock — 真实依赖或不测（No Mock, Real Dependencies or No Test）
 
-**所有前端测试（unit / component / integration / E2E）必须连接真实后端。没有真实后端 = 标记 NOT_TESTED，不生成 mock 测试。**
+**所有测试必须连接真实依赖。依赖不可用 = 标记 NOT_TESTED，不生成 mock 测试。**
 
-Mock 测试是假绿 — LLM 按 TypeScript 类型定义编造 mock 数据，但真实 API 的字段名、类型、是否可空全部可能不一致。Mock 测试只证明"前端代码在想象数据下不崩溃"，发现不了任何真实 bug。
+Mock 测试是假绿。编造的 mock 数据和真实依赖的行为不一致（字段名/类型/可空性/NULL 处理/级联行为/时间精度/错误格式），mock 测试只证明"代码在想象数据下不崩溃"，发现不了任何真实 bug。
+
+**禁止 mock 的范围（项目内部可控的一切依赖）**：
+- ❌ mock 数据库（fake repository、in-memory DB）— 用真实 DB
+- ❌ mock 缓存（fake Redis）— 用真实 Redis
+- ❌ mock 后端 API（mockResolvedValue、vi.mock、msw/nock）— 连真实后端
+- ❌ mock service 层 / repository 层 — 连真实实现
+- ❌ 前端 store 预注入初始状态 — 让 store 从真实 API 加载
+- ❌ 任何形式的手写假数据替代真实依赖返回
+
+**唯一例外 — 不可控的外部第三方依赖**：
+- ✅ 支付网关（RevenueCat/Stripe sandbox）
+- ✅ 第三方 OAuth（微信/Apple — 本地无法启动）
+- ✅ 外部 AI API（有 key 时真调，无 key 时 mock adapter）
+- ✅ 短信/邮件推送服务
+- 这些外部服务的 mock 限定在 adapter 层（接口隔离），不允许在业务层 mock
 
 **执行规则**：
 
 | 情况 | 处理 |
 |------|------|
-| 后端可启动（本地 dev） | 前端测试必须连真实后端 |
-| 后端不可启动 | 前端测试标记 `NOT_TESTED`，不生成 mock 测试 |
-| 后端 unit test（service 层） | 允许 mock repository 接口（内部实现细节，不是接缝） |
-| 后端 unit test（controller 层） | 允许 mock service 接口 |
+| 项目内部依赖可用（DB/Redis/后端 API） | 必须连真实依赖 |
+| 项目内部依赖不可用 | 标记 `NOT_TESTED`，不生成 mock 替代 |
+| 外部第三方不可用 | adapter 层 mock 或 sandbox，标注 `EXTERNAL_MOCKED` |
 
-**禁止的做法**：
-- ❌ `mockResolvedValue({id: "1", name: "test"})` — 手写 mock 数据
-- ❌ `vi.mock("@/lib/api")` — mock 整个 API 模块
-- ❌ `msw` / `nock` / `axios-mock-adapter` 拦截 HTTP — 让请求真的发出去
-- ❌ 前端 store 预注入初始状态 — 让 store 从真实 API 加载
+**正确做法**：
+1. Phase 0 启动完整运行环境（后端 + 数据库 + 缓存）
+2. Seed 测试数据到真实数据库
+3. 所有测试连真实服务，用真实数据交互
+4. 断言验证真实数据在各层正确流转
 
-**前端测试的正确做法**：
-1. Phase 0 确保后端可启动（dev server / docker-compose）
-2. Seed 测试数据（seed 脚本或 migration）
-3. 前端测试直接连真实后端 API
-4. 断言验证真实 API 返回的数据在 UI 上正确显示
-
-**为什么这条铁律存在**：
-实践中反复出现的模式 — 数百个 mock 测试全绿，但 E2E 连真实后端一跑，多个页面 JS 崩溃（数值方法对 undefined 调用、数组方法对 object 调用、日期解析失败、字段名不匹配）。所有 bug 都在前后端接缝层，mock 测试一个都发现不了，因为 mock 数据本身就是按前端类型定义"理想化"编造的。没有真实后端的前端测试不如不测。
+**为什么**：
+mock 测试全绿但连真实依赖就崩是反复出现的模式。所有 bug 在依赖接缝层，mock 测试发现不了。没有真实依赖的测试不如不测。
 
 ### 24. 断言源分离（Assertion-Source Separation）
 测试断言的"期望值"必须来自上游文档（design/tasks/product-map），不来自实现代码。无上游文档时允许从代码推导，但标注 `_assertion_source: "code"`。
