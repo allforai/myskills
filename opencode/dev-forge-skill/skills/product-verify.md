@@ -83,7 +83,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 **OpenRouter 专家矩阵覆盖**：
 - S1 covered（API/后端）→ DeepSeek 审计实现深度
 - S2 covered（UI/前端）→ Gemini 审计组件保真度
-- S3 covered（安全/规则）→ GPT-4o 审计护栏完整性
+- S3 covered（安全/规则）→ GPT 审计护栏完整性
 
 ---
 
@@ -370,7 +370,7 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
       **模型路由**（遵循 `docs/skill-commons.md` 专家矩阵）：
       - S1 covered 项（API/后端）→ DeepSeek 审计代码实现深度
       - S2 covered 项（UI/前端）→ Gemini 审计组件保真度
-      - S3 covered 项（安全/规则）→ GPT-4o 审计护栏完整性
+      - S3 covered 项（安全/规则）→ GPT 审计护栏完整性
       **审查范围**（成本控制）：
         covered 总数 ≤ 20 → 全量审查
         21-50 → 仅 frequency=高 + risk_level=高
@@ -739,9 +739,9 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
        prompt: 上述 prompt
      )
   4. 比对结果:
-     Claude covered + DeepSeek genuine → 确认 covered（无分歧）
-     Claude covered + DeepSeek stub → 标记 REVIEW_NEEDED（假阳性嫌疑）
-     Claude covered + DeepSeek partial → 标记 REVIEW_NEEDED（实现不完整）
+     Claude covered + 第二模型 genuine → 确认 covered（无分歧）
+     Claude covered + 第二模型 stub → 标记 REVIEW_NEEDED（假阳性嫌疑）
+     Claude covered + 第二模型 partial → 标记 REVIEW_NEEDED（实现不完整）
 ```
 
 **分歧处理**：REVIEW_NEEDED 项在静态汇总中单独展示，用户可选：

@@ -116,7 +116,9 @@ def collect_screens(base):
     return screens
 
 
-def ensure_hub_running(base, port=18900):
+def ensure_hub_running(base, port=None):
+    if port is None:
+        port = int(os.environ.get("REVIEW_HUB_PORT", "18900"))
     """Start Review Hub if not already running."""
     try:
         urllib.request.urlopen(f"http://localhost:{port}/", timeout=2)
@@ -217,7 +219,7 @@ def main():
         sys.exit(1)
 
     # Ensure Review Hub is running
-    port = 18900
+    port = int(os.environ.get("REVIEW_HUB_PORT", "18900"))
     hub_ok = ensure_hub_running(base, port)
 
     out_dir = os.path.join(base, "wireframe-verify")

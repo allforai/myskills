@@ -84,7 +84,7 @@ design-to-spec（规格层）   task-execute（执行层）   testforge（验证
 1.  **任务级审计 (Task-Level XV)**：
     *   **基准**：`task-context.json` (Traceability/Provenance)。
     *   **硬约束检查**：审计模型检查代码是否 100% 落地了 `task.rules` 及其在 `product-design` 阶段被验证通过的业务逻辑。
-    *   **模型路由**：遵循 `docs/skill-commons.md` 的**专家模型矩阵**（如 B2 调 GPT-4o，B1 调 DeepSeek）。
+    *   **模型路由**：遵循 `docs/skill-commons.md` 的**专家模型矩阵**（按 docs/skill-commons.md 专家模型矩阵按能力选择 OpenRouter 可用模型）。
     *   **动作**：执行 Agent 编写代码后，指定领域模型家族检查代码是否偏离了原始需求和约束。
     *   **成本控制**：仅对 `_Risk: HIGH_` 或 `protection_level: core` 的任务触发完整 XV；其余任务仅做 Phase 2 本地审计。
     *   **Prompt 模板**：向专家模型发送 `{task-context.json 片段} + {实现代码} + {本地审计结果}`，要求输出 `PASS | FAIL | WARN` + 具体行号 + 修复建议。

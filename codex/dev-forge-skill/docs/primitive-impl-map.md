@@ -9,7 +9,9 @@
 
 ## Web 技术栈
 
-| 原语 | UmiJS + AntD Pro | Vue 3 + Element Plus | Next.js (React) | Nuxt (Vue SSR) |
+> **UI 组件库不绑定框架**：表中示例基于常见搭配，LLM 应先检测项目实际使用的 UI 库（AntD / Element Plus / MUI / Chakra / shadcn 等），按实际库的 API 生成实现方案。
+
+| 原语 | UmiJS (React) | Vue 3 | Next.js (React) | Nuxt (Vue SSR) |
 |------|-----------------|---------------------|-----------------|----------------|
 | `VirtualList` | ProTable 内置虚拟化 | `el-table-v2`（虚拟表格） | `@tanstack/react-virtual` | `@tanstack/vue-virtual` |
 | `InfiniteScroll` | `ProList` + `onLoadMore` | `el-infinite-scroll` 指令 / `useInfiniteScroll`（VueUse） | `useInfiniteQuery` + `IntersectionObserver` | `useInfiniteQuery`（@tanstack/vue-query）+ `IntersectionObserver` |

@@ -296,7 +296,7 @@
         **修正方式**：V10 CRITICAL 发现由阶段 4（Auto-Fix）自动补充缺失的行为上报端点（B2 任务）和前端上报组件（B3 任务）到 tasks.md。
 
 ### 阶段 3：XV 交叉审查 (Cross-Verification)
-*   **模型路由**：遵循 `docs/skill-commons.md` 专家模型矩阵——API/架构审计 → GPT-4o，数据模型/算法 → DeepSeek，UI/视觉 → Gemini，安全/合规 → GPT-4o。
+*   **模型路由**：遵循 `docs/skill-commons.md` 专家模型矩阵——API/架构审计 → GPT，数据模型/算法 → DeepSeek，UI/视觉 → Gemini，安全/合规 → GPT。
 *   **审查重点**：识别任何偏离上游设计产物的"私自改动"，除非具备极强的技术理由。
 *   **执行规则**：
     1.  **Scope 限定**：XV 仅审查 Phase 2 标注 `DRIFT` 或 `WARN` 的条目 + 随机抽样 20% 通过项（成本控制）。

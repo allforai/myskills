@@ -53,7 +53,7 @@ def ensure_list(data, *keys):
 # ── Review Server Ports ───────────────────────────────────────────────────────
 
 REVIEW_PORTS = {
-    "review-hub": 18900,
+    "review-hub": int(os.environ.get("REVIEW_HUB_PORT", "18900")),
 }
 
 

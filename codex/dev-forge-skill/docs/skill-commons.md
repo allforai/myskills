@@ -82,19 +82,19 @@ dev-forge 的所有阶段（design-to-spec、task-execute、product-verify）均
 
 | 审计领域 | 推荐模型家族 | 擅长领域 | 应用场景示例 |
 |-----------|-------------|---------|--------------|
-| **架构与 API** | **GPT-4o** | 工业级标准遵循、RESTful 规范、OpenAPI 结构 | `api_design_review`, 契约漂移判定 |
+| **架构与 API** | **GPT** | 工业级标准遵循、RESTful 规范、OpenAPI 结构 | `api_design_review`, 契约漂移判定 |
 | **数据与算法** | **DeepSeek** | RDBMS 性能优化、复杂 SQL、逻辑严密性、算法一致性 | `data_model_review`, 后端逻辑审计 |
-| **UI 与 视觉** | **Gemini / GPT-4o-mini** | 多模态推理、布局感知、CSS 原语映射、Stitch 还原度 | `ui_consistency_review`, 前端组件审计 |
-| **安全与合规** | **GPT-4o** | 漏洞模式识别、SAST 结果解读、敏感信息脱敏 | `security_audit`, DevSecOps 风险评估 |
+| **UI 与 视觉** | **Gemini** | 多模态推理、布局感知、CSS 原语映射、Stitch 还原度 | `ui_consistency_review`, 前端组件审计 |
+| **安全与合规** | **GPT** | 漏洞模式识别、SAST 结果解读、敏感信息脱敏 | `security_audit`, DevSecOps 风险评估 |
 | **测试与边界** | **Gemini** | 创意发散、异常路径设想、复杂 Mock 数据构造 | `test_scenario_gap`, 情感诱导数据设计 |
 
 ### 调用规范 (XV 自动路由)
 
 执行 XV 审计时，Agent 应根据任务的 `batch` 类型自动映射模型：
 - **B1 (Data/Foundation)** -> DeepSeek
-- **B2 (Interface/API)** -> GPT-4o
+- **B2 (Interface/API)** -> GPT
 - **B3 (UI/Component)** -> Gemini
-- **B5 (Testing/Security)** -> GPT-4o / Gemini
+- **B5 (Testing/Security)** -> GPT / Gemini
 
 ---
 

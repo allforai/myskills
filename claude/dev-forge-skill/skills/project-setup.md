@@ -114,7 +114,7 @@ Step 1: 子项目拆分 + Monorepo 工具选择
     全部角色共享 → API 后端
     有移动端需求 → 移动端子项目
   → 生成子项目列表（不停，汇总到 Step 5）
-  自动选择 monorepo 工具: preflight.monorepo_tool（有 preflight 时）或推荐值（不停）
+  自动选择 monorepo 工具: preflight.monorepo_tool（有 preflight 时）或 LLM 根据项目语言生态推理最适合的工具（不停）
   → 每个子项目: id, name, type(backend/admin/web-customer/web-mobile/mobile-native)
   ↓
 Step 1.5: 架构 6V 审计 (Conway's Law Agent)
@@ -144,8 +144,8 @@ Step 3: 模块分配（逐子项目）
   → 检查: 所有模块都被分配了吗？有遗漏则提示
   ↓
 Step 4: 基础配置
-  每子项目自动分配: 端口号（基于 stacks.json 默认端口，避免冲突）、base path
-  自动选择 auth 策略: preflight.auth_strategy（有 preflight 时）或 JWT（不停）
+  每子项目自动分配: 端口号（LLM 根据技术栈常见默认端口推理，避免冲突）、base path
+  自动选择 auth 策略: preflight.auth_strategy（有 preflight 时）或 LLM 根据项目类型推理最适合的方案（不停）
   → 自动分配端口（不停，汇总到 Step 5）
   ↓
 Step 4.5: 开发者模式配置（Dev Mode）
@@ -179,10 +179,10 @@ Step 5: 生成 manifest + 汇总确认
   "mode": "new | existing",
   "product_source": ".allforai/product-map/product-map.json",
   "monorepo": {
-    "tool": "pnpm-workspace | turborepo | nx | manual",
+    "tool": "LLM 根据项目语言生态推理（如 pnpm-workspace / turborepo / nx / yarn-workspaces / cargo-workspaces / gradle / bazel / manual 等）",
     "root_name": "{project-name}"
   },
-  "auth_strategy": "jwt | session | oauth | none",
+  "auth_strategy": "LLM 根据项目类型推理（如 jwt / session / oauth2 / passkey / api-key / none 等）",
   "sub_projects": [
     {
       "id": "sp-001",

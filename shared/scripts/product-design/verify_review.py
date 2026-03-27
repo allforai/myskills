@@ -650,7 +650,9 @@ def run_xv(phase, ctx):
 
 HUB_PATHS = {"wireframe": "/wireframe", "ui": "/ui"}
 
-def ensure_hub_running(base, port=18900):
+def ensure_hub_running(base, port=None):
+    if port is None:
+        port = int(os.environ.get("REVIEW_HUB_PORT", "18900"))
     try:
         urllib.request.urlopen(f"http://localhost:{port}/", timeout=2)
         return True
@@ -714,7 +716,7 @@ def main():
             }
 
     if phase in HUB_PATHS:
-        port = 18900
+        port = int(os.environ.get("REVIEW_HUB_PORT", "18900"))
         if ensure_hub_running(base, port):
             output["hub_url"] = f"http://localhost:{port}{HUB_PATHS[phase]}"
 

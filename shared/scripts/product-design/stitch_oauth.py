@@ -214,7 +214,7 @@ def mode_browser():
     """Browser callback mode: start local server, open browser."""
     import webbrowser
 
-    port = 8085
+    port = int(os.environ.get("OAUTH_CALLBACK_PORT", "8085"))
     redirect_uri = f"http://localhost:{port}"
     auth_url = build_auth_url(redirect_uri)
     auth_code = None
@@ -254,7 +254,7 @@ def mode_browser():
 
 def mode_manual():
     """Manual mode: start localhost server, print URL, wait for callback."""
-    port = 8085
+    port = int(os.environ.get("OAUTH_CALLBACK_PORT", "8085"))
     redirect_uri = f"http://localhost:{port}"
     auth_url = build_auth_url(redirect_uri)
     auth_code = None
@@ -293,7 +293,7 @@ def mode_manual():
 def mode_generate_url():
     """Non-interactive step 1: print auth URL, save PKCE params to temp file.
     Uses localhost redirect — run --listen after opening the URL in browser."""
-    port = 8085
+    port = int(os.environ.get("OAUTH_CALLBACK_PORT", "8085"))
     redirect_uri = f"http://localhost:{port}"
     auth_url = build_auth_url(redirect_uri)
 

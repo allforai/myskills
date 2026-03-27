@@ -185,11 +185,7 @@ manifest.json            req + design + events + tasks  项目代码 + build-log
 
 **多语言实现规范**：
 
-| 技术栈 | i18n 方案 | 翻译文件位置 | hook/函数 |
-|--------|----------|-------------|-----------|
-| UmiJS (admin/merchant) | `@umijs/max` 内置 | `src/locales/` | `useIntl()` + `intl.formatMessage()` |
-| Next.js (website) | `next-intl` | `src/messages/` | `useTranslations()` |
-| Flutter (mobile) | `flutter_localizations` | `lib/l10n/*.arb` | `AppLocalizations.of(context)` |
+LLM 必须先检测项目实际 i18n 依赖（扫描 package.json / pubspec.yaml / build.gradle 等），使用项目已有的 i18n 方案和路径。仅当未检测到时，按技术栈常识推理最合适的方案。
 
 **通用规则**（所有技术栈）：
 - 所有用户可见文本通过 i18n 函数获取，禁止硬编码
