@@ -61,6 +61,8 @@ cr-visual orchestrator (this file)
 
 ### Phase A: Screenshot Capture
 
+> ▎ Screenshot prerequisite: If the target screen depends on dynamic data (messages, list items, etc.), proactively inject minimal test data via ViewModel commands to ensure key UI areas have content to compare during screenshots. Do not rely on pre-existing test account data.
+
 ```
 1. Read ./docs/cr-visual/step-capture.md
 2. Dispatch capture Agent:

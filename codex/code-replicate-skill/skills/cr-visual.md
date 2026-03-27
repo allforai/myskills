@@ -60,6 +60,8 @@ cr-visual orchestrator（本文件）
 
 ### Phase A: 截图采集
 
+> ▎ 截图前置条件：若目标 screen 依赖动态数据（消息、列表项等），应通过 ViewModel 命令主动注入最少量测试数据，确保截图时关键 UI 区域有内容可对比，不得依赖测试账号预置数据。
+
 ```
 1. Read ./docs/cr-visual/step-capture.md
 2. 派遣 capture Agent：
