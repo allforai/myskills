@@ -30,7 +30,7 @@ cr-visual 需要知道怎么启动和导航源 App。信息来源（优先级）
      "login": {
        "username": "test@example.com",
        "password": "test123",
-       "bypass_command": "设置环境变量/API调用来绕过2FA（如有）"
+       "mfa_method": "用户提供的正常 2FA 验证方式（如 TOTP 密钥、短信验证码获取方式等）"
      },
      "platform": "web | mobile | desktop"
    }

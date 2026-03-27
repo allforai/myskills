@@ -296,7 +296,7 @@ LLM 必须额外扫描每个页面/组件的源码，提取所有控件联动关
 前置条件（全部硬性，不降级）：
 - 后端运行（backend_start_command）
 - 数据就绪（seed_command）
-- 登录成功（login + bypass_command）
+- 登录成功（login，如有 2FA 则通过正常验证流程完成）
 
 ### 静态截图
 

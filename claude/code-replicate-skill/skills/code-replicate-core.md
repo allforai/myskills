@@ -40,7 +40,7 @@ Code Replicate 是逆向工程桥梁：读取已有代码库，生成标准 `.al
    - 源 App 运行信息（供 Phase 2 截图 + `/cr-visual` 使用）：
      · 启动命令（前端 + 后端）
      · URL
-     · 登录凭证（**多角色**：每个需要截图的角色一组凭证，如有 2FA 需提供绕过方式）
+     · 登录凭证（**多角色**：每个需要截图的角色一组凭证，如有 2FA 需提供正常验证方式如 TOTP 密钥）
      · 测试数据准备命令（seed 脚本或 demo 账号）
      · 平台类型
    > **闭环输入审计**（见 product-design-skill/docs/skill-commons.md §八）：
