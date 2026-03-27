@@ -80,6 +80,14 @@
 
 ---
 
+## Step 4.2.5: 路径 E — E2E 操作链（Operation-Driven E2E）
+
+> **这是 Phase 4 中投入产出比最高的路径。Chain 0 通过后立即执行，不等其他路径。**
+>
+> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/testforge/path-e-operation-e2e.md
+
+---
+
 ## Step 4.1: 基础设施补全 + ENV_ISSUE 子项目处理（仅 full/fix 模式）
 
 **ENV_ISSUE 子项目**（Phase 0 基线标记为 ENV_ISSUE 的子项目）：
@@ -142,11 +150,23 @@ dimension Logic > Interface > Data > UX（业务规则最先）
 路径 B: E2E Chain（跨站业务链测试）
   每批 1-2 条链（每条链是完整业务流）
   依赖关系：Path A/D/C 完成后再锻造链
+
+路径 E: E2E 操作链（单站操作驱动测试）— 新路径，最高优先级
+  对每个前端子项目，基于 business-flows 生成操作驱动的 E2E 链
+  数据通过 API 种子（beforeAll），操作通过 UI 执行，结果跨页面验证
+  每个 CRUD 操作必须测正向+负向
+  依赖关系：仅依赖 Chain 0 通过，不依赖任何其他路径
 ```
 
-**执行顺序**：Step 4.0(静态接缝预检) → **Step 4.0.5(Chain 0 冒烟 — 跑起来验证)** → Step 4.1(基础设施) → Step 4.2(批次规划) → Step 4.3 路径 A(仅逻辑层) → D → C → B(完整 E2E 链，复用 Chain 0 登录态) → Step 4.4(构建验证)
+**执行顺序**：Step 4.0(静态接缝预检) → **Step 4.0.5(Chain 0 冒烟)** → **Step 4.2.5 路径 E(E2E 操作链 — 紧跟 Chain 0)** → Step 4.1(基础设施) → Step 4.2(批次规划) → Step 4.3 路径 A → D → C → B → Step 4.4(构建验证)
 
-**跨子项目并行**：同一路径内，不同子项目互相独立，使用 Agent tool 并行执行。例如 Path A 中 website 和 admin 的单元测试可同时锻造。Path B 除外（E2E 链天然跨子项目，按链串行）。
+> **为什么 E2E 操作链排在 unit 测试之前**（铁律 #30）：
+> E2E 操作链发现的 bug（接缝层、UI 交互、错误处理）和 unit 测试发现的 bug 完全不重叠。
+> 实战数据：400 个 unit 测试全绿，但"删除有关联数据的实体"这种真实用户操作的前端报错 — unit 测试不覆盖此层。
+> 一条 E2E 操作链 5 分钟能发现接缝层 bug，50 个 unit 测试发现 0 个。
+> Chain 0 通过后立即锻造 E2E 操作链，不等 unit 测试完成。Path E 和 Path A 可并行。
+
+**跨子项目并行**：同一路径内，不同子项目互相独立，使用 Agent tool 并行执行。Path E 按前端子项目并行。Path B 除外（E2E 链天然跨子项目，按链串行）。
 
 ## Step 4.3: 逐批锻造（内循环）
 
@@ -422,9 +442,9 @@ Step 3: 验证断言不是同义反复
 6. 收敛（CG-1 同样适用，按平台独立计数）
 ```
 
-### 路径 B: E2E 链锻造
+### 路径 B: E2E 链锻造（操作驱动）
 
-> 详见 testforge.md 中 路径 B 部分（保留在主文件中或独立拆出）
+> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/testforge/path-b-e2e-chain.md
 
 ## Step 4.4: 构建验证
 

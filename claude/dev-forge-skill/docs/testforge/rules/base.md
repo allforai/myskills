@@ -114,3 +114,9 @@ Level 3 — 值正确性（目标水平）:
 | `expect(response.status).toBe(200)` | `expect(response.body.total).toBe(128.50)` | 验证"成功" vs 验证"结果对" |
 | `expect(component).toMatchSnapshot()` | `expect(screen.getByText('John')).toBeVisible()` | 验证"长这样" vs 验证"内容对" |
 | `expect(select.options.length).toBe(3)` | `expect(select.options).toContain('广东省')` | 验证"有3个" vs 验证"包含对的" |
+
+### 30. E2E 操作链优先于 Unit 测试（Operation-First）
+
+E2E 操作链（Path E）排在 Chain 0 之后**立即执行**，不等 unit 测试完成。Path E 和 Path A 可并行。
+
+原因：E2E 操作链发现的 bug（接缝层、错误处理链路）和 unit 测试发现的 bug 完全不重叠。先发现接缝 bug 再补 unit = 高效。

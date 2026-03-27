@@ -166,6 +166,39 @@ LLM 扫描前端源代码中的分页/无限滚动控件，对每个分页点审
 - 下一步引导与结果回流
 - 持续关系入口（history/reminder/notification/progress/recent activity 等相关项）
 
+**Operation Coverage 维度**（与 DataBinding/Linkage 互补：前者检查"数据展示"，此维度检查"用户操作"）：
+
+LLM 扫描前端源代码中的 mutation 操作（表单提交、确认弹窗、状态变更按钮），对每个操作审计：
+
+```
+对每个前端页面/组件中的 mutation 操作：
+
+创建操作（Form submit → API POST）：
+  → 有测试验证正向创建（填写有效数据 → 提交 → 实体出现）吗？
+  → 有测试验证负向创建（重复/无效数据 → 提交 → 错误提示）吗？
+
+删除操作（Delete button → Confirm → API DELETE）：
+  → 有测试验证正向删除（无关联实体 → 删除 → 实体消失）吗？
+  → 有测试验证负向删除（有关联数据的实体 → 删除 → 409 错误 toast + 数据仍在）吗？
+
+编辑操作（Edit dialog → Form submit → API PATCH）：
+  → 有测试验证正向编辑（修改为有效值 → 保存 → 值变化）吗？
+  → 有测试验证负向编辑（修改为无效值 → 保存 → 表单错误提示）吗？
+
+状态变更操作（Approve/Reject/Archive/Disable/Enable）：
+  → 有测试验证正向状态转换（合法转换 → badge/按钮变化）吗？
+  → 有测试验证负向状态转换（非法转换 → 拒绝提示）吗？
+
+独立操作（Reply/Export/Test Connection）：
+  → 有测试验证操作执行和结果反馈吗？
+```
+
+缺少上述测试的操作 → 标记为 `OPERATION_GAP`，`test_type` 标注为 `e2e_operation`（Path E 处理）。
+
+> **为什么 Operation Coverage 比 DataBinding 更重要**：
+> DataBinding 测的是"页面有数据"（Level 1-2 断言），Operation Coverage 测的是"用户能完成操作"（Level 3 断言）。
+> 实战证明：所有 DataBinding 测试通过，但"删除有关联分类"这个最基本的用户操作在前端报错 — 因为没有 Operation 测试。
+
 ### 输出
 
 写入 `.allforai/testforge/testforge-analysis.json`：

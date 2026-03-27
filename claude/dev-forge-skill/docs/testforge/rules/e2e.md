@@ -1,4 +1,4 @@
-# 铁律 — E2E 组（Path B/C Agent 遵守）
+# 铁律 — E2E 组（Path B/C/E Agent 遵守）
 
 ### 14. E2E 选择器先看后写
 写 Web UI E2E 测试前，必须先 `browser_navigate` + `browser_snapshot` 看真实 DOM 结构，基于快照中的实际元素编写选择器。**严禁不看页面凭猜测写 CSS 选择器。**
@@ -75,3 +75,18 @@ WSL2/CI 无 GPU 时：用 `--web-renderer html` 构建，Playwright 加 `retries
 **不需要全量覆盖**：优先覆盖用户高频操作的异步接缝（登录、核心 CRUD、支付），低频操作可标记 `DEFERRED`。
 
 **为什么禁止 mock**：mock 500 → 前端对 mock 的标准 JSON 错误体显示了"服务器错误" → 通过。但真实 500 可能返回 HTML 错误页 → 前端 JSON.parse 炸了 → bug 逃逸。真实触发才能暴露真实行为。
+
+### 31. CRUD 负向操作必测（Negative CRUD）
+
+对每个 delete/update/状态变更操作，**必须测至少一个负向路径**：
+
+- DELETE 有关联数据的实体 → 验证 409 拒绝 + 错误 toast + 数据仍在
+- UPDATE 为无效值 → 验证 400 + 表单错误提示
+- STATE 非法转换 → 验证拒绝
+- CREATE 重复/无效数据 → 验证 409/400 + 错误提示
+
+**负向 DELETE 是最高优先级**：FK 约束 → 后端 409 → interceptor → mutation onError → toast — 这条 5 节点接缝链最容易断。
+
+### 32. E2E 链禁止只读（No Read-Only Chains）
+
+没有写操作的 E2E 链 = 烟雾测试，不能标记为 E2E 链。E2E 链的核心价值 = 验证操作的因果关系跨页面正确传播。
