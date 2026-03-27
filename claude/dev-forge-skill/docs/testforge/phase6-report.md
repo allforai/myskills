@@ -294,7 +294,7 @@
 1. **行为驱动命名** — describe/group 按功能分组，不按方法名
 2. **Given-When-Then 结构** — 每个测试：准备数据 → 执行操作 → 验证结果
 3. **表驱动优先**（多参数场景）— 同一逻辑的多个输入用 table-driven / parameterized
-4. **Mock 最小化** — 只 mock 外部依赖（HTTP、DB），不 mock 被测模块的内部方法
+4. **禁止 Mock API 响应** — 前端测试不 mock HTTP 响应（mock 数据和真实 API 不一致是假绿头号原因）。后端 unit 可 mock repository 接口。替代方案：API fixture 录制或连真实后端
 5. **一个测试一个断言意图** — 可以有多个 expect/assert，但必须验证同一个行为
 6. **错误路径必测** — 每个 catch/error return/throw 至少一个测试
 7. **E2E 链数据自给自足** — 每条链在测试内创建所需数据，不依赖外部 seed 或其他链
