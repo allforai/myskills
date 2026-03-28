@@ -61,6 +61,49 @@ demo-forge 内部三阶段:
 
 ## 工作流
 
+### V0: 全界面穷举扫描
+
+> **验证必须穷举所有客户端界面，不能抽样。** 这是发现空页面和渲染崩溃的第一道防线。
+
+**目标**: 自主发现应用的所有界面，逐个验证是否有数据、是否能正常渲染。不依赖预定义的页面列表。
+
+**执行方式**: `subagent` — 主流程 dispatch subagent 做穷举扫描，自身准备 V1-V7 的验证计划。subagent 返回界面清单和状态后，主流程据此决定后续验证重点和问题路由。
+
+**subagent 任务描述**:
+> 打开应用，发现所有用户可达的界面。对每个界面判断：有数据 / 空页面 / 渲染崩溃 / 配置表单页。
+> 返回完整界面清单及每个界面的状态。
+
+**subagent 输入**: 应用 URL + 登录凭据 + `page-entity-mapping.json`（若存在）
+**subagent 输出**: 界面扫描结果 JSON（界面名、状态、问题描述）
+
+**subagent 内部步骤**:
+
+1. 打开应用首页，读取页面结构（snapshot / 截图）
+2. 从当前页面中提取所有导航入口（LLM 自行理解导航结构——侧边栏、顶栏、标签页、底部导航、菜单等，不硬编码选择器）
+3. 对每个导航入口，访问并读取页面内容
+4. LLM 判断每个页面的状态：
+
+| 状态 | 判断依据 | 处理 |
+|------|---------|------|
+| **有数据** | 列表有行、表格有记录、统计非零、内容区域有实质内容 | PASS |
+| **空页面** | "No data"、"not found"、空表格、全零统计、空列表 | route_to=execute |
+| **渲染崩溃** | 报错信息、空白主区域、控制台 Error、加载卡住 | route_to=dev_task |
+| **配置/表单页** | 页面本身是输入表单，不需要预填数据 | SKIP |
+
+5. 若发现子导航（二级菜单、Tab 切换等），递归检查
+6. 若 `page-entity-mapping.json` 存在，交叉验证：mapping 说应该有数据的界面是否真的有数据
+
+**主流程收到结果后**：
+- 空页面和崩溃页面写入 verify-issues.json
+- 输出进度：`V0 界面扫描: {total} 界面, {alive} 有数据, {empty} 空页面, {crash} 崩溃`
+
+**关键原则**：
+- **穷举不抽样** — 导航中每一个可点击的入口都必须访问
+- **平台无关** — 不限定 web/mobile/desktop，LLM 根据应用类型选择验证方式
+- **空页面是灌入未完成** — 除表单页外，任何数据展示页面为空都视为 execute 阶段遗漏
+
+---
+
 ### V1: 登录验证
 
 **目标**: 确认所有角色账号都能登录并看到正确权限数据。
@@ -321,13 +364,15 @@ experience-map.screen.actions[]
 
 **步骤**:
 
-1. **汇总**: 收集 V1-V7 所有检查结果
+1. **汇总**: 收集 V0-V7 所有检查结果
 2. **分类**: 对每个失败项判定 category + severity + route_to
 
 **路由规则**:
 
 | 问题类型 | category | route_to | 典型场景 |
 |---------|----------|----------|---------|
+| V0 空页面（界面无数据） | empty_page | execute | 界面存在但无数据可展示 |
+| V0 渲染崩溃（界面报错） | code_bug | dev_task | 界面有数据但渲染失败 |
 | 数据缺失、枚举未覆盖、链路不完整 | coverage | design | 实体 0 条记录，缺 REJECTED 状态 |
 | 图片 broken、视频不播放、外链残留、占位图 | media | media | 404、拉伸、灰块 |
 | 外键断裂、灌入失败 | data_integrity | execute | 关联数据缺失、链路断裂 |
@@ -336,6 +381,18 @@ experience-map.screen.actions[]
 | UI 活性不足（列表空、按钮无目标、状态缺失） | liveness | design | screen action 无数据支撑 |
 | 数据流断裂（因果链不连贯、关联数据缺失） | data_flow | execute | 父实体有子列表为空 |
 | 纯样式偏好、与数据无关的 UI 微调 | style_preference | skip | 记录但不路由 |
+
+**与执行引擎协议的桥接**：V8 路由结果同时转换为 UPSTREAM_DEFECT 信号返回给主流程调度器：
+
+| V8 route_to | UPSTREAM_DEFECT target_phase | severity |
+|-------------|------------------------------|----------|
+| design | demo-forge.design | warning |
+| media | demo-forge.media | warning |
+| execute | demo-forge.execute | warning |
+| dev_task | dev-forge.task-execute | blocker |
+| skip | 不发信号 | — |
+
+每个 verify issue 转换为一个 UPSTREAM_DEFECT 信号，由主流程调度器统一管理回退和去重。
 
 3. **6V 深度诊断**（针对 `code_bug` 和 `data_integrity` 类问题）:
    - 对每个 high severity 的 `code_bug` / `data_integrity` 问题，用 LLM 从 6 个工程视角诊断根因：

@@ -54,6 +54,10 @@ phases:
     output: "代码变更 + .allforai/dev-forge/build-log.json"
     rules: ["${CLAUDE_PLUGIN_ROOT}/skills/task-execute.md", "${CLAUDE_PLUGIN_ROOT}/docs/skill-commons.md"]
     depends_on: [design-to-spec]
+    # NOTE: task-execute 内部按 Round 分批 dispatch sub-subagent。
+    # 每个 Round 完成后 checkpoint 到 build-log.json，
+    # 主流程可在 Round 间重新 dispatch 以刷新 context。
+    # 详见 task-execute.md 的 Step 0.3 自动分片机制。
 
   - id: product-verify
     subagent_task: "产品验收：静态分析 + Playwright 动态验证"
@@ -71,7 +75,7 @@ phases:
 
   - id: fieldcheck
     subagent_task: "字段一致性：UI↔API↔Entity↔DB 四层字段检查"
-    input: ["项目代码库"]
+    input: ["项目代码库", ".allforai/dev-forge/design.json"]
     output: ".allforai/fieldcheck/"
     rules: ["${CLAUDE_PLUGIN_ROOT}/commands/fieldcheck.md"]
     depends_on: [task-execute]

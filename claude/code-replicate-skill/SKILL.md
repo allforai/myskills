@@ -93,20 +93,29 @@ phases:
     input: ["用户输入"]
     output: ".allforai/code-replicate/replicate-config.json"
     rules: ["${CLAUDE_PLUGIN_ROOT}/skills/code-replicate-core.md"]
+    preflight: true
 
-  - id: discovery
+  - id: discovery-scan
     subagent_task: "发现：扫描源码结构、模块摘要、基础设施清单、抽象提取"
     input: [".allforai/code-replicate/replicate-config.json", "源代码库"]
     output: ".allforai/code-replicate/discovery-profile.json, .allforai/code-replicate/extraction-plan.json"
     rules: ["${CLAUDE_PLUGIN_ROOT}/docs/analysis-principles.md"]
     depends_on: [preflight]
 
+  - id: discovery-confirm
+    preflight: true
+    subagent_task: "发现确认：展示发现结果，获取用户确认"
+    input: [".allforai/code-replicate/discovery-profile.json", ".allforai/code-replicate/extraction-plan.json"]
+    output: ".allforai/code-replicate/extraction-plan-confirmed.json"
+    rules: ["${CLAUDE_PLUGIN_ROOT}/skills/code-replicate-core.md"]
+    depends_on: [discovery-scan]
+
   - id: generate
     subagent_task: "生成：按模块 LLM 生成 → 脚本合并 → 标准产物"
     input: [".allforai/code-replicate/extraction-plan.json", "源代码库"]
-    output: ".allforai/product-map/, .allforai/experience-map/"
+    output: ".allforai/product-map/, .allforai/experience-map/, .allforai/use-case/"
     rules: ["${CLAUDE_PLUGIN_ROOT}/skills/code-replicate-core.md"]
-    depends_on: [discovery]
+    depends_on: [discovery-confirm]
 
   - id: verify
     subagent_task: "验证：schema 校验 + XV 交叉验证 + 还原度报告"
