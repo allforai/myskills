@@ -190,19 +190,19 @@ phases:
   - id: product-concept
     subagent_task: "发现产品愿景：分析用户需求，输出产品概念"
     input: []
-    output: ".allforai/product-concept.json"
+    output: ".allforai/product-concept/"
     rules: ["./skills/product-concept.md"]
 
   - id: product-map
     subagent_task: "构建产品地图：角色、任务、约束、业务流、数据模型"
-    input: [".allforai/product-concept.json", "项目代码库"]
+    input: [".allforai/product-concept/ (optional)", "项目代码库 (optional)"]
     output: ".allforai/product-map/"
     rules: ["./skills/product-map.md"]
-    depends_on: [product-concept]
+    depends_on: [{id: product-concept, optional: true}]
 
   - id: journey-emotion
     subagent_task: "绘制情感旅程：识别用户在每个任务中的情感波动和决策点"
-    input: [".allforai/product-map/"]
+    input: [".allforai/product-map/business-flows.json", ".allforai/product-map/role-profiles.json"]
     output: ".allforai/experience-map/journey-emotion-map.json"
     rules: ["./skills/journey-emotion.md"]
     depends_on: [product-map]
@@ -216,10 +216,11 @@ phases:
 
   - id: interaction-gate
     subagent_task: "交互质量门禁：评估体验地图的交互成熟度"
-    input: [".allforai/experience-map/experience-map.json"]
+    input: [".allforai/experience-map/experience-map.json", ".allforai/product-map/product-map.json"]
     output: ".allforai/experience-map/interaction-gate.json"
     rules: ["./skills/interaction-gate.md"]
     depends_on: [experience-map]
+    gate: true
 
   - id: use-case
     subagent_task: "生成用例树：从产品地图和体验地图推导完整用例"

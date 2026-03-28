@@ -29,7 +29,7 @@ version: "2.0.0"
 phases:
   - id: design
     subagent_task: "设计 demo 数据方案：实体清单、场景链路、API 端点映射"
-    input: [".allforai/product-map/", ".allforai/experience-map/"]
+    input: [".allforai/product-map/", ".allforai/experience-map/", "项目代码库"]
     output: ".allforai/demo-forge/demo-plan.json"
     rules: ["./skills/demo-design.md"]
 

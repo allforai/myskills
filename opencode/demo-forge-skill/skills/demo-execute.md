@@ -122,6 +122,9 @@ demo-forge 内部三阶段:
 - 输出到 `.allforai/demo-forge/api-gap-tasks.md` 供 dev-forge 补建 API
 - forge-log 记录阻断原因，提示用户先补 API 再重灌
 
+**UPSTREAM_DEFECT 信号**：发现 `API_MISSING_BLOCKER` 时，除记录到 forge-log 外，还必须在阶段摘要中返回 UPSTREAM_DEFECT 信号：
+{"signal":"UPSTREAM_DEFECT","source_phase":"demo-forge.execute","target_phase":"dev-forge.task-execute","defect_type":"API_MISSING_BLOCKER","evidence":"<具体缺失的 API 端点列表>","severity":"blocker","suggested_fix":"补建缺失的 API 端点，详见 api-gap-tasks.md"}
+
 **失败处理策略**：
 - **独立实体失败**：写入日志（含 API 响应状态码和错误体），继续灌入其他实体。灌入失败 = 真实 BIZ_BUG，记录到 forge-log
 - **父实体失败**：跳过该链路下所有子实体（避免外键悬空），整条链路标记为 `CHAIN_FAILED`
@@ -224,3 +227,4 @@ draft 保留不删，clean 后可直接重灌不必重新生成数据。
 5. **失败不静默，链路失败显式标记** — 独立失败记日志继续，父失败则整条链路标记 CHAIN_FAILED
 6. **灌入后立即验证可用性** — 用户账号创建后立即用认证 API 验证登录（不留到 demo-verify 才发现密码不对）；数据关联创建后查询确认链路完整（父→子关系可查到）。灌入验证失败 → 修正后重试，不静默跳过
 7. **下游消费验证上游完整性** — 灌入完成后必须对照客户端界面清单逐个检查数据覆盖（E5），不能只按 plan 灌完就结束。界面空 = 灌入未完成
+8. **灌入失败即 UPSTREAM_DEFECT** — API 返回 4xx/5xx 且非数据问题（如端点不存在、认证配置错误、CORS 拒绝），视为接缝层 bug，返回 UPSTREAM_DEFECT 信号（target: dev-forge.task-execute，severity: blocker）。数据校验失败（如必填字段缺失）视为 demo-design 问题，返回 UPSTREAM_DEFECT（target: demo-forge.design，severity: warning）

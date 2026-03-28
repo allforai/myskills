@@ -382,6 +382,18 @@ experience-map.screen.actions[]
 | 数据流断裂（因果链不连贯、关联数据缺失） | data_flow | execute | 父实体有子列表为空 |
 | 纯样式偏好、与数据无关的 UI 微调 | style_preference | skip | 记录但不路由 |
 
+**与执行引擎协议的桥接**：V8 路由结果同时转换为 UPSTREAM_DEFECT 信号返回给主流程调度器：
+
+| V8 route_to | UPSTREAM_DEFECT target_phase | severity |
+|-------------|------------------------------|----------|
+| design | demo-forge.design | warning |
+| media | demo-forge.media | warning |
+| execute | demo-forge.execute | warning |
+| dev_task | dev-forge.task-execute | blocker |
+| skip | 不发信号 | — |
+
+每个 verify issue 转换为一个 UPSTREAM_DEFECT 信号，由主流程调度器统一管理回退和去重。
+
 3. **6V 深度诊断**（针对 `code_bug` 和 `data_integrity` 类问题）:
    - 对每个 high severity 的 `code_bug` / `data_integrity` 问题，用 LLM 从 6 个工程视角诊断根因：
      - **V1 Contract**: API 签名/响应格式是否偏离了 `api-contracts.json`

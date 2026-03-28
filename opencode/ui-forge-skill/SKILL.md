@@ -63,7 +63,7 @@ version: "1.0.0"
 phases:
   - id: fidelity-check
     subagent_task: "还原度检测：对比设计规格与当前实现的偏差"
-    input: [".allforai/ui-design/", "前端代码库"]
+    input: [".allforai/ui-design/ (optional)", "前端代码库"]
     output: ".allforai/ui-forge/fidelity-assessment.json"
     rules: ["./docs/fidelity-checklist.md"]
 
