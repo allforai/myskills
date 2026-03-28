@@ -55,6 +55,46 @@ version: "1.0.0"
 - `non-invasive` — 默认不改业务流程、不改接口契约、不重写页面语义
 - `technical-team-oriented` — 面向专业研发，不使用空泛设计话术
 
+## 执行引擎阶段声明
+
+```yaml
+# execution-engine: ${CLAUDE_PLUGIN_ROOT}/docs/execution-engine.md
+
+phases:
+  - id: fidelity-check
+    subagent_task: "还原度检测：对比设计规格与当前实现的偏差"
+    input: [".allforai/ui-design/", "前端代码库"]
+    output: ".allforai/ui-forge/fidelity-assessment.json"
+    rules: ["${CLAUDE_PLUGIN_ROOT}/docs/fidelity-checklist.md"]
+
+  - id: restore
+    subagent_task: "还原修复：按设计规格修复实现偏差"
+    input: [".allforai/ui-forge/fidelity-assessment.json", ".allforai/ui-design/"]
+    output: "代码变更"
+    rules: ["${CLAUDE_PLUGIN_ROOT}/skills/ui-forge.md"]
+    depends_on: [fidelity-check]
+
+  - id: polish
+    subagent_task: "视觉打磨：层次、响应式、状态设计、微交互增强"
+    input: [".allforai/ui-design/", "前端代码库"]
+    output: "代码变更"
+    rules: ["${CLAUDE_PLUGIN_ROOT}/skills/ui-forge.md"]
+    depends_on: [restore]
+```
+
+## full 模式执行
+
+读取 `${CLAUDE_PLUGIN_ROOT}/docs/execution-engine.md` 获取调度协议。
+
+主流程作为纯调度器执行：
+1. 按 phases 声明的 depends_on 拓扑排序
+2. 逐阶段 dispatch subagent，使用协议中的任务模板
+3. 收集阶段摘要，选择性注入给下一阶段
+4. 收到 UPSTREAM_DEFECT 时按协议回退
+5. 所有阶段为线性依赖（fidelity-check → restore → polish），无并行机会
+
+---
+
 ## 参考文档
 
 - 定位说明：`${CLAUDE_PLUGIN_ROOT}/docs/positioning.md`

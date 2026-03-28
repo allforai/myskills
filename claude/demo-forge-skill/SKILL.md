@@ -21,6 +21,40 @@ version: "2.0.0"
 2. **应用代码已完成** — dev-forge Phase 7+（任务执行完毕），核心功能可用。
 3. **应用正在运行** — demo-execute 和 demo-verify 需要可访问的应用实例（本地或远程）。
 
+## 阶段声明
+
+```yaml
+# execution-engine: ${CLAUDE_PLUGIN_ROOT}/docs/execution-engine.md
+
+phases:
+  - id: design
+    subagent_task: "设计 demo 数据方案：实体清单、场景链路、API 端点映射"
+    input: [".allforai/product-map/", ".allforai/experience-map/"]
+    output: ".allforai/demo-forge/demo-plan.json"
+    rules: ["${CLAUDE_PLUGIN_ROOT}/skills/demo-design.md"]
+
+  - id: media
+    subagent_task: "获取/生成 demo 媒体素材并上传"
+    input: [".allforai/demo-forge/demo-plan.json"]
+    output: ".allforai/demo-forge/upload-mapping.json"
+    rules: ["${CLAUDE_PLUGIN_ROOT}/skills/media-forge.md"]
+    depends_on: [design]
+
+  - id: execute
+    subagent_task: "通过 API 灌入全部 demo 数据（灌入即集成测试）"
+    input: [".allforai/demo-forge/demo-plan.json", ".allforai/demo-forge/upload-mapping.json"]
+    output: ".allforai/demo-forge/forge-data.json"
+    rules: ["${CLAUDE_PLUGIN_ROOT}/skills/demo-execute.md"]
+    depends_on: [design, media]
+
+  - id: verify
+    subagent_task: "验证 demo 数据的视觉完整性（V1-V7 层 + UPSTREAM_DEFECT 回退）"
+    input: [".allforai/demo-forge/forge-data.json"]
+    output: ".allforai/demo-forge/verify-report.json"
+    rules: ["${CLAUDE_PLUGIN_ROOT}/skills/demo-verify.md"]
+    depends_on: [execute]
+```
+
 ## 全流程编排
 
 ```
@@ -134,6 +168,18 @@ Round 2 → Round 3（最多 3 轮修复）
 ```
 
 每轮的验证结果和修复动作记录在 `round-history.json`，支持断点续作。
+
+## full 模式执行
+
+读取 `${CLAUDE_PLUGIN_ROOT}/docs/execution-engine.md` 获取调度协议。
+
+主流程作为纯调度器执行：
+1. 按 phases 声明的 depends_on 拓扑排序
+2. 逐阶段 dispatch subagent，使用协议中的任务模板
+3. 收集阶段摘要，选择性注入给下一阶段
+4. verify 阶段发现问题时，通过 UPSTREAM_DEFECT 信号回退到 design/media/execute 或跨 skill 回退到 dev-forge
+5. 同一 {source, target} 对最多回退 2 次，超过标记 UNRESOLVED_DEFECT
+6. 所有阶段完成后输出最终报告
 
 ## 输出
 

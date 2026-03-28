@@ -174,6 +174,60 @@ your-project/
 
 ---
 
+## 执行引擎阶段声明
+
+```yaml
+# execution-engine: ${CLAUDE_PLUGIN_ROOT}/docs/execution-engine.md
+
+phases:
+  - id: profile
+    subagent_task: "项目画像：探测技术栈、架构类型、分层结构、模块划分"
+    input: ["项目代码库"]
+    output: ".allforai/code-tuner/tuner-profile.json"
+    rules: ["${CLAUDE_PLUGIN_ROOT}/references/phase0-profile.md", "${CLAUDE_PLUGIN_ROOT}/references/layer-mapping.md"]
+
+  - id: compliance
+    subagent_task: "架构合规检查：依赖方向、分层规则、跨架构通用规则"
+    input: [".allforai/code-tuner/tuner-profile.json", "项目代码库"]
+    output: ".allforai/code-tuner/phase1-compliance.json"
+    rules: ["${CLAUDE_PLUGIN_ROOT}/references/phase1-compliance.md"]
+    depends_on: [profile]
+
+  - id: duplicates
+    subagent_task: "重复检测：API/Service/Data/Utility 四层扫描"
+    input: [".allforai/code-tuner/tuner-profile.json", "项目代码库"]
+    output: ".allforai/code-tuner/phase2-duplicates.json"
+    rules: ["${CLAUDE_PLUGIN_ROOT}/references/phase2-duplicates.md"]
+    depends_on: [profile]
+
+  - id: abstractions
+    subagent_task: "抽象分析：垂直/水平/接口合并/验证逻辑/过度抽象"
+    input: [".allforai/code-tuner/tuner-profile.json", "项目代码库"]
+    output: ".allforai/code-tuner/phase3-abstractions.json"
+    rules: ["${CLAUDE_PLUGIN_ROOT}/references/phase3-abstractions.md"]
+    depends_on: [profile]
+
+  - id: report
+    subagent_task: "综合报告：5维评分 + 热力图 + 重构任务清单"
+    input: [".allforai/code-tuner/phase1-compliance.json", ".allforai/code-tuner/phase2-duplicates.json", ".allforai/code-tuner/phase3-abstractions.json"]
+    output: ".allforai/code-tuner/tuner-report.md, .allforai/code-tuner/tuner-tasks.json"
+    rules: ["${CLAUDE_PLUGIN_ROOT}/references/phase4-report.md"]
+    depends_on: [compliance, duplicates, abstractions]
+```
+
+## full 模式执行
+
+读取 `${CLAUDE_PLUGIN_ROOT}/docs/execution-engine.md` 获取调度协议。
+
+主流程作为纯调度器执行：
+1. 按 phases 声明的 depends_on 拓扑排序
+2. 逐阶段（或并行）dispatch subagent，使用协议中的任务模板
+3. 收集阶段摘要，选择性注入给下一阶段
+4. 收到 UPSTREAM_DEFECT 时按协议回退
+5. compliance / duplicates / abstractions 三个阶段可在 profile 完成后并行 dispatch
+
+---
+
 ## 使用方式
 
 ### 场景 1: 新项目完整分析
