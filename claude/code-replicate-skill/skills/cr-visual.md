@@ -70,7 +70,9 @@ cr-visual orchestrator（本文件）
 2. 派遣 capture Agent：
    - 输入：experience-map.json, route-map.json, replicate-config.json
    - 输出：screens[] 截图路径映射
-   - 失败条件：无可用截图 → 报错退出
+   - 失败条件：源端 + 目标端**均**无截图 → 报错退出
+   - 仅源端无截图 → 启动 CAPTURE_UNAVAILABLE 补偿策略（见 step-capture.md）
+   - 仅目标端无截图 → 报错退出（"目标应用必须可运行才能做视觉验证"）
 ```
 
 ### Phase B: 任务规划（关键新增）

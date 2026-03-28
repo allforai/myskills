@@ -1,6 +1,6 @@
 {
   "name": "code-replicate",
   "description": "Code Replication Bridge: reverse-engineer existing codebases into .allforai/ artifacts via 4-phase pipeline (scan → extract → map → output). 4 fidelity levels (interface / functional / architecture / exact), cross-stack migration, compatible with dev-forge pipeline.",
-  "version": "5.5.2",
+  "version": "5.6.0",
   "author": { "name": "dv" }
 }

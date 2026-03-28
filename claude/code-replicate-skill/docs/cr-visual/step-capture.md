@@ -56,7 +56,51 @@ cr-visual 需要知道怎么启动和导航源 App。信息来源（优先级）
 - 按 Phase 2c-visual 的完整协议执行（启动后端 → seed 数据 → 启动前端 → 登录 → 截图）
 - 任何前置条件失败 → 不截图，报具体失败原因
 
-**无截图可用** → 报错退出。
+**截图可用性判定**：
+
+- 源端 + 目标端均有截图 → 正常流程（继续 Step 3）
+- **仅源端无截图** → 启动 CAPTURE_UNAVAILABLE 补偿策略：
+
+  LLM 自主决定补偿方案，输出 compensation_strategy：
+
+  ```json
+  {
+    "capture_status": {
+      "source_screenshots": "unavailable",
+      "target_screenshots": "available",
+      "reason": "LLM 描述具体原因（如：源 App 为 Flutter iOS，当前环境无 iOS 模拟器）"
+    },
+    "compensation_strategy": {
+      "reasoning": "截图是 UI 闭环验证的最后防线。缺少源端截图意味着无法做视觉比对。需用其他手段补偿信息缺口。",
+      "actions": [
+        {
+          "action": "升级 experience-map 分析深度",
+          "detail": "将所有 depth=stub 的 screen 升级为 deep，通过更深的代码阅读弥补截图缺失",
+          "rationale": "截图一眼看到的 UI 元素和状态，现在只能通过读代码还原"
+        },
+        {
+          "action": "构建文本化 screen 描述",
+          "detail": "对每个 screen 生成自然语言描述，作为截图替代物供 structural 比对",
+          "rationale": "文本描述替代视觉截图"
+        },
+        {
+          "action": "加重 Completeness Sweep 维度 B",
+          "detail": "体验走查从辅助验证升级为主要验证手段",
+          "rationale": "没有截图时，用户旅程走查是唯一的体验层验证"
+        }
+      ],
+      "residual_risk": "无法验证像素级视觉还原。建议用户在目标环境可用时补跑 /cr-visual analyze",
+      "confidence_adjustment": "visual 维度置信度从 high 降为 medium，报告标注 VISUAL_PARTIALLY_VERIFIED"
+    }
+  }
+  ```
+
+  LLM 根据具体不可用场景自由组合补偿手段，不限于上述三种。核心原则：**截图缺失 → 用更深的代码理解补偿信息缺口**。
+
+  **执行边界**："升级 experience-map 分析深度"不是回改 `.allforai/experience-map/experience-map.json` 产物文件（那是 code-replicate Phase 3 的输出）。而是在 cr-visual 的分析上下文中，LLM 通过更深的源码阅读来补充对 screen 细节的理解，将补充信息写入 `visual-report.json` 的 `compensation_findings` 字段。不跨 skill 修改产物。
+
+- **仅目标端无截图** → 报错退出："目标应用必须可运行才能做视觉验证"
+- **源端 + 目标端均无截图** → 报错退出（不变）
 
 ## Step 3: 目标 App 截图
 

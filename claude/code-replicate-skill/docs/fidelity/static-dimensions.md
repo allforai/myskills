@@ -28,6 +28,39 @@ LLM 不能只检查"代码定义存在"就算匹配。必须验证**调用链连
 **evidence 必须包含代码引用**：
 每个 match 的 evidence 不能只写"文件存在"，必须引用具体代码位置（文件名:行号 或函数名），证明 LLM 确实读了。
 
+### 代码理解摘要（所有 F/U 维度的每条评分项必须输出）
+
+LLM 对每条评分项不只输出 match/gap + evidence 引用，还必须输出**代码理解摘要**，证明 LLM 真正理解了目标代码做什么：
+
+```json
+{
+  "item": "OrderViewModel — 订单管理",
+  "verdict": "implemented",
+  "code_comprehension": {
+    "files_read": ["ViewModels/OrderViewModel.cs"],
+    "lines_examined": "1-580",
+    "summary": "该 ViewModel 包含 LoadOrders() 通过 IOrderService 加载分页数据，CreateOrder()/UpdateOrder() 实现 CRUD，ExportToExcel() 处理导出。有 15 个 RelayCommand 绑定到 View。不是空壳——业务逻辑完整，包含验证、错误处理和状态管理。",
+    "call_chain": "View.xaml → OrderViewModel.LoadOrders() → OrderService.GetPagedAsync() → Repository.QueryAsync()",
+    "confidence": "high — 实际读取了完整实现，非仅文件名推断"
+  }
+}
+```
+
+**反模式自查**（LLM 在填写每条评分项时检查自己）：
+- 如果 `summary` 只有表层描述（"文件存在"/"类已定义"）→ 必须承认 evidence 不足，重新读取代码
+- 如果 `call_chain` 中断（定义存在但无调用者）→ 不能判为 `implemented`，应判为 `dead_code`
+- 如果 `lines_examined` 范围 < 20 行而 verdict 为 "implemented" → 必须解释为何这么少的代码就能判定完成度
+
+没有硬编码"空壳"阈值。LLM 必须用自然语言说明代码做了什么——如果说不出来，就是没读。
+
+**同质组件批量 evidence**（仅适用于 evidence 证明层，不适用于功能提取）：
+- 当多个评分项属于同一模式（如 60 种消息类型组件都继承同一基类、同一渲染模式），可以批量出 evidence：
+  - 说明共同模式（"60 个 MessageType 组件均继承 BaseMessageWidget，实现 build() 渲染 + onTap/onLongPress 交互"）
+  - **列举所有成员**（不可省略——功能提取阶段每个组件的交互都已独立记录，evidence 层确认它们都存在即可）
+  - **抽样深读 3-5 个**有代表性的成员（如 ImageMessage 有缩放、VoiceMessage 有播放状态机、LocationMessage 有地图内嵌），出完整 code_comprehension
+  - 剩余成员标注 `confidence: "medium — 同模式批量验证，未逐个深读"`
+- **禁止用批量评估省略功能差异**——ImageMessage 支持 pinch-to-zoom 但 TextMessage 不支持，这个差异必须在 interaction_triggers 中体现，不可被批量评估抹平
+
 ---
 
 ## F1 — API 表面还原

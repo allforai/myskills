@@ -140,3 +140,76 @@ Cross-cutting concerns are behaviors applied across multiple modules without bei
 - For each concern, record: what it does, how it's applied, which modules it affects
 - Distinguish framework-provided concerns (built-in auth guard) from custom ones (hand-written rate limiter)
 - These become `cross_cutting` entries in `source-summary.json`
+
+---
+
+## 7. Identifying User-Perceivable Capabilities
+
+User-perceivable capabilities are features that end users directly interact with or notice. They sit at the boundary between "business intent" (must extract) and "implementation decision" (replaceable).
+
+**The Disappearance Test:**
+
+> "If this capability vanishes from the target application, would an end user notice during normal usage?"
+> - Would notice → **user feature** (must extract to task-inventory / experience-map)
+> - Would not notice → **implementation detail** (replaceable, record in stack-mapping)
+
+**Reasoning examples:**
+
+| Capability | Disappearance Test | Classification |
+|------------|-------------------|---------------|
+| Drag file to chat window to send | User could do it before, can't now → notices | User feature |
+| Emoji picker popup | User could pick emojis, now can't → notices | User feature |
+| Clipboard paste image (Ctrl+V) | Ctrl+V sent screenshots before, doesn't now → notices | User feature |
+| Voice recording and playback | User could send/receive voice, now can't → notices | User feature |
+| Fullscreen image preview on tap | User could tap to enlarge, now can't → notices | User feature |
+| Long-press context menu (6 options) | User had 6 actions, now has 2 → notices 4 missing | Each option = user feature |
+| BLoC vs Provider state management | Same UX either way → doesn't notice | Implementation detail |
+| GridView vs ListView rendering | Same data and interaction → doesn't notice | Implementation detail |
+| flutter_sound vs just_audio library | Same record/play UX → doesn't notice | Implementation detail |
+
+**Three-Layer Model** (reasoning aid, not rigid classification):
+
+1. **User Capability Layer** (What + How user triggers it)
+   - Must extract to task-inventory and/or experience-map interaction_triggers
+   - Examples: send voice message, fullscreen preview, drag-sort list items, paste image from clipboard
+
+2. **Interaction Implementation Layer** (Which library/component implements it)
+   - Record in stack-mapping.json, replaceable in target with equivalent
+   - Examples: flutter_sound vs just_audio, Hero animation vs custom transition, native file picker vs web API
+
+3. **Code Structure Layer** (Code patterns and architecture)
+   - Do not copy — target ecosystem conventions apply
+   - Examples: BLoC vs MVVM, single-file components vs split, mixin vs inheritance, dependency injection style
+
+**Boundary disambiguation — the "apology test":**
+
+> When unsure whether something is a user feature or implementation detail, apply:
+> "If this capability disappears from the release, would we need to apologize to users in release notes?"
+> - Yes → user feature (extract it)
+> - Only developers would notice in code review → implementation detail (skip it)
+
+**Application to extraction-plan:**
+- For each screen_source and task_source, LLM should trace not just the main handler but also event bindings (onTap, onClick, onDrag, onPaste, onKeyDown, onLongPress, etc.)
+- Each distinct user trigger that produces a user-visible response = one capability to extract
+- Enum/switch rendering branches where each case produces distinct user-visible behavior should be extracted individually, not collapsed into a single component
+
+---
+
+## 8. Identifying Embedded Runtimes and Platform Capabilities
+
+Some applications contain sub-platforms that provide a runtime environment for third-party code (mini program engines, plugin systems, script engines, embedded browsers, custom DSL interpreters).
+
+**Detection signals:**
+- Sandboxed execution environments with their own lifecycle management
+- Bridge/channel APIs between host app and embedded code
+- Permission systems governing what embedded code can access
+- Independent navigation stacks, storage, or UI frameworks within the host app
+
+**Extraction approach:**
+- Record the runtime as a whole in infrastructure-profile with `cannot_substitute: true`
+- **Do NOT** extract screens/tasks from the runtime's internal implementation (it is platform infrastructure, not business logic)
+- **DO** extract the **host-to-runtime interface** as tasks in task-inventory: "launch embedded app", "embedded app invokes payment", "share from embedded app to chat", etc. — these are user-perceivable capabilities
+- In extraction-plan, mark the runtime's internal code as `skip_extraction: true, reason: "embedded_runtime"`
+- Record the runtime's capabilities (APIs it exposes to embedded code) in infrastructure-profile for the target to replicate
+
+**The disappearance test still applies** — "if the embedded runtime disappears, users notice" — but the extraction target is the **interface**, not the **internals**.

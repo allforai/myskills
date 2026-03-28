@@ -35,37 +35,57 @@ description: >
 
 > 同之前定义：读 dev-forge 追溯文件 → fidelity-index.json + 抽象继承链索引
 
-### 自适应维度选择
+### 自适应维度选择（LLM 推理版）
 
-LLM 扫描 `.allforai/` 产物，根据**实际存在的产物**决定启用哪些验证维度：
+LLM 扫描 `.allforai/` 产物，对每个维度族（F/U/I/A/B）输出**适用性论证**，写入 fidelity-report.json 的 `dimension_reasoning[]`：
 
+```json
+{
+  "dimension_reasoning": [
+    {
+      "dimension_group": "F",
+      "applicable": true,
+      "reasoning": "task-inventory.json 含 45 个 task，business-flows.json 含 12 条流程。后端业务逻辑是本项目的核心价值层。",
+      "artifacts_examined": ["task-inventory.json", "business-flows.json", "role-profiles.json"],
+      "risk_if_skipped": "high — 45 个 API 端点 + 12 条业务流将逃逸评估",
+      "weight": 1.0
+    },
+    {
+      "dimension_group": "U",
+      "applicable": true,
+      "reasoning": "experience-map.json 含 12 个 screen，其中 8 个有 components 和 actions。目标是 WPF 桌面应用，UI 是用户价值的主要载体。",
+      "artifacts_examined": ["experience-map.json", "source-summary.json"],
+      "risk_if_skipped": "high — 12 个 screen、40+ 个组件将逃逸评估",
+      "weight": 1.2
+    }
+  ]
+}
 ```
-检查 task-inventory.json     → 存在? → Read static-dimensions.md → 启用 F1
-检查 source-summary.data_entities → 非空? → 启用 F2
-检查 business-flows.json     → 存在? → 启用 F3
-检查 role-profiles.json      → 存在? → 启用 F4
-检查 use-case-tree.json      → 存在? → 启用 F5
-检查 source-summary.abstractions → 非空? → 启用 F6
-检查 constraints.json        → 存在? → 启用 F7
-检查 infrastructure-profile.json → 存在? → 启用 F8
 
-检查 experience-map.json     → 存在? → Read ui-dimensions.md → 启用 U1-U6
+**产物存在性仍是起点**——LLM 检查各产物文件是否存在，但不机械映射。对每个维度族：
+1. 检查相关产物是否存在
+2. 评估该维度族对**本项目**的重要性
+3. 输出 reasoning + risk_if_skipped + weight
 
-检查 目标项目可构建?         → Read runtime-verification.md → 启用 R1
-检查 test-vectors.json       → 存在? → 启用 R3
-检查 stack-mapping compatibility: exact → 启用 R4
-检查 infrastructure-profile 含数据持久化? → 启用 R5 行为场景
+**自相矛盾检测**：
+- 如果 `risk_if_skipped = high` 且 `applicable = false` → 触发 CONTRADICTION 警告
+- LLM 必须重新审视一次（one-shot）：重新得出相同结论 → `contradiction_acknowledged: true`，决策生效
 
-检查 infrastructure-profile 含事件总线? → F9 事件覆盖启用
-检查 infrastructure-profile 含数据持久化? → F10 启用（在 static-dimensions.md 中）
-检查 infrastructure-profile 含 cannot_substitute? → Read infra-critical-dimensions.md → 启用 I1-I5
-检查 project_archetype 含核心算法? → Read algorithm-dimensions.md → 启用 A1-A3
-检查 project_archetype 含 ABI 兼容? → Read abi-dimensions.md → 启用 B1-B4
-```
+**动态权重**：
+- LLM 根据项目特征为每个维度族分配 weight（默认 1.0）
+- 纯 API 后端 → F weight 高，U weight 低或 N/A
+- UI 密集型应用 → U weight 提升至 1.2+，F weight 保持 1.0
+- 权重和 reasoning 持久化到 fidelity-report.json，可追溯
 
-**archetype 判断由 LLM 语义理解** — 读 `replicate-config.project_archetype` 的自由文本描述，判断是否涉及算法/ABI。不靠关键词匹配。
+**不允许静默跳过**：每个维度族必须出现在 `dimension_reasoning[]` 中——要么 `applicable: true`（评分），要么 `applicable: false`（带 reasoning 和 risk 评估）。报告中不得有维度族缺席。
 
-**不硬编码"前端用 U 维度、后端用 F 维度"** — 纯粹按产物存在性决定。一个有 experience-map 的后端 BFF 项目也会启用 U 维度。一个有本地数据库的前端 App 也会启用 F2。
+读取各维度详细规则的方式不变：
+> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/fidelity/static-dimensions.md（F1-F10）
+> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/fidelity/ui-dimensions.md（U1-U6）
+> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/fidelity/runtime-verification.md（R1-R5）
+> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/fidelity/infra-critical-dimensions.md（I1-I5）
+> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/fidelity/algorithm-dimensions.md（A1-A3）
+> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/fidelity/abi-dimensions.md（B1-B4）
 
 ### 输入（三层加载）
 
@@ -121,8 +141,12 @@ LLM 按阶段 0 选中的维度逐一评分。
 ## 综合评分
 
 ```
-静态分 = (有效 F* + 有效 U* + 有效 I* + 有效 A* + 有效 B* 之和) / 有效维度数
+静态分 = sum(维度分_i × weight_i) / sum(weight_i)
+  — weight_i 来自 dimension_reasoning[].weight
+  — N/A 维度（总数为 0）不参与计算
+
 运行时分 = (有效 R* 之和) / 有效运行时维度数
+
 综合分 = 静态分 × 0.5 + 运行时分 × 0.5
 
 特殊规则：I 维度（关键基础设施）有任何一个评 0 分

@@ -519,3 +519,11 @@ Fidelity verification results from `/cr-fidelity`. Stored at `.allforai/code-rep
 - `history` — score progression across rounds (for convergence tracking)
 - `passed` — true when `overall_score >= threshold`
 - Convergence control (CG-F): max 3 rounds, monotonic score increase required
+
+---
+
+## experience-map.json — Code-Replicate Extensions
+
+> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/schemas/experience-map-extensions.md
+>
+> 扩展字段：interaction_triggers（5 种 trigger 类型）、state_variants（含远程事件驱动）、render_rules、global_components。全部可选，depth=stub 时不填充。
