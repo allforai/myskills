@@ -117,8 +117,7 @@ demo-forge 内部三阶段:
 
 **API_MISSING_BLOCKER 处理**：
 
-若某实体在 `api-gaps.json` 中标记为 `API_GAP`，不可绕过直写数据库。处理方式：
-- 标记该实体为 `API_MISSING_BLOCKER`
+若某实体在 `api-gaps.json` 中标记为 `API_MISSING_BLOCKER`，处理方式：
 - 跳过该实体及其依赖的子实体链路
 - 输出到 `.allforai/demo-forge/api-gap-tasks.md` 供 dev-forge 补建 API
 - forge-log 记录阻断原因，提示用户先补 API 再重灌

@@ -253,7 +253,7 @@ M3 AI 生成: 28 项补缺完成
 M6 完整性确认:
   已上传:        132/136
   UPLOAD_FAILED:   0
-  API_GAP:         4（已记录到 api-gaps.json）
+  API_MISSING_BLOCKER: 4（已记录到 api-gaps.json）
   external_url_count: 0 ✓
   状态: PASSED
 ```
