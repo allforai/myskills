@@ -18,6 +18,52 @@ version: "2.0.0"
 2. **Application code complete** — dev-forge Phase 7+ (task execution done), core features working.
 3. **Application running** — demo-execute and demo-verify need an accessible application instance (local or remote).
 
+## Execution Engine Phase Declarations
+
+```yaml
+# execution-engine: ./docs/execution-engine.md
+
+phases:
+  - id: design
+    subagent_task: "设计 demo 数据方案：实体清单、场景链路、API 端点映射"
+    input: [".allforai/product-map/", ".allforai/experience-map/"]
+    output: ".allforai/demo-forge/demo-plan.json"
+    rules: ["./skills/demo-design.md"]
+
+  - id: media
+    subagent_task: "获取/生成 demo 媒体素材并上传"
+    input: [".allforai/demo-forge/demo-plan.json"]
+    output: ".allforai/demo-forge/upload-mapping.json"
+    rules: ["./skills/media-forge.md"]
+    depends_on: [design]
+
+  - id: execute
+    subagent_task: "通过 API 灌入全部 demo 数据（灌入即集成测试）"
+    input: [".allforai/demo-forge/demo-plan.json", ".allforai/demo-forge/upload-mapping.json"]
+    output: ".allforai/demo-forge/forge-data.json"
+    rules: ["./skills/demo-execute.md"]
+    depends_on: [design, media]
+
+  - id: verify
+    subagent_task: "验证 demo 数据的视觉完整性（V1-V7 层 + UPSTREAM_DEFECT 回退）"
+    input: [".allforai/demo-forge/forge-data.json"]
+    output: ".allforai/demo-forge/verify-report.json"
+    rules: ["./skills/demo-verify.md"]
+    depends_on: [execute]
+```
+
+## full Mode Execution
+
+Read `./docs/execution-engine.md` for the dispatch protocol.
+
+The main flow operates as a pure dispatcher:
+1. Topological sort by phases depends_on
+2. Dispatch subagents per phase, using the task template from the protocol
+3. Collect phase summaries, selectively inject into next phase
+4. On UPSTREAM_DEFECT from verify, route back to design/media/execute or cross-skill to dev-forge
+5. Same {source, target} pair retries max 2 times, then mark UNRESOLVED_DEFECT
+6. Output final report when all phases complete
+
 ## Workflow Modes
 
 ```

@@ -173,6 +173,60 @@ your-project/
 
 ---
 
+## Execution Engine Phase Declarations
+
+```yaml
+# execution-engine: ./docs/execution-engine.md
+
+phases:
+  - id: profile
+    subagent_task: "项目画像：探测技术栈、架构类型、分层结构、模块划分"
+    input: ["项目代码库"]
+    output: ".allforai/code-tuner/tuner-profile.json"
+    rules: ["./references/phase0-profile.md", "./references/layer-mapping.md"]
+
+  - id: compliance
+    subagent_task: "架构合规检查：依赖方向、分层规则、跨架构通用规则"
+    input: [".allforai/code-tuner/tuner-profile.json", "项目代码库"]
+    output: ".allforai/code-tuner/phase1-compliance.json"
+    rules: ["./references/phase1-compliance.md"]
+    depends_on: [profile]
+
+  - id: duplicates
+    subagent_task: "重复检测：API/Service/Data/Utility 四层扫描"
+    input: [".allforai/code-tuner/tuner-profile.json", "项目代码库"]
+    output: ".allforai/code-tuner/phase2-duplicates.json"
+    rules: ["./references/phase2-duplicates.md"]
+    depends_on: [profile]
+
+  - id: abstractions
+    subagent_task: "抽象分析：垂直/水平/接口合并/验证逻辑/过度抽象"
+    input: [".allforai/code-tuner/tuner-profile.json", "项目代码库"]
+    output: ".allforai/code-tuner/phase3-abstractions.json"
+    rules: ["./references/phase3-abstractions.md"]
+    depends_on: [profile]
+
+  - id: report
+    subagent_task: "综合报告：5维评分 + 热力图 + 重构任务清单"
+    input: [".allforai/code-tuner/phase1-compliance.json", ".allforai/code-tuner/phase2-duplicates.json", ".allforai/code-tuner/phase3-abstractions.json"]
+    output: ".allforai/code-tuner/tuner-report.md, .allforai/code-tuner/tuner-tasks.json"
+    rules: ["./references/phase4-report.md"]
+    depends_on: [compliance, duplicates, abstractions]
+```
+
+## full Mode Execution
+
+Read `./docs/execution-engine.md` for the dispatch protocol.
+
+The main flow operates as a pure dispatcher:
+1. Topological sort by phases depends_on
+2. Dispatch subagents per phase (or parallel), using the task template from the protocol
+3. Collect phase summaries, selectively inject into next phase
+4. On UPSTREAM_DEFECT, route back per protocol
+5. compliance / duplicates / abstractions can be dispatched in parallel after profile completes
+
+---
+
 ## Usage Examples
 
 ### Scenario 1: New project full analysis

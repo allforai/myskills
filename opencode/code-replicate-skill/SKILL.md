@@ -143,6 +143,51 @@ Tell the AI: "compare visual fidelity"
 - `./docs/stack-mappings.md` — Cross-stack mapping reference
 - `./docs/schema-reference.md` — CR-specific schema definitions
 
+## 执行引擎阶段声明
+
+```yaml
+# execution-engine: ./docs/execution-engine.md
+
+phases:
+  - id: preflight
+    subagent_task: "预检：收集参数、克隆源码、确认复刻范围"
+    input: ["用户输入"]
+    output: ".allforai/code-replicate/replicate-config.json"
+    rules: ["./skills/code-replicate-core.md"]
+
+  - id: discovery
+    subagent_task: "发现：扫描源码结构、模块摘要、基础设施清单、抽象提取"
+    input: [".allforai/code-replicate/replicate-config.json", "源代码库"]
+    output: ".allforai/code-replicate/discovery-profile.json, .allforai/code-replicate/extraction-plan.json"
+    rules: ["./docs/analysis-principles.md"]
+    depends_on: [preflight]
+
+  - id: generate
+    subagent_task: "生成：按模块 LLM 生成 → 脚本合并 → 标准产物"
+    input: [".allforai/code-replicate/extraction-plan.json", "源代码库"]
+    output: ".allforai/product-map/, .allforai/experience-map/"
+    rules: ["./skills/code-replicate-core.md"]
+    depends_on: [discovery]
+
+  - id: verify
+    subagent_task: "验证：schema 校验 + XV 交叉验证 + 还原度报告"
+    input: [".allforai/product-map/", ".allforai/experience-map/", ".allforai/code-replicate/extraction-plan.json"]
+    output: ".allforai/code-replicate/replicate-report.json"
+    rules: ["./skills/cr-fidelity.md"]
+    depends_on: [generate]
+```
+
+## full 模式执行
+
+读取 `./docs/execution-engine.md` 获取调度协议。
+
+主流程作为纯调度器执行：
+1. 按 phases 声明的 depends_on 拓扑排序
+2. 逐阶段 dispatch subagent，使用协议中的任务模板
+3. 收集阶段摘要，选择性注入给下一阶段
+4. 收到 UPSTREAM_DEFECT 时按协议回退
+5. 所有阶段为线性依赖（preflight → discovery → generate → verify），无并行机会
+
 ## Orchestration
 
 > Details: `./execution-playbook.md`

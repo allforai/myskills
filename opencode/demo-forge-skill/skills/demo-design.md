@@ -2,391 +2,529 @@
 name: demo-design
 description: >
   Use when the user asks to "design demo data", "plan demo environment",
-  "demo-design", "demo plan", or mentions demo data planning,
-  demo environment design. Requires product-map to have been run first.
+  "demo-design", "演示数据设计", "设计演示方案", "demo plan",
+  or mentions demo data planning, demo environment design.
+  Requires product-map to have been run first.
 version: "1.0.0"
 ---
 
-# Demo Design — Data Plan Design
+# Demo Design — 演示数据方案设计
 
-> From the product map, plan all data needed to make the product look like real users are actively using it.
+> 从产品地图出发，规划让产品"看起来有人用"的全套数据。
 
-## Goal
+## 目标
 
-Using `product-map` as the blueprint, design demo data with business logic, user relationships, and time distribution:
+以 `product-map` 为蓝本，设计有业务逻辑、有人物关系、有时间分布的演示数据方案：
 
-1. **Who uses it** — create realistic user accounts per role
-2. **What they did** — generate business data by task frequency (high-frequency tasks get more, low-frequency less)
-3. **How it connects** — generate complete data chains by scenario, not isolated random records
-4. **Follows rules** — respect business constraints (irreversible operations, approval chains, amount limits)
-5. **Has time depth** — data distributed across months, recent-dense-remote-sparse, follows work hours
-6. **Has behavior feel** — user activity follows power-law distribution, operator attribution is consistent, journeys have sequence
-7. **Looks real** — images are real acquisitions, zero placeholders; text is diverse, not copy-paste
-
----
-
-## Positioning
-
-```
-demo-forge internal stages:
-  demo-design (this skill)  →  media-forge + demo-execute  →  demo-verify
-  Plan what data to generate     Acquire assets + populate       Open product, verify each item
-  Pure design, no execution      Consume the design plan         Produce issue list, route back
-```
-
-**Prerequisite**: product-map must have been run first, producing `.allforai/product-map/product-map.json` and `business-flows.json`.
+1. **谁在用** — 按角色创建真实感用户账号
+2. **做了什么** — 按任务频次生成业务数据（高频任务多生成，低频少生成）
+3. **怎么关联** — 按场景生成完整数据链路，不是孤立的随机记录
+4. **符合规则** — 按业务约束设置数据状态（不可逆操作、审批链、金额限制）
+5. **有时间感** — 数据分布在数月内，近密远疏，符合工作时间节奏
+6. **有行为感** — 用户活跃度服从幂律分布，操作人归属连贯，旅程有先后
+7. **看起来真** — 图片全部真实采集，零占位符；文本多样，不千篇一律
 
 ---
 
-## Enhancement Protocol (网络搜索 + OpenRouter)
+## 定位
 
-**网络搜索 keywords**:
+```
+product-map（现状+方向）  功能查漏（查缺口）  功能剪枝（查多余）  demo-forge（锻造演示）
+产品应该长什么样          地图说有的有没有     地图里有的该不该留   按地图锻造可演示的产品状态
+基础层                   基于 product-map    基于 product-map    基于 product-map
+```
+
+```
+demo-forge 内部三阶段:
+  demo-design（本技能）  →  media-forge + demo-execute  →  demo-verify
+  规划该生成什么数据          采集素材 + 灌入数据              打开产品逐项验证
+  纯设计不执行               消费设计方案                    产出问题清单路由回修
+```
+
+**前提**：必须先运行 `product-map`，生成 `.allforai/product-map/product-map.json` 和 `business-flows.json`。
+
+---
+
+## 快速开始
+
+```
+/demo-forge design       # 完整设计流程（Step 0 → 1 → 2 → 2.5）
+```
+
+**重入模式**：当 `demo-verify` 产出 `verify-issues.json` 且其中有 `route_to="design"` 的问题时，编排器会回调本技能。此时不全量重做，而是增量修改 `demo-plan.json` 中对应部分。详见「重入模式」章节。
+
+---
+
+## 增强协议（WebSearch + 4E+4V + OpenRouter）
+
+> 通用框架见 `${CLAUDE_PLUGIN_ROOT}/../product-design-skill/docs/skill-commons.md`，以下仅列本技能定制。
+
+**WebSearch 关键词**：
 - `"{ORM} seed data strategies {year}"`
 - `"realistic test data generation {language}"`
 - `"faker.js alternatives {year}"`
 
-**OpenRouter text diversity enhancement**:
-- **`text_diversity_zh`** (Qwen) — for Chinese target market, after Step 2 text templates:
-  - Input: industry keywords + field type list (names/descriptions/reviews/notifications)
-  - Generate: 15-20 natural Chinese variants per field type
-  - Purpose: Claude's Chinese tends to be formal; Qwen produces more natural Chinese
-- **`text_diversity_intl`** (Gemini) — for international/English target market:
-  - Input: same as above
-  - Generate: diverse English/multilingual variants
-- Generated text variants merge into `style-profile.json` `text_templates` field
-- OpenRouter unavailable → use Claude's own templates (quality sufficient, diversity slightly less)
+**4E+4V 重点**：
+- **E3 Guardrails**: 读 task.exceptions 生成边界数据（异常态记录）；读 task.audit 填充审计字段（操作人+时间戳+变更值）
+- **behavior 视角**: 读 task.outputs.states 确保每个状态枚举值都有对应演示记录
+
+**OpenRouter 文本多样性增强**：
+- **`text_diversity_zh`** (Qwen) — 目标市场为中文时，Step 2 文本模板设定后调用：
+  - 输入: 行业关键词 + 字段类型列表（名称/描述/评价/通知等）
+  - 生成: 每类字段 15-20 个自然中文变体（符合行业用语习惯）
+  - 目的: Claude 生成的中文偏书面，Qwen 中文语感更地道
+- **`text_diversity_intl`** (Gemini) — 目标市场为国际/英文时调用：
+  - 输入: 同上
+  - 生成: 多样化英文/多语言变体（发散创意、避免千篇一律）
+- 生成的文本变体合并到 `style-profile.json` 的 `text_templates` 字段
+- OpenRouter 不可用 → 使用 Claude 自身生成的模板（品质足够，仅多样性稍弱）
 
 ---
 
-## Demo Data Generation Principles
+## 演示数据生成原则
 
-| Principle | Step | Rule |
-|-----------|------|------|
-| Cover boundary values | Step 1 | Each field must include boundary data: null, extremes, special characters. Numbers include 0, negatives, max. Boundaries must respect constraints.json |
-| Equivalence partitioning | Step 1 | Partition by role/status (VIP user / free user / banned user), at least 1 representative record per class |
-| No duplicate data | Step 2 | Multiple records of same entity must differ in attributes, no copy-paste with only ID changes |
-| JSON is the contract format | Step 1 | demo-plan.json output = demo-execute input, structure must match |
+> 以下原则在各步骤中强制执行，设计的演示数据方案必须符合这些规则。
 
----
-
-## Workflow
-
-```
-Prerequisites: Load .allforai/product-map/product-map.json + business-flows.json
-    If files missing → tell user to run product-map first, terminate
-    ↓
-Prerequisites: Upstream staleness detection
-    Compare upstream file modification times vs this skill's last output:
-    - task-inventory.json updated after demo-plan.json
-      → warn "task-inventory.json updated after demo-plan.json, data may be stale"
-    - product-map.json updated after demo-plan.json
-      → warn "product-map.json updated after demo-plan.json, data may be stale"
-    - Warning only, do not block. User chooses to continue or refresh upstream.
-    ↓
-Execution mode: Steps 0-2 generate-and-continue, plan summary at end (no stop)
-    ↓
-Step 0: Data model mapping
-    Code entities ↔ product-map tasks/roles correspondence
-    → Progress: "Step 0 Model mapping done: {N} entities, {M} API gaps" (continue)
-    ↓
-Step 1: Demo data plan design (core)
-    1-A Role → user account design
-    1-B Task frequency → data volume design
-    1-C Scenario + business flow → data chain design
-    1-D Constraints → data rule design
-    1-E Enum full coverage check
-    1-F Time distribution design
-    1-G User behavior pattern design
-    1-H Data history depth design
-    1-M Media field annotation (acquisition list for media-forge)
-
-    Innovation data chains (if innovation_mode=active):
-    - For each protection_level=core innovation concept, design dedicated data chains
-    → Progress: "Step 1 Plan done: {N} accounts, {M} entities, {K} chains, {J} media fields" (continue)
-    ↓
-Step 2: Industry style + text template setup
-    Name styles, regional formats, text templates
-    → Progress: "Step 2 Style done: {industry} style, {N} text templates" (continue)
-    ↓
-Step 2.5: Text diversity enhancement (when OpenRouter available)
-    Select model by target market language:
-      Chinese → Qwen (text_diversity_zh)
-      International → Gemini (text_diversity_intl)
-    Input: Step 2 industry keywords + field type list
-    Output: 15-20 natural variants per field type
-    Merge into style-profile.json text_templates
-    → Progress: "Step 2.5 Text enhancement done: {N} field types, {M} variants"
-    OpenRouter unavailable → skip, use Claude templates
-    ↓
-Plan summary:
-    ## Demo Plan Summary
-
-    | Item | Details |
-    |------|---------|
-    | Entity mapping | {N} entities mapped, {M} API gaps |
-    | User accounts | {N} ({breakdown by role}) |
-    | Data volume | High {N}, Medium {M}, Low {K} records |
-    | Scenario chains | {N} complete chains |
-    | Enum coverage | {N}/{M} state values covered |
-    | Time span | {N} days |
-    | Media fields | {N} fields, {M} assets to acquire |
-    | Industry style | {industry} |
-    | Text templates | {N} types, {M} variants |
-
-    → Auto-confirm demo plan, design phase complete
-```
+| 原则 | 对应步骤 | 具体规则 |
+|------|---------|---------|
+| 覆盖边界值 | Step 1 | 每个字段必须包含边界数据：空值、极值、特殊字符（`'";--`）、极长/极短文本。数字字段包含 0、负数、最大值。**边界值必须尊重 constraints.json 约束**：如金额上限 10000 则边界为 9999/10000/10001，不生成违反约束的无效值 |
+| 等价类划分 | Step 1 | 按角色/状态划分等价类（如 VIP 用户/免费用户/封禁用户），每类至少 1 条代表性数据 |
+| 数据不雷同 | Step 2 | 同一实体的多条数据必须在属性上有差异（姓名/日期/金额随机变化），禁止 copy-paste 仅改 ID |
+| JSON 是合约格式 | Step 1 | 演示数据方案以 JSON 格式流转，demo-plan.json 输出 = demo-execute 输入，结构一致 |
 
 ---
 
-### Step 0: Data Model Mapping
-
-Extract data models (Entity, Model, Schema) from code, map to `product-map` tasks and roles:
+## 工作流
 
 ```
-product-map task "{task_name}"  →  code entity {Entity}
-product-map role "{role_name}"  →  code entity User(role={role_key})
-product-map scenario "{scenario}"  →  entity chain {EntityA} → {EntityB} → {EntityC}
+前置：加载 .allforai/product-map/product-map.json + business-flows.json
+      若文件不存在 → 提示用户先运行 /product-map，终止
+      ↓
+前置：上游过期检测
+      加载输入文件时，比较关键上游文件的修改时间与本技能上次输出的生成时间：
+      - task-inventory.json 在 demo-plan.json 生成后被更新
+        → ⚠ 警告「task-inventory.json 在 demo-plan.json 生成后被更新，数据可能过期，建议重新运行 product-map」
+      - product-map.json 在 demo-plan.json 生成后被更新
+        → ⚠ 警告「product-map.json 在 demo-plan.json 生成后被更新，数据可能过期，建议重新运行 product-map」
+      - 仅警告不阻断，用户可选择继续或先刷新上游
+      ↓
+  执行模式: Steps 0-2 生成即继续，plan 结束时输出汇总（不停）
+  ↓
+Step 0: 数据模型映射
+      代码实体 ↔ product-map 任务/角色 对应关系
+      → 输出进度「Step 0 模型映射 ✓ {N} 实体, {M} API缺口」（不停）
+      ↓
+Step 0-B: 客户端界面 → 数据需求反推
+      阅读客户端代码，提取所有界面及其数据依赖
+      与 Step 0 实体清单交叉比对，补充遗漏
+      → 输出进度「Step 0-B 界面反推 ✓ {N} 界面, {M} 实体补充」（不停）
+      ↓
+Step 1: 演示数据方案设计（核心）
+      1-A 角色 → 用户账号设计
+      1-B 任务频次 → 数据量设计
+      1-C 场景 + 业务流 → 数据关联链路设计
+      1-D 约束 → 数据规则设计
+      1-E 枚举全覆盖检查
+      1-F 时间分布设计
+      1-G 用户行为模式设计
+      1-H 数据历史深度设计
+      1-M 媒体字段标注（为 media-forge 提供采集清单）
+
+      **创新数据链路设计**（若 `innovation_mode=active`）:
+      - 为每个 `protection_level=core` 的创新概念设计专用数据链路
+      - 示例：
+        - IC001（场景流）：生成大量场景数据 + 用户滑动记录 + 停留时长
+        - IC002（赛季制）：生成多赛季数据 + 赛季重置记录 + 荣誉徽章
+        - IC003（紧急场景）：生成紧急场景数据 + 速成记录 + 信心评估
+      → 输出进度「Step 1 演示方案 ✓ {N} 账号, {M} 实体, {K} 场景链路, {J} 媒体字段」（不停）
+      ↓
+Step 2: 行业风格与文本模板设定
+      名称风格、地区格式、文本模板
+      → 输出进度「Step 2 风格模板 ✓ {industry} 风格, {N} 文本模板」（不停）
+      ↓
+Step 2.5: 文本多样性增强（OpenRouter 可用时）
+      根据目标市场语言选择模型:
+        中文市场 → Qwen (text_diversity_zh)
+        国际市场 → Gemini (text_diversity_intl)
+      输入: Step 2 的行业关键词 + 字段类型列表
+      输出: 每类字段 15-20 个自然语感变体
+      合并到 style-profile.json 的 text_templates
+      → 输出进度: 「Step 2.5 文本增强 ✓ {N} 类字段, {M} 个变体」
+      OpenRouter 不可用 → 跳过，使用 Claude 生成的模板
+      ↓
+  Plan 汇总:
+    ## Demo Plan 汇总
+
+    | 项目 | 详情 |
+    |------|------|
+    | 实体映射 | {N} 实体已映射, {M} API缺口 |
+    | 用户账号 | {N} 个（按角色: {breakdown}） |
+    | 数据量 | 高频 {N} 条, 中频 {M} 条, 低频 {K} 条 |
+    | 场景链路 | {N} 条完整链路 |
+    | 枚举覆盖 | {N}/{M} 状态值已覆盖 |
+    | 时间跨度 | {N} 天 |
+    | 媒体字段 | {N} 个字段, 需采集 {M} 项素材 |
+    | 行业风格 | {industry} |
+    | 文本模板 | {N} 类, {M} 个变体 |
+
+    → 自动确认 demo plan，设计阶段完成
 ```
-
-Detect API gaps: entity without create endpoint, task without corresponding API, mark as `API_MISSING_BLOCKER` — missing API must be created before population.
-
-Output: `.allforai/demo-forge/model-mapping.json`, `.allforai/demo-forge/api-gaps.json`
 
 ---
 
-### Step 1: Demo Data Plan Design
+### Step 0：数据模型映射
 
-The core step. product-map provides all decision basis.
-
-#### 1-A User Account Design (by role)
-
-Create test accounts per role from `role-profiles.json`:
+从代码提取数据模型（Entity、Model、Schema），与 `product-map` 中的任务和角色建立对应关系：
 
 ```
-{high-frequency role} (R001)  →  N accounts (split by sub-role)
-{medium-frequency role} (R002)  →  fewer accounts
-{admin role} (R003)  →  1 account
+product-map 任务「{任务名}」  →  代码实体 {Entity}
+product-map 角色「{角色名}」  →  代码实体 User（role={role_key}）
+product-map 场景「{场景名}」  →  实体关系 {EntityA} → {EntityB} → {EntityC}
 ```
 
-Each account has realistic info: name, avatar, join date, department.
+同步检测 API 缺口：有实体无对应创建端点、有任务无对应 API，标记为 `API_MISSING_BLOCKER`。API 缺失的实体必须先补 API 再灌数据，不可绕过。缺口实体输出到 `.allforai/demo-forge/api-gap-tasks.md` 供 dev-forge 执行补建。
 
-**Login credentials**:
-- All test accounts use unified password (e.g., `DemoForge2024!`) for quick role switching during demos
-- Password written to `demo-plan.json` `credentials` field
-- If product has SSO/OAuth, confirm password login fallback support, otherwise mark `AUTH_GAP`
+**确认方式**：不单独确认，汇总到 Plan 汇总（不停）
 
-#### 1-B Data Volume Design (by frequency)
+输出：`.allforai/demo-forge/model-mapping.json`、`.allforai/demo-forge/api-gaps.json`、`.allforai/demo-forge/api-gap-tasks.md`（若有缺口）
 
-**Data loading**: if `task-index.json` exists, read frequency from index directly (no need for full task-inventory.json). Otherwise fall back to reading `task-inventory.json`.
+---
 
-Pareto distribution:
+### Step 0-B：客户端界面 → 数据需求反推
 
-| Frequency | Strategy | Example |
-|-----------|----------|---------|
-| High | Large volume, 70%+ of total | Core business records 80 |
-| Medium | Moderate, ~20% of total | Secondary business 15 |
-| Low | Minimal, ensure existence only | Config/policy 2 |
+> **下游消费是上游质量最好的保证。** 不能只从后端模型正向设计实体清单——必须从客户端代码反向验证：每个界面需要什么数据，plan 是否覆盖。
 
-#### 1-C Data Chain Design (by scenario + business flow)
+**执行方式**: `subagent` — 主流程 dispatch subagent 执行，自身继续准备 Step 1 的上下文，等 subagent 返回后合并结果。
 
-No isolated data. Generate complete chains by scenario. Read `business-flows.json` for cross-role/cross-system flows first, then supplement with independent tasks from `task-inventory.json`.
+**subagent 任务描述**:
+> 阅读项目中所有客户端代码（路由定义、导航组件、页面/屏幕组件），提取每个用户可达界面的数据依赖。
+> 对每个界面分析：调用了哪些 API、读取了哪些数据、需要什么最低数据量才能"不空"。
+> 产出 `.allforai/demo-forge/page-entity-mapping.json`。
 
-```
-Scenario "{name}" (cross_dept: {deptA}+{deptB}):
-  {User entity} x N
-    └── {Main business entity} x M (completed status)
-          └── {Sub business entity} x K (submitted)
-                └── {Approval/routing entity} x J (processed)
-                      └── {Notification/log entity} x J (sent)
-```
+**subagent 输入**: 项目根目录
+**subagent 输出**: `.allforai/demo-forge/page-entity-mapping.json`
 
-Each scenario's data has continuous timestamps, logical state flow, complete foreign keys.
+**主流程收到结果后**：
+- 与 Step 0 的实体清单交叉比对
+- 界面依赖的实体不在清单中 → **补充到实体清单**
+- 界面需要特定状态/枚举值 → **补充到 Step 1-E 枚举覆盖**
 
-#### 1-C-2 Population Method Annotation (per entity)
+**产出格式**：
 
-All entities use API population — no exceptions. Annotate the API endpoint for each entity alongside chain design:
-
-| Annotation | Description |
-|------------|-------------|
-| `api` | Entity has create/update API endpoint — annotate endpoint path |
-| `API_MISSING_BLOCKER` | Entity has no create API — must be built before population (generate dev-forge task) |
-
-**No DB fallback**: entities marked `API_MISSING_BLOCKER` block population until the API is created. This ensures every data injection validates the full business logic stack (authentication, permissions, validation, derived fields).
-
-#### 1-D Constraint Rule Design (by business constraints + task rules)
-
-Read three data sources, convert constraints to data generation rules:
-
-1. **`constraints.json`** — global business constraints (amount limits, irreversible states, cross-entity rules)
-2. **`task.rules`** — task-level business rules (idempotency windows, threshold triggers, validation logic) → generate data that touches rule boundaries
-3. **`task.exceptions`** — task-level exception scenarios (timeout, conflict, permission denied) → generate boundary data that triggers exceptions
-
-#### 1-E Enum Full Coverage Check (mandatory)
-
-Traverse all tasks' `main_flow` and `outputs.states` from `task-inventory.json`, extract all state enum values, confirm each has corresponding records:
-
-```
-✗ Wrong: All records status = COMPLETED
-✓ Correct: Each defined state value has at least 1 record
+```json
+[
+  {"page": "界面名称/路径", "entities": ["EntityA", "EntityB"], "min_records": 2, "required_states": ["pending"]},
+  ...
+]
 ```
 
-**Focus on terminal and exception states** (most easily missed):
-- `REJECTED / CANCELED / EXPIRED / FAILED / CLOSED` — allocate records specifically
-- High-risk task `exceptions` states must exist in data
+**关键原则**：实体清单的完整性不由后端模型决定，而由"客户端每个界面都有数据可展示"决定。
 
-#### 1-F Time Distribution Design
+---
 
-Demo data timestamps must show realistic usage traces, not all on same day.
+### Step 1：演示数据方案设计
 
-**Time span**: default 90 days lookback, covering at least 3 calendar months.
+这是最核心的一步，product-map 直接给出了所有决策依据。
 
-**Distribution rules**:
+#### 1-A 用户账号设计（按角色）
 
-| Rule | Description |
-|------|-------------|
-| Recent-dense | Last 7 days = 30% of total, last 30 days = 60%, rest spread earlier |
-| Work hours | 80% of operations between 9:00-18:00, only 5% between 22:00-7:00 |
-| Weekday bias | Weekday density 3-5x weekend (more extreme for B2B) |
-| Old terminal, new active | 30+ day records 90%+ terminal state, 7-day records 50%+ active state |
+为 `role-profiles.json` 中每个角色创建对应数量的测试账号：
 
-#### 1-G User Behavior Pattern Design
+```
+{高频角色}（R001）  →  N 个账号（按子角色拆分）
+{中频角色}（R002）  →  少量账号
+{管理角色}（R003）  →  1 个账号
+```
 
-Real system user activity follows power-law distribution.
+每个账号有真实感信息：姓名、头像、入职时间、所在部门。
 
-| Tier | Share | Behavior |
-|------|-------|----------|
-| Heavy users | 10% of accounts | Produce 50% of business data, across multiple scenarios |
-| Regular users | 30% of accounts | Produce 35% of data, 1-2 scenarios |
-| Light users | 60% of accounts | Produce 15% of data, 1 scenario or account-only |
+**登录凭据**：
+- 所有测试账号使用统一密码（如 `DemoForge2024!`），方便演示时快速切换角色
+- 密码写入 `demo-plan.json` 的 `credentials` 字段，并在灌入日志中记录每个账号的登录方式（用户名/邮箱/手机号 + 密码）
+- 若产品有 SSO/OAuth 登录，需确认是否支持密码登录回退，否则标记为 `AUTH_GAP`
 
-#### 1-H Data History Depth Design
+#### 1-B 数据量设计（按频次）
 
-Provide meaningful historical data for reports, dashboards, trend charts.
+**数据加载**：若 `task-index.json` 存在，直接读取索引中每个任务的 `frequency` 字段完成数据量分配（索引已含 frequency，无需加载完整 task-inventory.json）。若索引不存在，回退到读取 `task-inventory.json`。
 
-| Data type | History depth | Notes |
-|-----------|--------------|-------|
-| User accounts | Spread across 180 days | Show continuous growth, not batch registration |
-| Core business entities | 90 days | Monthly fluctuation, not constant |
-| Config/dictionary | System launch date | `created_at` earlier than all business data |
-| Logs/transactions | Follow parent entity | Time consistent with parent |
+按帕累托比例分配数据量：
 
-**Monthly fluctuation**: each month's volume varies +-15% randomly.
+| 任务频次 | 数据量策略 | 示例 |
+|----------|------------|------|
+| 高 | 大量，占总数据 70%+ | 核心业务单据 80 条 |
+| 中 | 适量，占总数据 20% | 次要业务 15 条 |
+| 低 | 少量，仅保证存在 | 配置/策略类 2 条 |
 
-#### 1-M Media Field Annotation
+> 这让演示时高频场景数据丰富，低频场景不喧宾夺主。
 
-Traverse all entity field definitions, generate acquisition list for each media field:
+#### 1-C 数据链路设计（按场景 + 业务流）
+
+不生成孤立数据，而是按场景生成完整链路。优先读取 `business-flows.json` 中的跨角色/跨系统业务流，将每条业务流转化为数据链路；再补充 `task-inventory.json` 中未被业务流覆盖的独立任务。
+
+```
+场景「{场景名}」（cross_dept: {部门A}+{部门B}）：
+  {用户实体} x N
+    └── {主业务实体} x M（已完成状态）
+          └── {子业务实体} x K（已提交）
+                └── {审批/流转实体} x J（已处理）
+                      └── {通知/日志实体} x J（已发送）
+```
+
+每个场景生成的数据，时间戳连贯、状态流转合理、外键关联完整。
+
+#### 1-C-2 灌入方式标注（按实体）
+
+所有实体通过 API 灌入。在 1-C 确定场景链路时，同步为每个实体标注对应的 API 端点和调用顺序。
+
+若实体在 `api-gaps.json` 中标记为 `API_MISSING_BLOCKER` — 必须先补 API 再灌数据，不可绕过。缺口实体输出到 `.allforai/demo-forge/api-gap-tasks.md` 供 dev-forge 补建。
+
+**终态数据构造**：需要构造"跳过正常流程"的终态数据（如已关闭的历史记录），通过 API 按正常业务流程逐步推进状态（创建→流转→终态），不可跳步直写。
+
+#### 1-D 约束规则设计（按业务约束 + 任务级规则）
+
+读取三个数据源，将约束转为数据生成规则：
+
+1. **`constraints.json`** — 全局业务约束（金额上限、不可逆状态、跨实体规则）
+2. **`task.rules`** — 任务级业务规则（幂等窗口、阈值触发、校验逻辑）→ 生成触碰规则边界的数据
+3. **`task.exceptions`** — 任务级异常场景（超时、冲突、权限不足）→ 生成触发异常的边界数据
+
+| 数据源 | 业务约束示例 | 数据规则 |
+|--------|------------|----------|
+| constraints | 子实体金额不超过父实体金额 | child.amount <= parent.amount |
+| constraints | 某实体不可逆，无删除状态 | 不生成 status=deleted 的记录 |
+| task.rules | 高金额操作需要上级审批 | amount > threshold → approval.level = 2；同时生成刚好等于阈值的边界记录 |
+| task.rules | 同订单同原因 30 分钟内幂等 | 生成 2 条相同订单+原因、间隔 < 30min 的记录，验证幂等 |
+| task.exceptions | 审批超时 48h 自动升级 | 生成 approved_at - created_at > 48h 的记录，状态为 ESCALATED |
+| task.exceptions | 订单已全额退款不可重复 | 生成已全额退款的订单，供异常路径演示 |
+| task.sla | 审批有 SLA 时限 | created_at 和 approved_at 间隔在 SLA 范围内（含刚好超时的边界记录） |
+
+#### 1-E 枚举全覆盖检查（硬性规则）
+
+遍历 `task-inventory.json` 所有任务的 `main_flow` 和 `outputs.states`，提取全部状态枚举值，确认每个值都有对应记录：
+
+```
+✗ 错误：所有业务记录 status = COMPLETED
+✓ 正确：该实体定义的每个状态值（如 PENDING / APPROVED / REJECTED / COMPLETED / CANCELED）各至少 1 条
+```
+
+**重点检查终态和异常态**（最容易漏）：
+- `REJECTED / CANCELED / EXPIRED / FAILED / CLOSED` — 专门分配记录，不能因为"业务上少见"就跳过
+- 高风险任务的 `exceptions` 中提到的状态，也必须在数据中存在
+
+#### 1-F 时间分布设计
+
+演示数据的时间戳必须呈现真实的使用痕迹，不能全部集中在同一天。
+
+**时间跨度**：默认回溯 90 天（可由用户调整），覆盖至少 3 个自然月，让按月报表和趋势图有意义。
+
+**分布规则**：
+
+| 规则 | 说明 |
+|------|------|
+| 近密远疏 | 最近 7 天数据占总量 30%，最近 30 天占 60%，其余分散在更早时段 |
+| 工作时间集中 | 80% 的操作落在 9:00-18:00，仅 5% 在 22:00-7:00 |
+| 工作日优先 | 工作日数据密度是周末的 3-5 倍（B2B 场景更极端，C 端可适度放宽） |
+| 老终态新活态 | 30 天前的记录 90%+ 为终态（COMPLETED/CLOSED），7 天内的记录 50%+ 为活跃态（PENDING/IN_PROGRESS） |
+
+**实现方式**：用 `NOW - 随机偏移` 生成时间戳。偏移值从加权分布中采样（近期权重高），再加上当日 9-18 点范围内的随机小时分钟。`created_at < updated_at` 严格保证。
+
+#### 1-G 用户行为模式设计
+
+真实系统中用户活跃度服从幂律分布，不是均匀分配。
+
+**活跃度分层**：
+
+| 层级 | 占比 | 行为 |
+|------|------|------|
+| 重度用户 | 10% 的账号 | 产生 50% 的业务数据，跨多个场景 |
+| 普通用户 | 30% 的账号 | 产生 35% 的业务数据，1-2 个场景 |
+| 轻度用户 | 60% 的账号 | 产生 15% 的业务数据，仅 1 个场景或仅有账号 |
+
+**操作人归属**：同一操作人应处理多笔业务，而非每笔业务换一个操作人。读取 1-A 账号列表，按活跃度层级分配业务量。
+
+**用户旅程连贯性**：同一个用户的数据应体现连贯行为路径（按 `business-flows.json` 中的流程阶段），不同用户处于旅程的不同阶段（有人刚注册，有人已是老用户）。
+
+#### 1-H 数据历史深度设计
+
+为报表、Dashboard、趋势图提供有意义的历史数据。
+
+| 数据类型 | 历史深度 | 说明 |
+|---------|---------|------|
+| 用户账号 | 创建时间分散在 180 天内 | 体现持续增长，不是同一天批量注册 |
+| 核心业务实体 | 90 天 | 按月有波动，非匀速 |
+| 配置/字典 | 系统上线日（最早记录） | created_at 早于所有业务数据 |
+| 日志/流水 | 跟随关联业务记录 | 与父实体时间一致 |
+
+**月度波动**：每月业务量不完全相同，设一个 +-15% 的随机波动，让趋势图有起伏而非一条直线。
+
+#### 1-M 媒体字段标注
+
+遍历所有实体的字段定义，为每个需要媒体内容的字段生成采集清单，供 `media-forge` 消费。
+
+**标注格式**：
 
 ```json
 {
   "entity": "Product",
   "field": "cover_image",
   "media_type": "image",
-  "purpose": "product cover",
+  "purpose": "商品封面",
   "dimensions": "800x800",
   "aspect_ratio": "1:1",
   "count": 80,
-  "search_keywords": ["home goods", "kitchen appliances"],
-  "style_notes": "white background product photo, e-commerce style",
+  "search_keywords": ["家居用品", "厨房电器"],
+  "style_notes": "白底产品图，电商风格",
   "upload_endpoint": "POST /api/upload/image",
   "ref_field": "cover_image_id"
 }
 ```
 
-**Media type acquisition strategy**:
+**字段说明**：
 
-| media_type | Typical scenario | Strategy |
-|-----------|-----------------|----------|
-| image | Avatars, covers, detail images, banners | Brave Search → 网络搜索 fallback → AI gen (Imagen 4 / GPT-5 Image / FLUX 2 Pro) |
-| video | Product videos, tutorials, promos | Brave Video Search → 网络搜索 → AI gen (Veo 3.1 / Kling) / Playwright recording |
-| document | PDF attachments, contract scans | Template fill generation |
-| audio | Voice messages, audio courses | Google Cloud TTS |
+| 字段 | 含义 |
+|------|------|
+| `entity` | 关联的数据实体名称 |
+| `field` | 实体中的媒体字段名 |
+| `media_type` | 媒体类型：image / video / document / audio |
+| `purpose` | 媒体用途描述（用于搜索策略选择） |
+| `dimensions` | 目标尺寸（宽x高，像素） |
+| `aspect_ratio` | 宽高比（UI 容器约束） |
+| `count` | 需要采集的素材数量（= 该实体的记录数） |
+| `search_keywords` | 搜索关键词（从行业+用途推导） |
+| `style_notes` | 风格说明（保证同组素材视觉一致） |
+| `upload_endpoint` | 应用的上传 API 端点（从代码扫描获取） |
+| `ref_field` | 实体中存储媒体引用的字段名（如 image_id / file_url） |
 
-Output: `.allforai/demo-forge/demo-plan.json`
+**媒体类型与采集策略**：
 
----
+| media_type | 典型场景 | 采集策略 |
+|-----------|---------|---------|
+| image | 头像、封面、详情图、Banner | Brave Search → WebSearch 降级 → AI 生图（Imagen 4 / GPT-5 Image / FLUX 2 Pro）兜底 |
+| video | 产品视频、教程、宣传片 | Brave Video Search → WebSearch 降级 → AI 生视频（Veo 3.1 / Kling）/ Playwright 录屏兜底 |
+| document | PDF 附件、合同扫描件 | 模板填充生成 |
+| audio | 语音消息、音频课程 | Google Cloud TTS |
 
-### Step 2: Industry Style and Text Template Setup
+**确认方式**：不单独确认，汇总到 Plan 汇总（不停）
 
-Based on industry keywords (from user or inferred from product-map), research industry data style via 网络搜索:
-
-**Base style**: name conventions, amount ranges, currency format, category naming.
-
-**Regional format** (determined by product target market):
-- Phone number format (matching target market rules)
-- Address format (matching target market structure)
-- Email domains (use common personal/enterprise domains, not test@test.com)
-
-**Text content templates** (by entity field type):
-
-| Field type | Template strategy | Requirement |
-|-----------|-------------------|-------------|
-| Names/titles | Industry vocab + attribute combos, 20+ unique templates | Match target market naming conventions |
-| Descriptions/notes | 3-5 sentence realistic descriptions, varying length | Mix reasons/scenarios, avoid identical text |
-| Approval/decision comments | Positive/neutral/rejection, 3-5 each | Cover approve, reject, request-more-info |
-| User feedback/reviews | Positive/neutral/negative at 7:2:1 ratio | Not all max rating, realistic distribution |
-| System notifications | Template-fill with variables | Use product's actual notification format |
-
-Output: `.allforai/demo-forge/style-profile.json`
+输出：`.allforai/demo-forge/demo-plan.json`
 
 ---
 
-## Reentry Mode
+### Step 2：行业风格与文本模板设定
 
-When `verify-issues.json` contains `route_to="design"` issues, the orchestrator calls back this skill in reentry mode.
+基于用户提供的行业关键词（或从 product-map 推断），通过 WebSearch 获取该行业的数据风格：
 
-**Core principle**: incrementally modify `demo-plan.json`, do not redo from scratch.
+**基础风格**：
+- 人名风格（根据目标市场的语言和文化习惯）
+- 金额范围和货币格式
+- 分类命名习惯
 
-**Common reentry scenarios**:
+**地区格式**（根据产品目标市场确定，不预设任何国家）：
+- 手机号格式（符合目标市场的号码规则和位数）
+- 地址格式（符合目标市场的地址结构和行政区划）
+- 邮箱域名（不用 test@test.com，用目标市场常见的个人/企业邮箱域名）
 
-| Issue type | Modification |
-|-----------|-------------|
-| Entity record count insufficient | Increase data volume allocation in 1-B |
-| Enum value uncovered, filter returns empty | Add missing enum value records in 1-E |
-| Data chain incomplete, detail page relations empty | Add missing sub-entity/related entity in 1-C |
-| Role's main view has no data | Check 1-A account design and 1-G behavior allocation |
-| Dashboard dimension is zero | Add data records for that dimension |
-| Media field not annotated | Add missing media field in 1-M |
+**文本内容模板**（按实体字段类型）：
 
----
+| 字段类型 | 模板策略 | 要求 |
+|---------|---------|------|
+| 名称/标题 | 行业词库 + 属性组合，准备 20+ 个不重复模板 | 符合目标市场的命名习惯，而非「Item 1」 |
+| 描述/备注 | 3-5 句真实感描述，长短不一，不千篇一律 | 多种理由/场景混合，避免所有记录相同文本 |
+| 审批/决策意见 | 正面/中性/拒绝各准备 3-5 条 | 覆盖批准、驳回、补充材料等不同结论 |
+| 用户反馈/评价 | 正面/中性/负面按 7:2:1 比例分配 | 不全是最高评分，有真实的分布梯度 |
+| 系统通知/消息 | 按模板填充变量（业务编号/金额/时间） | 使用产品实际的通知模板格式和目标市场货币符号 |
 
-## Output Files
+**多样性要求**：同一类字段至少准备 10 个以上变体，随机选取。相邻记录不得出现完全相同的文本。
 
-| File | Step | Description |
-|------|------|-------------|
-| `.allforai/demo-forge/model-mapping.json` | Step 0 | Code entity ↔ product-map task/role mapping |
-| `.allforai/demo-forge/api-gaps.json` | Step 0 | API gap report (API_MISSING_BLOCKER — must be resolved before population) |
-| `.allforai/demo-forge/demo-plan.json` | Step 1 | Demo data plan (accounts/volume/chains/constraints/enums/time/behavior/media) |
-| `.allforai/demo-forge/style-profile.json` | Step 2 + 2.5 | Industry style + text templates + diversity variants |
+**确认方式**：不单独确认，汇总到 Plan 汇总（不停）
 
----
-
-## Iron Rules
-
-### 1. Frequency determines quantity, scenario determines relationships
-
-High-frequency task data should be abundant, low-frequency sparse. Relationships follow scenario chain design, not random assembly.
-
-### 2. Constraints are hard rules
-
-Business constraints from `constraints.json` must be reflected in data. Amount limits, approval chains, irreversible states -- the data plan must not violate them.
-
-### 3. 全部走 API，无例外
-
-所有数据灌入通过 API 端点，不直写数据库。灌入过程即集成测试 — 每次 API 调用验证认证、权限、校验、业务逻辑。缺失 API 的实体标记为 `API_MISSING_BLOCKER`，生成 dev-forge 修复任务，不降级为数据库直写。
+输出：`.allforai/demo-forge/style-profile.json`
 
 ---
 
-## Common Omission Patterns
+### Step 2.5：文本多样性增强（OpenRouter 可用时）
 
-| Omission | Symptom | Prevention |
-|----------|---------|------------|
-| Terminal states missing | All records "in progress" | 1-E enum check, verify each state |
-| Exception states missing | No failed, rejected, banned data | Allocate "bad path" records |
-| Log tables empty | Operation logs, messages, transactions empty | Step 0 mapping lists log entities |
-| Orphan accounts | Accounts with no business data | Demo accounts must have chain data |
-| Junction tables missing | Many-to-many tables empty | Step 0 scans junction tables |
-| Config tables empty | System params, templates empty | Config entities listed and fully populated |
-| Time logic errors | Child earlier than parent, future dates in history | Use relative time offsets (NOW-7d) |
-| Derived field mismatch | Aggregates != detail sums | BIZ_BUG — API should handle derived fields; route to dev_task |
-| Unnatural time distribution | All records on same day | 1-F time distribution, 90 day lookback |
-| Uniform user behavior | Every user produces equal data | 1-G power-law, 10% heavy users produce 50% data |
+根据目标市场语言选择模型：
+- 中文市场 → Qwen (text_diversity_zh)
+- 国际市场 → Gemini (text_diversity_intl)
+
+输入: Step 2 的行业关键词 + 字段类型列表
+输出: 每类字段 15-20 个自然语感变体
+合并到 style-profile.json 的 text_templates
+
+→ 输出进度: 「Step 2.5 文本增强 ✓ {N} 类字段, {M} 个变体」
+
+OpenRouter 不可用 → 跳过，使用 Claude 生成的模板
+
+---
+
+## 重入模式
+
+当 `demo-verify` 产出 `verify-issues.json` 且其中有 `route_to="design"` 的问题时，编排器会回调本技能进入重入模式。
+
+**核心原则**：增量修改 `demo-plan.json`，不全量重做。
+
+**处理流程**：
+
+```
+1. 读取 .allforai/demo-forge/verify-issues.json
+2. 筛选 route_to="design" 的问题
+3. 按问题类型定位 demo-plan.json 中需要修改的部分
+4. 增量修改并标注修改原因（关联 issue ID）
+5. 输出更新后的 demo-plan.json
+```
+
+**常见重入场景**：
+
+| 问题类型 | 对应修改 |
+|---------|---------|
+| 某实体记录数不足，列表页显得空 | 增加该实体在 1-B 中的数据量分配 |
+| 枚举值未覆盖，筛选条件无结果 | 补充 1-E 中遗漏的枚举值对应记录 |
+| 数据链路不完整，详情页关联为空 | 补充 1-C 中缺失的子实体/关联实体 |
+| 某角色主视图无数据 | 检查 1-A 账号设计和 1-G 行为分配 |
+| Dashboard 某维度为零 | 补充对应维度的数据记录 |
+| 媒体字段未标注，素材缺失 | 补充 1-M 中遗漏的媒体字段 |
+
+---
+
+## 输出文件
+
+| 文件 | 产出步骤 | 说明 |
+|------|---------|------|
+| `.allforai/demo-forge/model-mapping.json` | Step 0 | 代码实体 ↔ product-map 任务/角色映射 |
+| `.allforai/demo-forge/api-gaps.json` | Step 0 | API 缺口报告（有实体无端点、有任务无 API） |
+| `.allforai/demo-forge/demo-plan.json` | Step 1 | 演示数据方案（用户账号/数据量/链路/约束/枚举/时间/行为/媒体） |
+| `.allforai/demo-forge/style-profile.json` | Step 2 + 2.5 | 行业风格 + 文本模板 + 多样性变体 |
+
+---
+
+## 铁律
+
+### 1. 频次决定数量，场景决定关联
+
+高频任务的数据要多，低频任务的数据要少。数据之间的关联关系按场景链路设计，不随机拼凑。
+
+### 2. 约束是硬规则
+
+`constraints.json` 中的业务约束必须在数据中体现。金额上限、审批链、不可逆状态，设计的数据方案不得违反。
+
+### 3. 全部走 API，无例外（API 缺失 = 阻断，先补 API）
+
+所有数据灌入通过 API 端点，不直写数据库。API 缺失的实体标记为 `API_MISSING_BLOCKER`，输出到 `api-gap-tasks.md` 供 dev-forge 补建 API。灌入过程即集成测试 — 每次 API 调用验证认证、权限、校验、业务逻辑、级联、派生字段。
+
+---
+
+## 常见遗漏模式
+
+| 遗漏类型 | 具体表现 | 预防方法 |
+|---------|---------|---------|
+| 终态缺失 | 所有记录都"进行中" | 1-E 枚举全覆盖检查，逐一确认所有状态值 |
+| 异常态缺失 | 没有失败、拒绝、封禁的数据 | 专门为"坏路径"分配记录 |
+| 日志表为空 | 操作日志、消息、流水没有数据 | Step 0 模型映射时专门列出日志类实体 |
+| 孤立账号 | 有账号但没有任何关联业务数据 | 演示账号必须有关联业务链路数据 |
+| 中间表遗漏 | 多对多关系表没有记录 | Step 0 扫描无主键列的关联表，单独确认 |
+| 配置表为空 | 系统参数、模板等没有数据 | 配置类实体单独列出并全量填入 |
+| 时间逻辑错误 | 子实体时间早于父实体，未来时间出现在历史记录 | 用相对时间偏移（NOW-7d）而非固定日期 |
+| 派生字段不一致 | 聚合字段与明细之和不符，累计字段与流水不符 | API 灌入自动触发业务逻辑计算派生字段，不一致 = BIZ_BUG |
+| 时间分布不自然 | 所有记录集中在同一天，没有历史深度 | 1-F 时间分布设计，回溯 90 天 |
+| 用户行为均匀 | 每个用户产生相同数量的数据 | 1-G 幂律分布，10% 重度用户产生 50% 数据 |

@@ -181,6 +181,75 @@ version: "5.0.0"
 /design-audit role 客服专员  # 指定角色全链路校验
 ```
 
+## 执行引擎阶段声明
+
+```yaml
+# execution-engine: ./docs/execution-engine.md
+
+phases:
+  - id: product-concept
+    subagent_task: "发现产品愿景：分析用户需求，输出产品概念"
+    input: []
+    output: ".allforai/product-concept.json"
+    rules: ["./skills/product-concept.md"]
+
+  - id: product-map
+    subagent_task: "构建产品地图：角色、任务、约束、业务流、数据模型"
+    input: [".allforai/product-concept.json", "项目代码库"]
+    output: ".allforai/product-map/"
+    rules: ["./skills/product-map.md"]
+    depends_on: [product-concept]
+
+  - id: journey-emotion
+    subagent_task: "绘制情感旅程：识别用户在每个任务中的情感波动和决策点"
+    input: [".allforai/product-map/"]
+    output: ".allforai/experience-map/journey-emotion-map.json"
+    rules: ["./skills/journey-emotion.md"]
+    depends_on: [product-map]
+
+  - id: experience-map
+    subagent_task: "构建体验地图：将情感旅程转化为界面体验设计"
+    input: [".allforai/product-map/", ".allforai/experience-map/journey-emotion-map.json"]
+    output: ".allforai/experience-map/experience-map.json"
+    rules: ["./skills/experience-map.md"]
+    depends_on: [journey-emotion]
+
+  - id: interaction-gate
+    subagent_task: "交互质量门禁：评估体验地图的交互成熟度"
+    input: [".allforai/experience-map/experience-map.json"]
+    output: ".allforai/experience-map/interaction-gate.json"
+    rules: ["./skills/interaction-gate.md"]
+    depends_on: [experience-map]
+
+  - id: use-case
+    subagent_task: "生成用例树：从产品地图和体验地图推导完整用例"
+    input: [".allforai/product-map/", ".allforai/experience-map/"]
+    output: ".allforai/use-case/"
+    rules: ["./skills/use-case.md"]
+    depends_on: [interaction-gate]
+
+  - id: feature-gap
+    subagent_task: "分析功能缺口：对比用例树和现有实现，识别缺失功能"
+    input: [".allforai/product-map/", ".allforai/experience-map/", ".allforai/use-case/"]
+    output: ".allforai/feature-gap/"
+    rules: ["./skills/feature-gap.md"]
+    depends_on: [interaction-gate]
+
+  - id: ui-design
+    subagent_task: "生成 UI 设计规格：基于体验地图输出界面设计"
+    input: [".allforai/product-map/", ".allforai/experience-map/"]
+    output: ".allforai/ui-design/"
+    rules: ["./skills/ui-design.md"]
+    depends_on: [interaction-gate]
+
+  - id: design-audit
+    subagent_task: "设计审计：跨层一致性检查（追溯、覆盖、交叉一致性）"
+    input: [".allforai/product-map/", ".allforai/experience-map/", ".allforai/use-case/", ".allforai/feature-gap/", ".allforai/ui-design/"]
+    output: ".allforai/design-audit/"
+    rules: ["./skills/design-audit.md"]
+    depends_on: [use-case, feature-gap, ui-design]
+```
+
 ## 全流程编排
 
 使用 `/product-design full` 串联全部技能 + 阶段间检查点 + 终审：
@@ -190,6 +259,24 @@ version: "5.0.0"
 /product-design full skip: concept  # 跳过概念发现
 /product-design resume              # 从断点继续
 ```
+
+## full 模式执行
+
+读取 `./docs/execution-engine.md` 获取调度协议。
+
+主流程作为纯调度器执行：
+1. 按 phases 声明的 depends_on 拓扑排序
+2. 逐阶段（或并行）dispatch subagent，使用协议中的任务模板
+3. 收集阶段摘要，选择性注入给下一阶段
+4. 收到 UPSTREAM_DEFECT 时按协议回退
+5. use-case / feature-gap / ui-design 三个阶段无依赖关系，可并行 dispatch
+6. 所有阶段完成后输出最终报告
+
+若上游判定为 `consumer` 或 `mixed`，全流程默认附加一条隐式门禁：用户端不能只做到"概念映射 + 页面存在"，而必须逐步收敛到成熟产品级体验。
+
+> **review（Phase 5）**：线框+数据模型审核，验证 IA/流程/功能/数据结构。反馈路由到 product-map / experience-map / concept。通过后结构锁定，才进入视觉设计。
+
+> **Stitch 决策点**（Phase 5.5）：review 线框 tab 通过后、进入 Phase 6-8 并行执行前，检查 Stitch MCP 可用性。不可用时 向用户提问 三选一（上传设计稿 / 跳过视觉验收 / 配置 Stitch）。选择跳过时记入 pipeline-decisions（`stitch_skipped`），design-audit 标记 `stitch_skipped: true`。
 
 流程：concept → **review（概念 tab）** → product-map → **review（地图 tab）** → journey-emotion → experience-map（含模式扫描+行为规范 Step 3.6） → interaction-gate → **review（线框+数据模型 tab）** → **Stitch 决策点** → [use-case ∥ feature-gap ∥ ui-design] → **review（UI tab）** → design-audit，每阶段间插入检查点验证产出完整性。
 

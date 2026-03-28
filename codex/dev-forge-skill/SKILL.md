@@ -29,6 +29,73 @@ version: "6.0.0"
 
 本插件依赖 `product-design` 插件生成的 `.allforai/` 输出。请先执行 `product-design full` 工作流完成产品设计。
 
+## 执行引擎阶段声明
+
+```yaml
+# execution-engine: ./docs/execution-engine.md
+
+phases:
+  - id: project-setup
+    subagent_task: "项目初始化：探测技术栈、生成项目清单、配置开发环境"
+    input: ["项目代码库"]
+    output: ".allforai/project-manifest.json"
+    rules: ["./skills/project-setup.md"]
+
+  - id: design-to-spec
+    subagent_task: "设计转规格：FVL 闭环（4D 分解 → 6V 审计 → XV 交叉验证）"
+    input: [".allforai/product-map/", ".allforai/experience-map/", ".allforai/use-case/", ".allforai/ui-design/", ".allforai/project-manifest.json"]
+    output: ".allforai/dev-forge/requirements.md, .allforai/dev-forge/design.json, .allforai/dev-forge/tasks.md"
+    rules: ["./skills/design-to-spec.md"]
+    depends_on: [project-setup]
+
+  - id: task-execute
+    subagent_task: "执行开发任务：按 tasks.md 逐任务实现，含增量 XV 验证"
+    input: [".allforai/dev-forge/requirements.md", ".allforai/dev-forge/design.json", ".allforai/dev-forge/tasks.md"]
+    output: "代码变更 + .allforai/dev-forge/build-log.json"
+    rules: ["./skills/task-execute.md", "./docs/skill-commons.md"]
+    depends_on: [design-to-spec]
+
+  - id: product-verify
+    subagent_task: "产品验收：静态分析 + Playwright 动态验证"
+    input: ["项目代码库", ".allforai/dev-forge/design.json"]
+    output: ".allforai/product-verify/"
+    rules: ["./skills/product-verify.md"]
+    depends_on: [task-execute]
+
+  - id: deadhunt
+    subagent_task: "死链猎杀：死链 + CRUD 缺口 + 幽灵功能 + 接缝检查"
+    input: ["项目代码库"]
+    output: ".allforai/deadhunt/"
+    rules: ["./skills/deadhunt.md"]
+    depends_on: [task-execute]
+
+  - id: fieldcheck
+    subagent_task: "字段一致性：UI↔API↔Entity↔DB 四层字段检查"
+    input: ["项目代码库"]
+    output: ".allforai/fieldcheck/"
+    rules: ["./commands/fieldcheck.md"]
+    depends_on: [task-execute]
+
+  - id: testforge
+    subagent_task: "测试锻造：审计测试缺口 → 补测试 → 修 bug → 收敛"
+    input: ["项目代码库", ".allforai/dev-forge/design.json", ".allforai/dev-forge/tasks.md"]
+    output: ".allforai/testforge/"
+    rules: ["./commands/testforge.md"]
+    depends_on: [task-execute]
+```
+
+## full 模式执行
+
+读取 `./docs/execution-engine.md` 获取调度协议。
+
+主流程作为纯调度器执行：
+1. 按 phases 声明的 depends_on 拓扑排序
+2. 逐阶段（或并行）dispatch subagent，使用协议中的任务模板
+3. 收集阶段摘要，选择性注入给下一阶段
+4. 收到 UPSTREAM_DEFECT 时按协议回退
+5. product-verify / deadhunt / fieldcheck / testforge 四个阶段可并行 dispatch
+6. 所有阶段完成后输出最终报告
+
 ## 全流程编排
 
 ```
