@@ -37,7 +37,7 @@ version: "2.0.0"
 
 ## Overview
 
-Demo Forge transforms a working application into a demo-ready product by generating realistic data, acquiring rich media, populating everything through APIs/DB, and verifying the result visually with Playwright.
+Demo Forge transforms a working application into a demo-ready product by generating realistic data, acquiring rich media, populating everything through API endpoints only (no DB direct writes), and verifying the result visually with Playwright. The injection process itself IS integration testing — every API call validates authentication, permissions, validation, and business logic. Missing APIs are flagged as `API_MISSING_BLOCKER` and must be built before population.
 
 ## Prerequisites
 
@@ -67,7 +67,7 @@ Full mode executes `design → media → execute → verify` in sequence. Verify
 
 从 product-map 蓝图出发，规划演示环境所需的全部数据：账号体系、数据量级、业务链条、枚举覆盖、时间分布、行为模式、媒体字段、约束条件。
 
-**核心产出**：`demo-plan.json`（完整数据方案）、`model-mapping.json`（模型与 API 映射）、`api-gaps.json`（缺失 API 清单）。
+**核心产出**：`demo-plan.json`（完整数据方案）、`model-mapping.json`（模型与 API 映射）、`api-gaps.json`（缺失 API 清单 — API_MISSING_BLOCKER，必须先补建）。
 
 ### 1. demo-design — Data Plan Design
 
@@ -75,7 +75,7 @@ Full mode executes `design → media → execute → verify` in sequence. Verify
 
 From the product-map blueprint, plan all data needed for the demo environment: account hierarchy, data volume, business chains, enum coverage, time distribution, behavior patterns, media fields, constraints.
 
-**Key outputs**: `demo-plan.json` (complete data plan), `model-mapping.json` (model-to-API mapping), `api-gaps.json` (missing API list).
+**Key outputs**: `demo-plan.json` (complete data plan), `model-mapping.json` (model-to-API mapping), `api-gaps.json` (missing API list — `API_MISSING_BLOCKER`, must be built before population).
 
 ### 2. media-forge — 媒体素材锻造
 
@@ -97,15 +97,15 @@ Acquire, generate, process, and upload media assets for all media fields in demo
 
 > 详见 `./skills/demo-execute.md`
 
-根据 demo-plan 生成确定性数据，通过 API / DB 混合策略灌入应用。处理字段依赖顺序、关联关系、派生字段修正。
+根据 demo-plan 生成确定性数据，全部通过 API 端点灌入应用（无数据库直写）。灌入过程即集成测试，处理字段依赖顺序、关联关系。缺失 API 标记为 API_MISSING_BLOCKER，必须先补建。
 
-**核心产出**：`forge-data-draft.json`（生成的原始数据）、`forge-data.json`（灌入后的实际数据，含服务端生成 ID）、`forge-log.json`（灌入日志）。
+**核心产出**：`forge-data-draft.json`（生成的原始数据）、`forge-data.json`（灌入后的实际数据，含服务端生成 ID）、`forge-log.json`（灌入日志）。无 E4 派生字段修正阶段 — API 自动处理派生字段。
 
 ### 3. demo-execute — Data Generation and Population
 
 > Details: `./skills/demo-execute.md`
 
-Generate deterministic data from demo-plan and populate the application through API/DB hybrid strategy. Handle field dependency ordering, relationships, derived field correction.
+Generate deterministic data from demo-plan and populate the application through API endpoints only (no DB direct writes). The injection process IS integration testing — every API call validates the full business logic stack. Missing APIs are flagged as `API_MISSING_BLOCKER`. No E4 derived field correction phase — API handles derived fields automatically.
 
 **Key outputs**: `forge-data-draft.json` (generated raw data), `forge-data.json` (populated data with server IDs), `forge-log.json` (population log).
 

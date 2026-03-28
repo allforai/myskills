@@ -481,7 +481,7 @@ Missing states → route_to = "design" (demo-plan supplement data chain for that
       "page_url": "/dashboard/sales",
       "evidence": "screenshots/v4-round1-sales-overview.png",
       "route_to": "execute",
-      "suggested_fix": "Rerun E4 derived data correction, recalculate aggregate fields"
+      "suggested_fix": "BIZ_BUG — API should handle derived fields automatically; route to dev_task for fix"
     },
     {
       "id": "VI-003",

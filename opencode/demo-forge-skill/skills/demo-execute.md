@@ -33,7 +33,7 @@ demo-forge internal stages:
 | `demo-plan.json` | demo-design | Demo data plan (entities, chains, constraints, enums, time distribution) |
 | `style-profile.json` | demo-design | Industry style + text templates |
 | `upload-mapping.json` | media-forge | Local asset → server URL/ID mapping |
-| Application running | User | API accessible, database connectable |
+| Application running | User | API accessible |
 
 All four required. Missing any → terminate and tell user to complete the prerequisite.
 
@@ -55,7 +55,7 @@ Read `demo-plan.json` + `style-profile.json` + `upload-mapping.json`, generate r
 | Status fields | Allocate by enum coverage requirement, ensure each value has records (including terminal/exception states) |
 | Media fields | Read server_url / server_id directly from upload-mapping.json |
 | Foreign key fields | Auto-link by chain dependency (parent → child generation order, child references parent's temp ID) |
-| Derived fields | Mathematical calculation (sum = detail total, count = actual record count) |
+| Derived fields | Omit — API handles derived fields automatically via business logic |
 
 **Behavior distribution**:
 
@@ -77,7 +77,7 @@ Verify data quality item-by-item. Issues fall into two categories:
 □ Entity completeness — no zero-record entities (every entity has at least one record)
 □ Enum coverage   — every status field has all values represented (including REJECTED/CANCELED/EXPIRED/FAILED)
 □ Foreign key integrity — every foreign key ID has a corresponding record in the dataset
-□ Derived consistency — aggregate fields = detail sums, count fields = actual record counts
+□ Derived fields omitted — API handles derived fields; verify they are NOT in draft data
 □ Time logic   — created_at < updated_at, parent entity time earlier than child
 □ Media linkage   — all media fields reference upload-mapping entries (no external URLs)
 □ Behavior distribution   — heavy users produce approximately 50% of data
@@ -85,7 +85,7 @@ Verify data quality item-by-item. Issues fall into two categories:
 ```
 
 **Handling**:
-- Mathematical issues (derived mismatch, count error): **auto-fix**
+- Structural issues (missing FK target, zero-record entity): **auto-fix**
 - Other issues: mark as `PREFLIGHT_ISSUE`, report to user
 
 `--dry-run` mode stops after E2, does not enter E3.
@@ -94,44 +94,37 @@ Verify data quality item-by-item. Issues fall into two categories:
 
 ### E3: Data Population
 
+**All data injection goes through API endpoints — no exceptions.** The injection process itself IS integration testing: every API call verifies authentication, permissions, validation, and business logic. Injection failure = BIZ_BUG.
+
 **Population order follows scenario chains** (not alphabetical by entity), ensuring foreign key correctness:
 
 ```
-1. DB population: config tables, dictionary tables, API_GAP entities (no-logic base data)
-2. API population: user accounts (all scenario chains depend on users)
-3. Mixed population: by scenario priority (high → medium → low frequency)
+1. Config/dictionary entities: API in dependency order (base data first)
+2. User accounts: API creation (all scenario chains depend on users)
+3. Business entities: by scenario priority (high → medium → low frequency)
    - Within each scenario, follow chain order: parent → child → related entity
-   - Each entity uses API or DB per demo-plan Step 1-C-2 annotation
+   - ALL entities go through API, no exceptions
 ```
 
-**DB population notes**:
-- Direct writes skip business logic (triggers, callbacks), derived fields need E4 manual fix
-- ORM `created_at` / `updated_at` auto-fill won't work, must specify explicitly
-- DB-populated records also written to `forge-data.json`, deleted directly by clean mode
+**API_MISSING_BLOCKER handling**:
+- Entity marked `API_MISSING_BLOCKER` in `api-gaps.json` → **stop and create the missing API first**
+- Missing API is a development task: generate B-FIX task for dev-forge, do not proceed with that entity until API exists
+- Never fall back to DB direct write — that hides integration bugs
+
+**Injection = Integration Testing**:
+- 灌入过程即集成测试 — 每次 API 调用验证认证、权限、校验、业务逻辑
+- 灌入失败 = BIZ_BUG — API 返回非预期结果说明业务逻辑有缺陷，必须修复
+- API handles derived fields automatically (aggregates, counts, balances all triggered by business logic)
+- No manual derived field correction needed — if aggregates are wrong after API population, that is a BIZ_BUG
 
 **Failure handling**:
-- **Independent entity failure**: log it, continue populating others
+- **Independent entity failure**: log as `BIZ_BUG`, continue populating others
 - **Parent entity failure**: skip all children in that chain (avoid dangling foreign keys), mark entire chain `CHAIN_FAILED`
 - **End of population**: summarize failed chain count and reasons, prompt user to investigate
 
 **Output**:
 - `forge-data.json` — created data inventory (temp IDs replaced with real server IDs)
 - `forge-log.json` — population log (operation status per record)
-
----
-
-### E4: Derived Data Correction (post-DB population)
-
-DB direct writes skip business logic, so derived fields need manual correction:
-
-| Correction type | Operation |
-|----------------|-----------|
-| Aggregate fields | `SELECT SUM(amount) FROM details WHERE parent_id=?` → `UPDATE parent SET total=?` |
-| Count fields | `SELECT COUNT(*) FROM children WHERE parent_id=?` → `UPDATE parent SET count=?` |
-| Balances/inventory | Calculate final value from all transaction records |
-| Search indexes | Trigger reindex if full-text search exists |
-
-**Output**: update `forge-log.json`, append E4 correction records.
 
 ---
 
@@ -155,12 +148,12 @@ Clean mode reads `forge-data.json` and deletes all populated data in reverse ord
 ```
 1. Child entities → parent entities (reverse of forge-data.json population order)
 2. User accounts (last — other entities may reference user_id)
-3. DB-populated base data (config tables, dictionaries)
+3. Base data (config tables, dictionaries)
 ```
 
 **Cleanup method**:
-- Unified database DELETE (not API — faster, batch-capable)
-- DELETE by `id` and `table` recorded in `forge-data.json`
+- Use DELETE API endpoints where available
+- For entities without DELETE API: database DELETE by `id` and `table` recorded in `forge-data.json` (cleanup-only exception, not data injection)
 - If cascade delete configured, only delete top-level parents; otherwise delete layer by layer
 
 **Cleanup scope**:
@@ -178,7 +171,7 @@ When `verify-issues.json` contains `route_to="execute"` issues, enter reentry mo
 |-----------|----------|
 | Foreign key broken | Check forge-data.json, supplement missing parent records or fix FK references |
 | CHAIN_FAILED | Retry full chain population |
-| Derived inconsistency | Rerun E4 derived data correction |
+| Derived inconsistency | BIZ_BUG — API should handle derived fields; route to dev_task for fix |
 
 ---
 
@@ -188,14 +181,14 @@ When `verify-issues.json` contains `route_to="execute"` issues, enter reentry mo
 |------|------|-------------|
 | `forge-data-draft.json` | `.allforai/demo-forge/` | E1 generated dataset (temporary IDs) |
 | `forge-data.json` | `.allforai/demo-forge/` | E3 populated data inventory (real IDs) |
-| `forge-log.json` | `.allforai/demo-forge/` | Population log (operation status + E4 corrections) |
+| `forge-log.json` | `.allforai/demo-forge/` | Population log (operation status per record) |
 
 ---
 
 ## Iron Rules
 
-1. **Prefer API, use DB when needed** — API population triggers full business logic, DB direct write only for unsupported scenarios
-2. **Derived fields must be mathematically calculated, not LLM-estimated** — SUM/COUNT/balances all from deterministic queries
+1. **全部走 API，无例外** — 所有数据灌入通过 API 端点，不直写数据库。灌入过程即集成测试 — 每次 API 调用验证认证、权限、校验、业务逻辑。灌入失败 = BIZ_BUG
+2. **API_MISSING_BLOCKER — 缺失 API 必须先补建** — 实体无对应 API 时标记为 `API_MISSING_BLOCKER`，生成 dev-forge 修复任务，不降级为数据库直写
 3. **Chain-order population, parent before child** — any child entity population requires its parent to already exist
-4. **Failures are never silent, chain failures explicitly marked** — independent failures logged and continue, parent failure marks entire chain CHAIN_FAILED
+4. **Failures are never silent, chain failures explicitly marked** — independent failures logged as BIZ_BUG and continue, parent failure marks entire chain CHAIN_FAILED
 5. **Verify usability immediately after population** — user accounts verified with auth API right after creation (don't wait for demo-verify to discover wrong password); data relationships queried to confirm chain integrity. Population verification failure → fix and retry, never silently skip

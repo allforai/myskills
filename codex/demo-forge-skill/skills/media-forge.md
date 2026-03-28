@@ -183,7 +183,7 @@ Upload all `verified: true` assets through the application's own upload API.
 **Failure handling**:
 - Upload failure -> retry 2x (2s interval)
 - Still failing -> mark `status: "UPLOAD_FAILED"`, record error
-- `upload_endpoint` does not exist -> mark `API_GAP`, append to `api-gaps.json`
+- `upload_endpoint` does not exist -> mark `API_MISSING_BLOCKER`, append to `api-gaps.json`. Do NOT fall back to DB direct write. Missing upload API must be built first.
 
 **Output**: `upload-mapping.json`
 
@@ -206,7 +206,7 @@ Final hard validation ensuring pipeline output meets iron rules.
 M6 Integrity confirmation:
   Uploaded:          132/136
   UPLOAD_FAILED:       0
-  API_GAP:             4 (recorded in api-gaps.json)
+  API_MISSING_BLOCKER: 4 (recorded in api-gaps.json)
   external_url_count:  0
   Status: PASSED
 ```

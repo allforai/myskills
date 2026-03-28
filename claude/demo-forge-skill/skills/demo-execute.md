@@ -5,8 +5,8 @@ description: >
   "demo-execute", "灌入演示数据", "生成演示数据", "demo populate",
   or mentions data population, demo data generation, database seeding.
   Requires demo-plan.json + style-profile.json + upload-mapping.json.
-  Requires a running application for data population.
-version: "1.0.0"
+  Requires a running application for API-based data population.
+version: "2.0.0"
 ---
 
 # Demo Execute — 数据生成与灌入
@@ -33,7 +33,7 @@ demo-forge 内部三阶段:
 | `demo-plan.json` | demo-design | 演示数据方案（实体、链路、约束、枚举、时间分布） |
 | `style-profile.json` | demo-design | 行业风格 + 文本模板 |
 | `upload-mapping.json` | media-forge | 本地素材 -> 服务端 URL/ID 映射 |
-| 应用运行中 | 用户 | API 可访问、数据库可连接 |
+| 应用运行中 | 用户 | API 可访问 |
 
 四项缺任何一项则终止并提示用户补齐。
 
@@ -42,7 +42,7 @@ demo-forge 内部三阶段:
 ## 快速开始
 
 ```
-/demo-forge execute            # 完整流程（E1-E4）
+/demo-forge execute            # 完整流程（E1-E3）
 /demo-forge execute --dry-run  # 仅生成数据，不灌入（只跑 E1-E2）
 /demo-forge clean              # 清理已灌入数据
 ```
@@ -102,46 +102,37 @@ demo-forge 内部三阶段:
 
 ---
 
-### E3: 数据灌入
+### E3: 数据灌入（全部走 API）
 
-**灌入顺序由场景链路决定**（不是按实体字母顺序），确保外键依赖正确：
+**核心原则**：灌入过程即集成测试 — 每次 API 调用验证认证、权限、校验、业务逻辑、级联、派生字段。灌入失败 = 真实 BIZ_BUG，直接记录到 forge-log 交给修复流程。
+
+**灌入顺序由依赖关系决定**（父先于子），全部通过 API 端点：
 
 ```
-1. DB 灌入：配置表、字典表、API_GAP 实体（无业务逻辑的基础数据）
-2. API 灌入：用户账号（所有场景链路依赖用户）
-3. 混合灌入：按场景优先级（高频 → 中频 → 低频）
+1. 用户账号（所有场景链路依赖用户）
+2. 配置/字典数据（通过管理 API 创建）
+3. 业务数据：按场景优先级（高频 → 中频 → 低频）
    - 每个场景内按链路顺序：父实体 → 子实体 → 关联实体
-   - 每个实体按 demo-plan Step 1-C-2 标注的方式选择 API 或 DB
 ```
 
-**DB 灌入注意事项**：
-- 直接写入跳过业务逻辑（触发器、回调），派生字段需 E4 手动补写
-- ORM 的 `created_at` / `updated_at` 自动填充不生效，需显式指定
-- DB 灌入的记录同样写入 `forge-data.json`，clean 时直接 DELETE
+**API_MISSING_BLOCKER 处理**：
+
+若某实体在 `api-gaps.json` 中标记为 `API_GAP`，不可绕过直写数据库。处理方式：
+- 标记该实体为 `API_MISSING_BLOCKER`
+- 跳过该实体及其依赖的子实体链路
+- 输出到 `.allforai/demo-forge/api-gap-tasks.md` 供 dev-forge 补建 API
+- forge-log 记录阻断原因，提示用户先补 API 再重灌
 
 **失败处理策略**：
-- **独立实体失败**：写入日志，继续灌入其他实体
+- **独立实体失败**：写入日志（含 API 响应状态码和错误体），继续灌入其他实体。灌入失败 = 真实 BIZ_BUG，记录到 forge-log
 - **父实体失败**：跳过该链路下所有子实体（避免外键悬空），整条链路标记为 `CHAIN_FAILED`
 - **灌入结束**：汇总失败链路数量和原因，提示用户排查后可重试
+
+**派生字段**：全部由 API 业务逻辑自动计算（聚合、计数、余额、索引），无需手动修正。若 API 返回的派生字段与预期不符，视为 BIZ_BUG 记录到 forge-log。
 
 **输出**：
 - `forge-data.json` — 已创建数据清单（临时 ID 替换为真实服务端 ID）
 - `forge-log.json` — 灌入日志（每条记录的操作状态）
-
----
-
-### E4: 派生数据修正（DB 灌入后）
-
-DB 直写跳过业务逻辑，需手动修正派生字段：
-
-| 修正类型 | 操作 |
-|---------|------|
-| 聚合字段 | `SELECT SUM(amount) FROM details WHERE parent_id=?` → `UPDATE parent SET total=?` |
-| 计数字段 | `SELECT COUNT(*) FROM children WHERE parent_id=?` → `UPDATE parent SET count=?` |
-| 余额/库存 | 按全部流水记录正向计算最终值 |
-| 搜索索引 | 若存在全文搜索，触发 reindex |
-
-**输出**：更新 `forge-log.json`，追加 E4 修正记录。
 
 ---
 
@@ -165,12 +156,12 @@ draft 保留不删，clean 后可直接重灌不必重新生成数据。
 ```
 1. 子实体 → 父实体（按 forge-data.json 记录的灌入顺序逆序）
 2. 用户账号（最后删除，其他实体可能引用 user_id）
-3. DB 灌入的基础数据（配置表、字典表）
+3. 配置/字典数据
 ```
 
 **清理方式**：
-- 统一走数据库 DELETE（不走 API，速度快且可批量删除）
-- 按 `forge-data.json` 中记录的 `id` 和 `table` 逐条或批量 DELETE
+- 优先走删除 API（与灌入一致，触发级联清理逻辑）
+- 按 `forge-data.json` 中记录的 `id` 和删除端点逐条或批量删除
 - 若有 cascade delete 配置，只需删除顶层父实体；若无，严格按逆序逐层删除
 
 **清理范围**：
@@ -186,9 +177,10 @@ draft 保留不删，clean 后可直接重灌不必重新生成数据。
 
 | 问题类型 | 处理方式 |
 |---------|---------|
-| 外键断裂 | 检查 forge-data.json，补灌缺失的父记录或修正外键指向 |
-| CHAIN_FAILED | 重试该链路的完整灌入 |
-| 派生不一致 | 重跑 E4 派生数据修正 |
+| 外键断裂 | 检查 forge-data.json，通过 API 补灌缺失的父记录或修正外键指向 |
+| CHAIN_FAILED | 重试该链路的完整 API 灌入 |
+| 派生不一致 | 视为 BIZ_BUG，记录到 forge-log 路由给 dev-forge 修复业务逻辑 |
+| API_MISSING_BLOCKER | 等待 dev-forge 补建 API 后重试灌入 |
 
 ---
 
@@ -198,14 +190,15 @@ draft 保留不删，clean 后可直接重灌不必重新生成数据。
 |------|------|------|
 | `forge-data-draft.json` | `.allforai/demo-forge/` | E1 生成的完整数据集（临时 ID） |
 | `forge-data.json` | `.allforai/demo-forge/` | E3 灌入后的数据清单（真实 ID） |
-| `forge-log.json` | `.allforai/demo-forge/` | 灌入日志（操作状态 + E4 修正记录） |
+| `forge-log.json` | `.allforai/demo-forge/` | 灌入日志（操作状态 + BIZ_BUG 记录） |
 
 ---
 
 ## 铁律
 
-1. **优先 API，按需直写数据库** — API 灌入触发完整业务逻辑，DB 直写仅用于 API 不支持的场景
-2. **派生字段必须数学计算，不靠 LLM 估算** — SUM/COUNT/余额全部由确定性查询得出
-3. **链路顺序灌入，父先于子** — 任何子实体灌入前其父实体必须已存在
-4. **失败不静默，链路失败显式标记** — 独立失败记日志继续，父失败则整条链路标记 CHAIN_FAILED
-5. **灌入后立即验证可用性** — 用户账号创建后立即用认证 API 验证登录（不留到 demo-verify 才发现密码不对）；数据关联创建后查询确认链路完整（父→子关系可查到）。灌入验证失败 → 修正后重试，不静默跳过
+1. **全部走 API，无例外** — 所有数据灌入通过 API 端点，不直写数据库。API 缺失 = `API_MISSING_BLOCKER`，必须先补 API 再灌数据
+2. **灌入过程即集成测试** — 每次 API 调用验证认证、权限、校验、业务逻辑、级联、派生字段。灌入失败 = 真实 BIZ_BUG，直接记录到 forge-log 交给修复流程
+3. **派生字段由 API 业务逻辑自动计算** — 聚合/计数/余额/索引全部由服务端业务逻辑处理，无需手动修正。派生不一致 = BIZ_BUG
+4. **链路顺序灌入，父先于子** — 任何子实体灌入前其父实体必须已存在
+5. **失败不静默，链路失败显式标记** — 独立失败记日志继续，父失败则整条链路标记 CHAIN_FAILED
+6. **灌入后立即验证可用性** — 用户账号创建后立即用认证 API 验证登录（不留到 demo-verify 才发现密码不对）；数据关联创建后查询确认链路完整（父→子关系可查到）。灌入验证失败 → 修正后重试，不静默跳过

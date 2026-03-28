@@ -192,7 +192,7 @@ Upload all `verified: true` assets through the app's own upload API.
 
 - Upload failure → retry 2 times (2s interval)
 - Still fails → mark `status: "UPLOAD_FAILED"`, record error
-- `upload_endpoint` doesn't exist → mark `API_GAP`, append to `api-gaps.json`
+- `upload_endpoint` doesn't exist → mark `API_MISSING_BLOCKER`, append to `api-gaps.json` — upload API must be created before media can be populated
 
 **Output**: `upload-mapping.json`
 
@@ -215,7 +215,7 @@ Final hard check ensuring pipeline output complies with iron rules.
 M6 Completeness confirmation:
   Uploaded:          132/136
   UPLOAD_FAILED:       0
-  API_GAP:             4 (recorded in api-gaps.json)
+  API_MISSING_BLOCKER: 4 (recorded in api-gaps.json, must build APIs first)
   external_url_count:  0 ✓
   Status: PASSED
 ```

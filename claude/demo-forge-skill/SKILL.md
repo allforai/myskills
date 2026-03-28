@@ -69,7 +69,7 @@ version: "2.0.0"
 
 > 详见 `${CLAUDE_PLUGIN_ROOT}/skills/demo-execute.md`
 
-根据 demo-plan 生成确定性数据，通过 API / DB 混合策略灌入应用。处理字段依赖顺序、关联关系、派生字段修正。
+根据 demo-plan 生成确定性数据，全部通过 API 端点灌入应用。灌入过程即集成测试 — 每次 API 调用验证认证、权限、校验、业务逻辑、级联、派生字段。API 缺失 = `API_MISSING_BLOCKER`，必须先补 API 再灌数据。
 
 **核心产出**：`forge-data-draft.json`（生成的原始数据）、`forge-data.json`（灌入后的实际数据，含服务端生成 ID）、`forge-log.json`（灌入日志）。
 
@@ -140,7 +140,8 @@ Round 2 → Round 3（最多 3 轮修复）
 ```
 .allforai/demo-forge/
 ├── model-mapping.json          # 应用模型 ↔ API 端点映射
-├── api-gaps.json               # 缺失 API 清单（需 dev-forge 补建）
+├── api-gaps.json               # 缺失 API 清单（API_MISSING_BLOCKER）
+├── api-gap-tasks.md            # API 缺口补建任务（供 dev-forge 执行）
 ├── demo-plan.json              # 完整数据方案（账号+数据量+链条+约束）
 ├── style-profile.json          # 视觉风格画像（配色+图片风格+品牌调性）
 ├── assets/                     # 本地媒体素材

@@ -156,7 +156,7 @@ Load media-forge skill and execute full pipeline (M1 → M6).
 
 ### Execution
 
-Load demo-execute skill and execute full workflow (E1 → E4).
+Load demo-execute skill and execute full workflow (E1 → E3).
 
 ### Quality Gate
 

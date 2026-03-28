@@ -230,7 +230,7 @@ M3 AI 生成: 28 项补缺完成
 
 - 上传失败 → 重试 2 次（间隔 2s）
 - 仍失败 → 标记 `status: "UPLOAD_FAILED"`，记录错误信息
-- `upload_endpoint` 不存在 → 标记 `API_GAP`，追加到 `api-gaps.json`
+- `upload_endpoint` 不存在 → 标记 `API_MISSING_BLOCKER`，追加到 `api-gaps.json` 和 `api-gap-tasks.md` 供 dev-forge 补建
 
 **输出**：`upload-mapping.json`
 

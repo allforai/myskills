@@ -330,7 +330,8 @@ experience-map.screen.actions[]
 |---------|----------|----------|---------|
 | 数据缺失、枚举未覆盖、链路不完整 | coverage | design | 实体 0 条记录，缺 REJECTED 状态 |
 | 图片 broken、视频不播放、外链残留、占位图 | media | media | 404、拉伸、灰块 |
-| 外键断裂、派生不一致、灌入失败 | data_integrity | execute | Dashboard 汇总 != 明细之和 |
+| 外键断裂、灌入失败 | data_integrity | execute | 关联数据缺失、链路断裂 |
+| 派生字段不一致 | data_integrity | dev_task | Dashboard 汇总 != 明细之和（BIZ_BUG，API 业务逻辑问题） |
 | API 500、前端渲染 bug、SQL 错误、代码崩溃 | code_bug | dev_task | 应用代码 bug，非数据问题 |
 | UI 活性不足（列表空、按钮无目标、状态缺失） | liveness | design | screen action 无数据支撑 |
 | 数据流断裂（因果链不连贯、关联数据缺失） | data_flow | execute | 父实体有子列表为空 |
@@ -500,7 +501,7 @@ experience-map.screen.actions[]
       "page_url": "/dashboard/sales",
       "evidence": "screenshots/v4-round1-sales-overview.png",
       "route_to": "execute",
-      "suggested_fix": "重跑 E4 派生数据修正，重算聚合字段"
+      "suggested_fix": "派生字段不一致 = BIZ_BUG，路由 dev-forge 修复业务逻辑"
     },
     {
       "id": "VI-003",

@@ -54,7 +54,7 @@ Acquire, generate, process, and upload media for demo-plan media fields. Search 
 
 > See `skills/demo-execute.md`
 
-Generate deterministic data from demo-plan and populate the application via API/DB hybrid strategy. Handle field dependency ordering, associations, derived field correction.
+Generate deterministic data from demo-plan and populate the application via API endpoints only (no DB direct write). Injection IS integration testing — every API call validates auth, permissions, validation, and business logic. Missing API = `API_MISSING_BLOCKER`, must be built first. No E4 derived correction — API handles derived fields automatically.
 
 **Core output**: `forge-data-draft.json` (raw generated data), `forge-data.json` (populated data with server IDs), `forge-log.json` (population log).
 

@@ -168,7 +168,7 @@ product-map 产物必须存在：
 
 ### 执行
 
-加载 demo-execute skill 并执行完整工作流（E1 → E4）。
+加载 demo-execute skill 并执行完整工作流（E1 → E3）。
 
 ### 质量门禁
 
@@ -227,7 +227,7 @@ product-map 产物必须存在：
 
 1. **design 类** → 加载 `${CLAUDE_PLUGIN_ROOT}/skills/demo-design.md`，传入问题项，增量修改 `demo-plan.json`
 2. **media 类** → 加载 `${CLAUDE_PLUGIN_ROOT}/skills/media-forge.md`，传入问题项，补采/再加工/重传
-3. **execute 类** → 加载 `${CLAUDE_PLUGIN_ROOT}/skills/demo-execute.md`，传入问题项，补灌/修正
+3. **execute 类** → 加载 `${CLAUDE_PLUGIN_ROOT}/skills/demo-execute.md`，传入问题项，通过 API 补灌
 4. **dev_task 类** → 生成结构化任务（格式与 dev-forge tasks.md 一致），追加到对应子项目 tasks.md 的 B-FIX round。demo-forge 当轮标记为 `DEFERRED_TO_DEV`，不阻塞自身迭代
 
 ### 4.5-C 回归验证

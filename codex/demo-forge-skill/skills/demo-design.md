@@ -81,7 +81,7 @@ Step 1: Demo data scheme design (core)
      1-A Role -> user account design
      1-B Task frequency -> data volume design
      1-C Scenario + business flow -> data chain design
-     1-C-2 Population method annotation (api vs db per entity)
+     1-C-2 Population method annotation (API endpoint per entity)
      1-D Constraints -> data rule design
      1-E Enum full coverage check
      1-F Time distribution design
@@ -112,7 +112,7 @@ product-map role "{role_name}"  ->  code entity User (role={role_key})
 product-map scenario "{scenario}" -> entity relations {A} -> {B} -> {C}
 ```
 
-Detect API gaps: entity without create endpoint, task without API. Mark as `API_GAP`.
+Detect API gaps: entity without create endpoint, task without API. Mark as `API_MISSING_BLOCKER` — missing API must be built before data population can proceed.
 
 Output: `.allforai/demo-forge/model-mapping.json`, `.allforai/demo-forge/api-gaps.json`
 
@@ -151,12 +151,11 @@ Generate complete chains, not isolated data. Read `business-flows.json` for cros
 
 #### 1-C-2 Population Method Annotation (per entity)
 
-| Method | When to Use |
-|--------|-------------|
-| `api` | Entities needing business logic triggers (create records, notifications, status transitions, audit logs) |
-| `db` | No business logic side effects (config tables, dictionaries, historical archives, API_GAP entities) |
+**全部走 API，无例外。** 所有实体均通过 API 端点灌入，灌入过程即集成测试。
 
-Prefer `api`; use `db` when: entity is in `api-gaps.json`, need terminal-state data bypassing normal flow, or large batch without bulk API.
+- 每个实体标注对应的 API 端点（create / update / batch）
+- 实体无 create API -> 标记为 `API_MISSING_BLOCKER`，先补 API 再灌数据
+- **不降级为 DB 直写**。缺少 API 是阻断问题，生成 dev task 交由 dev-forge 补建端点
 
 #### 1-D Constraint Rules Design
 
@@ -278,9 +277,9 @@ High-frequency tasks get more data, low-frequency tasks get less. Associations f
 
 Business constraints from `constraints.json` must be reflected in data. Amount limits, approval chains, irreversible states — designed data must not violate them.
 
-### 3. Prefer API, use DB when needed
+### 3. 全部走 API，无例外
 
-Entities needing business logic (creation, state transitions, notifications) go through API. Config tables, dictionaries, archives, and API_GAP entities go through DB direct write. Each entity is annotated in Step 1-C-2.
+所有实体灌入均通过 API 端点，不直写数据库。灌入过程即集成测试 — 每次 API 调用验证认证、权限、校验、业务逻辑。缺少 API 端点标记为 `API_MISSING_BLOCKER`，先补 API 再灌数据。Each entity is annotated with its API endpoint in Step 1-C-2.
 
 ---
 
@@ -295,6 +294,6 @@ Entities needing business logic (creation, state transitions, notifications) go 
 | Missing junction tables | Many-to-many tables empty | Step 0 scan association tables |
 | Empty config tables | System params/templates missing | List config entities separately, fill all |
 | Time logic errors | Child before parent, future dates in history | Use relative offsets (NOW-7d) |
-| Derived field mismatch | Aggregates != detail sum | DB population -> manual recalculation |
+| Derived field mismatch | Aggregates != detail sum | API handles derived fields; mismatch = BIZ_BUG |
 | Flat time distribution | All records on same day | 1-F time distribution, 90-day lookback |
 | Uniform user behavior | Equal data per user | 1-G power-law: 10% heavy users produce 50% data |

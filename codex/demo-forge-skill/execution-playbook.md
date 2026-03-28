@@ -95,7 +95,7 @@ Load skill: `skills/demo-execute.md`
 - If media fields exist: `upload-mapping.json` must exist
 - Application URL must be collected (Phase 0-E)
 
-Execute full workflow (E1 -> E4).
+Execute full workflow (E1 -> E3). No E4 — API handles derived fields automatically.
 
 **Quality Gate:**
 - `forge-data.json` exists

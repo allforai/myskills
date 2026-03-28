@@ -32,7 +32,7 @@ demo-forge internal stages:
 | `demo-plan.json` | demo-design | Demo data scheme (entities, chains, constraints, enums, time distribution) |
 | `style-profile.json` | demo-design | Industry style + text templates |
 | `upload-mapping.json` | media-forge | Local asset -> server URL/ID mapping |
-| Application running | User | API accessible, database connectable |
+| Application running | User | API accessible |
 
 All four required. If any missing, abort and prompt to complete the prerequisite.
 
@@ -93,44 +93,31 @@ Item-by-item quality confirmation. Issues fall into two categories:
 
 ### E3: Data Population
 
+**全部走 API，无例外。** 灌入过程即集成测试 — 每次 API 调用验证认证、权限、校验、业务逻辑。灌入失败 = BIZ_BUG。
+
 **Population order follows scenario chain** (not entity alphabetical order), ensuring FK dependencies:
 
 ```
-1. DB population: config tables, dictionaries, API_GAP entities (no business logic)
+1. API population: config tables, dictionaries (POST/PUT endpoints)
 2. API population: user accounts (all chains depend on users)
-3. Mixed population: by scenario priority (high-freq -> mid-freq -> low-freq)
+3. API population: by scenario priority (high-freq -> mid-freq -> low-freq)
    - Per scenario, chain order: parent -> child -> associated entities
-   - Per entity, use method from demo-plan Step 1-C-2 annotation (api or db)
+   - ALL entities go through API endpoints in dependency order
 ```
 
-**DB population notes**:
-- Direct write bypasses business logic (triggers, callbacks), derived fields need E4 manual correction
-- ORM `created_at` / `updated_at` auto-fill does not work, must specify explicitly
-- DB-populated records are also written to `forge-data.json`, clean mode DELETEs them directly
+**API_MISSING_BLOCKER handling**:
+- Entity has no create API endpoint -> flag as `API_MISSING_BLOCKER`
+- **Do NOT fall back to DB direct write.** Missing API must be created first.
+- Generate a dev task for dev-forge to build the missing endpoint, then retry after endpoint is available.
 
 **Failure handling**:
-- **Independent entity failure**: log and continue with other entities
+- **Independent entity failure**: log and continue with other entities. Failure = BIZ_BUG, record for dev-forge.
 - **Parent entity failure**: skip all children in that chain (avoid FK dangling), mark entire chain as `CHAIN_FAILED`
 - **Population complete**: summarize failed chain count and reasons
 
 **Output**:
 - `forge-data.json` — created data inventory (temp IDs replaced with real server IDs)
 - `forge-log.json` — population log (operation status per record)
-
----
-
-### E4: Derived Data Correction (post-DB population)
-
-DB direct write bypasses business logic. Manual correction needed:
-
-| Correction Type | Operation |
-|----------------|-----------|
-| Aggregate fields | `SELECT SUM(amount) FROM details WHERE parent_id=?` -> `UPDATE parent SET total=?` |
-| Count fields | `SELECT COUNT(*) FROM children WHERE parent_id=?` -> `UPDATE parent SET count=?` |
-| Balance/inventory | Forward-calculate final value from all journal records |
-| Search index | Trigger reindex if full-text search exists |
-
-**Output**: Update `forge-log.json` with E4 correction records.
 
 ---
 
@@ -143,6 +130,8 @@ DB direct write bypasses business logic. Manual correction needed:
 
 Draft is preserved. After clean, can re-populate without regenerating data.
 
+> **No E4 stage.** API handles all derived fields (aggregates, counts, balances, indexes) automatically through business logic. No post-population correction needed.
+
 ---
 
 ## Clean Mode
@@ -154,12 +143,12 @@ Read `forge-data.json`, delete all populated data in reverse population order.
 ```
 1. Child entities -> parent entities (reverse of forge-data.json population order)
 2. User accounts (deleted last, other entities may reference user_id)
-3. DB-populated base data (config tables, dictionaries)
+3. Base data (config tables, dictionaries — deleted last)
 ```
 
 **Cleanup method**:
-- Unified DB DELETE (not API, faster and supports batch)
-- DELETE by `id` and `table` from `forge-data.json`
+- Use API DELETE endpoints where available (respects business logic and cascade rules)
+- DELETE by `id` from `forge-data.json`
 - If cascade delete configured, only delete top-level parents; otherwise strict reverse-order layer-by-layer
 
 **Cleanup scope**:
@@ -177,7 +166,7 @@ When `verify-issues.json` contains `route_to="execute"` issues, enter re-entry m
 |-----------|---------|
 | FK breakage | Check forge-data.json, supplement missing parent records or fix FK references |
 | CHAIN_FAILED | Retry full population for that chain |
-| Derived inconsistency | Re-run E4 derived data correction |
+| API_MISSING_BLOCKER | Check if dev-forge has built the missing endpoint, retry |
 
 ---
 
@@ -187,14 +176,15 @@ When `verify-issues.json` contains `route_to="execute"` issues, enter re-entry m
 |------|------|-------------|
 | `forge-data-draft.json` | `.allforai/demo-forge/` | E1 generated dataset (temp IDs) |
 | `forge-data.json` | `.allforai/demo-forge/` | E3 populated data inventory (real IDs) |
-| `forge-log.json` | `.allforai/demo-forge/` | Population log (status + E4 corrections) |
+| `forge-log.json` | `.allforai/demo-forge/` | Population log (status per record) |
 
 ---
 
 ## Iron Rules
 
-1. **Prefer API, use DB when needed** — API population triggers full business logic, DB direct write only for unsupported scenarios
-2. **Derived fields must be mathematically calculated, not LLM-estimated** — SUM/COUNT/balance all from deterministic queries
+1. **全部走 API，无例外** — 所有数据灌入通过 API 端点，不直写数据库。灌入过程即集成测试 — 每次 API 调用验证认证、权限、校验、业务逻辑。灌入失败 = BIZ_BUG。
+2. **API_MISSING_BLOCKER** — 缺少 API 端点不降级为 DB 直写，标记为 `API_MISSING_BLOCKER`，生成 dev task 先补 API 再灌数据
 3. **Chain order: parent before child** — any child entity must have its parent already existing before population
 4. **Failures are never silent** — independent failures logged and continue, parent failure marks entire chain CHAIN_FAILED
 5. **Post-population immediate validation** — verify user login right after account creation (do not wait for demo-verify); confirm chain integrity after association creation. Validation failure -> fix and retry, never silently skip
+6. **No E4 derived correction** — API handles derived fields automatically. If aggregates are wrong after API population, that is a BIZ_BUG, not a demo-forge concern

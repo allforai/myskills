@@ -148,7 +148,7 @@ product-map role "{role_name}"  →  code entity User(role={role_key})
 product-map scenario "{scenario}"  →  entity chain {EntityA} → {EntityB} → {EntityC}
 ```
 
-Detect API gaps: entity without create endpoint, task without corresponding API, mark as `API_GAP`.
+Detect API gaps: entity without create endpoint, task without corresponding API, mark as `API_MISSING_BLOCKER` — missing API must be created before population.
 
 Output: `.allforai/demo-forge/model-mapping.json`, `.allforai/demo-forge/api-gaps.json`
 
@@ -204,17 +204,14 @@ Each scenario's data has continuous timestamps, logical state flow, complete for
 
 #### 1-C-2 Population Method Annotation (per entity)
 
-Annotate population method for each entity alongside chain design:
+All entities use API population — no exceptions. Annotate the API endpoint for each entity alongside chain design:
 
-| Method | When to use |
-|--------|-------------|
-| `api` | Entities needing business logic triggers (creating records, triggering notifications, state flow, audit logs) |
-| `db` | Entities without business logic side effects (config tables, dictionaries, historical archives, entities with no API yet) |
+| Annotation | Description |
+|------------|-------------|
+| `api` | Entity has create/update API endpoint — annotate endpoint path |
+| `API_MISSING_BLOCKER` | Entity has no create API — must be built before population (generate dev-forge task) |
 
-Prefer `api`; use `db` when:
-- Entity is marked `API_GAP` in `api-gaps.json`
-- Need to construct "skip normal flow" terminal-state data
-- Large batch with no batch API available
+**No DB fallback**: entities marked `API_MISSING_BLOCKER` block population until the API is created. This ensures every data injection validates the full business logic stack (authentication, permissions, validation, derived fields).
 
 #### 1-D Constraint Rule Design (by business constraints + task rules)
 
@@ -357,7 +354,7 @@ When `verify-issues.json` contains `route_to="design"` issues, the orchestrator 
 | File | Step | Description |
 |------|------|-------------|
 | `.allforai/demo-forge/model-mapping.json` | Step 0 | Code entity ↔ product-map task/role mapping |
-| `.allforai/demo-forge/api-gaps.json` | Step 0 | API gap report |
+| `.allforai/demo-forge/api-gaps.json` | Step 0 | API gap report (API_MISSING_BLOCKER — must be resolved before population) |
 | `.allforai/demo-forge/demo-plan.json` | Step 1 | Demo data plan (accounts/volume/chains/constraints/enums/time/behavior/media) |
 | `.allforai/demo-forge/style-profile.json` | Step 2 + 2.5 | Industry style + text templates + diversity variants |
 
@@ -373,9 +370,9 @@ High-frequency task data should be abundant, low-frequency sparse. Relationships
 
 Business constraints from `constraints.json` must be reflected in data. Amount limits, approval chains, irreversible states -- the data plan must not violate them.
 
-### 3. Prefer API, use DB when needed
+### 3. 全部走 API，无例外
 
-Data needing business logic triggers (entity creation, state flow, notifications) goes through API. Config tables, dictionaries, historical archives, entities without API go through DB direct write. Each entity annotated in Step 1-C-2, mixed usage, not mutually exclusive.
+所有数据灌入通过 API 端点，不直写数据库。灌入过程即集成测试 — 每次 API 调用验证认证、权限、校验、业务逻辑。缺失 API 的实体标记为 `API_MISSING_BLOCKER`，生成 dev-forge 修复任务，不降级为数据库直写。
 
 ---
 
@@ -390,6 +387,6 @@ Data needing business logic triggers (entity creation, state flow, notifications
 | Junction tables missing | Many-to-many tables empty | Step 0 scans junction tables |
 | Config tables empty | System params, templates empty | Config entities listed and fully populated |
 | Time logic errors | Child earlier than parent, future dates in history | Use relative time offsets (NOW-7d) |
-| Derived field mismatch | Aggregates != detail sums | DB population requires manual aggregate recalculation |
+| Derived field mismatch | Aggregates != detail sums | BIZ_BUG — API should handle derived fields; route to dev_task |
 | Unnatural time distribution | All records on same day | 1-F time distribution, 90 day lookback |
 | Uniform user behavior | Every user produces equal data | 1-G power-law, 10% heavy users produce 50% data |
