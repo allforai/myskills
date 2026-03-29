@@ -111,6 +111,26 @@ max_node_execution_time: {safety.max_node_execution_time} seconds
 - Safety stop → current progress + TODO list
 - User interrupts → state saved in state-machine.json, resume with /run
 
+## Post-Completion: Learning + Feedback
+
+After the orchestrator loop terminates (success or safety stop):
+
+### Step 1: Extract Experience
+
+Read `${CLAUDE_PLUGIN_ROOT}/knowledge/learning-protocol.md` and follow its protocol:
+- Read state-machine.json corrections_applied + diagnosis_history
+- Extract reusable patterns
+- Deidentify (remove project-specific details)
+- Write to `${CLAUDE_PLUGIN_ROOT}/knowledge/learned/<category>.md`
+
+### Step 2: Propose Feedback (Optional)
+
+Read `${CLAUDE_PLUGIN_ROOT}/knowledge/feedback-protocol.md` and follow its protocol:
+- Filter for universally useful findings
+- Present to user for confirmation
+- Submit approved items as anonymous GitHub Issues
+- Save unapproved items locally only
+
 ## Context Management
 
 Each iteration:
