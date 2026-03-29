@@ -32,10 +32,14 @@ Layer 2: Orchestrator (/run)
 
 ```
 knowledge/
-  nodes/      -- Node templates (distilled from existing skills)
-  mappings/   -- Tech stack mapping tables
-  domains/    -- Business domain knowledge
-  learned/    -- Cross-project experience (auto-populated)
-  safety.md   -- Safety rules template
+  capabilities/ -- Capability references (15 files: discovery, translate, tune, etc.)
+                   Bootstrap freely combines into project-specific nodes
+  mappings/     -- Tech stack mapping tables (react-swiftui, express-gin, etc.)
+  domains/      -- Business domain knowledge (ecommerce, fintech, etc.)
+  learned/      -- Cross-project experience (auto-populated after /run)
+  safety.md     -- Safety rules template
   orchestrator-template.md -- /run command template
+  diagnosis.md  -- Full-chain diagnosis protocol
+  learning-protocol.md -- Experience extraction protocol
+  feedback-protocol.md -- Anonymous GitHub Issue feedback
 ```

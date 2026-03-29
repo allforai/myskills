@@ -1,7 +1,7 @@
 # Cross-Project Learning Protocol
 
 > After /run completes, the orchestrator extracts reusable experience and
-> writes it to knowledge/learned/ in the meta-skill plugin directory.
+> writes it to `.allforai/bootstrap/learned/` in the target project.
 
 ## When to Trigger
 
@@ -23,7 +23,7 @@ state-machine.json has any entries in:
 
 ## Output Format
 
-Append to `${CLAUDE_PLUGIN_ROOT}/knowledge/learned/<category>.md`:
+Append to `.allforai/bootstrap/learned/<category>.md`:
 
 ```markdown
 ## [{date}] {project_name or "anonymous"}
@@ -53,6 +53,6 @@ Append to `${CLAUDE_PLUGIN_ROOT}/knowledge/learned/<category>.md`:
 
 ## Consumption
 
-Next `/bootstrap` reads `knowledge/learned/` in Step 2.3.
+Next `/bootstrap` reads `.allforai/bootstrap/learned/` in Step 2.3.
 Learned experience takes precedence over preset mappings when they conflict
 (learned comes from actual execution, presets are theoretical).

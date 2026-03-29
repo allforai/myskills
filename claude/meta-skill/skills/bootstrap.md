@@ -189,7 +189,7 @@ Based on bootstrap-profile.json, load knowledge files:
 
 ### 2.1 Node Templates (always load all)
 
-Read all files in `${CLAUDE_PLUGIN_ROOT}/knowledge/nodes/*.md`.
+Read all files in `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/*.md`.
 Each file's "What Bootstrap Specializes" section tells you what to customize.
 
 ### 2.2 Determine Which Capabilities and Nodes Are Needed
@@ -306,7 +306,7 @@ Use these formats in entry_requires / exit_requires:
 
 For each node:
 
-1. Read the corresponding knowledge template (`knowledge/nodes/<name>.md`)
+1. Read the corresponding knowledge template (`knowledge/capabilities/<name>.md`)
 2. Read the "What Bootstrap Specializes" section
 3. For each item in that section, fill it with project-specific information from bootstrap-profile.json
 4. If a mapping file was loaded (Step 2.3), embed the mapping table in translate node-specs

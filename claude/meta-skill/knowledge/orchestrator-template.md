@@ -89,7 +89,7 @@ Max concurrent: {safety.max_concurrent_nodes}.
 
 ## On Failure: Full-Chain Diagnosis
 
-> See diagnosis protocol loaded from knowledge/diagnosis.md
+> When needed, read `.allforai/bootstrap/protocols/diagnosis.md`
 
 When a node returns status "failure":
 1. Do NOT retry or backtrack immediately
@@ -134,7 +134,7 @@ Read `.allforai/bootstrap/protocols/learning-protocol.md` and follow its protoco
 - Read state-machine.json corrections_applied + diagnosis_history
 - Extract reusable patterns
 - Deidentify (remove project-specific details)
-- Write to `${CLAUDE_PLUGIN_ROOT}/knowledge/learned/<category>.md`
+- Write to `.allforai/bootstrap/learned/<category>.md`
 
 ### Step 2: Propose Feedback (Optional)
 
