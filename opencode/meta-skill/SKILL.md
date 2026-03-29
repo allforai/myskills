@@ -4,10 +4,10 @@ description: >
   Meta-skill generator. Analyzes target projects and generates project-specific
   skills, state machine configurations, and orchestrator commands.
   Use bootstrap to analyze, then run to execute.
-version: "0.2.0"
+version: "0.3.0"
 ---
 
-# Meta-Skill v0.2.0
+# Meta-Skill v0.3.0
 
 > Unified skill generator — /bootstrap + /run.
 
