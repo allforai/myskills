@@ -84,9 +84,26 @@ not delivered to dev-forge as final products.
 - cr_gen_indexes.py, cr_gen_product_map.py
 - cr_validate.py (schema validation)
 
+## Archetype-Specific Artifact Selection
+
+Standard merge scripts (cr_merge_*.py) only apply to web-app archetypes.
+For non-standard projects, LLM outputs complete JSON artifacts directly
+(no fragment-merge workflow).
+
+| Archetype | Artifacts | Uses merge scripts? |
+|-----------|-----------|-------------------|
+| web-app | task-inventory, role-profiles, business-flows, experience-map, use-case-tree | Yes |
+| cli | command-tree, command-flows, use-case-tree | No (LLM direct) |
+| data-pipeline | dag-spec, transform-catalog | No |
+| game | system-spec, config-schema, protocol-spec | No |
+| library | api-surface, usage-patterns | No |
+| microservice | service-boundary-map, contract-spec | No |
+
+Non-standard artifacts are written to `.allforai/code-replicate/` (not product-map/).
+
 ## What Bootstrap Specializes
 
-- Which artifacts to generate (based on project archetype from discovery)
+- **Project archetype** (determines artifact selection table above)
 - Specific extraction-plan sources (from discovered module structure)
-- Which merge scripts are relevant
-- Custom artifact schemas for non-standard projects
+- Which merge scripts are relevant (web-app only)
+- Custom artifact schemas for non-standard projects (LLM designs the schema)

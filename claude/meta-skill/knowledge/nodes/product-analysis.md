@@ -85,10 +85,41 @@ Output: audit-report.json
 11. **Conflict detection at two layers**: task-level (product-map) and screen-level (experience-map) conflicts both surface independently.
 12. **Consumer maturity bar**: consumer/mixed products evaluated against mature product standards — not just "feature exists" but "flow feels complete".
 
+## Non-Web-App Archetypes
+
+The sub-phases above are designed for web/mobile apps. For other project types,
+bootstrap generates a DIFFERENT product-analysis node-spec:
+
+### CLI Tool
+- No roles (single user type). Skip role identification.
+- **Command tree** replaces task-inventory: each subcommand = one task
+- **Command flow** replaces business-flows: command pipelines and sequencing
+- No experience-map (no UI). No journey-emotion.
+- Use cases = command scenarios (happy path + error cases per subcommand)
+- Output: command-tree.json, command-flows.json (instead of standard artifacts)
+
+### Data Pipeline
+- No roles. No experience-map.
+- **DAG spec** replaces business-flows: pipeline stages and dependencies
+- **Transform catalog** replaces task-inventory: each transform = one task
+- Output: dag-spec.json, transform-catalog.json
+
+### Game Server
+- Roles = player types (not auth roles)
+- **System spec** (ECS systems) replaces task-inventory
+- **Config schema** (game balance tables) replaces constraints
+- **Protocol spec** (client-server wire format) as additional artifact
+
+### Library / SDK
+- No roles. No flows.
+- **API surface** replaces task-inventory: exported functions/types
+- **Usage patterns** replaces use-cases: how consumers use the API
+- Output: api-surface.json, usage-patterns.json
+
 ## What Bootstrap Specializes
 
-- Business domain context (from bootstrap-profile.json: ecommerce, fintech, healthcare...)
-- Which sub-phases are relevant (backend-only skips journey-emotion + experience-map + interaction-gate)
-- Domain-specific role templates (ecommerce: buyer/seller/admin; healthcare: patient/doctor/admin)
-- Domain-specific flow patterns (ecommerce: browse->cart->order->pay->fulfill)
-- experience_priority preset (consumer-facing apps default to `consumer` or `mixed`)
+- **Project archetype** (from discovery): web-app / cli / data-pipeline / game / library / microservice
+- Business domain context (from bootstrap-profile.json)
+- Which sub-phases are relevant (archetype determines which phases apply)
+- For web-apps: domain-specific role templates, flow patterns, experience_priority
+- For non-web-apps: archetype-specific artifact schemas and analysis approach
