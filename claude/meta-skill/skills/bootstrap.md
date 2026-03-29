@@ -517,6 +517,7 @@ Copy the evaluation scripts to the target project so the orchestrator can find t
 mkdir -p .allforai/bootstrap/scripts
 cp ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/orchestrator/check_requires.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/orchestrator/validate_bootstrap.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/orchestrator/loop_detection.py .allforai/bootstrap/scripts/
 ```
 
 > **Why copy?** The meta-skill plugin is installed in Claude's plugin cache.
@@ -533,6 +534,7 @@ Write these files (they were generated in memory during Steps 3-5, now persist t
 4. `.claude/commands/run.md` (from Step 5)
 5. `.allforai/bootstrap/scripts/check_requires.py` (copied from plugin)
 6. `.allforai/bootstrap/scripts/validate_bootstrap.py` (copied from plugin)
+7. `.allforai/bootstrap/scripts/loop_detection.py` (copied from plugin)
 
 ### 6.4 Confirm Completion
 
