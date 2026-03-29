@@ -1,8 +1,14 @@
 {
   "name": "meta-skill",
-  "version": "0.3.0",
-  "display_name": "Meta-Skill Generator",
-  "description": "Unified skill generator — analyzes projects, produces specialized node-specs and orchestrator configs. Two commands: /bootstrap (analyze + generate) and /run (execute).",
-  "category": "development",
-  "tags": ["meta", "orchestrator", "state-machine", "code-replicate", "dev-forge", "code-tuner"]
+  "owner": {
+    "name": "dv"
+  },
+  "plugins": [
+    {
+      "name": "meta-skill",
+      "version": "0.3.0",
+      "source": "./",
+      "description": "Meta-skill generator: analyzes projects, generates project-specific node-specs and orchestrator configs. Two commands: /bootstrap (analyze + generate) and /run (execute). Replaces 6 specialized plugins."
+    }
+  ]
 }
