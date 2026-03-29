@@ -92,3 +92,18 @@ After repair_plan completes:
 - Previously identified gaps must resolve (new gaps OK, old gaps can't recur)
 - Repair step failure → new diagnosis, but nested depth max 1 level
 - Each diagnosis record written to state-machine.json diagnosis_history
+
+## Out-of-Scope Repairs
+
+If the diagnosis identifies a root cause in a node that **does not exist** in the current
+state machine (e.g., demo-forge fails because API is missing, but there is no translate
+node to fix the code), the orchestrator:
+
+1. Marks the gap as UNRESOLVED
+2. Records it in diagnosis_history with `"out_of_scope": true`
+3. Outputs a clear TODO: "This issue requires [capability X] which is not in the current
+   workflow. Re-run /bootstrap with goals including [X] to add the necessary nodes."
+4. Does NOT attempt to create new nodes at runtime — node set is fixed at bootstrap time
+
+This handles the scenario where a limited-scope workflow (e.g., goals: ["demo"]) encounters
+issues that require capabilities from a broader scope (e.g., translate or tune).
