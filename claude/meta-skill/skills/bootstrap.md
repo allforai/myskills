@@ -443,7 +443,7 @@ This is the ground truth — not your conversation history.
 loop:
   1. Read state-machine.json (nodes, safety, progress, node_summaries)
   2. Evaluate entry/exit_requires mechanically:
-     Run: python <path-to-scripts>/check_requires.py .allforai/bootstrap/state-machine.json <node-id> --type exit --json
+     Run: python .allforai/bootstrap/scripts/check_requires.py .allforai/bootstrap/state-machine.json <node-id> --type exit --json
      for each completed node, and --type entry for candidate next nodes.
   3. Decide next node:
      - If only one node has entry_requires met and is not completed → go there
@@ -538,7 +538,7 @@ Each iteration, your context is:
 Old subagent results are compressed to node_summaries. Don't rely on conversation history.
 ````
 
-**Important:** Replace `<path-to-scripts>` with the actual path to `shared/scripts/orchestrator/` relative to the project root. Since the meta-skill plugin is installed in Claude's plugin cache, use an absolute path or document that the user needs the scripts available.
+**Important:** The scripts are copied to `.allforai/bootstrap/scripts/` in Step 6.2, so all paths above use that project-local location.
 
 Write to: `{project}/.claude/commands/run.md`
 
@@ -552,7 +552,7 @@ Before writing to the target project, validate everything.
 
 Run the validation script:
 ```bash
-python <path-to-scripts>/validate_bootstrap.py .allforai/bootstrap/
+python .allforai/bootstrap/scripts/validate_bootstrap.py .allforai/bootstrap/
 ```
 
 This checks:
@@ -627,7 +627,21 @@ mkdir -p .claude/commands
 mkdir -p .allforai/bootstrap/node-specs
 ```
 
-### 6.2 Write Files
+### 6.2 Copy Orchestrator Scripts
+
+Copy the evaluation scripts to the target project so the orchestrator can find them:
+
+```bash
+mkdir -p .allforai/bootstrap/scripts
+cp ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/orchestrator/check_requires.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/orchestrator/validate_bootstrap.py .allforai/bootstrap/scripts/
+```
+
+> **Why copy?** The meta-skill plugin is installed in Claude's plugin cache.
+> The target project needs its own copy of the scripts so `/run` can invoke them
+> without depending on the plugin cache path.
+
+### 6.3 Write Files
 
 Write these files (they were generated in memory during Steps 3-5, now persist them):
 
@@ -635,8 +649,10 @@ Write these files (they were generated in memory during Steps 3-5, now persist t
 2. `.allforai/bootstrap/state-machine.json` (from Step 4)
 3. `.allforai/bootstrap/node-specs/*.md` (from Step 3, one per node)
 4. `.claude/commands/run.md` (from Step 5)
+5. `.allforai/bootstrap/scripts/check_requires.py` (copied from plugin)
+6. `.allforai/bootstrap/scripts/validate_bootstrap.py` (copied from plugin)
 
-### 6.3 Confirm Completion
+### 6.4 Confirm Completion
 
 ```
 Bootstrap 完成。
