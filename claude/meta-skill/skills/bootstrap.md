@@ -99,7 +99,37 @@ If README.md exists, read it for:
 - Core user flows described
 - Technology decisions explained
 
-### 1.5 Output bootstrap-profile.json
+### 1.5 Collect Target Information (Interactive)
+
+Ask the user ONE combined question covering:
+
+1. **Goal**: What do you want to do? (analyze only / translate to another stack / both)
+2. **Target tech stack** (if translating): What's the target? (e.g., "SwiftUI + Go Gin", "Flutter", "React Native")
+3. **UI fidelity** (if translating frontend): faithful (pixel-match) or native (platform-idiomatic)?
+
+Format as a single AskUserQuestion with multiple choice where possible:
+
+```
+Bootstrap 分析完成。请确认目标：
+
+1. 目标：
+   a) 仅分析（生成 .allforai/ 产物，不生成代码）
+   b) 跨栈复刻（分析 + 翻译到目标技术栈）
+   c) 同栈重建（分析 + 按目标架构重新生成）
+
+2. 目标技术栈（仅 b/c 需回答）：
+   前端：___
+   后端：___
+
+3. UI 还原度（仅有前端翻译时）：
+   a) faithful — 像素级还原
+   b) native — 允许平台风格差异
+```
+
+If user chose (a), set `target_stacks: null` and skip translate/compile/test nodes.
+If user chose (b) or (c), record target_stacks in bootstrap-profile.json.
+
+### 1.6 Output bootstrap-profile.json
 
 Write to `.allforai/bootstrap/bootstrap-profile.json`:
 
@@ -122,6 +152,15 @@ Write to `.allforai/bootstrap/bootstrap-profile.json`:
       "build_tool": "<vite/webpack/go build/cargo/...>"
     }
   ],
+  "goal": "analyze | translate | rebuild",
+  "target_stacks": [
+    {
+      "role": "frontend | backend | mobile",
+      "language": "<target language>",
+      "framework": "<target framework>"
+    }
+  ],
+  "ui_fidelity": "faithful | native | null",
   "modules": [
     {
       "id": "M001",
