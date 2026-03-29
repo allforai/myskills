@@ -119,8 +119,14 @@ module per directory.
 For monoliths and small-to-medium projects: one discovery node covers structure + runtime + resources.
 
 ### Split into Multiple Nodes
-For microservices: one discovery node per service (discovery-service-a, discovery-service-b).
+For microservices: one discovery node per service (discover-user-service, discover-order-service).
 For monorepos: one discovery node per package/workspace.
+
+When split, each node produces its own artifacts with service-specific names:
+- `source-summary-{service}.json` (not source-summary.json)
+- `file-catalog-{service}.json`
+A final merge step (or the product-analysis node) reads all per-service files.
+Bootstrap must set each node's exit_requires to reference the service-specific file name.
 
 ### Merge with Another Capability
 For very simple projects (< 20 files): merge discovery + product-analysis into a single node.
