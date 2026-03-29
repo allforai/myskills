@@ -18,6 +18,38 @@ Strategy selection per component, compile-verify loop per module.
 
 ## Protocol
 
+### Step 0: Target Project Scaffold
+
+Before any translation, the target project must be initialized. This is the first
+action the translate node performs:
+
+**Frontend (iOS/SwiftUI):**
+- Create Xcode project if not exists (`xcodebuild` or template)
+- Set up directory structure (Views/, Models/, ViewModels/, Services/)
+- Initialize package manager (Swift Package Manager / CocoaPods)
+- Configure build scheme and simulator target
+
+**Frontend (Android/Compose):**
+- Create Gradle project if not exists (`gradle init` or template)
+- Set up directory structure (ui/, data/, domain/)
+- Configure build.gradle.kts with Compose dependencies
+- Set application ID and min SDK
+
+**Backend (Go/Gin):**
+- `go mod init <module-name>` if go.mod not exists
+- Create directory structure (cmd/, internal/, pkg/)
+- Add framework dependency (`go get github.com/gin-gonic/gin`)
+
+**Backend (Node/Express, Python/FastAPI, etc.):**
+- Initialize package manager (`npm init`, `pip install`, etc.)
+- Create entry point file
+- Add framework dependency
+
+**General:**
+- Scaffold is idempotent — skip if target project already initialized
+- Verify scaffold with a build command before starting translation
+- If scaffold build fails, fix before proceeding (don't translate into a broken project)
+
 ### DAG Planning
 1. Topological sort components by dependency
 2. Identify parallel groups (independent components)
@@ -61,8 +93,9 @@ Each task follows the dev-forge task-execute pattern:
 
 ## What Bootstrap Specializes
 
+- **Scaffold commands** (from target tech stack: xcodebuild init, go mod init, gradle init, etc.)
 - Complete mapping table (source framework -> target framework)
-- Compile/build commands
+- Compile/build commands (from knowledge/mappings/*.md "Build Commands" section)
 - Component complexity ratings (from discovery)
 - Error strategy preference (skip-and-log vs fail-fast)
 - DAG order (from dependency graph)
