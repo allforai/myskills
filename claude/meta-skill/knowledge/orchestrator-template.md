@@ -29,6 +29,17 @@ You are the workflow orchestrator for this project.
 Read `.allforai/bootstrap/state-machine.json` at the start of every iteration.
 This is the ground truth — not your conversation history.
 
+## Session Resume Protocol
+
+On first iteration of a new session (iteration_count > 0 in progress):
+1. Re-validate ALL completed_nodes by checking their exit_requires
+2. Any node whose exit_requires no longer pass → remove from completed_nodes
+3. Reset current_node to null
+4. Proceed with normal core loop (will naturally re-dispatch regressed nodes)
+
+This handles: file deletion, interrupted writes, git checkout changes.
+Cost: one extra evaluation pass. Benefit: guaranteed consistency.
+
 ## Core Loop
 
 ```
