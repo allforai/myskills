@@ -3,6 +3,7 @@
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -65,6 +66,9 @@ class TestJsonFieldGte(unittest.TestCase):
         self._dir = tempfile.mkdtemp()
         self._file = os.path.join(self._dir, "data.json")
 
+    def tearDown(self):
+        shutil.rmtree(self._dir)
+
     def _write(self, data):
         with open(self._file, "w") as f:
             json.dump(data, f)
@@ -105,6 +109,9 @@ class TestJsonArrayLengthGte(unittest.TestCase):
     def setUp(self):
         self._dir = tempfile.mkdtemp()
         self._file = os.path.join(self._dir, "data.json")
+
+    def tearDown(self):
+        shutil.rmtree(self._dir)
 
     def _write(self, data):
         with open(self._file, "w") as f:
@@ -153,6 +160,9 @@ class TestEvaluateNode(unittest.TestCase):
         with open(self._data_file, "w") as f:
             json.dump({"score": 80, "items": [1, 2, 3]}, f)
 
+    def tearDown(self):
+        shutil.rmtree(self._dir)
+
     def _write_sm(self, nodes):
         with open(self._sm_path, "w") as f:
             json.dump({"nodes": nodes}, f)
@@ -165,8 +175,11 @@ class TestEvaluateNode(unittest.TestCase):
                 {"json_field_gte": [self._data_file, "$.score", 50]},
             ],
         }])
-        results = evaluate_node(self._sm_path, "build", "exit")
-        self.assertTrue(all(r["passed"] for r in results))
+        outcome = evaluate_node(self._sm_path, "build", "exit")
+        self.assertEqual(outcome["node"], "build")
+        self.assertEqual(outcome["type"], "exit")
+        self.assertTrue(outcome["all_passed"])
+        self.assertTrue(all(r["passed"] for r in outcome["results"]))
 
     def test_partial_fail(self):
         self._write_sm([{
@@ -176,9 +189,10 @@ class TestEvaluateNode(unittest.TestCase):
                 {"json_field_gte": [self._data_file, "$.score", 99]},
             ],
         }])
-        results = evaluate_node(self._sm_path, "build", "exit")
-        self.assertTrue(results[0]["passed"])
-        self.assertFalse(results[1]["passed"])
+        outcome = evaluate_node(self._sm_path, "build", "exit")
+        self.assertFalse(outcome["all_passed"])
+        self.assertTrue(outcome["results"][0]["passed"])
+        self.assertFalse(outcome["results"][1]["passed"])
 
     def test_entry_requires(self):
         self._write_sm([{
@@ -187,8 +201,10 @@ class TestEvaluateNode(unittest.TestCase):
                 {"file_exists": self._data_file},
             ],
         }])
-        results = evaluate_node(self._sm_path, "verify", "entry")
-        self.assertTrue(results[0]["passed"])
+        outcome = evaluate_node(self._sm_path, "verify", "entry")
+        self.assertEqual(outcome["node"], "verify")
+        self.assertEqual(outcome["type"], "entry")
+        self.assertTrue(outcome["results"][0]["passed"])
 
     def test_unknown_node(self):
         self._write_sm([{"id": "build"}])
@@ -198,8 +214,9 @@ class TestEvaluateNode(unittest.TestCase):
     def test_no_requires(self):
         """Node exists but has no requires of the requested type."""
         self._write_sm([{"id": "build"}])
-        results = evaluate_node(self._sm_path, "build", "exit")
-        self.assertEqual(results, [])
+        outcome = evaluate_node(self._sm_path, "build", "exit")
+        self.assertEqual(outcome["results"], [])
+        self.assertTrue(outcome["all_passed"])
 
     def test_command_succeeds_in_evaluate(self):
         self._write_sm([{
@@ -208,8 +225,8 @@ class TestEvaluateNode(unittest.TestCase):
                 {"command_succeeds": "true"},
             ],
         }])
-        results = evaluate_node(self._sm_path, "lint", "entry")
-        self.assertTrue(results[0]["passed"])
+        outcome = evaluate_node(self._sm_path, "lint", "entry")
+        self.assertTrue(outcome["results"][0]["passed"])
 
     def test_array_length_in_evaluate(self):
         self._write_sm([{
@@ -218,8 +235,8 @@ class TestEvaluateNode(unittest.TestCase):
                 {"json_array_length_gte": [self._data_file, "$.items", 2]},
             ],
         }])
-        results = evaluate_node(self._sm_path, "check", "exit")
-        self.assertTrue(results[0]["passed"])
+        outcome = evaluate_node(self._sm_path, "check", "exit")
+        self.assertTrue(outcome["results"][0]["passed"])
 
 
 # ---------------------------------------------------------------------------
@@ -241,6 +258,9 @@ class TestCLI(unittest.TestCase):
         }]}
         with open(self._sm_path, "w") as f:
             json.dump(sm, f)
+
+    def tearDown(self):
+        shutil.rmtree(self._dir)
 
     def test_cli_exit_pass(self):
         result = subprocess.run(

@@ -15,7 +15,7 @@ import json
 import os
 import subprocess
 import sys
-from typing import Any, List
+from typing import Any
 
 
 # ---------------------------------------------------------------------------
@@ -104,7 +104,10 @@ _PRIMITIVES = {
 
 
 def _eval_single(req: dict) -> dict:
-    """Evaluate one require declaration; return {primitive, detail, passed}."""
+    """Evaluate one require declaration; return {primitive, detail, passed}.
+
+    *req* must be a single-key dict, e.g. {"file_exists": "/some/path"}.
+    """
     for prim_name, args in req.items():
         fn = _PRIMITIVES.get(prim_name)
         if fn is None:
@@ -119,11 +122,11 @@ def _eval_single(req: dict) -> dict:
 # evaluate_node
 # ---------------------------------------------------------------------------
 
-def evaluate_node(sm_path: str, node_id: str, req_type: str = "entry") -> List[dict]:
+def evaluate_node(sm_path: str, node_id: str, req_type: str = "entry") -> dict:
     """Load state-machine.json, find *node_id*, evaluate its requires.
 
     *req_type* is 'entry' or 'exit'.
-    Returns list of {primitive, detail, passed} dicts.
+    Returns {"node": node_id, "type": req_type, "results": [...], "all_passed": bool}.
     Raises ValueError if *node_id* not found.
     """
     with open(sm_path) as f:
@@ -140,7 +143,13 @@ def evaluate_node(sm_path: str, node_id: str, req_type: str = "entry") -> List[d
 
     key = f"{req_type}_requires"
     requires = node.get(key, [])
-    return [_eval_single(r) for r in requires]
+    results = [_eval_single(r) for r in requires]
+    return {
+        "node": node_id,
+        "type": req_type,
+        "results": results,
+        "all_passed": all(r["passed"] for r in results),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -159,16 +168,12 @@ def main(argv: list = None):
                         help="Output results as JSON")
     args = parser.parse_args(argv)
 
-    results = evaluate_node(args.sm_path, args.node_id, args.req_type)
-    all_passed = all(r["passed"] for r in results)
+    outcome = evaluate_node(args.sm_path, args.node_id, args.req_type)
+    results = outcome["results"]
+    all_passed = outcome["all_passed"]
 
     if args.output_json:
-        print(json.dumps({
-            "node": args.node_id,
-            "type": args.req_type,
-            "results": results,
-            "all_passed": all_passed,
-        }, indent=2))
+        print(json.dumps(outcome, indent=2))
     else:
         for r in results:
             status = "PASS" if r["passed"] else "FAIL"
