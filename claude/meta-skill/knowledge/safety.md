@@ -9,7 +9,7 @@ safety:
   loop_detection:
     warn_threshold: 3
     stop_threshold: 5
-  max_global_iterations: 30
+  max_global_iterations: 30  # default; bootstrap should scale: max(30, node_count * 3)
   progress_monotonicity:
     check_interval: 5
     violation_action: "output current best + TODO list"
