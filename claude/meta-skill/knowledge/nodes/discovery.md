@@ -61,6 +61,53 @@ User reviews discovery results. Last human interaction point before silent execu
 11. **Event bus inventory**: If source has EventBus/EventDispatcher/MessageBus, list all event types + publishers + subscribers. Events are cross-module coupling pipes — missing events = silent functional breakage.
 12. **Implicit behaviors explicit**: mixin/decorator/annotation-driven behaviors (auto-CRUD, auto-sync, auto-persist) must be documented as explicit capabilities. Record what capability is implicitly gained and what must be hand-implemented in a target stack without the equivalent mechanism.
 
+## Output Schemas (Required Fields)
+
+### source-summary.json
+
+```json
+{
+  "modules": [
+    {
+      "id": "M001",
+      "path": "src/pages/",
+      "role": "frontend | backend | shared",
+      "description": "what this directory contains",
+      "key_files": ["relative/path/to/important/file.ts"],
+      "file_count": 12
+    }
+  ],
+  "tech_stacks": [
+    { "role": "frontend", "language": "TypeScript", "framework": "React 18", ... }
+  ],
+  "abstractions": [],
+  "cross_cutting": [],
+  "data_entities": [],
+  "project_archetype": "web-app | api | cli | game | data-pipeline | ..."
+}
+```
+
+**Critical**: `modules[].path` MUST be a directory path. Modules are directory-based
+(not business-domain-based) because file-catalog and downstream nodes need to know
+WHERE to read files. If a business domain spans multiple directories, create one
+module per directory.
+
+### file-catalog.json
+
+```json
+{
+  "files": [
+    {
+      "path": "relative/path/to/file.ts",
+      "module": "M001",
+      "symbols": ["exported function/class names"],
+      "dependencies": ["other files this imports"],
+      "business_intent": "what this file does in business terms"
+    }
+  ]
+}
+```
+
 ## Scripts Referenced
 
 - `cr_discover.py --profile <discovery-profile>`: File scanning + module detection
