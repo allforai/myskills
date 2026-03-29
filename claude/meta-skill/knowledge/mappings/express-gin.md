@@ -119,3 +119,16 @@
 | `process.on("uncaughtException")` | `recover()` in goroutine | Direct | |
 | Stream piping | `io.Copy` / `io.Pipe` | Direct | |
 | `util.promisify` | — | Arch diff | Go uses synchronous calls in goroutines; no promisify |
+
+## Build Commands (Target: Go/Gin)
+
+| Action | Command |
+|--------|---------|
+| Build | `go build ./cmd/server` |
+| Test | `go test ./... -v` |
+| Clean | `go clean` |
+| Run | `go run ./cmd/server` |
+| Lint | `golangci-lint run` |
+| Vet | `go vet ./...` |
+
+Note: `./cmd/server` replaced by bootstrap with actual main package path.

@@ -118,3 +118,14 @@
 | CSS animation | `.animation()` + `withAnimation { }` | Direct | |
 | CSS transition | `.transition()` | Direct | |
 | z-index | ZStack layer order | Arch diff | Order in ZStack determines stacking; no z-index number |
+
+## Build Commands (Target: SwiftUI/iOS)
+
+| Action | Command |
+|--------|---------|
+| Build | `xcodebuild -scheme <AppName> -destination 'platform=iOS Simulator,name=iPhone 16' build` |
+| Test | `xcodebuild -scheme <AppName> -destination 'platform=iOS Simulator,name=iPhone 16' test` |
+| Clean | `xcodebuild -scheme <AppName> clean` |
+| Run | `open -a Simulator && xcodebuild -scheme <AppName> -destination 'platform=iOS Simulator,name=iPhone 16' build` |
+
+Note: `<AppName>` replaced by bootstrap with actual Xcode scheme name.

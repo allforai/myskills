@@ -92,3 +92,15 @@
 | Tab navigation | `BottomNavigation` + `NavHost` | Direct | |
 | Deep linking | `deepLink { uriPattern = "app://..." }` in `composable` | Direct | |
 | Route guards | `LaunchedEffect` check + navigate away | Direct | No built-in guards; check in effect |
+
+## Build Commands (Target: Jetpack Compose/Android)
+
+| Action | Command |
+|--------|---------|
+| Build | `./gradlew assembleDebug` |
+| Test | `./gradlew testDebugUnitTest` |
+| Clean | `./gradlew clean` |
+| Run | `./gradlew installDebug && adb shell am start -n <package>/.MainActivity` |
+| Lint | `./gradlew lintDebug` |
+
+Note: `<package>` replaced by bootstrap with actual Android package name.
