@@ -90,6 +90,8 @@ Each task follows the dev-forge task-execute pattern:
 6. **Round-based checkpointing**: Persist build-log.json after each round so progress survives context resets.
 7. **Single LLM call = single component**: Match dev-forge's "single target per call" discipline.
 8. **Consumer-priority flag propagation**: If experience_priority = consumer | mixed, UI task completion bar is higher than "page opens + API responds".
+9. **Route parity verification**: After all translation, verify that every source route/endpoint has a target equivalent. Compilation proves syntax; route parity proves functional completeness. Exit_requires should include a parity check, not just build success.
+10. **Model-to-route traceability**: Every data model found in discovery that has CRUD routes in the source must have corresponding routes in the target. Missing routes are silent functional gaps that only surface at integration (demo-forge, test-verify).
 
 ## What Bootstrap Specializes
 
