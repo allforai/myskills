@@ -266,6 +266,13 @@ Use these formats in entry_requires / exit_requires:
 
 **Use project-relative paths.** The orchestrator runs from the project root.
 
+**Critical rule for graph connectivity:**
+- `entry_requires` MUST only use `file_exists` or `json_*` primitives (no `command_succeeds`).
+  Graph connectivity analysis tracks file dependencies between nodes. `command_succeeds` is invisible to the graph.
+- `exit_requires` SHOULD include both `file_exists` (declares what this node produces) AND `command_succeeds` (verifies the output is valid).
+  Example: translate node exits with `file_exists: ios/EcommerceApp` (declares output) + `command_succeeds: xcodebuild build` (verifies it compiles).
+- If a node only has `command_succeeds` in exit_requires, downstream nodes cannot discover its output and will appear as graph orphans.
+
 ### Generation Process
 
 For each node:
