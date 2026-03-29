@@ -103,11 +103,9 @@ If README.md exists, read it for:
 
 Ask the user ONE combined question covering:
 
-1. **Goal**: What do you want to do? (analyze only / translate to another stack / both)
-2. **Target tech stack** (if translating): What's the target? (e.g., "SwiftUI + Go Gin", "Flutter", "React Native")
-3. **UI fidelity** (if translating frontend): faithful (pixel-match) or native (platform-idiomatic)?
+Ask the user ONE combined question. The format depends on whether existing code was detected:
 
-Format as a single AskUserQuestion with multiple choice where possible:
+**If code exists (Step 1.1 found package.json / go.mod / etc.):**
 
 ```
 Bootstrap 分析完成。请确认目标：
@@ -126,8 +124,31 @@ Bootstrap 分析完成。请确认目标：
    b) native — 允许平台风格差异
 ```
 
-If user chose (a), set `target_stacks: null` and skip translate/compile/test nodes.
-If user chose (b) or (c), record target_stacks in bootstrap-profile.json.
+**If no code exists (empty project or only README):**
+
+```
+当前目录没有检测到已有代码。请确认目标：
+
+1. 目标：
+   d) 从零构建新产品
+
+2. 产品愿景（一句话描述你要做什么）：
+   ___
+
+3. 目标技术栈：
+   前端：___
+   后端：___
+   移动端：___（如有）
+
+4. 业务领域：
+   a) 电商  b) 金融  c) 医疗  d) SaaS  e) 社交  f) 游戏  g) 其他：___
+```
+
+**Goal mapping:**
+- (a) → `goal: "analyze"`, `target_stacks: null`
+- (b) → `goal: "translate"`, record target_stacks
+- (c) → `goal: "rebuild"`, record target_stacks
+- (d) → `goal: "create"`, record target_stacks + product_vision + business_domain
 
 ### 1.6 Output bootstrap-profile.json
 
@@ -152,7 +173,8 @@ Write to `.allforai/bootstrap/bootstrap-profile.json`:
       "build_tool": "<vite/webpack/go build/cargo/...>"
     }
   ],
-  "goal": "analyze | translate | rebuild",
+  "goal": "analyze | translate | rebuild | create",
+  "product_vision": "<one sentence, only for goal=create>",
   "target_stacks": [
     {
       "role": "frontend | backend | mobile",

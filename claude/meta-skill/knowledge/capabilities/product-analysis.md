@@ -5,19 +5,33 @@
 
 ## Purpose
 
-Transform source code understanding into business-level artifacts: roles, tasks,
-business flows, experience maps, use cases. These artifacts are consumed by
-downstream nodes (generate-artifacts, translate, demo-forge).
+Produce business-level artifacts: roles, tasks, business flows, experience maps, use cases.
+Input depends on the entry path:
+- **From code (goal=analyze/translate/rebuild)**: source-summary.json + code analysis
+- **From scratch (goal=create)**: product-concept.json + domain knowledge + user vision
+
+Output is the same regardless of input path.
 
 ## Sub-Phases
 
 ### Product Map
+
+**From existing code:**
 - Role identification (from auth/permission code)
 - Task expansion (from handlers/routes/pages)
 - Constraint extraction (from validation rules)
 - Business flow construction (from service orchestration)
-- Conflict detection: task-level logic contradictions + CRUD gaps
 - Data model mapping (from ORM/schema definitions)
+
+**From scratch (no code):**
+- Role identification (from product vision + domain knowledge)
+- Task brainstorm (from user stories + domain patterns)
+- Constraint definition (from business rules + compliance requirements)
+- Business flow design (from user journeys)
+- Data model design (from entities identified in tasks)
+
+**Common to both paths:**
+- Conflict detection: task-level logic contradictions + CRUD gaps
 - View object generation (per-role UI bindings)
 - experience_priority classification: consumer / admin / mixed
 
