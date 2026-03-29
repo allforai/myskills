@@ -190,8 +190,6 @@ UI 还原度（仅有前端翻译时）：
 - (j) → `goals: ["quality-checks"]`
 - Combinations: user can select e.g. "a + e" or "h + i + j" (full verification suite)
 
-bootstrap-profile.json uses `goals` (array) instead of `goal` (string).
-
 ### 1.6 Output bootstrap-profile.json
 
 Write to `.allforai/bootstrap/bootstrap-profile.json`:
@@ -287,7 +285,7 @@ project complexity. A simple CLI might get 3 nodes; a microservice system might 
 - 已有 .allforai/ 产物，补充实施 → **translate** 或 **demo-forge** 是起点
 - 已实施完，做验收 → **product-verify** 或 **visual-verify** 是起点
 
-Bootstrap 根据 `goal` 字段（Step 1.5 收集）决定起点。
+Bootstrap 根据 `goals` 字段（Step 1.5 收集）决定起点。
 
 **How to compose nodes from capabilities:**
 - Read each selected capability's "Composition Hints"
@@ -522,7 +520,7 @@ Write the result to `.claude/commands/run.md` in the target project.
 
 **Important:** The scripts are copied to `.allforai/bootstrap/scripts/` in Step 6.2, so all paths in run.md use that project-local location.
 
-Write to: `{project}/.claude/commands/run.md`
+Write to: `.claude/commands/run.md`
 
 ---
 
