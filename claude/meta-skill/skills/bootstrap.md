@@ -412,133 +412,15 @@ Write to: `.allforai/bootstrap/state-machine.json`
 
 ## Step 5: Generate .claude/commands/run.md
 
-Generate the orchestrator command that users will invoke with `/run`.
+Read `${CLAUDE_PLUGIN_ROOT}/knowledge/orchestrator-template.md` for the complete template.
 
-Read `${CLAUDE_PLUGIN_ROOT}/knowledge/orchestrator-template.md` for the protocol structure.
+Replace these placeholders with project-specific values:
+- `{safety.*}` → from state-machine.json safety section
+- `{DIAGNOSIS_PROTOCOL}` → from `${CLAUDE_PLUGIN_ROOT}/knowledge/diagnosis.md`
 
-The generated run.md should be a complete Claude Code command file:
+Write the result to `.claude/commands/run.md` in the target project.
 
-````markdown
----
-name: run
-description: Execute the project-specific workflow orchestrator. Specify a goal like "逆向分析", "复刻到 SwiftUI", "代码治理", "视觉验收".
-arguments:
-  - name: goal
-    description: What you want to achieve (natural language)
-    required: true
----
-
-# Orchestrator Protocol
-
-You are the workflow orchestrator for this project.
-
-## State File
-
-Read `.allforai/bootstrap/state-machine.json` at the start of every iteration.
-This is the ground truth — not your conversation history.
-
-## Core Loop
-
-```
-loop:
-  1. Read state-machine.json (nodes, safety, progress, node_summaries)
-  2. Evaluate entry/exit_requires mechanically:
-     Run: python .allforai/bootstrap/scripts/check_requires.py .allforai/bootstrap/state-machine.json <node-id> --type exit --json
-     for each completed node, and --type entry for candidate next nodes.
-  3. Decide next node:
-     - If only one node has entry_requires met and is not completed → go there
-     - If multiple → choose based on goal description and dependency order
-     - If current node exit not met → self-loop, retry, or diagnose
-     - If failure → dispatch diagnosis subagent (see Diagnosis section)
-  4. Update state-machine.json progress
-  5. Dispatch subagent:
-     Read the node-spec at .allforai/bootstrap/node-specs/<node-id>.md
-     Dispatch Agent tool with the node-spec content as prompt
-  6. Receive result (subagent returns JSON per response contract)
-  7. Compress result to ≤500 char summary → write to state-machine.json node_summaries
-  8. Safety checks:
-     - Loop: hash(node_id + exit_requires results), sliding window 10, warn at 3, stop at 5
-     - Progress: every 5 iterations, completed_nodes must have increased
-  9. Back to 1
-```
-
-## Goal Matching
-
-Match the user's goal description to target node(s):
-
-| Goal pattern | Target |
-|-------------|--------|
-| 逆向分析, reverse engineer, analyze | generate-artifacts complete |
-| 复刻, replicate, translate, migrate to X | compile-verify complete |
-| 代码治理, tune, audit, quality | tune-* complete |
-| 视觉验收, visual, screenshot | visual-verify complete |
-| 测试验证, test, verify | test-verify complete |
-| 产品分析, product analysis | product-analysis complete |
-| 演示数据, demo | demo-forge complete |
-| UI 精修, ui polish | ui-forge complete |
-
-## Parallel Dispatch
-
-If multiple nodes have entry_requires met and their output_files are disjoint,
-dispatch them in parallel using multiple Agent tool calls in one message.
-Max concurrent: {safety.max_concurrent_nodes}.
-
-## Diagnosis Protocol
-
-When a node fails (subagent returns status: "failure"):
-
-1. Do NOT immediately retry or backtrack
-2. Dispatch a diagnosis subagent with this prompt:
-
-"You are diagnosing a workflow failure.
-Failed node: <node-id>
-Error: <error from subagent>
-All node summaries: <from state-machine.json node_summaries>
-All node exit_requires: <from state-machine.json nodes>
-
-Tasks:
-1. Root cause: trace from failed node to the earliest upstream gap
-2. Impact chain: which intermediate nodes are affected
-3. Same-class expansion: scan for similar gaps in other nodes/domains
-4. Repair plan: ordered list of nodes to re-run with specific actions
-5. Prevention: should any node-spec exit_requires be tightened?
-
-Output JSON: { root_cause, impact_chain, gaps_found, repair_plan, prevention }"
-
-3. Execute the repair plan from the diagnosis
-4. Apply prevention rules (Edit node-spec files if needed)
-5. Record in state-machine.json diagnosis_history
-
-## Subagent Response Contract
-
-All node subagents must return:
-```json
-{
-  "status": "success | failure | needs_input",
-  "summary": "≤500 chars",
-  "artifacts_created": ["file paths"],
-  "errors": ["descriptions"],
-  "user_prompt": "only if needs_input"
-}
-```
-
-## Termination
-
-- Target node(s) exit_requires all met → report success + summary
-- Safety stop triggered → output current progress + TODO list of remaining work
-- User interrupts → save state (already in state-machine.json), can resume with /run
-
-## Context Management
-
-Each iteration, your context is:
-- state-machine.json content (always re-read from file)
-- Last 2-3 subagent results (in conversation)
-- Last diagnosis result (if any)
-
-Old subagent results are compressed to node_summaries. Don't rely on conversation history.
-````
-
-**Important:** The scripts are copied to `.allforai/bootstrap/scripts/` in Step 6.2, so all paths above use that project-local location.
+**Important:** The scripts are copied to `.allforai/bootstrap/scripts/` in Step 6.2, so all paths in run.md use that project-local location.
 
 Write to: `{project}/.claude/commands/run.md`
 

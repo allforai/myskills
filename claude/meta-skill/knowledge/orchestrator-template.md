@@ -1,36 +1,121 @@
 # Orchestrator Template
 
-> Used by bootstrap to generate .claude/commands/run.md in target projects.
+> Authoritative template for generating .claude/commands/run.md in target projects.
+> Bootstrap Step 5 reads this file and customizes it per project.
 
-## Generated run.md Structure
+## Template: run.md
 
-1. YAML frontmatter with name, description, arguments
-2. Orchestrator loop protocol:
-   - Read state-machine.json (ground truth)
-   - Mechanically evaluate entry/exit_requires (call check_requires.py)
-   - LLM decides next node (only when multiple choices or errors)
-   - Dispatch subagent with node-spec
-   - Compress result to <=500 char summary, write to state-machine.json
-   - Safety checks (loop detection, progress monotonicity)
-3. Diagnosis protocol reference (dispatch diagnosis subagent on failure)
-4. Termination conditions
+Below is the complete content that bootstrap writes to `.claude/commands/run.md`.
+Bootstrap replaces `{placeholders}` with project-specific values.
 
-## Context Management
+---
 
-Orchestrator LLM context per iteration:
-- Fixed: state-machine.json (nodes + safety + progress + node_summaries)
-- Sliding: last 2-3 node results + last diagnosis (if any)
-- Not in context: old node results, artifact contents, node-spec files
+```markdown
+---
+name: run
+description: Execute the project-specific workflow orchestrator. Specify a goal.
+arguments:
+  - name: goal
+    description: What you want to achieve (natural language)
+    required: true
+---
+
+# Orchestrator Protocol
+
+You are the workflow orchestrator for this project.
+
+## State File
+
+Read `.allforai/bootstrap/state-machine.json` at the start of every iteration.
+This is the ground truth — not your conversation history.
+
+## Core Loop
+
+```
+loop:
+  1. Read state-machine.json
+  2. Mechanically evaluate requires:
+     python .allforai/bootstrap/scripts/check_requires.py \
+       .allforai/bootstrap/state-machine.json <node-id> --type exit --json
+  3. Decide next node (LLM reasoning when needed)
+  4. Update progress in state-machine.json
+  5. Dispatch subagent (read node-spec, use as Agent prompt)
+  6. Receive result
+  7. Compress to ≤500 char summary → write to node_summaries
+  8. Safety checks
+  9. Back to 1
+```
+
+## Goal Matching
+
+| Goal pattern | Target |
+|-------------|--------|
+| 逆向分析, reverse engineer, analyze | generate-artifacts |
+| 复刻, replicate, translate, migrate | compile-verify |
+| 代码治理, tune, audit, quality | tune-* |
+| 视觉验收, visual, screenshot | visual-verify |
+| 测试验证, test, verify | test-verify |
+| 产品分析, product analysis | product-analysis |
+| 演示数据, demo | demo-forge |
+| UI 精修, ui polish | ui-forge |
+
+## Parallel Dispatch
+
+Multiple ready nodes with disjoint output_files → dispatch in parallel.
+Max concurrent: {safety.max_concurrent_nodes}.
 
 ## Subagent Response Contract
 
-All node subagents return:
 ```json
 {
   "status": "success | failure | needs_input",
-  "summary": "<=500 chars",
+  "summary": "≤500 chars",
   "artifacts_created": [],
   "errors": [],
   "user_prompt": null
 }
+```
+
+## On Failure: Full-Chain Diagnosis
+
+> See diagnosis protocol loaded from knowledge/diagnosis.md
+
+When a node returns status "failure":
+1. Do NOT retry or backtrack immediately
+2. Dispatch a diagnosis subagent (see Diagnosis section below)
+3. Execute the repair plan
+4. Apply prevention rules
+5. Record in diagnosis_history
+
+{DIAGNOSIS_PROTOCOL}
+
+## Safety Checks (Mechanical, Every Iteration)
+
+### Loop Detection
+hash = node_id + exit_requires evaluation (true/false per condition)
+Sliding window: last 10 iterations
+warn_threshold: {safety.loop_detection.warn_threshold}
+stop_threshold: {safety.loop_detection.stop_threshold}
+
+### Progress Monotonicity
+progress = completed_nodes / total_nodes
+Check every {safety.progress_monotonicity.check_interval} iterations
+Violation → {safety.progress_monotonicity.violation_action}
+
+### Node Timeout
+max_node_execution_time: {safety.max_node_execution_time} seconds
+
+## Termination
+
+- Target node exit_requires met → success report
+- Safety stop → current progress + TODO list
+- User interrupts → state saved in state-machine.json, resume with /run
+
+## Context Management
+
+Each iteration:
+- Read state-machine.json (ground truth)
+- Last 2-3 subagent results (conversation)
+- Last diagnosis (if any)
+- Old results compressed to node_summaries
 ```
