@@ -110,10 +110,13 @@ Ask the user ONE combined question. The format depends on whether existing code 
 ```
 Bootstrap 分析完成。请确认目标：
 
-1. 目标：
-   a) 仅分析（生成 .allforai/ 产物，不生成代码）
+1. 目标（可多选）：
+   a) 逆向分析（生成 .allforai/ 产物，理解业务）
    b) 跨栈复刻（分析 + 翻译到目标技术栈）
    c) 同栈重建（分析 + 按目标架构重新生成）
+   e) 代码治理（架构合规 + 重复检测 + 抽象分析）
+   f) 演示数据（生成 demo-ready 数据集）
+   g) UI 精修（实现后 UI 还原度修复）
 
 2. 目标技术栈（仅 b/c 需回答）：
    前端：___
@@ -144,11 +147,17 @@ Bootstrap 分析完成。请确认目标：
    a) 电商  b) 金融  c) 医疗  d) SaaS  e) 社交  f) 游戏  g) 其他：___
 ```
 
-**Goal mapping:**
-- (a) → `goal: "analyze"`, `target_stacks: null`
-- (b) → `goal: "translate"`, record target_stacks
-- (c) → `goal: "rebuild"`, record target_stacks
-- (d) → `goal: "create"`, record target_stacks + product_vision + business_domain
+**Goal mapping (can combine multiple):**
+- (a) → `goals: ["analyze"]`
+- (b) → `goals: ["analyze", "translate"]`, record target_stacks
+- (c) → `goals: ["analyze", "rebuild"]`, record target_stacks
+- (d) → `goals: ["create"]`, record target_stacks + product_vision
+- (e) → `goals: ["tune"]`
+- (f) → `goals: ["demo"]`
+- (g) → `goals: ["ui-forge"]`
+- Combinations: user can select e.g. "a + e" (analyze + tune) or "b + f" (translate + demo)
+
+bootstrap-profile.json uses `goals` (array) instead of `goal` (string).
 
 ### 1.6 Output bootstrap-profile.json
 
@@ -173,8 +182,8 @@ Write to `.allforai/bootstrap/bootstrap-profile.json`:
       "build_tool": "<vite/webpack/go build/cargo/...>"
     }
   ],
-  "goal": "analyze | translate | rebuild | create",
-  "product_vision": "<one sentence, only for goal=create>",
+  "goals": ["analyze | translate | rebuild | create | tune | demo | ui-forge"],
+  "product_vision": "<one sentence, only for goals includes create>",
   "target_stacks": [
     {
       "role": "frontend | backend | mobile",
