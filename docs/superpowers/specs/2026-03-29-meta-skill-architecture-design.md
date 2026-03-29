@@ -31,6 +31,8 @@
 | 14 | 上下文管理 | 依赖对话历史 / 状态文件为 ground truth | 文件 | state-machine.json 是唯一状态源，对话历史可压缩，跨会话可恢复 |
 | 15 | 跨项目经验 | 每次从零 / 累积学习 | 累积学习 | knowledge/learned/ 存储实际执行发现，下次 bootstrap 时参考 |
 | 16 | 反馈闭环 | 本地积累 / 匿名上报 | 两者兼有 | 通用改进匿名提交 GitHub Issue（用户确认），项目特有经验仅留本地 |
+| 17 | 知识库目录名 | nodes/ / capabilities/ | capabilities/ | 动态组合而非固定模板——bootstrap 从 15 个 capability 自由组合出项目专属节点 |
+| 18 | 目标格式 | 单一字符串 / goals 数组 | goals 数组 | 支持多目标（如同时逆向+复刻+治理），orchestrator 按优先级串行执行 |
 
 ## 3. 整体架构
 
@@ -261,17 +263,22 @@ xcodebuild -scheme MyApp build 2>&1 | tail -20
 
 ```
 claude/meta-skill/knowledge/
-├── nodes/              # 节点模板（从现有 skill 提炼的通用协议）
-│   ├── discovery.md
-│   ├── product-analysis.md
-│   ├── generate-artifacts.md
-│   ├── translate.md
+├── capabilities/       # 能力参考（15 个，bootstrap 自由组合为项目专属节点）
 │   ├── compile-verify.md
+│   ├── demo-forge.md
+│   ├── discovery.md
+│   ├── feature-gap.md
+│   ├── generate-artifacts.md
+│   ├── product-analysis.md
+│   ├── product-concept.md
+│   ├── product-verify.md
+│   ├── quality-checks.md
 │   ├── test-verify.md
-│   ├── visual-verify.md
+│   ├── translate.md
 │   ├── tune.md
+│   ├── ui-design.md
 │   ├── ui-forge.md
-│   └── demo-forge.md
+│   └── visual-verify.md
 ├── mappings/           # 技术栈映射（预置 + 可扩展）
 │   ├── react-swiftui.md
 │   ├── react-compose.md
@@ -423,8 +430,8 @@ Step 6: 写入文件
 └── .allforai/bootstrap/
     ├── bootstrap-profile.json          # 轻量分析结果
     ├── state-machine.json              # 节点 + safety + progress
-    └── node-specs/                     # 每个节点的完整 subagent 指令
-        ├── discovery-structure.md
+    └── node-specs/                     # 项目专属节点（名称和数量由 bootstrap 决定，不是固定列表）
+        ├── discovery-structure.md     # 示例——实际文件名取决于项目
         ├── discovery-runtime.md
         ├── product-analysis.md
         ├── generate-artifacts.md
@@ -443,18 +450,26 @@ Step 6: 写入文件
 ### 新增
 
 ```
-claude/meta-skill/              # 唯一新 plugin
+claude/meta-skill/              # Claude Code plugin
 ├── .claude-plugin/
 ├── skills/bootstrap.md
 ├── commands/bootstrap.md
 ├── knowledge/                  # 从现有 6 个 skill 提炼
-│   ├── nodes/*.md
+│   ├── capabilities/*.md       # 15 个能力参考
 │   ├── mappings/*.md
 │   ├── domains/*.md
 │   ├── safety.md
 │   └── orchestrator-template.md
 ├── scripts/                    # 复用现有 Python 脚本
 └── SKILL.md
+
+codex/meta-skill/               # Codex 平台入口
+├── AGENTS.md                   # → 共享 knowledge/ (symlink)
+└── knowledge -> ../../claude/meta-skill/knowledge
+
+opencode/meta-skill/            # OpenCode 平台入口
+├── SKILL.md                    # → 共享 knowledge/ (symlink)
+└── knowledge -> ../../claude/meta-skill/knowledge
 ```
 
 ### 改造
@@ -463,14 +478,17 @@ claude/meta-skill/              # 唯一新 plugin
 
 | 来源 | 提炼到 |
 |------|--------|
-| code-replicate Phase 2 | knowledge/nodes/discovery.md |
-| code-replicate Phase 3 | knowledge/nodes/generate-artifacts.md |
-| code-replicate Phase 4 + cr-fidelity | knowledge/nodes/compile-verify.md, test-verify.md |
-| cr-visual | knowledge/nodes/visual-verify.md |
-| dev-forge design-to-spec + task-execute | knowledge/nodes/translate.md |
-| code-tuner | knowledge/nodes/tune.md |
-| product-design | knowledge/nodes/product-analysis.md |
-| demo-forge | knowledge/nodes/demo-forge.md |
+| code-replicate Phase 2 | knowledge/capabilities/discovery.md |
+| code-replicate Phase 3 | knowledge/capabilities/generate-artifacts.md |
+| code-replicate Phase 4 + cr-fidelity | knowledge/capabilities/compile-verify.md, test-verify.md |
+| cr-visual | knowledge/capabilities/visual-verify.md |
+| dev-forge design-to-spec + task-execute | knowledge/capabilities/translate.md |
+| code-tuner | knowledge/capabilities/tune.md |
+| product-design | knowledge/capabilities/product-analysis.md, product-concept.md, product-verify.md |
+| product-design feature-gap/prune/ui | knowledge/capabilities/feature-gap.md, ui-design.md |
+| demo-forge | knowledge/capabilities/demo-forge.md |
+| quality checks (deadhunt/fieldcheck/testforge) | knowledge/capabilities/quality-checks.md |
+| ui-forge | knowledge/capabilities/ui-forge.md |
 | stack-mappings.md | knowledge/mappings/ (按技术栈对拆分) |
 
 ### 不变
@@ -488,6 +506,38 @@ claude/meta-skill/              # 唯一新 plugin
 | OpenCode | skills.json | 项目根目录 .md |
 
 三平台知识库相同，只是生成产物的格式和写入位置不同。
+
+## 8.5 入口路径与目标系统
+
+### 五条入口路径
+
+| 入口 | 典型目标 | 起始 capability |
+|------|---------|----------------|
+| create | 从零构建新产品 | product-concept → product-analysis → generate-artifacts → translate |
+| analyze | 逆向分析已有项目 | discovery → product-analysis → generate-artifacts |
+| translate | 跨技术栈复刻 | discovery → translate → compile-verify → test-verify |
+| tune | 代码治理与优化 | discovery → tune → quality-checks |
+| verify | 验收与质量检查 | product-verify / visual-verify / quality-checks |
+
+`/bootstrap` 根据项目状态（是否有 `.allforai/` 产物、是否有源码等）推荐入口，用户可覆盖。
+
+### goals 数组
+
+`/run` 接受多目标，存储为 state-machine.json 的 `goals` 数组：
+
+```json
+{
+  "goals": [
+    { "id": "a", "description": "逆向分析", "entry_path": "analyze", "status": "completed" },
+    { "id": "b", "description": "复刻到 SwiftUI", "entry_path": "translate", "status": "in_progress" },
+    { "id": "c", "description": "代码治理", "entry_path": "tune", "status": "pending" }
+  ]
+}
+```
+
+orchestrator 按数组顺序串行执行，每个目标完成后推进到下一个。用户也可在执行中追加目标（`/run --append 视觉验收`）。
+
+单目标场景（`/run 逆向分析`）等价于 `goals: [{ "description": "逆向分析" }]`，向后兼容。
 
 ## 9. 全链路诊断协议
 
