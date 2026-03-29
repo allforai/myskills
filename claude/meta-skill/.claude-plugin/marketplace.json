@@ -1,6 +1,6 @@
 {
   "name": "meta-skill",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "display_name": "Meta-Skill Generator",
   "description": "Unified skill generator — analyzes projects, produces specialized node-specs and orchestrator configs. Two commands: /bootstrap (analyze + generate) and /run (execute).",
   "category": "development",
