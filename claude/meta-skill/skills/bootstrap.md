@@ -302,7 +302,11 @@ Bootstrap 根据 `goals` 字段（Step 1.5 收集）决定起点。
 
 Check if `${CLAUDE_PLUGIN_ROOT}/knowledge/mappings/<source>-<target>.md` exists for the detected stack pair. If yes, load it. If no, note that mappings will be LLM-generated (no preset).
 
-Also check `${CLAUDE_PLUGIN_ROOT}/knowledge/learned/<source>-<target>.md` for prior experience.
+Also check for prior experience in TWO locations:
+1. `${CLAUDE_PLUGIN_ROOT}/knowledge/learned/` — cross-project experience (from other projects)
+2. `.allforai/bootstrap/learned/` — this project's prior experience (from previous /run)
+
+If both exist for the same stack pair, merge them. Project-local experience takes precedence.
 
 ### 2.4 Domain Knowledge
 
@@ -600,12 +604,19 @@ Bootstrap 分析完成。
 
 ## Step 6: Write Files to Target Project
 
-### 6.1 Create Directories
+### 6.1 Create Directories (preserve learned/)
 
 ```bash
 mkdir -p .claude/commands
 mkdir -p .allforai/bootstrap/node-specs
+mkdir -p .allforai/bootstrap/learned   # preserved across re-bootstrap
 ```
+
+**Re-bootstrap behavior:**
+If `.allforai/bootstrap/` already exists (previous run):
+- **Preserve**: `.allforai/bootstrap/learned/` (project experience, never delete)
+- **Overwrite**: everything else (state-machine.json, node-specs/, scripts/, protocols/)
+- This means re-bootstrap resets workflow progress but keeps learned experience
 
 ### 6.2 Copy Orchestrator Scripts
 
