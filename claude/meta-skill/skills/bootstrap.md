@@ -192,20 +192,49 @@ Based on bootstrap-profile.json, load knowledge files:
 Read all files in `${CLAUDE_PLUGIN_ROOT}/knowledge/nodes/*.md`.
 Each file's "What Bootstrap Specializes" section tells you what to customize.
 
-### 2.2 Determine Which Nodes Are Needed
+### 2.2 Determine Which Capabilities and Nodes Are Needed
 
-| Condition | Nodes to generate |
-|-----------|-------------------|
-| Any project | discovery-structure, discovery-runtime |
-| Any project | product-analysis, generate-artifacts |
-| Has target tech stack (cross-stack) | plan-dag, translate-*, compile-verify |
-| Has frontend | visual-verify |
-| Has tests | test-verify |
-| User wants governance | tune-* |
+Bootstrap reads all capability files in `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/`.
+Each file's "Composition Hints" section tells you when to include it and how to split/merge.
+
+**Node count and granularity are project-dependent.** Bootstrap decides freely based on
+project complexity. A simple CLI might get 3 nodes; a microservice system might get 15.
+
+**Capability selection guide:**
+
+| Condition | Capabilities to include |
+|-----------|------------------------|
+| New product (no existing code) | **product-concept** (always first — project starting point) |
+| Any existing project | discovery, product-analysis |
+| Standard web/mobile app | generate-artifacts, feature-gap |
+| Has UI design needs | ui-design |
+| Has target tech stack (translation) | translate, compile-verify |
+| Has frontend to translate | visual-verify |
+| Has tests or needs tests | test-verify |
+| Post-implementation | product-verify, quality-checks |
+| User wants governance | tune |
 | Has frontend + needs polish | ui-forge |
 | Needs demo data | demo-forge |
 
-If the user hasn't specified a target (just analysis, no translation), skip translate/compile/test nodes.
+**Starting point depends on user's goal:**
+- 从零构建新产品 → **product-concept** 是起点
+- 复刻/迁移已有代码 → **discovery** 是起点
+- 治理已有代码 → **discovery + tune** 是起点
+- 已有 .allforai/ 产物，补充实施 → **translate** 或 **demo-forge** 是起点
+- 已实施完，做验收 → **product-verify** 或 **visual-verify** 是起点
+
+Bootstrap 根据 `goal` 字段（Step 1.5 收集）决定起点。
+
+**How to compose nodes from capabilities:**
+- Read each selected capability's "Composition Hints"
+- Simple project: merge related capabilities (discovery + analysis = 1 node)
+- Complex project: split capabilities (discovery per service = N nodes)
+- translate capability ALWAYS becomes multiple nodes (one per target platform)
+
+**Do NOT generate fixed node names.** Node IDs should reflect the project:
+- `discover-frontend` not `discovery-structure`
+- `translate-react-to-swiftui` not `translate-frontend`
+- `verify-ios-build` not `compile-verify`
 
 ### 2.3 Tech Stack Mappings
 
