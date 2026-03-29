@@ -87,7 +87,9 @@ When a node returns status "failure":
 4. Apply prevention rules
 5. Record in diagnosis_history
 
-{DIAGNOSIS_PROTOCOL}
+When diagnosis is needed, read the diagnosis protocol file:
+`.allforai/bootstrap/protocols/diagnosis.md`
+Follow its prompt template to dispatch a diagnosis subagent.
 
 ## Safety Checks (Mechanical, Every Iteration)
 
@@ -117,7 +119,7 @@ After the orchestrator loop terminates (success or safety stop):
 
 ### Step 1: Extract Experience
 
-Read `${CLAUDE_PLUGIN_ROOT}/knowledge/learning-protocol.md` and follow its protocol:
+Read `.allforai/bootstrap/protocols/learning-protocol.md` and follow its protocol:
 - Read state-machine.json corrections_applied + diagnosis_history
 - Extract reusable patterns
 - Deidentify (remove project-specific details)
@@ -125,7 +127,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/knowledge/learning-protocol.md` and follow its proto
 
 ### Step 2: Propose Feedback (Optional)
 
-Read `${CLAUDE_PLUGIN_ROOT}/knowledge/feedback-protocol.md` and follow its protocol:
+Read `.allforai/bootstrap/protocols/feedback-protocol.md` and follow its protocol:
 - Filter for universally useful findings
 - Present to user for confirmation
 - Submit approved items as anonymous GitHub Issues

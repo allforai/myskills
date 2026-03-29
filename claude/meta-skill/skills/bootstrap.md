@@ -518,18 +518,22 @@ mkdir -p .allforai/bootstrap/node-specs
 
 ### 6.2 Copy Orchestrator Scripts
 
-Copy the evaluation scripts to the target project so the orchestrator can find them:
+Copy scripts and protocol files to the target project so `/run` works independently:
 
 ```bash
 mkdir -p .allforai/bootstrap/scripts
+mkdir -p .allforai/bootstrap/protocols
 cp ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/orchestrator/check_requires.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/orchestrator/validate_bootstrap.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/orchestrator/loop_detection.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/knowledge/diagnosis.md .allforai/bootstrap/protocols/
+cp ${CLAUDE_PLUGIN_ROOT}/knowledge/learning-protocol.md .allforai/bootstrap/protocols/
+cp ${CLAUDE_PLUGIN_ROOT}/knowledge/feedback-protocol.md .allforai/bootstrap/protocols/
 ```
 
 > **Why copy?** The meta-skill plugin is installed in Claude's plugin cache.
-> The target project needs its own copy of the scripts so `/run` can invoke them
-> without depending on the plugin cache path.
+> The target project needs its own copy so `/run` works even if the plugin
+> is uninstalled or updated. All run.md references use project-local paths.
 
 ### 6.3 Write Files
 
@@ -542,6 +546,9 @@ Write these files (they were generated in memory during Steps 3-5, now persist t
 5. `.allforai/bootstrap/scripts/check_requires.py` (copied from plugin)
 6. `.allforai/bootstrap/scripts/validate_bootstrap.py` (copied from plugin)
 7. `.allforai/bootstrap/scripts/loop_detection.py` (copied from plugin)
+8. `.allforai/bootstrap/protocols/diagnosis.md` (copied from plugin)
+9. `.allforai/bootstrap/protocols/learning-protocol.md` (copied from plugin)
+10. `.allforai/bootstrap/protocols/feedback-protocol.md` (copied from plugin)
 
 ### 6.4 Confirm Completion
 
