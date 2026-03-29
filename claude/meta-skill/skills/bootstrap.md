@@ -25,6 +25,25 @@ Products are disposable — regenerate anytime with `/bootstrap`.
 > Goal: Understand the project enough to generate good node-specs.
 > NOT a deep scan — just "what does this project look like?"
 
+### 1.0 Detect Existing State
+
+Before analyzing code, check if this project already has artifacts:
+
+```bash
+ls .allforai/product-map/ .allforai/experience-map/ .allforai/use-case/ .allforai/bootstrap/ 2>/dev/null
+```
+
+Record what exists:
+- `has_product_artifacts`: true if product-map/task-inventory.json exists
+- `has_experience_map`: true if experience-map/experience-map.json exists
+- `has_bootstrap`: true if bootstrap/state-machine.json exists (previous /bootstrap run)
+- `has_code`: true if any code files detected in Step 1.1
+
+This affects Step 1.5 options:
+- has_product_artifacts + has_code → verification/demo/tune options are relevant
+- has_bootstrap → offer to reuse or regenerate
+- no code + no artifacts → only "create" option
+
 ### 1.1 Read Root Indicators
 
 Read these files if they exist (skip missing ones silently):
@@ -101,28 +120,39 @@ If README.md exists, read it for:
 
 ### 1.5 Collect Target Information (Interactive)
 
-Ask the user ONE combined question covering:
+Ask the user ONE combined question. Format depends on detected state (from Step 1.0):
 
-Ask the user ONE combined question. The format depends on whether existing code was detected:
-
-**If code exists (Step 1.1 found package.json / go.mod / etc.):**
+**If code + artifacts exist (has_code + has_product_artifacts):**
 
 ```
-Bootstrap 分析完成。请确认目标：
+检测到已有代码和 .allforai/ 产物。请确认目标（可多选）：
 
-1. 目标（可多选）：
+   a) 逆向分析（重新生成 .allforai/ 产物）
+   b) 跨栈复刻（翻译到目标技术栈）
+   c) 同栈重建（按目标架构重新生成）
+   e) 代码治理（架构合规 + 重复检测 + 抽象分析）
+   f) 演示数据（生成 demo-ready 数据集）
+   g) UI 精修（UI 还原度修复）
+   h) 功能验收（静态 + Playwright 动态验证）
+   i) 视觉验收（截图对比）
+   j) 质量检查（死链 + 字段一致性）
+```
+
+**If code exists but no artifacts (has_code, no has_product_artifacts):**
+
+```
+Bootstrap 分析完成。请确认目标（可多选）：
+
    a) 逆向分析（生成 .allforai/ 产物，理解业务）
    b) 跨栈复刻（分析 + 翻译到目标技术栈）
    c) 同栈重建（分析 + 按目标架构重新生成）
    e) 代码治理（架构合规 + 重复检测 + 抽象分析）
-   f) 演示数据（生成 demo-ready 数据集）
-   g) UI 精修（实现后 UI 还原度修复）
 
-2. 目标技术栈（仅 b/c 需回答）：
+目标技术栈（仅 b/c 需回答）：
    前端：___
    后端：___
 
-3. UI 还原度（仅有前端翻译时）：
+UI 还原度（仅有前端翻译时）：
    a) faithful — 像素级还原
    b) native — 允许平台风格差异
 ```
@@ -155,7 +185,10 @@ Bootstrap 分析完成。请确认目标：
 - (e) → `goals: ["tune"]`
 - (f) → `goals: ["demo"]`
 - (g) → `goals: ["ui-forge"]`
-- Combinations: user can select e.g. "a + e" (analyze + tune) or "b + f" (translate + demo)
+- (h) → `goals: ["product-verify"]`
+- (i) → `goals: ["visual-verify"]`
+- (j) → `goals: ["quality-checks"]`
+- Combinations: user can select e.g. "a + e" or "h + i + j" (full verification suite)
 
 bootstrap-profile.json uses `goals` (array) instead of `goal` (string).
 
