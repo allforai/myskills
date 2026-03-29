@@ -39,6 +39,12 @@
       "version": "1.0.0",
       "source": "./ui-forge-skill/",
       "description": "UI Forge: post-implementation UI refinement with fidelity-first restore-then-polish workflow. 面向专业研发团队的界面锻造：先检查还原度，再决定 restore 或 polish。"
+    },
+    {
+      "name": "meta-skill",
+      "version": "0.3.0",
+      "source": "./meta-skill/",
+      "description": "Meta-skill generator: analyzes projects, generates project-specific node-specs and orchestrator. /bootstrap + /run replaces 6 specialized plugins."
     }
   ]
 }
