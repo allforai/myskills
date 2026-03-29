@@ -1,7 +1,7 @@
-# Translate Node Template
+# Translate Capability
 
-> How to translate source code to target tech stack. Three strategies based on
-> component complexity: direct_translate, translate_with_adapt, intent_rebuild.
+> Capability reference for code translation across tech stacks (direct_translate, translate_with_adapt, intent_rebuild).
+> Bootstrap may create one or multiple nodes from this capability depending on project complexity.
 
 ## Purpose
 
@@ -93,13 +93,14 @@ Each task follows the dev-forge task-execute pattern:
 9. **Route parity verification**: After all translation, verify that every source route/endpoint has a target equivalent. Compilation proves syntax; route parity proves functional completeness. Exit_requires should include a parity check, not just build success.
 10. **Model-to-route traceability**: Every data model found in discovery that has CRUD routes in the source must have corresponding routes in the target. Missing routes are silent functional gaps that only surface at integration (demo-forge, test-verify).
 
-## What Bootstrap Specializes
+## Composition Hints
 
-- **Scaffold commands** (from target tech stack: xcodebuild init, go mod init, gradle init, etc.)
-- Complete mapping table (source framework -> target framework)
-- Compile/build commands (from knowledge/mappings/*.md "Build Commands" section)
-- Component complexity ratings (from discovery)
-- Error strategy preference (skip-and-log vs fail-fast)
-- DAG order (from dependency graph)
-- Round size (number of tasks per dispatch, default 5)
-- experience_priority flag (from product-analysis node output)
+### Split into Multiple Nodes (default)
+ALWAYS split per target platform: translate-ios, translate-api, translate-web.
+For large codebases: further split per module within a platform (translate-ios-auth, translate-ios-orders).
+
+### Single Node
+Only for single-platform projects with a small codebase: one translate node covers all components.
+
+### Merge with Another Capability
+For single-platform projects with few components: merge translate + compile-verify into a single node.

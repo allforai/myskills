@@ -1,6 +1,7 @@
-# Demo Forge Node Template
+# Demo Forge Capability
 
-> Generate realistic demo data via API-driven population.
+> Capability reference for demo data generation via API-driven population.
+> Bootstrap may create one or multiple nodes from this capability depending on project complexity.
 
 ## Purpose
 
@@ -69,10 +70,13 @@ Output: `.allforai/demo-forge/verify-report.json`
 5. **95% convergence**: Iterate design->execute->verify until 95% pass (max 3 rounds).
 6. **Business chain completeness**: Data must form complete lifecycle flows, not isolated records.
 
-## What Bootstrap Specializes
+## Composition Hints
 
-- API endpoint discovery (from task-inventory or route scan)
-- Data model schema (from discovery)
-- Media style profile (from existing app screenshots)
-- App startup commands + URLs
-- Account/credential setup for data population
+### Single Node (default)
+For most projects: one demo-forge node runs design + media + execute + verify as a single pipeline.
+
+### Split into Multiple Nodes
+For iterative refinement: split design vs execute (demo-forge-design, demo-forge-execute) so data design can be reviewed and revised before population begins.
+
+### Merge with Another Capability
+Rarely merged. Demo forge requires a running application and product-map artifacts, making it a distinct pipeline stage. Keep separate.

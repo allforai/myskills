@@ -1,6 +1,7 @@
-# UI Forge Node Template
+# UI Forge Capability
 
-> Post-implementation UI refinement: fidelity check, restore, polish.
+> Capability reference for post-implementation UI refinement (fidelity check, restore, polish).
+> Bootstrap may create one or multiple nodes from this capability depending on project complexity.
 
 ## Purpose
 
@@ -56,9 +57,13 @@ Output: code changes
 4. **Function-first**: Feature must be complete before UI tuning.
 5. **Non-invasive by default**: Do not rewrite page semantics or business flows.
 
-## What Bootstrap Specializes
+## Composition Hints
 
-- Design spec file locations
-- Token/design system references
-- UI framework (Tailwind, styled-components, SwiftUI modifiers...)
-- Component library patterns
+### Single Node (default)
+For single-platform projects: one ui-forge node handles fidelity check + restore + polish for all screens.
+
+### Split into Multiple Nodes
+For multi-platform projects: split per platform (ui-forge-ios, ui-forge-web) since each has distinct UI frameworks and design tokens.
+
+### Merge with Another Capability
+Rarely merged. UI forge is a specialized post-implementation pass that requires functional completeness as a prerequisite. Keep separate.

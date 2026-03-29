@@ -1,7 +1,7 @@
-# Product Analysis Node Template
+# Product Analysis Capability
 
-> How to analyze a project's business domain and produce product artifacts.
-> Covers: product-map, journey-emotion, experience-map, use-cases.
+> Capability reference for product analysis (product-map, journey-emotion, experience-map, use-cases).
+> Bootstrap may create one or multiple nodes from this capability depending on project complexity.
 
 ## Purpose
 
@@ -116,10 +116,13 @@ bootstrap generates a DIFFERENT product-analysis node-spec:
 - **Usage patterns** replaces use-cases: how consumers use the API
 - Output: api-surface.json, usage-patterns.json
 
-## What Bootstrap Specializes
+## Composition Hints
 
-- **Project archetype** (from discovery): web-app / cli / data-pipeline / game / library / microservice
-- Business domain context (from bootstrap-profile.json)
-- Which sub-phases are relevant (archetype determines which phases apply)
-- For web-apps: domain-specific role templates, flow patterns, experience_priority
-- For non-web-apps: archetype-specific artifact schemas and analysis approach
+### Single Node (default)
+For single-domain apps and simple products: one product-analysis node runs all sub-phases sequentially.
+
+### Split into Multiple Nodes
+For large apps with distinct business domains: one product-analysis node per domain (product-analysis-orders, product-analysis-inventory, product-analysis-payments).
+
+### Merge with Another Capability
+For simple projects with few roles and screens: merge product-analysis + generate-artifacts into a single node.

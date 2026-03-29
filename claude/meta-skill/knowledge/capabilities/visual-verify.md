@@ -1,6 +1,7 @@
-# Visual Verify Node Template
+# Visual Verify Capability
 
-> Screenshot-based UI comparison between source and target apps.
+> Capability reference for screenshot-based UI comparison between source and target apps.
+> Bootstrap may create one or multiple nodes from this capability depending on project complexity.
 
 ## Purpose
 
@@ -67,9 +68,13 @@ Per-screen agents run in parallel:
 - Aggregate per-screen scores into composite visual fidelity score
 - `full` mode: auto-repair -> re-capture -> re-compare until convergence (max 30 rounds)
 
-## What Bootstrap Specializes
+## Composition Hints
 
-- Screenshot capture method per platform (XCUITest, Espresso, Playwright)
-- App startup commands + URLs
-- Role credentials for multi-role screenshots
-- Platform adaptation rules from stack-mapping
+### Single Node (default)
+For single-platform projects: one visual-verify node captures and compares all screens.
+
+### Split into Multiple Nodes
+For multi-platform projects: split per platform (visual-verify-ios, visual-verify-android, visual-verify-web) since each requires different capture tooling.
+
+### Merge with Another Capability
+Rarely merged. Visual verification is inherently platform-specific and runs late in the pipeline. Keep separate.

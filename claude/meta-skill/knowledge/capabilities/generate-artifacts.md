@@ -1,7 +1,7 @@
-# Generate Artifacts Node Template
+# Generate Artifacts Capability
 
-> How to generate structured .allforai/ artifacts from source code analysis.
-> Fragment-based: per-module generation -> script merge -> final products.
+> Capability reference for artifact generation (.allforai/ structured outputs).
+> Bootstrap may create one or multiple nodes from this capability depending on project complexity.
 
 ## Purpose
 
@@ -101,9 +101,13 @@ For non-standard projects, LLM outputs complete JSON artifacts directly
 
 Non-standard artifacts are written to `.allforai/code-replicate/` (not product-map/).
 
-## What Bootstrap Specializes
+## Composition Hints
 
-- **Project archetype** (determines artifact selection table above)
-- Specific extraction-plan sources (from discovered module structure)
-- Which merge scripts are relevant (web-app only)
-- Custom artifact schemas for non-standard projects (LLM designs the schema)
+### Single Node (default)
+For small-to-medium projects: one generate-artifacts node produces all artifact types in sequence.
+
+### Split into Multiple Nodes
+For complex projects with many artifact types: split per artifact category (generate-artifacts-roles-tasks, generate-artifacts-flows-screens, generate-artifacts-usecases).
+
+### Merge with Another Capability
+For simple projects with few modules: merge product-analysis + generate-artifacts into a single node.

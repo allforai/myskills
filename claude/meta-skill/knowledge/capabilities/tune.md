@@ -1,6 +1,7 @@
-# Tune Node Template
+# Tune Capability
 
-> Architecture compliance, duplication detection, abstraction analysis.
+> Capability reference for architecture compliance, duplication detection, and abstraction analysis.
+> Bootstrap may create one or multiple nodes from this capability depending on project complexity.
 
 ## Purpose
 
@@ -68,9 +69,13 @@ validation placement correctness.
 5. **Responsibility over naming**: Layer assignment by dependency patterns and code responsibility, not folder names.
 6. **Over-abstraction detection**: Simultaneously check "should abstract" and "shouldn't have abstracted".
 
-## What Bootstrap Specializes
+## Composition Hints
 
-- Architecture type and layer mapping (from discovery)
-- Language-specific compliance rules
-- Framework-specific patterns to check
-- Pre-launch vs maintenance mode selection
+### Single Node (default)
+For quick audits and small codebases: one tune node runs all four phases sequentially.
+
+### Split into Multiple Nodes
+For deep analysis on large codebases: split per phase (tune-compliance, tune-duplication, tune-abstraction) to allow focused iteration on each dimension independently.
+
+### Merge with Another Capability
+Rarely merged. Tune is an independent audit capability that runs after implementation is complete. Keep separate.

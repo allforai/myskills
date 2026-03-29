@@ -1,7 +1,7 @@
-# Discovery Node Template
+# Discovery Capability
 
-> How to scan and understand an existing project. Used by bootstrap to generate
-> project-specific discovery node-specs.
+> How to scan and understand an existing project. Capability reference for discovery.
+> Bootstrap may create one or multiple nodes from this capability depending on project complexity.
 
 ## Purpose
 
@@ -113,10 +113,14 @@ module per directory.
 - `cr_discover.py --profile <discovery-profile>`: File scanning + module detection
 - Output: source-summary.json, file-catalog.json, code-index.json
 
-## What Bootstrap Specializes
+## Composition Hints
 
-When generating a project-specific discovery node-spec, bootstrap fills in:
-- Module paths and boundaries (from bootstrap-profile.json)
-- Which Phase B/C steps are relevant (backend-only projects skip assets/screenshots)
-- Specific file patterns to scan (from detected tech stack)
-- Coverage thresholds (may be adjusted per project complexity)
+### Single Node (default)
+For monoliths and small-to-medium projects: one discovery node covers structure + runtime + resources.
+
+### Split into Multiple Nodes
+For microservices: one discovery node per service (discovery-service-a, discovery-service-b).
+For monorepos: one discovery node per package/workspace.
+
+### Merge with Another Capability
+For very simple projects (< 20 files): merge discovery + product-analysis into a single node.

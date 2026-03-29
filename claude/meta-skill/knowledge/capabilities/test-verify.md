@@ -1,7 +1,7 @@
-# Test Verify Node Template
+# Test Verify Capability
 
-> Verify that translated code passes tests. Combines adapted source tests
-> and new tests generated during translation.
+> Capability reference for test verification (smoke, test vectors, protocol compat).
+> Bootstrap may create one or multiple nodes from this capability depending on project complexity.
 
 ## Purpose
 
@@ -76,10 +76,13 @@ If not resolved → surface as UPSTREAM_DEFECT with per-layer breakdown.
 5. **Failure routing before retry**: Classify failure type before retrying — prevents misdirected fixes.
 6. **Score persistence**: Write composite score to test-verify-report.json for downstream nodes (visual-verify, tune) to reference.
 
-## What Bootstrap Specializes
+## Composition Hints
 
-- Test commands per platform (e.g., `pytest`, `go test ./...`, `flutter test`, `jest`)
-- Which verification layers apply (from discovery: custom protocols, UI presence, API surface)
-- Test vector file locations (extracted during generate-artifacts)
-- Expected pass thresholds per layer
-- Health check URL/command for R2 smoke test
+### Single Node (default)
+For small-to-medium projects: one test-verify node runs all verification layers (R2-R4) sequentially.
+
+### Split into Multiple Nodes
+For large projects: split per test layer (test-verify-unit, test-verify-integration, test-verify-e2e) to isolate failure domains and allow parallel execution.
+
+### Merge with Another Capability
+For very simple projects (single platform, no custom protocols): merge compile-verify + test-verify into a single build-and-test node.

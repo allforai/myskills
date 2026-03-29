@@ -1,7 +1,7 @@
-# Compile Verify Node Template
+# Compile Verify Capability
 
-> Verify that translated code compiles and builds successfully.
-> Distinct from per-component compile loops in translate — this is the final gate.
+> Capability reference for full-build verification after translation.
+> Bootstrap may create one or multiple nodes from this capability depending on project complexity.
 
 ## Purpose
 
@@ -42,9 +42,13 @@ This node covers the R1 (Build) layer of the cr-fidelity runtime verification st
 - R1 failure blocks all downstream fidelity scoring
 - Build failure = composite fidelity score = 0 regardless of static analysis results
 
-## What Bootstrap Specializes
+## Composition Hints
 
-- Exact build commands per platform (frontend: `npm run build`, backend: `go build ./...`, mobile: `flutter build apk`, etc.)
-- Expected success output patterns (exit code, output path)
-- Known build quirks for this tech stack (e.g., codegen steps, proto compilation)
-- Environment variable requirements at build time
+### Single Node (default)
+For most projects: one compile-verify node runs the full build after all translation is complete.
+
+### Split into Multiple Nodes
+For multi-platform projects: one compile-verify node per platform (compile-verify-ios, compile-verify-api) since each has distinct build toolchains.
+
+### Merge with Another Capability
+For single-platform projects with few components: merge translate + compile-verify into a single node.
