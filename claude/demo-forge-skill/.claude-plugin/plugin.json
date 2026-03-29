@@ -1,6 +1,0 @@
-{
-  "name": "demo-forge",
-  "description": "Demo Forge: prepare production-ready demo environments with realistic data, rich media, and iterative quality verification. Four skills: demo-design (plan what data to create), media-forge (acquire + process + upload images/videos), demo-execute (generate + populate data), demo-verify (Playwright verification + issue routing). Multi-round iteration until 95% pass rate. 演示锻造：设计演示数据方案、采集加工上传富媒体、灌入数据、Playwright 验证，多轮迭代至 95% 通过率。",
-  "version": "2.0.0",
-  "author": { "name": "dv" }
-}

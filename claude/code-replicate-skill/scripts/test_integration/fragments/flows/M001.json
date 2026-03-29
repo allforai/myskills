@@ -1,7 +1,0 @@
-{"flows": [
-  {"name": "User Registration Flow", "description": "New user signs up", "nodes": [
-    {"seq": 1, "name": "Submit registration form", "task_ref": "T002", "role": "R001", "handoff": {}, "gap": false},
-    {"seq": 2, "name": "Validate and create account", "task_ref": "T002", "role": "R001", "handoff": {}, "gap": false},
-    {"seq": 3, "name": "Login with new account", "task_ref": "T001", "role": "R001", "handoff": {}, "gap": false}
-  ]}
-]}

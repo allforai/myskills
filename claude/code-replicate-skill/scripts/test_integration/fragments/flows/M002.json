@@ -1,7 +1,0 @@
-{"flows": [
-  {"name": "Profile Management Flow", "description": "User manages their profile", "nodes": [
-    {"seq": 1, "name": "View user list", "task_ref": "T003", "role": "R001", "handoff": {}, "gap": false},
-    {"seq": 2, "name": "View profile details", "task_ref": "T004", "role": "R002", "handoff": {}, "gap": false},
-    {"seq": 3, "name": "Update profile", "task_ref": "T005", "role": "R002", "handoff": {}, "gap": false}
-  ]}
-]}

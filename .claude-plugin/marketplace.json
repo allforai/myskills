@@ -5,46 +5,10 @@
   },
   "plugins": [
     {
-      "name": "product-design",
-      "version": "5.0.0",
-      "source": "./claude/product-design-skill/",
-      "description": "Product design suite: product-concept, product-map, journey-emotion, experience-map, interaction-gate, use-case, feature-gap, feature-prune, ui-design, design-audit."
-    },
-    {
-      "name": "dev-forge",
-      "version": "6.0.0",
-      "source": "./claude/dev-forge-skill/",
-      "description": "Development forge: project-setup, design-to-spec, project-scaffold, task-execute, e2e-verify, seed-forge, product-verify."
-    },
-    {
-      "name": "code-tuner",
-      "version": "2.0.0",
-      "source": "./claude/code-tuner-skill/",
-      "description": "Code architecture tuner: compliance check, duplication detection, abstraction analysis."
-    },
-    {
-      "name": "code-replicate",
-      "version": "5.0.0",
-      "source": "./claude/code-replicate-skill/",
-      "description": "Code replication bridge: reverse-engineer existing codebases into .allforai/ artifacts."
-    },
-    {
-      "name": "demo-forge",
-      "version": "2.0.0",
-      "source": "./claude/demo-forge-skill/",
-      "description": "Demo Forge: production-ready demo environments with realistic data, rich media, and iterative verification."
-    },
-    {
-      "name": "ui-forge",
-      "version": "1.0.0",
-      "source": "./claude/ui-forge-skill/",
-      "description": "UI Forge: post-implementation UI refinement with fidelity-first restore-then-polish workflow."
-    },
-    {
       "name": "meta-skill",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "source": "./claude/meta-skill/",
-      "description": "Meta-skill generator: analyzes projects, generates project-specific node-specs and orchestrator. /bootstrap + /run replaces 6 specialized plugins."
+      "description": "Meta-skill generator: analyzes projects, generates project-specific node-specs and orchestrator configs. /bootstrap + /run workflow. Replaces 6 specialized plugins."
     }
   ]
 }

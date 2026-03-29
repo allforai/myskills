@@ -59,25 +59,78 @@ def _parse_frontmatter(text: str) -> tuple:
             errors.append(f"YAML parse error: {e}")
             return None, errors
     else:
-        # Simple regex fallback: parse top-level "key: value" lines
+        # Simple regex fallback: parse "key: value" lines with one level of nesting
         data = {}
         try:
-            for line in yaml_text.splitlines():
-                line = line.strip()
-                if not line or line.startswith("#"):
+            lines = yaml_text.splitlines()
+            i = 0
+            while i < len(lines):
+                line = lines[i]
+                stripped = line.strip()
+                if not stripped or stripped.startswith("#"):
+                    i += 1
                     continue
+                # Top-level key (no leading whitespace)
                 m = re.match(r'^(\w+)\s*:\s*(.*)', line)
-                if m:
-                    key = m.group(1)
-                    val = m.group(2).strip()
-                    # Try to parse as JSON for lists/dicts
+                if not m:
+                    i += 1
+                    continue
+                key = m.group(1)
+                val = m.group(2).strip()
+                if val:
+                    # Inline value — try JSON parse for lists/dicts
                     if val.startswith("[") or val.startswith("{"):
                         try:
                             data[key] = json.loads(val)
                         except json.JSONDecodeError:
                             data[key] = val
+                    elif val.lower() in ("true", "false"):
+                        data[key] = val.lower() == "true"
                     else:
                         data[key] = val
+                else:
+                    # No inline value — collect indented children as sub-dict or list
+                    children = {}
+                    child_list = []
+                    is_list = False
+                    i += 1
+                    while i < len(lines):
+                        child_line = lines[i]
+                        if not child_line.strip() or (child_line[0] != ' ' and child_line[0] != '\t'):
+                            break
+                        cs = child_line.strip()
+                        if cs.startswith("- "):
+                            is_list = True
+                            list_val = cs[2:].strip()
+                            if list_val.startswith("{"):
+                                try:
+                                    child_list.append(json.loads(list_val))
+                                except json.JSONDecodeError:
+                                    child_list.append(list_val)
+                            else:
+                                # Try "key: val" inside list item
+                                lm = re.match(r'^(\w+)\s*:\s*(.*)', list_val)
+                                if lm:
+                                    child_list.append({lm.group(1): lm.group(2).strip()})
+                                else:
+                                    child_list.append(list_val)
+                        else:
+                            cm = re.match(r'^(\w+)\s*:\s*(.*)', cs)
+                            if cm:
+                                ck, cv = cm.group(1), cm.group(2).strip()
+                                if cv.startswith("{"):
+                                    try:
+                                        children[ck] = json.loads(cv)
+                                    except json.JSONDecodeError:
+                                        children[ck] = cv
+                                elif cv.lower() in ("true", "false"):
+                                    children[ck] = cv.lower() == "true"
+                                else:
+                                    children[ck] = cv
+                        i += 1
+                    data[key] = child_list if is_list else (children if children else None)
+                    continue
+                i += 1
             return data, errors
         except Exception as e:
             errors.append(f"YAML parse error (fallback parser): {e}")
@@ -89,6 +142,31 @@ def _parse_frontmatter(text: str) -> tuple:
 # ---------------------------------------------------------------------------
 
 _REQUIRED_NODE_FIELDS = ("node", "entry_requires", "exit_requires")
+_FAN_OUT_REQUIRED_FIELDS = ("source", "path")
+
+
+def _validate_fan_out(fan_out: Any) -> List[str]:
+    """Validate fan_out declaration if present. Returns list of error strings."""
+    errors: List[str] = []
+    if fan_out is None:
+        return errors
+    if not isinstance(fan_out, dict):
+        return ["fan_out must be a mapping (dict)"]
+    for field in _FAN_OUT_REQUIRED_FIELDS:
+        if field not in fan_out:
+            errors.append(f"fan_out missing required field: {field}")
+    if "parallel" in fan_out and not isinstance(fan_out["parallel"], bool):
+        errors.append("fan_out.parallel must be a boolean")
+    filt = fan_out.get("filter")
+    if filt is not None:
+        if not isinstance(filt, dict):
+            errors.append("fan_out.filter must be a mapping (dict)")
+        else:
+            if "field" not in filt:
+                errors.append("fan_out.filter missing required field: field")
+            if "equals" not in filt:
+                errors.append("fan_out.filter missing required field: equals")
+    return errors
 
 
 def validate_node_spec(path: str) -> List[str]:
@@ -110,6 +188,8 @@ def validate_node_spec(path: str) -> List[str]:
     for field in _REQUIRED_NODE_FIELDS:
         if field not in data:
             errors.append(f"Missing required field: {field}")
+
+    errors.extend(_validate_fan_out(data.get("fan_out")))
 
     return errors
 
@@ -146,6 +226,9 @@ def validate_state_machine(path: str) -> List[str]:
         for i, node in enumerate(nodes):
             if "id" not in node:
                 errors.append(f"Node at index {i} missing required field: id")
+            fan_out_errors = _validate_fan_out(node.get("fan_out"))
+            for e in fan_out_errors:
+                errors.append(f"Node '{node.get('id', f'index {i}')}': {e}")
 
     return errors
 

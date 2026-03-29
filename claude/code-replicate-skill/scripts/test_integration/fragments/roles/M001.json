@@ -1,1 +1,0 @@
-{"roles": [{"name": "Admin", "responsibilities": ["Manage users", "View logs"]}, {"name": "User", "responsibilities": ["View own profile", "Update own profile"]}]}

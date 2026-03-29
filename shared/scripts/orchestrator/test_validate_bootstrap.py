@@ -161,6 +161,154 @@ class TestValidateStateMachine(unittest.TestCase):
         errors = validate_state_machine(path)
         self.assertTrue(any("id" in e for e in errors))
 
+    def test_node_valid_fan_out(self):
+        path = self._write({
+            "schema_version": "1.0",
+            "nodes": [{"id": "translate", "fan_out": {
+                "source": "profile.json", "path": "$.modules", "parallel": True
+            }}],
+            "safety": {},
+            "progress": {},
+        })
+        errors = validate_state_machine(path)
+        self.assertEqual(errors, [])
+
+    def test_node_fan_out_missing_source(self):
+        path = self._write({
+            "schema_version": "1.0",
+            "nodes": [{"id": "translate", "fan_out": {
+                "path": "$.modules"
+            }}],
+            "safety": {},
+            "progress": {},
+        })
+        errors = validate_state_machine(path)
+        self.assertTrue(any("source" in e for e in errors))
+
+    def test_node_fan_out_missing_path(self):
+        path = self._write({
+            "schema_version": "1.0",
+            "nodes": [{"id": "translate", "fan_out": {
+                "source": "profile.json"
+            }}],
+            "safety": {},
+            "progress": {},
+        })
+        errors = validate_state_machine(path)
+        self.assertTrue(any("path" in e for e in errors))
+
+    def test_node_fan_out_bad_parallel(self):
+        path = self._write({
+            "schema_version": "1.0",
+            "nodes": [{"id": "translate", "fan_out": {
+                "source": "profile.json", "path": "$.modules", "parallel": "yes"
+            }}],
+            "safety": {},
+            "progress": {},
+        })
+        errors = validate_state_machine(path)
+        self.assertTrue(any("parallel" in e and "boolean" in e for e in errors))
+
+    def test_node_fan_out_valid_filter(self):
+        path = self._write({
+            "schema_version": "1.0",
+            "nodes": [{"id": "tune", "fan_out": {
+                "source": "profile.json", "path": "$.modules",
+                "filter": {"field": "role", "equals": "backend"}, "parallel": True
+            }}],
+            "safety": {},
+            "progress": {},
+        })
+        errors = validate_state_machine(path)
+        self.assertEqual(errors, [])
+
+    def test_node_fan_out_filter_missing_field(self):
+        path = self._write({
+            "schema_version": "1.0",
+            "nodes": [{"id": "tune", "fan_out": {
+                "source": "profile.json", "path": "$.modules",
+                "filter": {"equals": "backend"}
+            }}],
+            "safety": {},
+            "progress": {},
+        })
+        errors = validate_state_machine(path)
+        self.assertTrue(any("filter" in e and "field" in e for e in errors))
+
+    def test_node_fan_out_filter_missing_equals(self):
+        path = self._write({
+            "schema_version": "1.0",
+            "nodes": [{"id": "tune", "fan_out": {
+                "source": "profile.json", "path": "$.modules",
+                "filter": {"field": "role"}
+            }}],
+            "safety": {},
+            "progress": {},
+        })
+        errors = validate_state_machine(path)
+        self.assertTrue(any("filter" in e and "equals" in e for e in errors))
+
+    def test_node_fan_out_null_ignored(self):
+        path = self._write({
+            "schema_version": "1.0",
+            "nodes": [{"id": "build", "fan_out": None}],
+            "safety": {},
+            "progress": {},
+        })
+        errors = validate_state_machine(path)
+        self.assertEqual(errors, [])
+
+
+# ---------------------------------------------------------------------------
+# validate_fan_out in node-specs
+# ---------------------------------------------------------------------------
+class TestNodeSpecFanOut(unittest.TestCase):
+    def setUp(self):
+        self._dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self._dir)
+
+    def _write(self, name, content):
+        path = os.path.join(self._dir, name)
+        with open(path, "w") as f:
+            f.write(content)
+        return path
+
+    def test_spec_with_valid_fan_out(self):
+        path = self._write("node.md", (
+            "---\n"
+            "node: translate\n"
+            "entry_requires:\n"
+            "  - file_exists: dag.json\n"
+            "exit_requires:\n"
+            "  - file_exists: dist/\n"
+            "fan_out:\n"
+            "  source: profile.json\n"
+            "  path: $.modules\n"
+            "  parallel: true\n"
+            "---\n"
+            "# Translate\n"
+        ))
+        errors = validate_node_spec(path)
+        self.assertEqual(errors, [])
+
+    def test_spec_with_fan_out_missing_source(self):
+        path = self._write("node.md", (
+            "---\n"
+            "node: translate\n"
+            "entry_requires:\n"
+            "  - file_exists: dag.json\n"
+            "exit_requires:\n"
+            "  - file_exists: dist/\n"
+            "fan_out:\n"
+            "  path: $.modules\n"
+            "---\n"
+            "# Translate\n"
+        ))
+        errors = validate_node_spec(path)
+        self.assertTrue(any("source" in e for e in errors))
+
 
 # ---------------------------------------------------------------------------
 # validate_graph_connectivity

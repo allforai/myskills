@@ -10,14 +10,11 @@ This is **myskills** — a tri-platform (Claude Code / Codex / OpenCode) plugin 
 
 ```
 myskills/
-├── claude/                   # Claude Code platform (canonical)
-│   ├── product-design-skill/
-│   ├── dev-forge-skill/
-│   ├── demo-forge-skill/
-│   ├── code-tuner-skill/
-│   ├── code-replicate-skill/
-│   ├── ui-forge-skill/
-│   ├── .claude-plugin/       # Marketplace manifest
+├── claude/                   # Claude Code platform
+│   ├── meta-skill/           # Unified meta-skill (replaces 6 static plugins)
+│   │   ├── .claude-plugin/   # Plugin + marketplace manifests
+│   │   ├── skills/           # bootstrap.md (project analysis + generation)
+│   │   └── knowledge/        # Capability templates, orchestrator, protocols
 │   └── install.sh
 │
 ├── codex/                    # Codex platform (fully native)
@@ -43,32 +40,35 @@ myskills/
 ## Four-Layer Architecture
 
 ```
-Layer         Plugin            Coverage
-────────────  ────────────────  ─────────────────────────────────────────────
-Product       product-design    concept→map→journey-emotion→experience-map→gate→ui→use-cases→gaps→prune→audit
-Development   dev-forge         setup→spec→execute→verify→deadhunt→fieldcheck→e2e
-Demo          demo-forge        design→media→execute→verify→iterate
-Architecture  code-tuner        compliance→duplication→abstraction→scoring
+All capabilities are now unified under **meta-skill** — a single plugin that generates
+project-specific node-specs and orchestrator configs via `/bootstrap`, then executes them via `/run`.
+
+The four original layers (product-design, dev-forge, demo-forge, code-tuner) plus
+code-replicate and ui-forge are preserved as capability templates in
+`claude/meta-skill/knowledge/capabilities/`.
 ```
 
-Additional: `code-replicate-skill` (reverse-engineering bridge), `ui-forge-skill` (post-implementation UI refinement). deadhunt/fieldcheck are subcommands of dev-forge.
-
-## Claude Plugin Structure (per plugin)
+## Claude Meta-Skill Structure
 
 ```
-claude/{plugin}-skill/
+claude/meta-skill/
 ├── .claude-plugin/
-│   ├── plugin.json          # Plugin manifest (name, version, description)
+│   ├── plugin.json          # Plugin manifest
 │   └── marketplace.json     # Marketplace listing
-├── skills/                  # Skill definition files (*.md) — loaded by Claude on invocation
-├── commands/                # Slash command definitions (*.md) — user-invocable
-├── docs/                    # Design principles, guides, reference docs
-├── scripts/                 # Pre-built Python scripts (product-design, code-replicate)
-├── mcp-ai-gateway/          # MCP server (product-design only)
-└── SKILL.md                 # Root skill loaded when plugin is invoked
+├── skills/
+│   └── bootstrap.md         # Project analysis + node-spec generation
+├── knowledge/
+│   ├── capabilities/        # 15 capability templates (discovery, translate, tune, etc.)
+│   ├── orchestrator-template.md  # Template for generating run.md
+│   ├── diagnosis.md         # Full-chain diagnosis protocol
+│   ├── learning-protocol.md # Cross-session learning
+│   ├── feedback-protocol.md # Anonymous feedback submission
+│   └── safety.md            # Default safety configuration
+└── commands/
+    └── bootstrap.md         # /bootstrap slash command
 ```
 
-The `SKILL.md` in each plugin root is the entry point — it describes all sub-skills and links to them via `${CLAUDE_PLUGIN_ROOT}/skills/*.md`.
+User workflow: `/bootstrap` analyzes the target project → generates `.allforai/bootstrap/` (state-machine.json + node-specs) → `/run <goal>` executes the generated workflow.
 
 ## Shared Data Contract: `.allforai/`
 

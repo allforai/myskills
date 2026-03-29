@@ -1,1 +1,0 @@
-{"roles": [{"name": "User", "responsibilities": ["View own profile"]}, {"name": "Viewer", "responsibilities": ["View public data"]}]}

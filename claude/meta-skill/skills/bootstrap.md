@@ -6,7 +6,7 @@ description: >
   and writes to target project. Use when user runs /bootstrap.
 ---
 
-# Bootstrap Protocol v0.1.0
+# Bootstrap Protocol v0.2.0
 
 ## Overview
 
@@ -293,6 +293,13 @@ Bootstrap 根据 `goals` 字段（Step 1.5 收集）决定起点。
 - Complex project: split capabilities (discovery per service = N nodes)
 - translate capability ALWAYS becomes multiple nodes (one per target platform)
 
+**When to use fan_out vs multiple nodes:**
+- **Different platforms/stacks** → separate nodes (translate-react-to-swiftui, translate-express-to-vapor)
+  Each needs its own node-spec with platform-specific instructions.
+- **Same work repeated for N modules** → one node with fan_out (translate N packages, tune N services)
+  The node-spec body is identical except for `{{FAN_OUT_ITEM}}`.
+- Rule of thumb: if the node-spec body would be copy-pasted N times with only the target path changed, use fan_out.
+
 **Do NOT generate fixed node names.** Node IDs should reflect the project:
 - `discover-frontend` not `discovery-structure`
 - `translate-react-to-swiftui` not `translate-frontend`
@@ -336,10 +343,23 @@ entry_requires:
   - <require declaration using check_requires.py primitives>
 exit_requires:
   - <require declaration using check_requires.py primitives>
+# Optional: fan_out for batch processing (monorepo packages, multiple modules, etc.)
+fan_out:
+  source: <file path, e.g. .allforai/bootstrap/bootstrap-profile.json>
+  path: <simple JSONPath to array, e.g. $.modules>
+  filter: {field: "role", equals: "backend"}   # optional, filter array elements
+  parallel: true   # false = sequential
 ---
 ```
 
 Followed by a complete subagent instruction in Markdown.
+
+**fan_out** (optional): When present, the orchestrator mechanically expands the node into
+one sub-task per array element. Each subagent receives the node-spec body with `{{FAN_OUT_ITEM}}`
+replaced by the current element (JSON string). The node succeeds only when ALL sub-tasks succeed.
+
+Use fan_out when a node needs to repeat the same work for N items (e.g., translate N packages,
+verify N services). Without it, the LLM loops manually and may skip items.
 
 ### Require Declaration Primitives
 
@@ -478,9 +498,14 @@ For each node-spec file in `.allforai/bootstrap/node-specs/`:
       "entry_requires": ["<from frontmatter>"],
       "exit_requires": ["<from frontmatter>"],
       "hints": ["<from ## Hints section, one string per bullet>"],
-      "output_files": ["<glob patterns of files this node writes>"]
+      "output_files": ["<glob patterns of files this node writes>"],
+      "fan_out": null
     }
   ],
+  "hooks": {
+    "pre_node": ["check_requires entry", "budget_check"],
+    "post_node": ["check_requires exit", "loop_detection", "progress_monotonicity", "node_timeout"]
+  },
   "safety": {
     "loop_detection": { "warn_threshold": 3, "stop_threshold": 5 },
     "max_global_iterations": 30,
@@ -497,7 +522,8 @@ For each node-spec file in `.allforai/bootstrap/node-specs/`:
     "iteration_count": 0,
     "node_summaries": {},
     "corrections_applied": [],
-    "diagnosis_history": []
+    "diagnosis_history": [],
+    "transition_log": []
   }
 }
 ```
