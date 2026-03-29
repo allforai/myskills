@@ -15,7 +15,6 @@ import json
 import os
 import re
 import sys
-from collections import deque
 from typing import Any, Dict, List
 
 # Try PyYAML, fallback to simple regex parser
@@ -220,7 +219,7 @@ _DANGEROUS_PATTERNS = [
     (r'\brm\b.*-[^\s]*r[^\s]*f|rm\b.*-[^\s]*f[^\s]*r', "rm with -rf flags"),
     (r'\bsudo\b', "sudo usage"),
     (r'\bchmod\s+777\b', "chmod 777"),
-    (r'/dev/', "write to /dev/"),
+    (r'>\s*/dev/', "write to /dev/"),
     (r'\bmkfs\b', "mkfs"),
     (r'\bdd\b', "dd command"),
     (r':\(\)\s*\{.*\|.*\}', "fork bomb"),
@@ -235,6 +234,8 @@ def scan_dangerous_commands(requires: List[Dict[str, str]]) -> List[str]:
     warnings: List[str] = []
 
     for req in requires:
+        if not isinstance(req, dict):
+            continue
         cmd = req.get("command_succeeds")
         if cmd is None:
             continue
