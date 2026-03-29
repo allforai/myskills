@@ -104,15 +104,15 @@ _PRIMITIVES = {
 
 
 def _eval_single(req: dict) -> dict:
-    """Evaluate one require declaration; return {primitive, args, passed}."""
+    """Evaluate one require declaration; return {primitive, detail, passed}."""
     for prim_name, args in req.items():
         fn = _PRIMITIVES.get(prim_name)
         if fn is None:
-            return {"primitive": prim_name, "args": args, "passed": False,
+            return {"primitive": prim_name, "detail": args, "passed": False,
                     "error": f"unknown primitive: {prim_name}"}
         passed = fn(args)
-        return {"primitive": prim_name, "args": args, "passed": passed}
-    return {"primitive": "?", "args": None, "passed": False, "error": "empty require"}
+        return {"primitive": prim_name, "detail": args, "passed": passed}
+    return {"primitive": "?", "detail": None, "passed": False, "error": "empty require"}
 
 
 # ---------------------------------------------------------------------------
@@ -123,7 +123,7 @@ def evaluate_node(sm_path: str, node_id: str, req_type: str = "entry") -> List[d
     """Load state-machine.json, find *node_id*, evaluate its requires.
 
     *req_type* is 'entry' or 'exit'.
-    Returns list of {primitive, args, passed} dicts.
+    Returns list of {primitive, detail, passed} dicts.
     Raises ValueError if *node_id* not found.
     """
     with open(sm_path) as f:
@@ -163,11 +163,16 @@ def main(argv: list = None):
     all_passed = all(r["passed"] for r in results)
 
     if args.output_json:
-        print(json.dumps({"all_passed": all_passed, "results": results}, indent=2))
+        print(json.dumps({
+            "node": args.node_id,
+            "type": args.req_type,
+            "results": results,
+            "all_passed": all_passed,
+        }, indent=2))
     else:
         for r in results:
             status = "PASS" if r["passed"] else "FAIL"
-            print(f"  [{status}] {r['primitive']}: {r['args']}")
+            print(f"  [{status}] {r['primitive']}: {r['detail']}")
         if results:
             print(f"\n{'ALL PASSED' if all_passed else 'SOME FAILED'}")
         else:
