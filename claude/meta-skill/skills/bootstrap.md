@@ -271,18 +271,20 @@ project complexity. A simple CLI might get 3 nodes; a microservice system might 
 | Standard web/mobile app | generate-artifacts, feature-gap |
 | Has UI design needs | ui-design |
 | Has target tech stack (translation) | translate, compile-verify |
+| From scratch (no source code) | **implement**, compile-verify |
 | Has frontend to translate | visual-verify |
 | Has tests or needs tests | test-verify |
 | Post-implementation | product-verify, quality-checks |
-| User wants governance | tune |
+| User wants governance (backend) | tune |
+| User wants governance (frontend) | tune-frontend |
 | Has frontend + needs polish | ui-forge |
 | Needs demo data | demo-forge |
 
 **Starting point depends on user's goal:**
-- 从零构建新产品 → **product-concept** 是起点
-- 复刻/迁移已有代码 → **discovery** 是起点
-- 治理已有代码 → **discovery + tune** 是起点
-- 已有 .allforai/ 产物，补充实施 → **translate** 或 **demo-forge** 是起点
+- 从零构建新产品 → **product-concept** 是起点，实现用 **implement**（不是 translate）
+- 复刻/迁移已有代码 → **discovery** 是起点，实现用 **translate**
+- 治理已有代码 → **discovery + tune + tune-frontend** 是起点
+- 已有 .allforai/ 产物，补充实施 → **implement** 或 **demo-forge** 是起点
 - 已实施完，做验收 → **product-verify** 或 **visual-verify** 是起点
 
 Bootstrap 根据 `goals` 字段（Step 1.5 收集）决定起点。
