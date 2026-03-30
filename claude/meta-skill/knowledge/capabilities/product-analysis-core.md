@@ -11,10 +11,13 @@ All downstream nodes (ux, verify, implement, translate) depend on these artifact
 
 ## Entry Path
 
-- **From code (goal=analyze/translate/rebuild)**: reads source-summary.json + code analysis
+- **From code with extraction**: reads `.allforai/code-replicate/extracted/` (generate-artifacts output) as initial input, then refines with business analysis
+- **From code without extraction**: reads source-summary.json directly + code analysis
 - **From scratch (goal=create)**: reads product-concept.json + domain knowledge
 
-Output is the same regardless of entry path.
+Output is the same regardless of entry path. When extracted/ exists, pa-core
+enriches it (adds missing roles, CRUD closure, business flows). When it doesn't,
+pa-core generates from scratch.
 
 ## Sub-Phases
 

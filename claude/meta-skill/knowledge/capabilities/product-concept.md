@@ -26,6 +26,13 @@ Output: `.allforai/product-concept/concept.json`
 3. **Ruthless prioritization**: Must-have features only for v1. Everything else is post-launch.
 4. **Falsifiable metrics**: Success metrics must be measurable numbers, not vague goals.
 
+## Backtrack Triggers
+
+Other nodes may trigger a backtrack to this node when:
+- **product-analysis-core** encounters ambiguous or incomplete requirements that cannot be resolved from code or domain knowledge alone → concept needs to clarify scope or detail.
+
+On re-execution: **refine, don't restart**. Read the existing concept.json, identify what downstream flagged as ambiguous, and supplement the specific section. Do not discard previous decisions that weren't flagged.
+
 ## Composition Hints
 
 ### Single Node (default)

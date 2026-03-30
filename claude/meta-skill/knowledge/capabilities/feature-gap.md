@@ -42,11 +42,14 @@ Output: `.allforai/feature-gap/gap-report.json` + `gap-tasks.json` (actionable t
 
 ## Composition Hints
 
-### Single Node (default)
-Run after product-analysis + generate-artifacts are complete.
+### Included in pa-verify (default)
+Feature gap analysis is a sub-phase of product-analysis-verify by default.
+Do NOT generate a separate feature-gap node when pa-verify exists.
 
-### Merge with Product Analysis
-For simple projects: gap analysis as the final step of product-analysis node.
+### Standalone Node
+Only when pa-verify is split by dimension for very large projects:
+pa-verify splits into use-case-tree + feature-gap + design-audit as independent nodes.
+In this case feature-gap uses this capability template.
 
 ### Split by Dimension
-For very large projects: separate CRUD-gap, journey-gap, and screen-gap nodes.
+Very large standalone feature-gap: separate CRUD-gap, journey-gap, and screen-gap nodes.

@@ -5,8 +5,15 @@
 
 ## Purpose
 
-Transform discovery results (source-summary, file-catalog, code-index) into
-standard .allforai/ artifacts that downstream nodes consume.
+Mechanically extract structured data from source code into intermediate artifacts.
+This is the **extraction** step — a precursor to product-analysis-core, which
+does the **business analysis** refinement.
+
+Output goes to `.allforai/code-replicate/extracted/` (intermediate, not final).
+product-analysis-core reads these as initial input and writes the final versions
+to `.allforai/product-map/`.
+
+For "from scratch" projects (no source code), this capability is skipped entirely.
 
 ## Protocol
 
