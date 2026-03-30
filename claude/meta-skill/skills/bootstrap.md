@@ -267,7 +267,7 @@ project complexity. A simple CLI might get 3 nodes; a microservice system might 
 | Condition | Capabilities to include |
 |-----------|------------------------|
 | New product (no existing code) | **product-concept** (always first — project starting point) |
-| Any existing project | discovery, product-analysis |
+| Any existing project | discovery, product-analysis-core, product-analysis-ux, product-analysis-verify |
 | Standard web/mobile app | generate-artifacts, feature-gap |
 | Has UI design needs | ui-design |
 | Has target tech stack (translation) | translate, compile-verify |
