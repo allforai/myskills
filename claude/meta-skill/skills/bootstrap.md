@@ -625,9 +625,9 @@ Copy scripts and protocol files to the target project so `/run` works independen
 ```bash
 mkdir -p .allforai/bootstrap/scripts
 mkdir -p .allforai/bootstrap/protocols
-cp ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/orchestrator/check_requires.py .allforai/bootstrap/scripts/
-cp ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/orchestrator/validate_bootstrap.py .allforai/bootstrap/scripts/
-cp ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/orchestrator/loop_detection.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/check_requires.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/validate_bootstrap.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/loop_detection.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/knowledge/diagnosis.md .allforai/bootstrap/protocols/
 cp ${CLAUDE_PLUGIN_ROOT}/knowledge/learning-protocol.md .allforai/bootstrap/protocols/
 cp ${CLAUDE_PLUGIN_ROOT}/knowledge/feedback-protocol.md .allforai/bootstrap/protocols/
