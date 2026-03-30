@@ -468,6 +468,11 @@ For each node-spec file in `.allforai/bootstrap/node-specs/`:
 
 ### 4.2 Build Node List
 
+**IMPORTANT:** `entry_requires` and `exit_requires` must be arrays of single-key dicts,
+NOT strings. The YAML frontmatter `- file_exists: path` parses to `{"file_exists": "path"}`.
+Preserve this dict format when writing to state-machine.json. The validator and
+check_requires.py both expect `[{"file_exists": "path"}]`, not `["file_exists: path"]`.
+
 ```json
 {
   "schema_version": "1.0",
@@ -475,8 +480,8 @@ For each node-spec file in `.allforai/bootstrap/node-specs/`:
     {
       "id": "<from frontmatter node field>",
       "description": "<from # Task: line>",
-      "entry_requires": ["<from frontmatter>"],
-      "exit_requires": ["<from frontmatter>"],
+      "entry_requires": [{"file_exists": "<path from frontmatter>"}],
+      "exit_requires": [{"file_exists": "<path>"}, {"command_succeeds": "<cmd>"}],
       "hints": ["<from ## Hints section, one string per bullet>"],
       "output_files": ["<glob patterns of files this node writes>"]
     }
