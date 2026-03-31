@@ -576,9 +576,44 @@ If integration points are too complex for parallel execution, the nodes should
 be sequenced instead (one depends on the other), or a dedicated integration
 node should follow the parallel batch to wire everything together.
 
-**Integration verification**: The compile-verify node that follows parallel
-implementation nodes MUST check that all declared integration points are
-actually connected (not just that files exist, but that imports/calls exist).
+**Integration Stitch Node (MANDATORY after parallel implementation batch):**
+When 2+ implementation nodes run in parallel within the same module, the
+workflow MUST include a dedicated `stitch-{module}` node immediately after
+the parallel batch completes, BEFORE compile-verify and E2E.
+
+The stitch node's job:
+1. Read all parallel nodes' exit artifacts (the files they created)
+2. Read product-map business-flows to identify cross-component interactions
+3. For each business flow, trace the UI path across files from different nodes
+4. Detect disconnections: component A exists, component B exists, but A doesn't
+   import/call B (or vice versa)
+5. Fix each disconnection: add imports, wire up callbacks, connect data flow
+6. Run compile check after fixes to ensure nothing broke
+7. Produce a stitch report listing all connections made
+
+```
+Parallel impl nodes → stitch-{module} → compile-verify → E2E
+                         ↑
+                   Finds and fixes:
+                   - Missing imports between sibling files
+                   - UI triggers not wired to target components
+                   - Data passed from API but not parsed by UI
+                   - Callbacks/delegates not connected
+                   - Navigation links pointing to placeholder instead of real view
+```
+
+The stitch node is lightweight (reads + patches, no new features) but catches
+the integration gaps that parallel agents cannot see. It is the cheapest place
+to catch these bugs — far cheaper than discovering them in E2E.
+
+Exit artifact: `.allforai/bootstrap/stitch-{module}-report.json` with a list
+of all connections made and any issues found.
+
+**Node-spec for stitch nodes should include:**
+- The list of parallel nodes whose outputs need stitching
+- The product-map flows that cross node boundaries
+- Specific integration points from the parallel nodes' specs
+- Compile verification after all patches
 
 ### 3.4 Confirm with User
 
