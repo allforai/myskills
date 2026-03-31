@@ -41,6 +41,12 @@ Output: `.allforai/quality-checks/deadhunt-report.json` + `fieldcheck-report.jso
 3. **Cross-layer tracing**: Field consistency checked across ALL layers, not just adjacent ones.
 4. **Actionable output**: Every finding has file:line reference and suggested fix.
 
+## Knowledge References
+
+### Phase-Specific:
+- design-audit-dimensions.md §Reference-Integrity: cross-artifact reference validation
+- cross-phase-protocols.md §Upstream-Baseline-Validation: staleness and fidelity checks
+
 ## Composition Hints
 
 ### Single Node (default)

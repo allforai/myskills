@@ -69,6 +69,12 @@ validation placement correctness.
 5. **Responsibility over naming**: Layer assignment by dependency patterns and code responsibility, not folder names.
 6. **Over-abstraction detection**: Simultaneously check "should abstract" and "shouldn't have abstracted".
 
+## Knowledge References
+
+### Phase-Specific:
+- governance-styles.md: governance compliance checking
+- design-audit-dimensions.md: pattern and behavioral consistency
+
 ## Composition Hints
 
 ### Single Node (default)

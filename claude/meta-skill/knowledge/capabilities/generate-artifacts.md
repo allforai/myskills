@@ -101,6 +101,13 @@ For non-standard projects, LLM outputs complete JSON artifacts directly
 
 Non-standard artifacts are written to `.allforai/code-replicate/` (not product-map/).
 
+## Knowledge References
+
+### Phase-Specific:
+- experience-map-schema.md: three-layer structure (operation_lines > nodes > screens) for experience-map output
+- journey-emotion-schema.md: emotion baseline validation for experience-map fragments
+- cross-phase-protocols.md §Upstream-Baseline-Validation: verify fragments against upstream artifacts
+
 ## Composition Hints
 
 ### Single Node (default)

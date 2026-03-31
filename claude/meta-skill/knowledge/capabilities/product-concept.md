@@ -207,6 +207,16 @@ Full theory reference: `${CLAUDE_PLUGIN_ROOT}/knowledge/product-design-theory.md
 - Each option has evidence ("based on XX report...", "XX competitor does...")
 - "Other" response → WebSearch with user's input → new selection question
 
+## Knowledge References
+
+### Phase-Specific (load for nodes generated from this capability):
+- innovation-protocols.md §Adversarial-Generation: 4-model protocol for concept innovation
+- innovation-protocols.md §Search-Protocol: per-step WebSearch strategy, source quality P1-P4
+- innovation-protocols.md §XV-Cross-Validation: multi-model concept review
+- consumer-maturity-patterns.md: 11 patterns for consumer product maturity evaluation
+- governance-styles.md: governance style decisions that cascade downstream
+- product-design-theory.md §Phase-1: First Principles, JTBD, VPC, Lean Canvas, Blue Ocean ERRC, Kano, Mom Test
+
 ## Composition Hints
 
 ### Full Pipeline (new product, no existing concept)

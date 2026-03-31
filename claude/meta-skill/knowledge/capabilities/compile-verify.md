@@ -42,6 +42,11 @@ This node covers the R1 (Build) layer of the cr-fidelity runtime verification st
 - R1 failure blocks all downstream fidelity scoring
 - Build failure = composite fidelity score = 0 regardless of static analysis results
 
+## Knowledge References
+
+### Phase-Specific:
+(No phase-specific knowledge beyond universal references)
+
 ## Composition Hints
 
 ### Single Node (default)

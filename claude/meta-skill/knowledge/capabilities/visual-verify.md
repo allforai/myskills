@@ -68,6 +68,12 @@ Per-screen agents run in parallel:
 - Aggregate per-screen scores into composite visual fidelity score
 - `full` mode: auto-repair -> re-capture -> re-compare until convergence (max 30 rounds)
 
+## Knowledge References
+
+### Phase-Specific:
+- experience-map-schema.md: expected screen inventory for visual comparison
+- consumer-maturity-patterns.md: visual maturity evaluation criteria
+
 ## Composition Hints
 
 ### Single Node (default)

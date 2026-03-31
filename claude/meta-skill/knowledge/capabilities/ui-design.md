@@ -39,6 +39,13 @@ Output: `.allforai/ui-design/ui-design-spec.md` + `tokens.json` + `preview/*.htm
 3. **State completeness**: Every screen preview includes all state variants.
 4. **Consumer maturity**: If experience_priority = consumer, previews must show production-grade UI, not wireframes.
 
+## Knowledge References
+
+### Phase-Specific:
+- experience-map-schema.md: screen definitions and component specs to design from
+- consumer-maturity-patterns.md: consumer UX maturity requirements
+- product-design-theory.md §Phase-6: Design System, Atomic Design, WCAG, Gestalt
+
 ## Composition Hints
 
 ### Single Node (default)

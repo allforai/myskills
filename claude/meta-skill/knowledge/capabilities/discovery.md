@@ -113,6 +113,12 @@ module per directory.
 - `cr_discover.py --profile <discovery-profile>`: File scanning + module detection
 - Output: source-summary.json, file-catalog.json, code-index.json
 
+## Knowledge References
+
+### Phase-Specific:
+- experience-map-schema.md: understand target schema for downstream consumption
+- governance-styles.md §Operation-Profiles: identify role operation patterns during discovery
+
 ## Composition Hints
 
 ### Single Node (default)

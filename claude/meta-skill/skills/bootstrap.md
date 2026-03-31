@@ -546,8 +546,17 @@ For each node:
 3. For each item in that section, fill it with project-specific information from bootstrap-profile.json
 4. If a mapping file was loaded (Step 2.3), embed the mapping table in translate node-specs
 5. If a domain file was loaded (Step 2.4), embed domain hints in product-analysis node-spec
-6. Write entry_requires based on what upstream nodes produce
-7. Write exit_requires based on what this node must produce
+6. **Read the `## Knowledge References` section of the capability file** — it declares which
+   knowledge files this node depends on. Load each referenced file and embed the relevant
+   sections into the node-spec body under a `## Knowledge References` section.
+7. **Always inject universal knowledge** — regardless of what the capability declares,
+   every generated node-spec MUST include references to:
+   - `cross-phase-protocols.md §Push-Pull` — how to pass context to downstream nodes
+   - `cross-phase-protocols.md §4D+6V` — how to verify output quality
+   - `cross-phase-protocols.md §User-Confirmation-Gate` — when to ask user for confirmation
+   - `defensive-patterns.md` — error handling and resilience
+8. Write entry_requires based on what upstream nodes produce
+9. Write exit_requires based on what this node must produce
 
 ### Node Dependency Chain (for entry/exit_requires)
 
@@ -627,6 +636,24 @@ Each node-spec body should contain:
 
 ## Project Context
 <From bootstrap-profile: tech stack, modules, architecture pattern>
+
+## Theory Anchors
+<Classical frameworks guiding this phase — from capability + domain knowledge>
+<e.g., "JTBD for role definition, Mom Test for user validation">
+
+## Knowledge References (MANDATORY)
+<Injected from capability's Knowledge References + universal knowledge>
+
+### Universal (all nodes):
+- cross-phase-protocols.md §Push-Pull: <summarize how this node passes context downstream>
+- cross-phase-protocols.md §4D+6V: <summarize verification requirements for this node's output>
+- cross-phase-protocols.md §User-Confirmation-Gate: <list confirmation points in this node>
+- defensive-patterns.md: <list applicable defensive patterns>
+
+### Phase-Specific:
+<From capability's Knowledge References — only load what's relevant>
+<e.g., "innovation-protocols.md §Search-Protocol: per-step search strategy...">
+<e.g., "journey-emotion-schema.md: output must conform to this schema...">
 
 ## Protocol
 <From knowledge template: phases, steps, rules>

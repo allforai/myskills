@@ -130,6 +130,16 @@ bootstrap generates a DIFFERENT product-analysis node-spec:
 - **Usage patterns** replaces use-cases: how consumers use the API
 - Output: api-surface.json, usage-patterns.json
 
+## Knowledge References
+
+### Phase-Specific:
+- journey-emotion-schema.md: output schema for journey-emotion sub-phase
+- experience-map-schema.md: output schema for experience-map sub-phase
+- governance-styles.md: governance style classification drives screen/role generation
+- consumer-maturity-patterns.md: consumer maturity bar for experience-map evaluation
+- design-audit-dimensions.md §Interaction-Gate: scoring model for interaction gate sub-phase
+- product-design-theory.md §Phase-2-3-4: Story Mapping, RACI, Nielsen Heuristics, Service Blueprint, INVEST
+
 ## Composition Hints
 
 ### Single Node (default)

@@ -40,6 +40,13 @@ Output: `.allforai/feature-gap/gap-report.json` + `gap-tasks.json` (actionable t
 3. **State coverage**: Consumer-facing screens MUST have all 4 states. Admin screens need at minimum error + success.
 4. **Gaps generate tasks**: Every gap becomes an actionable task in gap-tasks.json.
 
+## Knowledge References
+
+### Phase-Specific:
+- experience-map-schema.md §States: screen state coverage requirements
+- journey-emotion-schema.md: journey completeness validation
+- consumer-maturity-patterns.md: consumer maturity gap detection
+
 ## Composition Hints
 
 ### Single Node (default)

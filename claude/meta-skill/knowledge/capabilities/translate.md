@@ -93,6 +93,12 @@ Each task follows the dev-forge task-execute pattern:
 9. **Route parity verification**: After all translation, verify that every source route/endpoint has a target equivalent. Compilation proves syntax; route parity proves functional completeness. Exit_requires should include a parity check, not just build success.
 10. **Model-to-route traceability**: Every data model found in discovery that has CRUD routes in the source must have corresponding routes in the target. Missing routes are silent functional gaps that only surface at integration (demo-forge, test-verify).
 
+## Knowledge References
+
+### Phase-Specific:
+- cross-phase-protocols.md §Upstream-Baseline-Validation: verify translated code against product artifacts
+- experience-map-schema.md: screen contracts for UI translation
+
 ## Composition Hints
 
 ### Split into Multiple Nodes (default)

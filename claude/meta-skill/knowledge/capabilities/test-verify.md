@@ -76,6 +76,11 @@ If not resolved → surface as UPSTREAM_DEFECT with per-layer breakdown.
 5. **Failure routing before retry**: Classify failure type before retrying — prevents misdirected fixes.
 6. **Score persistence**: Write composite score to test-verify-report.json for downstream nodes (visual-verify, tune) to reference.
 
+## Knowledge References
+
+### Phase-Specific:
+- cross-phase-protocols.md §Upstream-Baseline-Validation: test results validated against product artifacts
+
 ## Composition Hints
 
 ### Single Node (default)

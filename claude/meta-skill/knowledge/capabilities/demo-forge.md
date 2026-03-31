@@ -70,6 +70,12 @@ Output: `.allforai/demo-forge/verify-report.json`
 5. **95% convergence**: Iterate design->execute->verify until 95% pass (max 3 rounds).
 6. **Business chain completeness**: Data must form complete lifecycle flows, not isolated records.
 
+## Knowledge References
+
+### Phase-Specific:
+- consumer-maturity-patterns.md: demo data should showcase consumer maturity patterns
+- governance-styles.md §Operation-Profiles: demo data volume calibrated to operation profiles
+
 ## Composition Hints
 
 ### Single Node (default)

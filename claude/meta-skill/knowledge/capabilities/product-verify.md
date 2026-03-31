@@ -43,6 +43,13 @@ Output: `.allforai/product-verify/verify-report.json` + `verify-report.md`
 3. **App must be running**: Dynamic verification requires live app. Fail if app can't start.
 4. **Evidence-based**: Each check records screenshot or response body as proof.
 
+## Knowledge References
+
+### Phase-Specific:
+- design-audit-dimensions.md: 8-dimension audit framework
+- consumer-maturity-patterns.md: consumer maturity scoring
+- experience-map-schema.md §Interaction-Gate: gate scoring for verification
+
 ## Composition Hints
 
 ### Single Node (default)
