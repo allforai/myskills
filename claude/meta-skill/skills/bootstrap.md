@@ -409,63 +409,103 @@ Example: product-map says "SRS item due → send review card". Pipeline:
 5. Display: Front Desk UI ← exists
 → Workflow needs: "implement-background-scheduler" + "implement-push-notifications"
 
-**Data Feedback Loop Check (MANDATORY):**
-After pipeline checks, LLM MUST also check for **closed-loop feedback systems**
-defined in the product-map. A feedback loop is different from a linear pipeline:
-it's a cycle where user behavior generates data that feeds back into the system
-to adapt its behavior toward that user.
+**Adaptive State Machine Check (MANDATORY):**
+After pipeline checks, LLM MUST check for **adaptive state machines** defined
+in the product-map. Products with personalization, learning, or recommendation
+features have user states that evolve over time. The system must read the
+current state to decide behavior, and update the state after each interaction.
+
+This is NOT a linear pipeline check. It's a state machine check:
 
 ```
-Linear pipeline (covered above):
-  trigger ──→ generate ──→ store ──→ deliver ──→ display
-
-Feedback loop (this check):
-  collect ──→ aggregate ──→ inject back ──→ system adapts behavior
-     ↑                                            │
-     └──────────── user performs action ───────────┘
+                    ┌─── event ───┐
+                    ▼              │
+    ┌──────────────────────┐      │
+    │   User State         │      │
+    │  ┌─ dimension_1: val │      │
+    │  ├─ dimension_2: val │──────┘
+    │  └─ dimension_3: val │  state determines
+    └──────────────────────┘  system behavior
+              │                     │
+              ▼                     ▼
+    ┌──────────────┐     ┌──────────────────┐
+    │ Transition   │     │ Behavior Mapping │
+    │ event + rule │     │ state → action   │
+    │ → new state  │     │ (what AI does)   │
+    └──────────────┘     └──────────────────┘
 ```
 
 Check method: Read `product-map/task-inventory.json` tasks[]. For each task
 that describes adaptive behavior (keywords: "based on", "adjust", "personalize",
-"reinforce", "inject", "adapt", "track weakness", "proficiency-based"), trace
-the full feedback loop:
+"reinforce", "inject", "adapt", "track", "proficiency-based", "level"),
+verify three things:
 
+**1. State Definition — is the user state model complete?**
 ```
-For each adaptive/personalized behavior in the product:
-  □ Collection: is user data being captured? (errors, scores, choices)
-  □ Storage: is the collected data persisted? (DB table with history, not just current state)
-  □ Aggregation: is raw data being summarized into actionable signals?
-     (e.g., individual errors → "top 3 grammar weaknesses")
-  □ Injection: is the aggregated signal fed back into the system that affects user experience?
-     (e.g., weakness list → appended to Persona system prompt at conversation start)
-  □ Adaptation: does the system actually change behavior based on injected signal?
-     (e.g., Persona creates scenarios targeting the weakness, hint difficulty adjusts)
-  □ Re-collection: does the adapted behavior generate new data that updates the loop?
-     (e.g., user performance on targeted scenario → updates weakness scores)
+For each adaptive dimension in the product:
+  □ Is there a DB table/field that holds this state?
+  □ Does it store CURRENT value (for behavior decisions)?
+  □ Does it store HISTORY (for trend/progress reporting)?
+  □ Is the initial state defined (what value for new users)?
 ```
 
-If any step is missing, the loop is broken and the "personalized" feature is
-actually static. The workflow MUST include nodes to close the loop.
+**2. State Transitions — do events update the state?**
+```
+For each user event that should change state:
+  □ Is there code that runs AFTER the event to update state?
+     (e.g., after conversation ends → update grammar_profiles, proficiency, streak)
+  □ Is the transition rule correct? (not just increment — weighted, decayed, etc.)
+  □ Does the transition handle edge cases? (first time, reset, regression)
+```
 
-Common broken loops:
+**3. State→Behavior Mapping — does the system ACT on the state?**
+```
+For each adaptive behavior the product promises:
+  □ Does the code READ the user state before deciding what to do?
+     (e.g., conversation_service reads grammar_profiles before building prompt)
+  □ Does the behavior CHANGE based on state values?
+     (e.g., hint_mode=full vs keywords vs none produces different UI)
+  □ Is the mapping granular enough? (not just on/off but graduated response)
+```
 
-| Product Says | What's Usually Built | What's Usually Missing |
-|-------------|---------------------|----------------------|
-| "Adapt difficulty to user level" | Proficiency table + hint UI | Auto-update proficiency based on performance |
-| "Reinforce weaknesses across personas" | Grammar profile table | Injection into Persona prompts + cross-persona coordination |
-| "Personalized recommendations" | Content list endpoint | User preference/history tracking + ranking algorithm |
-| "Progress tracking" | Current stats snapshot | Historical snapshots for trend comparison |
-| "Spaced repetition" | SRS fields on assets | Scheduler that checks due dates + triggers review |
+If any of the three is incomplete, the "adaptive" feature is actually static.
+The workflow MUST include implementation nodes to complete the state machine.
 
-Example: product-map T05 says "Inject top weaknesses into persona prompts so
-personas create scenarios exercising those weaknesses". Loop:
-1. Collect: recast errors extracted from each conversation ← exists
-2. Store: grammar_profiles table ← exists
-3. Aggregate: top 3 weaknesses by error frequency ← **partial (no ranking)**
-4. Inject: append weaknesses to system prompt at conversation start ← **partial (threshold too high)**
-5. Adapt: Persona creates scenarios targeting weaknesses ← depends on injection
-6. Re-collect: new errors (or absence) updates grammar_profiles ← exists
-→ Workflow needs: "implement-learning-feedback-loops" node to close gaps at steps 3-4
+Common state machine gaps:
+
+| Product Promise | State Definition | Transitions | Behavior Mapping |
+|----------------|-----------------|-------------|------------------|
+| "Adapt to user level" | proficiency table ✓ | **Missing**: no auto-update after conversation | hint UI exists but always shows same mode |
+| "Reinforce weaknesses" | grammar_profiles ✓ | errors collected ✓ | **Missing**: not injected into Persona prompt |
+| "Personalized recommendations" | **Missing**: no preference tracking | N/A | content list is same for all users |
+| "Progress over time" | current snapshot only | **Missing**: no historical snapshots | cannot show "you improved this week" |
+| "Intimacy-driven outreach" | intimacy table ✓ | level updates ✓ | **Missing**: no proactive message generation based on level |
+
+Example — FlyDict learning state machine:
+```
+User Learning State:
+  proficiency_level: beginner|intermediate|advanced
+  weakness_profile: {grammar_category: mastery_score, ...}
+  hint_mode: full_with_translation|keywords_only|none
+  persona_familiarity: {persona_id: intimacy_level, ...}
+  scene_coverage: {tag: practiced_count, ...}
+
+Events that trigger transitions:
+  conversation_end → update weakness_profile, proficiency, scene_coverage
+  review_card_answer → update SRS schedule, weakness mastery
+  growth_test_pass → upgrade proficiency_level, adjust hint_mode
+
+State→Behavior mappings:
+  weakness_profile → injected into Persona system prompt (top 3 weaknesses)
+  hint_mode → determines flash card display style
+  proficiency_level → determines hint duration, quiz difficulty
+  scene_coverage → Coco recommends uncovered Persona tags
+  persona_familiarity → Persona correction directness, topic depth
+```
+
+For each mapping, check: does the code path exist from state read → behavior change?
+If a state exists in DB but nothing reads it to change behavior → broken mapping.
+If behavior is supposed to adapt but always reads a hardcoded default → broken mapping.
 
 ### 3.2 Write workflow.json
 
