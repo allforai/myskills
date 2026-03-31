@@ -36,6 +36,10 @@ def validate_workflow(wf_path: str) -> list:
     if len(wf["nodes"]) == 0:
         errors.append("workflow.json: nodes array is empty")
 
+    # Suspicious bare filenames that likely need a directory prefix
+    SUSPICIOUS_BARE = {'.env', 'config.json', 'config.yaml', 'package.json',
+                       'go.mod', 'Makefile', 'Dockerfile', 'README.md'}
+
     for i, node in enumerate(wf["nodes"]):
         nid = node.get("id", f"node[{i}]")
         if "id" not in node:
@@ -46,6 +50,15 @@ def validate_workflow(wf_path: str) -> list:
             errors.append(f"workflow.json: {nid} missing 'exit_artifacts'")
         elif not isinstance(node["exit_artifacts"], list):
             errors.append(f"workflow.json: {nid} exit_artifacts must be a list")
+        else:
+            for artifact_path in node["exit_artifacts"]:
+                basename = os.path.basename(artifact_path)
+                if artifact_path == basename and basename in SUSPICIOUS_BARE:
+                    errors.append(
+                        f"workflow.json: {nid} exit_artifact '{artifact_path}' "
+                        f"looks like a bare filename — use full project-relative "
+                        f"path (e.g., 'subdir/{artifact_path}' not '{artifact_path}')"
+                    )
 
     return errors
 
@@ -115,6 +128,10 @@ def main():
     result = {"errors": errors, "passed": len(errors) == 0}
     print(json.dumps(result, indent=2))
     sys.exit(0 if result["passed"] else 1)
+
+
+# Also export for testing
+__all__ = ["validate_workflow", "validate_node_spec"]
 
 
 if __name__ == "__main__":

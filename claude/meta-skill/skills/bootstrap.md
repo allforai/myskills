@@ -372,6 +372,16 @@ app might have "design-onboarding-flow" and "setup-push-notifications".
 
 **No entry_requires.** The orchestrator's LLM decides execution order at runtime.
 
+**exit_artifacts 路径规范（重要）：**
+- 必须是**精确的项目相对路径**，从项目根目录开始
+- ❌ `.env`（模糊——哪个目录的 .env？）
+- ✅ `flydict-api/.env`（精确——明确是 API 子目录）
+- ❌ `config.json`（模糊）
+- ✅ `.allforai/bootstrap/migration-result.json`（精确）
+- 对于 monorepo，路径必须包含子项目前缀
+- 路径必须是执行 `check_artifacts.py` 时从项目根目录能找到的
+- 生成 workflow.json 前，LLM 应检查项目目录结构确认路径正确
+
 ### 3.3 Pre-Generate Node-Specs
 
 For each node in workflow.json, generate a complete node-spec markdown file
