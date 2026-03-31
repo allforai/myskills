@@ -191,6 +191,42 @@ UI 还原度（仅有前端翻译时）：
 - Combinations: user can select e.g. "a + e" or "h + i + j" (full verification suite)
 - **demo-forge is automatically added** to any goal that includes code implementation (translate/rebuild/create). Reason: API-driven data population is the strongest integration test — it exposes runtime issues that compile-verify cannot catch (wrong routes, missing fields, broken relationships, auth failures).
 
+### 1.5.1 Collect Runtime Environment (when goals include code implementation)
+
+When goals include translate/rebuild/create (b/c/d), demo-forge will run and needs a live
+environment. Collect everything needed upfront so execution runs unattended.
+
+**Ask in the SAME question as Step 1.5** (append to the prompt, not a separate round):
+
+```
+由于目标包含代码实现，执行阶段需要运行环境。请提供：
+
+运行环境：
+  数据库连接：___ （PostgreSQL/MySQL/SQLite 连接串，或"使用 docker-compose 自动启动"）
+  缓存服务：___ （Redis 连接串，或"不需要"）
+
+AI 服务（如项目使用 AI）：
+  Gemini API Key：___（或"跳过 AI 功能"）
+  其他 API Key：___（按项目需要）
+
+应用启动方式：
+  后端启动命令：___（如 "go run cmd/server/main.go"，或"已在 .env 配好"）
+  前端启动命令：___（如 "npm run dev"）
+  端口：___（如 "API: 8080, Admin: 3000"）
+
+已有 .env 文件？：y/n（如有，bootstrap 读取并复用）
+```
+
+**Processing:**
+1. If user provides API keys → write to `.env` (gitignored) or verify existing `.env`
+2. If user says "docker-compose" → verify docker-compose.yml exists, plan to `docker compose up` before demo-forge
+3. If user says "skip AI" → demo-forge skips AI-dependent data, marks as TODO
+4. Record all in bootstrap-profile.json under `runtime_environment` field
+
+**Why upfront?** demo-forge runs after rebuild — if keys are missing at that point,
+the entire pipeline stalls and the user has to be interrupted. Collecting upfront
+enables fully unattended execution from `/run` to completion.
+
 ### 1.6 Output bootstrap-profile.json
 
 Write to `.allforai/bootstrap/bootstrap-profile.json`:
@@ -240,7 +276,22 @@ Write to `.allforai/bootstrap/bootstrap-profile.json`:
   },
   "detected_patterns": ["<REST API>", "<JWT auth>", "<Redis cache>", "..."],
   "architecture_pattern": "<MVC/Clean/Layered/Feature-sliced/...>",
-  "complexity_estimate": "low | medium | high"
+  "complexity_estimate": "low | medium | high",
+  "runtime_environment": {
+    "database": "<connection string or 'docker-compose'>",
+    "cache": "<Redis connection string or null>",
+    "ai_keys": {
+      "<provider>": "<key or 'skip'>"
+    },
+    "start_commands": {
+      "<role>": "<command to start the service>"
+    },
+    "ports": {
+      "<role>": "<port number>"
+    },
+    "env_file_exists": true,
+    "docker_compose_exists": true
+  }
 }
 ```
 
