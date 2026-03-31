@@ -133,7 +133,7 @@ Ask the user ONE combined question. Format depends on detected state (from Step 
    e) 代码治理（架构合规 + 重复检测 + 抽象分析）
    f) 演示数据（生成 demo-ready 数据集）
    g) UI 精修（UI 还原度修复）
-   h) 功能验收（静态 + Playwright 动态验证）
+   h) 功能验收（静态 + 全模块 E2E 动态验证）
    i) 视觉验收（截图对比）
    j) 质量检查（死链 + 字段一致性）
 ```
@@ -399,14 +399,37 @@ ONLY acceptable when no credentials are provided. This ensures demo-forge and sm
 exercise the full real stack, not a fake one. Every stub is a gap in integration testing.
 
 **Full E2E Testing Principle (applies to workflow planning):**
-If the project has ANY frontend (web, admin, mobile web view), the workflow MUST include
-a Playwright-based E2E testing node. This is NOT optional and NOT a sub-step of smoke-test.
-It is a first-class node in the workflow that LLM must plan during Step 3.1.
-- API-only testing (curl) catches backend bugs but misses: broken routing, missing
-  components, CSS rendering, auth token flow in browser, CORS, client-side validation
-- The E2E node must: open frontend → login with seeded credentials → navigate core
-  flows → create/edit/delete entities → take screenshots as evidence → report issues
-- If project has multiple frontends (admin + mobile), each gets its own E2E node
+Every module in `bootstrap-profile.json.modules[]` MUST have a corresponding verification
+node in the workflow. No module may be silently skipped. This is NOT optional.
+
+**Coverage rule**: When planning nodes in Step 3.1, LLM MUST iterate over every module
+in the bootstrap profile and ensure each has at least one verification node. If a module
+has no verification node, the workflow is incomplete.
+
+**Verification strategy per module role:**
+
+| Module Role | Verification Tool | Node Pattern |
+|-------------|------------------|--------------|
+| backend (API) | curl / HTTP client | api-integration-test |
+| frontend (web) | Playwright browser E2E | e2e-test-{name} |
+| admin (web) | Playwright browser E2E | e2e-test-admin |
+| mobile (Flutter) | `flutter test integration_test/` + `flutter build` | e2e-test-{name} |
+| mobile (React Native) | `detox test` or Maestro | e2e-test-{name} |
+| mobile (SwiftUI/Kotlin) | XCUITest / Espresso | e2e-test-{name} |
+| shared / infra | covered by consumers' tests | no separate node needed |
+
+**Why per-module nodes matter:**
+- API-only testing (curl) misses: broken routing, missing UI components, CSS rendering,
+  auth token flow in browser, client-side validation, CORS problems
+- Web Playwright misses: native mobile layout, platform-specific gestures, offline behavior
+- Each app is a separate deployment surface with its own failure modes
+- A passing API test does NOT prove the mobile app works
+
+**Each module's E2E node must:**
+- Use the appropriate tool for that module's tech stack (see table above)
+- Exercise core user flows end-to-end (login → navigate → CRUD → verify)
+- Produce evidence (screenshots, test reports, logs)
+- Report pass/fail per flow
 
 **Node-spec format:**
 

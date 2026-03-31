@@ -1,14 +1,14 @@
 # Product Verify Capability
 
 > Functional verification of implemented product against design artifacts.
-> Static analysis + dynamic Playwright-based testing.
+> Static analysis + dynamic E2E testing (tool matched to each module's tech stack).
 
 ## Purpose
 
 After code is written, verify it actually implements what was designed:
 - Static: check routes, API endpoints, page titles match artifacts
-- Dynamic: Playwright navigates the running app, verifies screens render,
-  buttons work, forms submit, data flows correctly.
+- Dynamic: navigate the running app, verify screens render, buttons work,
+  forms submit, data flows correctly.
 
 ## Protocol
 
@@ -18,8 +18,21 @@ After code is written, verify it actually implements what was designed:
 - Field parity: form fields in UI match API request schemas
 - Permission check: role-restricted routes have auth guards
 
-### Dynamic Verification (Playwright)
-- Launch app (dev server)
+### Dynamic Verification (per module type)
+
+Every module in the project must be verified using its appropriate tool:
+
+| Module Type | Tool | Method |
+|-------------|------|--------|
+| Web (Next.js, React, Vue) | Playwright | Browser navigate + interact + screenshot |
+| Flutter mobile | `flutter test integration_test/` | Compile + run integration tests on emulator/device |
+| React Native | Detox or Maestro | Native E2E test runner |
+| iOS native (SwiftUI) | XCUITest | Xcode test runner |
+| Android native (Kotlin) | Espresso | Gradle test runner |
+| API-only backend | curl / HTTP client | Endpoint integration test |
+
+For each module:
+- Launch app (dev server / emulator / device)
 - Per role: login → navigate each screen → verify elements exist
 - Form submission: fill + submit → verify response
 - Error states: trigger errors → verify error UI renders

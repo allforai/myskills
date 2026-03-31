@@ -87,7 +87,14 @@ If not resolved → surface as UPSTREAM_DEFECT with per-layer breakdown.
 For small-to-medium projects: one test-verify node runs all verification layers (R2-R4) sequentially.
 
 ### Split into Multiple Nodes
-For large projects: split per test layer (test-verify-unit, test-verify-integration, test-verify-e2e) to isolate failure domains and allow parallel execution.
+For large projects: split per module (test-verify-api, test-verify-admin, test-verify-mobile)
+rather than per layer. Each module has its own test runner and failure domain:
+- Go backend → `go test ./...`
+- Next.js admin → `vitest` + Playwright E2E
+- Flutter mobile → `flutter test` + `flutter test integration_test/`
+- React Native → `jest` + Detox
+
+This ensures no module is silently skipped. Per-module splitting also enables parallel execution.
 
 ### Merge with Another Capability
 For very simple projects (single platform, no custom protocols): merge compile-verify + test-verify into a single build-and-test node.

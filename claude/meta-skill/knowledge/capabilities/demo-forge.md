@@ -67,16 +67,16 @@ it exposes runtime issues that compile-verify cannot catch.
   2. Fix the code (directly or via diagnosis protocol)
   3. Rebuild + restart services
   4. Re-run the failed demo step
-- **E2E verification is mandatory**: Smoke-test MUST include Playwright-based full E2E
-  testing, not just curl API calls. If the project has a frontend (admin/mobile/web),
-  the smoke-test node-spec must instruct the subagent to:
-  1. Open the frontend in Playwright
-  2. Login with seeded credentials
-  3. Navigate core flows (list → detail → create → verify)
-  4. Take screenshots as evidence
-  5. Report any UI rendering issues, broken links, or missing data
-  API-only testing misses: broken frontend routing, missing components, CSS issues,
-  auth token flow in browser, client-side validation, CORS problems.
+- **E2E verification is mandatory for EVERY app module**: After demo data is seeded,
+  every module in the project MUST be verified end-to-end using its native test tool:
+  - Web apps (Next.js, React, Vue) → Playwright browser E2E
+  - Flutter apps → `flutter test integration_test/` (compile + run on emulator/device)
+  - React Native apps → Detox or Maestro
+  - Native iOS/Android → XCUITest / Espresso
+  - API-only → curl integration test
+  Each module gets its own verification — do NOT assume a passing API test proves
+  the mobile app works, or a passing admin E2E proves the consumer app works.
+  Every app is a separate deployment surface with its own failure modes.
 
 ## Specialization Guidance
 
