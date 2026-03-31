@@ -302,7 +302,8 @@ project complexity. A simple CLI might get 3 nodes; a microservice system might 
 
 | Condition | Capabilities to include |
 |-----------|------------------------|
-| New product (no existing code) | **product-concept** (always first — project starting point) |
+| New product (no existing code) | **product design layer** (see below — multiple LLM-generated nodes, not a single node) |
+| Rebuild with concept change | **product design layer** (partial — skip market research if user knows domain) |
 | Any existing project | discovery, product-analysis |
 | Standard web/mobile app | generate-artifacts, feature-gap |
 | Has UI design needs | ui-design |
@@ -372,12 +373,89 @@ with no required base data skips `seed-essential-data`.
 - translate capability ALWAYS becomes multiple nodes (one per target platform)
 - Operational nodes: LLM decides count and content based on project analysis
 
+#### Product Design Layer (LLM-generated, project-specific)
+
+When goals include creating a new product or rebuilding with concept change, the node
+graph needs a **product design layer** before any code is written. Like the operational
+layer, these nodes are LLM-generated and project-specific.
+
+**Bootstrap loads `knowledge/capabilities/product-concept.md` for the full sub-phase catalog
+and `knowledge/product-design-theory.md` for classical theory anchors.**
+
+Each sub-phase is a potential node. LLM decides which to include based on project type:
+
+| Sub-Phase Node | Theory Anchors | When to Include |
+|---------------|---------------|-----------------|
+| **problem-discovery** | First Principles, Opportunity Solution Tree | New product, or concept change |
+| **assumption-zeroing** | First Principles (applied to industry consensus) | New product — challenge "obvious" assumptions |
+| **market-research** | Blue Ocean ERRC, Porter's Five Forces | New product, or entering unfamiliar domain |
+| **innovation-exploration** | ERRC, Cross-domain inspiration | New product, or concept pivot |
+| **user-role-definition** | JTBD, VPC, Mom Test | Always (who uses this?) |
+| **business-model** | Lean Canvas, Business Model Canvas | New product, or monetization change |
+| **positioning** | Blue Ocean ERRC, Kano Model | New product, or repositioning |
+| **concept-crystallization** | All above converge | Always (produces the concept document) |
+| **concept-validation** | Lean Startup, Risk-driven validation | Always (can loop back to any prior node) |
+
+**Project-type specialization:**
+
+Product design nodes are NOT one-size-fits-all. LLM specializes based on project archetype:
+
+| Project Type | Product Design Differences |
+|-------------|--------------------------|
+| **Consumer app** (like FlyDict) | Full pipeline: deep user research, emotion journey, Kano for feature prioritization |
+| **Game** | Replace business-model with game economy design; add player psychology (Bartle types, flow theory); market-research focuses on game genre analysis |
+| **SDK / Library** | Skip user-role-definition (single role: developer); replace market-research with API landscape analysis; positioning = API ergonomics |
+| **SaaS B2B** | Add multi-tenant considerations; business-model includes enterprise pricing tiers; user-role-definition includes buyer vs user distinction |
+| **Data pipeline / CLI** | Minimal design: problem-discovery + concept-crystallization only; skip emotion/UX-heavy phases |
+| **Platform / Marketplace** | Add supply-demand balance analysis; two-sided role definition (producer + consumer); network effects in business model |
+
+**Each generated node-spec MUST include a `## Theory Anchors` section** citing the
+classical frameworks being applied. This ensures every design decision is traceable
+to established methodology, not ad-hoc opinion.
+
+**Interaction mode in node-specs:**
+- Search-driven selection questions (WebSearch → present as 2-4 options)
+- Never open-ended questions
+- Each option backed by evidence from search results
+- "Other" → re-search with user's input → new selection question
+
+**Node dependency graph for product design layer:**
+
+```
+problem-discovery
+  ↓
+assumption-zeroing ─────────┐
+  ↓                         │ (parallel)
+market-research ────────────┘
+  ↓
+innovation-exploration
+  entry: assumption-zeroing + market-research
+  ↓
+user-role-definition
+  entry: problem-discovery + market-research
+  ↓
+business-model
+  entry: user-role-definition
+  ↓
+positioning
+  entry: market-research + innovation + user-roles
+  ↓
+concept-crystallization
+  entry: all above
+  ↓
+concept-validation
+  entry: concept-crystallization
+  can loop back → any prior node if assumption is invalidated
+```
+
 **Do NOT generate fixed node names.** Node IDs should reflect the project:
 - `discover-frontend` not `discovery-structure`
 - `translate-react-to-swiftui` not `translate-frontend`
 - `verify-ios-build` not `compile-verify`
 - `setup-env-go-pg-redis` not `setup-runtime-env`
 - `seed-admin-and-personas` not `seed-essential-data`
+- `research-language-learning-market` not `market-research`
+- `define-learner-and-admin-roles` not `user-role-definition`
 
 ### 2.3 Tech Stack Mappings
 
