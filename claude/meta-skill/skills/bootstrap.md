@@ -372,6 +372,43 @@ For each module in bootstrap-profile.json.modules[]:
   □ Verification depends on implementation?
 ```
 
+**Functional Pipeline Completeness Check (MANDATORY):**
+After module-level checks, LLM MUST also check that cross-module functional
+pipelines are complete end-to-end. A "pipeline" is a product flow that spans
+multiple components (trigger → generation → storage → delivery → display).
+
+Check method: Read `product-map/role-profiles.json` trigger_conditions[] and
+`product-map/business-flows.json` flows[]. For each trigger/flow, trace the
+full pipeline:
+
+```
+For each trigger_condition or async business flow:
+  □ Trigger source exists? (cron job / event handler / user action)
+  □ Generation logic exists? (service that creates the data)
+  □ Storage exists? (DB table / queue)
+  □ Delivery mechanism exists? (API endpoint / push notification / WebSocket)
+  □ Client display exists? (UI that shows the result)
+```
+
+If any step in a pipeline is missing, the workflow MUST include a node to
+implement it. Common gaps that LLM must watch for:
+
+| Product Requirement | Often Missing | What to Check |
+|-------------------|---------------|---------------|
+| "Send X when Y happens" | Background scheduler/cron | Is there a goroutine/cron/worker that checks Y? |
+| "Push notification" | APNs/FCM integration | Is there push infra in the codebase? |
+| "Proactive messages" | Generation job | Endpoint exists to READ, but does anything WRITE? |
+| "Daily/weekly summary" | Aggregation job | Is there a scheduled job that aggregates data? |
+| "Real-time updates" | WebSocket/SSE | Is there a push channel, or only polling? |
+
+Example: product-map says "SRS item due → send review card". Pipeline:
+1. Trigger: cron job checks SRS due dates ← **missing if no scheduler**
+2. Generate: create ProactiveMessage record ← **missing if only read endpoint**
+3. Store: proactive_messages table ← exists
+4. Deliver: GET /messages/pending ← exists (but only pull, no push)
+5. Display: Front Desk UI ← exists
+→ Workflow needs: "implement-background-scheduler" + "implement-push-notifications"
+
 ### 3.2 Write workflow.json
 
 ```json
