@@ -353,7 +353,8 @@ app might have "design-onboarding-flow" and "setup-push-notifications".
       "id": "<project-specific name>",
       "goal": "<one sentence: what this node achieves>",
       "exit_artifacts": ["<file paths that prove this node is done>"],
-      "knowledge_refs": ["<which knowledge files this node should reference>"]
+      "knowledge_refs": ["<which knowledge files this node should reference>"],
+      "consumers": ["<node IDs that read this node's exit_artifacts>"]
     }
   ],
   "transition_log": []
@@ -365,6 +366,9 @@ app might have "design-onboarding-flow" and "setup-push-notifications".
 - `goal`: One sentence. Clear enough that a subagent knows what to do.
 - `exit_artifacts`: File paths. Node is complete when these files exist.
 - `knowledge_refs`: Which knowledge files to inject into the node-spec.
+- `consumers`: Which downstream nodes read this node's output. Used to generate
+  the Downstream Contract section in the node-spec — tells the subagent "who
+  will consume your output and what they need from it".
 
 **No entry_requires.** The orchestrator's LLM decides execution order at runtime.
 
@@ -408,6 +412,17 @@ Followed by:
 
 ## Exit Artifacts
 <What files must exist when done, with expected content description>
+
+## Downstream Contract
+<Who consumes this node's output, and what they need from it.
+ Generated from the consumers field in workflow.json.
+ For each consumer node: which fields/sections of the artifact they read,
+ and what format/depth they expect.>
+
+Example:
+  → design-loot-economy reads: mechanics[].name (weapon list), meta_loop.currencies
+  → implement-combat-system reads: mechanics[].parameters (concrete numbers needed)
+  → design-dungeon-generation reads: core_loop.steps (room encounter design)
 ```
 
 ### 3.4 Confirm with User

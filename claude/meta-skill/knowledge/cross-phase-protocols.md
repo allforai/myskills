@@ -177,13 +177,38 @@ Fields frequently used by multiple downstream phases. **Fields already in baseli
 | `roles[].operation_profile.density` | role-value-map.json | Pull | ui-design, dev-forge | caching strategy, prefetch behavior |
 | `roles[].operation_profile.high_frequency_tasks` | role-value-map.json | [B] | experience-map | prioritize high-frequency operation entry points |
 
-### A.5 Relationship to Upstream Baseline Validation
+### A.5 Downstream Contract (Node-Spec Integration)
+
+In workflow v2.0, Push-Pull is operationalized via the **Downstream Contract** section
+in each node-spec. Bootstrap generates this section from the `consumers` field in
+workflow.json:
+
+```
+workflow.json:
+  node "design-core-combat-loop":
+    consumers: ["design-loot-economy", "implement-combat-system", "design-dungeon-generation"]
+
+Generated node-spec "design-core-combat-loop.md":
+  ## Downstream Contract
+  → design-loot-economy reads: mechanics[].name (weapon list), meta_loop.currencies
+  → implement-combat-system reads: mechanics[].parameters (concrete values needed)
+  → design-dungeon-generation reads: core_loop.steps (room encounter structure)
+```
+
+This makes Push-Pull concrete: the producing node knows exactly which fields matter
+and at what depth, because it knows who will consume them. The subagent can then:
+- Ensure those fields are present and detailed enough
+- Include concrete values (not placeholders) for fields that implementation nodes need
+- Structure the artifact so consumer nodes can parse it reliably
+
+### A.6 Relationship to Upstream Baseline Validation
 
 Upstream baseline validation (see section C below) checks "does the downstream artifact faithfully reflect upstream intent?" The Push-Pull protocol provides the **data foundation** -- without loading upstream data, baseline validation cannot be performed. The three work together:
 
 ```
 Push (always):  every phase auto-loads concept-distilled baseline -> used for global consistency checks during acceptance
 Pull (on-demand): loads concept-level specific fields -> used for precise judgment during acceptance
+Contract (at generation): each node knows who reads its output and what they need
 Validation (at output): checks whether generated screens/code conform to baseline + pulled raw data
 ```
 
