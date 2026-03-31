@@ -400,14 +400,24 @@ Each sub-phase is a potential node. LLM decides which to include based on projec
 
 Product design nodes are NOT one-size-fits-all. LLM specializes based on project archetype:
 
-| Project Type | Product Design Differences |
-|-------------|--------------------------|
-| **Consumer app** (like FlyDict) | Full pipeline: deep user research, emotion journey, Kano for feature prioritization |
-| **Game** | Replace business-model with game economy design; add player psychology (Bartle types, flow theory); market-research focuses on game genre analysis |
-| **SDK / Library** | Skip user-role-definition (single role: developer); replace market-research with API landscape analysis; positioning = API ergonomics |
-| **SaaS B2B** | Add multi-tenant considerations; business-model includes enterprise pricing tiers; user-role-definition includes buyer vs user distinction |
-| **Data pipeline / CLI** | Minimal design: problem-discovery + concept-crystallization only; skip emotion/UX-heavy phases |
-| **Platform / Marketplace** | Add supply-demand balance analysis; two-sided role definition (producer + consumer); network effects in business model |
+| Project Type | Product Design Differences | Domain Knowledge |
+|-------------|--------------------------|------------------|
+| **Consumer app** | Full pipeline: deep user research, emotion journey, Kano | `domains/edtech.md` etc. if available |
+| **Game** | Replaces/adds ~10 game-specific nodes (see `domains/gaming.md`): worldbuilding, core-mechanics (MDA), economy (Sink-Source), progression (Flow Theory), level-design, narrative, art-direction, monetization, balance-testing | **`domains/gaming.md`** (full reference) |
+| **SDK / Library** | Skip user-role (single role: developer); API landscape analysis; positioning = ergonomics | `domains/sdk.md` if available |
+| **SaaS B2B** | Multi-tenant; enterprise pricing; buyer vs user distinction | `domains/saas.md` if available |
+| **Data pipeline / CLI** | Minimal: problem-discovery + concept-crystallization only | — |
+| **Platform / Marketplace** | Supply-demand balance; two-sided roles; network effects | `domains/platform.md` if available |
+
+**Domain knowledge files** (`knowledge/domains/*.md`) contain:
+- Which standard nodes to replace/supplement/add
+- Per-node theory anchors specific to the domain
+- Domain-specific output artifacts
+- Operational layer differences
+- Genre/sub-type node selection guide (e.g., RPG vs casual vs competitive)
+
+LLM loads the matching domain file in Step 2.4 and uses it to specialize ALL layers
+(product design, analysis, build, operational), not just product design.
 
 **Each generated node-spec MUST include a `## Theory Anchors` section** citing the
 classical frameworks being applied. This ensures every design decision is traceable
