@@ -398,6 +398,16 @@ Dev-mode code should check for real credentials and use them when available. Stu
 ONLY acceptable when no credentials are provided. This ensures demo-forge and smoke-test
 exercise the full real stack, not a fake one. Every stub is a gap in integration testing.
 
+**Full E2E Testing Principle (applies to workflow planning):**
+If the project has ANY frontend (web, admin, mobile web view), the workflow MUST include
+a Playwright-based E2E testing node. This is NOT optional and NOT a sub-step of smoke-test.
+It is a first-class node in the workflow that LLM must plan during Step 3.1.
+- API-only testing (curl) catches backend bugs but misses: broken routing, missing
+  components, CSS rendering, auth token flow in browser, CORS, client-side validation
+- The E2E node must: open frontend → login with seeded credentials → navigate core
+  flows → create/edit/delete entities → take screenshots as evidence → report issues
+- If project has multiple frontends (admin + mobile), each gets its own E2E node
+
 **Node-spec format:**
 
 ```yaml
