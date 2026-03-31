@@ -391,6 +391,13 @@ at `.allforai/bootstrap/node-specs/<id>.md`.
 fullest context (all knowledge loaded). Each subagent at /run time only
 needs to read its own node-spec.
 
+**Maximum Realism Principle (applies to ALL node-specs):**
+When the user has provided real credentials (API keys, database connections, service URLs),
+generated node-specs MUST instruct subagents to use the REAL service, not mocks/stubs.
+Dev-mode code should check for real credentials and use them when available. Stubs are
+ONLY acceptable when no credentials are provided. This ensures demo-forge and smoke-test
+exercise the full real stack, not a fake one. Every stub is a gap in integration testing.
+
 **Node-spec format:**
 
 ```yaml

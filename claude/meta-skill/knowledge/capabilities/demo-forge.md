@@ -47,9 +47,16 @@ it exposes runtime issues that compile-verify cannot catch.
 
 ## Methodology Guidance (not steps)
 
+- **Maximum realism**: Use REAL services whenever possible. If the user provided API keys,
+  use the real AI/storage/payment service — NOT mocks or stubs. Dev-mode adapters should
+  check for real credentials and use them when available. The ONLY acceptable stubs are
+  for external services that genuinely cannot be called (e.g., no API key provided, service
+  requires production environment). Every stub is a gap in integration testing.
 - **API-driven insertion**: Every data insert is an API call = integration test
 - **Dependency order**: Create parent entities before children
 - **Zero external links**: All media uploaded to app server
+- **Zero placeholder data**: No "[Dev]" prefixed strings, no "https://dev.example.com" URLs.
+  If the real service can produce the data, use it. If not, clearly mark as TODO.
 - **Verify visually**: Navigate screens with Playwright, verify data appears correctly
 - **Fix and re-verify**: On verification failure, diagnose cause, fix data or code, re-verify
 
