@@ -312,8 +312,8 @@ project complexity. A simple CLI might get 3 nodes; a microservice system might 
 | Post-implementation | product-verify, quality-checks |
 | User wants governance | tune |
 | Has frontend + needs polish | ui-forge |
-| Any code implementation (translate/rebuild/create) | **setup-runtime-env** (collect env vars, verify services) + **demo-forge** (API-driven data population = strongest integration test; exposes issues compile-verify misses) |
-| Needs demo data only | setup-runtime-env + demo-forge |
+| Any code implementation (translate/rebuild/create) | **operational nodes** (see below) + **demo-forge** |
+| Needs demo data only | operational nodes + demo-forge |
 
 **Starting point depends on user's goal:**
 - 从零构建新产品 → **product-concept** 是起点
@@ -324,16 +324,60 @@ project complexity. A simple CLI might get 3 nodes; a microservice system might 
 
 Bootstrap 根据 `goals` 字段（Step 1.5 收集）决定起点。
 
+#### Operational Capabilities (LLM-generated, project-specific)
+
+When goals include code implementation (translate/rebuild/create), the node graph needs
+an **operational layer** between "code compiles" and "product works". These nodes bridge
+the gap from compiled code to a running, data-populated, verified product.
+
+**Bootstrap does NOT have fixed templates for these.** LLM generates project-specific
+node-specs based on Step 1.1-1.4 analysis. Each node's content is fully specialized.
+
+| Operational Node | What it does | LLM specializes based on |
+|-----------------|--------------|-------------------------|
+| **setup-runtime-env** | Collect env vars, API keys, verify service connectivity | `.env.example`, `docker-compose.yml`, config files, detected dependencies |
+| **run-migrations** | Create/update database schema | Migration tool (GORM AutoMigrate, Flyway, Alembic, Prisma, knex, etc.) and migration files |
+| **start-services** | Start all services in correct order, verify healthy | `docker-compose.yml`, `Procfile`, `package.json` scripts, detected service count and dependencies |
+| **seed-essential-data** | Create system-required base data (admin accounts, default configs, required entities) | Entity model + business rules (e.g., "front desk persona must exist", "admin user must exist", "default categories required") |
+| **demo-forge** | Populate demo data via API calls, verify visually | Product map + entity model + API routes (existing capability, see `knowledge/capabilities/demo-forge.md`) |
+| **smoke-test** | End-to-end verification: health endpoints, login, core flows | API routes, frontend pages, health check patterns |
+
+**Node dependency chain (operational layer):**
+
+```
+compile-verify (code builds)
+  → setup-runtime-env (env vars, keys)
+  → run-migrations (DB schema)
+  → start-services (app running)
+  → seed-essential-data (base data)
+  → demo-forge (demo data via API)
+  → smoke-test (everything works)
+```
+
+**When to skip operational nodes:**
+- `run-migrations`: Skip if project uses auto-migration at startup (e.g., GORM AutoMigrate in main.go)
+- `start-services`: Skip if project is a CLI tool or library (no server to start)
+- `seed-essential-data`: Skip if no required base data detected
+- `smoke-test`: Can merge into demo-forge's verify phase if project is simple
+
+**Key rule:** LLM decides which operational nodes to generate and what goes in each.
+The table above is guidance, not a fixed template. A serverless project might not need
+`start-services`. A project with SQLite might not need `run-migrations`. A project
+with no required base data skips `seed-essential-data`.
+
 **How to compose nodes from capabilities:**
 - Read each selected capability's "Composition Hints"
 - Simple project: merge related capabilities (discovery + analysis = 1 node)
 - Complex project: split capabilities (discovery per service = N nodes)
 - translate capability ALWAYS becomes multiple nodes (one per target platform)
+- Operational nodes: LLM decides count and content based on project analysis
 
 **Do NOT generate fixed node names.** Node IDs should reflect the project:
 - `discover-frontend` not `discovery-structure`
 - `translate-react-to-swiftui` not `translate-frontend`
 - `verify-ios-build` not `compile-verify`
+- `setup-env-go-pg-redis` not `setup-runtime-env`
+- `seed-admin-and-personas` not `seed-essential-data`
 
 ### 2.3 Tech Stack Mappings
 
@@ -451,12 +495,40 @@ test-verify
   entry: build succeeds
   exit: tests pass
     ↓
+═══ Operational Layer (LLM-generated, project-specific) ═══
+    ↓
+setup-runtime-env
+  entry: build succeeds (code exists to run)
+  exit: runtime-env.json (all env vars collected, services verified)
+    ↓
+run-migrations (if needed)
+  entry: runtime-env.json
+  exit: DB schema created/verified
+    ↓
+start-services
+  entry: runtime-env.json, DB ready
+  exit: health check passes
+    ↓
+seed-essential-data (if needed)
+  entry: services running
+  exit: base data verified (admin exists, required entities exist)
+    ↓
+demo-forge
+  entry: services running, base data exists
+  exit: demo data populated, visual verification passes
+    ↓
+smoke-test
+  entry: demo data exists
+  exit: end-to-end flows verified
+    ↓
 visual-verify (if frontend)
-  entry: build succeeds, app runs
+  entry: app running with data
   exit: visual comparison passes
 ```
 
-Tune, ui-forge, demo-forge are optional branches — entry_requires = build succeeds or artifacts exist.
+Tune, ui-forge are optional branches — entry_requires = build succeeds or artifacts exist.
+Operational nodes are NOT optional when goals include code implementation — they are the
+bridge from "code compiles" to "product works".
 
 ### Node-Spec Body Structure
 
