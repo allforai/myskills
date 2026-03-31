@@ -19,8 +19,8 @@ You are diagnosing a workflow failure.
 - Iteration: {iteration_count}
 
 ## System State
-- All node summaries: {node_summaries from state-machine.json}
-- All node exit_requires: {extracted from state-machine.json nodes}
+- All node summaries: {node_summaries from workflow.json}
+- All node exit_requires: {extracted from workflow.json nodes}
 - Previous diagnoses: {diagnosis_history}
 
 ## Your Tasks
@@ -75,7 +75,7 @@ After diagnosis returns:
    - Read the node-spec for that node
    - Dispatch subagent with the repair action as additional context
    - Carry gaps_found so the subagent knows the full scope
-3. After each step, update state-machine.json progress
+3. After each step, update workflow.json progress
 4. Apply prevention rules: Edit the affected node-spec files
 
 ## Re-Verification
@@ -91,7 +91,7 @@ After repair_plan completes:
 - Repair plan length ≤ impact_chain length (can't be longer than the chain)
 - Previously identified gaps must resolve (new gaps OK, old gaps can't recur)
 - Repair step failure → new diagnosis, but nested depth max 1 level
-- Each diagnosis record written to state-machine.json diagnosis_history
+- Each diagnosis record written to workflow.json diagnosis_history
 
 ## Out-of-Scope Repairs
 
