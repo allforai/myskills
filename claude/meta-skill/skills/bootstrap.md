@@ -340,6 +340,38 @@ app might have "design-onboarding-flow" and "setup-push-notifications".
 **Node granularity is project-dependent.** A simple CLI tool might need
 3 nodes. A microservice platform might need 20. LLM decides.
 
+**Cross-Module Consistency Check (MANDATORY for rebuild/translate goals):**
+When goals include rebuild or translate, LLM MUST check EVERY module in
+`bootstrap-profile.json.modules[]` against the product definition (product-map
+artifacts, README, or product vision). For each module, answer:
+
+1. Does this module's code reflect the current product direction?
+2. Does it implement the entities/flows defined in the product-map?
+3. Is it consistent with other modules that have already been rebuilt?
+
+If a module is **stale or inconsistent** (e.g., API has new features but
+mobile still has old UI), it MUST get an **implementation node** before any
+verification node. Verification without implementation is useless — it only
+proves that outdated code runs, not that the product works.
+
+**Implementation-before-Verification Rule:**
+For each module, nodes must follow this order:
+```
+implement (if needed) → demo/seed (if applicable) → verify
+```
+A verification node for a module without a corresponding implementation node
+is only valid if the module's code is already up-to-date with the product
+definition. If the code is stale, plan the implementation node first.
+
+Checklist (LLM must iterate before finalizing workflow):
+```
+For each module in bootstrap-profile.json.modules[]:
+  □ Is code consistent with product-map? → YES: verify only / NO: implement first
+  □ Has implementation node (if needed)?
+  □ Has verification node?
+  □ Verification depends on implementation?
+```
+
 ### 3.2 Write workflow.json
 
 ```json
