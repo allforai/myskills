@@ -196,36 +196,48 @@ UI 还原度（仅有前端翻译时）：
 When goals include translate/rebuild/create (b/c/d), demo-forge will run and needs a live
 environment. Collect everything needed upfront so execution runs unattended.
 
-**Ask in the SAME question as Step 1.5** (append to the prompt, not a separate round):
+**This step is LLM-driven, not template-driven.** The questions to ask depend on what
+Step 1.1-1.4 discovered about the project. Do NOT use a fixed template.
 
-```
-由于目标包含代码实现，执行阶段需要运行环境。请提供：
+**Process:**
 
-运行环境：
-  数据库连接：___ （PostgreSQL/MySQL/SQLite 连接串，或"使用 docker-compose 自动启动"）
-  缓存服务：___ （Redis 连接串，或"不需要"）
+1. From Step 1.1-1.4 analysis, identify all runtime dependencies:
+   - Read `.env.example`, `docker-compose.yml`, config files to find required env vars
+   - Detect databases (PostgreSQL, MySQL, MongoDB, SQLite, etc.)
+   - Detect caches (Redis, Memcached, etc.)
+   - Detect AI/ML services (API keys for Gemini, OpenAI, etc.)
+   - Detect storage (S3, R2, local filesystem, etc.)
+   - Detect auth providers (OAuth, IAP, etc.)
+   - Detect any other external services (email, SMS, payment, etc.)
 
-AI 服务（如项目使用 AI）：
-  Gemini API Key：___（或"跳过 AI 功能"）
-  其他 API Key：___（按项目需要）
+2. Check what's already configured:
+   - Read existing `.env` file if present → note which vars are already set
+   - Read `docker-compose.yml` → note which services are auto-managed
+   - Check if services are reachable (e.g., `pg_isready`, `redis-cli ping`)
 
-应用启动方式：
-  后端启动命令：___（如 "go run cmd/server/main.go"，或"已在 .env 配好"）
-  前端启动命令：___（如 "npm run dev"）
-  端口：___（如 "API: 8080, Admin: 3000"）
+3. Generate a **project-specific** question listing ONLY what's missing or unverified:
+   - Group by category (database, cache, AI, storage, etc.)
+   - For each item: show the env var name, what it's for, and a sensible default if detectable
+   - If `.env` already has a value, show it and ask to confirm (not re-enter)
+   - If `docker-compose.yml` covers a service, note "docker-compose 会自动启动" and skip
+   - Include start commands and ports (detected from code or config)
+   - End with: "已有 .env 配置的项已标注，只需补充空白项。"
 
-已有 .env 文件？：y/n（如有，bootstrap 读取并复用）
-```
+4. **Append this to the Step 1.5 prompt** (same question, one round).
 
-**Processing:**
-1. If user provides API keys → write to `.env` (gitignored) or verify existing `.env`
-2. If user says "docker-compose" → verify docker-compose.yml exists, plan to `docker compose up` before demo-forge
-3. If user says "skip AI" → demo-forge skips AI-dependent data, marks as TODO
+**Processing user response:**
+1. If user provides values → write/update `.env` (ensure gitignored)
+2. If service covered by docker-compose → record in profile, plan `docker compose up` before demo-forge
+3. If user says "skip" for a service → demo-forge marks dependent data as TODO
 4. Record all in bootstrap-profile.json under `runtime_environment` field
 
 **Why upfront?** demo-forge runs after rebuild — if keys are missing at that point,
 the entire pipeline stalls and the user has to be interrupted. Collecting upfront
 enables fully unattended execution from `/run` to completion.
+
+**Why LLM-driven?** Every project has different dependencies. A Go+PostgreSQL+Redis+Gemini
+project needs different env vars than a Python+SQLite+OpenAI project. Fixed templates
+either ask too much (confusing) or too little (incomplete).
 
 ### 1.6 Output bootstrap-profile.json
 
@@ -278,11 +290,16 @@ Write to `.allforai/bootstrap/bootstrap-profile.json`:
   "architecture_pattern": "<MVC/Clean/Layered/Feature-sliced/...>",
   "complexity_estimate": "low | medium | high",
   "runtime_environment": {
-    "database": "<connection string or 'docker-compose'>",
-    "cache": "<Redis connection string or null>",
-    "ai_keys": {
-      "<provider>": "<key or 'skip'>"
-    },
+    "services": [
+      {
+        "name": "<service name, e.g. postgresql, redis, gemini>",
+        "type": "database | cache | ai | storage | auth | other",
+        "env_var": "<env var name, e.g. DATABASE_URL>",
+        "value": "<value or null if not yet configured>",
+        "source": "env_file | docker_compose | user_provided | detected | skip",
+        "required_for": ["demo-forge", "rebuild-api", "..."]
+      }
+    ],
     "start_commands": {
       "<role>": "<command to start the service>"
     },
@@ -290,7 +307,8 @@ Write to `.allforai/bootstrap/bootstrap-profile.json`:
       "<role>": "<port number>"
     },
     "env_file_exists": true,
-    "docker_compose_exists": true
+    "docker_compose_exists": true,
+    "pre_run_commands": ["<e.g. docker compose up -d>"]
   }
 }
 ```
