@@ -409,6 +409,64 @@ Example: product-map says "SRS item due → send review card". Pipeline:
 5. Display: Front Desk UI ← exists
 → Workflow needs: "implement-background-scheduler" + "implement-push-notifications"
 
+**Data Feedback Loop Check (MANDATORY):**
+After pipeline checks, LLM MUST also check for **closed-loop feedback systems**
+defined in the product-map. A feedback loop is different from a linear pipeline:
+it's a cycle where user behavior generates data that feeds back into the system
+to adapt its behavior toward that user.
+
+```
+Linear pipeline (covered above):
+  trigger ──→ generate ──→ store ──→ deliver ──→ display
+
+Feedback loop (this check):
+  collect ──→ aggregate ──→ inject back ──→ system adapts behavior
+     ↑                                            │
+     └──────────── user performs action ───────────┘
+```
+
+Check method: Read `product-map/task-inventory.json` tasks[]. For each task
+that describes adaptive behavior (keywords: "based on", "adjust", "personalize",
+"reinforce", "inject", "adapt", "track weakness", "proficiency-based"), trace
+the full feedback loop:
+
+```
+For each adaptive/personalized behavior in the product:
+  □ Collection: is user data being captured? (errors, scores, choices)
+  □ Storage: is the collected data persisted? (DB table with history, not just current state)
+  □ Aggregation: is raw data being summarized into actionable signals?
+     (e.g., individual errors → "top 3 grammar weaknesses")
+  □ Injection: is the aggregated signal fed back into the system that affects user experience?
+     (e.g., weakness list → appended to Persona system prompt at conversation start)
+  □ Adaptation: does the system actually change behavior based on injected signal?
+     (e.g., Persona creates scenarios targeting the weakness, hint difficulty adjusts)
+  □ Re-collection: does the adapted behavior generate new data that updates the loop?
+     (e.g., user performance on targeted scenario → updates weakness scores)
+```
+
+If any step is missing, the loop is broken and the "personalized" feature is
+actually static. The workflow MUST include nodes to close the loop.
+
+Common broken loops:
+
+| Product Says | What's Usually Built | What's Usually Missing |
+|-------------|---------------------|----------------------|
+| "Adapt difficulty to user level" | Proficiency table + hint UI | Auto-update proficiency based on performance |
+| "Reinforce weaknesses across personas" | Grammar profile table | Injection into Persona prompts + cross-persona coordination |
+| "Personalized recommendations" | Content list endpoint | User preference/history tracking + ranking algorithm |
+| "Progress tracking" | Current stats snapshot | Historical snapshots for trend comparison |
+| "Spaced repetition" | SRS fields on assets | Scheduler that checks due dates + triggers review |
+
+Example: product-map T05 says "Inject top weaknesses into persona prompts so
+personas create scenarios exercising those weaknesses". Loop:
+1. Collect: recast errors extracted from each conversation ← exists
+2. Store: grammar_profiles table ← exists
+3. Aggregate: top 3 weaknesses by error frequency ← **partial (no ranking)**
+4. Inject: append weaknesses to system prompt at conversation start ← **partial (threshold too high)**
+5. Adapt: Persona creates scenarios targeting weaknesses ← depends on injection
+6. Re-collect: new errors (or absence) updates grammar_profiles ← exists
+→ Workflow needs: "implement-learning-feedback-loops" node to close gaps at steps 3-4
+
 ### 3.2 Write workflow.json
 
 ```json
