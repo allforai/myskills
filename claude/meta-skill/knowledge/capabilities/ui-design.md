@@ -1,43 +1,53 @@
 # UI Design Capability
 
-> Generate UI design specifications and interactive HTML previews from product artifacts.
+> Generate UI design specifications from product artifacts.
+> Internal execution is LLM-driven — design approach adapts to project type.
 
-## Purpose
+## Goal
 
 Transform experience-map + product-map into concrete UI specifications:
-per-screen layout, component hierarchy, design tokens, and interactive HTML previews
-that stakeholders can review in a browser.
+design tokens, per-screen layouts, component specs, and optional interactive previews.
 
-## Protocol
+## What LLM Must Accomplish (not how)
 
-### Design Token Generation
-From experience-map screens and detected patterns:
-- Color palette, typography scale, spacing system
-- Component tokens (button variants, input styles, card layouts)
-- Output: `tokens.json`
+### Required Outputs
 
-### Per-Screen Specification
-For each screen in experience-map:
-- Layout structure (header/content/footer, sidebar, grid)
-- Component hierarchy (which components, nesting, data flow)
-- State variants (empty/loading/error/success visual treatment)
-- Micro-interactions (hover, focus, transition, loading animation)
+| Output | What |
+|--------|------|
+| `ui-design-spec.md` | Per-screen specification: layout, components, states, interactions |
+| `tokens.json` | Design tokens: color, typography, spacing, component, animation |
 
-### HTML Preview Generation
-For each role in role-profiles:
-- Generate a standalone HTML file showing that role's screens
-- Use design tokens for consistent styling
-- Interactive: clickable navigation between screens
-- Output: `.allforai/ui-design/preview/{role-id}.html`
+### Optional Outputs
 
-Output: `.allforai/ui-design/ui-design-spec.md` + `tokens.json` + `preview/*.html`
+| Output | When |
+|--------|------|
+| `preview/*.html` | Interactive HTML previews (if user wants visual validation) |
+| `art-direction.md` | For games or visually-driven products |
 
-## Rules (Must Preserve)
+### Required Quality
 
-1. **Design tokens are binding**: Downstream implementation must consume tokens.json.
-2. **Per-role previews**: Each role sees different screens — generate separate previews.
-3. **State completeness**: Every screen preview includes all state variants.
-4. **Consumer maturity**: If experience_priority = consumer, previews must show production-grade UI, not wireframes.
+- Every screen from experience-map has a specification
+- Design tokens are binding — downstream implementation must consume them
+- State completeness: every screen shows all state variants
+- Consumer maturity: consumer products get production-grade spec, not wireframes
+
+## Methodology Guidance (not steps)
+
+- **Design tokens first**: Establish visual language before screen design
+- **Per-role previews**: Each role sees different screens — design separately
+- **State completeness**: Every screen includes all state variants in the spec
+- **Don't over-specify**: Describe intent and constraints, not pixel coordinates
+- **Component reuse**: Identify shared components across screens, define once
+
+## Specialization Guidance
+
+| Project Type | UI Design Differences |
+|-------------|----------------------|
+| Consumer mobile app | Mobile-first, touch targets, thumb zones, offline states |
+| Admin dashboard | Data density, table/form patterns, multi-action pages |
+| Game | Art direction replaces UI design; mood board, style guide, character design |
+| SDK/Library | Documentation design replaces UI design (Diátaxis framework) |
+| CLI | No UI design needed — skip entirely |
 
 ## Knowledge References
 
@@ -52,7 +62,7 @@ Output: `.allforai/ui-design/ui-design-spec.md` + `tokens.json` + `preview/*.htm
 Run after experience-map is complete.
 
 ### Skip Entirely
-For backend-only projects, CLI tools, or when user explicitly skips UI design.
+For backend-only projects, CLI tools, or when user explicitly skips.
 
 ### Split by Role
-For apps with very different role UIs (e.g., consumer app + admin dashboard): one node per role.
+For apps with very different role UIs (e.g., consumer app + admin dashboard).
