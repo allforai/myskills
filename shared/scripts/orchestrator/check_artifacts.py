@@ -44,30 +44,32 @@ def main():
     if args.node_id:
         node = next((n for n in nodes if n.get("id") == args.node_id), None)
         if not node:
-            print(f"Node '{args.node_id}' not found")
-            sys.exit(1)
+            print(f"Node '{args.node_id}' not found", file=sys.stderr)
+            sys.exit(2)  # 2 = actual error (node not found), not "pending"
         result = check_node_artifacts(node)
         if args.output_json:
             print(json.dumps(result, indent=2))
+            sys.exit(0)  # --json always exits 0; status is in the JSON
         else:
             status = "DONE" if result["all_exist"] else "PENDING"
             print(f"[{status}] {result['node']}: {result['goal']}")
             for a in result["artifacts"]:
                 mark = "\u2713" if a["exists"] else "\u2717"
                 print(f"  {mark} {a['path']}")
-        sys.exit(0 if result["all_exist"] else 1)
+            sys.exit(0 if result["all_exist"] else 1)
     else:
         results = [check_node_artifacts(n) for n in nodes]
         done = sum(1 for r in results if r["all_exist"])
         total = len(results)
         if args.output_json:
             print(json.dumps({"done": done, "total": total, "nodes": results}, indent=2))
+            sys.exit(0)  # --json always exits 0; status is in the JSON
         else:
             print(f"Progress: {done}/{total} nodes complete\n")
             for r in results:
                 status = "DONE" if r["all_exist"] else "PENDING"
                 print(f"  [{status}] {r['node']}: {r['goal']}")
-        sys.exit(0 if done == total else 1)
+            sys.exit(0 if done == total else 1)
 
 
 if __name__ == "__main__":
