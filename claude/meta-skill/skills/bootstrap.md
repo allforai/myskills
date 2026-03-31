@@ -179,9 +179,9 @@ UI 还原度（仅有前端翻译时）：
 
 **Goal mapping (can combine multiple):**
 - (a) → `goals: ["analyze"]`
-- (b) → `goals: ["analyze", "translate"]`, record target_stacks
-- (c) → `goals: ["analyze", "rebuild"]`, record target_stacks
-- (d) → `goals: ["create"]`, record target_stacks + product_vision
+- (b) → `goals: ["analyze", "translate", "demo"]`, record target_stacks. demo-forge is auto-included because translate produces code that needs integration testing.
+- (c) → `goals: ["analyze", "rebuild", "demo"]`, record target_stacks. demo-forge is auto-included because rebuild produces code that needs integration testing.
+- (d) → `goals: ["create", "demo"]`, record target_stacks + product_vision. demo-forge is auto-included because new code needs integration testing.
 - (e) → `goals: ["tune"]`
 - (f) → `goals: ["demo"]`
 - (g) → `goals: ["ui-forge"]`
@@ -189,6 +189,7 @@ UI 还原度（仅有前端翻译时）：
 - (i) → `goals: ["visual-verify"]`
 - (j) → `goals: ["quality-checks"]`
 - Combinations: user can select e.g. "a + e" or "h + i + j" (full verification suite)
+- **demo-forge is automatically added** to any goal that includes code implementation (translate/rebuild/create). Reason: API-driven data population is the strongest integration test — it exposes runtime issues that compile-verify cannot catch (wrong routes, missing fields, broken relationships, auth failures).
 
 ### 1.6 Output bootstrap-profile.json
 
@@ -276,7 +277,8 @@ project complexity. A simple CLI might get 3 nodes; a microservice system might 
 | Post-implementation | product-verify, quality-checks |
 | User wants governance | tune |
 | Has frontend + needs polish | ui-forge |
-| Needs demo data | demo-forge |
+| Any code implementation (translate/rebuild) | **demo-forge** (API-driven data population = strongest integration test; exposes issues compile-verify misses) |
+| Needs demo data only | demo-forge |
 
 **Starting point depends on user's goal:**
 - 从零构建新产品 → **product-concept** 是起点
