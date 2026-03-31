@@ -542,7 +542,43 @@ Example:
   → design-loot-economy reads: mechanics[].name (weapon list), meta_loop.currencies
   → implement-combat-system reads: mechanics[].parameters (concrete numbers needed)
   → design-dungeon-generation reads: core_loop.steps (room encounter design)
+
+## Integration Points
+<Which OTHER parallel nodes produce components that THIS node must integrate.
+ When nodes run in parallel, their outputs may need to connect at specific
+ touchpoints. List each integration point explicitly so the subagent knows
+ to leave hooks or import the sibling node's components.>
+
+Example:
+  ← implement-ios-learning produces: FlashHintOverlay.swift
+    → THIS node's ChatView must: import and display FlashHintOverlay when
+      user taps "hint" button, reading hint_full/hint_translation from
+      Message.metadata
+  ← implement-ios-learning produces: WordCardView.swift
+    → THIS node's MessageBubble must: make tappable words trigger WordCardView
 ```
+
+**Integration Points Rule (MANDATORY for parallel implementation nodes):**
+When multiple implementation nodes run in parallel within the same module
+(e.g., implement-ios-conversations + implement-ios-learning both produce
+files inside flydict-ios/), the bootstrap MUST identify integration points
+where their outputs need to connect.
+
+For each product flow that spans multiple parallel nodes:
+1. Trace the UI interaction path (e.g., user in ChatView taps word → WordCard)
+2. Identify which node produces the trigger (ChatView) and which produces the
+   target (WordCardView)
+3. Add an Integration Points section to BOTH node-specs:
+   - The trigger node: "must call/import X from sibling node Y"
+   - The target node: "must expose X as a reusable component callable from Y"
+
+If integration points are too complex for parallel execution, the nodes should
+be sequenced instead (one depends on the other), or a dedicated integration
+node should follow the parallel batch to wire everything together.
+
+**Integration verification**: The compile-verify node that follows parallel
+implementation nodes MUST check that all declared integration points are
+actually connected (not just that files exist, but that imports/calls exist).
 
 ### 3.4 Confirm with User
 
