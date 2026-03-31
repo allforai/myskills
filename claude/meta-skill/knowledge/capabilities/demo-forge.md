@@ -59,6 +59,14 @@ it exposes runtime issues that compile-verify cannot catch.
   If the real service can produce the data, use it. If not, clearly mark as TODO.
 - **Verify visually**: Navigate screens with Playwright, verify data appears correctly
 - **Fix and re-verify**: On verification failure, diagnose cause, fix data or code, re-verify
+- **Demo is testing**: Demo-forge is the strongest integration test. When it discovers
+  bugs (wrong API response, missing field, broken adapter, auth failure), the orchestrator
+  should pause demo, fix the code, restart services, and resume demo — not skip the issue.
+  Demo-forge failures that require code changes should trigger the orchestrator to:
+  1. Record the failure in transition_log
+  2. Fix the code (directly or via diagnosis protocol)
+  3. Rebuild + restart services
+  4. Re-run the failed demo step
 
 ## Specialization Guidance
 
