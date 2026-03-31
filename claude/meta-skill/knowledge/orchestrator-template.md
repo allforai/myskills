@@ -1,154 +1,88 @@
 # Orchestrator Template
 
-> Authoritative template for generating .claude/commands/run.md in target projects.
-> Bootstrap Step 5 reads this file and customizes it per project.
+> Template for generating .claude/commands/run.md in target projects.
+> Bootstrap reads this and writes a customized version.
 
 ## Template: run.md
 
 Below is the complete content that bootstrap writes to `.claude/commands/run.md`.
-Bootstrap replaces `{placeholders}` with project-specific values.
 
 ---
 
-```markdown
+~~~markdown
 ---
 name: run
-description: Execute the project-specific workflow orchestrator. Specify a goal.
+description: Execute the project workflow. Specify a goal.
 arguments:
   - name: goal
     description: What you want to achieve (natural language)
     required: true
 ---
 
-# Orchestrator Protocol
+# Workflow Orchestrator
 
-You are the workflow orchestrator for this project.
+You are the workflow orchestrator. Execute nodes to achieve the goal.
 
-## State File
+## Ground Truth
 
-Read `.allforai/bootstrap/state-machine.json` at the start of every iteration.
-This is the ground truth — not your conversation history.
-
-## Session Resume Protocol
-
-On first iteration of a new session (iteration_count > 0 in progress):
-1. Re-validate ALL completed_nodes by checking their exit_requires
-2. Any node whose exit_requires no longer pass → remove from completed_nodes
-3. Reset current_node to null
-4. Proceed with normal core loop (will naturally re-dispatch regressed nodes)
-
-This handles: file deletion, interrupted writes, git checkout changes.
-Cost: one extra evaluation pass. Benefit: guaranteed consistency.
+Read `.allforai/bootstrap/workflow.json` at every iteration. Trust it over conversation history.
 
 ## Core Loop
 
 ```
-loop:
-  1. Read state-machine.json
-  2. Mechanically evaluate requires:
-     python .allforai/bootstrap/scripts/check_requires.py \
-       .allforai/bootstrap/state-machine.json <node-id> --type exit --json
-  3. Decide next node (LLM reasoning when needed)
-  4. Update progress in state-machine.json
-  5. Dispatch subagent (read node-spec, use as Agent prompt)
-  6. Receive result
-  7. Compress to ≤500 char summary → write to node_summaries
-  8. Safety checks
+每轮：
+  1. Read workflow.json (nodes + transition_log)
+  2. Run: python .allforai/bootstrap/scripts/check_artifacts.py .allforai/bootstrap/workflow.json --json
+  3. Review which nodes are done (exit_artifacts exist) and which are pending
+  4. Decide next node:
+     - What's done? What's pending? What makes sense next?
+     - Can run multiple nodes in parallel if their exit_artifacts don't overlap
+     - Can skip a node if its goal is already satisfied
+     - Can re-run a failed node after fixing the issue
+  5. Read the node-spec: .allforai/bootstrap/node-specs/<node-id>.md
+  6. Dispatch subagent with node-spec as prompt
+  7. On success: record transition (status=completed, artifacts_created)
+  8. On failure: record transition (status=failed, error=<one line>),
+     then read .allforai/bootstrap/protocols/diagnosis.md and diagnose
   9. Back to 1
 ```
 
-## Goal Matching
+## Recording Transitions
 
-| Goal pattern | Target |
-|-------------|--------|
-| 逆向分析, reverse engineer, analyze | generate-artifacts |
-| 复刻, replicate, translate, migrate | compile-verify |
-| 代码治理, tune, audit, quality | tune-* |
-| 视觉验收, visual, screenshot | visual-verify |
-| 测试验证, test, verify | test-verify |
-| 产品分析, product analysis | product-analysis |
-| 演示数据, demo | demo-forge |
-| UI 精修, ui polish | ui-forge |
-
-## Parallel Dispatch
-
-Multiple ready nodes with disjoint output_files → dispatch in parallel.
-Max concurrent: {safety.max_concurrent_nodes}.
-
-## Subagent Response Contract
+After each node completes or fails, append to workflow.json transition_log:
 
 ```json
 {
-  "status": "success | failure | needs_input",
-  "summary": "≤500 chars",
-  "artifacts_created": [],
-  "errors": [],
-  "user_prompt": null
+  "node": "<id>",
+  "status": "completed | failed",
+  "started_at": "<ISO timestamp>",
+  "completed_at": "<ISO timestamp>",
+  "artifacts_created": ["<file paths>"],
+  "error": "<one line, only if failed>"
 }
 ```
 
-## On Failure: Full-Chain Diagnosis
+## Session Resume
 
-> When needed, read `.allforai/bootstrap/protocols/diagnosis.md`
+On first iteration if transition_log is non-empty:
+1. Run check_artifacts.py to see current state
+2. Trust artifact existence over transition_log (files may have been deleted)
+3. Continue from where things stand
 
-When a node returns status "failure":
-1. Do NOT retry or backtrack immediately
-2. Dispatch a diagnosis subagent (see Diagnosis section below)
-3. Execute the repair plan
-4. Apply prevention rules
-5. Record in diagnosis_history
+## Safety (warnings, not blockers)
 
-When diagnosis is needed, read the diagnosis protocol file:
-`.allforai/bootstrap/protocols/diagnosis.md`
-Follow its prompt template to dispatch a diagnosis subagent.
-
-## Safety Checks (Mechanical, Every Iteration)
-
-### Loop Detection
-hash = node_id + exit_requires evaluation (true/false per condition)
-Sliding window: last 10 iterations
-warn_threshold: {safety.loop_detection.warn_threshold}
-stop_threshold: {safety.loop_detection.stop_threshold}
-
-### Progress Monotonicity
-progress = completed_nodes / total_nodes
-Check every {safety.progress_monotonicity.check_interval} iterations
-Violation → {safety.progress_monotonicity.violation_action}
-
-### Node Timeout
-max_node_execution_time: {safety.max_node_execution_time} seconds
+- Same node fails 3 times → warn user, ask if they want to continue
+- 5 iterations with no new artifacts → output current state + TODO list
+- Single node running > 10 minutes → warn but don't kill
 
 ## Termination
 
-- Target node exit_requires met → success report
-- Safety stop → current progress + TODO list
-- User interrupts → state saved in state-machine.json, resume with /run
+- All nodes' exit_artifacts exist → success report
+- User interrupts → transition_log is already saved, resume with /run
+- Safety warning acknowledged → continue or stop per user choice
 
-## Post-Completion: Learning + Feedback
+## Post-Completion
 
-After the orchestrator loop terminates (success or safety stop):
-
-### Step 1: Extract Experience
-
-Read `.allforai/bootstrap/protocols/learning-protocol.md` and follow its protocol:
-- Read state-machine.json corrections_applied + diagnosis_history
-- Extract reusable patterns
-- Deidentify (remove project-specific details)
-- Write to `.allforai/bootstrap/learned/<category>.md`
-
-### Step 2: Propose Feedback (Optional)
-
-Read `.allforai/bootstrap/protocols/feedback-protocol.md` and follow its protocol:
-- Filter for universally useful findings
-- Present to user for confirmation
-- Submit approved items as anonymous GitHub Issues
-- Save unapproved items locally only
-
-## Context Management
-
-Each iteration:
-- Read state-machine.json (ground truth)
-- Last 2-3 subagent results (conversation)
-- Last diagnosis (if any)
-- Old results compressed to node_summaries
-```
+1. Read `.allforai/bootstrap/protocols/learning-protocol.md` — extract experience
+2. Read `.allforai/bootstrap/protocols/feedback-protocol.md` — propose feedback
+~~~
