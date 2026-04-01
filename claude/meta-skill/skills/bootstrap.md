@@ -884,6 +884,37 @@ cover this feature? This is LLM semantic judgment, not string matching.
 Closure checks are **discovery-level** (as defined in §B.6): identify and mark what
 should exist, not exhaustive implementation-level checks.
 
+**Level 3 — Multi-Client Parity (when roles have multiple clients):**
+
+If any role in product-concept.json has `clients[]` (multi-client declaration) with
+`feature_parity` = `full` or `partial`:
+
+For each such role:
+1. List all clients declared for this role
+2. For each MVP feature accessible to this role:
+   - Check if EVERY client has a corresponding implementation node
+   - A feature "covered" by one client but missing on another = gap
+3. For `partial` parity: skip features listed in `parity_exceptions`
+
+Auto-fix for multi-client gaps:
+- If a feature has an implementation node for client A but not client B →
+  create or extend a node for client B
+- Each client needs its own compile-verify and E2E node (different tech stacks
+  require different build/test tools)
+
+**Backward compatibility**: if a role has only `client_type` (single client, legacy format),
+skip Level 3 for that role — Level 1 and 2 are sufficient.
+
+Example gap detection:
+```
+R1 消费者 (feature_parity: full, 3 clients):
+  "商品搜索":
+    buyer-ios:     implement-buyer-ios ✓
+    buyer-android: implement-buyer-android ✓
+    buyer-web:     ??? ← GAP: no implementation node for web client
+    → auto-fix: create implement-buyer-web node
+```
+
 #### 3.5.3 Convergence-Controlled Auto-Fix
 
 When uncovered features or broken closures are found, LLM decides:
