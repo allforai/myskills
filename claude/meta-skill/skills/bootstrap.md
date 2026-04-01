@@ -736,6 +736,114 @@ of all connections made and any issues found.
 - Specific integration points from the parallel nodes' specs
 - Compile verification after all patches
 
+### 3.5 Coverage Self-Check (Concept → Workflow Closure)
+
+> Goal: Verify that all features in product-concept.json are covered by at least one
+> workflow node. Auto-fix gaps using Closure Thinking and Reverse Backfill convergence
+> rules. Runs silently — no user confirmation needed.
+
+**Trigger**: `has_product_concept` is true (from Step 1.0). If false, skip to Step 3.4.
+
+#### 3.5.1 Extract Feature Inventory
+
+From `.allforai/product-concept/product-concept.json`, extract all declared features.
+Source fields vary by schema — LLM uses semantic understanding, not hardcoded paths:
+
+- `features[]` (structured feature list)
+- `errc_highlights.must_have[]` + `errc_highlights.differentiators[]`
+- `mvp_features[]` + `post_launch_features[]`
+- Any other field that declares "the product will do X"
+
+Output: a flat list of feature descriptions, each a natural-language statement.
+
+#### 3.5.2 Closure-Driven Coverage Check
+
+For each feature, two levels of verification:
+
+**Level 1 — Direct Coverage:**
+Does at least one node's `goal`, `exit_artifacts`, or node-spec body semantically
+cover this feature? This is LLM semantic judgment, not string matching.
+
+**Level 2 — Closure Completeness (6 types from cross-phase-protocols.md §B.3):**
+
+| Closure Type | Check |
+|-------------|-------|
+| Config Closure | Feature needs configuration → is there a node for config management? |
+| Monitoring Closure | Feature needs observability → is there a node for monitoring setup? |
+| Exception Closure | Feature has failure modes → are recovery paths covered by a node? |
+| Lifecycle Closure | Feature creates entities → is there cleanup/archival in some node? |
+| Mapping Closure | Feature has A↔B pair → is B covered? (e.g., create↔delete, buy↔refund) |
+| Navigation Closure | Feature is an entry point → is there an exit path in some node? |
+
+Closure checks are **discovery-level** (as defined in §B.6): identify and mark what
+should exist, not exhaustive implementation-level checks.
+
+#### 3.5.3 Convergence-Controlled Auto-Fix
+
+When uncovered features or broken closures are found, LLM decides:
+
+- **Extend existing node** — if the gap is closely related to an existing node's domain
+  (same business area, same tech module). Update that node's `goal`, `exit_artifacts`,
+  and node-spec.
+- **Create new node** — if the gap is a distinct concern not covered by any existing node.
+  Append to `workflow.json` nodes[] and generate new node-spec at
+  `.allforai/bootstrap/node-specs/<new-id>.md`.
+
+**Convergence rules (from cross-phase-protocols.md §E Reverse Backfill):**
+
+1. **Concept Sets the Boundary** — Only fix gaps derivable from `product-concept.json`.
+   Features not in the concept are out of scope.
+2. **Derivation Radius Decreases** — Bootstrap only fixes Ring 0 (directly missing
+   features) and Ring 1 (first-order closure gaps, e.g., "login" exists → "password
+   recovery" missing). Ring 2+ is deferred to execution-phase Reverse Backfill.
+3. **Layer Cutoff** — Bootstrap = product design phase boundary. Ring 2+ belongs to
+   development phase.
+
+**Stop conditions (any one triggers stop):**
+
+| Condition | Meaning |
+|-----------|---------|
+| Zero output | All features covered, all closures checked, no new gaps found |
+| All downgraded | All remaining gaps are Ring 2+ (beyond bootstrap scope) |
+| Scale reversal | A "gap" item's scope exceeds its parent feature → not a gap, it's a new feature |
+
+#### 3.5.4 Write Coverage Matrix
+
+Write `.allforai/bootstrap/coverage-matrix.json`:
+
+```json
+{
+  "source": "product-concept.json",
+  "checked_at": "<ISO timestamp>",
+  "total_features": 25,
+  "covered_before_check": 22,
+  "auto_fixed": 3,
+  "deferred_ring2_plus": 1,
+  "final_coverage_rate": "100%",
+  "matrix": [
+    {
+      "feature": "<feature description>",
+      "covered_by": ["<node-id>"],
+      "status": "covered"
+    },
+    {
+      "feature": "<feature description>",
+      "closure_type": "exception",
+      "derived_from": "<parent feature>",
+      "ring": 1,
+      "status": "auto_added",
+      "action": "extended node <node-id>"
+    },
+    {
+      "feature": "<feature description>",
+      "ring": 2,
+      "status": "deferred",
+      "reason": "ring2_cutoff | scale_reversal | all_downgraded"
+    }
+  ]
+}
+```
+
 ### 3.4 Confirm with User
 
 Present summary:
