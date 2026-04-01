@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "batches": [
+    {
+      "batch_id": "2026-04-03T09:00:00Z",
+      "source": "user_session",
+      "topic": "MVP 范围大幅收缩",
+      "decisions": [
+        {
+          "question": "H5 移动网页版是否保留在 MVP",
+          "chosen": "砍掉 buyer-h5，MVP 只做 iOS + Android App + PC Web",
+          "rationale": "H5 体验差（得分 75），投入产出比低，App 覆盖移动场景足够",
+          "supersedes": null
+        },
+        {
+          "question": "卖家移动端是否保留在 MVP",
+          "chosen": "砍掉 seller-app，卖家 MVP 只用 Web 后台",
+          "rationale": "卖家操作以批量为主（上架、导出），移动端价值有限",
+          "supersedes": null
+        },
+        {
+          "question": "Android 是否与 iOS 同时上线",
+          "chosen": "Android 推迟到 v1.1，MVP 仅 iOS",
+          "rationale": "目标市场（北美/欧洲）iOS 占比高，先快速验证再扩展 Android",
+          "supersedes": null
+        }
+      ]
+    },
+    {
+      "batch_id": "2026-04-03T14:00:00Z",
+      "source": "user_session",
+      "topic": "技术栈简化",
+      "decisions": [
+        {
+          "question": "微服务数量是否过多",
+          "chosen": "合并 svc-review 和 svc-message 到 svc-user，减少服务数",
+          "rationale": "评价和消息是用户维度的功能，独立服务增加运维复杂度，MVP 阶段不值得",
+          "supersedes": null
+        }
+      ]
+    }
+  ]
+}

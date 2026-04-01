@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "2.0",
   "mission": "全品类跨境电商平台——连接全球卖家与消费者，提供从商品发现到履约的端到端体验",
   "target_market": "全球消费者 + 中小型跨境卖家，日均订单目标 100 万+",
   "business_domains": ["marketplace", "logistics", "payments", "advertising", "seller-tools", "customer-service"],
@@ -33,66 +33,77 @@
   ],
   "errc_highlights": {
     "must_have": [
-      "商品搜索与推荐",
-      "商品详情页",
-      "购物车",
-      "结算与支付",
-      "订单管理",
-      "物流追踪",
-      "卖家入驻与审核",
-      "卖家商品管理",
-      "卖家订单履约",
-      "平台运营后台"
+      "商品搜索与推荐", "商品详情页", "购物车", "结算与支付",
+      "订单管理", "物流追踪", "卖家入驻与审核", "卖家商品管理",
+      "卖家订单履约", "平台运营后台"
     ],
-    "differentiators": [
-      "AI 智能客服",
-      "个性化推荐引擎",
-      "跨境一站式物流"
-    ],
-    "eliminate": [
-      "自营商品（纯平台模式）",
-      "线下门店",
-      "金融理财产品"
-    ]
+    "differentiators": ["AI 智能客服", "个性化推荐引擎", "跨境一站式物流"],
+    "eliminate": ["自营商品（纯平台模式）", "线下门店", "金融理财产品"]
   },
   "roles": [
-    { "id": "R1", "name": "消费者", "app": "buyer-app", "client_type": "react-native", "high_frequency_tasks": ["搜索", "浏览", "下单", "追踪物流"] },
-    { "id": "R2", "name": "卖家", "app": "seller-portal", "client_type": "react-spa", "high_frequency_tasks": ["商品管理", "订单处理", "数据分析"] },
-    { "id": "R3", "name": "平台运营", "app": "ops-admin", "client_type": "react-spa", "high_frequency_tasks": ["类目管理", "活动配置", "审核"] },
-    { "id": "R4", "name": "客服专员", "app": "cs-workbench", "client_type": "react-spa", "high_frequency_tasks": ["工单处理", "纠纷仲裁", "退款审批"] },
-    { "id": "R5", "name": "仓储操作员", "app": "wms-app", "client_type": "react-native", "high_frequency_tasks": ["入库", "出库", "盘点", "退货处理"] },
-    { "id": "R6", "name": "财务", "app": "finance-admin", "client_type": "react-spa", "high_frequency_tasks": ["结算对账", "发票管理", "税务报表"] },
-    { "id": "R7", "name": "广告主（卖家子角色）", "app": "ad-console", "client_type": "react-spa", "high_frequency_tasks": ["创建广告", "出价调整", "ROI 分析"] },
-    { "id": "R8", "name": "数据分析师", "app": "data-platform", "client_type": "react-spa", "high_frequency_tasks": ["报表查询", "A/B 测试", "模型监控"] }
+    {
+      "id": "R1", "name": "消费者",
+      "clients": [
+        { "app": "buyer-ios", "client_type": "swiftui-ios", "platform": "ios" },
+        { "app": "buyer-android", "client_type": "kotlin-android", "platform": "android" },
+        { "app": "buyer-web", "client_type": "next-js", "platform": "desktop-web" },
+        { "app": "buyer-h5", "client_type": "next-js", "platform": "mobile-web" }
+      ],
+      "feature_parity": "partial",
+      "parity_exceptions": ["推送通知仅限移动端", "指纹/面容支付仅限移动端", "AR 商品预览仅限 iOS"],
+      "high_frequency_tasks": ["搜索", "浏览", "下单", "追踪物流"]
+    },
+    {
+      "id": "R2", "name": "卖家",
+      "clients": [
+        { "app": "seller-portal", "client_type": "next-js", "platform": "desktop-web" },
+        { "app": "seller-app", "client_type": "react-native", "platform": "ios+android" }
+      ],
+      "feature_parity": "partial",
+      "parity_exceptions": ["批量上架仅限 Web（Excel 导入）", "数据看板仅限 Web（大屏图表）", "广告管理仅限 Web"],
+      "high_frequency_tasks": ["商品管理", "订单处理", "数据分析"]
+    },
+    {
+      "id": "R3", "name": "平台运营",
+      "clients": [
+        { "app": "ops-admin", "client_type": "next-js", "platform": "desktop-web" }
+      ],
+      "feature_parity": "independent",
+      "high_frequency_tasks": ["类目管理", "活动配置", "审核"]
+    },
+    {
+      "id": "R4", "name": "客服专员",
+      "clients": [
+        { "app": "cs-workbench", "client_type": "next-js", "platform": "desktop-web" }
+      ],
+      "feature_parity": "independent",
+      "high_frequency_tasks": ["工单处理", "纠纷仲裁", "退款审批"]
+    },
+    {
+      "id": "R5", "name": "仓储操作员",
+      "clients": [
+        { "app": "wms-app", "client_type": "react-native", "platform": "ios+android" }
+      ],
+      "feature_parity": "independent",
+      "high_frequency_tasks": ["入库", "出库", "盘点", "退货处理"]
+    },
+    {
+      "id": "R6", "name": "财务",
+      "clients": [
+        { "app": "finance-admin", "client_type": "next-js", "platform": "desktop-web" }
+      ],
+      "feature_parity": "independent",
+      "high_frequency_tasks": ["结算对账", "发票管理", "税务报表"]
+    }
   ],
   "mvp_features": [
-    "商品搜索与推荐",
-    "商品详情页",
-    "购物车",
-    "结算与支付",
-    "订单管理",
-    "物流追踪",
-    "卖家入驻与审核",
-    "卖家商品管理",
-    "卖家订单履约",
-    "平台运营后台",
-    "消息中心",
-    "用户评价系统"
+    "商品搜索与推荐", "商品详情页", "购物车", "结算与支付",
+    "订单管理", "物流追踪", "卖家入驻与审核", "卖家商品管理",
+    "卖家订单履约", "平台运营后台", "消息中心", "用户评价系统"
   ],
   "post_launch_features": [
-    "会员体系",
-    "客服系统",
-    "卖家数据看板",
-    "卖家广告系统",
-    "促销引擎",
-    "风控系统",
-    "内容社区",
-    "国际化",
-    "搜索广告",
-    "仓储管理",
-    "供应链金融",
-    "数据平台",
-    "开放平台 API",
-    "合规与审计"
+    "会员体系", "客服系统", "卖家数据看板", "卖家广告系统",
+    "促销引擎", "风控系统", "内容社区", "国际化", "搜索广告",
+    "仓储管理", "供应链金融", "数据平台", "开放平台 API", "合规与审计"
   ]
 }
