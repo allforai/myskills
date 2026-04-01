@@ -1,0 +1,103 @@
+{
+  "schema_version": "2.0",
+  "mission": "统一控制全屋智能设备，通过 AI 学习用户习惯实现自动化场景",
+  "target_market": "精装房/改善型住房的科技爱好者家庭，户均 10-30 个智能设备",
+  "business_domains": ["device-management", "automation", "energy", "security", "ai-learning"],
+  "features": [
+    "设备发现与配对（Zigbee/WiFi/BLE/Matter 多协议扫描+自动配对）",
+    "设备控制（开关、亮度、温度、模式切换、实时状态同步）",
+    "场景编排（if-then 规则引擎、时间触发、设备联动、地理围栏触发）",
+    "AI 习惯学习（分析使用模式→自动创建/优化场景→用户确认后生效）",
+    "能耗监控（实时功耗、历史趋势、异常预警、节能建议）",
+    "安防监控（摄像头实时流、移动侦测告警、门锁状态、烟雾/水浸告警）",
+    "家庭成员管理（角色权限、儿童模式、访客临时权限）",
+    "设备固件升级（OTA 推送、升级进度、回滚）",
+    "语音控制（自然语言意图识别→设备操作映射）",
+    "第三方平台对接（HomeKit/Google Home/Alexa 生态互通）",
+    "本地化运行（Hub 离线时核心功能可用、云端同步恢复）",
+    "通知与告警（设备异常、安防事件、能耗超标→多渠道推送）"
+  ],
+  "errc_highlights": {
+    "must_have": [
+      "设备发现与配对", "设备控制", "场景编排", "家庭成员管理", "通知与告警"
+    ],
+    "differentiators": [
+      "AI 习惯学习（自动化场景推荐）",
+      "本地化运行（Hub 离线可用）"
+    ],
+    "eliminate": [
+      "自研硬件设备（纯软件平台）",
+      "电商/设备销售",
+      "社交/社区功能"
+    ]
+  },
+  "roles": [
+    {
+      "id": "R1", "name": "家庭主人",
+      "clients": [
+        { "app": "home-ios", "client_type": "swiftui-ios", "platform": "ios" },
+        { "app": "home-android", "client_type": "kotlin-android", "platform": "android" },
+        { "app": "home-voice", "client_type": "voice-skill", "platform": "alexa+siri+google", "modality": "voice" },
+        { "app": "home-panel", "client_type": "flutter-embedded", "platform": "wall-panel-7inch", "modality": "touch-limited" },
+        { "app": "home-web", "client_type": "next-js", "platform": "desktop-web" }
+      ],
+      "feature_parity": "partial",
+      "parity_exceptions": [
+        "设备配对仅限手机 App（需要 BLE 扫描）",
+        "摄像头实时流仅限手机 App 和 Web（语音/面板带宽不足）",
+        "固件升级仅限手机 App 和 Web（需要进度展示）",
+        "能耗历史趋势仅限手机 App 和 Web（需要图表）",
+        "场景编排编辑仅限手机 App 和 Web（语音/面板只能触发已有场景）",
+        "AI 习惯学习确认仅限手机 App（避免误操作）",
+        "家庭成员管理仅限手机 App（安全敏感操作）"
+      ],
+      "high_frequency_tasks": ["设备控制", "查看状态", "触发场景"]
+    },
+    {
+      "id": "R2", "name": "家庭成员（受限）",
+      "clients": [
+        { "app": "home-ios", "client_type": "swiftui-ios", "platform": "ios" },
+        { "app": "home-android", "client_type": "kotlin-android", "platform": "android" },
+        { "app": "home-voice", "client_type": "voice-skill", "platform": "alexa+siri+google", "modality": "voice" },
+        { "app": "home-panel", "client_type": "flutter-embedded", "platform": "wall-panel-7inch", "modality": "touch-limited" }
+      ],
+      "feature_parity": "partial",
+      "parity_exceptions": [
+        "同 R1 例外 + 无管理类功能（被权限过滤）"
+      ],
+      "high_frequency_tasks": ["设备控制", "触发场景"]
+    },
+    {
+      "id": "R3", "name": "安装技师",
+      "clients": [
+        { "app": "tech-app", "client_type": "react-native", "platform": "ios+android" }
+      ],
+      "feature_parity": "independent",
+      "high_frequency_tasks": ["设备配对", "网络诊断", "固件升级"]
+    },
+    {
+      "id": "R4", "name": "云端管理员",
+      "clients": [
+        { "app": "cloud-admin", "client_type": "next-js", "platform": "desktop-web" }
+      ],
+      "feature_parity": "independent",
+      "high_frequency_tasks": ["设备类型管理", "固件包管理", "用户数据分析"]
+    }
+  ],
+  "mvp_features": [
+    "设备发现与配对",
+    "设备控制",
+    "场景编排",
+    "家庭成员管理",
+    "通知与告警",
+    "安防监控"
+  ],
+  "post_launch_features": [
+    "AI 习惯学习",
+    "能耗监控",
+    "设备固件升级",
+    "语音控制",
+    "第三方平台对接",
+    "本地化运行"
+  ]
+}

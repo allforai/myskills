@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "project_name": "homehub",
+  "business_domain": "iot",
+  "business_context": "智能家居统一控制平台，多协议设备管理 + AI 场景自动化",
+  "tech_stacks": [
+    { "role": "backend", "language": "Go", "framework": "Go + MQTT broker", "db": "PostgreSQL + TimescaleDB + Redis", "build_tool": "go build" },
+    { "role": "hub-firmware", "language": "Rust", "framework": "Embassy (async embedded)", "description": "Hub 本地网关固件，Zigbee/BLE/WiFi 协议栈" },
+    { "role": "frontend-ios", "language": "Swift", "framework": "SwiftUI", "build_tool": "xcodebuild" },
+    { "role": "frontend-android", "language": "Kotlin", "framework": "Jetpack Compose", "build_tool": "gradle" },
+    { "role": "frontend-web", "language": "TypeScript", "framework": "Next.js", "build_tool": "next build" },
+    { "role": "frontend-panel", "language": "Dart", "framework": "Flutter (embedded Linux)", "build_tool": "flutter build linux" },
+    { "role": "voice-skill", "language": "TypeScript", "framework": "Alexa SDK + Google Actions + Siri Shortcuts", "build_tool": "sam build" },
+    { "role": "event-bus", "language": "n/a", "framework": "MQTT + NATS", "description": "device events + cloud events" }
+  ],
+  "goals": ["create", "demo", "concept-acceptance"],
+  "modules": [
+    { "id": "M001", "path": "cloud-api", "role": "backend", "description": "Go cloud API + MQTT bridge" },
+    { "id": "M002", "path": "hub-firmware", "role": "hub-firmware", "description": "Rust hub gateway firmware" },
+    { "id": "M003", "path": "home-ios", "role": "frontend-ios", "description": "SwiftUI iOS App" },
+    { "id": "M004", "path": "home-android", "role": "frontend-android", "description": "Kotlin Android App" },
+    { "id": "M005", "path": "home-web", "role": "frontend-web", "description": "Next.js Web Dashboard" },
+    { "id": "M006", "path": "home-panel", "role": "frontend-panel", "description": "Flutter wall panel UI" },
+    { "id": "M007", "path": "voice-skills", "role": "voice-skill", "description": "Voice assistant integrations" },
+    { "id": "M008", "path": "cloud-admin", "role": "frontend-web", "description": "Next.js admin panel" },
+    { "id": "M009", "path": "tech-app", "role": "frontend-ios", "description": "React Native technician app" }
+  ],
+  "complexity_estimate": "very_high",
+  "requires_runtime_env": true
+}
