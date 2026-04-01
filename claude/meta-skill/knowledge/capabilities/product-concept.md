@@ -99,8 +99,12 @@ another challenges them). Single-model fallback: self-debate with explicit frami
    A single role may have multiple clients (e.g., consumer: iOS app + Android app + web + H5).
    For each role, declare:
    - `clients[]`: array of client apps, each with `app` name, `client_type`, `platform`
-   - `feature_parity`: `full` (all clients implement same features), `partial` (mostly same,
-     with exceptions), or `independent` (each client has different features)
+   - `feature_parity`: one of four modes:
+     - `full`: all clients implement same features (e.g., iOS vs Android)
+     - `partial`: mostly same, with exceptions listed in `parity_exceptions[]` (e.g., App vs Web)
+     - `independent`: each client has completely different features (e.g., admin vs user)
+     - `explicit`: each client declares its own `supported_features[]` — used for modality-limited
+       clients (voice assistant, embedded panel, watch) that can only do a small subset
    - `parity_exceptions[]`: features that differ across clients (only when parity=partial)
 
    **Backward compatibility**: if a role has only one client, the legacy `app` + `client_type`
@@ -117,6 +121,19 @@ another challenges them). Single-model fallback: self-debate with explicit frami
      ],
      "feature_parity": "partial",
      "parity_exceptions": ["推送通知仅限移动端", "AR 试穿仅限 iOS"]
+   }
+
+   // explicit mode — for modality-limited clients
+   {
+     "id": "R1", "name": "家庭主人",
+     "clients": [
+       { "app": "home-ios", "client_type": "swiftui-ios", "platform": "ios" },
+       { "app": "home-voice", "client_type": "voice-skill", "platform": "alexa",
+         "modality": "voice", "supported_features": ["设备控制", "触发场景", "查看状态"] },
+       { "app": "home-panel", "client_type": "flutter-embedded", "platform": "wall-panel",
+         "modality": "touch-limited", "supported_features": ["设备控制", "触发场景", "摄像头预览"] }
+     ],
+     "feature_parity": "explicit"
    }
    ```
 
