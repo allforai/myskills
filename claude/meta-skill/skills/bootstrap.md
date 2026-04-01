@@ -505,6 +505,11 @@ Example: product-map says "SRS item due → send review card". Pipeline:
 → Workflow needs: "implement-background-scheduler" + "implement-push-notifications"
 
 **Adaptive State Machine Check (MANDATORY):**
+> **Scope**: This check applies to EXISTING CODE — verifying that code already in the
+> codebase correctly implements the state machine (state storage, transitions, behavior
+> mappings). It runs during rebuild/translate goals when code exists. For NEW projects
+> (goal=create), this check is N/A — Step 3.5 Level 4 handles coverage planning instead.
+
 After pipeline checks, LLM MUST check for **adaptive state machines** defined
 in the product-map. Products with personalization, learning, or recommendation
 features have user states that evolve over time. The system must read the
@@ -923,6 +928,11 @@ R1 消费者 (feature_parity: full, 3 clients):
 ```
 
 **Level 4 — Adaptive State Machine Coverage (when concept has adaptive_systems):**
+> **Scope**: This check applies to WORKFLOW PLANNING — verifying that planned nodes
+> cover all state machine implementation needs (storage, transitions, schedulers).
+> It complements Step 3.1's check which verifies existing code. For new projects,
+> Level 4 is the primary state machine check. For rebuild/translate, both run:
+> Step 3.1 checks existing code gaps, Level 4 checks workflow node gaps.
 
 If `product-concept.json` contains `adaptive_systems[]`, check each state machine for
 three categories of gaps that Step 3.1's state machine check may have introduced:
