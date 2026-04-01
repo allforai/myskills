@@ -181,6 +181,32 @@ another challenges them). Single-model fallback: self-debate with explicit frami
 3. Information architecture: high-level screen/flow structure
 4. Interaction principles: core design rules
 5. Success metrics: falsifiable, measurable numbers
+6. **Adaptive systems declaration** (if product has personalization/learning features):
+   For each adaptive system, define the complete state machine:
+
+   ```json
+   "adaptive_systems": [
+     {
+       "name": "system name",
+       "description": "what this system adapts and why",
+       "state_dimensions": [
+         { "dim": "field_name", "type": "data type", "description": "what it tracks" }
+       ],
+       "transitions": [
+         { "event": "user action or system event", "updates": ["dim1", "dim2"] }
+       ],
+       "behavior_mappings": [
+         { "state_read": "which dimensions", "behavior": "what changes based on state" }
+       ]
+     }
+   ]
+   ```
+
+   **Quality requirements:**
+   - Every state dimension must have at least one transition that updates it
+   - Every behavior mapping must read dimensions that have transitions
+   - Transitions should reference MVP-scope events (flag post_launch events explicitly)
+   - State schema should be forward-compatible (post_launch can add dimensions/transitions)
 
 **Output:** `product-concept.json`, `product-definition.md`
 
