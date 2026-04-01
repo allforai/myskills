@@ -95,6 +95,30 @@ another challenges them). Single-model fallback: self-debate with explicit frami
 3. VPC per role: Jobs / Pains / Gains → Pain Relievers / Gain Creators
 4. Mom Test principle: questions based on behavioral facts, not opinion predictions
 5. **Producer-side closure check**: if someone consumes, who produces? who operates?
+6. **Multi-client declaration**: for each role, identify ALL client platforms they use.
+   A single role may have multiple clients (e.g., consumer: iOS app + Android app + web + H5).
+   For each role, declare:
+   - `clients[]`: array of client apps, each with `app` name, `client_type`, `platform`
+   - `feature_parity`: `full` (all clients implement same features), `partial` (mostly same,
+     with exceptions), or `independent` (each client has different features)
+   - `parity_exceptions[]`: features that differ across clients (only when parity=partial)
+
+   **Backward compatibility**: if a role has only one client, the legacy `app` + `client_type`
+   fields are equivalent to a single-element `clients[]` array.
+
+   Example:
+   ```json
+   {
+     "id": "R1", "name": "消费者",
+     "clients": [
+       { "app": "buyer-ios", "client_type": "swiftui-ios", "platform": "ios" },
+       { "app": "buyer-android", "client_type": "kotlin-android", "platform": "android" },
+       { "app": "buyer-web", "client_type": "next-js", "platform": "desktop-web" }
+     ],
+     "feature_parity": "partial",
+     "parity_exceptions": ["推送通知仅限移动端", "AR 试穿仅限 iOS"]
+   }
+   ```
 
 **Output:** `role-profiles.json`, `vpc-per-role.json`
 
