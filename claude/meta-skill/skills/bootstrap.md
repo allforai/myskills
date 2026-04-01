@@ -40,6 +40,7 @@ Record what exists:
 - `has_code`: true if any code files detected in Step 1.1
 - `has_iteration_feedback`: true if product-concept/iteration-feedback.json exists (previous concept-acceptance feedback)
 - `has_product_concept`: true if product-concept/product-concept.json exists
+- `has_decision_journal`: true if product-concept/decision-journal.json exists (previous /journal records)
 
 This affects Step 1.5 options:
 - has_product_artifacts + has_code → verification/demo/tune options are relevant
@@ -334,6 +335,25 @@ LLM uses this in Step 3 to:
 If `has_product_concept` (from Step 1.0):
 
 Read `.allforai/product-concept/product-concept.json`. This is needed for Step 3.5 Coverage Self-Check.
+
+### 2.6 Load Decision Journal (if exists)
+
+Check if `.allforai/product-concept/decision-journal.json` exists. If yes, read it.
+
+This file contains product decisions made during previous development sessions,
+recorded via the `/journal` command. Each batch has a timestamp, topic, and
+list of decisions with question/chosen/rationale.
+
+LLM uses this in Step 3 to:
+- **Respect previous decisions**: if user decided "login: email + Apple + Google, no WeChat",
+  do not plan a WeChat login node
+- **Detect conflicts**: if a decision contradicts the product-map, flag it (the decision
+  is newer and likely correct — suggest updating the product-map)
+- **Avoid re-asking**: if a question was already answered in the journal, don't ask again
+  in Step 1.5
+
+The journal is append-only. Later batches can supersede earlier ones (check `supersedes` field).
+When decisions conflict, the latest batch wins.
 
 > **After Step 2, do NOT ask the user anything.** Proceed to planning.
 
