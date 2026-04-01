@@ -1,0 +1,80 @@
+{
+  "_comment": "Simulated concept-acceptance output for petmart (first iteration, fails)",
+  "source": "product-concept.json",
+  "verified_at": "2026-04-01T14:00:00Z",
+  "iteration": 1,
+  "overall_score": 78,
+  "pass_threshold": 80,
+  "verdict": "needs_iteration",
+  "dimensions": [
+    {
+      "dimension": "value_proposition",
+      "score": 85,
+      "evidence": "一站式体验基本实现：商品、健康档案、社区功能在同一个 app 中，切换流畅。但医生咨询体验差，拖低整体'一站式'感受。",
+      "gaps": []
+    },
+    {
+      "dimension": "core_features",
+      "score": 90,
+      "evidence": "must_have 功能（商品浏览、购物车、支付、订单管理）全部可用。支付流程完整，订单状态流转正确。",
+      "gaps": []
+    },
+    {
+      "dimension": "differentiators",
+      "score": 60,
+      "evidence": "宠物健康档案可用但体验平淡（仅简单 CRUD）。医生在线咨询延迟严重（WebSocket 回复 >5s），无预约机制。",
+      "gaps": [
+        {
+          "feature": "宠物医生在线咨询",
+          "status": "poor_experience",
+          "severity": "core",
+          "detail": "WebSocket 实时通信延迟超过 5 秒，医生端无预约/排班管理，体验远低于概念承诺的'在线咨询'预期"
+        }
+      ]
+    },
+    {
+      "dimension": "role_coverage",
+      "score": 75,
+      "evidence": "宠物主人(R1)流程完整。运营管理员(R3)基本可用。宠物医生(R2)功能简陋——仅能查看/回复咨询，无排班、无患宠档案关联。",
+      "gaps": [
+        {
+          "feature": "医生端管理后台",
+          "status": "poor_experience",
+          "severity": "important",
+          "detail": "医生角色缺乏排班管理、患宠档案关联、咨询历史统计"
+        }
+      ]
+    },
+    {
+      "dimension": "business_model",
+      "score": 80,
+      "evidence": "商品购买→支付→退款流程完整。会员积分可累计和使用。优惠券创建/发放/核销正常。",
+      "gaps": []
+    },
+    {
+      "dimension": "eliminated_items",
+      "score": 100,
+      "evidence": "确认未实现：直播带货（无任何直播相关代码/UI）、二手交易（无 C2C 交易功能）。",
+      "gaps": []
+    }
+  ],
+  "iteration_feedback": {
+    "recommended_actions": [
+      {
+        "type": "reconsider_concept",
+        "target": "宠物医生在线咨询",
+        "suggestion": "实时通信复杂度超出 MVP 范围。建议：(a) 移到 v2 或 (b) 简化为异步消息（非实时）"
+      },
+      {
+        "type": "fix_gap",
+        "target": "社区帖子删除反馈",
+        "suggestion": "帖子删除后无确认 toast，用户不确定操作是否成功。添加删除确认对话框 + 成功提示。"
+      },
+      {
+        "type": "deprioritize",
+        "target": "医生端管理后台",
+        "suggestion": "随咨询功能一起推迟。当前管理后台仅保留运营管理员功能。"
+      }
+    ]
+  }
+}

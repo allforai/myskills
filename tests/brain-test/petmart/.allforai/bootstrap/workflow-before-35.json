@@ -1,0 +1,104 @@
+{
+  "schema_version": "2.0",
+  "project": "petmart",
+  "goal": "从零构建宠物电商平台",
+  "planned_at": "2026-04-01T10:00:00Z",
+  "_comment": "This is the workflow BEFORE Step 3.5 coverage check. Intentionally incomplete.",
+  "nodes": [
+    {
+      "id": "product-analysis",
+      "goal": "生成产品地图：角色、任务、业务流程、体验地图、用例",
+      "exit_artifacts": [
+        ".allforai/product-map/role-profiles.json",
+        ".allforai/product-map/task-inventory.json",
+        ".allforai/product-map/business-flows.json",
+        ".allforai/experience-map/experience-map.json",
+        ".allforai/use-case/use-case-tree.json"
+      ],
+      "knowledge_refs": ["product-analysis.md", "product-design-theory.md"],
+      "consumers": ["implement-api", "implement-mobile", "implement-admin", "demo-forge"]
+    },
+    {
+      "id": "setup-env",
+      "goal": "配置运行时环境：PostgreSQL、Redis、JWT 密钥",
+      "exit_artifacts": ["petmart-api/.env"],
+      "knowledge_refs": [],
+      "consumers": ["implement-api"]
+    },
+    {
+      "id": "implement-api",
+      "goal": "实现后端 API：商品、购物车、订单、支付、健康档案、社区",
+      "exit_artifacts": ["petmart-api/main.go"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["compile-verify-api", "implement-mobile", "implement-admin"]
+    },
+    {
+      "id": "implement-mobile",
+      "goal": "实现 Flutter 移动端：商品浏览、购物车、订单、健康档案、社区",
+      "exit_artifacts": ["petmart-app/lib/main.dart"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["compile-verify-mobile"]
+    },
+    {
+      "id": "implement-admin",
+      "goal": "实现 Next.js 管理后台：商品管理、订单管理、用户管理",
+      "exit_artifacts": ["petmart-admin/src/app/page.tsx"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["compile-verify-admin"]
+    },
+    {
+      "id": "compile-verify-api",
+      "goal": "编译验证后端 API",
+      "exit_artifacts": [".allforai/bootstrap/compile-verify-api-result.json"],
+      "knowledge_refs": ["compile-verify.md"],
+      "consumers": ["demo-forge"]
+    },
+    {
+      "id": "compile-verify-mobile",
+      "goal": "编译验证 Flutter 移动端",
+      "exit_artifacts": [".allforai/bootstrap/compile-verify-mobile-result.json"],
+      "knowledge_refs": ["compile-verify.md"],
+      "consumers": ["e2e-test-mobile"]
+    },
+    {
+      "id": "compile-verify-admin",
+      "goal": "编译验证 Next.js 管理后台",
+      "exit_artifacts": [".allforai/bootstrap/compile-verify-admin-result.json"],
+      "knowledge_refs": ["compile-verify.md"],
+      "consumers": ["e2e-test-admin"]
+    },
+    {
+      "id": "demo-forge",
+      "goal": "填充演示数据：商品、用户、订单、健康记录",
+      "exit_artifacts": [".allforai/demo-forge/forge-data.json"],
+      "knowledge_refs": ["demo-forge.md"],
+      "consumers": ["e2e-test-mobile", "e2e-test-admin"]
+    },
+    {
+      "id": "e2e-test-mobile",
+      "goal": "Flutter E2E 测试：宠物主人核心流程",
+      "exit_artifacts": [".allforai/bootstrap/e2e-mobile-result.json"],
+      "knowledge_refs": ["test-verify.md"],
+      "consumers": ["concept-acceptance"]
+    },
+    {
+      "id": "e2e-test-admin",
+      "goal": "Playwright E2E 测试：管理后台核心流程",
+      "exit_artifacts": [".allforai/bootstrap/e2e-admin-result.json"],
+      "knowledge_refs": ["test-verify.md"],
+      "consumers": ["concept-acceptance"]
+    },
+    {
+      "id": "concept-acceptance",
+      "goal": "对照产品概念验收最终产品体验",
+      "exit_artifacts": [
+        ".allforai/concept-acceptance/acceptance-report.json",
+        ".allforai/concept-acceptance/acceptance-report.md",
+        ".allforai/product-concept/iteration-feedback.json"
+      ],
+      "knowledge_refs": ["concept-acceptance.md"],
+      "consumers": []
+    }
+  ],
+  "transition_log": []
+}

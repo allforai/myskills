@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0",
+  "project_name": "petmart",
+  "business_domain": "ecommerce",
+  "business_context": "宠物电商平台，覆盖商品交易、健康管理和社区功能",
+  "tech_stacks": [
+    {
+      "role": "backend",
+      "language": "Go",
+      "language_version": "1.22",
+      "framework": "Gin",
+      "orm": "GORM",
+      "db": "PostgreSQL",
+      "build_tool": "go build"
+    },
+    {
+      "role": "frontend",
+      "language": "Dart",
+      "language_version": "3.3",
+      "framework": "Flutter",
+      "state_management": "Riverpod",
+      "build_tool": "flutter build"
+    },
+    {
+      "role": "frontend",
+      "language": "TypeScript",
+      "language_version": "5.4",
+      "framework": "Next.js",
+      "state_management": "Zustand",
+      "build_tool": "next build"
+    }
+  ],
+  "goals": ["create", "demo", "concept-acceptance"],
+  "target_stacks": [],
+  "ui_fidelity": null,
+  "modules": [
+    { "id": "M001", "path": "petmart-api", "role": "backend", "description": "Go API server" },
+    { "id": "M002", "path": "petmart-app", "role": "frontend", "description": "Flutter mobile app for pet owners" },
+    { "id": "M003", "path": "petmart-admin", "role": "frontend", "description": "Next.js admin panel for operators and vets" }
+  ],
+  "build_commands": {
+    "backend": "cd petmart-api && go build ./...",
+    "mobile": "cd petmart-app && flutter build apk",
+    "admin": "cd petmart-admin && next build"
+  },
+  "test_commands": {
+    "backend": "cd petmart-api && go test ./...",
+    "mobile": "cd petmart-app && flutter test",
+    "admin": "cd petmart-admin && npm test"
+  },
+  "detected_patterns": ["REST API", "JWT auth", "PostgreSQL", "Flutter mobile", "Next.js admin"],
+  "architecture_pattern": "Layered (API + Mobile + Admin)",
+  "complexity_estimate": "medium",
+  "requires_runtime_env": true
+}
