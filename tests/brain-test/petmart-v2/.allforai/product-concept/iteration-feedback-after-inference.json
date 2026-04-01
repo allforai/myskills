@@ -1,0 +1,65 @@
+{
+  "_comment": "This is iteration-feedback.json AFTER Step 2.5 auto-inferred user_decisions",
+  "iteration": 1,
+  "feedback_at": "2026-03-28T15:30:00Z",
+  "source": "concept-acceptance",
+  "overall_score": 78,
+  "verdict": "needs_iteration",
+  "gaps": [
+    {
+      "feature": "宠物医生在线咨询",
+      "severity": "core",
+      "status": "poor_experience",
+      "detail": "WebSocket 实时通信延迟超过 5 秒，医生端回复体验极差"
+    },
+    {
+      "feature": "社区帖子删除",
+      "severity": "important",
+      "status": "partial",
+      "detail": "删除成功后无确认反馈，用户不确定是否删除成功"
+    },
+    {
+      "feature": "医生端管理后台",
+      "severity": "important",
+      "status": "poor_experience",
+      "detail": "功能简陋，缺乏排班管理、患宠档案关联、咨询历史统计"
+    }
+  ],
+  "recommended_actions": [
+    {
+      "type": "reconsider_concept",
+      "target": "宠物医生在线咨询",
+      "suggestion": "实时通信复杂度超出 MVP 范围，建议移到 post_launch 或简化为异步消息"
+    },
+    {
+      "type": "fix_gap",
+      "target": "社区帖子删除",
+      "suggestion": "添加删除确认对话框和成功 toast 提示"
+    },
+    {
+      "type": "deprioritize",
+      "target": "医生端管理后台",
+      "suggestion": "随咨询功能一起推迟到 v2"
+    }
+  ],
+  "user_decisions": [
+    {
+      "action_target": "宠物医生在线咨询",
+      "decision": "deprioritize",
+      "evidence": "Feature moved to errc.eliminate in updated product-concept.json. R2 (宠物医生) role removed.",
+      "inferred_at": "2026-04-01T10:00:00Z"
+    },
+    {
+      "action_target": "社区帖子删除",
+      "decision": "fix",
+      "evidence": "社区帖子 feature remains in product-concept.json features list. User wants it fixed.",
+      "inferred_at": "2026-04-01T10:00:00Z"
+    },
+    {
+      "action_target": "医生端管理后台",
+      "decision": "deprioritize",
+      "evidence": "R2 (宠物医生) role removed from product-concept.json. Consistent with deprioritize recommendation.",
+      "inferred_at": "2026-04-01T10:00:00Z"
+    }
+  ]
+}

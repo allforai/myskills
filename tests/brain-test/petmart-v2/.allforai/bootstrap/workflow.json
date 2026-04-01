@@ -1,0 +1,104 @@
+{
+  "schema_version": "2.0",
+  "project": "petmart",
+  "goal": "迭代修复第一轮验收问题，构建不含医生咨询的宠物电商 v2",
+  "planned_at": "2026-04-01T10:10:00Z",
+  "_comment": "V2 workflow — informed by iteration-feedback. Medical consultation removed, social post deletion fix prioritized.",
+  "nodes": [
+    {
+      "id": "product-analysis-v2",
+      "goal": "更新产品地图：移除医生角色和咨询功能，调整业务流程",
+      "exit_artifacts": [
+        ".allforai/product-map/role-profiles.json",
+        ".allforai/product-map/task-inventory.json",
+        ".allforai/product-map/business-flows.json",
+        ".allforai/experience-map/experience-map.json"
+      ],
+      "knowledge_refs": ["product-analysis.md"],
+      "consumers": ["fix-social-deletion", "implement-api-v2", "implement-mobile-v2"]
+    },
+    {
+      "id": "fix-social-deletion",
+      "goal": "修复社区帖子删除体验：添加确认对话框 + 成功 toast + 动画移除",
+      "exit_artifacts": ["petmart-app/lib/features/community/post_delete_fix.dart"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["compile-verify-mobile"],
+      "_prioritized_by": "iteration-feedback: fix_gap on 社区帖子删除"
+    },
+    {
+      "id": "implement-api-v2",
+      "goal": "清理后端：移除 WebSocket 咨询代码、医生排班 API，保留核心电商 + 健康 + 社区 API",
+      "exit_artifacts": ["petmart-api/main.go"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["compile-verify-api"]
+    },
+    {
+      "id": "implement-mobile-v2",
+      "goal": "清理移动端：移除咨询聊天 UI、医生入口，优化社区帖子体验",
+      "exit_artifacts": ["petmart-app/lib/main.dart"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["compile-verify-mobile"]
+    },
+    {
+      "id": "implement-admin-v2",
+      "goal": "简化管理后台：移除医生管理模块，保留商品/订单/用户/内容审核",
+      "exit_artifacts": ["petmart-admin/src/app/page.tsx"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["compile-verify-admin"]
+    },
+    {
+      "id": "compile-verify-api",
+      "goal": "编译验证后端 API",
+      "exit_artifacts": [".allforai/bootstrap/compile-verify-api-result.json"],
+      "knowledge_refs": ["compile-verify.md"],
+      "consumers": ["demo-forge-v2"]
+    },
+    {
+      "id": "compile-verify-mobile",
+      "goal": "编译验证 Flutter 移动端",
+      "exit_artifacts": [".allforai/bootstrap/compile-verify-mobile-result.json"],
+      "knowledge_refs": ["compile-verify.md"],
+      "consumers": ["e2e-test-mobile"]
+    },
+    {
+      "id": "compile-verify-admin",
+      "goal": "编译验证 Next.js 管理后台",
+      "exit_artifacts": [".allforai/bootstrap/compile-verify-admin-result.json"],
+      "knowledge_refs": ["compile-verify.md"],
+      "consumers": ["e2e-test-admin"]
+    },
+    {
+      "id": "demo-forge-v2",
+      "goal": "更新演示数据：移除医生相关数据，补充社区帖子多样性",
+      "exit_artifacts": [".allforai/demo-forge/forge-data.json"],
+      "knowledge_refs": ["demo-forge.md"],
+      "consumers": ["e2e-test-mobile", "e2e-test-admin"]
+    },
+    {
+      "id": "e2e-test-mobile",
+      "goal": "Flutter E2E 测试：重点验证帖子删除体验修复",
+      "exit_artifacts": [".allforai/bootstrap/e2e-mobile-result.json"],
+      "knowledge_refs": ["test-verify.md"],
+      "consumers": ["concept-acceptance-v2"]
+    },
+    {
+      "id": "e2e-test-admin",
+      "goal": "Playwright E2E 测试：管理后台（无医生模块）",
+      "exit_artifacts": [".allforai/bootstrap/e2e-admin-result.json"],
+      "knowledge_refs": ["test-verify.md"],
+      "consumers": ["concept-acceptance-v2"]
+    },
+    {
+      "id": "concept-acceptance-v2",
+      "goal": "对照更新后的产品概念验收 v2 产品体验",
+      "exit_artifacts": [
+        ".allforai/concept-acceptance/acceptance-report.json",
+        ".allforai/concept-acceptance/acceptance-report.md",
+        ".allforai/product-concept/iteration-feedback.json"
+      ],
+      "knowledge_refs": ["concept-acceptance.md"],
+      "consumers": []
+    }
+  ],
+  "transition_log": []
+}
