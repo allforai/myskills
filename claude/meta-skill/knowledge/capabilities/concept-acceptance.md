@@ -88,8 +88,11 @@ For EACH client declared in the role:
 5. Score per client: completeness + fluency
 
 After all clients are tested, perform **parity check**:
-- `feature_parity: full` → every feature must work on every client (except parity_exceptions)
-- `feature_parity: partial` → features in parity_exceptions may differ across clients
+- `feature_parity: full` → every feature must work on every client
+- `feature_parity: partial` → every feature must work on every client, except those in `parity_exceptions`
+- `feature_parity: explicit` → each client is tested ONLY on its declared `supported_features[]`.
+  Score per client reflects only those features. A voice client scoring 90 on 3 features
+  is not compared against an iOS client scoring 85 on 10 features — different scopes.
 - Score parity: flag significant score differences between clients for the same flow
   (e.g., buyer-ios: 90, buyer-web: 60 → flag as "web experience significantly worse")
 - Parity failures are reported as gaps with severity based on the feature's importance
