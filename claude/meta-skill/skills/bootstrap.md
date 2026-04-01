@@ -392,6 +392,10 @@ When concept has drifted since last bootstrap:
 | feature_modified | Update affected nodes' goal and regenerate their node-specs. |
 | role_removed | Remove role-specific nodes (e.g., e2e-test for that role's app). Update shared nodes to exclude this role. |
 | tech_changed | Replace implementation + compile-verify + e2e nodes for the affected module with new tech stack equivalents. |
+| client_removed | Remove the implementation + compile-verify + e2e triplet for that client. If the role becomes single-client, Level 3 parity check no longer applies. |
+| client_added | Add implementation + compile-verify + e2e triplet for the new client. Trigger Level 3 parity check. |
+| module_merged | Remove nodes for merged services. Extend the target service node's goal to absorb merged functionality. |
+| module_split | Create new service nodes for the split-out module. Reduce the source service node's goal. |
 
 4. **Preserve unaffected nodes**: nodes whose goal does not relate to any drift change
    remain in workflow.json with their transition_log entries intact. Completed work is not lost.

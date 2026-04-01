@@ -109,7 +109,7 @@ Write `.allforai/product-concept/concept-drift.json`:
   "source_batches": ["<batch IDs that caused changes>"],
   "changes": [
     {
-      "type": "feature_removed | feature_added | feature_modified | role_removed | role_added | tech_changed",
+      "type": "feature_removed | feature_added | feature_modified | role_removed | role_added | tech_changed | client_removed | client_added | module_merged | module_split",
       "target": "<what changed>",
       "before": "<old value>",
       "after": "<new value>",
@@ -127,6 +127,10 @@ Impact classification:
 - `role_removed` → `["product-map", "experience-map", "workflow", "code"]`
 - `role_added` → `["product-map", "experience-map", "workflow"]`
 - `tech_changed` → `["workflow", "code"]`
+- `client_removed` → `["workflow", "code"]` (remove impl + compile + e2e nodes for that client)
+- `client_added` → `["workflow"]` (add impl + compile + e2e nodes for new client)
+- `module_merged` → `["workflow", "code"]` (remove merged service nodes, extend target service)
+- `module_split` → `["workflow", "code"]` (create new service nodes, reduce source service scope)
 
 If concept-drift.json already exists with `resolved: false` (previous unresolved drift),
 merge new changes into the existing changes[] array (don't overwrite).
