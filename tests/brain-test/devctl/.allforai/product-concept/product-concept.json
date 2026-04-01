@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "mission": "统一管理多云环境的开发者 CLI 工具",
+  "target_market": "使用多云架构的中大型技术团队",
+  "features": [
+    "多云身份认证（AWS/GCP/Azure 统一登录）",
+    "集群管理（列表/切换/状态查看）",
+    "日志聚合查看（实时 tail + 搜索）",
+    "配置同步（本地↔远端配置双向同步）",
+    "插件系统（第三方扩展）"
+  ],
+  "errc_highlights": {
+    "must_have": ["多云身份认证", "集群管理", "日志聚合查看"],
+    "differentiators": ["配置同步", "插件系统"],
+    "eliminate": ["GUI 界面", "监控告警"]
+  },
+  "roles": [
+    { "id": "R1", "name": "开发者", "app": "cli", "client_type": "terminal" }
+  ]
+}
