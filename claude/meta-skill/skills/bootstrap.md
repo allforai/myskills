@@ -891,14 +891,17 @@ should exist, not exhaustive implementation-level checks.
 **Level 3 — Multi-Client Parity (when roles have multiple clients):**
 
 If any role in product-concept.json has `clients[]` (multi-client declaration) with
-`feature_parity` = `full` or `partial`:
+`feature_parity` = `full`, `partial`, or `explicit`:
 
 For each such role:
 1. List all clients declared for this role
-2. For each MVP feature accessible to this role:
-   - Check if EVERY client has a corresponding implementation node
-   - A feature "covered" by one client but missing on another = gap
-3. For `partial` parity: skip features listed in `parity_exceptions`
+2. Determine check strategy based on parity mode:
+   - `full`: every client must cover ALL MVP features for this role
+   - `partial`: every client must cover all MVP features EXCEPT `parity_exceptions[]`
+   - `explicit`: each client only needs to cover its own `supported_features[]`
+3. For each feature × client pair that should be covered:
+   - Check if that client has a corresponding implementation node
+   - A feature that should be covered but has no node = gap
 
 Auto-fix for multi-client gaps:
 - If a feature has an implementation node for client A but not client B →
