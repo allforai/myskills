@@ -97,6 +97,38 @@ After all clients are tested, perform **parity check**:
   (e.g., buyer-ios: 90, buyer-web: 60 → flag as "web experience significantly worse")
 - Parity failures are reported as gaps with severity based on the feature's importance
 
+### Phase 2.5: Adaptive Behavior Verification (when concept has adaptive_systems)
+
+If `product-concept.json` contains `adaptive_systems[]`, verify that state machines
+actually work at runtime — not just that the code exists, but that behaviors change
+based on state.
+
+For each adaptive system:
+
+1. **Trigger state transitions**: use demo-forge seeded data or live interaction to
+   trigger events defined in `transitions[]`. Example: submit 5 wrong answers to
+   trigger frustration_index increase.
+
+2. **Verify state updates**: after triggering events, read the user's state from the
+   API or database. Confirm dimensions were updated as expected.
+
+3. **Verify behavior changes**: after state changes, trigger the behavior that reads
+   that state. Confirm the output differs from the default. Example: after
+   frustration_index > 0.7, the next exercise should be easier than before.
+
+4. **Test boundary conditions**:
+   - New user (all dimensions at initial values) → default behavior correct?
+   - Edge values (mastery = 0.0, mastery = 1.0) → no crashes, reasonable behavior?
+   - State regression (user was advanced, now answers wrong) → difficulty decreases?
+
+Evidence format: for each adaptive system, record a before/after state snapshot
+with the triggering events and observed behavior change. This is the strongest
+proof that personalization works — static code review cannot verify this.
+
+**MVP scope**: only verify behavior_mappings that reference MVP features. Mappings
+that reference post_launch features are skipped (flagged by Step 3.5 Level 4 as
+"premature mapping").
+
 ### Phase 3: Scoring and Verdict
 
 Aggregate dimension scores into overall_score. Apply verdict logic:
