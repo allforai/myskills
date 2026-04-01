@@ -115,7 +115,13 @@ Write `.allforai/product-concept/iteration-feedback.json`:
 
 Archive previous feedback to `.allforai/product-concept/iteration-history/iteration-{N}.json`.
 
+**Always write feedback**, regardless of verdict. On `pass`, gaps[] and recommended_actions[]
+will be empty or contain only minor items — the file serves as audit trail for the iteration.
+
 ### Phase 5: Human Intervention (orchestrator responsibility)
+
+When verdict = `pass`: orchestrator proceeds to normal completion (success report).
+No human intervention needed. The iteration loop is closed.
 
 When verdict = `needs_iteration`, the orchestrator (run.md) must:
 
