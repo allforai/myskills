@@ -763,6 +763,44 @@ of all connections made and any issues found.
 - Specific integration points from the parallel nodes' specs
 - Compile verification after all patches
 
+**Enum Exhaustiveness Check (MANDATORY in stitch nodes):**
+When the codebase defines an enum or type set (e.g., `SemanticType` with 13 values,
+`ContentType` with 5 values, user roles, status codes, etc.), the stitch node MUST
+verify that **every enum value has a code path in every consumer**.
+
+```
+For each enum/type set defined in the codebase:
+  □ List all values (e.g., 13 semanticTypes)
+  □ For each consumer of this enum:
+    - API: is there code that GENERATES this value? (creation path)
+    - Client: is there code that RENDERS this value? (display path)
+    - E2E: is there a test that exercises this value? (test path)
+  □ Any value missing a path in any consumer → gap to fix
+```
+
+This prevents the common failure pattern where a data model defines N types but
+only M < N are actually handled downstream:
+- API defines 13 semanticTypes → conversation_service only generates 3
+- iOS MessageBubble switch has 5 cases → 8 fall through to default
+- E2E tests only exercise "chat" messages → 12 types untested
+
+The stitch node must produce a coverage matrix in its report:
+```json
+{
+  "enum_coverage": {
+    "SemanticType": {
+      "total_values": 13,
+      "api_generates": ["chat", "recast", "..."],
+      "ios_renders": ["chat", "recast", "..."],
+      "e2e_tests": ["chat"],
+      "gaps": [
+        {"value": "weekly_report", "missing_in": ["api", "e2e"]}
+      ]
+    }
+  }
+}
+```
+
 ### 3.5 Coverage Self-Check (Concept → Workflow Closure)
 
 > Goal: Verify that all features in product-concept.json are covered by at least one
