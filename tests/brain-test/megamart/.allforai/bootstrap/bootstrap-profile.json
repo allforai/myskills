@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "project_name": "megamart",
+  "business_domain": "ecommerce",
+  "business_context": "全品类跨境电商平台，连接全球卖家与消费者，微服务架构",
+  "tech_stacks": [
+    { "role": "backend", "language": "Go", "framework": "Go-Micro", "db": "PostgreSQL + MongoDB + Redis + Elasticsearch", "build_tool": "go build" },
+    { "role": "frontend-buyer", "language": "TypeScript", "framework": "React Native", "build_tool": "eas build" },
+    { "role": "frontend-seller", "language": "TypeScript", "framework": "Next.js", "build_tool": "next build" },
+    { "role": "frontend-ops", "language": "TypeScript", "framework": "Next.js", "build_tool": "next build" },
+    { "role": "frontend-cs", "language": "TypeScript", "framework": "Next.js", "build_tool": "next build" },
+    { "role": "frontend-wms", "language": "TypeScript", "framework": "React Native", "build_tool": "eas build" },
+    { "role": "message-queue", "language": "Go", "framework": "NATS/Kafka", "description": "async event bus for order/payment/logistics" },
+    { "role": "search", "language": "n/a", "framework": "Elasticsearch", "description": "product search + recommendation" }
+  ],
+  "goals": ["create", "demo", "concept-acceptance"],
+  "modules": [
+    { "id": "M001", "path": "svc-user", "role": "backend", "description": "用户服务（注册/登录/会员）" },
+    { "id": "M002", "path": "svc-product", "role": "backend", "description": "商品服务（SKU/类目/搜索同步）" },
+    { "id": "M003", "path": "svc-order", "role": "backend", "description": "订单服务（下单/支付/退款/状态机）" },
+    { "id": "M004", "path": "svc-payment", "role": "backend", "description": "支付服务（多币种/多渠道/对账）" },
+    { "id": "M005", "path": "svc-logistics", "role": "backend", "description": "物流服务（多段追踪/清关/预估）" },
+    { "id": "M006", "path": "svc-seller", "role": "backend", "description": "卖家服务（入驻/审核/商品管理/履约）" },
+    { "id": "M007", "path": "svc-review", "role": "backend", "description": "评价服务（评价/回复/审核）" },
+    { "id": "M008", "path": "svc-message", "role": "backend", "description": "消息服务（通知/推送/站内信）" },
+    { "id": "M009", "path": "svc-ops", "role": "backend", "description": "运营服务（类目/活动/banner/规则）" },
+    { "id": "M010", "path": "svc-gateway", "role": "backend", "description": "API 网关（路由/限流/鉴权）" },
+    { "id": "M011", "path": "buyer-app", "role": "frontend-buyer", "description": "React Native 买家 App" },
+    { "id": "M012", "path": "seller-portal", "role": "frontend-seller", "description": "Next.js 卖家后台" },
+    { "id": "M013", "path": "ops-admin", "role": "frontend-ops", "description": "Next.js 运营后台" },
+    { "id": "M014", "path": "cs-workbench", "role": "frontend-cs", "description": "Next.js 客服工作台" },
+    { "id": "M015", "path": "wms-app", "role": "frontend-wms", "description": "React Native 仓储 App" }
+  ],
+  "complexity_estimate": "very_high",
+  "requires_runtime_env": true
+}
