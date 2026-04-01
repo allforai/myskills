@@ -374,6 +374,42 @@ When decisions conflict, the latest batch wins.
 > LLM has absorbed all knowledge in Step 2. Now freely plan what nodes
 > this specific project needs.
 
+### 3.0 Incremental Re-Planning (when concept-drift exists)
+
+> This section only applies when `has_concept_drift` is true AND an existing
+> `workflow.json` exists. Otherwise, skip to 3.1 for full planning.
+
+When concept has drifted since last bootstrap:
+
+1. Read `.allforai/product-concept/concept-drift.json` → changes[]
+2. Read existing `.allforai/bootstrap/workflow.json` → nodes[] + transition_log[]
+3. For each change, determine affected nodes:
+
+| Change Type | Node Action |
+|-------------|-------------|
+| feature_removed | Remove nodes whose goal is primarily about this feature. Add a `cleanup-{feature}` node if code already exists (detected from transition_log). |
+| feature_added | Add new implementation + verification nodes for the feature. |
+| feature_modified | Update affected nodes' goal and regenerate their node-specs. |
+| role_removed | Remove role-specific nodes (e.g., e2e-test for that role's app). Update shared nodes to exclude this role. |
+| tech_changed | Replace implementation + compile-verify + e2e nodes for the affected module with new tech stack equivalents. |
+
+4. **Preserve unaffected nodes**: nodes whose goal does not relate to any drift change
+   remain in workflow.json with their transition_log entries intact. Completed work is not lost.
+
+5. **Handle affected completed nodes**:
+   - Node removed → transition_log entry stays for audit, but node removed from nodes[]
+   - Node goal modified → clear its transition_log entry (needs re-execution)
+   - New node added → no transition_log entry yet
+
+6. Write updated workflow.json with modified nodes[] and preserved transition_log[].
+7. Regenerate node-specs for all affected nodes at `.allforai/bootstrap/node-specs/`.
+8. Proceed to Step 3.5 (Coverage Self-Check) — concept has changed, coverage must be re-verified.
+9. After Step 3.5 completes, mark drift as resolved:
+   read concept-drift.json, set `"resolved": true`, write back.
+
+**After incremental re-planning, skip 3.1-3.3** (they are for full planning) and go directly
+to Step 3.4 (Confirm with User) → Step 3.5 (Coverage Self-Check) → Step 4.
+
 ### 3.1 Design the Node Graph
 
 Based on project analysis (Step 1) + absorbed knowledge (Step 2), design
