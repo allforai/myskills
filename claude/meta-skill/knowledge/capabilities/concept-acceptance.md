@@ -71,11 +71,28 @@ principles only:
 | Desktop (Electron, Tauri) | Platform-specific E2E |
 
 For each role defined in product-concept.json:
+
+**Single-client roles** (legacy `client_type` field):
 1. Authenticate as that role (using demo-forge seeded credentials)
 2. Walk through each core flow end-to-end
 3. Capture evidence (screenshots/recordings/logs per platform)
 4. Score: completeness (can the flow be completed?) + fluency (unnecessary steps,
    dead ends, confusion?)
+
+**Multi-client roles** (`clients[]` array with `feature_parity`):
+For EACH client declared in the role:
+1. Use the appropriate E2E tool for that client's `client_type` (see table above)
+2. Authenticate as that role on THIS specific client
+3. Walk through each core flow end-to-end on THIS client
+4. Capture evidence per client
+5. Score per client: completeness + fluency
+
+After all clients are tested, perform **parity check**:
+- `feature_parity: full` → every feature must work on every client (except parity_exceptions)
+- `feature_parity: partial` → features in parity_exceptions may differ across clients
+- Score parity: flag significant score differences between clients for the same flow
+  (e.g., buyer-ios: 90, buyer-web: 60 → flag as "web experience significantly worse")
+- Parity failures are reported as gaps with severity based on the feature's importance
 
 ### Phase 3: Scoring and Verdict
 
