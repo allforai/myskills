@@ -946,11 +946,12 @@ Write these files (they were generated in memory during Steps 3-5, now persist t
 
 1. `.allforai/bootstrap/bootstrap-profile.json`
 2. `.allforai/bootstrap/workflow.json`
-3. `.allforai/bootstrap/node-specs/*.md`
-4. `.claude/commands/run.md`
-5. `.allforai/bootstrap/scripts/check_artifacts.py`
-6. `.allforai/bootstrap/scripts/validate_bootstrap.py`
-7. `.allforai/bootstrap/protocols/*.md`
+3. `.allforai/bootstrap/coverage-matrix.json` (from Step 3.5, only if product-concept.json exists)
+4. `.allforai/bootstrap/node-specs/*.md`
+5. `.claude/commands/run.md`
+6. `.allforai/bootstrap/scripts/check_artifacts.py`
+7. `.allforai/bootstrap/scripts/validate_bootstrap.py`
+8. `.allforai/bootstrap/protocols/*.md`
 
 ### 6.4 Confirm Completion
 
@@ -960,6 +961,7 @@ Bootstrap 完成。
 已写入 {count} 个文件：
   .allforai/bootstrap/bootstrap-profile.json
   .allforai/bootstrap/workflow.json
+  .allforai/bootstrap/coverage-matrix.json (覆盖率: {coverage_rate})
   .allforai/bootstrap/node-specs/ ({node_count} 个节点)
   .claude/commands/run.md
 
