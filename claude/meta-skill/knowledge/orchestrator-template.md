@@ -78,6 +78,7 @@ On first iteration if transition_log is non-empty:
 ## Termination
 
 - All nodes' exit_artifacts exist → success report
+- concept-acceptance verdict = needs_iteration → output acceptance-report.md, present iteration options (fix/re-bootstrap/accept), stop
 - User interrupts → transition_log is already saved, resume with /run
 - Safety warning acknowledged → continue or stop per user choice
 
