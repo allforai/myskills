@@ -1,0 +1,26 @@
+{
+  "_comment": "product-concept.json AFTER /journal merge (simulated)",
+  "schema_version": "1.0",
+  "mission": "让宠物主人一站式完成宠物用品选购、健康管理和社区交流",
+  "features": [
+    "商品浏览与搜索（按宠物种类/品牌/功能筛选）",
+    "购物车与结算",
+    "在线支付（微信/支付宝/信用卡）",
+    "订单管理与物流追踪",
+    "宠物健康档案（疫苗记录、体检提醒）",
+    "社区帖子（图文+短视频分享、评论、点赞）",
+    "宠物寄养服务（LBS 查找附近寄养家庭）",
+    "会员积分与等级",
+    "优惠券与促销活动",
+    "消息推送（订单状态、健康提醒、社区回复）"
+  ],
+  "errc_highlights": {
+    "must_have": ["商品浏览与搜索", "购物车与结算", "在线支付", "订单管理与物流追踪"],
+    "differentiators": ["宠物健康档案", "宠物寄养服务"],
+    "eliminate": ["直播带货", "二手交易", "宠物医生在线咨询"]
+  },
+  "roles": [
+    { "id": "R1", "name": "宠物主人", "app": "mobile-app", "client_type": "swiftui-ios" },
+    { "id": "R3", "name": "运营管理员", "app": "web-admin", "client_type": "web" }
+  ]
+}
