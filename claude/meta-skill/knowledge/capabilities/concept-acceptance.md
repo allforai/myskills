@@ -41,7 +41,8 @@ to verify against. Bootstrap auto-appends this node only when product-concept ex
 - Every dimension scored 0-100 with evidence
 - Every gap is actionable (type + target + suggestion)
 - Verdict is binary: `pass` or `needs_iteration`
-- Pass requires: overall_score >= 80 AND zero `core` severity gaps
+- Pass requires: overall_score >= pass_threshold AND zero `core` severity gaps
+- pass_threshold defaults to 80, but bootstrap can customize it in the node-spec based on project type (MVP/prototype: 60, standard product: 80, high-bar consumer: 90+)
 
 ## Protocol
 
@@ -79,8 +80,8 @@ For each role defined in product-concept.json:
 ### Phase 3: Scoring and Verdict
 
 Aggregate dimension scores into overall_score. Apply verdict logic:
-- `pass`: overall_score >= 80 AND no `core` severity gaps
-- `needs_iteration`: overall_score < 80 OR any `core` severity gap
+- `pass`: overall_score >= pass_threshold AND no `core` severity gaps
+- `needs_iteration`: overall_score < pass_threshold OR any `core` severity gap
 
 ### Phase 4: Iteration Feedback
 

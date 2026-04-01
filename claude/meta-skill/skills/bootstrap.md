@@ -332,6 +332,13 @@ LLM uses this in Step 3 to:
 - Avoid repeating the same planning mistakes
 - If user made decisions (e.g., "move social sharing to post-launch"), respect them
 
+If `user_decisions` is empty but `recommended_actions` exists, LLM infers decisions
+by comparing the current `product-concept.json` against the previous iteration's gaps:
+- Feature removed from concept → user decided to deprioritize
+- Feature moved to post_launch → user decided to defer
+- Feature still in must_have → user wants it fixed
+Record inferred decisions in `iteration-feedback.json` → `user_decisions[]` for audit.
+
 If `has_product_concept` (from Step 1.0):
 
 Read `.allforai/product-concept/product-concept.json`. This is needed for Step 3.5 Coverage Self-Check.
@@ -762,7 +769,7 @@ of all connections made and any issues found.
 > workflow node. Auto-fix gaps using Closure Thinking and Reverse Backfill convergence
 > rules. Runs silently — no user confirmation needed.
 
-**Trigger**: `has_product_concept` is true (from Step 1.0). If false, skip to Step 3.4.
+**Trigger**: `has_product_concept` is true (from Step 1.0). If false, skip to Step 3.4 (Confirm with User).
 
 #### 3.5.1 Extract Feature Inventory
 
