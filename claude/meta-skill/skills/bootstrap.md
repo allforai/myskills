@@ -922,6 +922,30 @@ R1 消费者 (feature_parity: full, 3 clients):
     → auto-fix: create implement-buyer-web node
 ```
 
+**Level 4 — Adaptive State Machine Coverage (when concept has adaptive_systems):**
+
+If `product-concept.json` contains `adaptive_systems[]`, check each state machine for
+three categories of gaps that Step 3.1's state machine check may have introduced:
+
+1. **Dead state detection**: for each state dimension, verify at least one MVP-scope
+   transition updates it. A dimension updated only by post_launch events (e.g.,
+   `ai_tutor_session`) is a "dead state" in MVP — either remove it from MVP schema
+   or add an alternative MVP-scope transition.
+
+2. **Premature mapping detection**: for each behavior mapping, check if the behavior
+   references a post_launch feature. If yes, the mapping cannot be implemented in MVP.
+   Either defer the mapping or provide an MVP-scope fallback behavior.
+
+3. **Background job detection**: for each transition or behavior that requires
+   scheduled/periodic execution (keywords: "cron", "daily", "weekly", "window",
+   "rolling", "periodic", "check every"), verify a scheduler/cron node exists in
+   the workflow. Missing scheduler = the state will never be updated.
+
+Auto-fix:
+- Dead state → add alternative transition from MVP events, or mark dimension as post_launch
+- Premature mapping → split into MVP behavior (simplified) + post_launch behavior (full)
+- Missing scheduler → create a `scheduler-{name}` node
+
 #### 3.5.3 Convergence-Controlled Auto-Fix
 
 When uncovered features or broken closures are found, LLM decides:
