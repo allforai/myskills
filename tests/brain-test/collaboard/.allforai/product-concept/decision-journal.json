@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "batches": [
+    {
+      "batch_id": "2026-04-02T10:00:00Z",
+      "source": "user_session",
+      "topic": "实时协作架构简化",
+      "decisions": [
+        {
+          "question": "CRDT 实现方案",
+          "chosen": "放弃 Hocuspocus 自建服务，改用 Liveblocks 托管服务",
+          "rationale": "自建 CRDT 服务器运维成本太高，Liveblocks 有成熟的 React SDK 和 tldraw 集成",
+          "supersedes": null
+        }
+      ]
+    },
+    {
+      "batch_id": "2026-04-02T15:00:00Z",
+      "source": "user_session",
+      "topic": "MVP 范围收缩",
+      "decisions": [
+        {
+          "question": "评论功能是否保留在 MVP",
+          "chosen": "评论推迟到 v2，MVP 只做画布协作 + 团队管理 + 导出",
+          "rationale": "评论系统（锚点、@提及、线程）工程量大，先确保核心画布体验",
+          "supersedes": null
+        },
+        {
+          "question": "访客角色是否保留",
+          "chosen": "保留访客角色，但只支持只读查看（无评论能力）",
+          "rationale": "分享白板给外部人员是刚需，只读模式实现简单",
+          "supersedes": null
+        }
+      ]
+    }
+  ]
+}

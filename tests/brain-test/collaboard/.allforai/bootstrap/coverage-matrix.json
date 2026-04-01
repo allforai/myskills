@@ -1,0 +1,144 @@
+{
+  "_comment": "Step 3.5 coverage check — LLM semantic judgment (not keyword matching)",
+  "source": "product-concept.json",
+  "checked_at": "2026-04-01T16:10:00Z",
+  "total_features": 14,
+  "covered_before_check": 4,
+  "auto_fixed": 2,
+  "closure_derived": 5,
+  "deferred_ring2_plus": 8,
+  "final_coverage_rate": "100%",
+  "_note": "8 post_launch features deferred (Ring 2+). All 6 mvp_features covered (4 originally + 2 auto-fixed). 5 closure gaps auto-fixed (Ring 1).",
+  "matrix": [
+    {
+      "feature": "无限画布（缩放、平移、网格对齐）",
+      "covered_by": ["implement-web"],
+      "status": "covered",
+      "_reasoning": "implement-web goal 'tldraw 画布集成' semantically covers infinite canvas — tldraw provides zoom/pan/grid natively"
+    },
+    {
+      "feature": "基础绘图工具（画笔、形状、文本、箭头、便签）",
+      "covered_by": ["implement-web"],
+      "status": "covered",
+      "_reasoning": "implement-web goal '绘图工具栏' covers drawing tools — tldraw provides these as built-in tools"
+    },
+    {
+      "feature": "实时多人协作（光标同步、冲突解决、在线状态）",
+      "covered_by": ["implement-realtime", "implement-web"],
+      "status": "covered",
+      "_reasoning": "implement-realtime goal 'Yjs CRDT sync + WebSocket + 光标同步' covers collaboration core"
+    },
+    {
+      "feature": "图片/PDF 导入与标注",
+      "ring": 2,
+      "status": "deferred",
+      "reason": "post_launch feature, Ring 2+"
+    },
+    {
+      "feature": "组件库（可复用的设计元素，团队共享）",
+      "ring": 2,
+      "status": "deferred",
+      "reason": "post_launch feature (differentiator but not mvp), Ring 2+"
+    },
+    {
+      "feature": "模板系统（会议、头脑风暴、用户旅程、架构图模板）",
+      "ring": 2,
+      "status": "deferred",
+      "reason": "post_launch feature, Ring 2+"
+    },
+    {
+      "feature": "评论与反馈（锚点评论、@提及、线程回复）",
+      "covered_by": [],
+      "status": "auto_added",
+      "ring": 0,
+      "action": "extended implement-api goal to include comment CRUD API; extended implement-web goal to include comment UI with anchored comments and @mentions",
+      "_reasoning": "mvp_feature — not covered by any node. implement-api only mentions '白板 CRUD' not comments."
+    },
+    {
+      "feature": "版本历史（快照、回滚、分支对比）",
+      "ring": 2,
+      "status": "deferred",
+      "reason": "post_launch feature, Ring 2+"
+    },
+    {
+      "feature": "导出功能（PNG/SVG/PDF，分享链接）",
+      "covered_by": [],
+      "status": "auto_added",
+      "ring": 0,
+      "action": "extended implement-api goal to include export endpoint (tldraw canvas to PNG/SVG/PDF); extended implement-web goal to include export button and share link generation",
+      "_reasoning": "mvp_feature / must_have — not mentioned in any node goal."
+    },
+    {
+      "feature": "AI 辅助（智能排版、手绘转矢量、自动配色建议）",
+      "ring": 2,
+      "status": "deferred",
+      "reason": "post_launch feature (differentiator but not mvp), Ring 2+"
+    },
+    {
+      "feature": "团队管理（成员邀请、角色权限、项目空间）",
+      "covered_by": ["implement-api", "implement-web"],
+      "status": "covered"
+    },
+    {
+      "feature": "第三方集成（Figma 导入、Slack 通知、Jira 卡片嵌入）",
+      "ring": 2,
+      "status": "deferred",
+      "reason": "post_launch feature, Ring 2+"
+    },
+    {
+      "feature": "离线模式（断网编辑、重连后自动合并）",
+      "ring": 2,
+      "status": "deferred",
+      "reason": "post_launch feature, Ring 2+ (though Yjs has offline capability, explicit offline UX is post-launch)"
+    },
+    {
+      "feature": "演示模式（全屏演示、激光笔、步骤导航）",
+      "ring": 2,
+      "status": "deferred",
+      "reason": "post_launch feature, Ring 2+"
+    },
+    {
+      "_comment": "--- Closure-derived gaps (Ring 1) ---"
+    },
+    {
+      "feature": "白板删除/归档",
+      "closure_type": "lifecycle",
+      "derived_from": "无限画布（白板创建）",
+      "ring": 1,
+      "status": "auto_added",
+      "action": "extended implement-api goal to include board soft-delete and archive"
+    },
+    {
+      "feature": "团队成员移除/离开",
+      "closure_type": "lifecycle",
+      "derived_from": "团队管理（成员邀请）",
+      "ring": 1,
+      "status": "auto_added",
+      "action": "extended implement-api goal to include member removal and leave-team flow"
+    },
+    {
+      "feature": "评论删除/编辑",
+      "closure_type": "mapping",
+      "derived_from": "评论与反馈",
+      "ring": 1,
+      "status": "auto_added",
+      "action": "extended implement-api + implement-web to include comment edit/delete"
+    },
+    {
+      "feature": "文件上传失败重试",
+      "closure_type": "exception",
+      "derived_from": "图片/PDF 导入（虽是 post_launch，但文件上传基础设施是 mvp 的一部分）",
+      "ring": 1,
+      "status": "auto_added",
+      "action": "extended implement-web to include upload retry UI with progress indicator"
+    },
+    {
+      "feature": "协作断连重连 UI",
+      "closure_type": "exception",
+      "derived_from": "实时多人协作",
+      "ring": 1,
+      "status": "auto_added",
+      "action": "extended implement-web to include connection status indicator and auto-reconnect feedback"
+    }
+  ]
+}

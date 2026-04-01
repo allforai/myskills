@@ -1,0 +1,96 @@
+{
+  "schema_version": "2.0",
+  "project": "collaboard",
+  "goal": "从零构建实时协作白板 SaaS",
+  "planned_at": "2026-04-01T16:00:00Z",
+  "_comment": "BEFORE Step 3.5 coverage check. Intentionally incomplete — LLM focused on core tech but missed several features.",
+  "nodes": [
+    {
+      "id": "product-analysis",
+      "goal": "生成产品地图：角色、任务、业务流程、体验地图、用例",
+      "exit_artifacts": [
+        ".allforai/product-map/role-profiles.json",
+        ".allforai/product-map/task-inventory.json",
+        ".allforai/product-map/business-flows.json",
+        ".allforai/experience-map/experience-map.json"
+      ],
+      "knowledge_refs": ["product-analysis.md", "product-design-theory.md"],
+      "consumers": ["implement-api", "implement-realtime", "implement-web"]
+    },
+    {
+      "id": "setup-env",
+      "goal": "配置运行时环境：PostgreSQL、Redis、S3 存储、JWT 密钥",
+      "exit_artifacts": ["collaboard-api/.env"],
+      "knowledge_refs": [],
+      "consumers": ["implement-api", "implement-realtime"]
+    },
+    {
+      "id": "implement-api",
+      "goal": "实现 NestJS 后端 API：用户认证、团队管理、白板 CRUD、文件上传",
+      "exit_artifacts": ["collaboard-api/src/main.ts"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["compile-verify-api", "implement-web"]
+    },
+    {
+      "id": "implement-realtime",
+      "goal": "实现 Hocuspocus CRDT 实时同步：Yjs 文档管理、WebSocket 连接、光标同步",
+      "exit_artifacts": ["collaboard-realtime/src/index.ts"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["compile-verify-realtime", "implement-web"]
+    },
+    {
+      "id": "implement-web",
+      "goal": "实现 React 前端：tldraw 画布集成、绘图工具栏、团队管理界面",
+      "exit_artifacts": ["collaboard-web/src/App.tsx"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["compile-verify-web"]
+    },
+    {
+      "id": "compile-verify-api",
+      "goal": "编译验证 NestJS API",
+      "exit_artifacts": [".allforai/bootstrap/compile-verify-api-result.json"],
+      "knowledge_refs": ["compile-verify.md"],
+      "consumers": ["demo-forge"]
+    },
+    {
+      "id": "compile-verify-realtime",
+      "goal": "编译验证 Hocuspocus 实时服务",
+      "exit_artifacts": [".allforai/bootstrap/compile-verify-realtime-result.json"],
+      "knowledge_refs": ["compile-verify.md"],
+      "consumers": ["demo-forge"]
+    },
+    {
+      "id": "compile-verify-web",
+      "goal": "编译验证 React 前端",
+      "exit_artifacts": [".allforai/bootstrap/compile-verify-web-result.json"],
+      "knowledge_refs": ["compile-verify.md"],
+      "consumers": ["e2e-test-web"]
+    },
+    {
+      "id": "demo-forge",
+      "goal": "填充演示数据：团队、用户、白板（含绘图内容）",
+      "exit_artifacts": [".allforai/demo-forge/forge-data.json"],
+      "knowledge_refs": ["demo-forge.md"],
+      "consumers": ["e2e-test-web"]
+    },
+    {
+      "id": "e2e-test-web",
+      "goal": "Playwright E2E 测试：设计师核心流程（创建白板→绘图→协作→导出）",
+      "exit_artifacts": [".allforai/bootstrap/e2e-web-result.json"],
+      "knowledge_refs": ["test-verify.md"],
+      "consumers": ["concept-acceptance"]
+    },
+    {
+      "id": "concept-acceptance",
+      "goal": "对照产品概念验收最终产品体验",
+      "exit_artifacts": [
+        ".allforai/concept-acceptance/acceptance-report.json",
+        ".allforai/concept-acceptance/acceptance-report.md",
+        ".allforai/product-concept/iteration-feedback.json"
+      ],
+      "knowledge_refs": ["concept-acceptance.md"],
+      "consumers": []
+    }
+  ],
+  "transition_log": []
+}

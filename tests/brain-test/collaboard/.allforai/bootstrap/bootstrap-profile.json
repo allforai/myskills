@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "project_name": "collaboard",
+  "business_domain": "saas",
+  "business_context": "面向远程设计团队的实时协作白板 SaaS，含 AI 辅助设计能力",
+  "tech_stacks": [
+    {
+      "role": "backend",
+      "language": "TypeScript",
+      "language_version": "5.4",
+      "framework": "NestJS",
+      "orm": "Prisma",
+      "db": "PostgreSQL",
+      "build_tool": "nest build"
+    },
+    {
+      "role": "frontend",
+      "language": "TypeScript",
+      "language_version": "5.4",
+      "framework": "React + tldraw",
+      "state_management": "Zustand",
+      "router": "React Router",
+      "build_tool": "vite build"
+    },
+    {
+      "role": "realtime",
+      "language": "TypeScript",
+      "framework": "Yjs + WebSocket (Hocuspocus)",
+      "description": "CRDT-based real-time collaboration layer"
+    }
+  ],
+  "goals": ["create", "demo", "concept-acceptance"],
+  "modules": [
+    { "id": "M001", "path": "collaboard-api", "role": "backend", "description": "NestJS API server + auth + team management" },
+    { "id": "M002", "path": "collaboard-web", "role": "frontend", "description": "React SPA with tldraw canvas" },
+    { "id": "M003", "path": "collaboard-realtime", "role": "realtime", "description": "Hocuspocus server for Yjs CRDT sync" }
+  ],
+  "build_commands": {
+    "backend": "cd collaboard-api && npm run build",
+    "frontend": "cd collaboard-web && npm run build",
+    "realtime": "cd collaboard-realtime && npm run build"
+  },
+  "detected_patterns": ["REST API", "WebSocket CRDT", "JWT auth", "PostgreSQL", "React SPA", "tldraw canvas"],
+  "architecture_pattern": "Layered (API + Realtime CRDT + SPA)",
+  "complexity_estimate": "high",
+  "requires_runtime_env": true
+}
