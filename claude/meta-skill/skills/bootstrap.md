@@ -38,11 +38,14 @@ Record what exists:
 - `has_experience_map`: true if experience-map/experience-map.json exists
 - `has_bootstrap`: true if bootstrap/workflow.json exists (previous /bootstrap run)
 - `has_code`: true if any code files detected in Step 1.1
+- `has_iteration_feedback`: true if product-concept/iteration-feedback.json exists (previous concept-acceptance feedback)
+- `has_product_concept`: true if product-concept/product-concept.json exists
 
 This affects Step 1.5 options:
 - has_product_artifacts + has_code → verification/demo/tune options are relevant
 - has_bootstrap → offer to reuse or regenerate
 - no code + no artifacts → only "create" option
+- has_iteration_feedback → LLM reads feedback in Step 2, prioritizes fixing previous gaps in Step 3
 
 ### 1.1 Read Root Indicators
 
@@ -179,9 +182,9 @@ UI 还原度（仅有前端翻译时）：
 
 **Goal mapping (can combine multiple):**
 - (a) → `goals: ["analyze"]`
-- (b) → `goals: ["analyze", "translate", "demo"]`, record target_stacks. demo-forge is auto-included because translate produces code that needs integration testing.
-- (c) → `goals: ["analyze", "rebuild", "demo"]`, record target_stacks. demo-forge is auto-included because rebuild produces code that needs integration testing.
-- (d) → `goals: ["create", "demo"]`, record target_stacks + product_vision. demo-forge is auto-included because new code needs integration testing.
+- (b) → `goals: ["analyze", "translate", "demo", "concept-acceptance"]`, record target_stacks. demo-forge is auto-included because translate produces code that needs integration testing. concept-acceptance is auto-included when product-concept.json exists.
+- (c) → `goals: ["analyze", "rebuild", "demo", "concept-acceptance"]`, record target_stacks. demo-forge is auto-included because rebuild produces code that needs integration testing. concept-acceptance is auto-included when product-concept.json exists.
+- (d) → `goals: ["create", "demo", "concept-acceptance"]`, record target_stacks + product_vision. demo-forge is auto-included because new code needs integration testing. concept-acceptance is auto-included when product-concept.json exists.
 - (e) → `goals: ["tune"]`
 - (f) → `goals: ["demo"]`
 - (g) → `goals: ["ui-forge"]`
@@ -190,6 +193,7 @@ UI 还原度（仅有前端翻译时）：
 - (j) → `goals: ["quality-checks"]`
 - Combinations: user can select e.g. "a + e" or "h + i + j" (full verification suite)
 - **demo-forge is automatically added** to any goal that includes code implementation (translate/rebuild/create). Reason: API-driven data population is the strongest integration test — it exposes runtime issues that compile-verify cannot catch (wrong routes, missing fields, broken relationships, auth failures).
+- **concept-acceptance is automatically added** to any goal that includes code implementation (translate/rebuild/create) AND `has_product_concept` is true. Reason: without verifying the final product experience against the original concept, the development loop never closes — product-verify checks code vs design artifacts, but not experience vs concept.
 
 ### 1.5.1 Runtime Environment Awareness (when goals include code implementation)
 
@@ -311,6 +315,25 @@ Always load these (they apply to ALL nodes regardless of type):
 Check if `${CLAUDE_PLUGIN_ROOT}/knowledge/mappings/<source>-<target>.md` exists.
 Also check `${CLAUDE_PLUGIN_ROOT}/knowledge/learned/` and
 `.allforai/bootstrap/learned/` for prior experience.
+
+### 2.5 Load Iteration Feedback (if re-bootstrapping)
+
+If `has_iteration_feedback` (from Step 1.0):
+
+Read `.allforai/product-concept/iteration-feedback.json`. This contains:
+- Previous concept-acceptance score and verdict
+- Gaps found in the last iteration
+- Recommended actions (fix_gap, simplify_flow, reconsider_concept, deprioritize)
+- User decisions from re-bootstrap
+
+LLM uses this in Step 3 to:
+- Prioritize nodes that address previous gaps
+- Avoid repeating the same planning mistakes
+- If user made decisions (e.g., "move social sharing to post-launch"), respect them
+
+If `has_product_concept` (from Step 1.0):
+
+Read `.allforai/product-concept/product-concept.json`. This is needed for Step 3.5 Coverage Self-Check.
 
 > **After Step 2, do NOT ask the user anything.** Proceed to planning.
 
