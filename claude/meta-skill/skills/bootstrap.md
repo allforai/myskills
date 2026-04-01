@@ -395,6 +395,9 @@ When concept has drifted since last bootstrap:
 
 4. **Preserve unaffected nodes**: nodes whose goal does not relate to any drift change
    remain in workflow.json with their transition_log entries intact. Completed work is not lost.
+   **Cross-change dependencies**: a tech_changed may also affect infrastructure nodes
+   (e.g., Flutter→SwiftUI means FCM push is no longer needed, only APNs). LLM must
+   trace second-order effects of each change on ALL nodes, not just the obvious ones.
 
 5. **Handle affected completed nodes**:
    - Node removed → transition_log entry stays for audit, but node removed from nodes[]
