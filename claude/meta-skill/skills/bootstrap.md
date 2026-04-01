@@ -845,6 +845,7 @@ Write `.allforai/bootstrap/coverage-matrix.json`:
   "total_features": 25,
   "covered_before_check": 22,
   "auto_fixed": 3,
+  "closure_derived": 2,
   "deferred_ring2_plus": 1,
   "final_coverage_rate": "100%",
   "matrix": [
