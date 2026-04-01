@@ -41,12 +41,14 @@ Record what exists:
 - `has_iteration_feedback`: true if product-concept/iteration-feedback.json exists (previous concept-acceptance feedback)
 - `has_product_concept`: true if product-concept/product-concept.json exists
 - `has_decision_journal`: true if product-concept/decision-journal.json exists (previous /journal records)
+- `has_concept_drift`: true if product-concept/concept-drift.json exists AND its `resolved` field is false
 
 This affects Step 1.5 options:
 - has_product_artifacts + has_code → verification/demo/tune options are relevant
 - has_bootstrap → offer to reuse or regenerate
 - no code + no artifacts → only "create" option
 - has_iteration_feedback → LLM reads feedback in Step 2, prioritizes fixing previous gaps in Step 3
+- has_concept_drift → Step 3 uses incremental re-planning (Step 3.0) instead of full planning
 
 ### 1.1 Read Root Indicators
 

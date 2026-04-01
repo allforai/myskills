@@ -80,15 +80,32 @@ Present the recorded decisions as a summary:
 已写入 .allforai/product-concept/decision-journal.json
 ```
 
-### Step 5: Remind about Concept Sync
+### Step 5: Conflict Detection
 
-If decisions significantly change the product direction (tech stack change, core feature rename, feature removal), remind:
+After recording decisions, check for conflicts with the current product concept.
+
+1. Read `.allforai/product-concept/product-concept.json` (if not found, skip to step 4 below)
+2. For each decision just recorded, check if it contradicts the concept:
+   - Decision removes a feature → is it in concept's `features[]`, `must_have[]`, or `differentiators[]`?
+   - Decision changes tech stack → does concept's `roles[].client_type` disagree?
+   - Decision adds a feature → is it in concept's `errc_highlights.eliminate[]`?
+   - Decision removes a role → is the role in concept's `roles[]`?
+
+3. **If conflicts found**, display:
 
 ```
-⚠️ 以下决策可能需要同步更新产品定义：
-  - product-map/role-profiles.json (角色名称变更)
-  - product-map/task-inventory.json (功能增删)
-  - bootstrap-profile.json (技术栈变更)
+⚠️ 检测到 {N} 条决策与 product-concept.json 冲突：
 
-建议在下次 /bootstrap 前更新这些文件，或让 /bootstrap 自动检测差异。
+  {for each conflict:}
+  {i}. journal: {decision.chosen}
+     concept: {current concept value and location}
+
+运行 /journal merge 解决冲突并更新产品定义。
+```
+
+4. **If no conflicts**, display:
+
+```
+✅ 所有决策与 product-concept.json 一致，无需合并。
+如有其他产品定义需要更新，运行 /journal merge。
 ```
