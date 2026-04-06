@@ -63,6 +63,15 @@ another challenges them). Single-model fallback: self-debate with explicit frami
 
 **Output:** `competitor-analysis.json`, `errc-matrix.json`
 
+**For existing products (reverse-concept / launch-prep):**
+When running on an existing product (not creating from scratch), market research focuses
+on **pricing and positioning validation** rather than problem discovery:
+1. Compare THIS product's features against competitors (using reverse-concept artifacts)
+2. Research competitor pricing tiers, trial strategies, conversion patterns
+3. Identify where THIS product is premium/standard/budget relative to competitors
+4. Research platform-specific pricing norms (e.g., Apple Tier pricing for target regions)
+This variant is invoked by launch-prep capability's Phase 1 (Competitive Research).
+
 **Skip when:** User already has deep domain expertise and competitive knowledge.
 
 ---

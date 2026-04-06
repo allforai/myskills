@@ -142,6 +142,7 @@ Ask the user ONE combined question. Format depends on detected state (from Step 
    h) 功能验收（静态 + 全模块 E2E 动态验证）
    i) 视觉验收（截图对比）
    j) 质量检查（死链 + 字段一致性）
+   k) 上架准备（竞品调研 → 概念定稿 → 缺口实现 → 合规 → 上架清单）
 ```
 
 **If code exists but no artifacts (has_code, no has_product_artifacts):**
@@ -153,6 +154,7 @@ Bootstrap 分析完成。请确认目标（可多选）：
    b) 跨栈复刻（分析 + 翻译到目标技术栈）
    c) 同栈重建（分析 + 按目标架构重新生成）
    e) 代码治理（架构合规 + 重复检测 + 抽象分析）
+   k) 上架准备（竞品调研 → 概念定稿 → 缺口实现 → 合规 → 上架清单）
 
 目标技术栈（仅 b/c 需回答）：
    前端：___
@@ -194,6 +196,7 @@ UI 还原度（仅有前端翻译时）：
 - (h) → `goals: ["product-verify"]`
 - (i) → `goals: ["visual-verify"]`
 - (j) → `goals: ["quality-checks"]`
+- (k) → `goals: ["launch-prep"]`. When product-concept artifacts don't exist, auto-prepend `reverse-concept` (need concept baseline before making launch decisions). launch-prep includes competitive research → concept finalization → gap implementation → compliance → checklist. The competitive research phase MUST run before any pricing/tier decisions are presented to the user — never ask the user to pick a price without data.
 - Combinations: user can select e.g. "a + e" or "h + i + j" (full verification suite)
 - **demo-forge is automatically added** to any goal that includes code implementation (translate/rebuild/create). Reason: API-driven data population is the strongest integration test — it exposes runtime issues that compile-verify cannot catch (wrong routes, missing fields, broken relationships, auth failures).
 - **concept-acceptance is automatically added** to any goal that includes code implementation (translate/rebuild/create) AND `has_product_concept` is true. Reason: without verifying the final product experience against the original concept, the development loop never closes — product-verify checks code vs design artifacts, but not experience vs concept.
