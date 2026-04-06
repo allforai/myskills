@@ -12,11 +12,26 @@ These artifacts describe WHAT the product does in business terms, not HOW it's i
 
 | Path | Input | When |
 |------|-------|------|
-| From code | source-summary.json + code reading | goal = analyze / translate / rebuild |
+| From code | source-summary.json + code reading + **concept-baseline.json** | goal = analyze / translate / rebuild |
 | From concept | product-concept outputs + domain knowledge | goal = create |
 | Hybrid | concept + code (rebuild with concept change) | goal = rebuild with new concept |
 
 Output is the same regardless of input path.
+
+**Concept-baseline dependency (for analyze goal):**
+When goal = analyze, product-analysis SHOULD load `concept-baseline.json` if it exists
+(produced by the upstream reverse-concept node). This baseline provides the independent
+"what the product should do" reference that prevents product-analysis from being circular
+(just listing what code does without evaluating completeness or intent).
+
+With concept-baseline loaded, product-analysis can:
+- Verify extracted tasks cover all Jobs in the baseline
+- Check that role permissions match governance styles
+- Flag features that exist in code but aren't aligned with the mission
+- Flag JTBD from the baseline that have no corresponding code implementation
+
+Without concept-baseline (backward compatibility), product-analysis still works
+but produces purely descriptive artifacts without evaluative judgment.
 
 ## What LLM Must Accomplish (not how)
 

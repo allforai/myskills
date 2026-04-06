@@ -184,7 +184,7 @@ UI 还原度（仅有前端翻译时）：
 ```
 
 **Goal mapping (can combine multiple):**
-- (a) → `goals: ["analyze"]`
+- (a) → `goals: ["reverse-concept", "analyze"]`. reverse-concept is mandatory for analyze — without it, product-analysis has no independent baseline and becomes circular (checking code against code-derived artifacts). reverse-concept produces concept-baseline.json which all downstream phases auto-load.
 - (b) → `goals: ["analyze", "translate", "demo", "concept-acceptance"]`, record target_stacks. demo-forge is auto-included because translate produces code that needs integration testing. concept-acceptance is auto-included when product-concept.json exists.
 - (c) → `goals: ["analyze", "rebuild", "demo", "concept-acceptance"]`, record target_stacks. demo-forge is auto-included because rebuild produces code that needs integration testing. concept-acceptance is auto-included when product-concept.json exists.
 - (d) → `goals: ["create", "demo", "concept-acceptance"]`, record target_stacks + product_vision. demo-forge is auto-included because new code needs integration testing. concept-acceptance is auto-included when product-concept.json exists.
@@ -448,6 +448,19 @@ If a module is **stale or inconsistent** (e.g., API has new features but
 mobile still has old UI), it MUST get an **implementation node** before any
 verification node. Verification without implementation is useless — it only
 proves that outdated code runs, not that the product works.
+
+**Concept-before-Analysis Rule (for analyze goal):**
+When goals include "analyze" (reverse analysis), the workflow MUST include a
+reverse-concept node BEFORE product-analysis nodes. The dependency chain is:
+```
+discover → reverse-concept → product-analysis → generate-artifacts
+```
+Without reverse-concept, product-analysis has no independent baseline — it becomes
+circular (extracting "what code does" without knowing "what code should do").
+reverse-concept produces concept-baseline.json (see cross-phase-protocols.md §A.1)
+which product-analysis and all downstream phases auto-load for consistency checking.
+
+See `capabilities/reverse-concept.md` for methodology and output schemas.
 
 **Implementation-before-Verification Rule:**
 For each module, nodes must follow this order:
