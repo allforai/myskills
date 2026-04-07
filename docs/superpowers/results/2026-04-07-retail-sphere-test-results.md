@@ -71,11 +71,16 @@
 
 ## Fix Tasks
 
-| id | capability | 类型 | 问题 | 修改文件 | 状态 |
-|----|------------|------|------|---------|------|
-| F1 | 全局 | A | Output 声明规范：所有 capability .md 需在 Output 节增加字段 schema | 所有 capability .md | TODO |
-| F2 | feature-prune | A | 创建独立 capability .md 文件 | 新建 feature-prune.md | TODO |
-| F3 | feature-gap | B1 | 声明 gaps[].task_ref 引用 task-inventory.tasks[].id | feature-gap.md（或 product-analysis.md） | TODO |
-| F4 | ui-design | B1/B2 | 声明 screens[].screen_name 字段；声明需覆盖 prune included=true 任务 | ui-design.md | TODO |
-| F5 | test-verify | B2 | 添加"Playwright CANNOT test native mobile apps"硬约束声明 | test-verify.md | TODO |
-| F6 | translate | B2 | 声明 prune included=true → 实现文件的映射约束 | translate.md | TODO |
+| id | capability | 类型 | 问题 | 修改文件 | 状态 | commit |
+|----|------------|------|------|---------|------|--------|
+| F1a | product-analysis | A/B1 | tasks[].id / roles[].id / tasks[].role_ref 字段 schema | product-analysis.md | ✅ FIXED | 3b12a2e |
+| F1b | reverse-concept | A/B1 | concept-baseline.json 字段 schema 内联 | reverse-concept.md | ✅ FIXED | c801d40 |
+| F1c | test-verify, product-verify | A | Output 字段 schema（composite_score, static_score 等） | test-verify.md, product-verify.md | ✅ FIXED | 9f3b37c |
+| F1d | demo-forge, quality-checks, code-tuner | A/B1 | seed_data[], fix_tasks[], score 字段 schema | demo-forge.md, quality-checks.md, tune.md | ✅ FIXED | 7516558 |
+| F2 | feature-prune | A | 创建独立 capability .md 文件 | 新建 feature-prune.md | ✅ FIXED | 33b39b7 |
+| F3 | feature-gap | B1 | gaps[].task_ref FK → task-inventory.tasks[].id | feature-gap.md | ✅ FIXED | 569a007 |
+| F4 | ui-design | B1/B2 | screens[] 结构声明 + prune covered=true 覆盖要求 | ui-design.md | ✅ FIXED | 569a007 |
+| F5 | test-verify | B2 | Playwright CANNOT test native mobile apps 硬约束 | test-verify.md | ✅ FIXED | 3b50c03 |
+| F6 | translate | B2 | prune included=true → 实现文件映射约束 | translate.md | ✅ FIXED | 3b50c03 |
+
+**所有 Fix Tasks 已完成。**
