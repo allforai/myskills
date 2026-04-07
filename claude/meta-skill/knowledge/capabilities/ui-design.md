@@ -23,6 +23,7 @@ design tokens, per-screen layouts, component specs, and optional interactive pre
 |--------|------|
 | `preview/*.html` | Interactive HTML previews (if user wants visual validation) |
 | `art-direction.md` | For games or visually-driven products |
+| `interaction-spec.md` | For products with significant dynamic interactions (IM, collaborative tools, games). Covers: transition animations, gesture interactions (swipe-to-reply, long-press menus), real-time update patterns (typing indicators, live cursors), micro-interactions (message send animation, pull-to-refresh), loading/skeleton states with timing. |
 
 ### Required Quality
 
