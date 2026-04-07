@@ -168,7 +168,7 @@ node-spec 的修改是 orchestrator 用 Edit tool 做的普通文件编辑。
 
 ## 5. Node-Spec 格式
 
-每个 node-spec 是一个完整的 subagent 指令，包含执行所需的全部上下文。subagent 不需要读别的文件。
+每个 node-spec 包含三类内容：任务指令、Context Pull 规则、以及必需的静态上下文。subagent 在执行前按 Context Pull 规则主动拉取上游产物，这是 node-spec 执行的一部分，不是例外。
 
 ```markdown
 ---
