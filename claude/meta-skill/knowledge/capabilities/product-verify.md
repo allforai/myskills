@@ -33,6 +33,9 @@ Every module in the project must be verified using its appropriate tool.
 | iOS native (SwiftUI) | XCUITest | Xcode test runner |
 | Android native (Kotlin) | Espresso | Gradle test runner |
 | API-only backend | curl / HTTP client | Endpoint integration test |
+| Unity | Unity Test Framework (`-runTests -testPlatform PlayMode`) | Automated playmode tests on target platform |
+| Unreal Engine | Gauntlet / Automation Framework | Automated functional tests |
+| Godot | GdUnit4 / GUT | Scene-based integration tests |
 
 For each module:
 - Launch app (dev server / emulator / device)
@@ -60,6 +63,13 @@ For each module:
 **React Native:**
 - Run Detox or Maestro E2E tests
 - Use `npx react-native start` + test framework
+
+**Game Engines (Unity/Unreal/Godot):**
+- Run automated playmode/functional tests in headless mode
+- Verify: game launches, main menu loads, core gameplay loop completes, save/load works
+- Verify: server connection (login, matchmaking, data sync) if multiplayer
+- Game-specific: combat sequence completes, economy transactions process, progression saves
+- Playwright/Detox CANNOT test game engine clients — use engine-native test frameworks only
 
 **Common mobile verification layers:**
 1. V1: App launches on simulator/emulator without crash
