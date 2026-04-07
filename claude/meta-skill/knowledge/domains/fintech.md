@@ -1,28 +1,100 @@
 # Fintech Domain Knowledge
 
-## Core Business Flows
-- Account Opening -> KYC Verification -> Fund Account -> Transact -> Settle
-- Lending: Apply -> Credit Check -> Approve -> Disburse -> Repay
-- Investment: Browse -> Research -> Order -> Execute -> Portfolio View
+> 金融科技领域的产品设计知识包。
+> Bootstrap Step 2.2 加载本文件 → Step 3 用本文件特化产品设计 + 实现 + 验证节点。
+> 触发条件：business_domain = fintech。
 
-## Typical Roles
-- Customer (consumer, experience_priority: consumer)
-- Compliance Officer (professional, experience_priority: admin)
-- Risk Manager (professional, experience_priority: admin)
-- Support Agent (professional, experience_priority: admin)
+---
 
-## Critical Business Rules
-- Double-entry bookkeeping (every debit has matching credit)
-- Transaction atomicity (ACID compliance)
-- Regulatory compliance (KYC/AML/PCI-DSS)
-- Audit trail (immutable transaction log)
-- Rate limiting (fraud prevention)
+## 一、金融科技检查维度
 
-## Common Entities
-- Account, Transaction, Ledger, User, KYCRecord, Instrument, Portfolio, Order
+Bootstrap Step 3 规划节点时，对以下维度逐项检查。具体技术方案由 LLM 结合
+Step 2.7 WebSearch 研究确定，本文件只提供检查框架。
 
-## Domain-Specific Checks
-- Transaction reversibility rules
-- Settlement timing (T+0, T+1, T+2)
-- Interest calculation accuracy
-- Regulatory reporting completeness
+### 1. 账户与交易
+- 复式记账（每笔借方有对应贷方）
+- 交易原子性（ACID 保障，不允许部分完成）
+- 交易幂等性（重复请求不重复执行）
+- 对账机制（内部账 vs 外部账定期核对）
+- 精度处理（Decimal 类型，不用浮点）
+
+### 2. 合规与监管
+- KYC 身份验证流程（证件上传→OCR→人脸比对→人工审核）
+- AML 反洗钱检测（交易模式分析、黑名单筛查）
+- 监管报告（定期向监管机构提交的数据格式和频率）
+- 数据留存要求（交易记录保存年限）
+- 跨境合规（不同司法管辖区的规则差异）
+
+### 3. 审计与可追溯
+- 不可变审计日志（append-only，不可删改）
+- 操作留痕（谁在什么时间做了什么操作）
+- 交易链路追踪（从发起到结算的完整路径）
+- 数据版本化（状态变更历史可回溯）
+
+### 4. 风控与安全
+- 实时风控规则引擎（交易前/中/后检查）
+- 速率限制（防止频繁小额测试攻击）
+- 异常交易检测（金额/频率/地理位置异常）
+- 多因素认证（MFA，尤其是大额操作）
+- 加密要求（传输加密 + 存储加密 + 密钥管理）
+
+### 5. 清结算
+- 结算周期（T+0 / T+1 / T+2）
+- 批量结算 vs 实时结算
+- 手续费计算（按比例/固定/阶梯）
+- 结算状态机（pending → processing → settled → failed → reconciled）
+
+### 6. 利率与计费
+- 利率计算方式（单利/复利/日利率/年化）
+- 计息周期（日/月/年）
+- 提前还款/逾期的利息调整
+- 费率透明度（年化利率展示要求）
+
+---
+
+## 二、金融科技对标准产品设计阶段的影响
+
+| 标准阶段 | 金融领域补充 |
+|---------|-----------|
+| user-role-definition | 标配角色：客户、合规官、风控经理、客服。合规和风控是金融特有角色 |
+| concept-crystallization | 增加业务状态机声明：交易、结算、贷款还款、KYC审核是 Category 1 状态机 |
+| security-design | 金融级安全：加密标准更高（PCI DSS / SOC2）、审计日志必须不可变 |
+| feature-prune | 合规功能不可裁剪（KYC/AML 是法律要求，不是 nice-to-have） |
+
+---
+
+## 三、金融科技对验证层的影响
+
+| 标准验证 | 金融领域补充 |
+|---------|-----------|
+| product-verify | 增加合规验证：KYC 流程端到端、交易限额检查、审计日志完整性 |
+| quality-checks | 增加精度验证：计算结果与预期值的精确匹配（不允许浮点误差） |
+| demo-forge | 数据需要合规语义：测试用户需要有效 KYC 状态、交易需要符合限额规则 |
+
+---
+
+## 四、金融科技项目的典型节点图补充
+
+| 补充节点 | 对应 capability | 理由 |
+|---------|----------------|------|
+| security-compliance | security-design | PCI DSS / SOC2 合规 + 加密策略 |
+| data-audit-trail | data-architecture | 不可变审计日志 + 数据版本化 |
+| implement-risk-engine | (project-specific) | 实时风控规则引擎是独立子系统 |
+| implement-settlement | (project-specific) | 清结算引擎是独立子系统 |
+| implement-kyc-flow | (project-specific) | KYC 流程集成（OCR/人脸/黑名单）|
+
+---
+
+## 五、研究触发器
+
+以下场景超出本文件覆盖范围。当项目涉及这些子领域时，bootstrap Step 2.7
+应通过 WebSearch 研究对应设计模式。
+
+| 触发条件 | 研究方向 |
+|---------|---------|
+| 产品包含证券/基金交易 | 订单簿撮合引擎、行情推送、持仓管理、分红处理 |
+| 产品包含加密货币 | 区块链集成、钱包管理、Gas 费计算、智能合约交互 |
+| 产品包含保险 | 核保规则引擎、理赔流程、精算模型、再保险 |
+| 产品包含跨境汇款 | SWIFT/SEPA 协议、汇率锁定、中间行路由、合规申报 |
+| 产品包含征信 | 信用评分模型、数据源接入、授权管理、报告生成 |
+| 产品包含开放银行 | Open Banking API 标准、PSD2 合规、账户聚合、支付发起 |
