@@ -34,6 +34,37 @@ For both deadhunt and fieldcheck:
 
 Output: `.allforai/quality-checks/deadhunt-report.json` + `fieldcheck-report.json`
 
+**deadhunt-report.json field schema:**
+```json
+{
+  "dead_routes": [
+    {
+      "route": "<string>",
+      "file": "<string — file:line>",
+      "reason": "<string>"
+    }
+  ],
+  "field_mismatches": [
+    {
+      "field": "<string>",
+      "expected": "<string>",
+      "actual": "<string>",
+      "file": "<string — file:line>"
+    }
+  ],
+  "fix_tasks": [
+    {
+      "id": "<string>",
+      "type": "<enum: dead_route | field_mismatch | broken_reference>",
+      "description": "<string>",
+      "file": "<string — file:line reference>",
+      "suggested_fix": "<string>"
+    }
+  ]
+}
+```
+`fix_tasks[].file` MUST include line number (file:line format). Every finding generates a fix_task.
+
 ## Rules (Must Preserve)
 
 1. **Understand-then-scan**: LLM reads code to understand patterns FIRST, then scans. No blind grep.

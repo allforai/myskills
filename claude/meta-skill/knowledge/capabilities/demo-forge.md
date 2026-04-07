@@ -45,6 +45,29 @@ it exposes runtime issues that compile-verify cannot catch.
 | `forge-data.json` | Record of all created entities with IDs |
 | `verify-report.json` | Visual verification results |
 
+**forge-data.json field schema:**
+```json
+{
+  "seed_data": [
+    {
+      "role_ref": "<string — MUST match role-profiles.json roles[].id>",
+      "entity_type": "<string>",
+      "entity_id": "<string>",
+      "fields": {}
+    }
+  ],
+  "demo_scenarios": [
+    {
+      "name": "<string>",
+      "role_ref": "<string>",
+      "steps": ["<string>"]
+    }
+  ]
+}
+```
+`seed_data[].role_ref` is a foreign key to `role-profiles.json roles[].id`.
+Every seed record must be associated with a role that can access it.
+
 ## Methodology Guidance (not steps)
 
 - **Maximum realism**: Use REAL services whenever possible. If the user provided API keys,
