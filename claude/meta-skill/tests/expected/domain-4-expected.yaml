@@ -1,0 +1,19 @@
+domain: 域-4
+capabilities: [test-verify, product-verify]
+
+results:
+  - capability: test-verify
+    assertion_A: PASS
+    assertion_B1: PASS
+    assertion_B2: PASS
+    b1_failures: []
+    b2_findings: []
+
+  - capability: product-verify
+    assertion_A: PASS
+    assertion_B1: PASS
+    assertion_B2: PASS
+    b1_failures: []
+    b2_findings: []
+
+critical_violations: []

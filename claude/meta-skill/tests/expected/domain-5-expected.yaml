@@ -1,0 +1,33 @@
+domain: 域-5
+capabilities: [demo-forge, quality-checks, code-tuner, launch-prep]
+
+results:
+  - capability: demo-forge
+    assertion_A: PASS
+    assertion_B1: PASS
+    assertion_B2: N/A
+    b1_failures: []
+    b2_findings: []
+
+  - capability: quality-checks
+    assertion_A: PASS
+    assertion_B1: PASS
+    assertion_B2: N/A
+    b1_failures: []
+    b2_findings: []
+
+  - capability: code-tuner
+    assertion_A: PASS
+    assertion_B1: PASS
+    assertion_B2: N/A
+    b1_failures: []
+    b2_findings: []
+
+  - capability: launch-prep
+    assertion_A: PASS
+    assertion_B1: N/A
+    assertion_B2: PASS
+    b1_failures: []
+    b2_findings: []
+
+critical_violations: []
