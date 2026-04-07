@@ -262,6 +262,7 @@ balance-testing（数值平衡测试：蒙特卡洛模拟 + Playtest）
 | **休闲/超休闲** | core-mechanics, level-design, monetization(ad-based) | worldbuilding, narrative, economy, progression |
 | **叙事/AVG** | narrative, worldbuilding, art-direction | economy, balance, progression |
 | **塔防/TD** | core-mechanics, level-design, economy, progression, balance, monetization(gacha+ad) | worldbuilding, narrative（轻量背景可嵌入 level-design）。注意塔协同效果设计是核心深度来源 |
+| **暗黑类/Loot-ARPG** | core-mechanics, economy, progression, balance, level-design, narrative, worldbuilding, monetization(premium) | assumption-zeroing, innovation。额外需要 Step 2.7 研究：词缀生成/掉落表/合成系统/交易系统 |
 | **竞技/MOBA/FPS** | core-mechanics, balance, player-archetype, monetization(battle-pass) | narrative, worldbuilding |
 | **沙盒/开放世界** | worldbuilding, core-mechanics, economy, progression, level-design | — (几乎全要) |
 | **独立/实验** | core-mechanics, art-direction | 按需选择，可非常精简 |
