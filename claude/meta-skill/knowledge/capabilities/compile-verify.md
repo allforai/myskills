@@ -60,6 +60,9 @@ Bootstrap MUST generate the correct build commands per platform:
 | Android (Kotlin) | `./gradlew assembleDebug` | .apk |
 | React Native | `npx react-native build-android` / `build-ios` | .apk/.app |
 | Rust | `cargo build` | target/ |
+| Unity | `unity -batchmode -buildTarget Android/iOS/StandaloneWindows64 -executeMethod BuildScript.Build` | .apk/.app/.exe |
+| Unreal Engine | `UnrealBuildTool` / `RunUAT BuildCookRun` | .pak + binary |
+| Godot | `godot --headless --export-release "platform" output` | .apk/.app/.exe/.pck |
 
 ## Composition Hints
 
@@ -74,6 +77,8 @@ Each has distinct build toolchains that may require different environments:
 - `compile-verify-flutter` — Flutter SDK + Dart
 - `compile-verify-ios` — Xcode + CocoaPods/SPM
 - `compile-verify-android` — Android SDK + Gradle
+- `compile-verify-unity` — Unity Editor (batchmode) + target SDK
+- `compile-verify-unreal` — Unreal Build Tool + target SDK
 
 **Do NOT combine `flutter build` and `npm run build` in one node** — different SDKs,
 different failure modes, different fix strategies.
