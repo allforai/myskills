@@ -378,6 +378,33 @@ LLM uses this in Step 3 to:
 The journal is append-only. Later batches can supersede earlier ones (check `supersedes` field).
 When decisions conflict, the latest batch wins.
 
+### 2.7 Knowledge Gap Research (if project scope exceeds loaded knowledge)
+
+After loading all knowledge, LLM self-checks: does the loaded domain knowledge
+cover ALL major subsystems in this project?
+
+**Trigger:** The project description or product vision mentions subsystems, business
+models, or technical patterns NOT covered by the loaded domain file or capabilities.
+
+**Examples of gaps that trigger research:**
+- Ecommerce project mentions "self-operated logistics" but domain file only covers
+  third-party logistics → WebSearch: "WMS warehouse management system design patterns"
+- Social app mentions "live streaming" but no domain file covers it →
+  WebSearch: "live streaming architecture CDN RTMP WebRTC"
+- Fintech project mentions "KYC/AML compliance" but no domain file covers it →
+  WebSearch: "KYC AML compliance system design"
+
+**Action:** For each identified gap, run 1-2 WebSearch queries to understand:
+- What are the core components of this subsystem?
+- What are the key state machines / business flows?
+- What are the common pitfalls?
+
+Incorporate findings into Step 3 planning. Do NOT write findings to files —
+they are ephemeral context for node planning only.
+
+**Skip when:** Domain knowledge covers the project well, or the project is simple
+enough that LLM's general knowledge is sufficient.
+
 > **After Step 2, do NOT ask the user anything.** Proceed to planning.
 
 ---
