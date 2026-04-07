@@ -1,27 +1,160 @@
 # E-Commerce Domain Knowledge
 
-## Core Business Flows
-- Browse -> Search -> Product Detail -> Add to Cart -> Checkout -> Payment -> Order Confirmation
-- Order Management: Track -> Cancel -> Return -> Refund
-- Seller: List Product -> Manage Inventory -> Process Orders -> Handle Returns
+> 电商领域的产品设计知识包。
+> Bootstrap Step 2.2 加载本文件 → Step 3 用本文件特化产品设计 + 实现 + 验证节点。
+> 触发条件：business_domain = ecommerce。
 
-## Typical Roles
-- Buyer (consumer, experience_priority: consumer)
-- Seller/Merchant (professional, experience_priority: admin)
-- Platform Admin (professional, experience_priority: admin)
-- Customer Service (professional, experience_priority: admin)
+---
 
-## Critical Business Rules
-- Inventory consistency (concurrent purchase race condition)
-- Payment idempotency (double-charge prevention)
-- Order state machine (pending -> paid -> shipped -> delivered -> completed)
-- Price calculation (discounts, coupons, taxes, shipping)
+## 一、电商特有的设计模式
 
-## Common Entities
-- User/Account, Product/SKU, Cart, Order, OrderItem, Payment, Address, Review, Category
+标准产品设计覆盖通用功能（CRUD、角色、旅程），但电商有独特的技术和产品模式，
+需要专项引导。以下每个模式包含三部分：what（是什么）、why（为什么电商需要）、
+check（bootstrap 检查项）。
 
-## Domain-Specific Checks
-- CRUD completeness per entity (especially Order lifecycle)
-- Payment callback handling (async notification from payment provider)
-- Stock deduction timing (optimistic vs pessimistic locking)
-- Multi-currency support (if international)
+### 1. 支付集成
+
+**What:** 与第三方支付网关（Stripe/PayPal/支付宝/微信支付）的集成。核心流程：
+- 创建支付意图 → 跳转/SDK 调起 → 用户支付 → 异步回调通知 → 更新订单状态
+
+**Why:** 支付是电商的命脉。集成错误 = 丢单或重复扣款。
+
+**Check:**
+- 支付接口必须幂等（同一订单重复请求不重复扣款）
+- 异步回调处理（webhook endpoint + 签名验证 + 幂等处理）
+- 支付超时处理（用户未完成支付 → 订单自动取消 → 库存释放）
+- 退款流程（全额/部分退款，退回原支付渠道）
+
+### 2. 库存并发控制
+
+**What:** 多用户同时购买同一商品时的库存一致性保障。
+
+**Why:** 超卖 = 客户投诉 + 信誉损失。库存不更新 = 错失销售。
+
+**Check:**
+- 扣减时机：下单扣减（乐观） vs 支付成功扣减（悲观）
+- 并发控制方案（数据库行锁 / Redis 原子操作 / 版本号乐观锁）
+- 库存预留机制（下单后锁定 N 分钟，超时释放）
+- SKU 级库存（而非 SPU 级，考虑规格组合：颜色×尺码）
+
+### 3. 价格计算链路
+
+**What:** 从商品原价到用户最终支付价的完整计算链路：
+```
+原价 → 促销折扣 → 优惠券 → 满减 → 会员折扣 → 小计 → 运费 → 税费 → 总价
+```
+
+**Why:** 价格错误是最高优先级的 bug。计算链路复杂容易出错。
+
+**Check:**
+- 价格计算是否在后端完成（前端仅展示，不参与计算）
+- 优惠叠加规则是否明确（可叠加 vs 互斥）
+- 精度处理（使用整数分/厘，不用浮点数）
+- 价格快照（订单锁定当时价格，不受后续改价影响）
+
+### 4. 订单状态机
+
+**What:** 订单从创建到完成的完整生命周期：
+```
+created → pending_payment → paid → processing → shipped → delivered → completed
+                ↓                      ↓              ↓
+            cancelled              returned      return_requested
+                                      ↓
+                                   refunded
+```
+
+**Why:** 订单状态驱动整个业务流程（库存、支付、物流、客服）。
+
+**Check:**
+- 每个状态转换有对应的 API 端点和权限控制
+- 状态转换的前置条件（如 shipped → delivered 需要物流确认）
+- 异常路径完整（取消、退货、退款、部分退款）
+- 状态变更触发通知（邮件/推送/短信）
+
+### 5. 搜索与推荐
+
+**What:** 商品搜索（关键词+筛选+排序）和个性化推荐（猜你喜欢、相关商品）。
+
+**Why:** 搜索是电商的第一入口。推荐驱动 30%+ 的成交。
+
+**Check:**
+- 搜索引擎选型（Elasticsearch/Meilisearch/Algolia）
+- 搜索功能完整性（模糊匹配、拼写纠错、同义词、分面筛选）
+- 搜索排序策略（相关性 × 销量 × 评分 × 广告竞价）
+- 推荐数据管道（浏览/购买/收藏 → 用户画像 → 推荐模型）
+- 搜索实时性（商品上架后多久可搜到）
+
+### 6. 卖家入驻与审核
+
+**What:** 卖家注册 → 资质审核 → 店铺开通 → 商品上架审核。
+
+**Why:** 平台型电商的核心是卖家生态。审核不严 = 假货泛滥。
+
+**Check:**
+- 入驻流程节点是否完整（资质上传→人工审核→合同签署→店铺激活）
+- 商品审核规则（违禁品、品类限制、图片质量）
+- 卖家层级与佣金差异
+- 卖家数据面板（订单统计、销售额、评分趋势）
+
+### 7. 物流追踪
+
+**What:** 订单发货后的物流状态实时追踪，集成第三方物流 API（FedEx/UPS/顺丰/圆通）。
+
+**Why:** "我的包裹到哪了"是下单后用户最关心的问题。
+
+**Check:**
+- 物流 API 集成方式（主动查询 vs webhook 推送）
+- 物流状态映射（各快递公司状态码 → 统一状态枚举）
+- 预计送达时间计算
+- 签收确认与自动确认收货（N 天无操作自动完成）
+
+### 8. 评价系统
+
+**What:** 买家对商品和卖家的评价（文字+图片+评分），以及卖家回复。
+
+**Why:** 评价是购买决策的核心参考。也是平台治理的工具。
+
+**Check:**
+- 评价时机（确认收货后开放，有时间窗口限制）
+- 评分维度（商品质量、物流速度、卖家服务）
+- 敏感内容过滤
+- 评价统计与商品/卖家评分计算（加权平均）
+- 追评机制
+
+---
+
+## 二、电商对标准产品设计阶段的影响
+
+| 标准阶段 | 电商领域补充 |
+|---------|-----------|
+| user-role-definition | 4 角色标配：买家、卖家、平台管理员、客服。买家多客户端（Web + App） |
+| concept-crystallization | 增加业务状态机声明：订单、支付、退款、商品审核是 Category 1 状态机 |
+| ui-design | 买家端重视消费体验（商品详情页、购物车动效）；卖家端重视效率（批量操作、数据表格） |
+| feature-gap | 增加支付链路完整性检查、库存一致性检查 |
+| feature-prune | 电商功能极多，MVP 裁剪关键：先核心购物流程，后推荐/营销/数据分析 |
+| demo-forge | 数据需要业务语义连贯性：商品有真实品类、价格有合理区间、订单有完整生命周期 |
+
+---
+
+## 三、电商对验证层的影响
+
+| 标准验证 | 电商领域补充 |
+|---------|-----------|
+| product-verify | 增加支付流程端到端验证（创建→支付→回调→状态更新） |
+| quality-checks | 增加价格一致性检查（前端展示价 vs API 返回价 vs 数据库存储价） |
+| demo-forge | 验证库存扣减（并发下单 → 库存不超卖）、价格计算（优惠券+满减+税费 = 正确总价） |
+
+---
+
+## 四、电商项目的典型节点图补充
+
+标准的 "create" 流程会生成 product-concept → implement → verify 链路。
+电商项目额外需要：
+
+| 补充节点 | 对应 capability | 理由 |
+|---------|----------------|------|
+| security-payment | security-design | 支付数据加密 + PCI DSS 合规 |
+| data-architecture-orders | data-architecture | 订单表分区策略 + 搜索索引 |
+| implement-payment-integration | (project-specific) | 支付网关集成是独立子系统 |
+| implement-logistics-integration | (project-specific) | 物流 API 集成是独立子系统 |
+| implement-search-engine | (project-specific) | ES 索引构建 + 搜索 API |
