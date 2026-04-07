@@ -634,6 +634,7 @@ If behavior is supposed to adapt but always reads a hardcoded default → broken
   "nodes": [
     {
       "id": "<project-specific name>",
+      "capability": "<name of the capability this node is based on, e.g. discovery, product-analysis, translate>",
       "goal": "<one sentence: what this node achieves>",
       "exit_artifacts": ["<file paths that prove this node is done>"],
       "knowledge_refs": ["<which knowledge files this node should reference>"],
@@ -646,6 +647,9 @@ If behavior is supposed to adapt but always reads a hardcoded default → broken
 
 **Node fields:**
 - `id`: Project-specific. NOT from a fixed vocabulary.
+- `capability`: Which capability this node is based on. Matches a file in
+  `knowledge/capabilities/<capability>.md`. Used at Context Pull generation time
+  to look up which upstream artifacts this node may consume.
 - `goal`: One sentence. Clear enough that a subagent knows what to do.
 - `exit_artifacts`: File paths. Node is complete when these files exist.
 - `knowledge_refs`: Which knowledge files to inject into the node-spec.
