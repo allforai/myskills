@@ -71,6 +71,9 @@ One design-to-spec node outputs all technical specifications for the project.
 ### Split by Service
 For monorepo with multiple services: spec-user-service, spec-messaging-service, spec-payment-service.
 
+### Split by Role
+For multi-role platforms (e.g., buyer + seller + admin): spec-buyer-api, spec-seller-api, spec-admin-api. Each role sees different endpoints, different data, and different permissions. A single api-spec.json may become unwieldy.
+
 ### Skip Entirely
 When goals do not include create or rebuild (existing code already has implicit specs).
 When translating between stacks (source code IS the spec).
