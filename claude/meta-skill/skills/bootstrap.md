@@ -692,6 +692,24 @@ Signs that a node needs splitting:
 If uncertain, split. Two focused nodes are better than one overloaded node.
 Each split node gets its own node-spec, exit_artifacts, and verification.
 
+**Large Project Decomposition (when total nodes > 30):**
+After completing the node graph, count the total nodes. If > 30, the project
+is likely too large for a single workflow execution. Suggest decomposition:
+
+1. Identify independent business lines (e.g., B2C shopping + logistics + B2B)
+2. Each business line becomes a separate /bootstrap → /run cycle
+3. Shared infrastructure (auth, DB, messaging) goes in the first cycle
+4. Present decomposition to user in Step 3.4 (Confirm with User):
+   ```
+   项目规模较大（{N} 个节点），建议分阶段执行：
+     Phase 1: {core business line} ({M1} 个节点)
+     Phase 2: {secondary line} ({M2} 个节点)
+     Phase 3: {tertiary line} ({M3} 个节点)
+   是否接受分阶段？还是一次性执行全部？
+   ```
+5. If user accepts: generate workflow.json for Phase 1 only, note Phase 2/3 as future
+6. If user declines: proceed with full workflow (their choice, warn about execution time)
+
 ### 3.2 Write workflow.json
 
 ```json
