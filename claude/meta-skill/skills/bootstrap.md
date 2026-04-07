@@ -767,6 +767,15 @@ has no verification node, the workflow is incomplete.
 **Playwright CANNOT test native mobile apps.** Never assign Playwright to a Flutter/iOS/Android
 module. This is a hard constraint — violating it silently passes CI while leaving mobile untested.
 
+**Verification Node Merging (optional optimization):**
+When multiple frontend modules share the same tech stack and build toolchain
+(e.g., seller-web and admin-web are both React/Vite), they MAY share a single
+compile-verify node to reduce total node count. Conditions for merging:
+- Same build command (e.g., both use `npm run build`)
+- Same test framework (e.g., both use vitest)
+- No cross-module build dependencies
+E2E nodes should NOT be merged — each module has distinct user flows and roles.
+
 **Why per-module nodes matter:**
 - API-only testing (curl) misses: broken routing, missing UI components, CSS rendering,
   auth token flow in browser, client-side validation, CORS problems
