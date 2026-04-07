@@ -14,7 +14,7 @@ design tokens, per-screen layouts, component specs, and optional interactive pre
 
 | Output | What |
 |--------|------|
-| `ui-design-spec.md` | Per-screen specification: layout, components, states, interactions |
+| `ui-design-spec.md` | Per-screen specification: layout, components, states, interactions. Must contain a `screens[]` inventory with `screen_name` and `role` for each screen, followed by per-screen detail sections. |
 | `tokens.json` | Design tokens: color, typography, spacing, component, animation |
 
 ### Optional Outputs
@@ -30,6 +30,7 @@ design tokens, per-screen layouts, component specs, and optional interactive pre
 - Design tokens are binding — downstream implementation must consume them
 - State completeness: every screen shows all state variants
 - Consumer maturity: consumer products get production-grade spec, not wireframes
+- Prune coverage: every task where `feature-prune decisions[].included = true` must have at least one corresponding screen in the spec. Load `prune-tasks.json` before designing — tasks excluded by prune (`included = false`) must NOT get screens.
 
 ## Methodology Guidance (not steps)
 

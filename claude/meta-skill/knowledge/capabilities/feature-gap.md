@@ -17,6 +17,22 @@ journey dead-ends, screen state holes, and unhandled exceptions.
 | `gap-report.json` | Gaps found across all checked dimensions |
 | `gap-tasks.json` | Actionable tasks for each gap, scored by severity × effort |
 
+**gap-tasks.json field schema:**
+```json
+{
+  "gaps": [
+    {
+      "task_ref": "<string — MUST match an existing tasks[].id in task-inventory.json>",
+      "type": "<enum: task | screen | journey>",
+      "priority": "<enum: core | important | minor>",
+      "dimension": "<string — which check dimension found this gap>",
+      "description": "<string>"
+    }
+  ]
+}
+```
+`task_ref` is a foreign key to `task-inventory.tasks[].id`. Every gap must reference an existing task. Gaps that don't map to a task must first create a task entry in task-inventory before being recorded here.
+
 ### Check Dimensions (LLM selects which apply)
 
 LLM decides which dimensions to check based on the project's entity model, flows, and screens.
