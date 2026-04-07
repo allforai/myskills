@@ -696,10 +696,14 @@ has no verification node, the workflow is incomplete.
 | backend (API) | curl / HTTP client | api-integration-test |
 | frontend (web) | Playwright browser E2E | e2e-test-{name} |
 | admin (web) | Playwright browser E2E | e2e-test-admin |
-| mobile (Flutter) | `flutter test integration_test/` + `flutter build` | e2e-test-{name} |
-| mobile (React Native) | `detox test` or Maestro | e2e-test-{name} |
-| mobile (SwiftUI/Kotlin) | XCUITest / Espresso | e2e-test-{name} |
+| mobile (Flutter) | `flutter test integration_test/` on simulator/emulator | e2e-test-{name} |
+| mobile (React Native) | Detox or Maestro | e2e-test-{name} |
+| mobile (iOS/SwiftUI) | XCUITest via `xcodebuild test` | e2e-test-{name} |
+| mobile (Android/Kotlin) | Espresso via `./gradlew connectedAndroidTest` | e2e-test-{name} |
 | shared / infra | covered by consumers' tests | no separate node needed |
+
+**Playwright CANNOT test native mobile apps.** Never assign Playwright to a Flutter/iOS/Android
+module. This is a hard constraint — violating it silently passes CI while leaving mobile untested.
 
 **Why per-module nodes matter:**
 - API-only testing (curl) misses: broken routing, missing UI components, CSS rendering,

@@ -81,20 +81,40 @@ If not resolved → surface as UPSTREAM_DEFECT with per-layer breakdown.
 ### Phase-Specific:
 - cross-phase-protocols.md §Upstream-Baseline-Validation: test results validated against product artifacts
 
+## Platform-Specific Test Commands
+
+Bootstrap MUST generate the correct test commands per platform:
+
+| Platform | Unit/Widget Tests | Integration/E2E Tests |
+|----------|------------------|-----------------------|
+| Web (Node.js) | `npm run test` / `vitest run` / `jest` | Playwright E2E |
+| Go backend | `go test ./...` | API integration tests |
+| Flutter | `flutter test` | `flutter test integration_test/` |
+| iOS (Swift) | `xcodebuild test -scheme X -destination 'platform=iOS Simulator'` | XCUITest |
+| Android (Kotlin) | `./gradlew test` | `./gradlew connectedAndroidTest` |
+| React Native | `npx jest` | Detox / Maestro |
+
+**Key rule:** Mobile test frameworks are fundamentally different from web.
+`flutter test` ≠ `npm test`. Bootstrap must detect the platform and emit the correct command.
+
 ## Composition Hints
 
 ### Single Node (default)
 For small-to-medium projects: one test-verify node runs all verification layers (R2-R4) sequentially.
 
-### Split into Multiple Nodes
-For large projects: split per module (test-verify-api, test-verify-admin, test-verify-mobile)
-rather than per layer. Each module has its own test runner and failure domain:
-- Go backend → `go test ./...`
-- Next.js admin → `vitest` + Playwright E2E
-- Flutter mobile → `flutter test` + `flutter test integration_test/`
-- React Native → `jest` + Detox
+### Split by Platform (REQUIRED for multi-platform projects)
+For projects with web + mobile: split into platform-specific nodes.
+Each platform has distinct test runners, simulators, and failure modes.
+**Do NOT put Flutter tests and Playwright tests in the same node.**
 
-This ensures no module is silently skipped. Per-module splitting also enables parallel execution.
+- `test-verify-api` — Go backend: `go test ./...`
+- `test-verify-web` — Next.js/React/Vue: `vitest` + Playwright E2E
+- `test-verify-mobile` — Flutter: `flutter test` + `flutter test integration_test/`; React Native: `jest` + Detox; iOS: `xcodebuild test`; Android: `./gradlew connectedAndroidTest`
+
+This ensures no module is silently skipped and enables parallel execution.
+
+### Split per Test Layer
+For large single-platform projects: split per test layer (test-verify-unit, test-verify-integration, test-verify-e2e) to isolate failure domains and allow parallel execution.
 
 ### Merge with Another Capability
 For very simple projects (single platform, no custom protocols): merge compile-verify + test-verify into a single build-and-test node.
