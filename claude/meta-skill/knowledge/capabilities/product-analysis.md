@@ -86,6 +86,21 @@ Every capability that references a task or role MUST use these IDs.
 | `interaction-gate.json` | After experience-map, always for consumer products |
 | `constraints.json` | When business rules are complex |
 
+### Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `role-profiles.json` | `roles` | feature-gap, feature-prune, ui-design, generate-artifacts | required | 角色定义是所有下游功能和 UI 设计的基础 |
+| `task-inventory.json` | `tasks` | feature-gap, feature-prune, generate-artifacts | required | 任务清单是功能差距分析和代码生成的输入 |
+| `task-inventory.json` | `tasks[].id`, `tasks[].role_ref` | feature-gap, feature-prune | required | 外键引用，下游必须用这些 ID 保持一致性 |
+| `business-flows.json` | `flows` | ui-design, generate-artifacts | required | 用户旅程定义 UI 结构和功能实现顺序 |
+| `experience-map.json` | `screens` | ui-design, generate-artifacts, product-verify | required | 屏幕契约是 UI 设计和验收的基础 |
+| `use-case-tree.json` | `cases` | test-verify, product-verify | required | 验收用例来自 Given/When/Then |
+| `journey-emotion-map.json` | `stages` | ui-design | optional | 仅 consumer 产品有此产物；缺失时跳过情感设计维度 |
+
 ### Required Quality
 
 - `experience_priority` classified: consumer / admin / mixed
