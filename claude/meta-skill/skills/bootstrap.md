@@ -64,6 +64,11 @@ Read these files if they exist (skip missing ones silently):
 - requirements.txt, pyproject.toml, setup.py, Pipfile
 - Gemfile, composer.json, pom.xml, *.csproj, *.sln
 
+**Game engines:**
+- ProjectSettings/ProjectVersion.txt, Assets/ (Unity)
+- *.uproject, Source/ (Unreal Engine)
+- project.godot (Godot)
+
 **Configuration:**
 - tsconfig.json, jsconfig.json
 - vite.config.*, webpack.config.*, next.config.*
