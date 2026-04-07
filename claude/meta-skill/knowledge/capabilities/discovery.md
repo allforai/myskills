@@ -32,6 +32,21 @@ For rebuild/translate goals, also:
 - Event bus inventory (if exists: all event types + publishers + subscribers)
 - Implicit behaviors documented (mixin/decorator/annotation-driven auto-CRUD, auto-sync, etc.)
 
+### Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `source-summary.json` | `tech_stacks` | translate, compile-verify, quality-checks | required | 翻译策略和编译验收都依赖技术栈 |
+| `source-summary.json` | `modules` | product-analysis, generate-artifacts | required | 模块边界是产物分析和代码生成的基础 |
+| `source-summary.json` | `architecture_pattern` | product-analysis | optional | 有助于识别设计模式，缺失时用代码读取兜底 |
+| `source-summary.json` | `detected_patterns` | product-analysis, translate | optional | 辅助推断业务意图和翻译复杂度 |
+| `file-catalog.json` | `modules[].key_files` | translate, generate-artifacts | required | 代码生成需要知道读哪些源文件 |
+| `infrastructure-profile.json` | `databases`, `caches`, `auth` | demo-forge, test-verify | required | demo 数据填充和测试都需要知道基础设施 |
+| `reuse-assessment.json` | `per_component` | translate | optional | 缺失时按全量翻译降级 |
+
 ## Methodology Guidance (not steps)
 
 LLM should apply these principles, in whatever order makes sense:
