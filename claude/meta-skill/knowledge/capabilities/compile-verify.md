@@ -47,13 +47,36 @@ This node covers the R1 (Build) layer of the cr-fidelity runtime verification st
 ### Phase-Specific:
 (No phase-specific knowledge beyond universal references)
 
+## Platform-Specific Build Commands
+
+Bootstrap MUST generate the correct build commands per platform:
+
+| Platform | Build Command | Output |
+|----------|--------------|--------|
+| Web (Node.js) | `npm run build` / `vite build` | dist/ |
+| Go backend | `go build ./...` | binary |
+| Flutter | `flutter build apk` / `flutter build ios` / `flutter build web` | build/ |
+| iOS (Swift) | `xcodebuild build -scheme X -destination 'generic/platform=iOS'` | .app |
+| Android (Kotlin) | `./gradlew assembleDebug` | .apk |
+| React Native | `npx react-native build-android` / `build-ios` | .apk/.app |
+| Rust | `cargo build` | target/ |
+
 ## Composition Hints
 
 ### Single Node (default)
 For most projects: one compile-verify node runs the full build after all translation is complete.
 
-### Split into Multiple Nodes
-For multi-platform projects: one compile-verify node per platform (compile-verify-ios, compile-verify-api) since each has distinct build toolchains.
+### Split by Platform (REQUIRED for multi-platform projects)
+For projects with web + mobile + backend: one compile-verify node per platform.
+Each has distinct build toolchains that may require different environments:
+- `compile-verify-web` — Node.js + bundler
+- `compile-verify-api` — Go/Python/Java
+- `compile-verify-flutter` — Flutter SDK + Dart
+- `compile-verify-ios` — Xcode + CocoaPods/SPM
+- `compile-verify-android` — Android SDK + Gradle
+
+**Do NOT combine `flutter build` and `npm run build` in one node** — different SDKs,
+different failure modes, different fix strategies.
 
 ### Merge with Another Capability
 For single-platform projects with few components: merge translate + compile-verify into a single node.

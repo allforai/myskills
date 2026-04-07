@@ -81,12 +81,37 @@ If not resolved → surface as UPSTREAM_DEFECT with per-layer breakdown.
 ### Phase-Specific:
 - cross-phase-protocols.md §Upstream-Baseline-Validation: test results validated against product artifacts
 
+## Platform-Specific Test Commands
+
+Bootstrap MUST generate the correct test commands per platform:
+
+| Platform | Unit/Widget Tests | Integration/E2E Tests |
+|----------|------------------|-----------------------|
+| Web (Node.js) | `npm run test` / `vitest run` / `jest` | Playwright E2E |
+| Go backend | `go test ./...` | API integration tests |
+| Flutter | `flutter test` | `flutter test integration_test/` |
+| iOS (Swift) | `xcodebuild test -scheme X -destination 'platform=iOS Simulator'` | XCUITest |
+| Android (Kotlin) | `./gradlew test` | `./gradlew connectedAndroidTest` |
+| React Native | `npx jest` | Detox / Maestro |
+
+**Key rule:** Mobile test frameworks are fundamentally different from web.
+`flutter test` ≠ `npm test`. Bootstrap must detect the platform and emit the correct command.
+
 ## Composition Hints
 
 ### Single Node (default)
 For small-to-medium projects: one test-verify node runs all verification layers (R2-R4) sequentially.
 
-### Split into Multiple Nodes
+### Split by Platform (REQUIRED for multi-platform projects)
+For projects with web + mobile: split into platform-specific nodes:
+- `test-verify-web` — runs web test suites (vitest, jest, Playwright)
+- `test-verify-mobile` — runs mobile test suites (flutter test, XCTest, Espresso)
+- `test-verify-api` — runs backend test suites (go test, pytest)
+
+Each platform has distinct test runners, simulators, and failure modes.
+Do NOT put Flutter tests and Playwright tests in the same node.
+
+### Split per Test Layer
 For large projects: split per test layer (test-verify-unit, test-verify-integration, test-verify-e2e) to isolate failure domains and allow parallel execution.
 
 ### Merge with Another Capability

@@ -399,14 +399,29 @@ ONLY acceptable when no credentials are provided. This ensures demo-forge and sm
 exercise the full real stack, not a fake one. Every stub is a gap in integration testing.
 
 **Full E2E Testing Principle (applies to workflow planning):**
-If the project has ANY frontend (web, admin, mobile web view), the workflow MUST include
-a Playwright-based E2E testing node. This is NOT optional and NOT a sub-step of smoke-test.
-It is a first-class node in the workflow that LLM must plan during Step 3.1.
-- API-only testing (curl) catches backend bugs but misses: broken routing, missing
-  components, CSS rendering, auth token flow in browser, CORS, client-side validation
-- The E2E node must: open frontend → login with seeded credentials → navigate core
-  flows → create/edit/delete entities → take screenshots as evidence → report issues
-- If project has multiple frontends (admin + mobile), each gets its own E2E node
+If the project has ANY frontend or mobile app, the workflow MUST include E2E testing nodes.
+This is NOT optional and NOT a sub-step of smoke-test.
+
+**Web frontends (Playwright):**
+- If the project has web frontends (website, admin, merchant panels), each gets a
+  Playwright-based E2E node. Playwright tests: routing, rendering, forms, auth, CORS.
+
+**Native mobile apps (platform-native testing):**
+- If the project has a native mobile module (Flutter, iOS/Swift, Android/Kotlin,
+  React Native), it MUST get its own E2E node using the CORRECT test framework:
+  - Flutter → `flutter test integration_test/` on simulator/emulator
+  - iOS → XCUITest via `xcodebuild test`
+  - Android → Espresso via `./gradlew connectedAndroidTest`
+  - React Native → Detox or Maestro
+- **Playwright CANNOT test native mobile apps.** Never assign Playwright to a
+  Flutter/iOS/Android module. This is a hard constraint.
+
+**Common requirements for ALL E2E nodes:**
+- Login with seeded credentials → navigate core flows → create/edit/delete entities
+  → take screenshots as evidence → report issues
+- Each platform gets its own independent E2E node (never combine web + mobile)
+- API-only testing (curl) is insufficient — it misses UI rendering, navigation,
+  client-side validation, and platform-specific behavior
 
 **Node-spec format:**
 
