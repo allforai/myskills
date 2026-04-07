@@ -45,6 +45,39 @@ but produces purely descriptive artifacts without evaluative judgment.
 | `experience-map.json` | What screens exist, what states, what interactions | >= 5 screens |
 | `use-case-tree.json` | Given/When/Then scenarios (happy + exception + boundary) | >= 15 cases |
 
+**task-inventory.json field schema (minimum required fields):**
+```json
+{
+  "tasks": [
+    {
+      "id": "<string — unique, stable identifier. Used as FK by feature-gap.gaps[].task_ref>",
+      "name": "<string>",
+      "role_ref": "<string — MUST match a roles[].id in role-profiles.json>",
+      "inputs": ["<string>"],
+      "outputs": ["<string>"],
+      "constraints": ["<string>"]
+    }
+  ]
+}
+```
+
+**role-profiles.json field schema (minimum required fields):**
+```json
+{
+  "roles": [
+    {
+      "id": "<string — unique identifier. Referenced by task-inventory.tasks[].role_ref>",
+      "name": "<string>",
+      "permissions": ["<string>"],
+      "audience_type": "<enum: consumer | admin | operator | system>"
+    }
+  ]
+}
+```
+
+`tasks[].id` and `roles[].id` are foreign key roots for all downstream capabilities.
+Every capability that references a task or role MUST use these IDs.
+
 ### Optional Outputs (LLM decides based on project type)
 
 | Output | When to include |
