@@ -75,6 +75,7 @@ If not resolved → surface as UPSTREAM_DEFECT with per-layer breakdown.
 4. **No silent skip**: Each verification layer must be explicitly evaluated with reasoning before being excluded.
 5. **Failure routing before retry**: Classify failure type before retrying — prevents misdirected fixes.
 6. **Score persistence**: Write composite score to test-verify-report.json for downstream nodes (visual-verify, tune) to reference.
+7. **Playwright constraint**: Playwright CANNOT test native mobile apps. Never assign Playwright to Flutter/iOS/Android/React Native modules. Each mobile module MUST use its platform-native test framework (see Platform-Specific Test Commands table). This is a hard constraint — assigning Playwright to mobile silently produces passing CI with zero mobile coverage.
 
 ## Knowledge References
 

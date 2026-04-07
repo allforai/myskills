@@ -17,6 +17,7 @@ Strategy selection per component, compile-verify loop per module.
 - Compile-verify loop passed for each component
 - Route parity verified (every source route has a target equivalent)
 - Model-to-route traceability verified
+- Prune scope respected: load `.allforai/feature-prune/prune-tasks.json` before planning component scope. Only implement tasks where `decisions[].included = true`. Tasks with `included = false` must NOT be implemented — create a `TODO(excluded-by-prune)` comment at most.
 
 ### Strategy Selection (per component, LLM decides)
 
