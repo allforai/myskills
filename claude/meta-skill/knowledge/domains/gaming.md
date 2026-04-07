@@ -99,10 +99,7 @@ balance-testing（数值平衡测试：蒙特卡洛模拟 + Playtest）
 | **Self-Determination Theory** | Deci & Ryan (2000) | 内在动机三要素：自主/胜任/关联 | 设计让玩家"想玩"而非"被迫玩"的系统 |
 | **Player Motivation Model** | Quantic Foundry / Yee (2006) | 12 维动机（破坏/社交/精通/沉浸/创造/收集） | 精细化玩家画像 |
 
-**LLM 在 node-spec 中应该：**
-- 分析目标品类的主要玩家类型分布
-- WebSearch 该品类的玩家社区（Reddit/TapTap/Steam 评论）了解真实需求
-- 输出：`player-archetypes.json`
+**输出：** `player-archetypes.json`
 
 ---
 
@@ -117,11 +114,7 @@ balance-testing（数值平衡测试：蒙特卡洛模拟 + Playtest）
 | **Meta Loop** | 行业通用 | 外循环：Session → Progress → New Content → Session | 定义长期留存驱动力 |
 | **Meaningful Choices** | Sid Meier | "游戏是一系列有趣的决策" | 每个机制必须给玩家有意义的选择 |
 
-**LLM 在 node-spec 中应该：**
-- 定义 Core Loop（一个 session 内的循环）
-- 定义 Meta Loop（跨 session 的进度循环）
-- 用 MDA 框架描述：Mechanic（规则）→ Dynamic（行为）→ Aesthetic（感受）
-- 输出：`core-mechanics.json`
+**输出：** `core-mechanics.json`
 
 ---
 
@@ -134,11 +127,7 @@ balance-testing（数值平衡测试：蒙特卡洛模拟 + Playtest）
 | **Inflation Control** | 经济膨胀导致新玩家追不上老玩家 | 设计消耗机制控制通胀 |
 | **Exchange Rate** | 不同资源之间的兑换关系 | 确保任何路径的单位时间收益平衡 |
 
-**LLM 在 node-spec 中应该：**
-- 列出所有资源/货币类型
-- 画出 Source → Sink 循环图
-- 定义关键兑换比率
-- 输出：`economy-model.json`
+**输出：** `economy-model.json`
 
 ---
 
@@ -151,11 +140,7 @@ balance-testing（数值平衡测试：蒙特卡洛模拟 + Playtest）
 | **Mastery Progression** | 行业通用 | 新手 → 进阶 → 精通，每阶段有明确的"成长感" | 设计技能/装备/等级解锁节奏 |
 | **Rubber Banding** | 行业通用 | 落后的玩家获得加速，领先的玩家获得减速 | 控制玩家间差距 |
 
-**LLM 在 node-spec 中应该：**
-- 定义成长维度（等级/技能/装备/成就）
-- 画出经验/难度曲线（数值表）
-- 标注心流区间
-- 输出：`progression-curve.json`
+**输出：** `progression-curve.json`
 
 ---
 
@@ -168,11 +153,7 @@ balance-testing（数值平衡测试：蒙特卡洛模拟 + Playtest）
 | **Difficulty Spike vs Curve** | 突然变难 = 流失；渐进变难 = 成就感 | 避免难度断层 |
 | **Content Gating** | 通过进度/技能/资源控制内容解锁 | 防止玩家跳过内容 |
 
-**LLM 在 node-spec 中应该：**
-- 定义关卡结构（章节/关卡/波次）
-- 标注教学关卡（引入新机制的关卡）
-- 定义难度参数（敌人数量/属性/时间限制）
-- 输出：`level-design.json`
+**输出：** `level-design.json`
 
 ---
 
@@ -185,10 +166,7 @@ balance-testing（数值平衡测试：蒙特卡洛模拟 + Playtest）
 | **Environmental Storytelling** | 行业通用 | 通过环境细节（而非对话）讲故事 | 场景设计承载叙事 |
 | **Lore Bible** | 行业通用 | 世界观设定集：历史/地理/势力/人物 | 保持叙事一致性 |
 
-**LLM 在 node-spec 中应该：**
-- 定义叙事结构（线性/分支/开放）
-- 定义主线/支线关系
-- 输出：`narrative-design.json`、`worldbuilding-bible.md`
+**输出：** `narrative-design.json`、`worldbuilding-bible.md`
 
 ---
 
@@ -205,11 +183,7 @@ balance-testing（数值平衡测试：蒙特卡洛模拟 + Playtest）
 | **Subscription** | MMO/服务型 | 月卡价值感、续费留存 |
 | **Ad-based** | 休闲/超休闲 | 广告频率、激励视频时机、eCPM 优化 |
 
-**LLM 在 node-spec 中应该：**
-- 根据品类推荐商业模式
-- WebSearch 同品类头部游戏的商业化策略
-- 设计付费点（不破坏游戏平衡）
-- 输出：`monetization-design.json`
+**输出：** `monetization-design.json`
 
 ---
 
@@ -226,10 +200,7 @@ balance-testing（数值平衡测试：蒙特卡洛模拟 + Playtest）
 | **Environment Design** | 场景构成/光影/氛围 |
 | **UI Style** | HUD/菜单/弹窗/字体/图标风格 |
 
-**LLM 在 node-spec 中应该：**
-- WebSearch 目标风格的参考作品
-- 定义美术风格关键词（如"赛博朋克 + 像素 + 霓虹"）
-- 输出：`art-direction.md`、`art-tokens.json`
+**输出：** `art-direction.md`、`art-tokens.json`
 
 ---
 
@@ -244,10 +215,7 @@ balance-testing（数值平衡测试：蒙特卡洛模拟 + Playtest）
 | **Playtest Protocol** | 结构化测试流程：目标/步骤/数据收集/分析 |
 | **A/B Testing** | 不同数值版本对比留存/付费数据 |
 
-**LLM 在 node-spec 中应该：**
-- 生成数值验证脚本（Python/spreadsheet）
-- 模拟关键循环 1000 次，输出统计结果
-- 输出：`balance-report.json`
+**输出：** `balance-report.json`
 
 ---
 
@@ -297,3 +265,19 @@ balance-testing（数值平衡测试：蒙特卡洛模拟 + Playtest）
 | **竞技/MOBA/FPS** | core-mechanics, balance, player-archetype, monetization(battle-pass) | narrative, worldbuilding |
 | **沙盒/开放世界** | worldbuilding, core-mechanics, economy, progression, level-design | — (几乎全要) |
 | **独立/实验** | core-mechanics, art-direction | 按需选择，可非常精简 |
+
+---
+
+## 七、研究触发器
+
+以下场景超出本文件覆盖范围。当项目涉及这些子领域时，bootstrap Step 2.7
+应通过 WebSearch 研究对应设计模式。
+
+| 触发条件 | 研究方向 |
+|---------|---------|
+| 产品包含多人联机 | Netcode 架构（P2P vs 专用服务器）、状态同步、延迟补偿、反作弊 |
+| 产品包含 UGC 关卡编辑器 | 关卡编辑器 UI、用户内容审核、关卡分享/评分 |
+| 产品包含赛季/赛事系统 | 排名算法（Elo/Glicko）、赛季重置、奖励结算 |
+| 产品包含跨平台存档 | 云存档同步、平台账号绑定、进度合并冲突处理 |
+| 产品包含 VR/AR | 空间交互设计、运动病预防、手部追踪、空间音频 |
+| 产品使用特定引擎 | 引擎特定的构建管线、资源管理、性能优化最佳实践 |
