@@ -183,6 +183,12 @@ UI 还原度（仅有前端翻译时）：
 
 4. 业务领域：
    a) 电商  b) 金融  c) 医疗  d) SaaS  e) 社交  f) 游戏  g) 其他：___
+
+5. 基础设施需求（可选，复杂项目建议回答）：
+   实时通信：___（如 WebSocket/gRPC/SSE/无）
+   消息队列：___（如 Kafka/NATS/Redis Pub-Sub/无）
+   文件存储：___（如 S3/MinIO/本地/无）
+   搜索引擎：___（如 Elasticsearch/Meilisearch/无）
 ```
 
 **Goal mapping (can combine multiple):**
@@ -520,13 +526,31 @@ Example: product-map says "SRS item due → send review card". Pipeline:
 5. Display: Front Desk UI ← exists
 → Workflow needs: "implement-background-scheduler" + "implement-push-notifications"
 
-**Adaptive State Machine Check (MANDATORY):**
+**State Machine Completeness Check (MANDATORY):**
 > **Scope**: This check applies to EXISTING CODE — verifying that code already in the
-> codebase correctly implements the state machine (state storage, transitions, behavior
+> codebase correctly implements state machines (state storage, transitions, behavior
 > mappings). It runs during rebuild/translate goals when code exists. For NEW projects
 > (goal=create), this check is N/A — Step 3.5 Level 4 handles coverage planning instead.
 
-After pipeline checks, LLM MUST check for **adaptive state machines** defined
+This check covers TWO categories of state machines:
+
+**Category 1: Business State Machines (deterministic)**
+Systems with well-defined states and transition rules driven by system events.
+Examples:
+- Message delivery: sent → delivered → read
+- Order lifecycle: created → paid → shipped → delivered → completed
+- User status: online → idle → offline (with last_seen timestamp)
+- Group membership: invited → member → admin → owner
+- Content moderation: pending → approved / rejected
+
+**Category 2: Adaptive State Machines (probabilistic)**
+Systems where state evolves based on user behavior and influences system behavior.
+Examples:
+- Learning proficiency: beginner → intermediate → advanced
+- Recommendation preferences: tracks interaction patterns → personalizes content
+- Engagement scoring: activity frequency → notification cadence
+
+After pipeline checks, LLM MUST check for **state machines** (both categories) defined
 in the product-map. Products with personalization, learning, or recommendation
 features have user states that evolve over time. The system must read the
 current state to decide behavior, and update the state after each interaction.
@@ -622,6 +646,19 @@ State→Behavior mappings:
 For each mapping, check: does the code path exist from state read → behavior change?
 If a state exists in DB but nothing reads it to change behavior → broken mapping.
 If behavior is supposed to adapt but always reads a hardcoded default → broken mapping.
+
+**Node Scope Self-Check (MANDATORY):**
+After designing the node graph, LLM MUST review each implementation node and ask:
+"Can a single subagent complete this node's goal in one execution with high quality?"
+
+Signs that a node needs splitting:
+- Node goal contains "and" connecting unrelated subsystems
+  (e.g., "implement user auth AND messaging AND file storage")
+- Node covers > 1 independent domain with no shared data model
+- Estimated output exceeds what one subagent can reliably produce
+
+If uncertain, split. Two focused nodes are better than one overloaded node.
+Each split node gets its own node-spec, exit_artifacts, and verification.
 
 ### 3.2 Write workflow.json
 
@@ -912,6 +949,40 @@ The stitch node must produce a coverage matrix in its report:
   }
 }
 ```
+
+**Cross-Module Stitch Node (MANDATORY for multi-module projects):**
+When the project has separate API and client modules (web/mobile), the workflow
+MUST include a `cross-module-stitch` node after all implement + intra-module
+stitch nodes complete, BEFORE compile-verify.
+
+This extends the intra-module stitch (above) to cover cross-module integration.
+Intra-module stitch catches missing imports within one codebase; cross-module
+stitch catches API contract mismatches between separate codebases.
+
+The cross-module stitch node's job:
+1. Read API node's exit artifacts (route definitions, response schemas)
+2. Read each client node's exit artifacts (API call sites, type definitions)
+3. For each API endpoint, verify all consuming clients:
+   - Parse the response correctly (field names, types, nesting)
+   - Handle all response states (success, error, empty, paginated)
+   - Send correct request format (query params, body schema, auth headers)
+4. For each WebSocket/realtime message type (if applicable):
+   - Server sends it → all clients handle it
+   - Client sends it → server processes it
+5. Fix mismatches: update client code to match API contract
+6. Produce cross-module-stitch-report.json
+
+```
+Parallel impl nodes → stitch-{module} → cross-module-stitch → compile-verify → E2E
+```
+
+Exit artifact: `.allforai/bootstrap/cross-module-stitch-report.json`
+
+**Node-spec for cross-module stitch should include:**
+- The API node's exit artifacts (route/schema definitions)
+- All client nodes' exit artifacts (API call sites)
+- design-to-spec artifacts if available (api-spec.json as reference contract)
+- WebSocket/protocol message types (if applicable)
 
 ### 3.5 Coverage Self-Check (Concept → Workflow Closure)
 
