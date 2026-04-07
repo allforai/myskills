@@ -77,6 +77,16 @@ identically regardless of whether concept was designed forward or extracted back
 See `product-concept.md` sub-phases for the canonical schemas of each file.
 `concept-baseline.json` schema is defined in `cross-phase-protocols.md §A.1`.
 
+### Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `concept-baseline.json` | `jobs`, `mission` | product-analysis | required | product-analysis 用 baseline 做一致性检查，避免循环分析 |
+| `concept-baseline.json` | `jobs[].success_criteria` | product-verify | optional | 验收时检查实现是否满足 JTBD 成功条件 |
+
 ## Methodology Guidance
 
 ### Extraction Strategy (not steps — principles)

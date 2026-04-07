@@ -43,6 +43,17 @@ Every task from gap-tasks MUST have an explicit decision — no silent omissions
 - Reasons are meaningful (not "low priority" alone — must reference effort/value/frequency data)
 - At least one P0 task must be `included = true`, or explicitly justify why no P0 tasks exist
 
+### Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `prune-decisions.json` | `decisions[].included` | translate, generate-artifacts | required | 只实现 included=true 的功能，必须在翻译前裁剪 |
+| `prune-tasks.json` | `tasks` | generate-artifacts | required | 生成代码任务列表以剪枝后的功能为准 |
+| `prune-report.md` | — | product-verify | optional | 验收时参考裁剪决策，了解哪些功能被排除 |
+
 ## Methodology Guidance (not how)
 
 - **Frequency first**: High-frequency tasks get P0/P1 by default unless effort is prohibitive
