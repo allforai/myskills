@@ -81,6 +81,25 @@ For each module:
 
 Output: `.allforai/product-verify/verify-report.json` + `verify-report.md`
 
+**verify-report.json field schema:**
+```json
+{
+  "static_score": "<number 0-100>",
+  "dynamic_score": "<number 0-100>",
+  "composite_score": "<number 0-100 — weighted average>",
+  "issues": [
+    {
+      "type": "<enum: route_missing | api_missing | field_mismatch | permission_gap | render_fail | form_fail>",
+      "severity": "<enum: critical | major | minor>",
+      "description": "<string>",
+      "evidence": "<string — screenshot path or response body reference>"
+    }
+  ],
+  "screenshots": ["<string — file path, optional>"]
+}
+```
+`static_score`, `dynamic_score`, `composite_score` are consumed by code-tuner and launch-prep.
+
 ## Rules (Must Preserve)
 
 1. **Static before dynamic**: Cheaper checks first, catch obvious gaps early.

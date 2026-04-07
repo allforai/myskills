@@ -67,6 +67,35 @@ Bootstrap sets `min_pass_rate` per layer (default: R2 = 100%, R3 = 90%, R4 = 100
 If actual rate < threshold → trigger fix loop (max 3 cycles).
 If not resolved → surface as UPSTREAM_DEFECT with per-layer breakdown.
 
+## Output Contract
+
+**test-verify-report.json field schema:**
+```json
+{
+  "results": [
+    {
+      "module_id": "<string — matches bootstrap-profile.json modules[].id>",
+      "layer": "<enum: R2 | R3 | R4>",
+      "pass_rate": "<number 0.0-1.0>",
+      "passed": "<number>",
+      "failed": "<number>",
+      "failures": ["<string — failure description>"]
+    }
+  ],
+  "composite_score": "<number 0.0-1.0 — static * 0.5 + runtime * 0.5>",
+  "verification_reasoning": [
+    {
+      "layer": "<string>",
+      "applicable": "<boolean>",
+      "reasoning": "<string>",
+      "risk_if_skipped": "<enum: low | medium | high>"
+    }
+  ]
+}
+```
+`composite_score` is consumed by downstream nodes (visual-verify, code-tuner, launch-prep).
+`results[].module_id` MUST reference a module declared in bootstrap-profile.json.
+
 ## Rules
 
 1. **Test commands from node-spec**: Bootstrap generates them per platform and test framework.
