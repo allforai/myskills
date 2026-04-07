@@ -40,6 +40,34 @@ against code-derived artifacts.
 | `concept-baseline.json` | Compact (~2KB) distilled baseline pushed to all downstream phases | ALL downstream phases auto-load this for consistency |
 | `business-model.json` | Revenue model, pricing tiers, unit economics (if detectable) | product-verify needs to check monetization flows are implemented |
 
+**concept-baseline.json minimum field schema:**
+```json
+{
+  "product_name": "<string>",
+  "mission": "<string — one sentence: Help [user] achieve [outcome] by [mechanism]>",
+  "target_users": ["<string — role names>"],
+  "core_features": [
+    {
+      "id": "<string>",
+      "name": "<string>",
+      "jtbd": "<string — Job-to-be-Done this feature serves>",
+      "evidence": ["<string — file:line or module reference>"]
+    }
+  ],
+  "business_flows": [
+    {
+      "id": "<string>",
+      "name": "<string>",
+      "steps": ["<string>"]
+    }
+  ],
+  "constraints": ["<string>"],
+  "governance_style": "<string — from governance-styles.md>"
+}
+```
+All fields with evidence[] arrays MUST cite code evidence per Evidence-Based Extraction rules.
+The full schema reference is in `cross-phase-protocols.md §A.1`.
+
 ### Schema Compatibility
 
 All output files MUST use the same schema as forward-designed product-concept outputs.
