@@ -39,6 +39,34 @@ against code-derived artifacts.
 | `product-mechanisms.json` | Governance styles, system boundaries, content lifecycle | product-analysis needs to know what's in-scope vs external |
 | `concept-baseline.json` | Compact (~2KB) distilled baseline pushed to all downstream phases | ALL downstream phases auto-load this for consistency |
 | `business-model.json` | Revenue model, pricing tiers, unit economics (if detectable) | product-verify needs to check monetization flows are implemented |
+| `concept-conflicts.json` | Contradictions found between code, docs, config, and modules | Human review — conflicts must be resolved before downstream phases proceed |
+
+**concept-conflicts.json field schema:**
+```json
+{
+  "conflicts": [
+    {
+      "type": "<enum: doc_vs_code | module_vs_module | schema_vs_logic | config_vs_impl | role_vs_permission>",
+      "description": "<string — what contradicts what>",
+      "evidence_a": "<string — file:line or source A>",
+      "evidence_b": "<string — file:line or source B>",
+      "severity": "<enum: high | medium | low>",
+      "resolution_hint": "<string — which side is likely correct and why>",
+      "resolved": false
+    }
+  ],
+  "summary": {
+    "total": "<number>",
+    "high": "<number>",
+    "medium": "<number>",
+    "low": "<number>"
+  }
+}
+```
+
+When conflicts are found, reverse-concept MUST present them to the user for resolution
+before proceeding. The user decides which side is correct. Unresolved high-severity
+conflicts block downstream phases — product-analysis should not proceed on a contradictory baseline.
 
 **concept-baseline.json minimum field schema:**
 ```json
@@ -86,6 +114,8 @@ See `product-concept.md` sub-phases for the canonical schemas of each file.
 |----------|------------|---------------------|----------|--------|
 | `concept-baseline.json` | `jobs`, `mission` | product-analysis | required | product-analysis 用 baseline 做一致性检查，避免循环分析 |
 | `concept-baseline.json` | `jobs[].success_criteria` | product-verify | optional | 验收时检查实现是否满足 JTBD 成功条件 |
+| `concept-conflicts.json` | `conflicts[]` | product-analysis | required | product-analysis 需要知道哪些概念有冲突，避免基于矛盾信息做分析 |
+| `concept-conflicts.json` | `conflicts[].resolved` | concept-acceptance | optional | 验收时检查冲突是否已被解决 |
 
 ## Methodology Guidance
 
@@ -144,6 +174,30 @@ Every claim in the output MUST cite evidence:
 
 LLM should NOT speculate beyond what code proves. If a README claims a feature
 that code doesn't implement, flag it as `"status": "claimed_not_implemented"`.
+
+### Conflict Detection (MANDATORY)
+
+After extraction, systematically scan for contradictions across all evidence sources.
+Conflicts are presented to the user for resolution — LLM does NOT resolve them.
+
+**Check dimensions:**
+
+| Conflict Type | How to detect |
+|---------------|---------------|
+| doc_vs_code | README/docs claim feature X → grep for implementation → not found or partially implemented |
+| module_vs_module | Backend defines N enum values / API endpoints → Frontend handles M < N (or different names) |
+| schema_vs_logic | DB table/field exists → no code reads or writes it (orphaned schema) |
+| config_vs_impl | .env/.config references service X → code integrates service Y instead |
+| role_vs_permission | Auth middleware defines role → no API endpoints are restricted to that role (phantom role) |
+
+**Severity rules:**
+- **high**: Affects core business flow (e.g., payment module contradicts pricing docs)
+- **medium**: Affects secondary feature (e.g., social sharing claimed but not implemented)
+- **low**: Cosmetic or naming inconsistency (e.g., `user_name` vs `username`)
+
+**Output:** Write all conflicts to `concept-conflicts.json`. Present high-severity
+conflicts to user immediately with resolution options. User must resolve or
+acknowledge before reverse-concept marks itself complete.
 
 ### Quality Bar
 
