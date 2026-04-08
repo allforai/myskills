@@ -1,6 +1,6 @@
 {
   "name": "meta-skill",
   "description": "Meta-skill generator: analyzes target projects and generates project-specific skills, commands, and state machine configurations. Replaces all 6 specialized skills with a unified /bootstrap + /run workflow.",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "author": { "name": "dv" }
 }
