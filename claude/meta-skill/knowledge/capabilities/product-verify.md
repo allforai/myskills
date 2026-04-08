@@ -145,6 +145,17 @@ Parity modes from product-concept:
 - consumer-maturity-patterns.md: consumer maturity scoring
 - experience-map-schema.md §Interaction-Gate: gate scoring for verification
 
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `verify-report.json` | `composite_score` | tune | optional | 代码治理参考验收分数决定优化优先级 |
+| `verify-report.json` | `composite_score`, `issues[]` | launch-prep | required | 上架准备需要验收报告确认产品就绪 |
+| `verify-report.json` | `issues[]` | concept-acceptance | optional | 概念验收参考已知问题列表 |
+
 ## Composition Hints
 
 ### Single Node (default)

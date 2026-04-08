@@ -78,6 +78,16 @@ Output: `.allforai/quality-checks/deadhunt-report.json` + `fieldcheck-report.jso
 - design-audit-dimensions.md §Reference-Integrity: cross-artifact reference validation
 - cross-phase-protocols.md §Upstream-Baseline-Validation: staleness and fidelity checks
 
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `deadhunt-report.json` | `fix_tasks[]` | translate (fix loop) | required | 修复循环需要知道哪些死链和字段不一致要修 |
+| `fieldcheck-report.json` | `field_mismatches[]` | translate (fix loop) | required | 字段不一致修复需要具体的字段映射信息 |
+
 ## Composition Hints
 
 ### Single Node (default)

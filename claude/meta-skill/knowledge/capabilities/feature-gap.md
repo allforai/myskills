@@ -68,6 +68,16 @@ These are TYPES of checks, not a fixed checklist:
 - journey-emotion-schema.md: journey completeness validation
 - consumer-maturity-patterns.md: consumer maturity gap detection
 
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `gap-tasks.json` | `gaps[].task_ref`, `gaps[].priority` | feature-prune | required | 裁剪决策基于差距任务列表及其优先级 |
+| `gap-report.md` | — | generate-artifacts | optional | 生成文档时参考差距分析报告 |
+
 ## Composition Hints
 
 ### Single Node (default)

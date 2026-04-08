@@ -58,6 +58,18 @@ design tokens, per-screen layouts, component specs, and optional interactive pre
 - consumer-maturity-patterns.md: consumer UX maturity requirements
 - product-design-theory.md §Phase-6: Design System, Atomic Design, WCAG, Gestalt
 
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `ui-design-spec.md` | `screens[]` | product-verify | required | 动态验证按屏幕列表逐一检查 |
+| `ui-design-spec.md` | `screens[]`, component specs | ui-forge | required | UI 精修需要原始设计规格作为基线 |
+| `ui-design-spec.md` | `screens[]` | visual-verify | required | 截图对比需要设计规格作为参照 |
+| `tokens.json` | all tokens | translate (implement nodes) | required | 实现必须消费设计 token（颜色/字体/间距） |
+
 ## Composition Hints
 
 ### Single Node (default)

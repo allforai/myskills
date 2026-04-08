@@ -117,6 +117,16 @@ Every seed record must be associated with a role that can access it.
 - consumer-maturity-patterns.md: demo data should showcase consumer maturity patterns
 - governance-styles.md §Operation-Profiles: demo data volume calibrated to operation profiles
 
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `forge-data.json` | `seed_data[].role_ref` | product-verify | required | 动态验证需要已填充数据的角色信息来逐角色测试 |
+| `verify-report.json` | verification results | concept-acceptance | optional | 概念验收参考 demo 验证结果 |
+
 ## Composition Hints
 
 ### Single Node (default)
