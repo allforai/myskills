@@ -44,11 +44,20 @@ exist for each pipeline", this capability checks "does code actually connect".
       "missing_behaviors": ["<string — state→behavior mappings not in code>"]
     }
   ],
+  "closure_gaps": [
+    {
+      "feature": "<string>",
+      "closure_type": "<enum: config | monitoring | exception | lifecycle | mapping | navigation>",
+      "description": "<string — what's missing>",
+      "severity": "<enum: high | medium | low>"
+    }
+  ],
   "summary": {
     "total_pipelines": "<number>",
     "complete": "<number>",
     "broken": "<number>",
-    "partial": "<number>"
+    "partial": "<number>",
+    "closure_gaps_count": "<number>"
   }
 }
 ```
@@ -86,6 +95,24 @@ Specifically check flows that cross process boundaries:
 
 These are the most commonly broken pipelines because they span multiple services
 and are easy to forget one end of.
+
+**4. Closure Types Verification**
+
+For each feature in product-concept, verify the 6 closure types have code paths
+(runtime counterpart of bootstrap Step 3.5 Level 2):
+
+| Closure Type | Runtime Check |
+|-------------|---------------|
+| Config Closure | Feature has user-configurable behavior → config file/DB/env var exists + code reads it |
+| Monitoring Closure | Feature is business-critical → logging/metrics/error tracking code exists |
+| Exception Closure | Feature has known failure modes → error handler + recovery/retry path in code |
+| Lifecycle Closure | Feature creates entities → cleanup/archival/expiry code exists |
+| Mapping Closure | Feature has A↔B pair → both directions implemented (create↔delete, buy↔refund, follow↔unfollow) |
+| Navigation Closure | Feature is UI entry point → exit/back path exists in code |
+
+Report closure gaps alongside pipeline gaps in the same report. A closure gap
+is less severe than a broken pipeline (pipeline = flow doesn't work at all,
+closure = flow works but is incomplete in edge cases).
 
 ### Required Quality
 
