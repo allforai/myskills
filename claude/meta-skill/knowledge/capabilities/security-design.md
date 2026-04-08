@@ -53,6 +53,18 @@ that implementation and verification nodes consume.
 - cross-phase-protocols.md §Safety: security-related safety rules
 - defensive-patterns.md: fallback and error handling that doesn't leak information
 
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `security-design.json` | auth scheme, token lifecycle | translate (implement nodes) | required | 实现需要知道用什么认证方案（JWT/OAuth/Passkeys） |
+| `security-design.json` | authorization model | translate (implement nodes) | required | 实现需要知道权限模型（RBAC/ABAC）来写 middleware |
+| `security-design.json` | all decisions | security-verify | required | security-verify 逐项对照安全决策与实现 |
+| `security-design.json` | rate limiting config | translate (implement nodes) | optional | 缺失时按默认限流策略继续 |
+
 ## Composition Hints
 
 ### Single Node (default)

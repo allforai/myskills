@@ -53,6 +53,17 @@ infrastructure architecture document that implementation nodes consume.
 - cross-phase-protocols.md §Maximum-Realism: use real services when credentials exist
 - defensive-patterns.md: fallback strategies when infra components are unavailable
 
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `infra-design.json` | technology choices per dimension | translate (setup-env node) | required | setup-env 需要知道选了哪些基础设施来配置环境 |
+| `infra-design.json` | integration patterns | translate (implement nodes) | optional | 实现时参考组件间集成模式，缺失时按通用模式继续 |
+| `infra-design.json` | realtime technology choice | design-to-spec | optional | protocol-spec.md 需要知道用 WebSocket 还是 gRPC |
+
 ## Composition Hints
 
 ### Single Node (default)

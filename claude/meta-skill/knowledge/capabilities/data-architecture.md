@@ -53,6 +53,17 @@ document that implementation nodes consume.
 ### Phase-Specific:
 - cross-phase-protocols.md §Upstream-Baseline-Validation: data schema consistency checks
 
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `data-architecture.json` | DB choice, storage strategy | translate (implement nodes) | required | 实现需要知道用什么数据库和存储策略来写 ORM/migration |
+| `data-architecture.json` | index plan | design-to-spec | optional | db-schema.md 生成时参考索引规划 |
+| `data-architecture.json` | search infrastructure | translate (implement nodes) | optional | 搜索相关实现需要知道用 ES 还是 PG tsvector |
+
 ## Composition Hints
 
 ### Single Node (default)
