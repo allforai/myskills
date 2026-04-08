@@ -2,10 +2,10 @@
 """Validate bootstrap products: workflow.json + node-specs/*.md.
 
 Checks:
-  - workflow.json: schema valid, nodes non-empty, each node has id/goal/exit_artifacts
+  - workflow.json: schema valid, nodes non-empty, each node has id/goal/capability/exit_artifacts
+  - workflow.json: consumers[] references point to existing node IDs
+  - workflow.json: exit_artifacts paths are not bare filenames
   - node-specs/*.md: YAML frontmatter parseable, 'node' field present
-
-No graph connectivity check (nodes have no entry_requires).
 """
 
 import json
@@ -40,12 +40,18 @@ def validate_workflow(wf_path: str) -> list:
     SUSPICIOUS_BARE = {'.env', 'config.json', 'config.yaml', 'package.json',
                        'go.mod', 'Makefile', 'Dockerfile', 'README.md'}
 
+    node_ids = {n.get("id") for n in wf["nodes"] if "id" in n}
+
     for i, node in enumerate(wf["nodes"]):
         nid = node.get("id", f"node[{i}]")
         if "id" not in node:
             errors.append(f"workflow.json: node[{i}] missing 'id'")
         if "goal" not in node:
             errors.append(f"workflow.json: {nid} missing 'goal'")
+        if "capability" not in node:
+            errors.append(f"workflow.json: {nid} missing 'capability'")
+        elif not isinstance(node["capability"], str) or not node["capability"]:
+            errors.append(f"workflow.json: {nid} 'capability' must be a non-empty string")
         if "exit_artifacts" not in node:
             errors.append(f"workflow.json: {nid} missing 'exit_artifacts'")
         elif not isinstance(node["exit_artifacts"], list):
@@ -59,6 +65,17 @@ def validate_workflow(wf_path: str) -> list:
                         f"looks like a bare filename — use full project-relative "
                         f"path (e.g., 'subdir/{artifact_path}' not '{artifact_path}')"
                     )
+
+        if "consumers" in node:
+            if not isinstance(node["consumers"], list):
+                errors.append(f"workflow.json: {nid} 'consumers' must be a list")
+            else:
+                for cid in node["consumers"]:
+                    if cid not in node_ids:
+                        errors.append(
+                            f"workflow.json: {nid} consumers references "
+                            f"non-existent node '{cid}'"
+                        )
 
     return errors
 
