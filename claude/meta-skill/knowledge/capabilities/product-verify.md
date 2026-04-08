@@ -110,6 +110,27 @@ Output: `.allforai/product-verify/verify-report.json` + `verify-report.md`
 ```
 `static_score`, `dynamic_score`, `composite_score` are consumed by code-tuner and launch-prep.
 
+### Multi-Client Feature Parity Verification
+
+When product-concept declares multiple clients for a role (e.g., buyer-web + buyer-mobile),
+verify that features are implemented consistently across all clients:
+
+1. Extract feature list from product-concept for this role
+2. For each feature × client pair:
+   - Does the client have a UI entry point for this feature?
+   - Does the client call the corresponding API endpoint?
+   - Are the user flows equivalent (same steps, same outcomes)?
+3. Report parity gaps: feature exists in client A but not client B
+
+This is the runtime counterpart of bootstrap Step 3.5 Level 3 (Multi-Client Parity).
+cross-module-stitch checks API CONTRACT consistency (fields, types, formats);
+this check verifies FEATURE consistency (same features available on all clients).
+
+Parity modes from product-concept:
+- `full`: every feature must exist on every client → any gap is a finding
+- `partial`: every feature except `parity_exceptions[]` → exceptions are allowed
+- `explicit`: each client declares `supported_features[]` → only check declared features
+
 ## Rules (Must Preserve)
 
 1. **Static before dynamic**: Cheaper checks first, catch obvious gaps early.
