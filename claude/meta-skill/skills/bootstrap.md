@@ -320,6 +320,25 @@ detected business_domain. If yes, load it — it contains domain-specific
 design stages, theory anchors, and output artifacts that override or
 supplement standard capabilities.
 
+### 2.2.1 Cross-Domain Methodology Loading
+
+If the product description mentions design patterns from another domain, load
+that domain's methodology sections as supplementary reference (not as primary
+domain override).
+
+**Common cross-domain patterns:**
+- Product uses gamification (XP, streaks, leaderboards, leagues) but is NOT a game
+  → load `gaming.md` for: Sink-Source, Flow Theory, progression-system, monetization patterns
+- Product has real-time chat/messaging but is NOT an IM app
+  → load `social-messaging.md` for: message sync, presence, typing indicators check dimensions
+- Product has marketplace/transactions but is NOT an ecommerce platform
+  → load `ecommerce.md` for: payment integration, order state machine check dimensions
+
+**Rules:**
+- Cross-domain files are REFERENCE only — do not apply their 替代关系 (replacement stages)
+- Only load methodology sections (theory anchors, check dimensions), skip node graphs and category tables
+- Primary domain file (if any) takes precedence on conflicts
+
 ### 2.3 Load Cross-Phase Knowledge
 
 Always load these (they apply to ALL nodes regardless of type):
