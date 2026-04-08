@@ -64,6 +64,16 @@ Bootstrap MUST generate the correct build commands per platform:
 | Unreal Engine | `UnrealBuildTool` / `RunUAT BuildCookRun` | .pak + binary |
 | Godot | `godot --headless --export-release "platform" output` | .apk/.app/.exe/.pck |
 
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| build artifacts (paths) | `artifact_paths[]` | test-verify | required | 测试验证需要知道构建产物路径 |
+| exit code | `exit_code` | test-verify | required | 构建失败则测试不应运行 |
+
 ## Composition Hints
 
 ### Single Node (default)

@@ -127,6 +127,16 @@ Bootstrap MUST generate the correct test commands per platform:
 **Key rule:** Mobile test frameworks are fundamentally different from web.
 `flutter test` ≠ `npm test`. Bootstrap must detect the platform and emit the correct command.
 
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `test-verify-report.json` | `composite_score`, `results[]` | product-verify | optional | 产品验证参考测试分数决定是否值得动态验证 |
+| `test-verify-report.json` | `composite_score` | tune | optional | 代码治理参考测试覆盖率 |
+
 ## Composition Hints
 
 ### Single Node (default)

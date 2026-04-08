@@ -49,6 +49,16 @@ Strategy selection per component, compile-verify loop per module.
 - cross-phase-protocols.md §Upstream-Baseline-Validation: verify translated code against product artifacts
 - experience-map-schema.md: screen contracts for UI translation
 
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| source code files | implementation files per module | compile-verify | required | 编译验证需要全部源代码文件存在 |
+| source code files | implementation files per module | spec-compliance-verify | required | Spec 合规验证需要对照代码与设计规格 |
+
 ## Composition Hints
 
 ### Split into Multiple Nodes (default)
