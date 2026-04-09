@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "drifted_at": "2026-04-02T16:00:00Z",
+  "last_merged_batch": "2026-04-02T15:00:00Z",
+  "source_batches": ["2026-04-02T10:00:00Z", "2026-04-02T15:00:00Z"],
+  "changes": [
+    {
+      "type": "tech_changed",
+      "target": "realtime collaboration layer",
+      "before": "Yjs + WebSocket (Hocuspocus) — self-hosted CRDT server",
+      "after": "Liveblocks — managed CRDT service with React SDK",
+      "impact": ["workflow", "code"]
+    },
+    {
+      "type": "feature_removed",
+      "target": "评论与反馈（锚点评论、@提及、线程回复）",
+      "before": "in features[] + mvp_features[]",
+      "after": "moved to post_launch_features[]",
+      "impact": ["product-map", "experience-map", "workflow", "code"]
+    },
+    {
+      "type": "feature_modified",
+      "target": "R4 访客角色能力",
+      "before": "high_frequency_tasks = [查看, 评论]",
+      "after": "high_frequency_tasks = [查看] (评论能力随评论功能推迟)",
+      "impact": ["product-map", "experience-map"]
+    }
+  ],
+  "resolved": false
+}

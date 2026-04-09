@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "batches": [
+    {
+      "batch_id": "2026-04-01T11:00:00Z",
+      "source": "user_session",
+      "topic": "技术栈调整",
+      "decisions": [
+        {
+          "question": "移动端技术栈选择",
+          "chosen": "改用 SwiftUI（仅 iOS），放弃 Flutter 跨平台",
+          "rationale": "目标用户 80% 是 iPhone，Android 版本推迟到 v2",
+          "supersedes": null
+        }
+      ]
+    },
+    {
+      "batch_id": "2026-04-01T14:00:00Z",
+      "source": "user_session",
+      "topic": "功能范围调整",
+      "decisions": [
+        {
+          "question": "医生在线咨询功能是否保留",
+          "chosen": "移除医生在线咨询，MVP 不做实时通信",
+          "rationale": "WebSocket 实时通信复杂度太高，MVP 先做好电商核心",
+          "supersedes": null
+        },
+        {
+          "question": "是否增加宠物寄养功能",
+          "chosen": "增加宠物寄养服务（LBS 查找附近寄养家庭）",
+          "rationale": "用户调研发现寄养是高频需求，差异化优势",
+          "supersedes": null
+        },
+        {
+          "question": "社区帖子的内容形式",
+          "chosen": "社区帖子支持短视频（15秒以内），不仅是图文",
+          "rationale": "竞品分析发现短视频互动率是图文的3倍",
+          "supersedes": null
+        }
+      ]
+    }
+  ]
+}

@@ -42,13 +42,56 @@ This node covers the R1 (Build) layer of the cr-fidelity runtime verification st
 - R1 failure blocks all downstream fidelity scoring
 - Build failure = composite fidelity score = 0 regardless of static analysis results
 
+## Knowledge References
+
+### Phase-Specific:
+(No phase-specific knowledge beyond universal references)
+
+## Platform-Specific Build Commands
+
+Bootstrap MUST generate the correct build commands per platform:
+
+| Platform | Build Command | Output |
+|----------|--------------|--------|
+| Web (Node.js) | `npm run build` / `vite build` | dist/ |
+| Go backend | `go build ./...` | binary |
+| Flutter | `flutter build apk` / `flutter build ios` / `flutter build web` | build/ |
+| iOS (Swift) | `xcodebuild build -scheme X -destination 'generic/platform=iOS'` | .app |
+| Android (Kotlin) | `./gradlew assembleDebug` | .apk |
+| React Native | `npx react-native build-android` / `build-ios` | .apk/.app |
+| Rust | `cargo build` | target/ |
+| Unity | `unity -batchmode -buildTarget Android/iOS/StandaloneWindows64 -executeMethod BuildScript.Build` | .apk/.app/.exe |
+| Unreal Engine | `UnrealBuildTool` / `RunUAT BuildCookRun` | .pak + binary |
+| Godot | `godot --headless --export-release "platform" output` | .apk/.app/.exe/.pck |
+
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| build artifacts (paths) | `artifact_paths[]` | test-verify | required | 测试验证需要知道构建产物路径 |
+| exit code | `exit_code` | test-verify | required | 构建失败则测试不应运行 |
+
 ## Composition Hints
 
 ### Single Node (default)
 For most projects: one compile-verify node runs the full build after all translation is complete.
 
-### Split into Multiple Nodes
-For multi-platform projects: one compile-verify node per platform (compile-verify-ios, compile-verify-api) since each has distinct build toolchains.
+### Split by Platform (REQUIRED for multi-platform projects)
+For projects with web + mobile + backend: one compile-verify node per platform.
+Each has distinct build toolchains that may require different environments:
+- `compile-verify-web` — Node.js + bundler
+- `compile-verify-api` — Go/Python/Java
+- `compile-verify-flutter` — Flutter SDK + Dart
+- `compile-verify-ios` — Xcode + CocoaPods/SPM
+- `compile-verify-android` — Android SDK + Gradle
+- `compile-verify-unity` — Unity Editor (batchmode) + target SDK
+- `compile-verify-unreal` — Unreal Build Tool + target SDK
+
+**Do NOT combine `flutter build` and `npm run build` in one node** — different SDKs,
+different failure modes, different fix strategies.
 
 ### Merge with Another Capability
 For single-platform projects with few components: merge translate + compile-verify into a single node.

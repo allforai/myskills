@@ -1,55 +1,87 @@
 # Feature Gap Capability
 
-> Detect missing features by cross-referencing product artifacts. Finds CRUD gaps,
-> journey dead-ends, and screen coverage holes.
+> Detect missing features by cross-referencing product artifacts.
+> Internal execution is LLM-driven — dimensions and checks are project-specific.
 
-## Purpose
+## Goal
 
-After product-analysis produces roles/tasks/flows/experience-map, verify completeness
-by checking that every entity has full CRUD, every journey reaches a conclusion,
-and every screen state is handled.
+Verify completeness of product artifacts before code is written. Find CRUD gaps,
+journey dead-ends, screen state holes, and unhandled exceptions.
 
-## Protocol
+## What LLM Must Accomplish (not how)
 
-### CRUD Completeness
-For each data entity in task-inventory:
-- Check: Create, Read, Update, Delete operations exist?
-- Missing operations → gap (unless intentionally excluded, e.g., immutable audit logs)
+### Required Outputs
 
-### Journey Walkthrough
-For each business flow:
-- Walk from start to end: every step has a screen? every decision has both branches?
-- Dead-end flows → gap
+| Output | What |
+|--------|------|
+| `gap-report.json` | Gaps found across all checked dimensions |
+| `gap-tasks.json` | Actionable tasks for each gap, scored by severity × effort |
 
-### Screen State Coverage
-For each screen in experience-map:
-- Check: empty, loading, error, success, permission-denied states exist?
-- Missing states → gap
+**gap-tasks.json field schema:**
+```json
+{
+  "gaps": [
+    {
+      "task_ref": "<string — MUST match an existing tasks[].id in task-inventory.json>",
+      "type": "<enum: task | screen | journey>",
+      "priority": "<enum: core | important | minor>",
+      "dimension": "<string — which check dimension found this gap>",
+      "description": "<string>"
+    }
+  ]
+}
+```
+`task_ref` is a foreign key to `task-inventory.tasks[].id`. Every gap must reference an existing task. Gaps that don't map to a task must first create a task entry in task-inventory before being recorded here.
 
-### Gap Scoring
-Each gap scored by:
-- Severity: core (blocks main flow) / important (affects UX) / minor (edge case)
-- Effort: low / medium / high
+### Check Dimensions (LLM selects which apply)
 
-Output: `.allforai/feature-gap/gap-report.json` + `gap-tasks.json` (actionable task list)
+LLM decides which dimensions to check based on the project's entity model, flows, and screens.
+These are TYPES of checks, not a fixed checklist:
 
-## Rules (Must Preserve)
+| Dimension | What to check | Applies when |
+|-----------|--------------|-------------|
+| CRUD completeness | Every entity has all needed operations | Always |
+| Journey completeness | Every flow has a defined end state, both branches at decisions | Has business flows |
+| Screen state coverage | empty/loading/error/success/(offline) states exist | Has UI screens |
+| Consumer maturity | Flows feel complete, not just "feature exists" | experience_priority = consumer/mixed |
+| Offline coverage | Core flows work offline | Offline-first products |
+| Error recovery | Every error state has a recovery path | Always |
+| Permission coverage | Every role can only access what they should | Multi-role products |
 
-1. **Entity-driven CRUD check**: Don't just check API endpoints — check from the entity perspective.
-2. **Journey completeness**: Every flow must have a defined end state (success or explicit failure).
-3. **State coverage**: Consumer-facing screens MUST have all 4 states. Admin screens need at minimum error + success.
-4. **Gaps generate tasks**: Every gap becomes an actionable task in gap-tasks.json.
+### Required Quality
+
+- Every gap becomes an actionable task in gap-tasks.json
+- Gaps scored: severity (core/important/minor) × effort (low/medium/high)
+- No core-severity gaps left unaddressed in the plan
+
+## Methodology Guidance (not steps)
+
+- **Entity-driven**: Check from the entity perspective, not the API perspective
+- **Journey-driven**: Walk each flow end-to-end, verify every step has a screen
+- **Consumer maturity bar**: For consumer products, "feature exists" is not enough — "flow feels complete"
+- **Gaps generate tasks**: Don't just find gaps — create actionable tasks with clear scope
+
+## Knowledge References
+
+### Phase-Specific:
+- experience-map-schema.md §States: screen state coverage requirements
+- journey-emotion-schema.md: journey completeness validation
+- consumer-maturity-patterns.md: consumer maturity gap detection
+
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `gap-tasks.json` | `gaps[].task_ref`, `gaps[].priority` | feature-prune | required | 裁剪决策基于差距任务列表及其优先级 |
+| `gap-report.md` | — | generate-artifacts | optional | 生成文档时参考差距分析报告 |
 
 ## Composition Hints
 
-### Included in pa-verify (default)
-Feature gap analysis is a sub-phase of product-analysis-verify by default.
-Do NOT generate a separate feature-gap node when pa-verify exists.
+### Single Node (default)
+Run after product-analysis + generate-artifacts.
 
-### Standalone Node
-Only when pa-verify is split by dimension for very large projects:
-pa-verify splits into use-case-tree + feature-gap + design-audit as independent nodes.
-In this case feature-gap uses this capability template.
-
-### Split by Dimension
-Very large standalone feature-gap: separate CRUD-gap, journey-gap, and screen-gap nodes.
+### Merge with Product Analysis
+For simple projects: gap analysis as the final step of product-analysis node.

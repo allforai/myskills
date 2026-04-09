@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "drifted_at": "2026-04-01T15:00:00Z",
+  "last_merged_batch": "2026-04-01T14:00:00Z",
+  "source_batches": ["2026-04-01T11:00:00Z", "2026-04-01T14:00:00Z"],
+  "changes": [
+    {
+      "type": "tech_changed",
+      "target": "R1 宠物主人 mobile client",
+      "before": "flutter-mobile",
+      "after": "swiftui-ios",
+      "impact": ["workflow", "code"]
+    },
+    {
+      "type": "feature_removed",
+      "target": "宠物医生在线咨询",
+      "before": "in features[] + differentiators[]",
+      "after": "moved to eliminate[]",
+      "impact": ["product-map", "experience-map", "workflow", "code"]
+    },
+    {
+      "type": "role_removed",
+      "target": "R2 宠物医生",
+      "before": "in roles[]",
+      "after": "removed",
+      "impact": ["product-map", "experience-map", "workflow", "code"]
+    },
+    {
+      "type": "feature_added",
+      "target": "宠物寄养服务（LBS 查找附近寄养家庭）",
+      "before": "not in concept",
+      "after": "added to features[] + differentiators[]",
+      "impact": ["product-map", "experience-map", "workflow"]
+    },
+    {
+      "type": "feature_modified",
+      "target": "社区帖子",
+      "before": "图文分享、评论、点赞",
+      "after": "图文+短视频分享、评论、点赞",
+      "impact": ["product-map", "experience-map", "workflow", "code"]
+    }
+  ],
+  "resolved": false
+}

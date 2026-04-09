@@ -1,0 +1,157 @@
+{
+  "schema_version": "2.0",
+  "project": "megamart",
+  "goal": "从零构建跨境电商平台 MVP",
+  "planned_at": "2026-04-01T18:00:00Z",
+  "_comment": "BEFORE Step 3.5. LLM focused on core commerce flow, missed several MVP features and many closures.",
+  "nodes": [
+    {
+      "id": "product-analysis",
+      "goal": "生成产品地图：8 角色、任务清单、业务流程、体验地图",
+      "exit_artifacts": [".allforai/product-map/role-profiles.json", ".allforai/product-map/task-inventory.json", ".allforai/product-map/business-flows.json", ".allforai/experience-map/experience-map.json"],
+      "knowledge_refs": ["product-analysis.md"],
+      "consumers": ["implement-user-svc", "implement-product-svc", "implement-order-svc", "implement-payment-svc", "implement-logistics-svc", "implement-seller-svc"]
+    },
+    {
+      "id": "setup-infra",
+      "goal": "配置基础设施：PostgreSQL、MongoDB、Redis、Elasticsearch、NATS、S3、API 网关",
+      "exit_artifacts": ["svc-gateway/config/.env", "docker-compose.yml"],
+      "knowledge_refs": [],
+      "consumers": ["implement-user-svc"]
+    },
+    {
+      "id": "implement-gateway",
+      "goal": "实现 API 网关：路由、限流、JWT 鉴权、CORS",
+      "exit_artifacts": ["svc-gateway/main.go"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["implement-user-svc"]
+    },
+    {
+      "id": "implement-user-svc",
+      "goal": "实现用户服务：注册、登录、JWT Token、用户 Profile",
+      "exit_artifacts": ["svc-user/main.go"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["implement-buyer-app", "implement-seller-portal"]
+    },
+    {
+      "id": "implement-product-svc",
+      "goal": "实现商品服务：SKU CRUD、类目树、Elasticsearch 同步、商品搜索 API",
+      "exit_artifacts": ["svc-product/main.go"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["implement-buyer-app", "implement-seller-portal"]
+    },
+    {
+      "id": "implement-order-svc",
+      "goal": "实现订单服务：创建订单、支付回调、状态机（待支付→已支付→已发货→已收货）",
+      "exit_artifacts": ["svc-order/main.go"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["implement-buyer-app", "implement-seller-portal"]
+    },
+    {
+      "id": "implement-payment-svc",
+      "goal": "实现支付服务：Stripe/PayPal 集成、多币种、支付回调",
+      "exit_artifacts": ["svc-payment/main.go"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["implement-order-svc"]
+    },
+    {
+      "id": "implement-logistics-svc",
+      "goal": "实现物流服务：物流单创建、状态更新、多段追踪",
+      "exit_artifacts": ["svc-logistics/main.go"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["implement-buyer-app"]
+    },
+    {
+      "id": "implement-seller-svc",
+      "goal": "实现卖家服务：入驻申请、审核流程、商品上架、订单履约",
+      "exit_artifacts": ["svc-seller/main.go"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["implement-seller-portal", "implement-ops-admin"]
+    },
+    {
+      "id": "implement-buyer-app",
+      "goal": "实现 React Native 买家 App：搜索、商品详情、购物车、下单、物流追踪",
+      "exit_artifacts": ["buyer-app/App.tsx"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["compile-verify-buyer"]
+    },
+    {
+      "id": "implement-seller-portal",
+      "goal": "实现卖家后台：商品管理、订单列表、发货操作",
+      "exit_artifacts": ["seller-portal/src/app/page.tsx"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["compile-verify-seller"]
+    },
+    {
+      "id": "implement-ops-admin",
+      "goal": "实现运营后台：类目管理、卖家审核",
+      "exit_artifacts": ["ops-admin/src/app/page.tsx"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["compile-verify-ops"]
+    },
+    {
+      "id": "compile-verify-backend",
+      "goal": "编译验证所有 Go 后端微服务",
+      "exit_artifacts": [".allforai/bootstrap/compile-verify-backend-result.json"],
+      "knowledge_refs": ["compile-verify.md"],
+      "consumers": ["demo-forge"]
+    },
+    {
+      "id": "compile-verify-buyer",
+      "goal": "编译验证 React Native 买家 App",
+      "exit_artifacts": [".allforai/bootstrap/compile-verify-buyer-result.json"],
+      "knowledge_refs": ["compile-verify.md"],
+      "consumers": ["e2e-test-buyer"]
+    },
+    {
+      "id": "compile-verify-seller",
+      "goal": "编译验证卖家后台",
+      "exit_artifacts": [".allforai/bootstrap/compile-verify-seller-result.json"],
+      "knowledge_refs": ["compile-verify.md"],
+      "consumers": ["e2e-test-seller"]
+    },
+    {
+      "id": "compile-verify-ops",
+      "goal": "编译验证运营后台",
+      "exit_artifacts": [".allforai/bootstrap/compile-verify-ops-result.json"],
+      "knowledge_refs": ["compile-verify.md"],
+      "consumers": ["e2e-test-ops"]
+    },
+    {
+      "id": "demo-forge",
+      "goal": "填充演示数据：商品、用户、卖家、订单",
+      "exit_artifacts": [".allforai/demo-forge/forge-data.json"],
+      "knowledge_refs": ["demo-forge.md"],
+      "consumers": ["e2e-test-buyer", "e2e-test-seller", "e2e-test-ops"]
+    },
+    {
+      "id": "e2e-test-buyer",
+      "goal": "买家 App E2E 测试（Detox）：搜索→详情→购物车→下单→追踪",
+      "exit_artifacts": [".allforai/bootstrap/e2e-buyer-result.json"],
+      "knowledge_refs": ["test-verify.md"],
+      "consumers": ["concept-acceptance"]
+    },
+    {
+      "id": "e2e-test-seller",
+      "goal": "卖家后台 E2E 测试（Playwright）：上架→订单→发货",
+      "exit_artifacts": [".allforai/bootstrap/e2e-seller-result.json"],
+      "knowledge_refs": ["test-verify.md"],
+      "consumers": ["concept-acceptance"]
+    },
+    {
+      "id": "e2e-test-ops",
+      "goal": "运营后台 E2E 测试（Playwright）：类目管理→卖家审核",
+      "exit_artifacts": [".allforai/bootstrap/e2e-ops-result.json"],
+      "knowledge_refs": ["test-verify.md"],
+      "consumers": ["concept-acceptance"]
+    },
+    {
+      "id": "concept-acceptance",
+      "goal": "对照产品概念验收最终产品体验",
+      "exit_artifacts": [".allforai/concept-acceptance/acceptance-report.json", ".allforai/concept-acceptance/acceptance-report.md", ".allforai/product-concept/iteration-feedback.json"],
+      "knowledge_refs": ["concept-acceptance.md"],
+      "consumers": []
+    }
+  ],
+  "transition_log": []
+}

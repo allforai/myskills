@@ -2,7 +2,7 @@
 name: bootstrap
 description: >
   Internal skill for /bootstrap command. Performs lightweight project analysis,
-  generates project-specific node-specs and state-machine.json, validates products,
+  generates project-specific node-specs and workflow.json, validates products,
   and writes to target project. Use when user runs /bootstrap.
 ---
 
@@ -12,7 +12,7 @@ description: >
 
 Bootstrap analyzes a target project and generates project-specific configurations:
 - node-specs (one per workflow node, fully specialized)
-- state-machine.json (node list + safety rules + progress tracking)
+- workflow.json (node graph + transition log)
 - .claude/commands/run.md (orchestrator entry point)
 
 All generated products are written to the target project directory.
@@ -36,13 +36,19 @@ ls .allforai/product-map/ .allforai/experience-map/ .allforai/use-case/ .allfora
 Record what exists:
 - `has_product_artifacts`: true if product-map/task-inventory.json exists
 - `has_experience_map`: true if experience-map/experience-map.json exists
-- `has_bootstrap`: true if bootstrap/state-machine.json exists (previous /bootstrap run)
+- `has_bootstrap`: true if bootstrap/workflow.json exists (previous /bootstrap run)
 - `has_code`: true if any code files detected in Step 1.1
+- `has_iteration_feedback`: true if product-concept/iteration-feedback.json exists (previous concept-acceptance feedback)
+- `has_product_concept`: true if product-concept/product-concept.json exists
+- `has_decision_journal`: true if product-concept/decision-journal.json exists (previous /journal records)
+- `has_concept_drift`: true if product-concept/concept-drift.json exists AND its `resolved` field is false
 
 This affects Step 1.5 options:
 - has_product_artifacts + has_code → verification/demo/tune options are relevant
 - has_bootstrap → offer to reuse or regenerate
 - no code + no artifacts → only "create" option
+- has_iteration_feedback → LLM reads feedback in Step 2, prioritizes fixing previous gaps in Step 3
+- has_concept_drift → Step 3 uses incremental re-planning (Step 3.0) instead of full planning
 
 ### 1.1 Read Root Indicators
 
@@ -57,6 +63,11 @@ Read these files if they exist (skip missing ones silently):
 - build.gradle, build.gradle.kts, settings.gradle
 - requirements.txt, pyproject.toml, setup.py, Pipfile
 - Gemfile, composer.json, pom.xml, *.csproj, *.sln
+
+**Game engines:**
+- ProjectSettings/ProjectVersion.txt, Assets/ (Unity)
+- *.uproject, Source/ (Unreal Engine)
+- project.godot (Godot)
 
 **Configuration:**
 - tsconfig.json, jsconfig.json
@@ -133,9 +144,10 @@ Ask the user ONE combined question. Format depends on detected state (from Step 
    e) 代码治理（架构合规 + 重复检测 + 抽象分析）
    f) 演示数据（生成 demo-ready 数据集）
    g) UI 精修（UI 还原度修复）
-   h) 功能验收（静态 + Playwright 动态验证）
+   h) 功能验收（静态 + 全模块 E2E 动态验证）
    i) 视觉验收（截图对比）
    j) 质量检查（死链 + 字段一致性）
+   k) 上架准备（竞品调研 → 概念定稿 → 缺口实现 → 合规 → 上架清单）
 ```
 
 **If code exists but no artifacts (has_code, no has_product_artifacts):**
@@ -147,6 +159,7 @@ Bootstrap 分析完成。请确认目标（可多选）：
    b) 跨栈复刻（分析 + 翻译到目标技术栈）
    c) 同栈重建（分析 + 按目标架构重新生成）
    e) 代码治理（架构合规 + 重复检测 + 抽象分析）
+   k) 上架准备（竞品调研 → 概念定稿 → 缺口实现 → 合规 → 上架清单）
 
 目标技术栈（仅 b/c 需回答）：
    前端：___
@@ -175,20 +188,60 @@ UI 还原度（仅有前端翻译时）：
 
 4. 业务领域：
    a) 电商  b) 金融  c) 医疗  d) SaaS  e) 社交  f) 游戏  g) 其他：___
+
+5. 基础设施需求（可选，复杂项目建议回答）：
+   实时通信：___（如 WebSocket/gRPC/SSE/无）
+   消息队列：___（如 Kafka/NATS/Redis Pub-Sub/无）
+   文件存储：___（如 S3/MinIO/本地/无）
+   搜索引擎：___（如 Elasticsearch/Meilisearch/无）
 ```
 
 **Goal mapping (can combine multiple):**
-- (a) → `goals: ["analyze"]`
-- (b) → `goals: ["analyze", "translate"]`, record target_stacks
-- (c) → `goals: ["analyze", "rebuild"]`, record target_stacks
-- (d) → `goals: ["create"]`, record target_stacks + product_vision
+- (a) → `goals: ["reverse-concept", "analyze"]`. reverse-concept is mandatory for analyze — without it, product-analysis has no independent baseline and becomes circular (checking code against code-derived artifacts). reverse-concept produces concept-baseline.json which all downstream phases auto-load.
+- (b) → `goals: ["analyze", "translate", "demo", "concept-acceptance"]`, record target_stacks. demo-forge is auto-included because translate produces code that needs integration testing. concept-acceptance is auto-included when product-concept.json exists.
+- (c) → `goals: ["analyze", "rebuild", "demo", "concept-acceptance"]`, record target_stacks. demo-forge is auto-included because rebuild produces code that needs integration testing. concept-acceptance is auto-included when product-concept.json exists.
+- (d) → `goals: ["create", "demo", "concept-acceptance"]`, record target_stacks + product_vision. demo-forge is auto-included because new code needs integration testing. concept-acceptance is auto-included when product-concept.json exists.
 - (e) → `goals: ["tune"]`
 - (f) → `goals: ["demo"]`
 - (g) → `goals: ["ui-forge"]`
 - (h) → `goals: ["product-verify"]`
 - (i) → `goals: ["visual-verify"]`
 - (j) → `goals: ["quality-checks"]`
+- (k) → `goals: ["launch-prep"]`. When product-concept artifacts don't exist, auto-prepend `reverse-concept` (need concept baseline before making launch decisions). launch-prep includes competitive research → concept finalization → gap implementation → compliance → checklist. The competitive research phase MUST run before any pricing/tier decisions are presented to the user — never ask the user to pick a price without data.
 - Combinations: user can select e.g. "a + e" or "h + i + j" (full verification suite)
+- **demo-forge is automatically added** to any goal that includes code implementation (translate/rebuild/create). Reason: API-driven data population is the strongest integration test — it exposes runtime issues that compile-verify cannot catch (wrong routes, missing fields, broken relationships, auth failures).
+- **concept-acceptance is automatically added** to any goal that includes code implementation (translate/rebuild/create) AND `has_product_concept` is true. Reason: without verifying the final product experience against the original concept, the development loop never closes — product-verify checks code vs design artifacts, but not experience vs concept.
+
+### 1.5.1 Runtime Environment Awareness (when goals include code implementation)
+
+When goals include translate/rebuild/create (b/c/d), demo-forge will run and needs a live
+environment. Bootstrap does NOT collect env details here — that is the job of a generated
+node-spec.
+
+**What bootstrap does in this step:**
+
+1. Note that goals require runtime environment
+2. In Step 3 (Plan Workflow), if the project needs runtime environment setup (databases,
+   caches, AI services, storage, auth, etc.), LLM should include a runtime environment
+   setup node as an **early node before any code execution** (before demo-forge, before
+   any service startup). The node name should be project-specific (e.g.,
+   `setup-env-go-pg-redis`, `configure-aws-services`).
+3. The runtime environment node-spec is **project-specific** — LLM generates it based on
+   Step 1.1-1.4 analysis (detected databases, caches, AI services, storage, auth, etc.)
+
+**What the generated runtime environment node does (at /run time):**
+
+1. Read `.env.example`, `docker-compose.yml`, config files to identify all required env vars
+2. Check what's already configured (`.env` exists? docker-compose covers it? service reachable?)
+3. Ask the user for ONLY missing items (project-specific, not a fixed template)
+4. Write/update `.env`, verify services are reachable
+5. Record runtime state in `.allforai/bootstrap/runtime-env.json`
+
+**Why a node, not a bootstrap step?**
+- Bootstrap is a template — it doesn't know project-specific env vars
+- The node-spec is generated by LLM after analyzing the project — it knows exactly what to ask
+- The node runs at `/run` time with interactive access to the user
+- If the user re-runs `/run` later, the node re-validates (env may have changed)
 
 ### 1.6 Output bootstrap-profile.json
 
@@ -239,395 +292,987 @@ Write to `.allforai/bootstrap/bootstrap-profile.json`:
   },
   "detected_patterns": ["<REST API>", "<JWT auth>", "<Redis cache>", "..."],
   "architecture_pattern": "<MVC/Clean/Layered/Feature-sliced/...>",
-  "complexity_estimate": "low | medium | high"
+  "complexity_estimate": "low | medium | high",
+  "requires_runtime_env": true
+}
 }
 ```
 
 ---
 
-## Step 2: Select Relevant Knowledge
+## Step 2: Load Knowledge (Reference, Not Menu)
 
-Based on bootstrap-profile.json, load knowledge files:
+> Goal: Absorb all available knowledge before planning.
+> Capabilities are REFERENCE material — LLM reads them for methodology
+> guidance, NOT as a list of nodes to select from.
 
-### 2.1 Node Templates (always load all)
+### 2.1 Load All Capabilities
 
 Read all files in `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/*.md`.
-Each file's "What Bootstrap Specializes" section tells you what to customize.
+These describe WHAT each type of work involves and WHAT methodology to apply.
+They are NOT a menu — LLM will freely design nodes that may combine, split,
+skip, or go beyond what any single capability describes.
 
-### 2.2 Determine Which Capabilities and Nodes Are Needed
+### 2.2 Load Domain Knowledge
 
-Bootstrap reads all capability files in `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/`.
-Each file's "Composition Hints" section tells you when to include it and how to split/merge.
+Check if `${CLAUDE_PLUGIN_ROOT}/knowledge/domains/<domain>.md` matches the
+detected business_domain. If yes, load it — it contains domain-specific
+design stages, theory anchors, and output artifacts that override or
+supplement standard capabilities.
 
-**Node count and granularity are project-dependent.** Bootstrap decides freely based on
-project complexity. A simple CLI might get 3 nodes; a microservice system might get 15.
+### 2.2.1 Cross-Domain Methodology Loading
 
-**Capability selection guide:**
+If the product description mentions design patterns from another domain, load
+that domain's methodology sections as supplementary reference (not as primary
+domain override).
 
-| Condition | Capabilities to include |
-|-----------|------------------------|
-| New product (no existing code) | **product-concept** (always first — project starting point) |
-| Any existing project | discovery, product-analysis-core, product-analysis-ux, product-analysis-verify |
-| Existing code (extraction) | generate-artifacts (before pa-core, writes to extracted/) |
-| Standard web/mobile app | (feature-gap included in pa-verify) |
-| Has UI design needs | ui-design |
-| Has target tech stack (translation) | translate, compile-verify |
-| From scratch (no source code) | **implement**, compile-verify |
-| Has frontend to translate | visual-verify |
-| Has tests or needs tests | test-verify |
-| Post-implementation | product-verify, quality-checks |
-| User wants governance (backend) | tune |
-| User wants governance (frontend) | tune-frontend |
-| Has frontend + needs polish | ui-forge |
-| Needs demo data | demo-forge |
+**Common cross-domain patterns:**
+- Product uses gamification (XP, streaks, leaderboards, leagues) but is NOT a game
+  → load `gaming.md` for: Sink-Source, Flow Theory, progression-system, monetization patterns
+- Product has real-time chat/messaging but is NOT an IM app
+  → load `social-messaging.md` for: message sync, presence, typing indicators check dimensions
+- Product has marketplace/transactions but is NOT an ecommerce platform
+  → load `ecommerce.md` for: payment integration, order state machine check dimensions
 
-**Starting point depends on user's goal:**
-- 从零构建新产品 → **product-concept** 是起点，实现用 **implement**（不是 translate）
-- 复刻/迁移已有代码 → **discovery** 是起点，实现用 **translate**
-- 治理已有代码 → **discovery + tune + tune-frontend** 是起点
-- 已有 .allforai/ 产物，补充实施 → **implement** 或 **demo-forge** 是起点
-- 已实施完，做验收 → **product-verify** 或 **visual-verify** 是起点
+**Rules:**
+- Cross-domain files are REFERENCE only — do not apply their 替代关系 (replacement stages)
+- Only load methodology sections (theory anchors, check dimensions), skip node graphs and category tables
+- Primary domain file (if any) takes precedence on conflicts
 
-Bootstrap 根据 `goals` 字段（Step 1.5 收集）决定起点。
+### 2.3 Load Cross-Phase Knowledge
 
-**How to compose nodes from capabilities:**
-- Read each selected capability's "Composition Hints"
-- Simple project: merge related capabilities (discovery + analysis = 1 node)
-- Complex project: split capabilities (discovery per service = N nodes)
-- translate capability ALWAYS becomes multiple nodes (one per target platform)
+Always load these (they apply to ALL nodes regardless of type):
+- `${CLAUDE_PLUGIN_ROOT}/knowledge/cross-phase-protocols.md`
+- `${CLAUDE_PLUGIN_ROOT}/knowledge/defensive-patterns.md`
+- `${CLAUDE_PLUGIN_ROOT}/knowledge/product-design-theory.md`
 
-**When to use fan_out vs multiple nodes:**
-- **Different platforms/stacks** → separate nodes (translate-react-to-swiftui, translate-express-to-vapor)
-  Each needs its own node-spec with platform-specific instructions.
-- **Same work repeated for N modules** → one node with fan_out (translate N packages, tune N services)
-  The node-spec body is identical except for `{{FAN_OUT_ITEM}}`.
-- Rule of thumb: if the node-spec body would be copy-pasted N times with only the target path changed, use fan_out.
+### 2.4 Load Tech Stack Mappings (if translating)
 
-**Do NOT generate fixed node names.** Node IDs should reflect the project:
-- `discover-frontend` not `discovery-structure`
-- `translate-react-to-swiftui` not `translate-frontend`
-- `verify-ios-build` not `compile-verify`
+Check if `${CLAUDE_PLUGIN_ROOT}/knowledge/mappings/<source>-<target>.md` exists.
+Also check `${CLAUDE_PLUGIN_ROOT}/knowledge/learned/` and
+`.allforai/bootstrap/learned/` for prior experience.
 
-### 2.3 Tech Stack Mappings
+### 2.5 Load Iteration Feedback (if re-bootstrapping)
 
-Check if `${CLAUDE_PLUGIN_ROOT}/knowledge/mappings/<source>-<target>.md` exists for the detected stack pair. If yes, load it. If no, note that mappings will be LLM-generated (no preset).
+If `has_iteration_feedback` (from Step 1.0):
 
-Also check for prior experience in TWO locations:
-1. `${CLAUDE_PLUGIN_ROOT}/knowledge/learned/` — cross-project experience (from other projects)
-2. `.allforai/bootstrap/learned/` — this project's prior experience (from previous /run)
+Read `.allforai/product-concept/iteration-feedback.json`. This contains:
+- Previous concept-acceptance score and verdict
+- Gaps found in the last iteration
+- Recommended actions (fix_gap, simplify_flow, reconsider_concept, deprioritize)
+- User decisions from re-bootstrap
 
-If both exist for the same stack pair, merge them. Project-local experience takes precedence.
+LLM uses this in Step 3 to:
+- Prioritize nodes that address previous gaps
+- Avoid repeating the same planning mistakes
+- If user made decisions (e.g., "move social sharing to post-launch"), respect them
 
-### 2.4 Domain Knowledge
+If `user_decisions` is empty but `recommended_actions` exists, LLM infers decisions
+by comparing the current `product-concept.json` against the previous iteration's gaps:
+- Feature removed from concept → user decided to deprioritize
+- Feature moved to post_launch → user decided to defer
+- Feature still in must_have → user wants it fixed
+Record inferred decisions in `iteration-feedback.json` → `user_decisions[]` for audit.
 
-Check if `${CLAUDE_PLUGIN_ROOT}/knowledge/domains/<domain>.md` matches the detected business_domain. If yes, load it. If no, skip (LLM will infer domain patterns from code).
+If `has_product_concept` (from Step 1.0):
 
-### 2.5 Safety Template
+Read `.allforai/product-concept/product-concept.json`. This is needed for Step 3.5 Coverage Self-Check.
 
-Read `${CLAUDE_PLUGIN_ROOT}/knowledge/safety.md` for default safety configuration.
+### 2.6 Load Decision Journal (if exists)
 
-> **After Step 2, do NOT ask the user anything yet.** Proceed to generation,
-> then present the summary in Step 5.5 for confirmation.
+Check if `.allforai/product-concept/decision-journal.json` exists. If yes, read it.
 
----
+This file contains product decisions made during previous development sessions,
+recorded via the `/journal` command. Each batch has a timestamp, topic, and
+list of decisions with question/chosen/rationale.
 
-## Step 3: Generate Node-Specs
+LLM uses this in Step 3 to:
+- **Respect previous decisions**: if user decided "login: email + Apple + Google, no WeChat",
+  do not plan a WeChat login node
+- **Detect conflicts**: if a decision contradicts the product-map, flag it (the decision
+  is newer and likely correct — suggest updating the product-map)
+- **Avoid re-asking**: if a question was already answered in the journal, don't ask again
+  in Step 1.5
 
-For each node determined in Step 2.2, generate a project-specific node-spec file.
+The journal is append-only. Later batches can supersede earlier ones (check `supersedes` field).
+When decisions conflict, the latest batch wins.
 
-### Node-Spec Format
+### 2.7 Knowledge Gap Research (if project scope exceeds loaded knowledge)
 
-Every node-spec is a Markdown file with YAML frontmatter:
+After loading all knowledge, LLM self-checks: does the loaded domain knowledge
+cover ALL major subsystems in this project?
 
-```yaml
----
-node: <node-id>
-entry_requires:
-  - <require declaration using check_requires.py primitives>
-exit_requires:
-  - <require declaration using check_requires.py primitives>
-# Optional: fan_out for batch processing (monorepo packages, multiple modules, etc.)
-fan_out:
-  source: <file path, e.g. .allforai/bootstrap/bootstrap-profile.json>
-  path: <simple JSONPath to array, e.g. $.modules>
-  filter: {field: "role", equals: "backend"}   # optional, filter array elements
-  parallel: true   # false = sequential
----
-```
+**Trigger:** The project description or product vision mentions subsystems, business
+models, or technical patterns NOT covered by the loaded domain file or capabilities.
 
-Followed by a complete subagent instruction in Markdown.
+**Examples of gaps that trigger research:**
+- Ecommerce project mentions "self-operated logistics" but domain file only covers
+  third-party logistics → WebSearch: "WMS warehouse management system design patterns"
+- Social app mentions "live streaming" but no domain file covers it →
+  WebSearch: "live streaming architecture CDN RTMP WebRTC"
+- Fintech project mentions "KYC/AML compliance" but no domain file covers it →
+  WebSearch: "KYC AML compliance system design"
 
-**fan_out** (optional): When present, the orchestrator mechanically expands the node into
-one sub-task per array element. Each subagent receives the node-spec body with `{{FAN_OUT_ITEM}}`
-replaced by the current element (JSON string). The node succeeds only when ALL sub-tasks succeed.
+**Action:** For each identified gap, run 1-2 WebSearch queries to understand:
+- What are the core components of this subsystem?
+- What are the key state machines / business flows?
+- What are the common pitfalls?
 
-Use fan_out when a node needs to repeat the same work for N items (e.g., translate N packages,
-verify N services). Without it, the LLM loops manually and may skip items.
+Incorporate findings into Step 3 planning. Do NOT write findings to files —
+they are ephemeral context for node planning only.
 
-### Require Declaration Primitives
+**Skip when:** Domain knowledge covers the project well, or the project is simple
+enough that LLM's general knowledge is sufficient.
 
-Use these formats in entry_requires / exit_requires:
-
-```yaml
-# File existence
-- file_exists: .allforai/product-map/task-inventory.json
-
-# Shell command succeeds (exit code 0)
-- command_succeeds: "npm run build 2>&1 | tail -1 | grep -q 'compiled successfully'"
-
-# JSON numeric field >= threshold
-- json_field_gte: [.allforai/product-map/task-inventory.json, "$.length", 1]
-
-# JSON array length >= minimum
-- json_array_length_gte: [.allforai/product-map/task-inventory.json, "$", 1]
-```
-
-**Use project-relative paths.** The orchestrator runs from the project root.
-
-**Critical rule for graph connectivity:**
-- `entry_requires` MUST only use `file_exists` or `json_*` primitives (no `command_succeeds`).
-  Graph connectivity analysis tracks file dependencies between nodes. `command_succeeds` is invisible to the graph.
-- `exit_requires` SHOULD include both `file_exists` (declares what this node produces) AND `command_succeeds` (verifies the output is valid).
-  Example: translate node exits with `file_exists: ios/EcommerceApp` (declares output) + `command_succeeds: xcodebuild build` (verifies it compiles).
-- If a node only has `command_succeeds` in exit_requires, downstream nodes cannot discover its output and will appear as graph orphans.
-
-### Generation Process
-
-For each node:
-
-1. Read the corresponding knowledge template (`knowledge/capabilities/<name>.md`)
-2. Read the "What Bootstrap Specializes" section
-3. For each item in that section, fill it with project-specific information from bootstrap-profile.json
-4. If a mapping file was loaded (Step 2.3), embed the mapping table in translate node-specs
-5. If a domain file was loaded (Step 2.4), embed domain hints in product-analysis node-spec
-6. Write entry_requires based on what upstream nodes produce
-7. Write exit_requires based on what this node must produce
-
-### Node Dependency Chain (for entry/exit_requires)
-
-```
-discovery-structure
-  exit: file-catalog.json, source-summary.json
-    ↓
-discovery-runtime
-  entry: source-summary.json
-  exit: infrastructure-profile.json
-    ↓
-product-analysis
-  entry: source-summary.json
-  exit: task-inventory.json, role-profiles.json, business-flows.json
-    ↓
-generate-artifacts
-  entry: task-inventory.json
-  exit: product-map.json, use-case-tree.json
-    ↓
-plan-dag (if translating)
-  entry: product-map.json, source-summary.json
-  exit: dag.json
-    ↓
-translate-frontend / translate-backend (parallel if both exist)
-  entry: dag.json
-  exit: target code compiles
-    ↓
-compile-verify
-  entry: target code exists
-  exit: full build succeeds
-    ↓
-test-verify
-  entry: build succeeds
-  exit: tests pass
-    ↓
-visual-verify (if frontend)
-  entry: build succeeds, app runs
-  exit: visual comparison passes
-```
-
-Tune, ui-forge, demo-forge are optional branches — entry_requires = build succeeds or artifacts exist.
-
-### Node-Spec Body Structure
-
-Each node-spec body should contain:
-
-```markdown
-# Task: <human-readable description>
-
-## Project Context
-<From bootstrap-profile: tech stack, modules, architecture pattern>
-
-## Protocol
-<From knowledge template: phases, steps, rules>
-<Specialized with project-specific details>
-
-## Scripts
-<Which Python scripts to call, with exact paths and arguments>
-<Paths relative to project root>
-
-## Verification
-<Exit criteria in human-readable form>
-
-## Hints
-<Project-specific tips from bootstrap analysis>
-<e.g., "React components are in src/features/*/components/">
-```
-
-### Output Directory
-
-Write generated node-specs to: `.allforai/bootstrap/node-specs/<node-id>.md`
-
-Create the directory if it doesn't exist.
+> **After Step 2, do NOT ask the user anything.** Proceed to planning.
 
 ---
 
-## Step 4: Generate state-machine.json
+## Step 3: Plan Workflow (LLM Free Planning)
 
-Build state-machine.json from the generated node-specs.
+> Goal: Design a project-specific workflow. NOT selecting from templates.
+> LLM has absorbed all knowledge in Step 2. Now freely plan what nodes
+> this specific project needs.
 
-### 4.1 Collect Nodes
+### 3.0 Incremental Re-Planning (when concept-drift exists)
 
-For each node-spec file in `.allforai/bootstrap/node-specs/`:
-1. Parse YAML frontmatter
-2. Extract: node (id), entry_requires, exit_requires
-3. Read the body for description (first `# Task:` line) and hints
+> This section only applies when `has_concept_drift` is true AND an existing
+> `workflow.json` exists. Otherwise, skip to 3.1 for full planning.
 
-### 4.2 Build Node List
+When concept has drifted since last bootstrap:
+
+1. Read `.allforai/product-concept/concept-drift.json` → changes[]
+2. Read existing `.allforai/bootstrap/workflow.json` → nodes[] + transition_log[]
+3. For each change, determine affected nodes:
+
+| Change Type | Node Action |
+|-------------|-------------|
+| feature_removed | Remove nodes whose goal is primarily about this feature. Add a `cleanup-{feature}` node if code already exists (detected from transition_log). |
+| feature_added | Add new implementation + verification nodes for the feature. |
+| feature_modified | Update affected nodes' goal and regenerate their node-specs. |
+| role_removed | Remove role-specific nodes (e.g., e2e-test for that role's app). Update shared nodes to exclude this role. |
+| tech_changed | Replace implementation + compile-verify + e2e nodes for the affected module with new tech stack equivalents. |
+| client_removed | Remove the implementation + compile-verify + e2e triplet for that client. If the role becomes single-client, Level 3 parity check no longer applies. |
+| client_added | Add implementation + compile-verify + e2e triplet for the new client. Trigger Level 3 parity check. |
+| module_merged | Remove nodes for merged services. Extend the target service node's goal to absorb merged functionality. |
+| module_split | Create new service nodes for the split-out module. Reduce the source service node's goal. |
+
+4. **Preserve unaffected nodes**: nodes whose goal does not relate to any drift change
+   remain in workflow.json with their transition_log entries intact. Completed work is not lost.
+   **Cross-change dependencies**: a tech_changed may also affect infrastructure nodes
+   (e.g., Flutter→SwiftUI means FCM push is no longer needed, only APNs). LLM must
+   trace second-order effects of each change on ALL nodes, not just the obvious ones.
+
+5. **Handle affected completed nodes**:
+   - Node removed → transition_log entry stays for audit, but node removed from nodes[]
+   - Node goal modified → clear its transition_log entry (needs re-execution)
+   - New node added → no transition_log entry yet
+
+6. Write updated workflow.json with modified nodes[] and preserved transition_log[].
+7. Regenerate node-specs for all affected nodes at `.allforai/bootstrap/node-specs/`.
+8. Proceed to Step 3.5 (Coverage Self-Check) — concept has changed, coverage must be re-verified.
+9. After Step 3.5 completes, mark drift as resolved:
+   read concept-drift.json, set `"resolved": true`, write back.
+
+**After incremental re-planning, skip 3.1-3.3** (they are for full planning) and go directly
+to Step 3.4 (Confirm with User) → Step 3.5 (Coverage Self-Check) → Step 4.
+
+### 3.1 Design the Node Graph
+
+Based on project analysis (Step 1) + absorbed knowledge (Step 2), design
+a set of nodes that will achieve the user's goal. Consider:
+
+- What needs to happen? (understand code, design product, write code, verify, populate data...)
+- What order makes sense for THIS project?
+- What can run in parallel?
+- What can be skipped or merged?
+
+**There is no fixed template.** A game project might have nodes for
+"design-economy-system" and "balance-test-combat". An SDK project might
+have "design-api-surface" and "write-getting-started-guide". A consumer
+app might have "design-onboarding-flow" and "setup-push-notifications".
+
+**Node granularity is project-dependent.** A simple CLI tool might need
+3 nodes. A microservice platform might need 20. LLM decides.
+
+**Cross-Module Consistency Check (MANDATORY for rebuild/translate goals):**
+When goals include rebuild or translate, LLM MUST check EVERY module in
+`bootstrap-profile.json.modules[]` against the product definition (product-map
+artifacts, README, or product vision). For each module, answer:
+
+1. Does this module's code reflect the current product direction?
+2. Does it implement the entities/flows defined in the product-map?
+3. Is it consistent with other modules that have already been rebuilt?
+
+If a module is **stale or inconsistent** (e.g., API has new features but
+mobile still has old UI), it MUST get an **implementation node** before any
+verification node. Verification without implementation is useless — it only
+proves that outdated code runs, not that the product works.
+
+**Concept-before-Analysis Rule (for analyze goal):**
+When goals include "analyze" (reverse analysis), the workflow MUST include a
+reverse-concept node BEFORE product-analysis nodes. The dependency chain is:
+```
+discover → reverse-concept → product-analysis → generate-artifacts
+```
+Without reverse-concept, product-analysis has no independent baseline — it becomes
+circular (extracting "what code does" without knowing "what code should do").
+reverse-concept produces concept-baseline.json (see cross-phase-protocols.md §A.1)
+which product-analysis and all downstream phases auto-load for consistency checking.
+
+See `capabilities/reverse-concept.md` for methodology and output schemas.
+
+**Implementation-before-Verification Rule:**
+For each module, nodes must follow this order:
+```
+implement (if needed) → demo/seed (if applicable) → verify
+```
+A verification node for a module without a corresponding implementation node
+is only valid if the module's code is already up-to-date with the product
+definition. If the code is stale, plan the implementation node first.
+
+Checklist (LLM must iterate before finalizing workflow):
+```
+For each module in bootstrap-profile.json.modules[]:
+  □ Is code consistent with product-map? → YES: verify only / NO: implement first
+  □ Has implementation node (if needed)?
+  □ Has verification node?
+  □ Verification depends on implementation?
+```
+
+**Functional Pipeline Completeness Check (MANDATORY):**
+After module-level checks, LLM MUST also check that cross-module functional
+pipelines are complete end-to-end. A "pipeline" is a product flow that spans
+multiple components (trigger → generation → storage → delivery → display).
+
+Check method: Read `product-map/role-profiles.json` trigger_conditions[] and
+`product-map/business-flows.json` flows[]. For each trigger/flow, trace the
+full pipeline:
+
+```
+For each trigger_condition or async business flow:
+  □ Trigger source exists? (cron job / event handler / user action)
+  □ Generation logic exists? (service that creates the data)
+  □ Storage exists? (DB table / queue)
+  □ Delivery mechanism exists? (API endpoint / push notification / WebSocket)
+  □ Client display exists? (UI that shows the result)
+```
+
+If any step in a pipeline is missing, the workflow MUST include a node to
+implement it. Common gaps that LLM must watch for:
+
+| Product Requirement | Often Missing | What to Check |
+|-------------------|---------------|---------------|
+| "Send X when Y happens" | Background scheduler/cron | Is there a goroutine/cron/worker that checks Y? |
+| "Push notification" | APNs/FCM integration | Is there push infra in the codebase? |
+| "Proactive messages" | Generation job | Endpoint exists to READ, but does anything WRITE? |
+| "Daily/weekly summary" | Aggregation job | Is there a scheduled job that aggregates data? |
+| "Real-time updates" | WebSocket/SSE | Is there a push channel, or only polling? |
+
+Example: product-map says "SRS item due → send review card". Pipeline:
+1. Trigger: cron job checks SRS due dates ← **missing if no scheduler**
+2. Generate: create ProactiveMessage record ← **missing if only read endpoint**
+3. Store: proactive_messages table ← exists
+4. Deliver: GET /messages/pending ← exists (but only pull, no push)
+5. Display: Front Desk UI ← exists
+→ Workflow needs: "implement-background-scheduler" + "implement-push-notifications"
+
+**State Machine Completeness Check (MANDATORY):**
+> **Scope**: This check applies to EXISTING CODE — verifying that code already in the
+> codebase correctly implements state machines (state storage, transitions, behavior
+> mappings). It runs during rebuild/translate goals when code exists. For NEW projects
+> (goal=create), this check is N/A — Step 3.5 Level 4 handles coverage planning instead.
+
+This check covers TWO categories of state machines:
+
+**Category 1: Business State Machines (deterministic)**
+Systems with well-defined states and transition rules driven by system events.
+Examples:
+- Message delivery: sent → delivered → read
+- Order lifecycle: created → paid → shipped → delivered → completed
+- User status: online → idle → offline (with last_seen timestamp)
+- Group membership: invited → member → admin → owner
+- Content moderation: pending → approved / rejected
+
+**Category 2: Adaptive State Machines (probabilistic)**
+Systems where state evolves based on user behavior and influences system behavior.
+Examples:
+- Learning proficiency: beginner → intermediate → advanced
+- Recommendation preferences: tracks interaction patterns → personalizes content
+- Engagement scoring: activity frequency → notification cadence
+
+After pipeline checks, LLM MUST check for **state machines** (both categories) defined
+in the product-map. Products with personalization, learning, or recommendation
+features have user states that evolve over time. The system must read the
+current state to decide behavior, and update the state after each interaction.
+
+This is NOT a linear pipeline check. It's a state machine check:
+
+```
+                    ┌─── event ───┐
+                    ▼              │
+    ┌──────────────────────┐      │
+    │   User State         │      │
+    │  ┌─ dimension_1: val │      │
+    │  ├─ dimension_2: val │──────┘
+    │  └─ dimension_3: val │  state determines
+    └──────────────────────┘  system behavior
+              │                     │
+              ▼                     ▼
+    ┌──────────────┐     ┌──────────────────┐
+    │ Transition   │     │ Behavior Mapping │
+    │ event + rule │     │ state → action   │
+    │ → new state  │     │ (what AI does)   │
+    └──────────────┘     └──────────────────┘
+```
+
+Check method: Read `product-map/task-inventory.json` tasks[]. For each task
+that describes adaptive behavior (keywords: "based on", "adjust", "personalize",
+"reinforce", "inject", "adapt", "track", "proficiency-based", "level"),
+verify three things:
+
+**1. State Definition — is the user state model complete?**
+```
+For each adaptive dimension in the product:
+  □ Is there a DB table/field that holds this state?
+  □ Does it store CURRENT value (for behavior decisions)?
+  □ Does it store HISTORY (for trend/progress reporting)?
+  □ Is the initial state defined (what value for new users)?
+```
+
+**2. State Transitions — do events update the state?**
+```
+For each user event that should change state:
+  □ Is there code that runs AFTER the event to update state?
+     (e.g., after conversation ends → update grammar_profiles, proficiency, streak)
+  □ Is the transition rule correct? (not just increment — weighted, decayed, etc.)
+  □ Does the transition handle edge cases? (first time, reset, regression)
+```
+
+**3. State→Behavior Mapping — does the system ACT on the state?**
+```
+For each adaptive behavior the product promises:
+  □ Does the code READ the user state before deciding what to do?
+     (e.g., conversation_service reads grammar_profiles before building prompt)
+  □ Does the behavior CHANGE based on state values?
+     (e.g., hint_mode=full vs keywords vs none produces different UI)
+  □ Is the mapping granular enough? (not just on/off but graduated response)
+```
+
+If any of the three is incomplete, the "adaptive" feature is actually static.
+The workflow MUST include implementation nodes to complete the state machine.
+
+Common state machine gaps:
+
+| Product Promise | State Definition | Transitions | Behavior Mapping |
+|----------------|-----------------|-------------|------------------|
+| "Adapt to user level" | proficiency table ✓ | **Missing**: no auto-update after conversation | hint UI exists but always shows same mode |
+| "Reinforce weaknesses" | grammar_profiles ✓ | errors collected ✓ | **Missing**: not injected into Persona prompt |
+| "Personalized recommendations" | **Missing**: no preference tracking | N/A | content list is same for all users |
+| "Progress over time" | current snapshot only | **Missing**: no historical snapshots | cannot show "you improved this week" |
+| "Intimacy-driven outreach" | intimacy table ✓ | level updates ✓ | **Missing**: no proactive message generation based on level |
+
+Example — FlyDict learning state machine:
+```
+User Learning State:
+  proficiency_level: beginner|intermediate|advanced
+  weakness_profile: {grammar_category: mastery_score, ...}
+  hint_mode: full_with_translation|keywords_only|none
+  persona_familiarity: {persona_id: intimacy_level, ...}
+  scene_coverage: {tag: practiced_count, ...}
+
+Events that trigger transitions:
+  conversation_end → update weakness_profile, proficiency, scene_coverage
+  review_card_answer → update SRS schedule, weakness mastery
+  growth_test_pass → upgrade proficiency_level, adjust hint_mode
+
+State→Behavior mappings:
+  weakness_profile → injected into Persona system prompt (top 3 weaknesses)
+  hint_mode → determines flash card display style
+  proficiency_level → determines hint duration, quiz difficulty
+  scene_coverage → Coco recommends uncovered Persona tags
+  persona_familiarity → Persona correction directness, topic depth
+```
+
+For each mapping, check: does the code path exist from state read → behavior change?
+If a state exists in DB but nothing reads it to change behavior → broken mapping.
+If behavior is supposed to adapt but always reads a hardcoded default → broken mapping.
+
+**Node Scope Self-Check (MANDATORY):**
+After designing the node graph, LLM MUST review each implementation node and ask:
+"Can a single subagent complete this node's goal in one execution with high quality?"
+
+Signs that a node needs splitting:
+- Node goal contains "and" connecting unrelated subsystems
+  (e.g., "implement user auth AND messaging AND file storage")
+- Node covers > 1 independent domain with no shared data model
+- Estimated output exceeds what one subagent can reliably produce
+
+If uncertain, split. Two focused nodes are better than one overloaded node.
+Each split node gets its own node-spec, exit_artifacts, and verification.
+
+**Large Project Decomposition (when total nodes > 30):**
+After completing the node graph, count the total nodes. If > 30, the project
+is likely too large for a single workflow execution. Suggest decomposition:
+
+1. Identify independent business lines (e.g., B2C shopping + logistics + B2B)
+2. Each business line becomes a separate /bootstrap → /run cycle
+3. Shared infrastructure (auth, DB, messaging) goes in the first cycle
+4. Present decomposition to user in Step 3.4 (Confirm with User):
+   ```
+   项目规模较大（{N} 个节点），建议分阶段执行：
+     Phase 1: {core business line} ({M1} 个节点)
+     Phase 2: {secondary line} ({M2} 个节点)
+     Phase 3: {tertiary line} ({M3} 个节点)
+   是否接受分阶段？还是一次性执行全部？
+   ```
+5. If user accepts: generate workflow.json for Phase 1 only, note Phase 2/3 as future
+6. If user declines: proceed with full workflow (their choice, warn about execution time)
+
+### 3.2 Write workflow.json
 
 ```json
 {
-  "schema_version": "1.0",
+  "schema_version": "2.0",
+  "project": "<project name>",
+  "goal": "<user's goal>",
+  "planned_at": "<ISO timestamp>",
   "nodes": [
     {
-      "id": "<from frontmatter node field>",
-      "description": "<from # Task: line>",
-      "entry_requires": ["<from frontmatter>"],
-      "exit_requires": ["<from frontmatter>"],
-      "hints": ["<from ## Hints section, one string per bullet>"],
-      "output_files": ["<glob patterns of files this node writes>"],
-      "fan_out": null
+      "id": "<project-specific name>",
+      "capability": "<name of the capability this node is based on, e.g. discovery, product-analysis, translate>",
+      "goal": "<one sentence: what this node achieves>",
+      "exit_artifacts": ["<file paths that prove this node is done>"],
+      "knowledge_refs": ["<which knowledge files this node should reference>"],
+      "consumers": ["<node IDs that read this node's exit_artifacts>"]
     }
   ],
-  "hooks": {
-    "pre_node": ["check_requires entry", "budget_check"],
-    "post_node": ["check_requires exit", "loop_detection", "progress_monotonicity", "node_timeout"]
-  },
-  "safety": {
-    "loop_detection": { "warn_threshold": 3, "stop_threshold": 5 },
-    "max_global_iterations": 30,
-    "progress_monotonicity": {
-      "check_interval": 5,
-      "violation_action": "output current best + TODO list"
-    },
-    "max_concurrent_nodes": 3,
-    "max_node_execution_time": 600
-  },
-  "progress": {
-    "completed_nodes": [],
-    "current_node": null,
-    "iteration_count": 0,
-    "node_summaries": {},
-    "corrections_applied": [],
-    "diagnosis_history": [],
-    "transition_log": []
+  "transition_log": []
+}
+```
+
+**Node fields:**
+- `id`: Project-specific. NOT from a fixed vocabulary.
+- `capability`: Which capability this node is based on. Matches a file in
+  `knowledge/capabilities/<capability>.md`. Used at Context Pull generation time
+  to look up which upstream artifacts this node may consume.
+- `goal`: One sentence. Clear enough that a subagent knows what to do.
+- `exit_artifacts`: File paths. Node is complete when these files exist.
+- `knowledge_refs`: Which knowledge files to inject into the node-spec.
+- `consumers`: Which downstream nodes read this node's output. Used to generate
+  the Downstream Contract section in the node-spec — tells the subagent "who
+  will consume your output and what they need from it".
+
+**No entry_requires.** The orchestrator's LLM decides execution order at runtime.
+
+**exit_artifacts 路径规范（重要）：**
+- 必须是**精确的项目相对路径**，从项目根目录开始
+- ❌ `.env`（模糊——哪个目录的 .env？）
+- ✅ `flydict-api/.env`（精确——明确是 API 子目录）
+- ❌ `config.json`（模糊）
+- ✅ `.allforai/bootstrap/migration-result.json`（精确）
+- 对于 monorepo，路径必须包含子项目前缀
+- 路径必须是执行 `check_artifacts.py` 时从项目根目录能找到的
+- 生成 workflow.json 前，LLM 应检查项目目录结构确认路径正确
+
+### 3.3 Pre-Generate Node-Specs
+
+For each node in workflow.json, generate a complete node-spec markdown file
+at `.allforai/bootstrap/node-specs/<id>.md`.
+
+**Why pre-generate?** Saves execution-time attention. Bootstrap has the
+fullest context (all knowledge loaded). Each subagent at /run time only
+needs to read its own node-spec.
+
+**Context Pull Generation (for each node-spec):**
+
+For each node, generate a `Context Pull` section using this algorithm:
+
+1. Find upstream nodes: scan workflow.json nodes[] for any node whose `consumers[]`
+   includes the current node's id.
+2. For each upstream node, read its `capability` field. Load
+   `knowledge/capabilities/<capability>.md`.
+3. In the Downstream Consumers table, keep rows where `Consumer Capability` contains
+   the CURRENT node's capability name.
+4. Filter by project relevance: skip rows where the producing capability is not
+   included in this project's workflow (e.g., skip `reuse-assessment.json` rows
+   if no node with capability=discovery produced it for this project).
+5. Split remaining rows into two groups:
+   - `required`: missing file → subagent must return error, naming the missing file
+   - `optional`: missing file → subagent logs warning and continues with fallback
+6. Write the Context Pull section as natural-language instructions (see template above).
+   Use the `Reason` column to explain why each field matters for this node's work.
+
+If a node has no upstream nodes (first in the graph), omit the Context Pull section entirely.
+
+**Maximum Realism Principle (applies to ALL node-specs):**
+When the user has provided real credentials (API keys, database connections, service URLs),
+generated node-specs MUST instruct subagents to use the REAL service, not mocks/stubs.
+Dev-mode code should check for real credentials and use them when available. Stubs are
+ONLY acceptable when no credentials are provided. This ensures demo-forge and smoke-test
+exercise the full real stack, not a fake one. Every stub is a gap in integration testing.
+
+**Full E2E Testing Principle (applies to workflow planning):**
+Every module in `bootstrap-profile.json.modules[]` MUST have a corresponding verification
+node in the workflow. No module may be silently skipped. This is NOT optional.
+
+**Coverage rule**: When planning nodes in Step 3.1, LLM MUST iterate over every module
+in the bootstrap profile and ensure each has at least one verification node. If a module
+has no verification node, the workflow is incomplete.
+
+**Verification strategy per module role:**
+
+| Module Role | Verification Tool | Node Pattern |
+|-------------|------------------|--------------|
+| backend (API) | curl / HTTP client | api-integration-test |
+| frontend (web) | Playwright browser E2E | e2e-test-{name} |
+| admin (web) | Playwright browser E2E | e2e-test-admin |
+| mobile (Flutter) | `flutter test integration_test/` on simulator/emulator | e2e-test-{name} |
+| mobile (React Native) | Detox or Maestro | e2e-test-{name} |
+| mobile (iOS/SwiftUI) | XCUITest via `xcodebuild test` | e2e-test-{name} |
+| mobile (Android/Kotlin) | Espresso via `./gradlew connectedAndroidTest` | e2e-test-{name} |
+| shared / infra | covered by consumers' tests | no separate node needed |
+
+**Playwright CANNOT test native mobile apps.** Never assign Playwright to a Flutter/iOS/Android
+module. This is a hard constraint — violating it silently passes CI while leaving mobile untested.
+
+**Verification Node Merging (optional optimization):**
+When multiple frontend modules share the same tech stack and build toolchain
+(e.g., seller-web and admin-web are both React/Vite), they MAY share a single
+compile-verify node to reduce total node count. Conditions for merging:
+- Same build command (e.g., both use `npm run build`)
+- Same test framework (e.g., both use vitest)
+- No cross-module build dependencies
+E2E nodes should NOT be merged — each module has distinct user flows and roles.
+
+**Why per-module nodes matter:**
+- API-only testing (curl) misses: broken routing, missing UI components, CSS rendering,
+  auth token flow in browser, client-side validation, CORS problems
+- Web Playwright misses: native mobile layout, platform-specific gestures, offline behavior
+- Each app is a separate deployment surface with its own failure modes
+- A passing API test does NOT prove the mobile app works
+
+**Each module's E2E node must:**
+- Use the appropriate tool for that module's tech stack (see table above)
+- Exercise core user flows end-to-end (login → navigate → CRUD → verify)
+- Produce evidence (screenshots, test reports, logs)
+- Report pass/fail per flow
+
+**Node-spec format:**
+
+```yaml
+---
+node: <id>
+exit_artifacts:
+  - <file path>
+---
+```
+
+Followed by:
+
+```markdown
+# Task: <goal, expanded into a clear task description>
+
+## Project Context
+<From bootstrap-profile: tech stack, modules, architecture>
+
+## Context Pull
+
+<Generated by bootstrap based on upstream nodes' Downstream Consumers tables.>
+<Lists which upstream artifact fields this node must read before executing.>
+<Split into required (missing = error return) and optional (missing = warning + continue).>
+<If this node has no upstream nodes, this section is omitted.>
+
+Example:
+
+**必需（缺失则报错返回，不要继续执行）：**
+- 从 `.allforai/bootstrap/source-summary.json` 读取 `tech_stacks` 字段，
+  用于了解当前项目的技术栈，作为翻译策略选择的依据。
+
+**可选（缺失则输出 warning 后继续，使用降级策略）：**
+- 从 `.allforai/bootstrap/reuse-assessment.json` 读取 `per_component` 字段，
+  用于了解每个组件的复用评估结果。缺失时按全量翻译策略继续。
+
+## Theory Anchors
+<Classical frameworks for this work, from knowledge files>
+
+## Knowledge References
+<Relevant sections from cross-phase-protocols, defensive-patterns,
+ domain knowledge, capability methodology — embedded, not just linked>
+
+## Guidance
+<LLM-generated execution guidance based on absorbed knowledge.
+ NOT fixed steps — principles, goals, quality bars, methodology.>
+
+## Exit Artifacts
+<What files must exist when done, with expected content description>
+
+## Downstream Contract
+<Who consumes this node's output, and what they need from it.
+ Generated from the consumers field in workflow.json.
+ For each consumer node: which fields/sections of the artifact they read,
+ and what format/depth they expect.>
+
+Example:
+  → design-loot-economy reads: mechanics[].name (weapon list), meta_loop.currencies
+  → implement-combat-system reads: mechanics[].parameters (concrete numbers needed)
+  → design-dungeon-generation reads: core_loop.steps (room encounter design)
+
+## Integration Points
+<Which OTHER parallel nodes produce components that THIS node must integrate.
+ When nodes run in parallel, their outputs may need to connect at specific
+ touchpoints. List each integration point explicitly so the subagent knows
+ to leave hooks or import the sibling node's components.>
+
+Example:
+  ← implement-ios-learning produces: FlashHintOverlay.swift
+    → THIS node's ChatView must: import and display FlashHintOverlay when
+      user taps "hint" button, reading hint_full/hint_translation from
+      Message.metadata
+  ← implement-ios-learning produces: WordCardView.swift
+    → THIS node's MessageBubble must: make tappable words trigger WordCardView
+```
+
+**Integration Points Rule (MANDATORY for parallel implementation nodes):**
+When multiple implementation nodes run in parallel within the same module
+(e.g., implement-ios-conversations + implement-ios-learning both produce
+files inside flydict-ios/), the bootstrap MUST identify integration points
+where their outputs need to connect.
+
+For each product flow that spans multiple parallel nodes:
+1. Trace the UI interaction path (e.g., user in ChatView taps word → WordCard)
+2. Identify which node produces the trigger (ChatView) and which produces the
+   target (WordCardView)
+3. Add an Integration Points section to BOTH node-specs:
+   - The trigger node: "must call/import X from sibling node Y"
+   - The target node: "must expose X as a reusable component callable from Y"
+
+If integration points are too complex for parallel execution, the nodes should
+be sequenced instead (one depends on the other), or a dedicated integration
+node should follow the parallel batch to wire everything together.
+
+**Integration Stitch Node (MANDATORY after parallel implementation batch):**
+When 2+ implementation nodes run in parallel within the same module, the
+workflow MUST include a dedicated `stitch-{module}` node immediately after
+the parallel batch completes, BEFORE compile-verify and E2E.
+
+The stitch node's job:
+1. Read all parallel nodes' exit artifacts (the files they created)
+2. Read product-map business-flows to identify cross-component interactions
+3. For each business flow, trace the UI path across files from different nodes
+4. Detect disconnections: component A exists, component B exists, but A doesn't
+   import/call B (or vice versa)
+5. Fix each disconnection: add imports, wire up callbacks, connect data flow
+6. Run compile check after fixes to ensure nothing broke
+7. Produce a stitch report listing all connections made
+
+```
+Parallel impl nodes → stitch-{module} → compile-verify → E2E
+                         ↑
+                   Finds and fixes:
+                   - Missing imports between sibling files
+                   - UI triggers not wired to target components
+                   - Data passed from API but not parsed by UI
+                   - Callbacks/delegates not connected
+                   - Navigation links pointing to placeholder instead of real view
+```
+
+The stitch node is lightweight (reads + patches, no new features) but catches
+the integration gaps that parallel agents cannot see. It is the cheapest place
+to catch these bugs — far cheaper than discovering them in E2E.
+
+Exit artifact: `.allforai/bootstrap/stitch-{module}-report.json` with a list
+of all connections made and any issues found.
+
+**Node-spec for stitch nodes should include:**
+- The list of parallel nodes whose outputs need stitching
+- The product-map flows that cross node boundaries
+- Specific integration points from the parallel nodes' specs
+- Compile verification after all patches
+
+**Enum Exhaustiveness Check (MANDATORY in stitch nodes):**
+When the codebase defines an enum or type set (e.g., `SemanticType` with 13 values,
+`ContentType` with 5 values, user roles, status codes, etc.), the stitch node MUST
+verify that **every enum value has a code path in every consumer**.
+
+```
+For each enum/type set defined in the codebase:
+  □ List all values (e.g., 13 semanticTypes)
+  □ For each consumer of this enum:
+    - API: is there code that GENERATES this value? (creation path)
+    - Client: is there code that RENDERS this value? (display path)
+    - E2E: is there a test that exercises this value? (test path)
+  □ Any value missing a path in any consumer → gap to fix
+```
+
+This prevents the common failure pattern where a data model defines N types but
+only M < N are actually handled downstream:
+- API defines 13 semanticTypes → conversation_service only generates 3
+- iOS MessageBubble switch has 5 cases → 8 fall through to default
+- E2E tests only exercise "chat" messages → 12 types untested
+
+The stitch node must produce a coverage matrix in its report:
+```json
+{
+  "enum_coverage": {
+    "SemanticType": {
+      "total_values": 13,
+      "api_generates": ["chat", "recast", "..."],
+      "ios_renders": ["chat", "recast", "..."],
+      "e2e_tests": ["chat"],
+      "gaps": [
+        {"value": "weekly_report", "missing_in": ["api", "e2e"]}
+      ]
+    }
   }
 }
 ```
 
-### 4.3 Validate output_files Disjointness
+**Cross-Module Stitch Node (MANDATORY for multi-module projects):**
+When the project has separate API and client modules (web/mobile), the workflow
+MUST include a `cross-module-stitch` node after all implement + intra-module
+stitch nodes complete, BEFORE compile-verify.
 
-For nodes that could run in parallel (e.g., translate-frontend + translate-backend),
-verify their output_files globs don't overlap. If they do, add a note in the node
-that they must run sequentially.
+This extends the intra-module stitch (above) to cover cross-module integration.
+Intra-module stitch catches missing imports within one codebase; cross-module
+stitch catches API contract mismatches between separate codebases.
 
-Write to: `.allforai/bootstrap/state-machine.json`
+The cross-module stitch node's job:
+1. Read API node's exit artifacts (route definitions, response schemas)
+2. Read each client node's exit artifacts (API call sites, type definitions)
+3. For each API endpoint, verify all consuming clients:
+   - Parse the response correctly (field names, types, nesting)
+   - Handle all response states (success, error, empty, paginated)
+   - Send correct request format (query params, body schema, auth headers)
+4. For each WebSocket/realtime message type (if applicable):
+   - Server sends it → all clients handle it
+   - Client sends it → server processes it
+5. Fix mismatches: update client code to match API contract
+6. Produce cross-module-stitch-report.json
+
+```
+Parallel impl nodes → stitch-{module} → cross-module-stitch → compile-verify → E2E
+```
+
+Exit artifact: `.allforai/bootstrap/cross-module-stitch-report.json`
+
+**Node-spec for cross-module stitch should include:**
+- The API node's exit artifacts (route/schema definitions)
+- All client nodes' exit artifacts (API call sites)
+- design-to-spec artifacts if available (api-spec.json as reference contract)
+- WebSocket/protocol message types (if applicable)
+
+### 3.5 Coverage Self-Check (Concept → Workflow Closure)
+
+> Goal: Verify that all features in product-concept.json are covered by at least one
+> workflow node. Auto-fix gaps using Closure Thinking and Reverse Backfill convergence
+> rules. Runs silently — no user confirmation needed.
+
+**Trigger**: `has_product_concept` is true (from Step 1.0). If false, skip to Step 3.4 (Confirm with User).
+
+#### 3.5.1 Extract Feature Inventory
+
+From `.allforai/product-concept/product-concept.json`, extract all declared features.
+Source fields vary by schema — LLM uses semantic understanding, not hardcoded paths:
+
+- `features[]` (structured feature list)
+- `errc_highlights.must_have[]` + `errc_highlights.differentiators[]`
+- `mvp_features[]` + `post_launch_features[]`
+- Any other field that declares "the product will do X"
+
+Output: a flat list of feature descriptions, each a natural-language statement.
+
+#### 3.5.2 Closure-Driven Coverage Check
+
+For each feature, two levels of verification:
+
+**Level 1 — Direct Coverage:**
+Does at least one node's `goal`, `exit_artifacts`, or node-spec body semantically
+cover this feature? This is LLM semantic judgment, not string matching.
+
+**Level 2 — Closure Completeness (6 types from cross-phase-protocols.md §B.3):**
+
+| Closure Type | Check |
+|-------------|-------|
+| Config Closure | Feature needs configuration → is there a node for config management? |
+| Monitoring Closure | Feature needs observability → is there a node for monitoring setup? |
+| Exception Closure | Feature has failure modes → are recovery paths covered by a node? |
+| Lifecycle Closure | Feature creates entities → is there cleanup/archival in some node? |
+| Mapping Closure | Feature has A↔B pair → is B covered? (e.g., create↔delete, buy↔refund) |
+| Navigation Closure | Feature is an entry point → is there an exit path in some node? |
+
+Closure checks are **discovery-level** (as defined in §B.6): identify and mark what
+should exist, not exhaustive implementation-level checks.
+
+**Level 3 — Multi-Client Parity (when roles have multiple clients):**
+
+If any role in product-concept.json has `clients[]` (multi-client declaration) with
+`feature_parity` = `full`, `partial`, or `explicit`:
+
+For each such role:
+1. List all clients declared for this role
+2. Determine check strategy based on parity mode:
+   - `full`: every client must cover ALL MVP features for this role
+   - `partial`: every client must cover all MVP features EXCEPT `parity_exceptions[]`
+   - `explicit`: each client only needs to cover its own `supported_features[]`
+3. For each feature × client pair that should be covered:
+   - Check if that client has a corresponding implementation node
+   - A feature that should be covered but has no node = gap
+
+Auto-fix for multi-client gaps:
+- If a feature has an implementation node for client A but not client B →
+  create or extend a node for client B
+- Each client needs its own compile-verify and E2E node (different tech stacks
+  require different build/test tools)
+
+**Backward compatibility**: if a role has only `client_type` (single client, legacy format),
+skip Level 3 for that role — Level 1 and 2 are sufficient.
+
+Example gap detection:
+```
+R1 消费者 (feature_parity: full, 3 clients):
+  "商品搜索":
+    buyer-ios:     implement-buyer-ios ✓
+    buyer-android: implement-buyer-android ✓
+    buyer-web:     ??? ← GAP: no implementation node for web client
+    → auto-fix: create implement-buyer-web node
+```
+
+**Level 4 — Adaptive State Machine Coverage (when concept has adaptive_systems):**
+> **Scope**: This check applies to WORKFLOW PLANNING — verifying that planned nodes
+> cover all state machine implementation needs (storage, transitions, schedulers).
+> It complements Step 3.1's check which verifies existing code. For new projects,
+> Level 4 is the primary state machine check. For rebuild/translate, both run:
+> Step 3.1 checks existing code gaps, Level 4 checks workflow node gaps.
+
+If `product-concept.json` contains `adaptive_systems[]`, check each state machine for
+three categories of gaps that Step 3.1's state machine check may have introduced:
+
+1. **Dead state detection**: for each state dimension, verify at least one MVP-scope
+   transition updates it. A dimension updated only by post_launch events (e.g.,
+   `ai_tutor_session`) is a "dead state" in MVP — either remove it from MVP schema
+   or add an alternative MVP-scope transition.
+
+2. **Premature mapping detection**: for each behavior mapping, check if the behavior
+   references a post_launch feature. If yes, the mapping cannot be implemented in MVP.
+   Either defer the mapping or provide an MVP-scope fallback behavior.
+
+3. **Background job detection**: for each transition or behavior that requires
+   scheduled/periodic execution (keywords: "cron", "daily", "weekly", "window",
+   "rolling", "periodic", "check every"), verify a scheduler/cron node exists in
+   the workflow. Missing scheduler = the state will never be updated.
+
+Auto-fix:
+- Dead state → add alternative transition from MVP events, or mark dimension as post_launch
+- Premature mapping → split into MVP behavior (simplified) + post_launch behavior (full)
+- Missing scheduler → create a `scheduler-{name}` node
+
+#### 3.5.3 Convergence-Controlled Auto-Fix
+
+When uncovered features or broken closures are found, LLM decides:
+
+- **Extend existing node** — if the gap is closely related to an existing node's domain
+  (same business area, same tech module). Update that node's `goal`, `exit_artifacts`,
+  and node-spec.
+- **Create new node** — if the gap is a distinct concern not covered by any existing node.
+  Append to `workflow.json` nodes[] and generate new node-spec at
+  `.allforai/bootstrap/node-specs/<new-id>.md`.
+
+**Convergence rules (from cross-phase-protocols.md §E Reverse Backfill):**
+
+1. **Concept Sets the Boundary** — Only fix gaps derivable from `product-concept.json`.
+   Features not in the concept are out of scope.
+2. **Derivation Radius Decreases** — Bootstrap only fixes Ring 0 (directly missing
+   features) and Ring 1 (first-order closure gaps, e.g., "login" exists → "password
+   recovery" missing). Ring 2+ is deferred to execution-phase Reverse Backfill.
+3. **Layer Cutoff** — Bootstrap = product design phase boundary. Ring 2+ belongs to
+   development phase.
+
+**Stop conditions (any one triggers stop):**
+
+| Condition | Meaning |
+|-----------|---------|
+| Zero output | All features covered, all closures checked, no new gaps found |
+| All downgraded | All remaining gaps are Ring 2+ (beyond bootstrap scope) |
+| Scale reversal | A "gap" item's scope exceeds its parent feature → not a gap, it's a new feature |
+
+#### 3.5.4 Write Coverage Matrix
+
+Write `.allforai/bootstrap/coverage-matrix.json`:
+
+```json
+{
+  "source": "product-concept.json",
+  "checked_at": "<ISO timestamp>",
+  "total_features": 25,
+  "covered_before_check": 22,
+  "auto_fixed": 3,
+  "closure_derived": 2,
+  "deferred_ring2_plus": 1,
+  "final_coverage_rate": "100%",
+  "matrix": [
+    {
+      "feature": "<feature description>",
+      "covered_by": ["<node-id>"],
+      "status": "covered"
+    },
+    {
+      "feature": "<feature description>",
+      "closure_type": "exception",
+      "derived_from": "<parent feature>",
+      "ring": 1,
+      "status": "auto_added",
+      "action": "extended node <node-id>"
+    },
+    {
+      "feature": "<feature description>",
+      "ring": 2,
+      "status": "deferred",
+      "reason": "ring2_cutoff | scale_reversal | all_downgraded"
+    }
+  ]
+}
+```
+
+### 3.4 Confirm with User
+
+Present summary:
+
+```
+Bootstrap 完成。
+
+项目：{project_name}
+目标：{goal}
+技术栈：{tech stacks}
+
+规划了 {N} 个节点：
+  {list each node id + goal}
+
+确认正确吗？
+```
+
+User confirms → proceed to Step 4.
 
 ---
 
-## Step 5: Generate .claude/commands/run.md
+## Step 4: Generate run.md
 
-Read `${CLAUDE_PLUGIN_ROOT}/knowledge/orchestrator-template.md` for the complete template.
-
-Replace these placeholders with project-specific values:
-- `{safety.*}` → from state-machine.json safety section
-- `{DIAGNOSIS_PROTOCOL}` → from `${CLAUDE_PLUGIN_ROOT}/knowledge/diagnosis.md`
-
+Read `${CLAUDE_PLUGIN_ROOT}/knowledge/orchestrator-template.md` for the template.
 Write the result to `.claude/commands/run.md` in the target project.
 
-**Important:** The scripts are copied to `.allforai/bootstrap/scripts/` in Step 6.2, so all paths in run.md use that project-local location.
-
-Write to: `.claude/commands/run.md`
+No customization needed beyond what the template provides — the orchestrator
+reads workflow.json at runtime, which already contains all project-specific information.
 
 ---
 
-## Step 5.5: Validate Generated Products
+## Step 5: Validate
 
-Before writing to the target project, validate everything.
-
-### Layer 1: Structural Validation (automatic)
-
-Run the validation script:
+Run:
 ```bash
 python .allforai/bootstrap/scripts/validate_bootstrap.py .allforai/bootstrap/
 ```
 
-This checks:
-- All node-spec YAML frontmatter parseable
-- Required fields present (node, entry_requires, exit_requires)
-- state-machine.json schema valid (nodes non-empty, safety complete, schema_version)
-- Graph connectivity (all nodes reachable from root)
-- No dangerous commands in exit_requires
-
-If validation fails:
-- Read the error JSON output
-- Fix the issues (re-generate affected node-specs or state-machine.json)
-- Re-run validation
-- Max 3 fix attempts, then present errors to user
-
-### Layer 2: Build Command Verification (automatic)
-
-For each build_command in bootstrap-profile.json:
-```bash
-<build_command>
-```
-
-Record exit codes. Failed commands = validation warnings (not blockers,
-since the project may need setup first).
-
-### Layer 3: User Confirmation (interactive)
-
-Present a summary to the user:
-
-```
-Bootstrap 分析完成。
-
-技术栈：{list each tech_stack with role + language + framework}
-业务域：{business_domain} — {business_context}
-架构：{architecture_pattern}
-
-生成节点（{count} 个）：
-  {list each node-id with one-line description}
-
-{if mapping loaded} 映射：{source} → {target}（{mapping_file_name}）
-{if no mapping} 映射：无预置映射，将由 LLM 推理生成
-
-{if domain loaded} 领域知识：{domain_file_name}
-{if no domain} 领域知识：无预置，将从代码推理
-
-{if build_commands tested}
-构建验证：
-  {each command + result (pass/fail)}
-{end if}
-
-{if validation had warnings}
-注意事项：
-  {list warnings}
-{end if}
-
-确认这些配置正确吗？如有问题请指出。
-```
-
-**Handle user response:**
-- User confirms → proceed to Step 6
-- User points out issues → fix the specific issues, re-validate, re-present
-- Max 3 rounds of correction
+If errors: fix and re-validate (max 3 attempts).
 
 ---
 
@@ -644,7 +1289,7 @@ mkdir -p .allforai/bootstrap/learned   # preserved across re-bootstrap
 **Re-bootstrap behavior:**
 If `.allforai/bootstrap/` already exists (previous run):
 - **Preserve**: `.allforai/bootstrap/learned/` (project experience, never delete)
-- **Overwrite**: everything else (state-machine.json, node-specs/, scripts/, protocols/)
+- **Overwrite**: everything else (workflow.json, node-specs/, scripts/, protocols/)
 - This means re-bootstrap resets workflow progress but keeps learned experience
 
 ### 6.2 Copy Orchestrator Scripts
@@ -654,9 +1299,8 @@ Copy scripts and protocol files to the target project so `/run` works independen
 ```bash
 mkdir -p .allforai/bootstrap/scripts
 mkdir -p .allforai/bootstrap/protocols
-cp ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/orchestrator/check_requires.py .allforai/bootstrap/scripts/
-cp ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/orchestrator/validate_bootstrap.py .allforai/bootstrap/scripts/
-cp ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/orchestrator/loop_detection.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/check_artifacts.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/validate_bootstrap.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/knowledge/diagnosis.md .allforai/bootstrap/protocols/
 cp ${CLAUDE_PLUGIN_ROOT}/knowledge/learning-protocol.md .allforai/bootstrap/protocols/
 cp ${CLAUDE_PLUGIN_ROOT}/knowledge/feedback-protocol.md .allforai/bootstrap/protocols/
@@ -670,16 +1314,14 @@ cp ${CLAUDE_PLUGIN_ROOT}/knowledge/feedback-protocol.md .allforai/bootstrap/prot
 
 Write these files (they were generated in memory during Steps 3-5, now persist them):
 
-1. `.allforai/bootstrap/bootstrap-profile.json` (from Step 1)
-2. `.allforai/bootstrap/state-machine.json` (from Step 4)
-3. `.allforai/bootstrap/node-specs/*.md` (from Step 3, one per node)
-4. `.claude/commands/run.md` (from Step 5)
-5. `.allforai/bootstrap/scripts/check_requires.py` (copied from plugin)
-6. `.allforai/bootstrap/scripts/validate_bootstrap.py` (copied from plugin)
-7. `.allforai/bootstrap/scripts/loop_detection.py` (copied from plugin)
-8. `.allforai/bootstrap/protocols/diagnosis.md` (copied from plugin)
-9. `.allforai/bootstrap/protocols/learning-protocol.md` (copied from plugin)
-10. `.allforai/bootstrap/protocols/feedback-protocol.md` (copied from plugin)
+1. `.allforai/bootstrap/bootstrap-profile.json`
+2. `.allforai/bootstrap/workflow.json`
+3. `.allforai/bootstrap/coverage-matrix.json` (from Step 3.5, only if product-concept.json exists)
+4. `.allforai/bootstrap/node-specs/*.md`
+5. `.claude/commands/run.md`
+6. `.allforai/bootstrap/scripts/check_artifacts.py`
+7. `.allforai/bootstrap/scripts/validate_bootstrap.py`
+8. `.allforai/bootstrap/protocols/*.md`
 
 ### 6.4 Confirm Completion
 
@@ -688,7 +1330,8 @@ Bootstrap 完成。
 
 已写入 {count} 个文件：
   .allforai/bootstrap/bootstrap-profile.json
-  .allforai/bootstrap/state-machine.json
+  .allforai/bootstrap/workflow.json
+  .allforai/bootstrap/coverage-matrix.json (覆盖率: {coverage_rate})
   .allforai/bootstrap/node-specs/ ({node_count} 个节点)
   .claude/commands/run.md
 
@@ -705,8 +1348,7 @@ Bootstrap 完成。
 If bootstrap fails at any step:
 - Steps 1-2 (analysis): Likely a file access issue. Check project path.
 - Step 3 (generation): Retry with more context from source files.
-- Step 4-5 (state-machine/run.md): Fix based on validation errors.
-- Step 5.5 (validation): Fix and re-validate (max 3 attempts).
+- Step 4-5 (run.md/validation): Fix based on validation errors.
 - Step 6 (file writing): Check directory permissions.
 
 All intermediate products are in memory until Step 6.

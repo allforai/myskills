@@ -1,0 +1,17 @@
+{
+  "schema_version": "2.0",
+  "project": "legacy-api",
+  "goal": "代码治理",
+  "planned_at": "2026-04-01T12:00:00Z",
+  "_comment": "No product-concept.json. Step 3.5 skipped. No concept-acceptance node.",
+  "nodes": [
+    {
+      "id": "code-audit",
+      "goal": "架构合规检查 + 重复代码检测 + 抽象层分析",
+      "exit_artifacts": [".allforai/code-tuner/tuner-report.json"],
+      "knowledge_refs": ["tune.md"],
+      "consumers": []
+    }
+  ],
+  "transition_log": []
+}

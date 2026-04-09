@@ -6,13 +6,13 @@
 ## When to Trigger
 
 After the orchestrator loop terminates (success or safety stop), if
-state-machine.json has any entries in:
+workflow.json has any entries in:
 - `corrections_applied` (node-spec modifications during execution)
 - `diagnosis_history` (full-chain diagnoses performed)
 
 ## Extraction Process
 
-1. Read state-machine.json progress section
+1. Read workflow.json progress section
 2. For each correction in corrections_applied:
    - Extract: which node, what was wrong, what was learned
    - Classify: mapping-gap / discovery-blind-spot / convergence / safety / other

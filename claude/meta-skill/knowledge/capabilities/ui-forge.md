@@ -57,6 +57,13 @@ Output: code changes
 4. **Function-first**: Feature must be complete before UI tuning.
 5. **Non-invasive by default**: Do not rewrite page semantics or business flows.
 
+## Knowledge References
+
+### Phase-Specific:
+- experience-map-schema.md: screen specs for UI polish targets
+- consumer-maturity-patterns.md: maturity gaps to fix
+- product-design-theory.md §Phase-6: WCAG, Gestalt for polish work
+
 ## Composition Hints
 
 ### Single Node (default)

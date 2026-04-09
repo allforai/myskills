@@ -1,0 +1,63 @@
+{
+  "schema_version": "2.0",
+  "project": "devctl",
+  "goal": "从零构建多云 CLI 管理工具",
+  "planned_at": "2026-04-01T11:00:00Z",
+  "_comment": "CLI project — no UI, no Playwright. Concept-acceptance uses shell script E2E.",
+  "nodes": [
+    {
+      "id": "product-analysis",
+      "goal": "生成产品地图：命令树、配置模型、集成点",
+      "exit_artifacts": [
+        ".allforai/product-map/task-inventory.json",
+        ".allforai/product-map/business-flows.json"
+      ],
+      "knowledge_refs": ["product-analysis.md"],
+      "consumers": ["implement-core", "implement-plugins"]
+    },
+    {
+      "id": "implement-core",
+      "goal": "实现核心模块：多云认证（凭证安全存储）、集群管理、日志聚合（tail+搜索）、配置同步（含冲突解决）",
+      "exit_artifacts": ["cmd/devctl/main.go"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["implement-plugins", "compile-verify"],
+      "_modified_by": "Step 3.5 — extended: credential secure storage (Ring 1, Config Closure), conflict resolution (Ring 1, Exception Closure)"
+    },
+    {
+      "id": "implement-plugins",
+      "goal": "实现插件系统：插件加载、安装、卸载、更新、列表",
+      "exit_artifacts": ["internal/plugin/manager.go"],
+      "knowledge_refs": ["translate.md"],
+      "consumers": ["compile-verify"],
+      "_added_by": "Step 3.5 — Ring 0 gap: 插件系统无实现节点",
+      "_modified_by": "Step 3.5 — extended: uninstall + update (Ring 1, Lifecycle Closure)"
+    },
+    {
+      "id": "compile-verify",
+      "goal": "编译验证：go build + go vet + golangci-lint",
+      "exit_artifacts": [".allforai/bootstrap/compile-verify-result.json"],
+      "knowledge_refs": ["compile-verify.md"],
+      "consumers": ["smoke-test"]
+    },
+    {
+      "id": "smoke-test",
+      "goal": "CLI 冒烟测试：每个子命令执行 --help 和基本操作",
+      "exit_artifacts": [".allforai/bootstrap/smoke-test-result.json"],
+      "knowledge_refs": ["test-verify.md"],
+      "consumers": ["concept-acceptance"]
+    },
+    {
+      "id": "concept-acceptance",
+      "goal": "对照产品概念验收 CLI 工具体验：每个核心功能的命令执行 + 输出验证",
+      "exit_artifacts": [
+        ".allforai/concept-acceptance/acceptance-report.json",
+        ".allforai/concept-acceptance/acceptance-report.md",
+        ".allforai/product-concept/iteration-feedback.json"
+      ],
+      "knowledge_refs": ["concept-acceptance.md"],
+      "consumers": [],
+      "_note": "Dynamic verification uses shell script execution, not Playwright — CLI project has no UI"
+    }
+  ],
+  "transition_log": []
+}

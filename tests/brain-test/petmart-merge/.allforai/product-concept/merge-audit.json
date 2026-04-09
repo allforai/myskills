@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "merges": [
+    {
+      "merged_at": "2026-04-01T15:00:00Z",
+      "batches_merged": ["2026-04-01T11:00:00Z", "2026-04-01T14:00:00Z"],
+      "resolutions": [
+        {
+          "decision_batch": "2026-04-01T11:00:00Z",
+          "question": "移动端技术栈选择",
+          "resolution": "accept_journal",
+          "before": "roles[R1].client_type = flutter-mobile",
+          "after": "roles[R1].client_type = swiftui-ios"
+        },
+        {
+          "decision_batch": "2026-04-01T14:00:00Z",
+          "question": "医生在线咨询功能是否保留",
+          "resolution": "accept_journal",
+          "before": "宠物医生在线咨询 in features[] + differentiators[]",
+          "after": "moved to errc_highlights.eliminate[], R2 role removed"
+        },
+        {
+          "decision_batch": "2026-04-01T14:00:00Z",
+          "question": "是否增加宠物寄养功能",
+          "resolution": "accept_journal",
+          "before": "not in concept",
+          "after": "added to features[] + differentiators[]"
+        },
+        {
+          "decision_batch": "2026-04-01T14:00:00Z",
+          "question": "社区帖子的内容形式",
+          "resolution": "accept_journal",
+          "before": "社区帖子（图文分享、评论、点赞）",
+          "after": "社区帖子（图文+短视频分享、评论、点赞）"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+domain: 域-1
+capabilities: [product-concept, reverse-concept, product-analysis]
+
+results:
+  - capability: product-concept
+    assertion_A: PASS
+    assertion_B1: N/A
+    assertion_B2: PASS
+    b1_failures: []
+    b2_findings: []
+
+  - capability: reverse-concept
+    assertion_A: PASS
+    assertion_B1: PASS
+    assertion_B2: PASS
+    b1_failures: []
+    b2_findings: []
+
+  - capability: product-analysis
+    assertion_A: PASS
+    assertion_B1: PASS
+    assertion_B2: PASS
+    b1_failures: []
+    b2_findings: []
+
+critical_violations: []

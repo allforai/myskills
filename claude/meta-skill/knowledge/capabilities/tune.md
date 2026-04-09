@@ -53,6 +53,29 @@ validation placement correctness.
 - 5D scoring: compliance(25%) + duplication(25%) + abstraction(20%) + validation(15%) + data-model(15%)
 - Output: tuner-report.md + tuner-tasks.json
 
+**tuner-tasks.json field schema:**
+```json
+{
+  "compliance_score": "<number 0-100>",
+  "duplication_score": "<number 0-100>",
+  "abstraction_score": "<number 0-100>",
+  "validation_score": "<number 0-100>",
+  "data_model_score": "<number 0-100>",
+  "composite_score": "<number 0-100 — compliance*0.25 + duplication*0.25 + abstraction*0.20 + validation*0.15 + data_model*0.15>",
+  "tuner_tasks": [
+    {
+      "id": "<string>",
+      "phase": "<enum: compliance | duplication | abstraction | validation | data-model>",
+      "severity": "<enum: critical | major | minor>",
+      "description": "<string>",
+      "file": "<string — file:line>"
+    }
+  ]
+}
+```
+`compliance_score`, `duplication_score`, `abstraction_score` are the three primary scores
+consumed by launch-prep as a baseline reference.
+
 ## Two Modes
 
 | Mode | Refactor Style | Violation Tagging | Task Order |
@@ -68,6 +91,12 @@ validation placement correctness.
 4. **Pre-launch vs maintenance**: Each finding carries both aggressive and conservative variants.
 5. **Responsibility over naming**: Layer assignment by dependency patterns and code responsibility, not folder names.
 6. **Over-abstraction detection**: Simultaneously check "should abstract" and "shouldn't have abstracted".
+
+## Knowledge References
+
+### Phase-Specific:
+- governance-styles.md: governance compliance checking
+- design-audit-dimensions.md: pattern and behavioral consistency
 
 ## Composition Hints
 

@@ -1,0 +1,14 @@
+{
+  "modules_detected": 7,
+  "constraint_violations": 0,
+  "missing_nodes": 0,
+  "tool_assignments": [
+    {"module_id": "consumer",      "e2e_tool": "flutter test integration_test/", "playwright": false},
+    {"module_id": "merchant-app",  "e2e_tool": "detox|maestro",                  "playwright": false},
+    {"module_id": "ios-vip",       "e2e_tool": "xcodebuild test",                "playwright": false},
+    {"module_id": "android-pos",   "e2e_tool": "gradlew connectedAndroidTest",   "playwright": false},
+    {"module_id": "merchant-web",  "e2e_tool": "playwright",                     "playwright": true},
+    {"module_id": "admin-web",     "e2e_tool": "playwright",                     "playwright": true},
+    {"module_id": "api",           "e2e_tool": "curl",                           "playwright": false}
+  ]
+}

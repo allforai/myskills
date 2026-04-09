@@ -1,0 +1,63 @@
+{
+  "source": "product-concept.json",
+  "checked_at": "2026-04-01T11:05:00Z",
+  "total_features": 5,
+  "covered_before_check": 4,
+  "auto_fixed": 1,
+  "closure_derived": 3,
+  "deferred_ring2_plus": 0,
+  "final_coverage_rate": "100%",
+  "matrix": [
+    {
+      "feature": "多云身份认证（AWS/GCP/Azure 统一登录）",
+      "covered_by": ["implement-core"],
+      "status": "covered"
+    },
+    {
+      "feature": "集群管理（列表/切换/状态查看）",
+      "covered_by": ["implement-core"],
+      "status": "covered"
+    },
+    {
+      "feature": "日志聚合查看（实时 tail + 搜索）",
+      "covered_by": ["implement-core"],
+      "status": "covered"
+    },
+    {
+      "feature": "配置同步（本地↔远端配置双向同步）",
+      "covered_by": ["implement-core"],
+      "status": "covered"
+    },
+    {
+      "feature": "插件系统（第三方扩展）",
+      "covered_by": ["implement-plugins"],
+      "status": "auto_added",
+      "ring": 0,
+      "action": "created new node implement-plugins"
+    },
+    {
+      "feature": "凭证安全存储",
+      "closure_type": "config",
+      "derived_from": "多云身份认证",
+      "ring": 1,
+      "status": "auto_added",
+      "action": "extended implement-core goal to include credential secure storage"
+    },
+    {
+      "feature": "配置同步冲突解决",
+      "closure_type": "exception",
+      "derived_from": "配置同步",
+      "ring": 1,
+      "status": "auto_added",
+      "action": "extended implement-core goal to include conflict resolution strategy"
+    },
+    {
+      "feature": "插件卸载与更新",
+      "closure_type": "lifecycle",
+      "derived_from": "插件系统",
+      "ring": 1,
+      "status": "auto_added",
+      "action": "extended implement-plugins goal to include uninstall and update commands"
+    }
+  ]
+}

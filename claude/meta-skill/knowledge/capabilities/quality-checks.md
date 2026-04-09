@@ -34,12 +34,59 @@ For both deadhunt and fieldcheck:
 
 Output: `.allforai/quality-checks/deadhunt-report.json` + `fieldcheck-report.json`
 
+**deadhunt-report.json field schema:**
+```json
+{
+  "dead_routes": [
+    {
+      "route": "<string>",
+      "file": "<string — file:line>",
+      "reason": "<string>"
+    }
+  ],
+  "field_mismatches": [
+    {
+      "field": "<string>",
+      "expected": "<string>",
+      "actual": "<string>",
+      "file": "<string — file:line>"
+    }
+  ],
+  "fix_tasks": [
+    {
+      "id": "<string>",
+      "type": "<enum: dead_route | field_mismatch | broken_reference>",
+      "description": "<string>",
+      "file": "<string — file:line reference>",
+      "suggested_fix": "<string>"
+    }
+  ]
+}
+```
+`fix_tasks[].file` MUST include line number (file:line format). Every finding generates a fix_task.
+
 ## Rules (Must Preserve)
 
 1. **Understand-then-scan**: LLM reads code to understand patterns FIRST, then scans. No blind grep.
 2. **No false positives on intentional gaps**: Dead code marked with `// deprecated` or `// TODO` is flagged differently from truly orphaned code.
 3. **Cross-layer tracing**: Field consistency checked across ALL layers, not just adjacent ones.
 4. **Actionable output**: Every finding has file:line reference and suggested fix.
+
+## Knowledge References
+
+### Phase-Specific:
+- design-audit-dimensions.md §Reference-Integrity: cross-artifact reference validation
+- cross-phase-protocols.md §Upstream-Baseline-Validation: staleness and fidelity checks
+
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `deadhunt-report.json` | `fix_tasks[]` | translate (fix loop) | required | 修复循环需要知道哪些死链和字段不一致要修 |
+| `fieldcheck-report.json` | `field_mismatches[]` | translate (fix loop) | required | 字段不一致修复需要具体的字段映射信息 |
 
 ## Composition Hints
 

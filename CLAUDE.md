@@ -76,18 +76,28 @@ All plugins read/write to a project-local `.allforai/` directory. This is the in
 
 ```
 .allforai/
+├── product-concept/         # product-concept.json, concept-baseline.json, decision-journal.json
 ├── product-map/             # role-profiles, task-inventory, task-index, business-flows, constraints
 ├── experience-map/          # journey-emotion-map, experience-map, interaction-gate
 ├── use-case/                # use-case-tree (JSON, machine), use-case-report (Markdown, human)
-├── feature-gap/             # task-gaps, screen-gaps, journey-gaps, gap-tasks, gap-report
-├── feature-prune/           # frequency-tier, prune-decisions, prune-tasks, prune-report
+├── feature-gap/             # gap-tasks.json, gap-report.md
+├── feature-prune/           # prune-tasks.json, frequency-tier.json, prune-report.md
+├── tech-spec/               # api-spec.json, db-schema.md, protocol-spec.md (from design-to-spec)
+├── infra-design/            # infra-design.json, infra-design.md
+├── security-design/         # security-design.json, security-design.md
+├── data-architecture/       # data-architecture.json, data-architecture.md
 ├── design-audit/            # audit-report (JSON + Markdown)
-├── ui-design/               # ui-design-spec.md + preview/*.html (per-role HTML previews)
+├── ui-design/               # ui-design-spec.md, tokens.json, interaction-spec.md, preview/*.html
 ├── seed-forge/              # seed-plan, forge-data, assets/ (dev seed data)
 ├── demo-forge/              # demo-plan, forge-data, assets/, verify-report, round-history
 ├── product-verify/          # static-report, dynamic-report, verify-report
+├── spec-compliance/         # spec-compliance-report.json
+├── pipeline-closure/        # pipeline-closure-report.json
+├── security-verify/         # security-verify-report.json
 ├── deadhunt/                # validation-profile, static-analysis/, tests/, fix-tasks
-└── code-tuner/              # tuner-profile, phase1-4 JSONs, tuner-report, tuner-tasks
+├── code-tuner/              # tuner-profile, phase1-4 JSONs, tuner-report, tuner-tasks
+├── launch-prep/             # competitive-research, compliance-checklist, launch-checklist
+└── bootstrap/               # workflow.json, bootstrap-profile.json, node-specs/, scripts/, learned/
 ```
 
 **Output contract**: JSON files are machine-readable (complete fields, for AI agents and automation); Markdown `*-report.md` files are human-readable summaries. Never duplicate JSON content in Markdown.

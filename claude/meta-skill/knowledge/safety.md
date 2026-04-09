@@ -1,6 +1,6 @@
 # Safety Rules Template
 
-> Used by bootstrap to generate the safety section of state-machine.json.
+> Used by bootstrap to generate the safety section of workflow.json.
 
 ## Default Configuration
 

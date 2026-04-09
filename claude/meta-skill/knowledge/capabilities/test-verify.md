@@ -67,6 +67,35 @@ Bootstrap sets `min_pass_rate` per layer (default: R2 = 100%, R3 = 90%, R4 = 100
 If actual rate < threshold → trigger fix loop (max 3 cycles).
 If not resolved → surface as UPSTREAM_DEFECT with per-layer breakdown.
 
+## Output Contract
+
+**test-verify-report.json field schema:**
+```json
+{
+  "results": [
+    {
+      "module_id": "<string — matches bootstrap-profile.json modules[].id>",
+      "layer": "<enum: R2 | R3 | R4>",
+      "pass_rate": "<number 0.0-1.0>",
+      "passed": "<number>",
+      "failed": "<number>",
+      "failures": ["<string — failure description>"]
+    }
+  ],
+  "composite_score": "<number 0.0-1.0 — static * 0.5 + runtime * 0.5>",
+  "verification_reasoning": [
+    {
+      "layer": "<string>",
+      "applicable": "<boolean>",
+      "reasoning": "<string>",
+      "risk_if_skipped": "<enum: low | medium | high>"
+    }
+  ]
+}
+```
+`composite_score` is consumed by downstream nodes (visual-verify, code-tuner, launch-prep).
+`results[].module_id` MUST reference a module declared in bootstrap-profile.json.
+
 ## Rules
 
 1. **Test commands from node-spec**: Bootstrap generates them per platform and test framework.
@@ -75,14 +104,57 @@ If not resolved → surface as UPSTREAM_DEFECT with per-layer breakdown.
 4. **No silent skip**: Each verification layer must be explicitly evaluated with reasoning before being excluded.
 5. **Failure routing before retry**: Classify failure type before retrying — prevents misdirected fixes.
 6. **Score persistence**: Write composite score to test-verify-report.json for downstream nodes (visual-verify, tune) to reference.
+7. **Playwright constraint**: Playwright CANNOT test native mobile apps. Never assign Playwright to Flutter/iOS/Android/React Native modules. Each mobile module MUST use its platform-native test framework (see Platform-Specific Test Commands table). This is a hard constraint — assigning Playwright to mobile silently produces passing CI with zero mobile coverage.
+
+## Knowledge References
+
+### Phase-Specific:
+- cross-phase-protocols.md §Upstream-Baseline-Validation: test results validated against product artifacts
+
+## Platform-Specific Test Commands
+
+Bootstrap MUST generate the correct test commands per platform:
+
+| Platform | Unit/Widget Tests | Integration/E2E Tests |
+|----------|------------------|-----------------------|
+| Web (Node.js) | `npm run test` / `vitest run` / `jest` | Playwright E2E |
+| Go backend | `go test ./...` | API integration tests |
+| Flutter | `flutter test` | `flutter test integration_test/` |
+| iOS (Swift) | `xcodebuild test -scheme X -destination 'platform=iOS Simulator'` | XCUITest |
+| Android (Kotlin) | `./gradlew test` | `./gradlew connectedAndroidTest` |
+| React Native | `npx jest` | Detox / Maestro |
+
+**Key rule:** Mobile test frameworks are fundamentally different from web.
+`flutter test` ≠ `npm test`. Bootstrap must detect the platform and emit the correct command.
+
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `test-verify-report.json` | `composite_score`, `results[]` | product-verify | optional | 产品验证参考测试分数决定是否值得动态验证 |
+| `test-verify-report.json` | `composite_score` | tune | optional | 代码治理参考测试覆盖率 |
 
 ## Composition Hints
 
 ### Single Node (default)
 For small-to-medium projects: one test-verify node runs all verification layers (R2-R4) sequentially.
 
-### Split into Multiple Nodes
-For large projects: split per test layer (test-verify-unit, test-verify-integration, test-verify-e2e) to isolate failure domains and allow parallel execution.
+### Split by Platform (REQUIRED for multi-platform projects)
+For projects with web + mobile: split into platform-specific nodes.
+Each platform has distinct test runners, simulators, and failure modes.
+**Do NOT put Flutter tests and Playwright tests in the same node.**
+
+- `test-verify-api` — Go backend: `go test ./...`
+- `test-verify-web` — Next.js/React/Vue: `vitest` + Playwright E2E
+- `test-verify-mobile` — Flutter: `flutter test` + `flutter test integration_test/`; React Native: `jest` + Detox; iOS: `xcodebuild test`; Android: `./gradlew connectedAndroidTest`
+
+This ensures no module is silently skipped and enables parallel execution.
+
+### Split per Test Layer
+For large single-platform projects: split per test layer (test-verify-unit, test-verify-integration, test-verify-e2e) to isolate failure domains and allow parallel execution.
 
 ### Merge with Another Capability
 For very simple projects (single platform, no custom protocols): merge compile-verify + test-verify into a single build-and-test node.

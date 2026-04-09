@@ -1,0 +1,114 @@
+{
+  "schema_version": "2.0",
+  "mission": "AI 驱动的个性化编程学习平台——根据每个学生的能力画像动态调整教学内容、难度和路径",
+  "target_market": "编程初学者到中级开发者，18-35岁，目标月活 50 万",
+  "business_domains": ["adaptive-learning", "content-management", "assessment", "gamification", "analytics"],
+  "features": [
+    "知识图谱（编程概念依赖关系、先修条件、难度分级）",
+    "自适应练习（根据学生能力动态选题、难度梯度调整）",
+    "代码沙盒（在线编辑+运行+自动评测、多语言支持）",
+    "AI 导师对话（基于学生弱点针对性讲解、苏格拉底式提问）",
+    "学习路径推荐（基于目标+当前能力→最优路径规划）",
+    "视频课程（录播+字幕+书签+笔记、进度同步）",
+    "实时编程直播课（老师编码+学生跟做+实时答疑）",
+    "项目实战（阶段性项目、代码审查、作品集）",
+    "能力评估测试（入学测试+阶段测试+模拟面试）",
+    "学习数据看板（学习时长、正确率趋势、能力雷达图）",
+    "社区问答（学生提问、AI 初筛+人工回答、投票排序）",
+    "成就与激励（学习连续天数、徽章、排行榜、经验值）",
+    "家长/导师报告（学习进度周报、弱项分析、建议）",
+    "课程创作工具（老师上传内容、题目编辑器、知识点标注）",
+    "A/B 测试框架（教学策略对比、内容效果评估）"
+  ],
+  "errc_highlights": {
+    "must_have": [
+      "知识图谱", "自适应练习", "代码沙盒", "学习路径推荐",
+      "能力评估测试", "学习数据看板"
+    ],
+    "differentiators": [
+      "AI 导师对话（苏格拉底式）",
+      "自适应难度的核心算法（不是简单的 easy/medium/hard）"
+    ],
+    "eliminate": [
+      "学历认证/证书",
+      "招聘对接",
+      "线下课程"
+    ]
+  },
+  "roles": [
+    {
+      "id": "R1", "name": "学生",
+      "clients": [
+        { "app": "learn-web", "client_type": "next-js", "platform": "desktop-web" },
+        { "app": "learn-ios", "client_type": "swiftui-ios", "platform": "ios" },
+        { "app": "learn-android", "client_type": "kotlin-android", "platform": "android" }
+      ],
+      "feature_parity": "partial",
+      "parity_exceptions": ["代码沙盒完整功能仅限 Web（移动端只读+简单编辑）", "实时直播课仅限 Web"],
+      "high_frequency_tasks": ["做练习", "看课程", "查看进度"]
+    },
+    {
+      "id": "R2", "name": "老师/内容创作者",
+      "clients": [
+        { "app": "creator-portal", "client_type": "next-js", "platform": "desktop-web" }
+      ],
+      "feature_parity": "independent",
+      "high_frequency_tasks": ["创建课程", "编辑题目", "查看学生数据"]
+    },
+    {
+      "id": "R3", "name": "家长/导师",
+      "clients": [
+        { "app": "learn-web", "client_type": "next-js", "platform": "desktop-web" },
+        { "app": "learn-ios", "client_type": "swiftui-ios", "platform": "ios" }
+      ],
+      "feature_parity": "full",
+      "high_frequency_tasks": ["查看报告", "设置学习目标"]
+    },
+    {
+      "id": "R4", "name": "平台管理员",
+      "clients": [
+        { "app": "admin-portal", "client_type": "next-js", "platform": "desktop-web" }
+      ],
+      "feature_parity": "independent",
+      "high_frequency_tasks": ["内容审核", "用户管理", "数据分析"]
+    }
+  ],
+  "adaptive_systems": [
+    {
+      "name": "学生能力模型",
+      "description": "每个学生的编程能力多维画像，驱动自适应练习和路径推荐",
+      "state_dimensions": [
+        { "dim": "concept_mastery", "type": "map<concept_id, float>", "description": "每个知识点的掌握度 0-1" },
+        { "dim": "difficulty_level", "type": "enum(beginner|elementary|intermediate|advanced|expert)", "description": "综合难度等级" },
+        { "dim": "learning_velocity", "type": "float", "description": "学习速度（近 7 天新知识点/天）" },
+        { "dim": "weakness_profile", "type": "list<concept_id>", "description": "薄弱知识点 TOP 5" },
+        { "dim": "preferred_style", "type": "enum(visual|practice|reading|interactive)", "description": "偏好学习风格" },
+        { "dim": "streak_days", "type": "int", "description": "连续学习天数" },
+        { "dim": "frustration_index", "type": "float", "description": "挫败感指数（连续错误率）" }
+      ],
+      "transitions": [
+        { "event": "exercise_completed", "updates": ["concept_mastery", "difficulty_level", "learning_velocity", "weakness_profile", "frustration_index"] },
+        { "event": "assessment_passed", "updates": ["difficulty_level", "concept_mastery"] },
+        { "event": "video_watched", "updates": ["preferred_style", "learning_velocity"] },
+        { "event": "daily_login", "updates": ["streak_days"] },
+        { "event": "ai_tutor_session", "updates": ["concept_mastery", "weakness_profile", "preferred_style"] }
+      ],
+      "behavior_mappings": [
+        { "state_read": "concept_mastery + difficulty_level", "behavior": "自适应练习选题：从知识图谱中选择掌握度 < 0.6 的前置概念已掌握的知识点" },
+        { "state_read": "weakness_profile", "behavior": "AI 导师对话：优先讲解 TOP 5 薄弱知识点" },
+        { "state_read": "learning_velocity + concept_mastery", "behavior": "学习路径推荐：根据速度和掌握度动态调整路径节点" },
+        { "state_read": "preferred_style", "behavior": "内容推荐：偏好 visual 的推视频，偏好 practice 的推练习" },
+        { "state_read": "frustration_index", "behavior": "难度降级：挫败感 > 0.7 时自动降低下一题难度，插入鼓励性内容" },
+        { "state_read": "streak_days", "behavior": "激励策略：连续 7 天解锁徽章，断签后发推送提醒" }
+      ]
+    }
+  ],
+  "mvp_features": [
+    "知识图谱", "自适应练习", "代码沙盒", "学习路径推荐",
+    "能力评估测试", "学习数据看板"
+  ],
+  "post_launch_features": [
+    "AI 导师对话", "视频课程", "实时编程直播课", "项目实战",
+    "社区问答", "成就与激励", "家长/导师报告", "课程创作工具", "A/B 测试框架"
+  ]
+}
