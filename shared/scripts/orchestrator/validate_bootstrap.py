@@ -36,6 +36,31 @@ def validate_workflow(wf_path: str) -> list:
     if len(wf["nodes"]) == 0:
         errors.append("workflow.json: nodes array is empty")
 
+    transition_log = wf.get("transition_log", [])
+    if not isinstance(transition_log, list):
+        errors.append("workflow.json: transition_log must be a list")
+    else:
+        valid_statuses = {"completed", "failed"}
+        for i, entry in enumerate(transition_log):
+            if not isinstance(entry, dict):
+                errors.append(f"workflow.json: transition_log[{i}] must be an object")
+                continue
+            for field in ["node", "status", "started_at", "completed_at", "artifacts_created"]:
+                if field not in entry:
+                    errors.append(f"workflow.json: transition_log[{i}] missing '{field}'")
+            if "status" in entry and entry["status"] not in valid_statuses:
+                errors.append(
+                    f"workflow.json: transition_log[{i}] status must be one of {sorted(valid_statuses)}"
+                )
+            if "artifacts_created" in entry and not isinstance(entry["artifacts_created"], list):
+                errors.append(
+                    f"workflow.json: transition_log[{i}] artifacts_created must be a list"
+                )
+            if entry.get("status") == "failed" and "error" not in entry:
+                errors.append(
+                    f"workflow.json: transition_log[{i}] failed entry missing 'error'"
+                )
+
     # Suspicious bare filenames that likely need a directory prefix
     SUSPICIOUS_BARE = {'.env', 'config.json', 'config.yaml', 'package.json',
                        'go.mod', 'Makefile', 'Dockerfile', 'README.md'}

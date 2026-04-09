@@ -16,6 +16,7 @@ Validation orientation:
 
 | Plugin | Scenario | Current Status | Main Confidence | Main Remaining Risk |
 |--------|----------|----------------|-----------------|---------------------|
+| `meta-skill` | Codex parity adapter | Usable at the adapter-contract level | Medium on entry/contract surface | Full end-to-end bootstrap and generated-run execution still need dedicated smoke evidence |
 | `product-design` | FreshEats | Usable | High on phase structure | Needs real run to confirm artifact contracts end-to-end |
 | `dev-forge` | TeamPulse | Usable with explicit prerequisites and reduced-context fallback | Medium-High | Full-fidelity results still depend on upstream `.allforai/product-map/` correctness |
 | `demo-forge` | MarketHub | Usable with clarified runtime reporting | Medium | Runtime/tooling assumptions and iteration routing still unproven in practice |
@@ -24,6 +25,16 @@ Validation orientation:
 | `ui-forge` | PulseCRM UI Restore | Clear and bounded | High on positioning | Real restore-vs-polish decisions still need execution evidence |
 
 ## Per-Plugin Notes
+
+### meta-skill
+
+Strengths:
+- Codex adapter now has an explicit `SKILL.md` entry, MCP registration manifest, command wrappers, and bootstrap adapter
+- Codex contract now documents `workflow.json` rather than the stale `state-machine.json` primary wording
+- Shared knowledge, scripts, tests, and MCP gateway are wired into the Codex tree
+
+Risk:
+- The generated Codex run entry is specified at the contract level, but still needs full bootstrap-to-run smoke execution evidence
 
 ### product-design
 

@@ -1,45 +1,49 @@
-# AGENTS.md — Meta-Skill Generator
+# AGENTS.md — Meta-Skill Generator (Codex)
 
-> Codex-native entry for the meta-skill generator.
-> Analyzes projects and generates project-specific workflow configurations.
+> Codex-native adapter entry for the meta-skill generator.
+> The canonical workflow graph contract is `workflow.json`.
 
 ## Commands
 
-| # | Command | Purpose |
-|---|---------|---------|
-| 1 | bootstrap | Analyze project → generate node-specs + state-machine + /run command |
-
-## How It Works
-
-1. Run `bootstrap` on a target project
-2. Bootstrap performs lightweight analysis (tech stack, modules, domain)
-3. Generates project-specific node-specs in `.allforai/bootstrap/`
-4. Generates orchestrator command (run.md) in project root
-5. Use `run [goal]` to execute any workflow
+| Command | Purpose |
+|---------|---------|
+| `bootstrap` | Analyze a target project, generate project-specific node-specs, `.allforai/bootstrap/workflow.json`, and a Codex run entry |
+| `setup` | Detect and configure optional external capabilities and MCP-backed services |
+| `journal` | Record product decisions into `.allforai/product-concept/decision-journal.json` |
+| `journal-merge` | Merge journal decisions into `product-concept.json` and emit `concept-drift.json` |
 
 ## Generated Outputs
 
-```
+```text
 .allforai/bootstrap/
-  bootstrap-profile.json    — project analysis
-  state-machine.json        — nodes + safety + progress
-  node-specs/*.md           — per-node subagent instructions
-  scripts/                  — evaluation scripts
-  protocols/                — diagnosis + learning + feedback
+  bootstrap-profile.json
+  product-summary.json
+  workflow.json
+  node-specs/*.md
+  scripts/
+  protocols/
+
+.codex/commands/
+  run.md
 ```
 
-## Knowledge Base
+## Contract Notes
 
-Shared with Claude Code and OpenCode platforms:
-- `knowledge/capabilities/` — 15 capability references
-- `knowledge/mappings/` — tech stack mapping tables
-- `knowledge/domains/` — business domain knowledge
+- `workflow.json` is the forward contract.
+- `state-machine.json` may only be read for backward compatibility during migration.
+- The generated Codex orchestrator entry is `.codex/commands/run.md`, not `.claude/commands/run.md`.
 
-## Entry Points
+## Shared Asset Strategy
 
-| Goal | Starting Capability |
-|------|-------------------|
-| New product | product-concept |
-| Replicate existing code | discovery |
-| Code governance | discovery + tune |
-| Verification | product-verify / visual-verify |
+This Codex adapter intentionally reuses the Claude meta-skill knowledge, helper scripts,
+tests, and MCP gateway from the same repository so capability content stays aligned.
+Platform-specific behavior is handled by Codex-local wrapper files in this directory.
+
+## Codex-Only Extensions
+
+Codex may carry local specialization guidance without forcing the same change onto other platforms.
+
+Current local extension:
+
+- `knowledge/im-specialization.md` for research-first realtime messaging specialization
+- `knowledge/product-inference.md` for evidence-backed reverse-product summaries
