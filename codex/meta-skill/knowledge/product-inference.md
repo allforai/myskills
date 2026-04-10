@@ -50,6 +50,12 @@ Recommended shape:
 3. Do not invent product claims that are not supported by code or artifacts.
 4. If evidence is weak or conflicting, lower confidence and record open questions.
 
+Important:
+
+- product inference explains what the product appears to be
+- product inference does not replace UI fidelity evidence for replication work
+- if the workflow goal is source-faithful UI reproduction, bootstrap must still capture source UI structure and interaction evidence explicitly
+
 ## Good Uses
 
 - reverse engineering an inherited codebase

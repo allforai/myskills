@@ -41,6 +41,22 @@ def save_json(path: Path, data: dict) -> None:
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+def load_bootstrap_goal(project_root: Path) -> str | None:
+    profile_path = project_root / ".allforai/bootstrap/bootstrap-profile.json"
+    if not profile_path.exists():
+        return None
+    try:
+        profile = load_json(profile_path)
+    except Exception:
+        return None
+
+    for key in ("task_goal", "user_goal", "goal"):
+        value = profile.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
+
+
 def artifact_exists(project_root: Path, rel_path: str) -> bool:
     return (project_root / rel_path).exists()
 
@@ -116,10 +132,22 @@ def count_consecutive_failures(workflow: dict, node_id: str) -> int:
     return count
 
 
+def transition_artifacts(entry: dict) -> list[str]:
+    artifacts = entry.get("artifacts_created")
+    if isinstance(artifacts, list):
+        return artifacts
+
+    artifacts = entry.get("artifacts")
+    if isinstance(artifacts, list):
+        return artifacts
+
+    return []
+
+
 def stagnant_iteration_count(workflow: dict) -> int:
     count = 0
     for entry in reversed(workflow.get("transition_log", [])):
-        if entry.get("artifacts_created"):
+        if transition_artifacts(entry):
             break
         count += 1
     return count
@@ -189,8 +217,8 @@ def run_diagnosis(project_root: Path, node_id: str, attempt_count: int) -> subpr
     return run_codex(project_root, build_diagnosis_prompt(node_id, attempt_count))
 
 
-def parse_legacy_args(argv: list[str]) -> tuple[str, int]:
-    goal = DEFAULT_GOAL
+def parse_legacy_args(argv: list[str], project_root: Path) -> tuple[str, int]:
+    goal = load_bootstrap_goal(project_root) or DEFAULT_GOAL
     max_iterations = DEFAULT_MAX_ITERATIONS
     if len(argv) >= 2 and argv[1].strip():
         goal = argv[1].strip()
@@ -203,8 +231,8 @@ def parse_legacy_args(argv: list[str]) -> tuple[str, int]:
 
 
 def main() -> int:
-    goal, max_iterations = parse_legacy_args(sys.argv)
     project_root = find_project_root(Path.cwd())
+    goal, max_iterations = parse_legacy_args(sys.argv, project_root)
     workflow_path = project_root / ".allforai/bootstrap/workflow.json"
 
     for iteration in range(1, max_iterations + 1):

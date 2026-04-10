@@ -15,6 +15,7 @@ Apply this specialization when the project intent is clearly one of:
 Common evidence signals:
 
 - user goal contains `replicate`, `复刻`, `migration`, `port`, `parity`, `rewrite client`
+- user goal contains `还原`, `高还原`, `faithful`, `像原版`, `mobile`, `手游`, or similar fidelity language
 - repository docs mention `legacy`, `migration plan`, `parity report`, `evidence source`
 - there is an explicit old project path or read-only reference repo
 - the target repo keeps one runtime stable while replacing another
@@ -52,6 +53,12 @@ all of these responsibilities:
 6. validate local runnable parity on at least one end-to-end path
 7. record remaining fidelity gaps and non-goals
 
+When the source product is mobile-first and UI fidelity matters, the workflow must also cover:
+
+8. capture source UI structure and interaction evidence before UI implementation
+9. preserve source information architecture and touch-first interaction assumptions unless the user explicitly allows adaptation
+10. verify UI fidelity separately from generic runtime validation
+
 These are responsibilities, not exact node names.
 
 ## Preferred Workflow Shape
@@ -78,6 +85,18 @@ Recommended progression:
 7. `parity-acceptance`
    - summarize achieved fidelity, remaining gaps, and next repair targets
 
+For mobile high-fidelity replication, prefer this upgraded shape:
+
+1. `lock-replication-boundary`
+2. `map-legacy-evidence`
+3. `capture-mobile-ui-evidence`
+4. `expand-parity-coverage`
+5. `port-core-runtime`
+6. `implement-ui-fidelity-slice`
+7. `verify-ui-fidelity`
+8. `validate-local-runtime`
+9. `parity-acceptance`
+
 Equivalent names are acceptable if the responsibilities remain explicit.
 
 ## Guardrails
@@ -87,6 +106,9 @@ Equivalent names are acceptable if the responsibilities remain explicit.
 - Do not spend multiple early nodes restating the same migration boundary.
 - Do not omit direct implementation nodes once enough evidence exists.
 - Prefer parity reports that point to concrete implementation work, not just audits.
+- Do not replace a mobile source UI with a desktop-first dashboard, browser-native overlay, or free-form control panel unless the user explicitly asks for adaptation.
+- Do not treat "same features exist" as sufficient evidence of UI parity.
+- Do not let the target runtime or rendering stack dictate the information architecture when fidelity is the stated goal.
 
 ## Node-Spec Upgrades
 
@@ -98,12 +120,27 @@ When this specialization is active, generated node-specs should emphasize:
 - explicit non-goals
 - runnable verification signals
 
+For UI-related replication nodes, generated node-specs should also emphasize:
+
+- source platform and input model
+- screen hierarchy and page-entry relationships
+- overlay versus full-screen behavior in the source
+- forbidden redesign moves
+- explicit deviation logs for anything that is still not matched
+
 Implementation-oriented node-specs should usually answer:
 
 - what source behavior is being reproduced
 - where that behavior should live in the target
 - what counts as parity for this node
 - what local smoke or artifact proves completion
+
+UI fidelity nodes should additionally answer:
+
+- which source screens or flows are being matched
+- which target surfaces must stay structurally aligned
+- which touch interactions or state transitions must remain source-native
+- what evidence proves structural or visual fidelity beyond raw functionality
 
 ## Validation Rules
 
@@ -114,3 +151,6 @@ When replication / migration specialization is triggered:
 - at least one node must target runtime or behavioral porting
 - at least one node must target user-facing parity
 - at least one node must validate a runnable local path
+- if the source is mobile-first and UI fidelity matters, at least one node must capture UI evidence before implementation
+- if the source is mobile-first and UI fidelity matters, at least one node must verify UI fidelity separately from runtime validation
+- if `design_freedom = none`, UI implementation nodes must be framed as source-led reproduction, not reinterpretation

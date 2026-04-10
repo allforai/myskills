@@ -48,6 +48,9 @@ Guidance file:
 Use when the project's primary goal is to reproduce, port, or migrate an existing
 product or client with high fidelity.
 
+This includes mobile-client fidelity work where generic "feature parity" planning often
+misses source UI structure, input assumptions, and visual hierarchy constraints.
+
 ## Future Domain Shape
 
 Every future high-risk domain file should provide:

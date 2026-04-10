@@ -18,6 +18,37 @@ Use that protocol in full, but apply the Codex-specific substitutions below.
 
 ## Required Codex Substitutions
 
+### 0. Task Capture Before Generation
+
+Before generating any bootstrap artifacts, capture the user's concrete task goal for this run.
+
+Rules:
+
+- if the invoking message already contains a clear goal, treat that as the bootstrap task goal
+- if the goal is missing or too vague, ask one concise plain-text question before generating artifacts
+- do not let `flow.py` become the first place where the real task goal appears
+- the captured task goal must shape workflow design, specialization detection, and node selection
+- write the captured task goal into `.allforai/bootstrap/bootstrap-profile.json`
+
+For replication and migration work, task capture must also classify fidelity intent before workflow generation.
+
+Minimum classification fields to record in `.allforai/bootstrap/bootstrap-profile.json` when the project is a reproduction / port / migration:
+
+- `source_platform`: `mobile | desktop | web | mixed | unknown`
+- `ui_fidelity_mode`: `none | structural | visual | pixel_like`
+- `interaction_fidelity`: `source_native | platform_adapted`
+- `design_freedom`: `none | constrained | moderate`
+
+Classification rules:
+
+- if the user asks for `复刻`, `还原`, `faithful`, `像原版`, `高还原`, or similar, do not silently downgrade the request into generic feature parity
+- if the source product is primarily mobile, default `source_platform = mobile` unless strong evidence contradicts it
+- if the user wants a high-fidelity client rewrite and does not explicitly permit redesign, default:
+  - `ui_fidelity_mode = visual`
+  - `interaction_fidelity = source_native`
+  - `design_freedom = none`
+- when fidelity intent is still ambiguous, ask one concise follow-up before generation rather than letting downstream nodes guess
+
 ### 1. Plugin Root Resolution
 
 Whenever the canonical protocol references a Claude-specific plugin-root variable, resolve it as:
@@ -77,6 +108,7 @@ Generation rule:
 - the generated file must invoke `codex exec --dangerously-bypass-approvals-and-sandbox`
 - it should work with zero arguments by default
 - it may accept legacy positional arguments `<goal> <max_iterations>` for compatibility, but must not require them
+- when no goal argument is provided, it should default to the captured bootstrap task goal from `.allforai/bootstrap/bootstrap-profile.json`
 - it must treat `workflow.json` plus `transition_log` as the runtime source of truth
 - after 3 consecutive failures on the same node, it must stop retries, run diagnosis, and record `diagnosis_history`
 - after 5 consecutive transitions with no new artifacts, it must stop instead of looping forever
@@ -87,6 +119,7 @@ When the canonical protocol tells the user to run `/run [goal]`, adapt the instr
 
 - use the generated Codex run entry at `.codex/commands/run.md`
 - invoke it through Codex's command mechanism in the target project
+- prefer keeping the main task goal fixed at bootstrap time instead of introducing it only during run time
 
 ### 6. Research-First Specialization
 
@@ -129,6 +162,8 @@ Important:
 - after the rewrite boundary is clear, prefer direct parity and implementation nodes
 - if one runtime is explicitly stable, do not make rewriting it the center of the workflow
 - if a legacy evidence source exists, make the source-to-target parity relationship explicit
+- if `source_platform = mobile` and `ui_fidelity_mode != none`, do not collapse UI fidelity into a generic browser-native or desktop-native overlay task
+- if `design_freedom = none`, generated UI nodes must treat source UI evidence as the baseline and must not reinterpret the information architecture as a fresh product design exercise
 
 ### 8. IM / Realtime Messaging Specialization
 
@@ -176,6 +211,21 @@ Rules:
 - YAML frontmatter with `node:` remains required
 - generated run continues to read `node-specs/*.md` first during this phase
 
+For UI-related replication nodes, `## Spec` must additionally include:
+
+- source UI evidence paths or surfaces
+- source platform assumptions
+- explicit fidelity constraints
+- forbidden redesigns
+- acceptance by comparison, not just by feature existence
+
+For UI-related replication nodes, `## Task` must require this order:
+
+1. capture or read source UI evidence
+2. compare source structure and interactions against the target
+3. implement the selected fidelity slice
+4. record residual deviations explicitly
+
 Recommended shape:
 
 ```md
@@ -217,6 +267,12 @@ After generation, verify all of the following:
 - project-local helper copies exist under `.allforai/bootstrap/`
 - `.allforai/codex/flow.py` exists for Codex targets
 
+Also verify the bootstrap profile captures the task intent:
+
+- `.allforai/bootstrap/bootstrap-profile.json` contains a non-empty task goal field
+- the workflow node goals are consistent with that captured task goal
+- replication workflows record fidelity intent fields when source reproduction is the main objective
+
 For Phase 1 structured node-spec migration, also verify:
 
 - each non-trivial node-spec includes `## Spec`
@@ -238,6 +294,9 @@ For `im_realtime` workflows, also verify:
 - at least one IM-specific verification responsibility exists
 
 For any future high-risk domain hook, also verify:
+
+- if `source_platform = mobile` and `ui_fidelity_mode != none`, the workflow contains explicit UI evidence capture or UI fidelity verification responsibilities
+- if `design_freedom = none`, no UI implementation node is framed as open-ended redesign, browser-native reinterpretation, or desktop-first adaptation
 
 - the domain's minimum responsibility floor exists in the generated workflow
 
