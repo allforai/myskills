@@ -2,18 +2,20 @@
 
 ## Bootstrap
 
-1. Read the target project directory.
-2. Detect tech stacks, modules, architecture patterns, and any existing `.allforai/` artifacts.
-3. Collect or infer the target goals.
-4. Load canonical capability references from `./knowledge/capabilities/`.
-5. Use research-first specialization:
+1. Capture the concrete task goal for this bootstrap run.
+2. If the goal is not explicit enough, ask one concise question before generating anything.
+3. Read the target project directory.
+4. Detect tech stacks, modules, architecture patterns, and any existing `.allforai/` artifacts.
+5. Collect or infer supporting context around the task goal.
+6. Load canonical capability references from `./knowledge/capabilities/`.
+7. Use research-first specialization:
    - prefer project evidence over hardcoded assumptions
    - for high-risk domains, load Codex-only specialization guidance such as `./knowledge/high-risk-specialization.md`
    - then load the domain-specific guidance file, for example `./knowledge/im-specialization.md`
    - when the project is clearly a fidelity-oriented rewrite, also load `./knowledge/replication-specialization.md`
    - when the product shape can be inferred from code evidence, load `./knowledge/product-inference.md`
-6. Follow the canonical bootstrap protocol from `./skills/bootstrap.md`.
-7. Generate:
+8. Follow the canonical bootstrap protocol from `./skills/bootstrap.md`.
+9. Generate:
    - `.allforai/bootstrap/bootstrap-profile.json`
    - `.allforai/bootstrap/product-summary.json` when supported by repository evidence
    - `.allforai/bootstrap/workflow.json`
@@ -22,8 +24,9 @@
    - `.allforai/bootstrap/protocols/*`
    - `.allforai/codex/flow.py` by materializing `./knowledge/flow-template.py`
    - `.codex/commands/run.md`
-8. Validate the bootstrap products.
-9. Present a summary and next-step usage instructions.
+10. Ensure `bootstrap-profile.json` records the captured task goal and any key constraints that shaped the workflow.
+11. Validate the bootstrap products.
+12. Present a summary and next-step usage instructions.
 
 ## Run (Generated)
 

@@ -16,6 +16,8 @@ description: "Execute the generated project workflow toward a natural-language g
 
 User goal: `$ARGUMENTS`
 
+If no goal argument is provided, reuse the task goal captured during `bootstrap` from `.allforai/bootstrap/bootstrap-profile.json`.
+
 ## Ground Truth
 
 Read `.allforai/bootstrap/workflow.json` at every iteration.
@@ -86,6 +88,8 @@ On the first iteration, if `transition_log` is non-empty:
 If the workflow should keep moving until completion without stopping for "next step" confirmation, use:
 
 `python .allforai/codex/flow.py`
+
+You may pass an explicit goal override, but the normal path is to let `flow.py` reuse the goal captured during `bootstrap`.
 
 This Codex-only outer driver repeatedly relaunches Codex against pending nodes until:
 

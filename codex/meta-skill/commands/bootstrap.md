@@ -25,3 +25,9 @@ That adapter file binds the shared meta-skill protocol to Codex by applying thes
 ## Execution
 
 Read `./skills/bootstrap.md` and follow its protocol.
+
+Before any workflow generation:
+
+- collect the user's concrete task goal for this bootstrap run
+- if the goal is not already explicit in the invoking message, ask one concise plain-text question before proceeding
+- do not generate `workflow.json` or `node-specs/*.md` from only the repository shape when task intent is still ambiguous
