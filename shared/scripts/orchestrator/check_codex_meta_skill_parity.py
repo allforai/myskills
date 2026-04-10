@@ -118,6 +118,19 @@ def main() -> int:
     if "--dangerously-bypass-approvals-and-sandbox" not in flow_template_text:
         errors.append("flow template does not use Codex highest-permission execution")
 
+    install_text = read_text(CODEX_META / "install.sh") if (CODEX_META / "install.sh").exists() else ""
+    if (
+        "~/.codex/skills/meta-skill" not in install_text
+        and ".codex/skills/meta-skill" not in install_text
+        and "$HOME/.codex/skills/meta-skill" not in install_text
+        and '${CODEX_HOME:-$HOME/.codex}/skills/meta-skill' not in install_text
+    ):
+        errors.append("install.sh does not install into the local Codex skills directory")
+    if ".install-source" not in install_text:
+        errors.append("install.sh does not record installation source metadata")
+    if ".allforai/codex/flow.py" not in install_text:
+        errors.append("install.sh usage text does not mention the Codex non-stop driver")
+
     # Validate .mcp.json shape.
     mcp_path = CODEX_META / ".mcp.json"
     if mcp_path.exists():

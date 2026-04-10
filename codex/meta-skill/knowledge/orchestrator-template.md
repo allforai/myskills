@@ -80,4 +80,16 @@ On the first iteration, if `transition_log` is non-empty:
 2. Read `.allforai/bootstrap/protocols/learning-protocol.md`
 3. Read `.allforai/bootstrap/protocols/feedback-protocol.md`
 4. Summarize reusable experience and proposed feedback
+
+## Non-Stop Driver
+
+If the workflow should keep moving until completion without stopping for "next step" confirmation, use:
+
+`python .allforai/codex/flow.py`
+
+This Codex-only outer driver repeatedly relaunches Codex against pending nodes until:
+
+- all required exit artifacts exist
+- a failed transition is recorded for the currently selected node
+- or the driver's max-iteration safety limit is reached
 ~~~
