@@ -40,6 +40,10 @@ clear. A replication workflow should usually have:
 
 The workflow may still include analysis artifacts, but analysis must serve execution.
 
+If the repository already contains recent parity reports, validation notes, or acceptance documents,
+bootstrap should treat them as evidence inputs and move quickly to the next repair or fidelity slice
+instead of generating multiple "preserve current baseline" nodes.
+
 ## Mandatory Responsibility Floor
 
 Once replication / migration intent is confirmed, the generated workflow must cover
@@ -58,6 +62,8 @@ When the source product is mobile-first and UI fidelity matters, the workflow mu
 8. capture source UI structure and interaction evidence before UI implementation
 9. preserve source information architecture and touch-first interaction assumptions unless the user explicitly allows adaptation
 10. verify UI fidelity separately from generic runtime validation
+
+These are logical responsibilities. The LLM may choose any node count or naming scheme, but it may not erase these responsibilities by folding them into a broad "port runtime" or "validate parity" node with no explicit UI-fidelity contract.
 
 These are responsibilities, not exact node names.
 
@@ -99,6 +105,13 @@ For mobile high-fidelity replication, prefer this upgraded shape:
 
 Equivalent names are acceptable if the responsibilities remain explicit.
 
+Important:
+
+- the upgraded shape is an example, not a mandatory fixed node list
+- what is mandatory is the presence of distinct source-evidence, source-led UI implementation, and UI verification responsibilities
+- if the LLM chooses fewer nodes, each merged node must still make those responsibilities explicit in both acceptance criteria and tasks
+- if the repository already has current parity and validation artifacts, skip redundant baseline-documentation nodes unless those artifacts are stale or contradictory
+
 ## Guardrails
 
 - Do not turn a replication project into a fresh product-design exercise.
@@ -109,6 +122,9 @@ Equivalent names are acceptable if the responsibilities remain explicit.
 - Do not replace a mobile source UI with a desktop-first dashboard, browser-native overlay, or free-form control panel unless the user explicitly asks for adaptation.
 - Do not treat "same features exist" as sufficient evidence of UI parity.
 - Do not let the target runtime or rendering stack dictate the information architecture when fidelity is the stated goal.
+- Do not narrow the user's objective from "faithful mobile-client reproduction" to "playable slice" unless the user explicitly approves that scope reduction.
+- Do not let concrete target file guesses prematurely freeze the implementation before UI evidence responsibilities have been satisfied.
+- Do not insert multiple documentation-only baseline nodes ahead of the next repair slice when the current repository already has usable parity evidence.
 
 ## Node-Spec Upgrades
 
@@ -154,3 +170,5 @@ When replication / migration specialization is triggered:
 - if the source is mobile-first and UI fidelity matters, at least one node must capture UI evidence before implementation
 - if the source is mobile-first and UI fidelity matters, at least one node must verify UI fidelity separately from runtime validation
 - if `design_freedom = none`, UI implementation nodes must be framed as source-led reproduction, not reinterpretation
+- if the source is mobile-first and UI fidelity matters, the workflow may not consist only of boundary -> backlog -> runtime implementation -> runtime validation -> acceptance; it must include explicit UI-fidelity responsibilities beyond generic playability checks
+- if recent parity reports already exist, no more than one lightweight refresh node should appear before the next implementation or repair node unless stale evidence truly blocks execution

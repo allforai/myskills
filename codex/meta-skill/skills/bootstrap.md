@@ -48,6 +48,7 @@ Classification rules:
   - `interaction_fidelity = source_native`
   - `design_freedom = none`
 - when fidelity intent is still ambiguous, ask one concise follow-up before generation rather than letting downstream nodes guess
+- if the user explicitly names source UI structure, interaction paths, visual hierarchy, or forbids browser-style redesign, preserve that wording in `task_goal` instead of narrowing it to only a playable slice
 
 ### 1. Plugin Root Resolution
 
@@ -164,6 +165,7 @@ Important:
 - if a legacy evidence source exists, make the source-to-target parity relationship explicit
 - if `source_platform = mobile` and `ui_fidelity_mode != none`, do not collapse UI fidelity into a generic browser-native or desktop-native overlay task
 - if `design_freedom = none`, generated UI nodes must treat source UI evidence as the baseline and must not reinterpret the information architecture as a fresh product design exercise
+- node count and node names remain LLM-designed, but the required responsibilities may not be merged away into a single generic runtime-parity node when fidelity is a core user constraint
 
 ### 8. IM / Realtime Messaging Specialization
 
@@ -190,9 +192,11 @@ When the repository contains enough evidence to infer the product shape:
 Rules:
 
 - this is a standard bootstrap output when supported by evidence
-- prefer expressing this responsibility as a standard workflow node, for example `infer-product-shape`
+- prefer generating `product-summary.json` during bootstrap itself when the evidence is already obvious from repository docs and current artifacts
+- do not spend a mainline workflow node on product inference if it does not unblock the next implementation or verification decision
 - it should describe user-facing systems, not just tech stacks
 - if confidence is low, emit open questions instead of pretending certainty
+- in fidelity-oriented replication projects with strong existing parity docs, product inference is supporting context, not a primary execution milestone
 
 ### 10. Phase 1 Structured Node-Specs
 
@@ -218,6 +222,20 @@ For UI-related replication nodes, `## Spec` must additionally include:
 - explicit fidelity constraints
 - forbidden redesigns
 - acceptance by comparison, not just by feature existence
+
+For replication workflows where `source_platform = mobile` and `ui_fidelity_mode != none`, the generated node-spec set as a whole must preserve three distinct responsibilities:
+
+1. source UI evidence capture or refresh
+2. source-led UI fidelity implementation
+3. UI fidelity verification
+
+These responsibilities may be merged only when the resulting node-spec still contains explicit acceptance criteria and task steps for all three. They may not disappear into a generic runtime-validation or gameplay-port node.
+
+When the repository already contains current parity reports, validation docs, or acceptance artifacts that describe the present state with enough fidelity:
+
+- do not generate extra baseline-preservation nodes whose only purpose is to restate or re-freeze the current state
+- instead, treat those existing artifacts as evidence inputs for the next repair, implementation, verification, or acceptance nodes
+- only emit a dedicated baseline-refresh node if the existing artifacts are clearly stale, contradictory, or missing the information needed to execute the next slice safely
 
 For UI-related replication nodes, `## Task` must require this order:
 
@@ -272,6 +290,7 @@ Also verify the bootstrap profile captures the task intent:
 - `.allforai/bootstrap/bootstrap-profile.json` contains a non-empty task goal field
 - the workflow node goals are consistent with that captured task goal
 - replication workflows record fidelity intent fields when source reproduction is the main objective
+- high-fidelity reproduction workflows do not narrow the task goal from source-faithful reproduction into only "playable", "usable", or "browser-native" language unless the user explicitly requested that tradeoff
 
 For Phase 1 structured node-spec migration, also verify:
 
@@ -297,6 +316,7 @@ For any future high-risk domain hook, also verify:
 
 - if `source_platform = mobile` and `ui_fidelity_mode != none`, the workflow contains explicit UI evidence capture or UI fidelity verification responsibilities
 - if `design_freedom = none`, no UI implementation node is framed as open-ended redesign, browser-native reinterpretation, or desktop-first adaptation
+- if `source_platform = mobile` and `ui_fidelity_mode != none`, UI evidence, UI implementation, and UI verification responsibilities all exist as distinct obligations even if the LLM chooses different node counts or names
 
 - the domain's minimum responsibility floor exists in the generated workflow
 
@@ -308,3 +328,4 @@ For replication / migration workflows, also verify:
 - at least one runtime or behavioral port node exists
 - at least one local runnable validation node exists
 - the workflow is not composed entirely of planning / audit nodes
+- if parity reports and validation artifacts already exist, the workflow does not spend multiple early nodes merely preserving baseline documents before entering the next repair or fidelity slice

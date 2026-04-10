@@ -55,6 +55,7 @@ Important:
 - product inference explains what the product appears to be
 - product inference does not replace UI fidelity evidence for replication work
 - if the workflow goal is source-faithful UI reproduction, bootstrap must still capture source UI structure and interaction evidence explicitly
+- if repository evidence already makes the product shape obvious, prefer emitting `product-summary.json` directly during bootstrap rather than dedicating a main execution node to it
 
 ## Good Uses
 

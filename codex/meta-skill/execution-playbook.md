@@ -4,6 +4,7 @@
 
 1. Capture the concrete task goal for this bootstrap run.
 2. If the goal is not explicit enough, ask one concise question before generating anything.
+   If the user is asking for faithful reproduction, keep their fidelity constraints intact rather than rewriting the goal as only "playable" or "usable".
 3. Read the target project directory.
 4. Detect tech stacks, modules, architecture patterns, and any existing `.allforai/` artifacts.
 5. Collect or infer supporting context around the task goal.
@@ -25,6 +26,8 @@
    - `.allforai/codex/flow.py` by materializing `./knowledge/flow-template.py`
    - `.codex/commands/run.md`
 10. Ensure `bootstrap-profile.json` records the captured task goal and any key constraints that shaped the workflow.
+    For mobile high-fidelity replication, ensure the generated workflow preserves explicit UI evidence, UI implementation, and UI verification responsibilities even if the node names are free-form.
+    If parity and validation artifacts already exist, treat them as evidence inputs and avoid generating multiple baseline-only nodes before the next real repair slice.
 11. Validate the bootstrap products.
 12. Present a summary and next-step usage instructions.
 

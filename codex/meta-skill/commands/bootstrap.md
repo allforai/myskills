@@ -31,3 +31,4 @@ Before any workflow generation:
 - collect the user's concrete task goal for this bootstrap run
 - if the goal is not already explicit in the invoking message, ask one concise plain-text question before proceeding
 - do not generate `workflow.json` or `node-specs/*.md` from only the repository shape when task intent is still ambiguous
+- when the task is high-fidelity replication, preserve the user's fidelity language in the generated bootstrap profile and workflow instead of silently narrowing the goal to a smaller playable slice
