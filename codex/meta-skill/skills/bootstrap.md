@@ -115,6 +115,21 @@ Rules:
 - research and LLM synthesis still determine the final workflow shape
 - once a high-risk domain is confirmed, the required responsibilities may not be omitted
 
+### 7b. Replication / Migration Specialization
+
+For projects whose primary goal is to reproduce or port an existing system:
+
+- read `../knowledge/replication-specialization.md`
+- detect whether the project is actually a replication / migration workflow
+- if yes, inject the replication responsibility floor during workflow planning
+
+Important:
+
+- do not let the workflow collapse into a long chain of planning-only nodes
+- after the rewrite boundary is clear, prefer direct parity and implementation nodes
+- if one runtime is explicitly stable, do not make rewriting it the center of the workflow
+- if a legacy evidence source exists, make the source-to-target parity relationship explicit
+
 ### 8. IM / Realtime Messaging Specialization
 
 For Telegram / WhatsApp / Discord / secure-messaging style products:
@@ -225,3 +240,12 @@ For `im_realtime` workflows, also verify:
 For any future high-risk domain hook, also verify:
 
 - the domain's minimum responsibility floor exists in the generated workflow
+
+For replication / migration workflows, also verify:
+
+- at least one node locks the rewrite boundary and evidence source
+- at least one node maps legacy evidence to target surfaces
+- at least one implementation-oriented parity node exists
+- at least one runtime or behavioral port node exists
+- at least one local runnable validation node exists
+- the workflow is not composed entirely of planning / audit nodes

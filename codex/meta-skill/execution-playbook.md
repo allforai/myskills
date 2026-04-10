@@ -10,6 +10,7 @@
    - prefer project evidence over hardcoded assumptions
    - for high-risk domains, load Codex-only specialization guidance such as `./knowledge/high-risk-specialization.md`
    - then load the domain-specific guidance file, for example `./knowledge/im-specialization.md`
+   - when the project is clearly a fidelity-oriented rewrite, also load `./knowledge/replication-specialization.md`
    - when the product shape can be inferred from code evidence, load `./knowledge/product-inference.md`
 6. Follow the canonical bootstrap protocol from `./skills/bootstrap.md`.
 7. Generate:

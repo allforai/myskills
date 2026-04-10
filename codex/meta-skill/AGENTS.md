@@ -50,5 +50,6 @@ Codex may carry local specialization guidance without forcing the same change on
 Current local extension:
 
 - `knowledge/im-specialization.md` for research-first realtime messaging specialization
+- `knowledge/replication-specialization.md` for fidelity-oriented replication and migration specialization
 - `knowledge/product-inference.md` for evidence-backed reverse-product summaries
 - `knowledge/flow-template.py` for Codex-only non-stop workflow execution

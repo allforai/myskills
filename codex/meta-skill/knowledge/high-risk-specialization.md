@@ -39,6 +39,15 @@ Guidance file:
 
 Use when the product is a realtime messaging / multi-client chat system.
 
+### `replication_migration`
+
+Guidance file:
+
+- `./replication-specialization.md`
+
+Use when the project's primary goal is to reproduce, port, or migrate an existing
+product or client with high fidelity.
+
 ## Future Domain Shape
 
 Every future high-risk domain file should provide:

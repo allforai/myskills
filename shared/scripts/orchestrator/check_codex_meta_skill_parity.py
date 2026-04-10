@@ -42,6 +42,7 @@ def main() -> int:
         (CODEX_META / "skills" / "bootstrap.md", "skills/bootstrap.md"),
         (CODEX_META / "knowledge" / "high-risk-specialization.md", "knowledge/high-risk-specialization.md"),
         (CODEX_META / "knowledge" / "im-specialization.md", "knowledge/im-specialization.md"),
+        (CODEX_META / "knowledge" / "replication-specialization.md", "knowledge/replication-specialization.md"),
         (CODEX_META / "knowledge" / "product-inference.md", "knowledge/product-inference.md"),
         (CODEX_META / "knowledge" / "flow-template.py", "knowledge/flow-template.py"),
         (CODEX_META / "knowledge" / "orchestrator-template.md", "knowledge/orchestrator-template.md"),
@@ -71,6 +72,7 @@ def main() -> int:
     run_template_text = read_text(CODEX_META / "knowledge" / "orchestrator-template.md") if (CODEX_META / "knowledge" / "orchestrator-template.md").exists() else ""
     high_risk_text = read_text(CODEX_META / "knowledge" / "high-risk-specialization.md") if (CODEX_META / "knowledge" / "high-risk-specialization.md").exists() else ""
     im_text = read_text(CODEX_META / "knowledge" / "im-specialization.md") if (CODEX_META / "knowledge" / "im-specialization.md").exists() else ""
+    replication_text = read_text(CODEX_META / "knowledge" / "replication-specialization.md") if (CODEX_META / "knowledge" / "replication-specialization.md").exists() else ""
     product_inference_text = read_text(CODEX_META / "knowledge" / "product-inference.md") if (CODEX_META / "knowledge" / "product-inference.md").exists() else ""
     flow_template_text = read_text(CODEX_META / "knowledge" / "flow-template.py") if (CODEX_META / "knowledge" / "flow-template.py").exists() else ""
 
@@ -100,11 +102,18 @@ def main() -> int:
     if "im-specialization.md" not in skill_text + playbook_text + bootstrap_text + high_risk_text:
         errors.append("IM specialization guidance is not wired into Codex specialization flow")
 
+    if "replication-specialization.md" not in skill_text + agents_text + playbook_text + bootstrap_text + high_risk_text:
+        errors.append("replication specialization guidance is not wired into Codex specialization flow")
+
     if "research" not in high_risk_text.lower():
         errors.append("high-risk specialization guidance does not encode research-first behavior")
 
     if "mandatory responsibility" not in im_text.lower():
         errors.append("IM specialization guidance does not define a mandatory responsibility floor")
+    if "implementation-oriented" not in replication_text.lower():
+        errors.append("replication specialization guidance does not steer bootstrap toward implementation-oriented parity nodes")
+    if "planning / audit" not in replication_text.lower():
+        errors.append("replication specialization guidance does not guard against planning-only workflows")
 
     if "product-summary.json" not in skill_text + agents_text + playbook_text + bootstrap_text + product_inference_text:
         errors.append("product inference contract is not fully documented")
