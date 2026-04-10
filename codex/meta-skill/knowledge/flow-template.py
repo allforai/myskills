@@ -162,6 +162,37 @@ def run_post_checks(project_root: Path) -> None:
         subprocess.run([sys.executable, str(scripts / "check_product_summary.py"), str(product_summary)], cwd=project_root, check=False)
 
 
+def goal_based_completion_required(project_root: Path) -> bool:
+    profile_path = project_root / ".allforai/bootstrap/bootstrap-profile.json"
+    if not profile_path.exists():
+        return False
+    try:
+        profile = load_json(profile_path)
+    except Exception:
+        return False
+    return profile.get("completion_mode") == "goal_based"
+
+
+def acceptance_requires_iteration(project_root: Path) -> bool:
+    acceptance_path = project_root / ".allforai/bootstrap/artifacts/parity-acceptance.md"
+    if not acceptance_path.exists():
+        return False
+    try:
+        text = acceptance_path.read_text(encoding="utf-8").lower()
+    except Exception:
+        return False
+
+    markers = [
+        "needs_iteration",
+        "continue",
+        "next repair target",
+        "remaining deviations",
+        "remaining blockers",
+        "goal still open",
+    ]
+    return any(marker in text for marker in markers)
+
+
 def build_prompt(node_id: str, goal: str) -> str:
     return f"""Continue the generated workflow autonomously.
 
@@ -239,6 +270,20 @@ def main() -> int:
         workflow = load_json(workflow_path)
         node = first_pending_node(project_root, workflow)
         if node is None:
+            if goal_based_completion_required(project_root) and acceptance_requires_iteration(project_root):
+                print(
+                    json.dumps(
+                        {
+                            "passed": False,
+                            "done": False,
+                            "error": "acceptance indicates the current slice completed but the overall goal remains open",
+                        },
+                        indent=2,
+                        ensure_ascii=False,
+                    ),
+                    file=sys.stderr,
+                )
+                return 5
             run_post_checks(project_root)
             print(json.dumps({"passed": True, "done": True, "iterations": iteration - 1}, indent=2, ensure_ascii=False))
             return 0

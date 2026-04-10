@@ -50,6 +50,17 @@ Classification rules:
 - when fidelity intent is still ambiguous, ask one concise follow-up before generation rather than letting downstream nodes guess
 - if the user explicitly names source UI structure, interaction paths, visual hierarchy, or forbids browser-style redesign, preserve that wording in `task_goal` instead of narrowing it to only a playable slice
 
+For high-fidelity replication, bootstrap must also record completion semantics in `.allforai/bootstrap/bootstrap-profile.json`:
+
+- `completion_mode`: `slice_based | goal_based`
+- `goal_acceptance_threshold`: `core_flow_only | major_surface_fidelity | full_requested_scope`
+
+Default rules:
+
+- if the user asks for faithful or high-fidelity reproduction, default `completion_mode = goal_based`
+- if the user asks for faithful or high-fidelity reproduction, default `goal_acceptance_threshold = major_surface_fidelity`
+- do not silently downgrade goal completion to "current slice accepted" unless the user explicitly asks to work slice-by-slice
+
 ### 1. Plugin Root Resolution
 
 Whenever the canonical protocol references a Claude-specific plugin-root variable, resolve it as:
@@ -110,6 +121,12 @@ Artifact placement rule:
 - `docs/bootstrap/` is a project documentation surface, not the canonical workflow completion surface
 - generated workflows may update `docs/bootstrap/` as an optional mirror or long-lived project document, but `docs/bootstrap/*` must not be the only `exit_artifacts` used to decide node completion
 - if a repository already contains `docs/bootstrap/*`, treat those files as evidence inputs unless the node also emits a fresh `.allforai/bootstrap/*` completion artifact for the current run
+
+Goal-completion rule:
+
+- for `completion_mode = goal_based`, bootstrap must generate workflow logic that distinguishes node completion from user-goal completion
+- the workflow may mark a node or a slice complete while still requiring follow-on slices
+- acceptance artifacts must explicitly say whether the overall user goal is done or whether another slice is required
 
 Generation rule:
 
@@ -174,6 +191,7 @@ Important:
 - if `source_platform = mobile` and `ui_fidelity_mode != none`, do not collapse UI fidelity into a generic browser-native or desktop-native overlay task
 - if `design_freedom = none`, generated UI nodes must treat source UI evidence as the baseline and must not reinterpret the information architecture as a fresh product design exercise
 - node count and node names remain LLM-designed, but the required responsibilities may not be merged away into a single generic runtime-parity node when fidelity is a core user constraint
+- if `completion_mode = goal_based`, do not end the workflow after a single accepted slice when major user-facing fidelity surfaces still remain below the requested threshold
 
 ### 8. IM / Realtime Messaging Specialization
 
@@ -251,6 +269,12 @@ For all generated workflows:
 - if a node also updates `docs/bootstrap/*`, list those as secondary outputs in the node-spec body, not as the only completion contract
 - avoid reusing pre-existing project docs as the sole completion signal for a new workflow run
 
+For goal-based replication workflows:
+
+- include an acceptance node that evaluates overall goal completion, not only the current slice
+- if that acceptance node finds high-priority fidelity gaps above the requested threshold, the workflow must continue with another repair or fidelity slice rather than terminating as fully done
+- acceptance nodes may summarize a completed slice, but they must also state whether the user goal remains open
+
 For UI-related replication nodes, `## Task` must require this order:
 
 1. capture or read source UI evidence
@@ -306,6 +330,7 @@ Also verify the bootstrap profile captures the task intent:
 - the workflow node goals are consistent with that captured task goal
 - replication workflows record fidelity intent fields when source reproduction is the main objective
 - high-fidelity reproduction workflows do not narrow the task goal from source-faithful reproduction into only "playable", "usable", or "browser-native" language unless the user explicitly requested that tradeoff
+- high-fidelity reproduction workflows record `completion_mode = goal_based` unless the user explicitly chose slice-based execution
 
 For Phase 1 structured node-spec migration, also verify:
 
@@ -345,3 +370,4 @@ For replication / migration workflows, also verify:
 - the workflow is not composed entirely of planning / audit nodes
 - if parity reports and validation artifacts already exist, the workflow does not spend multiple early nodes merely preserving baseline documents before entering the next repair or fidelity slice
 - `docs/bootstrap/*` files may appear as evidence inputs or optional mirrored outputs, but they are not the sole node completion artifacts
+- if `completion_mode = goal_based`, acceptance logic cannot mark the workflow fully done while major requested fidelity surfaces still remain explicitly open

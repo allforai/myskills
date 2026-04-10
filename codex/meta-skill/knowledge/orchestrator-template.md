@@ -77,6 +77,7 @@ On the first iteration, if `transition_log` is non-empty:
 
 - All required exit artifacts exist: report success
 - `concept-acceptance` verdict = `needs_iteration`: output acceptance summary, stop, and ask whether to fix, re-bootstrap, or accept
+- for goal-based replication workflows, do not treat an accepted current slice as final success when the acceptance artifact says major requested fidelity surfaces remain open
 - User interrupts: the next run resumes from `workflow.json`
 
 ## Post-Completion

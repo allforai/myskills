@@ -48,6 +48,11 @@ In this specialization, completion artifacts for workflow execution should be fr
 records, not pre-existing `docs/bootstrap/*` files. Existing docs are valuable evidence, but they are not
 reliable node-completion signals because they may already exist before the new run starts.
 
+In high-fidelity replication, a completed slice is not the same thing as a completed user goal.
+If major requested surfaces such as shell, room flow, ranking, mail, cosmetics, HUD, or result flow
+remain materially below the requested fidelity threshold, the workflow should plan another slice instead
+of declaring overall success.
+
 ## Mandatory Responsibility Floor
 
 Once replication / migration intent is confirmed, the generated workflow must cover
@@ -70,6 +75,11 @@ When the source product is mobile-first and UI fidelity matters, the workflow mu
 These are logical responsibilities. The LLM may choose any node count or naming scheme, but it may not erase these responsibilities by folding them into a broad "port runtime" or "validate parity" node with no explicit UI-fidelity contract.
 
 These are responsibilities, not exact node names.
+
+For `completion_mode = goal_based`, the workflow must also cover:
+
+11. goal-level acceptance that evaluates whether the requested fidelity target has actually been met
+12. continued iteration planning when the current slice is accepted but the overall goal is still open
 
 ## Preferred Workflow Shape
 
@@ -115,6 +125,7 @@ Important:
 - what is mandatory is the presence of distinct source-evidence, source-led UI implementation, and UI verification responsibilities
 - if the LLM chooses fewer nodes, each merged node must still make those responsibilities explicit in both acceptance criteria and tasks
 - if the repository already has current parity and validation artifacts, skip redundant baseline-documentation nodes unless those artifacts are stale or contradictory
+- if the current slice is accepted but major source-facing fidelity gaps remain, continue with the next repair slice rather than terminating the whole workflow
 
 ## Guardrails
 
@@ -130,6 +141,7 @@ Important:
 - Do not let concrete target file guesses prematurely freeze the implementation before UI evidence responsibilities have been satisfied.
 - Do not insert multiple documentation-only baseline nodes ahead of the next repair slice when the current repository already has usable parity evidence.
 - Do not use pre-existing `docs/bootstrap/*` documents as the sole `exit_artifacts` for a node that is supposed to execute in the current run.
+- Do not confuse "accepted current slice" with "user goal complete" in a high-fidelity migration.
 
 ## Node-Spec Upgrades
 
@@ -178,3 +190,6 @@ When replication / migration specialization is triggered:
 - if the source is mobile-first and UI fidelity matters, the workflow may not consist only of boundary -> backlog -> runtime implementation -> runtime validation -> acceptance; it must include explicit UI-fidelity responsibilities beyond generic playability checks
 - if recent parity reports already exist, no more than one lightweight refresh node should appear before the next implementation or repair node unless stale evidence truly blocks execution
 - every execution node must emit a fresh `.allforai/bootstrap/*` artifact that can distinguish the current run from prior project documentation
+- if `completion_mode = goal_based`, the acceptance layer must either:
+  - declare the overall goal complete with justification against the requested threshold, or
+  - identify the next required slice and keep the workflow open
