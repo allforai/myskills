@@ -5,6 +5,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INSTALL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/meta-skill"
 SOURCE_REPO="${SOURCE_REPO:-https://github.com/allforai/myskills.git}"
 SOURCE_REF="${SOURCE_REF:-refs/heads/main}"
+SOURCE_COMMIT="${SOURCE_COMMIT:-}"
+
+if [ -z "$SOURCE_COMMIT" ] && command -v git >/dev/null 2>&1; then
+  if SOURCE_COMMIT_CANDIDATE="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null)"; then
+    SOURCE_COMMIT="$SOURCE_COMMIT_CANDIDATE"
+  fi
+fi
 
 copy_dir() {
   local src="$1"
@@ -42,6 +49,7 @@ python3 -m py_compile "$INSTALL_DIR/knowledge/flow-template.py"
 {
   echo "source_repo=$SOURCE_REPO"
   echo "source_ref=$SOURCE_REF"
+  echo "source_commit=$SOURCE_COMMIT"
   echo "installed_from=$SCRIPT_DIR"
 } > "$INSTALL_DIR/.install-source"
 
