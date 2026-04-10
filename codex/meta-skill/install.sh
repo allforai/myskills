@@ -38,7 +38,8 @@ cp -R "$SCRIPT_DIR"/. "$INSTALL_DIR"/
 # the installed snapshot remains usable outside the source checkout.
 for rel in scripts tests mcp-ai-gateway; do
   if [ -L "$INSTALL_DIR/$rel" ]; then
-    target="$(cd "$(dirname "$INSTALL_DIR/$rel")" && cd "$(readlink "$INSTALL_DIR/$rel")" && pwd)"
+    source_link="$SCRIPT_DIR/$rel"
+    target="$(cd "$(dirname "$source_link")" && cd "$(readlink "$source_link")" && pwd)"
     rm -f "$INSTALL_DIR/$rel"
     copy_dir "$target" "$INSTALL_DIR/$rel"
   fi
