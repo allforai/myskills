@@ -24,6 +24,9 @@ Read `.allforai/bootstrap/workflow.json` at every iteration.
 Trust project-local artifacts over conversation history.
 If `.allforai/bootstrap/product-summary.json` exists, treat it as the current best product inference baseline.
 
+Treat `.allforai/bootstrap/*` artifacts as the canonical completion surface for workflow nodes.
+Project docs under `docs/bootstrap/` may be updated, but they should not be the only completion signal for a node.
+
 ## Core Loop
 
 每轮：

@@ -44,6 +44,10 @@ If the repository already contains recent parity reports, validation notes, or a
 bootstrap should treat them as evidence inputs and move quickly to the next repair or fidelity slice
 instead of generating multiple "preserve current baseline" nodes.
 
+In this specialization, completion artifacts for workflow execution should be fresh `.allforai/bootstrap/*`
+records, not pre-existing `docs/bootstrap/*` files. Existing docs are valuable evidence, but they are not
+reliable node-completion signals because they may already exist before the new run starts.
+
 ## Mandatory Responsibility Floor
 
 Once replication / migration intent is confirmed, the generated workflow must cover
@@ -125,6 +129,7 @@ Important:
 - Do not narrow the user's objective from "faithful mobile-client reproduction" to "playable slice" unless the user explicitly approves that scope reduction.
 - Do not let concrete target file guesses prematurely freeze the implementation before UI evidence responsibilities have been satisfied.
 - Do not insert multiple documentation-only baseline nodes ahead of the next repair slice when the current repository already has usable parity evidence.
+- Do not use pre-existing `docs/bootstrap/*` documents as the sole `exit_artifacts` for a node that is supposed to execute in the current run.
 
 ## Node-Spec Upgrades
 
@@ -172,3 +177,4 @@ When replication / migration specialization is triggered:
 - if `design_freedom = none`, UI implementation nodes must be framed as source-led reproduction, not reinterpretation
 - if the source is mobile-first and UI fidelity matters, the workflow may not consist only of boundary -> backlog -> runtime implementation -> runtime validation -> acceptance; it must include explicit UI-fidelity responsibilities beyond generic playability checks
 - if recent parity reports already exist, no more than one lightweight refresh node should appear before the next implementation or repair node unless stale evidence truly blocks execution
+- every execution node must emit a fresh `.allforai/bootstrap/*` artifact that can distinguish the current run from prior project documentation

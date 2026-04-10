@@ -28,6 +28,7 @@
 10. Ensure `bootstrap-profile.json` records the captured task goal and any key constraints that shaped the workflow.
     For mobile high-fidelity replication, ensure the generated workflow preserves explicit UI evidence, UI implementation, and UI verification responsibilities even if the node names are free-form.
     If parity and validation artifacts already exist, treat them as evidence inputs and avoid generating multiple baseline-only nodes before the next real repair slice.
+    Ensure each node's required completion artifact lives under `.allforai/bootstrap/`; `docs/bootstrap/` may be mirrored or updated, but it is not the primary completion contract.
 11. Validate the bootstrap products.
 12. Present a summary and next-step usage instructions.
 

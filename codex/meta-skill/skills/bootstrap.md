@@ -103,6 +103,14 @@ Example:
 
 - `.allforai/codex/flow.py` for a Codex non-stop outer driver
 
+Artifact placement rule:
+
+- required node completion artifacts must live under `.allforai/bootstrap/`
+- prefer `.allforai/bootstrap/records/` for node run records and `.allforai/bootstrap/artifacts/` for generated execution outputs
+- `docs/bootstrap/` is a project documentation surface, not the canonical workflow completion surface
+- generated workflows may update `docs/bootstrap/` as an optional mirror or long-lived project document, but `docs/bootstrap/*` must not be the only `exit_artifacts` used to decide node completion
+- if a repository already contains `docs/bootstrap/*`, treat those files as evidence inputs unless the node also emits a fresh `.allforai/bootstrap/*` completion artifact for the current run
+
 Generation rule:
 
 - materialize `../knowledge/flow-template.py` into `.allforai/codex/flow.py`
@@ -237,6 +245,12 @@ When the repository already contains current parity reports, validation docs, or
 - instead, treat those existing artifacts as evidence inputs for the next repair, implementation, verification, or acceptance nodes
 - only emit a dedicated baseline-refresh node if the existing artifacts are clearly stale, contradictory, or missing the information needed to execute the next slice safely
 
+For all generated workflows:
+
+- every node must have at least one required completion artifact under `.allforai/bootstrap/`
+- if a node also updates `docs/bootstrap/*`, list those as secondary outputs in the node-spec body, not as the only completion contract
+- avoid reusing pre-existing project docs as the sole completion signal for a new workflow run
+
 For UI-related replication nodes, `## Task` must require this order:
 
 1. capture or read source UI evidence
@@ -284,6 +298,7 @@ After generation, verify all of the following:
 - `.codex/commands/run.md` exists
 - project-local helper copies exist under `.allforai/bootstrap/`
 - `.allforai/codex/flow.py` exists for Codex targets
+- every node in `workflow.json` has at least one `exit_artifact` rooted under `.allforai/bootstrap/`
 
 Also verify the bootstrap profile captures the task intent:
 
@@ -329,3 +344,4 @@ For replication / migration workflows, also verify:
 - at least one local runnable validation node exists
 - the workflow is not composed entirely of planning / audit nodes
 - if parity reports and validation artifacts already exist, the workflow does not spend multiple early nodes merely preserving baseline documents before entering the next repair or fidelity slice
+- `docs/bootstrap/*` files may appear as evidence inputs or optional mirrored outputs, but they are not the sole node completion artifacts
