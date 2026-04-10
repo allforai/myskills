@@ -19,6 +19,7 @@ That adapter file binds the shared meta-skill protocol to Codex by applying thes
 - use `workflow.json` as the canonical bootstrap graph
 - write the generated run entry to `.codex/commands/run.md`
 - resolve plugin assets through repository-relative paths instead of a Claude-specific plugin-root variable
+- standardize generated `node-specs/*.md` around `## Spec / ## Design / ## Task` sections during Phase 1 migration
 
 ## Execution
 

@@ -38,7 +38,8 @@ Layer 2: Orchestrator (generated run entry)
 
 - Bootstrap writes the orchestrator entry to `.codex/commands/run.md` inside the target project.
 - The generated run entry is a Codex markdown command, not a Claude command.
-- The generated run entry must only reference project-local assets under `.allforai/bootstrap/`.
+- Shared workflow contracts remain under `.allforai/bootstrap/`.
+- Codex-only runtime helpers should be written under `.allforai/codex/` to avoid mixing platform-specific files with shared bootstrap artifacts.
 - Bootstrap should also write `.allforai/bootstrap/product-summary.json` when the project can be reverse-inferred from repository evidence.
 
 ## Shared Semantic Assets

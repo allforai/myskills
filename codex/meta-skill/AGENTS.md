@@ -23,6 +23,9 @@
   scripts/
   protocols/
 
+.allforai/codex/
+  flow.py
+
 .codex/commands/
   run.md
 ```
@@ -32,6 +35,7 @@
 - `workflow.json` is the forward contract.
 - `state-machine.json` may only be read for backward compatibility during migration.
 - The generated Codex orchestrator entry is `.codex/commands/run.md`, not `.claude/commands/run.md`.
+- Shared contracts belong under `.allforai/bootstrap/`; Codex-only runtime helpers belong under `.allforai/codex/`.
 
 ## Shared Asset Strategy
 

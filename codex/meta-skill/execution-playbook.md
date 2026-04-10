@@ -19,6 +19,7 @@
    - `.allforai/bootstrap/node-specs/*.md`
    - `.allforai/bootstrap/scripts/*`
    - `.allforai/bootstrap/protocols/*`
+   - `.allforai/codex/flow.py` for Codex-only non-stop execution
    - `.codex/commands/run.md`
 8. Validate the bootstrap products.
 9. Present a summary and next-step usage instructions.

@@ -49,6 +49,7 @@ def main() -> int:
         (CODEX_META / "tests", "tests"),
         (CODEX_META / "mcp-ai-gateway", "mcp-ai-gateway"),
         (ORCH / "check_product_summary.py", "shared/scripts/orchestrator/check_product_summary.py"),
+        (ORCH / "check_structured_node_spec.py", "shared/scripts/orchestrator/check_structured_node_spec.py"),
     ]
     for path, label in required_paths:
         check_exists(path, label, errors)

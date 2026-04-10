@@ -61,6 +61,16 @@ The generated workflow must still copy project-local helper assets into the targ
 Those copied assets must reference only project-local paths at run time.
 When product inference is emitted, include a project-local `check_product_summary.py` validator in `.allforai/bootstrap/scripts/`.
 
+Codex-only runtime helpers must not be mixed into the shared bootstrap tree.
+
+Write Codex-only execution helpers under:
+
+- `.allforai/codex/*`
+
+Example:
+
+- `.allforai/codex/flow.py` for a Codex non-stop outer driver
+
 ### 5. User Invocation Text
 
 When the canonical protocol tells the user to run `/run [goal]`, adapt the instruction to:
@@ -124,6 +134,53 @@ Rules:
 - it should describe user-facing systems, not just tech stacks
 - if confidence is low, emit open questions instead of pretending certainty
 
+### 10. Phase 1 Structured Node-Specs
+
+During the first `spec/design/task` migration phase, keep `node-specs/*.md` as the runtime contract,
+but standardize each generated node-spec around these sections:
+
+- `## Spec`
+- `## Design`
+- `## Task`
+
+Rules:
+
+- `## Spec` defines goal, evidence scope, exit artifacts, and acceptance constraints
+- `## Design` records current approach, tradeoffs, and open risks
+- `## Task` defines the immediate executable work
+- YAML frontmatter with `node:` remains required
+- generated run continues to read `node-specs/*.md` first during this phase
+
+Recommended shape:
+
+```md
+---
+node: <node-id>
+---
+
+# Node
+
+## Spec
+
+- goal
+- evidence inputs
+- exit artifacts
+- acceptance / invariants
+
+## Design
+
+- approach
+- alternatives or tradeoffs
+- open risks
+
+## Task
+
+- immediate actions
+- concrete file or surface targets
+- local verification
+- completion signal
+```
+
 ## Validation Requirements
 
 After generation, verify all of the following:
@@ -133,6 +190,12 @@ After generation, verify all of the following:
 - `.allforai/bootstrap/node-specs/*.md` exist
 - `.codex/commands/run.md` exists
 - project-local helper copies exist under `.allforai/bootstrap/`
+
+For Phase 1 structured node-spec migration, also verify:
+
+- each non-trivial node-spec includes `## Spec`
+- each non-trivial node-spec includes `## Design`
+- each non-trivial node-spec includes `## Task`
 
 When product inference is supported by repository evidence, also verify:
 
