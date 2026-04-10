@@ -117,6 +117,14 @@ def main() -> int:
 
     if "--dangerously-bypass-approvals-and-sandbox" not in flow_template_text:
         errors.append("flow template does not use Codex highest-permission execution")
+    if "MAX_CONSECUTIVE_FAILURES_PER_NODE = 3" not in flow_template_text:
+        errors.append("flow template does not enforce a repeated-failure threshold")
+    if "MAX_STAGNANT_ITERATIONS = 5" not in flow_template_text:
+        errors.append("flow template does not enforce a stagnation threshold")
+    if "diagnosis_history" not in flow_template_text:
+        errors.append("flow template does not record diagnosis_history")
+    if "diagnosis.md" not in flow_template_text:
+        errors.append("flow template does not use the diagnosis protocol after repeated failures")
 
     install_text = read_text(CODEX_META / "install.sh") if (CODEX_META / "install.sh").exists() else ""
     if (

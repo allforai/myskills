@@ -77,6 +77,9 @@ Generation rule:
 - the generated file must invoke `codex exec --dangerously-bypass-approvals-and-sandbox`
 - it should work with zero arguments by default
 - it may accept legacy positional arguments `<goal> <max_iterations>` for compatibility, but must not require them
+- it must treat `workflow.json` plus `transition_log` as the runtime source of truth
+- after 3 consecutive failures on the same node, it must stop retries, run diagnosis, and record `diagnosis_history`
+- after 5 consecutive transitions with no new artifacts, it must stop instead of looping forever
 
 ### 5. User Invocation Text
 

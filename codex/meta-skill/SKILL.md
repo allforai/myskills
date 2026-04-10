@@ -41,6 +41,7 @@ Layer 2: Orchestrator (generated run entry)
 - Shared workflow contracts remain under `.allforai/bootstrap/`.
 - Codex-only runtime helpers should be written under `.allforai/codex/` to avoid mixing platform-specific files with shared bootstrap artifacts.
 - Bootstrap should also write `.allforai/bootstrap/product-summary.json` when the project can be reverse-inferred from repository evidence.
+- The generated `.allforai/codex/flow.py` is a Codex-only supervisor: it uses `transition_log` as runtime state, stops after repeated node failures, and records `diagnosis_history` instead of looping forever.
 
 ## Shared Semantic Assets
 

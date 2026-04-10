@@ -64,7 +64,7 @@ On the first iteration, if `transition_log` is non-empty:
 
 ## Safety
 
-- Same node fails 3 times: warn the user and ask whether to continue
+- Same node fails 3 times: stop automatic retries, run diagnosis, and record `diagnosis_history`
 - 5 iterations with no new artifacts: stop and output current best state plus TODOs
 - Single node running too long: warn, do not silently discard work
 
@@ -90,6 +90,7 @@ If the workflow should keep moving until completion without stopping for "next s
 This Codex-only outer driver repeatedly relaunches Codex against pending nodes until:
 
 - all required exit artifacts exist
-- a failed transition is recorded for the currently selected node
+- the same node fails 3 times and a diagnosis record is written
+- 5 consecutive transitions create no new artifacts
 - or the driver's max-iteration safety limit is reached
 ~~~

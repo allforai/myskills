@@ -35,5 +35,7 @@ It must:
 3. Read node-specs from `.allforai/bootstrap/node-specs/`.
 4. Record transitions to `workflow.json`.
 5. Resume safely from current project-local artifacts.
+6. If the same node fails 3 times, stop retries, read `.allforai/bootstrap/protocols/diagnosis.md`, and record `diagnosis_history`.
+7. If 5 consecutive transitions produce no new artifacts, stop and report stagnation instead of looping forever.
 
 `state-machine.json` is not the primary contract. It may only be read for backward compatibility while older bootstrap outputs still exist.

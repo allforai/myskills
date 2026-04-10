@@ -16,6 +16,8 @@ from pathlib import Path
 
 
 DEFAULT_MAX_ITERATIONS = 200
+MAX_CONSECUTIVE_FAILURES_PER_NODE = 3
+MAX_STAGNANT_ITERATIONS = 5
 DEFAULT_GOAL = "Complete the entire generated workflow end-to-end. Do not stop to ask what to do next. Keep executing nodes until the workflow is done, then stop for unified acceptance."
 
 
@@ -41,6 +43,10 @@ def save_json(path: Path, data: dict) -> None:
 
 def artifact_exists(project_root: Path, rel_path: str) -> bool:
     return (project_root / rel_path).exists()
+
+
+def diagnosis_protocol_path(project_root: Path) -> Path:
+    return project_root / ".allforai/bootstrap/protocols/diagnosis.md"
 
 
 def first_pending_node(project_root: Path, workflow: dict) -> dict | None:
@@ -77,6 +83,48 @@ def append_transition_if_missing(
     save_json(workflow_path, workflow)
 
 
+def append_diagnosis_entry(
+    workflow_path: Path,
+    node_id: str,
+    attempts: int,
+    summary: str,
+    diagnosis_output: str,
+) -> None:
+    workflow = load_json(workflow_path)
+    diagnosis_history = workflow.setdefault("diagnosis_history", [])
+    diagnosis_history.append(
+        {
+            "node": node_id,
+            "attempts": attempts,
+            "recorded_at": now_iso(),
+            "summary": summary,
+            "diagnosis_output": diagnosis_output,
+        }
+    )
+    save_json(workflow_path, workflow)
+
+
+def count_consecutive_failures(workflow: dict, node_id: str) -> int:
+    count = 0
+    for entry in reversed(workflow.get("transition_log", [])):
+        if entry.get("node") != node_id:
+            break
+        if entry.get("status") == "failed":
+            count += 1
+            continue
+        break
+    return count
+
+
+def stagnant_iteration_count(workflow: dict) -> int:
+    count = 0
+    for entry in reversed(workflow.get("transition_log", [])):
+        if entry.get("artifacts_created"):
+            break
+        count += 1
+    return count
+
+
 def run_post_checks(project_root: Path) -> None:
     scripts = project_root / ".allforai/bootstrap/scripts"
     bootstrap_dir = project_root / ".allforai/bootstrap"
@@ -104,6 +152,26 @@ Requirements:
 Do not ask for acceptance. Execute the work directly."""
 
 
+def build_diagnosis_prompt(node_id: str, attempt_count: int) -> str:
+    return f"""Diagnose a repeated workflow failure and stop after writing the diagnosis.
+
+Failed node: {node_id}
+Consecutive failed attempts: {attempt_count}
+
+Requirements:
+1. Read `.allforai/bootstrap/workflow.json`.
+2. Read `.allforai/bootstrap/node-specs/{node_id}.md`.
+3. Read `.allforai/bootstrap/protocols/diagnosis.md`.
+4. Inspect the failed node's missing exit artifacts and the recent `transition_log`.
+5. Write a concise diagnosis summary describing:
+   - likely root cause
+   - whether the missing work is upstream, in-node, or out-of-scope
+   - the best next repair step
+6. Output plain text only. Do not execute new implementation work in this diagnosis pass.
+7. Stop after emitting the diagnosis.
+"""
+
+
 def run_codex(project_root: Path, prompt: str) -> subprocess.CompletedProcess[str]:
     command = [
         "codex",
@@ -115,6 +183,10 @@ def run_codex(project_root: Path, prompt: str) -> subprocess.CompletedProcess[st
         prompt,
     ]
     return subprocess.run(command, cwd=project_root, text=True, capture_output=True)
+
+
+def run_diagnosis(project_root: Path, node_id: str, attempt_count: int) -> subprocess.CompletedProcess[str]:
+    return run_codex(project_root, build_diagnosis_prompt(node_id, attempt_count))
 
 
 def parse_legacy_args(argv: list[str]) -> tuple[str, int]:
@@ -144,6 +216,59 @@ def main() -> int:
             return 0
 
         node_id = node["id"]
+        failure_count = count_consecutive_failures(workflow, node_id)
+        if failure_count >= MAX_CONSECUTIVE_FAILURES_PER_NODE:
+            diagnosis_path = diagnosis_protocol_path(project_root)
+            diagnosis = run_diagnosis(project_root, node_id, failure_count)
+            diagnosis_text = (diagnosis.stdout or diagnosis.stderr or "").strip()
+            if diagnosis_path.exists() and not diagnosis_text:
+                diagnosis_text = (
+                    "Diagnosis protocol exists but Codex returned no diagnosis output. "
+                    f"Read {diagnosis_path} and inspect the latest failed transitions for {node_id}."
+                )
+            elif not diagnosis_text:
+                diagnosis_text = (
+                    "Repeated failures exceeded the supervisor threshold and no diagnosis output was returned."
+                )
+            append_diagnosis_entry(
+                workflow_path,
+                node_id,
+                failure_count,
+                f"Repeated node failure reached threshold {MAX_CONSECUTIVE_FAILURES_PER_NODE}.",
+                diagnosis_text[:4000],
+            )
+            print(
+                json.dumps(
+                    {
+                        "passed": False,
+                        "done": False,
+                        "node": node_id,
+                        "error": "failure threshold reached",
+                        "consecutive_failures": failure_count,
+                        "diagnosis_recorded": True,
+                    },
+                    indent=2,
+                    ensure_ascii=False,
+                ),
+                file=sys.stderr,
+            )
+            return 3
+
+        if stagnant_iteration_count(workflow) >= MAX_STAGNANT_ITERATIONS:
+            print(
+                json.dumps(
+                    {
+                        "passed": False,
+                        "done": False,
+                        "error": f"stagnant workflow: {MAX_STAGNANT_ITERATIONS} consecutive transitions without new artifacts",
+                    },
+                    indent=2,
+                    ensure_ascii=False,
+                ),
+                file=sys.stderr,
+            )
+            return 4
+
         before_count = len(workflow.get("transition_log", []))
         started_at = now_iso()
         result = run_codex(project_root, build_prompt(node_id, goal))

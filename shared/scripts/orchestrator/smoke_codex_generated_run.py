@@ -64,6 +64,14 @@ def main() -> int:
             errors.append("flow template does not use Codex highest-permission execution")
         if ".allforai/bootstrap/workflow.json" not in flow_text:
             errors.append("flow template does not reference workflow.json")
+        if "MAX_CONSECUTIVE_FAILURES_PER_NODE = 3" not in flow_text:
+            errors.append("flow template does not enforce repeated-failure supervision")
+        if "MAX_STAGNANT_ITERATIONS = 5" not in flow_text:
+            errors.append("flow template does not enforce stagnation supervision")
+        if "diagnosis_history" not in flow_text:
+            errors.append("flow template does not record diagnosis history")
+        if ".allforai/bootstrap/protocols/diagnosis.md" not in flow_text:
+            errors.append("flow template does not read the diagnosis protocol")
         if ".allforai/codex/flow.py" not in str(flow_path):
             errors.append("flow template was not materialized to the Codex-only path")
         if ".codex/commands/run.md" in text:
