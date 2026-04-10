@@ -71,6 +71,13 @@ Example:
 
 - `.allforai/codex/flow.py` for a Codex non-stop outer driver
 
+Generation rule:
+
+- materialize `../knowledge/flow-template.py` into `.allforai/codex/flow.py`
+- the generated file must invoke `codex exec --dangerously-bypass-approvals-and-sandbox`
+- it should work with zero arguments by default
+- it may accept legacy positional arguments `<goal> <max_iterations>` for compatibility, but must not require them
+
 ### 5. User Invocation Text
 
 When the canonical protocol tells the user to run `/run [goal]`, adapt the instruction to:
@@ -190,6 +197,7 @@ After generation, verify all of the following:
 - `.allforai/bootstrap/node-specs/*.md` exist
 - `.codex/commands/run.md` exists
 - project-local helper copies exist under `.allforai/bootstrap/`
+- `.allforai/codex/flow.py` exists for Codex targets
 
 For Phase 1 structured node-spec migration, also verify:
 

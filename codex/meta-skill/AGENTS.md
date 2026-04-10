@@ -51,3 +51,4 @@ Current local extension:
 
 - `knowledge/im-specialization.md` for research-first realtime messaging specialization
 - `knowledge/product-inference.md` for evidence-backed reverse-product summaries
+- `knowledge/flow-template.py` for Codex-only non-stop workflow execution

@@ -63,3 +63,4 @@ Current Codex-only extension:
 - `knowledge/high-risk-specialization.md` for generic high-risk domain hooks
 - `knowledge/im-specialization.md` for realtime messaging / Telegram-class products
 - `knowledge/product-inference.md` for research-first reverse-product inference
+- `knowledge/flow-template.py` for Codex non-stop workflow execution

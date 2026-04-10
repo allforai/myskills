@@ -43,6 +43,7 @@ def main() -> int:
         (CODEX_META / "knowledge" / "high-risk-specialization.md", "knowledge/high-risk-specialization.md"),
         (CODEX_META / "knowledge" / "im-specialization.md", "knowledge/im-specialization.md"),
         (CODEX_META / "knowledge" / "product-inference.md", "knowledge/product-inference.md"),
+        (CODEX_META / "knowledge" / "flow-template.py", "knowledge/flow-template.py"),
         (CODEX_META / "knowledge" / "orchestrator-template.md", "knowledge/orchestrator-template.md"),
         (CODEX_META / "knowledge", "knowledge"),
         (CODEX_META / "scripts", "scripts"),
@@ -71,6 +72,7 @@ def main() -> int:
     high_risk_text = read_text(CODEX_META / "knowledge" / "high-risk-specialization.md") if (CODEX_META / "knowledge" / "high-risk-specialization.md").exists() else ""
     im_text = read_text(CODEX_META / "knowledge" / "im-specialization.md") if (CODEX_META / "knowledge" / "im-specialization.md").exists() else ""
     product_inference_text = read_text(CODEX_META / "knowledge" / "product-inference.md") if (CODEX_META / "knowledge" / "product-inference.md").exists() else ""
+    flow_template_text = read_text(CODEX_META / "knowledge" / "flow-template.py") if (CODEX_META / "knowledge" / "flow-template.py").exists() else ""
 
     for name, text in {
         "SKILL.md": skill_text,
@@ -109,6 +111,12 @@ def main() -> int:
 
     if "evidence" not in product_inference_text.lower():
         errors.append("product inference guidance does not require evidence-backed output")
+
+    if ".allforai/codex/flow.py" not in skill_text + agents_text + playbook_text + bootstrap_text + flow_template_text:
+        errors.append("Codex non-stop flow driver contract is not fully documented")
+
+    if "--dangerously-bypass-approvals-and-sandbox" not in flow_template_text:
+        errors.append("flow template does not use Codex highest-permission execution")
 
     # Validate .mcp.json shape.
     mcp_path = CODEX_META / ".mcp.json"
