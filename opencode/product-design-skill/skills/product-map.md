@@ -399,7 +399,7 @@ Check `.allforai/product-concept/requirements-brief.json`:
 | confirmed_status | product-map behavior |
 |-----------------|---------------------|
 | `fully_confirmed` | Skip directional questions; seed business-flows from `core_paths`; auto-generate tasks from `standard_modules` (tagged `source: "standard_module"`) |
-| `partially_confirmed` | Skip confirmed sections; ask about `status: "pending"` items before expanding |
+| `partially_confirmed` | First check if `core_paths` contains any `pending` items: ① If yes, guide user to complete Stage A path confirmation first (cannot infer Stage B modules without confirmed paths); ② If core_paths are all confirmed and only modules/boundary decisions are pending, ask about pending items inline in Step 0 before expanding |
 | `stale` (schema version mismatch) | Warn user; fall back to standard flow (treat as absent) |
 | `pending` (Stage A/B/C not completed) | Prompt user to complete all stages of `/requirements` before running product-map; or continue as unconfirmed (no questions skipped) |
 | File absent | Prompt: recommend running `/requirements` first; user may choose to continue as unconfirmed (no questions skipped) |

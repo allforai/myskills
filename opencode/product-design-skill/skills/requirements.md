@@ -32,7 +32,7 @@ description: >
 
 Collect 2-4 paths manually, then proceed to Stage B.
 
-**Goal:** Lock in 2–4 primary user paths before any expansion.
+**Goal:** Lock the main user paths before any expansion (typically 2-4). When there are more than 4 roles, group them by primary business value and present in batches; the user can confirm all or focus on core roles first.
 
 Read roles + business_model from concept-baseline and derive 2–4 core paths. Each path contains:
 
@@ -104,6 +104,13 @@ Please confirm these paths, or point out any missing or incorrect items:
 | Enterprise management paths (approval/permissions/reporting) | Audit Log, Multi-tenancy, SSO |
 | SaaS paths (subscription/usage/billing) | Subscription Billing, Usage Metrics, Webhooks |
 
+**When no domain matches:** If Stage A paths do not match any domain signal above, show a prompt in the Tier 2 area instead of leaving it empty:
+
+```
+Domain layer (no known domain pattern detected)
+  If you need domain-specific modules (e.g. medical records, shipment tracking, leaderboards), please specify
+```
+
 **Tier 3 — optional_candidates** (not shown by default; listed under "Optional" section)
 
 Real-time Chat / File Storage / Full-text Search / Internationalization (i18n) / Offline Support (PWA)
@@ -135,6 +142,7 @@ Reply "confirmed" to continue, or describe the items you want to change:
 - "confirmed" / "confirm" / "continue" / "no changes" → write `status: "confirmed"`, `decision_source: "user_confirmed"` for all displayed modules
 - Corrections only (no explicit "confirm") → changed items get `decision_source: "user_override"`; remaining items are treated as implicitly confirmed: `status: "confirmed", decision_source: "user_confirmed"`
 - No reply / interrupted → all modules get `status: "pending"`
+- User says "don't need X" / "remove X" / "disable X" → write `status: "excluded"`, `decision_source: "user_excluded"` for that module; no tasks generated
 
 ---
 
@@ -166,6 +174,8 @@ How long should an order be retained after a payment failure?
 ```
 
 Maximum 5 questions. Stage C completes once all are answered.
+
+**Out-of-option answers:** If the user's answer is not one of the given options (e.g. "1 hour", "depends on order amount"), write the user's verbatim text to `selected_option`, set `decision_source: "user_custom"`, and continue to the next question. Do not re-ask; do not force-map to existing options.
 
 **Question flow:** Display one question at a time, wait for the user's answer before showing the next. After all questions are answered (or confirmed no more questions), proceed to the output phase.
 
@@ -205,7 +215,7 @@ Write to `.allforai/product-concept/requirements-brief.json`:
       "tier": "foundation_default",
       "default": "Email/password + Google OAuth",
       "status": "confirmed | pending | excluded",
-      "decision_source": "default | user_confirmed | user_override | inferred",
+      "decision_source": "default | user_confirmed | user_override | user_excluded | inferred",
       "override": null
     }
   ],
@@ -216,7 +226,7 @@ Write to `.allforai/product-concept/requirements-brief.json`:
       "question": "How long should an order be retained after a payment failure?",
       "options": ["Auto-cancel after 30 minutes", "24 hours (user can retry payment)", "Never auto-cancel, handle manually"],
       "selected_option": "Auto-cancel after 30 minutes",
-      "decision_source": "user_selected | default",
+      "decision_source": "user_selected | user_custom | default",
       "rationale": null,
       "impact_scope": ["CP-001", "SM-payment"]
     }

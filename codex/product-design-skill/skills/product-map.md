@@ -399,7 +399,7 @@ Step 9: 校验
 | confirmed_status | product-map 行为 |
 |-----------------|----------------|
 | `fully_confirmed` | 跳过方向性问题；用 `core_paths` 生成 business-flows 骨架；`standard_modules` 直接生成 tasks（带 `source: "standard_module"` 标签） |
-| `partially_confirmed` | 跳过已确认部分；对 `status: "pending"` 的项继续提问后再展开 |
+| `partially_confirmed` | 先检查 `core_paths` 是否含 `pending` 项：① 若有，必须先引导用户完成 Stage A 路径确认（路径未定则无法推断 Stage B 模块）；② 若 core_paths 全部 confirmed，仅 modules/boundary 有 pending，则在 Step 0 inline 补问 pending 项后继续展开 |
 | `stale`（schema 版本不匹配） | 警告用户，回退到常规流程（当作文件不存在处理） |
 | `pending`（Stage A/B/C 未完成） | 提示用户需要先完成 `/requirements` 的所有 Stage 再运行 product-map；或以 unconfirmed 状态继续（不跳过任何问题） |
 | 文件不存在 | 提示：建议先运行 `/requirements`；用户可选择继续（以 unconfirmed 状态运行，不跳过任何问题） |

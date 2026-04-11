@@ -32,7 +32,7 @@ description: >
 
 手动收集 2-4 条路径后继续 Stage B。
 
-**目标：** 在任何展开前，锁定 2-4 条主干用户路径。
+**目标：** 在任何展开前，锁定主干用户路径（通常 2-4 条）。角色超过 4 个时，按覆盖主要业务价值的原则分组展示，用户可选择全部确认或聚焦核心角色。
 
 读取 concept-baseline 中的 roles + business_model，推导 2-4 条核心路径。每条路径包含：
 
@@ -104,6 +104,13 @@ description: >
 | 企业管理路径（审批/权限/报表） | 操作审计日志, 多租户, SSO |
 | SaaS 路径（订阅/用量/账单） | 订阅计费, 用量统计, Webhook |
 
+**无领域匹配时：** 若 Stage A 路径不符合以上任一领域信号，Tier 2 区域显示提示而非留空：
+
+```
+领域层（未检测到已知领域模式）
+  如需添加领域相关模块（如医疗记录、物流追踪、游戏排行榜），请直接告知
+```
+
 **Tier 3 — optional_candidates**（不默认展示，列在"可选项"区）
 
 实时聊天 / 文件存储 / 全文搜索 / 多语言(i18n) / 离线支持(PWA)
@@ -135,6 +142,7 @@ description: >
 - "确认" / "confirm" / "continue" / "无修改" → 所有展示模块写 `status: "confirmed"`，`decision_source: "user_confirmed"`
 - 只给出修改说明（未显式说"确认"）→ 修改项写 `decision_source: "user_override"`，其余视为隐式确认写 `status: "confirmed", decision_source: "user_confirmed"`
 - 无回复 / 中断 → 所有模块写 `status: "pending"`
+- 用户说"不需要 X" / "关闭 X" / "去掉 X" → 该模块写 `status: "excluded"`，`decision_source: "user_excluded"`；不生成对应 tasks
 
 ---
 
@@ -166,6 +174,8 @@ description: >
 ```
 
 最多 5 个问题。全部回答后 Stage C 完成。
+
+**选项外回答：** 若用户回答不在给定选项中（如"1小时"、"根据订单金额决定"），直接将用户原文写入 `selected_option`，`decision_source: "user_custom"`，继续下一题。不重新提问，不强行映射到已有选项。
 
 **提问流程：** 每次只显示一个问题，等用户回答后再显示下一个。所有问题回答完毕（或确认无更多问题）后进入输出阶段。
 
@@ -205,7 +215,7 @@ description: >
       "tier": "foundation_default",
       "default": "邮箱密码 + Google OAuth",
       "status": "confirmed | pending | excluded",
-      "decision_source": "default | user_confirmed | user_override | inferred",
+      "decision_source": "default | user_confirmed | user_override | user_excluded | inferred",
       "override": null
     }
   ],
@@ -216,7 +226,7 @@ description: >
       "question": "支付失败后订单保留多久？",
       "options": ["30分钟自动取消", "24小时（用户可重新支付）", "不自动取消，人工处理"],
       "selected_option": "30分钟自动取消",
-      "decision_source": "user_selected | default",
+      "decision_source": "user_selected | user_custom | default",
       "rationale": null,
       "impact_scope": ["CP-001", "SM-payment"]
     }
