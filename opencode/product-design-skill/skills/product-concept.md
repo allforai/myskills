@@ -889,3 +889,19 @@ Step 1 不能只定义"谁用产品"，还必须定义"谁运营产品"。产品
 - **分歧处理**：模型间分歧由主模型裁决，记录 `disagreements` 字段
 - **效果优先**：成本不设上限，追求最佳创新效果
 - **输出留痕**：`multi_model_collaboration` 字段记录所有使用的模型及角色
+
+---
+
+## Requirements Confirmation (Auto-triggered — runs after concept-baseline.json)
+
+> See `./skills/requirements.md`
+
+After `concept-baseline.json` is generated, automatically enter Requirements Confirmation (Stage A → B → C):
+
+1. **Stage A**: Present derived core paths; wait for explicit user confirmation
+2. **Stage B**: Present standard module list (foundation layer + inferred domain layer); wait for explicit user confirmation
+3. **Stage C**: Ask 3-5 multiple-choice questions for key boundary decisions that cannot be inferred
+
+Stages run in sequence. After all complete, write `.allforai/product-concept/requirements-brief.json`.
+
+**Do not auto-advance any Stage without an explicit user reply.** No reply / session interruption → write `status: "pending"` for that Stage.

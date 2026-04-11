@@ -889,3 +889,19 @@ Step 1 不能只定义"谁用产品"，还必须定义"谁运营产品"。产品
 - **分歧处理**：模型间分歧由主模型裁决，记录 `disagreements` 字段
 - **效果优先**：成本不设上限，追求最佳创新效果
 - **输出留痕**：`multi_model_collaboration` 字段记录所有使用的模型及角色
+
+---
+
+## 需求确认（自动触发 — concept-baseline.json 生成后立即执行）
+
+> 详见 `./skills/requirements.md`
+
+`concept-baseline.json` 生成后，自动进入需求确认阶段（Stage A → B → C）：
+
+1. **Stage A**：展示推导出的核心路径，等待用户明确确认
+2. **Stage B**：展示标准模块清单（基础层 + 领域层推断），等待用户明确确认
+3. **Stage C**：逐一提问 3-5 个无法推断的关键边界，用选择题
+
+三个 Stage 顺序执行。全部完成后写入 `.allforai/product-concept/requirements-brief.json`。
+
+**不得在用户明确回复前自动推进任何 Stage。** 无回复 / 会话中断 → 对应 Stage 写 `status: "pending"`。
