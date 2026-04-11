@@ -74,7 +74,10 @@ Please confirm these paths, or point out any missing or incorrect items:
 
 ## Stage B — Standard Modules Bulk Sign-off
 
-**Input:** Paths confirmed in Stage A + project type (fullstack / backend / frontend)  
+**Input:** Paths confirmed in Stage A + project type (fullstack / backend / frontend)
+- Project type is read from `concept-baseline.json` → `pipeline_preferences.project_type`
+- If the field is absent or /requirements runs standalone without concept-baseline, default to `fullstack` and note in the module display: "(project type not detected, showing fullstack defaults — correct if wrong)"
+
 **Goal:** Confirm standard infrastructure in one message, no item-by-item discussion.
 
 ### Module Catalog (Three-Tier Structure)

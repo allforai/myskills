@@ -74,7 +74,10 @@ description: >
 
 ## Stage B — 标准模块批量 Sign-off
 
-**输入：** Stage A 确认的路径 + 项目类型（fullstack / backend / frontend）  
+**输入：** Stage A 确认的路径 + 项目类型（fullstack / backend / frontend）
+- 项目类型优先读 `concept-baseline.json` 的 `pipeline_preferences.project_type` 字段
+- 若字段不存在或 /requirements 独立运行时无 concept-baseline，默认使用 `fullstack`，并在模块展示时注明"（项目类型未检测，按 fullstack 展示，如有误请告知）"
+
 **目标：** 一条消息确认标准基础设施，不做逐项讨论。
 
 ### 模块目录（三层结构）

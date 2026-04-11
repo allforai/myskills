@@ -406,7 +406,7 @@ Step 9: 校验
 
 **stale 判定**（满足任一条件）：
 - `schema_version` != `"1.1"`（协议版本过期）
-- `based_on_concept_baseline_version` != 当前 `concept-baseline.json` 的文件 mtime（概念已更新但需求未重新确认）→ 降级为警告而非强制回退，product-map 正常运行但在输出中标注 `requirements_stale: true`
+- `based_on_concept_baseline_version` != 当前 `concept-baseline.json` 的文件 mtime（概念已更新但需求未重新确认）→ 降级为警告而非强制回退，product-map 正常运行但在最终输出的 `product-map.json` 顶层写入 `"requirements_stale": true`，review 时高亮提示
 
 ---
 

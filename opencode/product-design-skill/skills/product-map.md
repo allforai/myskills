@@ -406,7 +406,7 @@ Check `.allforai/product-concept/requirements-brief.json`:
 
 **Stale detection** (either condition triggers):
 - `schema_version` != `"1.1"` (protocol version outdated) → fall back to standard flow
-- `based_on_concept_baseline_version` != current mtime of `concept-baseline.json` (concept updated but requirements not re-confirmed) → warn only; product-map continues but outputs `requirements_stale: true`
+- `based_on_concept_baseline_version` != current mtime of `concept-baseline.json` (concept updated but requirements not re-confirmed) → warn only; product-map continues normally but writes `"requirements_stale": true` at the top level of the output `product-map.json`; highlighted in review
 
 ---
 
