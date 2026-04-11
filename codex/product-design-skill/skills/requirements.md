@@ -209,7 +209,7 @@ description: >
       "selected_option": "30分钟自动取消",
       "decision_source": "user_selected | default",
       "rationale": null,
-      "impact_scope": ["CP-001", "SM-payment"],   // 受影响的 core_path IDs 和 standard_module IDs
+      "impact_scope": ["CP-001", "SM-payment"]
     }
   ],
 
