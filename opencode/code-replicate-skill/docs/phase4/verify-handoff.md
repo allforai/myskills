@@ -100,3 +100,18 @@ OL-D4 角色完整性:
 - 跨栈复刻额外提示：检查 stack-mapping.json 中的手动决策点
 - KNOWN_GAP 列表（内循环未修复 + 外循环超 20% 的遗漏项）
 
+**Step 4g** — Gap pattern analysis (large loop)
+
+Aggregate `known_gaps.json` across all modules. Identify systematic failure patterns: (1) a contract TYPE that consistently fails (e.g., all `cross_module_rules` entries are known_gaps → extraction strategy is wrong for this pattern); (2) a TARGET STACK pattern that makes reverse extraction unreliable. Write findings to `replicate-report.md` §Gap Patterns. If pattern count ≥ 3 for any category, recommend re-running Phase 2.5 with refined extraction rules before next replication attempt.
+
+**replicate-report.md §Gap Patterns format:**
+
+```markdown
+## Gap Patterns
+
+| Pattern | Affected Contracts | Root Cause | Recommendation |
+|---------|-------------------|------------|---------------|
+| cross_module_rules extraction | BC-005, BC-012, BC-019 | Rules expressed via DB constraints not visible in service layer | Re-run Phase 2.5 with explicit DB constraint scan |
+| UI precondition detection | UI-003, UI-007 | Preconditions encoded as CSS `disabled` attribute, not in JS logic | Add CSS-based precondition extraction to Phase 2.5.2 |
+```
+

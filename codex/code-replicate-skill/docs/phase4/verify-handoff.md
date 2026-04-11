@@ -100,3 +100,18 @@ OL-D4 角色完整性:
 - 跨栈复刻额外提示：检查 stack-mapping.json 中的手动决策点
 - KNOWN_GAP 列表（内循环未修复 + 外循环超 20% 的遗漏项）
 
+**Step 4g** — Gap pattern analysis（大闭环）
+
+汇总 `known_gaps.json` 中所有模块的 gap。识别系统性失败模式：(1) 某类合约类型反复失败（如所有 `cross_module_rules` 条目均为 known_gap → 提取策略对该模式有误）；(2) 目标栈某种代码模式导致逆向提取不可靠。将发现写入 `replicate-report.md` §Gap Patterns。若任何类别的 pattern 数 ≥ 3，建议用户在下次复刻前重新运行 Phase 2.5（改进提取规则）。
+
+**replicate-report.md §Gap Patterns 格式：**
+
+```markdown
+## Gap Patterns
+
+| Pattern | 受影响合约 | 根因 | 建议 |
+|---------|-----------|------|------|
+| cross_module_rules 提取 | BC-005, BC-012, BC-019 | 规则通过 DB 约束表达，在 service 层不可见 | 重新运行 Phase 2.5，增加 DB 约束扫描 |
+| UI 前置条件检测 | UI-003, UI-007 | 前置条件通过 CSS disabled 属性编码，不在 JS 逻辑中 | Phase 2.5.2 增加基于 CSS 的前置条件提取 |
+```
+
