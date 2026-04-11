@@ -82,6 +82,10 @@ description: >
 | SM-email | 通知-邮件 | 注册确认 / 密码重置 | always | ✓ | ✓ | — |
 | SM-softdelete | 软删除 | 用户/订单数据逻辑删除保留 | has_user_data OR has_order_data | ✓ | ✓ | — |
 
+**inclusion_rule 评估：** 展示 Stage B 模块列表前，先评估每个 foundation_default 模块的 `inclusion_rule`：
+- `always` → 始终包含
+- `has_user_data OR has_order_data` → 仅当 Stage A 路径中出现用户账号操作或订单操作时包含；否则设 `status: "excluded"`，不在展示列表中显示
+
 **Tier 2 — domain_defaults**（LLM 从 Stage A 路径推断，展示时加 `[推断]` 标签）
 
 | 领域信号（来自 Stage A 路径） | 推断模块 |
@@ -119,7 +123,7 @@ description: >
 ```
 
 **确认规则：**
-- "确认" / "confirm" / "continue" / "无修改" → 所有展示模块写 `status: "confirmed"`
+- "确认" / "confirm" / "continue" / "无修改" → 所有展示模块写 `status: "confirmed"`，`decision_source: "user_confirmed"`
 - 指出修改 → 修改项写 `decision_source: "user_override"`，其余写 `status: "confirmed"`
 - 无回复 / 中断 → 所有模块写 `status: "pending"`
 
@@ -154,6 +158,10 @@ description: >
 
 最多 5 个问题。全部回答后 Stage C 完成。
 
+**提问流程：** 每次只显示一个问题，等用户回答后再显示下一个。所有问题回答完毕（或确认无更多问题）后进入输出阶段。
+
+如果扫描后没有符合提问规则的歧义点，跳过 Stage C，直接输出 requirements-brief.json（`boundary_decisions: []` 为空数组，这是合法值）。
+
 ---
 
 ## 输出：requirements-brief.json
@@ -167,7 +175,7 @@ description: >
   "confirmed_at": "<ISO 8601 or null>",
   "confirmed_status": "fully_confirmed | partially_confirmed | pending",
   "source_command": "/product-concept | /requirements",
-  "based_on_concept_baseline_version": "<hash or timestamp>",
+  "based_on_concept_baseline_version": "<concept-baseline.json 的文件修改时间 mtime ISO 8601；若无法获取则用生成时的 generated_at>",
 
   "core_paths": [
     {
@@ -201,8 +209,7 @@ description: >
       "selected_option": "30分钟自动取消",
       "decision_source": "user_selected | default",
       "rationale": null,
-      "impact_scope": ["CP-001", "SM-payment"],
-      "affects_path": "CP-001"
+      "impact_scope": ["CP-001", "SM-payment"],   // 受影响的 core_path IDs 和 standard_module IDs
     }
   ],
 
@@ -214,6 +221,10 @@ description: >
 - `fully_confirmed`：所有 core_paths + standard_modules + boundary_decisions 均为 confirmed
 - `partially_confirmed`：至少一项为 pending，但 Stage A/B/C 已完成
 - `pending`：Stage A/B/C 未完成（会话中断）
+
+**`unconfirmed_areas`** 字段填写规则：
+- Stage A/B/C 中 `status: "pending"` 的项，将其 ID（如 `CP-001`、`SM-payment`）加入此数组
+- 如果所有项均已确认，写 `[]`
 
 ---
 
