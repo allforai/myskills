@@ -164,26 +164,56 @@ Phase 4  整体验收交付（现有）
 
 ---
 
-## Phase 3 增强：逐单元生成 + 即时验收
+## Phase 3 增强：逐单元生成 + 逆向检查闭环
 
-### 变更
+### 核心机制：逆向提取 + Diff
 
-每个生成单元执行前，从 `acceptance-contracts.json` 取出对应合约作为 acceptance criteria。
+验收不依赖"跑测试看是否通过"，而是**用同一套提取规则作用于目标代码，得到合约 B，再与源码合约 A 做结构 diff**。
+
+```
+源码 → 提取合约 A（Phase 2.5）
+目标代码（生成后）→ 逆向提取合约 B
+Diff(A, B) → 精确差距清单
+```
+
+优势：纯静态，不依赖运行环境。即使目标跑不起来，仍可执行逆向检查。UI 合约同样适用——不需要截图，比较的是交互意图结构。
+
+### 每单元执行流程
 
 ```
 for each generation_unit:
-  1. 取对应合约（BC-xxx 或 UI-xxx）
+  1. 从 acceptance-contracts.json 取出合约 A（BC-xxx 或 UI-xxx）
   2. 生成目标代码
-  3. 对照合约验收：
-     - 后端：接口签名、错误条件、副作用是否覆盖
-     - UI：状态列表、用户操作、转换是否实现
-  4. 通过 → 下一单元
-     不通过 → 当前单元内修复（最多 3 轮）→ 仍失败 → 标记为 known_gap
+  3. 逆向提取目标代码的合约 B
+  4. Diff(A, B)
+     → Diff 为空：通过，进入下一单元
+     → Diff 不为空：得到精确差距 → 修复 → 重新逆向提取
+     → 3 轮未收敛：标记为 known_gap（保留完整 diff）
 ```
+
+### 三层闭环
+
+**小闭环（单元级）：**
+生成 → 逆向提取 → Diff → 修复 → 重新提取
+每个生成单元内部收敛，错误不扩散到下一单元。
+
+**中闭环（合约级）：**
+若某合约反复无法满足（3 轮修复均失败），回溯 Phase 2.5 重新审视源码。
+可能原因：合约提取本身有误，或源码中该规则的表达方式特殊。
+→ 修正合约 A → 重新生成该单元。
+
+**大闭环（方法论级）：**
+Phase 4 汇总所有 known_gap，分析系统性失败模式：
+- 某类合约（如跨模块隐性规则）总是提取不准 → 改进提取策略
+- 某类目标栈代码总是逆向提取失败 → 改进逆向提取规则
+→ 反馈改进合约提取方法，用于下次复刻。
 
 ### known_gap 处理
 
-修复 3 轮仍不通过的合约项，标记为 `known_gap`，写入最终报告。不阻断后续单元，但在 Phase 4 汇总时展示给用户。
+标记为 `known_gap` 的合约项保留完整 diff，不阻断后续单元。Phase 4 汇总时：
+- 展示给用户：差在哪、差多少
+- 标注是否可手动补全
+- 系统性 pattern 触发大闭环
 
 ---
 
@@ -192,9 +222,9 @@ for each generation_unit:
 | 产物 | 阶段 | 用途 |
 |------|------|------|
 | `acceptance-ceiling.json` | Phase 1.2 | 保真度上限 + 用户确认 |
-| `acceptance-contracts.json` | Phase 2.5 | 验收 oracle |
-| `known_gaps.json` | Phase 3 | 未收敛的合约项 |
-| `replicate-report.md` | Phase 4 | 整体报告（含 gap 汇总）|
+| `acceptance-contracts.json` | Phase 2.5 | 源码合约 A（oracle） |
+| `known_gaps.json` | Phase 3 | 未收敛合约项 + 完整 diff |
+| `replicate-report.md` | Phase 4 | 整体报告（gap 汇总 + 系统性 pattern）|
 
 ---
 
