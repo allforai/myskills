@@ -15,6 +15,58 @@
 
 ---
 
+## Step 2.5.0: 入口可达性扫描（前置过滤）
+
+**目标：** 在提取合约前，建立可达性地图，排除死代码和死功能，避免把"从未运行"的代码提取为合约。
+
+**执行步骤：**
+
+1. 从 `source-summary.json` 取所有入口点（路由注册、事件监听、CLI 命令、main loop、定时任务）
+2. 从入口点出发追踪调用链，标记每个 handler / screen 的可达性：
+
+| 可达性标记 | 含义 | 后续处理 |
+|-----------|------|---------|
+| `reachable` | 从入口可追踪到 | 正常提取合约，`confidence: "high"` |
+| `suspect_dead` | 无入口指向、被 feature flag 关闭、或被注释包围 | 跳过提取，列入 `dead_code_candidates.json` |
+| `unknown` | 动态 dispatch / 字符串拼接路由 / 跨进程调用 | 提取合约，标 `confidence: "low"` |
+
+3. 按项目类型识别可达性：
+   - **Web 后端**：从路由文件追踪 handler
+   - **React/Next.js**：从 `<Route>` / `router.push` / `Link` 追踪 Page
+   - **Flutter**：从 `Navigator.push` / `GoRouter` 追踪 Screen
+   - **游戏引擎**：从 SceneManager / 状态机跳转追踪 Scene
+4. 输出 `dead_code_candidates.json` 到 `.allforai/code-replicate/`
+5. 在 Step 2.5.3 写完合约后，向用户展示候选死代码列表，等待确认
+
+**`dead_code_candidates.json` 格式：**
+
+```json
+{
+  "candidates": [
+    {
+      "type": "screen",
+      "name": "LegacyReportScreen",
+      "file": "src/screens/LegacyReportScreen.tsx",
+      "reason": "no_navigation_path",
+      "last_commit": "2021-03-14"
+    },
+    {
+      "type": "endpoint",
+      "name": "POST /api/v1/export/csv",
+      "file": "routes/export.php",
+      "reason": "feature_flag_disabled",
+      "flag": "ENABLE_CSV_EXPORT=false"
+    }
+  ]
+}
+```
+
+用户可选择：**忽略**（不复刻）或**强制纳入**（`confidence: "forced"`）。
+
+**当 `source_runnable: false` 时：** 可达性扫描是截图缺失时的唯一过滤机制。所有 UI 合约额外标记 `"evidence": "code_only"`，提示 Phase 3 遇到 known_gap 时优先怀疑合约本身（可能是死代码漏网），而非直接修复生成代码。
+
+---
+
 ## Step 2.5.1: 后端行为合约提取
 
 **来源文件：** routes / controllers / service 层（参考 extraction-plan.task_sources）

@@ -129,6 +129,7 @@ Phase 2 Stage D 确认后立即执行。从源码提取验收合约，作为 Pha
 
 | Step | 产出 | 做什么 |
 |------|------|--------|
+| 2.5.0 | dead_code_candidates.json | 入口可达性扫描：标记 reachable / suspect_dead / unknown，排除死代码 |
 | 2.5.1 | backend_contracts[] | 逐接口提取：输入/输出/错误条件/副作用/跨模块规则 |
 | 2.5.2 | ui_contracts[] | 逐屏幕提取：状态列表/用户操作（含前置条件）/状态转换/意图 |
 | 2.5.3 | acceptance-contracts.json | 合并写入 `.allforai/code-replicate/` |
@@ -533,6 +534,7 @@ dev-forge 读此 schema → 为目标栈生成等价的数据库迁移（如 GOR
 **CR 专属过程文件**：
 - `.allforai/code-replicate/`: replicate-config.json, source-summary.json, discovery-profile.json, extraction-plan.json, stack-mapping.json, replicate-report.md
 - `acceptance-ceiling.json` — Phase 1.2 保真度上限 + 用户确认状态
+- `dead_code_candidates.json` — Phase 2.5.0 入口可达性扫描结果，用户确认后决定 ignore / force-include
 - `acceptance-contracts.json` — Phase 2.5 验收合约 oracle（后端 + UI）
 - `known_gaps.json` — Phase 3 未收敛合约项 + 完整 diff
 - `.allforai/code-replicate/fragments/`: 中间片段（合并后可删除）

@@ -125,6 +125,7 @@ Runs immediately after Phase 2 Stage D confirm. Extracts acceptance contracts fr
 
 | Step | Output | Action |
 |------|--------|--------|
+| 2.5.0 | dead_code_candidates.json | Entry point reachability scan: mark reachable / suspect_dead / unknown, filter dead code |
 | 2.5.1 | backend_contracts[] | Per-endpoint: inputs, outputs, error conditions, side effects, cross-module rules |
 | 2.5.2 | ui_contracts[] | Per-screen: states, user_actions (with preconditions), transitions, intent |
 | 2.5.3 | acceptance-contracts.json | Merge and write to `.allforai/code-replicate/` |
@@ -476,6 +477,7 @@ dev-forge reads this schema -> generates equivalent database migrations for the 
 **CR-specific process files**:
 - `.allforai/code-replicate/`: replicate-config.json, source-summary.json, discovery-profile.json, extraction-plan.json, stack-mapping.json, replicate-report.md
 - `acceptance-ceiling.json` — Phase 1.2 fidelity ceiling + user confirmation state
+- `dead_code_candidates.json` — Phase 2.5.0 entry point reachability scan results; user confirms ignore / force-include
 - `acceptance-contracts.json` — Phase 2.5 acceptance contracts oracle (backend + UI)
 - `known_gaps.json` — Phase 3 unresolved contract items + full diff
 - `.allforai/code-replicate/fragments/`: intermediate fragments (can delete after merge)

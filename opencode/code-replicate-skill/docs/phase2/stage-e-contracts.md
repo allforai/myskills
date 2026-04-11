@@ -15,6 +15,58 @@ Implicit cross-module rules (constraints scattered across multiple files with no
 
 ---
 
+## Step 2.5.0: Entry Point Reachability Scan (Pre-filter)
+
+**Goal:** Before extracting contracts, build a reachability map to exclude dead code and dead features — avoid extracting "never-executed" code as contracts.
+
+**Steps:**
+
+1. Collect all entry points from `source-summary.json` (route registrations, event listeners, CLI commands, main loop, scheduled tasks)
+2. Trace call chains from entry points, marking reachability of each handler / screen:
+
+| Reachability | Meaning | Action |
+|-------------|---------|--------|
+| `reachable` | Traceable from an entry point | Extract contract normally, `confidence: "high"` |
+| `suspect_dead` | No entry points lead here; feature flag disabled; or wrapped in commented-out block | Skip extraction; list in `dead_code_candidates.json` |
+| `unknown` | Dynamic dispatch / string-concatenated routes / cross-process calls | Extract contract, mark `confidence: "low"` |
+
+3. Identify reachability by project type:
+   - **Web backend**: trace from route files to handlers
+   - **React/Next.js**: trace from `<Route>` / `router.push` / `Link` to Pages
+   - **Flutter**: trace from `Navigator.push` / `GoRouter` to Screens
+   - **Game engines**: trace from SceneManager / state machine transitions to Scenes
+4. Write `dead_code_candidates.json` to `.allforai/code-replicate/`
+5. After Step 2.5.3 contracts are written, show the dead code candidate list to user and wait for confirmation
+
+**`dead_code_candidates.json` format:**
+
+```json
+{
+  "candidates": [
+    {
+      "type": "screen",
+      "name": "LegacyReportScreen",
+      "file": "src/screens/LegacyReportScreen.tsx",
+      "reason": "no_navigation_path",
+      "last_commit": "2021-03-14"
+    },
+    {
+      "type": "endpoint",
+      "name": "POST /api/v1/export/csv",
+      "file": "routes/export.php",
+      "reason": "feature_flag_disabled",
+      "flag": "ENABLE_CSV_EXPORT=false"
+    }
+  ]
+}
+```
+
+User choices: **ignore** (do not replicate) or **force-include** (`confidence: "forced"`).
+
+**When `source_runnable: false`:** The reachability scan is the only filter available when screenshots are absent. All UI contracts are additionally marked `"evidence": "code_only"` — signaling that when Phase 3 encounters a known_gap for these contracts, the first suspicion should be the contract itself (possible dead code slipping through), not the generated code.
+
+---
+
 ## Step 2.5.1: Backend Behavior Contract Extraction
 
 **Source files:** routes / controllers / service layer (refer to extraction-plan.task_sources)

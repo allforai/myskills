@@ -161,9 +161,10 @@ Phase 2 Stage D 确认后立即执行。从源码提取验收合约，作为 Pha
 
 | Step | Output | Action |
 |------|--------|--------|
-| 2.5.1 | backend_contracts[] | 逐接口提取：输入/输出/错误条件/副作用/跨模块规则 |
-| 2.5.2 | ui_contracts[] | 逐屏幕提取：状态列表/用户操作（含前置条件）/状态转换/意图 |
-| 2.5.3 | acceptance-contracts.json | 合并写入 `.allforai/code-replicate/` |
+| 2.5.0 | dead_code_candidates.json | 入口可达性扫描：标记 reachable / suspect_dead / unknown，排除死代码 |
+| 2.5.1 | backend_contracts[] | 逐接口提取：输入/输出/错误条件/副作用/跨模块规则（仅 reachable） |
+| 2.5.2 | ui_contracts[] | 逐屏幕提取：状态列表/用户操作（含前置条件）/状态转换/意图（仅 reachable） |
+| 2.5.3 | acceptance-contracts.json | 合并写入；展示死代码候选列表给用户确认 |
 
 **提取原则：提取意图，不提取实现。** 换了技术栈，意图不变；组件代码完全不同。
 散落在多个文件中的跨模块隐性规则必须在这里整合为显式合约项。

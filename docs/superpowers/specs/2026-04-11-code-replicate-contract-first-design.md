@@ -104,6 +104,37 @@ Phase 4  整体验收交付（现有）
 
 从源码中提取**验收合约**，作为整个复刻的 oracle。所有后续生成单元以此为约束。
 
+### Step 2.5.0：入口可达性扫描（前置过滤）
+
+**动机：** 提取合约前先过滤死代码和死功能。否则在 `source_runnable: false` 时（没有截图辅助），死功能可能混入合约，导致 Phase 3 为从未存在的功能生成代码，产生误报 known_gap。
+
+**步骤：**
+1. 从 `source-summary.json` 取所有入口点（路由注册、事件监听、CLI 命令、main loop、定时任务）
+2. 从入口点追踪调用链，标记可达性：
+
+| 标记 | 含义 | 处理 |
+|------|------|------|
+| `reachable` | 从入口可追踪到 | 正常提取合约，`confidence: "high"` |
+| `suspect_dead` | 无入口指向、feature flag 关闭、注释包围 | 跳过提取，列入候选列表 |
+| `unknown` | 动态 dispatch / 字符串拼接路由 | 提取合约，标 `confidence: "low"` |
+
+3. 输出 `dead_code_candidates.json`，Phase 2.5.3 完成后展示给用户确认（ignore / force-include）
+4. **`source_runnable: false` 时**：所有 UI 合约额外标记 `"evidence": "code_only"`，提示 Phase 3 遇到 known_gap 时优先怀疑合约本身，而非直接修复生成代码
+
+```json
+{
+  "candidates": [
+    {
+      "type": "screen",
+      "name": "LegacyReportScreen",
+      "file": "src/screens/LegacyReportScreen.tsx",
+      "reason": "no_navigation_path",
+      "last_commit": "2021-03-14"
+    }
+  ]
+}
+```
+
 ### 后端行为合约
 
 从 routes / controllers / services 提取：

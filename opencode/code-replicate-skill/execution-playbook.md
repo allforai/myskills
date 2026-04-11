@@ -152,9 +152,10 @@ Runs immediately after Phase 2 Stage D confirm. Extracts acceptance contracts fr
 
 | Step | Output | Action |
 |------|--------|--------|
-| 2.5.1 | backend_contracts[] | Per-endpoint: inputs, outputs, error conditions, side effects, cross-module rules |
-| 2.5.2 | ui_contracts[] | Per-screen: states, user_actions (with preconditions), transitions, intent |
-| 2.5.3 | acceptance-contracts.json | Merge and write to `.allforai/code-replicate/` |
+| 2.5.0 | dead_code_candidates.json | Entry point reachability scan: mark reachable / suspect_dead / unknown, filter dead code |
+| 2.5.1 | backend_contracts[] | Per-endpoint: inputs, outputs, error conditions, side effects, cross-module rules (reachable only) |
+| 2.5.2 | ui_contracts[] | Per-screen: states, user_actions (with preconditions), transitions, intent (reachable only) |
+| 2.5.3 | acceptance-contracts.json | Merge and write; show dead code candidates to user for confirmation |
 
 **Extraction principle: extract intent, not implementation.** Intent does not change when the stack changes; component code changes completely.
 Cross-module implicit rules scattered across files must be consolidated into explicit contract items here.
