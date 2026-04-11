@@ -41,6 +41,23 @@ This skill's sole responsibility is extracting **business intent** (what it does
      - Platform type
    > **Input audit**: After user answers, check **intent closure** (does code behavior match what user wants?) and **boundary closure** (code handles normal path, what about exceptions user expects?). Ask follow-up for MUST-level gaps as multiple-choice.
 5. Write replicate-config.json -> `.allforai/code-replicate/` (including `source_app` field)
+
+**Step 1.2 — Runability Assessment (Gate)**
+
+1. Attempt source build: run build command (package.json scripts.build / go build / flutter build / Makefile)
+2. Check target env: verify target language runtime version, framework CLI, database service availability
+3. Compute fidelity ceiling from detection results:
+
+   | Condition | UI Verification Capability | Fidelity Ceiling |
+   |-----------|---------------------------|-----------------|
+   | Source + target both runnable, screenshots available | Full runtime verification | ~100% |
+   | Runnable, no screenshot environment | Structural verification only | ~70% |
+   | Source or target cannot run | Static contract diff only | ~40% |
+
+4. Write `acceptance-ceiling.json` to `.allforai/code-replicate/`
+5. Present fidelity ceiling and `known_gaps` list to user
+6. **Wait for explicit user confirmation before continuing.** If not confirmed, stop — do not enter Phase 2.
+
 6. Create fragments directory structure: `.allforai/code-replicate/fragments/{roles,screens,tasks,flows,usecases,constraints}/`
 
 ---
@@ -97,6 +114,23 @@ Phase 2 has 4 stages, 15 steps total. Detailed protocols for each stage are load
 > Details: `./docs/phase2/stage-d-confirm.md`
 
 > **=== After Phase 2, no more configuration questions ===**
+
+---
+
+### Phase 2.5: Contract Extraction
+
+> See: ./docs/phase2/stage-e-contracts.md
+
+Runs immediately after Phase 2 Stage D confirm. Extracts acceptance contracts from source code — the oracle used by Phase 3 reverse-check.
+
+| Step | Output | Action |
+|------|--------|--------|
+| 2.5.1 | backend_contracts[] | Per-endpoint: inputs, outputs, error conditions, side effects, cross-module rules |
+| 2.5.2 | ui_contracts[] | Per-screen: states, user_actions (with preconditions), transitions, intent |
+| 2.5.3 | acceptance-contracts.json | Merge and write to `.allforai/code-replicate/` |
+
+**Core principle: extract intent, not implementation.** Intent does not change when the stack changes; component code changes completely.
+Cross-module implicit rules scattered across files must be consolidated into explicit contract items here.
 
 ---
 
@@ -194,7 +228,7 @@ dev-forge and cr-fidelity adaptively consume **whatever artifacts actually exist
 
 ---
 
-Execute per extraction-plan.artifacts list: LLM reads sources -> generates fragments -> **UI closure verification** -> **4D self-check** -> merge.
+Execute per extraction-plan.artifacts list: LLM reads sources -> generates fragments -> **UI closure verification** -> **4D self-check** -> **Reverse Contract Extraction + Diff** -> merge.
 
 ### UI-Driven Closure Understanding (Phase 2.13 evidence as Phase 3 input)
 
@@ -227,6 +261,65 @@ After generating each module's fragment, LLM validates with four-dimensional que
 | **D4 Decisions** | Rationale for categorizing as core vs basic? Is audience_type judgment reasonable? | Correct judgment or add rationale |
 
 4D self-check is **a thinking process embedded in each Step**, not producing additional files. If issues found, LLM corrects the fragment before passing to merge script.
+
+### Reverse Contract Extraction + Diff (after 4D self-check, before merge)
+
+**When to run:** After each module fragment completes 4D self-check, before running the merge script.
+
+**Flow:**
+
+```
+1. Load module's contracts A from acceptance-contracts.json (BC-xxx + UI-xxx)
+2. Reverse-extract contracts B from the generated target code fragment:
+   - Backend fragment → apply stage-e-contracts.md §Step 2.5.1 rules
+   - UI fragment      → apply stage-e-contracts.md §Step 2.5.2 rules
+3. Diff(A, B)
+   → Empty diff: pass, proceed to merge
+   → Non-empty diff: enter small loop fix
+```
+
+**Small loop (unit level, max 3 rounds):**
+```
+diff not empty
+→ Fix fragment precisely per diff (don't rewrite the whole fragment — only add missing error conditions / side_effects / states / actions)
+→ Re-extract contracts B
+→ Re-run Diff(A, B)
+→ Empty → pass → merge
+→ Still non-empty → round +1 → max 3 rounds
+→ 3 rounds still non-empty → mark as known_gap (preserve full diff) → proceed to merge (with gap flag)
+```
+
+**Medium loop (contract level):**
+When a contract fails all 3 fix rounds, backtrack to Phase 2.5 to re-examine source:
+- Was the contract extracted incorrectly (rule misunderstood)?
+- Does the source express the rule in an unusual way (e.g., via DB constraint rather than code logic)?
+Correct contract A → re-execute current generation unit (do not re-run all of Phase 3).
+
+**known_gap format (written to `.allforai/code-replicate/known_gaps.json`):**
+
+```json
+{
+  "gaps": [
+    {
+      "contract_id": "BC-005",
+      "type": "backend",
+      "module_id": "M001",
+      "diff": {
+        "missing_error_conditions": [{ "condition": "user_banned", "status": 403 }],
+        "missing_side_effects": ["audit_log.write"],
+        "extra_error_conditions": [],
+        "intent_mismatch": null
+      },
+      "fix_attempts": 3,
+      "status": "known_gap",
+      "manual_action": "Add 403 handler for banned users; add audit logging to order creation service"
+    }
+  ],
+  "total_contracts": 20,
+  "passing": 17,
+  "known_gap_count": 3
+}
+```
 
 ### Standard Artifact Step Reference
 
