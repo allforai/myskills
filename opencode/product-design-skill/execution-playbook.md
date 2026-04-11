@@ -1,6 +1,6 @@
 # Product Design — Execution Playbook
 
-> 10-phase orchestration with explicit transition logic, parallel phase support, and verify loop protocol.
+> 10-phase orchestration: concept -> requirements -> map -> journey -> experience-map -> gate -> feature-gap -> design-audit — with explicit transition logic, parallel phase support, and verify loop protocol.
 
 ---
 
@@ -16,6 +16,7 @@ This playbook defines the full product-design pipeline executed by the `product-
 Phase 0   Artifact Detection + Capability Scan
 Phase 1   Product Concept (optional)
 Phase 1.5 Concept Verify + Baseline Distillation
+Phase 1.6 Requirements Confirmation (auto — Stage A→B→C, outputs requirements-brief.json)
 Phase 2   Product Map
 Phase 2.5 Map Verify + Consumer Maturity Audit
 Phase 3   Journey Emotion
@@ -175,6 +176,25 @@ After concept and product-map complete, append to `.allforai/pipeline-decisions.
 ```
 
 Deduplicate by `phase` field — re-runs replace existing entries.
+
+---
+
+## Phase 1.6: Requirements Confirmation
+
+Skill: `./skills/requirements.md`
+
+Auto-triggered after concept-baseline.json is written. No user action needed to start it.
+
+Skip conditions:
+- `.allforai/product-concept/requirements-brief.json` exists AND `confirmed_status` is `fully_confirmed` or `partially_confirmed` → skip (already confirmed)
+- User explicitly passes `skip: requirements` → skip with warning
+
+Stage sequence:
+- Stage A: present core paths → wait for explicit confirmation
+- Stage B: present standard modules → wait for explicit confirmation
+- Stage C: ask up to 5 multiple-choice boundary questions
+
+Output: `.allforai/product-concept/requirements-brief.json`
 
 ---
 

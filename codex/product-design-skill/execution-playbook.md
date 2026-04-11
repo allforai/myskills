@@ -1,6 +1,6 @@
 # Execution Playbook — Product Design 10-Phase Pipeline
 
-> Full pipeline orchestration: concept -> map -> journey -> experience-map -> gate -> use-case -> feature-gap -> ui-design -> design-audit
+> Full pipeline orchestration: concept -> requirements -> map -> journey -> experience-map -> gate -> use-case -> feature-gap -> ui-design -> design-audit
 
 ## Pipeline Overview
 
@@ -8,6 +8,7 @@
 Phase 0:  Artifact Detection + Scale Check + External Capability Probe
 Phase 1:  product-concept (optional)
 Phase 1.5: concept-baseline generation (auto)
+Phase 1.6: requirements confirmation (auto — Stage A→B→C, outputs requirements-brief.json)
 Phase 2:  product-map (9 steps: profile -> roles -> tasks -> flows -> conflicts -> constraints -> output -> data-model -> view-objects -> validation)
 Phase 3:  journey-emotion (LLM emotion annotation + human confirmation)
 Phase 4:  experience-map (LLM design + validation loop) + interaction-gate
@@ -46,6 +47,23 @@ Pipeline preferences collected in Step 3.5 (UI style, competitors, scope strateg
 ### Phase 1.5: concept-baseline generation
 
 After concept verify loop passes, extract compact baseline from concept artifacts into `.allforai/product-concept/concept-baseline.json` (~2KB). This is consumed by all downstream skills as background context.
+
+### Phase 1.6: requirements confirmation
+
+Skill: `./skills/requirements.md`
+
+Auto-triggered after concept-baseline.json is written. No user action needed to start it.
+
+Skip conditions:
+- `.allforai/product-concept/requirements-brief.json` exists AND `confirmed_status` is `fully_confirmed` or `partially_confirmed` → skip (already confirmed)
+- User explicitly passes `skip: requirements` → skip with warning
+
+Stage sequence:
+- Stage A: present core paths → wait for explicit confirmation
+- Stage B: present standard modules → wait for explicit confirmation
+- Stage C: ask up to 5 multiple-choice boundary questions
+
+Output: `.allforai/product-concept/requirements-brief.json`
 
 ### Phase 2: product-map
 
