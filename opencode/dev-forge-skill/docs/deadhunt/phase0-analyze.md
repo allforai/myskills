@@ -406,7 +406,14 @@ settings    CRUD        —           —          —
       "validate_method": "patrol",
       "platform_capabilities": ["push", "scan", "biometric", "ar", "offline", "native_pay", "camera"],
       "platform_limitations": ["no_batch_ops", "no_rich_editor"],
-      "notes": "Flutter 端使用 Patrol 做深度测试，flutter_test 做单元测试"
+      "notes": "Flutter 端使用 Patrol 做深度测试，flutter_test 做单元测试",
+      "ui_locator_coverage": {
+        "rate": 0.31,
+        "level": "medium",
+        "stable_patterns": ["ValueKey('order_*')"],
+        "unstable_risk": "medium",
+        "recommendation": "建议为核心交互元素补充 ValueKey 或 Semantics label"
+      }
     },
     {
       "id": "customer_mp",

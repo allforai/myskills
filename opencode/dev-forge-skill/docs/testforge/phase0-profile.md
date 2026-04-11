@@ -114,6 +114,58 @@ Step 2.5: Web 应用路由模式和渲染模式探测
 
 **原因**：这些配置问题导致单独跑通但混跑失败，是 testforge 首轮失败的常见根因。前置检查比事后修复高效得多。
 
+### Step 0.2.9: UI 定位能力审计
+
+**逐 module 扫描所有 UI 客户端，评估项目对稳定 UI 定位的支持程度。**
+后端模块跳过。结果写入 `test-profile.json`，Phase 3 的 helper 生成依赖此结果决定策略。
+
+每个 UI module 独立扫描，LLM 根据该 module 的框架选择对应扫描方式：
+
+- **Flutter**：Widget 树中显式 Key / ValueKey / Semantics label 的覆盖率
+- **iOS 原生**：accessibilityIdentifier 赋值的覆盖率
+- **Android 原生 / RN**：testID / contentDescription / accessibilityLabel 的覆盖率
+- **Web**：data-testid / aria-label / role 属性在可交互元素上的覆盖率
+- **其他框架**：识别该框架推荐的稳定定位机制，评估其使用率
+
+输出覆盖率评级，**按 module_id 分组**写入 `test-profile.json`：
+
+```json
+"ui_locator_coverage": {
+  "M002": {
+    "framework": "Patrol",
+    "rate": 0.23,
+    "level": "low",
+    "stable_patterns": ["ValueKey('order_*')"],
+    "unstable_risk": "high",
+    "recommendation": "建议为核心交互元素补充 ValueKey 或 Semantics label"
+  },
+  "M003": {
+    "framework": "Playwright",
+    "rate": 0.71,
+    "level": "high",
+    "stable_patterns": ["data-testid='*'"],
+    "unstable_risk": "low",
+    "recommendation": ""
+  }
+}
+```
+
+| level | rate 范围 | helper 策略 |
+|-------|----------|------------|
+| high | > 70% | 直接使用稳定标识符，降级逻辑最小化 |
+| medium | 30–70% | 混合策略，降级链保留，部分标记 `SELECTOR_UNSTABLE` |
+| low | < 30% | 保守降级，广泛标记 `SELECTOR_UNSTABLE`，报告中建议补充标识符 |
+
+**非英语文本选择器风险（额外检查）**：若项目面向非英语市场（日语 / 中文 / 阿拉伯语等），扫描现有测试文件和源码中是否存在以非 ASCII 文本作为唯一定位依据的选择器。发现时在对应 module 的 `ui_locator_coverage` 中追加：
+
+```json
+"non_ascii_risk": {
+  "detected": true,
+  "examples": ["find.text('ご注文')", "tapOn: '購入する'"],
+  "risk": "高——文案随本地化 / 敬語切換可能变更，建议替换为稳定标识符"
+}
+```
+
 ### Step 0.3: 基线测试运行
 
 **在审计之前，必须先跑一遍现有测试建立基线。** 不跑基线 → Phase 4 分不清"新测试暴露的 bug"还是"原来就坏的测试"。
@@ -146,12 +198,12 @@ Step 2.5: Web 应用路由模式和渲染模式探测
 ```
 ## 测试画像
 
-| 子项目 | 类型 | 单元框架 | E2E 框架 | 测试数 | 通过 | 失败 | Helpers | Factories |
-|--------|------|---------|---------|-------|------|------|---------|-----------|
-| ... | frontend/backend/cross-platform | ... | ... | ... | ... | ... | ... | ... |
+| 子项目 | 类型 | 单元框架 | E2E 框架 | 测试数 | 通过 | 失败 | UI定位覆盖率 | Helpers | Factories |
+|--------|------|---------|---------|-------|------|------|------------|---------|-----------|
+| ... | frontend/backend/cross-platform | ... | ... | ... | ... | ... | low/medium/high | ... | ... |
 ```
 
-写入 `.allforai/testforge/test-profile.json`。
+写入 `.allforai/testforge/test-profile.json`，每个 UI 客户端子项目附带 `ui_locator_coverage` 字段。
 
 ### Step 0.5: 加载上游文档（按需）
 

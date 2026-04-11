@@ -89,6 +89,57 @@ For each module:
 6. V6: Error handling works (invalid input, network error)
 7. V7: Role-based access enforced
 
+### UI Test Helper Generation (per-module, framework-agnostic)
+
+Before writing integration/E2E tests for any UI module, generate a framework-specific helper
+that supplements the test framework's native capabilities without replacing them.
+
+**Pre-step — Framework Capability Assessment:**
+For each UI module, evaluate the test framework's native coverage across 8 fragile layers,
+then write the assessment to `.allforai/deadhunt/ui-helper-profile.json` (keyed by `module_id`):
+
+```json
+{
+  "modules": [
+    {
+      "module_id": "M002",
+      "framework": "Patrol",
+      "layers": {
+        "element_discovery":  { "native": "partial",   "helper": "supplement" },
+        "button_trigger":     { "native": "partial",   "helper": "supplement" },
+        "gesture":            { "native": "partial",   "helper": "supplement" },
+        "async_wait":         { "native": "partial",   "helper": "supplement" },
+        "system_dialog":      { "native": "covered",   "helper": "thin" },
+        "keyboard_ime":       { "native": "uncovered", "helper": "full" },
+        "scroll_container":   { "native": "uncovered", "helper": "full" },
+        "cross_app":          { "native": "partial",   "helper": "supplement" }
+      }
+    }
+  ]
+}
+```
+
+**The 8 Fragile Layers (goals — LLM decides implementation):**
+
+| Layer | Goal |
+|-------|------|
+| 1. Element Discovery | Find elements with failure semantics; multi-tier fallback when testID coverage is low |
+| 2. Button Trigger | Confirm element is in viewport, visible, and interactable before tap/click |
+| 3. Touch Gesture | Wait for animation/page-transition to settle before gesture |
+| 4. Async Wait | Wait for data-ready signal (loading disappears / list appears); timeout reports specific target |
+| 5. System Dialog | Auto-handle known permission dialogs; best-effort dismiss unknown ones |
+| 6. Keyboard & IME | Keep subsequent tap targets in operable area; for IME projects block other interactions during composing state |
+| 7. Scroll Container | Ensure target element is rendered into the view tree before interaction |
+| 8. Cross-App Flow | Track app-leave and app-return state; verify context is correct after redirect back |
+
+**Helper principle:** Supplement, not replace. Layers already covered natively get thin wrappers only.
+Backend-only modules skip helper generation entirely.
+
+**Framework降级 (when preferred framework CLI is unavailable):**
+- Flutter: Patrol → `flutter test integration_test/`
+- Android / React Native: Maestro → Espresso (Android) / Detox (RN)
+- iOS: XCUITest (no降级; required for native iOS UI tests)
+
 Output: `.allforai/product-verify/verify-report.json` + `verify-report.md`
 
 **verify-report.json field schema:**

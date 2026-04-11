@@ -119,7 +119,7 @@ Bootstrap MUST generate the correct test commands per platform:
 |----------|------------------|-----------------------|
 | Web (Node.js) | `npm run test` / `vitest run` / `jest` | Playwright E2E |
 | Go backend | `go test ./...` | API integration tests |
-| Flutter | `flutter test` | `flutter test integration_test/` |
+| Flutter | `flutter test` | Patrol (`patrol test`) → fallback `flutter test integration_test/` |
 | iOS (Swift) | `xcodebuild test -scheme X -destination 'platform=iOS Simulator'` | XCUITest |
 | Android (Kotlin) | `./gradlew test` | `./gradlew connectedAndroidTest` |
 | React Native | `npx jest` | Detox / Maestro |

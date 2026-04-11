@@ -882,12 +882,12 @@ product-map（现状+方向）   feature-gap（功能查漏）    product-verify
 mobile-native 子项目:
   tech_stack = Swift / SwiftUI   → XCUITest
   tech_stack = Kotlin / Java     → Maestro（降级 → Espresso）
-  tech_stack = Flutter           → Patrol（降级 → Maestro → integration_test）
+  tech_stack = Flutter           → Patrol（降级 → flutter test integration_test/）
   tech_stack = RN / Expo         → Maestro（降级 → Detox）
 ```
 
 **Maestro 降级**：
-- Patrol CLI 不可用（Flutter）→ 降级为 Maestro，再降级为 `flutter test integration_test/`
+- Patrol CLI 不可用（Flutter）→ 降级为 `flutter test integration_test/`
 - Maestro CLI 不可用 → Android 降级为 Espresso，RN 降级为 Detox
 - 均不可用 → 标记为 `DEFERRED_NATIVE`（仅测 API 层）
 - 输出提示：「安装 Maestro（`curl -Ls https://get.maestro.mobile.dev | bash`）以启用移动端动态验证」

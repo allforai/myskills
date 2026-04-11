@@ -1,7 +1,8 @@
-## Patrol 深度测试引擎（Flutter 端）
+## Patrol 参考示例（Flutter 端）
 
-> 当 Phase 0 检测到 Flutter 客户端时，Phase 3 使用 Patrol 替代 Playwright 做深度测试。
-> 两个引擎独立执行，结果汇入同一个 `reports/convergence-deep.json` 格式。
+> **本文档是参考示例，不是强制路由目标。**
+> 展示 Patrol 框架下的测试模式（5 层检测、Widget 查找策略、结果格式等），供 LLM 适配 Flutter 项目时参考。
+> Helper 生成规则见 `helper-rules.md`，引擎选择由 LLM 根据项目决定。
 
 ### 架构：双引擎并行
 
