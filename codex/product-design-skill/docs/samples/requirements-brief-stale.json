@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-01-15T08:00:00Z",
+  "confirmed_at": "2026-01-15T08:10:00Z",
+  "confirmed_status": "fully_confirmed",
+  "source_command": "/product-concept",
+  "core_paths": [
+    {
+      "id": "CP-001",
+      "actor": "User",
+      "path": ["login", "view dashboard"],
+      "confirmed": true
+    }
+  ],
+  "standard_modules": [],
+  "boundary_decisions": [],
+  "unconfirmed_areas": []
+}

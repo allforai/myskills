@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.1",
+  "generated_at": "2026-04-11T10:00:00Z",
+  "confirmed_at": "2026-04-11T10:05:00Z",
+  "confirmed_status": "fully_confirmed",
+  "source_command": "/product-concept",
+  "based_on_concept_baseline_version": "2026-04-11T09:58:00Z",
+  "core_paths": [
+    {
+      "id": "CP-001",
+      "actor": "买家",
+      "trigger": "选定商品后发起购买",
+      "steps": ["搜索商品", "加购", "结账", "支付"],
+      "success_outcome": "形成待履约订单，库存锁定，等待卖家发货",
+      "status": "confirmed",
+      "notes": null
+    },
+    {
+      "id": "CP-002",
+      "actor": "卖家",
+      "trigger": "有新订单待处理",
+      "steps": ["查看订单", "备货", "填写快递信息", "发货确认"],
+      "success_outcome": "订单进入物流阶段，买家收到发货通知",
+      "status": "confirmed",
+      "notes": null
+    }
+  ],
+  "standard_modules": [
+    {"id": "SM-auth", "name": "认证", "tier": "foundation_default", "default": "邮箱密码 + Google OAuth", "status": "confirmed", "decision_source": "user_confirmed", "override": null},
+    {"id": "SM-session", "name": "会话", "tier": "foundation_default", "default": "JWT，7天有效期，refresh token", "status": "confirmed", "decision_source": "user_confirmed", "override": null},
+    {"id": "SM-rbac", "name": "权限", "tier": "foundation_default", "default": "RBAC，admin / user 两级", "status": "confirmed", "decision_source": "user_confirmed", "override": null},
+    {"id": "SM-email", "name": "通知-邮件", "tier": "foundation_default", "default": "注册确认 / 密码重置", "status": "confirmed", "decision_source": "user_confirmed", "override": null},
+    {"id": "SM-softdelete", "name": "软删除", "tier": "foundation_default", "default": "用户/订单数据逻辑删除保留", "status": "confirmed", "decision_source": "user_confirmed", "override": null},
+    {"id": "SM-payment", "name": "支付", "tier": "domain_default", "default": "第三方网关，支持退款申请", "status": "confirmed", "decision_source": "user_override", "override": "需支持微信支付和支付宝"},
+    {"id": "SM-review", "name": "评价", "tier": "domain_default", "default": "买家对订单评价，卖家可回复", "status": "confirmed", "decision_source": "inferred", "override": null}
+  ],
+  "boundary_decisions": [
+    {
+      "id": "BD-001",
+      "question": "支付失败后订单保留多久？",
+      "options": ["30分钟自动取消", "24小时（用户可重新支付）", "不自动取消，人工处理"],
+      "selected_option": "30分钟自动取消",
+      "decision_source": "user_selected",
+      "rationale": null,
+      "impact_scope": ["CP-001", "SM-payment"]
+    },
+    {
+      "id": "BD-002",
+      "question": "卖家是否需要通过资质审核才能开店？",
+      "options": ["是，需上传营业执照", "否，注册即可开店", "可选，认证卖家有更高曝光"],
+      "selected_option": "可选，认证卖家有更高曝光",
+      "decision_source": "user_selected",
+      "rationale": null,
+      "impact_scope": ["CP-002", "SM-rbac"]
+    }
+  ],
+  "unconfirmed_areas": []
+}
