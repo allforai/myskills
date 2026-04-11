@@ -23,6 +23,8 @@ Currently product-concept outputs vision-level artifacts (mission, roles, compet
     confirmed_status = "fully_confirmed"    → skip directional questions
     confirmed_status = "partially_confirmed" → skip confirmed sections only;
                                                ask about pending areas
+    confirmed_status = "pending"            → warn user; offer /requirements first,
+                                               or continue with unconfirmed status
     confirmed_status = "stale" / schema mismatch → warn + fall back to
                                                standard flow (no silent skip)
   no requirements-brief.json → warn user, offer /requirements first,
@@ -37,10 +39,10 @@ A standalone `/requirements` command is also added for re-running independently 
 
 ## Stage A — Core Path Confirmation (coarse)
 
-**Input:** concept-baseline.json  
-**Goal:** Lock the 2-4 main user paths before any expansion.
+**Input:** concept-baseline.json (fallback: ask user to describe main roles and flows if file absent)
+**Goal:** Lock the main user paths (typically 2-4; complex products may have more) before any expansion.
 
-LLM reads concept-baseline roles + business model, derives 2-4 core paths. Each path includes actor, trigger, main steps, and success outcome — no exceptions or edge cases.
+LLM reads concept-baseline roles + business model, derives the main core paths. Each path includes actor, trigger, main steps, and success outcome — no exceptions or edge cases.
 
 **Path format:**
 
@@ -78,7 +80,7 @@ LLM reads concept-baseline roles + business model, derives 2-4 core paths. Each 
 
 ## Stage B — Standard Module Batch Sign-off
 
-**Input:** Stage A confirmed paths + project type  
+**Input:** Stage A confirmed paths + project type (read from `concept-baseline.pipeline_preferences.project_type`; default: `fullstack`)
 **Goal:** Confirm standard infrastructure in one message; skip lengthy discussion.
 
 ### Module Catalog Structure
@@ -89,11 +91,13 @@ Modules are grouped in three tiers. Each module has an `inclusion_rule` that gov
 
 | Module | inclusion_rule | fullstack | backend | frontend |
 |--------|---------------|-----------|---------|----------|
-| 认证 (Auth) | always | ✓ | ✓ | ✓ |
+| 认证 (Auth) | always | 邮箱+OAuth | 邮箱+OAuth | Firebase Auth / Auth0 |
 | 会话 (Session) | always | ✓ | ✓ | — |
 | 权限 (RBAC) | always | ✓ | ✓ | — |
 | 通知-邮件 | always | ✓ | ✓ | — |
 | 软删除 | has_user_data OR has_order_data | ✓ | ✓ | — |
+
+Note: Auth module defaults to Firebase Auth / Auth0 when `project_type = frontend`.
 
 **Tier 2 — domain_defaults** (LLM infers from Stage A paths; shown with `[推断]` label):
 
@@ -102,6 +106,8 @@ Examples by domain signal in Stage A paths:
 - social paths → 关注关系, 消息通知, 内容审核
 - enterprise admin paths → 操作审计日志, 多租户, SSO
 - SaaS paths → 订阅计费, 用量统计, Webhook
+
+If no domain signals are inferred, Tier 2 is omitted; show message: "领域层（推断）：未识别到明显领域特征，跳过。"
 
 **Tier 3 — optional_candidates** (not shown by default; listed at bottom as "可选项"):
 
@@ -130,14 +136,20 @@ Examples: 实时聊天, 文件存储, 全文搜索, 多语言 (i18n), 离线支�
 回复"确认"继续，或说明要改的项：
 ```
 
-**Confirmation rule:** Only an explicit "确认 / confirm / continue / 无修改" (or specific corrections) writes `status: "confirmed"`. No reply or session interruption → `status: "pending"`.
+**Confirmation rules:**
+- Explicit "确认 / confirm / continue / 无修改" → writes `status: "confirmed"` for all modules; `decision_source: "user_confirmed"`.
+- Correction-only reply (e.g., "支付改为微信支付，其余确认") → unchanged modules implicitly confirmed; corrected module gets `decision_source: "user_override"`.
+- User explicitly removes a module (e.g., "去掉软删除") → `status: "excluded"`, `decision_source: "user_excluded"`.
+- No reply or session interruption → `status: "pending"`.
 
 ---
 
 ## Stage C — Boundary Decisions (fine)
 
-**Input:** Stage A paths + Stage B modules  
-**Goal:** Close 3-5 ambiguities that cannot be inferred, using multiple-choice questions.
+**Input:** Stage A paths + Stage B modules
+**Goal:** Close ambiguities that cannot be inferred, using multiple-choice questions.
+
+**Zero-question exit:** If no question passes the selection filter, Stage C is skipped and requirements-brief.json is written immediately with `boundary_decisions: []`.
 
 ### Question Selection Rule
 
@@ -150,7 +162,12 @@ Only ask questions where the answer affects at least one of:
 
 Questions that can be reasonably defaulted are skipped; the chosen default is recorded in `boundary_decisions` with `decision_source: "default"`.
 
-**Interaction (one question at a time):**
+Maximum 5 questions total.
+
+### Interaction
+
+Questions are asked one at a time. After each answer, confirm receipt briefly before presenting the next question:
+
 ```
 路径"买家结账"有一个需要确认的点：
 
@@ -160,7 +177,9 @@ Questions that can be reasonably defaulted are skipped; the chosen default is re
   c) 不自动取消，人工处理
 ```
 
-Maximum 5 questions. After all questions answered (or defaulted), Stage C is complete.
+If the user answers outside the listed options (e.g., "2小时"), record the answer verbatim as `decision_source: "user_custom"`.
+
+After all questions are answered (or defaulted), Stage C is complete and requirements-brief.json is written.
 
 ---
 
@@ -175,7 +194,7 @@ Written to `.allforai/product-concept/requirements-brief.json`.
   "confirmed_at": "<ISO 8601 or null>",
   "confirmed_status": "fully_confirmed | partially_confirmed | pending",
   "source_command": "/product-concept | /requirements",
-  "based_on_concept_baseline_version": "<hash or timestamp>",
+  "based_on_concept_baseline_version": "<mtime of concept-baseline.json>",
 
   "core_paths": [
     {
@@ -196,7 +215,7 @@ Written to `.allforai/product-concept/requirements-brief.json`.
       "tier": "foundation_default",
       "default": "邮箱密码 + Google OAuth",
       "status": "confirmed | pending | excluded",
-      "decision_source": "default | user_confirmed | user_override | inferred",
+      "decision_source": "default | user_confirmed | user_override | user_excluded | inferred",
       "override": null
     },
     {
@@ -216,10 +235,9 @@ Written to `.allforai/product-concept/requirements-brief.json`.
       "question": "支付失败后订单保留多久？",
       "options": ["30分钟自动取消", "24小时（用户可重新支付）", "不自动取消，人工处理"],
       "selected_option": "30分钟自动取消",
-      "decision_source": "user_selected | default",
+      "decision_source": "user_selected | user_custom | default",
       "rationale": null,
-      "impact_scope": ["CP-001", "SM-payment"],
-      "affects_path": "CP-001"
+      "impact_scope": ["CP-001", "SM-payment"]
     }
   ],
 
@@ -228,9 +246,11 @@ Written to `.allforai/product-concept/requirements-brief.json`.
 ```
 
 **`confirmed_status` logic:**
-- `fully_confirmed`: all core_paths, standard_modules, and boundary_decisions have `status: confirmed`
-- `partially_confirmed`: at least one item is `pending`
-- `pending`: Stage A/B/C not yet completed (session interrupted)
+- `fully_confirmed`: all core_paths `status: confirmed`, all standard_modules `status: confirmed | excluded`, all boundary_decisions have `decision_source` set
+- `partially_confirmed`: Stage A confirmed but Stage B or C not completed; `unconfirmed_areas` lists affected item IDs
+- `pending`: Stage A not yet completed (session interrupted before any confirmation)
+
+**`unconfirmed_areas` population rule:** After each stage completes, append IDs of any items that remain `status: "pending"`. If all items in a stage are confirmed, nothing is appended for that stage.
 
 ---
 
@@ -240,7 +260,8 @@ Written to `.allforai/product-concept/requirements-brief.json`.
 |--------------------------|----------------------|
 | `fully_confirmed` | Skip all directional questions; seed flows + tasks from brief |
 | `partially_confirmed` | Skip confirmed sections; ask about pending areas before expanding |
-| `stale` (schema version mismatch) | Warn user; fall back to standard flow |
+| `pending` | Warn user; offer `/requirements` first, or continue as unconfirmed |
+| `stale` (schema_version mismatch OR concept-baseline.json mtime newer than `based_on_concept_baseline_version`) | Warn user; fall back to standard flow; set `requirements_stale: true` in product-map.json |
 | File absent | Warn user; offer `/requirements`; or continue as unconfirmed |
 
 **Field usage:**
@@ -251,6 +272,7 @@ Written to `.allforai/product-concept/requirements-brief.json`.
 | `standard_modules` (confirmed) | Auto-generate tasks with `source: "standard_module"` tag |
 | `standard_modules` (user_override) | Generate as customized tasks; flag for attention |
 | `standard_modules` (pending) | Ask user before generating |
+| `standard_modules` (excluded) | Skip generation entirely |
 | `boundary_decisions` | Write to constraints.json for the affected flow |
 | `unconfirmed_areas` | Flag in conflict-report.json |
 
@@ -265,11 +287,11 @@ Written to `.allforai/product-concept/requirements-brief.json`.
 **Modified files:**
 - `codex/product-design-skill/skills/product-concept.md` — append trigger block at end: after concept-baseline.json, auto-enter Requirements Confirmation
 - `opencode/product-design-skill/skills/product-concept.md` — mirror
-- `codex/product-design-skill/skills/product-map.md` — add Step 0: detect + read requirements-brief.json with confirmed_status branch
+- `codex/product-design-skill/skills/product-map.md` — add Step 0: detect + read requirements-brief.json with confirmed_status branch (5 states)
 - `opencode/product-design-skill/skills/product-map.md` — mirror
-- `codex/product-design-skill/AGENTS.md` — add requirements skill registration + artifact path
+- `codex/product-design-skill/AGENTS.md` — add requirements skill registration (row 1.6) + artifact path + resume marker
 - `opencode/product-design-skill/SKILL.md` — add requirements skill registration + artifact path
-- `codex/product-design-skill/execution-playbook.md` — add requirements phase to phase table
+- `codex/product-design-skill/execution-playbook.md` — add Phase 1.6 requirements to phase table
 - `opencode/product-design-skill/execution-playbook.md` — mirror
 
 **Artifact path added to `.allforai/`:**
@@ -278,7 +300,7 @@ Written to `.allforai/product-concept/requirements-brief.json`.
 **Test / validation items:**
 - Sample `requirements-brief.json` with `fully_confirmed` status (e-commerce golden case)
 - Sample `requirements-brief.json` with `partially_confirmed` status (Stage B interrupted)
-- Sample with schema version mismatch (stale detection test)
+- Sample with `schema_version: "1.0"` (stale detection test)
 - Golden path transcript: `/product-concept` → Stage A/B/C interaction → `requirements-brief.json` → `/product-map` Step 0 reads and branches correctly
 
 ---
