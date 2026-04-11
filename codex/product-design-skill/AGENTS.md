@@ -7,7 +7,7 @@
 | # | Skill | File | Purpose |
 |---|-------|------|---------|
 | 1 | product-concept | ./skills/product-concept.md | Discover product vision from scratch (search + choice-driven) or reverse-engineer from existing code |
-| 1.5 | requirements | ./skills/requirements.md | Progressive requirements confirmation: Stage A (core paths) → Stage B (standard modules) → Stage C (boundary decisions). Auto-triggered after product-concept; also runnable as /requirements |
+| 1.6 | requirements | ./skills/requirements.md | Progressive requirements confirmation: Stage A (core paths) → Stage B (standard modules) → Stage C (boundary decisions). Auto-triggered after product-concept; also runnable as /requirements |
 | 2 | product-map | ./skills/product-map.md | Map roles, tasks, business flows, constraints, data model, view objects (9 steps) |
 | 3 | journey-emotion | ./skills/journey-emotion.md | Annotate emotion/intensity/risk/design-hint per business-flow node (human decision point) |
 | 4 | experience-map | ./skills/experience-map.md | LLM-designed screens with operation_lines > nodes > screens structure + validation loop |
