@@ -5,7 +5,7 @@ description: >
   product-map (产品地图), journey-emotion (情绪旅程),
   experience-map (体验地图, 支持 --variants, 含模式扫描+行为规范), interaction-gate (交互质量门禁),
   feature-gap (功能查漏), design-audit (设计审计).
-  Pipeline: concept → map → journey-emotion → experience-map → feature-gap → audit.
+  Pipeline: concept → requirements → map → journey-emotion → experience-map → feature-gap → audit.
   Use /review to launch the unified review hub (one site, 6 tabs).
   Use /product-design full to run the full pipeline with checkpoints.
 version: "5.0.0"
@@ -37,6 +37,23 @@ version: "5.0.0"
 /product-concept          # 完整流程
 /product-concept reverse  # 从已有产品反推概念
 ```
+
+### 1.5. requirements — Requirements Confirmation
+
+> See `./skills/requirements.md`
+
+Auto-triggered after `/product-concept` generates concept-baseline.json. Walks through 3 stages of progressive requirements confirmation, outputs `requirements-brief.json` for product-map.
+
+```
+/requirements          # Re-run after scope change
+```
+
+**Stages:**
+- Stage A: Confirm 2-4 core user paths (actor + trigger + steps + success outcome)
+- Stage B: Batch sign-off standard modules (foundation defaults + inferred domain modules)
+- Stage C: 3-5 multiple-choice boundary questions (only for entity/permission/state/integration/billing decisions)
+
+**Output:** `.allforai/product-concept/requirements-brief.json` with `confirmed_status: fully_confirmed | partially_confirmed | pending`
 
 ### 1.5/2.5/5/9. review — 统一审核站点
 

@@ -7,6 +7,7 @@
 | # | Skill | File | Purpose |
 |---|-------|------|---------|
 | 1 | product-concept | ./skills/product-concept.md | Discover product vision from scratch (search + choice-driven) or reverse-engineer from existing code |
+| 1.5 | requirements | ./skills/requirements.md | Progressive requirements confirmation: Stage A (core paths) → Stage B (standard modules) → Stage C (boundary decisions). Auto-triggered after product-concept; also runnable as /requirements |
 | 2 | product-map | ./skills/product-map.md | Map roles, tasks, business flows, constraints, data model, view objects (9 steps) |
 | 3 | journey-emotion | ./skills/journey-emotion.md | Annotate emotion/intensity/risk/design-hint per business-flow node (human decision point) |
 | 4 | experience-map | ./skills/experience-map.md | LLM-designed screens with operation_lines > nodes > screens structure + validation loop |
@@ -25,6 +26,7 @@ Described in: `./commands/product-design.md`
 ```
 Phase 0: artifact detection
 Phase 1: product-concept (optional, skippable)
+Phase 1.6: requirements confirmation (auto — Stage A→B→C, outputs requirements-brief.json)
 Phase 2: product-map
 Phase 3: journey-emotion
 Phase 4: experience-map + interaction-gate
@@ -49,6 +51,7 @@ Resume mode checks `.allforai/` artifact presence:
 | Phase | Completion marker |
 |-------|-------------------|
 | 1 concept | `.allforai/product-concept/` exists |
+| 1.6 requirements | `.allforai/product-concept/requirements-brief.json` exists AND `confirmed_status` != `"pending"` |
 | 2 product-map | `.allforai/product-map/task-inventory.json` exists, task count > 0 |
 | 3 journey-emotion | `.allforai/experience-map/journey-emotion-map.json` exists |
 | 4 experience-map | `.allforai/experience-map/experience-map.json` exists, screen count > 0 |
