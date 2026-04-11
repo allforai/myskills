@@ -6,10 +6,11 @@ Phase-by-phase orchestration for the code-replicate workflow.
 
 | Phase | Goal | Key Outputs | Completion Signal |
 |-------|------|-------------|-------------------|
-| 1 | Preflight | `replicate-config.json`, fragments dirs | Config written, source accessible |
+| 1 | Preflight | `replicate-config.json`, `acceptance-ceiling.json`, fragments dirs | Config written, **user confirmed fidelity ceiling** |
 | 2 | Discovery + Confirm | `source-summary.json`, `infrastructure-profile.json`, `stack-mapping.json`, visual captures | User confirmation (last interaction) |
-| 3 | Generate | Standard `.allforai/` artifacts (role-profiles, task-inventory, business-flows, etc.) | All extraction-plan artifacts merged |
-| 4 | Verify & Handoff | `replicate-report.md`, validated artifacts | Schema valid, 6V audit complete |
+| 2.5 | Contract Extraction | `acceptance-contracts.json` | All backend + UI contracts extracted |
+| 3 | Generate + Reverse-Check | Standard `.allforai/` artifacts, `known_gaps.json` | All units pass diff or marked as known_gap |
+| 4 | Verify & Handoff | `replicate-report.md`, validated artifacts, gap pattern analysis | Schema valid, 6V audit + gap report complete |
 
 All outputs are written to `.allforai/` in the target project.
 
@@ -57,6 +58,39 @@ If present, resume from `current_step`. Each completed step is recorded immediat
    - Source app info: ask if frontend/fullstack (needed for screenshots)
 5. Write `replicate-config.json` to `.allforai/code-replicate/`
 6. Create fragment directory structure
+
+### Step 1.2: Runability Assessment (门禁)
+
+在任何分析开始前，评估源项目和目标环境是否可运行，输出 `acceptance-ceiling.json`，并向用户声明保真度上限。
+
+**检测步骤：**
+1. 尝试源项目构建：执行 build 命令（package.json scripts.build / go build / flutter build）
+2. 检测目标栈运行环境：目标语言运行时版本、框架 CLI、数据库可用性
+3. 根据检测结果计算保真度上限：
+
+| 条件 | UI 验收能力 | 保真度上限 |
+|------|------------|-----------|
+| 源 + 目标均可运行，可截图 | 完整运行时验收 | ~100% |
+| 可运行，无截图环境 | 结构验收，无视觉对比 | ~70% |
+| 源或目标无法运行 | 仅静态合约 diff | ~40% |
+
+4. 写 `acceptance-ceiling.json` 到 `.allforai/code-replicate/`
+5. 向用户展示保真度上限和 `known_gaps` 列表
+6. **等待用户显式确认后才继续。** 未确认则停止。
+
+```json
+{
+  "source_runnable": true,
+  "source_build_cmd": "npm run build",
+  "target_env_ready": false,
+  "target_missing": ["Node.js 18+", "PostgreSQL"],
+  "screenshot_available": false,
+  "fidelity_ceiling": 0.7,
+  "known_gaps": ["runtime UI verification", "visual diff against running target"],
+  "user_confirmed": false,
+  "confirmed_at": null
+}
+```
 
 ---
 
@@ -119,7 +153,26 @@ Steps 2.5-2.9 are independent and can run in parallel for large projects.
 
 ---
 
-## Phase 3: Generate (Silent)
+## Phase 2.5: 合约提取
+
+**Reference:** `./docs/phase2/stage-e-contracts.md`
+
+Phase 2 Stage D 确认后立即执行。从源码提取验收合约，作为 Phase 3 逆向检查的 oracle。
+
+| Step | Output | Action |
+|------|--------|--------|
+| 2.5.1 | backend_contracts[] | 逐接口提取：输入/输出/错误条件/副作用/跨模块规则 |
+| 2.5.2 | ui_contracts[] | 逐屏幕提取：状态列表/用户操作（含前置条件）/状态转换/意图 |
+| 2.5.3 | acceptance-contracts.json | 合并写入 `.allforai/code-replicate/` |
+
+**提取原则：提取意图，不提取实现。** 换了技术栈，意图不变；组件代码完全不同。
+散落在多个文件中的跨模块隐性规则必须在这里整合为显式合约项。
+
+Output: `.allforai/code-replicate/acceptance-contracts.json`
+
+---
+
+## Phase 3: Generate + Reverse-Check (Silent)
 
 **Reference:** `./skills/code-replicate-core.md` (Phase 3 section), `./docs/phase3/standard-artifact-steps.md`
 
@@ -133,11 +186,16 @@ LLM reads source-summary.json and generates `extraction-plan.json` with:
 ### Artifact Generation
 
 For each artifact in extraction-plan.artifacts:
-1. LLM reads specified source files per module
-2. Generates JSON fragment per module
-3. **UI closure check**: cross-reference Phase 2.13 screenshots/API logs
-4. **4D self-check**: conclusion / evidence / constraints / decisions
-5. Merge via script (standard artifacts) or LLM direct output (custom artifacts)
+1. Load acceptance contracts for this module from `acceptance-contracts.json`
+2. LLM reads specified source files per module
+3. Generates JSON fragment per module
+4. **UI closure check**: cross-reference Phase 2.13 screenshots/API logs
+5. **4D self-check**: conclusion / evidence / constraints / decisions
+6. **Reverse contract extraction**: extract contracts B from generated fragment
+7. **Diff(A, B)**: compare extracted contracts B against source contracts A
+   - Empty diff → pass, proceed to merge
+   - Non-empty diff → fix → re-extract → max 3 rounds → mark as `known_gap` with full diff
+8. Merge via script (standard artifacts) or LLM direct output (custom artifacts)
 
 Standard artifact scripts at `../../shared/scripts/code-replicate/`:
 - `cr_merge_roles.py`, `cr_merge_screens.py`, `cr_merge_tasks.py`

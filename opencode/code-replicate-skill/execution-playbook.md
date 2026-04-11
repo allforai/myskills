@@ -8,10 +8,11 @@
 
 | Phase | Goal | Key Outputs | Completion Signal |
 |-------|------|-------------|-------------------|
-| 1 — Preflight | Collect parameters, clone source | `replicate-config.json`, fragments directory structure | Config written with all parameters |
+| 1 — Preflight | Collect parameters, clone source | `replicate-config.json`, `acceptance-ceiling.json`, fragments directory structure | Config written, **user confirmed fidelity ceiling** |
 | 2 — Discovery + Confirm | Scan source, build knowledge base, user confirms | `source-summary.json`, `discovery-profile.json`, `infrastructure-profile.json`, `file-catalog.json`, `code-index.json`, `stack-mapping.json` | User confirmation received (last interaction) |
-| 3 — Generate | Extract artifacts per extraction-plan | Standard `.allforai/` artifacts (task-inventory, role-profiles, business-flows, use-case-tree, experience-map, etc.) | All artifacts merged and written |
-| 4 — Verify & Handoff | Validate, audit, report | `replicate-report.md`, validated artifacts | Report generated, handoff complete |
+| 2.5 — Contract Extraction | Extract acceptance contracts from source | `acceptance-contracts.json` | All backend + UI contracts extracted |
+| 3 — Generate + Reverse-Check | Extract artifacts per extraction-plan, diff against contracts | Standard `.allforai/` artifacts, `known_gaps.json` | All units pass diff or marked as known_gap |
+| 4 — Verify & Handoff | Validate, audit, report | `replicate-report.md`, validated artifacts, gap pattern analysis | Schema valid, 6V audit + gap report complete |
 
 ---
 
@@ -72,6 +73,24 @@ Automatic after all artifacts generated and merged.
 
 ---
 
+## Phase 3: Generate + Reverse-Check (Silent)
+
+### Artifact Generation
+
+For each artifact in extraction-plan.artifacts:
+1. Load acceptance contracts for this module from `acceptance-contracts.json`
+2. LLM reads specified source files per module
+3. Generates JSON fragment per module
+4. **UI closure check**: cross-reference Phase 2.13 screenshots/API logs
+5. **4D self-check**: conclusion / evidence / constraints / decisions
+6. **Reverse contract extraction**: extract contracts B from generated fragment
+7. **Diff(A, B)**: compare extracted contracts B against source contracts A
+   - Empty diff → pass, proceed to merge
+   - Non-empty diff → fix → re-extract → max 3 rounds → mark as `known_gap` with full diff
+8. Merge via script (standard artifacts) or LLM direct output (custom artifacts)
+
+---
+
 ## Orchestration Rules
 
 1. **Do not confirm between phases** — flow automatically from Phase 1 through Phase 4
@@ -91,6 +110,58 @@ When the user's request is missing required parameters, ask naturally in a singl
 5. **Business direction** — replicate / slim / extend
 
 Only ask for parameters that cannot be inferred from the user's message.
+
+### Step 1.2: Runability Assessment (Gate)
+
+Before any analysis begins, evaluate whether source and target environments can run. Output `acceptance-ceiling.json` and present fidelity ceiling to user.
+
+**Detection steps:**
+1. Attempt source build: run build command (package.json scripts.build / go build / flutter build)
+2. Check target env: target language runtime, framework CLI, database availability
+3. Compute fidelity ceiling:
+
+| Condition | UI Verification Capability | Fidelity Ceiling |
+|-----------|---------------------------|-----------------|
+| Source + target both runnable, screenshots available | Full runtime verification | ~100% |
+| Runnable, no screenshot environment | Structural verification only | ~70% |
+| Source or target cannot run | Static contract diff only | ~40% |
+
+4. Write `acceptance-ceiling.json` to `.allforai/code-replicate/`
+5. Present ceiling and `known_gaps` list to user
+6. **Wait for explicit user confirmation before proceeding.** Stop if user declines.
+
+```json
+{
+  "source_runnable": true,
+  "source_build_cmd": "npm run build",
+  "target_env_ready": false,
+  "target_missing": ["Node.js 18+", "PostgreSQL"],
+  "screenshot_available": false,
+  "fidelity_ceiling": 0.7,
+  "known_gaps": ["runtime UI verification", "visual diff against running target"],
+  "user_confirmed": false,
+  "confirmed_at": null
+}
+```
+
+## Phase 2.5: Contract Extraction
+
+**Reference:** `./docs/phase2/stage-e-contracts.md`
+
+Runs immediately after Phase 2 Stage D confirm. Extracts acceptance contracts from source code — the oracle used by Phase 3 reverse-check.
+
+| Step | Output | Action |
+|------|--------|--------|
+| 2.5.1 | backend_contracts[] | Per-endpoint: inputs, outputs, error conditions, side effects, cross-module rules |
+| 2.5.2 | ui_contracts[] | Per-screen: states, user_actions (with preconditions), transitions, intent |
+| 2.5.3 | acceptance-contracts.json | Merge and write to `.allforai/code-replicate/` |
+
+**Extraction principle: extract intent, not implementation.** Intent does not change when the stack changes; component code changes completely.
+Cross-module implicit rules scattered across files must be consolidated into explicit contract items here.
+
+Output: `.allforai/code-replicate/acceptance-contracts.json`
+
+---
 
 ## Script Paths
 
