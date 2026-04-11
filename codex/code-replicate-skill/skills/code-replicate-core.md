@@ -373,6 +373,9 @@ diff 不为空
 25. **不跳过文件** — LLM 不能根据文件名猜测重要性后跳过文件。Phase 2.3.5 要求对未读文件**采样阅读**（前面看定义 + 中间看方法签名），快速判断文件价值后决定是否完整读取。每个模块的文件覆盖率必须 ≥ 50%。source-summary 中记录 coverage + files_skipped，用户确认时可见
 26. **code-index 常驻上下文** — Phase 3 每次 LLM 调用必须同时加载 source-summary.json 和 code-index.json 作为全局视角。file-catalog 按模块切片加载（file-catalog-M001.json），替代直接读源码。需要精确实现细节时可定向回读源码中的具体函数
 27. **禁止伪造截图** — Phase 2.13 截图必须来自真实业务操作。禁止用 `page.evaluate()` 修改 DOM/View 控件状态。`page.evaluate()` 仅允许调用 ViewModel/Store 方法（Tier 2）或读取状态。三级策略：用户交互（Tier 1）→ ViewModel 调用（Tier 2）→ 网络 Mock（Tier 3）→ 不可达则标记 UNREACHABLE
+28. **合约先于生成** — Phase 2.5 合约提取必须在 Phase 3 任何生成单元开始前全部完成。没有合约的生成单元无法执行逆向 Diff，等同于盲目生成
+29. **逆向 Diff 是验收标准** — Phase 3 每个生成单元的完成条件是 Diff(A, B) 为空或标记为 known_gap，不是"代码看起来合理"。主观判断不是验收
+30. **保真度上限用户确认** — Phase 1.2 评估结果必须向用户显式声明。用户未确认保真度上限 → Phase 2 不得启动。"跑不起来"不是障碍，是已知约束，但用户必须主动接受
 
 ---
 
@@ -529,6 +532,9 @@ dev-forge 读此 schema → 为目标栈生成等价的数据库迁移（如 GOR
 
 **CR 专属过程文件**：
 - `.allforai/code-replicate/`: replicate-config.json, source-summary.json, discovery-profile.json, extraction-plan.json, stack-mapping.json, replicate-report.md
+- `acceptance-ceiling.json` — Phase 1.2 保真度上限 + 用户确认状态
+- `acceptance-contracts.json` — Phase 2.5 验收合约 oracle（后端 + UI）
+- `known_gaps.json` — Phase 3 未收敛合约项 + 完整 diff
 - `.allforai/code-replicate/fragments/`: 中间片段（合并后可删除）
 
 ---

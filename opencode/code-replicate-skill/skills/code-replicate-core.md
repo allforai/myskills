@@ -361,6 +361,9 @@ Correct contract A → re-execute current generation unit (do not re-run all of 
 25. **Don't skip files** — LLM cannot skip files based on filename guessing. Phase 2.3.5 requires sampling unread files. Each module coverage >= 50%
 26. **code-index always in context** — Phase 3 every LLM call must load both source-summary.json and code-index.json
 27. **No screenshot fabrication** — Phase 2.13 screenshots must come from real business operations. `page.evaluate()` only allowed for ViewModel/Store method calls (Tier 2) or reading state. Three-tier strategy: user interaction (Tier 1) -> ViewModel call (Tier 2) -> network mock (Tier 3) -> unreachable = mark UNREACHABLE
+28. **Contracts before generation** — Phase 2.5 contract extraction must complete before any Phase 3 generation unit begins. A unit without contracts cannot run reverse diff — it is blind generation
+29. **Reverse diff is the acceptance criterion** — A Phase 3 generation unit is done when Diff(A, B) is empty or marked known_gap, not when the code "looks reasonable." Subjective judgment is not acceptance
+30. **Fidelity ceiling requires user confirmation** — Phase 1.2 assessment must be explicitly presented to the user. No user confirmation of fidelity ceiling → Phase 2 must not start. "Cannot run" is not a blocker, it is a known constraint — but the user must actively accept it
 
 ---
 
@@ -472,6 +475,9 @@ dev-forge reads this schema -> generates equivalent database migrations for the 
 
 **CR-specific process files**:
 - `.allforai/code-replicate/`: replicate-config.json, source-summary.json, discovery-profile.json, extraction-plan.json, stack-mapping.json, replicate-report.md
+- `acceptance-ceiling.json` — Phase 1.2 fidelity ceiling + user confirmation state
+- `acceptance-contracts.json` — Phase 2.5 acceptance contracts oracle (backend + UI)
+- `known_gaps.json` — Phase 3 unresolved contract items + full diff
 - `.allforai/code-replicate/fragments/`: intermediate fragments (can delete after merge)
 
 ---
