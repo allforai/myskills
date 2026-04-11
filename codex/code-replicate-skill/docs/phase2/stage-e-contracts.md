@@ -107,6 +107,11 @@
 - `user_actions` 聚焦 click / submit / input change
 - 跨 App flow（OAuth、支付跳转）标记 `"cross_app": true`
 
+**对于非标框架（游戏引擎、桌面 GUI、自定义状态机）：**
+- `states` 和 `user_actions` 的**来源文件**由 LLM 根据项目实际架构自主识别——可能是 Scene 管理器、Animator 状态机、事件总线、自定义 GameStateManager，而非传统 components/screens
+- 提取**目标**（意图）不变：用户处于哪个阶段、能做什么操作、触发什么转换
+- 逆向提取（Phase 3）同理：从目标栈的等价结构中提取，不强求与源码来源文件类型相同
+
 **不提取：**
 - 具体 CSS 类名（实现）
 - 组件库 API（实现）

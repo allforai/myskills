@@ -107,6 +107,11 @@ Implicit cross-module rules (constraints scattered across multiple files with no
 - `user_actions` focuses on click / submit / input change
 - Cross-app flows (OAuth, payment redirects) mark `"cross_app": true`
 
+**For non-standard frameworks (game engines, desktop GUI, custom state machines):**
+- The **source files** for `states` and `user_actions` are identified by the LLM based on actual project architecture — may be a Scene manager, Animator state machine, event bus, or custom GameStateManager rather than traditional components/screens
+- The extraction **goal** (intent) is unchanged: what stage is the user in, what actions can they take, what transitions can be triggered
+- Reverse extraction (Phase 3) applies the same principle: extract from the target stack's equivalent structures — no requirement to match the source file types
+
 **Do NOT extract:**
 - Specific CSS class names (implementation)
 - Component library APIs (implementation)
