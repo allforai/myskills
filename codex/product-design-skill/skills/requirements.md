@@ -25,6 +25,13 @@ description: >
 ## Stage A — 核心路径确认
 
 **输入：** `.allforai/product-concept/concept-baseline.json`  
+
+**concept-baseline.json 不存在时：** 提示用户先运行 `/product-concept`，或切换到手动模式——直接向用户提问：
+1. 产品面向哪些核心角色？
+2. 每个角色的主要使用路径是什么（触发 → 步骤 → 成功结果）？
+
+手动收集 2-4 条路径后继续 Stage B。
+
 **目标：** 在任何展开前，锁定 2-4 条主干用户路径。
 
 读取 concept-baseline 中的 roles + business_model，推导 2-4 条核心路径。每条路径包含：
@@ -82,6 +89,8 @@ description: >
 | SM-email | 通知-邮件 | 注册确认 / 密码重置 | always | ✓ | ✓ | — |
 | SM-softdelete | 软删除 | 用户/订单数据逻辑删除保留 | has_user_data OR has_order_data | ✓ | ✓ | — |
 
+**SM-auth 前端特化：** 当项目类型为 `frontend`（无自有后端）时，默认方案改为"第三方 auth SDK 对接（Firebase Auth / Auth0）+ token 本地存储"，不展示"邮箱密码 + Google OAuth"（后者暗含自建 auth 后端）。
+
 **inclusion_rule 评估：** 展示 Stage B 模块列表前，先评估每个 foundation_default 模块的 `inclusion_rule`：
 - `always` → 始终包含
 - `has_user_data OR has_order_data` → 仅当 Stage A 路径中出现用户账号操作或订单操作时包含；否则设 `status: "excluded"`，不在展示列表中显示
@@ -124,7 +133,7 @@ description: >
 
 **确认规则：**
 - "确认" / "confirm" / "continue" / "无修改" → 所有展示模块写 `status: "confirmed"`，`decision_source: "user_confirmed"`
-- 指出修改 → 修改项写 `decision_source: "user_override"`，其余写 `status: "confirmed"`
+- 只给出修改说明（未显式说"确认"）→ 修改项写 `decision_source: "user_override"`，其余视为隐式确认写 `status: "confirmed", decision_source: "user_confirmed"`
 - 无回复 / 中断 → 所有模块写 `status: "pending"`
 
 ---

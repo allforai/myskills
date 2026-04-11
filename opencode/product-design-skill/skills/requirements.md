@@ -25,6 +25,13 @@ description: >
 ## Stage A — Core Paths Confirmation
 
 **Input:** `.allforai/product-concept/concept-baseline.json`  
+
+**When concept-baseline.json is absent:** Prompt user to run `/product-concept` first, or switch to manual mode — ask the user directly:
+1. Who are the core user roles for this product?
+2. What is the main usage path for each role (trigger → steps → success outcome)?
+
+Collect 2-4 paths manually, then proceed to Stage B.
+
 **Goal:** Lock in 2–4 primary user paths before any expansion.
 
 Read roles + business_model from concept-baseline and derive 2–4 core paths. Each path contains:
@@ -82,6 +89,8 @@ Please confirm these paths, or point out any missing or incorrect items:
 | SM-email | Email Notification | Registration confirmation / password reset | always | ✓ | ✓ | — |
 | SM-softdelete | Soft Delete | Logical deletion retention for user/order data | has_user_data OR has_order_data | ✓ | ✓ | — |
 
+**SM-auth frontend specialization:** When project type is `frontend` (no own backend), the default changes to "Third-party auth SDK integration (Firebase Auth / Auth0) + local token storage" — do not show "Email/password + Google OAuth" which implies a self-hosted auth backend.
+
 **inclusion_rule evaluation:** Before displaying the Stage B module list, evaluate each foundation_default module's `inclusion_rule`:
 - `always` → always include
 - `has_user_data OR has_order_data` → include only when Stage A paths involve user account operations or order operations; otherwise set `status: "excluded"` and omit from the displayed list
@@ -124,7 +133,7 @@ Reply "confirmed" to continue, or describe the items you want to change:
 
 **Confirmation Rule:**
 - "confirmed" / "confirm" / "continue" / "no changes" → write `status: "confirmed"`, `decision_source: "user_confirmed"` for all displayed modules
-- Points out changes → changed items get `decision_source: "user_override"`, rest get `status: "confirmed"`
+- Corrections only (no explicit "confirm") → changed items get `decision_source: "user_override"`; remaining items are treated as implicitly confirmed: `status: "confirmed", decision_source: "user_confirmed"`
 - No reply / interrupted → all modules get `status: "pending"`
 
 ---

@@ -401,9 +401,12 @@ Step 9: 校验
 | `fully_confirmed` | 跳过方向性问题；用 `core_paths` 生成 business-flows 骨架；`standard_modules` 直接生成 tasks（带 `source: "standard_module"` 标签） |
 | `partially_confirmed` | 跳过已确认部分；对 `status: "pending"` 的项继续提问后再展开 |
 | `stale`（schema 版本不匹配） | 警告用户，回退到常规流程（当作文件不存在处理） |
+| `pending`（Stage A/B/C 未完成） | 提示用户需要先完成 `/requirements` 的所有 Stage 再运行 product-map；或以 unconfirmed 状态继续（不跳过任何问题） |
 | 文件不存在 | 提示：建议先运行 `/requirements`；用户可选择继续（以 unconfirmed 状态运行，不跳过任何问题） |
 
-**stale 判定**：`requirements-brief.json` 中 `schema_version` != `"1.1"` 视为 stale。
+**stale 判定**（满足任一条件）：
+- `schema_version` != `"1.1"`（协议版本过期）
+- `based_on_concept_baseline_version` != 当前 `concept-baseline.json` 的文件 mtime（概念已更新但需求未重新确认）→ 降级为警告而非强制回退，product-map 正常运行但在输出中标注 `requirements_stale: true`
 
 ---
 

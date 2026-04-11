@@ -401,9 +401,12 @@ Check `.allforai/product-concept/requirements-brief.json`:
 | `fully_confirmed` | Skip directional questions; seed business-flows from `core_paths`; auto-generate tasks from `standard_modules` (tagged `source: "standard_module"`) |
 | `partially_confirmed` | Skip confirmed sections; ask about `status: "pending"` items before expanding |
 | `stale` (schema version mismatch) | Warn user; fall back to standard flow (treat as absent) |
+| `pending` (Stage A/B/C not completed) | Prompt user to complete all stages of `/requirements` before running product-map; or continue as unconfirmed (no questions skipped) |
 | File absent | Prompt: recommend running `/requirements` first; user may choose to continue as unconfirmed (no questions skipped) |
 
-**Stale detection**: `schema_version` in requirements-brief.json != `"1.1"` → treat as stale.
+**Stale detection** (either condition triggers):
+- `schema_version` != `"1.1"` (protocol version outdated) → fall back to standard flow
+- `based_on_concept_baseline_version` != current mtime of `concept-baseline.json` (concept updated but requirements not re-confirmed) → warn only; product-map continues but outputs `requirements_stale: true`
 
 ---
 
