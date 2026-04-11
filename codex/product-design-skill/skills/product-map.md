@@ -392,6 +392,21 @@ Step 9: 校验
 
 ---
 
+## Step 0：读取需求确认基础
+
+检测 `.allforai/product-concept/requirements-brief.json`：
+
+| confirmed_status | product-map 行为 |
+|-----------------|----------------|
+| `fully_confirmed` | 跳过方向性问题；用 `core_paths` 生成 business-flows 骨架；`standard_modules` 直接生成 tasks（带 `source: "standard_module"` 标签） |
+| `partially_confirmed` | 跳过已确认部分；对 `status: "pending"` 的项继续提问后再展开 |
+| `stale`（schema 版本不匹配） | 警告用户，回退到常规流程（当作文件不存在处理） |
+| 文件不存在 | 提示：建议先运行 `/requirements`；用户可选择继续（以 unconfirmed 状态运行，不跳过任何问题） |
+
+**stale 判定**：`requirements-brief.json` 中 `schema_version` != `"1.1"` 视为 stale。
+
+---
+
 ## Step 详细定义（按阶段加载）
 
 详细的 Step 定义拆分到以下文件中，执行到对应阶段时加载：

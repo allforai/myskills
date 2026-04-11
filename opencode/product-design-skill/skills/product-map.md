@@ -392,6 +392,21 @@ Step 9: 校验
 
 ---
 
+## Step 0: Read Requirements Brief
+
+Check `.allforai/product-concept/requirements-brief.json`:
+
+| confirmed_status | product-map behavior |
+|-----------------|---------------------|
+| `fully_confirmed` | Skip directional questions; seed business-flows from `core_paths`; auto-generate tasks from `standard_modules` (tagged `source: "standard_module"`) |
+| `partially_confirmed` | Skip confirmed sections; ask about `status: "pending"` items before expanding |
+| `stale` (schema version mismatch) | Warn user; fall back to standard flow (treat as absent) |
+| File absent | Prompt: recommend running `/requirements` first; user may choose to continue as unconfirmed (no questions skipped) |
+
+**Stale detection**: `schema_version` in requirements-brief.json != `"1.1"` → treat as stale.
+
+---
+
 ## Step 详细定义（按阶段加载）
 
 详细的 Step 定义拆分到以下文件中，执行到对应阶段时加载：
