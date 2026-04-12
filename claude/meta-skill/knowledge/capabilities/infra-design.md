@@ -39,6 +39,26 @@ infrastructure architecture document that implementation nodes consume.
 - Integration patterns between components are defined (how does the API talk to the queue? how does the queue trigger the worker?)
 - Development vs production configuration differences are noted
 
+## Interaction Mode
+
+**Search-driven selection questions (mandatory for each relevant dimension):**
+
+For each design dimension that applies to this project, LLM MUST:
+
+1. **WebSearch** 1-2 rounds: benchmarks, case studies, production war stories for the candidate technologies at the project's expected scale
+2. **Present 2-4 options** as a selection question, each with:
+   - Technology name + one-line positioning (e.g., "NATS — lightweight, no persistence, <1ms latency")
+   - Evidence from search ("Used by Cloudflare for 10M+ msg/s", "Benchmark shows X vs Y at N scale")
+   - Fit assessment for THIS project ("your scale is ~1K msg/s, so Kafka's overhead is unnecessary")
+3. **User selects** — LLM does NOT decide for the user
+4. **"Other" response** → WebSearch with user's input → new selection question with refined options
+
+**When to skip interaction:**
+- Dimension has only one viable option at the project's scale (e.g., APNs for iOS push — no real alternative)
+- User already specified the technology in bootstrap Step 1.5 (e.g., "Redis" in infrastructure needs)
+- **Decision already made in product-concept tech-architecture sub-phase** — load `tech-architecture.json` and inherit those choices. Only ask about integration/configuration details, not the technology selection itself.
+- In these cases, state the decision with rationale and move on (user can override)
+
 ## Methodology Guidance (not steps)
 
 - **Start from product requirements**: Read product-concept features that imply infra needs (realtime, notifications, file handling, search)

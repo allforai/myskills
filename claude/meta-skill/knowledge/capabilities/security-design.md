@@ -39,6 +39,26 @@ that implementation and verification nodes consume.
 - Sensitive data paths are identified (PII, credentials, payment data) with protection measures
 - OWASP Top 10 mitigations are addressed for the project's tech stack
 
+## Interaction Mode
+
+**Search-driven selection questions (mandatory for auth, authorization, and encryption dimensions):**
+
+For each design dimension where multiple viable options exist, LLM MUST:
+
+1. **WebSearch** 1-2 rounds: security best practices, real-world breach case studies, and framework ecosystem support for the candidate approaches
+2. **Present 2-4 options** as a selection question, each with:
+   - Approach name + one-line positioning (e.g., "Passkeys — phishing-resistant, no password to leak, WebAuthn standard")
+   - Evidence from search ("Apple/Google adopted 2023, 40% faster login in Kayak case study")
+   - Fit assessment for THIS project ("your app has mobile + web clients — Passkeys need fallback for older Android")
+3. **User selects** — LLM does NOT decide for the user
+4. **"Other" response** → WebSearch with user's input → new selection question with refined options
+
+**When to skip interaction:**
+- Dimension has an industry-standard default with no meaningful tradeoff (e.g., TLS for transport, parameterized queries for SQL injection)
+- User already specified the approach in bootstrap or product-concept
+- **Decision already made in product-concept tech-architecture sub-phase** — load `tech-architecture.json` and inherit those choices. Only ask about implementation details (token lifecycle, key rotation policy), not the mechanism selection itself.
+- In these cases, state the decision with rationale and move on (user can override)
+
 ## Methodology Guidance (not steps)
 
 - **STRIDE threat modeling**: For each component, consider Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege

@@ -40,6 +40,26 @@ document that implementation nodes consume.
 - Index strategy matches the access patterns (not just "add indexes")
 - Data lifecycle is defined (how long is data kept? what triggers archival/deletion?)
 
+## Interaction Mode
+
+**Search-driven selection questions (mandatory for each relevant dimension):**
+
+For each design dimension that applies to this project, LLM MUST:
+
+1. **WebSearch** 1-2 rounds: benchmarks, production case studies, and scale-specific comparisons for the candidate technologies
+2. **Present 2-4 options** as a selection question, each with:
+   - Technology name + one-line positioning (e.g., "Meilisearch — instant setup, <10M docs, typo-tolerant")
+   - Evidence from search ("Benchmark: Meilisearch 50ms p99 at 5M docs vs ES 120ms with tuning")
+   - Fit assessment for THIS project ("your entity count is ~500K, full-text on 3 fields — PG tsvector is sufficient, no external service needed")
+3. **User selects** — LLM does NOT decide for the user
+4. **"Other" response** → WebSearch with user's input → new selection question with refined options
+
+**When to skip interaction:**
+- Dimension has only one viable option (e.g., framework's built-in migration tool)
+- User already specified the technology in bootstrap Step 1.5
+- **Decision already made in product-concept tech-architecture sub-phase** — load `tech-architecture.json` and inherit those choices. Only ask about schema design, index strategy, and configuration details, not the technology selection itself.
+- Project scale makes the choice obvious AND there's no meaningful tradeoff (state the decision with rationale, user can override)
+
 ## Methodology Guidance (not steps)
 
 - **Access pattern driven**: Choose DB and design schema based on how data is queried, not how it's structured

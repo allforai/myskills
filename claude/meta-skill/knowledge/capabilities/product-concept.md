@@ -164,7 +164,85 @@ This variant is invoked by launch-prep capability's Phase 1 (Competitive Researc
 
 ---
 
-### Sub-Phase 7: Positioning & Differentiation (定位与差异化)
+### Sub-Phase 7: Technical Architecture & Feasibility (技术选型与可行性)
+
+**Theory anchors:** CAP Theorem, 12-Factor App, CQRS/Event Sourcing (when applicable)
+
+**What it does:**
+
+Based on the features defined in prior sub-phases, identify which features have
+non-trivial technical implications, and make the key architecture decisions NOW —
+before concept crystallization locks the MVP scope.
+
+1. **Scan features for technical triggers**: For each feature from innovation-exploration
+   and user-role-definition, identify implied technical requirements:
+   - Realtime collaboration/chat → WebSocket vs SSE vs polling?
+   - Offline-first → local DB + sync strategy?
+   - AI personalization → embedding storage, inference latency budget?
+   - Full-text search → dedicated engine or DB built-in?
+   - File/media handling → object storage + CDN?
+   - Multi-platform push → unified service or per-platform?
+   - Spaced repetition / scheduling → background job infrastructure?
+
+2. **WebSearch per technical decision**: 1-2 rounds per decision point — benchmarks,
+   production case studies, scale-appropriate comparisons. Search for failure cases too
+   ("XX at scale problems", "migrating away from XX").
+
+3. **Present as selection questions**: For each decision with real tradeoffs, present
+   2-4 options with evidence and fit assessment for THIS project's expected scale.
+   Never open-ended. User selects.
+
+4. **Identify technical risks & hard problems**: Flag decisions that could derail the
+   project if wrong. Examples:
+   - "Offline sync with conflict resolution is the hardest part of this product"
+   - "Realtime multiplayer at <50ms needs dedicated infrastructure, not just WebSocket"
+   - "Spaced repetition algorithm affects core learning UX — needs research"
+
+5. **Assess MVP feasibility**: Given the selected tech stack, are all MVP features
+   buildable? Flag features where the technical cost exceeds their product value —
+   these are candidates for post-launch deferral.
+
+**Output:** `tech-architecture.json`, containing:
+```json
+{
+  "decisions": [
+    {
+      "dimension": "realtime",
+      "chosen": "WebSocket (Socket.IO)",
+      "alternatives_considered": ["SSE", "gRPC streaming"],
+      "rationale": "bidirectional needed for collaboration; SSE is one-way only",
+      "evidence": ["search result references"],
+      "affects_features": ["F3-collaborative-editing", "F7-live-cursors"]
+    }
+  ],
+  "technical_risks": [
+    {
+      "risk": "offline sync conflict resolution",
+      "severity": "high",
+      "affected_features": ["F5-offline-mode"],
+      "mitigation": "use CRDT (Yjs) — proven in Figma/Linear",
+      "fallback_if_too_hard": "defer offline to post-launch"
+    }
+  ],
+  "mvp_feasibility": {
+    "all_feasible": true,
+    "deferred_for_tech_cost": ["F12-voice-input — requires ASR pipeline, high cost for MVP"]
+  }
+}
+```
+
+**Depends on:** innovation-exploration, user-role-definition
+
+**Skip when:** Pure replication with no new architecture decisions (target stack already known from bootstrap Step 1.5). Also skip for simple CRUD apps with no realtime, offline, AI, or search features.
+
+**Relationship to downstream capabilities:** This sub-phase makes the high-level
+"what technology" decisions. Downstream capabilities (infra-design, data-architecture,
+security-design) refine the "how to configure and integrate" details. They inherit
+the decisions made here and do NOT re-ask the user for choices already made.
+
+---
+
+### Sub-Phase 8: Positioning & Differentiation (定位与差异化)
 
 **Theory anchors:** Blue Ocean ERRC, Kano Model
 
@@ -180,7 +258,7 @@ This variant is invoked by launch-prep capability's Phase 1 (Competitive Researc
 
 ---
 
-### Sub-Phase 8: Concept Crystallization (概念结晶)
+### Sub-Phase 9: Concept Crystallization (概念结晶)
 
 **Theory anchors:** All above converge here
 
@@ -219,11 +297,11 @@ This variant is invoked by launch-prep capability's Phase 1 (Competitive Researc
 
 **Output:** `product-concept.json`, `product-definition.md`
 
-**Depends on:** all prior sub-phases
+**Depends on:** all prior sub-phases (including tech-architecture — MVP scope must account for technical feasibility)
 
 ---
 
-### Sub-Phase 9: Concept Validation (概念验证)
+### Sub-Phase 10: Concept Validation (概念验证)
 
 **Theory anchors:** Lean Startup (Build-Measure-Learn), Risk-driven validation
 
@@ -257,15 +335,18 @@ user-role-definition
 business-model
   entry: user-role-definition
   ↓
+tech-architecture
+  entry: innovation-exploration + user-role-definition
+  ↓
 positioning
   entry: market-research + innovation-exploration + user-role-definition
   ↓
 concept-crystallization
-  entry: all above
+  entry: all above (tech-architecture informs MVP feasibility)
   ↓
 concept-validation
   entry: concept-crystallization
-  can loop back → any prior node
+  can loop back → any prior node (including tech-architecture)
 ```
 
 ## Theory Reference
@@ -294,6 +375,9 @@ Full theory reference: `${CLAUDE_PLUGIN_ROOT}/knowledge/product-design-theory.md
 | `product-concept.json` | `roles[]`, `clients[]` | ui-design, product-verify | required | UI 按角色设计，验收按角色测试 |
 | `product-concept.json` | `adaptive_systems[]` | pipeline-closure-verify | optional | 自适应状态机完整性验证 |
 | `product-concept.json` | `errc_highlights` | concept-acceptance | required | 概念验收对照 must_have 和 differentiators |
+| `tech-architecture.json` | `decisions[]` | infra-design, data-architecture, security-design | required | 下游技术设计继承概念阶段的选型决策，不重复询问用户 |
+| `tech-architecture.json` | `technical_risks[]` | concept-acceptance, product-verify | optional | 验收时检查高风险技术项是否已缓解 |
+| `tech-architecture.json` | `mvp_feasibility` | concept-crystallization (self) | required | MVP 范围必须考虑技术可行性，不可行的功能推迟 |
 | `product-definition.md` | — | generate-artifacts | optional | 生成 README 时参考产品定义 |
 
 ## Knowledge References
@@ -316,7 +400,7 @@ On re-execution: **refine, don't restart**. Read the existing concept.json, iden
 ## Composition Hints
 
 ### Full Pipeline (new product, no existing concept)
-Generate all 9 sub-phase nodes. User confirms each before proceeding.
+Generate all 10 sub-phase nodes. User confirms each before proceeding.
 
 ### Partial Pipeline (rebuild with concept change, like FlyDict v2)
 Skip market-research if user already knows the domain.
