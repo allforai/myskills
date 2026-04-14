@@ -160,6 +160,109 @@ Do NOT flag their absence as contract drift. Only flag where two live
 consumers exist with different expectations — not where one consumer was
 deliberately retired.
 
+## Forked Creation Sites
+
+When the same business resource (user, conversation, message, order,
+profile, etc.) can be created by more than one code path, every path must
+produce the **same row shape**. Common multi-path scenarios:
+
+- Runtime service constructor **vs** migration / backfill script
+- Admin-side manual create **vs** user-side self-signup
+- Seeder / fixture loader **vs** webhook-triggered create
+- Default value path **vs** explicit-value path
+- v1 constructor left for backward compatibility **vs** v2 new constructor
+
+Divergent shapes between paths produce resources that render differently
+depending on how they were created. Tests written against one path pass;
+users who land via the other path see broken UI.
+
+Detection method:
+1. For each entity/table defined in `product-map/entity-model.json`, grep
+   every `INSERT` / `.Create` / `.Save` / ORM new-instance constructor site
+2. Group sites by entity
+3. For each group with >1 site, compare the field set each site populates
+4. Any field populated by some sites but not others → `forked_creation_finding`
+5. Prioritize fields that drive UI behavior (preview/summary, status flags,
+   actions/interactive content, permissions)
+
+Output under `fieldcheck-report.json`:
+
+```json
+{
+  "forked_creation_findings": [
+    {
+      "id": "FC-001",
+      "entity": "<table / entity name>",
+      "sites": [
+        {"path": "internal/service/<foo>_service.go:88 FooService.Create",
+         "fields_populated": ["id", "name", "status", "actions", "preview"],
+         "user_facing_path": "runtime — new users go through this"},
+        {"path": "migrations/seed.go:140 seedLegacyFoos",
+         "fields_populated": ["id", "name", "status"],
+         "user_facing_path": "one-time — migration for pre-existing users"}
+      ],
+      "diverging_fields": ["actions", "preview"],
+      "severity": "P1",
+      "user_impact": "Users who received the resource via migration see it without `actions` (no interactive buttons) and without `preview` (list row shows empty). Users created after the migration see both correctly."
+    }
+  ]
+}
+```
+
+The fix is almost always one of:
+- Delete the duplicate creation path, funnel through the canonical service
+- Bring the diverged path up to parity with the canonical site
+
+## Cross-Module Ghost Routes
+
+Extends `deadhunt-report` ghost-call detection across module boundaries.
+Within-module deadhunt catches functions defined but not called; cross-
+module ghost routes catch a **route / endpoint registered on the server
+that no client ever calls**. Usually means either:
+
+- Server has the handler ready but the client was never wired to it —
+  dead contract in waiting
+- Client used to call it but was refactored to call a different route —
+  forgotten server-side handler
+- Two parallel implementations exist (new route + legacy route) and the
+  client picked the legacy one — the new route is zombie code
+
+Detection method (per registered route):
+1. Enumerate every route registration in the server (e.g., in a router
+   setup function: `r.POST("/foo/:id/bar", ...)`) — capture method + path
+2. For each registered path, `grep` across ALL client codebases listed in
+   `bootstrap-profile.json.modules[]` where `role in [frontend, mobile,
+   admin]` — look for the path literal (or a template-interpolated version
+   of it) in source files
+3. Zero client references → `cross_module_ghost_route`
+4. For each finding, include: server registration site, expected client(s)
+   by module role, current status (never-wired / legacy-shadowed / unknown)
+
+Output under `deadhunt-report.json`:
+
+```json
+{
+  "cross_module_ghost_routes": [
+    {
+      "id": "GR-001",
+      "method": "POST",
+      "path": "/conversations/:id/action",
+      "registered_at": "internal/router/router.go:120",
+      "handler": "ConversationController.ProcessAction",
+      "client_references": [],
+      "severity": "P1",
+      "hypothesis": "server added this endpoint for interactive-button clicks; the iOS client routes button clicks to /conversations/:id/answer instead, so /action is never reached"
+    }
+  ]
+}
+```
+
+The iron-rule note applies here too: a route that exists as part of an
+intentional migration / deprecation plan should be documented in
+`product-concept.errc_highlights.eliminate[]` or
+`concept-conflicts.json`; otherwise a zero-client-reference route is a
+bug, not a deliberate state.
+
 ## Downstream Consumers
 
 > Bootstrap reads this table to generate Context Pull sections for downstream node-specs.

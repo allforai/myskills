@@ -47,7 +47,7 @@ exist for each pipeline", this capability checks "does code actually connect".
   "closure_gaps": [
     {
       "feature": "<string>",
-      "closure_type": "<enum: config | monitoring | exception | lifecycle | mapping | navigation>",
+      "closure_type": "<enum: config | monitoring | exception | lifecycle | mapping | navigation | multi_surface>",
       "description": "<string — what's missing>",
       "severity": "<enum: high | medium | low>"
     }
@@ -113,6 +113,31 @@ For each feature in product-concept, verify the 6 closure types have code paths
 Report closure gaps alongside pipeline gaps in the same report. A closure gap
 is less severe than a broken pipeline (pipeline = flow doesn't work at all,
 closure = flow works but is incomplete in edge cases).
+
+**5. Multi-Surface Consistency**
+
+A single piece of data often appears in more than one UI surface — for example
+a collection item appears both in a list row (with a summary/preview) and in
+a detail view (with full content). When the underlying data mutates, every
+surface that renders it must refresh. Single-surface coverage hides bugs where
+surface-A is correct but surface-B is stale or empty.
+
+For each entity declared in the product-map (messages, orders, items,
+notifications, etc.):
+- Enumerate every UI surface that renders any field of that entity
+- For every mutation path that writes to the entity (creation / edit / delete)
+  verify that each rendering surface receives a refresh signal (reactive
+  binding, pub-sub event, list-invalidation, cache key update, etc.)
+- Asymmetric coverage — detail updates but list stays stale, or list updates
+  but detail stays stale — is a **partial** pipeline. The common offender is
+  list-preview / list-summary fields that are updated independently from the
+  detail content, and can end up empty because their update path runs in the
+  wrong order or not at all.
+
+Report these under `closure_gaps[]` with `closure_type: "multi_surface"`,
+naming which surface is stale and why (e.g., "mutation runs INSERT on
+details table while list_preview UPDATE expects row to already exist; row
+order race").
 
 ### Required Quality
 
