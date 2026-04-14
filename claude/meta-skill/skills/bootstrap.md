@@ -211,6 +211,7 @@ UI 还原度（仅有前端翻译时）：
 - Combinations: user can select e.g. "a + e" or "h + i + j" (full verification suite)
 - **demo-forge is automatically added** to any goal that includes code implementation (translate/rebuild/create). Reason: API-driven data population is the strongest integration test — it exposes runtime issues that compile-verify cannot catch (wrong routes, missing fields, broken relationships, auth failures).
 - **concept-acceptance is automatically added** to any goal that includes code implementation (translate/rebuild/create) AND `has_product_concept` is true. Reason: without verifying the final product experience against the original concept, the development loop never closes — product-verify checks code vs design artifacts, but not experience vs concept.
+- **runtime-smoke-verify is automatically added** to any goal that includes code implementation (translate/rebuild/create) OR launch-prep. Reason: test-harness verification cannot catch runtime contract bugs that only surface when the artifact launches outside the harness (env-var dual-contracts, URL prefix drift, missing signing / provisioning, deep-link breakage). See `knowledge/capabilities/runtime-smoke-verify.md`. This node runs **after** product-verify passes and **before** launch-checklist. Added 2026-04-14 after a real FlyDict incident where 47 XCUITest cases passed but manual app launch showed 404 on login — symptom of `UITEST_API_BASE_URL` being parsed differently by tests and by `FlyDictApp.swift`.
 
 ### 1.5.1 Runtime Environment Awareness (when goals include code implementation)
 
@@ -351,6 +352,40 @@ Always load these (they apply to ALL nodes regardless of type):
 Check if `${CLAUDE_PLUGIN_ROOT}/knowledge/mappings/<source>-<target>.md` exists.
 Also check `${CLAUDE_PLUGIN_ROOT}/knowledge/learned/` and
 `.allforai/bootstrap/learned/` for prior experience.
+
+### 2.4.1 Load Blind-Spot Retrospectives (MANDATORY)
+
+If `.allforai/bootstrap/learned/blind-spots.md` exists (project-local) OR
+`${CLAUDE_PLUGIN_ROOT}/knowledge/learned/blind-spots.md` (global), LLM must
+read it before Step 3 planning.
+
+Each entry in `blind-spots.md` records a class of bug that the previous
+workflow **missed** and the minimum additional check required to catch it.
+For each entry with `status: scheduled` or `status: open`:
+
+- Locate the capability that would prevent it (listed in the entry)
+- Verify that capability is in the current workflow's goals or will be
+  auto-added based on Step 1.5 goal mapping
+- If the preventing capability is NOT in the workflow → add it in Step 3.1
+  and mark the entry `status: closed` once the node is planned
+
+This is how the workflow **learns from its own failures**. Without this,
+the same class of bug slips past every bootstrap run because the system
+doesn't remember what it missed. Entries with `status: closed` stay for
+audit.
+
+Format of a single entry (reference `knowledge/learned/blind-spots.md` for
+the canonical template):
+
+```markdown
+## <date> — <short name>
+
+- **Class**: <category of bug>
+- **Missed**: <concrete instance>
+- **Why missed**: <which node was expected to catch + what it actually did>
+- **Minimum prevention**: <smallest additional check>
+- **Status**: open | scheduled | closed
+```
 
 ### 2.5 Load Iteration Feedback (if re-bootstrapping)
 
