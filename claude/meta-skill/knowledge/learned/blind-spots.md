@@ -155,6 +155,42 @@ the project-local `.allforai/bootstrap/learned/blind-spots.md`.
 - **First reported in**: 2026-04-15 session (second incident in the same
   week across different concrete symptoms, same underlying class)
 
+## 2026-04-15 — Test-mode fast-path diverges from user-mode real-path
+
+- **Class**: test helper hits the real endpoint but with a flag / query param
+  that triggers an early-return on the server (async mode, mock mode, skip-
+  validation). The "fast return" is asserted green; the long tail of the
+  real flow (async reply, delayed side-effects, enrichment) is never
+  asserted. Production users take the long-tail path and fail there.
+- **Missed**: every E2E "send message" helper passed `?async=1`, which made
+  the server save the user message and return immediately while a goroutine
+  generated the LLM reply. Tests asserted only that the user message came
+  back saved. No test ever subscribed to the delivery channel and waited
+  for the reply event, so a broken long-tail (panic in the goroutine, lost
+  pubsub publish, timed-out LLM call) was completely invisible. Users typed
+  a message and watched a spinner time out after 60s.
+- **Why missed**: "the test hits the real endpoint" feels like real
+  coverage. The contract-parity check sees a real client → real server
+  call. The ghost-route check sees the route referenced. The test passes
+  because the portion it exercises really does work. The untested half
+  lives inside a branch the test deliberately takes in order to run fast.
+- **Minimum prevention**: `quality-checks` Test-Mode Branch Audit —
+  enumerate every test helper call that hits a server endpoint, parse its
+  URL + body for flags/params; locate the server handler; if any of those
+  flags gate an early-return or a goroutine fork, mark the branch(es) past
+  that gate as "uncovered by this helper" unless a separate assertion in
+  the same test waits for the deferred side-effect. Flag every test-only
+  flag that prod client code never sends (true fast-path divergence, not
+  just a performance toggle both sides use).
+- **Capability added**: `knowledge/capabilities/quality-checks.md` §Test-
+  Mode Branch Audit
+- **Status**: `closed` — rule documented + finding schema
+  (`test_mode_fastpath_divergence`) added
+- **First reported in**: 2026-04-15 session — user typed a chat message,
+  LLM reply timed out after 60s, and the full deterministic E2E pack
+  (~30 cases) had no signal because every test helper asked the server
+  to skip the very path that was broken
+
 ## 2026-04-14 — Server route with zero client callers (cross-module ghost)
 
 - **Class**: HTTP route registered on the backend, intended for a client

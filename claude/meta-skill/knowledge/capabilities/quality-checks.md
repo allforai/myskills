@@ -319,6 +319,104 @@ intentional migration / deprecation plan should be documented in
 `concept-conflicts.json`; otherwise a zero-client-reference route is a
 bug, not a deliberate state.
 
+## Test-Mode Branch Audit
+
+Catches two closely-related coverage-gap classes around HTTP flags that
+re-shape the server handler's control flow:
+
+- **Sub-case A — Async-delivery assertion gap**: both tests AND prod
+  clients pass the same flag (e.g., `?async=1`), the server forks a
+  goroutine and returns the pre-delivery state, and prod users block on
+  a downstream event (SSE message arrival, push notification, deferred
+  record appearing) — but the test stops asserting at the fire and never
+  waits for the arrival. Not a divergence in the flag, a divergence in
+  *how far each side walks down the path after the flag*. Prod users
+  experience the second half; tests never do.
+- **Sub-case B — Test-only fast-path**: flag is sent ONLY by tests; no
+  prod client passes it. The branch the flag selects (early-return,
+  mock substitution, skip-validation, dry-run) is genuinely unreached
+  by any test. Strictly worse than A — not just an assertion gap but
+  an entire code path the test suite pretends to cover.
+
+Both sub-cases produce `test_mode_fastpath_divergence` findings.
+
+Typical triggers on the server:
+- `?async=1` / `?background=true` — handler forks a goroutine and returns
+  before the deferred work completes (usually sub-case A)
+- `?mock=1` / `?fake=1` / `X-Test: true` — handler swaps in a mock of an
+  upstream service (usually sub-case B)
+- `?skip_validation=1` / `?dry_run=1` — handler skips gates (B)
+- any header/param whose only caller is test-side code (B)
+
+Detection method (per test helper that hits a real endpoint):
+1. Enumerate test helpers — functions that build a URL / body and call
+   the real HTTP client (not a mocked client)
+2. Extract URL path + query params + body keys; normalize to a
+   `(method, path, flag_set)` triple
+3. Locate the server handler for that `(method, path)`; parse it for
+   branches gated on any flag from `flag_set` OR for goroutines/deferred
+   work launched BEFORE the response returns (async patterns count even
+   when unconditional)
+4. For every such branch / fork, identify the downstream code it enables
+   (goroutine launched, gate skipped, mock substituted, deferred publish)
+5. **Sub-case A check**: does any test in the same suite assert on the
+   downstream side-effect (subscribe to the delivery channel, poll for
+   the deferred record, check the real upstream was called)? If no →
+   finding, `sub_case: "A"`. This is independent of whether prod sends
+   the same flag.
+6. **Sub-case B check**: does any production client (mobile / web /
+   admin) ever send this flag? If no → finding, `sub_case: "B"`. Bump
+   severity since the branch is entirely unreached.
+7. A single endpoint can produce BOTH sub-cases (flag is test-only AND
+   no test asserts the downstream) — emit both.
+
+**Do not dismiss a finding on the grounds that "prod also uses this
+flag."** Prod parity on the flag eliminates sub-case B, not sub-case A.
+The Async-delivery assertion gap is the more common shape in practice.
+
+Output under `deadhunt-report.json`:
+
+```json
+{
+  "test_mode_fastpath_findings": [
+    {
+      "id": "TM-001",
+      "endpoint": "POST /resource/:id/messages",
+      "test_flag": "?async=1",
+      "sub_case": "A",
+      "used_by_prod_client": true,
+      "helper_sites": [
+        "tests/e2e/helpers.ext:190 sendTextMessage"
+      ],
+      "handler_branch": "internal/controller/<foo>_controller.ext:240 — if async { go generateReplyAsync(...); return userMsg }",
+      "uncovered_downstream": [
+        "generateReplyAsync goroutine",
+        "pubsub.Publish(message)",
+        "SSE delivery to subscribed client"
+      ],
+      "any_test_asserts_downstream": false,
+      "severity": "P1",
+      "user_impact": "Every production typed-message flow runs through the uncovered downstream. A panic, hang, or lost publish in that code path fails silently — the user sees a spinner that times out, but no test turns red."
+    }
+  ]
+}
+```
+
+The fix is usually one of:
+- Add at least one test that exercises the full path (e.g., subscribes
+  to the delivery channel and waits for the deferred event). Accept the
+  slower runtime; mark it as the "slow lane" in the suite.
+- If the flag is never sent by any prod client, delete the test-only
+  flag and have tests traverse the real path directly.
+- If the flag exists for a legitimate prod use case (e.g., batch
+  ingestion), add a separate test that exercises the prod-dominant
+  value of the flag.
+
+Iron-rule note: any test helper that hits a real endpoint with a flag
+that no prod client ever sends is the clearest possible signal of a
+test/prod-mode divergence. That single predicate — "does any prod
+client send this flag?" — catches the whole class cheaply.
+
 ## Downstream Consumers
 
 > Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
