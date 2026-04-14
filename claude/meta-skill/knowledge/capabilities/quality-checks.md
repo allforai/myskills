@@ -97,9 +97,20 @@ Classes of symbol to scan:
 - **Response payload keys** — server returns `free_conv` but iOS decoder
   expects `free_conversation`; decoder gracefully returns nil, UI shows
   blank state, no stacktrace
-- **Enum values that N-1 consumers know about** — server produces
-  `semanticType=placement_quiz` but iOS MessageBubble switch doesn't handle
-  it, falls through to default rendering
+- **Response-shape decoder mismatch (whole-shape drift)** — server returns
+  a wrapper / container containing one or more entities; client
+  call-site declares a parametric decoder whose target type is a bare
+  entity (or a differently-shaped container). Compile-time the client is
+  happy; at runtime the decoder fails and the user sees a broken
+  interaction. Distinct from the per-field "payload keys" class above
+  because here EVERY field mismatches at once. Common in clients whose
+  language enforces static Decodable/Deserializable types at the call
+  site — the type system cannot express the actual server shape at the
+  API-declaration site, so the drift only appears at runtime.
+- **Enum values that N-1 consumers know about** — server produces a value
+  in an enum field (e.g., `semantic_type=foo`) but a client-side switch /
+  match on that field has no branch for `foo`, falls through to a default
+  rendering or action
 
 Detection method:
 1. Grep all call sites of the symbol.
@@ -111,6 +122,40 @@ Detection method:
    mismatched consumer, (b) whether the mismatch produces a visible error
    or a silent wrong result.
 
+### Response-shape decoder audit (sub-check for typed client decoders)
+
+When the client stack enforces a target type at the decode call-site
+(parametric Decodable, generic request helpers, interface-based HTTP
+clients), perform this extra audit:
+
+1. Enumerate every client-side call to a request helper that is parametric
+   on a decoder target type (generic `request<T>`, typed response
+   declarations in interface-based HTTP clients, etc.).
+2. For each call, capture the **endpoint identifier** (enum case, URL
+   constant, interface method) + the **declared target type**.
+3. For each endpoint, locate the server handler. Capture the response
+   body shape the handler produces (struct / map / class serialized
+   to JSON).
+4. Compare the JSON top-level key set the server emits vs the key set
+   the client's declared type will accept (exact match required unless
+   the decoder explicitly opts into lenient / ignore-unknown handling).
+5. Mismatch → `response_shape_decoder_mismatch` finding. User impact
+   is always at least P1 because the runtime error surface is usually
+   a raw decode error shown to the user, not a silent wrong result.
+
+Common culprits — language-agnostic:
+- Server-side pattern: handler wraps the primary result in a container
+  carrying auxiliary context (pagination envelope, relationship data,
+  operation metadata). Client call-site declared the target type as
+  just the primary entity.
+- Backend evolution: an endpoint originally returned a bare entity;
+  later wrapped in a container for richer data. One client caller
+  updated its decoder target, another didn't. Clients with static
+  target types still compile but decode fails.
+- Multi-client projects: one client platform adopted the new response
+  shape; another platform's decoder target lags. Shape drift invisible
+  unless both client declaration files are read side-by-side.
+
 Output goes into `fieldcheck-report.json` under a new key:
 
 ```json
@@ -118,42 +163,53 @@ Output goes into `fieldcheck-report.json` under a new key:
   "contract_drift_findings": [
     {
       "id": "CD-001",
-      "symbol": "UITEST_API_BASE_URL",
+      "symbol": "<shared env-var name>",
       "kind": "env_var_dual_contract",
       "consumers": [
-        {"file": "FlyDictUITests/APIHelper.swift", "line": 12, "shape": "bare host; test prepends /api/v1"},
-        {"file": "FlyDictApp.swift", "line": 32, "shape": "full URL including /api/v1"}
+        {"file": "<consumer A file:line>", "shape": "bare host; caller prepends /api/vN"},
+        {"file": "<consumer B file:line>", "shape": "full URL including /api/vN"}
       ],
       "severity": "P1",
-      "user_impact": "Manual launch shows 404 login screen; XCUITest passes.",
-      "recommended_fix": "APIClient auto-appends /api/v1 when absent, OR unify test + app conventions on same format"
+      "user_impact": "One consumer path works end-to-end; the other consumer path fails the very first request. Indistinguishable until both paths are exercised.",
+      "recommended_fix": "Unify both consumers to a single format, OR have the later-binding consumer detect and normalize the format at use site"
     },
     {
       "id": "CD-002",
-      "symbol": "tier",
+      "symbol": "<request-body field name>",
       "kind": "request_body_field_drift",
       "consumers": [
-        {"file": "flydict-api/internal/controller/admin/user_mgmt_controller.go", "line": 163, "shape": "json:\"tier\" binding:\"required\""},
-        {"file": "flydict-admin/src/lib/api/endpoints/users.ts", "line": 22, "shape": "body payload names field subscription_tier"}
+        {"file": "<server handler file:line>", "shape": "struct tag declares field X"},
+        {"file": "<client API call site file:line>", "shape": "body payload serializes field Y"}
       ],
       "severity": "P0",
-      "user_impact": "Admin UI PATCH returns 400; subscription adjustments silently fail until one side updates."
+      "user_impact": "Client mutation silently fails with a 400 until one side is updated."
     },
     {
       "id": "CD-003",
-      "symbol": "/scenarios?tags=",
+      "symbol": "<server endpoint>?<query-param>=",
       "kind": "query_param_accepted_but_unused",
       "consumers": [
-        {"file": "scenario_controller.go", "line": 60, "shape": "c.Query(\"tags\") read but passed nowhere"}
+        {"file": "<server handler file:line>", "shape": "query value read into a variable, then discarded before reaching the service/repo"}
       ],
       "severity": "P1",
-      "user_impact": "Unknown tag values return full result set instead of 0 rows; users filter by typo see everything."
+      "user_impact": "Unknown values fall through to the unfiltered result set; users filtering by typo see everything instead of zero rows."
+    },
+    {
+      "id": "CD-004",
+      "symbol": "<HTTP method> <endpoint path>",
+      "kind": "response_shape_decoder_mismatch",
+      "consumers": [
+        {"file": "<server handler file:line>", "shape": "response body wrapped in container {primary, auxiliary, metadata}"},
+        {"file": "<client call-site file:line>", "shape": "declared decoder target = bare primary-entity type"}
+      ],
+      "severity": "P1",
+      "user_impact": "Runtime decode error surfaces as an alert when the user triggers this endpoint. UI automation that only checks button-is-tappable never inspects the subsequent alert, so the bug ships."
     }
   ]
 }
 ```
 
-Iron-rule note (from 2026-04-14 FlyDict retrospective):
+Iron-rule note (from 2026-04-14 retrospective):
 Items listed in `business-model.rejected_options[]` and
 `product-concept.errc_highlights.eliminate[]` are **intentional removals**.
 Do NOT flag their absence as contract drift. Only flag where two live

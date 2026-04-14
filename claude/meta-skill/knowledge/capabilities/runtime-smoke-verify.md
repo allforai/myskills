@@ -99,19 +99,19 @@ Write `.allforai/runtime-smoke/smoke-report.json`:
       "role": "mobile",
       "build_result": "pass",
       "launch_result": "fail",
-      "smoke_endpoint": "POST /api/v1/auth/login",
+      "smoke_endpoint": "<HTTP method> <path>",
       "smoke_status": 404,
       "evidence": ".allforai/runtime-smoke/M003/first-screen.png",
-      "failure_cause": "base URL env var UITEST_API_BASE_URL missing /api/v1 suffix; APIClient.setBaseURL consumed it verbatim",
-      "fix": "either (a) APIClient auto-appends /api/v1 when absent, (b) tests and app agree on same convention, or (c) document expected format in APIClient.resolveBaseURL"
+      "failure_cause": "base URL env var consumed verbatim by the app's HTTP client; tests prepend an API stem the app does not, so the app emits requests against the wrong path",
+      "fix": "either (a) HTTP client normalizes / detects the missing stem at use site, (b) tests and app agree on a single shared format, or (c) document the expected format at the env-var declaration site"
     }
   ],
   "contract_drift_warnings": [
     {
-      "symbol": "UITEST_API_BASE_URL",
+      "symbol": "<env var name>",
       "consumers": [
-        {"path": "FlyDictUITests/APIHelper.login", "expected_shape": "bare host, test prepends /api/v1"},
-        {"path": "FlyDictApp.swift", "expected_shape": "full URL including /api/v1"}
+        {"path": "<test-side consumer file:line>", "expected_shape": "bare host, caller prepends API stem"},
+        {"path": "<app-side consumer file:line>", "expected_shape": "full URL including API stem"}
       ],
       "severity": "P1"
     }

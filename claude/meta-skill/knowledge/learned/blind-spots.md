@@ -33,11 +33,13 @@ the project-local `.allforai/bootstrap/learned/blind-spots.md`.
 
 - **Class**: runtime contract parity between two consumers of the same
   environment variable
-- **Missed**: FlyDict iOS project. `UITEST_API_BASE_URL` was read as a
-  bare host by XCUITest (tests prepend `/api/v1/...`) and as a full URL
-  including `/api/v1` by `FlyDictApp.swift` via `APIClient.setBaseURL`.
-  Manual app launch with `http://localhost:9600` showed 404 login
-  screen; all 47 XCUITest cases passed.
+- **Missed**: a base-URL env var was read in two places — XCUITest helpers
+  parsed it as a bare host and prepended the API path stem themselves;
+  the production app code passed it directly to its HTTP client which
+  expected the value to already include the API path stem. Manual launch
+  with the bare-host value (the test convention) showed a 404 on the
+  first request; the entire UI test suite still passed because tests
+  exclusively used the bare-host convention.
 - **Why missed**: product-verify-ios runs XCUITest exclusively, so only
   the tests-side contract is exercised. pipeline-closure-verify does
   static cross-layer checks only. quality-checks hunted dead-code /
@@ -53,15 +55,16 @@ the project-local `.allforai/bootstrap/learned/blind-spots.md`.
   goals that include code implementation or launch-prep (see
   `skills/bootstrap.md` Step 1.5 goal mapping). Contract-Parity check
   runs as part of every quality-checks invocation.
-- **First reported in**: FlyDict project, 2026-04-14 session
+- **First reported in**: 2026-04-14 retrospective
 
 ## 2026-04-14 — State-machine transition wired to the wrong event
 
 - **Class**: event-driven state change bound to an event users rarely trigger
-- **Missed**: FlyDict `ConversationService.updateStreak` fired from the
-  conversation-end path (generateQuiz + extractVocabulary side-effect).
-  Messenger-style users don't click "end conversation", so streak never
-  advanced in practice. Rule was correct; event binding was wrong.
+- **Missed**: a streak-update side-effect was wired into the conversation-
+  end pathway (firing alongside post-conversation enrichment jobs).
+  Messenger-style users don't trigger an explicit conversation-end action,
+  so the side-effect almost never ran. The rule itself was correctly
+  implemented; it was bound to the wrong upstream event.
 - **Why missed**: Coverage measured "is rule implemented" rather than
   "does rule fire in the user's real flow." E2E test that sent one
   message and then queried /profile/streak caught this in the first
@@ -74,7 +77,7 @@ the project-local `.allforai/bootstrap/learned/blind-spots.md`.
 - **Capability added**: pipeline-closure-verify extended with "state
   transition trigger-path trace" (TODO — currently `open` status)
 - **Status**: `open` — preventing check not yet implemented
-- **First reported in**: FlyDict project, 2026-04-14 session
+- **First reported in**: 2026-04-14 retrospective
 
 ## 2026-04-14 — Path disconnect between rendering surfaces
 
@@ -96,7 +99,7 @@ the project-local `.allforai/bootstrap/learned/blind-spots.md`.
 - **Capability added**: `knowledge/capabilities/pipeline-closure-verify.md`
   §5. Multi-Surface Consistency
 - **Status**: `closed`
-- **First reported in**: FlyDict project, 2026-04-14 session
+- **First reported in**: 2026-04-14 retrospective
 
 ## 2026-04-14 — Forked creation paths produce diverging row shapes
 
@@ -119,7 +122,38 @@ the project-local `.allforai/bootstrap/learned/blind-spots.md`.
 - **Capability added**: `knowledge/capabilities/quality-checks.md` §Forked
   Creation Sites
 - **Status**: `closed`
-- **First reported in**: FlyDict project, 2026-04-14 session
+- **First reported in**: 2026-04-14 retrospective
+
+## 2026-04-15 — Response-shape decoder mismatch (whole-shape drift)
+
+- **Class**: server endpoint returns a container shape; client call site
+  declares its decoder for a bare entity (or for a different shape). Both
+  sides compile. The mismatch only surfaces at runtime as a decode error
+  the user sees as a raw alert.
+- **Missed**: an endpoint wraps its primary result in a container that
+  also carries auxiliary context. The calling code on the client declares
+  a parametric decoder that targets only the primary entity. The client
+  language's static type system has no visibility into the server's
+  response shape at the declaration site, so the mismatch cannot be
+  expressed at compile time.
+- **Why missed**: API-level tests bypass the client's decoder entirely
+  (they parse raw JSON themselves). UI-level tests check whether a
+  button is tappable, not what happens after — the runtime decode error
+  shows as an alert the test never inspects. The existing per-field
+  `contract-parity` check covered field-name drift but not whole-shape
+  drift at the decoder call site. The existing ghost-route check saw a
+  client reference to the endpoint and treated the contract as satisfied.
+- **Minimum prevention**: extend `contract-parity` with a Response-Shape
+  Decoder audit — enumerate every parametric-decoder call-site on the
+  client, capture the endpoint identifier + declared target type,
+  locate the server handler, compare the JSON top-level key sets.
+  Mismatch → P1 finding.
+- **Capability added**: `knowledge/capabilities/quality-checks.md`
+  §Contract-Parity §Response-shape decoder audit
+- **Status**: `closed` — rule documented + finding schema
+  (`response_shape_decoder_mismatch`) added
+- **First reported in**: 2026-04-15 session (second incident in the same
+  week across different concrete symptoms, same underlying class)
 
 ## 2026-04-14 — Server route with zero client callers (cross-module ghost)
 
@@ -140,4 +174,4 @@ the project-local `.allforai/bootstrap/learned/blind-spots.md`.
 - **Capability added**: `knowledge/capabilities/quality-checks.md` §Cross-
   Module Ghost Routes
 - **Status**: `closed`
-- **First reported in**: FlyDict project, 2026-04-14 session
+- **First reported in**: 2026-04-14 retrospective
