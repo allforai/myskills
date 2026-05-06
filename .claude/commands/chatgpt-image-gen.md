@@ -80,7 +80,7 @@ For each category, for each prompt in that category, follow these sub-steps:
 ```javascript
 () => {
   const imgs = [...document.querySelectorAll('img')].filter(
-    img => img.src.startsWith('https://files.oaiusercontent.com')
+    img => img.alt && img.alt.startsWith('Generated image:') && img.closest('main')
   );
   const stillGenerating = !!document.querySelector('[aria-label="Stop generating"]');
   return { done: imgs.length > 0 && !stillGenerating };
@@ -100,10 +100,12 @@ Wait 5 seconds, then repeat. If `done` is `true`, proceed. If 120 seconds elapse
 
 ```javascript
 () => {
+  // Generated images have alt starting with "Generated image:" and are inside <main>
+  // This avoids capturing GPT sidebar icons which also use backend-api/estuary URLs
   const imgs = [...document.querySelectorAll('img')].filter(
-    img => img.src.startsWith('https://files.oaiusercontent.com')
+    img => img.alt && img.alt.startsWith('Generated image:') && img.closest('main')
   );
-  return { urls: imgs.map(i => i.src) };
+  return { urls: [...new Set(imgs.map(i => i.src))] };
 }
 ```
 
@@ -127,15 +129,22 @@ If the returned `urls` array is empty:
 
 3. For each URL in the extracted list:
 
+First, extract the session cookies from the browser via `browser_evaluate`:
+```javascript
+() => document.cookie
+```
+
+Then download with curl, passing the extracted cookies:
 ```bash
 curl -L "<url>" \
   -H "Referer: https://chatgpt.com/" \
+  -H "Cookie: <cookie_string>" \
   --retry 1 \
   --retry-delay 5 \
   -o "<outputDir>/<category>/<slug>_<N>.png"
 ```
 
-Note: `files.oaiusercontent.com` URLs are signed and self-authenticating — no session cookie is required.
+Note: ChatGPT image URLs are served from `chatgpt.com/backend-api/estuary/content` and require session cookies to download. The `document.cookie` call returns the non-HttpOnly cookies which are sufficient for this endpoint.
 
 `<N>` is the sequence number for the first URL, incrementing for each additional URL.
 
