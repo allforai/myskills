@@ -54,8 +54,7 @@ For each category, for each prompt in that category, follow these sub-steps:
 
 1. Call `browser_navigate` with `url: "https://chatgpt.com"`.
 2. Call `browser_snapshot`. Check whether the snapshot contains "Log in" or "Sign up" text anywhere.
-   - If login UI is visible: stop immediately and print:
-     `ERROR: ChatGPT is not logged in. Configure the Playwright MCP server with a saved storage state (cookies) from a logged-in ChatGPT session, then re-run this command.`
+   - If login UI is visible: print `⏳ ChatGPT login required. Please log in in the Playwright browser window, then press Enter here to continue.` and pause (call `AskUserQuestion` with the question "Press Enter once you have logged in to ChatGPT in the browser window."). After the user responds, call `browser_snapshot` again to confirm login succeeded (no "Log in" / "Sign up" text). If still not logged in, stop with an error.
 3. Call `browser_snapshot`. Find the element whose accessible name is "New chat". Use its `ref` value as `target` and call `browser_click` with `element: "New chat button"`.
 
 ### 3c. Verify model supports image generation
