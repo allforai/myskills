@@ -44,81 +44,100 @@ Print: `Initialized output directories under <outputDir>/`
 
 For each category, for each prompt in that category, follow these sub-steps:
 
-### 3a. Open a fresh ChatGPT conversation
+### 3a. Bootstrap the browser
+
+Before navigating, ensure a browser page is available:
+1. Call `list_pages` to see open pages.
+2. If the result is empty, call `new_page` to open a new tab.
+3. If pages exist, call `select_page` to select the first one.
+
+### 3b. Open a fresh ChatGPT conversation
 
 1. Call `navigate_page` with URL `https://chatgpt.com`
-2. Call `take_snapshot`. Find the element with accessible name "New chat" and call `click` on it.
-3. Call `take_snapshot`. Read the model selector label displayed at the top center of the page.
-   - If the label is not "GPT-4o": call `click` on the model selector, then `take_snapshot`, then `click` on "GPT-4o" in the dropdown.
+2. Call `take_snapshot`. Check if the page contains a login button or "Log in" / "Sign up" text.
+   - If login UI is visible: stop immediately and print:
+     `ERROR: ChatGPT is not logged in. Please sign in at https://chatgpt.com in the Chrome window controlled by chrome-devtools-mcp, then re-run this command.`
+3. Call `take_snapshot`. In the snapshot output, find the element whose accessible name is "New chat". Copy its `uid` value and pass it to `click`.
+
+### 3c. Verify model is GPT-4o
+
+1. Call `take_snapshot`. Read the model selector label displayed at the top center of the page.
+   - If the label is not "GPT-4o": in the snapshot output, find the model selector element, copy its `uid`, and call `click` with that `uid`. Then call `take_snapshot`, find the "GPT-4o" option in the dropdown, copy its `uid`, and call `click` with that `uid`.
    - GPT-4o supports image generation natively. Do not look for a separate "DALL-E" option.
 
-### 3b. Submit the prompt
+### 3d. Submit the prompt
 
-4. Call `take_snapshot`. Find the prompt input element (role: textbox) and call `fill` with the current prompt text.
-5. Call `press_key` with key `Enter`.
+1. Call `take_snapshot`. In the snapshot output, find the element with role `textbox` (the prompt input). Copy its `uid` and call `fill` with that `uid` and the current prompt text.
+2. Call `press_key` with key `Enter`.
 
-### 3c. Wait for generation to complete
+### 3e. Wait for generation to complete
 
-6. Poll every 5 seconds using `wait_for` for the following condition to be true:
-   - An `<img>` element whose `src` attribute starts with `https://files.oaiusercontent.com` is present in the page, AND
-   - The "Stop generating" button (or spinner) is no longer visible.
-   - Maximum wait: 120 seconds.
-
-   **If generation times out (120s elapsed):**
-   Record this prompt as `TIMEOUT`. Print: `⚠ TIMEOUT: [category] "<prompt>"`. Move to the next prompt.
-
-   **If the page displays a rate-limit message** (page text contains "rate limit", "too many requests", or "limit reached"):
-   Wait 60 seconds. Retry the `wait_for` loop once. If still rate-limited, record as `RATE_LIMITED`, skip all remaining prompts in the current category, and continue with the next category.
-
-### 3d. Extract image URLs and session cookies
-
-7. Call `evaluate_script` with the following JavaScript:
+1. Use `evaluate_script` with this JavaScript to check if generation is complete:
 
 ```javascript
-(() => {
+() => {
   const imgs = [...document.querySelectorAll('img')].filter(
     img => img.src.startsWith('https://files.oaiusercontent.com')
   );
-  return {
-    urls: imgs.map(i => i.src),
-    cookies: document.cookie
-  };
-})()
+  const stillGenerating = !!document.querySelector('[aria-label="Stop generating"]');
+  return { done: imgs.length > 0 && !stillGenerating };
+}
+```
+
+Repeat this every 5 seconds (wait 5 seconds between calls). If `done` is `true`, proceed. If 120 seconds elapse and `done` is still `false`, treat as TIMEOUT.
+
+   **If TIMEOUT:** Record as `TIMEOUT`. Print: `⚠ TIMEOUT: [category] "<prompt>"`. Move to the next prompt.
+
+   **If the page displays a rate-limit message** (check with `evaluate_script` for `() => document.body.innerText.toLowerCase()` containing "plan limit", "image generation limit", "too many requests", or "limit reached"):
+   Wait 60 seconds. Retry the polling loop once. If still rate-limited, record as `RATE_LIMITED`, skip all remaining prompts in the current category, and continue with the next category.
+
+### 3f. Extract image URLs
+
+1. Call `evaluate_script` with the following JavaScript:
+
+```javascript
+() => {
+  const imgs = [...document.querySelectorAll('img')].filter(
+    img => img.src.startsWith('https://files.oaiusercontent.com')
+  );
+  return { urls: imgs.map(i => i.src) };
+}
 ```
 
 If the returned `urls` array is empty:
 - Call `take_screenshot` and save it to `<outputDir>/<category>/debug_<slug>.png` for diagnosis.
 - Record as `NO_IMAGE_FOUND`. Print: `⚠ NO_IMAGE_FOUND: [category] "<prompt>"`. Move to the next prompt.
 
-### 3e. Download images
+### 3g. Download images
 
-8. Compute the filename slug:
+1. Compute the filename slug:
    - Take the prompt text, lowercase it, keep only the first 40 characters
    - Replace spaces with `_`
    - Strip all characters that are not alphanumeric or `_`
    - Example: `"A Sunset Over Mountains!"` → `a_sunset_over_mountains`
 
-9. Determine the sequence number:
+2. Determine the sequence number:
    ```bash
    ls "<outputDir>/<category>/<slug>"_*.png 2>/dev/null | wc -l
    ```
    Add 1 to the count and zero-pad to 2 digits (e.g., `01`, `02`). This ensures existing files are never overwritten.
 
-10. For each URL in the extracted list (index `i`, starting at 1):
+3. For each URL in the extracted list (index `i`, starting at 1):
 
 ```bash
 curl -L "<url>" \
-  --cookie "<cookies>" \
   -H "Referer: https://chatgpt.com/" \
   --retry 1 \
   --retry-delay 5 \
   -o "<outputDir>/<category>/<slug>_<N>.png"
 ```
 
+Note: `files.oaiusercontent.com` URLs are signed and self-authenticating — no session cookie is required.
+
 Where `<N>` is the sequence number for the first URL, incrementing for subsequent URLs.
 
 **If curl exits with non-zero and the HTTP status was 403:**
-Re-run the `evaluate_script` from Step 3d to refresh the URL (they expire within minutes), then retry curl once. If still failing, record as `URL_EXPIRED`.
+Re-run the `evaluate_script` from Step 3f to refresh the URL (they expire within minutes), then retry curl once. If still failing, record as `URL_EXPIRED`.
 
 **If curl exits with non-zero for any other reason after retries:**
 Record as `DOWNLOAD_FAILED`.
