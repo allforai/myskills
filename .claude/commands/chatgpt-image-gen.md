@@ -28,3 +28,14 @@ Example of a valid input file:
   }
 }
 ```
+
+## Step 2: Initialize Output Directories
+
+Before processing any prompts, create all required output directories:
+
+For each category key in `categories`, run:
+```bash
+mkdir -p "<outputDir>/<category>"
+```
+
+Print: `Initialized output directories under <outputDir>/`
