@@ -44,35 +44,39 @@ Print: `Initialized output directories under <outputDir>/`
 
 For each category, for each prompt in that category, follow these sub-steps:
 
-### 3a. Bootstrap the browser
+### 3a. Bootstrap the browser tab
 
-Before navigating, ensure a browser page is available:
-1. Call `list_pages` to see open pages.
-2. If the result is empty, call `new_page` to open a new tab.
-3. If pages exist, call `select_page` to select the first one.
+1. Call `browser_tabs` with `action: "list"` to see open tabs.
+2. If no tabs exist, call `browser_tabs` with `action: "new"` and `url: "https://chatgpt.com"`, then skip to Step 3b item 2.
+3. If tabs exist, call `browser_tabs` with `action: "select"` and `index: 0` to select the first tab.
 
 ### 3b. Open a fresh ChatGPT conversation
 
-1. Call `navigate_page` with URL `https://chatgpt.com`
-2. Call `take_snapshot`. Check if the page contains a login button or "Log in" / "Sign up" text.
+1. Call `browser_navigate` with `url: "https://chatgpt.com"`.
+2. Call `browser_snapshot`. Check whether the snapshot contains "Log in" or "Sign up" text anywhere.
    - If login UI is visible: stop immediately and print:
-     `ERROR: ChatGPT is not logged in. Please sign in at https://chatgpt.com in the Chrome window controlled by chrome-devtools-mcp, then re-run this command.`
-3. Call `take_snapshot`. In the snapshot output, find the element whose accessible name is "New chat". Copy its `uid` value and pass it to `click`.
+     `ERROR: ChatGPT is not logged in. Configure the Playwright MCP server with a saved storage state (cookies) from a logged-in ChatGPT session, then re-run this command.`
+3. Call `browser_snapshot`. Find the element whose accessible name is "New chat". Use its `ref` value as `target` and call `browser_click` with `element: "New chat button"`.
 
-### 3c. Verify model is GPT-4o
+### 3c. Verify model supports image generation
 
-1. Call `take_snapshot`. Read the model selector label displayed at the top center of the page.
-   - If the label is not "GPT-4o": in the snapshot output, find the model selector element, copy its `uid`, and call `click` with that `uid`. Then call `take_snapshot`, find the "GPT-4o" option in the dropdown, copy its `uid`, and call `click` with that `uid`.
+1. Call `browser_snapshot`. Read the model selector label at the top of the page.
+   - If the label is not "GPT-4o" or "GPT-4": find the model selector element in the snapshot, use its `ref` as `target`, and call `browser_click` with `element: "model selector"`.
+   - Then call `browser_snapshot`, find the "GPT-4o" option in the dropdown, use its `ref` as `target`, and call `browser_click` with `element: "GPT-4o option"`.
    - GPT-4o supports image generation natively. Do not look for a separate "DALL-E" option.
 
 ### 3d. Submit the prompt
 
-1. Call `take_snapshot`. In the snapshot output, find the element with role `textbox` (the prompt input). Copy its `uid` and call `fill` with that `uid` and the current prompt text.
-2. Call `press_key` with key `Enter`.
+1. Call `browser_snapshot`. Find the element with role `textbox` (the chat input). Use its `ref` as `target`.
+2. Call `browser_type` with:
+   - `target`: the textbox ref from the snapshot
+   - `element: "chat input"`
+   - `text`: the current prompt text
+   - `submit: true` (this types the text and presses Enter)
 
 ### 3e. Wait for generation to complete
 
-1. Use `evaluate_script` with this JavaScript to check if generation is complete:
+1. Call `browser_evaluate` with this function to check if generation is complete:
 
 ```javascript
 () => {
@@ -84,16 +88,16 @@ Before navigating, ensure a browser page is available:
 }
 ```
 
-Repeat this every 5 seconds (wait 5 seconds between calls). If `done` is `true`, proceed. If 120 seconds elapse and `done` is still `false`, treat as TIMEOUT.
+Wait 5 seconds, then repeat. If `done` is `true`, proceed. If 120 seconds elapse and `done` is still `false`, treat as TIMEOUT.
 
    **If TIMEOUT:** Record as `TIMEOUT`. Print: `⚠ TIMEOUT: [category] "<prompt>"`. Move to the next prompt.
 
-   **If the page displays a rate-limit message** (check with `evaluate_script` for `() => document.body.innerText.toLowerCase()` containing "plan limit", "image generation limit", "too many requests", or "limit reached"):
+   **If the page displays a rate-limit message** (call `browser_evaluate` with `() => document.body.innerText.toLowerCase()` and check if the result contains "plan limit", "image generation limit", "too many requests", or "limit reached"):
    Wait 60 seconds. Retry the polling loop once. If still rate-limited, record as `RATE_LIMITED`, skip all remaining prompts in the current category, and continue with the next category.
 
 ### 3f. Extract image URLs
 
-1. Call `evaluate_script` with the following JavaScript:
+1. Call `browser_evaluate` with the following function:
 
 ```javascript
 () => {
@@ -105,7 +109,7 @@ Repeat this every 5 seconds (wait 5 seconds between calls). If `done` is `true`,
 ```
 
 If the returned `urls` array is empty:
-- Call `take_screenshot` and save it to `<outputDir>/<category>/debug_<slug>.png` for diagnosis.
+- Compute the slug (see Step 3g item 1) then call `browser_take_screenshot` with `filename: "<outputDir>/<category>/debug_<slug>.png"` and `type: "png"`.
 - Record as `NO_IMAGE_FOUND`. Print: `⚠ NO_IMAGE_FOUND: [category] "<prompt>"`. Move to the next prompt.
 
 ### 3g. Download images
@@ -122,7 +126,7 @@ If the returned `urls` array is empty:
    ```
    Add 1 to the count and zero-pad to 2 digits (e.g., `01`, `02`). This ensures existing files are never overwritten.
 
-3. For each URL in the extracted list (index `i`, starting at 1):
+3. For each URL in the extracted list:
 
 ```bash
 curl -L "<url>" \
@@ -134,10 +138,10 @@ curl -L "<url>" \
 
 Note: `files.oaiusercontent.com` URLs are signed and self-authenticating — no session cookie is required.
 
-Where `<N>` is the sequence number for the first URL, incrementing for subsequent URLs.
+`<N>` is the sequence number for the first URL, incrementing for each additional URL.
 
 **If curl exits with non-zero and the HTTP status was 403:**
-Re-run the `evaluate_script` from Step 3f to refresh the URL (they expire within minutes), then retry curl once. If still failing, record as `URL_EXPIRED`.
+Re-run the `browser_evaluate` from Step 3f to refresh the URL (they expire within minutes), then retry curl once. If still failing, record as `URL_EXPIRED`.
 
 **If curl exits with non-zero for any other reason after retries:**
 Record as `DOWNLOAD_FAILED`.
@@ -163,6 +167,6 @@ Error codes and their meanings:
 - `RATE_LIMITED` — ChatGPT returned a rate limit response; remaining prompts in that category were also skipped
 - `NO_IMAGE_FOUND` — Generation completed but no `files.oaiusercontent.com` image was found in the DOM
 - `DOWNLOAD_FAILED` — `curl` failed after retries (non-403 error)
-- `URL_EXPIRED` — Image URL returned 403 even after refreshing via `evaluate_script`
+- `URL_EXPIRED` — Image URL returned 403 even after refreshing via `browser_evaluate`
 
 If all prompts succeeded, print: `All prompts completed successfully.` instead of the skipped section.
