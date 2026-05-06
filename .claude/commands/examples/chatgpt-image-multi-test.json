@@ -1,0 +1,12 @@
+{
+  "outputDir": "./chatgpt-images-multi-test",
+  "categories": {
+    "landscapes": [
+      "a misty mountain at sunrise",
+      "an ocean cliff at sunset"
+    ],
+    "portraits": [
+      "a samurai warrior in armor, dramatic lighting"
+    ]
+  }
+}
