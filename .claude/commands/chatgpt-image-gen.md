@@ -124,3 +124,26 @@ Re-run the `evaluate_script` from Step 3d to refresh the URL (they expire within
 Record as `DOWNLOAD_FAILED`.
 
 **On success:** Print: `✓ <category>/<slug>_<N>.png`
+
+## Step 4: Print Final Summary
+
+After all categories have been processed, print a summary in this format:
+
+```
+=== chatgpt-image-gen Summary ===
+Total prompts:  X
+Downloaded:     Y images
+Skipped:        Z prompts
+
+Skipped details:
+- [category] "prompt text" → ERROR_CODE
+```
+
+Error codes and their meanings:
+- `TIMEOUT` — ChatGPT did not finish generating within 120 seconds
+- `RATE_LIMITED` — ChatGPT returned a rate limit response; remaining prompts in that category were also skipped
+- `NO_IMAGE_FOUND` — Generation completed but no `files.oaiusercontent.com` image was found in the DOM
+- `DOWNLOAD_FAILED` — `curl` failed after retries (non-403 error)
+- `URL_EXPIRED` — Image URL returned 403 even after refreshing via `evaluate_script`
+
+If all prompts succeeded, print: `All prompts completed successfully.` instead of the skipped section.
