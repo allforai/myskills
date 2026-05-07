@@ -71,7 +71,7 @@ Read these files if they exist (skip missing ones silently):
 - *.love (LÖVE2D)
 - Cargo.toml with `bevy` in dependencies (Bevy/Rust)
 - pubspec.yaml with `flame` in dependencies (Flame/Flutter game engine)
-- requirements.txt or pyproject.toml with `pygame` dependency (pygame/Python)
+- requirements.txt or pyproject.toml with `pygame` in dependencies (pygame/Python)
 
 **Configuration:**
 - tsconfig.json, jsconfig.json
