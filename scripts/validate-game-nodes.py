@@ -53,8 +53,8 @@ for tmpl_path in sorted(TEMPLATES_DIR.glob("*.json")):
     for field in ("required_nodes", "optional_nodes", "always_include", "node_order"):
         for node_id in tmpl.get(field, []):
             if node_id not in canonical_ids:
-                # Check if it has a bootstrap_note (ad-hoc nodes are expected)
-                if "bootstrap_note" not in tmpl:
+                # Ad-hoc nodes in optional_nodes are expected when bootstrap_note is present
+                if not ("bootstrap_note" in tmpl and field == "optional_nodes"):
                     errors.append(
                         f"[{scenario_id}] {field}: '{node_id}' not in canonical registry "
                         f"and no bootstrap_note present"

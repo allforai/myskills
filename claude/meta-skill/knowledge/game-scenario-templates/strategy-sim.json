@@ -16,7 +16,8 @@
   "always_include": [
     "art-direction",
     "art-spec-design",
-    "ai-art-generation"
+    "ai-art-generation",
+    "game-design-finalize"
   ],
   "node_order": [
     "core-loop-design",
@@ -25,7 +26,8 @@
     "tech-tree-design",
     "art-direction",
     "art-spec-design",
-    "ai-art-generation"
+    "ai-art-generation",
+    "game-design-finalize"
   ],
   "bootstrap_note": "map-generation-spec not in canonical node registry — bootstrap generates ad-hoc node-spec when selected"
 }

@@ -18,7 +18,8 @@
   "always_include": [
     "art-direction",
     "art-spec-design",
-    "ai-art-generation"
+    "ai-art-generation",
+    "game-design-finalize"
   ],
   "node_order": [
     "core-loop-design",
@@ -27,7 +28,8 @@
     "competitive-balance-design",
     "art-direction",
     "art-spec-design",
-    "ai-art-generation"
+    "ai-art-generation",
+    "game-design-finalize"
   ],
   "bootstrap_note": "social-system-design, anti-cheat-design, live-ops-design not in canonical node registry — bootstrap uses Step 2.7 research to generate ad-hoc node-specs for these when selected"
 }

@@ -56,6 +56,8 @@ product-concept
   ├─ art-spec-design
   └─ ai-art-generation  (automatic node, no human gate)
   ↓
+game-design-finalize  (aggregates all system JSONs → game-design-doc.json; human gate: lead-designer)
+  ↓
 product-analysis  (reads game-design-doc.json as concept baseline)
   ↓
 generate-artifacts
@@ -191,6 +193,7 @@ No improvised names.
 | `character-arc-design` | `narrative-designer` | `game-design/character-arc.html` | `game-design/systems/character-arc.json` | narrative-design |
 | `art-direction` | `art-director` | `game-design/art-direction.html` | `game-design/art-style-guide.json` | art-direction |
 | `art-spec-design` | `concept-artist` | `game-design/art-spec.html` | `game-design/art-asset-inventory.json` | art-direction |
+| `game-design-finalize` | `lead-designer` | `game-design/game-design-dashboard.html` | `game-design/game-design-doc.json` | — |
 | `ai-art-generation` | _(automatic — no discipline_owner)_ | _(updates art-direction.html)_ | updates `art-asset-inventory.json` | — |
 
 ## HTML Presentation Specs
@@ -237,7 +240,7 @@ All HTML outputs are **static** (v1). Bootstrap embeds data at generation time.
 - **Layout:** Filterable card grid — filter by discipline / type / state
 - **Each card:** ID + name + dimensions + description + palette constraint chips + milestone gate + AI-gen preview if available + approval status
 
-### `narrative-structure.html`
+### `narrative.html`
 - **Audience:** narrative-designer
 - **Above fold:** Interactive SVG story tree (nodes expandable on click, colour = act)
 - **Expanded:** Emotional arc line chart (X: story progress %, Y: intensity; annotate peaks / valleys / reversals)
@@ -328,7 +331,8 @@ in HTML. Set `ai_generatable = true` for future re-run. Never block pipeline.
 
 ### Full Pipeline (new game from scratch)
 All nodes for detected scenario. `art-direction` + `art-spec-design` + `ai-art-generation`
-always appended. Every node requires human approval gate.
++ `game-design-finalize` always appended. Every node requires human approval gate
+(except `ai-art-generation` which is automatic).
 
 ### Partial Pipeline (existing game, adding feature)
 Skip `core-loop-design` and `art-direction` if both have `approved` records.
