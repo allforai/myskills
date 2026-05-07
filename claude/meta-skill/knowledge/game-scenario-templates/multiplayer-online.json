@@ -13,6 +13,7 @@
   "optional_nodes": [
     "social-system-design",
     "anti-cheat-design",
+    "audio-design",
     "live-ops-design"
   ],
   "always_include": [
@@ -26,10 +27,12 @@
     "network-architecture-design",
     "matchmaking-design",
     "competitive-balance-design",
+    "anti-cheat-design",
+    "audio-design",
     "art-direction",
     "art-spec-design",
     "ai-art-generation",
     "game-design-finalize"
   ],
-  "bootstrap_note": "social-system-design, anti-cheat-design, live-ops-design not in canonical node registry — bootstrap uses Step 2.7 research to generate ad-hoc node-specs for these when selected"
+  "bootstrap_note": "social-system-design, live-ops-design not in canonical node registry — bootstrap uses Step 2.7 research to generate ad-hoc node-specs for these when selected"
 }

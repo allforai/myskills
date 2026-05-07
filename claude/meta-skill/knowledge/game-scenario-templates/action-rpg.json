@@ -14,7 +14,9 @@
   "optional_nodes": [
     "narrative-design",
     "level-design",
-    "worldbuilding"
+    "worldbuilding",
+    "monetization-design",
+    "audio-design"
   ],
   "always_include": [
     "art-direction",
@@ -28,9 +30,11 @@
     "skill-tree-design",
     "progression-curve-design",
     "economy-design",
+    "monetization-design",
     "narrative-design",
     "level-design",
     "worldbuilding",
+    "audio-design",
     "art-direction",
     "art-spec-design",
     "ai-art-generation",

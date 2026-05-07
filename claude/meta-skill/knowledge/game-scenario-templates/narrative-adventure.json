@@ -8,10 +8,12 @@
     "core-loop-design",
     "narrative-design",
     "branching-structure-design",
-    "character-arc-design"
+    "character-arc-design",
+    "dialogue-system-spec"
   ],
   "optional_nodes": [
-    "dialogue-system-spec"
+    "worldbuilding",
+    "audio-design"
   ],
   "always_include": [
     "art-direction",
@@ -24,10 +26,12 @@
     "narrative-design",
     "branching-structure-design",
     "character-arc-design",
+    "worldbuilding",
+    "dialogue-system-spec",
+    "audio-design",
     "art-direction",
     "art-spec-design",
     "ai-art-generation",
     "game-design-finalize"
-  ],
-  "bootstrap_note": "dialogue-system-spec not in canonical node registry — bootstrap generates ad-hoc node-spec when selected"
+  ]
 }

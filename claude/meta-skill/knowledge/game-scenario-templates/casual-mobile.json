@@ -11,7 +11,8 @@
   ],
   "optional_nodes": [
     "retention-hook-design",
-    "meta-game-design"
+    "meta-game-design",
+    "audio-design"
   ],
   "always_include": [
     "art-direction",
@@ -25,6 +26,7 @@
     "monetization-design",
     "retention-hook-design",
     "meta-game-design",
+    "audio-design",
     "art-direction",
     "art-spec-design",
     "ai-art-generation",

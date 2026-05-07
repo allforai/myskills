@@ -11,6 +11,7 @@
     "procedural-gen-spec"
   ],
   "optional_nodes": [
+    "audio-design",
     "build-variety-design"
   ],
   "always_include": [
@@ -24,6 +25,7 @@
     "run-structure-design",
     "meta-progression-design",
     "procedural-gen-spec",
+    "audio-design",
     "art-direction",
     "art-spec-design",
     "ai-art-generation",

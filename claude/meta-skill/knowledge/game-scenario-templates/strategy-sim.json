@@ -7,10 +7,11 @@
   "required_nodes": [
     "core-loop-design",
     "economy-design",
-    "ai-faction-design",
     "tech-tree-design"
   ],
   "optional_nodes": [
+    "ai-faction-design",
+    "audio-design",
     "map-generation-spec"
   ],
   "always_include": [
@@ -24,6 +25,7 @@
     "economy-design",
     "ai-faction-design",
     "tech-tree-design",
+    "audio-design",
     "art-direction",
     "art-spec-design",
     "ai-art-generation",
