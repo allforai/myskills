@@ -70,6 +70,8 @@ Read these files if they exist (skip missing ones silently):
 - project.godot (Godot)
 - *.love (LÖVE2D)
 - Cargo.toml with `bevy` in dependencies (Bevy/Rust)
+- pubspec.yaml with `flame` in dependencies (Flame/Flutter game engine)
+- requirements.txt or pyproject.toml with `pygame` dependency (pygame/Python)
 
 **Configuration:**
 - tsconfig.json, jsconfig.json
@@ -214,6 +216,20 @@ After confirming the main goal, ask ONE additional question:
 
 Map answer to `game_scenario` field in bootstrap-profile.json.
 If user is unsure, suggest `action-rpg` as default (broadest node set).
+
+After the user selects a scenario, bootstrap reads the selected template's `bootstrap_note`
+(if present). If the note lists ad-hoc optional nodes, present them as a follow-up question:
+
+```
+以下功能模块可选（非必需）：
+   [list nodes from bootstrap_note, one per line with short description]
+   需要加入哪些？（可多选，直接回车跳过）
+```
+
+Canonical optional nodes (those that appear in the template's `node_order`) are selected
+automatically based on project context — bootstrap decides which are relevant without
+asking the user. Ad-hoc optional nodes (those only listed in `bootstrap_note`) MUST be
+explicitly selected by the user, as they require custom node-spec generation.
 
 **Goal mapping (can combine multiple):**
 - (a) → `goals: ["reverse-concept", "analyze"]`. reverse-concept is mandatory for analyze — without it, product-analysis has no independent baseline and becomes circular (checking code against code-derived artifacts). reverse-concept produces concept-baseline.json which all downstream phases auto-load.
