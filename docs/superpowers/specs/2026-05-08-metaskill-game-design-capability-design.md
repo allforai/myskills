@@ -1,7 +1,8 @@
 # Meta-Skill 游戏项目专化设计规格
 
 **日期：** 2026-05-08  
-**范围：** 方案 B — GDD Capability 优先，其余 capability 渐进迭代  
+**范围：** 方案 B — GDD Capability 优先，其余 capability 渐进迭代
+**术语约定：** 游戏品类模板（Game Scenario Template）— 按游戏品类选出的节点集合，英文用 `game-scenario`，中文用"品类模板"，不用"剧情模板"  
 **状态：** 待实现
 
 ---
@@ -48,7 +49,23 @@
 | 节点选择 | 通用流程 | 按游戏类型（剧情）选节点集 |
 | 美术流程 | 设计完即交付 | 替代资产贯穿全程，分阶段替换 |
 
-### 2.3 Pipeline 位置
+### 2.3 与 gaming.md 的继承关系
+
+`knowledge/domains/gaming.md` 已定义游戏领域的完整知识层：15 个设计节点、理论锚点、每节点 artifact 内容定义、按品类的节点选择建议。
+
+`game-design.md`（本 spec 要新建的 capability）是其**执行层**，不重写知识，而是引用并扩展：
+
+| 层 | 文件 | 职责 |
+|----|------|------|
+| 知识层 | `domains/gaming.md` | 节点定义、理论锚点、artifact 内容、品类节点选择 |
+| 执行层 | `capabilities/game-design.md` | HTML 输出规格、human gate 协议、美术替代管线、AI 图片生成、团队职能分配 |
+
+**Artifact 协调规则：**
+- `gaming.md` 定义的各节点 artifact（`player-archetypes.json`、`core-mechanics.json`、`economy-model.json` 等）维持不变，写入 `.allforai/game-design/systems/` 子目录
+- 新增 `game-design-doc.json` 作为**聚合索引**：引用各系统 artifact 路径，加上 `team_roles`、`art_direction`、`art_asset_inventory_ref` 等执行层字段
+- `bootstrap` 读取 `gaming.md` 获取节点内容知识，读取 `game-design.md` 获取执行层规格，生成合并后的 node-spec
+
+### 2.4 Pipeline 位置
 
 ```
 product-concept
@@ -69,22 +86,54 @@ generate-artifacts
 
 ---
 
-## 3. 游戏剧情模板（Game Scenario Templates）
+## 3. 游戏品类模板（Game Scenario Templates）
 
-Bootstrap 按检测结果匹配模板，选出对应节点集：
+Bootstrap 按检测结果匹配品类模板，选出对应节点集。节点 ID 与 `domains/gaming.md` 第六节保持一致。
 
-| 剧情 ID | 适用类型 | 必选节点 | 可选节点 |
+| 品类 ID | 适用类型 | 必选节点 | 可选节点 |
 |--------|---------|---------|---------|
-| `casual-mobile` | 超休闲/中度手游 | core-loop, ftue-design, monetization-design | retention-hook, meta-game |
-| `action-rpg` | 动作/卡牌/RPG | core-loop, combat-system, skill-tree, progression-curve, economy | narrative, level-design, world-building |
-| `multiplayer-online` | MMO/MOBA/FPS | core-loop, network-architecture, matchmaking, competitive-balance | social-system, anti-cheat, live-ops |
-| `roguelike` | 肉鸽/Roguelite | core-loop, run-structure, meta-progression, procedural-gen-spec | build-variety |
-| `strategy-sim` | 策略/模拟经营 | core-loop, game-economy-simulation, ai-faction, tech-tree | map-generation |
-| `narrative-adventure` | 叙事/视觉小说/AVG | core-loop, narrative-tree, branching-structure, character-arc | dialogue-system |
+| `casual-mobile` | 超休闲/中度手游 | `core-loop-design`, `ftue-design`, `monetization-design` | `retention-hook-design`, `meta-game-design` |
+| `action-rpg` | 动作/卡牌/RPG | `core-loop-design`, `combat-system-design`, `skill-tree-design`, `progression-curve-design`, `economy-design` | `narrative-design`, `level-design`, `worldbuilding` |
+| `multiplayer-online` | MMO/MOBA/FPS | `core-loop-design`, `network-architecture-design`, `matchmaking-design`, `competitive-balance-design` | `social-system-design`, `anti-cheat-design`, `live-ops-design` |
+| `roguelike` | 肉鸽/Roguelite | `core-loop-design`, `run-structure-design`, `meta-progression-design`, `procedural-gen-spec` | `build-variety-design` |
+| `strategy-sim` | 策略/模拟经营 | `core-loop-design`, `economy-design`, `ai-faction-design`, `tech-tree-design` | `map-generation-spec` |
+| `narrative-adventure` | 叙事/视觉小说/AVG | `core-loop-design`, `narrative-design`, `branching-structure-design`, `character-arc-design` | `dialogue-system-spec` |
 
-所有剧情模板存放于：`knowledge/game-scenario-templates/<scenario-id>.json`
+所有品类模板存放于：`knowledge/game-scenario-templates/<scenario-id>.json`
 
 Bootstrap 在 Step 1.5 无法自动判断时，向用户呈现选择题（不开放输入）。
+
+### 3.1 规范节点总表（Canonical Node Registry）
+
+> Bootstrap 生成 node-spec 时必须从此表取值，不得自行造名。
+
+| node_id | discipline_owner | html_output | json_output | gaming.md 对应阶段 |
+|---------|-----------------|-------------|-------------|------------------|
+| `core-loop-design` | `lead-designer` | `game-design/core-loop.html` | `game-design/systems/core-mechanics.json` | core-mechanics-design |
+| `ftue-design` | `ux-designer` | `game-design/ftue.html` | `game-design/systems/ftue.json` | level-design（教学关卡） |
+| `monetization-design` | `monetization-designer` | `game-design/monetization.html` | `game-design/systems/monetization-design.json` | monetization-design |
+| `retention-hook-design` | `systems-designer` | `game-design/retention-hook.html` | `game-design/systems/retention-hook.json` | progression-system |
+| `meta-game-design` | `systems-designer` | `game-design/meta-game.html` | `game-design/systems/meta-game.json` | progression-system |
+| `combat-system-design` | `combat-designer` | `game-design/combat-system.html` | `game-design/systems/combat-system.json` | core-mechanics-design |
+| `skill-tree-design` | `combat-designer` | `game-design/skill-tree.html` | `game-design/systems/skill-tree.json` | progression-system |
+| `progression-curve-design` | `numeric-designer` | `game-design/progression-curve.html` | `game-design/systems/progression-curve.json` | progression-system |
+| `economy-design` | `numeric-designer` | `game-design/economy.html` | `game-design/systems/economy-model.json` | economy-design |
+| `narrative-design` | `narrative-designer` | `game-design/narrative.html` | `game-design/systems/narrative-design.json` | narrative-design |
+| `level-design` | `level-designer` | `game-design/level-design.html` | `game-design/systems/level-design.json` | level-design |
+| `worldbuilding` | `narrative-designer` | `game-design/worldbuilding.html` | `game-design/systems/worldbuilding-bible.md` | worldbuilding |
+| `network-architecture-design` | `backend-programmer` | `game-design/network-arch.html` | `game-design/systems/network-architecture.json` | （bootstrap Step 2.7 扩展）|
+| `matchmaking-design` | `backend-programmer` | `game-design/matchmaking.html` | `game-design/systems/matchmaking.json` | （同上）|
+| `competitive-balance-design` | `numeric-designer` | `game-design/competitive-balance.html` | `game-design/systems/balance-report.json` | balance-testing |
+| `run-structure-design` | `lead-designer` | `game-design/run-structure.html` | `game-design/systems/run-structure.json` | core-mechanics-design |
+| `meta-progression-design` | `systems-designer` | `game-design/meta-progression.html` | `game-design/systems/meta-progression.json` | progression-system |
+| `procedural-gen-spec` | `gameplay-programmer` | `game-design/procedural-gen.html` | `game-design/systems/procedural-gen.json` | （引擎专化）|
+| `ai-faction-design` | `ai-programmer` | `game-design/ai-faction.html` | `game-design/systems/ai-faction.json` | core-mechanics-design |
+| `tech-tree-design` | `systems-designer` | `game-design/tech-tree.html` | `game-design/systems/tech-tree.json` | progression-system |
+| `branching-structure-design` | `narrative-designer` | `game-design/branching-structure.html` | `game-design/systems/branching-structure.json` | narrative-design |
+| `character-arc-design` | `narrative-designer` | `game-design/character-arc.html` | `game-design/systems/character-arc.json` | narrative-design |
+| `art-direction` | `art-director` | `game-design/art-direction.html` | `game-design/art-style-guide.json` | art-direction |
+| `art-spec-design` | `concept-artist` | `game-design/art-spec.html` | `game-design/art-asset-inventory.json` | art-direction |
+| `ai-art-generation` | _(自动节点，无 discipline_owner)_ | _(更新 art-direction.html)_ | 更新 `art-asset-inventory.json` | — |
 
 ---
 
@@ -108,6 +157,9 @@ Bootstrap 在 Step 1.5 无法自动判断时，向用户呈现选择题（不开
   "human_gate": true,
   "gate_requires_all_reviewers": false,
   "gate_approval_rule": "discipline_owner must approve; reviewers approval is advisory",
+
+  "approval_record_path": ".allforai/game-design/approval-records.json",
+  "gate_status": "pending | in-review | approved | revision-requested",
 
   "presentation": {
     "primary_audience": "combat-designer",
@@ -319,10 +371,50 @@ Bootstrap 在 Step 1.5 无法自动判断时，向用户呈现选择题（不开
 
 ## 6. HTML 输出规格
 
+### 6.0 v1 HTML 交付模型
+
+**v1 采用静态 HTML，不依赖 JavaScript 写回。**
+
+- HTML 文件由 `/run` 执行节点时生成，是**只读展示文档**
+- 审批状态、修改意见均写入独立文件 `.allforai/game-design/approval-records.json`
+- 人工审核后，由审核人（或 AI 代劳）手动更新 `approval-records.json` 对应条目
+- `/run` 在推进下一节点前读取 `approval-records.json` 判断 gate 是否通过
+- v2 再考虑 HTML 内嵌审批按钮（写回 JSON）
+
+**`approval-records.json` 结构：**
+
+```json
+{
+  "records": [
+    {
+      "node_id": "combat-system-design",
+      "gate_status": "approved",
+      "discipline_owner": "combat-designer",
+      "approved_by": ["combat-designer", "gameplay-programmer"],
+      "revision_notes": "",
+      "approved_at": "2026-05-08T10:30:00Z",
+      "unblocks": ["skill-tree-design", "animation-state-machine-spec"]
+    },
+    {
+      "node_id": "art-direction",
+      "gate_status": "revision-requested",
+      "discipline_owner": "art-director",
+      "approved_by": [],
+      "revision_notes": "色板中主色太暗，需要提高明度 10%，参考《空洞骑士》的蓝色而非深海蓝",
+      "approved_at": null,
+      "unblocks": ["art-spec-design", "ai-art-generation"]
+    }
+  ]
+}
+```
+
+`/run` 的 gate 判断逻辑：`gate_status == "approved"` → 解锁 `unblocks[]` 中的节点；`revision-requested` → 重新执行该节点（读取 `revision_notes` 作为修改指令）。
+
 ### 6.1 `game-design-dashboard.html`（项目总览）
 
 **读者：** 制作人、主策划、各职能负责人  
-**目标：** 5 秒内看清当前状态，知道哪里需要自己介入
+**目标：** 5 秒内看清当前状态，知道哪里需要自己介入  
+**格式：** 静态 HTML，读取时从 `approval-records.json` 和 `art-asset-inventory.json` 嵌入当前数据
 
 **必须包含：**
 - Tab 导航：按职能分组（设计/美术/程序/音频）
@@ -436,13 +528,15 @@ target_suffix = {
 
 ### 7.3 工具优先级
 
+以下工具 ID 在 **meta-skill ai-gateway MCP 已配置**时可用（`shared/mcp-ai-gateway/` 已安装且 `OPENROUTER_API_KEY` / `GOOGLE_API_KEY` 已设置）：
+
 ```
 优先：mcp__plugin_meta-skill_ai-gateway__flux_generate_image   (FLUX Pro)
-次选：mcp__plugin_meta-skill_ai-gateway__generate_image         (Google Imagen)
+次选：mcp__plugin_meta-skill_ai-gateway__generate_image         (Google Imagen 4)
 兜底：mcp__plugin_meta-skill_ai-gateway__openrouter_generate_image
 ```
 
-工具不可用时：维持 placeholder 状态，在 HTML 中显示规格文字 + 占位框。
+**工具不可用时（降级）：** 维持 placeholder 状态，HTML 中显示规格文字 + 尺寸占位框，`ai_generatable` 字段保留供后续补跑。不阻塞 pipeline 继续执行。
 
 ### 7.4 资产状态更新
 
