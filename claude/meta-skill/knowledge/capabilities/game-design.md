@@ -193,6 +193,9 @@ No improvised names.
 | `character-arc-design` | `narrative-designer` | `game-design/character-arc.html` | `game-design/systems/character-arc.json` | narrative-design |
 | `art-direction` | `art-director` | `game-design/art-direction.html` | `game-design/art-style-guide.json` | art-direction |
 | `art-spec-design` | `concept-artist` | `game-design/art-spec.html` | `game-design/art-asset-inventory.json` | art-direction |
+| `anti-cheat-design` | `backend-programmer` | `game-design/anti-cheat.html` | `game-design/systems/anti-cheat-design.json` | — |
+| `dialogue-system-spec` | `gameplay-programmer` | `game-design/dialogue-system.html` | `game-design/systems/dialogue-system.json` | narrative-design |
+| `audio-design` | `audio-director` | `game-design/audio-design.html` | `game-design/systems/audio-design.json` | — |
 | `game-design-finalize` | `lead-designer` | `game-design/game-design-dashboard.html` | `game-design/game-design-doc.json` | — |
 | `ai-art-generation` | _(automatic — no discipline_owner)_ | _(updates art-direction.html)_ | updates `art-asset-inventory.json` | — |
 
@@ -246,6 +249,30 @@ All HTML outputs are **static** (v1). Bootstrap embeds data at generation time.
 - **Expanded:** Emotional arc line chart (X: story progress %, Y: intensity; annotate peaks / valleys / reversals)
 - **Expanded:** Character arc timeline (horizontal, one row per character)
 - **Collapsed:** Dialogue node detail (click to expand per node)
+
+### `anti-cheat.html`
+- **Audience:** backend-programmer (primary), lead-designer (secondary)
+- **Above fold:** Threat model overview — table of cheat types (speed hack / memory edit / packet manipulation / account sharing) × severity (critical/high/medium) × detection difficulty
+- **Expanded:** Detection methods per cheat type with false-positive rate estimate
+- **Expanded:** Third-party middleware comparison (EAC / BattlEye / custom) with cost/coverage matrix
+- **Collapsed:** Technical implementation spec, ban escalation ladder
+
+### `dialogue-system.html`
+- **Audience:** gameplay-programmer (primary), narrative-designer (secondary)
+- **Layout:** Two-column — left: design spec (narrative-designer readable); right: technical schema (programmer readable)
+- **Above fold:** Node type catalogue (dialogue / choice / condition / jump / event-trigger) with visual icons
+- **Expanded:** Variable system — global/local/character-scoped flags, data types, default values
+- **Expanded:** Branching rules — max depth, merge points, dead-end detection
+- **Collapsed:** Script format reference (YAML/JSON/ink/.twee spec), localization key pattern
+
+### `audio-design.html`
+- **Audience:** audio-director
+- **Rule:** Embed audio previews where possible (base64 short clips or waveform SVG placeholders)
+- **Above fold:** Audio identity statement (2-3 sentences: genre, mood, key instruments, forbidden sounds)
+- **Below:** Adaptive music system diagram — layers, triggers, crossfade rules
+- **Below:** SFX catalogue table (event → file → loop? → 3D spatial? → priority) — sortable
+- **Below:** Voice acting spec — languages, tone notes, character voice reference
+- **Collapsed:** Full audio asset list with milestone gates
 
 ## Art Substitution Pipeline
 
@@ -324,7 +351,7 @@ in HTML. Set `ai_generatable = true` for future re-run. Never block pipeline.
 | `product-analysis` | `game-design-doc.json` | Concept baseline; `player_roles` → `role-profiles.json`; `systems[]` → task-inventory in system-spec format |
 | `ui-design` | `art-style-guide.json`, `game-design-doc.json` | Design tokens from art direction; game screens (HUD, menus, inventory, dialogue) |
 | `demo-forge` | `art-asset-inventory.json`, `game-design-doc.json.progression` | Player save data at progression stages using available art state |
-| `quality-checks` | `game-design-doc.json.economy.balance_targets` | Numerical QA; art-agnostic check; milestone gate check |
+| `quality-checks` | `game-design-doc.json.economy.balance_targets`, `audio-design.json.sfx_catalogue[].milestone_gate` | Numerical QA; art-agnostic check; milestone gate check; audio milestone check |
 | `generate-artifacts` | `game-design-doc.json.systems[]` | Code generation targets; must implement Asset Registry |
 
 ## Composition Hints
