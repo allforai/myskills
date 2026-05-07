@@ -68,6 +68,8 @@ Read these files if they exist (skip missing ones silently):
 - ProjectSettings/ProjectVersion.txt, Assets/ (Unity)
 - *.uproject, Source/ (Unreal Engine)
 - project.godot (Godot)
+- *.love (LÖVE2D)
+- Cargo.toml with `bevy` in dependencies (Bevy/Rust)
 
 **Configuration:**
 - tsconfig.json, jsconfig.json
@@ -196,6 +198,23 @@ UI 还原度（仅有前端翻译时）：
    搜索引擎：___（如 Elasticsearch/Meilisearch/无）
 ```
 
+**If business_domain = "gaming" (detected or user-selected):**
+
+After confirming the main goal, ask ONE additional question:
+
+```
+游戏品类（选一）：
+   a) 超休闲/中度手游 (casual-mobile)
+   b) 动作/卡牌/RPG (action-rpg)
+   c) 在线多人 MMO/MOBA/FPS (multiplayer-online)
+   d) 肉鸽/Roguelite (roguelike)
+   e) 策略/模拟经营 (strategy-sim)
+   f) 叙事/视觉小说/AVG (narrative-adventure)
+```
+
+Map answer to `game_scenario` field in bootstrap-profile.json.
+If user is unsure, suggest `action-rpg` as default (broadest node set).
+
 **Goal mapping (can combine multiple):**
 - (a) → `goals: ["reverse-concept", "analyze"]`. reverse-concept is mandatory for analyze — without it, product-analysis has no independent baseline and becomes circular (checking code against code-derived artifacts). reverse-concept produces concept-baseline.json which all downstream phases auto-load.
 - (b) → `goals: ["analyze", "translate", "demo", "concept-acceptance"]`, record target_stacks. demo-forge is auto-included because translate produces code that needs integration testing. concept-acceptance is auto-included when product-concept.json exists.
@@ -294,6 +313,8 @@ Write to `.allforai/bootstrap/bootstrap-profile.json`:
   "detected_patterns": ["<REST API>", "<JWT auth>", "<Redis cache>", "..."],
   "architecture_pattern": "<MVC/Clean/Layered/Feature-sliced/...>",
   "complexity_estimate": "low | medium | high",
+  "is_game_project": false,
+  "game_scenario": "casual-mobile | action-rpg | multiplayer-online | roguelike | strategy-sim | narrative-adventure | null",
   "requires_runtime_env": true
 }
 }
@@ -526,6 +547,19 @@ a set of nodes that will achieve the user's goal. Consider:
 "design-economy-system" and "balance-test-combat". An SDK project might
 have "design-api-surface" and "write-getting-started-guide". A consumer
 app might have "design-onboarding-flow" and "setup-push-notifications".
+
+**Game project node injection (when `is_game_project = true`):**
+
+1. Read `${CLAUDE_PLUGIN_ROOT}/knowledge/game-scenario-templates/${game_scenario}.json`
+2. Read `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/game-design.md` §Canonical Node Registry
+3. Insert game-design nodes into the workflow AFTER `product-concept` node and BEFORE `product-analysis` node
+4. For each node in `required_nodes` + `always_include` (and selected `optional_nodes`):
+   - Look up `node_id` in game-design.md Canonical Node Registry
+   - Generate node-spec with: `capability: game-design`, `discipline_owner`, `html_output`, `json_output`, `human_gate: true`, `approval_record_path: ".allforai/game-design/approval-records.json"`, `gate_status: "pending"`, `presentation` spec from game-design.md §HTML Presentation Specs
+   - `blocked_by`: previous node in `node_order`
+   - `unlocks`: next node in `node_order`
+5. Initialise `.allforai/game-design/approval-records.json` with one `pending` record per game-design node
+6. Ad-hoc nodes (listed in `bootstrap_note` of the scenario template): generate node-spec with `capability: game-design`, but use Step 2.7 research for content — they are not in the canonical registry
 
 **Node granularity is project-dependent.** A simple CLI tool might need
 3 nodes. A microservice platform might need 20. LLM decides.
