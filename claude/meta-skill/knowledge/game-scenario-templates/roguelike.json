@@ -1,0 +1,31 @@
+{
+  "scenario_id": "roguelike",
+  "display_name_zh": "肉鸽/Roguelite",
+  "display_name_en": "Roguelike / Roguelite",
+  "description": "Run-based games with procedural generation and meta-progression",
+  "gaming_md_emphasis": ["core-mechanics-design", "progression-system", "economy-design", "balance-testing"],
+  "required_nodes": [
+    "core-loop-design",
+    "run-structure-design",
+    "meta-progression-design",
+    "procedural-gen-spec"
+  ],
+  "optional_nodes": [
+    "build-variety-design"
+  ],
+  "always_include": [
+    "art-direction",
+    "art-spec-design",
+    "ai-art-generation"
+  ],
+  "node_order": [
+    "core-loop-design",
+    "run-structure-design",
+    "meta-progression-design",
+    "procedural-gen-spec",
+    "art-direction",
+    "art-spec-design",
+    "ai-art-generation"
+  ],
+  "bootstrap_note": "build-variety-design not in canonical node registry — bootstrap generates ad-hoc node-spec when selected"
+}

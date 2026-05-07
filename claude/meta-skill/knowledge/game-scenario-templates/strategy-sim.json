@@ -1,0 +1,31 @@
+{
+  "scenario_id": "strategy-sim",
+  "display_name_zh": "策略/模拟经营",
+  "display_name_en": "Strategy / Simulation",
+  "description": "Strategy games, city builders, tycoon, 4X, tower defense",
+  "gaming_md_emphasis": ["economy-design", "core-mechanics-design", "progression-system", "balance-testing"],
+  "required_nodes": [
+    "core-loop-design",
+    "economy-design",
+    "ai-faction-design",
+    "tech-tree-design"
+  ],
+  "optional_nodes": [
+    "map-generation-spec"
+  ],
+  "always_include": [
+    "art-direction",
+    "art-spec-design",
+    "ai-art-generation"
+  ],
+  "node_order": [
+    "core-loop-design",
+    "economy-design",
+    "ai-faction-design",
+    "tech-tree-design",
+    "art-direction",
+    "art-spec-design",
+    "ai-art-generation"
+  ],
+  "bootstrap_note": "map-generation-spec not in canonical node registry — bootstrap generates ad-hoc node-spec when selected"
+}

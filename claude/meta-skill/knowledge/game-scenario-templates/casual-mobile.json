@@ -1,0 +1,31 @@
+{
+  "scenario_id": "casual-mobile",
+  "display_name_zh": "超休闲/中度手游",
+  "display_name_en": "Casual / Mid-core Mobile",
+  "description": "Mobile-first games: hyper-casual, mid-core, card, idle, merge",
+  "gaming_md_emphasis": ["core-mechanics-design", "monetization-design", "progression-system", "level-design"],
+  "required_nodes": [
+    "core-loop-design",
+    "ftue-design",
+    "monetization-design"
+  ],
+  "optional_nodes": [
+    "retention-hook-design",
+    "meta-game-design"
+  ],
+  "always_include": [
+    "art-direction",
+    "art-spec-design",
+    "ai-art-generation"
+  ],
+  "node_order": [
+    "core-loop-design",
+    "ftue-design",
+    "monetization-design",
+    "retention-hook-design",
+    "meta-game-design",
+    "art-direction",
+    "art-spec-design",
+    "ai-art-generation"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "scenario_id": "narrative-adventure",
+  "display_name_zh": "叙事/视觉小说/AVG",
+  "display_name_en": "Narrative / Visual Novel / Adventure",
+  "description": "Story-driven games: visual novels, point-and-click adventures, interactive fiction",
+  "gaming_md_emphasis": ["narrative-design", "worldbuilding", "art-direction"],
+  "required_nodes": [
+    "core-loop-design",
+    "narrative-design",
+    "branching-structure-design",
+    "character-arc-design"
+  ],
+  "optional_nodes": [
+    "dialogue-system-spec"
+  ],
+  "always_include": [
+    "art-direction",
+    "art-spec-design",
+    "ai-art-generation"
+  ],
+  "node_order": [
+    "core-loop-design",
+    "narrative-design",
+    "branching-structure-design",
+    "character-arc-design",
+    "art-direction",
+    "art-spec-design",
+    "ai-art-generation"
+  ],
+  "bootstrap_note": "dialogue-system-spec not in canonical node registry — bootstrap generates ad-hoc node-spec when selected"
+}

@@ -1,0 +1,37 @@
+{
+  "scenario_id": "action-rpg",
+  "display_name_zh": "动作/卡牌/RPG",
+  "display_name_en": "Action / Card / RPG",
+  "description": "Action games, card games, role-playing games with progression and combat",
+  "gaming_md_emphasis": ["core-mechanics-design", "economy-design", "progression-system", "narrative-design", "level-design", "balance-testing"],
+  "required_nodes": [
+    "core-loop-design",
+    "combat-system-design",
+    "skill-tree-design",
+    "progression-curve-design",
+    "economy-design"
+  ],
+  "optional_nodes": [
+    "narrative-design",
+    "level-design",
+    "worldbuilding"
+  ],
+  "always_include": [
+    "art-direction",
+    "art-spec-design",
+    "ai-art-generation"
+  ],
+  "node_order": [
+    "core-loop-design",
+    "combat-system-design",
+    "skill-tree-design",
+    "progression-curve-design",
+    "economy-design",
+    "narrative-design",
+    "level-design",
+    "worldbuilding",
+    "art-direction",
+    "art-spec-design",
+    "ai-art-generation"
+  ]
+}
