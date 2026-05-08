@@ -88,14 +88,36 @@ Based on competitive research + existing concept, finalize unresolved decisions:
 
 ### Phase 3: Implementation Gap Analysis (缺口分析)
 
-Compare finalized concept against current implementation:
+Compare finalized concept against current implementation. Gap categories vary by architecture_pattern:
 
-1. **List all gaps** between concept and code
-   - Payment integration (IAP/StoreKit/Google Play)
-   - Feature gating enforcement
-   - Pricing display
-   - Trial flow
-   - Missing features promised in paid tier
+**Mobile app (iOS/Android):**
+- Payment integration (IAP/StoreKit/Google Play)
+- Feature gating enforcement
+- Pricing display
+- Trial flow
+- Missing features promised in paid tier
+
+**Web app / SaaS:**
+- Stripe/payment provider integration
+- Subscription management UI
+- Free tier usage limits enforced
+- Billing portal
+
+**GitHub Action / CLI tool / Library/SDK:**
+- Documentation completeness (README, usage examples, API docs)
+- Input validation and error messages
+- Version compatibility matrix
+- Migration guide (if breaking changes)
+- Example workflows / code samples
+
+**Game (Steam/console):**
+- Achievement integration
+- Cloud save implementation
+- Platform overlay support
+- Demo build scoped correctly
+- Content rating asset compliance (screenshots, trailer)
+
+1. **List all gaps** between concept and code (using archetype-appropriate categories above)
 
 2. **Prioritize gaps**
    - P0 Blocker: cannot launch without this (e.g., IAP not working)
@@ -110,7 +132,7 @@ Compare finalized concept against current implementation:
 
 ### Phase 4: Platform Compliance (平台合规)
 
-Check platform-specific requirements:
+Check platform-specific requirements based on target launch platform (read from bootstrap-profile.json `architecture_pattern` and user input):
 
 **iOS App Store:**
 - Privacy policy URL required
@@ -125,6 +147,32 @@ Check platform-specific requirements:
 **Google Play** (if applicable):
 - Similar requirements with Play Billing Library
 - Data Safety section
+
+**Web / Browser (SPA, PWA, WASM):**
+- Privacy policy URL + cookie consent banner (GDPR/ePrivacy)
+- Content Security Policy (CSP) headers configured
+- HTTPS enforced (no mixed content)
+- Accessibility (WCAG 2.1 AA minimum)
+- Core Web Vitals targets (LCP < 2.5s, CLS < 0.1, INP < 200ms)
+- Service worker scope correct (PWA only)
+- Cross-browser compatibility confirmed (Chrome, Firefox, Safari minimum)
+
+**GitHub Marketplace (GitHub Actions):**
+- `action.yml` manifest complete (name, description, author, branding icon/color)
+- All `inputs:` and `outputs:` documented with descriptions
+- Permissions declared (read/write scopes) — principle of least privilege
+- README with usage examples and quickstart
+- Verified publisher badge eligibility (if applicable)
+- License file present (required for marketplace listing)
+- No hardcoded tokens or secrets in workflow examples
+- Test coverage with example workflows in `.github/workflows/`
+
+**Steam (Desktop game):**
+- Steam SDK integrated (achievement API, cloud save, overlay)
+- Steamworks partner portal app page complete
+- Age ratings submitted (IARC or regional equivalents)
+- GDPR compliance for EU accounts
+- Build on all target platforms (Windows/Mac/Linux)
 
 **Output:** `.allforai/launch-prep/compliance-checklist.json`
 

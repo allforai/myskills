@@ -70,6 +70,10 @@ principles only:
 | API-only backend | curl / HTTP client |
 | CLI tool | Shell script execution |
 | Desktop (Electron, Tauri) | Platform-specific E2E |
+| Unity | Unity Test Framework (PlayMode -runTests) |
+| Godot | GUT framework (`godot --headless --script addons/gut/gut_cmdln.gd`) or GdUnit4 |
+| Unreal Engine | Gauntlet Automation Framework |
+| Game (no automated runner) | Manual playthrough checklist: launch → core loop → save/load → exit |
 
 For each role defined in product-concept.json:
 

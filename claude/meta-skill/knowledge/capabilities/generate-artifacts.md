@@ -39,13 +39,18 @@ that downstream nodes (translate, rebuild, demo-forge, ui-design) consume.
 
 ## Specialization Guidance
 
-| Archetype | Artifacts | Format |
-|-----------|-----------|--------|
-| Web/Mobile app | task-inventory, role-profiles, business-flows, experience-map, use-cases | Standard merge |
-| CLI | command-tree, command-flows, use-cases | LLM direct |
-| Data pipeline | dag-spec, transform-catalog | LLM direct |
-| Game | system-spec, config-schema, protocol-spec | LLM direct |
-| Library/SDK | api-surface, usage-patterns | LLM direct |
+| Archetype | Artifacts | Output Location |
+|-----------|-----------|-----------------|
+| Web/Mobile app | task-inventory, role-profiles, business-flows, experience-map, use-cases | Standard `.allforai/product-map/` merge |
+| CLI | command-tree, command-flows, use-cases | `.allforai/generate-artifacts/` LLM direct |
+| Data pipeline | dag-spec, transform-catalog | `.allforai/generate-artifacts/` LLM direct |
+| Game | system-spec.json, config-schema.json (loot tables, level data, balance), protocol-spec.md (if multiplayer) | `.allforai/game-design/` |
+| Library/SDK | api-surface.json, usage-patterns.json | `.allforai/generate-artifacts/` LLM direct |
+| Background service (Celery/BullMQ/Sidekiq) | task-spec.json (task names, arg schemas, retry policies), queue-topology.json | `.allforai/generate-artifacts/` LLM direct |
+| KMM (Kotlin Multiplatform) | entity-model.json (shared once), per-platform view-objects (ios-view-objects.json, android-view-objects.json) | `.allforai/product-map/` for shared; `.allforai/generate-artifacts/` for platform views |
+| GitHub Action | action-spec.json (inputs, outputs, runs config), workflow-examples.md | `.allforai/generate-artifacts/` LLM direct |
+
+**view-objects.json note**: Only generate for projects with UI screens. Background services, CLI tools, and Library/SDK archetypes skip view-objects.json entirely — their Downstream Consumers (translate) do not need per-screen bindings.
 
 ## Downstream Consumers
 

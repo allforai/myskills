@@ -76,6 +76,7 @@ All plugins read/write to a project-local `.allforai/` directory. This is the in
 
 ```
 .allforai/
+├── discovery/               # source-summary.json, file-catalog.json, infrastructure-profile.json, reuse-assessment.json
 ├── product-concept/         # product-concept.json, concept-baseline.json, decision-journal.json
 ├── product-map/             # role-profiles, task-inventory, task-index, business-flows, constraints
 ├── experience-map/          # journey-emotion-map, experience-map, interaction-gate
@@ -88,6 +89,8 @@ All plugins read/write to a project-local `.allforai/` directory. This is the in
 ├── data-architecture/       # data-architecture.json, data-architecture.md
 ├── design-audit/            # audit-report (JSON + Markdown)
 ├── ui-design/               # ui-design-spec.md, tokens.json, interaction-spec.md, preview/*.html
+├── game-design/             # system-spec.json, config-schema.json, protocol-spec.md (game-specific generate-artifacts outputs)
+├── generate-artifacts/      # cli/pipeline/service/sdk archetype artifacts (command-tree, dag-spec, etc.)
 ├── seed-forge/              # seed-plan, forge-data, assets/ (dev seed data)
 ├── demo-forge/              # demo-plan, forge-data, assets/, verify-report, round-history
 ├── product-verify/          # static-report, dynamic-report, verify-report, ui-helper-profile.json

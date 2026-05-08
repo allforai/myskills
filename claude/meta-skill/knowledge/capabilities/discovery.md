@@ -12,17 +12,19 @@ infrastructure, abstractions, cross-cutting concerns, and reuse potential.
 
 ### Required Outputs
 
+All discovery outputs are written to `.allforai/discovery/`:
+
 | Output | What | Why downstream needs it |
 |--------|------|------------------------|
-| `source-summary.json` | Module inventory, tech stacks, architecture pattern | product-analysis needs to know what exists |
-| `file-catalog.json` | Key files per module with business intent | generate-artifacts needs to read source |
-| `infrastructure-profile.json` | DB, cache, auth, storage, background jobs | setup-runtime-env needs to know what to configure |
+| `.allforai/discovery/source-summary.json` | Module inventory, tech stacks, architecture pattern | product-analysis needs to know what exists |
+| `.allforai/discovery/file-catalog.json` | Key files per module with business intent | generate-artifacts needs to read source |
+| `.allforai/discovery/infrastructure-profile.json` | DB, cache, auth, storage, background jobs | setup-runtime-env needs to know what to configure |
 
 For rebuild/translate goals, also:
 
 | Output | What | Why |
 |--------|------|-----|
-| `reuse-assessment.json` | Per-component: reuse / adapt / remove / new | rebuild nodes need to know what to keep |
+| `.allforai/discovery/reuse-assessment.json` | Per-component: reuse / adapt / remove / new | rebuild nodes need to know what to keep |
 
 ### Required Coverage
 
@@ -39,13 +41,13 @@ For rebuild/translate goals, also:
 
 | Artifact | Field Path | Consumer Capability | Required | Reason |
 |----------|------------|---------------------|----------|--------|
-| `source-summary.json` | `tech_stacks` | translate, compile-verify, quality-checks | required | 翻译策略和编译验收都依赖技术栈 |
-| `source-summary.json` | `modules` | product-analysis, generate-artifacts | required | 模块边界是产物分析和代码生成的基础 |
-| `source-summary.json` | `architecture_pattern` | product-analysis | optional | 有助于识别设计模式，缺失时用代码读取兜底 |
-| `source-summary.json` | `detected_patterns` | product-analysis, translate | optional | 辅助推断业务意图和翻译复杂度 |
-| `file-catalog.json` | `modules[].key_files` | translate, generate-artifacts | required | 代码生成需要知道读哪些源文件 |
-| `infrastructure-profile.json` | `databases`, `caches`, `auth` | demo-forge, test-verify | required | demo 数据填充和测试都需要知道基础设施 |
-| `reuse-assessment.json` | `per_component` | translate | optional | 缺失时按全量翻译降级 |
+| `.allforai/discovery/source-summary.json` | `tech_stacks` | translate, compile-verify, quality-checks | required | 翻译策略和编译验收都依赖技术栈 |
+| `.allforai/discovery/source-summary.json` | `modules` | product-analysis, generate-artifacts | required | 模块边界是产物分析和代码生成的基础 |
+| `.allforai/discovery/source-summary.json` | `architecture_pattern` | product-analysis | optional | 有助于识别设计模式，缺失时用代码读取兜底 |
+| `.allforai/discovery/source-summary.json` | `detected_patterns` | product-analysis, translate | optional | 辅助推断业务意图和翻译复杂度 |
+| `.allforai/discovery/file-catalog.json` | `modules[].key_files` | translate, generate-artifacts | required | 代码生成需要知道读哪些源文件 |
+| `.allforai/discovery/infrastructure-profile.json` | `databases`, `caches`, `auth` | demo-forge, test-verify | required | demo 数据填充和测试都需要知道基础设施 |
+| `.allforai/discovery/reuse-assessment.json` | `per_component` | translate | optional | 缺失时按全量翻译降级 |
 
 ## Methodology Guidance (not steps)
 
