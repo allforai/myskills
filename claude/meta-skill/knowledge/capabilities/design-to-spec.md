@@ -30,7 +30,7 @@ implementation nodes consume via Context Pull.
 
 | Output | When |
 |--------|------|
-| `.allforai/tech-spec/protocol-spec.md` | Realtime communication protocol: message types, event formats, connection lifecycle. Only when project uses WebSocket/gRPC streaming/SSE. |
+| `.allforai/tech-spec/protocol-spec.md` | Realtime communication protocol: message types, event formats, connection lifecycle. Generated when project uses WebSocket/gRPC/SSE. **For gRPC services**: MUST document all proto service definitions (service name, RPC methods, request/response message types), streaming patterns (unary / server-stream / client-stream / bidirectional), custom error codes (gRPC status code + application error body), and if gRPC-Gateway is used: the REST endpoint mapping (`google.api.http` annotations per method). |
 
 ### Required Quality
 

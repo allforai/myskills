@@ -174,6 +174,23 @@ Check platform-specific requirements based on target launch platform (read from 
 - No hardcoded tokens or secrets in workflow examples
 - Test coverage with example workflows in `.github/workflows/`
 
+**Electron desktop app (Windows/macOS/Linux):**
+- Windows (Authenticode): acquire code signing certificate (DigiCert/GlobalSign; EV cert for SmartScreen bypass); configure `electron-builder` `win.certificateFile` + `certificatePassword`; without signing, Windows SmartScreen shows "unverified publisher" warning
+- macOS (Developer ID + Notarization): configure `electron-builder` `mac.identity`; notarize the .dmg or .app.zip using `xcrun notarytool`; staple: `xcrun stapler staple <app>.dmg`; Gatekeeper blocks on macOS Catalina+ without notarization
+- Linux: create `.deb` / `.rpm` / `.AppImage` via electron-builder; optionally GPG-sign with `gpg --detach-sign`
+- Auto-updater: integrate `electron-updater`; configure `publish` section in electron-builder config (GitHub Releases / S3); test auto-update on staging before 100% rollout
+- Distribution format: electron-builder creates platform-appropriate installers (.exe NSIS, .msi, .dmg, .pkg, .deb, .rpm, .AppImage, .snap)
+
+**Tauri desktop app (Windows/macOS/Linux):**
+- Windows: code signing via `src-tauri/tauri.conf.json` → `bundle.windows.certificateThumbprint` (Authenticode); configure in CI with env vars
+- macOS: notarization via `bundle.macOS.signingIdentity` + `bundle.macOS.providerShortName`; Tauri wraps `xcrun notarytool` internally when signing is configured
+- Linux: `.AppImage` / `.deb` / `.rpm` via Tauri bundler
+- All platforms: Tauri v2 capability audit before release — review `src-tauri/capabilities/*.json` for overly-broad permissions (path globs, network host wildcards)
+
+**React Native bare workflow (iOS + Android):**
+- iOS: Use Fastlane `match` for certificate management (sync certificates/profiles from encrypted git repo); `fastlane ios build` automates signing + TestFlight upload (`pilot upload`). Document `ios/fastlane/Fastfile`.
+- Android: `fastlane android build` + `fastlane supply` for Play Console upload; signing keystore path/alias in `android/gradle.properties` (via CI env vars, never committed).
+
 **macOS App Store:**
 - Privacy policy URL required
 - App Privacy labels (data collection declaration) in App Store Connect

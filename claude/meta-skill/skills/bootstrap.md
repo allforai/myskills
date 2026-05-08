@@ -140,7 +140,7 @@ Some SDKs have "game" or "engine" in their name but are used for non-game purpos
 - package.json with `gatsby` in dependencies → `framework: Gatsby (React SSG), architecture_pattern: 'web-ssg-gatsby'`. Verification: `gatsby build` + Playwright on built site.
 
 **Desktop app frameworks:**
-- src-tauri/tauri.conf.json OR src-tauri/Cargo.toml (Tauri — Rust-powered desktop app with web frontend; architecture_pattern: 'desktop-app-tauri')
+- src-tauri/tauri.conf.json OR src-tauri/Cargo.toml → Tauri desktop app. Detect version: if `src-tauri/capabilities/` directory exists → Tauri v2 (new fine-grained Capabilities permission system); otherwise Tauri v1 (broad allowlist). Set `architecture_pattern: 'desktop-app-tauri'` and `tauri_major_version: 2` or `1` in bootstrap-profile.json. Build command: check `package.json` for `"tauri"` script → `npm run tauri build`; fallback `cargo tauri build`. Tauri v2 security note: IPC permissions now defined per-capability in `src-tauri/capabilities/*.json` — security-design must review capability scopes. demo-forge suppression: Tauri has a local web frontend; demo-forge runs against the Tauri dev server (`npm run tauri dev`). runtime-smoke-verify uses tauri-driver, not curl.
 - electron.js OR electron-builder.json OR package.json with `electron` as a top-level dependency (Electron — desktop app with Node.js backend; architecture_pattern: 'desktop-app-electron')
 
 **Library / SDK / published package:**
@@ -174,6 +174,7 @@ BaaS projects have NO separate backend module — the backend IS the cloud servi
 - package.json with `@supabase/supabase-js` in dependencies → BaaS: Supabase (PostgreSQL + Auth + Realtime). Runtime-env: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, optionally `SUPABASE_SERVICE_ROLE_KEY`. Verification: Playwright for E2E; Supabase local dev (`supabase start`) for integration. architecture_pattern: 'baas-supabase'
 - amplify.yml at root OR package.json with `aws-amplify` OR `@aws-amplify/backend` → BaaS: AWS Amplify. Runtime-env: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`. architecture_pattern: 'baas-amplify'
 - package.json with `@appwrite/sdk` → BaaS: Appwrite. architecture_pattern: 'baas-appwrite'
+- package.json with `pocketbase` npm package OR `pocketbase-sdk` → BaaS: PocketBase (self-hosted Go binary with embedded SQLite, serves REST API + realtime SSE, provides Auth + File storage + DB in one process). Runtime-env: `POCKETBASE_URL` (e.g., `http://localhost:8090`), `PB_ADMIN_EMAIL`, `PB_ADMIN_PASSWORD`. Local dev: `pocketbase serve`. Note: PocketBase runs as a single Go binary; there is no separate message queue, no separate auth service, no SDK-managed schema — schema is managed via PocketBase Admin UI. Verification: Playwright for E2E on the frontend; PocketBase Admin REST API for integration tests. architecture_pattern: 'baas-pocketbase'
 
 **Serverless / FaaS (Function-as-a-Service):**
 Serverless projects deploy functions; there is NO persistent server process to start. Verification is via local emulator, NOT `curl localhost`.
@@ -478,6 +479,9 @@ node-spec.
    - `telegraf` or `node-telegram-bot-api` (Node.js) OR `python-telegram-bot` in requirements.txt (Python) → prompt for `TELEGRAM_BOT_TOKEN`
    These tokens are the most critical runtime credentials for event-driven bots and are NOT
    covered by database/cache/auth service detection.
+   For **Python async task queue projects** (detected from `requirements.txt` or `pyproject.toml`):
+   - `celery` or `celery-beat` in requirements → prompt for `CELERY_BROKER_URL` (Redis: `redis://localhost:6379/0`; RabbitMQ: `amqp://...`) and `CELERY_RESULT_BACKEND`; record worker startup command (`celery -A <app_module> worker --loglevel=info`); if `celery-beat` present, record beat startup (`celery -A <app_module> beat`); if `flower` present, record dashboard port (default 5555).
+   - `redis` or `redis-py` in requirements → prompt for `REDIS_URL`; double-check if this Redis is also used as Celery broker (common pattern = one Redis instance serving both roles).
    For **BaaS projects**, also identify service credentials from dependency analysis:
    - `firebase` / `firebase-admin` → prompt for `FIREBASE_PROJECT_ID`, `FIREBASE_API_KEY`, service account JSON path (for admin SDK); offer to configure Firebase Emulator Suite (`firebase emulators:start`)
    - `@supabase/supabase-js` → prompt for `SUPABASE_URL`, `SUPABASE_ANON_KEY`, optionally `SUPABASE_SERVICE_ROLE_KEY`; offer Supabase local (`supabase start`)

@@ -25,7 +25,7 @@ that implementation and verification nodes consume.
 |-----------|-------------------|-------------|
 | Authentication | JWT / OAuth2 / SSO / 2FA / Passkeys / API keys | Product has user accounts |
 | Authorization | RBAC / ABAC / permission matrix / row-level security | Product has multiple roles |
-| Transport encryption | TLS / mTLS | Always (HTTPS minimum) |
+| Transport encryption | TLS (one-way, client verifies server) / mTLS (mutual, both sides present certs — standard for gRPC service-to-service) | Always (HTTPS minimum). For gRPC microservices: evaluate mTLS for inter-service communication; requires CA setup, certificate provisioning per service, and rotation policy. |
 | End-to-end encryption | Signal Protocol / MLS / custom | Product handles sensitive private communication |
 | Data-at-rest encryption | DB-level / application-level / KMS-managed | Product stores PII or financial data |
 | Rate limiting | Token bucket / sliding window / per-user / per-IP | Product has public API or user-facing endpoints |
@@ -33,6 +33,8 @@ that implementation and verification nodes consume.
 | Key management | Environment vars / HashiCorp Vault / cloud KMS / **macOS Keychain (required for macOS/iOS native apps)** / Android Keystore | Product uses API keys, encryption keys, or secrets. For macOS/iOS: Keychain is the REQUIRED storage — UserDefaults is plaintext and env vars are unavailable in sandboxed bundles. |
 | Regulatory / Compliance | GDPR (EU user data) / COPPA (under-13 users) / PCI-DSS (payment card data) / HIPAA (health data) / App Store guidelines | Product collects personal data, handles payments, or targets minors |
 | Game anti-cheat | Server-side authoritative validation / replay verification / anomaly detection / ban system | Multiplayer games or games with economy systems — client-side data must never be trusted for score/inventory/currency |
+| Electron IPC security | `contextBridge` with explicit allowlist / `contextIsolation: true` / `nodeIntegration: false` / `sandbox: true` / IPC channel validation | All Electron desktop apps — renderer process must not have direct Node.js access |
+| Tauri v2 Capabilities | Fine-grained IPC permission scopes in `src-tauri/capabilities/*.json` (command allowlist per capability, scope-limited by path/host) | All Tauri v2 apps — least-privilege capability set required |
 
 ### Required Quality
 

@@ -31,9 +31,12 @@ Every module in the project must be verified using its appropriate tool.
 |-------------|------|--------|
 | Web (Next.js, React, Vue) | Playwright | Browser navigate + interact + screenshot |
 | Flutter mobile | `flutter test integration_test/` | Compile + run integration tests on emulator/device |
-| React Native | Detox or Maestro | Native E2E test runner |
+| React Native (bare workflow) | **Detox** (preferred for bare — deeper React Native bridge integration; requires `detox-cli` setup) or Maestro (simpler setup, less RN-specific). Note: both require Metro bundler running (`npx react-native start`) as a background process before E2E tests. |
+| React Native (Expo managed) | Maestro (preferred for Expo — no native build config needed) or Detox |
 | iOS native (SwiftUI) | XCUITest | Xcode test runner (`xcodebuild test -destination 'platform=iOS Simulator'`) |
 | macOS native (SwiftUI/AppKit) | XCUITest + XCTest | `xcodebuild test -destination 'platform=macOS'`; verify window launch, menu bar items, Keychain access, entitlement-gated features |
+| Electron desktop app | Playwright via `electronApplication` option (`playwright.config.ts` with `{ launchOptions: { executablePath: './dist/MyApp' } }`) | Launch built Electron binary; verify window renders, buttons work, SQLite data persists across app restart, IPC invoke responds |
+| Tauri v2 desktop app | `tauri-driver` + WebdriverIO (`@wdio/selenium-standalone-service`) OR Playwright `electronApplication` for the WebView layer | Launch Tauri app; verify window renders, invoke IPC command, verify response; `cargo test` for Rust backend unit tests |
 | Android native (Kotlin) | Espresso | Gradle test runner |
 | Discord bot | `discord.js` mock client / `discord-py` pytest fixtures | Unit-test command handlers with mocked interactions; integration-test with a dedicated test guild (real bot token) |
 | API-only backend | curl / HTTP client | Endpoint integration test |

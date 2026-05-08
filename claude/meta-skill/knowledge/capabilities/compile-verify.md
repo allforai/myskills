@@ -55,10 +55,17 @@ Bootstrap MUST generate the correct build commands per platform:
 |----------|--------------|--------|
 | Web (Node.js) | `npm run build` / `vite build` | dist/ |
 | Go backend | `go build ./...` | binary |
+| Go backend (gRPC) | `buf generate && go build ./...` (when `buf.yaml` present) OR `protoc --go_out=. --go-grpc_out=. proto/*.proto && go build ./...` (when raw protoc). **Proto compilation MUST run before `go build`** — generated `.pb.go` files are required imports. | binary |
+| Go multi-module (go.work) | Run `buf generate` once at workspace root (if buf.yaml present), then `go build ./...` per service module listed in go.work `use ./` entries. | binary per service |
 | Flutter | `flutter build apk` / `flutter build ios` / `flutter build web` | build/ |
 | iOS (Swift) | `xcodebuild build -scheme X -destination 'generic/platform=iOS'` | .app |
 | Android (Kotlin) | `./gradlew assembleDebug` | .apk |
-| React Native | `npx react-native build-android` / `build-ios` | .apk/.app |
+| React Native (Expo managed) | `npx expo build:android` / `eas build --platform ios` | .apk/.ipa |
+| React Native (bare - iOS) | `xcodebuild -workspace ios/<AppName>.xcworkspace -scheme <AppName> -configuration Release -destination 'generic/platform=iOS Simulator'` | .app |
+| React Native (bare - Android) | `./gradlew assembleRelease` (production) or `./gradlew assembleDebug` (development) | .apk |
+| Electron (desktop app) | `npm run build` (builds renderer bundle) followed by `npm run make` or `npx electron-builder` (packages .dmg/.exe/.AppImage). Note: `npm run build` alone only builds the React/Vue frontend — the full Electron binary/installer requires electron-builder. Check `package.json scripts` for the combined `build:electron` or `package` command. | dist/ (.dmg/.exe/.AppImage/.deb) |
+| Tauri v1 | `npm run tauri build` (preferred, if build script exists) OR `cargo tauri build` | .dmg/.exe/.AppImage |
+| Tauri v2 | `npm run tauri build` OR `cargo tauri build` — check `src-tauri/Cargo.toml` for `tauri` version. Note: v2 requires capabilities defined in `src-tauri/capabilities/` folder. | .dmg/.exe/.AppImage |
 | Rust (binary / CLI) | `cargo build --release` | target/release/<bin> |
 | Rust (library / SDK) | `cargo test` | target/debug/deps/ — compile + doctests confirm public API surface |
 | Kotlin Multiplatform (KMM) shared | `./gradlew :shared:build` | shared/build/ — must run BEFORE iOS/Android compile nodes |

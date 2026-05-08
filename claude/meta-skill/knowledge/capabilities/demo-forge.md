@@ -79,6 +79,24 @@ For projects with `architecture_pattern` starting with `baas-`, there is no trad
 | AWS Amplify (`baas-amplify`) | Amplify SDK (`@aws-amplify/auth`, `@aws-amplify/api`) with admin credentials for seeding; user pool credentials for verify | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` for admin |
 | Appwrite (`baas-appwrite`) | Appwrite SDK with API key for seeding; session-based client for verify | `APPWRITE_API_KEY` for admin; session token for client verify |
 
+## Async Task Queue Projects
+
+For projects with background task queues (Celery, Bull, Temporal, etc.), demo data may be created by endpoints that immediately return a task ID while work happens asynchronously:
+
+| Task Queue | Worker Startup | Data Seeding Approach | Verification |
+|-----------|----------------|----------------------|--------------|
+| Celery (Python) | `celery -A <app> worker --loglevel=info` (must be running BEFORE seeding) | POST to API endpoints that enqueue tasks; capture `task_id` from response | Poll Redis result backend: `redis-cli GET celery-task-meta-<task_id>` or `celery -A app AsyncResult(task_id).get(timeout=30)` until `state == "SUCCESS"`. Timeout after 30s = worker stalled = failure. |
+| Bull (Node.js) | `npm run worker` or `node worker.js` | POST to API endpoints; capture returned `job.id` | Poll job state: `await job.getState()` == "completed" (via Bull Board or direct queue query). |
+| Temporal | Start Temporal server + worker | Trigger workflows via API | Query Temporal workflow status until "COMPLETED". |
+
+**Critical ordering for async tasks:**
+1. Start workers BEFORE seeding any data (tasks queued without workers → infinite pending)
+2. Enqueue tasks via API (validates the API layer)
+3. Poll result backend for completion with timeout (validates the worker layer)
+4. Only then verify visual output (validates the UI layer)
+
+**Skipping task completion wait = verification failure**: If demo-forge verifies UI before tasks complete, it will see empty/pending states and produce false failures. Always wait for task completion before navigating to the result screen.
+
 ## Methodology Guidance (not steps)
 
 - **Maximum realism**: Use REAL services whenever possible. If the user provided API keys,

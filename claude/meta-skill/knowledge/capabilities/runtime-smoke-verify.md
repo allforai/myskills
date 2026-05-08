@@ -139,6 +139,8 @@ Write `.allforai/runtime-smoke/smoke-report.json`:
 | `ide-plugin-vscode` | Suppress — cannot automate extension host headlessly |
 | `library-sdk` | Suppress — no runtime surface; library has no launch |
 | `github-action` | Suppress — CI action has no persistent launch |
+| `desktop-app-electron` | Adapt — smoke = `npm run start` launches Electron binary without crash; verify main window renders using `electron-playwright-helpers` or launch the built binary directly; record window screenshot; verify no uncaught exceptions in DevTools console (accessible via `mainWindow.webContents.getURL()` / `console.error` listener). No HTTP endpoint — success = window visible + IPC roundtrip responds. |
+| `desktop-app-tauri` | Adapt — smoke = `npm run tauri dev` or launch the built binary; verify app window opens; issue one IPC invoke via `tauri-driver` + WebdriverIO; verify response received. No HTTP endpoint — success = window visible + IPC response. Record `src-tauri/capabilities/` list to verify Tauri v2 capability set is as designed. |
 | `browser-extension` | Adapt — use `chrome --load-extension` + WebDriver; record extension load success/failure |
 | `serverless-sam` | Adapt — use `sam local start-api` as live environment; smoke = curl health endpoint |
 | `serverless-framework` | Adapt — use `serverless-offline` as live environment |
@@ -146,6 +148,8 @@ Write `.allforai/runtime-smoke/smoke-report.json`:
 | Twine/Ren'Py (narrative, web export) | Adapt — smoke = headless Chrome `open index.html`, verify page loaded (presence of #game canvas or `#ren_py` container), no console errors. Do NOT rely on `document.title` — Ren'Py export template may not set it. |
 | Elixir/Phoenix (LiveView) | Adapt — smoke = `mix phx.server` starts without crash; curl `http://localhost:4000/` returns 200 (LiveView pages return HTML, no separate /health needed). Check supervision tree logs for crash reports (`[error]`). |
 | Rust CLI | Adapt — smoke = run binary with `--help` or `--version`, verify exit code 0 and expected output on stdout. For TUI: run with a test input file or `--dry-run` flag if supported; verify exit code and no panic output. No HTTP endpoint — success is non-zero exit code check inverted (0 = success). |
+| Backend with Celery async workers | Adapt — **two-process smoke required**: (1) `curl /health` on the FastAPI/Django API process → verify 200 OK; (2) worker health check: `celery -A <app> inspect active` OR `redis-cli KEYS celery*` (should return active task metadata keys). Enqueue a fast test task via API (`POST /test-task`), poll Redis result backend for `state == "SUCCESS"` within 10s. Both API and worker must pass — worker-down with API-up is a failure. |
+| gRPC backend (with gRPC-Gateway) | Adapt — smoke = verify BOTH the gRPC port AND the HTTP transcoding gateway: (1) gRPC health: `grpc_health_probe -addr=:50051` or `grpcurl -plaintext localhost:50051 grpc.health.v1.Health/Check`; (2) REST transcoding: `curl http://localhost:8080/healthz` → 200. Both must pass — gRPC services that lost the HTTP gateway layer are partially broken. |
 
 ## Required inputs from upstream nodes
 

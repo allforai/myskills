@@ -125,6 +125,7 @@ Bootstrap MUST generate the correct test commands per platform:
 | React Native | `npx jest` | Detox / Maestro |
 | Unity | `Unity.exe -runTests -testPlatform EditMode -projectPath .` | PlayMode: `-testPlatform PlayMode` |
 | Godot | `godot --headless --script addons/gut/gut_cmdln.gd` (GUT framework) | Manual scene tests |
+| Go backend (gRPC) | `go test ./...` per service module | Protocol compat: `buf lint` (style) + `buf breaking --against '.git#branch=main'` (backward compat check against previous proto version). **buf breaking is R4 for gRPC** — a passing `go test` does not guarantee proto schema backward compatibility. |
 | Roblox (Rojo) | TestEZ via `rojo test` or custom runner | Manual in Roblox Studio |
 | Rust game (Bevy/macroquad) | `cargo test` for logic | Rendering: manual test scenarios |
 | GBStudio | **No automated test runner** — manual verification only | N/A |
