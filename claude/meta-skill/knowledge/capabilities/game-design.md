@@ -474,6 +474,16 @@ in HTML. Set `ai_generatable = true` for future re-run. Never block pipeline.
 - `ai_gen_target = "actual-asset"` → `current_state: placeholder → temp`; write image path to `substitution.temp`
 - `ai_gen_target = "concept-reference" | "mood-reference"` → `current_state` stays `placeholder`; record path in `ai_generated.path` (reference only, not ingested into game)
 
+### Completion Signal
+
+`ai-art-generation` has no `human_gate`, so `/run` uses a different completion check:
+
+**Complete when:** all assets in `art-asset-inventory.json.assets[]` have either:
+- `current_state != "placeholder"` (generation succeeded), OR
+- `ai_generatable = true` AND `ai_generated.attempted = true` (generation was attempted but failed — graceful degradation)
+
+After completion, write `"ai_art_generation_done": true` to `approval-records.json` for the `ai-art-generation` record (use `gate_status: "approved"` since no human review needed). This signals to `/run` that `game-design-finalize` is now unblocked.
+
 ## game-design-doc.json Schema
 
 `game-design-finalize` produces `.allforai/game-design/game-design-doc.json` by aggregating all
