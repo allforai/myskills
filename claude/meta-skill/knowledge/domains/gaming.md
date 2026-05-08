@@ -266,6 +266,8 @@ balance-testing（数值平衡测试：蒙特卡洛模拟 + Playtest）
 | 品类 | 核心节点 | 可跳过 |
 |------|---------|--------|
 | **RPG/MMO** | core-loop-design, combat-system-design, skill-tree-design, progression-curve-design, economy-design, narrative-design, level-design, worldbuilding, monetization-design, competitive-balance-design | — |
+| **肉鸽/Roguelite** | core-loop-design, run-structure-design, meta-progression-design, procedural-gen-spec | economy-design, card-system-design（deck-building 肉鸽）, puzzle-design（谜题混合型）; 注意 roguelike 每局独立，build variance 是核心乐趣 |
+| **策略/模拟经营** | core-loop-design, economy-design, tech-tree-design | ai-faction-design（4X 敌方 AI）, combat-system-design + competitive-balance-design（有战斗机制时）; 经济闭环是重心 |
 | **卡牌/策略** | core-loop-design, economy-design, monetization-design, competitive-balance-design | level-design, narrative-design |
 | **休闲/超休闲** | core-loop-design, level-design, monetization-design | worldbuilding, narrative-design, economy-design, progression-curve-design |
 | **叙事/AVG** | narrative-design, worldbuilding, art-direction | economy-design, competitive-balance-design, progression-curve-design |

@@ -13,8 +13,7 @@
     "ai-faction-design",
     "combat-system-design",
     "competitive-balance-design",
-    "audio-design",
-    "map-generation-spec"
+    "audio-design"
   ],
   "always_include": [
     "art-direction",
@@ -35,5 +34,5 @@
     "ai-art-generation",
     "game-design-finalize"
   ],
-  "bootstrap_note": "map-generation-spec not in canonical node registry — bootstrap generates ad-hoc node-spec when selected"
+  "bootstrap_note": "Ad-hoc optional (not in canonical registry — requires user opt-in): map-generation-spec (procedural map/dungeon layout generation rules, tile placement constraints — for 4X/roguelike-lite/city-builder hybrids). Canonical optional guidance: ai-faction-design for 4X/RTS with enemy AI factions; combat-system-design + competitive-balance-design for 4X/tactical games with turn-based or real-time combat; audio-design for games with dynamic music or adaptive soundscapes"
 }

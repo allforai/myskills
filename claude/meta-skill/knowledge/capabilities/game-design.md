@@ -211,7 +211,10 @@ All HTML outputs are **static** (v1). Bootstrap embeds data at generation time.
 - **Audience:** producer, lead-designer
 - **Goal:** 5-second status overview — see what needs attention
 - **Layout:** Tab navigation by discipline (Design / Art / Engineering / Audio)
-- **Required content:** node status badges (pending/in-review/approved/revision-requested) + discipline + last-updated; art progress heatmap (placeholder/temp/alpha/final counts per type); milestone completion gauge (gate-ready assets / total)
+- **Above fold:** Overall completion gauge (approved nodes / total nodes) + alert strip listing any nodes with gate_status = revision-requested (red) or in-review overdue > 48h (yellow)
+- **Below:** Node status card grid — one card per game-design node with: node name, discipline_owner, gate_status badge (pending/in-review/approved/revision-requested), last-updated timestamp
+- **Below:** Art progress heatmap — rows: asset types, columns: states (placeholder/temp/alpha/final), cells: count; highlight rows with 0 final assets that have a milestone gate
+- **Collapsed:** Per-node revision notes (visible on card expand)
 
 ### `core-loop.html`
 - **Audience:** lead-designer
@@ -243,9 +246,10 @@ All HTML outputs are **static** (v1). Bootstrap embeds data at generation time.
 - **Below:** AI-generated drafts (2×2 grid, click to enlarge)
 
 ### `art-spec-design.html`
-- **Audience:** each art discipline (filter to own assets)
-- **Layout:** Filterable card grid — filter by discipline / type / state
-- **Each card:** ID + name + dimensions + description + palette constraint chips + milestone gate + AI-gen preview if available + approval status
+- **Audience:** concept-artist (primary reviewer, approves the spec); other art disciplines (character-artist, environment-artist, ui-artist, etc.) filter to their own assets for reference
+- **Layout:** Filterable card grid — filter by discipline / type / state (default: show all; discipline_owner reviews all before approving)
+- **Above fold:** Asset count summary by type and state (table: rows = asset type, columns = state count); ⚠️ highlight asset types with 0 spec cards (unspecified categories)
+- **Below:** Filterable card grid — one card per asset: ID + name + dimensions + description + palette constraint chips + milestone gate + AI-gen preview if available + approval status
 
 ### `narrative.html`
 - **Audience:** narrative-designer

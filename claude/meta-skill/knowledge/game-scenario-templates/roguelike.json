@@ -11,6 +11,8 @@
     "procedural-gen-spec"
   ],
   "optional_nodes": [
+    "combat-system-design",
+    "economy-design",
     "puzzle-design",
     "card-system-design",
     "audio-design"
@@ -26,6 +28,8 @@
     "run-structure-design",
     "meta-progression-design",
     "procedural-gen-spec",
+    "combat-system-design",
+    "economy-design",
     "puzzle-design",
     "card-system-design",
     "audio-design",
@@ -34,5 +38,5 @@
     "ai-art-generation",
     "game-design-finalize"
   ],
-  "bootstrap_note": "Ad-hoc optional (not in canonical registry — requires user opt-in): build-variety-design (build synergy space, viable archetypes, run variance analysis — for roguelikes with deep build expression like Hades/Dead Cells). Canonical optional guidance: card-system-design for deck-building roguelikes (Slay the Spire style); puzzle-design for puzzle-hybrid roguelikes"
+  "bootstrap_note": "Ad-hoc optional (not in canonical registry — requires user opt-in): build-variety-design (build synergy space, viable archetypes, run variance analysis — for roguelikes with deep build expression like Hades/Dead Cells). Canonical optional guidance: combat-system-design for action roguelikes with combat (Hades/Dead Cells/Enter the Gungeon style); economy-design for roguelikes with resource/currency loops; card-system-design for deck-building roguelikes (Slay the Spire style); puzzle-design for puzzle-hybrid roguelikes"
 }

@@ -56,6 +56,7 @@ Read these files if they exist (skip missing ones silently):
 
 **Package managers / language markers:**
 - package.json, package-lock.json, yarn.lock, pnpm-lock.yaml
+- bun.lockb (Bun runtime lock file — treat as `runtime: bun`; also check `package.json` scripts for `bun run` to confirm)
 - go.mod, go.sum
 - Cargo.toml, Cargo.lock
 - pubspec.yaml, pubspec.lock
@@ -120,15 +121,19 @@ Some SDKs have "game" or "engine" in their name but are used for non-game purpos
 - src-tauri/tauri.conf.json OR src-tauri/Cargo.toml (Tauri — Rust-powered desktop app with web frontend; architecture_pattern: 'desktop-app-tauri')
 - electron.js OR electron-builder.json OR package.json with `electron` as a top-level dependency (Electron — desktop app with Node.js backend; architecture_pattern: 'desktop-app-electron')
 
+**CI/CD action / marketplace packages:**
+- `action.yml` at root with a `runs:` key (GitHub Actions custom action / reusable action; architecture_pattern: 'github-action')
+- `action.yaml` at root with a `runs:` key (same; yaml extension variant)
+
 **Desktop app plugin / extension frameworks:**
-- .obsidianplugin OR package.json with `obsidian` in dependencies (Obsidian plugin; architecture_pattern: 'ide-plugin-obsidian')
+- `manifest.json` at root with both `"id"` and `"minAppVersion"` fields AND `package.json` with `obsidian` in `devDependencies` or `dependencies` (Obsidian plugin; architecture_pattern: 'ide-plugin-obsidian'). Note: do NOT rely on a `.obsidianplugin` file — it does not exist in the Obsidian ecosystem.
 - package.json with `@types/vscode` in devDependencies AND `"contributes"` section OR `.vscodeignore` present (VS Code extension; architecture_pattern: 'ide-plugin-vscode')
 - manifest.json at root with `"manifest_version"` key AND `"browser_action"` or `"action"` or `"background"` (Browser extension; architecture_pattern: 'browser-extension')
 
 **Configuration:**
 - tsconfig.json, jsconfig.json
 - vite.config.*, webpack.config.*, next.config.*
-- deno.json, deno.jsonc (Deno runtime / Fresh framework)
+- deno.json, deno.jsonc (Deno runtime — if also `islands/` and `routes/` directories are present, classify as Deno Fresh SSR framework; architecture_pattern: 'deno-fresh-islands'. Verification note: Deno Fresh uses `Deno.test` with `@std/testing` library; check for `deno task test` command in deno.json tasks.)
 - docker-compose.yml, Dockerfile
 - .github/workflows/*.yml, .gitlab-ci.yml, Jenkinsfile
 - .env.example, .env.template
@@ -313,7 +318,18 @@ If the user's game doesn't fit any template exactly, suggest the closest match:
 - 放置/挂机/增量游戏 (idle/incremental — e.g. Cookie Clicker, AdVenture Capitalist) → e) 策略/模拟经营 (economy-design + progression-curve-design focus; session loop is offline accumulation, NOT retention-hook); note: present disambiguation to user if unclear between idle and strategy: "该游戏是否有实时操作（战斗/建造），还是主要依赖离线积累？"
 - 放置 RPG (AFK-style idle with hero collection) → d) 肉鸽/Roguelite OR b) 动作/卡牌/RPG depending on whether each run is discrete; note: distinguish from pure idle (no runs, continuous offline progression)
 - 教育/严肃游戏 (EdTech/serious game) → a) 超休闲/中度手游 (FTUE + session design focus); note to user: "combat-system-design 对教育类游戏通常不适用，请在可选节点中跳过"
+- PICO-8 / 幻想主机 / 复古风格游戏 → a) 超休闲/中度手游; note: despite the "mobile" label, treat as general casual — apply platform capability guard below
 - 平台移植 (same-engine platform port, e.g., Unity PC → Unity mobile) → goal (c) 同栈重建; add note: "platform port = rebuild with target platform constraints (touch input, resolution, performance budget)"
+
+**Platform capability guard (applies during Step 3.1 canonical optional selection):**
+Some game engines/platforms structurally cannot support IAP, push notifications, or retention systems.
+For these platforms, suppress `monetization-design`, `retention-hook-design`, and `meta-game-design`
+from the canonical optional eligibility pool, regardless of the selected scenario template:
+- PICO-8 (*.p8 detected) — no store integration, no push API
+- LÖVE2D standalone (*.love or main.lua+conf.lua, no build.settings) — no native store
+- GBStudio (*.gbsproj) — Game Boy cartridge, no runtime monetization
+- Twine/Ren'Py web export — static web narrative, no IAP
+Note in the bootstrap output: "Platform [{engine}] does not support IAP/push — monetization/retention nodes omitted from eligibility pool."
 
 The template is a STARTING POINT. The user can add or remove nodes via the optional node question that follows.
 
@@ -334,6 +350,7 @@ After the user selects a scenario, bootstrap reads the selected template's `boot
 - Include `combat-system-design` and `competitive-balance-design` only if the game has combat or PvP mechanics
 - Include `puzzle-design` only if the game has dedicated puzzle content
 - Include `retention-hook-design` / `meta-game-design` for mobile games with session loops
+- Include `monetization-design` as **strongly recommended** (annotate with `[推荐]` in opt-in question) for any `casual-mobile` scenario game targeting Android/iOS (detected from Unity mobile build targets, Android/iOS in *.uproject target platforms, `pubspec.yaml` Flutter targets, or similar). Exception: apply platform capability guard (PICO-8, LÖVE2D, etc.) first.
 - Include `economy-design` / `tech-tree-design` for RTS games (in multiplayer-online scenario) or strategy games
 - Include `level-design` for games with designed maps, levels, or zones
 
@@ -375,7 +392,14 @@ node-spec.
 
 **What the generated runtime environment node does (at /run time):**
 
-1. Read `.env.example`, `docker-compose.yml`, config files to identify all required env vars
+1. Read `.env.example`, `docker-compose.yml`, config files to identify all required env vars.
+   For **event-driven service projects** (Discord/Slack/Telegram bots, webhook consumers), also
+   identify the primary service authentication token from `package.json` dependencies and `.env.example`:
+   - `discord.js` dependency → prompt for `DISCORD_TOKEN` + `DISCORD_APPLICATION_ID`
+   - `@slack/bolt` dependency → prompt for `SLACK_BOT_TOKEN` + `SLACK_SIGNING_SECRET`
+   - `telegraf` or `node-telegram-bot-api` → prompt for `TELEGRAM_BOT_TOKEN`
+   These tokens are the most critical runtime credentials for event-driven bots and are NOT
+   covered by database/cache/auth service detection.
 2. Check what's already configured (`.env` exists? docker-compose covers it? service reachable?)
 3. Ask the user for ONLY missing items (project-specific, not a fixed template)
 4. Write/update `.env`, verify services are reachable
@@ -613,6 +637,12 @@ cover ALL major subsystems in this project?
    knowledge of the target stack's ecosystem gaps is < 70% confident. Translation gaps are a
    first-class research trigger — migrating between ecosystems (e.g., Deno→Bun, CRA→Vite,
    REST→tRPC, Redis Sessions→JWTs, Django ORM→SQLAlchemy async) often has non-obvious pitfalls.
+3. The project uses a **niche or specialized platform** where LLM framework knowledge is < 70%
+   confident, even for non-translate goals (analyze, create, quality-checks). In these cases,
+   Step 2.7 research is needed to generate correct node-spec guidance, not just translation pitfalls.
+   Examples: HarmonyOS/ArkTS (Ability lifecycle, ohosTest framework), Roblox Luau (Roblox API,
+   DataStore, RemoteEvent architecture), GBStudio (Game Boy ROM constraints), Defold (message-passing
+   architecture, collection proxies), Solar2D (transition library, composer scenes).
 
 **Examples of gaps that trigger research:**
 - Ecommerce project mentions "self-operated logistics" but domain file only covers
@@ -727,7 +757,11 @@ For `analyze` goal, inject only if no `approval-records.json` exists (new projec
    - All nodes get: `capability: game-design`, `human_gate: true`, `approval_record_path: ".allforai/game-design/approval-records.json"`, `gate_status: "pending"`
 5. Initialise `.allforai/game-design/approval-records.json` with one `pending` record per game-design node
 6. Ad-hoc nodes appearing in EITHER `optional_nodes` OR `bootstrap_note` (but absent from both the canonical registry AND `node_order`): these require user opt-in, presented in the opt-in question after scenario selection. Process them ONCE — if a node appears in both `optional_nodes` and `bootstrap_note`, treat it as a single ad-hoc opt-in candidate (do not generate two node-specs). If the user selects it, generate node-spec via Step 2.7 research and position per step 4 ad-hoc rule.
-7. **Cross-scenario signal scan (hybrid games):** After loading the primary scenario template, scan Step 1.1–1.3 findings for multiplayer/network signals — dependencies like `Mirror`, `Unity Netcode`, `Photon`, `Nakama`, `Colyseum`, `relay`, `WebSocket`, network socket code, or multiplayer room logic. If found AND `network-architecture-design` + `matchmaking-design` are NOT already in the primary scenario's `required_nodes`, present them as supplementary optional nodes in the opt-in question with note: "检测到联网/多人代码，建议补充选择以下节点".
+7. **Cross-scenario signal scan (hybrid games):** After loading the primary scenario template, scan Step 1.1–1.3 findings for multiplayer/network signals:
+   - **Unity signals:** dependencies like `Mirror`, `Unity Netcode`, `Photon`, `Nakama`, `Colyseum`, `relay`, `WebSocket`, network socket code, or multiplayer room logic
+   - **Unreal Engine 5 signals:** `.uproject` `Plugins` array containing `OnlineSubsystem`, `OnlineSubsystemSteam`, `OnlineSubsystemEOS`; C++ source containing `DOREPLIFETIME`, `NetMulticast`, `Server` UFUNCTION specifiers; `.Build.cs` files referencing `OnlineSubsystemUtils`
+   - **General signals:** `WebSocket`/`gRPC`/`socket.io` in any package file; source files importing `net`/`socket` modules with multiplayer room or lobby patterns
+   If any signal found AND `network-architecture-design` + `matchmaking-design` are NOT already in the primary scenario's `required_nodes`, present them as supplementary optional nodes in the opt-in question with note: "检测到联网/多人代码，建议补充选择以下节点".
 
 **Node granularity is project-dependent.** A simple CLI tool might need
 3 nodes. A microservice platform might need 20. LLM decides.
@@ -1076,7 +1110,7 @@ has no verification node, the workflow is incomplete.
 | mobile (React Native) | Detox or Maestro | e2e-test-{name} |
 | mobile (iOS/SwiftUI) | XCUITest via `xcodebuild test` | e2e-test-{name} |
 | mobile (Android/Kotlin) | Espresso via `./gradlew connectedAndroidTest` | e2e-test-{name} |
-| desktop (Tauri) | Playwright via `@playwright/test` (Tauri v2 has Playwright driver) + `cargo test` for IPC/Rust backend | e2e-test-{name} |
+| desktop (Tauri v2) | `tauri-driver` (WebDriver binary) + WebdriverIO with `wdio-tauri-service` for UI E2E; `cargo test` for Rust IPC unit tests. ⚠️ Playwright does NOT work with Tauri v2 — use tauri-driver. Run Step 2.7 WebSearch for current tauri-driver setup if LLM confidence < 70% | e2e-test-{name} |
 | desktop (Electron) | Playwright via `electron-playwright-helpers` (drives the Electron webview) | e2e-test-{name} |
 | game client (Unity) | Unity Test Runner (EditMode + PlayMode) via `unity -runTests -testPlatform EditMode/PlayMode` | game-test-{name} |
 | game client (Godot) | GUT (Godot Unit Testing) or `godot --test` | game-test-{name} |
@@ -1085,7 +1119,9 @@ has no verification node, the workflow is incomplete.
 | game client (pygame/Python) | pytest + `pygame.display.set_mode` in headless SDL (SDL_VIDEODRIVER=dummy) | game-test-{name} |
 | game client (PICO-8) | Manual test only (no headless mode); document manual test scenarios | game-test-manual |
 | event-driven service (Discord bot / CLI / background worker) | jest/vitest + mock event provider (e.g., discord.js mock client, mock queue consumer); no HTTP routes to curl | e2e-test-{name} |
-| IDE plugin (VS Code extension) | `@vscode/test-cli` or `@vscode/test-electron` via `npm run test`; Playwright unsupported inside VS Code host | plugin-test-{name} |
+| GitHub Actions custom action | `act` (local Actions runner) for end-to-end workflow testing; jest/vitest for JS action unit tests; `@actions/core` mock for testing action I/O | action-test-{name} |
+| mobile (HarmonyOS/ArkTS) | DevEco Studio ohosTest framework via `hdc` (Huawei Device Connector) on HarmonyOS emulator or real device; unit tests via `@ohos/hypium`. ⚠️ No Playwright/Detox/XCUITest support for HarmonyOS | e2e-test-{name} |
+| IDE plugin (VS Code extension) | `@vscode/test-cli` or `@vscode/test-electron` via `npm run test`; Playwright unsupported inside VS Code host. For extensions contributing a Language Server (activationEvents includes `onLanguage:*` or `contributes.languages`), also add LSP integration tests via `vscode-languageserver-protocol` test harness. For Debug Adapter Protocol extensions, add DAP integration tests. | plugin-test-{name} |
 | IDE plugin (Obsidian plugin) | `jest` with Obsidian vault fixture mock; full testing requires Obsidian CLI headless (if available) | plugin-test-{name} |
 | browser extension | Playwright with `chrome.launch({ channel: 'chrome' })` + extension load via `args: ['--load-extension=./dist']` | e2e-test-{name} |
 | shared / infra | covered by consumers' tests | no separate node needed |
