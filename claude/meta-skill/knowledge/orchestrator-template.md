@@ -39,7 +39,11 @@ Read `.allforai/bootstrap/workflow.json` at every iteration. Trust it over conve
      - Can run multiple nodes in parallel if their exit_artifacts don't overlap
      - Can skip a node if its goal is already satisfied
      - Can re-run a failed node after fixing the issue
-     - **Game-design nodes with `human_gate: true`:** do NOT advance to the next node based on exit_artifact existence alone. Also check `.allforai/game-design/approval-records.json` — the node is only "done" when its `gate_status == "approved"`. If `gate_status == "revision-requested"`, re-run the node passing `revision_notes` as instruction, then reset status to `"in-review"` after re-execution completes.
+     - **Game-design nodes with `human_gate: true`:** do NOT advance to the next node based on exit_artifact existence alone. Also check `.allforai/game-design/approval-records.json`:
+       - `gate_status == "pending"` AND all exit_artifacts exist → auto-set `gate_status` to `"in-review"` and notify the `discipline_owner` that the output is ready for review. Do NOT advance yet.
+       - `gate_status == "in-review"` → wait for `discipline_owner` to approve or request revision. Do NOT advance.
+       - `gate_status == "approved"` → this node is done; advance to unlocked nodes.
+       - `gate_status == "revision-requested"` → re-run the node passing `revision_notes` as instruction; after re-execution completes, reset `gate_status` to `"in-review"`.
   5. Read the node-spec: .allforai/bootstrap/node-specs/<node-id>.md
   6. Dispatch subagent with node-spec as prompt
   7. On success: record transition (status=completed, artifacts_created)
