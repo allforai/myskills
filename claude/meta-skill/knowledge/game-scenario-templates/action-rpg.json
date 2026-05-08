@@ -16,7 +16,8 @@
     "level-design",
     "worldbuilding",
     "monetization-design",
-    "audio-design"
+    "audio-design",
+    "card-system-design"
   ],
   "always_include": [
     "art-direction",
@@ -39,5 +40,6 @@
     "art-spec-design",
     "ai-art-generation",
     "game-design-finalize"
-  ]
+  ],
+  "bootstrap_note": "card-system-design not in canonical node registry — add for digital card games (Hearthstone / Legends of Runeterra style) covering mana economy, card pool, keyword system, synergy design, and collection management"
 }
