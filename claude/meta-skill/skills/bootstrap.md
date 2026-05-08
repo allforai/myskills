@@ -195,11 +195,15 @@ Bootstrap 分析完成。请确认目标（可多选）：
    c) 同栈重建（分析 + 按目标架构重新生成）
    d) 从零构建新产品（忽略已有代码，以产品愿景为起点重新设计）
    e) 代码治理（架构合规 + 重复检测 + 抽象分析）
+   j) 质量检查（死链 + 字段一致性）
    k) 上架准备（竞品调研 → 概念定稿 → 缺口实现 → 合规 → 上架清单）
 
 目标技术栈（仅 b/c/d 需回答）：
    前端：___
    后端：___
+
+产品愿景（仅 d 需回答 — 一句话描述你要做什么）：
+   ___
 
 UI 还原度（仅有前端翻译时）：
    a) faithful — 像素级还原
@@ -295,8 +299,8 @@ After the user selects a scenario, bootstrap reads the selected template's `boot
 
 **Goal mapping (can combine multiple):**
 - (a) → `goals: ["reverse-concept", "analyze"]`. reverse-concept is mandatory for analyze — without it, product-analysis has no independent baseline and becomes circular (checking code against code-derived artifacts). reverse-concept produces concept-baseline.json which all downstream phases auto-load.
-- (b) → `goals: ["analyze", "translate", "demo", "concept-acceptance"]`, record target_stacks. demo-forge is auto-included because translate produces code that needs integration testing. concept-acceptance is auto-included when product-concept.json exists.
-- (c) → `goals: ["analyze", "rebuild", "demo", "concept-acceptance"]`, record target_stacks. demo-forge is auto-included because rebuild produces code that needs integration testing. concept-acceptance is auto-included when product-concept.json exists.
+- (b) → `goals: ["analyze", "translate", "demo", "concept-acceptance"]`, record target_stacks. demo-forge is auto-included because translate produces code that needs integration testing. concept-acceptance is auto-included when product-concept.json exists. **Auto-prepend `reverse-concept` when `concept-baseline.json` does not exist** (required for analyze — without it product-analysis has no independent baseline; if concept-baseline.json already exists from a prior run, skip).
+- (c) → `goals: ["analyze", "rebuild", "demo", "concept-acceptance"]`, record target_stacks. demo-forge is auto-included because rebuild produces code that needs integration testing. concept-acceptance is auto-included when product-concept.json exists. **Auto-prepend `reverse-concept` when `concept-baseline.json` does not exist** (same baseline requirement as (b)).
 - (d) → `goals: ["create", "demo", "concept-acceptance"]`, record target_stacks + product_vision. demo-forge is auto-included because new code needs integration testing. concept-acceptance is auto-included when product-concept.json exists.
 - (e) → `goals: ["tune"]`
 - (f) → `goals: ["demo"]`

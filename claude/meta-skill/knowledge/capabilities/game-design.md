@@ -122,16 +122,16 @@ Approval state is tracked in `.allforai/game-design/approval-records.json`.
       "approved_by": [],
       "revision_notes": "",
       "approved_at": null,
-      "unblocks": ["<downstream_node_id>"]
+      "unlocks": ["<downstream_node_id>"]
     }
   ]
 }
 ```
 
 Gate rules:
-- `gate_status == "approved"` → unlock all `unblocks[]` nodes
-- `gate_status == "revision-requested"` → re-execute node with `revision_notes` as instruction
-- `discipline_owner` must approve; `discipline_reviewers` approval is advisory
+- `gate_status == "approved"` → unlock all `unlocks[]` nodes
+- `gate_status == "revision-requested"` → re-execute node with `revision_notes` as instruction; after re-execution completes, reset `gate_status` to `"in-review"` (awaiting fresh approval from `discipline_owner`)
+- `discipline_owner` must approve (drives `gate_status`); `discipline_reviewers` approval is advisory — reviewers may add `revision_notes` but cannot change `gate_status` unilaterally; if reviewer flags an issue post-approval, they must coordinate with `discipline_owner` to reset `gate_status` to `"revision-requested"`
 
 Bootstrap initialises this file with one `pending` record per game-design node when
 writing node-specs to `.allforai/bootstrap/`.
@@ -481,18 +481,24 @@ in HTML. Set `ai_generatable = true` for future re-run. Never block pipeline.
 
 ### State Update After Generation
 
-- `ai_gen_target = "actual-asset"` → `current_state: placeholder → temp`; write image path to `substitution.temp`
-- `ai_gen_target = "concept-reference" | "mood-reference"` → `current_state` stays `placeholder`; record path in `ai_generated.path` (reference only, not ingested into game)
+For every asset attempt, always write `ai_generated.attempted = true` first (before checking success/failure):
+
+- `ai_gen_target = "actual-asset"`:
+  - On success → `current_state: placeholder → temp`; write image path to `substitution.temp`; `ai_generated.attempted = true`
+  - On failure → `current_state` stays `placeholder`; `ai_generatable = true`; `ai_generated.attempted = true`
+- `ai_gen_target = "concept-reference" | "mood-reference"`:
+  - On success → `current_state` stays `placeholder`; record path in `ai_generated.path` (reference only, not ingested into game); `ai_generated.attempted = true`; `ai_generatable = true` (marks asset as satisfied for completion check)
+  - On failure → `current_state` stays `placeholder`; `ai_generatable = true`; `ai_generated.attempted = true`
 
 ### Completion Signal
 
 `ai-art-generation` has no `human_gate`, so `/run` uses a different completion check:
 
 **Complete when:** all assets in `art-asset-inventory.json.assets[]` have either:
-- `current_state != "placeholder"` (generation succeeded), OR
-- `ai_generatable = true` AND `ai_generated.attempted = true` (generation was attempted but failed — graceful degradation)
+- `current_state != "placeholder"` (actual-asset generation succeeded → state promoted to temp), OR
+- `ai_generatable = true` AND `ai_generated.attempted = true` (generation was attempted — covers both: failed actual-asset, and all concept/mood-reference assets regardless of success)
 
-After completion, write `"ai_art_generation_done": true` to `approval-records.json` for the `ai-art-generation` record (use `gate_status: "approved"` since no human review needed). This signals to `/run` that `game-design-finalize` is now unblocked.
+After completion, set `gate_status: "approved"` in `approval-records.json` for the `ai-art-generation` record (no human review needed). This signals to `/run` that `game-design-finalize` is now unblocked via the standard gate rule.
 
 ## game-design-doc.json Schema
 
