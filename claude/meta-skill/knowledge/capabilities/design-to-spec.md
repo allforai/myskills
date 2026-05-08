@@ -30,7 +30,7 @@ implementation nodes consume via Context Pull.
 
 | Output | When |
 |--------|------|
-| `.allforai/tech-spec/protocol-spec.md` | Realtime communication protocol: message types, event formats, connection lifecycle. Generated when project uses WebSocket/gRPC/SSE/WebRTC. **For gRPC services**: document proto service definitions, streaming patterns, custom error codes, and gRPC-Gateway REST mapping. **For WebRTC (video/audio)**: WebRTC is NOT a single protocol — it has two separate planes that must be documented independently: (1) **Signaling plane** (typically WebSocket or HTTP): session negotiation messages (offer/answer/ICE candidates), room join/leave events, call state machine; (2) **Media plane** (WebRTC P2P or TURN relay): the actual audio/video transport — NOT documented in api-spec.json, but infrastructure requirements (STUN/TURN server, SFU if group video) MUST be captured in infra-design.json. Conflating signaling and media into one "WebSocket API" is a common design error for IM/video products. |
+| `.allforai/tech-spec/protocol-spec.md` | Realtime communication protocol: message types, event formats, connection lifecycle. Generated when project uses WebSocket/gRPC/SSE. **For gRPC services**: MUST document all proto service definitions (service name, RPC methods, request/response message types), streaming patterns (unary / server-stream / client-stream / bidirectional), custom error codes (gRPC status code + application error body), and if gRPC-Gateway is used: the REST endpoint mapping (`google.api.http` annotations per method). |
 
 **tRPC API specification** (`api_style: tRPC` detected in bootstrap-profile.json):
 tRPC has no REST endpoints — procedures are the API surface. The `api-spec.json` MUST document:
