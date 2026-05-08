@@ -103,6 +103,13 @@ Compare finalized concept against current implementation. Gap categories vary by
 - Free tier usage limits enforced
 - Billing portal
 
+**macOS native app (SwiftUI/AppKit):**
+- Sandbox entitlement vs feature parity (sandboxed apps have restricted file system access)
+- Keychain usage for all secrets (not UserDefaults, not env vars)
+- Hardened runtime: all entitlements declared, no `disable-library-validation` unless justified
+- Notarization pipeline in CI (automated signing + notarytool submission)
+- Universal binary or correct architecture target (Apple Silicon / Intel / both)
+
 **GitHub Action / CLI tool / Library/SDK:**
 - Documentation completeness (README, usage examples, API docs)
 - Input validation and error messages
@@ -166,6 +173,23 @@ Check platform-specific requirements based on target launch platform (read from 
 - License file present (required for marketplace listing)
 - No hardcoded tokens or secrets in workflow examples
 - Test coverage with example workflows in `.github/workflows/`
+
+**macOS App Store:**
+- Privacy policy URL required
+- App Privacy labels (data collection declaration) in App Store Connect
+- App Sandbox entitlement required (`com.apple.security.app-sandbox = true`)
+- Hardened runtime required for notarization
+- Content ratings (age ratings in App Store Connect)
+- Same IAP/subscription disclosure rules as iOS (if app has paid features)
+
+**macOS Developer ID (direct distribution, outside App Store):**
+- Developer ID Application certificate (not Distribution certificate)
+- Hardened runtime entitlements declared (`com.apple.security.hardened-runtime = true`)
+- Notarization: `xcrun notarytool submit <app>.zip --apple-id <id> --team-id <tid> --password <app-specific-pwd>` — Apple requires notarization for all macOS software distributed outside the App Store since macOS Catalina
+- Staple ticket to bundle: `xcrun stapler staple <app>.dmg` (must staple AFTER notarization approval)
+- Gatekeeper check: `spctl --assess --type exec --verbose <app>` — must return "accepted"
+- entitlements.plist must declare only the minimum required (network access, file access, hardened runtime flags) — excessive entitlements can fail notarization review
+- Privacy policy URL must be accessible (Gatekeeper shows it to users at first launch)
 
 **Steam (Desktop game):**
 - Steam SDK integrated (achievement API, cloud save, overlay)

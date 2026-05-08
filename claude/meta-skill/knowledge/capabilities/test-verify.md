@@ -130,6 +130,8 @@ Bootstrap MUST generate the correct test commands per platform:
 | GBStudio | **No automated test runner** — manual verification only | N/A |
 | PICO-8 | **No automated test runner** — manual verification only | N/A |
 | Twine / Ren'Py | Playwright E2E on exported HTML bundle (`npx serve dist/` then Playwright) | passage navigation, variable tracking, ending states |
+| Discord bot (discord.js) | `jest` or `vitest` with mocked `discord.js` interaction objects | Unit tests for command handlers; integration tests against a real test guild with `DISCORD_TEST_GUILD_ID` |
+| Discord bot (discord.py / nextcord / py-cord) | `pytest` with `unittest.mock.AsyncMock` for interaction mocking; `pytest-asyncio` for async command tests | Unit tests mock `ctx` / `interaction`; integration tests use `discord.py` test utilities with real bot token + test guild |
 
 **Key rule:** Mobile test frameworks are fundamentally different from web. `flutter test` ≠ `npm test`. Bootstrap must detect the platform and emit the correct command.
 

@@ -30,7 +30,7 @@ that implementation and verification nodes consume.
 | Data-at-rest encryption | DB-level / application-level / KMS-managed | Product stores PII or financial data |
 | Rate limiting | Token bucket / sliding window / per-user / per-IP | Product has public API or user-facing endpoints |
 | Input validation | Schema validation / sanitization / parameterized queries | Always (OWASP Top 10) |
-| Key management | Environment vars / HashiCorp Vault / cloud KMS / keychain | Product uses API keys, encryption keys, or secrets |
+| Key management | Environment vars / HashiCorp Vault / cloud KMS / **macOS Keychain (required for macOS/iOS native apps)** / Android Keystore | Product uses API keys, encryption keys, or secrets. For macOS/iOS: Keychain is the REQUIRED storage — UserDefaults is plaintext and env vars are unavailable in sandboxed bundles. |
 | Regulatory / Compliance | GDPR (EU user data) / COPPA (under-13 users) / PCI-DSS (payment card data) / HIPAA (health data) / App Store guidelines | Product collects personal data, handles payments, or targets minors |
 | Game anti-cheat | Server-side authoritative validation / replay verification / anomaly detection / ban system | Multiplayer games or games with economy systems — client-side data must never be trusted for score/inventory/currency |
 
@@ -40,6 +40,7 @@ that implementation and verification nodes consume.
 - Every authentication flow has a defined token lifecycle (issue, refresh, revoke)
 - Sensitive data paths are identified (PII, credentials, payment data) with protection measures
 - OWASP Top 10 mitigations are addressed for the project's tech stack
+- **macOS/iOS apps**: Keychain access group configuration is documented with STRIDE analysis (Elevation of Privilege: wrong access group allows cross-app secret reads; Tampering: unrestricted Keychain items survive app uninstall and are accessible to reinstalled apps). Key items: `kSecAttrAccessible` value should be `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` for most secrets (not `kSecAttrAccessibleAlways`).
 
 ## Interaction Mode
 

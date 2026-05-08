@@ -41,9 +41,9 @@ it exposes runtime issues that compile-verify cannot catch.
 
 | Output | What |
 |--------|------|
-| `demo-plan.json` | Data design: entities, volumes, chains, media needs |
-| `forge-data.json` | Record of all created entities with IDs |
-| `verify-report.json` | Visual verification results |
+| `.allforai/demo-forge/demo-plan.json` | Data design: entities, volumes, chains, media needs |
+| `.allforai/demo-forge/forge-data.json` | Record of all created entities with IDs |
+| `.allforai/demo-forge/verify-report.json` | Visual verification results |
 
 **forge-data.json field schema:**
 ```json
@@ -67,6 +67,17 @@ it exposes runtime issues that compile-verify cannot catch.
 ```
 `seed_data[].role_ref` is a foreign key to `role-profiles.json roles[].id`.
 Every seed record must be associated with a role that can access it.
+
+## BaaS Project Guidance
+
+For projects with `architecture_pattern` starting with `baas-`, there is no traditional REST API to drive. Use the BaaS SDK directly:
+
+| BaaS | SDK for Seeding | Credential Notes |
+|------|-----------------|-----------------|
+| Supabase (`baas-supabase`) | `@supabase/supabase-js` — use `createClient(url, SERVICE_ROLE_KEY)` for seeding (bypasses RLS); then verify display with `ANON_KEY` (respects RLS — tests actual user-facing behavior). **Never use curl** — Supabase RLS operates at the Postgres level; curl requests without JWT hit RLS and fail. Run `supabase start` for local dev. | `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` for seed; `SUPABASE_ANON_KEY` for verify |
+| Firebase (`baas-firebase`) | Firebase Admin SDK for seeding (bypasses Security Rules); Firebase Client SDK for verification (respects Security Rules). Run `firebase emulators:start` for local. **Never bypass Firestore Security Rules in verify phase** — that masks real auth bugs. | `FIREBASE_PROJECT_ID` + service account JSON for admin; `FIREBASE_API_KEY` for client |
+| AWS Amplify (`baas-amplify`) | Amplify SDK (`@aws-amplify/auth`, `@aws-amplify/api`) with admin credentials for seeding; user pool credentials for verify | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` for admin |
+| Appwrite (`baas-appwrite`) | Appwrite SDK with API key for seeding; session-based client for verify | `APPWRITE_API_KEY` for admin; session token for client verify |
 
 ## Methodology Guidance (not steps)
 
@@ -145,8 +156,8 @@ For Twine / PICO-8 / GBStudio / Ren'Py web exports: static exports with no serve
 
 | Artifact | Field Path | Consumer Capability | Required | Reason |
 |----------|------------|---------------------|----------|--------|
-| `forge-data.json` | `seed_data[].role_ref` | product-verify | required | 动态验证需要已填充数据的角色信息来逐角色测试 |
-| `verify-report.json` | verification results | concept-acceptance | optional | 概念验收参考 demo 验证结果 |
+| `.allforai/demo-forge/forge-data.json` | `seed_data[].role_ref` | product-verify | required | 动态验证需要已填充数据的角色信息来逐角色测试 |
+| `.allforai/demo-forge/verify-report.json` | verification results | concept-acceptance | optional | 概念验收参考 demo 验证结果 |
 
 ## Composition Hints
 

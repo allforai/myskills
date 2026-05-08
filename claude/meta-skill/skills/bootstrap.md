@@ -111,6 +111,8 @@ Read these files if they exist (skip missing ones silently):
 - build.gradle.kts with `com.soywiz.korlibs.korge` in dependencies OR `id("com.soywiz.korge")` in plugins block (KorGE — Kotlin/Multiplatform game engine)
 - package.json with `littlejsengine` in dependencies (LittleJS — tiny JavaScript 2D game engine)
 - requirements.txt or pyproject.toml with `arcade` in dependencies (Arcade — Python 2D game framework, alternative to pygame)
+- `build.gradle` or `build.gradle.kts` with `net.fabricmc:fabric-loader` in dependencies → Minecraft mod (Fabric loader). Set `architecture_pattern: 'game-mod'`, `is_game_project = true`. Fabric signals: `fabric.mod.json` in `src/main/resources/`, `*.client.json` mixin configs. Verification: `./gradlew build` for compile; functional tests require a running Minecraft instance — document as manual test scenarios. **CRITICAL: game-mod ≠ library-sdk** — do NOT suppress demo-forge (mod testing = running inside a live Minecraft game) and do NOT set architecture_pattern to 'library-sdk'.
+- `build.gradle` or `build.gradle.kts` with `net.minecraftforge:forge` in dependencies → Minecraft mod (Forge loader). Set `architecture_pattern: 'game-mod'`, `is_game_project = true`. Forge signals: `src/main/resources/META-INF/mods.toml`, `forge.cfg`. Same verification and demo-forge rules as Fabric above.
 
 **Game engine SDK disambiguation heuristic:**
 Some SDKs have "game" or "engine" in their name but are used for non-game purposes:
@@ -127,7 +129,7 @@ Some SDKs have "game" or "engine" in their name but are used for non-game purpos
 
 **Mobile frameworks:**
 - package.json with `react-native` in dependencies but NO expo key/dependency AND no eas.json → `framework: React Native (bare workflow), architecture_pattern: 'mobile-rn-bare'`. Verification: Detox (`@testing-library/react-native` + `detox`) or Maestro for E2E; iOS: `xcodebuild`, Android: `./gradlew`. Note: bare workflow requires separate iOS (Xcode) + Android (Gradle) build configs, unlike Expo managed.
-- pubspec.yaml with `flutter` as an SDK dependency but NOT `flame` in dependencies (Flame is a game engine; detect Flutter app separately from Flutter game). To determine target platform, check `pubspec.yaml`'s `flutter.platforms` field or presence of `{macos,windows,linux}/` directories vs `android/` or `ios/`: if only desktop platform directories exist → `architecture_pattern: 'mobile-flutter-desktop'`; if iOS/Android present → `architecture_pattern: 'mobile-flutter'`. Verification: for desktop, `flutter test integration_test/` with desktop device target; for mobile, `flutter test integration_test/` on iOS Simulator / Android Emulator.
+- pubspec.yaml with `flutter` as an SDK dependency but NOT `flame` in dependencies (Flame is a game engine; detect Flutter app separately from Flutter game). To determine target platform, check `pubspec.yaml`'s `flutter.platforms` field or presence of `{macos,windows,linux}/` directories vs `android/` or `ios/`: if only desktop platform directories exist → `architecture_pattern: 'mobile-flutter-desktop'`; if iOS/Android present → `architecture_pattern: 'mobile-flutter'`. Verification: for desktop, `flutter test integration_test/` with desktop device target; for mobile, `flutter test integration_test/` on iOS Simulator / Android Emulator. **Offline-first exception**: if `drift` (or `drift_sqflite`) is in `pubspec.yaml` dependencies AND no backend module is detected (no go.mod, no Cargo.toml, no package.json with Express/FastAPI/etc.) → set `offline_first: true` in bootstrap-profile.json. Suppress `demo-forge` (no backend API to drive data population — Drift persists directly to local SQLite) and `runtime-smoke-verify` (no HTTP server to health-check). Note: "Offline-first Flutter+Drift detected — demo-forge and runtime-smoke-verify suppressed (no backend API)."
 - build.gradle.kts with `kotlin("multiplatform")` plugin AND `sourceSets { commonMain ... iosMain ... androidMain }` → `framework: Kotlin Multiplatform Mobile (KMM), architecture_pattern: 'mobile-kmm'`. KMM shares business logic across iOS/Android; two separate client modules (iOS Swift + Android Kotlin) consume the shared Kotlin module. Verification: `./gradlew :shared:test` for shared module; platform-specific tests for iOS (XCTest) and Android (instrumentation). Cross-module stitch applies — shared module API must be validated against both platform consumers.
 
 **Web SSR frameworks (additional detections):**
@@ -162,6 +164,9 @@ Set: `architecture_pattern: 'library-sdk'`. **Verification note**: library proje
 - `manifest.json` at root with both `"id"` and `"minAppVersion"` fields AND `package.json` with `obsidian` in `devDependencies` or `dependencies` (Obsidian plugin; architecture_pattern: 'ide-plugin-obsidian'). Note: do NOT rely on a `.obsidianplugin` file — it does not exist in the Obsidian ecosystem.
 - package.json with `@types/vscode` in devDependencies AND `"contributes"` section OR `.vscodeignore` present (VS Code extension; architecture_pattern: 'ide-plugin-vscode')
 - manifest.json at root with `"manifest_version"` key AND `"browser_action"` or `"action"` or `"background"` (Browser extension; architecture_pattern: 'browser-extension')
+
+**Deployment platform markers:**
+- `vercel.json` at root OR `package.json` scripts containing `"vercel"` as a value OR `vercel` as a direct devDependency → Vercel-deployed project. Set `deployment_platform: 'vercel'` in bootstrap-profile.json. Vercel IS the infrastructure — Step 3 MUST suppress the `infra-design` node. Note in bootstrap output: "Vercel deployment detected — infra-design omitted (Vercel is the infrastructure)." The `architecture_pattern` remains unchanged (e.g., Next.js stays 'web-nextjs' — Vercel is the deploy target, not the framework).
 
 **Backend-as-a-Service (BaaS) / cloud-native:**
 BaaS projects have NO separate backend module — the backend IS the cloud service. Set `architecture_pattern: 'baas-<provider>'` and do NOT create a separate backend module in the workflow.
@@ -545,6 +550,8 @@ Write to `.allforai/bootstrap/bootstrap-profile.json`:
   "is_game_project": false,
   "game_engines_detected": ["<engine name(s) from Step 1.1 detection, empty if none>"],
   "game_scenario": "casual-mobile | action-rpg | multiplayer-online | roguelike | strategy-sim | narrative-adventure | null",
+  "deployment_platform": "vercel | null",  // vercel when vercel.json / vercel devDep detected; null otherwise
+  "offline_first": false,  // true when Flutter+Drift without backend module detected
   "requires_runtime_env": false,  // true only when goals include translate/rebuild/create; false for analyze/tune/quality-checks
   "detected_state": {
     "has_code": false,

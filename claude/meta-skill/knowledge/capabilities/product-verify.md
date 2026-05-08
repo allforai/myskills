@@ -32,8 +32,10 @@ Every module in the project must be verified using its appropriate tool.
 | Web (Next.js, React, Vue) | Playwright | Browser navigate + interact + screenshot |
 | Flutter mobile | `flutter test integration_test/` | Compile + run integration tests on emulator/device |
 | React Native | Detox or Maestro | Native E2E test runner |
-| iOS native (SwiftUI) | XCUITest | Xcode test runner |
+| iOS native (SwiftUI) | XCUITest | Xcode test runner (`xcodebuild test -destination 'platform=iOS Simulator'`) |
+| macOS native (SwiftUI/AppKit) | XCUITest + XCTest | `xcodebuild test -destination 'platform=macOS'`; verify window launch, menu bar items, Keychain access, entitlement-gated features |
 | Android native (Kotlin) | Espresso | Gradle test runner |
+| Discord bot | `discord.js` mock client / `discord-py` pytest fixtures | Unit-test command handlers with mocked interactions; integration-test with a dedicated test guild (real bot token) |
 | API-only backend | curl / HTTP client | Endpoint integration test |
 | Unity | Unity Test Framework (`-runTests -testPlatform PlayMode`) | Automated playmode tests on target platform |
 | Unreal Engine | Gauntlet / Automation Framework | Automated functional tests |

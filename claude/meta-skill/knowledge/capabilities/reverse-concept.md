@@ -84,7 +84,7 @@ conflicts block downstream phases — product-analysis should not proceed on a c
       "id": "R1",
       "name": "<role name inferred from auth/permission code or README>",
       "app": "<frontend app this role uses — from routing/module analysis>",
-      "client_type": "<mobile-ios | mobile-android | web | desktop — from detected tech stack>",
+      "client_type": "<mobile-ios | mobile-android | web | desktop | swiftui-macos | menu-bar-app | discord-bot | slack-bot | telegram-bot — from detected tech stack>",
       "screen_granularity": "<inferred from component complexity and navigation depth>",
       "high_frequency_tasks": ["<top 3 tasks from API endpoint frequency analysis>"],
       "design_principle": "<inferred from UX patterns in code>",
@@ -150,10 +150,10 @@ See `product-concept.md` sub-phases for the canonical schemas of each file.
 
 | Artifact | Field Path | Consumer Capability | Required | Reason |
 |----------|------------|---------------------|----------|--------|
-| `concept-baseline.json` | `mission`, `roles[].high_frequency_tasks` | product-analysis | required | product-analysis 用 baseline 做一致性检查，避免循环分析 |
-| `concept-baseline.json` | `reverse_extras.core_features[].jtbd` | product-verify | optional | 验收时检查实现是否满足 JTBD 成功条件；字段位于 reverse_extras 扩展块 |
-| `concept-conflicts.json` | `conflicts[]` | product-analysis | required | product-analysis 需要知道哪些概念有冲突，避免基于矛盾信息做分析 |
-| `concept-conflicts.json` | `conflicts[].resolved` | concept-acceptance | optional | 验收时检查冲突是否已被解决 |
+| `.allforai/product-concept/concept-baseline.json` | `mission`, `roles[].high_frequency_tasks` | product-analysis | required | product-analysis 用 baseline 做一致性检查，避免循环分析 |
+| `.allforai/product-concept/concept-baseline.json` | `reverse_extras.core_features[].jtbd` | product-verify | optional | 验收时检查实现是否满足 JTBD 成功条件；字段位于 reverse_extras 扩展块 |
+| `.allforai/product-concept/concept-conflicts.json` | `conflicts[]` | product-analysis | required | product-analysis 需要知道哪些概念有冲突，避免基于矛盾信息做分析 |
+| `.allforai/product-concept/concept-conflicts.json` | `conflicts[].resolved` | concept-acceptance | optional | 验收时检查冲突是否已被解决 |
 
 ## Methodology Guidance
 
@@ -178,6 +178,8 @@ See `product-concept.md` sub-phases for the canonical schemas of each file.
 - Entity relationships reveal what each role creates/reads/manages
 - For each role: extract jobs (from endpoints), pains (from error handling),
   gains (from success flows)
+- **Discord bots**: Roles are defined by guild permission checks, NOT HTTP middleware. Look for: `interaction.member.permissions.has(PermissionFlagsBits.X)` checks, command `defaultMemberPermissions` field, `required_permissions` arrays, or `@discordjs/builders` permission decorators. Slash command groups = feature domains; permission requirements = role boundaries. `client_type: 'discord-bot'` for all roles.
+- **macOS native apps**: Check entitlements files (`*.entitlements`) for sandbox/capability declarations; check SwiftUI `@AppStorage` / `NSUserDefaults` for settings persistence; check `NSApplicationDelegate` for app lifecycle. Menu bar apps (`NSStatusBar` / `LSUIElement = YES`) get `client_type: 'menu-bar-app'`; regular windowed apps get `client_type: 'swiftui-macos'`.
 
 **4. Governance & System Boundaries**
 - Content lifecycle: who creates → who reviews → who publishes → who consumes
