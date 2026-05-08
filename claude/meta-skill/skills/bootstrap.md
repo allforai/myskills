@@ -1022,7 +1022,9 @@ is likely too large for a single workflow execution. Suggest decomposition:
       "discipline_owner": null
     }
   ],
-  "transition_log": []
+  "transition_log": [],
+  "diagnosis_history": [],
+  "corrections_applied": []
 }
 ```
 
