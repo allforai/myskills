@@ -128,6 +128,10 @@ Some SDKs have "game" or "engine" in their name but are used for non-game purpos
 
 **Web SSR frameworks (additional detections):**
 - package.json with `@sveltejs/kit` in dependencies OR `svelte.config.js` at root with `@sveltejs/kit/vite` adapter → `framework: SvelteKit, architecture_pattern: 'web-ssr-sveltekit'`. Verification: `npm run test` (vitest) for unit tests, Playwright for E2E (SvelteKit has first-class Playwright integration).
+- package.json with `nuxt` OR `@nuxt/kit` in dependencies OR `nuxt.config.ts/js` at root → `framework: Nuxt (Vue SSR), architecture_pattern: 'web-ssr-nuxt'`. Verification: `nuxt test` (Nuxt's built-in testing module) or Playwright for E2E.
+- astro.config.mjs or astro.config.ts at root OR package.json with `astro` in dependencies → `framework: Astro, architecture_pattern: 'web-ssg-astro'`. Verification: Playwright for E2E on built output; `astro check` for TypeScript/component errors.
+- package.json with `@remix-run/node` OR `@remix-run/react` in dependencies → `framework: Remix, architecture_pattern: 'web-ssr-remix'`. Verification: Playwright for E2E; `remix vite:build` for compile check.
+- package.json with `gatsby` in dependencies → `framework: Gatsby (React SSG), architecture_pattern: 'web-ssg-gatsby'`. Verification: `gatsby build` + Playwright on built site.
 
 **Desktop app frameworks:**
 - src-tauri/tauri.conf.json OR src-tauri/Cargo.toml (Tauri — Rust-powered desktop app with web frontend; architecture_pattern: 'desktop-app-tauri')
