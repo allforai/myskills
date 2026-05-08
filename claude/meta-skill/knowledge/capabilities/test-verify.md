@@ -123,9 +123,17 @@ Bootstrap MUST generate the correct test commands per platform:
 | iOS (Swift) | `xcodebuild test -scheme X -destination 'platform=iOS Simulator'` | XCUITest |
 | Android (Kotlin) | `./gradlew test` | `./gradlew connectedAndroidTest` |
 | React Native | `npx jest` | Detox / Maestro |
+| Unity | `Unity.exe -runTests -testPlatform EditMode -projectPath .` | PlayMode: `-testPlatform PlayMode` |
+| Godot | `godot --headless --script addons/gut/gut_cmdln.gd` (GUT framework) | Manual scene tests |
+| Roblox (Rojo) | TestEZ via `rojo test` or custom runner | Manual in Roblox Studio |
+| Rust game (Bevy/macroquad) | `cargo test` for logic | Rendering: manual test scenarios |
+| GBStudio | **No automated test runner** — manual verification only | N/A |
+| PICO-8 | **No automated test runner** — manual verification only | N/A |
+| Twine / Ren'Py | Playwright E2E on exported HTML bundle (`npx serve dist/` then Playwright) | passage navigation, variable tracking, ending states |
 
-**Key rule:** Mobile test frameworks are fundamentally different from web.
-`flutter test` ≠ `npm test`. Bootstrap must detect the platform and emit the correct command.
+**Key rule:** Mobile test frameworks are fundamentally different from web. `flutter test` ≠ `npm test`. Bootstrap must detect the platform and emit the correct command.
+
+**No-test-runner guard**: If bootstrap detects `architecture_pattern` matching GBStudio, PICO-8, or Ren'Py, mark R3/R4 as `applicable: false` with reasoning "Platform has no automated test runner — manual verification only." Do not attempt to run a test command.
 
 ## Downstream Consumers
 

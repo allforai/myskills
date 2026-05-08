@@ -8,6 +8,22 @@
 Generate target platform code from source code + .allforai/ artifacts.
 Strategy selection per component, compile-verify loop per module.
 
+## Prerequisites / Context Pull
+
+| Artifact | Source | Field | Required | When |
+|----------|--------|-------|----------|------|
+| `source-summary.json` | discovery | `tech_stacks`, `modules` | required | always — tech stack drives strategy selection and build commands |
+| `file-catalog.json` | discovery | `modules[].key_files` | required | always — translate reads source files from this catalog |
+| `reuse-assessment.json` | discovery | `per_component` | optional | translate/rebuild goals — determines reuse vs rebuild per component |
+| `prune-tasks.json` | feature-prune | `decisions[].included` | optional | when feature-prune node exists — scope gate for implementation |
+| `entity-model.json` | generate-artifacts | `entities[]`, `relationships[]` | required | create/rebuild goals — data model foundation for ORM/migrations |
+| `product-map.json` | generate-artifacts | all fields | required | create/rebuild goals — drives component scope and order |
+| `api-spec.json` | design-to-spec | `endpoints[]` | required | create/rebuild goals when design-to-spec is present |
+| `db-schema.md` | design-to-spec | table definitions | required | create/rebuild goals when design-to-spec is present |
+| `protocol-spec.md` | design-to-spec | message types | optional | realtime projects (WebSocket/gRPC/SSE) only |
+
+**Existing code conflict resolution**: Before writing any file, check whether a target file already exists. If yes: diff against intended output. Minor divergence → emit `TODO(merge-conflict)` comment at the diff site and proceed. Structural divergence (different architecture) → raise as UPSTREAM_DEFECT and pause — do not overwrite silently.
+
 ## What LLM Must Accomplish (not how)
 
 ### Required Outcomes
@@ -18,6 +34,7 @@ Strategy selection per component, compile-verify loop per module.
 - Route parity verified (every source route has a target equivalent)
 - Model-to-route traceability verified
 - Prune scope respected: load `.allforai/feature-prune/prune-tasks.json` before planning component scope. Only implement tasks where `decisions[].included = true`. Tasks with `included = false` must NOT be implemented — create a `TODO(excluded-by-prune)` comment at most.
+- `translation-manifest.json` written to `.allforai/translate/translation-manifest.json` on completion — records each module's status and output path for compile-verify and product-verify consumption.
 
 ### Strategy Selection (per component, LLM decides)
 

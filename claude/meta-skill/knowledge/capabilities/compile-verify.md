@@ -59,10 +59,16 @@ Bootstrap MUST generate the correct build commands per platform:
 | iOS (Swift) | `xcodebuild build -scheme X -destination 'generic/platform=iOS'` | .app |
 | Android (Kotlin) | `./gradlew assembleDebug` | .apk |
 | React Native | `npx react-native build-android` / `build-ios` | .apk/.app |
-| Rust | `cargo build` | target/ |
+| Rust (binary / CLI) | `cargo build --release` | target/release/<bin> |
+| Rust (library / SDK) | `cargo test` | target/debug/deps/ — compile + doctests confirm public API surface |
+| Kotlin Multiplatform (KMM) shared | `./gradlew :shared:build` | shared/build/ — must run BEFORE iOS/Android compile nodes |
+| AWS SAM (serverless) | `sam build` | .aws-sam/build/ |
+| Serverless Framework | `serverless package` | .serverless/ |
 | Unity | `unity -batchmode -buildTarget Android/iOS/StandaloneWindows64 -executeMethod BuildScript.Build` | .apk/.app/.exe |
 | Unreal Engine | `UnrealBuildTool` / `RunUAT BuildCookRun` | .pak + binary |
 | Godot | `godot --headless --export-release "platform" output` | .apk/.app/.exe/.pck |
+| Python (desktop/script) | `python -m pytest --co -q` (collection-only; fastest syntax+import check) | N/A (interpreted) |
+| Twine / Twee (narrative) | `tweego -o dist/index.html *.tw` (if tweego installed) OR skip | dist/index.html |
 
 ## Downstream Consumers
 
@@ -85,6 +91,7 @@ Each has distinct build toolchains that may require different environments:
 - `compile-verify-web` — Node.js + bundler
 - `compile-verify-api` — Go/Python/Java
 - `compile-verify-flutter` — Flutter SDK + Dart
+- `compile-verify-kmm-shared` — Kotlin Multiplatform shared module (`./gradlew :shared:build`); must run BEFORE iOS/Android compile nodes
 - `compile-verify-ios` — Xcode + CocoaPods/SPM
 - `compile-verify-android` — Android SDK + Gradle
 - `compile-verify-unity` — Unity Editor (batchmode) + target SDK

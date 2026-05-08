@@ -37,6 +37,7 @@ design tokens, per-screen layouts, component specs, and optional interactive pre
 
 - **Design tokens first**: Establish visual language before screen design
 - **Per-role previews**: Each role sees different screens — design separately
+- **Multi-client roles**: Load `product-concept.json roles[].clients[]`. For `feature_parity: full` → one unified screen set. For `partial` → base screen set plus per-client deviation specs for each `parity_exceptions[]` item. For `independent` → separate screen sets per client. For `explicit` → design only `supported_features[]` per client. Use `client_type` to select component vocabulary (Cupertino for `swiftui-ios`, Material for `kotlin-android`).
 - **State completeness**: Every screen includes all state variants in the spec
 - **Don't over-specify**: Describe intent and constraints, not pixel coordinates
 - **Component reuse**: Identify shared components across screens, define once
@@ -47,7 +48,8 @@ design tokens, per-screen layouts, component specs, and optional interactive pre
 |-------------|----------------------|
 | Consumer mobile app | Mobile-first, touch targets, thumb zones, offline states |
 | Admin dashboard | Data density, table/form patterns, multi-action pages |
-| Game | Art direction replaces UI design; mood board, style guide, character design |
+| Casual / narrative game | Art direction replaces UI design; mood board, style guide, character design |
+| Multiplayer / action game with HUD | Produce both art direction AND interaction-spec covering HUD components (health/stamina bars, minimap, scoreboard, inventory grid, toast notifications) plus UI screens (lobby, matchmaking, settings) |
 | SDK/Library | Documentation design replaces UI design (Diátaxis framework) |
 | CLI | No UI design needed — skip entirely |
 

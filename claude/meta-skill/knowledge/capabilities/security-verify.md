@@ -77,6 +77,11 @@ and "the code actually does X".
 - Secrets loaded from environment variables or secret manager
 - .env files in .gitignore
 
+**7. Dependency Supply Chain**
+- Run `cargo audit` / `npm audit` / `pip audit` / `bundler-audit` as appropriate
+- Flag any CVE-rated vulnerabilities (high/critical block release; medium/low → document)
+- Applies to all projects (even library-sdk and embedded-firmware that skip auth dimensions)
+
 ### Required Quality
 
 - Every decision from security-design has an explicit verdict
@@ -116,3 +121,5 @@ For simple projects: add security checks as an additional dimension within quali
 
 ### Skip Entirely
 For internal tools with no user data, prototype projects, or when security-design was explicitly skipped.
+
+For `architecture_pattern: library-sdk`, `ide-plugin-obsidian`, `ide-plugin-vscode`, or `embedded-firmware`: skip auth/authorization/rate-limiting/transport dimensions (no server endpoints exist). Still run **Check Dimension 6 (Key Management)** and **Check Dimension 7 (Dependency Supply Chain)** — hardcoded secrets and CVEs are risks for any project type.
