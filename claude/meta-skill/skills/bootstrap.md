@@ -37,7 +37,7 @@ Record what exists:
 - `has_product_artifacts`: true if product-map/task-inventory.json exists
 - `has_experience_map`: true if experience-map/experience-map.json exists
 - `has_bootstrap`: true if bootstrap/workflow.json exists (previous /bootstrap run)
-- `has_code`: true if source code files (*.ts, *.tsx, *.js, *.mjs, *.go, *.py, *.cs, *.rs, *.dart, *.swift, *.kt, *.java, *.cpp, *.c, *.rb, *.lua, *.gd, *.hx, *.p8, *.p8.png, etc.) are detected in Step 1.1. Config-only files (package.json, Cargo.toml, go.mod, pubspec.yaml, pom.xml with no src/) do NOT set has_code = true. Note: *.p8 PICO-8 cartridges embed Lua code and count as source files.
+- `has_code`: true if source code files (*.ts, *.tsx, *.js, *.mjs, *.go, *.py, *.cs, *.rs, *.dart, *.swift, *.kt, *.java, *.cpp, *.c, *.rb, *.lua, *.luau, *.server.luau, *.client.luau, *.gd, *.hx, *.p8, *.p8.png, *.twee, *.tw, etc.) are detected in Step 1.1. Config-only files (package.json, Cargo.toml, go.mod, pubspec.yaml, pom.xml with no src/) do NOT set has_code = true. Notes: *.p8 PICO-8 cartridges embed Lua code; *.luau is Roblox's Luau dialect (Rojo projects use .luau not .lua); *.twee/*.tw are Twine story source files.
 - `has_iteration_feedback`: true if product-concept/iteration-feedback.json exists (previous concept-acceptance feedback)
 - `has_product_concept`: true if product-concept/product-concept.json exists
 - `has_decision_journal`: true if product-concept/decision-journal.json exists (previous /journal records)
@@ -57,6 +57,7 @@ Read these files if they exist (skip missing ones silently):
 **Package managers / language markers:**
 - package.json, package-lock.json, yarn.lock, pnpm-lock.yaml
 - bun.lockb (Bun runtime lock file — treat as `runtime: bun`; also check `package.json` scripts for `bun run` to confirm)
+- app.json with `"expo"` key at root, OR eas.json, OR package.json with `expo` in dependencies → `framework: Expo (React Native), architecture_pattern: 'mobile-rn-expo'`
 - go.mod, go.sum
 - Cargo.toml, Cargo.lock
 - pubspec.yaml, pubspec.lock
@@ -87,14 +88,14 @@ Read these files if they exist (skip missing ones silently):
 - game.js + game.json at project root (WeChat Mini Game; distinguished from mini programs which use app.js)
 - *.yyp (GameMaker Studio 2)
 - *.twee or *.tw (Twine / interactive fiction; scenario hint: narrative-adventure)
-- *.rbxlx or *.rbxl (Roblox Studio place files) or default.project.json containing a `"tree"` key with `"$className": "DataModel"` (Rojo workflow for Roblox)
+- *.rbxlx or *.rbxl (Roblox Studio place files) or default.project.json containing a `"tree"` key with `"$className": "DataModel"` (Rojo workflow for Roblox; scenario hint: multiplayer-online — Roblox is always client-server multiplayer)
 - GameScene.swift at project root or in Sources/ (SpriteKit / SceneKit — Apple's 2D/3D game frameworks for iOS/macOS)
 - package.json with `phaser` in dependencies (Phaser.js — popular HTML5 / WebGL game framework)
 - package.json with `kaboom` in dependencies (Kaboom.js — JavaScript game library)
 - package.json with `excalibur` in dependencies (Excalibur.js — TypeScript game engine)
 - build.gradle or build.gradle.kts with `com.badlogicgames.gdx:gdx` (libGDX — Java/Kotlin cross-platform game framework)
 - *.sdpkg or *.csproj with `Stride.Games` in dependencies (Stride — C#/.NET game engine, formerly Xenko)
-- *.gbsproj (GBStudio — Game Boy / Game Boy Color game maker)
+- *.gbsproj (GBStudio — Game Boy / Game Boy Color game maker; scenario hint: casual-mobile; platform capability guard applies — no IAP/push/store)
 - haxelib.json with `flixel` in dependencies (HaxeFlixel — Haxe 2D game framework)
 - build.settings + main.lua at project root (Solar2D / Corona SDK — Lua mobile game engine; ≠ LÖVE2D which uses conf.lua instead of build.settings; ⚠ Solar2D detection takes precedence — if build.settings is present, suppress any LÖVE2D match from *.love glob)
 - *.p8 or *.p8.png at project root (PICO-8 fantasy console cartridge)
@@ -321,15 +322,18 @@ If the user's game doesn't fit any template exactly, suggest the closest match:
 - PICO-8 / 幻想主机 / 复古风格游戏 → a) 超休闲/中度手游; note: despite the "mobile" label, treat as general casual — apply platform capability guard below
 - 平台移植 (same-engine platform port, e.g., Unity PC → Unity mobile) → goal (c) 同栈重建; add note: "platform port = rebuild with target platform constraints (touch input, resolution, performance budget)"
 
-**Platform capability guard (applies during Step 3.1 canonical optional selection):**
+**Platform capability guard (applies during Step 3.1 node injection):**
 Some game engines/platforms structurally cannot support IAP, push notifications, or retention systems.
 For these platforms, suppress `monetization-design`, `retention-hook-design`, and `meta-game-design`
-from the canonical optional eligibility pool, regardless of the selected scenario template:
+from BOTH (a) the `required_nodes` list AND (b) the canonical optional eligibility pool, regardless
+of what the selected scenario template declares. If these nodes appear in a template's `required_nodes`,
+remove them before building the workflow — the platform constraint overrides the template:
 - PICO-8 (*.p8 detected) — no store integration, no push API
 - LÖVE2D standalone (*.love or main.lua+conf.lua, no build.settings) — no native store
 - GBStudio (*.gbsproj) — Game Boy cartridge, no runtime monetization
 - Twine/Ren'Py web export — static web narrative, no IAP
-Note in the bootstrap output: "Platform [{engine}] does not support IAP/push — monetization/retention nodes omitted from eligibility pool."
+- HaxeFlixel targeting HTML5/desktop only (haxelib.json + flixel, no mobile build config) — no native store
+Note in the bootstrap output: "Platform [{engine}] does not support IAP/push — monetization/retention nodes removed from workflow (required and optional)."
 
 The template is a STARTING POINT. The user can add or remove nodes via the optional node question that follows.
 
