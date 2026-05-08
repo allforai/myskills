@@ -122,6 +122,15 @@ Some SDKs have "game" or "engine" in their name but are used for non-game purpos
 - src-tauri/tauri.conf.json OR src-tauri/Cargo.toml (Tauri — Rust-powered desktop app with web frontend; architecture_pattern: 'desktop-app-tauri')
 - electron.js OR electron-builder.json OR package.json with `electron` as a top-level dependency (Electron — desktop app with Node.js backend; architecture_pattern: 'desktop-app-electron')
 
+**Library / SDK / published package:**
+Detect a project as a publishable library (not an app) when ALL of the following hold:
+- package.json has a `"main"` or `"exports"` field pointing to a dist/lib directory (NOT `"scripts.start"`) AND has no app-like entry points (no `src/App.tsx`, no `pages/`, no `app/`), OR
+- pyproject.toml / setup.py / setup.cfg with a `[tool.poetry]` section that has `packages =` but no Django/Flask/FastAPI dependency in `[tool.poetry.dependencies]`, OR
+- Cargo.toml with `[lib]` section and no `[[bin]]` section, OR
+- pom.xml with `<packaging>jar</packaging>` (not war/ear), AND no `main()` entry class in src/main, OR
+- haxelib.json present (HaxeFlixel/other Haxe libraries are themselves publishable packages)
+Set: `architecture_pattern: 'library-sdk'`. **Verification note**: library projects do NOT need a running server; test with the language's native test runner (`npm test`, `cargo test`, `pytest`, `mvn test`). **demo-forge suppression**: when `architecture_pattern = 'library-sdk'`, suppress `demo-forge` from all goals — library projects have no running service to populate data into. Note in bootstrap output: "Library/SDK project detected — demo-forge omitted (no live server to populate)."
+
 **CI/CD action / marketplace packages:**
 - `action.yml` at root with a `runs:` key (GitHub Actions custom action / reusable action; architecture_pattern: 'github-action')
 - `action.yaml` at root with a `runs:` key (same; yaml extension variant)
@@ -1124,6 +1133,11 @@ has no verification node, the workflow is incomplete.
 | game client (Phaser.js/web) | Jest or Playwright in headless browser (Phaser runs in jsdom or a real browser) | game-test-{name} |
 | game client (pygame/Python) | pytest + `pygame.display.set_mode` in headless SDL (SDL_VIDEODRIVER=dummy) | game-test-{name} |
 | game client (PICO-8) | Manual test only (no headless mode); document manual test scenarios | game-test-manual |
+| game client (Roblox/Luau) | TestEZ framework (Roblox's built-in test runner); run via Roblox Studio Play mode or `run-in-roblox` CLI for headless server tests. Client-side tests require Studio GUI mode — document manual test scenarios for client flows | game-test-{name} |
+| game client (GBStudio) | Manual ROM test in GB emulator (BGB or mGBA); automated testing not supported — document manual test checklist (start screen, progression, save/load, credits) | game-test-manual |
+| game client (SpriteKit/SceneKit — iOS) | XCTest with headless iOS Simulator (`xcodebuild test -scheme {name} -destination 'platform=iOS Simulator,name=iPhone 15'`); game-specific flows via XCUITest; physics/rendering tests via in-process unit tests with `SKView(frame:)` | game-test-{name} |
+| game client (Twine / interactive fiction — web export) | Playwright browser E2E on the exported HTML bundle (serve with `npx serve dist/` then run Playwright); test passage navigation, variable tracking, and ending states | e2e-test-{name} |
+| game client (HaxeFlixel) | haxe + `FlxTest` for unit logic; full game requires headless Flash/OpenFL test runner (`lime test neko` or `lime test html5` with headless browser); document manual test scenarios for visual/audio flows | game-test-{name} |
 | event-driven service (Discord bot / CLI / background worker) | jest/vitest + mock event provider (e.g., discord.js mock client, mock queue consumer); no HTTP routes to curl | e2e-test-{name} |
 | GitHub Actions custom action | `act` (local Actions runner) for end-to-end workflow testing; jest/vitest for JS action unit tests; `@actions/core` mock for testing action I/O | action-test-{name} |
 | mobile (HarmonyOS/ArkTS) | DevEco Studio ohosTest framework via `hdc` (Huawei Device Connector) on HarmonyOS emulator or real device; unit tests via `@ohos/hypium`. ⚠️ No Playwright/Detox/XCUITest support for HarmonyOS | e2e-test-{name} |
@@ -1218,9 +1232,18 @@ Example:
 
 ## Downstream Contract
 <Who consumes this node's output, and what they need from it.
- Generated from the consumers field in workflow.json.
- For each consumer node: which fields/sections of the artifact they read,
- and what format/depth they expect.>
+
+Algorithm: For each consumer node ID listed in workflow.json `consumers[]`:
+1. Look up that consumer node's `capability` field in workflow.json
+2. Load `knowledge/capabilities/<capability>.md` for that consumer
+3. Find the row in the consumer capability's "Downstream Consumers" table where
+   the artifact column matches this node's exit_artifact filename
+4. Use the `Field Path` and `Reason` columns from that row to populate one contract line:
+   "→ <consumer-node-id> reads: <Field Path> — <Reason>"
+5. If the consumer capability has no Downstream Consumers table row for this artifact,
+   write: "→ <consumer-node-id>: reads full artifact (no field-specific dependency declared)"
+
+This algorithm mirrors the Context Pull algorithm (Step 3.3) but runs in the producing direction.>
 
 Example:
   → design-loot-economy reads: mechanics[].name (weapon list), meta_loop.currencies
@@ -1377,6 +1400,16 @@ Exit artifact: `.allforai/bootstrap/cross-module-stitch-report.json`
 - All client nodes' exit artifacts (API call sites)
 - design-to-spec artifacts if available (api-spec.json as reference contract)
 - WebSocket/protocol message types (if applicable)
+
+**Game-protocol stitch (multiplayer/online games):**
+When `is_game_project = true` AND the project has a dedicated server module (e.g., multiplayer
+server, authoritative game server), the cross-module stitch must also verify the game
+wire protocol — NOT just REST routes. Include in the stitch node-spec:
+- WebSocket message schema (if game uses ws/socket.io) — client send ↔ server handler mapping
+- UDP packet format (if game uses UDP; e.g., Godot's NetworkedMultiplayerENet, Unity's UTP)
+- Authoritative server state synchronization: which game state fields the server owns vs. client predicts
+- Client reconciliation flow: how server corrections are applied to client-side predicted state
+- Verify: every message type the client sends has a matching server handler; every server broadcast has a matching client receiver
 
 ### 3.5 Coverage Self-Check (Concept → Workflow Closure)
 

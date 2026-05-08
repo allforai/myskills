@@ -11,7 +11,7 @@
 In a multi-phase pipeline, each phase only reads its direct upstream artifact. Information decays geometrically:
 
 ```
-concept -> map -> experience-map -> ui-design -> dev-forge
+concept -> map -> experience-map -> ui-design -> translate (dev-forge)
  100%      70%       50%              30%          10%
 ```
 
@@ -109,7 +109,7 @@ The concept-distilled baseline is a compact summary covering general decisions. 
 Examples:
 - experience-map needs `governance_styles[].downstream_implications` to decide whether a screen needs a review queue component -- the baseline only has `style: "auto_review"`, not detailed enough
 - use-case needs `roles[].jobs[].pain_relievers` to generate sad path use cases -- the baseline only has `high_frequency_tasks`
-- dev-forge needs `roles[].operation_profile.density` to decide caching strategy -- the baseline only has `screen_granularity`
+- translate (dev-forge) needs `roles[].operation_profile.density` to decide caching strategy -- the baseline only has `screen_granularity`
 
 #### Declaration Format
 
@@ -167,15 +167,15 @@ Fields frequently used by multiple downstream phases. **Fields already in baseli
 | `mission` | product-concept.json | [B] | all phases | product positioning baseline, prevents feature drift |
 | `roles[].app` | role-value-map.json | [B] | all phases | which sub-project code/screens belong to |
 | `roles[].screen_granularity` | role-value-map.json | [B] | experience-map, ui-design | screen splitting strategy |
-| `governance_styles[].style` | product-mechanisms.json | [B] | experience-map, use-case, dev-forge | presence of review screens/use cases/code |
-| `governance_styles[].system_boundary` | product-mechanisms.json | [B] | experience-map, use-case, dev-forge | which features only write integration interfaces |
+| `governance_styles[].style` | product-mechanisms.json | [B] | experience-map, use-case, translate | presence of review screens/use cases/code. Note: "translate" = the meta-skill capability for implementation (formerly called "dev-forge") |
+| `governance_styles[].system_boundary` | product-mechanisms.json | [B] | experience-map, use-case, translate | which features only write integration interfaces |
 | `pipeline_preferences` | product-concept.json | [B] | all phases | auto mode, UI style |
 | `errc_highlights` | product-concept.json | [B] | all phases | feature priority baseline |
-| `governance_styles[].downstream_implications` | product-mechanisms.json | Pull | experience-map, dev-forge | determines specific component requirements |
+| `governance_styles[].downstream_implications` | product-mechanisms.json | Pull | experience-map, translate | determines specific component requirements |
 | `governance_styles[].rationale` | product-mechanisms.json | Pull | use-case | acceptance of governance design rationality |
 | `roles[].jobs[].pain_relievers` | product-concept.json | Pull | use-case | generating sad path use cases |
-| `roles[].operation_profile.density` | role-value-map.json | Pull | ui-design, dev-forge | caching strategy, prefetch behavior |
-| `roles[].operation_profile.high_frequency_tasks` | role-value-map.json | [B] | experience-map | prioritize high-frequency operation entry points |
+| `roles[].operation_profile.density` | role-value-map.json | Pull | ui-design, translate | caching strategy, prefetch behavior |
+| `roles[].high_frequency_tasks` | concept-baseline.json (§A.1 field) | [B] | experience-map | prioritize high-frequency operation entry points. Note: `operation_profile.high_frequency_tasks` lives in role-value-map.json; the baseline only carries the flat `roles[].high_frequency_tasks` field — pull from role-value-map.json when deeper operation_profile fields are needed |
 
 ### A.5 Downstream Contract (Node-Spec Integration)
 
@@ -294,9 +294,9 @@ Issues found -> modify source files -> re-run script -> re-review
 No issues -> pass, proceed to next phase
 ```
 
-**Execution entry**: `python3 verify_review.py <BASE> --phase <phase> [--xv]`
+**Execution**: The verification loop is an LLM-driven process, not a fixed script. The subagent reads phase outputs, applies 4D + 6V + Closure thinking, produces a structured review JSON (issues found), modifies source files, then re-reads outputs and re-reviews. This loop is implemented inline in the node-spec, not via a separate script. (`verify_review.py` was an older reference and is no longer distributed — do not look for it in target projects.)
 
-**XV Enhancement** (optional): The `--xv` flag triggers cross-model cross-validation, sending output summaries to a second AI model (via OpenRouter API) for independent opinions. XV enhances the Loop; it is not an independent phase.
+**XV Enhancement** (optional): Cross-model cross-validation sends output summaries to a second AI model (via the `mcp__plugin_meta-skill_ai-gateway__ask_model` tool or equivalent) for independent opinions. XV enhances the loop; it is not an independent phase.
 
 **Loop round limits**: max 2-3 rounds of generate -> review -> fix -> re-review. If issues persist after 3 rounds, mark as UNRESOLVED and proceed.
 
@@ -335,7 +335,7 @@ State coverage: annotate four states        State coverage: every state has code
 
 **Development closure is "implementation-level"**: 100% complete all closures. Product design only marked 3 exceptions; development must derive 15 from those 3 (network timeout, concurrency conflicts, permission changes, data inconsistency, external service degradation...).
 
-**dev-forge's responsibility shift**: design-to-spec should not just "translate" product design's exception list; it should **proactively derive the negative space** -- using product design's normal flows as input, systematically derive all possible exception paths, boundary conditions, race conditions, and degradation strategies.
+**Translate capability's responsibility shift**: design-to-spec should not just "translate" product design's exception list; it should **proactively derive the negative space** -- using product design's normal flows as input, systematically derive all possible exception paths, boundary conditions, race conditions, and degradation strategies.
 
 ---
 
@@ -460,7 +460,11 @@ The pipeline is unidirectional: concept -> map -> experience-map -> ... -> code.
 
 ### Backfill Mechanism
 
-When design-to-spec phase 1.5 discovers Category B gaps, **write back directly to upstream artifacts**:
+When any implementation node (design-to-spec, translate, or any spec/implementation phase) discovers a closure-derivable gap, **write back directly to upstream artifacts**:
+
+**Category A** — entirely new domain (not derivable from existing features): do NOT backfill; record in `_uncertainty.unexplored_areas` within the node's own report file for the next product design iteration.
+
+**Category B** — derivable from an existing feature's capability closure (e.g., "password recovery" derived from "login"): backfill upstream + forward generate spec.
 
 ```
 Category B discovery (e.g., "password recovery" -- derived from "login"'s capability-level closure)
@@ -477,6 +481,27 @@ Record:
   5. negative-space-supplement.json (audit trail: what was discovered, why judged as gap vs new domain)
 ```
 
+`negative-space-supplement.json` schema:
+```json
+{
+  "discoveries": [
+    {
+      "id": "NS-001",
+      "type": "Category A | Category B",
+      "description": "<what was discovered>",
+      "derived_from": "<existing feature ID or 'n/a' for Category A>",
+      "derivation_ring": "<1=direct closure | 2=second-order | 3=third-order>",
+      "action": "backfill | record_only",
+      "backfilled_entries": ["<task-inventory.json:T099>", "..."],
+      "discovered_by": "<node-id>",
+      "discovered_at": "<ISO timestamp>"
+    }
+  ]
+}
+```
+
+`_uncertainty.unexplored_areas` is a list of strings appended to the discovering node's report file (e.g., `gap-report.md`, `spec-compliance-report.json`) — it is NOT a separate file. Format: `{ "_uncertainty": { "unexplored_areas": ["<description of new domain discovered but not pursued>"] } }`.
+
 ### Backfill Entry Marker
 
 All backfilled entries are appended to original files using the `_backfill` marker:
@@ -486,7 +511,7 @@ All backfilled entries are appended to original files using the `_backfill` mark
   "id": "T099",
   "name": "credential recovery",
   "_backfill": {
-    "source": "design-to-spec 1.5",
+    "source": "<node-id that discovered the gap>",
     "ns_ref": "NS-001",
     "derived_from": "T005-authentication (capability-level closure: credential loss recovery)",
     "derivation_ring": 1,

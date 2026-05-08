@@ -375,6 +375,7 @@ Full theory reference: `${CLAUDE_PLUGIN_ROOT}/knowledge/product-design-theory.md
 | `product-concept.json` | `roles[]`, `clients[]` | ui-design, product-verify | required | UI 按角色设计，验收按角色测试 |
 | `product-concept.json` | `adaptive_systems[]` | pipeline-closure-verify | optional | 自适应状态机完整性验证 |
 | `product-concept.json` | `errc_highlights` | concept-acceptance | required | 概念验收对照 must_have 和 differentiators |
+| `concept-baseline.json` | `mission`, `roles[].high_frequency_tasks`, `errc_highlights` | product-analysis, experience-map, translate | required | ALL downstream phases auto-load concept-baseline for cross-phase consistency. Bootstrap MUST include a `generate-concept-baseline` step in the node-spec for any product-concept node (forward-design); or the last product-concept sub-phase node must produce concept-baseline.json as an exit artifact. Schema: cross-phase-protocols.md §A.1 |
 | `tech-architecture.json` | `decisions[]` | infra-design, data-architecture, security-design | required | 下游技术设计继承概念阶段的选型决策，不重复询问用户 |
 | `tech-architecture.json` | `technical_risks[]` | concept-acceptance, product-verify | optional | 验收时检查高风险技术项是否已缓解 |
 | `tech-architecture.json` | `mvp_feasibility` | concept-crystallization (self) | required | MVP 范围必须考虑技术可行性，不可行的功能推迟 |

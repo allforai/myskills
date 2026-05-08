@@ -32,7 +32,7 @@ For both deadhunt and fieldcheck:
 3. Batch scans all files using derived rules
 4. Reports findings with file:line references
 
-Output: `.allforai/quality-checks/deadhunt-report.json` + `fieldcheck-report.json`
+Output: `.allforai/deadhunt/deadhunt-report.json` + `.allforai/deadhunt/fieldcheck-report.json`
 
 **deadhunt-report.json field schema:**
 ```json
@@ -287,9 +287,9 @@ Detection method (per registered route):
 1. Enumerate every route registration in the server (e.g., in a router
    setup function: `r.POST("/foo/:id/bar", ...)`) — capture method + path
 2. For each registered path, `grep` across ALL client codebases listed in
-   `bootstrap-profile.json.modules[]` where `role in [frontend, mobile,
-   admin]` — look for the path literal (or a template-interpolated version
-   of it) in source files
+   `bootstrap-profile.json.modules[]` where `role in [frontend, mobile]`
+   — look for the path literal (or a template-interpolated version
+   of it) in source files. Note: valid module roles are `frontend | backend | mobile | shared | infra`; there is no "admin" role — admin UI modules are classified as `frontend`.
 3. Zero client references → `cross_module_ghost_route`
 4. For each finding, include: server registration site, expected client(s)
    by module role, current status (never-wired / legacy-shadowed / unknown)

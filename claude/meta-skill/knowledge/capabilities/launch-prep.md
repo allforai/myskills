@@ -28,6 +28,7 @@ marketing positioning. These decisions should be research-informed, not guessed.
 |-------|--------|----------|
 | Existing concept artifacts | `.allforai/product-concept/` | Yes — need to know current product concept |
 | Existing product-map | `.allforai/product-map/` | Yes — need to know what's implemented |
+| Bootstrap profile | `.allforai/bootstrap/bootstrap-profile.json` | Yes — need module roles, platform, detected tech stack, and architecture_pattern to tailor compliance checks and gap analysis |
 | Static verify report | `.allforai/product-verify/` | Optional — if available, shows known gaps |
 | Target platform | User input | Yes — iOS App Store / Google Play / Web / etc. |
 
@@ -83,7 +84,7 @@ Based on competitive research + existing concept, finalize unresolved decisions:
    - User confirms or adjusts
    - Write finalized decisions to concept artifacts
 
-**Output:** Update `.allforai/product-concept/business-model.json` + `concept-baseline.json`
+**Output:** Update `.allforai/product-concept/business-model.json`. For `concept-baseline.json`: NEVER overwrite it unconditionally — the baseline is the canonical cross-phase reference and overwriting it mid-workflow breaks consumers that have already loaded it. Instead, append finalization decisions to a new file `.allforai/launch-prep/concept-finalization.json`, and emit a `concept-baseline-patch.json` with only the delta fields changed (e.g., updated `errc_highlights.must_have`, updated `pipeline_preferences`). The orchestrator can apply the patch to concept-baseline.json only after all downstream concept-baseline consumers have completed.
 
 ### Phase 3: Implementation Gap Analysis (缺口分析)
 

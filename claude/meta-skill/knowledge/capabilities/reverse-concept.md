@@ -150,8 +150,8 @@ See `product-concept.md` sub-phases for the canonical schemas of each file.
 
 | Artifact | Field Path | Consumer Capability | Required | Reason |
 |----------|------------|---------------------|----------|--------|
-| `concept-baseline.json` | `jobs`, `mission` | product-analysis | required | product-analysis 用 baseline 做一致性检查，避免循环分析 |
-| `concept-baseline.json` | `jobs[].success_criteria` | product-verify | optional | 验收时检查实现是否满足 JTBD 成功条件 |
+| `concept-baseline.json` | `mission`, `roles[].high_frequency_tasks` | product-analysis | required | product-analysis 用 baseline 做一致性检查，避免循环分析 |
+| `concept-baseline.json` | `reverse_extras.core_features[].jtbd` | product-verify | optional | 验收时检查实现是否满足 JTBD 成功条件；字段位于 reverse_extras 扩展块 |
 | `concept-conflicts.json` | `conflicts[]` | product-analysis | required | product-analysis 需要知道哪些概念有冲突，避免基于矛盾信息做分析 |
 | `concept-conflicts.json` | `conflicts[].resolved` | concept-acceptance | optional | 验收时检查冲突是否已被解决 |
 
