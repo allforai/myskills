@@ -345,6 +345,70 @@ in HTML. Set `ai_generatable = true` for future re-run. Never block pipeline.
 - `ai_gen_target = "actual-asset"` → `current_state: placeholder → temp`; write image path to `substitution.temp`
 - `ai_gen_target = "concept-reference" | "mood-reference"` → `current_state` stays `placeholder`; record path in `ai_generated.path` (reference only, not ingested into game)
 
+## game-design-doc.json Schema
+
+`game-design-finalize` produces `.allforai/game-design/game-design-doc.json` by aggregating all
+approved system JSONs. Only include fields whose source JSON exists (skip missing optional nodes).
+
+```json
+{
+  "game_title": "<string>",
+  "scenario": "<casual-mobile | action-rpg | multiplayer-online | roguelike | strategy-sim | narrative-adventure>",
+  "design_version": "<semver string>",
+  "generated_at": "<ISO 8601>",
+  "player_roles": [
+    { "role_id": "<string>", "archetype": "<string>", "motivation": "<string>", "pain_points": ["<string>"] }
+  ],
+  "core_loop": { "$ref": "systems/core-mechanics.json" },
+  "systems": [
+    {
+      "system_id": "<node_id from canonical registry>",
+      "system_name": "<display name>",
+      "json_path": "<relative path under .allforai/game-design/systems/>",
+      "gate_status": "approved | revision-requested"
+    }
+  ],
+  "economy": {
+    "currencies": ["<string>"],
+    "balance_targets": { "<dimension>": "<target range>" },
+    "sink_source_summary": "<string>"
+  },
+  "progression": {
+    "max_level": "<number | null>",
+    "curve_type": "<linear | exponential | sigmoid | custom>",
+    "meta_unlocks": ["<string>"]
+  },
+  "narrative": {
+    "story_acts": "<number | null>",
+    "branching_depth": "<number | null>",
+    "endings_count": "<number | null>"
+  },
+  "art": {
+    "style_id": "<string from art-style-guide.json>",
+    "asset_count": "<number>",
+    "placeholder_count": "<number>",
+    "temp_count": "<number>",
+    "alpha_count": "<number>",
+    "final_count": "<number>"
+  },
+  "audio": {
+    "music_tracks": "<number | null>",
+    "sfx_events": "<number | null>"
+  },
+  "approval_summary": {
+    "total_nodes": "<number>",
+    "approved": "<number>",
+    "pending": "<number>",
+    "revision_requested": "<number>"
+  }
+}
+```
+
+`product-analysis` reads: `player_roles[]`, `systems[]`, `core_loop`, `progression`.
+`demo-forge` reads: `progression`, `economy.currencies`.
+`quality-checks` reads: `economy.balance_targets`, `audio.sfx_events`, `art` counts.
+`generate-artifacts` reads: `systems[]` for code generation targets.
+
 ## Downstream Consumers
 
 | Capability | Reads | Uses |
