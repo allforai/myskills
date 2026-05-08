@@ -226,20 +226,20 @@ balance-testing（数值平衡测试：蒙特卡洛模拟 + Playtest）
 > `game-design-doc.json Schema` 为准。HTML-first 架构下，每个节点输出 `.html` + `.json`，
 > 而非本节列出的 `.md` 文件。
 
-| 概念产出物（知识层参考） | 格式 | 对应阶段 | 执行层实际文件 |
+| 概念产出物（知识层参考） | 格式 | 对应节点 (node_id) | 执行层实际文件 |
 |----------------------|------|---------|-------------|
-| `player-archetypes` | JSON | player-archetype-definition | 来自 `product-concept.json` 的 target_audience |
-| `core-mechanics` | JSON | core-loop-design | `game-design/systems/core-mechanics.json` |
-| `economy-model` | JSON | economy-design | `game-design/systems/economy-model.json` |
-| `progression-curve` | JSON | progression-curve-design | `game-design/systems/progression-curve.json` |
-| `level-design` | JSON | level-design | `game-design/systems/level-design.json` |
-| `narrative-design` | JSON | narrative-design | `game-design/systems/narrative-design.json` |
-| `worldbuilding-bible` | Markdown | worldbuilding | `game-design/systems/worldbuilding-bible.md` (Markdown exception — lore docs are prose) |
-| `monetization-design` | JSON | monetization-design | `game-design/systems/monetization-design.json` |
-| `art-style-guide` | JSON | art-direction | `game-design/art-style-guide.json` |
-| `art-asset-inventory` | JSON | art-spec-design | `game-design/art-asset-inventory.json` |
-| `balance-report` | JSON | competitive-balance-design | `game-design/systems/balance-report.json` |
-| `game-design-doc` | JSON | game-design-finalize | `game-design/game-design-doc.json` (aggregates all above) |
+| `player-archetypes` | JSON | _(product-concept层，非 game-design 节点)_ | 来自 `product-concept.json` 的 target_audience |
+| `core-mechanics` | JSON | `core-loop-design` | `game-design/systems/core-mechanics.json` |
+| `economy-model` | JSON | `economy-design` | `game-design/systems/economy-model.json` |
+| `progression-curve` | JSON | `progression-curve-design` | `game-design/systems/progression-curve.json` |
+| `level-design` | JSON | `level-design` | `game-design/systems/level-design.json` |
+| `narrative-design` | JSON | `narrative-design` | `game-design/systems/narrative-design.json` |
+| `worldbuilding-bible` | Markdown | `worldbuilding` | `game-design/systems/worldbuilding-bible.md` _(prose，由 game-design-finalize 跳过)_; 结构摘要 → `game-design/systems/worldbuilding.json` |
+| `monetization-design` | JSON | `monetization-design` | `game-design/systems/monetization-design.json` |
+| `art-style-guide` | JSON | `art-direction` | `game-design/art-style-guide.json` |
+| `art-asset-inventory` | JSON | `art-spec-design` | `game-design/art-asset-inventory.json` |
+| `balance-report` | JSON | `competitive-balance-design` | `game-design/systems/balance-report.json` |
+| `game-design-doc` | JSON | `game-design-finalize` | `game-design/game-design-doc.json` (aggregates all above) |
 
 所有产出写入 `.allforai/game-design/`。
 
@@ -266,14 +266,14 @@ balance-testing（数值平衡测试：蒙特卡洛模拟 + Playtest）
 | 品类 | 核心节点 | 可跳过 |
 |------|---------|--------|
 | **RPG/MMO** | core-loop-design, combat-system-design, skill-tree-design, progression-curve-design, economy-design, narrative-design, level-design, worldbuilding, monetization-design, competitive-balance-design | — |
-| **卡牌/策略** | player-archetype, core-mechanics, economy, monetization, balance | level-design, narrative |
-| **休闲/超休闲** | core-mechanics, level-design, monetization(ad-based) | worldbuilding, narrative, economy, progression |
-| **叙事/AVG** | narrative, worldbuilding, art-direction | economy, balance, progression |
-| **塔防/TD** | core-mechanics, level-design, economy, progression, balance, monetization(gacha+ad) | worldbuilding, narrative（轻量背景可嵌入 level-design）。注意塔协同效果设计是核心深度来源 |
-| **暗黑类/Loot-ARPG** | core-mechanics, economy, progression, balance, level-design, narrative, worldbuilding, monetization(premium) | assumption-zeroing, innovation。额外需要 Step 2.7 研究：词缀生成/掉落表/合成系统/交易系统 |
-| **竞技/MOBA/FPS** | core-mechanics, balance, player-archetype, monetization(battle-pass) | narrative, worldbuilding |
-| **沙盒/开放世界** | worldbuilding, core-mechanics, economy, progression, level-design | — (几乎全要) |
-| **独立/实验** | core-mechanics, art-direction | 按需选择，可非常精简 |
+| **卡牌/策略** | core-loop-design, economy-design, monetization-design, competitive-balance-design | level-design, narrative-design |
+| **休闲/超休闲** | core-loop-design, level-design, monetization-design | worldbuilding, narrative-design, economy-design, progression-curve-design |
+| **叙事/AVG** | narrative-design, worldbuilding, art-direction | economy-design, competitive-balance-design, progression-curve-design |
+| **塔防/TD** | core-loop-design, level-design, economy-design, progression-curve-design, competitive-balance-design, monetization-design | worldbuilding, narrative-design（轻量背景可嵌入 level-design）。注意塔协同效果设计是核心深度来源 |
+| **暗黑类/Loot-ARPG** | core-loop-design, economy-design, progression-curve-design, competitive-balance-design, level-design, narrative-design, worldbuilding, monetization-design | 额外需要 Step 2.7 研究：词缀生成/掉落表/合成系统/交易系统 |
+| **竞技/MOBA/FPS** | core-loop-design, competitive-balance-design, monetization-design | narrative-design, worldbuilding |
+| **沙盒/开放世界** | worldbuilding, core-loop-design, economy-design, progression-curve-design, level-design | — (几乎全要) |
+| **独立/实验** | core-loop-design, art-direction | 按需选择，可非常精简 |
 
 ---
 

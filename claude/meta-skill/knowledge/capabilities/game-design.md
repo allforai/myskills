@@ -146,6 +146,7 @@ Every game-design node-spec adds these fields beyond standard node-spec schema:
   "discipline_reviewers": ["<role_id>"],
   "html_output": ".allforai/game-design/<filename>.html",
   "json_output": ".allforai/game-design/systems/<artifact>.json",
+  "prose_output": null,
   "human_gate": true,
   "gate_approval_rule": "discipline_owner must approve; reviewers approval is advisory",
   "approval_record_path": ".allforai/game-design/approval-records.json",
@@ -181,7 +182,7 @@ No improvised names.
 | `economy-design` | `numeric-designer` | `game-design/economy.html` | `game-design/systems/economy-model.json` | economy-design |
 | `narrative-design` | `narrative-designer` | `game-design/narrative.html` | `game-design/systems/narrative-design.json` | narrative-design |
 | `level-design` | `level-designer` | `game-design/level-design.html` | `game-design/systems/level-design.json` | level-design |
-| `worldbuilding` | `narrative-designer` | `game-design/worldbuilding.html` | `game-design/systems/worldbuilding.json` _(structured summary)_ + `game-design/systems/worldbuilding-bible.md` _(full lore prose, not aggregated by finalize)_ | worldbuilding |
+| `worldbuilding` | `narrative-designer` | `game-design/worldbuilding.html` | `game-design/systems/worldbuilding.json` _(structured summary; aggregated by finalize)_; `prose_output`: `game-design/systems/worldbuilding-bible.md` _(full lore prose; linked via lore_file field, not parsed as JSON)_ | worldbuilding |
 | `network-architecture-design` | `backend-programmer` | `game-design/network-arch.html` | `game-design/systems/network-architecture.json` | (Step 2.7 research) |
 | `matchmaking-design` | `backend-programmer` | `game-design/matchmaking.html` | `game-design/systems/matchmaking.json` | (Step 2.7 research) |
 | `competitive-balance-design` | `numeric-designer` | `game-design/competitive-balance.html` | `game-design/systems/balance-report.json` | balance-testing |
