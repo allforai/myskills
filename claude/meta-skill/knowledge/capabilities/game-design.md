@@ -586,10 +586,13 @@ approved system JSONs. Only include fields whose source JSON exists (skip missin
 | Capability | Reads | Uses |
 |-----------|-------|------|
 | `product-analysis` | `game-design-doc.json` | Concept baseline; `player_roles` → `role-profiles.json`; `systems[]` → task-inventory in system-spec format |
-| `ui-design` | `art-style-guide.json`, `game-design-doc.json` | Design tokens from art direction; game screens (HUD, menus, inventory, dialogue) |
-| `demo-forge` | `art-asset-inventory.json`, `game-design-doc.json.progression` | Player save data at progression stages using available art state |
-| `quality-checks` | `game-design-doc.json.economy.balance_targets`, `audio-design.json.sfx_catalogue[].milestone_gate` | Numerical QA; art-agnostic check; milestone gate check; audio milestone check |
+| `ui-design` | `game-design/art-style-guide.json`, `game-design-doc.json` | Design tokens from art direction; game screens (HUD, menus, inventory, dialogue) |
+| `demo-forge` | `game-design/art-asset-inventory.json`, `game-design-doc.json.progression` | Player save data at progression stages using available art state |
+| `quality-checks` | `game-design-doc.json.economy.balance_targets`, `game-design/systems/audio-design.json.sfx_catalogue[].milestone_gate` | Numerical QA; art-agnostic check; milestone gate check; audio milestone check |
 | `generate-artifacts` | `game-design-doc.json.systems[]` | Code generation targets; must implement Asset Registry |
+| `product-verify` | `game-design-doc.json` | Verifies implementation against game design spec; checks all `systems[]` were implemented |
+| `concept-acceptance` | `game-design-doc.json` | Post-implementation concept fitness check; compares shipped game systems against original concept |
+| `launch-prep` | `game-design-doc.json` | Competitive research context (what systems does this game have?); monetization model for pricing research |
 
 ## Engine-Specific Content
 

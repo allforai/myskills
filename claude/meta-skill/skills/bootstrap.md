@@ -37,7 +37,7 @@ Record what exists:
 - `has_product_artifacts`: true if product-map/task-inventory.json exists
 - `has_experience_map`: true if experience-map/experience-map.json exists
 - `has_bootstrap`: true if bootstrap/workflow.json exists (previous /bootstrap run)
-- `has_code`: true if source code files (*.ts, *.tsx, *.js, *.mjs, *.go, *.py, *.cs, *.rs, *.dart, *.swift, *.kt, *.java, *.cpp, *.c, *.rb, *.lua, *.gd, *.hx, etc.) are detected in Step 1.1. Config-only files (package.json, Cargo.toml, go.mod, pubspec.yaml, pom.xml with no src/) do NOT set has_code = true.
+- `has_code`: true if source code files (*.ts, *.tsx, *.js, *.mjs, *.go, *.py, *.cs, *.rs, *.dart, *.swift, *.kt, *.java, *.cpp, *.c, *.rb, *.lua, *.gd, *.hx, *.p8, *.p8.png, etc.) are detected in Step 1.1. Config-only files (package.json, Cargo.toml, go.mod, pubspec.yaml, pom.xml with no src/) do NOT set has_code = true. Note: *.p8 PICO-8 cartridges embed Lua code and count as source files.
 - `has_iteration_feedback`: true if product-concept/iteration-feedback.json exists (previous concept-acceptance feedback)
 - `has_product_concept`: true if product-concept/product-concept.json exists
 - `has_decision_journal`: true if product-concept/decision-journal.json exists (previous /journal records)
@@ -99,7 +99,7 @@ Read these files if they exist (skip missing ones silently):
 - *.p8 or *.p8.png at project root (PICO-8 fantasy console cartridge)
 - go.mod with `hajimehoshi/ebiten` in require block (Ebitengine — Go 2D game engine)
 - go.mod with `g3n/engine` in require block (g3n — Go 3D game engine)
-- build.gradle.kts with `com.soywiz.korlibs.korge` in dependencies (KorGE — Kotlin/Multiplatform game engine)
+- build.gradle.kts with `com.soywiz.korlibs.korge` in dependencies OR `id("com.soywiz.korge")` in plugins block (KorGE — Kotlin/Multiplatform game engine)
 - package.json with `littlejsengine` in dependencies (LittleJS — tiny JavaScript 2D game engine)
 - requirements.txt or pyproject.toml with `arcade` in dependencies (Arcade — Python 2D game framework, alternative to pygame)
 
@@ -325,7 +325,7 @@ After the user selects a scenario, bootstrap reads the selected template's `boot
 - Combinations: user can select e.g. "a + e" or "h + i + j" (full verification suite)
 - **demo-forge is automatically added** to any goal that includes code implementation (translate/rebuild/create). Reason: API-driven data population is the strongest integration test — it exposes runtime issues that compile-verify cannot catch (wrong routes, missing fields, broken relationships, auth failures).
 - **concept-acceptance is automatically added** to any goal that includes code implementation (translate/rebuild/create) AND `has_product_concept` is true. Reason: without verifying the final product experience against the original concept, the development loop never closes — product-verify checks code vs design artifacts, but not experience vs concept.
-- **runtime-smoke-verify is automatically added** to any goal that includes code implementation (translate/rebuild/create) OR launch-prep. Reason: test-harness verification cannot catch runtime contract bugs that only surface when the artifact launches outside the harness (env-var dual-contracts, URL prefix drift, missing signing / provisioning, deep-link breakage). See `knowledge/capabilities/runtime-smoke-verify.md`. This node runs **after** product-verify passes and **before** launch-checklist. Added 2026-04-14 after a retrospective incident where a full UI test suite passed but manual app launch hit a 404 on the first request — same env-var name parsed differently between tests and the production runtime.
+- **runtime-smoke-verify is automatically added** to any goal that includes code implementation (translate/rebuild/create) OR launch-prep. Reason: test-harness verification cannot catch runtime contract bugs that only surface when the artifact launches outside the harness (env-var dual-contracts, URL prefix drift, missing signing / provisioning, deep-link breakage). See `knowledge/capabilities/runtime-smoke-verify.md`. Ordering: runs **after** product-verify passes (when product-verify is in the graph) OR immediately **before** launch-checklist (when goals include launch-prep but NOT product-verify — no product-verify gate to wait for). Added 2026-04-14 after a retrospective incident where a full UI test suite passed but manual app launch hit a 404 on the first request — same env-var name parsed differently between tests and the production runtime.
 
 ### 1.5.1 Runtime Environment Awareness (when goals include code implementation)
 
@@ -411,8 +411,17 @@ Write to `.allforai/bootstrap/bootstrap-profile.json`:
   "is_game_project": false,
   "game_engines_detected": ["<engine name(s) from Step 1.1 detection, empty if none>"],
   "game_scenario": "casual-mobile | action-rpg | multiplayer-online | roguelike | strategy-sim | narrative-adventure | null",
-  "requires_runtime_env": true
-}
+  "requires_runtime_env": false,  // true only when goals include translate/rebuild/create; false for analyze/tune/quality-checks
+  "detected_state": {
+    "has_code": false,
+    "has_product_artifacts": false,
+    "has_bootstrap": false,
+    "has_product_concept": false,
+    "has_experience_map": false,
+    "has_iteration_feedback": false,
+    "has_decision_journal": false,
+    "has_concept_drift": false
+  }
 }
 ```
 
@@ -570,8 +579,9 @@ models, or technical patterns NOT covered by the loaded domain file or capabilit
 - What are the key state machines / business flows?
 - What are the common pitfalls?
 
-Incorporate findings into Step 3 planning. Do NOT write findings to files —
-they are ephemeral context for node planning only.
+**Budget limits:** Max 5 gaps per research session; max 2 queries per gap; skip WebSearch if LLM general knowledge covers > 70% of the subsystem (use in-context knowledge directly).
+
+Incorporate findings into Step 3 planning. Do NOT write findings to files — they are ephemeral context for the current bootstrap session only. **In-session dependency:** if bootstrap is interrupted between Step 2.7 and Step 3, re-run from Step 2.7 to regenerate the research context before generating ad-hoc node-specs.
 
 **Skip when:** Domain knowledge covers the project well, or the project is simple
 enough that LLM's general knowledge is sufficient.
@@ -663,7 +673,7 @@ For `analyze` goal, inject only if no `approval-records.json` exists (new projec
      - **Ad-hoc optional node** (in `optional_nodes` but absent from node_order or canonical registry): use Step 2.7 research to generate node-spec content; position it immediately before `game-design-finalize` in the generated workflow sequence; `blocked_by` = last SELECTED canonical optional node in node_order sequence order (i.e., highest-index selected canonical optional); if no canonical optionals are selected, `blocked_by` = last required node in node_order; `unlocks` = game-design-finalize.
    - All nodes get: `capability: game-design`, `human_gate: true`, `approval_record_path: ".allforai/game-design/approval-records.json"`, `gate_status: "pending"`
 5. Initialise `.allforai/game-design/approval-records.json` with one `pending` record per game-design node
-6. Ad-hoc nodes listed only in `bootstrap_note` (not in `optional_nodes`): these require user opt-in (presented in the optional node question after scenario selection). If the user selects them, generate their node-spec via Step 2.7 research and position them per step 4 ad-hoc rule above.
+6. Ad-hoc nodes appearing in EITHER `optional_nodes` OR `bootstrap_note` (but absent from both the canonical registry AND `node_order`): these require user opt-in, presented in the opt-in question after scenario selection. Process them ONCE — if a node appears in both `optional_nodes` and `bootstrap_note`, treat it as a single ad-hoc opt-in candidate (do not generate two node-specs). If the user selects it, generate node-spec via Step 2.7 research and position per step 4 ad-hoc rule.
 7. **Cross-scenario signal scan (hybrid games):** After loading the primary scenario template, scan Step 1.1–1.3 findings for multiplayer/network signals — dependencies like `Mirror`, `Unity Netcode`, `Photon`, `Nakama`, `Colyseum`, `relay`, `WebSocket`, network socket code, or multiplayer room logic. If found AND `network-architecture-design` + `matchmaking-design` are NOT already in the primary scenario's `required_nodes`, present them as supplementary optional nodes in the opt-in question with note: "检测到联网/多人代码，建议补充选择以下节点".
 
 **Node granularity is project-dependent.** A simple CLI tool might need

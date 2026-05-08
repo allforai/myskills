@@ -12,9 +12,8 @@
   ],
   "optional_nodes": [
     "puzzle-design",
-    "audio-design",
-    "build-variety-design",
-    "card-system-design"
+    "card-system-design",
+    "audio-design"
   ],
   "always_include": [
     "art-direction",
@@ -35,5 +34,5 @@
     "ai-art-generation",
     "game-design-finalize"
   ],
-  "bootstrap_note": "build-variety-design not in canonical node registry — bootstrap generates ad-hoc node-spec when selected; card-system-design: include for deck-building / card-based roguelikes (Slay the Spire style)"
+  "bootstrap_note": "Ad-hoc optional (not in canonical registry — requires user opt-in): build-variety-design (build synergy space, viable archetypes, run variance analysis — for roguelikes with deep build expression like Hades/Dead Cells). Canonical optional guidance: card-system-design for deck-building roguelikes (Slay the Spire style); puzzle-design for puzzle-hybrid roguelikes"
 }

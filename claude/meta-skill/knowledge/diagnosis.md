@@ -19,8 +19,9 @@ You are diagnosing a workflow failure.
 - Iteration: {iteration_count}
 
 ## System State
-- All node summaries: {node_summaries from workflow.json}
-- All node exit_requires: {extracted from workflow.json nodes}
+- All nodes: {nodes[] from workflow.json — id + goal + exit_artifacts per node}
+- All node exit_artifacts: {extracted from workflow.json nodes[].exit_artifacts}
+- Game-design gate state (if applicable): {records[] from .allforai/game-design/approval-records.json — check gate_status for any node with capability: game-design; revision-requested status not reset after re-execution is a common false-failure mode}
 - Previous diagnoses: {diagnosis_history}
 
 ## Your Tasks
@@ -39,7 +40,7 @@ You are diagnosing a workflow failure.
    Each entry: node ID + specific action + what context to carry.
    Use `depends_on_previous: true` when a step needs the prior step's output.
 
-5. **Prevention**: Should any node-spec's exit_requires or hints be tightened
+5. **Prevention**: Should any node-spec's exit_artifacts or hints be tightened
    to prevent this class of failure in future iterations?
 
 ## Output Format
@@ -59,7 +60,7 @@ Return JSON:
     { "node": "<node-id>", "action": "<what to do>", "depends_on_previous": true|false }
   ],
   "prevention": [
-    { "node_spec": "<node-id>", "add_to_exit_requires": "<new condition>" },
+    { "node_spec": "<node-id>", "add_to_exit_artifacts": "<new file path to check>" },
     { "node_spec": "<node-id>", "add_to_hints": "<new hint>" }
   ]
 }
@@ -81,7 +82,7 @@ After diagnosis returns:
 ## Re-Verification
 
 After repair_plan completes:
-- Re-evaluate the originally failed node's exit_requires
+- Re-evaluate the originally failed node's exit_artifacts existence check
 - If still failing → diagnose again (with updated context)
 - diagnosis_history prevents re-diagnosing the same root cause
 

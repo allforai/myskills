@@ -15,11 +15,8 @@
     "tech-tree-design",
     "level-design",
     "monetization-design",
-    "social-system-design",
     "anti-cheat-design",
-    "audio-design",
-    "live-ops-design",
-    "hero-roster-design"
+    "audio-design"
   ],
   "always_include": [
     "art-direction",
@@ -43,5 +40,5 @@
     "ai-art-generation",
     "game-design-finalize"
   ],
-  "bootstrap_note": "social-system-design, live-ops-design, hero-roster-design not in canonical node registry — bootstrap uses Step 2.7 research to generate ad-hoc node-specs for these when selected; economy-design and tech-tree-design: include for RTS games (StarCraft/WarCraft style); level-design: include for MOBAs (map/lane design) and MMOs (dungeon/zone design); hero-roster-design: include for MOBAs (champion ability roster) and hero shooters"
+  "bootstrap_note": "Ad-hoc optionals (not in canonical registry — require user opt-in, bootstrap uses Step 2.7 research to generate node-specs): social-system-design (guild/friend/chat systems), live-ops-design (seasonal content/events/battle pass), hero-roster-design (champion ability roster — include for MOBAs and hero shooters). Canonical optional guidance: economy-design + tech-tree-design for RTS games (StarCraft/WarCraft style); level-design for MOBAs (map/lane design) and MMOs (dungeon/zone design)"
 }
