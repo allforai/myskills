@@ -547,6 +547,19 @@ approved system JSONs. Only include fields whose source JSON exists (skip missin
 | `quality-checks` | `game-design-doc.json.economy.balance_targets`, `audio-design.json.sfx_catalogue[].milestone_gate` | Numerical QA; art-agnostic check; milestone gate check; audio milestone check |
 | `generate-artifacts` | `game-design-doc.json.systems[]` | Code generation targets; must implement Asset Registry |
 
+## Engine-Specific Content
+
+When `bootstrap-profile.json.game_engines_detected` is non-empty, game-design
+node-specs should include engine-specific guidance in the HTML output and JSON artifact.
+
+Key nodes that benefit from engine context:
+- `procedural-gen-spec`: reference engine's procedural APIs (e.g., Godot: `TileMap` + `AStar3D`; Unity: `ProBuilder`; Bevy: ECS proc-gen patterns)
+- `network-architecture-design`: reference engine's networking layer (Godot: `MultiplayerAPI`; Unity: `Netcode for GameObjects`; Unreal: `GameNetworkManager`)
+- `dialogue-system-spec`: reference engine's dialogue tooling (Godot: `DialogueManager` plugin; Unity: `Yarn Spinner`; Ren'Py: native Ren'Py script format)
+- `art-direction`: reference engine's renderer capabilities (Godot: CanvasItem shaders / Forward+ / Mobile; Unity: URP / HDRP; Unreal: Nanite / Lumen)
+
+If `game_engines_detected` is empty (user confirmed game via 业务领域 f), omit engine-specific content — engine is unknown.
+
 ## Composition Hints
 
 ### Full Pipeline (new game from scratch)

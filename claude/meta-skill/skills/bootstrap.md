@@ -377,6 +377,7 @@ Write to `.allforai/bootstrap/bootstrap-profile.json`:
   "architecture_pattern": "<MVC/Clean/Layered/Feature-sliced/...>",
   "complexity_estimate": "low | medium | high",
   "is_game_project": false,
+  "game_engines_detected": ["<engine name(s) from Step 1.1 detection, empty if none>"],
   "game_scenario": "casual-mobile | action-rpg | multiplayer-online | roguelike | strategy-sim | narrative-adventure | null",
   "requires_runtime_env": true
 }
