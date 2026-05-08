@@ -28,11 +28,12 @@
     "meta-progression-design",
     "procedural-gen-spec",
     "puzzle-design",
+    "card-system-design",
     "audio-design",
     "art-direction",
     "art-spec-design",
     "ai-art-generation",
     "game-design-finalize"
   ],
-  "bootstrap_note": "build-variety-design not in canonical node registry — bootstrap generates ad-hoc node-spec when selected; card-system-design not in canonical node registry — add for deck-building / card-based roguelikes (Slay the Spire style) covering mana economy, card pools, synergy space, rarity distribution"
+  "bootstrap_note": "build-variety-design not in canonical node registry — bootstrap generates ad-hoc node-spec when selected; card-system-design: include for deck-building / card-based roguelikes (Slay the Spire style)"
 }

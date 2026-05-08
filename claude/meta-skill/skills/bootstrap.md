@@ -37,7 +37,7 @@ Record what exists:
 - `has_product_artifacts`: true if product-map/task-inventory.json exists
 - `has_experience_map`: true if experience-map/experience-map.json exists
 - `has_bootstrap`: true if bootstrap/workflow.json exists (previous /bootstrap run)
-- `has_code`: true if any code files detected in Step 1.1
+- `has_code`: true if source code files (*.ts, *.tsx, *.js, *.mjs, *.go, *.py, *.cs, *.rs, *.dart, *.swift, *.kt, *.java, *.cpp, *.c, *.rb, *.lua, *.gd, *.hx, etc.) are detected in Step 1.1. Config-only files (package.json, Cargo.toml, go.mod, pubspec.yaml, pom.xml with no src/) do NOT set has_code = true.
 - `has_iteration_feedback`: true if product-concept/iteration-feedback.json exists (previous concept-acceptance feedback)
 - `has_product_concept`: true if product-concept/product-concept.json exists
 - `has_decision_journal`: true if product-concept/decision-journal.json exists (previous /journal records)
@@ -238,7 +238,18 @@ UI 还原度（仅有前端翻译时）：
 
 **If game engine detected in Step 1.1 AND user has NOT explicitly selected 业务领域 f) 游戏:**
 
-Before asking the game scenario, confirm the project type:
+**If `game_engines_detected` has 2+ entries (multiple engines detected):** First disambiguate before game/non-game confirmation:
+
+```
+检测到多个游戏引擎标记：[engine1], [engine2]。请确认主引擎：
+   a) 主引擎是 [engine1]（[engine2] 为工具/辅助依赖）
+   b) 主引擎是 [engine2]（[engine1] 为工具/辅助依赖）
+   c) 这不是游戏项目（引擎仅用于工具/可视化/仿真）
+```
+
+If user selects (c): `is_game_project = false`. Otherwise, keep only the selected primary engine in `game_engines_detected`.
+
+**If `game_engines_detected` has exactly 1 entry:** Confirm the project type:
 
 ```
 检测到 [引擎名] 项目，请确认项目类型：
@@ -272,6 +283,8 @@ If the user's game doesn't fit any template exactly, suggest the closest match:
 - 沙盒/开放世界 (Minecraft style) → b) or e) depending on combat vs. economy emphasis
 - 音乐/节奏游戏 (Guitar Hero style) → a) 超休闲/中度手游 (session design + retention focus)
 - 益智/解谜 (Wordle/casual puzzle) → a) 超休闲/中度手游
+- 教育/严肃游戏 (EdTech/serious game) → a) 超休闲/中度手游 (FTUE + session design focus); note to user: "combat-system-design 对教育类游戏通常不适用，请在可选节点中跳过"
+- 平台移植 (same-engine platform port, e.g., Unity PC → Unity mobile) → goal (c) 同栈重建; add note: "platform port = rebuild with target platform constraints (touch input, resolution, performance budget)"
 
 The template is a STARTING POINT. The user can add or remove nodes via the optional node question that follows.
 
@@ -368,7 +381,7 @@ Write to `.allforai/bootstrap/bootstrap-profile.json`:
       "build_tool": "<vite/webpack/go build/cargo/...>"
     }
   ],
-  "goals": ["analyze | translate | rebuild | create | tune | demo | ui-forge"],
+  "goals": ["reverse-concept | analyze | translate | rebuild | create | tune | demo | ui-forge | product-verify | visual-verify | quality-checks | launch-prep | concept-acceptance | runtime-smoke-verify"],
   "product_vision": "<one sentence, only for goals includes create>",
   "target_stacks": [
     {
@@ -651,6 +664,7 @@ For `analyze` goal, inject only if no `approval-records.json` exists (new projec
    - All nodes get: `capability: game-design`, `human_gate: true`, `approval_record_path: ".allforai/game-design/approval-records.json"`, `gate_status: "pending"`
 5. Initialise `.allforai/game-design/approval-records.json` with one `pending` record per game-design node
 6. Ad-hoc nodes listed only in `bootstrap_note` (not in `optional_nodes`): these require user opt-in (presented in the optional node question after scenario selection). If the user selects them, generate their node-spec via Step 2.7 research and position them per step 4 ad-hoc rule above.
+7. **Cross-scenario signal scan (hybrid games):** After loading the primary scenario template, scan Step 1.1–1.3 findings for multiplayer/network signals — dependencies like `Mirror`, `Unity Netcode`, `Photon`, `Nakama`, `Colyseum`, `relay`, `WebSocket`, network socket code, or multiplayer room logic. If found AND `network-architecture-design` + `matchmaking-design` are NOT already in the primary scenario's `required_nodes`, present them as supplementary optional nodes in the opt-in question with note: "检测到联网/多人代码，建议补充选择以下节点".
 
 **Node granularity is project-dependent.** A simple CLI tool might need
 3 nodes. A microservice platform might need 20. LLM decides.

@@ -41,11 +41,12 @@
     "dialogue-system-spec",
     "level-design",
     "worldbuilding",
+    "card-system-design",
     "audio-design",
     "art-direction",
     "art-spec-design",
     "ai-art-generation",
     "game-design-finalize"
   ],
-  "bootstrap_note": "card-system-design not in canonical node registry — add for digital card games (Hearthstone / Legends of Runeterra style) covering mana economy, card pool, keyword system, synergy design, and collection management"
+  "bootstrap_note": "card-system-design: include for digital card games (Hearthstone / Legends of Runeterra style) or gacha games with unit collection"
 }

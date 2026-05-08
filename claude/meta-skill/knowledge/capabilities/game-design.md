@@ -200,6 +200,7 @@ No improvised names.
 | `audio-design` | `audio-director` | `game-design/audio-design.html` | `game-design/systems/audio-design.json` | — |
 | `game-design-finalize` | `lead-designer` | `game-design/game-design-dashboard.html` | `game-design/game-design-doc.json` | — |
 | `puzzle-design` | `level-designer` | `game-design/puzzle-design.html` | `game-design/systems/puzzle-design.json` | level-design |
+| `card-system-design` | `systems-designer` | `game-design/card-system.html` | `game-design/systems/card-system.json` | progression-system |
 | `ai-art-generation` | _(automatic — no discipline_owner)_ | _(updates art-direction.html)_ | updates `art-asset-inventory.json` | — |
 
 ## HTML Presentation Specs
@@ -407,6 +408,15 @@ All HTML outputs are **static** (v1). Bootstrap embeds data at generation time.
 - **Expanded:** Difficulty curve chart (X: puzzle index, Y: estimated difficulty; annotate expected stuck rate thresholds)
 - **Expanded:** Hint system design — hint levels (nudge / hint / spoiler), delivery mechanism (character, UI, time-based auto-offer)
 - **Collapsed:** Puzzle dependency graph (SVG — which puzzles must be solved before others can be accessed)
+
+### `card-system.html`
+- **Audience:** systems-designer (primary), numeric-designer (secondary for balance)
+- **Above fold:** Card taxonomy — table of card types (unit / spell / structure / equipment / etc.) × rarity tiers × count
+- **Expanded:** Card pool matrix (rarity × archetype; highlight synergy clusters)
+- **Expanded:** Economy design — mana/energy/resource curve (X: turn, Y: available resources); cost distribution per rarity
+- **Expanded:** Keyword system — all keywords defined (effect / trigger / interaction notes)
+- **Expanded:** Collection mechanics — acquisition sources (pack / craft / reward / shop), duplicate handling, storage limits
+- **Collapsed:** Balance levers — target win-rate by archetype, oppressive combo watchlist, design guardrails
 
 ### `character-arc.html`
 - **Audience:** narrative-designer

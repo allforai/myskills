@@ -47,8 +47,12 @@ Orchestrator presents:
 For each approved item:
 
 ```bash
+# Ensure labels exist before creating issue (safe to run even if labels already exist)
+gh label create "feedback/auto" --repo allforai/myskills --color "#0075ca" --description "Automatic feedback from meta-skill" 2>/dev/null || true
+gh label create "{tech_stack_label}" --repo allforai/myskills --color "#e4e669" 2>/dev/null || true
+
 gh issue create \
-  --repo <myskills-repo> \
+  --repo allforai/myskills \
   --title "[Auto Feedback] {tech_stack_pair} — {one_line_description}" \
   --body "$(cat <<'EOF'
 ## [Auto Feedback] {tech_stack_pair} — {description}
@@ -64,7 +68,17 @@ gh issue create \
 {which knowledge file to modify and what to add/change}
 EOF
 )" \
-  --label "feedback/auto,{tech_stack_label}"
+  --label "feedback/auto,{tech_stack_label}" 2>/dev/null || \
+gh issue create \
+  --repo allforai/myskills \
+  --title "[Auto Feedback] {tech_stack_pair} — {one_line_description}" \
+  --body "$(cat <<'EOF'
+## [Auto Feedback] {tech_stack_pair} — {description}
+**Category**: {mapping-gap | discovery-blind-spot | convergence | safety}
+{deidentified improvement suggestion}
+Suggested: {which knowledge file to modify and what to add/change}
+EOF
+)"
 ```
 
 ## Fallback

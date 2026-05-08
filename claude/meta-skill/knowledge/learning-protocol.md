@@ -53,6 +53,6 @@ Append to `.allforai/bootstrap/learned/<category>.md`:
 
 ## Consumption
 
-Next `/bootstrap` reads `.allforai/bootstrap/learned/` in Step 2.3.
+Next `/bootstrap` reads `.allforai/bootstrap/learned/` in Step 2.4 / Step 2.4.1 (Load Tech Stack Mappings + Load Blind-Spot Retrospectives).
 Learned experience takes precedence over preset mappings when they conflict
 (learned comes from actual execution, presets are theoretical).
