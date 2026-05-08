@@ -74,7 +74,9 @@ Read these files if they exist (skip missing ones silently):
 - *.love OR (main.lua + conf.lua at root) (LÖVE2D; *.love is the packaged output, main.lua+conf.lua is the dev project)
 - Cargo.toml with `bevy` in dependencies (Bevy/Rust); for Cargo workspaces, also check member crates (e.g., `game/Cargo.toml`, `crates/*/Cargo.toml`) — the workspace root often has no direct dependencies
 - pubspec.yaml with `flame` in dependencies (Flame/Flutter game engine)
-- requirements.txt or pyproject.toml with `pygame` in dependencies (pygame/Python)
+- requirements.txt or pyproject.toml with `pygame` or `pygame-ce` in dependencies (pygame / pygame-ce community edition / Python)
+- requirements.txt or pyproject.toml with `panda3d` in dependencies (Panda3D — Python/C++ 3D game engine)
+- requirements.txt or pyproject.toml with `ursina` in dependencies (Ursina — Python 3D game engine built on Panda3D)
 - cocos-project.json (Cocos Creator)
 - *.rpy or renpy/ directory (Ren'Py visual novel engine; scenario hint: narrative-adventure)
 - Game.rpgproject (RPG Maker MV/MZ; scenario hint: action-rpg)
