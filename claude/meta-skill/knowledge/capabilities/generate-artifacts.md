@@ -6,7 +6,7 @@
 ## Goal
 
 Transform discovery + analysis results into structured, machine-readable artifacts
-that downstream nodes (translate, rebuild, demo-forge) consume.
+that downstream nodes (translate, rebuild, demo-forge, ui-design) consume.
 
 ## What LLM Must Accomplish (not how)
 
@@ -46,6 +46,18 @@ that downstream nodes (translate, rebuild, demo-forge) consume.
 | Data pipeline | dag-spec, transform-catalog | LLM direct |
 | Game | system-spec, config-schema, protocol-spec | LLM direct |
 | Library/SDK | api-surface, usage-patterns | LLM direct |
+
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `product-map.json` | all fields | translate, ui-design | required | Unified view of roles/tasks/flows drives implementation and UI design |
+| `view-objects.json` | `screens[].bindings` | translate, ui-design | required | Per-role UI bindings specify what each screen shows and what data it needs |
+| `entity-model.json` | `entities[]`, `relationships[]` | translate, demo-forge | required | Data model is the foundation for API schema, ORM, and seed data |
+| `use-case-tree.json` | `cases[].given_when_then` | test-verify, product-verify | required | 4-layer use case tree provides acceptance test specifications |
 
 ## Knowledge References
 
