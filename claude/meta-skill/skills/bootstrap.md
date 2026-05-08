@@ -258,8 +258,17 @@ If the detected engine has a **scenario hint** (marked in the game engines list 
    c) 在线多人 MMO/MOBA/FPS (multiplayer-online)
    d) 肉鸽/Roguelite (roguelike)
    e) 策略/模拟经营 (strategy-sim)
-   f) 叙事/视觉小说/AVG (narrative-adventure)  ← [推荐] if Ren'Py / Twine / RenPy detected
+   f) 叙事/视觉小说/AVG (narrative-adventure)  ← [推荐] if Ren'Py / Twine detected
 ```
+
+If the user's game doesn't fit any template exactly, suggest the closest match:
+- 体育/运动游戏 (FIFA/NBA style) → e) 策略/模拟经营 (team management + balance focus)
+- 格斗游戏 (Street Fighter style) → b) 动作/卡牌/RPG (combat system focus)
+- 沙盒/开放世界 (Minecraft style) → b) or e) depending on combat vs. economy emphasis
+- 音乐/节奏游戏 (Guitar Hero style) → a) 超休闲/中度手游 (session design + retention focus)
+- 益智/解谜 (Wordle/casual puzzle) → a) 超休闲/中度手游
+
+The template is a STARTING POINT. The user can add or remove nodes via the optional node question that follows.
 
 Map answer to `game_scenario` field in bootstrap-profile.json.
 If no scenario hint and user is unsure, suggest `action-rpg` as default (broadest node set).
