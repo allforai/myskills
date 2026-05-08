@@ -96,4 +96,6 @@ For microservice architectures: infra-realtime, infra-storage, infra-messaging a
 For simple projects with one database and no realtime: merge infra decisions into the setup-env node.
 
 ### Skip Entirely
-For static sites, CLI tools, pure frontend apps with no backend, or SDK/library projects.
+For static sites, CLI tools, pure frontend apps with no backend, SDK/library projects, or `embedded-firmware` projects.
+
+**BaaS exception** (`architecture_pattern` starts with `baas-`): The cloud service IS the infrastructure — do NOT run infra-design to select message queues or CDN. Instead, create a minimal `infra-design.json` that documents the BaaS services in use (e.g., Firebase: Firestore + Auth + Functions + Storage) and their configuration requirements (emulator setup, service credentials), then skip all interactive dimension questions.

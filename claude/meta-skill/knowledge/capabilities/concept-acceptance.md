@@ -12,8 +12,9 @@ actionable feedback for the next iteration.
 
 ## Prerequisite
 
-`product-concept.json` must exist. Without it, this capability has no baseline
-to verify against. Bootstrap auto-appends this node only when product-concept exists.
+`product-concept.json` must exist — OR — for game projects, `game-design-doc.json` (from game-design-finalize node). Bootstrap auto-appends this node when `has_product_concept = true` OR `is_game_project = true`.
+
+**Game project fallback** (`is_game_project = true` and `has_product_concept = false`): Use `.allforai/game-design/game-design-doc.json` as the concept baseline. Dimension mapping: `core_loop` → Value proposition + Core features; `systems[]` → Core features + Differentiators; `player_roles[]` → Role coverage; `economy` → Business model (monetization flows). All other verification dimensions remain the same.
 
 ## What LLM Must Accomplish (not how)
 

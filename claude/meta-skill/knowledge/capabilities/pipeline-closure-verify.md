@@ -47,7 +47,7 @@ exist for each pipeline", this capability checks "does code actually connect".
   "closure_gaps": [
     {
       "feature": "<string>",
-      "closure_type": "<enum: config | monitoring | exception | lifecycle | mapping | navigation | multi_surface>",
+      "closure_type": "<enum: config | monitoring | exception | lifecycle | mapping | navigation | multi_surface | save_load | audio | progression | input>",
       "description": "<string — what's missing>",
       "severity": "<enum: high | medium | low>"
     }
@@ -138,6 +138,15 @@ Report these under `closure_gaps[]` with `closure_type: "multi_surface"`,
 naming which surface is stale and why (e.g., "mutation runs INSERT on
 details table while list_preview UPDATE expects row to already exist; row
 order race").
+
+### Game-Specific Closure Types (when `is_game_project = true`)
+
+| Closure Type | What to check |
+|-------------|---------------|
+| `save_load` | Game has progression state → code writes player state to disk/DB + code loads it on restart |
+| `audio` | Game references SFX/music in design → audio manager exists + event hooks call it |
+| `progression` | Game has XP/levels/unlocks → code reads progression state and gates content access |
+| `input` | Game declares player input scheme → input handler covers all declared actions (no unmapped input) |
 
 ### Required Quality
 

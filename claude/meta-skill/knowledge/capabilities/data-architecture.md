@@ -23,7 +23,7 @@ document that implementation nodes consume.
 
 | Dimension | Options to evaluate | Applies when |
 |-----------|-------------------|-------------|
-| Primary database | PostgreSQL / MySQL / MongoDB / DynamoDB / CockroachDB | Always (if product persists data) |
+| Primary database | PostgreSQL / MySQL / MongoDB / DynamoDB / CockroachDB / **Firestore / Firebase RTDB** | Always (if product persists data) |
 | Secondary/specialized DB | Redis / TimescaleDB / Neo4j / InfluxDB | Product has time-series, graph, or cache-heavy patterns |
 | Storage strategy | Hot/warm/cold tiering / TTL-based expiry / archival | Product accumulates data over time |
 | Index design | B-tree / GIN / GiST / composite / partial | Product has complex queries |
@@ -67,6 +67,7 @@ For each design dimension that applies to this project, LLM MUST:
 - **Event Sourcing consideration**: If audit trail or temporal queries are important, consider event log as source of truth
 - **Data lifecycle management**: Define retention policies upfront — storage costs compound
 - **Migration safety**: Every schema change must be backward-compatible or have a rollback plan
+- **Firestore / Firebase RTDB**: schema design = collection/document hierarchy + Security Rules as schema enforcement. Replace SQL index planning with query pattern → denormalization decision → composite index in Firestore console. Skip "Migration strategy" dimension (schema-less). Security Rules act as the schema constraint layer.
 
 ## Knowledge References
 

@@ -101,14 +101,35 @@ Every seed record must be associated with a role that can access it.
   the mobile app works, or a passing admin E2E proves the consumer app works.
   Every app is a separate deployment surface with its own failure modes.
 
+## Safety
+
+**Pre-flight staging credential check (REQUIRED before any data write):**
+Before executing any data population step, verify all DB connection strings and service endpoints point to staging/test infrastructure. Detection: any connection string containing `prod`, `production`, `live`, or a known production hostname pattern → abort immediately with: "demo-forge requires staging environment — production credentials detected. Set staging env vars and retry." If env vars are unset or ambiguous, prompt user before writing any data. demo-forge MUST NEVER execute data population against a production database or production cloud service.
+
+## Suppression Conditions
+
+demo-forge is **not applicable** for the following project types and MUST be suppressed (removed from the workflow, not run with empty output):
+
+| architecture_pattern | Reason |
+|----------------------|--------|
+| `library-sdk` | No running service to populate data into |
+| `embedded-firmware` | No HTTP service; device requires physical hardware |
+| `browser-extension` | Extension runs in browser host; no independent data layer |
+| `ide-plugin-obsidian` | Plugin loaded by Obsidian; no HTTP API to drive |
+| `ide-plugin-vscode` | Extension host; no HTTP server |
+| `github-action` | CI action; no live HTTP service |
+
+Serverless (`serverless-sam`, `serverless-framework`, `serverless-cf-workers`) are NOT suppressed — use the local emulator (`sam local start-api`, `serverless-offline`, `wrangler dev`) as the live environment.
+
+For Twine / PICO-8 / GBStudio / Ren'Py web exports: static exports with no server or DB — suppress demo-forge.
+
 ## Specialization Guidance
 
 | Project Type | Demo Forge Differences |
 |-------------|----------------------|
 | Consumer app | User journey data (onboarding → engagement → retention progression) |
 | Admin/SaaS | Multi-tenant data, role hierarchies, workflow states |
-| Game | Player save data at different progression stages, economy snapshots |
-| SDK | Example project using the SDK (dogfooding) — not traditional demo data |
+| Game (has server/backend) | Player save data at different progression stages, economy snapshots. For static/serverless game exports (Twine, PICO-8, LÖVE2D, GBStudio), see Suppression Conditions. |
 | Marketplace | Both supplier and buyer data, transaction history |
 
 ## Knowledge References

@@ -120,20 +120,36 @@ Write `.allforai/runtime-smoke/smoke-report.json`:
 }
 ```
 
-## Downstream consumers
+## Downstream Consumers
 
-- `launch-checklist` reads `overall` — must be `pass` for release sign-off
-- `learned/blind-spots.md` updated when the node catches a new class of bug
-- `quality-checks` reads `contract_drift_warnings[]` and merges into its
-  fieldcheck-report
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `.allforai/runtime-smoke/smoke-report.json` | `overall` | launch-prep | required | 上架前需要烟雾测试全通过才能放行 |
+| `.allforai/runtime-smoke/smoke-report.json` | `contract_drift_warnings[]` | quality-checks | optional | 字段一致性检查合并合约漂移警告 |
+
+## Suppression and Adaptation Rules
+
+| architecture_pattern | Action |
+|----------------------|--------|
+| `embedded-firmware` | Suppress — document manual device test scenarios |
+| `ide-plugin-obsidian` | Suppress — cannot automate desktop GUI headlessly |
+| `ide-plugin-vscode` | Suppress — cannot automate extension host headlessly |
+| `library-sdk` | Suppress — no runtime surface; library has no launch |
+| `github-action` | Suppress — CI action has no persistent launch |
+| `browser-extension` | Adapt — use `chrome --load-extension` + WebDriver; record extension load success/failure |
+| `serverless-sam` | Adapt — use `sam local start-api` as live environment; smoke = curl health endpoint |
+| `serverless-framework` | Adapt — use `serverless-offline` as live environment |
+| `serverless-cf-workers` | Adapt — use `wrangler dev` as live environment |
+| Twine/Ren'Py (narrative, web export) | Adapt — smoke = headless Chrome `open index.html`, verify document.title matches story title, no console errors |
 
 ## Required inputs from upstream nodes
 
 - `bootstrap-profile.json` — module list + build commands
-- `product-verify-*` reports — must all pass before smoke (smoke runs
-  additional verification, not a replacement)
-- `.env.example` / deployment config files from the project — to know
-  what env vars a real deployment sets
+- `product-verify-*` reports — required only when `product-verify` is in the workflow graph; waived when runtime-smoke-verify runs directly before launch-prep without product-verify
+- `.env.example` / deployment config files from the project — to know what env vars a real deployment sets
 
 ## Implementation notes
 
