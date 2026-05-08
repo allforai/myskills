@@ -12,7 +12,7 @@ workflow.json has any entries in:
 
 ## Extraction Process
 
-1. Read workflow.json progress section
+1. Read `corrections_applied[]` and `diagnosis_history[]` from workflow.json
 2. For each correction in corrections_applied:
    - Extract: which node, what was wrong, what was learned
    - Classify: mapping-gap / discovery-blind-spot / convergence / safety / other
@@ -42,6 +42,7 @@ Append to `.allforai/bootstrap/learned/<category>.md`:
 - Tech stack specific: `<source>-<target>.md` (e.g., `react-swiftui.md`)
 - Node specific: `<node-type>-patterns.md` (e.g., `discovery-patterns.md`)
 - General: `general-patterns.md`
+- Blind spots (gaps not caught by expected capability node): `blind-spots.md` (append, do not overwrite)
 
 ## Privacy Rules
 
