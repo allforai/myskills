@@ -155,6 +155,20 @@ Set: `architecture_pattern: 'library-sdk'`. **Verification note**: library proje
 - package.json with `@types/vscode` in devDependencies AND `"contributes"` section OR `.vscodeignore` present (VS Code extension; architecture_pattern: 'ide-plugin-vscode')
 - manifest.json at root with `"manifest_version"` key AND `"browser_action"` or `"action"` or `"background"` (Browser extension; architecture_pattern: 'browser-extension')
 
+**Backend-as-a-Service (BaaS) / cloud-native:**
+BaaS projects have NO separate backend module — the backend IS the cloud service. Set `architecture_pattern: 'baas-<provider>'` and do NOT create a separate backend module in the workflow.
+- package.json with `firebase` OR `firebase-admin` in dependencies → BaaS: Firebase. Runtime-env: `FIREBASE_PROJECT_ID`, Firebase emulator suite (`firebase emulators:start`) for local testing. Verification: Playwright for E2E on the frontend; Firebase emulator for integration tests (Auth, Firestore, Functions). architecture_pattern: 'baas-firebase'
+- package.json with `@supabase/supabase-js` in dependencies → BaaS: Supabase (PostgreSQL + Auth + Realtime). Runtime-env: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, optionally `SUPABASE_SERVICE_ROLE_KEY`. Verification: Playwright for E2E; Supabase local dev (`supabase start`) for integration. architecture_pattern: 'baas-supabase'
+- amplify.yml at root OR package.json with `aws-amplify` OR `@aws-amplify/backend` → BaaS: AWS Amplify. Runtime-env: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`. architecture_pattern: 'baas-amplify'
+- package.json with `@appwrite/sdk` → BaaS: Appwrite. architecture_pattern: 'baas-appwrite'
+
+**Serverless / FaaS (Function-as-a-Service):**
+Serverless projects deploy functions; there is NO persistent server process to start. Verification is via local emulator, NOT `curl localhost`.
+- serverless.yml or serverless.ts at root (Serverless Framework; deploys to AWS Lambda, Azure Functions, GCP Cloud Functions). Runtime-env: AWS credentials OR cloud credentials. Local testing: `serverless-offline` plugin for HTTP triggers. architecture_pattern: 'serverless-framework'
+- `sam-template.yaml` or `template.yaml` with `AWSTemplateFormatVersion: 2010-09-09` → AWS SAM (Serverless Application Model). Local testing: `sam local start-api`. architecture_pattern: 'serverless-sam'
+- functions/ directory with `wrangler.toml` at root → Cloudflare Workers. Local testing: `wrangler dev`. architecture_pattern: 'serverless-cf-workers'
+- ⚠ Serverless projects: demo-forge suppression does NOT apply (functions handle HTTP requests). Use serverless-offline or SAM local as the "live environment" for demo-forge data population.
+
 **Configuration:**
 - tsconfig.json, jsconfig.json
 - vite.config.*, webpack.config.*, next.config.*
