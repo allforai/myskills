@@ -59,6 +59,7 @@ Read these files if they exist (skip missing ones silently):
 - bun.lockb (Bun runtime lock file — treat as `runtime: bun`; also check `package.json` scripts for `bun run` to confirm)
 - app.json with `"expo"` key at root, OR eas.json, OR package.json with `expo` in dependencies → `framework: Expo (React Native), architecture_pattern: 'mobile-rn-expo'`
 - go.mod, go.sum
+- go.work (Go multi-module workspace — treat as monorepo; each `use ./sub` entry is a separate Go module; list all modules as separate backend modules in bootstrap-profile.json)
 - Cargo.toml, Cargo.lock
 - pubspec.yaml, pubspec.lock
 - Podfile, Podfile.lock
@@ -68,6 +69,9 @@ Read these files if they exist (skip missing ones silently):
 - mix.exs (Elixir/Phoenix)
 - Package.swift (Swift Package Manager / Vapor backend)
 - oh-package.json5 (HarmonyOS / ArkTS)
+- *.proto files present in any directory (gRPC service definition; set `api_style: gRPC`; proto compile step required before tests — add `protoc` / `buf generate` step to node-spec)
+- package.json with `@trpc/server` (tRPC API; set `api_style: tRPC`; ⚠ no REST routes to enumerate — procedures live in router definition file)
+- buf.yaml at root (Buf CLI for proto schema management — always companion to gRPC; confirms proto-based API)
 
 **Game engines:**
 - ProjectSettings/ProjectVersion.txt, Assets/ (Unity)
@@ -172,6 +176,12 @@ Serverless projects deploy functions; there is NO persistent server process to s
 - `sam-template.yaml` or `template.yaml` with `AWSTemplateFormatVersion: 2010-09-09` → AWS SAM (Serverless Application Model). Local testing: `sam local start-api`. architecture_pattern: 'serverless-sam'
 - functions/ directory with `wrangler.toml` at root → Cloudflare Workers. Local testing: `wrangler dev`. architecture_pattern: 'serverless-cf-workers'
 - ⚠ Serverless projects: demo-forge suppression does NOT apply (functions handle HTTP requests). Use serverless-offline or SAM local as the "live environment" for demo-forge data population.
+
+**Monorepo orchestrators:**
+- pnpm-workspace.yaml + turbo.json → Turborepo monorepo. Each entry in `apps/` is a frontend/backend/mobile app module; each entry in `packages/` is a shared internal library (classify as `role: shared`). Set `architecture_pattern: 'monorepo-turborepo'`.
+- nx.json at root + `apps/` + `libs/` directories → Nx monorepo. Each app in `apps/` is a separate module; `libs/` contains shared packages. Set `architecture_pattern: 'monorepo-nx'`. Check `nx.json.projects` or `project.json` files for per-app details.
+- pnpm-workspace.yaml WITHOUT turbo.json → plain pnpm workspace (monorepo without task orchestration). Enumerate workspace `packages[]` glob to find modules.
+⚠ For ALL monorepo types: enumerate EVERY app/package entry and create a separate module entry in `bootstrap-profile.json.modules[]` per deployable unit. Internal shared packages that are NOT standalone deployments get `role: shared`.
 
 **Configuration:**
 - tsconfig.json, jsconfig.json
@@ -1192,6 +1202,9 @@ has no verification node, the workflow is incomplete.
 | IDE plugin (VS Code extension) | `@vscode/test-cli` or `@vscode/test-electron` via `npm run test`; Playwright unsupported inside VS Code host. For extensions contributing a Language Server (activationEvents includes `onLanguage:*` or `contributes.languages`), also add LSP integration tests via `vscode-languageserver-protocol` test harness. For Debug Adapter Protocol extensions, add DAP integration tests. | plugin-test-{name} |
 | IDE plugin (Obsidian plugin) | `jest` with Obsidian vault fixture mock; full testing requires Obsidian CLI headless (if available) | plugin-test-{name} |
 | browser extension | Playwright with `chrome.launch({ channel: 'chrome' })` + extension load via `args: ['--load-extension=./dist']` | e2e-test-{name} |
+| backend API (tRPC) | jest/vitest with `@trpc/server` test client (no curl — tRPC has no REST routes). Create a tRPC caller via `createCallerFactory(router)(ctx)` and invoke procedures directly in tests. ⚠ Do NOT use curl or HTTP for tRPC backends — procedures are not HTTP-addressable by design. | api-test-{name} |
+| backend API (GraphQL) | jest/vitest with `graphql-tag` + test server (`ApolloServer.executeOperation` or `graphql()` executor); for E2E, Playwright or `graphql-request` against a running dev server. Cross-module stitch must check GraphQL operations (queries, mutations, subscriptions) against schema — not just REST routes. | api-test-{name} |
+| backend service (gRPC) | language-native test runner with gRPC test client (Go: `grpc.Dial("bufnet")` + `bufconn`; Node.js: `@grpc/grpc-js` test channel). ⚠ `.proto` files must be compiled before tests (add proto compile step to node-spec). No curl — gRPC uses binary Protobuf wire format. | api-test-{name} |
 | library / SDK | Language native test runner only — `npm test` (Jest/Vitest), `cargo test`, `pytest`, `mvn test`, `go test ./...`. No E2E node needed (no running server). No Playwright/Detox. | lib-test-{name} |
 | embedded / firmware | `pio test` (PlatformIO) for on-device/simulator unit tests; physical hardware tests documented as manual test scenarios; no HTTP/REST tests | firmware-test-{name} |
 | shared / infra | covered by consumers' tests | no separate node needed |
