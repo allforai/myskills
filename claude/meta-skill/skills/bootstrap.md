@@ -605,6 +605,14 @@ app might have "design-onboarding-flow" and "setup-push-notifications".
 
 **Game project node injection (when `is_game_project = true`):**
 
+**Skip injection entirely when goals are:** `tune`, `product-verify`, `quality-checks`,
+`demo`, `launch-prep`, or `visual-verify`. These goals assume game design documents
+already exist; injecting design nodes would be wasteful. If `approval-records.json`
+already has all-approved records, also skip (partial pipeline: see game-design.md §Composition Hints).
+
+**Inject when goals include:** `create`, `translate`, or `rebuild` (new or re-designed game).
+For `analyze` goal, inject only if no `approval-records.json` exists (new project without prior design pass).
+
 1. Read `${CLAUDE_PLUGIN_ROOT}/knowledge/game-scenario-templates/${game_scenario}.json`
 2. Read `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/game-design.md` §Canonical Node Registry
 3. Insert game-design nodes into the workflow AFTER `product-concept` node and BEFORE `product-analysis` node
