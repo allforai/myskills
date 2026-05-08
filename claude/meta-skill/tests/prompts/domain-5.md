@@ -12,7 +12,7 @@
 | capability | artifact_path | required_fields | validation_mode |
 |------------|---------------|-----------------|-----------------|
 | demo-forge | `.allforai/demo-forge/forge-data/` | seed_data[](含 role_ref), demo_scenarios[] | B1 mechanical |
-| quality-checks | `.allforai/deadhunt/deadhunt-report.json`, `.allforai/deadhunt/fieldcheck-report.json` | dead_routes[](含 file:line), field_mismatches[], fix_tasks[] | B1 mechanical |
+| quality-checks | `.allforai/quality-checks/deadhunt-report.json`, `.allforai/quality-checks/fieldcheck-report.json` | dead_routes[](含 file:line), field_mismatches[], fix_tasks[] | B1 mechanical |
 | code-tuner | `.allforai/code-tuner/tuner-report.json`, `tuner-tasks.json` | compliance_score, duplication_score, abstraction_score, tuner_tasks[].id | B1 mechanical |
 | launch-prep | `.allforai/launch-prep/launch-checklist.json` | competitive_research(完成标志), checklist[](含 item, status) | B2 semantic |
 
