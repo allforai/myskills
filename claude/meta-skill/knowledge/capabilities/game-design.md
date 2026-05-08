@@ -560,8 +560,17 @@ it must not run until all upstream nodes are approved. Upstream nodes may run in
 after `core-loop-design` — finalize waits for all of them.
 
 ### Partial Pipeline (existing game, adding feature)
-Skip `core-loop-design` and `art-direction` if both have `approved` records.
-Start from the system node being modified.
+Read `approval-records.json`. For each node with `gate_status == "approved"`:
+skip generating a new node-spec for it — the approved output still stands.
+Only generate node-specs for nodes that are `pending`, `in-review`, `revision-requested`,
+or **absent from the approval records** (newly added node for the feature).
+
+Bootstrap identifies the minimum set of nodes that need re-running:
+1. The node whose design is changing (the feature being added/modified)
+2. Any node whose output references data from the changed node
+3. `game-design-finalize` always re-runs (to produce an updated `game-design-doc.json`)
+
+Example: Adding ranked PvP mode → only `competitive-balance-design` + `game-design-finalize` need re-running if all other nodes are approved.
 
 ### Skip Entirely
 Game SDK / engine projects, CLI game tools, non-game projects.

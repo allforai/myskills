@@ -90,6 +90,7 @@ Read these files if they exist (skip missing ones silently):
 - package.json with `kaboom` in dependencies (Kaboom.js — JavaScript game library)
 - package.json with `excalibur` in dependencies (Excalibur.js — TypeScript game engine)
 - build.gradle or build.gradle.kts with `com.badlogicgames.gdx:gdx` (libGDX — Java/Kotlin cross-platform game framework)
+- *.sdpkg or *.csproj with `Stride.Games` in dependencies (Stride — C#/.NET game engine, formerly Xenko)
 - *.gbsproj (GBStudio — Game Boy / Game Boy Color game maker)
 - haxelib.json with `flixel` in dependencies (HaxeFlixel — Haxe 2D game framework)
 - build.settings + main.lua at project root (Solar2D / Corona SDK — Lua mobile game engine; ≠ LÖVE2D which uses conf.lua instead of build.settings)
