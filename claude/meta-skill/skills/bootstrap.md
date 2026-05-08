@@ -97,6 +97,8 @@ Read these files if they exist (skip missing ones silently):
 - haxelib.json with `flixel` in dependencies (HaxeFlixel — Haxe 2D game framework)
 - build.settings + main.lua at project root (Solar2D / Corona SDK — Lua mobile game engine; ≠ LÖVE2D which uses conf.lua instead of build.settings)
 - *.p8 or *.p8.png at project root (PICO-8 fantasy console cartridge)
+- go.mod with `hajimehoshi/ebiten` in require block (Ebitengine — Go 2D game engine)
+- go.mod with `g3n/engine` in require block (g3n — Go 3D game engine)
 - requirements.txt or pyproject.toml with `arcade` in dependencies (Arcade — Python 2D game framework, alternative to pygame)
 
 **Configuration:**
