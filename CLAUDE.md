@@ -91,8 +91,7 @@ All plugins read/write to a project-local `.allforai/` directory. This is the in
 ├── ui-design/               # ui-design-spec.md, tokens.json, interaction-spec.md, preview/*.html
 ├── game-design/             # system-spec.json, config-schema.json, protocol-spec.md (game-specific generate-artifacts outputs)
 ├── generate-artifacts/      # cli/pipeline/service/sdk archetype artifacts (command-tree, dag-spec, etc.)
-├── seed-forge/              # seed-plan, forge-data, assets/ (dev seed data)
-├── demo-forge/              # demo-plan, forge-data, assets/, verify-report, round-history
+├── demo-forge/              # demo-plan.json, forge-data.json, verify-report.json (demo + integration testing)
 ├── product-verify/          # static-report, dynamic-report, verify-report, ui-helper-profile.json
 ├── spec-compliance/         # spec-compliance-report.json
 ├── pipeline-closure/        # pipeline-closure-report.json
