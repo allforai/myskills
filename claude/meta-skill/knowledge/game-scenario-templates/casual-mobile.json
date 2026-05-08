@@ -12,6 +12,8 @@
   "optional_nodes": [
     "retention-hook-design",
     "meta-game-design",
+    "level-design",
+    "progression-curve-design",
     "audio-design"
   ],
   "always_include": [
@@ -26,6 +28,8 @@
     "monetization-design",
     "retention-hook-design",
     "meta-game-design",
+    "level-design",
+    "progression-curve-design",
     "audio-design",
     "art-direction",
     "art-spec-design",
