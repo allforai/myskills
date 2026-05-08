@@ -446,6 +446,11 @@ node-spec.
    - `telegraf` or `node-telegram-bot-api` (Node.js) OR `python-telegram-bot` in requirements.txt (Python) → prompt for `TELEGRAM_BOT_TOKEN`
    These tokens are the most critical runtime credentials for event-driven bots and are NOT
    covered by database/cache/auth service detection.
+   For **BaaS projects**, also identify service credentials from dependency analysis:
+   - `firebase` / `firebase-admin` → prompt for `FIREBASE_PROJECT_ID`, `FIREBASE_API_KEY`, service account JSON path (for admin SDK); offer to configure Firebase Emulator Suite (`firebase emulators:start`)
+   - `@supabase/supabase-js` → prompt for `SUPABASE_URL`, `SUPABASE_ANON_KEY`, optionally `SUPABASE_SERVICE_ROLE_KEY`; offer Supabase local (`supabase start`)
+   - `aws-amplify` / `@aws-amplify/backend` → prompt for `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_USER_POOLS_ID`, `AWS_USER_POOLS_WEB_CLIENT_ID`
+   - `@appwrite/sdk` → prompt for `APPWRITE_ENDPOINT`, `APPWRITE_PROJECT_ID`, `APPWRITE_API_KEY`
 2. Check what's already configured (`.env` exists? docker-compose covers it? service reachable?)
 3. Ask the user for ONLY missing items (project-specific, not a fixed template)
 4. Write/update `.env`, verify services are reachable
