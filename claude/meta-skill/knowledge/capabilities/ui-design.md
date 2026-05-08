@@ -78,7 +78,7 @@ design tokens, per-screen layouts, component specs, and optional interactive pre
 Run after experience-map is complete.
 
 ### Skip Entirely
-For backend-only projects, CLI tools, or when user explicitly skips.
+For backend-only projects, CLI tools, `embedded-firmware`, `github-action`, or when user explicitly skips.
 
 ### Split by Role
 For apps with very different role UIs (e.g., consumer app + admin dashboard).

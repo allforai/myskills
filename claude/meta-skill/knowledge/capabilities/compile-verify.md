@@ -69,6 +69,8 @@ Bootstrap MUST generate the correct build commands per platform:
 | Godot | `godot --headless --export-release "platform" output` | .apk/.app/.exe/.pck |
 | Python (desktop/script) | `python -m pytest --co -q` (collection-only; fastest syntax+import check) | N/A (interpreted) |
 | Twine / Twee (narrative) | `tweego -o dist/index.html *.tw` (if tweego installed) OR skip | dist/index.html |
+| Embedded C / C++ firmware (ARM) | `cmake -B build -DCMAKE_TOOLCHAIN_FILE=arm-none-eabi.cmake && cmake --build build` | build/*.elf / build/*.bin / build/*.hex |
+| Embedded C (bare-metal, no CMake) | `make all` (Makefile-driven cross-compile with `arm-none-eabi-gcc`) | *.elf / *.bin |
 
 ## Downstream Consumers
 

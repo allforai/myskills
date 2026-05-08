@@ -76,7 +76,7 @@ Output: code changes
 ## Composition Hints
 
 ### Skip Entirely
-For backend-only projects, CLI tools, SDK/library projects (`architecture_pattern: library-sdk`), or any project where ui-design was skipped: skip ui-forge entirely — it requires `ui-design-spec.md` as a baseline.
+For backend-only projects, CLI tools, SDK/library projects (`architecture_pattern: library-sdk`), `embedded-firmware`, `github-action`, or any project where ui-design was skipped: skip ui-forge entirely — it requires `ui-design-spec.md` as a baseline.
 
 ### Single Node (default)
 For single-platform projects: one ui-forge node handles fidelity check + restore + polish for all screens.
