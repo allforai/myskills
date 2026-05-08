@@ -124,7 +124,7 @@ Bootstrap MUST generate the correct test commands per platform:
 | Android (Kotlin) | `./gradlew test` | `./gradlew connectedAndroidTest` |
 | React Native | `npx jest` | Detox / Maestro |
 | Unity | `Unity.exe -runTests -testPlatform EditMode -projectPath .` | PlayMode: `-testPlatform PlayMode` |
-| Godot | `godot --headless --script addons/gut/gut_cmdln.gd` (GUT framework) | Manual scene tests |
+| Godot | GUT: `godot --headless --script addons/gut/gut_cmdln.gd` (check `addons/gut/` exists). GdUnit4: `godot --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd` (check `addons/gdUnit4/bin/` exists). If neither found, mark R3 as `applicable: false` — no test runner detected. | Manual scene tests (if no framework present) |
 | Go backend (gRPC) | `go test ./...` per service module | Protocol compat: `buf lint` (style) + `buf breaking --against '.git#branch=main'` (backward compat check against previous proto version). **buf breaking is R4 for gRPC** — a passing `go test` does not guarantee proto schema backward compatibility. |
 | Roblox (Rojo) | TestEZ via `rojo test` or custom runner | Manual in Roblox Studio |
 | Rust game (Bevy/macroquad) | `cargo test` for logic | Rendering: manual test scenarios |
@@ -139,6 +139,9 @@ Bootstrap MUST generate the correct test commands per platform:
 | Kotlin Spring Boot | `./gradlew test` per module for unit tests; `./gradlew integrationTest` for Spring integration tests (requires running DB/Kafka) | R4 protocol: API compatibility via SpringDoc/OpenAPI diff if springdoc-openapi present |
 | Deno (Fresh / runtime) | `deno test` (built-in test runner, no npm needed). For Fresh: `deno test --allow-net tests/` | E2E: Playwright on built Fresh output (`deno task start` + Playwright) |
 | Flutter (macOS desktop) | `flutter test` for unit/widget tests; `flutter test integration_test/ --device-id=macos` for E2E on macOS (requires macOS device target). CI: `macos-latest` GitHub Actions runner required. | N/A |
+| .NET / ASP.NET Core | `dotnet test` (discovers all *Tests.csproj in the solution). For integration tests: `dotnet test --filter Category=Integration` (requires running DB or test containers). Use `dotnet test --logger trx` for CI result output. | Testcontainers or SQL Server LocalDB for DB-dependent tests |
+| Obsidian plugin | `npm run test` (vitest or jest with Obsidian API mocks). Note: full integration testing requires loading the plugin into Obsidian dev vault manually — automated headless testing is limited to unit tests of pure logic. | Manual vault load for full E2E |
+| VS Code extension | `npm run test` (runs `@vscode/test-electron` which launches VS Code with the extension loaded; exits with test results). Command: `node ./out/test/runTest.js` (typical convention). | `@vscode/test-electron` extension host tests |
 
 **Key rule:** Mobile test frameworks are fundamentally different from web. `flutter test` ≠ `npm test`. Bootstrap must detect the platform and emit the correct command.
 

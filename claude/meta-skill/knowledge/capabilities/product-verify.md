@@ -42,11 +42,12 @@ Every module in the project must be verified using its appropriate tool.
 | HarmonyOS (ArkTS) | `ohosTest` framework (component tests + UI tests) | `hvigorw test` on simulator or real device; ArkUI test for component rendering; verify Ability launch, permissions, network access |
 | Kotlin Spring Boot | `./gradlew test` + `./gradlew integrationTest` (with Testcontainers for DB/Kafka) | API E2E: RestAssured or MockMvc; Kafka consumer tests via embedded Kafka |
 | API-only backend | curl / HTTP client | Endpoint integration test |
-| Unity | Unity Test Framework (`-runTests -testPlatform PlayMode`) | Automated playmode tests on target platform |
+| Unity | Unit: `Unity.exe -runTests -testPlatform EditMode -projectPath . -resultsFile ./test-results.xml`; Gameplay: `-testPlatform PlayMode`. For multiplayer games: use NGO test utilities to verify message serialization and client-server handshakes | Automated playmode tests on target platform |
 | Unreal Engine | Gauntlet / Automation Framework | Automated functional tests |
-| Godot | GdUnit4 / GUT | Scene-based integration tests |
-| Obsidian plugin | Obsidian Test API + esbuild integration | Load plugin into Obsidian dev vault; verify commands register, settings save/load, views open |
-| VSCode extension | `@vscode/test-electron` | Extension host integration tests; verify commands activate, tree views render |
+| Godot | GUT: `godot --headless --script addons/gut/gut_cmdln.gd --output-json results.json` (if `addons/gut/` present). GdUnit4: `godot --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd` (if `addons/gdUnit4/bin/` present). If neither framework detected: mark R3 non-applicable | Scene-based integration tests |
+| Obsidian plugin | `npm run test` (vitest/jest with Obsidian API mocks) for unit tests; full integration requires loading plugin into Obsidian dev vault manually — automate with `obsidian-testing-framework` if available | Load plugin into Obsidian dev vault; verify commands register, settings save/load, views open |
+| VSCode extension | `npm run test` (runs `@vscode/test-electron` — launches VS Code with extension loaded, exits with test results). Typical: `node ./out/test/runTest.js` | Extension host integration tests; verify commands activate, tree views render |
+| .NET / ASP.NET Core | `dotnet test` (all test projects in solution); integration: `dotnet test --filter Category=Integration` with Testcontainers for DB | API E2E: RestAssured / HttpClient against running dotnet server |
 | Scrapy / crawler | pytest + database state assertions | Run crawl with test seed URLs; verify items written to DB, pipelines execute, no exceptions |
 
 For each module:

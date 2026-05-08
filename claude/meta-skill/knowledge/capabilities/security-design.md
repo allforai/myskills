@@ -35,6 +35,7 @@ that implementation and verification nodes consume.
 | Game anti-cheat | Server-side authoritative validation / replay verification / anomaly detection / ban system | Multiplayer games or games with economy systems — client-side data must never be trusted for score/inventory/currency |
 | Electron IPC security | `contextBridge` with explicit allowlist / `contextIsolation: true` / `nodeIntegration: false` / `sandbox: true` / IPC channel validation | All Electron desktop apps — renderer process must not have direct Node.js access |
 | Tauri v2 Capabilities | Fine-grained IPC permission scopes in `src-tauri/capabilities/*.json` (command allowlist per capability, scope-limited by path/host) | All Tauri v2 apps — least-privilege capability set required |
+| IDE Plugin data access | Obsidian: full Node.js + vault access (no sandbox) — document which vault data the plugin reads/writes, and whether it transmits data externally; secrets via `app.vault.adapter` local storage, NOT source code. VS Code: extension host process (not sandboxed) — use `vscode.SecretStorage` for secrets (OS Keychain/Credential Manager), declare minimum `activationEvents`, avoid requesting `workspace` access unless needed | All Obsidian plugins and VS Code extensions — no granular permission model exists in either IDE; plugin README must explicitly state data access scope |
 
 ### Required Quality
 

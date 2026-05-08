@@ -174,6 +174,25 @@ Check platform-specific requirements based on target launch platform (read from 
 - No hardcoded tokens or secrets in workflow examples
 - Test coverage with example workflows in `.github/workflows/`
 
+**Obsidian Community Plugins:**
+- `manifest.json` required fields: `id` (kebab-case, globally unique), `name`, `author`, `version`, `minAppVersion` (minimum Obsidian version the plugin supports)
+- README with usage instructions (required for plugin page — Community Plugins browser shows it)
+- Beta testing via BRAT: share URL `obsidian://install-plugin?repo=<owner>/<repo>` for testers before official listing
+- Official listing: submit PR to `obsidianmd/obsidian-releases` (community-plugins.json + versions.json); review team checks manifest validity, README quality, and basic code review (1–2 weeks)
+- No payment processing in Obsidian ecosystem — plugins are free; donations via Patreon/Buy Me a Coffee are user-driven
+- Notarization NOT required — plugins run inside Obsidian's existing Electron process
+
+**VS Code Extension (Visual Studio Marketplace):**
+- `package.json` required fields: `publisher` (verified Microsoft account ID), `name` (lowercase, no spaces), `version` (semver), `engines.vscode` (min version, e.g., `^1.80.0`), `activationEvents`, `contributes` (commands, views, config)
+- Publisher registration: create Publisher ID at https://marketplace.visualstudio.com/manage → associate GitHub or Microsoft account
+- Icon: 128×128 PNG at project root (referenced in `package.json` `icon` field)
+- README.md with usage examples and screenshots (displayed on Marketplace listing page)
+- License file required
+- `.vscodeignore` configured to exclude test files, `node_modules/`, build intermediates from `.vsix` package
+- Package: `vsce package` → produces `.vsix` file; inspect with `vsce ls` to confirm size
+- Publish: `vsce publish` (requires PAT from Azure DevOps or `vsce login <publisher>`)
+- Post-publish: extension searchable within 1–2 hours; rated listing (downloads, reviews) visible within 24 hours
+
 **Electron desktop app (Windows/macOS/Linux):**
 - Windows (Authenticode): acquire code signing certificate (DigiCert/GlobalSign; EV cert for SmartScreen bypass); configure `electron-builder` `win.certificateFile` + `certificatePassword`; without signing, Windows SmartScreen shows "unverified publisher" warning
 - macOS (Developer ID + Notarization): configure `electron-builder` `mac.identity`; notarize the .dmg or .app.zip using `xcrun notarytool`; staple: `xcrun stapler staple <app>.dmg`; Gatekeeper blocks on macOS Catalina+ without notarization
@@ -225,11 +244,13 @@ Check platform-specific requirements based on target launch platform (read from 
 - Error monitoring: Deno Deploy logs to stdout; configure external log aggregation (Datadog, Logtail) for production visibility
 
 **Steam (Desktop game):**
-- Steam SDK integrated (achievement API, cloud save, overlay)
-- Steamworks partner portal app page complete
-- Age ratings submitted (IARC or regional equivalents)
-- GDPR compliance for EU accounts
-- Build on all target platforms (Windows/Mac/Linux)
+- Steam SDK integrated in game client (achievement API, cloud save, overlay, SteamUser auth)
+- **Dedicated server (if multiplayer)**: Steamworks GameServer API integrated for player auth token validation (`BeginAuthSession`/`EndAuthSession`); server binary uploaded to Steamworks as a separate AppID (dedicated servers are typically free-to-own); verify server connects to Steam backend at startup
+- **Anti-cheat (if multiplayer with progression)**: VAC enabled OR EAC/BattlEye integrated; server-authoritative validation of all score/inventory/ability inputs — client data must never be trusted
+- Steamworks partner portal: game client AppID AND server AppID configured; build branches mapped to correct depot targets; upload all platform binaries (client + server) before review
+- Age ratings submitted (IARC or regional equivalents — required for Steam store page approval)
+- GDPR compliance for EU accounts (privacy policy URL in store page)
+- Build verified on all target platforms (Windows/Mac/Linux) — both client AND server binaries
 
 **Output:** `.allforai/launch-prep/compliance-checklist.json`
 

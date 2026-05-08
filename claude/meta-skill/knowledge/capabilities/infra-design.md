@@ -97,7 +97,7 @@ For microservice architectures: infra-realtime, infra-storage, infra-messaging a
 For simple projects with one database and no realtime: merge infra decisions into the setup-env node.
 
 ### Skip Entirely
-For static sites, CLI tools, pure frontend apps with no backend, SDK/library projects, or `embedded-firmware` projects.
+For static sites, CLI tools, pure frontend apps with no backend, SDK/library projects, `embedded-firmware` projects, or IDE plugins (`ide-plugin-obsidian`, `ide-plugin-vscode`) — these run inside the host IDE's existing infrastructure and define no independent backend services.
 
 **Static site / narrative export** (`architecture_pattern: static-site` OR product has no backend, no realtime, no auth): only CDN + object storage applies. Skip all dimension questions about message queues, WebSocket, load balancing. Recommend: Cloudflare Pages / Netlify / GitHub Pages and document the choice; no `infra-design.json` interactive session needed.
 

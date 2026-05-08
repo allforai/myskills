@@ -152,6 +152,10 @@ Serverless (`serverless-sam`, `serverless-framework`, `serverless-cf-workers`) a
 
 For Twine / PICO-8 / GBStudio / Ren'Py web exports: static exports with no server or DB — suppress demo-forge.
 
+**Game clients with no backend** (`offline_first: true` set by bootstrap): suppress demo-forge — no API to drive data population. Examples: offline Godot puzzle game, single-player Unity game with no server.
+
+**Game clients WITH a separate backend API**: do NOT suppress demo-forge. Run demo-forge against the backend ONLY (leaderboard API, matchmaking service, player account service). Seed player accounts, match history, leaderboard entries via API calls. Verify via `curl /leaderboard` or admin panel Playwright test. Game client launch is NOT required for demo-forge — only the backend service needs to be running.
+
 ## Specialization Guidance
 
 | Project Type | Demo Forge Differences |

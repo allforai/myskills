@@ -85,6 +85,9 @@ Bootstrap MUST generate the correct build commands per platform:
 | Deno Fresh (SSR) | `deno task build` (check `deno.json` `tasks.build` entry) OR `deno check` for type-checking without bundle output | dist/ (if build task exists) |
 | HarmonyOS (ArkTS) | `hvigorw build` or `npm run build` (check `oh-package.json5` scripts). HarmonyOS uses `hvigor` build tool (Harmony equivalent of Gradle). Output: `.hap` module file. Requires DevEco Studio SDK or hvigor CLI installed. | entry/build/default/outputs/*.hap |
 | Next.js + Prisma | `npx prisma migrate deploy && npm run build` — Prisma schema MUST be deployed before Next.js build (build may fail or type errors occur if schema not synced). | .next/ |
+| .NET / ASP.NET Core | `dotnet build` (debug) OR `dotnet publish -c Release -o bin/publish` (production). For solutions with multiple projects: `dotnet build <Solution>.sln`. | bin/publish/ (production) or bin/Debug/net*/dll |
+| Obsidian plugin | `npm run build` (esbuild compiles TypeScript → main.js in project root). Verify output: `main.js` + `styles.css` (if styles present) + `manifest.json`. | main.js |
+| VS Code extension | `npm run compile` (TypeScript → out/) OR `vsce package` (produces .vsix distributable). Check `package.json` scripts for actual command. | out/ or *.vsix |
 | Embedded C / C++ firmware (ARM) | `cmake -B build -DCMAKE_TOOLCHAIN_FILE=arm-none-eabi.cmake && cmake --build build` | build/*.elf / build/*.bin / build/*.hex |
 | Embedded C (bare-metal, no CMake) | `make all` (Makefile-driven cross-compile with `arm-none-eabi-gcc`) | *.elf / *.bin |
 
@@ -102,6 +105,13 @@ Bootstrap MUST generate the correct build commands per platform:
 
 ### Single Node (default)
 For most projects: one compile-verify node runs the full build after all translation is complete.
+
+### Split by Build Target (REQUIRED for game + backend projects)
+For game projects that also have a dedicated server or API backend: one compile-verify node per target, with backend built FIRST:
+- `compile-verify-backend` — `dotnet publish` / `go build` / etc. (must complete before game client build if shared types/protos are involved)
+- `compile-verify-game-client` — Unity batchmode / Godot export / etc.
+
+This ordering ensures shared type safety: the server DLLs or generated proto files must exist before the game client builds against them.
 
 ### Split by Platform (REQUIRED for multi-platform projects)
 For projects with web + mobile + backend: one compile-verify node per platform.

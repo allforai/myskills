@@ -76,7 +76,7 @@ Read these files if they exist (skip missing ones silently):
 **Game engines:**
 - ProjectSettings/ProjectVersion.txt, Assets/ (Unity)
 - *.uproject, Source/ (Unreal Engine)
-- project.godot (Godot)
+- project.godot (Godot). **Test framework detection**: Check `addons/gut/gut.gd` → GUT framework; check `addons/gdUnit4/bin/GdUnitCmdTool.gd` → GdUnit4 framework. Record `godot_test_framework: "GUT" | "GdUnit4" | null` in bootstrap-profile.json. If null, mark R3 as non-applicable. **Offline-first detection**: If no HTTP client imports (`HTTPClient`, `HTTPRequest`, `WebSocketClient`) found in any `.gd` or `.cs` script in the project → set `offline_first: true`; suppress `demo-forge` and `runtime-smoke-verify`.
 - *.love OR (main.lua + conf.lua at root) (LÖVE2D; *.love is the packaged output, main.lua+conf.lua is the dev project; ⚠ if build.settings is also present, this is Solar2D — not LÖVE2D; Solar2D takes precedence)
 - Cargo.toml with `bevy` in dependencies (Bevy/Rust); for Cargo workspaces, also check member crates (e.g., `game/Cargo.toml`, `crates/*/Cargo.toml`) — the workspace root often has no direct dependencies
 - Cargo.toml with `macroquad` in dependencies (Macroquad — lightweight Rust 2D game library; verification: `cargo test` for logic; rendering tests require display — document manual test scenarios for rendering)
@@ -113,6 +113,16 @@ Read these files if they exist (skip missing ones silently):
 - requirements.txt or pyproject.toml with `arcade` in dependencies (Arcade — Python 2D game framework, alternative to pygame)
 - `build.gradle` or `build.gradle.kts` with `net.fabricmc:fabric-loader` in dependencies → Minecraft mod (Fabric loader). Set `architecture_pattern: 'game-mod'`, `is_game_project = true`. Fabric signals: `fabric.mod.json` in `src/main/resources/`, `*.client.json` mixin configs. Verification: `./gradlew build` for compile; functional tests require a running Minecraft instance — document as manual test scenarios. **CRITICAL: game-mod ≠ library-sdk** — do NOT suppress demo-forge (mod testing = running inside a live Minecraft game) and do NOT set architecture_pattern to 'library-sdk'.
 - `build.gradle` or `build.gradle.kts` with `net.minecraftforge:forge` in dependencies → Minecraft mod (Forge loader). Set `architecture_pattern: 'game-mod'`, `is_game_project = true`. Forge signals: `src/main/resources/META-INF/mods.toml`, `forge.cfg`. Same verification and demo-forge rules as Fabric above.
+
+**Game + Backend Mixed Project Detection:**
+If a game engine is detected (Unity / Unreal / Godot / Bevy / etc.) AND a backend module is ALSO detected (*.csproj / go.mod / requirements.txt with FastAPI/Flask/Django / Gemfile / etc.) in a subdirectory (e.g., `server/`, `backend/`, `dedicated-server/`):
+→ Treat as a TWO-MODULE project: `game_client` module + `backend` module
+→ Set `is_game_project = true`; `architecture_pattern` describes the game engine (e.g., `game-unity`)
+→ In `bootstrap-profile.json.modules[]`: create one entry per module with distinct `role`, `path`, and `build_commands`
+→ Example: `modules: [{ id: "M001", role: "game_client", path: ".", ... }, { id: "M002", role: "backend", path: "server/", ... }]`
+→ Generate separate `compile-verify` nodes (backend FIRST — game client may depend on shared types); separate `test-verify` nodes
+→ Do NOT suppress `demo-forge` — run demo-forge against the backend API only (not the game client)
+→ `runtime-smoke-verify`: suppress game client launch; smoke-test backend module only
 
 **Game engine SDK disambiguation heuristic:**
 Some SDKs have "game" or "engine" in their name but are used for non-game purposes:
