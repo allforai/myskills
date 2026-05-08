@@ -76,15 +76,16 @@ Read these files if they exist (skip missing ones silently):
 - pubspec.yaml with `flame` in dependencies (Flame/Flutter game engine)
 - requirements.txt or pyproject.toml with `pygame` in dependencies (pygame/Python)
 - cocos-project.json (Cocos Creator)
-- *.rpy or renpy/ directory (Ren'Py visual novel engine)
-- Game.rpgproject (RPG Maker MV/MZ)
+- *.rpy or renpy/ directory (Ren'Py visual novel engine; scenario hint: narrative-adventure)
+- Game.rpgproject (RPG Maker MV/MZ; scenario hint: action-rpg)
 - game.project + *.script or *.go (Defold; note: *.go here is Defold's game object format, not Go language)
 - *.c3proj (Construct 3)
 - *.mgcb (MonoGame/.NET)
 - game.js + game.json at project root (WeChat Mini Game; distinguished from mini programs which use app.js)
 - *.yyp (GameMaker Studio 2)
-- *.twee or *.tw (Twine / interactive fiction; maps to narrative-adventure scenario)
+- *.twee or *.tw (Twine / interactive fiction; scenario hint: narrative-adventure)
 - *.rbxlx or *.rbxl (Roblox Studio place files) or default.project.json with Roblox tree structure (Rojo workflow)
+- GameScene.swift at project root or in Sources/ (SpriteKit / SceneKit — Apple's 2D/3D game frameworks for iOS/macOS)
 
 **Configuration:**
 - tsconfig.json, jsconfig.json
@@ -229,20 +230,22 @@ treat the engine as tech stack context and proceed with the normal bootstrap flo
 **If business_domain = "gaming" confirmed (user selected (a) above, or explicitly chose
 业务领域 f) 游戏 in the no-code prompt):**
 
-After confirming the main goal, ask ONE additional question:
+After confirming the main goal, ask ONE additional question.
+
+If the detected engine has a **scenario hint** (marked in the game engines list above as "scenario hint: X"), pre-mark that option with `[推荐]` in the list. The user can override — they are not locked in.
 
 ```
 游戏品类（选一）：
    a) 超休闲/中度手游 (casual-mobile)
-   b) 动作/卡牌/RPG (action-rpg)
+   b) 动作/卡牌/RPG (action-rpg)         ← [推荐] if RPG Maker detected
    c) 在线多人 MMO/MOBA/FPS (multiplayer-online)
    d) 肉鸽/Roguelite (roguelike)
    e) 策略/模拟经营 (strategy-sim)
-   f) 叙事/视觉小说/AVG (narrative-adventure)
+   f) 叙事/视觉小说/AVG (narrative-adventure)  ← [推荐] if Ren'Py / Twine / RenPy detected
 ```
 
 Map answer to `game_scenario` field in bootstrap-profile.json.
-If user is unsure, suggest `action-rpg` as default (broadest node set).
+If no scenario hint and user is unsure, suggest `action-rpg` as default (broadest node set).
 
 After the user selects a scenario, bootstrap reads the selected template's `bootstrap_note`
 (if present). If the note lists ad-hoc optional nodes, present them as a follow-up question:
