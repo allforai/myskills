@@ -11,6 +11,8 @@
   ],
   "optional_nodes": [
     "ai-faction-design",
+    "combat-system-design",
+    "competitive-balance-design",
     "audio-design",
     "map-generation-spec"
   ],
@@ -25,6 +27,8 @@
     "economy-design",
     "ai-faction-design",
     "tech-tree-design",
+    "combat-system-design",
+    "competitive-balance-design",
     "audio-design",
     "art-direction",
     "art-spec-design",
