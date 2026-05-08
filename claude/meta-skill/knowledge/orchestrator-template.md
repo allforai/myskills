@@ -78,7 +78,10 @@ On first iteration if transition_log is non-empty:
 
 ## Safety (warnings, not blockers)
 
-- Same node fails 3 times → warn user, ask if they want to continue
+- Same node fails 3 times → **before warning**, check `workflow.json.diagnosis_history` for that node:
+  - If any entry has `"out_of_scope": true` → mark workflow halted, output TODO list, do NOT retry or ask user
+  - If 2+ entries share the same `root_cause.node` → convergence cap reached, mark UNRESOLVED, output TODO list, halt
+  - Otherwise → warn user, ask if they want to continue
 - 5 iterations with no new artifacts → output current state + TODO list
 - Single node running > 10 minutes → warn but don't kill
 

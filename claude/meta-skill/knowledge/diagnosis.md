@@ -78,6 +78,10 @@ After diagnosis returns:
    - Carry gaps_found so the subagent knows the full scope
 3. After each step, update workflow.json progress
 4. Apply prevention rules: Edit the affected node-spec files
+5. **After each successful repair step**, orchestrator appends to `workflow.json corrections_applied[]`:
+   ```json
+   { "node": "<node-id>", "what_was_wrong": "<root_cause.description>", "fix_applied": "<repair action taken>", "timestamp": "<ISO>" }
+   ```
 
 ## Re-Verification
 
@@ -85,6 +89,22 @@ After repair_plan completes:
 - Re-evaluate the originally failed node's exit_artifacts existence check
 - If still failing → diagnose again (with updated context)
 - diagnosis_history prevents re-diagnosing the same root cause
+
+## Diagnosis History Recording
+
+Each diagnosis result is appended to `workflow.json diagnosis_history[]` by the orchestrator:
+
+```json
+{
+  "timestamp": "<ISO timestamp>",
+  "failed_node": "<node-id>",
+  "root_cause": { "node": "<node-id>", "description": "<what's wrong>" },
+  "impact_chain": ["<node-id>", "..."],
+  "gaps_found": [{ "domain": "<area>", "missing": ["<item>"], "severity": "high|medium|low" }],
+  "repair_plan": [{ "node": "<node-id>", "action": "<what to do>", "depends_on_previous": true }],
+  "out_of_scope": false
+}
+```
 
 ## Convergence Control
 

@@ -31,6 +31,14 @@ Checked every `check_interval` iterations.
 
 **Carve-out for human gate nodes:** Nodes with `human_gate: true` and `gate_status == "in-review"` are excluded from the no-progress check — they are legitimately waiting for human approval, not stuck. Only count them as "no progress" if they remain `in-review` for more than `max_node_execution_time * 2` seconds without a gate status change.
 
+## Demo Data Staging Constraint
+
+demo-forge node-specs MUST include a pre-flight credential check:
+- Verify all DB connection strings and service endpoints point to staging/test infrastructure
+- Detection: connection strings containing `prod`, `production`, `live`, or a known production hostname pattern → fail immediately with: "demo-forge requires staging environment — production credentials detected. Set staging env vars and retry."
+- If env vars are unset or ambiguous, prompt user before writing any data
+- demo-forge MUST NEVER execute data population against a production database or production cloud service
+
 ## Dangerous Command Patterns
 
 Blocked in generated node-specs:

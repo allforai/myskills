@@ -558,6 +558,15 @@ Write to `.allforai/bootstrap/bootstrap-profile.json`:
 }
 ```
 
+> **bootstrap-profile.json vs discovery source-summary.json — no conflict:**
+> bootstrap-profile.json is produced during /bootstrap phase and lives in `.allforai/bootstrap/`.
+> It is NOT consumed by /run-time subagents directly. If the workflow includes a discovery node,
+> that node produces `source-summary.json` by reading source code directly — it does NOT read
+> bootstrap-profile.json. The two artifacts have overlapping fields (tech_stacks, modules,
+> architecture_pattern, detected_patterns) but are independent: bootstrap-profile captures
+> the structural view needed for workflow planning; source-summary captures the deep semantic
+> view needed for code generation. Downstream node-specs reference source-summary.json only.
+
 ---
 
 ## Step 2: Load Knowledge (Reference, Not Menu)
@@ -1185,6 +1194,11 @@ generated node-specs MUST instruct subagents to use the REAL service, not mocks/
 Dev-mode code should check for real credentials and use them when available. Stubs are
 ONLY acceptable when no credentials are provided. This ensures demo-forge and smoke-test
 exercise the full real stack, not a fake one. Every stub is a gap in integration testing.
+
+**Safety Constraint (applies to demo-forge node-specs):**
+Read `${CLAUDE_PLUGIN_ROOT}/knowledge/safety.md §Demo Data Staging Constraint` when
+generating demo-forge node-specs. The pre-flight credential check (staging vs production
+detection) MUST be included in every generated demo-forge node-spec as the first step.
 
 **Full E2E Testing Principle (applies to workflow planning):**
 Every module in `bootstrap-profile.json.modules[]` MUST have a corresponding verification
