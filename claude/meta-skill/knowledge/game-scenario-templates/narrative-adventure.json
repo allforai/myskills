@@ -25,9 +25,9 @@
   "node_order": [
     "core-loop-design",
     "narrative-design",
+    "worldbuilding",
     "branching-structure-design",
     "character-arc-design",
-    "worldbuilding",
     "puzzle-design",
     "dialogue-system-spec",
     "audio-design",

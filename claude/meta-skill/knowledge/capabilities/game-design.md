@@ -119,8 +119,10 @@ Approval state is tracked in `.allforai/game-design/approval-records.json`.
       "node_id": "<node_id from Canonical Node Registry>",
       "gate_status": "pending | in-review | approved | revision-requested",
       "discipline_owner": "<role_id>",
+      "discipline_reviewers": ["<role_id>"],
       "approved_by": [],
       "revision_notes": "",
+      "reviewer_notes": "",
       "approved_at": null,
       "unlocks": ["<downstream_node_id>"]
     }
@@ -128,10 +130,16 @@ Approval state is tracked in `.allforai/game-design/approval-records.json`.
 }
 ```
 
+**Consistency invariant:** The `unlocks[]` field here MUST be identical to the corresponding `workflow.json nodes[].unlocks[]` field written by bootstrap. Bootstrap is the single writer of both fields and MUST derive them from the same source (node_order). `/run` uses `approval-records.json.unlocks[]` for gate-driven unblocking of game-design nodes; if these diverge from `workflow.json.nodes[].unlocks[]`, the orchestrator graph will be out of sync. Verify after bootstrap: `records[i].unlocks == workflow.json.nodes[matching_id].unlocks` for every game-design node.
+
+Note on `revision_notes` vs `reviewer_notes`: `revision_notes` is written by the `discipline_owner` when requesting changes (triggers re-execution); `reviewer_notes` is written by `discipline_reviewers` for advisory observations that do not change `gate_status`.
+
 Gate rules:
+- `gate_status == "pending"` AND node's `exit_artifacts` all exist → `/run` automatically sets `gate_status` to `"in-review"` and notifies `discipline_owner` that the output is ready for review. (Bootstrap initializes all records as `pending`; node execution produces the artifacts; `/run` transitions to `in-review` — this is the only way to reach `in-review`.)
+- `gate_status == "in-review"` → wait for `discipline_owner` to review the HTML output and either approve or request revision. `/run` does not advance to next game-design node while any predecessor is `in-review`.
 - `gate_status == "approved"` → unlock all `unlocks[]` nodes
 - `gate_status == "revision-requested"` → re-execute node with `revision_notes` as instruction; after re-execution completes, reset `gate_status` to `"in-review"` (awaiting fresh approval from `discipline_owner`)
-- `discipline_owner` must approve (drives `gate_status`); `discipline_reviewers` approval is advisory — reviewers may add `revision_notes` but cannot change `gate_status` unilaterally; if reviewer flags an issue post-approval, they must coordinate with `discipline_owner` to reset `gate_status` to `"revision-requested"`
+- `discipline_owner` must approve (drives `gate_status`); `discipline_reviewers` approval is advisory — reviewers may add `reviewer_notes` but cannot change `gate_status` unilaterally; if reviewer flags an issue post-approval, they must coordinate with `discipline_owner` to reset `gate_status` to `"revision-requested"`
 
 Bootstrap initialises this file with one `pending` record per game-design node when
 writing node-specs to `.allforai/bootstrap/`.
@@ -179,7 +187,7 @@ No improvised names.
 | `combat-system-design` | `combat-designer` | `game-design/combat-system.html` | `game-design/systems/combat-system.json` | core-mechanics-design |
 | `skill-tree-design` | `combat-designer` | `game-design/skill-tree.html` | `game-design/systems/skill-tree.json` | progression-system |
 | `progression-curve-design` | `numeric-designer` | `game-design/progression-curve.html` | `game-design/systems/progression-curve.json` | progression-system |
-| `economy-design` | `numeric-designer` | `game-design/economy.html` | `game-design/systems/economy-model.json` | economy-design |
+| `economy-design` | `numeric-designer` | `game-design/economy-design.html` | `game-design/systems/economy-model.json` | economy-design |
 | `narrative-design` | `narrative-designer` | `game-design/narrative.html` | `game-design/systems/narrative-design.json` | narrative-design |
 | `level-design` | `level-designer` | `game-design/level-design.html` | `game-design/systems/level-design.json` | level-design |
 | `worldbuilding` | `narrative-designer` | `game-design/worldbuilding.html` | `game-design/systems/worldbuilding.json` _(structured summary; aggregated by finalize)_; `prose_output`: `game-design/systems/worldbuilding-bible.md` _(full lore prose; linked via lore_file field, not parsed as JSON)_ | worldbuilding |
@@ -194,7 +202,7 @@ No improvised names.
 | `branching-structure-design` | `narrative-designer` | `game-design/branching-structure.html` | `game-design/systems/branching-structure.json` | narrative-design |
 | `character-arc-design` | `narrative-designer` | `game-design/character-arc.html` | `game-design/systems/character-arc.json` | narrative-design |
 | `art-direction` | `art-director` | `game-design/art-direction.html` | `game-design/art-style-guide.json` | art-direction |
-| `art-spec-design` | `concept-artist` | `game-design/art-spec.html` | `game-design/art-asset-inventory.json` | art-direction |
+| `art-spec-design` | `concept-artist` | `game-design/art-spec-design.html` | `game-design/art-asset-inventory.json` | art-direction |
 | `anti-cheat-design` | `backend-programmer` | `game-design/anti-cheat.html` | `game-design/systems/anti-cheat-design.json` | — |
 | `dialogue-system-spec` | `gameplay-programmer` | `game-design/dialogue-system.html` | `game-design/systems/dialogue-system.json` | narrative-design |
 | `audio-design` | `audio-director` | `game-design/audio-design.html` | `game-design/systems/audio-design.json` | — |
@@ -469,7 +477,7 @@ All HTML outputs are **static** (v1). Bootstrap embeds data at generation time.
 
 ### Trigger
 
-Automatically triggered after `art-direction` node reaches `gate_status = "approved"`.
+Automatically triggered after `art-spec-design` node reaches `gate_status = "approved"` (which itself requires `art-direction` to be approved first). Reads `art-asset-inventory.json` produced by `art-spec-design`; if triggered by `art-direction` approval alone, `art-asset-inventory.json` would not yet exist.
 `ai-art-generation` has no `human_gate` — it runs and updates the dashboard on completion.
 
 ### Prompt Construction
@@ -515,6 +523,74 @@ For every asset attempt, always write `ai_generated.attempted = true` first (bef
 
 After completion, set `gate_status: "approved"` in `approval-records.json` for the `ai-art-generation` record (no human review needed). This signals to `/run` that `game-design-finalize` is now unblocked via the standard gate rule.
 
+## art-style-guide.json Schema
+
+`art-direction` produces `.allforai/game-design/art-style-guide.json`:
+
+```json
+{
+  "style_id": "<slug — used by ai-art-generation as prompt prefix anchor>",
+  "style_summary": "<1-2 sentence description for LLM prompt injection>",
+  "style_prompt_prefix": "<text prepended to every AI art generation prompt for this game>",
+  "color_palette": [
+    { "hex": "#RRGGBB", "role": "<primary | secondary | accent | background | ui>" }
+  ],
+  "forbidden_styles": ["<style tag to avoid>"],
+  "reference_works": [
+    { "title": "<work name>", "what_to_borrow": "<specific quality to emulate>" }
+  ],
+  "mood_keywords": ["<adjective>"],
+  "character_style": "<e.g., cartoon / realistic / pixel / watercolor>",
+  "environment_style": "<e.g., high-contrast / muted / painterly>",
+  "ui_style": "<e.g., flat / glassmorphism / retro>"
+}
+```
+
+## art-asset-inventory.json Schema
+
+`art-spec-design` produces `.allforai/game-design/art-asset-inventory.json`.
+`ai-art-generation` updates `current_state`, `ai_generated.*`, and `substitution.*` fields in place.
+
+```json
+{
+  "assets": [
+    {
+      "asset_id": "<slug — unique per asset>",
+      "name": "<display name>",
+      "type": "<character | environment | ui | vfx | icon | background | animation-frame | audio-cover>",
+      "discipline": "<character-artist | environment-artist | ui-artist | vfx-artist | concept-artist>",
+      "dimensions": "<WxH px or 'vector'>",
+      "description": "<what this asset depicts>",
+      "palette_constraints": ["<color role or hex>"],
+      "milestone_gate": "<alpha | final | none>",
+      "current_state": "placeholder | temp | alpha | final",
+      "ai_generatable": true,
+      "ai_gen_target": "<placeholder | temp>",
+      "ai_generated": {
+        "attempted": false,
+        "path": null,
+        "prompt": null,
+        "model": null,
+        "generated_at": null
+      },
+      "substitution": {
+        "placeholder": "<path to geometry / solid color asset>",
+        "temp": "<path to AI-generated or free asset>",
+        "alpha": null,
+        "final": null
+      }
+    }
+  ],
+  "summary": {
+    "total": 0,
+    "by_state": { "placeholder": 0, "temp": 0, "alpha": 0, "final": 0 },
+    "by_type": { "<type>": 0 },
+    "ai_generatable_count": 0,
+    "ai_generated_count": 0
+  }
+}
+```
+
 ## game-design-doc.json Schema
 
 `game-design-finalize` produces `.allforai/game-design/game-design-doc.json` by aggregating all
@@ -535,7 +611,7 @@ approved system JSONs. Only include fields whose source JSON exists (skip missin
       "system_id": "<node_id from canonical registry>",
       "system_name": "<display name>",
       "json_path": "<relative path under .allforai/game-design/systems/>",
-      "gate_status": "approved | revision-requested"
+      "gate_status": "approved"
     }
   ],
   "economy": {
