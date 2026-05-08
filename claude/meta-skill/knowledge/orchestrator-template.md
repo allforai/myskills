@@ -45,7 +45,7 @@ Read `.allforai/bootstrap/workflow.json` at every iteration. Trust it over conve
        - `gate_status == "approved"` → this node is done; advance to unlocked nodes.
        - `gate_status == "revision-requested"` → re-run the node passing `revision_notes` as instruction; after re-execution completes, reset `gate_status` to `"in-review"`.
   5. Read the node-spec: .allforai/bootstrap/node-specs/<node-id>.md
-  6. Dispatch subagent with node-spec as prompt
+  6. Dispatch subagent with node-spec as prompt. Per §D of cross-phase-protocols.md: execution-phase subagents are FORBIDDEN from using AskUserQuestion or any user interaction — all decisions must already be written to .allforai/ files from the Discussion Phase (bootstrap). If a subagent reports UPSTREAM_DEFECT (missing decision information), pause execution and return to Discussion Phase to supplement decisions, then resume.
   7. On success: record transition (status=completed, artifacts_created)
   8. On failure: record transition (status=failed, error=<one line>),
      then read .allforai/bootstrap/protocols/diagnosis.md and diagnose.
