@@ -75,6 +75,9 @@ Read these files if they exist (skip missing ones silently):
 - project.godot (Godot)
 - *.love OR (main.lua + conf.lua at root) (LÖVE2D; *.love is the packaged output, main.lua+conf.lua is the dev project; ⚠ if build.settings is also present, this is Solar2D — not LÖVE2D; Solar2D takes precedence)
 - Cargo.toml with `bevy` in dependencies (Bevy/Rust); for Cargo workspaces, also check member crates (e.g., `game/Cargo.toml`, `crates/*/Cargo.toml`) — the workspace root often has no direct dependencies
+- Cargo.toml with `macroquad` in dependencies (Macroquad — lightweight Rust 2D game library; verification: `cargo test` for logic; rendering tests require display — document manual test scenarios for rendering)
+- Cargo.toml with `ggez` in dependencies (ggez — Rust 2D game framework; verification: same as macroquad)
+- Cargo.toml with `nannou` in dependencies (Nannou — Rust creative coding / game framework; verification: `cargo test` for non-rendering logic)
 - pubspec.yaml with `flame` in dependencies (Flame/Flutter game engine)
 - requirements.txt or pyproject.toml with `pygame` or `pygame-ce` in dependencies (pygame / pygame-ce community edition / Python)
 - requirements.txt or pyproject.toml with `panda3d` in dependencies (Panda3D — Python/C++ 3D game engine)
@@ -117,6 +120,13 @@ Some SDKs have "game" or "engine" in their name but are used for non-game purpos
   if a client-side game engine is also detected. A backend-only project with PlayFab is a SaaS/backend project.
 - Unity Addressables / Unity DOTS / Unity ECS in isolation (without ProjectSettings/ProjectVersion.txt)
   — likely a Unity package author project; still classify as game, but note `architecture_pattern: 'unity-package'`.
+
+**Mobile frameworks:**
+- package.json with `react-native` in dependencies but NO expo key/dependency AND no eas.json → `framework: React Native (bare workflow), architecture_pattern: 'mobile-rn-bare'`. Verification: Detox (`@testing-library/react-native` + `detox`) or Maestro for E2E; iOS: `xcodebuild`, Android: `./gradlew`. Note: bare workflow requires separate iOS (Xcode) + Android (Gradle) build configs, unlike Expo managed.
+- build.gradle.kts with `kotlin("multiplatform")` plugin AND `sourceSets { commonMain ... iosMain ... androidMain }` → `framework: Kotlin Multiplatform Mobile (KMM), architecture_pattern: 'mobile-kmm'`. KMM shares business logic across iOS/Android; two separate client modules (iOS Swift + Android Kotlin) consume the shared Kotlin module. Verification: `./gradlew :shared:test` for shared module; platform-specific tests for iOS (XCTest) and Android (instrumentation). Cross-module stitch applies — shared module API must be validated against both platform consumers.
+
+**Web SSR frameworks (additional detections):**
+- package.json with `@sveltejs/kit` in dependencies OR `svelte.config.js` at root with `@sveltejs/kit/vite` adapter → `framework: SvelteKit, architecture_pattern: 'web-ssr-sveltekit'`. Verification: `npm run test` (vitest) for unit tests, Playwright for E2E (SvelteKit has first-class Playwright integration).
 
 **Desktop app frameworks:**
 - src-tauri/tauri.conf.json OR src-tauri/Cargo.toml (Tauri — Rust-powered desktop app with web frontend; architecture_pattern: 'desktop-app-tauri')
