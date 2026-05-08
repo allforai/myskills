@@ -72,6 +72,10 @@ Read these files if they exist (skip missing ones silently):
 - Cargo.toml with `bevy` in dependencies (Bevy/Rust)
 - pubspec.yaml with `flame` in dependencies (Flame/Flutter game engine)
 - requirements.txt or pyproject.toml with `pygame` in dependencies (pygame/Python)
+- cocos-project.json (Cocos Creator)
+- *.rpy or renpy/ directory (Ren'Py visual novel engine)
+- Game.rpgproject (RPG Maker MV/MZ)
+- game.project + *.script or *.go (Defold; note: *.go here is Defold's game object format, not Go language)
 
 **Configuration:**
 - tsconfig.json, jsconfig.json
