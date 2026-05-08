@@ -24,6 +24,7 @@ infrastructure architecture document that implementation nodes consume.
 | Dimension | Options to evaluate | Applies when |
 |-----------|-------------------|-------------|
 | Realtime communication | WebSocket / gRPC streaming / SSE / MQTT / Long polling | Product has live updates, chat, collaboration |
+| WebRTC media infrastructure | **TURN/STUN relay** (for NAT traversal — self-hosted coturn vs managed service) + **SFU vs P2P**: peer-to-peer works for 1:1 calls; for group calls, an SFU (Selective Forwarding Unit) is needed to avoid N² uplink. TURN and SFU are infrastructure choices separate from the signaling transport (WebSocket). | Product has real-time audio/video (calls, conferencing, screen share) |
 | Message queue | NATS / Kafka / RabbitMQ / Redis Pub-Sub / SQS | Product has async workflows, event-driven processing |
 | Object storage | S3 / MinIO / GCS / Azure Blob | Product handles file uploads, media, documents |
 | CDN & static assets | CloudFront / Cloudflare / Fastly / self-hosted / Netlify / Vercel / GitHub Pages | Product serves static content or media at scale |

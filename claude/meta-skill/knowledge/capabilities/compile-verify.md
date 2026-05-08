@@ -57,7 +57,7 @@ Bootstrap MUST generate the correct build commands per platform:
 | Go backend | `go build ./...` | binary |
 | Go backend (gRPC) | **Proto files must compile before Go source**: `buf generate && go build ./...` (buf.yaml) or `protoc ... && go build ./...` (raw protoc). Without this step `go build` fails — generated `.pb.go` files are missing imports. | binary |
 | Flutter | `flutter build <target>` — target matches platform: `apk` / `ios` / `web` / `macos` / `linux` / `windows`. LLM selects target from bootstrap-profile.json module platform field. | build/ |
-| iOS (Swift) | `xcodebuild build -scheme X -destination 'generic/platform=iOS'` | .app |
+| iOS (Swift) | **Two-step**: `pod install` (if `Podfile` exists, generates `.xcworkspace`) → `xcodebuild build -workspace X.xcworkspace -scheme X -destination 'generic/platform=iOS'`. Running xcodebuild without pod install first fails with "Pods not integrated" errors. Swift Package Manager projects skip pod install; use `-project` flag instead. | .app |
 | Android (Kotlin) | `./gradlew assembleDebug` | .apk |
 | React Native | Expo managed: `npx expo export` for local bundle check (`npx expo build` is deprecated — use `eas build` for binaries). Bare workflow: `xcodebuild` (iOS) + `./gradlew assembleRelease` (Android). | bundle / .apk / .ipa |
 | Electron | **Two-step**: renderer bundle first (`npm run build`), then Electron binary (`npm run make` or `npx electron-builder`). `npm run build` alone does NOT produce the Electron binary — check `package.json scripts` for the combined command. | dist/ |
@@ -97,6 +97,9 @@ For game projects that also have a dedicated server or API backend: one compile-
 - `compile-verify-game-client` — Unity batchmode / Godot export / etc.
 
 This ordering ensures shared type safety: the server DLLs or generated proto files must exist before the game client builds against them.
+
+### Multi-Service Backend with Shared Protos
+For monorepos where multiple backend services share proto definitions: the service that GENERATES the `.pb.go` / `.pb.cc` / `*_grpc.pb.go` files must compile first. Downstream services that only IMPORT the generated files must declare a dependency edge in the workflow graph. Bootstrap detects shared proto ownership by looking for which service owns the `proto/` or `api/` directory containing the shared `.proto` files.
 
 ### Split by Platform (REQUIRED for multi-platform projects)
 For projects with web + mobile + backend: one compile-verify node per platform.

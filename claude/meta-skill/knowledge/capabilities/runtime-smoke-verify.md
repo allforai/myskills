@@ -154,7 +154,9 @@ LLM applies these rules to each module during bootstrap, selecting the correct s
 | Bot (webhook-based: Telegram / Slack HTTP mode) | POST a mock event payload to the webhook endpoint; verify 200 OK and signature validation logic executes. Do NOT call the live platform API — use locally-posted mock. |
 | Bot (gateway/socket-mode: Discord / Slack Socket Mode) | Verify process starts and connects to gateway without error (log check). No HTTP endpoint to curl — success = gateway connect logged. |
 | API + async worker (Celery / Sidekiq / Bull / Kafka consumer / etc.) | **Two-process smoke required**: (1) API health check → 200; (2) worker health check → worker is reachable and consuming. Worker-down with API-up = failure. LLM determines the worker health check command from the detected queue technology. |
+| Microservices (N services, each with own port) | **All-services smoke required**: every service in `bootstrap-profile.json.modules[]` with `role: "backend"` must pass its own health check. One service down = overall failure, even if N-1 pass. Inter-service: if service A calls service B via gRPC/HTTP internally, the smoke for service A must include one cross-service call (or check that service B is reachable via service A's health endpoint). |
 | gRPC with HTTP gateway | Both ports must pass: gRPC health probe on gRPC port + HTTP curl on gateway port. A service missing its HTTP gateway layer is partially broken. |
+| Non-HTTP protocol service (TURN/STUN, MQTT broker, raw TCP/UDP) | No `curl` available. Use the protocol's native client: TURN → `turnutils_uclient` / `stunserver`; MQTT → `mosquitto_sub -t '$SYS/#'`; raw UDP → `nc -u`. Success = protocol handshake completes within timeout. Document the check command in smoke-report.json `smoke_endpoint` field using protocol:// prefix (e.g., `turn://0.0.0.0:3478`). |
 
 ## Required inputs from upstream nodes
 

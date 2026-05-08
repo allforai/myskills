@@ -30,7 +30,7 @@ implementation nodes consume via Context Pull.
 
 | Output | When |
 |--------|------|
-| `.allforai/tech-spec/protocol-spec.md` | Realtime communication protocol: message types, event formats, connection lifecycle. Generated when project uses WebSocket/gRPC/SSE. **For gRPC services**: MUST document all proto service definitions (service name, RPC methods, request/response message types), streaming patterns (unary / server-stream / client-stream / bidirectional), custom error codes (gRPC status code + application error body), and if gRPC-Gateway is used: the REST endpoint mapping (`google.api.http` annotations per method). |
+| `.allforai/tech-spec/protocol-spec.md` | Realtime communication protocol: message types, event formats, connection lifecycle. Generated when project uses WebSocket/gRPC/SSE. **For gRPC services**: MUST document all proto service definitions (service name, RPC methods, request/response message types), streaming patterns (unary / server-stream / client-stream / bidirectional), custom error codes (gRPC status code + application error body), and if gRPC-Gateway is used: the REST endpoint mapping (`google.api.http` annotations per method). **For WebRTC projects**: WebRTC signaling (SDP offer/answer exchange, ICE candidate delivery, call state machine) is NOT a REST API — it is a stateful bidirectional protocol. Document it in `protocol-spec.md`, NOT as REST routes in `api-spec.json`. The signaling section must cover: offer/answer flow, ICE candidate trickling, renegotiation triggers, and error recovery (peer disconnect, ICE failure). |
 
 **tRPC API specification** (`api_style: tRPC` detected in bootstrap-profile.json):
 tRPC has no REST endpoints — procedures are the API surface. The `api-spec.json` MUST document:

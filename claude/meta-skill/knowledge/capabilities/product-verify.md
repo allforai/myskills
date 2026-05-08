@@ -61,6 +61,8 @@ For each module:
 - Error states: trigger errors → verify error UI renders
 - Empty states: verify empty state when no data
 
+**Real-time delivery verification** (applies when product has messaging, collaborative editing, live notifications, or any feature where one user's action must appear to another user): single-session testing CANNOT verify delivery. The verification node MUST open **two simultaneous sessions** (two browser tabs, two emulator instances, two API clients) — one as sender, one as receiver — and assert the event appears on the receiver side within an acceptable timeout. Single-session tests that only verify the sender side give false confidence.
+
 ### Dynamic Verification (Mobile — Platform-Native)
 
 **Flutter:**
@@ -72,6 +74,7 @@ For each module:
 **iOS (Swift/SwiftUI):**
 - Run `xcodebuild test` with XCTest/XCUITest
 - Verify launch, navigation, data display, form submission on Simulator
+- **CallKit / VoIP push limitation**: Incoming call triggers that rely on VoIP PushKit notifications cannot be tested on Simulator — APNs sandbox requires a real device. If the project uses CallKit, mark incoming-call automation as a manual test item; automate the outgoing-call initiation flow only.
 
 **Android (Kotlin/Compose):**
 - Run `./gradlew connectedAndroidTest` with Espresso/Compose UI tests
