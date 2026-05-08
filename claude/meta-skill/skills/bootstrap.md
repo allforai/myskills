@@ -103,6 +103,28 @@ Read these files if they exist (skip missing ones silently):
 - package.json with `littlejsengine` in dependencies (LittleJS — tiny JavaScript 2D game engine)
 - requirements.txt or pyproject.toml with `arcade` in dependencies (Arcade — Python 2D game framework, alternative to pygame)
 
+**Game engine SDK disambiguation heuristic:**
+Some SDKs have "game" or "engine" in their name but are used for non-game purposes:
+- `three.js` / `babylon.js` / `A-Frame` — 3D rendering / WebXR libraries; NOT game engines by default.
+  Classify as game engine ONLY if the project also has a game loop (requestAnimationFrame with game state update), a scene graph with interactive entities, and either a physics integration or a level/scene definition file.
+  Otherwise treat as visualization/web frontend.
+- `cocos-js` in package.json (Cocos2d-x JS binding) — same heuristic as three.js; look for scene files.
+- `matter-js` / `planck.js` / `rapier.js` — physics engines, NOT game engines; classify as 'physics-library'.
+  Set `is_game_project = true` only if they are co-located with a rendering layer AND interactive gameplay logic.
+- `PlayFab SDK` / `GameSparks SDK` / `Nakama SDK` — game backend SDKs; set `is_game_project = true` ONLY
+  if a client-side game engine is also detected. A backend-only project with PlayFab is a SaaS/backend project.
+- Unity Addressables / Unity DOTS / Unity ECS in isolation (without ProjectSettings/ProjectVersion.txt)
+  — likely a Unity package author project; still classify as game, but note `architecture_pattern: 'unity-package'`.
+
+**Desktop app frameworks:**
+- src-tauri/tauri.conf.json OR src-tauri/Cargo.toml (Tauri — Rust-powered desktop app with web frontend; architecture_pattern: 'desktop-app-tauri')
+- electron.js OR electron-builder.json OR package.json with `electron` as a top-level dependency (Electron — desktop app with Node.js backend; architecture_pattern: 'desktop-app-electron')
+
+**Desktop app plugin / extension frameworks:**
+- .obsidianplugin OR package.json with `obsidian` in dependencies (Obsidian plugin; architecture_pattern: 'ide-plugin-obsidian')
+- package.json with `@types/vscode` in devDependencies AND `"contributes"` section OR `.vscodeignore` present (VS Code extension; architecture_pattern: 'ide-plugin-vscode')
+- manifest.json at root with `"manifest_version"` key AND `"browser_action"` or `"action"` or `"background"` (Browser extension; architecture_pattern: 'browser-extension')
+
 **Configuration:**
 - tsconfig.json, jsconfig.json
 - vite.config.*, webpack.config.*, next.config.*
@@ -254,11 +276,16 @@ If user selects (c): `is_game_project = false`. Otherwise, keep only the selecte
 ```
 检测到 [引擎名] 项目，请确认项目类型：
    a) 游戏项目（继续选择游戏品类）
-   b) 非游戏应用（AR/VR/可视化/仿真/工具等）
+   b) 非游戏 VR/AR 体验（沉浸式可视化 / 训练仿真 / 工业 AR / 医疗 XR 等）
+   c) 非游戏可视化/仿真工具（数据可视化、物理仿真、建筑可视化等）
+   d) 其他非游戏用途（请说明）
 ```
 
-If user selects (b): set `is_game_project = false`, skip game scenario selection entirely,
-treat the engine as tech stack context and proceed with the normal bootstrap flow.
+If user selects (b): set `is_game_project = false`, `architecture_pattern: 'xr-experience'`. Treat
+engine as tech stack context, load `knowledge/domains/xr.md` if available as supplementary reference.
+If user selects (c): set `is_game_project = false`, `architecture_pattern: 'visualization-sim'`.
+If user selects (d): set `is_game_project = false`, record user's description in `business_context`.
+For all non-game selections: skip game scenario selection entirely and proceed with normal bootstrap flow.
 
 **If business_domain = "gaming" confirmed (user selected (a) above, or explicitly chose
 业务领域 f) 游戏 in the no-code prompt):**
@@ -283,6 +310,8 @@ If the user's game doesn't fit any template exactly, suggest the closest match:
 - 沙盒/开放世界 (Minecraft style) → b) or e) depending on combat vs. economy emphasis
 - 音乐/节奏游戏 (Guitar Hero style) → a) 超休闲/中度手游 (session design + retention focus)
 - 益智/解谜 (Wordle/casual puzzle) → a) 超休闲/中度手游
+- 放置/挂机/增量游戏 (idle/incremental — e.g. Cookie Clicker, AdVenture Capitalist) → e) 策略/模拟经营 (economy-design + progression-curve-design focus; session loop is offline accumulation, NOT retention-hook); note: present disambiguation to user if unclear between idle and strategy: "该游戏是否有实时操作（战斗/建造），还是主要依赖离线积累？"
+- 放置 RPG (AFK-style idle with hero collection) → d) 肉鸽/Roguelite OR b) 动作/卡牌/RPG depending on whether each run is discrete; note: distinguish from pure idle (no runs, continuous offline progression)
 - 教育/严肃游戏 (EdTech/serious game) → a) 超休闲/中度手游 (FTUE + session design focus); note to user: "combat-system-design 对教育类游戏通常不适用，请在可选节点中跳过"
 - 平台移植 (same-engine platform port, e.g., Unity PC → Unity mobile) → goal (c) 同栈重建; add note: "platform port = rebuild with target platform constraints (touch input, resolution, performance budget)"
 
@@ -447,6 +476,19 @@ detected business_domain. If yes, load it — it contains domain-specific
 design stages, theory anchors, and output artifacts that override or
 supplement standard capabilities.
 
+**Special case — `business_domain = gaming` but `is_game_project = false`:**
+This occurs when a user explicitly chose 业务领域 f) 游戏 in the no-code prompt
+but then the game-engine confirmation step set `is_game_project = false` (e.g.,
+user confirmed "this is a game backend / game analytics SaaS / game CMS, not a
+game client"). In this case:
+- Do NOT load `gaming.md` as the primary domain file (it defines game-design node
+  injection which does not apply to non-game projects)
+- Instead, load `gaming.md` as a **cross-domain supplementary reference only**
+  (methodology sections: Sink-Source, Flow Theory, monetization patterns)
+- The project's actual business domain should be re-inferred from Step 1.1–1.4
+  analysis (e.g., saas, fintech, ecommerce) and that domain file loaded as primary
+- If no better domain match is found, proceed without a primary domain file
+
 ### 2.2.1 Cross-Domain Methodology Loading
 
 If the product description mentions design patterns from another domain, load
@@ -563,8 +605,14 @@ When decisions conflict, the latest batch wins.
 After loading all knowledge, LLM self-checks: does the loaded domain knowledge
 cover ALL major subsystems in this project?
 
-**Trigger:** The project description or product vision mentions subsystems, business
-models, or technical patterns NOT covered by the loaded domain file or capabilities.
+**Trigger:** One of the following:
+1. The project description or product vision mentions subsystems, business models, or technical
+   patterns NOT covered by the loaded domain file or capabilities.
+2. The user's **target technology stack** (for translate/rebuild goals) includes a runtime,
+   framework, or platform that differs significantly from the source stack AND LLM's general
+   knowledge of the target stack's ecosystem gaps is < 70% confident. Translation gaps are a
+   first-class research trigger — migrating between ecosystems (e.g., Deno→Bun, CRA→Vite,
+   REST→tRPC, Redis Sessions→JWTs, Django ORM→SQLAlchemy async) often has non-obvious pitfalls.
 
 **Examples of gaps that trigger research:**
 - Ecommerce project mentions "self-operated logistics" but domain file only covers
@@ -573,11 +621,16 @@ models, or technical patterns NOT covered by the loaded domain file or capabilit
   WebSearch: "live streaming architecture CDN RTMP WebRTC"
 - Fintech project mentions "KYC/AML compliance" but no domain file covers it →
   WebSearch: "KYC AML compliance system design"
+- Translate goal: source is Deno + Hono, target is Bun + Elysia →
+  WebSearch: "Bun Elysia framework patterns 2024" + "Deno to Bun migration pitfalls"
+- Translate goal: source is React Class components, target is Next.js 15 App Router →
+  WebSearch: "Next.js 15 App Router migration class components server components"
 
 **Action:** For each identified gap, run 1-2 WebSearch queries to understand:
 - What are the core components of this subsystem?
 - What are the key state machines / business flows?
 - What are the common pitfalls?
+- (For translation gaps) What idiomatic patterns does the target stack use that differ from source?
 
 **Budget limits:** Max 5 gaps per research session; max 2 queries per gap; skip WebSearch if LLM general knowledge covers > 70% of the subsystem (use in-context knowledge directly).
 
@@ -928,7 +981,11 @@ is likely too large for a single workflow execution. Suggest decomposition:
       "goal": "<one sentence: what this node achieves>",
       "exit_artifacts": ["<file paths that prove this node is done>"],
       "knowledge_refs": ["<which knowledge files this node should reference>"],
-      "consumers": ["<node IDs that read this node's exit_artifacts>"]
+      "consumers": ["<node IDs that read this node's exit_artifacts>"],
+      "blocked_by": ["<node IDs that must complete before this node can run; empty if no dependencies>"],
+      "unlocks": ["<node IDs unblocked when this node completes>"],
+      "human_gate": false,
+      "discipline_owner": null
     }
   ],
   "transition_log": []
@@ -946,8 +1003,12 @@ is likely too large for a single workflow execution. Suggest decomposition:
 - `consumers`: Which downstream nodes read this node's output. Used to generate
   the Downstream Contract section in the node-spec — tells the subagent "who
   will consume your output and what they need from it".
+- `blocked_by`: Node IDs that must be approved/completed before this node runs. Orchestrator checks this at runtime to decide which nodes are eligible. For game-design nodes, also checks `approval-records.json` gate_status.
+- `unlocks`: Node IDs unblocked when this node's gate is approved. Used by the orchestrator to advance the workflow after approval.
+- `human_gate`: `true` for game-design nodes requiring discipline_owner approval; `false` for all others. Orchestrator reads this to decide whether to check `approval-records.json` in addition to `exit_artifacts`.
+- `discipline_owner`: Role ID of the approver for human_gate nodes (e.g., `"lead-designer"`); `null` for non-gate nodes.
 
-**No entry_requires.** The orchestrator's LLM decides execution order at runtime.
+**No entry_requires.** The orchestrator's LLM decides execution order at runtime based on `blocked_by` and artifact existence.
 
 **exit_artifacts 路径规范（重要）：**
 - 必须是**精确的项目相对路径**，从项目根目录开始
@@ -1015,10 +1076,32 @@ has no verification node, the workflow is incomplete.
 | mobile (React Native) | Detox or Maestro | e2e-test-{name} |
 | mobile (iOS/SwiftUI) | XCUITest via `xcodebuild test` | e2e-test-{name} |
 | mobile (Android/Kotlin) | Espresso via `./gradlew connectedAndroidTest` | e2e-test-{name} |
+| desktop (Tauri) | Playwright via `@playwright/test` (Tauri v2 has Playwright driver) + `cargo test` for IPC/Rust backend | e2e-test-{name} |
+| desktop (Electron) | Playwright via `electron-playwright-helpers` (drives the Electron webview) | e2e-test-{name} |
+| game client (Unity) | Unity Test Runner (EditMode + PlayMode) via `unity -runTests -testPlatform EditMode/PlayMode` | game-test-{name} |
+| game client (Godot) | GUT (Godot Unit Testing) or `godot --test` | game-test-{name} |
+| game client (Bevy/Rust) | `cargo test` with Bevy's headless test harness | game-test-{name} |
+| game client (Phaser.js/web) | Jest or Playwright in headless browser (Phaser runs in jsdom or a real browser) | game-test-{name} |
+| game client (pygame/Python) | pytest + `pygame.display.set_mode` in headless SDL (SDL_VIDEODRIVER=dummy) | game-test-{name} |
+| game client (PICO-8) | Manual test only (no headless mode); document manual test scenarios | game-test-manual |
+| event-driven service (Discord bot / CLI / background worker) | jest/vitest + mock event provider (e.g., discord.js mock client, mock queue consumer); no HTTP routes to curl | e2e-test-{name} |
+| IDE plugin (VS Code extension) | `@vscode/test-cli` or `@vscode/test-electron` via `npm run test`; Playwright unsupported inside VS Code host | plugin-test-{name} |
+| IDE plugin (Obsidian plugin) | `jest` with Obsidian vault fixture mock; full testing requires Obsidian CLI headless (if available) | plugin-test-{name} |
+| browser extension | Playwright with `chrome.launch({ channel: 'chrome' })` + extension load via `args: ['--load-extension=./dist']` | e2e-test-{name} |
 | shared / infra | covered by consumers' tests | no separate node needed |
 
 **Playwright CANNOT test native mobile apps.** Never assign Playwright to a Flutter/iOS/Android
 module. This is a hard constraint — violating it silently passes CI while leaving mobile untested.
+
+**Game clients are NOT backend services.** Never assign `curl` or HTTP integration tests to a game
+client module (Unity, Godot, Bevy, Phaser, pygame, PICO-8). Game clients communicate through
+internal game loops and events, not REST endpoints. Curl-passing tests for a game client project
+prove nothing about gameplay correctness.
+
+**Event-driven services have no HTTP entry point.** Discord bots, CLI tools, cron workers, and
+message queue consumers cannot be tested with curl or Playwright. Use unit tests with a mock
+provider (mock Discord client, mock SQS consumer, mock cron scheduler). The test must exercise
+the handler logic, not just the HTTP layer.
 
 **Verification Node Merging (optional optimization):**
 When multiple frontend modules share the same tech stack and build toolchain
@@ -1216,6 +1299,13 @@ The stitch node must produce a coverage matrix in its report:
 When the project has separate API and client modules (web/mobile), the workflow
 MUST include a `cross-module-stitch` node after all implement + intra-module
 stitch nodes complete, BEFORE compile-verify.
+
+**Exemption — single-module game projects:** If the project is `is_game_project = true`
+AND `bootstrap-profile.json.modules[]` has exactly ONE entry (the game client itself),
+the cross-module-stitch node is NOT required. A single-module game has no API ↔ client
+boundary to stitch. Skip to compile-verify (or game-test) directly after the intra-module
+stitch. If the game has a dedicated backend (e.g., multiplayer server, leaderboard API as
+a separate module), the exemption does not apply — stitch as normal.
 
 This extends the intra-module stitch (above) to cover cross-module integration.
 Intra-module stitch catches missing imports within one codebase; cross-module
