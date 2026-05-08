@@ -64,12 +64,14 @@ Read these files if they exist (skip missing ones silently):
 - requirements.txt, pyproject.toml, setup.py, Pipfile
 - Gemfile, composer.json, pom.xml, *.csproj, *.sln
 - mix.exs (Elixir/Phoenix)
+- Package.swift (Swift Package Manager / Vapor backend)
+- oh-package.json5 (HarmonyOS / ArkTS)
 
 **Game engines:**
 - ProjectSettings/ProjectVersion.txt, Assets/ (Unity)
 - *.uproject, Source/ (Unreal Engine)
 - project.godot (Godot)
-- *.love (LÖVE2D)
+- *.love OR (main.lua + conf.lua at root) (LÖVE2D; *.love is the packaged output, main.lua+conf.lua is the dev project)
 - Cargo.toml with `bevy` in dependencies (Bevy/Rust)
 - pubspec.yaml with `flame` in dependencies (Flame/Flutter game engine)
 - requirements.txt or pyproject.toml with `pygame` in dependencies (pygame/Python)
@@ -80,6 +82,8 @@ Read these files if they exist (skip missing ones silently):
 - *.c3proj (Construct 3)
 - *.mgcb (MonoGame/.NET)
 - game.js + game.json at project root (WeChat Mini Game; distinguished from mini programs which use app.js)
+- *.yyp (GameMaker Studio 2)
+- *.twee or *.tw (Twine / interactive fiction; maps to narrative-adventure scenario)
 
 **Configuration:**
 - tsconfig.json, jsconfig.json
