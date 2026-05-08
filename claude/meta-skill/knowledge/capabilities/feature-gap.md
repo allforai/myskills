@@ -14,8 +14,8 @@ journey dead-ends, screen state holes, and unhandled exceptions.
 
 | Output | What |
 |--------|------|
-| `gap-report.md` | Human-readable summary of gaps found across all checked dimensions |
-| `gap-tasks.json` | Actionable tasks for each gap, scored by severity × effort |
+| `.allforai/feature-gap/gap-report.md` | Human-readable summary of gaps found across all checked dimensions |
+| `.allforai/feature-gap/gap-tasks.json` | Actionable tasks for each gap, scored by severity × effort |
 
 **gap-tasks.json field schema:**
 ```json

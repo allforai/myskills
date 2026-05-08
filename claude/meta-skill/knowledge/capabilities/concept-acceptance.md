@@ -22,9 +22,9 @@ actionable feedback for the next iteration.
 
 | Output | What |
 |--------|------|
-| `acceptance-report.json` | Structured scoring across all concept dimensions |
-| `acceptance-report.md` | Human-readable summary with gaps and recommendations |
-| `iteration-feedback.json` | Written to product-concept/ for next bootstrap cycle |
+| `.allforai/concept-acceptance/acceptance-report.json` | Structured scoring across all concept dimensions |
+| `.allforai/concept-acceptance/acceptance-report.md` | Human-readable summary with gaps and recommendations |
+| `.allforai/product-concept/iteration-feedback.json` | Written to product-concept/ for next bootstrap cycle |
 
 ### Verification Dimensions
 

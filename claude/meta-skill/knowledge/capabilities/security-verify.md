@@ -21,7 +21,7 @@ and "the code actually does X".
 
 | Output | What |
 |--------|------|
-| `security-verify-report.json` | Per-decision verification: implemented / missing / partial |
+| `.allforai/security-verify/security-verify-report.json` | Per-decision verification: implemented / missing / partial |
 
 **security-verify-report.json field schema:**
 ```json

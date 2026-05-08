@@ -15,8 +15,9 @@ that translate and ui-design consume as their scope boundary.
 
 | Output | What |
 |--------|------|
-| `prune-tasks.json` | Include/exclude decision for every gap task, with reason |
-| `frequency-tier.json` | Frequency tier assignment per task (P0/P1/P2/P3) |
+| `.allforai/feature-prune/prune-tasks.json` | Include/exclude decision for every gap task, with reason |
+| `.allforai/feature-prune/frequency-tier.json` | Frequency tier assignment per task (P0/P1/P2/P3) |
+| `.allforai/feature-prune/prune-report.md` | Human-readable pruning summary with rationale per decision |
 
 **prune-tasks.json field schema:**
 ```json

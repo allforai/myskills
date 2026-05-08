@@ -16,8 +16,8 @@ document that implementation nodes consume.
 
 | Output | What |
 |--------|------|
-| `data-architecture.json` | Data layer decisions: DB choice, storage strategy, index plan, search infra |
-| `data-architecture.md` | Human-readable data architecture document |
+| `.allforai/data-architecture/data-architecture.json` | Data layer decisions: DB choice, storage strategy, index plan, search infra |
+| `.allforai/data-architecture/data-architecture.md` | Human-readable data architecture document |
 
 ### Design Dimensions (LLM selects which apply)
 

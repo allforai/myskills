@@ -17,7 +17,7 @@ exist for each pipeline", this capability checks "does code actually connect".
 
 | Output | What |
 |--------|------|
-| `pipeline-closure-report.json` | Per-pipeline verification: complete / broken / partial, with evidence |
+| `.allforai/pipeline-closure/pipeline-closure-report.json` | Per-pipeline verification: complete / broken / partial, with evidence |
 
 **pipeline-closure-report.json field schema:**
 ```json

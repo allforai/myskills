@@ -22,7 +22,7 @@ code has 20 endpoints, each with matching request/response schemas.
 
 | Output | What |
 |--------|------|
-| `spec-compliance-report.json` | Per-endpoint / per-table / per-message verification |
+| `.allforai/spec-compliance/spec-compliance-report.json` | Per-endpoint / per-table / per-message verification |
 
 **spec-compliance-report.json field schema:**
 ```json
