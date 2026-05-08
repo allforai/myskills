@@ -611,7 +611,7 @@ app might have "design-onboarding-flow" and "setup-push-notifications".
 4. For each node in `required_nodes` + `always_include` (and selected `optional_nodes`):
    - Look up `node_id` in game-design.md Canonical Node Registry
    - Generate node-spec with: `capability: game-design`, `discipline_owner`, `html_output`, `json_output`, `human_gate: true`, `approval_record_path: ".allforai/game-design/approval-records.json"`, `gate_status: "pending"`, `presentation` spec from game-design.md §HTML Presentation Specs
-   - `blocked_by`: previous node in `node_order`
+   - `blocked_by`: previous node in `node_order` (exception: `game-design-finalize` is `blocked_by` ALL other game-design nodes in the selected scenario, since it must aggregate every system JSON)
    - `unlocks`: next node in `node_order`
 5. Initialise `.allforai/game-design/approval-records.json` with one `pending` record per game-design node
 6. Ad-hoc nodes (listed in `bootstrap_note` of the scenario template): generate node-spec with `capability: game-design`, but use Step 2.7 research for content — they are not in the canonical registry

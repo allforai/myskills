@@ -554,6 +554,11 @@ All nodes for detected scenario. `art-direction` + `art-spec-design` + `ai-art-g
 + `game-design-finalize` always appended. Every node requires human approval gate
 (except `ai-art-generation` which is automatic).
 
+**Dependency rule for `game-design-finalize`:** Set `blocked_by` = ALL other game-design
+nodes in the scenario (not just the preceding node). Finalize aggregates every system JSON;
+it must not run until all upstream nodes are approved. Upstream nodes may run in parallel
+after `core-loop-design` — finalize waits for all of them.
+
 ### Partial Pipeline (existing game, adding feature)
 Skip `core-loop-design` and `art-direction` if both have `approved` records.
 Start from the system node being modified.
