@@ -24,6 +24,8 @@ infrastructure architecture document that implementation nodes consume.
 | Dimension | Options to evaluate | Applies when |
 |-----------|-------------------|-------------|
 | Realtime communication | WebSocket / gRPC streaming / SSE / MQTT / Long polling | Product has live updates, chat, collaboration |
+| WebRTC media infrastructure | STUN (stateless, free, handles ~80% of NAT cases) / TURN relay (expensive — relays all media bytes through server, must capacity-plan bandwidth cost) / SFU (Selective Forwarding Unit — for group video: server receives all streams, selectively forwards; examples: mediasoup, Janus, LiveKit) / MCU (Multipoint Control Unit — transcodes and mixes, higher CPU cost) | Product has voice or video calls. **TURN is not optional** — without it, calls fail behind symmetric NAT (~20% of users). SFU is required for group video > 2 participants (P2P N² connections are not scalable). |
+| Social feed fan-out | Push model (write fan-out: write to every follower's feed on post) / Pull model (read fan-out: aggregate feeds on read) / Hybrid (push for active users, pull for inactive) | Product has a social feed (moments, timeline, activity stream). Push is fast to read but expensive for high-follower accounts; pull is cheap to write but expensive to read. Hybrid is the production answer for scale. |
 | Message queue | NATS / Kafka / RabbitMQ / Redis Pub-Sub / SQS | Product has async workflows, event-driven processing |
 | Object storage | S3 / MinIO / GCS / Azure Blob | Product handles file uploads, media, documents |
 | CDN & static assets | CloudFront / Cloudflare / Fastly / self-hosted / Netlify / Vercel / GitHub Pages | Product serves static content or media at scale |

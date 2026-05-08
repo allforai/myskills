@@ -61,6 +61,16 @@ For each module:
 - Error states: trigger errors → verify error UI renders
 - Empty states: verify empty state when no data
 
+**Real-time delivery verification (IM / collaboration / multiplayer products):**
+Single-client E2E tests cannot verify real-time delivery. For products where User A's action must appear on User B's screen, the test must maintain **two simultaneous connections**:
+- Connect Client A and Client B to the same server (or room/channel)
+- Client A sends message/event → verify Client B receives it within timeout
+- Verify message ordering (sequence numbers preserved under concurrent send)
+- Verify delivery receipts / read receipts flow in the correct direction
+- Verify reconnection behavior: Client B disconnects → reconnects → catches up on missed messages
+
+This applies to: IM chat, collaborative editors, multiplayer games, live dashboards, video call signaling. If the test only has one client, message delivery to other participants is untested.
+
 ### Dynamic Verification (Mobile — Platform-Native)
 
 **Flutter:**
