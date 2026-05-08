@@ -13,6 +13,7 @@
   ],
   "optional_nodes": [
     "worldbuilding",
+    "puzzle-design",
     "audio-design"
   ],
   "always_include": [
@@ -27,6 +28,7 @@
     "branching-structure-design",
     "character-arc-design",
     "worldbuilding",
+    "puzzle-design",
     "dialogue-system-spec",
     "audio-design",
     "art-direction",

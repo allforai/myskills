@@ -198,6 +198,7 @@ No improvised names.
 | `dialogue-system-spec` | `gameplay-programmer` | `game-design/dialogue-system.html` | `game-design/systems/dialogue-system.json` | narrative-design |
 | `audio-design` | `audio-director` | `game-design/audio-design.html` | `game-design/systems/audio-design.json` | — |
 | `game-design-finalize` | `lead-designer` | `game-design/game-design-dashboard.html` | `game-design/game-design-doc.json` | — |
+| `puzzle-design` | `level-designer` | `game-design/puzzle-design.html` | `game-design/systems/puzzle-design.json` | level-design |
 | `ai-art-generation` | _(automatic — no discipline_owner)_ | _(updates art-direction.html)_ | updates `art-asset-inventory.json` | — |
 
 ## HTML Presentation Specs
@@ -396,6 +397,14 @@ All HTML outputs are **static** (v1). Bootstrap embeds data at generation time.
 - **Expanded:** Decision point table — choice text / consequence / affected flags / estimated word count
 - **Expanded:** Convergence analysis — how many unique paths exist, where they merge
 - **Collapsed:** Flag/variable catalogue (name / type / scope / default / read-by)
+
+### `puzzle-design.html`
+- **Audience:** level-designer (primary), narrative-designer (secondary for narrative puzzles)
+- **Above fold:** Puzzle type catalogue — table of puzzle categories (inventory / observation / manipulation / lateral-thinking / meta) × count × average solve time estimate
+- **Expanded:** Per-puzzle spec cards (id / type / inputs / solution / fail state / hint levels / skip-able?)
+- **Expanded:** Difficulty curve chart (X: puzzle index, Y: estimated difficulty; annotate expected stuck rate thresholds)
+- **Expanded:** Hint system design — hint levels (nudge / hint / spoiler), delivery mechanism (character, UI, time-based auto-offer)
+- **Collapsed:** Puzzle dependency graph (SVG — which puzzles must be solved before others can be accessed)
 
 ### `character-arc.html`
 - **Audience:** narrative-designer

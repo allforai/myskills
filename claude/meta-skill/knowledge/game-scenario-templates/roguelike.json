@@ -11,6 +11,7 @@
     "procedural-gen-spec"
   ],
   "optional_nodes": [
+    "puzzle-design",
     "audio-design",
     "build-variety-design",
     "card-system-design"
@@ -26,6 +27,7 @@
     "run-structure-design",
     "meta-progression-design",
     "procedural-gen-spec",
+    "puzzle-design",
     "audio-design",
     "art-direction",
     "art-spec-design",
