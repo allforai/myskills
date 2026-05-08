@@ -14,7 +14,7 @@ journey dead-ends, screen state holes, and unhandled exceptions.
 
 | Output | What |
 |--------|------|
-| `gap-report.json` | Gaps found across all checked dimensions |
+| `gap-report.md` | Human-readable summary of gaps found across all checked dimensions |
 | `gap-tasks.json` | Actionable tasks for each gap, scored by severity × effort |
 
 **gap-tasks.json field schema:**
@@ -47,6 +47,8 @@ These are TYPES of checks, not a fixed checklist:
 | Offline coverage | Core flows work offline | Offline-first products |
 | Error recovery | Every error state has a recovery path | Always |
 | Permission coverage | Every role can only access what they should | Multi-role products |
+| Concept-to-design parity | Every feature in `product-concept.json.mvp_features[]` maps to at least one task in task-inventory.json; every `post_launch_features[]` item is intentionally absent | Has product-concept.json |
+| Game loop completeness | Every discrete game state (start-run, in-run, death, win, meta-progression) has at least one entry point and one exit; no dead-end states | `is_game_project = true` |
 
 ### Required Quality
 

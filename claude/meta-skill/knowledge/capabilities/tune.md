@@ -92,6 +92,16 @@ consumed by launch-prep as a baseline reference.
 5. **Responsibility over naming**: Layer assignment by dependency patterns and code responsibility, not folder names.
 6. **Over-abstraction detection**: Simultaneously check "should abstract" and "shouldn't have abstracted".
 
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `.allforai/code-tuner/tuner-tasks.json` | `compliance_score`, `duplication_score`, `abstraction_score` | launch-prep | optional | 上架准备检查代码治理基准分（可接受门槛） |
+| `.allforai/code-tuner/tuner-tasks.json` | `tuner_tasks[]` | (human review) | optional | 治理任务列表供人工排期，无自动下游消费者 |
+
 ## Knowledge References
 
 ### Phase-Specific:

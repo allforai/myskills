@@ -50,14 +50,19 @@ Every task from gap-tasks MUST have an explicit decision — no silent omissions
 
 | Artifact | Field Path | Consumer Capability | Required | Reason |
 |----------|------------|---------------------|----------|--------|
-| `prune-decisions.json` | `decisions[].included` | translate, generate-artifacts | required | 只实现 included=true 的功能，必须在翻译前裁剪 |
-| `prune-tasks.json` | `tasks` | generate-artifacts | required | 生成代码任务列表以剪枝后的功能为准 |
+| `prune-tasks.json` | `decisions[].included` | translate, generate-artifacts | required | 只实现 included=true 的功能，必须在翻译前裁剪 |
+| `prune-tasks.json` | `decisions[]` | generate-artifacts | required | 生成代码任务列表以剪枝后的功能为准 |
 | `prune-report.md` | — | product-verify | optional | 验收时参考裁剪决策，了解哪些功能被排除 |
 
 ## Methodology Guidance (not how)
 
-- **Frequency first**: High-frequency tasks get P0/P1 by default unless effort is prohibitive
+- **Frequency first**: High-frequency tasks get P0/P1 by default unless effort is prohibitive (web/mobile apps only — see game exception below)
 - **Consumer maturity bar**: For consumer products, flow-completeness tasks are P0 even if low frequency
+
+**Game project prune criteria (`is_game_project = true`):**
+Frequency-based P0/P1/P2/P3 tiers do NOT apply to game systems — game loops are the product, not measurable user tasks. Instead use: Core Loop (P0) → Meta Loop (P1) → Polish/Retention (P2) → Monetization/Social (P3). Never prune a system that is the only instance of a game state (e.g., "game over screen" cannot be P3). A retention mechanic (daily reward, streak) is P0 for casual-mobile, P2 for roguelike. IAP is P1 for casual-mobile, P3 for story-driven games.
+
+
 - **Scope gate**: The total included scope should be achievable within the project's constraints — don't include everything by default
 - **Audit trail**: excluded tasks must have reasons — they inform future releases
 

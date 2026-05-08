@@ -91,6 +91,16 @@ and "the code actually does X".
 - **Negative testing**: Try to find paths that bypass security (unprotected routes, missing validation)
 - **Secret scanning**: Grep for common secret patterns (API_KEY=, password=, Bearer hardcoded tokens)
 
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `.allforai/security-verify/security-verify-report.json` | `summary.critical_missing` | pipeline-closure-verify | optional | 管道闭合检查读取安全验证的关键缺口项 |
+| `.allforai/security-verify/security-verify-report.json` | `summary`, `decisions_checked[]` | launch-prep | optional | 上架准备合规检查单需要知道安全验证通过状态 |
+
 ## Knowledge References
 
 ### Phase-Specific:

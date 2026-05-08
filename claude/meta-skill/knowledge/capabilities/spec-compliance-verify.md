@@ -123,6 +123,17 @@ For each message type in protocol-spec.md:
 - **Migration-aware**: For DB, check both ORM model definitions AND migration files
 - **Extra detection matters**: Undocumented endpoints are security risks (unprotected surface area)
 
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `.allforai/spec-compliance/spec-compliance-report.json` | `summary.missing`, `summary.drifted` | concept-acceptance | required | Acceptance verdict requires knowing if spec gaps exist |
+| `.allforai/spec-compliance/spec-compliance-report.json` | `api_compliance.missing[]`, `db_compliance.missing_tables[]` | pipeline-closure-verify | optional | Pipeline closure can cross-reference spec gaps with flow gaps |
+| `.allforai/spec-compliance/spec-compliance-report.json` | `summary` | launch-prep | required | Launch prep needs overall compliance score before greenlight |
+
 ## Knowledge References
 
 ### Phase-Specific:

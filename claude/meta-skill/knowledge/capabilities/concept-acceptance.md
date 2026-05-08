@@ -198,6 +198,17 @@ report and feedback; the orchestrator decides whether to stop.
 5. **Feedback is structured**: iteration-feedback.json must be machine-readable so
    the next bootstrap can consume it automatically.
 
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `.allforai/concept-acceptance/acceptance-report.json` | `verdict`, `overall_score` | orchestrator (run.md) | required | orchestrator 需要 verdict 来决定是否停止执行还是继续 |
+| `.allforai/concept-acceptance/acceptance-report.json` | `gaps[]` | orchestrator (run.md) | required | 输出 gap 摘要给用户选择下一步行动 |
+| `.allforai/product-concept/iteration-feedback.json` | full file | bootstrap (re-run) | optional | 下一轮 /bootstrap 读取历史 gap 进行增量规划 |
+
 ## Knowledge References
 
 ### Phase-Specific:

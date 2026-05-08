@@ -153,6 +153,16 @@ order race").
 - **Evidence-based**: Every "exists" claim must have a file:line reference. Every "missing" must explain what was expected and not found.
 - **Async focus**: Pay special attention to async flows (callbacks, cron, WebSocket) — these break most often
 
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `.allforai/pipeline-closure/pipeline-closure-report.json` | `summary.broken`, `pipelines[]` | concept-acceptance | optional | concept-acceptance 参考 broken pipelines 作为 core gap 证据；broken pipeline = 必然 needs_iteration |
+| `.allforai/pipeline-closure/pipeline-closure-report.json` | `closure_gaps[]` | product-verify | optional | product-verify 可借用 closure gap 补充静态验证报告 |
+
 ## Knowledge References
 
 ### Phase-Specific:

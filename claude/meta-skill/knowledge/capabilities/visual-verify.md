@@ -68,6 +68,16 @@ Per-screen agents run in parallel:
 - Aggregate per-screen scores into composite visual fidelity score
 - `full` mode: auto-repair -> re-capture -> re-compare until convergence (max 30 rounds)
 
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `.allforai/visual-verify/visual-verify-report.json` | composite visual fidelity score | pipeline-closure-verify | optional | 管道闭合检查读取视觉验证综合分 |
+| `.allforai/visual-verify/visual-verify-report.json` | per-screen scores | launch-prep | optional | 上架准备参考视觉还原度是否达标 |
+
 ## Knowledge References
 
 ### Phase-Specific:
@@ -75,6 +85,9 @@ Per-screen agents run in parallel:
 - consumer-maturity-patterns.md: visual maturity evaluation criteria
 
 ## Composition Hints
+
+### Skip Entirely
+For projects with `architecture_pattern` in `['library-sdk', 'embedded-firmware', 'github-action']` or serverless patterns, CLI tools, pure backend services, or where `ui-design` was skipped: skip visual-verify entirely — no screens to capture. Add a **Headless guard** pre-check: if `ui-design-spec.md` does not exist, abort with `SKIP_HEADLESS: no UI screens declared`.
 
 ### Single Node (default)
 For single-platform projects: one visual-verify node captures and compares all screens.

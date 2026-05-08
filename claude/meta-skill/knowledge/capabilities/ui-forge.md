@@ -57,6 +57,15 @@ Output: code changes
 4. **Function-first**: Feature must be complete before UI tuning.
 5. **Non-invasive by default**: Do not rewrite page semantics or business flows.
 
+## Downstream Consumers
+
+> Bootstrap reads this table to generate Context Pull sections for downstream node-specs.
+> `required` = subagent reports error if file missing; `optional` = warning + continue.
+
+| Artifact | Field Path | Consumer Capability | Required | Reason |
+|----------|------------|---------------------|----------|--------|
+| `.allforai/ui-forge/fidelity-assessment.json` | `deviations[]` | visual-verify | optional | 视觉验证可参考 UI 精修后的还原度基准 |
+
 ## Knowledge References
 
 ### Phase-Specific:
@@ -65,6 +74,9 @@ Output: code changes
 - product-design-theory.md §Phase-6: WCAG, Gestalt for polish work
 
 ## Composition Hints
+
+### Skip Entirely
+For backend-only projects, CLI tools, SDK/library projects (`architecture_pattern: library-sdk`), or any project where ui-design was skipped: skip ui-forge entirely — it requires `ui-design-spec.md` as a baseline.
 
 ### Single Node (default)
 For single-platform projects: one ui-forge node handles fidelity check + restore + polish for all screens.
