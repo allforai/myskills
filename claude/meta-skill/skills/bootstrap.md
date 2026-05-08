@@ -451,6 +451,9 @@ node-spec.
    - `@supabase/supabase-js` → prompt for `SUPABASE_URL`, `SUPABASE_ANON_KEY`, optionally `SUPABASE_SERVICE_ROLE_KEY`; offer Supabase local (`supabase start`)
    - `aws-amplify` / `@aws-amplify/backend` → prompt for `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_USER_POOLS_ID`, `AWS_USER_POOLS_WEB_CLIENT_ID`
    - `@appwrite/sdk` → prompt for `APPWRITE_ENDPOINT`, `APPWRITE_PROJECT_ID`, `APPWRITE_API_KEY`
+   For **Apple cloud services** (detected from entitlements files or Swift imports):
+   - CloudKit entitlement (`*.entitlements` with `com.apple.developer.icloud-container-identifiers`) → note: CloudKit requires a real Apple Developer account + provisioned container; no local emulator available. Verify container name from entitlements file. Document as "CloudKit testing requires physical device or iOS Simulator with iCloud signed-in account."
+   - Sign in with Apple (`com.apple.developer.applesignin` entitlement) → similar constraint: requires Apple account; mock via XCTest's `ASAuthorizationAppleIDProvider` mocking for unit tests.
 2. Check what's already configured (`.env` exists? docker-compose covers it? service reachable?)
 3. Ask the user for ONLY missing items (project-specific, not a fixed template)
 4. Write/update `.env`, verify services are reachable
