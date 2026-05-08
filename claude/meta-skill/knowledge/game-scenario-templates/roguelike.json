@@ -12,7 +12,8 @@
   ],
   "optional_nodes": [
     "audio-design",
-    "build-variety-design"
+    "build-variety-design",
+    "card-system-design"
   ],
   "always_include": [
     "art-direction",
@@ -31,5 +32,5 @@
     "ai-art-generation",
     "game-design-finalize"
   ],
-  "bootstrap_note": "build-variety-design not in canonical node registry — bootstrap generates ad-hoc node-spec when selected"
+  "bootstrap_note": "build-variety-design not in canonical node registry — bootstrap generates ad-hoc node-spec when selected; card-system-design not in canonical node registry — add for deck-building / card-based roguelikes (Slay the Spire style) covering mana economy, card pools, synergy space, rarity distribution"
 }
