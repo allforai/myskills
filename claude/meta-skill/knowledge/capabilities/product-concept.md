@@ -108,6 +108,33 @@ This variant is invoked by launch-prep capability's Phase 1 (Competitive Researc
    A single role may have multiple clients (e.g., consumer: iOS app + Android app + web + H5).
    For each role, declare:
    - `clients[]`: array of client apps, each with `app` name, `client_type`, `platform`
+
+   **Valid `client_type` values:**
+
+   | client_type | Platform | Notes |
+   |-------------|----------|-------|
+   | `swiftui-ios` | iOS | Native SwiftUI/UIKit app |
+   | `kotlin-android` | Android | Native Kotlin/Compose app |
+   | `flutter-mobile` | iOS + Android | Flutter cross-platform app |
+   | `react-native` | iOS + Android | React Native (Expo or bare) |
+   | `next-js` | Desktop web | Next.js web app |
+   | `react-spa` | Desktop web | React/Vue/SvelteKit SPA |
+   | `swiftui-macos` | macOS | Native SwiftUI/AppKit Mac app |
+   | `menu-bar-app` | macOS | NSStatusBar / LSUIElement menu bar app |
+   | `electron` | Desktop (Win/Mac/Linux) | Electron desktop app |
+   | `tauri` | Desktop (Win/Mac/Linux) | Tauri (Rust + web frontend) |
+   | `flutter-desktop` | Desktop (Win/Mac/Linux) | Flutter desktop target |
+   | `discord-bot` | Discord platform | Slash commands / gateway events |
+   | `slack-bot` | Slack platform | Block Kit / Events API / Slash commands |
+   | `telegram-bot` | Telegram platform | Bot API commands / inline mode |
+   | `voice-skill` | Smart speaker | Alexa Skill / Google Action |
+   | `flutter-embedded` | Embedded screen | Flutter on embedded display |
+   | `browser-extension` | Chrome/Firefox/Edge | Browser extension |
+   | `vscode-extension` | VS Code | VS Code extension |
+   | `obsidian-plugin` | Obsidian | Obsidian community plugin |
+   | `github-action` | GitHub CI | GitHub Actions custom action |
+   | `cli` | Terminal | Command-line tool |
+
    - `feature_parity`: one of four modes:
      - `full`: all clients implement same features (e.g., iOS vs Android)
      - `partial`: mostly same, with exceptions listed in `parity_exceptions[]` (e.g., App vs Web)
