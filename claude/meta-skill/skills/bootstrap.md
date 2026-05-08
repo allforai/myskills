@@ -72,7 +72,7 @@ Read these files if they exist (skip missing ones silently):
 - *.uproject, Source/ (Unreal Engine)
 - project.godot (Godot)
 - *.love OR (main.lua + conf.lua at root) (LÖVE2D; *.love is the packaged output, main.lua+conf.lua is the dev project)
-- Cargo.toml with `bevy` in dependencies (Bevy/Rust)
+- Cargo.toml with `bevy` in dependencies (Bevy/Rust); for Cargo workspaces, also check member crates (e.g., `game/Cargo.toml`, `crates/*/Cargo.toml`) — the workspace root often has no direct dependencies
 - pubspec.yaml with `flame` in dependencies (Flame/Flutter game engine)
 - requirements.txt or pyproject.toml with `pygame` in dependencies (pygame/Python)
 - cocos-project.json (Cocos Creator)
@@ -100,6 +100,7 @@ Read these files if they exist (skip missing ones silently):
 **Configuration:**
 - tsconfig.json, jsconfig.json
 - vite.config.*, webpack.config.*, next.config.*
+- deno.json, deno.jsonc (Deno runtime / Fresh framework)
 - docker-compose.yml, Dockerfile
 - .github/workflows/*.yml, .gitlab-ci.yml, Jenkinsfile
 - .env.example, .env.template
