@@ -1217,18 +1217,37 @@ Example:
   用于了解每个组件的复用评估结果。缺失时按全量翻译策略继续。
 
 ## Theory Anchors
-<Classical frameworks for this work, from knowledge files>
+<Classical frameworks for this work, from knowledge files.
+
+Bootstrap writes this section by reading the loaded capability file's own
+`## Knowledge References → Phase-Specific` list and extracting the theory
+framework names (e.g., "JTBD", "ERRC", "Clean Architecture"). List 2-4
+framework names with a one-line description of how they apply to this node.
+The subagent treats this as a complete reference — do NOT ask it to re-read
+the capability file to find frameworks.>
 
 ## Knowledge References
 <Relevant sections from cross-phase-protocols, defensive-patterns,
- domain knowledge, capability methodology — embedded, not just linked>
+ domain knowledge, capability methodology — embedded, not just linked.
+
+Bootstrap embeds the specific subsections of cross-phase-protocols.md and
+defensive-patterns.md relevant to this node's capability (e.g., §B.3 Closure
+Thinking for implementation nodes, §D User Confirmation Gate for decision
+nodes). Do NOT just list file names — copy the relevant paragraph/table
+verbatim so the subagent has complete context without re-reading source files.
+The subagent treats this section as complete and does not re-read source files
+unless the node-spec explicitly says to.>
 
 ## Guidance
 <LLM-generated execution guidance based on absorbed knowledge.
  NOT fixed steps — principles, goals, quality bars, methodology.>
 
 ## Exit Artifacts
-<What files must exist when done, with expected content description>
+<What files must exist when done, with expected content description.
+
+MUST include every path listed in the YAML frontmatter `exit_artifacts:` (which must match workflow.json).
+May add descriptive guidance about expected content for each file.
+Must NOT list additional files as artifacts beyond what's in the YAML frontmatter — `check_artifacts.py` validates exactly the YAML-listed paths.>
 
 ## Downstream Contract
 <Who consumes this node's output, and what they need from it.
@@ -1266,6 +1285,11 @@ Example:
 ```
 
 **Integration Points Rule (MANDATORY for parallel implementation nodes):**
+**Parallel detection criterion**: Two nodes are considered parallel within the same module when:
+(a) they share the same `blocked_by` set (both have the same dependencies, or both have empty `blocked_by`), AND
+(b) their `exit_artifacts` paths share the same top-level directory prefix (e.g., both write into `flydict-ios/`).
+Bootstrap detects this pattern during Step 3.1 node graph design and adds Integration Points sections to both node-specs.
+
 When multiple implementation nodes run in parallel within the same module
 (e.g., implement-ios-conversations + implement-ios-learning both produce
 files inside flydict-ios/), the bootstrap MUST identify integration points
