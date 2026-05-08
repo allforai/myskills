@@ -425,6 +425,22 @@ After the user selects a scenario, bootstrap reads the selected template's `boot
 - (j) → `goals: ["quality-checks"]`
 - (k) → `goals: ["launch-prep"]`. When product-concept artifacts don't exist, auto-prepend `reverse-concept` (need concept baseline before making launch decisions). launch-prep includes competitive research → concept finalization → gap implementation → compliance → checklist. The competitive research phase MUST run before any pricing/tier decisions are presented to the user — never ask the user to pick a price without data.
 - Combinations: user can select e.g. "a + e" or "h + i + j" (full verification suite)
+
+**Goal Combination Ordering Rules (enforced in generated workflow.json):**
+When the user selects multiple goals, the generated workflow MUST enforce this dependency order:
+```
+1. reverse-concept           (if needed as baseline — auto-prepended for analyze/launch-prep)
+2. analyze / product-analysis (depends on reverse-concept)
+3. translate / rebuild / create (depends on analyze if present)
+4. demo-forge (depends on implementation)
+5. quality-checks / tune     (can run on any completed implementation)
+6. product-verify            (depends on implementation)
+7. launch-prep               (depends on all: code + verify + concept)
+```
+Example: goal (a) + (j) → workflow order: reverse-concept → product-analysis → quality-checks (NOT quality-checks first)
+Example: goal (b) + (k) → workflow order: analyze → translate → demo → product-verify → launch-prep (launch-prep BLOCKED BY product-verify)
+Example: goal (h) + (i) + (j) → product-verify → visual-verify → quality-checks (can run in parallel after implementation)
+These ordering rules are enforced via `blocked_by` in workflow.json — not left to LLM judgment at /run time.
 - **demo-forge is automatically added** to any goal that includes code implementation (translate/rebuild/create). Reason: API-driven data population is the strongest integration test — it exposes runtime issues that compile-verify cannot catch (wrong routes, missing fields, broken relationships, auth failures).
 - **concept-acceptance is automatically added** to any goal that includes code implementation (translate/rebuild/create) AND `has_product_concept` is true. Reason: without verifying the final product experience against the original concept, the development loop never closes — product-verify checks code vs design artifacts, but not experience vs concept.
 - **runtime-smoke-verify is automatically added** to any goal that includes code implementation (translate/rebuild/create) OR launch-prep. Reason: test-harness verification cannot catch runtime contract bugs that only surface when the artifact launches outside the harness (env-var dual-contracts, URL prefix drift, missing signing / provisioning, deep-link breakage). See `knowledge/capabilities/runtime-smoke-verify.md`. Ordering: runs **after** product-verify passes (when product-verify is in the graph) OR immediately **before** launch-checklist (when goals include launch-prep but NOT product-verify — no product-verify gate to wait for). Added 2026-04-14 after a retrospective incident where a full UI test suite passed but manual app launch hit a 404 on the first request — same env-var name parsed differently between tests and the production runtime.
@@ -748,6 +764,12 @@ enough that LLM's general knowledge is sufficient.
 > This section only applies when `has_concept_drift` is true AND an existing
 > `workflow.json` exists. Otherwise, skip to 3.1 for full planning.
 
+**Goal Change Detection (runs BEFORE incremental re-planning):**
+Before running §3.0, compare the user's current goal (from Step 1.5) against the `goals` field in the existing `workflow.json`:
+- If goals are DIFFERENT (e.g., was `["analyze"]`, now `["create"]`): do NOT use incremental re-planning. Instead, clear `workflow.json.nodes[]` entirely and run full §3.1 planning. Preserve `transition_log[]` for audit. All existing node-specs are stale and must be regenerated.
+- If goals are THE SAME but concept drifted: use §3.0 incremental re-planning (below).
+- If `workflow.json` has no `goals` field (schema mismatch from older bootstrap): treat as "goals differ" → full re-planning.
+
 When concept has drifted since last bootstrap:
 
 1. Read `.allforai/product-concept/concept-drift.json` → changes[]
@@ -780,8 +802,7 @@ When concept has drifted since last bootstrap:
 6. Write updated workflow.json with modified nodes[] and preserved transition_log[].
 7. Regenerate node-specs for all affected nodes at `.allforai/bootstrap/node-specs/`.
 8. Proceed to Step 3.5 (Coverage Self-Check) — concept has changed, coverage must be re-verified.
-9. After Step 3.5 completes, mark drift as resolved:
-   read concept-drift.json, set `"resolved": true`, write back.
+9. Do NOT mark drift as resolved here. The orchestrator (/run) marks drift resolved AFTER all nodes complete successfully. This prevents the case where bootstrap marks drift resolved but /run fails partway — next /bootstrap would then wrongly see drift as already resolved and skip re-planning.
 
 **After incremental re-planning, skip 3.1-3.3** (they are for full planning) and go directly
 to Step 3.4 (Confirm with User) → Step 3.5 (Coverage Self-Check) → Step 4.

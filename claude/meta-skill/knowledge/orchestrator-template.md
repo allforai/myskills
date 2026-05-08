@@ -91,6 +91,26 @@ On first iteration if transition_log is non-empty:
 
 ## Post-Completion
 
-1. Read `.allforai/bootstrap/protocols/learning-protocol.md` — extract experience
-2. Read `.allforai/bootstrap/protocols/feedback-protocol.md` — propose feedback
+**Run regardless of success or early stop:**
+
+1. **Mark concept drift resolved (if applicable):**
+   If `.allforai/product-concept/concept-drift.json` exists AND `resolved = false`
+   AND all nodes completed successfully: set `"resolved": true` and write back.
+   If /run stopped early or failed: leave `resolved = false` (drift still pending for next /bootstrap).
+
+2. **Learning extraction:**
+   Read `.allforai/bootstrap/protocols/learning-protocol.md`.
+   Check `workflow.json.corrections_applied[]` and `diagnosis_history[]`:
+   - If both empty: no learning to extract, skip.
+   - For each entry in `corrections_applied[]`:
+     * Extract: node, what_was_wrong (root_cause), fix_applied
+     * Classify per learning-protocol.md type (mapping-gap / discovery-blind-spot / convergence / safety / other)
+     * Write to `.allforai/bootstrap/learned/<category>.md` per learning-protocol.md File Naming Convention
+   - For each entry in `diagnosis_history[]`:
+     * Extract root_cause pattern and gaps_found domains
+     * If the gap was not caught by the expected capability node → classify as "blind-spot"
+     * Write to `.allforai/bootstrap/learned/blind-spots.md` (append, do not overwrite)
+
+3. **Feedback proposal:**
+   Read `.allforai/bootstrap/protocols/feedback-protocol.md` — propose feedback
 ~~~
