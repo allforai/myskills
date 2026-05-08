@@ -665,14 +665,14 @@ approved system JSONs. Only include fields whose source JSON exists (skip missin
 
 | Capability | Reads | Uses |
 |-----------|-------|------|
-| `product-analysis` | `game-design-doc.json` | Concept baseline; `player_roles` → `role-profiles.json`; `systems[]` → task-inventory in system-spec format |
-| `ui-design` | `game-design/art-style-guide.json`, `game-design-doc.json` | Design tokens from art direction; game screens (HUD, menus, inventory, dialogue) |
-| `demo-forge` | `game-design/art-asset-inventory.json`, `game-design-doc.json.progression` | Player save data at progression stages using available art state |
-| `quality-checks` | `game-design-doc.json.economy.balance_targets`, `game-design/systems/audio-design.json.sfx_catalogue[].milestone_gate` | Numerical QA; art-agnostic check; milestone gate check; audio milestone check |
-| `generate-artifacts` | `game-design-doc.json.systems[]` | Code generation targets; must implement Asset Registry |
-| `product-verify` | `game-design-doc.json` | Verifies implementation against game design spec; checks all `systems[]` were implemented |
-| `concept-acceptance` | `game-design-doc.json` | Post-implementation concept fitness check; compares shipped game systems against original concept |
-| `launch-prep` | `game-design-doc.json` | Competitive research context (what systems does this game have?); monetization model for pricing research |
+| `product-analysis` | `.allforai/game-design/game-design-doc.json` | Concept baseline; `player_roles` → `role-profiles.json`; `systems[]` → task-inventory in system-spec format |
+| `ui-design` | `.allforai/game-design/art-style-guide.json`, `.allforai/game-design/game-design-doc.json` | Design tokens from art direction; game screens (HUD, menus, inventory, dialogue) |
+| `demo-forge` | `.allforai/game-design/art-asset-inventory.json`, `.allforai/game-design/game-design-doc.json` `.progression` | Player save data at progression stages using available art state |
+| `quality-checks` | `.allforai/game-design/game-design-doc.json` `.economy.balance_targets`, `.allforai/game-design/systems/audio-design.json.sfx_catalogue[].milestone_gate` | Numerical QA; art-agnostic check; milestone gate check; audio milestone check |
+| `generate-artifacts` | `.allforai/game-design/game-design-doc.json` `.systems[]` | Code generation targets; must implement Asset Registry |
+| `product-verify` | `.allforai/game-design/game-design-doc.json` | Verifies implementation against game design spec; checks all `systems[]` were implemented |
+| `concept-acceptance` | `.allforai/game-design/game-design-doc.json` | Post-implementation concept fitness check; compares shipped game systems against original concept |
+| `launch-prep` | `.allforai/game-design/game-design-doc.json` | Competitive research context (what systems does this game have?); monetization model for pricing research |
 
 ## Engine-Specific Content
 
@@ -684,6 +684,15 @@ Key nodes that benefit from engine context:
 - `network-architecture-design`: reference engine's networking layer (Godot: `MultiplayerAPI`; Unity: `Netcode for GameObjects`; Unreal: `GameNetworkManager`)
 - `dialogue-system-spec`: reference engine's dialogue tooling (Godot: `DialogueManager` plugin; Unity: `Yarn Spinner`; Ren'Py: native Ren'Py script format)
 - `art-direction`: reference engine's renderer capabilities (Godot: CanvasItem shaders / Forward+ / Mobile; Unity: URP / HDRP; Unreal: Nanite / Lumen)
+- **VR games** (Meta Quest, SteamVR, PSVR2): add VR-specific guidance to `art-direction` (target ≥90 FPS for comfort, avoid bright flashes, field-of-view constraints) and `ftue-design` (hand-tracking calibration tutorial, locomotion onboarding: teleport vs smooth). Reference: Meta XR SDK (Unity), Unreal Engine VR Toolset, Godot XR plugins.
+
+**Gacha/random loot monetization compliance note** (applies to any `monetization-design` node with gacha pull rates):
+The monetization spec MUST include a legal compliance checklist section:
+- Probability disclosure: list all pull rates in the UI (required in CN, KR, JP, and increasingly EU)
+- Hard pity documentation: guaranteed rare threshold stated explicitly (e.g., "guaranteed 5★ at 90 pulls")
+- Regional compliance: China requires exact probability tables for ALL characters; Korea GRAC requires pity transparency; Japan requires withdrawal-period disclosures
+- Consumer protection: duplicate handling (do duplicates give currency? is there a duplicate-prevention system?), refund policy for technical failures
+- P2W vs cosmetics-only designation: explicitly document whether the gacha confers gameplay power advantage; this affects rating/classification in multiple regions
 
 If `game_engines_detected` is empty (user confirmed game via 业务领域 f), omit engine-specific content — engine is unknown.
 

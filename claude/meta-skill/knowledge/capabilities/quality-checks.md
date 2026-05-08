@@ -32,7 +32,7 @@ For both deadhunt and fieldcheck:
 3. Batch scans all files using derived rules
 4. Reports findings with file:line references
 
-Output: `.allforai/deadhunt/deadhunt-report.json` + `.allforai/deadhunt/fieldcheck-report.json`
+Output: `.allforai/quality-checks/deadhunt-report.json` + `.allforai/quality-checks/fieldcheck-report.json`
 
 **deadhunt-report.json field schema:**
 ```json
@@ -290,6 +290,7 @@ Detection method (per registered route):
    `bootstrap-profile.json.modules[]` where `role in [frontend, mobile]`
    — look for the path literal (or a template-interpolated version
    of it) in source files. Note: valid module roles are `frontend | backend | mobile | shared | infra`; there is no "admin" role — admin UI modules are classified as `frontend`.
+   **Tauri exception**: also grep `src-tauri/` module (role = backend) for `#[tauri::command]` functions and check that each appears in React/JS `invoke('fn_name')` calls.
 3. Zero client references → `cross_module_ghost_route`
 4. For each finding, include: server registration site, expected client(s)
    by module role, current status (never-wired / legacy-shadowed / unknown)
@@ -424,8 +425,8 @@ client send this flag?" — catches the whole class cheaply.
 
 | Artifact | Field Path | Consumer Capability | Required | Reason |
 |----------|------------|---------------------|----------|--------|
-| `deadhunt-report.json` | `fix_tasks[]` | translate (fix loop) | required | 修复循环需要知道哪些死链和字段不一致要修 |
-| `fieldcheck-report.json` | `field_mismatches[]` | translate (fix loop) | required | 字段不一致修复需要具体的字段映射信息 |
+| `.allforai/quality-checks/deadhunt-report.json` | `fix_tasks[]` | translate (fix loop) | required | Fix loop needs to know which dead links and field mismatches to repair |
+| `.allforai/quality-checks/fieldcheck-report.json` | `field_mismatches[]` | translate (fix loop) | required | Field mismatch repair needs specific field mapping information |
 
 ## Composition Hints
 
@@ -437,3 +438,12 @@ For very large projects: separate nodes for independent parallel execution.
 
 ### Skip Fieldcheck
 For backend-only projects with no UI layer: fieldcheck (UI→API) is not applicable. Still run deadhunt.
+
+### Platform Adaptation Rules
+
+| Architecture | Deadhunt Adaptation | Fieldcheck Adaptation |
+|-------------|--------------------|-----------------------|
+| **CloudKit (no HTTP API)** | Deadhunt still applies: scan for unused Swift CKRecord properties and unused NSPredicate queries | Fieldcheck rule changes: "UI SwiftUI binding → CKRecord property → local model" — skip HTTP API layer entirely; no route literals to grep |
+| **Tauri (Rust + React)** | Add `src-tauri/` to backend module scan; detect unused Rust `#[tauri::command]` functions not referenced by React frontend `invoke('cmd_name')`; grep `invoke(` in frontend to find all called commands | Fieldcheck: scan Rust command argument structs ↔ React `invoke()` payload fields |
+| **Serverless (Lambda + DynamoDB)** | Contract-parity checks: apply per Lambda function boundary, not per HTTP route. Ghost routes = Lambda handlers defined but never triggered (no EventBridge rule, no SQS subscription, no API Gateway route). Test-mode branch audit: check if handler uses different DynamoDB table name in test vs prod (data-layer divergence, not code-path divergence) | Fieldcheck: field tracing = Lambda event payload field → handler parameter → DynamoDB item attribute |
+| **Desktop / no HTTP server** | Skip cross-module ghost-routes scan (no routes to enumerate). Still run dead-code detection on module boundaries. | Fieldcheck: skip if no HTTP API; still check IPC/local RPC field consistency (e.g., Electron IPC events, Tauri commands) |

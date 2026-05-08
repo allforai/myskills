@@ -97,6 +97,7 @@ All plugins read/write to a project-local `.allforai/` directory. This is the in
 ├── spec-compliance/         # spec-compliance-report.json
 ├── pipeline-closure/        # pipeline-closure-report.json
 ├── security-verify/         # security-verify-report.json
+├── quality-checks/          # deadhunt-report.json, fieldcheck-report.json (from quality-checks capability)
 ├── deadhunt/                # validation-profile, static-analysis/, tests/, fix-tasks
 ├── code-tuner/              # tuner-profile, phase1-4 JSONs, tuner-report, tuner-tasks
 ├── concept-acceptance/      # acceptance-report.json
