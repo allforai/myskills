@@ -123,6 +123,7 @@ Some SDKs have "game" or "engine" in their name but are used for non-game purpos
 
 **Mobile frameworks:**
 - package.json with `react-native` in dependencies but NO expo key/dependency AND no eas.json → `framework: React Native (bare workflow), architecture_pattern: 'mobile-rn-bare'`. Verification: Detox (`@testing-library/react-native` + `detox`) or Maestro for E2E; iOS: `xcodebuild`, Android: `./gradlew`. Note: bare workflow requires separate iOS (Xcode) + Android (Gradle) build configs, unlike Expo managed.
+- pubspec.yaml with `flutter` as an SDK dependency but NOT `flame` in dependencies (Flame is a game engine; detect Flutter app separately from Flutter game). To determine target platform, check `pubspec.yaml`'s `flutter.platforms` field or presence of `{macos,windows,linux}/` directories vs `android/` or `ios/`: if only desktop platform directories exist → `architecture_pattern: 'mobile-flutter-desktop'`; if iOS/Android present → `architecture_pattern: 'mobile-flutter'`. Verification: for desktop, `flutter test integration_test/` with desktop device target; for mobile, `flutter test integration_test/` on iOS Simulator / Android Emulator.
 - build.gradle.kts with `kotlin("multiplatform")` plugin AND `sourceSets { commonMain ... iosMain ... androidMain }` → `framework: Kotlin Multiplatform Mobile (KMM), architecture_pattern: 'mobile-kmm'`. KMM shares business logic across iOS/Android; two separate client modules (iOS Swift + Android Kotlin) consume the shared Kotlin module. Verification: `./gradlew :shared:test` for shared module; platform-specific tests for iOS (XCTest) and Android (instrumentation). Cross-module stitch applies — shared module API must be validated against both platform consumers.
 
 **Web SSR frameworks (additional detections):**
@@ -140,6 +141,10 @@ Detect a project as a publishable library (not an app) when ALL of the following
 - pom.xml with `<packaging>jar</packaging>` (not war/ear), AND no `main()` entry class in src/main, OR
 - haxelib.json present (HaxeFlixel/other Haxe libraries are themselves publishable packages)
 Set: `architecture_pattern: 'library-sdk'`. **Verification note**: library projects do NOT need a running server; test with the language's native test runner (`npm test`, `cargo test`, `pytest`, `mvn test`). **demo-forge suppression**: when `architecture_pattern = 'library-sdk'`, suppress `demo-forge` from all goals — library projects have no running service to populate data into. Note in bootstrap output: "Library/SDK project detected — demo-forge omitted (no live server to populate)."
+
+**Embedded / firmware:**
+- platformio.ini at root (PlatformIO — cross-platform embedded development for Arduino, ESP32, STM32, etc.; architecture_pattern: 'embedded-firmware'). Verification: `pio test` for unit tests (PlatformIO's native test runner runs on-device or via embedded simulator); full device tests require physical hardware or QEMU — document as manual test scenarios. demo-forge suppression: firmware has no HTTP service; suppress demo-forge. runtime-env setup: physical device or QEMU emulator setup may be needed.
+- *.ino at project root with no game engine marker (Arduino sketch; architecture_pattern: 'embedded-firmware'). If platformio.ini is also present, platformio.ini takes precedence. ⚠ `.ino` files in game projects (e.g., Construct 3 exports) are NOT Arduino — only match when no game engine markers are present.
 
 **CI/CD action / marketplace packages:**
 - `action.yml` at root with a `runs:` key (GitHub Actions custom action / reusable action; architecture_pattern: 'github-action')
@@ -418,9 +423,9 @@ node-spec.
 1. Read `.env.example`, `docker-compose.yml`, config files to identify all required env vars.
    For **event-driven service projects** (Discord/Slack/Telegram bots, webhook consumers), also
    identify the primary service authentication token from `package.json` dependencies and `.env.example`:
-   - `discord.js` dependency → prompt for `DISCORD_TOKEN` + `DISCORD_APPLICATION_ID`
+   - `discord.js` dependency (Node.js) OR `discord.py` / `nextcord` / `py-cord` in requirements.txt (Python) → prompt for `DISCORD_TOKEN` + `DISCORD_APPLICATION_ID`
    - `@slack/bolt` dependency → prompt for `SLACK_BOT_TOKEN` + `SLACK_SIGNING_SECRET`
-   - `telegraf` or `node-telegram-bot-api` → prompt for `TELEGRAM_BOT_TOKEN`
+   - `telegraf` or `node-telegram-bot-api` (Node.js) OR `python-telegram-bot` in requirements.txt (Python) → prompt for `TELEGRAM_BOT_TOKEN`
    These tokens are the most critical runtime credentials for event-driven bots and are NOT
    covered by database/cache/auth service detection.
 2. Check what's already configured (`.env` exists? docker-compose covers it? service reachable?)
@@ -1154,6 +1159,8 @@ has no verification node, the workflow is incomplete.
 | IDE plugin (VS Code extension) | `@vscode/test-cli` or `@vscode/test-electron` via `npm run test`; Playwright unsupported inside VS Code host. For extensions contributing a Language Server (activationEvents includes `onLanguage:*` or `contributes.languages`), also add LSP integration tests via `vscode-languageserver-protocol` test harness. For Debug Adapter Protocol extensions, add DAP integration tests. | plugin-test-{name} |
 | IDE plugin (Obsidian plugin) | `jest` with Obsidian vault fixture mock; full testing requires Obsidian CLI headless (if available) | plugin-test-{name} |
 | browser extension | Playwright with `chrome.launch({ channel: 'chrome' })` + extension load via `args: ['--load-extension=./dist']` | e2e-test-{name} |
+| library / SDK | Language native test runner only — `npm test` (Jest/Vitest), `cargo test`, `pytest`, `mvn test`, `go test ./...`. No E2E node needed (no running server). No Playwright/Detox. | lib-test-{name} |
+| embedded / firmware | `pio test` (PlatformIO) for on-device/simulator unit tests; physical hardware tests documented as manual test scenarios; no HTTP/REST tests | firmware-test-{name} |
 | shared / infra | covered by consumers' tests | no separate node needed |
 
 **Playwright CANNOT test native mobile apps.** Never assign Playwright to a Flutter/iOS/Android
@@ -1405,6 +1412,18 @@ the cross-module-stitch node is NOT required. A single-module game has no API �
 boundary to stitch. Skip to compile-verify (or game-test) directly after the intra-module
 stitch. If the game has a dedicated backend (e.g., multiplayer server, leaderboard API as
 a separate module), the exemption does not apply — stitch as normal.
+
+**Exemption — library/SDK projects:** If `architecture_pattern = 'library-sdk'`, skip
+cross-module-stitch entirely. Libraries are single consumable packages with no client/server
+boundary — their "consumers" are external developers, not modules within the same project.
+Internal packages within a library monorepo (e.g., packages/core + packages/react bindings)
+DO still need intra-module stitch if they run in parallel, but not cross-module-stitch.
+
+**Exemption — embedded/firmware projects:** If `architecture_pattern = 'embedded-firmware'`,
+skip cross-module-stitch. Firmware communicates via hardware protocols, not HTTP APIs. If the
+project includes both firmware AND a companion mobile/web app (e.g., BLE companion app),
+cross-module stitch applies to the mobile↔API boundary only, not the firmware↔mobile boundary
+(which is documented via protocol spec, not stitched via code analysis).
 
 This extends the intra-module stitch (above) to cover cross-module integration.
 Intra-module stitch catches missing imports within one codebase; cross-module
