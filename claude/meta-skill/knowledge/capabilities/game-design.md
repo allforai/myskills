@@ -34,11 +34,12 @@ Bootstrap reads both files when generating node-specs for game projects:
 
 ## Trigger Conditions
 
-Bootstrap activates this capability when:
-- Game engine detected: `project.godot`, `*.uproject` + `Source/`, `Assets/` +
-  `ProjectSettings/ProjectVersion.txt`, `*.love`, `Cargo.toml` + bevy dependency
-- OR `bootstrap-profile.json.business_domain = "gaming"`
-- OR user selects game domain in Step 1.5
+Bootstrap activates this capability when `bootstrap-profile.json.is_game_project = true`.
+
+`is_game_project` is set to true only after explicit user confirmation — engine detection
+(Unity, Unreal, Godot, LÖVE2D, Bevy, Flame, pygame) triggers a confirmation question in
+Step 1.5; user must confirm the project is a game before `is_game_project` is set.
+Direct selection of 业务领域 f) 游戏 in the no-code prompt also sets `is_game_project = true`.
 
 Skip when:
 - Project is a game SDK / engine (not a playable game itself)
