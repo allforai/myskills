@@ -68,33 +68,71 @@ When conflicts are found, reverse-concept MUST present them to the user for reso
 before proceeding. The user decides which side is correct. Unresolved high-severity
 conflicts block downstream phases — product-analysis should not proceed on a contradictory baseline.
 
-**concept-baseline.json minimum field schema:**
+**concept-baseline.json schema:** reverse-concept MUST produce the EXACT same schema as `cross-phase-protocols.md §A.1` (the canonical schema that all downstream phases auto-load). Use code evidence to populate each field. The fields below are §A.1 fields with reverse-concept extraction guidance:
+
 ```json
 {
-  "product_name": "<string>",
-  "mission": "<string — one sentence: Help [user] achieve [outcome] by [mechanism]>",
-  "target_users": ["<string — role names>"],
-  "core_features": [
+  "_meta": {
+    "generated_from": "reverse-concept phase",
+    "generated_at": "<ISO timestamp>",
+    "source_files": ["<code files analyzed>"]
+  },
+  "mission": "<Help [user] achieve [outcome] by [mechanism] — derived from README + code + UX flows>",
+  "target_market": "<inferred from code context, user-facing strings, README>",
+  "roles": [
     {
-      "id": "<string>",
-      "name": "<string>",
-      "jtbd": "<string — Job-to-be-Done this feature serves>",
-      "evidence": ["<string — file:line or module reference>"]
+      "id": "R1",
+      "name": "<role name inferred from auth/permission code or README>",
+      "app": "<frontend app this role uses — from routing/module analysis>",
+      "client_type": "<mobile-ios | mobile-android | web | desktop — from detected tech stack>",
+      "screen_granularity": "<inferred from component complexity and navigation depth>",
+      "high_frequency_tasks": ["<top 3 tasks from API endpoint frequency analysis>"],
+      "design_principle": "<inferred from UX patterns in code>",
+      "evidence": ["<file:line supporting this role definition>"]
     }
   ],
-  "business_flows": [
+  "governance_styles": [
     {
-      "id": "<string>",
-      "name": "<string>",
-      "steps": ["<string>"]
+      "flow_domain": "<business domain — e.g., content publishing, order processing>",
+      "style": "<auto_review | human_review | self_serve — from workflow code>",
+      "system_boundary": {
+        "in_scope": ["<what the system handles directly>"],
+        "external": ["<what is delegated to external services>"]
+      }
     }
   ],
-  "constraints": ["<string>"],
-  "governance_style": "<string — from governance-styles.md>"
+  "errc_highlights": {
+    "must_have": ["<features clearly implemented and business-critical>"],
+    "differentiators": ["<features that distinguish this product from standard alternatives>"],
+    "eliminate": ["<explicitly excluded or not implemented>"]
+  },
+  "pipeline_preferences": {
+    "auto_mode": true,
+    "ui_style": "<inferred from existing UI components or design tokens>"
+  },
+  "reverse_extras": {
+    "core_features": [
+      {
+        "id": "<string>",
+        "name": "<string>",
+        "jtbd": "<Job-to-be-Done this feature serves>",
+        "evidence": ["<file:line — REQUIRED: all features must have code evidence>"]
+      }
+    ],
+    "business_flows": [
+      {
+        "id": "<string>",
+        "name": "<string>",
+        "steps": ["<string>"],
+        "evidence": ["<file:line>"]
+      }
+    ],
+    "constraints": ["<string — tech constraints inferred from code>"]
+  }
 }
 ```
-All fields with evidence[] arrays MUST cite code evidence per Evidence-Based Extraction rules.
-The full schema reference is in `cross-phase-protocols.md §A.1`.
+
+`reverse_extras` is a reverse-concept-only extension block. Downstream phases read §A.1 fields (`mission`, `roles`, `governance_styles`, `errc_highlights`) directly; `reverse_extras` provides additional reverse-analysis detail for phases that opt-in. All fields with evidence[] MUST cite code evidence per Evidence-Based Extraction rules.
 
 ### Schema Compatibility
 
