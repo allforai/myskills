@@ -71,7 +71,7 @@ Read these files if they exist (skip missing ones silently):
 - ProjectSettings/ProjectVersion.txt, Assets/ (Unity)
 - *.uproject, Source/ (Unreal Engine)
 - project.godot (Godot)
-- *.love OR (main.lua + conf.lua at root) (LÖVE2D; *.love is the packaged output, main.lua+conf.lua is the dev project)
+- *.love OR (main.lua + conf.lua at root) (LÖVE2D; *.love is the packaged output, main.lua+conf.lua is the dev project; ⚠ if build.settings is also present, this is Solar2D — not LÖVE2D; Solar2D takes precedence)
 - Cargo.toml with `bevy` in dependencies (Bevy/Rust); for Cargo workspaces, also check member crates (e.g., `game/Cargo.toml`, `crates/*/Cargo.toml`) — the workspace root often has no direct dependencies
 - pubspec.yaml with `flame` in dependencies (Flame/Flutter game engine)
 - requirements.txt or pyproject.toml with `pygame` or `pygame-ce` in dependencies (pygame / pygame-ce community edition / Python)
@@ -80,13 +80,13 @@ Read these files if they exist (skip missing ones silently):
 - cocos-project.json (Cocos Creator)
 - *.rpy or renpy/ directory (Ren'Py visual novel engine; scenario hint: narrative-adventure)
 - Game.rpgproject (RPG Maker MV/MZ; scenario hint: action-rpg)
-- game.project + *.script or *.go (Defold; note: *.go here is Defold's game object format, not Go language)
+- game.project + *.script or *.go (Defold; note: *.go here is Defold's game object format, not Go language; ⚠ if go.mod is present, *.go files are Go source — only match Defold *.go when go.mod is ABSENT)
 - *.c3proj (Construct 3)
 - *.mgcb (MonoGame/.NET)
 - game.js + game.json at project root (WeChat Mini Game; distinguished from mini programs which use app.js)
 - *.yyp (GameMaker Studio 2)
 - *.twee or *.tw (Twine / interactive fiction; scenario hint: narrative-adventure)
-- *.rbxlx or *.rbxl (Roblox Studio place files) or default.project.json with Roblox tree structure (Rojo workflow)
+- *.rbxlx or *.rbxl (Roblox Studio place files) or default.project.json containing a `"tree"` key with `"$className": "DataModel"` (Rojo workflow for Roblox)
 - GameScene.swift at project root or in Sources/ (SpriteKit / SceneKit — Apple's 2D/3D game frameworks for iOS/macOS)
 - package.json with `phaser` in dependencies (Phaser.js — popular HTML5 / WebGL game framework)
 - package.json with `kaboom` in dependencies (Kaboom.js — JavaScript game library)
@@ -95,7 +95,7 @@ Read these files if they exist (skip missing ones silently):
 - *.sdpkg or *.csproj with `Stride.Games` in dependencies (Stride — C#/.NET game engine, formerly Xenko)
 - *.gbsproj (GBStudio — Game Boy / Game Boy Color game maker)
 - haxelib.json with `flixel` in dependencies (HaxeFlixel — Haxe 2D game framework)
-- build.settings + main.lua at project root (Solar2D / Corona SDK — Lua mobile game engine; ≠ LÖVE2D which uses conf.lua instead of build.settings)
+- build.settings + main.lua at project root (Solar2D / Corona SDK — Lua mobile game engine; ≠ LÖVE2D which uses conf.lua instead of build.settings; ⚠ Solar2D detection takes precedence — if build.settings is present, suppress any LÖVE2D match from *.love glob)
 - *.p8 or *.p8.png at project root (PICO-8 fantasy console cartridge)
 - go.mod with `hajimehoshi/ebiten` in require block (Ebitengine — Go 2D game engine)
 - go.mod with `g3n/engine` in require block (g3n — Go 3D game engine)
@@ -635,12 +635,12 @@ For `analyze` goal, inject only if no `approval-records.json` exists (new projec
 2. Read `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/game-design.md` §Canonical Node Registry
 3. Insert game-design nodes into the workflow AFTER `product-concept` node and BEFORE `product-analysis` node
 4. For each node in `required_nodes` + `always_include` (and selected `optional_nodes`):
-   - Look up `node_id` in game-design.md Canonical Node Registry
-   - Generate node-spec with: `capability: game-design`, `discipline_owner`, `html_output`, `json_output`, `human_gate: true`, `approval_record_path: ".allforai/game-design/approval-records.json"`, `gate_status: "pending"`, `presentation` spec from game-design.md §HTML Presentation Specs
-   - `blocked_by`: previous node in `node_order` (exception: `game-design-finalize` is `blocked_by` ALL other game-design nodes in the selected scenario, since it must aggregate every system JSON)
-   - `unlocks`: next node in `node_order`
+   - Check if `node_id` exists in game-design.md Canonical Node Registry:
+     - **Canonical node** (in registry AND node_order): look up `discipline_owner`, `html_output`, `json_output`, `presentation` from the registry. Set `blocked_by` = previous node in `node_order`; `unlocks` = next node in `node_order`. Exception: `game-design-finalize` is `blocked_by` ALL other game-design nodes in the scenario (it aggregates every system JSON).
+     - **Ad-hoc optional node** (in `optional_nodes` but absent from node_order or canonical registry): use Step 2.7 research to generate node-spec content; position it immediately before `game-design-finalize` in the generated workflow sequence; `blocked_by` = last canonical optional node (or last required node if no canonicals selected); `unlocks` = game-design-finalize.
+   - All nodes get: `capability: game-design`, `human_gate: true`, `approval_record_path: ".allforai/game-design/approval-records.json"`, `gate_status: "pending"`
 5. Initialise `.allforai/game-design/approval-records.json` with one `pending` record per game-design node
-6. Ad-hoc nodes (listed in `bootstrap_note` of the scenario template): generate node-spec with `capability: game-design`, but use Step 2.7 research for content — they are not in the canonical registry
+6. Ad-hoc nodes listed only in `bootstrap_note` (not in `optional_nodes`): these require user opt-in (presented in the optional node question after scenario selection). If the user selects them, generate their node-spec via Step 2.7 research and position them per step 4 ad-hoc rule above.
 
 **Node granularity is project-dependent.** A simple CLI tool might need
 3 nodes. A microservice platform might need 20. LLM decides.
