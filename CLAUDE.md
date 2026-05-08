@@ -90,12 +90,17 @@ All plugins read/write to a project-local `.allforai/` directory. This is the in
 ├── ui-design/               # ui-design-spec.md, tokens.json, interaction-spec.md, preview/*.html
 ├── seed-forge/              # seed-plan, forge-data, assets/ (dev seed data)
 ├── demo-forge/              # demo-plan, forge-data, assets/, verify-report, round-history
-├── product-verify/          # static-report, dynamic-report, verify-report
+├── product-verify/          # static-report, dynamic-report, verify-report, ui-helper-profile.json
 ├── spec-compliance/         # spec-compliance-report.json
 ├── pipeline-closure/        # pipeline-closure-report.json
 ├── security-verify/         # security-verify-report.json
 ├── deadhunt/                # validation-profile, static-analysis/, tests/, fix-tasks
 ├── code-tuner/              # tuner-profile, phase1-4 JSONs, tuner-report, tuner-tasks
+├── concept-acceptance/      # acceptance-report.json
+├── runtime-smoke/           # smoke-report.json
+├── visual-verify/           # visual-verify-report.json, screenshots/
+├── test-verify/             # test-verify-report.json
+├── translate/               # translation-manifest.json
 ├── launch-prep/             # competitive-research, compliance-checklist, launch-checklist
 └── bootstrap/               # workflow.json, bootstrap-profile.json, node-specs/, scripts/, learned/
 ```

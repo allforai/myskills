@@ -31,6 +31,8 @@ that implementation and verification nodes consume.
 | Rate limiting | Token bucket / sliding window / per-user / per-IP | Product has public API or user-facing endpoints |
 | Input validation | Schema validation / sanitization / parameterized queries | Always (OWASP Top 10) |
 | Key management | Environment vars / HashiCorp Vault / cloud KMS / keychain | Product uses API keys, encryption keys, or secrets |
+| Regulatory / Compliance | GDPR (EU user data) / COPPA (under-13 users) / PCI-DSS (payment card data) / HIPAA (health data) / App Store guidelines | Product collects personal data, handles payments, or targets minors |
+| Game anti-cheat | Server-side authoritative validation / replay verification / anomaly detection / ban system | Multiplayer games or games with economy systems — client-side data must never be trusted for score/inventory/currency |
 
 ### Required Quality
 

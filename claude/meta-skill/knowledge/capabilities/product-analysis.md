@@ -18,6 +18,19 @@ These artifacts describe WHAT the product does in business terms, not HOW it's i
 
 Output is the same regardless of input path.
 
+**source-summary.json fields consumed (for analyze/translate/rebuild goals):**
+
+| Field | Used for |
+|-------|----------|
+| `tech_stacks[]` | Determine analysis strategy (web-app vs game vs CLI) |
+| `modules[]` | Scope of analysis — which modules to cover |
+| `modules[].key_files[]` | Entry points for code reading |
+| `architecture_pattern` | Select archetype-specific output schema (see Specialization Guidance) |
+| `detected_patterns[]` | Identify domain-specific conventions (e.g., ECS for games, event-sourcing for backend) |
+| `experience_priority` | Classification hint: consumer / admin / mixed |
+
+**Archetype fallback rule**: If `source-summary.json` is absent (goal = create, or discovery was skipped), infer archetype from `product-concept.json.architecture_pattern`. If neither exists, default to `web-app` archetype and note the assumption in the output artifacts.
+
 **Concept-baseline dependency (for analyze goal):**
 When goal = analyze, product-analysis SHOULD load `concept-baseline.json` if it exists
 (produced by the upstream reverse-concept node). This baseline provides the independent

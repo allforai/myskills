@@ -23,14 +23,14 @@ implementation nodes consume via Context Pull.
 
 | Output | What |
 |--------|------|
-| `api-spec.json` | API endpoint definitions: routes, methods, request/response schemas, auth requirements |
-| `db-schema.md` | Database table/collection design: fields, types, relations, indexes, constraints |
+| `.allforai/tech-spec/api-spec.json` | API endpoint definitions: routes, methods, request/response schemas, auth requirements |
+| `.allforai/tech-spec/db-schema.md` | Database table/collection design: fields, types, relations, indexes, constraints |
 
 ### Optional Outputs
 
 | Output | When |
 |--------|------|
-| `protocol-spec.md` | Realtime communication protocol: message types, event formats, connection lifecycle. Only when project uses WebSocket/gRPC streaming/SSE. |
+| `.allforai/tech-spec/protocol-spec.md` | Realtime communication protocol: message types, event formats, connection lifecycle. Only when project uses WebSocket/gRPC streaming/SSE. |
 
 ### Required Quality
 
@@ -102,10 +102,11 @@ For each key decision, present as:
 
 | Artifact | Field Path | Consumer Capability | Required | Reason |
 |----------|------------|---------------------|----------|--------|
-| `api-spec.json` | `endpoints[]` | translate (implement nodes) | required | Implement nodes need to know which endpoints to build |
-| `api-spec.json` | `endpoints[].request_schema`, `response_schema` | demo-forge | required | Demo-forge constructs API requests from schema definitions |
-| `db-schema.md` | table definitions | translate (implement nodes) | required | Implement nodes need the data model to write ORM/migration code |
-| `protocol-spec.md` | message types | translate (implement nodes) | optional | Only realtime projects need protocol implementation |
+| `.allforai/tech-spec/api-spec.json` | `endpoints[]` | translate (implement nodes) | required | Implement nodes need to know which endpoints to build |
+| `.allforai/tech-spec/api-spec.json` | `endpoints[].request_schema`, `response_schema` | demo-forge | required | Demo-forge constructs API requests from schema definitions |
+| `.allforai/tech-spec/api-spec.json` | `endpoints[]` | spec-compliance-verify | required | Spec 合规验证对照 API 契约检查实现 |
+| `.allforai/tech-spec/db-schema.md` | table definitions | translate (implement nodes) | required | Implement nodes need the data model to write ORM/migration code |
+| `.allforai/tech-spec/protocol-spec.md` | message types | translate (implement nodes) | optional | Only realtime projects need protocol implementation |
 
 ## Knowledge References
 

@@ -22,7 +22,7 @@ validation placement correctness.
 - Map logical layers (Entry/Business/Data/Utility) by dependency direction (not folder names)
 - Scan all entities, relations, DTO/VO distribution
 - **User confirms profile before proceeding** (last human gate)
-- Output: tuner-profile.json
+- Output: `.allforai/code-tuner/tuner-profile.json`
 
 ### Phase 1: Architecture Compliance
 
@@ -33,25 +33,25 @@ validation placement correctness.
   - G-01~G-06: universal rules (all architectures)
 - Special T-03: Entry direct-to-Data access — valid for simple CRUD, violation for business logic
 - Special G-04/G-05/G-06: layered validation (format at entry, business rules at business layer, none at data)
-- Output: phase1-compliance.json
+- Output: `.allforai/code-tuner/phase1-compliance.json`
 
 ### Phase 2: Duplication Detection
 
 - 4-layer scan: API/Entry, Service/Business, Data/Query, Utility
 - >70% structural similarity = candidate duplicate
-- Output: phase2-duplicates.json
+- Output: `.allforai/code-tuner/phase2-duplicates.json`
 
 ### Phase 3: Abstraction Analysis
 
 - Vertical: similar classes -> base class opportunity
 - Horizontal: scattered code -> shared method opportunity
 - Over-abstraction: 1 impl + 1 call site + transparent passthrough = over-engineered
-- Output: phase3-abstractions.json
+- Output: `.allforai/code-tuner/phase3-abstractions.json`
 
 ### Phase 4: Synthesis
 
 - 5D scoring: compliance(25%) + duplication(25%) + abstraction(20%) + validation(15%) + data-model(15%)
-- Output: tuner-report.md + tuner-tasks.json
+- Output: `.allforai/code-tuner/tuner-report.md` + `.allforai/code-tuner/tuner-tasks.json`
 
 **tuner-tasks.json field schema:**
 ```json
@@ -85,7 +85,7 @@ consumed by launch-prep as a baseline reference.
 
 ## Rules
 
-1. **Backend code only**: Frontend/docs repos rejected.
+1. **Backend or library code**: Applies to backend services, CLI tools, library/SDK packages. Frontend-only repos (no business logic) and documentation repos are rejected.
 2. **Understand-then-scan**: LLM reads project rules once, then batch scans.
 3. **No auto-refactoring**: Report + task list only. No code changes.
 4. **Pre-launch vs maintenance**: Each finding carries both aggressive and conservative variants.

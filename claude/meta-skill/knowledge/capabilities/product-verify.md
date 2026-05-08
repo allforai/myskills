@@ -71,23 +71,17 @@ For each module:
 - Game-specific: combat sequence completes, economy transactions process, progression saves
 - Playwright/Detox CANNOT test game engine clients — use engine-native test frameworks only
 
-**Common mobile verification layers:**
-1. V1: App launches on simulator/emulator without crash
-2. V2: All screens reachable via navigation
-3. V3: Content renders correctly (no blank screens, no undefined data)
-4. V4: Forms submit and data persists
-5. V5: API integration works (login, CRUD, real-time)
-6. V6: Error handling (network off, invalid input, server error)
-7. V7: Platform-specific (push notifications, deep links, permissions)
-
 ### Verification Layers (V1-V7)
-1. V1: App launches without error
-2. V2: All routes reachable
-3. V3: Page content matches spec (title, key elements)
-4. V4: Forms submit successfully
-5. V5: CRUD operations work end-to-end
-6. V6: Error handling works (invalid input, network error)
-7. V7: Role-based access enforced
+
+| Layer | Web / API | Mobile (Flutter/iOS/Android/RN) |
+|-------|-----------|---------------------------------|
+| V1 | App / server launches without error | App launches on simulator/emulator without crash |
+| V2 | All routes reachable | All screens reachable via navigation |
+| V3 | Page content matches spec (title, key elements) | Content renders correctly (no blank screens, no undefined data) |
+| V4 | Forms submit successfully | Forms submit and data persists |
+| V5 | CRUD operations work end-to-end | API integration works (login, CRUD, real-time) |
+| V6 | Error handling (invalid input, network error) | Error handling (network off, invalid input, server error) |
+| V7 | Role-based access enforced | Platform-specific (push notifications, deep links, permissions) |
 
 ### UI Test Helper Generation (per-module, framework-agnostic)
 
@@ -96,7 +90,7 @@ that supplements the test framework's native capabilities without replacing them
 
 **Pre-step — Framework Capability Assessment:**
 For each UI module, evaluate the test framework's native coverage across 8 fragile layers,
-then write the assessment to `.allforai/deadhunt/ui-helper-profile.json` (keyed by `module_id`):
+then write the assessment to `.allforai/product-verify/ui-helper-profile.json` (keyed by `module_id`):
 
 ```json
 {
@@ -181,6 +175,7 @@ Parity modes from product-concept:
 - `full`: every feature must exist on every client → any gap is a finding
 - `partial`: every feature except `parity_exceptions[]` → exceptions are allowed
 - `explicit`: each client declares `supported_features[]` → only check declared features
+- **Fallback (no parity_mode declared)**: treat as `full` — verify all features across all clients, flag gaps as minor severity
 
 ## Rules (Must Preserve)
 
@@ -203,7 +198,7 @@ Parity modes from product-concept:
 
 | Artifact | Field Path | Consumer Capability | Required | Reason |
 |----------|------------|---------------------|----------|--------|
-| `verify-report.json` | `composite_score` | tune | optional | 代码治理参考验收分数决定优化优先级 |
+| `verify-report.json` | `composite_score` | code-tuner | optional | 代码治理参考验收分数决定优化优先级 |
 | `verify-report.json` | `composite_score`, `issues[]` | launch-prep | required | 上架准备需要验收报告确认产品就绪 |
 | `verify-report.json` | `issues[]` | concept-acceptance | optional | 概念验收参考已知问题列表 |
 

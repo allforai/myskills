@@ -73,8 +73,9 @@ Strategy selection per component, compile-verify loop per module.
 
 | Artifact | Field Path | Consumer Capability | Required | Reason |
 |----------|------------|---------------------|----------|--------|
-| source code files | implementation files per module | compile-verify | required | 编译验证需要全部源代码文件存在 |
-| source code files | implementation files per module | spec-compliance-verify | required | Spec 合规验证需要对照代码与设计规格 |
+| `.allforai/translate/translation-manifest.json` | `modules[].status`, `modules[].output_path` | compile-verify | required | 编译验证按 manifest 逐模块运行构建命令 |
+| `.allforai/translate/translation-manifest.json` | `modules[].output_path`, `modules[].strategy` | spec-compliance-verify | required | Spec 合规验证需要定位已翻译代码文件 |
+| `.allforai/translate/translation-manifest.json` | `modules[].status` | product-verify | optional | 产品验证参考翻译状态决定验证范围 |
 
 ## Composition Hints
 
