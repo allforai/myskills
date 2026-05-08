@@ -99,6 +99,8 @@ Read these files if they exist (skip missing ones silently):
 - *.p8 or *.p8.png at project root (PICO-8 fantasy console cartridge)
 - go.mod with `hajimehoshi/ebiten` in require block (Ebitengine — Go 2D game engine)
 - go.mod with `g3n/engine` in require block (g3n — Go 3D game engine)
+- build.gradle.kts with `com.soywiz.korlibs.korge` in dependencies (KorGE — Kotlin/Multiplatform game engine)
+- package.json with `littlejsengine` in dependencies (LittleJS — tiny JavaScript 2D game engine)
 - requirements.txt or pyproject.toml with `arcade` in dependencies (Arcade — Python 2D game framework, alternative to pygame)
 
 **Configuration:**
