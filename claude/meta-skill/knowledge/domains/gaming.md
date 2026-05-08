@@ -221,22 +221,27 @@ balance-testing（数值平衡测试：蒙特卡洛模拟 + Playtest）
 
 ## 四、领域特有的产出物
 
-| 产出物 | 格式 | 对应阶段 |
-|--------|------|---------|
-| `player-archetypes.json` | JSON | player-archetype-definition |
-| `core-mechanics.json` | JSON | core-mechanics-design |
-| `economy-model.json` | JSON | economy-design |
-| `progression-curve.json` | JSON | progression-system |
-| `level-design.json` | JSON | level-design |
-| `narrative-design.json` | JSON | narrative-design |
-| `worldbuilding-bible.md` | Markdown | worldbuilding |
-| `monetization-design.json` | JSON | monetization-design |
-| `art-direction.md` | Markdown | art-direction |
-| `art-tokens.json` | JSON | art-direction |
-| `balance-report.json` | JSON | balance-testing |
-| `game-design-document.md` | Markdown | concept-crystallization (替代 product-definition.md) |
+> **执行层注意：** 本节列出概念阶段的产出物名称供知识参考。
+> 实际文件路径和格式以 `capabilities/game-design.md` 的 Canonical Node Registry 和
+> `game-design-doc.json Schema` 为准。HTML-first 架构下，每个节点输出 `.html` + `.json`，
+> 而非本节列出的 `.md` 文件。
 
-所有产出写入 `.allforai/product-concept/` 和 `.allforai/game-design/`。
+| 概念产出物（知识层参考） | 格式 | 对应阶段 | 执行层实际文件 |
+|----------------------|------|---------|-------------|
+| `player-archetypes` | JSON | player-archetype-definition | 来自 `product-concept.json` 的 target_audience |
+| `core-mechanics` | JSON | core-loop-design | `game-design/systems/core-mechanics.json` |
+| `economy-model` | JSON | economy-design | `game-design/systems/economy-model.json` |
+| `progression-curve` | JSON | progression-curve-design | `game-design/systems/progression-curve.json` |
+| `level-design` | JSON | level-design | `game-design/systems/level-design.json` |
+| `narrative-design` | JSON | narrative-design | `game-design/systems/narrative-design.json` |
+| `worldbuilding-bible` | Markdown | worldbuilding | `game-design/systems/worldbuilding-bible.md` (Markdown exception — lore docs are prose) |
+| `monetization-design` | JSON | monetization-design | `game-design/systems/monetization-design.json` |
+| `art-style-guide` | JSON | art-direction | `game-design/art-style-guide.json` |
+| `art-asset-inventory` | JSON | art-spec-design | `game-design/art-asset-inventory.json` |
+| `balance-report` | JSON | competitive-balance-design | `game-design/systems/balance-report.json` |
+| `game-design-doc` | JSON | game-design-finalize | `game-design/game-design-doc.json` (aggregates all above) |
+
+所有产出写入 `.allforai/game-design/`。
 
 ---
 
@@ -255,9 +260,12 @@ balance-testing（数值平衡测试：蒙特卡洛模拟 + Playtest）
 
 ## 六、常见游戏品类的节点选择参考
 
+> 以下节点名称为 game-design.md Canonical Node Registry 中的 `node_id`。
+> 实际选用哪些节点由 bootstrap 读取 game-scenario-templates/ 决定。
+
 | 品类 | 核心节点 | 可跳过 |
 |------|---------|--------|
-| **RPG/MMO** | 全部 15 个节点 | — |
+| **RPG/MMO** | core-loop-design, combat-system-design, skill-tree-design, progression-curve-design, economy-design, narrative-design, level-design, worldbuilding, monetization-design, competitive-balance-design | — |
 | **卡牌/策略** | player-archetype, core-mechanics, economy, monetization, balance | level-design, narrative |
 | **休闲/超休闲** | core-mechanics, level-design, monetization(ad-based) | worldbuilding, narrative, economy, progression |
 | **叙事/AVG** | narrative, worldbuilding, art-direction | economy, balance, progression |
