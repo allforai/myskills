@@ -44,7 +44,9 @@ Read `.allforai/bootstrap/workflow.json` at every iteration. Trust it over conve
   6. Dispatch subagent with node-spec as prompt
   7. On success: record transition (status=completed, artifacts_created)
   8. On failure: record transition (status=failed, error=<one line>),
-     then read .allforai/bootstrap/protocols/diagnosis.md and diagnose
+     then read .allforai/bootstrap/protocols/diagnosis.md and diagnose.
+     After diagnosis + repair: append to workflow.json `corrections_applied[]`:
+     `{"node": "<id>", "what_was_wrong": "<root_cause>", "fix_applied": "<action>", "timestamp": "<ISO>"}`
   9. Back to 1
 ```
 
