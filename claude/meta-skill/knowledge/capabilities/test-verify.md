@@ -119,34 +119,21 @@ Bootstrap MUST generate the correct test commands per platform:
 |----------|------------------|-----------------------|
 | Web (Node.js) | `npm run test` / `vitest run` / `jest` | Playwright E2E |
 | Go backend | `go test ./...` | API integration tests |
-| Flutter | `flutter test` | Patrol (`patrol test`) → fallback `flutter test integration_test/` |
+| Flutter | `flutter test` | Patrol → fallback `flutter test integration_test/`; for desktop targets add `--device-id=macos/linux/windows` |
 | iOS (Swift) | `xcodebuild test -scheme X -destination 'platform=iOS Simulator'` | XCUITest |
 | Android (Kotlin) | `./gradlew test` | `./gradlew connectedAndroidTest` |
-| React Native (Expo managed) | `npx jest` | Maestro preferred (no native build config needed); E2E requires real device or emulator + dev client (`eas build --profile development`). Note: Expo Go is NOT sufficient for full E2E (sandbox restrictions); use development client for realistic testing. |
-| React Native (bare workflow) | `npx jest` | Detox preferred (deeper RN bridge integration); Maestro also supported. Requires Metro bundler running (`npx react-native start`) before E2E tests. |
+| React Native (Expo managed) | `npx jest` | Maestro preferred — no native build config needed; Expo Go is insufficient for full E2E (sandbox restrictions), use EAS development build instead |
+| React Native (bare workflow) | `npx jest` | Detox preferred (deeper RN bridge); Metro bundler must be running before E2E tests |
 | Unity | `Unity.exe -runTests -testPlatform EditMode -projectPath .` | PlayMode: `-testPlatform PlayMode` |
-| Godot | GUT: `godot --headless --script addons/gut/gut_cmdln.gd` (check `addons/gut/` exists). GdUnit4: `godot --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd` (check `addons/gdUnit4/bin/` exists). If neither found, mark R3 as `applicable: false` — no test runner detected. | Manual scene tests (if no framework present) |
-| Go backend (gRPC) | `go test ./...` per service module | Protocol compat: `buf lint` (style) + `buf breaking --against '.git#branch=main'` (backward compat check against previous proto version). **buf breaking is R4 for gRPC** — a passing `go test` does not guarantee proto schema backward compatibility. |
+| Godot | Detect test framework from `addons/` — GUT or GdUnit4 are common. If neither found, mark R3 `applicable: false`. | Manual scene tests if no framework present |
+| Go backend (gRPC) | `go test ./...` per service module | **R4**: `buf lint` + `buf breaking --against '.git#branch=main'` — a passing `go test` does NOT guarantee proto schema backward compatibility |
 | Roblox (Rojo) | TestEZ via `rojo test` or custom runner | Manual in Roblox Studio |
-| Rust game (Bevy/macroquad) | `cargo test` for logic | Rendering: manual test scenarios |
+| Rust game | `cargo test` for logic | Rendering: manual test scenarios |
 | GBStudio | **No automated test runner** — manual verification only | N/A |
 | PICO-8 | **No automated test runner** — manual verification only | N/A |
-| Twine / Ren'Py | Playwright E2E on exported HTML bundle (`npx serve dist/` then Playwright) | passage navigation, variable tracking, ending states |
-| Discord bot (discord.js) | `jest` or `vitest` with mocked `discord.js` interaction objects | Unit tests for command handlers; integration tests against a real test guild with `DISCORD_TEST_GUILD_ID` |
-| Discord bot (discord.py / nextcord / py-cord) | `pytest` with `unittest.mock.AsyncMock` for interaction mocking; `pytest-asyncio` for async command tests | Unit tests mock `ctx` / `interaction`; integration tests use `discord.py` test utilities with real bot token + test guild |
-| Telegram bot (python-telegram-bot / aiogram) | `pytest` + `pytest-asyncio`; mock `telegram.Update` and `telegram.ext.ContextTypes.DEFAULT_TYPE`; use `Application.builder().token("test").build()` for handler registration | Unit tests mock `/start`, `/help`, message handlers; integration with real bot token against Telegram test environment |
-| Telegram bot (telegraf / node-telegram-bot-api) | `jest`/`vitest`; mock Telegram `Update` objects; use `telegraf.handleUpdate()` to simulate incoming messages | Unit tests mock command middleware; integration tests use real test bot token |
-| Slack bot (@slack/bolt) | `jest`/`vitest`; mock Bolt `say`, `respond`, `ack` functions; use `app.receiver.handler` for direct payload injection | Unit tests mock slash commands, modals, shortcuts; integration tests POST mock payloads to `/slack/events` handler |
-| CLI tool (Node.js/Python/Go) | Unit: `npm test` / `pytest` / `go test ./...` for logic. Integration: spawn subprocess with test args (`node dist/cli.js --help`, `npx cli --version`, `node dist/cli.js <cmd> --dry-run`); assert exit code 0 and expected stdout | For interactive CLI: mock stdin with `inquirer-test` utilities or pipe input; verify output matches expected |
-| tRPC backend | `npm run test` / `vitest run` using `createCallerFactory(router)(ctx)` (no HTTP client — tRPC has no REST routes; call procedures as functions in tests) | For E2E: Playwright on the Next.js frontend; tRPC calls are made client-side via `trpc.procedure.query()` — no curl/HTTP testing of procedures |
-| HarmonyOS (ArkTS) | `ohosTest` framework: run tests via DevEco Studio or `hvigorw test` CLI | Component tests on HarmonyOS simulator or real device; ArkUI test framework for UI component testing |
-| Ruby on Rails | `bundle exec rspec` (RSpec) or `bundle exec rails test` (Minitest) for unit/integration tests | System tests: `bundle exec rails test:system` (Capybara + Selenium/Chrome). Action Cable R4: test WebSocket channel subscribe/broadcast lifecycle via ActionCable test helpers |
-| Kotlin Spring Boot | `./gradlew test` per module for unit tests; `./gradlew integrationTest` for Spring integration tests (requires running DB/Kafka) | R4 protocol: API compatibility via SpringDoc/OpenAPI diff if springdoc-openapi present |
-| Deno (Fresh / runtime) | `deno test` (built-in test runner, no npm needed). For Fresh: `deno test --allow-net tests/` | E2E: Playwright on built Fresh output (`deno task start` + Playwright) |
-| Flutter (macOS desktop) | `flutter test` for unit/widget tests; `flutter test integration_test/ --device-id=macos` for E2E on macOS (requires macOS device target). CI: `macos-latest` GitHub Actions runner required. | N/A |
-| .NET / ASP.NET Core | `dotnet test` (discovers all *Tests.csproj in the solution). For integration tests: `dotnet test --filter Category=Integration` (requires running DB or test containers). Use `dotnet test --logger trx` for CI result output. | Testcontainers or SQL Server LocalDB for DB-dependent tests |
-| Obsidian plugin | `npm run test` (vitest or jest with Obsidian API mocks). Note: full integration testing requires loading the plugin into Obsidian dev vault manually — automated headless testing is limited to unit tests of pure logic. | Manual vault load for full E2E |
-| VS Code extension | `npm run test` (runs `@vscode/test-electron` which launches VS Code with the extension loaded; exits with test results). Command: `node ./out/test/runTest.js` (typical convention). | `@vscode/test-electron` extension host tests |
+| Twine / Ren'Py | Playwright E2E on exported HTML bundle | passage navigation, variable tracking, ending states |
+| Bot projects (Discord / Telegram / Slack) | **Event-driven — no HTTP routes to curl.** Mock the event provider (mock discord.js client, mock telegram.Update, mock Bolt payload); call command handlers directly with mock objects. | Integration: real bot token against dedicated test guild/workspace/bot (not production). |
+| tRPC backend | Call procedures directly via `createCallerFactory(router)(ctx)` — no HTTP client, no REST routes | For E2E: Playwright on the frontend; tRPC calls are client-side — never curl tRPC procedures |
 
 **Key rule:** Mobile test frameworks are fundamentally different from web. `flutter test` ≠ `npm test`. Bootstrap must detect the platform and emit the correct command.
 

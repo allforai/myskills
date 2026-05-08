@@ -132,37 +132,29 @@ Write `.allforai/runtime-smoke/smoke-report.json`:
 
 ## Suppression and Adaptation Rules
 
-| architecture_pattern | Action |
-|----------------------|--------|
-| `embedded-firmware` | Suppress — document manual device test scenarios |
-| `ide-plugin-obsidian` | Suppress — cannot automate desktop GUI headlessly |
-| `ide-plugin-vscode` | Suppress — cannot automate extension host headlessly |
-| `library-sdk` | Suppress — no runtime surface; library has no launch |
+LLM applies these rules to each module during bootstrap, selecting the correct smoke approach from the project's actual stack. Rules are principles — not exhaustive per-technology scripts.
+
+**Suppress (no runtime surface to test):**
+
+| Pattern | Action |
+|---------|--------|
+| `library-sdk`, `cli` | Suppress — no persistent runtime; test via test-verify instead. CLI exception: if the project has a companion HTTP service, smoke that. |
+| `embedded-firmware` | Suppress — requires physical device; document manual test scenarios |
+| `ide-plugin-*` | Suppress — plugin runs inside host IDE process; cannot launch headlessly. Use product-verify instead. |
 | `github-action` | Suppress — CI action has no persistent launch |
-| `desktop-app-electron` | Adapt — smoke = `npm run start` launches Electron binary without crash; verify main window renders using `electron-playwright-helpers` or launch the built binary directly; record window screenshot; verify no uncaught exceptions in DevTools console (accessible via `mainWindow.webContents.getURL()` / `console.error` listener). No HTTP endpoint — success = window visible + IPC roundtrip responds. |
-| `desktop-app-tauri` | Adapt — smoke = `npm run tauri dev` or launch the built binary; verify app window opens; issue one IPC invoke via `tauri-driver` + WebdriverIO; verify response received. No HTTP endpoint — success = window visible + IPC response. Record `src-tauri/capabilities/` list to verify Tauri v2 capability set is as designed. |
-| `browser-extension` | Adapt — use `chrome --load-extension` + WebDriver; record extension load success/failure |
-| `serverless-sam` | Adapt — use `sam local start-api` as live environment; smoke = curl health endpoint |
-| `serverless-framework` | Adapt — use `serverless-offline` as live environment |
-| `serverless-cf-workers` | Adapt — use `wrangler dev` as live environment |
-| Twine/Ren'Py (narrative, web export) | Adapt — smoke = headless Chrome `open index.html`, verify page loaded (presence of #game canvas or `#ren_py` container), no console errors. Do NOT rely on `document.title` — Ren'Py export template may not set it. |
-| Elixir/Phoenix (LiveView) | Adapt — smoke = `mix phx.server` starts without crash; curl `http://localhost:4000/` returns 200 (LiveView pages return HTML, no separate /health needed). Check supervision tree logs for crash reports (`[error]`). |
-| Rust CLI | Adapt — smoke = run binary with `--help` or `--version`, verify exit code 0 and expected output on stdout. For TUI: run with a test input file or `--dry-run` flag if supported; verify exit code and no panic output. No HTTP endpoint — success is non-zero exit code check inverted (0 = success). |
-| Backend with Celery async workers | Adapt — **two-process smoke required**: (1) `curl /health` on the FastAPI/Django API process → verify 200 OK; (2) worker health check: `celery -A <app> inspect active` OR `redis-cli KEYS celery*` (should return active task metadata keys). Enqueue a fast test task via API (`POST /test-task`), poll Redis result backend for `state == "SUCCESS"` within 10s. Both API and worker must pass — worker-down with API-up is a failure. |
-| gRPC backend (with gRPC-Gateway) | Adapt — smoke = verify BOTH the gRPC port AND the HTTP transcoding gateway: (1) gRPC health: `grpc_health_probe -addr=:50051` or `grpcurl -plaintext localhost:50051 grpc.health.v1.Health/Check`; (2) REST transcoding: `curl http://localhost:8080/healthz` → 200. Both must pass — gRPC services that lost the HTTP gateway layer are partially broken. |
-| Rails + Sidekiq | Adapt — two-process smoke required: (1) `rails server` starts; `curl /health` (or `curl /up` for Rails 7.1) → 200; (2) worker health: `bundle exec sidekiq status` or check Redis for Sidekiq process heartbeat (`SMEMBERS sidekiq:processes`). Enqueue a fast test job and verify Redis removes it from `sidekiq:queue:default` within 5s. Both API and worker must pass. |
-| Spring Boot + Kafka | Adapt — two-process smoke required: (1) `curl http://localhost:8080/actuator/health` → `{"status":"UP"}`; (2) Kafka consumer health: `kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group <app-group>` — verify `LAG == 0` or consumer is STABLE. A service with HTTP UP but Kafka consumer STOPPED is partially broken. |
-| Deno Fresh (SSR) | Adapt — smoke = `deno run --allow-net --allow-read dev.ts` (or `deno task start`) starts without crash; `curl http://localhost:8000/` → 200 with HTML content (Fresh renders SSR pages on-demand, no JSON health endpoint). Verify no `console.error` in server logs. |
-| mobile-flutter-desktop (macOS) | Adapt — smoke = launch built .app bundle directly (`open build/macos/Build/Products/Release/MyApp.app`) or via `flutter run -d macos`; verify window appears within 5s (no crash); capture screenshot; check for Flutter framework errors in console log. No HTTP endpoint — success = macOS window visible + no crash. |
-| `bot-telegram` | Adapt — smoke = POST a fake Telegram update JSON to the webhook endpoint (`/telegram-webhook` or as configured); verify 200 OK response. DO NOT call the real Telegram Bot API — use a locally-posted mock payload. Verify webhook signature check logic runs without rejection. |
-| `bot-slack` | Adapt — smoke = POST mock Slack event JSON to `/slack/events`; verify 200 OK + challenge token echo (Slack URL verification). Verify `X-Slack-Signature` validation runs. If app uses Socket Mode (no HTTP endpoint): suppress runtime-smoke-verify; verify via test-verify mock payloads instead. |
-| `bot-discord` | Adapt — smoke = send mock Discord interaction payload to bot's HTTP interactions endpoint (if configured) OR verify bot process starts and connects to Discord gateway without error (log check). No HTTP health endpoint — success = process starts + gateway connect logged. |
-| CLI tool (Node.js/TypeScript/Python) | Adapt — smoke = run `node dist/cli.js --help` (or `npx <cli-name> --help` or `python -m cli --help`); verify exit code 0 and help text on stdout. For file operations: run with `--dry-run` on test file; verify exit 0 and no side effects. No HTTP endpoint — success = exit code 0 and expected stdout. |
-| game-unity | Adapt — Unity game client cannot be headlessly smoke-tested (requires GPU/display). Skip game binary launch. If project has a backend module (ASP.NET Core / dedicated server): smoke-test the backend only (`dotnet run` + `curl /health` → 200). If offline game (no backend detected): suppress runtime-smoke-verify entirely. Note in report: "Unity game client smoke launch skipped — requires display. Backend smoke-test applies if present." |
-| game-godot | Adapt — Godot game client cannot be headlessly smoke-tested (requires display). Skip game binary launch. If project has a backend: smoke-test the backend only. If offline (no HTTP client imports detected, `offline_first: true`): suppress runtime-smoke-verify. Note in report: "Godot game client smoke launch skipped — requires display." |
-| game-unreal | Adapt — Unreal Engine game binary requires GPU/display. Skip client binary launch. If dedicated server binary exists (built with `-server` target): smoke = launch server binary + verify listener port is open (`nc -z localhost <port>`). If offline: suppress. |
-| ide-plugin-obsidian | Suppress — Obsidian plugin host cannot be launched headlessly; plugin runs inside Obsidian Electron process. Manual verification in Obsidian desktop app required. Use product-verify instead (load plugin into dev vault, verify commands + settings). |
-| ide-plugin-vscode | Suppress — VS Code extension host cannot be smoke-tested via HTTP. Use product-verify (`@vscode/test-electron`) instead — extension host integration tests cover activation and command registration. |
+
+**Adapt (non-HTTP or multi-process runtime):**
+
+| Pattern | Adaptation Principle |
+|---------|---------------------|
+| Desktop app (Electron / Tauri / Flutter desktop / native) | No HTTP endpoint. Success = binary launches without crash + main window appears + one IPC roundtrip responds. LLM selects the appropriate launch command and window verification tool for the detected framework. |
+| Serverless | Use the framework's local emulator as the live environment (e.g., `sam local`, `serverless-offline`, `wrangler dev`). Curl the emulated health/function endpoint. |
+| Narrative / static web export | Headless browser opens index.html; verify page canvas/container loads; no console errors. Do NOT rely on document.title. |
+| Game client (Unity / Unreal / Godot / etc.) | Game clients require display — skip binary launch. If backend module present: smoke the backend only. If offline (`offline_first: true`): suppress entirely. |
+| Bot (webhook-based: Telegram / Slack HTTP mode) | POST a mock event payload to the webhook endpoint; verify 200 OK and signature validation logic executes. Do NOT call the live platform API — use locally-posted mock. |
+| Bot (gateway/socket-mode: Discord / Slack Socket Mode) | Verify process starts and connects to gateway without error (log check). No HTTP endpoint to curl — success = gateway connect logged. |
+| API + async worker (Celery / Sidekiq / Bull / Kafka consumer / etc.) | **Two-process smoke required**: (1) API health check → 200; (2) worker health check → worker is reachable and consuming. Worker-down with API-up = failure. LLM determines the worker health check command from the detected queue technology. |
+| gRPC with HTTP gateway | Both ports must pass: gRPC health probe on gRPC port + HTTP curl on gateway port. A service missing its HTTP gateway layer is partially broken. |
 
 ## Required inputs from upstream nodes
 

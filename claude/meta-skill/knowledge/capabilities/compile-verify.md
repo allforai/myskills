@@ -55,42 +55,26 @@ Bootstrap MUST generate the correct build commands per platform:
 |----------|--------------|--------|
 | Web (Node.js) | `npm run build` / `vite build` | dist/ |
 | Go backend | `go build ./...` | binary |
-| Go backend (gRPC) | `buf generate && go build ./...` (when `buf.yaml` present) OR `protoc --go_out=. --go-grpc_out=. proto/*.proto && go build ./...` (when raw protoc). **Proto compilation MUST run before `go build`** — generated `.pb.go` files are required imports. | binary |
-| Go multi-module (go.work) | Run `buf generate` once at workspace root (if buf.yaml present), then `go build ./...` per service module listed in go.work `use ./` entries. | binary per service |
-| Flutter (mobile) | `flutter build apk` / `flutter build ios` | build/ |
-| Flutter (web) | `flutter build web` | build/web/ |
-| Flutter (macOS desktop) | `flutter build macos` | build/macos/Build/Products/Release/ (.app bundle) |
-| Flutter (Linux desktop) | `flutter build linux` | build/linux/x64/release/bundle/ |
-| Flutter (Windows desktop) | `flutter build windows` | build/windows/runner/Release/ |
+| Go backend (gRPC) | **Proto files must compile before Go source**: `buf generate && go build ./...` (buf.yaml) or `protoc ... && go build ./...` (raw protoc). Without this step `go build` fails — generated `.pb.go` files are missing imports. | binary |
+| Flutter | `flutter build <target>` — target matches platform: `apk` / `ios` / `web` / `macos` / `linux` / `windows`. LLM selects target from bootstrap-profile.json module platform field. | build/ |
 | iOS (Swift) | `xcodebuild build -scheme X -destination 'generic/platform=iOS'` | .app |
 | Android (Kotlin) | `./gradlew assembleDebug` | .apk |
-| React Native (Expo managed) | Local bundle: `npx expo export --platform android` + `npx expo export --platform ios` (checks JS bundle compiles without errors). Full binary: `eas build --platform ios/android` (cloud build — requires EAS account; produces .apk/.ipa). Note: `npx expo build` is DEPRECATED — use `eas build` instead. | build/ (local export) or EAS artifact |
-| Node.js / TypeScript CLI | `npm run build` (check `package.json` scripts.build; fallback `npx tsc`) — produces compiled JS in `dist/`. Verify `bin` entry points exist and are executable. | dist/cli.js (or configured output) |
-| React Native (bare - iOS) | `xcodebuild -workspace ios/<AppName>.xcworkspace -scheme <AppName> -configuration Release -destination 'generic/platform=iOS Simulator'` | .app |
-| React Native (bare - Android) | `./gradlew assembleRelease` (production) or `./gradlew assembleDebug` (development) | .apk |
-| Electron (desktop app) | `npm run build` (builds renderer bundle) followed by `npm run make` or `npx electron-builder` (packages .dmg/.exe/.AppImage). Note: `npm run build` alone only builds the React/Vue frontend — the full Electron binary/installer requires electron-builder. Check `package.json scripts` for the combined `build:electron` or `package` command. | dist/ (.dmg/.exe/.AppImage/.deb) |
-| Tauri v1 | `npm run tauri build` (preferred, if build script exists) OR `cargo tauri build` | .dmg/.exe/.AppImage |
-| Tauri v2 | `npm run tauri build` OR `cargo tauri build` — check `src-tauri/Cargo.toml` for `tauri` version. Note: v2 requires capabilities defined in `src-tauri/capabilities/` folder. | .dmg/.exe/.AppImage |
+| React Native | Expo managed: `npx expo export` for local bundle check (`npx expo build` is deprecated — use `eas build` for binaries). Bare workflow: `xcodebuild` (iOS) + `./gradlew assembleRelease` (Android). | bundle / .apk / .ipa |
+| Electron | **Two-step**: renderer bundle first (`npm run build`), then Electron binary (`npm run make` or `npx electron-builder`). `npm run build` alone does NOT produce the Electron binary — check `package.json scripts` for the combined command. | dist/ |
+| Tauri | `npm run tauri build` or `cargo tauri build`. Tauri v2: capabilities must exist in `src-tauri/capabilities/` or build succeeds but IPC calls fail at runtime. | .dmg/.exe/.AppImage |
 | Rust (binary / CLI) | `cargo build --release` | target/release/<bin> |
-| Rust (library / SDK) | `cargo test` | target/debug/deps/ — compile + doctests confirm public API surface |
-| Kotlin Multiplatform (KMM) shared | `./gradlew :shared:build` | shared/build/ — must run BEFORE iOS/Android compile nodes |
+| Rust (library / SDK) | `cargo test` — compile + doctests confirm public API surface | target/debug/deps/ |
+| Kotlin Multiplatform (KMM) shared | `./gradlew :shared:build` — **must run BEFORE** iOS/Android compile nodes | shared/build/ |
 | AWS SAM (serverless) | `sam build` | .aws-sam/build/ |
 | Serverless Framework | `serverless package` | .serverless/ |
-| Unity | `unity -batchmode -buildTarget Android/iOS/StandaloneWindows64 -executeMethod BuildScript.Build` | .apk/.app/.exe |
+| Unity | `unity -batchmode -buildTarget <target> -executeMethod BuildScript.Build` | .apk/.app/.exe |
 | Unreal Engine | `UnrealBuildTool` / `RunUAT BuildCookRun` | .pak + binary |
-| Godot | `godot --headless --export-release "platform" output` | .apk/.app/.exe/.pck |
-| Python (desktop/script) | `python -m pytest --co -q` (collection-only; fastest syntax+import check) | N/A (interpreted) |
-| Twine / Twee (narrative) | `tweego -o dist/index.html *.tw` (if tweego installed) OR skip | dist/index.html |
-| Ruby on Rails | `bundle install && bundle exec rails assets:precompile && bundle exec rails db:schema:load RAILS_ENV=test` (order matters: assets before schema; or `db:migrate` if incremental). Build success = no Sprockets errors + schema loads. | public/assets/ |
-| Kotlin Spring Boot (Gradle) | `./gradlew build` (single module) or `./gradlew :service1:build :service2:build` (multi-service monorepo with settings.gradle). For monorepos: check `settings.gradle` `include` entries to enumerate all service modules. | build/libs/*.jar per module |
-| Deno Fresh (SSR) | `deno task build` (check `deno.json` `tasks.build` entry) OR `deno check` for type-checking without bundle output | dist/ (if build task exists) |
-| HarmonyOS (ArkTS) | `hvigorw build` or `npm run build` (check `oh-package.json5` scripts). HarmonyOS uses `hvigor` build tool (Harmony equivalent of Gradle). Output: `.hap` module file. Requires DevEco Studio SDK or hvigor CLI installed. | entry/build/default/outputs/*.hap |
-| Next.js + Prisma | `npx prisma migrate deploy && npm run build` — Prisma schema MUST be deployed before Next.js build (build may fail or type errors occur if schema not synced). | .next/ |
-| .NET / ASP.NET Core | `dotnet build` (debug) OR `dotnet publish -c Release -o bin/publish` (production). For solutions with multiple projects: `dotnet build <Solution>.sln`. | bin/publish/ (production) or bin/Debug/net*/dll |
-| Obsidian plugin | `npm run build` (esbuild compiles TypeScript → main.js in project root). Verify output: `main.js` + `styles.css` (if styles present) + `manifest.json`. | main.js |
-| VS Code extension | `npm run compile` (TypeScript → out/) OR `vsce package` (produces .vsix distributable). Check `package.json` scripts for actual command. | out/ or *.vsix |
-| Embedded C / C++ firmware (ARM) | `cmake -B build -DCMAKE_TOOLCHAIN_FILE=arm-none-eabi.cmake && cmake --build build` | build/*.elf / build/*.bin / build/*.hex |
-| Embedded C (bare-metal, no CMake) | `make all` (Makefile-driven cross-compile with `arm-none-eabi-gcc`) | *.elf / *.bin |
+| Godot | `godot --headless --export-release "<platform>" output` | .apk/.app/.exe/.pck |
+| Python | `python -m pytest --co -q` (collection-only syntax+import check for interpreted projects) | N/A |
+| Twine / Twee | `tweego -o dist/index.html *.tw` (if tweego installed) OR skip | dist/index.html |
+| Next.js + Prisma | **Schema before build**: `npx prisma migrate deploy && npm run build` — build may fail with type errors if schema is not synced first. | .next/ |
+| .NET / ASP.NET Core | `dotnet build` / `dotnet publish -c Release` | bin/publish/ |
+| Embedded firmware | `cmake -B build ... && cmake --build build` or `make all` (Makefile) | *.elf / *.bin |
 
 ## Downstream Consumers
 
