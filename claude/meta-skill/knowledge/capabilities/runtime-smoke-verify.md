@@ -143,7 +143,9 @@ Write `.allforai/runtime-smoke/smoke-report.json`:
 | `serverless-sam` | Adapt — use `sam local start-api` as live environment; smoke = curl health endpoint |
 | `serverless-framework` | Adapt — use `serverless-offline` as live environment |
 | `serverless-cf-workers` | Adapt — use `wrangler dev` as live environment |
-| Twine/Ren'Py (narrative, web export) | Adapt — smoke = headless Chrome `open index.html`, verify document.title matches story title, no console errors |
+| Twine/Ren'Py (narrative, web export) | Adapt — smoke = headless Chrome `open index.html`, verify page loaded (presence of #game canvas or `#ren_py` container), no console errors. Do NOT rely on `document.title` — Ren'Py export template may not set it. |
+| Elixir/Phoenix (LiveView) | Adapt — smoke = `mix phx.server` starts without crash; curl `http://localhost:4000/` returns 200 (LiveView pages return HTML, no separate /health needed). Check supervision tree logs for crash reports (`[error]`). |
+| Rust CLI | Adapt — smoke = run binary with `--help` or `--version`, verify exit code 0 and expected output on stdout. For TUI: run with a test input file or `--dry-run` flag if supported; verify exit code and no panic output. No HTTP endpoint — success is non-zero exit code check inverted (0 = success). |
 
 ## Required inputs from upstream nodes
 

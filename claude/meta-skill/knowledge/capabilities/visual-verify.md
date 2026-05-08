@@ -42,7 +42,7 @@ identify layout/style/content discrepancies, fix in repair loop.
 5. **Data injection tiers**: User interaction > ViewModel call > Network mock > UNREACHABLE.
 6. **Pre-condition**: Visual verify runs last — after cr-fidelity + product-verify + testforge all pass.
 7. **Encoding**: All output files must use UTF-8. JSON with `ensure_ascii=False`. Scrub GBK mojibake on read-back.
-8. **Linkage verify**: If interaction-recordings.json exists, execute same business flow chains (not just screenshots).
+8. **Linkage verify**: If `.allforai/visual-verify/interaction-recordings.json` exists, execute same business flow chains (not just screenshots).
 
 ## Phases
 
@@ -87,7 +87,9 @@ Per-screen agents run in parallel:
 ## Composition Hints
 
 ### Skip Entirely
-For projects with `architecture_pattern` in `['library-sdk', 'embedded-firmware', 'github-action']` or serverless patterns, CLI tools, pure backend services, or where `ui-design` was skipped: skip visual-verify entirely — no screens to capture. Add a **Headless guard** pre-check: if `ui-design-spec.md` does not exist, abort with `SKIP_HEADLESS: no UI screens declared`.
+For projects with `architecture_pattern` in `['library-sdk', 'embedded-firmware', 'github-action']` or serverless patterns, CLI tools (including Rust CLI + TUI — terminal output cannot be compared with screenshot diff), pure backend services, or where `ui-design` was skipped: skip visual-verify entirely — no screens to capture.
+
+**Headless guard** (mandatory pre-check): if `.allforai/ui-design/ui-design-spec.md` does not exist, abort with `SKIP_HEADLESS: no UI screens declared` and mark node as skipped. Do NOT attempt to capture screenshots.
 
 ### Single Node (default)
 For single-platform projects: one visual-verify node captures and compares all screens.

@@ -20,6 +20,8 @@ After code is written, verify it actually implements what was designed:
 - Field parity: form fields in UI match API request schemas
 - Permission check: role-restricted routes have auth guards
 
+**Skip conditions for non-UI projects**: If `architecture_pattern` is `library-sdk`, `github-action`, `cli`, `background-service`, `embedded-firmware`, or no `ui-design-spec.md` exists: skip route parity and field parity checks. API parity still applies if an API spec exists. Permission check applies only if the project has auth middleware.
+
 ### Dynamic Verification (per module type)
 
 Every module in the project must be verified using its appropriate tool.
@@ -36,6 +38,9 @@ Every module in the project must be verified using its appropriate tool.
 | Unity | Unity Test Framework (`-runTests -testPlatform PlayMode`) | Automated playmode tests on target platform |
 | Unreal Engine | Gauntlet / Automation Framework | Automated functional tests |
 | Godot | GdUnit4 / GUT | Scene-based integration tests |
+| Obsidian plugin | Obsidian Test API + esbuild integration | Load plugin into Obsidian dev vault; verify commands register, settings save/load, views open |
+| VSCode extension | `@vscode/test-electron` | Extension host integration tests; verify commands activate, tree views render |
+| Scrapy / crawler | pytest + database state assertions | Run crawl with test seed URLs; verify items written to DB, pipelines execute, no exceptions |
 
 For each module:
 - Launch app (dev server / emulator / device)
@@ -134,7 +139,7 @@ Backend-only modules skip helper generation entirely.
 - Android / React Native: Maestro → Espresso (Android) / Detox (RN)
 - iOS: XCUITest (no降级; required for native iOS UI tests)
 
-Output: `.allforai/product-verify/verify-report.json` + `verify-report.md`
+Output: `.allforai/product-verify/verify-report.json` + `.allforai/product-verify/verify-report.md`
 
 **verify-report.json field schema:**
 ```json

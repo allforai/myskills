@@ -70,8 +70,12 @@ LLM specializes discovery based on project type:
 | Microservices | Per-service discovery, then cross-service dependencies |
 | Monorepo | Per-package/workspace, shared dependencies |
 | Mobile app | Platform-specific patterns, offline data layer |
-| Game | Asset pipeline, game loop, state management, config tables |
+| Game | Asset pipeline, game loop, state management, config tables; procedural/AI systems; save format |
 | SDK/Library | Public API surface, test suite, documentation, examples |
+| IDE Plugin (Obsidian/VSCode) | Plugin lifecycle hooks (`onload`/`onunload`), command registrations, settings schema, host API version constraints |
+| Browser Extension | `manifest.json` permissions, content scripts vs background workers, message-passing protocol |
+| Background job / Crawler | Task/job definitions (names, arg schemas, retry policies), queue topology, scheduler config |
+| KMM (Kotlin Multiplatform) | Shared module API surface first; then per-platform (iOS/Android) platform-specific layer; Gradle module graph |
 
 ## Knowledge References
 

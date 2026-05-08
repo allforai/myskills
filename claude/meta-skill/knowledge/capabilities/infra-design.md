@@ -26,7 +26,8 @@ infrastructure architecture document that implementation nodes consume.
 | Realtime communication | WebSocket / gRPC streaming / SSE / MQTT / Long polling | Product has live updates, chat, collaboration |
 | Message queue | NATS / Kafka / RabbitMQ / Redis Pub-Sub / SQS | Product has async workflows, event-driven processing |
 | Object storage | S3 / MinIO / GCS / Azure Blob | Product handles file uploads, media, documents |
-| CDN & static assets | CloudFront / Cloudflare / Fastly / self-hosted | Product serves static content or media at scale |
+| CDN & static assets | CloudFront / Cloudflare / Fastly / self-hosted / Netlify / Vercel / GitHub Pages | Product serves static content or media at scale |
+| PaaS deployment | Fly.io / Railway / Render / Gigalixir (Elixir-native) / Heroku | Apps needing managed hosting without Kubernetes overhead |
 | Push notifications | APNs / FCM / Web Push / OneSignal | Product has mobile apps or browser notifications |
 | Caching | Redis / Memcached / application-level cache | Product has hot data or expensive queries |
 | Load balancing | Nginx / HAProxy / cloud LB / service mesh | Product expects concurrent users |
@@ -97,5 +98,7 @@ For simple projects with one database and no realtime: merge infra decisions int
 
 ### Skip Entirely
 For static sites, CLI tools, pure frontend apps with no backend, SDK/library projects, or `embedded-firmware` projects.
+
+**Static site / narrative export** (`architecture_pattern: static-site` OR product has no backend, no realtime, no auth): only CDN + object storage applies. Skip all dimension questions about message queues, WebSocket, load balancing. Recommend: Cloudflare Pages / Netlify / GitHub Pages and document the choice; no `infra-design.json` interactive session needed.
 
 **BaaS exception** (`architecture_pattern` starts with `baas-`): The cloud service IS the infrastructure — do NOT run infra-design to select message queues or CDN. Instead, create a minimal `infra-design.json` that documents the BaaS services in use (e.g., Firebase: Firestore + Auth + Functions + Storage) and their configuration requirements (emulator setup, service credentials), then skip all interactive dimension questions.
