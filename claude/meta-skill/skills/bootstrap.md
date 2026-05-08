@@ -63,6 +63,7 @@ Read these files if they exist (skip missing ones silently):
 - build.gradle, build.gradle.kts, settings.gradle
 - requirements.txt, pyproject.toml, setup.py, Pipfile
 - Gemfile, composer.json, pom.xml, *.csproj, *.sln
+- mix.exs (Elixir/Phoenix)
 
 **Game engines:**
 - ProjectSettings/ProjectVersion.txt, Assets/ (Unity)
@@ -76,6 +77,9 @@ Read these files if they exist (skip missing ones silently):
 - *.rpy or renpy/ directory (Ren'Py visual novel engine)
 - Game.rpgproject (RPG Maker MV/MZ)
 - game.project + *.script or *.go (Defold; note: *.go here is Defold's game object format, not Go language)
+- *.c3proj (Construct 3)
+- *.mgcb (MonoGame/.NET)
+- game.js + game.json at project root (WeChat Mini Game; distinguished from mini programs which use app.js)
 
 **Configuration:**
 - tsconfig.json, jsconfig.json
