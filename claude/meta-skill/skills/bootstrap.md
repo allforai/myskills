@@ -86,6 +86,10 @@ Read these files if they exist (skip missing ones silently):
 - *.twee or *.tw (Twine / interactive fiction; scenario hint: narrative-adventure)
 - *.rbxlx or *.rbxl (Roblox Studio place files) or default.project.json with Roblox tree structure (Rojo workflow)
 - GameScene.swift at project root or in Sources/ (SpriteKit / SceneKit — Apple's 2D/3D game frameworks for iOS/macOS)
+- package.json with `phaser` in dependencies (Phaser.js — popular HTML5 / WebGL game framework)
+- package.json with `kaboom` in dependencies (Kaboom.js — JavaScript game library)
+- package.json with `excalibur` in dependencies (Excalibur.js — TypeScript game engine)
+- build.gradle or build.gradle.kts with `com.badlogicgames.gdx:gdx` (libGDX — Java/Kotlin cross-platform game framework)
 
 **Configuration:**
 - tsconfig.json, jsconfig.json
