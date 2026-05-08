@@ -1496,7 +1496,24 @@ wire protocol — NOT just REST routes. Include in the stitch node-spec:
 > workflow node. Auto-fix gaps using Closure Thinking and Reverse Backfill convergence
 > rules. Runs silently — no user confirmation needed.
 
-**Trigger**: `has_product_concept` is true (from Step 1.0). If false, skip to Step 3.4 (Confirm with User).
+**Trigger**: `has_product_concept` is true (from Step 1.0). If false AND `is_game_project` is true, run **Game Design Coverage Check** (§3.5.0) instead. If both false, skip to Step 3.4 (Confirm with User).
+
+#### 3.5.0 Game Design Coverage Check (game projects without product-concept.json)
+
+When `is_game_project = true` AND `has_product_concept = false`, run this abbreviated coverage check instead of the full §3.5 flow. The game-design nodes are themselves the design artifacts (equivalent role to product-concept.json), so coverage is checked against the selected game scenario template.
+
+**Checks to run:**
+
+| System Concern | Trigger Condition | Check |
+|---------------|------------------|-------|
+| Save/Load | game has progression (levels, stats, unlocks) | Is there a node covering save/load system or persistence design? If not, note as gap — document in bootstrap output as "Save system gap: game has progression but no save/load design node." |
+| Audio | any audio-related content (music, SFX) referenced in narrative/world docs | Is `audio-design` in the selected nodes? If not, suggest opt-in. |
+| Input/Control scheme | always applicable for game projects | Is input mapping covered in core-loop-design or a dedicated node? |
+| Progression/Meta-loop | game has XP, levels, unlocks, or currency | Is `meta-game-design` or equivalent in selected nodes? |
+| Tutorial / Onboarding | game has complex mechanics (action-rpg, strategy-sim, roguelike) | Is tutorial flow mentioned in any node's scope? |
+| Platform-specific constraints | platform capability guard applied | Are suppressed monetization/retention nodes documented as "not applicable" in bootstrap output? |
+
+If any gap is found: add a note to bootstrap output (not a blocker). Game projects in pure design mode proceed to game-design nodes regardless.
 
 #### 3.5.1 Extract Feature Inventory
 
@@ -1528,6 +1545,15 @@ cover this feature? This is LLM semantic judgment, not string matching.
 | Lifecycle Closure | Feature creates entities → is there cleanup/archival in some node? |
 | Mapping Closure | Feature has A↔B pair → is B covered? (e.g., create↔delete, buy↔refund) |
 | Navigation Closure | Feature is an entry point → is there an exit path in some node? |
+
+**Game-specific closure types (added when `is_game_project = true`):**
+
+| Closure Type | Check |
+|-------------|-------|
+| Save/Load Closure | Game has progression state → is there persistence/save-system implementation coverage? |
+| Audio Closure | Game references music or SFX → is audio-design or audio-implementation covered? |
+| Progression Closure | Game has XP/levels/unlocks → is meta-game-design or progression system covered? |
+| Input Closure | Game requires player input → is controller/input scheme defined in core-loop or a dedicated node? |
 
 Closure checks are **discovery-level** (as defined in §B.6): identify and mark what
 should exist, not exhaustive implementation-level checks.
