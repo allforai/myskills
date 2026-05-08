@@ -50,9 +50,9 @@ Every task from gap-tasks MUST have an explicit decision — no silent omissions
 
 | Artifact | Field Path | Consumer Capability | Required | Reason |
 |----------|------------|---------------------|----------|--------|
-| `prune-tasks.json` | `decisions[].included` | translate, generate-artifacts | required | 只实现 included=true 的功能，必须在翻译前裁剪 |
-| `prune-tasks.json` | `decisions[]` | generate-artifacts | required | 生成代码任务列表以剪枝后的功能为准 |
-| `prune-report.md` | — | product-verify | optional | 验收时参考裁剪决策，了解哪些功能被排除 |
+| `.allforai/feature-prune/prune-tasks.json` | `decisions[].included` | translate, generate-artifacts | required | Only implement included=true features — prune scope gate before translate |
+| `.allforai/feature-prune/prune-tasks.json` | `decisions[]` | generate-artifacts | required | Code generation task list must use pruned feature scope |
+| `.allforai/feature-prune/prune-report.md` | — | product-verify | optional | Verification references prune decisions to understand excluded features |
 
 ## Methodology Guidance (not how)
 
@@ -60,7 +60,9 @@ Every task from gap-tasks MUST have an explicit decision — no silent omissions
 - **Consumer maturity bar**: For consumer products, flow-completeness tasks are P0 even if low frequency
 
 **Game project prune criteria (`is_game_project = true`):**
-Frequency-based P0/P1/P2/P3 tiers do NOT apply to game systems — game loops are the product, not measurable user tasks. Instead use: Core Loop (P0) → Meta Loop (P1) → Polish/Retention (P2) → Monetization/Social (P3). Never prune a system that is the only instance of a game state (e.g., "game over screen" cannot be P3). A retention mechanic (daily reward, streak) is P0 for casual-mobile, P2 for roguelike. IAP is P1 for casual-mobile, P3 for story-driven games.
+Frequency-based P0/P1/P2/P3 tiers do NOT apply to game systems — game loops are the product, not measurable user tasks. Instead use: Core Loop (P0) → Meta Loop (P1) → Polish/Retention (P2) → Monetization/Social (P3). Never prune a system that is the only instance of a game state (e.g., "game over screen" cannot be P3). A retention mechanic (daily reward, streak) is P0 for casual-mobile, P2 for roguelike. IAP is P1 for casual-mobile (if platform supports it), P3 for story-driven games.
+
+**Fantasy console constraint pruning (PICO-8, GBStudio):** The cartridge token/size limit IS the prune boundary. Tier assignment = by cartridge budget impact: P0 = core mechanic required for the game to be playable; P1 = features that fit within the cartridge limit; P2 = features that require token optimization to include; P3 = features that cannot fit without removing P0 content. Run token/size estimation before include/exclude decisions.
 
 
 - **Scope gate**: The total included scope should be achievable within the project's constraints — don't include everything by default

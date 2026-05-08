@@ -95,7 +95,7 @@ Read these files if they exist (skip missing ones silently):
 - game.js + game.json at project root (WeChat Mini Game; distinguished from mini programs which use app.js)
 - *.yyp (GameMaker Studio 2)
 - *.twee or *.tw (Twine / interactive fiction; scenario hint: narrative-adventure)
-- *.rbxlx or *.rbxl (Roblox Studio place files) or default.project.json containing a `"tree"` key with `"$className": "DataModel"` (Rojo workflow for Roblox; scenario hint: multiplayer-online — Roblox is always client-server multiplayer)
+- *.rbxlx or *.rbxl (Roblox Studio place files) or default.project.json containing a `"tree"` key with `"$className": "DataModel"` (Rojo workflow for Roblox; scenario hint: multiplayer-online — Roblox is always client-server multiplayer). Additional Rojo signals: wally.toml (Roblox package manager), *.server.luau / *.client.luau files, selene.toml (Roblox linter), or selene_defs/ directory. Note: Rojo projects do NOT store .rbxl files in git — detect via project.json + .luau + wally.toml combination.
 - GameScene.swift at project root or in Sources/ (SpriteKit / SceneKit — Apple's 2D/3D game frameworks for iOS/macOS)
 - package.json with `phaser` in dependencies (Phaser.js — popular HTML5 / WebGL game framework)
 - package.json with `kaboom` in dependencies (Kaboom.js — JavaScript game library)
@@ -385,6 +385,7 @@ remove them before building the workflow — the platform constraint overrides t
 - GBStudio (*.gbsproj) — Game Boy cartridge, no runtime monetization
 - Twine/Ren'Py web export — static web narrative, no IAP
 - HaxeFlixel targeting HTML5/desktop only (haxelib.json + flixel, no mobile build config) — no native store
+- Roblox (default.project.json or *.rbxl detected) — DOES have its own monetization (Robux, Developer Products, Game Passes, Limited Items via DevEx), but these use the **Roblox economy API**, NOT App Store IAP/StoreKit/Google Play Billing. Suppress generic `monetization-design` and `launch-prep` IAP compliance nodes. Instead inject `roblox-monetization-design` as optional node (covers Robux product setup, premium payouts, DevEx setup). Do NOT suppress retention-hook-design (Roblox supports daily login rewards via DataStore + RemoteEvent).
 Note in the bootstrap output: "Platform [{engine}] does not support IAP/push — monetization/retention nodes removed from workflow (required and optional)."
 
 The template is a STARTING POINT. The user can add or remove nodes via the optional node question that follows.

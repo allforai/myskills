@@ -30,6 +30,9 @@ document that implementation nodes consume.
 | Full-text search | Elasticsearch / Meilisearch / Typesense / PG tsvector | Product needs search beyond simple WHERE clauses |
 | Vector search | pgvector / Pinecone / Weaviate / Qdrant | Product uses AI embeddings or semantic search |
 | Sharding & partitioning | Horizontal sharding / table partitioning / read replicas | Product expects large data volume |
+| Multi-tenancy isolation | Row-Level Security (Postgres RLS + tenant_id) / separate schemas per tenant / separate databases per tenant | Multi-tenant SaaS (multiple customers sharing the same deployment) |
+| Event sourcing | EventStore DB / Axon / custom append-only log (Kafka topic) | Product requires full audit trail, temporal queries, or CQRS with separate read/write models |
+| CQRS read models | PostgreSQL read replica / Redis cache / Elasticsearch projections | Projects using event sourcing — read models are projections from the event log, not normalized tables |
 | Migration strategy | Framework migration tool / raw SQL versioned / schema-first | Always (if using relational DB) |
 | Backup & recovery | Automated snapshots / point-in-time recovery / export | Production deployments |
 
@@ -81,9 +84,10 @@ For each design dimension that applies to this project, LLM MUST:
 
 | Artifact | Field Path | Consumer Capability | Required | Reason |
 |----------|------------|---------------------|----------|--------|
-| `data-architecture.json` | DB choice, storage strategy | translate (implement nodes) | required | 实现需要知道用什么数据库和存储策略来写 ORM/migration |
-| `data-architecture.json` | index plan | design-to-spec | optional | db-schema.md 生成时参考索引规划 |
-| `data-architecture.json` | search infrastructure | translate (implement nodes) | optional | 搜索相关实现需要知道用 ES 还是 PG tsvector |
+| `.allforai/data-architecture/data-architecture.json` | DB choice, storage strategy | translate (implement nodes) | required | Implementation needs DB and storage decisions to write ORM/migration |
+| `.allforai/data-architecture/data-architecture.json` | index plan | design-to-spec | optional | db-schema.md generation references index planning |
+| `.allforai/data-architecture/data-architecture.json` | search infrastructure | translate (implement nodes) | optional | Search implementation needs ES vs PG tsvector decision |
+| `.allforai/data-architecture/data-architecture.json` | multi_tenancy_strategy, event_sourcing_strategy | translate (implement nodes) | optional | RLS policy and event log decisions are foundational for multi-tenant/CQRS implementations |
 
 ## Composition Hints
 
@@ -95,3 +99,5 @@ For single-database projects: merge data decisions into infra-design node.
 
 ### Skip Entirely
 For stateless tools, CLI utilities, or projects where data layer is already defined and not changing.
+
+**Fantasy console / embedded constrained storage** (PICO-8, LÖVE2D in memory-only mode): product has no external database — persistence is 256-byte cartridge save slots or in-process memory. Skip all dimension questions. Document: "storage = cartridge persistent storage (256 bytes) — no external DB needed." Add `data_layer: "embedded_only"` to the minimal data-architecture.json output.

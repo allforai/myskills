@@ -22,8 +22,8 @@ journey dead-ends, screen state holes, and unhandled exceptions.
 {
   "gaps": [
     {
-      "task_ref": "<string — MUST match an existing tasks[].id in task-inventory.json>",
-      "type": "<enum: task | screen | journey>",
+      "task_ref": "<string — MUST match an existing tasks[].id in task-inventory.json; or null for game archetypes without task-inventory>",
+      "type": "<enum: task | screen | journey | game_state>",
       "priority": "<enum: core | important | minor>",
       "dimension": "<string — which check dimension found this gap>",
       "description": "<string>"
@@ -32,6 +32,8 @@ journey dead-ends, screen state holes, and unhandled exceptions.
 }
 ```
 `task_ref` is a foreign key to `task-inventory.tasks[].id`. Every gap must reference an existing task. Gaps that don't map to a task must first create a task entry in task-inventory before being recorded here.
+
+**Game / fantasy console exception**: For `is_game_project = true` archetypes that do NOT have `task-inventory.json` (PICO-8, GBStudio, Twine), set `task_ref = null` and use `type: game_state` to describe game-state gaps. The Game loop completeness dimension applies; the Concept-to-design parity dimension does NOT apply (no product-concept.json to check against).
 
 ### Check Dimensions (LLM selects which apply)
 
@@ -48,7 +50,7 @@ These are TYPES of checks, not a fixed checklist:
 | Error recovery | Every error state has a recovery path | Always |
 | Permission coverage | Every role can only access what they should | Multi-role products |
 | Concept-to-design parity | Every feature in `product-concept.json.mvp_features[]` maps to at least one task in task-inventory.json; every `post_launch_features[]` item is intentionally absent | Has product-concept.json |
-| Game loop completeness | Every discrete game state (start-run, in-run, death, win, meta-progression) has at least one entry point and one exit; no dead-end states | `is_game_project = true` |
+| Game loop completeness | Every discrete game state (start-run, in-run, death, win, meta-progression) has at least one entry point and one exit; no dead-end states. States that don't exist in the game design (e.g., no "win" in an endless roguelike) are exempt — explicitly exclude them rather than flagging as gap. | `is_game_project = true` |
 
 ### Required Quality
 
@@ -77,8 +79,8 @@ These are TYPES of checks, not a fixed checklist:
 
 | Artifact | Field Path | Consumer Capability | Required | Reason |
 |----------|------------|---------------------|----------|--------|
-| `gap-tasks.json` | `gaps[].task_ref`, `gaps[].priority` | feature-prune | required | 裁剪决策基于差距任务列表及其优先级 |
-| `gap-report.md` | — | generate-artifacts | optional | 生成文档时参考差距分析报告 |
+| `.allforai/feature-gap/gap-tasks.json` | `gaps[].task_ref`, `gaps[].priority` | feature-prune | required | Prune decisions are based on gap task list and priorities |
+| `.allforai/feature-gap/gap-report.md` | — | generate-artifacts | optional | Reference gap analysis during artifact generation |
 
 ## Composition Hints
 
