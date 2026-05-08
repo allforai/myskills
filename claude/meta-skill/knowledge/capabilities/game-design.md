@@ -275,6 +275,134 @@ All HTML outputs are **static** (v1). Bootstrap embeds data at generation time.
 - **Below:** Voice acting spec — languages, tone notes, character voice reference
 - **Collapsed:** Full audio asset list with milestone gates
 
+### `ftue.html`
+- **Audience:** ux-designer (primary), lead-designer (secondary)
+- **Above fold:** FTUE flow diagram — step-by-step first session (step name / goal / UI screen / skip-able?)
+- **Expanded:** Drop-off risk table — each step with expected completion %, red-flag threshold
+- **Expanded:** Tutorial gating rules — what feature unlocks at which step
+- **Collapsed:** Copy spec (tutorial messages verbatim, with tone notes)
+
+### `monetization.html`
+- **Audience:** monetization-designer (primary), lead-designer (secondary)
+- **Above fold:** Revenue model summary — IAP tiers / ad types / subscription — with price anchoring chart
+- **Expanded:** Purchase funnel: impression → consideration → conversion → repeat; target rates per step
+- **Expanded:** Whale / dolphin / minnow player archetype spend profiles
+- **Collapsed:** Full IAP SKU table (id / label / price / value / unlock), A/B test candidates
+
+### `retention-hook.html`
+- **Audience:** systems-designer
+- **Above fold:** Hook loop diagram — trigger → action → reward → investment cycle (SVG)
+- **Expanded:** Daily/weekly/monthly hook schedule grid (day × hook type × reward)
+- **Expanded:** Push notification strategy — event types, copy examples, opt-out risk
+- **Collapsed:** Competitor hook analysis table
+
+### `meta-game.html`
+- **Audience:** systems-designer
+- **Above fold:** Meta-game layer map — what exists outside the core loop (collection / progression / social / seasonal)
+- **Expanded:** Collection system — item catalogue structure, display screen layout
+- **Expanded:** Progression systems above core loop — battle pass / season / mastery
+- **Collapsed:** Long-term engagement curve (X: days played, Y: engagement score)
+
+### `skill-tree.html`
+- **Audience:** combat-designer
+- **Above fold:** Visual skill tree graph (SVG) — nodes = skills, edges = unlock requirements, color = tier
+- **Expanded:** Per-skill detail cards (name / cost / effect / scaling formula / cooldown / max-rank)
+- **Expanded:** Build archetype summary — top 3-5 paths with playstyle label
+- **Collapsed:** Full skill table sortable by tier / cost / effect type
+
+### `progression-curve.html`
+- **Audience:** numeric-designer
+- **Above fold:** Multi-line chart — XP required per level, power growth, economy growth (X: level, Y: value; toggle dimensions)
+- **Expanded:** Pacing table — expected hours per level band (1-10 / 11-30 / 31-max); ⚠️ alert if band > 8 hours
+- **Expanded:** Soft-cap / hard-cap annotations on curve
+- **Collapsed:** Full level table (level / XP threshold / reward / unlocks)
+
+### `level-design.html`
+- **Audience:** level-designer (primary), combat-designer (secondary)
+- **Above fold:** World map or level selection overview (placeholder image with zone labels)
+- **Expanded:** Per-level spec cards — objective / enemy composition / hazards / estimated duration / difficulty rating
+- **Expanded:** Difficulty curve chart (X: level index, Y: difficulty score)
+- **Collapsed:** Encounter tables, spawn rules, pacing notes
+
+### `worldbuilding.html`
+- **Audience:** narrative-designer
+- **Above fold:** World overview card — setting, era, tone, 3-5 defining facts
+- **Below:** Faction relationship diagram (SVG — nodes = factions, edges = relationship type + tension)
+- **Below:** Geography map (placeholder image with region labels and lore notes)
+- **Below:** Terminology glossary (term / meaning / usage context), collapsible
+- **Collapsed:** Full lore documents (history, religion, magic/tech system rules)
+
+### `network-arch.html`
+- **Audience:** backend-programmer
+- **Above fold:** Architecture diagram (SVG) — client / relay / game server / database topology with latency budgets
+- **Expanded:** Message flow — client → server → client for key actions (move / attack / ability)
+- **Expanded:** Tick rate spec, bandwidth estimate (bytes/s per player at peak), concurrent player target
+- **Collapsed:** Failure modes and fallback behavior (disconnect / desync / server crash)
+
+### `matchmaking.html`
+- **Audience:** backend-programmer (primary), systems-designer (secondary)
+- **Above fold:** Matchmaking algorithm flowchart (SVG) — skill bucket → lobby fill → timeout expansion
+- **Expanded:** Rating system spec (ELO / MMR / TrueSkill) with formula and decay rules
+- **Expanded:** Queue time target vs. match quality trade-off chart
+- **Collapsed:** Edge cases (solo vs. group, cross-region, skill floor/ceiling)
+
+### `competitive-balance.html`
+- **Audience:** numeric-designer (primary), combat-designer (secondary)
+- **Above fold:** Balance radar chart — key game metrics vs. target ranges (DPS / TTK / win-rate spread)
+- **Expanded:** Per-entity stat table (hero/class/weapon; sortable by metric)
+- **Expanded:** Win-rate heat map (entity A vs. entity B; ⚠️ flag > 55% win rate)
+- **Collapsed:** Balance changelog template, patch cycle cadence
+
+### `run-structure.html`
+- **Audience:** lead-designer
+- **Above fold:** Run flow diagram (SVG) — start → floors/encounters → boss → end (with branch types: elite / shop / rest / treasure)
+- **Expanded:** Encounter type table (type / weight / difficulty band / rewards)
+- **Expanded:** Run length spec — target time per floor, total run target, variance range
+- **Collapsed:** Seed / procedural rules that determine branch probabilities
+
+### `meta-progression.html`
+- **Audience:** systems-designer
+- **Above fold:** Meta unlock tree (SVG) — permanent upgrades, grouped by type (character / passive / starting bonus)
+- **Expanded:** Unlock economy table — meta currency sources (run completion / challenges) × sinks (unlock costs)
+- **Expanded:** First-session vs. 10-session vs. 50-session progression state comparison
+- **Collapsed:** Challenge / achievement definitions that feed meta currency
+
+### `procedural-gen.html`
+- **Audience:** gameplay-programmer (primary), lead-designer (secondary)
+- **Layout:** Two-column — left: designer constraints; right: algorithm spec
+- **Above fold:** Generator pipeline diagram — seed → room graph → content fill → validation
+- **Expanded:** Constraint table — guaranteed rooms per run, min/max branching factor, forbidden adjacencies
+- **Expanded:** Content distribution rules — enemy density curve, item rarity weights, loot tables
+- **Collapsed:** Rejection sampling rules, seed format, replay-from-seed spec
+
+### `ai-faction.html`
+- **Audience:** ai-programmer (primary), systems-designer (secondary)
+- **Above fold:** Faction behaviour state machine (SVG) — states = strategy, edges = transition condition
+- **Expanded:** Per-faction profile — aggression / expansion / diplomacy weights + trigger thresholds
+- **Expanded:** Difficulty scaling table — how AI weights shift per difficulty level
+- **Collapsed:** Pathfinding spec, fog-of-war rules, economy weights
+
+### `tech-tree.html`
+- **Audience:** systems-designer (primary), numeric-designer (secondary)
+- **Above fold:** Visual tech tree (SVG) — nodes = tech, edges = prerequisites, color = era/tier
+- **Expanded:** Per-node spec cards (name / cost / prerequisites / unlocks / era)
+- **Expanded:** Research pacing table — expected turns to key milestones at normal speed
+- **Collapsed:** Full tech table sortable by era / cost / unlocked buildings or units
+
+### `branching-structure.html`
+- **Audience:** narrative-designer
+- **Above fold:** Full story branch graph (SVG — interactive, nodes expandable on click, color = chapter)
+- **Expanded:** Decision point table — choice text / consequence / affected flags / estimated word count
+- **Expanded:** Convergence analysis — how many unique paths exist, where they merge
+- **Collapsed:** Flag/variable catalogue (name / type / scope / default / read-by)
+
+### `character-arc.html`
+- **Audience:** narrative-designer
+- **Above fold:** Per-character arc timeline (horizontal, one row per character; X: story %, annotate turning points)
+- **Expanded:** Character sheet per character — motivation / wound / lie / truth / arc type (flat/positive/negative)
+- **Expanded:** Relationship web (SVG — nodes = characters, edges = relationship + tension at start/end)
+- **Collapsed:** Scene-by-scene character presence matrix
+
 ## Art Substitution Pipeline
 
 ### Four States (formal milestones, not workarounds)
