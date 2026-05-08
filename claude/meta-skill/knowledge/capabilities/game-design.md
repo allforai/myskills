@@ -288,6 +288,7 @@ All HTML outputs are **static** (v1). Bootstrap embeds data at generation time.
 - **Expanded:** Purchase funnel: impression → consideration → conversion → repeat; target rates per step
 - **Expanded:** Whale / dolphin / minnow player archetype spend profiles
 - **Collapsed:** Full IAP SKU table (id / label / price / value / unlock), A/B test candidates
+- **Gacha/抽卡 supplement (include when revenue model = Gacha):** Pull rate table (rarity tier × base rate × soft-pity rate × hard-pity threshold); banner structure (featured/limited/standard pool, rate-up mechanic); expected pulls to threshold chart (X: pulls, Y: cumulative probability of getting featured item)
 
 ### `retention-hook.html`
 - **Audience:** systems-designer
