@@ -101,6 +101,8 @@ For static sites, CLI tools, pure frontend apps with no backend, SDK/library pro
 
 **Static site / narrative export** (`architecture_pattern: static-site` OR product has no backend, no realtime, no auth): only CDN + object storage applies. Skip all dimension questions about message queues, WebSocket, load balancing. Recommend: Cloudflare Pages / Netlify / GitHub Pages and document the choice; no `infra-design.json` interactive session needed.
 
+**Vercel deployment** (`bootstrap-profile.json.deployment_platform == 'vercel'`): Vercel IS the CDN, serverless runtime, and deployment platform. Suppress infra-design entirely — no interactive dimension questions needed. Create a minimal `infra-design.json` documenting: Vercel Edge Network (CDN), Vercel Serverless Functions (API routes), and any additional services (e.g., Vercel KV, Vercel Postgres, Vercel Blob if used). Document env var requirements from `.env.example`.
+
 **BaaS exception** (`architecture_pattern` starts with `baas-`): The cloud service IS the infrastructure — do NOT run infra-design to select message queues or CDN. Instead, create a minimal `infra-design.json` that documents the BaaS services in use and their configuration requirements (emulator setup, service credentials), then skip all interactive dimension questions.
 
 Examples by provider:
