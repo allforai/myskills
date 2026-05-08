@@ -39,6 +39,8 @@ Every module in the project must be verified using its appropriate tool.
 | Tauri v2 desktop app | `tauri-driver` + WebdriverIO (`@wdio/selenium-standalone-service`) OR Playwright `electronApplication` for the WebView layer | Launch Tauri app; verify window renders, invoke IPC command, verify response; `cargo test` for Rust backend unit tests |
 | Android native (Kotlin) | Espresso | Gradle test runner |
 | Discord bot | `discord.js` mock client / `discord-py` pytest fixtures | Unit-test command handlers with mocked interactions; integration-test with a dedicated test guild (real bot token) |
+| HarmonyOS (ArkTS) | `ohosTest` framework (component tests + UI tests) | `hvigorw test` on simulator or real device; ArkUI test for component rendering; verify Ability launch, permissions, network access |
+| Kotlin Spring Boot | `./gradlew test` + `./gradlew integrationTest` (with Testcontainers for DB/Kafka) | API E2E: RestAssured or MockMvc; Kafka consumer tests via embedded Kafka |
 | API-only backend | curl / HTTP client | Endpoint integration test |
 | Unity | Unity Test Framework (`-runTests -testPlatform PlayMode`) | Automated playmode tests on target platform |
 | Unreal Engine | Gauntlet / Automation Framework | Automated functional tests |

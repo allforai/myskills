@@ -32,6 +32,17 @@ implementation nodes consume via Context Pull.
 |--------|------|
 | `.allforai/tech-spec/protocol-spec.md` | Realtime communication protocol: message types, event formats, connection lifecycle. Generated when project uses WebSocket/gRPC/SSE. **For gRPC services**: MUST document all proto service definitions (service name, RPC methods, request/response message types), streaming patterns (unary / server-stream / client-stream / bidirectional), custom error codes (gRPC status code + application error body), and if gRPC-Gateway is used: the REST endpoint mapping (`google.api.http` annotations per method). |
 
+**tRPC API specification** (`api_style: tRPC` detected in bootstrap-profile.json):
+tRPC has no REST endpoints — procedures are the API surface. The `api-spec.json` MUST document:
+- Router structure (nested routers, procedure names, type: `query` / `mutation` / `subscription`)
+- Input schemas (Zod validators — document shape, required/optional fields, constraints)
+- Output types (inferred from resolver return type)
+- Auth context: which procedures require authenticated context (`protectedProcedure` vs `publicProcedure`)
+- Error handling: which `TRPCError` codes each procedure can throw (`UNAUTHORIZED`, `NOT_FOUND`, `FORBIDDEN`, etc.)
+- For subscriptions: transport (WebSocket vs HTTP streaming), update frequency, cancellation behavior
+
+There are NO REST routes to enumerate — do NOT generate REST-style `api-spec.json` entries for tRPC procedures. Instead, represent each procedure as: `{ "router": "users", "procedure": "getById", "type": "query", "input_schema": {...}, "output_schema": {...}, "auth": "protected" }`.
+
 ### Required Quality
 
 - Every entity in product-concept has corresponding DB tables/collections

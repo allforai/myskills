@@ -133,6 +133,12 @@ Bootstrap MUST generate the correct test commands per platform:
 | Twine / Ren'Py | Playwright E2E on exported HTML bundle (`npx serve dist/` then Playwright) | passage navigation, variable tracking, ending states |
 | Discord bot (discord.js) | `jest` or `vitest` with mocked `discord.js` interaction objects | Unit tests for command handlers; integration tests against a real test guild with `DISCORD_TEST_GUILD_ID` |
 | Discord bot (discord.py / nextcord / py-cord) | `pytest` with `unittest.mock.AsyncMock` for interaction mocking; `pytest-asyncio` for async command tests | Unit tests mock `ctx` / `interaction`; integration tests use `discord.py` test utilities with real bot token + test guild |
+| tRPC backend | `npm run test` / `vitest run` using `createCallerFactory(router)(ctx)` (no HTTP client — tRPC has no REST routes; call procedures as functions in tests) | For E2E: Playwright on the Next.js frontend; tRPC calls are made client-side via `trpc.procedure.query()` — no curl/HTTP testing of procedures |
+| HarmonyOS (ArkTS) | `ohosTest` framework: run tests via DevEco Studio or `hvigorw test` CLI | Component tests on HarmonyOS simulator or real device; ArkUI test framework for UI component testing |
+| Ruby on Rails | `bundle exec rspec` (RSpec) or `bundle exec rails test` (Minitest) for unit/integration tests | System tests: `bundle exec rails test:system` (Capybara + Selenium/Chrome). Action Cable R4: test WebSocket channel subscribe/broadcast lifecycle via ActionCable test helpers |
+| Kotlin Spring Boot | `./gradlew test` per module for unit tests; `./gradlew integrationTest` for Spring integration tests (requires running DB/Kafka) | R4 protocol: API compatibility via SpringDoc/OpenAPI diff if springdoc-openapi present |
+| Deno (Fresh / runtime) | `deno test` (built-in test runner, no npm needed). For Fresh: `deno test --allow-net tests/` | E2E: Playwright on built Fresh output (`deno task start` + Playwright) |
+| Flutter (macOS desktop) | `flutter test` for unit/widget tests; `flutter test integration_test/ --device-id=macos` for E2E on macOS (requires macOS device target). CI: `macos-latest` GitHub Actions runner required. | N/A |
 
 **Key rule:** Mobile test frameworks are fundamentally different from web. `flutter test` ≠ `npm test`. Bootstrap must detect the platform and emit the correct command.
 

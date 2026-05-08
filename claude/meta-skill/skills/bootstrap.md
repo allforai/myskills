@@ -167,6 +167,7 @@ Set: `architecture_pattern: 'library-sdk'`. **Verification note**: library proje
 
 **Deployment platform markers:**
 - `vercel.json` at root OR `package.json` scripts containing `"vercel"` as a value OR `vercel` as a direct devDependency → Vercel-deployed project. Set `deployment_platform: 'vercel'` in bootstrap-profile.json. Vercel IS the infrastructure — Step 3 MUST suppress the `infra-design` node. Note in bootstrap output: "Vercel deployment detected — infra-design omitted (Vercel is the infrastructure)." The `architecture_pattern` remains unchanged (e.g., Next.js stays 'web-nextjs' — Vercel is the deploy target, not the framework).
+- `deno.json` with a `deploy` or `deployments` section, OR `.github/workflows/*.yml` containing `denoland/deployctl-action`, OR `import_map.json` with `deno.land/x/deployctl` imports → Deno Deploy deployment. Set `deployment_platform: 'deno-deploy'` in bootstrap-profile.json. Deno Deploy IS the infrastructure (KV store, Edge execution, HTTP routing) — Step 3 MUST suppress `infra-design`. Note: "Deno Deploy detected — infra-design omitted (Deno Deploy is the infrastructure)." Create minimal `infra-design.json` documenting Deno KV requirements and environment variable names.
 
 **Backend-as-a-Service (BaaS) / cloud-native:**
 BaaS projects have NO separate backend module — the backend IS the cloud service. Set `architecture_pattern: 'baas-<provider>'` and do NOT create a separate backend module in the workflow.

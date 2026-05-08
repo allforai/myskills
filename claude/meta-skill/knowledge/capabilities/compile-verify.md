@@ -57,7 +57,11 @@ Bootstrap MUST generate the correct build commands per platform:
 | Go backend | `go build ./...` | binary |
 | Go backend (gRPC) | `buf generate && go build ./...` (when `buf.yaml` present) OR `protoc --go_out=. --go-grpc_out=. proto/*.proto && go build ./...` (when raw protoc). **Proto compilation MUST run before `go build`** — generated `.pb.go` files are required imports. | binary |
 | Go multi-module (go.work) | Run `buf generate` once at workspace root (if buf.yaml present), then `go build ./...` per service module listed in go.work `use ./` entries. | binary per service |
-| Flutter | `flutter build apk` / `flutter build ios` / `flutter build web` | build/ |
+| Flutter (mobile) | `flutter build apk` / `flutter build ios` | build/ |
+| Flutter (web) | `flutter build web` | build/web/ |
+| Flutter (macOS desktop) | `flutter build macos` | build/macos/Build/Products/Release/ (.app bundle) |
+| Flutter (Linux desktop) | `flutter build linux` | build/linux/x64/release/bundle/ |
+| Flutter (Windows desktop) | `flutter build windows` | build/windows/runner/Release/ |
 | iOS (Swift) | `xcodebuild build -scheme X -destination 'generic/platform=iOS'` | .app |
 | Android (Kotlin) | `./gradlew assembleDebug` | .apk |
 | React Native (Expo managed) | `npx expo build:android` / `eas build --platform ios` | .apk/.ipa |
@@ -76,6 +80,11 @@ Bootstrap MUST generate the correct build commands per platform:
 | Godot | `godot --headless --export-release "platform" output` | .apk/.app/.exe/.pck |
 | Python (desktop/script) | `python -m pytest --co -q` (collection-only; fastest syntax+import check) | N/A (interpreted) |
 | Twine / Twee (narrative) | `tweego -o dist/index.html *.tw` (if tweego installed) OR skip | dist/index.html |
+| Ruby on Rails | `bundle install && bundle exec rails assets:precompile && bundle exec rails db:schema:load RAILS_ENV=test` (order matters: assets before schema; or `db:migrate` if incremental). Build success = no Sprockets errors + schema loads. | public/assets/ |
+| Kotlin Spring Boot (Gradle) | `./gradlew build` (single module) or `./gradlew :service1:build :service2:build` (multi-service monorepo with settings.gradle). For monorepos: check `settings.gradle` `include` entries to enumerate all service modules. | build/libs/*.jar per module |
+| Deno Fresh (SSR) | `deno task build` (check `deno.json` `tasks.build` entry) OR `deno check` for type-checking without bundle output | dist/ (if build task exists) |
+| HarmonyOS (ArkTS) | `hvigorw build` or `npm run build` (check `oh-package.json5` scripts). HarmonyOS uses `hvigor` build tool (Harmony equivalent of Gradle). Output: `.hap` module file. Requires DevEco Studio SDK or hvigor CLI installed. | entry/build/default/outputs/*.hap |
+| Next.js + Prisma | `npx prisma migrate deploy && npm run build` — Prisma schema MUST be deployed before Next.js build (build may fail or type errors occur if schema not synced). | .next/ |
 | Embedded C / C++ firmware (ARM) | `cmake -B build -DCMAKE_TOOLCHAIN_FILE=arm-none-eabi.cmake && cmake --build build` | build/*.elf / build/*.bin / build/*.hex |
 | Embedded C (bare-metal, no CMake) | `make all` (Makefile-driven cross-compile with `arm-none-eabi-gcc`) | *.elf / *.bin |
 

@@ -42,6 +42,7 @@ that implementation and verification nodes consume.
 - Every authentication flow has a defined token lifecycle (issue, refresh, revoke)
 - Sensitive data paths are identified (PII, credentials, payment data) with protection measures
 - OWASP Top 10 mitigations are addressed for the project's tech stack
+- **HarmonyOS/ArkTS apps**: HUKS (Harmony Unified Key Store `@ohos.security.huks`) is the required secure key storage. Do NOT use `@ohos.data.preferences` (plaintext key-value) for secrets. Configure HUKS key policy with: `HuksKeyPurpose.ENCRYPT_DECRYPT`, restricted algorithm, and unlock-required access control equivalent. All system resource permissions (camera, mic, location) MUST be declared in `module.json5` `requestPermissions[]`.
 - **macOS/iOS apps**: Keychain access group configuration is documented with STRIDE analysis (Elevation of Privilege: wrong access group allows cross-app secret reads; Tampering: unrestricted Keychain items survive app uninstall and are accessible to reinstalled apps). Key items: `kSecAttrAccessible` value should be `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` for most secrets (not `kSecAttrAccessibleAlways`).
 
 ## Interaction Mode

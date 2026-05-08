@@ -208,6 +208,22 @@ Check platform-specific requirements based on target launch platform (read from 
 - entitlements.plist must declare only the minimum required (network access, file access, hardened runtime flags) — excessive entitlements can fail notarization review
 - Privacy policy URL must be accessible (Gatekeeper shows it to users at first launch)
 
+**HarmonyOS (Huawei App Gallery Connect / AGC):**
+- Privacy policy URL required (AGC requires it before review approval)
+- Data safety labels (AGC Data Privacy section — similar to iOS App Privacy)
+- Content ratings via AGC (required for App Gallery listing)
+- Permissions declared in `module.json5` → `requestPermissions[]` (all requested permissions reviewed by AGC)
+- Build signing: use Huawei Developer certificate + AGC signing config
+- IAP: if app has paid features, use Huawei IAP service (NOT Google Play Billing) — `com.huawei.hms.iap` package
+- Distribution: upload `.hap` file to AGC console; set age ratings, supported devices, supported HarmonyOS versions
+
+**Deno Deploy:**
+- Environment variables must be set in Deno Deploy project settings dashboard (not `.env` file — sandboxed runtime)
+- GitHub integration configured for auto-deploy on push (if applicable)
+- Deno KV data backup strategy documented (no automatic backup — implement Litestream or export cron if data loss is unacceptable)
+- HTTPS: Deno Deploy provides automatic HTTPS/TLS; verify no mixed-content in frontend
+- Error monitoring: Deno Deploy logs to stdout; configure external log aggregation (Datadog, Logtail) for production visibility
+
 **Steam (Desktop game):**
 - Steam SDK integrated (achievement API, cloud save, overlay)
 - Steamworks partner portal app page complete
