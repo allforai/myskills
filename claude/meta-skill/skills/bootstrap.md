@@ -817,6 +817,13 @@ For `analyze` goal, inject only if no `approval-records.json` exists (new projec
    - **General signals:** `WebSocket`/`gRPC`/`socket.io` in any package file; source files importing `net`/`socket` modules with multiplayer room or lobby patterns
    If any signal found AND `network-architecture-design` + `matchmaking-design` are NOT already in the primary scenario's `required_nodes`, present them as supplementary optional nodes in the opt-in question with note: "检测到联网/多人代码，建议补充选择以下节点".
 
+**BaaS / Serverless verification in node graph:**
+When `architecture_pattern` starts with `baas-` or `serverless-`:
+- There is NO persistent backend server process. demo-forge populates data via the BaaS SDK or serverless local emulator, NOT via `curl localhost`.
+- The runtime-env setup node MUST start the local emulator (Firebase Emulator, Supabase local, `serverless-offline`, `sam local start-api`) as a prerequisite for demo-forge and E2E verification nodes. Order: `setup-env → start-emulator → demo-forge → e2e-verify`.
+- For BaaS: if no local emulator is available (e.g., Amplify some services), document in node-spec as "BaaS integration tests require staging environment — use staging credentials for this node."
+- For Serverless: demo-forge invokes functions via local emulator CLI, not HTTP server; verification node runs function-level tests (not Playwright against a running server).
+
 **Node granularity is project-dependent.** A simple CLI tool might need
 3 nodes. A microservice platform might need 20. LLM decides.
 
