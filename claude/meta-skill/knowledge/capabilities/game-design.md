@@ -181,7 +181,7 @@ No improvised names.
 | `economy-design` | `numeric-designer` | `game-design/economy.html` | `game-design/systems/economy-model.json` | economy-design |
 | `narrative-design` | `narrative-designer` | `game-design/narrative.html` | `game-design/systems/narrative-design.json` | narrative-design |
 | `level-design` | `level-designer` | `game-design/level-design.html` | `game-design/systems/level-design.json` | level-design |
-| `worldbuilding` | `narrative-designer` | `game-design/worldbuilding.html` | `game-design/systems/worldbuilding-bible.md` _(Markdown — lore prose)_ | worldbuilding |
+| `worldbuilding` | `narrative-designer` | `game-design/worldbuilding.html` | `game-design/systems/worldbuilding.json` _(structured summary)_ + `game-design/systems/worldbuilding-bible.md` _(full lore prose, not aggregated by finalize)_ | worldbuilding |
 | `network-architecture-design` | `backend-programmer` | `game-design/network-arch.html` | `game-design/systems/network-architecture.json` | (Step 2.7 research) |
 | `matchmaking-design` | `backend-programmer` | `game-design/matchmaking.html` | `game-design/systems/matchmaking.json` | (Step 2.7 research) |
 | `competitive-balance-design` | `numeric-designer` | `game-design/competitive-balance.html` | `game-design/systems/balance-report.json` | balance-testing |
@@ -333,6 +333,7 @@ All HTML outputs are **static** (v1). Bootstrap embeds data at generation time.
 - **Below:** Geography map (placeholder image with region labels and lore notes)
 - **Below:** Terminology glossary (term / meaning / usage context), collapsible
 - **Collapsed:** Full lore documents (history, religion, magic/tech system rules)
+- **Output note:** Produce TWO files after approval — (1) `worldbuilding.json` (compact structured summary: `{setting, era, tone, factions[], key_locations[], lore_file}`) for `game-design-finalize` aggregation; (2) `worldbuilding-bible.md` (full prose lore document). Only `worldbuilding.json` is referenced in `game-design-doc.json`; the `.md` is linked via the `lore_file` field.
 
 ### `network-arch.html`
 - **Audience:** backend-programmer
@@ -530,6 +531,12 @@ approved system JSONs. Only include fields whose source JSON exists (skip missin
     "story_acts": "<number | null>",
     "branching_depth": "<number | null>",
     "endings_count": "<number | null>"
+  },
+  "worldbuilding": {
+    "setting": "<brief setting description | null>",
+    "factions_count": "<number | null>",
+    "key_locations_count": "<number | null>",
+    "lore_file": "game-design/systems/worldbuilding-bible.md"
   },
   "art": {
     "style_id": "<string from art-style-guide.json>",

@@ -193,10 +193,11 @@ Bootstrap 分析完成。请确认目标（可多选）：
    a) 逆向分析（生成 .allforai/ 产物，理解业务）
    b) 跨栈复刻（分析 + 翻译到目标技术栈）
    c) 同栈重建（分析 + 按目标架构重新生成）
+   d) 从零构建新产品（忽略已有代码，以产品愿景为起点重新设计）
    e) 代码治理（架构合规 + 重复检测 + 抽象分析）
    k) 上架准备（竞品调研 → 概念定稿 → 缺口实现 → 合规 → 上架清单）
 
-目标技术栈（仅 b/c 需回答）：
+目标技术栈（仅 b/c/d 需回答）：
    前端：___
    后端：___
 
@@ -282,10 +283,15 @@ After the user selects a scenario, bootstrap reads the selected template's `boot
    需要加入哪些？（可多选，直接回车跳过）
 ```
 
-Canonical optional nodes (those that appear in the template's `node_order`) are selected
-automatically based on project context — bootstrap decides which are relevant without
-asking the user. Ad-hoc optional nodes (those only listed in `bootstrap_note`) MUST be
-explicitly selected by the user, as they require custom node-spec generation.
+**Canonical optional nodes** (those that appear in the template's `node_order`) form an *eligibility pool* — not an auto-include list. Bootstrap selects from the pool based on project signals. Examples of project signals:
+- Include `narrative-design` / `branching-structure-design` / `character-arc-design` / `dialogue-system-spec` only if the game has explicit narrative or branching dialogue (not for hack-and-slash, idle, or sports games)
+- Include `combat-system-design` and `competitive-balance-design` only if the game has combat or PvP mechanics
+- Include `puzzle-design` only if the game has dedicated puzzle content
+- Include `retention-hook-design` / `meta-game-design` for mobile games with session loops
+- Include `economy-design` / `tech-tree-design` for RTS games (in multiplayer-online scenario) or strategy games
+- Include `level-design` for games with designed maps, levels, or zones
+
+**Ad-hoc optional nodes** (those listed in `bootstrap_note` but NOT in `node_order`) MUST be explicitly presented to the user for opt-in. When parsing `bootstrap_note`, identify ad-hoc nodes as those with phrases like "not in canonical node registry" or those absent from `node_order`. Do NOT re-present canonical optional nodes (already in `node_order`) in the user opt-in question — they are handled automatically by bootstrap's context judgment.
 
 **Goal mapping (can combine multiple):**
 - (a) → `goals: ["reverse-concept", "analyze"]`. reverse-concept is mandatory for analyze — without it, product-analysis has no independent baseline and becomes circular (checking code against code-derived artifacts). reverse-concept produces concept-baseline.json which all downstream phases auto-load.
@@ -637,7 +643,7 @@ For `analyze` goal, inject only if no `approval-records.json` exists (new projec
 4. For each node in `required_nodes` + `always_include` (and selected `optional_nodes`):
    - Check if `node_id` exists in game-design.md Canonical Node Registry:
      - **Canonical node** (in registry AND node_order): look up `discipline_owner`, `html_output`, `json_output`, `presentation` from the registry. Set `blocked_by` = previous node in `node_order`; `unlocks` = next node in `node_order`. Exception: `game-design-finalize` is `blocked_by` ALL other game-design nodes in the scenario (it aggregates every system JSON).
-     - **Ad-hoc optional node** (in `optional_nodes` but absent from node_order or canonical registry): use Step 2.7 research to generate node-spec content; position it immediately before `game-design-finalize` in the generated workflow sequence; `blocked_by` = last canonical optional node (or last required node if no canonicals selected); `unlocks` = game-design-finalize.
+     - **Ad-hoc optional node** (in `optional_nodes` but absent from node_order or canonical registry): use Step 2.7 research to generate node-spec content; position it immediately before `game-design-finalize` in the generated workflow sequence; `blocked_by` = last SELECTED canonical optional node in node_order sequence order (i.e., highest-index selected canonical optional); if no canonical optionals are selected, `blocked_by` = last required node in node_order; `unlocks` = game-design-finalize.
    - All nodes get: `capability: game-design`, `human_gate: true`, `approval_record_path: ".allforai/game-design/approval-records.json"`, `gate_status: "pending"`
 5. Initialise `.allforai/game-design/approval-records.json` with one `pending` record per game-design node
 6. Ad-hoc nodes listed only in `bootstrap_note` (not in `optional_nodes`): these require user opt-in (presented in the optional node question after scenario selection). If the user selects them, generate their node-spec via Step 2.7 research and position them per step 4 ad-hoc rule above.
