@@ -64,7 +64,8 @@ Bootstrap MUST generate the correct build commands per platform:
 | Flutter (Windows desktop) | `flutter build windows` | build/windows/runner/Release/ |
 | iOS (Swift) | `xcodebuild build -scheme X -destination 'generic/platform=iOS'` | .app |
 | Android (Kotlin) | `./gradlew assembleDebug` | .apk |
-| React Native (Expo managed) | `npx expo build:android` / `eas build --platform ios` | .apk/.ipa |
+| React Native (Expo managed) | Local bundle: `npx expo export --platform android` + `npx expo export --platform ios` (checks JS bundle compiles without errors). Full binary: `eas build --platform ios/android` (cloud build — requires EAS account; produces .apk/.ipa). Note: `npx expo build` is DEPRECATED — use `eas build` instead. | build/ (local export) or EAS artifact |
+| Node.js / TypeScript CLI | `npm run build` (check `package.json` scripts.build; fallback `npx tsc`) — produces compiled JS in `dist/`. Verify `bin` entry points exist and are executable. | dist/cli.js (or configured output) |
 | React Native (bare - iOS) | `xcodebuild -workspace ios/<AppName>.xcworkspace -scheme <AppName> -configuration Release -destination 'generic/platform=iOS Simulator'` | .app |
 | React Native (bare - Android) | `./gradlew assembleRelease` (production) or `./gradlew assembleDebug` (development) | .apk |
 | Electron (desktop app) | `npm run build` (builds renderer bundle) followed by `npm run make` or `npx electron-builder` (packages .dmg/.exe/.AppImage). Note: `npm run build` alone only builds the React/Vue frontend — the full Electron binary/installer requires electron-builder. Check `package.json scripts` for the combined `build:electron` or `package` command. | dist/ (.dmg/.exe/.AppImage/.deb) |

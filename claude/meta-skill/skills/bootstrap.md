@@ -57,7 +57,7 @@ Read these files if they exist (skip missing ones silently):
 **Package managers / language markers:**
 - package.json, package-lock.json, yarn.lock, pnpm-lock.yaml
 - bun.lockb (Bun runtime lock file — treat as `runtime: bun`; also check `package.json` scripts for `bun run` to confirm)
-- app.json with `"expo"` key at root, OR eas.json, OR package.json with `expo` in dependencies → `framework: Expo (React Native), architecture_pattern: 'mobile-rn-expo'`
+- app.json with `"expo"` key at root, OR eas.json, OR package.json with `expo` in dependencies → `framework: Expo (React Native)`. Then check for bare workflow: if `ios/Podfile` AND `android/build.gradle` both exist → `architecture_pattern: 'mobile-rn-bare'` (bare workflow; use Xcode/Gradle + EAS Build; Detox/Maestro for E2E). If NOT present → `architecture_pattern: 'mobile-rn-expo'` (managed workflow; use `npx expo export` for local bundle check + EAS Build for binaries; Maestro preferred for E2E).
 - go.mod, go.sum
 - go.work (Go multi-module workspace — treat as monorepo; each `use ./sub` entry is a separate Go module; list all modules as separate backend modules in bootstrap-profile.json)
 - Cargo.toml, Cargo.lock
@@ -162,6 +162,8 @@ Detect a project as a publishable library (not an app) when ALL of the following
 - haxelib.json present (HaxeFlixel/other Haxe libraries are themselves publishable packages)
 Set: `architecture_pattern: 'library-sdk'`. **Verification note**: library projects do NOT need a running server; test with the language's native test runner (`npm test`, `cargo test`, `pytest`, `mvn test`). **demo-forge suppression**: when `architecture_pattern = 'library-sdk'`, suppress `demo-forge` from all goals — library projects have no running service to populate data into. Note in bootstrap output: "Library/SDK project detected — demo-forge omitted (no live server to populate)."
 
+**CLI tool exception**: A package.json with a `"bin"` field (object mapping command names to entry scripts, e.g., `"bin": { "mycli": "dist/cli.js" }`) is a CLI tool, NOT a library. Set `architecture_pattern: 'cli'`, record `bin_commands: [<key names>]` in bootstrap-profile.json. Compile check: `npm run build` or `tsc`; smoke: `node dist/cli.js --help` → exit 0. demo-forge suppression: CLI has no running HTTP service — suppress demo-forge. **detection precedence**: if both `bin` and `main` exist (CLI + importable library), prefer 'cli' classification; note dual-use in bootstrap output.
+
 **Embedded / firmware:**
 - platformio.ini at root (PlatformIO — cross-platform embedded development for Arduino, ESP32, STM32, etc.; architecture_pattern: 'embedded-firmware'). Verification: `pio test` for unit tests (PlatformIO's native test runner runs on-device or via embedded simulator); full device tests require physical hardware or QEMU — document as manual test scenarios. demo-forge suppression: firmware has no HTTP service; suppress demo-forge. runtime-env setup: physical device or QEMU emulator setup may be needed.
 - *.ino at project root with no game engine marker (Arduino sketch; architecture_pattern: 'embedded-firmware'). If platformio.ini is also present, platformio.ini takes precedence. ⚠ `.ino` files in game projects (e.g., Construct 3 exports) are NOT Arduino — only match when no game engine markers are present.
@@ -169,6 +171,13 @@ Set: `architecture_pattern: 'library-sdk'`. **Verification note**: library proje
 **CI/CD action / marketplace packages:**
 - `action.yml` at root with a `runs:` key (GitHub Actions custom action / reusable action; architecture_pattern: 'github-action')
 - `action.yaml` at root with a `runs:` key (same; yaml extension variant)
+
+**Chat bots / event-driven services:**
+- package.json with `discord.js` OR requirements.txt/pyproject.toml with `discord.py` / `nextcord` / `py-cord` → Discord bot. architecture_pattern: `'bot-discord'`. No HTTP routes — event-driven. Verification: mock Discord client (discord.js) / pytest+AsyncMock (discord.py). demo-forge suppression: suppress unless bot has a separate web dashboard or API.
+- package.json with `@slack/bolt` OR `slack` OR requirements.txt with `slack-sdk` / `slack-bolt` → Slack bot. architecture_pattern: `'bot-slack'`. Verification: jest/vitest with mocked Slack payloads; `@slack/bolt` test utilities. Smoke: POST mock event JSON to `/slack/events` endpoint.
+- package.json with `telegraf` OR `node-telegram-bot-api` → Telegram bot (Node.js). architecture_pattern: `'bot-telegram'`. Verification: jest with mocked Telegram Update objects. Smoke: POST fake update JSON to webhook endpoint.
+- requirements.txt or pyproject.toml with `python-telegram-bot` OR `aiogram` OR `telebot` → Telegram bot (Python). architecture_pattern: `'bot-telegram'`. Verification: pytest with mocked `telegram.Update` and `ContextTypes`. Smoke: POST fake update to FastAPI/webhook handler.
+- ⚠ Bots with a companion web API/backend (webhook handler + DB): create TWO modules — bot logic module + API/webhook module. Generate separate test-verify nodes for each. Bot smoke test hits the webhook endpoint directly.
 
 **Desktop app plugin / extension frameworks:**
 - `manifest.json` at root with both `"id"` and `"minAppVersion"` fields AND `package.json` with `obsidian` in `devDependencies` or `dependencies` (Obsidian plugin; architecture_pattern: 'ide-plugin-obsidian'). Note: do NOT rely on a `.obsidianplugin` file — it does not exist in the Obsidian ecosystem.

@@ -252,6 +252,39 @@ Check platform-specific requirements based on target launch platform (read from 
 - GDPR compliance for EU accounts (privacy policy URL in store page)
 - Build verified on all target platforms (Windows/Mac/Linux) — both client AND server binaries
 
+**Telegram Bot (BotFather):**
+- Register bot via `@BotFather` on Telegram: `/newbot` command → set name, username (must end with `bot`), description, profile photo
+- Privacy policy URL required if bot collects any user data (user IDs, messages, etc.) — Telegram requires privacy statement in bot info
+- GDPR compliance for EU users: document data retention policy (how long user data stored, deletion request process)
+- Webhook must use HTTPS (Telegram rejects non-TLS webhooks)
+- No hardcoded tokens; `TELEGRAM_BOT_TOKEN` via environment variable or secret vault only
+- Register webhook: `curl "https://api.telegram.org/bot{TOKEN}/setWebhook?url=https://{DOMAIN}/webhook&secret_token={SECRET}"` — include `secret_token` for request verification
+
+**Slack App (Slack App Directory):**
+- App manifest (`app.json`) complete: name, display name, description, icons (512×512 PNG)
+- OAuth scopes minimized to principle of least privilege — Slack App Directory review rejects over-scoped apps
+- Privacy policy URL required (displayed on App Directory listing)
+- Slash command descriptions and usage hints documented (shown in Slack UI)
+- Request URL verified (Slack sends a URL verification challenge — endpoint must respond with `challenge` value)
+- Token rotation policy documented; `SLACK_SIGNING_SECRET` used for request signature verification
+- App Directory submission: submit via Slack API portal → review process (1–2 weeks); Slack checks security, privacy, and UX
+
+**Node.js / Python CLI (npm / PyPI):**
+- `package.json` required fields: `name` (unique in registry), `version` (semver), `description`, `bin` (command → entry point mapping), `files` (array of directories to publish), `license`, `author`, `repository.url`
+- README.md with usage examples and `--help` output (displayed on npm package page)
+- Pre-publish: `npm pack` → inspect tarball contents; confirm no `.env`, secrets, or test fixtures included
+- `.npmignore` or `files` field configured to exclude test/, docs/, *.ts source (publish only compiled dist/)
+- Publish: `npm publish` (requires npm account + auth token or `npm login`); use `--access public` for scoped packages
+- Optional: configure GitHub Actions to auto-publish on release tag (`release.yaml` using `NPM_TOKEN` secret)
+- PyPI equivalent: `python -m build && twine upload dist/*` (requires PyPI account + API token)
+
+**Expo (React Native) — EAS Submit:**
+- `eas.json` configured with `submit` profiles: iOS (`appleId`, `ascAppId` or auto-detected) and Android (`serviceAccountKeyPath`)
+- iOS submit: `eas submit --platform ios --profile production` → uploads to TestFlight; requires Apple Developer account + App Store Connect API key or App-Specific Password
+- Android submit: `eas submit --platform android --profile production` → uploads to Play Console internal track; requires Google Play API service account JSON
+- Deep linking verified before submit: Universal Links (iOS) requires `.well-known/apple-app-site-association` deployed on HTTPS domain; App Links (Android) requires `assetlinks.json` on domain — both must be live BEFORE building or deep links fail at runtime
+- Push notifications: `expo-notifications` requires EAS Build (not functional in Expo Go); verify with development build before production submit
+
 **Output:** `.allforai/launch-prep/compliance-checklist.json`
 
 ### Phase 5: Launch Checklist (上架清单)

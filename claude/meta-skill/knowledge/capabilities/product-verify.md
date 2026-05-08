@@ -22,6 +22,8 @@ After code is written, verify it actually implements what was designed:
 
 **Skip conditions for non-UI projects**: If `architecture_pattern` is `library-sdk`, `github-action`, `cli`, `background-service`, `embedded-firmware`, or no `ui-design-spec.md` exists: skip route parity and field parity checks. API parity still applies if an API spec exists. Permission check applies only if the project has auth middleware.
 
+**CLI tool verification**: No route/field parity (no UI). Instead verify: (a) all documented commands exist in code (`--help` lists all subcommands); (b) argument validation works (required args missing → non-zero exit + error message); (c) output format matches spec (JSON/plain text/table); (d) exit codes correct (0 = success, non-zero = error); (e) stdin/stdout pipes work for data flow. Use `npm test` / `cargo test` / `go test` for unit tests; process spawn tests (`child_process.spawn` / `subprocess.run`) for E2E.
+
 ### Dynamic Verification (per module type)
 
 Every module in the project must be verified using its appropriate tool.
@@ -38,7 +40,9 @@ Every module in the project must be verified using its appropriate tool.
 | Electron desktop app | Playwright via `electronApplication` option (`playwright.config.ts` with `{ launchOptions: { executablePath: './dist/MyApp' } }`) | Launch built Electron binary; verify window renders, buttons work, SQLite data persists across app restart, IPC invoke responds |
 | Tauri v2 desktop app | `tauri-driver` + WebdriverIO (`@wdio/selenium-standalone-service`) OR Playwright `electronApplication` for the WebView layer | Launch Tauri app; verify window renders, invoke IPC command, verify response; `cargo test` for Rust backend unit tests |
 | Android native (Kotlin) | Espresso | Gradle test runner |
-| Discord bot | `discord.js` mock client / `discord-py` pytest fixtures | Unit-test command handlers with mocked interactions; integration-test with a dedicated test guild (real bot token) |
+| Discord bot | `discord.js` mock client / `discord-py` pytest fixtures | Unit-test command handlers and event listeners with mocked interactions; integration-test with dedicated test guild (real bot token); verify embeds render, buttons work, select menus function |
+| Slack bot | `@slack/bolt` testing utilities or direct HTTP mock | Unit-test slash commands and workflows; POST mock event payloads to `/slack/events`; verify command responses, modal submission handling, home tab content |
+| Telegram bot | Mocked `telegram.Update` / `telegram.ext.Context` (Python) or mocked Telegram `Update` objects (Node.js) | Unit-test command handlers; verify inline keyboards, message editing; integration-test with real test bot token against Telegram API |
 | HarmonyOS (ArkTS) | `ohosTest` framework (component tests + UI tests) | `hvigorw test` on simulator or real device; ArkUI test for component rendering; verify Ability launch, permissions, network access |
 | Kotlin Spring Boot | `./gradlew test` + `./gradlew integrationTest` (with Testcontainers for DB/Kafka) | API E2E: RestAssured or MockMvc; Kafka consumer tests via embedded Kafka |
 | API-only backend | curl / HTTP client | Endpoint integration test |
