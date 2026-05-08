@@ -84,6 +84,7 @@ Read these files if they exist (skip missing ones silently):
 - game.js + game.json at project root (WeChat Mini Game; distinguished from mini programs which use app.js)
 - *.yyp (GameMaker Studio 2)
 - *.twee or *.tw (Twine / interactive fiction; maps to narrative-adventure scenario)
+- *.rbxlx or *.rbxl (Roblox Studio place files) or default.project.json with Roblox tree structure (Rojo workflow)
 
 **Configuration:**
 - tsconfig.json, jsconfig.json
