@@ -200,7 +200,21 @@ UI 还原度（仅有前端翻译时）：
    搜索引擎：___（如 Elasticsearch/Meilisearch/无）
 ```
 
-**If business_domain = "gaming" (detected or user-selected):**
+**If game engine detected in Step 1.1 AND user has NOT explicitly selected 业务领域 f) 游戏:**
+
+Before asking the game scenario, confirm the project type:
+
+```
+检测到 [引擎名] 项目，请确认项目类型：
+   a) 游戏项目（继续选择游戏品类）
+   b) 非游戏应用（AR/VR/可视化/仿真/工具等）
+```
+
+If user selects (b): set `is_game_project = false`, skip game scenario selection entirely,
+treat the engine as tech stack context and proceed with the normal bootstrap flow.
+
+**If business_domain = "gaming" confirmed (user selected (a) above, or explicitly chose
+业务领域 f) 游戏 in the no-code prompt):**
 
 After confirming the main goal, ask ONE additional question:
 
