@@ -1098,7 +1098,7 @@ is likely too large for a single workflow execution. Suggest decomposition:
 {
   "schema_version": "2.0",
   "project": "<project name>",
-  "goal": "<user's goal>",
+  "goals": ["<user-selected goal codes, e.g. 'analyze', 'translate', 'quality-checks'>"],
   "planned_at": "<ISO timestamp>",
   "nodes": [
     {
@@ -1131,6 +1131,7 @@ is likely too large for a single workflow execution. Suggest decomposition:
 - `consumers`: Which downstream nodes read this node's output. Used to generate
   the Downstream Contract section in the node-spec — tells the subagent "who
   will consume your output and what they need from it".
+  **How to populate**: For each node N, `consumers[]` = all node IDs M where N appears in M's `blocked_by[]` AND N's exit_artifacts are listed in the Downstream Consumers table of M's capability file. Bootstrap derives this during Step 3.1 node graph design — after blocked_by chains are established, traverse them in reverse to fill consumers.
 - `blocked_by`: Node IDs that must be approved/completed before this node runs. Orchestrator checks this at runtime to decide which nodes are eligible. For game-design nodes, also checks `approval-records.json` gate_status.
 - `unlocks`: Node IDs unblocked when this node's gate is approved. Used by the orchestrator to advance the workflow after approval.
 - `human_gate`: `true` for game-design nodes requiring discipline_owner approval; `false` for all others. Orchestrator reads this to decide whether to check `approval-records.json` in addition to `exit_artifacts`.
