@@ -57,7 +57,11 @@ def validate_workflow(wf_path: str) -> list:
         elif not isinstance(node["exit_artifacts"], list):
             errors.append(f"workflow.json: {nid} exit_artifacts must be a list")
         else:
-            for artifact_path in node["exit_artifacts"]:
+            for raw in node["exit_artifacts"]:
+                if isinstance(raw, dict):
+                    artifact_path = raw.get("path", "")
+                else:
+                    artifact_path = raw
                 basename = os.path.basename(artifact_path)
                 if artifact_path == basename and basename in SUSPICIOUS_BARE:
                     errors.append(
