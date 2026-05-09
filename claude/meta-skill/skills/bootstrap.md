@@ -881,6 +881,43 @@ For `analyze` goal, inject only if no `approval-records.json` exists (new projec
      - **Canonical node** (in registry AND node_order): look up `discipline_owner`, `html_output`, `json_output`, `presentation` from the registry. Set `blocked_by` = **previous SELECTED node in `node_order`** (skip unselected optional nodes — a node that is not included in the workflow cannot appear in any `blocked_by` list); `unlocks` = **next SELECTED node in `node_order`** (same skipping rule). Exception: `game-design-finalize` is `blocked_by` ALL other game-design nodes in the scenario that are actually selected (it aggregates every system JSON from selected nodes only).
      - **Ad-hoc optional node** (in `optional_nodes` but absent from node_order or canonical registry): use Step 2.7 research to generate node-spec content; position it immediately before `game-design-finalize` in the generated workflow sequence; `blocked_by` = last SELECTED canonical optional node in node_order sequence order (i.e., highest-index selected canonical optional); if no canonical optionals are selected, `blocked_by` = last required node in node_order; `unlocks` = game-design-finalize.
    - All nodes get: `capability: game-design`, `human_gate: true`, `approval_record_path: ".allforai/game-design/approval-records.json"`, `gate_status: "pending"`
+
+**Art Concept Node Injection (always applies when `art-direction` is in the selected workflow):**
+
+After inserting the `art-direction` node, also insert an `art-concept` node immediately following it:
+- `node_id: "art-concept"`, `capability: "art-concept-skill"`, `human_gate: false`
+- `blocked_by: ["art-direction"]`; update `art-spec-design` to `blocked_by: ["art-concept"]` (remove `art-direction` from its blocked_by list)
+- `unlocks: ["art-spec-design"]`
+- **No approval-records entry** (art-concept is a skill invocation, not a human-reviewed document)
+- **Node-spec content** for art-concept (write verbatim to `.allforai/bootstrap/node-specs/art-concept.md`):
+
+```markdown
+---
+node: art-concept
+human_gate: false
+blocked_by: [art-direction]
+unlocks: [art-spec-design]
+exit_artifacts:
+  - .allforai/game-design/art-pipeline-config.json
+---
+
+# Task: 美术技术规格确认（Art Concept Skill Invocation）
+
+## 执行方法
+
+读取并执行 `${CLAUDE_PLUGIN_ROOT}/skills/art-concept.md` skill。
+
+该 skill 完成以下工作：
+1. 验收 art-direction 输出（读取 art-style-guide.json.art_overview，3个字段）
+2. 执行竞品美术研究（搜索驱动，内部使用）
+3. 按维度分支（2D通用/2D像素/3D）进行 Q&A，逐问确认技术规格
+4. 产出 `.allforai/game-design/art-pipeline-config.json`（status=final）
+
+## 完成条件
+
+`.allforai/game-design/art-pipeline-config.json` 存在且 `status == "final"`。
+```
+
 5. Initialise `.allforai/game-design/approval-records.json` with one `pending` record per game-design node
 6. Ad-hoc nodes appearing in EITHER `optional_nodes` OR `bootstrap_note` (but absent from both the canonical registry AND `node_order`): these require user opt-in, presented in the opt-in question after scenario selection. Process them ONCE — if a node appears in both `optional_nodes` and `bootstrap_note`, treat it as a single ad-hoc opt-in candidate (do not generate two node-specs). If the user selects it, generate node-spec via Step 2.7 research and position per step 4 ad-hoc rule.
 7. **Cross-scenario signal scan (hybrid games):** After loading the primary scenario template, scan Step 1.1–1.3 findings for multiplayer/network signals:

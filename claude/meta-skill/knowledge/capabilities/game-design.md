@@ -53,9 +53,12 @@ product-concept
 [game-design nodes — bootstrap selects from game-scenario-templates/]
   ├─ core-loop-design
   ├─ [scenario-specific system nodes]
-  ├─ art-direction
-  ├─ art-spec-design
-  └─ ai-art-generation  (automatic node, no human gate)
+  ├─ art-direction            (产出 art-style-guide.json，含 art_overview 字段)
+  │     ↓
+  │   art-concept skill       (交互式美术技术规格，产出 art-pipeline-config.json)
+  │     ↓
+  ├─ art-spec-design          (读取 art-pipeline-config.json 特化资产清单)
+  └─ [art-gen nodes]          (由 art-pipeline-config.active_nodes 决定，automatic，no human gate)
   ↓
 game-design-finalize  (aggregates all system JSONs → game-design-doc.json; human gate: lead-designer)
   ↓
@@ -63,6 +66,21 @@ product-analysis  (reads game-design-doc.json as concept baseline)
   ↓
 generate-artifacts
 ```
+
+## Art Concept Trigger
+
+Bootstrap 在生成 `art-spec-design` node-spec 时，须在其 `Context Pull` 段注明：
+
+```
+执行前检查 art-pipeline-config.json 是否存在：
+  存在且 status="final" → 直接读取，按 config 特化资产清单
+  不存在 / status="draft" → 提示用户先运行 art-concept skill：
+    "art-pipeline-config.json 不存在或未完成。请在继续前运行 /art-concept 确认美术技术规格。"
+    暂停执行，等待 art-concept 完成后重新触发
+```
+
+`art-direction` 节点 approved → `/run` 自动调起 `art-concept` skill（读取
+`art-style-guide.json.art_overview`）。art-concept 完成后，`/run` 继续推进 `art-spec-design`。
 
 ## Team Roles
 
@@ -201,8 +219,15 @@ No improvised names.
 | `tech-tree-design` | `systems-designer` | `game-design/tech-tree.html` | `game-design/systems/tech-tree.json` | progression-system |
 | `branching-structure-design` | `narrative-designer` | `game-design/branching-structure.html` | `game-design/systems/branching-structure.json` | narrative-design |
 | `character-arc-design` | `narrative-designer` | `game-design/character-arc.html` | `game-design/systems/character-arc.json` | narrative-design |
-| `art-direction` | `art-director` | `game-design/art-direction.html` | `game-design/art-style-guide.json` | art-direction |
+| `art-direction` | `art-director` | `game-design/art-direction.html` | `game-design/art-style-guide.json` (含 art_overview 字段) | art-direction |
+| `art-concept` | _(skill — /run 自动调起，无 discipline_owner)_ | — | `game-design/art-pipeline-config.json` | art-direction |
 | `art-spec-design` | `concept-artist` | `game-design/art-spec-design.html` | `game-design/art-asset-inventory.json` | art-direction |
+| `tile-art-gen` | `concept-artist` | `game-design/tile-art-review.html` | `game-design/systems/tile-art-spec.json` | art-gen |
+| `character-art-gen` | `character-modeler` | `game-design/character-art-review.html` | `game-design/systems/character-art-spec.json` | art-gen |
+| `environment-art-gen` | `environment-artist` | `game-design/environment-art-review.html` | `game-design/systems/environment-art-spec.json` | art-gen |
+| `ui-art-gen` | `ui-artist` | `game-design/ui-art-review.html` | `game-design/systems/ui-art-spec.json` | art-gen |
+| `vfx-art-gen` | `vfx-artist` | `game-design/vfx-art-review.html` | `game-design/systems/vfx-asset-spec.json` | art-gen |
+| `art-qa` | `art-director` | `game-design/art-qa-report.html` | — | art-gen |
 | `anti-cheat-design` | `backend-programmer` | `game-design/anti-cheat.html` | `game-design/systems/anti-cheat-design.json` | — |
 | `dialogue-system-spec` | `gameplay-programmer` | `game-design/dialogue-system.html` | `game-design/systems/dialogue-system.json` | narrative-design |
 | `audio-design` | `audio-director` | `game-design/audio-design.html` | `game-design/systems/audio-design.json` | — |
@@ -477,8 +502,17 @@ All HTML outputs are **static** (v1). Bootstrap embeds data at generation time.
 
 ### Trigger
 
-Automatically triggered after `art-spec-design` node reaches `gate_status = "approved"` (which itself requires `art-direction` to be approved first). Reads `art-asset-inventory.json` produced by `art-spec-design`; if triggered by `art-direction` approval alone, `art-asset-inventory.json` would not yet exist.
-`ai-art-generation` has no `human_gate` — it runs and updates the dashboard on completion.
+The `ai-art-generation` node is superseded by role-based art-gen nodes (`tile-art-gen`,
+`character-art-gen`, `environment-art-gen`, `ui-art-gen`, `vfx-art-gen`, `art-qa`).
+These nodes are selected by `art-pipeline-config.json.active_nodes` after `art-concept` completes.
+
+Each art-gen node is triggered automatically after `art-spec-design` reaches
+`gate_status = "approved"`. Art-gen nodes have `human_gate: true` (discipline-specific review).
+`art-qa` is the final gate before `game-design-finalize`.
+
+**Legacy `ai-art-generation` node**: retained for backward compatibility with existing projects
+that were bootstrapped before the art-concept/art-gen split. New projects always use the
+role-based nodes. Do not generate `ai-art-generation` node-spec for new projects.
 
 ### Prompt Construction
 
@@ -542,9 +576,18 @@ After completion, set `gate_status: "approved"` in `approval-records.json` for t
   "mood_keywords": ["<adjective>"],
   "character_style": "<e.g., cartoon / realistic / pixel / watercolor>",
   "environment_style": "<e.g., high-contrast / muted / painterly>",
-  "ui_style": "<e.g., flat / glassmorphism / retro>"
+  "ui_style": "<e.g., flat / glassmorphism / retro>",
+  "art_overview": {
+    "dimension": "<2d | 3d | 2.5d>",
+    "style": "<cartoon | pixel | realistic | hand_drawn | vector>",
+    "animation_system": "<frame | spine | 3d_skeletal | mixed>",
+    "notes": "<brief rationale for above choices>"
+  }
 }
 ```
+
+`art_overview` 是 `art-concept` skill 的上游输入（Step 0 验收字段）。
+`art-direction` 节点执行时必须填写此字段，缺失将阻塞 art-concept 执行。
 
 ## art-asset-inventory.json Schema
 
@@ -699,9 +742,13 @@ If `game_engines_detected` is empty (user confirmed game via 业务领域 f), om
 ## Composition Hints
 
 ### Full Pipeline (new game from scratch)
-All nodes for detected scenario. `art-direction` + `art-spec-design` + `ai-art-generation`
-+ `game-design-finalize` always appended. Every node requires human approval gate
-(except `ai-art-generation` which is automatic).
+All nodes for detected scenario. `art-direction` + `art-concept`(skill，自动调起) +
+`art-spec-design` + `[art-gen nodes from active_nodes]` + `art-qa` +
+`game-design-finalize` always appended.
+
+**art-gen nodes** are determined by `art-pipeline-config.json.active_nodes` at art-concept
+completion time. Bootstrap writes only the listed nodes into `workflow.json`.
+Every art-gen node requires human approval gate (discipline-specific).
 
 **Dependency rule for `game-design-finalize`:** Set `blocked_by` = ALL other game-design
 nodes in the scenario (not just the preceding node). Finalize aggregates every system JSON;

@@ -200,7 +200,19 @@ balance-testing（数值平衡测试：蒙特卡洛模拟 + Playtest）
 | **Environment Design** | 场景构成/光影/氛围 |
 | **UI Style** | HUD/菜单/弹窗/字体/图标风格 |
 
-**输出：** `art-direction.md`、`art-tokens.json`
+**输出：** `art-style-guide.json`（必含 `art_overview` 字段）、`art-tokens.json`
+
+`art_overview` 为必填字段，缺少将阻塞下游 art-concept skill 执行：
+```json
+{
+  "dimension": "2d",           // "2d" | "3d" | "2.5d"
+  "style": "cartoon",          // "cartoon" | "pixel" | "realistic" | "hand_drawn" | "vector"
+  "animation_system": "spine", // "frame" | "spine" | "3d_skeletal" | "mixed"
+  "notes": "<一句话说明选择理由>"
+}
+```
+
+**下一步（自动触发）：** art-concept skill — 基于 art_overview 问答确认技术规格，产出 `art-pipeline-config.json`。
 
 ---
 
