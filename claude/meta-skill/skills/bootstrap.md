@@ -906,15 +906,22 @@ For `analyze` goal, inject only if no `approval-records.json` exists (new projec
 3. Insert game-design nodes into the workflow AFTER `product-concept` node and BEFORE `product-analysis` node
 4. For each node in `required_nodes` + `always_include` (and selected `optional_nodes`):
    - Check if `node_id` exists in game-design.md Canonical Node Registry:
-     - **Canonical node** (in registry AND node_order): look up `discipline_owner`, `html_output`, `json_output`, `presentation` from the registry. Set `blocked_by` = **previous SELECTED node in `node_order`** (skip unselected optional nodes — a node that is not included in the workflow cannot appear in any `blocked_by` list); `unlocks` = **next SELECTED node in `node_order`** (same skipping rule). Exception: `game-design-finalize` is `blocked_by` ALL other game-design nodes in the scenario that are actually selected (it aggregates every system JSON from selected nodes only).
-     - **Ad-hoc optional node** (in `optional_nodes` but absent from node_order or canonical registry): use Step 2.7 research to generate node-spec content; position it immediately before `game-design-finalize` in the generated workflow sequence; `blocked_by` = last SELECTED canonical optional node in node_order sequence order (i.e., highest-index selected canonical optional); if no canonical optionals are selected, `blocked_by` = last required node in node_order; `unlocks` = game-design-finalize.
+     - **Canonical node** (in registry AND node_order): look up `discipline_owner`, `html_output`, `json_output`, `presentation` from the registry. Set `hard_blocked_by` = **previous SELECTED node in `node_order`** (skip unselected optional nodes); `unlocks` = **next SELECTED node in `node_order`** (same skipping rule). Exception: `game-design-finalize` has `hard_blocked_by` = ALL other game-design nodes that are actually selected.
+
+     **Parallelism rule:** After assigning the default serial `hard_blocked_by`, apply this override for sibling nodes that only READ a shared predecessor's output (not data-produce it): if two or more nodes both `hard_blocked_by` the same single predecessor and neither is in the other's consumers[], reclassify the later node's dependency on its sibling as `alignment_refs` instead of `hard_blocked_by`. Common parallel groups by scenario:
+       - `casual-mobile`: once `core-loop-design` is approved → `economy-design`, `progression-design`, `retention-design` may all run concurrently (each `hard_blocked_by: ["core-loop-design"]`, `alignment_refs: []` to each other)
+       - `action-rpg`: once `core-loop-design` approved → `combat-system-design`, `character-design`, `progression-design` may run concurrently
+       - `narrative-adventure`: once `core-loop-design` approved → `narrative-design`, `character-design`, `world-design` may run concurrently
+       - Always serial (never parallelise): `art-direction → art-concept → art-spec-design` (each writes data the next needs)
+       - Always serial: `game-design-finalize` (reads ALL — stays `hard_blocked_by` all selected nodes)
+     - **Ad-hoc optional node** (in `optional_nodes` but absent from node_order or canonical registry): use Step 2.7 research to generate node-spec content; position it immediately before `game-design-finalize` in the generated workflow sequence; `hard_blocked_by` = last SELECTED canonical optional node in node_order sequence order (if no canonical optionals selected, `hard_blocked_by` = last required node in node_order); `unlocks` = game-design-finalize.
    - All nodes get: `capability: game-design`, `human_gate: true`, `approval_record_path: ".allforai/game-design/approval-records.json"`, `gate_status: "pending"`, `review_checklist: [<3–5 items from game-design.md checklist table for this node type; use discipline-appropriate generic items if node not in table>]`
 
 **Art Concept Node Injection (always applies when `art-direction` is in the selected workflow):**
 
 After inserting the `art-direction` node, also insert an `art-concept` node immediately following it:
 - `node_id: "art-concept"`, `capability: "art-concept-skill"`, `human_gate: false`
-- `blocked_by: ["art-direction"]`; update `art-spec-design` to `blocked_by: ["art-concept"]` (remove `art-direction` from its blocked_by list)
+- `hard_blocked_by: ["art-direction"]`; update `art-spec-design` to `hard_blocked_by: ["art-concept"]` (remove `art-direction` from its hard_blocked_by list)
 - `unlocks: ["art-spec-design"]`
 - **No approval-records entry** (art-concept is a skill invocation, not a human-reviewed document)
 - **Node-spec content** for art-concept (write verbatim to `.allforai/bootstrap/node-specs/art-concept.md`):
