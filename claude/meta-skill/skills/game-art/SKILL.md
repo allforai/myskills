@@ -4,6 +4,8 @@
 > Status: bundled, inactive, not wired.
 > This directory is installed with meta-skill but is not automatically invoked by
 > `/bootstrap` or `/run` until a node-spec explicitly reads a child skill path.
+> These are Claude Code-readable sub-skills, not separately installed top-level
+> skills.
 
 ## Purpose
 
@@ -26,8 +28,13 @@ Do not organize by tool. Organize by production layer:
 | Layer | Child skill | Responsibility |
 |---|---|---|
 | `00-env` | `asset-registry` | Canonical asset IDs, file prefixes, paths, lifecycle states, validation report. |
+| `10-design` | `2d-animation-production-plan` | Light 2D animation method selection, fallback strategy, downstream routing, QA requirements. |
 | `10-design` | `motion-design` | Animation intent, key poses, timing, events, readability, fallback motion. |
+| `20-spec` | `2d-layering-spec` | Unified scene, character, outfit, animation overlay, VFX, UI, helper, atlas, and runtime layer rules. |
+| `20-spec` | `2d-view-mode-spec` | Side-view, top-down, isometric, fixed-room, board/grid, visual-novel, shooter, and hybrid spatial rules. |
+| `20-spec` | `animation-state-machine-spec` | Runtime animation states, transitions, priorities, event frames, fallback states, import references. |
 | `20-spec` | `character-layer-sheet` | Character part decomposition, layer-sheet prompt/spec, pivots, validation. |
+| `20-spec` | `engine-export-profile` | Engine/tool export contracts for atlases, pivots, clips, tilemaps, skeletons, and runtime import. |
 | `20-spec` | `tileset-spec` | Tilemap mode selection, terrain vocabulary, tile rules, collision/walkability contracts. |
 | `20-spec` | `vfx-spec` | VFX semantics, gameplay events, presentation layer, dimension, implementation mode, timing, readability budgets. |
 | `20-spec` | `visual-style-tokens` | Shared palette, shape, line, material, camera, typography, and motion tokens. |
@@ -54,6 +61,7 @@ Do not organize by tool. Organize by production layer:
 | `30-generate` | `skeletal-animation` | Bone hierarchy, transform timelines, rendered preview loop, visual validation, repair. |
 | `40-qa` | `art-preview-qa` | Cross-asset visual QA, downstream feedback, issue classification, repair routing. |
 | `40-qa` | `atlas-packaging` | Atlas packing manifests, spacing/margin checks, references, and export validation. |
+| `40-qa` | `2d-style-consistency-qa` | Palette, outline, scale, projection, readability, animation, UI/game, and runtime style QA. |
 | `40-qa` | `runtime-import-check` | Runtime import validation for assets, manifests, previews, and fallback status. |
 
 ## Canonical Invocation Paths
@@ -62,8 +70,13 @@ Use these paths when a node-spec calls a child skill:
 
 ```text
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/asset-registry/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/motion-design/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/2d-layering-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/2d-view-mode-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/animation-state-machine-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/character-layer-sheet/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/engine-export-profile/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/tileset-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/vfx-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/visual-style-tokens/SKILL.md
@@ -90,6 +103,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/vfx-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/skeletal-animation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/art-preview-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/atlas-packaging/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/2d-style-consistency-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/runtime-import-check/SKILL.md
 ```
 
@@ -118,21 +132,50 @@ Skeletal character animation:
 
 ```text
 00-env/asset-registry
+-> 10-design/2d-animation-production-plan
 -> 10-design/motion-design
+-> 20-spec/2d-view-mode-spec
+-> 20-spec/2d-layering-spec
+-> 20-spec/engine-export-profile
 -> 20-spec/character-layer-sheet
+-> 20-spec/animation-state-machine-spec
 -> 30-generate/skeletal-animation
--> 40-qa/art-preview-qa          (future)
--> 40-qa/runtime-import-check    (future)
+-> 40-qa/art-preview-qa
+-> 40-qa/2d-style-consistency-qa
+-> 40-qa/runtime-import-check
+```
+
+Light 2D indie character production:
+
+```text
+00-env/asset-registry
+-> 20-spec/visual-style-tokens
+-> 20-spec/2d-view-mode-spec
+-> 20-spec/2d-layering-spec
+-> 10-design/2d-animation-production-plan
+-> 10-design/motion-design
+-> 20-spec/engine-export-profile
+-> 20-spec/frame-animation-spec | 20-spec/character-layer-sheet
+-> 20-spec/animation-state-machine-spec
+-> 30-generate/frame-animation-generation | 30-generate/skeletal-animation
+-> 40-qa/art-preview-qa
+-> 40-qa/2d-style-consistency-qa
+-> 40-qa/atlas-packaging
+-> 40-qa/runtime-import-check
 ```
 
 Tileset generation, future:
 
 ```text
 00-env/asset-registry
--> 10-design/visual-style-tokens
+-> 20-spec/visual-style-tokens
+-> 20-spec/2d-view-mode-spec
+-> 20-spec/2d-layering-spec
+-> 20-spec/engine-export-profile
 -> 20-spec/tileset-spec
 -> 30-generate/tileset-generation
 -> 40-qa/art-preview-qa
+-> 40-qa/2d-style-consistency-qa
 -> 40-qa/atlas-packaging
 ```
 
@@ -150,6 +193,8 @@ VFX generation:
 
 ```text
 00-env/asset-registry
+-> 20-spec/2d-view-mode-spec
+-> 20-spec/2d-layering-spec
 -> 20-spec/vfx-spec
 -> 30-generate/vfx-generation
    -> 30-generate/particle-system     (when implementation includes particle)
@@ -179,13 +224,18 @@ Image-backed asset generation:
 
 ```text
 00-env/asset-registry
+-> 20-spec/visual-style-tokens
+-> 20-spec/2d-layering-spec
 -> 30-generate/image-generation-contract
 -> 30-generate/icon-generation | tileset-generation | sprite-vfx-generation | decal-generation
--> 40-qa/art-preview-qa          (future)
+-> 40-qa/art-preview-qa
+-> 40-qa/2d-style-consistency-qa
+-> 40-qa/runtime-import-check
 ```
 
 ## Non-Goals
 
-This pack does not install tools, mutate bootstrap behavior, or register a
-top-level Claude Code skill. It is an internal bundled capability pack that
-future meta-skill nodes may explicitly call.
+This pack does not install tools, mutate bootstrap behavior, or register each
+child as a separate top-level Claude Code skill. It is an internal bundled
+Claude Code-readable capability pack that future meta-skill nodes may
+explicitly call by path.
