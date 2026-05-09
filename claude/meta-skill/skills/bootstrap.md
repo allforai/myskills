@@ -45,10 +45,13 @@ Record what exists:
   - `product-concept/concept-drift.json` exists AND its `resolved` field is false
   - `.allforai/game-design/approval-records.json` exists AND any record has `gate_status == "revision-requested"` (in-flight revision cycle on a design gate)
   - `.allforai/game-design/approval-records.json` exists AND any record has non-empty `revision_notes` AND `gate_status == "approved"` (a previous revision was re-approved — downstream consumers may need re-execution)
+  - (when `is_game_project = false`) `.allforai/app-design/approval-records.json` exists AND any record has `gate_status == "revision-requested"` (in-flight revision cycle on an app design gate)
+  - (when `is_game_project = false`) `.allforai/app-design/approval-records.json` exists AND any record has `gate_status == "approved"` AND `revision_notes` is non-empty (a previous app-design revision was re-approved — downstream consumers may need re-execution)
   
   When `has_concept_drift` is true due to approval-records (not concept-drift.json), set:
   - `concept_drift_source: "product-concept"` — when triggered by concept-drift.json (condition 1 above)
-  - `concept_drift_source: "game-design-gate"` — when triggered by either approval-records.json condition (conditions 2 or 3 above)
+  - `concept_drift_source: "game-design-gate"` — when triggered by either game-design approval-records.json condition (conditions 2 or 3 above)
+  - `concept_drift_source: "app-design-gate"` — when triggered by either app-design approval-records.json condition (conditions 4 or 5 above, when `is_game_project = false`)
 
 This affects Step 1.5 options:
 - has_product_artifacts + has_code → verification/demo/tune options are relevant
@@ -985,11 +988,15 @@ exit_artifacts:
 
 **App Design Node Injection (when `is_game_project = false` AND goal includes design phase):**
 
-When `is_game_project = false` AND the selected goal implies product design phases (e.g., user chose "从零构建新产品" or the goal includes UI/UX design work), inject app-design nodes using `knowledge/capabilities/app-design.md` Canonical Node Registry:
+**Skip injection entirely when goals are:** `translate`, `analyze`, `tune`, `product-verify`, `quality-checks`, `demo`, `launch-prep`, or `visual-verify`. These goals assume app design documents already exist; injecting design nodes would be wasteful.
+
+**Inject when `goals` includes `create` or `rebuild`** (new or re-designed app). For all other goals — `translate`, `analyze`, `tune`, `product-verify`, `quality-checks`, `demo`, `launch-prep`, `visual-verify` — **skip injection entirely** (app-design phases are already complete).
+
+Inject app-design nodes using `knowledge/capabilities/app-design.md` Canonical Node Registry:
 
 - Required nodes always injected: `ia-design`, `user-flow-design`, `interaction-design`, `app-design-finalize`
 - Optional nodes injected when relevant: `content-design` (content-heavy apps), `data-model-design` (data-intensive apps — inject when `has_database_model` is detected or user confirms)
-- Each node gets: `capability: "app-design"`, `human_gate: true`, `approval_record_path: ".allforai/app-design/approval-records.json"`, `gate_status: "pending"`, `discipline_owner` from app-design.md Canonical Node Registry
+- Each node gets: `capability: "app-design"`, `human_gate: true`, `approval_record_path: ".allforai/app-design/approval-records.json"`, `gate_status: "pending"`, `discipline_owner` from app-design.md Canonical Node Registry, `review_checklist: [<3 role-appropriate quality checks>]` — generate 3 discipline-appropriate checklist items per node (e.g., for ia-design: "All primary user flows represented", "Screen hierarchy reflects priority", "Navigation patterns consistent")
 - Ordering: `ia-design` first (no hard_blocked_by); `user-flow-design` and `content-design` and `data-model-design` each `hard_blocked_by: ["ia-design"]`; `interaction-design` `hard_blocked_by: ["user-flow-design"]`; `app-design-finalize` `hard_blocked_by:` ALL other selected app-design nodes
 - `app-design-finalize` `unlocks:` subsequent execution nodes (same role as `game-design-finalize`)
 - **No approval-records entry** for nodes with `human_gate: false` — only human_gate nodes get records
@@ -999,6 +1006,8 @@ When `is_game_project = false` AND the selected goal implies product design phas
 - `node_id: "concept-freeze"`, `capability: "concept-contract"`, `human_gate: false`
 - `hard_blocked_by: ["app-design-finalize"]`
 - `exit_artifacts: [".allforai/concept-contract.json"]`
+- After injecting, update all app execution nodes (any node that previously had `hard_blocked_by: ["app-design-finalize"]`) to instead `hard_blocked_by: ["concept-freeze"]`
+- Node-spec file: Write `.allforai/bootstrap/node-specs/concept-freeze.md` using `knowledge/capabilities/concept-contract.md` Branch B (app project). Set `input_files` to `.allforai/app-design/app-design-doc.json` and `.allforai/app-design/approval-records.json`.
 - **No approval-records entry**
 
 5. Initialise `.allforai/game-design/approval-records.json` with one `pending` record per game-design node
