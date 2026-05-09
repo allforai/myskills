@@ -37,6 +37,8 @@ Read `.allforai/bootstrap/workflow.json` at every iteration. Trust it over conve
   4. Decide next node:
      - What's done? What's pending? What makes sense next?
      - Can run multiple nodes in parallel if their exit_artifacts don't overlap
+     - **hard_blocked_by**: node cannot start until ALL hard_blocked_by nodes are complete (exit_artifacts exist + gate approved). Treat legacy `blocked_by` field the same way.
+     - **alignment_refs**: node CAN start even if alignment_refs nodes are not complete; read their artifacts if available, degrade gracefully if not. Dispatch in parallel if no hard_blocked_by prevents it.
      - Can skip a node if its goal is already satisfied
      - Can re-run a failed node after fixing the issue
      - **Game-design nodes with `human_gate: true`:** do NOT advance to the next node based on exit_artifact existence alone. Also check `.allforai/game-design/approval-records.json`:

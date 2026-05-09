@@ -895,7 +895,7 @@ After inserting the `art-direction` node, also insert an `art-concept` node imme
 ---
 node: art-concept
 human_gate: false
-blocked_by: [art-direction]
+hard_blocked_by: [art-direction]
 unlocks: [art-spec-design]
 exit_artifacts:
   - .allforai/game-design/art-pipeline-config.json
@@ -1231,7 +1231,8 @@ is likely too large for a single workflow execution. Suggest decomposition:
       ],
       "knowledge_refs": ["<which knowledge files this node should reference>"],
       "consumers": ["<node IDs that read this node's exit_artifacts>"],
-      "blocked_by": ["<node IDs that must complete before this node can run; empty if no dependencies>"],
+      "hard_blocked_by": ["<node IDs that must complete before this node can start — strict execution gate>"],
+      "alignment_refs": ["<node IDs this node reads from but can run concurrently — reads artifacts after they exist>"],
       "unlocks": ["<node IDs unblocked when this node completes>"],
       "human_gate": false,
       "discipline_owner": null
@@ -1264,7 +1265,10 @@ is likely too large for a single workflow execution. Suggest decomposition:
   the Downstream Contract section in the node-spec — tells the subagent "who
   will consume your output and what they need from it".
   **How to populate**: For each node N, `consumers[]` = all node IDs M where N appears in M's `blocked_by[]` AND N's exit_artifacts are listed in the Downstream Consumers table of M's capability file. Bootstrap derives this during Step 3.1 node graph design — after blocked_by chains are established, traverse them in reverse to fill consumers.
-- `blocked_by`: Node IDs that must be approved/completed before this node runs. Orchestrator checks this at runtime to decide which nodes are eligible. For game-design nodes, also checks `approval-records.json` gate_status.
+- `hard_blocked_by`: Node IDs that must complete (exit_artifacts exist + human_gate approved if applicable) before this node can START. The orchestrator will not dispatch this node until all hard_blocked_by nodes are complete. Use for true data dependencies — this node's inputs don't exist until upstream finishes.
+- `alignment_refs`: Node IDs this node reads artifacts FROM but does not strictly depend on for execution timing. The orchestrator may dispatch this node in parallel with alignment_refs nodes; the node-spec's Context Pull section must handle the case where alignment_refs artifacts may not yet exist (graceful degradation). Use for "I want to align with X's output but can work without it."
+
+**Migration note:** The legacy `blocked_by` field is equivalent to `hard_blocked_by`. Both are accepted; `hard_blocked_by` is preferred for new bootstrap runs.
 - `unlocks`: Node IDs unblocked when this node's gate is approved. Used by the orchestrator to advance the workflow after approval.
 - `human_gate`: `true` for game-design nodes requiring discipline_owner approval; `false` for all others. Orchestrator reads this to decide whether to check `approval-records.json` in addition to `exit_artifacts`.
 - `discipline_owner`: Role ID of the approver for human_gate nodes (e.g., `"lead-designer"`); `null` for non-gate nodes.
