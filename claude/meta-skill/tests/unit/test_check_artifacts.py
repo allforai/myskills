@@ -1,8 +1,6 @@
 import json
 import os
 import sys
-import tempfile
-import textwrap
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/orchestrator"))
 from check_artifacts import check_node_artifacts
@@ -51,8 +49,7 @@ def test_dict_artifact_validation_command_fails(tmp_path):
         "path": str(f),
         "validation_commands": [f'python3 -c "import json,sys; json.load(open(sys.argv[1]))" {f}']
     }]))
-    # THE BUG: currently all_exist is True despite validation_error
-    assert result["all_exist"] is False  # must be False after fix
+    assert result["all_exist"] is False
     assert "validation_error" in result["artifacts"][0]
 
 
