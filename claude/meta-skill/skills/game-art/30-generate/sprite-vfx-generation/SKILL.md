@@ -39,6 +39,22 @@ Optional inputs: `vfx-spec.json`, `art-style-guide.json`,
 `asset-registry.json`, `ui-registry.json`, existing sprite sheets, and caller
 generation capabilities.
 
+## Image Generation Upstream Contract
+
+Every generated sprite-sheet image must follow
+`game-art/30-generate/image-generation-contract/SKILL.md`.
+
+Use normalized image requests with `purpose=sprite_vfx`. The request must
+include frame count, FPS, frame size, lifecycle phase, layer, alpha policy,
+output path, positive prompt, negative prompt, sequence readability checks,
+frame crop checks, and `downstream_feedback.enabled=true`.
+
+If VFX generation, preview rendering, runtime import, or visual QA reports
+`CROPPED_SUBJECT`, `LOW_READABILITY`, `STYLE_DRIFT`, `BAD_ALPHA`, `WRONG_SCALE`,
+or event-timing unreadability caused by the sheet image, process the defect
+through `image-generation-contract` and regenerate when root cause is
+`image_generation` or `prompt_contract`.
+
 ## Output Contract
 
 | Output | Required | Purpose | Consumed by |

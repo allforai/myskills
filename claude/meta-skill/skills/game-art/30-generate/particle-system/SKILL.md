@@ -93,6 +93,22 @@ Out of scope:
 | `continuous` | fire, aura, rain, smoke, magic field | Spawn rate, loop stop condition, performance cap. |
 | `pulse` | warning zones, UI highlight, charging spell | Period, phase, visibility budget. |
 
+## Image Generation Upstream Contract
+
+When particle textures are generated, each bitmap request must follow
+`game-art/30-generate/image-generation-contract/SKILL.md`.
+
+Use normalized image requests with `purpose=particle_texture`. The request must
+include particle role, layer, blend mode, texture shape, alpha policy, style,
+output path, positive prompt, negative prompt, scale readability checks, blend
+suitability checks, and `downstream_feedback.enabled=true`.
+
+If particle preview, VFX generation, runtime import, or visual QA reports
+`BAD_ALPHA`, `LOW_READABILITY`, `STYLE_DRIFT`, `CROPPED_SUBJECT`, or
+`WRONG_SCALE` for a particle texture, process the defect through
+`image-generation-contract` and regenerate when root cause is `image_generation`
+or `prompt_contract`.
+
 ## Layer Rules
 
 | Presentation layer | Output root | QA focus |

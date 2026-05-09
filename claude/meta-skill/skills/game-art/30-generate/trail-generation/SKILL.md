@@ -36,6 +36,22 @@ Out of scope:
 Optional inputs: `vfx-spec.json`, `art-style-guide.json`, registries, existing
 trail textures, and preview capabilities.
 
+## Image Generation Upstream Contract
+
+When trail strip textures are generated, each bitmap request must follow
+`game-art/30-generate/image-generation-contract/SKILL.md`.
+
+Use normalized image requests with `purpose=trail_texture`. The request must
+include trail width/length, color over life, alpha/fade rule, layer, style,
+output path, positive prompt, negative prompt, stretch suitability checks, fade
+checks, and `downstream_feedback.enabled=true`.
+
+If trail preview, VFX generation, runtime import, or visual QA reports
+`BAD_ALPHA`, `STYLE_DRIFT`, `WRONG_SCALE`, `CROPPED_SUBJECT`, or
+`LOW_READABILITY` for a trail texture, process the defect through
+`image-generation-contract` and regenerate when root cause is `image_generation`
+or `prompt_contract`.
+
 ## Output Contract
 
 | Output | Required | Purpose | Consumed by |

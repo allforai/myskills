@@ -84,6 +84,22 @@ Tile prompts must specify:
 For connected tiles, prompts must request edge-compatible variants and avoid
 unique landmarks that break repetition.
 
+## Image Generation Upstream Contract
+
+Every generated tile image or tile sheet must follow
+`game-art/30-generate/image-generation-contract/SKILL.md`.
+
+Use normalized image requests with `purpose=tileset`. The request must include
+tile size, projection, connectivity, terrain id, variant id, atlas contract,
+positive prompt, negative prompt, output path, seam checks, preview-map checks,
+and `downstream_feedback.enabled=true`.
+
+If atlas packing, preview-map assembly, level generation, or runtime import
+reports `SEAM_FAILURE`, `WRONG_SCALE`, `STYLE_DRIFT`, `BAD_ALPHA`,
+`LOW_READABILITY`, or `CROPPED_SUBJECT`, classify the root cause through
+`image-generation-contract`. Regenerate tiles when the image violates the
+request or the prompt was underspecified.
+
 ## Output Contract
 
 | Output | Required | Purpose | Consumed by |

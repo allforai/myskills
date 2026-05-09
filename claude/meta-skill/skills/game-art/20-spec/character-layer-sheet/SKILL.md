@@ -190,6 +190,22 @@ Prompt requirements:
 - forbid text, labels, motion blur, cropped limbs, and merged hands/weapons,
 - include target view and style.
 
+## Image Generation Upstream Contract
+
+When generating a layer sheet image, follow
+`game-art/30-generate/image-generation-contract/SKILL.md`.
+
+Use normalized image requests with `purpose=layer_sheet`. The request must
+include exact part list, target view, style source, output path, positive
+prompt, negative prompt, part-separation acceptance checks, crop checks, pivot
+feasibility checks, and `downstream_feedback.enabled=true`.
+
+If skeletal animation, image slicing, rig planning, or visual QA reports
+`MISSING_REQUIRED_PART`, `MERGED_PARTS`, `CROPPED_SUBJECT`, `WRONG_VIEW`,
+`WRONG_SCALE`, or `STYLE_DRIFT`, process the downstream feedback through
+`image-generation-contract`. Regenerate the layer sheet when the root cause is
+`image_generation` or `prompt_contract`.
+
 ## Automatic Validation
 
 Run deterministic checks:

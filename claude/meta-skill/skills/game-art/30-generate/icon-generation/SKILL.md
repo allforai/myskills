@@ -105,6 +105,22 @@ Out of scope:
 | 7. Repair | Revise prompt/spec and regenerate up to capped attempts. | `repair_log[]` |
 | 8. Export manifest | Stable paths, states, atlas plan. | `icon-manifest.json` |
 
+## Image Generation Upstream Contract
+
+Every generated icon must follow
+`game-art/30-generate/image-generation-contract/SKILL.md`.
+
+Use normalized image requests with `purpose` set to `skill_icon`, `item_icon`,
+`currency_icon`, `status_icon`, or `ui_icon`. The request must include positive
+prompt, negative prompt, output path, small-size readability checks, alpha or
+background policy, and `downstream_feedback.enabled=true`.
+
+If a downstream UI, HUD, inventory, shop, or runtime consumer reports
+`LOW_READABILITY`, `STYLE_DRIFT`, `TEXT_ARTIFACT`, `CROPPED_SUBJECT`,
+`WRONG_SCALE`, or `BAD_ALPHA` against an icon, process the feedback through
+`image-generation-contract` before revising downstream specs. Regenerate the
+icon when root cause is `image_generation` or `prompt_contract`.
+
 ## Output Contract
 
 | Output | Required | Purpose | Consumed by |

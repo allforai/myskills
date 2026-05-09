@@ -72,6 +72,23 @@ Out of scope:
 - If image generation is unavailable, produce complete prompt/spec artifacts and
   mark image outputs `not_generated`.
 
+## Image Generation Upstream Contract
+
+Every generated UI mockup must follow
+`game-art/30-generate/image-generation-contract/SKILL.md`.
+
+Use normalized image requests with `purpose=ui_mockup`. The request must include
+screen/component id, breakpoint, layout spec reference, component state
+reference, style token source, output path, positive prompt, negative prompt,
+layout fidelity checks, text-fit checks, playfield protection checks, and
+`downstream_feedback.enabled=true`.
+
+If UI readability QA, frontend implementation, or browser screenshot validation
+reports `LOW_READABILITY`, `TEXT_ARTIFACT`, `CROPPED_SUBJECT`, `WRONG_SCALE`,
+`STYLE_DRIFT`, or layout drift caused by the mockup image, process the defect
+through `image-generation-contract`. Regenerate the mockup when root cause is
+`image_generation` or `prompt_contract`; otherwise repair layout/component specs.
+
 ## Output Contract
 
 | Output | Required | Purpose | Consumed by |

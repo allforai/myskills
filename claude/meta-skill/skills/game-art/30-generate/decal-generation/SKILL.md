@@ -35,6 +35,21 @@ Out of scope:
 Optional inputs: `vfx-spec.json`, `tileset-spec.json`, `art-style-guide.json`,
 registries, existing decal textures, and preview capabilities.
 
+## Image Generation Upstream Contract
+
+Every generated decal texture must follow
+`game-art/30-generate/image-generation-contract/SKILL.md`.
+
+Use normalized image requests with `purpose=decal`. The request must include
+surface compatibility, projection/placement, size, lifetime, fade, blend policy,
+output path, positive prompt, negative prompt, alpha/blend checks, surface
+readability checks, and `downstream_feedback.enabled=true`.
+
+If VFX generation, tile preview, runtime projection, or visual QA reports
+`BAD_ALPHA`, `CROPPED_SUBJECT`, `STYLE_DRIFT`, `WRONG_SCALE`, or
+`LOW_READABILITY`, process the defect through `image-generation-contract` and
+regenerate when root cause is `image_generation` or `prompt_contract`.
+
 ## Output Contract
 
 | Output | Required | Purpose | Consumed by |

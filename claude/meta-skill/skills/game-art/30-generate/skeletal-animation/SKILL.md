@@ -181,6 +181,25 @@ Forbidden:
 - Claiming final-quality output for effects that the automated pipeline cannot
   produce.
 
+## Image Generation Upstream Contract
+
+When this skill requests layer sheets, skeleton overlays, pose keyframe sheets,
+or visual reference images, each bitmap request must follow
+`game-art/30-generate/image-generation-contract/SKILL.md`.
+
+Use normalized image requests with `purpose=layer_sheet`, `pose_reference`, or
+`preview`. The request must include asset id, file prefix, target view,
+animation id when relevant, style source, output path, positive prompt, negative
+prompt, pose/readability checks, crop checks, and
+`downstream_feedback.enabled=true`.
+
+If rig planning, preview rendering, pose validation, or runtime import reports
+`MISSING_REQUIRED_PART`, `MERGED_PARTS`, `WRONG_VIEW`, `CROPPED_SUBJECT`,
+`LOW_READABILITY`, `STYLE_DRIFT`, or `WRONG_SCALE`, route the defect through
+`image-generation-contract`. Regenerate only the failed image request when root
+cause is `image_generation` or `prompt_contract`; otherwise repair the
+downstream animation spec.
+
 ## Creative Workflow
 
 The skeletal animation workflow has eight fixed stages. Do not skip stages even

@@ -30,6 +30,7 @@ Do not organize by tool. Organize by production layer:
 | `20-spec` | `character-layer-sheet` | Character part decomposition, layer-sheet prompt/spec, pivots, validation. |
 | `20-spec` | `tileset-spec` | Tilemap mode selection, terrain vocabulary, tile rules, collision/walkability contracts. |
 | `20-spec` | `vfx-spec` | VFX semantics, gameplay events, presentation layer, dimension, implementation mode, timing, readability budgets. |
+| `30-generate` | `image-generation-contract` | Shared LLM image request, prompt, output, visual acceptance, repair, and fallback contract. |
 | `30-generate` | `icon-generation` | Skill, item, currency, ability, status, and UI icon set generation with consistency QA. |
 | `30-generate` | `tileset-generation` | Tileset prompts, generated tile sheets, atlas manifests, preview maps, repair loop. |
 | `30-generate` | `particle-system` | Reusable particle emitter configs, textures, previews, validation, and repair. |
@@ -54,6 +55,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/motion-design/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/character-layer-sheet/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/tileset-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/vfx-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/image-generation-contract/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/icon-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/tileset-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/particle-system/SKILL.md
@@ -145,9 +147,19 @@ Icon set generation:
 
 ```text
 00-env/asset-registry
+-> 30-generate/image-generation-contract
 -> 30-generate/icon-generation
 -> 40-qa/art-preview-qa          (future)
 -> game-ui/00-env/ui-registry    (consumer)
+```
+
+Image-backed asset generation:
+
+```text
+00-env/asset-registry
+-> 30-generate/image-generation-contract
+-> 30-generate/icon-generation | tileset-generation | sprite-vfx-generation | decal-generation
+-> 40-qa/art-preview-qa          (future)
 ```
 
 ## Non-Goals
