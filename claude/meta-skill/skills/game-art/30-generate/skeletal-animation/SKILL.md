@@ -188,9 +188,12 @@ or visual reference images, each bitmap request must follow
 `game-art/30-generate/image-generation-contract/SKILL.md`.
 
 Use normalized image requests with `purpose=layer_sheet`, `pose_reference`, or
-`preview`. The request must include asset id, file prefix, target view,
-animation id when relevant, style source, output path, positive prompt, negative
-prompt, pose/readability checks, crop checks, and
+`preview`, and matching `generation_profile.task_type` values. Use
+`prompt_template=layer_sheet_prompt`, `prompt_template=pose_reference_prompt`,
+or `prompt_template=preview_prompt` rather than a generic prompt. The request
+must include asset id, file prefix, target view, animation id when relevant,
+style source, output path, positive prompt, negative prompt, pose/readability
+checks, crop checks, and
 `downstream_feedback.enabled=true`.
 
 If rig planning, preview rendering, pose validation, or runtime import reports
@@ -251,6 +254,8 @@ Track each asset and each animation with one of these states:
 | Timing and curves | Duration is in allowed range, keyframes are sorted, loop animations end on start pose, event frames fall within duration. | Normalize timing; if gameplay event timing is unknown, mark `needs_revision`. |
 | Render and preview | Every animation has a rendered preview when tooling is available; otherwise it has a deterministic preview spec and fallback. | Generate preview, or record tool absence and use static keyframe validation. |
 | Visual QA and repair | Deterministic checks pass; visual validation passes or repair attempts are exhausted with fallback ready. | Apply repair loop; then mark `approved`, `needs_revision`, or `automation_limited`. |
+
+## Automatic Validation
 
 ### Automatic validation checks
 

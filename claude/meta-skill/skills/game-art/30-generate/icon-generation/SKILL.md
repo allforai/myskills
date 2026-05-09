@@ -111,9 +111,12 @@ Every generated icon must follow
 `game-art/30-generate/image-generation-contract/SKILL.md`.
 
 Use normalized image requests with `purpose` set to `skill_icon`, `item_icon`,
-`currency_icon`, `status_icon`, or `ui_icon`. The request must include positive
-prompt, negative prompt, output path, small-size readability checks, alpha or
-background policy, and `downstream_feedback.enabled=true`.
+`currency_icon`, `status_icon`, or `ui_icon`, and
+`generation_profile.task_type=icon`. The request must use
+`prompt_template=icon_prompt` and a model profile that supports high-silhouette
+single-subject output. It must include positive prompt, negative prompt, output
+path, small-size readability checks, alpha or background policy, and
+`downstream_feedback.enabled=true`.
 
 If a downstream UI, HUD, inventory, shop, or runtime consumer reports
 `LOW_READABILITY`, `STYLE_DRIFT`, `TEXT_ARTIFACT`, `CROPPED_SUBJECT`,

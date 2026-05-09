@@ -77,10 +77,13 @@ Out of scope:
 Every generated UI mockup must follow
 `game-art/30-generate/image-generation-contract/SKILL.md`.
 
-Use normalized image requests with `purpose=ui_mockup`. The request must include
-screen/component id, breakpoint, layout spec reference, component state
-reference, style token source, output path, positive prompt, negative prompt,
-layout fidelity checks, text-fit checks, playfield protection checks, and
+Use normalized image requests with `purpose=ui_mockup` and
+`generation_profile.task_type=ui_mockup`. The request must use
+`prompt_template=ui_mockup_prompt` and a model profile that supports
+layout-aware image generation or editing. It must include screen/component id,
+breakpoint, layout spec reference, component state reference, style token
+source, output path, positive prompt, negative prompt, layout fidelity checks,
+text-fit checks, playfield protection checks, and
 `downstream_feedback.enabled=true`.
 
 If UI readability QA, frontend implementation, or browser screenshot validation

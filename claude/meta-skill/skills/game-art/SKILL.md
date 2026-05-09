@@ -30,7 +30,15 @@ Do not organize by tool. Organize by production layer:
 | `20-spec` | `character-layer-sheet` | Character part decomposition, layer-sheet prompt/spec, pivots, validation. |
 | `20-spec` | `tileset-spec` | Tilemap mode selection, terrain vocabulary, tile rules, collision/walkability contracts. |
 | `20-spec` | `vfx-spec` | VFX semantics, gameplay events, presentation layer, dimension, implementation mode, timing, readability budgets. |
+| `20-spec` | `visual-style-tokens` | Shared palette, shape, line, material, camera, typography, and motion tokens. |
+| `20-spec` | `frame-animation-spec` | Frame-animation vocabulary, frame counts, timing, anchors, loop rules, acceptance. |
 | `30-generate` | `image-generation-contract` | Shared LLM image request, prompt, output, visual acceptance, repair, and fallback contract. |
+| `30-generate` | `background-generation` | Background scene prompts, layers, parallax/depth, generated images, validation. |
+| `30-generate` | `prop-generation` | Reusable prop specs, generated images/models/placeholders, variants, validation. |
+| `30-generate` | `portrait-generation` | Character portraits, busts, dialogue/emotion variants, generated images, QA. |
+| `30-generate` | `item-art-generation` | Item/equipment art specs, generated images, variants, inventory/shop validation. |
+| `30-generate` | `frame-animation-generation` | Sprite-frame animation sheets, frame metadata, previews, repair loop. |
+| `30-generate` | `expression-set-generation` | Character expression sheets, emotion states, portraits, validation, repair. |
 | `30-generate` | `icon-generation` | Skill, item, currency, ability, status, and UI icon set generation with consistency QA. |
 | `30-generate` | `tileset-generation` | Tileset prompts, generated tile sheets, atlas manifests, preview maps, repair loop. |
 | `30-generate` | `particle-system` | Reusable particle emitter configs, textures, previews, validation, and repair. |
@@ -44,6 +52,9 @@ Do not organize by tool. Organize by production layer:
 | `30-generate` | `animation-event-fx` | Footstep, landing, weapon, cast, and hit FX bound to animation timeline events. |
 | `30-generate` | `vfx-generation` | VFX orchestration across particle, sprite-sheet, trail, shader, decal, screen-effect, mesh-burst, light-pulse, and animation-event branches. |
 | `30-generate` | `skeletal-animation` | Bone hierarchy, transform timelines, rendered preview loop, visual validation, repair. |
+| `40-qa` | `art-preview-qa` | Cross-asset visual QA, downstream feedback, issue classification, repair routing. |
+| `40-qa` | `atlas-packaging` | Atlas packing manifests, spacing/margin checks, references, and export validation. |
+| `40-qa` | `runtime-import-check` | Runtime import validation for assets, manifests, previews, and fallback status. |
 
 ## Canonical Invocation Paths
 
@@ -55,7 +66,15 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/motion-design/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/character-layer-sheet/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/tileset-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/vfx-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/visual-style-tokens/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/frame-animation-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/image-generation-contract/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/background-generation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/prop-generation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/portrait-generation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/item-art-generation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/frame-animation-generation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/expression-set-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/icon-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/tileset-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/particle-system/SKILL.md
@@ -69,6 +88,9 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/light-pulse-generation/SKILL.m
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/animation-event-fx/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/vfx-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/skeletal-animation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/art-preview-qa/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/atlas-packaging/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/runtime-import-check/SKILL.md
 ```
 
 ## Layering Rules

@@ -40,10 +40,13 @@ registries, existing decal textures, and preview capabilities.
 Every generated decal texture must follow
 `game-art/30-generate/image-generation-contract/SKILL.md`.
 
-Use normalized image requests with `purpose=decal`. The request must include
-surface compatibility, projection/placement, size, lifetime, fade, blend policy,
-output path, positive prompt, negative prompt, alpha/blend checks, surface
-readability checks, and `downstream_feedback.enabled=true`.
+Use normalized image requests with `purpose=decal` and
+`generation_profile.task_type=decal`. The request must use
+`prompt_template=decal_prompt` and a model profile that supports transparent
+texture output. It must include surface compatibility, projection/placement,
+size, lifetime, fade, blend policy, output path, positive prompt, negative
+prompt, alpha/blend checks, surface readability checks, and
+`downstream_feedback.enabled=true`.
 
 If VFX generation, tile preview, runtime projection, or visual QA reports
 `BAD_ALPHA`, `CROPPED_SUBJECT`, `STYLE_DRIFT`, `WRONG_SCALE`, or

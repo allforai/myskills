@@ -195,10 +195,12 @@ Prompt requirements:
 When generating a layer sheet image, follow
 `game-art/30-generate/image-generation-contract/SKILL.md`.
 
-Use normalized image requests with `purpose=layer_sheet`. The request must
-include exact part list, target view, style source, output path, positive
-prompt, negative prompt, part-separation acceptance checks, crop checks, pivot
-feasibility checks, and `downstream_feedback.enabled=true`.
+Use normalized image requests with `purpose=layer_sheet` and
+`generation_profile.task_type=layer_sheet`. The request must use
+`prompt_template=layer_sheet_prompt` and a model profile that supports controlled
+component separation. It must include exact part list, target view, style source,
+output path, positive prompt, negative prompt, part-separation acceptance checks,
+crop checks, pivot feasibility checks, and `downstream_feedback.enabled=true`.
 
 If skeletal animation, image slicing, rig planning, or visual QA reports
 `MISSING_REQUIRED_PART`, `MERGED_PARTS`, `CROPPED_SUBJECT`, `WRONG_VIEW`,

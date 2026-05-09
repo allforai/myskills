@@ -52,6 +52,7 @@ Out of scope:
 | Input | Required fields | Missing behavior |
 |---|---|---|
 | Image generation request | `request_id`, `asset_id`, `purpose`, `output_path`, `prompt`, `acceptance` | Return `UPSTREAM_DEFECT`. |
+| Generation profile | `task_type`, `model_class`, `prompt_template`, `output_constraints` | Derive from `purpose` once; if still ambiguous, return `UPSTREAM_DEFECT`. |
 | Style context | art style, palette/material/tone, target view or UI context | Use `.allforai/game-design/art-style-guide.json` or return `COMPLETED_WITH_LIMITS` with spec-only output. |
 
 ### Optional inputs
@@ -74,7 +75,24 @@ Every image-producing skill must normalize image requests to this shape:
   "request_id": "ico_fireball_primary",
   "asset_id": "fireball",
   "file_prefix": "ico_fireball",
-  "purpose": "skill_icon | tileset | ui_mockup | layer_sheet | pose_reference | sprite_vfx | decal | particle_texture | trail_texture | preview",
+  "purpose": "skill_icon | tileset | ui_mockup | layer_sheet | pose_reference | sprite_vfx | decal | particle_texture | trail_texture | background | prop | portrait | item_art | frame_animation | expression_set | preview",
+  "generation_profile": {
+    "task_type": "icon | tileset | ui_mockup | layer_sheet | pose_reference | sprite_vfx | decal | particle_texture | trail_texture | background | prop | portrait | item_art | frame_animation | expression_set | preview",
+    "model_class": "image_generation | image_edit | multimodal_validate | spec_only",
+    "recommended_model": "<runtime-selected model or capability alias>",
+    "prompt_template": "icon_prompt | tileset_prompt | ui_mockup_prompt | layer_sheet_prompt | pose_reference_prompt | sprite_vfx_prompt | decal_prompt | particle_texture_prompt | trail_texture_prompt | background_prompt | prop_prompt | portrait_prompt | item_art_prompt | frame_animation_prompt | expression_set_prompt | preview_prompt",
+    "output_constraints": {
+      "alpha": false,
+      "exact_size": true,
+      "style_lock": true,
+      "multi_frame_consistency": false,
+      "small_size_readability": false,
+      "seamless_edges": false,
+      "layout_fidelity": false,
+      "part_separation": false,
+      "identity_consistency": false
+    }
+  },
   "style_context": {
     "source": ".allforai/game-design/art-style-guide.json",
     "dimension": "2d | 3d | screen_space",
@@ -113,10 +131,40 @@ Every image-producing skill must normalize image requests to this shape:
 }
 ```
 
+## Generation Profile Selection
+
+Every image request must declare a `generation_profile`. The caller may choose
+the actual model at runtime, but it must choose a model whose capabilities match
+the task profile. Do not use one generic prompt template for all image tasks.
+
+| Task type | Model capability profile | Prompt template | Required output constraints |
+|---|---|---|---|
+| `icon` | high-silhouette image generation or edit | `icon_prompt` | alpha, exact size, style lock, small-size readability. |
+| `tileset` | consistent texture/tile generation | `tileset_prompt` | exact size, seamless edges, style lock, atlas compatibility. |
+| `ui_mockup` | layout-aware image generation/edit | `ui_mockup_prompt` | layout fidelity, text constraints, style lock. |
+| `layer_sheet` | controlled character/component separation | `layer_sheet_prompt` | part separation, alpha/neutral background, exact size. |
+| `pose_reference` | character-consistent pose/reference generation | `pose_reference_prompt` | identity consistency, pose readability, style lock. |
+| `sprite_vfx` | frame-consistent effect generation | `sprite_vfx_prompt` | alpha, exact frame grid, multi-frame consistency. |
+| `decal` | transparent texture generation | `decal_prompt` | alpha, blend edge quality, surface readability. |
+| `particle_texture` | simple transparent sprite generation | `particle_texture_prompt` | alpha, small texture readability, blend suitability. |
+| `trail_texture` | strip/gradient texture generation | `trail_texture_prompt` | alpha, stretch suitability, fade quality. |
+| `background` | scene/background generation | `background_prompt` | camera/view, composition, style lock, UI-safe negative space. |
+| `prop` | isolated object generation | `prop_prompt` | alpha, scale readability, style lock. |
+| `portrait` | identity-consistent character portrait | `portrait_prompt` | identity consistency, crop policy, expression clarity. |
+| `item_art` | isolated item/equipment generation | `item_art_prompt` | alpha, category readability, rarity/state clarity. |
+| `frame_animation` | frame sheet generation/edit | `frame_animation_prompt` | exact frame grid, anchor consistency, multi-frame consistency. |
+| `expression_set` | identity-consistent expression variants | `expression_set_prompt` | identity consistency, expression distinction, crop consistency. |
+| `preview` | validation preview or reference image | `preview_prompt` | composition matches downstream validation need. |
+
+If no available model supports the required profile, return
+`COMPLETED_WITH_LIMITS` with a `spec_only` or `placeholder_ready` output instead
+of pretending the generated image is final.
+
 ## Prompt Contract
 
 Every request must include:
 - asset purpose,
+- generation profile and prompt template,
 - exact subject,
 - style source,
 - target view/camera,
@@ -190,9 +238,11 @@ Run deterministic checks:
 2. Output path starts with the caller-approved root.
 3. Output filename starts with the resolved `file_prefix`.
 4. Size/aspect/background policy are declared.
-5. Negative prompt or `must_not_include` exists.
-6. `max_repair_attempts` is finite.
-7. Generated outputs are never marked `approved` without validation.
+5. `generation_profile.task_type`, `model_class`, `prompt_template`, and
+   `output_constraints` are declared.
+6. Negative prompt or `must_not_include` exists.
+7. `max_repair_attempts` is finite.
+8. Generated outputs are never marked `approved` without validation.
 
 Run visual validation when images exist:
 1. Subject matches the request purpose.

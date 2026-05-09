@@ -246,6 +246,8 @@ Fallback output:
 }
 ```
 
+## Automatic Validation
+
 ## Automatic Acceptance
 
 Run these deterministic checks:
