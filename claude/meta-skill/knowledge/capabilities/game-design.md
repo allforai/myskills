@@ -770,3 +770,29 @@ Example: Adding ranked PvP mode → only `competitive-balance-design` + `game-de
 
 ### Skip Entirely
 Game SDK / engine projects, CLI game tools, non-game projects.
+
+---
+
+## Concept Visualization Integration
+
+> 引用协议：`knowledge/capabilities/concept-visualization.md`（phase-id = `game-design`）
+
+**启动：** 游戏设计阶段第一个节点（通常是 `core-loop-design`）开始执行前，调用「工具层：启动序列」（phase-id = `game-design`）。
+
+**跨 session 累积：** game-design 分多次 `/run` 执行（各节点之间有 human_gate 暂停）。
+`conclusion-kanban.html` 和 `mindmap.html` 跨 session 累积：每次 `/run` 启动时检查文件是否存在，若存在则读取已有内容继续追加。
+`wireframes.html` 每次 session 重置（总是重写初始模板后再按触发规则生成新线框）。
+
+**各节点执行完成且 human_gate 通过后** 调用「工具层：结论更新序列」：
+
+| 节点 | 目标看板列 slug | 线框触发 |
+|---|---|---|
+| `core-loop-design` | `wanfa` | **低保真**（此节点完成时触发，内容：HUD草图+关卡布局草图） |
+| `economy-design` | `jingji` | — |
+| `progression-design` | `chengzhang` | — |
+| `narrative-design` | `xushi` | — |
+| `art-direction` | `meishu` | **中保真**（此节点完成时触发，内容：完整游戏UI层级线框） |
+
+game-design 思维导图使用**结论节点**（fill: `#744210`，橙色）表示关键设计决策，区分于普通结构节点。
+
+**结束：** 所有游戏设计节点完成（`game-design-finalize` 通过 human_gate）后，调用「工具层：结束序列」。
