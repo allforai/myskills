@@ -41,11 +41,12 @@ Read `.allforai/bootstrap/workflow.json` at every iteration. Trust it over conve
      - **alignment_refs**: node CAN start even if alignment_refs nodes are not complete; read their artifacts if available, degrade gracefully if not. Dispatch in parallel if no hard_blocked_by prevents it.
      - Can skip a node if its goal is already satisfied
      - Can re-run a failed node after fixing the issue
-     - **Game-design nodes with `human_gate: true`:** do NOT advance to the next node based on exit_artifact existence alone. Also check `.allforai/game-design/approval-records.json`:
-       - `gate_status == "pending"` AND all exit_artifacts exist → auto-set `gate_status` to `"in-review"` and notify the `discipline_owner` that the output is ready for review. Do NOT advance yet.
+     - **Nodes with `human_gate: true`:** do NOT advance based on exit_artifact existence alone. Read the node's `approval_record_path` field from workflow.json (e.g., `.allforai/game-design/approval-records.json` for game-design nodes, `.allforai/app-design/approval-records.json` for app-design nodes). Look up this node's record by `node_id`:
+       - `gate_status == "pending"` AND all exit_artifacts exist → auto-set `gate_status` to `"in-review"` and notify `discipline_owner`. Do NOT advance yet.
        - `gate_status == "in-review"` → wait for `discipline_owner` to approve or request revision. Do NOT advance.
        - `gate_status == "approved"` → this node is done; advance to unlocked nodes.
        - `gate_status == "revision-requested"` → re-run the node passing `revision_notes` as instruction; after re-execution completes, reset `gate_status` to `"in-review"`.
+       - If `approval_record_path` is missing on the node → treat as `gate_status == "pending"` and warn.
   5. Read the node-spec: .allforai/bootstrap/node-specs/<node-id>.md
   6. Dispatch subagent with node-spec as prompt. Per §D of cross-phase-protocols.md: execution-phase subagents are FORBIDDEN from using AskUserQuestion or any user interaction — all decisions must already be written to .allforai/ files from the Discussion Phase (bootstrap). If a subagent reports UPSTREAM_DEFECT (missing decision information), pause execution and return to Discussion Phase to supplement decisions, then resume.
   7. On success: record transition (status=completed, artifacts_created)
