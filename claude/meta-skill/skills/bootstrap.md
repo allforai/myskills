@@ -41,7 +41,14 @@ Record what exists:
 - `has_iteration_feedback`: true if product-concept/iteration-feedback.json exists (previous concept-acceptance feedback)
 - `has_product_concept`: true if product-concept/product-concept.json exists
 - `has_decision_journal`: true if product-concept/decision-journal.json exists (previous /journal records)
-- `has_concept_drift`: true if product-concept/concept-drift.json exists AND its `resolved` field is false
+- `has_concept_drift`: true if ANY of the following conditions hold:
+  - `product-concept/concept-drift.json` exists AND its `resolved` field is false
+  - `.allforai/game-design/approval-records.json` exists AND any record has `gate_status == "revision-requested"` (in-flight revision cycle on a design gate)
+  - `.allforai/game-design/approval-records.json` exists AND any record has non-empty `revision_notes` AND `gate_status == "approved"` (a previous revision was re-approved — downstream consumers may need re-execution)
+  
+  When `has_concept_drift` is true due to approval-records (not concept-drift.json), set:
+  - `concept_drift_source: "product-concept"` — when triggered by concept-drift.json
+  - `concept_drift_source: "game-design-gate"` — when triggered by approval-records.json revision
 
 This affects Step 1.5 options:
 - has_product_artifacts + has_code → verification/demo/tune options are relevant
@@ -844,6 +851,24 @@ When concept has drifted since last bootstrap:
 7. Regenerate node-specs for all affected nodes at `.allforai/bootstrap/node-specs/`.
 8. Proceed to Step 3.5 (Coverage Self-Check) — concept has changed, coverage must be re-verified.
 9. Do NOT mark drift as resolved here. The orchestrator (/run) marks drift resolved AFTER all nodes complete successfully. This prevents the case where bootstrap marks drift resolved but /run fails partway — next /bootstrap would then wrongly see drift as already resolved and skip re-planning.
+
+**When `concept_drift_source == "game-design-gate"`:**
+
+1. Read `.allforai/game-design/approval-records.json` → collect all records with non-empty `revision_notes`
+2. For each revised node, identify which downstream nodes consume its output (from `consumers[]` in workflow.json)
+3. Mark those downstream nodes as `"status": "needs-rerun"` in workflow.json — they must re-execute with the updated design input
+4. Nodes whose `hard_blocked_by` does not include any revised node → preserve as-is (no re-execution needed)
+5. Write revision summary to `.allforai/product-concept/concept-drift.json` if it doesn't exist yet:
+   ```json
+   {
+     "source": "game-design-gate",
+     "changes": [
+       { "node": "<revised node id>", "revision_notes": "<notes from approval-records>", "detected_at": "<ISO>" }
+     ],
+     "resolved": false
+   }
+   ```
+6. Do NOT mark drift as resolved here. The orchestrator (/run) marks it resolved after all re-run nodes complete successfully.
 
 **After incremental re-planning, skip 3.1-3.3** (they are for full planning) and go directly
 to Step 3.4 (Confirm with User) → Step 3.5 (Coverage Self-Check) → Step 4.
