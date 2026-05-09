@@ -20,7 +20,7 @@ all approved concept-phase decisions, with a `canonical_registry` derived from
 | File | Required fields |
 |------|----------------|
 | `.allforai/product-concept/product-concept.json` | `genre`, `target_platform`, `core_loop` |
-| `.allforai/game-design/art-style-guide.json` | `art_overview` |
+| `.allforai/game-design/art-style-guide.json` | `art_overview` (incl. `animation_system`) |
 | `.allforai/game-design/art-pipeline-config.json` | `dimension`, `style`, `active_nodes` |
 | `.allforai/game-design/art-asset-inventory.json` | `assets[].asset_id`, `assets[].type`, `assets[].name` |
 | `.allforai/game-design/approval-records.json` | all records with `gate_status` |
@@ -54,6 +54,8 @@ Read `art-asset-inventory.json.assets[]`. For each asset:
   - type=`audio-cover` → `aud_{asset_id}`
   - other → `{asset_id}` (no prefix)
 - Group into `characters[]`, `tiles[]`, `environments[]`, `ui[]`, `vfx[]`, `other[]`
+- Types `icon` and `audio-cover` are grouped into `other[]` in the output schema,
+  with their computed `file_prefix` stored in the entry alongside `asset_id` and `name`.
 
 ### Step 3: Write concept-contract.json
 
@@ -88,7 +90,9 @@ Stamp with `frozen_at` (ISO timestamp) and `schema_version: "1.0"`.
     "vfx": [
       { "asset_id": "<slug>", "name": "<display name>", "file_prefix": "vfx_<slug>" }
     ],
-    "other": []
+    "other": [
+      { "asset_id": "<slug>", "name": "<display name>", "file_prefix": "<derived prefix>" }
+    ]
   },
   "active_art_nodes": ["<node ids from art-pipeline-config.active_nodes>"],
   "human_gates_approved": ["<list of approved node ids from approval-records.json>"]

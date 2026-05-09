@@ -924,6 +924,7 @@ After inserting `art-spec-design`, also insert a `concept-freeze` node immediate
 - `node_id: "concept-freeze"`, `capability: "concept-contract"`, `human_gate: false`
 - `hard_blocked_by: ["art-spec-design"]`; update all art-gen nodes (`ai-art-generation`, `tile-art-gen`, `character-art-gen`, `environment-art-gen`, `vfx-art-gen`, etc.) to `hard_blocked_by: ["concept-freeze"]` (remove `art-spec-design` from their hard_blocked_by)
 - `unlocks`: all art-gen nodes
+- **No approval-records entry** (concept-freeze has `human_gate: false` — no discipline_owner review needed)
 - **Node-spec content** for concept-freeze (write verbatim to `.allforai/bootstrap/node-specs/concept-freeze.md`):
 
 ```markdown
@@ -931,6 +932,7 @@ After inserting `art-spec-design`, also insert a `concept-freeze` node immediate
 node: concept-freeze
 human_gate: false
 hard_blocked_by: [art-spec-design]
+unlocks: []  # populated by bootstrap from workflow's art-gen nodes
 exit_artifacts:
   - .allforai/concept-contract.json
 ---
