@@ -918,6 +918,44 @@ exit_artifacts:
 `.allforai/game-design/art-pipeline-config.json` 存在且 `status == "final"`。
 ```
 
+**Concept Freeze Node Injection (applies when art-spec-design is in the selected workflow):**
+
+After inserting `art-spec-design`, also insert a `concept-freeze` node immediately following it:
+- `node_id: "concept-freeze"`, `capability: "concept-contract"`, `human_gate: false`
+- `hard_blocked_by: ["art-spec-design"]`; update all art-gen nodes (`ai-art-generation`, `tile-art-gen`, `character-art-gen`, `environment-art-gen`, `vfx-art-gen`, etc.) to `hard_blocked_by: ["concept-freeze"]` (remove `art-spec-design` from their hard_blocked_by)
+- `unlocks`: all art-gen nodes
+- **Node-spec content** for concept-freeze (write verbatim to `.allforai/bootstrap/node-specs/concept-freeze.md`):
+
+```markdown
+---
+node: concept-freeze
+human_gate: false
+hard_blocked_by: [art-spec-design]
+exit_artifacts:
+  - .allforai/concept-contract.json
+---
+
+# Task: 概念合约冻结（Concept Freeze）
+
+## 执行方法
+
+读取并执行 `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/concept-contract.md` capability。
+
+该节点完成以下工作：
+1. 验证所有 human_gate 节点均已 approved（approval-records.json）
+2. 从 art-asset-inventory.json 构建 canonical_registry（ID→文件前缀映射）
+3. 写入 `.allforai/concept-contract.json`（schema_version=1.0）
+
+## 完成条件
+
+`.allforai/concept-contract.json` 存在且 `schema_version == "1.0"`。
+
+## 重要说明
+
+所有后续 art-gen 节点必须从 concept-contract.json 读取 canonical_registry，
+使用其中的 file_prefix 作为生成文件的命名权威来源，不得自行命名。
+```
+
 5. Initialise `.allforai/game-design/approval-records.json` with one `pending` record per game-design node
 6. Ad-hoc nodes appearing in EITHER `optional_nodes` OR `bootstrap_note` (but absent from both the canonical registry AND `node_order`): these require user opt-in, presented in the opt-in question after scenario selection. Process them ONCE — if a node appears in both `optional_nodes` and `bootstrap_note`, treat it as a single ad-hoc opt-in candidate (do not generate two node-specs). If the user selects it, generate node-spec via Step 2.7 research and position per step 4 ad-hoc rule.
 7. **Cross-scenario signal scan (hybrid games):** After loading the primary scenario template, scan Step 1.1–1.3 findings for multiplayer/network signals:
