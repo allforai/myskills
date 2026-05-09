@@ -56,6 +56,9 @@
 
 **输出**：各维度的推荐选项列表（内部使用，不单独展示，用于 Step 1 选项生成）
 
+**→ 在进入 Step 1 前，调用 Concept Visualization 启动序列（phase-id = `art-concept`）：**
+> 参见 `knowledge/capabilities/concept-visualization.md` — 「工具层：启动序列」
+
 ### Step 1：按维度逐一问答
 
 **铁律：从不问开放性问题。每问提供 2-4 个选项，选项必须来自 Step 0.5 搜索结论，附带证据。**
@@ -172,6 +175,23 @@
 
 ---
 
+### Step 1.5：Concept Visualization 更新约定
+
+> 参见 `knowledge/capabilities/concept-visualization.md` — 「工具层：结论更新序列」
+
+Step 1 每问结论确认后，按下表调用结论更新序列（分支 A / B / C 均适用）：
+
+| 问题 | 目标看板列 slug | 线框触发 |
+|---|---|---|
+| Q1（地砖系统 / 地砖分辨率 / 多边形面数） | `shijue`（视觉方向） | **低保真**（此列第1张卡片写入时触发） |
+| Q2（动画方案 / 调色板大小 / 贴图工作流） | `shijue`（视觉方向） | — |
+| Q3（特效方案 / 动画帧数 / 骨骼动画来源） | `guige`（技术规格） | **中保真**（此列第1张卡片写入时触发） |
+| Q4（场景层次 / Aseprite安装 / VFX方案） | `guige`（技术规格） | — |
+| Q5（概念原画需求 / 场景构建方式） | `qingdan`（资产清单） | — |
+| Q6（工具链约束，仅分支 A / B） | `gongju`（工具链） | — |
+
+---
+
 ### Step 2：产出 art-pipeline-config.json 草稿
 
 根据 Step 1 所有答案组装 JSON，写入 `.allforai/game-design/art-pipeline-config.json`，`status` 置为 `"draft"`。
@@ -227,6 +247,9 @@
 
 下一步：/run 将继续执行 art-spec-design 节点
 ```
+
+**→ 调用 Concept Visualization 结束序列（phase-id = `art-concept`）：**
+> 参见 `knowledge/capabilities/concept-visualization.md` — 「工具层：结束序列」
 
 ---
 
