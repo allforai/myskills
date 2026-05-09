@@ -17,6 +17,10 @@ all approved concept-phase decisions, with a `canonical_registry` derived from
 
 ## Inputs
 
+The concept-freeze node serves both game/art projects and non-game app projects. Inputs are conditional on project type — read `bootstrap-profile.json.is_game_project` to determine which branch applies.
+
+### Branch A: Game / Art project (`is_game_project = true`)
+
 | File | Required fields |
 |------|----------------|
 | `.allforai/product-concept/product-concept.json` | `genre`, `target_platform`, `core_loop` |
@@ -26,7 +30,23 @@ all approved concept-phase decisions, with a `canonical_registry` derived from
 | `.allforai/game-design/approval-records.json` | all records with `gate_status` |
 
 If `art-asset-inventory.json` is missing → report UPSTREAM_DEFECT and halt.
-If any human_gate node has `gate_status != "approved"` → halt with error listing unapproved gates.
+If any game-design human_gate node has `gate_status != "approved"` → halt listing unapproved gates.
+
+### Branch B: Non-game app project (`is_game_project = false`)
+
+| File | Required fields |
+|------|----------------|
+| `.allforai/product-concept/product-concept.json` | `name`, `target_users`, `core_features` |
+| `.allforai/app-design/app-design-doc.json` | `ia-design`, `user-flow-design`, `interaction-design` top-level keys |
+| `.allforai/app-design/approval-records.json` | all records with `gate_status` |
+
+If `app-design-doc.json` is missing → report UPSTREAM_DEFECT and halt.
+If any app-design human_gate node has `gate_status != "approved"` → halt listing unapproved gates.
+
+For Branch B, `canonical_registry` is derived from `app-design-doc.json` screen and component IDs rather than art asset IDs:
+- `screens[]` from `ia-design` → registry group `screens`, `file_prefix: "scr_{screen_id}"`
+- `components[]` from `interaction-design` → registry group `components`, `file_prefix: "cmp_{component_id}"`
+- `flows[]` from `user-flow-design` → registry group `flows`, `file_prefix: "flw_{flow_id}"`
 
 ## Output
 
