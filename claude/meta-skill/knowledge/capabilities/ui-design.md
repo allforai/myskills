@@ -82,3 +82,24 @@ For backend-only projects, CLI tools, `embedded-firmware`, `github-action`, or w
 
 ### Split by Role
 For apps with very different role UIs (e.g., consumer app + admin dashboard).
+
+---
+
+## App Design Concept Visualization
+
+> App设计阶段可视化协议。仅当 phase-id = `app-design` 时适用。
+> 游戏 UI 通过 game-design 阶段的可视化协议处理，不在此范围内。
+> 引用协议：`knowledge/capabilities/concept-visualization.md`（phase-id = `app-design`）
+
+**启动：** App设计阶段开始时（通常在 experience-map 完成后），调用「工具层：启动序列」（phase-id = `app-design`）。
+
+**各子阶段结论确认后** 调用「工具层：结论更新序列」：
+
+| 子阶段内容 | 目标看板列 slug | 线框触发 |
+|---|---|---|
+| 用户流程定义（JTBD / 体验地图 / 导航路径） | `liucheng` | **低保真**（此列第1张卡片写入时触发，内容：主屏幕骨架线框） |
+| 页面结构定义（信息架构 / 导航层级 / 屏幕清单） | `jiegou` | **中保真**（此列第1张卡片写入时触发，内容：核心页面线框集3-5页） |
+| 组件规范（Design System 组件定义 / 复用规则） | `zujian` | — |
+| 设计 Token（颜色 / 字体 / 间距 / 圆角） | `token` | — |
+
+**结束：** UI设计阶段全部完成后，调用「工具层：结束序列」。
