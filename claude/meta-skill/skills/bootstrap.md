@@ -983,6 +983,24 @@ exit_artifacts:
 使用其中的 file_prefix 作为生成文件的命名权威来源，不得自行命名。
 ```
 
+**App Design Node Injection (when `is_game_project = false` AND goal includes design phase):**
+
+When `is_game_project = false` AND the selected goal implies product design phases (e.g., user chose "从零构建新产品" or the goal includes UI/UX design work), inject app-design nodes using `knowledge/capabilities/app-design.md` Canonical Node Registry:
+
+- Required nodes always injected: `ia-design`, `user-flow-design`, `interaction-design`, `app-design-finalize`
+- Optional nodes injected when relevant: `content-design` (content-heavy apps), `data-model-design` (data-intensive apps — inject when `has_database_model` is detected or user confirms)
+- Each node gets: `capability: "app-design"`, `human_gate: true`, `approval_record_path: ".allforai/app-design/approval-records.json"`, `gate_status: "pending"`, `discipline_owner` from app-design.md Canonical Node Registry
+- Ordering: `ia-design` first (no hard_blocked_by); `user-flow-design` and `content-design` and `data-model-design` each `hard_blocked_by: ["ia-design"]`; `interaction-design` `hard_blocked_by: ["user-flow-design"]`; `app-design-finalize` `hard_blocked_by:` ALL other selected app-design nodes
+- `app-design-finalize` `unlocks:` subsequent execution nodes (same role as `game-design-finalize`)
+- **No approval-records entry** for nodes with `human_gate: false` — only human_gate nodes get records
+- After injecting, initialise `.allforai/app-design/approval-records.json` with one `pending` record per selected app-design node (same structure as game-design approval-records.json)
+
+**Concept Freeze for app projects:** When `app-design-finalize` is in the workflow, also inject a `concept-freeze` node immediately after it:
+- `node_id: "concept-freeze"`, `capability: "concept-contract"`, `human_gate: false`
+- `hard_blocked_by: ["app-design-finalize"]`
+- `exit_artifacts: [".allforai/concept-contract.json"]`
+- **No approval-records entry**
+
 5. Initialise `.allforai/game-design/approval-records.json` with one `pending` record per game-design node
 6. Ad-hoc nodes appearing in EITHER `optional_nodes` OR `bootstrap_note` (but absent from both the canonical registry AND `node_order`): these require user opt-in, presented in the opt-in question after scenario selection. Process them ONCE — if a node appears in both `optional_nodes` and `bootstrap_note`, treat it as a single ad-hoc opt-in candidate (do not generate two node-specs). If the user selects it, generate node-spec via Step 2.7 research and position per step 4 ad-hoc rule.
 7. **Cross-scenario signal scan (hybrid games):** After loading the primary scenario template, scan Step 1.1–1.3 findings for multiplayer/network signals:
