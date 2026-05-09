@@ -11,6 +11,7 @@ With --node: checks one node's exit_artifacts.
 import argparse
 import json
 import os
+import subprocess
 import sys
 
 
@@ -19,8 +20,24 @@ def check_node_artifacts(node: dict) -> dict:
     node_id = node.get("id", "?")
     artifacts = node.get("exit_artifacts", [])
     results = []
-    for path in artifacts:
-        results.append({"path": path, "exists": os.path.exists(path)})
+    for item in artifacts:
+        if isinstance(item, dict):
+            path = item["path"]
+            validation_commands = item.get("validation_commands", [])
+        else:
+            path = item
+            validation_commands = []
+        entry = {"path": path, "exists": os.path.exists(path)}
+        if validation_commands and entry["exists"]:
+            for cmd in validation_commands:
+                proc = subprocess.run(cmd, shell=True, capture_output=True)
+                if proc.returncode != 0:
+                    entry["validation_error"] = {
+                        "command": cmd,
+                        "stderr": proc.stderr.decode(errors="replace"),
+                    }
+                    break
+        results.append(entry)
     return {
         "node": node_id,
         "goal": node.get("goal", ""),

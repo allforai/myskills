@@ -47,8 +47,8 @@ Record what exists:
   - `.allforai/game-design/approval-records.json` exists AND any record has non-empty `revision_notes` AND `gate_status == "approved"` (a previous revision was re-approved — downstream consumers may need re-execution)
   
   When `has_concept_drift` is true due to approval-records (not concept-drift.json), set:
-  - `concept_drift_source: "product-concept"` — when triggered by concept-drift.json
-  - `concept_drift_source: "game-design-gate"` — when triggered by approval-records.json revision
+  - `concept_drift_source: "product-concept"` — when triggered by concept-drift.json (condition 1 above)
+  - `concept_drift_source: "game-design-gate"` — when triggered by either approval-records.json condition (conditions 2 or 3 above)
 
 This affects Step 1.5 options:
 - has_product_artifacts + has_code → verification/demo/tune options are relevant
