@@ -34,8 +34,9 @@ The output contract must include `contract_id`, `target_runtime`,
 `engine_export_profile_ref`, `adapter_policy`, `format_decisions`,
 `asset_manifest_refs`, `atlas_refs`, `animation_refs`, `state_machine_refs`,
 `skeleton_refs`, `tilemap_refs`, `ui_asset_refs`, `vfx_refs`, `layering_refs`,
-`import_paths`, `runtime_ids`, `pivot_anchor_policy`, `sorting_policy`,
-`collision_helper_refs`, `qa_summary`, `fallback_summary`,
+`source_3d_refs`, `runtime_excluded_source_refs`, `import_paths`,
+`runtime_ids`, `pivot_anchor_policy`, `sorting_policy`, `collision_helper_refs`,
+`qa_summary`, `fallback_summary`,
 `known_limitations`, `consumer_contracts`, `state`, and `validation`.
 
 Asset entries must include:
@@ -101,6 +102,8 @@ Readiness gates:
 | animation | clips/state machines preserve event frames and fallback states |
 | tiles | tile IDs, collision, walkability, and preview maps are present |
 | layers | sorting, occlusion, UI/world separation, and swap layers resolve |
+| 3D source exclusion | production-only 3D sources are not runtime assets |
+| 3D-assisted QA | 3D-derived 2D assets pass projection, lighting, pivot, edge, and runtime-leak checks |
 | runtime | runtime import report has no blocker/major issue |
 | QA | visual/style/readability QA blockers are closed or downgraded with limits |
 | adapter | engine profile can be consumed without undocumented native mutations |
@@ -133,6 +136,12 @@ routes to the producing skill; missing atlas metadata routes to
 `2d-style-consistency-qa`; unsupported native engine edits route back to
 `engine-export-profile` to either downgrade to manifest-only output or require a
 future engine-specific adapter.
+
+For 3D-assisted production, raw 3D source assets must appear only in
+`source_3d_refs` or `runtime_excluded_source_refs`. They must not appear in
+`asset_manifest_refs`, `import_paths`, or runtime consumer contracts unless
+`2-5d-production-mode-spec.runtime_art_mode` explicitly allows hybrid runtime
+and executable import validation passed.
 
 This skill must not require a universal engine-specific schema. It verifies that
 the LLM-selected output format is explicit, internally consistent, referenced by
