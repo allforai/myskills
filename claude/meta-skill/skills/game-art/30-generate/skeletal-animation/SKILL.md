@@ -1064,5 +1064,5 @@ exit_artifacts:
 Suggested invocation:
 
 ```markdown
-Read and execute `${CLAUDE_PLUGIN_ROOT}/skills/game-art/skeletal-animation/SKILL.md`.
+Read and execute `${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/skeletal-animation/SKILL.md`.
 ```
