@@ -29,8 +29,19 @@ Do not organize by tool. Organize by production layer:
 | `10-design` | `motion-design` | Animation intent, key poses, timing, events, readability, fallback motion. |
 | `20-spec` | `character-layer-sheet` | Character part decomposition, layer-sheet prompt/spec, pivots, validation. |
 | `20-spec` | `tileset-spec` | Tilemap mode selection, terrain vocabulary, tile rules, collision/walkability contracts. |
+| `20-spec` | `vfx-spec` | VFX semantics, gameplay events, presentation layer, dimension, implementation mode, timing, readability budgets. |
 | `30-generate` | `icon-generation` | Skill, item, currency, ability, status, and UI icon set generation with consistency QA. |
 | `30-generate` | `tileset-generation` | Tileset prompts, generated tile sheets, atlas manifests, preview maps, repair loop. |
+| `30-generate` | `particle-system` | Reusable particle emitter configs, textures, previews, validation, and repair. |
+| `30-generate` | `sprite-vfx-generation` | Sprite-sheet VFX frame specs, generated sheets, frame metadata, previews, repair. |
+| `30-generate` | `trail-generation` | Trail/ribbon specs, strip textures, timing, previews, validation, repair. |
+| `30-generate` | `shader-vfx-generation` | Shader/material VFX parameter specs, placeholders, previews, reduced fallbacks. |
+| `30-generate` | `decal-generation` | Impact marks, projected decals, scorch/blood/crack specs, textures, validation. |
+| `30-generate` | `screen-effect-generation` | Flash, shake, vignette, radial burst, accessibility-safe screen-space effects. |
+| `30-generate` | `mesh-burst-generation` | 3D shard/debris burst specs, placeholder meshes, timing, physics-lite validation. |
+| `30-generate` | `light-pulse-generation` | 2.5D/3D light pulse specs, intensity curves, color timing, accessibility caps. |
+| `30-generate` | `animation-event-fx` | Footstep, landing, weapon, cast, and hit FX bound to animation timeline events. |
+| `30-generate` | `vfx-generation` | VFX orchestration across particle, sprite-sheet, trail, shader, decal, screen-effect, mesh-burst, light-pulse, and animation-event branches. |
 | `30-generate` | `skeletal-animation` | Bone hierarchy, transform timelines, rendered preview loop, visual validation, repair. |
 
 ## Canonical Invocation Paths
@@ -42,8 +53,19 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/asset-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/motion-design/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/character-layer-sheet/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/tileset-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/vfx-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/icon-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/tileset-generation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/particle-system/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/sprite-vfx-generation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/trail-generation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/shader-vfx-generation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/decal-generation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/screen-effect-generation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/mesh-burst-generation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/light-pulse-generation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/animation-event-fx/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/vfx-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/skeletal-animation/SKILL.md
 ```
 
@@ -98,6 +120,25 @@ VFX generation, future:
 -> 20-spec/vfx-beat-sheet
 -> 30-generate/vfx-generation
 -> 40-qa/art-preview-qa
+```
+
+VFX generation:
+
+```text
+00-env/asset-registry
+-> 20-spec/vfx-spec
+-> 30-generate/vfx-generation
+   -> 30-generate/particle-system     (when implementation includes particle)
+   -> 30-generate/sprite-vfx-generation
+   -> 30-generate/trail-generation
+   -> 30-generate/shader-vfx-generation
+   -> 30-generate/decal-generation
+   -> 30-generate/screen-effect-generation
+   -> 30-generate/mesh-burst-generation
+   -> 30-generate/light-pulse-generation
+   -> 30-generate/animation-event-fx
+-> 40-qa/art-preview-qa          (future)
+-> game-ui/00-env/ui-registry    (consumer for UI-layer VFX)
 ```
 
 Icon set generation:
