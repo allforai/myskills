@@ -67,8 +67,10 @@
 
 5. 记录 pageId（全程使用）：
    mcp__plugin_playwright_playwright__browser_tabs
-   → 找到 URL 中含 concept-session/<phase-id>/ 的3个页面
-   → 记录 tab1_pageId（kanban）、tab2_pageId（mindmap）、tab3_pageId（wireframes）
+   → 按 URL 匹配 concept-session/<phase-id>/ 的3个页面（按打开顺序排列）：
+     tab1_pageId = URL 含 conclusion-kanban.html 的页面
+     tab2_pageId = URL 含 mindmap.html 的页面
+     tab3_pageId = URL 含 wireframes.html 的页面
 ```
 
 ---
@@ -154,7 +156,7 @@ LLM 决策：
    中保真视觉规范：fill:#2a2a2a，组件名标注 font-size:11px，尺寸 dashed 线
 
 8. 读取现有 wireframes.html：
-   将当前 #main-content 的 SVG 提取并缩放为 200px 宽缩略图
+   将当前 #main-content 的 SVG 提取并缩放为 200px 宽缩略图（保持宽高比，设置 SVG width="200" 并通过 viewBox 保持原始比例）
    追加到 #history div 内（包裹在 .history-item 中，添加时间戳文字）
    将新线框 SVG 写入 #main-content
    更新 .frame-label 文字为当前保真度 + 时间戳
@@ -190,7 +192,7 @@ LLM 决策：
 ### conclusion-kanban.html（首次运行时生成）
 
 将 `{PHASE_LABEL}`、`{COL*}` 替换为阶段实际值（见阶段配置表）。
-4列阶段（art-concept、app-design）省略第5列注释行；5列阶段（product-concept、game-design）保留：
+列数规则：art-concept 和 app-design 使用4列（省略第5列注释行）；product-concept 和 game-design 使用5列（保留第5列注释行并取消注释）：
 
 ```html
 <!DOCTYPE html>
