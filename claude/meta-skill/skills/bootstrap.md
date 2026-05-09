@@ -1223,7 +1223,12 @@ is likely too large for a single workflow execution. Suggest decomposition:
       "id": "<project-specific name>",
       "capability": "<name of the capability this node is based on, e.g. discovery, product-analysis, translate>",
       "goal": "<one sentence: what this node achieves>",
-      "exit_artifacts": ["<file paths that prove this node is done>"],
+      "exit_artifacts": [
+        {
+          "path": "<project-relative file path>",
+          "validation_commands": []
+        }
+      ],
       "knowledge_refs": ["<which knowledge files this node should reference>"],
       "consumers": ["<node IDs that read this node's exit_artifacts>"],
       "blocked_by": ["<node IDs that must complete before this node can run; empty if no dependencies>"],
@@ -1244,7 +1249,16 @@ is likely too large for a single workflow execution. Suggest decomposition:
   `knowledge/capabilities/<capability>.md`. Used at Context Pull generation time
   to look up which upstream artifacts this node may consume.
 - `goal`: One sentence. Clear enough that a subagent knows what to do.
-- `exit_artifacts`: File paths. Node is complete when these files exist.
+- `exit_artifacts`: Array of artifact objects. Node is complete when all `path` files exist.
+  Each entry has:
+  - `path`: Project-relative file path. Node is complete when this file exists.
+  - `validation_commands` (optional): Shell commands that must exit 0 after the file exists.
+    Use for format checks beyond mere existence (e.g., `python3 -c "import json,sys; json.load(open('file.json'))"` for JSON validity,
+    `grep -q '"status": "final"' file.json` for specific field checks).
+    Empty array = existence check only. Bootstrap should populate these for JSON output files.
+  
+  **Shorthand:** Bootstrap may also use the string form `"<path>"` for artifacts with no
+  validation_commands. check_artifacts.py accepts both forms.
 - `knowledge_refs`: Which knowledge files to inject into the node-spec.
 - `consumers`: Which downstream nodes read this node's output. Used to generate
   the Downstream Contract section in the node-spec — tells the subagent "who
@@ -1266,6 +1280,9 @@ is likely too large for a single workflow execution. Suggest decomposition:
 - 对于 monorepo，路径必须包含子项目前缀
 - 路径必须是执行 `check_artifacts.py` 时从项目根目录能找到的
 - 生成 workflow.json 前，LLM 应检查项目目录结构确认路径正确
+- `validation_commands` 建议：对所有 JSON 输出文件，至少加入 JSON 合法性检查：
+  `python3 -c "import json,sys; json.load(open('<path>'))"` 
+  对有 `status` 字段的 JSON，追加：`grep -q '"status": "final"' <path>`
 
 ### 3.3 Pre-Generate Node-Specs
 
