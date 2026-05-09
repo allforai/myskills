@@ -41,7 +41,7 @@ def check_node_artifacts(node: dict) -> dict:
     return {
         "node": node_id,
         "goal": node.get("goal", ""),
-        "all_exist": all(r["exists"] for r in results),
+        "all_exist": all(r["exists"] and "validation_error" not in r for r in results),
         "artifacts": results,
     }
 
