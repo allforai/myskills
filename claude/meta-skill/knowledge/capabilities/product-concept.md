@@ -446,3 +446,24 @@ When replicating an existing product with no concept change.
 When user wants to co-design through conversation rather than automated pipeline.
 Generate a single `interactive-concept-design` node that facilitates Q&A discussion,
 but still applies theory anchors and produces the same structured outputs.
+
+---
+
+## Concept Visualization Integration
+
+> 引用协议：`knowledge/capabilities/concept-visualization.md`（phase-id = `product-concept`）
+
+**启动：** 产品概念阶段第一个子节点开始执行前，调用「工具层：启动序列」（phase-id = `product-concept`）。
+
+**各子阶段结论确认后** 立即调用「工具层：结论更新序列」，按下表写入对应列：
+
+| 子阶段 | 目标看板列 slug | 线框触发 |
+|---|---|---|
+| problem-discovery | `wenti` | — |
+| user-role-definition | `yonghu` | — |
+| market-research | `jingpin` | **低保真**（此列第1张卡片写入时触发，内容：App主界面骨架） |
+| innovation-exploration 或 concept-crystallization | `gongneng` | **中保真**（此列第1张卡片写入时触发，内容：核心用户流程线框） |
+| business-model | `shangye` | — |
+| tech-architecture 或 positioning | `gongneng`（技术约束）或 `shangye`（定位结论） | — |
+
+**结束：** 所有子阶段完成后，调用「工具层：结束序列」。
