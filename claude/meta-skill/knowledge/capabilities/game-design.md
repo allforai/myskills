@@ -136,6 +136,9 @@ Approval state is tracked in `.allforai/game-design/approval-records.json`.
     {
       "node_id": "<node_id from Canonical Node Registry>",
       "gate_status": "pending | in-review | approved | revision-requested",
+      "review_checklist": [
+        { "item": "<role-specific quality check>", "checked": false }
+      ],
       "discipline_owner": "<role_id>",
       "discipline_reviewers": ["<role_id>"],
       "approved_by": [],
@@ -177,6 +180,7 @@ Every game-design node-spec adds these fields beyond standard node-spec schema:
   "gate_approval_rule": "discipline_owner must approve; reviewers approval is advisory",
   "approval_record_path": ".allforai/game-design/approval-records.json",
   "gate_status": "pending",
+  "review_checklist": [{ "item": "<check>", "checked": false }],
   "presentation": {
     "primary_audience": "<role_id>",
     "layout": "<layout_type>",
@@ -189,6 +193,20 @@ Every game-design node-spec adds these fields beyond standard node-spec schema:
   }
 }
 ```
+
+**review_checklist population:** Bootstrap generates 3–5 role-specific checklist items per
+node type based on `discipline_owner`. Items must be concrete and verifiable — not generic
+("looks good") but specific ("all character sprites have consistent line weight").
+
+Checklist items by node:
+
+| Node | discipline_owner | Checklist items |
+|------|-----------------|-----------------|
+| `art-direction` | `art-director` | 1. 风格参考图与目标受众匹配; 2. 色调方案有明确主色/辅色/强调色; 3. 字体层级清晰（正文/标题/UI）; 4. 动画风格与引擎能力匹配 |
+| `art-spec-design` | `concept-artist` | 1. 所有 must_have 资产已列入清单; 2. 每个资产有明确尺寸规格; 3. 资产 ID 唯一无重复; 4. ai_generatable 分类合理; 5. milestone_gate 与发布计划一致 |
+| `character-design` | `character-artist` | 1. 主角有完整表情图; 2. 骨骼绑定点位标注清楚; 3. 角色比例在同一参考系下统一 |
+| `environment-design` | `environment-artist` | 1. 地砖可无缝拼接（边缘像素匹配）; 2. 视差层数与 art-pipeline-config 一致; 3. 光源方向全场景统一 |
+| `ui-art-gen` | `ui-artist` | 1. 所有交互元素有 hover/pressed 状态; 2. 字体渲染在目标分辨率下清晰; 3. 色盲友好（不依赖颜色单独传达信息） |
 
 ## Canonical Node Registry
 
