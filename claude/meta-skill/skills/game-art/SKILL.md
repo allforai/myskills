@@ -31,6 +31,7 @@ Do not organize by tool. Organize by production layer:
 | `00-env` | `production-tool-capability-registry` | Detect, auto-install, and validate Blender CLI/Python, image, atlas, importer, and probe tools before use. |
 | `10-design` | `2d-animation-production-plan` | Light 2D animation method selection, fallback strategy, downstream routing, QA requirements. |
 | `10-design` | `art-direction-input-contract` | Product concept, gameplay, runtime constraints, and human visual preferences as art input. |
+| `10-design` | `asset-source-strategy-spec` | Decide per asset whether to use LLM generation, existing packs, existing 3D sources, user assets, adaptation, or hybrid production. |
 | `10-design` | `motion-design` | Animation intent, key poses, timing, events, readability, fallback motion. |
 | `20-spec` | `2-5d-production-mode-spec` | 3D-assisted production boundaries for games that render/bake to 2D runtime assets. |
 | `20-spec` | `2-5d-lighting-shadow-spec` | Light direction, baked shadows, helper maps, and runtime lighting rules for 3D-assisted 2D output. |
@@ -38,9 +39,11 @@ Do not organize by tool. Organize by production layer:
 | `20-spec` | `2d-view-mode-spec` | Side-view, top-down, isometric, fixed-room, board/grid, visual-novel, shooter, and hybrid spatial rules. |
 | `20-spec` | `3d-source-asset-spec` | Production-only 3D source assets, cameras, materials, passes, output mapping, and runtime exclusion. |
 | `20-spec` | `animation-state-machine-spec` | Runtime animation states, transitions, priorities, event frames, fallback states, import references. |
+| `20-spec` | `asset-pack-search-spec` | Search and select existing 2D/3D asset packs with license, style, coverage, adaptation, and downstream fit constraints. |
 | `20-spec` | `artifact-handoff-contract` | Shared cross-skill artifact handoff schema, downstream routes, QA/runtime status, and repair routes. |
 | `20-spec` | `character-layer-sheet` | Character part decomposition, layer-sheet prompt/spec, pivots, validation. |
 | `20-spec` | `engine-export-profile` | Engine/tool export contracts for atlases, pivots, clips, tilemaps, skeletons, and runtime import. |
+| `20-spec` | `existing-asset-adaptation-spec` | Normalize, edit, recolor, resize, rerender, or route existing 2D/3D assets into project art contracts. |
 | `20-spec` | `tileset-spec` | Tilemap mode selection, terrain vocabulary, tile rules, collision/walkability contracts. |
 | `20-spec` | `vfx-spec` | VFX semantics, gameplay events, presentation layer, dimension, implementation mode, timing, readability budgets. |
 | `20-spec` | `visual-style-tokens` | Shared palette, shape, line, material, camera, typography, and motion tokens. |
@@ -70,6 +73,8 @@ Do not organize by tool. Organize by production layer:
 | `40-qa` | `atlas-packaging` | Atlas packing manifests, spacing/margin checks, references, and export validation. |
 | `40-qa` | `2d-style-consistency-qa` | Palette, outline, scale, projection, readability, animation, UI/game, and runtime style QA. |
 | `40-qa` | `3d-assisted-2d-qa` | Perspective, lighting, edge, pivot, style, helper-map, and runtime-exclusion QA for 3D-derived 2D assets. |
+| `40-qa` | `asset-license-provenance-qa` | Hard-gate asset license, provenance, commercial/modification permission, attribution, and traceability. |
+| `40-qa` | `asset-pack-integration-qa` | Validate existing/adapted asset packs against style, coverage, atlas, metadata, runtime import, and handoff contracts. |
 | `40-qa` | `engine-ready-art-output-contract` | Final engine/runtime import contract for assets, manifests, atlas, animation, VFX, UI, QA, and fallbacks. |
 | `40-qa` | `runtime-import-check` | Runtime import validation for assets, manifests, previews, and fallback status. |
 
@@ -82,6 +87,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/asset-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/production-tool-capability-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-direction-input-contract/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/asset-source-strategy-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/motion-design/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/2-5d-production-mode-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/2-5d-lighting-shadow-spec/SKILL.md
@@ -89,9 +95,11 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/2d-layering-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/2d-view-mode-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/3d-source-asset-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/animation-state-machine-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/asset-pack-search-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/artifact-handoff-contract/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/character-layer-sheet/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/engine-export-profile/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/existing-asset-adaptation-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/tileset-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/vfx-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/visual-style-tokens/SKILL.md
@@ -121,6 +129,8 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/art-preview-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/atlas-packaging/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/2d-style-consistency-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/3d-assisted-2d-qa/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-pack-integration-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/engine-ready-art-output-contract/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/runtime-import-check/SKILL.md
 ```
@@ -224,6 +234,51 @@ Light 2D indie character production:
 -> 40-qa/2d-style-consistency-qa
 -> 40-qa/3d-assisted-2d-qa
 -> 40-qa/atlas-packaging
+-> 40-qa/runtime-import-check
+-> 40-qa/engine-ready-art-output-contract
+```
+
+Existing asset pack sourcing:
+
+```text
+10-design/art-direction-input-contract
+-> 00-env/asset-registry
+-> 20-spec/visual-style-tokens
+-> 20-spec/2d-view-mode-spec
+-> 20-spec/2d-layering-spec
+-> 20-spec/engine-export-profile
+-> 10-design/asset-source-strategy-spec
+-> 20-spec/asset-pack-search-spec
+-> 40-qa/asset-license-provenance-qa
+-> 20-spec/existing-asset-adaptation-spec
+-> 20-spec/artifact-handoff-contract
+-> 40-qa/asset-pack-integration-qa
+-> 40-qa/atlas-packaging
+-> 40-qa/2d-style-consistency-qa
+-> 40-qa/runtime-import-check
+-> 40-qa/engine-ready-art-output-contract
+```
+
+Existing 3D source to 2D runtime:
+
+```text
+10-design/art-direction-input-contract
+-> 00-env/asset-registry
+-> 00-env/production-tool-capability-registry
+-> 20-spec/visual-style-tokens
+-> 20-spec/2d-view-mode-spec
+-> 20-spec/2d-layering-spec
+-> 20-spec/engine-export-profile
+-> 10-design/asset-source-strategy-spec
+-> 20-spec/asset-pack-search-spec
+-> 40-qa/asset-license-provenance-qa
+-> 20-spec/existing-asset-adaptation-spec
+-> 20-spec/3d-source-asset-spec
+-> 20-spec/2-5d-lighting-shadow-spec
+-> 30-generate/render-to-2d-asset-generation
+-> 20-spec/artifact-handoff-contract
+-> 40-qa/3d-assisted-2d-qa
+-> 40-qa/asset-pack-integration-qa
 -> 40-qa/runtime-import-check
 -> 40-qa/engine-ready-art-output-contract
 ```
