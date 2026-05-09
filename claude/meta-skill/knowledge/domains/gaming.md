@@ -207,7 +207,7 @@ balance-testing（数值平衡测试：蒙特卡洛模拟 + Playtest）
 {
   "dimension": "2d",           // "2d" | "3d" | "2.5d"
   "style": "cartoon",          // "cartoon" | "pixel" | "realistic" | "hand_drawn" | "vector"
-  "animation_system": "spine", // "frame" | "spine" | "3d_skeletal" | "mixed"
+  "animation_system": "dragonbones", // "frame" | "dragonbones" | "3d_skeletal" | "mixed"
   "notes": "<一句话说明选择理由>"
 }
 ```

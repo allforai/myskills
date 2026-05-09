@@ -29,7 +29,7 @@
 检查字段：
   ✓ art_overview.dimension: "2d" | "3d" | "2.5d"
   ✓ art_overview.style: "cartoon" | "pixel" | "realistic" | "hand_drawn" | "vector"
-  ✓ art_overview.animation_system: "frame" | "spine" | "3d_skeletal" | "mixed"
+  ✓ art_overview.animation_system: "frame" | "dragonbones" | "3d_skeletal" | "mixed"
 
 若字段缺失：
   → 提示 art-direction 节点需补充 art_overview 字段，暂停执行
@@ -78,13 +78,13 @@
 
 **Q2：角色动画方案？**
 - 无骨骼（帧序列，手工质感，文件较大）
-- Spine Lite（骨骼动画，支持换装，成本中等）
-- Spine Full（骨骼+网格，最平滑，需授权）
+- DragonBones 标准（骨骼动画，开源免费，AI 可生成变换动画 JSON）
+- DragonBones 高级（骨骼+网格变形，最平滑，需人工 GUI 绑骨）
 → 驱动：`character.rig`
 
 **Q3：特效方案？**
 - 帧序列（Aseprite/Photoshop制作，精细可控）
-- Spine FX（与角色同骨骼系统）
+- DragonBones FX（变换类 AI 可生成；粒子路径需人工）
 - Shader 粒子（引擎内置，实时，无需额外资产）
 → 驱动：`vfx.approach`
 
@@ -102,9 +102,9 @@
 → 驱动：`concept_art.types[]`；非"不需要"时 active_nodes 加入 `concept-art-gen`
 
 **Q6：工具链约束？**
-- 已有 Spine 商业授权
-- 仅使用开源工具（DragonBones / 无骨骼）
-- 有外包美术支持（可选更复杂方案）
+- 使用 DragonBones（开源免费，Cocos 原生支持）
+- 仅使用无骨骼方案（帧序列，最简）
+- 有外包美术支持（可选 DragonBones 高级网格方案）
 → 驱动：`toolchain.constraints`
 
 ---
@@ -138,7 +138,7 @@
 
 **Q5：需要概念原画？**（同分支A Q5）
 
-**Q6：工具链约束？**（同分支A Q6，但"已有 Spine 授权"替换为"已有 Aseprite 授权"）
+**Q6：工具链约束？**（同分支A Q6，但骨骼选项改为"不需要骨骼动画（纯帧序列）"）
 
 ---
 
@@ -262,20 +262,20 @@ Step 1 每问结论确认后，按下表调用结论更新序列（分支 A / B 
   "status": "final",
   "dimension": "2d",
   "style": "cartoon",
-  "animation_system": "spine",
+  "animation_system": "dragonbones",
   "tileset": {
     "type": "grid",
     "tile_size": 128,
     "atlas": true
   },
   "character": {
-    "rig": "spine_lite",
+    "rig": "dragonbones",
     "expressions": true,
     "bone_limit": 30
   },
   "vfx": {
-    "approach": "sprite_sheet",
-    "spine_fx": false
+    "approach": "dragonbones_fx",
+    "ai_generatable": "transform_only"
   },
   "environment": {
     "parallax_layers": 3
@@ -285,7 +285,7 @@ Step 1 每问结论确认后，按下表调用结论更新序列（分支 A / B 
     "types": []
   },
   "toolchain": {
-    "spine_licensed": true,
+    "dragonbones_available": true,
     "aseprite_available": false,
     "constraints": []
   },
@@ -325,7 +325,7 @@ Step 1 每问结论确认后，按下表调用结论更新序列（分支 A / B 
   },
   "vfx": {
     "approach": "sprite_sheet",
-    "spine_fx": false
+    "ai_generatable": "transform_only"
   },
   "environment": {
     "parallax_layers": 2
@@ -359,6 +359,6 @@ Step 1 每问结论确认后，按下表调用结论更新序列（分支 A / B 
 | `art-spec-design` | `tileset.*`, `character.*`, `vfx.*`, `pixel.*` | 生成资产清单时对齐规格（尺寸/骨骼/帧数） |
 | `tile-art-gen` | `style`, `tileset.type`, `tileset.tile_size`, `pixel.*` | 切换生图策略（正常生图 vs 像素化管道） |
 | `character-art-gen` | `character.rig`, `character.expressions` | 生成分层骨骼参考图 vs 帧动画参考图 |
-| `vfx-art-gen` | `vfx.approach`, `vfx.spine_fx` | 决定帧序列规格 vs 参数文档 |
+| `vfx-art-gen` | `vfx.approach`, `vfx.ai_generatable` | 决定 AI 生成 DragonBones JSON vs 帧序列 vs 规格文档 |
 | `environment-art-gen` | `environment.parallax_layers`, `model_3d.*` | 图层数 / 3D 场景规格 |
 | `ui-art-gen` | `style`, `toolchain.*` | 矢量图标 vs AI 生图图标策略 |

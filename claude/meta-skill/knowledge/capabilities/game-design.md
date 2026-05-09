@@ -580,7 +580,7 @@ After completion, set `gate_status: "approved"` in `approval-records.json` for t
   "art_overview": {
     "dimension": "<2d | 3d | 2.5d>",
     "style": "<cartoon | pixel | realistic | hand_drawn | vector>",
-    "animation_system": "<frame | spine | 3d_skeletal | mixed>",
+    "animation_system": "<frame | dragonbones | 3d_skeletal | mixed>",
     "notes": "<brief rationale for above choices>"
   }
 }
