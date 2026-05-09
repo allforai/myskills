@@ -909,7 +909,7 @@ For `analyze` goal, inject only if no `approval-records.json` exists (new projec
      - **Canonical node** (in registry AND node_order): look up `discipline_owner`, `html_output`, `json_output`, `presentation` from the registry. Set `hard_blocked_by` = **previous SELECTED node in `node_order`** (skip unselected optional nodes); `unlocks` = **next SELECTED node in `node_order`** (same skipping rule). Exception: `game-design-finalize` has `hard_blocked_by` = ALL other game-design nodes that are actually selected.
 
      **Parallelism rule:** After assigning the default serial `hard_blocked_by`, apply this override for sibling nodes that only READ a shared predecessor's output (not data-produce it): if two or more nodes both `hard_blocked_by` the same single predecessor and neither is in the other's consumers[], reclassify the later node's dependency on its sibling as `alignment_refs` instead of `hard_blocked_by`. Common parallel groups by scenario:
-       - `casual-mobile`: once `core-loop-design` is approved → `economy-design`, `progression-design`, `retention-design` may all run concurrently (each `hard_blocked_by: ["core-loop-design"]`, `alignment_refs: []` to each other)
+       - `casual-mobile`: once `core-loop-design` is approved → `economy-design`, `progression-design`, `retention-design` may all run concurrently (each `hard_blocked_by: ["core-loop-design"]`; each lists the other two as `alignment_refs` for graceful degradation reads)
        - `action-rpg`: once `core-loop-design` approved → `combat-system-design`, `character-design`, `progression-design` may run concurrently
        - `narrative-adventure`: once `core-loop-design` approved → `narrative-design`, `character-design`, `world-design` may run concurrently
        - Always serial (never parallelise): `art-direction → art-concept → art-spec-design` (each writes data the next needs)
@@ -995,14 +995,12 @@ exit_artifacts:
 
 **App Design Node Injection (when `is_game_project = false` AND goal includes design phase):**
 
-**Skip injection entirely when goals are:** `translate`, `analyze`, `tune`, `product-verify`, `quality-checks`, `demo`, `launch-prep`, or `visual-verify`. These goals assume app design documents already exist; injecting design nodes would be wasteful.
-
 **Inject when `goals` includes `create` or `rebuild`** (new or re-designed app). For all other goals — `translate`, `analyze`, `tune`, `product-verify`, `quality-checks`, `demo`, `launch-prep`, `visual-verify` — **skip injection entirely** (app-design phases are already complete).
 
 Inject app-design nodes using `knowledge/capabilities/app-design.md` Canonical Node Registry:
 
 - Required nodes always injected: `ia-design`, `user-flow-design`, `interaction-design`, `app-design-finalize`
-- Optional nodes injected when relevant: `content-design` (content-heavy apps), `data-model-design` (data-intensive apps — inject when `has_database_model` is detected or user confirms)
+- Optional nodes injected when relevant: `content-design` (content-heavy apps), `data-model-design` (data-intensive apps — inject when user confirms data-intensive app (e.g., database schema, complex data model mentioned in discussion))
 - Each node gets: `capability: "app-design"`, `human_gate: true`, `approval_record_path: ".allforai/app-design/approval-records.json"`, `gate_status: "pending"`, `discipline_owner` from app-design.md Canonical Node Registry, `review_checklist: [<3 role-appropriate quality checks>]` — generate 3 discipline-appropriate checklist items per node (e.g., for ia-design: "All primary user flows represented", "Screen hierarchy reflects priority", "Navigation patterns consistent")
 - Ordering: `ia-design` first (no hard_blocked_by); `user-flow-design` and `content-design` and `data-model-design` each `hard_blocked_by: ["ia-design"]`; `interaction-design` `hard_blocked_by: ["user-flow-design"]`; `app-design-finalize` `hard_blocked_by:` ALL other selected app-design nodes
 - `app-design-finalize` `unlocks:` subsequent execution nodes (same role as `game-design-finalize`)
@@ -1014,7 +1012,7 @@ Inject app-design nodes using `knowledge/capabilities/app-design.md` Canonical N
 - `hard_blocked_by: ["app-design-finalize"]`
 - `exit_artifacts: [".allforai/concept-contract.json"]`
 - After injecting, update all app execution nodes (any node that previously had `hard_blocked_by: ["app-design-finalize"]`) to instead `hard_blocked_by: ["concept-freeze"]`
-- Node-spec file: Write `.allforai/bootstrap/node-specs/concept-freeze.md` using `knowledge/capabilities/concept-contract.md` Branch B (app project). Set `input_files` to `.allforai/app-design/app-design-doc.json` and `.allforai/app-design/approval-records.json`.
+- Node-spec file: Write `.allforai/bootstrap/node-specs/concept-freeze.md` using `knowledge/capabilities/concept-contract.md` Branch B (app project). In the node-spec, instruct the subagent to read from `.allforai/app-design/app-design-doc.json` and `.allforai/app-design/approval-records.json`.
 - **No approval-records entry**
 
 5. Initialise `.allforai/game-design/approval-records.json` with one `pending` record per game-design node

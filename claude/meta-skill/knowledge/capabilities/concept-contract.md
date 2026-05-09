@@ -56,32 +56,42 @@ For Branch B, `canonical_registry` is derived from `app-design-doc.json` screen 
 
 ### Step 1: Validate all gates approved
 
-Read `.allforai/game-design/approval-records.json`. Every record must have
-`gate_status == "approved"`. Collect any non-approved records and report them.
-If any exist → halt. Do not produce the contract until all gates pass.
+Read `bootstrap-profile.json` to determine `is_game_project`.
+
+- **Branch A** (`is_game_project = true`): Read `.allforai/game-design/approval-records.json`. Every record must have `gate_status == "approved"`. Collect any non-approved records and report them. If any exist → halt.
+- **Branch B** (`is_game_project = false`): Read `.allforai/app-design/approval-records.json`. Every record must have `gate_status == "approved"`. Collect any non-approved records and report them. If any exist → halt.
+
+Do not produce the contract until all gates pass.
 
 ### Step 2: Build canonical_registry
 
-Read `art-asset-inventory.json.assets[]`. For each asset:
-- `asset_id` is the canonical slug (never invent a new one)
-- Derive `file_prefix` by convention:
-  - type=`character` → `npc_{asset_id}`
-  - type=`tile` → `t_{asset_id}`
-  - type=`environment` → `env_{asset_id}`
-  - type=`ui` → `ui_{asset_id}`
-  - type=`vfx` → `vfx_{asset_id}`
-  - type=`icon` → `ico_{asset_id}`
-  - type=`audio-cover` → `aud_{asset_id}`
-  - other → `{asset_id}` (no prefix)
-- Group into `characters[]`, `tiles[]`, `environments[]`, `ui[]`, `vfx[]`, `other[]`
-- Types `icon` and `audio-cover` are grouped into `other[]` in the output schema,
-  with their computed `file_prefix` stored in the entry alongside `asset_id` and `name`.
+- **Branch A** (`is_game_project = true`): Read `art-asset-inventory.json.assets[]`. For each asset:
+  - `asset_id` is the canonical slug (never invent a new one)
+  - Derive `file_prefix` by convention:
+    - type=`character` → `npc_{asset_id}`
+    - type=`tile` → `t_{asset_id}`
+    - type=`environment` → `env_{asset_id}`
+    - type=`ui` → `ui_{asset_id}`
+    - type=`vfx` → `vfx_{asset_id}`
+    - type=`icon` → `ico_{asset_id}`
+    - type=`audio-cover` → `aud_{asset_id}`
+    - other → `{asset_id}` (no prefix)
+  - Group into `characters[]`, `tiles[]`, `environments[]`, `ui[]`, `vfx[]`, `other[]`
+  - Types `icon` and `audio-cover` are grouped into `other[]` in the output schema,
+    with their computed `file_prefix` stored in the entry alongside `asset_id` and `name`.
+
+- **Branch B** (`is_game_project = false`): Read `app-design-doc.json`. Build registry from:
+  - `screens[]` from `ia-design` → registry group `screens`, `file_prefix: "scr_{screen_id}"`
+  - `components[]` from `interaction-design` → registry group `components`, `file_prefix: "cmp_{component_id}"`
+  - `flows[]` from `user-flow-design` → registry group `flows`, `file_prefix: "flw_{flow_id}"`
 
 ### Step 3: Write concept-contract.json
 
 Stamp with `frozen_at` (ISO timestamp) and `schema_version: "1.0"`.
 
 ## Output Schema
+
+### Branch A (game project) output example
 
 ```json
 {
@@ -115,6 +125,32 @@ Stamp with `frozen_at` (ISO timestamp) and `schema_version: "1.0"`.
     ]
   },
   "active_art_nodes": ["<node ids from art-pipeline-config.active_nodes>"],
+  "human_gates_approved": ["<list of approved node ids from approval-records.json>"]
+}
+```
+
+### Branch B (app project) output example
+
+```json
+{
+  "schema_version": "1.0",
+  "frozen_at": "<ISO timestamp>",
+  "project": {
+    "name": "<from product-concept.json>",
+    "target_users": "<from product-concept.json>",
+    "core_features": ["<from product-concept.json>"]
+  },
+  "canonical_registry": {
+    "screens": [
+      { "screen_id": "<slug>", "name": "<display name>", "file_prefix": "scr_<slug>" }
+    ],
+    "components": [
+      { "component_id": "<slug>", "name": "<display name>", "file_prefix": "cmp_<slug>" }
+    ],
+    "flows": [
+      { "flow_id": "<slug>", "name": "<display name>", "file_prefix": "flw_<slug>" }
+    ]
+  },
   "human_gates_approved": ["<list of approved node ids from approval-records.json>"]
 }
 ```
