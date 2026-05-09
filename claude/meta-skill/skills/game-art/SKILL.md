@@ -29,6 +29,7 @@ Do not organize by tool. Organize by production layer:
 |---|---|---|
 | `00-env` | `asset-registry` | Canonical asset IDs, file prefixes, paths, lifecycle states, validation report. |
 | `10-design` | `2d-animation-production-plan` | Light 2D animation method selection, fallback strategy, downstream routing, QA requirements. |
+| `10-design` | `art-direction-input-contract` | Product concept, gameplay, runtime constraints, and human visual preferences as art input. |
 | `10-design` | `motion-design` | Animation intent, key poses, timing, events, readability, fallback motion. |
 | `20-spec` | `2d-layering-spec` | Unified scene, character, outfit, animation overlay, VFX, UI, helper, atlas, and runtime layer rules. |
 | `20-spec` | `2d-view-mode-spec` | Side-view, top-down, isometric, fixed-room, board/grid, visual-novel, shooter, and hybrid spatial rules. |
@@ -62,6 +63,7 @@ Do not organize by tool. Organize by production layer:
 | `40-qa` | `art-preview-qa` | Cross-asset visual QA, downstream feedback, issue classification, repair routing. |
 | `40-qa` | `atlas-packaging` | Atlas packing manifests, spacing/margin checks, references, and export validation. |
 | `40-qa` | `2d-style-consistency-qa` | Palette, outline, scale, projection, readability, animation, UI/game, and runtime style QA. |
+| `40-qa` | `engine-ready-art-output-contract` | Final engine/runtime import contract for assets, manifests, atlas, animation, VFX, UI, QA, and fallbacks. |
 | `40-qa` | `runtime-import-check` | Runtime import validation for assets, manifests, previews, and fallback status. |
 
 ## Canonical Invocation Paths
@@ -71,6 +73,7 @@ Use these paths when a node-spec calls a child skill:
 ```text
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/asset-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-direction-input-contract/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/motion-design/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/2d-layering-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/2d-view-mode-spec/SKILL.md
@@ -104,6 +107,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/skeletal-animation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/art-preview-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/atlas-packaging/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/2d-style-consistency-qa/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/engine-ready-art-output-contract/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/runtime-import-check/SKILL.md
 ```
 
@@ -131,6 +135,26 @@ Rules:
 Skeletal character animation:
 
 ```text
+10-design/art-direction-input-contract
+-> 00-env/asset-registry
+-> 20-spec/visual-style-tokens
+-> 20-spec/2d-view-mode-spec
+-> 20-spec/2d-layering-spec
+-> 20-spec/engine-export-profile
+-> 10-design/2d-animation-production-plan
+-> 10-design/motion-design
+-> 20-spec/character-layer-sheet
+-> 20-spec/animation-state-machine-spec
+-> 30-generate/skeletal-animation
+-> 40-qa/art-preview-qa
+-> 40-qa/2d-style-consistency-qa
+-> 40-qa/runtime-import-check
+-> 40-qa/engine-ready-art-output-contract
+```
+
+Legacy skeletal character animation:
+
+```text
 00-env/asset-registry
 -> 10-design/2d-animation-production-plan
 -> 10-design/motion-design
@@ -143,9 +167,31 @@ Skeletal character animation:
 -> 40-qa/art-preview-qa
 -> 40-qa/2d-style-consistency-qa
 -> 40-qa/runtime-import-check
+-> 40-qa/engine-ready-art-output-contract
 ```
 
 Light 2D indie character production:
+
+```text
+10-design/art-direction-input-contract
+-> 00-env/asset-registry
+-> 20-spec/visual-style-tokens
+-> 20-spec/2d-view-mode-spec
+-> 20-spec/2d-layering-spec
+-> 20-spec/engine-export-profile
+-> 10-design/2d-animation-production-plan
+-> 10-design/motion-design
+-> 20-spec/frame-animation-spec | 20-spec/character-layer-sheet
+-> 20-spec/animation-state-machine-spec
+-> 30-generate/frame-animation-generation | 30-generate/skeletal-animation
+-> 40-qa/art-preview-qa
+-> 40-qa/2d-style-consistency-qa
+-> 40-qa/atlas-packaging
+-> 40-qa/runtime-import-check
+-> 40-qa/engine-ready-art-output-contract
+```
+
+Legacy light 2D indie character production:
 
 ```text
 00-env/asset-registry
@@ -162,6 +208,7 @@ Light 2D indie character production:
 -> 40-qa/2d-style-consistency-qa
 -> 40-qa/atlas-packaging
 -> 40-qa/runtime-import-check
+-> 40-qa/engine-ready-art-output-contract
 ```
 
 Tileset generation, future:
@@ -177,6 +224,7 @@ Tileset generation, future:
 -> 40-qa/art-preview-qa
 -> 40-qa/2d-style-consistency-qa
 -> 40-qa/atlas-packaging
+-> 40-qa/engine-ready-art-output-contract
 ```
 
 VFX generation, future:
@@ -231,6 +279,7 @@ Image-backed asset generation:
 -> 40-qa/art-preview-qa
 -> 40-qa/2d-style-consistency-qa
 -> 40-qa/runtime-import-check
+-> 40-qa/engine-ready-art-output-contract
 ```
 
 ## Non-Goals
