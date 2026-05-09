@@ -606,7 +606,7 @@ After completion, set `gate_status: "approved"` in `approval-records.json` for t
       "description": "<what this asset depicts>",
       "palette_constraints": ["<color role or hex>"],
       "milestone_gate": "<alpha | final | none>",
-      "current_state": "placeholder | temp | alpha | final",
+      "current_state": "placeholder | temp | alpha | final | locked",
       "ai_generatable": true,
       "ai_gen_target": "<placeholder | temp>",
       "ai_generated": {
@@ -620,19 +620,36 @@ After completion, set `gate_status: "approved"` in `approval-records.json` for t
         "placeholder": "<path to geometry / solid color asset>",
         "temp": "<path to AI-generated or free asset>",
         "alpha": null,
-        "final": null
+        "final": null,
+        "locked": null
       }
     }
   ],
   "summary": {
     "total": 0,
-    "by_state": { "placeholder": 0, "temp": 0, "alpha": 0, "final": 0 },
+    "by_state": { "placeholder": 0, "temp": 0, "alpha": 0, "final": 0, "locked": 0 },
     "by_type": { "<type>": 0 },
     "ai_generatable_count": 0,
     "ai_generated_count": 0
   }
 }
 ```
+
+### Asset Lifecycle Transition Rules
+
+```
+placeholder → temp:    AI generation succeeds (ai-art-generation node)
+temp → alpha:          Art QA passes initial review (art-qa node scores ≥ 3/5)
+alpha → final:         discipline_owner approves in art-qa gate
+final → locked:        Release build confirmed — set by launch-prep or asset-lock command
+locked → *:            FORBIDDEN — locked assets cannot regress; create new asset_id for replacements
+```
+
+**Orchestrator behavior:**
+- `ai-art-generation`: transitions `placeholder → temp`
+- `art-qa`: transitions `temp → alpha` (on QA pass), `alpha → final` (on discipline_owner approval)
+- `launch-prep`: transitions `final → locked` (when `milestone_gate == "final"` and build is confirmed)
+- Any node attempting to overwrite a `locked` asset must report UPSTREAM_DEFECT and halt
 
 ## game-design-doc.json Schema
 
