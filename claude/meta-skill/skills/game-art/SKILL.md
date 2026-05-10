@@ -319,16 +319,6 @@ Tileset generation, future:
 -> 40-qa/engine-ready-art-output-contract
 ```
 
-VFX generation, future:
-
-```text
-00-env/asset-registry
--> 10-design/motion-design
--> 20-spec/vfx-beat-sheet
--> 30-generate/vfx-generation
--> 40-qa/art-preview-qa
-```
-
 VFX generation:
 
 ```text

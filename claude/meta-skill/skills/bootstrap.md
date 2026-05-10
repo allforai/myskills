@@ -944,15 +944,11 @@ exit_artifacts:
 
 art-concept skill 完成后，依次调用以下 game-art 子 skill 细化策略（读取对应 SKILL.md 并执行）：
 
-1. **资产来源策略：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/asset-source-strategy-spec/SKILL.md`
-   - 输入：参见 SKILL.md 的 Invocation Contract
-   - 输出：每类资产的来源策略（生成/外包/改造/混合）
-
-2. **动画生产计划：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md`
+1. **动画生产计划：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md`
    - 输入：参见 SKILL.md 的 Invocation Contract
    - 输出：动画方案选择（帧动画/DragonBones/Tween/混合）及降级路径
 
-3. **动效设计**（当游戏有动效需求时，即 art-pipeline-config.json 中存在动画资产时）：`${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/motion-design/SKILL.md`
+2. **动效设计**（当游戏有动效需求时，即 art-pipeline-config.json 中存在动画资产时）：`${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/motion-design/SKILL.md`
    - 输入：`art-pipeline-config.json`、`art-style-guide.json.art_overview`
    - 输出：关键帧意图、Timing 规则、可读性规范
 
@@ -996,6 +992,10 @@ concept-contract capability 完成后，依次调用以下 game-art 子 skill（
 2. **资产注册表初始化：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/asset-registry/SKILL.md`
    - （输入/输出：参见 SKILL.md 的 Invocation Contract）
    - 输出：`.allforai/game-design/asset-registry.json`（以 canonical_registry 为权威，资产 ID → 文件前缀 → 生命周期状态的单一可信注册表）
+
+3. **资产来源策略：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/asset-source-strategy-spec/SKILL.md`
+   - （输入/输出：参见 SKILL.md 的 Invocation Contract；依赖上一步生成的 `asset-registry.json`）
+   - 输出：每类资产的 `source_strategy`（`existing_asset_pack` / `existing_3d_source_asset` / `user_provided_asset` / `adapt_existing_asset` / `hybrid` / `placeholder_only`）写入 `asset-registry.json`
 
 ## 完成条件
 
@@ -1127,8 +1127,8 @@ Read and follow each applicable sub-skill SKILL.md in order:
 2. **Atlas packaging (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/atlas-packaging/SKILL.md`
 3. **Runtime import (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/runtime-import-check/SKILL.md`
 4. **3D-assisted QA** (when `dimension=2.5d`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/3d-assisted-2d-qa/SKILL.md`
-5. **Asset pack QA** (when any asset has `source_strategy=pack`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-pack-integration-qa/SKILL.md`
-6. **License provenance** (when any asset has `source_strategy=pack` or `external`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md`
+5. **Asset pack QA** (when any asset has `source_strategy=existing_asset_pack`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-pack-integration-qa/SKILL.md`
+6. **License provenance** (when any asset has `source_strategy=existing_asset_pack`, `existing_3d_source_asset`, or `user_provided_asset`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md`
 
 ## Completion Condition
 
