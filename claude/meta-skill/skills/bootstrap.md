@@ -945,14 +945,14 @@ exit_artifacts:
 art-concept skill 完成后，依次调用以下 game-art 子 skill 细化策略（读取对应 SKILL.md 并执行）：
 
 1. **资产来源策略：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/asset-source-strategy-spec/SKILL.md`
-   - 输入：`art-pipeline-config.json`、`art-asset-inventory.json`（若已存在）
+   - 输入：参见 SKILL.md 的 Invocation Contract
    - 输出：每类资产的来源策略（生成/外包/改造/混合）
 
 2. **动画生产计划：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md`
-   - 输入：`art-pipeline-config.json.animation_system`、`art-pipeline-config.json.character`
+   - 输入：参见 SKILL.md 的 Invocation Contract
    - 输出：动画方案选择（帧动画/DragonBones/Tween/混合）及降级路径
 
-3. **动效设计**（当 `animation_system != "none"` 时）：`${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/motion-design/SKILL.md`
+3. **动效设计**（当游戏有动效需求时，即 art-pipeline-config.json 中存在动画资产时）：`${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/motion-design/SKILL.md`
    - 输入：`art-pipeline-config.json`、`art-style-guide.json.art_overview`
    - 输出：关键帧意图、Timing 规则、可读性规范
 
