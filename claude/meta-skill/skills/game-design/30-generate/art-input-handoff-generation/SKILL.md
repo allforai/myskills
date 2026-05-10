@@ -57,7 +57,8 @@ must not introduce requirements that are absent from JSON source artifacts.
 `program-development-node-handoff.json` includes `handoff_id`, `source_refs`,
 `target_engine`, `runtime_assumptions`, `implementation_nodes`,
 `data_contracts`, `asset_import_contracts`, `ui_runtime_contracts`,
-`audio_runtime_contracts`, `test_nodes`, `blocked_nodes`, and `state`.
+`audio_runtime_contracts`, `frontend_runtime_contracts`, `test_nodes`,
+`blocked_nodes`, and `state`.
 
 `asset_import_contracts` must reference the game-art exit artifacts that
 program/runtime nodes consume:
@@ -84,7 +85,20 @@ Allowed `node_type` values: `runtime_architecture`, `core_loop_runtime`,
 `inventory_runtime`, `crafting_runtime`, `building_runtime`, `social_runtime`,
 `achievement_runtime`, `dialogue_runtime`, `ui_runtime`, `audio_runtime`,
 `asset_import_runtime`, `save_load_runtime`, `telemetry_runtime`,
-`network_runtime`, `qa_runtime`.
+`network_runtime`, `frontend_runtime`, `frontend_data_binding`,
+`frontend_audio_binding`, `frontend_save_state`, `playable_smoke_test`,
+`playability_probe`, `visual_runtime_regression`, `frontend_performance_budget`,
+`frontend_build_export`, `qa_runtime`.
+
+`frontend_runtime_contracts` define how client/frontend work consumes design,
+level, art, UI, animation/VFX, and audio contracts. Each entry includes
+`frontend_contract_id`, `source_requirements`, `required_inputs`,
+`expected_output_artifacts`, `validation_command_or_surface`,
+`screenshot_or_probe_required`, `repair_target`, and `blocking_states`. Use
+`game-frontend` for client-side asset binding, scene composition, input/camera
+binding, HUD binding, game data binding, audio binding, save-state binding,
+animation/VFX binding, playable assembly, smoke tests, playability probes,
+visual regression QA, frontend performance budgets, and build/export QA.
 
 Every requirement entry in any handoff must include `requirement_id`, `source_skill`,
 `source_artifact`, `source_ref`, `player_facing_purpose`, `art_impact`,
@@ -142,6 +156,8 @@ planning are present, source-traceable, and actionable:
 - systems, modes, objectives, economy, progression, content, and levels imply
   concrete implementation nodes with inputs, outputs, dependencies, runtime
   acceptance, and executable validation paths;
+- playable client requirements imply frontend contracts with runnable scene,
+  asset, UI, input, camera, animation/VFX, and screenshot/probe validation;
 - every program development node maps back to source planning requirements
   rather than being invented as generic engineering work;
 - every asset import runtime node references the engine-ready art manifest and

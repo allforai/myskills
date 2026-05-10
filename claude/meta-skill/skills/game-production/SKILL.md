@@ -8,7 +8,8 @@
 Game Production is the ownership map for all game-related sub-skills. Use it
 when deciding where a new game sub-skill belongs or when checking whether a
 node should call design, art, UI, audio, content, level, systems, balance,
-combat, narrative, liveops, onboarding, genre-common, or runtime skills.
+combat, narrative, liveops, onboarding, genre-common, frontend, or runtime
+skills.
 
 This pack does not execute production work. It prevents category drift.
 
@@ -24,6 +25,7 @@ This pack does not execute production work. It prevents category drift.
 | `game-ui` | Game UI structure, screen layout, UI assets, UI consistency, UI import readiness. | General website/app UI outside game context. |
 | `game-art` | Visual assets, style tokens, source strategy, image/animation/VFX production, atlas, import QA, engine-ready art manifest. | Gameplay implementation and runtime systems. |
 | `game-audio` | Music/SFX/voice style, cue specs, generated audio manifests, audio QA. | Audio engine integration code unless delegated by runtime. |
+| `game-frontend` | Playable client assembly, asset/UI/animation/VFX bindings, scene composition, browser/engine smoke tests, visual runtime regression QA. | Product design, art generation, backend/security architecture. |
 | `game-balance` | Numeric tuning, curves, simulations, balance QA. | Economy/product purpose and runtime code. |
 | `game-combat` | Combat-specific rules, timing, hit readability, combat QA. | General system design and engine implementation. |
 | `game-onboarding` | FTUE/tutorial product flow and onboarding QA. | Generic app onboarding. |
@@ -36,6 +38,8 @@ This pack does not execute production work. It prevents category drift.
 - Product/design skills define what the player should experience and what
   acceptance means.
 - Art/UI/audio skills produce media assets plus manifests and import evidence.
+- Frontend skills bind approved contracts into a runnable client and prove it
+  with logs, screenshots, probes, and input smoke tests.
 - Runtime skills define how approved product and asset contracts become
   executable systems.
 - A downstream skill may consume an upstream contract, but must not rewrite the
@@ -64,3 +68,30 @@ Game art exits to program/runtime through:
 Program development must consume art through `runtime_id`, `asset_id`, and
 manifest references from the engine-ready art manifest. Hardcoded raw asset
 paths are a contract violation.
+
+Engine differences are handled by:
+
+```text
+game-art/20-spec/engine-export-profile
+-> game-art/40-qa/runtime-import-check
+-> game-art/40-qa/engine-ready-art-output-contract
+-> game-frontend/20-spec/asset-import-binding-spec
+```
+
+Do not duplicate art skills per engine by default. Add an engine-specific
+adapter only when the profile/manifest/adapter path cannot express or validate
+the target import behavior.
+
+Game frontend exits through:
+
+```text
+.allforai/game-frontend/assembly/playable-client-assembly-report.json
+.allforai/game-frontend/qa/playable-smoke-test-report.json
+.allforai/game-frontend/qa/playability-probe-report.json
+.allforai/game-frontend/qa/visual-runtime-regression-report.json
+.allforai/game-frontend/qa/frontend-performance-budget-report.json
+.allforai/game-frontend/qa/frontend-build-export-report.json
+```
+
+Frontend completion requires a runnable client validation path. If the client
+cannot run, frontend QA must block instead of accepting source inspection.

@@ -219,6 +219,10 @@ Program-facing exit artifacts:
 Both must agree on `asset_id`, `runtime_id`, paths, atlas/frame metadata,
 fallback status, and validation evidence.
 
+`game-frontend` is the primary client-side consumer for this manifest. It owns
+loader keys, scene binding, HUD binding, animation/VFX binding, playable smoke
+tests, and visual runtime regression QA.
+
 ## Example Role Chains
 
 Skeletal character animation:

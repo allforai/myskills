@@ -54,4 +54,6 @@ Runtime code consumes art through:
 The manifest is produced by `game-art/40-qa/engine-ready-art-output-contract`.
 Runtime nodes must reference `runtime_id`, `asset_id`, manifests, atlas frames,
 animation clips, UI refs, VFX configs, and fallback status from that file.
-Hardcoded raw image paths are a contract violation.
+Hardcoded raw image paths are a contract violation. Client-side visual binding,
+scene assembly, input/camera wiring, HUD overlay, and playable smoke tests live
+in `game-frontend`.

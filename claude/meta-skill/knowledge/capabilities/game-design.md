@@ -22,7 +22,8 @@ does not own detailed game design or art production methods; those live in
 `skills/game-narrative/*`, `skills/game-balance/*`, `skills/game-combat/*`,
 `skills/game-content/*`, `skills/game-onboarding/*`, `skills/game-liveops/*`,
 `skills/game-genre-common/*`, `skills/game-art/*`, `skills/game-ui/*`, and
-`skills/game-audio/*`. Program/runtime-facing contracts live in
+`skills/game-audio/*`. Client assembly and playable frontend validation live in
+`skills/game-frontend/*`. Program/runtime-facing contracts live in
 `skills/game-runtime/*`.
 
 ## Knowledge Layer Reference
@@ -366,6 +367,8 @@ Program implementation consumes art through
 `.allforai/game-runtime/art/engine-ready-art-manifest.json`, produced by
 `game-art/40-qa/engine-ready-art-output-contract`. Runtime nodes must use
 manifest `runtime_id` and `asset_id` references rather than raw generated paths.
+Playable client assembly, scene binding, HUD binding, input/camera binding, and
+runtime screenshot validation belong to `game-frontend`.
 
 ## game-design-doc.json Schema
 

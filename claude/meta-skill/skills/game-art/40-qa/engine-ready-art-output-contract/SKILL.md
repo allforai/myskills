@@ -41,11 +41,18 @@ The output contract must include `contract_id`, `target_runtime`,
 `qa_summary`, `fallback_summary`,
 `known_limitations`, `consumer_contracts`, `state`, and `validation`.
 
-`engine-ready-art-manifest.json` is the program-facing subset consumed by
-runtime implementation nodes. It must include `manifest_id`, `target_runtime`,
-`source_contract_ref`, `runtime_assets`, `atlas_manifests`,
-`animation_manifests`, `tilemap_manifests`, `ui_manifests`, `vfx_manifests`,
-`import_validation_ref`, `known_limitations`, and `state`.
+`engine-ready-art-manifest.json` is the program/frontend-facing subset consumed
+by runtime and client implementation nodes. It must include `manifest_id`,
+`target_runtime`, `engine_profile_ref`, `adapter_policy`,
+`format_decisions_ref`, `source_contract_ref`, `runtime_assets`,
+`atlas_manifests`, `animation_manifests`, `tilemap_manifests`, `ui_manifests`,
+`vfx_manifests`, `import_validation_ref`, `known_limitations`, `state`, and
+`validation`.
+
+Engine-specific differences are represented through `engine_profile_ref`,
+`adapter_policy`, and concrete manifest refs, not by changing this common
+manifest schema. Frontend/runtime consumers adapt from the common manifest into
+their local loader/import format.
 
 Asset entries must include:
 
@@ -55,8 +62,13 @@ Asset entries must include:
   "runtime_id": "art/player",
   "kind": "character | tileset | background | prop | icon | ui | vfx | audio_visual_ref",
   "paths": [],
+  "engine_profile_ref": ".allforai/game-design/art/export/engine-export-profile.json",
+  "adapter_policy": "profile_only | generate_import_manifest | run_importer | native_project_edit",
+  "format_decision_refs": [],
   "manifest_refs": [],
   "atlas_ref": null,
+  "frontend_binding_hints": [],
+  "engine_import_hints": [],
   "pivot": {"x": 0.5, "y": 1.0, "space": "normalized"},
   "sorting_layer": "actors",
   "animation_refs": [],
@@ -117,6 +129,7 @@ Readiness gates:
 | adapter | engine profile can be consumed without undocumented native mutations |
 | format decisions | concrete formats are recorded, justified, and validated |
 | import evidence | runtime import report includes evidence paths and validation method |
+| common manifest | engine profile ref, adapter policy, runtime IDs, format refs, and import validation refs are present |
 
 State progression gates:
 
@@ -156,6 +169,17 @@ the LLM-selected output format is explicit, internally consistent, referenced by
 consumers, and covered by runtime validation. If the format cannot be validated,
 return `needs_revision` or `blocked_by_runtime_import` rather than inventing a
 fake engine import result.
+
+Before completion, verify that every program/frontend-facing runtime asset can
+be converted by the declared adapter policy:
+
+- `profile_only` requires a documented loader/import mapping and manifest parse
+  evidence.
+- `generate_import_manifest` requires a generated manifest path and parser or
+  adapter dry-run evidence.
+- `run_importer` requires command, exit code, logs, and imported artifact refs.
+- `native_project_edit` requires exact project files, owning implementation
+  node, and executable engine validation.
 
 ## Completion Conditions
 
