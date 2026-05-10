@@ -7,7 +7,7 @@ description: >
 version: "0.6.4"
 ---
 
-# Meta-Skill v0.6.3
+# Meta-Skill v0.6.4
 
 > Unified skill generator — replaces 6 specialized plugins with /bootstrap + /run.
 
