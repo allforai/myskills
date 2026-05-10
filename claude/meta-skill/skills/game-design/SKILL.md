@@ -46,6 +46,7 @@ Do not organize by document type. Organize by production decision layer:
 | `40-qa` | `economy-balance-qa` | Validate source/sink closure, inflation, exploit, affordability, and resource deadlocks. |
 | `40-qa` | `content-coverage-qa` | Validate that every system/content requirement has data, art, UI, audio, level, and runtime ownership. |
 | `40-qa` | `implementation-feasibility-qa` | Validate engine/tool feasibility, runtime complexity, unresolved risks, and non-substituted verification. |
+| `40-qa` | `game-design-final-closure-qa` | Validate final cross-skill product-design closure before downstream implementation and import work. |
 
 ## Canonical Invocation Paths
 
@@ -72,6 +73,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-design/40-qa/progression-balance-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-design/40-qa/economy-balance-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-design/40-qa/content-coverage-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-design/40-qa/implementation-feasibility-qa/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-design/40-qa/game-design-final-closure-qa/SKILL.md
 ```
 
 ## Shared Contracts
@@ -141,6 +143,7 @@ Full game-design pass:
 -> 40-qa/economy-balance-qa
 -> 40-qa/content-coverage-qa
 -> 40-qa/implementation-feasibility-qa
+-> 40-qa/game-design-final-closure-qa
 ```
 
 Downstream handoff examples:

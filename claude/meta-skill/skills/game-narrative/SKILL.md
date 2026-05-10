@@ -12,6 +12,10 @@ for games that need written content.
 | Layer | Child skill | Responsibility |
 |---|---|---|
 | `10-design` | `narrative-tone-design` | Voice, tone, world language, character voice rules. |
+| `10-design` | `world-bible-spec` | World rules, factions, locations, terminology, tone, and constraints. |
+| `10-design` | `character-arc-spec` | Character roles, motivations, arcs, relationships, voice, and portrait needs. |
+| `20-spec` | `story-structure-spec` | Acts, beats, branches, convergence, endings, and emotional pacing. |
+| `20-spec` | `narrative-event-trigger-spec` | Story/quest triggers, flags, variables, conditions, and runtime handoff. |
 | `20-spec` | `dialogue-spec` | Dialogue structure, speakers, states, triggers, variables. |
 | `20-spec` | `quest-text-spec` | Quest/objective/tutorial/reward text contracts. |
 | `30-generate` | `dialogue-generation` | Dialogue drafts, variants, localization-ready manifests. |
@@ -21,6 +25,10 @@ for games that need written content.
 
 ```text
 ${CLAUDE_PLUGIN_ROOT}/skills/game-narrative/10-design/narrative-tone-design/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-narrative/10-design/world-bible-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-narrative/10-design/character-arc-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-narrative/20-spec/story-structure-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-narrative/20-spec/narrative-event-trigger-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-narrative/20-spec/dialogue-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-narrative/20-spec/quest-text-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-narrative/30-generate/dialogue-generation/SKILL.md
