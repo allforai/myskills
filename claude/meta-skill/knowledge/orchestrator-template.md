@@ -32,7 +32,7 @@ Read `.allforai/bootstrap/workflow.json` at every iteration. Trust it over conve
 ```
 每轮：
   1. Read workflow.json (nodes + transition_log)
-  2. Run: python .allforai/bootstrap/scripts/check_artifacts.py .allforai/bootstrap/workflow.json --json
+  2. Run: python3 .allforai/bootstrap/scripts/check_artifacts.py .allforai/bootstrap/workflow.json --json
   3. Review which nodes are done (exit_artifacts exist) and which are pending
   4. Decide next node:
      - What's done? What's pending? What makes sense next?

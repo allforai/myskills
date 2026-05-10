@@ -11,7 +11,7 @@
 **Protocol**:
 
 1. Read file contents
-2. Validate JSON legality with `python -m json.tool` or equivalent
+2. Validate JSON legality with `python3 -m json.tool` or equivalent
 3. Parse failure ->
    - Check whether a `.bak` backup file exists in the same directory
    - `.bak` exists -> prompt user: "Warning: {filename} JSON parse failed. Backup found: {filename}.bak. Restore?"

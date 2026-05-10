@@ -276,7 +276,7 @@ Check platform-specific requirements based on target launch platform (read from 
 - `.npmignore` or `files` field configured to exclude test/, docs/, *.ts source (publish only compiled dist/)
 - Publish: `npm publish` (requires npm account + auth token or `npm login`); use `--access public` for scoped packages
 - Optional: configure GitHub Actions to auto-publish on release tag (`release.yaml` using `NPM_TOKEN` secret)
-- PyPI equivalent: `python -m build && twine upload dist/*` (requires PyPI account + API token)
+- PyPI equivalent: `python3 -m build && twine upload dist/*` (requires PyPI account + API token)
 
 **Expo (React Native) — EAS Submit:**
 - `eas.json` configured with `submit` profiles: iOS (`appleId`, `ascAppId` or auto-detected) and Android (`serviceAccountKeyPath`)

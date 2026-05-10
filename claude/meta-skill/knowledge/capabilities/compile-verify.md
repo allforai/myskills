@@ -70,7 +70,7 @@ Bootstrap MUST generate the correct build commands per platform:
 | Unity | `unity -batchmode -buildTarget <target> -executeMethod BuildScript.Build` | .apk/.app/.exe |
 | Unreal Engine | `UnrealBuildTool` / `RunUAT BuildCookRun` | .pak + binary |
 | Godot | `godot --headless --export-release "<platform>" output` | .apk/.app/.exe/.pck |
-| Python | `python -m pytest --co -q` (collection-only syntax+import check for interpreted projects) | N/A |
+| Python | `python3 -m pytest --co -q` (collection-only syntax+import check for interpreted projects) | N/A |
 | Twine / Twee | `tweego -o dist/index.html *.tw` (if tweego installed) OR skip | dist/index.html |
 | Next.js + Prisma | **Schema before build**: `npx prisma migrate deploy && npm run build` — build may fail with type errors if schema is not synced first. | .next/ |
 | .NET / ASP.NET Core | `dotnet build` / `dotnet publish -c Release` | bin/publish/ |

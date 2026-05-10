@@ -2111,7 +2111,7 @@ reads workflow.json at runtime, which already contains all project-specific info
 
 Run:
 ```bash
-python .allforai/bootstrap/scripts/validate_bootstrap.py .allforai/bootstrap/
+python3 .allforai/bootstrap/scripts/validate_bootstrap.py .allforai/bootstrap/
 ```
 
 If errors: fix and re-validate (max 3 attempts).
