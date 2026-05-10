@@ -940,13 +940,21 @@ exit_artifacts:
 
 ## 执行方法
 
-读取并执行 `${CLAUDE_PLUGIN_ROOT}/skills/art-concept.md` skill。
+读取并执行 `${CLAUDE_PLUGIN_ROOT}/skills/art-concept.md` skill，完成交互式 Q&A 并产出 `art-pipeline-config.json`。
 
-该 skill 完成以下工作：
-1. 验收 art-direction 输出（读取 art-style-guide.json.art_overview，3个字段）
-2. 执行竞品美术研究（搜索驱动，内部使用）
-3. 按维度分支（2D通用/2D像素/3D）进行 Q&A，逐问确认技术规格
-4. 产出 `.allforai/game-design/art-pipeline-config.json`（status=final）
+art-concept skill 完成后，依次调用以下 game-art 子 skill 细化策略（读取对应 SKILL.md 并执行）：
+
+1. **资产来源策略：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/asset-source-strategy-spec/SKILL.md`
+   - 输入：`art-pipeline-config.json`、`art-asset-inventory.json`（若已存在）
+   - 输出：每类资产的来源策略（生成/外包/改造/混合）
+
+2. **动画生产计划：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md`
+   - 输入：`art-pipeline-config.json.animation_system`、`art-pipeline-config.json.character`
+   - 输出：动画方案选择（帧动画/DragonBones/Tween/混合）及降级路径
+
+3. **动效设计**（当 `animation_system != "none"` 时）：`${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/motion-design/SKILL.md`
+   - 输入：`art-pipeline-config.json`、`art-style-guide.json.art_overview`
+   - 输出：关键帧意图、Timing 规则、可读性规范
 
 ## 完成条件
 
