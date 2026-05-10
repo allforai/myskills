@@ -1006,6 +1006,86 @@ concept-contract capability 完成后，依次调用以下 game-art 子 skill（
 所有后续 art-gen 节点必须从 `concept-contract.json` 读取 `canonical_registry`，使用其中的 `file_prefix` 作为生成文件的命名权威来源，不得自行命名。
 ```
 
+**Art-Gen Node Injection (when `art-spec-design` and `concept-freeze` are in the selected workflow):**
+
+After injecting `concept-freeze`, read `art-pipeline-config.json.active_nodes` and inject one node-spec per entry. Use the sub-skill mapping table below to determine which `game-art` sub-skills each node-spec should delegate to.
+
+**Sub-Skill Mapping Table:**
+
+| `node_id` | Pre-Spec Sub-Skills (read first) | Generate Sub-Skills (run after) | Condition |
+|-----------|----------------------------------|--------------------------------|-----------|
+| `tile-art-gen` | `skills/game-art/20-spec/tileset-spec/SKILL.md` | `skills/game-art/30-generate/tileset-generation/SKILL.md` | always |
+| `tile-art-gen` | + `skills/game-art/20-spec/2-5d-production-mode-spec/SKILL.md` + `skills/game-art/20-spec/2-5d-lighting-shadow-spec/SKILL.md` | + `skills/game-art/30-generate/render-to-2d-asset-generation/SKILL.md` | when `dimension=2.5d` |
+| `character-art-gen` | `skills/game-art/20-spec/character-layer-sheet/SKILL.md` + `skills/game-art/20-spec/visual-style-tokens/SKILL.md` | `skills/game-art/30-generate/skeletal-animation/SKILL.md` | when `character.rig` = `dragonbones`, `dragonbones_mesh`, or `skeletal_3d` |
+| `character-art-gen` | same pre-spec | `skills/game-art/30-generate/frame-animation-generation/SKILL.md` | when `character.rig=frame_sequence` |
+| `character-art-gen` | — | + `skills/game-art/30-generate/expression-set-generation/SKILL.md` | when `character.expressions=true` (append after primary generate) |
+| `environment-art-gen` | `skills/game-art/20-spec/2d-view-mode-spec/SKILL.md` | `skills/game-art/30-generate/background-generation/SKILL.md` + `skills/game-art/30-generate/prop-generation/SKILL.md` | always |
+| `environment-art-gen` | + `skills/game-art/20-spec/3d-source-asset-spec/SKILL.md` | + `skills/game-art/30-generate/render-to-2d-asset-generation/SKILL.md` | when `dimension=3d` or `2.5d` |
+| `ui-art-gen` | `skills/game-art/20-spec/visual-style-tokens/SKILL.md` | `skills/game-art/30-generate/icon-generation/SKILL.md` | always |
+| `ui-art-gen` | — | + `skills/game-art/30-generate/portrait-generation/SKILL.md` | when `concept_art.needed=true` |
+| `vfx-art-gen` | `skills/game-art/20-spec/vfx-spec/SKILL.md` | `skills/game-art/30-generate/vfx-generation/SKILL.md` | always |
+
+**Node-spec template for each `active_node` entry:**
+
+Write `.allforai/bootstrap/node-specs/<node-id>.md` using this template, substituting `<TYPE>`, `<REGISTRY_KEY>`, `<CONFIG_SECTION>`, and `<DISCIPLINE_OWNER>` from the table below:
+
+| `node_id` | `<TYPE>` | `<REGISTRY_KEY>` | `<CONFIG_SECTION>` | `<DISCIPLINE_OWNER>` |
+|-----------|----------|-----------------|-------------------|---------------------|
+| `tile-art-gen` | tile | `tiles` | `tileset` | `concept-artist` |
+| `character-art-gen` | character | `characters` | `character` | `character-modeler` |
+| `environment-art-gen` | environment | `environments` | `environment` | `environment-artist` |
+| `ui-art-gen` | UI | `ui` + `other` | _(all remaining)_ | `ui-artist` |
+| `vfx-art-gen` | VFX | `vfx` | `vfx` | `vfx-artist` |
+
+```markdown
+---
+node: <node-id>
+human_gate: true
+hard_blocked_by: [concept-freeze]
+unlocks: [art-qa]
+exit_artifacts:
+  - path: .allforai/game-design/<node-id>-review.html
+  - path: .allforai/game-design/systems/<node-id>-spec.json
+---
+
+# Goal
+
+Generate <TYPE> art assets for all entries in `.allforai/concept-contract.json` `canonical_registry.<REGISTRY_KEY>[]`.
+
+## Inputs
+
+- `.allforai/concept-contract.json` — `canonical_registry.<REGISTRY_KEY>[]` (authoritative asset IDs and `file_prefix` values; do not invent your own names)
+- `.allforai/game-design/art-pipeline-config.json` — `<CONFIG_SECTION>` configuration and `toolchain.detected_capabilities`
+- `.allforai/game-design/art-asset-inventory.json` — current asset states (skip assets with `current_state == "locked"`)
+- `.allforai/game-design/asset-registry.json` — canonical registry built by concept-freeze
+
+## Sub-Skill Invocation
+
+Read and follow each sub-skill SKILL.md in order. Each sub-skill defines its own output contract — follow it exactly.
+
+### Step 1 — Pre-Spec
+
+<List the pre-spec sub-skill paths from the mapping table above for this node_id, with conditions>
+
+### Step 2 — Generate
+
+<List the generate sub-skill paths from the mapping table above for this node_id, with conditions>
+
+## Completion Condition
+
+`.allforai/game-design/systems/<node-id>-spec.json` exists AND `.allforai/game-design/<node-id>-review.html` exists AND all `canonical_registry.<REGISTRY_KEY>[]` entries have `current_state != "placeholder"`.
+
+If any sub-skill returns `UPSTREAM_DEFECT` → halt and report the defect. Do not advance to `art-qa`.
+```
+
+**Key rules for art-gen injection:**
+- `hard_blocked_by: ["concept-freeze"]` for ALL art-gen nodes (regardless of type)
+- `unlocks: ["art-qa"]` for ALL art-gen nodes
+- `human_gate: true` for ALL art-gen nodes (discipline-specific approval required)
+- `approval_record_path: ".allforai/game-design/approval-records.json"` for ALL art-gen nodes
+- `review_checklist`: use the checklist from `game-design.md` canonical registry table
+- Do NOT inject a node-spec for entries in `skipped_nodes` — only `active_nodes` get node-specs
+
 **App Design Node Injection (when `is_game_project = false` AND goal includes design phase):**
 
 **Inject when `goals` includes `create` or `rebuild`** (new or re-designed app). For all other goals — `translate`, `analyze`, `tune`, `product-verify`, `quality-checks`, `demo`, `launch-prep`, `visual-verify` — **skip injection entirely** (app-design phases are already complete).
