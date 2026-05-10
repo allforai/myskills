@@ -1086,6 +1086,58 @@ If any sub-skill returns `UPSTREAM_DEFECT` → halt and report the defect. Do no
 - `review_checklist`: use the checklist from `game-design.md` canonical registry table
 - Do NOT inject a node-spec for entries in `skipped_nodes` — only `active_nodes` get node-specs
 
+**Art-QA Node Injection (when `art-qa` is in the canonical node registry for the selected scenario):**
+
+After injecting all art-gen nodes, inject the `art-qa` node:
+- `node_id: "art-qa"`, `capability: "game-design"`, `human_gate: true`
+- `hard_blocked_by:` ALL active art-gen nodes (i.e., every entry in `active_nodes` that was actually injected — tile-art-gen, character-art-gen, environment-art-gen, ui-art-gen, vfx-art-gen, whichever are in `active_nodes`)
+- `unlocks: ["game-design-finalize"]`
+- `discipline_owner: "art-director"`
+- `approval_record_path: ".allforai/game-design/approval-records.json"`
+- `review_checklist:` ["全资产风格一致性（调色板/线条/光影）", "所有资产均有 alpha/final 状态", "Atlas 打包无越界/重叠", "运行时导入通过（无丢失引用）", "3D 衍生资产透视/枢轴正确（若 dimension=2.5d）"]
+
+**Node-spec for art-qa** (write verbatim to `.allforai/bootstrap/node-specs/art-qa.md`):
+
+```markdown
+---
+node: art-qa
+human_gate: true
+hard_blocked_by: []  # populated by bootstrap: all active art-gen node IDs
+unlocks: [game-design-finalize]
+exit_artifacts:
+  - path: .allforai/game-design/art-qa-report.html
+---
+
+# Goal
+
+Run quality assurance across all generated art assets. Invoke the appropriate game-art QA sub-skills and aggregate results into `art-qa-report.html`.
+
+## Inputs
+
+- `.allforai/concept-contract.json` — `canonical_registry` (all types)
+- `.allforai/game-design/art-pipeline-config.json` — `dimension`, `style`, `vfx.approach`
+- `.allforai/game-design/systems/` — all `*-art-spec.json` outputs from art-gen nodes
+- `.allforai/game-design/art-style-guide.json` — visual style reference
+
+## Sub-Skill Invocation
+
+Read and follow each applicable sub-skill SKILL.md in order:
+
+1. **Style consistency (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/2d-style-consistency-qa/SKILL.md`
+2. **Atlas packaging (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/atlas-packaging/SKILL.md`
+3. **Runtime import (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/runtime-import-check/SKILL.md`
+4. **3D-assisted QA** (when `dimension=2.5d`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/3d-assisted-2d-qa/SKILL.md`
+5. **Asset pack QA** (when any asset has `source_strategy=pack`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-pack-integration-qa/SKILL.md`
+6. **License provenance** (when any asset has `source_strategy=pack` or `external`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md`
+
+## Completion Condition
+
+`art-qa-report.html` exists AND no sub-skill returned `UPSTREAM_DEFECT`.
+
+**Gate action on sub-skill score < 3/5:**
+For each failing asset, set `gate_status: "revision-requested"` in `.allforai/game-design/approval-records.json` for the relevant art-gen node, and populate `revision_notes` with the QA sub-skill's issue list. The orchestrator will re-run that art-gen node with `revision_notes` as context.
+```
+
 **App Design Node Injection (when `is_game_project = false` AND goal includes design phase):**
 
 **Inject when `goals` includes `create` or `rebuild`** (new or re-designed app). For all other goals — `translate`, `analyze`, `tune`, `product-verify`, `quality-checks`, `demo`, `launch-prep`, `visual-verify` — **skip injection entirely** (app-design phases are already complete).
