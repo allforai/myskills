@@ -1,36 +1,47 @@
 ---
 name: game-design
 description: >
-  Game Design Document (GDD) capability for game projects. Generates HTML-first,
-  human-reviewed design nodes for core loop, combat systems, economy, narrative,
-  art direction, and art asset specs. Activated by bootstrap when a game engine is
-  detected. All nodes require discipline-specific human approval before proceeding.
+  Game Design Document (GDD) orchestration capability for game projects. Defines
+  bootstrap node routing, approval gates, final aggregation, and downstream
+  handoff for game design workflows. Concrete design methodology, art generation,
+  and validation are delegated to bundled game-* sub-skills.
 ---
 
 # Game Design Capability
 
-> Execution layer for game project design. Reads domain knowledge from
-> `${CLAUDE_PLUGIN_ROOT}/knowledge/domains/gaming.md`. Adds HTML outputs,
-> human gate protocol, art substitution pipeline, and AI image generation.
+> Orchestration layer for game project design. Reads lightweight domain
+> selection knowledge from `${CLAUDE_PLUGIN_ROOT}/knowledge/domains/gaming.md`
+> and delegates concrete execution to bundled game-* sub-skills.
 
 ## Goal
 
-Bridge `product-concept` (vision) and `generate-artifacts` (code) with
-domain-specific game design documentation. Each node outputs a static HTML
-for human review and a JSON artifact for downstream consumption.
+Bridge `product-concept` (vision) and `generate-artifacts` (code) by injecting
+game-design nodes, approval gates, and final handoff artifacts. This capability
+does not own detailed game design or art production methods; those live in
+`skills/game-design/*`, `skills/game-systems/*`, `skills/game-level/*`,
+`skills/game-narrative/*`, `skills/game-balance/*`, `skills/game-combat/*`,
+`skills/game-content/*`, `skills/game-onboarding/*`, `skills/game-liveops/*`,
+`skills/game-genre-common/*`, `skills/game-art/*`, `skills/game-ui/*`, and
+`skills/game-audio/*`. Program/runtime-facing contracts live in
+`skills/game-runtime/*`.
 
 ## Knowledge Layer Reference
 
-This capability is the **execution layer** over `domains/gaming.md`:
+This capability is the **orchestration layer** over `domains/gaming.md`:
 
 | Layer | File | Responsibility |
 |-------|------|----------------|
-| Knowledge | `domains/gaming.md` | Node definitions, theory anchors, artifact content, genre node selection |
-| Execution | `capabilities/game-design.md` (this file) | HTML output specs, human gate protocol, art substitution, AI image generation, team role assignment |
+| Knowledge | `domains/gaming.md` | Lightweight genre/template selection and fallback LLM guidance |
+| Orchestration | `capabilities/game-design.md` (this file) | Node registry, sub-skill mapping, approval gate protocol, final aggregation, downstream handoff |
+| Execution | `skills/game-*/*/SKILL.md` | Concrete methodology, input/output contracts, generation, QA, repair routing |
 
-Bootstrap reads both files when generating node-specs for game projects:
-- From `gaming.md`: node content methodology and artifact schemas
-- From this file: execution layer rules (HTML paths, gate protocol, art pipeline)
+Bootstrap reads `gaming.md` and this file when generating node-specs for game
+projects:
+- From `gaming.md`: scenario/template selection and fallback LLM context.
+- From this file: canonical node IDs, output paths, approval gates, sub-skill
+  mapping, and final handoff rules.
+- From mapped sub-skills: concrete methodology, artifact contracts, validation,
+  generation, and repair routing.
 
 ## Trigger Conditions
 
@@ -53,14 +64,14 @@ product-concept
 [game-design nodes — bootstrap selects from game-scenario-templates/]
   ├─ core-loop-design
   ├─ [scenario-specific system nodes]
-  ├─ art-direction            (产出 art-style-guide.json，含 art_overview 字段)
+  ├─ art-direction            (delegates to game-art art-direction input contract)
   │     ↓
   │   art-concept skill       (交互式美术技术规格，产出 art-pipeline-config.json)
   │     ↓
-  ├─ art-spec-design          (读取 art-pipeline-config.json 特化资产清单)
-  └─ [art-gen nodes]          (由 art-pipeline-config.active_nodes 决定，automatic，no human gate)
+  ├─ art-spec-design          (delegates to game-art asset registry/spec skills)
+  └─ [art-gen nodes]          (由 art-pipeline-config.active_nodes 决定)
   ↓
-game-design-finalize  (aggregates all system JSONs → game-design-doc.json; human gate: lead-designer)
+game-design-finalize  (aggregates all system JSONs → game-design-doc.json + handoff artifacts; human gate: lead-designer)
   ↓
 product-analysis  (reads game-design-doc.json as concept baseline)
   ↓
@@ -227,13 +238,13 @@ No improvised names.
 | `narrative-design` | `narrative-designer` | `game-design/narrative.html` | `game-design/systems/narrative-design.json` | narrative-design |
 | `level-design` | `level-designer` | `game-design/level-design.html` | `game-design/systems/level-design.json` | level-design |
 | `worldbuilding` | `narrative-designer` | `game-design/worldbuilding.html` | `game-design/systems/worldbuilding.json` _(structured summary; aggregated by finalize)_; `prose_output`: `game-design/systems/worldbuilding-bible.md` _(full lore prose; linked via lore_file field, not parsed as JSON)_ | worldbuilding |
-| `network-architecture-design` | `backend-programmer` | `game-design/network-arch.html` | `game-design/systems/network-architecture.json` | (Step 2.7 research) |
-| `matchmaking-design` | `backend-programmer` | `game-design/matchmaking.html` | `game-design/systems/matchmaking.json` | (Step 2.7 research) |
+| `network-architecture-design` | `backend-programmer` | `game-runtime/network/network-architecture.html` | `game-runtime/network/network-architecture-spec.json` | (runtime architecture) |
+| `matchmaking-design` | `backend-programmer` | `game-runtime/server/matchmaking-service.html` | `game-runtime/server/matchmaking-service-spec.json` | (runtime service) |
 | `competitive-balance-design` | `numeric-designer` | `game-design/competitive-balance.html` | `game-design/systems/balance-report.json` | balance-testing |
 | `run-structure-design` | `lead-designer` | `game-design/run-structure.html` | `game-design/systems/run-structure.json` | core-mechanics-design |
 | `meta-progression-design` | `systems-designer` | `game-design/meta-progression.html` | `game-design/systems/meta-progression.json` | progression-system |
-| `procedural-gen-spec` | `gameplay-programmer` | `game-design/procedural-gen.html` | `game-design/systems/procedural-gen.json` | (engine specialisation) |
-| `ai-faction-design` | `ai-programmer` | `game-design/ai-faction.html` | `game-design/systems/ai-faction.json` | core-mechanics-design |
+| `procedural-gen-spec` | `gameplay-programmer` | `game-runtime/simulation/procedural-generator.html` | `game-runtime/simulation/procedural-generator-spec.json` | (runtime simulation) |
+| `ai-faction-design` | `ai-programmer` | `game-runtime/simulation/ai-faction-runtime.html` | `game-runtime/simulation/ai-faction-runtime-spec.json` | (runtime simulation) |
 | `tech-tree-design` | `systems-designer` | `game-design/tech-tree.html` | `game-design/systems/tech-tree.json` | progression-system |
 | `branching-structure-design` | `narrative-designer` | `game-design/branching-structure.html` | `game-design/systems/branching-structure.json` | narrative-design |
 | `character-arc-design` | `narrative-designer` | `game-design/character-arc.html` | `game-design/systems/character-arc.json` | narrative-design |
@@ -246,7 +257,7 @@ No improvised names.
 | `ui-art-gen` | `ui-artist` | `game-design/ui-art-review.html` | `game-design/systems/ui-art-spec.json` | art-gen |
 | `vfx-art-gen` | `vfx-artist` | `game-design/vfx-art-review.html` | `game-design/systems/vfx-asset-spec.json` | art-gen |
 | `art-qa` | `art-director` | `game-design/art-qa-report.html` | — | art-gen |
-| `anti-cheat-design` | `backend-programmer` | `game-design/anti-cheat.html` | `game-design/systems/anti-cheat-design.json` | — |
+| `anti-cheat-design` | `backend-programmer` | `game-runtime/security/anti-cheat-architecture.html` | `game-runtime/security/anti-cheat-architecture-spec.json` | (runtime security) |
 | `dialogue-system-spec` | `gameplay-programmer` | `game-design/dialogue-system.html` | `game-design/systems/dialogue-system.json` | narrative-design |
 | `audio-design` | `audio-director` | `game-design/audio-design.html` | `game-design/systems/audio-design.json` | — |
 | `game-design-finalize` | `lead-designer` | `game-design/game-design-dashboard.html` | `game-design/game-design-doc.json` | — |
@@ -254,406 +265,114 @@ No improvised names.
 | `card-system-design` | `systems-designer` | `game-design/card-system.html` | `game-design/systems/card-system.json` | progression-system |
 | `ai-art-generation` | _(automatic — no discipline_owner)_ | _(updates art-direction.html)_ | updates `art-asset-inventory.json` | — |
 
-## HTML Presentation Specs
+## Finalize Exit Artifacts
 
-All HTML outputs are **static** (v1). Bootstrap embeds data at generation time.
+`game-design-finalize` has one primary `json_output` in the registry table, but
+it must also produce handoff artifacts consumed by art and downstream program
+development. Bootstrap MUST add all paths below to the `game-design-finalize`
+node's `exit_artifacts`:
 
-### `game-design-dashboard.html`
-- **Audience:** producer, lead-designer
-- **Goal:** 5-second status overview — see what needs attention
-- **Layout:** Tab navigation by discipline (Design / Art / Engineering / Audio)
-- **Above fold:** Overall completion gauge (approved nodes / total nodes) + alert strip listing any nodes with gate_status = revision-requested (red) or in-review overdue > 48h (yellow)
-- **Below:** Node status card grid — one card per game-design node with: node name, discipline_owner, gate_status badge (pending/in-review/approved/revision-requested), last-updated timestamp
-- **Below:** Art progress heatmap — rows: asset types, columns: states (placeholder/temp/alpha/final), cells: count; highlight rows with 0 final assets that have a milestone gate
-- **Collapsed:** Per-node revision notes (visible on card expand)
-
-### `core-loop.html`
-- **Audience:** lead-designer
-- **Above fold:** SVG loop diagram — Primary → Secondary → Tertiary with duration labels
-- **Expanded:** Design intent (2-3 sentences, gameplay language, not spec language)
-- **Decision callouts:** ⚠️ warning blocks for unresolved design choices with option comparison
-
-### `combat-system.html`
-- **Audience:** combat-designer (primary), gameplay-programmer (secondary)
-- **Layout:** Two-column — left: gameplay language; right: technical spec
-- **Above fold:** System overview + 3 key design decisions (one decision per callout)
-- **Expanded:** Sortable skill table (columns: name / damage-multiplier / cooldown / cost / range / status-effect)
-- **Expanded:** SVG state machine diagram (node = state, edge = transition + condition)
-- **Collapsed:** Full formulas, edge cases, boundary conditions
-
-### `economy-design.html`
-- **Audience:** numeric-designer
-- **Above fold:** Sankey chart — currency sources → pool → sinks (edge width = volume)
-- **Expanded:** Growth curve line chart (X: level, Y: value; tab-switch dimensions: XP/ATK/DEF/economy)
-- **Expanded:** Balance thresholds — ⚠️ highlight on values that need designer confirmation
-- **Collapsed:** Full parameter tables (numeric, sortable)
-
-### `art-direction.html`
-- **Audience:** art-director
-- **Rule:** Image-first. Maximum 3 consecutive lines of text anywhere on page.
-- **Above fold:** Mood image (full-width)
-- **Below:** Color palette swatches (hex + role label) + forbidden styles (tag chips)
-- **Below:** Reference works (thumbnail row, labelled)
-- **Below:** AI-generated drafts (2×2 grid, click to enlarge)
-
-### `art-spec-design.html`
-- **Audience:** concept-artist (primary reviewer, approves the spec); other art disciplines (character-artist, environment-artist, ui-artist, etc.) filter to their own assets for reference
-- **Layout:** Filterable card grid — filter by discipline / type / state (default: show all; discipline_owner reviews all before approving)
-- **Above fold:** Asset count summary by type and state (table: rows = asset type, columns = state count); ⚠️ highlight asset types with 0 spec cards (unspecified categories)
-- **Below:** Filterable card grid — one card per asset: ID + name + dimensions + description + palette constraint chips + milestone gate + AI-gen preview if available + approval status
-
-### `narrative.html`
-- **Audience:** narrative-designer
-- **Above fold:** Interactive SVG story tree (nodes expandable on click, colour = act)
-- **Expanded:** Emotional arc line chart (X: story progress %, Y: intensity; annotate peaks / valleys / reversals)
-- **Expanded:** Character arc timeline (horizontal, one row per character)
-- **Collapsed:** Dialogue node detail (click to expand per node)
-
-### `anti-cheat.html`
-- **Audience:** backend-programmer (primary), lead-designer (secondary)
-- **Above fold:** Threat model overview — table of cheat types (speed hack / memory edit / packet manipulation / account sharing) × severity (critical/high/medium) × detection difficulty
-- **Expanded:** Detection methods per cheat type with false-positive rate estimate
-- **Expanded:** Third-party middleware comparison (EAC / BattlEye / custom) with cost/coverage matrix
-- **Collapsed:** Technical implementation spec, ban escalation ladder
-
-### `dialogue-system.html`
-- **Audience:** gameplay-programmer (primary), narrative-designer (secondary)
-- **Layout:** Two-column — left: design spec (narrative-designer readable); right: technical schema (programmer readable)
-- **Above fold:** Node type catalogue (dialogue / choice / condition / jump / event-trigger) with visual icons
-- **Expanded:** Variable system — global/local/character-scoped flags, data types, default values
-- **Expanded:** Branching rules — max depth, merge points, dead-end detection
-- **Collapsed:** Script format reference (YAML/JSON/ink/.twee spec), localization key pattern
-
-### `audio-design.html`
-- **Audience:** audio-director
-- **Rule:** Embed audio previews where possible (base64 short clips or waveform SVG placeholders)
-- **Above fold:** Audio identity statement (2-3 sentences: genre, mood, key instruments, forbidden sounds)
-- **Below:** Adaptive music system diagram — layers, triggers, crossfade rules
-- **Below:** SFX catalogue table (event → file → loop? → 3D spatial? → priority) — sortable
-- **Below:** Voice acting spec — languages, tone notes, character voice reference
-- **Collapsed:** Full audio asset list with milestone gates
-
-### `ftue.html`
-- **Audience:** ux-designer (primary), lead-designer (secondary)
-- **Above fold:** FTUE flow diagram — step-by-step first session (step name / goal / UI screen / skip-able?)
-- **Expanded:** Drop-off risk table — each step with expected completion %, red-flag threshold
-- **Expanded:** Tutorial gating rules — what feature unlocks at which step
-- **Collapsed:** Copy spec (tutorial messages verbatim, with tone notes)
-
-### `monetization.html`
-- **Audience:** monetization-designer (primary), lead-designer (secondary)
-- **Above fold:** Revenue model summary — IAP tiers / ad types / subscription — with price anchoring chart
-- **Expanded:** Purchase funnel: impression → consideration → conversion → repeat; target rates per step
-- **Expanded:** Whale / dolphin / minnow player archetype spend profiles
-- **Collapsed:** Full IAP SKU table (id / label / price / value / unlock), A/B test candidates
-- **Gacha/抽卡 supplement (include when revenue model = Gacha):** Pull rate table (rarity tier × base rate × soft-pity rate × hard-pity threshold); banner structure (featured/limited/standard pool, rate-up mechanic); expected pulls to threshold chart (X: pulls, Y: cumulative probability of getting featured item)
-
-### `retention-hook.html`
-- **Audience:** systems-designer
-- **Above fold:** Hook loop diagram — trigger → action → reward → investment cycle (SVG)
-- **Expanded:** Daily/weekly/monthly hook schedule grid (day × hook type × reward)
-- **Expanded:** Push notification strategy — event types, copy examples, opt-out risk
-- **Collapsed:** Competitor hook analysis table
-
-### `meta-game.html`
-- **Audience:** systems-designer
-- **Above fold:** Meta-game layer map — what exists outside the core loop (collection / progression / social / seasonal)
-- **Expanded:** Collection system — item catalogue structure, display screen layout
-- **Expanded:** Progression systems above core loop — battle pass / season / mastery
-- **Collapsed:** Long-term engagement curve (X: days played, Y: engagement score)
-
-### `skill-tree.html`
-- **Audience:** combat-designer
-- **Above fold:** Visual skill tree graph (SVG) — nodes = skills, edges = unlock requirements, color = tier
-- **Expanded:** Per-skill detail cards (name / cost / effect / scaling formula / cooldown / max-rank)
-- **Expanded:** Build archetype summary — top 3-5 paths with playstyle label
-- **Collapsed:** Full skill table sortable by tier / cost / effect type
-
-### `progression-curve.html`
-- **Audience:** numeric-designer
-- **Above fold:** Multi-line chart — XP required per level, power growth, economy growth (X: level, Y: value; toggle dimensions)
-- **Expanded:** Pacing table — expected hours per level band (1-10 / 11-30 / 31-max); ⚠️ alert if band > 8 hours
-- **Expanded:** Soft-cap / hard-cap annotations on curve
-- **Collapsed:** Full level table (level / XP threshold / reward / unlocks)
-
-### `level-design.html`
-- **Audience:** level-designer (primary), combat-designer (secondary)
-- **Above fold:** World map or level selection overview (placeholder image with zone labels)
-- **Expanded:** Per-level spec cards — objective / enemy composition / hazards / estimated duration / difficulty rating
-- **Expanded:** Difficulty curve chart (X: level index, Y: difficulty score)
-- **Collapsed:** Encounter tables, spawn rules, pacing notes
-
-### `worldbuilding.html`
-- **Audience:** narrative-designer
-- **Above fold:** World overview card — setting, era, tone, 3-5 defining facts
-- **Below:** Faction relationship diagram (SVG — nodes = factions, edges = relationship type + tension)
-- **Below:** Geography map (placeholder image with region labels and lore notes)
-- **Below:** Terminology glossary (term / meaning / usage context), collapsible
-- **Collapsed:** Full lore documents (history, religion, magic/tech system rules)
-- **Output note:** Produce TWO files after approval — (1) `worldbuilding.json` (compact structured summary: `{setting, era, tone, factions[], key_locations[], lore_file}`) for `game-design-finalize` aggregation; (2) `worldbuilding-bible.md` (full prose lore document). Only `worldbuilding.json` is referenced in `game-design-doc.json`; the `.md` is linked via the `lore_file` field.
-
-### `network-arch.html`
-- **Audience:** backend-programmer
-- **Above fold:** Architecture diagram (SVG) — client / relay / game server / database topology with latency budgets
-- **Expanded:** Message flow — client → server → client for key actions (move / attack / ability)
-- **Expanded:** Tick rate spec, bandwidth estimate (bytes/s per player at peak), concurrent player target
-- **Collapsed:** Failure modes and fallback behavior (disconnect / desync / server crash)
-
-### `matchmaking.html`
-- **Audience:** backend-programmer (primary), systems-designer (secondary)
-- **Above fold:** Matchmaking algorithm flowchart (SVG) — skill bucket → lobby fill → timeout expansion
-- **Expanded:** Rating system spec (ELO / MMR / TrueSkill) with formula and decay rules
-- **Expanded:** Queue time target vs. match quality trade-off chart
-- **Collapsed:** Edge cases (solo vs. group, cross-region, skill floor/ceiling)
-
-### `competitive-balance.html`
-- **Audience:** numeric-designer (primary), combat-designer (secondary)
-- **Above fold:** Balance radar chart — key game metrics vs. target ranges (DPS / TTK / win-rate spread)
-- **Expanded:** Per-entity stat table (hero/class/weapon; sortable by metric)
-- **Expanded:** Win-rate heat map (entity A vs. entity B; ⚠️ flag > 55% win rate)
-- **Collapsed:** Balance changelog template, patch cycle cadence
-
-### `run-structure.html`
-- **Audience:** lead-designer
-- **Above fold:** Run flow diagram (SVG) — start → floors/encounters → boss → end (with branch types: elite / shop / rest / treasure)
-- **Expanded:** Encounter type table (type / weight / difficulty band / rewards)
-- **Expanded:** Run length spec — target time per floor, total run target, variance range
-- **Collapsed:** Seed / procedural rules that determine branch probabilities
-
-### `meta-progression.html`
-- **Audience:** systems-designer
-- **Above fold:** Meta unlock tree (SVG) — permanent upgrades, grouped by type (character / passive / starting bonus)
-- **Expanded:** Unlock economy table — meta currency sources (run completion / challenges) × sinks (unlock costs)
-- **Expanded:** First-session vs. 10-session vs. 50-session progression state comparison
-- **Collapsed:** Challenge / achievement definitions that feed meta currency
-
-### `procedural-gen.html`
-- **Audience:** gameplay-programmer (primary), lead-designer (secondary)
-- **Layout:** Two-column — left: designer constraints; right: algorithm spec
-- **Above fold:** Generator pipeline diagram — seed → room graph → content fill → validation
-- **Expanded:** Constraint table — guaranteed rooms per run, min/max branching factor, forbidden adjacencies
-- **Expanded:** Content distribution rules — enemy density curve, item rarity weights, loot tables
-- **Collapsed:** Rejection sampling rules, seed format, replay-from-seed spec
-
-### `ai-faction.html`
-- **Audience:** ai-programmer (primary), systems-designer (secondary)
-- **Above fold:** Faction behaviour state machine (SVG) — states = strategy, edges = transition condition
-- **Expanded:** Per-faction profile — aggression / expansion / diplomacy weights + trigger thresholds
-- **Expanded:** Difficulty scaling table — how AI weights shift per difficulty level
-- **Collapsed:** Pathfinding spec, fog-of-war rules, economy weights
-
-### `tech-tree.html`
-- **Audience:** systems-designer (primary), numeric-designer (secondary)
-- **Above fold:** Visual tech tree (SVG) — nodes = tech, edges = prerequisites, color = era/tier
-- **Expanded:** Per-node spec cards (name / cost / prerequisites / unlocks / era)
-- **Expanded:** Research pacing table — expected turns to key milestones at normal speed
-- **Collapsed:** Full tech table sortable by era / cost / unlocked buildings or units
-
-### `branching-structure.html`
-- **Audience:** narrative-designer
-- **Above fold:** Full story branch graph (SVG — interactive, nodes expandable on click, color = chapter)
-- **Expanded:** Decision point table — choice text / consequence / affected flags / estimated word count
-- **Expanded:** Convergence analysis — how many unique paths exist, where they merge
-- **Collapsed:** Flag/variable catalogue (name / type / scope / default / read-by)
-
-### `puzzle-design.html`
-- **Audience:** level-designer (primary), narrative-designer (secondary for narrative puzzles)
-- **Above fold:** Puzzle type catalogue — table of puzzle categories (inventory / observation / manipulation / lateral-thinking / meta) × count × average solve time estimate
-- **Expanded:** Per-puzzle spec cards (id / type / inputs / solution / fail state / hint levels / skip-able?)
-- **Expanded:** Difficulty curve chart (X: puzzle index, Y: estimated difficulty; annotate expected stuck rate thresholds)
-- **Expanded:** Hint system design — hint levels (nudge / hint / spoiler), delivery mechanism (character, UI, time-based auto-offer)
-- **Collapsed:** Puzzle dependency graph (SVG — which puzzles must be solved before others can be accessed)
-
-### `card-system.html`
-- **Audience:** systems-designer (primary), numeric-designer (secondary for balance)
-- **Above fold:** Card taxonomy — table of card types (unit / spell / structure / equipment / etc.) × rarity tiers × count
-- **Expanded:** Card pool matrix (rarity × archetype; highlight synergy clusters)
-- **Expanded:** Economy design — mana/energy/resource curve (X: turn, Y: available resources); cost distribution per rarity
-- **Expanded:** Keyword system — all keywords defined (effect / trigger / interaction notes)
-- **Expanded:** Collection mechanics — acquisition sources (pack / craft / reward / shop), duplicate handling, storage limits
-- **Collapsed:** Balance levers — target win-rate by archetype, oppressive combo watchlist, design guardrails
-
-### `character-arc.html`
-- **Audience:** narrative-designer
-- **Above fold:** Per-character arc timeline (horizontal, one row per character; X: story %, annotate turning points)
-- **Expanded:** Character sheet per character — motivation / wound / lie / truth / arc type (flat/positive/negative)
-- **Expanded:** Relationship web (SVG — nodes = characters, edges = relationship + tension at start/end)
-- **Collapsed:** Scene-by-scene character presence matrix
-
-## Art Substitution Pipeline
-
-### Four States (formal milestones, not workarounds)
-
-| State | Content | Code / Demo usable |
-|-------|---------|-------------------|
-| `placeholder` | Geometry / solid color / text label | ✅ always |
-| `temp` | AI-generated image or free asset | ✅ demo / test |
-| `alpha` | First human art pass | ✅ Alpha milestone |
-| `final` | Ship quality | ✅ Release |
-
-### Default Substitution Rules
-
-- `character`: Capsule geometry, name label on head
-- `environment`: Whitebox geometry, functional zones in distinct solid colors
-- `animation`: Position tween, no skeletal animation
-- `vfx`: Single-color particle burst (white circle)
-- `ui-icon`: Rounded rectangle + icon name text
-- `ui-bg`: Solid color + game title text
-- `audio-sfx`: 440 Hz sine (hit) / 200 Hz (damage received) / 880 Hz (level-up)
-- `audio-bgm`: Silent OR CC0 library track
-
-### Milestone Gate Rules
-
-- **Alpha:** all `milestone_gate = "alpha"` assets must reach `alpha` state
-- **Beta:** all `milestone_gate = "beta"` assets must reach `alpha` state (beta allowed to lag)
-- **Release:** all assets must reach `final` state
-- `demo-forge` and `product-verify` execute at any art state — never blocked by missing final art
-
-### Art-Agnostic Code Constraint
-
-`generate-artifacts` node-spec MUST include:
-> Code references assets via an Asset Registry (ID → path lookup). Hardcoded asset paths are prohibited. Path resolved from `art-asset-inventory.json.assets[].substitution[current_state]` at runtime.
-
-`quality-checks` adds scan: detect hardcoded asset paths that bypass Asset Registry.
-
-## AI Art Generation
-
-### Trigger
-
-The `ai-art-generation` node is superseded by role-based art-gen nodes (`tile-art-gen`,
-`character-art-gen`, `environment-art-gen`, `ui-art-gen`, `vfx-art-gen`, `art-qa`).
-These nodes are selected by `art-pipeline-config.json.active_nodes` after `art-concept` completes.
-
-Each art-gen node is triggered automatically after `art-spec-design` reaches
-`gate_status = "approved"`. Art-gen nodes have `human_gate: true` (discipline-specific review).
-`art-qa` is the final gate before `game-design-finalize`.
-
-**Legacy `ai-art-generation` node**: retained for backward compatibility with existing projects
-that were bootstrapped before the art-concept/art-gen split. New projects always use the
-role-based nodes. Do not generate `ai-art-generation` node-spec for new projects.
-
-### Generation Delegation
-
-**New projects:** Art generation is handled entirely by the role-based art-gen node-specs injected by `bootstrap.md`. Each art-gen node-spec delegates to the appropriate `game-art` sub-skills:
-
-- `tile-art-gen` → `game-art/20-spec/tileset-spec` + `game-art/30-generate/tileset-generation`
-- `character-art-gen` → `game-art/20-spec/character-layer-sheet` + `game-art/30-generate/skeletal-animation` (or `frame-animation-generation`)
-- `environment-art-gen` → `game-art/20-spec/2d-view-mode-spec` + `game-art/30-generate/background-generation`
-- `ui-art-gen` → `game-art/20-spec/visual-style-tokens` + `game-art/30-generate/icon-generation`
-- `vfx-art-gen` → `game-art/20-spec/vfx-spec` + `game-art/30-generate/vfx-generation`
-
-See `bootstrap.md` Art-Gen Node Injection for the full sub-skill mapping table and node-spec templates.
-
-**Legacy `ai-art-generation` node** (retained for backward compatibility only): uses the old embedded prompt construction and image generation API. Do not use for new projects. The `ai-art-generation` node-spec, if present, still updates `current_state`, `ai_generated.*`, and `substitution.*` fields as before.
-
-### Completion Signal
-
-`ai-art-generation` has no `human_gate`, so `/run` uses a different completion check:
-
-**Complete when:** all assets in `art-asset-inventory.json.assets[]` have either:
-- `current_state != "placeholder"` (actual-asset generation succeeded → state promoted to temp), OR
-- `ai_generatable = true` AND `ai_generated.attempted = true` (generation was attempted — covers both: failed actual-asset, and all concept/mood-reference assets regardless of success)
-
-After completion, set `gate_status: "approved"` in `approval-records.json` for the `ai-art-generation` record (no human review needed). This signals to `/run` that `game-design-finalize` is now unblocked via the standard gate rule.
-
-## art-style-guide.json Schema
-
-`art-direction` produces `.allforai/game-design/art-style-guide.json`:
-
-```json
-{
-  "style_id": "<slug — used by ai-art-generation as prompt prefix anchor>",
-  "style_summary": "<1-2 sentence description for LLM prompt injection>",
-  "style_prompt_prefix": "<text prepended to every AI art generation prompt for this game>",
-  "color_palette": [
-    { "hex": "#RRGGBB", "role": "<primary | secondary | accent | background | ui>" }
-  ],
-  "forbidden_styles": ["<style tag to avoid>"],
-  "reference_works": [
-    { "title": "<work name>", "what_to_borrow": "<specific quality to emulate>" }
-  ],
-  "mood_keywords": ["<adjective>"],
-  "character_style": "<e.g., cartoon / realistic / pixel / watercolor>",
-  "environment_style": "<e.g., high-contrast / muted / painterly>",
-  "ui_style": "<e.g., flat / glassmorphism / retro>",
-  "art_overview": {
-    "dimension": "<2d | 3d | 2.5d>",
-    "style": "<cartoon | pixel | realistic | hand_drawn | vector>",
-    "animation_system": "<frame | dragonbones | 3d_skeletal | mixed>",
-    "notes": "<brief rationale for above choices>"
-  }
-}
+```text
+.allforai/game-design/game-design-doc.json
+.allforai/game-design/game-design-dashboard.html
+.allforai/game-design/design/art-input-handoff.json
+.allforai/game-design/design/art-input-handoff-report.json
+.allforai/game-design/design/game-planning-handoff.md
+.allforai/game-design/design/program-development-node-handoff.json
 ```
 
-`art_overview` 是 `art-concept` skill 的上游输入（Step 0 验收字段）。
-`art-direction` 节点执行时必须填写此字段，缺失将阻塞 art-concept 执行。
+The handoff artifacts are formal cross-phase contracts, not optional helper
+files. `product-analysis` and downstream implementation nodes may rely on them
+after `game-design-finalize` is approved.
 
-## art-asset-inventory.json Schema
+## Sub-Skill Mapping
 
-`art-spec-design` produces `.allforai/game-design/art-asset-inventory.json`.
-`ai-art-generation` updates `current_state`, `ai_generated.*`, and `substitution.*` fields in place.
+Bootstrap reads this table when injecting game-design node-specs. Nodes with `sub_skill_paths` → generate thin delegating node-spec (read and follow each SKILL.md in sequence). Nodes with `—` → generate LLM-based node-spec using `domains/gaming.md` methodology.
 
-```json
-{
-  "assets": [
-    {
-      "asset_id": "<slug — unique per asset>",
-      "name": "<display name>",
-      "type": "<character | environment | ui | vfx | icon | background | animation-frame | audio-cover>",
-      "discipline": "<character-artist | environment-artist | ui-artist | vfx-artist | concept-artist>",
-      "dimensions": "<WxH px or 'vector'>",
-      "description": "<what this asset depicts>",
-      "palette_constraints": ["<color role or hex>"],
-      "milestone_gate": "<alpha | final | none>",
-      "current_state": "placeholder | temp | alpha | final | locked",
-      "ai_generatable": true,
-      "ai_gen_target": "<placeholder | temp>",
-      "ai_generated": {
-        "attempted": false,
-        "path": null,
-        "prompt": null,
-        "model": null,
-        "generated_at": null
-      },
-      "substitution": {
-        "placeholder": "<path to geometry / solid color asset>",
-        "temp": "<path to AI-generated or free asset>",
-        "alpha": null,
-        "final": null,
-        "locked": null
-      }
-    }
-  ],
-  "summary": {
-    "total": 0,
-    "by_state": { "placeholder": 0, "temp": 0, "alpha": 0, "final": 0, "locked": 0 },
-    "by_type": { "<type>": 0 },
-    "ai_generatable_count": 0,
-    "ai_generated_count": 0
-  }
-}
-```
+Sub-skill paths expand to `${CLAUDE_PLUGIN_ROOT}/skills/<path>/SKILL.md`.
 
-### Asset Lifecycle Transition Rules
+| node_id | sub_skill_paths |
+|---------|----------------|
+| `core-loop-design` | `game-systems/10-design/core-loop-design` |
+| `ftue-design` | `game-ui/10-design/ui-flow-design`, `game-ui/20-spec/screen-layout-spec` |
+| `monetization-design` | `game-design/20-spec/economy-spec` |
+| `retention-hook-design` | `game-design/10-concept/player-experience-contract` |
+| `meta-game-design` | `game-design/20-spec/meta-game-spec` |
+| `combat-system-design` | `game-systems/20-spec/combat-spec` |
+| `skill-tree-design` | `game-systems/20-spec/progression-spec` |
+| `progression-curve-design` | `game-systems/20-spec/progression-spec` |
+| `economy-design` | `game-systems/20-spec/economy-spec` |
+| `narrative-design` | `game-narrative/10-design/narrative-tone-design`, `game-narrative/20-spec/quest-text-spec` |
+| `level-design` | `game-level/10-design/level-flow-design`, `game-level/20-spec/level-layout-spec` |
+| `worldbuilding` | `game-narrative/10-design/narrative-tone-design` |
+| `network-architecture-design` | `game-runtime/20-spec/network-architecture-spec` |
+| `matchmaking-design` | `game-runtime/20-spec/matchmaking-service-spec` |
+| `competitive-balance-design` | `game-systems/40-qa/balance-sanity-qa` |
+| `run-structure-design` | `game-design/10-concept/core-game-loop-spec` |
+| `meta-progression-design` | `game-systems/20-spec/progression-spec` |
+| `procedural-gen-spec` | `game-runtime/20-spec/procedural-generator-spec` |
+| `ai-faction-design` | `game-runtime/20-spec/ai-faction-runtime-spec` |
+| `tech-tree-design` | `game-design/20-spec/mechanics-spec` |
+| `branching-structure-design` | `game-narrative/20-spec/dialogue-spec` |
+| `character-arc-design` | `game-narrative/10-design/narrative-tone-design` |
+| `art-direction` | `game-art/10-design/art-direction-input-contract` |
+| `art-concept` | _(skill — auto-triggered by /run, not a registry node)_ |
+| `art-spec-design` | `game-art/00-env/asset-registry` |
+| `tile-art-gen` | _(see bootstrap.md Art-Gen Node Injection)_ |
+| `character-art-gen` | _(see bootstrap.md Art-Gen Node Injection)_ |
+| `environment-art-gen` | _(see bootstrap.md Art-Gen Node Injection)_ |
+| `ui-art-gen` | _(see bootstrap.md Art-Gen Node Injection)_ |
+| `vfx-art-gen` | _(see bootstrap.md Art-Gen Node Injection)_ |
+| `art-qa` | _(see bootstrap.md Art-Gen Node Injection)_ |
+| `anti-cheat-design` | `game-runtime/20-spec/anti-cheat-architecture-spec` |
+| `dialogue-system-spec` | `game-narrative/20-spec/dialogue-spec` |
+| `audio-design` | `game-audio/10-design/audio-style-design`, `game-audio/20-spec/music-cue-spec`, `game-audio/20-spec/sfx-spec` |
+| `game-design-finalize` | `game-design/30-generate/art-input-handoff-generation`, `game-design/40-qa/content-coverage-qa`, `game-design/40-qa/core-loop-closure-qa`, `game-design/40-qa/contract-wiring-qa`, `game-design/40-qa/game-design-final-closure-qa` |
+| `puzzle-design` | `game-level/10-design/level-flow-design`, `game-level/20-spec/level-layout-spec` |
+| `card-system-design` | `game-design/20-spec/mechanics-spec` |
+| `ai-art-generation` | _(legacy — superseded by art-gen nodes)_ |
 
-```
-placeholder → temp:    AI generation succeeds (ai-art-generation node)
-temp → alpha:          Art QA passes initial review (art-qa node scores ≥ 3/5)
-alpha → final:         discipline_owner approves in art-qa gate
-final → locked:        Release build confirmed — set by launch-prep or asset-lock command
-locked → *:            FORBIDDEN — locked assets cannot regress; create new asset_id for replacements
-```
+## Presentation Contract
 
-**Orchestrator behavior:**
-- `ai-art-generation`: transitions `placeholder → temp`
-- `art-qa`: transitions `temp → alpha` (on QA pass), `alpha → final` (on discipline_owner approval)
-- `launch-prep`: transitions `final → locked` (when `milestone_gate == "final"` and build is confirmed)
-- Any node attempting to overwrite a `locked` asset must report UPSTREAM_DEFECT and halt
+All HTML outputs are static review artifacts. Bootstrap embeds data at
+generation time; HTML must not write approval state. Approval state lives only
+in `.allforai/game-design/approval-records.json`.
+
+Per-node layout details belong to mapped sub-skills. `game-design-dashboard.html`
+is the finalize overview and must at minimum show node status, approval blockers,
+revision notes, and art/audio/system readiness from `approval-records.json` and
+`game-design-doc.json`.
+
+## Art Pipeline Delegation
+
+`game-design.md` only declares art orchestration points. Concrete art methods
+live in `skills/game-art/SKILL.md` and child skills.
+
+| Stage | Orchestration rule |
+|---|---|
+| `art-direction` | Delegate to `game-art/10-design/art-direction-input-contract`. |
+| `art-concept` | Auto-triggered by `/run`; writes `.allforai/game-design/art-pipeline-config.json`. |
+| `art-spec-design` | Delegate to `game-art/00-env/asset-registry` and asset spec skills. |
+| role art-gen nodes | Selected from `art-pipeline-config.json.active_nodes` by bootstrap. |
+| `art-qa` | Delegate to `game-art/40-qa/art-preview-qa` plus specialized QA/import skills, ending with `game-art/40-qa/engine-ready-art-output-contract`. |
+
+The orchestration invariant is simple: generated or sourced art cannot be
+treated as accepted unless the relevant game-art QA/import skill returns a
+validated status. Missing tools, missing images, placeholder-only output, or
+unrunnable import checks must surface as blocking validation failures, not as
+substitute evidence.
+
+Program implementation consumes art through
+`.allforai/game-runtime/art/engine-ready-art-manifest.json`, produced by
+`game-art/40-qa/engine-ready-art-output-contract`. Runtime nodes must use
+manifest `runtime_id` and `asset_id` references rather than raw generated paths.
 
 ## game-design-doc.json Schema
 
-`game-design-finalize` produces `.allforai/game-design/game-design-doc.json` by aggregating all
-approved system JSONs. Only include fields whose source JSON exists (skip missing optional nodes).
+`game-design-finalize` produces `.allforai/game-design/game-design-doc.json`
+by aggregating all approved system JSONs. It also produces the handoff artifacts
+listed in §Finalize Exit Artifacts. Only include fields whose source JSON exists
+(skip missing optional nodes).
 
 ```json
 {
@@ -715,7 +434,8 @@ approved system JSONs. Only include fields whose source JSON exists (skip missin
 }
 ```
 
-`product-analysis` reads: `player_roles[]`, `systems[]`, `core_loop`, `progression`.
+`product-analysis` reads: `player_roles[]`, `systems[]`, `core_loop`,
+`progression`, and `.allforai/game-design/design/program-development-node-handoff.json`.
 `demo-forge` reads: `progression`, `economy.currencies`.
 `quality-checks` reads: `economy.balance_targets`, `audio.sfx_events`, `art` counts.
 `generate-artifacts` reads: `systems[]` for code generation targets.
@@ -724,7 +444,7 @@ approved system JSONs. Only include fields whose source JSON exists (skip missin
 
 | Capability | Reads | Uses |
 |-----------|-------|------|
-| `product-analysis` | `.allforai/game-design/game-design-doc.json` | Concept baseline; `player_roles` → `role-profiles.json`; `systems[]` → task-inventory in system-spec format |
+| `product-analysis` | `.allforai/game-design/game-design-doc.json`, `.allforai/game-design/design/program-development-node-handoff.json` | Concept baseline plus implementation-node seed; `player_roles` → `role-profiles.json`; `systems[]` and `implementation_nodes[]` → task-inventory |
 | `ui-design` | `.allforai/game-design/art-style-guide.json`, `.allforai/game-design/game-design-doc.json` | Design tokens from art direction; game screens (HUD, menus, inventory, dialogue) |
 | `demo-forge` | `.allforai/game-design/art-asset-inventory.json`, `.allforai/game-design/game-design-doc.json` `.progression` | Player save data at progression stages using available art state |
 | `quality-checks` | `.allforai/game-design/game-design-doc.json` `.economy.balance_targets`, `.allforai/game-design/systems/audio-design.json.sfx_catalogue[].milestone_gate` | Numerical QA; art-agnostic check; milestone gate check; audio milestone check |
@@ -732,28 +452,6 @@ approved system JSONs. Only include fields whose source JSON exists (skip missin
 | `product-verify` | `.allforai/game-design/game-design-doc.json` | Verifies implementation against game design spec; checks all `systems[]` were implemented |
 | `concept-acceptance` | `.allforai/game-design/game-design-doc.json` | Post-implementation concept fitness check; compares shipped game systems against original concept |
 | `launch-prep` | `.allforai/game-design/game-design-doc.json` | Competitive research context (what systems does this game have?); monetization model for pricing research |
-
-## Engine-Specific Content
-
-When `bootstrap-profile.json.game_engines_detected` is non-empty, game-design
-node-specs should include engine-specific guidance in the HTML output and JSON artifact.
-
-Key nodes that benefit from engine context:
-- `procedural-gen-spec`: reference engine's procedural APIs (e.g., Godot: `TileMap` + `AStar3D`; Unity: `ProBuilder`; Bevy: ECS proc-gen patterns)
-- `network-architecture-design`: reference engine's networking layer (Godot: `MultiplayerAPI`; Unity: `Netcode for GameObjects`; Unreal: `GameNetworkManager`)
-- `dialogue-system-spec`: reference engine's dialogue tooling (Godot: `DialogueManager` plugin; Unity: `Yarn Spinner`; Ren'Py: native Ren'Py script format)
-- `art-direction`: reference engine's renderer capabilities (Godot: CanvasItem shaders / Forward+ / Mobile; Unity: URP / HDRP; Unreal: Nanite / Lumen)
-- **VR games** (Meta Quest, SteamVR, PSVR2): add VR-specific guidance to `art-direction` (target ≥90 FPS for comfort, avoid bright flashes, field-of-view constraints) and `ftue-design` (hand-tracking calibration tutorial, locomotion onboarding: teleport vs smooth). Reference: Meta XR SDK (Unity), Unreal Engine VR Toolset, Godot XR plugins.
-
-**Gacha/random loot monetization compliance note** (applies to any `monetization-design` node with gacha pull rates):
-The monetization spec MUST include a legal compliance checklist section:
-- Probability disclosure: list all pull rates in the UI (required in CN, KR, JP, and increasingly EU)
-- Hard pity documentation: guaranteed rare threshold stated explicitly (e.g., "guaranteed 5★ at 90 pulls")
-- Regional compliance: China requires exact probability tables for ALL characters; Korea GRAC requires pity transparency; Japan requires withdrawal-period disclosures
-- Consumer protection: duplicate handling (do duplicates give currency? is there a duplicate-prevention system?), refund policy for technical failures
-- P2W vs cosmetics-only designation: explicitly document whether the gacha confers gameplay power advantage; this affects rating/classification in multiple regions
-
-If `game_engines_detected` is empty (user confirmed game via 业务领域 f), omit engine-specific content — engine is unknown.
 
 ## Composition Hints
 
@@ -780,7 +478,7 @@ or **absent from the approval records** (newly added node for the feature).
 Bootstrap identifies the minimum set of nodes that need re-running:
 1. The node whose design is changing (the feature being added/modified)
 2. Any node whose output references data from the changed node
-3. `game-design-finalize` always re-runs (to produce an updated `game-design-doc.json`)
+3. `game-design-finalize` always re-runs (to produce an updated `game-design-doc.json` and handoff artifacts)
 
 Example: Adding ranked PvP mode → only `competitive-balance-design` + `game-design-finalize` need re-running if all other nodes are approved.
 

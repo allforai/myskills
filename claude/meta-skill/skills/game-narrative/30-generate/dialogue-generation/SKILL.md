@@ -22,7 +22,7 @@ Manifest entries must include `dialogue_id`, `speaker_id`, `line_id`, `text`,
 and `validation`.
 
 Allowed states: `draft`, `validated`, `needs_revision`, `localization_ready`,
-`placeholder`.
+`blocked_by_missing_source`, `failed_validation`.
 
 Downstream consumers: `game-narrative/text-consistency-qa`,
 `game-audio/sfx-spec`, `game-ui/ui-mockup-generation`, runtime dialogue import,
@@ -44,7 +44,7 @@ continuity, expression references, and localization readiness.
 If text fails UI length constraints, repair the line text before changing layout
 unless the layout spec is missing required text behavior.
 
-Root causes for failed outputs must be classified as `dialogue_generation`,
+Repair routing: root causes for failed outputs must be classified as `dialogue_generation`,
 `dialogue_spec`, `narrative_tone`, `portrait_expression_art`,
 `ui_constraints`, `localization_constraints`, or `runtime_import`. Generated
 lines cannot become `localization_ready` until text consistency QA passes.
@@ -52,4 +52,5 @@ lines cannot become `localization_ready` until text consistency QA passes.
 ## Completion Conditions
 
 Return `COMPLETED` when dialogue manifest/report validate. Return
-`COMPLETED_WITH_LIMITS` for placeholder dialogue.
+`FAILED_VALIDATION` when required dialogue is missing, placeholder-only, fails
+text consistency, or cannot be validated.

@@ -41,7 +41,7 @@ Allowed states: `draft`, `validated`, `needs_revision`,
     "pillars": ".allforai/game-design/design/game-pillar-spec.json",
     "registry": ".allforai/game-design/design/game-design-registry.json"
   },
-  "output_root": ".allforai/game-design/product"
+  "output_root": ".allforai/game-design/design"
 }
 ```
 

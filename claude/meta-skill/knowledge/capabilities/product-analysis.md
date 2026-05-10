@@ -14,9 +14,49 @@ These artifacts describe WHAT the product does in business terms, not HOW it's i
 |------|-------|------|
 | From code | source-summary.json + code reading + **concept-baseline.json** | goal = analyze / translate / rebuild |
 | From concept | product-concept outputs + domain knowledge | goal = create |
+| From app design | `.allforai/app-design/app-design-doc.json` + concept baseline when present | app projects after app-design |
+| From game design | `.allforai/game-design/game-design-doc.json` + `.allforai/game-design/design/program-development-node-handoff.json` | game projects after game-design |
 | Hybrid | concept + code (rebuild with concept change) | goal = rebuild with new concept |
 
 Output is the same regardless of input path.
+
+## Design Handoff Input Precedence
+
+Product-analysis is the first major convergence point between app and game
+pipelines. It must select the most specific approved upstream design artifact
+before falling back to a generic concept baseline.
+
+Input precedence:
+
+1. **Game project after game-design:** read
+   `.allforai/game-design/game-design-doc.json` and
+   `.allforai/game-design/design/program-development-node-handoff.json`. Use
+   `implementation_nodes` as the primary seed for `task-inventory.json`.
+2. **App project after app-design:** read `.allforai/app-design/app-design-doc.json`
+   and map screens, flows, IA, and interactions into roles, tasks, flows,
+   experience map, and use cases.
+3. **Generic concept/code path:** read `.allforai/product-concept/concept-baseline.json`
+   when present, plus discovery/code evidence when analyzing existing code.
+
+Do not merge incompatible baselines silently. If both app-design and
+game-design artifacts exist, choose based on `bootstrap-profile.json.is_game_project`
+and report the ignored branch as a warning. If the selected design artifact is
+missing but approval records show the design phase should have completed, return
+`UPSTREAM_DEFECT` instead of falling back to a weaker concept baseline.
+
+Game mapping rules:
+- `game-design-doc.json.player_roles[]` -> `role-profiles.json.roles[]`.
+- `game-design-doc.json.systems[]` and `program-development-node-handoff.json.implementation_nodes[]` -> `task-inventory.json.tasks[]`.
+- `program-development-node-handoff.json.dependencies` -> `business-flows.json.flows[]`.
+- UI/HUD/menu/dialogue/inventory runtime nodes -> `experience-map.json.screens[]`.
+- `runtime_acceptance` and `test_command_or_validation_path` -> `use-case-tree.json.cases[]`.
+
+App mapping rules:
+- app-design roles/personas -> `role-profiles.json.roles[]`.
+- app-design features/interactions -> `task-inventory.json.tasks[]`.
+- app-design user flows -> `business-flows.json.flows[]`.
+- app-design screens/components/states -> `experience-map.json.screens[]`.
+- app-design acceptance rules -> `use-case-tree.json.cases[]`.
 
 **source-summary.json fields consumed (for analyze/translate/rebuild goals):**
 

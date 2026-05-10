@@ -47,8 +47,8 @@ Check impossible costs, runaway sources, dead progression, combat one-shots,
 unreachable rewards, excessive grind, missing fail/retry, and cross-spec event
 coverage.
 
-Every issue must name one repair target. Do not report broad "balance feels
-wrong" findings without a spec path and failed invariant.
+Repair routing: every issue must name one repair target. Do not report broad
+"balance feels wrong" findings without a spec path and failed invariant.
 
 ## Completion Conditions
 

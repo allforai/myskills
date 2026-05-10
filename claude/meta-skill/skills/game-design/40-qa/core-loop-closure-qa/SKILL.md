@@ -40,7 +40,7 @@ Allowed statuses: `passed`, `passed_with_warnings`, `needs_revision`,
     "mechanics": ".allforai/game-design/systems/mechanics-spec.json",
     "progression": ".allforai/game-design/systems/progression-spec.json"
   },
-  "output_root": ".allforai/game-design/product"
+  "output_root": ".allforai/game-design/design"
 }
 ```
 

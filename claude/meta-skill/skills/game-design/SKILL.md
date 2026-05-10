@@ -27,9 +27,15 @@ Do not organize by document type. Organize by production decision layer:
 | Layer | Child skill | Responsibility |
 |---|---|---|
 | `00-env` | `game-design-registry` | Canonical feature, system, loop, resource, level, enemy, item, quest, and content-pack IDs. |
+| `10-concept` | `audience-positioning-spec` | Target audience, platform expectations, reference games, differentiation, preference, and market constraints. |
+| `10-concept` | `genre-hybridization-spec` | Primary and secondary genre roles, cross-genre interfaces, hybrid risks, and downstream constraints. |
 | `10-concept` | `player-experience-contract` | Target player, session, platform, motivation, emotion, complexity, monetization, and preference constraints. |
 | `10-concept` | `game-pillar-spec` | Design pillars, tradeoff rules, design constraints, and acceptance signals. |
 | `10-concept` | `core-game-loop-spec` | Session loop, action-feedback-reward chain, failure recovery, and loop consumers. |
+| `20-spec` | `game-mode-spec` | Playable modes, entry/exit conditions, objectives, rewards, difficulty, UI, and runtime state. |
+| `20-spec` | `objective-system-spec` | Goal taxonomy, tracking, completion, failure, rewards, UI display, save state, and softlock prevention. |
+| `20-spec` | `difficulty-experience-spec` | Pressure curve, failure frequency, recovery, assist options, difficulty modes, and telemetry signals. |
+| `20-spec` | `meta-game-spec` | Long-term game outside a single run/session: collection, daily/weekly loops, mastery, seasons, social surfaces, and re-entry motivation. |
 | `20-spec` | `mechanics-spec` | Core interaction rules, inputs, risks, rewards, feedback, and runtime system refs. |
 | `20-spec` | `progression-spec` | Unlocks, growth, chapters, mastery, meta progression, and motivation gates. |
 | `20-spec` | `economy-spec` | Resource sources, sinks, prices, rewards, inventory, exploits, and balancing hooks. |
@@ -41,11 +47,13 @@ Do not organize by document type. Organize by production decision layer:
 | `30-generate` | `level-plan-generation` | Playable blockout contracts, maps, encounter/reward placement, collision, and preview requirements. |
 | `30-generate` | `enemy-design-list-generation` | Enemy set, behaviors, stats, spawn roles, drops, art/VFX/audio/runtime requirements. |
 | `30-generate` | `item-skill-design-generation` | Item, equipment, skill, status, icon, VFX, animation event, and data-table entries. |
+| `30-generate` | `art-input-handoff-generation` | Aggregate concept and planning outputs into art input, planning documentation, and program development node handoffs. |
 | `40-qa` | `core-loop-closure-qa` | Validate goals, actions, feedback, reward, next-step motivation, failure, and session closure. |
 | `40-qa` | `progression-balance-qa` | Validate pacing, unlocks, difficulty, grind, content gates, and dead-end risks. |
 | `40-qa` | `economy-balance-qa` | Validate source/sink closure, inflation, exploit, affordability, and resource deadlocks. |
 | `40-qa` | `content-coverage-qa` | Validate that every system/content requirement has data, art, UI, audio, level, and runtime ownership. |
 | `40-qa` | `implementation-feasibility-qa` | Validate engine/tool feasibility, runtime complexity, unresolved risks, and non-substituted verification. |
+| `40-qa` | `contract-wiring-qa` | Validate mapped sub-skill inputs, outputs, states, repair routes, final aggregation, and downstream handoff wiring. |
 | `40-qa` | `game-design-final-closure-qa` | Validate final cross-skill product-design closure before downstream implementation and import work. |
 
 ## Canonical Invocation Paths
@@ -54,9 +62,15 @@ Use these paths when a node-spec calls a child skill:
 
 ```text
 ${CLAUDE_PLUGIN_ROOT}/skills/game-design/00-env/game-design-registry/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-design/10-concept/audience-positioning-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-design/10-concept/genre-hybridization-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-design/10-concept/player-experience-contract/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-design/10-concept/game-pillar-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-design/10-concept/core-game-loop-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-design/20-spec/game-mode-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-design/20-spec/objective-system-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-design/20-spec/difficulty-experience-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-design/20-spec/meta-game-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-design/20-spec/mechanics-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-design/20-spec/progression-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-design/20-spec/economy-spec/SKILL.md
@@ -68,11 +82,13 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-design/30-generate/design-data-table-generatio
 ${CLAUDE_PLUGIN_ROOT}/skills/game-design/30-generate/level-plan-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-design/30-generate/enemy-design-list-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-design/30-generate/item-skill-design-generation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-design/30-generate/art-input-handoff-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-design/40-qa/core-loop-closure-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-design/40-qa/progression-balance-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-design/40-qa/economy-balance-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-design/40-qa/content-coverage-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-design/40-qa/implementation-feasibility-qa/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-design/40-qa/contract-wiring-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-design/40-qa/game-design-final-closure-qa/SKILL.md
 ```
 
@@ -101,6 +117,32 @@ runtime implementation
 Every downstream requirement must preserve the originating `feature_id`,
 `system_id`, or `content_id`.
 
+## Methodology Ownership
+
+Each leaf child skill owns its own design methodology. The parent pack only
+defines routing, layer order, shared contract roots, and example chains.
+
+Methodology belongs with the artifact it produces:
+- audience, hybrid genre, player experience, pillars, core loop, modes,
+  objectives, difficulty, mechanics, progression, economy, level, combat,
+  content, narrative quest, generated tables, and closure QA live in this pack's
+  leaf `SKILL.md` files.
+- art-input handoff methodology lives in
+  `30-generate/art-input-handoff-generation` and is the bridge from game
+  concept/planning into `game-art` and downstream program development.
+- numeric tuning methodology lives in `game-balance`.
+- combat-specialist methodology lives in `game-combat`.
+- runtime, server, simulation, and security implementation methodology lives in
+  `game-runtime`.
+- level craft methodology lives in `game-level`.
+- story/dialogue methodology lives in `game-narrative`.
+- content cadence, onboarding, and liveops methodology live in their own packs.
+- reusable genre pattern methodology lives in `game-genre-common`.
+
+If a child needs deeper process guidance, add it to that child skill or a
+directly referenced one-level resource under that child. Do not move concrete
+design procedures back into `knowledge/capabilities/game-design.md`.
+
 ## Layering Rules
 
 Allowed dependencies flow from earlier numbered layers to later numbered
@@ -125,6 +167,8 @@ Full game-design pass:
 
 ```text
 00-env/game-design-registry
+-> 10-concept/audience-positioning-spec
+-> 10-concept/genre-hybridization-spec
 -> 10-concept/player-experience-contract
 -> 10-concept/game-pillar-spec
 -> 10-concept/core-game-loop-spec
@@ -132,12 +176,17 @@ Full game-design pass:
 -> 20-spec/progression-spec
 -> 20-spec/economy-spec
 -> 20-spec/level-design-spec
+-> 20-spec/combat-spec
 -> 20-spec/content-taxonomy-spec
 -> 20-spec/narrative-quest-spec
+-> 20-spec/game-mode-spec
+-> 20-spec/objective-system-spec
+-> 20-spec/difficulty-experience-spec
 -> 30-generate/design-data-table-generation
 -> 30-generate/level-plan-generation
 -> 30-generate/enemy-design-list-generation
 -> 30-generate/item-skill-design-generation
+-> 30-generate/art-input-handoff-generation
 -> 40-qa/core-loop-closure-qa
 -> 40-qa/progression-balance-qa
 -> 40-qa/economy-balance-qa
@@ -150,6 +199,7 @@ Downstream handoff examples:
 
 ```text
 20-spec/content-taxonomy-spec -> game-art/00-env/asset-registry
+30-generate/art-input-handoff-generation -> game-art/10-design/art-direction-input-contract
 20-spec/level-design-spec -> game-level/20-spec/level-layout-spec
 30-generate/item-skill-design-generation -> game-art/30-generate/icon-generation
 20-spec/combat-spec -> game-art/10-design/motion-design

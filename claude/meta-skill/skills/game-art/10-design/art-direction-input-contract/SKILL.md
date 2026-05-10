@@ -15,13 +15,20 @@ generation, QA, and engine-ready output.
 
 ## Input Contract
 
-Required: product/game concept, target game type, target platform, core gameplay
-loop, and any available human preference notes.
+Required: art input handoff from game-design, product/game concept, target game
+type, target platform, core gameplay loop, and human preference notes.
 
 Optional: reference images, negative references, genre competitors, narrative
 tone, UI direction, monetization/business positioning, accessibility goals,
 target runtime, production budget, image-generation capability, and existing
 project art.
+
+Preferred upstream handoff:
+`.allforai/game-design/design/art-input-handoff.json`. When present, treat it
+as the canonical source for gameplay, audience, content, preference, runtime,
+and acceptance context. If it is missing in a game-design pipeline, return
+`UPSTREAM_DEFECT` and route to `game-design/art-input-handoff-generation`
+instead of reconstructing planning context from conversation state.
 
 ## Output Contract
 
@@ -69,6 +76,7 @@ Downstream consumers: `asset-registry`, `visual-style-tokens`,
   "skill": "game-art/art-direction-input-contract",
   "mode": "normalize_validate",
   "input_paths": {
+    "art_input_handoff": ".allforai/game-design/design/art-input-handoff.json",
     "concept_contract": ".allforai/concept-contract.json",
     "game_design_doc": ".allforai/game-design/game-design-doc.json",
     "human_preferences": ".allforai/game-design/art/human-preferences.json"
@@ -82,9 +90,9 @@ Supported modes: `normalize_validate`, `validate_existing`, `repair_existing`,
 
 ## Automatic Validation
 
-Check that product context, gameplay context, visual preference, technical
-constraint, and acceptance priority are explicit enough for downstream art
-skills. A preference must be tagged as one of `hard_requirement`,
+Check that art input handoff, product context, gameplay context, visual
+preference, technical constraint, and acceptance priority are explicit enough
+for downstream art skills. A preference must be tagged as one of `hard_requirement`,
 `soft_preference`, `negative_constraint`, or `unknown`.
 
 Decision rules:
@@ -120,9 +128,10 @@ draft
 -> blocked_by_runtime_constraints    required visual direction cannot fit target runtime
 ```
 
-Repair routing: missing product or gameplay context returns to the product/game
-concept node; conflicting human preferences repair here through
-`preference_merge`; missing runtime constraints route to
+Repair routing: missing art input handoff routes to
+`game-design/art-input-handoff-generation`; missing product or gameplay context
+returns to the product/game concept node; conflicting human preferences repair
+here through `preference_merge`; missing runtime constraints route to
 `engine-export-profile`; style ambiguity routes to `visual-style-tokens` only
 after this contract records the unknowns.
 
@@ -130,6 +139,6 @@ after this contract records the unknowns.
 
 Return `COMPLETED` when the contract gives downstream art skills enough
 product, gameplay, preference, runtime, and acceptance context to proceed.
-Return `COMPLETED_WITH_WARNINGS` when human preferences are sparse but safe
-defaults are documented. Return `UPSTREAM_DEFECT` when product concept or hard
-preference conflicts block art direction.
+Return `FAILED_VALIDATION` when the art input handoff, product concept, human
+preferences, or runtime constraints are missing, contradictory, or not
+source-traceable.

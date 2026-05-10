@@ -70,5 +70,6 @@ invalid prices or grants repair here; missing icon/item references route to
 
 ## Completion Conditions
 
-Return `COMPLETED` when economy spec validates. Return `COMPLETED_WITH_WARNINGS`
-when numeric tuning remains approximate.
+Return `COMPLETED` when economy spec validates. Return `FAILED_VALIDATION` when
+source/sink rules, numeric tuning, display rules, or item/icon references are
+missing or unverifiable.

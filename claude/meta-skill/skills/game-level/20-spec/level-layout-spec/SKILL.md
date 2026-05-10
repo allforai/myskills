@@ -45,8 +45,8 @@ Supported modes: `spec_validate`, `validate_existing`, `repair_existing`.
 Check dimensions, spawn/goal placement, connectivity, collision/walkability,
 objective coverage, hazard fairness, camera bounds, and tileset compatibility.
 
-If a required tile or prop is missing, return `COMPLETED_WITH_LIMITS` only when a
-placeholder blockout remains playable; otherwise return `UPSTREAM_DEFECT`.
+If a required tile or prop is missing, return `UPSTREAM_DEFECT` with the owning
+art requirement; do not substitute placeholder art as validation evidence.
 
 Repair routing: impossible routes, unreachable objectives, or unfair hazard
 grammar repair here; missing level ordering repairs `level-flow-design`; missing
@@ -56,4 +56,5 @@ tile/prop defects route to the owning art skill.
 ## Completion Conditions
 
 Return `COMPLETED` when layout spec and report validate. Return
-`COMPLETED_WITH_LIMITS` for abstract blockouts without art references.
+`FAILED_VALIDATION` when required layout, art, collision, or playability
+evidence is missing.

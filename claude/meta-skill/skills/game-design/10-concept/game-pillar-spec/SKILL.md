@@ -39,7 +39,7 @@ Allowed states: `draft`, `validated`, `needs_revision`,
     "player_experience": ".allforai/game-design/design/player-experience-contract.json",
     "registry": ".allforai/game-design/design/game-design-registry.json"
   },
-  "output_root": ".allforai/game-design/product"
+  "output_root": ".allforai/game-design/design"
 }
 ```
 

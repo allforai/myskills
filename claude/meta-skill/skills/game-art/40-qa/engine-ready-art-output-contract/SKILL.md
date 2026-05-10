@@ -29,6 +29,8 @@ Writes:
 
 - `.allforai/game-design/art/export/engine-ready-art-output-contract.json`
 - `.allforai/game-design/art/export/engine-ready-art-output-report.json`
+- `.allforai/game-runtime/art/engine-ready-art-manifest.json`
+- `.allforai/game-runtime/art/engine-ready-art-report.json`
 
 The output contract must include `contract_id`, `target_runtime`,
 `engine_export_profile_ref`, `adapter_policy`, `format_decisions`,
@@ -38,6 +40,12 @@ The output contract must include `contract_id`, `target_runtime`,
 `runtime_ids`, `pivot_anchor_policy`, `sorting_policy`, `collision_helper_refs`,
 `qa_summary`, `fallback_summary`,
 `known_limitations`, `consumer_contracts`, `state`, and `validation`.
+
+`engine-ready-art-manifest.json` is the program-facing subset consumed by
+runtime implementation nodes. It must include `manifest_id`, `target_runtime`,
+`source_contract_ref`, `runtime_assets`, `atlas_manifests`,
+`animation_manifests`, `tilemap_manifests`, `ui_manifests`, `vfx_manifests`,
+`import_validation_ref`, `known_limitations`, and `state`.
 
 Asset entries must include:
 

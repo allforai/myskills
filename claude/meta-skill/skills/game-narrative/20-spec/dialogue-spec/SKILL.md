@@ -51,5 +51,6 @@ UI layout omits required dialogue behavior.
 
 ## Completion Conditions
 
-Return `COMPLETED` when dialogue spec validates. Return `UPSTREAM_DEFECT` for
-missing speakers or context.
+Return `COMPLETED` when dialogue spec validates. Return `FAILED_VALIDATION`
+for missing speakers, invalid branches, missing context, or unverifiable UI
+constraints.

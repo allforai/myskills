@@ -50,5 +50,6 @@ to `game-ui/screen-layout-spec`; terminology drift returns to
 
 ## Completion Conditions
 
-Return `COMPLETED` when quest text spec validates. Return
-`COMPLETED_WITH_LIMITS` when optional quests are placeholder-only.
+Return `COMPLETED` when quest text spec validates. Return `FAILED_VALIDATION`
+when required quest, objective, tutorial, reward, or UI text is missing,
+placeholder-only, or unverifiable.

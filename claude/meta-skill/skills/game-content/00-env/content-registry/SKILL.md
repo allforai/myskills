@@ -43,4 +43,5 @@ missing quest/activity detail routes to the owning content spec.
 ## Completion Conditions
 
 Return `COMPLETED` when content IDs and owners are stable. Return
-`UPSTREAM_DEFECT` when no content source exists.
+`FAILED_VALIDATION` when no content source exists or required content lacks a
+stable owner.

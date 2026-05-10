@@ -902,11 +902,34 @@ already has all-approved records, also skip (partial pipeline: see game-design.m
 For `analyze` goal, inject only if no `approval-records.json` exists (new project without prior design pass).
 
 1. Read `${CLAUDE_PLUGIN_ROOT}/knowledge/game-scenario-templates/${game_scenario}.json`
-2. Read `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/game-design.md` §Canonical Node Registry
+2. Read `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/game-design.md` §Canonical Node Registry + §Sub-Skill Mapping + §Finalize Exit Artifacts
 3. Insert game-design nodes into the workflow AFTER `product-concept` node and BEFORE `product-analysis` node
 4. For each node in `required_nodes` + `always_include` (and selected `optional_nodes`):
    - Check if `node_id` exists in game-design.md Canonical Node Registry:
-     - **Canonical node** (in registry AND node_order): look up `discipline_owner`, `html_output`, `json_output`, `presentation` from the registry. Set `hard_blocked_by` = **previous SELECTED node in `node_order`** (skip unselected optional nodes); `unlocks` = **next SELECTED node in `node_order`** (same skipping rule). Exception: `game-design-finalize` has `hard_blocked_by` = ALL other game-design nodes that are actually selected.
+     - **Canonical node** (in registry AND node_order): look up `discipline_owner`, `html_output`, `json_output` from the registry; look up `sub_skill_paths` from §Sub-Skill Mapping. Set `hard_blocked_by` = **previous SELECTED node in `node_order`** (skip unselected optional nodes); `unlocks` = **next SELECTED node in `node_order`** (same skipping rule). Exception: `game-design-finalize` has `hard_blocked_by` = ALL other game-design nodes that are actually selected, and its `exit_artifacts` MUST include every path listed in `game-design.md` §Finalize Exit Artifacts in addition to the registry `html_output` and `json_output`.
+
+       **Node-spec content — branch on `sub_skill_paths`:**
+       - **`sub_skill_paths` is non-empty** → generate thin delegating node-spec:
+         ```markdown
+         # Goal
+         Execute {node_id} for this project.
+
+         > **Non-interactive execution.** All design decisions are recorded in `.allforai/`.
+         > Do NOT use AskUserQuestion or request user input. If a decision is ambiguous,
+         > apply the most conservative interpretation derivable from the input contracts.
+
+         ## Sub-Skill Invocation
+         Follow these sub-skills in sequence:
+         - Read and follow `${CLAUDE_PLUGIN_ROOT}/skills/{sub_skill_path_1}/SKILL.md`
+         - Read and follow `${CLAUDE_PLUGIN_ROOT}/skills/{sub_skill_path_2}/SKILL.md`
+         (expand for each path in sub_skill_paths)
+
+         ## Inputs
+         - `.allforai/concept-contract.json`
+         - `.allforai/product-concept/concept-baseline.json`
+         - Sub-skill SKILL.md files define their specific input contracts.
+         ```
+       - **`sub_skill_paths` is `—`** → generate LLM-based node-spec: use `domains/gaming.md` methodology for this node's phase (theory anchors, output format, design questions), anchored to `discipline_owner` context. This is the current default behavior for unmapped nodes.
 
      **Parallelism rule:** After assigning the default serial `hard_blocked_by`, apply this override for sibling nodes that only READ a shared predecessor's output (not data-produce it): if two or more nodes both `hard_blocked_by` the same single predecessor and neither is in the other's consumers[], reclassify the later node's dependency on its sibling as `alignment_refs` instead of `hard_blocked_by`. Common parallel groups by scenario:
        - `casual-mobile`: once `core-loop-design` is approved → `economy-design`, `progression-design`, `retention-design` may all run concurrently (each `hard_blocked_by: ["core-loop-design"]`; each lists the other two as `alignment_refs` for graceful degradation reads)
@@ -915,7 +938,7 @@ For `analyze` goal, inject only if no `approval-records.json` exists (new projec
        - Always serial (never parallelise): `art-direction → art-concept → art-spec-design` (each writes data the next needs)
        - Always serial: `game-design-finalize` (reads ALL — stays `hard_blocked_by` all selected nodes)
      - **Ad-hoc optional node** (in `optional_nodes` but absent from node_order or canonical registry): use Step 2.7 research to generate node-spec content; position it immediately before `game-design-finalize` in the generated workflow sequence; `hard_blocked_by` = last SELECTED canonical optional node in node_order sequence order (if no canonical optionals selected, `hard_blocked_by` = last required node in node_order); `unlocks` = game-design-finalize.
-   - All nodes get: `capability: game-design`, `human_gate: true`, `approval_record_path: ".allforai/game-design/approval-records.json"`, `gate_status: "pending"`, `review_checklist: [<3–5 items from game-design.md checklist table for this node type; use discipline-appropriate generic items if node not in table>]`
+   - All nodes get: `capability: game-design`, `human_gate: true`, `approval_record_path: ".allforai/game-design/approval-records.json"`, `gate_status: "pending"`, `review_checklist: [<3–5 role-specific items for this node's discipline_owner>]`
 
 **Art Concept Node Injection (always applies when `art-direction` is in the selected workflow):**
 
@@ -1127,6 +1150,8 @@ hard_blocked_by: []  # populated by bootstrap: all active art-gen node IDs
 unlocks: [game-design-finalize]
 exit_artifacts:
   - path: .allforai/game-design/art-qa-report.html
+  - path: .allforai/game-design/art/export/engine-ready-art-output-contract.json
+  - path: .allforai/game-runtime/art/engine-ready-art-manifest.json
 ---
 
 # Goal
@@ -1150,10 +1175,11 @@ Read and follow each applicable sub-skill SKILL.md in order:
 4. **3D-assisted QA** (when `dimension=2.5d`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/3d-assisted-2d-qa/SKILL.md`
 5. **Asset pack QA** (when any asset has `source_strategy=existing_asset_pack`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-pack-integration-qa/SKILL.md`
 6. **License provenance sweep** (always, as final audit): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md` — for external-source assets this is a confirmation sweep (primary check already ran in art-gen Step 0); for AI-generated assets this catches potential training-data IP issues
+7. **Engine-ready art handoff (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/engine-ready-art-output-contract/SKILL.md`
 
 ## Completion Condition
 
-`art-qa-report.html` exists AND no sub-skill returned `UPSTREAM_DEFECT`.
+`art-qa-report.html` exists, `.allforai/game-runtime/art/engine-ready-art-manifest.json` exists, and no sub-skill returned `UPSTREAM_DEFECT`.
 
 **Gate action on sub-skill score < 3/5:**
 For each failing asset, set `gate_status: "revision-requested"` in `.allforai/game-design/approval-records.json` for the relevant art-gen node, and populate `revision_notes` with the QA sub-skill's issue list. The orchestrator will re-run that art-gen node with `revision_notes` as context.

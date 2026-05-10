@@ -76,5 +76,6 @@ skills after the combat event IDs are stable.
 
 ## Completion Conditions
 
-Return `COMPLETED` when combat spec validates. Return `COMPLETED_WITH_WARNINGS`
-when numeric tuning is approximate but structurally valid.
+Return `COMPLETED` when combat spec validates. Return `FAILED_VALIDATION` when
+combat timing, numeric tuning, readability, or event references are missing or
+unverifiable.

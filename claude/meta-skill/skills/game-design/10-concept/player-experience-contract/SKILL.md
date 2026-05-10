@@ -41,7 +41,7 @@ Allowed states: `draft`, `validated`, `needs_revision`,
     "registry": ".allforai/game-design/design/game-design-registry.json",
     "product_concept": ".allforai/product-concept.json"
   },
-  "output_root": ".allforai/game-design/product"
+  "output_root": ".allforai/game-design/design"
 }
 ```
 

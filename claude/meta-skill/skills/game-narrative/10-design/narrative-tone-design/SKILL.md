@@ -60,5 +60,6 @@ failures route to the producer only after this tone contract validates.
 
 ## Completion Conditions
 
-Return `COMPLETED` when tone contract validates. Return
-`COMPLETED_WITH_WARNINGS` when optional world details are inferred.
+Return `COMPLETED` when tone contract validates. Return `FAILED_VALIDATION`
+when required tone, terminology, audience, or voice constraints are missing or
+contradictory.

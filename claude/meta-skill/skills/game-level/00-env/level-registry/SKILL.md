@@ -46,5 +46,6 @@ is stable.
 
 ## Completion Conditions
 
-Return `COMPLETED` when registry and report validate. Return `UPSTREAM_DEFECT`
-when no level context can be resolved.
+Return `COMPLETED` when registry and report validate. Return
+`FAILED_VALIDATION` when no level context can be resolved or required levels
+lack stable IDs.

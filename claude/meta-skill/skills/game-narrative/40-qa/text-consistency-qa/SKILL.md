@@ -37,7 +37,7 @@ Supported modes: `validate`, `validate_specs_only`, `repair_targets`.
 Check tone drift, terminology drift, missing variables, unsafe placeholders,
 length overflow, duplicate lines, branch continuity, and UI constraints.
 
-Each blocker or major issue must name one upstream repair target. Route tone and
+Repair routing: each blocker or major issue must name one upstream repair target. Route tone and
 terminology failures to `narrative-tone-design`, branch or trigger failures to
 `dialogue-spec`, generated line wording failures to `dialogue-generation`, quest
 objective failures to `quest-text-spec`, and text fit failures to the owning

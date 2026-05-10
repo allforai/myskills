@@ -43,7 +43,7 @@ Allowed states: `planned`, `specified`, `generated`, `validated`,
     "product_concept": ".allforai/product-concept.json",
     "game_design_doc": ".allforai/game-design/game-design-doc.json"
   },
-  "output_root": ".allforai/game-design/product"
+  "output_root": ".allforai/game-design/design"
 }
 ```
 
@@ -62,4 +62,5 @@ requirements route to `implementation-feasibility-qa`.
 ## Completion Conditions
 
 Return `COMPLETED` when the registry is valid and every design entity has a
-stable ID and owner. Return `UPSTREAM_DEFECT` when no product concept exists.
+stable ID and owner. Return `FAILED_VALIDATION` when no product concept exists
+or required design entities cannot be assigned stable IDs.

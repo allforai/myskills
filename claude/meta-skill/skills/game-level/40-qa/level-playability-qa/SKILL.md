@@ -39,7 +39,7 @@ Check graph reachability, soft locks, invalid collisions, missing objectives,
 unfair hazard placement, route readability, camera coverage, and repair target
 classification.
 
-Do not route visual tile/prop defects to level layout. Route them to
+Repair routing: do not route visual tile/prop defects to level layout. Route them to
 `art-preview-qa` or the relevant art producer; route structural dead ends to
 `level-layout-spec`.
 

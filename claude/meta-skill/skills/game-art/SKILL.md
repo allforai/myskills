@@ -77,7 +77,7 @@ Layer numbers indicate directory organization and default execution order for ne
 | `40-qa` | `3d-assisted-2d-qa` | Perspective, lighting, edge, pivot, style, helper-map, and runtime-exclusion QA for 3D-derived 2D assets. |
 | `40-qa` | `asset-license-provenance-qa` | Hard-gate asset license, provenance, commercial/modification permission, attribution, and traceability. |
 | `40-qa` | `asset-pack-integration-qa` | Validate existing/adapted asset packs against style, coverage, atlas, metadata, runtime import, and handoff contracts. |
-| `40-qa` | `engine-ready-art-output-contract` | Final engine/runtime import contract for assets, manifests, atlas, animation, VFX, UI, QA, and fallbacks. |
+| `40-qa` | `engine-ready-art-output-contract` | Final engine/runtime import contract and program-facing art manifest for assets, manifests, atlas, animation, VFX, UI, QA, and fallbacks. |
 | `40-qa` | `runtime-import-check` | Runtime import validation for assets, manifests, previews, and fallback status. |
 
 ## Canonical Invocation Paths
@@ -153,8 +153,71 @@ Rules:
   `asset-registry` exists.
 - Each child skill must define `Input Contract`, `Output Contract`,
   `Invocation Contract`, automatic validation, and completion conditions.
-- If a child skill cannot complete, it must return a structured status such as
-  `UPSTREAM_DEFECT`, `FAILED_VALIDATION`, or `COMPLETED_WITH_LIMITS`.
+- If a required tool, image, source asset, preview, license, or runtime import
+  check is unavailable, return `UPSTREAM_DEFECT`, `blocked_by_missing_evidence`,
+  or `FAILED_VALIDATION`. Do not mark placeholder-only or spec-only output as
+  accepted production art.
+
+## Methodology Ownership
+
+Each leaf child skill owns the method for its artifact. The parent pack only
+defines layer order and common chains.
+
+Art methods should be placed where they are executed:
+- source choice and human preference collection: `10-design/art-direction-input-contract`
+  and `10-design/asset-source-strategy-spec`;
+- visual consistency rules: `20-spec/visual-style-tokens`;
+- decomposition and runtime fit: `20-spec/2d-layering-spec`,
+  `20-spec/engine-export-profile`, and asset-specific `20-spec/*` skills;
+- LLM image prompt/repair/feedback loop: `30-generate/image-generation-contract`;
+- concrete asset generation: asset-specific `30-generate/*` skills;
+- preview, atlas, style, license, import, and engine handoff validation:
+  `40-qa/*` skills.
+
+Do not put concrete art generation, prompt, or QA procedures in
+`knowledge/capabilities/game-design.md`; that file only wires game-design nodes
+to these skills.
+
+## Asset Lifecycle And Closure
+
+`asset-registry` is the source of truth for asset IDs, file prefixes, lifecycle
+state, and handoff paths. Child skills may only advance an asset state when the
+required evidence for that state exists.
+
+Recommended lifecycle:
+
+```text
+planned -> sourced | generated -> integrated -> qa_passed -> engine_ready -> locked
+```
+
+Rules:
+- `planned` means the asset exists in the registry but has no accepted runtime
+  artifact.
+- `sourced` or `generated` requires provenance or generation records plus files.
+- `integrated` requires manifest, atlas/layer metadata, and target engine
+  export profile compatibility.
+- `qa_passed` requires the relevant visual/style/license/preview QA report.
+- `engine_ready` requires runtime import validation when an engine/importer is
+  available; if it cannot run, report blocked validation instead of substituting
+  a static inspection.
+- `locked` assets must not be overwritten; create a new asset ID or versioned
+  replacement.
+
+Downstream implementation must reference assets through registry IDs and
+manifests, not hardcoded paths. Hardcoded asset paths are a contract violation.
+
+Program-facing exit artifacts:
+
+```text
+.allforai/game-design/art/export/engine-ready-art-output-contract.json
+.allforai/game-runtime/art/engine-ready-art-manifest.json
+.allforai/game-design/art/qa/runtime-import-check-report.json
+```
+
+`engine-ready-art-output-contract` is the authoritative art-side contract.
+`engine-ready-art-manifest.json` is the runtime-side subset for program nodes.
+Both must agree on `asset_id`, `runtime_id`, paths, atlas/frame metadata,
+fallback status, and validation evidence.
 
 ## Example Role Chains
 

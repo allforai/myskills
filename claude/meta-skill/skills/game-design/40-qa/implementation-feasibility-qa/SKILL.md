@@ -40,7 +40,7 @@ Allowed statuses: `passed`, `passed_with_warnings`, `needs_revision`,
     "content_taxonomy": ".allforai/game-design/content/content-taxonomy-spec.json",
     "data_manifest": ".allforai/game-design/data/game-data-table-manifest.json"
   },
-  "output_root": ".allforai/game-design/product"
+  "output_root": ".allforai/game-design/design"
 }
 ```
 

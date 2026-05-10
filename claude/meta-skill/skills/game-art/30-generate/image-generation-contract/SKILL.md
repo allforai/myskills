@@ -53,17 +53,17 @@ Out of scope:
 |---|---|---|
 | Image generation request | `request_id`, `asset_id`, `purpose`, `output_path`, `prompt`, `acceptance` | Return `UPSTREAM_DEFECT`. |
 | Generation profile | `task_type`, `model_class`, `prompt_template`, `output_constraints` | Derive from `purpose` once; if still ambiguous, return `UPSTREAM_DEFECT`. |
-| Style context | art style, palette/material/tone, target view or UI context | Use `.allforai/game-design/art-style-guide.json` or return `COMPLETED_WITH_LIMITS` with spec-only output. |
+| Style context | art style, palette/material/tone, target view or UI context | Use `.allforai/game-design/art-style-guide.json` or return `UPSTREAM_DEFECT`. |
 
 ### Optional inputs
 
-| Input | Fields used | Fallback |
+| Input | Fields used | Missing behavior |
 |---|---|---|
-| `.allforai/game-design/art-style-guide.json` | style, palette, line/rendering rules, camera | Use neutral readable defaults. |
+| `.allforai/game-design/art-style-guide.json` | style, palette, line/rendering rules, camera | Return `UPSTREAM_DEFECT` when style lock is required. |
 | `.allforai/game-design/asset-registry.json` | `asset_id`, `file_prefix`, paths, state | Use caller-provided naming. |
 | `.allforai/game-design/ui/ui-registry.json` | UI screen/component refs | Use caller-provided UI context. |
 | Existing generated images | validation and repair source | Register or validate existing image. |
-| Caller generation capabilities | image model, transparent background support, vision validator | Produce spec-only fallback if unavailable. |
+| Caller generation capabilities | image model, transparent background support, vision validator | Return `FAILED_VALIDATION` if required generation or validation cannot run. |
 
 ## Request Schema
 
@@ -156,9 +156,9 @@ the task profile. Do not use one generic prompt template for all image tasks.
 | `expression_set` | identity-consistent expression variants | `expression_set_prompt` | identity consistency, expression distinction, crop consistency. |
 | `preview` | validation preview or reference image | `preview_prompt` | composition matches downstream validation need. |
 
-If no available model supports the required profile, return
-`COMPLETED_WITH_LIMITS` with a `spec_only` or `placeholder_ready` output instead
-of pretending the generated image is final.
+If no available model supports the required profile, return `FAILED_VALIDATION`
+with the missing capability and repair target. Do not produce spec-only or
+placeholder output as accepted image-generation completion.
 
 ## Prompt Contract
 
@@ -303,8 +303,8 @@ original request:
 
 The repair budget is shared across the image request and its downstream
 consumer. A default budget is 3 image attempts plus 2 downstream revalidation
-attempts. If the defect still remains, return `COMPLETED_WITH_LIMITS` with
-`automation_limited` or `placeholder_ready`.
+attempts. If the defect still remains, return `FAILED_VALIDATION` with the
+last evidence, failed checks, and upstream repair target.
 
 ## Repair Loop
 
@@ -315,19 +315,18 @@ If validation fails:
 4. Re-run deterministic and visual validation.
 5. Stop after `max_repair_attempts`.
 
-If still failing, return `COMPLETED_WITH_LIMITS` and produce one of:
-- `spec_only`,
-- `placeholder_ready`,
-- `automation_limited`,
-- `needs_revision`.
+If still failing, return `FAILED_VALIDATION` with issue evidence and repair
+targets. Spec-only or placeholder artifacts may be written for debugging, but
+must not be reported as accepted generation output.
 
 Do not ask for human reference images or human approval.
 
 ## Completion Conditions
 
 Return `COMPLETED` only when normalized request manifests and reports validate,
-and every generated image either passes acceptance or has a structured fallback.
+and every required generated image passes acceptance.
 
-Return `COMPLETED_WITH_LIMITS` when image generation or vision validation is
-unavailable but request specs are complete. Return `UPSTREAM_DEFECT` when a
-request lacks required fields and cannot be normalized.
+Return `FAILED_VALIDATION` when image generation or vision validation is
+unavailable for required output, or when generated images fail acceptance after
+the repair budget. Return `UPSTREAM_DEFECT` when a request lacks required fields
+and cannot be normalized.

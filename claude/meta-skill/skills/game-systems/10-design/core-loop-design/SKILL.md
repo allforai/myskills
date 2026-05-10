@@ -65,5 +65,6 @@ stable.
 
 ## Completion Conditions
 
-Return `COMPLETED` when core loop validates. Return `UPSTREAM_DEFECT` when no
-gameplay loop can be inferred.
+Return `COMPLETED` when core loop validates. Return `FAILED_VALIDATION` when no
+gameplay loop can be inferred or loop events cannot be exposed to downstream
+systems.
