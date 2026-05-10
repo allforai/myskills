@@ -532,38 +532,19 @@ Each art-gen node is triggered automatically after `art-spec-design` reaches
 that were bootstrapped before the art-concept/art-gen split. New projects always use the
 role-based nodes. Do not generate `ai-art-generation` node-spec for new projects.
 
-### Prompt Construction
+### Generation Delegation
 
-```
-final_prompt = art_style_guide.style_prompt_prefix
-             + ", " + asset.art_spec.description
-             + ", " + target_suffix[asset.ai_gen_target]
+**New projects:** Art generation is handled entirely by the role-based art-gen node-specs injected by `bootstrap.md`. Each art-gen node-spec delegates to the appropriate `game-art` sub-skills:
 
-target_suffix:
-  "concept-reference" → "character concept sheet, front side back views, white background"
-  "actual-asset"      → "game UI icon, isolated, transparent background, no shadow"
-  "mood-reference"    → "environment concept art, cinematic composition, dramatic lighting"
-```
+- `tile-art-gen` → `game-art/20-spec/tileset-spec` + `game-art/30-generate/tileset-generation`
+- `character-art-gen` → `game-art/20-spec/character-layer-sheet` + `game-art/30-generate/skeletal-animation` (or `frame-animation-generation`)
+- `environment-art-gen` → `game-art/20-spec/2d-view-mode-spec` + `game-art/30-generate/background-generation`
+- `ui-art-gen` → `game-art/20-spec/visual-style-tokens` + `game-art/30-generate/icon-generation`
+- `vfx-art-gen` → `game-art/20-spec/vfx-spec` + `game-art/30-generate/vfx-generation`
 
-### Tool Priority (requires ai-gateway MCP configured)
+See `bootstrap.md` Art-Gen Node Injection for the full sub-skill mapping table and node-spec templates.
 
-1. `mcp__plugin_meta-skill_ai-gateway__flux_generate_image` (FLUX Pro)
-2. `mcp__plugin_meta-skill_ai-gateway__generate_image` (Google Imagen 4)
-3. `mcp__plugin_meta-skill_ai-gateway__openrouter_generate_image`
-
-**Degradation:** If none available → keep `placeholder` state, embed spec text + size frame
-in HTML. Set `ai_generatable = true` for future re-run. Never block pipeline.
-
-### State Update After Generation
-
-For every asset attempt, always write `ai_generated.attempted = true` first (before checking success/failure):
-
-- `ai_gen_target = "actual-asset"`:
-  - On success → `current_state: placeholder → temp`; write image path to `substitution.temp`; `ai_generated.attempted = true`
-  - On failure → `current_state` stays `placeholder`; `ai_generatable = true`; `ai_generated.attempted = true`
-- `ai_gen_target = "concept-reference" | "mood-reference"`:
-  - On success → `current_state` stays `placeholder`; record path in `ai_generated.path` (reference only, not ingested into game); `ai_generated.attempted = true`; `ai_generatable = true` (marks asset as satisfied for completion check)
-  - On failure → `current_state` stays `placeholder`; `ai_generatable = true`; `ai_generated.attempted = true`
+**Legacy `ai-art-generation` node** (retained for backward compatibility only): uses the old embedded prompt construction and image generation API. Do not use for new projects. The `ai-art-generation` node-spec, if present, still updates `current_state`, `ai_generated.*`, and `substitution.*` fields as before.
 
 ### Completion Signal
 
