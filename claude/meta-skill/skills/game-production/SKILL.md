@@ -8,8 +8,8 @@
 Game Production is the ownership map for all game-related sub-skills. Use it
 when deciding where a new game sub-skill belongs or when checking whether a
 node should call design, art, UI, audio, content, level, systems, balance,
-combat, narrative, liveops, onboarding, genre-common, frontend, or runtime
-skills.
+combat, narrative, liveops, onboarding, genre-common, templates, frontend, or
+runtime skills.
 
 This pack does not execute production work. It prevents category drift.
 
@@ -21,6 +21,7 @@ This pack does not execute production work. It prevents category drift.
 | `game-systems` | Gameplay system rules and product-facing system specs shared across genres. | Engine-specific implementation and backend services. |
 | `game-level` | Level flow, layout, blockout, encounter placement, playability QA. | Tileset image production and runtime map importer code. |
 | `game-content` | Content registry, taxonomy, content list generation, coverage QA. | Visual generation and code import. |
+| `game-templates` | Shared data containers: template registry, schemas, inheritance, refs, instances, closure QA, and runtime load QA. | Product invention, art/audio generation, final numeric tuning, runtime code. |
 | `game-narrative` | Tone, quests, dialogue, story consistency, text generation. | Dialogue runtime implementation unless delegated by a program node. |
 | `game-ui` | Game UI structure, screen layout, UI assets, UI consistency, UI import readiness. | General website/app UI outside game context. |
 | `game-art` | Visual assets, style tokens, source strategy, image/animation/VFX production, atlas, import QA, engine-ready art manifest. | Gameplay implementation and runtime systems. |
@@ -55,6 +56,17 @@ Game design exits through:
 .allforai/game-design/game-design-doc.json
 .allforai/game-design/design/art-input-handoff.json
 .allforai/game-design/design/program-development-node-handoff.json
+```
+
+Game templates bridge content/design/balance/resources to frontend/runtime:
+
+```text
+.allforai/game-templates/template-registry.json
+.allforai/game-templates/schemas/*.schema.json
+.allforai/game-templates/instances/*.json
+.allforai/game-templates/template-reference-map.json
+.allforai/game-templates/qa/template-reference-closure-qa-report.json
+.allforai/game-templates/qa/template-runtime-load-qa-report.json
 ```
 
 Game art exits to program/runtime through:

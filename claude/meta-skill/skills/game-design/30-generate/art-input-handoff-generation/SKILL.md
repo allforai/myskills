@@ -60,6 +60,12 @@ must not introduce requirements that are absent from JSON source artifacts.
 `audio_runtime_contracts`, `frontend_runtime_contracts`, `test_nodes`,
 `blocked_nodes`, and `state`.
 
+`data_contracts` should identify whether downstream implementation should
+consume raw design/data-table artifacts or `game-templates` instances. When
+template-based content is required, include `.allforai/game-templates/`
+registry, schema, instance, reference-map, and runtime-load QA paths as required
+inputs for frontend/runtime data nodes.
+
 `asset_import_contracts` must reference the game-art exit artifacts that
 program/runtime nodes consume:
 
@@ -88,7 +94,7 @@ Allowed `node_type` values: `runtime_architecture`, `core_loop_runtime`,
 `network_runtime`, `frontend_runtime`, `frontend_data_binding`,
 `frontend_audio_binding`, `frontend_save_state`, `playable_smoke_test`,
 `playability_probe`, `visual_runtime_regression`, `frontend_performance_budget`,
-`frontend_build_export`, `qa_runtime`.
+`frontend_build_export`, `template_data_runtime`, `qa_runtime`.
 
 `frontend_runtime_contracts` define how client/frontend work consumes design,
 level, art, UI, animation/VFX, and audio contracts. Each entry includes

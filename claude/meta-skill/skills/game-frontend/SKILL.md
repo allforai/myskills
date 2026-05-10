@@ -61,6 +61,10 @@ Game Frontend should consume these artifacts when present:
 ```text
 .allforai/game-design/game-design-doc.json
 .allforai/game-design/design/program-development-node-handoff.json
+.allforai/game-templates/template-registry.json
+.allforai/game-templates/schemas/
+.allforai/game-templates/instances/
+.allforai/game-templates/template-reference-map.json
 .allforai/game-runtime/art/engine-ready-art-manifest.json
 .allforai/game-design/art/qa/runtime-import-check-report.json
 .allforai/game-design/data/
