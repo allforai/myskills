@@ -1063,13 +1063,34 @@ Generate <TYPE> art assets for all entries in `.allforai/concept-contract.json` 
 
 Read and follow each sub-skill SKILL.md in order. Each sub-skill defines its own output contract — follow it exactly.
 
+### Step 0 — Source Resolution (per asset, before Pre-Spec)
+
+For each asset in `canonical_registry.<REGISTRY_KEY>[]`, check its `source_strategy` from `asset-registry.json`:
+
+- **`existing_asset_pack`:**
+  1. `${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/asset-pack-search-spec/SKILL.md` — search and select candidate pack
+  2. `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md` — verify license; if FAIL → fall back to `ai_generated` for this asset and proceed to Step 1
+  3. `${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/existing-asset-adaptation-spec/SKILL.md` — adapt to spec
+  4. Mark asset `current_state: adapted`; skip Step 1 and Step 2 for this asset.
+
+- **`adapt_existing_asset`:**
+  1. `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md` — verify license; if FAIL → fall back to `ai_generated` and proceed to Step 1
+  2. `${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/existing-asset-adaptation-spec/SKILL.md` — adapt to spec
+  3. Mark asset `current_state: adapted`; skip Step 1 and Step 2 for this asset.
+
+- **`existing_3d_source_asset` / `user_provided_asset`:**
+  1. `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md` — verify license; if FAIL → halt with UPSTREAM_DEFECT (user-provided assets cannot silently fall back)
+  2. Proceed to Step 1 (pre-spec for rendering/conversion pipeline).
+
+- **`ai_generated` / `hybrid` / `placeholder_only`:** skip Step 0, proceed directly to Step 1.
+
 ### Step 1 — Pre-Spec
 
-<List the pre-spec sub-skill paths from the mapping table above for this node_id, with conditions>
+<List the pre-spec sub-skill paths from the mapping table above for this node_id, with conditions. Skip for assets that completed Step 0 and are already marked `adapted`.>
 
 ### Step 2 — Generate
 
-<List the generate sub-skill paths from the mapping table above for this node_id, with conditions>
+<List the generate sub-skill paths from the mapping table above for this node_id, with conditions. Skip for assets already marked `adapted`.>
 
 ## Completion Condition
 
@@ -1128,7 +1149,7 @@ Read and follow each applicable sub-skill SKILL.md in order:
 3. **Runtime import (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/runtime-import-check/SKILL.md`
 4. **3D-assisted QA** (when `dimension=2.5d`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/3d-assisted-2d-qa/SKILL.md`
 5. **Asset pack QA** (when any asset has `source_strategy=existing_asset_pack`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-pack-integration-qa/SKILL.md`
-6. **License provenance** (when any asset has `source_strategy=existing_asset_pack`, `existing_3d_source_asset`, or `user_provided_asset`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md`
+6. **License provenance sweep** (always, as final audit): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md` — for external-source assets this is a confirmation sweep (primary check already ran in art-gen Step 0); for AI-generated assets this catches potential training-data IP issues
 
 ## Completion Condition
 

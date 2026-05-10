@@ -23,6 +23,8 @@ Do not organize by tool. Organize by production layer:
 40-qa         Can the generated output be used downstream?
 ```
 
+Layer numbers indicate directory organization and default execution order for new projects. Individual chains in node-specs may deviate from this order when the use case requires it (e.g., running a 40-qa license check before a 20-spec adaptation step). The node-spec is authoritative; chains shown below are illustrative.
+
 ## Current Children
 
 | Layer | Child skill | Responsibility |
