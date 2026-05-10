@@ -44,6 +44,15 @@ Read `.allforai/bootstrap/workflow.json` at every iteration. Trust it over conve
      - **Nodes with `human_gate: true`:** do NOT advance based on exit_artifact existence alone. Read the node's `approval_record_path` field from workflow.json (e.g., `.allforai/game-design/approval-records.json` for game-design nodes, `.allforai/app-design/approval-records.json` for app-design nodes). Look up this node's record by `node_id`:
        - `gate_status == "pending"` AND all exit_artifacts exist → auto-set `gate_status` to `"in-review"` and notify `discipline_owner`. Do NOT advance yet.
        - `gate_status == "in-review"` → wait for `discipline_owner` to approve or request revision. Do NOT advance.
+         - For game-design nodes, open `.allforai/game-design/review-dashboard.html` through a local static server and use Playwright as the approval write-back agent:
+           1. Start or reuse `python3 -m http.server 43871 --directory .allforai/game-design`.
+           2. Navigate Playwright to `http://127.0.0.1:43871/review-dashboard.html`.
+           3. The reviewer enters notes and clicks the Chinese controls for Approve / Request revision / Save notes.
+           4. Read `window.__approvalDashboard.getPendingAction()` with Playwright.
+           5. If it returns JSON, run:
+              `python3 .allforai/bootstrap/scripts/apply_approval_action.py --approval .allforai/game-design/approval-records.json --action-json '<json from page>'`
+           6. Run `window.__approvalDashboard.clearPendingAction()` and refresh the page.
+           7. Re-read `approval-records.json` before deciding whether the node can advance.
        - `gate_status == "approved"` → this node is done; advance to unlocked nodes.
        - `gate_status == "revision-requested"` → re-run the node passing `revision_notes` as instruction; after re-execution completes, reset `gate_status` to `"in-review"`.
        - If `approval_record_path` is missing on the node → treat as `gate_status == "pending"` and warn.

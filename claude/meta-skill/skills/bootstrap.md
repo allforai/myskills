@@ -2219,6 +2219,8 @@ mkdir -p .allforai/bootstrap/scripts
 mkdir -p .allforai/bootstrap/protocols
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/check_artifacts.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/validate_bootstrap.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/render_approval_dashboard.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/apply_approval_action.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/knowledge/diagnosis.md .allforai/bootstrap/protocols/
 cp ${CLAUDE_PLUGIN_ROOT}/knowledge/learning-protocol.md .allforai/bootstrap/protocols/
 cp ${CLAUDE_PLUGIN_ROOT}/knowledge/feedback-protocol.md .allforai/bootstrap/protocols/
@@ -2241,6 +2243,14 @@ Write these files (they were generated in memory during Steps 3-5, now persist t
 7. `.allforai/bootstrap/scripts/validate_bootstrap.py`
 8. `.allforai/bootstrap/protocols/*.md`
 9. `.allforai/game-design/approval-records.json` — initialize with one `pending` record per selected game-design node that has `human_gate: true`. **On rebuild (when goals include `create` or `rebuild`) and file already exists: reset ALL existing records to `gate_status: "pending"`, clear `approved_by`, `approved_at`, `reviewer_notes`, and `revision_notes`. Preserve the node list structure but reset approval state.** On first bootstrap: create fresh. Nodes with `human_gate: false` (art-concept, concept-freeze) do NOT get records.
+10. `.allforai/game-design/review-dashboard.html` — render immediately after `approval-records.json`, before any game-design node executes:
+    ```bash
+    python3 .allforai/bootstrap/scripts/render_approval_dashboard.py \
+      --approval .allforai/game-design/approval-records.json \
+      --workflow .allforai/bootstrap/workflow.json \
+      --output .allforai/game-design/review-dashboard.html
+    ```
+    The review dashboard is the live approval control surface. Do not wait for `game-design-finalize` to create it. `game-design-dashboard.html` remains the final summary artifact only.
 
 ### 6.4 Confirm Completion
 
