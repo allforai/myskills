@@ -978,27 +978,32 @@ hard_blocked_by: [art-spec-design]
 unlocks: []  # populated by bootstrap from workflow's art-gen nodes
 exit_artifacts:
   - .allforai/concept-contract.json
+  - .allforai/game-design/asset-registry.json
 ---
 
 # Task: 概念合约冻结（Concept Freeze）
 
 ## 执行方法
 
-读取并执行 `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/concept-contract.md` capability。
+读取并执行 `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/concept-contract.md` capability，完成 canonical_registry 构建并写入 `concept-contract.json`。
 
-该节点完成以下工作：
-1. 验证所有 human_gate 节点均已 approved（approval-records.json）
-2. 从 art-asset-inventory.json 构建 canonical_registry（ID→文件前缀映射）
-3. 写入 `.allforai/concept-contract.json`（schema_version=1.0）
+concept-contract capability 完成后，依次调用以下 game-art 子 skill（读取对应 SKILL.md 并执行）：
+
+1. **工具能力检测：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/production-tool-capability-registry/SKILL.md`
+   - （输入/输出：参见 SKILL.md 的 Invocation Contract）
+   - 将检测结果写回 `art-pipeline-config.json.toolchain.detected_capabilities`
+
+2. **资产注册表初始化：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/asset-registry/SKILL.md`
+   - （输入/输出：参见 SKILL.md 的 Invocation Contract）
+   - 输出：`.allforai/game-design/asset-registry.json`（以 canonical_registry 为权威，资产 ID → 文件前缀 → 生命周期状态的单一可信注册表）
 
 ## 完成条件
 
-`.allforai/concept-contract.json` 存在且 `schema_version == "1.0"`。
+`.allforai/concept-contract.json` 存在且 `schema_version == "1.0"` 且 `.allforai/game-design/asset-registry.json` 存在。
 
 ## 重要说明
 
-所有后续 art-gen 节点必须从 concept-contract.json 读取 canonical_registry，
-使用其中的 file_prefix 作为生成文件的命名权威来源，不得自行命名。
+所有后续 art-gen 节点必须从 `concept-contract.json` 读取 `canonical_registry`，使用其中的 `file_prefix` 作为生成文件的命名权威来源，不得自行命名。
 ```
 
 **App Design Node Injection (when `is_game_project = false` AND goal includes design phase):**
