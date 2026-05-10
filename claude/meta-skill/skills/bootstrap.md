@@ -910,11 +910,21 @@ primary cause of execution failures on rebuild. Reset `approval-records.json` to
 before starting node generation.
 
 1. Read `${CLAUDE_PLUGIN_ROOT}/knowledge/game-scenario-templates/${game_scenario}.json`
-2. Read `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/game-design.md` §Canonical Node Registry + §Sub-Skill Mapping + §Finalize Exit Artifacts
+2. Read `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/game-design.md` §Canonical Node Registry + §Sub-Skill Mapping + §Conditional Sub-Skill Expansion Rules + §Finalize Exit Artifacts
 3. Insert game-design nodes into the workflow AFTER `product-concept` node and BEFORE `product-analysis` node
 4. For each node in `required_nodes` + `always_include` (and selected `optional_nodes`):
    - Check if `node_id` exists in game-design.md Canonical Node Registry:
-     - **Canonical node** (in registry AND node_order): look up `discipline_owner`, `html_output`, `json_output` from the registry; look up `sub_skill_paths` from §Sub-Skill Mapping. Set `hard_blocked_by` = **previous SELECTED node in `node_order`** (skip unselected optional nodes); `unlocks` = **next SELECTED node in `node_order`** (same skipping rule). Exception: `game-design-finalize` has `hard_blocked_by` = ALL other game-design nodes that are actually selected, and its `exit_artifacts` MUST include every path listed in `game-design.md` §Finalize Exit Artifacts in addition to the registry `html_output` and `json_output`.
+     - **Canonical node** (in registry AND node_order): look up `discipline_owner`, `html_output`, `json_output` from the registry; look up `sub_skill_paths` from §Sub-Skill Mapping, then apply §Conditional Sub-Skill Expansion Rules to append any applicable leaf skills. Set `hard_blocked_by` = **previous SELECTED node in `node_order`** (skip unselected optional nodes); `unlocks` = **next SELECTED node in `node_order`** (same skipping rule). Exception: `game-design-finalize` has `hard_blocked_by` = ALL other game-design nodes that are actually selected, and its `exit_artifacts` MUST include every path listed in `game-design.md` §Finalize Exit Artifacts in addition to the registry `html_output` and `json_output`.
+
+       **Sub-skill path validation:** Before writing a delegating node-spec,
+       resolve every expanded sub-skill path to
+       `${CLAUDE_PLUGIN_ROOT}/skills/<path>/SKILL.md`. The file MUST exist and
+       include these exact sections: `Input Contract`, `Output Contract`,
+       `Invocation Contract`, `Automatic Validation`, and `Completion
+       Conditions`. If any mapped path or required section is missing, stop
+       bootstrap with `BOOTSTRAP_SUB_SKILL_MAPPING_INVALID` and list the
+       missing path/section. Do not silently drop that sub-skill and do not
+       convert an explicitly mapped node to generic LLM execution.
 
        **Node-spec content — branch on `sub_skill_paths`:**
        - **`sub_skill_paths` is non-empty** → generate thin delegating node-spec:
@@ -1052,9 +1062,18 @@ After injecting `concept-freeze`, read `art-pipeline-config.json.active_nodes` a
 | `character-art-gen` | — | + `skills/game-art/30-generate/expression-set-generation/SKILL.md` | when `character.expressions=true` (append after primary generate) |
 | `environment-art-gen` | `skills/game-art/20-spec/2d-view-mode-spec/SKILL.md` | `skills/game-art/30-generate/background-generation/SKILL.md` + `skills/game-art/30-generate/prop-generation/SKILL.md` | always |
 | `environment-art-gen` | + `skills/game-art/20-spec/3d-source-asset-spec/SKILL.md` | + `skills/game-art/30-generate/render-to-2d-asset-generation/SKILL.md` | when `dimension=3d` or `2.5d` |
-| `ui-art-gen` | `skills/game-art/20-spec/visual-style-tokens/SKILL.md` | `skills/game-art/30-generate/icon-generation/SKILL.md` | always |
+| `ui-art-gen` | `skills/game-ui/00-env/ui-registry/SKILL.md` + `skills/game-ui/10-design/hud-information-design/SKILL.md` + `skills/game-ui/20-spec/component-state-spec/SKILL.md` + `skills/game-ui/20-spec/screen-layout-spec/SKILL.md` + `skills/game-art/20-spec/visual-style-tokens/SKILL.md` | `skills/game-ui/30-generate/ui-mockup-generation/SKILL.md` + `skills/game-art/30-generate/icon-generation/SKILL.md` | always |
 | `ui-art-gen` | — | + `skills/game-art/30-generate/portrait-generation/SKILL.md` | when `concept_art.needed=true` |
 | `vfx-art-gen` | `skills/game-art/20-spec/vfx-spec/SKILL.md` | `skills/game-art/30-generate/vfx-generation/SKILL.md` | always |
+| `vfx-art-gen` | — | + `skills/game-art/30-generate/particle-system/SKILL.md` | when `vfx.approach` includes `particle` |
+| `vfx-art-gen` | — | + `skills/game-art/30-generate/sprite-vfx-generation/SKILL.md` | when `vfx.approach` includes `sprite` or `spritesheet` |
+| `vfx-art-gen` | — | + `skills/game-art/30-generate/shader-vfx-generation/SKILL.md` | when `vfx.approach` includes `shader` |
+| `vfx-art-gen` | — | + `skills/game-art/30-generate/trail-generation/SKILL.md` | when `vfx.approach` includes `trail` |
+| `vfx-art-gen` | — | + `skills/game-art/30-generate/screen-effect-generation/SKILL.md` | when `vfx.approach` includes `screen` or `postprocess` |
+| `vfx-art-gen` | — | + `skills/game-art/30-generate/light-pulse-generation/SKILL.md` | when `vfx.approach` includes `light` |
+| `vfx-art-gen` | — | + `skills/game-art/30-generate/mesh-burst-generation/SKILL.md` | when `vfx.approach` includes `mesh` |
+| `vfx-art-gen` | — | + `skills/game-art/30-generate/decal-generation/SKILL.md` | when `vfx.approach` includes `decal` |
+| `vfx-art-gen` | — | + `skills/game-art/30-generate/animation-event-fx/SKILL.md` | when VFX must bind to animation events |
 
 **Node-spec template for each `active_node` entry:**
 
@@ -1177,13 +1196,15 @@ Run quality assurance across all generated art assets. Invoke the appropriate ga
 
 Read and follow each applicable sub-skill SKILL.md in order:
 
-1. **Style consistency (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/2d-style-consistency-qa/SKILL.md`
-2. **Atlas packaging (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/atlas-packaging/SKILL.md`
-3. **Runtime import (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/runtime-import-check/SKILL.md`
-4. **3D-assisted QA** (when `dimension=2.5d`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/3d-assisted-2d-qa/SKILL.md`
-5. **Asset pack QA** (when any asset has `source_strategy=existing_asset_pack`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-pack-integration-qa/SKILL.md`
-6. **License provenance sweep** (always, as final audit): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md` — for external-source assets this is a confirmation sweep (primary check already ran in art-gen Step 0); for AI-generated assets this catches potential training-data IP issues
-7. **Engine-ready art handoff (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/engine-ready-art-output-contract/SKILL.md`
+1. **Preview evidence (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/art-preview-qa/SKILL.md`
+2. **Style consistency (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/2d-style-consistency-qa/SKILL.md`
+3. **UI readability** (when `ui-art-gen` ran): `${CLAUDE_PLUGIN_ROOT}/skills/game-ui/40-qa/ui-readability-qa/SKILL.md`
+4. **Atlas packaging (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/atlas-packaging/SKILL.md`
+5. **Runtime import (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/runtime-import-check/SKILL.md`
+6. **3D-assisted QA** (when `dimension=2.5d`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/3d-assisted-2d-qa/SKILL.md`
+7. **Asset pack QA** (when any asset has `source_strategy=existing_asset_pack`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-pack-integration-qa/SKILL.md`
+8. **License provenance sweep** (always, as final audit): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md` — for external-source assets this is a confirmation sweep (primary check already ran in art-gen Step 0); for AI-generated assets this catches potential training-data IP issues
+9. **Engine-ready art handoff (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/engine-ready-art-output-contract/SKILL.md`
 
 ## Completion Condition
 

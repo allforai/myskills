@@ -289,26 +289,28 @@ after `game-design-finalize` is approved.
 ## Sub-Skill Mapping
 
 Bootstrap reads this table when injecting game-design node-specs. Nodes with `sub_skill_paths` → generate thin delegating node-spec (read and follow each SKILL.md in sequence). Nodes with `—` → generate LLM-based node-spec using `domains/gaming.md` methodology.
+After reading this table, bootstrap MUST apply §Conditional Sub-Skill Expansion
+Rules and MUST validate every expanded path before writing node-specs.
 
 Sub-skill paths expand to `${CLAUDE_PLUGIN_ROOT}/skills/<path>/SKILL.md`.
 
 | node_id | sub_skill_paths |
 |---------|----------------|
 | `core-loop-design` | `game-systems/10-design/core-loop-design` |
-| `ftue-design` | `game-ui/10-design/ui-flow-design`, `game-ui/20-spec/screen-layout-spec` |
+| `ftue-design` | `game-onboarding/10-design/first-session-experience-spec`, `game-onboarding/20-spec/tutorial-step-spec`, `game-onboarding/20-spec/feature-unlock-teaching-spec`, `game-onboarding/40-qa/ftue-friction-qa`, `game-ui/10-design/ui-flow-design`, `game-ui/20-spec/screen-layout-spec` |
 | `monetization-design` | `game-design/20-spec/economy-spec` |
 | `retention-hook-design` | `game-design/10-concept/player-experience-contract` |
 | `meta-game-design` | `game-design/20-spec/meta-game-spec` |
-| `combat-system-design` | `game-systems/20-spec/combat-spec` |
+| `combat-system-design` | `game-design/20-spec/combat-spec`, `game-combat/20-spec/enemy-behavior-spec`, `game-combat/20-spec/skill-design-spec`, `game-combat/20-spec/status-effect-spec`, `game-combat/40-qa/combat-readability-qa` |
 | `skill-tree-design` | `game-systems/20-spec/progression-spec` |
 | `progression-curve-design` | `game-systems/20-spec/progression-spec` |
 | `economy-design` | `game-systems/20-spec/economy-spec` |
 | `narrative-design` | `game-narrative/10-design/narrative-tone-design`, `game-narrative/20-spec/quest-text-spec` |
-| `level-design` | `game-level/10-design/level-flow-design`, `game-level/20-spec/level-layout-spec` |
+| `level-design` | `game-design/20-spec/level-design-spec`, `game-level/00-env/level-registry`, `game-level/10-design/level-flow-design`, `game-level/20-spec/level-layout-spec`, `game-level/20-spec/level-difficulty-budget-spec`, `game-level/20-spec/teaching-beat-spec`, `game-level/20-spec/encounter-placement-spec`, `game-level/20-spec/reward-placement-spec`, `game-level/40-qa/level-pacing-qa`, `game-level/40-qa/level-playability-qa` |
 | `worldbuilding` | `game-narrative/10-design/narrative-tone-design` |
 | `network-architecture-design` | `game-runtime/20-spec/network-architecture-spec` |
 | `matchmaking-design` | `game-runtime/20-spec/matchmaking-service-spec` |
-| `competitive-balance-design` | `game-systems/40-qa/balance-sanity-qa` |
+| `competitive-balance-design` | `game-balance/00-env/balance-registry`, `game-balance/10-design/balance-goal-spec`, `game-balance/30-generate/balance-table-generation`, `game-balance/40-qa/combat-balance-qa`, `game-systems/40-qa/balance-sanity-qa` |
 | `run-structure-design` | `game-design/10-concept/core-game-loop-spec` |
 | `meta-progression-design` | `game-systems/20-spec/progression-spec` |
 | `procedural-gen-spec` | `game-runtime/20-spec/procedural-generator-spec` |
@@ -328,10 +330,56 @@ Sub-skill paths expand to `${CLAUDE_PLUGIN_ROOT}/skills/<path>/SKILL.md`.
 | `anti-cheat-design` | `game-runtime/20-spec/anti-cheat-architecture-spec` |
 | `dialogue-system-spec` | `game-narrative/20-spec/dialogue-spec` |
 | `audio-design` | `game-audio/10-design/audio-style-design`, `game-audio/20-spec/music-cue-spec`, `game-audio/20-spec/sfx-spec` |
-| `game-design-finalize` | `game-design/30-generate/art-input-handoff-generation`, `game-design/40-qa/content-coverage-qa`, `game-design/40-qa/core-loop-closure-qa`, `game-design/40-qa/contract-wiring-qa`, `game-design/40-qa/game-design-final-closure-qa` |
-| `puzzle-design` | `game-level/10-design/level-flow-design`, `game-level/20-spec/level-layout-spec` |
+| `game-design-finalize` | `game-design/30-generate/design-data-table-generation`, `game-design/30-generate/art-input-handoff-generation`, `game-design/40-qa/content-coverage-qa`, `game-design/40-qa/core-loop-closure-qa`, `game-design/40-qa/contract-wiring-qa`, `game-design/40-qa/game-design-final-closure-qa` |
+| `puzzle-design` | `game-design/20-spec/level-design-spec`, `game-level/10-design/level-flow-design`, `game-level/20-spec/level-layout-spec`, `game-level/20-spec/teaching-beat-spec`, `game-level/40-qa/level-pacing-qa` |
 | `card-system-design` | `game-design/20-spec/mechanics-spec` |
 | `ai-art-generation` | _(legacy — superseded by art-gen nodes)_ |
+
+## Conditional Sub-Skill Expansion Rules
+
+Bootstrap must keep workflow nodes coarse-grained. These rules append leaf
+sub-skills into the selected node-spec's `Sub-Skill Invocation`; they do not
+create additional workflow nodes unless a scenario template explicitly selects
+one.
+
+**Path validation:** For every sub-skill path from §Sub-Skill Mapping or this
+section, verify `${CLAUDE_PLUGIN_ROOT}/skills/<path>/SKILL.md` exists before
+writing node-specs. The file must include `Input Contract`, `Output Contract`,
+`Invocation Contract`, `Automatic Validation`, and `Completion Conditions`.
+If any required file or section is missing, fail bootstrap with
+`BOOTSTRAP_SUB_SKILL_MAPPING_INVALID` and list the missing path/section. Do not
+fall back to generic LLM execution for a path that is explicitly mapped.
+
+**Level design:** The `level-design` chain owns level flow, layout, difficulty
+budget, teaching, encounter/reward placement, and pacing QA.
+`level-blockout-generation` may be appended when a visual/blockout preview is
+required by the scenario or when downstream frontend/runtime validation needs a
+map artifact.
+
+**Templates:** Append the following to `game-design-finalize` when the game has
+items, enemies, skills, levels, quests, economy rows, drop tables, content packs,
+or any implementation goal that needs reusable data containers:
+`game-templates/00-env/template-registry`,
+`game-templates/20-spec/template-schema-spec`,
+`game-templates/20-spec/template-inheritance-spec`,
+`game-templates/20-spec/template-reference-binding-spec`,
+`game-templates/30-generate/template-instance-generation`,
+`game-templates/40-qa/template-reference-closure-qa`.
+Append `game-templates/40-qa/template-runtime-load-qa` only when a runnable
+frontend/runtime load surface exists; if it cannot run, the skill must block
+rather than accept static inspection.
+
+**Frontend handoff:** Do not inject `game-frontend` as a game-design review
+node. When the overall user goal includes implementation, `game-design-finalize`
+must emit `program-development-node-handoff.json` entries telling downstream
+program nodes to invoke the `game-frontend` pack after approved art, UI, audio,
+level, template, and runtime contracts exist. Frontend validation must run
+through the executable QA skills in `game-frontend/40-qa`; unavailable runtime
+commands are blockers.
+
+**Shared production map:** `game-production/SKILL.md` is a routing reference,
+not an executable node. Bootstrap may cite it in generated node-specs when
+resolving ownership conflicts, but must not add it to workflow execution.
 
 ## Presentation Contract
 
