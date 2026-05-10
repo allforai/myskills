@@ -896,10 +896,18 @@ app might have "design-onboarding-flow" and "setup-push-notifications".
 **Skip injection entirely when goals are:** `tune`, `product-verify`, `quality-checks`,
 `demo`, `launch-prep`, or `visual-verify`. These goals assume game design documents
 already exist; injecting design nodes would be wasteful. If `approval-records.json`
-already has all-approved records, also skip (partial pipeline: see game-design.md §Composition Hints).
+already has all-approved records, also skip — **unless goals include `create` or `rebuild`**,
+in which case always inject and regenerate (partial pipeline hint does not apply to full re-runs).
 
 **Inject when goals include:** `create`, `translate`, or `rebuild` (new or re-designed game).
 For `analyze` goal, inject only if no `approval-records.json` exists (new project without prior design pass).
+
+**On `rebuild` goal — mandatory regeneration:** ALL existing node-spec files under
+`.allforai/bootstrap/node-specs/` for game-design nodes MUST be overwritten, even if they
+already exist. Do NOT skip a node-spec because a file is already present. Stale node-specs
+(wrong format, wrong exit_artifacts, wrong blocked_by, missing sub-skill references) are the
+primary cause of execution failures on rebuild. Reset `approval-records.json` to all-pending
+before starting node generation.
 
 1. Read `${CLAUDE_PLUGIN_ROOT}/knowledge/game-scenario-templates/${game_scenario}.json`
 2. Read `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/game-design.md` §Canonical Node Registry + §Sub-Skill Mapping + §Finalize Exit Artifacts
@@ -2206,11 +2214,12 @@ Write these files (they were generated in memory during Steps 3-5, now persist t
 1. `.allforai/bootstrap/bootstrap-profile.json`
 2. `.allforai/bootstrap/workflow.json`
 3. `.allforai/bootstrap/coverage-matrix.json` (from Step 3.5, only if product-concept.json exists)
-4. `.allforai/bootstrap/node-specs/*.md`
+4. `.allforai/bootstrap/node-specs/*.md` — **always overwrite existing files**, even on rebuild
 5. `.claude/commands/run.md`
 6. `.allforai/bootstrap/scripts/check_artifacts.py`
 7. `.allforai/bootstrap/scripts/validate_bootstrap.py`
 8. `.allforai/bootstrap/protocols/*.md`
+9. `.allforai/game-design/approval-records.json` — initialize with one `pending` record per selected game-design node that has `human_gate: true`. **On rebuild (when goals include `create` or `rebuild`) and file already exists: reset ALL existing records to `gate_status: "pending"`, clear `approved_by`, `approved_at`, `reviewer_notes`, and `revision_notes`. Preserve the node list structure but reset approval state.** On first bootstrap: create fresh. Nodes with `human_gate: false` (art-concept, concept-freeze) do NOT get records.
 
 ### 6.4 Confirm Completion
 
