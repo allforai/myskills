@@ -96,11 +96,12 @@ This is Phase 2 of the bug fix workflow. Your goal is to understand why the bug 
 - Consider backwards compatibility
 - Plan for future prevention of similar bugs
 
-## Critical Rules
-- **NEVER** proceed to the next phase without explicit user approval
-- Accept only clear affirmative responses: "yes", "approved", "looks good", etc.
-- If user provides feedback, make revisions and ask for approval again
-- Continue revision cycle until explicit approval is received
+## 完成后行为
 
-## Next Phase
-After approval, proceed to `/bug-fix`.
+分析文档写完后：
+- 展示分析结果
+- 询问："分析是否正确？有没有需要补充的？"
+- 用户确认（或 5 秒内无异议直接继续）→ **自动执行 `/bug-fix {bug-name}`，不要等用户再次输入命令**
+- 用户有修改意见 → 修改后再次展示，确认后继续
+
+> 关键：确认后立即继续，不要停下来让用户手动输 `/bug-fix`。

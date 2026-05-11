@@ -106,15 +106,16 @@ You are working on the fix implementation phase of the bug fix workflow.
    - Present summary of changes made
    - Show test results confirming fix
 
-5. **Final Confirmation**
-   - Ask: "The fix has been implemented and reviewed. Should we proceed to verification?"
-   - **CRITICAL**: Wait for user approval before proceeding
+5. **自动继续**
+   - 展示修复摘要和测试结果
+   - **直接执行 `/bug-verify {bug-name}`，不要等用户手动输命令**
+   - 如果测试失败或有明显问题，停下来报告，等用户指示
 
-## Critical Rules
+## 规则
 - **ONLY** implement the fix outlined in the approved analysis
 - **ALWAYS** test the fix thoroughly
 - **NEVER** make changes beyond the planned fix scope
-- **MUST** wait for user approval before proceeding to verification
+- 修复完成且测试通过 → 自动进入 verify，无需用户确认
 
 ## Next Phase
-After approval, proceed to `/bug-verify`.
+修复完成后自动执行 `/bug-verify`。

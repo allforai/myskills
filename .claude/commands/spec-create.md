@@ -123,10 +123,9 @@ If validation fails, use the feedback to improve the requirements before present
 
 - **Only present to user after validation passes or improvements are made**
 - **Present the validated requirements document with codebase analysis summary**
-- Ask: "Do the requirements look good? If so, we can move on to the design phase."
-- **CRITICAL**: Wait for explicit approval before proceeding to Phase 2
-- Accept only clear affirmative responses: "yes", "approved", "looks good", etc.
-- If user provides feedback, make revisions and ask for approval again
+- 展示 requirements 文档，问："需求看起来没问题吗？"
+- 用户确认后 → **立即开始 Phase 2，不要等用户再说任何话**
+- 用户有修改意见 → 修改后重新展示，确认后立即继续
 
 ## PHASE 2: Design Creation
 
@@ -197,8 +196,9 @@ If validation fails, use the feedback to improve the design before presenting to
 
 - **Only present to user after validation passes or improvements are made**
 - **Present the validated design document** with code reuse highlights and steering document alignment
-- Ask: "Does the design look good? If so, we can move on to the implementation planning."
-- **CRITICAL**: Wait for explicit approval before proceeding to Phase 3
+- 展示 design 文档，问："设计看起来没问题吗？"
+- 用户确认后 → **立即开始 Phase 3，不要等用户再说任何话**
+- 用户有修改意见 → 修改后重新展示，确认后立即继续
 
 ## PHASE 3: Tasks Creation
 
@@ -290,9 +290,9 @@ If validation fails, use the feedback to break down tasks further and improve at
 - **Only present to user after validation passes or improvements are made**
 
 - **Present the validated task list**
-- Ask: "Do the tasks look good? Each task should be atomic and agent-friendly."
-- **CRITICAL**: Wait for explicit approval before proceeding
-- **AFTER APPROVAL**: Ask "Would you like me to generate individual task commands for easier execution? (yes/no)"
+- 展示 tasks 文档，问："任务拆分看起来没问题吗？需要生成 task commands 吗？(yes/no)"
+- 用户确认后 → 如需要则生成 commands，**然后立即结束，告知用户重启 Claude Code**
+- 用户有修改意见 → 修改后重新展示，确认后继续
 - **IF YES**: Execute `claude-code-spec-workflow generate-task-commands {feature-name}`
 - **IF NO**: Continue with traditional task execution approach
 
@@ -307,10 +307,10 @@ If validation fails, use the feedback to break down tasks further and improve at
 - **Do not skip phases** - complete Requirements → Design → Tasks → Commands sequence
 
 ### Approval Requirements
-- **NEVER** proceed to the next phase without explicit user approval
-- Accept only clear affirmative responses: "yes", "approved", "looks good", etc.
-- If user provides feedback, make revisions and ask for approval again
-- Continue revision cycle until explicit approval is received
+- 每个 phase 完成后展示结果并等待用户确认（这是必要的 review 点）
+- 用户确认后 → **立即**开始下一个 phase，不要停下来等用户再次输入
+- 用户有修改意见 → 修改完再次展示，确认后继续
+- 不要把"等待确认"和"等待用户主动触发下一步"混淆——确认即继续
 
 ### Template Usage
 **Use the pre-loaded template context** from step 2 above - do not reload templates.

@@ -1,133 +1,96 @@
 # Spec Execute Command
 
-Execute specific tasks from the approved task list.
+Execute tasks from the approved task list, automatically continuing until all tasks are done.
 
 ## Usage
 ```
 /spec-execute [task-id] [feature-name]
 ```
 
-## Phase Overview
-**Your Role**: Execute tasks systematically with validation
+- 指定 task-id：只执行该任务，完成后继续执行下一个
+- 不指定 task-id：从第一个未完成任务开始，**一直执行到全部完成**
 
-This is Phase 4 of the spec workflow. Your goal is to implement individual tasks from the approved task list, one at a time.
+## CRITICAL: 不要停下来
 
-## Instructions
+完成每个任务后，**立即开始下一个**，不要停下来等用户说"继续"。
 
-**Execution Steps**:
+唯一停止条件：
+- 所有任务已完成 → 打印"✅ 全部任务完成"并退出
+- 某任务失败且无法自动修复 → 报告具体错误并停止
+- 用户在对话中明确说"停下" / "stop" / "暂停"
 
-**Step 1: Load Context**
+## 执行循环
+
+```
+LOOP:
+  1. 读取 tasks.md，找到第一个未完成 ([ ]) 的任务
+  2. 如果没有未完成任务 → 打印"✅ {feature-name} 全部任务完成" → EXIT
+  3. 加载该任务的上下文（steering + spec + task details）
+  4. 用 spec-task-executor agent 执行任务
+  5. 执行成功：
+       - 标记完成：claude-code-spec-workflow get-tasks {feature-name} {task-id} --mode complete
+       - 打印一行："✅ Task {task-id} 完成 — {一句话说明}"
+       - GOTO LOOP（立即开始下一个）
+  6. 执行失败：
+       - 尝试修复，最多重试 2 次
+       - 仍失败 → 报告"❌ Task {task-id} 失败：{原因}" → EXIT
+```
+
+## Step 1: Load Context（每个任务执行前）
+
 ```bash
-# Load steering documents (if available)
+# 加载 steering 文档（如果存在）
 claude-code-spec-workflow get-steering-context
 
-# Load specification context
+# 加载 spec 上下文
 claude-code-spec-workflow get-spec-context {feature-name}
 
-# Load specific task details
+# 加载当前任务详情
 claude-code-spec-workflow get-tasks {feature-name} {task-id} --mode single
 ```
 
-**Step 2: Execute with Agent**
-Use the `spec-task-executor` agent:
+## Step 2: 用 Agent 执行
+
 ```
 Use the spec-task-executor agent to implement task {task-id} for the {feature-name} specification.
 
 ## Steering Context
-[PASTE THE COMPLETE OUTPUT FROM get-steering-context COMMAND HERE]
+[完整的 get-steering-context 输出]
 
 ## Specification Context
-[PASTE THE REQUIREMENTS AND DESIGN SECTIONS FROM get-spec-context COMMAND HERE]
+[get-spec-context 的 requirements + design 部分]
 
 ## Task Details
-[PASTE THE OUTPUT FROM get-tasks SINGLE COMMAND HERE]
+[get-tasks single 输出]
 
 ## Instructions
-- Implement ONLY the specified task: {task-id}
-- Follow all project conventions and leverage existing code
-- Mark the task as complete using: claude-code-spec-workflow get-tasks {feature-name} {task-id} --mode complete
-- Provide a completion summary
+- 只实现指定的任务：{task-id}
+- 遵循项目规范，复用现有代码
+- 完成后标记：claude-code-spec-workflow get-tasks {feature-name} {task-id} --mode complete
 ```
 
+## 实现规范
 
-3. **Task Execution**
-   - Focus on ONE task at a time
-   - If task has sub-tasks, start with those
-   - Follow the implementation details from design.md
-   - Verify against requirements specified in the task
+- 每次专注一个任务，不跨任务修改
+- 遵循 steering 文档（tech.md / structure.md）
+- 复用现有 utilities 和 patterns
+- 如有子任务先完成子任务
+- 有测试要求的必须写测试
 
-4. **Implementation Guidelines**
-   - Write clean, maintainable code
-   - **Follow steering documents**: Adhere to patterns in tech.md and conventions in structure.md
-   - Follow existing code patterns and conventions
-   - Include appropriate error handling
-   - Add unit tests where specified
-   - Document complex logic
+## 任务选择逻辑
 
-5. **Validation**
-   - Verify implementation meets acceptance criteria
-   - Run tests if they exist
-   - Check for lint/type errors
-   - Ensure integration with existing code
+未指定 task-id 时：
+- 扫描 tasks.md，找所有未完成任务
+- 按编号顺序依次执行，不跳过，不询问
 
-6. **Task Completion Protocol**
-When completing any task during `/spec-execute`:
-   1. **Mark task complete**: Use the get-tasks script to mark completion:
-      ```bash
-      # Cross-platform command:
-      claude-code-spec-workflow get-tasks {feature-name} {task-id} --mode complete
-      ```
-   2. **Confirm to user**: State clearly "Task X has been marked as complete"
-   3. **Stop execution**: Do not proceed to next task automatically
-   4. **Wait for instruction**: Let user decide next steps
+未指定 feature-name 时：
+- 检查 `.claude/specs/` 目录
+- 只有一个 spec → 直接使用
+- 多个 spec → 询问用户选哪个
 
+## 示例
 
-
-
-## Critical Workflow Rules
-
-### Task Execution
-- **ONLY** execute one task at a time during implementation
-- **CRITICAL**: Mark completed tasks using get-tasks --mode complete before stopping
-- **ALWAYS** stop after completing a task
-- **NEVER** automatically proceed to the next task
-- **MUST** wait for user to request next task execution
-- **CONFIRM** task completion status to user
-
-### Requirement References
-- **ALL** tasks must reference specific requirements using _Requirements: X.Y_ format
-- **ENSURE** traceability from requirements through design to implementation
-- **VALIDATE** implementations against referenced requirements
-
-## Task Selection
-If no task-id specified:
-- Look at tasks.md for the spec
-- Recommend the next pending task
-- Ask user to confirm before proceeding
-
-If no feature-name specified:
-- Check `.claude/specs/` directory for available specs
-- If only one spec exists, use it
-- If multiple specs exist, ask user which one to use
-- Display error if no specs are found
-
-## Examples
 ```
-/spec-execute 1 user-authentication
-/spec-execute 2.1 user-authentication
+/spec-execute user-authentication          # 从头执行所有任务
+/spec-execute 2.1 user-authentication      # 从 2.1 开始，继续到结束
 ```
-
-## Important Rules
-- Only execute ONE task at a time
-- **ALWAYS** mark completed tasks using get-tasks --mode complete
-- Always stop after completing a task
-- Wait for user approval before continuing
-- Never skip tasks or jump ahead
-- Confirm task completion status to user
-
-## Next Steps
-After task completion, you can:
-- Address any issues identified in the review
-- Run tests if applicable
-- Execute the next task using `/spec-execute [next-task-id]`
-- Check overall progress with `/spec-status {feature-name}`
