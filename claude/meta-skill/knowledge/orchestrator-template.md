@@ -44,17 +44,17 @@ Read `.allforai/bootstrap/workflow.json` at every iteration. Trust it over conve
      - **Nodes with `human_gate: true`:** do NOT advance based on exit_artifact existence alone. Read the node's `approval_record_path` field from workflow.json (e.g., `.allforai/game-design/approval-records.json` for game-design nodes, `.allforai/app-design/approval-records.json` for app-design nodes). Look up this node's record by `node_id`:
        - `gate_status == "pending"` AND all exit_artifacts exist → auto-set `gate_status` to `"in-review"` and notify `discipline_owner`. Do NOT advance yet.
        - `gate_status == "in-review"` → wait for `discipline_owner` to approve or request revision. Do NOT advance.
-         - For game-design nodes, use Playwright as the approval write-back agent:
+         - For game-design nodes, use the web-server approval flow (no Playwright required):
            1. Regenerate the dashboard with fresh embedded data:
               `python3 .allforai/bootstrap/scripts/render_approval_dashboard.py --approval .allforai/game-design/approval-records.json --workflow .allforai/bootstrap/workflow.json --output .allforai/game-design/review-dashboard.html`
-           2. Start or reuse a local static server: `python3 -m http.server 43871 --directory .allforai/game-design`
-           3. Navigate Playwright to `http://127.0.0.1:43871/review-dashboard.html`.
-           4. The reviewer enters notes and clicks 批准 / 要求修改 / 保存备注.
-           5. Poll `window.__approvalDashboard.getPendingAction()` with Playwright until it returns non-null JSON.
-           6. Apply the action:
-              `python3 .allforai/bootstrap/scripts/apply_approval_action.py --approval .allforai/game-design/approval-records.json --action-json '<json from getPendingAction>'`
-           7. Call `window.__approvalDashboard.clearPendingAction()` with Playwright.
-           8. If more nodes need review, go to step 1 (regenerate with fresh data) and reload the page.
+           2. Start or reuse the approval server on port 43871 (runs in background):
+              `python3 .allforai/bootstrap/scripts/serve_approval.py --approval .allforai/game-design/approval-records.json --directory .allforai/game-design --port 43871`
+              (check `lsof -i :43871` first; skip if already running)
+           3. Tell the reviewer: **"请在 Chrome 中打开 http://127.0.0.1:43871/review-dashboard.html 进行审批"**
+           4. Poll `approval-records.json` every 30 seconds: read the record for this node_id and check `gate_status`.
+              Repeat until `gate_status` changes to `"approved"` or `"revision-requested"`.
+              (The dashboard's approve/request-revision buttons POST directly to `/api/action` and update the JSON file.)
+           5. Once `gate_status` changes, stop polling and proceed per the new status below.
        - `gate_status == "approved"` → this node is done; advance to unlocked nodes.
        - `gate_status == "revision-requested"` → re-run the node passing `revision_notes` as instruction; after re-execution completes, reset `gate_status` to `"in-review"`.
        - If `approval_record_path` is missing on the node → treat as `gate_status == "pending"` and warn.
