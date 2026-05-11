@@ -48,186 +48,346 @@ def main() -> int:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>游戏设计审批看板</title>
 <style>
-body {{ margin: 0; font: 14px/1.45 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #20242a; background: #f6f7f8; }}
-header {{ position: sticky; top: 0; z-index: 2; display: flex; gap: 16px; align-items: center; justify-content: space-between; padding: 14px 20px; background: #fff; border-bottom: 1px solid #d9dde2; }}
-h1 {{ margin: 0; font-size: 18px; }}
-main {{ padding: 18px 20px 32px; }}
-.summary {{ display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }}
-.pill {{ padding: 4px 9px; border: 1px solid #cbd2d9; border-radius: 999px; background: #fff; }}
-.tree {{ display: flex; flex-direction: column; gap: 10px; }}
-.branch {{ background: #fff; border: 1px solid #d9dde2; border-radius: 8px; }}
-.branch summary {{ display: flex; gap: 10px; align-items: center; cursor: pointer; padding: 12px 14px; }}
-.branch-title {{ font-weight: 700; }}
-.branch-meta {{ color: #5b6470; }}
-.branch-body {{ padding: 0 14px 14px; }}
-.children {{ margin-left: 18px; padding-left: 14px; border-left: 2px solid #d9dde2; display: flex; flex-direction: column; gap: 10px; }}
-.card {{ background: #fff; border: 1px solid #d9dde2; border-radius: 8px; padding: 14px; }}
-.card h2 {{ margin: 0 0 6px; font-size: 16px; }}
-.meta {{ color: #5b6470; margin-bottom: 10px; }}
-.status {{ display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid #bcc5cf; background: #f9fafb; }}
-.approved {{ border-color: #83b88b; background: #eef8f0; }}
-.revision-requested {{ border-color: #d19a61; background: #fff5e8; }}
-.in-review {{ border-color: #6f9ed8; background: #edf5ff; }}
-label {{ display: block; margin-top: 10px; font-weight: 600; }}
-textarea {{ box-sizing: border-box; width: 100%; min-height: 74px; resize: vertical; margin-top: 4px; padding: 8px; border: 1px solid #cbd2d9; border-radius: 6px; font: inherit; }}
-.checks {{ margin: 10px 0; padding: 0; list-style: none; }}
-.checks li {{ display: flex; gap: 7px; align-items: flex-start; margin: 6px 0; }}
-.actions {{ display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }}
-button {{ border: 1px solid #aeb7c2; border-radius: 6px; background: #fff; padding: 7px 10px; cursor: pointer; }}
-button.primary {{ color: #fff; background: #2367c9; border-color: #2367c9; }}
-button.warn {{ color: #4a2600; background: #fff1db; border-color: #d19a61; }}
-#pending {{ white-space: pre-wrap; margin: 0; color: #334155; }}
+*,*::before,*::after{{box-sizing:border-box}}
+body{{margin:0;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;color:#1a202c;background:#f0f2f5;min-height:100vh}}
+a{{color:#2b6cb0;text-decoration:none}}
+a:hover{{text-decoration:underline}}
+
+/* ── Header ── */
+.hd{{position:sticky;top:0;z-index:10;background:#1a365d;color:#fff;padding:0 20px;display:flex;align-items:center;gap:16px;height:52px;box-shadow:0 2px 8px rgba(0,0,0,.25)}}
+.hd h1{{margin:0;font-size:16px;font-weight:700;letter-spacing:.3px;flex:1}}
+.hd-stats{{display:flex;gap:8px}}
+.stat-chip{{padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;border:none;color:#fff;transition:opacity .15s}}
+.stat-chip:hover{{opacity:.85}}
+.chip-revision{{background:#c53030}}
+.chip-review{{background:#2b6cb0}}
+.chip-pending{{background:#718096}}
+.chip-approved{{background:#276749}}
+.hd-refresh{{padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;cursor:pointer;font-size:13px}}
+.hd-refresh:hover{{background:rgba(255,255,255,.2)}}
+.pulse{{display:inline-block;width:7px;height:7px;border-radius:50%;background:#68d391;margin-right:6px;animation:pulse 2s ease-in-out infinite}}
+@keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:.4}}}}
+
+/* ── Layout ── */
+.layout{{display:flex;min-height:calc(100vh - 52px)}}
+.sidebar{{width:220px;flex-shrink:0;background:#fff;border-right:1px solid #e2e8f0;padding:16px 0;position:sticky;top:52px;height:calc(100vh - 52px);overflow-y:auto}}
+.sidebar-section{{margin-bottom:4px}}
+.sidebar-label{{padding:4px 16px;font-size:11px;font-weight:700;color:#a0aec0;text-transform:uppercase;letter-spacing:.6px}}
+.sidebar-item{{display:flex;align-items:center;gap:8px;padding:7px 16px;cursor:pointer;border-left:3px solid transparent;transition:background .1s}}
+.sidebar-item:hover{{background:#f7fafc}}
+.sidebar-item.active{{background:#ebf8ff;border-left-color:#3182ce;color:#2b6cb0;font-weight:600}}
+.sidebar-item.s-revision{{border-left-color:#fc8181}}
+.sidebar-item.s-review{{border-left-color:#63b3ed}}
+.sidebar-item.s-pending{{border-left-color:#cbd5e0}}
+.sidebar-item.s-approved{{border-left-color:#68d391}}
+.sidebar-dot{{width:8px;height:8px;border-radius:50%;flex-shrink:0}}
+.dot-revision{{background:#e53e3e}}
+.dot-review{{background:#3182ce}}
+.dot-pending{{background:#a0aec0}}
+.dot-approved{{background:#38a169}}
+.sidebar-name{{font-size:13px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+
+/* ── Main panel ── */
+.main{{flex:1;padding:20px;overflow-x:hidden;max-width:900px}}
+.section-head{{display:flex;align-items:center;gap:10px;margin:0 0 14px;padding-bottom:10px;border-bottom:2px solid #e2e8f0}}
+.section-head h2{{margin:0;font-size:15px;font-weight:700;color:#2d3748}}
+.section-badge{{padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600}}
+.badge-revision{{background:#fed7d7;color:#c53030}}
+.badge-review{{background:#bee3f8;color:#2b6cb0}}
+.badge-pending{{background:#e2e8f0;color:#4a5568}}
+.badge-approved{{background:#c6f6d5;color:#276749}}
+.cards{{display:flex;flex-direction:column;gap:14px;margin-bottom:28px}}
+
+/* ── Card ── */
+.card{{background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;transition:box-shadow .15s}}
+.card:hover{{box-shadow:0 4px 12px rgba(0,0,0,.08)}}
+.card-bar{{height:4px}}
+.bar-revision{{background:#e53e3e}}
+.bar-review{{background:#3182ce}}
+.bar-pending{{background:#a0aec0}}
+.bar-approved{{background:#38a169}}
+.card-body{{padding:16px}}
+.card-header{{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}}
+.card-title{{font-size:15px;font-weight:700;color:#1a202c;flex:1}}
+.status-badge{{padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}}
+.badge-s-revision{{background:#fed7d7;color:#9b2c2c}}
+.badge-s-review{{background:#bee3f8;color:#2c5282}}
+.badge-s-pending{{background:#e2e8f0;color:#4a5568}}
+.badge-s-approved{{background:#c6f6d5;color:#22543d}}
+.card-meta{{font-size:12px;color:#718096;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}}
+.card-meta a{{font-size:12px}}
+
+/* Checklist */
+.checklist{{margin:0 0 12px;padding:0;list-style:none;background:#f7fafc;border-radius:6px;padding:10px 12px}}
+.checklist li{{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:#4a5568;padding:3px 0}}
+.checklist li::before{{content:"☐";color:#a0aec0;flex-shrink:0;margin-top:1px}}
+.checklist li.done::before{{content:"☑";color:#38a169}}
+
+/* Notes */
+.notes-row{{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}}
+.note-block label{{display:block;font-size:12px;font-weight:600;color:#4a5568;margin-bottom:4px}}
+.note-block textarea{{width:100%;min-height:70px;resize:vertical;padding:8px;border:1px solid #e2e8f0;border-radius:6px;font:inherit;font-size:13px;color:#2d3748;background:#f7fafc}}
+.note-block textarea:focus{{outline:none;border-color:#90cdf4;background:#fff}}
+.note-block.revision-notes textarea{{border-color:#fc8181;background:#fff5f5}}
+
+/* Revision notes (read-only) */
+.existing-notes{{margin-bottom:12px}}
+.existing-notes .note-label{{font-size:12px;font-weight:600;color:#9b2c2c;margin-bottom:4px}}
+.existing-notes .note-body{{background:#fff5f5;border:1px solid #fc8181;border-radius:6px;padding:8px 10px;font-size:13px;color:#c53030;white-space:pre-wrap}}
+
+/* Actions */
+.actions{{display:flex;flex-wrap:wrap;gap:8px}}
+.btn{{padding:7px 14px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s}}
+.btn:hover{{background:#f7fafc}}
+.btn-approve{{background:#276749;border-color:#276749;color:#fff}}
+.btn-approve:hover{{background:#22543d}}
+.btn-revision{{background:#c53030;border-color:#c53030;color:#fff}}
+.btn-revision:hover{{background:#9b2c2c}}
+.btn-save{{background:#2b6cb0;border-color:#2b6cb0;color:#fff}}
+.btn-save:hover{{background:#2c5282}}
+
+/* Playwright action panel */
+.playwright-panel{{margin-bottom:24px;background:#fffff0;border:1px solid #f6e05e;border-radius:8px;overflow:hidden}}
+.playwright-head{{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;font-size:13px;font-weight:600;color:#744210}}
+.playwright-body{{padding:0 14px 12px;display:none}}
+.playwright-panel.has-action .playwright-body{{display:block}}
+.playwright-panel.has-action .playwright-head{{background:#fefcbf}}
+pre#pending{{margin:8px 0 0;padding:10px;background:#fff;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;white-space:pre-wrap;color:#2d3748;max-height:120px;overflow-y:auto}}
+.btn-clear{{margin-top:8px;font-size:12px;padding:4px 10px}}
+
+/* Dividers */
+.no-items{{padding:12px 16px;color:#a0aec0;font-size:13px;font-style:italic}}
 </style>
 </head>
 <body>
-<header>
-  <h1>游戏设计审批看板</h1>
-  <div><button onclick="reloadRecords()">刷新</button></div>
+<header class="hd">
+  <h1><span class="pulse"></span>游戏设计审批看板</h1>
+  <div class="hd-stats" id="hd-stats"></div>
+  <button class="hd-refresh" onclick="reloadRecords()">刷新</button>
 </header>
-<main>
-  <section class="summary" id="summary"></section>
-  <section class="card">
-    <strong>待写回的 Playwright 操作</strong>
-    <pre id="pending">无</pre>
-  </section>
-  <section class="tree" id="records"></section>
-</main>
+<div class="layout">
+  <nav class="sidebar" id="sidebar"></nav>
+  <main class="main" id="main"></main>
+</div>
 <script>
 const EMBEDDED = {embedded};
 const ACTION_KEY = "allforai.gameDesignApprovalAction";
 let state = EMBEDDED;
+let activeFilter = null;
+
+const STATUS_ORDER = ["revision-requested","in-review","pending","approved"];
+const STATUS_LABELS = {{"revision-requested":"要求修改","in-review":"审核中","pending":"待执行","approved":"已批准"}};
+const STATUS_CHIP = {{"revision-requested":"chip-revision","in-review":"chip-review","pending":"chip-pending","approved":"chip-approved"}};
+const STATUS_BADGE = {{"revision-requested":"badge-revision","in-review":"badge-review","pending":"badge-pending","approved":"badge-approved"}};
+const STATUS_BADGE_S = {{"revision-requested":"badge-s-revision","in-review":"badge-s-review","pending":"badge-s-pending","approved":"badge-s-approved"}};
+const STATUS_BAR = {{"revision-requested":"bar-revision","in-review":"bar-review","pending":"bar-pending","approved":"bar-approved"}};
+const STATUS_DOT = {{"revision-requested":"dot-revision","in-review":"dot-review","pending":"dot-pending","approved":"dot-approved"}};
+const STATUS_SIDEBAR = {{"revision-requested":"s-revision","in-review":"s-review","pending":"s-pending","approved":"s-approved"}};
 
 async function loadApproval() {{
   try {{
-    const response = await fetch("approval-records.json?ts=" + Date.now(), {{ cache: "no-store" }});
-    if (response.ok) state.approval = await response.json();
-  }} catch (error) {{
-    // file:// fallback uses embedded bootstrap state.
-  }}
+    const r = await fetch("approval-records.json?ts="+Date.now(),{{cache:"no-store"}});
+    if (r.ok) state.approval = await r.json();
+  }} catch(e) {{ /* file:// fallback */ }}
+}}
+
+function getNodeId(rec) {{ return rec.node_id || rec.node || ""; }}
+
+function htmlOutputFor(rec) {{
+  if (rec.html_output) return rec.html_output;
+  const nid = getNodeId(rec);
+  const map = {{
+    "core-loop-design":"core-loop.html","character-arc-design":"character-arc.html",
+    "ftue-design":"ftue.html","monetization-design":"monetization.html",
+    "retention-hook-design":"retention-hook.html","meta-game-design":"meta-game.html",
+    "level-design":"level-design.html","puzzle-design":"puzzle-design.html",
+    "progression-curve-design":"progression-curve.html","audio-design":"audio-design.html",
+    "worldbuilding":"worldbuilding.html","art-direction":"art-direction.html",
+    "art-spec-design":"art-spec-design.html","tile-art-gen":"tile-art-review.html",
+    "character-art-gen":"character-art-review.html","environment-art-gen":"environment-art-review.html",
+    "ui-art-gen":"ui-art-review.html","vfx-art-gen":"vfx-art-review.html",
+    "art-qa":"art-qa-report.html","game-design-finalize":"game-design-dashboard.html"
+  }};
+  return map[nid] || null;
 }}
 
 function queueAction(action) {{
   action.created_at = new Date().toISOString();
   localStorage.setItem(ACTION_KEY, JSON.stringify(action));
-  renderPending();
+  updatePlaywrightPanel();
 }}
 
-function getText(id) {{
-  const node = document.getElementById(id);
-  return node ? node.value : "";
-}}
+function getText(id) {{ const el=document.getElementById(id); return el?el.value:""; }}
 
 function approve(nodeId) {{
-  queueAction({{
-    action: "approve",
-    node_id: nodeId,
-    approved_by: "discipline_owner",
-    reviewer_notes: getText("reviewer-" + nodeId),
-    revision_notes: ""
-  }});
+  queueAction({{action:"approve",node_id:nodeId,approved_by:"discipline_owner",
+    reviewer_notes:getText("reviewer-"+nodeId),revision_notes:""}});
 }}
 
 function requestRevision(nodeId) {{
-  queueAction({{
-    action: "request_revision",
-    node_id: nodeId,
-    reviewer_notes: getText("reviewer-" + nodeId),
-    revision_notes: getText("revision-" + nodeId)
-  }});
+  const notes = getText("revision-"+nodeId);
+  if (!notes.trim()) {{ alert("请填写修改意见后再提交"); return; }}
+  queueAction({{action:"request_revision",node_id:nodeId,
+    reviewer_notes:getText("reviewer-"+nodeId),revision_notes:notes}});
 }}
 
 function saveNotes(nodeId) {{
-  queueAction({{
-    action: "save_notes",
-    node_id: nodeId,
-    reviewer_notes: getText("reviewer-" + nodeId),
-    revision_notes: getText("revision-" + nodeId)
-  }});
+  queueAction({{action:"save_notes",node_id:nodeId,
+    reviewer_notes:getText("reviewer-"+nodeId),revision_notes:getText("revision-"+nodeId)}});
 }}
 
-function renderPending() {{
-  document.getElementById("pending").textContent = localStorage.getItem(ACTION_KEY) || "无";
+function clearAction() {{ localStorage.removeItem(ACTION_KEY); updatePlaywrightPanel(); }}
+
+function updatePlaywrightPanel() {{
+  const panel = document.getElementById("playwright-panel");
+  const pre = document.getElementById("pending");
+  const raw = localStorage.getItem(ACTION_KEY);
+  if (!panel) return;
+  if (raw) {{
+    panel.classList.add("has-action");
+    try {{ pre.textContent = JSON.stringify(JSON.parse(raw), null, 2); }}
+    catch(e) {{ pre.textContent = raw; }}
+  }} else {{
+    panel.classList.remove("has-action");
+    pre.textContent = "无待处理操作";
+  }}
+}}
+
+function filterBy(status) {{
+  activeFilter = activeFilter === status ? null : status;
+  render();
+}}
+
+function scrollTo(nodeId) {{
+  const el = document.getElementById("card-"+nodeId);
+  if (el) el.scrollIntoView({{behavior:"smooth",block:"start"}});
+}}
+
+function renderCard(rec) {{
+  const nid = getNodeId(rec);
+  const st = rec.gate_status || "pending";
+  const outputHref = htmlOutputFor(rec);
+  const outputLink = outputHref ? `<a href="${{escapeAttr(outputHref)}}" target="_blank">查看输出 ↗</a>` : "";
+  const reviewers = (rec.discipline_reviewers||[]).join(", ");
+
+  const checklist = (rec.review_checklist||[]).map(item => {{
+    const text = typeof item==="string" ? item : (item.item||"");
+    const checked = typeof item==="object" && item.checked;
+    return `<li class="${{checked?"done":""}}">${{escapeHtml(text)}}</li>`;
+  }}).join("");
+  const checklistHtml = checklist ? `<ul class="checklist">${{checklist}}</ul>` : "";
+
+  const existingRevision = rec.revision_notes ?
+    `<div class="existing-notes"><div class="note-label">⚠ 待修改意见</div><div class="note-body">${{escapeHtml(rec.revision_notes)}}</div></div>` : "";
+
+  const existingReviewer = rec.reviewer_notes ?
+    `<div class="existing-notes" style="margin-bottom:8px"><div class="note-label" style="color:#2b6cb0">📝 评审备注</div><div class="note-body" style="border-color:#90cdf4;background:#ebf8ff;color:#2c5282">${{escapeHtml(rec.reviewer_notes)}}</div></div>` : "";
+
+  return `<div class="card" id="card-${{escapeAttr(nid)}}">
+  <div class="card-bar ${{STATUS_BAR[st]||"bar-pending"}}"></div>
+  <div class="card-body">
+    <div class="card-header">
+      <div class="card-title">${{escapeHtml(nid)}}</div>
+      <span class="status-badge ${{STATUS_BADGE_S[st]||"badge-s-pending"}}">${{STATUS_LABELS[st]||st}}</span>
+    </div>
+    <div class="card-meta">
+      <span>负责人：<strong>${{escapeHtml(rec.discipline_owner||"")}}</strong></span>
+      ${{reviewers ? `<span>评审员：${{escapeHtml(reviewers)}}</span>` : ""}}
+      ${{rec.approved_by&&rec.approved_by.length ? `<span style="color:#276749">✓ 批准人：${{escapeHtml((rec.approved_by||[]).join(", "))}}</span>` : ""}}
+      ${{outputLink}}
+    </div>
+    ${{checklistHtml}}
+    ${{existingRevision}}${{existingReviewer}}
+    <div class="notes-row">
+      <div class="note-block">
+        <label>评审备注</label>
+        <textarea id="reviewer-${{escapeAttr(nid)}}" placeholder="评审员备注（不影响审批状态）">${{escapeHtml(rec.reviewer_notes||"")}}</textarea>
+      </div>
+      <div class="note-block revision-notes">
+        <label>修改意见</label>
+        <textarea id="revision-${{escapeAttr(nid)}}" placeholder="请填写修改意见后点击"要求修改"">${{escapeHtml(rec.revision_notes||"")}}</textarea>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-approve" onclick="approve('${{escapeJs(nid)}}')">✓ 批准</button>
+      <button class="btn btn-revision" onclick="requestRevision('${{escapeJs(nid)}}')">↩ 要求修改</button>
+      <button class="btn btn-save" onclick="saveNotes('${{escapeJs(nid)}}')">💾 保存备注</button>
+    </div>
+  </div>
+</div>`;
 }}
 
 function render() {{
   const records = state.approval.records || [];
-  const counts = records.reduce((acc, r) => {{
-    acc[r.gate_status] = (acc[r.gate_status] || 0) + 1;
-    return acc;
-  }}, {{}});
-  document.getElementById("summary").innerHTML = Object.keys(counts).sort()
-    .map(k => `<span class="pill">${{k}}: ${{counts[k]}}</span>`).join("");
-  document.getElementById("records").innerHTML = renderTree(records);
-  renderPending();
-}}
-
-function renderTree(records) {{
-  const nodes = records.map(record => ({{
-    record,
-    id: record.node_id,
-    parent: findParent(record, records),
-    children: []
-  }}));
-  const byId = new Map(nodes.map(node => [node.id, node]));
-  const roots = [];
-  for (const node of nodes) {{
-    if (node.parent && byId.has(node.parent)) byId.get(node.parent).children.push(node);
-    else roots.push(node);
+  const grouped = {{}};
+  for (const st of STATUS_ORDER) grouped[st] = [];
+  for (const rec of records) {{
+    const st = rec.gate_status || "pending";
+    if (!grouped[st]) grouped[st] = [];
+    grouped[st].push(rec);
   }}
-  return roots.map(node => renderNode(node, 0)).join("");
-}}
 
-function findParent(record, records) {{
-  const workflowNode = (state.workflow.nodes || []).find(node => node.node_id === record.node_id || node.id === record.node_id || node.node === record.node_id);
-  const deps = workflowNode ? (workflowNode.hard_blocked_by || workflowNode.blocked_by || []) : [];
-  const known = new Set(records.map(item => item.node_id));
-  const parent = [...deps].reverse().find(dep => known.has(dep));
-  if (parent) return parent;
-  if (record.node_id.includes("-art-") || record.node_id === "art-qa") return "art-spec-design";
-  if (record.node_id.includes("level") || record.node_id.includes("puzzle")) return "level-design";
-  if (record.node_id.includes("combat") || record.node_id.includes("skill") || record.node_id.includes("balance")) return "combat-system-design";
-  if (record.node_id.includes("narrative") || record.node_id.includes("dialogue") || record.node_id.includes("character-arc") || record.node_id.includes("world")) return "narrative-design";
-  return null;
-}}
+  // Header stats
+  const statsHtml = STATUS_ORDER
+    .filter(st => grouped[st].length)
+    .map(st => `<button class="stat-chip ${{STATUS_CHIP[st]}}" onclick="filterBy('${{st}}')">
+      ${{STATUS_LABELS[st]}} ${{grouped[st].length}}
+    </button>`).join("");
+  document.getElementById("hd-stats").innerHTML = statsHtml;
 
-function renderNode(node, depth) {{
-  const record = node.record;
-  const hasChildren = node.children.length > 0;
-  const shouldOpen = depth === 0 || record.gate_status === "in-review" || record.gate_status === "revision-requested" || node.children.some(child => child.record.gate_status !== "approved");
-  const card = renderCard(record);
-  if (!hasChildren) return card;
-  const childHtml = node.children.map(child => renderNode(child, depth + 1)).join("");
-  return `<details class="branch" ${{shouldOpen ? "open" : ""}}>
-    <summary>
-      <span class="branch-title">${{escapeHtml(record.node_id)}}</span>
-      <span class="status ${{escapeAttr(record.gate_status)}}">${{escapeHtml(record.gate_status)}}</span>
-      <span class="branch-meta">${{node.children.length}} 个关联节点</span>
-    </summary>
-    <div class="branch-body">
-      ${{card}}
-      <div class="children">${{childHtml}}</div>
+  // Sidebar
+  let sidebarHtml = "";
+  for (const st of STATUS_ORDER) {{
+    const items = grouped[st];
+    if (!items.length) continue;
+    sidebarHtml += `<div class="sidebar-section">
+      <div class="sidebar-label">${{STATUS_LABELS[st]}}</div>`;
+    for (const rec of items) {{
+      const nid = getNodeId(rec);
+      sidebarHtml += `<div class="sidebar-item ${{STATUS_SIDEBAR[st]||""}}" onclick="scrollTo('${{escapeJs(nid)}}')" title="${{escapeAttr(nid)}}">
+        <span class="sidebar-dot ${{STATUS_DOT[st]||"dot-pending"}}"></span>
+        <span class="sidebar-name">${{escapeHtml(nid)}}</span>
+      </div>`;
+    }}
+    sidebarHtml += "</div>";
+  }}
+  document.getElementById("sidebar").innerHTML = sidebarHtml;
+
+  // Main cards
+  const toShow = activeFilter
+    ? STATUS_ORDER.filter(st => st === activeFilter)
+    : STATUS_ORDER.filter(st => st !== "approved");
+  const showApproved = !activeFilter || activeFilter === "approved";
+
+  let mainHtml = `<div id="playwright-panel" class="playwright-panel">
+    <div class="playwright-head" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">
+      ⚡ Playwright 待写回操作
     </div>
-  </details>`;
-}}
+    <div class="playwright-body">
+      <pre id="pending">无待处理操作</pre>
+      <button class="btn btn-save btn-clear" onclick="clearAction()">清除</button>
+    </div>
+  </div>`;
 
-function renderCard(record) {{
-    const checklist = (record.review_checklist || []).map(item =>
-      `<li><input type="checkbox" ${{item.checked ? "checked" : ""}} disabled><span>${{escapeHtml(item.item || item)}}</span></li>`
-    ).join("");
-    const output = record.html_output ? `<a href="${{escapeAttr(record.html_output)}}" target="_blank">打开节点输出</a>` : "";
-    return `<article class="card" data-node-id="${{escapeAttr(record.node_id)}}">
-      <h2>${{escapeHtml(record.node_id)}}</h2>
-      <div class="meta"><span class="status ${{escapeAttr(record.gate_status)}}">${{escapeHtml(record.gate_status)}}</span>
-      · 负责人：${{escapeHtml(record.discipline_owner || "")}} ${{output}}</div>
-      <ul class="checks">${{checklist}}</ul>
-      <label>评审备注<textarea id="reviewer-${{escapeAttr(record.node_id)}}">${{escapeHtml(record.reviewer_notes || "")}}</textarea></label>
-      <label>修改意见<textarea id="revision-${{escapeAttr(record.node_id)}}">${{escapeHtml(record.revision_notes || "")}}</textarea></label>
-      <div class="actions">
-        <button onclick="saveNotes('${{escapeJs(record.node_id)}}')">保存备注</button>
-        <button class="primary" onclick="approve('${{escapeJs(record.node_id)}}')">批准</button>
-        <button class="warn" onclick="requestRevision('${{escapeJs(record.node_id)}}')">要求修改</button>
-      </div>
-    </article>`;
+  for (const st of toShow) {{
+    const items = grouped[st];
+    if (!items.length) continue;
+    const badgeCls = STATUS_BADGE[st] || "badge-pending";
+    mainHtml += `<div class="section-head">
+      <h2>${{{{"revision-requested":"⚠ 需要修改","in-review":"🔍 审核中","pending":"⏳ 待执行","approved":"✅ 已批准"}}[st]||st}}</h2>
+      <span class="section-badge ${{badgeCls}}">${{items.length}} 个节点</span>
+    </div>
+    <div class="cards">${{items.map(renderCard).join("")}}</div>`;
+  }}
+
+  if (showApproved && !activeFilter && grouped["approved"].length) {{
+    mainHtml += `<details style="margin-bottom:20px"><summary style="cursor:pointer;font-weight:600;color:#276749;padding:8px 0">✅ 已批准节点 (${{grouped["approved"].length}})</summary>
+      <div class="cards" style="margin-top:10px">${{grouped["approved"].map(renderCard).join("")}}</div>
+    </details>`;
+  }}
+
+  document.getElementById("main").innerHTML = mainHtml;
+  updatePlaywrightPanel();
 }}
 
 async function reloadRecords() {{
@@ -235,20 +395,41 @@ async function reloadRecords() {{
   render();
 }}
 
-function escapeHtml(value) {{
-  return String(value).replace(/[&<>"']/g, c => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c]));
-}}
-function escapeAttr(value) {{ return escapeHtml(value); }}
-function escapeJs(value) {{ return String(value).replace(/['\\\\]/g, "\\\\$&"); }}
+function escapeHtml(v) {{ return String(v).replace(/[&<>"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c])); }}
+function escapeAttr(v) {{ return escapeHtml(v); }}
+function escapeJs(v) {{ return String(v).replace(/['\\\\]/g,"\\\\$&"); }}
 
+// Use in-memory store so Playwright works with file:// (no localStorage needed)
+let _pendingAction = null;
 window.__approvalDashboard = {{
-  getPendingAction: () => localStorage.getItem(ACTION_KEY),
-  clearPendingAction: () => {{ localStorage.removeItem(ACTION_KEY); renderPending(); }},
+  pendingAction: null,
+  getPendingAction: () => _pendingAction ? JSON.stringify(_pendingAction) : null,
+  clearPendingAction: () => {{ _pendingAction = null; window.__approvalDashboard.pendingAction = null; updatePlaywrightPanel(); }},
   reload: reloadRecords
 }};
 
+// Override queueAction to also set in-memory store
+const _origQueue = queueAction;
+function queueAction(action) {{
+  action.created_at = new Date().toISOString();
+  _pendingAction = action;
+  window.__approvalDashboard.pendingAction = action;
+  // Also try localStorage for web-server mode
+  try {{ localStorage.setItem(ACTION_KEY, JSON.stringify(action)); }} catch(e) {{}}
+  updatePlaywrightPanel();
+}}
+function clearAction() {{
+  _pendingAction = null;
+  window.__approvalDashboard.pendingAction = null;
+  try {{ localStorage.removeItem(ACTION_KEY); }} catch(e) {{}}
+  updatePlaywrightPanel();
+}}
+
+// file:// mode: use embedded data only, no polling
+// http:// mode: fetch live updates every 3s
+const IS_FILE = location.protocol === "file:";
 reloadRecords();
-setInterval(reloadRecords, 3000);
+if (!IS_FILE) setInterval(reloadRecords, 3000);
 </script>
 </body>
 </html>

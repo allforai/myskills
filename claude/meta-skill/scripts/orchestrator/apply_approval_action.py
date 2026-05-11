@@ -23,7 +23,11 @@ def main() -> int:
         raise SystemExit("action_json missing node_id")
 
     records = data.get("records", [])
-    record = next((item for item in records if item.get("node_id") == node_id), None)
+    # Support both "node_id" (v2 schema) and "node" (legacy v1 schema)
+    record = next(
+        (item for item in records if item.get("node_id") == node_id or item.get("node") == node_id),
+        None,
+    )
     if record is None:
         raise SystemExit(f"approval record not found: {node_id}")
 
