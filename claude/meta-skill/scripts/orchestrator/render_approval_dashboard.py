@@ -390,6 +390,10 @@ function render() {{
 
 async function reloadRecords() {{
   await loadApproval();
+  const focused = document.activeElement;
+  if (focused && (focused.tagName === "TEXTAREA" || focused.tagName === "INPUT")) {{
+    return;
+  }}
   render();
 }}
 
@@ -397,8 +401,8 @@ function escapeHtml(v) {{ return String(v).replace(/[&<>"']/g,c=>({{'&':'&amp;',
 function escapeAttr(v) {{ return escapeHtml(v); }}
 function escapeJs(v) {{ return String(v).replace(/['\\\\]/g,"\\\\$&"); }}
 
-reloadRecords();
-setInterval(reloadRecords, 5000);
+render();
+setInterval(reloadRecords, 15000);
 </script>
 </body>
 </html>
