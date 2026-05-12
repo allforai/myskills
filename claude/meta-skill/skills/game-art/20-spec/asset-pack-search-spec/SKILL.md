@@ -9,13 +9,14 @@ description: Internal bundled meta-skill module for game-art/20-spec/asset-pack-
 
 ## Overview
 
-Defines how to search for existing 2D and 3D art assets or asset packs. It
-captures search queries, target platforms, candidate result fields, ranking
-criteria, budget, license requirements, style fit, and downstream adaptation
-needs.
+Defines how to search local libraries, user-provided bundles, existing 2D and
+3D art assets, web results, or asset packs. It captures source order, search
+queries, target platforms, candidate result fields, ranking criteria, budget,
+license requirements, style fit, and downstream adaptation needs.
 
 This skill specifies the search and result contract. It does not treat found
-assets as usable until license/provenance QA passes.
+assets as usable until license/provenance QA passes and image outputs are
+registered into the accepted image manifest.
 
 ## Input Contract
 
@@ -33,16 +34,16 @@ Writes:
 - `.allforai/game-design/art/sourcing/asset-pack-search-report.json`
 
 Search specs must include `search_id`, `asset_group`, `queries`, `platforms`,
-`required_asset_types`, `source_dimension`, `style_constraints`,
-`runtime_format_preferences`, `production_source_preferences`,
+`source_order`, `required_asset_types`, `source_dimension`,
+`style_constraints`, `runtime_format_preferences`, `production_source_preferences`,
 `license_requirements`, `budget`, `ranking_weights`, `rejection_rules`, `state`,
 and `consumer_refs`.
 
-Candidate results must include `candidate_id`, `title`, `source_url`,
-`source_platform`, `author_or_publisher`, `license_claim`, `price`,
-`formats`, `source_dimension`, `asset_count`, `preview_refs`, `style_match_score`,
-`runtime_fit_score`, `adaptation_cost`, `license_risk`, `provenance_status`,
-`selected`, and `next_skill`.
+Candidate results must include `candidate_id`, `title`, `source_kind`,
+`source_url`, `source_platform`, `local_path`, `author_or_publisher`,
+`license_claim`, `price`, `formats`, `source_dimension`, `asset_count`,
+`preview_refs`, `style_match_score`, `runtime_fit_score`, `adaptation_cost`,
+`license_risk`, `provenance_status`, `selected`, and `next_skill`.
 
 Allowed `source_dimension` values: `2d`, `3d`, `mixed`, `audio_visual`,
 `unknown`.
@@ -55,8 +56,9 @@ Allowed states: `draft`, `searched`, `candidates_ranked`, `needs_revision`,
 `blocked_by_no_candidates`, `blocked_by_search_access`.
 
 Downstream consumers: `asset-license-provenance-qa`,
-`existing-asset-adaptation-spec`, `asset-pack-integration-qa`,
-`artifact-handoff-contract`, and `engine-ready-art-output-contract`.
+`existing-asset-adaptation-spec`, `image-generation-contract`,
+`asset-pack-integration-qa`, `artifact-handoff-contract`, and
+`engine-ready-art-output-contract`.
 
 ## Invocation Contract
 
@@ -83,10 +85,22 @@ format list, preview evidence, price/budget fit, style fit, adaptation estimate,
 and license QA route. No candidate may become selected for runtime integration
 without `asset-license-provenance-qa`.
 
-Common platforms may include official marketplaces, open asset libraries,
-creator stores, project-local asset folders, and user-provided bundles. Search
-results must record exact source and retrieval date if discovered online by a
-caller with web access.
+Search order:
+
+```text
+project-local asset folders
+-> user-provided bundles
+-> approved/cached studio libraries
+-> configured marketplaces or open asset libraries
+-> wider web search if allowed
+```
+
+Do not perform wider web or LLM generation before local/user/approved library
+sources have either produced no suitable candidate or been explicitly skipped
+by source policy. Common platforms may include official marketplaces, open asset
+libraries, creator stores, project-local asset folders, and user-provided
+bundles. Search results must record exact source and retrieval date if
+discovered online by a caller with web access.
 
 3D existing assets are valid search targets when they are used as production
 sources for 2D output. Typical candidates include `.blend`, `.fbx`, `.glb`,
@@ -120,6 +134,12 @@ Repair routing: bad queries repair here; no candidates route to
 `asset-source-strategy-spec`; unclear license routes to
 `asset-license-provenance-qa`; runtime format gaps route to
 `engine-export-profile`.
+
+Selected bitmap candidates must be passed to
+`image-generation-contract` using `register_searched_or_existing` mode after
+license/provenance and adaptation evidence are available. Downstream skills may
+consume only `.allforai/game-design/art/image-generation/accepted-image-manifest.json`
+entries with `consumer_ready: true`.
 
 ## Completion Conditions
 

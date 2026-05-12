@@ -56,7 +56,7 @@ Layer numbers indicate directory organization and default execution order for ne
 | `20-spec` | `vfx-spec` | VFX semantics, gameplay events, presentation layer, dimension, implementation mode, timing, readability budgets. |
 | `20-spec` | `visual-style-tokens` | Shared palette, shape, line, material, camera, typography, and motion tokens. |
 | `20-spec` | `frame-animation-spec` | Frame-animation vocabulary, frame counts, timing, anchors, loop rules, acceptance. |
-| `30-generate` | `image-generation-contract` | Shared LLM image request, prompt, output, visual acceptance, repair, and fallback contract. |
+| `30-generate` | `image-generation-contract` | Shared bitmap acquisition request, prompt/search/register, output, visual acceptance, repair, and fallback contract. |
 | `30-generate` | `background-generation` | Background scene prompts, layers, parallax/depth, generated images, validation. |
 | `30-generate` | `prop-generation` | Reusable prop specs, generated images/models/placeholders, variants, validation. |
 | `30-generate` | `portrait-generation` | Character portraits, busts, dialogue/emotion variants, generated images, QA. |
@@ -176,7 +176,8 @@ Art methods should be placed where they are executed:
 - visual consistency rules: `20-spec/visual-style-tokens`;
 - decomposition and runtime fit: `20-spec/2d-layering-spec`,
   `20-spec/engine-export-profile`, and asset-specific `20-spec/*` skills;
-- LLM image prompt/repair/feedback loop: `30-generate/image-generation-contract`;
+- bitmap acquisition prompt/search/register/repair/feedback loop:
+  `30-generate/image-generation-contract`;
 - concrete asset generation: asset-specific `30-generate/*` skills;
 - preview, atlas, style, license, import, and engine handoff validation:
   `40-qa/*` skills.
@@ -212,6 +213,20 @@ Rules:
 
 Downstream implementation must reference assets through registry IDs and
 manifests, not hardcoded paths. Hardcoded asset paths are a contract violation.
+
+Bitmap source closure:
+- asset sourcing must check `local_asset_library`, `user_provided_asset`,
+  approved/cached libraries, and allowed web or marketplace sources before LLM
+  image generation unless source policy explicitly skips them;
+- all generated, searched, user-provided, adapted, local, or 3D-rendered bitmap
+  outputs must be registered through
+  `30-generate/image-generation-contract`;
+- downstream art/UI/VFX/atlas/animation/runtime skills may consume only
+  `.allforai/game-design/art/image-generation/accepted-image-manifest.json`
+  entries with `consumer_ready: true`, not raw PNG/JPG/WebP paths;
+- when a downstream validation fails because of an upstream image, the owning
+  source/generation/adaptation skill must repair or replace that image and then
+  re-run the downstream consumer validation that originally failed.
 
 Program-facing exit artifacts:
 

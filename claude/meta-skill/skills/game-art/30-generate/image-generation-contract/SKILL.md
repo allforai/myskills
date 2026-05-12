@@ -12,16 +12,17 @@ description: Internal bundled meta-skill module for game-art/30-generate/image-g
 
 ## Overview
 
-This sub-skill defines the shared contract for LLM image generation in game art
-and game UI pipelines. It treats image generation as an unreliable upstream that
-must be constrained, validated, repaired, and recorded before downstream skills
-can consume the result.
+This sub-skill defines the shared contract for LLM image generation and other
+bitmap-image acquisition in game art and game UI pipelines. It treats every
+image upstream as unreliable until it is constrained, validated, repaired, and
+recorded before downstream skills can consume the result.
 
 It also defines the feedback loop from downstream skills back to image
-generation. If a later skill fails because an image is cropped, merged,
+acquisition. If a later skill fails because an image is cropped, merged,
 misaligned, unreadable, wrong style, wrong scale, or otherwise unusable, the
 later skill must report the defect against the original image request so the
-image can be regenerated instead of forcing downstream workarounds.
+image can be regenerated, replaced, adapted, or rejected instead of forcing
+downstream workarounds.
 
 This skill does not decide which asset should exist. Asset-specific skills such
 as `icon-generation`, `tileset-generation`, `character-layer-sheet`,
@@ -31,7 +32,8 @@ asset purpose and then use this contract for image requests and acceptance.
 
 ## Scope
 
-Use this skill whenever a downstream skill needs AI-generated bitmap output:
+Use this skill whenever a downstream skill needs bitmap output from any
+non-runtime source:
 - icons,
 - tilesets,
 - UI mockups,
@@ -42,6 +44,17 @@ Use this skill whenever a downstream skill needs AI-generated bitmap output:
 - particle textures,
 - trail strip textures,
 - preview or reference images.
+
+Allowed upstream image sources:
+- `llm_image_generation`,
+- `image_edit`,
+- `web_or_marketplace_search`,
+- `existing_asset_pack`,
+- `user_provided_asset`,
+- `3d_assisted_render`,
+- `local_asset_library`,
+- `local_existing_asset`,
+- `hybrid`.
 
 Out of scope:
 - choosing gameplay semantics,
@@ -68,6 +81,7 @@ Out of scope:
 | `.allforai/game-design/asset-registry.json` | `asset_id`, `file_prefix`, paths, state | Use caller-provided naming. |
 | `.allforai/game-design/ui/ui-registry.json` | UI screen/component refs | Use caller-provided UI context. |
 | Existing generated images | validation and repair source | Register or validate existing image. |
+| Search/adaptation outputs | candidate image paths, license and adaptation reports | Validate as acquired images before downstream consumption. |
 | Caller generation capabilities | image model, transparent background support, vision validator | Return `FAILED_VALIDATION` if required generation or validation cannot run. |
 
 ## Request Schema
@@ -83,7 +97,8 @@ Every image-producing skill must normalize image requests to this shape:
   "purpose": "skill_icon | tileset | ui_mockup | layer_sheet | pose_reference | sprite_vfx | decal | particle_texture | trail_texture | background | prop | portrait | item_art | frame_animation | expression_set | preview",
   "generation_profile": {
     "task_type": "icon | tileset | ui_mockup | layer_sheet | pose_reference | sprite_vfx | decal | particle_texture | trail_texture | background | prop | portrait | item_art | frame_animation | expression_set | preview",
-    "model_class": "image_generation | image_edit | multimodal_validate | spec_only",
+    "source_kind": "llm_image_generation | image_edit | web_or_marketplace_search | existing_asset_pack | user_provided_asset | 3d_assisted_render | local_asset_library | local_existing_asset | hybrid",
+    "model_class": "image_generation | image_edit | multimodal_validate | search_register | render_register | spec_only",
     "recommended_model": "<runtime-selected model or capability alias>",
     "prompt_template": "icon_prompt | tileset_prompt | ui_mockup_prompt | layer_sheet_prompt | pose_reference_prompt | sprite_vfx_prompt | decal_prompt | particle_texture_prompt | trail_texture_prompt | background_prompt | prop_prompt | portrait_prompt | item_art_prompt | frame_animation_prompt | expression_set_prompt | preview_prompt",
     "output_constraints": {
@@ -130,8 +145,19 @@ Every image-producing skill must normalize image requests to this shape:
     "downstream_feedback": {
       "enabled": true,
       "accepted_consumers": ["<skill name>"],
+      "consumer_input_contract": "<path or schema ref>",
+      "consumer_required_checks": [],
+      "consumer_ready_gate": true,
       "reopen_on": ["CROPPED_SUBJECT", "MISSING_REQUIRED_PART", "STYLE_DRIFT"]
     }
+  },
+  "provenance": {
+    "source_kind": "llm_image_generation",
+    "source_url": null,
+    "source_candidate_id": null,
+    "license_report_ref": null,
+    "adaptation_manifest_ref": null,
+    "generation_report_ref": ".allforai/game-design/art/image-generation/image-generation-report.json"
   }
 }
 ```
@@ -197,11 +223,68 @@ Common negative constraints:
 | `.allforai/game-design/art/image-generation/image-request-manifest.json` | yes | Normalized image requests, prompts, outputs, states. | image-producing skills, QA. |
 | `.allforai/game-design/art/image-generation/image-generation-report.json` | yes | Validation, repair attempts, failures, fallbacks. | diagnostics and QA. |
 | `.allforai/game-design/art/image-generation/image-feedback-report.json` | when downstream fails | Downstream defect reports mapped back to image requests. | image-producing skills and repair loops. |
-| Requested image paths | when generated | Bitmap outputs owned by caller-specific skill. | downstream asset/UI/VFX pipelines. |
+| `.allforai/game-design/art/image-generation/accepted-image-manifest.json` | yes when images are accepted | Only downstream-consumable manifest for generated, searched, user-provided, adapted, local, or 3D-rendered images. | downstream asset/UI/VFX pipelines. |
+| Requested image paths | when generated or registered | Bitmap outputs owned by caller-specific skill. | accepted-image manifest only; downstream skills must not consume raw PNG paths directly. |
 
 UI-producing callers may write UI-owned images under `.allforai/game-design/ui/`
 but should still record the request in the shared manifest or an equivalent
 caller-local manifest that follows this schema.
+
+## Accepted Image Manifest Gate
+
+`accepted-image-manifest.json` is the only allowed handoff from image upstreams
+to downstream asset, UI, VFX, atlas, animation, and engine-export skills.
+Downstream skills must not consume raw PNG paths directly.
+
+Every accepted manifest entry must include:
+
+```json
+{
+  "schema_version": "1.0",
+  "request_id": "ico_fireball_primary",
+  "asset_id": "fireball",
+  "file_prefix": "ico_fireball",
+  "source_kind": "llm_image_generation | image_edit | web_or_marketplace_search | existing_asset_pack | user_provided_asset | 3d_assisted_render | local_asset_library | local_existing_asset | hybrid",
+  "accepted_image_path": ".allforai/game-design/art/icons/ico_fireball.png",
+  "accepted_manifest_path": ".allforai/game-design/art/image-generation/accepted-image-manifest.json",
+  "consumer_skill": "game-art/icon-generation",
+  "consumer_input_contract": "game-art/30-generate/icon-generation/SKILL.md#Input Contract",
+  "consumer_ready": true,
+  "acceptance_state": "accepted | needs_revision | rejected | blocked_by_license | blocked_by_validation | blocked_by_downstream_validation",
+  "deterministic_checks": [],
+  "visual_checks": [],
+  "provenance": {
+    "source_url": null,
+    "source_candidate_id": null,
+    "license_report_ref": null,
+    "adaptation_manifest_ref": null,
+    "generation_report_ref": ".allforai/game-design/art/image-generation/image-generation-report.json"
+  },
+  "repair_history": [],
+  "downstream_revalidation": {
+    "required": false,
+    "consumer_report_path": null,
+    "last_failed_defect": null,
+    "rerun_status": "not_required | passed | failed | blocked"
+  }
+}
+```
+
+`consumer_ready` may be true only when all of the following are true:
+- the accepted image path exists and matches the declared format/size/alpha
+  policy;
+- deterministic and visual validation pass for the declared purpose;
+- the entry names the downstream consumer skill and its input contract;
+- license/provenance status passes for searched, marketplace, pack,
+  user-provided, or local-existing assets;
+- adaptation or render reports pass when the image came from existing assets or
+  3D-assisted production;
+- after any downstream feedback, the pipeline must re-run the downstream
+  consumer validation that originally failed and record the result here.
+
+If any condition cannot be checked, set `consumer_ready: false` and return
+`FAILED_VALIDATION`, `UPSTREAM_DEFECT`, or the specific blocked state. Do not
+substitute a weaker static inspection for a required downstream validation.
 
 ## Invocation Contract
 
@@ -232,6 +315,7 @@ Supported modes:
 | `normalize_only` | Validate and normalize image requests without generation. |
 | `normalize_generate_validate` | Normalize, generate/register, validate, repair, and report. |
 | `validate_existing` | Validate existing image outputs against requests. |
+| `register_searched_or_existing` | Register searched, marketplace, user-provided, adapted, local, or 3D-rendered image outputs, then validate them into the accepted-image manifest. |
 | `repair_request` | Produce revised prompt constraints for failed requests. |
 | `process_downstream_feedback` | Read downstream defects, classify root cause, reopen image requests when needed. |
 
@@ -248,6 +332,10 @@ Run deterministic checks:
 6. Negative prompt or `must_not_include` exists.
 7. `max_repair_attempts` is finite.
 8. Generated outputs are never marked `approved` without validation.
+9. Accepted entries are written only through `accepted-image-manifest.json`.
+10. `consumer_ready` is false unless the declared downstream consumer and input
+    contract are present.
+11. Non-LLM sources include license/provenance and adaptation/render evidence.
 
 Run visual validation when images exist:
 1. Subject matches the request purpose.
@@ -261,8 +349,8 @@ Run visual validation when images exist:
 
 ## Downstream Feedback Loop
 
-Downstream skills must not silently compensate for unusable generated images.
-If a consumer fails after using a generated image, it must write a feedback item
+Downstream skills must not silently compensate for unusable upstream images.
+If a consumer fails after using an accepted image, it must write a feedback item
 that identifies whether the root cause belongs to the image request, downstream
 spec, runtime/tooling, or unavailable capability.
 
@@ -281,7 +369,7 @@ Feedback item shape:
     "evidence": ["<path or structured note>"]
   },
   "root_cause": "image_generation | prompt_contract | downstream_spec | runtime_tooling | unknown",
-  "requested_action": "regenerate_image | revise_prompt | revise_downstream_spec | keep_with_warning"
+  "requested_action": "regenerate_image | replace_source_candidate | adapt_existing_asset | revise_prompt | revise_downstream_spec | keep_with_warning"
 }
 ```
 
@@ -290,6 +378,12 @@ Root-cause rules:
   request was sound. Regenerate with the same or slightly tightened prompt.
 - `prompt_contract`: request was underspecified or missing a negative
   constraint. Revise prompt contract before regenerating.
+- `source_selection`: searched, pack, user-provided, or local source cannot
+  satisfy style/runtime/license/quality constraints. Return to
+  `asset-pack-search-spec` or `asset-source-strategy-spec`.
+- `asset_adaptation`: source image is usable but target slicing, scale, alpha,
+  pivot, atlas, style normalization, or metadata is wrong. Return to
+  `existing-asset-adaptation-spec`.
 - `downstream_spec`: image is valid but downstream expectations were wrong.
   Do not regenerate; repair the downstream spec.
 - `runtime_tooling`: image is valid but import/render tooling failed. Do not
@@ -305,6 +399,12 @@ original request:
 5. Re-run image validation.
 6. Re-run the downstream consumer validation that originally failed.
 7. Stop after the combined image/downstream repair budget is exhausted.
+
+When feedback root cause is `source_selection`, `license_provenance`, or
+`asset_adaptation`, do not call image generation by default. Reopen the selected
+candidate or adaptation entry, repair through the owning source/adaptation skill,
+then re-register the image here and re-run the downstream consumer validation
+that originally failed.
 
 The repair budget is shared across the image request and its downstream
 consumer. A default budget is 3 image attempts plus 2 downstream revalidation
@@ -322,16 +422,19 @@ If validation fails:
 
 If still failing, return `FAILED_VALIDATION` with issue evidence and repair
 targets. Spec-only or placeholder artifacts may be written for debugging, but
-must not be reported as accepted generation output.
+must not be reported as accepted generation output or written with
+`consumer_ready: true`.
 
 Do not ask for human reference images or human approval.
 
 ## Completion Conditions
 
-Return `COMPLETED` only when normalized request manifests and reports validate,
-and every required generated image passes acceptance.
+Return `COMPLETED` only when normalized request manifests, reports, and
+`accepted-image-manifest.json` validate, and every required image is
+`consumer_ready: true` for its declared downstream consumer.
 
 Return `FAILED_VALIDATION` when image generation or vision validation is
-unavailable for required output, or when generated images fail acceptance after
+unavailable for required generated output, when searched/existing assets lack
+license/provenance or adaptation evidence, or when images fail acceptance after
 the repair budget. Return `UPSTREAM_DEFECT` when a request lacks required fields
 and cannot be normalized.

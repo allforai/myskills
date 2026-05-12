@@ -10,8 +10,9 @@ description: Internal bundled meta-skill module for game-art/10-design/asset-sou
 ## Overview
 
 Chooses the source strategy for each art asset or asset group. It decides
-whether to use LLM image generation, 3D-assisted rendering, existing asset
-packs, user-provided files, adapted existing assets, or mixed sourcing.
+whether to use local/project asset libraries, user-provided files, existing
+asset packs, web or marketplace search, LLM image generation, 3D-assisted
+rendering, adapted existing assets, or mixed sourcing.
 
 Use this after `art-direction-input-contract` and before asset search,
 generation, or 3D-assisted production.
@@ -32,13 +33,15 @@ Writes:
 - `.allforai/game-design/art/sourcing/asset-source-strategy-report.json`
 
 Strategy entries must include `asset_id`, `asset_group`, `asset_kind`,
-`source_strategy`, `selection_reason`, `license_requirements`,
-`quality_requirements`, `adaptation_requirements`, `fallback_strategy`,
-`downstream_skill_refs`, `handoff_requirements`, `state`, and `consumer_refs`.
+`source_strategy`, `source_priority_chain`, `selection_reason`,
+`license_requirements`, `quality_requirements`, `adaptation_requirements`,
+`fallback_strategy`, `downstream_skill_refs`, `handoff_requirements`, `state`,
+and `consumer_refs`.
 
-Allowed source strategies: `llm_image_generation`, `3d_assisted_render`,
-`existing_asset_pack`, `existing_3d_source_asset`, `user_provided_asset`,
-`adapt_existing_asset`, `hybrid`, `placeholder_only`.
+Allowed source strategies: `local_asset_library`, `user_provided_asset`,
+`existing_asset_pack`, `web_or_marketplace_search`, `llm_image_generation`,
+`3d_assisted_render`, `existing_3d_source_asset`, `adapt_existing_asset`,
+`hybrid`, `placeholder_only`.
 
 Allowed states: `draft`, `validated`, `needs_revision`,
 `blocked_by_preferences`, `blocked_by_license_policy`, `blocked_by_budget`.
@@ -72,10 +75,31 @@ strategy, license requirements, quality gates, adaptation needs, and downstream
 routes. Existing packs must route through license/provenance QA before
 adaptation or runtime output.
 
+Default priority chain:
+
+```text
+local_asset_library
+-> user_provided_asset
+-> existing_asset_pack
+-> web_or_marketplace_search
+-> llm_image_generation
+-> 3d_assisted_render | hybrid
+```
+
+Only skip an earlier step when the project explicitly forbids that source,
+the required asset kind cannot be satisfied by that source, or the source is
+unavailable. Record every skipped step and reason in `source_priority_chain`.
+
 Strategy rules:
 
 - Use `existing_asset_pack` for broad, coherent sets such as UI packs, tilesets,
   icons, VFX packs, or complete character packs when license and style fit.
+- Use `local_asset_library` before web search or LLM generation when project
+  files, shared studio libraries, or cached approved packs are available.
+- Use `user_provided_asset` before web search or LLM generation when the user
+  has provided reference or production-ready assets with usable rights.
+- Use `web_or_marketplace_search` when no local/user asset satisfies the
+  contract and the source policy allows online discovery.
 - Use `existing_3d_source_asset` when a licensed model, scene, material, or
   animation pack can accelerate Blender-based render-to-2D production.
 - Use `adapt_existing_asset` when assets are available but need resizing,
@@ -101,6 +125,11 @@ Repair routing: unclear style/source preference returns to
 `art-direction-input-contract`; missing assets route to `asset-registry`;
 license policy conflicts route to `asset-license-provenance-qa`; unavailable
 tools route to `production-tool-capability-registry`.
+
+All source paths that produce bitmap images must ultimately route through
+`image-generation-contract` in registration mode so the downstream consumer
+receives `.allforai/game-design/art/image-generation/accepted-image-manifest.json`
+entries with `consumer_ready: true`, not raw file paths.
 
 ## Completion Conditions
 
