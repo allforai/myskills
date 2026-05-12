@@ -163,6 +163,11 @@ Each platform has distinct test runners, simulators, and failure modes.
 - `test-verify-web` — Next.js/React/Vue: `vitest` + Playwright E2E
 - `test-verify-mobile` — Flutter: `flutter test` + `flutter test integration_test/`; React Native: `jest` + Detox; iOS: `xcodebuild test`; Android: `./gradlew connectedAndroidTest`
 
+For Android/Kotlin/Compose apps with user-facing screens, `connectedAndroidTest` is
+the UI automation acceptance path, not an optional manual scenario. If no device or
+emulator is connected, report `BLOCKED_ENV` and preserve the failed `adb devices`
+evidence. Do not mark the UI layer accepted by writing manual test steps.
+
 This ensures no module is silently skipped and enables parallel execution.
 
 ### Split per Test Layer

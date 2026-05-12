@@ -1626,7 +1626,7 @@ has no verification node, the workflow is incomplete.
 | mobile (Flutter) | `flutter test integration_test/` on simulator/emulator | e2e-test-{name} |
 | mobile (React Native) | Detox or Maestro | e2e-test-{name} |
 | mobile (iOS/SwiftUI) | XCUITest via `xcodebuild test` | e2e-test-{name} |
-| mobile (Android/Kotlin) | Espresso via `./gradlew connectedAndroidTest` | e2e-test-{name} |
+| mobile (Android/Kotlin/Compose) | Espresso or Compose UI test via `./gradlew connectedAndroidTest`; optional Maestro only when the project already uses it | android-ui-verify or e2e-test-{name} |
 | desktop (Tauri v2) | `tauri-driver` (WebDriver binary) + WebdriverIO with `wdio-tauri-service` for UI E2E; `cargo test` for Rust IPC unit tests. ⚠️ Playwright does NOT work with Tauri v2 — use tauri-driver. Run Step 2.7 WebSearch for current tauri-driver setup if LLM confidence < 70% | e2e-test-{name} |
 | desktop (Electron) | Playwright via `electron-playwright-helpers` (drives the Electron webview) | e2e-test-{name} |
 | game client (Unity) | Unity Test Runner (EditMode + PlayMode) via `unity -runTests -testPlatform EditMode/PlayMode` | game-test-{name} |
@@ -1652,6 +1652,31 @@ has no verification node, the workflow is incomplete.
 | library / SDK | Language native test runner only — `npm test` (Jest/Vitest), `cargo test`, `pytest`, `mvn test`, `go test ./...`. No E2E node needed (no running server). No Playwright/Detox. | lib-test-{name} |
 | embedded / firmware | `pio test` (PlatformIO) for on-device/simulator unit tests; physical hardware tests documented as manual test scenarios; no HTTP/REST tests | firmware-test-{name} |
 | shared / infra | covered by consumers' tests | no separate node needed |
+
+**Mobile UI automation hard rule**: For every mobile app module with user-facing screens,
+bootstrap MUST generate a dedicated platform UI automation node in addition to unit tests.
+For Android/Kotlin/Compose, create `android-ui-verify` (or a more specific
+`e2e-test-{module}`) that runs `./gradlew connectedAndroidTest` and collects test XML,
+screenshots, and logcat. Do not hide Android UI automation inside generic `test-verify`
+unless that node explicitly runs `connectedAndroidTest` and emits Android UI evidence.
+
+**No manual fallback for automatable mobile UI**: If no Android device/emulator is
+available, the Android UI node MUST return `BLOCKED_ENV` / `FAILED_ENV` with the missing
+device or emulator evidence. It MUST NOT replace the automated node with a manual
+scenario checklist. Manual scenarios may be extra documentation only, never acceptance.
+
+**Android UI node minimum contract**:
+
+- Inputs: app module path, built debug APK or Gradle install target, app-design screen
+  map when present, product concept must-have flows.
+- Commands: `adb devices`, `./gradlew connectedAndroidTest` or module-specific
+  connected test task, plus screenshot/logcat collection when the runner starts.
+- Outputs: `.allforai/verify/android-ui-test-report.json`,
+  `.allforai/verify/android-ui-screenshots/`, and
+  `.allforai/verify/android-logcat.txt`.
+- Acceptance: at least one automated UI path covers launch/navigation for each required
+  manager surface or must-have user flow. If the runtime cannot launch, expose the
+  failure as a blocking validation result.
 
 **Playwright CANNOT test native mobile apps.** Never assign Playwright to a Flutter/iOS/Android
 module. This is a hard constraint — violating it silently passes CI while leaving mobile untested.
