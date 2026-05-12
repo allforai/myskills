@@ -65,6 +65,7 @@ into required, optional, and inferred values.
 | `.allforai/game-design/art-style-guide.json` | `art_overview.dimension`, `art_overview.style`, `art_overview.animation_system` | Return `UPSTREAM_DEFECT`; cannot choose animation branch. |
 | `.allforai/game-design/art-pipeline-config.json` | `character.rig` for 2D, or `model_3d.anim_source` for 3D | Return `UPSTREAM_DEFECT`; cannot choose rig strategy. |
 | `.allforai/game-design/art-asset-inventory.json` | `assets[].asset_id`, `assets[].type`, `assets[].name` | Return `UPSTREAM_DEFECT`; cannot select animated assets. |
+| `.allforai/game-design/art/env/2d-animation-toolchain-report.json` | `status`, required tool entries, validation evidence, blocked downstream skills | Return `blocked_by_missing_toolchain` for 2D skeletal animation when required tool evidence is missing. |
 
 ### Required per-asset fields
 
@@ -89,6 +90,7 @@ concept-contract, or node-spec context:
 | Existing character reference image | silhouette, costume, proportions | Generate prompt/spec only; do not require image. |
 | Existing layer sheet | part boundaries | Reuse if filenames match `file_prefix`; otherwise generate new spec. |
 | Existing runtime/engine info | DragonBones runtime, Cocos, Phaser, Unity, Godot | Use neutral transform schema and browser/scripted preview. |
+| `.allforai/game-design/art/env/2d-animation-toolchain-registry.json` | verified DragonBones/Spine/atlas/preview/import commands | If absent, rely on report status; do not assume tools exist. |
 | Requested animation list | animation ids, durations, gameplay events | Infer from `gameplay_role`. |
 
 ### Inferred animation defaults
@@ -134,6 +136,8 @@ Before running the creative workflow, build an internal normalized input object:
     }
   ],
   "tooling": {
+    "toolchain_report": ".allforai/game-design/art/env/2d-animation-toolchain-report.json",
+    "toolchain_status": "validated | validated_with_limits | blocked_by_missing_toolchain | blocked_by_missing_runtime_profile | failed_validation",
     "render_runtime": "browser_canvas | dragonbones_runtime | scripted_2d_transform | none",
     "vision_validator_available": true
   }
@@ -158,6 +162,11 @@ with the missing field list.
    complex weapon trails, and particle path choreography as automation-limited.
    Replace them with simplified transform animation, key pose references, or
    placeholder motion. Do not route to human review.
+7. If the selected 2D skeletal pipeline requires DragonBones, Spine, atlas,
+   preview, or runtime import tooling and
+   `.allforai/game-design/art/env/2d-animation-toolchain-report.json` is absent
+   or blocked, stop with `blocked_by_missing_toolchain` instead of producing an
+   accepted animation plan.
 
 ## No-Human Rule
 
@@ -728,6 +737,12 @@ and include `schema_version: "1.0"`.
 - If rendering is unavailable, `render_previews.render_path` must be
   `static_keyframe_board` and `visual_validation.validator` must be
   `partial_static_keyframes`.
+- For 2D skeletal output, `acceptance.toolchain_report_ref` must point to
+  `.allforai/game-design/art/env/2d-animation-toolchain-report.json`.
+- If that report status is `blocked_by_missing_toolchain`,
+  `blocked_by_missing_runtime_profile`, or `failed_validation`, this skill may
+  write diagnostic specs but must not set `acceptance.verdict` to `approved` or
+  `approved_with_automation_limits`.
 
 ## Invocation Contract
 
@@ -753,7 +768,8 @@ Minimal invocation context:
     "art_style_guide": ".allforai/game-design/art-style-guide.json",
     "art_pipeline_config": ".allforai/game-design/art-pipeline-config.json",
     "art_asset_inventory": ".allforai/game-design/art-asset-inventory.json",
-    "concept_contract": ".allforai/concept-contract.json"
+    "concept_contract": ".allforai/concept-contract.json",
+    "toolchain_report": ".allforai/game-design/art/env/2d-animation-toolchain-report.json"
   },
   "asset_filter": {
     "asset_ids": [],

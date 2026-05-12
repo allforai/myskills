@@ -42,6 +42,8 @@ ENGINE_READY_MANIFEST = ".allforai/game-runtime/art/engine-ready-art-manifest.js
 ACCEPTED_IMAGE_MANIFEST = ".allforai/game-design/art/image-generation/accepted-image-manifest.json"
 IMAGE_MODEL_REGISTRY = ".allforai/game-design/art/image-generation/image-model-capability-registry.json"
 IMAGE_MODEL_ROUTING_REPORT = ".allforai/game-design/art/image-generation/image-model-routing-report.json"
+ANIMATION_TOOLCHAIN_REPORT = ".allforai/game-design/art/env/2d-animation-toolchain-report.json"
+ANIMATION_TOOLCHAIN_REGISTRY = ".allforai/game-design/art/env/2d-animation-toolchain-registry.json"
 
 REQUIRED_IMAGE_CONTRACT_TERMS = {
     ACCEPTED_IMAGE_MANIFEST,
@@ -96,6 +98,18 @@ REQUIRED_IMAGE_MODEL_REGISTRY_TERMS = {
     "selected_model",
 }
 
+REQUIRED_2D_ANIMATION_TOOLCHAIN_TERMS = {
+    ANIMATION_TOOLCHAIN_REPORT,
+    ANIMATION_TOOLCHAIN_REGISTRY,
+    "DragonBones",
+    "Spine",
+    "blocked_by_missing_toolchain",
+    "blocked_by_missing_runtime_profile",
+    "validation_evidence",
+    "install_policy",
+    "Do not silently switch DragonBones",
+}
+
 IMAGE_UPSTREAM_CONSUMER_SKILLS = {
     "game-art/20-spec/character-layer-sheet/SKILL.md",
     "game-art/30-generate/background-generation/SKILL.md",
@@ -112,6 +126,11 @@ IMAGE_UPSTREAM_CONSUMER_SKILLS = {
     "game-art/30-generate/tileset-generation/SKILL.md",
     "game-art/30-generate/trail-generation/SKILL.md",
     "game-ui/30-generate/ui-mockup-generation/SKILL.md",
+}
+
+ANIMATION_TOOLCHAIN_CONSUMER_SKILLS = {
+    "game-art/10-design/2d-animation-production-plan/SKILL.md",
+    "game-art/30-generate/skeletal-animation/SKILL.md",
 }
 
 SKILL_REF_RE = re.compile(
@@ -163,6 +182,7 @@ def validate_art_pipeline(repo_root: str) -> list:
     asset_binding = skills_root / "game-frontend/20-spec/asset-import-binding-spec/SKILL.md"
     image_contract = game_art_root / "30-generate/image-generation-contract/SKILL.md"
     image_model_registry = game_art_root / "00-env/image-model-capability-registry/SKILL.md"
+    animation_toolchain_env = game_art_root / "00-env/2d-animation-toolchain-env/SKILL.md"
     source_strategy = game_art_root / "10-design/asset-source-strategy-spec/SKILL.md"
     asset_search = game_art_root / "20-spec/asset-pack-search-spec/SKILL.md"
 
@@ -174,6 +194,7 @@ def validate_art_pipeline(repo_root: str) -> list:
         asset_binding,
         image_contract,
         image_model_registry,
+        animation_toolchain_env,
         source_strategy,
         asset_search,
     ]
@@ -190,6 +211,7 @@ def validate_art_pipeline(repo_root: str) -> list:
     asset_binding_text = _read(asset_binding)
     image_contract_text = _read(image_contract)
     image_model_registry_text = _read(image_model_registry)
+    animation_toolchain_env_text = _read(animation_toolchain_env)
     source_strategy_text = _read(source_strategy)
     asset_search_text = _read(asset_search)
 
@@ -280,6 +302,9 @@ def validate_art_pipeline(repo_root: str) -> list:
     for term in sorted(REQUIRED_IMAGE_MODEL_REGISTRY_TERMS):
         if term not in image_model_registry_text:
             errors.append(f"image-model-capability-registry: missing model routing term {term}")
+    for term in sorted(REQUIRED_2D_ANIMATION_TOOLCHAIN_TERMS):
+        if term not in animation_toolchain_env_text:
+            errors.append(f"2d-animation-toolchain-env: missing toolchain closure term {term}")
     for term in sorted(REQUIRED_SOURCE_STRATEGY_TERMS):
         if term not in source_strategy_text:
             errors.append(f"asset-source-strategy-spec: missing source priority term {term}")
@@ -292,6 +317,8 @@ def validate_art_pipeline(repo_root: str) -> list:
         errors.append("game-art/SKILL.md: missing raw bitmap path consumption ban")
     if "game-art/00-env/image-model-capability-registry/SKILL.md" not in game_art_text:
         errors.append("game-art/SKILL.md: missing image model capability registry child path")
+    if "game-art/00-env/2d-animation-toolchain-env/SKILL.md" not in game_art_text:
+        errors.append("game-art/SKILL.md: missing 2D animation toolchain env child path")
     if IMAGE_MODEL_REGISTRY not in game_art_text and "image-model-capability-registry" not in game_art_text:
         errors.append("game-art/SKILL.md: missing image model routing closure rule")
 
@@ -303,6 +330,15 @@ def validate_art_pipeline(repo_root: str) -> list:
         skill_text = _read(skill_path)
         if "image-generation-contract" not in skill_text:
             errors.append(f"skills/{ref}: missing image-generation-contract reference")
+
+    for ref in sorted(ANIMATION_TOOLCHAIN_CONSUMER_SKILLS):
+        skill_path = _skill_ref_to_path(root, ref)
+        if not skill_path.exists():
+            errors.append(f"2d animation toolchain consumer missing: skills/{ref}")
+            continue
+        skill_text = _read(skill_path)
+        if "2d-animation-toolchain" not in skill_text:
+            errors.append(f"skills/{ref}: missing 2d-animation-toolchain-env/report reference")
 
     return errors
 

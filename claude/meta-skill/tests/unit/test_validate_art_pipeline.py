@@ -17,7 +17,9 @@ def _minimal_repo(tmp_path):
         tmp_path,
         "claude/meta-skill/skills/game-art/SKILL.md",
         """${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/art-preview-qa/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/2d-animation-toolchain-env/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/image-model-capability-registry/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/asset-source-strategy-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/asset-pack-search-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/character-layer-sheet/SKILL.md
@@ -104,6 +106,25 @@ selected_model
     )
     _write(
         tmp_path,
+        "claude/meta-skill/skills/game-art/00-env/2d-animation-toolchain-env/SKILL.md",
+        """.allforai/game-design/art/env/2d-animation-toolchain-report.json
+.allforai/game-design/art/env/2d-animation-toolchain-registry.json
+DragonBones
+Spine
+blocked_by_missing_toolchain
+blocked_by_missing_runtime_profile
+validation_evidence
+install_policy
+Do not silently switch DragonBones
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-art/10-design/2d-animation-production-plan/SKILL.md",
+        "game-art/00-env/2d-animation-toolchain-env .allforai/game-design/art/env/2d-animation-toolchain-report.json",
+    )
+    _write(
+        tmp_path,
         "claude/meta-skill/skills/game-art/10-design/asset-source-strategy-spec/SKILL.md",
         """source_priority_chain
 local_asset_library
@@ -145,7 +166,7 @@ consumer_ready: true
         _write(
             tmp_path,
             f"claude/meta-skill/skills/game-art/{rel}/SKILL.md",
-            "game-art/30-generate/image-generation-contract",
+            "game-art/30-generate/image-generation-contract game-art/00-env/2d-animation-toolchain-env",
         )
     _write(
         tmp_path,

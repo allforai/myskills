@@ -1116,7 +1116,11 @@ concept-contract capability 完成后，依次调用以下 game-art 子 skill（
    - （输入/输出：参见 SKILL.md 的 Invocation Contract）
    - 输出：`.allforai/game-design/asset-registry.json`（以 canonical_registry 为权威，资产 ID → 文件前缀 → 生命周期状态的单一可信注册表）
 
-3. **资产来源策略：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/asset-source-strategy-spec/SKILL.md`
+3. **2D 动画工具链检测：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/2d-animation-toolchain-env/SKILL.md`
+   - （输入/输出：参见 SKILL.md 的 Invocation Contract；依赖动画生产计划与 `asset-registry.json`）
+   - 当动画生产计划包含 `skeletal_animation`、`frame_animation`、`part_tween`、`pose_swap`、`ui_tween` 或 `vfx_only` 时，验证 DragonBones/Spine/帧动画/图集/预览/运行时导入工具链；缺少必需工具时返回 `blocked_by_missing_toolchain`，不得让下游动画节点假装完成。
+
+4. **资产来源策略：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/asset-source-strategy-spec/SKILL.md`
    - （输入/输出：参见 SKILL.md 的 Invocation Contract；依赖上一步生成的 `asset-registry.json`）
    - 输出：每类资产的 `source_strategy`（`existing_asset_pack` / `existing_3d_source_asset` / `user_provided_asset` / `adapt_existing_asset` / `hybrid` / `placeholder_only`）写入 `asset-registry.json`
 
@@ -1140,7 +1144,7 @@ After injecting `concept-freeze`, read `art-pipeline-config.json.active_nodes` a
 |-----------|----------------------------------|--------------------------------|-----------|
 | `tile-art-gen` | `skills/game-art/20-spec/tileset-spec/SKILL.md` | `skills/game-art/30-generate/tileset-generation/SKILL.md` | always |
 | `tile-art-gen` | + `skills/game-art/20-spec/2-5d-production-mode-spec/SKILL.md` + `skills/game-art/20-spec/2-5d-lighting-shadow-spec/SKILL.md` | + `skills/game-art/30-generate/render-to-2d-asset-generation/SKILL.md` | when `dimension=2.5d` |
-| `character-art-gen` | `skills/game-art/20-spec/character-layer-sheet/SKILL.md` + `skills/game-art/20-spec/visual-style-tokens/SKILL.md` | `skills/game-art/30-generate/skeletal-animation/SKILL.md` | when `character.rig` = `dragonbones`, `dragonbones_mesh`, or `skeletal_3d` |
+| `character-art-gen` | `skills/game-art/00-env/2d-animation-toolchain-env/SKILL.md` + `skills/game-art/20-spec/character-layer-sheet/SKILL.md` + `skills/game-art/20-spec/visual-style-tokens/SKILL.md` | `skills/game-art/30-generate/skeletal-animation/SKILL.md` | when `character.rig` = `dragonbones`, `dragonbones_mesh`, or `skeletal_3d` |
 | `character-art-gen` | same pre-spec | `skills/game-art/30-generate/frame-animation-generation/SKILL.md` | when `character.rig=frame_sequence` |
 | `character-art-gen` | — | + `skills/game-art/30-generate/expression-set-generation/SKILL.md` | when `character.expressions=true` (append after primary generate) |
 | `environment-art-gen` | `skills/game-art/20-spec/2d-view-mode-spec/SKILL.md` | `skills/game-art/30-generate/background-generation/SKILL.md` + `skills/game-art/30-generate/prop-generation/SKILL.md` | always |

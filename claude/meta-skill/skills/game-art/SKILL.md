@@ -35,6 +35,7 @@ Layer numbers indicate directory organization and default execution order for ne
 | Layer | Child skill | Responsibility |
 |---|---|---|
 | `00-env` | `asset-registry` | Canonical asset IDs, file prefixes, paths, lifecycle states, validation report. |
+| `00-env` | `2d-animation-toolchain-env` | Detect, install when possible, verify, and block missing 2D animation authoring, preview, atlas, and runtime import tools. |
 | `00-env` | `image-model-capability-registry` | Detect image provider/MCP access, discover current model catalogs, and route generation profiles to suitable models. |
 | `00-env` | `production-tool-capability-registry` | Detect, auto-install, and validate Blender CLI/Python, image, atlas, importer, and probe tools before use. |
 | `10-design` | `2d-animation-production-plan` | Light 2D animation method selection, fallback strategy, downstream routing, QA requirements. |
@@ -94,6 +95,7 @@ Use these paths when a node-spec calls a child skill:
 
 ```text
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/asset-registry/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/2d-animation-toolchain-env/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/image-model-capability-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/production-tool-capability-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md
@@ -264,6 +266,7 @@ Skeletal character animation:
 ```text
 10-design/art-direction-input-contract
 -> 00-env/asset-registry
+-> 00-env/2d-animation-toolchain-env
 -> 00-env/production-tool-capability-registry
 -> 20-spec/visual-style-tokens
 -> 20-spec/2d-view-mode-spec
@@ -284,6 +287,7 @@ Legacy skeletal character animation:
 
 ```text
 00-env/asset-registry
+-> 00-env/2d-animation-toolchain-env
 -> 10-design/2d-animation-production-plan
 -> 10-design/motion-design
 -> 20-spec/2d-view-mode-spec
@@ -303,6 +307,7 @@ Light 2D indie character production:
 ```text
 10-design/art-direction-input-contract
 -> 00-env/asset-registry
+-> 00-env/2d-animation-toolchain-env
 -> 20-spec/visual-style-tokens
 -> 20-spec/2d-view-mode-spec
 -> 20-spec/2d-layering-spec
@@ -390,6 +395,7 @@ Legacy light 2D indie character production:
 
 ```text
 00-env/asset-registry
+-> 00-env/2d-animation-toolchain-env
 -> 20-spec/visual-style-tokens
 -> 20-spec/2d-view-mode-spec
 -> 20-spec/2d-layering-spec

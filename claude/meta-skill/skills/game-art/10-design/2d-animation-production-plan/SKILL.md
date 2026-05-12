@@ -23,8 +23,8 @@ roles, target runtime, and expected animation complexity.
 
 Optional: `asset-registry.json`, `motion-design.json`, `visual-style-tokens.json`,
 `2d-view-mode-spec.json`, `2d-layering-spec.json`, engine constraints,
-available tools, image generation capabilities, and target platform performance
-budget.
+available tools, `.allforai/game-design/art/env/2d-animation-toolchain-report.json`,
+image generation capabilities, and target platform performance budget.
 
 ## Output Contract
 
@@ -35,8 +35,8 @@ Writes:
 
 Plan entries must include `asset_id`, `asset_role`, `animation_method`,
 `required_animation_sets`, `source_art_strategy`, `downstream_skill_refs`,
-`runtime_export_profile_ref`, `qa_requirements`, `fallback_method`, `state`,
-and `consumer_refs`.
+`runtime_export_profile_ref`, `toolchain_report_ref`, `qa_requirements`,
+`fallback_method`, `state`, and `consumer_refs`.
 
 Allowed `animation_method` values:
 
@@ -73,6 +73,7 @@ Plan entries must also carry a `decision_evidence` object:
   "required_animation_sets": ["idle", "run", "jump", "fall", "attack", "hit"],
   "fallback_method": "part_tween",
   "fallback_trigger": "rig_or_preview_validation_failed",
+  "toolchain_report_ref": ".allforai/game-design/art/env/2d-animation-toolchain-report.json",
   "max_generation_attempts": 3,
   "acceptance_gates": ["preview_readability", "runtime_import", "style_consistency"]
 }
@@ -134,6 +135,12 @@ The plan must not select `skeletal_animation` without either a layer contract or
 a declared fallback to `part_tween`, `pose_swap`, or `frame_animation`. It must
 not select `frame_animation` without frame count, FPS, anchor, and direction
 requirements in downstream refs.
+
+The plan must require `game-art/00-env/2d-animation-toolchain-env` before any
+downstream skeletal, frame, part-tween, pose-swap, UI-tween, or VFX-only
+animation generation. If the toolchain report later returns
+`blocked_by_missing_toolchain`, do not silently switch methods; only activate a
+fallback method that was already declared in this plan.
 
 Repair routing: missing asset IDs return to `asset-registry`; unclear motion
 intent returns to `motion-design`; missing style constraints return to
