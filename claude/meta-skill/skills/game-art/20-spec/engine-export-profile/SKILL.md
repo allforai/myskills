@@ -15,8 +15,14 @@ pivots, frame naming, animation metadata, tilemap exports, skeleton formats,
 compression, validation, and fallback behavior.
 
 Use this when the art pipeline must target Godot, Unity, Phaser, Pixi, Cocos,
-Defold, Love2D, Tiled, Aseprite, TexturePacker, Spine, DragonBones, or a custom
+Defold, Love2D, Tiled, Aseprite, TexturePacker, DragonBones, or a custom
 runtime adapter.
+
+For 2D skeletal animation and transform-style VFX, DragonBones is the default
+LLM-friendly format because its JSON-style contracts can be planned, generated,
+inspected, and repaired by Claude Code. Spine is not the default. Only mention
+or select Spine when the target project already uses Spine at runtime or the
+user explicitly requires Spine compatibility.
 
 ## Input Contract
 
@@ -101,8 +107,11 @@ Check that the profile names one target runtime or adapter, one coordinate
 system, one pivot convention, one atlas metadata format, one animation clip
 naming rule, and one runtime import validation path. Tilemap projects must
 declare map format and tile ID conventions. Skeletal projects must declare
-whether the runtime consumes Spine, DragonBones, generated JSON, or simplified
-transform timelines.
+whether the runtime consumes DragonBones, generated JSON, simplified transform
+timelines, or Spine only when Spine is already an explicit project constraint.
+
+Selection rule: for LLM-led 2D animation or VFX, prefer DragonBones /
+DragonBones-compatible JSON. Do not route new VFX work to Spine by default.
 
 Common runtime defaults:
 
