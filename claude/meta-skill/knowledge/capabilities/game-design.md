@@ -341,7 +341,7 @@ Sub-skill paths expand to `${CLAUDE_PLUGIN_ROOT}/skills/<path>/SKILL.md`.
 | `progression-curve-design` | `game-systems/20-spec/progression-spec` |
 | `economy-design` | `game-systems/20-spec/economy-spec` |
 | `narrative-design` | `game-narrative/10-design/narrative-tone-design`, `game-narrative/20-spec/quest-text-spec` |
-| `level-design` | `game-design/20-spec/level-design-spec`, `game-level/00-env/level-registry`, `game-level/10-design/level-flow-design`, `game-level/20-spec/level-layout-spec`, `game-level/20-spec/level-difficulty-budget-spec`, `game-level/20-spec/teaching-beat-spec`, `game-level/20-spec/encounter-placement-spec`, `game-level/20-spec/reward-placement-spec`, `game-level/40-qa/level-difficulty-validation-qa`, `game-level/40-qa/level-pacing-qa`, `game-level/40-qa/level-playability-qa` |
+| `level-design` | `game-design/20-spec/level-design-spec`, `game-level/00-env/level-registry`, `game-level/10-design/level-flow-design`, `game-level/20-spec/level-layout-spec`, `game-level/20-spec/player-skill-model-spec`, `game-level/20-spec/level-difficulty-budget-spec`, `game-level/20-spec/teaching-beat-spec`, `game-level/20-spec/encounter-placement-spec`, `game-level/20-spec/reward-placement-spec`, `game-level/40-qa/level-difficulty-validation-qa`, `game-level/40-qa/level-pacing-qa`, `game-level/40-qa/level-playability-qa` |
 | `worldbuilding` | `game-narrative/10-design/narrative-tone-design` |
 | `network-architecture-design` | `game-runtime/20-spec/network-architecture-spec` |
 | `matchmaking-design` | `game-runtime/20-spec/matchmaking-service-spec` |
@@ -385,8 +385,9 @@ If any required file or section is missing, fail bootstrap with
 `BOOTSTRAP_SUB_SKILL_MAPPING_INVALID` and list the missing path/section. Do not
 fall back to generic LLM execution for a path that is explicitly mapped.
 
-**Level design:** The `level-design` chain owns level flow, layout, difficulty
-budget, teaching, encounter/reward placement, and pacing QA.
+**Level design:** The `level-design` chain owns level flow, layout, player
+skill model, difficulty budget, teaching, encounter/reward placement, and
+pacing QA.
 `level-blockout-generation` may be appended when a visual/blockout preview is
 required by the scenario or when downstream frontend/runtime validation needs a
 map artifact.

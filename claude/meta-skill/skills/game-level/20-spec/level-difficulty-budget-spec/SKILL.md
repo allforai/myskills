@@ -21,13 +21,12 @@ labels.
 
 ## Input Contract
 
-Required: difficulty experience spec, level flow design, level layout spec,
-objective system requirements, and core loop requirements.
+Required: difficulty experience spec, player skill model, level flow design,
+level layout spec, objective system requirements, and core loop requirements.
 
 Optional: encounter placement spec, reward placement spec, teaching beats,
 progression curve, combat balance report, enemy list, item/skill tables,
-player ability model, accessibility constraints, telemetry model, blockout
-manifest, and playtest/probe evidence.
+accessibility constraints, blockout manifest, and playtest/probe evidence.
 
 ## Output Contract
 
@@ -83,6 +82,7 @@ Allowed states: `draft`, `validated`, `needs_revision`,
   "input_paths": {
     "difficulty_experience": ".allforai/game-design/design/difficulty-experience-spec.json",
     "core_loop": ".allforai/game-design/design/core-game-loop-spec.json",
+    "player_skill_model": ".allforai/game-design/levels/player-skill-model-spec.json",
     "level_flow": ".allforai/game-design/levels/level-flow-design.json",
     "level_layout": ".allforai/game-design/levels/level-layout-spec.json",
     "objective_system": ".allforai/game-design/systems/objective-system-spec.json"
@@ -144,13 +144,14 @@ Anti-patterns to reject:
 
 Check that every required level or region has a measurable budget for pressure,
 enemy/hazard density, recovery, reward cadence, retry cost, spike limits, and
-psychological curve. The budget must match the target player skill model,
+psychological curve. The budget must match the player skill model,
 session length, progression curve, emotional arc, and failure/recovery
 expectations.
 
 Methodology:
 
 - Convert difficulty intent into measurable budget axes, not labels.
+- Convert player skill model thresholds into concrete per-region limits.
 - Convert psychological intent into measurable curve axes, not mood labels.
 - Express difficulty with both pressure and recovery; harder levels may raise
   pressure only when counterplay and recovery are defined.
@@ -176,7 +177,8 @@ Methodology:
 If no executable or probeable validation path exists for a required budget,
 return `blocked_by_missing_probe`; do not accept prose judgment as evidence.
 
-Repair routing: vague difficulty routes to `difficulty-experience-spec`;
+Repair routing: vague player capability routes to `player-skill-model-spec`;
+vague difficulty routes to `difficulty-experience-spec`;
 vague emotion or motivation routes to `player-experience-contract`; layout gaps
 route to `level-layout-spec`; encounter pressure gaps route to
 `encounter-placement-spec`; reward/recovery or relief-window gaps route to

@@ -21,9 +21,9 @@ psychological outcomes without evidence.
 
 ## Input Contract
 
-Required: level difficulty budget, level flow design, level layout spec,
-teaching beats, encounter placement, reward placement, and objective system
-requirements.
+Required: player skill model, level difficulty budget, level flow design, level
+layout spec, teaching beats, encounter placement, reward placement, and
+objective system requirements.
 
 Optional: blockout manifest, collision/walkability graph, combat balance report,
 progression curve, player ability model, enemy behavior specs, runtime
@@ -59,6 +59,7 @@ Allowed states: `passed`, `passed_with_warnings`, `needs_revision`,
   "skill": "game-level/level-difficulty-validation-qa",
   "mode": "validate",
   "input_paths": {
+    "player_skill_model": ".allforai/game-design/levels/player-skill-model-spec.json",
     "difficulty_budget": ".allforai/game-design/levels/level-difficulty-budget-spec.json",
     "level_flow": ".allforai/game-design/levels/level-flow-design.json",
     "level_layout": ".allforai/game-design/levels/level-layout-spec.json",
@@ -76,7 +77,8 @@ Supported modes: `validate`, `validate_static_only`, `validate_with_probe`,
 
 ## Automatic Validation
 
-Validate these axes for every level/region with a budget:
+Validate these axes for every level/region with a budget, using the player
+skill model as the threshold source:
 
 - `mechanical_precision`: jump windows, timing windows, aiming/input complexity,
   movement constraints, and required execution consistency.
@@ -124,7 +126,8 @@ Evidence rules:
 - LLM judgment may summarize findings, but may not be the sole evidence for
   numeric difficulty budget compliance.
 
-Repair routing: budget target defects route to
+Repair routing: player capability threshold defects route to
+`player-skill-model-spec`; budget target defects route to
 `level-difficulty-budget-spec`; layout and route defects route to
 `level-layout-spec`; teaching readiness defects route to `teaching-beat-spec`;
 enemy/hazard pressure defects route to `encounter-placement-spec`; reward,
