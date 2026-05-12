@@ -16,6 +16,9 @@ python3 claude/meta-skill/scripts/orchestrator/validate_art_pipeline.py .
 echo "[pre-commit] validate meta-skill cross-file contracts"
 python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py
 
+echo "[pre-commit] validate specialization governance"
+python3 claude/meta-skill/scripts/orchestrator/validate_specialization_contracts.py .
+
 echo "[pre-commit] strict node_id invariant"
 if rg -n 'node\.get\("id"|record\.get\("node"|item\.get\("node"|r\.get\("node"|rec\.node\b' \
   claude/meta-skill/scripts/orchestrator \
