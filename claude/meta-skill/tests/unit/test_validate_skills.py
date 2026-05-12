@@ -15,6 +15,17 @@ def _write_skill(root, rel, body):
 def test_validate_skill_tree_accepts_layered_skill_path(tmp_path):
     _write_skill(
         tmp_path,
+        "app-design",
+        """---
+name: app-design
+description: Parent.
+---
+
+${CLAUDE_PLUGIN_ROOT}/skills/app-design/20-spec/data-model-spec/SKILL.md
+""",
+    )
+    _write_skill(
+        tmp_path,
         "app-design/20-spec/data-model-spec",
         """---
 name: data-model-spec
@@ -33,6 +44,17 @@ description: Test skill.
 
 
 def test_validate_skill_tree_rejects_missing_invocation_target(tmp_path):
+    _write_skill(
+        tmp_path,
+        "app-design",
+        """---
+name: app-design
+description: Parent.
+---
+
+${CLAUDE_PLUGIN_ROOT}/skills/app-design/20-spec/data-model-spec/SKILL.md
+""",
+    )
     _write_skill(
         tmp_path,
         "app-design/20-spec/data-model-spec",
@@ -73,6 +95,17 @@ ${CLAUDE_PLUGIN_ROOT}/skills/app-design/20-spec/missing/SKILL.md
 def test_validate_skill_tree_requires_frontmatter(tmp_path):
     _write_skill(
         tmp_path,
+        "app-design",
+        """---
+name: app-design
+description: Parent.
+---
+
+${CLAUDE_PLUGIN_ROOT}/skills/app-design/20-spec/data-model-spec/SKILL.md
+""",
+    )
+    _write_skill(
+        tmp_path,
         "app-design/20-spec/data-model-spec",
         """# Data Model Spec
 
@@ -86,3 +119,33 @@ def test_validate_skill_tree_requires_frontmatter(tmp_path):
 
     errors = validate_skill_tree(str(tmp_path))
     assert any("missing YAML frontmatter" in error for error in errors)
+
+
+def test_validate_skill_tree_rejects_orphan_child_skill(tmp_path):
+    _write_skill(
+        tmp_path,
+        "app-design",
+        """---
+name: app-design
+description: Parent.
+---
+""",
+    )
+    _write_skill(
+        tmp_path,
+        "app-design/20-spec/data-model-spec",
+        """---
+name: data-model-spec
+description: Test skill.
+---
+
+## Invocation Contract
+
+```json
+{"skill":"app-design/data-model-spec","mode":"spec_validate","output_root":".allforai/app-design/spec"}
+```
+""",
+    )
+
+    errors = validate_skill_tree(str(tmp_path))
+    assert any("orphan bundled skill" in error for error in errors)

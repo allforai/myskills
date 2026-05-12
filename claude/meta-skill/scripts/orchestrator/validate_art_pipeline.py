@@ -32,6 +32,12 @@ REQUIRED_ART_QA_EXIT_ARTIFACTS = {
     ".allforai/game-runtime/art/engine-ready-art-manifest.json",
 }
 
+REQUIRED_ART_CONCEPT_ARTIFACTS = {
+    ".allforai/game-design/art-pipeline-config.json",
+    ".allforai/game-design/art/art-concept-validation.html",
+    ".allforai/game-design/art/art-concept-validation.json",
+}
+
 ENGINE_READY_MANIFEST = ".allforai/game-runtime/art/engine-ready-art-manifest.json"
 
 SKILL_REF_RE = re.compile(
@@ -108,6 +114,35 @@ def validate_art_pipeline(repo_root: str) -> list:
         if not target.exists():
             errors.append(f"bootstrap.md: referenced art pipeline skill missing: skills/{ref}")
 
+    art_concept_section = _section(
+        bootstrap_text,
+        "**Art Concept Node Injection",
+        "**Concept Freeze Node Injection",
+    )
+    if not art_concept_section:
+        errors.append("bootstrap.md: Art Concept Node Injection section missing")
+    else:
+        if "game-art/10-design/art-concept-validation/SKILL.md" not in art_concept_section:
+            errors.append("bootstrap.md: art-concept does not invoke art-concept-validation")
+        for artifact in sorted(REQUIRED_ART_CONCEPT_ARTIFACTS):
+            if artifact not in art_concept_section:
+                errors.append(f"bootstrap.md: art-concept missing exit artifact {artifact}")
+        if 'state in ["passed", "passed_with_warnings"]' not in art_concept_section:
+            errors.append("bootstrap.md: art-concept completion does not gate validation state")
+
+    concept_freeze_section = _section(
+        bootstrap_text,
+        "**Concept Freeze Node Injection",
+        "**Art-Gen Node Injection",
+    )
+    if not concept_freeze_section:
+        errors.append("bootstrap.md: Concept Freeze Node Injection section missing")
+    else:
+        if ".allforai/game-design/art/art-concept-validation.json" not in concept_freeze_section:
+            errors.append("bootstrap.md: concept-freeze does not require art concept validation")
+        if "UPSTREAM_DEFECT" not in concept_freeze_section:
+            errors.append("bootstrap.md: concept-freeze missing art concept validation failure gate")
+
     art_qa_section = _section(
         bootstrap_text,
         "**Art-QA Node Injection",
@@ -136,6 +171,9 @@ def validate_art_pipeline(repo_root: str) -> list:
         errors.append("asset-import-binding-spec: does not consume engine-ready manifest")
     if ENGINE_READY_MANIFEST not in game_design_text:
         errors.append("game-design.md: does not route program implementation through engine-ready manifest")
+    for artifact in sorted(REQUIRED_ART_CONCEPT_ARTIFACTS - {".allforai/game-design/art-pipeline-config.json"}):
+        if artifact not in game_design_text and artifact not in game_art_text:
+            errors.append(f"game-design/game-art: art concept gate artifact not documented: {artifact}")
 
     if "runtime_id" not in engine_ready_text or "asset_id" not in engine_ready_text:
         errors.append("engine-ready-art-output-contract: missing runtime_id/asset_id contract")

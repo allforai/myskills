@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Validate bundled SKILL.md files for basic contract hygiene.
+"""Validate bundled SKILL.md files for contract hygiene.
 
-This is intentionally structural, not semantic. It catches low-level mistakes
-that are easy to introduce while editing skills: broken frontmatter, malformed
-Invocation Contract JSON, missing canonical child paths, duplicate names, and
-obvious artifact path problems.
+This is intentionally structural, not semantic. It catches mistakes that are
+easy to introduce while editing skills: broken frontmatter, malformed
+Invocation Contract JSON, missing canonical child paths, orphan child skills,
+duplicate names, and obvious artifact path problems.
 """
 
 import argparse
@@ -25,6 +25,9 @@ FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 JSON_BLOCK_RE = re.compile(r"```json\n(.*?)\n```", re.DOTALL)
 CANONICAL_SKILL_PATH_RE = re.compile(
     r"\$\{CLAUDE_PLUGIN_ROOT\}/skills/([^\s`]+/SKILL\.md)"
+)
+ANY_SKILL_PATH_RE = re.compile(
+    r"(?:\$\{CLAUDE_PLUGIN_ROOT\}/)?skills/([A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+/SKILL\.md)"
 )
 PATH_KEYS = {
     "input_paths",
@@ -90,6 +93,45 @@ def _skill_value_exists(skill_root: Path, skill_value: str) -> bool:
     return any(path.parent.name == leaf for path in base.rglob("SKILL.md"))
 
 
+def _reference_roots(skill_root: Path) -> list[Path]:
+    meta_root = skill_root.parent
+    return [
+        skill_root,
+        meta_root / "knowledge/capabilities",
+        meta_root / "knowledge/domains",
+    ]
+
+
+def _all_reference_text(skill_root: Path) -> str:
+    chunks = []
+    for root in _reference_roots(skill_root):
+        if not root.exists():
+            continue
+        for path in sorted(root.rglob("*.md")):
+            try:
+                chunks.append(path.read_text())
+            except Exception:
+                continue
+    return "\n".join(chunks)
+
+
+def _referenced_skill_paths(skill_root: Path) -> set[str]:
+    text = _all_reference_text(skill_root)
+    refs = set()
+    for match in ANY_SKILL_PATH_RE.findall(text):
+        refs.add(match)
+        refs.add(match.removesuffix("/SKILL.md"))
+
+    for skill_file in sorted(skill_root.rglob("SKILL.md")):
+        rel = skill_file.relative_to(skill_root).as_posix()
+        slug = rel.removesuffix("/SKILL.md")
+        if slug in text:
+            refs.add(rel)
+            refs.add(slug)
+
+    return refs
+
+
 def validate_skill_tree(skill_root: str) -> list:
     root = Path(skill_root)
     errors = []
@@ -101,8 +143,15 @@ def validate_skill_tree(skill_root: str) -> list:
     if not skill_files:
         return [f"{skill_root}: no SKILL.md files found"]
 
+    referenced_paths = _referenced_skill_paths(root)
+
     for path in skill_files:
         rel = path.relative_to(root)
+        rel_str = rel.as_posix()
+        slug = rel_str.removesuffix("/SKILL.md")
+        if len(rel.parts) > 2 and rel_str not in referenced_paths and slug not in referenced_paths:
+            errors.append(f"{rel}: orphan bundled skill is not referenced by any pack, bootstrap, or capability mapping")
+
         try:
             text = path.read_text()
         except Exception as exc:

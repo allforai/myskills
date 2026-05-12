@@ -22,11 +22,19 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/atlas-packaging/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/runtime-import-check/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/engine-ready-art-output-contract/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept-validation/SKILL.md
 .allforai/game-design/art-qa-report.html
+.allforai/game-design/art/art-concept-validation.html
+.allforai/game-design/art/art-concept-validation.json
 .allforai/game-design/art/export/engine-ready-art-output-contract.json
 .allforai/game-runtime/art/engine-ready-art-manifest.json
 .allforai/game-design/art/qa/runtime-import-check-report.json
 """,
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-art/10-design/art-concept-validation/SKILL.md",
+        "---\nname: art-concept-validation\ndescription: x\n---\n",
     )
     for rel in [
         "art-preview-qa",
@@ -49,12 +57,25 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/engine-ready-art-output-contract/SKI
     _write(
         tmp_path,
         "claude/meta-skill/knowledge/capabilities/game-design.md",
-        ".allforai/game-runtime/art/engine-ready-art-manifest.json",
+        """.allforai/game-runtime/art/engine-ready-art-manifest.json
+.allforai/game-design/art/art-concept-validation.html
+.allforai/game-design/art/art-concept-validation.json
+""",
     )
     _write(
         tmp_path,
         "claude/meta-skill/skills/bootstrap.md",
-        """**Art-QA Node Injection
+        """**Art Concept Node Injection
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept-validation/SKILL.md
+.allforai/game-design/art-pipeline-config.json
+.allforai/game-design/art/art-concept-validation.html
+.allforai/game-design/art/art-concept-validation.json
+state in ["passed", "passed_with_warnings"]
+**Concept Freeze Node Injection
+.allforai/game-design/art/art-concept-validation.json
+UPSTREAM_DEFECT
+**Art-Gen Node Injection
+**Art-QA Node Injection
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/art-preview-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/2d-style-consistency-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/atlas-packaging/SKILL.md
