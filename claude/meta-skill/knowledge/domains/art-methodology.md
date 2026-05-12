@@ -42,12 +42,12 @@ AI 生图可用性：**不可直接生成**（AI 生参考图，程序化 Blende
 
 ### DragonBones 2D 骨骼动画
 
-资产形式：DragonBones 工程文件 → 导出 JSON + Atlas PNG  
-制作工具：DragonBones Pro（开源免费）/ Cocos Creator 内置运行时  
+资产形式：DragonBones-compatible JSON + Atlas PNG；DragonBones 工程文件只是可选编辑源  
+制作工具：项目内 JSON/Atlas 生成器 + Cocos Creator 内置运行时；DragonBones Pro GUI 只是可选人工编辑器  
 AI 生图可用性：**部分可用**  
-- AI 可直接生成 DragonBones JSON（变换动画：缩放/透明度/位移）  
-- AI 可生成分层参考图（各骨骼部件独立层），供动画师参考  
-- 复杂 IK/网格变形动画仍需人工在 GUI 中制作
+- AI 可直接生成 DragonBones-compatible JSON（变换动画：缩放/透明度/位移）  
+- AI 可生成分层参考图（各骨骼部件独立层）  
+- 复杂 IK/网格变形动画若无自动生成器与运行时验证，必须降级为自动 fallback 或标记 automation_limited；不得要求人工 GUI 作为自动闭环
 
 ### VFX 特效
 
@@ -178,8 +178,9 @@ AI 生图可用性：**部分可用**
   → [可选] Aseprite 手工修整 → Atlas 打包 → 引擎导入
 
 DragonBones 骨骼动画:
-  分层参考图（AI 生成各部件）→ DragonBones 工程（骨骼绑定/动画制作）
-  或 AI 直接生成 DragonBones JSON（变换类动画）→ Runtime 解析
+  分层参考图（AI 生成各部件）→ 项目脚本生成 DragonBones-compatible JSON + Atlas
+  → Preview 渲染 → Runtime 导入验证
+  [可选] DragonBones Pro GUI 仅作为人工编辑器，不是自动化必需项
 
 3D:
   概念图（AI参考）→ Blender 建模 → UV 展开 → 贴图绘制（PBR/手绘）
@@ -199,20 +200,20 @@ DragonBones 骨骼动画:
 dimension = "2d" AND style ≠ "pixel":
   → 地砖系统（grid/isometric/无地砖）
       └─ 无地砖 → 移除 tile-art-gen from active_nodes
-  → 角色动画方案（frame/dragonbones/dragonbones_mesh）
+  → 角色动画方案（frame/dragonbones-compatible/dragonbones_mesh 自动降级）
   → 特效方案（sprite_sheet/dragonbones_fx/shader_particle）
   → 场景层次（1层/2-3层/多层视差）
   → 概念原画需求（无/角色/场景/两者）
       └─ 有需求 → 加入 concept-art-gen（须先生成 node-spec）
-  → 工具链约束（DragonBones 开源免费/外包）
+  → 工具链约束（自动生成器/运行时导入/可选 GUI 编辑器）
 
 dimension = "2d" AND style = "pixel":
   → 地砖分辨率（8/16/32/64 px）
   → 调色板大小（8/16/32/256色）
   → 动画帧数预算（4/8/16帧）
-  → Aseprite 可用性（已安装/未安装）
+  → 帧动画自动化路径（PIL/脚本/可选 Aseprite CLI）
   → 概念原画需求（同上）
-  → 工具链约束（Aseprite授权/开源）
+  → 工具链约束（自动化优先，GUI 仅可选）
 
 dimension = "3d":
   → 面数预算（低模/中模/不限）
@@ -236,7 +237,7 @@ dimension = "3d":
 | 手工质感 | ❌（骨骼动画有"数字感"） | ✅（帧帧手绘，有纸张感） |
 | 复杂 VFX | ❌（骨骼不适合碎片/粒子） | ✅（帧序列可表达任意效果） |
 | **LLM 可生成性**（主因） | ✅ **开放 JSON 格式，LLM 可直接生成变换动画** | ⚠️ 帧内容需逐帧生图，LLM 不擅长 |
-| 工具授权成本 | ✅（开源免费） | 低（Aseprite 开源可用） |
+| 工具授权成本 | ✅（格式/运行时可自动化；Pro GUI 可选） | 低（PIL/脚本可自动化；Aseprite GUI 可选） |
 | 动画师学习曲线 | 中 | 低（逐帧绘制） |
 
 **推荐规则**：
@@ -325,7 +326,7 @@ is immutable — do not regenerate it; if replacement is needed, create a new as
 |---|---|---|
 | 过早细化 | art-concept 阶段就定死像素级数值，样本验收后无法调整 | Step 1 只问方向性决策，具体数值留 art-spec-design |
 | 风格混搭 | 不同资产类别使用不同风格参考图，导致视觉割裂 | 所有 AI 生图 prompt 共享同一 `style_prompt_prefix` |
-| 忽略工具链约束 | 选了 dragonbones_mesh 但团队不熟 GUI，或选了 Aseprite CLI 但未安装 | Step 1 Q6 明确问工具链约束，写入 config 后节点执行时检查 |
-| 低估特效复杂度 | 将 DragonBones FX 粒子路径动画标记为 AI 可完全自动化，实际仍需人工 | 区分变换类（AI 可生成）vs 网格/IK/粒子路径（需人工 GUI） |
+| 忽略工具链约束 | 选了 dragonbones_mesh 但没有自动生成器/运行时导入 adapter，或选了 Aseprite CLI 但未安装 | Step 1 Q6 明确问自动化工具链约束，写入 config 后节点执行时检查 |
+| 低估特效复杂度 | 将 DragonBones FX 粒子路径动画标记为 AI 可完全自动化，但没有可执行生成器与预览验收 | 区分变换类（AI 可生成）vs 网格/IK/粒子路径（需自动 fallback 或 automation_limited） |
 | 像素化参数错误 | PIL resize 使用双线性插值（BILINEAR）而非最近邻（NEAREST），导致边缘模糊 | art-concept skill 中明确注明 `Image.NEAREST` |
 | 忽略整数缩放 | 像素风地砖在非整数倍分辨率屏幕上显示模糊 | 验收时必须在目标设备分辨率测试，而非 PC 模拟器 |

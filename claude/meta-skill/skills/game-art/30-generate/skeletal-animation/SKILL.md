@@ -162,8 +162,9 @@ with the missing field list.
    complex weapon trails, and particle path choreography as automation-limited.
    Replace them with simplified transform animation, key pose references, or
    placeholder motion. Do not route to human review.
-7. If the selected 2D skeletal pipeline requires DragonBones, Spine, atlas,
-   preview, or runtime import tooling and
+7. If the selected 2D skeletal pipeline requires DragonBones-compatible data
+   generation, Spine-compatible data generation, atlas, preview, or runtime
+   import tooling and
    `.allforai/game-design/art/env/2d-animation-toolchain-report.json` is absent
    or blocked, stop with `blocked_by_missing_toolchain` instead of producing an
    accepted animation plan.
@@ -521,6 +522,12 @@ Visual checks:
 The 2D DragonBones pipeline implements the creative workflow above using
 DragonBones-compatible planning artifacts.
 
+This pipeline does not require DragonBones Pro GUI. The automation target is
+DragonBones-compatible runtime data: armature/skeleton JSON, texture atlas
+metadata, part images, animation timelines, preview renders, and engine import
+evidence. DragonBones Pro may be recorded as an optional editor, but it is not a
+completion gate unless a project explicitly chooses a manual authoring path.
+
 ### Step 1: Select animated assets
 
 Filter `art-asset-inventory.json.assets[]` to include:
@@ -605,7 +612,7 @@ Classify each requested animation into one of three production modes:
 
 | Mode | Use when | Output |
 |---|---|---|
-| `ai_transform_json` | Position, rotation, scale, opacity, squash/stretch only | DragonBones transform JSON spec. |
+| `ai_transform_json` | Position, rotation, scale, opacity, squash/stretch only | DragonBones-compatible transform JSON spec. |
 | `keyframe_reference` | Needs expressive poses that can be described as key poses | Keyframe image spec and timing notes. |
 | `automation_limited` | Needs IK, mesh deformation, cloth/hair physics, facial acting, or complex trails | Simplified transform fallback and explicit automation limit. |
 
@@ -742,7 +749,9 @@ and include `schema_version: "1.0"`.
 - If that report status is `blocked_by_missing_toolchain`,
   `blocked_by_missing_runtime_profile`, or `failed_validation`, this skill may
   write diagnostic specs but must not set `acceptance.verdict` to `approved` or
-  `approved_with_automation_limits`.
+  `approved_with_automation_limits`, unless the blocked item is only an
+  optional GUI editor and the automated compatible generator, preview, and
+  runtime import path are validated.
 
 ## Invocation Contract
 

@@ -1,6 +1,6 @@
 ---
 name: game-art-00-env-2d-animation-toolchain-env
-description: Internal bundled meta-skill module for game-art/00-env/2d-animation-toolchain-env; use within generated bootstrap node-specs when 2D animation production needs DragonBones, Spine, frame animation, atlas, preview, or runtime import tooling validation.
+description: Internal bundled meta-skill module for game-art/00-env/2d-animation-toolchain-env; use within generated bootstrap node-specs when 2D animation production needs DragonBones-compatible data generation, Spine/frame animation, atlas, preview, or runtime import tooling validation.
 ---
 
 # 2D Animation Toolchain Env Skill
@@ -10,14 +10,19 @@ description: Internal bundled meta-skill module for game-art/00-env/2d-animation
 ## Overview
 
 This skill is the environment gate for 2D animation production. It determines
-whether the local/project toolchain can actually create, preview, export, and
-validate frame animation, part tween animation, DragonBones-style skeletal
-animation, Spine-style skeletal animation, UI tweens, or VFX-bound animation.
+whether the local/project toolchain can actually generate, preview, import, and
+validate frame animation, part tween animation, DragonBones-compatible skeletal
+data, Spine-style skeletal data, UI tweens, or VFX-bound animation.
 
 The goal is not to prefer a tool. The goal is to prevent downstream animation
 skills from claiming completion when the required executable tools are missing.
 If a required tool cannot be installed and verified automatically, this skill
 must return a blocked status and name the blocked downstream skills.
+
+For automated pipelines, require executable project adapters and runtime
+validation, not GUI authoring tools. DragonBones Pro GUI and Spine Editor GUI
+are optional human-facing editors; their absence must not block a pipeline that
+can generate compatible JSON/atlas data and prove runtime import automatically.
 
 ## Input Contract
 
@@ -38,6 +43,7 @@ Optional inputs:
 - configured CLI command overrides
 - CI/runtime environment constraints
 - project-local scripts for preview, import, atlas, or screenshot validation
+- project-local DragonBones-compatible JSON/atlas generator scripts
 
 ## Output Contract
 
@@ -70,6 +76,7 @@ Each `tools[]` entry must include `tool_id`, `tool_kind`, `required_for`,
 Allowed `tool_kind` values:
 
 - `skeletal_editor`
+- `skeletal_data_generator`
 - `skeletal_runtime`
 - `frame_editor`
 - `atlas_packer`
@@ -127,8 +134,8 @@ Select required capabilities from the animation production plan:
 
 | Animation method | Required capabilities | Typical tools |
 |---|---|---|
-| `skeletal_animation` with `dragonbones` / `dragonbones_mesh` | skeletal authoring/export, atlas, preview, runtime import | DragonBones Pro or project adapter, texture/atlas tool, Cocos/engine importer |
-| `skeletal_animation` with `spine` | skeletal authoring/export, atlas, preview, runtime import | Spine CLI/editor where licensed, texture/atlas tool, engine importer |
+| `skeletal_animation` with `dragonbones` / `dragonbones_mesh` | DragonBones-compatible JSON/atlas generation, preview, runtime import | project generator/adapter, texture/atlas tool, Cocos/engine importer; DragonBones Pro GUI optional |
+| `skeletal_animation` with `spine` | Spine-compatible data generation/export, atlas, preview, runtime import | project generator/adapter or licensed CLI where available; Spine GUI optional |
 | `part_tween` | layer metadata, preview renderer, runtime import | project script, browser/canvas preview, engine importer |
 | `frame_animation` | frame sheet production, atlas, preview, runtime import | Aseprite or image pipeline, atlas packer, engine importer |
 | `pose_swap` / `ui_tween` | image processor, preview renderer, runtime import | project script, browser preview, engine importer |
@@ -138,14 +145,18 @@ DragonBones policy:
 
 - DragonBones is allowed for 2D skeletal animation when the project or
   production plan requests DragonBones-compatible output.
-- Do not assume DragonBones is installed because the spec names it.
-- Validate with an executable command or project adapter. Examples:
-  `dragonbones --version`, a project-provided DragonBones export script, or an
-  engine import command that proves DragonBones JSON/atlas can be loaded.
-- If no reliable automatic install command is declared by project config or
-  package manager discovery, set `install_policy=not_installable` or
-  `manual_only`, `availability=missing`, and
-  `failure_status=blocked_by_missing_toolchain`.
+- Do not require DragonBones Pro GUI for fully automated production.
+- Prefer a project-local generator/adapter that writes DragonBones-compatible
+  armature/skeleton JSON, texture atlas metadata, and runtime asset paths.
+- Validate the automated path with executable evidence: generator fixture
+  command exits `0`, atlas files exist, preview renders frames/screenshots, and
+  engine import proves the DragonBones JSON/atlas can be loaded.
+- If DragonBones Pro GUI is installed, record it as optional
+  `tool_kind=skeletal_editor` with `required=false` unless the production plan
+  explicitly declares a manual authoring path.
+- If no generator, preview, or runtime import adapter exists, set
+  `failure_status=blocked_by_missing_toolchain`. The missing capability is the
+  compatible automated data pipeline, not the GUI app.
 - Do not silently switch DragonBones to Spine, frame animation, or static
   output. Such switches must be declared by the upstream animation production
   plan and recorded as a fallback.
@@ -153,8 +164,8 @@ DragonBones policy:
 Spine policy:
 
 - Spine may be recorded when the project has a valid Spine authoring/export
-  path. Treat license or GUI-only constraints as blocking unless a verifiable
-  CLI/project adapter exists.
+  path. Treat license or GUI-only constraints as optional editor capability
+  unless a verifiable CLI/project adapter is required by the production plan.
 - Do not replace DragonBones with Spine merely because Spine is installed.
 
 Frame animation policy:
@@ -185,13 +196,14 @@ read animation production plan
 -> block downstream skills when required evidence is absent
 ```
 
-Each required tool must have executable validation evidence before downstream
+Each required capability must have executable validation evidence before downstream
 animation generation can claim `approved`, `engine_ready`, or `qa_passed`.
 
 Required evidence examples:
 
 - command exists and version command exits `0`
-- export script exits `0` on a minimal fixture
+- DragonBones-compatible or Spine-compatible generator exits `0` on a minimal
+  fixture and writes schema-valid JSON plus atlas metadata
 - preview renderer outputs a screenshot or frame file
 - engine importer loads a minimal animation asset and exits `0`
 - atlas packer produces a manifest with expected image paths
@@ -203,6 +215,7 @@ Rejected evidence:
 - generated JSON that was never imported or previewed
 - screenshot path that does not exist
 - manual editor instruction
+- GUI app presence without an automated export/import adapter
 
 ## Repair Routing
 
@@ -211,8 +224,8 @@ When validation fails, route repair by root cause:
 | Failure | Repair route |
 |---|---|
 | missing animation method | `2d-animation-production-plan` |
-| DragonBones requested but unavailable | this skill, then `2d-animation-production-plan` only if a declared fallback exists |
-| Spine requested but unavailable | this skill, then `2d-animation-production-plan` only if a declared fallback exists |
+| DragonBones-compatible generator/preview/import adapter unavailable | this skill, then `skeletal-animation` if a generator can be created, otherwise `2d-animation-production-plan` only if a declared fallback exists |
+| Spine-compatible generator/preview/import adapter unavailable | this skill, then `2d-animation-production-plan` only if a declared fallback exists |
 | missing frame/atlas tool | this skill or `atlas-packaging` |
 | missing preview renderer | this skill or the producing animation skill |
 | missing runtime import profile | `engine-export-profile` |

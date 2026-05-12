@@ -103,11 +103,26 @@ REQUIRED_2D_ANIMATION_TOOLCHAIN_TERMS = {
     ANIMATION_TOOLCHAIN_REGISTRY,
     "DragonBones",
     "Spine",
+    "DragonBones-compatible JSON/atlas generation",
+    "DragonBones Pro GUI",
+    "required=false",
+    "project-local generator/adapter",
+    "GUI app presence without an automated export/import adapter",
     "blocked_by_missing_toolchain",
     "blocked_by_missing_runtime_profile",
     "validation_evidence",
     "install_policy",
     "Do not silently switch DragonBones",
+}
+
+REQUIRED_PRODUCTION_TOOL_RULE_TERMS = {
+    "Tool Capability Rule",
+    "Required capability must be an automatable execution path",
+    "GUI application",
+    "Do not mutate global PATH",
+    "Blender GUI presence alone is not executable evidence",
+    "Texture packing requires an atlas generator",
+    "Audio production requires provider APIs",
 }
 
 IMAGE_UPSTREAM_CONSUMER_SKILLS = {
@@ -183,6 +198,7 @@ def validate_art_pipeline(repo_root: str) -> list:
     image_contract = game_art_root / "30-generate/image-generation-contract/SKILL.md"
     image_model_registry = game_art_root / "00-env/image-model-capability-registry/SKILL.md"
     animation_toolchain_env = game_art_root / "00-env/2d-animation-toolchain-env/SKILL.md"
+    production_tool_registry = game_art_root / "00-env/production-tool-capability-registry/SKILL.md"
     source_strategy = game_art_root / "10-design/asset-source-strategy-spec/SKILL.md"
     asset_search = game_art_root / "20-spec/asset-pack-search-spec/SKILL.md"
 
@@ -195,6 +211,7 @@ def validate_art_pipeline(repo_root: str) -> list:
         image_contract,
         image_model_registry,
         animation_toolchain_env,
+        production_tool_registry,
         source_strategy,
         asset_search,
     ]
@@ -212,6 +229,7 @@ def validate_art_pipeline(repo_root: str) -> list:
     image_contract_text = _read(image_contract)
     image_model_registry_text = _read(image_model_registry)
     animation_toolchain_env_text = _read(animation_toolchain_env)
+    production_tool_registry_text = _read(production_tool_registry)
     source_strategy_text = _read(source_strategy)
     asset_search_text = _read(asset_search)
 
@@ -305,6 +323,9 @@ def validate_art_pipeline(repo_root: str) -> list:
     for term in sorted(REQUIRED_2D_ANIMATION_TOOLCHAIN_TERMS):
         if term not in animation_toolchain_env_text:
             errors.append(f"2d-animation-toolchain-env: missing toolchain closure term {term}")
+    for term in sorted(REQUIRED_PRODUCTION_TOOL_RULE_TERMS):
+        if term not in production_tool_registry_text:
+            errors.append(f"production-tool-capability-registry: missing tool capability rule term {term}")
     for term in sorted(REQUIRED_SOURCE_STRATEGY_TERMS):
         if term not in source_strategy_text:
             errors.append(f"asset-source-strategy-spec: missing source priority term {term}")

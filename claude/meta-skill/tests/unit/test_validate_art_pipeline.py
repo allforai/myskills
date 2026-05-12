@@ -19,6 +19,7 @@ def _minimal_repo(tmp_path):
         """${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/art-preview-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/2d-animation-toolchain-env/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/image-model-capability-registry/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/production-tool-capability-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/asset-source-strategy-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/asset-pack-search-spec/SKILL.md
@@ -111,11 +112,28 @@ selected_model
 .allforai/game-design/art/env/2d-animation-toolchain-registry.json
 DragonBones
 Spine
+DragonBones-compatible JSON/atlas generation
+DragonBones Pro GUI
+required=false
+project-local generator/adapter
+GUI app presence without an automated export/import adapter
 blocked_by_missing_toolchain
 blocked_by_missing_runtime_profile
 validation_evidence
 install_policy
 Do not silently switch DragonBones
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-art/00-env/production-tool-capability-registry/SKILL.md",
+        """Tool Capability Rule
+Required capability must be an automatable execution path
+GUI application
+Do not mutate global PATH
+Blender GUI presence alone is not executable evidence
+Texture packing requires an atlas generator
+Audio production requires provider APIs
 """,
     )
     _write(

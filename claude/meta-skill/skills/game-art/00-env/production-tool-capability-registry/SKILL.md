@@ -20,6 +20,40 @@ Blender CLI or an explicitly declared equivalent render tool is missing, attempt
 automatic installation; if validation still fails, downstream render skills must
 stop with `blocked_by_tooling`.
 
+## Tool Capability Rule
+
+Required capability must be an automatable execution path, not the name of a
+GUI app.
+
+Classify every tool-like dependency before marking it required:
+
+| Dependency type | Can be required? | Evidence required |
+|---|---:|---|
+| CLI command | yes | command exists, version/probe exits `0`, and a minimal fixture can run when applicable |
+| API / hosted model | yes | credentials/config exist and a dry-run or provider capability probe succeeds |
+| MCP tool | yes only for declared MCP workflows | callable MCP probe succeeds and produces evidence |
+| project adapter / script | yes | project-local path exists, is executable, and a fixture/probe succeeds |
+| file format compatibility | yes | schema-valid artifact plus downstream importer/preview evidence |
+| runtime import / build | yes when engine-ready is claimed | target engine/import command runs; static inspection is not a substitute |
+| GUI application | no by default | record as optional unless it exposes a verified CLI/API/adapter path |
+
+Rules:
+- Do not require Photoshop, Illustrator, Figma, Canva, Aseprite GUI, Spine GUI,
+  DragonBones Pro GUI, TexturePacker GUI, Cocos Creator GUI, Logic, GarageBand,
+  Ableton, or any similar GUI app unless a verified automation adapter is the
+  actual required path.
+- Do not infer automation from app installation alone.
+- Do not mutate global PATH to make a project adapter look globally installed;
+  reference project-local adapters directly.
+- A GUI app may be listed with `required=false` as a human-facing editor or
+  diagnostic tool.
+- Blender is an exception only through its headless path:
+  `blender --background --python <script>`. Blender GUI is not required.
+- Texture packing requires an atlas generator/manifest plus validation, not
+  TexturePacker GUI specifically.
+- Audio production requires provider APIs, synthesis scripts, ffmpeg, analysis
+  scripts, and runtime import checks; DAW GUI apps are optional only.
+
 ## Input Contract
 
 Required: requested art pipeline capabilities and target runtime.
@@ -36,10 +70,11 @@ Writes:
 - `.allforai/game-design/art/tools/production-tool-capability-report.json`
 
 Tool entries must include `tool_id`, `tool_kind`, `required_for`,
-`preferred_access`, `cli_command`, `optional_mcp_tool`, `availability`,
-`version`, `validation_command`, `install_policy`, `install_commands`,
-`install_evidence`, `validation_evidence`, `project_paths`, `failure_status`,
-`consumer_refs`, and `notes`.
+`required`, `automation_surface`, `preferred_access`, `cli_command`,
+`optional_mcp_tool`, `availability`, `version`, `validation_command`,
+`install_policy`, `install_commands`, `install_evidence`,
+`validation_evidence`, `project_paths`, `failure_status`, `consumer_refs`, and
+`notes`.
 
 Default required Blender entry:
 
@@ -48,6 +83,8 @@ Default required Blender entry:
   "tool_id": "blender",
   "tool_kind": "3d_renderer",
   "required_for": ["3d_source_render", "sprite_turntable", "shadow_pass", "helper_maps"],
+  "required": true,
+  "automation_surface": "cli",
   "preferred_access": "cli",
   "cli_command": "blender",
   "optional_mcp_tool": "blender-mcp",
@@ -63,6 +100,9 @@ Default required Blender entry:
   "failure_status": "blocked_by_tooling"
 }
 ```
+
+Allowed `automation_surface` values: `cli`, `api`, `mcp`, `project_adapter`,
+`script`, `runtime_import`, `file_format`, `gui_optional`, `unknown`.
 
 Allowed `tool_kind` values: `3d_renderer`, `image_processor`,
 `atlas_packer`, `runtime_importer`, `engine_editor`, `preview_renderer`,
@@ -137,6 +177,7 @@ Blender execution policy:
   referenced by producing manifests.
 - Optional MCP can inspect scenes or assist diagnostics, but completion must not
   depend on MCP.
+- Blender GUI presence alone is not executable evidence.
 - Install success alone is insufficient; rerun `blender --version`.
 - If Blender CLI cannot be installed or verified, return `blocked_by_tooling`.
 

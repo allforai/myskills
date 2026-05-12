@@ -78,13 +78,13 @@
 
 **Q2：角色动画方案？**
 - 无骨骼（帧序列，手工质感，文件较大）
-- DragonBones 标准（骨骼动画，开源免费，AI 可生成变换动画 JSON）
-- DragonBones 高级（骨骼+网格变形，最平滑，需人工 GUI 绑骨）
+- DragonBones-compatible 标准（自动生成骨骼 JSON + Atlas，Cocos 运行时导入验证）
+- DragonBones 高级网格（仅当存在自动生成/导入 adapter；否则降级为标准变换骨骼）
 → 驱动：`character.rig`
 
 **Q3：特效方案？**
-- 帧序列（Aseprite/Photoshop制作，精细可控）
-- DragonBones FX（变换类 AI 可生成；粒子路径需人工）
+- 帧序列（AI/脚本生成 PNG 序列，Aseprite/Photoshop 仅可选人工编辑）
+- DragonBones-compatible FX（变换类 AI 可生成；粒子路径无自动生成器时降级到粒子/VFX skill）
 - Shader 粒子（引擎内置，实时，无需额外资产）
 → 驱动：`vfx.approach`
 
@@ -102,9 +102,9 @@
 → 驱动：`concept_art.types[]`；非"不需要"时 active_nodes 加入 `concept-art-gen`
 
 **Q6：工具链约束？**
-- 使用 DragonBones（开源免费，Cocos 原生支持）
-- 仅使用无骨骼方案（帧序列，最简）
-- 有外包美术支持（可选 DragonBones 高级网格方案）
+- 使用 DragonBones-compatible 自动数据生成 + Cocos 导入验证
+- 仅使用无骨骼自动化方案（帧序列/part tween，最简）
+- 有可验证外部产线 adapter（可接受高级网格/人工编辑源，但必须有自动导出与导入验证）
 → 驱动：`toolchain.constraints`
 
 ---
@@ -132,8 +132,8 @@
 → 驱动：`pixel.anim_frames`
 
 **Q4：Aseprite 是否已安装？**
-- 已安装（可用 Aseprite CLI batch 模式做像素化后处理）
-- 未安装（用 Python PIL 降采样，效果略差）
+- 有可验证 Aseprite CLI（可选增强路径）
+- 无 Aseprite CLI（使用 Python PIL/脚本降采样与调色板量化）
 → 驱动：`toolchain.aseprite_available`
 
 **Q5：需要概念原画？**（同分支A Q5）
