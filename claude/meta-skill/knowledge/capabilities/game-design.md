@@ -255,6 +255,24 @@ Checklist items by node:
 | `environment-design` | `environment-artist` | 1. 地砖可无缝拼接（边缘像素匹配）; 2. 视差层数与 art-pipeline-config 一致; 3. 光源方向全场景统一 |
 | `ui-art-gen` | `ui-artist` | 1. 所有交互元素有 hover/pressed 状态; 2. 字体渲染在目标分辨率下清晰; 3. 色盲友好（不依赖颜色单独传达信息） |
 
+## Output Language Policy
+
+All game-design nodes produce documents reviewed by Chinese development teams.
+Bootstrap MUST inject this policy into every generated game-design node-spec.
+
+| Content type | Required language |
+|---|---|
+| HTML navigation, section headings, labels, button text, captions | Chinese (zh-CN) |
+| Document title, page header, badge text | Chinese (zh-CN) |
+| Design descriptions, rationale, comments | Chinese (zh-CN) |
+| JSON description/display string values | Chinese (zh-CN) |
+| In-game proper nouns (character names, place names, item names) | Game world's native language (e.g., Japanese for Japan-themed games) — do NOT translate |
+| JSON field **keys** | English snake_case (schema convention — do not translate) |
+| JSON ID / enum values | English snake_case |
+
+**Enforcement rule:** Any HTML output that uses English for navigation tabs, section titles, or
+descriptive labels is a policy violation and must be requested for revision.
+
 ## Canonical Node Registry
 
 Bootstrap MUST use these exact IDs when generating game-design node-specs.

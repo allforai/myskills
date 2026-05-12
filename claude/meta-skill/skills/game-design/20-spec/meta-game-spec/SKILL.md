@@ -29,6 +29,10 @@ Writes:
 - `.allforai/game-design/systems/meta-game-spec.json`
 - `.allforai/game-design/systems/meta-game-report.json`
 
+**Output language:** All display strings (descriptions, labels, summary text) in JSON and HTML
+outputs MUST be in Chinese (zh-CN). In-game proper nouns (area names, item names) keep the game
+world's native language. JSON field keys remain English snake_case.
+
 Meta-game systems must include `system_id`, `player_motivation`,
 `session_bridge`, `long_term_goal`, `progression_refs`, `reward_model`,
 `reset_or_season_rule`, `content_refresh_rule`, `ui_surfaces`,

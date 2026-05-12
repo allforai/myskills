@@ -936,6 +936,11 @@ before starting node generation.
          > Do NOT use AskUserQuestion or request user input. If a decision is ambiguous,
          > apply the most conservative interpretation derivable from the input contracts.
 
+         > **Output language (mandatory):** All HTML navigation tabs, section headings,
+         > labels, captions, and descriptive text MUST be in Chinese (zh-CN).
+         > In-game proper nouns (character/place/item names) keep the game world's native
+         > language. JSON field keys stay English snake_case. See game-design.md §Output Language Policy.
+
          ## Sub-Skill Invocation
          Follow these sub-skills in sequence:
          - Read and follow `${CLAUDE_PLUGIN_ROOT}/skills/{sub_skill_path_1}/SKILL.md`
@@ -947,7 +952,13 @@ before starting node generation.
          - `.allforai/product-concept/concept-baseline.json`
          - Sub-skill SKILL.md files define their specific input contracts.
          ```
-       - **`sub_skill_paths` is `—`** → generate LLM-based node-spec: use `domains/gaming.md` methodology for this node's phase (theory anchors, output format, design questions), anchored to `discipline_owner` context. This is the current default behavior for unmapped nodes.
+       - **`sub_skill_paths` is `—`** → generate LLM-based node-spec: use `domains/gaming.md` methodology for this node's phase (theory anchors, output format, design questions), anchored to `discipline_owner` context. This is the current default behavior for unmapped nodes. **Add this mandatory block to every LLM-based node-spec:**
+         ```markdown
+         > **Output language (mandatory):** All HTML navigation tabs, section headings,
+         > labels, captions, and descriptive text MUST be in Chinese (zh-CN).
+         > In-game proper nouns keep the game world's native language. JSON field keys
+         > stay English snake_case. See game-design.md §Output Language Policy.
+         ```
 
      **Parallelism rule:** After assigning the default serial `hard_blocked_by`, apply this override for sibling nodes that only READ a shared predecessor's output (not data-produce it): if two or more nodes both `hard_blocked_by` the same single predecessor and neither is in the other's consumers[], reclassify the later node's dependency on its sibling as `alignment_refs` instead of `hard_blocked_by`. Common parallel groups by scenario:
        - `casual-mobile`: once `core-loop-design` is approved → `economy-design`, `progression-design`, `retention-design` may all run concurrently (each `hard_blocked_by: ["core-loop-design"]`; each lists the other two as `alignment_refs` for graceful degradation reads)
@@ -1858,6 +1869,37 @@ E2E nodes should NOT be merged — each module has distinct user flows and roles
 - Exercise core user flows end-to-end (login → navigate → CRUD → verify)
 - Produce evidence (screenshots, test reports, logs)
 - Report pass/fail per flow
+
+**UI screenshot + Claude Code visual review hard gate:**
+
+Every verification node that exercises a user-facing UI MUST include screenshot
+capture and Claude Code visual review in its node-spec. This applies to Web
+Playwright, Electron, Tauri WebView, browser extensions, Flutter, iOS, Android,
+React Native, HarmonyOS, and game clients with visible runtime scenes.
+
+Required node-spec obligations:
+
+- Capture screenshots for every tested critical state: launch, loaded screen,
+  navigation target, primary form/action, success state, error/empty state, and
+  any permission/offline state covered by the flow.
+- Write a screenshot manifest:
+  `.allforai/verify/ui-screenshot-manifest.json` or a node-specific equivalent
+  under `.allforai/product-verify/` / `.allforai/visual-verify/`.
+- After screenshots are captured, ask Claude Code to inspect the screenshots as
+  visual evidence and write:
+  - `.allforai/verify/claude-code-visual-review.json`
+  - `.allforai/verify/claude-code-visual-review.md`
+- The Claude Code review must check blank screens, loading stuck states,
+  clipped/overlapped text, unreadable contrast, missing required content,
+  broken navigation state, modal/keyboard obstruction, wrong language, and
+  responsive layout breakage.
+- The node cannot pass when screenshots are missing, unreadable, stale, or when
+  Claude Code reports blocker/major visual issues. Return
+  `blocked_by_missing_screenshots`, `blocked_by_unreadable_screenshot`, or
+  `failed_visual_review` instead.
+- If the browser, emulator, simulator, device, or game runtime cannot launch,
+  return `BLOCKED_ENV` / `FAILED_ENV`. Do not substitute DOM inspection, static
+  code review, or manual prose for screenshot-based acceptance.
 
 **Node-spec format:**
 

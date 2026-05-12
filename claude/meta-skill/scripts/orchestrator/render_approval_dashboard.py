@@ -106,10 +106,18 @@ a:hover{{text-decoration:underline}}
 
 /* ── Layout ── */
 .layout{{display:flex;height:calc(100vh - 52px)}}
-.sidebar{{width:220px;min-width:180px;flex-shrink:0;background:#fff;border-right:1px solid #e2e8f0;padding:12px 0;overflow-y:auto}}
+.sidebar{{width:220px;min-width:0;flex-shrink:0;background:#fff;border-right:1px solid #e2e8f0;display:flex;flex-direction:column;transition:width .22s ease;overflow:hidden}}
+.sidebar.collapsed{{width:28px}}
+.sidebar-hd{{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:4px 8px 4px 12px;border-bottom:1px solid #e2e8f0;background:#fff;min-height:38px}}
+.sidebar-hd-title{{font-size:12px;font-weight:700;color:#4a5568;letter-spacing:.3px;white-space:nowrap;transition:opacity .2s ease}}
+.sidebar.collapsed .sidebar-hd-title{{opacity:0}}
+.sidebar-body{{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 0}}
+.sidebar.collapsed .sidebar-body{{overflow:hidden;pointer-events:none}}
+.sidebar-toggle{{width:26px;height:26px;border-radius:7px;background:transparent;border:1.5px solid #e2e8f0;cursor:pointer;font-size:15px;color:#718096;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;line-height:1;transition:background .15s,color .15s,border-color .15s}}
+.sidebar-toggle:hover{{background:#eff6ff;border-color:#bfdbfe;color:#3b82f6}}
 .sidebar-section{{margin-bottom:4px}}
-.sidebar-label{{padding:4px 16px;font-size:11px;font-weight:700;color:#a0aec0;text-transform:uppercase;letter-spacing:.6px}}
-.sidebar-item{{display:flex;align-items:center;gap:8px;padding:7px 16px;cursor:pointer;border-left:3px solid transparent;transition:background .1s}}
+.sidebar-label{{padding:4px 16px;font-size:11px;font-weight:700;color:#a0aec0;text-transform:uppercase;letter-spacing:.6px;white-space:nowrap}}
+.sidebar-item{{display:flex;align-items:center;gap:8px;padding:7px 16px;cursor:pointer;border-left:3px solid transparent;transition:background .1s;white-space:nowrap}}
 .sidebar-item:hover{{background:#f7fafc}}
 .sidebar-item.active{{background:#ebf8ff;border-left-color:#3182ce;color:#2b6cb0;font-weight:600}}
 .sidebar-item.s-revision{{border-left-color:#fc8181}}
@@ -125,21 +133,35 @@ a:hover{{text-decoration:underline}}
 
 /* ── Main panel ── */
 .main{{display:none}}
-@media(max-width:1100px){{.sidebar{{width:210px}}}}
-@media(max-width:800px){{.layout{{flex-direction:column;height:auto}}.sidebar{{width:100%;max-height:220px;border-right:none;border-bottom:1px solid #e2e8f0}}.preview-panel,.preview-panel.open{{width:100%;height:72vh;border-left:none;border-top:1px solid #e2e8f0}}}}
+@media(max-width:1100px){{.sidebar:not(.collapsed){{width:210px}}}}
+@media(max-width:800px){{.layout{{flex-direction:column;height:auto}}.sidebar{{width:100%!important;max-height:220px;border-right:none;border-bottom:1px solid #e2e8f0}}.sidebar.collapsed{{max-height:34px}}.preview-panel,.preview-panel.open{{width:100%;height:72vh;border-left:none;border-top:1px solid #e2e8f0}}}}
 
 /* ── Preview panel ── */
-.preview-panel{{flex:1;background:#fff;border-left:1px solid #e2e8f0;overflow:hidden;transition:width .2s ease;display:flex;flex-direction:column;min-width:0}}
-.preview-panel:not(.open)::after{{content:"选择一个节点的输出后在这里预览";display:flex;align-items:center;justify-content:center;height:100%;color:#718096;background:#fff}}
-.preview-panel:not(.open) .preview-hd,.preview-panel:not(.open) .preview-iframe,.preview-panel:not(.open) .preview-actions{{display:none}}
-.preview-hd{{padding:8px 12px;background:#f7fafc;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:8px;flex-shrink:0;min-height:38px}}
-.preview-title{{flex:1;font-size:12px;color:#4a5568;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
-.preview-close{{padding:3px 10px;border-radius:5px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;font-size:12px;color:#4a5568;flex-shrink:0}}
-.preview-close:hover{{background:#fed7d7;border-color:#fc8181;color:#c53030}}
+.preview-panel{{flex:1;background:#fff;border-left:1px solid #e2e8f0;overflow:hidden;display:flex;flex-direction:column;min-width:0}}
+.preview-panel:not(.open) .preview-iframe,.preview-panel:not(.open) .preview-actions{{display:none}}
+.preview-panel:not(.open) .tab-bar-empty{{display:flex}}
+.preview-panel.open .tab-bar-empty{{display:none}}
+
+/* Tab bar */
+.tab-bar{{display:flex;align-items:flex-end;background:#eef0f3;border-bottom:1px solid #dde1e7;flex-shrink:0;overflow-x:auto;overflow-y:hidden;min-height:36px;scrollbar-width:none;-ms-overflow-style:none;padding:0 0 0 6px;gap:2px}}
+.tab-bar::-webkit-scrollbar{{display:none}}
+.tab-bar-empty{{align-items:center;justify-content:center;height:100%;color:#a0aec0;font-size:13px;display:none}}
+.preview-tab{{display:flex;align-items:center;gap:5px;padding:0 8px 0 10px;height:28px;min-width:80px;max-width:180px;cursor:pointer;background:#dde1e9;border:1px solid #cdd2da;border-bottom:none;border-radius:5px 5px 0 0;font-size:12px;color:#5a6478;white-space:nowrap;flex-shrink:0;transition:background .12s;margin-top:8px;position:relative}}
+.preview-tab:hover{{background:#e8eaee;color:#2d3748}}
+.preview-tab.active{{background:#fff;color:#1a202c;font-weight:600;border-color:#dde1e7;height:32px;margin-top:4px;z-index:1;box-shadow:0 -1px 0 #fff}}
+.preview-tab-name{{flex:1;overflow:hidden;text-overflow:ellipsis;min-width:40px}}
+.preview-tab-x{{width:16px;height:16px;border-radius:3px;border:none;background:transparent;cursor:pointer;font-size:10px;color:#a0aec0;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;transition:background .1s,color .1s;margin-left:2px}}
+.preview-tab-x:hover{{background:rgba(0,0,0,.1);color:#4a5568}}
 .preview-iframe{{flex:1;border:none;width:100%;display:block}}
-.preview-actions{{border-top:1px solid #e2e8f0;background:#fff;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start;box-shadow:0 -4px 14px rgba(0,0,0,.06)}}
-.preview-actions-title{{font-size:13px;font-weight:800;color:#1a202c;margin-bottom:6px}}
-.preview-actions-meta{{font-size:12px;color:#718096;margin-bottom:8px;display:flex;gap:10px;flex-wrap:wrap}}
+.preview-actions{{border-top:1px solid #e2e8f0;background:#fff;box-shadow:0 -4px 14px rgba(0,0,0,.06);flex-shrink:0}}
+.pa-hd{{display:flex;align-items:center;gap:8px;height:40px;padding:0 14px;background:#f8fafc;border-bottom:1px solid #edf2f7}}
+.pa-hd-info{{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}}
+.preview-actions-title{{font-size:13px;font-weight:700;color:#1a202c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+.preview-actions-meta{{font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+.pa-toggle{{width:26px;height:26px;border-radius:7px;border:1.5px solid #e2e8f0;background:transparent;cursor:pointer;font-size:15px;color:#718096;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;transition:background .15s,color .15s,border-color .15s}}
+.pa-toggle:hover{{background:#f0f9ff;border-color:#bae6fd;color:#0284c7}}
+.pa-body{{padding:6px 12px 10px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start;overflow:hidden;transition:max-height .2s ease,padding .2s ease;max-height:300px}}
+.pa-body.hidden{{max-height:0;padding-top:0;padding-bottom:0}}
 .preview-actions textarea{{width:100%;min-height:54px;resize:vertical;padding:8px;border:1px solid #e2e8f0;border-radius:6px;font:inherit;font-size:13px;color:#2d3748;background:#f8fafc}}
 .preview-actions textarea:focus{{outline:none;border-color:#90cdf4;background:#fff}}
 .preview-actions-grid{{display:grid;grid-template-columns:1fr 1fr;gap:8px}}
@@ -223,12 +245,17 @@ a:hover{{text-decoration:underline}}
   <button class="hd-refresh" onclick="reloadRecords()">刷新</button>
 </header>
 <div class="layout">
-  <nav class="sidebar" id="sidebar"></nav>
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-hd">
+      <span class="sidebar-hd-title">节点列表</span>
+      <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="折叠侧边栏">‹</button>
+    </div>
+    <div class="sidebar-body" id="sidebar-body"></div>
+  </nav>
   <main class="main" id="main" hidden aria-hidden="true"></main>
   <div class="preview-panel" id="preview-panel">
-    <div class="preview-hd">
-      <span class="preview-title" id="preview-title"></span>
-      <button class="preview-close" onclick="closePreview()">✕ 关闭</button>
+    <div class="tab-bar" id="tab-bar">
+      <span class="tab-bar-empty">选择一个节点的输出后在这里预览</span>
     </div>
     <iframe id="preview-iframe" class="preview-iframe" src="about:blank"></iframe>
     <div id="preview-actions" class="preview-actions"></div>
@@ -536,46 +563,58 @@ function renderCard(rec) {{
 </div>`;
 }}
 
+let previewActionsCollapsed = false;
+
+function togglePreviewActions() {{
+  previewActionsCollapsed = !previewActionsCollapsed;
+  const body = document.getElementById("pa-body");
+  const btn = document.getElementById("pa-toggle-btn");
+  if (body) body.classList.toggle("hidden", previewActionsCollapsed);
+  if (btn) {{ btn.textContent = previewActionsCollapsed ? "▲" : "▼"; btn.title = previewActionsCollapsed ? "展开操作栏" : "折叠操作栏"; }}
+  try {{ localStorage.setItem("paCollapsed", previewActionsCollapsed ? "1" : "0"); }} catch(e) {{}}
+}}
+
+function initPreviewActionsState() {{
+  try {{ if (localStorage.getItem("paCollapsed") === "1") previewActionsCollapsed = true; }} catch(e) {{}}
+}}
+
 function renderPreviewActions(rec) {{
   const target = document.getElementById("preview-actions");
   if (!target) return;
-  if (!rec) {{
-    target.innerHTML = "";
-    return;
-  }}
+  if (!rec) {{ target.innerHTML = ""; return; }}
   const nid = getNodeId(rec);
   const st = rec.gate_status || "pending";
   const isReadOnly = !!(rec.read_only || rec.virtual_gate);
   const reviewers = (rec.discipline_reviewers||[]).join(", ");
   const approvalPath = rec.approval_record_path || "";
+  const hidden = previewActionsCollapsed ? " hidden" : "";
+  const toggleIcon = previewActionsCollapsed ? "▲" : "▼";
+  const toggleTitle = previewActionsCollapsed ? "展开操作栏" : "折叠操作栏";
+  const metaParts = [STATUS_LABELS[st]||st, `负责人：${{escapeHtml(rec.discipline_owner||"")}}`, reviewers ? `评审员：${{escapeHtml(reviewers)}}` : "", rec.gate_state ? `Gate：${{escapeHtml(rec.gate_state)}}` : ""].filter(Boolean);
+  const hd = `<div class="pa-hd">
+    <div class="pa-hd-info">
+      <span class="preview-actions-title">${{escapeHtml(nid)}}</span>
+      <span class="preview-actions-meta">${{metaParts.join(" · ")}}</span>
+    </div>
+    <button class="pa-toggle" id="pa-toggle-btn" onclick="togglePreviewActions()" title="${{toggleTitle}}">${{toggleIcon}}</button>
+  </div>`;
   if (isReadOnly) {{
-    target.innerHTML = `<div>
-      <div class="preview-actions-title">${{escapeHtml(nid)}}</div>
-      <div class="preview-actions-meta">
-        <span>${{STATUS_LABELS[st]||st}}</span>
-        <span>负责人：${{escapeHtml(rec.discipline_owner||"")}}</span>
-        ${{rec.gate_state ? `<span>Gate：${{escapeHtml(rec.gate_state)}}</span>` : ""}}
-      </div>
+    target.innerHTML = hd + `<div class="pa-body${{hidden}}" id="pa-body">
       <div class="preview-actions-readonly">${{escapeHtml(rec.gate_summary || "只读自动化 Gate，不写入审批记录。")}}</div>
-    </div><div class="preview-actions-buttons"></div>`;
+      <div></div>
+    </div>`;
     return;
   }}
-  target.innerHTML = `<div>
-    <div class="preview-actions-title">${{escapeHtml(nid)}}</div>
-    <div class="preview-actions-meta">
-      <span>${{STATUS_LABELS[st]||st}}</span>
-      <span>负责人：${{escapeHtml(rec.discipline_owner||"")}}</span>
-      ${{reviewers ? `<span>评审员：${{escapeHtml(reviewers)}}</span>` : ""}}
-    </div>
+  target.innerHTML = hd + `<div class="pa-body${{hidden}}" id="pa-body">
     <div class="preview-actions-grid">
       <textarea id="reviewer-${{escapeAttr(nid)}}" placeholder="评审备注（不影响审批状态）">${{escapeHtml(rec.reviewer_notes||"")}}</textarea>
       <textarea id="revision-${{escapeAttr(nid)}}" placeholder="修改意见：填写后点击要求修改">${{escapeHtml(rec.revision_notes||"")}}</textarea>
     </div>
-  </div>
-  <div class="preview-actions-buttons">
-    <button id="approve-${{escapeAttr(nid)}}" class="btn btn-approve" onclick="approve('${{escapeJs(nid)}}','${{escapeJs(approvalPath)}}')">批准</button>
-    <button id="revision-btn-${{escapeAttr(nid)}}" class="btn btn-revision" onclick="requestRevision('${{escapeJs(nid)}}','${{escapeJs(approvalPath)}}')">要求修改</button>
-    <button id="save-${{escapeAttr(nid)}}" class="btn btn-save" onclick="saveNotes('${{escapeJs(nid)}}','${{escapeJs(approvalPath)}}')">保存备注</button>
+    <div class="preview-actions-buttons">
+      <button id="approve-${{escapeAttr(nid)}}" class="btn btn-approve" onclick="approve('${{escapeJs(nid)}}','${{escapeJs(approvalPath)}}')">批准</button>
+      <button id="revision-btn-${{escapeAttr(nid)}}" class="btn btn-revision" onclick="requestRevision('${{escapeJs(nid)}}','${{escapeJs(approvalPath)}}')">要求修改</button>
+      <button id="save-${{escapeAttr(nid)}}" class="btn btn-save" onclick="saveNotes('${{escapeJs(nid)}}','${{escapeJs(approvalPath)}}')">保存备注</button>
+    </div>
   </div>`;
 }}
 
@@ -615,7 +654,7 @@ function render() {{
     }}
     sidebarHtml += "</div>";
   }}
-  document.getElementById("sidebar").innerHTML = sidebarHtml;
+  document.getElementById("sidebar-body").innerHTML = sidebarHtml;
 
   // Main content
   const toShow = activeFilter
@@ -653,37 +692,110 @@ async function reloadRecords() {{
   render();
 }}
 
-function openPreview(href, nodeId) {{
-  const panel = document.getElementById("preview-panel");
-  const iframe = document.getElementById("preview-iframe");
-  const title = document.getElementById("preview-title");
-  activeNodeId = nodeId || activeNodeId;
-  title.textContent = href;
-  iframe.src = href + "?ts=" + Date.now();
-  panel.classList.add("open");
-  renderPreviewActions(recordByNodeId(activeNodeId));
-  if (nodeId) {{
-    setTimeout(() => {{
-      const el = document.getElementById("card-" + nodeId);
-      if (el) el.scrollIntoView({{behavior:"smooth", block:"nearest"}});
-    }}, 50);
+let openTabs = [];
+let activeTabId = null;
+
+function renderTabs() {{
+  const bar = document.getElementById("tab-bar");
+  if (!bar) return;
+  const emptyEl = bar.querySelector(".tab-bar-empty");
+  if (!openTabs.length) {{
+    bar.innerHTML = "";
+    if (emptyEl) bar.appendChild(emptyEl);
+    return;
   }}
+  const tabs = openTabs.map(tab => {{
+    const active = tab.nodeId === activeTabId;
+    return `<div class="preview-tab${{active?" active":""}}" onclick="switchTab('${{escapeJs(tab.nodeId)}}')" title="${{escapeAttr(tab.nodeId)}}">
+      <span class="preview-tab-name">${{escapeHtml(tab.nodeId)}}</span>
+      <button class="preview-tab-x" onclick="closeTab('${{escapeJs(tab.nodeId)}}',event)">✕</button>
+    </div>`;
+  }}).join("");
+  bar.innerHTML = tabs;
+}}
+
+function switchTab(nodeId) {{
+  if (activeTabId === nodeId) return;
+  activeTabId = nodeId;
+  activeNodeId = nodeId;
+  const tab = openTabs.find(t => t.nodeId === nodeId);
+  if (tab) {{
+    const iframe = document.getElementById("preview-iframe");
+    iframe.src = tab.href + "?ts=" + Date.now();
+  }}
+  renderPreviewActions(recordByNodeId(nodeId));
+  renderTabs();
+}}
+
+function closeTab(nodeId, e) {{
+  if (e) e.stopPropagation();
+  openTabs = openTabs.filter(t => t.nodeId !== nodeId);
+  if (activeTabId === nodeId) {{
+    if (openTabs.length) {{
+      const next = openTabs[openTabs.length - 1];
+      activeTabId = next.nodeId;
+      activeNodeId = next.nodeId;
+      const iframe = document.getElementById("preview-iframe");
+      iframe.src = next.href + "?ts=" + Date.now();
+      renderPreviewActions(recordByNodeId(next.nodeId));
+    }} else {{
+      activeTabId = null;
+      activeNodeId = null;
+      document.getElementById("preview-panel").classList.remove("open");
+      document.getElementById("preview-iframe").src = "about:blank";
+      renderPreviewActions(null);
+    }}
+  }}
+  renderTabs();
+}}
+
+function openPreview(href, nodeId) {{
+  const existing = openTabs.find(t => t.nodeId === nodeId);
+  if (!existing) {{
+    openTabs.push({{nodeId, href}});
+  }} else {{
+    existing.href = href;
+  }}
+  activeTabId = nodeId;
+  activeNodeId = nodeId;
+  document.getElementById("preview-panel").classList.add("open");
+  document.getElementById("preview-iframe").src = href + "?ts=" + Date.now();
+  renderPreviewActions(recordByNodeId(nodeId));
+  renderTabs();
 }}
 
 function closePreview() {{
-  const panel = document.getElementById("preview-panel");
-  const iframe = document.getElementById("preview-iframe");
-  activeNodeId = null;
-  panel.classList.remove("open");
-  renderPreviewActions(null);
-  setTimeout(() => {{ iframe.src = "about:blank"; }}, 200);
+  if (activeTabId) closeTab(activeTabId);
 }}
 
 function escapeHtml(v) {{ return String(v).replace(/[&<>"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c])); }}
 function escapeAttr(v) {{ return escapeHtml(v); }}
 function escapeJs(v) {{ return String(v).replace(/['\\\\]/g,"\\\\$&"); }}
 
+function toggleSidebar() {{
+  const sidebar = document.getElementById("sidebar");
+  const btn = document.getElementById("sidebar-toggle");
+  const collapsed = sidebar.classList.toggle("collapsed");
+  btn.textContent = collapsed ? "›" : "‹";
+  btn.title = collapsed ? "展开侧边栏" : "折叠侧边栏";
+  try {{ localStorage.setItem("sidebarCollapsed", collapsed ? "1" : "0"); }} catch(e) {{}}
+}}
+
+function initSidebarState() {{
+  try {{
+    if (localStorage.getItem("sidebarCollapsed") === "1") {{
+      const sidebar = document.getElementById("sidebar");
+      const btn = document.getElementById("sidebar-toggle");
+      sidebar.classList.add("collapsed");
+      btn.textContent = "›";
+      btn.title = "展开侧边栏";
+    }}
+  }} catch(e) {{}}
+}}
+
 render();
+initSidebarState();
+initPreviewActionsState();
 loadGateStates().then(render);
 setInterval(reloadRecords, 15000);
 </script>
