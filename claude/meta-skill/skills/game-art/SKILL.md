@@ -42,6 +42,7 @@ Layer numbers indicate directory organization and default execution order for ne
 | `10-design` | `art-direction-input-contract` | Product concept, gameplay, runtime constraints, and human visual preferences as art input. |
 | `10-design` | `asset-source-strategy-spec` | Decide per asset whether to use LLM generation, existing packs, existing 3D sources, user assets, adaptation, or hybrid production. |
 | `10-design` | `motion-design` | Animation intent, key poses, timing, events, readability, fallback motion. |
+| `10-design` | `visual-hook-design` | Primary visual selling points, screenshot appeal, and recognizable art hooks before asset production. |
 | `20-spec` | `2-5d-production-mode-spec` | 3D-assisted production boundaries for games that render/bake to 2D runtime assets. |
 | `20-spec` | `2-5d-lighting-shadow-spec` | Light direction, baked shadows, helper maps, and runtime lighting rules for 3D-assisted 2D output. |
 | `20-spec` | `2d-layering-spec` | Unified scene, character, outfit, animation overlay, VFX, UI, helper, atlas, and runtime layer rules. |
@@ -100,6 +101,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept-validation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-direction-input-contract/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/asset-source-strategy-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/motion-design/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/visual-hook-design/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/2-5d-production-mode-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/2-5d-lighting-shadow-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/2d-layering-spec/SKILL.md

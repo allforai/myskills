@@ -33,12 +33,15 @@ This capability is the **orchestration layer** over `domains/gaming.md`:
 | Layer | File | Responsibility |
 |-------|------|----------------|
 | Knowledge | `domains/gaming.md` | Lightweight genre/template selection and fallback LLM guidance |
+| Knowledge | `domains/game-genre-specialization.md` | Rules for generating project-local specialized skills for genre-tight methods |
 | Orchestration | `capabilities/game-design.md` (this file) | Node registry, sub-skill mapping, approval gate protocol, final aggregation, downstream handoff |
 | Execution | `skills/game-*/*/SKILL.md` | Concrete methodology, input/output contracts, generation, QA, repair routing |
 
 Bootstrap reads `gaming.md` and this file when generating node-specs for game
 projects:
 - From `gaming.md`: scenario/template selection and fallback LLM context.
+- From `game-genre-specialization.md`: when and how to generate project-local
+  specialized skills for genre-tight methods.
 - From this file: canonical node IDs, output paths, approval gates, sub-skill
   mapping, and final handoff rules.
 - From mapped sub-skills: concrete methodology, artifact contracts, validation,
@@ -467,6 +470,37 @@ map artifact.
 run after difficulty budget, teaching, encounter, reward, and layout specs, and
 before pacing/playability closure. Pacing/playability QA may not pass a level
 that has blocker difficulty-validation findings.
+
+**Genre-tight specialization:** Bundled sub-skills must stay broadly reusable
+across game types. Do not add one global child skill per game genre, subgenre,
+or project. When a project declares a tight genre with special validation
+logic, such as 连连看 / Onet path-connection matching, rhythm timing charts,
+roguelike map seeds, deck-builder card pools, word-puzzle dictionaries, or
+merge-game object chains, bootstrap must generate project-local specialized
+skills and node-spec instructions instead of expanding the global skill pack.
+
+Project-local specialized skills are written under:
+`.allforai/bootstrap/specialized-skills/<specialization_id>/SKILL.md`
+
+Specialized skill generation rules:
+- Generate a specialized skill only when the concept/game-design inputs prove
+  that the genre-specific method is required.
+- The specialized skill must name the project genre signal that triggered it.
+- It must define `Input Contract`, `Output Contract`, `Invocation Contract`,
+  `Automatic Validation`, `Repair Routing`, and `Completion Conditions`.
+- It must consume project artifacts and runtime code when relevant; do not
+  invent generic assumptions that contradict the project.
+- It must produce project-local artifacts under `.allforai/`, not global plugin
+  files.
+- Generated node-specs may read these project-local specialized skills
+  directly, but Sub-Skill Mapping must not reference them as bundled skills.
+- If runtime validation is required but cannot run, the specialized skill must
+  block with a clear status rather than substituting a weaker fallback.
+
+For path-connection matching projects such as Glow Island, the bootstrap-time
+specialization should generate project-local guidance for tile-family
+readability, board path-feedback readability, and solver/difficulty QA derived
+from the project's puzzle spec and runtime matcher.
 
 **Templates:** Append the following to `game-design-finalize` when the game has
 items, enemies, skills, levels, quests, economy rows, drop tables, content packs,

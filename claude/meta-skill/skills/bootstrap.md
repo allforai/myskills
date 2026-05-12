@@ -910,7 +910,8 @@ primary cause of execution failures on rebuild. Reset `approval-records.json` to
 before starting node generation.
 
 1. Read `${CLAUDE_PLUGIN_ROOT}/knowledge/game-scenario-templates/${game_scenario}.json`
-2. Read `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/game-design.md` §Canonical Node Registry + §Sub-Skill Mapping + §Conditional Sub-Skill Expansion Rules + §Finalize Exit Artifacts
+2. Read `${CLAUDE_PLUGIN_ROOT}/knowledge/domains/game-genre-specialization.md`
+3. Read `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/game-design.md` §Canonical Node Registry + §Sub-Skill Mapping + §Conditional Sub-Skill Expansion Rules + §Finalize Exit Artifacts
 3. Insert game-design nodes into the workflow AFTER `product-concept` node and BEFORE `product-analysis` node
 4. For each node in `required_nodes` + `always_include` (and selected `optional_nodes`):
    - Check if `node_id` exists in game-design.md Canonical Node Registry:
@@ -925,6 +926,38 @@ before starting node generation.
        bootstrap with `BOOTSTRAP_SUB_SKILL_MAPPING_INVALID` and list the
        missing path/section. Do not silently drop that sub-skill and do not
        convert an explicitly mapped node to generic LLM execution.
+
+       **Project-local specialized skill generation:**
+       - Bundled sub-skills are only for reusable cross-genre capabilities.
+         Do not create or require a global child skill for every game genre.
+       - Follow `${CLAUDE_PLUGIN_ROOT}/knowledge/domains/game-genre-specialization.md`
+         when deciding whether to generate project-local specialized skills.
+       - When concept/design inputs prove a genre-tight method is required,
+         generate a project-local specialized skill at
+         `.allforai/bootstrap/specialized-skills/<specialization_id>/SKILL.md`.
+       - A generated specialized skill MUST include `Input Contract`,
+         `Output Contract`, `Invocation Contract`, `Automatic Validation`,
+         `Repair Routing`, and `Completion Conditions`.
+       - Node-specs may read project-local specialized skills directly from
+         `.allforai/bootstrap/specialized-skills/`, but Sub-Skill Mapping must
+         never reference those paths as bundled plugin skills.
+       - Specialized skills must consume project artifacts and runtime code
+         when relevant, and must write project-local `.allforai/` outputs.
+       - If executable validation is required but unavailable, the generated
+         specialized skill must return a blocked/failed state instead of using
+         a weaker fallback.
+
+       **Specialization examples:**
+       - 连连看 / Onet / path-connection matching: generate specialized skill
+         guidance for tile-family readability, path-feedback readability, and
+         solver/difficulty QA using the project's puzzle spec and runtime
+         matcher.
+       - Rhythm games: generate beatmap timing-window validation and input
+         latency validation.
+       - Deck-builders: generate card-pool closure, draw-probability, and
+         combo-loop validation.
+       - Roguelikes: generate seed reproducibility, map connectivity, and
+         progression risk validation.
 
        **Node-spec content — branch on `sub_skill_paths`:**
        - **`sub_skill_paths` is non-empty** → generate thin delegating node-spec:
@@ -947,6 +980,12 @@ before starting node generation.
          > use "旧版"/"previously"/"replaced" in visible UI text, or include content for systems
          > absent from concept-baseline.json. Sub-skill output must be verified and corrected
          > before writing exit artifacts. See game-design.md §Design Integrity Rules.
+
+         > **Genre-tight specialization:** If the project genre has special validation logic
+         > not represented by reusable bundled sub-skills, read or generate the relevant
+         > project-local specialized skill under `.allforai/bootstrap/specialized-skills/`.
+         > Do not assume the global skill pack has one child skill per genre. See
+         > game-design.md §Genre-tight specialization.
 
          ## Sub-Skill Invocation
          Follow these sub-skills in sequence:
@@ -971,6 +1010,11 @@ before starting node generation.
          > (concept-baseline.json, core-mechanics.json). NEVER reference old/deprecated systems,
          > use "旧版"/"previously"/"replaced" in visible UI text, or include content for systems
          > absent from concept-baseline.json. See game-design.md §Design Integrity Rules.
+
+         > **Genre-tight specialization:** If this node covers a tight genre with special
+         > validation logic, read or generate the relevant project-local specialized skill
+         > under `.allforai/bootstrap/specialized-skills/`, then follow its contracts.
+         > Do not assume the global skill pack has one child skill per genre.
          ```
 
      **Parallelism rule:** After assigning the default serial `hard_blocked_by`, apply this override for sibling nodes that only READ a shared predecessor's output (not data-produce it): if two or more nodes both `hard_blocked_by` the same single predecessor and neither is in the other's consumers[], reclassify the later node's dependency on its sibling as `alignment_refs` instead of `hard_blocked_by`. Common parallel groups by scenario:
