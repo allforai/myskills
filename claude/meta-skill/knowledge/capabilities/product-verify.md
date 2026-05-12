@@ -240,6 +240,8 @@ For Android/Kotlin/Compose products, product verification may consume static evi
 from code review, but UI completeness is not accepted until an Android UI automation
 node runs `./gradlew connectedAndroidTest` (Espresso or Compose UI tests) or records a
 blocking environment failure. A manual checklist is not a substitute for this node.
+The same rule applies to iOS, Flutter, React Native, and HarmonyOS with their
+platform-native UI runners.
 
 ### Split Static vs Dynamic
 For large apps: static verification as one node, dynamic as another.

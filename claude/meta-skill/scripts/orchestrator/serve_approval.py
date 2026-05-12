@@ -62,13 +62,13 @@ class ApprovalHandler(http.server.SimpleHTTPRequestHandler):
 
     def _apply_action(self, action: dict) -> None:
         data = json.loads(self.approval_path.read_text(encoding="utf-8"))
-        node_id = action.get("node_id") or action.get("node")
+        node_id = action.get("node_id")
         if not node_id:
             raise ValueError("missing node_id")
 
         records = data.get("records", [])
         record = next(
-            (r for r in records if r.get("node_id") == node_id or r.get("node") == node_id),
+            (r for r in records if r.get("node_id") == node_id),
             None,
         )
         if record is None:

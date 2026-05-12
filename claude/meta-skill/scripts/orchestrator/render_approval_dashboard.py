@@ -184,7 +184,7 @@ async function loadApproval() {{
   }} catch(e) {{}}
 }}
 
-function getNodeId(rec) {{ return rec.node_id || rec.node || ""; }}
+function getNodeId(rec) {{ return rec.node_id || ""; }}
 
 function htmlOutputFor(rec) {{
   if (rec.html_output) return rec.html_output;

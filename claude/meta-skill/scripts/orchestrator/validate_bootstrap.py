@@ -2,10 +2,11 @@
 """Validate bootstrap products: workflow.json + node-specs/*.md.
 
 Checks:
-  - workflow.json: schema valid, nodes non-empty, each node has id/node_id, goal/capability/exit_artifacts
-  - workflow.json: consumers[] references point to existing node IDs
+  - workflow.json: schema valid, nodes non-empty, each node has node_id, goal/capability/exit_artifacts
+  - workflow.json: consumers[]/hard_blocked_by[]/unlocks[]/alignment_refs[] references point to existing node IDs
   - workflow.json: exit_artifacts paths are not bare filenames
-  - bootstrap-profile.json + workflow.json: Android UI modules have platform UI automation
+  - workflow.json nodes have matching node-specs, and node-specs are not orphaned
+  - bootstrap-profile.json + workflow.json: mobile UI modules have platform UI automation
   - node-specs/*.md: YAML frontmatter parseable, 'node' field present
 """
 
@@ -23,7 +24,7 @@ except ImportError:
 
 def _node_id(node: dict, fallback: str = "") -> str:
     """Return the canonical workflow node identifier."""
-    return node.get("id") or node.get("node_id") or fallback
+    return node.get("node_id") or fallback
 
 
 def _lower_blob(value) -> str:
@@ -37,6 +38,93 @@ def _lower_blob(value) -> str:
 def _load_json(path: str):
     with open(path) as f:
         return json.load(f)
+
+
+REFERENCE_FIELDS = ("consumers", "hard_blocked_by", "unlocks", "alignment_refs")
+
+
+UI_TEST_PLATFORMS = {
+    "android": {
+        "display": "Android mobile UI",
+        "runner_terms": (
+            "connectedandroidtest",
+            "espresso",
+            "compose ui",
+            "android-ui",
+            "android ui",
+            "maestro",
+        ),
+        "evidence_terms": (
+            "android-ui-test-report",
+            "android-logcat",
+            "android-ui-screenshots",
+            "connectedandroidtest",
+        ),
+    },
+    "ios": {
+        "display": "iOS mobile UI",
+        "runner_terms": (
+            "xcodebuild test",
+            "xcuitest",
+            "xctest",
+            "ios-ui",
+            "ios ui",
+        ),
+        "evidence_terms": (
+            "ios-ui-test-report",
+            "xcresult",
+            "ios-ui-screenshots",
+            "xcodebuild test",
+        ),
+    },
+    "flutter": {
+        "display": "Flutter mobile UI",
+        "runner_terms": (
+            "flutter test integration_test",
+            "integration_test/",
+            "patrol",
+            "flutter-ui",
+            "flutter ui",
+        ),
+        "evidence_terms": (
+            "flutter-ui-test-report",
+            "integration_test",
+            "flutter-ui-screenshots",
+            "patrol",
+        ),
+    },
+    "react-native": {
+        "display": "React Native mobile UI",
+        "runner_terms": (
+            "detox",
+            "maestro",
+            "react-native-ui",
+            "react native ui",
+        ),
+        "evidence_terms": (
+            "react-native-ui-test-report",
+            "detox",
+            "maestro",
+            "rn-ui-screenshots",
+        ),
+    },
+    "harmonyos": {
+        "display": "HarmonyOS mobile UI",
+        "runner_terms": (
+            "hypium",
+            "ohostest",
+            "hdc",
+            "harmony-ui",
+            "harmonyos ui",
+        ),
+        "evidence_terms": (
+            "harmony-ui-test-report",
+            "hypium",
+            "ohostest",
+            "hdc",
+        ),
+    },
+}
 
 
 def validate_workflow(wf_path: str) -> list:
@@ -62,8 +150,12 @@ def validate_workflow(wf_path: str) -> list:
 
     for i, node in enumerate(wf["nodes"]):
         nid = _node_id(node, f"node[{i}]")
-        if not _node_id(node):
-            errors.append(f"workflow.json: node[{i}] missing 'id' or 'node_id'")
+        if "id" in node:
+            errors.append(f"workflow.json: {nid} uses forbidden legacy field 'id'; use 'node_id'")
+        if "blocked_by" in node:
+            errors.append(f"workflow.json: {nid} uses forbidden legacy field 'blocked_by'; use 'hard_blocked_by'")
+        if not node.get("node_id"):
+            errors.append(f"workflow.json: node[{i}] missing 'node_id'")
         if "goal" not in node:
             errors.append(f"workflow.json: {nid} missing 'goal'")
         if "capability" not in node:
@@ -88,33 +180,24 @@ def validate_workflow(wf_path: str) -> list:
                         f"path (e.g., 'subdir/{artifact_path}' not '{artifact_path}')"
                     )
 
-        if "consumers" in node:
-            if not isinstance(node["consumers"], list):
-                errors.append(f"workflow.json: {nid} 'consumers' must be a list")
-            else:
-                for cid in node["consumers"]:
-                    if cid not in node_ids:
-                        errors.append(
-                            f"workflow.json: {nid} consumers references "
-                            f"non-existent node '{cid}'"
-                        )
+        for field in REFERENCE_FIELDS:
+            if field not in node:
+                continue
+            if not isinstance(node[field], list):
+                errors.append(f"workflow.json: {nid} '{field}' must be a list")
+                continue
+            for cid in node[field]:
+                if cid not in node_ids:
+                    errors.append(
+                        f"workflow.json: {nid} {field} references "
+                        f"non-existent node '{cid}'"
+                    )
 
     return errors
 
 
-def _profile_has_android_ui_module(profile: dict) -> bool:
-    """Detect Android app modules that need runtime UI automation."""
-    stack_blob = _lower_blob(profile.get("tech_stacks", []))
-    test_blob = _lower_blob(profile.get("test_commands", {}))
-    android_stack = (
-        "android" in stack_blob
-        or "kotlin" in stack_blob
-        or "jetpack compose" in stack_blob
-        or "connectedandroidtest" in test_blob
-    )
-    if not android_stack:
-        return False
-
+def _profile_has_mobile_ui_module(profile: dict) -> bool:
+    """Detect mobile app modules with user-facing screens."""
     for module in profile.get("modules", []):
         module_blob = _lower_blob(module)
         if module.get("role") == "mobile" and (
@@ -129,35 +212,65 @@ def _profile_has_android_ui_module(profile: dict) -> bool:
     return False
 
 
-def _android_ui_node_present(workflow: dict, specs_dir: str) -> bool:
-    """Return true when workflow contains a real Android UI automation node."""
-    android_terms = (
-        "connectedandroidtest",
-        "espresso",
-        "compose ui",
-        "android-ui",
-        "android ui",
-        "maestro",
-    )
-    evidence_terms = (
-        "android-ui-test-report",
-        "android-logcat",
-        "android-ui-screenshots",
-        "connectedandroidtest",
-    )
+def _required_mobile_ui_platforms(profile: dict) -> list:
+    """Infer platform-specific UI automation requirements from bootstrap profile."""
+    if not _profile_has_mobile_ui_module(profile):
+        return []
+
+    blob = _lower_blob(profile)
+    required = []
+
+    if "flutter" in blob:
+        required.append("flutter")
+    if "react native" in blob or "react-native" in blob or "expo" in blob:
+        required.append("react-native")
+    if "harmonyos" in blob or "arkts" in blob or "deveco" in blob or "hypium" in blob:
+        required.append("harmonyos")
+
+    native_mobile_frameworks = {"flutter", "react-native", "harmonyos"}
+    if not any(platform in required for platform in native_mobile_frameworks):
+        if (
+            "ios" in blob
+            or "swiftui" in blob
+            or "swift" in blob
+            or "xcodebuild" in blob
+            or "xcuitest" in blob
+        ):
+            required.append("ios")
+        if (
+            "android" in blob
+            or "kotlin" in blob
+            or "jetpack compose" in blob
+            or "connectedandroidtest" in blob
+        ):
+            required.append("android")
+
+    return required
+
+
+def _node_blob(node: dict, specs_dir: str) -> str:
+    nid = _node_id(node)
+    blob = _lower_blob(node)
+    spec_path = os.path.join(specs_dir, f"{nid}.md")
+    if os.path.exists(spec_path):
+        try:
+            with open(spec_path) as f:
+                blob += "\n" + f.read().lower()
+        except Exception:
+            pass
+    return blob
+
+
+def _ui_node_present(workflow: dict, specs_dir: str, platform: str) -> bool:
+    """Return true when workflow contains a real platform UI automation node."""
+    spec = UI_TEST_PLATFORMS[platform]
+    runner_terms = spec["runner_terms"]
+    evidence_terms = spec["evidence_terms"]
 
     for node in workflow.get("nodes", []):
-        nid = _node_id(node)
-        node_blob = _lower_blob(node)
-        spec_path = os.path.join(specs_dir, f"{nid}.md")
-        if os.path.exists(spec_path):
-            try:
-                with open(spec_path) as f:
-                    node_blob += "\n" + f.read().lower()
-            except Exception:
-                pass
+        node_blob = _node_blob(node, specs_dir)
 
-        if not any(term in node_blob for term in android_terms):
+        if not any(term in node_blob for term in runner_terms):
             continue
 
         manual_only = (
@@ -165,7 +278,7 @@ def _android_ui_node_present(workflow: dict, specs_dir: str) -> bool:
             or "manual - requires device" in node_blob
             or "document manual test scenarios" in node_blob
         )
-        has_runner = "connectedandroidtest" in node_blob or "maestro" in node_blob
+        has_runner = any(term in node_blob for term in runner_terms)
         has_evidence = any(term in node_blob for term in evidence_terms)
         has_blocked_env = "blocked_env" in node_blob or "failed_env" in node_blob
 
@@ -191,17 +304,44 @@ def validate_mobile_ui_coverage(bdir: str) -> list:
     except Exception:
         return errors
 
-    if not _profile_has_android_ui_module(profile):
+    for platform in _required_mobile_ui_platforms(profile):
+        if not _ui_node_present(workflow, specs_dir, platform):
+            spec = UI_TEST_PLATFORMS[platform]
+            errors.append(
+                f"workflow.json: {spec['display']} module detected, but no platform UI "
+                f"automation node with runner evidence was found. Generate a dedicated "
+                f"UI automation/e2e-test node for {platform} and report BLOCKED_ENV if "
+                f"the required device, simulator, emulator, or service is unavailable; "
+                f"do not replace it with manual scenarios."
+            )
+
+    return errors
+
+
+def validate_node_spec_coverage(bdir: str) -> list:
+    """Ensure workflow nodes and node-spec files stay in sync."""
+    errors = []
+    workflow_path = os.path.join(bdir, "workflow.json")
+    specs_dir = os.path.join(bdir, "node-specs")
+    if not os.path.exists(workflow_path) or not os.path.isdir(specs_dir):
         return errors
 
-    if not _android_ui_node_present(workflow, specs_dir):
-        errors.append(
-            "workflow.json: Android mobile UI module detected, but no Android UI "
-            "automation node with connectedAndroidTest/Espresso/Compose UI/Maestro "
-            "evidence was found. Generate android-ui-verify/e2e-test-* and report "
-            "BLOCKED_ENV if no device or emulator is available; do not replace it "
-            "with manual scenarios."
-        )
+    try:
+        workflow = _load_json(workflow_path)
+    except Exception:
+        return errors
+
+    node_ids = {_node_id(node) for node in workflow.get("nodes", []) if _node_id(node)}
+    spec_ids = {
+        os.path.splitext(fname)[0]
+        for fname in os.listdir(specs_dir)
+        if fname.endswith(".md")
+    }
+
+    for node_id in sorted(node_ids - spec_ids):
+        errors.append(f"node-specs: workflow node '{node_id}' has no matching node-spec file")
+    for spec_id in sorted(spec_ids - node_ids):
+        errors.append(f"node-specs/{spec_id}.md: no matching workflow node")
 
     return errors
 
@@ -253,6 +393,7 @@ def main():
     wf_path = os.path.join(bdir, "workflow.json")
     if os.path.exists(wf_path):
         errors.extend(validate_workflow(wf_path))
+        errors.extend(validate_node_spec_coverage(bdir))
         errors.extend(validate_mobile_ui_coverage(bdir))
     else:
         sm_path = os.path.join(bdir, "state-machine.json")
@@ -275,7 +416,12 @@ def main():
 
 
 # Also export for testing
-__all__ = ["validate_workflow", "validate_node_spec", "validate_mobile_ui_coverage"]
+__all__ = [
+    "validate_workflow",
+    "validate_node_spec",
+    "validate_node_spec_coverage",
+    "validate_mobile_ui_coverage",
+]
 
 
 if __name__ == "__main__":

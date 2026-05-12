@@ -6,7 +6,7 @@ from check_artifacts import check_node_artifacts
 
 
 def _make_node(artifacts):
-    return {"id": "test-node", "goal": "test", "exit_artifacts": artifacts}
+    return {"node_id": "test-node", "goal": "test", "exit_artifacts": artifacts}
 
 
 def test_string_artifact_exists(tmp_path):
@@ -14,7 +14,17 @@ def test_string_artifact_exists(tmp_path):
     f.write_text("{}")
     result = check_node_artifacts(_make_node([str(f)]))
     assert result["all_exist"] is True
+    assert result["node_id"] == "test-node"
     assert len(result["artifacts"]) == 1
+
+
+def test_node_id_required():
+    try:
+        check_node_artifacts({"goal": "test", "exit_artifacts": []})
+    except ValueError as exc:
+        assert "node_id" in str(exc)
+    else:
+        raise AssertionError("expected ValueError")
 
 
 def test_string_artifact_missing(tmp_path):

@@ -126,7 +126,7 @@ def evaluate_node(sm_path: str, node_id: str, req_type: str = "entry") -> dict:
     """Load state-machine.json, find *node_id*, evaluate its requires.
 
     *req_type* is 'entry' or 'exit'.
-    Returns {"node": node_id, "type": req_type, "results": [...], "all_passed": bool}.
+    Returns {"node_id": node_id, "type": req_type, "results": [...], "all_passed": bool}.
     Raises ValueError if *node_id* not found.
     """
     with open(sm_path) as f:
@@ -134,7 +134,7 @@ def evaluate_node(sm_path: str, node_id: str, req_type: str = "entry") -> dict:
 
     node = None
     for n in sm.get("nodes", []):
-        if n.get("id") == node_id:
+        if n.get("node_id") == node_id:
             node = n
             break
 
@@ -145,7 +145,7 @@ def evaluate_node(sm_path: str, node_id: str, req_type: str = "entry") -> dict:
     requires = node.get(key, [])
     results = [_eval_single(r) for r in requires]
     return {
-        "node": node_id,
+        "node_id": node_id,
         "type": req_type,
         "results": results,
         "all_passed": all(r["passed"] for r in results),

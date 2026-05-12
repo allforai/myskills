@@ -22,7 +22,7 @@ DEFAULT_STOP_THRESHOLD = 5
 
 def _make_hash(node_id: str, exit_results: list) -> str:
     """Deterministic hash of node_id + exit_requires evaluation results."""
-    blob = json.dumps({"node": node_id, "results": exit_results}, sort_keys=True)
+    blob = json.dumps({"node_id": node_id, "results": exit_results}, sort_keys=True)
     return hashlib.md5(blob.encode()).hexdigest()[:12]
 
 

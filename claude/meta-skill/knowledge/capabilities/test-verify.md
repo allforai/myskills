@@ -168,6 +168,11 @@ the UI automation acceptance path, not an optional manual scenario. If no device
 emulator is connected, report `BLOCKED_ENV` and preserve the failed `adb devices`
 evidence. Do not mark the UI layer accepted by writing manual test steps.
 
+Apply the same no-manual-substitute rule to iOS (`xcodebuild test`/XCUITest),
+Flutter (`flutter test integration_test/` or Patrol), React Native (Detox or
+Maestro), and HarmonyOS (Hypium/ohosTest via `hdc`). Missing runtime targets are
+environment blockers, not successful verification.
+
 This ensures no module is silently skipped and enables parallel execution.
 
 ### Split per Test Layer

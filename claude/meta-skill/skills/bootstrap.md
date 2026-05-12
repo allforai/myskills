@@ -477,7 +477,7 @@ When the user selects multiple goals, the generated workflow MUST enforce this d
 Example: goal (a) + (j) → workflow order: reverse-concept → product-analysis → quality-checks (NOT quality-checks first)
 Example: goal (b) + (k) → workflow order: analyze → translate → demo → product-verify → launch-prep (launch-prep BLOCKED BY product-verify)
 Example: goal (h) + (i) + (j) → product-verify → visual-verify → quality-checks (can run in parallel after implementation)
-These ordering rules are enforced via `blocked_by` in workflow.json — not left to LLM judgment at /run time.
+These ordering rules are enforced via `hard_blocked_by` in workflow.json — not left to LLM judgment at /run time.
 - **demo-forge is automatically added** to any goal that includes code implementation (translate/rebuild/create). Reason: API-driven data population is the strongest integration test — it exposes runtime issues that compile-verify cannot catch (wrong routes, missing fields, broken relationships, auth failures).
 - **concept-acceptance is automatically added** to any goal that includes code implementation (translate/rebuild/create) AND (`has_product_concept` is true OR `is_game_project` is true). For game projects, concept-acceptance uses `game-design-doc.json` as baseline (see `capabilities/concept-acceptance.md § Prerequisite`). Reason: without verifying the final product experience against the original concept, the development loop never closes — product-verify checks code vs design artifacts, but not experience vs concept.
 - **runtime-smoke-verify is automatically added** to any goal that includes code implementation (translate/rebuild/create) OR launch-prep. Reason: test-harness verification cannot catch runtime contract bugs that only surface when the artifact launches outside the harness (env-var dual-contracts, URL prefix drift, missing signing / provisioning, deep-link breakage). See `knowledge/capabilities/runtime-smoke-verify.md`. Ordering: runs **after** product-verify passes (when product-verify is in the graph) OR immediately **before** launch-checklist (when goals include launch-prep but NOT product-verify — no product-verify gate to wait for). Added 2026-04-14 after a retrospective incident where a full UI test suite passed but manual app launch hit a 404 on the first request — same env-var name parsed differently between tests and the production runtime.
@@ -866,7 +866,7 @@ When concept has drifted since last bootstrap:
    {
      "source": "game-design-gate",
      "changes": [
-       { "node": "<revised node id>", "revision_notes": "<notes from approval-records>", "detected_at": "<ISO>" }
+       { "node_id": "<revised node id>", "revision_notes": "<notes from approval-records>", "detected_at": "<ISO>" }
      ],
      "resolved": false
    }
@@ -905,7 +905,7 @@ For `analyze` goal, inject only if no `approval-records.json` exists (new projec
 **On `rebuild` goal — mandatory regeneration:** ALL existing node-spec files under
 `.allforai/bootstrap/node-specs/` for game-design nodes MUST be overwritten, even if they
 already exist. Do NOT skip a node-spec because a file is already present. Stale node-specs
-(wrong format, wrong exit_artifacts, wrong blocked_by, missing sub-skill references) are the
+(wrong format, wrong exit_artifacts, wrong hard_blocked_by, missing sub-skill references) are the
 primary cause of execution failures on rebuild. Reset `approval-records.json` to all-pending
 before starting node generation.
 
@@ -1077,7 +1077,7 @@ After injecting `concept-freeze`, read `art-pipeline-config.json.active_nodes` a
 
 **Node-spec template for each `active_node` entry:**
 
-Write `.allforai/bootstrap/node-specs/<node-id>.md` using this template, substituting `<TYPE>`, `<REGISTRY_KEY>`, `<CONFIG_SECTION>`, and `<DISCIPLINE_OWNER>` from the table below:
+Write `.allforai/bootstrap/node-specs/<node_id>.md` using this template, substituting `<TYPE>`, `<REGISTRY_KEY>`, `<CONFIG_SECTION>`, and `<DISCIPLINE_OWNER>` from the table below:
 
 | `node_id` | `<TYPE>` | `<REGISTRY_KEY>` | `<CONFIG_SECTION>` | `<DISCIPLINE_OWNER>` |
 |-----------|----------|-----------------|-------------------|---------------------|
@@ -1089,13 +1089,13 @@ Write `.allforai/bootstrap/node-specs/<node-id>.md` using this template, substit
 
 ```markdown
 ---
-node: <node-id>
+node: <node_id>
 human_gate: true
 hard_blocked_by: [concept-freeze]
 unlocks: [art-qa]
 exit_artifacts:
-  - path: .allforai/game-design/<node-id>-review.html
-  - path: .allforai/game-design/systems/<node-id>-spec.json
+  - path: .allforai/game-design/<node_id>-review.html
+  - path: .allforai/game-design/systems/<node_id>-spec.json
 ---
 
 # Goal
@@ -1144,7 +1144,7 @@ For each asset in `canonical_registry.<REGISTRY_KEY>[]`, check its `source_strat
 
 ## Completion Condition
 
-`.allforai/game-design/systems/<node-id>-spec.json` exists AND `.allforai/game-design/<node-id>-review.html` exists AND all `canonical_registry.<REGISTRY_KEY>[]` entries have `current_state != "placeholder"`.
+`.allforai/game-design/systems/<node_id>-spec.json` exists AND `.allforai/game-design/<node_id>-review.html` exists AND all `canonical_registry.<REGISTRY_KEY>[]` entries have `current_state != "placeholder"`.
 
 If any sub-skill returns `UPSTREAM_DEFECT` → halt and report the defect. Do not advance to `art-qa`.
 ```
@@ -1498,7 +1498,7 @@ is likely too large for a single workflow execution. Suggest decomposition:
   "planned_at": "<ISO timestamp>",
   "nodes": [
     {
-      "id": "<project-specific name>",
+      "node_id": "<project-specific name>",
       "capability": "<name of the capability this node is based on, e.g. discovery, product-analysis, translate>",
       "goal": "<one sentence: what this node achieves>",
       "exit_artifacts": [
@@ -1523,7 +1523,7 @@ is likely too large for a single workflow execution. Suggest decomposition:
 ```
 
 **Node fields:**
-- `id`: Project-specific. NOT from a fixed vocabulary.
+- `node_id`: Project-specific. NOT from a fixed vocabulary. `id` is forbidden in workflow nodes.
 - `capability`: Which capability this node is based on. Matches a file in
   `knowledge/capabilities/<capability>.md`. Used at Context Pull generation time
   to look up which upstream artifacts this node may consume.
@@ -1542,16 +1542,15 @@ is likely too large for a single workflow execution. Suggest decomposition:
 - `consumers`: Which downstream nodes read this node's output. Used to generate
   the Downstream Contract section in the node-spec — tells the subagent "who
   will consume your output and what they need from it".
-  **How to populate**: For each node N, `consumers[]` = all node IDs M where N appears in M's `blocked_by[]` AND N's exit_artifacts are listed in the Downstream Consumers table of M's capability file. Bootstrap derives this during Step 3.1 node graph design — after blocked_by chains are established, traverse them in reverse to fill consumers.
+  **How to populate**: For each node N, `consumers[]` = all node IDs M where N appears in M's `hard_blocked_by[]` AND N's exit_artifacts are listed in the Downstream Consumers table of M's capability file. Bootstrap derives this during Step 3.1 node graph design — after hard_blocked_by chains are established, traverse them in reverse to fill consumers.
 - `hard_blocked_by`: Node IDs that must complete (exit_artifacts exist + human_gate approved if applicable) before this node can START. The orchestrator will not dispatch this node until all hard_blocked_by nodes are complete. Use for true data dependencies — this node's inputs don't exist until upstream finishes.
 - `alignment_refs`: Node IDs this node reads artifacts FROM but does not strictly depend on for execution timing. The orchestrator may dispatch this node in parallel with alignment_refs nodes; the node-spec's Context Pull section must handle the case where alignment_refs artifacts may not yet exist (graceful degradation). Use for "I want to align with X's output but can work without it."
 
-**Migration note:** The legacy `blocked_by` field is equivalent to `hard_blocked_by`. Both are accepted; `hard_blocked_by` is preferred for new bootstrap runs.
 - `unlocks`: Node IDs unblocked when this node's gate is approved. Used by the orchestrator to advance the workflow after approval.
 - `human_gate`: `true` for game-design nodes requiring discipline_owner approval; `false` for all others. Orchestrator reads this to decide whether to check `approval-records.json` in addition to `exit_artifacts`.
 - `discipline_owner`: Role ID of the approver for human_gate nodes (e.g., `"lead-designer"`); `null` for non-gate nodes.
 
-**No entry_requires.** The orchestrator's LLM decides execution order at runtime based on `blocked_by` and artifact existence.
+**No entry_requires.** The orchestrator's LLM decides execution order at runtime based on `hard_blocked_by` and artifact existence.
 
 **exit_artifacts 路径规范（重要）：**
 - 必须是**精确的项目相对路径**，从项目根目录开始
@@ -1569,7 +1568,7 @@ is likely too large for a single workflow execution. Suggest decomposition:
 ### 3.3 Pre-Generate Node-Specs
 
 For each node in workflow.json, generate a complete node-spec markdown file
-at `.allforai/bootstrap/node-specs/<id>.md`.
+at `.allforai/bootstrap/node-specs/<node_id>.md`.
 
 **Why pre-generate?** Saves execution-time attention. Bootstrap has the
 fullest context (all knowledge loaded). Each subagent at /run time only
@@ -1580,7 +1579,7 @@ needs to read its own node-spec.
 For each node, generate a `Context Pull` section using this algorithm:
 
 1. Find upstream nodes: scan workflow.json nodes[] for any node whose `consumers[]`
-   includes the current node's id.
+   includes the current node's `node_id`.
 2. For each upstream node, read its `capability` field. Load
    `knowledge/capabilities/<capability>.md`.
 3. In the Downstream Consumers table, keep rows where `Consumer Capability` contains
@@ -1678,6 +1677,20 @@ scenario checklist. Manual scenarios may be extra documentation only, never acce
   manager surface or must-have user flow. If the runtime cannot launch, expose the
   failure as a blocking validation result.
 
+**Other mobile UI node minimum contracts**:
+
+- iOS/SwiftUI: run `xcodebuild test` with XCTest/XCUITest and emit
+  `ios-ui-test-report.json` plus `.xcresult` or screenshot evidence.
+- Flutter: run `flutter test integration_test/` or Patrol and emit
+  `flutter-ui-test-report.json` plus device/emulator evidence.
+- React Native / Expo: run Detox or Maestro and emit
+  `react-native-ui-test-report.json` plus trace/screenshot evidence. Expo Go is not
+  enough for full E2E; use an EAS development build when needed.
+- HarmonyOS/ArkTS: run Hypium/ohosTest through `hdc` and emit
+  `harmony-ui-test-report.json` plus device/emulator evidence.
+- For all platforms, missing device/simulator/emulator/service is `BLOCKED_ENV` or
+  `FAILED_ENV`, not manual acceptance.
+
 **Playwright CANNOT test native mobile apps.** Never assign Playwright to a Flutter/iOS/Android
 module. This is a hard constraint — violating it silently passes CI while leaving mobile untested.
 
@@ -1717,7 +1730,7 @@ E2E nodes should NOT be merged — each module has distinct user flows and roles
 
 ```yaml
 ---
-node: <id>
+node: <node_id>
 exit_artifacts:
   - <file path>
 ---
@@ -1818,7 +1831,7 @@ Example:
 
 **Integration Points Rule (MANDATORY for parallel implementation nodes):**
 **Parallel detection criterion**: Two nodes are considered parallel within the same module when:
-(a) they share the same `blocked_by` set (both have the same dependencies, or both have empty `blocked_by`), AND
+(a) they share the same `hard_blocked_by` set (both have the same dependencies, or both have empty `hard_blocked_by`), AND
 (b) their `exit_artifacts` paths share the same top-level directory prefix (e.g., both write into `flydict-ios/`).
 Bootstrap detects this pattern during Step 3.1 node graph design and adds Integration Points sections to both node-specs.
 
@@ -2119,7 +2132,7 @@ When uncovered features or broken closures are found, LLM decides:
   and node-spec.
 - **Create new node** — if the gap is a distinct concern not covered by any existing node.
   Append to `workflow.json` nodes[] and generate new node-spec at
-  `.allforai/bootstrap/node-specs/<new-id>.md`.
+  `.allforai/bootstrap/node-specs/<new-node-id>.md`.
 
 **Convergence rules (from cross-phase-protocols.md §E Reverse Backfill):**
 
@@ -2156,7 +2169,7 @@ Write `.allforai/bootstrap/coverage-matrix.json`:
   "matrix": [
     {
       "feature": "<feature description>",
-      "covered_by": ["<node-id>"],
+      "covered_by": ["<node_id>"],
       "status": "covered"
     },
     {
@@ -2165,7 +2178,7 @@ Write `.allforai/bootstrap/coverage-matrix.json`:
       "derived_from": "<parent feature>",
       "ring": 1,
       "status": "auto_added",
-      "action": "extended node <node-id>"
+      "action": "extended node <node_id>"
     },
     {
       "feature": "<feature description>",
