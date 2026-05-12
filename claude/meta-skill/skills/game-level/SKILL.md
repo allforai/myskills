@@ -24,6 +24,7 @@ VFX, and runtime constraints, but it does not generate art assets directly.
 | `20-spec` | `encounter-placement-spec` | Encounter placement, enemy/hazard composition, difficulty, and counterplay. |
 | `20-spec` | `reward-placement-spec` | Reward placement, risk/cost, visibility, reachability, and economy pacing. |
 | `30-generate` | `level-blockout-generation` | Blockout maps, collision/walkability metadata, previews. |
+| `40-qa` | `level-difficulty-validation-qa` | Hard validation of actual level difficulty against budget, evidence, spike, recovery, and psychological curve constraints. |
 | `40-qa` | `level-playability-qa` | Reachability, pacing, collision, objective, and preview checks. |
 | `40-qa` | `level-pacing-qa` | Teaching, encounter, reward, rest, and difficulty pacing QA. |
 
@@ -38,6 +39,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-level/20-spec/teaching-beat-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-level/20-spec/encounter-placement-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-level/20-spec/reward-placement-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-level/30-generate/level-blockout-generation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-level/40-qa/level-difficulty-validation-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-level/40-qa/level-playability-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-level/40-qa/level-pacing-qa/SKILL.md
 ```

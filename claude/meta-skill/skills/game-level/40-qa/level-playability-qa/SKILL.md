@@ -15,7 +15,8 @@ enemy/resource placement, camera bounds, and known failure cases.
 ## Input Contract
 
 Required: level blockout or layout spec. Optional: runtime screenshots,
-tileset/prop manifests, combat/progression specs.
+tileset/prop manifests, combat/progression specs, and level difficulty
+validation QA report.
 
 ## Output Contract
 
@@ -33,7 +34,7 @@ Downstream consumers: `level-layout-spec`, `level-blockout-generation`,
 ## Invocation Contract
 
 ```json
-{"skill":"game-level/level-playability-qa","mode":"validate","input_paths":{"level_layout_spec":".allforai/game-design/levels/level-layout-spec.json","blockout_manifest":".allforai/game-design/levels/blockouts/level-blockout-manifest.json"},"output_root":".allforai/game-design/levels"}
+{"skill":"game-level/level-playability-qa","mode":"validate","input_paths":{"level_layout_spec":".allforai/game-design/levels/level-layout-spec.json","blockout_manifest":".allforai/game-design/levels/blockouts/level-blockout-manifest.json","difficulty_validation":".allforai/game-design/levels/level-difficulty-validation-qa-report.json"},"output_root":".allforai/game-design/levels"}
 ```
 
 Supported modes: `validate`, `validate_artifacts_only`, `validate_previews`.
@@ -43,6 +44,9 @@ Supported modes: `validate`, `validate_artifacts_only`, `validate_previews`.
 Check graph reachability, soft locks, invalid collisions, missing objectives,
 unfair hazard placement, route readability, camera coverage, and repair target
 classification.
+If difficulty validation reports missing probes, unreadable danger, excessive
+retry cost, or unverified execution windows, playability QA must keep the level
+blocked until the relevant artifact/probe exists.
 
 Repair routing: do not route visual tile/prop defects to level layout. Route them to
 `art-preview-qa` or the relevant art producer; route structural dead ends to

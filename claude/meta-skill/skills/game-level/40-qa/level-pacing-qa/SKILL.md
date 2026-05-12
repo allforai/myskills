@@ -18,8 +18,8 @@ Required: level flow design, level layout spec, teaching beats, encounter
 placement, reward placement when applicable, and level difficulty budget when
 the game has explicit difficulty targets.
 
-Optional: blockout previews, playtest traces, progression curve, and combat
-balance report.
+Optional: blockout previews, playtest traces, progression curve, combat
+balance report, and level difficulty validation QA report.
 
 ## Output Contract
 
@@ -34,7 +34,7 @@ Allowed statuses: `passed`, `passed_with_warnings`, `needs_revision`,
 ## Invocation Contract
 
 ```json
-{"skill":"game-level/level-pacing-qa","mode":"validate","input_paths":{"difficulty_budget":".allforai/game-design/levels/level-difficulty-budget-spec.json"},"output_root":".allforai/game-design/levels"}
+{"skill":"game-level/level-pacing-qa","mode":"validate","input_paths":{"difficulty_budget":".allforai/game-design/levels/level-difficulty-budget-spec.json","difficulty_validation":".allforai/game-design/levels/level-difficulty-validation-qa-report.json"},"output_root":".allforai/game-design/levels"}
 ```
 
 Supported modes: `validate`, `repair_targets`.
@@ -66,6 +66,9 @@ recovery mismatches.
 Repair routing: teaching defects route to teaching-beat-spec; encounter defects
 route to encounter-placement-spec; reward defects route to
 reward-placement-spec; budget defects route to level-difficulty-budget-spec.
+If `level-difficulty-validation-qa-report.json` exists and has blocker
+findings, pacing QA must inherit those blockers instead of passing on average
+pacing alone.
 
 ## Completion Conditions
 
