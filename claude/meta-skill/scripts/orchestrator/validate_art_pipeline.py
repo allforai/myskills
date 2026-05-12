@@ -39,6 +39,55 @@ REQUIRED_ART_CONCEPT_ARTIFACTS = {
 }
 
 ENGINE_READY_MANIFEST = ".allforai/game-runtime/art/engine-ready-art-manifest.json"
+ACCEPTED_IMAGE_MANIFEST = ".allforai/game-design/art/image-generation/accepted-image-manifest.json"
+
+REQUIRED_IMAGE_CONTRACT_TERMS = {
+    ACCEPTED_IMAGE_MANIFEST,
+    "consumer_ready",
+    "register_searched_or_existing",
+    "web_or_marketplace_search",
+    "local_asset_library",
+    "Downstream skills must not consume raw PNG paths directly",
+    "re-run the downstream consumer validation",
+}
+
+REQUIRED_SOURCE_STRATEGY_TERMS = {
+    "source_priority_chain",
+    "local_asset_library",
+    "user_provided_asset",
+    "web_or_marketplace_search",
+    "llm_image_generation",
+    ACCEPTED_IMAGE_MANIFEST,
+    "consumer_ready: true",
+}
+
+REQUIRED_ASSET_SEARCH_TERMS = {
+    "source_order",
+    "project-local asset folders",
+    "user-provided bundles",
+    "wider web search",
+    "register_searched_or_existing",
+    ACCEPTED_IMAGE_MANIFEST,
+    "consumer_ready: true",
+}
+
+IMAGE_UPSTREAM_CONSUMER_SKILLS = {
+    "game-art/20-spec/character-layer-sheet/SKILL.md",
+    "game-art/30-generate/background-generation/SKILL.md",
+    "game-art/30-generate/decal-generation/SKILL.md",
+    "game-art/30-generate/expression-set-generation/SKILL.md",
+    "game-art/30-generate/frame-animation-generation/SKILL.md",
+    "game-art/30-generate/icon-generation/SKILL.md",
+    "game-art/30-generate/item-art-generation/SKILL.md",
+    "game-art/30-generate/particle-system/SKILL.md",
+    "game-art/30-generate/portrait-generation/SKILL.md",
+    "game-art/30-generate/prop-generation/SKILL.md",
+    "game-art/30-generate/skeletal-animation/SKILL.md",
+    "game-art/30-generate/sprite-vfx-generation/SKILL.md",
+    "game-art/30-generate/tileset-generation/SKILL.md",
+    "game-art/30-generate/trail-generation/SKILL.md",
+    "game-ui/30-generate/ui-mockup-generation/SKILL.md",
+}
 
 SKILL_REF_RE = re.compile(
     r"(?:\$\{CLAUDE_PLUGIN_ROOT\}/)?skills/((?:game-art|game-ui|game-frontend)/[^\s`)]+/SKILL\.md)"
@@ -87,8 +136,20 @@ def validate_art_pipeline(repo_root: str) -> list:
     game_design = root / "claude/meta-skill/knowledge/capabilities/game-design.md"
     engine_ready = game_art_root / "40-qa/engine-ready-art-output-contract/SKILL.md"
     asset_binding = skills_root / "game-frontend/20-spec/asset-import-binding-spec/SKILL.md"
+    image_contract = game_art_root / "30-generate/image-generation-contract/SKILL.md"
+    source_strategy = game_art_root / "10-design/asset-source-strategy-spec/SKILL.md"
+    asset_search = game_art_root / "20-spec/asset-pack-search-spec/SKILL.md"
 
-    required_files = [game_art_pack, bootstrap, game_design, engine_ready, asset_binding]
+    required_files = [
+        game_art_pack,
+        bootstrap,
+        game_design,
+        engine_ready,
+        asset_binding,
+        image_contract,
+        source_strategy,
+        asset_search,
+    ]
     for path in required_files:
         if not path.exists():
             errors.append(f"{path}: required art pipeline file missing")
@@ -100,6 +161,9 @@ def validate_art_pipeline(repo_root: str) -> list:
     game_design_text = _read(game_design)
     engine_ready_text = _read(engine_ready)
     asset_binding_text = _read(asset_binding)
+    image_contract_text = _read(image_contract)
+    source_strategy_text = _read(source_strategy)
+    asset_search_text = _read(asset_search)
 
     listed_game_art_refs = _canonical_refs(game_art_text, "game-art")
     for skill_file in sorted(game_art_root.rglob("SKILL.md")):
@@ -181,6 +245,29 @@ def validate_art_pipeline(repo_root: str) -> list:
         errors.append("asset-import-binding-spec: missing blocked_by_import_validation state")
     if "blocked_by_runtime_import" not in engine_ready_text:
         errors.append("engine-ready-art-output-contract: missing blocked_by_runtime_import state")
+
+    for term in sorted(REQUIRED_IMAGE_CONTRACT_TERMS):
+        if term not in image_contract_text:
+            errors.append(f"image-generation-contract: missing closure term {term}")
+    for term in sorted(REQUIRED_SOURCE_STRATEGY_TERMS):
+        if term not in source_strategy_text:
+            errors.append(f"asset-source-strategy-spec: missing source priority term {term}")
+    for term in sorted(REQUIRED_ASSET_SEARCH_TERMS):
+        if term not in asset_search_text:
+            errors.append(f"asset-pack-search-spec: missing search cascade term {term}")
+    if ACCEPTED_IMAGE_MANIFEST not in game_art_text:
+        errors.append("game-art/SKILL.md: missing accepted image manifest closure rule")
+    if "raw PNG/JPG/WebP paths" not in game_art_text:
+        errors.append("game-art/SKILL.md: missing raw bitmap path consumption ban")
+
+    for ref in sorted(IMAGE_UPSTREAM_CONSUMER_SKILLS):
+        skill_path = _skill_ref_to_path(root, ref)
+        if not skill_path.exists():
+            errors.append(f"image upstream consumer missing: skills/{ref}")
+            continue
+        skill_text = _read(skill_path)
+        if "image-generation-contract" not in skill_text:
+            errors.append(f"skills/{ref}: missing image-generation-contract reference")
 
     return errors
 
