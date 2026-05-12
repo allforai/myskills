@@ -441,7 +441,7 @@ live in `skills/game-art/SKILL.md` and child skills.
 | Stage | Orchestration rule |
 |---|---|
 | `art-direction` | Delegate to `game-art/10-design/art-direction-input-contract`. |
-| `art-concept` | Auto-triggered by `/run`; writes `.allforai/game-design/art-pipeline-config.json`. |
+| `art-concept` | Auto-triggered by `/run`; writes `.allforai/game-design/art-pipeline-config.json` and delegates concept alignment review to `game-art/10-design/art-concept-validation`. |
 | `art-spec-design` | Delegate to `game-art/00-env/asset-registry` and asset spec skills. |
 | role art-gen nodes | Selected from `art-pipeline-config.json.active_nodes` by bootstrap. |
 | `art-qa` | Delegate to `game-art/40-qa/art-preview-qa` plus specialized QA/import skills, ending with `game-art/40-qa/engine-ready-art-output-contract`. |
@@ -451,6 +451,12 @@ treated as accepted unless the relevant game-art QA/import skill returns a
 validated status. Missing tools, missing images, placeholder-only output, or
 unrunnable import checks must surface as blocking validation failures, not as
 substitute evidence.
+
+Before bulk asset generation, art concept validation must produce
+`.allforai/game-design/art/art-concept-validation.html` and
+`.allforai/game-design/art/art-concept-validation.json`. The HTML is the
+human-readable Chinese review gate for product/game concept alignment, visual
+pillars, UI/world consistency, risk flags, and human preference decisions.
 
 Program implementation consumes art through
 `.allforai/game-runtime/art/engine-ready-art-manifest.json`, produced by

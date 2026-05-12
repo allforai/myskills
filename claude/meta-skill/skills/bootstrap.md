@@ -975,6 +975,8 @@ hard_blocked_by: [art-direction]
 unlocks: [art-spec-design]
 exit_artifacts:
   - .allforai/game-design/art-pipeline-config.json
+  - .allforai/game-design/art/art-concept-validation.html
+  - .allforai/game-design/art/art-concept-validation.json
 ---
 
 # Task: 美术技术规格确认（Art Concept Skill Invocation）
@@ -993,9 +995,16 @@ art-concept skill 完成后，依次调用以下 game-art 子 skill 细化策略
    - 输入：`art-pipeline-config.json`、`art-style-guide.json.art_overview`
    - 输出：关键帧意图、Timing 规则、可读性规范
 
+3. **美术概念验证 HTML Gate：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept-validation/SKILL.md`
+   - 输入：产品/游戏概念、美术方向输入契约、art-pipeline-config、style tokens 或 art-style-guide、人类偏好
+   - 输出：`.allforai/game-design/art/art-concept-validation.html`（中文，人类阅读）和 `.allforai/game-design/art/art-concept-validation.json`
+   - 要求：验证美术方向与产品概念、玩法可读性、目标受众、UI/世界观一致性、VFX/动效、运行时约束和人类偏好是否闭合；未通过则不得进入 concept-freeze / art-gen。
+
 ## 完成条件
 
-`.allforai/game-design/art-pipeline-config.json` 存在且 `status == "final"`。
+`.allforai/game-design/art-pipeline-config.json` 存在且 `status == "final"`，
+`.allforai/game-design/art/art-concept-validation.html` 存在，
+`.allforai/game-design/art/art-concept-validation.json` 存在且 `state in ["passed", "passed_with_warnings"]`。
 ```
 
 **Concept Freeze Node Injection (applies when art-spec-design is in the selected workflow):**
@@ -1041,6 +1050,7 @@ concept-contract capability 完成后，依次调用以下 game-art 子 skill（
 ## 完成条件
 
 `.allforai/concept-contract.json` 存在且 `schema_version == "1.0"` 且 `.allforai/game-design/asset-registry.json` 存在。
+如果 `.allforai/game-design/art/art-concept-validation.json` 不存在或状态不是 `passed` / `passed_with_warnings`，必须返回 `UPSTREAM_DEFECT`，不得冻结概念或推进 art-gen。
 
 ## 重要说明
 

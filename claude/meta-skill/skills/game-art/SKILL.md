@@ -37,6 +37,7 @@ Layer numbers indicate directory organization and default execution order for ne
 | `00-env` | `asset-registry` | Canonical asset IDs, file prefixes, paths, lifecycle states, validation report. |
 | `00-env` | `production-tool-capability-registry` | Detect, auto-install, and validate Blender CLI/Python, image, atlas, importer, and probe tools before use. |
 | `10-design` | `2d-animation-production-plan` | Light 2D animation method selection, fallback strategy, downstream routing, QA requirements. |
+| `10-design` | `art-concept-validation` | Human-readable HTML/JSON gate that validates product concept to art concept alignment before bulk art generation. |
 | `10-design` | `art-direction-input-contract` | Product concept, gameplay, runtime constraints, and human visual preferences as art input. |
 | `10-design` | `asset-source-strategy-spec` | Decide per asset whether to use LLM generation, existing packs, existing 3D sources, user assets, adaptation, or hybrid production. |
 | `10-design` | `motion-design` | Animation intent, key poses, timing, events, readability, fallback motion. |
@@ -93,6 +94,7 @@ Use these paths when a node-spec calls a child skill:
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/asset-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/production-tool-capability-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept-validation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-direction-input-contract/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/asset-source-strategy-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/motion-design/SKILL.md
@@ -214,6 +216,9 @@ manifests, not hardcoded paths. Hardcoded asset paths are a contract violation.
 Program-facing exit artifacts:
 
 ```text
+.allforai/game-design/art-qa-report.html
+.allforai/game-design/art/art-concept-validation.html
+.allforai/game-design/art/art-concept-validation.json
 .allforai/game-design/art/export/engine-ready-art-output-contract.json
 .allforai/game-runtime/art/engine-ready-art-manifest.json
 .allforai/game-design/art/qa/runtime-import-check-report.json

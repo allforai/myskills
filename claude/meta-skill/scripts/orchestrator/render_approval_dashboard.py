@@ -86,7 +86,16 @@ a:hover{{text-decoration:underline}}
 .sidebar-name{{font-size:13px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
 
 /* ── Main panel ── */
-.main{{flex:1;padding:20px;overflow-y:auto;min-width:0}}
+.main{{flex:1;padding:20px;overflow-y:auto;min-width:0;transition:flex .2s}}
+
+/* ── Preview panel ── */
+.preview-panel{{width:0;flex-shrink:0;background:#fff;border-left:1px solid #e2e8f0;overflow:hidden;transition:width .2s ease;display:flex;flex-direction:column}}
+.preview-panel.open{{width:55%}}
+.preview-hd{{padding:8px 12px;background:#f7fafc;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:8px;flex-shrink:0;min-height:38px}}
+.preview-title{{flex:1;font-size:12px;color:#4a5568;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+.preview-close{{padding:3px 10px;border-radius:5px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;font-size:12px;color:#4a5568;flex-shrink:0}}
+.preview-close:hover{{background:#fed7d7;border-color:#fc8181;color:#c53030}}
+.preview-iframe{{flex:1;border:none;width:100%;display:block}}
 .section-head{{display:flex;align-items:center;gap:10px;margin:0 0 14px;padding-bottom:10px;border-bottom:2px solid #e2e8f0}}
 .section-head h2{{margin:0;font-size:15px;font-weight:700;color:#2d3748}}
 .section-badge{{padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600}}
@@ -161,6 +170,13 @@ a:hover{{text-decoration:underline}}
 <div class="layout">
   <nav class="sidebar" id="sidebar"></nav>
   <main class="main" id="main"></main>
+  <div class="preview-panel" id="preview-panel">
+    <div class="preview-hd">
+      <span class="preview-title" id="preview-title"></span>
+      <button class="preview-close" onclick="closePreview()">✕ 关闭</button>
+    </div>
+    <iframe id="preview-iframe" class="preview-iframe" src="about:blank"></iframe>
+  </div>
 </div>
 <div class="toast" id="toast"></div>
 <script>
@@ -275,7 +291,7 @@ function renderCard(rec) {{
   const nid = getNodeId(rec);
   const st = rec.gate_status || "pending";
   const outputHref = htmlOutputFor(rec);
-  const outputLink = outputHref ? `<a href="${{escapeAttr(outputHref)}}" target="_blank">查看输出 ↗</a>` : "";
+  const outputLink = outputHref ? `<a href="javascript:void(0)" onclick="openPreview('${{escapeJs(outputHref)}}','${{escapeJs(nid)}}')">查看输出 ▶</a>` : "";
   const reviewers = (rec.discipline_reviewers||[]).join(", ");
 
   const checklist = (rec.review_checklist||[]).map(item => {{
@@ -395,6 +411,28 @@ async function reloadRecords() {{
     return;
   }}
   render();
+}}
+
+function openPreview(href, nodeId) {{
+  const panel = document.getElementById("preview-panel");
+  const iframe = document.getElementById("preview-iframe");
+  const title = document.getElementById("preview-title");
+  title.textContent = href;
+  iframe.src = href + "?ts=" + Date.now();
+  panel.classList.add("open");
+  if (nodeId) {{
+    setTimeout(() => {{
+      const el = document.getElementById("card-" + nodeId);
+      if (el) el.scrollIntoView({{behavior:"smooth", block:"nearest"}});
+    }}, 50);
+  }}
+}}
+
+function closePreview() {{
+  const panel = document.getElementById("preview-panel");
+  const iframe = document.getElementById("preview-iframe");
+  panel.classList.remove("open");
+  setTimeout(() => {{ iframe.src = "about:blank"; }}, 200);
 }}
 
 function escapeHtml(v) {{ return String(v).replace(/[&<>"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c])); }}

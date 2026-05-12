@@ -10,6 +10,9 @@ python3 -m pytest claude/meta-skill/tests/unit
 echo "[pre-commit] validate bundled skills"
 python3 claude/meta-skill/scripts/orchestrator/validate_skills.py claude/meta-skill/skills
 
+echo "[pre-commit] validate game art pipeline wiring"
+python3 claude/meta-skill/scripts/orchestrator/validate_art_pipeline.py .
+
 echo "[pre-commit] strict node_id invariant"
 if rg -n 'node\.get\("id"|record\.get\("node"|item\.get\("node"|r\.get\("node"|rec\.node\b' \
   claude/meta-skill/scripts/orchestrator \
