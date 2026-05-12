@@ -1,3 +1,8 @@
+---
+name: game-art-20-spec-3d-source-asset-spec
+description: Internal bundled meta-skill module for game-art/20-spec/3d-source-asset-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # 3D Source Asset Spec Skill
 
 > Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.

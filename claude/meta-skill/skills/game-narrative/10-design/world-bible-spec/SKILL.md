@@ -1,3 +1,8 @@
+---
+name: game-narrative-10-design-world-bible-spec
+description: Internal bundled meta-skill module for game-narrative/10-design/world-bible-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # World Bible Spec Skill
 
 > Internal sub-skill for game-narrative pipelines. Status: bundled, inactive, not wired.

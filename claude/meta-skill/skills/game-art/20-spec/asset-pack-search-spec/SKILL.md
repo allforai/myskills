@@ -1,3 +1,8 @@
+---
+name: game-art-20-spec-asset-pack-search-spec
+description: Internal bundled meta-skill module for game-art/20-spec/asset-pack-search-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Asset Pack Search Spec Skill
 
 > Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.

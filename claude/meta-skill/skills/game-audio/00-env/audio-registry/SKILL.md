@@ -1,3 +1,8 @@
+---
+name: game-audio-00-env-audio-registry
+description: Internal bundled meta-skill module for game-audio/00-env/audio-registry; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Audio Registry Skill
 
 > Internal sub-skill for game-audio pipelines. Status: bundled, inactive, not wired.

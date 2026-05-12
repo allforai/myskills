@@ -1,3 +1,8 @@
+---
+name: game-genre-common-40-qa-genre-fit-qa
+description: Internal bundled meta-skill module for game-genre-common/40-qa/genre-fit-qa; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Genre Fit QA Skill
 
 > Internal sub-skill for game-genre-common pipelines. Status: bundled, inactive, not wired.

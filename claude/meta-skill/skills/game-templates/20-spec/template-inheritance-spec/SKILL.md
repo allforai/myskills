@@ -1,3 +1,8 @@
+---
+name: game-templates-20-spec-template-inheritance-spec
+description: Internal bundled meta-skill module for game-templates/20-spec/template-inheritance-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Template Inheritance Spec Skill
 
 > Internal sub-skill for game-templates pipelines. Status: bundled, inactive, not wired.

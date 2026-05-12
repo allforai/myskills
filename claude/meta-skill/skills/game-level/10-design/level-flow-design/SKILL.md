@@ -1,3 +1,8 @@
+---
+name: game-level-10-design-level-flow-design
+description: Internal bundled meta-skill module for game-level/10-design/level-flow-design; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Level Flow Design Skill
 
 > Internal sub-skill for game-level pipelines. Status: bundled, inactive, not wired.

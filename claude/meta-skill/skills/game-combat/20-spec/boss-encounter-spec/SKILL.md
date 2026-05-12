@@ -1,3 +1,8 @@
+---
+name: game-combat-20-spec-boss-encounter-spec
+description: Internal bundled meta-skill module for game-combat/20-spec/boss-encounter-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Boss Encounter Spec Skill
 
 > Internal sub-skill for game-combat pipelines. Status: bundled, inactive, not wired.

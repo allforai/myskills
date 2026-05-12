@@ -1,3 +1,8 @@
+---
+name: game-level-20-spec-teaching-beat-spec
+description: Internal bundled meta-skill module for game-level/20-spec/teaching-beat-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Teaching Beat Spec Skill
 
 > Internal sub-skill for game-level pipelines. Status: bundled, inactive, not wired.

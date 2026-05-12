@@ -1,3 +1,8 @@
+---
+name: game-frontend-20-spec-game-data-binding-spec
+description: Internal bundled meta-skill module for game-frontend/20-spec/game-data-binding-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Game Data Binding Spec Skill
 
 > Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.

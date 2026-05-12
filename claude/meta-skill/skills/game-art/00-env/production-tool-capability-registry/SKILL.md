@@ -1,3 +1,8 @@
+---
+name: game-art-00-env-production-tool-capability-registry
+description: Internal bundled meta-skill module for game-art/00-env/production-tool-capability-registry; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Production Tool Capability Registry Skill
 
 > Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.

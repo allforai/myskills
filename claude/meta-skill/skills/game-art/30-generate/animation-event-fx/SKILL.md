@@ -1,3 +1,8 @@
+---
+name: game-art-30-generate-animation-event-fx
+description: Internal bundled meta-skill module for game-art/30-generate/animation-event-fx; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Animation Event FX Skill
 
 > Internal sub-skill for game art pipelines.

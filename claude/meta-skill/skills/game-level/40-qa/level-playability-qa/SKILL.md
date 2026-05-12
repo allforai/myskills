@@ -1,3 +1,8 @@
+---
+name: game-level-40-qa-level-playability-qa
+description: Internal bundled meta-skill module for game-level/40-qa/level-playability-qa; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Level Playability QA Skill
 
 > Internal sub-skill for game-level pipelines. Status: bundled, inactive, not wired.

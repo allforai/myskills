@@ -1,3 +1,8 @@
+---
+name: game-templates-40-qa-template-reference-closure-qa
+description: Internal bundled meta-skill module for game-templates/40-qa/template-reference-closure-qa; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Template Reference Closure QA Skill
 
 > Internal sub-skill for game-templates pipelines. Status: bundled, inactive, not wired.

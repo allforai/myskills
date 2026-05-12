@@ -1,3 +1,8 @@
+---
+name: game-templates-30-generate-template-instance-generation
+description: Internal bundled meta-skill module for game-templates/30-generate/template-instance-generation; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Template Instance Generation Skill
 
 > Internal sub-skill for game-templates pipelines. Status: bundled, inactive, not wired.

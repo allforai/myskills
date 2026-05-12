@@ -1,7 +1,12 @@
+---
+name: app-design
+description: Internal bundled meta-skill module for app-design; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # App Design Skill Pack
 
 > Internal bundled sub-skill pack for app product design. Status: bundled,
-> inactive, not wired.
+> bootstrap-wired, invoked by app-design node-specs.
 
 ## Purpose
 
@@ -21,6 +26,7 @@ product, UX, content, data, growth, compliance, and engineering handoff.
 | `10-concept` | `audience-positioning-spec` | Target audience, jobs, decision criteria, accessibility, business context, and user preferences. |
 | `10-concept` | `job-story-spec` | Jobs-to-be-done, use cases, triggers, desired outcomes, risks, and acceptance signals. |
 | `20-spec` | `information-architecture-spec` | Navigation model, screen taxonomy, hierarchy, routes, and entry points. |
+| `20-spec` | `app-surface-topology-spec` | App shape, deployable surfaces, module roles, tech stacks, and per-surface validation routing. |
 | `20-spec` | `user-flow-spec` | Primary, alternate, empty, error, onboarding, and recovery flows. |
 | `20-spec` | `feature-priority-spec` | MVP scope, release cuts, dependency order, non-goals, and tradeoffs. |
 | `20-spec` | `screen-requirements-spec` | Per-screen purpose, data, actions, states, validation, and handoff requirements. |
@@ -41,6 +47,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/app-design/00-env/app-design-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/app-design/10-concept/audience-positioning-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/app-design/10-concept/job-story-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/app-design/20-spec/information-architecture-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/app-design/20-spec/app-surface-topology-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/app-design/20-spec/user-flow-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/app-design/20-spec/feature-priority-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/app-design/20-spec/screen-requirements-spec/SKILL.md

@@ -1,3 +1,8 @@
+---
+name: game-ui-40-qa-ui-readability-qa
+description: Internal bundled meta-skill module for game-ui/40-qa/ui-readability-qa; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # UI Readability QA Skill
 
 > Internal sub-skill for game UI pipelines.

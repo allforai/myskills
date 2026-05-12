@@ -1,3 +1,8 @@
+---
+name: game-systems-20-spec-social-system-spec
+description: Internal bundled meta-skill module for game-systems/20-spec/social-system-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Social System Spec Skill
 
 > Internal sub-skill for game-systems pipelines. Status: bundled, inactive, not wired.

@@ -4,6 +4,11 @@
 > Bootstrap Step 2.2 加载本文件 → Step 3 用本文件特化产品设计 + 实现 + 验证节点。
 > 触发条件：business_domain = ecommerce。
 
+可执行的子 skill 集位于
+`${CLAUDE_PLUGIN_ROOT}/skills/app-domain/ecommerce/SKILL.md`。本文件只作为领域知识
+参考；当目标是普通 B2C、电商平台、marketplace、retail commerce 时，bootstrap 应优先
+使用 `app-domain/ecommerce` 子 skill 生成需求端契约、业务状态机和下游程序 handoff。
+
 ---
 
 ## 一、电商检查维度

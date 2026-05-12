@@ -1,3 +1,8 @@
+---
+name: game-onboarding-20-spec-tutorial-step-spec
+description: Internal bundled meta-skill module for game-onboarding/20-spec/tutorial-step-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Tutorial Step Spec Skill
 
 > Internal sub-skill for game-onboarding pipelines. Status: bundled, inactive, not wired.

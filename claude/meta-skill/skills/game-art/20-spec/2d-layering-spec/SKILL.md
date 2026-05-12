@@ -1,3 +1,8 @@
+---
+name: game-art-20-spec-2d-layering-spec
+description: Internal bundled meta-skill module for game-art/20-spec/2d-layering-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # 2D Layering Spec Skill
 
 > Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.

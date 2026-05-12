@@ -1,3 +1,8 @@
+---
+name: game-frontend-20-spec-hud-ui-binding-spec
+description: Internal bundled meta-skill module for game-frontend/20-spec/hud-ui-binding-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # HUD UI Binding Spec Skill
 
 > Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.

@@ -1,3 +1,8 @@
+---
+name: game-frontend-40-qa-frontend-performance-budget-qa
+description: Internal bundled meta-skill module for game-frontend/40-qa/frontend-performance-budget-qa; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Frontend Performance Budget QA Skill
 
 > Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.

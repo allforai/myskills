@@ -1,3 +1,8 @@
+---
+name: game-narrative-20-spec-story-structure-spec
+description: Internal bundled meta-skill module for game-narrative/20-spec/story-structure-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Story Structure Spec Skill
 
 > Internal sub-skill for game-narrative pipelines. Status: bundled, inactive, not wired.

@@ -1,3 +1,8 @@
+---
+name: game-audio-20-spec-sfx-spec
+description: Internal bundled meta-skill module for game-audio/20-spec/sfx-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # SFX Spec Skill
 
 > Internal sub-skill for game-audio pipelines. Status: bundled, inactive, not wired.

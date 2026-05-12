@@ -1,3 +1,8 @@
+---
+name: game-audio-30-generate-music-prompt-generation
+description: Internal bundled meta-skill module for game-audio/30-generate/music-prompt-generation; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Music Prompt Generation Skill
 
 > Internal sub-skill for game-audio pipelines. Status: bundled, inactive, not wired.

@@ -1,3 +1,8 @@
+---
+name: game-level-00-env-level-registry
+description: Internal bundled meta-skill module for game-level/00-env/level-registry; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Level Registry Skill
 
 > Internal sub-skill for game-level pipelines. Status: bundled, inactive, not wired.

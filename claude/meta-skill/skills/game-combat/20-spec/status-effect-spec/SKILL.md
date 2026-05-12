@@ -1,3 +1,8 @@
+---
+name: game-combat-20-spec-status-effect-spec
+description: Internal bundled meta-skill module for game-combat/20-spec/status-effect-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Status Effect Spec Skill
 
 > Internal sub-skill for game-combat pipelines. Status: bundled, inactive, not wired.

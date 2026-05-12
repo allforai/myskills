@@ -1,3 +1,8 @@
+---
+name: game-frontend-40-qa-playability-probe-qa
+description: Internal bundled meta-skill module for game-frontend/40-qa/playability-probe-qa; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Playability Probe QA Skill
 
 > Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.

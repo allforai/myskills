@@ -1,3 +1,8 @@
+---
+name: game-content-30-generate-content-pack-plan-generation
+description: Internal bundled meta-skill module for game-content/30-generate/content-pack-plan-generation; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Content Pack Plan Generation Skill
 
 > Internal sub-skill for game-content pipelines. Status: bundled, inactive, not wired.

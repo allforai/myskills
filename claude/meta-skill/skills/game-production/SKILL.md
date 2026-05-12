@@ -1,3 +1,8 @@
+---
+name: game-production
+description: Internal bundled meta-skill module for game-production; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Game Production Skill Map
 
 > Internal bundled routing map for game-related sub-skill packs.

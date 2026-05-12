@@ -1,3 +1,8 @@
+---
+name: game-art-30-generate-render-to-2d-asset-generation
+description: Internal bundled meta-skill module for game-art/30-generate/render-to-2d-asset-generation; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Render To 2D Asset Generation Skill
 
 > Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.

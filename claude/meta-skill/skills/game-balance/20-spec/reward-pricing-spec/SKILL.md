@@ -1,3 +1,8 @@
+---
+name: game-balance-20-spec-reward-pricing-spec
+description: Internal bundled meta-skill module for game-balance/20-spec/reward-pricing-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Reward Pricing Spec Skill
 
 > Internal sub-skill for game-balance pipelines. Status: bundled, inactive, not wired.

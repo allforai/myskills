@@ -1,3 +1,8 @@
+---
+name: game-level-30-generate-level-blockout-generation
+description: Internal bundled meta-skill module for game-level/30-generate/level-blockout-generation; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Level Blockout Generation Skill
 
 > Internal sub-skill for game-level pipelines. Status: bundled, inactive, not wired.

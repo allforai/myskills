@@ -1,3 +1,8 @@
+---
+name: game-balance-00-env-balance-registry
+description: Internal bundled meta-skill module for game-balance/00-env/balance-registry; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Balance Registry Skill
 
 > Internal sub-skill for game-balance pipelines. Status: bundled, inactive, not wired.

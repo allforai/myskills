@@ -1,3 +1,8 @@
+---
+name: game-design-00-env-game-design-registry
+description: Internal bundled meta-skill module for game-design/00-env/game-design-registry; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Game Design Registry Skill
 
 > Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.

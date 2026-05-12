@@ -1,3 +1,8 @@
+---
+name: game-art-10-design-asset-source-strategy-spec
+description: Internal bundled meta-skill module for game-art/10-design/asset-source-strategy-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Asset Source Strategy Spec Skill
 
 > Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.

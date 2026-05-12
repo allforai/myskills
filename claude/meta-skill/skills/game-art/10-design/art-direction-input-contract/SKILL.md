@@ -1,3 +1,8 @@
+---
+name: game-art-10-design-art-direction-input-contract
+description: Internal bundled meta-skill module for game-art/10-design/art-direction-input-contract; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Art Direction Input Contract Skill
 
 > Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.

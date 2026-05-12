@@ -1,3 +1,8 @@
+---
+name: game-art-30-generate-mesh-burst-generation
+description: Internal bundled meta-skill module for game-art/30-generate/mesh-burst-generation; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Mesh Burst Generation Skill
 
 > Internal sub-skill for game art pipelines.

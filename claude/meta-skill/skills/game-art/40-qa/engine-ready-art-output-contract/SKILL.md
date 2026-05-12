@@ -1,3 +1,8 @@
+---
+name: game-art-40-qa-engine-ready-art-output-contract
+description: Internal bundled meta-skill module for game-art/40-qa/engine-ready-art-output-contract; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Engine-Ready Art Output Contract Skill
 
 > Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.

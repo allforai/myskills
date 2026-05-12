@@ -1,3 +1,8 @@
+---
+name: game-art-30-generate-trail-generation
+description: Internal bundled meta-skill module for game-art/30-generate/trail-generation; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Trail Generation Skill
 
 > Internal sub-skill for game art pipelines.

@@ -1,3 +1,8 @@
+---
+name: game-genre-common-20-spec-relationship-system-spec
+description: Internal bundled meta-skill module for game-genre-common/20-spec/relationship-system-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Relationship System Spec Skill
 
 > Internal sub-skill for game-genre-common pipelines. Status: bundled, inactive, not wired.

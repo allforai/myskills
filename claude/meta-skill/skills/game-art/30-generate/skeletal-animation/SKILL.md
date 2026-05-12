@@ -1,3 +1,8 @@
+---
+name: game-art-30-generate-skeletal-animation
+description: Internal bundled meta-skill module for game-art/30-generate/skeletal-animation; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Skeletal Animation Skill
 
 > Internal sub-skill for game art pipelines.

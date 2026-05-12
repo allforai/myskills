@@ -1,3 +1,8 @@
+---
+name: game-ui-10-design-hud-information-design
+description: Internal bundled meta-skill module for game-ui/10-design/hud-information-design; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # HUD Information Design Skill
 
 > Internal sub-skill for game UI pipelines.

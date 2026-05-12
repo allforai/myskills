@@ -1,3 +1,8 @@
+---
+name: game-art-20-spec-vfx-spec
+description: Internal bundled meta-skill module for game-art/20-spec/vfx-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # VFX Spec Skill
 
 > Internal sub-skill for game art pipelines.

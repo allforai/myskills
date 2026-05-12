@@ -1,3 +1,8 @@
+---
+name: game-art-20-spec-tileset-spec
+description: Internal bundled meta-skill module for game-art/20-spec/tileset-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Tileset Spec Skill
 
 > Internal sub-skill for game art pipelines.

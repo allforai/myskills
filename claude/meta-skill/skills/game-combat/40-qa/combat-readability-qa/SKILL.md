@@ -1,3 +1,8 @@
+---
+name: game-combat-40-qa-combat-readability-qa
+description: Internal bundled meta-skill module for game-combat/40-qa/combat-readability-qa; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Combat Readability QA Skill
 
 > Internal sub-skill for game-combat pipelines. Status: bundled, inactive, not wired.

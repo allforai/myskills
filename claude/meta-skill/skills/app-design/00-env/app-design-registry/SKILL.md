@@ -1,6 +1,11 @@
+---
+name: app-design-00-env-app-design-registry
+description: Internal bundled meta-skill module for app-design/00-env/app-design-registry; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # App Design Registry Skill
 
-> Internal sub-skill for app-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for app-design pipelines. Status: bundled, bootstrap-wired, invoked by app-design node-specs.
 
 ## Overview
 

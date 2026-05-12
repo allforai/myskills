@@ -1,3 +1,8 @@
+---
+name: game-balance-40-qa-combat-balance-qa
+description: Internal bundled meta-skill module for game-balance/40-qa/combat-balance-qa; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Combat Balance QA Skill
 
 > Internal sub-skill for game-balance pipelines. Status: bundled, inactive, not wired.

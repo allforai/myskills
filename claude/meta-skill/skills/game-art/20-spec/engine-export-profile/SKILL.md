@@ -1,3 +1,8 @@
+---
+name: game-art-20-spec-engine-export-profile
+description: Internal bundled meta-skill module for game-art/20-spec/engine-export-profile; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Engine Export Profile Skill
 
 > Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.

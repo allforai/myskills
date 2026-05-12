@@ -1,3 +1,8 @@
+---
+name: game-art-30-generate-screen-effect-generation
+description: Internal bundled meta-skill module for game-art/30-generate/screen-effect-generation; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Screen Effect Generation Skill
 
 > Internal sub-skill for game art pipelines.

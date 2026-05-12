@@ -1,3 +1,8 @@
+---
+name: game-level-40-qa-level-pacing-qa
+description: Internal bundled meta-skill module for game-level/40-qa/level-pacing-qa; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Level Pacing QA Skill
 
 > Internal sub-skill for game-level pipelines. Status: bundled, inactive, not wired.

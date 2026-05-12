@@ -1,3 +1,8 @@
+---
+name: game-narrative-10-design-narrative-tone-design
+description: Internal bundled meta-skill module for game-narrative/10-design/narrative-tone-design; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Narrative Tone Design Skill
 
 > Internal sub-skill for game-narrative pipelines. Status: bundled, inactive, not wired.

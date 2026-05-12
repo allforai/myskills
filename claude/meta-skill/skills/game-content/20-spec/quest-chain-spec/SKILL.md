@@ -1,3 +1,8 @@
+---
+name: game-content-20-spec-quest-chain-spec
+description: Internal bundled meta-skill module for game-content/20-spec/quest-chain-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Quest Chain Spec Skill
 
 > Internal sub-skill for game-content pipelines. Status: bundled, inactive, not wired.

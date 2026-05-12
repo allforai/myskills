@@ -1,3 +1,8 @@
+---
+name: game-combat-20-spec-enemy-behavior-spec
+description: Internal bundled meta-skill module for game-combat/20-spec/enemy-behavior-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Enemy Behavior Spec Skill
 
 > Internal sub-skill for game-combat pipelines. Status: bundled, inactive, not wired.

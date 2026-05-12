@@ -1,3 +1,8 @@
+---
+name: game-templates-00-env-template-registry
+description: Internal bundled meta-skill module for game-templates/00-env/template-registry; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Template Registry Skill
 
 > Internal sub-skill for game-templates pipelines. Status: bundled, inactive, not wired.

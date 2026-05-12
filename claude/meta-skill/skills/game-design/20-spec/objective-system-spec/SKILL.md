@@ -1,3 +1,8 @@
+---
+name: game-design-20-spec-objective-system-spec
+description: Internal bundled meta-skill module for game-design/20-spec/objective-system-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Objective System Spec Skill
 
 > Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.

@@ -1,3 +1,8 @@
+---
+name: game-genre-common-20-spec-deck-building-spec
+description: Internal bundled meta-skill module for game-genre-common/20-spec/deck-building-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Deck Building Spec Skill
 
 > Internal sub-skill for game-genre-common pipelines. Status: bundled, inactive, not wired.

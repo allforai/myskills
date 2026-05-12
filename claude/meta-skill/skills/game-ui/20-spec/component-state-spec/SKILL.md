@@ -1,3 +1,8 @@
+---
+name: game-ui-20-spec-component-state-spec
+description: Internal bundled meta-skill module for game-ui/20-spec/component-state-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Component State Spec Skill
 
 > Internal sub-skill for game UI pipelines.

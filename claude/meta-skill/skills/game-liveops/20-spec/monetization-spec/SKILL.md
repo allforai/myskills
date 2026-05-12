@@ -1,3 +1,8 @@
+---
+name: game-liveops-20-spec-monetization-spec
+description: Internal bundled meta-skill module for game-liveops/20-spec/monetization-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Monetization Spec Skill
 
 > Internal sub-skill for game-liveops pipelines. Status: bundled, inactive, not wired.

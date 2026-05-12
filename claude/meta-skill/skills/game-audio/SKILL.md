@@ -1,3 +1,8 @@
+---
+name: game-audio
+description: Internal bundled meta-skill module for game-audio; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Game Audio Skill Pack
 
 > Internal bundled sub-skill pack for meta-skill. Status: bundled, inactive, not wired.

@@ -1,3 +1,8 @@
+---
+name: game-art-20-spec-character-layer-sheet
+description: Internal bundled meta-skill module for game-art/20-spec/character-layer-sheet; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Character Layer Sheet Skill
 
 > Internal sub-skill for game art pipelines.

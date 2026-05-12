@@ -1,3 +1,8 @@
+---
+name: game-content-20-spec-activity-design-spec
+description: Internal bundled meta-skill module for game-content/20-spec/activity-design-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Activity Design Spec Skill
 
 > Internal sub-skill for game-content pipelines. Status: bundled, inactive, not wired.

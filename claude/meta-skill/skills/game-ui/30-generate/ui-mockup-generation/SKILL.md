@@ -1,3 +1,8 @@
+---
+name: game-ui-30-generate-ui-mockup-generation
+description: Internal bundled meta-skill module for game-ui/30-generate/ui-mockup-generation; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # UI Mockup Generation Skill
 
 > Internal sub-skill for game UI pipelines.

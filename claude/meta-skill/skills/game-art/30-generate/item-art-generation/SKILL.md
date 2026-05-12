@@ -1,3 +1,8 @@
+---
+name: game-art-30-generate-item-art-generation
+description: Internal bundled meta-skill module for game-art/30-generate/item-art-generation; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Item Art Generation Skill
 
 > Internal sub-skill for game art pipelines. Status: bundled, inactive, not wired.

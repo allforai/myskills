@@ -1,3 +1,8 @@
+---
+name: game-design-40-qa-core-loop-closure-qa
+description: Internal bundled meta-skill module for game-design/40-qa/core-loop-closure-qa; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Core Loop Closure QA Skill
 
 > Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.

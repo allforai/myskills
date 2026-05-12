@@ -1,3 +1,8 @@
+---
+name: game-art-10-design-motion-design
+description: Internal bundled meta-skill module for game-art/10-design/motion-design; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Motion Design Skill
 
 > Internal sub-skill for game art pipelines.

@@ -1,3 +1,8 @@
+---
+name: game-onboarding-10-design-first-session-experience-spec
+description: Internal bundled meta-skill module for game-onboarding/10-design/first-session-experience-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # First Session Experience Spec Skill
 
 > Internal sub-skill for game-onboarding pipelines. Status: bundled, inactive, not wired.

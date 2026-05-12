@@ -1,3 +1,8 @@
+---
+name: game-audio-10-design-audio-style-design
+description: Internal bundled meta-skill module for game-audio/10-design/audio-style-design; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Audio Style Design Skill
 
 > Internal sub-skill for game-audio pipelines. Status: bundled, inactive, not wired.

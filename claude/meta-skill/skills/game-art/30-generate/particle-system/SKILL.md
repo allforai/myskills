@@ -1,3 +1,8 @@
+---
+name: game-art-30-generate-particle-system
+description: Internal bundled meta-skill module for game-art/30-generate/particle-system; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Particle System Skill
 
 > Internal sub-skill for game art pipelines.

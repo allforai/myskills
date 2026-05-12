@@ -1,3 +1,8 @@
+---
+name: game-templates
+description: Internal bundled meta-skill module for game-templates; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Game Templates Skill Pack
 
 > Internal bundled sub-skill pack for meta-skill.

@@ -1,3 +1,8 @@
+---
+name: game-templates-40-qa-template-runtime-load-qa
+description: Internal bundled meta-skill module for game-templates/40-qa/template-runtime-load-qa; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Template Runtime Load QA Skill
 
 > Internal sub-skill for game-templates pipelines. Status: bundled, inactive, not wired.

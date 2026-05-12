@@ -1,3 +1,8 @@
+---
+name: game-art-30-generate-shader-vfx-generation
+description: Internal bundled meta-skill module for game-art/30-generate/shader-vfx-generation; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Shader VFX Generation Skill
 
 > Internal sub-skill for game art pipelines.

@@ -1,3 +1,8 @@
+---
+name: game-narrative-30-generate-dialogue-generation
+description: Internal bundled meta-skill module for game-narrative/30-generate/dialogue-generation; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Dialogue Generation Skill
 
 > Internal sub-skill for game-narrative pipelines. Status: bundled, inactive, not wired.

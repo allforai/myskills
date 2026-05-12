@@ -1,3 +1,8 @@
+---
+name: game-content-00-env-content-registry
+description: Internal bundled meta-skill module for game-content/00-env/content-registry; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Content Registry Skill
 
 > Internal sub-skill for game-content pipelines. Status: bundled, inactive, not wired.

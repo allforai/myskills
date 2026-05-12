@@ -1,3 +1,8 @@
+---
+name: game-content-20-spec-content-roadmap-spec
+description: Internal bundled meta-skill module for game-content/20-spec/content-roadmap-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Content Roadmap Spec Skill
 
 > Internal sub-skill for game-content pipelines. Status: bundled, inactive, not wired.

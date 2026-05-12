@@ -1,3 +1,8 @@
+---
+name: game-design-20-spec-meta-game-spec
+description: Internal bundled meta-skill module for game-design/20-spec/meta-game-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Meta Game Spec Skill
 
 > Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.

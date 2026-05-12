@@ -1,3 +1,8 @@
+---
+name: game-art-00-env-asset-registry
+description: Internal bundled meta-skill module for game-art/00-env/asset-registry; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Asset Registry Skill
 
 > Internal sub-skill for game art pipelines.

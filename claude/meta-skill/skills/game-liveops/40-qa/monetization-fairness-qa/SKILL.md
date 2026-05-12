@@ -1,3 +1,8 @@
+---
+name: game-liveops-40-qa-monetization-fairness-qa
+description: Internal bundled meta-skill module for game-liveops/40-qa/monetization-fairness-qa; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Monetization Fairness QA Skill
 
 > Internal sub-skill for game-liveops pipelines. Status: bundled, inactive, not wired.

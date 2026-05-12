@@ -1,3 +1,8 @@
+---
+name: game-ui-00-env-ui-registry
+description: Internal bundled meta-skill module for game-ui/00-env/ui-registry; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # UI Registry Skill
 
 > Internal sub-skill for game UI pipelines.

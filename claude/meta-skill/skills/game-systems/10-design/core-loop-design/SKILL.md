@@ -1,3 +1,8 @@
+---
+name: game-systems-10-design-core-loop-design
+description: Internal bundled meta-skill module for game-systems/10-design/core-loop-design; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Core Loop Design Skill
 
 > Internal sub-skill for game-systems pipelines. Status: bundled, inactive, not wired.

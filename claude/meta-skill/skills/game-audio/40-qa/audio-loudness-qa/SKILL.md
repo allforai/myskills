@@ -1,3 +1,8 @@
+---
+name: game-audio-40-qa-audio-loudness-qa
+description: Internal bundled meta-skill module for game-audio/40-qa/audio-loudness-qa; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Audio Loudness QA Skill
 
 > Internal sub-skill for game-audio pipelines. Status: bundled, inactive, not wired.

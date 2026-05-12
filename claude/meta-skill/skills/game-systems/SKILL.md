@@ -1,3 +1,8 @@
+---
+name: game-systems
+description: Internal bundled meta-skill module for game-systems; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Game Systems Skill Pack
 
 > Internal bundled sub-skill pack for meta-skill. Status: bundled, inactive, not wired.

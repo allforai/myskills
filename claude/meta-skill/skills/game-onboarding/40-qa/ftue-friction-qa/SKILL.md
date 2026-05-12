@@ -1,3 +1,8 @@
+---
+name: game-onboarding-40-qa-ftue-friction-qa
+description: Internal bundled meta-skill module for game-onboarding/40-qa/ftue-friction-qa; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # FTUE Friction QA Skill
 
 > Internal sub-skill for game-onboarding pipelines. Status: bundled, inactive, not wired.

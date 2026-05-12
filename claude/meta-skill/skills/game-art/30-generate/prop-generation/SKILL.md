@@ -1,3 +1,8 @@
+---
+name: game-art-30-generate-prop-generation
+description: Internal bundled meta-skill module for game-art/30-generate/prop-generation; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Prop Generation Skill
 
 > Internal sub-skill for game art pipelines. Status: bundled, inactive, not wired.

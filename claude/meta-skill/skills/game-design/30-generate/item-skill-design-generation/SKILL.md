@@ -1,3 +1,8 @@
+---
+name: game-design-30-generate-item-skill-design-generation
+description: Internal bundled meta-skill module for game-design/30-generate/item-skill-design-generation; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Item Skill Design Generation Skill
 
 > Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.

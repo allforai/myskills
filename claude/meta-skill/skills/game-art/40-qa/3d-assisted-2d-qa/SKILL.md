@@ -1,3 +1,8 @@
+---
+name: game-art-40-qa-3d-assisted-2d-qa
+description: Internal bundled meta-skill module for game-art/40-qa/3d-assisted-2d-qa; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # 3D Assisted 2D QA Skill
 
 > Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.

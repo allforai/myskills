@@ -1,3 +1,8 @@
+---
+name: game-audio-20-spec-music-cue-spec
+description: Internal bundled meta-skill module for game-audio/20-spec/music-cue-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Music Cue Spec Skill
 
 > Internal sub-skill for game-audio pipelines. Status: bundled, inactive, not wired.

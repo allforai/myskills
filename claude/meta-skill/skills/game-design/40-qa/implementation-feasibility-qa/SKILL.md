@@ -1,3 +1,8 @@
+---
+name: game-design-40-qa-implementation-feasibility-qa
+description: Internal bundled meta-skill module for game-design/40-qa/implementation-feasibility-qa; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Implementation Feasibility QA Skill
 
 > Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.

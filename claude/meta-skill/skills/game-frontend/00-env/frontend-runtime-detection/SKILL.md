@@ -1,3 +1,8 @@
+---
+name: game-frontend-00-env-frontend-runtime-detection
+description: Internal bundled meta-skill module for game-frontend/00-env/frontend-runtime-detection; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Frontend Runtime Detection Skill
 
 > Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.

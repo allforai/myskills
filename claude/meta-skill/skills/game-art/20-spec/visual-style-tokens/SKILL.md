@@ -1,3 +1,8 @@
+---
+name: game-art-20-spec-visual-style-tokens
+description: Internal bundled meta-skill module for game-art/20-spec/visual-style-tokens; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Visual Style Tokens Skill
 
 > Internal sub-skill for game art pipelines. Status: bundled, inactive, not wired.

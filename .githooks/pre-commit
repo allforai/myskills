@@ -7,8 +7,11 @@ python3 -m py_compile claude/meta-skill/scripts/orchestrator/*.py
 echo "[pre-commit] pytest meta-skill unit tests"
 python3 -m pytest claude/meta-skill/tests/unit
 
+echo "[pre-commit] validate bundled skills"
+python3 claude/meta-skill/scripts/orchestrator/validate_skills.py claude/meta-skill/skills
+
 echo "[pre-commit] strict node_id invariant"
-if rg -n 'node\.get\("id"|\.get\("node"\)|rec\.node\b' \
+if rg -n 'node\.get\("id"|record\.get\("node"|item\.get\("node"|r\.get\("node"|rec\.node\b' \
   claude/meta-skill/scripts/orchestrator \
   claude/meta-skill/knowledge/orchestrator-template.md; then
   echo "[pre-commit] forbidden legacy node/id compatibility found" >&2

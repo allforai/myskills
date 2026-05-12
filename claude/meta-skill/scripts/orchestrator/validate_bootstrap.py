@@ -6,6 +6,9 @@ Checks:
   - workflow.json: consumers[]/hard_blocked_by[]/unlocks[]/alignment_refs[] references point to existing node IDs
   - workflow.json: exit_artifacts paths are not bare filenames
   - workflow.json nodes have matching node-specs, and node-specs are not orphaned
+  - node-spec frontmatter matches workflow node_id, exit_artifacts, and graph fields
+  - human_gate workflow nodes have matching approval records
+  - app-design workflow closure emits handoff/QA artifacts and routes execution through concept-freeze
   - bootstrap-profile.json + workflow.json: mobile UI modules have platform UI automation
   - node-specs/*.md: YAML frontmatter parseable, 'node' field present
 """
@@ -40,7 +43,68 @@ def _load_json(path: str):
         return json.load(f)
 
 
+def _artifact_path(item) -> str:
+    if isinstance(item, dict):
+        return item.get("path", "")
+    return item
+
+
+def _artifact_paths(items) -> list:
+    if not isinstance(items, list):
+        return []
+    return [_artifact_path(item) for item in items]
+
+
+def _read_node_spec(path: str) -> tuple:
+    try:
+        with open(path) as f:
+            text = f.read()
+    except Exception as e:
+        return None, "", [f"cannot read: {e}"]
+
+    if not text.startswith("---"):
+        return None, text, ["no YAML frontmatter (missing opening ---)"]
+
+    second = text.find("---", 3)
+    if second == -1:
+        return None, text, ["no closing --- for YAML frontmatter"]
+
+    yaml_text = text[3:second].strip()
+    if _HAS_YAML:
+        try:
+            data = yaml.safe_load(yaml_text)
+        except Exception as e:
+            return None, text, [f"YAML parse error: {e}"]
+        if not isinstance(data, dict):
+            return None, text, ["frontmatter is not a dict"]
+        return data, text, []
+
+    data = {}
+    for line in yaml_text.splitlines():
+        if ":" in line:
+            key, value = line.split(":", 1)
+            data[key.strip()] = value.strip()
+    return data, text, []
+
+
 REFERENCE_FIELDS = ("consumers", "hard_blocked_by", "unlocks", "alignment_refs")
+
+
+APP_DESIGN_REQUIRED_NODES = {
+    "ia-design",
+    "user-flow-design",
+    "interaction-design",
+    "app-design-finalize",
+}
+
+
+APP_DESIGN_FINALIZE_REQUIRED_ARTIFACTS = {
+    ".allforai/app-design/app-design-doc.json",
+    ".allforai/app-design/app-design-doc.html",
+    ".allforai/app-design/handoff/ui-design-input-handoff.json",
+    ".allforai/app-design/handoff/program-development-node-handoff.json",
+    ".allforai/app-design/qa/app-design-closure-qa-report.json",
+}
 
 
 UI_TEST_PLATFORMS = {
@@ -168,10 +232,7 @@ def validate_workflow(wf_path: str) -> list:
             errors.append(f"workflow.json: {nid} exit_artifacts must be a list")
         else:
             for raw in node["exit_artifacts"]:
-                if isinstance(raw, dict):
-                    artifact_path = raw.get("path", "")
-                else:
-                    artifact_path = raw
+                artifact_path = _artifact_path(raw)
                 basename = os.path.basename(artifact_path)
                 if artifact_path == basename and basename in SUSPICIOUS_BARE:
                     errors.append(
@@ -346,38 +407,208 @@ def validate_node_spec_coverage(bdir: str) -> list:
     return errors
 
 
+def validate_node_spec_contracts(bdir: str) -> list:
+    """Ensure node-spec frontmatter mirrors workflow node contracts."""
+    errors = []
+    workflow_path = os.path.join(bdir, "workflow.json")
+    specs_dir = os.path.join(bdir, "node-specs")
+    if not os.path.exists(workflow_path) or not os.path.isdir(specs_dir):
+        return errors
+
+    try:
+        workflow = _load_json(workflow_path)
+    except Exception:
+        return errors
+
+    nodes = {node.get("node_id"): node for node in workflow.get("nodes", []) if node.get("node_id")}
+    for node_id, node in sorted(nodes.items()):
+        spec_path = os.path.join(specs_dir, f"{node_id}.md")
+        if not os.path.exists(spec_path):
+            continue
+        data, _text, spec_errors = _read_node_spec(spec_path)
+        if spec_errors:
+            continue
+
+        if data.get("node") != node_id:
+            errors.append(
+                f"node-specs/{node_id}.md: frontmatter node '{data.get('node')}' "
+                f"does not match workflow node_id '{node_id}'"
+            )
+
+        if "exit_artifacts" in data:
+            spec_paths = _artifact_paths(data.get("exit_artifacts"))
+            workflow_paths = _artifact_paths(node.get("exit_artifacts"))
+            if spec_paths != workflow_paths:
+                errors.append(
+                    f"node-specs/{node_id}.md: frontmatter exit_artifacts {spec_paths} "
+                    f"do not match workflow exit_artifacts {workflow_paths}"
+                )
+
+        for field in ("hard_blocked_by", "alignment_refs", "unlocks"):
+            if field in data:
+                spec_value = data.get(field) or []
+                workflow_value = node.get(field) or []
+                if spec_value != workflow_value:
+                    errors.append(
+                        f"node-specs/{node_id}.md: frontmatter {field} {spec_value} "
+                        f"does not match workflow {field} {workflow_value}"
+                    )
+
+    return errors
+
+
+def validate_approval_records(bdir: str) -> list:
+    """Ensure human_gate nodes and approval-records.json stay in sync."""
+    errors = []
+    workflow_path = os.path.join(bdir, "workflow.json")
+    if not os.path.exists(workflow_path):
+        return errors
+
+    try:
+        workflow = _load_json(workflow_path)
+    except Exception:
+        return errors
+
+    nodes = [node for node in workflow.get("nodes", []) if node.get("human_gate") is True]
+    if not nodes:
+        return errors
+
+    by_path = {}
+    for node in nodes:
+        node_id = node.get("node_id", "?")
+        record_path = node.get("approval_record_path")
+        if not record_path:
+            errors.append(f"workflow.json: {node_id} human_gate missing approval_record_path")
+            continue
+        by_path.setdefault(record_path, []).append(node)
+
+    for record_path, gated_nodes in sorted(by_path.items()):
+        abs_path = os.path.join(os.path.dirname(bdir), "..", record_path)
+        abs_path = os.path.normpath(abs_path)
+        if not os.path.exists(abs_path):
+            errors.append(f"{record_path}: approval records file missing")
+            continue
+        try:
+            data = _load_json(abs_path)
+        except Exception as e:
+            errors.append(f"{record_path}: cannot parse: {e}")
+            continue
+
+        records = data.get("records")
+        if not isinstance(records, list):
+            errors.append(f"{record_path}: 'records' array missing or not a list")
+            continue
+
+        record_by_node = {}
+        for index, record in enumerate(records):
+            if "node" in record:
+                errors.append(f"{record_path}: records[{index}] uses forbidden legacy field 'node'")
+            record_node_id = record.get("node_id")
+            if not record_node_id:
+                errors.append(f"{record_path}: records[{index}] missing node_id")
+                continue
+            if record_node_id in record_by_node:
+                errors.append(f"{record_path}: duplicate record for node_id '{record_node_id}'")
+            record_by_node[record_node_id] = record
+
+        expected_ids = {node["node_id"] for node in gated_nodes}
+        actual_ids = set(record_by_node)
+        for missing in sorted(expected_ids - actual_ids):
+            errors.append(f"{record_path}: missing approval record for node_id '{missing}'")
+        for extra in sorted(actual_ids - expected_ids):
+            errors.append(f"{record_path}: approval record for non-human_gate node_id '{extra}'")
+
+        for node in gated_nodes:
+            node_id = node["node_id"]
+            record = record_by_node.get(node_id)
+            if not record:
+                continue
+            if (record.get("unlocks") or []) != (node.get("unlocks") or []):
+                errors.append(
+                    f"{record_path}: record '{node_id}' unlocks {record.get('unlocks') or []} "
+                    f"do not match workflow unlocks {node.get('unlocks') or []}"
+                )
+
+            checklist = record.get("review_checklist")
+            if checklist is not None and not isinstance(checklist, list):
+                errors.append(f"{record_path}: record '{node_id}' review_checklist must be a list")
+
+    return errors
+
+
+def validate_app_design_flow(bdir: str) -> list:
+    """Validate app-design planning closes into downstream implementation contracts."""
+    errors = []
+    workflow_path = os.path.join(bdir, "workflow.json")
+    if not os.path.exists(workflow_path):
+        return errors
+
+    try:
+        workflow = _load_json(workflow_path)
+    except Exception:
+        return errors
+
+    nodes = {node.get("node_id"): node for node in workflow.get("nodes", []) if node.get("node_id")}
+    app_nodes = {
+        node_id: node
+        for node_id, node in nodes.items()
+        if node.get("capability") == "app-design" or node_id in APP_DESIGN_REQUIRED_NODES
+    }
+    if not app_nodes:
+        return errors
+
+    missing_required = sorted(APP_DESIGN_REQUIRED_NODES - set(nodes))
+    for node_id in missing_required:
+        errors.append(f"workflow.json: app-design workflow missing required node '{node_id}'")
+
+    finalize = nodes.get("app-design-finalize")
+    if not finalize:
+        return errors
+
+    expected_blockers = sorted(node_id for node_id in app_nodes if node_id != "app-design-finalize")
+    actual_blockers = sorted(finalize.get("hard_blocked_by") or [])
+    missing_blockers = sorted(set(expected_blockers) - set(actual_blockers))
+    if missing_blockers:
+        errors.append(
+            "workflow.json: app-design-finalize hard_blocked_by missing "
+            f"selected app-design nodes {missing_blockers}"
+        )
+
+    finalize_artifacts = set(_artifact_paths(finalize.get("exit_artifacts")))
+    missing_artifacts = sorted(APP_DESIGN_FINALIZE_REQUIRED_ARTIFACTS - finalize_artifacts)
+    if missing_artifacts:
+        errors.append(
+            "workflow.json: app-design-finalize missing required handoff/closure "
+            f"exit_artifacts {missing_artifacts}"
+        )
+
+    concept_freeze = nodes.get("concept-freeze")
+    if not concept_freeze:
+        errors.append("workflow.json: app-design workflow missing concept-freeze node")
+    elif "app-design-finalize" not in (concept_freeze.get("hard_blocked_by") or []):
+        errors.append("workflow.json: concept-freeze must be hard_blocked_by app-design-finalize")
+
+    for node_id, node in sorted(nodes.items()):
+        if node_id == "concept-freeze":
+            continue
+        if node_id in app_nodes:
+            continue
+        if "app-design-finalize" in (node.get("hard_blocked_by") or []):
+            errors.append(
+                f"workflow.json: {node_id} depends directly on app-design-finalize; "
+                "depend on concept-freeze instead"
+            )
+
+    return errors
+
+
 def validate_node_spec(path: str) -> list:
     """Validate a single node-spec markdown file."""
-    errors = []
-    try:
-        with open(path) as f:
-            text = f.read()
-    except Exception as e:
-        return [f"cannot read: {e}"]
-
-    if not text.startswith("---"):
-        errors.append("no YAML frontmatter (missing opening ---)")
+    data, _text, errors = _read_node_spec(path)
+    if errors:
         return errors
-
-    second = text.find("---", 3)
-    if second == -1:
-        errors.append("no closing --- for YAML frontmatter")
-        return errors
-
-    yaml_text = text[3:second].strip()
-    if _HAS_YAML:
-        try:
-            data = yaml.safe_load(yaml_text)
-            if not isinstance(data, dict):
-                errors.append("frontmatter is not a dict")
-                return errors
-            if "node" not in data:
-                errors.append("frontmatter missing 'node' field")
-        except Exception as e:
-            errors.append(f"YAML parse error: {e}")
-    else:
-        if "node:" not in yaml_text:
-            errors.append("frontmatter missing 'node' field (no YAML lib, regex check)")
+    if "node" not in data:
+        errors.append("frontmatter missing 'node' field")
 
     return errors
 
@@ -394,6 +625,9 @@ def main():
     if os.path.exists(wf_path):
         errors.extend(validate_workflow(wf_path))
         errors.extend(validate_node_spec_coverage(bdir))
+        errors.extend(validate_node_spec_contracts(bdir))
+        errors.extend(validate_approval_records(bdir))
+        errors.extend(validate_app_design_flow(bdir))
         errors.extend(validate_mobile_ui_coverage(bdir))
     else:
         sm_path = os.path.join(bdir, "state-machine.json")
@@ -420,6 +654,9 @@ __all__ = [
     "validate_workflow",
     "validate_node_spec",
     "validate_node_spec_coverage",
+    "validate_node_spec_contracts",
+    "validate_approval_records",
+    "validate_app_design_flow",
     "validate_mobile_ui_coverage",
 ]
 

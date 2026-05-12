@@ -1,3 +1,8 @@
+---
+name: game-balance-30-generate-balance-table-generation
+description: Internal bundled meta-skill module for game-balance/30-generate/balance-table-generation; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Balance Table Generation Skill
 
 > Internal sub-skill for game-balance pipelines. Status: bundled, inactive, not wired.

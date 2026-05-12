@@ -1,3 +1,8 @@
+---
+name: game-art-30-generate-image-generation-contract
+description: Internal bundled meta-skill module for game-art/30-generate/image-generation-contract; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Image Generation Contract Skill
 
 > Internal sub-skill for game art pipelines.

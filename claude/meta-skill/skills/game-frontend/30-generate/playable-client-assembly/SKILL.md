@@ -1,3 +1,8 @@
+---
+name: game-frontend-30-generate-playable-client-assembly
+description: Internal bundled meta-skill module for game-frontend/30-generate/playable-client-assembly; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Playable Client Assembly Skill
 
 > Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.

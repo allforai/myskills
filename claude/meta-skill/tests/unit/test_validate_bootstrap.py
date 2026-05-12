@@ -4,7 +4,10 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/orchestrator"))
 from validate_bootstrap import (
+    validate_approval_records,
+    validate_app_design_flow,
     validate_mobile_ui_coverage,
+    validate_node_spec_contracts,
     validate_node_spec_coverage,
     validate_workflow,
 )
@@ -125,6 +128,208 @@ def test_node_spec_coverage_detects_missing_and_orphan_specs(tmp_path):
 
     assert "node-specs: workflow node 'missing-spec' has no matching node-spec file" in errors
     assert "node-specs/orphan.md: no matching workflow node" in errors
+
+
+def test_node_spec_contract_detects_frontmatter_mismatch(tmp_path):
+    _write_workflow(
+        tmp_path,
+        [
+            _base_node(
+                node_id="build",
+                exit_artifacts=[".allforai/build.json"],
+                hard_blocked_by=["setup"],
+                unlocks=["verify"],
+            ),
+            _base_node(node_id="setup"),
+            _base_node(node_id="verify"),
+        ],
+    )
+    (tmp_path / "node-specs").mkdir()
+    (tmp_path / "node-specs" / "build.md").write_text(
+        "---\n"
+        "node: wrong-build\n"
+        "exit_artifacts:\n"
+        "  - .allforai/other.json\n"
+        "hard_blocked_by: []\n"
+        "unlocks: []\n"
+        "---\n"
+    )
+
+    errors = validate_node_spec_contracts(str(tmp_path))
+
+    assert any("frontmatter node 'wrong-build'" in e for e in errors)
+    assert any("frontmatter exit_artifacts" in e for e in errors)
+    assert any("frontmatter hard_blocked_by" in e for e in errors)
+    assert any("frontmatter unlocks" in e for e in errors)
+
+
+def test_node_spec_contract_passes_when_frontmatter_matches(tmp_path):
+    _write_workflow(
+        tmp_path,
+        [
+            _base_node(
+                node_id="build",
+                exit_artifacts=[".allforai/build.json"],
+                hard_blocked_by=["setup"],
+                unlocks=["verify"],
+            ),
+            _base_node(node_id="setup"),
+            _base_node(node_id="verify"),
+        ],
+    )
+    (tmp_path / "node-specs").mkdir()
+    (tmp_path / "node-specs" / "build.md").write_text(
+        "---\n"
+        "node: build\n"
+        "exit_artifacts:\n"
+        "  - .allforai/build.json\n"
+        "hard_blocked_by:\n"
+        "  - setup\n"
+        "unlocks:\n"
+        "  - verify\n"
+        "---\n"
+    )
+
+    errors = validate_node_spec_contracts(str(tmp_path))
+
+    assert errors == []
+
+
+def _bootstrap_dir(tmp_path):
+    bdir = tmp_path / ".allforai" / "bootstrap"
+    (bdir / "node-specs").mkdir(parents=True)
+    return bdir
+
+
+def test_approval_records_detect_missing_and_mismatched_records(tmp_path):
+    bdir = _bootstrap_dir(tmp_path)
+    workflow = {
+        "nodes": [
+            _base_node(
+                node_id="design",
+                human_gate=True,
+                approval_record_path=".allforai/game-design/approval-records.json",
+                unlocks=["next"],
+            ),
+            _base_node(node_id="next"),
+        ],
+        "transition_log": [],
+    }
+    (bdir / "workflow.json").write_text(json.dumps(workflow))
+    approval_dir = tmp_path / ".allforai" / "game-design"
+    approval_dir.mkdir()
+    (approval_dir / "approval-records.json").write_text(json.dumps({
+        "records": [
+            {"node_id": "other", "gate_status": "pending", "unlocks": []},
+            {"node": "legacy", "gate_status": "pending", "unlocks": []},
+        ]
+    }))
+
+    errors = validate_approval_records(str(bdir))
+
+    assert any("missing approval record for node_id 'design'" in e for e in errors)
+    assert any("approval record for non-human_gate node_id 'other'" in e for e in errors)
+    assert any("uses forbidden legacy field 'node'" in e for e in errors)
+
+
+def test_approval_records_pass_when_matching(tmp_path):
+    bdir = _bootstrap_dir(tmp_path)
+    workflow = {
+        "nodes": [
+            _base_node(
+                node_id="design",
+                human_gate=True,
+                approval_record_path=".allforai/app-design/approval-records.json",
+                unlocks=["next"],
+            ),
+            _base_node(node_id="next"),
+        ],
+        "transition_log": [],
+    }
+    (bdir / "workflow.json").write_text(json.dumps(workflow))
+    approval_dir = tmp_path / ".allforai" / "app-design"
+    approval_dir.mkdir()
+    (approval_dir / "approval-records.json").write_text(json.dumps({
+        "records": [
+            {
+                "node_id": "design",
+                "gate_status": "pending",
+                "unlocks": ["next"],
+                "review_checklist": [],
+            }
+        ]
+    }))
+
+    errors = validate_approval_records(str(bdir))
+
+    assert errors == []
+
+
+def test_app_design_flow_requires_finalize_handoff_and_concept_freeze(tmp_path):
+    bdir = _bootstrap_dir(tmp_path)
+    workflow = {
+        "nodes": [
+            _base_node(node_id="ia-design", capability="app-design", human_gate=True),
+            _base_node(node_id="user-flow-design", capability="app-design", human_gate=True),
+            _base_node(node_id="interaction-design", capability="app-design", human_gate=True),
+            _base_node(
+                node_id="app-design-finalize",
+                capability="app-design",
+                human_gate=True,
+                hard_blocked_by=["ia-design"],
+                exit_artifacts=[".allforai/app-design/app-design-doc.json"],
+            ),
+            _base_node(node_id="implement-web", hard_blocked_by=["app-design-finalize"]),
+        ],
+        "transition_log": [],
+    }
+    (bdir / "workflow.json").write_text(json.dumps(workflow))
+
+    errors = validate_app_design_flow(str(bdir))
+
+    assert any("app-design-finalize hard_blocked_by missing" in e for e in errors)
+    assert any("app-design-finalize missing required handoff/closure" in e for e in errors)
+    assert any("missing concept-freeze node" in e for e in errors)
+    assert any("depends directly on app-design-finalize" in e for e in errors)
+
+
+def test_app_design_flow_passes_with_handoff_and_concept_freeze(tmp_path):
+    bdir = _bootstrap_dir(tmp_path)
+    app_nodes = [
+        _base_node(node_id="ia-design", capability="app-design", human_gate=True),
+        _base_node(node_id="user-flow-design", capability="app-design", human_gate=True),
+        _base_node(node_id="interaction-design", capability="app-design", human_gate=True),
+    ]
+    workflow = {
+        "nodes": [
+            *app_nodes,
+            _base_node(
+                node_id="app-design-finalize",
+                capability="app-design",
+                human_gate=True,
+                hard_blocked_by=["ia-design", "user-flow-design", "interaction-design"],
+                exit_artifacts=[
+                    ".allforai/app-design/app-design-doc.json",
+                    ".allforai/app-design/app-design-doc.html",
+                    ".allforai/app-design/handoff/ui-design-input-handoff.json",
+                    ".allforai/app-design/handoff/program-development-node-handoff.json",
+                    ".allforai/app-design/qa/app-design-closure-qa-report.json",
+                ],
+            ),
+            _base_node(
+                node_id="concept-freeze",
+                capability="concept-contract",
+                hard_blocked_by=["app-design-finalize"],
+            ),
+            _base_node(node_id="implement-web", hard_blocked_by=["concept-freeze"]),
+        ],
+        "transition_log": [],
+    }
+    (bdir / "workflow.json").write_text(json.dumps(workflow))
+
+    errors = validate_app_design_flow(str(bdir))
+
+    assert errors == []
 
 
 def _write_mobile_profile(tmp_path, framework, language="Kotlin", test_commands=None):

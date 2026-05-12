@@ -1,3 +1,8 @@
+---
+name: game-frontend-40-qa-playable-smoke-test
+description: Internal bundled meta-skill module for game-frontend/40-qa/playable-smoke-test; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Playable Smoke Test Skill
 
 > Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.

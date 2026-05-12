@@ -1,3 +1,8 @@
+---
+name: game-design-20-spec-level-design-spec
+description: Internal bundled meta-skill module for game-design/20-spec/level-design-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Level Design Spec Skill
 
 > Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.

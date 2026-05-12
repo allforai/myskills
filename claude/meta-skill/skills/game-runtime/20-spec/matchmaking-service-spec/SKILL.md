@@ -1,3 +1,8 @@
+---
+name: game-runtime-20-spec-matchmaking-service-spec
+description: Internal bundled meta-skill module for game-runtime/20-spec/matchmaking-service-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Matchmaking Service Spec Skill
 
 > Internal sub-skill for game-runtime pipelines. Status: bundled, inactive, not wired.

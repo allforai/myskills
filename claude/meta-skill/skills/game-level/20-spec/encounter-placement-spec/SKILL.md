@@ -1,3 +1,8 @@
+---
+name: game-level-20-spec-encounter-placement-spec
+description: Internal bundled meta-skill module for game-level/20-spec/encounter-placement-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Encounter Placement Spec Skill
 
 > Internal sub-skill for game-level pipelines. Status: bundled, inactive, not wired.

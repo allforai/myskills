@@ -1,3 +1,8 @@
+---
+name: game-art-30-generate-light-pulse-generation
+description: Internal bundled meta-skill module for game-art/30-generate/light-pulse-generation; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Light Pulse Generation Skill
 
 > Internal sub-skill for game art pipelines.

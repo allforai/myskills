@@ -1,3 +1,8 @@
+---
+name: game-design-30-generate-design-data-table-generation
+description: Internal bundled meta-skill module for game-design/30-generate/design-data-table-generation; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Game Design Data Table Generation Skill
 
 > Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.

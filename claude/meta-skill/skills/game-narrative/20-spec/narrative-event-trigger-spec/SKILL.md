@@ -1,3 +1,8 @@
+---
+name: game-narrative-20-spec-narrative-event-trigger-spec
+description: Internal bundled meta-skill module for game-narrative/20-spec/narrative-event-trigger-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Narrative Event Trigger Spec Skill
 
 > Internal sub-skill for game-narrative pipelines. Status: bundled, inactive, not wired.

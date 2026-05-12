@@ -1,6 +1,11 @@
+---
+name: app-design-10-concept-job-story-spec
+description: Internal bundled meta-skill module for app-design/10-concept/job-story-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Job Story Spec Skill
 
-> Internal sub-skill for app-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for app-design pipelines. Status: bundled, bootstrap-wired, invoked by app-design node-specs.
 
 ## Overview
 

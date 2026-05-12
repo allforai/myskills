@@ -1,3 +1,8 @@
+---
+name: game-design-20-spec-mechanics-spec
+description: Internal bundled meta-skill module for game-design/20-spec/mechanics-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Mechanics Spec Skill
 
 > Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.

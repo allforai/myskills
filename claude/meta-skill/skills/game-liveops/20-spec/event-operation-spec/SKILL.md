@@ -1,3 +1,8 @@
+---
+name: game-liveops-20-spec-event-operation-spec
+description: Internal bundled meta-skill module for game-liveops/20-spec/event-operation-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Event Operation Spec Skill
 
 > Internal sub-skill for game-liveops pipelines. Status: bundled, inactive, not wired.

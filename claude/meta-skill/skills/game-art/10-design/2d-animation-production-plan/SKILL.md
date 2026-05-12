@@ -1,3 +1,8 @@
+---
+name: game-art-10-design-2d-animation-production-plan
+description: Internal bundled meta-skill module for game-art/10-design/2d-animation-production-plan; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # 2D Animation Production Plan Skill
 
 > Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.

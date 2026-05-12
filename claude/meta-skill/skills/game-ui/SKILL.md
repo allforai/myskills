@@ -1,3 +1,8 @@
+---
+name: game-ui
+description: Internal bundled meta-skill module for game-ui; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Game UI Skill Pack
 
 > Internal bundled sub-skill pack for meta-skill.

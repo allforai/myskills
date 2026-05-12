@@ -1,3 +1,8 @@
+---
+name: game-design-10-concept-player-experience-contract
+description: Internal bundled meta-skill module for game-design/10-concept/player-experience-contract; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Player Experience Contract Skill
 
 > Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.

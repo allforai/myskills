@@ -1,3 +1,8 @@
+---
+name: game-balance-10-design-balance-goal-spec
+description: Internal bundled meta-skill module for game-balance/10-design/balance-goal-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Balance Goal Spec Skill
 
 > Internal sub-skill for game-balance pipelines. Status: bundled, inactive, not wired.

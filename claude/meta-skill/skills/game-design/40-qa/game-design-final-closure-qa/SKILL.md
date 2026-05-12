@@ -1,3 +1,8 @@
+---
+name: game-design-40-qa-game-design-final-closure-qa
+description: Internal bundled meta-skill module for game-design/40-qa/game-design-final-closure-qa; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Game Design Final Closure QA Skill
 
 > Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.

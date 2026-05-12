@@ -1,6 +1,11 @@
+---
+name: app-design-20-spec-data-model-spec
+description: Internal bundled meta-skill module for app-design/20-spec/data-model-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Data Model Spec Skill
 
-> Internal sub-skill for app-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for app-design pipelines. Status: bundled, bootstrap-wired, invoked by app-design node-specs.
 
 ## Overview
 

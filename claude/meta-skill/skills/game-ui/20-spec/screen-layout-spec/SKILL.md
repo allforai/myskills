@@ -1,3 +1,8 @@
+---
+name: game-ui-20-spec-screen-layout-spec
+description: Internal bundled meta-skill module for game-ui/20-spec/screen-layout-spec; use within generated bootstrap node-specs when this exact contract is selected.
+---
+
 # Screen Layout Spec Skill
 
 > Internal sub-skill for game UI pipelines.

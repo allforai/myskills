@@ -1221,12 +1221,73 @@ For each failing asset, set `gate_status: "revision-requested"` in `.allforai/ga
 Inject app-design nodes using `knowledge/capabilities/app-design.md` Canonical Node Registry:
 
 - Required nodes always injected: `ia-design`, `user-flow-design`, `interaction-design`, `app-design-finalize`
-- Optional nodes injected when relevant: `content-design` (content-heavy apps), `data-model-design` (data-intensive apps — inject when user confirms data-intensive app (e.g., database schema, complex data model mentioned in discussion))
+- Optional nodes injected when relevant: `content-design` (content-heavy apps), `data-model-design` (data-intensive apps — inject when database, workflow, CRUD, analytics, offline, import/export, or permission-heavy behavior is present), `monetization-design` (subscription, trial, paywall, credits, billing, marketplace, app-store purchase, or paid tier language)
 - Each node gets: `capability: "app-design"`, `human_gate: true`, `approval_record_path: ".allforai/app-design/approval-records.json"`, `gate_status: "pending"`, `discipline_owner` from app-design.md Canonical Node Registry, `review_checklist: [<3 role-appropriate quality checks>]` — generate 3 discipline-appropriate checklist items per node (e.g., for ia-design: "All primary user flows represented", "Screen hierarchy reflects priority", "Navigation patterns consistent")
-- Ordering: `ia-design` first (no hard_blocked_by); `user-flow-design` and `content-design` and `data-model-design` each `hard_blocked_by: ["ia-design"]`; `interaction-design` `hard_blocked_by: ["user-flow-design"]`; `app-design-finalize` `hard_blocked_by:` ALL other selected app-design nodes
+- Ordering: `ia-design` first (no hard_blocked_by); `user-flow-design`, `content-design`, `data-model-design`, and `monetization-design` each `hard_blocked_by: ["ia-design"]`; `interaction-design` `hard_blocked_by: ["user-flow-design"]`; `app-design-finalize` `hard_blocked_by:` ALL other selected app-design nodes
 - `app-design-finalize` `unlocks:` subsequent execution nodes (same role as `game-design-finalize`)
 - **No approval-records entry** for nodes with `human_gate: false` — only human_gate nodes get records
 - After injecting, initialise `.allforai/app-design/approval-records.json` with one `pending` record per selected app-design node (same structure as game-design approval-records.json)
+
+**App-Design Sub-Skill Mapping:** Generate every app-design node-spec as a thin delegating
+node-spec that reads and follows the matching child skill files listed in
+`knowledge/capabilities/app-design.md` §Sub-Skill Mapping. Do not use a generic
+LLM-only app-design prompt when a mapped child skill exists.
+
+**App-Domain Extension Injection:** If the primary `business_domain` is
+`ecommerce`, `b2c-commerce`, `marketplace`, or `retail-commerce`, inject the
+`app-domain/ecommerce` domain-extension before `app-design-finalize` completes.
+Generate thin delegating node-specs that read these bundled skills:
+
+- `app-domain/ecommerce/00-env/commerce-domain-registry`
+- `app-domain/ecommerce/20-spec/catalog-merchandising-spec`
+- `app-domain/ecommerce/20-spec/search-discovery-spec`
+- `app-domain/ecommerce/20-spec/merchant-platform-ops-spec`
+- `app-domain/ecommerce/20-spec/promotion-pricing-membership-spec`
+- `app-domain/ecommerce/20-spec/cart-checkout-payment-spec`
+- `app-domain/ecommerce/20-spec/order-fulfillment-after-sales-spec`
+- `app-domain/ecommerce/20-spec/commerce-risk-compliance-spec`
+- `app-domain/ecommerce/30-generate/commerce-program-handoff-extension`
+- `app-domain/ecommerce/40-qa/commerce-flow-coverage-qa`
+
+The commerce extension output
+`.allforai/app-domain/ecommerce/handoff/commerce-program-handoff-extension.json`
+MUST be listed as an input artifact for `app-design-finalize` and preserved in
+`.allforai/app-design/handoff/program-development-node-handoff.json`. If the
+commerce extension cannot be produced, mark affected downstream implementation
+and verification scope blocked instead of generating generic ecommerce nodes.
+
+Minimum dependency order for the ecommerce extension:
+
+- `commerce-domain-registry` after `ia-design`
+- `catalog-merchandising-spec` and `merchant-platform-ops-spec` after
+  `data-model-design` when selected, otherwise after `ia-design`
+- `search-discovery-spec` after `catalog-merchandising-spec`
+- `promotion-pricing-membership-spec` after `catalog-merchandising-spec` and
+  `merchant-platform-ops-spec`
+- `cart-checkout-payment-spec` after `catalog-merchandising-spec` and
+  `promotion-pricing-membership-spec`
+- `order-fulfillment-after-sales-spec` after `cart-checkout-payment-spec` and
+  `merchant-platform-ops-spec`
+- `commerce-risk-compliance-spec` after `cart-checkout-payment-spec`,
+  `order-fulfillment-after-sales-spec`, and `merchant-platform-ops-spec`
+- `commerce-program-handoff-extension` after all selected commerce specs
+- `commerce-flow-coverage-qa` after `commerce-program-handoff-extension`
+- `app-design-finalize` after `commerce-flow-coverage-qa`
+
+`app-design-finalize` MUST include these exit artifacts in both workflow.json and
+the node-spec frontmatter:
+
+- `.allforai/app-design/app-design-doc.json`
+- `.allforai/app-design/app-design-doc.html`
+- `.allforai/app-design/handoff/ui-design-input-handoff.json`
+- `.allforai/app-design/handoff/program-development-node-handoff.json`
+- `.allforai/app-design/qa/app-design-closure-qa-report.json`
+
+After `app-design-finalize`, downstream implementation, compile, test,
+product-verify, runtime-smoke, and launch-prep nodes MUST read
+`.allforai/app-design/handoff/program-development-node-handoff.json` when it exists.
+If bootstrap cannot create concrete implementation nodes from this handoff, it must
+mark the affected downstream scope blocked rather than inventing vague nodes.
 
 **Concept Freeze for app projects:** When `app-design-finalize` is in the workflow, also inject a `concept-freeze` node immediately after it:
 - `node_id: "concept-freeze"`, `capability: "concept-contract"`, `human_gate: false`
