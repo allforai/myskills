@@ -969,7 +969,7 @@ After inserting the `art-direction` node, also insert an `art-concept` node imme
 
 ```markdown
 ---
-node: art-concept
+node_id: art-concept
 human_gate: false
 hard_blocked_by: [art-direction]
 unlocks: [art-spec-design]
@@ -1018,7 +1018,7 @@ After inserting `art-spec-design`, also insert a `concept-freeze` node immediate
 
 ```markdown
 ---
-node: concept-freeze
+node_id: concept-freeze
 human_gate: false
 hard_blocked_by: [art-spec-design]
 unlocks: []  # populated by bootstrap from workflow's art-gen nodes
@@ -1099,7 +1099,7 @@ Write `.allforai/bootstrap/node-specs/<node_id>.md` using this template, substit
 
 ```markdown
 ---
-node: <node_id>
+node_id: <node_id>
 human_gate: true
 hard_blocked_by: [concept-freeze]
 unlocks: [art-qa]
@@ -1181,7 +1181,7 @@ After injecting all art-gen nodes, inject the `art-qa` node:
 
 ```markdown
 ---
-node: art-qa
+node_id: art-qa
 human_gate: true
 hard_blocked_by: []  # populated by bootstrap: all active art-gen node IDs
 unlocks: [game-design-finalize]
@@ -1306,6 +1306,68 @@ mark the affected downstream scope blocked rather than inventing vague nodes.
 - After injecting, update all app execution nodes (any node that previously had `hard_blocked_by: ["app-design-finalize"]`) to instead `hard_blocked_by: ["concept-freeze"]`
 - Node-spec file: Write `.allforai/bootstrap/node-specs/concept-freeze.md` using `knowledge/capabilities/concept-contract.md` Branch B (app project). In the node-spec, instruct the subagent to read from `.allforai/app-design/app-design-doc.json` and `.allforai/app-design/approval-records.json`.
 - **No approval-records entry**
+
+**技术架构概念验证节点注入（程序实现节点之前）：**
+
+当 workflow 将从产品 / App / 游戏设计进入程序实现、编译、测试、运行时冒烟、产品验收、上线准备、引擎导入或运行时导入时，必须注入 `architecture-concept-validation` 节点。
+
+- `node_id: "architecture-concept-validation"`，`capability: "architecture-concept-validation"`，`human_gate: false`
+- 如果存在 `game-design-finalize`，将本节点放在 `game-design-finalize` 之后，并设置 `hard_blocked_by: ["game-design-finalize"]`。
+- 否则，如果存在 App 项目的 `concept-freeze`，将本节点放在 `concept-freeze` 之后，并设置 `hard_blocked_by: ["concept-freeze"]`。
+- 否则，如果没有 design-finalize 节点但存在程序实现节点，将本节点放在第一个实现节点之前，并把 `hard_blocked_by` 设置为当前最强的上游设计 / 产品分析节点。
+- 所有原本依赖 `game-design-finalize`、App `concept-freeze` 或 product-analysis 的下游实现、编译、测试、运行时冒烟、产品验收、上线准备、引擎导入、前端执行节点，都要改为依赖 `architecture-concept-validation`。
+- `unlocks`：填入所有被改为依赖本节点的下游节点。
+- **不写入 approval-records**。`architecture-concept-validation` 的 `human_gate: false`，审批看板会通过 workflow.json 把它展示为只读 HTML 验证 gate。
+- **architecture-concept-validation 的 node-spec 内容**（原样写入 `.allforai/bootstrap/node-specs/architecture-concept-validation.md`）：
+
+```markdown
+---
+node_id: architecture-concept-validation
+human_gate: false
+hard_blocked_by: []  # 由 bootstrap 根据 game-design-finalize、App concept-freeze 或最强上游设计/产品节点填入
+unlocks: []          # 由 bootstrap 根据被改为依赖本节点的实现/运行时节点填入
+exit_artifacts:
+  - .allforai/architecture/architecture-concept-validation.html
+  - .allforai/architecture/architecture-concept-validation.json
+  - .allforai/architecture/architecture-concept-validation-report.json
+---
+
+# Task: 技术框架 / 技术架构决策 HTML Gate
+
+## 执行方法
+
+读取并执行 `${CLAUDE_PLUGIN_ROOT}/skills/architecture/10-design/architecture-concept-validation/SKILL.md`。
+
+## 输入
+
+- `.allforai/bootstrap/bootstrap-profile.json`
+- `.allforai/bootstrap/workflow.json`
+- `.allforai/product-concept/concept-baseline.json`
+- `.allforai/concept-contract.json`
+- `.allforai/app-design/handoff/program-development-node-handoff.json`（app 项目存在时）
+- `.allforai/game-design/design/program-development-node-handoff.json`（游戏项目存在时）
+- `.allforai/product-concept/tech-architecture.json`（存在时）
+- `.allforai/game-runtime/art/engine-ready-art-manifest.json`（游戏前端或素材导入存在时）
+- 当前仓库的 package / framework / engine / build / test / deploy 证据
+
+## 输出
+
+- `.allforai/architecture/architecture-concept-validation.html`（中文，人类阅读）
+- `.allforai/architecture/architecture-concept-validation.json`
+- `.allforai/architecture/architecture-concept-validation-report.json`
+
+## 验收要求
+
+必须验证技术栈、项目形态、模块边界、数据/API/状态边界、安全权限边界、第三方依赖、构建测试运行路径、以及每个下游实现节点的输入/输出/验证映射。
+
+如果无法真实运行、构建、导入或验证，不得使用替代验收；必须在 JSON 中写入 `blocked_validation_items` 并返回 blocked 状态。
+
+## 完成条件
+
+`.allforai/architecture/architecture-concept-validation.html` 存在，
+`.allforai/architecture/architecture-concept-validation.json` 存在且
+`state in ["passed", "passed_with_warnings"]`。
+```
 
 5. Initialise `.allforai/game-design/approval-records.json` with one `pending` record per game-design node
 6. Ad-hoc nodes appearing in EITHER `optional_nodes` OR `bootstrap_note` (but absent from both the canonical registry AND `node_order`): these require user opt-in, presented in the opt-in question after scenario selection. Process them ONCE — if a node appears in both `optional_nodes` and `bootstrap_note`, treat it as a single ad-hoc opt-in candidate (do not generate two node-specs). If the user selects it, generate node-spec via Step 2.7 research and position per step 4 ad-hoc rule.
@@ -1801,7 +1863,7 @@ E2E nodes should NOT be merged — each module has distinct user flows and roles
 
 ```yaml
 ---
-node: <node_id>
+node_id: <node_id>
 exit_artifacts:
   - <file path>
 ---
@@ -2329,6 +2391,7 @@ mkdir -p .allforai/bootstrap/protocols
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/check_artifacts.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/validate_bootstrap.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/render_approval_dashboard.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/serve_approval.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/apply_approval_action.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/knowledge/diagnosis.md .allforai/bootstrap/protocols/
 cp ${CLAUDE_PLUGIN_ROOT}/knowledge/learning-protocol.md .allforai/bootstrap/protocols/
@@ -2351,15 +2414,16 @@ Write these files (they were generated in memory during Steps 3-5, now persist t
 6. `.allforai/bootstrap/scripts/check_artifacts.py`
 7. `.allforai/bootstrap/scripts/validate_bootstrap.py`
 8. `.allforai/bootstrap/protocols/*.md`
-9. `.allforai/game-design/approval-records.json` — initialize with one `pending` record per selected game-design node that has `human_gate: true`. **On rebuild (when goals include `create` or `rebuild`) and file already exists: reset ALL existing records to `gate_status: "pending"`, clear `approved_by`, `approved_at`, `reviewer_notes`, and `revision_notes`. Preserve the node list structure but reset approval state.** On first bootstrap: create fresh. Nodes with `human_gate: false` (art-concept, concept-freeze) do NOT get records.
-10. `.allforai/game-design/review-dashboard.html` — render immediately after `approval-records.json`, before any game-design node executes:
+9. `.allforai/game-design/approval-records.json`：为每个 `human_gate: true` 的游戏设计节点初始化一条 `pending` 记录。**重建时（goals 包含 `create` 或 `rebuild`）如果文件已存在，重置所有记录为 `gate_status: "pending"`，清空 `approved_by`、`approved_at`、`reviewer_notes`、`revision_notes`。保留节点列表结构，但重置审批状态。**首次 bootstrap 时创建新文件。`human_gate: false` 的节点（art-concept、concept-freeze、architecture-concept-validation）不写入审批记录。
+10. `.allforai/game-design/review-dashboard.html`：在生成 `approval-records.json` 后立即渲染，并且必须早于任何 game-design 节点执行：
     ```bash
     python3 .allforai/bootstrap/scripts/render_approval_dashboard.py \
       --approval .allforai/game-design/approval-records.json \
+      --approval .allforai/app-design/approval-records.json \
       --workflow .allforai/bootstrap/workflow.json \
       --output .allforai/game-design/review-dashboard.html
     ```
-    The review dashboard is the live approval control surface. Do not wait for `game-design-finalize` to create it. `game-design-dashboard.html` remains the final summary artifact only.
+    审批看板是实时审批操作界面。不要等到 `game-design-finalize` 才创建它；`game-design-dashboard.html` 只作为最终汇总产物。
 
 ### 6.4 Confirm Completion
 

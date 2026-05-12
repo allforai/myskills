@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Apply a queued approval-dashboard action to approval-records.json."""
+"""Apply a queued approval-dashboard action to one approval-records.json file."""
 
 from __future__ import annotations
 
@@ -11,23 +11,44 @@ from pathlib import Path
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--approval", required=True)
+    parser.add_argument("--approval", action="append", required=True)
     parser.add_argument("--action-json", required=True)
     args = parser.parse_args()
 
-    approval_path = Path(args.approval)
-    data = json.loads(approval_path.read_text(encoding="utf-8"))
+    approval_paths = [Path(path) for path in args.approval]
     action = json.loads(args.action_json)
     node_id = action.get("node_id")
     if not node_id:
         raise SystemExit("action_json missing node_id")
 
-    records = data.get("records", [])
-    record = next(
-        (item for item in records if item.get("node_id") == node_id),
-        None,
-    )
-    if record is None:
+    requested_path = action.get("approval_record_path")
+    candidates = approval_paths
+    if requested_path:
+        requested = Path(requested_path)
+        candidates = [
+            path
+            for path in approval_paths
+            if path == requested or path.as_posix().endswith(requested.as_posix())
+        ] or approval_paths
+
+    approval_path = None
+    data = None
+    record = None
+    for path in candidates:
+        if not path.exists():
+            continue
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        found = next(
+            (item for item in payload.get("records", []) if item.get("node_id") == node_id),
+            None,
+        )
+        if found is not None:
+            approval_path = path
+            data = payload
+            record = found
+            break
+
+    if approval_path is None or data is None or record is None:
         raise SystemExit(f"approval record not found: {node_id}")
 
     now = datetime.now(timezone.utc).isoformat()

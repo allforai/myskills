@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the game-design approval dashboard.
+"""Render the design and architecture approval dashboard.
 
 Generates static HTML served by serve_approval.py. Approval buttons POST
 directly to /api/action — no Playwright or localStorage required.
@@ -18,21 +18,59 @@ def read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def combine_approvals(paths: list[Path]) -> dict:
+    records = []
+    sources = []
+    for path in paths:
+        payload = read_json(path)
+        if not payload:
+            continue
+        source = path.as_posix()
+        sources.append(source)
+        for record in payload.get("records", []):
+            if isinstance(record, dict):
+                enriched = dict(record)
+                enriched.setdefault("approval_record_path", source)
+                records.append(enriched)
+    return {"records": records, "sources": sources}
+
+
+def read_gate_states() -> dict:
+    gate_paths = {
+        "art-concept": Path(".allforai/game-design/art/art-concept-validation.json"),
+        "architecture-concept-validation": Path(
+            ".allforai/architecture/architecture-concept-validation.json"
+        ),
+    }
+    states = {}
+    for node_id, path in gate_paths.items():
+        payload = read_json(path)
+        if payload:
+            states[node_id] = payload
+    return states
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--approval", required=True)
+    parser.add_argument(
+        "--approval",
+        action="append",
+        required=True,
+        help="Path to approval-records.json. May be passed more than once.",
+    )
     parser.add_argument("--workflow", required=False)
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
 
-    approval_path = Path(args.approval)
+    approval_paths = [Path(path) for path in args.approval]
     workflow_path = Path(args.workflow) if args.workflow else None
     output_path = Path(args.output)
 
-    approval = read_json(approval_path)
+    approval = combine_approvals(approval_paths)
     workflow = read_json(workflow_path) if workflow_path else {}
+    gate_states = read_gate_states()
     embedded = json.dumps(
-        {"approval": approval, "workflow": workflow},
+        {"approval": approval, "workflow": workflow, "gate_states": gate_states},
         ensure_ascii=False,
         separators=(",", ":"),
     ).replace("</", "<\\/")
@@ -44,7 +82,7 @@ def main() -> int:
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>游戏设计审批看板</title>
+<title>设计与架构审批看板</title>
 <style>
 *,*::before,*::after{{box-sizing:border-box}}
 html,body{{margin:0;height:100%;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;color:#1a202c;background:#f0f2f5}}
@@ -86,66 +124,83 @@ a:hover{{text-decoration:underline}}
 .sidebar-name{{font-size:13px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
 
 /* ── Main panel ── */
-.main{{flex:1;padding:20px;overflow-y:auto;min-width:0;transition:flex .2s}}
+.main{{display:none}}
+@media(max-width:1100px){{.sidebar{{width:210px}}}}
+@media(max-width:800px){{.layout{{flex-direction:column;height:auto}}.sidebar{{width:100%;max-height:220px;border-right:none;border-bottom:1px solid #e2e8f0}}.preview-panel,.preview-panel.open{{width:100%;height:72vh;border-left:none;border-top:1px solid #e2e8f0}}}}
 
 /* ── Preview panel ── */
-.preview-panel{{width:0;flex-shrink:0;background:#fff;border-left:1px solid #e2e8f0;overflow:hidden;transition:width .2s ease;display:flex;flex-direction:column}}
-.preview-panel.open{{width:55%}}
+.preview-panel{{flex:1;background:#fff;border-left:1px solid #e2e8f0;overflow:hidden;transition:width .2s ease;display:flex;flex-direction:column;min-width:0}}
+.preview-panel:not(.open)::after{{content:"选择一个节点的输出后在这里预览";display:flex;align-items:center;justify-content:center;height:100%;color:#718096;background:#fff}}
+.preview-panel:not(.open) .preview-hd,.preview-panel:not(.open) .preview-iframe,.preview-panel:not(.open) .preview-actions{{display:none}}
 .preview-hd{{padding:8px 12px;background:#f7fafc;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:8px;flex-shrink:0;min-height:38px}}
 .preview-title{{flex:1;font-size:12px;color:#4a5568;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
 .preview-close{{padding:3px 10px;border-radius:5px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;font-size:12px;color:#4a5568;flex-shrink:0}}
 .preview-close:hover{{background:#fed7d7;border-color:#fc8181;color:#c53030}}
 .preview-iframe{{flex:1;border:none;width:100%;display:block}}
-.section-head{{display:flex;align-items:center;gap:10px;margin:0 0 14px;padding-bottom:10px;border-bottom:2px solid #e2e8f0}}
-.section-head h2{{margin:0;font-size:15px;font-weight:700;color:#2d3748}}
+.preview-actions{{border-top:1px solid #e2e8f0;background:#fff;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start;box-shadow:0 -4px 14px rgba(0,0,0,.06)}}
+.preview-actions-title{{font-size:13px;font-weight:800;color:#1a202c;margin-bottom:6px}}
+.preview-actions-meta{{font-size:12px;color:#718096;margin-bottom:8px;display:flex;gap:10px;flex-wrap:wrap}}
+.preview-actions textarea{{width:100%;min-height:54px;resize:vertical;padding:8px;border:1px solid #e2e8f0;border-radius:6px;font:inherit;font-size:13px;color:#2d3748;background:#f8fafc}}
+.preview-actions textarea:focus{{outline:none;border-color:#90cdf4;background:#fff}}
+.preview-actions-grid{{display:grid;grid-template-columns:1fr 1fr;gap:8px}}
+.preview-actions-buttons{{display:flex;flex-direction:column;gap:6px;min-width:120px}}
+.preview-actions-readonly{{font-size:13px;color:#4a5568;background:#f7fafc;border:1px solid #e2e8f0;border-radius:6px;padding:8px 10px}}
+.section-head{{display:flex;align-items:center;gap:8px;margin:2px 0 8px;padding:0 2px 7px;border-bottom:1px solid #e2e8f0}}
+.section-head h2{{margin:0;font-size:13px;font-weight:700;color:#2d3748}}
 .section-badge{{padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600}}
 .badge-revision{{background:#fed7d7;color:#c53030}}
 .badge-review{{background:#bee3f8;color:#2b6cb0}}
 .badge-pending{{background:#e2e8f0;color:#4a5568}}
 .badge-approved{{background:#c6f6d5;color:#276749}}
-.cards{{display:flex;flex-direction:column;gap:14px;margin-bottom:28px}}
+.cards{{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}}
 
 /* ── Card ── */
-.card{{background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;transition:box-shadow .15s}}
-.card:hover{{box-shadow:0 4px 12px rgba(0,0,0,.08)}}
+.card{{background:#fff;border-radius:8px;border:1px solid #e2e8f0;overflow:hidden;transition:box-shadow .15s,border-color .15s}}
+.card:hover{{box-shadow:0 2px 8px rgba(0,0,0,.06);border-color:#cbd5e0}}
 .card-bar{{height:4px}}
 .bar-revision{{background:#e53e3e}}
 .bar-review{{background:#3182ce}}
 .bar-pending{{background:#a0aec0}}
 .bar-approved{{background:#38a169}}
-.card-body{{padding:16px}}
-.card-header{{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}}
-.card-title{{font-size:15px;font-weight:700;color:#1a202c;flex:1}}
-.status-badge{{padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}}
+.card-body{{padding:10px 12px}}
+.card-header{{display:flex;align-items:center;gap:8px;margin-bottom:6px}}
+.card-title{{font-size:14px;font-weight:700;color:#1a202c;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+.status-badge{{padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}}
 .badge-s-revision{{background:#fed7d7;color:#9b2c2c}}
 .badge-s-review{{background:#bee3f8;color:#2c5282}}
 .badge-s-pending{{background:#e2e8f0;color:#4a5568}}
 .badge-s-approved{{background:#c6f6d5;color:#22543d}}
-.card-meta{{font-size:12px;color:#718096;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}}
+.card-meta{{font-size:12px;color:#718096;margin-bottom:6px;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}}
 .card-meta a{{font-size:12px}}
 
 /* Checklist */
-.checklist{{margin:0 0 12px;padding:10px 12px;list-style:none;background:#f7fafc;border-radius:6px}}
+.checklist{{margin:6px 0 0;padding:8px 10px;list-style:none;background:#f7fafc;border-radius:6px}}
 .checklist li{{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:#4a5568;padding:3px 0}}
 .checklist li::before{{content:"☐";color:#a0aec0;flex-shrink:0;margin-top:1px}}
 .checklist li.done::before{{content:"☑";color:#38a169}}
 
 /* Notes */
-.notes-row{{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}}
+.review-details{{border-top:1px solid #edf2f7;margin-top:8px;padding-top:6px}}
+.review-details summary{{cursor:pointer;color:#2b6cb0;font-size:12px;font-weight:700;list-style:none;display:flex;align-items:center;justify-content:space-between}}
+.review-details summary::after{{content:"展开";font-weight:600;color:#718096}}
+.review-details[open] summary::after{{content:"收起"}}
+.notes-row{{display:grid;grid-template-columns:1fr;gap:8px;margin:8px 0}}
 @media(max-width:600px){{.notes-row{{grid-template-columns:1fr}}}}
 .note-block label{{display:block;font-size:12px;font-weight:600;color:#4a5568;margin-bottom:4px}}
-.note-block textarea{{width:100%;min-height:70px;resize:vertical;padding:8px;border:1px solid #e2e8f0;border-radius:6px;font:inherit;font-size:13px;color:#2d3748;background:#f7fafc}}
+.note-block textarea{{width:100%;min-height:58px;resize:vertical;padding:8px;border:1px solid #e2e8f0;border-radius:6px;font:inherit;font-size:13px;color:#2d3748;background:#f7fafc}}
 .note-block textarea:focus{{outline:none;border-color:#90cdf4;background:#fff}}
 .note-block.revision-notes textarea{{border-color:#fc8181;background:#fff5f5}}
 
 /* Existing notes (read-only) */
-.existing-notes{{margin-bottom:12px}}
+.existing-notes{{margin:6px 0}}
 .existing-notes .note-label{{font-size:12px;font-weight:600;color:#9b2c2c;margin-bottom:4px}}
 .existing-notes .note-body{{background:#fff5f5;border:1px solid #fc8181;border-radius:6px;padding:8px 10px;font-size:13px;color:#c53030;white-space:pre-wrap}}
 
 /* Actions */
-.actions{{display:flex;flex-wrap:wrap;gap:8px}}
-.btn{{padding:7px 14px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s}}
+.actions{{display:flex;flex-wrap:wrap;gap:6px}}
+.btn{{padding:6px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s}}
+.btn-link{{border-color:#bee3f8;color:#2b6cb0;background:#ebf8ff}}
+.btn-link:hover{{background:#bee3f8;text-decoration:none}}
 .btn:hover{{background:#f7fafc}}
 .btn:disabled{{opacity:.5;cursor:default}}
 .btn-approve{{background:#276749;border-color:#276749;color:#fff}}
@@ -163,19 +218,20 @@ a:hover{{text-decoration:underline}}
 </head>
 <body>
 <header class="hd">
-  <h1><span class="pulse"></span>游戏设计审批看板</h1>
+  <h1><span class="pulse"></span>设计与架构审批看板</h1>
   <div class="hd-chips" id="hd-stats"></div>
   <button class="hd-refresh" onclick="reloadRecords()">刷新</button>
 </header>
 <div class="layout">
   <nav class="sidebar" id="sidebar"></nav>
-  <main class="main" id="main"></main>
+  <main class="main" id="main" hidden aria-hidden="true"></main>
   <div class="preview-panel" id="preview-panel">
     <div class="preview-hd">
       <span class="preview-title" id="preview-title"></span>
       <button class="preview-close" onclick="closePreview()">✕ 关闭</button>
     </div>
     <iframe id="preview-iframe" class="preview-iframe" src="about:blank"></iframe>
+    <div id="preview-actions" class="preview-actions"></div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -183,6 +239,8 @@ a:hover{{text-decoration:underline}}
 const EMBEDDED = {embedded};
 let state = EMBEDDED;
 let activeFilter = null;
+let currentRecords = [];
+let activeNodeId = null;
 
 const STATUS_ORDER = ["revision-requested","in-review","pending","approved"];
 const STATUS_LABELS = {{"revision-requested":"要求修改","in-review":"审核中","pending":"待执行","approved":"已批准"}};
@@ -192,18 +250,54 @@ const STATUS_BADGE_S = {{"revision-requested":"badge-s-revision","in-review":"ba
 const STATUS_BAR = {{"revision-requested":"bar-revision","in-review":"bar-review","pending":"bar-pending","approved":"bar-approved"}};
 const STATUS_DOT = {{"revision-requested":"dot-revision","in-review":"dot-review","pending":"dot-pending","approved":"dot-approved"}};
 const STATUS_SIDEBAR = {{"revision-requested":"s-revision","in-review":"s-review","pending":"s-pending","approved":"s-approved"}};
+const GATE_JSON_PATHS = {{
+  "art-concept": ".allforai/game-design/art/art-concept-validation.json",
+  "architecture-concept-validation": ".allforai/architecture/architecture-concept-validation.json"
+}};
 
 async function loadApproval() {{
   try {{
-    const r = await fetch("approval-records.json?ts="+Date.now(),{{cache:"no-store"}});
-    if (r.ok) state.approval = await r.json();
+    const sources = (state.approval && state.approval.sources && state.approval.sources.length)
+      ? state.approval.sources : ["approval-records.json"];
+    const records = [];
+    const loadedSources = [];
+    for (const source of sources) {{
+      const r = await fetch(normalizeOutputHref(source)+"?ts="+Date.now(),{{cache:"no-store"}});
+      if (!r.ok) continue;
+      const payload = await r.json();
+      loadedSources.push(source);
+      for (const record of (payload.records || [])) {{
+        records.push({{...record, approval_record_path: source}});
+      }}
+    }}
+    if (loadedSources.length) state.approval = {{records, sources: loadedSources}};
   }} catch(e) {{}}
+}}
+
+async function loadGateStates() {{
+  state.gate_states = state.gate_states || {{}};
+  for (const [nodeId, path] of Object.entries(GATE_JSON_PATHS)) {{
+    if (!workflowHasNode(nodeId)) continue;
+    try {{
+      const r = await fetch(normalizeOutputHref(path)+"?ts="+Date.now(),{{cache:"no-store"}});
+      if (r.ok) state.gate_states[nodeId] = await r.json();
+    }} catch(e) {{}}
+  }}
 }}
 
 function getNodeId(rec) {{ return rec.node_id || ""; }}
 
+function normalizeOutputHref(path) {{
+  if (!path) return null;
+  let href = String(path);
+  if (href.startsWith(".allforai/game-design/")) return href.slice(".allforai/game-design/".length);
+  if (href.startsWith(".allforai/architecture/")) return "../architecture/" + href.slice(".allforai/architecture/".length);
+  if (href.startsWith(".allforai/")) return "../" + href.slice(".allforai/".length);
+  return href;
+}}
+
 function htmlOutputFor(rec) {{
-  if (rec.html_output) return rec.html_output;
+  if (rec.html_output) return normalizeOutputHref(rec.html_output);
   const nid = getNodeId(rec);
   const map = {{
     "core-loop-design":"core-loop.html","character-arc-design":"character-arc.html",
@@ -215,9 +309,84 @@ function htmlOutputFor(rec) {{
     "art-spec-design":"art-spec-design.html","tile-art-gen":"tile-art-review.html",
     "character-art-gen":"character-art-review.html","environment-art-gen":"environment-art-review.html",
     "ui-art-gen":"ui-art-review.html","vfx-art-gen":"vfx-art-review.html",
-    "art-qa":"art-qa-report.html","game-design-finalize":"game-design-dashboard.html"
+    "art-concept":"art/art-concept-validation.html",
+    "art-qa":"art-qa-report.html","game-design-finalize":"game-design-dashboard.html",
+    "architecture-concept-validation":"../architecture/architecture-concept-validation.html"
   }};
-  return map[nid] || null;
+  return normalizeOutputHref(map[nid]) || null;
+}}
+
+function workflowNodes() {{
+  return (state.workflow && Array.isArray(state.workflow.nodes)) ? state.workflow.nodes : [];
+}}
+
+function workflowHasNode(nodeId) {{
+  return workflowNodes().some(n => n && n.node_id === nodeId);
+}}
+
+function gatePayload(nodeId) {{
+  return (state.gate_states && state.gate_states[nodeId]) || null;
+}}
+
+function statusFromGateState(payload) {{
+  const gateState = payload && payload.state ? String(payload.state) : "";
+  if (!gateState) return "pending";
+  if (gateState === "passed") return "approved";
+  if (gateState === "passed_with_warnings") return "in-review";
+  if (gateState === "needs_revision" || gateState.startsWith("blocked_") || gateState === "failed_validation") return "revision-requested";
+  return "pending";
+}}
+
+function gateSummary(payload) {{
+  if (!payload) return "等待 gate 产物生成。";
+  const stateText = payload.state ? `状态：${{payload.state}}。` : "状态：未声明。";
+  const summary = payload.approval_summary || payload.summary || "";
+  const blockers = Array.isArray(payload.blocked_validation_items) && payload.blocked_validation_items.length
+    ? `阻塞项：${{payload.blocked_validation_items.length}} 个。`
+    : "";
+  return [stateText, summary, blockers].filter(Boolean).join(" ");
+}}
+
+function virtualGateRecords(records) {{
+  const existing = new Set(records.map(getNodeId));
+  const gates = [];
+  if (workflowHasNode("art-concept") && !existing.has("art-concept")) {{
+    const payload = gatePayload("art-concept");
+    gates.push({{
+      node_id: "art-concept",
+      gate_status: statusFromGateState(payload),
+      discipline_owner: "art-director",
+      html_output: ".allforai/game-design/art/art-concept-validation.html",
+      gate_state: payload && payload.state,
+      gate_summary: gateSummary(payload),
+      read_only: true,
+      virtual_gate: true,
+      review_checklist: [
+        "美术概念 HTML gate 已生成并可阅读",
+        "美术方向与产品/游戏概念、目标受众和玩法可读性闭合",
+        "未通过时必须阻断后续 art-gen 节点"
+      ]
+    }});
+  }}
+  if (workflowHasNode("architecture-concept-validation") && !existing.has("architecture-concept-validation")) {{
+    const payload = gatePayload("architecture-concept-validation");
+    gates.push({{
+      node_id: "architecture-concept-validation",
+      gate_status: statusFromGateState(payload),
+      discipline_owner: "lead-engineer",
+      html_output: ".allforai/architecture/architecture-concept-validation.html",
+      gate_state: payload && payload.state,
+      gate_summary: gateSummary(payload),
+      read_only: true,
+      virtual_gate: true,
+      review_checklist: [
+        "技术框架 / 技术架构决策 HTML gate 已生成并可阅读",
+        "实现节点均映射到模块、输入契约、输出契约和验证路径",
+        "无法运行或导入验证时必须暴露 blocked 状态，不允许替代验收"
+      ]
+    }});
+  }}
+  return gates;
 }}
 
 function getText(id) {{ const el=document.getElementById(id); return el?el.value:""; }}
@@ -251,20 +420,20 @@ async function submitAction(action) {{
   }}
 }}
 
-function approve(nodeId) {{
-  submitAction({{action:"approve",node_id:nodeId,approved_by:"discipline_owner",
+function approve(nodeId, approvalPath) {{
+  submitAction({{action:"approve",node_id:nodeId,approval_record_path:approvalPath,approved_by:"discipline_owner",
     reviewer_notes:getText("reviewer-"+nodeId),revision_notes:""}});
 }}
 
-function requestRevision(nodeId) {{
+function requestRevision(nodeId, approvalPath) {{
   const notes = getText("revision-"+nodeId);
   if (!notes.trim()) {{ alert("请填写修改意见后再提交"); return; }}
-  submitAction({{action:"request_revision",node_id:nodeId,
+  submitAction({{action:"request_revision",node_id:nodeId,approval_record_path:approvalPath,
     reviewer_notes:getText("reviewer-"+nodeId),revision_notes:notes}});
 }}
 
-function saveNotes(nodeId) {{
-  submitAction({{action:"save_notes",node_id:nodeId,
+function saveNotes(nodeId, approvalPath) {{
+  submitAction({{action:"save_notes",node_id:nodeId,approval_record_path:approvalPath,
     reviewer_notes:getText("reviewer-"+nodeId),revision_notes:getText("revision-"+nodeId)}});
 }}
 
@@ -287,9 +456,28 @@ function scrollTo(nodeId) {{
   if (el) el.scrollIntoView({{behavior:"smooth",block:"start"}});
 }}
 
+function recordByNodeId(nodeId) {{
+  return currentRecords.find(rec => getNodeId(rec) === nodeId) || null;
+}}
+
+function selectRecord(nodeId) {{
+  const rec = recordByNodeId(nodeId);
+  if (!rec) return;
+  const href = htmlOutputFor(rec);
+  if (href) openPreview(href, nodeId);
+  else {{
+    activeNodeId = nodeId;
+    document.getElementById("preview-title").textContent = nodeId;
+    document.getElementById("preview-iframe").src = "about:blank";
+    document.getElementById("preview-panel").classList.add("open");
+    renderPreviewActions(rec);
+  }}
+}}
+
 function renderCard(rec) {{
   const nid = getNodeId(rec);
   const st = rec.gate_status || "pending";
+  const isReadOnly = !!(rec.read_only || rec.virtual_gate);
   const outputHref = htmlOutputFor(rec);
   const outputLink = outputHref ? `<a href="javascript:void(0)" onclick="openPreview('${{escapeJs(outputHref)}}','${{escapeJs(nid)}}')">查看输出 ▶</a>` : "";
   const reviewers = (rec.discipline_reviewers||[]).join(", ");
@@ -307,7 +495,11 @@ function renderCard(rec) {{
   const existingReviewer = rec.reviewer_notes ?
     `<div class="existing-notes" style="margin-bottom:8px"><div class="note-label" style="color:#2b6cb0">📝 评审备注</div><div class="note-body" style="border-color:#90cdf4;background:#ebf8ff;color:#2c5282">${{escapeHtml(rec.reviewer_notes)}}</div></div>` : "";
 
+  const readonlyNotice = isReadOnly ?
+    `<div class="existing-notes" style="margin-bottom:12px"><div class="note-label" style="color:#4a5568">只读验证 Gate${{rec.gate_state ? `：${{escapeHtml(rec.gate_state)}}` : ""}}</div><div class="note-body" style="border-color:#cbd5e0;background:#f7fafc;color:#4a5568">${{escapeHtml(rec.gate_summary || "此项来自 workflow 的自动化验证节点，不写入 approval-records.json。请打开 HTML gate 查看结论；若 gate 输出 blocked 或 failed，后续执行节点应被阻断。")}}</div></div>` : "";
+
   const isApproved = st === "approved";
+  const approvalPath = rec.approval_record_path || "";
   return `<div class="card" id="card-${{escapeAttr(nid)}}">
   <div class="card-bar ${{STATUS_BAR[st]||"bar-pending"}}"></div>
   <div class="card-body">
@@ -318,12 +510,13 @@ function renderCard(rec) {{
     <div class="card-meta">
       <span>负责人：<strong>${{escapeHtml(rec.discipline_owner||"")}}</strong></span>
       ${{reviewers ? `<span>评审员：${{escapeHtml(reviewers)}}</span>` : ""}}
+      ${{isReadOnly ? `<span>类型：只读自动化 Gate</span>` : ""}}
       ${{rec.approved_by&&rec.approved_by.length ? `<span style="color:#276749">✓ 批准：${{escapeHtml((rec.approved_by||[]).join(", "))}}</span>` : ""}}
       ${{outputLink}}
     </div>
     ${{checklistHtml}}
-    ${{existingRevision}}${{existingReviewer}}
-    ${{isApproved ? "" : `
+    ${{readonlyNotice}}${{existingRevision}}${{existingReviewer}}
+    ${{isApproved || isReadOnly ? "" : `
     <div class="notes-row">
       <div class="note-block">
         <label>评审备注</label>
@@ -335,16 +528,61 @@ function renderCard(rec) {{
       </div>
     </div>
     <div class="actions">
-      <button id="approve-${{escapeAttr(nid)}}" class="btn btn-approve" onclick="approve('${{escapeJs(nid)}}')">✓ 批准</button>
-      <button id="revision-btn-${{escapeAttr(nid)}}" class="btn btn-revision" onclick="requestRevision('${{escapeJs(nid)}}')">↩ 要求修改</button>
-      <button id="save-${{escapeAttr(nid)}}" class="btn btn-save" onclick="saveNotes('${{escapeJs(nid)}}')">💾 保存备注</button>
+      <button id="approve-${{escapeAttr(nid)}}" class="btn btn-approve" onclick="approve('${{escapeJs(nid)}}','${{escapeJs(approvalPath)}}')">✓ 批准</button>
+      <button id="revision-btn-${{escapeAttr(nid)}}" class="btn btn-revision" onclick="requestRevision('${{escapeJs(nid)}}','${{escapeJs(approvalPath)}}')">↩ 要求修改</button>
+      <button id="save-${{escapeAttr(nid)}}" class="btn btn-save" onclick="saveNotes('${{escapeJs(nid)}}','${{escapeJs(approvalPath)}}')">💾 保存备注</button>
     </div>`}}
   </div>
 </div>`;
 }}
 
+function renderPreviewActions(rec) {{
+  const target = document.getElementById("preview-actions");
+  if (!target) return;
+  if (!rec) {{
+    target.innerHTML = "";
+    return;
+  }}
+  const nid = getNodeId(rec);
+  const st = rec.gate_status || "pending";
+  const isReadOnly = !!(rec.read_only || rec.virtual_gate);
+  const reviewers = (rec.discipline_reviewers||[]).join(", ");
+  const approvalPath = rec.approval_record_path || "";
+  if (isReadOnly) {{
+    target.innerHTML = `<div>
+      <div class="preview-actions-title">${{escapeHtml(nid)}}</div>
+      <div class="preview-actions-meta">
+        <span>${{STATUS_LABELS[st]||st}}</span>
+        <span>负责人：${{escapeHtml(rec.discipline_owner||"")}}</span>
+        ${{rec.gate_state ? `<span>Gate：${{escapeHtml(rec.gate_state)}}</span>` : ""}}
+      </div>
+      <div class="preview-actions-readonly">${{escapeHtml(rec.gate_summary || "只读自动化 Gate，不写入审批记录。")}}</div>
+    </div><div class="preview-actions-buttons"></div>`;
+    return;
+  }}
+  target.innerHTML = `<div>
+    <div class="preview-actions-title">${{escapeHtml(nid)}}</div>
+    <div class="preview-actions-meta">
+      <span>${{STATUS_LABELS[st]||st}}</span>
+      <span>负责人：${{escapeHtml(rec.discipline_owner||"")}}</span>
+      ${{reviewers ? `<span>评审员：${{escapeHtml(reviewers)}}</span>` : ""}}
+    </div>
+    <div class="preview-actions-grid">
+      <textarea id="reviewer-${{escapeAttr(nid)}}" placeholder="评审备注（不影响审批状态）">${{escapeHtml(rec.reviewer_notes||"")}}</textarea>
+      <textarea id="revision-${{escapeAttr(nid)}}" placeholder="修改意见：填写后点击要求修改">${{escapeHtml(rec.revision_notes||"")}}</textarea>
+    </div>
+  </div>
+  <div class="preview-actions-buttons">
+    <button id="approve-${{escapeAttr(nid)}}" class="btn btn-approve" onclick="approve('${{escapeJs(nid)}}','${{escapeJs(approvalPath)}}')">批准</button>
+    <button id="revision-btn-${{escapeAttr(nid)}}" class="btn btn-revision" onclick="requestRevision('${{escapeJs(nid)}}','${{escapeJs(approvalPath)}}')">要求修改</button>
+    <button id="save-${{escapeAttr(nid)}}" class="btn btn-save" onclick="saveNotes('${{escapeJs(nid)}}','${{escapeJs(approvalPath)}}')">保存备注</button>
+  </div>`;
+}}
+
 function render() {{
-  const records = state.approval.records || [];
+  const approvalRecords = state.approval.records || [];
+  const records = approvalRecords.concat(virtualGateRecords(approvalRecords));
+  currentRecords = records;
   const grouped = {{}};
   for (const st of STATUS_ORDER) grouped[st] = [];
   for (const rec of records) {{
@@ -370,7 +608,7 @@ function render() {{
       <div class="sidebar-label">${{STATUS_LABELS[st]}}</div>`;
     for (const rec of items) {{
       const nid = getNodeId(rec);
-      sidebarHtml += `<div class="sidebar-item ${{STATUS_SIDEBAR[st]||""}}" onclick="scrollTo('${{escapeJs(nid)}}')" title="${{escapeAttr(nid)}}">
+      sidebarHtml += `<div class="sidebar-item ${{STATUS_SIDEBAR[st]||""}}" onclick="selectRecord('${{escapeJs(nid)}}')" title="${{escapeAttr(nid)}}">
         <span class="sidebar-dot ${{STATUS_DOT[st]||"dot-pending"}}"></span>
         <span class="sidebar-name">${{escapeHtml(nid)}}</span>
       </div>`;
@@ -401,11 +639,13 @@ function render() {{
     </details>`;
   }}
 
-  document.getElementById("main").innerHTML = mainHtml;
+  document.getElementById("main").innerHTML = "";
+  if (activeNodeId) renderPreviewActions(recordByNodeId(activeNodeId));
 }}
 
 async function reloadRecords() {{
   await loadApproval();
+  await loadGateStates();
   const focused = document.activeElement;
   if (focused && (focused.tagName === "TEXTAREA" || focused.tagName === "INPUT")) {{
     return;
@@ -417,9 +657,11 @@ function openPreview(href, nodeId) {{
   const panel = document.getElementById("preview-panel");
   const iframe = document.getElementById("preview-iframe");
   const title = document.getElementById("preview-title");
+  activeNodeId = nodeId || activeNodeId;
   title.textContent = href;
   iframe.src = href + "?ts=" + Date.now();
   panel.classList.add("open");
+  renderPreviewActions(recordByNodeId(activeNodeId));
   if (nodeId) {{
     setTimeout(() => {{
       const el = document.getElementById("card-" + nodeId);
@@ -431,7 +673,9 @@ function openPreview(href, nodeId) {{
 function closePreview() {{
   const panel = document.getElementById("preview-panel");
   const iframe = document.getElementById("preview-iframe");
+  activeNodeId = null;
   panel.classList.remove("open");
+  renderPreviewActions(null);
   setTimeout(() => {{ iframe.src = "about:blank"; }}, 200);
 }}
 
@@ -440,6 +684,7 @@ function escapeAttr(v) {{ return escapeHtml(v); }}
 function escapeJs(v) {{ return String(v).replace(/['\\\\]/g,"\\\\$&"); }}
 
 render();
+loadGateStates().then(render);
 setInterval(reloadRecords, 15000);
 </script>
 </body>

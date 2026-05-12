@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """HTTP server for the review dashboard with approval action API.
 
-Serves static files from the game-design directory AND handles
+Serves static files from the review dashboard directory AND handles
 POST /api/action requests to write approval actions directly to
 approval-records.json — no Playwright required.
 
 Usage:
     python3 serve_approval.py \\
         --approval .allforai/game-design/approval-records.json \\
-        --directory .allforai/game-design \\
+        --approval .allforai/app-design/approval-records.json \\
+        --directory .allforai \\
         --port 43871
 """
 
@@ -24,7 +25,7 @@ from pathlib import Path
 
 
 class ApprovalHandler(http.server.SimpleHTTPRequestHandler):
-    approval_path: Path
+    approval_paths: list[Path]
 
     # ── POST /api/action ────────────────────────────────────────────────────
     def do_POST(self) -> None:
@@ -61,18 +62,42 @@ class ApprovalHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def _apply_action(self, action: dict) -> None:
-        data = json.loads(self.approval_path.read_text(encoding="utf-8"))
         node_id = action.get("node_id")
         if not node_id:
             raise ValueError("missing node_id")
 
-        records = data.get("records", [])
-        record = next(
-            (r for r in records if r.get("node_id") == node_id),
-            None,
-        )
-        if record is None:
+        requested_path = action.get("approval_record_path")
+        candidates = self.approval_paths
+        if requested_path:
+            requested = Path(requested_path)
+            candidates = [
+                path
+                for path in self.approval_paths
+                if path == requested.resolve() or path.as_posix().endswith(requested.as_posix())
+            ] or self.approval_paths
+
+        matched_path = None
+        data = None
+        record = None
+        for path in candidates:
+            if not path.exists():
+                continue
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            records = payload.get("records", [])
+            found = next(
+                (r for r in records if r.get("node_id") == node_id),
+                None,
+            )
+            if found is not None:
+                matched_path = path
+                data = payload
+                record = found
+                break
+
+        if matched_path is None or data is None or record is None:
             raise ValueError(f"record not found: {node_id}")
+
+        records = data.get("records", [])
 
         now = datetime.now(timezone.utc).isoformat()
         if action.get("reviewer_notes") is not None:
@@ -101,7 +126,7 @@ class ApprovalHandler(http.server.SimpleHTTPRequestHandler):
         else:
             raise ValueError(f"unknown action: {kind}")
 
-        self.approval_path.write_text(
+        matched_path.write_text(
             json.dumps(data, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
@@ -112,29 +137,44 @@ class ApprovalHandler(http.server.SimpleHTTPRequestHandler):
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--approval", required=True, help="Path to approval-records.json")
+    parser.add_argument(
+        "--approval",
+        action="append",
+        required=True,
+        help="Path to approval-records.json. May be passed more than once.",
+    )
     parser.add_argument("--directory", required=True, help="Static files directory to serve")
     parser.add_argument("--port", type=int, default=43871)
     args = parser.parse_args()
 
-    approval_path = Path(args.approval).resolve()
+    approval_paths = [Path(path).resolve() for path in args.approval]
     directory = Path(args.directory).resolve()
 
-    if not approval_path.exists():
-        print(f"ERROR: approval file not found: {approval_path}", file=sys.stderr)
+    existing_approvals = [path for path in approval_paths if path.exists()]
+    if not existing_approvals:
+        print(
+            "ERROR: no approval files found: "
+            + ", ".join(path.as_posix() for path in approval_paths),
+            file=sys.stderr,
+        )
         return 1
 
     class Handler(ApprovalHandler):
         pass
 
-    Handler.approval_path = approval_path
+    Handler.approval_paths = existing_approvals
 
     os.chdir(directory)
 
+    if (directory / "game-design/review-dashboard.html").exists():
+        dashboard_path = "/game-design/review-dashboard.html"
+    else:
+        dashboard_path = "/review-dashboard.html"
+
     with http.server.HTTPServer(("", args.port), Handler) as httpd:
-        url = f"http://127.0.0.1:{args.port}/review-dashboard.html"
-        print(f"Approval dashboard: {url}", flush=True)
-        print("Open in Chrome to review. Press Ctrl-C to stop.", flush=True)
+        url = f"http://127.0.0.1:{args.port}{dashboard_path}"
+        print(f"审批看板: {url}", flush=True)
+        print("请在 Chrome 中打开进行审批。按 Ctrl-C 停止。", flush=True)
         httpd.serve_forever()
 
     return 0
