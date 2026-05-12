@@ -24,15 +24,22 @@ screen load, render, respond, and prove assets are connected.
 | Layer | Child skill | Responsibility |
 |---|---|---|
 | `00-env` | `frontend-runtime-detection` | Detect client stack, engine/runtime commands, dev server, test tools, and runnable validation surface. |
+| `10-design` | `runtime-architecture-design` | Define frontend runtime architecture, module ownership, engine adapter strategy, and validation surfaces before implementation. |
+| `20-spec` | `game-state-model-spec` | Define runtime, scene, gameplay, UI, save, and transient state ownership, schemas, transitions, and probes. |
+| `20-spec` | `scene-flow-spec` | Define scene routing, loading/error states, transition triggers, restore policy, and navigation probes. |
 | `20-spec` | `asset-import-binding-spec` | Bind engine-ready art manifest entries to loader keys, runtime IDs, atlas frames, fallbacks, and import checks. |
+| `20-spec` | `asset-loading-strategy-spec` | Define preload/lazy-load groups, cache, retry, fallback, progress UI, and loading probes. |
 | `20-spec` | `game-data-binding-spec` | Bind design data tables and system specs into frontend-readable modules, schemas, loader keys, and probes. |
+| `20-spec` | `gameplay-system-binding-spec` | Bind rules, levels, objectives, economy, progression, templates, and feedback events to frontend modules and probes. |
 | `20-spec` | `scene-composition-spec` | Define scenes, layers, camera framing, level/art/UI/audio composition, and visible smoke targets. |
 | `20-spec` | `input-camera-binding-spec` | Bind player input, camera follow/framing, viewport constraints, and device controls. |
 | `20-spec` | `hud-ui-binding-spec` | Bind game UI/HUD contracts to frontend screens, states, safe areas, and runtime data. |
 | `20-spec` | `animation-vfx-binding-spec` | Bind animation states, clips, events, VFX, particles, and fallback visuals to gameplay/front-end events. |
 | `20-spec` | `audio-binding-spec` | Bind audio cues to frontend loader keys, scene/UI/animation triggers, volume groups, and runtime probes. |
 | `20-spec` | `save-state-binding-spec` | Bind local/frontend persistence for progress, settings, checkpoints, reset, and save/load probes. |
+| `20-spec` | `performance-budget-spec` | Define measurable frontend startup, frame, memory, bundle, draw/update, particle, and audio budgets. |
 | `30-generate` | `playable-client-assembly` | Apply the bindings in the target frontend codebase and produce a runnable client integration report. |
+| `40-qa` | `runtime-architecture-qa` | Validate architecture/state/scene/loading/system/performance contracts as a closed graph. |
 | `40-qa` | `playable-smoke-test` | Run the client and verify scene load, input, assets, HUD, animation/VFX, logs, and screenshots. |
 | `40-qa` | `playability-probe-qa` | Drive a short automated gameplay loop and verify state/feedback changes. |
 | `40-qa` | `visual-runtime-regression-qa` | Compare runtime screenshots/probes against expected scene/UI/art visibility and report regressions. |
@@ -43,15 +50,22 @@ screen load, render, respond, and prove assets are connected.
 
 ```text
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/00-env/frontend-runtime-detection/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/10-design/runtime-architecture-design/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/20-spec/game-state-model-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/20-spec/scene-flow-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/20-spec/asset-import-binding-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/20-spec/asset-loading-strategy-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/20-spec/game-data-binding-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/20-spec/gameplay-system-binding-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/20-spec/scene-composition-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/20-spec/input-camera-binding-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/20-spec/hud-ui-binding-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/20-spec/animation-vfx-binding-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/20-spec/audio-binding-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/20-spec/save-state-binding-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/20-spec/performance-budget-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/30-generate/playable-client-assembly/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/40-qa/runtime-architecture-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/40-qa/playable-smoke-test/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/40-qa/playability-probe-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/40-qa/visual-runtime-regression-qa/SKILL.md
@@ -84,6 +98,7 @@ Game Frontend writes contracts under:
 
 ```text
 .allforai/game-frontend/env/
+.allforai/game-frontend/design/
 .allforai/game-frontend/bindings/
 .allforai/game-frontend/assembly/
 .allforai/game-frontend/qa/
@@ -96,3 +111,33 @@ client code and resource bindings in the target project, but it must not invent
 missing design requirements, regenerate art, or accept unavailable validation.
 If the client cannot run, return a blocking validation status and expose the
 missing command, server, engine, or dependency.
+
+## Project Specialization
+
+The bundled `game-frontend` children define reusable contracts only. Do not add
+global child skills for specific game types or engines such as path-connection
+matching, match-3, tower defense, rhythm, roguelike, Cocos Creator, Phaser,
+Unity, Godot, or a single project's scene/state model.
+
+When the frontend runtime depends on genre-specific state, engine-specific
+adapter behavior, platform-specific input/loading/performance constraints, or
+existing project runtime code, generate or read a project-local specialized
+skill under:
+
+```text
+.allforai/bootstrap/specialized-skills/<specialization_id>-frontend-runtime/SKILL.md
+```
+
+That project-local skill may define concrete scene flow, state machines,
+input gestures, asset loading groups, runtime probes, and engine commands for
+the project. It must still call back into the bundled `game-frontend` contracts
+for outputs and QA.
+
+Required specialized frontend sections:
+
+- `Input Contract`
+- `Output Contract`
+- `Invocation Contract`
+- `Automatic Validation`
+- `Repair Routing`
+- `Completion Conditions`

@@ -15,8 +15,8 @@ assets, HUD overlays, audio cues, and smoke-test targets.
 
 ## Input Contract
 
-Required: game design doc, frontend runtime profile, asset import bindings, and
-at least one level or scene requirement.
+Required: game design doc, frontend runtime profile, scene flow, asset import
+bindings, and at least one level or scene requirement.
 
 Optional: level layout specs, blockouts, tileset manifests, UI registry, audio
 cue specs, animation/VFX bindings, and existing scene code.
@@ -46,6 +46,7 @@ Allowed states: `draft`, `validated`, `needs_revision`,
   "input_paths": {
     "game_design_doc": ".allforai/game-design/game-design-doc.json",
     "runtime_profile": ".allforai/game-frontend/env/frontend-runtime-profile.json",
+    "scene_flow": ".allforai/game-frontend/bindings/scene-flow-spec.json",
     "asset_bindings": ".allforai/game-frontend/bindings/asset-import-binding-spec.json"
   },
   "output_root": ".allforai/game-frontend/bindings"

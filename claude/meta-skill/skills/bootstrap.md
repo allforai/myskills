@@ -957,6 +957,13 @@ before starting node generation.
          `<specialization_id>-art-generation` under
          `.allforai/bootstrap/specialized-skills/` with prompt templates,
          model profile preferences, preview validation, and repair routing.
+       - Project-specific frontend runtime: when scene flow, state model,
+         input/camera behavior, asset loading, performance budget, or runtime
+         probes depend on the concrete genre/engine/platform/project code,
+         generate `<specialization_id>-frontend-runtime` under
+         `.allforai/bootstrap/specialized-skills/`. The global `game-frontend`
+         children remain generic contracts and must not embed Cocos/Phaser/
+         Unity/Godot or genre-specific state machines directly.
        - Rhythm games: generate beatmap timing-window validation and input
          latency validation.
        - Deck-builders: generate card-pool closure, draw-probability, and

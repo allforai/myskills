@@ -110,6 +110,57 @@ strategy, image model routing, image generation, accepted-image manifests,
 style QA, atlas/import QA, and runtime handoff. It only adds project-specific
 planning, prompting, preview validation, and repair criteria.
 
+## Frontend Runtime Specialization
+
+Generate a project-local frontend runtime specialization when the frontend
+architecture depends on a concrete genre, engine, platform, or project runtime
+shape that should not become a global bundled skill.
+
+Typical triggers:
+- board/puzzle games with genre-specific state machines, input gestures,
+  solver probes, or visual feedback rules;
+- action, rhythm, shooter, roguelike, tower-defense, merge, deck-builder, or
+  simulation games whose runtime loop cannot be described by generic scene
+  bindings alone;
+- engine-specific frontend behavior such as Cocos Creator scenes/assets,
+  Phaser scenes/loaders, Unity/Godot scenes, React/Pixi canvas overlays, or
+  native mobile wrappers;
+- platform-specific input, safe area, loading, remote asset, save, or
+  performance constraints;
+- project code already contains runtime systems that generated specs must bind
+  to exactly.
+
+Suggested output path:
+
+```text
+.allforai/bootstrap/specialized-skills/<specialization_id>-frontend-runtime/SKILL.md
+```
+
+The specialized frontend skill should define:
+- project game type and runtime trigger evidence;
+- engine/framework adapter assumptions;
+- project-specific scene flow and state model rules;
+- input and camera/viewport rules;
+- asset/audio/VFX loading and binding specifics;
+- gameplay-system binding rules;
+- playability probes and screenshot/log evidence requirements;
+- runtime build/import/smoke validation commands;
+- blocked states when the engine, adapter, or probe cannot run.
+
+Suggested project outputs:
+
+```text
+.allforai/game-frontend/specialized/<specialization_id>/runtime-specialization.json
+.allforai/game-frontend/specialized/<specialization_id>/playability-probe-plan.json
+.allforai/game-frontend/specialized/<specialization_id>/runtime-specialization-report.json
+```
+
+The specialized frontend skill must still use the global `game-frontend`
+contracts for runtime detection, architecture design, state model, scene flow,
+asset loading, gameplay binding, assembly, smoke tests, playability probes,
+visual regression, and performance QA. It only adds project-specific runtime
+rules and executable probes.
+
 ## Generation Template
 
 ```markdown

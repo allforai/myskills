@@ -13,6 +13,12 @@ python3 claude/meta-skill/scripts/orchestrator/validate_skills.py claude/meta-sk
 echo "[pre-commit] validate game art pipeline wiring"
 python3 claude/meta-skill/scripts/orchestrator/validate_art_pipeline.py .
 
+echo "[pre-commit] validate game frontend pipeline wiring"
+python3 claude/meta-skill/scripts/orchestrator/validate_game_frontend_pipeline.py .
+
+echo "[pre-commit] validate game creative pipeline wiring"
+python3 claude/meta-skill/scripts/orchestrator/validate_game_creative_pipeline.py .
+
 echo "[pre-commit] validate meta-skill cross-file contracts"
 python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py
 

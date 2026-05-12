@@ -15,8 +15,10 @@ and expose a smoke-test route.
 
 ## Input Contract
 
-Required: frontend runtime profile, asset import bindings, scene composition,
-input/camera binding, HUD/UI binding, and animation/VFX binding.
+Required: frontend runtime profile, runtime architecture design, game state
+model, scene flow, asset loading strategy, gameplay system bindings, asset
+import bindings, scene composition, input/camera binding, HUD/UI binding, and
+animation/VFX binding.
 
 Optional: game design doc, level data, audio cue manifests, existing client
 architecture, dev server command, and test conventions.
@@ -46,6 +48,11 @@ Allowed states: `assembled`, `assembled_with_limits`, `needs_revision`,
   "mode": "assemble",
   "input_paths": {
     "runtime_profile": ".allforai/game-frontend/env/frontend-runtime-profile.json",
+    "runtime_architecture": ".allforai/game-frontend/design/runtime-architecture-design.json",
+    "game_state_model": ".allforai/game-frontend/bindings/game-state-model-spec.json",
+    "scene_flow": ".allforai/game-frontend/bindings/scene-flow-spec.json",
+    "asset_loading": ".allforai/game-frontend/bindings/asset-loading-strategy-spec.json",
+    "gameplay_systems": ".allforai/game-frontend/bindings/gameplay-system-binding-spec.json",
     "asset_bindings": ".allforai/game-frontend/bindings/asset-import-binding-spec.json",
     "scene_composition": ".allforai/game-frontend/bindings/scene-composition-spec.json",
     "input_camera": ".allforai/game-frontend/bindings/input-camera-binding-spec.json",

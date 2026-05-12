@@ -15,8 +15,8 @@ pressure, and low-end target constraints.
 
 ## Input Contract
 
-Required: frontend runtime profile, playable assembly report, smoke or
-playability report, and declared performance budget or platform target.
+Required: frontend runtime profile, performance budget spec, playable assembly
+report, and smoke or playability report.
 
 Optional: build output, browser performance trace, engine profiler output,
 asset manifest, atlas manifest, bundle analyzer output, and runtime logs.
@@ -41,6 +41,7 @@ Allowed states: `passed`, `passed_with_warnings`, `needs_revision`,
   "mode": "validate",
   "input_paths": {
     "runtime_profile": ".allforai/game-frontend/env/frontend-runtime-profile.json",
+    "performance_budget": ".allforai/game-frontend/bindings/performance-budget-spec.json",
     "assembly_report": ".allforai/game-frontend/assembly/playable-client-assembly-report.json",
     "smoke_report": ".allforai/game-frontend/qa/playable-smoke-test-report.json"
   },
