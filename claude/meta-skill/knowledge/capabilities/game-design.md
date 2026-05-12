@@ -502,6 +502,15 @@ specialization should generate project-local guidance for tile-family
 readability, board path-feedback readability, and solver/difficulty QA derived
 from the project's puzzle spec and runtime matcher.
 
+Art generation may also require project-local specialization. When visual
+quality depends on an asset family or concrete play surface, bootstrap should
+generate `<specialization_id>-art-generation` under
+`.allforai/bootstrap/specialized-skills/` to define project-specific prompt
+templates, model profile preferences, preview validation contexts, and repair
+routing. The specialized art skill must still call the global source strategy,
+image model routing, image generation, accepted-image manifest, style QA, and
+runtime handoff contracts.
+
 **Templates:** Append the following to `game-design-finalize` when the game has
 items, enemies, skills, levels, quests, economy rows, drop tables, content packs,
 or any implementation goal that needs reusable data containers:

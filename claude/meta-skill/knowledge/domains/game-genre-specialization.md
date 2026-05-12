@@ -23,6 +23,8 @@ Generate project-local specialized skills when at least one condition is true:
 - The genre has an executable rule system that generic QA cannot validate.
 - The level/content generator needs a genre-specific solver.
 - Visual readability depends on a genre-specific play surface.
+- Asset generation depends on a project-specific visual family, play surface,
+  or screenshot context that generic art prompts cannot validate.
 - Balance depends on genre-specific probability, timing, or combinatorics.
 - Runtime code already contains a domain algorithm that must match design docs.
 - A project-specific content taxonomy is too detailed for generic skills.
@@ -61,6 +63,52 @@ It must also include:
 - generated artifact paths under `.allforai/`;
 - blocked/failed states for missing executable validation;
 - repair routing back to design, art, level, frontend, or tooling owners.
+
+## Art Generation Specialization
+
+Generate a project-local art generation specialization when the project's art
+quality depends on a concrete play surface or asset family that cannot be
+validated one asset at a time.
+
+Typical triggers:
+- dense board tiles where identity depends on the whole tile family;
+- cards where frame, rarity, illustration, text zones, and hand readability
+  must be validated together;
+- rhythm notes/lanes where timing readability depends on scrolling layout;
+- tower-defense units/projectiles where battlefield readability depends on
+  team, lane, range, and VFX overlap;
+- merge objects where chain progression must remain visually ordered;
+- store screenshots or ad creatives where the first-viewport visual promise is
+  more important than isolated asset quality.
+
+The specialized art skill should define:
+- asset family generation plan;
+- project-specific prompt templates and negative prompts;
+- model profile preferences from the global image model registry;
+- local source search/adaptation rules when project assets can be reused;
+- screen or board preview compositions for validation;
+- visual-model/LLM review criteria for family distinctiveness and context fit;
+- repair loop back to image generation, source search, adaptation, or art
+  direction.
+
+Suggested output path:
+
+```text
+.allforai/bootstrap/specialized-skills/<specialization_id>-art-generation/SKILL.md
+```
+
+Suggested project outputs:
+
+```text
+.allforai/game-design/art/specialized/<specialization_id>/art-generation-plan.json
+.allforai/game-design/art/specialized/<specialization_id>/prompt-templates.json
+.allforai/game-design/art/specialized/<specialization_id>/preview-validation-report.json
+```
+
+The specialized art skill must still use the global art contracts for source
+strategy, image model routing, image generation, accepted-image manifests,
+style QA, atlas/import QA, and runtime handoff. It only adds project-specific
+planning, prompting, preview validation, and repair criteria.
 
 ## Generation Template
 

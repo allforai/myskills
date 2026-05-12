@@ -952,6 +952,11 @@ before starting node generation.
          guidance for tile-family readability, path-feedback readability, and
          solver/difficulty QA using the project's puzzle spec and runtime
          matcher.
+       - Project-specific art generation: when asset quality depends on a
+         concrete play surface or family-level distinction, generate
+         `<specialization_id>-art-generation` under
+         `.allforai/bootstrap/specialized-skills/` with prompt templates,
+         model profile preferences, preview validation, and repair routing.
        - Rhythm games: generate beatmap timing-window validation and input
          latency validation.
        - Deck-builders: generate card-pool closure, draw-probability, and
@@ -1190,6 +1195,21 @@ Generate <TYPE> art assets for all entries in `.allforai/concept-contract.json` 
 ## Sub-Skill Invocation
 
 Read and follow each sub-skill SKILL.md in order. Each sub-skill defines its own output contract — follow it exactly.
+
+### Step -1 — Project Art Generation Specialization
+
+Before resolving per-asset sources, evaluate
+`${CLAUDE_PLUGIN_ROOT}/knowledge/domains/game-genre-specialization.md`
+§Art Generation Specialization. If this project or node requires
+family-level or play-surface-specific art generation rules, generate or read
+the project-local specialized skill at
+`.allforai/bootstrap/specialized-skills/<specialization_id>-art-generation/SKILL.md`.
+
+Use it to define node-local prompt templates, model profile preferences,
+preview validation contexts, and repair routing. This project-local skill must
+still route concrete generation through the bundled source strategy,
+image-model-capability-registry, image-generation-contract, accepted-image
+manifest, style QA, and runtime import contracts.
 
 ### Step 0 — Source Resolution (per asset, before Pre-Spec)
 
