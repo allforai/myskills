@@ -40,10 +40,18 @@ REQUIRED_ART_CONCEPT_ARTIFACTS = {
 
 ENGINE_READY_MANIFEST = ".allforai/game-runtime/art/engine-ready-art-manifest.json"
 ACCEPTED_IMAGE_MANIFEST = ".allforai/game-design/art/image-generation/accepted-image-manifest.json"
+IMAGE_MODEL_REGISTRY = ".allforai/game-design/art/image-generation/image-model-capability-registry.json"
+IMAGE_MODEL_ROUTING_REPORT = ".allforai/game-design/art/image-generation/image-model-routing-report.json"
 
 REQUIRED_IMAGE_CONTRACT_TERMS = {
     ACCEPTED_IMAGE_MANIFEST,
+    IMAGE_MODEL_REGISTRY,
+    IMAGE_MODEL_ROUTING_REPORT,
     "consumer_ready",
+    "image-model-capability-registry",
+    "route_model",
+    "selected provider/model",
+    "missing_capabilities",
     "register_searched_or_existing",
     "web_or_marketplace_search",
     "local_asset_library",
@@ -69,6 +77,23 @@ REQUIRED_ASSET_SEARCH_TERMS = {
     "register_searched_or_existing",
     ACCEPTED_IMAGE_MANIFEST,
     "consumer_ready: true",
+}
+
+REQUIRED_IMAGE_MODEL_REGISTRY_TERMS = {
+    IMAGE_MODEL_REGISTRY,
+    IMAGE_MODEL_ROUTING_REPORT,
+    "google_gemini_image",
+    "fal_ai",
+    "openrouter_image",
+    "project_local_mcp",
+    "GOOGLE_API_KEY",
+    "FAL_KEY",
+    "OPENROUTER_API_KEY",
+    "output_modalities=image",
+    "generation_profile",
+    "missing_capabilities",
+    "blocked_by_missing_model",
+    "selected_model",
 }
 
 IMAGE_UPSTREAM_CONSUMER_SKILLS = {
@@ -137,6 +162,7 @@ def validate_art_pipeline(repo_root: str) -> list:
     engine_ready = game_art_root / "40-qa/engine-ready-art-output-contract/SKILL.md"
     asset_binding = skills_root / "game-frontend/20-spec/asset-import-binding-spec/SKILL.md"
     image_contract = game_art_root / "30-generate/image-generation-contract/SKILL.md"
+    image_model_registry = game_art_root / "00-env/image-model-capability-registry/SKILL.md"
     source_strategy = game_art_root / "10-design/asset-source-strategy-spec/SKILL.md"
     asset_search = game_art_root / "20-spec/asset-pack-search-spec/SKILL.md"
 
@@ -147,6 +173,7 @@ def validate_art_pipeline(repo_root: str) -> list:
         engine_ready,
         asset_binding,
         image_contract,
+        image_model_registry,
         source_strategy,
         asset_search,
     ]
@@ -162,6 +189,7 @@ def validate_art_pipeline(repo_root: str) -> list:
     engine_ready_text = _read(engine_ready)
     asset_binding_text = _read(asset_binding)
     image_contract_text = _read(image_contract)
+    image_model_registry_text = _read(image_model_registry)
     source_strategy_text = _read(source_strategy)
     asset_search_text = _read(asset_search)
 
@@ -249,6 +277,9 @@ def validate_art_pipeline(repo_root: str) -> list:
     for term in sorted(REQUIRED_IMAGE_CONTRACT_TERMS):
         if term not in image_contract_text:
             errors.append(f"image-generation-contract: missing closure term {term}")
+    for term in sorted(REQUIRED_IMAGE_MODEL_REGISTRY_TERMS):
+        if term not in image_model_registry_text:
+            errors.append(f"image-model-capability-registry: missing model routing term {term}")
     for term in sorted(REQUIRED_SOURCE_STRATEGY_TERMS):
         if term not in source_strategy_text:
             errors.append(f"asset-source-strategy-spec: missing source priority term {term}")
@@ -259,6 +290,10 @@ def validate_art_pipeline(repo_root: str) -> list:
         errors.append("game-art/SKILL.md: missing accepted image manifest closure rule")
     if "raw PNG/JPG/WebP paths" not in game_art_text:
         errors.append("game-art/SKILL.md: missing raw bitmap path consumption ban")
+    if "game-art/00-env/image-model-capability-registry/SKILL.md" not in game_art_text:
+        errors.append("game-art/SKILL.md: missing image model capability registry child path")
+    if IMAGE_MODEL_REGISTRY not in game_art_text and "image-model-capability-registry" not in game_art_text:
+        errors.append("game-art/SKILL.md: missing image model routing closure rule")
 
     for ref in sorted(IMAGE_UPSTREAM_CONSUMER_SKILLS):
         skill_path = _skill_ref_to_path(root, ref)

@@ -71,6 +71,7 @@ Out of scope:
 |---|---|---|
 | Image generation request | `request_id`, `asset_id`, `purpose`, `output_path`, `prompt`, `acceptance` | Return `UPSTREAM_DEFECT`. |
 | Generation profile | `task_type`, `model_class`, `prompt_template`, `output_constraints` | Derive from `purpose` once; if still ambiguous, return `UPSTREAM_DEFECT`. |
+| Image model capability registry | selected provider/model, fallback models, missing capabilities | Call `game-art/00-env/image-model-capability-registry/SKILL.md`; return `FAILED_VALIDATION` if required generation cannot be routed. |
 | Style context | art style, palette/material/tone, target view or UI context | Use `.allforai/game-design/art-style-guide.json` or return `UPSTREAM_DEFECT`. |
 
 ### Optional inputs
@@ -80,6 +81,8 @@ Out of scope:
 | `.allforai/game-design/art-style-guide.json` | style, palette, line/rendering rules, camera | Return `UPSTREAM_DEFECT` when style lock is required. |
 | `.allforai/game-design/asset-registry.json` | `asset_id`, `file_prefix`, paths, state | Use caller-provided naming. |
 | `.allforai/game-design/ui/ui-registry.json` | UI screen/component refs | Use caller-provided UI context. |
+| `.allforai/game-design/art/image-generation/image-model-capability-registry.json` | provider/model capabilities | Required before selecting an AI image model. |
+| `.allforai/game-design/art/image-generation/image-model-routing-report.json` | selected model and fallbacks | Required for `llm_image_generation` or `image_edit`. |
 | Existing generated images | validation and repair source | Register or validate existing image. |
 | Search/adaptation outputs | candidate image paths, license and adaptation reports | Validate as acquired images before downstream consumption. |
 | Caller generation capabilities | image model, transparent background support, vision validator | Return `FAILED_VALIDATION` if required generation or validation cannot run. |
@@ -99,7 +102,9 @@ Every image-producing skill must normalize image requests to this shape:
     "task_type": "icon | tileset | ui_mockup | layer_sheet | pose_reference | sprite_vfx | decal | particle_texture | trail_texture | background | prop | portrait | item_art | frame_animation | expression_set | preview",
     "source_kind": "llm_image_generation | image_edit | web_or_marketplace_search | existing_asset_pack | user_provided_asset | 3d_assisted_render | local_asset_library | local_existing_asset | hybrid",
     "model_class": "image_generation | image_edit | multimodal_validate | search_register | render_register | spec_only",
-    "recommended_model": "<runtime-selected model or capability alias>",
+    "recommended_model": "<selected provider/model from image-model-routing-report>",
+    "fallback_models": [],
+    "missing_capabilities": [],
     "prompt_template": "icon_prompt | tileset_prompt | ui_mockup_prompt | layer_sheet_prompt | pose_reference_prompt | sprite_vfx_prompt | decal_prompt | particle_texture_prompt | trail_texture_prompt | background_prompt | prop_prompt | portrait_prompt | item_art_prompt | frame_animation_prompt | expression_set_prompt | preview_prompt",
     "output_constraints": {
       "alpha": false,
@@ -167,6 +172,9 @@ Every image-producing skill must normalize image requests to this shape:
 Every image request must declare a `generation_profile`. The caller may choose
 the actual model at runtime, but it must choose a model whose capabilities match
 the task profile. Do not use one generic prompt template for all image tasks.
+For `llm_image_generation` and `image_edit`, model choice must come from
+`game-art/00-env/image-model-capability-registry/SKILL.md`, not from a hardcoded
+default model name.
 
 | Task type | Model capability profile | Prompt template | Required output constraints |
 |---|---|---|---|
@@ -190,6 +198,21 @@ the task profile. Do not use one generic prompt template for all image tasks.
 If no available model supports the required profile, return `FAILED_VALIDATION`
 with the missing capability and repair target. Do not produce spec-only or
 placeholder output as accepted image-generation completion.
+
+Provider routing rules:
+- Google, fal.ai, OpenRouter, project MCP tools, or custom HTTP providers may be
+  selected only after the capability registry records callable access and model
+  catalog evidence.
+- MCP access is allowed as the provider access path, but MCP presence alone is
+  not enough; the selected model must still satisfy the request profile.
+- OpenRouter model discovery must use image-output model metadata when
+  available.
+- fal.ai model selection must record the model schema or model page reference.
+- Google image model selection must record the current model id and capability
+  evidence from the provider or documentation.
+- A generic all-purpose model may be used for drafts, but it cannot produce
+  `consumer_ready: true` unless it satisfies the hard capabilities and passes
+  downstream validation.
 
 ## Prompt Contract
 
@@ -295,7 +318,9 @@ substitute a weaker static inspection for a required downstream validation.
   "input_paths": {
     "art_style_guide": ".allforai/game-design/art-style-guide.json",
     "asset_registry": ".allforai/game-design/asset-registry.json",
-    "ui_registry": ".allforai/game-design/ui/ui-registry.json"
+    "ui_registry": ".allforai/game-design/ui/ui-registry.json",
+    "image_model_registry": ".allforai/game-design/art/image-generation/image-model-capability-registry.json",
+    "image_model_routing": ".allforai/game-design/art/image-generation/image-model-routing-report.json"
   },
   "requests": [],
   "generation": {
@@ -313,6 +338,7 @@ Supported modes:
 | Mode | Behavior |
 |---|---|
 | `normalize_only` | Validate and normalize image requests without generation. |
+| `route_model` | Invoke or consume `image-model-capability-registry` routing for AI image requests. |
 | `normalize_generate_validate` | Normalize, generate/register, validate, repair, and report. |
 | `validate_existing` | Validate existing image outputs against requests. |
 | `register_searched_or_existing` | Register searched, marketplace, user-provided, adapted, local, or 3D-rendered image outputs, then validate them into the accepted-image manifest. |
@@ -336,6 +362,9 @@ Run deterministic checks:
 10. `consumer_ready` is false unless the declared downstream consumer and input
     contract are present.
 11. Non-LLM sources include license/provenance and adaptation/render evidence.
+12. LLM/image-edit requests include a selected provider/model from
+    `image-model-routing-report.json`, or a blocked state with
+    `missing_capabilities`.
 
 Run visual validation when images exist:
 1. Subject matches the request purpose.

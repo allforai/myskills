@@ -35,6 +35,7 @@ Layer numbers indicate directory organization and default execution order for ne
 | Layer | Child skill | Responsibility |
 |---|---|---|
 | `00-env` | `asset-registry` | Canonical asset IDs, file prefixes, paths, lifecycle states, validation report. |
+| `00-env` | `image-model-capability-registry` | Detect image provider/MCP access, discover current model catalogs, and route generation profiles to suitable models. |
 | `00-env` | `production-tool-capability-registry` | Detect, auto-install, and validate Blender CLI/Python, image, atlas, importer, and probe tools before use. |
 | `10-design` | `2d-animation-production-plan` | Light 2D animation method selection, fallback strategy, downstream routing, QA requirements. |
 | `10-design` | `art-concept-validation` | Human-readable HTML/JSON gate that validates product concept to art concept alignment before bulk art generation. |
@@ -92,6 +93,7 @@ Use these paths when a node-spec calls a child skill:
 
 ```text
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/asset-registry/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/image-model-capability-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/production-tool-capability-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept-validation/SKILL.md
@@ -176,6 +178,8 @@ Art methods should be placed where they are executed:
 - visual consistency rules: `20-spec/visual-style-tokens`;
 - decomposition and runtime fit: `20-spec/2d-layering-spec`,
   `20-spec/engine-export-profile`, and asset-specific `20-spec/*` skills;
+- image provider/model capability discovery and routing:
+  `00-env/image-model-capability-registry`;
 - bitmap acquisition prompt/search/register/repair/feedback loop:
   `30-generate/image-generation-contract`;
 - concrete asset generation: asset-specific `30-generate/*` skills;
@@ -218,6 +222,9 @@ Bitmap source closure:
 - asset sourcing must check `local_asset_library`, `user_provided_asset`,
   approved/cached libraries, and allowed web or marketplace sources before LLM
   image generation unless source policy explicitly skips them;
+- AI image generation must first route through
+  `00-env/image-model-capability-registry`; a model may be selected only when
+  its detected provider capabilities satisfy the request `generation_profile`;
 - all generated, searched, user-provided, adapted, local, or 3D-rendered bitmap
   outputs must be registered through
   `30-generate/image-generation-contract`;

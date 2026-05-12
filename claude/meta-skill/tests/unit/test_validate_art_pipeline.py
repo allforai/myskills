@@ -17,6 +17,7 @@ def _minimal_repo(tmp_path):
         tmp_path,
         "claude/meta-skill/skills/game-art/SKILL.md",
         """${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/art-preview-qa/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/image-model-capability-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/asset-source-strategy-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/asset-pack-search-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/character-layer-sheet/SKILL.md
@@ -48,6 +49,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept-validation/SKILL.md
 .allforai/game-design/art/qa/runtime-import-check-report.json
 .allforai/game-design/art/image-generation/accepted-image-manifest.json
 raw PNG/JPG/WebP paths
+image-model-capability-registry
 """,
     )
     _write(
@@ -67,12 +69,37 @@ raw PNG/JPG/WebP paths
         tmp_path,
         "claude/meta-skill/skills/game-art/30-generate/image-generation-contract/SKILL.md",
         """.allforai/game-design/art/image-generation/accepted-image-manifest.json
+.allforai/game-design/art/image-generation/image-model-capability-registry.json
+.allforai/game-design/art/image-generation/image-model-routing-report.json
 consumer_ready
+image-model-capability-registry
+route_model
+selected provider/model
+missing_capabilities
 register_searched_or_existing
 web_or_marketplace_search
 local_asset_library
 Downstream skills must not consume raw PNG paths directly
 re-run the downstream consumer validation
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-art/00-env/image-model-capability-registry/SKILL.md",
+        """.allforai/game-design/art/image-generation/image-model-capability-registry.json
+.allforai/game-design/art/image-generation/image-model-routing-report.json
+google_gemini_image
+fal_ai
+openrouter_image
+project_local_mcp
+GOOGLE_API_KEY
+FAL_KEY
+OPENROUTER_API_KEY
+output_modalities=image
+generation_profile
+missing_capabilities
+blocked_by_missing_model
+selected_model
 """,
     )
     _write(
