@@ -941,6 +941,13 @@ before starting node generation.
          > In-game proper nouns (character/place/item names) keep the game world's native
          > language. JSON field keys stay English snake_case. See game-design.md §Output Language Policy.
 
+         > **Design integrity (mandatory):** All mechanics, currencies, item names, and system
+         > values in output documents MUST be sourced from the authoritative input files
+         > (concept-baseline.json, core-mechanics.json). NEVER reference old/deprecated systems,
+         > use "旧版"/"previously"/"replaced" in visible UI text, or include content for systems
+         > absent from concept-baseline.json. Sub-skill output must be verified and corrected
+         > before writing exit artifacts. See game-design.md §Design Integrity Rules.
+
          ## Sub-Skill Invocation
          Follow these sub-skills in sequence:
          - Read and follow `${CLAUDE_PLUGIN_ROOT}/skills/{sub_skill_path_1}/SKILL.md`
@@ -958,6 +965,12 @@ before starting node generation.
          > labels, captions, and descriptive text MUST be in Chinese (zh-CN).
          > In-game proper nouns keep the game world's native language. JSON field keys
          > stay English snake_case. See game-design.md §Output Language Policy.
+
+         > **Design integrity (mandatory):** All mechanics, currencies, item names, and system
+         > values in output documents MUST be sourced from the authoritative input files
+         > (concept-baseline.json, core-mechanics.json). NEVER reference old/deprecated systems,
+         > use "旧版"/"previously"/"replaced" in visible UI text, or include content for systems
+         > absent from concept-baseline.json. See game-design.md §Design Integrity Rules.
          ```
 
      **Parallelism rule:** After assigning the default serial `hard_blocked_by`, apply this override for sibling nodes that only READ a shared predecessor's output (not data-produce it): if two or more nodes both `hard_blocked_by` the same single predecessor and neither is in the other's consumers[], reclassify the later node's dependency on its sibling as `alignment_refs` instead of `hard_blocked_by`. Common parallel groups by scenario:

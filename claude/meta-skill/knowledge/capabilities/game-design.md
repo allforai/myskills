@@ -273,6 +273,60 @@ Bootstrap MUST inject this policy into every generated game-design node-spec.
 **Enforcement rule:** Any HTML output that uses English for navigation tabs, section titles, or
 descriptive labels is a policy violation and must be requested for revision.
 
+## Design Integrity Rules
+
+Every game-design node execution MUST follow these rules to prevent stale or conflicting content
+from appearing in output documents.
+
+### Rule 1: Input-First, No Invention
+
+All mechanics, currencies, item names, and system values in output documents MUST be sourced
+from the authoritative input files (concept-baseline.json, core-mechanics.json, worldbuilding.json,
+etc.). The LLM MUST NOT fill in values from general game design knowledge when the input files
+provide the authoritative values.
+
+**Before generating any content section, explicitly read the relevant input fields:**
+- Currency system → read `concept-baseline.json.economy.currency_model`
+- Special mechanics → read `core-mechanics.json` for the active mechanic list
+- Character names → read `worldbuilding.json.characters[]`
+- Chapter structure → read `worldbuilding.json.chapters[]`
+
+### Rule 2: No Deprecated Content in Output Documents
+
+Output HTML and JSON MUST NOT contain any reference to systems, mechanics, or values that are
+not currently active in the project design. This includes:
+
+- **Never** reference old mechanic names even as historical context (e.g., "旧版 X", "previously X", "replaced by Y")
+- **Never** include currency types, item names, or SKUs that are not in the current concept-baseline
+- **Never** include color swatches, UI components, or asset entries for removed systems
+- If a sub-skill template contains placeholder examples with generic game design patterns (e.g.,
+  "hard currency", "bomb tile"), those placeholders MUST be replaced with the actual values from
+  the project's input files — never output the placeholder itself
+
+**Enforcement:** Any reference to a system not present in concept-baseline.json or core-mechanics.json
+is a violation. The node must re-read the input files and remove the reference before finalizing output.
+
+### Rule 3: Sub-Skill Output Verification
+
+After invoking each sub-skill, the orchestrating node MUST verify that the sub-skill's output:
+1. Does not contain system/mechanic names absent from the project's authoritative input files
+2. Does not include "旧版", "deprecated", "old version", "previously", "replaced" in visible UI text
+3. Color palettes, icon lists, and asset tables only reference currently-active game systems
+
+If a violation is found, the node corrects it before writing the final exit artifact — it does NOT
+pass the violation through to the output document.
+
+### Rule 4: Concept-Baseline is the Single Source of Truth
+
+`concept-baseline.json` is the authoritative contract for:
+- Economy model (single/dual currency, currency names, IAP SKUs)
+- Core mechanic names and special tile/block identifiers
+- Chapter count and structure
+- Retention hook constraints (e.g., no time-pressure mechanics)
+
+Any sub-skill output that contradicts concept-baseline.json MUST be overridden by the
+orchestrating node before writing exit artifacts.
+
 ## Canonical Node Registry
 
 Bootstrap MUST use these exact IDs when generating game-design node-specs.
