@@ -69,27 +69,27 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 3. **已存在** → 报告「MCP 服务器已构建」，继续
 
-#### mcp-chatgpt-image 依赖检测
+#### mcp-image-batch 依赖检测
 
-检测项目本地的 chatgpt-image MCP 服务器是否已安装：
+检测项目本地的 image-batch MCP 服务器是否已安装：
 
 1. **读取项目 settings.json**：
    ```bash
    cat .claude/settings.json 2>/dev/null
    ```
-   提取 `mcpServers.chatgpt-image.args[0]` 中的路径（入口文件），取其父目录的父目录作为 `MCP_CGPT_DIR`。
+   提取 `mcpServers.image-batch.args[0]` 中的路径（入口文件），取其父目录的父目录作为 `MCP_CGPT_DIR`。
 
-2. **若未注册**（settings.json 不存在或无 `chatgpt-image` 条目）：
-   - 尝试自动检测：`find . -name "mcp-chatgpt-image" -type d -maxdepth 4 2>/dev/null | head -1`
-   - 找到 → 记录路径，报告「chatgpt-image 目录已找到但未注册」
-   - 未找到 → 报告「chatgpt-image 未安装」，继续（Step 1.5c 引导安装）
+2. **若未注册**（settings.json 不存在或无 `image-batch` 条目）：
+   - 尝试自动检测：`find . -name "mcp-image-batch" -type d -maxdepth 4 2>/dev/null | head -1`
+   - 找到 → 记录路径，报告「image-batch 目录已找到但未注册」
+   - 未找到 → 报告「image-batch 未安装」，继续（Step 1.5c 引导安装）
 
 3. **若已注册**：
    ```bash
    ls "${MCP_CGPT_DIR}/node_modules/@modelcontextprotocol" 2>/dev/null
    ```
-   - 存在 → 报告「chatgpt-image 依赖已安装」
-   - 不存在 → 报告「chatgpt-image 依赖缺失，需运行 npm install」，Step 1.5c 中补装
+   - 存在 → 报告「image-batch 依赖已安装」
+   - 不存在 → 报告「image-batch 依赖缺失，需运行 npm install」，Step 1.5c 中补装
 
 ### Step 1: 检测当前状态
 
@@ -231,7 +231,7 @@ claude mcp add -s user playwright -- npx -y @playwright/mcp@latest
 Playwright MCP 已注册到用户级配置。需重启 Claude Code 后生效。
 ```
 
-#### 1.5b. ChatGPT Image MCP（若未就绪）
+#### 1.5b. 批量生图 MCP（若未就绪）
 
 使用 AskUserQuestion 询问：
 
@@ -248,7 +248,7 @@ Playwright MCP 已注册到用户级配置。需重启 Claude Code 后生效。
 ```bash
 # 从 git 仓库根目录找
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-MCP_CGPT_DIR="${REPO_ROOT}/shared/mcp-chatgpt-image"
+MCP_CGPT_DIR="${REPO_ROOT}/shared/mcp-image-batch"
 ```
 
 检查目录是否存在：
@@ -290,7 +290,7 @@ ls "${MCP_CGPT_DIR}/node_modules/@modelcontextprotocol"
 **Step 4: 确认**
 
 ```
-✅ ChatGPT Image MCP 已安装并注册。
+✅ 批量生图 MCP（image-batch）已安装并注册。
    路径: {MCP_CGPT_DIR}
    需重启 Claude Code 后生效。
    

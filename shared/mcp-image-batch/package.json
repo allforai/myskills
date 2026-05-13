@@ -1,5 +1,5 @@
 {
-  "name": "mcp-chatgpt-image",
+  "name": "mcp-image-batch",
   "version": "1.0.0",
   "description": "MCP server for batch ChatGPT image generation via logged-in Chrome (macOS)",
   "type": "module",

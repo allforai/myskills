@@ -1,4 +1,4 @@
-# mcp-chatgpt-image
+# mcp-image-batch
 
 Batch ChatGPT image generation via the user's **already-logged-in Chrome** on macOS.
 
@@ -10,7 +10,7 @@ Batch ChatGPT image generation via the user's **already-logged-in Chrome** on ma
 ## Setup
 
 ```bash
-cd shared/mcp-chatgpt-image
+cd shared/mcp-image-batch
 npm install
 ```
 
@@ -21,7 +21,7 @@ Add to Claude Code's MCP config (`.claude/settings.json`):
   "mcpServers": {
     "chatgpt-image": {
       "command": "node",
-      "args": ["/absolute/path/to/shared/mcp-chatgpt-image/src/index.js"]
+      "args": ["/absolute/path/to/shared/mcp-image-batch/src/index.js"]
     }
   }
 }
