@@ -1886,6 +1886,7 @@ has no verification node, the workflow is incomplete.
 | mobile (Android/Kotlin/Compose) | Espresso or Compose UI test via `./gradlew connectedAndroidTest`; optional Maestro only when the project already uses it | android-ui-verify or e2e-test-{name} |
 | desktop (Tauri v2) | `tauri-driver` (WebDriver binary) + WebdriverIO with `wdio-tauri-service` for UI E2E; `cargo test` for Rust IPC unit tests. ⚠️ Playwright does NOT work with Tauri v2 — use tauri-driver. Run Step 2.7 WebSearch for current tauri-driver setup if LLM confidence < 70% | e2e-test-{name} |
 | desktop (Electron) | Playwright via `electron-playwright-helpers` (drives the Electron webview) | e2e-test-{name} |
+| game client (Cocos Creator 3.x) | CLI build via `${COCOS_CREATOR_APP:-/Applications/CocosCreator.app}/Contents/MacOS/CocosCreator --project <project-dir> --build "platform=web-mobile"`. TypeScript `module 'cc'` errors from standalone `tsc` are engine-type noise — they resolve inside the CC build environment and must NOT block compilation. No GUI Dashboard required. For unit tests: Jest on pure logic files that don't import `cc`; visual/scene tests are manual. | game-test-{name} |
 | game client (Unity) | Unity Test Runner (EditMode + PlayMode) via `unity -runTests -testPlatform EditMode/PlayMode` | game-test-{name} |
 | game client (Godot) | GUT (Godot Unit Testing) or `godot --test` | game-test-{name} |
 | game client (Bevy/Rust) | `cargo test` with Bevy's headless test harness | game-test-{name} |

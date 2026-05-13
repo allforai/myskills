@@ -70,6 +70,7 @@ Bootstrap MUST generate the correct build commands per platform:
 | Unity | `unity -batchmode -buildTarget <target> -executeMethod BuildScript.Build` | .apk/.app/.exe |
 | Unreal Engine | `UnrealBuildTool` / `RunUAT BuildCookRun` | .pak + binary |
 | Godot | `godot --headless --export-release "<platform>" output` | .apk/.app/.exe/.pck |
+| Cocos Creator 3.x | **CLI build (no GUI required)**: `${COCOS_CREATOR_APP:-/Applications/CocosCreator.app}/Contents/MacOS/CocosCreator --project <project-dir> --build "platform=web-mobile"`. macOS app binary path is `CocosCreator.app/Contents/MacOS/CocosCreator`; set `COCOS_CREATOR_APP` env var to override. Available platforms: `web-mobile`, `web-desktop`, `android`, `ios`. TypeScript `module 'cc'` errors that appear under standalone `tsc` resolve automatically inside this build environment — do NOT report them as failures requiring GUI. First run is slow (project cache init). Exit code 0 = success. | build/ |
 | Python | `python3 -m pytest --co -q` (collection-only syntax+import check for interpreted projects) | N/A |
 | Twine / Twee | `tweego -o dist/index.html *.tw` (if tweego installed) OR skip | dist/index.html |
 | Next.js + Prisma | **Schema before build**: `npx prisma migrate deploy && npm run build` — build may fail with type errors if schema is not synced first. | .next/ |
