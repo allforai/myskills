@@ -357,6 +357,7 @@ Supported modes:
 | `register_searched_or_existing` | Register searched, marketplace, user-provided, adapted, local, or 3D-rendered image outputs, then validate them into the accepted-image manifest. |
 | `repair_request` | Produce revised prompt constraints for failed requests. |
 | `process_downstream_feedback` | Read downstream defects, classify root cause, reopen image requests when needed. |
+| `repair_coverage_shortage` | Generate more candidates or missing required variants after QA/downstream coverage failure. |
 
 ## Batch MCP Execution
 
@@ -479,6 +480,16 @@ original request:
 6. Re-run the downstream consumer validation that originally failed.
 7. Stop after the combined image/downstream repair budget is exhausted.
 
+When feedback indicates coverage shortage, insufficient accepted images, missing
+required variants, or not enough usable candidates, do not treat the previous
+partial batch as complete. Add or reopen only the affected request ids and call
+`game-art/30-generate/batch-image-generation/SKILL.md` again through
+`mcp-image-batch` file handoff. Then re-run this contract's validation and the
+downstream consumer validation. Examples include missing required tile states,
+too few distinguishable tile variants, incomplete expression sets, insufficient
+icon alternatives, failed contact-sheet coverage, and visual QA rejecting enough
+images that the accepted count falls below the contract.
+
 When feedback root cause is `source_selection`, `license_provenance`, or
 `asset_adaptation`, do not call image generation by default. Reopen the selected
 candidate or adaptation entry, repair through the owning source/adaptation skill,
@@ -495,7 +506,9 @@ last evidence, failed checks, and upstream repair target.
 If validation fails:
 1. Write the failed check and evidence into the report.
 2. Modify only the prompt constraints relevant to the failed check.
-3. Regenerate or re-register the image.
+3. Regenerate or re-register the image. For LLM/image-edit requests routed to
+   `mcp_image_batch`, regenerate by submitting an affected-request repair batch
+   to `mcp-image-batch`; do not switch to ad hoc single-image generation.
 4. Re-run deterministic and visual validation.
 5. Stop after `max_repair_attempts`.
 

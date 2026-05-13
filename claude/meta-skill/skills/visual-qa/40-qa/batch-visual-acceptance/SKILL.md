@@ -184,6 +184,8 @@ Audit checks:
 - every reviewed batch has inspected evidence paths;
 - every blocker/major finding has artifact id, failure code, evidence refs, and
   repair suggestion;
+- coverage shortage findings have required count, accepted count, missing
+  variant/state ids when known, and repair suggestion;
 - feedback was emitted for blocker/major findings;
 - required repairs were executed or explicitly failed;
 - failed batches were rerun by Codex CLI after repair;
@@ -195,6 +197,9 @@ When Codex reports blocker/major issues:
 1. Write caller-compatible feedback with `artifact_id`, `batch_id`,
    `failure_code`, `severity`, `evidence_refs`, `root_cause`, and
    `requested_action`.
+   Use `root_cause=coverage_shortage` when the problem is too few accepted
+   images, missing required variants, incomplete state coverage, or rejected
+   candidate count rather than a single-image defect.
 2. Route repair to the caller-provided owner skill/node.
 3. Rebuild only affected evidence and batch documents.
 4. Rerun Codex CLI for affected batches.

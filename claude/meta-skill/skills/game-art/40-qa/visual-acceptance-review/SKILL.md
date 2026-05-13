@@ -285,6 +285,11 @@ Loop:
      `game-art/30-generate/image-generation-contract/SKILL.md` in
      `process_downstream_feedback` or `repair_request` mode, then regenerate
      or re-register affected images.
+   - `coverage_shortage`: invoke
+     `game-art/30-generate/image-generation-contract/SKILL.md` in
+     `repair_coverage_shortage` mode and generate additional candidates through
+     `game-art/30-generate/batch-image-generation/SKILL.md` using
+     `mcp-image-batch` file handoff.
    - `source_selection`: route to `asset-source-strategy-spec` or
      `asset-pack-search-spec`, then re-register through
      `image-generation-contract`.
@@ -325,6 +330,9 @@ Before returning success:
    repair-and-revalidation iteration or remains as `FAILED_VALIDATION`.
 9. Confirm the repair loop report exists whenever any Codex blocker/major issue
    was found.
+10. Confirm coverage shortage, insufficient variants, missing required images,
+    or too few visually accepted candidates triggered another `mcp-image-batch`
+    repair batch or remains `FAILED_VALIDATION` after budget exhaustion.
 
 ## Completion Conditions
 

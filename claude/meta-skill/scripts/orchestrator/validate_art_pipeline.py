@@ -86,6 +86,10 @@ REQUIRED_IMAGE_CONTRACT_TERMS = {
     GENERATED_IMAGE_FILES_MANIFEST,
     "blocked_by_missing_mcp_image_batch",
     "Do not mark MCP outputs `consumer_ready: true` directly",
+    "repair_coverage_shortage",
+    "coverage shortage",
+    "insufficient accepted images",
+    "mcp-image-batch` file handoff",
 }
 
 REQUIRED_BATCH_IMAGE_GENERATION_TERMS = {
@@ -103,6 +107,10 @@ REQUIRED_BATCH_IMAGE_GENERATION_TERMS = {
     "blocked_by_missing_mcp_image_batch",
     "Do not paste large",
     "`image-generation-contract` may write accepted entries",
+    "coverage shortage",
+    "enough visually accepted images",
+    "accepted output count is below",
+    "triggers another",
 }
 
 REQUIRED_ART_GEN_COMPLETION_TERMS = {
@@ -143,7 +151,10 @@ REQUIRED_VISUAL_ACCEPTANCE_TERMS = {
     "Repair And Revalidation Loop",
     "image-feedback-report.json",
     "process_downstream_feedback",
+    "repair_coverage_shortage",
+    "coverage_shortage",
     "rerun Codex CLI review",
+    "too few visually accepted candidates",
     "batch Markdown documents",
     ".allforai/bootstrap/specialized-skills/<specialization_id>-art-generation/SKILL.md",
     "Project-Specific Acceptance",

@@ -34,6 +34,7 @@ Optional:
 - reference image paths;
 - previous `mcp-image-batch` run report;
 - downstream feedback report;
+- visual acceptance coverage gap report;
 - repair attempt index;
 - provider/model overrides already validated by
   `image-model-capability-registry`.
@@ -158,15 +159,26 @@ After the MCP completes:
 
 ## Repair Loop
 
-When downstream feedback or visual QA reports image defects:
+When downstream feedback or visual QA reports image defects, missing required
+assets, insufficient variants, incomplete expression/state coverage, or not
+enough visually accepted images:
 1. Rebuild only affected request prompt files and batch input entries.
-2. Submit a repair batch to `mcp-image-batch`.
+2. If the problem is coverage shortage, add the missing request ids or variant
+   requests to the same repair batch instead of creating isolated one-off image
+   calls.
+3. Submit a repair batch to `mcp-image-batch`.
 3. Preserve prior output paths in repair history and write new output paths or
    versioned filenames.
 4. Re-run `image-generation-contract` validation and downstream consumer
    validation.
 
 Default budget: 3 batch generation attempts per affected request.
+
+Use `mcp-image-batch` again whenever the accepted output count is below the
+caller-required count. Examples: fewer than required tile variants, missing
+special tiles, insufficient icon alternatives, incomplete character expression
+sets, failed contact-sheet coverage, or QA rejecting too many candidates. Do not
+fill shortage with placeholder images or prose.
 
 ## Automatic Validation
 
@@ -179,6 +191,9 @@ Before returning success:
 6. The output manifest references the original request ids.
 7. No raw generated image path is handed to downstream skills outside
    `accepted-image-manifest.json`.
+8. Coverage shortage or insufficient accepted images triggers another
+   `mcp-image-batch` repair batch or returns `FAILED_VALIDATION` after budget
+   exhaustion.
 
 ## Completion Conditions
 
