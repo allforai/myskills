@@ -68,7 +68,7 @@ Allowed availability values: `available`, `missing_key`, `mcp_missing`,
 
 Allowed routing states: `selected`, `selected_with_warning`,
 `blocked_by_missing_model`, `blocked_by_provider_access`,
-`blocked_by_policy`, `blocked_by_budget`.
+`blocked_by_policy`, `blocked_by_budget`, `blocked_by_missing_identity_lock`.
 
 Allowed capability tags:
 - `text_to_image`
@@ -80,6 +80,11 @@ Allowed capability tags:
 - `text_rendering`
 - `layout_fidelity`
 - `identity_consistency`
+- `identity_lock`
+- `style_lora`
+- `character_lora`
+- `object_lora`
+- `lora_adapter`
 - `multi_frame_consistency`
 - `frame_grid`
 - `seamless_texture`
@@ -184,6 +189,46 @@ When no candidate satisfies hard capabilities, return
 generic all-purpose model as a production model when it lacks required
 capabilities.
 
+## Identity And Style Locking
+
+LoRA is optional globally but required for requests whose acceptance criteria
+declare `identity_lock.required=true` and whose risk cannot be satisfied by
+reference-image edit mode. Treat LoRA as one implementation of a broader
+identity/style lock strategy.
+
+Supported lock methods:
+- `lora_adapter`: provider/model supports a project, style, character, or object
+  LoRA adapter.
+- `reference_edit_mode`: provider supports image edit / image-to-image with a
+  context image and mask.
+- `reference_image_only`: provider supports reference images but not true edit
+  mode; this is lower confidence and cannot satisfy strict locks by itself.
+- `prompt_only`: allowed only for low-risk assets.
+
+Registry entries that support LoRA must record `lora_adapter_id`,
+`lora_adapter_kind`, `lora_trigger_tokens`, `lora_weight_range`,
+`lora_training_source_ref`, `lora_license_ref`, and `lora_validation_evidence`
+when available.
+
+Routing report entries must include `identity_lock_method`,
+`identity_lock_strength`, `lora_adapter_id`, `requires_lora`, and
+`identity_lock_fallbacks`. Allowed lock strengths: `strict`, `medium`, `low`,
+`none`.
+
+Use `requires_lora=true` for:
+- recurring named characters across portraits, expression sets, animation frames,
+  layer sheets, or outfit variants when edit mode cannot preserve identity;
+- project-specific art style that must remain stable across many future batches;
+- branded objects, puzzle pieces, tile families, icons, or mascots whose shape
+  vocabulary must remain stable beyond one batch;
+- any acceptance criteria that marks identity/style drift as a blocker and
+  disallows reference-only fallback.
+
+If `requires_lora=true` and no candidate exposes `lora_adapter` or an accepted
+project LoRA profile, return `blocked_by_missing_identity_lock`. Do not silently
+downgrade to prompt-only generation. If reference edit mode is allowed as a
+fallback, set `selected_with_warning` and record the higher QA risk.
+
 ## MCP Image Batch Provider
 
 When `mcp-image-batch` is configured, record it as provider kind
@@ -224,6 +269,9 @@ Run these checks:
 9. Fallback models must satisfy the same hard capabilities, not just the same
    provider family.
 10. Missing provider access returns a blocked state instead of a placeholder.
+11. Strict identity/style lock requests are not routed to prompt-only models.
+12. LoRA routes include adapter id, trigger tokens or profile ref, and license
+    evidence when available.
 
 ## Repair Loop
 

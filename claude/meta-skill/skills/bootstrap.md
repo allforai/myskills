@@ -917,6 +917,15 @@ before starting node generation.
    - Check if `node_id` exists in game-design.md Canonical Node Registry:
      - **Canonical node** (in registry AND node_order): look up `discipline_owner`, `html_output`, `json_output` from the registry; look up `sub_skill_paths` from §Sub-Skill Mapping, then apply §Conditional Sub-Skill Expansion Rules to append any applicable leaf skills. Set `hard_blocked_by` = **previous SELECTED node in `node_order`** (skip unselected optional nodes); `unlocks` = **next SELECTED node in `node_order`** (same skipping rule). Exception: `game-design-finalize` has `hard_blocked_by` = ALL other game-design nodes that are actually selected, and its `exit_artifacts` MUST include every path listed in `game-design.md` §Finalize Exit Artifacts in addition to the registry `html_output` and `json_output`.
 
+       **Game frontend handoff:** When generating `game-design-finalize`, require
+       `.allforai/game-design/design/program-development-node-handoff.json` to
+       include the `game_frontend` block from `game-design.md` §Conditional
+       Sub-Skill Expansion Rules / Frontend handoff whenever the overall goal
+       includes implementation. This does NOT create a game-design node for
+       `game-frontend`. It tells downstream program/frontend nodes to invoke
+       the `game-frontend` pack and preserve required QA skills, including
+       `game-frontend/40-qa/runtime-gameplay-visual-acceptance`.
+
        **Sub-skill path validation:** Before writing a delegating node-spec,
        resolve every expanded sub-skill path to
        `${CLAUDE_PLUGIN_ROOT}/skills/<path>/SKILL.md`. The file MUST exist and

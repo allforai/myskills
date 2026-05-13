@@ -37,6 +37,8 @@ Optional:
 - reference image paths;
 - edit-mode configuration: `contextImage`, `basePrompt`, `maskRegion`, and
   optional `imageIndex`;
+- LoRA / identity lock routing fields: `identity_lock_method`,
+  `lora_adapter_id`, `lora_trigger_tokens`, and `lora_weight`;
 - previous `mcp-image-batch` run report;
 - downstream feedback report;
 - visual acceptance coverage gap report;
@@ -117,6 +119,13 @@ project-relative paths:
       "selected_provider": "project_local_mcp",
       "selected_model": "mcp-image-batch:<model-or-profile>",
       "operation": "generate | edit",
+      "identity_lock": {
+        "identity_lock_method": "lora_adapter | reference_edit_mode | reference_image_only | prompt_only",
+        "lora_adapter_id": null,
+        "lora_trigger_tokens": [],
+        "lora_weight": null,
+        "fallback_used": false
+      },
       "prompt_path": ".allforai/game-design/art/image-generation/prompts/tile_grass_001.md",
       "negative_prompt_path": ".allforai/game-design/art/image-generation/prompts/tile_grass_001.negative.md",
       "reference_image_paths": [],
@@ -192,6 +201,26 @@ If `operation=edit` lacks an existing context/base image or `maskRegion`, return
 `UPSTREAM_DEFECT`. If the edit session cannot open the editor or draw the mask,
 return `FAILED_ENV` or `FAILED_VALIDATION` with the MCP error.
 
+## LoRA / Adapter Handoff
+
+When the routing report selects `identity_lock_method=lora_adapter`, include the
+LoRA adapter/profile fields in the batch input file. Do not rely on hidden
+conversation state for LoRA selection.
+
+Required LoRA fields for locked requests:
+- `lora_adapter_id` or project-local LoRA profile ref;
+- `lora_trigger_tokens` when the provider requires trigger words;
+- `lora_weight` or provider default policy when available;
+- `lora_adapter_kind`: `style_lora | character_lora | object_lora | tile_family_lora | icon_family_lora`;
+- `lora_license_ref` or `lora_training_source_ref` when provided by the model
+  registry.
+
+Prompt files must include required trigger tokens exactly once unless the
+provider schema says otherwise. If the MCP/provider does not expose LoRA adapter
+selection, return `blocked_by_missing_identity_lock` for strict locked requests
+or route to `reference_edit_mode` only when the acceptance criteria allow the
+higher-risk fallback.
+
 ## Long Task Protocol
 
 `mcp-image-batch` is a long task:
@@ -263,6 +292,8 @@ Before returning success:
    exhaustion.
 9. Edit-mode requests include context/base image, maskRegion, and operation
    metadata, and validation checks identity/style preservation outside the mask.
+10. LoRA-routed requests include adapter/profile metadata and trigger tokens in
+    file handoff, or they return `blocked_by_missing_identity_lock`.
 
 ## Completion Conditions
 

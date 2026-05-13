@@ -59,6 +59,12 @@ ASSET_ACCEPTANCE_CRITERIA_JSON = ".allforai/game-design/art/asset-acceptance-cri
 ASSET_ACCEPTANCE_CRITERIA_MD = ".allforai/game-design/art/asset-acceptance-criteria.md"
 ANIMATION_TOOLCHAIN_REPORT = ".allforai/game-design/art/env/2d-animation-toolchain-report.json"
 ANIMATION_TOOLCHAIN_REGISTRY = ".allforai/game-design/art/env/2d-animation-toolchain-registry.json"
+LORA_LOCK_SPEC = ".allforai/game-design/art/lora/lora-identity-style-lock-spec.json"
+LORA_DECISION_REPORT = ".allforai/game-design/art/lora/lora-training-decision-report.md"
+LORA_ADAPTER_REGISTRY = ".allforai/game-design/art/lora/lora-adapter-registry.json"
+LORA_TRAINING_JOB = ".allforai/game-design/art/lora/lora-training-job.json"
+LORA_VALIDATION_REPORT = ".allforai/game-design/art/lora/lora-validation-report.json"
+LORA_VALIDATION_CONTACT_SHEET = ".allforai/game-design/art/lora/lora-validation-contact-sheet.png"
 
 REQUIRED_IMAGE_CONTRACT_TERMS = {
     ACCEPTED_IMAGE_MANIFEST,
@@ -94,6 +100,11 @@ REQUIRED_IMAGE_CONTRACT_TERMS = {
     "context/base image",
     "maskRegion",
     "preservation acceptance",
+    "identity_lock",
+    "requires_lora",
+    "blocked_by_missing_identity_lock",
+    "lora_adapter_id",
+    "prompt-only",
 }
 
 REQUIRED_BATCH_IMAGE_GENERATION_TERMS = {
@@ -124,6 +135,11 @@ REQUIRED_BATCH_IMAGE_GENERATION_TERMS = {
     "maskRegion",
     "imageIndex",
     "identity/style preservation outside the mask",
+    "LoRA",
+    "lora_adapter_id",
+    "lora_trigger_tokens",
+    "lora_weight",
+    "blocked_by_missing_identity_lock",
 }
 
 REQUIRED_ART_GEN_COMPLETION_TERMS = {
@@ -216,6 +232,27 @@ REQUIRED_FRONTEND_VISUAL_RUNTIME_TERMS = {
     "blocked_by_missing_codex_cli",
 }
 
+REQUIRED_GAME_FRONTEND_HANDOFF_TERMS = {
+    ".allforai/game-design/design/program-development-node-handoff.json",
+    '"game_frontend"',
+    '"skill_pack": "game-frontend"',
+    '"required_qa_skills"',
+    "game-frontend/40-qa/playable-smoke-test",
+    "game-frontend/40-qa/playability-probe-qa",
+    "game-frontend/40-qa/runtime-gameplay-visual-acceptance",
+    "game-frontend/40-qa/visual-runtime-regression-qa",
+    "functional assertions and Codex CLI screenshot review must both pass",
+    "not a game-design node",
+}
+
+REQUIRED_BOOTSTRAP_FRONTEND_HANDOFF_TERMS = {
+    "Game frontend handoff",
+    ".allforai/game-design/design/program-development-node-handoff.json",
+    "`game_frontend` block",
+    "This does NOT create a game-design node",
+    "game-frontend/40-qa/runtime-gameplay-visual-acceptance",
+}
+
 REQUIRED_BOOTSTRAP_UI_VISUAL_TERMS = {
     "UI screenshot + Codex CLI visual review hard gate",
     "visual-qa/40-qa/batch-visual-acceptance/SKILL.md",
@@ -248,6 +285,9 @@ REQUIRED_ACCEPTANCE_CRITERIA_TERMS = {
     "blocking_failure_codes",
     "repair_routes",
     "project/runtime-specific",
+    "identity/style lock strategy",
+    "requires_lora",
+    "LoRA is required",
     "Return `UPSTREAM_DEFECT`",
 }
 
@@ -292,7 +332,44 @@ REQUIRED_IMAGE_MODEL_REGISTRY_TERMS = {
     "blocked_by_missing_mcp_image_batch",
     "supports_edit_mode=true",
     "missing edit capability",
+    "identity_lock",
+    "lora_adapter",
+    "style_lora",
+    "character_lora",
+    "blocked_by_missing_identity_lock",
+    "requires_lora=true",
     "selected_model",
+}
+
+REQUIRED_LORA_LOCK_SPEC_TERMS = {
+    LORA_LOCK_SPEC,
+    LORA_DECISION_REPORT,
+    "local_gpu",
+    "remote_gpu_rental",
+    "provider_api_training",
+    "existing_lora",
+    "blocked_by_missing_identity_lock",
+    "blocked_by_missing_training_runtime",
+    "Do not choose local training just because the machine exists",
+    "training_location",
+    "requires_lora",
+}
+
+REQUIRED_LORA_ADAPTER_TRAINING_TERMS = {
+    LORA_ADAPTER_REGISTRY,
+    LORA_TRAINING_JOB,
+    LORA_VALIDATION_REPORT,
+    LORA_VALIDATION_CONTACT_SHEET,
+    "local_gpu",
+    "remote_gpu_rental",
+    "provider_api_training",
+    "Existing LoRA",
+    "blocked_by_missing_dataset",
+    "blocked_by_missing_training_runtime",
+    "lora_adapter_id",
+    "lora_trigger_tokens",
+    "validation_evidence",
+    "must not silently fall back to prompt-only generation",
 }
 
 REQUIRED_2D_ANIMATION_TOOLCHAIN_TERMS = {
@@ -398,6 +475,8 @@ def validate_art_pipeline(repo_root: str) -> list:
     art_preview_qa = game_art_root / "40-qa/art-preview-qa/SKILL.md"
     visual_acceptance = game_art_root / "40-qa/visual-acceptance-review/SKILL.md"
     acceptance_criteria = game_art_root / "20-spec/asset-acceptance-criteria/SKILL.md"
+    lora_lock_spec = game_art_root / "20-spec/lora-identity-style-lock-spec/SKILL.md"
+    lora_training = game_art_root / "30-generate/lora-adapter-training/SKILL.md"
     codex_delegation = skills_root / "codex-cli-delegation/30-execute/codex-cli-task/SKILL.md"
     frontend_visual_runtime = skills_root / "game-frontend/40-qa/visual-runtime-regression-qa/SKILL.md"
     image_model_registry = game_art_root / "00-env/image-model-capability-registry/SKILL.md"
@@ -418,6 +497,8 @@ def validate_art_pipeline(repo_root: str) -> list:
         art_preview_qa,
         visual_acceptance,
         acceptance_criteria,
+        lora_lock_spec,
+        lora_training,
         codex_delegation,
         frontend_visual_runtime,
         image_model_registry,
@@ -443,6 +524,8 @@ def validate_art_pipeline(repo_root: str) -> list:
     art_preview_qa_text = _read(art_preview_qa)
     visual_acceptance_text = _read(visual_acceptance)
     acceptance_criteria_text = _read(acceptance_criteria)
+    lora_lock_spec_text = _read(lora_lock_spec)
+    lora_training_text = _read(lora_training)
     codex_delegation_text = _read(codex_delegation)
     frontend_visual_runtime_text = _read(frontend_visual_runtime)
     image_model_registry_text = _read(image_model_registry)
@@ -537,6 +620,9 @@ def validate_art_pipeline(repo_root: str) -> list:
     for term in sorted(REQUIRED_BOOTSTRAP_UI_VISUAL_TERMS):
         if term not in bootstrap_text:
             errors.append(f"bootstrap.md: UI screenshot visual gate missing term {term}")
+    for term in sorted(REQUIRED_BOOTSTRAP_FRONTEND_HANDOFF_TERMS):
+        if term not in bootstrap_text:
+            errors.append(f"bootstrap.md: frontend handoff missing term {term}")
 
     for artifact in REQUIRED_ART_QA_EXIT_ARTIFACTS:
         if artifact not in game_art_text and artifact not in engine_ready_text:
@@ -548,6 +634,9 @@ def validate_art_pipeline(repo_root: str) -> list:
         errors.append("asset-import-binding-spec: does not consume engine-ready manifest")
     if ENGINE_READY_MANIFEST not in game_design_text:
         errors.append("game-design.md: does not route program implementation through engine-ready manifest")
+    for term in sorted(REQUIRED_GAME_FRONTEND_HANDOFF_TERMS):
+        if term not in game_design_text:
+            errors.append(f"game-design.md: missing frontend handoff term {term}")
     for artifact in sorted(REQUIRED_ART_CONCEPT_ARTIFACTS - {".allforai/game-design/art-pipeline-config.json"}):
         if artifact not in game_design_text and artifact not in game_art_text:
             errors.append(f"game-design/game-art: art concept gate artifact not documented: {artifact}")
@@ -594,6 +683,12 @@ def validate_art_pipeline(repo_root: str) -> list:
     for term in sorted(REQUIRED_IMAGE_MODEL_REGISTRY_TERMS):
         if term not in image_model_registry_text:
             errors.append(f"image-model-capability-registry: missing model routing term {term}")
+    for term in sorted(REQUIRED_LORA_LOCK_SPEC_TERMS):
+        if term not in lora_lock_spec_text:
+            errors.append(f"lora-identity-style-lock-spec: missing LoRA decision term {term}")
+    for term in sorted(REQUIRED_LORA_ADAPTER_TRAINING_TERMS):
+        if term not in lora_training_text:
+            errors.append(f"lora-adapter-training: missing LoRA training term {term}")
     for term in sorted(REQUIRED_2D_ANIMATION_TOOLCHAIN_TERMS):
         if term not in animation_toolchain_env_text:
             errors.append(f"2d-animation-toolchain-env: missing toolchain closure term {term}")

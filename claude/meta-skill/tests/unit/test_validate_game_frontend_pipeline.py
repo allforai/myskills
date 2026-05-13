@@ -30,6 +30,7 @@ def _minimal_repo(tmp_path):
         "20-spec/performance-budget-spec",
         "30-generate/playable-client-assembly",
         "40-qa/runtime-architecture-qa",
+        "40-qa/runtime-gameplay-visual-acceptance",
     ]
     parent = "\n".join(
         f"${{CLAUDE_PLUGIN_ROOT}}/skills/game-frontend/{ref}/SKILL.md"
@@ -77,6 +78,30 @@ asset-loading-strategy-spec.json
 performance-budget-spec.json
 do not substitute static review for runtime evidence
 specialization_required=true
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-frontend/40-qa/runtime-gameplay-visual-acceptance/SKILL.md",
+        """.allforai/game-frontend/qa/runtime-gameplay-visual-acceptance-plan.json
+.allforai/game-frontend/qa/runtime-gameplay-screenshot-manifest.json
+.allforai/game-frontend/qa/runtime-gameplay-visual-batches/
+.allforai/game-frontend/qa/codex-gameplay-visual-review.json
+.allforai/game-frontend/qa/codex-gameplay-visual-review.md
+.allforai/game-frontend/qa/runtime-gameplay-visual-repair-loop-report.json
+.allforai/game-frontend/qa/runtime-gameplay-visual-acceptance-report.json
+Screenshot review is mandatory for visible gameplay acceptance
+must not pass from logs, DOM, canvas probes, or state deltas alone
+Gameplay Screenshot Plan
+before/after pairs
+Codex CLI
+pull mode
+Claude Code must not re-score visual quality
+Repair And Revalidation Loop
+rerun the same affected gameplay screenshot tasks
+blocked_by_missing_screenshot
+blocked_by_missing_codex_cli
+blocked_by_missing_visual_model_capability
 """,
     )
 

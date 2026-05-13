@@ -15,6 +15,7 @@ REQUIRED_PARENT_TERMS = {
     "gameplay-system-binding-spec",
     "performance-budget-spec",
     "runtime-architecture-qa",
+    "runtime-gameplay-visual-acceptance",
     ".allforai/bootstrap/specialized-skills/<specialization_id>-frontend-runtime/SKILL.md",
 }
 
@@ -43,6 +44,28 @@ REQUIRED_RUNTIME_ARCH_TERMS = {
     "Do not encode Cocos/Phaser/Unity/Godot or genre-specific",
 }
 
+REQUIRED_GAMEPLAY_VISUAL_ACCEPTANCE_TERMS = {
+    ".allforai/game-frontend/qa/runtime-gameplay-visual-acceptance-plan.json",
+    ".allforai/game-frontend/qa/runtime-gameplay-screenshot-manifest.json",
+    ".allforai/game-frontend/qa/runtime-gameplay-visual-batches/",
+    ".allforai/game-frontend/qa/codex-gameplay-visual-review.json",
+    ".allforai/game-frontend/qa/codex-gameplay-visual-review.md",
+    ".allforai/game-frontend/qa/runtime-gameplay-visual-repair-loop-report.json",
+    ".allforai/game-frontend/qa/runtime-gameplay-visual-acceptance-report.json",
+    "Screenshot review is mandatory for visible gameplay acceptance",
+    "must not pass from logs, DOM, canvas probes, or state deltas alone",
+    "Gameplay Screenshot Plan",
+    "before/after pairs",
+    "Codex CLI",
+    "pull mode",
+    "Claude Code must not re-score visual quality",
+    "Repair And Revalidation Loop",
+    "rerun the same affected gameplay screenshot tasks",
+    "blocked_by_missing_screenshot",
+    "blocked_by_missing_codex_cli",
+    "blocked_by_missing_visual_model_capability",
+}
+
 
 def _read(path: Path) -> str:
     return path.read_text()
@@ -67,9 +90,10 @@ def validate_game_frontend_pipeline(repo_root: str) -> list[str]:
     runtime_arch = frontend_root / "10-design/runtime-architecture-design/SKILL.md"
     assembly = frontend_root / "30-generate/playable-client-assembly/SKILL.md"
     arch_qa = frontend_root / "40-qa/runtime-architecture-qa/SKILL.md"
+    gameplay_visual_acceptance = frontend_root / "40-qa/runtime-gameplay-visual-acceptance/SKILL.md"
 
     errors: list[str] = []
-    for path in [frontend_pack, runtime_arch, assembly, arch_qa]:
+    for path in [frontend_pack, runtime_arch, assembly, arch_qa, gameplay_visual_acceptance]:
         if not path.exists():
             errors.append(f"{path}: required game-frontend pipeline file missing")
     if errors:
@@ -79,6 +103,7 @@ def validate_game_frontend_pipeline(repo_root: str) -> list[str]:
     runtime_arch_text = _read(runtime_arch)
     assembly_text = _read(assembly)
     arch_qa_text = _read(arch_qa)
+    gameplay_visual_acceptance_text = _read(gameplay_visual_acceptance)
     listed_refs = _canonical_refs(parent_text)
 
     for skill_file in sorted(frontend_root.rglob("SKILL.md")):
@@ -100,6 +125,9 @@ def validate_game_frontend_pipeline(repo_root: str) -> list[str]:
     for term in sorted(REQUIRED_RUNTIME_ARCH_TERMS):
         if not _has_term(runtime_arch_text, term):
             errors.append(f"runtime-architecture-design: missing specialization term {term}")
+    for term in sorted(REQUIRED_GAMEPLAY_VISUAL_ACCEPTANCE_TERMS):
+        if not _has_term(gameplay_visual_acceptance_text, term):
+            errors.append(f"runtime-gameplay-visual-acceptance: missing gameplay visual term {term}")
 
     return errors
 

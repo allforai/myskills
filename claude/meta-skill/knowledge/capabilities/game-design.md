@@ -532,6 +532,41 @@ level, template, and runtime contracts exist. Frontend validation must run
 through the executable QA skills in `game-frontend/40-qa`; unavailable runtime
 commands are blockers.
 
+The handoff must include a `game_frontend` block when a runnable client is part
+of the implementation goal:
+
+```json
+{
+  "game_frontend": {
+    "required": true,
+    "skill_pack": "game-frontend",
+    "entry_phase": "after_approved_design_art_ui_audio_level_template_contracts",
+    "runtime_required": true,
+    "required_qa_skills": [
+      "game-frontend/40-qa/playable-smoke-test",
+      "game-frontend/40-qa/playability-probe-qa",
+      "game-frontend/40-qa/runtime-gameplay-visual-acceptance",
+      "game-frontend/40-qa/visual-runtime-regression-qa",
+      "game-frontend/40-qa/frontend-performance-budget-qa",
+      "game-frontend/40-qa/frontend-build-export-qa"
+    ],
+    "blocking_statuses": [
+      "blocked_by_unrunnable_client",
+      "blocked_by_missing_screenshot",
+      "blocked_by_missing_codex_cli",
+      "blocked_by_missing_visual_model_capability",
+      "failed_validation"
+    ],
+    "visual_acceptance_rule": "functional assertions and Codex CLI screenshot review must both pass; do not accept logs, DOM, probes, or state deltas alone for visible gameplay."
+  }
+}
+```
+
+Downstream program nodes may split this into multiple implementation/QA nodes,
+but they must preserve the required QA skill list and blocking statuses. The
+`runtime-gameplay-visual-acceptance` skill is not a game-design node; it is a
+post-implementation executable QA requirement.
+
 **Shared production map:** `game-production/SKILL.md` is a routing reference,
 not an executable node. Bootstrap may cite it in generated node-specs when
 resolving ownership conflicts, but must not add it to workflow execution.

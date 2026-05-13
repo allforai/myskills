@@ -113,6 +113,16 @@ Every image-producing skill must normalize image requests to this shape:
     "recommended_model": "<selected provider/model from image-model-routing-report>",
     "fallback_models": [],
     "missing_capabilities": [],
+    "identity_lock": {
+      "required": false,
+      "lock_scope": "none | project_style | character | object | tile_family | icon_family | ui_family",
+      "preferred_method": "lora_adapter | reference_edit_mode | reference_image_only | prompt_only",
+      "requires_lora": false,
+      "lora_adapter_id": null,
+      "lora_trigger_tokens": [],
+      "fallback_allowed": true,
+      "fallback_risk": "none"
+    },
     "prompt_template": "icon_prompt | tileset_prompt | ui_mockup_prompt | layer_sheet_prompt | pose_reference_prompt | sprite_vfx_prompt | decal_prompt | particle_texture_prompt | trail_texture_prompt | background_prompt | prop_prompt | portrait_prompt | item_art_prompt | frame_animation_prompt | expression_set_prompt | preview_prompt",
     "output_constraints": {
       "alpha": false,
@@ -221,6 +231,40 @@ Provider routing rules:
 - A generic all-purpose model may be used for drafts, but it cannot produce
   `consumer_ready: true` unless it satisfies the hard capabilities and passes
   downstream validation.
+
+## Identity / Style Lock Contract
+
+Every image request must decide whether identity/style lock is required. This is
+separate from normal `style_lock`: normal style lock can be prompt/reference
+based, while strict identity lock may require LoRA or an equivalent adapter.
+
+Use `identity_lock.required=true` when the asset must stay stable across many
+outputs or future batches:
+- recurring character portraits, expression sets, pose sheets, animation frames,
+  layer sheets, or outfit variants;
+- project-wide style that must survive model/provider changes;
+- branded mascots, special objects, tile families, puzzle pieces, icon families,
+  or UI visual systems with recognizable shape language.
+
+Allowed methods:
+- `lora_adapter`: use a provider/model LoRA, style LoRA, character LoRA, object
+  LoRA, or project adapter profile.
+- `reference_edit_mode`: use `mcp-image-batch` edit mode / image-to-image with
+  context image and mask.
+- `reference_image_only`: use reference images without edit masking; allowed only
+  when acceptance criteria permit higher drift risk.
+- `prompt_only`: allowed only for low-risk, one-off assets.
+
+If `requires_lora=true`, requests must include `lora_adapter_id` or a
+project-local LoRA profile ref from `image-model-routing-report.json`. If absent,
+return `blocked_by_missing_identity_lock` unless the acceptance criteria
+explicitly allow `reference_edit_mode` fallback. Fallbacks must set
+`fallback_risk=higher_identity_drift` and trigger stricter visual QA.
+
+Accepted manifest entries for locked assets must record the lock method,
+adapter/profile id, trigger tokens when applicable, and whether a fallback was
+used. Do not mark `consumer_ready: true` for strict locked assets generated with
+prompt-only models.
 
 ## Prompt Contract
 
@@ -439,6 +483,8 @@ Run deterministic checks:
 16. `image_edit` / image-to-image requests routed to `mcp_image_batch` include
     operation, context/base image, maskRegion, and preservation acceptance
     checks.
+17. Strict identity/style lock requests include identity lock method, LoRA
+    adapter/profile when required, and no prompt-only strict acceptance.
 
 Run visual validation when images exist:
 1. Subject matches the request purpose.

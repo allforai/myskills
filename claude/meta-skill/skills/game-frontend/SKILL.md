@@ -42,6 +42,7 @@ screen load, render, respond, and prove assets are connected.
 | `40-qa` | `runtime-architecture-qa` | Validate architecture/state/scene/loading/system/performance contracts as a closed graph. |
 | `40-qa` | `playable-smoke-test` | Run the client and verify scene load, input, assets, HUD, animation/VFX, logs, and screenshots. |
 | `40-qa` | `playability-probe-qa` | Drive a short automated gameplay loop and verify state/feedback changes. |
+| `40-qa` | `runtime-gameplay-visual-acceptance` | Capture screenshots across automated gameplay states, delegate visual judgment to Codex CLI, and rerun after repairs. |
 | `40-qa` | `visual-runtime-regression-qa` | Compare runtime screenshots/probes against expected scene/UI/art visibility and report regressions. |
 | `40-qa` | `frontend-performance-budget-qa` | Validate load, frame, bundle, asset, and runtime performance budgets with evidence. |
 | `40-qa` | `frontend-build-export-qa` | Validate production build/export output, asset references, launch, and release smoke evidence. |
@@ -68,6 +69,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/30-generate/playable-client-assembly/
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/40-qa/runtime-architecture-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/40-qa/playable-smoke-test/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/40-qa/playability-probe-qa/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/40-qa/runtime-gameplay-visual-acceptance/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/40-qa/visual-runtime-regression-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/40-qa/frontend-performance-budget-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/40-qa/frontend-build-export-qa/SKILL.md

@@ -26,8 +26,10 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/asset-source-strategy-spec/SKILL
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/asset-acceptance-criteria/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/asset-pack-search-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/character-layer-sheet/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/lora-identity-style-lock-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/image-generation-contract/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/batch-image-generation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/lora-adapter-training/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/background-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/decal-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/expression-set-generation/SKILL.md
@@ -216,6 +218,11 @@ operation
 context/base image
 maskRegion
 preservation acceptance
+identity_lock
+requires_lora
+blocked_by_missing_identity_lock
+lora_adapter_id
+prompt-only
 """,
     )
     _write(
@@ -248,6 +255,11 @@ basePrompt
 maskRegion
 imageIndex
 identity/style preservation outside the mask
+LoRA
+lora_adapter_id
+lora_trigger_tokens
+lora_weight
+blocked_by_missing_identity_lock
 """,
     )
     _write(
@@ -273,6 +285,12 @@ batch_execution_skill=game-art/30-generate/batch-image-generation/SKILL.md
 blocked_by_missing_mcp_image_batch
 supports_edit_mode=true
 missing edit capability
+identity_lock
+lora_adapter
+style_lora
+character_lora
+blocked_by_missing_identity_lock
+requires_lora=true
 selected_model
 """,
     )
@@ -348,7 +366,45 @@ evidence_required
 blocking_failure_codes
 repair_routes
 project/runtime-specific
+identity/style lock strategy
+requires_lora
+LoRA is required
 Return `UPSTREAM_DEFECT`
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-art/20-spec/lora-identity-style-lock-spec/SKILL.md",
+        """.allforai/game-design/art/lora/lora-identity-style-lock-spec.json
+.allforai/game-design/art/lora/lora-training-decision-report.md
+local_gpu
+remote_gpu_rental
+provider_api_training
+existing_lora
+blocked_by_missing_identity_lock
+blocked_by_missing_training_runtime
+Do not choose local training just because the machine exists
+training_location
+requires_lora
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-art/30-generate/lora-adapter-training/SKILL.md",
+        """.allforai/game-design/art/lora/lora-adapter-registry.json
+.allforai/game-design/art/lora/lora-training-job.json
+.allforai/game-design/art/lora/lora-validation-report.json
+.allforai/game-design/art/lora/lora-validation-contact-sheet.png
+local_gpu
+remote_gpu_rental
+provider_api_training
+Existing LoRA
+blocked_by_missing_dataset
+blocked_by_missing_training_runtime
+lora_adapter_id
+lora_trigger_tokens
+validation_evidence
+must not silently fall back to prompt-only generation
 """,
     )
     for rel in [
@@ -405,12 +461,27 @@ blocked_by_missing_visual_evidence
         """.allforai/game-runtime/art/engine-ready-art-manifest.json
 .allforai/game-design/art/art-concept-validation.html
 .allforai/game-design/art/art-concept-validation.json
+.allforai/game-design/design/program-development-node-handoff.json
+"game_frontend"
+"skill_pack": "game-frontend"
+"required_qa_skills"
+game-frontend/40-qa/playable-smoke-test
+game-frontend/40-qa/playability-probe-qa
+game-frontend/40-qa/runtime-gameplay-visual-acceptance
+game-frontend/40-qa/visual-runtime-regression-qa
+functional assertions and Codex CLI screenshot review must both pass
+not a game-design node
 """,
     )
     _write(
         tmp_path,
         "claude/meta-skill/skills/bootstrap.md",
         """**Art Concept Node Injection
+Game frontend handoff
+.allforai/game-design/design/program-development-node-handoff.json
+`game_frontend` block
+This does NOT create a game-design node
+game-frontend/40-qa/runtime-gameplay-visual-acceptance
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept-validation/SKILL.md
 .allforai/game-design/art-pipeline-config.json
 .allforai/game-design/art/art-concept-validation.html

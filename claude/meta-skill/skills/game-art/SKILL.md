@@ -56,12 +56,14 @@ Layer numbers indicate directory organization and default execution order for ne
 | `20-spec` | `character-layer-sheet` | Character part decomposition, layer-sheet prompt/spec, pivots, validation. |
 | `20-spec` | `engine-export-profile` | Engine/tool export contracts for atlases, pivots, clips, tilemaps, skeletons, and runtime import. |
 | `20-spec` | `existing-asset-adaptation-spec` | Normalize, edit, recolor, resize, rerender, or route existing 2D/3D assets into project art contracts. |
+| `20-spec` | `lora-identity-style-lock-spec` | Decide whether strict identity/style lock requires LoRA, and choose local GPU, remote GPU rental, provider API training, existing LoRA, or fallback. |
 | `20-spec` | `tileset-spec` | Tilemap mode selection, terrain vocabulary, tile rules, collision/walkability contracts. |
 | `20-spec` | `vfx-spec` | VFX semantics, gameplay events, presentation layer, dimension, implementation mode, timing, readability budgets. |
 | `20-spec` | `visual-style-tokens` | Shared palette, shape, line, material, camera, typography, and motion tokens. |
 | `20-spec` | `frame-animation-spec` | Frame-animation vocabulary, frame counts, timing, anchors, loop rules, acceptance. |
 | `30-generate` | `image-generation-contract` | Shared bitmap acquisition request, prompt/search/register, output, visual acceptance, repair, and fallback contract. |
 | `30-generate` | `batch-image-generation` | Execute bulk LLM image generation through `mcp-image-batch` long-task MCP with file-based input/output handoff. |
+| `30-generate` | `lora-adapter-training` | Train, purchase/register, validate, and hand off LoRA adapters for strict identity/style locking. |
 | `30-generate` | `background-generation` | Background scene prompts, layers, parallax/depth, generated images, validation. |
 | `30-generate` | `prop-generation` | Reusable prop specs, generated images/models/placeholders, variants, validation. |
 | `30-generate` | `portrait-generation` | Character portraits, busts, dialogue/emotion variants, generated images, QA. |
@@ -119,12 +121,14 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/artifact-handoff-contract/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/character-layer-sheet/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/engine-export-profile/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/existing-asset-adaptation-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/lora-identity-style-lock-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/tileset-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/vfx-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/visual-style-tokens/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/frame-animation-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/image-generation-contract/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/batch-image-generation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/lora-adapter-training/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/background-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/prop-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/portrait-generation/SKILL.md
