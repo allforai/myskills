@@ -27,13 +27,12 @@ Add to Claude Code's MCP config (`.claude/settings.json`):
 }
 ```
 
-## Usage
-
-Create a prompts JSON file:
+## Prompts file format
 
 ```json
 {
   "outputDir": "./my-images",
+  "sessionMode": "per-category",
   "categories": {
     "landscapes": ["a sunset over mountains", "misty forest at dawn"],
     "portraits": ["a samurai warrior in armor"]
@@ -41,14 +40,77 @@ Create a prompts JSON file:
 }
 ```
 
-In Claude Code:
+### sessionMode
 
-```
-Start a batch job with /path/to/prompts.json
+| Value | Behaviour |
+|-------|-----------|
+| `"per-category"` | **(default)** New ChatGPT session at the start of each category. Prompts within a category share the same conversation context. |
+| `"per-prompt"` | Legacy behaviour — fresh session before every single prompt. |
+| `"shared"` | One session for the entire batch. |
+
+### Category-level config (`categoryConfig`)
+
+```json
+{
+  "outputDir": "./my-images",
+  "sessionMode": "per-category",
+  "categoryConfig": {
+    "portraits": {
+      "contextImage": "/path/to/reference.png"
+    }
+  },
+  "categories": {
+    "portraits": ["Expression A", "Expression B"]
+  }
+}
 ```
 
-Claude calls `start_batch` → job starts in background → Claude periodically calls
-`check_progress` to report status. Chrome must be open and logged into chatgpt.com.
+**`contextImage`** — paste a reference image into the chat at the start of the category's session. The model can then reference it for subsequent prompts in that session.
+
+### Edit mode (in-painting / img2img)
+
+Locks character identity by **only regenerating the painted mask area** of an existing generated image. Unpainted regions are preserved pixel-for-pixel.
+
+```json
+{
+  "outputDir": "./umeko-repair",
+  "sessionMode": "per-category",
+  "categoryConfig": {
+    "umeko_expressions": {
+      "editMode": {
+        "contextImage": ".allforai/art/expressions/char_umeko_expr_default.png",
+        "basePrompt": "Re-render this character in warm pastel watercolor chibi style, same face and clothing.",
+        "maskRegion": [0.10, 0.30, 0.80, 0.45]
+      }
+    }
+  },
+  "categories": {
+    "umeko_expressions": [
+      "happy expression — full warm genuine smile, crinkle eyes",
+      "thinking — eyes quiet, head tilted, mouth closed",
+      "surprised — eyes open wide with honest delight"
+    ]
+  }
+}
+```
+
+**Edit mode flow per category:**
+1. Open fresh ChatGPT session
+2. Upload `contextImage` via clipboard paste (reference for face/proportions)
+3. Submit `basePrompt` → wait for ChatGPT to generate the base image
+4. For each prompt:
+   - Click 编辑 on the base image (index 0 in the conversation)
+   - Draw the mask using `maskRegion` (raster brush strokes via PointerEvents)
+   - Submit the prompt in the editor
+   - Wait for the edited image → download
+
+**`maskRegion`** format: `[xFraction, yFraction, widthFraction, heightFraction]`
+where fractions are 0–1 relative to the canvas bounds.
+
+Example for face/expression area (lower half of face):
+```json
+"maskRegion": [0.10, 0.30, 0.80, 0.50]
+```
 
 ## Tools
 

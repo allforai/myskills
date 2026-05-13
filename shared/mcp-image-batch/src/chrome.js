@@ -67,6 +67,48 @@ export function activateChrome() {
   } catch {}
 }
 
+/**
+ * Copy an image file to the macOS clipboard using AppleScript.
+ * Supports PNG and JPEG.
+ */
+export function copyImageToClipboard(imagePath) {
+  const ext = imagePath.split('.').pop().toLowerCase();
+  const asType = (ext === 'jpg' || ext === 'jpeg') ? '«class JPEG»' : '«class PNGf»';
+  const asFile = tmpPath("applescript");
+  const escaped = imagePath.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  writeFileSync(asFile,
+    `set the clipboard to (read (POSIX file "${escaped}") as ${asType})`
+  );
+  try {
+    execSync(`osascript '${asFile}'`, { encoding: "utf8", timeout: 10000 });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    try { unlinkSync(asFile); } catch {}
+  }
+}
+
+/**
+ * Send Cmd+V to Chrome's front tab via System Events (pastes clipboard).
+ */
+export function pasteInChrome() {
+  const asFile = tmpPath("applescript");
+  writeFileSync(asFile,
+    `tell application "Google Chrome" to activate\n` +
+    `delay 0.3\n` +
+    `tell application "System Events" to keystroke "v" using command down`
+  );
+  try {
+    execSync(`osascript '${asFile}'`, { encoding: "utf8", timeout: 5000 });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    try { unlinkSync(asFile); } catch {}
+  }
+}
+
 export function sleepSync(ms) {
   execSync(`sleep ${(ms / 1000).toFixed(2)}`, { timeout: ms + 2000 });
 }

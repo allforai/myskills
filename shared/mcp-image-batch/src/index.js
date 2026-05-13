@@ -39,7 +39,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         properties: {
           prompts_file: {
             type: "string",
-            description: "Path to JSON file: { outputDir, categories: { name: [prompt, ...] } }"
+            description: "Path to JSON file: { outputDir, categories: { name: [prompt, ...] }, sessionMode?: 'per-category'|'per-prompt'|'shared', categoryConfig?: { name: { contextImage?: string } } }. sessionMode defaults to 'per-category' (prompts within a category share a ChatGPT session). Set contextImage to upload a reference image at session start for img2img workflows."
           }
         },
         required: ["prompts_file"]

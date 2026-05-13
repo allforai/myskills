@@ -2,7 +2,7 @@
  * ChatGPT image generation workflow.
  * All browser interactions go through osascript → Chrome JS execution.
  */
-import { executeInChrome, navigateChrome, sleepSync } from "./chrome.js";
+import { executeInChrome, navigateChrome, sleepSync, copyImageToClipboard, pasteInChrome } from "./chrome.js";
 import { readdirSync, statSync } from "fs";
 import { join, extname } from "path";
 import { homedir } from "os";
@@ -115,6 +115,7 @@ const GENERATED_IMG_JS = `
 
 const CHECK_JS = `
   JSON.stringify({
+    imageCount: (${GENERATED_IMG_JS}).length,
     done: (${GENERATED_IMG_JS}).length > 0
       && !document.querySelector('[data-testid="stop-button"], [aria-label="Stop generating"]'),
     generating: !!document.querySelector('[data-testid="stop-button"], [aria-label="Stop generating"]'),
@@ -122,14 +123,14 @@ const CHECK_JS = `
   })
 `;
 
-export function waitForImageGeneration(timeoutMs = 180000, log = () => {}) {
+export function waitForImageGeneration(timeoutMs = 180000, log = () => {}, minImageCount = 0) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     try {
       const raw = executeInChrome(CHECK_JS);
       const state = JSON.parse(raw);
       if (state.rateLimited) return { ok: false, error: "RATE_LIMITED" };
-      if (state.done) return { ok: true };
+      if (state.done && state.imageCount > minImageCount) return { ok: true };
       log(state.generating ? "generating..." : "waiting...");
     } catch (e) {
       log(`poll_error: ${e.message}`);
@@ -139,16 +140,26 @@ export function waitForImageGeneration(timeoutMs = 180000, log = () => {}) {
   return { ok: false, error: "TIMEOUT" };
 }
 
+export function countGeneratedImages() {
+  try {
+    const raw = executeInChrome(`JSON.stringify({ count: (${GENERATED_IMG_JS}).length })`);
+    return JSON.parse(raw).count;
+  } catch {
+    return 0;
+  }
+}
+
 // ─── Download via Browser fetch ────────────────────────────────────────────
 
 export function downloadImageViaBrowser(slug, n) {
   const filename = `${slug}_${String(n).padStart(2, "0")}.png`;
 
-  // Step 1: open fullscreen dialog (click on image button)
+  // Step 1: open fullscreen dialog (click on the most recent image button)
   executeInChrome(`
     (function() {
       const btn = [...document.querySelectorAll('button')]
-        .find(b => b.querySelector('img[alt*="Generated image"]') || b.textContent.includes('已生成图片'));
+        .filter(b => b.querySelector('img[alt*="Generated image"]') || b.textContent.includes('已生成图片'))
+        .at(-1);
       if (btn) btn.click();
     })()
   `);
@@ -237,6 +248,182 @@ function findLatestDownload(preferredName) {
   } catch {}
 
   return { ok: false, path: null, error: "not_in_downloads" };
+}
+
+// ─── Image Upload (img2img) ────────────────────────────────────────────────
+
+export function uploadImageToChat(imagePath) {
+  // Focus the chat input
+  executeInChrome(`
+    (function() {
+      const el = document.querySelector(
+        '#prompt-textarea, [data-testid="prompt-textarea"], div[contenteditable="true"]'
+      );
+      if (el) el.focus();
+    })()
+  `);
+  sleepSync(300);
+
+  // Copy image to clipboard and paste into ChatGPT
+  if (!copyImageToClipboard(imagePath)) return { ok: false, error: "clipboard_copy_failed" };
+  sleepSync(300);
+  if (!pasteInChrome()) return { ok: false, error: "paste_failed" };
+  sleepSync(2500);
+
+  // Verify attachment appeared in the UI
+  const result = executeInChrome(`
+    JSON.stringify({
+      ok: !!(
+        document.querySelector('[data-testid*="file-attachment"]') ||
+        document.querySelector('button[aria-label*="Remove"]') ||
+        document.querySelector('[class*="attachment"]') ||
+        [...document.querySelectorAll('[role="button"]')]
+          .find(b => b.querySelector('img[src^="blob:"]'))
+      )
+    })
+  `);
+  try {
+    const { ok } = JSON.parse(result);
+    return { ok: ok ?? false, error: ok ? null : "attachment_not_detected" };
+  } catch {
+    return { ok: false, error: "verify_failed" };
+  }
+}
+
+// ─── Edit Mode (in-painting) ───────────────────────────────────────────────
+
+export function clickEditOnImage(imageIndex = 0) {
+  // Hover over the target image to make the 编辑 button visible
+  executeInChrome(`
+    (function() {
+      const imgs = [...document.querySelectorAll('main img')]
+        .filter(i => i.src && (
+          i.src.includes('chatgpt.com/backend-api') ||
+          i.src.includes('oaiusercontent.com') ||
+          i.src.includes('estuary/content')
+        ) && i.naturalWidth > 0);
+      const img = imgs.at(${imageIndex});
+      if (!img) return;
+      [img, img.closest('button, [role="button"], figure, div')].filter(Boolean)
+        .forEach(el => el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })));
+    })()
+  `);
+  sleepSync(700);
+
+  const result = executeInChrome(`
+    (function() {
+      const editBtns = [
+        ...document.querySelectorAll('button[aria-label*="Edit"], button[aria-label*="编辑"]'),
+        ...document.querySelectorAll('[data-testid*="edit-image"], [data-testid*="image-edit"]'),
+        ...[...document.querySelectorAll('button')].filter(b =>
+          b.textContent.trim() === '编辑' || b.textContent.trim() === 'Edit'
+        )
+      ];
+      const btn = editBtns.at(${imageIndex});
+      if (!btn) return 'no_edit_button';
+      btn.click();
+      return 'clicked';
+    })()
+  `);
+  return { ok: result === 'clicked', error: result !== 'clicked' ? result : null };
+}
+
+export function waitForEditorCanvas(timeoutMs = 15000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      const raw = executeInChrome(`JSON.stringify({
+        hasCanvas: !!(
+          document.querySelector('canvas') ||
+          document.querySelector('[data-testid*="canvas"]') ||
+          document.querySelector('[class*="canvas"]')
+        )
+      })`);
+      if (JSON.parse(raw).hasCanvas) return { ok: true };
+    } catch {}
+    sleepSync(1000);
+  }
+  return { ok: false, error: 'canvas_not_found' };
+}
+
+export function drawMaskOnCanvas(maskRegion) {
+  // maskRegion: [xFrac, yFrac, widthFrac, heightFrac] — fractions of canvas bounds
+  const [xF, yF, wF, hF] = maskRegion;
+  const result = executeInChrome(`
+    (function() {
+      const canvas =
+        document.querySelector('canvas') ||
+        document.querySelector('[data-testid*="canvas"]');
+      if (!canvas) return 'no_canvas';
+
+      const rect = canvas.getBoundingClientRect();
+      const x0 = rect.left + rect.width  * ${xF};
+      const y0 = rect.top  + rect.height * ${yF};
+      const x1 = rect.left + rect.width  * (${xF} + ${wF});
+      const y1 = rect.top  + rect.height * (${yF} + ${hF});
+
+      function fire(type, x, y) {
+        const opts = { clientX: x, clientY: y, bubbles: true, cancelable: true,
+                       pressure: (type !== 'pointerup') ? 0.5 : 0, pointerType: 'mouse' };
+        [canvas, document.elementFromPoint(x, y)].filter(Boolean)
+          .forEach(el => el.dispatchEvent(new PointerEvent(type, opts)));
+      }
+
+      // Horizontal raster strokes across the mask rectangle
+      const rowStep = 16;
+      for (let cy = y0; cy <= y1; cy += rowStep) {
+        fire('pointerdown', x0, cy);
+        for (let cx = x0 + 4; cx <= x1; cx += 4) fire('pointermove', cx, cy);
+        fire('pointerup', x1, cy);
+      }
+      return 'drawn';
+    })()
+  `);
+  return { ok: result === 'drawn', error: result !== 'drawn' ? result : null };
+}
+
+export function submitEditPrompt(text) {
+  const sanitized = text.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$/g, "\\$");
+
+  // Find the editor's prompt input (not the main chat textarea)
+  const typed = executeInChrome(`
+    (function() {
+      const el =
+        document.querySelector('[data-testid*="edit-prompt"] textarea') ||
+        document.querySelector('[data-testid*="edit-prompt"] [contenteditable]') ||
+        document.querySelector('[placeholder*="Describe"], [placeholder*="描述"]') ||
+        [...document.querySelectorAll('textarea')].find(t =>
+          t.id !== 'prompt-textarea' && t.dataset.testid !== 'prompt-textarea'
+        ) ||
+        [...document.querySelectorAll('[contenteditable="true"]')].find(el =>
+          !el.dataset.id && el !== document.querySelector('#prompt-textarea')
+        );
+      if (!el) return 'no_input';
+      el.focus();
+      document.execCommand('selectAll', false, null);
+      document.execCommand('delete', false, null);
+      document.execCommand('insertText', false, \`${sanitized}\`);
+      return 'typed';
+    })()
+  `);
+  if (typed !== 'typed') return { ok: false, error: `type_failed:${typed}` };
+  sleepSync(300);
+
+  const sent = executeInChrome(`
+    (function() {
+      const btn =
+        document.querySelector('[data-testid*="edit-submit"]') ||
+        document.querySelector('[data-testid*="generate-edit"]') ||
+        [...document.querySelectorAll('button')].find(b =>
+          /^(生成|Generate|Apply|确定)$/i.test(b.textContent.trim()) && !b.disabled
+        );
+      if (!btn) return 'no_button';
+      if (btn.disabled) return 'disabled';
+      btn.click();
+      return 'sent';
+    })()
+  `);
+  return { ok: sent === 'sent', error: sent !== 'sent' ? sent : null };
 }
 
 // ─── Slug utility ──────────────────────────────────────────────────────────

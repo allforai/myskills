@@ -9,7 +9,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, renameSync, appendFileSync } from "fs";
 import { join, extname } from "path";
 
-import { openFreshChat, selectBestImageModel, submitPrompt, waitForImageGeneration, downloadImageViaBrowser, makeSlug } from "./workflow.js";
+import { openFreshChat, selectBestImageModel, submitPrompt, waitForImageGeneration, downloadImageViaBrowser, makeSlug, countGeneratedImages, uploadImageToChat, clickEditOnImage, waitForEditorCanvas, drawMaskOnCanvas, submitEditPrompt } from "./workflow.js";
 import { activateChrome } from "./chrome.js";
 
 const promptsFile = process.argv[2];
@@ -26,7 +26,7 @@ try {
   process.exit(1);
 }
 
-const { outputDir, categories } = config;
+const { outputDir, categories, sessionMode = "per-category", categoryConfig = {} } = config;
 if (!outputDir || typeof categories !== "object") {
   console.error("Invalid prompts file: needs outputDir + categories");
   process.exit(1);
@@ -67,12 +67,18 @@ const total = Object.values(categories).reduce((s, a) => s + a.length, 0);
 saveJob({ pid: process.pid, status: "running", startedAt: new Date().toISOString(), promptsFile, total });
 log(`=== runner started, pid=${process.pid}, total=${total} prompts ===`);
 
-// ── Select model once ────────────────────────────────────────────────────────
+// ── Session management ───────────────────────────────────────────────────────
 
 activateChrome();
-openFreshChat();
-const modelSelected = selectBestImageModel();
-log(`Model selected: ${modelSelected}`);
+
+function startSession() {
+  openFreshChat();
+  const model = selectBestImageModel();
+  log(`Model selected: ${model}`);
+}
+
+// "shared" mode: one session for all categories
+if (sessionMode === "shared") startSession();
 
 // ── Process prompts ──────────────────────────────────────────────────────────
 
@@ -80,6 +86,40 @@ let downloaded = 0;
 const skipped = [];
 
 outer: for (const [category, prompts] of Object.entries(categories)) {
+  const catCfg = categoryConfig[category] ?? {};
+
+  if (sessionMode === "per-category") {
+    startSession();
+    const editMode = catCfg.editMode;
+
+    if (editMode) {
+      // Upload reference image and generate the "base" that will be edited
+      if (editMode.contextImage) {
+        log(`Uploading base reference for [${category}]: ${editMode.contextImage}`);
+        const up = uploadImageToChat(editMode.contextImage);
+        log(`Reference upload: ${JSON.stringify(up)}`);
+        if (!up.ok) log(`  ⚠ reference upload failed — continuing without reference`);
+        sleepSync(1000);
+      }
+      if (editMode.basePrompt) {
+        log(`Generating base image: "${editMode.basePrompt.slice(0, 60)}..."`);
+        const baseSubmit = submitPrompt(editMode.basePrompt);
+        if (!baseSubmit.ok) {
+          log(`  ⚠ base prompt submit failed: ${baseSubmit.error}`);
+        } else {
+          const baseGen = waitForImageGeneration(180000, (msg) => log(`  [base] ${msg}`), 0);
+          log(`  Base image: ${baseGen.ok ? 'ready' : baseGen.error}`);
+          sleepSync(1500);
+        }
+      }
+    } else if (catCfg.contextImage) {
+      log(`Uploading context image for [${category}]: ${catCfg.contextImage}`);
+      const up = uploadImageToChat(catCfg.contextImage);
+      log(`Context image upload: ${JSON.stringify(up)}`);
+      if (up.ok) sleepSync(2000);
+    }
+  }
+
   for (const prompt of prompts) {
     const key = `${category}::${prompt}`;
 
@@ -91,9 +131,40 @@ outer: for (const [category, prompts] of Object.entries(categories)) {
 
     log(`\n→ [${category}] "${prompt}"`);
 
-    openFreshChat();
+    if (sessionMode === "per-prompt") {
+      startSession();
+    }
 
-    const submitResult = submitPrompt(prompt);
+    // Count existing images so waitForImageGeneration can detect the NEW one
+    const startImageCount = sessionMode !== "per-prompt" ? countGeneratedImages() : 0;
+
+    const editMode = catCfg?.editMode;
+    let submitResult;
+
+    if (editMode) {
+      // In-painting: click 编辑 on the base image (index 0), draw mask, submit prompt
+      log(`  [edit] clicking 编辑 on base image...`);
+      const clickResult = clickEditOnImage(0);
+      if (!clickResult.ok) {
+        log(`  ⚠ edit button not found: ${clickResult.error}`);
+        skipped.push({ category, prompt, error: "EDIT_BUTTON_NOT_FOUND" });
+        continue;
+      }
+      const canvasResult = waitForEditorCanvas(15000);
+      if (!canvasResult.ok) {
+        log(`  ⚠ editor canvas not open`);
+        skipped.push({ category, prompt, error: "CANVAS_NOT_FOUND" });
+        continue;
+      }
+      log(`  [edit] drawing mask ${JSON.stringify(editMode.maskRegion)}`);
+      const maskResult = drawMaskOnCanvas(editMode.maskRegion);
+      log(`  [edit] mask: ${JSON.stringify(maskResult)}`);
+      sleepSync(400);
+      submitResult = submitEditPrompt(prompt);
+    } else {
+      submitResult = submitPrompt(prompt);
+    }
+
     if (!submitResult.ok) {
       log(`  ⚠ submit failed: ${submitResult.error}`);
       skipped.push({ category, prompt, error: "SUBMIT_FAILED" });
@@ -101,7 +172,7 @@ outer: for (const [category, prompts] of Object.entries(categories)) {
     }
     log("  submitted, waiting for generation...");
 
-    const genResult = waitForImageGeneration(180000, (msg) => log(`  ${msg}`));
+    const genResult = waitForImageGeneration(180000, (msg) => log(`  ${msg}`), startImageCount);
     if (!genResult.ok) {
       log(`  ⚠ ${genResult.error}`);
       skipped.push({ category, prompt, error: genResult.error });
