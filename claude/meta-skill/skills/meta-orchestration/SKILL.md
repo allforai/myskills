@@ -25,12 +25,14 @@ runtime, or verification needs.
 |---|---|---|
 | `20-spec` | `dynamic-skill-composition` | Select required/optional skills and produce a project-specific skill composition plan. |
 | `40-qa` | `artifact-contract-graph-qa` | Validate artifact producers, consumers, dependencies, repair routes, and blocked scopes. |
+| `40-qa` | `unattended-run-readiness-qa` | Validate before `/run` that the workflow can execute unattended without human prompts, missing tools, or hidden fallback completion. |
 
 ## Canonical Invocation Paths
 
 ```text
 ${CLAUDE_PLUGIN_ROOT}/skills/meta-orchestration/20-spec/dynamic-skill-composition/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/meta-orchestration/40-qa/artifact-contract-graph-qa/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/meta-orchestration/40-qa/unattended-run-readiness-qa/SKILL.md
 ```
 
 ## Shared Output Root
@@ -45,5 +47,6 @@ composition as unavailable in the bootstrap report.
 ## Boundary
 
 Do not invent domain requirements here. Use domain skills to define domain
-content. This pack only selects skills, connects artifacts, and validates graph
-closure.
+content. This pack only selects skills, connects artifacts, validates graph
+closure, and blocks `/run` before execution when the workflow is not ready for
+unattended execution.

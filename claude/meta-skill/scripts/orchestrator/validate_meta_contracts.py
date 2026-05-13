@@ -63,9 +63,40 @@ def validate_approval_scripts_copied(errors: list[str]) -> None:
         "render_approval_dashboard.py",
         "serve_approval.py",
         "apply_approval_action.py",
+        "validate_unattended_readiness.py",
     ):
         if f"scripts/orchestrator/{script}" not in text:
             errors.append(f"bootstrap.md: does not copy approval script {script}")
+
+
+def validate_unattended_run_contract(errors: list[str]) -> None:
+    bootstrap_text = BOOTSTRAP.read_text(encoding="utf-8")
+    template = ROOT / "knowledge/orchestrator-template.md"
+    template_text = template.read_text(encoding="utf-8")
+    template_flat = " ".join(template_text.split())
+    parent = ROOT / "skills/meta-orchestration/SKILL.md"
+    parent_text = parent.read_text(encoding="utf-8")
+    skill = ROOT / "skills/meta-orchestration/40-qa/unattended-run-readiness-qa/SKILL.md"
+    if not skill.exists():
+        errors.append("meta-orchestration: missing unattended-run-readiness-qa skill")
+    for term in (
+        ".allforai/bootstrap/unattended-run-readiness-spec.json",
+        ".allforai/bootstrap/unattended-run-readiness.json",
+        ".allforai/bootstrap/unattended-run-readiness.md",
+        "validate_unattended_readiness.py",
+    ):
+        if term not in bootstrap_text:
+            errors.append(f"bootstrap.md: missing unattended readiness term {term}")
+    for term in (
+        "Preflight Gate",
+        "validate_unattended_readiness.py",
+        "status != \"ready\"",
+        "do not ask the user mid-run",
+    ):
+        if term not in template_text and term not in template_flat:
+            errors.append(f"orchestrator-template.md: missing unattended preflight term {term}")
+    if "unattended-run-readiness-qa" not in parent_text:
+        errors.append("meta-orchestration/SKILL.md: missing unattended readiness child")
 
 
 def main() -> int:
@@ -74,6 +105,7 @@ def main() -> int:
     validate_node_id_templates(errors)
     validate_dashboard_virtual_gates(errors)
     validate_approval_scripts_copied(errors)
+    validate_unattended_run_contract(errors)
     if errors:
         for error in errors:
             print(error, file=sys.stderr)

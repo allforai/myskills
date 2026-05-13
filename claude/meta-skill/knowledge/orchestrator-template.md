@@ -27,6 +27,21 @@ You are the workflow orchestrator. Execute nodes to achieve the goal.
 
 Read `.allforai/bootstrap/workflow.json` at every iteration. Trust it over conversation history.
 
+## Preflight Gate
+
+Before executing any workflow node, run unattended readiness:
+
+```bash
+python3 .allforai/bootstrap/scripts/validate_unattended_readiness.py . --write-report
+```
+
+If it exits non-zero or `.allforai/bootstrap/unattended-run-readiness.json`
+has `status != "ready"`, stop immediately. Do not start partial execution, do
+not ask the user mid-run, and do not silently weaken validation. Report the
+blockers from `.allforai/bootstrap/unattended-run-readiness.md` and ask the user
+to resolve them through `/setup check`, `/bootstrap`, or the approval dashboard
+before re-running `/run`.
+
 ## Core Loop
 
 ```
