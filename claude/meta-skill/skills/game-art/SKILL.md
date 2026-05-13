@@ -50,6 +50,7 @@ Layer numbers indicate directory organization and default execution order for ne
 | `20-spec` | `2d-view-mode-spec` | Side-view, top-down, isometric, fixed-room, board/grid, visual-novel, shooter, and hybrid spatial rules. |
 | `20-spec` | `3d-source-asset-spec` | Production-only 3D source assets, cameras, materials, passes, output mapping, and runtime exclusion. |
 | `20-spec` | `animation-state-machine-spec` | Runtime animation states, transitions, priorities, event frames, fallback states, import references. |
+| `20-spec` | `asset-acceptance-criteria` | Project- and runtime-specific acceptance standards for every art asset family before production. |
 | `20-spec` | `asset-pack-search-spec` | Search and select existing 2D/3D asset packs with license, style, coverage, adaptation, and downstream fit constraints. |
 | `20-spec` | `artifact-handoff-contract` | Shared cross-skill artifact handoff schema, downstream routes, QA/runtime status, and repair routes. |
 | `20-spec` | `character-layer-sheet` | Character part decomposition, layer-sheet prompt/spec, pivots, validation. |
@@ -81,6 +82,7 @@ Layer numbers indicate directory organization and default execution order for ne
 | `30-generate` | `vfx-generation` | VFX orchestration across particle, sprite-sheet, trail, shader, decal, screen-effect, mesh-burst, light-pulse, and animation-event branches. |
 | `30-generate` | `skeletal-animation` | Bone hierarchy, transform timelines, rendered preview loop, visual validation, repair. |
 | `40-qa` | `art-preview-qa` | Cross-asset visual QA, downstream feedback, issue classification, repair routing. |
+| `40-qa` | `visual-acceptance-review` | Task-list-based visual acceptance using actual images, Codex CLI independent review, and Claude Code closure audit. |
 | `40-qa` | `atlas-packaging` | Atlas packing manifests, spacing/margin checks, references, and export validation. |
 | `40-qa` | `2d-style-consistency-qa` | Palette, outline, scale, projection, readability, animation, UI/game, and runtime style QA. |
 | `40-qa` | `3d-assisted-2d-qa` | Perspective, lighting, edge, pivot, style, helper-map, and runtime-exclusion QA for 3D-derived 2D assets. |
@@ -110,6 +112,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/2d-layering-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/2d-view-mode-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/3d-source-asset-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/animation-state-machine-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/asset-acceptance-criteria/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/asset-pack-search-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/artifact-handoff-contract/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/character-layer-sheet/SKILL.md
@@ -141,6 +144,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/animation-event-fx/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/vfx-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/skeletal-animation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/art-preview-qa/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/visual-acceptance-review/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/atlas-packaging/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/2d-style-consistency-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/3d-assisted-2d-qa/SKILL.md
@@ -180,6 +184,8 @@ Art methods should be placed where they are executed:
 - source choice and human preference collection: `10-design/art-direction-input-contract`
   and `10-design/asset-source-strategy-spec`;
 - visual consistency rules: `20-spec/visual-style-tokens`;
+- project/runtime-specific acceptance standards:
+  `20-spec/asset-acceptance-criteria`;
 - decomposition and runtime fit: `20-spec/2d-layering-spec`,
   `20-spec/engine-export-profile`, and asset-specific `20-spec/*` skills;
 - image provider/model capability discovery and routing:
@@ -212,7 +218,18 @@ Rules:
 - `sourced` or `generated` requires provenance or generation records plus files.
 - `integrated` requires manifest, atlas/layer metadata, and target engine
   export profile compatibility.
-- `qa_passed` requires the relevant visual/style/license/preview QA report.
+- `qa_passed` requires the relevant visual/style/license/preview QA report plus
+  `visual-acceptance-review` evidence for generated or adapted bitmap assets.
+  Required visual acceptance artifacts are
+  `.allforai/game-design/art/qa/visual-acceptance-task-list.json`,
+  `.allforai/game-design/art/qa/visual-acceptance-batches/`,
+  `.allforai/game-design/art/qa/codex-visual-review.json`,
+  `.allforai/game-design/art/qa/codex-visual-review.md`,
+  `.allforai/game-design/art/qa/visual-review-closure-audit.json`, and
+  `.allforai/game-design/art/qa/visual-review-closure-audit.md`. If visual
+  defects require repair, the loop must also write
+  `.allforai/game-design/art/qa/visual-repair-loop-report.json` and
+  `.allforai/game-design/art/qa/visual-repair-loop-report.md`.
 - `engine_ready` requires runtime import validation when an engine/importer is
   available; if it cannot run, report blocked validation instead of substituting
   a static inspection.

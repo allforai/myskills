@@ -15,9 +15,14 @@ skill, including `image-generation-contract` for generated-image defects.
 
 ## Input Contract
 
-Required: at least one manifest or preview path. Optional:
-`asset-registry.json`, `ui-registry.json`, `image-generation-report.json`,
-screenshots/previews.
+Required: accepted image manifest plus actual image evidence for generated or
+adapted bitmap assets. Evidence may be per-asset PNG/JPG/WebP files, contact
+sheets, preview maps, animation previews, UI mockup previews, or runtime
+screenshots. Optional: `asset-registry.json`, `ui-registry.json`,
+`image-generation-report.json`.
+
+Manifest-only review is not allowed. If the QA agent did not inspect actual
+images or generated previews, return `blocked_by_missing_visual_evidence`.
 
 ## Output Contract
 
@@ -43,7 +48,12 @@ Allowed root causes: `image_generation`, `prompt_contract`, `asset_spec`,
     "ui_registry": ".allforai/game-design/ui/ui-registry.json",
     "image_generation_report": ".allforai/game-design/art/image-generation/image-generation-report.json"
   },
-  "evidence": {"previews": [], "screenshots": []},
+  "evidence": {
+    "images": [],
+    "contact_sheets": [],
+    "previews": [],
+    "screenshots": []
+  },
   "output_root": ".allforai/game-design/art"
 }
 ```
@@ -53,7 +63,14 @@ Supported modes: `validate`, `validate_artifacts_only`, `validate_visuals`.
 ## Automatic Validation
 
 Check existence, naming, style, crop, alpha, small-size readability, playfield/UI
-occlusion, manifest consistency, and downstream root-cause routing.
+occlusion, manifest consistency, and downstream root-cause routing. For
+generated or adapted bitmap assets, `validate_artifacts_only` may only report
+schema/path defects; it cannot pass visual acceptance.
+
+The report must include `visual_evidence_inspected: true`, a list of inspected
+image/contact-sheet/preview paths, and a per-asset or per-task verdict. A report
+that only verifies fields, paths, or semantic consistency must return
+`blocked_by_missing_visual_evidence`.
 
 For image-generation defects, emit feedback compatible with
 `.allforai/game-design/art/image-generation/image-feedback-report.json`. For
@@ -63,5 +80,7 @@ images.
 
 ## Completion Conditions
 
-Return `COMPLETED` when no blocker/major issues remain. Return
-`FAILED_VALIDATION` for blocker defects and include repair targets.
+Return `COMPLETED` when actual visual evidence was inspected and no
+blocker/major issues remain. Return `FAILED_VALIDATION` for blocker defects and
+include repair targets. Return `blocked_by_missing_visual_evidence` when images
+or previews are missing, unreadable, stale, or not inspected.

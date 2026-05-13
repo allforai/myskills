@@ -143,7 +143,7 @@ Supported modes:
 
 | Mode | Behavior |
 |---|---|
-| `spec_only` | Write generation specs and manifest placeholders. |
+| `spec_only` | Write generation specs and manifest placeholders for planning only; this mode cannot complete a production art-gen node. |
 | `spec_generate_validate` | Generate/register tiles, assemble preview maps, validate, repair, report. |
 | `validate_existing` | Validate existing tile images and manifest. |
 | `register_existing` | Register existing tile files without regenerating. |
@@ -217,8 +217,13 @@ fallback set that downstream systems can consume.
 
 ## Completion Conditions
 
-Return `COMPLETED` only when specs, manifest, and report validate, and generated
-tiles pass visual validation when generation is available.
+Return `COMPLETED` only when specs, manifest, accepted image entries, preview
+maps, and report validate, and generated tiles pass visual validation when
+generation is required.
 
-Return `COMPLETED_WITH_LIMITS` when only spec artifacts are produced, or when a
-reduced variant set is approved as an automation fallback.
+Return `COMPLETED_WITH_LIMITS` only for planning/spec stages, or when a reduced
+variant set is approved as an automation fallback after actual image evidence
+was inspected. In `spec_generate_validate` mode, missing images, missing preview
+maps, or skipped visual validation must return `FAILED_VALIDATION` or
+`blocked_by_missing_visual_evidence`; spec-only output must not be treated as
+completed generated art.

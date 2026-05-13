@@ -1202,6 +1202,7 @@ Generate <TYPE> art assets for all entries in `.allforai/concept-contract.json` 
 - `.allforai/game-design/art-pipeline-config.json` — `<CONFIG_SECTION>` configuration and `toolchain.detected_capabilities`
 - `.allforai/game-design/art-asset-inventory.json` — current asset states (skip assets with `current_state == "locked"`)
 - `.allforai/game-design/asset-registry.json` — canonical registry built by concept-freeze
+- `.allforai/game-design/art/asset-acceptance-criteria.json` — project/runtime-specific standard for this node's assets
 
 ## Sub-Skill Invocation
 
@@ -1221,6 +1222,20 @@ preview validation contexts, and repair routing. This project-local skill must
 still route concrete generation through the bundled source strategy,
 image-model-capability-registry, image-generation-contract, accepted-image
 manifest, style QA, and runtime import contracts.
+
+### Step -0.5 — Asset Acceptance Criteria
+
+Before any image generation, source adaptation, 3D render-to-2D output, atlas
+packaging, or visual QA, invoke
+`${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/asset-acceptance-criteria/SKILL.md`.
+This writes `.allforai/game-design/art/asset-acceptance-criteria.json` and
+`.allforai/game-design/art/asset-acceptance-criteria.md`.
+
+The criteria must combine project-specific standards from the specialized
+art-generation skill with technology-specific standards from the target runtime,
+engine export profile, atlas/import rules, view mode, and platform. Do not use
+generic visual standards when the project type or runtime imposes different
+requirements.
 
 ### Step 0 — Source Resolution (per asset, before Pre-Spec)
 
@@ -1253,7 +1268,9 @@ For each asset in `canonical_registry.<REGISTRY_KEY>[]`, check its `source_strat
 
 ## Completion Condition
 
-`.allforai/game-design/systems/<node_id>-spec.json` exists AND `.allforai/game-design/<node_id>-review.html` exists AND all `canonical_registry.<REGISTRY_KEY>[]` entries have `current_state != "placeholder"`.
+`.allforai/game-design/systems/<node_id>-spec.json` exists AND `.allforai/game-design/<node_id>-review.html` exists AND `.allforai/game-design/art/image-generation/accepted-image-manifest.json` contains entries for this node's produced/adapted bitmap assets with `consumer_ready: true` AND the referenced image files exist.
+
+Spec-only, manifest-only, or path-existence-only output is not a completed art-gen node. If the node is expected to generate, adapt, search, register, or render images and no actual visual evidence exists, return `FAILED_VALIDATION` or `blocked_by_missing_visual_evidence`; do not advance to `art-qa`.
 
 If any sub-skill returns `UPSTREAM_DEFECT` → halt and report the defect. Do not advance to `art-qa`.
 ```
@@ -1306,21 +1323,30 @@ Run quality assurance across all generated art assets. Invoke the appropriate ga
 Read and follow each applicable sub-skill SKILL.md in order:
 
 1. **Preview evidence (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/art-preview-qa/SKILL.md`
-2. **Style consistency (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/2d-style-consistency-qa/SKILL.md`
-3. **UI readability** (when `ui-art-gen` ran): `${CLAUDE_PLUGIN_ROOT}/skills/game-ui/40-qa/ui-readability-qa/SKILL.md`
-4. **Atlas packaging (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/atlas-packaging/SKILL.md`
-5. **Runtime import (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/runtime-import-check/SKILL.md`
-6. **3D-assisted QA** (when `dimension=2.5d`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/3d-assisted-2d-qa/SKILL.md`
-7. **Asset pack QA** (when any asset has `source_strategy=existing_asset_pack`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-pack-integration-qa/SKILL.md`
-8. **License provenance sweep** (always, as final audit): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md` — for external-source assets this is a confirmation sweep (primary check already ran in art-gen Step 0); for AI-generated assets this catches potential training-data IP issues
-9. **Engine-ready art handoff (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/engine-ready-art-output-contract/SKILL.md`
+2. **Visual acceptance batch documents + Codex CLI review document + Claude Code closure audit document (always for generated/adapted bitmap assets):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/visual-acceptance-review/SKILL.md`
+3. **Style consistency (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/2d-style-consistency-qa/SKILL.md`
+4. **UI readability** (when `ui-art-gen` ran): `${CLAUDE_PLUGIN_ROOT}/skills/game-ui/40-qa/ui-readability-qa/SKILL.md`
+5. **Atlas packaging (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/atlas-packaging/SKILL.md`
+6. **Runtime import (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/runtime-import-check/SKILL.md`
+7. **3D-assisted QA** (when `dimension=2.5d`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/3d-assisted-2d-qa/SKILL.md`
+8. **Asset pack QA** (when any asset has `source_strategy=existing_asset_pack`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-pack-integration-qa/SKILL.md`
+9. **License provenance sweep** (always, as final audit): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md` — for external-source assets this is a confirmation sweep (primary check already ran in art-gen Step 0); for AI-generated assets this catches potential training-data IP issues
+10. **Engine-ready art handoff (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/engine-ready-art-output-contract/SKILL.md`
 
 ## Completion Condition
 
-`art-qa-report.html` exists, `.allforai/game-runtime/art/engine-ready-art-manifest.json` exists, and no sub-skill returned `UPSTREAM_DEFECT`.
+`art-qa-report.html` exists, `.allforai/game-runtime/art/engine-ready-art-manifest.json` exists, `.allforai/game-design/art/qa/visual-acceptance-task-list.json` exists, `.allforai/game-design/art/qa/visual-acceptance-batches/` contains Markdown batch documents, `.allforai/game-design/art/qa/codex-visual-review.json` exists, `.allforai/game-design/art/qa/codex-visual-review.md` exists, `.allforai/game-design/art/qa/visual-review-closure-audit.json` exists, `.allforai/game-design/art/qa/visual-review-closure-audit.md` exists, and if any Codex blocker/major visual issue was found then `.allforai/game-design/art/qa/visual-repair-loop-report.json` and `.allforai/game-design/art/qa/visual-repair-loop-report.md` exist showing regenerate/repair plus rerun Codex CLI review and Claude Code closure audit for affected batches. No sub-skill may return `UPSTREAM_DEFECT`, `FAILED_VALIDATION`, `blocked_by_missing_visual_evidence`, or `blocked_by_missing_codex_cli`.
+
+`COMPLETED_WITH_LIMITS` cannot pass art-qa when the limit is missing images, missing contact sheets, missing screenshots, missing Codex CLI visual review, or missing Claude Code closure audit.
 
 **Gate action on sub-skill score < 3/5:**
-For each failing asset, set `gate_status: "revision-requested"` in `.allforai/game-design/approval-records.json` for the relevant art-gen node, and populate `revision_notes` with the QA sub-skill's issue list. The orchestrator will re-run that art-gen node with `revision_notes` as context.
+For each failing asset, first execute the visual repair loop through
+`image-feedback-report.json`, regenerate/repair the affected assets, and rerun
+the affected visual acceptance batches. If the issue still fails after the
+repair budget, set `gate_status: "revision-requested"` in
+`.allforai/game-design/approval-records.json` for the relevant art-gen node, and
+populate `revision_notes` with the QA sub-skill's issue list. The orchestrator
+will re-run that art-gen node with `revision_notes` as context.
 ```
 
 **App Design Node Injection (when `is_game_project = false` AND goal includes design phase):**
@@ -1958,10 +1984,10 @@ E2E nodes should NOT be merged — each module has distinct user flows and roles
 - Produce evidence (screenshots, test reports, logs)
 - Report pass/fail per flow
 
-**UI screenshot + Claude Code visual review hard gate:**
+**UI screenshot + Codex CLI visual review hard gate:**
 
 Every verification node that exercises a user-facing UI MUST include screenshot
-capture and Claude Code visual review in its node-spec. This applies to Web
+capture and Codex CLI visual review in its node-spec. This applies to Web
 Playwright, Electron, Tauri WebView, browser extensions, Flutter, iOS, Android,
 React Native, HarmonyOS, and game clients with visible runtime scenes.
 
@@ -1973,18 +1999,26 @@ Required node-spec obligations:
 - Write a screenshot manifest:
   `.allforai/verify/ui-screenshot-manifest.json` or a node-specific equivalent
   under `.allforai/product-verify/` / `.allforai/visual-verify/`.
-- After screenshots are captured, ask Claude Code to inspect the screenshots as
-  visual evidence and write:
-  - `.allforai/verify/claude-code-visual-review.json`
-  - `.allforai/verify/claude-code-visual-review.md`
-- The Claude Code review must check blank screens, loading stuck states,
-  clipped/overlapped text, unreadable contrast, missing required content,
-  broken navigation state, modal/keyboard obstruction, wrong language, and
-  responsive layout breakage.
+- After screenshots are captured, use the shared batch visual acceptance skill:
+  `${CLAUDE_PLUGIN_ROOT}/skills/visual-qa/40-qa/batch-visual-acceptance/SKILL.md`
+  and delegate visual inspection through
+  `${CLAUDE_PLUGIN_ROOT}/skills/codex-cli-delegation/30-execute/codex-cli-task/SKILL.md`.
+- The node must write Codex visual review reports:
+  - `.allforai/verify/codex-ui-visual-review.json`
+  - `.allforai/verify/codex-ui-visual-review.md`
+  - `.allforai/verify/ui-visual-closure-audit.json`
+  - `.allforai/verify/ui-visual-closure-audit.md`
+- Codex CLI must check blank screens, loading stuck states, clipped/overlapped
+  text, unreadable contrast, missing required content, broken navigation state,
+  modal/keyboard obstruction, wrong language, and responsive layout breakage.
+- Claude Code only performs closure audit: report existence, inspected evidence
+  paths, failure routing, repair execution, and rerun records. Claude Code must
+  not re-score screenshot quality when Codex CLI has produced the visual review.
 - The node cannot pass when screenshots are missing, unreadable, stale, or when
-  Claude Code reports blocker/major visual issues. Return
+  Codex CLI reports blocker/major visual issues. Return
   `blocked_by_missing_screenshots`, `blocked_by_unreadable_screenshot`, or
-  `failed_visual_review` instead.
+  `failed_visual_review` instead. Return `blocked_by_missing_codex_cli` when
+  Codex CLI cannot run.
 - If the browser, emulator, simulator, device, or game runtime cannot launch,
   return `BLOCKED_ENV` / `FAILED_ENV`. Do not substitute DOM inspection, static
   code review, or manual prose for screenshot-based acceptance.

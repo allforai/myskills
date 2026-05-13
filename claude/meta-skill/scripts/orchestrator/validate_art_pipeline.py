@@ -19,6 +19,7 @@ from pathlib import Path
 
 REQUIRED_ART_QA_SKILLS = {
     "game-art/40-qa/art-preview-qa",
+    "game-art/40-qa/visual-acceptance-review",
     "game-art/40-qa/2d-style-consistency-qa",
     "game-art/40-qa/atlas-packaging",
     "game-art/40-qa/runtime-import-check",
@@ -28,6 +29,14 @@ REQUIRED_ART_QA_SKILLS = {
 
 REQUIRED_ART_QA_EXIT_ARTIFACTS = {
     ".allforai/game-design/art-qa-report.html",
+    ".allforai/game-design/art/qa/visual-acceptance-task-list.json",
+    ".allforai/game-design/art/qa/visual-acceptance-batches/",
+    ".allforai/game-design/art/qa/codex-visual-review.json",
+    ".allforai/game-design/art/qa/codex-visual-review.md",
+    ".allforai/game-design/art/qa/visual-review-closure-audit.json",
+    ".allforai/game-design/art/qa/visual-review-closure-audit.md",
+    ".allforai/game-design/art/qa/visual-repair-loop-report.json",
+    ".allforai/game-design/art/qa/visual-repair-loop-report.md",
     ".allforai/game-design/art/export/engine-ready-art-output-contract.json",
     ".allforai/game-runtime/art/engine-ready-art-manifest.json",
 }
@@ -42,6 +51,8 @@ ENGINE_READY_MANIFEST = ".allforai/game-runtime/art/engine-ready-art-manifest.js
 ACCEPTED_IMAGE_MANIFEST = ".allforai/game-design/art/image-generation/accepted-image-manifest.json"
 IMAGE_MODEL_REGISTRY = ".allforai/game-design/art/image-generation/image-model-capability-registry.json"
 IMAGE_MODEL_ROUTING_REPORT = ".allforai/game-design/art/image-generation/image-model-routing-report.json"
+ASSET_ACCEPTANCE_CRITERIA_JSON = ".allforai/game-design/art/asset-acceptance-criteria.json"
+ASSET_ACCEPTANCE_CRITERIA_MD = ".allforai/game-design/art/asset-acceptance-criteria.md"
 ANIMATION_TOOLCHAIN_REPORT = ".allforai/game-design/art/env/2d-animation-toolchain-report.json"
 ANIMATION_TOOLCHAIN_REGISTRY = ".allforai/game-design/art/env/2d-animation-toolchain-registry.json"
 
@@ -59,6 +70,131 @@ REQUIRED_IMAGE_CONTRACT_TERMS = {
     "local_asset_library",
     "Downstream skills must not consume raw PNG paths directly",
     "re-run the downstream consumer validation",
+    ASSET_ACCEPTANCE_CRITERIA_JSON,
+    "asset-acceptance-criteria",
+    "consumer_ready` remains false",
+}
+
+REQUIRED_ART_GEN_COMPLETION_TERMS = {
+    ACCEPTED_IMAGE_MANIFEST,
+    "consumer_ready: true",
+    "referenced image files exist",
+    "Spec-only, manifest-only, or path-existence-only output is not a completed art-gen node",
+    "blocked_by_missing_visual_evidence",
+}
+
+REQUIRED_ART_PREVIEW_QA_TERMS = {
+    "Manifest-only review is not allowed",
+    "blocked_by_missing_visual_evidence",
+    "visual_evidence_inspected: true",
+    "actual visual evidence was inspected",
+}
+
+REQUIRED_VISUAL_ACCEPTANCE_TERMS = {
+    "visual-qa/40-qa/batch-visual-acceptance/SKILL.md",
+    "visual-qa/batch-visual-acceptance",
+    "visual-qa/00-env/visual-model-capability-registry/SKILL.md",
+    "codex-cli-delegation/30-execute/codex-cli-task/SKILL.md",
+    "visual_model_routing",
+    "blocked_by_missing_visual_model_capability",
+    ".allforai/game-design/art/qa/visual-acceptance-task-list.json",
+    ".allforai/game-design/art/qa/visual-acceptance-batches/",
+    ".allforai/game-design/art/qa/codex-visual-review.json",
+    ".allforai/game-design/art/qa/codex-visual-review.md",
+    ".allforai/game-design/art/qa/visual-review-closure-audit.json",
+    ".allforai/game-design/art/qa/visual-review-closure-audit.md",
+    ".allforai/game-design/art/qa/visual-repair-loop-report.json",
+    ".allforai/game-design/art/qa/visual-repair-loop-report.md",
+    "Codex CLI",
+    "Claude Code closure audit",
+    "Claude Code does not re-judge visual quality",
+    "without re-scoring visual quality",
+    "audit_verdict",
+    "Repair And Revalidation Loop",
+    "image-feedback-report.json",
+    "process_downstream_feedback",
+    "rerun Codex CLI review",
+    "batch Markdown documents",
+    ".allforai/bootstrap/specialized-skills/<specialization_id>-art-generation/SKILL.md",
+    "Project-Specific Acceptance",
+    ASSET_ACCEPTANCE_CRITERIA_JSON,
+    ASSET_ACCEPTANCE_CRITERIA_MD,
+    "blocked_by_missing_codex_cli",
+    "blocked_by_missing_visual_evidence",
+    "Do not accept manifest-only review",
+    "visual evidence paths",
+}
+
+REQUIRED_CODEX_DELEGATION_TERMS = {
+    "codex-cli-delegation/30-execute/codex-cli-task/SKILL.md",
+    "short, path-based prompt",
+    "Do not paste batch contents",
+    "--return-all-messages",
+    "final report files",
+}
+
+REQUIRED_CODEX_DELEGATION_SKILL_TERMS = {
+    "Pull Mode Delegation",
+    "pull mode",
+    "short prompt is not a vague prompt",
+    "target cwd",
+    "input paths",
+    "evidence directories",
+    "output paths",
+    "success/failure conditions",
+    "pulls the",
+    "needed context from the workspace",
+    "Do not push file contents",
+    "blocked_by_missing_input_paths",
+    "return_all_messages: false",
+}
+
+REQUIRED_FRONTEND_VISUAL_RUNTIME_TERMS = {
+    "visual-qa/40-qa/batch-visual-acceptance/SKILL.md",
+    "codex-cli-delegation/30-execute/codex-cli-task/SKILL.md",
+    ".allforai/game-frontend/qa/codex-runtime-visual-review.json",
+    ".allforai/game-frontend/qa/codex-runtime-visual-review.md",
+    ".allforai/game-frontend/qa/runtime-visual-closure-audit.json",
+    ".allforai/game-frontend/qa/runtime-visual-closure-audit.md",
+    "Codex CLI must inspect screenshots",
+    "do not pass from probes or metadata alone",
+    "Claude Code performs only closure audit",
+    "blocked_by_missing_codex_cli",
+}
+
+REQUIRED_BOOTSTRAP_UI_VISUAL_TERMS = {
+    "UI screenshot + Codex CLI visual review hard gate",
+    "visual-qa/40-qa/batch-visual-acceptance/SKILL.md",
+    "codex-cli-delegation/30-execute/codex-cli-task/SKILL.md",
+    ".allforai/verify/codex-ui-visual-review.json",
+    ".allforai/verify/codex-ui-visual-review.md",
+    ".allforai/verify/ui-visual-closure-audit.json",
+    ".allforai/verify/ui-visual-closure-audit.md",
+    "Claude Code only performs closure audit",
+    "not re-score screenshot quality",
+    "blocked_by_missing_codex_cli",
+}
+
+REQUIRED_TILESET_GENERATION_TERMS = {
+    "spec_only",
+    "planning only",
+    "cannot complete a production art-gen node",
+    "accepted image entries",
+    "preview maps",
+    "blocked_by_missing_visual_evidence",
+}
+
+REQUIRED_ACCEPTANCE_CRITERIA_TERMS = {
+    ASSET_ACCEPTANCE_CRITERIA_JSON,
+    ASSET_ACCEPTANCE_CRITERIA_MD,
+    "Project And Technology Variation",
+    "visual_acceptance",
+    "technical_acceptance",
+    "evidence_required",
+    "blocking_failure_codes",
+    "repair_routes",
+    "project/runtime-specific",
+    "Return `UPSTREAM_DEFECT`",
 }
 
 REQUIRED_SOURCE_STRATEGY_TERMS = {
@@ -149,7 +285,7 @@ ANIMATION_TOOLCHAIN_CONSUMER_SKILLS = {
 }
 
 SKILL_REF_RE = re.compile(
-    r"(?:\$\{CLAUDE_PLUGIN_ROOT\}/)?skills/((?:game-art|game-ui|game-frontend)/[^\s`)]+/SKILL\.md)"
+    r"(?:\$\{CLAUDE_PLUGIN_ROOT\}/)?skills/((?:game-art|game-ui|game-frontend|visual-qa|codex-cli-delegation)/[^\s`)]+/SKILL\.md)"
 )
 
 
@@ -196,6 +332,12 @@ def validate_art_pipeline(repo_root: str) -> list:
     engine_ready = game_art_root / "40-qa/engine-ready-art-output-contract/SKILL.md"
     asset_binding = skills_root / "game-frontend/20-spec/asset-import-binding-spec/SKILL.md"
     image_contract = game_art_root / "30-generate/image-generation-contract/SKILL.md"
+    tileset_generation = game_art_root / "30-generate/tileset-generation/SKILL.md"
+    art_preview_qa = game_art_root / "40-qa/art-preview-qa/SKILL.md"
+    visual_acceptance = game_art_root / "40-qa/visual-acceptance-review/SKILL.md"
+    acceptance_criteria = game_art_root / "20-spec/asset-acceptance-criteria/SKILL.md"
+    codex_delegation = skills_root / "codex-cli-delegation/30-execute/codex-cli-task/SKILL.md"
+    frontend_visual_runtime = skills_root / "game-frontend/40-qa/visual-runtime-regression-qa/SKILL.md"
     image_model_registry = game_art_root / "00-env/image-model-capability-registry/SKILL.md"
     animation_toolchain_env = game_art_root / "00-env/2d-animation-toolchain-env/SKILL.md"
     production_tool_registry = game_art_root / "00-env/production-tool-capability-registry/SKILL.md"
@@ -209,6 +351,12 @@ def validate_art_pipeline(repo_root: str) -> list:
         engine_ready,
         asset_binding,
         image_contract,
+        tileset_generation,
+        art_preview_qa,
+        visual_acceptance,
+        acceptance_criteria,
+        codex_delegation,
+        frontend_visual_runtime,
         image_model_registry,
         animation_toolchain_env,
         production_tool_registry,
@@ -227,6 +375,12 @@ def validate_art_pipeline(repo_root: str) -> list:
     engine_ready_text = _read(engine_ready)
     asset_binding_text = _read(asset_binding)
     image_contract_text = _read(image_contract)
+    tileset_generation_text = _read(tileset_generation)
+    art_preview_qa_text = _read(art_preview_qa)
+    visual_acceptance_text = _read(visual_acceptance)
+    acceptance_criteria_text = _read(acceptance_criteria)
+    codex_delegation_text = _read(codex_delegation)
+    frontend_visual_runtime_text = _read(frontend_visual_runtime)
     image_model_registry_text = _read(image_model_registry)
     animation_toolchain_env_text = _read(animation_toolchain_env)
     production_tool_registry_text = _read(production_tool_registry)
@@ -292,6 +446,33 @@ def validate_art_pipeline(repo_root: str) -> list:
                 errors.append(f"bootstrap.md: art-qa missing exit artifact {artifact}")
         if "Do not advance to `art-qa`" not in bootstrap_text:
             errors.append("bootstrap.md: art-gen UPSTREAM_DEFECT halt rule missing")
+        for term in sorted(REQUIRED_ART_GEN_COMPLETION_TERMS):
+            if term not in bootstrap_text:
+                errors.append(f"bootstrap.md: art-gen completion missing visual closure term {term}")
+        for term in ["FAILED_VALIDATION", "blocked_by_missing_visual_evidence", "blocked_by_missing_codex_cli"]:
+            if term not in art_qa_section:
+                errors.append(f"bootstrap.md: art-qa completion missing blocking status {term}")
+        for term in [
+            "asset-acceptance-criteria/SKILL.md",
+            ASSET_ACCEPTANCE_CRITERIA_JSON,
+            ASSET_ACCEPTANCE_CRITERIA_MD,
+            "project-specific standards",
+            "technology-specific standards",
+        ]:
+            if term not in bootstrap_text:
+                errors.append(f"bootstrap.md: art-gen missing acceptance criteria term {term}")
+        for term in [
+            ".allforai/game-design/art/qa/visual-repair-loop-report.json",
+            ".allforai/game-design/art/qa/visual-repair-loop-report.md",
+            "regenerate/repair plus rerun Codex CLI review and Claude Code closure audit",
+            "image-feedback-report.json",
+        ]:
+            if term not in art_qa_section:
+                errors.append(f"bootstrap.md: art-qa missing visual repair loop term {term}")
+
+    for term in sorted(REQUIRED_BOOTSTRAP_UI_VISUAL_TERMS):
+        if term not in bootstrap_text:
+            errors.append(f"bootstrap.md: UI screenshot visual gate missing term {term}")
 
     for artifact in REQUIRED_ART_QA_EXIT_ARTIFACTS:
         if artifact not in game_art_text and artifact not in engine_ready_text:
@@ -317,6 +498,32 @@ def validate_art_pipeline(repo_root: str) -> list:
     for term in sorted(REQUIRED_IMAGE_CONTRACT_TERMS):
         if term not in image_contract_text:
             errors.append(f"image-generation-contract: missing closure term {term}")
+    for term in sorted(REQUIRED_ART_PREVIEW_QA_TERMS):
+        if term not in art_preview_qa_text:
+            errors.append(f"art-preview-qa: missing visual evidence term {term}")
+    for term in sorted(REQUIRED_VISUAL_ACCEPTANCE_TERMS):
+        if term not in visual_acceptance_text:
+            errors.append(f"visual-acceptance-review: missing review closure term {term}")
+    batch_visual_acceptance = skills_root / "visual-qa/40-qa/batch-visual-acceptance/SKILL.md"
+    if not batch_visual_acceptance.exists():
+        errors.append(f"{batch_visual_acceptance}: required visual-qa batch skill missing")
+    else:
+        batch_visual_acceptance_text = _read(batch_visual_acceptance)
+        for term in sorted(REQUIRED_CODEX_DELEGATION_TERMS):
+            if term not in batch_visual_acceptance_text:
+                errors.append(f"batch-visual-acceptance: missing codex delegation term {term}")
+    for term in sorted(REQUIRED_CODEX_DELEGATION_SKILL_TERMS):
+        if term not in codex_delegation_text:
+            errors.append(f"codex-cli-task: missing pull-mode delegation term {term}")
+    for term in sorted(REQUIRED_FRONTEND_VISUAL_RUNTIME_TERMS):
+        if term not in frontend_visual_runtime_text:
+            errors.append(f"visual-runtime-regression-qa: missing Codex screenshot review term {term}")
+    for term in sorted(REQUIRED_TILESET_GENERATION_TERMS):
+        if term not in tileset_generation_text:
+            errors.append(f"tileset-generation: missing spec-only closure term {term}")
+    for term in sorted(REQUIRED_ACCEPTANCE_CRITERIA_TERMS):
+        if term not in acceptance_criteria_text:
+            errors.append(f"asset-acceptance-criteria: missing standards term {term}")
     for term in sorted(REQUIRED_IMAGE_MODEL_REGISTRY_TERMS):
         if term not in image_model_registry_text:
             errors.append(f"image-model-capability-registry: missing model routing term {term}")
@@ -334,6 +541,8 @@ def validate_art_pipeline(repo_root: str) -> list:
             errors.append(f"asset-pack-search-spec: missing search cascade term {term}")
     if ACCEPTED_IMAGE_MANIFEST not in game_art_text:
         errors.append("game-art/SKILL.md: missing accepted image manifest closure rule")
+    if "game-art/20-spec/asset-acceptance-criteria/SKILL.md" not in game_art_text:
+        errors.append("game-art/SKILL.md: missing asset acceptance criteria child path")
     if "raw PNG/JPG/WebP paths" not in game_art_text:
         errors.append("game-art/SKILL.md: missing raw bitmap path consumption ban")
     if "game-art/00-env/image-model-capability-registry/SKILL.md" not in game_art_text:

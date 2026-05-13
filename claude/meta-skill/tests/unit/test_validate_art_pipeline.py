@@ -17,11 +17,13 @@ def _minimal_repo(tmp_path):
         tmp_path,
         "claude/meta-skill/skills/game-art/SKILL.md",
         """${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/art-preview-qa/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/visual-acceptance-review/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/2d-animation-toolchain-env/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/image-model-capability-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/production-tool-capability-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/asset-source-strategy-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/asset-acceptance-criteria/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/asset-pack-search-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/character-layer-sheet/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/image-generation-contract/SKILL.md
@@ -45,6 +47,21 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/engine-ready-art-output-contract/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept-validation/SKILL.md
 .allforai/game-design/art-qa-report.html
+.allforai/game-design/art/qa/visual-acceptance-task-list.json
+visual-qa/40-qa/batch-visual-acceptance/SKILL.md
+visual-qa/batch-visual-acceptance
+visual-qa/00-env/visual-model-capability-registry/SKILL.md
+codex-cli-delegation/30-execute/codex-cli-task/SKILL.md
+codex-cli-delegation/30-execute/codex-cli-task/SKILL.md
+visual_model_routing
+blocked_by_missing_visual_model_capability
+.allforai/game-design/art/qa/visual-acceptance-batches/
+.allforai/game-design/art/qa/codex-visual-review.json
+.allforai/game-design/art/qa/codex-visual-review.md
+.allforai/game-design/art/qa/visual-review-closure-audit.json
+.allforai/game-design/art/qa/visual-review-closure-audit.md
+.allforai/game-design/art/qa/visual-repair-loop-report.json
+.allforai/game-design/art/qa/visual-repair-loop-report.md
 .allforai/game-design/art/art-concept-validation.html
 .allforai/game-design/art/art-concept-validation.json
 .allforai/game-design/art/export/engine-ready-art-output-contract.json
@@ -53,6 +70,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept-validation/SKILL.md
 .allforai/game-design/art/image-generation/accepted-image-manifest.json
 raw PNG/JPG/WebP paths
 image-model-capability-registry
+game-art/20-spec/asset-acceptance-criteria/SKILL.md
 """,
     )
     _write(
@@ -62,12 +80,102 @@ image-model-capability-registry
     )
     for rel in [
         "art-preview-qa",
+        "visual-acceptance-review",
         "2d-style-consistency-qa",
         "atlas-packaging",
         "runtime-import-check",
         "asset-license-provenance-qa",
     ]:
         _write(tmp_path, f"claude/meta-skill/skills/game-art/40-qa/{rel}/SKILL.md", "---\nname: x\ndescription: x\n---\n")
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-art/40-qa/art-preview-qa/SKILL.md",
+        """Manifest-only review is not allowed
+blocked_by_missing_visual_evidence
+visual_evidence_inspected: true
+actual visual evidence was inspected
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-art/40-qa/visual-acceptance-review/SKILL.md",
+        """.allforai/game-design/art/qa/visual-acceptance-task-list.json
+.allforai/game-design/art/qa/visual-acceptance-batches/
+.allforai/game-design/art/qa/codex-visual-review.json
+.allforai/game-design/art/qa/codex-visual-review.md
+.allforai/game-design/art/qa/visual-review-closure-audit.json
+.allforai/game-design/art/qa/visual-review-closure-audit.md
+.allforai/game-design/art/qa/visual-repair-loop-report.json
+.allforai/game-design/art/qa/visual-repair-loop-report.md
+.allforai/game-design/art/asset-acceptance-criteria.json
+.allforai/game-design/art/asset-acceptance-criteria.md
+codex-cli-delegation/30-execute/codex-cli-task/SKILL.md
+visual-qa/40-qa/batch-visual-acceptance/SKILL.md
+visual-qa/batch-visual-acceptance
+visual-qa/00-env/visual-model-capability-registry/SKILL.md
+visual_model_routing
+blocked_by_missing_visual_model_capability
+Codex CLI
+Claude Code closure audit
+Claude Code does not re-judge visual quality
+without re-scoring visual quality
+audit_verdict
+Repair And Revalidation Loop
+image-feedback-report.json
+process_downstream_feedback
+rerun Codex CLI review
+batch Markdown documents
+.allforai/bootstrap/specialized-skills/<specialization_id>-art-generation/SKILL.md
+Project-Specific Acceptance
+blocked_by_missing_codex_cli
+blocked_by_missing_visual_evidence
+Do not accept manifest-only review
+visual evidence paths
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/visual-qa/40-qa/batch-visual-acceptance/SKILL.md",
+        """codex-cli-delegation/30-execute/codex-cli-task/SKILL.md
+short, path-based prompt
+Do not paste batch contents
+--return-all-messages
+final report files
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/codex-cli-delegation/30-execute/codex-cli-task/SKILL.md",
+        """Pull Mode Delegation
+pull mode
+short prompt is not a vague prompt
+target cwd
+input paths
+evidence directories
+output paths
+success/failure conditions
+pulls the
+needed context from the workspace
+Do not push file contents
+blocked_by_missing_input_paths
+return_all_messages: false
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-frontend/40-qa/visual-runtime-regression-qa/SKILL.md",
+        """visual-qa/40-qa/batch-visual-acceptance/SKILL.md
+codex-cli-delegation/30-execute/codex-cli-task/SKILL.md
+.allforai/game-frontend/qa/codex-runtime-visual-review.json
+.allforai/game-frontend/qa/codex-runtime-visual-review.md
+.allforai/game-frontend/qa/runtime-visual-closure-audit.json
+.allforai/game-frontend/qa/runtime-visual-closure-audit.md
+Codex CLI must inspect screenshots
+do not pass from probes or metadata alone
+Claude Code performs only closure audit
+blocked_by_missing_codex_cli
+""",
+    )
     _write(
         tmp_path,
         "claude/meta-skill/skills/game-art/30-generate/image-generation-contract/SKILL.md",
@@ -84,6 +192,9 @@ web_or_marketplace_search
 local_asset_library
 Downstream skills must not consume raw PNG paths directly
 re-run the downstream consumer validation
+.allforai/game-design/art/asset-acceptance-criteria.json
+asset-acceptance-criteria
+consumer_ready` remains false
 """,
     )
     _write(
@@ -165,6 +276,21 @@ register_searched_or_existing
 consumer_ready: true
 """,
     )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-art/20-spec/asset-acceptance-criteria/SKILL.md",
+        """.allforai/game-design/art/asset-acceptance-criteria.json
+.allforai/game-design/art/asset-acceptance-criteria.md
+Project And Technology Variation
+visual_acceptance
+technical_acceptance
+evidence_required
+blocking_failure_codes
+repair_routes
+project/runtime-specific
+Return `UPSTREAM_DEFECT`
+""",
+    )
     for rel in [
         "20-spec/character-layer-sheet",
         "30-generate/background-generation",
@@ -186,6 +312,18 @@ consumer_ready: true
             f"claude/meta-skill/skills/game-art/{rel}/SKILL.md",
             "game-art/30-generate/image-generation-contract game-art/00-env/2d-animation-toolchain-env",
         )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-art/30-generate/tileset-generation/SKILL.md",
+        """game-art/30-generate/image-generation-contract
+spec_only
+planning only
+cannot complete a production art-gen node
+accepted image entries
+preview maps
+blocked_by_missing_visual_evidence
+""",
+    )
     _write(
         tmp_path,
         "claude/meta-skill/skills/game-ui/30-generate/ui-mockup-generation/SKILL.md",
@@ -222,17 +360,50 @@ state in ["passed", "passed_with_warnings"]
 .allforai/game-design/art/art-concept-validation.json
 UPSTREAM_DEFECT
 **Art-Gen Node Injection
+.allforai/game-design/art/asset-acceptance-criteria.json
+.allforai/game-design/art/asset-acceptance-criteria.md
+asset-acceptance-criteria/SKILL.md
+project-specific standards
+technology-specific standards
+.allforai/game-design/art/image-generation/accepted-image-manifest.json
+consumer_ready: true
+referenced image files exist
+Spec-only, manifest-only, or path-existence-only output is not a completed art-gen node
+blocked_by_missing_visual_evidence
 **Art-QA Node Injection
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/art-preview-qa/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/visual-acceptance-review/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/2d-style-consistency-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/atlas-packaging/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/runtime-import-check/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/engine-ready-art-output-contract/SKILL.md
 .allforai/game-design/art-qa-report.html
+.allforai/game-design/art/qa/visual-acceptance-task-list.json
+.allforai/game-design/art/qa/visual-acceptance-batches/
+.allforai/game-design/art/qa/codex-visual-review.json
+.allforai/game-design/art/qa/codex-visual-review.md
+.allforai/game-design/art/qa/visual-review-closure-audit.json
+.allforai/game-design/art/qa/visual-review-closure-audit.md
+.allforai/game-design/art/qa/visual-repair-loop-report.json
+.allforai/game-design/art/qa/visual-repair-loop-report.md
 .allforai/game-design/art/export/engine-ready-art-output-contract.json
 .allforai/game-runtime/art/engine-ready-art-manifest.json
 Do not advance to `art-qa`
+FAILED_VALIDATION
+blocked_by_missing_visual_evidence
+blocked_by_missing_codex_cli
+regenerate/repair plus rerun Codex CLI review and Claude Code closure audit
+image-feedback-report.json
+UI screenshot + Codex CLI visual review hard gate
+visual-qa/40-qa/batch-visual-acceptance/SKILL.md
+codex-cli-delegation/30-execute/codex-cli-task/SKILL.md
+.allforai/verify/codex-ui-visual-review.json
+.allforai/verify/codex-ui-visual-review.md
+.allforai/verify/ui-visual-closure-audit.json
+.allforai/verify/ui-visual-closure-audit.md
+Claude Code only performs closure audit
+not re-score screenshot quality
 **App Design Node Injection
 """,
     )

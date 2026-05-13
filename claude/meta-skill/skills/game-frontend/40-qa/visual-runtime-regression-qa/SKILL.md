@@ -13,19 +13,32 @@ Validates runtime screenshots and probes against expected scene composition,
 asset visibility, HUD placement, layer order, scale, animation/VFX readability,
 and known baseline screenshots.
 
+Screenshot-based visual judgment must be delegated to Codex CLI through the
+shared batch visual acceptance workflow. This skill owns game-frontend standards,
+evidence preparation, and repair routing; it should not re-score screenshots
+inside Claude Code.
+
 ## Input Contract
 
 Required: playable smoke test report, scene composition spec, asset import
 bindings, HUD/UI binding, and screenshot/probe evidence.
 
 Optional: previous baseline screenshots, art QA reports, style consistency QA,
-runtime import report, Playwright traces, and viewport matrix.
+runtime import report, Playwright traces, viewport matrix, and
+`.allforai/visual-qa/visual-model-routing-report.json`.
 
 ## Output Contract
 
 Writes:
 
 - `.allforai/game-frontend/qa/visual-runtime-regression-report.json`
+- `.allforai/game-frontend/qa/visual-runtime-regression-batches/`
+- `.allforai/game-frontend/qa/codex-runtime-visual-review.json`
+- `.allforai/game-frontend/qa/codex-runtime-visual-review.md`
+- `.allforai/game-frontend/qa/runtime-visual-closure-audit.json`
+- `.allforai/game-frontend/qa/runtime-visual-closure-audit.md`
+- `.allforai/game-frontend/qa/runtime-visual-repair-loop-report.json`
+- `.allforai/game-frontend/qa/runtime-visual-repair-loop-report.md`
 
 Findings must include `finding_id`, `scene_id`, `viewport`, `expected`,
 `actual`, `evidence_path`, `severity`, `root_cause`, `repair_target`,
@@ -54,10 +67,22 @@ Supported modes: `validate`, `compare_baseline`, `repair_targets`.
 
 ## Automatic Validation
 
-Check screenshots for blank canvas, missing assets, wrong layer order,
-incorrect scale/pivot, HUD overlap, cropped text, unreadable VFX, missing
-animation state, and responsive viewport issues. Use pixel/canvas probes when
-available.
+Build batch documents from the screenshot/probe evidence and invoke:
+
+```text
+${CLAUDE_PLUGIN_ROOT}/skills/visual-qa/40-qa/batch-visual-acceptance/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/codex-cli-delegation/30-execute/codex-cli-task/SKILL.md
+```
+
+Codex CLI must inspect screenshots for blank canvas, missing assets, wrong layer
+order, incorrect scale/pivot, HUD overlap, cropped text, unreadable VFX, missing
+animation state, and responsive viewport issues. Use pixel/canvas probes as
+supporting evidence, but do not pass from probes or metadata alone.
+
+Claude Code performs only closure audit: Codex report exists, inspected
+evidence paths are listed, blocker/major findings have repair targets, affected
+batches were rerun after repair, and unresolved blockers remain
+`FAILED_VALIDATION`.
 
 Repair routing: missing assets route to asset import binding; visual asset
 defects route to game-art QA; layout/HUD defects route to HUD/UI binding or
@@ -67,5 +92,7 @@ binding.
 ## Completion Conditions
 
 Return `COMPLETED` when runtime visuals match the declared scene and UI
-contracts. Return `FAILED_VALIDATION` when screenshots/probes are missing or
-show blocking visual regressions.
+contracts and Codex CLI has no unresolved blocker/major findings. Return
+`FAILED_VALIDATION` when screenshots/probes are missing, Codex CLI reports
+blocking visual regressions after the repair budget, or the closure audit is
+incomplete. Return `blocked_by_missing_codex_cli` when Codex CLI cannot run.

@@ -73,12 +73,14 @@ Out of scope:
 | Generation profile | `task_type`, `model_class`, `prompt_template`, `output_constraints` | Derive from `purpose` once; if still ambiguous, return `UPSTREAM_DEFECT`. |
 | Image model capability registry | selected provider/model, fallback models, missing capabilities | Call `game-art/00-env/image-model-capability-registry/SKILL.md`; return `FAILED_VALIDATION` if required generation cannot be routed. |
 | Style context | art style, palette/material/tone, target view or UI context | Use `.allforai/game-design/art-style-guide.json` or return `UPSTREAM_DEFECT`. |
+| Asset acceptance criteria | visual and technical standards per asset family | Use `.allforai/game-design/art/asset-acceptance-criteria.json`; return `UPSTREAM_DEFECT` when missing for production generation. |
 
 ### Optional inputs
 
 | Input | Fields used | Missing behavior |
 |---|---|---|
 | `.allforai/game-design/art-style-guide.json` | style, palette, line/rendering rules, camera | Return `UPSTREAM_DEFECT` when style lock is required. |
+| `.allforai/game-design/art/asset-acceptance-criteria.json` | project/runtime-specific acceptance standards | Required before `consumer_ready: true`. |
 | `.allforai/game-design/asset-registry.json` | `asset_id`, `file_prefix`, paths, state | Use caller-provided naming. |
 | `.allforai/game-design/ui/ui-registry.json` | UI screen/component refs | Use caller-provided UI context. |
 | `.allforai/game-design/art/image-generation/image-model-capability-registry.json` | provider/model capabilities | Required before selecting an AI image model. |
@@ -320,7 +322,8 @@ substitute a weaker static inspection for a required downstream validation.
     "asset_registry": ".allforai/game-design/asset-registry.json",
     "ui_registry": ".allforai/game-design/ui/ui-registry.json",
     "image_model_registry": ".allforai/game-design/art/image-generation/image-model-capability-registry.json",
-    "image_model_routing": ".allforai/game-design/art/image-generation/image-model-routing-report.json"
+    "image_model_routing": ".allforai/game-design/art/image-generation/image-model-routing-report.json",
+    "asset_acceptance_criteria": ".allforai/game-design/art/asset-acceptance-criteria.json"
   },
   "requests": [],
   "generation": {
@@ -365,6 +368,8 @@ Run deterministic checks:
 12. LLM/image-edit requests include a selected provider/model from
     `image-model-routing-report.json`, or a blocked state with
     `missing_capabilities`.
+13. Production requests reference matching asset-family criteria from
+    `asset-acceptance-criteria.json`; otherwise `consumer_ready` remains false.
 
 Run visual validation when images exist:
 1. Subject matches the request purpose.
