@@ -30,6 +30,12 @@ as `icon-generation`, `tileset-generation`, `character-layer-sheet`,
 `trail-generation`, `skeletal-animation`, and `ui-mockup-generation` decide the
 asset purpose and then use this contract for image requests and acceptance.
 
+For bulk LLM image production, this contract must delegate execution to
+`game-art/30-generate/batch-image-generation/SKILL.md` when `mcp-image-batch` is
+available and the routing report selects it. `mcp-image-batch` is a long-task
+MCP, so batch prompts and results must be passed through files, not chat/tool
+message payloads.
+
 ## Scope
 
 Use this skill whenever a downstream skill needs bitmap output from any
@@ -246,6 +252,10 @@ Common negative constraints:
 | Output | Required | Purpose | Consumed by |
 |---|---:|---|---|
 | `.allforai/game-design/art/image-generation/image-request-manifest.json` | yes | Normalized image requests, prompts, outputs, states. | image-producing skills, QA. |
+| `.allforai/game-design/art/image-generation/mcp-image-batch-input.json` | when using `mcp-image-batch` | File-based request handoff for long-task batch generation. | `batch-image-generation`. |
+| `.allforai/game-design/art/image-generation/mcp-image-batch-task.json` | when using `mcp-image-batch` | Long-task id, polling policy, and final task state. | diagnostics and repair loops. |
+| `.allforai/game-design/art/image-generation/mcp-image-batch-output.json` | when using `mcp-image-batch` | Structured MCP result mapped to request ids and generated files. | image validation. |
+| `.allforai/game-design/art/image-generation/generated-image-files-manifest.json` | when generated | Raw generated file registry before acceptance. | image validation only. |
 | `.allforai/game-design/art/image-generation/image-generation-report.json` | yes | Validation, repair attempts, failures, fallbacks. | diagnostics and QA. |
 | `.allforai/game-design/art/image-generation/image-feedback-report.json` | when downstream fails | Downstream defect reports mapped back to image requests. | image-producing skills and repair loops. |
 | `.allforai/game-design/art/image-generation/accepted-image-manifest.json` | yes when images are accepted | Only downstream-consumable manifest for generated, searched, user-provided, adapted, local, or 3D-rendered images. | downstream asset/UI/VFX pipelines. |
@@ -348,6 +358,35 @@ Supported modes:
 | `repair_request` | Produce revised prompt constraints for failed requests. |
 | `process_downstream_feedback` | Read downstream defects, classify root cause, reopen image requests when needed. |
 
+## Batch MCP Execution
+
+When a batch contains multiple `llm_image_generation` or `image_edit` requests
+and `image-model-routing-report.json` selects `mcp_image_batch`, invoke:
+
+```text
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/batch-image-generation/SKILL.md
+```
+
+Rules:
+- use `mcp-image-batch` for the batch execution;
+- write prompts, negative prompts, request arrays, reference paths, and output
+  paths into `.allforai/game-design/art/image-generation/mcp-image-batch-input.json`
+  or per-request prompt files;
+- submit only file paths and long-task policy to the MCP;
+- poll the long task and record
+  `.allforai/game-design/art/image-generation/mcp-image-batch-task.json`;
+- read results from
+  `.allforai/game-design/art/image-generation/mcp-image-batch-output.json`;
+- map generated files into
+  `.allforai/game-design/art/image-generation/generated-image-files-manifest.json`;
+- then run deterministic validation, visual validation, and downstream
+  acceptance from this contract before writing `accepted-image-manifest.json`.
+
+Do not mark MCP outputs `consumer_ready: true` directly. Do not hand raw
+`generated-image-files-manifest.json` paths to downstream skills. If
+`mcp-image-batch` is selected but unavailable, return
+`blocked_by_missing_mcp_image_batch`.
+
 ## Automatic Validation
 
 Run deterministic checks:
@@ -370,6 +409,12 @@ Run deterministic checks:
     `missing_capabilities`.
 13. Production requests reference matching asset-family criteria from
     `asset-acceptance-criteria.json`; otherwise `consumer_ready` remains false.
+14. When `mcp_image_batch` is selected, the batch adapter wrote
+    `mcp-image-batch-input.json`, `mcp-image-batch-task.json`,
+    `mcp-image-batch-output.json`, and
+    `generated-image-files-manifest.json`.
+15. `mcp-image-batch` outputs are never accepted without this contract's
+    deterministic and visual validation.
 
 Run visual validation when images exist:
 1. Subject matches the request purpose.

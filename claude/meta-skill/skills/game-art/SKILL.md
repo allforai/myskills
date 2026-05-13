@@ -61,6 +61,7 @@ Layer numbers indicate directory organization and default execution order for ne
 | `20-spec` | `visual-style-tokens` | Shared palette, shape, line, material, camera, typography, and motion tokens. |
 | `20-spec` | `frame-animation-spec` | Frame-animation vocabulary, frame counts, timing, anchors, loop rules, acceptance. |
 | `30-generate` | `image-generation-contract` | Shared bitmap acquisition request, prompt/search/register, output, visual acceptance, repair, and fallback contract. |
+| `30-generate` | `batch-image-generation` | Execute bulk LLM image generation through `mcp-image-batch` long-task MCP with file-based input/output handoff. |
 | `30-generate` | `background-generation` | Background scene prompts, layers, parallax/depth, generated images, validation. |
 | `30-generate` | `prop-generation` | Reusable prop specs, generated images/models/placeholders, variants, validation. |
 | `30-generate` | `portrait-generation` | Character portraits, busts, dialogue/emotion variants, generated images, QA. |
@@ -123,6 +124,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/vfx-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/visual-style-tokens/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/frame-animation-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/image-generation-contract/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/batch-image-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/background-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/prop-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/portrait-generation/SKILL.md

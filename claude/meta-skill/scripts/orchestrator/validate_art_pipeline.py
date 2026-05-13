@@ -51,6 +51,10 @@ ENGINE_READY_MANIFEST = ".allforai/game-runtime/art/engine-ready-art-manifest.js
 ACCEPTED_IMAGE_MANIFEST = ".allforai/game-design/art/image-generation/accepted-image-manifest.json"
 IMAGE_MODEL_REGISTRY = ".allforai/game-design/art/image-generation/image-model-capability-registry.json"
 IMAGE_MODEL_ROUTING_REPORT = ".allforai/game-design/art/image-generation/image-model-routing-report.json"
+MCP_IMAGE_BATCH_INPUT = ".allforai/game-design/art/image-generation/mcp-image-batch-input.json"
+MCP_IMAGE_BATCH_TASK = ".allforai/game-design/art/image-generation/mcp-image-batch-task.json"
+MCP_IMAGE_BATCH_OUTPUT = ".allforai/game-design/art/image-generation/mcp-image-batch-output.json"
+GENERATED_IMAGE_FILES_MANIFEST = ".allforai/game-design/art/image-generation/generated-image-files-manifest.json"
 ASSET_ACCEPTANCE_CRITERIA_JSON = ".allforai/game-design/art/asset-acceptance-criteria.json"
 ASSET_ACCEPTANCE_CRITERIA_MD = ".allforai/game-design/art/asset-acceptance-criteria.md"
 ANIMATION_TOOLCHAIN_REPORT = ".allforai/game-design/art/env/2d-animation-toolchain-report.json"
@@ -73,6 +77,32 @@ REQUIRED_IMAGE_CONTRACT_TERMS = {
     ASSET_ACCEPTANCE_CRITERIA_JSON,
     "asset-acceptance-criteria",
     "consumer_ready` remains false",
+    "game-art/30-generate/batch-image-generation/SKILL.md",
+    "mcp-image-batch",
+    "long-task",
+    MCP_IMAGE_BATCH_INPUT,
+    MCP_IMAGE_BATCH_TASK,
+    MCP_IMAGE_BATCH_OUTPUT,
+    GENERATED_IMAGE_FILES_MANIFEST,
+    "blocked_by_missing_mcp_image_batch",
+    "Do not mark MCP outputs `consumer_ready: true` directly",
+}
+
+REQUIRED_BATCH_IMAGE_GENERATION_TERMS = {
+    "mcp-image-batch",
+    "long-task image generation",
+    "file handoff",
+    MCP_IMAGE_BATCH_INPUT,
+    MCP_IMAGE_BATCH_TASK,
+    MCP_IMAGE_BATCH_OUTPUT,
+    GENERATED_IMAGE_FILES_MANIFEST,
+    "input file path",
+    "output file path",
+    "poll",
+    "task_id",
+    "blocked_by_missing_mcp_image_batch",
+    "Do not paste large",
+    "`image-generation-contract` may write accepted entries",
 }
 
 REQUIRED_ART_GEN_COMPLETION_TERMS = {
@@ -223,6 +253,7 @@ REQUIRED_IMAGE_MODEL_REGISTRY_TERMS = {
     "google_gemini_image",
     "fal_ai",
     "openrouter_image",
+    "mcp_image_batch",
     "project_local_mcp",
     "GOOGLE_API_KEY",
     "FAL_KEY",
@@ -231,6 +262,10 @@ REQUIRED_IMAGE_MODEL_REGISTRY_TERMS = {
     "generation_profile",
     "missing_capabilities",
     "blocked_by_missing_model",
+    "mcp-image-batch",
+    "mcp_long_task",
+    "batch_execution_skill=game-art/30-generate/batch-image-generation/SKILL.md",
+    "blocked_by_missing_mcp_image_batch",
     "selected_model",
 }
 
@@ -332,6 +367,7 @@ def validate_art_pipeline(repo_root: str) -> list:
     engine_ready = game_art_root / "40-qa/engine-ready-art-output-contract/SKILL.md"
     asset_binding = skills_root / "game-frontend/20-spec/asset-import-binding-spec/SKILL.md"
     image_contract = game_art_root / "30-generate/image-generation-contract/SKILL.md"
+    batch_image_generation = game_art_root / "30-generate/batch-image-generation/SKILL.md"
     tileset_generation = game_art_root / "30-generate/tileset-generation/SKILL.md"
     art_preview_qa = game_art_root / "40-qa/art-preview-qa/SKILL.md"
     visual_acceptance = game_art_root / "40-qa/visual-acceptance-review/SKILL.md"
@@ -351,6 +387,7 @@ def validate_art_pipeline(repo_root: str) -> list:
         engine_ready,
         asset_binding,
         image_contract,
+        batch_image_generation,
         tileset_generation,
         art_preview_qa,
         visual_acceptance,
@@ -375,6 +412,7 @@ def validate_art_pipeline(repo_root: str) -> list:
     engine_ready_text = _read(engine_ready)
     asset_binding_text = _read(asset_binding)
     image_contract_text = _read(image_contract)
+    batch_image_generation_text = _read(batch_image_generation)
     tileset_generation_text = _read(tileset_generation)
     art_preview_qa_text = _read(art_preview_qa)
     visual_acceptance_text = _read(visual_acceptance)
@@ -498,6 +536,9 @@ def validate_art_pipeline(repo_root: str) -> list:
     for term in sorted(REQUIRED_IMAGE_CONTRACT_TERMS):
         if term not in image_contract_text:
             errors.append(f"image-generation-contract: missing closure term {term}")
+    for term in sorted(REQUIRED_BATCH_IMAGE_GENERATION_TERMS):
+        if term not in batch_image_generation_text:
+            errors.append(f"batch-image-generation: missing MCP batch term {term}")
     for term in sorted(REQUIRED_ART_PREVIEW_QA_TERMS):
         if term not in art_preview_qa_text:
             errors.append(f"art-preview-qa: missing visual evidence term {term}")

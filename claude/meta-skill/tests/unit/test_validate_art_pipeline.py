@@ -27,6 +27,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/asset-acceptance-criteria/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/asset-pack-search-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/character-layer-sheet/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/image-generation-contract/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/batch-image-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/background-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/decal-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/expression-set-generation/SKILL.md
@@ -195,6 +196,34 @@ re-run the downstream consumer validation
 .allforai/game-design/art/asset-acceptance-criteria.json
 asset-acceptance-criteria
 consumer_ready` remains false
+game-art/30-generate/batch-image-generation/SKILL.md
+mcp-image-batch
+long-task
+.allforai/game-design/art/image-generation/mcp-image-batch-input.json
+.allforai/game-design/art/image-generation/mcp-image-batch-task.json
+.allforai/game-design/art/image-generation/mcp-image-batch-output.json
+.allforai/game-design/art/image-generation/generated-image-files-manifest.json
+blocked_by_missing_mcp_image_batch
+Do not mark MCP outputs `consumer_ready: true` directly
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-art/30-generate/batch-image-generation/SKILL.md",
+        """mcp-image-batch
+long-task image generation
+file handoff
+.allforai/game-design/art/image-generation/mcp-image-batch-input.json
+.allforai/game-design/art/image-generation/mcp-image-batch-task.json
+.allforai/game-design/art/image-generation/mcp-image-batch-output.json
+.allforai/game-design/art/image-generation/generated-image-files-manifest.json
+input file path
+output file path
+poll
+task_id
+blocked_by_missing_mcp_image_batch
+Do not paste large
+`image-generation-contract` may write accepted entries
 """,
     )
     _write(
@@ -205,6 +234,7 @@ consumer_ready` remains false
 google_gemini_image
 fal_ai
 openrouter_image
+mcp_image_batch
 project_local_mcp
 GOOGLE_API_KEY
 FAL_KEY
@@ -213,6 +243,10 @@ output_modalities=image
 generation_profile
 missing_capabilities
 blocked_by_missing_model
+mcp-image-batch
+mcp_long_task
+batch_execution_skill=game-art/30-generate/batch-image-generation/SKILL.md
+blocked_by_missing_mcp_image_batch
 selected_model
 """,
     )

@@ -20,6 +20,7 @@ Supported provider families:
 - `google_gemini_image`
 - `fal_ai`
 - `openrouter_image`
+- `mcp_image_batch`
 - `project_local_mcp`
 - `custom_http_provider`
 
@@ -182,6 +183,26 @@ When no candidate satisfies hard capabilities, return
 `blocked_by_missing_model` and list `missing_capabilities`. Do not select a
 generic all-purpose model as a production model when it lacks required
 capabilities.
+
+## MCP Image Batch Provider
+
+When `mcp-image-batch` is configured, record it as provider kind
+`mcp_image_batch` with `access_path=mcp_long_task` and `mcp_tool=mcp-image-batch`.
+This provider is preferred for large batches of `llm_image_generation` or
+`image_edit` requests when it satisfies the same hard capabilities as the routed
+task profile.
+
+The registry must verify:
+- the MCP tool exists and can accept a file path input;
+- the MCP can write a structured output file;
+- long-task submission and polling are available;
+- selected model/profile information is returned or configured;
+- missing tool support returns `blocked_by_missing_mcp_image_batch`, not a
+  silent fallback to chat-based image generation.
+
+For `mcp_image_batch`, the routing report must include
+`batch_execution_skill=game-art/30-generate/batch-image-generation/SKILL.md`
+and the selected model entry must state that file handoff is required.
 
 ## Automatic Validation
 
