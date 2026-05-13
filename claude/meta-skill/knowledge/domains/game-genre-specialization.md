@@ -353,7 +353,14 @@ Typical generated specialized skills:
 - `match3-solver-validator`: BFS/A* Match-3 solver for solvability and
   difficulty QA, rejection of trivial or impossible levels;
 - `match3-difficulty-calibration`: automated difficulty band assignment using
-  solver metrics (min_moves, solution_count, move_headroom);
+  solver metrics. The accept/retry pipeline MUST enforce: (a) per-band floor
+  (easy≥3, standard≥5, challenge≥8, boss≥10), (b) per-band ceiling (easy≤8,
+  standard≤14, challenge≤22) so bands don't bleed into each other, (c)
+  within-band non-decreasing min_moves across level index with ±1 tolerance,
+  tracking `prevBandMinMoves` per band across the chapter so a later level in
+  the same band cannot be significantly easier than an earlier one. All three
+  checks run inline in the generation loop; failed levels are re-seeded and
+  retried (MAX_RETRIES ≥ 20) before accepting as warning;
 - `match3-level-pacing-qa`: progression-curve fit check across all chapters.
 
 Required project inputs: puzzle-design.json (tile types, specials, obstacles,
