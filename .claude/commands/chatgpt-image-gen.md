@@ -6,6 +6,8 @@ argument-hint: <path-to-prompts.json>
 # ChatGPT Image Generator
 
 Generate images in batch from ChatGPT using a JSON prompt file, organized into per-category local folders.
+Uses **Chrome MCP** (browsermcp) — connects to your existing logged-in Chrome session, no login required.
+Downloads images entirely through the browser (hover → download button → move from ~/Downloads).
 
 ## Step 1: Read and Validate Input
 
@@ -40,123 +42,96 @@ mkdir -p "<outputDir>/<category>"
 
 Print: `Initialized output directories under <outputDir>/`
 
-## Step 3: Generate Images
+## Step 3: Select the Best Image Generation Model (once per session)
+
+Do this only once at the start, before processing any prompts.
+
+1. Call `browser_navigate` with `url: "https://chatgpt.com"`.
+2. Call `browser_snapshot`. Look for the model selector — it is typically a button or clickable element near the top of the page or the input area showing the current model name (e.g., "ChatGPT", "GPT-4o", "o3", etc.).
+3. Click the model selector to open the dropdown.
+4. Call `browser_snapshot` on the dropdown. Look for the best available image generation option. Priority order:
+   - Any option explicitly mentioning "Image generation", "DALL·E", or "Image"
+   - Otherwise use the most capable general model available (typically the highest-tier GPT or o-series model listed)
+5. Click that option to select it.
+6. Call `browser_snapshot` to confirm selection.
+
+If no model selector is found, proceed with the current default model.
+
+## Step 4: Generate Images
 
 For each category, for each prompt in that category, follow these sub-steps:
 
-### 3a. Bootstrap the browser tab
-
-1. Call `browser_tabs` with `action: "list"` to see open tabs.
-2. If no tabs exist, call `browser_tabs` with `action: "new"` and `url: "https://chatgpt.com"`, then skip to Step 3b item 2.
-3. If tabs exist, call `browser_tabs` with `action: "select"` and `index: 0` to select the first tab.
-
-### 3b. Open a fresh ChatGPT conversation
+### 4a. Open a fresh ChatGPT conversation
 
 1. Call `browser_navigate` with `url: "https://chatgpt.com"`.
-2. Call `browser_snapshot`. Check whether the snapshot contains "Log in" or "Sign up" text anywhere.
-   - If login UI is visible: print `⏳ ChatGPT login required. Please log in in the Playwright browser window, then press Enter here to continue.` and pause (call `AskUserQuestion` with the question "Press Enter once you have logged in to ChatGPT in the browser window."). After the user responds, call `browser_snapshot` again to confirm login succeeded (no "Log in" / "Sign up" text). If still not logged in, stop with an error.
-3. Call `browser_snapshot`. Find the element whose accessible name is "New chat". Use its `ref` value as `target` and call `browser_click` with `element: "New chat button"`.
+2. Call `browser_snapshot`. If a "New chat" button or link is visible, click it. If the page already shows a fresh empty chat (no previous messages), skip the click.
 
-### 3c. Verify model supports image generation
+### 4b. Submit the prompt
 
-1. Call `browser_snapshot`. Read the model selector label at the top of the page.
-   - If the label is not "GPT-4o" or "GPT-4": find the model selector element in the snapshot, use its `ref` as `target`, and call `browser_click` with `element: "model selector"`.
-   - Then call `browser_snapshot`, find the "GPT-4o" option in the dropdown, use its `ref` as `target`, and call `browser_click` with `element: "GPT-4o option"`.
-   - GPT-4o supports image generation natively. Do not look for a separate "DALL-E" option.
+**Important**: Do NOT use `submit: true` in `browser_type` — it causes a 30-second timeout waiting for ChatGPT to finish. Instead, type first, then press Enter separately.
 
-### 3d. Submit the prompt
-
-1. Call `browser_snapshot`. Find the element with role `textbox` (the chat input). Use its `ref` as `target`.
+1. Call `browser_snapshot`. Find the element with role `textbox` (the chat input). Note its `ref`.
 2. Call `browser_type` with:
-   - `target`: the textbox ref from the snapshot
+   - `ref`: the textbox ref from the snapshot
    - `element: "chat input"`
    - `text`: the current prompt text
-   - `submit: true` (this types the text and presses Enter)
+   - `submit: false`
+3. Call `browser_press_key` with `key: "Enter"` to submit.
+   - If `browser_press_key` times out, **treat it as submitted** and proceed to Step 4c. Do not retry.
 
-### 3e. Wait for generation to complete
+### 4c. Wait for generation to complete
 
-1. Call `browser_evaluate` with this function to check if generation is complete:
+Poll every 5 seconds by calling `browser_snapshot` and examining the result:
 
-```javascript
-() => {
-  const imgs = [...document.querySelectorAll('img')].filter(
-    img => img.alt && img.alt.startsWith('Generated image:') && img.closest('main')
-  );
-  const stillGenerating = !!document.querySelector('[aria-label="Stop generating"]');
-  return { done: imgs.length > 0 && !stillGenerating };
-}
-```
+- **Complete** when: the snapshot contains an `img` element whose accessible name starts with `"Generated image:"` AND no button or element with accessible name containing `"Stop generating"` is visible.
+- **Rate limited** when: visible text in the snapshot contains any of: `"plan limit"`, `"image generation limit"`, `"too many requests"`, `"limit reached"`.
+  - Wait 60 seconds, poll once more. If still rate-limited: record `RATE_LIMITED`, skip all remaining prompts in this category, continue with the next category.
+- **Timeout** after 120 seconds with no completion: record `TIMEOUT`, print `⚠ TIMEOUT: [category] "<prompt>"`, move to next prompt.
 
-Wait 5 seconds, then repeat. If `done` is `true`, proceed. If 120 seconds elapse and `done` is still `false`, treat as TIMEOUT.
+### 4d. Download the image via browser
 
-   **If TIMEOUT:** Record as `TIMEOUT`. Print: `⚠ TIMEOUT: [category] "<prompt>"`. Move to the next prompt.
+Once generation is complete:
 
-   **If the page displays a rate-limit message** (call `browser_evaluate` with `() => document.body.innerText.toLowerCase()` and check if the result contains "plan limit", "image generation limit", "too many requests", or "limit reached"):
-   Wait 60 seconds. Retry the polling loop once. If still rate-limited, record as `RATE_LIMITED`, skip all remaining prompts in the current category, and continue with the next category.
+1. Call `browser_snapshot`. Find the generated image element (accessible name starts with `"Generated image:"`). Note its `ref`.
 
-### 3f. Extract image URLs
+2. Call `browser_hover` with `ref` and `element: "generated image"` to reveal the action buttons overlay.
 
-1. Call `browser_evaluate` with the following function:
+3. Call `browser_snapshot` again. Look for a download button — it may be labeled `"Download"`, `"下载"`, have an accessible name containing "download", or show as a button with a download icon near the image. Use its `ref` and call `browser_click` with `element: "download button"`.
+   - If no download button appears after hover, click on the image itself to open it full-screen, then look for a download button in the full-screen overlay.
 
-```javascript
-() => {
-  // Generated images have alt starting with "Generated image:" and are inside <main>
-  // This avoids capturing GPT sidebar icons which also use backend-api/estuary URLs
-  const imgs = [...document.querySelectorAll('img')].filter(
-    img => img.alt && img.alt.startsWith('Generated image:') && img.closest('main')
-  );
-  return { urls: [...new Set(imgs.map(i => i.src))] };
-}
-```
+4. Wait for the download to complete:
+   ```bash
+   sleep 4
+   ```
 
-If the returned `urls` array is empty:
-- Compute the slug (see Step 3g item 1) then call `browser_take_screenshot` with `filename: "<outputDir>/<category>/debug_<slug>.png"` and `type: "png"`.
-- Record as `NO_IMAGE_FOUND`. Print: `⚠ NO_IMAGE_FOUND: [category] "<prompt>"`. Move to the next prompt.
+5. Find the most recently downloaded image file:
+   ```bash
+   DOWNLOADED=$(ls -t ~/Downloads/*.png ~/Downloads/*.jpg ~/Downloads/*.webp ~/Downloads/*.jpeg 2>/dev/null | head -1)
+   ```
 
-### 3g. Download images
+6. If `DOWNLOADED` is empty, record `DOWNLOAD_FAILED` and move to next prompt.
 
-1. Compute the filename slug:
+7. Compute the filename slug:
    - Take the prompt text, lowercase it, keep only the first 40 characters
    - Replace spaces with `_`
    - Strip all characters that are not alphanumeric or `_`
-   - Example: `"A Sunset Over Mountains!"` → `a_sunset_over_mountains`
 
-2. Determine the sequence number:
+8. Determine the sequence number:
    ```bash
-   ls "<outputDir>/<category>/<slug>"_*.png 2>/dev/null | wc -l
+   COUNT=$(ls "<outputDir>/<category>/<slug>"_*.* 2>/dev/null | wc -l | tr -d ' ')
+   N=$(printf "%02d" $((COUNT + 1)))
+   EXT="${DOWNLOADED##*.}"
    ```
-   Add 1 to the count and zero-pad to 2 digits (e.g., `01`, `02`). This ensures existing files are never overwritten.
 
-3. For each URL in the extracted list:
+9. Move the file to the destination:
+   ```bash
+   mv "$DOWNLOADED" "<outputDir>/<category>/<slug>_${N}.${EXT}"
+   ```
 
-First, extract the session cookies from the browser via `browser_evaluate`:
-```javascript
-() => document.cookie
-```
+   **On success:** Print: `✓ <category>/<slug>_${N}.${EXT}`
+   **On failure:** Record `DOWNLOAD_FAILED`. Print: `⚠ DOWNLOAD_FAILED: [category] "<prompt>"`.
 
-Then download with curl, passing the extracted cookies:
-```bash
-curl -L "<url>" \
-  -H "Referer: https://chatgpt.com/" \
-  -H "Cookie: <cookie_string>" \
-  --retry 1 \
-  --retry-delay 5 \
-  -o "<outputDir>/<category>/<slug>_<N>.png"
-```
-
-Note: ChatGPT image URLs are served from `chatgpt.com/backend-api/estuary/content` and require session cookies to download. The `document.cookie` call returns the non-HttpOnly cookies which are sufficient for this endpoint.
-
-`<N>` is the sequence number for the first URL, incrementing for each additional URL.
-
-**If curl exits with non-zero and the HTTP status was 403:**
-Re-run the `browser_evaluate` from Step 3f to refresh the URL (they expire within minutes), then retry curl once. If still failing, record as `URL_EXPIRED`.
-
-**If curl exits with non-zero for any other reason after retries:**
-Record as `DOWNLOAD_FAILED`.
-
-**On success:** Print: `✓ <category>/<slug>_<N>.png`
-
-## Step 4: Print Final Summary
+## Step 5: Print Final Summary
 
 After all categories have been processed, print a summary in this format:
 
@@ -170,11 +145,9 @@ Skipped details:
 - [category] "prompt text" → ERROR_CODE
 ```
 
-Error codes and their meanings:
+Error codes:
 - `TIMEOUT` — ChatGPT did not finish generating within 120 seconds
 - `RATE_LIMITED` — ChatGPT returned a rate limit response; remaining prompts in that category were also skipped
-- `NO_IMAGE_FOUND` — Generation completed but no `files.oaiusercontent.com` image was found in the DOM
-- `DOWNLOAD_FAILED` — `curl` failed after retries (non-403 error)
-- `URL_EXPIRED` — Image URL returned 403 even after refreshing via `browser_evaluate`
+- `DOWNLOAD_FAILED` — No downloaded image found in ~/Downloads after clicking download
 
 If all prompts succeeded, print: `All prompts completed successfully.` instead of the skipped section.
