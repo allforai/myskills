@@ -14,6 +14,7 @@ All paths are relative to `codex/meta-skill/`.
 - `check`: status only
 - `reset`: clear assumptions and re-evaluate from scratch
 - `update`: rebuild local gateway and refresh install guidance
+- `impact [from_ref]`: analyze meta-skill changes and recommend which current project nodes should be rerun
 
 ## Capability Model
 
@@ -81,6 +82,31 @@ Otherwise:
 - for missing gateway build: instruct or execute build steps
 - for missing env vars: ask the user to provide or configure them
 - for missing browser automation / Stitch: explain installation prerequisites and the degraded workflow
+
+## Step 3: Update Impact Analysis
+
+If the user is in `impact` mode, do not configure external services. Generate a rerun recommendation report for the current project.
+
+Run from the current project root:
+
+```bash
+python3 <myskills_repo>/claude/meta-skill/scripts/orchestrator/analyze_skill_update_impact.py \
+  --repo-root <myskills_repo> \
+  --project-root . \
+  --from-ref <from_ref> \
+  --output-root .allforai/setup
+```
+
+If no `<from_ref>` is provided, still run the analyzer without `--from-ref`; the report will ask for a change source. If the repo is not a git checkout, pass one or more `--changed-file` arguments instead.
+
+Required outputs:
+
+```text
+.allforai/setup/skill-update-impact.json
+.allforai/setup/skill-update-impact.md
+```
+
+Use the report to decide whether to rerun `/bootstrap`, a specific node, a QA node, or a downstream handoff. Do not execute the rerun automatically from setup.
 
 ## Codex Interaction Rule
 

@@ -1,6 +1,6 @@
 ---
 description: "检测和配置所有外部能力：Playwright（UI 自动化）+ OpenRouter（跨模型 XV）+ Brave Search（媒体搜索）+ Google AI（生图/生视频）+ Stitch UI（视觉稿）。一站式状态仪表板 + 引导配置 + 一键更新所有插件/MCP/技能。"
-argument-hint: "[check|reset|update]"
+argument-hint: "[check|reset|update|impact]"
 allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 ---
 
@@ -18,6 +18,7 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 - **`check`** → 仅检测当前状态（全部外部能力的可用性仪表板）
 - **`reset`** → 清除已有配置，重新引导
 - **`update`** → 更新所有已安装的插件、MCP 服务器和技能（见 Step 5）
+- **`impact [from_ref]`** → 根据 meta-skill 更新内容，分析当前项目哪些节点/环节需要重跑（见 Step 6）
 
 ## 外部能力总览
 
@@ -726,6 +727,9 @@ MCP 服务器:
 
 ⚠️ 插件或 MCP 服务器有更新时，必须重启 Claude Code 才能生效。
    请退出当前会话并重新启动 Claude Code。
+
+下一步建议：重启后在项目目录运行 `/setup impact <更新前版本或 git ref>`，
+生成需要重跑的节点建议。
 ```
 
 **重启提示规则**：
@@ -733,6 +737,77 @@ MCP 服务器:
 - MCP 服务器重建成功 → 必须提示重启
 - 所有插件均无更新且无 MCP 重建 → 不提示重启
 - 提示文案必须包含「请退出当前会话并重新启动 Claude Code」，不能只说"需要重启"
+
+### Step 6: Skill 更新影响分析（仅 `impact` 模式）
+
+`impact` 模式用于版本更新后判断当前项目哪些环节需要重跑。它不执行节点，只生成可审计建议。
+
+#### 输入
+
+支持：
+
+```text
+/setup impact
+/setup impact <from_ref>
+```
+
+- `<from_ref>` 可为更新前的 git commit、tag、branch 或版本对应 ref。
+- 如果没有 `<from_ref>`，仍然生成报告，但状态为 `needs_change_input`，要求补充变更来源。
+- 当前项目必须优先读取 `.allforai/bootstrap/workflow.json` 和
+  `.allforai/bootstrap/node-specs/`；不存在时只输出全局建议。
+
+#### 执行
+
+在当前项目根目录运行：
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/analyze_skill_update_impact.py \
+  --repo-root ${CLAUDE_PLUGIN_ROOT}/../.. \
+  --project-root . \
+  --from-ref <from_ref> \
+  --output-root .allforai/setup
+```
+
+如果 `${CLAUDE_PLUGIN_ROOT}` 不是 git checkout，或 `<from_ref>` 不可用，则允许改用显式变更文件：
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/analyze_skill_update_impact.py \
+  --repo-root ${CLAUDE_PLUGIN_ROOT}/../.. \
+  --project-root . \
+  --changed-file claude/meta-skill/skills/game-art/30-generate/image-generation-contract/SKILL.md \
+  --output-root .allforai/setup
+```
+
+#### 输出
+
+必须写入：
+
+```text
+.allforai/setup/skill-update-impact.json
+.allforai/setup/skill-update-impact.md
+```
+
+报告内容包括：
+- 当前 meta-skill 版本；
+- 变更来源；
+- 变更文件；
+- 受影响 skill；
+- 全局建议；
+- 匹配到的当前项目 node_id；
+- 每个节点的重跑理由和推荐动作。
+
+#### 判定原则
+
+- 先按 node-spec 中显式引用的 skill 路径匹配。
+- 再按领域保守匹配，例如：
+  - `game-art` 改动 → art-generation / art-qa / visual acceptance 相关节点；
+  - `visual-qa` 改动 → 截图验收、视觉验收、art-qa；
+  - `game-frontend` 改动 → game frontend binding/smoke/runtime visual QA；
+  - `game-design` 改动 → 游戏策划节点和下游 handoff/art-input；
+  - `app-design` 改动 → app 策划节点和下游 UI/program handoff；
+  - `bootstrap` 改动 → 建议重新 `/bootstrap`。
+- 该命令只给出“重跑建议”，不自动执行 `/bootstrap` 或 `/run`。
+- 如果建议不确定，宁可标为 `medium` 并说明原因，不要静默忽略。
 
 ## 铁律（强制执行）
 

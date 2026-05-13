@@ -196,13 +196,17 @@ The registry must verify:
 - the MCP tool exists and can accept a file path input;
 - the MCP can write a structured output file;
 - long-task submission and polling are available;
+- edit-mode tools or config are available when routing `image_edit` /
+  image-to-image requests;
 - selected model/profile information is returned or configured;
 - missing tool support returns `blocked_by_missing_mcp_image_batch`, not a
   silent fallback to chat-based image generation.
 
 For `mcp_image_batch`, the routing report must include
 `batch_execution_skill=game-art/30-generate/batch-image-generation/SKILL.md`
-and the selected model entry must state that file handoff is required.
+and the selected model entry must state that file handoff is required. For edit
+requests, the selected route must include `supports_edit_mode=true` or a
+blocked state with the missing edit capability.
 
 ## Automatic Validation
 

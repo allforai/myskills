@@ -9,14 +9,17 @@ description: Internal bundled meta-skill module for game-art/30-generate/batch-i
 
 ## Overview
 
-Execute bulk image generation through the `mcp-image-batch` MCP. This is a
-long-task image generation path and must use file handoff. Do not paste large
-prompt batches, reference manifests, generated image bytes, or per-image result
-payloads into the conversation.
+Execute bulk image generation and image editing through the `mcp-image-batch`
+MCP. This is a long-task image generation path and must use file handoff. Do
+not paste large prompt batches, reference manifests, generated image bytes, or
+per-image result payloads into the conversation.
 
 This skill does not replace `game-art/30-generate/image-generation-contract`.
 It is the batch execution adapter used by that contract when many
 `llm_image_generation` or `image_edit` requests should be produced together.
+For `image_edit` / image-to-image / in-painting requests, this skill must use
+the MCP edit-mode contract instead of treating references as ordinary text
+prompt hints.
 
 ## Input Contract
 
@@ -32,6 +35,8 @@ Required:
 
 Optional:
 - reference image paths;
+- edit-mode configuration: `contextImage`, `basePrompt`, `maskRegion`, and
+  optional `imageIndex`;
 - previous `mcp-image-batch` run report;
 - downstream feedback report;
 - visual acceptance coverage gap report;
@@ -87,7 +92,8 @@ skills may consume only `accepted-image-manifest.json` after validation.
 }
 ```
 
-Supported modes: `mcp_image_batch_file_handoff`, `poll_existing_task`,
+Supported modes: `mcp_image_batch_file_handoff`,
+`mcp_image_batch_edit_file_handoff`, `poll_existing_task`,
 `repair_failed_batch`, `register_existing_batch_output`.
 
 ## File Handoff Protocol
@@ -110,9 +116,16 @@ project-relative paths:
       "task_type": "tileset",
       "selected_provider": "project_local_mcp",
       "selected_model": "mcp-image-batch:<model-or-profile>",
+      "operation": "generate | edit",
       "prompt_path": ".allforai/game-design/art/image-generation/prompts/tile_grass_001.md",
       "negative_prompt_path": ".allforai/game-design/art/image-generation/prompts/tile_grass_001.negative.md",
       "reference_image_paths": [],
+      "edit_mode": {
+        "contextImage": null,
+        "basePrompt": null,
+        "maskRegion": null,
+        "imageIndex": 0
+      },
       "output_path": ".allforai/game-design/art/generated/tile_grass_001.png",
       "acceptance_ref": ".allforai/game-design/art/asset-acceptance-criteria.json"
     }
@@ -124,6 +137,60 @@ Prompt text may be written to per-request prompt files. Keep the MCP call small:
 pass the input file path, output file path, and task policy. The MCP tool must
 read from files and write files. Do not pass the full request array through the
 chat/tool prompt when a file path is available.
+
+## Edit Mode / Image-To-Image
+
+Use edit mode for identity-preserving variations, local repairs, expression
+sets, outfit/color changes, object state variants, and any request where the
+existing image must remain mostly stable. Edit mode is not a generic regenerate;
+it modifies a masked region of a base image.
+
+File handoff can use either supported MCP shape:
+
+1. **Batch edit mode through `start_batch`**:
+
+```json
+{
+  "outputDir": ".allforai/game-design/art/generated/edit-batch-001",
+  "sessionMode": "per-category",
+  "categoryConfig": {
+    "umeko_expressions": {
+      "editMode": {
+        "contextImage": ".allforai/game-design/art/characters/umeko_default.png",
+        "basePrompt": "Re-render this character in the approved style, preserving face, clothing, and proportions.",
+        "maskRegion": [0.10, 0.30, 0.80, 0.45]
+      }
+    }
+  },
+  "categories": {
+    "umeko_expressions": [
+      "happy expression, same identity and outfit",
+      "surprised expression, same identity and outfit"
+    ]
+  }
+}
+```
+
+2. **Stepwise edit session**:
+   - call `prepare_edit_session(output_dir, context_image, base_prompt)`;
+   - capture/record visual evidence that the base image is ready;
+   - call `run_edit_prompt(output_dir, category, prompt, mask_region,
+     image_index)` for each edit prompt;
+   - write the resulting files into `generated-image-files-manifest.json`.
+
+Edit-mode request entries must include:
+- `operation=edit`;
+- `contextImage` or `reference_image_paths[0]` pointing to an existing readable
+  image;
+- `basePrompt` when the MCP needs to render a base before editing;
+- `maskRegion` as `[xFraction, yFraction, widthFraction, heightFraction]`;
+- `imageIndex` when not using the last/base image;
+- acceptance criteria that verify both the edited region and the preserved
+  unedited region.
+
+If `operation=edit` lacks an existing context/base image or `maskRegion`, return
+`UPSTREAM_DEFECT`. If the edit session cannot open the editor or draw the mask,
+return `FAILED_ENV` or `FAILED_VALIDATION` with the MCP error.
 
 ## Long Task Protocol
 
@@ -194,6 +261,8 @@ Before returning success:
 8. Coverage shortage or insufficient accepted images triggers another
    `mcp-image-batch` repair batch or returns `FAILED_VALIDATION` after budget
    exhaustion.
+9. Edit-mode requests include context/base image, maskRegion, and operation
+   metadata, and validation checks identity/style preservation outside the mask.
 
 ## Completion Conditions
 

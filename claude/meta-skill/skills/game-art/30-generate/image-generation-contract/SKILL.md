@@ -370,9 +370,10 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/batch-image-generation/SKILL.m
 
 Rules:
 - use `mcp-image-batch` for the batch execution;
-- write prompts, negative prompts, request arrays, reference paths, and output
-  paths into `.allforai/game-design/art/image-generation/mcp-image-batch-input.json`
-  or per-request prompt files;
+- write prompts, negative prompts, request arrays, reference paths, edit-mode
+  fields, and output paths into
+  `.allforai/game-design/art/image-generation/mcp-image-batch-input.json` or
+  per-request prompt files;
 - submit only file paths and long-task policy to the MCP;
 - poll the long task and record
   `.allforai/game-design/art/image-generation/mcp-image-batch-task.json`;
@@ -387,6 +388,25 @@ Do not mark MCP outputs `consumer_ready: true` directly. Do not hand raw
 `generated-image-files-manifest.json` paths to downstream skills. If
 `mcp-image-batch` is selected but unavailable, return
 `blocked_by_missing_mcp_image_batch`.
+
+For `image_edit`, `image_to_image`, in-painting, local repair, or
+identity-preserving variation requests, include edit-mode fields for
+`game-art/30-generate/batch-image-generation/SKILL.md`:
+
+```json
+{
+  "operation": "edit",
+  "contextImage": ".allforai/game-design/art/characters/umeko_default.png",
+  "basePrompt": "Render the approved base image while preserving identity.",
+  "maskRegion": [0.10, 0.30, 0.80, 0.45],
+  "imageIndex": 0
+}
+```
+
+Do not route edit requests through plain text-to-image generation when the
+downstream requirement is to preserve identity, pose, clothing, layout, or
+unmasked pixels. If the request lacks a context/base image or mask region,
+return `UPSTREAM_DEFECT` and repair the request contract first.
 
 ## Automatic Validation
 
@@ -416,6 +436,9 @@ Run deterministic checks:
     `generated-image-files-manifest.json`.
 15. `mcp-image-batch` outputs are never accepted without this contract's
     deterministic and visual validation.
+16. `image_edit` / image-to-image requests routed to `mcp_image_batch` include
+    operation, context/base image, maskRegion, and preservation acceptance
+    checks.
 
 Run visual validation when images exist:
 1. Subject matches the request purpose.

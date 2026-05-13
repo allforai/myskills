@@ -90,6 +90,39 @@ export function copyImageToClipboard(imagePath) {
 }
 
 /**
+ * Copy plain text to the macOS clipboard via pbcopy.
+ * Use this before pasteInChrome() to bypass ChatGPT's React event blocking.
+ */
+export function copyTextToClipboard(text) {
+  try {
+    execSync(`printf '%s' ${JSON.stringify(text)} | pbcopy`, { timeout: 5000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Press Return/Enter in Chrome via System Events.
+ */
+export function pressReturnInChrome() {
+  const asFile = tmpPath("applescript");
+  writeFileSync(asFile,
+    `tell application "Google Chrome" to activate\n` +
+    `delay 0.2\n` +
+    `tell application "System Events" to key code 36`
+  );
+  try {
+    execSync(`osascript '${asFile}'`, { encoding: "utf8", timeout: 5000 });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    try { unlinkSync(asFile); } catch {}
+  }
+}
+
+/**
  * Send Cmd+V to Chrome's front tab via System Events (pastes clipboard).
  */
 export function pasteInChrome() {

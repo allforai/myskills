@@ -10,13 +10,31 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, rename
 import { join, extname } from "path";
 
 import { openFreshChat, selectBestImageModel, submitPrompt, waitForImageGeneration, downloadImageViaBrowser, makeSlug, countGeneratedImages, uploadImageToChat, clickEditOnImage, waitForEditorCanvas, drawMaskOnCanvas, submitEditPrompt } from "./workflow.js";
-import { activateChrome } from "./chrome.js";
+import { activateChrome, sleepSync } from "./chrome.js";
 
 const promptsFile = process.argv[2];
 if (!promptsFile) {
   console.error("Usage: node runner.js <prompts_file>");
   process.exit(1);
 }
+
+// Capture crash details in the log file (detached process has no stderr)
+// logFile is set up later after outputDir is known; buffer until then
+const earlyErrors = [];
+process.on("uncaughtException", (err) => {
+  const msg = `FATAL uncaughtException: ${err.message}\n${err.stack}`;
+  earlyErrors.push(msg);
+  // If log() is available (outputDir resolved), write there; otherwise stderr
+  try { appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`); } catch {}
+  try { saveJob({ status: "crashed", error: err.message }); } catch {}
+  process.exit(1);
+});
+process.on("unhandledRejection", (reason) => {
+  const msg = `FATAL unhandledRejection: ${reason}`;
+  try { appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`); } catch {}
+  try { saveJob({ status: "crashed", error: String(reason) }); } catch {}
+  process.exit(1);
+});
 
 let config;
 try {
@@ -40,7 +58,7 @@ for (const cat of Object.keys(categories)) {
 }
 
 const stateFile   = join(outputDir, ".progress.json");
-const logFile     = join(outputDir, ".log.txt");
+var   logFile     = join(outputDir, ".log.txt");   // var so uncaughtException handler can reach it
 const jobFile     = join(outputDir, ".job.json");
 
 function log(msg) {
@@ -150,7 +168,8 @@ outer: for (const [category, prompts] of Object.entries(categories)) {
         skipped.push({ category, prompt, error: "EDIT_BUTTON_NOT_FOUND" });
         continue;
       }
-      const canvasResult = waitForEditorCanvas(15000);
+      sleepSync(3000); // wait for editor modal to animate/initialize
+      const canvasResult = waitForEditorCanvas(25000);
       if (!canvasResult.ok) {
         log(`  ⚠ editor canvas not open`);
         skipped.push({ category, prompt, error: "CANVAS_NOT_FOUND" });

@@ -13,6 +13,7 @@ import { spawn } from "child_process";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { runSetupChecks } from "./setup.js";
+import { prepareEditSession, runEditPrompt } from "./edit-session.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const RUNNER = join(__dirname, "runner.js");
@@ -67,6 +68,40 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         },
         required: ["output_dir"]
       }
+    },
+    {
+      name: "prepare_edit_session",
+      description: "Open a fresh ChatGPT session for editMode: upload reference image and generate the base image. Call this once per category, then call run_edit_prompt for each prompt. Use Browser MCP screenshot after this returns to visually verify the base image.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          output_dir: { type: "string", description: "Directory to write progress/log files" },
+          context_image: { type: "string", description: "Path to reference image to upload (optional)" },
+          base_prompt: { type: "string", description: "Prompt to generate the base image that will be edited (optional)" }
+        },
+        required: ["output_dir"]
+      }
+    },
+    {
+      name: "run_edit_prompt",
+      description: "Run one editMode prompt: click 编辑 on the base image, draw mask, submit prompt via clipboard (bypasses React event blocking), wait for generation, download and save. Use Browser MCP screenshot before/after to verify state.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          output_dir:  { type: "string", description: "Output directory (same as prepare_edit_session)" },
+          category:    { type: "string", description: "Sub-folder name for this category" },
+          prompt:      { type: "string", description: "The edit prompt text" },
+          mask_region: {
+            type: "array",
+            description: "Mask region as [xFraction, yFraction, widthFraction, heightFraction] (0–1 relative to canvas)",
+            items: { type: "number" },
+            minItems: 4,
+            maxItems: 4
+          },
+          image_index: { type: "number", description: "Which base image to edit, 0 = last in conversation (default: 0)" }
+        },
+        required: ["output_dir", "category", "prompt", "mask_region"]
+      }
     }
   ]
 }));
@@ -74,10 +109,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
-  if (name === "check_setup")    return handleCheckSetup();
-  if (name === "start_batch")    return handleStartBatch(args.prompts_file);
-  if (name === "check_progress") return handleCheckProgress(args.output_dir, args.tail_lines ?? 20);
-  if (name === "stop_batch")     return handleStopBatch(args.output_dir);
+  if (name === "check_setup")          return handleCheckSetup();
+  if (name === "start_batch")          return handleStartBatch(args.prompts_file);
+  if (name === "check_progress")       return handleCheckProgress(args.output_dir, args.tail_lines ?? 20);
+  if (name === "stop_batch")           return handleStopBatch(args.output_dir);
+  if (name === "prepare_edit_session") return handlePrepareEditSession(args);
+  if (name === "run_edit_prompt")      return handleRunEditPrompt(args);
 
   return { content: [{ type: "text", text: `Unknown tool: ${name}` }], isError: true };
 });
@@ -214,6 +251,35 @@ function handleStopBatch(outputDir) {
     return { content: [{ type: "text", text: `Sent SIGTERM to pid ${job.pid}` }] };
   } catch (e) {
     return { content: [{ type: "text", text: `Could not kill pid ${job.pid}: ${e.message}` }] };
+  }
+}
+
+function handlePrepareEditSession(args) {
+  const { output_dir, context_image, base_prompt } = args;
+  const editMode = { contextImage: context_image, basePrompt: base_prompt };
+  try {
+    const result = prepareEditSession(output_dir, editMode);
+    const text = result.ok
+      ? `Session ready. hasBaseImage=${result.hasBaseImage}\n\nTake a Browser MCP screenshot to verify the base image looks correct before calling run_edit_prompt.`
+      : `Session setup failed: ${result.error}`;
+    return { content: [{ type: "text", text }], isError: !result.ok };
+  } catch (e) {
+    return { content: [{ type: "text", text: `Error: ${e.message}` }], isError: true };
+  }
+}
+
+function handleRunEditPrompt(args) {
+  const { output_dir, category, prompt, mask_region, image_index = 0 } = args;
+  try {
+    const result = runEditPrompt(output_dir, category, prompt, mask_region, image_index);
+    const text = result.ok
+      ? result.skipped
+        ? `Skipped (already done): ${result.savedPath}`
+        : `Done. Saved: ${result.savedPath}\n\nTake a Browser MCP screenshot to verify the result before the next prompt.`
+      : `Edit prompt failed: ${result.error}`;
+    return { content: [{ type: "text", text }], isError: !result.ok };
+  } catch (e) {
+    return { content: [{ type: "text", text: `Error: ${e.message}` }], isError: true };
   }
 }
 

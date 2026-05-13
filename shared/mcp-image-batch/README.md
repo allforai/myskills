@@ -114,11 +114,33 @@ Example for face/expression area (lower half of face):
 
 ## Tools
 
+### Regular batch (background runner)
+
 | Tool | Description |
 |------|-------------|
 | `start_batch(prompts_file)` | Spawn background runner, return immediately |
 | `check_progress(output_dir, tail_lines?)` | Read job status + recent log lines |
 | `stop_batch(output_dir)` | Kill the running job |
+
+### EditMode (Claude Code drives directly)
+
+| Tool | Description |
+|------|-------------|
+| `prepare_edit_session(output_dir, context_image?, base_prompt?)` | Open fresh ChatGPT session, upload reference, generate base image. Use Browser MCP screenshot after to verify. |
+| `run_edit_prompt(output_dir, category, prompt, mask_region, image_index?)` | Run one edit: click 编辑 → draw mask → paste prompt → wait → download. Use Browser MCP screenshot after to verify. |
+
+**EditMode workflow:**
+```
+prepare_edit_session(...)          # sets up ChatGPT session (~2 min)
+→ Browser MCP screenshot           # verify base image looks correct
+run_edit_prompt(..., prompt1, ...) # edit prompt 1 (~2 min)
+→ Browser MCP screenshot           # verify result
+run_edit_prompt(..., prompt2, ...) # edit prompt 2
+→ Browser MCP screenshot
+...
+```
+
+Text input uses **pbcopy + AppleScript Cmd+V** to bypass ChatGPT's React event blocking.
 
 ## File-based state (in outputDir)
 
@@ -139,9 +161,11 @@ Claude Code
       → reads .job.json + .log.txt + .progress.json
       ← returns status + recent log tail
 
-runner.js (background)
+runner.js (background — osascript only, no Browser MCP needed)
   → osascript → Chrome JS execution
       → chatgpt.com (already logged in)
+  → pbcopy + Cmd+V (AppleScript keystroke)
+      → bypasses ChatGPT's React synthetic event blocking for text input
   → Browser fetch → ~/Downloads
   → mv to outputDir/{category}/
   → writes .progress.json (resume support)
@@ -149,8 +173,19 @@ runner.js (background)
   → updates .job.json (status + counters)
 ```
 
+### Text input strategy
+
+ChatGPT's main textarea and edit-mode input are React `contenteditable` divs that block `execCommand('insertText')` and similar synthetic DOM events. The reliable approach:
+
+1. **Focus** the input via `el.focus()` + `el.click()` (JS, works fine)
+2. **Write text** to macOS clipboard via `pbcopy` (shell)
+3. **Paste** via AppleScript `keystroke "v" using command down` — treated as real user input
+4. **Submit** via AppleScript `key code 36` (Return) or `btn.click()` for send button
+
+This works for both `submitPrompt` (main chat) and `submitEditPrompt` (image editor).
+
 ## Requirements
 
-- macOS (uses `osascript`)
+- macOS (uses `osascript` + `pbcopy`)
 - Google Chrome logged into chatgpt.com
 - Node.js 18+

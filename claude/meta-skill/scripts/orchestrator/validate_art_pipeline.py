@@ -90,6 +90,10 @@ REQUIRED_IMAGE_CONTRACT_TERMS = {
     "coverage shortage",
     "insufficient accepted images",
     "mcp-image-batch` file handoff",
+    "operation",
+    "context/base image",
+    "maskRegion",
+    "preservation acceptance",
 }
 
 REQUIRED_BATCH_IMAGE_GENERATION_TERMS = {
@@ -105,12 +109,21 @@ REQUIRED_BATCH_IMAGE_GENERATION_TERMS = {
     "poll",
     "task_id",
     "blocked_by_missing_mcp_image_batch",
-    "Do not paste large",
+    "not paste large",
     "`image-generation-contract` may write accepted entries",
     "coverage shortage",
     "enough visually accepted images",
     "accepted output count is below",
     "triggers another",
+    "mcp_image_batch_edit_file_handoff",
+    "prepare_edit_session",
+    "run_edit_prompt",
+    "operation=edit",
+    "contextImage",
+    "basePrompt",
+    "maskRegion",
+    "imageIndex",
+    "identity/style preservation outside the mask",
 }
 
 REQUIRED_ART_GEN_COMPLETION_TERMS = {
@@ -277,6 +290,8 @@ REQUIRED_IMAGE_MODEL_REGISTRY_TERMS = {
     "mcp_long_task",
     "batch_execution_skill=game-art/30-generate/batch-image-generation/SKILL.md",
     "blocked_by_missing_mcp_image_batch",
+    "supports_edit_mode=true",
+    "missing edit capability",
     "selected_model",
 }
 
