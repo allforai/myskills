@@ -317,6 +317,49 @@ Required project inputs usually include dictionary source, locale policy,
 answer list, clue list, board/grid constraints, safety rules, and validation
 scripts when available.
 
+### Tile-Match / Match-3 Puzzle
+
+Applies to Match-3 (Candy Crush style), Bejeweled, Tile Blast, and similar
+games where the player matches groups of tiles on a grid.
+
+**Content scale reality:** Match-3 games require hundreds to thousands of
+levels. Human-authored GUI editors cannot scale to this volume. Bootstrap MUST
+generate a **level generation + solver validation pipeline** as the primary
+`level-content-pipeline` node — NOT a passive GUI editor. The GUI editor is
+optional and secondary (for human review only).
+
+**Decision rule for bootstrap:** When `game_genre` is `match-3`, `tile-match`,
+`puzzle-casual`, or similar AND `level_count > 50` in the design spec, replace
+`level-editor-tool` with `level-content-pipeline` whose node-spec generates:
+
+1. **Level generator** (`tools/level-gen/generate.ts` or `.py`): LLM-prompted
+   or algorithmic generation of grid layout, tile distribution, obstacles, and
+   goals from a chapter/difficulty config. Input: progression-curve.json,
+   puzzle-design.json. Output: level JSON files.
+2. **Solver/validator** (`tools/level-gen/solver.ts` or `.py`): BFS/A* or
+   beam-search Match-3 solver that verifies: (a) level is solvable within
+   max_steps, (b) minimum move count meets difficulty floor, (c) no
+   unsatisfiable goal states. Input: generated level JSON. Output:
+   solver-report.json with pass/fail per level.
+3. **Generation loop**: Run generator → solver → reject-and-retry until all
+   levels in a chapter meet difficulty targets. Write accepted levels to
+   `game-client/assets/resources/levels/`.
+4. **GUI editor** (optional, secondary): React/web tool for human spot-check
+   and minor adjustments. Should load solver output, not be the primary source.
+
+Typical generated specialized skills:
+- `match3-level-generator`: chapter-aware LLM or rule-based tile layout
+  generation with difficulty parameter control;
+- `match3-solver-validator`: BFS/A* Match-3 solver for solvability and
+  difficulty QA, rejection of trivial or impossible levels;
+- `match3-difficulty-calibration`: automated difficulty band assignment using
+  solver metrics (min_moves, solution_count, move_headroom);
+- `match3-level-pacing-qa`: progression-curve fit check across all chapters.
+
+Required project inputs: puzzle-design.json (tile types, specials, obstacles,
+board sizes), progression-curve.json (difficulty targets per chapter/level),
+core-mechanics.json (match rules, combo system), and any existing level data.
+
 ## Hard Boundary
 
 If a specialization proves generally reusable across many unrelated game types,
