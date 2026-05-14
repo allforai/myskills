@@ -34,6 +34,10 @@ REQUIRED_PARENT_TERMS = {
     "2d-production-closure-qa",
     "code-repair-loop",
     "do not accept static review",
+    "prototype/placeholder rejection",
+    "pure color blocks",
+    "black debug backgrounds",
+    "engine-ready art bindings",
 }
 
 REQUIRED_CLOSURE_TERMS = {
@@ -56,6 +60,11 @@ REQUIRED_CLOSURE_TERMS = {
     "failed_validation",
     "no blocker or major findings",
     "Do not accept static review",
+    "prototype/placeholder rejection",
+    "pure-color blocks",
+    "black debug backgrounds",
+    "generic placeholder geometry",
+    "visible traceability",
 }
 
 REQUIRED_GAME_DESIGN_TERMS = {

@@ -72,6 +72,8 @@ The pack exits through:
 .allforai/game-2d/qa/revalidation-report.json
 .allforai/game-2d/qa/2d-production-closure-report.json
 .allforai/game-2d/qa/2d-production-closure.html
+.allforai/visual-qa/visual-acceptance-criteria.json
+.allforai/visual-qa/visual-acceptance-criteria.md
 ```
 
 ## Invocation Contract
@@ -100,6 +102,20 @@ Validation must include runtime screenshot evidence, functional assertions, and
 Codex CLI screenshot review where visible gameplay is involved; do not accept
 static review, logs, source inspection, DOM state, canvas probes, or manifest
 presence as a replacement for visible runtime evidence.
+
+Runtime visual evidence must include prototype/placeholder rejection. A 2D slice
+is not accepted when the screenshot shows a playable prototype made of pure
+color blocks, black debug backgrounds, sample scenes, generic placeholder
+geometry, missing HUD, or missing engine-ready art bindings. The active runtime
+scene must be traceable to production contracts and visible assets must map to
+`runtime_id`/`asset_id` from the engine-ready art manifest.
+
+Core gameplay evidence must include invariant checks for the target loop. For
+board/grid games this includes board dimensions, tile/entity counts before and
+after actions, legal coordinate ranges, refill/drop conservation, legal runtime
+ids, and absence of malformed values such as `[object Set]`, `[object Object]`,
+`undefined`, or `NaN`. Similar invariants must be declared for other game
+types by the project-local specialized skill.
 
 Blocking statuses:
 

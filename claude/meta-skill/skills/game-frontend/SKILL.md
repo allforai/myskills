@@ -38,6 +38,7 @@ screen load, render, respond, and prove assets are connected.
 | `20-spec` | `audio-binding-spec` | Bind audio cues to frontend loader keys, scene/UI/animation triggers, volume groups, and runtime probes. |
 | `20-spec` | `save-state-binding-spec` | Bind local/frontend persistence for progress, settings, checkpoints, reset, and save/load probes. |
 | `20-spec` | `performance-budget-spec` | Define measurable frontend startup, frame, memory, bundle, draw/update, particle, and audio budgets. |
+| `20-spec` | `runtime-debug-bridge-contract` | Define QA-only runtime/MCP query bridge for scene trees, runtime-created objects, bindings, logs, screenshots, invariants, and safe diagnostics. |
 | `30-generate` | `playable-client-assembly` | Apply the bindings in the target frontend codebase and produce a runnable client integration report. |
 | `40-qa` | `runtime-architecture-qa` | Validate architecture/state/scene/loading/system/performance contracts as a closed graph. |
 | `40-qa` | `playable-smoke-test` | Run the client and verify scene load, input, assets, HUD, animation/VFX, logs, and screenshots. |
@@ -65,6 +66,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/20-spec/animation-vfx-binding-spec/SK
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/20-spec/audio-binding-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/20-spec/save-state-binding-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/20-spec/performance-budget-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/20-spec/runtime-debug-bridge-contract/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/30-generate/playable-client-assembly/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/40-qa/runtime-architecture-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-frontend/40-qa/playable-smoke-test/SKILL.md
@@ -134,6 +136,19 @@ That project-local skill may define concrete scene flow, state machines,
 input gestures, asset loading groups, runtime probes, and engine commands for
 the project. It must still call back into the bundled `game-frontend` contracts
 for outputs and QA.
+
+When runtime-created visible objects matter, generate or implement the
+project-local probe through
+`game-frontend/20-spec/runtime-debug-bridge-contract`. MCP access, if used, must
+wrap that QA bridge contract and stay read/diagnostic by default; runtime
+mutation is forbidden unless the specialized skill declares a bounded diagnostic
+operation and the durable fix is applied to source/assets.
+
+For Cocos Creator, project-local specialization must follow
+`claude/meta-skill/knowledge/engines/cocos.md`: use real screenshots plus a
+QA-only runtime probe for scene/node/asset binding evidence, and add release
+checks proving the probe and prototype/debug entrypoints are disabled or
+unreachable.
 
 Required specialized frontend sections:
 

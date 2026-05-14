@@ -52,6 +52,16 @@ NODE_DEFS = [
         "exit_artifacts": [".allforai/game-2d/spec/session-flow-contract.json"],
     },
     {
+        "node_id": "game-2d-visual-acceptance-criteria",
+        "skill": "visual-qa/20-spec/visual-acceptance-criteria",
+        "goal": "生成 2D 运行时截图、资产绑定、原型占位拒绝和玩法不变量的视觉验收标准",
+        "exit_artifacts": [
+            ".allforai/visual-qa/visual-acceptance-criteria.json",
+            ".allforai/visual-qa/visual-acceptance-criteria.md",
+            ".allforai/visual-qa/visual-evidence-requirements.json",
+        ],
+    },
+    {
         "node_id": "game-2d-playable-slice-assembly",
         "skill": "game-2d-production/30-generate/playable-slice-assembly",
         "goal": "把 2D 设计、美术、UI、音频和前端契约总装为可运行切片",

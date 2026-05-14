@@ -20,8 +20,8 @@ composition, input/camera binding, game data binding, and objective/core-loop
 requirements.
 
 Optional: level difficulty budget, save-state binding, animation/VFX binding,
-audio binding, telemetry events, Playwright traces, engine logs, and expected
-state probes.
+audio binding, telemetry events, Playwright traces, engine logs, engine-specific
+runtime visual probe output, and expected state probes.
 
 ## Output Contract
 
@@ -64,6 +64,19 @@ Drive the client with configured inputs and inspect state/log/screenshot
 evidence. At minimum, prove one core-loop action changes state or produces
 expected feedback. If state cannot be probed, mark blocked rather than guessing
 from visuals.
+
+When the design or specialized runtime skill declares gameplay invariants,
+validate them before and after each probed action. Invariants may include board
+cell counts, tile/object counts, coordinate bounds, legal runtime IDs, resource
+conservation, selection state, health/damage limits, spawn/despawn counts, and
+absence of malformed values such as `[object Set]`, `[object Object]`,
+`undefined`, or `NaN`. If an action visually appears to work but an invariant
+fails, return `failed_validation` with a `code_gaps` repair target.
+
+For engines with a specialized runtime QA probe, such as Cocos, Godot, or
+Unity, read the probe output together with screenshots. Probe evidence can
+prove state/binding invariants but cannot replace screenshot-based visual
+acceptance.
 
 When a level difficulty budget is present, choose probe actions that exercise
 the declared validation probe for the target scene or region. Compare observed

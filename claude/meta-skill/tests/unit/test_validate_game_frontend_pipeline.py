@@ -28,6 +28,7 @@ def _minimal_repo(tmp_path):
         "20-spec/audio-binding-spec",
         "20-spec/save-state-binding-spec",
         "20-spec/performance-budget-spec",
+        "20-spec/runtime-debug-bridge-contract",
         "30-generate/playable-client-assembly",
         "40-qa/runtime-architecture-qa",
         "40-qa/runtime-gameplay-visual-acceptance",
@@ -65,6 +66,7 @@ Do not encode Cocos/Phaser/Unity/Godot or genre-specific
 .allforai/game-frontend/bindings/scene-flow-spec.json
 .allforai/game-frontend/bindings/asset-loading-strategy-spec.json
 .allforai/game-frontend/bindings/gameplay-system-binding-spec.json
+.allforai/game-frontend/bindings/runtime-debug-bridge-contract.json
 """,
     )
     _write(
@@ -99,6 +101,15 @@ pull mode
 Claude Code must not re-score visual quality
 Repair And Revalidation Loop
 rerun the same affected gameplay screenshot tasks
+production_visual_binding
+prototype/placeholder rejection
+pure-color blocks
+black debug
+generic geometric
+engine-ready asset manifest
+wrong entrypoint
+prototype component
+missing asset loader mapping
 blocked_by_missing_screenshot
 blocked_by_missing_codex_cli
 blocked_by_missing_visual_model_capability

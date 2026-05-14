@@ -114,6 +114,7 @@ GAME_2D_PRODUCTION_REQUIRED_NODES = [
     "game-2d-asset-runtime-binding-contract",
     "game-2d-input-feedback-contract",
     "game-2d-session-flow-contract",
+    "game-2d-visual-acceptance-criteria",
     "game-2d-playable-slice-assembly",
     "game-2d-core-loop-playability-qa",
     "game-2d-asset-binding-visual-qa",
@@ -724,10 +725,10 @@ def validate_game_2d_production_flow(bdir: str) -> list:
                 spec_text = f.read()
         except Exception:
             continue
-        if "game-2d-production/" not in spec_text:
+        if "game-2d-production/" not in spec_text and "visual-qa/20-spec/visual-acceptance-criteria" not in spec_text:
             errors.append(
                 f"node-specs/{node_id}.md: game 2D production node-spec must delegate "
-                "to a game-2d-production child skill"
+                "to a game-2d-production child skill or the visual acceptance criteria skill"
             )
 
     return errors

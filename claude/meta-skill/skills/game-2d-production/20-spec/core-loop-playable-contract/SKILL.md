@@ -18,6 +18,7 @@ Write `.allforai/game-2d/spec/core-loop-playable-contract.json` with:
 - minimum playable scenario and deterministic seed when applicable
 - win, lose, retry, next, and progression conditions
 - required telemetry/probe assertions
+- gameplay invariants that must hold before and after core actions
 - screenshot checkpoints before and after meaningful player actions.
 
 ## Invocation Contract
@@ -42,6 +43,18 @@ requirements.
 Reject contracts that only describe intent. Each loop step must map to at least
 one runtime assertion and one visible screenshot checkpoint when the step is
 visible to the player.
+
+The contract must include `gameplay_invariants` for the target loop. Examples:
+board/grid games must declare board dimensions, expected occupied/empty counts,
+coordinate bounds, legal node/id naming, selection state, refill/drop
+conservation, and disallowed values such as `undefined`, `NaN`, or
+`[object Object]`/`[object Set]` in runtime ids. Action games must declare
+player/enemy/resource/health/projectile invariants. UI-heavy games must declare
+list/item count and selected item invariants.
+
+If the approved design is genre-tight, the project-local specialized runtime
+skill must define concrete invariant probes. A generic QA node must not invent
+weak invariants after the fact.
 
 ## Completion Conditions
 

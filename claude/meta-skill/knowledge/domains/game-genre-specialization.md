@@ -147,6 +147,20 @@ The specialized frontend skill should define:
 - runtime build/import/smoke validation commands;
 - blocked states when the engine, adapter, or probe cannot run.
 
+For Cocos Creator projects, read
+`claude/meta-skill/knowledge/engines/cocos.md` and include its runtime QA probe,
+production scene, resource binding, screenshot+probe capture, and release
+probe-disabled checks in the project-local frontend runtime specialization. Do
+not put Cocos-specific probe code into global bundled skills.
+
+For Godot projects, read `claude/meta-skill/knowledge/engines/godot.md` and
+include its scene tree/resource probe, screenshot+probe capture, and release
+export probe-disabled checks.
+
+For Unity projects, read `claude/meta-skill/knowledge/engines/unity.md` and
+include its Scene/GameObject/asset probe, screenshot+probe capture, and release
+build probe-disabled checks.
+
 Suggested project outputs:
 
 ```text

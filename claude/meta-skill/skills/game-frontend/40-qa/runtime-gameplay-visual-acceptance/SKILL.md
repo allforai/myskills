@@ -24,6 +24,8 @@ state deltas alone when the player-facing result is visible.
 Required:
 - `.allforai/game-frontend/qa/playable-smoke-test-report.json`
 - `.allforai/game-frontend/qa/playability-probe-report.json`
+- `.allforai/visual-qa/visual-acceptance-criteria.json`
+- `.allforai/visual-qa/visual-acceptance-criteria.md`
 - `.allforai/game-frontend/bindings/scene-composition-spec.json`
 - `.allforai/game-frontend/bindings/gameplay-system-binding-spec.json`
 - `.allforai/game-frontend/bindings/hud-ui-binding-spec.json`
@@ -111,6 +113,12 @@ The plan must be project-specific. Use the specialized frontend runtime skill
 when present to choose genre-specific milestones, but keep this skill's output
 contract unchanged.
 
+Every plan must include at least one `production_visual_binding` milestone for
+the primary gameplay screen. This milestone checks that production assets,
+HUD/UI, background/context, and feedback layers are visible at the same time as
+the core loop. It is not enough for a canvas to contain playable placeholder
+geometry.
+
 ## Automatic Validation
 
 1. Start the real client or engine. If it cannot run, return
@@ -123,7 +131,11 @@ contract unchanged.
    response, and error-free runtime logs.
 5. Build batch Markdown/JSON documents under
    `.allforai/game-frontend/qa/runtime-gameplay-visual-batches/`.
-6. Invoke:
+6. Ensure `.allforai/visual-qa/visual-acceptance-criteria.json` covers the
+   current gameplay scene, state, asset bindings, forbidden placeholders, and
+   repair routes. If it is missing or generic, return
+   `blocked_by_missing_visual_criteria`.
+7. Invoke:
 
 ```text
 ${CLAUDE_PLUGIN_ROOT}/skills/visual-qa/40-qa/batch-visual-acceptance/SKILL.md
@@ -136,6 +148,20 @@ unclear selection/target feedback, weak or absent action feedback, HUD overlap,
 wrong z-order, unreadable text, indistinguishable tiles/icons, broken animation
 frames, VFX hiding gameplay, camera/framing errors, and viewport-specific
 interaction risk.
+
+Codex CLI must also run a prototype/placeholder rejection check. The review
+must fail the batch when screenshots show pure-color blocks, black debug
+backgrounds, generic geometric tiles, sample/prototype boards, missing HUD, or
+visuals that do not match the declared art direction and engine-ready asset
+manifest. If the game is playable but the screenshot is still a prototype scene,
+return `failed_validation`; do not downgrade it to a warning.
+
+When placeholder-like visuals are detected, the review prompt must tell Codex
+CLI to read only the relevant paths: scene entrypoint/config, scene composition
+spec, asset import binding spec, engine-ready art manifest, and screenshots. It
+must identify whether the root cause is wrong entrypoint, missing scene binding,
+missing asset loader mapping, placeholder fallback, or ungenerated/unimported
+art.
 
 Claude Code must not re-score visual quality. Claude Code only checks closure:
 review files exist, screenshot evidence paths are present, findings have repair
@@ -151,6 +177,14 @@ Every blocker or major finding must route to one of:
 - game-art QA or asset import binding when assets are missing, unreadable, or
   inconsistent;
 - frontend code assembly when runtime implementation is wrong.
+
+Prototype/placeholder findings route as follows:
+- wrong production entrypoint or active sample scene -> scene-flow or playable
+  client assembly;
+- prototype component/debug renderer active -> frontend code assembly;
+- engine-ready assets exist but are not visible -> asset import binding;
+- HUD/background/context missing -> scene composition or HUD/UI binding;
+- visual assets absent or unreadable -> game-art QA and engine-ready output.
 
 After repair, rerun the same affected gameplay screenshot tasks. Do not close
 from an edited report or partial evidence. The loop completes only when the
@@ -169,4 +203,5 @@ unacceptable after the repair budget.
 Return `blocked_by_missing_screenshot` when required screenshots are absent.
 Return `blocked_by_missing_codex_cli` when Codex CLI cannot run. Return
 `blocked_by_missing_visual_model_capability` when no usable visual model route
-exists for review.
+exists for review. Return `blocked_by_missing_visual_criteria` when no explicit
+visual acceptance criteria cover the gameplay screenshot batch.

@@ -16,6 +16,7 @@ REQUIRED_PARENT_TERMS = {
     "performance-budget-spec",
     "runtime-architecture-qa",
     "runtime-gameplay-visual-acceptance",
+    "runtime-debug-bridge-contract",
     ".allforai/bootstrap/specialized-skills/<specialization_id>-frontend-runtime/SKILL.md",
 }
 
@@ -25,6 +26,7 @@ REQUIRED_ASSEMBLY_TERMS = {
     ".allforai/game-frontend/bindings/scene-flow-spec.json",
     ".allforai/game-frontend/bindings/asset-loading-strategy-spec.json",
     ".allforai/game-frontend/bindings/gameplay-system-binding-spec.json",
+    ".allforai/game-frontend/bindings/runtime-debug-bridge-contract.json",
 }
 
 REQUIRED_ARCH_QA_TERMS = {
@@ -61,6 +63,15 @@ REQUIRED_GAMEPLAY_VISUAL_ACCEPTANCE_TERMS = {
     "Claude Code must not re-score visual quality",
     "Repair And Revalidation Loop",
     "rerun the same affected gameplay screenshot tasks",
+    "production_visual_binding",
+    "prototype/placeholder rejection",
+    "pure-color blocks",
+    "black debug",
+    "generic geometric",
+    "engine-ready asset manifest",
+    "wrong entrypoint",
+    "prototype component",
+    "missing asset loader mapping",
     "blocked_by_missing_screenshot",
     "blocked_by_missing_codex_cli",
     "blocked_by_missing_visual_model_capability",
@@ -91,9 +102,10 @@ def validate_game_frontend_pipeline(repo_root: str) -> list[str]:
     assembly = frontend_root / "30-generate/playable-client-assembly/SKILL.md"
     arch_qa = frontend_root / "40-qa/runtime-architecture-qa/SKILL.md"
     gameplay_visual_acceptance = frontend_root / "40-qa/runtime-gameplay-visual-acceptance/SKILL.md"
+    runtime_debug_bridge = frontend_root / "20-spec/runtime-debug-bridge-contract/SKILL.md"
 
     errors: list[str] = []
-    for path in [frontend_pack, runtime_arch, assembly, arch_qa, gameplay_visual_acceptance]:
+    for path in [frontend_pack, runtime_arch, assembly, arch_qa, gameplay_visual_acceptance, runtime_debug_bridge]:
         if not path.exists():
             errors.append(f"{path}: required game-frontend pipeline file missing")
     if errors:

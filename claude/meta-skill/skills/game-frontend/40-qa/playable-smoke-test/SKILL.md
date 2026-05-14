@@ -62,6 +62,13 @@ scene, perform configured input actions, collect logs, and capture screenshots.
 Check that expected assets and HUD elements are visible and that at least one
 core input path changes game state or camera state.
 
+Smoke status must not pass from canvas existence alone. The screenshot evidence
+must prove the loaded scene is the production smoke scene, not a prototype/debug
+scene. If the visible output is pure-color blocks, a black debug background,
+generic geometric placeholders, missing HUD, or a sample/prototype component,
+return `failed_validation` and route repair to scene-flow, playable client
+assembly, asset import binding, or frontend code assembly.
+
 If the client cannot run, return `blocked_by_unrunnable_client`. Do not replace
 runtime evidence with source-code inspection.
 

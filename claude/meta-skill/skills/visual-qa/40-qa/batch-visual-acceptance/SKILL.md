@@ -33,12 +33,16 @@ the target workspace.
 
 Required:
 - acceptance criteria document or JSON supplied by the caller;
+  prefer `.allforai/visual-qa/visual-acceptance-criteria.json` and
+  `.allforai/visual-qa/visual-acceptance-criteria.md` produced by
+  `visual-qa/20-spec/visual-acceptance-criteria/SKILL.md`;
 - `.allforai/visual-qa/visual-model-routing-report.json` or caller-local
   equivalent produced by
   `visual-qa/00-env/visual-model-capability-registry/SKILL.md`;
 - visual evidence paths: images, screenshots, contact sheets, preview maps,
   animation previews, HTML screenshots, video frame captures, or rendered
   canvases;
+- runtime probe files when the criteria require dynamic object evidence;
 - for test screenshots, a test report or flow/state manifest that maps each
   screenshot to the exercised route, viewport/device, state, expected UI, and
   pass/fail assertions;
@@ -55,6 +59,15 @@ Optional:
 
 If evidence files are missing, unreadable, stale, or not directly inspectable,
 return `blocked_by_missing_visual_evidence`.
+
+If criteria require runtime probe evidence and the probe output is missing,
+stale, or not tied to the screenshot task id, return
+`blocked_by_missing_runtime_probe`.
+
+If acceptance criteria are missing, stale, generic, or do not cover the current
+visual scope, return `blocked_by_missing_visual_criteria` or
+`UPSTREAM_DEFECT`. Do not run Codex CLI with an implicit standard such as
+"looks good" or "canvas exists".
 
 If Codex CLI cannot be invoked, return `blocked_by_missing_codex_cli`. Do not
 replace Codex CLI with a same-agent prose summary.
@@ -117,6 +130,10 @@ Before creating or running batches:
    `selected_visual_model`, and `model_reason`.
 3. Block high-risk batches with `blocked_by_missing_visual_model_capability`
    when no capable visual model is available.
+4. Verify the criteria came from
+   `visual-qa/20-spec/visual-acceptance-criteria` or an equivalent
+   project-local specialization and contains visual promise, forbidden visuals,
+   failure codes, evidence requirements, and repair routes.
 
 Create Markdown batch documents under `<output_root>/visual-acceptance-batches/`.
 The task-list JSON is only an index; the batch Markdown documents are the audit
@@ -222,6 +239,12 @@ Before returning success:
 7. Blocker/major findings have feedback or remain `FAILED_VALIDATION`.
 8. Any repair rerun has new or updated evidence and a rerun Codex report.
 9. No artifact is accepted from metadata, manifest, or prose alone.
+10. Acceptance criteria are explicit for the reviewed scope and include blocker
+    rejection for blank/prototype/placeholder visuals when runtime or generated
+    production assets are in scope.
+11. When criteria require runtime probe evidence, the batch references the probe
+    path alongside screenshots and validates that probe ids/counts/binding refs
+    do not contradict the visible evidence.
 
 ## Completion Conditions
 
@@ -234,4 +257,7 @@ repair budget or when feedback/rerun closure is incomplete.
 Return `blocked_by_missing_visual_evidence` when required evidence is missing or
 unreadable. Return `blocked_by_missing_codex_cli` when Codex CLI cannot run.
 Return `blocked_by_missing_visual_model_capability` when required visual model
-capability is unavailable or unknown.
+capability is unavailable or unknown. Return
+`blocked_by_missing_visual_criteria` when no explicit criteria document covers
+the batch. Return `blocked_by_missing_runtime_probe` when required runtime probe
+evidence is missing.

@@ -19,6 +19,8 @@ Write `.allforai/game-2d/spec/asset-runtime-binding-contract.json` with:
 - animation, VFX, and audio event bindings
 - placeholder policy and missing-asset blocking rules
 - runtime screenshot checkpoints proving assets are visible in context.
+- runtime probe requirements proving visible nodes/entities are bound to
+  declared `asset_id`/`runtime_id`, not placeholder renderers.
 
 ## Invocation Contract
 
@@ -41,6 +43,11 @@ Program code must consume this contract instead of hardcoding raw asset paths.
 Fail if a required gameplay/UI element lacks `asset_id`, `runtime_id`, anchor,
 pivot, or screenshot proof. Placeholder use is a blocker unless explicitly
 approved by the design handoff.
+
+For engine runtimes that support probes, require probe fields for visible
+asset/node counts, runtime id mapping, source asset reference, and placeholder
+flags. If visible runtime elements cannot be traced to the engine-ready art
+manifest, the binding contract is incomplete.
 
 ## Completion Conditions
 

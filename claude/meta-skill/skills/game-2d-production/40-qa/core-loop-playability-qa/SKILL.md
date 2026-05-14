@@ -40,6 +40,17 @@ For every required loop step, run input automation, assert state changes, and
 capture before/after runtime screenshots. Visible gameplay acceptance must use
 functional assertions and Codex CLI screenshot review.
 
+Also verify every `gameplay_invariants` entry from the core-loop playable
+contract using runtime state probes, engine-specific QA probes, or project-local
+test APIs. For board/grid games this must include dimensions, occupied/empty
+counts, coordinate bounds, refill/drop conservation, legal tile/node ids, and
+absence of malformed ids such as `[object Set]`, `[object Object]`,
+`undefined`, or `NaN`. A screenshot that looks playable cannot pass when a
+state invariant fails.
+
+If invariant probes are unavailable for a visible core-loop system, return
+`blocked_by_missing_probe` instead of guessing from visual screenshots.
+
 ## Completion Conditions
 
 Complete only when the core loop can be played from input to outcome, or when a

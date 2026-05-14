@@ -18,7 +18,8 @@ and expose a smoke-test route.
 Required: frontend runtime profile, runtime architecture design, game state
 model, scene flow, asset loading strategy, gameplay system bindings, asset
 import bindings, scene composition, input/camera binding, HUD/UI binding, and
-animation/VFX binding.
+animation/VFX binding. When runtime-created visible objects need probe evidence,
+also consume the runtime debug bridge contract.
 
 Optional: game design doc, level data, audio cue manifests, existing client
 architecture, dev server command, and test conventions.
@@ -57,7 +58,8 @@ Allowed states: `assembled`, `assembled_with_limits`, `needs_revision`,
     "scene_composition": ".allforai/game-frontend/bindings/scene-composition-spec.json",
     "input_camera": ".allforai/game-frontend/bindings/input-camera-binding-spec.json",
     "hud_ui": ".allforai/game-frontend/bindings/hud-ui-binding-spec.json",
-    "animation_vfx": ".allforai/game-frontend/bindings/animation-vfx-binding-spec.json"
+    "animation_vfx": ".allforai/game-frontend/bindings/animation-vfx-binding-spec.json",
+    "runtime_debug_bridge": ".allforai/game-frontend/bindings/runtime-debug-bridge-contract.json"
   },
   "output_root": ".allforai/game-frontend/assembly"
 }

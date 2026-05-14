@@ -79,6 +79,15 @@ order, incorrect scale/pivot, HUD overlap, cropped text, unreadable VFX, missing
 animation state, and responsive viewport issues. Use pixel/canvas probes as
 supporting evidence, but do not pass from probes or metadata alone.
 
+Prototype/placeholder visuals are blocking regressions. Reject screenshots that
+show pure-color blocks, black debug backgrounds, generic geometric sprites,
+sample/prototype scenes, missing production HUD, or a core loop rendered without
+the assets declared in the engine-ready art manifest. For suspected
+placeholder output, require Codex CLI to inspect the scene entrypoint/config,
+scene composition spec, asset import bindings, and screenshot evidence by path.
+The finding must name the repair target: wrong entrypoint, prototype component,
+missing scene binding, missing asset loader mapping, or missing runtime art.
+
 Claude Code performs only closure audit: Codex report exists, inspected
 evidence paths are listed, blocker/major findings have repair targets, affected
 batches were rerun after repair, and unresolved blockers remain

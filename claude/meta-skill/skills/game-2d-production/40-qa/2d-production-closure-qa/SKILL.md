@@ -55,9 +55,19 @@ Require:
 - session-completion QA
 - code-repair-loop report proving `code_gaps` were fixed or absent
 - revalidation report proving affected QA paths were rerun after repair
+- explicit visual acceptance criteria from `.allforai/visual-qa/`
+- gameplay invariant checks from core-loop playability QA
 - runtime-gameplay-visual-acceptance
 - frontend build/export or explicit `blocked_by_unrunnable_client`
 - functional assertions and Codex CLI screenshot review
+- prototype/placeholder rejection proving the accepted screenshots are not
+  prototype-only components, pure-color blocks, black debug backgrounds,
+  generic placeholder geometry, or a core loop without production HUD/art
+- visible traceability from the accepted gameplay screenshot to
+  `engine-ready art manifest` entries by `runtime_id` and `asset_id`
+- runtime probe or state assertion evidence proving board/grid/object counts,
+  coordinates, runtime ids, and malformed values are valid for the selected
+  game type
 
 Do not accept static review. Do not accept logs, DOM, probes, source inspection,
 or manifest existence alone. If validation cannot run, report
@@ -69,4 +79,5 @@ or manifest existence alone. If validation cannot run, report
 
 Pass only when there are no blocker or major findings, all required screenshots
 exist, all runtime assertions pass, the repair loop has revalidated affected
-screenshots, and the final HTML can be read by humans in Chinese.
+screenshots, prototype/placeholder rejection passes, and the final HTML can be
+read by humans in Chinese.
