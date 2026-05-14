@@ -99,7 +99,14 @@ Before stopping, record `preflight_blocked` with
      then read .allforai/bootstrap/protocols/diagnosis.md and diagnose.
      After diagnosis + repair: append to workflow.json `corrections_applied[]`:
      `{"node_id": "<node_id>", "what_was_wrong": "<root_cause>", "fix_applied": "<action>", "timestamp": "<ISO>"}`
-  12. Back to 1
+  12. If a completed QA/verify/smoke/visual/runtime node writes a report with
+      `code_gaps` or `test_gaps`, do not treat downstream closure as ready.
+      Execute the applicable repair loop node first. If no domain-specific
+      repair loop exists, create/follow a node-spec using
+      `.allforai/bootstrap/protocols/feedback-protocol.md` only for feedback and
+      `${CLAUDE_PLUGIN_ROOT}/skills/meta-orchestration/40-qa/execution-repair-loop/SKILL.md`
+      for repair behavior. Rerun affected QA evidence before closure.
+  13. Back to 1
 ```
 
 ## Recording Transitions

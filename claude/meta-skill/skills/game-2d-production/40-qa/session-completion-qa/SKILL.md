@@ -14,6 +14,8 @@ contract when present, and UI screen map.
 
 Write `.allforai/game-2d/qa/session-completion-qa-report.json` with route
 trace, screenshots, assertions, performance notes, blockers, and repair routing.
+Findings must be classified into `code_gaps`, `asset_gaps`, `contract_gaps`,
+and `environment_blockers`.
 
 ## Invocation Contract
 

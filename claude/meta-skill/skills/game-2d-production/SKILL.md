@@ -34,6 +34,7 @@ must consume that specialized contract.
 | `core-loop-playability-qa` | Validate input-to-state-to-feedback-to-outcome behavior with runtime evidence. | `${CLAUDE_PLUGIN_ROOT}/skills/game-2d-production/40-qa/core-loop-playability-qa/SKILL.md` |
 | `asset-binding-visual-qa` | Validate that generated/imported assets are actually bound, visible, readable, and not placeholders. | `${CLAUDE_PLUGIN_ROOT}/skills/game-2d-production/40-qa/asset-binding-visual-qa/SKILL.md` |
 | `session-completion-qa` | Validate a complete session path: start, play, finish, retry/continue, and exit. | `${CLAUDE_PLUGIN_ROOT}/skills/game-2d-production/40-qa/session-completion-qa/SKILL.md` |
+| `code-repair-loop` | Repair QA-discovered implementation defects, rebuild, and rerun affected 2D QA evidence. | `${CLAUDE_PLUGIN_ROOT}/skills/game-2d-production/40-qa/code-repair-loop/SKILL.md` |
 | `2d-production-closure-qa` | Final 2D closure gate across design, art, UI, audio, frontend, runtime, screenshots, build, and test evidence. | `${CLAUDE_PLUGIN_ROOT}/skills/game-2d-production/40-qa/2d-production-closure-qa/SKILL.md` |
 
 ## Input Contract
@@ -67,6 +68,8 @@ The pack exits through:
 .allforai/game-2d/qa/core-loop-playability-qa-report.json
 .allforai/game-2d/qa/asset-binding-visual-qa-report.json
 .allforai/game-2d/qa/session-completion-qa-report.json
+.allforai/game-2d/repair/code-repair-loop-report.json
+.allforai/game-2d/qa/revalidation-report.json
 .allforai/game-2d/qa/2d-production-closure-report.json
 .allforai/game-2d/qa/2d-production-closure.html
 ```
@@ -110,8 +113,9 @@ Blocking statuses:
 
 ## Completion Conditions
 
-The 2D production slice is complete only when `2d-production-closure-qa`
-reports no blocker or major findings, all required runtime screenshots exist,
-the core loop is playable, assets are bound through `runtime_id` and `asset_id`,
-and session flow can start, play, finish, retry or continue without manual
+The 2D production slice is complete only when `code-repair-loop` has repaired
+and revalidated QA-discovered `code_gaps`, `2d-production-closure-qa` reports no
+blocker or major findings, all required runtime screenshots exist, the core
+loop is playable, assets are bound through `runtime_id` and `asset_id`, and
+session flow can start, play, finish, retry or continue without manual
 intervention.

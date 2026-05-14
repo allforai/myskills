@@ -928,16 +928,19 @@ listed `required_closure_skills` into concrete downstream nodes in this order:
 - `game-2d-core-loop-playability-qa`
 - `game-2d-asset-binding-visual-qa`
 - `game-2d-session-completion-qa`
+- `game-2d-code-repair-loop`
 - `game-2d-production-closure-qa`
 
 Each node-spec must be a thin delegating node-spec that reads the matching
 `game-2d-production/.../SKILL.md` file, declares its `.allforai/game-2d/...`
 exit artifacts, and hard-blocks on the previous selected 2D production node.
 `game-2d-playable-slice-assembly` must also hard-block on the selected
-game-frontend assembly node when present. `game-2d-production-closure-qa` must
-hard-block on all selected 2D QA nodes and must be represented in the workflow
-before unattended readiness can pass. If bootstrap cannot expand this handoff,
-mark the downstream 2D implementation scope blocked; do not leave the
+game-frontend assembly node when present. `game-2d-code-repair-loop` must
+hard-block on all selected 2D QA nodes, repair QA-discovered `code_gaps`, and
+rerun affected QA evidence up to 3 attempts. `game-2d-production-closure-qa`
+must hard-block on `game-2d-code-repair-loop` and must be represented in the
+workflow before unattended readiness can pass. If bootstrap cannot expand this
+handoff, mark the downstream 2D implementation scope blocked; do not leave the
 `game_2d_production` handoff as inert JSON.
 
 After writing the initial workflow and node-specs, run the project-local
@@ -950,6 +953,28 @@ python3 .allforai/bootstrap/scripts/expand_game_2d_production.py .
 This script is idempotent. It appends or repairs the 11 generic
 `game-2d-production` nodes and their thin delegating node-specs whenever the
 project handoff requires 2D production closure.
+
+**Generic QA repair loop rule (all app/game/software workflows):** Any QA,
+verify, smoke, visual, runtime, or closure node that can discover implementation
+defects must classify findings into `code_gaps`, `test_gaps`, `asset_gaps`,
+`contract_gaps`, and `environment_blockers` or equivalent names. A blocker
+report with repairable `code_gaps` is not sufficient for final closure. Before
+any downstream acceptance/closure node can pass, bootstrap or the generated
+workflow must include a repair-and-revalidation step that follows
+`${CLAUDE_PLUGIN_ROOT}/skills/meta-orchestration/40-qa/execution-repair-loop/SKILL.md`.
+
+Domain-specific repair loops may specialize the generic loop, such as
+`game-2d-production/40-qa/code-repair-loop`, but they must preserve these
+generic rules:
+
+- repair implementation/test gaps in project code or tests
+- run build/test/runtime commands after repair
+- rerun affected QA evidence
+- stop after 3 attempts
+- block on environment/tool/runtime/contract blockers rather than substituting
+  static review
+- final closure must consume the repair report and must not pass while
+  repairable `code_gaps` remain
 
 **On `rebuild` goal — mandatory regeneration:** ALL existing node-spec files under
 `.allforai/bootstrap/node-specs/` for game-design nodes MUST be overwritten, even if they

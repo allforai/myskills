@@ -18,6 +18,7 @@ CHILD_REFS = [
     "40-qa/core-loop-playability-qa",
     "40-qa/asset-binding-visual-qa",
     "40-qa/session-completion-qa",
+    "40-qa/code-repair-loop",
     "40-qa/2d-production-closure-qa",
 ]
 
@@ -31,6 +32,7 @@ REQUIRED_PARENT_TERMS = {
     "game-audio",
     "runtime screenshot evidence",
     "2d-production-closure-qa",
+    "code-repair-loop",
     "do not accept static review",
 }
 
@@ -44,6 +46,8 @@ REQUIRED_CLOSURE_TERMS = {
     "core-loop playability QA",
     "asset-binding visual QA",
     "session-completion QA",
+    "code-repair-loop report",
+    "revalidation report",
     "runtime-gameplay-visual-acceptance",
     "functional assertions and Codex CLI screenshot review",
     "blocked_by_unrunnable_client",
@@ -59,6 +63,7 @@ REQUIRED_GAME_DESIGN_TERMS = {
     "game-2d-production",
     "after_game_frontend_bindings_and_runtime_art_audio_ui_manifests",
     "game-2d-production/40-qa/2d-production-closure-qa",
+    "game-2d-production/40-qa/code-repair-loop",
     ".allforai/game-2d/qa/2d-production-closure-report.json",
     "do not accept static review",
 }

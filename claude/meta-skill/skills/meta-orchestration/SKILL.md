@@ -26,6 +26,7 @@ runtime, or verification needs.
 | `20-spec` | `dynamic-skill-composition` | Select required/optional skills and produce a project-specific skill composition plan. |
 | `40-qa` | `artifact-contract-graph-qa` | Validate artifact producers, consumers, dependencies, repair routes, and blocked scopes. |
 | `40-qa` | `unattended-run-readiness-qa` | Validate before `/run` that the workflow can execute unattended without human prompts, missing tools, or hidden fallback completion. |
+| `40-qa` | `execution-repair-loop` | Generic QA-discovered implementation repair and revalidation loop for app, game, frontend, backend, UI, and runtime workflows. |
 
 ## Canonical Invocation Paths
 
@@ -33,6 +34,7 @@ runtime, or verification needs.
 ${CLAUDE_PLUGIN_ROOT}/skills/meta-orchestration/20-spec/dynamic-skill-composition/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/meta-orchestration/40-qa/artifact-contract-graph-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/meta-orchestration/40-qa/unattended-run-readiness-qa/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/meta-orchestration/40-qa/execution-repair-loop/SKILL.md
 ```
 
 ## Shared Output Root

@@ -183,6 +183,8 @@ def test_game_2d_handoff_accepts_ordered_production_nodes(tmp_path):
                 ".allforai/game-2d/qa/core-loop-playability-qa-report.json",
                 ".allforai/game-2d/qa/asset-binding-visual-qa-report.json",
                 ".allforai/game-2d/qa/session-completion-qa-report.json",
+                ".allforai/game-2d/repair/code-repair-loop-report.json",
+                ".allforai/game-2d/qa/revalidation-report.json",
                 ".allforai/game-2d/qa/2d-production-closure-report.json",
                 ".allforai/game-2d/qa/2d-production-closure.html",
             ]

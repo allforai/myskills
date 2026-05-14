@@ -590,6 +590,7 @@ contracts exist:
       "game-2d-production/40-qa/core-loop-playability-qa",
       "game-2d-production/40-qa/asset-binding-visual-qa",
       "game-2d-production/40-qa/session-completion-qa",
+      "game-2d-production/40-qa/code-repair-loop",
       "game-2d-production/40-qa/2d-production-closure-qa"
     ],
     "required_outputs": [
@@ -597,6 +598,8 @@ contracts exist:
       ".allforai/game-2d/qa/core-loop-playability-qa-report.json",
       ".allforai/game-2d/qa/asset-binding-visual-qa-report.json",
       ".allforai/game-2d/qa/session-completion-qa-report.json",
+      ".allforai/game-2d/repair/code-repair-loop-report.json",
+      ".allforai/game-2d/qa/revalidation-report.json",
       ".allforai/game-2d/qa/2d-production-closure-report.json",
       ".allforai/game-2d/qa/2d-production-closure.html"
     ],
@@ -608,7 +611,7 @@ contracts exist:
       "blocked_by_missing_visual_model_capability",
       "failed_validation"
     ],
-    "acceptance_rule": "The playable 2D slice must pass core-loop, asset-binding visual, session-completion, and final 2d-production closure QA with runtime screenshot evidence; do not accept static review."
+    "acceptance_rule": "The playable 2D slice must pass core-loop, asset-binding visual, session-completion, code-repair-loop revalidation, and final 2d-production closure QA with runtime screenshot evidence; do not accept static review."
   }
 }
 ```

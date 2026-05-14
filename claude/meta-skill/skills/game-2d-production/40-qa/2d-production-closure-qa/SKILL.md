@@ -9,7 +9,8 @@ description: Final closure gate for a playable 2D game slice across design, art,
 
 Read all `game-2d` reports, game-frontend QA reports, engine-ready art manifest,
 UI/audio manifests, build/export reports, and project-local specialized QA
-reports.
+reports. Always read `.allforai/game-2d/repair/code-repair-loop-report.json`
+and `.allforai/game-2d/qa/revalidation-report.json`.
 
 ## Output Contract
 
@@ -35,7 +36,9 @@ change art direction, or invent a fallback acceptance path.
     ".allforai/game-2d/assembly/playable-slice-assembly-report.json",
     ".allforai/game-2d/qa/core-loop-playability-qa-report.json",
     ".allforai/game-2d/qa/asset-binding-visual-qa-report.json",
-    ".allforai/game-2d/qa/session-completion-qa-report.json"
+    ".allforai/game-2d/qa/session-completion-qa-report.json",
+    ".allforai/game-2d/repair/code-repair-loop-report.json",
+    ".allforai/game-2d/qa/revalidation-report.json"
   ],
   "output_root": ".allforai/game-2d/qa"
 }
@@ -50,6 +53,8 @@ Require:
 - core-loop playability QA
 - asset-binding visual QA
 - session-completion QA
+- code-repair-loop report proving `code_gaps` were fixed or absent
+- revalidation report proving affected QA paths were rerun after repair
 - runtime-gameplay-visual-acceptance
 - frontend build/export or explicit `blocked_by_unrunnable_client`
 - functional assertions and Codex CLI screenshot review

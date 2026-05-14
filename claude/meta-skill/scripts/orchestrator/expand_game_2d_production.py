@@ -79,6 +79,16 @@ NODE_DEFS = [
         "exit_artifacts": [".allforai/game-2d/qa/session-completion-qa-report.json"],
     },
     {
+        "node_id": "game-2d-code-repair-loop",
+        "skill": "game-2d-production/40-qa/code-repair-loop",
+        "goal": "修复 2D QA 发现的代码缺口并重跑受影响验收",
+        "exit_artifacts": [
+            ".allforai/game-2d/repair/code-repair-loop-report.json",
+            ".allforai/game-2d/repair/code-repair-loop-report.md",
+            ".allforai/game-2d/qa/revalidation-report.json",
+        ],
+    },
+    {
         "node_id": "game-2d-production-closure-qa",
         "skill": "game-2d-production/40-qa/2d-production-closure-qa",
         "goal": "执行 2D 游戏最终出厂闭环验收",
@@ -214,12 +224,14 @@ def expand_game_2d_production(project_root: Path, *, dry_run: bool = False) -> d
         blockers = [previous] if previous else []
         if node_id == "game-2d-playable-slice-assembly" and frontend_assembly:
             blockers = sorted(set(blockers + [frontend_assembly]))
-        if node_id == "game-2d-production-closure-qa":
+        if node_id == "game-2d-code-repair-loop":
             blockers = [
                 "game-2d-core-loop-playability-qa",
                 "game-2d-asset-binding-visual-qa",
                 "game-2d-session-completion-qa",
             ]
+        if node_id == "game-2d-production-closure-qa":
+            blockers = ["game-2d-code-repair-loop"]
         blockers = [item for item in blockers if item]
 
         node = _node_for(defn, blockers)

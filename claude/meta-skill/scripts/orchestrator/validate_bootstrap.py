@@ -118,6 +118,7 @@ GAME_2D_PRODUCTION_REQUIRED_NODES = [
     "game-2d-core-loop-playability-qa",
     "game-2d-asset-binding-visual-qa",
     "game-2d-session-completion-qa",
+    "game-2d-code-repair-loop",
     "game-2d-production-closure-qa",
 ]
 
@@ -127,6 +128,8 @@ GAME_2D_PRODUCTION_REQUIRED_ARTIFACTS = {
     ".allforai/game-2d/qa/core-loop-playability-qa-report.json",
     ".allforai/game-2d/qa/asset-binding-visual-qa-report.json",
     ".allforai/game-2d/qa/session-completion-qa-report.json",
+    ".allforai/game-2d/repair/code-repair-loop-report.json",
+    ".allforai/game-2d/qa/revalidation-report.json",
     ".allforai/game-2d/qa/2d-production-closure-report.json",
     ".allforai/game-2d/qa/2d-production-closure.html",
 }

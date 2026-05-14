@@ -128,11 +128,14 @@ cannot run, frontend QA must block instead of accepting source inspection.
 .allforai/game-2d/qa/core-loop-playability-qa-report.json
 .allforai/game-2d/qa/asset-binding-visual-qa-report.json
 .allforai/game-2d/qa/session-completion-qa-report.json
+.allforai/game-2d/repair/code-repair-loop-report.json
+.allforai/game-2d/qa/revalidation-report.json
 .allforai/game-2d/qa/2d-production-closure-report.json
 .allforai/game-2d/qa/2d-production-closure.html
 ```
 
 2D production closure requires `game-frontend` runtime evidence plus visible
-runtime screenshot evidence. It must block on unrunnable clients, missing
-runtime commands, missing screenshots, missing Codex CLI visual capability, or
-failed validation. It must not accept static review.
+runtime screenshot evidence. It must repair QA-discovered code gaps before
+final closure, then block on unrunnable clients, missing runtime commands,
+missing screenshots, missing Codex CLI visual capability, or failed validation.
+It must not accept static review.

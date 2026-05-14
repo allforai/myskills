@@ -14,7 +14,8 @@ runtime-gameplay-visual-acceptance report, and engine-ready art manifest.
 
 Write `.allforai/game-2d/qa/asset-binding-visual-qa-report.json` with asset
 coverage, screenshot evidence, missing/placeholder findings, readability
-findings, and repair routing.
+findings, and repair routing. Findings must be classified into `code_gaps`,
+`asset_gaps`, `contract_gaps`, and `environment_blockers`.
 
 ## Invocation Contract
 

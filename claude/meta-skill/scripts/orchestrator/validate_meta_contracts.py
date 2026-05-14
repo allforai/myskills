@@ -107,6 +107,47 @@ def validate_unattended_run_contract(errors: list[str]) -> None:
             errors.append(f"orchestrator-template.md: missing unattended preflight term {term}")
     if "unattended-run-readiness-qa" not in parent_text:
         errors.append("meta-orchestration/SKILL.md: missing unattended readiness child")
+    if "execution-repair-loop" not in parent_text:
+        errors.append("meta-orchestration/SKILL.md: missing execution repair loop child")
+
+
+def validate_execution_repair_loop_contract(errors: list[str]) -> None:
+    bootstrap_text = BOOTSTRAP.read_text(encoding="utf-8")
+    template = ROOT / "knowledge/orchestrator-template.md"
+    template_text = template.read_text(encoding="utf-8")
+    skill = ROOT / "skills/meta-orchestration/40-qa/execution-repair-loop/SKILL.md"
+    if not skill.exists():
+        errors.append("meta-orchestration: missing execution-repair-loop skill")
+        return
+    skill_text = skill.read_text(encoding="utf-8")
+    for term in (
+        "Generic QA repair loop rule",
+        "code_gaps",
+        "test_gaps",
+        "rerun affected QA evidence",
+        "3 attempts",
+        "execution-repair-loop",
+    ):
+        if term not in bootstrap_text:
+            errors.append(f"bootstrap.md: missing generic repair loop term {term}")
+    for term in (
+        "code_gaps",
+        "test_gaps",
+        "repair loop",
+        "Rerun affected QA evidence",
+    ):
+        if term not in template_text:
+            errors.append(f"orchestrator-template.md: missing repair loop runtime term {term}")
+    for term in (
+        "code_gaps",
+        "test_gaps",
+        "environment_blockers",
+        "blocked_by_environment",
+        "3 attempts",
+        "Downstream closure nodes",
+    ):
+        if term not in skill_text:
+            errors.append(f"execution-repair-loop/SKILL.md: missing repair contract term {term}")
 
 
 def validate_implement_goal_contract(errors: list[str]) -> None:
@@ -160,6 +201,7 @@ def main() -> int:
     validate_dashboard_virtual_gates(errors)
     validate_approval_scripts_copied(errors)
     validate_unattended_run_contract(errors)
+    validate_execution_repair_loop_contract(errors)
     validate_implement_goal_contract(errors)
     validate_feedback_contract(errors)
     if errors:

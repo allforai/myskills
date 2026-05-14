@@ -14,7 +14,8 @@ manifest, runtime profile, and project-local specialized QA guidance.
 
 Write `.allforai/game-2d/qa/core-loop-playability-qa-report.json` with action
 trace, assertions, screenshot manifest, pass/fail/blocker status, and repair
-recommendations.
+recommendations. Findings must be classified into `code_gaps`, `asset_gaps`,
+`contract_gaps`, and `environment_blockers`.
 
 ## Invocation Contract
 
@@ -42,4 +43,6 @@ functional assertions and Codex CLI screenshot review.
 ## Completion Conditions
 
 Complete only when the core loop can be played from input to outcome, or when a
-specific blocker is reported.
+specific blocker is reported with a repair class. Implementation defects must be
+listed in `code_gaps` so `game-2d-production/40-qa/code-repair-loop` can repair
+and rerun affected QA. Do not hide code defects as generic blockers.
