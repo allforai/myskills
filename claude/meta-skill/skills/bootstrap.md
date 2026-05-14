@@ -2643,6 +2643,8 @@ cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/render_approval_dashboard.py .allf
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/serve_approval.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/apply_approval_action.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/record_meta_skill_feedback.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/record_run_event.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/summarize_run_log.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/knowledge/diagnosis.md .allforai/bootstrap/protocols/
 cp ${CLAUDE_PLUGIN_ROOT}/knowledge/learning-protocol.md .allforai/bootstrap/protocols/
 cp ${CLAUDE_PLUGIN_ROOT}/knowledge/feedback-protocol.md .allforai/bootstrap/protocols/
@@ -2666,15 +2668,17 @@ Write these files (they were generated in memory during Steps 3-5, now persist t
 8. `.allforai/bootstrap/scripts/expand_game_2d_production.py`
 9. `.allforai/bootstrap/scripts/validate_unattended_readiness.py`
 10. `.allforai/bootstrap/scripts/record_meta_skill_feedback.py`
-11. `.allforai/bootstrap/unattended-run-readiness-spec.json`：声明本次 workflow 在 `/run` 前必须满足的无人值守能力、审批、工具、Key、运行时、长任务恢复、视觉验收和禁止降级完成规则。读取并遵循 `${CLAUDE_PLUGIN_ROOT}/skills/meta-orchestration/40-qa/unattended-run-readiness-qa/SKILL.md`。
-12. `.allforai/bootstrap/unattended-run-readiness.json` 和 `.allforai/bootstrap/unattended-run-readiness.md`：bootstrap 结束前运行一次：
+11. `.allforai/bootstrap/scripts/record_run_event.py`
+12. `.allforai/bootstrap/scripts/summarize_run_log.py`
+13. `.allforai/bootstrap/unattended-run-readiness-spec.json`：声明本次 workflow 在 `/run` 前必须满足的无人值守能力、审批、工具、Key、运行时、长任务恢复、视觉验收和禁止降级完成规则。读取并遵循 `${CLAUDE_PLUGIN_ROOT}/skills/meta-orchestration/40-qa/unattended-run-readiness-qa/SKILL.md`。
+14. `.allforai/bootstrap/unattended-run-readiness.json` 和 `.allforai/bootstrap/unattended-run-readiness.md`：bootstrap 结束前运行一次：
     ```bash
     python3 .allforai/bootstrap/scripts/validate_unattended_readiness.py . --write-report
     ```
     允许 `status: "not_ready"`，但必须把 blocker 前置暴露给用户。`/run` 会再次执行同一检查；未 ready 时不得启动长任务。
-13. `.allforai/bootstrap/protocols/*.md`
-14. `.allforai/game-design/approval-records.json`：为每个 `human_gate: true` 的游戏设计节点初始化一条 `pending` 记录。**重建时（goals 包含 `create` 或 `rebuild`）如果文件已存在，重置所有记录为 `gate_status: "pending"`，清空 `approved_by`、`approved_at`、`reviewer_notes`、`revision_notes`。保留节点列表结构，但重置审批状态。**首次 bootstrap 时创建新文件。`human_gate: false` 的节点（art-concept、concept-freeze、architecture-concept-validation）不写入审批记录。
-15. `.allforai/game-design/review-dashboard.html`：在生成 `approval-records.json` 后立即渲染，并且必须早于任何 game-design 节点执行：
+15. `.allforai/bootstrap/protocols/*.md`
+16. `.allforai/game-design/approval-records.json`：为每个 `human_gate: true` 的游戏设计节点初始化一条 `pending` 记录。**重建时（goals 包含 `create` 或 `rebuild`）如果文件已存在，重置所有记录为 `gate_status: "pending"`，清空 `approved_by`、`approved_at`、`reviewer_notes`、`revision_notes`。保留节点列表结构，但重置审批状态。**首次 bootstrap 时创建新文件。`human_gate: false` 的节点（art-concept、concept-freeze、architecture-concept-validation）不写入审批记录。
+17. `.allforai/game-design/review-dashboard.html`：在生成 `approval-records.json` 后立即渲染，并且必须早于任何 game-design 节点执行：
     ```bash
     python3 .allforai/bootstrap/scripts/render_approval_dashboard.py \
       --approval .allforai/game-design/approval-records.json \

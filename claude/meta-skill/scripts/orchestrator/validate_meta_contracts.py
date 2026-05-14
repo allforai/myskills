@@ -65,6 +65,8 @@ def validate_approval_scripts_copied(errors: list[str]) -> None:
         "apply_approval_action.py",
         "expand_game_2d_production.py",
         "record_meta_skill_feedback.py",
+        "record_run_event.py",
+        "summarize_run_log.py",
         "validate_unattended_readiness.py",
     ):
         if f"scripts/orchestrator/{script}" not in text:
@@ -94,6 +96,10 @@ def validate_unattended_run_contract(errors: list[str]) -> None:
         "validate_unattended_readiness.py",
         "expand_game_2d_production.py",
         "record_meta_skill_feedback.py",
+        "record_run_event.py",
+        "summarize_run_log.py",
+        "run-log.jsonl",
+        "run-summary.md",
         "status != \"ready\"",
         "do not ask the user mid-run",
     ):
