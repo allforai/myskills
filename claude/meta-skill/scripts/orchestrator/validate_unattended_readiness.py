@@ -195,6 +195,14 @@ def validate_unattended_readiness(project_root: Path) -> dict:
                 "game frontend handoff exists but runtime gameplay visual QA is not represented",
             )
 
+    if "game_2d_production" in lower_blob or "game-2d-production" in lower_blob:
+        if "game-2d-production-closure-qa" not in lower_blob and "2d-production-closure-qa" not in lower_blob:
+            _add(
+                blockers,
+                "unexpanded_game_2d_production_handoff",
+                "game 2D production handoff exists but 2D production closure QA is not represented",
+            )
+
     status = READY_STATUS if not blockers else BLOCKING_STATUS
     return {
         "status": status,

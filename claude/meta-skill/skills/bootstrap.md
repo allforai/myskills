@@ -911,6 +911,35 @@ create downstream implementation and QA nodes. If the required handoff artifacts
 are missing, add a targeted handoff-regeneration/analysis node or block
 unattended readiness; do not silently convert `implement` into `rebuild`.
 
+**Game implementation handoff expansion:** For `implement`, inspect
+`.allforai/game-design/design/program-development-node-handoff.json` before
+writing workflow nodes. If it contains `game_frontend`, expand the listed
+frontend implementation/QA requirements into concrete downstream nodes that read
+the `game-frontend` sub-skills. If it contains `game_2d_production`, expand the
+listed `required_closure_skills` into concrete downstream nodes in this order:
+
+- `game-2d-runtime-profile`
+- `game-2d-view-mode-runtime-contract`
+- `game-2d-core-loop-playable-contract`
+- `game-2d-asset-runtime-binding-contract`
+- `game-2d-input-feedback-contract`
+- `game-2d-session-flow-contract`
+- `game-2d-playable-slice-assembly`
+- `game-2d-core-loop-playability-qa`
+- `game-2d-asset-binding-visual-qa`
+- `game-2d-session-completion-qa`
+- `game-2d-production-closure-qa`
+
+Each node-spec must be a thin delegating node-spec that reads the matching
+`game-2d-production/.../SKILL.md` file, declares its `.allforai/game-2d/...`
+exit artifacts, and hard-blocks on the previous selected 2D production node.
+`game-2d-playable-slice-assembly` must also hard-block on the selected
+game-frontend assembly node when present. `game-2d-production-closure-qa` must
+hard-block on all selected 2D QA nodes and must be represented in the workflow
+before unattended readiness can pass. If bootstrap cannot expand this handoff,
+mark the downstream 2D implementation scope blocked; do not leave the
+`game_2d_production` handoff as inert JSON.
+
 **On `rebuild` goal — mandatory regeneration:** ALL existing node-spec files under
 `.allforai/bootstrap/node-specs/` for game-design nodes MUST be overwritten, even if they
 already exist. Do NOT skip a node-spec because a file is already present. Stale node-specs
@@ -934,6 +963,16 @@ before starting node generation.
        `game-frontend`. It tells downstream program/frontend nodes to invoke
        the `game-frontend` pack and preserve required QA skills, including
        `game-frontend/40-qa/runtime-gameplay-visual-acceptance`.
+
+       **2D game production handoff:** When the selected game target is a 2D
+       client/runtime and the overall goal includes implementation, require
+       `.allforai/game-design/design/program-development-node-handoff.json` to
+       include the `game_2d_production` block from `game-design.md`
+       §Conditional Sub-Skill Expansion Rules / Frontend handoff. This does
+       NOT create a game-design node for `game-2d-production`; it tells
+       downstream program/frontend nodes to invoke the `game-2d-production`
+       pack after approved art/UI/audio/frontend/runtime contracts exist and
+       preserve `game-2d-production/40-qa/2d-production-closure-qa`.
 
        **Sub-skill path validation:** Before writing a delegating node-spec,
        resolve every expanded sub-skill path to
@@ -982,6 +1021,14 @@ before starting node generation.
          `.allforai/bootstrap/specialized-skills/`. The global `game-frontend`
          children remain generic contracts and must not embed Cocos/Phaser/
          Unity/Godot or genre-specific state machines directly.
+       - Project-specific 2D production: when playable slice acceptance depends
+         on concrete genre rules, tile/readability families, camera constraints,
+         solver difficulty, or custom session win/loss proofs, generate
+         `<specialization_id>-2d-production` under
+         `.allforai/bootstrap/specialized-skills/`. The global
+         `game-2d-production` pack remains a generic production closure and
+         must consume the project-local specialization instead of embedding
+         genre-tight rules globally.
        - Rhythm games: generate beatmap timing-window validation and input
          latency validation.
        - Deck-builders: generate card-pool closure, draw-probability, and

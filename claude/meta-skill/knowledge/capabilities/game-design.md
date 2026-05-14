@@ -567,6 +567,52 @@ but they must preserve the required QA skill list and blocking statuses. The
 `runtime-gameplay-visual-acceptance` skill is not a game-design node; it is a
 post-implementation executable QA requirement.
 
+The handoff must also include a `game_2d_production` block when the target game
+runs as a 2D client or 2D runtime. This is not a game-design node; it is a
+downstream program/frontend production closure requirement that runs after
+approved design, art, UI, audio, level, template, frontend, and runtime
+contracts exist:
+
+```json
+{
+  "game_2d_production": {
+    "required": true,
+    "skill_pack": "game-2d-production",
+    "entry_phase": "after_game_frontend_bindings_and_runtime_art_audio_ui_manifests",
+    "required_closure_skills": [
+      "game-2d-production/00-env/runtime-profile",
+      "game-2d-production/20-spec/view-mode-runtime-contract",
+      "game-2d-production/20-spec/core-loop-playable-contract",
+      "game-2d-production/20-spec/asset-runtime-binding-contract",
+      "game-2d-production/20-spec/input-feedback-contract",
+      "game-2d-production/20-spec/session-flow-contract",
+      "game-2d-production/30-generate/playable-slice-assembly",
+      "game-2d-production/40-qa/core-loop-playability-qa",
+      "game-2d-production/40-qa/asset-binding-visual-qa",
+      "game-2d-production/40-qa/session-completion-qa",
+      "game-2d-production/40-qa/2d-production-closure-qa"
+    ],
+    "required_outputs": [
+      ".allforai/game-2d/assembly/playable-slice-assembly-report.json",
+      ".allforai/game-2d/qa/core-loop-playability-qa-report.json",
+      ".allforai/game-2d/qa/asset-binding-visual-qa-report.json",
+      ".allforai/game-2d/qa/session-completion-qa-report.json",
+      ".allforai/game-2d/qa/2d-production-closure-report.json",
+      ".allforai/game-2d/qa/2d-production-closure.html"
+    ],
+    "blocking_statuses": [
+      "blocked_by_unrunnable_client",
+      "blocked_by_missing_runtime_command",
+      "blocked_by_missing_screenshot",
+      "blocked_by_missing_codex_cli",
+      "blocked_by_missing_visual_model_capability",
+      "failed_validation"
+    ],
+    "acceptance_rule": "The playable 2D slice must pass core-loop, asset-binding visual, session-completion, and final 2d-production closure QA with runtime screenshot evidence; do not accept static review."
+  }
+}
+```
+
 **Shared production map:** `game-production/SKILL.md` is a routing reference,
 not an executable node. Bootstrap may cite it in generated node-specs when
 resolving ownership conflicts, but must not add it to workflow execution.

@@ -16,6 +16,9 @@ python3 claude/meta-skill/scripts/orchestrator/validate_art_pipeline.py .
 echo "[pre-commit] validate game frontend pipeline wiring"
 python3 claude/meta-skill/scripts/orchestrator/validate_game_frontend_pipeline.py .
 
+echo "[pre-commit] validate game 2D production pipeline wiring"
+python3 claude/meta-skill/scripts/orchestrator/validate_game_2d_production_pipeline.py .
+
 echo "[pre-commit] validate game creative pipeline wiring"
 python3 claude/meta-skill/scripts/orchestrator/validate_game_creative_pipeline.py .
 

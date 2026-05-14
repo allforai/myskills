@@ -60,3 +60,15 @@ def test_unattended_readiness_blocks_interactive_node_spec(tmp_path):
 
     assert report["status"] == "not_ready"
     assert any(item["code"] == "node_spec_allows_user_prompt" for item in report["blockers"])
+
+
+def test_unattended_readiness_blocks_unexpanded_game_2d_handoff(tmp_path):
+    _minimal_project(tmp_path, node_spec="game_2d_production handoff exists")
+
+    report = validate_unattended_readiness(tmp_path)
+
+    assert report["status"] == "not_ready"
+    assert any(
+        item["code"] == "unexpanded_game_2d_production_handoff"
+        for item in report["blockers"]
+    )

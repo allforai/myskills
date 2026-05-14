@@ -32,6 +32,7 @@ This pack does not execute production work. It prevents category drift.
 | `game-art` | Visual assets, style tokens, source strategy, image/animation/VFX production, atlas, import QA, engine-ready art manifest. | Gameplay implementation and runtime systems. |
 | `game-audio` | Music/SFX/voice style, cue specs, generated audio manifests, audio QA. | Audio engine integration code unless delegated by runtime. |
 | `game-frontend` | Playable client assembly, asset/UI/animation/VFX bindings, scene composition, browser/engine smoke tests, visual runtime regression QA. | Product design, art generation, backend/security architecture. |
+| `game-2d-production` | 2D playable vertical slice assembly, runtime binding closure, core-loop playability QA, session completion QA, and final 2D production closure. | Genre-specific design rules, art generation, engine-specific code ownership, and 3D runtime production. |
 | `game-balance` | Numeric tuning, curves, simulations, balance QA. | Economy/product purpose and runtime code. |
 | `game-combat` | Combat-specific rules, timing, hit readability, combat QA. | General system design and engine implementation. |
 | `game-onboarding` | FTUE/tutorial product flow and onboarding QA. | Generic app onboarding. |
@@ -112,3 +113,26 @@ Game frontend exits through:
 
 Frontend completion requires a runnable client validation path. If the client
 cannot run, frontend QA must block instead of accepting source inspection.
+
+2D game production exits through:
+
+```text
+.allforai/game-2d/env/2d-runtime-profile.json
+.allforai/game-2d/spec/view-mode-runtime-contract.json
+.allforai/game-2d/spec/core-loop-playable-contract.json
+.allforai/game-2d/spec/asset-runtime-binding-contract.json
+.allforai/game-2d/spec/input-feedback-contract.json
+.allforai/game-2d/spec/session-flow-contract.json
+.allforai/game-2d/assembly/playable-slice-manifest.json
+.allforai/game-2d/assembly/playable-slice-assembly-report.json
+.allforai/game-2d/qa/core-loop-playability-qa-report.json
+.allforai/game-2d/qa/asset-binding-visual-qa-report.json
+.allforai/game-2d/qa/session-completion-qa-report.json
+.allforai/game-2d/qa/2d-production-closure-report.json
+.allforai/game-2d/qa/2d-production-closure.html
+```
+
+2D production closure requires `game-frontend` runtime evidence plus visible
+runtime screenshot evidence. It must block on unrunnable clients, missing
+runtime commands, missing screenshots, missing Codex CLI visual capability, or
+failed validation. It must not accept static review.
