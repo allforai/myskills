@@ -63,6 +63,7 @@ def validate_approval_scripts_copied(errors: list[str]) -> None:
         "render_approval_dashboard.py",
         "serve_approval.py",
         "apply_approval_action.py",
+        "expand_game_2d_production.py",
         "validate_unattended_readiness.py",
     ):
         if f"scripts/orchestrator/{script}" not in text:
@@ -90,6 +91,7 @@ def validate_unattended_run_contract(errors: list[str]) -> None:
     for term in (
         "Preflight Gate",
         "validate_unattended_readiness.py",
+        "expand_game_2d_production.py",
         "status != \"ready\"",
         "do not ask the user mid-run",
     ):

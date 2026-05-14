@@ -940,6 +940,17 @@ before unattended readiness can pass. If bootstrap cannot expand this handoff,
 mark the downstream 2D implementation scope blocked; do not leave the
 `game_2d_production` handoff as inert JSON.
 
+After writing the initial workflow and node-specs, run the project-local
+expander before validation:
+
+```bash
+python3 .allforai/bootstrap/scripts/expand_game_2d_production.py .
+```
+
+This script is idempotent. It appends or repairs the 11 generic
+`game-2d-production` nodes and their thin delegating node-specs whenever the
+project handoff requires 2D production closure.
+
 **On `rebuild` goal — mandatory regeneration:** ALL existing node-spec files under
 `.allforai/bootstrap/node-specs/` for game-design nodes MUST be overwritten, even if they
 already exist. Do NOT skip a node-spec because a file is already present. Stale node-specs
@@ -2626,6 +2637,7 @@ mkdir -p .allforai/bootstrap/scripts
 mkdir -p .allforai/bootstrap/protocols
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/check_artifacts.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/validate_bootstrap.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/expand_game_2d_production.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/validate_unattended_readiness.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/render_approval_dashboard.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/serve_approval.py .allforai/bootstrap/scripts/
@@ -2650,16 +2662,17 @@ Write these files (they were generated in memory during Steps 3-5, now persist t
 5. `.claude/commands/run.md`
 6. `.allforai/bootstrap/scripts/check_artifacts.py`
 7. `.allforai/bootstrap/scripts/validate_bootstrap.py`
-8. `.allforai/bootstrap/scripts/validate_unattended_readiness.py`
-9. `.allforai/bootstrap/unattended-run-readiness-spec.json`：声明本次 workflow 在 `/run` 前必须满足的无人值守能力、审批、工具、Key、运行时、长任务恢复、视觉验收和禁止降级完成规则。读取并遵循 `${CLAUDE_PLUGIN_ROOT}/skills/meta-orchestration/40-qa/unattended-run-readiness-qa/SKILL.md`。
-10. `.allforai/bootstrap/unattended-run-readiness.json` 和 `.allforai/bootstrap/unattended-run-readiness.md`：bootstrap 结束前运行一次：
+8. `.allforai/bootstrap/scripts/expand_game_2d_production.py`
+9. `.allforai/bootstrap/scripts/validate_unattended_readiness.py`
+10. `.allforai/bootstrap/unattended-run-readiness-spec.json`：声明本次 workflow 在 `/run` 前必须满足的无人值守能力、审批、工具、Key、运行时、长任务恢复、视觉验收和禁止降级完成规则。读取并遵循 `${CLAUDE_PLUGIN_ROOT}/skills/meta-orchestration/40-qa/unattended-run-readiness-qa/SKILL.md`。
+11. `.allforai/bootstrap/unattended-run-readiness.json` 和 `.allforai/bootstrap/unattended-run-readiness.md`：bootstrap 结束前运行一次：
     ```bash
     python3 .allforai/bootstrap/scripts/validate_unattended_readiness.py . --write-report
     ```
     允许 `status: "not_ready"`，但必须把 blocker 前置暴露给用户。`/run` 会再次执行同一检查；未 ready 时不得启动长任务。
-11. `.allforai/bootstrap/protocols/*.md`
-12. `.allforai/game-design/approval-records.json`：为每个 `human_gate: true` 的游戏设计节点初始化一条 `pending` 记录。**重建时（goals 包含 `create` 或 `rebuild`）如果文件已存在，重置所有记录为 `gate_status: "pending"`，清空 `approved_by`、`approved_at`、`reviewer_notes`、`revision_notes`。保留节点列表结构，但重置审批状态。**首次 bootstrap 时创建新文件。`human_gate: false` 的节点（art-concept、concept-freeze、architecture-concept-validation）不写入审批记录。
-13. `.allforai/game-design/review-dashboard.html`：在生成 `approval-records.json` 后立即渲染，并且必须早于任何 game-design 节点执行：
+12. `.allforai/bootstrap/protocols/*.md`
+13. `.allforai/game-design/approval-records.json`：为每个 `human_gate: true` 的游戏设计节点初始化一条 `pending` 记录。**重建时（goals 包含 `create` 或 `rebuild`）如果文件已存在，重置所有记录为 `gate_status: "pending"`，清空 `approved_by`、`approved_at`、`reviewer_notes`、`revision_notes`。保留节点列表结构，但重置审批状态。**首次 bootstrap 时创建新文件。`human_gate: false` 的节点（art-concept、concept-freeze、architecture-concept-validation）不写入审批记录。
+14. `.allforai/game-design/review-dashboard.html`：在生成 `approval-records.json` 后立即渲染，并且必须早于任何 game-design 节点执行：
     ```bash
     python3 .allforai/bootstrap/scripts/render_approval_dashboard.py \
       --approval .allforai/game-design/approval-records.json \

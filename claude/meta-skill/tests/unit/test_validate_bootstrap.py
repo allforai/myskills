@@ -4,8 +4,10 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/orchestrator"))
 from validate_bootstrap import (
+    GAME_2D_PRODUCTION_REQUIRED_NODES,
     validate_approval_records,
     validate_app_design_flow,
+    validate_game_2d_production_flow,
     validate_mobile_ui_coverage,
     validate_node_spec_contracts,
     validate_node_spec_coverage,
@@ -34,6 +36,13 @@ def _base_node(**overrides):
     }
     node.update(overrides)
     return node
+
+
+def _write(root, rel, text):
+    path = root / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+    return path
 
 
 def test_string_artifact_passes(tmp_path):
@@ -128,6 +137,79 @@ def test_node_spec_coverage_detects_missing_and_orphan_specs(tmp_path):
 
     assert "node-specs: workflow node 'missing-spec' has no matching node-spec file" in errors
     assert "node-specs/orphan.md: no matching workflow node" in errors
+
+
+def test_game_2d_handoff_requires_production_nodes(tmp_path):
+    bdir = tmp_path / ".allforai/bootstrap"
+    bdir.mkdir(parents=True)
+    _write_workflow(
+        bdir,
+        [
+            _base_node(
+                node_id="setup-runtime-env",
+                capability="game-runtime",
+                exit_artifacts=[".allforai/bootstrap/runtime.json"],
+            )
+        ],
+    )
+    _write(
+        tmp_path,
+        ".allforai/game-design/design/program-development-node-handoff.json",
+        json.dumps(
+            {
+                "target_engine": "cocos-creator-3.x",
+                "runtime_assumptions": {"platform": "web-canvas-2d"},
+                "implementation_nodes": [{"node_id": "implement-puzzle-core"}],
+            }
+        ),
+    )
+
+    errors = validate_game_2d_production_flow(str(bdir))
+
+    assert any("missing required game-2d-production nodes" in error for error in errors)
+
+
+def test_game_2d_handoff_accepts_ordered_production_nodes(tmp_path):
+    bdir = tmp_path / ".allforai/bootstrap"
+    specs_dir = bdir / "node-specs"
+    specs_dir.mkdir(parents=True)
+    nodes = []
+    previous = None
+    for node_id in GAME_2D_PRODUCTION_REQUIRED_NODES:
+        artifacts = [f".allforai/game-2d/{node_id}.json"]
+        if node_id == "game-2d-production-closure-qa":
+            artifacts = [
+                ".allforai/game-2d/assembly/playable-slice-assembly-report.json",
+                ".allforai/game-2d/qa/core-loop-playability-qa-report.json",
+                ".allforai/game-2d/qa/asset-binding-visual-qa-report.json",
+                ".allforai/game-2d/qa/session-completion-qa-report.json",
+                ".allforai/game-2d/qa/2d-production-closure-report.json",
+                ".allforai/game-2d/qa/2d-production-closure.html",
+            ]
+        nodes.append(
+            _base_node(
+                node_id=node_id,
+                capability="game-2d-production",
+                hard_blocked_by=[previous] if previous else [],
+                exit_artifacts=artifacts,
+            )
+        )
+        _write(
+            bdir,
+            f"node-specs/{node_id}.md",
+            f"---\nnode: {node_id}\n---\nRead game-2d-production/{node_id}/SKILL.md\n",
+        )
+        previous = node_id
+    _write_workflow(bdir, nodes)
+    _write(
+        tmp_path,
+        ".allforai/game-design/design/program-development-node-handoff.json",
+        json.dumps({"game_2d_production": {"required": True}, "implementation_nodes": []}),
+    )
+
+    errors = validate_game_2d_production_flow(str(bdir))
+
+    assert errors == []
 
 
 def test_node_spec_contract_detects_frontmatter_mismatch(tmp_path):

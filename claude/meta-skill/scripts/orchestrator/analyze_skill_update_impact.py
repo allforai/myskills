@@ -149,6 +149,17 @@ def _domain_rules(path: str) -> list[dict]:
             "rerun": "rerun game frontend binding, smoke, and visual runtime QA nodes",
             "severity": "medium",
         })
+    if (
+        "claude/meta-skill/skills/game-2d-production/" in path
+        or "expand_game_2d_production.py" in path
+        or "validate_game_2d_production_pipeline.py" in path
+    ):
+        rules.append({
+            "scope": "game-2d-production",
+            "reason": "2D game production closure or workflow expansion contract changed",
+            "rerun": "rerun /bootstrap or run expand_game_2d_production.py, then rerun 2D production closure nodes",
+            "severity": "high",
+        })
     if "claude/meta-skill/skills/game-design/" in path:
         rules.append({
             "scope": "game-design",
@@ -171,6 +182,7 @@ def _node_matches_domain(blob: str, scope: str) -> bool:
         "game-art": ("game-art", "art-qa", "image-generation", "asset-registry", "visual-acceptance"),
         "visual-qa": ("visual", "screenshot", "codex-visual", "visual-qa", "art-qa"),
         "game-frontend": ("game-frontend", "runtime", "smoke", "visual-runtime", "client"),
+        "game-2d-production": ("game-2d-production", "game-2d", "2d-production", "playable-slice", "core-loop-playability"),
         "game-design": ("game-design", "game", "core-loop", "level", "economy", "handoff"),
         "app-design": ("app-design", "screen", "user-flow", "interaction", "handoff"),
         "bootstrap": ("bootstrap",),

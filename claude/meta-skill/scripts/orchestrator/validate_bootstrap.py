@@ -107,6 +107,31 @@ APP_DESIGN_FINALIZE_REQUIRED_ARTIFACTS = {
 }
 
 
+GAME_2D_PRODUCTION_REQUIRED_NODES = [
+    "game-2d-runtime-profile",
+    "game-2d-view-mode-runtime-contract",
+    "game-2d-core-loop-playable-contract",
+    "game-2d-asset-runtime-binding-contract",
+    "game-2d-input-feedback-contract",
+    "game-2d-session-flow-contract",
+    "game-2d-playable-slice-assembly",
+    "game-2d-core-loop-playability-qa",
+    "game-2d-asset-binding-visual-qa",
+    "game-2d-session-completion-qa",
+    "game-2d-production-closure-qa",
+]
+
+
+GAME_2D_PRODUCTION_REQUIRED_ARTIFACTS = {
+    ".allforai/game-2d/assembly/playable-slice-assembly-report.json",
+    ".allforai/game-2d/qa/core-loop-playability-qa-report.json",
+    ".allforai/game-2d/qa/asset-binding-visual-qa-report.json",
+    ".allforai/game-2d/qa/session-completion-qa-report.json",
+    ".allforai/game-2d/qa/2d-production-closure-report.json",
+    ".allforai/game-2d/qa/2d-production-closure.html",
+}
+
+
 UI_TEST_PLATFORMS = {
     "android": {
         "display": "Android mobile UI",
@@ -602,6 +627,109 @@ def validate_app_design_flow(bdir: str) -> list:
     return errors
 
 
+def _project_root_from_bootstrap_dir(bdir: str) -> str:
+    return os.path.abspath(os.path.join(bdir, "..", ".."))
+
+
+def _game_2d_handoff_required(project_root: str) -> bool:
+    handoff_path = os.path.join(
+        project_root,
+        ".allforai/game-design/design/program-development-node-handoff.json",
+    )
+    if not os.path.exists(handoff_path):
+        return False
+
+    try:
+        handoff = _load_json(handoff_path)
+    except Exception:
+        return False
+
+    blob = _lower_blob(handoff)
+    if "game_2d_production" in blob:
+        return True
+
+    # Older handoff files may predate the explicit game_2d_production block.
+    # Treat clear 2D client/runtime evidence as requiring the same expansion so
+    # stale bootstraps are forced to regenerate instead of silently skipping
+    # final 2D production closure.
+    two_d_terms = (
+        "2d",
+        "web-canvas",
+        "cocos",
+        "phaser",
+        "godot_2d",
+        "unity_2d",
+        "canvas",
+    )
+    implementation_nodes = handoff.get("implementation_nodes")
+    has_program_nodes = isinstance(implementation_nodes, list) and bool(implementation_nodes)
+    return has_program_nodes and any(term in blob for term in two_d_terms)
+
+
+def validate_game_2d_production_flow(bdir: str) -> list:
+    """Validate that 2D game handoff expands into concrete production nodes."""
+    errors = []
+    workflow_path = os.path.join(bdir, "workflow.json")
+    specs_dir = os.path.join(bdir, "node-specs")
+    if not os.path.exists(workflow_path):
+        return errors
+
+    project_root = _project_root_from_bootstrap_dir(bdir)
+    if not _game_2d_handoff_required(project_root):
+        return errors
+
+    try:
+        workflow = _load_json(workflow_path)
+    except Exception:
+        return errors
+
+    nodes = {node.get("node_id"): node for node in workflow.get("nodes", []) if node.get("node_id")}
+    missing_nodes = [node_id for node_id in GAME_2D_PRODUCTION_REQUIRED_NODES if node_id not in nodes]
+    if missing_nodes:
+        errors.append(
+            "workflow.json: game 2D production handoff detected, but workflow is missing "
+            f"required game-2d-production nodes {missing_nodes}"
+        )
+        return errors
+
+    for previous, current in zip(
+        GAME_2D_PRODUCTION_REQUIRED_NODES,
+        GAME_2D_PRODUCTION_REQUIRED_NODES[1:],
+    ):
+        blockers = nodes[current].get("hard_blocked_by") or []
+        if previous not in blockers:
+            errors.append(
+                f"workflow.json: {current} must be hard_blocked_by {previous} "
+                "for ordered 2D production closure"
+            )
+
+    closure = nodes["game-2d-production-closure-qa"]
+    closure_artifacts = set(_artifact_paths(closure.get("exit_artifacts")))
+    missing_artifacts = sorted(GAME_2D_PRODUCTION_REQUIRED_ARTIFACTS - closure_artifacts)
+    if missing_artifacts:
+        errors.append(
+            "workflow.json: game-2d-production-closure-qa missing required exit_artifacts "
+            f"{missing_artifacts}"
+        )
+
+    for node_id in GAME_2D_PRODUCTION_REQUIRED_NODES:
+        spec_path = os.path.join(specs_dir, f"{node_id}.md")
+        if not os.path.exists(spec_path):
+            continue
+        try:
+            with open(spec_path) as f:
+                spec_text = f.read()
+        except Exception:
+            continue
+        if "game-2d-production/" not in spec_text:
+            errors.append(
+                f"node-specs/{node_id}.md: game 2D production node-spec must delegate "
+                "to a game-2d-production child skill"
+            )
+
+    return errors
+
+
 def validate_node_spec(path: str) -> list:
     """Validate a single node-spec markdown file."""
     data, _text, errors = _read_node_spec(path)
@@ -628,6 +756,7 @@ def main():
         errors.extend(validate_node_spec_contracts(bdir))
         errors.extend(validate_approval_records(bdir))
         errors.extend(validate_app_design_flow(bdir))
+        errors.extend(validate_game_2d_production_flow(bdir))
         errors.extend(validate_mobile_ui_coverage(bdir))
     else:
         sm_path = os.path.join(bdir, "state-machine.json")
@@ -657,6 +786,7 @@ __all__ = [
     "validate_node_spec_contracts",
     "validate_approval_records",
     "validate_app_design_flow",
+    "validate_game_2d_production_flow",
     "validate_mobile_ui_coverage",
 ]
 
