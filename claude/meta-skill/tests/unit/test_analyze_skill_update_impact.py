@@ -3,7 +3,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/orchestrator"))
-from analyze_skill_update_impact import analyze, write_reports
+from analyze_skill_update_impact import analyze, main, write_reports
 
 
 def _write(root, rel, text):
@@ -86,3 +86,32 @@ def test_analyze_skill_update_impact_needs_change_input_without_ref_or_files(tmp
     assert result["state"] == "needs_change_input"
     assert result["changed_files"] == []
     assert result["global_recommendations"][0]["scope"] == "unknown"
+
+
+def test_analyze_skill_update_impact_reads_installed_plugin_version(tmp_path):
+    plugin_root = tmp_path / "plugin"
+    project = tmp_path / "project"
+    _write(plugin_root, "SKILL.md", 'version: "2.0.1"\n')
+
+    result = analyze(str(plugin_root), str(project))
+
+    assert result["meta_skill_version"] == "2.0.1"
+
+
+def test_impact_cli_needs_change_input_is_not_shell_error(tmp_path):
+    plugin_root = tmp_path / "plugin"
+    project = tmp_path / "project"
+    _write(plugin_root, "SKILL.md", 'version: "2.0.1"\n')
+
+    code = main([
+        "--repo-root",
+        str(plugin_root),
+        "--project-root",
+        str(project),
+        "--output-root",
+        str(project / ".allforai/setup"),
+    ])
+
+    assert code == 0
+    data = json.loads((project / ".allforai/setup/skill-update-impact.json").read_text())
+    assert data["state"] == "needs_change_input"

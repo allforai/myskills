@@ -38,9 +38,21 @@ def _load_json(path: Path):
 
 
 def _current_version(repo_root: Path) -> str | None:
-    text = _read_text(repo_root / "claude/meta-skill/SKILL.md")
-    match = re.search(r'version:\s*"([^"]+)"', text)
-    return match.group(1) if match else None
+    candidates = [
+        repo_root / "claude/meta-skill/SKILL.md",
+        repo_root / "SKILL.md",
+        Path(__file__).resolve().parents[2] / "SKILL.md",
+    ]
+    plugin_family_root = repo_root / "meta-skill"
+    if plugin_family_root.is_dir():
+        candidates.extend(sorted(plugin_family_root.glob("*/SKILL.md"), reverse=True))
+
+    for candidate in candidates:
+        text = _read_text(candidate)
+        match = re.search(r'version:\s*"([^"]+)"', text)
+        if match:
+            return match.group(1)
+    return None
 
 
 def _git_changed_files(repo_root: Path, from_ref: str | None) -> tuple[list[str], str]:
@@ -310,7 +322,12 @@ def main(argv=None) -> int:
     json_path, md_path = write_reports(result, args.output_root)
     print(f"wrote {json_path}")
     print(f"wrote {md_path}")
-    return 0 if result["state"] == "completed" else 2
+    if result["state"] != "completed":
+        print(
+            "impact analysis needs change input: provide --from-ref or --changed-file; "
+            "report was still written"
+        )
+    return 0
 
 
 if __name__ == "__main__":

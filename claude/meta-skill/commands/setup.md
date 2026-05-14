@@ -789,7 +789,7 @@ MCP 服务器:
 
 ```bash
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/analyze_skill_update_impact.py \
-  --repo-root ${CLAUDE_PLUGIN_ROOT}/../.. \
+  --repo-root ${CLAUDE_PLUGIN_ROOT} \
   --project-root . \
   --from-ref <from_ref> \
   --output-root .allforai/setup
@@ -799,7 +799,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/analyze_skill_update_impact.p
 
 ```bash
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/analyze_skill_update_impact.py \
-  --repo-root ${CLAUDE_PLUGIN_ROOT}/../.. \
+  --repo-root ${CLAUDE_PLUGIN_ROOT} \
   --project-root . \
   --changed-file claude/meta-skill/skills/game-art/30-generate/image-generation-contract/SKILL.md \
   --output-root .allforai/setup

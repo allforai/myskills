@@ -13,9 +13,58 @@ import json
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 
-def check_node_artifacts(node: dict) -> dict:
+BLOCKING_STATUS_VALUES = {
+    "blocked",
+    "failed",
+    "failed_validation",
+    "failed_env",
+    "not_ready",
+    "needs_revision",
+    "revision-requested",
+}
+
+STATUS_FIELDS = (
+    "status",
+    "qa_status",
+    "overall_status",
+    "repair_status",
+    "revalidation_status",
+    "overall_launch_status",
+    "validation_status",
+)
+
+
+def _resolve_path(path: str, project_root: Path | None = None) -> str:
+    if os.path.isabs(path) or project_root is None:
+        return path
+    return str(project_root / path)
+
+
+def _artifact_status_error(path: str) -> dict | None:
+    if not path.endswith(".json") or not os.path.exists(path):
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return None
+    if not isinstance(data, dict):
+        return None
+    for field in STATUS_FIELDS:
+        value = data.get(field)
+        if isinstance(value, str) and value.lower() in BLOCKING_STATUS_VALUES:
+            return {
+                "field": field,
+                "value": value,
+                "reason": "artifact report status is blocking; file existence is not completion",
+            }
+    return None
+
+
+def check_node_artifacts(node: dict, project_root: Path | None = None) -> dict:
     """Check if a node's exit_artifacts all exist."""
     node_id = node.get("node_id")
     if not node_id:
@@ -29,10 +78,20 @@ def check_node_artifacts(node: dict) -> dict:
         else:
             path = item
             validation_commands = []
-        entry = {"path": path, "exists": os.path.exists(path)}
+        resolved_path = _resolve_path(path, project_root)
+        entry = {"path": path, "exists": os.path.exists(resolved_path)}
+        if entry["exists"]:
+            status_error = _artifact_status_error(resolved_path)
+            if status_error:
+                entry["status_error"] = status_error
         if validation_commands and entry["exists"]:
             for cmd in validation_commands:
-                proc = subprocess.run(cmd, shell=True, capture_output=True)
+                proc = subprocess.run(
+                    cmd,
+                    shell=True,
+                    capture_output=True,
+                    cwd=str(project_root) if project_root else None,
+                )
                 if proc.returncode != 0:
                     entry["validation_error"] = {
                         "command": cmd,
@@ -43,9 +102,19 @@ def check_node_artifacts(node: dict) -> dict:
     return {
         "node_id": node_id,
         "goal": node.get("goal", ""),
-        "all_exist": all(r["exists"] and "validation_error" not in r for r in results),
+        "all_exist": all(
+            r["exists"] and "validation_error" not in r and "status_error" not in r
+            for r in results
+        ),
         "artifacts": results,
     }
+
+
+def _project_root_for_workflow(workflow_path: str) -> Path:
+    path = Path(workflow_path).resolve()
+    if path.name == "workflow.json" and path.parent.name == "bootstrap" and path.parent.parent.name == ".allforai":
+        return path.parent.parent.parent
+    return Path.cwd()
 
 
 def main():
@@ -59,13 +128,14 @@ def main():
         wf = json.load(f)
 
     nodes = wf.get("nodes", [])
+    project_root = _project_root_for_workflow(args.workflow_path)
 
     if args.node_id:
         node = next((n for n in nodes if n.get("node_id") == args.node_id), None)
         if not node:
             print(f"Node '{args.node_id}' not found", file=sys.stderr)
             sys.exit(2)  # 2 = actual error (node not found), not "pending"
-        result = check_node_artifacts(node)
+        result = check_node_artifacts(node, project_root)
         if args.output_json:
             print(json.dumps(result, indent=2))
             sys.exit(0)  # --json always exits 0; status is in the JSON
@@ -77,7 +147,7 @@ def main():
                 print(f"  {mark} {a['path']}")
             sys.exit(0 if result["all_exist"] else 1)
     else:
-        results = [check_node_artifacts(n) for n in nodes]
+        results = [check_node_artifacts(n, project_root) for n in nodes]
         done = sum(1 for r in results if r["all_exist"])
         total = len(results)
         if args.output_json:

@@ -72,3 +72,22 @@ def test_false_command_fails(tmp_path):
     }]))
     assert result["all_exist"] is False
     assert "validation_error" in result["artifacts"][0]
+
+
+def test_blocked_status_artifact_is_not_complete(tmp_path):
+    f = tmp_path / "qa.json"
+    f.write_text('{"qa_status":"blocked"}')
+
+    result = check_node_artifacts(_make_node([str(f)]))
+
+    assert result["all_exist"] is False
+    assert result["artifacts"][0]["status_error"]["field"] == "qa_status"
+
+
+def test_completed_status_artifact_is_complete(tmp_path):
+    f = tmp_path / "qa.json"
+    f.write_text('{"qa_status":"passed"}')
+
+    result = check_node_artifacts(_make_node([str(f)]))
+
+    assert result["all_exist"] is True

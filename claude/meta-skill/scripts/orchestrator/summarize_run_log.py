@@ -31,6 +31,10 @@ def _load_events(project_root: Path) -> list[dict]:
     return events
 
 
+def _node_id(event: dict) -> str | None:
+    return event.get("node_id") or event.get("node")
+
+
 def summarize(project_root: Path) -> dict:
     project_root = project_root.resolve()
     events = _load_events(project_root)
@@ -39,10 +43,13 @@ def summarize(project_root: Path) -> dict:
     by_node = defaultdict(lambda: Counter())
     blockers = []
     failures = []
+    completed_nodes = []
     for event in events:
-        node_id = event.get("node_id")
+        node_id = _node_id(event)
         if node_id:
             by_node[node_id][event.get("event", "unknown")] += 1
+        if event.get("event") == "node_completed" and node_id:
+            completed_nodes.append(node_id)
         if event.get("blocking_reason"):
             blockers.append(event)
         if event.get("event") in {"node_failed", "validation_failed", "preflight_blocked", "run_halted"}:
@@ -60,6 +67,7 @@ def summarize(project_root: Path) -> dict:
             node_id: dict(counter)
             for node_id, counter in sorted(by_node.items())
         },
+        "completed_nodes": sorted(set(completed_nodes)),
         "blocker_count": len(blockers),
         "failure_count": len(failures),
         "blockers": blockers[-20:],
@@ -90,9 +98,17 @@ def write_reports(project_root: Path, summary: dict) -> tuple[Path, Path]:
         lines.append(f"- `{key}`: {value}")
     if not summary["events_by_type"]:
         lines.append("- none")
+    lines.extend(["", "## Completed Nodes"])
+    for node_id in summary.get("completed_nodes", []):
+        lines.append(f"- `{node_id}`")
+    if not summary.get("completed_nodes"):
+        lines.append("- none")
     lines.extend(["", "## Recent Failures"])
     for item in summary["failures"]:
-        lines.append(f"- `{item.get('event')}` node=`{item.get('node_id')}` reason=`{item.get('blocking_reason') or item.get('message')}`")
+        lines.append(
+            f"- `{item.get('event')}` node=`{_node_id(item)}` "
+            f"reason=`{item.get('blocking_reason') or item.get('message')}`"
+        )
     if not summary["failures"]:
         lines.append("- none")
     md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")

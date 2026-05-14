@@ -39,3 +39,23 @@ def test_summarize_run_log_writes_reports(tmp_path):
     assert json_path.exists()
     assert md_path.exists()
     assert "missing_screenshot" in md_path.read_text()
+
+
+def test_summarize_run_log_accepts_legacy_node_key(tmp_path):
+    log_path = tmp_path / ".allforai/bootstrap/run-log.jsonl"
+    log_path.parent.mkdir(parents=True)
+    log_path.write_text(
+        json.dumps({
+            "event": "node_completed",
+            "node": "legacy-node",
+            "status": "completed",
+            "run_id": "r1",
+            "ts": "2026-01-01T00:00:00+00:00",
+        })
+        + "\n"
+    )
+
+    summary = summarize(tmp_path)
+
+    assert summary["completed_nodes"] == ["legacy-node"]
+    assert summary["nodes"]["legacy-node"]["node_completed"] == 1
