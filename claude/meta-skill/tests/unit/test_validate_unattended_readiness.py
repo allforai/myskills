@@ -31,6 +31,27 @@ def _minimal_project(tmp_path, *, gate_status="approved", node_spec="non interac
     _write(tmp_path, ".allforai/bootstrap/scripts/validate_bootstrap.py", "")
     _write(tmp_path, ".allforai/bootstrap/scripts/check_artifacts.py", "")
     _write(tmp_path, ".allforai/bootstrap/scripts/validate_unattended_readiness.py", "")
+    readiness_spec = {
+        "version": 1,
+        "run_mode": "unattended",
+        "forbid_mid_run_user_prompts": True,
+        "forbid_hidden_fallback_completion": True,
+        "max_repair_attempts": 3,
+        "required_capabilities": [],
+        "required_repair_loops": [],
+        "long_task_policy": {
+            "file_based_handoff": True,
+            "polling": True,
+            "timeout": True,
+            "retry": True,
+            "resume": True,
+        },
+    }
+    _write(
+        tmp_path,
+        ".allforai/bootstrap/unattended-run-readiness-spec.json",
+        json.dumps(readiness_spec),
+    )
     approval = {"records": [{"node_id": "design", "gate_status": gate_status}]}
     _write(tmp_path, ".allforai/game-design/approval-records.json", json.dumps(approval))
 
@@ -72,3 +93,47 @@ def test_unattended_readiness_blocks_unexpanded_game_2d_handoff(tmp_path):
         item["code"] == "unexpanded_game_2d_production_handoff"
         for item in report["blockers"]
     )
+
+
+def test_unattended_readiness_blocks_missing_spec(tmp_path):
+    _minimal_project(tmp_path)
+    (tmp_path / ".allforai/bootstrap/unattended-run-readiness-spec.json").unlink()
+
+    report = validate_unattended_readiness(tmp_path)
+
+    assert report["status"] == "not_ready"
+    assert any(item["code"] == "missing_unattended_readiness_spec" for item in report["blockers"])
+
+
+def test_unattended_readiness_blocks_broken_repair_loop_contract(tmp_path):
+    _minimal_project(tmp_path)
+    spec = {
+        "version": 1,
+        "run_mode": "unattended",
+        "forbid_mid_run_user_prompts": True,
+        "forbid_hidden_fallback_completion": True,
+        "max_repair_attempts": 3,
+        "required_capabilities": [],
+        "required_repair_loops": [
+            {
+                "scope": "runtime-qa",
+                "qa_node_ids": ["runtime-qa"],
+                "repair_node_id": "runtime-repair",
+                "closure_node_ids": ["closure-qa"],
+                "max_attempts": 3,
+            }
+        ],
+        "long_task_policy": {
+            "file_based_handoff": True,
+            "polling": True,
+            "timeout": True,
+            "retry": True,
+            "resume": True,
+        },
+    }
+    _write(tmp_path, ".allforai/bootstrap/unattended-run-readiness-spec.json", json.dumps(spec))
+
+    report = validate_unattended_readiness(tmp_path)
+
+    assert report["status"] == "not_ready"
+    assert any(item["code"] == "missing_repair_loop_node" for item in report["blockers"])

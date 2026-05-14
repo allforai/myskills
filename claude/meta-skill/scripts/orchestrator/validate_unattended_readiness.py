@@ -58,15 +58,232 @@ def _read_approval(path: Path, node_id: str) -> dict | None:
     return None
 
 
+def _as_bool(value) -> bool:
+    return value is True or str(value).lower() == "true"
+
+
 def _contains_any(text: str, terms: tuple[str, ...]) -> bool:
     lower = text.lower()
     return any(term.lower() in lower for term in terms)
+
+
+def _load_readiness_spec(path: Path, blockers: list[dict]) -> dict:
+    if not path.exists():
+        _add(
+            blockers,
+            "missing_unattended_readiness_spec",
+            f"{path} is missing; bootstrap must specialize unattended requirements before /run",
+        )
+        return {}
+    try:
+        spec = _load_json(path)
+    except Exception as exc:
+        _add(blockers, "invalid_unattended_readiness_spec", f"{path} cannot be parsed: {exc}")
+        return {}
+    if not isinstance(spec, dict):
+        _add(blockers, "invalid_unattended_readiness_spec", f"{path} must contain a JSON object")
+        return {}
+    return spec
+
+
+def _validate_policy_spec(spec: dict, blockers: list[dict], warnings: list[dict]) -> None:
+    if not spec:
+        return
+
+    if not _as_bool(spec.get("forbid_mid_run_user_prompts")):
+        _add(
+            blockers,
+            "missing_noninteractive_policy",
+            "unattended spec must set forbid_mid_run_user_prompts=true",
+        )
+    if not _as_bool(spec.get("forbid_hidden_fallback_completion")):
+        _add(
+            blockers,
+            "missing_no_fallback_policy",
+            "unattended spec must set forbid_hidden_fallback_completion=true",
+        )
+
+    max_repair_attempts = spec.get("max_repair_attempts")
+    if max_repair_attempts is None:
+        _add(blockers, "missing_repair_attempt_budget", "unattended spec missing max_repair_attempts")
+    elif not isinstance(max_repair_attempts, int) or max_repair_attempts < 1 or max_repair_attempts > 5:
+        _add(
+            blockers,
+            "invalid_repair_attempt_budget",
+            "unattended spec max_repair_attempts must be an integer from 1 to 5",
+        )
+
+    long_task_policy = spec.get("long_task_policy")
+    if not isinstance(long_task_policy, dict):
+        _add(blockers, "missing_long_task_recovery", "unattended spec missing long_task_policy")
+    else:
+        for key in ("file_based_handoff", "polling", "timeout", "retry", "resume"):
+            if not _as_bool(long_task_policy.get(key)):
+                _add(
+                    blockers,
+                    "missing_long_task_recovery",
+                    f"unattended spec long_task_policy.{key} must be true",
+                )
+
+    repair_loops = spec.get("required_repair_loops")
+    if repair_loops is None:
+        warnings.append({
+            "code": "missing_required_repair_loops",
+            "message": "unattended spec declares no required repair loops; this is valid only for non-QA workflows",
+        })
+    elif not isinstance(repair_loops, list):
+        _add(blockers, "invalid_repair_loop_spec", "required_repair_loops must be a list")
+
+
+def _validate_required_capabilities(
+    project_root: Path,
+    spec: dict,
+    blockers: list[dict],
+    external_tool_findings: list[dict],
+) -> None:
+    capabilities = spec.get("required_capabilities") if isinstance(spec, dict) else None
+    if capabilities is None:
+        return
+    if not isinstance(capabilities, list):
+        _add(blockers, "invalid_required_capabilities", "required_capabilities must be a list")
+        return
+
+    for item in capabilities:
+        if not isinstance(item, dict):
+            _add(blockers, "invalid_required_capabilities", "required_capabilities entries must be objects")
+            continue
+        if item.get("required") is False:
+            continue
+        capability = item.get("capability")
+        if not capability:
+            _add(blockers, "invalid_required_capabilities", "required capability missing capability name")
+            continue
+
+        if capability == "codex_cli":
+            codex_path = shutil.which("codex")
+            external_tool_findings.append({"capability": "codex_cli", "path": codex_path, "source": "spec"})
+            if not codex_path:
+                _add(blockers, "missing_codex_cli", "Codex CLI is required by unattended spec")
+        elif capability == "mcp_image_batch":
+            settings = project_root / ".claude/settings.json"
+            has_image_batch = False
+            if settings.exists():
+                try:
+                    data = _load_json(settings)
+                    servers = data.get("mcpServers") or {}
+                    has_image_batch = "image-batch" in servers or "mcp-image-batch" in servers
+                except Exception:
+                    has_image_batch = False
+            external_tool_findings.append({
+                "capability": "mcp_image_batch",
+                "registered": has_image_batch,
+                "source": "spec",
+            })
+            if not has_image_batch:
+                _add(blockers, "missing_mcp_image_batch", "mcp-image-batch is required by unattended spec")
+        elif capability == "google_api_key":
+            has_key = bool(os.environ.get(item.get("env") or "GOOGLE_API_KEY"))
+            external_tool_findings.append({"capability": "google_api_key", "present": has_key, "source": "spec"})
+            if not has_key:
+                _add(blockers, "missing_google_key", "Google API key is required by unattended spec")
+        elif capability == "fal_key":
+            has_key = bool(os.environ.get(item.get("env") or "FAL_KEY"))
+            external_tool_findings.append({"capability": "fal_key", "present": has_key, "source": "spec"})
+            if not has_key:
+                _add(blockers, "missing_fal_key", "FAL key is required by unattended spec")
+        elif capability == "runtime_command":
+            commands = item.get("commands")
+            if not isinstance(commands, list) or not commands:
+                _add(blockers, "missing_runtime_command", "runtime_command capability requires commands[]")
+                continue
+            missing = []
+            for command in commands:
+                if not isinstance(command, str) or not command.strip():
+                    missing.append(command)
+                    continue
+                binary = command.strip().split()[0]
+                if binary.startswith("./"):
+                    if not (project_root / binary).exists():
+                        missing.append(command)
+                elif not shutil.which(binary):
+                    missing.append(command)
+            external_tool_findings.append({
+                "capability": "runtime_command",
+                "commands": commands,
+                "missing_commands": missing,
+                "source": "spec",
+            })
+            if missing:
+                _add(blockers, "missing_runtime_command", f"runtime command binaries/files unavailable: {missing}")
+        elif capability in {"playwright", "browser_automation"}:
+            has_tool = bool(shutil.which("playwright") or shutil.which("npx"))
+            external_tool_findings.append({"capability": capability, "available": has_tool, "source": "spec"})
+            if not has_tool:
+                _add(
+                    blockers,
+                    "missing_playwright_or_engine_automation",
+                    f"{capability} is required by unattended spec",
+                )
+        elif capability == "engine_automation":
+            commands = item.get("commands")
+            if not isinstance(commands, list) or not commands:
+                _add(
+                    blockers,
+                    "missing_playwright_or_engine_automation",
+                    "engine_automation capability requires commands[]",
+                )
+        else:
+            external_tool_findings.append({
+                "capability": capability,
+                "state": "declared_unchecked",
+                "source": "spec",
+            })
+
+
+def _validate_repair_loop_spec(spec: dict, nodes: list[dict], blockers: list[dict]) -> None:
+    if not spec or not isinstance(spec.get("required_repair_loops"), list):
+        return
+    node_ids = {node.get("node_id") for node in nodes if node.get("node_id")}
+    node_by_id = {node.get("node_id"): node for node in nodes if node.get("node_id")}
+
+    for index, loop in enumerate(spec.get("required_repair_loops") or []):
+        if not isinstance(loop, dict):
+            _add(blockers, "invalid_repair_loop_spec", f"required_repair_loops[{index}] must be an object")
+            continue
+        repair_node_id = loop.get("repair_node_id")
+        qa_nodes = loop.get("qa_node_ids") or loop.get("qa_nodes") or []
+        closure_nodes = loop.get("closure_node_ids") or loop.get("closure_nodes") or []
+        if not repair_node_id:
+            _add(blockers, "missing_repair_loop_node", f"required_repair_loops[{index}] missing repair_node_id")
+            continue
+        if repair_node_id not in node_ids:
+            _add(blockers, "missing_repair_loop_node", f"repair loop node '{repair_node_id}' missing from workflow")
+            continue
+        for qa_node_id in qa_nodes:
+            if qa_node_id not in node_ids:
+                _add(blockers, "missing_repair_loop_source", f"QA node '{qa_node_id}' missing from workflow")
+            elif qa_node_id not in (node_by_id[repair_node_id].get("hard_blocked_by") or []):
+                _add(
+                    blockers,
+                    "repair_loop_not_blocked_by_qa",
+                    f"repair loop '{repair_node_id}' must hard_blocked_by QA node '{qa_node_id}'",
+                )
+        for closure_node_id in closure_nodes:
+            if closure_node_id not in node_ids:
+                _add(blockers, "missing_repair_loop_closure", f"closure node '{closure_node_id}' missing from workflow")
+            elif repair_node_id not in (node_by_id[closure_node_id].get("hard_blocked_by") or []):
+                _add(
+                    blockers,
+                    "closure_not_blocked_by_repair_loop",
+                    f"closure node '{closure_node_id}' must hard_blocked_by repair loop '{repair_node_id}'",
+                )
 
 
 def validate_unattended_readiness(project_root: Path) -> dict:
     bootstrap_root = project_root / ".allforai/bootstrap"
     workflow_path = bootstrap_root / "workflow.json"
     node_specs_dir = bootstrap_root / "node-specs"
+    spec_path = bootstrap_root / "unattended-run-readiness-spec.json"
     blockers: list[dict] = []
     warnings: list[dict] = []
     approval_gate_findings: list[dict] = []
@@ -74,6 +291,9 @@ def validate_unattended_readiness(project_root: Path) -> dict:
     external_tool_findings: list[dict] = []
     fallback_findings: list[dict] = []
     long_task_findings: list[dict] = []
+
+    readiness_spec = _load_readiness_spec(spec_path, blockers)
+    _validate_policy_spec(readiness_spec, blockers, warnings)
 
     if not workflow_path.exists():
         _add(blockers, "missing_workflow", f"{workflow_path} does not exist")
@@ -155,6 +375,9 @@ def validate_unattended_readiness(project_root: Path) -> dict:
 
     blob = json.dumps(workflow, ensure_ascii=False) + "\n" + "\n".join(all_node_text)
     lower_blob = blob.lower()
+
+    _validate_required_capabilities(project_root, readiness_spec, blockers, external_tool_findings)
+    _validate_repair_loop_spec(readiness_spec, nodes, blockers)
 
     if "codex" in lower_blob or "visual-acceptance" in lower_blob or "screenshot" in lower_blob:
         codex_path = shutil.which("codex")

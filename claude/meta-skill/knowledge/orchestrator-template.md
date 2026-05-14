@@ -60,6 +60,12 @@ Before stopping, record `preflight_blocked` with
        during `/run`, after bootstrap has already written the initial workflow.
      - If it adds or repairs nodes, immediately re-read
        `.allforai/bootstrap/workflow.json` before selecting the next node.
+     - After dynamic expansion, rerun:
+       `python3 .allforai/bootstrap/scripts/validate_unattended_readiness.py . --write-report`
+       If readiness becomes `not_ready`, stop before executing the newly
+       unlocked nodes. Dynamic expansion is allowed to reveal missing
+       project-specific commands/tools/repair loops, but those blockers must
+       be exposed immediately rather than several hours later.
   3. Run: python3 .allforai/bootstrap/scripts/validate_bootstrap.py .allforai/bootstrap/
      - If validation fails, stop before executing any node and fix bootstrap artifacts.
        Record `bootstrap_validation_failed`, then run

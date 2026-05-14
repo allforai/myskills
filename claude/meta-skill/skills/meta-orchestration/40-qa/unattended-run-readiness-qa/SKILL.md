@@ -64,6 +64,13 @@ Writes:
 - `recommended_pre_run_actions[]`
 
 Allowed blocker codes:
+- `missing_unattended_readiness_spec`
+- `invalid_unattended_readiness_spec`
+- `missing_noninteractive_policy`
+- `missing_no_fallback_policy`
+- `missing_repair_attempt_budget`
+- `invalid_repair_attempt_budget`
+- `invalid_required_capabilities`
 - `pending_human_gate`
 - `node_spec_allows_user_prompt`
 - `missing_node_spec`
@@ -79,6 +86,43 @@ Allowed blocker codes:
 - `forbidden_completed_with_limits`
 - `unexpanded_program_handoff`
 - `missing_long_task_recovery`
+- `missing_repair_loop_node`
+- `missing_repair_loop_source`
+- `missing_repair_loop_closure`
+- `repair_loop_not_blocked_by_qa`
+- `closure_not_blocked_by_repair_loop`
+
+## Stable Generic Contract
+
+This skill owns the generic sleep-safe execution contract. Keep this contract
+stable and project-neutral. Bootstrap owns project specialization.
+
+Generic requirements that must be written now by this skill:
+
+- `/run` cannot start without `.allforai/bootstrap/unattended-run-readiness-spec.json`.
+- No mid-run user prompts or approval waits are allowed during unattended
+  execution.
+- Hidden fallback completion is forbidden unless the project explicitly lowers
+  scope before `/run`.
+- Repairable QA findings must route through a repair-and-revalidation loop.
+- Long tasks must use file-based handoff, polling, timeout, retry, and resume
+  evidence.
+- Missing tools, keys, runtime commands, image providers, browser automation, or
+  engine automation are pre-run blockers, not mid-run surprises.
+
+Project-specific requirements that bootstrap must specialize:
+
+- exact runtime commands and engine launch commands;
+- exact image/audio/model providers and API keys;
+- exact MCP servers such as `mcp-image-batch`;
+- exact visual acceptance criteria and forbidden placeholders;
+- exact QA nodes, repair loop node ids, closure node ids, and attempt budgets;
+- exact long-task timeout/retry values;
+- exact human approval records that must be approved before `/run`.
+
+Do not hard-code project genre, engine, asset style, app surface, or provider
+choice in this generic skill. Put those in the generated readiness spec and
+project-local node-specs.
 
 ## Invocation Contract
 
@@ -149,6 +193,48 @@ The readiness check must reject:
   an explicit project allowance;
 - long tasks that do not define file-based handoff, polling, retry, timeout,
   and resume evidence.
+
+The generated spec must be machine-readable and include at minimum:
+
+```json
+{
+  "version": 1,
+  "run_mode": "unattended",
+  "forbid_mid_run_user_prompts": true,
+  "forbid_hidden_fallback_completion": true,
+  "max_repair_attempts": 3,
+  "required_capabilities": [
+    {
+      "capability": "runtime_command",
+      "required": true,
+      "commands": ["<project-specific command>"],
+      "reason": "<why this workflow needs it>"
+    }
+  ],
+  "required_repair_loops": [
+    {
+      "scope": "<project-specific scope>",
+      "qa_node_ids": ["<qa-node-id>"],
+      "repair_node_id": "<repair-loop-node-id>",
+      "closure_node_ids": ["<closure-node-id>"],
+      "max_attempts": 3
+    }
+  ],
+  "long_task_policy": {
+    "file_based_handoff": true,
+    "polling": true,
+    "timeout": true,
+    "retry": true,
+    "resume": true
+  }
+}
+```
+
+Allowed `required_capabilities[].capability` values include
+`runtime_command`, `engine_automation`, `playwright`, `browser_automation`,
+`codex_cli`, `mcp_image_batch`, `google_api_key`, `fal_key`, and
+project-defined capability names. Unknown project-defined names must still be
+recorded, but cannot substitute for a known required tool.
 
 ## Repair Routing
 

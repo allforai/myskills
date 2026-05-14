@@ -153,6 +153,49 @@ def _node_for(defn: dict, blockers: list[str]) -> dict:
     }
 
 
+def _upsert_game_2d_readiness_repair_loop(project_root: Path, *, dry_run: bool = False) -> bool:
+    """Specialize the project readiness spec with the generated 2D repair loop."""
+    spec_path = project_root / ".allforai/bootstrap/unattended-run-readiness-spec.json"
+    if not spec_path.exists():
+        return False
+    try:
+        spec = _load_json(spec_path)
+    except Exception:
+        return False
+    if not isinstance(spec, dict):
+        return False
+
+    loops = spec.setdefault("required_repair_loops", [])
+    if not isinstance(loops, list):
+        return False
+
+    desired = {
+        "scope": "game-2d-production",
+        "qa_node_ids": [
+            "game-2d-core-loop-playability-qa",
+            "game-2d-asset-binding-visual-qa",
+            "game-2d-session-completion-qa",
+        ],
+        "repair_node_id": "game-2d-code-repair-loop",
+        "closure_node_ids": ["game-2d-production-closure-qa"],
+        "max_attempts": 3,
+    }
+
+    for index, loop in enumerate(loops):
+        if isinstance(loop, dict) and loop.get("scope") == "game-2d-production":
+            if loop == desired:
+                return False
+            loops[index] = desired
+            if not dry_run:
+                _write_json(spec_path, spec)
+            return True
+
+    loops.append(desired)
+    if not dry_run:
+        _write_json(spec_path, spec)
+    return True
+
+
 def _yaml_list(values: list[str]) -> str:
     if not values:
         return " []"
@@ -281,11 +324,14 @@ def expand_game_2d_production(project_root: Path, *, dry_run: bool = False) -> d
     if changed and not dry_run:
         _write_json(workflow_path, workflow)
 
+    readiness_updated = _upsert_game_2d_readiness_repair_loop(project_root, dry_run=dry_run)
+
     return {
         "status": "expanded",
-        "changed": changed,
+        "changed": changed or readiness_updated,
         "generated_nodes": generated,
         "updated_nodes": updated,
+        "readiness_spec_updated": readiness_updated,
         "required_nodes": GAME_2D_PRODUCTION_REQUIRED_NODES,
     }
 

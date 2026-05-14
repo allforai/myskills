@@ -976,6 +976,37 @@ generic rules:
 - final closure must consume the repair report and must not pass while
   repairable `code_gaps` remain
 
+**Unattended execution split of responsibility:** The generic rule is stable;
+the project details are generated during bootstrap.
+
+Write these generic requirements into every workflow:
+
+- `/run` begins with unattended readiness validation and stops before any node
+  if readiness is not `ready`.
+- node-specs may not ask the user, wait for approvals, or weaken validation
+  during `/run`;
+- QA-discovered `code_gaps` and `test_gaps` must route to a repair loop before
+  closure;
+- long tasks must use file-based input/output, polling, timeout, retry, and
+  resume evidence;
+- missing environments, keys, MCP servers, engine commands, Codex CLI, browser
+  automation, or visual model routes are blockers, not fallback passes.
+
+Generate these project-specific details into
+`.allforai/bootstrap/unattended-run-readiness-spec.json`:
+
+- exact runtime/build/dev-server/engine commands;
+- exact provider keys and MCP servers required by the selected nodes;
+- exact visual acceptance criteria producer/consumer nodes;
+- exact QA node ids, repair-loop node ids, closure node ids, and max attempts;
+- exact long-task timeout/retry policy for selected external services;
+- exact human gates that must be approved before unattended execution.
+
+Do not hard-code game genre, engine-specific commands, visual style, app
+surfaces, or model/provider choice in the bundled skill files unless they are
+generic capability contracts. Those details belong in bootstrap-generated
+node-specs and readiness spec so re-bootstrap can specialize each project.
+
 **On `rebuild` goal — mandatory regeneration:** ALL existing node-spec files under
 `.allforai/bootstrap/node-specs/` for game-design nodes MUST be overwritten, even if they
 already exist. Do NOT skip a node-spec because a file is already present. Stale node-specs
