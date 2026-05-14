@@ -51,6 +51,7 @@ Out of scope:
 | `.allforai/concept-contract.json` | product identity and visual promise | Use game design tone. |
 | `.allforai/game-design/asset-registry.json` | icon, portrait, item refs | Use placeholder refs. |
 | Existing generated mockups | screen previews | Validate and register. |
+| Stitch UI MCP availability | optional high-fidelity menu/HUD/system screen mockups | Record skipped_optional when unavailable. |
 | Caller context | image generation and vision availability | Produce specs only if unavailable. |
 
 ## Generation Workflow
@@ -60,7 +61,7 @@ Out of scope:
 | 1. Derive UI tokens | Palette, typography, borders, panels, icon tone. | `ui-style-tokens.json` |
 | 2. Select mockup targets | Screens, states, breakpoints. | `mockup_targets[]` |
 | 3. Write prompt/spec | One prompt/spec per target. | `mockup_specs[]` |
-| 4. Generate or register images | Use available image tool or existing files. | `mockups/*.png` |
+| 4. Generate or register images | Use optional Stitch for suitable UI screens, image generation, or existing files. | `mockups/*.png`, `optional_stitch_mockups` |
 | 5. Validate previews | Layout fidelity, style consistency, text fit. | `visual_validation` |
 | 6. Repair | Update spec/prompt and regenerate up to capped attempts. | `repair_log[]` |
 | 7. Export manifest | Stable list of specs and images. | `ui-mockup-manifest.json` |
@@ -76,6 +77,40 @@ Out of scope:
   decorative fake paragraphs.
 - If image generation is unavailable, produce complete prompt/spec artifacts and
   mark image outputs `not_generated`.
+
+## Optional Stitch UI Enhancement
+
+Stitch UI is optional and non-blocking. Use it only when available and only for
+game UI surfaces where a screen mockup is useful:
+- title screen, main menu, settings, pause, shop, inventory, quest/dialogue,
+  level select, results, profile, battle pass, and other system screens;
+- HUD layout previews when the output is a composition mockup, not a runtime
+  asset.
+
+Do not use Stitch for character art, icons, tiles, VFX, sprites, engine-ready UI
+textures, or gameplay/world assets. Those remain under `game-art` and image
+generation contracts.
+
+Every manifest must include:
+
+```json
+{
+  "optional_stitch_mockups": {
+    "status": "used | skipped_optional | failed_nonblocking",
+    "tool": "stitch-ui",
+    "project_id": null,
+    "mockup_refs": [],
+    "covered_screen_ids": [],
+    "reason": "Stitch unavailable, skipped because optional"
+  }
+}
+```
+
+If Stitch succeeds, register its mockup refs as optional visual references for
+QA and frontend implementation. If Stitch is unavailable, unauthenticated,
+rate-limited, or fails, record `skipped_optional` or `failed_nonblocking` and
+continue with the normal mockup spec/image-generation path. Do not return
+`FAILED_VALIDATION` solely because Stitch is unavailable.
 
 ## Image Generation Upstream Contract
 
@@ -103,7 +138,7 @@ through `image-generation-contract`. Regenerate the mockup when root cause is
 |---|---:|---|---|
 | `.allforai/game-design/ui/ui-style-tokens.json` | yes | UI-specific tokens derived from shared art style. | mockups, frontend, QA. |
 | `.allforai/game-design/ui/ui-mockup-spec.json` | yes | Mockup targets, prompts, expected composition, validation rules. | image generation, QA. |
-| `.allforai/game-design/ui/ui-mockup-manifest.json` | yes | Generated/registered image paths and statuses. | frontend, QA. |
+| `.allforai/game-design/ui/ui-mockup-manifest.json` | yes | Generated/registered image paths, optional Stitch refs, and statuses. | frontend, QA. |
 | `.allforai/game-design/ui/mockups/*.png` | when generated | Screen or component preview. | QA and product review. |
 | `.allforai/game-design/ui/ui-mockup-report.json` | yes | Validation, repair attempts, unresolved issues. | Diagnostics and QA. |
 
@@ -148,6 +183,8 @@ Run deterministic checks:
 5. Every referenced shared asset exists or is marked placeholder.
 6. UI tokens include color, typography, spacing, border, panel, and feedback
    categories.
+7. `optional_stitch_mockups.status` is present and is one of `used`,
+   `skipped_optional`, or `failed_nonblocking`.
 
 Run visual validation when images exist:
 1. Required regions appear in the expected relative order.

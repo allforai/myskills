@@ -292,6 +292,7 @@ Ask the user ONE combined question. Format depends on detected state (from Step 
    a) 逆向分析（重新生成 .allforai/ 产物）
    b) 跨栈复刻（翻译到目标技术栈）
    c) 同栈重建（按目标架构重新生成）
+   l) 继续实施开发（按现有产品/美术/技术框架补齐未完成功能并自测）
    e) 代码治理（架构合规 + 重复检测 + 抽象分析）
    f) 演示数据（生成 demo-ready 数据集）
    g) UI 精修（UI 还原度修复）
@@ -310,6 +311,7 @@ Bootstrap 分析完成。请确认目标（可多选）：
    b) 跨栈复刻（分析 + 翻译到目标技术栈）
    c) 同栈重建（分析 + 按目标架构重新生成）
    d) 从零构建新产品（忽略已有代码，以产品愿景为起点重新设计）
+   l) 继续实施开发（先补齐 .allforai/ 设计产物，再实施未完成功能并自测）
    e) 代码治理（架构合规 + 重复检测 + 抽象分析）
    j) 质量检查（死链 + 字段一致性）
    k) 上架准备（竞品调研 → 概念定稿 → 缺口实现 → 合规 → 上架清单）
@@ -454,6 +456,7 @@ After the user selects a scenario, bootstrap reads the selected template's `boot
 - (b) → `goals: ["analyze", "translate", "demo", "concept-acceptance"]`, record target_stacks. demo-forge is auto-included because translate produces code that needs integration testing. concept-acceptance is auto-included when product-concept.json exists. **Auto-prepend `reverse-concept` when `concept-baseline.json` does not exist** (required for analyze — without it product-analysis has no independent baseline; if concept-baseline.json already exists from a prior run, skip).
 - (c) → `goals: ["analyze", "rebuild", "demo", "concept-acceptance"]`, record target_stacks. demo-forge is auto-included because rebuild produces code that needs integration testing. concept-acceptance is auto-included when product-concept.json exists. **Auto-prepend `reverse-concept` when `concept-baseline.json` does not exist** (same baseline requirement as (b)).
 - (d) → `goals: ["create", "demo", "concept-acceptance"]`, record target_stacks + product_vision. demo-forge is auto-included because new code needs integration testing. concept-acceptance is auto-included when product-concept.json exists.
+- (l) → `goals: ["implement", "demo", "product-verify", "visual-verify", "quality-checks", "concept-acceptance"]`. Use when product/design/art/technology framework already exists and the request is to continue implementation, fill incomplete features, connect generated handoff contracts to code, and self-test. If `.allforai/product-concept/concept-baseline.json` and `.allforai/game-design/game-design-doc.json` are both missing, auto-prepend `reverse-concept` + `analyze` because implementation needs an independent baseline. Do not treat `implement` as `rebuild`: preserve existing code and only create implementation nodes for missing or stale functionality.
 - (e) → `goals: ["tune"]`
 - (f) → `goals: ["demo"]`
 - (g) → `goals: ["ui-forge"]`
@@ -468,7 +471,7 @@ When the user selects multiple goals, the generated workflow MUST enforce this d
 ```
 1. reverse-concept           (if needed as baseline — auto-prepended for analyze/launch-prep)
 2. analyze / product-analysis (depends on reverse-concept)
-3. translate / rebuild / create (depends on analyze if present)
+3. translate / rebuild / create / implement (depends on analyze if present)
 4. demo-forge (depends on implementation)
 5. quality-checks / tune     (can run on any completed implementation)
 6. product-verify            (depends on implementation)
@@ -476,15 +479,16 @@ When the user selects multiple goals, the generated workflow MUST enforce this d
 ```
 Example: goal (a) + (j) → workflow order: reverse-concept → product-analysis → quality-checks (NOT quality-checks first)
 Example: goal (b) + (k) → workflow order: analyze → translate → demo → product-verify → launch-prep (launch-prep BLOCKED BY product-verify)
+Example: goal (l) → implement missing/stale features → demo → product-verify + visual-verify + quality-checks → concept-acceptance
 Example: goal (h) + (i) + (j) → product-verify → visual-verify → quality-checks (can run in parallel after implementation)
 These ordering rules are enforced via `hard_blocked_by` in workflow.json — not left to LLM judgment at /run time.
-- **demo-forge is automatically added** to any goal that includes code implementation (translate/rebuild/create). Reason: API-driven data population is the strongest integration test — it exposes runtime issues that compile-verify cannot catch (wrong routes, missing fields, broken relationships, auth failures).
-- **concept-acceptance is automatically added** to any goal that includes code implementation (translate/rebuild/create) AND (`has_product_concept` is true OR `is_game_project` is true). For game projects, concept-acceptance uses `game-design-doc.json` as baseline (see `capabilities/concept-acceptance.md § Prerequisite`). Reason: without verifying the final product experience against the original concept, the development loop never closes — product-verify checks code vs design artifacts, but not experience vs concept.
-- **runtime-smoke-verify is automatically added** to any goal that includes code implementation (translate/rebuild/create) OR launch-prep. Reason: test-harness verification cannot catch runtime contract bugs that only surface when the artifact launches outside the harness (env-var dual-contracts, URL prefix drift, missing signing / provisioning, deep-link breakage). See `knowledge/capabilities/runtime-smoke-verify.md`. Ordering: runs **after** product-verify passes (when product-verify is in the graph) OR immediately **before** launch-checklist (when goals include launch-prep but NOT product-verify — no product-verify gate to wait for). Added 2026-04-14 after a retrospective incident where a full UI test suite passed but manual app launch hit a 404 on the first request — same env-var name parsed differently between tests and the production runtime.
+- **demo-forge is automatically added** to any goal that includes code implementation (translate/rebuild/create/implement). Reason: API-driven data population is the strongest integration test — it exposes runtime issues that compile-verify cannot catch (wrong routes, missing fields, broken relationships, auth failures).
+- **concept-acceptance is automatically added** to any goal that includes code implementation (translate/rebuild/create/implement) AND (`has_product_concept` is true OR `is_game_project` is true). For game projects, concept-acceptance uses `game-design-doc.json` as baseline (see `capabilities/concept-acceptance.md § Prerequisite`). Reason: without verifying the final product experience against the original concept, the development loop never closes — product-verify checks code vs design artifacts, but not experience vs concept.
+- **runtime-smoke-verify is automatically added** to any goal that includes code implementation (translate/rebuild/create/implement) OR launch-prep. Reason: test-harness verification cannot catch runtime contract bugs that only surface when the artifact launches outside the harness (env-var dual-contracts, URL prefix drift, missing signing / provisioning, deep-link breakage). See `knowledge/capabilities/runtime-smoke-verify.md`. Ordering: runs **after** product-verify passes (when product-verify is in the graph) OR immediately **before** launch-checklist (when goals include launch-prep but NOT product-verify — no product-verify gate to wait for). Added 2026-04-14 after a retrospective incident where a full UI test suite passed but manual app launch hit a 404 on the first request — same env-var name parsed differently between tests and the production runtime.
 
 ### 1.5.1 Runtime Environment Awareness (when goals include code implementation)
 
-When goals include translate/rebuild/create (b/c/d), demo-forge will run and needs a live
+When goals include translate/rebuild/create/implement (b/c/d/l), demo-forge will run and needs a live
 environment. Bootstrap does NOT collect env details here — that is the job of a generated
 node-spec.
 
@@ -554,7 +558,7 @@ Write to `.allforai/bootstrap/bootstrap-profile.json`:
       "build_tool": "<vite/webpack/go build/cargo/...>"
     }
   ],
-  "goals": ["reverse-concept | analyze | translate | rebuild | create | tune | demo | ui-forge | product-verify | visual-verify | quality-checks | launch-prep | concept-acceptance | runtime-smoke-verify"],
+  "goals": ["reverse-concept | analyze | translate | rebuild | create | implement | tune | demo | ui-forge | product-verify | visual-verify | quality-checks | launch-prep | concept-acceptance | runtime-smoke-verify"],
   "product_vision": "<one sentence, only for goals includes create>",
   "target_stacks": [
     {
@@ -586,7 +590,7 @@ Write to `.allforai/bootstrap/bootstrap-profile.json`:
   "game_scenario": "casual-mobile | action-rpg | multiplayer-online | roguelike | strategy-sim | narrative-adventure | null",
   "deployment_platform": "vercel | null",  // vercel when vercel.json / vercel devDep detected; null otherwise
   "offline_first": false,  // true when Flutter+Drift without backend module detected
-  "requires_runtime_env": false,  // true only when goals include translate/rebuild/create; false for analyze/tune/quality-checks
+  "requires_runtime_env": false,  // true only when goals include translate/rebuild/create/implement; false for analyze/tune/quality-checks
   "detected_state": {
     "has_code": false,
     "has_product_artifacts": false,
@@ -893,7 +897,7 @@ app might have "design-onboarding-flow" and "setup-push-notifications".
 
 **Game project node injection (when `is_game_project = true`):**
 
-**Skip injection entirely when goals are:** `tune`, `product-verify`, `quality-checks`,
+**Skip injection entirely when goals are:** `implement`, `tune`, `product-verify`, `quality-checks`,
 `demo`, `launch-prep`, or `visual-verify`. These goals assume game design documents
 already exist; injecting design nodes would be wasteful. If `approval-records.json`
 already has all-approved records, also skip — **unless goals include `create` or `rebuild`**,
@@ -901,6 +905,11 @@ in which case always inject and regenerate (partial pipeline hint does not apply
 
 **Inject when goals include:** `create`, `translate`, or `rebuild` (new or re-designed game).
 For `analyze` goal, inject only if no `approval-records.json` exists (new project without prior design pass).
+For `implement` goal, do not regenerate game-design nodes. Use existing approved
+game design, art, UI, audio, level, template, and program handoff artifacts to
+create downstream implementation and QA nodes. If the required handoff artifacts
+are missing, add a targeted handoff-regeneration/analysis node or block
+unattended readiness; do not silently convert `implement` into `rebuild`.
 
 **On `rebuild` goal — mandatory regeneration:** ALL existing node-spec files under
 `.allforai/bootstrap/node-specs/` for game-design nodes MUST be overwritten, even if they
@@ -1360,7 +1369,13 @@ will re-run that art-gen node with `revision_notes` as context.
 
 **App Design Node Injection (when `is_game_project = false` AND goal includes design phase):**
 
-**Inject when `goals` includes `create` or `rebuild`** (new or re-designed app). For all other goals — `translate`, `analyze`, `tune`, `product-verify`, `quality-checks`, `demo`, `launch-prep`, `visual-verify` — **skip injection entirely** (app-design phases are already complete).
+**Inject when `goals` includes `create` or `rebuild`** (new or re-designed app). For all other goals — `implement`, `translate`, `analyze`, `tune`, `product-verify`, `quality-checks`, `demo`, `launch-prep`, `visual-verify` — **skip injection entirely** (app-design phases are already complete).
+
+For `implement`, consume existing app-design handoff artifacts and generate
+downstream implementation/QA nodes. If `.allforai/app-design/handoff/` is
+missing, generate a targeted handoff-regeneration/analysis node or block
+unattended readiness; do not re-run the full app-design approval flow unless
+the user explicitly selects `rebuild`.
 
 Inject app-design nodes using `knowledge/capabilities/app-design.md` Canonical Node Registry:
 

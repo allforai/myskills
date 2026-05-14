@@ -4,10 +4,10 @@ description: >
   Meta-skill generator for the myskills ecosystem. Analyzes target projects and generates
   project-specific skills (node-specs), state machine configurations, and orchestrator
   commands. Use /bootstrap to analyze a project, then /run to execute any workflow.
-version: "0.6.17"
+version: "0.6.18"
 ---
 
-# Meta-Skill v0.6.16
+# Meta-Skill v0.6.18
 
 > Unified skill generator — replaces 6 specialized plugins with /bootstrap + /run.
 
@@ -79,6 +79,7 @@ knowledge/
 | Capability | Purpose |
 |-----------|---------|
 | translate | Cross-stack code translation or new implementation |
+| implement | Continue implementation from existing product/design/art/technical framework and self-test |
 | discovery | Understand existing project structure and tech stack |
 | generate-artifacts | Create README, docs, guides from code |
 

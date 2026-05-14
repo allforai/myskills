@@ -149,3 +149,36 @@ description: Test skill.
 
     errors = validate_skill_tree(str(tmp_path))
     assert any("orphan bundled skill" in error for error in errors)
+
+
+def test_validate_skill_tree_requires_optional_stitch_contract_for_app_handoff(tmp_path):
+    _write_skill(
+        tmp_path,
+        "app-design",
+        """---
+name: app-design
+description: Parent.
+---
+
+Stitch availability must not block unattended `/run`
+${CLAUDE_PLUGIN_ROOT}/skills/app-design/30-generate/ui-input-handoff-generation/SKILL.md
+""",
+    )
+    _write_skill(
+        tmp_path,
+        "app-design/30-generate/ui-input-handoff-generation",
+        """---
+name: app-design-30-generate-ui-input-handoff-generation
+description: Test skill.
+---
+
+## Invocation Contract
+
+```json
+{"skill":"app-design/ui-input-handoff-generation","mode":"generate","output_root":".allforai/app-design/handoff"}
+```
+""",
+    )
+
+    errors = validate_skill_tree(str(tmp_path))
+    assert any("optional Stitch" in error or "non-blocking Stitch" in error for error in errors)

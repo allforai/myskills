@@ -99,6 +99,24 @@ def validate_unattended_run_contract(errors: list[str]) -> None:
         errors.append("meta-orchestration/SKILL.md: missing unattended readiness child")
 
 
+def validate_implement_goal_contract(errors: list[str]) -> None:
+    bootstrap_text = BOOTSTRAP.read_text(encoding="utf-8")
+    skill_text = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+    for term in (
+        "l) 继续实施开发",
+        '"implement", "demo", "product-verify", "visual-verify", "quality-checks", "concept-acceptance"',
+        "Do not treat `implement` as `rebuild`",
+        "translate / rebuild / create / implement",
+        "translate/rebuild/create/implement",
+        "goals include translate/rebuild/create/implement",
+        "do not silently convert `implement` into `rebuild`",
+    ):
+        if term not in bootstrap_text:
+            errors.append(f"bootstrap.md: missing implement goal term {term}")
+    if "| implement | Continue implementation" not in skill_text:
+        errors.append("SKILL.md: missing implement capability row")
+
+
 def main() -> int:
     errors: list[str] = []
     validate_capability_files(errors)
@@ -106,6 +124,7 @@ def main() -> int:
     validate_dashboard_virtual_gates(errors)
     validate_approval_scripts_copied(errors)
     validate_unattended_run_contract(errors)
+    validate_implement_goal_contract(errors)
     if errors:
         for error in errors:
             print(error, file=sys.stderr)

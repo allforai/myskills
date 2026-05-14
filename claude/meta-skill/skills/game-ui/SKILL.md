@@ -36,7 +36,7 @@ Do not organize by tool. Organize by production layer:
 | `10-design` | `hud-information-design` | HUD information priority, visibility rules, gameplay protection, fallback HUD. |
 | `20-spec` | `screen-layout-spec` | Responsive screen layout, safe zones, regions, navigation, breakpoint rules. |
 | `20-spec` | `component-state-spec` | Button, bar, card, icon, modal, list, and control states with validation. |
-| `30-generate` | `ui-mockup-generation` | Mockup prompts/specs, generated previews, repair loop, export manifest. |
+| `30-generate` | `ui-mockup-generation` | Mockup prompts/specs, optional Stitch UI references for suitable menus/HUD/system screens, generated previews, repair loop, export manifest. |
 | `40-qa` | `ui-readability-qa` | Automated checks for readability, tap targets, contrast, overlap, and playfield protection. |
 
 ## Canonical Invocation Paths
@@ -122,3 +122,9 @@ This pack does not install tools, mutate bootstrap behavior, register a
 top-level Claude Code skill, or replace frontend implementation skills. It is an
 internal bundled capability pack that future meta-skill nodes may explicitly
 call.
+
+Stitch UI is optional and non-blocking for Game UI. Use it only for menu, HUD,
+shop, inventory, level select, settings, dialogue, and other system-screen
+mockups. Do not use Stitch for game-world art, icons, tiles, sprites, VFX,
+character art, or engine-ready runtime assets. When unavailable, record
+`optional_stitch_mockups.status="skipped_optional"` and continue.

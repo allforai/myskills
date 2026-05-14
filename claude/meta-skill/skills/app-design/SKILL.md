@@ -35,7 +35,7 @@ product, UX, content, data, growth, compliance, and engineering handoff.
 | `20-spec` | `interaction-pattern-spec` | Component behavior, state transitions, feedback, gestures, loading, and accessibility. |
 | `20-spec` | `permissions-notifications-settings-spec` | Account, privacy, permissions, notifications, settings, consent, and preference controls. |
 | `20-spec` | `monetization-subscription-spec` | Pricing, subscription, trial, paywall, entitlement, cancellation, and fairness constraints. |
-| `30-generate` | `ui-input-handoff-generation` | Structured handoff for UI design: screens, flows, states, copy, tokens, and priorities. |
+| `30-generate` | `ui-input-handoff-generation` | Structured handoff for UI design: screens, flows, states, copy, tokens, priorities, and optional Stitch UI mockup references when available. |
 | `30-generate` | `program-handoff-generation` | Structured handoff for implementation nodes: data, APIs, state, permissions, and tests. |
 | `40-qa` | `flow-coverage-qa` | Validate flows cover jobs, screens, errors, empty states, and recovery paths. |
 | `40-qa` | `app-design-closure-qa` | Final cross-contract closure before approval and downstream implementation. |
@@ -64,8 +64,16 @@ ${CLAUDE_PLUGIN_ROOT}/skills/app-design/40-qa/app-design-closure-qa/SKILL.md
 
 ## Boundary
 
-App Design must not implement code, generate visual UI assets, or invent
-business decisions after the concept phase. Missing decisions must route back to
-product concept or the relevant app-design child skill. Downstream app UI,
-frontend, backend, and QA nodes consume this pack through explicit handoff
-artifacts, not conversation memory.
+App Design must not implement code or invent business decisions after the
+concept phase. Missing decisions must route back to product concept or the
+relevant app-design child skill. Downstream app UI, frontend, backend, and QA
+nodes consume this pack through explicit handoff artifacts, not conversation
+memory.
+
+Stitch UI is optional. When available, app-design handoff may attach high
+fidelity screen mockup references with `optional_stitch_mockups.status` set to
+`used`. When unavailable or failed, it must record `skipped_optional` or
+`failed_nonblocking` and continue with structured textual handoff. Stitch
+availability must not block unattended `/run`.
+
+Stitch availability must not block unattended `/run`.

@@ -38,6 +38,18 @@ PATH_KEYS = {
     "bootstrap_profile",
 }
 
+STITCH_OPTIONAL_STATUS_TERMS = (
+    "optional_stitch_mockups",
+    "used | skipped_optional | failed_nonblocking",
+    "Stitch",
+)
+
+STITCH_NONBLOCKING_TERMS = (
+    "Do not return `FAILED_VALIDATION` solely because Stitch is unavailable",
+    "Stitch availability must not block unattended `/run`",
+    "Stitch UI is optional and non-blocking",
+)
+
 
 def _parse_frontmatter(text: str):
     match = FRONTMATTER_RE.search(text)
@@ -173,6 +185,25 @@ def validate_skill_tree(skill_root: str) -> list:
             names[name] = rel
         if not description:
             errors.append(f"{rel}: frontmatter missing description")
+
+        if rel_str in {
+            "app-design/30-generate/ui-input-handoff-generation/SKILL.md",
+            "game-ui/30-generate/ui-mockup-generation/SKILL.md",
+        }:
+            for term in STITCH_OPTIONAL_STATUS_TERMS:
+                if term not in text:
+                    errors.append(f"{rel}: missing optional Stitch contract term {term}")
+            if not any(term in text for term in STITCH_NONBLOCKING_TERMS):
+                errors.append(f"{rel}: missing explicit non-blocking Stitch rule")
+        app_stitch_child = root / "app-design/30-generate/ui-input-handoff-generation/SKILL.md"
+        if (
+            rel_str == "app-design/SKILL.md"
+            and app_stitch_child.exists()
+            and "Stitch availability must not block unattended `/run`" not in text
+        ):
+            errors.append(f"{rel}: missing app-design Stitch non-blocking pack rule")
+        if rel_str == "game-ui/SKILL.md" and "Do not use Stitch for game-world art" not in text:
+            errors.append(f"{rel}: missing game-ui Stitch scope boundary")
 
         for target in CANONICAL_SKILL_PATH_RE.findall(text):
             target_path = root / target
