@@ -10,8 +10,9 @@ description: Internal bundled meta-skill module for game-art/10-design/2d-animat
 ## Overview
 
 Chooses the animation production strategy for light-animation 2D indie games.
-It decides when to use frame animation, skeletal animation, separated-part
-tweening, static pose swaps, UI tweening, VFX-only motion, or hybrid fallback.
+It decides when to use frame animation, motion video to sprite extraction,
+skeletal animation, separated-part tweening, static pose swaps, UI tweening,
+VFX-only motion, or hybrid fallback.
 
 Use this before detailed animation specs when the project has multiple asset
 classes or when production cost, tool support, and runtime constraints matter.
@@ -41,6 +42,7 @@ Plan entries must include `asset_id`, `asset_role`, `animation_method`,
 Allowed `animation_method` values:
 
 - `frame_animation`
+- `motion_video_to_sprite`
 - `skeletal_animation`
 - `part_tween`
 - `pose_swap`
@@ -55,7 +57,7 @@ Allowed states: `draft`, `validated`, `needs_revision`, `blocked_by_assets`,
 Downstream consumers: `motion-design`, `character-layer-sheet`,
 `frame-animation-spec`, `animation-state-machine-spec`,
 `engine-export-profile`, `skeletal-animation`, `frame-animation-generation`,
-`2d-layering-spec`, `animation-event-fx`, `art-preview-qa`,
+`motion-video-to-sprite-animation`, `2d-layering-spec`, `animation-event-fx`, `art-preview-qa`,
 `2d-style-consistency-qa`, `runtime-import-check`, and runtime implementation
 nodes.
 
@@ -114,6 +116,7 @@ Method selection rules:
 | Condition | Prefer | Avoid unless required |
 |---|---|---|
 | Pixel art, exact silhouettes, short loops | `frame_animation` | `skeletal_animation` |
+| Short action needs organic motion but no runtime rig | `motion_video_to_sprite` | `skeletal_animation` or hand-authored large frame sets |
 | Many outfits/equipment swaps | `skeletal_animation` or `part_tween` | full redraw frame sets |
 | Small props with open/close/on/off | `pose_swap` | full animation sheets |
 | UI affordance or button feedback | `ui_tween` | character animation pipeline |
@@ -134,11 +137,15 @@ draft
 The plan must not select `skeletal_animation` without either a layer contract or
 a declared fallback to `part_tween`, `pose_swap`, or `frame_animation`. It must
 not select `frame_animation` without frame count, FPS, anchor, and direction
-requirements in downstream refs.
+requirements in downstream refs. It must not select `motion_video_to_sprite`
+without source strategy, provenance/license rules, target FPS, duration,
+looping policy, frame size, anchor, visual acceptance route, and runtime export
+requirements.
 
 The plan must require `game-art/00-env/2d-animation-toolchain-env` before any
 downstream skeletal, frame, part-tween, pose-swap, UI-tween, or VFX-only
-animation generation. If the toolchain report later returns
+animation generation, including `motion-video-to-sprite-animation`. If the
+toolchain report later returns
 `blocked_by_missing_toolchain`, do not silently switch methods; only activate a
 fallback method that was already declared in this plan.
 

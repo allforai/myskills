@@ -11,8 +11,9 @@ description: Internal bundled meta-skill module for game-art/10-design/asset-sou
 
 Chooses the source strategy for each art asset or asset group. It decides
 whether to use local/project asset libraries, user-provided files, existing
-asset packs, web or marketplace search, LLM image generation, 3D-assisted
-rendering, adapted existing assets, or mixed sourcing.
+asset packs, web or marketplace search, LLM image generation, motion-video
+sourcing/capture, 3D-assisted rendering, adapted existing assets, or mixed
+sourcing.
 
 Use this after `art-direction-input-contract` and before asset search,
 generation, or 3D-assisted production.
@@ -40,15 +41,17 @@ and `consumer_refs`.
 
 Allowed source strategies: `local_asset_library`, `user_provided_asset`,
 `existing_asset_pack`, `web_or_marketplace_search`, `llm_image_generation`,
-`3d_assisted_render`, `existing_3d_source_asset`, `adapt_existing_asset`,
-`hybrid`, `placeholder_only`.
+`motion_video_source`, `ai_video_source`, `3d_render_capture`,
+`engine_capture`, `3d_assisted_render`, `existing_3d_source_asset`,
+`adapt_existing_asset`, `hybrid`, `placeholder_only`.
 
 Allowed states: `draft`, `validated`, `needs_revision`,
 `blocked_by_preferences`, `blocked_by_license_policy`, `blocked_by_budget`.
 
 Downstream consumers: `asset-pack-search-spec`, `asset-license-provenance-qa`,
 `existing-asset-adaptation-spec`, `image-generation-contract`,
-`render-to-2d-asset-generation`, `artifact-handoff-contract`,
+`render-to-2d-asset-generation`, `motion-video-to-sprite-animation`,
+`artifact-handoff-contract`,
 `asset-pack-integration-qa`, and `engine-ready-art-output-contract`.
 
 ## Invocation Contract
@@ -83,6 +86,7 @@ local_asset_library
 -> existing_asset_pack
 -> web_or_marketplace_search
 -> llm_image_generation
+-> motion_video_source | ai_video_source | 3d_render_capture | engine_capture
 -> 3d_assisted_render | hybrid
 ```
 
@@ -102,6 +106,14 @@ Strategy rules:
   contract and the source policy allows online discovery.
 - Use `existing_3d_source_asset` when a licensed model, scene, material, or
   animation pack can accelerate Blender-based render-to-2D production.
+- Use `motion_video_source` when a local, user-provided, licensed web, or
+  marketplace video/reference can become a frame animation through
+  `motion-video-to-sprite-animation`.
+- Use `ai_video_source` when no suitable licensed motion source exists and
+  short organic motion can be generated, extracted, visually accepted, and
+  imported as 2D frames.
+- Use `3d_render_capture` or `engine_capture` when repeatable camera angle,
+  scale, or action control is more important than AI-video variation.
 - Use `adapt_existing_asset` when assets are available but need resizing,
   palette/style normalization, slicing, pivots, metadata, or atlas packing.
 - Use `llm_image_generation` when no suitable licensed source exists or style

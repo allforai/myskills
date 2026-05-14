@@ -70,6 +70,7 @@ Layer numbers indicate directory organization and default execution order for ne
 | `30-generate` | `render-to-2d-asset-generation` | Render/bake/register 2D runtime assets from 3D-assisted production sources. |
 | `30-generate` | `item-art-generation` | Item/equipment art specs, generated images, variants, inventory/shop validation. |
 | `30-generate` | `frame-animation-generation` | Sprite-frame animation sheets, frame metadata, previews, repair loop. |
+| `30-generate` | `motion-video-to-sprite-animation` | Source local/web/AI/3D/engine motion video, extract frames, normalize spritesheets, preview, visual QA, and runtime validation. |
 | `30-generate` | `expression-set-generation` | Character expression sheets, emotion states, portraits, validation, repair. |
 | `30-generate` | `icon-generation` | Skill, item, currency, ability, status, and UI icon set generation with consistency QA. |
 | `30-generate` | `tileset-generation` | Tileset prompts, generated tile sheets, atlas manifests, preview maps, repair loop. |
@@ -135,6 +136,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/portrait-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/render-to-2d-asset-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/item-art-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/frame-animation-generation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/motion-video-to-sprite-animation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/expression-set-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/icon-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/tileset-generation/SKILL.md

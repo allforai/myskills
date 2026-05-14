@@ -36,6 +36,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/expression-set-generation/SKIL
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/frame-animation-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/icon-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/item-art-generation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/motion-video-to-sprite-animation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/particle-system/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/portrait-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/prop-generation/SKILL.md
@@ -415,6 +416,7 @@ must not silently fall back to prompt-only generation
         "30-generate/frame-animation-generation",
         "30-generate/icon-generation",
         "30-generate/item-art-generation",
+        "30-generate/motion-video-to-sprite-animation",
         "30-generate/particle-system",
         "30-generate/portrait-generation",
         "30-generate/prop-generation",

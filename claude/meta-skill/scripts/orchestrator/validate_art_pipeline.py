@@ -407,6 +407,7 @@ IMAGE_UPSTREAM_CONSUMER_SKILLS = {
     "game-art/30-generate/frame-animation-generation/SKILL.md",
     "game-art/30-generate/icon-generation/SKILL.md",
     "game-art/30-generate/item-art-generation/SKILL.md",
+    "game-art/30-generate/motion-video-to-sprite-animation/SKILL.md",
     "game-art/30-generate/particle-system/SKILL.md",
     "game-art/30-generate/portrait-generation/SKILL.md",
     "game-art/30-generate/prop-generation/SKILL.md",
@@ -420,6 +421,7 @@ IMAGE_UPSTREAM_CONSUMER_SKILLS = {
 ANIMATION_TOOLCHAIN_CONSUMER_SKILLS = {
     "game-art/10-design/2d-animation-production-plan/SKILL.md",
     "game-art/30-generate/skeletal-animation/SKILL.md",
+    "game-art/30-generate/motion-video-to-sprite-animation/SKILL.md",
 }
 
 SKILL_REF_RE = re.compile(

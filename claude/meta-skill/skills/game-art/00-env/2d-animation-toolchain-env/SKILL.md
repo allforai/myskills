@@ -12,7 +12,8 @@ description: Internal bundled meta-skill module for game-art/00-env/2d-animation
 This skill is the environment gate for 2D animation production. It determines
 whether the local/project toolchain can actually generate, preview, import, and
 validate frame animation, part tween animation, DragonBones-compatible skeletal
-data, Spine-style skeletal data, UI tweens, or VFX-bound animation.
+data, Spine-style skeletal data, motion-video-to-sprite extraction, UI tweens,
+or VFX-bound animation.
 
 The goal is not to prefer a tool. The goal is to prevent downstream animation
 skills from claiming completion when the required executable tools are missing.
@@ -39,6 +40,7 @@ Optional inputs:
 - `.allforai/game-design/art-pipeline-config.json`
 - `.allforai/game-design/systems/skeletal-animation-plan.json`
 - `.allforai/game-design/systems/frame-animation-spec.json`
+- `.allforai/game-design/art/animations/video-to-sprite/motion-video-source-plan.json`
 - project package files and editor config
 - configured CLI command overrides
 - CI/runtime environment constraints
@@ -79,6 +81,8 @@ Allowed `tool_kind` values:
 - `skeletal_data_generator`
 - `skeletal_runtime`
 - `frame_editor`
+- `video_source_adapter`
+- `video_frame_extractor`
 - `atlas_packer`
 - `image_processor`
 - `preview_renderer`
@@ -138,6 +142,7 @@ Select required capabilities from the animation production plan:
 | `skeletal_animation` with `spine` | Spine-compatible data generation/export, atlas, preview, runtime import | project generator/adapter or licensed CLI where available; Spine GUI optional |
 | `part_tween` | layer metadata, preview renderer, runtime import | project script, browser/canvas preview, engine importer |
 | `frame_animation` | frame sheet production, atlas, preview, runtime import | Aseprite or image pipeline, atlas packer, engine importer |
+| `motion_video_to_sprite` | source video acquisition/capture, frame extraction, image normalization, atlas, preview, runtime import | local/search/AI-video/3D/engine capture adapter, `ffmpeg` or equivalent, image pipeline, atlas packer, engine importer |
 | `pose_swap` / `ui_tween` | image processor, preview renderer, runtime import | project script, browser preview, engine importer |
 | `vfx_only` | VFX preview and runtime import | VFX generation skill, engine importer |
 
@@ -174,6 +179,23 @@ Frame animation policy:
   path. Aseprite, ImageMagick, sharp/canvas scripts, or engine importers are
   acceptable only when commands execute and evidence is recorded.
 
+Motion video to sprite policy:
+
+- If `motion_video_to_sprite` is selected, validate both the source acquisition
+  path and the extraction/normalization path.
+- Acceptable source adapters include project-local video libraries,
+  user-provided motion references, licensed web/marketplace downloads,
+  AI-video provider tasks, Blender/3D render capture, and engine/browser
+  capture, but each required adapter must have executable or file evidence.
+- `ffmpeg` or an equivalent verified extractor must produce frame files from a
+  fixture/source video. A video URL, prompt, or manifest alone is not evidence.
+- Background removal, crop/anchor normalization, preview rendering, atlas
+  packing, Codex CLI visual review, and runtime import remain separate required
+  capabilities when the production plan requires final runtime output.
+- If source acquisition or extraction cannot run, return
+  `blocked_by_missing_toolchain`; do not substitute a static pose or spec-only
+  animation.
+
 Runtime import policy:
 
 - Import validation is separate from authoring validation.
@@ -205,6 +227,7 @@ Required evidence examples:
 - DragonBones-compatible or Spine-compatible generator exits `0` on a minimal
   fixture and writes schema-valid JSON plus atlas metadata
 - preview renderer outputs a screenshot or frame file
+- video extractor outputs expected frame files from a source video fixture
 - engine importer loads a minimal animation asset and exits `0`
 - atlas packer produces a manifest with expected image paths
 
@@ -235,6 +258,7 @@ Downstream skills must read this report before generating or accepting output:
 
 - `game-art/30-generate/skeletal-animation`
 - `game-art/30-generate/frame-animation-generation`
+- `game-art/30-generate/motion-video-to-sprite-animation`
 - `game-art/20-spec/animation-state-machine-spec`
 - `game-art/40-qa/runtime-import-check`
 - `game-art/40-qa/engine-ready-art-output-contract`
