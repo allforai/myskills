@@ -60,5 +60,9 @@ root cause is image output, atlas settings, or runtime target. Only route to
 
 ## Completion Conditions
 
-Return `COMPLETED` when atlas manifests validate. Return
-`COMPLETED_WITH_LIMITS` when packing is planned but not physically executed.
+Return `COMPLETED` when atlas manifests validate and physical packing/import
+evidence exists for required runtime atlases. Return `COMPLETED_WITH_LIMITS`
+only for planning/spec phases. For launch, launch-prep, production, or
+unattended run goals, planned-but-not-executed packing, missing atlas files,
+placeholder atlas frames, or unpacked required UI/gameplay sprites block
+completion.

@@ -94,5 +94,9 @@ or disabled screen effect.
 
 ## Completion Conditions
 
-Return `COMPLETED` only when specs, manifest, report, and available previews
-validate. Return `COMPLETED_WITH_LIMITS` for reduced or disabled fallback.
+Return `COMPLETED` only when specs, manifest, report, runtime binding evidence,
+and previews validate. Return `COMPLETED_WITH_LIMITS` only for planning/spec
+phases or explicit accessibility reduced-motion behavior that is not standing in
+for a required effect. For launch, launch-prep, production, or unattended run
+goals, disabled, missing, or reduced fallback effects used as required feedback
+block completion.

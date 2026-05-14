@@ -72,5 +72,8 @@ defects.
 
 ## Completion Conditions
 
-Return `COMPLETED` when generated sheets, metadata, previews, and reports
-validate. Return `COMPLETED_WITH_LIMITS` for reduced frame fallback.
+Return `COMPLETED` when generated sheets, metadata, previews, reports, and
+runtime/visual checks validate. Return `COMPLETED_WITH_LIMITS` only for
+planning/spec phases. For launch, launch-prep, production, or unattended run
+goals, reduced frame fallback, missing frames, spec-only metadata, or
+`automation_limited` required animation blocks completion.

@@ -122,9 +122,9 @@ Readiness gates:
 | Gate | Required evidence |
 |---|---|
 | registry | every asset has stable `asset_id` and `file_prefix` |
-| paths | every path exists or is explicitly placeholder/disabled |
+| paths | every required production path exists; placeholder/disabled paths are blockers unless explicitly out of launch scope |
 | atlas | packed assets have atlas metadata, padding, pivot, and trim policy |
-| animation | clips/state machines preserve event frames and fallback states |
+| animation | clips/state machines preserve event frames; fallback states are repair diagnostics, not production substitutes |
 | tiles | tile IDs, collision, walkability, and preview maps are present |
 | layers | sorting, occlusion, UI/world separation, and swap layers resolve |
 | 3D source exclusion | production-only 3D sources are not runtime assets |
@@ -141,7 +141,7 @@ State progression gates:
 ```text
 draft
 -> engine_ready                 all required gates pass and no blocker/major QA
--> engine_ready_with_limits     placeholders or simplified fallbacks are declared
+-> engine_ready_with_limits     non-production limitations are declared and explicitly out of launch scope
 -> needs_revision               manifest refs, QA, atlas, or runtime IDs conflict
 -> blocked_by_missing_assets    required generated/registered assets are absent
 -> blocked_by_runtime_import    import validation failed
@@ -186,10 +186,19 @@ be converted by the declared adapter policy:
 - `native_project_edit` requires exact project files, owning implementation
   node, and executable engine validation.
 
+For launch, launch-prep, production, or unattended run goals,
+`engine_ready_with_limits`, `passed_with_warnings`, placeholder assets,
+simplified fallbacks, disabled required assets, missing VFX/audio/UI/tiles/props,
+or unknown limitations are not acceptable completion. They must return
+`needs_revision`, `blocked_by_missing_assets`, `blocked_by_runtime_import`, or
+`blocked_by_qa` and route to the owning producer/import skill. Only a project
+policy with `production_acceptance_policy.allow_placeholder_or_fallback_assets=true`
+and per-asset approval reason may allow a fallback to be non-blocking.
+
 ## Completion Conditions
 
-Return `COMPLETED` when the output contract is `engine_ready` or
-`engine_ready_with_limits` and every limitation is explicit. Return
+Return `COMPLETED` when the output contract is `engine_ready` with executable
+import evidence and no required production fallback assets. Return
 `FAILED_VALIDATION` when required runtime consumers cannot safely import the art
 package. Return `UPSTREAM_DEFECT` when upstream manifests are missing enough
 information that this contract cannot assemble.

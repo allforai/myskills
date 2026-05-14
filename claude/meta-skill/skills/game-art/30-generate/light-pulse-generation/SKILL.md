@@ -95,5 +95,7 @@ placeholder.
 
 ## Completion Conditions
 
-Return `COMPLETED` only when specs, manifest, report, and available previews
-validate. Return `COMPLETED_WITH_LIMITS` for reduced or placeholder output.
+Return `COMPLETED` only when specs, manifest, report, runtime/config evidence,
+and previews validate. Return `COMPLETED_WITH_LIMITS` only for planning/spec
+phases. For launch, launch-prep, production, or unattended run goals, reduced,
+placeholder, missing, or fallback-only light pulse output blocks completion.

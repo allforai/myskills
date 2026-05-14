@@ -9,6 +9,8 @@ from validate_game_2d_production_pipeline import (
     REQUIRED_GAME_DESIGN_TERMS,
     REQUIRED_GAME_PRODUCTION_TERMS,
     REQUIRED_PARENT_TERMS,
+    REQUIRED_ASSET_BINDING_TERMS,
+    REQUIRED_ASSET_CONTRACT_TERMS,
     validate_game_2d_production_pipeline,
 )
 
@@ -32,6 +34,10 @@ def _minimal_repo(tmp_path):
         text = "---\nname: x\ndescription: x\n---\n"
         if ref == "40-qa/2d-production-closure-qa":
             text += "\n".join(sorted(REQUIRED_CLOSURE_TERMS))
+        if ref == "40-qa/asset-binding-visual-qa":
+            text += "\n".join(sorted(REQUIRED_ASSET_BINDING_TERMS))
+        if ref == "20-spec/asset-runtime-binding-contract":
+            text += "\n".join(sorted(REQUIRED_ASSET_CONTRACT_TERMS))
         _write(tmp_path, f"claude/meta-skill/skills/game-2d-production/{ref}/SKILL.md", text)
 
     _write(

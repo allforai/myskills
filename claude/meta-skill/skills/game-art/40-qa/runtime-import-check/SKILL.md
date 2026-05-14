@@ -131,6 +131,8 @@ on root cause.
 ## Completion Conditions
 
 Return `COMPLETED` when engine/importer, adapter, scene-load, render, screenshot,
-or manifest-parse validation passes with no blockers. Return `FAILED_VALIDATION`
-with repair targets for missing/invalid runtime artifacts, unavailable engines,
-or missing executable import validation.
+or manifest-parse validation passes with no blockers and no required production
+asset is placeholder, disabled, fallback-only, missing, `not_generated`,
+`spec_ready`, or `automation_limited`. Return `FAILED_VALIDATION` with repair
+targets for missing/invalid runtime artifacts, unavailable engines, missing
+executable import validation, or fallback-only runtime coverage.

@@ -71,5 +71,8 @@ cause is image generation or prompt contract.
 
 ## Completion Conditions
 
-Return `COMPLETED` when manifest/report validate and generated images pass
-available visual checks. Return `COMPLETED_WITH_LIMITS` for spec-only fallback.
+Return `COMPLETED` when manifest/report validate and generated or registered
+background images pass visual/runtime checks. Return `COMPLETED_WITH_LIMITS`
+only for planning/spec phases. For launch, launch-prep, production, or
+unattended run goals, spec-only, placeholder, missing, or fallback backgrounds
+are blockers.

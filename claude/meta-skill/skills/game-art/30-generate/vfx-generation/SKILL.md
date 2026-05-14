@@ -15,7 +15,9 @@ description: Internal bundled meta-skill module for game-art/30-generate/vfx-gen
 This sub-skill orchestrates VFX production artifacts from `vfx-spec.json`:
 particle branches, sprite-sheet specs, trail specs, shader or screen-effect
 placeholders, decals, mesh bursts, light pulses, animation-event bindings,
-preview manifests, and QA reports.
+preview manifests, and QA reports. For production 2D game output, fallback VFX
+may be recorded as a repair diagnosis but must not be accepted as final runtime
+coverage.
 
 The skill supports world, UI, and screen-space VFX across 2D and 3D. It chooses
 the output branches from the VFX spec instead of splitting into separate
@@ -189,10 +191,14 @@ Run deterministic checks:
 6. UI-layer VFX references registered UI components or screens when available.
 7. Screen-space VFX includes reduced-motion fallback.
 8. Particle VFX has a `particle-system` branch output or an explicit
-  `automation_limited` fallback.
-9. Mesh-burst VFX has a `mesh-burst-generation` branch output or fallback.
-10. Light-pulse VFX has a `light-pulse-generation` branch output or fallback.
-11. Animation-event FX has an `animation-event-fx` branch output or fallback.
+  branch output; `automation_limited` is a production blocker unless the effect
+  is explicitly optional or accessibility-only.
+9. Mesh-burst VFX has a `mesh-burst-generation` branch output; fallback-only
+   mesh bursts block production VFX completion.
+10. Light-pulse VFX has a `light-pulse-generation` branch output; fallback-only
+    light pulses block production VFX completion.
+11. Animation-event FX has an `animation-event-fx` branch output; timing
+    placeholders block production VFX completion.
 12. No VFX is marked `approved` without validation.
 
 Run visual validation when previews exist:
@@ -209,7 +215,7 @@ Run visual validation when previews exist:
 If validation fails, repair the spec and regenerate up to 3 times. Particle
 branch failures should first be routed through `game-art/particle-system` repair.
 If validation still fails, mark the affected VFX `automation_limited` and
-preserve a simplified fallback:
+preserve a simplified fallback only as diagnostic/repair evidence:
 - simple particle burst from `particle-system` instead of complex shader,
 - sprite flash instead of full animation,
 - static decal instead of dynamic effect,
@@ -217,8 +223,11 @@ preserve a simplified fallback:
 
 ## Completion Conditions
 
-Return `COMPLETED` only when specs, manifest, and report validate, and generated
-or registered previews pass available QA.
+Return `COMPLETED` only when specs, manifest, report, generated or registered
+runtime artifacts, previews, and import/visual QA pass.
 
-Return `COMPLETED_WITH_LIMITS` when only specs/manifests can be produced, or
-when complex effects are reduced to automated fallbacks.
+Return `COMPLETED_WITH_LIMITS` only for planning/spec phases. For launch,
+launch-prep, production, or unattended run goals, spec-only manifests,
+`not_generated`, `automation_limited`, missing frame directories, placeholder
+shader/materials, tween-only effects, and reduced fallback effects are blockers
+that must route to the owning VFX branch generator.

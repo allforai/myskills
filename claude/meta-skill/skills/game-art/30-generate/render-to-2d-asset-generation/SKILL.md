@@ -189,7 +189,10 @@ returns to `2d-layering-spec`; output format issues return to
 ## Completion Conditions
 
 Return `COMPLETED` when generation/registration, manifest, preview, and reports
-validate and outputs are ready for QA. Return `COMPLETED_WITH_LIMITS` only when
-the caller explicitly accepts registered existing renders without generation.
+validate and outputs are ready for QA. Return `COMPLETED_WITH_LIMITS` only for
+planning/spec phases or when registered existing renders are explicitly out of
+launch scope. For launch, launch-prep, production, or unattended run goals,
+missing renders, placeholder renders, reduced fallback renders, or unvalidated
+registered renders block completion.
 Return `FAILED_VALIDATION` when render outputs cannot be produced or registered
 with enough evidence for downstream import validation.

@@ -122,11 +122,14 @@ Each registered asset uses one lifecycle state:
 | `preview_ready` | Preview or atlas test exists. | Run visual/deterministic validation. |
 | `approved` | Asset passed validation and can be consumed by runtime. | Downstream can use it. |
 | `needs_revision` | Asset failed validation but can be regenerated. | Re-run producing skill. |
-| `automation_limited` | Automated asset is usable as fallback but not final-quality. | Downstream may use fallback with warning. |
+| `automation_limited` | Automated asset is not final-quality and only usable as planning/prototype fallback. | Block launch/production; route repair or mark explicitly out of scope. |
 | `not_applicable` | Asset does not apply to current pipeline branch. | Ignore in current flow. |
 
-No downstream skill should treat `planned`, `spec_ready`, or `generated` as final
-runtime-ready states.
+No downstream skill should treat `planned`, `spec_ready`, `generated`, or
+`automation_limited` as final runtime-ready states. For launch, launch-prep,
+production, or unattended run goals, placeholder/fallback/automation-limited
+assets block completion unless the project production policy explicitly marks
+the asset out of launch scope.
 
 ## Output Contract
 

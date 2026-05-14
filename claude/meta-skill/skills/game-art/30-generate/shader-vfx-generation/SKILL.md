@@ -93,5 +93,8 @@ overlay, or no-op placeholder.
 
 ## Completion Conditions
 
-Return `COMPLETED` only when specs, manifest, report, and available previews
-validate. Return `COMPLETED_WITH_LIMITS` for placeholder or reduced fallback.
+Return `COMPLETED` only when specs, manifest, report, runtime/import evidence,
+and previews validate. Return `COMPLETED_WITH_LIMITS` only for planning/spec
+phases. For launch, launch-prep, production, or unattended run goals,
+placeholder materials, no-op overlays, reduced fallback shaders, or missing
+runtime shader evidence block completion.

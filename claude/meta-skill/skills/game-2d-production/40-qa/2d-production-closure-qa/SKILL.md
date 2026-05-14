@@ -69,6 +69,34 @@ Require:
   coordinates, runtime ids, and malformed values are valid for the selected
   game type
 
+Launch/production closure must not pass with hidden production gaps. Treat the
+following as blockers unless the project explicitly lowered scope before `/run`
+with `production_acceptance_policy.allow_placeholder_or_fallback_assets=true`
+and a per-finding approval reason:
+
+- silent audio stubs, placeholder audio, prompt-only audio, or unloaded audio
+  manifests;
+- missing VFX frame sequences, `spec_ready`/`not_generated` VFX manifests,
+  tween-only VFX fallbacks, or placeholder particle/shader effects;
+- generic placeholder tiles, missing chapter/theme-specific tile art, or
+  reduced tilesets used as final art;
+- missing obstacle/prop sprites or borrowed special-tile badges/icons;
+- unpacked or placeholder UI icon atlases required by runtime;
+- character portraits, expressions, animation frames, backgrounds, props, or
+  icons that are only present as specs, placeholders, borrowed art, or
+  incomplete generated batches;
+- engine scene/prefab/inspector bindings that rely on placeholder renderers,
+  fallback assets, missing SpriteFrame/AudioClip/ParticleSystem refs, or
+  untraceable runtime ids.
+
+If any upstream report contains `asset_gaps`, `warnings`,
+`non_blocking_warnings`, `known_gaps`, `remaining_gaps`, or
+`degraded_contracts` mentioning placeholder, stub, borrowed, missing, absent,
+generic, `spec_ready`, `not_generated`, silent, fallback, or degraded production
+assets, closure must return `failed_validation` or a blocking status and route
+the item to the owning producer skill. Do not downgrade these findings to
+`accepted_with_warnings` for launch or production goals.
+
 Do not accept static review. Do not accept logs, DOM, probes, source inspection,
 or manifest existence alone. If validation cannot run, report
 `blocked_by_unrunnable_client`, `blocked_by_missing_screenshot`,

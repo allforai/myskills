@@ -257,5 +257,7 @@ Return `COMPLETED` only when `tileset-spec.json` and
 terrain and variant contracts.
 
 Return `NOT_APPLICABLE` when the game has no tilemap/grid/map assembly need.
-Return `COMPLETED_WITH_LIMITS` when a reduced connectivity set is intentionally
-chosen for automation.
+Return `COMPLETED_WITH_LIMITS` only for planning/spec phases when a reduced
+connectivity set is intentionally out of launch scope. For launch, launch-prep,
+production, or unattended run goals, missing required terrain variants, generic
+placeholder tiles, or reduced connectivity fallbacks are blockers.

@@ -42,6 +42,22 @@ runtime screenshots. Fail if generated art is not distinguishable at target
 size, mismatches the approved art direction, or uses placeholders without
 approval.
 
+Production acceptance is strict. For `launch`, `launch-prep`,
+`production-closure`, or unattended production goals, do not pass the QA report
+when required assets are represented by placeholders, stubs, borrowed art,
+generic art, missing chapter/theme variants, `spec_ready` or `not_generated`
+manifests, silent audio, tween-only VFX fallback, empty frame directories, or
+other fallback outputs. These findings must be `blockers` or `major_findings`
+and must route to the owning producer skill such as `game-audio`,
+`sprite-vfx-generation`, `particle-system`, `tileset-generation`,
+`prop-generation`, `icon-generation`, runtime import, or project-local
+specialized art/audio/VFX skills.
+
+Only an explicit project scope decision can allow fallback assets:
+`production_acceptance_policy.allow_placeholder_or_fallback_assets=true` plus a
+specific per-finding approval reason. Without that explicit policy, asset gaps
+with `severity: minor` still block launch/production closure.
+
 Read `.allforai/visual-qa/visual-acceptance-criteria.json` and
 `.allforai/visual-qa/visual-acceptance-criteria.md` before building visual QA
 batches. If criteria are missing or do not cover the current asset family or
@@ -77,4 +93,8 @@ without a runtime binding is a blocker even if the screenshot appears playable.
 
 Complete when every required visible `asset_id`/`runtime_id` has runtime
 screenshot evidence, the visible scene is not a prototype/debug renderer, and
-no blocker or major visual binding finding remains.
+no blocker or major visual binding finding remains. Do not return pass when
+`asset_gaps`, `warnings`, `known_gaps`, or `degraded_contracts` contain
+placeholder, stub, borrowed, missing, absent, `spec_ready`, `not_generated`,
+silent, tween fallback, or generic fallback production assets unless the
+project has explicitly lowered scope before this QA.

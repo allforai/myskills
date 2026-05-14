@@ -202,8 +202,10 @@ spec or placeholder.
 ## Completion Conditions
 
 Return `COMPLETED` only when required specs and manifests validate, and generated
-icons pass validation when generation is available. Return
-`COMPLETED_WITH_LIMITS` when only spec artifacts or placeholders can be produced.
+or registered icons pass visual/runtime checks. Return `COMPLETED_WITH_LIMITS`
+only for planning/spec phases. For launch, launch-prep, production, or
+unattended run goals, spec-only artifacts, placeholders, borrowed icons, missing
+atlas frames, or fallback icons block completion.
 
 ## Downstream Use
 

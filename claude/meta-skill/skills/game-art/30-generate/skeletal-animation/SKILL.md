@@ -814,7 +814,7 @@ The sub-skill must return one of these statuses to the caller:
 | Status | Meaning | Caller action |
 |---|---|---|
 | `COMPLETED` | `acceptance.verdict` is acceptable. | Continue downstream. |
-| `COMPLETED_WITH_LIMITS` | Fallbacks exist and limitations are explicit. | Continue downstream using fallback notes. |
+| `COMPLETED_WITH_LIMITS` | Fallbacks exist and limitations are explicit. | Planning/spec only; block launch/production unless out of scope. |
 | `NOT_APPLICABLE` | Skeletal animation is not suitable. | Route to frame animation/static asset flow. |
 | `UPSTREAM_DEFECT` | Required input is missing or contradictory. | Pause caller node; fix upstream artifact. |
 | `FAILED_VALIDATION` | Repair loop exhausted without valid fallback. | Do not continue downstream. |
@@ -825,6 +825,13 @@ Status mapping:
 - `not_applicable` -> `NOT_APPLICABLE`
 - `blocked_by_missing_input` -> `UPSTREAM_DEFECT`
 - `needs_revision` or `validation_failed` -> `FAILED_VALIDATION`
+
+For launch, launch-prep, production, or unattended run goals,
+`approved_with_automation_limits`, placeholder motion, missing rendered previews,
+static keyframe-only validation for required runtime animation, or simplified
+fallback animation must be treated as blocking unless the affected animation is
+explicitly out of launch scope. Fallbacks may document repair direction, but
+they are not production completion evidence.
 
 ### Downstream consumption contract
 

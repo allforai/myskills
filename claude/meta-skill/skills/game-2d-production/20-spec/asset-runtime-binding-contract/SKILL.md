@@ -44,6 +44,15 @@ Fail if a required gameplay/UI element lacks `asset_id`, `runtime_id`, anchor,
 pivot, or screenshot proof. Placeholder use is a blocker unless explicitly
 approved by the design handoff.
 
+The contract must classify every placeholder, stub, borrowed asset, missing
+variant, `spec_ready` manifest, `not_generated` output, silent audio file,
+tween-only VFX fallback, empty frame directory, generic tile fallback, unpacked
+required atlas, or engine placeholder renderer as a production gap with an
+owning producer skill and repair route. For launch/production goals, these
+gaps are blocking unless the project explicitly sets
+`production_acceptance_policy.allow_placeholder_or_fallback_assets=true` before
+execution and records a per-item approval reason.
+
 For engine runtimes that support probes, require probe fields for visible
 asset/node counts, runtime id mapping, source asset reference, and placeholder
 flags. If visible runtime elements cannot be traced to the engine-ready art

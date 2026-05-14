@@ -44,17 +44,23 @@ Supported modes: `spec_only`, `spec_generate_validate`, `validate_existing`,
 ## Automatic Validation
 
 Check file paths, duration, loudness target, clipping, silence, loop flags,
-event timing, variants, and downstream runtime feedback.
+event timing, variants, and downstream runtime feedback. Files that are silent,
+tiny stub files, prompt-only records, missing paths, or placeholder waveforms
+must be `needs_revision` or `failed_validation`, not approved.
 
 If loudness QA fails, repair audio generation or normalization metadata. If an
 event mapping is wrong, repair `sfx-spec` instead of regenerating audio.
 
 Root causes for failed outputs must be classified as `sfx_prompt`,
 `sfx_generation`, `sfx_spec`, `audio_registry`, `loudness_qa`, or
-`runtime_import`. Do not mark an SFX as `approved` until loudness QA has passed
-or explicitly returned `COMPLETED_WITH_LIMITS`.
+`runtime_import`. Do not mark an SFX as `approved` until real audio exists,
+loudness QA has passed, and runtime import can resolve the file. A
+`COMPLETED_WITH_LIMITS` loudness result is blocking for launch, production, and
+unattended execution unless a project-level production acceptance policy
+explicitly allows fallback audio.
 
 ## Completion Conditions
 
-Return `COMPLETED` when generated/registered audio and reports validate. Return
-`COMPLETED_WITH_LIMITS` for prompt-only output.
+Return `COMPLETED` when generated/registered real audio and reports validate.
+Return `COMPLETED_WITH_LIMITS` only for planning/spec phases. Prompt-only,
+silent, stub, missing, or placeholder output is a production blocker.

@@ -44,7 +44,9 @@ Check cue coverage, loopability instructions, duration, stem mapping, transition
 metadata, style consistency, and loudness QA readiness.
 
 If audio generation is unavailable, emit prompt-only output with
-`automation_limited` state and keep cue IDs stable for downstream runtime wiring.
+`automation_limited` state for planning only and keep cue IDs stable for repair
+routing. Do not let downstream runtime wiring treat prompt-only output as
+production audio.
 
 Root causes for failed outputs must be classified as `music_prompt`,
 `music_generation`, `music_cue_spec`, `audio_style`, `loudness_qa`, or
@@ -52,7 +54,14 @@ Root causes for failed outputs must be classified as `music_prompt`,
 cue IDs repair `music-cue-spec`; style mismatches repair `audio-style-design`;
 clipping, silence, or bad loops repair through `audio-loudness-qa`.
 
+Launch, launch-prep, production, and unattended run goals require generated or
+registered real audio files. Prompt-only manifests, silent files, missing paths,
+and placeholder loops must block and route to a real audio generation/registration
+node.
+
 ## Completion Conditions
 
-Return `COMPLETED` when prompts/manifests validate. Return
-`COMPLETED_WITH_LIMITS` when generated audio is unavailable.
+Return `COMPLETED` when prompts/manifests validate and all required production
+cues have generated or registered real audio. Return `COMPLETED_WITH_LIMITS`
+only for explicit planning/spec phases; generated-audio-unavailable blocks
+production execution.

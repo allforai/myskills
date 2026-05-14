@@ -71,5 +71,8 @@ or prompt defects; otherwise repair prop metadata.
 
 ## Completion Conditions
 
-Return `COMPLETED` when specs, manifest, report, and generated assets validate.
-Return `COMPLETED_WITH_LIMITS` for placeholders.
+Return `COMPLETED` when specs, manifest, report, generated or registered assets,
+and runtime/visual checks validate. Return `COMPLETED_WITH_LIMITS` only for
+planning/spec phases. For launch, launch-prep, production, or unattended run
+goals, placeholders, borrowed props, missing props, or fallback props are
+blockers.

@@ -102,8 +102,9 @@ Validate that each handoff entry is self-contained:
 
 - `artifact_id`, `artifact_type`, `producer_skill`, and `producer_manifest` are
   present.
-- `paths` exist or the artifact is explicitly `preview_only`, `placeholder`,
-  `disabled`, or `engine_unavailable`.
+- `paths` exist for every required production/runtime artifact. `preview_only`,
+  `placeholder`, `disabled`, or `engine_unavailable` entries are diagnostics or
+  out-of-scope declarations, not production completion.
 - `downstream_routes` cover at least one QA route and, for runtime assets, one
   runtime/export route.
 - Each consumer route lists required fields and accepted artifact types.
@@ -125,6 +126,12 @@ Consumer acceptance rules:
 | runtime import | engine profile, runtime IDs, paths, executable validation plan |
 | engine-ready output | QA status, runtime status, fallback status, consumer contracts |
 
+For launch, launch-prep, production, or unattended run goals, a handoff entry
+with `placeholder`, `disabled`, `engine_unavailable`, `fallback_status` other
+than `none`, missing runtime paths, missing QA evidence, or missing executable
+runtime/import validation must be `blocked` unless the project production policy
+explicitly marks that artifact out of launch scope.
+
 State progression gates:
 
 ```text
@@ -143,7 +150,8 @@ runtime import failures route to `runtime-import-check` or
 
 ## Completion Conditions
 
-Return `COMPLETED` when all handoff entries are self-contained and acceptable to
-their declared consumers. Return `FAILED_VALIDATION` when required fields,
-routes, repair targets, QA evidence, or runtime evidence are missing. Return
+Return `COMPLETED` when all handoff entries are self-contained, production
+assets have real paths/evidence, and declared consumers can import them. Return
+`FAILED_VALIDATION` when required fields, routes, repair targets, QA evidence,
+runtime evidence, or production asset paths are missing or fallback-only. Return
 `UPSTREAM_DEFECT` when producer manifests cannot be resolved.

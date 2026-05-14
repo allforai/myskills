@@ -73,6 +73,8 @@ description: 验证 BGM loop 的循环点、接缝、时长、淡入淡出、转
 检查：
 
 - 音频文件存在且可解码；
+- 音频不是静音、极短 stub、占位文件、prompt-only 记录或 fallback-only
+  说明；
 - 时长符合 spec；
 - loop 接缝没有明显点击、突兀断裂、节拍错位或尾音截断；
 - fade-in/fade-out 与 loop policy 一致；
@@ -82,7 +84,9 @@ description: 验证 BGM loop 的循环点、接缝、时长、淡入淡出、转
 
 ## 完成条件
 
-当所有必需 loop 没有 blocker/major 问题时，返回 `COMPLETED`。
+当所有必需 loop 没有 blocker/major 问题，并且都是真实可播放音频时，返回
+`COMPLETED`。
 
-存在重大 loop 接缝或不可解码问题时，返回 `FAILED_VALIDATION`。
-
+存在重大 loop 接缝、不可解码、静音、stub、占位、缺失文件、prompt-only 或
+fallback-only 问题时，返回 `FAILED_VALIDATION`，不能降级为
+`passed_with_warnings`。

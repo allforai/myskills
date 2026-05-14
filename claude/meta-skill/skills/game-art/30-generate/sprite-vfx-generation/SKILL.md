@@ -116,9 +116,14 @@ Run visual validation when sheets/previews exist:
 5. Style matches the art style guide.
 
 Repair prompt/spec and regenerate up to 3 times; otherwise mark
-`automation_limited` and emit a reduced frame-count fallback.
+`automation_limited` and emit a reduced frame-count fallback only as diagnostic
+evidence. Reduced frame-count fallback is not production-complete for required
+launch VFX.
 
 ## Completion Conditions
 
-Return `COMPLETED` only when specs, manifest, report, and available previews
-validate. Return `COMPLETED_WITH_LIMITS` for spec-only or reduced-frame fallback.
+Return `COMPLETED` only when specs, manifest, report, generated/registered sheet
+files, frame metadata, previews, and visual checks validate. Return
+`COMPLETED_WITH_LIMITS` only for planning/spec phases. For launch, launch-prep,
+production, or unattended run goals, spec-only output, missing frames,
+`automation_limited`, and reduced-frame fallback are blockers.

@@ -123,7 +123,9 @@ route to `2d-style-consistency-qa` and then the relevant producer.
 ## Completion Conditions
 
 Return `COMPLETED` when every required runtime animation state has an animation
-ref, transition rule, event binding, fallback, and export profile reference.
-Return `COMPLETED_WITH_LIMITS` when optional states intentionally fall back to
-idle or pose swaps. Return `FAILED_VALIDATION` when required states are
-unreachable or unsafe for runtime import.
+ref, transition rule, event binding, export profile reference, and validation
+path. Return `COMPLETED_WITH_LIMITS` only for optional states intentionally out
+of launch scope. For launch, launch-prep, production, or unattended run goals,
+fallback-only required states, idle stand-ins, or pose-swap substitutes are
+blockers. Return `FAILED_VALIDATION` when required states are unreachable,
+fallback-only, or unsafe for runtime import.

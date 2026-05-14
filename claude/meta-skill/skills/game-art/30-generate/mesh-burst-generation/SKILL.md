@@ -95,5 +95,8 @@ Repair up to 3 times; otherwise downgrade to particle debris or sprite burst.
 
 ## Completion Conditions
 
-Return `COMPLETED` only when specs, manifest, report, and available previews
-validate. Return `COMPLETED_WITH_LIMITS` for placeholder or fallback-only output.
+Return `COMPLETED` only when specs, manifest, report, generated or registered
+mesh/debris artifacts, and previews validate. Return `COMPLETED_WITH_LIMITS`
+only for planning/spec phases. For launch, launch-prep, production, or
+unattended run goals, placeholder, missing, or fallback-only mesh burst output
+blocks completion.

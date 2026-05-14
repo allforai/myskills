@@ -159,7 +159,9 @@ producer after this plan remains stable.
 ## Completion Conditions
 
 Return `COMPLETED` when every relevant 2D asset has an animation method,
-fallback, downstream skill route, QA route, and export dependency. Return
-`COMPLETED_WITH_LIMITS` when low-priority assets are intentionally static.
+downstream skill route, QA route, export dependency, and explicit production
+scope. Fallbacks are repair/scope notes, not production completion. Return
+`COMPLETED_WITH_LIMITS` only when low-priority assets are intentionally static
+and out of launch scope.
 Return `UPSTREAM_DEFECT` when assets, runtime, or gameplay roles cannot be
 resolved.

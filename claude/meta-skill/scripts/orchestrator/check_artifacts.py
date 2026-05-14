@@ -17,13 +17,19 @@ from pathlib import Path
 
 
 BLOCKING_STATUS_VALUES = {
+    "accepted_with_warnings",
     "blocked",
+    "degraded",
     "failed",
     "failed_validation",
     "failed_env",
+    "not_generated",
     "not_ready",
+    "placeholder",
     "needs_revision",
     "revision-requested",
+    "spec_only",
+    "spec_ready",
 }
 
 STATUS_FIELDS = (
@@ -34,6 +40,37 @@ STATUS_FIELDS = (
     "revalidation_status",
     "overall_launch_status",
     "validation_status",
+)
+
+PRODUCTION_GAP_FIELDS = (
+    "asset_gaps",
+    "warnings",
+    "non_blocking_warnings",
+    "known_gaps",
+    "remaining_gaps",
+    "degraded_contracts",
+)
+
+FORBIDDEN_PRODUCTION_GAP_TERMS = (
+    "absent",
+    "borrowed",
+    "degraded",
+    "fallback",
+    "generic placeholder",
+    "missing",
+    "not delivered",
+    "not_generated",
+    "placeholder",
+    "silent",
+    "spec_ready",
+    "stub",
+    "tween fallback",
+)
+
+ALLOWED_PRODUCTION_GAP_FLAGS = (
+    "allowed_by_production_policy",
+    "explicitly_approved_for_launch",
+    "prototype_mode_allowed",
 )
 
 
@@ -61,6 +98,58 @@ def _artifact_status_error(path: str) -> dict | None:
                 "value": value,
                 "reason": "artifact report status is blocking; file existence is not completion",
             }
+    gap_error = _production_gap_error(data)
+    if gap_error:
+        return gap_error
+    return None
+
+
+def _allowed_gap(item) -> bool:
+    if not isinstance(item, dict):
+        return False
+    return any(item.get(flag) is True for flag in ALLOWED_PRODUCTION_GAP_FLAGS)
+
+
+def _gap_text(item) -> str:
+    if isinstance(item, str):
+        return item.lower()
+    if isinstance(item, dict):
+        parts = []
+        for key, value in item.items():
+            if key in ALLOWED_PRODUCTION_GAP_FLAGS:
+                continue
+            if isinstance(value, (str, int, float, bool)):
+                parts.append(str(value))
+            elif isinstance(value, list):
+                parts.extend(str(v) for v in value if isinstance(v, (str, int, float, bool)))
+        return " ".join(parts).lower()
+    return ""
+
+
+def _production_gap_error(data: dict) -> dict | None:
+    policy = data.get("production_acceptance_policy")
+    allow_gaps = isinstance(policy, dict) and policy.get("allow_placeholder_or_fallback_assets") is True
+
+    for field in PRODUCTION_GAP_FIELDS:
+        value = data.get(field)
+        if value in (None, [], {}):
+            continue
+        items = value if isinstance(value, list) else [value]
+        for item in items:
+            if allow_gaps or _allowed_gap(item):
+                continue
+            text = _gap_text(item)
+            matched = [term for term in FORBIDDEN_PRODUCTION_GAP_TERMS if term in text]
+            if matched:
+                return {
+                    "field": field,
+                    "value": item,
+                    "matched_terms": matched,
+                    "reason": (
+                        "production artifact contains placeholder/stub/fallback/missing asset gap; "
+                        "route to producer skill or explicitly lower scope before completion"
+                    ),
+                }
     return None
 
 

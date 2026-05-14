@@ -24,7 +24,7 @@ Writes `.allforai/game-design/audio/sfx-spec.json` and
 
 SFX entries must include `audio_id`, `event_ref`, `semantic`, `duration_ms`,
 `timing_offset_ms`, `intensity`, `variants`, `loudness_target`, `loop`, and
-`fallback`.
+`fallback_policy`.
 
 Each entry must also include `style_ref`, `consumer_refs`, `mix_priority`,
 `state`, and `qa_requirements`.
@@ -48,10 +48,17 @@ Supported modes: `spec_validate`, `validate_existing`, `repair_existing`.
 ## Automatic Validation
 
 Check event coverage, timing, duration, intensity, variants, loop flags,
-loudness targets, UI/gameplay distinction, and fallback sound class.
+loudness targets, UI/gameplay distinction, and fallback policy.
 
 If VFX or UI specs reference missing SFX, return `UPSTREAM_DEFECT` unless a
-placeholder SFX prompt is generated and marked `COMPLETED_WITH_LIMITS`.
+placeholder SFX prompt is generated for planning only and marked
+`COMPLETED_WITH_LIMITS`.
+
+For launch, launch-prep, production, or unattended run goals, placeholder SFX
+prompts, silent files, prompt-only output, and fallback sound classes are not
+accepted production audio. They must block downstream runtime/audio import and
+route to `game-audio/sfx-generation`, `sfx-procedural-generation`, or the
+project-local audio producer until real audio files exist and pass loudness QA.
 
 Repair routing: missing `audio_id` repairs `audio-registry`; missing event
 semantics repair the owning UI/VFX/combat spec; bad loudness or duration targets
@@ -60,5 +67,7 @@ repair here; bad generated files route to `sfx-generation` and
 
 ## Completion Conditions
 
-Return `COMPLETED` when SFX spec validates. Return `COMPLETED_WITH_LIMITS` when
-placeholder prompts replace missing final audio.
+Return `COMPLETED` when SFX spec validates and no required production event is
+covered only by placeholder, silent, prompt-only, or fallback audio. Return
+`COMPLETED_WITH_LIMITS` only for explicit planning/spec phases; it is blocking
+for launch, production, and unattended execution.

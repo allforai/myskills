@@ -114,5 +114,8 @@ fallback.
 
 ## Completion Conditions
 
-Return `COMPLETED` only when specs, manifest, report, and available previews
-validate. Return `COMPLETED_WITH_LIMITS` for simplified or spec-only trails.
+Return `COMPLETED` only when specs, manifest, report, generated or registered
+trail assets/configs, and previews validate. Return `COMPLETED_WITH_LIMITS`
+only for planning/spec phases. For launch, launch-prep, production, or
+unattended run goals, simplified fallback, spec-only, missing, or
+`automation_limited` trails block completion.

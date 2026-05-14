@@ -97,6 +97,9 @@ binding with an automation-limited state.
 
 ## Completion Conditions
 
-Return `COMPLETED` only when event bindings, manifest, report, and available
-previews validate. Return `COMPLETED_WITH_LIMITS` when animation previews are
-unavailable but event timing placeholders are valid.
+Return `COMPLETED` only when event bindings, manifest, report, branch VFX
+artifacts, timing evidence, and previews validate. Return
+`COMPLETED_WITH_LIMITS` only for planning/spec phases. For launch, launch-prep,
+production, or unattended run goals, unavailable previews, event timing
+placeholders, missing branch VFX, or fallback-only event feedback block
+completion.

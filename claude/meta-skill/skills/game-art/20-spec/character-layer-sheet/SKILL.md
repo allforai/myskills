@@ -287,9 +287,13 @@ Return statuses:
 | Status | Meaning | Caller action |
 |---|---|---|
 | `COMPLETED` | Layer sheet plan and validation pass. | Continue downstream. |
-| `COMPLETED_WITH_LIMITS` | Simplified or automation-limited sheet exists. | Continue with limits. |
+| `COMPLETED_WITH_LIMITS` | Simplified or automation-limited sheet exists. | Planning/spec only; block launch/production unless out of scope. |
 | `UPSTREAM_DEFECT` | Missing asset registry or character target. | Pause caller; fix upstream input. |
-| `FAILED_VALIDATION` | Repair loop exhausted without usable fallback. | Do not continue downstream. |
+| `FAILED_VALIDATION` | Repair loop exhausted without production-usable output. | Do not continue downstream. |
+
+For launch, launch-prep, production, or unattended run goals, simplified,
+automation-limited, placeholder, or fallback-only layer sheets block downstream
+runtime use unless the affected asset is explicitly out of launch scope.
 
 ## Layer Sheet Plan Schema
 

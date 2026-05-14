@@ -112,5 +112,8 @@ fallback.
 
 ## Completion Conditions
 
-Return `COMPLETED` only when specs, manifest, report, and available previews
-validate. Return `COMPLETED_WITH_LIMITS` for placeholder or simplified decals.
+Return `COMPLETED` only when specs, manifest, report, generated or registered
+decal assets, and previews validate. Return `COMPLETED_WITH_LIMITS` only for
+planning/spec phases. For launch, launch-prep, production, or unattended run
+goals, placeholder, simplified fallback, or missing decal assets block
+completion.

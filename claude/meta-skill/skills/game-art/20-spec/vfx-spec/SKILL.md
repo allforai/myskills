@@ -297,6 +297,9 @@ Return `COMPLETED` only when `vfx-spec.json` and `vfx-spec-report.json` validate
 and every selected VFX has layer, dimension, implementation, timing, anchor, and
 acceptance rules.
 
-Return `COMPLETED_WITH_LIMITS` when complex effects are reduced to sprite,
-particle, or placeholder specs. Return `UPSTREAM_DEFECT` when required event
-context is missing and cannot be inferred.
+Return `COMPLETED_WITH_LIMITS` only for planning/spec phases when complex
+effects are intentionally reduced and out of launch scope. For launch,
+launch-prep, production, or unattended run goals, placeholder VFX specs or
+reduced required effects are blockers unless routed to a concrete generation
+branch and validated. Return `UPSTREAM_DEFECT` when required event context is
+missing and cannot be inferred.

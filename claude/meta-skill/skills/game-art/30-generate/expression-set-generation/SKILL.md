@@ -69,4 +69,6 @@ speaker/emotion mapping defects to dialogue spec.
 ## Completion Conditions
 
 Return `COMPLETED` when required expressions validate. Return
-`COMPLETED_WITH_LIMITS` when placeholder expressions are used.
+`COMPLETED_WITH_LIMITS` only for planning/spec phases. For launch, launch-prep,
+production, or unattended run goals, placeholder, borrowed, missing, or fallback
+expressions block completion.

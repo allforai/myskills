@@ -65,6 +65,36 @@ REQUIRED_CLOSURE_TERMS = {
     "black debug backgrounds",
     "generic placeholder geometry",
     "visible traceability",
+    "silent audio stubs",
+    "missing VFX frame sequences",
+    "spec_ready",
+    "not_generated",
+    "tween-only VFX fallbacks",
+    "borrowed special-tile badges",
+    "accepted_with_warnings",
+    "production_acceptance_policy.allow_placeholder_or_fallback_assets=true",
+}
+
+REQUIRED_ASSET_BINDING_TERMS = {
+    "Production acceptance is strict",
+    "silent audio",
+    "tween-only VFX fallback",
+    "spec_ready",
+    "not_generated",
+    "borrowed art",
+    "asset_gaps",
+    "block launch/production closure",
+    "production_acceptance_policy.allow_placeholder_or_fallback_assets=true",
+}
+
+REQUIRED_ASSET_CONTRACT_TERMS = {
+    "placeholder, stub, borrowed asset",
+    "silent audio file",
+    "tween-only VFX fallback",
+    "empty frame directory",
+    "generic tile fallback",
+    "owning producer skill",
+    "production_acceptance_policy.allow_placeholder_or_fallback_assets=true",
 }
 
 REQUIRED_GAME_DESIGN_TERMS = {
@@ -122,11 +152,13 @@ def validate_game_2d_production_pipeline(repo_root: str) -> list[str]:
     production_root = skills_root / "game-2d-production"
     parent = production_root / "SKILL.md"
     closure = production_root / "40-qa/2d-production-closure-qa/SKILL.md"
+    asset_binding_qa = production_root / "40-qa/asset-binding-visual-qa/SKILL.md"
+    asset_contract = production_root / "20-spec/asset-runtime-binding-contract/SKILL.md"
     game_design = root / "claude/meta-skill/knowledge/capabilities/game-design.md"
     bootstrap = root / "claude/meta-skill/skills/bootstrap.md"
     game_production = skills_root / "game-production/SKILL.md"
 
-    required_files = [parent, closure, game_design, bootstrap, game_production]
+    required_files = [parent, closure, asset_binding_qa, asset_contract, game_design, bootstrap, game_production]
     required_files.extend(production_root / ref / "SKILL.md" for ref in CHILD_REFS)
 
     errors: list[str] = []
@@ -138,6 +170,8 @@ def validate_game_2d_production_pipeline(repo_root: str) -> list[str]:
 
     parent_text = _read(parent)
     closure_text = _read(closure)
+    asset_binding_text = _read(asset_binding_qa)
+    asset_contract_text = _read(asset_contract)
     game_design_text = _read(game_design)
     bootstrap_text = _read(bootstrap)
     game_production_text = _read(game_production)
@@ -157,6 +191,8 @@ def validate_game_2d_production_pipeline(repo_root: str) -> list[str]:
 
     _check_terms(errors, parent_text, "game-2d-production/SKILL.md", REQUIRED_PARENT_TERMS)
     _check_terms(errors, closure_text, "2d-production-closure-qa", REQUIRED_CLOSURE_TERMS)
+    _check_terms(errors, asset_binding_text, "asset-binding-visual-qa", REQUIRED_ASSET_BINDING_TERMS)
+    _check_terms(errors, asset_contract_text, "asset-runtime-binding-contract", REQUIRED_ASSET_CONTRACT_TERMS)
     _check_terms(errors, game_design_text, "game-design.md", REQUIRED_GAME_DESIGN_TERMS)
     _check_terms(errors, bootstrap_text, "bootstrap.md", REQUIRED_BOOTSTRAP_TERMS)
     _check_terms(errors, game_production_text, "game-production/SKILL.md", REQUIRED_GAME_PRODUCTION_TERMS)

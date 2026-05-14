@@ -71,4 +71,6 @@ semantic defects.
 ## Completion Conditions
 
 Return `COMPLETED` when required item images and manifest validate. Return
-`COMPLETED_WITH_LIMITS` for placeholder items.
+`COMPLETED_WITH_LIMITS` only for planning/spec phases. For launch, launch-prep,
+production, or unattended run goals, placeholder, borrowed, missing, or fallback
+item art blocks completion.

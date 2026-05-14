@@ -56,7 +56,7 @@ Out of scope:
 | `.allforai/game-design/asset-registry.json` | file prefixes and world references | Use caller file prefix. |
 | `.allforai/game-design/ui/ui-registry.json` | UI anchors and component refs | Use caller anchor. |
 | Existing particle textures/configs | registration and validation | Generate missing specs only. |
-| Caller context | image generation, preview renderer, vision validator | Produce spec-only fallback if unavailable. |
+| Caller context | image generation, preview renderer, vision validator | Produce spec-only diagnostics if unavailable; production completion blocks. |
 
 ### Normalized input
 
@@ -231,12 +231,16 @@ Run visual validation when previews exist:
 
 If validation fails, repair emitter values or texture specs and retry up to 3
 times. If still failing, mark `automation_limited` and emit a simplified
-fallback such as static sparkle, reduced burst count, or no-texture particles.
+fallback such as static sparkle, reduced burst count, or no-texture particles
+only as diagnostic evidence. Required production VFX must remain blocked until
+a generated or registered particle asset validates.
 
 ## Completion Conditions
 
-Return `COMPLETED` only when particle specs, manifest, report, and available
-previews validate.
+Return `COMPLETED` only when particle specs, manifest, generated or registered
+particle configs/textures, report, previews, and visual/import checks validate.
 
-Return `COMPLETED_WITH_LIMITS` when only specs/manifests can be produced, or
-when complex particle behavior is reduced to an automated fallback.
+Return `COMPLETED_WITH_LIMITS` only for planning/spec phases. For launch,
+launch-prep, production, or unattended run goals, spec-only manifests,
+`automation_limited`, missing textures/configs, no-texture particles, and
+reduced fallback particles are blockers.

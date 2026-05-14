@@ -24,7 +24,7 @@ Writes `.allforai/game-design/audio/music-cue-spec.json` and
 
 Cue entries must include `cue_id`, `game_state`, `entry_condition`,
 `exit_condition`, `loop`, `duration_target`, `intensity`, `transition`,
-`stem_refs`, and `fallback`.
+`stem_refs`, and `fallback_policy`.
 
 Each cue must also include `style_ref`, `consumer_refs`, `event_refs`,
 `mix_priority`, `silence_policy`, and `state`.
@@ -47,10 +47,16 @@ Supported modes: `spec_validate`, `validate_existing`, `repair_existing`.
 ## Automatic Validation
 
 Check cue coverage, loop points, transitions, stem needs, intensity mapping,
-duration targets, and fallback ambience.
+duration targets, and fallback policy.
 
 If level or UI flow references a missing cue, repair cue mapping before music
 generation. Do not generate orphan music that is not reachable from game state.
+
+For launch, launch-prep, production, or unattended run goals, prompt-only music,
+placeholder ambience, silent loops, and fallback ambience standing in for a
+required cue are production blockers. They must route to
+`game-audio/bgm-loop-generation-google-lyria`, `music-prompt-generation`, or a
+project-local audio producer and then through audio QA/runtime import.
 
 Repair routing: missing style or instrumentation returns to
 `audio-style-design`; missing game states return to `level-flow-design` or core
@@ -59,5 +65,7 @@ to `music-prompt-generation` and then `audio-loudness-qa`.
 
 ## Completion Conditions
 
-Return `COMPLETED` when cue spec validates. Return `COMPLETED_WITH_LIMITS` for
-prompt-only or placeholder music.
+Return `COMPLETED` when cue spec validates and no required production cue is
+covered only by prompt-only, placeholder, silent, or fallback audio. Return
+`COMPLETED_WITH_LIMITS` only for explicit planning/spec phases; it blocks
+launch, production, and unattended execution.

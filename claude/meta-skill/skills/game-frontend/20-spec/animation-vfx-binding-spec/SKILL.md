@@ -56,9 +56,14 @@ Supported modes: `spec_validate`, `validate_existing`, `repair_existing`.
 
 ## Automatic Validation
 
-Check that each required entity state has an animation or declared fallback,
+Check that each required entity state has an animation,
 event frames are preserved, VFX timing does not hide gameplay readability, and
 smoke tests can trigger at least one representative animation/VFX path.
+
+For launch, launch-prep, production, or unattended run goals, declared fallback
+visuals are not enough for required gameplay feedback. Missing clips, missing
+VFX frames/configs, timing placeholders, tween-only substitutions, or
+fallback-only effects must block and route to the producing animation/VFX skill.
 
 Repair routing: missing clips route to `game-art/frame-animation-generation` or
 `game-art/skeletal-animation`; missing effects route to `game-art/vfx-generation`;
@@ -66,6 +71,7 @@ runtime binding ambiguity routes to `asset-import-binding-spec`.
 
 ## Completion Conditions
 
-Return `COMPLETED` when animation and VFX bindings can be triggered and probed.
+Return `COMPLETED` when animation and VFX bindings can be triggered and probed
+with generated or registered production assets.
 Return `FAILED_VALIDATION` when required gameplay feedback has no visual state,
-event trigger, or validation path.
+event trigger, validation path, or only fallback/placeholder coverage.

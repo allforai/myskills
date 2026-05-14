@@ -221,9 +221,10 @@ Return `COMPLETED` only when specs, manifest, accepted image entries, preview
 maps, and report validate, and generated tiles pass visual validation when
 generation is required.
 
-Return `COMPLETED_WITH_LIMITS` only for planning/spec stages, or when a reduced
-variant set is approved as an automation fallback after actual image evidence
-was inspected. In `spec_generate_validate` mode, missing images, missing preview
-maps, or skipped visual validation must return `FAILED_VALIDATION` or
-`blocked_by_missing_visual_evidence`; spec-only output must not be treated as
-completed generated art.
+Return `COMPLETED_WITH_LIMITS` only for planning/spec stages or when a reduced
+variant set is explicitly out of launch scope after actual image evidence was
+inspected. For launch, launch-prep, production, or unattended run goals, reduced
+variant fallback, generic tiles, missing chapter/theme variants, missing images,
+missing preview maps, or skipped visual validation must return
+`FAILED_VALIDATION` or `blocked_by_missing_visual_evidence`; spec-only output
+must not be treated as completed generated art.

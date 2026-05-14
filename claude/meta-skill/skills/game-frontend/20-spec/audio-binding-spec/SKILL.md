@@ -56,10 +56,15 @@ Supported modes: `spec_validate`, `validate_existing`, `repair_existing`.
 
 ## Automatic Validation
 
-Check that required cues have files or declared fallbacks, frontend keys,
+Check that required cues have files, frontend keys,
 trigger events, platform-safe playback policy, and a runtime probe. Browser
 autoplay limits must be explicit; do not assume audio can play before user
 gesture.
+
+For launch, launch-prep, production, or unattended run goals, declared fallback
+audio is not enough for required cues. Silent files, stubs, prompt-only audio,
+missing paths, or fallback-only cues must route to `game-audio` and block
+frontend audio binding.
 
 Repair routing: missing audio routes to `game-audio`; missing trigger routes to
 scene/HUD/animation binding; platform conflicts route to frontend runtime
@@ -67,6 +72,6 @@ detection.
 
 ## Completion Conditions
 
-Return `COMPLETED` when required cues can be loaded and triggered. Return
-`FAILED_VALIDATION` when required audio has no file, trigger, fallback, or
-runtime validation path.
+Return `COMPLETED` when required cues can be loaded and triggered with real
+audio evidence. Return `FAILED_VALIDATION` when required audio has no file,
+trigger, runtime validation path, or only fallback/stub coverage.

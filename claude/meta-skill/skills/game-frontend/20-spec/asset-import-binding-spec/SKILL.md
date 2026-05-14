@@ -63,10 +63,12 @@ Supported modes: `spec_validate`, `validate_existing`, `repair_existing`.
 ## Automatic Validation
 
 Check that every required frontend-visible asset has a loader key, runtime ID,
-file path, manifest reference, engine profile ref, adapter policy, fallback
-policy, and validation probe. File paths must exist unless the manifest
-explicitly marks the asset as placeholder or disabled. Hardcoded raw paths
-without manifest refs are invalid.
+file path, manifest reference, engine profile ref, adapter policy,
+production-fallback policy, and validation probe. File paths must exist.
+Placeholder, disabled, fallback-only, `spec_ready`, `not_generated`, or
+`automation_limited` required assets are blocking for launch/production unless a
+project production policy explicitly marks the asset out of scope. Hardcoded raw
+paths without manifest refs are invalid.
 
 Engine/profile compatibility checks:
 

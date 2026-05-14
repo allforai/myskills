@@ -54,5 +54,8 @@ fallback frames, and whether required animations from motion design are covered.
 
 ## Completion Conditions
 
-Return `COMPLETED` when specs and report validate. Return
-`COMPLETED_WITH_LIMITS` when reduced frame counts are used as fallback.
+Return `COMPLETED` when specs and report validate and every required production
+animation has a downstream generation/QA route. Return `COMPLETED_WITH_LIMITS`
+only for planning/spec phases. For launch, launch-prep, production, or
+unattended run goals, reduced frame-count fallback for required animation is a
+blocker unless explicitly accepted by project production policy.

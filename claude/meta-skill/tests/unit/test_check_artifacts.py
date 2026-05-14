@@ -91,3 +91,25 @@ def test_completed_status_artifact_is_complete(tmp_path):
     result = check_node_artifacts(_make_node([str(f)]))
 
     assert result["all_exist"] is True
+
+
+def test_asset_gap_with_placeholder_terms_is_not_complete(tmp_path):
+    f = tmp_path / "qa.json"
+    f.write_text('{"asset_gaps":[{"severity":"minor","notes":"VFX frames missing; tween fallback active"}]}')
+
+    result = check_node_artifacts(_make_node([str(f)]))
+
+    assert result["all_exist"] is False
+    assert result["artifacts"][0]["status_error"]["field"] == "asset_gaps"
+
+
+def test_explicit_production_policy_can_allow_placeholder_gap(tmp_path):
+    f = tmp_path / "qa.json"
+    f.write_text(
+        '{"production_acceptance_policy":{"allow_placeholder_or_fallback_assets":true},'
+        '"asset_gaps":[{"severity":"minor","notes":"placeholder art explicitly accepted for prototype"}]}'
+    )
+
+    result = check_node_artifacts(_make_node([str(f)]))
+
+    assert result["all_exist"] is True

@@ -71,4 +71,6 @@ dialogue or expression specs.
 ## Completion Conditions
 
 Return `COMPLETED` when all required variants validate. Return
-`COMPLETED_WITH_LIMITS` when missing expressions use placeholders.
+`COMPLETED_WITH_LIMITS` only for planning/spec phases. For launch, launch-prep,
+production, or unattended run goals, missing expressions, placeholder portraits,
+borrowed portraits, or fallback portraits are blockers.
