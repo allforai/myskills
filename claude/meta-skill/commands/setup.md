@@ -364,20 +364,47 @@ Authorization: Bearer {access_token}
 3. 重新运行 /setup
 ```
 
-**Step 4: 注册 Stitch MCP 到插件配置**
+**Step 4: 创建 token 刷新包装脚本**
+
+`stitch-mcp proxy` 需要 `STITCH_ACCESS_TOKEN` 环境变量，不读取 ADC 文件。
+因此需要一个包装脚本在每次启动时用 refresh_token 换取 access_token：
+
+```bash
+cat > ~/.claude/stitch-mcp-start.sh << 'SCRIPT'
+#!/bin/bash
+ADC="$HOME/.stitch-mcp/config/application_default_credentials.json"
+if [ ! -f "$ADC" ]; then
+  echo "ERROR: Stitch ADC not found at $ADC" >&2
+  exit 1
+fi
+REFRESH_TOKEN=$(python3 -c "import json; d=json.load(open('$HOME/.stitch-mcp/config/application_default_credentials.json')); print(d['refresh_token'])")
+ACCESS_TOKEN=$(curl -s -X POST 'https://oauth2.googleapis.com/token' \
+  -d "client_id=764086051850-6qr4p6gpi6hn506pt8ejuq83di341hur.apps.googleusercontent.com" \
+  -d "client_secret=d-FL95Q19q7MQmFpd7hHD0Ty" \
+  -d "refresh_token=$REFRESH_TOKEN" \
+  -d "grant_type=refresh_token" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+export STITCH_ACCESS_TOKEN="$ACCESS_TOKEN"
+exec stitch-mcp proxy
+SCRIPT
+chmod +x ~/.claude/stitch-mcp-start.sh
+```
+
+> **说明**：脚本每次 Claude Code 启动时自动刷新 token（有效期 1 小时），无需手动维护。
+
+**Step 5: 注册 Stitch MCP 到插件配置**
 
 读取 `${CLAUDE_PLUGIN_ROOT}/.mcp.json`，检查是否包含 `stitch` 服务器配置：
-- 已有 → 跳过
-- 缺失 → 添加到 `.mcp.json` 的 `mcpServers` 中：
+- 已有且 command 为包装脚本 → 跳过
+- 缺失或 command 仍为 `stitch-mcp` → 添加/替换 `.mcp.json` 的 `mcpServers` 中：
 ```json
 "stitch": {
-  "command": "stitch-mcp",
-  "args": ["proxy"],
-  "env": {
-    "GOOGLE_CLOUD_PROJECT": "{选中的 project ID}"
-  }
+  "command": "/Users/aa/.claude/stitch-mcp-start.sh",
+  "args": []
 }
 ```
+
+> **注意**：`/Users/aa` 替换为实际用户主目录（`$HOME`）的绝对路径。
 
 提示重启 Claude Code 后生效。
 

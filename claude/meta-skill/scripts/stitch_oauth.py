@@ -376,10 +376,51 @@ def mode_exchange(code):
     print("PKCE temp file cleaned up.")
 
 
-DONE_MSG = """
+WRAPPER_SCRIPT = """\
+#!/bin/bash
+# Auto-refresh Stitch access token on each Claude Code startup.
+# stitch-mcp proxy requires STITCH_ACCESS_TOKEN; it does NOT read ADC files.
+ADC="$HOME/.stitch-mcp/config/application_default_credentials.json"
+if [ ! -f "$ADC" ]; then
+  echo "ERROR: Stitch ADC not found at $ADC" >&2
+  exit 1
+fi
+REFRESH_TOKEN=$(python3 -c "import json; d=json.load(open('$HOME/.stitch-mcp/config/application_default_credentials.json')); print(d['refresh_token'])")
+ACCESS_TOKEN=$(curl -s -X POST 'https://oauth2.googleapis.com/token' \\
+  -d "client_id=764086051850-6qr4p6gpi6hn506pt8ejuq83di341hur.apps.googleusercontent.com" \\
+  -d "client_secret=d-FL95Q19q7MQmFpd7hHD0Ty" \\
+  -d "refresh_token=$REFRESH_TOKEN" \\
+  -d "grant_type=refresh_token" \\
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+export STITCH_ACCESS_TOKEN="$ACCESS_TOKEN"
+exec stitch-mcp proxy
+"""
+
+WRAPPER_PATH = os.path.expanduser("~/.claude/stitch-mcp-start.sh")
+
+
+def create_wrapper_script():
+    """Write the token-refresh wrapper script to ~/.claude/stitch-mcp-start.sh."""
+    os.makedirs(os.path.dirname(WRAPPER_PATH), exist_ok=True)
+    with open(WRAPPER_PATH, "w", encoding="utf-8") as f:
+        f.write(WRAPPER_SCRIPT)
+    os.chmod(WRAPPER_PATH, 0o755)
+    print(f"Wrapper script created: {WRAPPER_PATH}")
+
+
+DONE_MSG = f"""
 Done! Stitch OAuth + quota project configured.
+Wrapper script: {WRAPPER_PATH}
+  - Automatically refreshes STITCH_ACCESS_TOKEN on each Claude Code startup.
+
 Ensure stitch-mcp is installed: npm install -g @_davideast/stitch-mcp
-MCP config is in plugin .mcp.json (auto-loaded). Restart Claude Code to activate.
+Register in plugin .mcp.json:
+  "stitch": {{
+    "command": "{WRAPPER_PATH}",
+    "args": []
+  }}
+
+Restart Claude Code to activate.
 """
 
 
@@ -400,6 +441,7 @@ def main():
 
     if args.fix_quota:
         setup_quota_project()
+        create_wrapper_script()
         return
 
     if args.generate_url:
@@ -409,12 +451,14 @@ def main():
     if args.listen:
         mode_listen()
         setup_quota_project()
+        create_wrapper_script()
         print(DONE_MSG)
         return
 
     if args.exchange:
         mode_exchange(args.exchange)
         setup_quota_project()
+        create_wrapper_script()
         print(DONE_MSG)
         return
 
@@ -431,6 +475,7 @@ def main():
             mode_manual()
 
     setup_quota_project()
+    create_wrapper_script()
     print(DONE_MSG)
 
 
