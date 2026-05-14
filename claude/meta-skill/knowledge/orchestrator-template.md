@@ -154,5 +154,10 @@ On first iteration if transition_log is non-empty:
      * Write to `.allforai/bootstrap/learned/blind-spots.md` (append, do not overwrite)
 
 3. **Feedback proposal:**
-   Read `.allforai/bootstrap/protocols/feedback-protocol.md` — propose feedback
+   Read `.allforai/bootstrap/protocols/feedback-protocol.md`. If learning
+   extraction found a universally useful meta-skill issue, run:
+   `python3 .allforai/bootstrap/scripts/record_meta_skill_feedback.py . --category "<category>" --message "<deidentified failure pattern>"`
+   This must not ask the user mid-run. Prefer a writable local `myskills`
+   repository; only fall back to anonymous GitHub issue draft/auto mode when no
+   local repo is available.
 ~~~

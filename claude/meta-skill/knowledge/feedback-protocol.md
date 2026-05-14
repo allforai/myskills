@@ -1,7 +1,7 @@
-# Anonymous Feedback Protocol
+# Meta-Skill Feedback Protocol
 
-> After experience extraction, propose universally useful findings as
-> anonymous GitHub Issues on the myskills repository.
+> After experience extraction, record universally useful findings for the
+> myskills repository without leaking project-specific information.
 
 ## When to Trigger
 
@@ -27,24 +27,50 @@ Before proposing any Issue, verify the content contains:
 - NO user identity (name, email, username)
 - NO business logic descriptions
 
-## User Confirmation Flow
+## Target Priority
+
+Feedback uses this strict priority order:
+
+1. **Local myskills repo first.** If a writable local `myskills` repository is
+   available, record sanitized feedback there and notify the user. Do not
+   create a GitHub Issue.
+2. **Anonymous GitHub fallback.** If no local myskills repo is available, write
+   sanitized GitHub issue content to project-local pending files. Only create an
+   issue automatically when `META_SKILL_FEEDBACK_MODE=auto`, `gh` is
+   authenticated, and the privacy scan passes.
+
+Local repo candidates:
+
+- `$META_SKILL_LOCAL_REPO`
+- `../myskills` from the target project
+- `../../myskills` from the target project
+- `~/workspace/myskills`
+
+The local repo must be a git repository whose remote contains
+`allforai/myskills`, and it must be writable. If it is missing or unsafe, do not
+write to it.
+
+## Non-Interactive Flow
 
 ```
-Orchestrator presents:
+Orchestrator runs:
 
-"本次执行发现了 {N} 条可能对 meta-skill 有改进价值的经验：
-{numbered list of deidentified findings}
-
-是否愿意匿名提交到 myskills GitHub Issues？(y/n/选择部分提交)"
+python3 .allforai/bootstrap/scripts/record_meta_skill_feedback.py . \
+  --category "<mapping-gap|discovery-blind-spot|convergence|safety|workflow-gap>" \
+  --message "<short deidentified failure pattern>"
 ```
 
-- User says yes → submit all
-- User says no → skip, keep local only
-- User selects specific items → submit only those
+- If local myskills exists → write `docs/feedback/inbox/<timestamp>-<category>.md`
+  in that repo and report the path.
+- If local myskills is unavailable → write:
+  - `.allforai/bootstrap/pending-feedback.md`
+  - `.allforai/bootstrap/pending-feedback.json`
+- If `META_SKILL_FEEDBACK_MODE=auto` and GitHub is available → create an
+  anonymous issue after privacy scan. Otherwise keep the pending draft.
 
 ## Issue Creation
 
-For each approved item:
+For fallback issue creation:
 
 ```bash
 # Ensure labels exist before creating issue (safe to run even if labels already exist)
@@ -86,3 +112,8 @@ EOF
 If `gh` CLI is not available or not authenticated:
 - Log the Issue content to `.allforai/bootstrap/pending-feedback.md`
 - Inform user: "gh CLI 不可用，反馈已保存到 pending-feedback.md，您可以稍后手动提交"
+
+If the privacy scan fails:
+- Do not submit an issue.
+- Write pending files with `privacy_findings[]`.
+- Notify the user that manual review is required.

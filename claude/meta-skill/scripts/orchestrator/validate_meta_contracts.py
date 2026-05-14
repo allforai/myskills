@@ -64,6 +64,7 @@ def validate_approval_scripts_copied(errors: list[str]) -> None:
         "serve_approval.py",
         "apply_approval_action.py",
         "expand_game_2d_production.py",
+        "record_meta_skill_feedback.py",
         "validate_unattended_readiness.py",
     ):
         if f"scripts/orchestrator/{script}" not in text:
@@ -92,6 +93,7 @@ def validate_unattended_run_contract(errors: list[str]) -> None:
         "Preflight Gate",
         "validate_unattended_readiness.py",
         "expand_game_2d_production.py",
+        "record_meta_skill_feedback.py",
         "status != \"ready\"",
         "do not ask the user mid-run",
     ):
@@ -119,6 +121,32 @@ def validate_implement_goal_contract(errors: list[str]) -> None:
         errors.append("SKILL.md: missing implement capability row")
 
 
+def validate_feedback_contract(errors: list[str]) -> None:
+    feedback = ROOT / "knowledge/feedback-protocol.md"
+    feedback_text = feedback.read_text(encoding="utf-8")
+    script = ROOT / "scripts/orchestrator/record_meta_skill_feedback.py"
+    script_text = script.read_text(encoding="utf-8") if script.exists() else ""
+    for term in (
+        "Local myskills repo first",
+        "Anonymous GitHub fallback",
+        "META_SKILL_LOCAL_REPO",
+        "META_SKILL_FEEDBACK_MODE=auto",
+        "pending-feedback.json",
+        "privacy scan",
+    ):
+        if term not in feedback_text:
+            errors.append(f"feedback-protocol.md: missing feedback target term {term}")
+    for term in (
+        "find_local_myskills",
+        "docs/feedback/inbox",
+        "pending-feedback.json",
+        "gh issue create",
+        "privacy_scan_failed",
+    ):
+        if term not in script_text:
+            errors.append(f"record_meta_skill_feedback.py: missing implementation term {term}")
+
+
 def main() -> int:
     errors: list[str] = []
     validate_capability_files(errors)
@@ -127,6 +155,7 @@ def main() -> int:
     validate_approval_scripts_copied(errors)
     validate_unattended_run_contract(errors)
     validate_implement_goal_contract(errors)
+    validate_feedback_contract(errors)
     if errors:
         for error in errors:
             print(error, file=sys.stderr)
