@@ -127,6 +127,61 @@ def _artifact_paths(items) -> list[str]:
     return paths
 
 
+def _required_artifacts_exist(project_root: Path, artifacts: set[str]) -> bool:
+    if not artifacts:
+        return False
+    return all((project_root / artifact).exists() for artifact in artifacts)
+
+
+def _read_node_spec_frontmatter(path: Path) -> dict:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception:
+        return {}
+    if not text.startswith("---"):
+        return {}
+    end = text.find("---", 3)
+    if end == -1:
+        return {}
+    data: dict[str, object] = {}
+    for line in text[3:end].strip().splitlines():
+        if ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        data[key.strip()] = value.strip().strip('"').strip("'")
+    return data
+
+
+def _cleanup_orphan_game_2d_specs(specs_dir: Path, workflow_node_ids: set[str], *, dry_run: bool) -> list[str]:
+    if not specs_dir.is_dir():
+        return []
+    removed: list[str] = []
+    for spec_path in specs_dir.glob("*.md"):
+        spec_id = spec_path.stem
+        if spec_id in workflow_node_ids:
+            continue
+        fm = _read_node_spec_frontmatter(spec_path)
+        fm_node_id = str(fm.get("node_id") or "")
+        capability = str(fm.get("capability") or "")
+        text = ""
+        try:
+            text = spec_path.read_text(encoding="utf-8")
+        except Exception:
+            pass
+        managed = (
+            spec_id in GAME_2D_PRODUCTION_REQUIRED_NODES
+            or fm_node_id in GAME_2D_PRODUCTION_REQUIRED_NODES
+            or capability == "game-2d-production"
+            or "game-2d-production/" in text
+        )
+        if not managed:
+            continue
+        removed.append(spec_id)
+        if not dry_run:
+            spec_path.unlink()
+    return removed
+
+
 def _find_frontend_assembly_node(nodes: list[dict]) -> str | None:
     for node in nodes:
         node_id = node.get("node_id")
@@ -209,7 +264,7 @@ def _spec_for(defn: dict, node: dict) -> str:
     blockers = node.get("hard_blocked_by") or []
     alignment_refs = node.get("alignment_refs") or []
     return f"""---
-node: {node_id}
+node_id: {node_id}
 goal: {json.dumps(node["goal"], ensure_ascii=False)}
 capability: game-2d-production
 human_gate: false
@@ -258,7 +313,34 @@ def expand_game_2d_production(project_root: Path, *, dry_run: bool = False) -> d
     if not workflow_path.exists():
         return {"status": "blocked", "reason": "missing_workflow", "changed": False}
     if not _game_2d_handoff_required(str(project_root)):
-        return {"status": "skipped", "reason": "game_2d_production_not_required", "changed": False}
+        workflow_node_ids: set[str] = set()
+        if workflow_path.exists():
+            try:
+                workflow = _load_json(workflow_path)
+                workflow_node_ids = {
+                    node.get("node_id") for node in workflow.get("nodes", []) if node.get("node_id")
+                }
+            except Exception:
+                workflow_node_ids = set()
+        removed = _cleanup_orphan_game_2d_specs(specs_dir, workflow_node_ids, dry_run=dry_run)
+        return {
+            "status": "skipped",
+            "reason": "game_2d_production_not_required",
+            "changed": bool(removed),
+            "removed_orphan_specs": removed,
+        }
+    if _required_artifacts_exist(project_root, GAME_2D_PRODUCTION_REQUIRED_ARTIFACTS):
+        workflow = _load_json(workflow_path)
+        workflow_node_ids = {
+            node.get("node_id") for node in workflow.get("nodes", []) if node.get("node_id")
+        }
+        removed = _cleanup_orphan_game_2d_specs(specs_dir, workflow_node_ids, dry_run=dry_run)
+        return {
+            "status": "skipped",
+            "reason": "game_2d_production_artifacts_already_exist",
+            "changed": bool(removed),
+            "removed_orphan_specs": removed,
+        }
 
     workflow = _load_json(workflow_path)
     nodes = workflow.setdefault("nodes", [])
@@ -325,12 +407,18 @@ def expand_game_2d_production(project_root: Path, *, dry_run: bool = False) -> d
         _write_json(workflow_path, workflow)
 
     readiness_updated = _upsert_game_2d_readiness_repair_loop(project_root, dry_run=dry_run)
+    removed_specs = _cleanup_orphan_game_2d_specs(
+        specs_dir,
+        {node.get("node_id") for node in nodes if node.get("node_id")},
+        dry_run=dry_run,
+    )
 
     return {
         "status": "expanded",
-        "changed": changed or readiness_updated,
+        "changed": changed or readiness_updated or bool(removed_specs),
         "generated_nodes": generated,
         "updated_nodes": updated,
+        "removed_orphan_specs": removed_specs,
         "readiness_spec_updated": readiness_updated,
         "required_nodes": GAME_2D_PRODUCTION_REQUIRED_NODES,
     }

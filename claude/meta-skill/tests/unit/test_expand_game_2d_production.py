@@ -43,7 +43,7 @@ def _minimal_project(tmp_path):
         tmp_path,
         ".allforai/bootstrap/node-specs/game-frontend-playable-client-assembly.md",
         """---
-node: game-frontend-playable-client-assembly
+node_id: game-frontend-playable-client-assembly
 goal: assemble frontend
 capability: game-frontend
 human_gate: false
@@ -96,9 +96,11 @@ def test_expand_game_2d_production_generates_valid_nodes(tmp_path):
     assert validate_node_spec_contracts(str(tmp_path / ".allforai/bootstrap")) == []
     assert validate_game_2d_production_flow(str(tmp_path / ".allforai/bootstrap")) == []
     for node_id in GAME_2D_PRODUCTION_REQUIRED_NODES:
-        assert validate_node_spec(
-            str(tmp_path / f".allforai/bootstrap/node-specs/{node_id}.md")
-        ) == []
+        spec_path = tmp_path / f".allforai/bootstrap/node-specs/{node_id}.md"
+        assert validate_node_spec(str(spec_path)) == []
+        spec_text = spec_path.read_text()
+        assert f"node_id: {node_id}" in spec_text
+        assert f"node: {node_id}" not in spec_text
     readiness_spec = json.loads(
         (tmp_path / ".allforai/bootstrap/unattended-run-readiness-spec.json").read_text()
     )
@@ -123,3 +125,32 @@ def test_expand_game_2d_production_skips_when_not_required(tmp_path):
     result = expand_game_2d_production(tmp_path)
 
     assert result["status"] == "skipped"
+
+
+def test_expand_game_2d_production_skips_when_required_artifacts_exist(tmp_path):
+    _minimal_project(tmp_path)
+    for artifact in [
+        ".allforai/game-2d/assembly/playable-slice-assembly-report.json",
+        ".allforai/game-2d/qa/core-loop-playability-qa-report.json",
+        ".allforai/game-2d/qa/asset-binding-visual-qa-report.json",
+        ".allforai/game-2d/qa/session-completion-qa-report.json",
+        ".allforai/game-2d/repair/code-repair-loop-report.json",
+        ".allforai/game-2d/qa/revalidation-report.json",
+        ".allforai/game-2d/qa/2d-production-closure-report.json",
+        ".allforai/game-2d/qa/2d-production-closure.html",
+    ]:
+        _write(tmp_path, artifact, "{}")
+    _write(
+        tmp_path,
+        ".allforai/bootstrap/node-specs/game-2d-production-closure-qa.md",
+        "---\nnode_id: game-2d-production-closure-qa\ncapability: game-2d-production\n---\n",
+    )
+
+    result = expand_game_2d_production(tmp_path)
+
+    assert result["status"] == "skipped"
+    assert result["reason"] == "game_2d_production_artifacts_already_exist"
+    assert result["removed_orphan_specs"] == ["game-2d-production-closure-qa"]
+    workflow = json.loads((tmp_path / ".allforai/bootstrap/workflow.json").read_text())
+    node_ids = [node["node_id"] for node in workflow["nodes"]]
+    assert "game-2d-production-closure-qa" not in node_ids

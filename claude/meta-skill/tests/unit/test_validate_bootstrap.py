@@ -199,7 +199,7 @@ def test_game_2d_handoff_accepts_ordered_production_nodes(tmp_path):
         _write(
             bdir,
             f"node-specs/{node_id}.md",
-            f"---\nnode: {node_id}\n---\nRead game-2d-production/{node_id}/SKILL.md\n",
+            f"---\nnode_id: {node_id}\n---\nRead game-2d-production/{node_id}/SKILL.md\n",
         )
         previous = node_id
     _write_workflow(bdir, nodes)
@@ -231,7 +231,7 @@ def test_node_spec_contract_detects_frontmatter_mismatch(tmp_path):
     (tmp_path / "node-specs").mkdir()
     (tmp_path / "node-specs" / "build.md").write_text(
         "---\n"
-        "node: wrong-build\n"
+        "node_id: wrong-build\n"
         "exit_artifacts:\n"
         "  - .allforai/other.json\n"
         "hard_blocked_by: []\n"
@@ -241,7 +241,7 @@ def test_node_spec_contract_detects_frontmatter_mismatch(tmp_path):
 
     errors = validate_node_spec_contracts(str(tmp_path))
 
-    assert any("frontmatter node 'wrong-build'" in e for e in errors)
+    assert any("frontmatter node_id 'wrong-build'" in e for e in errors)
     assert any("frontmatter exit_artifacts" in e for e in errors)
     assert any("frontmatter hard_blocked_by" in e for e in errors)
     assert any("frontmatter unlocks" in e for e in errors)
@@ -264,7 +264,7 @@ def test_node_spec_contract_passes_when_frontmatter_matches(tmp_path):
     (tmp_path / "node-specs").mkdir()
     (tmp_path / "node-specs" / "build.md").write_text(
         "---\n"
-        "node: build\n"
+        "node_id: build\n"
         "exit_artifacts:\n"
         "  - .allforai/build.json\n"
         "hard_blocked_by:\n"

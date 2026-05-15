@@ -10,7 +10,7 @@ Checks:
   - human_gate workflow nodes have matching approval records
   - app-design workflow closure emits handoff/QA artifacts and routes execution through concept-freeze
   - bootstrap-profile.json + workflow.json: mobile UI modules have platform UI automation
-  - node-specs/*.md: YAML frontmatter parseable, 'node' field present
+  - node-specs/*.md: YAML frontmatter parseable, node_id field present
 """
 
 import json
@@ -458,9 +458,10 @@ def validate_node_spec_contracts(bdir: str) -> list:
         if spec_errors:
             continue
 
-        if data.get("node") != node_id:
+        spec_node_id = data.get("node_id") or ""
+        if spec_node_id != node_id:
             errors.append(
-                f"node-specs/{node_id}.md: frontmatter node '{data.get('node')}' "
+                f"node-specs/{node_id}.md: frontmatter node_id '{spec_node_id}' "
                 f"does not match workflow node_id '{node_id}'"
             )
 
@@ -681,6 +682,11 @@ def validate_game_2d_production_flow(bdir: str) -> list:
     project_root = _project_root_from_bootstrap_dir(bdir)
     if not _game_2d_handoff_required(project_root):
         return errors
+    if all(
+        os.path.exists(os.path.join(project_root, artifact))
+        for artifact in GAME_2D_PRODUCTION_REQUIRED_ARTIFACTS
+    ):
+        return errors
 
     try:
         workflow = _load_json(workflow_path)
@@ -739,8 +745,10 @@ def validate_node_spec(path: str) -> list:
     data, _text, errors = _read_node_spec(path)
     if errors:
         return errors
-    if "node" not in data:
-        errors.append("frontmatter missing 'node' field")
+    if "node_id" not in data:
+        errors.append("frontmatter missing 'node_id' field")
+    if "node" in data:
+        errors.append("frontmatter forbidden legacy 'node' field; use 'node_id'")
 
     return errors
 

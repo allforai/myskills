@@ -30,7 +30,7 @@ def validate_node_id_templates(errors: list[str]) -> None:
     for match in re.finditer(r"(?m)^node:\s+", text):
         line_no = text[: match.start()].count("\n") + 1
         errors.append(
-            f"bootstrap.md:{line_no}: node-spec template uses 'node:'; use 'node_id:'"
+            f"bootstrap.md:{line_no}: node-spec template uses forbidden legacy 'node:'; use 'node_id:'"
         )
 
 
