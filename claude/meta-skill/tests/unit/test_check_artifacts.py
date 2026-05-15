@@ -85,6 +85,26 @@ def test_blocked_status_artifact_is_not_complete(tmp_path):
     assert result["artifacts"][0]["status_error"]["field"] == "qa_status"
 
 
+def test_conditional_pass_status_artifact_is_not_complete(tmp_path):
+    f = tmp_path / "qa.json"
+    f.write_text('{"overall_status":"conditional_pass"}')
+
+    result = check_node_artifacts(_make_node([str(f)]))
+
+    assert result["all_exist"] is False
+    assert result["artifacts"][0]["status_error"]["field"] == "overall_status"
+
+
+def test_blocked_by_status_artifact_is_not_complete(tmp_path):
+    f = tmp_path / "qa.json"
+    f.write_text('{"status":"blocked_by_missing_runtime_probe"}')
+
+    result = check_node_artifacts(_make_node([str(f)]))
+
+    assert result["all_exist"] is False
+    assert result["artifacts"][0]["status_error"]["field"] == "status"
+
+
 def test_empty_json_artifact_is_not_complete(tmp_path):
     f = tmp_path / "qa.json"
     f.write_text("{}")
@@ -114,6 +134,16 @@ def test_asset_gap_with_placeholder_terms_is_not_complete(tmp_path):
     assert result["artifacts"][0]["status_error"]["field"] == "asset_gaps"
 
 
+def test_remaining_gap_without_forbidden_terms_is_not_complete(tmp_path):
+    f = tmp_path / "qa.json"
+    f.write_text('{"remaining_gaps":[{"id":"audio-meta","notes":"音频 .meta 缺失，需要继续处理"}]}')
+
+    result = check_node_artifacts(_make_node([str(f)]))
+
+    assert result["all_exist"] is False
+    assert result["artifacts"][0]["status_error"]["field"] == "remaining_gaps"
+
+
 def test_visual_blocker_with_prototype_renderer_is_not_complete(tmp_path):
     f = tmp_path / "qa.json"
     f.write_text(
@@ -141,7 +171,7 @@ def test_runtime_qa_artifact_is_stale_after_source_change(tmp_path):
     assert result["artifacts"][0]["status_error"]["field"] == "$mtime"
 
 
-def test_explicit_production_policy_can_allow_placeholder_gap(tmp_path):
+def test_explicit_production_policy_does_not_make_asset_gap_complete(tmp_path):
     f = tmp_path / "qa.json"
     f.write_text(
         '{"production_acceptance_policy":{"allow_placeholder_or_fallback_assets":true},'
@@ -150,4 +180,5 @@ def test_explicit_production_policy_can_allow_placeholder_gap(tmp_path):
 
     result = check_node_artifacts(_make_node([str(f)]))
 
-    assert result["all_exist"] is True
+    assert result["all_exist"] is False
+    assert result["artifacts"][0]["status_error"]["field"] == "asset_gaps"

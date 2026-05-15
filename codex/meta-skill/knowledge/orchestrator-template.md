@@ -66,7 +66,11 @@ On the first iteration, if `transition_log` is non-empty:
 1. run `check_artifacts.py` to inspect current state
 2. trust artifact readiness over the saved transition log; a JSON report with
    blocking status, fallback/placeholder/prototype gaps, or failed validation is
-   not complete merely because the file exists
+   not complete merely because the file exists. `conditional_pass`, `partial`,
+   `accepted_with_warnings`, `passed_with_warnings`, `blocked_by_*`, or any
+   non-empty `gaps`, `code_gaps`, `test_gaps`, `asset_gaps`, `audio_gaps`,
+   `remaining_gaps`, `blockers`, `major_findings`, or `unresolved_findings`
+   means the workflow must continue repair/revalidation.
 3. continue from the current project state
 
 ## Safety

@@ -19,14 +19,19 @@ from pathlib import Path
 BLOCKING_STATUS_VALUES = {
     "accepted_with_warnings",
     "blocked",
+    "conditional_pass",
     "degraded",
     "failed",
     "failed_validation",
     "failed_env",
+    "incomplete",
     "not_generated",
     "not_ready",
+    "partial",
+    "partial_pass",
     "placeholder",
     "needs_revision",
+    "passed_with_warnings",
     "revision-requested",
     "spec_only",
     "spec_ready",
@@ -45,10 +50,16 @@ STATUS_FIELDS = (
 
 PRODUCTION_GAP_FIELDS = (
     "asset_gaps",
+    "audio_gaps",
+    "code_gaps",
+    "contract_gaps",
+    "gaps",
     "warnings",
     "non_blocking_warnings",
     "known_gaps",
     "remaining_gaps",
+    "test_gaps",
+    "unresolved_findings",
     "degraded_contracts",
     "blockers",
     "major_findings",
@@ -57,6 +68,7 @@ PRODUCTION_GAP_FIELDS = (
 FORBIDDEN_PRODUCTION_GAP_TERMS = (
     "absent",
     "borrowed",
+    "conditional pass",
     "debug scene",
     "degraded",
     "fallback",
@@ -75,6 +87,16 @@ FORBIDDEN_PRODUCTION_GAP_TERMS = (
     "spec_ready",
     "stub",
     "tween fallback",
+    "缺失",
+    "未完成",
+    "未生成",
+    "未修复",
+    "未处理",
+    "待处理",
+    "剩余",
+    "降级",
+    "占位",
+    "警告",
 )
 
 ALLOWED_PRODUCTION_GAP_FLAGS = (
@@ -130,7 +152,9 @@ def _artifact_status_error(path: str, project_root: Path | None = None) -> dict 
         }
     for field in STATUS_FIELDS:
         value = data.get(field)
-        if isinstance(value, str) and value.lower() in BLOCKING_STATUS_VALUES:
+        if isinstance(value, str) and (
+            value.lower() in BLOCKING_STATUS_VALUES or value.lower().startswith("blocked_by_")
+        ):
             return {
                 "field": field,
                 "value": value,
@@ -206,6 +230,26 @@ def _production_gap_error(data: dict) -> dict | None:
         value = data.get(field)
         if value in (None, [], {}):
             continue
+        if field in {
+            "asset_gaps",
+            "audio_gaps",
+            "blockers",
+            "code_gaps",
+            "contract_gaps",
+            "gaps",
+            "major_findings",
+            "remaining_gaps",
+            "test_gaps",
+            "unresolved_findings",
+        }:
+            return {
+                "field": field,
+                "value": value,
+                "reason": (
+                    "artifact contains unresolved gaps/findings; continue repair and revalidation "
+                    "instead of treating file existence as completion"
+                ),
+            }
         items = value if isinstance(value, list) else [value]
         for item in items:
             if allow_gaps or _allowed_gap(item):

@@ -23,14 +23,19 @@ DEFAULT_GOAL = "Complete the entire generated workflow end-to-end. Do not stop t
 BLOCKING_STATUS_VALUES = {
     "accepted_with_warnings",
     "blocked",
+    "conditional_pass",
     "degraded",
     "failed",
     "failed_validation",
     "failed_env",
+    "incomplete",
     "needs_revision",
     "not_generated",
     "not_ready",
+    "partial",
+    "partial_pass",
     "placeholder",
+    "passed_with_warnings",
     "revision-requested",
     "spec_only",
     "spec_ready",
@@ -49,10 +54,16 @@ STATUS_FIELDS = (
 
 PRODUCTION_GAP_FIELDS = (
     "asset_gaps",
+    "audio_gaps",
+    "code_gaps",
+    "contract_gaps",
+    "gaps",
     "warnings",
     "non_blocking_warnings",
     "known_gaps",
     "remaining_gaps",
+    "test_gaps",
+    "unresolved_findings",
     "degraded_contracts",
     "blockers",
     "major_findings",
@@ -61,6 +72,7 @@ PRODUCTION_GAP_FIELDS = (
 FORBIDDEN_PRODUCTION_GAP_TERMS = (
     "absent",
     "borrowed",
+    "conditional pass",
     "debug scene",
     "degraded",
     "fallback",
@@ -78,6 +90,16 @@ FORBIDDEN_PRODUCTION_GAP_TERMS = (
     "spec_ready",
     "stub",
     "tween fallback",
+    "缺失",
+    "未完成",
+    "未生成",
+    "未修复",
+    "未处理",
+    "待处理",
+    "剩余",
+    "降级",
+    "占位",
+    "警告",
 )
 
 STALE_SENSITIVE_ARTIFACT_MARKERS = (
@@ -163,13 +185,28 @@ def artifact_status_error(path: Path, project_root: Path | None = None) -> str |
 
     for field in STATUS_FIELDS:
         value = data.get(field)
-        if isinstance(value, str) and value.lower() in BLOCKING_STATUS_VALUES:
+        if isinstance(value, str) and (
+            value.lower() in BLOCKING_STATUS_VALUES or value.lower().startswith("blocked_by_")
+        ):
             return f"{field}={value}"
 
     for field in PRODUCTION_GAP_FIELDS:
         value = data.get(field)
         if value in (None, [], {}):
             continue
+        if field in {
+            "asset_gaps",
+            "audio_gaps",
+            "blockers",
+            "code_gaps",
+            "contract_gaps",
+            "gaps",
+            "major_findings",
+            "remaining_gaps",
+            "test_gaps",
+            "unresolved_findings",
+        }:
+            return f"{field} contains unresolved gaps/findings"
         items = value if isinstance(value, list) else [value]
         for item in items:
             if isinstance(item, dict) and (
@@ -361,8 +398,9 @@ Requirements:
 3. Complete exactly this node end-to-end. Do not stop after planning.
 4. Create or update any project files required to satisfy the node's exit artifacts.
 5. Append a `transition_log` entry to `.allforai/bootstrap/workflow.json` with `completed` or `failed`.
-6. If the node fails, write a one-line `error` field explaining the blocker.
-7. Stop only after this node is completed or a failed transition has been written.
+6. Do not write `completed` when any exit artifact says `conditional_pass`, `partial`, `accepted_with_warnings`, `passed_with_warnings`, `blocked_by_*`, or contains unresolved `gaps`, `code_gaps`, `asset_gaps`, `audio_gaps`, `remaining_gaps`, `blockers`, `major_findings`, or `unresolved_findings`. Continue repairing and rerunning validation inside this node when it owns the fix; otherwise write `failed` with the exact blocker and repair owner.
+7. If the node fails, write a one-line `error` field explaining the blocker.
+8. Stop only after this node is truly completed or a failed transition has been written.
 
 Do not ask for acceptance. Execute the work directly."""
 
