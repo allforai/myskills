@@ -682,12 +682,6 @@ def validate_game_2d_production_flow(bdir: str) -> list:
     project_root = _project_root_from_bootstrap_dir(bdir)
     if not _game_2d_handoff_required(project_root):
         return errors
-    if all(
-        os.path.exists(os.path.join(project_root, artifact))
-        for artifact in GAME_2D_PRODUCTION_REQUIRED_ARTIFACTS
-    ):
-        return errors
-
     try:
         workflow = _load_json(workflow_path)
     except Exception:

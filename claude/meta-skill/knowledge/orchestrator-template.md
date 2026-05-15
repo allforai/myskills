@@ -71,16 +71,19 @@ Before stopping, record `preflight_blocked` with
        Record `bootstrap_validation_failed`, then run
        `python3 .allforai/bootstrap/scripts/summarize_run_log.py . --write-report`.
   4. Run: python3 .allforai/bootstrap/scripts/check_artifacts.py .allforai/bootstrap/workflow.json --json
-  5. Review which nodes are done (exit_artifacts exist) and which are pending
+     - Treat `all_exist=false` as pending even when files exist. `check_artifacts.py`
+       rejects reports with blocking statuses, fallback/placeholder/prototype
+       gaps, silent/missing assets, or failed validation.
+  5. Review which nodes are done (exit_artifacts ready) and which are pending
   6. Decide next node:
      - What's done? What's pending? What makes sense next?
      - Can run multiple nodes in parallel if their exit_artifacts don't overlap
-     - **hard_blocked_by**: node cannot start until ALL hard_blocked_by nodes are complete (exit_artifacts exist + gate approved).
+     - **hard_blocked_by**: node cannot start until ALL hard_blocked_by nodes are complete (exit_artifacts ready + gate approved).
      - **alignment_refs**: node CAN start even if alignment_refs nodes are not complete; read their artifacts if available, degrade gracefully if not. Dispatch in parallel if no hard_blocked_by prevents it.
      - Can skip a node if its goal is already satisfied
      - Can re-run a failed node after fixing the issue
      - **Nodes with `human_gate: true`:** do NOT advance based on exit_artifact existence alone. Read the node's `approval_record_path` field from workflow.json (e.g., `.allforai/game-design/approval-records.json` for game-design nodes, `.allforai/app-design/approval-records.json` for app-design nodes). Look up this node's record by `node_id`:
-       - `gate_status == "pending"` AND all exit_artifacts exist → auto-set `gate_status` to `"in-review"` and notify `discipline_owner`. Do NOT advance yet.
+       - `gate_status == "pending"` AND all exit_artifacts are ready → auto-set `gate_status` to `"in-review"` and notify `discipline_owner`. Do NOT advance yet.
        - `gate_status == "in-review"` → wait for `discipline_owner` to approve or request revision. Do NOT advance.
          - 对设计审批节点，使用本地 Web 审批看板流程（不需要 Playwright）：
            1. 用最新数据重新渲染看板：
@@ -148,7 +151,7 @@ On first iteration if transition_log is non-empty:
 
 ## Termination
 
-- All nodes' exit_artifacts exist → success report
+- All nodes' exit_artifacts are ready → success report
 - concept-acceptance verdict = needs_iteration → output acceptance-report.md, present iteration options (fix/re-bootstrap/accept), stop
 - User interrupts → transition_log is already saved, resume with /run
 - Safety warning acknowledged → continue or stop per user choice

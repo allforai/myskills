@@ -127,12 +127,6 @@ def _artifact_paths(items) -> list[str]:
     return paths
 
 
-def _required_artifacts_exist(project_root: Path, artifacts: set[str]) -> bool:
-    if not artifacts:
-        return False
-    return all((project_root / artifact).exists() for artifact in artifacts)
-
-
 def _read_node_spec_frontmatter(path: Path) -> dict:
     try:
         text = path.read_text(encoding="utf-8")
@@ -329,19 +323,6 @@ def expand_game_2d_production(project_root: Path, *, dry_run: bool = False) -> d
             "changed": bool(removed),
             "removed_orphan_specs": removed,
         }
-    if _required_artifacts_exist(project_root, GAME_2D_PRODUCTION_REQUIRED_ARTIFACTS):
-        workflow = _load_json(workflow_path)
-        workflow_node_ids = {
-            node.get("node_id") for node in workflow.get("nodes", []) if node.get("node_id")
-        }
-        removed = _cleanup_orphan_game_2d_specs(specs_dir, workflow_node_ids, dry_run=dry_run)
-        return {
-            "status": "skipped",
-            "reason": "game_2d_production_artifacts_already_exist",
-            "changed": bool(removed),
-            "removed_orphan_specs": removed,
-        }
-
     workflow = _load_json(workflow_path)
     nodes = workflow.setdefault("nodes", [])
     if not isinstance(nodes, list):

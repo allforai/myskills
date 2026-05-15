@@ -20,6 +20,85 @@ MAX_CONSECUTIVE_FAILURES_PER_NODE = 3
 MAX_STAGNANT_ITERATIONS = 5
 DEFAULT_GOAL = "Complete the entire generated workflow end-to-end. Do not stop to ask what to do next. Keep executing nodes until the workflow is done, then stop for unified acceptance."
 
+BLOCKING_STATUS_VALUES = {
+    "accepted_with_warnings",
+    "blocked",
+    "degraded",
+    "failed",
+    "failed_validation",
+    "failed_env",
+    "needs_revision",
+    "not_generated",
+    "not_ready",
+    "placeholder",
+    "revision-requested",
+    "spec_only",
+    "spec_ready",
+}
+
+STATUS_FIELDS = (
+    "status",
+    "qa_status",
+    "overall_status",
+    "repair_status",
+    "revalidation_status",
+    "overall_launch_status",
+    "validation_status",
+    "acceptance_state",
+)
+
+PRODUCTION_GAP_FIELDS = (
+    "asset_gaps",
+    "warnings",
+    "non_blocking_warnings",
+    "known_gaps",
+    "remaining_gaps",
+    "degraded_contracts",
+    "blockers",
+    "major_findings",
+)
+
+FORBIDDEN_PRODUCTION_GAP_TERMS = (
+    "absent",
+    "borrowed",
+    "debug scene",
+    "degraded",
+    "fallback",
+    "generic",
+    "graphics",
+    "missing",
+    "not delivered",
+    "not_generated",
+    "placeholder",
+    "prototype",
+    "prototypeboard",
+    "pure-color",
+    "sample scene",
+    "silent",
+    "spec_ready",
+    "stub",
+    "tween fallback",
+)
+
+STALE_SENSITIVE_ARTIFACT_MARKERS = (
+    ".allforai/game-2d/assembly/",
+    ".allforai/game-2d/qa/",
+    ".allforai/game-2d/repair/",
+    ".allforai/game-frontend/assembly/",
+    ".allforai/game-frontend/qa/",
+    ".allforai/visual-qa/",
+)
+
+STALE_SOURCE_DIRS = (
+    "game-client/assets/scripts",
+    "game-client/assets/scenes",
+    "game-client/assets/resources",
+    "assets/scripts",
+    "assets/scenes",
+    "assets/resources",
+    "src",
+)
+
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
@@ -61,13 +140,90 @@ def artifact_exists(project_root: Path, rel_path: str) -> bool:
     return (project_root / rel_path).exists()
 
 
+def artifact_path(item) -> str:
+    if isinstance(item, dict):
+        return str(item.get("path", ""))
+    return str(item)
+
+
+def artifact_status_error(path: Path, project_root: Path | None = None) -> str | None:
+    if path.suffix != ".json" or not path.exists():
+        return None
+    stale_error = stale_runtime_artifact_error(path, project_root)
+    if stale_error:
+        return stale_error
+    try:
+        data = load_json(path)
+    except Exception:
+        return None
+    if not isinstance(data, dict):
+        return None
+    if not data:
+        return "empty JSON artifact is not a valid completion report or contract"
+
+    for field in STATUS_FIELDS:
+        value = data.get(field)
+        if isinstance(value, str) and value.lower() in BLOCKING_STATUS_VALUES:
+            return f"{field}={value}"
+
+    for field in PRODUCTION_GAP_FIELDS:
+        value = data.get(field)
+        if value in (None, [], {}):
+            continue
+        items = value if isinstance(value, list) else [value]
+        for item in items:
+            if isinstance(item, dict) and (
+                item.get("allowed_by_production_policy") is True
+                or item.get("explicitly_approved_for_launch") is True
+            ):
+                continue
+            text = json.dumps(item, ensure_ascii=False).lower()
+            for term in FORBIDDEN_PRODUCTION_GAP_TERMS:
+                if term in text:
+                    return f"{field} contains forbidden production gap term: {term}"
+    return None
+
+
+def stale_runtime_artifact_error(path: Path, project_root: Path | None) -> str | None:
+    if project_root is None:
+        return None
+    try:
+        rel_path = str(path.resolve().relative_to(project_root.resolve()))
+    except Exception:
+        return None
+    if not any(marker in rel_path for marker in STALE_SENSITIVE_ARTIFACT_MARKERS):
+        return None
+    artifact_mtime = path.stat().st_mtime
+    newest_source: tuple[str, float] | None = None
+    for rel_dir in STALE_SOURCE_DIRS:
+        source_dir = project_root / rel_dir
+        if not source_dir.exists():
+            continue
+        for source in source_dir.rglob("*"):
+            if not source.is_file() or source.suffix.lower() not in {
+                ".ts", ".js", ".json", ".scene", ".prefab", ".png", ".jpg", ".jpeg", ".webp", ".mp3", ".wav", ".ogg"
+            }:
+                continue
+            mtime = source.stat().st_mtime
+            if mtime > artifact_mtime and (newest_source is None or mtime > newest_source[1]):
+                newest_source = (str(source.relative_to(project_root)), mtime)
+    if newest_source is None:
+        return None
+    return f"stale runtime/visual artifact; newer source exists: {newest_source[0]}"
+
+
+def artifact_ready(project_root: Path, rel_path: str) -> bool:
+    path = project_root / rel_path
+    return path.exists() and artifact_status_error(path, project_root) is None
+
+
 def diagnosis_protocol_path(project_root: Path) -> Path:
     return project_root / ".allforai/bootstrap/protocols/diagnosis.md"
 
 
 def first_pending_node(project_root: Path, workflow: dict) -> dict | None:
     for node in workflow.get("nodes", []):
-        if not all(artifact_exists(project_root, path) for path in node.get("exit_artifacts", [])):
+        if not all(artifact_ready(project_root, artifact_path(path)) for path in node.get("exit_artifacts", [])):
             return node
     return None
 
@@ -347,11 +503,13 @@ def main() -> int:
         result = run_codex(project_root, build_prompt(node_id, goal))
 
         artifacts_created = [
-            path for path in node.get("exit_artifacts", []) if artifact_exists(project_root, path)
+            artifact_path(path)
+            for path in node.get("exit_artifacts", [])
+            if artifact_ready(project_root, artifact_path(path))
         ]
-        all_exist = len(artifacts_created) == len(node.get("exit_artifacts", []))
+        all_ready = len(artifacts_created) == len(node.get("exit_artifacts", []))
 
-        if all_exist:
+        if all_ready:
             append_transition_if_missing(
                 workflow_path,
                 before_count,
@@ -362,7 +520,19 @@ def main() -> int:
             )
         else:
             lines = (result.stderr or result.stdout or "").strip().splitlines()
-            error_line = lines[-1][:300] if lines else "Codex stopped before satisfying exit artifacts."
+            readiness_errors = []
+            for item in node.get("exit_artifacts", []):
+                rel_path = artifact_path(item)
+                path = project_root / rel_path
+                if not path.exists():
+                    readiness_errors.append(f"missing {rel_path}")
+                    continue
+                status_error = artifact_status_error(path, project_root)
+                if status_error:
+                    readiness_errors.append(f"{rel_path}: {status_error}")
+            error_line = "; ".join(readiness_errors)[:300] if readiness_errors else (
+                lines[-1][:300] if lines else "Codex stopped before satisfying ready exit artifacts."
+            )
             append_transition_if_missing(
                 workflow_path,
                 before_count,
@@ -377,7 +547,7 @@ def main() -> int:
             "iteration": iteration,
             "node": node_id,
             "returncode": result.returncode,
-            "all_exit_artifacts_exist": all_exist,
+            "all_exit_artifacts_ready": all_ready,
         }, ensure_ascii=False))
 
     print(json.dumps({

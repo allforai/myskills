@@ -127,7 +127,7 @@ def test_expand_game_2d_production_skips_when_not_required(tmp_path):
     assert result["status"] == "skipped"
 
 
-def test_expand_game_2d_production_skips_when_required_artifacts_exist(tmp_path):
+def test_expand_game_2d_production_still_repairs_workflow_when_required_artifacts_exist(tmp_path):
     _minimal_project(tmp_path)
     for artifact in [
         ".allforai/game-2d/assembly/playable-slice-assembly-report.json",
@@ -148,9 +148,9 @@ def test_expand_game_2d_production_skips_when_required_artifacts_exist(tmp_path)
 
     result = expand_game_2d_production(tmp_path)
 
-    assert result["status"] == "skipped"
-    assert result["reason"] == "game_2d_production_artifacts_already_exist"
-    assert result["removed_orphan_specs"] == ["game-2d-production-closure-qa"]
+    assert result["status"] == "expanded"
+    assert "game-2d-production-closure-qa" in result["generated_nodes"]
     workflow = json.loads((tmp_path / ".allforai/bootstrap/workflow.json").read_text())
     node_ids = [node["node_id"] for node in workflow["nodes"]]
-    assert "game-2d-production-closure-qa" not in node_ids
+    assert GAME_2D_PRODUCTION_REQUIRED_NODES[-1] in node_ids
+    assert validate_game_2d_production_flow(str(tmp_path / ".allforai/bootstrap")) == []

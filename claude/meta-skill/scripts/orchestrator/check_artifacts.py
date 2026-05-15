@@ -40,6 +40,7 @@ STATUS_FIELDS = (
     "revalidation_status",
     "overall_launch_status",
     "validation_status",
+    "acceptance_state",
 )
 
 PRODUCTION_GAP_FIELDS = (
@@ -49,18 +50,27 @@ PRODUCTION_GAP_FIELDS = (
     "known_gaps",
     "remaining_gaps",
     "degraded_contracts",
+    "blockers",
+    "major_findings",
 )
 
 FORBIDDEN_PRODUCTION_GAP_TERMS = (
     "absent",
     "borrowed",
+    "debug scene",
     "degraded",
     "fallback",
+    "generic",
     "generic placeholder",
+    "graphics",
     "missing",
     "not delivered",
     "not_generated",
     "placeholder",
+    "prototype",
+    "prototypeboard",
+    "pure-color",
+    "sample scene",
     "silent",
     "spec_ready",
     "stub",
@@ -73,6 +83,25 @@ ALLOWED_PRODUCTION_GAP_FLAGS = (
     "prototype_mode_allowed",
 )
 
+STALE_SENSITIVE_ARTIFACT_MARKERS = (
+    ".allforai/game-2d/assembly/",
+    ".allforai/game-2d/qa/",
+    ".allforai/game-2d/repair/",
+    ".allforai/game-frontend/assembly/",
+    ".allforai/game-frontend/qa/",
+    ".allforai/visual-qa/",
+)
+
+STALE_SOURCE_DIRS = (
+    "game-client/assets/scripts",
+    "game-client/assets/scenes",
+    "game-client/assets/resources",
+    "assets/scripts",
+    "assets/scenes",
+    "assets/resources",
+    "src",
+)
+
 
 def _resolve_path(path: str, project_root: Path | None = None) -> str:
     if os.path.isabs(path) or project_root is None:
@@ -80,9 +109,12 @@ def _resolve_path(path: str, project_root: Path | None = None) -> str:
     return str(project_root / path)
 
 
-def _artifact_status_error(path: str) -> dict | None:
+def _artifact_status_error(path: str, project_root: Path | None = None) -> dict | None:
     if not path.endswith(".json") or not os.path.exists(path):
         return None
+    stale_error = _stale_runtime_artifact_error(path, project_root)
+    if stale_error:
+        return stale_error
     try:
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
@@ -90,6 +122,12 @@ def _artifact_status_error(path: str) -> dict | None:
         return None
     if not isinstance(data, dict):
         return None
+    if not data:
+        return {
+            "field": "$",
+            "value": {},
+            "reason": "empty JSON artifact is not a valid completion report or contract",
+        }
     for field in STATUS_FIELDS:
         value = data.get(field)
         if isinstance(value, str) and value.lower() in BLOCKING_STATUS_VALUES:
@@ -102,6 +140,40 @@ def _artifact_status_error(path: str) -> dict | None:
     if gap_error:
         return gap_error
     return None
+
+
+def _stale_runtime_artifact_error(path: str, project_root: Path | None) -> dict | None:
+    if project_root is None:
+        return None
+    try:
+        rel_path = str(Path(path).resolve().relative_to(project_root.resolve()))
+    except Exception:
+        return None
+    if not any(marker in rel_path for marker in STALE_SENSITIVE_ARTIFACT_MARKERS):
+        return None
+    artifact_mtime = os.path.getmtime(path)
+    newest_source: tuple[str, float] | None = None
+    for rel_dir in STALE_SOURCE_DIRS:
+        source_dir = project_root / rel_dir
+        if not source_dir.exists():
+            continue
+        for root, dirs, files in os.walk(source_dir):
+            dirs[:] = [d for d in dirs if d not in {"node_modules", "library", "temp", "build"}]
+            for name in files:
+                if not name.endswith((".ts", ".js", ".json", ".scene", ".prefab", ".png", ".jpg", ".jpeg", ".webp", ".mp3", ".wav", ".ogg")):
+                    continue
+                full_path = os.path.join(root, name)
+                mtime = os.path.getmtime(full_path)
+                if mtime > artifact_mtime and (newest_source is None or mtime > newest_source[1]):
+                    newest_source = (str(Path(full_path).relative_to(project_root)), mtime)
+    if newest_source is None:
+        return None
+    return {
+        "field": "$mtime",
+        "value": rel_path,
+        "newer_source": newest_source[0],
+        "reason": "runtime/visual QA artifact is stale because source or asset files changed after it was written",
+    }
 
 
 def _allowed_gap(item) -> bool:
@@ -170,7 +242,7 @@ def check_node_artifacts(node: dict, project_root: Path | None = None) -> dict:
         resolved_path = _resolve_path(path, project_root)
         entry = {"path": path, "exists": os.path.exists(resolved_path)}
         if entry["exists"]:
-            status_error = _artifact_status_error(resolved_path)
+            status_error = _artifact_status_error(resolved_path, project_root)
             if status_error:
                 entry["status_error"] = status_error
         if validation_commands and entry["exists"]:

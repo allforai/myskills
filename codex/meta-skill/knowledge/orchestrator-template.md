@@ -64,7 +64,9 @@ After each node completes or fails, append to `workflow.json`:
 On the first iteration, if `transition_log` is non-empty:
 
 1. run `check_artifacts.py` to inspect current state
-2. trust artifact existence over the saved transition log
+2. trust artifact readiness over the saved transition log; a JSON report with
+   blocking status, fallback/placeholder/prototype gaps, or failed validation is
+   not complete merely because the file exists
 3. continue from the current project state
 
 ## Safety
@@ -75,7 +77,7 @@ On the first iteration, if `transition_log` is non-empty:
 
 ## Termination
 
-- All required exit artifacts exist: report success
+- All required exit artifacts are ready: report success
 - `concept-acceptance` verdict = `needs_iteration`: output acceptance summary, stop, and ask whether to fix, re-bootstrap, or accept
 - for goal-based replication workflows, do not treat an accepted current slice as final success when the acceptance artifact says major requested fidelity surfaces remain open
 - User interrupts: the next run resumes from `workflow.json`

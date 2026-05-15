@@ -156,6 +156,15 @@ visuals that do not match the declared art direction and engine-ready asset
 manifest. If the game is playable but the screenshot is still a prototype scene,
 return `failed_validation`; do not downgrade it to a warning.
 
+Metric-only visual checks are insufficient. Pixel statistics, color counts,
+edge detection, OCR, object counts, or DOM/canvas probes can support the report,
+but they cannot decide visual acceptance alone. Codex CLI must answer the
+project-level perceptual question from the visual criteria, such as whether the
+screen looks like the approved game promise, art direction, scene context, and
+genre-specific play surface. A screenshot with acceptable color variety but a
+black debug background, absent HUD, pure-color tiles, or no themed context must
+fail even if low-level metrics pass.
+
 When placeholder-like visuals are detected, the review prompt must tell Codex
 CLI to read only the relevant paths: scene entrypoint/config, scene composition
 spec, asset import binding spec, engine-ready art manifest, and screenshots. It

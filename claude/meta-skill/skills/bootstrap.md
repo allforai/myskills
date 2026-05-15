@@ -950,9 +950,13 @@ expander before validation:
 python3 .allforai/bootstrap/scripts/expand_game_2d_production.py .
 ```
 
-This script is idempotent. It appends or repairs the 11 generic
+This script is idempotent. It appends or repairs the generic
 `game-2d-production` nodes and their thin delegating node-specs whenever the
-project handoff requires 2D production closure.
+project handoff requires 2D production closure. It must not skip expansion only
+because old `.allforai/game-2d/` artifacts already exist: older reports are
+evidence inputs, not proof that the current skill version's production gates
+are satisfied. Existing reports must be rechecked by the generated workflow and
+by artifact-status validation before closure.
 
 **Generic QA repair loop rule (all app/game/software workflows):** Any QA,
 verify, smoke, visual, runtime, or closure node that can discover implementation
@@ -973,6 +977,14 @@ generic rules:
 - stop after 3 attempts
 - block on environment/tool/runtime/contract blockers rather than substituting
   static review
+
+**Artifact readiness rule:** Exit artifacts are complete only when they exist
+and their machine-readable contents do not declare blocking statuses or hidden
+production gaps. A JSON report with `failed_validation`, `blocked`,
+`needs_revision`, `accepted_with_warnings`, `placeholder`, `spec_ready`,
+`not_generated`, fallback/stub/silent/missing asset gaps, prototype/debug scene
+findings, or pure-color placeholder visuals must keep the node pending or
+failed. Do not treat such reports as completed merely because the files exist.
 - final closure must consume the repair report and must not pass while
   repairable `code_gaps` remain
 
@@ -1939,7 +1951,7 @@ is likely too large for a single workflow execution. Suggest decomposition:
   the Downstream Contract section in the node-spec — tells the subagent "who
   will consume your output and what they need from it".
   **How to populate**: For each node N, `consumers[]` = all node IDs M where N appears in M's `hard_blocked_by[]` AND N's exit_artifacts are listed in the Downstream Consumers table of M's capability file. Bootstrap derives this during Step 3.1 node graph design — after hard_blocked_by chains are established, traverse them in reverse to fill consumers.
-- `hard_blocked_by`: Node IDs that must complete (exit_artifacts exist + human_gate approved if applicable) before this node can START. The orchestrator will not dispatch this node until all hard_blocked_by nodes are complete. Use for true data dependencies — this node's inputs don't exist until upstream finishes.
+- `hard_blocked_by`: Node IDs that must complete (exit_artifacts ready + human_gate approved if applicable) before this node can START. The orchestrator will not dispatch this node until all hard_blocked_by nodes are complete and artifact-status validation passes. Use for true data dependencies — this node's inputs are not usable until upstream finishes.
 - `alignment_refs`: Node IDs this node reads artifacts FROM but does not strictly depend on for execution timing. The orchestrator may dispatch this node in parallel with alignment_refs nodes; the node-spec's Context Pull section must handle the case where alignment_refs artifacts may not yet exist (graceful degradation). Use for "I want to align with X's output but can work without it."
 
 - `unlocks`: Node IDs unblocked when this node's gate is approved. Used by the orchestrator to advance the workflow after approval.

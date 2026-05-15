@@ -64,8 +64,15 @@ exist. This node is not optional for a 2D production workflow.
    `repair_status: "no_code_gaps"` and preserve non-code blockers for closure.
 3. If `code_gaps` exist, repair them in project code, then run build/start
    commands from the runtime profile.
-4. Rerun the affected QA paths and regenerate runtime screenshots.
-5. Repeat repair and revalidation up to 3 attempts.
+4. Any project code, scene, prefab, asset-binding, UI, VFX, audio, or resource
+   change made by this node invalidates prior runtime, screenshot, visual, and
+   closure QA artifacts. Mark the stale reports in the repair report and rerun
+   every affected QA path; do not reuse pre-repair visual evidence.
+5. Rerun runtime screenshot capture, runtime probe capture, Codex CLI visual
+   review, core-loop assertions, asset-binding visual QA, and session-completion
+   QA when the repair touches visible gameplay, scene entrypoints, generated
+   nodes, asset loading, HUD, VFX, audio triggers, or completion flow.
+6. Repeat repair and revalidation up to 3 attempts.
 
 Do not repair design intent, art direction, asset source quality, missing
 external tools, or unavailable runtimes in this node. Route those findings to
@@ -74,6 +81,10 @@ their upstream owners and keep them blocking.
 ## Completion Conditions
 
 Return `COMPLETED` only when all repairable `code_gaps` are fixed and affected
-QA evidence is rerun, or when no code gaps exist. Return `FAILED_VALIDATION`
-when repairable code gaps remain after 3 attempts. Return a blocking status for
-environment/tool/runtime blockers that prevent revalidation.
+QA evidence is rerun after the last code/resource change, or when no code gaps
+exist. `fix-without-verify` is not a valid completion state: if a report is
+older than changed gameplay code, scene files, runtime resources, or generated
+asset bindings, return `FAILED_VALIDATION` or a blocking stale-evidence status.
+Return `FAILED_VALIDATION` when repairable code gaps remain after 3 attempts.
+Return a blocking status for environment/tool/runtime blockers that prevent
+revalidation.

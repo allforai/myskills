@@ -187,9 +187,18 @@ For runtime screenshots, criteria must require:
 - traceability from visible assets to runtime manifests or binding specs.
 - embedded runtime probe or equivalent engine test API when important visible
   objects are created dynamically at runtime.
+- perceptual project-fit questions that cannot be replaced by metrics, such as
+  whether the screenshot matches the approved product promise, art direction,
+  genre surface, scene context, and player-facing emotional tone.
 
 Canvas, DOM, log, state, or manifest checks may support the review, but cannot
 replace screenshot inspection.
+
+Pixel metrics are supporting evidence only. Unique-color counts, edge/rounding
+detection, object counts, OCR, or histogram checks must not pass a visual batch
+when the screen still feels like a prototype, debug scene, unthemed board, or
+wrong product. The criteria must name at least one human-perceptual acceptance
+question for each runtime scene/screen batch.
 
 ## Runtime Probe Requirement
 
