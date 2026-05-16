@@ -21,7 +21,7 @@ coverage and node completion standards.
 
 ## Guiding Philosophy
 
-Every production workflow must be expanded through four lenses:
+Every production workflow must be expanded through six lenses:
 
 - **Reverse reasoning**: infer the shipped product surfaces, runtime modules,
   data containers, assets, integrations, and acceptance evidence from the final
@@ -32,6 +32,23 @@ Every production workflow must be expanded through four lenses:
 - **Acceptance-driven execution**: node completion must include effect
   verification. "Code was written", "file exists", or "function is callable" is
   implementation evidence, not completion evidence.
+- **Quality-driven acceptance**: node completion must ask "is it good enough
+  for the approved project promise?" not only "does it exist?" Bootstrap must
+  generate project-specific quality questions, evidence requirements, failure
+  codes, and repair routes for user-facing, runtime, visual, audio, content,
+  and integration deliverables.
+- **Attention management**: every node must declare what it is optimizing for,
+  what it is not doing, which inputs are mandatory, which inputs are optional,
+  which quality questions stay in focus, when it must stop, and which repair
+  targets it may emit. A node-spec that invites broad repository reading,
+  vague context gathering, or unbounded "improve this" work is not suitable for
+  unattended execution.
+- **Bootstrap context compression**: do more project understanding, routing,
+  specialization, and contract writing in bootstrap so `/run` can execute by
+  pulling exact inputs instead of re-reading the whole project. Bootstrap should
+  spend context to create durable node-specs, interface cards, visual
+  acceptance standards, and repair loops; execution nodes should spend context
+  only on their declared attention contract and current evidence.
 - **Dimension elevation thinking**: raise the reasoning level above the current
   node list and above the user's named means. Do not merely add more
   categories. First distinguish the user's goal from the proposed route: "buy a
@@ -84,6 +101,7 @@ The JSON report must include:
   "reverse_reasoning_findings": [],
   "closure_loop_findings": [],
   "acceptance_driven_findings": [],
+  "attention_management_findings": [],
   "underexpanded_scope_findings": [],
   "node_completion_findings": [],
   "required_repairs": []
@@ -102,11 +120,19 @@ Allowed blocker codes:
 - `missing_platform_qa`
 - `missing_dimension_elevation_review`
 - `missing_high_level_product_dimension`
+- `missing_attention_contract`
+- `unbounded_context_pull`
+- `missing_non_goals`
+- `missing_stop_conditions`
+- `missing_quality_questions`
 - `missing_repair_loop`
 - `repair_loop_not_blocked_by_qa`
 - `acceptance_not_blocked_by_repair_loop`
 - `qa_report_without_revalidation`
 - `code_only_completion`
+- `existence_only_completion`
+- `missing_quality_acceptance`
+- `unresolved_quality_gaps`
 - `fallback_completion_allowed`
 
 ## Automatic Validation
@@ -118,6 +144,12 @@ Reject the workflow when any of these conditions hold:
 - bootstrap treats a named means, technology, module, or requested node as the
   final goal without checking the underlying product outcome and alternative
   routes;
+- a node-spec lacks an `Attention Contract` with primary outcome, non-goals,
+  must-read inputs, quality questions, stop conditions, and repair targets;
+- a node-spec asks the executor to read broad context or scan the whole
+  repository without justifying repository-wide evidence as the task itself;
+- a node-spec has no stop condition for missing inputs, unavailable runtime,
+  failed effect evidence, unresolved quality gaps, or environment blockers;
 - the workflow only follows the current implementation path and does not raise
   the reasoning level to production-system invariants, contract closure,
   evidence quality, dependency closure, and failure-recovery requirements;
@@ -132,6 +164,11 @@ Reject the workflow when any of these conditions hold:
 - a rewritten module node does not require import/export compatibility checks;
 - node completion says `done`, `implemented`, or `file exists` without an
   effect verification artifact;
+- node completion uses existence/structure/function-call checks without
+  project-specific quality acceptance questions;
+- a report declares non-empty `quality_gaps`, `effect_gaps`,
+  `experience_gaps`, `visual_quality_gaps`, or `perceptual_gaps` while still
+  unlocking downstream production nodes;
 - QA outputs can be `partial`, `conditional_pass`, `accepted_with_warnings`, or
   fallback completion while still unlocking downstream production nodes.
 
@@ -153,6 +190,7 @@ build acceptance.
 ## Completion Conditions
 
 Return `COMPLETED` only when `status == "passed"` and every production node has
-effect verification. Return `FAILED_VALIDATION` if the workflow is
-under-expanded, has code-only completion, lacks repair loops, or lets fallback
-states unlock downstream nodes.
+attention contract, effect verification, and quality acceptance. Return
+`FAILED_VALIDATION` if the workflow is under-expanded, has code-only or existence-only completion, lacks repair loops, lacks attention boundaries, lacks
+quality questions, carries unresolved quality gaps, or lets fallback states
+unlock downstream nodes.

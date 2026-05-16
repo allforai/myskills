@@ -52,6 +52,15 @@ alignment_refs: []
 exit_artifacts:
   - ".allforai/game-frontend/assembly/playable-client-assembly-report.json"
 ---
+## Attention Contract
+- Primary outcome: assemble frontend.
+- Non-goals / out-of-scope: do not perform unrelated work.
+- Must-read inputs: workflow fields.
+- Optional inputs: none.
+- Context budget: fixture only.
+- Quality questions: does the assembly contract exist?
+- Stop conditions: stop when inputs are missing.
+- Repair targets: code_gaps, quality_gaps.
 """,
     )
     _write(

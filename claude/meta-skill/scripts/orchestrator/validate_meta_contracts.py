@@ -64,6 +64,7 @@ def validate_approval_scripts_copied(errors: list[str]) -> None:
         "serve_approval.py",
         "apply_approval_action.py",
         "expand_game_2d_production.py",
+        "reconcile_bootstrap_workflow.py",
         "record_meta_skill_feedback.py",
         "record_run_event.py",
         "summarize_run_log.py",
@@ -244,7 +245,15 @@ def validate_bootstrap_node_expansion_contract(errors: list[str]) -> None:
         "underlying desired product outcome",
         "named means",
         "effect verification",
-        "code-only completion",
+        "code-only or existence-only completion",
+        "Quality-driven acceptance",
+        "existence-only completion",
+        "quality_gaps",
+        "Attention management",
+        "missing_attention_contract",
+        "unbounded_context_pull",
+        "missing_stop_conditions",
+        "Bootstrap context compression",
     ):
         if term not in skill_text:
             errors.append(f"bootstrap-node-expansion-qa: missing contract term {term}")
@@ -258,11 +267,53 @@ def validate_bootstrap_node_expansion_contract(errors: list[str]) -> None:
         "named means",
         "effect verification",
         "## Effect Verification",
+        "quality-driven acceptance",
+        "## Quality Acceptance",
+        "quality_gaps",
+        "## Attention Contract",
+        "Primary outcome",
+        "Non-goals",
+        "Must-read inputs",
+        "Stop conditions",
+        "Repair targets",
+        "Bootstrap should spend context once",
+        "execute in pull mode",
     ):
         if term not in bootstrap_text:
             errors.append(f"bootstrap.md: missing bootstrap node expansion term {term}")
     if "bootstrap-node-expansion-qa" not in parent_text:
         errors.append("meta-orchestration/SKILL.md: missing bootstrap-node-expansion-qa child")
+
+
+def validate_rebootstrap_reconciliation_contract(errors: list[str]) -> None:
+    bootstrap_text = BOOTSTRAP.read_text(encoding="utf-8")
+    script = ROOT / "scripts/orchestrator/reconcile_bootstrap_workflow.py"
+    if not script.exists():
+        errors.append("scripts/orchestrator/reconcile_bootstrap_workflow.py: missing")
+        return
+    script_text = script.read_text(encoding="utf-8")
+    for term in (
+        "workflow-state-index.json",
+        "workflow-reconciliation-plan.json",
+        "workflow-reconciliation-plan.md",
+        "keep/update/add/remove/supersede/invalidate",
+        "reconciliation_applied",
+        "--candidate-workflow",
+        "must not silently overwrite",
+    ):
+        if term not in bootstrap_text:
+            errors.append(f"bootstrap.md: missing re-bootstrap reconciliation term {term}")
+    for term in (
+        "build_state_index",
+        "build_reconciliation_plan",
+        "orphan_specs",
+        "artifact_readiness",
+        "supersede",
+        "invalidate",
+        "quality_gaps",
+    ):
+        if term not in script_text:
+            errors.append(f"reconcile_bootstrap_workflow.py: missing implementation term {term}")
 
 
 def main() -> int:
@@ -277,6 +328,7 @@ def main() -> int:
     validate_feedback_contract(errors)
     validate_canvas2d_contract(errors)
     validate_bootstrap_node_expansion_contract(errors)
+    validate_rebootstrap_reconciliation_contract(errors)
     if errors:
         for error in errors:
             print(error, file=sys.stderr)

@@ -276,6 +276,17 @@ exit_artifacts:{_yaml_list(exit_artifacts)}
 
 `${{CLAUDE_PLUGIN_ROOT}}/skills/{skill}/SKILL.md`
 
+## Attention Contract
+
+- Primary outcome: 完成 `{node_id}` 的真实 2D 生产效果，并产出可被下游验收和修复循环消费的证据。
+- Non-goals / out-of-scope: 不重新定义游戏概念、不替换运行时、不用占位或 fallback 冒充完成、不扫描无关仓库文件。
+- Must-read inputs: 读取本节点 skill、frontmatter 声明的 blockers 产物、2D 生产契约、程序 handoff、运行时 profile，以及与本节点输出直接相关的当前运行证据。
+- Optional inputs: 读取项目概念、美术/音频/视觉验收标准、历史 QA 报告和运行日志；缺失时记录 warning，但不得隐式降低验收标准。
+- Context budget: 优先读取声明的输入 artifact、接口卡片、当前运行证据和本节点相关源码；只有在定位 blocker 时才扩大到调用方/被调用方文件。
+- Quality questions: 该节点是否让 2D 游戏更接近可交付产品；效果是否真实发生；截图、探针、音频、资产或玩法证据是否证明“好不好”；失败是否进入修复和重验。
+- Stop conditions: 必需输入缺失、运行时不可启动、无法截图/探针/播放/交互、发现未修复质量缺口、或只能提供 mock/静态结构证据时，返回阻塞状态。
+- Repair targets: 可输出 `code_gaps`、`asset_gaps`、`test_gaps`、`quality_gaps`、`effect_gaps`、`experience_gaps`、`environment_blockers`。
+
 ## Inputs
 
 - `.allforai/game-design/game-design-doc.json`

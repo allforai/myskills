@@ -25,6 +25,7 @@ In scope:
 - text fit and truncation checks,
 - contrast/readability checks,
 - HUD/playfield occlusion checks,
+- project-specific screen archetype concept-fit checks,
 - visual style consistency checks,
 - repair recommendations for upstream UI specs.
 
@@ -136,6 +137,14 @@ When mockups or screenshots exist, validate:
 6. Button states are visually distinguishable.
 7. UI palette and materials match the art style guide.
 8. Safe-area issues are absent on mobile portrait and landscape.
+9. Specialized screens visibly satisfy their project-local
+   `screen_archetype_contract`: the screen promise is recognizable, hierarchy
+   is clear, state semantics are distinct, labels/icons/rewards/counters do not
+   overlap, and required context layers are present.
+10. Reject runtime screenshots that satisfy only functional structure while
+    violating the archetype contract, such as generic placeholders, debug-like
+    geometry, unreadable labels, icons placed over text, floating unrelated HUD
+    controls, or no visual connection to the approved concept/art direction.
 
 ## Repair Plan Rules
 
@@ -145,6 +154,8 @@ Each issue must name the upstream owner:
 - overlap or safe-zone issue -> `screen-layout-spec.json`,
 - missing state or tap target issue -> `component-state-spec.json`,
 - mockup mismatch -> `ui-mockup-spec.json`,
+- screen archetype/state/label defects -> `screen-layout-spec.json` and
+  `component-state-spec.json`,
 - naming/path issue -> `ui-registry.json`.
 
 ## Completion Conditions

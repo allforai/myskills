@@ -73,7 +73,8 @@ Before stopping, record `preflight_blocked` with
   4. Run: python3 .allforai/bootstrap/scripts/check_artifacts.py .allforai/bootstrap/workflow.json --json
      - Treat `all_exist=false` as pending even when files exist. `check_artifacts.py`
        rejects reports with blocking statuses, fallback/placeholder/prototype
-       gaps, silent/missing assets, or failed validation.
+       gaps, silent/missing assets, failed validation, existence-only completion,
+       or unresolved quality/effect/experience gaps.
   5. Review which nodes are done (exit_artifacts ready) and which are pending
   6. Decide next node:
      - What's done? What's pending? What makes sense next?

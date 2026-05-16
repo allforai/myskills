@@ -90,6 +90,19 @@ def _read_node_spec(path: str) -> tuple:
 REFERENCE_FIELDS = ("consumers", "hard_blocked_by", "unlocks", "alignment_refs")
 
 
+NODE_SPEC_REQUIRED_ATTENTION_TERMS = (
+    "## Attention Contract",
+    "Primary outcome",
+    "Non-goals",
+    "Must-read inputs",
+    "Optional inputs",
+    "Context budget",
+    "Quality questions",
+    "Stop conditions",
+    "Repair targets",
+)
+
+
 APP_DESIGN_REQUIRED_NODES = {
     "ia-design",
     "user-flow-design",
@@ -263,6 +276,61 @@ CANVAS2D_REQUIRED_FAMILIES = {
         "final weighted product acceptance",
     ),
 }
+
+
+VISIBLE_GAME_RUNTIME_TERMS = (
+    "game-frontend",
+    "game-ui",
+    "gameplay",
+    "runtime-gameplay-visual",
+    "playable",
+    "visual-qa",
+    "screenshot",
+    "scene",
+    "hud",
+)
+
+
+VISUAL_QA_TERMS = (
+    "runtime-gameplay-visual",
+    "visual-qa",
+    "visual acceptance",
+    "ui-readability",
+    "asset-binding-visual",
+    "codex visual",
+    "screenshot",
+)
+
+
+VISUAL_CRITERIA_TERMS = (
+    "visual-acceptance-criteria",
+    ".allforai/visual-qa/visual-acceptance-criteria.json",
+    ".allforai/visual-qa/visual-acceptance-criteria.md",
+)
+
+
+PROGRESSION_MAP_TERMS = (
+    "level-select",
+    "level select",
+    "world map",
+    "mission map",
+    "chapter map",
+    "stage road",
+    "progression route",
+    "progression map",
+    "选关",
+    "关卡地图",
+)
+
+
+PROGRESSION_MAP_CRITERIA_TERMS = (
+    "progression map acceptance",
+    "progression_map_contract",
+    "map metaphor",
+    "node states",
+    "label/icon",
+    "prototype map geometry",
+)
 
 
 UI_TEST_PLATFORMS = {
@@ -765,6 +833,73 @@ def validate_canvas2d_game_client_profile_flow(bdir: str) -> list:
     return errors
 
 
+def validate_game_visual_acceptance_standard_flow(bdir: str) -> list:
+    """Ensure visible game workflows generate visual standards before screenshot QA."""
+    errors = []
+    workflow_path = os.path.join(bdir, "workflow.json")
+    specs_dir = os.path.join(bdir, "node-specs")
+    if not os.path.exists(workflow_path):
+        return errors
+
+    try:
+        workflow = _load_json(workflow_path)
+    except Exception:
+        return errors
+
+    blob = _workflow_and_specs_blob(bdir, workflow)
+    has_visible_game = _contains_any(blob, VISIBLE_GAME_RUNTIME_TERMS) and (
+        "game" in blob or "game-design" in blob
+    )
+    visual_qa_nodes = _matching_nodes(workflow, specs_dir, VISUAL_QA_TERMS)
+    if not has_visible_game and not visual_qa_nodes:
+        return errors
+
+    criteria_nodes = _matching_nodes(workflow, specs_dir, VISUAL_CRITERIA_TERMS)
+    if not criteria_nodes:
+        errors.append(
+            "workflow.json: visible game UI/runtime workflow requires a visual "
+            "acceptance criteria producer before screenshot/visual QA nodes"
+        )
+        return errors
+
+    required_artifacts = {
+        ".allforai/visual-qa/visual-acceptance-criteria.json",
+        ".allforai/visual-qa/visual-acceptance-criteria.md",
+        ".allforai/visual-qa/visual-evidence-requirements.json",
+    }
+    criteria_ids = {node["node_id"] for node in criteria_nodes if node.get("node_id")}
+    for node in criteria_nodes:
+        artifacts = set(_artifact_paths(node.get("exit_artifacts")))
+        missing = sorted(required_artifacts - artifacts)
+        if missing:
+            errors.append(
+                f"workflow.json: {node.get('node_id')} visual criteria node missing "
+                f"required exit_artifacts {missing}"
+            )
+
+    for node in visual_qa_nodes:
+        node_id = node.get("node_id")
+        if node_id in criteria_ids:
+            continue
+        blockers = set(node.get("hard_blocked_by") or [])
+        if not blockers.intersection(criteria_ids):
+            errors.append(
+                f"workflow.json: visual QA node '{node_id}' must be hard_blocked_by "
+                "the visual acceptance criteria producer"
+            )
+
+    if _contains_any(blob, PROGRESSION_MAP_TERMS):
+        criteria_blob = "\n".join(_node_blob(node, specs_dir) for node in criteria_nodes)
+        if not _contains_any(criteria_blob, PROGRESSION_MAP_CRITERIA_TERMS):
+            errors.append(
+                "workflow.json: level-select/world-map/progression route detected, "
+                "but visual acceptance criteria node-spec does not define progression "
+                "map acceptance standards"
+            )
+
+    return errors
+
+
 def validate_node_spec_coverage(bdir: str) -> list:
     """Ensure workflow nodes and node-spec files stay in sync."""
     errors = []
@@ -811,7 +946,7 @@ def validate_node_spec_contracts(bdir: str) -> list:
         spec_path = os.path.join(specs_dir, f"{node_id}.md")
         if not os.path.exists(spec_path):
             continue
-        data, _text, spec_errors = _read_node_spec(spec_path)
+        data, text, spec_errors = _read_node_spec(spec_path)
         if spec_errors:
             continue
 
@@ -840,6 +975,12 @@ def validate_node_spec_contracts(bdir: str) -> list:
                         f"node-specs/{node_id}.md: frontmatter {field} {spec_value} "
                         f"does not match workflow {field} {workflow_value}"
                     )
+
+        for term in NODE_SPEC_REQUIRED_ATTENTION_TERMS:
+            if term not in text:
+                errors.append(
+                    f"node-specs/{node_id}.md: missing attention contract term {term!r}"
+                )
 
     return errors
 
@@ -1093,13 +1234,16 @@ def validate_game_2d_production_flow(bdir: str) -> list:
 
 def validate_node_spec(path: str) -> list:
     """Validate a single node-spec markdown file."""
-    data, _text, errors = _read_node_spec(path)
+    data, text, errors = _read_node_spec(path)
     if errors:
         return errors
     if "node_id" not in data:
         errors.append("frontmatter missing 'node_id' field")
     if "node" in data:
         errors.append("frontmatter forbidden legacy 'node' field; use 'node_id'")
+    for term in NODE_SPEC_REQUIRED_ATTENTION_TERMS:
+        if term not in text:
+            errors.append(f"missing attention contract term {term!r}")
 
     return errors
 
@@ -1121,6 +1265,7 @@ def main():
         errors.extend(validate_app_design_flow(bdir))
         errors.extend(validate_game_2d_production_flow(bdir))
         errors.extend(validate_canvas2d_game_client_profile_flow(bdir))
+        errors.extend(validate_game_visual_acceptance_standard_flow(bdir))
         errors.extend(validate_mobile_ui_coverage(bdir))
     else:
         sm_path = os.path.join(bdir, "state-machine.json")
@@ -1152,6 +1297,7 @@ __all__ = [
     "validate_app_design_flow",
     "validate_game_2d_production_flow",
     "validate_canvas2d_game_client_profile_flow",
+    "validate_game_visual_acceptance_standard_flow",
     "validate_mobile_ui_coverage",
 ]
 

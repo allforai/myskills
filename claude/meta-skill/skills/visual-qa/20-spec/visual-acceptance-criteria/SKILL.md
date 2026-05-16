@@ -172,6 +172,10 @@ Global forbidden visuals must always include:
 - visible assets that cannot be traced to `asset_id`/`runtime_id`;
 - layout/text overlap, cropped primary content, or unreadable target-size text;
 - visual style mismatch against project art/UI direction.
+- specialized screens that look like debug/prototype layouts instead of their
+  project-local screen archetype contract: generic placeholder geometry,
+  repeated filler backgrounds, status icons overlapping labels, missing
+  background/context layers, or floating controls with unclear meaning.
 
 ## Runtime Standard
 
@@ -190,6 +194,11 @@ For runtime screenshots, criteria must require:
 - perceptual project-fit questions that cannot be replaced by metrics, such as
   whether the screenshot matches the approved product promise, art direction,
   genre surface, scene context, and player-facing emotional tone.
+- for specialized screens, criteria must include a screen-specific archetype
+  acceptance standard derived from the project concept and UI contracts. The
+  standard must define required context, hierarchy, state semantics, readable
+  labels, separated icons/rewards/counters, integrated HUD/context, and
+  forbidden prototype/debug patterns for that archetype.
 
 Canvas, DOM, log, state, or manifest checks may support the review, but cannot
 replace screenshot inspection.
@@ -199,6 +208,12 @@ detection, object counts, OCR, or histogram checks must not pass a visual batch
 when the screen still feels like a prototype, debug scene, unthemed board, or
 wrong product. The criteria must name at least one human-perceptual acceptance
 question for each runtime scene/screen batch.
+
+For specialized screens, the perceptual question must be explicit: "Does this
+screen satisfy the approved project-specific screen promise, or merely expose
+functional controls?" A screen that has the right buttons/data but lacks the
+promised context, hierarchy, state clarity, and readable visual semantics must
+fail visual acceptance.
 
 ## Runtime Probe Requirement
 
@@ -247,6 +262,9 @@ Before returning success:
 5. Confirm repair routes name owning skills/nodes instead of generic "fix UI".
 6. Confirm Markdown and JSON outputs agree on failure codes and required
    evidence.
+7. If the scope includes specialized screens, confirm the criteria includes
+   screen archetype acceptance rules and blocker failure codes for prototype
+   geometry, label/icon overlap, missing context layers, and unclear states.
 
 ## Completion Conditions
 

@@ -30,6 +30,9 @@ BLOCKING_STATUS_VALUES = {
     "partial",
     "partial_pass",
     "placeholder",
+    "existence_only",
+    "not_good_enough",
+    "quality_failed",
     "needs_revision",
     "passed_with_warnings",
     "revision-requested",
@@ -46,6 +49,10 @@ STATUS_FIELDS = (
     "overall_launch_status",
     "validation_status",
     "acceptance_state",
+    "quality_status",
+    "effect_status",
+    "experience_status",
+    "visual_quality_status",
 )
 
 PRODUCTION_GAP_FIELDS = (
@@ -63,6 +70,11 @@ PRODUCTION_GAP_FIELDS = (
     "degraded_contracts",
     "blockers",
     "major_findings",
+    "quality_gaps",
+    "effect_gaps",
+    "experience_gaps",
+    "visual_quality_gaps",
+    "perceptual_gaps",
 )
 
 FORBIDDEN_PRODUCTION_GAP_TERMS = (
@@ -74,6 +86,14 @@ FORBIDDEN_PRODUCTION_GAP_TERMS = (
     "fallback",
     "generic",
     "generic placeholder",
+    "not good enough",
+    "quality gap",
+    "quality failed",
+    "existence only",
+    "function only",
+    "structure only",
+    "looks wrong",
+    "does not match concept",
     "graphics",
     "missing",
     "not delivered",

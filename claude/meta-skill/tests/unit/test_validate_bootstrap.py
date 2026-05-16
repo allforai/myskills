@@ -46,6 +46,19 @@ def _write(root, rel, text):
     return path
 
 
+ATTENTION_CONTRACT_BODY = """
+## Attention Contract
+- Primary outcome: produce the tested node outcome.
+- Non-goals / out-of-scope: do not perform unrelated work.
+- Must-read inputs: workflow fields required by the node.
+- Optional inputs: none.
+- Context budget: read only the relevant fixtures.
+- Quality questions: does the node meet the fixture contract?
+- Stop conditions: stop when required inputs are missing.
+- Repair targets: code_gaps, quality_gaps.
+"""
+
+
 def test_string_artifact_passes(tmp_path):
     path = _write_workflow(tmp_path, [_base_node(exit_artifacts=[".allforai/out.json"])])
     errors = validate_workflow(path)
@@ -119,7 +132,7 @@ def _write_node_spec(root, node_id, body="Canvas2D gameplay effect verification 
     _write(
         root,
         f"node-specs/{node_id}.md",
-        f"---\nnode_id: {node_id}\n---\n{body}\n",
+        f"---\nnode_id: {node_id}\n---\n{ATTENTION_CONTRACT_BODY}\n{body}\n",
     )
 
 
@@ -286,7 +299,7 @@ def test_game_2d_handoff_accepts_ordered_production_nodes(tmp_path):
         _write(
             bdir,
             f"node-specs/{node_id}.md",
-            f"---\nnode_id: {node_id}\n---\nRead game-2d-production/{node_id}/SKILL.md\n",
+            f"---\nnode_id: {node_id}\n---\n{ATTENTION_CONTRACT_BODY}\nRead game-2d-production/{node_id}/SKILL.md\n",
         )
         previous = node_id
     _write_workflow(bdir, nodes)
@@ -324,6 +337,7 @@ def test_node_spec_contract_detects_frontmatter_mismatch(tmp_path):
         "hard_blocked_by: []\n"
         "unlocks: []\n"
         "---\n"
+        f"{ATTENTION_CONTRACT_BODY}\n"
     )
 
     errors = validate_node_spec_contracts(str(tmp_path))
@@ -359,11 +373,38 @@ def test_node_spec_contract_passes_when_frontmatter_matches(tmp_path):
         "unlocks:\n"
         "  - verify\n"
         "---\n"
+        f"{ATTENTION_CONTRACT_BODY}\n"
     )
 
     errors = validate_node_spec_contracts(str(tmp_path))
 
     assert errors == []
+
+
+def test_node_spec_contract_requires_attention_contract(tmp_path):
+    _write_workflow(
+        tmp_path,
+        [
+            _base_node(
+                node_id="build",
+                exit_artifacts=[".allforai/build.json"],
+            ),
+        ],
+    )
+    (tmp_path / "node-specs").mkdir()
+    (tmp_path / "node-specs" / "build.md").write_text(
+        "---\n"
+        "node_id: build\n"
+        "exit_artifacts:\n"
+        "  - .allforai/build.json\n"
+        "---\n"
+        "## Effect Verification\n"
+    )
+
+    errors = validate_node_spec_contracts(str(tmp_path))
+
+    assert any("missing attention contract term '## Attention Contract'" in e for e in errors)
+    assert any("missing attention contract term 'Primary outcome'" in e for e in errors)
 
 
 def _bootstrap_dir(tmp_path):

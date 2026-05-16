@@ -124,6 +124,26 @@ def test_completed_status_artifact_is_complete(tmp_path):
     assert result["all_exist"] is True
 
 
+def test_existence_only_quality_status_is_not_complete(tmp_path):
+    f = tmp_path / "qa.json"
+    f.write_text('{"quality_status":"existence_only"}')
+
+    result = check_node_artifacts(_make_node([str(f)]))
+
+    assert result["all_exist"] is False
+    assert result["artifacts"][0]["status_error"]["field"] == "quality_status"
+
+
+def test_quality_gaps_are_not_complete(tmp_path):
+    f = tmp_path / "qa.json"
+    f.write_text('{"status":"passed","quality_gaps":[{"notes":"structure only; does not match concept"}]}')
+
+    result = check_node_artifacts(_make_node([str(f)]))
+
+    assert result["all_exist"] is False
+    assert result["artifacts"][0]["status_error"]["field"] == "quality_gaps"
+
+
 def test_asset_gap_with_placeholder_terms_is_not_complete(tmp_path):
     f = tmp_path / "qa.json"
     f.write_text('{"asset_gaps":[{"severity":"minor","notes":"VFX frames missing; tween fallback active"}]}')

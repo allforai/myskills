@@ -102,6 +102,8 @@ for visible milestones, such as:
 - scoring/resource/HUD change;
 - animation, VFX, or feedback moment;
 - win, lose, retry, pause, or transition state when applicable;
+- any specialized pre-game, map, menu, board, shop, dialogue, or other screen
+  that is part of the core session loop;
 - responsive viewport variants when the target includes mobile or desktop.
 
 For games where visual feedback is the main playability signal, such as puzzle,
@@ -156,6 +158,14 @@ visuals that do not match the declared art direction and engine-ready asset
 manifest. If the game is playable but the screenshot is still a prototype scene,
 return `failed_validation`; do not downgrade it to a warning.
 
+For specialized screens, Codex CLI must evaluate the project-local screen
+archetype contract from `visual-acceptance-criteria` and game-ui specs. The
+batch must fail when the screen is only a functional placeholder: generic
+controls, repeated filler backgrounds, debug-looking geometry, labels hidden by
+icons/rewards/counters, indistinct states, missing required context layers, or
+HUD controls floating without clear relationship to the screen. Having tappable
+controls and correct data is not enough.
+
 Metric-only visual checks are insufficient. Pixel statistics, color counts,
 edge detection, OCR, object counts, or DOM/canvas probes can support the report,
 but they cannot decide visual acceptance alone. Codex CLI must answer the
@@ -193,6 +203,8 @@ Prototype/placeholder findings route as follows:
 - prototype component/debug renderer active -> frontend code assembly;
 - engine-ready assets exist but are not visible -> asset import binding;
 - HUD/background/context missing -> scene composition or HUD/UI binding;
+- screen archetype, state hierarchy, or label/icon overlap defects -> game-ui
+  screen-layout/component-state plus scene composition;
 - visual assets absent or unreadable -> game-art QA and engine-ready output.
 
 After repair, rerun the same affected gameplay screenshot tasks. Do not close

@@ -819,11 +819,46 @@ enough that LLM's general knowledge is sufficient.
 > This section only applies when `has_concept_drift` is true AND an existing
 > `workflow.json` exists. Otherwise, skip to 3.1 for full planning.
 
+**Re-bootstrap state index and reconciliation gate (hard rule):**
+When an existing `.allforai/bootstrap/workflow.json` is present, bootstrap must
+not silently overwrite the workflow or node-specs. Before any full or
+incremental re-planning, run:
+
+```bash
+python3 .allforai/bootstrap/scripts/reconcile_bootstrap_workflow.py . --write
+```
+
+This writes:
+
+- `.allforai/bootstrap/workflow-state-index.json`
+- `.allforai/bootstrap/workflow-reconciliation-plan.json`
+- `.allforai/bootstrap/workflow-reconciliation-plan.md`
+
+If bootstrap creates a candidate workflow before committing the final one, run
+the same script with `--candidate-workflow <candidate-path> --write` and use
+the plan actions instead of direct replacement:
+
+| Plan Action | Meaning |
+|-------------|---------|
+| `keep` | Preserve node, node_id, and completed evidence unless downstream invalidation says otherwise. |
+| `update` | Keep node_id but regenerate node-spec and mark affected downstream nodes `needs-rerun`. |
+| `add` | Add new node and node-spec. |
+| `remove` | Remove unused/unexecuted node-spec or node. |
+| `supersede` | Do not silently delete completed work; replace with a new node only with audit trail. |
+| `invalidate` | Existing artifact is missing, blocked, stale, invalid, or quality/effect incomplete; rerun node and downstream QA/closure. |
+
+The final written workflow must explain how each non-`keep` action was applied
+in `workflow.json.reconciliation_applied[]`. Re-bootstrap must preserve
+`transition_log[]` for audit, remove orphan node-specs, and keep stable
+`node_id`s unless a node's meaning has changed enough to require `supersede`.
+Canonical action set: `keep/update/add/remove/supersede/invalidate`.
+Bootstrap must not silently overwrite an existing workflow.
+
 **Goal Change Detection (runs BEFORE incremental re-planning):**
 Before running §3.0, compare the user's current goal (from Step 1.5) against the `goals` field in the existing `workflow.json`:
-- If goals are DIFFERENT (e.g., was `["analyze"]`, now `["create"]`): do NOT use incremental re-planning. Instead, clear `workflow.json.nodes[]` entirely and run full §3.1 planning. Preserve `transition_log[]` for audit. All existing node-specs are stale and must be regenerated.
+- If goals are DIFFERENT (e.g., was `["analyze"]`, now `["create"]`): do NOT use blind incremental re-planning. Generate a candidate full workflow, run the reconciliation gate above, then apply explicit `keep/update/add/remove/supersede/invalidate` actions. Preserve `transition_log[]` for audit. Existing node-specs are stale until the reconciliation plan keeps or regenerates them.
 - If goals are THE SAME but concept drifted: use §3.0 incremental re-planning (below).
-- If `workflow.json` has no `goals` field (schema mismatch from older bootstrap): treat as "goals differ" → full re-planning.
+- If `workflow.json` has no `goals` field (schema mismatch from older bootstrap): treat as "goals differ" → candidate full re-planning + reconciliation.
 
 When concept has drifted since last bootstrap:
 
@@ -958,6 +993,29 @@ evidence inputs, not proof that the current skill version's production gates
 are satisfied. Existing reports must be rechecked by the generated workflow and
 by artifact-status validation before closure.
 
+**Visual acceptance standard node generation (hard rule):** Any workflow that
+implements or verifies a visible game UI/runtime must include a dedicated visual
+acceptance criteria producer before screenshot QA:
+
+- node purpose: derive project-specific visual acceptance standards;
+- sub-skill:
+  `${CLAUDE_PLUGIN_ROOT}/skills/visual-qa/20-spec/visual-acceptance-criteria/SKILL.md`;
+- required outputs:
+  `.allforai/visual-qa/visual-acceptance-criteria.json`,
+  `.allforai/visual-qa/visual-acceptance-criteria.md`, and
+  `.allforai/visual-qa/visual-evidence-requirements.json`;
+- downstream visual QA nodes, including runtime gameplay screenshot QA,
+  game UI readability QA, art QA, and 2D production visual closure, must
+  hard-block on this node.
+
+The visual criteria node must derive screen-specific standards from the
+project's concept, UI registry, art direction, scene flow, and runtime handoff.
+Do not hard-code a bundled standard for one screen type. If the project has a
+map-like, list-like, board-like, combat-like, dialogue-like, shop-like, or other
+specialized screen, bootstrap must generate that screen archetype's acceptance
+standard inside the project-local criteria artifact before `/run`. Do not let
+runtime visual QA invent this standard during Run.
+
 **Generic QA repair loop rule (all app/game/software workflows):** Any QA,
 verify, smoke, visual, runtime, or closure node that can discover implementation
 defects must classify findings into `code_gaps`, `test_gaps`, `asset_gaps`,
@@ -985,6 +1043,11 @@ production gaps. A JSON report with `failed_validation`, `blocked`,
 `not_generated`, fallback/stub/silent/missing asset gaps, prototype/debug scene
 findings, or pure-color placeholder visuals must keep the node pending or
 failed. Do not treat such reports as completed merely because the files exist.
+Reports may not use `existence_only`, `structure_only`, `function_only`,
+`not_good_enough`, or `quality_failed` as a passing state. Non-empty
+`quality_gaps`, `effect_gaps`, `experience_gaps`, `visual_quality_gaps`, or
+`perceptual_gaps` are production blockers unless the project has explicitly
+lowered scope before `/run`.
 - final closure must consume the repair report and must not pass while
   repairable `code_gaps` remain
 
@@ -2052,6 +2115,10 @@ as the meta QA gate. The gate must check four lenses:
   and revalidation;
 - acceptance-driven execution: node completion contains effect verification,
   not only "code written", "file exists", or "function callable".
+- quality-driven acceptance: node completion answers "is it good enough for the
+  approved project promise?" not only "does it exist?". Bootstrap must generate
+  project-specific quality questions and failure codes for every user-facing,
+  runtime, visual, audio, content, and integration deliverable.
 - dimension elevation thinking: bootstrap raises the reasoning level above the
   current node list and above the user's named means. It must separate the
   underlying product outcome from the proposed route: "buy a plane ticket" may
@@ -2065,8 +2132,9 @@ as the meta QA gate. The gate must check four lenses:
   This is not "add more product dimensions".
 
 If this gate reports under-expanded nodes, missing repair loops, or code-only
-completion criteria, bootstrap must regenerate node-specs or stop before
-`/run`.
+or existence-only completion criteria, missing project-specific quality
+questions, or unresolved quality/effect gaps, bootstrap must regenerate
+node-specs or stop before `/run`.
 
 **Verification strategy per module role:**
 
@@ -2272,6 +2340,37 @@ Followed by:
 ## Project Context
 <From bootstrap-profile: tech stack, modules, architecture>
 
+## Attention Contract
+<Required for every node. Define what the executor must pay attention to and
+what it must ignore so the node does not waste context or optimize the wrong
+goal.
+
+- Primary outcome: one sentence describing the real outcome this node must
+  produce. This must be the underlying product/development result, not merely a
+  named means or file-writing task.
+- Non-goals / out-of-scope: concrete tempting work this node must not do.
+- Must-read inputs: exact artifacts and fields that are mandatory before work
+  starts. Missing required inputs means return a blocking status instead of
+  guessing.
+- Optional inputs: artifacts that may improve quality but must not become
+  hidden blockers.
+- Context budget: the smallest set of files/evidence the executor should read.
+  Do not ask the executor to scan the whole repository unless repository-wide
+  evidence is the actual task.
+- Quality questions: 2-5 project-specific questions the executor must keep in
+  focus while working.
+- Stop conditions: conditions that require stopping or returning blocked rather
+  than continuing with assumptions, fallback, mocks, or existence-only output.
+- Repair targets: which gap fields this node may emit for downstream repair,
+  such as `code_gaps`, `asset_gaps`, `quality_gaps`, `effect_gaps`, or
+  `experience_gaps`.>
+
+Bootstrap should spend context once to produce this contract; `/run` should
+then execute in pull mode by reading only the listed inputs and evidence. Do
+not force execution nodes to rediscover the project, infer missing standards,
+or scan broad context that bootstrap could have converted into durable
+contracts.
+
 ## Context Pull
 
 <Generated by bootstrap based on upstream nodes' Downstream Consumers tables.>
@@ -2331,6 +2430,17 @@ proof, real request/response, storage round trip, simulator evidence, or engine
 run evidence. Code written, file exists, exported function exists, or mock-only
 assertions are not sufficient completion evidence. If the effect cannot be
 verified, return a blocking status instead of marking the node complete.>
+
+## Quality Acceptance
+<Required for every production deliverable. State the project-specific
+"good enough" questions this node must answer, the evidence used to answer
+them, and the failure codes that keep the node incomplete. This must be derived
+from upstream concept, design, runtime, art, UI, audio, content, platform, or
+business contracts as applicable. The node must not ask only whether something
+exists; it must ask whether the delivered effect is good enough for the approved
+project promise. Non-empty `quality_gaps`, `effect_gaps`,
+`experience_gaps`, `visual_quality_gaps`, or `perceptual_gaps` block
+completion and route to repair/revalidation.>
 
 ## Downstream Contract
 <Who consumes this node's output, and what they need from it.
@@ -2797,8 +2907,18 @@ mkdir -p .allforai/bootstrap/learned   # preserved across re-bootstrap
 **Re-bootstrap behavior:**
 If `.allforai/bootstrap/` already exists (previous run):
 - **Preserve**: `.allforai/bootstrap/learned/` (project experience, never delete)
-- **Overwrite**: everything else (workflow.json, node-specs/, scripts/, protocols/)
-- This means re-bootstrap resets workflow progress but keeps learned experience
+- **Preserve for audit**: `transition_log[]`, `run-log.jsonl`,
+  `workflow-state-index.json`, `workflow-reconciliation-plan.json`, and
+  `workflow-reconciliation-plan.md`
+- **Reconcile before overwrite**: run `reconcile_bootstrap_workflow.py --write`
+  before replacing `workflow.json` or `node-specs/`; if a candidate workflow is
+  generated, run it again with `--candidate-workflow`.
+- **Overwrite only by plan**: apply explicit `keep/update/add/remove/supersede/
+  invalidate` actions. Do not reset workflow progress merely because
+  re-bootstrap ran.
+- This means re-bootstrap keeps learned experience and execution audit, while
+  only regenerating nodes whose contracts, inputs, outputs, or evidence became
+  stale.
 
 ### 6.2 Copy Orchestrator Scripts
 
@@ -2810,6 +2930,7 @@ mkdir -p .allforai/bootstrap/protocols
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/check_artifacts.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/validate_bootstrap.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/expand_game_2d_production.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/reconcile_bootstrap_workflow.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/validate_unattended_readiness.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/render_approval_dashboard.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/serve_approval.py .allforai/bootstrap/scripts/

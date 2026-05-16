@@ -25,6 +25,7 @@ In scope:
 - safe zones,
 - HUD placement,
 - menu and modal layout,
+- project-specific screen archetype layout contracts,
 - density rules,
 - automatic layout validation.
 
@@ -72,6 +73,28 @@ Out of scope:
 - Navigation must have deterministic back/close behavior from `ui-flow-map`.
 - Avoid text-heavy layout on gameplay screens; move explanations to pause,
   tutorial, or results screens.
+
+## Screen Archetype Layout Contracts
+
+Screens with specialized semantics must define a project-local
+`screen_archetype_contract` instead of being treated as generic panels or
+button lists. Bootstrap derives applicable archetypes from the project concept,
+UI registry, game loop, art direction, and scene flow. The reusable skill must
+not hard-code one project's screen type as universal.
+
+Each `screen_archetype_contract` must define:
+
+- the user goal and screen promise;
+- required visible context that makes the screen belong to this project;
+- primary element hierarchy and state semantics;
+- label/icon/reward/counter placement rules;
+- interaction affordance and tap target rules;
+- forbidden prototype patterns for that archetype;
+- repair route when the runtime screenshot violates the contract.
+
+If a specialized screen cannot define its archetype contract from upstream
+concept/UI/art inputs, return `UPSTREAM_DEFECT` instead of generating a generic
+placeholder screen.
 
 ## Output Contract
 
@@ -148,6 +171,11 @@ Run these checks:
 6. Modal bounds fit the smallest viewport.
 7. Every transition in `ui-flow-map` has a source and target layout.
 8. Text containers have max width and wrapping rules.
+9. Specialized screens define a `screen_archetype_contract` with hierarchy,
+   state semantics, label/icon separation, context layers, and forbidden
+   prototype patterns.
+10. Labels, icons, rewards, counters, and primary state markers have non-overlap
+    rules at the smallest target viewport.
 
 ## Completion Conditions
 
