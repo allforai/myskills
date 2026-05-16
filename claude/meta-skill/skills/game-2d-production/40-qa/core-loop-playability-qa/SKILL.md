@@ -48,6 +48,14 @@ absence of malformed ids such as `[object Set]`, `[object Object]`,
 `undefined`, or `NaN`. A screenshot that looks playable cannot pass when a
 state invariant fails.
 
+For path-connection matching / Onet / 连连看, QA must prove at least one
+initially matchable pair exists and that this pair connects through the
+production runtime matcher, not a separate test-only solver with different
+rules. If the board uses a shape mask, verify the contract's null/shape-hole
+traversability and outside-board routing policy. Also verify the board
+boundary/frame or slot grid is visible enough for a player to understand the
+play area.
+
 If invariant probes are unavailable for a visible core-loop system, return
 `blocked_by_missing_probe` instead of guessing from visual screenshots.
 

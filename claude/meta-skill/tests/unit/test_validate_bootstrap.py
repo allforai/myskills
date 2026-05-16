@@ -7,6 +7,7 @@ from validate_bootstrap import (
     GAME_2D_PRODUCTION_REQUIRED_NODES,
     validate_approval_records,
     validate_app_design_flow,
+    validate_canvas2d_game_client_profile_flow,
     validate_game_2d_production_flow,
     validate_mobile_ui_coverage,
     validate_node_spec_contracts,
@@ -112,6 +113,92 @@ def test_legacy_blocked_by_schema_fails(tmp_path):
     errors = validate_workflow(path)
 
     assert any("forbidden legacy field 'blocked_by'" in e for e in errors)
+
+
+def _write_node_spec(root, node_id, body="Canvas2D gameplay effect verification runtime evidence"):
+    _write(
+        root,
+        f"node-specs/{node_id}.md",
+        f"---\nnode_id: {node_id}\n---\n{body}\n",
+    )
+
+
+def test_canvas2d_game_client_underexpanded_workflow_fails(tmp_path):
+    nodes = [
+        _base_node(node_id="canvas2d-client-scaffold", capability="game-frontend", exit_artifacts=[".allforai/canvas/scaffold.json"]),
+        _base_node(node_id="canvas2d-browser-qa", capability="game-frontend", exit_artifacts=[".allforai/canvas/browser-qa.json"]),
+        _base_node(node_id="canvas2d-mobile-build", capability="game-frontend", exit_artifacts=[".allforai/canvas/mobile-build.json"]),
+        _base_node(node_id="canvas2d-android-sim-test", capability="game-frontend", exit_artifacts=[".allforai/canvas/android.json"]),
+    ]
+    _write(tmp_path, "workflow.json", json.dumps({"nodes": nodes}))
+    _write(tmp_path, "bootstrap-profile.json", json.dumps({"project_type": "game", "runtime": "Canvas2D"}))
+    _write(tmp_path, "canvas2d-game-client-profile.json", "{}")
+    for node in nodes:
+        _write_node_spec(tmp_path, node["node_id"])
+
+    errors = validate_canvas2d_game_client_profile_flow(str(tmp_path))
+
+    assert any("under-expanded" in e for e in errors)
+    assert any("missing required profile families" in e for e in errors)
+    assert any("QA matrix" in e for e in errors)
+
+
+def test_canvas2d_game_client_mature_profile_passes(tmp_path):
+    node_ids = [
+        "canvas2d-runtime-core",
+        "canvas2d-interface-cards",
+        "canvas2d-asset-bundle",
+        "canvas2d-gameplay-scene",
+        "canvas2d-gameplay-system-matcher",
+        "canvas2d-browser-qa",
+        "canvas2d-visual-qa",
+        "canvas2d-gameplay-quality-qa",
+        "canvas2d-performance-qa",
+        "canvas2d-art-quality-qa",
+        "canvas2d-qa-repair-loop",
+        "canvas2d-concept-acceptance",
+    ]
+    nodes = []
+    for node_id in node_ids:
+        blockers = []
+        if node_id == "canvas2d-concept-acceptance":
+            blockers = ["canvas2d-qa-repair-loop"]
+        nodes.append(
+            _base_node(
+                node_id=node_id,
+                capability="game-frontend",
+                hard_blocked_by=blockers,
+                exit_artifacts=[f".allforai/canvas/{node_id}.json"],
+            )
+        )
+        body = (
+            "Canvas2D gameplay scene effect verification runtime evidence screenshot "
+            "module_wiring_proofs production consumer visual acceptance runtime probe "
+            "asset manifest preload fps memory performance budget legal action"
+        )
+        if "interface-cards" in node_id:
+            body = "interface cards public module signatures preserved_exports"
+        if "asset-bundle" in node_id:
+            body += " decoded resource"
+        if "browser-qa" in node_id:
+            body += " Playwright browser smoke"
+        if "visual-qa" in node_id:
+            body += " Codex visual screenshot"
+        if "gameplay-quality" in node_id:
+            body += " playability solvability legal action rule invariant"
+        if "performance" in node_id:
+            body += " performance-qa render pressure"
+        if "repair-loop" in node_id:
+            body += " qa-repair-loop repair and revalidation revalidation-report"
+        if "concept-acceptance" in node_id:
+            body += " concept-acceptance acceptance-report final weighted product acceptance"
+        _write_node_spec(tmp_path, node_id, body)
+
+    _write(tmp_path, "workflow.json", json.dumps({"nodes": nodes}))
+    _write(tmp_path, "bootstrap-profile.json", json.dumps({"project_type": "game", "runtime": "Canvas2D"}))
+    _write(tmp_path, "canvas2d-game-client-profile.json", json.dumps({"runtime": "Canvas2D game-client profile"}))
+
+    assert validate_canvas2d_game_client_profile_flow(str(tmp_path)) == []
 
 
 def test_node_id_schema_passes(tmp_path):

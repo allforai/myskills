@@ -57,6 +57,13 @@ Run available frontend profiling/build commands or collect browser/engine
 timing evidence. Static asset counts may explain issues but cannot replace
 runtime measurement when a budget is required.
 
+For Canvas2D/Web Canvas/WebView Canvas projects, performance/viewport QA must
+rerun after gameplay, renderer, scene, asset, or DPR-related code changes. If
+the target includes mobile/WebView, run a high-DPR browser pass (for example
+`deviceScaleFactor: 3`) and verify the central gameplay region is visible and
+not black/offscreen. A stale DPR report from before renderer fixes is not valid
+closure evidence.
+
 Repair routing: oversized assets route to game-art atlas/export; slow startup
 routes to assembly/data/asset binding; render pressure routes to scene,
 animation/VFX, or frontend implementation.

@@ -1100,6 +1100,11 @@ before starting node generation.
          `.allforai/bootstrap/specialized-skills/`. The global `game-frontend`
          children remain generic contracts and must not embed Cocos/Phaser/
          Unity/Godot or genre-specific state machines directly.
+         When a runtime has a matching file under
+         `${CLAUDE_PLUGIN_ROOT}/knowledge/engines/`, the generated
+         specialization must read that file and keep runtime-specific rules
+         inside the project-local specialization, not in this main bootstrap
+         flow.
        - Project-specific 2D production: when playable slice acceptance depends
          on concrete genre rules, tile/readability families, camera constraints,
          solver difficulty, or custom session win/loss proofs, generate
@@ -1936,7 +1941,10 @@ is likely too large for a single workflow execution. Suggest decomposition:
   `knowledge/capabilities/<capability>.md`. Used at Context Pull generation time
   to look up which upstream artifacts this node may consume.
 - `goal`: One sentence. Clear enough that a subagent knows what to do.
-- `exit_artifacts`: Array of artifact objects. Node is complete when all `path` files exist.
+- `exit_artifacts`: Array of artifact objects. Artifact existence is necessary
+  but not sufficient for runtime, UI, art, audio, VFX, network, storage, and
+  game nodes. Such nodes are complete only when their effect verification also
+  passes and the result is written into an exit artifact.
   Each entry has:
   - `path`: Project-relative file path. Node is complete when this file exists.
   - `validation_commands` (optional): Shell commands that must exit 0 after the file exists.
@@ -2023,6 +2031,43 @@ node in the workflow. No module may be silently skipped. This is NOT optional.
 in the bootstrap profile and ensure each has at least one verification node. If a module
 has no verification node, the workflow is incomplete.
 
+**QA convergence rule:** When a workflow contains two or more QA/verify/smoke/
+visual/runtime/performance/audio/platform test nodes, bootstrap must append a
+repair-and-revalidation loop before final closure. The loop reads all selected
+QA reports, repairs feasible implementation/test gaps, reruns affected QA
+evidence, and blocks closure while unresolved gaps remain. For game projects,
+bootstrap must also append a final product/concept acceptance node that gives a
+quantified final pass/fail against the approved concept, art promise, runtime
+surface, platform targets, and must-have game loops.
+
+**Bootstrap node expansion QA (hard rule):** Before writing `/run`, validate
+that the generated workflow actually expands the project guidance instead of
+only producing scaffold/build/smoke nodes. Use
+`${CLAUDE_PLUGIN_ROOT}/skills/meta-orchestration/40-qa/bootstrap-node-expansion-qa/SKILL.md`
+as the meta QA gate. The gate must check four lenses:
+- reverse reasoning: final product surfaces, runtime modules, assets, data
+  containers, integrations, and acceptance evidence were inferred back into
+  nodes;
+- closure loops: QA/visual/runtime/platform findings route into bounded repair
+  and revalidation;
+- acceptance-driven execution: node completion contains effect verification,
+  not only "code written", "file exists", or "function callable".
+- dimension elevation thinking: bootstrap raises the reasoning level above the
+  current node list and above the user's named means. It must separate the
+  underlying product outcome from the proposed route: "buy a plane ticket" may
+  really mean "arrive at a destination on time", where another route could be
+  better. Likewise, "use a specific engine", "generate a specific runtime
+  node", or "add this module" is not automatically the final goal. Bootstrap must model the
+  workflow as an automated production system and ask which invariants,
+  contracts, evidence, dependency closures, and failure-recovery mechanisms are
+  required for stable unattended delivery; then project that higher-level model
+  back down into nodes, completion standards, validators, and repair routes.
+  This is not "add more product dimensions".
+
+If this gate reports under-expanded nodes, missing repair loops, or code-only
+completion criteria, bootstrap must regenerate node-specs or stop before
+`/run`.
+
 **Verification strategy per module role:**
 
 | Module Role | Verification Tool | Node Pattern |
@@ -2036,7 +2081,8 @@ has no verification node, the workflow is incomplete.
 | mobile (Android/Kotlin/Compose) | Espresso or Compose UI test via `./gradlew connectedAndroidTest`; optional Maestro only when the project already uses it | android-ui-verify or e2e-test-{name} |
 | desktop (Tauri v2) | `tauri-driver` (WebDriver binary) + WebdriverIO with `wdio-tauri-service` for UI E2E; `cargo test` for Rust IPC unit tests. ⚠️ Playwright does NOT work with Tauri v2 — use tauri-driver. Run Step 2.7 WebSearch for current tauri-driver setup if LLM confidence < 70% | e2e-test-{name} |
 | desktop (Electron) | Playwright via `electron-playwright-helpers` (drives the Electron webview) | e2e-test-{name} |
-| game client (Cocos Creator 3.x) | CLI build via `${COCOS_CREATOR_APP:-/Applications/CocosCreator.app}/Contents/MacOS/CocosCreator --project <project-dir> --build "platform=web-mobile"`. TypeScript `module 'cc'` errors from standalone `tsc` are engine-type noise — they resolve inside the CC build environment and must NOT block compilation. No GUI Dashboard required. For unit tests: Jest on pure logic files that don't import `cc`; visual/scene tests are manual. | game-test-{name} |
+| game client (runtime-specific) | Generate a project-local frontend-runtime specialization and, when available, read the matching `${CLAUDE_PLUGIN_ROOT}/knowledge/engines/<runtime>.md` file for concrete build/test/probe rules. The main workflow must stay runtime-neutral; runtime-specific QA belongs in the specialization. | game-runtime-profile + game-test-{name} |
+| game client (Cocos Creator 3.x) | Use the runtime-specific engine knowledge and project-local specialization for concrete CLI build, runtime probe, screenshot, and release-check rules. | game-test-{name} |
 | game client (Unity) | Unity Test Runner (EditMode + PlayMode) via `unity -runTests -testPlatform EditMode/PlayMode` | game-test-{name} |
 | game client (Godot) | GUT (Godot Unit Testing) or `godot --test` | game-test-{name} |
 | game client (Bevy/Rust) | `cargo test` with Bevy's headless test harness | game-test-{name} |
@@ -2107,6 +2153,40 @@ module. This is a hard constraint — violating it silently passes CI while leav
 client module (Unity, Godot, Bevy, Phaser, pygame, PICO-8). Game clients communicate through
 internal game loops and events, not REST endpoints. Curl-passing tests for a game client project
 prove nothing about gameplay correctness.
+
+**Runtime-specific game-client profile expansion (hard rule):** If bootstrap
+detects a game project whose gameplay runtime needs specialized build, render,
+probe, asset, or platform behavior, it must read the matching
+`${CLAUDE_PLUGIN_ROOT}/knowledge/engines/<runtime>.md` file when present and
+expand a project-local game-client profile before writing workflow nodes. A
+workflow with only scaffold/build/smoke nodes is incomplete for production or
+unattended goals.
+
+The profile must cover applicable node families declared by the runtime
+knowledge file and the project concept: runtime core, interface contracts,
+asset/resource loading, scene/screen nodes, gameplay systems, I/O systems,
+platform bridges, runtime QA, visual QA, gameplay QA, performance QA, platform
+QA, QA repair loop, and final concept acceptance. Omit a family only with an
+explicit profile decision and reason.
+
+Bootstrap should write the profile decision to a project-local runtime profile
+artifact and reference it from the project-local frontend-runtime
+specialization. Every generated runtime node-spec must pull the relevant
+interface contracts, gameplay rule constraints, and runtime probe requirements
+from that specialization.
+
+**Runtime-specific spec-lint requirements:** After node-spec generation,
+validate:
+- every `hard_blocked_by` target exists;
+- every `exit_artifacts` path matches the node's declared output root;
+- generated module nodes have downstream consumer wiring proof requirements;
+- rewritten module specs preserve existing exported names or update consumers;
+- public class/function signatures come from interface cards, not repeated
+  free text in multiple node-specs;
+- any runtime-specific mobile target has its required screenshot/runtime QA
+  before native build nodes;
+- any audio/network/storage/resource-loader feature has runtime-effect QA, not
+  only mock/structure checks.
 
 **Event-driven services have no HTTP entry point.** Discord bots, CLI tools, cron workers, and
 message queue consumers cannot be tested with curl or Playwright. Use unit tests with a mock
@@ -2242,6 +2322,16 @@ MUST include every path listed in the YAML frontmatter `exit_artifacts:` (which 
 May add descriptive guidance about expected content for each file.
 Must NOT list additional files as artifacts beyond what's in the YAML frontmatter — `check_artifacts.py` validates exactly the YAML-listed paths.>
 
+## Effect Verification
+<Required for implementation, runtime, UI, game, art, audio, VFX, network,
+storage, and platform nodes. Describe how the node proves the user-visible or
+runtime effect actually happened. Examples: screenshot manifest + visual review,
+runtime probe values, decoded audio buffers, production consumer/import/init
+proof, real request/response, storage round trip, simulator evidence, or engine
+run evidence. Code written, file exists, exported function exists, or mock-only
+assertions are not sufficient completion evidence. If the effect cannot be
+verified, return a blocking status instead of marking the node complete.>
+
 ## Downstream Contract
 <Who consumes this node's output, and what they need from it.
 
@@ -2311,15 +2401,29 @@ The stitch node's job:
 3. For each business flow, trace the UI path across files from different nodes
 4. Detect disconnections: component A exists, component B exists, but A doesn't
    import/call B (or vice versa)
-5. Fix each disconnection: add imports, wire up callbacks, connect data flow
-6. Run compile check after fixes to ensure nothing broke
-7. Produce a stitch report listing all connections made
+5. For every newly created module/class, prove at least one production consumer
+   imports it and calls its constructor/init/load/registration path. Zero
+   consumer references or constructor-only/no-init usage is a blocking
+   `code_gaps` finding.
+6. Before rewriting any existing module, scan all import/require consumers and
+   preserve every imported export name or update all consumers in the same
+   stitch/implementation slice. Deleted exports used by consumers are blocking.
+7. For runtime-specialized game clients, read the project-local
+   frontend-runtime specialization and interface cards before wiring modules.
+   Audio/VFX/renderer modules must prove production boot reachability, not only
+   file existence.
+8. Fix each disconnection: add imports, wire up callbacks, connect data flow
+9. Run compile check after fixes to ensure nothing broke
+10. Produce a stitch report listing all connections made, consumer refs, init
+   calls verified, preserved exports, and remaining integration gaps.
 
 ```
 Parallel impl nodes → stitch-{module} → compile-verify → E2E
                          ↑
                    Finds and fixes:
                    - Missing imports between sibling files
+                   - Runtime modules created but never initialized
+                   - Existing module exports removed while still imported
                    - UI triggers not wired to target components
                    - Data passed from API but not parsed by UI
                    - Callbacks/delegates not connected

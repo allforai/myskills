@@ -35,7 +35,7 @@ The report must include `assembly_id`, `runtime_profile_ref`,
 `bindings_consumed`, `files_changed`, `entrypoints`, `asset_loader_changes`,
 `scene_changes`, `input_camera_changes`, `hud_changes`,
 `animation_vfx_changes`, `known_limitations`, `smoke_test_command`,
-`state`, and `consumer_refs`.
+`state`, `consumer_refs`, `module_wiring_proofs`, and `preserved_exports`.
 
 Allowed states: `assembled`, `assembled_with_limits`, `needs_revision`,
 `blocked_by_missing_bindings`, `blocked_by_runtime_profile`,
@@ -73,6 +73,26 @@ After editing the project, run the strongest available build/typecheck/import
 command from the runtime profile. If no command can run, return a blocking
 state. Do not mark the client assembled based only on file edits.
 
+For every newly created production runtime module, prove it is wired into the
+production boot path. The report must list the module path, exported class or
+factory, consumer import path, constructor/init/load/registration call, and a
+runtime probe or test proving the initialized instance is active. A module that
+exists but has zero production consumers, or is imported but never initialized,
+is `failed_validation`.
+
+Before rewriting an existing module, scan project imports/requires that target
+that module and record the imported export names. The rewritten module must
+preserve those exports or update every consumer in the same assembly slice and
+prove the build still passes. Silent deletion of an imported export is
+`failed_validation`, even if the rewritten module matches the new node-spec.
+
+For Canvas2D/Web Canvas/WebView Canvas projects, read the project-local
+frontend-runtime specialization generated from
+`knowledge/engines/canvas2d.md`. Audio managers, VFX systems, renderers,
+resource manifests, and gameplay systems must each have module interface cards
+or equivalent report entries. Assembly cannot pass with dead-code modules or
+manifest-only integration.
+
 Repair routing: missing bindings route to their owning spec; build/type errors
 route to the changed frontend files; missing assets route to asset import
 binding or game-art engine-ready manifest.
@@ -80,5 +100,7 @@ binding or game-art engine-ready manifest.
 ## Completion Conditions
 
 Return `COMPLETED` when the client builds or reaches the declared runnable
-surface. Return `FAILED_VALIDATION` when assembly cannot be built, launched, or
-traced to approved bindings.
+surface, every new module has a production consumer and init/load proof, and
+rewritten modules preserve or migrate existing exports. Return
+`FAILED_VALIDATION` when assembly cannot be built, launched, wired, initialized,
+or traced to approved bindings.

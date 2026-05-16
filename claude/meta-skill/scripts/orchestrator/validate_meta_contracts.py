@@ -194,6 +194,77 @@ def validate_feedback_contract(errors: list[str]) -> None:
             errors.append(f"record_meta_skill_feedback.py: missing implementation term {term}")
 
 
+def validate_canvas2d_contract(errors: list[str]) -> None:
+    bootstrap_text = BOOTSTRAP.read_text(encoding="utf-8")
+    canvas2d = ROOT / "knowledge/engines/canvas2d.md"
+    if not canvas2d.exists():
+        errors.append("knowledge/engines/canvas2d.md: missing Canvas2D specialization knowledge")
+        return
+    canvas2d_text = canvas2d.read_text(encoding="utf-8")
+    for term in (
+        "Canvas2D game-client profile",
+        "interface-cards",
+        "qa-repair-loop",
+        "concept-acceptance",
+        "deviceScaleFactor",
+        "I/O Runtime-Effect QA",
+        "shape holes",
+        "Module Wiring Gate",
+    ):
+        if term not in canvas2d_text:
+            errors.append(f"canvas2d.md: missing specialization term {term}")
+    for term in (
+        "Runtime-specific game-client profile expansion",
+        "knowledge/engines/<runtime>.md",
+        "project-local runtime profile",
+        "QA convergence rule",
+        "Bootstrap node expansion QA",
+        "Runtime-specific spec-lint requirements",
+        "runtime-effect QA",
+    ):
+        if term not in bootstrap_text:
+            errors.append(f"bootstrap.md: missing runtime-specialized bootstrap term {term}")
+
+
+def validate_bootstrap_node_expansion_contract(errors: list[str]) -> None:
+    bootstrap_text = BOOTSTRAP.read_text(encoding="utf-8")
+    skill = ROOT / "skills/meta-orchestration/40-qa/bootstrap-node-expansion-qa/SKILL.md"
+    parent = ROOT / "skills/meta-orchestration/SKILL.md"
+    if not skill.exists():
+        errors.append("meta-orchestration bootstrap-node-expansion-qa skill missing")
+        return
+    skill_text = skill.read_text(encoding="utf-8")
+    parent_text = parent.read_text(encoding="utf-8")
+    for term in (
+        "bootstrap-node-expansion-qa",
+        "reverse reasoning",
+        "Closure loops",
+        "Acceptance-driven execution",
+        "Dimension elevation thinking",
+        "underlying desired product outcome",
+        "named means",
+        "effect verification",
+        "code-only completion",
+    ):
+        if term not in skill_text:
+            errors.append(f"bootstrap-node-expansion-qa: missing contract term {term}")
+    for term in (
+        "bootstrap-node-expansion-qa",
+        "reverse reasoning",
+        "closure loops",
+        "acceptance-driven execution",
+        "dimension elevation thinking",
+        "underlying product outcome",
+        "named means",
+        "effect verification",
+        "## Effect Verification",
+    ):
+        if term not in bootstrap_text:
+            errors.append(f"bootstrap.md: missing bootstrap node expansion term {term}")
+    if "bootstrap-node-expansion-qa" not in parent_text:
+        errors.append("meta-orchestration/SKILL.md: missing bootstrap-node-expansion-qa child")
+
+
 def main() -> int:
     errors: list[str] = []
     validate_capability_files(errors)
@@ -204,6 +275,8 @@ def main() -> int:
     validate_execution_repair_loop_contract(errors)
     validate_implement_goal_contract(errors)
     validate_feedback_contract(errors)
+    validate_canvas2d_contract(errors)
+    validate_bootstrap_node_expansion_contract(errors)
     if errors:
         for error in errors:
             print(error, file=sys.stderr)

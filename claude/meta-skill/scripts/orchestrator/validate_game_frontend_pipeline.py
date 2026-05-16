@@ -18,6 +18,9 @@ REQUIRED_PARENT_TERMS = {
     "runtime-gameplay-visual-acceptance",
     "runtime-debug-bridge-contract",
     ".allforai/bootstrap/specialized-skills/<specialization_id>-frontend-runtime/SKILL.md",
+    "knowledge/engines/",
+    "generic frontend contract for all game runtimes",
+    "corresponding runtime knowledge file",
 }
 
 REQUIRED_ASSEMBLY_TERMS = {
@@ -27,6 +30,41 @@ REQUIRED_ASSEMBLY_TERMS = {
     ".allforai/game-frontend/bindings/asset-loading-strategy-spec.json",
     ".allforai/game-frontend/bindings/gameplay-system-binding-spec.json",
     ".allforai/game-frontend/bindings/runtime-debug-bridge-contract.json",
+    "module_wiring_proofs",
+    "preserved_exports",
+    "zero production consumers",
+    "rewriting an existing module",
+    "Canvas2D",
+}
+
+REQUIRED_AUDIO_BINDING_TERMS = {
+    "runtime_effect_assertions",
+    "AudioBuffer",
+    "AudioContext.state",
+    "loadBGM",
+    "loadSFX",
+    "mock",
+}
+
+REQUIRED_GAMEPLAY_BINDING_TERMS = {
+    "gameplay_rule_constraints",
+    "pathfinding traversability",
+    "null/shape-hole",
+    "initial state contains a legal action",
+}
+
+REQUIRED_SMOKE_TERMS = {
+    "deviceScaleFactor: 3",
+    "central gameplay region is nonblank/nonblack",
+    "I/O features",
+    "runtime effects",
+}
+
+REQUIRED_PERFORMANCE_TERMS = {
+    "Canvas2D",
+    "DPR",
+    "deviceScaleFactor: 3",
+    "central gameplay region",
 }
 
 REQUIRED_ARCH_QA_TERMS = {
@@ -103,9 +141,26 @@ def validate_game_frontend_pipeline(repo_root: str) -> list[str]:
     arch_qa = frontend_root / "40-qa/runtime-architecture-qa/SKILL.md"
     gameplay_visual_acceptance = frontend_root / "40-qa/runtime-gameplay-visual-acceptance/SKILL.md"
     runtime_debug_bridge = frontend_root / "20-spec/runtime-debug-bridge-contract/SKILL.md"
+    audio_binding = frontend_root / "20-spec/audio-binding-spec/SKILL.md"
+    gameplay_binding = frontend_root / "20-spec/gameplay-system-binding-spec/SKILL.md"
+    smoke_test = frontend_root / "40-qa/playable-smoke-test/SKILL.md"
+    performance_spec = frontend_root / "20-spec/performance-budget-spec/SKILL.md"
+    performance_qa = frontend_root / "40-qa/frontend-performance-budget-qa/SKILL.md"
 
     errors: list[str] = []
-    for path in [frontend_pack, runtime_arch, assembly, arch_qa, gameplay_visual_acceptance, runtime_debug_bridge]:
+    for path in [
+        frontend_pack,
+        runtime_arch,
+        assembly,
+        arch_qa,
+        gameplay_visual_acceptance,
+        runtime_debug_bridge,
+        audio_binding,
+        gameplay_binding,
+        smoke_test,
+        performance_spec,
+        performance_qa,
+    ]:
         if not path.exists():
             errors.append(f"{path}: required game-frontend pipeline file missing")
     if errors:
@@ -116,6 +171,11 @@ def validate_game_frontend_pipeline(repo_root: str) -> list[str]:
     assembly_text = _read(assembly)
     arch_qa_text = _read(arch_qa)
     gameplay_visual_acceptance_text = _read(gameplay_visual_acceptance)
+    audio_binding_text = _read(audio_binding)
+    gameplay_binding_text = _read(gameplay_binding)
+    smoke_test_text = _read(smoke_test)
+    performance_spec_text = _read(performance_spec)
+    performance_qa_text = _read(performance_qa)
     listed_refs = _canonical_refs(parent_text)
 
     for skill_file in sorted(frontend_root.rglob("SKILL.md")):
@@ -140,6 +200,18 @@ def validate_game_frontend_pipeline(repo_root: str) -> list[str]:
     for term in sorted(REQUIRED_GAMEPLAY_VISUAL_ACCEPTANCE_TERMS):
         if not _has_term(gameplay_visual_acceptance_text, term):
             errors.append(f"runtime-gameplay-visual-acceptance: missing gameplay visual term {term}")
+    for term in sorted(REQUIRED_AUDIO_BINDING_TERMS):
+        if not _has_term(audio_binding_text, term):
+            errors.append(f"audio-binding-spec: missing Canvas2D audio runtime term {term}")
+    for term in sorted(REQUIRED_GAMEPLAY_BINDING_TERMS):
+        if not _has_term(gameplay_binding_text, term):
+            errors.append(f"gameplay-system-binding-spec: missing game rule constraint term {term}")
+    for term in sorted(REQUIRED_SMOKE_TERMS):
+        if not _has_term(smoke_test_text, term):
+            errors.append(f"playable-smoke-test: missing Canvas2D smoke term {term}")
+    for term in sorted(REQUIRED_PERFORMANCE_TERMS):
+        if not _has_term(performance_spec_text, term) and not _has_term(performance_qa_text, term):
+            errors.append(f"performance Canvas2D DPR term missing {term}")
 
     return errors
 

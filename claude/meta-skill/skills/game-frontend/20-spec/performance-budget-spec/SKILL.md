@@ -44,6 +44,8 @@ Required metric groups:
 - particle/VFX counts
 - audio channel/decoded size
 - screenshot/probe capture availability
+- Canvas2D DPR/viewport rendering stability when the runtime uses Web Canvas
+  and targets mobile/WebView
 
 Allowed states: `draft`, `validated`, `needs_revision`,
 `blocked_by_runtime_profile`, `blocked_by_missing_target_platform`,
@@ -72,6 +74,11 @@ Supported modes: `spec_validate`, `validate_existing`, `repair_existing`.
 Each budget must name a measurement method available in the runtime profile or
 return `blocked_by_unmeasurable_budget`. Static estimates may set targets but
 cannot replace runtime measurement when a budget is blocking.
+
+For Canvas2D/Web Canvas/WebView Canvas runtimes, define DPR rendering checks as
+blocking QA when mobile is a target: at least DPR 1 and target-high DPR
+screenshots, central gameplay nonblank/nonblack threshold, viewport-bound
+primary elements, and resize/orientation stability where applicable.
 
 Repair routing: missing platform target routes to product/game design; missing
 measurement tooling routes to frontend-runtime-detection; oversized assets route

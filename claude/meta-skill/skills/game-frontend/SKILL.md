@@ -120,8 +120,8 @@ missing command, server, engine, or dependency.
 
 The bundled `game-frontend` children define reusable contracts only. Do not add
 global child skills for specific game types or engines such as path-connection
-matching, match-3, tower defense, rhythm, roguelike, Cocos Creator, Phaser,
-Unity, Godot, or a single project's scene/state model.
+matching, match-3, tower defense, rhythm, roguelike, Canvas2D, Cocos Creator,
+Phaser, Unity, Godot, or a single project's scene/state model.
 
 When the frontend runtime depends on genre-specific state, engine-specific
 adapter behavior, platform-specific input/loading/performance constraints, or
@@ -149,6 +149,12 @@ For Cocos Creator, project-local specialization must follow
 QA-only runtime probe for scene/node/asset binding evidence, and add release
 checks proving the probe and prototype/debug entrypoints are disabled or
 unreachable.
+
+For runtime families with matching files under
+`claude/meta-skill/knowledge/engines/`, project-local specialization must follow
+the corresponding runtime knowledge file. Keep concrete engine/runtime rules
+there and in the generated project-local specialization; this parent skill
+remains a generic frontend contract for all game runtimes.
 
 Required specialized frontend sections:
 

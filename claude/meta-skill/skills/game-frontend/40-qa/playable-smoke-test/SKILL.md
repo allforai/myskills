@@ -20,7 +20,8 @@ composition spec, input/camera binding, HUD/UI binding, animation/VFX binding,
 and asset import bindings.
 
 Optional: Playwright config, engine CLI, screenshot probes, expected pixel
-regions, dev server URL, and smoke route.
+regions, dev server URL, smoke route, mobile viewport matrix, and
+deviceScaleFactor matrix.
 
 ## Output Contract
 
@@ -61,6 +62,20 @@ Start the dev server or engine command when available, navigate/load the smoke
 scene, perform configured input actions, collect logs, and capture screenshots.
 Check that expected assets and HUD elements are visible and that at least one
 core input path changes game state or camera state.
+
+For Canvas2D/Web Canvas/WebView Canvas projects, the smoke test must include a
+high-DPR viewport when the target includes mobile or WebView. Use Playwright or
+an equivalent browser runner with `deviceScaleFactor: 3` or the highest target
+mobile DPR declared by the runtime profile. Capture screenshots and verify the
+central gameplay region is nonblank/nonblack, primary board/HUD elements are
+inside viewport bounds, and logical coordinates are not accidentally multiplied
+by physical pixel ratio. A desktop DPR 1 pass does not prove mobile Canvas2D
+rendering.
+
+For I/O features surfaced in the smoke path, verify runtime effects. Audio
+smoke must prove decoded buffers and production trigger calls, not only method
+existence. Network/storage/resource smoke must prove real runtime load/read
+results, not only mocks or manifest paths.
 
 Smoke status must not pass from canvas existence alone. The screenshot evidence
 must prove the loaded scene is the production smoke scene, not a prototype/debug

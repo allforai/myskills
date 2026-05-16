@@ -19,6 +19,8 @@ Write `.allforai/game-2d/spec/core-loop-playable-contract.json` with:
 - win, lose, retry, next, and progression conditions
 - required telemetry/probe assertions
 - gameplay invariants that must hold before and after core actions
+- explicit game-rule constraints for pathfinding, collision, selection,
+  boundary, and empty/null states when applicable
 - screenshot checkpoints before and after meaningful player actions.
 
 ## Invocation Contract
@@ -51,6 +53,14 @@ conservation, and disallowed values such as `undefined`, `NaN`, or
 `[object Object]`/`[object Set]` in runtime ids. Action games must declare
 player/enemy/resource/health/projectile invariants. UI-heavy games must declare
 list/item count and selected item invariants.
+
+For path-connection matching / Onet / 连连看 and similar board games, the
+contract must include a `pathfinding_rules` or equivalent section covering:
+which cells are occupied, empty, null, shape holes, blocked, or traversable;
+whether null/shape-hole cells can be crossed; outside-board routing policy;
+maximum turn count; known initially matchable pair; expected path visualization;
+and visible board boundary/frame requirements. Missing these rules is
+`FAILED_VALIDATION`, not an implementation detail to infer later.
 
 If the approved design is genre-tight, the project-local specialized runtime
 skill must define concrete invariant probes. A generic QA node must not invent

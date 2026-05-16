@@ -31,7 +31,9 @@ def _minimal_repo(tmp_path):
         "20-spec/runtime-debug-bridge-contract",
         "30-generate/playable-client-assembly",
         "40-qa/runtime-architecture-qa",
+        "40-qa/playable-smoke-test",
         "40-qa/runtime-gameplay-visual-acceptance",
+        "40-qa/frontend-performance-budget-qa",
     ]
     parent = "\n".join(
         f"${{CLAUDE_PLUGIN_ROOT}}/skills/game-frontend/{ref}/SKILL.md"
@@ -40,7 +42,12 @@ def _minimal_repo(tmp_path):
     _write(
         tmp_path,
         "claude/meta-skill/skills/game-frontend/SKILL.md",
-        parent + "\n.allforai/bootstrap/specialized-skills/<specialization_id>-frontend-runtime/SKILL.md",
+        parent + """
+.allforai/bootstrap/specialized-skills/<specialization_id>-frontend-runtime/SKILL.md
+knowledge/engines/
+generic frontend contract for all game runtimes
+corresponding runtime knowledge file
+""",
     )
     for ref in refs:
         if ref == "10-design/runtime-architecture-design":
@@ -67,6 +74,58 @@ Do not encode Cocos/Phaser/Unity/Godot or genre-specific
 .allforai/game-frontend/bindings/asset-loading-strategy-spec.json
 .allforai/game-frontend/bindings/gameplay-system-binding-spec.json
 .allforai/game-frontend/bindings/runtime-debug-bridge-contract.json
+module_wiring_proofs
+preserved_exports
+zero production consumers
+rewriting an existing module
+Canvas2D
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-frontend/20-spec/audio-binding-spec/SKILL.md",
+        """runtime_effect_assertions
+AudioBuffer
+AudioContext.state
+loadBGM
+loadSFX
+mock
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-frontend/20-spec/gameplay-system-binding-spec/SKILL.md",
+        """gameplay_rule_constraints
+pathfinding traversability
+null/shape-hole
+initial state contains a legal action
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-frontend/40-qa/playable-smoke-test/SKILL.md",
+        """deviceScaleFactor: 3
+central gameplay region is nonblank/nonblack
+I/O features
+runtime effects
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-frontend/20-spec/performance-budget-spec/SKILL.md",
+        """Canvas2D
+DPR
+deviceScaleFactor: 3
+central gameplay region
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-frontend/40-qa/frontend-performance-budget-qa/SKILL.md",
+        """Canvas2D
+DPR
+deviceScaleFactor: 3
+central gameplay region
 """,
     )
     _write(

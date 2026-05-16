@@ -136,6 +136,135 @@ GAME_2D_PRODUCTION_REQUIRED_ARTIFACTS = {
 }
 
 
+CANVAS2D_GAME_CLIENT_MIN_NODE_COUNT = 12
+
+
+CANVAS2D_RUNTIME_TERMS = (
+    "canvas2d",
+    "canvas 2d",
+    "htmlcanvas",
+    "htmlcanvaselement",
+    "web canvas",
+    "web-canvas",
+    "webview canvas",
+    "getcontext(\"2d\")",
+    "getcontext('2d')",
+)
+
+
+CANVAS2D_MOBILE_TERMS = (
+    "mobile",
+    "ios",
+    "android",
+    "capacitor",
+    "cordova",
+    "webview",
+    "app store",
+    "google play",
+)
+
+
+CANVAS2D_AUDIO_TERMS = (
+    "audio",
+    "bgm",
+    "sfx",
+    "web audio",
+    "audiocontext",
+)
+
+
+CANVAS2D_ART_TERMS = (
+    "asset",
+    "art",
+    "sprite",
+    "tileset",
+    "texture",
+    "icon",
+)
+
+
+CANVAS2D_REQUIRED_FAMILIES = {
+    "runtime-core": (
+        "runtime-core",
+        "scene-manager",
+        "renderer",
+        "boot sequence",
+        "progressmanager",
+        "input manager",
+    ),
+    "interface-cards": (
+        "interface-card",
+        "interface cards",
+        "interfaces/",
+        "public module signatures",
+        "preserved_exports",
+    ),
+    "asset-bundle": (
+        "asset-bundle",
+        "asset manifest",
+        "preload",
+        "resource manifest",
+        "decoded resource",
+    ),
+    "scene-nodes": (
+        "scene",
+        "intro-scene",
+        "gameplay-scene",
+        "level-select",
+        "map-scene",
+        "dialog-scene",
+        "shop-scene",
+    ),
+    "gameplay-system": (
+        "gameplay-system",
+        "matcher",
+        "bfs",
+        "core-loop",
+        "obstacle",
+        "special tile",
+        "combo",
+    ),
+    "browser-qa": (
+        "browser-qa",
+        "playwright",
+        "browser smoke",
+        "runtime probe",
+    ),
+    "visual-qa": (
+        "visual-qa",
+        "visual acceptance",
+        "screenshot",
+        "codex visual",
+    ),
+    "gameplay-quality-qa": (
+        "gameplay-quality",
+        "playability",
+        "solvability",
+        "legal action",
+        "rule invariant",
+    ),
+    "performance-qa": (
+        "performance-qa",
+        "performance budget",
+        "fps",
+        "memory",
+        "render pressure",
+    ),
+    "qa-repair-loop": (
+        "qa-repair-loop",
+        "repair-loop",
+        "repair and revalidation",
+        "revalidation-report",
+    ),
+    "concept-acceptance": (
+        "concept-acceptance",
+        "concept acceptance",
+        "acceptance-report",
+        "final weighted product acceptance",
+    ),
+}
+
+
 UI_TEST_PLATFORMS = {
     "android": {
         "display": "Android mobile UI",
@@ -351,6 +480,82 @@ def _node_blob(node: dict, specs_dir: str) -> str:
     return blob
 
 
+def _read_text_if_exists(path: str) -> str:
+    try:
+        if os.path.exists(path):
+            with open(path) as f:
+                return f.read()
+    except Exception:
+        return ""
+    return ""
+
+
+def _workflow_and_specs_blob(bdir: str, workflow: dict) -> str:
+    specs_dir = os.path.join(bdir, "node-specs")
+    parts = [_lower_blob(workflow)]
+    for name in (
+        "bootstrap-profile.json",
+        "canvas2d-game-client-profile.json",
+        "unattended-run-readiness-spec.json",
+    ):
+        parts.append(_read_text_if_exists(os.path.join(bdir, name)).lower())
+    if os.path.isdir(specs_dir):
+        for fname in sorted(os.listdir(specs_dir)):
+            if fname.endswith(".md"):
+                parts.append(_read_text_if_exists(os.path.join(specs_dir, fname)).lower())
+    return "\n".join(parts)
+
+
+def _contains_any(blob: str, terms: tuple[str, ...]) -> bool:
+    return any(term in blob for term in terms)
+
+
+def _canvas2d_game_client_detected(bdir: str, workflow: dict) -> bool:
+    """Detect project-local Canvas2D/Web Canvas game clients."""
+    blob = _workflow_and_specs_blob(bdir, workflow)
+    has_canvas_runtime = _contains_any(blob, CANVAS2D_RUNTIME_TERMS)
+    has_game_context = any(
+        term in blob
+        for term in (
+            "game",
+            "gameplay",
+            "game-design",
+            "level",
+            "scene",
+            "tile",
+            "连连看",
+            "onet",
+        )
+    )
+    has_canvas_profile = os.path.exists(os.path.join(bdir, "canvas2d-game-client-profile.json"))
+    return (has_canvas_runtime and has_game_context) or has_canvas_profile
+
+
+def _matching_nodes(workflow: dict, specs_dir: str, terms: tuple[str, ...]) -> list[dict]:
+    matched = []
+    for node in workflow.get("nodes", []):
+        if _contains_any(_node_blob(node, specs_dir), terms):
+            matched.append(node)
+    return matched
+
+
+def _family_present(workflow: dict, specs_dir: str, terms: tuple[str, ...]) -> bool:
+    return bool(_matching_nodes(workflow, specs_dir, terms))
+
+
+def _node_own_blob(node: dict) -> str:
+    """Serialize only workflow-owned node metadata, not the whole spec body."""
+    return _lower_blob(node)
+
+
+def _matching_nodes_by_contract(workflow: dict, terms: tuple[str, ...]) -> list[dict]:
+    return [
+        node
+        for node in workflow.get("nodes", [])
+        if _contains_any(_node_own_blob(node), terms)
+    ]
+
+
 def _ui_node_present(workflow: dict, specs_dir: str, platform: str) -> bool:
     """Return true when workflow contains a real platform UI automation node."""
     spec = UI_TEST_PLATFORMS[platform]
@@ -403,6 +608,158 @@ def validate_mobile_ui_coverage(bdir: str) -> list:
                 f"UI automation/e2e-test node for {platform} and report BLOCKED_ENV if "
                 f"the required device, simulator, emulator, or service is unavailable; "
                 f"do not replace it with manual scenarios."
+            )
+
+    return errors
+
+
+def validate_canvas2d_game_client_profile_flow(bdir: str) -> list:
+    """Ensure Canvas2D game clients expand into production-grade nodes and QA."""
+    errors = []
+    workflow_path = os.path.join(bdir, "workflow.json")
+    specs_dir = os.path.join(bdir, "node-specs")
+    if not os.path.exists(workflow_path):
+        return errors
+
+    try:
+        workflow = _load_json(workflow_path)
+    except Exception:
+        return errors
+
+    if not _canvas2d_game_client_detected(bdir, workflow):
+        return errors
+
+    blob = _workflow_and_specs_blob(bdir, workflow)
+    nodes = {
+        node.get("node_id"): node
+        for node in workflow.get("nodes", [])
+        if node.get("node_id")
+    }
+
+    profile_path = os.path.join(bdir, "canvas2d-game-client-profile.json")
+    if not os.path.exists(profile_path):
+        errors.append(
+            "workflow.json: Canvas2D game client detected, but "
+            ".allforai/bootstrap/canvas2d-game-client-profile.json is missing"
+        )
+
+    canvas_nodes = _matching_nodes(workflow, specs_dir, CANVAS2D_RUNTIME_TERMS + ("gameplay", "scene"))
+    if len(canvas_nodes) < CANVAS2D_GAME_CLIENT_MIN_NODE_COUNT:
+        errors.append(
+            "workflow.json: Canvas2D game client profile under-expanded; "
+            f"found {len(canvas_nodes)} relevant nodes, expected at least "
+            f"{CANVAS2D_GAME_CLIENT_MIN_NODE_COUNT}. Bootstrap must expand "
+            "runtime core, scenes, gameplay systems, QA, repair loop, and "
+            "concept acceptance instead of only scaffold/build/smoke nodes."
+        )
+
+    missing_families = []
+    for family, terms in CANVAS2D_REQUIRED_FAMILIES.items():
+        if not _family_present(workflow, specs_dir, terms):
+            missing_families.append(family)
+
+    if _contains_any(blob, CANVAS2D_AUDIO_TERMS):
+        for family, terms in {
+            "audio-system": ("audio-system", "audiomanager", "web audio", "loadbgm", "loadsfx"),
+            "audio-qa": ("audio-qa", "audiobuffer", "audiocontext.state", "decoded buffer"),
+        }.items():
+            if not _family_present(workflow, specs_dir, terms):
+                missing_families.append(family)
+
+    if _contains_any(blob, CANVAS2D_ART_TERMS):
+        for family, terms in {
+            "art-quality-qa": ("art-quality", "asset-binding-visual", "sprite readability", "runtime asset binding"),
+        }.items():
+            if not _family_present(workflow, specs_dir, terms):
+                missing_families.append(family)
+
+    if _contains_any(blob, CANVAS2D_MOBILE_TERMS):
+        for family, terms in {
+            "platform-build": ("ios-build", "android-sim", "capacitor", "xcodebuild", "gradle"),
+            "dpr-screenshot-qa": ("devicescalefactor", "dpr", "central gameplay region"),
+        }.items():
+            if not _family_present(workflow, specs_dir, terms):
+                missing_families.append(family)
+
+    if missing_families:
+        errors.append(
+            "workflow.json: Canvas2D game client workflow missing required "
+            f"profile families {sorted(set(missing_families))}"
+        )
+
+    qa_nodes = [
+        node
+        for node in workflow.get("nodes", [])
+        if _contains_any(
+            _node_blob(node, specs_dir),
+            ("qa", "verify", "smoke", "visual", "test", "performance", "acceptance"),
+        )
+    ]
+    if len(qa_nodes) < 5:
+        errors.append(
+            "workflow.json: Canvas2D game client needs a QA matrix, not a single smoke test; "
+            f"found {len(qa_nodes)} QA/verify nodes, expected browser, visual, gameplay, "
+            "performance/DPR, and final acceptance at minimum"
+        )
+
+    repair_nodes = _matching_nodes_by_contract(workflow, ("qa-repair-loop", "repair-loop", "revalidation-report"))
+    acceptance_nodes = _matching_nodes_by_contract(workflow, ("concept-acceptance", "acceptance-report"))
+    if qa_nodes and not repair_nodes:
+        errors.append("workflow.json: Canvas2D QA nodes require a qa-repair-loop node")
+    if repair_nodes and acceptance_nodes:
+        repair_ids = {node["node_id"] for node in repair_nodes if node.get("node_id")}
+        for acceptance in acceptance_nodes:
+            blockers = set(acceptance.get("hard_blocked_by") or [])
+            if not blockers.intersection(repair_ids):
+                errors.append(
+                    f"workflow.json: {acceptance.get('node_id')} must be hard_blocked_by "
+                    "the Canvas2D qa-repair-loop"
+                )
+    elif not acceptance_nodes:
+        errors.append("workflow.json: Canvas2D game client requires final concept-acceptance")
+
+    effect_terms = (
+        "effect verification",
+        "runtime evidence",
+        "runtime-effect",
+        "screenshot",
+        "decoded buffer",
+        "production consumer",
+        "module_wiring_proofs",
+    )
+    effect_node_id_terms = (
+        "canvas2d",
+        "gameplay-scene",
+        "scene-manager",
+        "audio-system",
+        "vfx",
+        "asset-bundle",
+        "backend-client",
+        "platform-plugins",
+    )
+    excluded_effect_node_terms = (
+        "qa",
+        "verify",
+        "test",
+        "repair",
+        "acceptance",
+        "compile",
+        "build",
+        "profile",
+        "contract",
+        "interface",
+        "spec",
+    )
+    for node_id, node in sorted(nodes.items()):
+        node_blob = _node_blob(node, specs_dir)
+        node_id_blob = node_id.lower()
+        is_visible_or_runtime = _contains_any(node_id_blob, effect_node_id_terms)
+        is_excluded = _contains_any(node_id_blob, excluded_effect_node_terms)
+        is_planning_only = _contains_any(node_blob, ("interface-card", "spec", "contract", "profile"))
+        if is_visible_or_runtime and not is_excluded and not is_planning_only and not _contains_any(node_blob, effect_terms):
+            errors.append(
+                f"node-specs/{node_id}.md: Canvas2D runtime node completion must include "
+                "effect verification, not only code creation"
             )
 
     return errors
@@ -763,6 +1120,7 @@ def main():
         errors.extend(validate_approval_records(bdir))
         errors.extend(validate_app_design_flow(bdir))
         errors.extend(validate_game_2d_production_flow(bdir))
+        errors.extend(validate_canvas2d_game_client_profile_flow(bdir))
         errors.extend(validate_mobile_ui_coverage(bdir))
     else:
         sm_path = os.path.join(bdir, "state-machine.json")
@@ -793,6 +1151,7 @@ __all__ = [
     "validate_approval_records",
     "validate_app_design_flow",
     "validate_game_2d_production_flow",
+    "validate_canvas2d_game_client_profile_flow",
     "validate_mobile_ui_coverage",
 ]
 
