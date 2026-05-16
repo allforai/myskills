@@ -1267,8 +1267,13 @@ hard_blocked_by: [art-direction]
 unlocks: [art-spec-design]
 exit_artifacts:
   - .allforai/game-design/art-pipeline-config.json
+  - .allforai/game-design/art/2d-art-style-taxonomy.html
+  - .allforai/game-design/art/2d-art-style-taxonomy.json
+  - .allforai/game-design/art/human-visual-preferences.json
   - .allforai/game-design/art/art-concept-validation.html
   - .allforai/game-design/art/art-concept-validation.json
+  - .allforai/game-design/art/art-direction-benchmark.json
+  - .allforai/game-design/art/art-direction-benchmark.md
 ---
 
 # Task: 美术技术规格确认（Art Concept Skill Invocation）
@@ -1279,24 +1284,38 @@ exit_artifacts:
 
 art-concept skill 完成后，依次调用以下 game-art 子 skill 细化策略（读取对应 SKILL.md 并执行）：
 
-1. **动画生产计划：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md`
+1. **2D 美术风格分类与偏好契约：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-art-style-taxonomy/SKILL.md`
+   - 输入：产品/游戏概念、已有美术偏好、项目摘要
+   - 输出：`.allforai/game-design/art/2d-art-style-taxonomy.html`（中文，人类阅读）、`.allforai/game-design/art/2d-art-style-taxonomy.json`、`.allforai/game-design/art/human-visual-preferences.json`
+   - 要求：在项目启动前向用户交代可选 2D 美术风格族、适合类型、生产成本、LLM 生图难度、LoRA/参考图/编辑模式需求、程序加工适配度、运行时风险和禁止风格；不得把具体项目标准写死到全局 skill。
+
+2. **动画生产计划：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md`
    - 输入：参见 SKILL.md 的 Invocation Contract
    - 输出：动画方案选择（帧动画/DragonBones/Tween/混合）及降级路径
 
-2. **动效设计**（当游戏有动效需求时，即 art-pipeline-config.json 中存在动画资产时）：`${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/motion-design/SKILL.md`
+3. **动效设计**（当游戏有动效需求时，即 art-pipeline-config.json 中存在动画资产时）：`${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/motion-design/SKILL.md`
    - 输入：`art-pipeline-config.json`、`art-style-guide.json.art_overview`
    - 输出：关键帧意图、Timing 规则、可读性规范
 
-3. **美术概念验证 HTML Gate：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept-validation/SKILL.md`
+4. **美术概念验证 HTML Gate：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept-validation/SKILL.md`
    - 输入：产品/游戏概念、美术方向输入契约、art-pipeline-config、style tokens 或 art-style-guide、人类偏好
    - 输出：`.allforai/game-design/art/art-concept-validation.html`（中文，人类阅读）和 `.allforai/game-design/art/art-concept-validation.json`
    - 要求：验证美术方向与产品概念、玩法可读性、目标受众、UI/世界观一致性、VFX/动效、运行时约束和人类偏好是否闭合；未通过则不得进入 concept-freeze / art-gen。
 
+5. **美术导演基准：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-direction-benchmark/SKILL.md`
+   - 输入：产品/游戏概念、美术方向输入契约、art-pipeline-config、人类偏好、style tokens
+   - 输出：`.allforai/game-design/art/art-direction-benchmark.json` 和 `.allforai/game-design/art/art-direction-benchmark.md`
+   - 要求：定义项目级商业视觉承诺、参考/反参考、视觉质量评分轴、资产家族标准、运行时截图标准和禁止通过项。这个基准回答“好不好看、像不像本游戏、有没有商业卖相”，不是回答“文件有没有生成”。
+
 ## 完成条件
 
 `.allforai/game-design/art-pipeline-config.json` 存在且 `status == "final"`，
+`.allforai/game-design/art/2d-art-style-taxonomy.html` 存在且为中文，
+`.allforai/game-design/art/2d-art-style-taxonomy.json` 存在且 `status in ["ready", "pending_user_choice"]`，
 `.allforai/game-design/art/art-concept-validation.html` 存在，
-`.allforai/game-design/art/art-concept-validation.json` 存在且 `state in ["passed", "passed_with_warnings"]`。
+`.allforai/game-design/art/art-concept-validation.json` 存在且 `state in ["passed", "passed_with_warnings"]`，
+`.allforai/game-design/art/art-direction-benchmark.json` 存在且 `status == "ready"`，
+`.allforai/game-design/art/art-direction-benchmark.md` 存在。
 ```
 
 **Concept Freeze Node Injection (applies when art-spec-design is in the selected workflow):**
@@ -1415,6 +1434,8 @@ Generate <TYPE> art assets for all entries in `.allforai/concept-contract.json` 
 - `.allforai/game-design/art-asset-inventory.json` — current asset states (skip assets with `current_state == "locked"`)
 - `.allforai/game-design/asset-registry.json` — canonical registry built by concept-freeze
 - `.allforai/game-design/art/asset-acceptance-criteria.json` — project/runtime-specific standard for this node's assets
+- `.allforai/game-design/art/2d-art-style-taxonomy.json` — selected style family, avoid styles, LLM fit, processing fit, and user-facing preference contract
+- `.allforai/game-design/art/programmatic-art-processing-plan.json` — material-first processing rules for raw materials, assembly, previews, and runtime outputs
 
 ## Sub-Skill Invocation
 
@@ -1449,6 +1470,20 @@ engine export profile, atlas/import rules, view mode, and platform. Do not use
 generic visual standards when the project type or runtime imposes different
 requirements.
 
+### Step -0.4 — Programmatic Art Processing Plan
+
+Before prompt compilation or direct image generation, invoke
+`${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/programmatic-art-processing-plan/SKILL.md`.
+This writes `.allforai/game-design/art/programmatic-art-processing-plan.json`
+and `.allforai/game-design/art/programmatic-art-processing-plan.md`.
+
+The default policy is `material_first`: ask LLM/image/search sources for raw
+materials that deterministic tools can layer, assemble, recolor, atlas, animate,
+decorate, mask, componentize, or preview into runtime assets. Direct final-image
+generation is an exception and must be justified in the plan. If required
+automatable processing tools are missing, block with the missing capability
+instead of silently accepting lower-quality final images.
+
 ### Step 0 — Source Resolution (per asset, before Pre-Spec)
 
 For each asset in `canonical_registry.<REGISTRY_KEY>[]`, check its `source_strategy` from `asset-registry.json`:
@@ -1474,13 +1509,32 @@ For each asset in `canonical_registry.<REGISTRY_KEY>[]`, check its `source_strat
 
 <List the pre-spec sub-skill paths from the mapping table above for this node_id, with conditions. Skip for assets that completed Step 0 and are already marked `adapted`.>
 
+### Step 1.5 — Prompt Compilation And Batch Plan
+
+For every asset still using `ai_generated`, `image_edit`, or `hybrid`
+production, invoke:
+
+1. `${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/image-prompt-compiler/SKILL.md`
+   - 输出：`.allforai/game-design/art/image-generation/compiled-prompt-manifest.json` 和 prompt 文件目录
+   - 要求：按资产类型、风格基准、验收标准、模型路由、LoRA/参考图锁定和程序加工计划编译 prompt；不得使用临时自由 prompt。
+2. `${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/image-batch-generation-plan/SKILL.md`
+   - 输出：`.allforai/game-design/art/image-generation/image-batch-generation-plan.json` 和 `.md`
+   - 要求：按资产家族、模型能力、prompt 模板、候选数量、重试预算和 material-first 策略分批；覆盖不足必须触发下一批或保持阻塞。
+
 ### Step 2 — Generate
 
 <List the generate sub-skill paths from the mapping table above for this node_id, with conditions. Skip for assets already marked `adapted`.>
 
+After batch generation, invoke
+`${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/generated-candidate-selection/SKILL.md`
+before any downstream consumer reads images. Raw MCP/image outputs are candidates
+only. They may enter `.allforai/game-design/art/image-generation/accepted-image-manifest.json`
+with `consumer_ready: true` only after selection verifies visual evidence,
+processing readiness, coverage, and acceptance criteria.
+
 ## Completion Condition
 
-`.allforai/game-design/systems/<node_id>-spec.json` exists AND `.allforai/game-design/<node_id>-review.html` exists AND `.allforai/game-design/art/image-generation/accepted-image-manifest.json` contains entries for this node's produced/adapted bitmap assets with `consumer_ready: true` AND the referenced image files exist.
+`.allforai/game-design/systems/<node_id>-spec.json` exists AND `.allforai/game-design/<node_id>-review.html` exists AND `.allforai/game-design/art/programmatic-art-processing-plan.json` exists AND `.allforai/game-design/art/image-generation/compiled-prompt-manifest.json` exists when generation is required AND `.allforai/game-design/art/image-generation/image-batch-generation-plan.json` exists when batch generation is required AND `.allforai/game-design/art/image-generation/generated-candidate-selection-report.json` exists when new images were generated AND `.allforai/game-design/art/image-generation/accepted-image-manifest.json` contains entries for this node's produced/adapted bitmap assets with `consumer_ready: true` AND the referenced image files exist.
 
 Spec-only, manifest-only, or path-existence-only output is not a completed art-gen node. If the node is expected to generate, adapt, search, register, or render images and no actual visual evidence exists, return `FAILED_VALIDATION` or `blocked_by_missing_visual_evidence`; do not advance to `art-qa`.
 
@@ -1515,6 +1569,10 @@ hard_blocked_by: []  # populated by bootstrap: all active art-gen node IDs
 unlocks: [game-design-finalize]
 exit_artifacts:
   - path: .allforai/game-design/art-qa-report.html
+  - path: .allforai/game-design/art/qa/asset-family-consistency-report.json
+  - path: .allforai/game-design/art/qa/asset-family-consistency-report.md
+  - path: .allforai/game-design/art/qa/in-game-beauty-gate-report.json
+  - path: .allforai/game-design/art/qa/in-game-beauty-gate-report.md
   - path: .allforai/game-design/art/export/engine-ready-art-output-contract.json
   - path: .allforai/game-runtime/art/engine-ready-art-manifest.json
 ---
@@ -1529,6 +1587,7 @@ Run quality assurance across all generated art assets. Invoke the appropriate ga
 - `.allforai/game-design/art-pipeline-config.json` — `dimension`, `style`, `vfx.approach`
 - `.allforai/game-design/systems/` — all `*-art-spec.json` outputs from art-gen nodes
 - `.allforai/game-design/art-style-guide.json` — visual style reference
+- `.allforai/game-design/art/art-direction-benchmark.json` — project-specific benchmark for commercial visual quality, family cohesion, anti-reference rejection, and runtime screenshot beauty
 
 ## Sub-Skill Invocation
 
@@ -1536,29 +1595,43 @@ Read and follow each applicable sub-skill SKILL.md in order:
 
 1. **Preview evidence (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/art-preview-qa/SKILL.md`
 2. **Visual acceptance batch documents + Codex CLI review document + Claude Code closure audit document (always for generated/adapted bitmap assets):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/visual-acceptance-review/SKILL.md`
-3. **Style consistency (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/2d-style-consistency-qa/SKILL.md`
-4. **UI readability** (when `ui-art-gen` ran): `${CLAUDE_PLUGIN_ROOT}/skills/game-ui/40-qa/ui-readability-qa/SKILL.md`
-5. **Atlas packaging (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/atlas-packaging/SKILL.md`
-6. **Runtime import (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/runtime-import-check/SKILL.md`
-7. **3D-assisted QA** (when `dimension=2.5d`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/3d-assisted-2d-qa/SKILL.md`
-8. **Asset pack QA** (when any asset has `source_strategy=existing_asset_pack`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-pack-integration-qa/SKILL.md`
-9. **License provenance sweep** (always, as final audit): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md` — for external-source assets this is a confirmation sweep (primary check already ran in art-gen Step 0); for AI-generated assets this catches potential training-data IP issues
-10. **Engine-ready art handoff (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/engine-ready-art-output-contract/SKILL.md`
+3. **Asset family consistency (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-family-consistency-qa/SKILL.md`
+4. **Style consistency (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/2d-style-consistency-qa/SKILL.md`
+5. **UI readability** (when `ui-art-gen` ran): `${CLAUDE_PLUGIN_ROOT}/skills/game-ui/40-qa/ui-readability-qa/SKILL.md`
+6. **Atlas packaging (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/atlas-packaging/SKILL.md`
+7. **Runtime import (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/runtime-import-check/SKILL.md`
+8. **In-game beauty gate (always when runtime screenshots can be captured):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/in-game-beauty-gate/SKILL.md`
+9. **3D-assisted QA** (when `dimension=2.5d`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/3d-assisted-2d-qa/SKILL.md`
+10. **Asset pack QA** (when any asset has `source_strategy=existing_asset_pack`): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-pack-integration-qa/SKILL.md`
+11. **License provenance sweep** (always, as final audit): `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md` — for external-source assets this is a confirmation sweep (primary check already ran in art-gen Step 0); for AI-generated assets this catches potential training-data IP issues
+12. **Engine-ready art handoff (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/engine-ready-art-output-contract/SKILL.md`
 
 ## Completion Condition
 
-`art-qa-report.html` exists, `.allforai/game-runtime/art/engine-ready-art-manifest.json` exists, `.allforai/game-design/art/qa/visual-acceptance-task-list.json` exists, `.allforai/game-design/art/qa/visual-acceptance-batches/` contains Markdown batch documents, `.allforai/game-design/art/qa/codex-visual-review.json` exists, `.allforai/game-design/art/qa/codex-visual-review.md` exists, `.allforai/game-design/art/qa/visual-review-closure-audit.json` exists, `.allforai/game-design/art/qa/visual-review-closure-audit.md` exists, and if any Codex blocker/major visual issue was found then `.allforai/game-design/art/qa/visual-repair-loop-report.json` and `.allforai/game-design/art/qa/visual-repair-loop-report.md` exist showing regenerate/repair plus rerun Codex CLI review and Claude Code closure audit for affected batches. No sub-skill may return `UPSTREAM_DEFECT`, `FAILED_VALIDATION`, `blocked_by_missing_visual_evidence`, or `blocked_by_missing_codex_cli`.
+`art-qa-report.html` exists, `.allforai/game-runtime/art/engine-ready-art-manifest.json` exists, `.allforai/game-design/art/qa/visual-acceptance-task-list.json` exists, `.allforai/game-design/art/qa/visual-acceptance-batches/` contains Markdown batch documents, `.allforai/game-design/art/qa/codex-visual-review.json` exists, `.allforai/game-design/art/qa/codex-visual-review.md` exists, `.allforai/game-design/art/qa/visual-review-closure-audit.json` exists, `.allforai/game-design/art/qa/visual-review-closure-audit.md` exists, `.allforai/game-design/art/qa/asset-family-consistency-report.json` exists with `status == "passed"`, `.allforai/game-design/art/qa/in-game-beauty-gate-report.json` exists with `status == "passed"` when runtime screenshots are available, and if any Codex blocker/major visual issue was found then `.allforai/game-design/art/qa/visual-repair-loop-report.json` and `.allforai/game-design/art/qa/visual-repair-loop-report.md` exist showing regenerate/repair plus rerun Codex CLI review and Claude Code closure audit for affected batches. No sub-skill may return `UPSTREAM_DEFECT`, `FAILED_VALIDATION`, `blocked_by_missing_visual_evidence`, `blocked_by_missing_codex_cli`, `blocked_by_missing_runtime_screenshots`, `quality_gaps`, `visual_quality_gaps`, `beauty_gaps`, or `runtime_visual_gaps`.
 
 `COMPLETED_WITH_LIMITS` cannot pass art-qa when the limit is missing images, missing contact sheets, missing screenshots, missing Codex CLI visual review, or missing Claude Code closure audit.
 
-**Gate action on sub-skill score < 3/5:**
-For each failing asset, first execute the visual repair loop through
-`image-feedback-report.json`, regenerate/repair the affected assets, and rerun
-the affected visual acceptance batches. If the issue still fails after the
-repair budget, set `gate_status: "revision-requested"` in
-`.allforai/game-design/approval-records.json` for the relevant art-gen node, and
-populate `revision_notes` with the QA sub-skill's issue list. The orchestrator
-will re-run that art-gen node with `revision_notes` as context.
+**Gate action on any art QA failure:**
+For each failing asset, asset family, or runtime screenshot, first execute the
+visual repair loop. The loop must write an owner-specific feedback report
+(`image-feedback-report.json` for image-owned failures,
+`.allforai/game-frontend/qa/runtime-visual-feedback-report.json` for
+runtime/UI-owned failures, or an equivalent import/binding feedback report),
+repair the narrowest upstream owner, rebuild affected previews/contact sheets or
+runtime screenshots, rerun Codex CLI visual review for the affected evidence,
+and rerun the specific QA gate that failed. Append every iteration to
+`.allforai/game-design/art/qa/visual-repair-loop-report.json` and
+`.allforai/game-design/art/qa/visual-repair-loop-report.md`.
+
+If the issue still fails after the repair budget, set
+`gate_status: "revision-requested"` in
+`.allforai/game-design/approval-records.json` for the relevant art-gen or
+runtime/frontend node, and populate `revision_notes` with the QA sub-skill's
+issue list. The orchestrator will re-run that node with `revision_notes` as
+context. Do not let `art-qa` unlock `game-design-finalize` or engine-ready art
+handoff while `quality_gaps`, `visual_quality_gaps`, `beauty_gaps`, or
+`runtime_visual_gaps` remain.
 ```
 
 **App Design Node Injection (when `is_game_project = false` AND goal includes design phase):**

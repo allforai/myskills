@@ -16,17 +16,24 @@ def _minimal_repo(tmp_path):
     _write(
         tmp_path,
         "claude/meta-skill/skills/game-art/SKILL.md",
-        """${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/art-preview-qa/SKILL.md
+"""${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/art-preview-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/visual-acceptance-review/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-family-consistency-qa/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/in-game-beauty-gate/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/2d-animation-toolchain-env/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/image-model-capability-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/production-tool-capability-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-art-style-taxonomy/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-direction-benchmark/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/asset-source-strategy-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/asset-acceptance-criteria/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/asset-pack-search-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/character-layer-sheet/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/lora-identity-style-lock-spec/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/programmatic-art-processing-plan/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/image-prompt-compiler/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/image-batch-generation-plan/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/image-generation-contract/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/batch-image-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/lora-adapter-training/SKILL.md
@@ -49,8 +56,12 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/atlas-packaging/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/runtime-import-check/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/engine-ready-art-output-contract/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/generated-candidate-selection/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept-validation/SKILL.md
 .allforai/game-design/art-qa-report.html
+.allforai/game-design/art/2d-art-style-taxonomy.html
+.allforai/game-design/art/2d-art-style-taxonomy.json
+.allforai/game-design/art/human-visual-preferences.json
 .allforai/game-design/art/qa/visual-acceptance-task-list.json
 visual-qa/40-qa/batch-visual-acceptance/SKILL.md
 visual-qa/batch-visual-acceptance
@@ -66,12 +77,22 @@ blocked_by_missing_visual_model_capability
 .allforai/game-design/art/qa/visual-review-closure-audit.md
 .allforai/game-design/art/qa/visual-repair-loop-report.json
 .allforai/game-design/art/qa/visual-repair-loop-report.md
+.allforai/game-design/art/qa/asset-family-consistency-report.json
+.allforai/game-design/art/qa/asset-family-consistency-report.md
+.allforai/game-design/art/qa/in-game-beauty-gate-report.json
+.allforai/game-design/art/qa/in-game-beauty-gate-report.md
 .allforai/game-design/art/art-concept-validation.html
 .allforai/game-design/art/art-concept-validation.json
+.allforai/game-design/art/art-direction-benchmark.json
+.allforai/game-design/art/art-direction-benchmark.md
 .allforai/game-design/art/export/engine-ready-art-output-contract.json
 .allforai/game-runtime/art/engine-ready-art-manifest.json
 .allforai/game-design/art/qa/runtime-import-check-report.json
 .allforai/game-design/art/image-generation/accepted-image-manifest.json
+.allforai/game-design/art/programmatic-art-processing-plan.json
+.allforai/game-design/art/image-generation/compiled-prompt-manifest.json
+.allforai/game-design/art/image-generation/image-batch-generation-plan.json
+.allforai/game-design/art/image-generation/generated-candidate-selection-report.json
 raw PNG/JPG/WebP paths
 image-model-capability-registry
 game-art/20-spec/asset-acceptance-criteria/SKILL.md
@@ -82,9 +103,37 @@ game-art/20-spec/asset-acceptance-criteria/SKILL.md
         "claude/meta-skill/skills/game-art/10-design/art-concept-validation/SKILL.md",
         "---\nname: art-concept-validation\ndescription: x\n---\n",
     )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-art/10-design/2d-art-style-taxonomy/SKILL.md",
+        """.allforai/game-design/art/2d-art-style-taxonomy.html
+.allforai/game-design/art/2d-art-style-taxonomy.json
+.allforai/game-design/art/human-visual-preferences.json
+LLM generation difficulty
+programmatic processing methods
+production cost
+avoid styles
+HTML must be in Chinese
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-art/10-design/art-direction-benchmark/SKILL.md",
+        """.allforai/game-design/art/art-direction-benchmark.json
+.allforai/game-design/art/art-direction-benchmark.md
+commercial visual appeal
+benchmark_references
+anti_references
+runtime_screenshot_standards
+minimum_pass_score
+art that exists but is not good enough
+""",
+    )
     for rel in [
         "art-preview-qa",
         "visual-acceptance-review",
+        "asset-family-consistency-qa",
+        "in-game-beauty-gate",
         "2d-style-consistency-qa",
         "atlas-packaging",
         "runtime-import-check",
@@ -138,6 +187,57 @@ blocked_by_missing_codex_cli
 blocked_by_missing_visual_evidence
 Do not accept manifest-only review
 visual evidence paths
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-art/40-qa/asset-family-consistency-qa/SKILL.md",
+        """.allforai/game-design/art/qa/asset-family-consistency-report.json
+.allforai/game-design/art/qa/asset-family-consistency-report.md
+whole asset families
+contact sheets
+cross-family cohesion
+Repair And Revalidation Loop
+image-feedback-report.json
+visual-repair-loop-report.json
+Rerun Codex CLI review
+visual_quality_gaps
+requires_regeneration
+manifest-only
+Do not return `passed` with repair routes still open
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-art/40-qa/in-game-beauty-gate/SKILL.md",
+        """.allforai/game-design/art/qa/in-game-beauty-gate-report.json
+.allforai/game-design/art/qa/in-game-beauty-gate-report.md
+actual runtime screenshots
+blocked_by_missing_runtime_screenshots
+Repair And Revalidation Loop
+runtime-visual-feedback-report.json
+visual-repair-loop-report.json
+Rerun Codex CLI runtime visual review
+beauty_gaps
+runtime_visual_gaps
+static mockups
+fresh runtime screenshots
+Do not downgrade the issue to
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-art/40-qa/generated-candidate-selection/SKILL.md",
+        """.allforai/game-design/art/image-generation/generated-candidate-selection-report.json
+.allforai/game-design/art/image-generation/generated-candidate-selection-report.md
+.allforai/game-design/art/image-generation/accepted-image-manifest.json
+Raw LLM outputs are candidates
+blocked_by_missing_visual_evidence
+coverage_shortage
+requires_additional_batch
+processing_readiness
+consumer_ready: true
+programmatic processing plan
 """,
     )
     _write(
@@ -224,6 +324,17 @@ requires_lora
 blocked_by_missing_identity_lock
 lora_adapter_id
 prompt-only
+game-art/20-spec/programmatic-art-processing-plan/SKILL.md
+game-art/20-spec/image-prompt-compiler/SKILL.md
+game-art/20-spec/image-batch-generation-plan/SKILL.md
+game-art/40-qa/generated-candidate-selection/SKILL.md
+.allforai/game-design/art/programmatic-art-processing-plan.json
+.allforai/game-design/art/image-generation/compiled-prompt-manifest.json
+.allforai/game-design/art/image-generation/image-batch-generation-plan.json
+.allforai/game-design/art/image-generation/generated-candidate-selection-report.json
+material_first
+LLM outputs are candidates
+Coverage shortage
 """,
     )
     _write(
@@ -261,6 +372,15 @@ lora_adapter_id
 lora_trigger_tokens
 lora_weight
 blocked_by_missing_identity_lock
+.allforai/game-design/art/image-generation/compiled-prompt-manifest.json
+.allforai/game-design/art/image-generation/image-batch-generation-plan.json
+.allforai/game-design/art/programmatic-art-processing-plan.json
+compiled prompt manifest
+image batch generation plan
+programmatic art processing plan
+game-art/20-spec/image-batch-generation-plan/SKILL.md
+game-art/20-spec/image-prompt-compiler/SKILL.md
+material_first
 """,
     )
     _write(
@@ -375,6 +495,51 @@ Return `UPSTREAM_DEFECT`
     )
     _write(
         tmp_path,
+        "claude/meta-skill/skills/game-art/20-spec/programmatic-art-processing-plan/SKILL.md",
+        """.allforai/game-design/art/programmatic-art-processing-plan.json
+.allforai/game-design/art/programmatic-art-processing-plan.md
+material_first
+LLM/raw source produces stable materials
+layer_composition
+part_assembly
+palette_recolor
+atlas_slicing
+skeletal_or_part_animation
+tile_rule_generation
+ui_componentization
+automatic_preview_generation
+Direct final-image generation must be justified as an exception
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-art/20-spec/image-prompt-compiler/SKILL.md",
+        """.allforai/game-design/art/image-generation/compiled-prompt-manifest.json
+.allforai/game-design/art/image-generation/prompts/
+material-first generation
+material_first
+programmatic_consumer
+assembly_contract_ref
+LoRA
+prompt files
+Do not synthesize production prompts
+""",
+    )
+    _write(
+        tmp_path,
+        "claude/meta-skill/skills/game-art/20-spec/image-batch-generation-plan/SKILL.md",
+        """.allforai/game-design/art/image-generation/image-batch-generation-plan.json
+.allforai/game-design/art/image-generation/image-batch-generation-plan.md
+raw-material-first
+material_first_policy
+required_candidate_count
+retry_budget
+mcp_image_batch_required
+coverage shortage will trigger another batch
+""",
+    )
+    _write(
+        tmp_path,
         "claude/meta-skill/skills/game-art/20-spec/lora-identity-style-lock-spec/SKILL.md",
         """.allforai/game-design/art/lora/lora-identity-style-lock-spec.json
 .allforai/game-design/art/lora/lora-training-decision-report.md
@@ -460,9 +625,11 @@ blocked_by_missing_visual_evidence
     _write(
         tmp_path,
         "claude/meta-skill/knowledge/capabilities/game-design.md",
-        """.allforai/game-runtime/art/engine-ready-art-manifest.json
+""".allforai/game-runtime/art/engine-ready-art-manifest.json
 .allforai/game-design/art/art-concept-validation.html
 .allforai/game-design/art/art-concept-validation.json
+.allforai/game-design/art/art-direction-benchmark.json
+.allforai/game-design/art/art-direction-benchmark.md
 .allforai/game-design/design/program-development-node-handoff.json
 "game_frontend"
 "skill_pack": "game-frontend"
@@ -484,10 +651,17 @@ Game frontend handoff
 `game_frontend` block
 This does NOT create a game-design node
 game-frontend/40-qa/runtime-gameplay-visual-acceptance
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-art-style-taxonomy/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept-validation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-direction-benchmark/SKILL.md
 .allforai/game-design/art-pipeline-config.json
+.allforai/game-design/art/2d-art-style-taxonomy.html
+.allforai/game-design/art/2d-art-style-taxonomy.json
+.allforai/game-design/art/human-visual-preferences.json
 .allforai/game-design/art/art-concept-validation.html
 .allforai/game-design/art/art-concept-validation.json
+.allforai/game-design/art/art-direction-benchmark.json
+.allforai/game-design/art/art-direction-benchmark.md
 state in ["passed", "passed_with_warnings"]
 **Concept Freeze Node Injection
 .allforai/game-design/art/art-concept-validation.json
@@ -496,6 +670,15 @@ UPSTREAM_DEFECT
 .allforai/game-design/art/asset-acceptance-criteria.json
 .allforai/game-design/art/asset-acceptance-criteria.md
 asset-acceptance-criteria/SKILL.md
+programmatic-art-processing-plan/SKILL.md
+.allforai/game-design/art/programmatic-art-processing-plan.json
+image-prompt-compiler/SKILL.md
+.allforai/game-design/art/image-generation/compiled-prompt-manifest.json
+image-batch-generation-plan/SKILL.md
+.allforai/game-design/art/image-generation/image-batch-generation-plan.json
+generated-candidate-selection/SKILL.md
+.allforai/game-design/art/image-generation/generated-candidate-selection-report.json
+material_first
 project-specific standards
 technology-specific standards
 .allforai/game-design/art/image-generation/accepted-image-manifest.json
@@ -506,7 +689,9 @@ blocked_by_missing_visual_evidence
 **Art-QA Node Injection
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/art-preview-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/visual-acceptance-review/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-family-consistency-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/2d-style-consistency-qa/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/in-game-beauty-gate/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/atlas-packaging/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/runtime-import-check/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-license-provenance-qa/SKILL.md
@@ -520,6 +705,10 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/engine-ready-art-output-contract/SKI
 .allforai/game-design/art/qa/visual-review-closure-audit.md
 .allforai/game-design/art/qa/visual-repair-loop-report.json
 .allforai/game-design/art/qa/visual-repair-loop-report.md
+.allforai/game-design/art/qa/asset-family-consistency-report.json
+.allforai/game-design/art/qa/asset-family-consistency-report.md
+.allforai/game-design/art/qa/in-game-beauty-gate-report.json
+.allforai/game-design/art/qa/in-game-beauty-gate-report.md
 .allforai/game-design/art/export/engine-ready-art-output-contract.json
 .allforai/game-runtime/art/engine-ready-art-manifest.json
 Do not advance to `art-qa`
@@ -528,6 +717,14 @@ blocked_by_missing_visual_evidence
 blocked_by_missing_codex_cli
 regenerate/repair plus rerun Codex CLI review and Claude Code closure audit
 image-feedback-report.json
+asset-family-consistency-report.json
+in-game-beauty-gate-report.json
+beauty_gaps
+runtime_visual_gaps
+owner-specific feedback report
+rerun Codex CLI visual review
+rerun the specific QA gate
+Do not let `art-qa` unlock `game-design-finalize`
 UI screenshot + Codex CLI visual review hard gate
 visual-qa/40-qa/batch-visual-acceptance/SKILL.md
 codex-cli-delegation/30-execute/codex-cli-task/SKILL.md

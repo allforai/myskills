@@ -26,6 +26,12 @@ prompt hints.
 Required:
 - normalized image request manifest from
   `.allforai/game-design/art/image-generation/image-request-manifest.json`;
+- compiled prompt manifest from
+  `.allforai/game-design/art/image-generation/compiled-prompt-manifest.json`;
+- image batch generation plan from
+  `.allforai/game-design/art/image-generation/image-batch-generation-plan.json`;
+- programmatic art processing plan from
+  `.allforai/game-design/art/programmatic-art-processing-plan.json`;
 - image model routing report from
   `.allforai/game-design/art/image-generation/image-model-routing-report.json`;
 - asset acceptance criteria from
@@ -80,6 +86,9 @@ skills may consume only `accepted-image-manifest.json` after validation.
   "mode": "mcp_image_batch_file_handoff",
   "input_paths": {
     "image_requests": ".allforai/game-design/art/image-generation/image-request-manifest.json",
+    "compiled_prompts": ".allforai/game-design/art/image-generation/compiled-prompt-manifest.json",
+    "batch_plan": ".allforai/game-design/art/image-generation/image-batch-generation-plan.json",
+    "programmatic_processing_plan": ".allforai/game-design/art/programmatic-art-processing-plan.json",
     "image_model_routing": ".allforai/game-design/art/image-generation/image-model-routing-report.json",
     "asset_acceptance_criteria": ".allforai/game-design/art/asset-acceptance-criteria.json",
     "downstream_feedback": ".allforai/game-design/art/image-generation/image-feedback-report.json"
@@ -109,6 +118,9 @@ project-relative paths:
   "schema_version": "1.0",
   "batch_id": "art_batch_001",
   "source_manifest": ".allforai/game-design/art/image-generation/image-request-manifest.json",
+  "compiled_prompt_manifest": ".allforai/game-design/art/image-generation/compiled-prompt-manifest.json",
+  "batch_plan": ".allforai/game-design/art/image-generation/image-batch-generation-plan.json",
+  "programmatic_processing_plan": ".allforai/game-design/art/programmatic-art-processing-plan.json",
   "routing_report": ".allforai/game-design/art/image-generation/image-model-routing-report.json",
   "output_root": ".allforai/game-design/art/generated/",
   "requests": [
@@ -128,6 +140,11 @@ project-relative paths:
       },
       "prompt_path": ".allforai/game-design/art/image-generation/prompts/tile_grass_001.md",
       "negative_prompt_path": ".allforai/game-design/art/image-generation/prompts/tile_grass_001.negative.md",
+      "material_first": {
+        "enabled": true,
+        "raw_material_kind": "motif",
+        "assembly_contract_ref": ".allforai/game-design/art/programmatic-art-processing-plan.json"
+      },
       "reference_image_paths": [],
       "edit_mode": {
         "contextImage": null,
@@ -146,6 +163,12 @@ Prompt text may be written to per-request prompt files. Keep the MCP call small:
 pass the input file path, output file path, and task policy. The MCP tool must
 read from files and write files. Do not pass the full request array through the
 chat/tool prompt when a file path is available.
+
+The batch executor must follow
+`game-art/20-spec/image-batch-generation-plan/SKILL.md`; it must not invent new
+batch grouping, candidate counts, or model profiles at execution time. When a
+batch is marked `material_first`, pass the raw-material prompt files and output
+paths exactly as compiled by `game-art/20-spec/image-prompt-compiler/SKILL.md`.
 
 ## Edit Mode / Image-To-Image
 

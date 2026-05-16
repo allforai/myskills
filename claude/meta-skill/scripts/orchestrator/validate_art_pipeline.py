@@ -20,7 +20,9 @@ from pathlib import Path
 REQUIRED_ART_QA_SKILLS = {
     "game-art/40-qa/art-preview-qa",
     "game-art/40-qa/visual-acceptance-review",
+    "game-art/40-qa/asset-family-consistency-qa",
     "game-art/40-qa/2d-style-consistency-qa",
+    "game-art/40-qa/in-game-beauty-gate",
     "game-art/40-qa/atlas-packaging",
     "game-art/40-qa/runtime-import-check",
     "game-art/40-qa/asset-license-provenance-qa",
@@ -37,14 +39,23 @@ REQUIRED_ART_QA_EXIT_ARTIFACTS = {
     ".allforai/game-design/art/qa/visual-review-closure-audit.md",
     ".allforai/game-design/art/qa/visual-repair-loop-report.json",
     ".allforai/game-design/art/qa/visual-repair-loop-report.md",
+    ".allforai/game-design/art/qa/asset-family-consistency-report.json",
+    ".allforai/game-design/art/qa/asset-family-consistency-report.md",
+    ".allforai/game-design/art/qa/in-game-beauty-gate-report.json",
+    ".allforai/game-design/art/qa/in-game-beauty-gate-report.md",
     ".allforai/game-design/art/export/engine-ready-art-output-contract.json",
     ".allforai/game-runtime/art/engine-ready-art-manifest.json",
 }
 
 REQUIRED_ART_CONCEPT_ARTIFACTS = {
     ".allforai/game-design/art-pipeline-config.json",
+    ".allforai/game-design/art/2d-art-style-taxonomy.html",
+    ".allforai/game-design/art/2d-art-style-taxonomy.json",
+    ".allforai/game-design/art/human-visual-preferences.json",
     ".allforai/game-design/art/art-concept-validation.html",
     ".allforai/game-design/art/art-concept-validation.json",
+    ".allforai/game-design/art/art-direction-benchmark.json",
+    ".allforai/game-design/art/art-direction-benchmark.md",
 }
 
 ENGINE_READY_MANIFEST = ".allforai/game-runtime/art/engine-ready-art-manifest.json"
@@ -55,6 +66,10 @@ MCP_IMAGE_BATCH_INPUT = ".allforai/game-design/art/image-generation/mcp-image-ba
 MCP_IMAGE_BATCH_TASK = ".allforai/game-design/art/image-generation/mcp-image-batch-task.json"
 MCP_IMAGE_BATCH_OUTPUT = ".allforai/game-design/art/image-generation/mcp-image-batch-output.json"
 GENERATED_IMAGE_FILES_MANIFEST = ".allforai/game-design/art/image-generation/generated-image-files-manifest.json"
+PROGRAMMATIC_ART_PROCESSING_PLAN = ".allforai/game-design/art/programmatic-art-processing-plan.json"
+COMPILED_PROMPT_MANIFEST = ".allforai/game-design/art/image-generation/compiled-prompt-manifest.json"
+IMAGE_BATCH_GENERATION_PLAN = ".allforai/game-design/art/image-generation/image-batch-generation-plan.json"
+GENERATED_CANDIDATE_SELECTION_REPORT = ".allforai/game-design/art/image-generation/generated-candidate-selection-report.json"
 ASSET_ACCEPTANCE_CRITERIA_JSON = ".allforai/game-design/art/asset-acceptance-criteria.json"
 ASSET_ACCEPTANCE_CRITERIA_MD = ".allforai/game-design/art/asset-acceptance-criteria.md"
 ANIMATION_TOOLCHAIN_REPORT = ".allforai/game-design/art/env/2d-animation-toolchain-report.json"
@@ -105,6 +120,17 @@ REQUIRED_IMAGE_CONTRACT_TERMS = {
     "blocked_by_missing_identity_lock",
     "lora_adapter_id",
     "prompt-only",
+    "game-art/20-spec/programmatic-art-processing-plan/SKILL.md",
+    "game-art/20-spec/image-prompt-compiler/SKILL.md",
+    "game-art/20-spec/image-batch-generation-plan/SKILL.md",
+    "game-art/40-qa/generated-candidate-selection/SKILL.md",
+    PROGRAMMATIC_ART_PROCESSING_PLAN,
+    COMPILED_PROMPT_MANIFEST,
+    IMAGE_BATCH_GENERATION_PLAN,
+    GENERATED_CANDIDATE_SELECTION_REPORT,
+    "material_first",
+    "LLM outputs are candidates",
+    "Coverage shortage",
 }
 
 REQUIRED_BATCH_IMAGE_GENERATION_TERMS = {
@@ -140,6 +166,15 @@ REQUIRED_BATCH_IMAGE_GENERATION_TERMS = {
     "lora_trigger_tokens",
     "lora_weight",
     "blocked_by_missing_identity_lock",
+    COMPILED_PROMPT_MANIFEST,
+    IMAGE_BATCH_GENERATION_PLAN,
+    PROGRAMMATIC_ART_PROCESSING_PLAN,
+    "compiled prompt manifest",
+    "image batch generation plan",
+    "programmatic art processing plan",
+    "game-art/20-spec/image-batch-generation-plan/SKILL.md",
+    "game-art/20-spec/image-prompt-compiler/SKILL.md",
+    "material_first",
 }
 
 REQUIRED_ART_GEN_COMPLETION_TERMS = {
@@ -155,6 +190,112 @@ REQUIRED_ART_PREVIEW_QA_TERMS = {
     "blocked_by_missing_visual_evidence",
     "visual_evidence_inspected: true",
     "actual visual evidence was inspected",
+}
+
+REQUIRED_ART_DIRECTION_BENCHMARK_TERMS = {
+    ".allforai/game-design/art/art-direction-benchmark.json",
+    ".allforai/game-design/art/art-direction-benchmark.md",
+    "commercial visual appeal",
+    "benchmark_references",
+    "anti_references",
+    "runtime_screenshot_standards",
+    "minimum_pass_score",
+    "art that exists but is not good enough",
+}
+
+REQUIRED_2D_ART_STYLE_TAXONOMY_TERMS = {
+    ".allforai/game-design/art/2d-art-style-taxonomy.html",
+    ".allforai/game-design/art/2d-art-style-taxonomy.json",
+    ".allforai/game-design/art/human-visual-preferences.json",
+    "LLM generation difficulty",
+    "programmatic processing methods",
+    "production cost",
+    "avoid styles",
+    "HTML must be in Chinese",
+}
+
+REQUIRED_PROGRAMMATIC_PROCESSING_TERMS = {
+    PROGRAMMATIC_ART_PROCESSING_PLAN,
+    ".allforai/game-design/art/programmatic-art-processing-plan.md",
+    "material_first",
+    "LLM/raw source produces stable materials",
+    "layer_composition",
+    "part_assembly",
+    "palette_recolor",
+    "atlas_slicing",
+    "skeletal_or_part_animation",
+    "tile_rule_generation",
+    "ui_componentization",
+    "automatic_preview_generation",
+    "Direct final-image generation must be justified as an exception",
+}
+
+REQUIRED_IMAGE_PROMPT_COMPILER_TERMS = {
+    COMPILED_PROMPT_MANIFEST,
+    ".allforai/game-design/art/image-generation/prompts/",
+    "material-first generation",
+    "material_first",
+    "programmatic_consumer",
+    "assembly_contract_ref",
+    "LoRA",
+    "prompt files",
+    "Do not synthesize production prompts",
+}
+
+REQUIRED_IMAGE_BATCH_PLAN_TERMS = {
+    IMAGE_BATCH_GENERATION_PLAN,
+    ".allforai/game-design/art/image-generation/image-batch-generation-plan.md",
+    "raw-material-first",
+    "material_first_policy",
+    "required_candidate_count",
+    "retry_budget",
+    "mcp_image_batch_required",
+    "coverage shortage will trigger another batch",
+}
+
+REQUIRED_CANDIDATE_SELECTION_TERMS = {
+    GENERATED_CANDIDATE_SELECTION_REPORT,
+    ".allforai/game-design/art/image-generation/generated-candidate-selection-report.md",
+    ACCEPTED_IMAGE_MANIFEST,
+    "Raw LLM outputs are candidates",
+    "blocked_by_missing_visual_evidence",
+    "coverage_shortage",
+    "requires_additional_batch",
+    "processing_readiness",
+    "consumer_ready: true",
+    "programmatic processing plan",
+}
+
+REQUIRED_ASSET_FAMILY_CONSISTENCY_TERMS = {
+    ".allforai/game-design/art/qa/asset-family-consistency-report.json",
+    ".allforai/game-design/art/qa/asset-family-consistency-report.md",
+    "whole asset families",
+    "contact sheets",
+    "cross-family cohesion",
+    "Repair And Revalidation Loop",
+    "image-feedback-report.json",
+    "visual-repair-loop-report.json",
+    "Rerun Codex CLI review",
+    "visual_quality_gaps",
+    "requires_regeneration",
+    "manifest-only",
+    "Do not return `passed` with repair routes still open",
+}
+
+REQUIRED_IN_GAME_BEAUTY_GATE_TERMS = {
+    ".allforai/game-design/art/qa/in-game-beauty-gate-report.json",
+    ".allforai/game-design/art/qa/in-game-beauty-gate-report.md",
+    "actual runtime screenshots",
+    "blocked_by_missing_runtime_screenshots",
+    "Repair And Revalidation Loop",
+    "runtime-visual-feedback-report.json",
+    "visual-repair-loop-report.json",
+    "Rerun Codex CLI runtime visual review",
+    "beauty_gaps",
+    "runtime_visual_gaps",
+    "static mockups",
+    "fresh runtime screenshots",
+    "Do not downgrade the issue to",
 }
 
 REQUIRED_VISUAL_ACCEPTANCE_TERMS = {
@@ -476,6 +617,14 @@ def validate_art_pipeline(repo_root: str) -> list:
     tileset_generation = game_art_root / "30-generate/tileset-generation/SKILL.md"
     art_preview_qa = game_art_root / "40-qa/art-preview-qa/SKILL.md"
     visual_acceptance = game_art_root / "40-qa/visual-acceptance-review/SKILL.md"
+    art_style_taxonomy = game_art_root / "10-design/2d-art-style-taxonomy/SKILL.md"
+    art_direction_benchmark = game_art_root / "10-design/art-direction-benchmark/SKILL.md"
+    programmatic_processing = game_art_root / "20-spec/programmatic-art-processing-plan/SKILL.md"
+    image_prompt_compiler = game_art_root / "20-spec/image-prompt-compiler/SKILL.md"
+    image_batch_plan = game_art_root / "20-spec/image-batch-generation-plan/SKILL.md"
+    candidate_selection = game_art_root / "40-qa/generated-candidate-selection/SKILL.md"
+    asset_family_consistency = game_art_root / "40-qa/asset-family-consistency-qa/SKILL.md"
+    in_game_beauty_gate = game_art_root / "40-qa/in-game-beauty-gate/SKILL.md"
     acceptance_criteria = game_art_root / "20-spec/asset-acceptance-criteria/SKILL.md"
     lora_lock_spec = game_art_root / "20-spec/lora-identity-style-lock-spec/SKILL.md"
     lora_training = game_art_root / "30-generate/lora-adapter-training/SKILL.md"
@@ -498,6 +647,14 @@ def validate_art_pipeline(repo_root: str) -> list:
         tileset_generation,
         art_preview_qa,
         visual_acceptance,
+        art_style_taxonomy,
+        art_direction_benchmark,
+        programmatic_processing,
+        image_prompt_compiler,
+        image_batch_plan,
+        candidate_selection,
+        asset_family_consistency,
+        in_game_beauty_gate,
         acceptance_criteria,
         lora_lock_spec,
         lora_training,
@@ -525,6 +682,14 @@ def validate_art_pipeline(repo_root: str) -> list:
     tileset_generation_text = _read(tileset_generation)
     art_preview_qa_text = _read(art_preview_qa)
     visual_acceptance_text = _read(visual_acceptance)
+    art_style_taxonomy_text = _read(art_style_taxonomy)
+    art_direction_benchmark_text = _read(art_direction_benchmark)
+    programmatic_processing_text = _read(programmatic_processing)
+    image_prompt_compiler_text = _read(image_prompt_compiler)
+    image_batch_plan_text = _read(image_batch_plan)
+    candidate_selection_text = _read(candidate_selection)
+    asset_family_consistency_text = _read(asset_family_consistency)
+    in_game_beauty_gate_text = _read(in_game_beauty_gate)
     acceptance_criteria_text = _read(acceptance_criteria)
     lora_lock_spec_text = _read(lora_lock_spec)
     lora_training_text = _read(lora_training)
@@ -559,6 +724,10 @@ def validate_art_pipeline(repo_root: str) -> list:
     else:
         if "game-art/10-design/art-concept-validation/SKILL.md" not in art_concept_section:
             errors.append("bootstrap.md: art-concept does not invoke art-concept-validation")
+        if "game-art/10-design/2d-art-style-taxonomy/SKILL.md" not in art_concept_section:
+            errors.append("bootstrap.md: art-concept does not invoke 2d-art-style-taxonomy")
+        if "game-art/10-design/art-direction-benchmark/SKILL.md" not in art_concept_section:
+            errors.append("bootstrap.md: art-concept does not invoke art-direction-benchmark")
         for artifact in sorted(REQUIRED_ART_CONCEPT_ARTIFACTS):
             if artifact not in art_concept_section:
                 errors.append(f"bootstrap.md: art-concept missing exit artifact {artifact}")
@@ -607,6 +776,15 @@ def validate_art_pipeline(repo_root: str) -> list:
             ASSET_ACCEPTANCE_CRITERIA_MD,
             "project-specific standards",
             "technology-specific standards",
+            "programmatic-art-processing-plan/SKILL.md",
+            PROGRAMMATIC_ART_PROCESSING_PLAN,
+            "image-prompt-compiler/SKILL.md",
+            COMPILED_PROMPT_MANIFEST,
+            "image-batch-generation-plan/SKILL.md",
+            IMAGE_BATCH_GENERATION_PLAN,
+            "generated-candidate-selection/SKILL.md",
+            GENERATED_CANDIDATE_SELECTION_REPORT,
+            "material_first",
         ]:
             if term not in bootstrap_text:
                 errors.append(f"bootstrap.md: art-gen missing acceptance criteria term {term}")
@@ -615,6 +793,14 @@ def validate_art_pipeline(repo_root: str) -> list:
             ".allforai/game-design/art/qa/visual-repair-loop-report.md",
             "regenerate/repair plus rerun Codex CLI review and Claude Code closure audit",
             "image-feedback-report.json",
+            "asset-family-consistency-report.json",
+            "in-game-beauty-gate-report.json",
+            "beauty_gaps",
+            "runtime_visual_gaps",
+            "owner-specific feedback report",
+            "rerun Codex CLI visual review",
+            "rerun the specific QA gate",
+            "Do not let `art-qa` unlock `game-design-finalize`",
         ]:
             if term not in art_qa_section:
                 errors.append(f"bootstrap.md: art-qa missing visual repair loop term {term}")
@@ -659,6 +845,30 @@ def validate_art_pipeline(repo_root: str) -> list:
     for term in sorted(REQUIRED_ART_PREVIEW_QA_TERMS):
         if term not in art_preview_qa_text:
             errors.append(f"art-preview-qa: missing visual evidence term {term}")
+    for term in sorted(REQUIRED_2D_ART_STYLE_TAXONOMY_TERMS):
+        if term not in art_style_taxonomy_text:
+            errors.append(f"2d-art-style-taxonomy: missing taxonomy term {term}")
+    for term in sorted(REQUIRED_ART_DIRECTION_BENCHMARK_TERMS):
+        if term not in art_direction_benchmark_text:
+            errors.append(f"art-direction-benchmark: missing benchmark term {term}")
+    for term in sorted(REQUIRED_PROGRAMMATIC_PROCESSING_TERMS):
+        if term not in programmatic_processing_text:
+            errors.append(f"programmatic-art-processing-plan: missing processing term {term}")
+    for term in sorted(REQUIRED_IMAGE_PROMPT_COMPILER_TERMS):
+        if term not in image_prompt_compiler_text:
+            errors.append(f"image-prompt-compiler: missing prompt compiler term {term}")
+    for term in sorted(REQUIRED_IMAGE_BATCH_PLAN_TERMS):
+        if term not in image_batch_plan_text:
+            errors.append(f"image-batch-generation-plan: missing batch plan term {term}")
+    for term in sorted(REQUIRED_CANDIDATE_SELECTION_TERMS):
+        if term not in candidate_selection_text:
+            errors.append(f"generated-candidate-selection: missing candidate selection term {term}")
+    for term in sorted(REQUIRED_ASSET_FAMILY_CONSISTENCY_TERMS):
+        if term not in asset_family_consistency_text:
+            errors.append(f"asset-family-consistency-qa: missing family QA term {term}")
+    for term in sorted(REQUIRED_IN_GAME_BEAUTY_GATE_TERMS):
+        if term not in in_game_beauty_gate_text:
+            errors.append(f"in-game-beauty-gate: missing runtime beauty term {term}")
     for term in sorted(REQUIRED_VISUAL_ACCEPTANCE_TERMS):
         if term not in visual_acceptance_text:
             errors.append(f"visual-acceptance-review: missing review closure term {term}")

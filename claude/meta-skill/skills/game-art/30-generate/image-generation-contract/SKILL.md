@@ -36,6 +36,20 @@ available and the routing report selects it. `mcp-image-batch` is a long-task
 MCP, so batch prompts and results must be passed through files, not chat/tool
 message payloads.
 
+Preferred production chain:
+
+```text
+game-art/20-spec/programmatic-art-processing-plan/SKILL.md
+-> game-art/20-spec/image-prompt-compiler/SKILL.md
+-> game-art/20-spec/image-batch-generation-plan/SKILL.md
+-> game-art/30-generate/batch-image-generation/SKILL.md
+-> game-art/40-qa/generated-candidate-selection/SKILL.md
+-> accepted-image-manifest.json
+```
+
+LLM outputs are candidates. They are not consumer-ready until candidate
+selection, processing-readiness checks, and downstream validation pass.
+
 ## Scope
 
 Use this skill whenever a downstream skill needs bitmap output from any
@@ -80,6 +94,9 @@ Out of scope:
 | Image model capability registry | selected provider/model, fallback models, missing capabilities | Call `game-art/00-env/image-model-capability-registry/SKILL.md`; return `FAILED_VALIDATION` if required generation cannot be routed. |
 | Style context | art style, palette/material/tone, target view or UI context | Use `.allforai/game-design/art-style-guide.json` or return `UPSTREAM_DEFECT`. |
 | Asset acceptance criteria | visual and technical standards per asset family | Use `.allforai/game-design/art/asset-acceptance-criteria.json`; return `UPSTREAM_DEFECT` when missing for production generation. |
+| Programmatic processing plan | material-first policy, raw material requirements, assembly/preview outputs | Use `.allforai/game-design/art/programmatic-art-processing-plan.json`; return `UPSTREAM_DEFECT` when production 2D art can be assembled or processed deterministically but no plan exists. |
+| Compiled prompt manifest | prompt file paths, negative prompt paths, material-first flags, LoRA/reference locks | Use `.allforai/game-design/art/image-generation/compiled-prompt-manifest.json`; return `UPSTREAM_DEFECT` before batch execution when missing. |
+| Batch generation plan | batch groups, candidate coverage targets, retry budgets, model/profile grouping | Use `.allforai/game-design/art/image-generation/image-batch-generation-plan.json`; return `UPSTREAM_DEFECT` for bulk generation when missing. |
 
 ### Optional inputs
 
@@ -91,6 +108,8 @@ Out of scope:
 | `.allforai/game-design/ui/ui-registry.json` | UI screen/component refs | Use caller-provided UI context. |
 | `.allforai/game-design/art/image-generation/image-model-capability-registry.json` | provider/model capabilities | Required before selecting an AI image model. |
 | `.allforai/game-design/art/image-generation/image-model-routing-report.json` | selected model and fallbacks | Required for `llm_image_generation` or `image_edit`. |
+| `.allforai/game-design/art/2d-art-style-taxonomy.json` | selected 2D style family, avoid styles, LLM fit, processing fit | Use to keep prompts aligned with bootstrap-facing user choice. |
+| `.allforai/game-design/art/image-generation/generated-candidate-selection-report.json` | selected/rejected candidates and coverage shortages | Required before marking raw generated outputs accepted. |
 | Existing generated images | validation and repair source | Register or validate existing image. |
 | Search/adaptation outputs | candidate image paths, license and adaptation reports | Validate as acquired images before downstream consumption. |
 | Caller generation capabilities | image model, transparent background support, vision validator | Return `FAILED_VALIDATION` if required generation or validation cannot run. |
@@ -124,6 +143,12 @@ Every image-producing skill must normalize image requests to this shape:
       "fallback_risk": "none"
     },
     "prompt_template": "icon_prompt | tileset_prompt | ui_mockup_prompt | layer_sheet_prompt | pose_reference_prompt | sprite_vfx_prompt | decal_prompt | particle_texture_prompt | trail_texture_prompt | background_prompt | prop_prompt | portrait_prompt | item_art_prompt | frame_animation_prompt | expression_set_prompt | preview_prompt",
+    "material_first": {
+      "enabled": true,
+      "raw_material_kind": "layer | part | motif | plate | symbol | pose_reference | texture_source | vfx_source",
+      "programmatic_consumer": "",
+      "assembly_contract_ref": ".allforai/game-design/art/programmatic-art-processing-plan.json"
+    },
     "output_constraints": {
       "alpha": false,
       "exact_size": true,
@@ -217,6 +242,12 @@ If no available model supports the required profile, return `FAILED_VALIDATION`
 with the missing capability and repair target. Do not produce spec-only or
 placeholder output as accepted image-generation completion.
 
+Before selecting the final prompt/model path, read the programmatic processing
+plan. If it says `material_first`, prompt for the raw materials required by the
+plan rather than a flattened final in-game image. Ignore this only when the
+processing plan records a justified exception and acceptance criteria allow the
+risk.
+
 Provider routing rules:
 - Google, fal.ai, OpenRouter, project MCP tools, or custom HTTP providers may be
   selected only after the capability registry records callable access and model
@@ -296,10 +327,14 @@ Common negative constraints:
 | Output | Required | Purpose | Consumed by |
 |---|---:|---|---|
 | `.allforai/game-design/art/image-generation/image-request-manifest.json` | yes | Normalized image requests, prompts, outputs, states. | image-producing skills, QA. |
+| `.allforai/game-design/art/programmatic-art-processing-plan.json` | yes for 2D production art | Raw material and deterministic processing plan. | prompt compiler, candidate selection, QA. |
+| `.allforai/game-design/art/image-generation/compiled-prompt-manifest.json` | when AI generation is used | Prompt files and lock/material-first metadata. | batch planning and generation. |
+| `.allforai/game-design/art/image-generation/image-batch-generation-plan.json` | when batch generation is used | Candidate coverage, grouping, retry, and model policies. | batch-image-generation and repair loops. |
 | `.allforai/game-design/art/image-generation/mcp-image-batch-input.json` | when using `mcp-image-batch` | File-based request handoff for long-task batch generation. | `batch-image-generation`. |
 | `.allforai/game-design/art/image-generation/mcp-image-batch-task.json` | when using `mcp-image-batch` | Long-task id, polling policy, and final task state. | diagnostics and repair loops. |
 | `.allforai/game-design/art/image-generation/mcp-image-batch-output.json` | when using `mcp-image-batch` | Structured MCP result mapped to request ids and generated files. | image validation. |
 | `.allforai/game-design/art/image-generation/generated-image-files-manifest.json` | when generated | Raw generated file registry before acceptance. | image validation only. |
+| `.allforai/game-design/art/image-generation/generated-candidate-selection-report.json` | when generated | Selected/rejected candidates, coverage shortage, processing readiness. | accepted manifest gate and repair loops. |
 | `.allforai/game-design/art/image-generation/image-generation-report.json` | yes | Validation, repair attempts, failures, fallbacks. | diagnostics and QA. |
 | `.allforai/game-design/art/image-generation/image-feedback-report.json` | when downstream fails | Downstream defect reports mapped back to image requests. | image-producing skills and repair loops. |
 | `.allforai/game-design/art/image-generation/accepted-image-manifest.json` | yes when images are accepted | Only downstream-consumable manifest for generated, searched, user-provided, adapted, local, or 3D-rendered images. | downstream asset/UI/VFX pipelines. |
@@ -314,6 +349,13 @@ caller-local manifest that follows this schema.
 `accepted-image-manifest.json` is the only allowed handoff from image upstreams
 to downstream asset, UI, VFX, atlas, animation, and engine-export skills.
 Downstream skills must not consume raw PNG paths directly.
+
+Raw LLM/MCP files must pass
+`game-art/40-qa/generated-candidate-selection/SKILL.md` before
+`accepted-image-manifest.json` may contain `consumer_ready: true`. Selection
+must inspect generated files against the compiled prompt manifest, batch plan,
+asset acceptance criteria, and programmatic processing plan. Coverage shortage
+must trigger another batch or remain blocking.
 
 Every accepted manifest entry must include:
 
@@ -426,7 +468,10 @@ Rules:
 - map generated files into
   `.allforai/game-design/art/image-generation/generated-image-files-manifest.json`;
 - then run deterministic validation, visual validation, and downstream
-  acceptance from this contract before writing `accepted-image-manifest.json`.
+  acceptance from this contract before writing `accepted-image-manifest.json`;
+- generated candidates must be filtered by
+  `game-art/40-qa/generated-candidate-selection/SKILL.md` before any entry is
+  marked `consumer_ready: true`.
 
 Do not mark MCP outputs `consumer_ready: true` directly. Do not hand raw
 `generated-image-files-manifest.json` paths to downstream skills. If
