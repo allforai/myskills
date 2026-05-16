@@ -12,8 +12,15 @@ def _write_skill(root, rel, body):
     return path
 
 
+def _write_pack(root, rel, body):
+    path = root / rel / "PACK.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(body)
+    return path
+
+
 def test_validate_skill_tree_accepts_layered_skill_path(tmp_path):
-    _write_skill(
+    _write_pack(
         tmp_path,
         "app-design",
         """---
@@ -44,7 +51,7 @@ description: Test skill.
 
 
 def test_validate_skill_tree_rejects_missing_invocation_target(tmp_path):
-    _write_skill(
+    _write_pack(
         tmp_path,
         "app-design",
         """---
@@ -76,7 +83,7 @@ description: Test skill.
 
 
 def test_validate_skill_tree_rejects_broken_canonical_path(tmp_path):
-    _write_skill(
+    _write_pack(
         tmp_path,
         "app-design",
         """---
@@ -92,8 +99,23 @@ ${CLAUDE_PLUGIN_ROOT}/skills/app-design/20-spec/missing/SKILL.md
     assert any("canonical skill path missing" in error for error in errors)
 
 
-def test_validate_skill_tree_requires_frontmatter(tmp_path):
+def test_validate_skill_tree_rejects_public_pack_skill(tmp_path):
     _write_skill(
+        tmp_path,
+        "app-design",
+        """---
+name: app-design
+description: Parent.
+---
+""",
+    )
+
+    errors = validate_skill_tree(str(tmp_path))
+    assert any("top-level pack must use PACK.md" in error for error in errors)
+
+
+def test_validate_skill_tree_requires_frontmatter(tmp_path):
+    _write_pack(
         tmp_path,
         "app-design",
         """---
@@ -122,7 +144,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/app-design/20-spec/data-model-spec/SKILL.md
 
 
 def test_validate_skill_tree_rejects_orphan_child_skill(tmp_path):
-    _write_skill(
+    _write_pack(
         tmp_path,
         "app-design",
         """---
@@ -152,7 +174,7 @@ description: Test skill.
 
 
 def test_validate_skill_tree_requires_optional_stitch_contract_for_app_handoff(tmp_path):
-    _write_skill(
+    _write_pack(
         tmp_path,
         "app-design",
         """---

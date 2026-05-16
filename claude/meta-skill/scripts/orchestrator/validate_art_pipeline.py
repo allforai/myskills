@@ -607,7 +607,7 @@ def validate_art_pipeline(repo_root: str) -> list:
 
     skills_root = root / "claude/meta-skill/skills"
     game_art_root = skills_root / "game-art"
-    game_art_pack = game_art_root / "SKILL.md"
+    game_art_pack = game_art_root / "PACK.md"
     bootstrap = root / "claude/meta-skill/skills/bootstrap.md"
     game_design = root / "claude/meta-skill/knowledge/capabilities/game-design.md"
     engine_ready = game_art_root / "40-qa/engine-ready-art-output-contract/SKILL.md"
@@ -707,7 +707,7 @@ def validate_art_pipeline(repo_root: str) -> list:
             continue
         ref = skill_file.relative_to(skills_root).as_posix()
         if ref not in listed_game_art_refs:
-            errors.append(f"game-art/SKILL.md: missing canonical child path skills/{ref}")
+            errors.append(f"game-art/PACK.md: missing canonical child path skills/{ref}")
 
     for ref in sorted(set(SKILL_REF_RE.findall(bootstrap_text))):
         target = _skill_ref_to_path(root, ref)
@@ -914,17 +914,17 @@ def validate_art_pipeline(repo_root: str) -> list:
         if term not in asset_search_text:
             errors.append(f"asset-pack-search-spec: missing search cascade term {term}")
     if ACCEPTED_IMAGE_MANIFEST not in game_art_text:
-        errors.append("game-art/SKILL.md: missing accepted image manifest closure rule")
+        errors.append("game-art/PACK.md: missing accepted image manifest closure rule")
     if "game-art/20-spec/asset-acceptance-criteria/SKILL.md" not in game_art_text:
-        errors.append("game-art/SKILL.md: missing asset acceptance criteria child path")
+        errors.append("game-art/PACK.md: missing asset acceptance criteria child path")
     if "raw PNG/JPG/WebP paths" not in game_art_text:
-        errors.append("game-art/SKILL.md: missing raw bitmap path consumption ban")
+        errors.append("game-art/PACK.md: missing raw bitmap path consumption ban")
     if "game-art/00-env/image-model-capability-registry/SKILL.md" not in game_art_text:
-        errors.append("game-art/SKILL.md: missing image model capability registry child path")
+        errors.append("game-art/PACK.md: missing image model capability registry child path")
     if "game-art/00-env/2d-animation-toolchain-env/SKILL.md" not in game_art_text:
-        errors.append("game-art/SKILL.md: missing 2D animation toolchain env child path")
+        errors.append("game-art/PACK.md: missing 2D animation toolchain env child path")
     if IMAGE_MODEL_REGISTRY not in game_art_text and "image-model-capability-registry" not in game_art_text:
-        errors.append("game-art/SKILL.md: missing image model routing closure rule")
+        errors.append("game-art/PACK.md: missing image model routing closure rule")
 
     for ref in sorted(IMAGE_UPSTREAM_CONSUMER_SKILLS):
         skill_path = _skill_ref_to_path(root, ref)

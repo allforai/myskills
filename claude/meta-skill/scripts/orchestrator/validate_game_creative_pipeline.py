@@ -63,7 +63,7 @@ def validate_game_creative_pipeline(repo_root: str) -> list[str]:
     root = Path(repo_root)
     skills_root = root / "claude/meta-skill/skills"
     creative_root = skills_root / "game-creative"
-    creative_pack = creative_root / "SKILL.md"
+    creative_pack = creative_root / "PACK.md"
     critique = creative_root / "40-qa/creative-quality-critique/SKILL.md"
 
     errors: list[str] = []
@@ -82,11 +82,11 @@ def validate_game_creative_pipeline(repo_root: str) -> list[str]:
             continue
         ref = skill_file.relative_to(skills_root).as_posix()
         if ref not in listed_refs:
-            errors.append(f"game-creative/SKILL.md: missing canonical child path skills/{ref}")
+            errors.append(f"game-creative/PACK.md: missing canonical child path skills/{ref}")
 
     for term in sorted(REQUIRED_PARENT_TERMS):
         if not _has_term(parent_text, term):
-            errors.append(f"game-creative/SKILL.md: missing creative pack term {term}")
+            errors.append(f"game-creative/PACK.md: missing creative pack term {term}")
     for term in sorted(REQUIRED_CRITIQUE_TERMS):
         if not _has_term(critique_text, term):
             errors.append(f"creative-quality-critique: missing required term {term}")

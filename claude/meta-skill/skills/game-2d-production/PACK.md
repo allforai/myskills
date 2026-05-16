@@ -110,6 +110,14 @@ geometry, missing HUD, or missing engine-ready art bindings. The active runtime
 scene must be traceable to production contracts and visible assets must map to
 `runtime_id`/`asset_id` from the engine-ready art manifest.
 
+Closure is scope-lock driven, not warning driven. QA may not turn discovered
+code, asset, audio, VFX, UI, level-goal, or visual-quality gaps into
+`deferred_items`. Deferred closure is allowed only when `.allforai/scope-lock.json`
+was written before implementation/QA and proves the feature or asset was removed
+from design, data, code, manifests, acceptance criteria, and runtime
+expectations. If the promise still exists anywhere active, the missing work is a
+blocker.
+
 Core gameplay evidence must include invariant checks for the target loop. For
 board/grid games this includes board dimensions, tile/entity counts before and
 after actions, legal coordinate ranges, refill/drop conservation, legal runtime

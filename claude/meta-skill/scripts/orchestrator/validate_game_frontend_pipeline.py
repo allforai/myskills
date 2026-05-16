@@ -135,7 +135,7 @@ def validate_game_frontend_pipeline(repo_root: str) -> list[str]:
     root = Path(repo_root)
     skills_root = root / "claude/meta-skill/skills"
     frontend_root = skills_root / "game-frontend"
-    frontend_pack = frontend_root / "SKILL.md"
+    frontend_pack = frontend_root / "PACK.md"
     runtime_arch = frontend_root / "10-design/runtime-architecture-design/SKILL.md"
     assembly = frontend_root / "30-generate/playable-client-assembly/SKILL.md"
     arch_qa = frontend_root / "40-qa/runtime-architecture-qa/SKILL.md"
@@ -183,11 +183,11 @@ def validate_game_frontend_pipeline(repo_root: str) -> list[str]:
             continue
         ref = skill_file.relative_to(skills_root).as_posix()
         if ref not in listed_refs:
-            errors.append(f"game-frontend/SKILL.md: missing canonical child path skills/{ref}")
+            errors.append(f"game-frontend/PACK.md: missing canonical child path skills/{ref}")
 
     for term in sorted(REQUIRED_PARENT_TERMS):
         if not _has_term(parent_text, term):
-            errors.append(f"game-frontend/SKILL.md: missing frontend architecture term {term}")
+            errors.append(f"game-frontend/PACK.md: missing frontend architecture term {term}")
     for term in sorted(REQUIRED_ASSEMBLY_TERMS):
         if not _has_term(assembly_text, term):
             errors.append(f"playable-client-assembly: missing required input term {term}")

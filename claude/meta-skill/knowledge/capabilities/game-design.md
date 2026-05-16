@@ -635,7 +635,7 @@ readiness from `approval-records.json` and `game-design-doc.json`.
 ## Art Pipeline Delegation
 
 `game-design.md` only declares art orchestration points. Concrete art methods
-live in `skills/game-art/SKILL.md` and child skills.
+live in `skills/game-art/PACK.md` and child skills.
 
 | Stage | Orchestration rule |
 |---|---|

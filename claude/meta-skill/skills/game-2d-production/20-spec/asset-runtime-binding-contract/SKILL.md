@@ -48,10 +48,12 @@ The contract must classify every placeholder, stub, borrowed asset, missing
 variant, `spec_ready` manifest, `not_generated` output, silent audio file,
 tween-only VFX fallback, empty frame directory, generic tile fallback, unpacked
 required atlas, or engine placeholder renderer as a production gap with an
-owning producer skill and repair route. For launch/production goals, these
-gaps are blocking unless the project explicitly sets
-`production_acceptance_policy.allow_placeholder_or_fallback_assets=true` before
-execution and records a per-item approval reason.
+owning producer skill and repair route. For launch/production goals, these gaps
+are blocking unless a pre-run `.allforai/scope-lock.json` explicitly excludes
+the feature or asset and includes removal evidence proving it was also removed
+from product/design docs, generated data, runtime code, UI, manifests,
+acceptance criteria, and QA expectations. `deferred_items` are not allowed as a
+substitute for missing runtime-bound production assets.
 
 For engine runtimes that support probes, require probe fields for visible
 asset/node counts, runtime id mapping, source asset reference, and placeholder

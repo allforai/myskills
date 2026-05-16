@@ -70,9 +70,9 @@ Require:
   game type
 
 Launch/production closure must not pass with hidden production gaps. Treat the
-following as blockers unless the project explicitly lowered scope before `/run`
-with `production_acceptance_policy.allow_placeholder_or_fallback_assets=true`
-and a per-finding approval reason:
+following as blockers. They cannot be converted to `deferred_items`,
+`non_blocking_warnings`, `accepted_with_warnings`, or "v1 later" by the QA node
+itself.
 
 - silent audio stubs, placeholder audio, prompt-only audio, or unloaded audio
   manifests;
@@ -89,6 +89,22 @@ and a per-finding approval reason:
   fallback assets, missing SpriteFrame/AudioClip/ParticleSystem refs, or
   untraceable runtime ids.
 
+The only way to exclude one of these from launch/production closure is an
+explicit scope-cut artifact created before the run reaches implementation or QA:
+
+```text
+.allforai/scope-lock.json
+```
+
+The scope cut must include `scope_decision_id`, `excluded_feature_or_asset`,
+`product_reason`, `approved_before_run: true`, `owner`, `affected_files`, and
+`removal_evidence`. It is valid only if the feature/asset is also removed or
+disabled consistently from product/design docs, generated data, runtime code,
+UI, manifests, acceptance criteria, and QA expectations. A missing implementation
+cannot become a scope cut after QA finds it. If the feature, asset id, goal type,
+VFX cue, audio cue, visual state, or UI promise still appears anywhere in active
+runtime/data/acceptance artifacts, the finding remains blocking.
+
 If any upstream report contains `asset_gaps`, `warnings`,
 `non_blocking_warnings`, `known_gaps`, `remaining_gaps`, or
 `degraded_contracts` mentioning placeholder, stub, borrowed, missing, absent,
@@ -96,6 +112,12 @@ generic, `spec_ready`, `not_generated`, silent, fallback, or degraded production
 assets, closure must return `failed_validation` or a blocking status and route
 the item to the owning producer skill. Do not downgrade these findings to
 `accepted_with_warnings` for launch or production goals.
+
+If an upstream report contains `deferred_items`, closure must audit each item
+against `.allforai/scope-lock.json`. Any deferred item without a matching valid
+scope cut and removal evidence is a blocker. Do not allow QA to rewrite
+`code_gaps`, `asset_gaps`, `contract_gaps`, `missing_assets`, or
+`visual_quality_gaps` into `deferred_items` during the same run.
 
 Do not accept static review. Do not accept logs, DOM, probes, source inspection,
 or manifest existence alone. If validation cannot run, report

@@ -38,6 +38,8 @@ REQUIRED_PARENT_TERMS = {
     "pure color blocks",
     "black debug backgrounds",
     "engine-ready art bindings",
+    "scope-lock",
+    "QA may not turn discovered",
 }
 
 REQUIRED_CLOSURE_TERMS = {
@@ -72,7 +74,12 @@ REQUIRED_CLOSURE_TERMS = {
     "tween-only VFX fallbacks",
     "borrowed special-tile badges",
     "accepted_with_warnings",
-    "production_acceptance_policy.allow_placeholder_or_fallback_assets=true",
+    ".allforai/scope-lock.json",
+    "deferred_items",
+    "approved_before_run: true",
+    "removal_evidence",
+    "A missing implementation cannot become a scope cut after QA finds it",
+    "Do not allow QA to rewrite",
 }
 
 REQUIRED_ASSET_BINDING_TERMS = {
@@ -84,7 +91,9 @@ REQUIRED_ASSET_BINDING_TERMS = {
     "borrowed art",
     "asset_gaps",
     "block launch/production closure",
-    "production_acceptance_policy.allow_placeholder_or_fallback_assets=true",
+    ".allforai/scope-lock.json",
+    "removed consistently",
+    "Do not convert asset gaps into `deferred_items`",
 }
 
 REQUIRED_ASSET_CONTRACT_TERMS = {
@@ -94,7 +103,9 @@ REQUIRED_ASSET_CONTRACT_TERMS = {
     "empty frame directory",
     "generic tile fallback",
     "owning producer skill",
-    "production_acceptance_policy.allow_placeholder_or_fallback_assets=true",
+    ".allforai/scope-lock.json",
+    "removal evidence",
+    "`deferred_items` are not allowed",
 }
 
 REQUIRED_GAME_DESIGN_TERMS = {
@@ -150,13 +161,13 @@ def validate_game_2d_production_pipeline(repo_root: str) -> list[str]:
     root = Path(repo_root)
     skills_root = root / "claude/meta-skill/skills"
     production_root = skills_root / "game-2d-production"
-    parent = production_root / "SKILL.md"
+    parent = production_root / "PACK.md"
     closure = production_root / "40-qa/2d-production-closure-qa/SKILL.md"
     asset_binding_qa = production_root / "40-qa/asset-binding-visual-qa/SKILL.md"
     asset_contract = production_root / "20-spec/asset-runtime-binding-contract/SKILL.md"
     game_design = root / "claude/meta-skill/knowledge/capabilities/game-design.md"
     bootstrap = root / "claude/meta-skill/skills/bootstrap.md"
-    game_production = skills_root / "game-production/SKILL.md"
+    game_production = skills_root / "game-production/PACK.md"
 
     required_files = [parent, closure, asset_binding_qa, asset_contract, game_design, bootstrap, game_production]
     required_files.extend(production_root / ref / "SKILL.md" for ref in CHILD_REFS)
@@ -180,22 +191,22 @@ def validate_game_2d_production_pipeline(repo_root: str) -> list[str]:
     for ref in CHILD_REFS:
         canonical = f"game-2d-production/{ref}/SKILL.md"
         if canonical not in listed_refs:
-            errors.append(f"game-2d-production/SKILL.md: missing canonical child path skills/{canonical}")
+            errors.append(f"game-2d-production/PACK.md: missing canonical child path skills/{canonical}")
 
     for skill_file in sorted(production_root.rglob("SKILL.md")):
         if skill_file == parent:
             continue
         ref = skill_file.relative_to(skills_root).as_posix()
         if ref not in listed_refs:
-            errors.append(f"game-2d-production/SKILL.md: missing canonical child path skills/{ref}")
+            errors.append(f"game-2d-production/PACK.md: missing canonical child path skills/{ref}")
 
-    _check_terms(errors, parent_text, "game-2d-production/SKILL.md", REQUIRED_PARENT_TERMS)
+    _check_terms(errors, parent_text, "game-2d-production/PACK.md", REQUIRED_PARENT_TERMS)
     _check_terms(errors, closure_text, "2d-production-closure-qa", REQUIRED_CLOSURE_TERMS)
     _check_terms(errors, asset_binding_text, "asset-binding-visual-qa", REQUIRED_ASSET_BINDING_TERMS)
     _check_terms(errors, asset_contract_text, "asset-runtime-binding-contract", REQUIRED_ASSET_CONTRACT_TERMS)
     _check_terms(errors, game_design_text, "game-design.md", REQUIRED_GAME_DESIGN_TERMS)
     _check_terms(errors, bootstrap_text, "bootstrap.md", REQUIRED_BOOTSTRAP_TERMS)
-    _check_terms(errors, game_production_text, "game-production/SKILL.md", REQUIRED_GAME_PRODUCTION_TERMS)
+    _check_terms(errors, game_production_text, "game-production/PACK.md", REQUIRED_GAME_PRODUCTION_TERMS)
 
     return errors
 

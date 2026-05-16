@@ -53,10 +53,13 @@ and must route to the owning producer skill such as `game-audio`,
 `prop-generation`, `icon-generation`, runtime import, or project-local
 specialized art/audio/VFX skills.
 
-Only an explicit project scope decision can allow fallback assets:
-`production_acceptance_policy.allow_placeholder_or_fallback_assets=true` plus a
-specific per-finding approval reason. Without that explicit policy, asset gaps
-with `severity: minor` still block launch/production closure.
+Only an explicit pre-run scope cut can remove an asset from required production
+coverage. The scope cut must be recorded in `.allforai/scope-lock.json` before
+implementation/QA and must prove the feature or asset was removed consistently
+from product/design docs, runtime data, code, manifests, acceptance criteria, and
+QA expectations. A fallback asset still visible in runtime is not a valid scope
+cut. Without a valid scope-lock entry, asset gaps with `severity: minor` still
+block launch/production closure.
 
 Read `.allforai/visual-qa/visual-acceptance-criteria.json` and
 `.allforai/visual-qa/visual-acceptance-criteria.md` before building visual QA
@@ -97,4 +100,6 @@ no blocker or major visual binding finding remains. Do not return pass when
 `asset_gaps`, `warnings`, `known_gaps`, or `degraded_contracts` contain
 placeholder, stub, borrowed, missing, absent, `spec_ready`, `not_generated`,
 silent, tween fallback, or generic fallback production assets unless the
-project has explicitly lowered scope before this QA.
+project has explicitly cut that asset from scope before this QA and removal
+evidence proves it no longer exists in active runtime/data/acceptance artifacts.
+Do not convert asset gaps into `deferred_items` in this QA node.

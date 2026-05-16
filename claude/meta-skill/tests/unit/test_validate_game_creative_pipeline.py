@@ -15,7 +15,7 @@ def _write(root, rel, text):
 def _minimal_repo(tmp_path):
     _write(
         tmp_path,
-        "claude/meta-skill/skills/game-creative/SKILL.md",
+        "claude/meta-skill/skills/game-creative/PACK.md",
         """${CLAUDE_PLUGIN_ROOT}/skills/game-creative/40-qa/creative-quality-critique/SKILL.md
 creative-quality-critique
 contract_defect

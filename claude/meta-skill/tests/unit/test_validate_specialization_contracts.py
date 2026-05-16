@@ -55,7 +55,7 @@ Validate bundled child skill paths only.
     )
     _write(
         tmp_path,
-        "claude/meta-skill/skills/game-art/SKILL.md",
+        "claude/meta-skill/skills/game-art/PACK.md",
         "---\nname: game-art\ndescription: x\n---\n",
     )
 

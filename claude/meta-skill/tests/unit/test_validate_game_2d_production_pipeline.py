@@ -28,7 +28,7 @@ def _minimal_repo(tmp_path):
         for ref in CHILD_REFS
     )
     parent += "\n" + "\n".join(sorted(REQUIRED_PARENT_TERMS))
-    _write(tmp_path, "claude/meta-skill/skills/game-2d-production/SKILL.md", parent)
+    _write(tmp_path, "claude/meta-skill/skills/game-2d-production/PACK.md", parent)
 
     for ref in CHILD_REFS:
         text = "---\nname: x\ndescription: x\n---\n"
@@ -52,7 +52,7 @@ def _minimal_repo(tmp_path):
     )
     _write(
         tmp_path,
-        "claude/meta-skill/skills/game-production/SKILL.md",
+        "claude/meta-skill/skills/game-production/PACK.md",
         "\n".join(sorted(REQUIRED_GAME_PRODUCTION_TERMS)),
     )
 

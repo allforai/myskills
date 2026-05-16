@@ -41,7 +41,7 @@ def _minimal_repo(tmp_path):
     )
     _write(
         tmp_path,
-        "claude/meta-skill/skills/game-frontend/SKILL.md",
+        "claude/meta-skill/skills/game-frontend/PACK.md",
         parent + """
 .allforai/bootstrap/specialized-skills/<specialization_id>-frontend-runtime/SKILL.md
 knowledge/engines/

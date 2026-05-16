@@ -40,7 +40,7 @@ Record what exists:
 - `has_code`: true if source code files (*.ts, *.tsx, *.js, *.mjs, *.go, *.py, *.cs, *.rs, *.dart, *.swift, *.kt, *.java, *.cpp, *.c, *.rb, *.lua, *.luau, *.server.luau, *.client.luau, *.gd, *.hx, *.p8, *.p8.png, *.twee, *.tw, etc.) are detected in Step 1.1. Config-only files (package.json, Cargo.toml, go.mod, pubspec.yaml, pom.xml with no src/) do NOT set has_code = true. Notes: *.p8 PICO-8 cartridges embed Lua code; *.luau is Roblox's Luau dialect (Rojo projects use .luau not .lua); *.twee/*.tw are Twine story source files.
 - `has_iteration_feedback`: true if product-concept/iteration-feedback.json exists (previous concept-acceptance feedback)
 - `has_product_concept`: true if product-concept/product-concept.json exists
-- `has_decision_journal`: true if product-concept/decision-journal.json exists (previous /journal records)
+- `has_decision_journal`: true if product-concept/decision-journal.json exists (previous recorded product decisions)
 - `has_concept_drift`: true if ANY of the following conditions hold:
   - `product-concept/concept-drift.json` exists AND its `resolved` field is false
   - `.allforai/game-design/approval-records.json` exists AND any record has `gate_status == "revision-requested"` (in-flight revision cycle on a design gate)
@@ -745,7 +745,7 @@ Read `.allforai/product-concept/product-concept.json`. This is needed for Step 3
 Check if `.allforai/product-concept/decision-journal.json` exists. If yes, read it.
 
 This file contains product decisions made during previous development sessions,
-recorded via the `/journal` command. Each batch has a timestamp, topic, and
+recorded during earlier product discussion. Each batch has a timestamp, topic, and
 list of decisions with question/chosen/rationale.
 
 LLM uses this in Step 3 to:

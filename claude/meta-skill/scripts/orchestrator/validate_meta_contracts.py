@@ -79,7 +79,7 @@ def validate_unattended_run_contract(errors: list[str]) -> None:
     template = ROOT / "knowledge/orchestrator-template.md"
     template_text = template.read_text(encoding="utf-8")
     template_flat = " ".join(template_text.split())
-    parent = ROOT / "skills/meta-orchestration/SKILL.md"
+    parent = ROOT / "skills/meta-orchestration/PACK.md"
     parent_text = parent.read_text(encoding="utf-8")
     skill = ROOT / "skills/meta-orchestration/40-qa/unattended-run-readiness-qa/SKILL.md"
     if not skill.exists():
@@ -107,9 +107,9 @@ def validate_unattended_run_contract(errors: list[str]) -> None:
         if term not in template_text and term not in template_flat:
             errors.append(f"orchestrator-template.md: missing unattended preflight term {term}")
     if "unattended-run-readiness-qa" not in parent_text:
-        errors.append("meta-orchestration/SKILL.md: missing unattended readiness child")
+        errors.append("meta-orchestration/PACK.md: missing unattended readiness child")
     if "execution-repair-loop" not in parent_text:
-        errors.append("meta-orchestration/SKILL.md: missing execution repair loop child")
+        errors.append("meta-orchestration/PACK.md: missing execution repair loop child")
 
 
 def validate_execution_repair_loop_contract(errors: list[str]) -> None:
@@ -230,7 +230,7 @@ def validate_canvas2d_contract(errors: list[str]) -> None:
 def validate_bootstrap_node_expansion_contract(errors: list[str]) -> None:
     bootstrap_text = BOOTSTRAP.read_text(encoding="utf-8")
     skill = ROOT / "skills/meta-orchestration/40-qa/bootstrap-node-expansion-qa/SKILL.md"
-    parent = ROOT / "skills/meta-orchestration/SKILL.md"
+    parent = ROOT / "skills/meta-orchestration/PACK.md"
     if not skill.exists():
         errors.append("meta-orchestration bootstrap-node-expansion-qa skill missing")
         return
@@ -282,7 +282,7 @@ def validate_bootstrap_node_expansion_contract(errors: list[str]) -> None:
         if term not in bootstrap_text:
             errors.append(f"bootstrap.md: missing bootstrap node expansion term {term}")
     if "bootstrap-node-expansion-qa" not in parent_text:
-        errors.append("meta-orchestration/SKILL.md: missing bootstrap-node-expansion-qa child")
+        errors.append("meta-orchestration/PACK.md: missing bootstrap-node-expansion-qa child")
 
 
 def validate_rebootstrap_reconciliation_contract(errors: list[str]) -> None:
@@ -316,6 +316,26 @@ def validate_rebootstrap_reconciliation_contract(errors: list[str]) -> None:
             errors.append(f"reconcile_bootstrap_workflow.py: missing implementation term {term}")
 
 
+def validate_public_entrypoint_surface(errors: list[str]) -> None:
+    commands_dir = ROOT / "commands"
+    allowed_commands = {"setup.md", "bootstrap.md"}
+    actual_commands = {path.name for path in commands_dir.glob("*.md")}
+    extra_commands = sorted(actual_commands - allowed_commands)
+    missing_commands = sorted(allowed_commands - actual_commands)
+    for name in missing_commands:
+        errors.append(f"commands/{name}: required public command missing")
+    for name in extra_commands:
+        errors.append(
+            f"commands/{name}: unexpected public command; only setup/bootstrap are installed, and run is generated per project"
+        )
+
+    public_pack_skills = sorted((ROOT / "skills").glob("*/SKILL.md"))
+    for path in public_pack_skills:
+        errors.append(
+            f"{path.relative_to(ROOT)}: unexpected public pack skill; use PACK.md so internal packs do not appear in the skill picker"
+        )
+
+
 def main() -> int:
     errors: list[str] = []
     validate_capability_files(errors)
@@ -329,6 +349,7 @@ def main() -> int:
     validate_canvas2d_contract(errors)
     validate_bootstrap_node_expansion_contract(errors)
     validate_rebootstrap_reconciliation_contract(errors)
+    validate_public_entrypoint_surface(errors)
     if errors:
         for error in errors:
             print(error, file=sys.stderr)
