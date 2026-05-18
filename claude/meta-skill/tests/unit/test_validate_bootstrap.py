@@ -168,6 +168,13 @@ def test_canvas2d_game_client_mature_profile_passes(tmp_path):
         "canvas2d-gameplay-quality-qa",
         "canvas2d-performance-qa",
         "canvas2d-art-quality-qa",
+        "canvas2d-audio-registry",
+        "canvas2d-audio-style",
+        "canvas2d-sfx-spec",
+        "canvas2d-audio-generation",
+        "canvas2d-audio-system",
+        "canvas2d-audio-qa",
+        "canvas2d-runtime-audio-import",
         "canvas2d-qa-repair-loop",
         "canvas2d-concept-acceptance",
     ]
@@ -201,6 +208,20 @@ def test_canvas2d_game_client_mature_profile_passes(tmp_path):
             body += " playability solvability legal action rule invariant"
         if "performance" in node_id:
             body += " performance-qa render pressure"
+        if "audio-registry" in node_id:
+            body += " game-audio audio-registry audio ids audio manifest sfx-manifest bgm-loop-manifest"
+        if "audio-style" in node_id:
+            body += " game-audio audio-style sonic palette mix direction audio mood"
+        if "sfx-spec" in node_id:
+            body += " game-audio sfx-spec event sfx sfx source strategy sfx-source-strategy"
+        if "audio-generation" in node_id:
+            body += " game-audio sfx-procedural-generation sfx-source-adaptation bgm-loop-generation google lyria real audio files"
+        if "audio-system" in node_id:
+            body += " game-audio audio-system AudioManager Web Audio loadBGM loadSFX decoded buffer production consumer"
+        if "audio-qa" in node_id:
+            body += " game-audio audio-qa audio-loudness-qa AudioBuffer AudioContext.state decoded buffer"
+        if "runtime-audio-import" in node_id:
+            body += " game-audio runtime-audio-import engine-ready-audio-manifest runtime audio import actual playback playback validation"
         if "repair-loop" in node_id:
             body += " qa-repair-loop repair and revalidation revalidation-report"
         if "concept-acceptance" in node_id:
@@ -210,6 +231,106 @@ def test_canvas2d_game_client_mature_profile_passes(tmp_path):
     _write(tmp_path, "workflow.json", json.dumps({"nodes": nodes}))
     _write(tmp_path, "bootstrap-profile.json", json.dumps({"project_type": "game", "runtime": "Canvas2D"}))
     _write(tmp_path, "canvas2d-game-client-profile.json", json.dumps({"runtime": "Canvas2D game-client profile"}))
+
+    assert validate_canvas2d_game_client_profile_flow(str(tmp_path)) == []
+
+
+def test_canvas2d_game_client_requires_audio_closure_by_default(tmp_path):
+    node_ids = [
+        "canvas2d-runtime-core",
+        "canvas2d-interface-cards",
+        "canvas2d-asset-bundle",
+        "canvas2d-gameplay-scene",
+        "canvas2d-gameplay-system-matcher",
+        "canvas2d-browser-qa",
+        "canvas2d-visual-qa",
+        "canvas2d-gameplay-quality-qa",
+        "canvas2d-performance-qa",
+        "canvas2d-art-quality-qa",
+        "canvas2d-qa-repair-loop",
+        "canvas2d-concept-acceptance",
+    ]
+    nodes = []
+    for node_id in node_ids:
+        blockers = ["canvas2d-qa-repair-loop"] if node_id == "canvas2d-concept-acceptance" else []
+        nodes.append(
+            _base_node(
+                node_id=node_id,
+                capability="game-frontend",
+                hard_blocked_by=blockers,
+                exit_artifacts=[f".allforai/canvas/{node_id}.json"],
+            )
+        )
+        _write_node_spec(
+            tmp_path,
+            node_id,
+            "Canvas2D gameplay scene effect verification runtime evidence screenshot "
+            "module_wiring_proofs production consumer visual acceptance runtime probe "
+            "asset manifest preload fps memory performance budget legal action "
+            "interface cards public module signatures preserved_exports qa-repair-loop "
+            "concept-acceptance acceptance-report final weighted product acceptance",
+        )
+
+    _write(tmp_path, "workflow.json", json.dumps({"nodes": nodes}))
+    _write(tmp_path, "bootstrap-profile.json", json.dumps({"project_type": "game", "runtime": "Canvas2D"}))
+    _write(tmp_path, "canvas2d-game-client-profile.json", json.dumps({"runtime": "Canvas2D game-client profile"}))
+
+    errors = validate_canvas2d_game_client_profile_flow(str(tmp_path))
+
+    assert any("audio closure" in e or "audio-" in e for e in errors)
+
+
+def test_canvas2d_game_client_audio_can_be_scope_locked_out(tmp_path):
+    node_ids = [
+        "canvas2d-runtime-core",
+        "canvas2d-interface-cards",
+        "canvas2d-asset-bundle",
+        "canvas2d-gameplay-scene",
+        "canvas2d-gameplay-system-matcher",
+        "canvas2d-browser-qa",
+        "canvas2d-visual-qa",
+        "canvas2d-gameplay-quality-qa",
+        "canvas2d-performance-qa",
+        "canvas2d-art-quality-qa",
+        "canvas2d-qa-repair-loop",
+        "canvas2d-concept-acceptance",
+    ]
+    nodes = []
+    for node_id in node_ids:
+        blockers = ["canvas2d-qa-repair-loop"] if node_id == "canvas2d-concept-acceptance" else []
+        nodes.append(
+            _base_node(
+                node_id=node_id,
+                capability="game-frontend",
+                hard_blocked_by=blockers,
+                exit_artifacts=[f".allforai/canvas/{node_id}.json"],
+            )
+        )
+        _write_node_spec(
+            tmp_path,
+            node_id,
+            "Canvas2D gameplay scene effect verification runtime evidence screenshot "
+            "module_wiring_proofs production consumer visual acceptance runtime probe "
+            "asset manifest preload fps memory performance budget legal action "
+            "interface cards public module signatures preserved_exports qa-repair-loop "
+            "concept-acceptance acceptance-report final weighted product acceptance",
+        )
+
+    _write(tmp_path, "workflow.json", json.dumps({"nodes": nodes}))
+    _write(tmp_path, "bootstrap-profile.json", json.dumps({"project_type": "game", "runtime": "Canvas2D"}))
+    _write(tmp_path, "canvas2d-game-client-profile.json", json.dumps({"runtime": "Canvas2D game-client profile"}))
+    _write(
+        tmp_path,
+        "scope-lock.json",
+        json.dumps(
+            {
+                "scope_decision_id": "scope-audio-cut",
+                "excluded_feature_or_asset": "audio / SFX / BGM",
+                "approved_before_run": True,
+                "product_reason": "silent prototype",
+            }
+        ),
+    )
 
     assert validate_canvas2d_game_client_profile_flow(str(tmp_path)) == []
 

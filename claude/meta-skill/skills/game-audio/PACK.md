@@ -97,6 +97,7 @@ Dependencies flow from earlier numbered layers to later numbered layers only.
 
 ## Hard Rules
 
+- 游戏生产、发布准备、无人值守 run、可玩切片、商店包或最终验收目标下，音频默认是必需闭环，不是可选 polish。除非 `.allforai/scope-lock.json` 在实现前明确裁掉 audio/SFX/BGM，否则 bootstrap 必须展开本包的规格、生成/获取、QA 和 runtime import 节点。
 - BGM loop 使用 Google Lyria；如果 Google Lyria 不可用，返回 blocked，不用 OpenRouter 替代音频生成。
 - SFX 不默认使用音乐生成模型。简单 SFX 走程序化合成，复杂 SFX 走素材库/已有素材改造。
 - 任何音频文件进入运行时前，必须通过 loudness QA；BGM 还必须通过 loop QA。

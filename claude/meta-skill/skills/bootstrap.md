@@ -2744,7 +2744,7 @@ When `is_game_project = true` AND `has_product_concept = false`, run this abbrev
 | System Concern | Trigger Condition | Check |
 |---------------|------------------|-------|
 | Save/Load | game has progression (levels, stats, unlocks) | Is there a node covering save/load system or persistence design? If not, note as gap — document in bootstrap output as "Save system gap: game has progression but no save/load design node." |
-| Audio | any audio-related content (music, SFX) referenced in narrative/world docs | Is `audio-design` in the selected nodes? If not, suggest opt-in. |
+| Audio | game production, launch-prep, unattended run, or any music/SFX reference | Is the full `game-audio` chain covered: audio-registry, audio-style, SFX/BGM spec, source strategy/generation, loudness/loop QA, runtime-audio-import? If not, add those nodes. Only skip audio when `.allforai/scope-lock.json` approved before run removes audio/SFX/BGM from product scope. |
 | Input/Control scheme | always applicable for game projects | Is input mapping covered in core-loop-design or a dedicated node? |
 | Progression/Meta-loop | game has XP, levels, unlocks, or currency | Is `meta-game-design` or equivalent in selected nodes? |
 | Tutorial / Onboarding | game has complex mechanics (action-rpg, strategy-sim, roguelike) | Is tutorial flow mentioned in any node's scope? |
@@ -2788,7 +2788,7 @@ cover this feature? This is LLM semantic judgment, not string matching.
 | Closure Type | Check |
 |-------------|-------|
 | Save/Load Closure | Game has progression state → is there persistence/save-system implementation coverage? |
-| Audio Closure | Game references music or SFX → is audio-design or audio-implementation covered? |
+| Audio Closure | Game production requires SFX/BGM closure by default → are game-audio specification, generation/acquisition, loudness/loop QA, runtime import, event binding, and actual load/playback verification covered? Scope-lock is the only valid way to exclude audio. |
 | Progression Closure | Game has XP/levels/unlocks → is meta-game-design or progression system covered? |
 | Input Closure | Game requires player input → is controller/input scheme defined in core-loop or a dedicated node? |
 

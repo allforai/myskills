@@ -278,6 +278,57 @@ CANVAS2D_REQUIRED_FAMILIES = {
 }
 
 
+CANVAS2D_REQUIRED_AUDIO_FAMILIES = {
+    "audio-registry": (
+        "audio-registry",
+        "audio ids",
+        "audio manifest",
+        "sfx-manifest",
+        "bgm-loop-manifest",
+    ),
+    "audio-style": (
+        "audio-style",
+        "sonic palette",
+        "mix direction",
+        "audio mood",
+    ),
+    "sfx-spec": (
+        "sfx-spec",
+        "event sfx",
+        "sfx source strategy",
+        "sfx-source-strategy",
+    ),
+    "audio-generation": (
+        "sfx-procedural-generation",
+        "sfx-source-adaptation",
+        "bgm-loop-generation",
+        "google lyria",
+        "real audio files",
+    ),
+    "audio-system": (
+        "audio-system",
+        "audiomanager",
+        "web audio",
+        "loadbgm",
+        "loadsfx",
+    ),
+    "audio-qa": (
+        "audio-qa",
+        "audio-loudness-qa",
+        "audiobuffer",
+        "audiocontext.state",
+        "decoded buffer",
+    ),
+    "runtime-audio-import": (
+        "runtime-audio-import",
+        "engine-ready-audio-manifest",
+        "runtime audio import",
+        "actual playback",
+        "playback validation",
+    ),
+}
+
+
 VISIBLE_GAME_RUNTIME_TERMS = (
     "game-frontend",
     "game-ui",
@@ -578,6 +629,30 @@ def _contains_any(blob: str, terms: tuple[str, ...]) -> bool:
     return any(term in blob for term in terms)
 
 
+def _scope_lock_excludes_audio(bdir: str) -> bool:
+    """Return true only when a project-level scope lock explicitly cuts audio."""
+    candidates = [
+        os.path.join(bdir, "scope-lock.json"),
+        os.path.join(os.path.dirname(bdir), "scope-lock.json"),
+        os.path.join(os.path.dirname(os.path.dirname(bdir)), ".allforai", "scope-lock.json"),
+    ]
+    for path in candidates:
+        if not os.path.exists(path):
+            continue
+        try:
+            data = _load_json(path)
+        except Exception:
+            continue
+        blob = _lower_blob(data)
+        if (
+            ("audio" in blob or "sfx" in blob or "bgm" in blob or "音效" in blob or "音乐" in blob)
+            and "approved_before_run" in blob
+            and "true" in blob
+        ):
+            return True
+    return False
+
+
 def _canvas2d_game_client_detected(bdir: str, workflow: dict) -> bool:
     """Detect project-local Canvas2D/Web Canvas game clients."""
     blob = _workflow_and_specs_blob(bdir, workflow)
@@ -726,11 +801,9 @@ def validate_canvas2d_game_client_profile_flow(bdir: str) -> list:
         if not _family_present(workflow, specs_dir, terms):
             missing_families.append(family)
 
-    if _contains_any(blob, CANVAS2D_AUDIO_TERMS):
-        for family, terms in {
-            "audio-system": ("audio-system", "audiomanager", "web audio", "loadbgm", "loadsfx"),
-            "audio-qa": ("audio-qa", "audiobuffer", "audiocontext.state", "decoded buffer"),
-        }.items():
+    audio_scope_locked = _scope_lock_excludes_audio(bdir)
+    if not audio_scope_locked:
+        for family, terms in CANVAS2D_REQUIRED_AUDIO_FAMILIES.items():
             if not _family_present(workflow, specs_dir, terms):
                 missing_families.append(family)
 
@@ -753,6 +826,11 @@ def validate_canvas2d_game_client_profile_flow(bdir: str) -> list:
         errors.append(
             "workflow.json: Canvas2D game client workflow missing required "
             f"profile families {sorted(set(missing_families))}"
+        )
+    if not audio_scope_locked and not _contains_any(blob, ("game-audio", "runtime-audio-import")):
+        errors.append(
+            "workflow.json: Canvas2D game production requires a full audio closure "
+            "chain unless .allforai/scope-lock.json explicitly excludes audio before run"
         )
 
     qa_nodes = [
