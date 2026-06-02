@@ -63,7 +63,7 @@ test('exports schemas and functions', () => {
   assert.equal(core.DAG_SCHEMA.type, 'object')
   assert.equal(core.NODE_RESULT_SCHEMA.type, 'object')
   assert.equal(core.EXPAND_SCHEMA.type, 'object')
-  for (const fn of ['computeReady','routeOutcome','mergeExpanded','pickExit','convergenceCheck','runNode','commitNode','runEngine']) {
+  for (const fn of ['computeReady','routeOutcome','mergeExpanded','pickExit','convergenceCheck','serializeCommit','runNode','commitNode','runEngine']) {
     assert.equal(typeof core[fn], 'function', `missing ${fn}`)
   }
 })
@@ -100,7 +100,8 @@ const DAG_SCHEMA = {
         soft_retry_max: { type: 'integer' }
       } } },
     completed: { type: 'array', items: { type: 'string' } },
-    expanders: { type: 'array', items: { type: 'string' } }
+    expanders: { type: 'array', items: { type: 'string' } },
+    applied_expanders: { type: 'array', items: { type: 'string' } } // fix C5: cross-session double-expansion guard
   }
 }
 
@@ -112,6 +113,7 @@ const NODE_RESULT_SCHEMA = {
     outcome: { type: 'string', enum: ['passed', 'soft_fail', 'hard_fail'] },
     artifacts_written: { type: 'array', items: { type: 'string' } },
     blocking_findings: { type: 'array', items: { type: 'object' } },
+    assumed_decisions: { type: 'array', items: { type: 'object' } }, // fix C1: engine persists these, not the subagent
     summary: { type: 'string' }
   }
 }
@@ -126,11 +128,11 @@ const EXPAND_SCHEMA = {
 module.exports = {
   DAG_SCHEMA, NODE_RESULT_SCHEMA, EXPAND_SCHEMA,
   computeReady, routeOutcome, mergeExpanded, pickExit, convergenceCheck,
-  runNode, commitNode, runEngine
+  serializeCommit, runNode, commitNode, runEngine
 }
 ```
 
-Then add stub function declarations ABOVE `module.exports` but INSIDE the markers is wrong — instead place them inside the marker region. For this task, add minimal stubs inside the marker block (just before `// <<<ENGINE-CORE-END>>>`):
+Add minimal stubs inside the marker block (just before `// <<<ENGINE-CORE-END>>>`):
 
 ```js
 function computeReady() { return [] }
@@ -138,6 +140,7 @@ function routeOutcome() { return 'soft' }
 function mergeExpanded(nodes) { return nodes }
 function pickExit() { return 'complete' }
 function convergenceCheck() { return false }
+function serializeCommit(fn) { return Promise.resolve().then(fn) }
 async function runNode() {}
 async function commitNode() {}
 async function runEngine() { return { status: 'complete' } }
@@ -764,17 +767,49 @@ test('runEngine: expander adds a node that then runs', async () => {
   assert.equal(res.status, 'complete')
   assert.equal(agent.counters.b, 1) // expanded node executed
 })
+
+test('runEngine: applied_expanders are NOT re-run (fix C5)', async () => {
+  const dag = { nodes: [
+    { node_id: 'a', capability: 'x', hard_blocked_by: [], exit_artifacts: [] }
+  ], completed: ['a'], expanders: ['mk_b'], applied_expanders: ['mk_b'] }
+  const agent = makeFakeAgent({ 'load-dag': dag })
+  const res = await core.runEngine({ agent, pipeline })
+  assert.equal(res.status, 'complete')
+  assert.equal(agent.counters['expand:mk_b'], undefined) // already applied -> skipped
+})
+
+test('runEngine: stuck graph -> needs_diagnosis with synthesized deadlock (fix C3)', async () => {
+  const dag = { nodes: [
+    { node_id: 'a', capability: 'x', hard_blocked_by: ['ghost'], exit_artifacts: [] }
+  ], completed: [] }
+  const agent = makeFakeAgent({ 'load-dag': dag })
+  const res = await core.runEngine({ agent, pipeline })
+  assert.equal(res.status, 'needs_diagnosis')
+  assert.equal(res.hardFailures.length, 1)
+  assert.equal(res.hardFailures[0].blocking_findings[0].type, 'deadlock')
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `node --test claude/meta-skill/knowledge/run-engine/tests/engine-integration.test.js`
-Expected: FAIL — `runEngine` stub returns `{status:'complete'}` but never calls commit/expand (counter assertions fail).
+Expected: FAIL — `runEngine` stub returns `{status:'complete'}` but never calls commit/expand (counter + status assertions fail).
 
 - [ ] **Step 3: Write implementation** (replace `commitNode` + `runEngine` stubs inside the marker block)
 
+Also **replace the `serializeCommit` stub** (from Task 1) with the real serialized queue, and add the module-level queue var just before it:
+
 ```js
+let _commitQueue = Promise.resolve()
+function serializeCommit(fn) {           // fix C1: physical commits never overlap
+  const next = _commitQueue.then(fn, fn) // chain regardless of prior outcome
+  _commitQueue = next.then(() => {}, () => {})
+  return next
+}
+
 async function commitNode(result, agent, done) {
+  // The commit agent appends transition_log + any result.assumed_decisions to
+  // assumed-decisions.json (real prompt wired in Plan 2). Engine persists; subagent does not.
   await agent(`commit:${result.node_id}`, { label: `commit:${result.node_id}` })
   done.add(result.node_id)
 }
@@ -783,11 +818,14 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
   phase('Load')
   const dag = await agent('load workflow.json into DAG_SCHEMA', { schema: DAG_SCHEMA, label: 'load-dag' })
   const done = new Set(dag.completed || [])
+  const applied = new Set(dag.applied_expanders || [])   // fix C5
 
   phase('Expand')
   for (const exp of (dag.expanders || [])) {
+    if (applied.has(exp)) continue                        // fix C5: don't re-run on resume
     const r = await agent(`run expander ${exp}; return new_nodes`, { schema: EXPAND_SCHEMA, label: `expand:${exp}` })
     dag.nodes = mergeExpanded(dag.nodes, (r && r.new_nodes) || [])
+    applied.add(exp)
   }
 
   phase('Execute')
@@ -799,7 +837,7 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
       ready,
       node => runNode(node, agent),
       result => routeOutcome(result) === 'done'
-        ? commitNode(result, agent, done).then(() => result)
+        ? serializeCommit(() => commitNode(result, agent, done)).then(() => result)  // fix C1: serialized
         : result,
       result => routeOutcome(result) === 'done' ? null : result
     )
@@ -810,14 +848,23 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
     }
   }
   const remaining = dag.nodes.filter(n => !done.has(n.node_id))
-  return { status: pickExit(remaining, []) }
+  if (pickExit(remaining, []) === 'needs_diagnosis') {
+    // fix C3: stuck graph (cycle / missing dep) — synthesize a deadlock failure so the
+    // /run handler always receives a non-empty hardFailures[].
+    return { status: 'needs_diagnosis', hardFailures: [{
+      node_id: remaining[0].node_id, outcome: 'hard_fail',
+      blocking_findings: [{ type: 'deadlock',
+        detail: `stuck: ${remaining.map(n => n.node_id).join(',')} unreachable (cycle or missing dep)` }]
+    }] }
+  }
+  return { status: 'complete' }
 }
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `node --test claude/meta-skill/knowledge/run-engine/tests/engine-integration.test.js`
-Expected: PASS (3 tests).
+Expected: PASS (5 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -921,14 +968,38 @@ test('L2.4 mid-batch commit does not corrupt the in-flight batch', async () => {
   assert.equal(agent.counters.B, 1)
   assert.equal(agent.counters.C, 1) // C ran exactly once — never re-queued by a recompute
 })
+
+test('L2.5 commit serialization: second commit waits for the first (fix C1)', async () => {
+  // Two passing siblings; gate the first commit so we can observe the second has not started.
+  const firstCommit = makeDeferred()
+  const started = []
+  const agent = makeFakeAgent({
+    'load-dag': { nodes: [
+      { node_id: 'A', capability: 'x', hard_blocked_by: [], exit_artifacts: [] },
+      { node_id: 'B', capability: 'x', hard_blocked_by: [], exit_artifacts: [] }
+    ], completed: [] },
+    A: passed('A'), B: passed('B'),
+    'commit:A': (i, p) => { started.push('A'); return firstCommit.promise },
+    'commit:B': (i, p) => { started.push('B'); return {} }
+  })
+  const run = core.runEngine({ agent, pipeline })
+  await new Promise(r => setImmediate(r))
+  // Only the first commit may have started; B's commit must be queued behind it.
+  assert.deepEqual(started, ['A'])
+  firstCommit.resolve({})
+  await run
+  assert.deepEqual(started, ['A', 'B']) // serialized order
+})
 ```
+
+(Spec §7 Layer 2 assertion 6 — stuck-graph deadlock — is already covered by the `runEngine: stuck graph` test in Task 10.)
 
 - [ ] **Step 2: Run test to verify it fails (or passes)**
 
 Run: `node --test claude/meta-skill/knowledge/run-engine/tests/engine-integration.test.js`
-Expected: PASS — the engine from Task 10 already satisfies these. (If any fail, the engine logic — not the test — is wrong; fix `runEngine`/`runNode` until green. These four assertions are the core acceptance criteria from the spec §7 Layer 2.)
+Expected: PASS — the engine from Task 10 already satisfies L2.1–L2.5. (If any fail, the engine logic — not the test — is wrong; fix `runEngine`/`runNode` until green. These are the core acceptance criteria from spec §7 Layer 2.)
 
-- [ ] **Step 3: (No new implementation expected.)** If L2.4 reveals the batch is recomputed mid-flight, confirm `computeReady` is called only at the top of the `while` loop (it is, in Task 10). No code change should be needed.
+- [ ] **Step 3: (No new implementation expected.)** If L2.4 reveals the batch is recomputed mid-flight, confirm `computeReady` is called only at the top of the `while` loop (it is, in Task 10). If L2.5 fails, confirm `serializeCommit` chains onto `_commitQueue` (Task 10). No code change should be needed.
 
 - [ ] **Step 4: Run the full test dir**
 
@@ -1071,9 +1142,11 @@ Run inside a real Claude Code session (the Workflow tool requires the harness).
 Token cost is acceptable: this tests the engine, not a user project.
 
 ## Setup
-1. Ensure `.allforai/_l3/decision-n4.json` EXISTS (Phase A would have produced it):
+1. Stage the fixture at the engine's canonical path (fix R2 — `loadDagPrompt` reads
+   `.allforai/bootstrap/workflow.json`, NOT the fixtures dir):
+   `mkdir -p .allforai/bootstrap .allforai/_l3 && cp claude/meta-skill/knowledge/run-engine/tests/fixtures/mini-workflow.json .allforai/bootstrap/workflow.json`
+2. Ensure `.allforai/_l3/decision-n4.json` EXISTS (Phase A would have produced it):
    `{"decision":"variant-A","rationale":"L3 fixture preset"}`
-2. The load-DAG agent should read `tests/fixtures/mini-workflow.json` as the DAG.
 3. Node subagents are "noop": each writes its `exit_artifacts` path with `{"ok":true}` and returns
    `{node_id, outcome:"passed", artifacts_written:[...], blocking_findings:[]}` — EXCEPT the seeded behaviors below.
 
@@ -1166,7 +1239,7 @@ Expected: shows the current plugin/marketplace versions and the bootstrap body v
 
 - [ ] **Step 2: Bump all three (minor — new engine subsystem)**
 
-Edit `claude/meta-skill/.claude-plugin/plugin.json` and `claude/meta-skill/.claude-plugin/marketplace.json`: increment the middle version number (e.g. `0.8.11` → `0.9.0`). Edit the bootstrap skill's version marker to match. Use the SAME version string in all three. (Per repo discipline: versions live in 3 places and drift easily.)
+Edit `claude/meta-skill/.claude-plugin/plugin.json` and `claude/meta-skill/.claude-plugin/marketplace.json`: increment the middle version number (e.g. `0.8.11` → `0.9.0`). **Add a `version:` field to `skills/bootstrap.md` YAML frontmatter** set to the same string (fix R3 — the frontmatter `version:` is now the canonical third location; if a body header `# Bootstrap Protocol vX.Y.Z` exists, demote it to a non-authoritative comment). Use the SAME version string in all three. (Per repo discipline: versions live in 3 places and drift easily.)
 
 - [ ] **Step 3: Verify they match**
 
@@ -1207,7 +1280,12 @@ git commit -m "chore(meta-skill): bump version for run-engine Plan 1"
 | §3.2 `knowledge/run-engine/` naming (avoid `engines/`) | all tasks |
 | §3.3.1 CC-superset fields in schema | Task 1 |
 | §3.3.2 idempotency (completed skip) | Task 10 (idempotent test) |
-| §7 DoD version bump (3 locations) | Task 15 |
+| §7 DoD version bump (3 locations, R3 frontmatter) | Task 15 |
+| §8.1 C1 serialized commit + assumed_decisions | Tasks 1, 10, 11 (L2.5) |
+| §8.1 C2 repair-cascade closure | **Plan 2** (Python `compute_reset_closure.py` — repair runs in the /run main loop, not the JS engine) |
+| §8.1 C3 stuck-graph deadlock exit | Tasks 10, 11 (L2.6) |
+| §8.1 C5 applied_expanders skip | Tasks 1, 10 |
+| §8.1 R2 L3 fixture at canonical path | Task 13 |
 
 **Deferred to Plan 2/3 (intentionally NOT in this plan):** load-DAG/expander/commit *agents'* real prompts + file I/O (Plan 2 wires real agents; Plan 1 uses fakes), `/run` skill exit-handling + diagnosis resume (§4.5, Plan 2), bootstrap emitting superset fields + `expanders` list (§9, Plan 2), G0/A0/Phase A audits (§4.6–4.8, Plan 3), `human_gate`→`decision_inputs` migration in bootstrap (Plan 2), Codex/OpenCode superset-ignore check (Plan 2).
 

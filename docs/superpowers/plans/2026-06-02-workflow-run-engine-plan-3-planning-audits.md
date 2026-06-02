@@ -63,14 +63,18 @@ class TestDecisionCoverage(unittest.TestCase):
     def test_valid(self):
         ok, errs = validate_decision_coverage({
             "captured": [{"id": "art-style", "node_id": "ui"}],
-            "missing": [{"id": "tone", "rationale": "implied by concept, no node"}]
+            "missing": [{"id": "tone", "rationale": "implied by concept, no node", "consumer_node": "copy"}]
         })
         self.assertTrue(ok, errs)
 
-    def test_missing_entry_requires_rationale(self):
+    def test_missing_entry_requires_rationale_and_consumer(self):
         ok, errs = validate_decision_coverage({"captured": [], "missing": [{"id": "tone"}]})
         self.assertFalse(ok)
         self.assertIn("rationale", " ".join(errs))
+        # fix C4: a missing decision must name the node that will consume it
+        ok2, errs2 = validate_decision_coverage({"captured": [], "missing": [{"id": "tone", "rationale": "x"}]})
+        self.assertFalse(ok2)
+        self.assertIn("consumer_node", " ".join(errs2))
 
 class TestDecisionArtifact(unittest.TestCase):
     def test_valid(self):
@@ -128,6 +132,8 @@ def validate_decision_coverage(obj):
             errs.append("missing-entry needs 'id'")
         if "rationale" not in m:
             errs.append("missing-entry needs 'rationale'")
+        if "consumer_node" not in m:  # fix C4: wire decision to its consumer
+            errs.append("missing-entry needs 'consumer_node'")
     return (len(errs) == 0, errs)
 
 
@@ -192,6 +198,9 @@ Validate with `validate_decision_artifact` before moving to the next decision.
 
 ## Hard rules
 - One question per message.
+- **Fork cap (fix L2): at most 3 follow-up forks per decision.** If a decision hasn't
+  converged after 3 forks, pick the leading option, record it with a "low-confidence" note,
+  and move on — never loop indefinitely on one decision.
 - Generation-before: this runs BEFORE the node that consumes the decision.
 - Stay in `/bootstrap`; `/run` must never reach a brainstorming step.
 ```
@@ -286,13 +295,15 @@ Runs after G0 (over the right-sized graph), before Phase A. Dual-angle; union re
   marked `decision_mode: "brainstorm"`.
 
 Union the two; write `.allforai/bootstrap/decision-coverage.json`:
-`{ "captured": [{id, node_id}], "missing": [{id, rationale}] }`.
+`{ "captured": [{id, node_id}], "missing": [{id, rationale, consumer_node}] }`.
+**Every `missing` entry MUST name its `consumer_node`** (fix C4 — which node will read this
+decision); a decision with no consumer is a planning error, not a decision.
 
 Validate:
 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/validate_audit_outputs.py decision-coverage .allforai/bootstrap/decision-coverage.json`
 
 Fold every `missing` entry into the Phase A decision queue (and set `decision_mode:
-"brainstorm"` + the future `decision_inputs` path on the node that will consume it).
+"brainstorm"` + the future `decision_inputs` path on its `consumer_node`).
 ```
 
 - [ ] **Step 2: Verify**
@@ -328,9 +339,17 @@ one question at a time, intent → 2–3 options with tradeoffs → incremental 
 write `.allforai/<domain>/decision-<id>.json` and validate it:
 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/validate_audit_outputs.py decision .allforai/<domain>/decision-<id>.json`
 
+**Wire it (fix C4):** after writing each decision artifact, set the `consumer_node`'s
+`decision_inputs` to include that artifact's path in `workflow.json`. (The final invariant
+gate then verifies both directions: no missing, no orphan.)
+
+**G0 overturn → re-audit (fix R1):** Phase A also presents G0's batched restructure
+confirmations. If the user OVERTURNS a G0 split/merge, the node set changed, so **re-run A0**
+on the corrected graph (decision coverage may have shifted) before finalizing the queue.
+
 Generation-before: each decision is gathered BEFORE the node that consumes it (the node
 references it via `decision_inputs`). When the queue is empty, every decision artifact is
-on disk — proceed to the final invariant gate. `/run` will be fully autonomous.
+on disk and wired — proceed to the final invariant gate. `/run` will be fully autonomous.
 ```
 
 - [ ] **Step 2: Confirm the four-step order now reads G0 → A0 → Phase A → invariant gate**
@@ -423,7 +442,7 @@ Run: `grep -n '"version"' claude/meta-skill/.claude-plugin/plugin.json claude/me
 
 - [ ] **Step 2: Bump all three (minor — Plan 3 completes the feature)**
 
-Increment the minor digit consistently (e.g. `0.9.1` → `0.10.0`). Same string in all three.
+Increment the minor digit consistently across `plugin.json`, `marketplace.json`, and the `version:` field in `skills/bootstrap.md` frontmatter (fix R3) — e.g. `0.9.1` → `0.10.0`. Same string in all three.
 
 - [ ] **Step 3: Verify match**
 
@@ -460,7 +479,10 @@ git commit -m "chore(meta-skill): bump version for run-engine Plan 3 (feature co
 | §3.1 ordering G0 → A0 → Phase A → invariant gate | Task 5 Step 2 |
 | §6 audit artifact contracts | Task 1 |
 | §1.2 all interaction in bootstrap; none in /run | Task 5 Step 3 |
-| §7 DoD version bump + full regression | Task 7 |
+| §8.1 L2 brainstorming-lite fork cap (≤3) | Task 2 |
+| §8.1 C4 consumer_node + wiring in Phase A | Tasks 1, 4, 5 |
+| §8.1 R1 re-run A0 on G0 overturn | Task 5 |
+| §7 DoD version bump (R3 frontmatter) + full regression | Task 7 |
 
 **Cross-plan closure:** Plan 2 Task 2's invariant (`check_decision_inputs`) consumes exactly the `decision-<id>.json` artifacts Plan 3 Task 5 produces — the loop is closed. Plan 2 Task 4 sets `decision_mode`/`decision_inputs`; Plan 3 A0/Phase A populate the decisions those fields point to.
 

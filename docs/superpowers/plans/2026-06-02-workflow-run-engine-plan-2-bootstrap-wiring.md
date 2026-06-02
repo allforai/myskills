@@ -19,7 +19,8 @@
 | `claude/meta-skill/knowledge/run-engine/engine-core.js` | Modify | Add prompt-builder fns (`loadDagPrompt`, `expandPrompt`, `runNodePrompt`, `commitPrompt`, `commitFailuresPrompt`); `runEngine` uses them. |
 | `claude/meta-skill/knowledge/run-engine/run-engine.workflow.js` | Modify | Re-sync inlined region after engine-core change. |
 | `claude/meta-skill/knowledge/run-engine/tests/prompts.test.js` | Create | Assert each prompt builder includes its required references. |
-| `shared/scripts/orchestrator/check_decision_inputs.py` | Create | Bootstrap-time invariant: every node `decision_inputs` artifact exists on disk. |
+| `shared/scripts/orchestrator/check_decision_inputs.py` | Create | Bootstrap-time invariant: every node `decision_inputs` artifact exists + no orphan decisions (fix C4). |
+| `shared/scripts/orchestrator/compute_reset_closure.py` | Create | Repair-cascade closure for diagnosis reset (fix C2). |
 | `shared/scripts/orchestrator/test_check_decision_inputs.py` | Create | Tests for the invariant check. |
 | `shared/scripts/orchestrator/test_superset_tolerance.py` | Create | Assert `validate_bootstrap.py` / `check_requires.py` tolerate unknown superset fields. |
 | `claude/meta-skill/skills/bootstrap.md` | Modify | Emit superset fields in node generation; convert `human_gate`→`decision_inputs`; emit `expanders` list; run the invariant check before declaring bootstrap done. |
@@ -69,8 +70,16 @@ test('runNodePrompt includes node_spec_path, decision_inputs, no-placeholder rul
   assert.match(p, /\[retry 1\]/)         // strictness suffix threaded through
 })
 
-test('commitPrompt and commitFailuresPrompt reference the right log targets', () => {
-  assert.match(core.commitPrompt({ node_id: 'a', artifacts_written: ['x'] }), /transition_log/)
+test('commitPrompt references transition_log AND persists assumed_decisions (fix C1)', () => {
+  const p = core.commitPrompt({ node_id: 'a', artifacts_written: ['x'], assumed_decisions: [{ id: 'tone', decision: 'warm' }] })
+  assert.match(p, /transition_log/)
+  assert.match(p, /assumed-decisions\.json/)
+})
+test('runNodePrompt tells the subagent to RETURN assumed_decisions, not write them (fix C1)', () => {
+  const p = core.runNodePrompt({ node_id: 'n', node_spec_path: 's.md' }, '')
+  assert.match(p, /assumed_decisions/)
+})
+test('commitFailuresPrompt references diagnosis_history', () => {
   assert.match(core.commitFailuresPrompt([{ node_id: 'c' }]), /diagnosis_history/)
 })
 ```
@@ -115,19 +124,24 @@ function runNodePrompt(node, strict) {
     'Write all exit_artifacts and run their validation_commands to self-check.',
     cv.length ? `Additionally run closure verification for: ${cv.join(', ')}.` : '',
     'STRICTLY forbid placeholder / stub / debug-residue / pure-color placeholder outputs.',
+    'If you must assume an unforeseen emergent decision, pick a sensible default and RETURN it in',
+    'assumed_decisions: [{id, decision, default_chosen, rationale}] — do NOT write any file yourself',
+    '(the engine persists it during the serialized commit).',
     'Return a NODE_RESULT { node_id, outcome (passed|soft_fail|hard_fail), artifacts_written,',
-    'blocking_findings: [{type, detail, suspected_root_node?}] }. Attach suspected_root_node when the',
-    'root cause is in another node.',
+    'blocking_findings: [{type, detail, suspected_root_node?}], assumed_decisions? }. Attach',
+    'suspected_root_node when the root cause is in another node.',
     strict || ''
   ].filter(Boolean).join(' ')
 }
 
 function commitPrompt(result) {
+  const ad = result.assumed_decisions || []
   return [
     `Append to .allforai/bootstrap/workflow.json transition_log: node_id ${result.node_id},`,
     `status "completed", artifacts_created ${JSON.stringify(result.artifacts_written || [])}.`,
+    ad.length ? `Also append these to .allforai/bootstrap/assumed-decisions.json: ${JSON.stringify(ad)}.` : '',
     'Append only; do not touch other entries.'
-  ].join(' ')
+  ].filter(Boolean).join(' ')
 }
 
 function commitFailuresPrompt(hardFailures) {
@@ -206,6 +220,13 @@ class TestCheckDecisionInputs(unittest.TestCase):
         wf = self._wf([{"node_id": "a"}, {"node_id": "b", "decision_inputs": []}])
         self.assertEqual(check_decision_inputs(wf, base_dir="/tmp"), [])
 
+    def test_orphan_decision_detected(self):
+        from check_decision_inputs import find_orphan_decisions
+        wf = self._wf([{"node_id": "a", "decision_inputs": ["d/decision-x.json"]}])
+        # decision-y.json was gathered but no node references it -> orphan (fix C4)
+        orphans = find_orphan_decisions(wf, ["d/decision-x.json", "d/decision-y.json"])
+        self.assertEqual(orphans, ["d/decision-y.json"])
+
 if __name__ == "__main__":
     unittest.main()
 ```
@@ -239,18 +260,35 @@ def check_decision_inputs(workflow, base_dir="."):
     return missing
 
 
+def find_orphan_decisions(workflow, decision_paths):
+    """Fix C4 (reverse direction): every gathered decision-*.json must be referenced by
+    >=1 node's decision_inputs. Return decision paths that no node consumes."""
+    referenced = set()
+    for node in workflow.get("nodes", []):
+        for path in node.get("decision_inputs", []) or []:
+            referenced.add(os.path.normpath(path))
+    return [p for p in decision_paths if os.path.normpath(p) not in referenced]
+
+
 def main(argv):
+    import glob
     base = argv[1] if len(argv) > 1 else "."
     wf_path = os.path.join(base, ".allforai/bootstrap/workflow.json")
     with open(wf_path) as f:
         workflow = json.load(f)
     missing = check_decision_inputs(workflow, base_dir=base)
-    if missing:
-        print("BLOCKED: missing decision_inputs artifacts (Phase A incomplete):")
+    # Orphan direction (fix C4): every gathered decision-*.json must be referenced by a node.
+    gathered = [os.path.relpath(p, base) for p in
+                glob.glob(os.path.join(base, ".allforai/**/decision-*.json"), recursive=True)]
+    orphans = find_orphan_decisions(workflow, gathered)
+    if missing or orphans:
+        print("BLOCKED: decision wiring incomplete:")
         for m in missing:
-            print(f"  - {m['node_id']}: {m['missing']}")
+            print(f"  - missing: {m['node_id']} -> {m['missing']}")
+        for o in orphans:
+            print(f"  - orphan (unwired): {o}")
         return 1
-    print("OK: all decision_inputs artifacts present")
+    print("OK: decision_inputs present and every decision is wired to a consumer")
     return 0
 
 
@@ -267,7 +305,108 @@ Expected: PASS (3 tests).
 
 ```bash
 git add shared/scripts/orchestrator/check_decision_inputs.py shared/scripts/orchestrator/test_check_decision_inputs.py
-git commit -m "feat(orchestrator): bootstrap-time decision_inputs existence invariant"
+git commit -m "feat(orchestrator): bootstrap-time decision_inputs + orphan-decision invariant"
+```
+
+---
+
+## Task 2b: `compute_reset_closure.py` — repair-cascade closure (fix C2)
+
+The `/run` diagnosis step resets a root-cause node; this helper computes the **transitive
+downstream** that must also reset, so no consumer runs on stale upstream.
+
+**Files:**
+- Create: `shared/scripts/orchestrator/compute_reset_closure.py`
+- Create: `shared/scripts/orchestrator/test_compute_reset_closure.py`
+
+- [ ] **Step 1: Write the failing test**
+
+Create `shared/scripts/orchestrator/test_compute_reset_closure.py`:
+
+```python
+import unittest
+from compute_reset_closure import reset_closure
+
+NODES = [
+    {"node_id": "n1", "hard_blocked_by": []},
+    {"node_id": "n2", "hard_blocked_by": ["n1"]},
+    {"node_id": "n3", "hard_blocked_by": ["n2"]},
+    {"node_id": "x",  "hard_blocked_by": []},
+]
+
+class TestResetClosure(unittest.TestCase):
+    def test_transitive_downstream(self):
+        self.assertEqual(sorted(reset_closure(NODES, ["n1"])), ["n1", "n2", "n3"])
+
+    def test_unrelated_untouched(self):
+        self.assertEqual(sorted(reset_closure(NODES, ["x"])), ["x"])
+
+    def test_diamond(self):
+        nodes = [
+            {"node_id": "a", "hard_blocked_by": []},
+            {"node_id": "b", "hard_blocked_by": ["a"]},
+            {"node_id": "c", "hard_blocked_by": ["a"]},
+            {"node_id": "d", "hard_blocked_by": ["b", "c"]},
+        ]
+        self.assertEqual(sorted(reset_closure(nodes, ["a"])), ["a", "b", "c", "d"])
+
+if __name__ == "__main__":
+    unittest.main()
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `cd shared/scripts/orchestrator && python3 -m unittest test_compute_reset_closure -v`
+Expected: FAIL — `No module named 'compute_reset_closure'`.
+
+- [ ] **Step 3: Write implementation**
+
+Create `shared/scripts/orchestrator/compute_reset_closure.py`:
+
+```python
+"""Fix C2: when diagnosis resets a root-cause node, every node transitively
+downstream (via hard_blocked_by) must also reset, else it runs on stale upstream."""
+import json
+import sys
+
+
+def reset_closure(nodes, root_ids):
+    reset = set(root_ids)
+    changed = True
+    while changed:
+        changed = False
+        for n in nodes:
+            nid = n.get("node_id")
+            if nid in reset:
+                continue
+            if any(dep in reset for dep in n.get("hard_blocked_by", []) or []):
+                reset.add(nid)
+                changed = True
+    return list(reset)
+
+
+def main(argv):
+    # argv: workflow.json path, then one or more root node_ids
+    wf = json.load(open(argv[1]))
+    roots = argv[2:]
+    print(json.dumps(reset_closure(wf.get("nodes", []), roots)))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `cd shared/scripts/orchestrator && python3 -m unittest test_compute_reset_closure -v`
+Expected: PASS (3 tests).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add shared/scripts/orchestrator/compute_reset_closure.py shared/scripts/orchestrator/test_compute_reset_closure.py
+git commit -m "feat(orchestrator): compute_reset_closure for repair cascade (fix C2)"
 ```
 
 ---
@@ -389,9 +528,11 @@ At the end of the bootstrap protocol (after node-specs + decisions are written, 
 
 Before declaring bootstrap complete, run:
 `python3 ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/orchestrator/check_decision_inputs.py <project_base>`
-(or the plugin-local copy under `scripts/`). If it reports BLOCKED, the corresponding
-Phase A decision was not gathered — return to Phase A for those node_ids. `/run` must
-not be offered until this check returns OK.
+(or the plugin-local copy under `scripts/`). This checks BOTH closure directions (fix C4):
+every node's `decision_inputs` artifact exists, AND every gathered `decision-*.json` is
+referenced by ≥1 node (no orphan decisions). If it reports BLOCKED, either a Phase A decision
+was not gathered (missing) or a gathered decision was not wired to a consumer (orphan) — return
+to Phase A. `/run` must not be offered until this check returns OK.
 ```
 
 - [ ] **Step 4: Fixture round-trip validation**
@@ -449,13 +590,18 @@ Replace the "execution loop" portion of the template with this (verbatim):
    (read `.allforai/bootstrap/assumed-decisions.json` + any UNRESOLVED) and stop.
 
 3. On `needs_diagnosis`:
-   a. Read `hardFailures` + `workflow.json` `diagnosis_history`.
-   b. Run `${CLAUDE_PLUGIN_ROOT}/knowledge/diagnosis.md`: locate the root-cause node
+   a. Read `hardFailures` (always non-empty — a stuck graph carries a synthesized `deadlock`
+      finding) + `workflow.json` `diagnosis_history`.
+   b. GLOBAL cap (fix L1): if total entries in `diagnosis_history` ≥ 5, mark UNRESOLVED and
+      stop — this catches oscillating root causes the per-cause cap misses.
+   c. Run `${CLAUDE_PLUGIN_ROOT}/knowledge/diagnosis.md`: locate the root-cause node
       (use `suspected_root_node` when present). This is autonomous — never ask the user.
-   c. Convergence cap: if the same root cause already appears ≥2 times in
-      `diagnosis_history`, mark it UNRESOLVED, write best-effort output + TODO, and stop.
-   d. Otherwise apply the repair plan: remove the root-cause node_id(s) from the
-      `transition_log` completed set, then RESUME the engine
+   d. Per-cause cap: if the same root cause already appears ≥2 times in `diagnosis_history`,
+      mark it UNRESOLVED, write best-effort output + TODO, and stop.
+   e. Otherwise apply the repair plan WITH CASCADE (fix C2):
+      `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/compute_reset_closure.py .allforai/bootstrap/workflow.json <root_id...>`
+      → remove the returned closure (root + transitive downstream) from the `transition_log`
+      completed set, then RESUME the engine
       (same session: resumeFromRunId; cross-session: re-invoke — workflow.json idempotency
       skips already-completed nodes).
 
@@ -523,8 +669,8 @@ Expected: `frontmatter ok`
 
 Plugins reference `${CLAUDE_PLUGIN_ROOT}/scripts/`. Copy the invariant check into the plugin's own scripts dir (the repo keeps plugin-local copies of shared scripts):
 
-Run: `mkdir -p claude/meta-skill/scripts && cp shared/scripts/orchestrator/check_decision_inputs.py claude/meta-skill/scripts/check_decision_inputs.py && ls claude/meta-skill/scripts/check_decision_inputs.py`
-Expected: the path is listed.
+Run: `mkdir -p claude/meta-skill/scripts && cp shared/scripts/orchestrator/check_decision_inputs.py shared/scripts/orchestrator/compute_reset_closure.py claude/meta-skill/scripts/ && ls claude/meta-skill/scripts/check_decision_inputs.py claude/meta-skill/scripts/compute_reset_closure.py`
+Expected: both paths are listed (compute_reset_closure.py is referenced by the orchestrator template's repair step).
 
 - [ ] **Step 4: Confirm the copy runs**
 
@@ -534,8 +680,8 @@ Expected: `OK` + `exit=0` (the fixture from Task 4 still has its artifact).
 - [ ] **Step 5: Commit**
 
 ```bash
-git add claude/meta-skill/commands/run.md claude/meta-skill/scripts/check_decision_inputs.py
-git commit -m "feat(meta-skill): /run command entry + plugin-local invariant check"
+git add claude/meta-skill/commands/run.md claude/meta-skill/scripts/check_decision_inputs.py claude/meta-skill/scripts/compute_reset_closure.py
+git commit -m "feat(meta-skill): /run command entry + plugin-local invariant/closure helpers"
 ```
 
 ---
@@ -551,7 +697,7 @@ Run: `grep -n '"version"' claude/meta-skill/.claude-plugin/plugin.json claude/me
 
 - [ ] **Step 2: Bump all three (patch — wiring on top of Plan 1's minor)**
 
-Increment the patch digit consistently across `plugin.json`, `marketplace.json`, and the bootstrap version marker (e.g. `0.9.0` → `0.9.1`). Same string in all three.
+Increment the patch digit consistently across `plugin.json`, `marketplace.json`, and the `version:` field in `skills/bootstrap.md` frontmatter (added in Plan 1 Task 15, fix R3) — e.g. `0.9.0` → `0.9.1`. Same string in all three.
 
 - [ ] **Step 3: Verify match**
 
@@ -593,7 +739,11 @@ git commit -m "chore(meta-skill): bump version for run-engine Plan 2"
 | §4.5 main-loop exit handling (complete / needs_diagnosis + diagnosis resume) | Task 5 |
 | §4.9 Phase C report reads assumed-decisions.json | Task 5 |
 | §3.2 `/run` invokes engine; CC-only, others frozen | Tasks 5, 6 |
-| §7 DoD version bump | Task 7 |
+| §8.1 C1 assumed_decisions persisted via commit prompt | Task 1 |
+| §8.1 C2 repair cascade (compute_reset_closure) | Task 2b, Task 5 |
+| §8.1 C4 orphan-decision closure check | Task 2 |
+| §8.1 L1 global diagnosis cap | Task 5 |
+| §7 DoD version bump (R3 frontmatter) | Task 7 |
 
 **Deferred to Plan 3:** G0 granularity audit, A0 decision-coverage audit, Phase A brainstorming-lite procedure (these PRODUCE the `decision-<id>.json` artifacts that Task 2's invariant checks for; until Plan 3, fixtures supply them).
 
