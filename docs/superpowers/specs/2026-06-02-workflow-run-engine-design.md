@@ -33,7 +33,7 @@ This drives the whole architecture, taken to its conclusion: **all human interac
 - Replace the `/run` execution loop with a **deterministic Workflow-based engine** (a generic JS interpreter of `workflow.json`).
 - Make `alignment_refs` siblings **actually run in parallel**.
 - Move **all human-decision points up front** and conduct them via a brainstorming-lite protocol.
-- Add a **planning-time decision-coverage audit** so decisions are caught before the run, not during it.
+- Add **planning-time audits**: a node-granularity audit (G0, right-size nodes for single-task attention) and a decision-coverage audit (A0, catch decisions before the run, not during it).
 - Keep `workflow.json` as the single durable ground truth; make the engine **idempotent** against it (cross-session safe).
 
 ---
@@ -54,6 +54,11 @@ This drives the whole architecture, taken to its conclusion: **all human interac
 ```
 ╔═══ /bootstrap  (ALL human interaction lives here) ═══════════╗
 ║  confirm goal (Step 1.5)  → analyze → generate nodes          ║
+║        │                                                      ║
+║        ▼                                                      ║
+║  G0  Node-Granularity Audit ── right-size each node to its    ║
+║        attention budget; split-too-coarse + merge-too-fine    ║
+║        → granularity-audit.json ; restructures the DAG        ║
 ║        │                                                      ║
 ║        ▼                                                      ║
 ║  A0  Decision-Coverage Audit ── dual-angle (concept ⨁ node)   ║
@@ -77,7 +82,9 @@ This drives the whole architecture, taken to its conclusion: **all human interac
 ╚══════════════════════════════════════════════════════════════╝
 ```
 
-**Command boundary:** **All human interaction is consolidated into `/bootstrap`** — goal confirmation (existing Step 1.5), the A0 audit, and Phase A decision-gathering. `/bootstrap` exits only when every decision artifact is on disk. `/run` is then **fully autonomous from start to finish** — no questions, no stops (except catastrophic `UNRESOLVED`). It can be backgrounded and left unattended. User-facing flow is unchanged: still `/bootstrap` then `/run`; the shift is that `/bootstrap` absorbs all decisions and `/run` becomes a pure long-running autonomous task.
+**Ordering note (G0 before A0):** granularity restructuring splits/merges nodes, which changes *which* decisions live on *which* node. So right-size the nodes first (G0), then audit decision coverage over the right-sized graph (A0), then gather decisions (Phase A).
+
+**Command boundary:** **All human interaction is consolidated into `/bootstrap`** — goal confirmation (existing Step 1.5), the G0/A0 audits, and Phase A decision-gathering. `/bootstrap` exits only when every decision artifact is on disk. `/run` is then **fully autonomous from start to finish** — no questions, no stops (except catastrophic `UNRESOLVED`). It can be backgrounded and left unattended. User-facing flow is unchanged: still `/bootstrap` then `/run`; the shift is that `/bootstrap` absorbs all decisions and `/run` becomes a pure long-running autonomous task.
 
 Trade-off: `/bootstrap` grows from "quick analysis" into "analysis + gather all decisions"; in return `/run` needs zero human attention.
 
@@ -85,9 +92,9 @@ Trade-off: `/bootstrap` grows from "quick analysis" into "analysis + gather all 
 
 | Layer | Responsibility | Implementation |
 |-------|----------------|----------------|
-| `/bootstrap` skill (main-loop Claude) | Confirm goal; generate nodes; run A0 audit; run Phase A brainstorming-lite → write all decision artifacts | markdown skill |
+| `/bootstrap` skill (main-loop Claude) | Confirm goal; generate nodes; run G0 granularity audit (restructure DAG); run A0 decision-coverage audit; run Phase A brainstorming-lite → write all decision artifacts | markdown skill |
 | `/run` skill (main-loop Claude) | Drive Phase B → C autonomously; on `needs_diagnosis` run `diagnosis.md`; resume the engine between segments — no human interaction | markdown skill |
-| Workflow engine (`run-engine.workflow.js`) | Read DAG → topo-schedule → run ready nodes in parallel → validate → self-heal soft failures → commit → return on completion/hard-failure | one **generic** JS interpreter in plugin `knowledge/engine/` |
+| Workflow engine (`run-engine.workflow.js`) | Read DAG → topo-schedule → run ready nodes in parallel → validate → self-heal soft failures → commit → return on completion/hard-failure | one **generic** JS interpreter in plugin `knowledge/run-engine/` (NOT `knowledge/engine/` — `knowledge/engines/` already exists for game-engine knowledge files; avoid the near-collision) |
 | Engine-core (`engine-core.js`) | Pure decision logic (no `agent()` calls) | plain JS module, unit-tested |
 | Node subagents | Read node-spec, do file I/O, run validation, return schema-validated result | `agent(spec, {schema})` |
 
@@ -110,7 +117,7 @@ The engine recognizes only two structured objects; everything else is plain JS (
 // load-DAG agent returns this
 const DAG_SCHEMA = {
   type: 'object',
-  required: ['nodes', 'completed', 'approvals'],
+  required: ['nodes', 'completed'],
   properties: {
     nodes: { type: 'array', items: { type: 'object',
       required: ['node_id','capability','hard_blocked_by','exit_artifacts'],
@@ -120,16 +127,16 @@ const DAG_SCHEMA = {
         hard_blocked_by: { type: 'array', items: { type: 'string' } },
         alignment_refs:  { type: 'array', items: { type: 'string' } },
         exit_artifacts:  { type: 'array', items: { type: 'object' } }, // {path, validation_commands}
-        human_gate:      { type: 'boolean' },
         node_spec_path:  { type: 'string' },
+        profile_slice:   { type: 'object' },   // bootstrap-profile fields this node needs (tech stack, scenario, paths)
         // —— CC-first superset (other platforms ignore) ——
         decision_mode:   { type: 'string', enum: ['brainstorm','none'] },
+        decision_inputs: { type: 'array', items: { type: 'string' } }, // required decision-<x>.json paths (former human_gate)
         closure_verify:  { type: 'array', items: { type: 'string' } }, // ['audio','save-load','2d-placeholder']
         soft_retry_max:  { type: 'integer' }                           // default 2
       } } },
-    completed: { type: 'array', items: { type: 'string' } },  // idempotent skip-list
-    approvals: { type: 'object' },                            // {node_id: 'approved'|'pending'|...}
-    expanders: { type: 'array', items: { type: 'string' } }
+    completed:  { type: 'array', items: { type: 'string' } },  // idempotent skip-list (from transition_log)
+    expanders:  { type: 'array', items: { type: 'string' } }   // NEW field bootstrap must emit (see §4.2.2)
   }
 }
 
@@ -150,15 +157,19 @@ const NODE_RESULT_SCHEMA = {
 
 `outcome` is decided by the node subagent (only it can read files / run `validation_commands` — engine scripts cannot touch the filesystem). The engine reads `outcome` + `blocking_findings` for routing only.
 
+**On `human_gate` removal (reviewer reconciliation).** The current `workflow.json` carries `human_gate: true` + an interactive approval-record/web-dashboard loop. In this design that runtime concept is **removed** — it contradicts "zero stops in `/run`". A former human-gated node is re-expressed as a normal node with `decision_inputs: ['…/decision-<x>.json']`: the *direction* it used to gate is now decided up front in Phase A (generation-before), and the decision artifact becomes a **required input** the node subagent reads. The engine has **no gate function** and `computeReady` does **not** consult any approval state. If a `decision_inputs` artifact is missing at runtime, the node subagent returns `hard_fail` (a planning bug — Phase A should have produced it). Bootstrap asserts, before `/run`, that every `decision_inputs` reference has a corresponding artifact on disk.
+
+**On `profile_slice`.** load-DAG copies only the `bootstrap-profile.json` fields a node actually needs (tech stack, scenario, target paths) into `profile_slice`, so the engine never re-reads the profile and node subagents get their context inline.
+
 ### 4.2 Engine seven parts (`run-engine.workflow.js`, Phase B)
 
-1. **load-DAG** — one agent reads `workflow.json` + `bootstrap-profile.json` → `DAG_SCHEMA`. Build `done = new Set(dag.completed)`.
-2. **expand** — for each `dag.expanders`, an agent runs the expander and returns new nodes; merge idempotently (`mergeExpanded` skips existing `node_id`). This is the "plan auto-updates during the run" capability.
-3. **computeReady** — `nodes.filter(n => !done.has(n.node_id) && n.hard_blocked_by.every(d => done.has(d)))`. **`alignment_refs` do NOT block** — present them as read-if-available; this is the source of free parallelism.
+1. **load-DAG** — one agent reads `workflow.json` (+ slices `bootstrap-profile.json` into each node's `profile_slice`) → `DAG_SCHEMA`. Build `done = new Set(dag.completed)` from `transition_log` (status `completed`).
+2. **expand** — `dag.expanders` is a **new field bootstrap emits** listing the project-local expander scripts that apply (today expansion is hardcoded — e.g. `expand_game_2d_production.py` invoked imperatively in `orchestrator-template.md`; this design promotes it to a declared list). For each expander, an agent **runs the script** (it mutates `workflow.json` in place, the existing behavior — file I/O stays in the agent, not the engine script) and returns the resulting node set. The engine then reconciles in-memory via the pure `mergeExpanded(nodes, newNodes)` (skips existing `node_id`, idempotent on re-entry). **Boundary:** the script owns `workflow.json` mutation; `mergeExpanded` only updates the engine's in-memory `dag.nodes`. This is the "plan auto-updates during the run" capability.
+3. **computeReady** — `nodes.filter(n => !done.has(n.node_id) && n.hard_blocked_by.every(d => done.has(d)))`. **`alignment_refs` do NOT block** — present them as read-if-available; this is the source of free parallelism. No approval/gate state is consulted (see human_gate removal note above).
 4. **pipeline batch** — the ready batch flows through a `pipeline()` (run → commit), no barrier: a node that passes commits while siblings are still running.
-5. **runNode** — dispatch the node-spec as a subagent with `NODE_RESULT_SCHEMA`; internal soft-retry loop (≤ `soft_retry_max`, default 2) with progressively stricter prompts; includes `closure_verify` instructions when present.
+5. **runNode** — dispatch the node-spec (+ `profile_slice` + read `decision_inputs`) as a subagent with `NODE_RESULT_SCHEMA`; internal soft-retry loop (≤ `soft_retry_max`, default 2) with progressively stricter prompts; includes `closure_verify` instructions when present.
 6. **commit** — on pass, an agent appends to `transition_log` immediately and `done.add(node_id)` (per-node, not batched — crash/re-entry loses zero progress).
-7. **exits** — Phase B has **two** exits: `complete` (all done) and `needs_diagnosis` (hard failures collected). `gates_pending` is removed (decisions are front-loaded; an unsatisfied gate mid-run is a planning bug → treated as hard failure).
+7. **exits** — Phase B has **two** exits: `complete` (all done) and `needs_diagnosis` (hard failures collected). There is no `gates_pending` exit: decisions are front-loaded, so a missing `decision_inputs` artifact mid-run is a planning bug surfaced as a hard failure.
 
 ### 4.3 Soft/hard routing (`routeOutcome`, the hybrid heart)
 
@@ -168,6 +179,8 @@ Two rules, applied to a failed node's `blocking_findings`:
 2. Otherwise (placeholder / missing field / failed validation) → **soft fail**; retry the same node ≤ `soft_retry_max` with a stricter prompt; on exhaustion → hard fail.
 
 The engine **trusts the subagent's self-reported flag**. Mislabel risk is bounded: a mislabeled `cross_node`-as-soft wastes at most `soft_retry_max` retries, then converts to hard and surfaces to Claude anyway — it never deadlocks.
+
+**Note on `failed_validation`.** A failed `validation_command` is soft by default (rule 2), but it can also stem from an upstream cause. The node subagent MUST attach `suspected_root_node` when it attributes a validation failure elsewhere — otherwise the engine pointlessly retries `soft_retry_max` times before giving up. "Soft vs hard" is the subagent's call via the flag, not the finding `type`.
 
 ### 4.4 pipeline shape (v1)
 
@@ -197,22 +210,36 @@ invoke Workflow(run-engine) → {status, ...}
 
 Resume: same-session uses `resumeFromRunId` (cached `agent()` calls return instantly); cross-session re-invokes fresh and relies on `workflow.json` idempotency.
 
-### 4.6 A0 — Decision-Coverage Audit (within `/bootstrap`, before Phase A)
+### 4.6 G0 — Node-Granularity Audit (within `/bootstrap`, before A0)
 
-Runs **inside `/bootstrap`**, after node generation and before Phase A. **Dual-angle**, union the results:
+Runs **inside `/bootstrap`**, immediately after node generation and **before A0**. Right-sizes each node to its attention budget so single-task focus is optimal.
+
+**Premise: granularity quality is U-shaped, not monotonic.** Too coarse → attention dilution / context overflow / quality drop. Too fine → coordination cost explodes (more node-specs, more exit contracts, more handoffs → more field-drift), and cross-node coherence collapses (no agent holds the whole picture; integration/stitch bugs multiply). The target is **right-sized** (one coherent, independently-deliverable, independently-testable responsibility that fits the attention budget), **not minimal**.
+
+**Bidirectional audit**, measured against each node's Attention Contract (Primary outcome / Context budget / Non-goals — existing node-spec fields):
+
+- **Too coarse → split.** Signals: multiple primary outcomes, exceeds context budget, bundles independent concerns. Action: split into right-sized nodes, regenerate their specs/exit-contracts/dependencies.
+- **Too fine → merge.** Signals: no standalone deliverable, exists only to feed one sibling, exit artifact is a fragment. Action: merge into the coherent parent.
+- **Right-sized → pass.**
+
+**Handling:** the audit **acts** (splits/merges), reusing bootstrap's node-generation machinery; non-trivial restructures are surfaced for confirmation during the bootstrap interactive phase (alongside Phase A). Output `granularity-audit.json` = `{ split: [...], merged: [...], kept: [...] }` with rationale per change. **Convergence cap:** at most 2 restructure passes, then accept and log residual outliers (prevents split→audit→split loops).
+
+### 4.7 A0 — Decision-Coverage Audit (within `/bootstrap`, after G0, before Phase A)
+
+Runs **inside `/bootstrap`**, after G0 (over the right-sized graph) and before Phase A. **Dual-angle**, union the results:
 
 - **Agent 1 (concept completeness):** enumerate every direction/intent fork implied by the source concept artifacts (art style, monetization model, tech selection, tone, scope tradeoffs, …).
 - **Agent 2 (node reverse-inference):** scan generated nodes/node-specs for implicit choices not marked `decision_mode: brainstorm`.
 
 Output `decision-coverage.json` = `{ captured: [...], missing: [...] }` (each `missing` entry carries a rationale). `missing` decisions are folded into the Phase A queue. Mirrors the existing `coverage-matrix.json` pattern.
 
-### 4.7 Phase A — brainstorming-lite (within `/bootstrap`)
+### 4.8 Phase A — brainstorming-lite (within `/bootstrap`)
 
 Runs **inside `/bootstrap`** (the final interactive step), iterating the decision queue (generated `decision_mode: brainstorm` nodes + A0 `missing`). A lightweight protocol distilled from the `brainstorming` skill: one question at a time, surface intent, 2–3 options with tradeoffs, incremental confirmation — converging to a **decision artifact** (`.allforai/<domain>/decision-<node>.json`) consumed by the downstream generation node as a required input. **No spec doc, no reviewer loop, no writing-plans handoff** (those are the full skill's ceremony; omitted here for high-frequency in-run decisions).
 
-### 4.8 Phase C — Report
+### 4.9 Phase C — Report
 
-Surface: (a) decisions auto-assumed mid-run by Phase B (assume + declare), (b) any `UNRESOLVED` nodes with TODO, (c) learning extraction into `.allforai/bootstrap/learned/`.
+Surface: (a) decisions auto-assumed mid-run by Phase B (assume + declare) — read from `assumed-decisions.json` (see §5), (b) any `UNRESOLVED` nodes with TODO, (c) learning extraction into `.allforai/bootstrap/learned/`.
 
 ---
 
@@ -221,15 +248,17 @@ Surface: (a) decisions auto-assumed mid-run by Phase B (assume + declare), (b) a
 "Decisions all up front" vs "plan grows during the run" conflict only when a mid-run expander creates a node needing a decision Phase A never covered. Two-tier policy:
 
 1. **Pre-expand in Phase A** as much as predictable, so most emergent decisions are surfaced and decided before Phase B.
-2. **Residual (truly runtime-dependent):** Phase B **assumes a sensible default + declares it**, logs it, surfaces it in Phase C. Never stops. (Consistent with Codex's assume+declare philosophy.)
+2. **Residual (truly runtime-dependent):** Phase B **assumes a sensible default + declares it** — the node subagent appends `{node_id, decision, default_chosen, rationale}` to `.allforai/bootstrap/assumed-decisions.json` — then continues. Never stops. Phase C surfaces this file. (Consistent with Codex's assume+declare philosophy.)
 
 ---
 
 ## 6. Data & file contracts
 
-- `workflow.json` — unchanged base schema + CC-only superset fields (§4.1). Single durable ground truth.
+- `workflow.json` — base schema + CC-only superset fields (`decision_mode`, `decision_inputs`, `closure_verify`, `soft_retry_max`, `expanders`) per §4.1. Single durable ground truth. (`human_gate`/`approvals` no longer used at runtime — see §4.1 reconciliation.)
+- `granularity-audit.json` — G0 output (`split`/`merged`/`kept`).
 - `decision-coverage.json` — A0 output.
-- `.allforai/<domain>/decision-<node>.json` — Phase A decision artifacts.
+- `.allforai/<domain>/decision-<node>.json` — Phase A decision artifacts (referenced by node `decision_inputs`).
+- `.allforai/bootstrap/assumed-decisions.json` — mid-run assume+declare log (§5), surfaced in Phase C.
 - `transition_log[]` / `diagnosis_history[]` — engine commit + failure log.
 - JSON = machine-readable (complete fields); `*-report.md` = human summary (no duplicated JSON).
 
@@ -244,12 +273,13 @@ Extract decision logic into `engine-core.js` pure functions; the Workflow script
 
 | Function | Asserts |
 |----------|---------|
-| `computeReady(nodes, done)` | hard_blocked_by gating; `alignment_refs` non-blocking; completed skipped |
-| `gateBlocked(node, approvals)` | human_gate unapproved → true |
-| `routeOutcome(result)` | cross_node/suspected_root_node → hard; placeholder → soft; passed → done |
+| `computeReady(nodes, done)` | hard_blocked_by gating; `alignment_refs` non-blocking; completed skipped; **no** approval/gate state consulted |
+| `routeOutcome(result)` | cross_node/suspected_root_node → hard; placeholder/failed_validation (no root flag) → soft; passed → done |
 | `mergeExpanded(nodes, newNodes)` | idempotent (existing id not duplicated) |
-| `pickExit(ready, hardFails)` | hardFail → needs_diagnosis; all done → complete |
+| `pickExit(ready, hardFails)` | hardFail → needs_diagnosis; all done → complete (no `gates_pending`) |
 | `convergenceCheck(history, rootCause)` | same root cause ≥2 → UNRESOLVED |
+
+(No `gateBlocked` unit — `human_gate` is removed at runtime, §4.1. The "every `decision_inputs` artifact exists" invariant is a **bootstrap-time** check, not an engine pure-function.)
 
 Run: `node --check run-engine.workflow.js` (syntax) + extract-and-`node --test` (function level).
 
@@ -267,7 +297,8 @@ A purpose-built mini fixture `workflow.json` (7 nodes) exercising every path. Re
 ```
 n1 plain pass
 n2,n3 siblings (alignment_refs) → verify true parallelism; n3 seeds a placeholder → verify soft self-heal
-n4 human_gate → pre-satisfied by Phase A → verify no mid-run stop
+n4 has decision_inputs (former human_gate) → artifact present from Phase A → verify it runs without stopping;
+   a variant with the artifact deleted → verify hard_fail (missing-decision = planning bug), not a stop
 n5 seeds cross_node → n1 → verify needs_diagnosis + diagnosis removes n1's completed + rerun
 n6 depends on n4 + n5 → verify dependency unlock
 expander adds n7 at runtime → verify "plan auto-updates during run"
@@ -277,7 +308,7 @@ Pass criteria: engine invoked ≥2× (initial → post-diagnosis resume); final 
 
 ### Definition of Done
 - L1 + L2 green; L3 fixture passes a full real run.
-- Version bumped in all three places (`plugin.json`, `marketplace.json`, `SKILL.md` frontmatter).
+- Version bumped in all three places: `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and the bootstrap skill's version marker. **Caveat:** `skills/bootstrap.md` currently has no `version:` frontmatter field — its version lives in the body header (`# Bootstrap Protocol vX.Y.Z`, already drifted from `plugin.json`). The plan must pick and standardize the third location (add frontmatter `version:` or treat the body header as canonical) so the three stay in sync.
 
 ---
 
@@ -285,7 +316,7 @@ Pass criteria: engine invoked ≥2× (initial → post-diagnosis resume); final 
 
 1. Route: direct engine rewrite (not incremental).
 2. CC-first superset schema, dual executor; never compromise CC for parity.
-3. Phases: `/bootstrap` = goal + nodes + A0 audit + Phase A decisions (all interaction); `/run` = Phase B autonomous → Phase C report.
+3. Phases: `/bootstrap` = goal + nodes + G0 granularity audit + A0 decision-coverage audit + Phase A decisions (all interaction); `/run` = Phase B autonomous → Phase C report.
 4. **All human interaction consolidated into `/bootstrap`**; `/run` is fully autonomous, zero interaction (only UNRESOLVED halts).
 5. Decision timing: generation-before (decisions upstream → decision artifacts).
 6. brainstorming-lite (distilled protocol), not the full brainstorming skill.
@@ -296,13 +327,18 @@ Pass criteria: engine invoked ≥2× (initial → post-diagnosis resume); final 
 11. `workflow.json` idempotent skip-list; resume cache optional.
 12. A0 dual-angle audit (concept-completeness ⨁ node-reverse-inference).
 13. Testing: 3 layers; L3 freely re-runnable on dedicated fixture; DoD bumps 3 version locations.
+14. G0 node-granularity audit: bidirectional (split-too-coarse + merge-too-fine), acts on the DAG, runs before A0; target right-sized (U-curve), not minimal; ≤2 restructure passes.
+15. `human_gate` removed at runtime — re-expressed as `decision_inputs` required artifacts produced in Phase A; engine has no gate function.
 
 ---
 
 ## 9. Open items for the implementation plan
 
-- Exact location/naming under `claude/meta-skill/knowledge/engine/` and how `/run` skill instructs the Workflow call.
+- Exact file naming under `claude/meta-skill/knowledge/run-engine/` (avoid the existing `knowledge/engines/` game-engine dir) and how the `/run` skill instructs the Workflow call.
 - Migration: keep the old markdown loop available as fallback during rollout, or hard cut-over on CC.
-- `decision_mode`/`closure_verify`/`soft_retry_max` field injection point in `bootstrap.md` node generation.
+- Bootstrap node generation must learn to emit the new superset fields: `decision_mode`, `decision_inputs`, `closure_verify`, `soft_retry_max`, and the `expanders` list (promoting today's hardcoded `expand_*.py` invocations to a declared list).
+- How `closure_verify` enum values (`audio`/`save-load`/`2d-placeholder`) map to the existing closure-gate capability nodes (`bootstrap.md` audio/2D production closure QA) vs. become inline subagent instructions.
+- G0 granularity audit: concrete split/merge thresholds and how it reuses bootstrap's node-generation machinery to regenerate specs after a restructure.
+- Bootstrap-time invariant check: every node's `decision_inputs` artifacts exist before `/run` is allowed to start.
 - Codex/OpenCode: confirm they gracefully ignore the new superset fields (no parsing errors).
 ```
