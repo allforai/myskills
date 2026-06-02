@@ -43,6 +43,13 @@ const NODE_RESULT_SCHEMA = {
     artifacts_written: { type: 'array', items: { type: 'string' } },
     blocking_findings: { type: 'array', items: { type: 'object' } },
     assumed_decisions: { type: 'array', items: { type: 'object' } }, // fix C1: engine persists these, not the subagent
+    verification: { type: 'object',                                  // verification-honesty: evidence of real working behavior
+      properties: {
+        method: { type: 'string', enum: ['real-run', 'real-test', 'real-api', 'db-query', 'screenshot', 'none'] },
+        evidence_path: { type: 'string' }, // captured proof file; must EXIST for the node to count as 'verified'
+        verifier: { type: 'string' },      // identity that verified — must differ from the generator
+        claim: { type: 'string' }          // one line: what was proven to actually work
+      } },
     summary: { type: 'string' }
   }
 }
@@ -123,6 +130,11 @@ function runNodePrompt(node, strict) {
     'Write all exit_artifacts and run their validation_commands to self-check.',
     cv.length ? `Additionally run closure verification for: ${cv.join(', ')}.` : '',
     'STRICTLY forbid placeholder / stub / debug-residue / pure-color placeholder outputs.',
+    'VERIFICATION (epistemic honesty): if you actually exercised the real built behavior, capture',
+    'external proof to a file (real run output / real API round-trip with real data / db row / screenshot)',
+    'and RETURN verification: {method, evidence_path, verifier, claim}. If you only generated code',
+    'without exercising it, RETURN verification.method "none" — do NOT claim verified. "Generated"',
+    'must never masquerade as "verified".',
     'If you must assume an unforeseen emergent decision, pick a sensible default and RETURN it in',
     'assumed_decisions: [{id, decision, default_chosen, rationale}] — do NOT write any file yourself',
     '(the engine persists it during the serialized commit).',
@@ -135,9 +147,13 @@ function runNodePrompt(node, strict) {
 
 function commitPrompt(result) {
   const ad = result.assumed_decisions || []
+  const v = result.verification || { method: 'none' }
   return [
     `Append to .allforai/bootstrap/workflow.json transition_log: node_id ${result.node_id},`,
-    `status "completed", artifacts_created ${JSON.stringify(result.artifacts_written || [])}.`,
+    `status "completed", artifacts_created ${JSON.stringify(result.artifacts_written || [])},`,
+    `verification ${JSON.stringify(v)}.`,
+    '(verification is recorded verbatim — do NOT upgrade method or invent evidence; completeness is',
+    'computed from this field by compute_completeness.py.)',
     ad.length ? `Also append these to .allforai/bootstrap/assumed-decisions.json: ${JSON.stringify(ad)}.` : '',
     'Append only; do not touch other entries.'
   ].filter(Boolean).join(' ')

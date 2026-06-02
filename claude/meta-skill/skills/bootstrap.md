@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-version: "0.10.0"
+version: "0.11.0"
 description: >
   Internal skill for /bootstrap command. Performs lightweight project analysis,
   generates project-specific node-specs and workflow.json, validates products,
@@ -1061,6 +1061,16 @@ Write these generic requirements into every workflow:
   if readiness is not `ready`.
 - node-specs may not ask the user, wait for approvals, or weaken validation
   during `/run`;
+- **Verification honesty (mandatory):** every node-spec must follow
+  `${CLAUDE_PLUGIN_ROOT}/knowledge/verification-protocol.md`. A node returns real
+  external evidence (`verification: {method, evidence_path, verifier, claim}`) ONLY when it
+  actually exercised the built behavior; otherwise `method: "none"` (honest `unverified`).
+  Verify-type node-specs (product-verify, concept-acceptance, runtime-smoke, security-verify,
+  etc.) MUST be independent of the generator, adversarially try to *disprove* "done", and
+  capture proof to `evidence_path`. "Generated" must never be reported as "verified" — the
+  Phase C report counts only evidence-verified nodes (compute_completeness.py). Mark a node
+  `critical: true` when it serves a critical user flow (task-inventory) so the launch gate can
+  require real evidence for it. Also run the `hollowness-detector` capability against suspect code.
 - QA-discovered `code_gaps` and `test_gaps` must route to a repair loop before
   closure;
 - long tasks must use file-based input/output, polling, timeout, retry, and

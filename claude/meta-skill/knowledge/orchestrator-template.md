@@ -56,8 +56,19 @@ Before stopping, record `preflight_blocked` with
    - `{ status: "complete" }`
    - `{ status: "needs_diagnosis", hardFailures: [...] }`
 
-2. On `complete`: run the learning-protocol extraction, then produce the Phase C report
-   (read `.allforai/bootstrap/assumed-decisions.json` + any UNRESOLVED) and stop.
+2. On `complete`: run the learning-protocol extraction, then produce the Phase C report:
+   a. **Evidence-anchored completeness (verification honesty).** Run
+      `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/compute_completeness.py <base>` — it derives each
+      node's TRUE state from its recorded `verification` evidence and writes
+      `.allforai/bootstrap/completeness-report.json`. **Report the two-column result as the
+      headline: VERIFIED (真验过) % vs unverified (只生成没验) %.** Never present "completed
+      node count" as completeness — a node without real evidence is `unverified`, never counted.
+   b. Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/check_evidence.py <base>` to list any
+      false "verified" claims (evidence missing / self-graded) — these are downgraded.
+   c. **Launch gate:** if `completeness-report.json.critical_unverified` is non-empty, the product
+      is NOT launch-ready regardless of node count — surface those critical flows as needing real
+      verification. Do not call the product complete on self-attestation.
+   d. Read `.allforai/bootstrap/assumed-decisions.json` + any UNRESOLVED, then stop.
 
 3. On `needs_diagnosis`:
    a. Read `hardFailures` (always non-empty — a stuck graph carries a synthesized `deadlock`

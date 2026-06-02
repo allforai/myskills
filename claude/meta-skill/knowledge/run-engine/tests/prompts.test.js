@@ -40,6 +40,19 @@ test('runNodePrompt tells the subagent to RETURN assumed_decisions, not write th
   assert.match(p, /assumed_decisions/)
 })
 
+test('runNodePrompt demands real evidence and forbids generated-as-verified (verification honesty)', () => {
+  const p = core.runNodePrompt({ node_id: 'n', node_spec_path: 's.md' }, '')
+  assert.match(p, /verification/)
+  assert.match(p, /evidence_path/)
+  assert.match(p, /masquerade as "verified"/)
+})
+
+test('commitPrompt records verification verbatim (no upgrade)', () => {
+  const p = core.commitPrompt({ node_id: 'a', artifacts_written: [], verification: { method: 'none' } })
+  assert.match(p, /verification/)
+  assert.match(p, /do NOT upgrade/)
+})
+
 test('commitFailuresPrompt references diagnosis_history', () => {
   assert.match(core.commitFailuresPrompt([{ node_id: 'c' }]), /diagnosis_history/)
 })
