@@ -90,12 +90,70 @@ function serializeCommit(fn) {           // fix C1: physical commits never overl
   return next
 }
 
+function loadDagPrompt() {
+  return [
+    'Read .allforai/bootstrap/workflow.json and .allforai/bootstrap/bootstrap-profile.json.',
+    'Return a DAG object: nodes[] (each with node_id, capability, hard_blocked_by, alignment_refs,',
+    'exit_artifacts, node_spec_path, decision_mode, decision_inputs, closure_verify, soft_retry_max,',
+    'and a profile_slice carrying only the bootstrap-profile fields that node needs — tech stack,',
+    'scenario, target paths); completed[] = node_ids whose transition_log status is "completed";',
+    'expanders[] = the declared expander scripts; applied_expanders[] = expanders already run.',
+    'Do not execute any node. Read and summarize only.'
+  ].join(' ')
+}
+
+function expandPrompt(expander) {
+  return [
+    `Run the project-local expander ${expander} (it mutates .allforai/bootstrap/workflow.json in place,`,
+    'the existing behavior). Then return { new_nodes: [...] } listing the nodes it added',
+    '(node_id, capability, hard_blocked_by, exit_artifacts, and any superset fields).',
+    'Do not duplicate nodes that already exist.'
+  ].join(' ')
+}
+
+function runNodePrompt(node, strict) {
+  const di = (node.decision_inputs || [])
+  const cv = (node.closure_verify || [])
+  return [
+    `Read and execute the node-spec at ${node.node_spec_path}.`,
+    di.length ? `First read these required decision inputs: ${di.join(', ')} — if any is missing, return outcome "hard_fail".` : '',
+    `Project context (profile_slice): ${JSON.stringify(node.profile_slice || {})}.`,
+    'Write all exit_artifacts and run their validation_commands to self-check.',
+    cv.length ? `Additionally run closure verification for: ${cv.join(', ')}.` : '',
+    'STRICTLY forbid placeholder / stub / debug-residue / pure-color placeholder outputs.',
+    'If you must assume an unforeseen emergent decision, pick a sensible default and RETURN it in',
+    'assumed_decisions: [{id, decision, default_chosen, rationale}] — do NOT write any file yourself',
+    '(the engine persists it during the serialized commit).',
+    'Return a NODE_RESULT { node_id, outcome (passed|soft_fail|hard_fail), artifacts_written,',
+    'blocking_findings: [{type, detail, suspected_root_node?}], assumed_decisions? }. Attach',
+    'suspected_root_node when the root cause is in another node.',
+    strict || ''
+  ].filter(Boolean).join(' ')
+}
+
+function commitPrompt(result) {
+  const ad = result.assumed_decisions || []
+  return [
+    `Append to .allforai/bootstrap/workflow.json transition_log: node_id ${result.node_id},`,
+    `status "completed", artifacts_created ${JSON.stringify(result.artifacts_written || [])}.`,
+    ad.length ? `Also append these to .allforai/bootstrap/assumed-decisions.json: ${JSON.stringify(ad)}.` : '',
+    'Append only; do not touch other entries.'
+  ].filter(Boolean).join(' ')
+}
+
+function commitFailuresPrompt(hardFailures) {
+  return [
+    'Append these hard failures to .allforai/bootstrap/workflow.json diagnosis_history',
+    `(failed_node + blocking_findings): ${JSON.stringify((hardFailures || []).map(h => h.node_id))}.`
+  ].join(' ')
+}
+
 async function runNode(node, agent) {
   const max = node.soft_retry_max ?? 2
   let attempt = 0
   let strict = ''
   while (true) {
-    const r = await agent(`run:${node.node_id}${strict}`, { schema: NODE_RESULT_SCHEMA, label: node.node_id })
+    const r = await agent(runNodePrompt(node, strict), { schema: NODE_RESULT_SCHEMA, label: node.node_id })
     const cls = routeOutcome(r)
     if (cls === 'done') return r
     if (cls === 'hard') return { ...r, outcome: 'hard_fail' }
@@ -111,20 +169,20 @@ async function runNode(node, agent) {
 async function commitNode(result, agent, done) {
   // The commit agent appends transition_log + any result.assumed_decisions to
   // assumed-decisions.json (real prompt wired in Plan 2). Engine persists; subagent does not.
-  await agent(`commit:${result.node_id}`, { label: `commit:${result.node_id}` })
+  await agent(commitPrompt(result), { label: `commit:${result.node_id}` })
   done.add(result.node_id)
 }
 
 async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) {
   phase('Load')
-  const dag = await agent('load workflow.json into DAG_SCHEMA', { schema: DAG_SCHEMA, label: 'load-dag' })
+  const dag = await agent(loadDagPrompt(), { schema: DAG_SCHEMA, label: 'load-dag' })
   const done = new Set(dag.completed || [])
   const applied = new Set(dag.applied_expanders || [])   // fix C5
 
   phase('Expand')
   for (const exp of (dag.expanders || [])) {
     if (applied.has(exp)) continue                        // fix C5: don't re-run on resume
-    const r = await agent(`run expander ${exp}; return new_nodes`, { schema: EXPAND_SCHEMA, label: `expand:${exp}` })
+    const r = await agent(expandPrompt(exp), { schema: EXPAND_SCHEMA, label: `expand:${exp}` })
     dag.nodes = mergeExpanded(dag.nodes, (r && r.new_nodes) || [])
     applied.add(exp)
   }
@@ -144,7 +202,7 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
     )
     const hardFailures = outcomes.filter(r => r && routeOutcome(r) === 'hard')
     if (hardFailures.length > 0) {
-      await agent('record hard failures to diagnosis_history', { label: 'commit-failures' })
+      await agent(commitFailuresPrompt(hardFailures), { label: 'commit-failures' })
       return { status: 'needs_diagnosis', hardFailures }
     }
   }
