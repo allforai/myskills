@@ -1087,7 +1087,7 @@ const result = await runEngine({ agent, pipeline, log, phase })
 return result
 ```
 
-The pasted region defines `DAG_SCHEMA`, `NODE_RESULT_SCHEMA`, `EXPAND_SCHEMA`, `computeReady`, `routeOutcome`, `mergeExpanded`, `pickExit`, `convergenceCheck`, `runNode`, `commitNode`, `runEngine`. The shell adds ONLY the `meta` block above it and the `runEngine(...)` call below it — no `require`, no `module.exports`, no `import`.
+The pasted region defines `DAG_SCHEMA`, `NODE_RESULT_SCHEMA`, `EXPAND_SCHEMA`, `computeReady`, `routeOutcome`, `mergeExpanded`, `pickExit`, `convergenceCheck`, `serializeCommit` (+ its `_commitQueue` var), `runNode`, `commitNode`, `runEngine`. The shell adds ONLY the `meta` block above it and the `runEngine(...)` call below it — no `require`, no `module.exports`, no `import`. (The sync-check test compares the whole marker region byte-for-byte, so a verbatim copy is what matters — this list is just orientation.)
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -1271,7 +1271,7 @@ git commit -m "chore(meta-skill): bump version for run-engine Plan 1"
 | §4.3 routeOutcome soft/hard routing | Task 3 |
 | §4.2.2 mergeExpanded idempotent | Task 4 |
 | §4.2.7 two exits / pickExit | Task 5 |
-| §4.5 convergence cap | Task 6 (`convergenceCheck`; *consumed* by /run skill in Plan 2) |
+| §4.5 per-cause convergence cap | Task 6 — `convergenceCheck` is the **tested reference** for the ≥2-per-cause policy; diagnosis runs in the `/run` markdown layer, which applies the same rule inline (Plan 2 Task 5 step 3d) + the global cap (L1, step 3b). Kept as a unit-tested spec of the policy, like the engine documents its own contracts. |
 | §4.2.5 runNode soft-retry | Task 9 |
 | §4.2.6 commitNode + §4.2 full loop | Task 10 |
 | §4.4 pipeline shape + §7 Layer 2 four assertions | Tasks 7, 11 |
@@ -1283,7 +1283,7 @@ git commit -m "chore(meta-skill): bump version for run-engine Plan 1"
 | §7 DoD version bump (3 locations, R3 frontmatter) | Task 15 |
 | §8.1 C1 serialized commit + assumed_decisions | Tasks 1, 10, 11 (L2.5) |
 | §8.1 C2 repair-cascade closure | **Plan 2** (Python `compute_reset_closure.py` — repair runs in the /run main loop, not the JS engine) |
-| §8.1 C3 stuck-graph deadlock exit | Tasks 10, 11 (L2.6) |
+| §8.1 C3 stuck-graph deadlock exit | Task 10 (`stuck graph` integration test) |
 | §8.1 C5 applied_expanders skip | Tasks 1, 10 |
 | §8.1 R2 L3 fixture at canonical path | Task 13 |
 

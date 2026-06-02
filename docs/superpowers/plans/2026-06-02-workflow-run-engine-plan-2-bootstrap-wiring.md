@@ -596,8 +596,9 @@ Replace the "execution loop" portion of the template with this (verbatim):
       stop — this catches oscillating root causes the per-cause cap misses.
    c. Run `${CLAUDE_PLUGIN_ROOT}/knowledge/diagnosis.md`: locate the root-cause node
       (use `suspected_root_node` when present). This is autonomous — never ask the user.
-   d. Per-cause cap: if the same root cause already appears ≥2 times in `diagnosis_history`,
-      mark it UNRESOLVED, write best-effort output + TODO, and stop.
+   d. Per-cause cap (the policy unit-tested as engine-core `convergenceCheck`): if the same root
+      cause already appears ≥2 times in `diagnosis_history`, mark it UNRESOLVED, write best-effort
+      output + TODO, and stop.
    e. Otherwise apply the repair plan WITH CASCADE (fix C2):
       `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/compute_reset_closure.py .allforai/bootstrap/workflow.json <root_id...>`
       → remove the returned closure (root + transitive downstream) from the `transition_log`
