@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-version: "0.9.0"
+version: "0.10.0"
 description: >
   Internal skill for /bootstrap command. Performs lightweight project analysis,
   generates project-specific node-specs and workflow.json, validates products,
@@ -3047,15 +3047,37 @@ on disk and wired — proceed to the final invariant gate. `/run` will be fully 
 
 ---
 
-## Final gate: decision_inputs invariant
+## Final gate: three-lens DAG validation (节点生成验证)
 
-Before declaring bootstrap complete, run:
-`python3 ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/orchestrator/check_decision_inputs.py <project_base>`
-(or the plugin-local copy under `scripts/`). This checks BOTH closure directions (fix C4):
-every node's `decision_inputs` artifact exists, AND every gathered `decision-*.json` is
-referenced by ≥1 node (no orphan decisions). If it reports BLOCKED, either a Phase A decision
-was not gathered (missing) or a gathered decision was not wired to a consumer (orphan) — return
-to Phase A. `/run` must not be offered until this check returns OK.
+Before declaring bootstrap complete and offering `/run`, validate the generated node graph
+through three lenses. The point is to **shift structural failures LEFT** — catch them here, at
+planning time, instead of mid-run as a C3 `deadlock`/`needs_diagnosis` (which would violate the
+"autonomous run, zero surprises" promise). Hard errors BLOCK `/run`; warnings are surfaced.
+
+**1. 闭环 — decision closure (deterministic, BLOCK).**
+`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/check_decision_inputs.py <project_base>`
+Both directions (fix C4): every node's `decision_inputs` artifact exists AND every gathered
+`decision-*.json` is referenced by ≥1 node (no orphan decisions). BLOCKED → return to Phase A.
+
+**2. 大小循环 — DAG structure (deterministic, BLOCK).**
+`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/validate_dag_structure.py <project_base>`
+Detects dependency **cycles** in `hard_blocked_by` and dependencies on **non-existent nodes** —
+both are guaranteed runtime deadlocks. BLOCKED → the cycle/missing-dep is a planning bug; fix
+the generated graph and re-validate.
+
+**3. 逆向 — reverse critic (LLM judgment, WARN).**
+Dispatch one agent that works BACKWARDS from the goal over the node-specs (the node schema has
+no `consumes` field, so this needs the specs' prose):
+- *artifact closure*: for each node, do the inputs its node-spec reads have an upstream producer?
+- *dead nodes*: any node whose outputs no downstream node consumes and that isn't a goal deliverable?
+- *goal traceback*: does every goal feature have a producing node, and does every node trace back
+  to serving the goal?
+- *weakest link*: any single node an unusually large share of others depend on (SPOF)?
+Write findings to `.allforai/bootstrap/dag-critique.json`
+(`{closure_gaps, dead_nodes, goal_gaps, spofs}`). These are WARNINGS surfaced to the user (avoid
+false-positive gating); a genuine `goal_gap` should route back to node generation.
+
+`/run` is offered only when lenses **1 and 2** return OK.
 
 ---
 

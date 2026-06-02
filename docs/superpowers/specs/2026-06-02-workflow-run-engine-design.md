@@ -261,6 +261,18 @@ Output `decision-coverage.json` = `{ captured: [...], missing: [...] }` (each `m
 
 Runs **inside `/bootstrap`** (the final interactive step), iterating the decision queue (generated `decision_mode: brainstorm` nodes + A0 `missing`). A lightweight protocol distilled from the `brainstorming` skill: one question at a time, surface intent, 2–3 options with tradeoffs, incremental confirmation — converging to a **decision artifact** (`.allforai/<domain>/decision-<node>.json`) consumed by the downstream generation node as a required input. **No spec doc, no reviewer loop, no writing-plans handoff** (those are the full skill's ceremony; omitted here for high-frequency in-run decisions).
 
+### 4.8.5 Final gate — three-lens DAG validation (节点生成验证, post-design addition)
+
+The final step of `/bootstrap` (after Phase A, before `/run` is offered) validates the **generated node graph** through the same three lenses used to harden this very design (§8.1) — turning the method into a built-in step. Purpose: **shift structural failures LEFT** — catch them at planning time instead of mid-run as a C3 `deadlock`, preserving "autonomous run, zero surprises". It also restores the graph-structure check the `validate_bootstrap` refactor (`717bc93`) removed.
+
+| Lens | Checks | Mode | Disposition |
+|------|--------|------|-------------|
+| 🔗 闭环 | `decision_inputs` exist + no orphan decisions (C4) | deterministic (`check_decision_inputs.py`) | **BLOCK** |
+| 🔁 大小循环 | no `hard_blocked_by` cycle; no dependency on a non-existent node | deterministic (`validate_dag_structure.py`: Kahn topo + missing-dep scan) | **BLOCK** |
+| 🔄 逆向 | artifact closure, dead nodes, goal-traceback, weakest-link/SPOF — reading node-specs backwards from the goal | LLM critic → `dag-critique.json` | **WARN** |
+
+**Why the lens split is forced by the schema.** Cycle + missing-dep are pure graph ops on `hard_blocked_by` (deterministic, unit-tested). Artifact-closure / dead-node detection need a per-node *consumes* set, which the node schema does not carry — so they fall to the LLM critic, which reads the node-specs' prose. Deterministic lenses hard-block (a cycle is unambiguously a deadlock); the LLM lens only warns (avoid false-positive gating). `/run` is offered iff the two deterministic lenses pass.
+
 ### 4.9 Phase C — Report
 
 Surface: (a) decisions auto-assumed mid-run by Phase B (assume + declare) — read from `assumed-decisions.json` (see §5), (b) any `UNRESOLVED` nodes with TODO, (c) learning extraction into `.allforai/bootstrap/learned/`.
