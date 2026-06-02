@@ -10,9 +10,7 @@ import unittest
 from check_requires import evaluate_node
 from validate_bootstrap import (
     validate_node_spec,
-    validate_state_machine,
-    validate_graph_connectivity,
-    scan_dangerous_commands,
+    validate_workflow,
 )
 
 
@@ -59,6 +57,20 @@ class TestIntegration(unittest.TestCase):
         with open(self.sm_path, "w") as f:
             json.dump(self.sm, f)
 
+        # workflow.json: the NEW bootstrap-product schema validate_workflow checks
+        # (id/goal/exit_artifacts). check_requires still reads the state-machine above.
+        self.wf = {
+            "nodes": [
+                {"id": n["id"], "goal": "Do " + n["id"],
+                 "exit_artifacts": ["artifacts/" + n["id"] + ".json"]}
+                for n in self.sm["nodes"]
+            ],
+            "transition_log": [],
+        }
+        self.wf_path = os.path.join(self.bootstrap_dir, "workflow.json")
+        with open(self.wf_path, "w") as f:
+            json.dump(self.wf, f)
+
         # Create matching node-specs
         for node in self.sm["nodes"]:
             nid = node["id"]
@@ -75,17 +87,13 @@ class TestIntegration(unittest.TestCase):
         shutil.rmtree(self.tmpdir)
 
     def test_validation_passes(self):
-        errors = validate_state_machine(self.sm_path)
-        self.assertEqual(errors, [], f"State machine errors: {errors}")
+        errors = validate_workflow(self.wf_path)
+        self.assertEqual(errors, [], f"workflow.json errors: {errors}")
 
         for fname in os.listdir(self.specs_dir):
             path = os.path.join(self.specs_dir, fname)
             errors = validate_node_spec(path)
             self.assertEqual(errors, [], f"Node-spec errors for {fname}: {errors}")
-
-    def test_graph_connected(self):
-        orphans = validate_graph_connectivity(self.sm["nodes"])
-        self.assertEqual(orphans, [])
 
     def test_check_requires_before_artifacts(self):
         result = evaluate_node(self.sm_path, "discovery", "exit")
@@ -101,15 +109,6 @@ class TestIntegration(unittest.TestCase):
         self.assertTrue(r1["all_passed"])
         r2 = evaluate_node(self.sm_path, "generate", "exit")
         self.assertTrue(r2["all_passed"])
-
-    def test_no_dangerous_commands(self):
-        all_commands = []
-        for node in self.sm["nodes"]:
-            for req in node.get("exit_requires", []):
-                if isinstance(req, dict):
-                    all_commands.append(req)
-        dangers = scan_dangerous_commands(all_commands)
-        self.assertEqual(dangers, [])
 
 
 if __name__ == "__main__":

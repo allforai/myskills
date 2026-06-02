@@ -20,7 +20,8 @@ class TestSupersetTolerance(unittest.TestCase):
         import validate_bootstrap
         with tempfile.TemporaryDirectory() as d:
             wf_path = self._write_wf(d)
-            wf = json.load(open(wf_path))
+            with open(wf_path) as f:
+                wf = json.load(f)
             # Must not raise on unknown fields; node remains structurally valid.
             self.assertEqual(wf["nodes"][0]["node_id"], "n1")
             # If validate_bootstrap exposes a node-shape checker, it must pass:

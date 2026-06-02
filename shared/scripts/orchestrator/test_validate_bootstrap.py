@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
-"""Tests for validate_bootstrap.py — bootstrap product validation."""
+"""Tests for validate_bootstrap.py — current contract only.
 
+The module validates the NEW bootstrap products:
+  - workflow.json: nodes[] non-empty, each node has id/goal/exit_artifacts (a list),
+    no bare suspicious exit-artifact filenames, well-formed transition_log[].
+  - node-specs/*.md: YAML frontmatter present with a 'node' field.
+
+(The old state-machine schema, fan-out, graph-connectivity and dangerous-command
+checks were removed in the validate_bootstrap simplification refactor; their tests
+were removed with them.)
+"""
 import json
 import os
 import shutil
@@ -9,12 +18,92 @@ import sys
 import tempfile
 import unittest
 
-from validate_bootstrap import (
-    validate_node_spec,
-    validate_state_machine,
-    validate_graph_connectivity,
-    scan_dangerous_commands,
-)
+from validate_bootstrap import validate_workflow, validate_node_spec
+
+
+def _write_json(path, obj):
+    with open(path, "w") as f:
+        json.dump(obj, f)
+
+
+# ---------------------------------------------------------------------------
+# validate_workflow
+# ---------------------------------------------------------------------------
+class TestValidateWorkflow(unittest.TestCase):
+    def setUp(self):
+        self._dir = tempfile.mkdtemp()
+        self.path = os.path.join(self._dir, "workflow.json")
+
+    def tearDown(self):
+        shutil.rmtree(self._dir)
+
+    def _node(self, **over):
+        n = {"id": "n1", "goal": "do x", "exit_artifacts": ["sub/out.json"]}
+        n.update(over)
+        return n
+
+    def test_valid(self):
+        _write_json(self.path, {"nodes": [self._node()], "transition_log": []})
+        self.assertEqual(validate_workflow(self.path), [])
+
+    def test_cannot_parse(self):
+        with open(self.path, "w") as f:
+            f.write("{not json")
+        self.assertTrue(any("cannot parse" in e for e in validate_workflow(self.path)))
+
+    def test_nodes_missing(self):
+        _write_json(self.path, {})
+        self.assertTrue(any("nodes" in e for e in validate_workflow(self.path)))
+
+    def test_empty_nodes(self):
+        _write_json(self.path, {"nodes": []})
+        self.assertTrue(any("empty" in e for e in validate_workflow(self.path)))
+
+    def test_node_missing_id(self):
+        n = self._node()
+        del n["id"]
+        _write_json(self.path, {"nodes": [n]})
+        self.assertTrue(any("missing 'id'" in e for e in validate_workflow(self.path)))
+
+    def test_node_missing_goal(self):
+        n = self._node()
+        del n["goal"]
+        _write_json(self.path, {"nodes": [n]})
+        self.assertTrue(any("missing 'goal'" in e for e in validate_workflow(self.path)))
+
+    def test_node_missing_exit_artifacts(self):
+        n = self._node()
+        del n["exit_artifacts"]
+        _write_json(self.path, {"nodes": [n]})
+        self.assertTrue(any("missing 'exit_artifacts'" in e for e in validate_workflow(self.path)))
+
+    def test_exit_artifacts_not_list(self):
+        _write_json(self.path, {"nodes": [self._node(exit_artifacts="nope")]})
+        self.assertTrue(any("must be a list" in e for e in validate_workflow(self.path)))
+
+    def test_bare_suspicious_filename(self):
+        _write_json(self.path, {"nodes": [self._node(exit_artifacts=["package.json"])]})
+        self.assertTrue(any("bare filename" in e for e in validate_workflow(self.path)))
+
+    def test_transition_log_must_be_list(self):
+        _write_json(self.path, {"nodes": [self._node()], "transition_log": {}})
+        self.assertTrue(any("transition_log must be a list" in e for e in validate_workflow(self.path)))
+
+    def test_transition_log_entry_missing_fields(self):
+        _write_json(self.path, {"nodes": [self._node()], "transition_log": [{"node": "n1"}]})
+        self.assertTrue(any("missing 'status'" in e for e in validate_workflow(self.path)))
+
+    def test_transition_log_bad_status(self):
+        entry = {"node": "n1", "status": "weird", "started_at": "t",
+                 "completed_at": "t", "artifacts_created": []}
+        _write_json(self.path, {"nodes": [self._node()], "transition_log": [entry]})
+        self.assertTrue(any("status must be one of" in e for e in validate_workflow(self.path)))
+
+    def test_transition_log_failed_needs_error(self):
+        entry = {"node": "n1", "status": "failed", "started_at": "t",
+                 "completed_at": "t", "artifacts_created": []}
+        _write_json(self.path, {"nodes": [self._node()], "transition_log": [entry]})
+        self.assertTrue(any("failed entry missing 'error'" in e for e in validate_workflow(self.path)))
 
 
 # ---------------------------------------------------------------------------
@@ -23,360 +112,30 @@ from validate_bootstrap import (
 class TestValidateNodeSpec(unittest.TestCase):
     def setUp(self):
         self._dir = tempfile.mkdtemp()
+        self.path = os.path.join(self._dir, "spec.md")
 
     def tearDown(self):
         shutil.rmtree(self._dir)
 
-    def _write(self, name, content):
-        path = os.path.join(self._dir, name)
-        with open(path, "w") as f:
-            f.write(content)
-        return path
+    def _write(self, text):
+        with open(self.path, "w") as f:
+            f.write(text)
 
     def test_valid_spec(self):
-        path = self._write("node.md", (
-            "---\n"
-            "node: build\n"
-            "entry_requires:\n"
-            "  - file_exists: src/\n"
-            "exit_requires:\n"
-            "  - file_exists: dist/\n"
-            "---\n"
-            "# Build node\n"
-        ))
-        errors = validate_node_spec(path)
-        self.assertEqual(errors, [])
+        self._write("---\nnode: n1\n---\n\n# Task\nDo it.")
+        self.assertEqual(validate_node_spec(self.path), [])
 
     def test_missing_node_field(self):
-        path = self._write("node.md", (
-            "---\n"
-            "entry_requires:\n"
-            "  - file_exists: src/\n"
-            "exit_requires:\n"
-            "  - file_exists: dist/\n"
-            "---\n"
-        ))
-        errors = validate_node_spec(path)
-        self.assertTrue(any("node" in e for e in errors))
-
-    def test_missing_exit_requires(self):
-        path = self._write("node.md", (
-            "---\n"
-            "node: build\n"
-            "entry_requires:\n"
-            "  - file_exists: src/\n"
-            "---\n"
-        ))
-        errors = validate_node_spec(path)
-        self.assertTrue(any("exit_requires" in e for e in errors))
+        self._write("---\ntitle: x\n---\n\nbody")
+        self.assertTrue(any("node" in e for e in validate_node_spec(self.path)))
 
     def test_no_frontmatter(self):
-        path = self._write("node.md", "# Just markdown\nNo frontmatter here.\n")
-        errors = validate_node_spec(path)
-        self.assertTrue(any("frontmatter" in e.lower() or "---" in e for e in errors))
+        self._write("# Task\nno frontmatter here")
+        self.assertTrue(any("frontmatter" in e for e in validate_node_spec(self.path)))
 
-    def test_malformed_yaml(self):
-        path = self._write("node.md", (
-            "---\n"
-            "  bad indent\n"
-            "    : missing key\n"
-            "---\n"
-        ))
-        errors = validate_node_spec(path)
-        # Should report missing required fields at minimum (malformed content)
-        self.assertTrue(len(errors) > 0)
-
-    def test_missing_closing_delimiter(self):
-        path = self._write("node.md", (
-            "---\n"
-            "node: build\n"
-            "entry_requires: []\n"
-            "exit_requires: []\n"
-        ))
-        errors = validate_node_spec(path)
-        self.assertTrue(any("closing" in e.lower() or "---" in e for e in errors))
-
-
-# ---------------------------------------------------------------------------
-# validate_state_machine
-# ---------------------------------------------------------------------------
-class TestValidateStateMachine(unittest.TestCase):
-    def setUp(self):
-        self._dir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        shutil.rmtree(self._dir)
-
-    def _write(self, data):
-        path = os.path.join(self._dir, "state-machine.json")
-        with open(path, "w") as f:
-            json.dump(data, f)
-        return path
-
-    def test_valid(self):
-        path = self._write({
-            "schema_version": "1.0",
-            "nodes": [{"id": "build"}, {"id": "test"}],
-            "safety": {"max_retries": 3},
-            "progress": {"total": 2},
-        })
-        errors = validate_state_machine(path)
-        self.assertEqual(errors, [])
-
-    def test_empty_nodes(self):
-        path = self._write({
-            "schema_version": "1.0",
-            "nodes": [],
-            "safety": {},
-            "progress": {},
-        })
-        errors = validate_state_machine(path)
-        self.assertTrue(any("empty" in e.lower() or "non-empty" in e.lower() for e in errors))
-
-    def test_missing_schema_version(self):
-        path = self._write({
-            "nodes": [{"id": "build"}],
-            "safety": {},
-            "progress": {},
-        })
-        errors = validate_state_machine(path)
-        self.assertTrue(any("schema_version" in e for e in errors))
-
-    def test_missing_safety(self):
-        path = self._write({
-            "schema_version": "1.0",
-            "nodes": [{"id": "build"}],
-            "progress": {},
-        })
-        errors = validate_state_machine(path)
-        self.assertTrue(any("safety" in e for e in errors))
-
-    def test_node_missing_id(self):
-        path = self._write({
-            "schema_version": "1.0",
-            "nodes": [{"id": "build"}, {"name": "test"}],
-            "safety": {},
-            "progress": {},
-        })
-        errors = validate_state_machine(path)
-        self.assertTrue(any("id" in e for e in errors))
-
-    def test_node_valid_fan_out(self):
-        path = self._write({
-            "schema_version": "1.0",
-            "nodes": [{"id": "translate", "fan_out": {
-                "source": "profile.json", "path": "$.modules", "parallel": True
-            }}],
-            "safety": {},
-            "progress": {},
-        })
-        errors = validate_state_machine(path)
-        self.assertEqual(errors, [])
-
-    def test_node_fan_out_missing_source(self):
-        path = self._write({
-            "schema_version": "1.0",
-            "nodes": [{"id": "translate", "fan_out": {
-                "path": "$.modules"
-            }}],
-            "safety": {},
-            "progress": {},
-        })
-        errors = validate_state_machine(path)
-        self.assertTrue(any("source" in e for e in errors))
-
-    def test_node_fan_out_missing_path(self):
-        path = self._write({
-            "schema_version": "1.0",
-            "nodes": [{"id": "translate", "fan_out": {
-                "source": "profile.json"
-            }}],
-            "safety": {},
-            "progress": {},
-        })
-        errors = validate_state_machine(path)
-        self.assertTrue(any("path" in e for e in errors))
-
-    def test_node_fan_out_bad_parallel(self):
-        path = self._write({
-            "schema_version": "1.0",
-            "nodes": [{"id": "translate", "fan_out": {
-                "source": "profile.json", "path": "$.modules", "parallel": "yes"
-            }}],
-            "safety": {},
-            "progress": {},
-        })
-        errors = validate_state_machine(path)
-        self.assertTrue(any("parallel" in e and "boolean" in e for e in errors))
-
-    def test_node_fan_out_valid_filter(self):
-        path = self._write({
-            "schema_version": "1.0",
-            "nodes": [{"id": "tune", "fan_out": {
-                "source": "profile.json", "path": "$.modules",
-                "filter": {"field": "role", "equals": "backend"}, "parallel": True
-            }}],
-            "safety": {},
-            "progress": {},
-        })
-        errors = validate_state_machine(path)
-        self.assertEqual(errors, [])
-
-    def test_node_fan_out_filter_missing_field(self):
-        path = self._write({
-            "schema_version": "1.0",
-            "nodes": [{"id": "tune", "fan_out": {
-                "source": "profile.json", "path": "$.modules",
-                "filter": {"equals": "backend"}
-            }}],
-            "safety": {},
-            "progress": {},
-        })
-        errors = validate_state_machine(path)
-        self.assertTrue(any("filter" in e and "field" in e for e in errors))
-
-    def test_node_fan_out_filter_missing_equals(self):
-        path = self._write({
-            "schema_version": "1.0",
-            "nodes": [{"id": "tune", "fan_out": {
-                "source": "profile.json", "path": "$.modules",
-                "filter": {"field": "role"}
-            }}],
-            "safety": {},
-            "progress": {},
-        })
-        errors = validate_state_machine(path)
-        self.assertTrue(any("filter" in e and "equals" in e for e in errors))
-
-    def test_node_fan_out_null_ignored(self):
-        path = self._write({
-            "schema_version": "1.0",
-            "nodes": [{"id": "build", "fan_out": None}],
-            "safety": {},
-            "progress": {},
-        })
-        errors = validate_state_machine(path)
-        self.assertEqual(errors, [])
-
-
-# ---------------------------------------------------------------------------
-# validate_fan_out in node-specs
-# ---------------------------------------------------------------------------
-class TestNodeSpecFanOut(unittest.TestCase):
-    def setUp(self):
-        self._dir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        shutil.rmtree(self._dir)
-
-    def _write(self, name, content):
-        path = os.path.join(self._dir, name)
-        with open(path, "w") as f:
-            f.write(content)
-        return path
-
-    def test_spec_with_valid_fan_out(self):
-        path = self._write("node.md", (
-            "---\n"
-            "node: translate\n"
-            "entry_requires:\n"
-            "  - file_exists: dag.json\n"
-            "exit_requires:\n"
-            "  - file_exists: dist/\n"
-            "fan_out:\n"
-            "  source: profile.json\n"
-            "  path: $.modules\n"
-            "  parallel: true\n"
-            "---\n"
-            "# Translate\n"
-        ))
-        errors = validate_node_spec(path)
-        self.assertEqual(errors, [])
-
-    def test_spec_with_fan_out_missing_source(self):
-        path = self._write("node.md", (
-            "---\n"
-            "node: translate\n"
-            "entry_requires:\n"
-            "  - file_exists: dag.json\n"
-            "exit_requires:\n"
-            "  - file_exists: dist/\n"
-            "fan_out:\n"
-            "  path: $.modules\n"
-            "---\n"
-            "# Translate\n"
-        ))
-        errors = validate_node_spec(path)
-        self.assertTrue(any("source" in e for e in errors))
-
-
-# ---------------------------------------------------------------------------
-# validate_graph_connectivity
-# ---------------------------------------------------------------------------
-class TestValidateGraphConnectivity(unittest.TestCase):
-    def test_connected_graph(self):
-        nodes = [
-            {"id": "root", "entry_requires": [], "exit_requires": [{"file_exists": "a.txt"}]},
-            {"id": "mid", "entry_requires": [{"file_exists": "a.txt"}], "exit_requires": [{"file_exists": "b.txt"}]},
-            {"id": "leaf", "entry_requires": [{"file_exists": "b.txt"}], "exit_requires": []},
-        ]
-        orphans = validate_graph_connectivity(nodes)
-        self.assertEqual(orphans, [])
-
-    def test_orphan_nodes(self):
-        nodes = [
-            {"id": "root", "entry_requires": [], "exit_requires": [{"file_exists": "a.txt"}]},
-            {"id": "orphan", "entry_requires": [{"file_exists": "z.txt"}], "exit_requires": []},
-        ]
-        orphans = validate_graph_connectivity(nodes)
-        self.assertIn("orphan", orphans)
-
-    def test_no_roots(self):
-        nodes = [
-            {"id": "a", "entry_requires": [{"file_exists": "x.txt"}], "exit_requires": []},
-            {"id": "b", "entry_requires": [{"file_exists": "y.txt"}], "exit_requires": []},
-        ]
-        orphans = validate_graph_connectivity(nodes)
-        # All nodes are orphans if no root exists
-        self.assertIn("a", orphans)
-        self.assertIn("b", orphans)
-
-
-# ---------------------------------------------------------------------------
-# scan_dangerous_commands
-# ---------------------------------------------------------------------------
-class TestScanDangerousCommands(unittest.TestCase):
-    def test_safe_command(self):
-        requires = [{"command_succeeds": "npm test"}]
-        warnings = scan_dangerous_commands(requires)
-        self.assertEqual(warnings, [])
-
-    def test_rm_rf(self):
-        requires = [{"command_succeeds": "rm -rf /"}]
-        warnings = scan_dangerous_commands(requires)
-        self.assertTrue(len(warnings) > 0)
-        self.assertTrue(any("rm" in w.lower() for w in warnings))
-
-    def test_sudo(self):
-        requires = [{"command_succeeds": "sudo apt install foo"}]
-        warnings = scan_dangerous_commands(requires)
-        self.assertTrue(len(warnings) > 0)
-        self.assertTrue(any("sudo" in w.lower() for w in warnings))
-
-    def test_chmod_777(self):
-        requires = [{"command_succeeds": "chmod 777 /var/www"}]
-        warnings = scan_dangerous_commands(requires)
-        self.assertTrue(len(warnings) > 0)
-
-    def test_dd_command(self):
-        requires = [{"command_succeeds": "dd if=/dev/zero of=/dev/sda"}]
-        warnings = scan_dangerous_commands(requires)
-        self.assertTrue(len(warnings) > 0)
-
-    def test_non_command_entries_ignored(self):
-        requires = [{"file_exists": "/tmp/safe"}]
-        warnings = scan_dangerous_commands(requires)
-        self.assertEqual(warnings, [])
+    def test_no_closing_delimiter(self):
+        self._write("---\nnode: n1\nnever closed")
+        self.assertTrue(any("closing" in e for e in validate_node_spec(self.path)))
 
 
 # ---------------------------------------------------------------------------
@@ -385,65 +144,31 @@ class TestScanDangerousCommands(unittest.TestCase):
 class TestCLI(unittest.TestCase):
     def setUp(self):
         self._dir = tempfile.mkdtemp()
-        self._nodes_dir = os.path.join(self._dir, "nodes")
-        os.makedirs(self._nodes_dir)
+        self._specs = os.path.join(self._dir, "node-specs")
+        os.makedirs(self._specs)
 
     def tearDown(self):
         shutil.rmtree(self._dir)
 
-    def _write_node(self, name, content):
-        path = os.path.join(self._nodes_dir, name)
-        with open(path, "w") as f:
-            f.write(content)
-        return path
-
-    def _write_sm(self, data):
-        path = os.path.join(self._dir, "state-machine.json")
-        with open(path, "w") as f:
-            json.dump(data, f)
-        return path
-
-    def test_cli_valid_bootstrap(self):
-        self._write_node("build.md", (
-            "---\n"
-            "node: build\n"
-            "entry_requires: []\n"
-            "exit_requires:\n"
-            "  - file_exists: dist/\n"
-            "---\n"
-            "# Build\n"
-        ))
-        self._write_sm({
-            "schema_version": "1.0",
-            "nodes": [{"id": "build", "entry_requires": [], "exit_requires": [{"file_exists": "dist/"}]}],
-            "safety": {"max_retries": 3},
-            "progress": {"total": 1},
-        })
-        result = subprocess.run(
-            [sys.executable, "-m", "validate_bootstrap", self._dir],
-            capture_output=True, text=True,
+    def _run(self):
+        return subprocess.run(
+            [sys.executable, "validate_bootstrap.py", self._dir],
             cwd=os.path.dirname(os.path.abspath(__file__)),
-        )
-        self.assertEqual(result.returncode, 0)
-        output = json.loads(result.stdout)
-        self.assertTrue(output["passed"])
+            capture_output=True, text=True)
 
-    def test_cli_invalid_bootstrap(self):
-        self._write_node("bad.md", "# No frontmatter\n")
-        self._write_sm({
-            "nodes": [{"id": "bad"}],
-            "safety": {},
-            "progress": {},
-        })
-        result = subprocess.run(
-            [sys.executable, "-m", "validate_bootstrap", self._dir],
-            capture_output=True, text=True,
-            cwd=os.path.dirname(os.path.abspath(__file__)),
-        )
-        self.assertEqual(result.returncode, 1)
-        output = json.loads(result.stdout)
-        self.assertFalse(output["passed"])
-        self.assertTrue(len(output["errors"]) > 0)
+    def test_cli_valid(self):
+        _write_json(os.path.join(self._dir, "workflow.json"),
+                    {"nodes": [{"id": "n1", "goal": "g", "exit_artifacts": ["sub/o.json"]}],
+                     "transition_log": []})
+        with open(os.path.join(self._specs, "n1.md"), "w") as f:
+            f.write("---\nnode: n1\n---\n\n# Task")
+        r = self._run()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
+    def test_cli_invalid(self):
+        _write_json(os.path.join(self._dir, "workflow.json"), {"nodes": []})  # empty -> error
+        r = self._run()
+        self.assertEqual(r.returncode, 1)
 
 
 if __name__ == "__main__":
