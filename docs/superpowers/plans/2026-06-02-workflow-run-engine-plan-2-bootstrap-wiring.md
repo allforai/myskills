@@ -52,10 +52,11 @@ test('loadDagPrompt references workflow.json + bootstrap-profile + profile_slice
   assert.match(p, /completed/)
 })
 
-test('expandPrompt names the expander and asks for new_nodes', () => {
+test('expandPrompt names the expander, asks for new_nodes, records applied_expanders (fix C5)', () => {
   const p = core.expandPrompt('expand_game_2d_production.py')
   assert.match(p, /expand_game_2d_production\.py/)
   assert.match(p, /new_nodes/)
+  assert.match(p, /applied_expanders/)
 })
 
 test('runNodePrompt includes node_spec_path, decision_inputs, no-placeholder rule, closure_verify', () => {
@@ -110,7 +111,9 @@ function expandPrompt(expander) {
     `Run the project-local expander ${expander} (it mutates .allforai/bootstrap/workflow.json in place,`,
     'the existing behavior). Then return { new_nodes: [...] } listing the nodes it added',
     '(node_id, capability, hard_blocked_by, exit_artifacts, and any superset fields).',
-    'Do not duplicate nodes that already exist.'
+    'Do not duplicate nodes that already exist.',
+    `Finally, append "${expander}" to workflow.json applied_expanders (create the array if absent;`,
+    'do not duplicate) so this expander is NOT re-run on a later resume (fix C5 write-back).'
   ].join(' ')
 }
 

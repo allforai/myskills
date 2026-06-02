@@ -97,7 +97,9 @@ function expandPrompt(expander) {
     `Run the project-local expander ${expander} (it mutates .allforai/bootstrap/workflow.json in place,`,
     'the existing behavior). Then return { new_nodes: [...] } listing the nodes it added',
     '(node_id, capability, hard_blocked_by, exit_artifacts, and any superset fields).',
-    'Do not duplicate nodes that already exist.'
+    'Do not duplicate nodes that already exist.',
+    `Finally, append "${expander}" to workflow.json applied_expanders (create the array if absent;`,
+    'do not duplicate) so this expander is NOT re-run on a later resume (fix C5 write-back).'
   ].join(' ')
 }
 
