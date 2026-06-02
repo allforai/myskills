@@ -16,6 +16,24 @@ import json
 import os
 import sys
 
+# Methods whose evidence MUST be a structured, reproducible capture record (anti-fabrication
+# L1) — not agent-authored free text. 'screenshot' is exempt (an image, checked elsewhere).
+COMMAND_METHODS = {"real-run", "real-test", "real-api", "db-query"}
+
+
+def _is_capture_record(path):
+    """True iff path holds a capture_evidence/v1 record of a SUCCESSFUL run (exit 0)."""
+    try:
+        with open(path) as f:
+            r = json.load(f)
+    except Exception:
+        return False
+    return (isinstance(r, dict)
+            and r.get("schema") == "capture_evidence/v1"
+            and "command" in r
+            and r.get("exit_code") == 0
+            and "stdout_sha256" in r)
+
 
 def derive_state(entry, base_dir="."):
     if entry.get("status") == "failed":
@@ -35,6 +53,8 @@ def derive_state(entry, base_dir="."):
     gen = entry.get("generated_by")
     if gen and gen == v.get("verifier"):
         return "unverified"  # verifier == generator: self-graded homework
+    if method in COMMAND_METHODS and not _is_capture_record(resolved):
+        return "unverified"  # anti-fabrication L1: command evidence must be a real capture record
     return "verified"
 
 

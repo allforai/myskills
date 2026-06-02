@@ -42,10 +42,38 @@ and artifact files instead of exercising the real product. This protocol makes
 5. **No upgrading.** Never raise `method` above what you actually did. "Generated but I
    couldn't run it" is `none`, and that is the correct, honest answer.
 
+## Anti-fabrication: capture, don't author (L1) + reproduce (L2)
+
+Free text is forgeable; a real execution is not. For every command-based method
+(`real-run`/`real-test`/`real-api`/`db-query`), **do NOT write the evidence yourself** —
+capture it with a tool:
+
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/capture_evidence.py <evidence_path> -- <the real command>
+```
+
+`capture_evidence.py` runs the command and records `{command, exit_code, stdout, stdout_sha256}`
+— you choose WHAT to run, the script records what ACTUALLY happened. `check_evidence.py`
+downgrades any command-method evidence that is NOT a `capture_evidence/v1` record (free text →
+`unverified`). An independent pass then re-runs it:
+
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/reverify.py <evidence_path>   # must REPRODUCE exit 0
+```
+
+A fabricated record (claims exit 0 for a command that really fails) is caught by reverify.
+To fake evidence that survives capture + reverify, the command would have to actually pass —
+i.e. you'd have to really make it work. That is the point: **make doing it the easy path.**
+
+(`screenshot` is exempt from the capture-record rule — it's an image; its authenticity is
+checked by the hollowness detector / human, not by reproduction.)
+
 ## Honest boundary
 
-The deterministic gate ensures evidence **exists and is the right type** — it cannot
-stop a determined agent that **fabricates** evidence. The hollowness detector
-(`capabilities/hollowness-detector.md`) checks evidence authenticity + hunts hollow code;
-the two-column report stays transparent for human spot-checks. We do not claim
-un-gameability — we make the **default path honest** and lying **catchable**.
+This is defense-in-depth, not un-gameability. Provenance over content: capture (L1) +
+reproduction (L2) kill free-text and non-reproducing fabrication; the hollowness detector
+(L3, `capabilities/hollowness-detector.md`) checks the command exercises the REAL system (not
+a local fake) and hunts hollow code; the transparent two-column report enables human spot-check
+sampling (L5). A determined faker who stands up a fake service that really passes can still
+fool L1/L2 — that residual is what L3 + human sampling cover. We make the **default path honest**,
+fabrication **expensive and reproduction-checkable**, and the report **transparent**.

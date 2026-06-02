@@ -11,6 +11,14 @@ def _touch(path, content='x'):
         f.write(content)
 
 
+def _capture(path, exit_code=0):
+    """Write a valid capture_evidence/v1 record (what command-method evidence must be)."""
+    import json
+    with open(path, 'w') as f:
+        json.dump({"schema": "capture_evidence/v1", "command": ["true"],
+                   "exit_code": exit_code, "stdout": "", "stdout_sha256": "abc"}, f)
+
+
 def _verif(method="real-run", evidence_path=None, verifier="v-agent", claim="works"):
     v = {"method": method, "verifier": verifier, "claim": claim}
     if evidence_path is not None:
@@ -35,9 +43,23 @@ class TestDeriveState(unittest.TestCase):
 
     def test_verified_with_real_evidence(self):
         with tempfile.TemporaryDirectory() as d:
-            p = os.path.join(d, "evidence.txt")
-            _touch(p, "real run output")
-            e = {"status": "completed", "verification": _verif(evidence_path="evidence.txt")}
+            _capture(os.path.join(d, "evidence.json"))
+            e = {"status": "completed", "verification": _verif(evidence_path="evidence.json")}
+            self.assertEqual(derive_state(e, base_dir=d), "verified")
+
+    def test_command_method_with_plaintext_evidence_is_unverified(self):
+        # anti-fabrication L1: a command method must carry a structured capture record,
+        # not agent-authored free text (which it could fabricate).
+        with tempfile.TemporaryDirectory() as d:
+            _touch(os.path.join(d, "fake.txt"), "I totally ran it and it passed, trust me")
+            e = {"status": "completed", "verification": _verif(evidence_path="fake.txt")}
+            self.assertEqual(derive_state(e, base_dir=d), "unverified")
+
+    def test_screenshot_method_accepts_image_file(self):
+        # screenshot is exempt from the capture-record requirement (it's an image)
+        with tempfile.TemporaryDirectory() as d:
+            _touch(os.path.join(d, "shot.png"), "PNGDATA")
+            e = {"status": "completed", "verification": _verif(method="screenshot", evidence_path="shot.png")}
             self.assertEqual(derive_state(e, base_dir=d), "verified")
 
     def test_self_graded_downgrades(self):
@@ -69,9 +91,9 @@ class TestComputeCompleteness(unittest.TestCase):
 
     def test_mixed_counts_and_pct(self):
         with tempfile.TemporaryDirectory() as d:
-            _touch(os.path.join(d, "ev.txt"), "proof")
+            _capture(os.path.join(d, "ev.json"))
             tl = [
-                {"node": "a", "status": "completed", "verification": _verif(evidence_path="ev.txt")},  # verified
+                {"node": "a", "status": "completed", "verification": _verif(evidence_path="ev.json")}, # verified
                 {"node": "b", "status": "completed", "verification": {"method": "none"}},              # unverified
                 {"node": "c", "status": "failed"},                                                     # failed
                 {"node": "d", "status": "completed", "verification": _verif(evidence_path="gone.txt")},# unverified (missing)
