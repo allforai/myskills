@@ -1,0 +1,15 @@
+{
+  "schema_version": "2.0",
+  "project_name": "run-engine-L3-fixture",
+  "nodes": [
+    { "node_id": "n1", "capability": "noop", "hard_blocked_by": [], "exit_artifacts": [{ "path": ".allforai/_l3/n1.json" }] },
+    { "node_id": "n2", "capability": "noop", "hard_blocked_by": ["n1"], "alignment_refs": ["n3"], "exit_artifacts": [{ "path": ".allforai/_l3/n2.json" }] },
+    { "node_id": "n3", "capability": "noop", "hard_blocked_by": ["n1"], "alignment_refs": ["n2"], "exit_artifacts": [{ "path": ".allforai/_l3/n3.json" }], "soft_retry_max": 2 },
+    { "node_id": "n4", "capability": "noop", "hard_blocked_by": ["n1"], "decision_inputs": [".allforai/_l3/decision-n4.json"], "exit_artifacts": [{ "path": ".allforai/_l3/n4.json" }] },
+    { "node_id": "n5", "capability": "noop", "hard_blocked_by": ["n1"], "exit_artifacts": [{ "path": ".allforai/_l3/n5.json" }] },
+    { "node_id": "n6", "capability": "noop", "hard_blocked_by": ["n4", "n5"], "exit_artifacts": [{ "path": ".allforai/_l3/n6.json" }] }
+  ],
+  "completed": [],
+  "expanders": ["mk_n7"],
+  "transition_log": []
+}

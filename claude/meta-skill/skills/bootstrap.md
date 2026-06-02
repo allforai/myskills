@@ -1,5 +1,6 @@
 ---
 name: bootstrap
+version: "0.9.0"
 description: >
   Internal skill for /bootstrap command. Performs lightweight project analysis,
   generates project-specific node-specs and workflow.json, validates products,
@@ -2102,6 +2103,27 @@ is likely too large for a single workflow execution. Suggest decomposition:
 - `human_gate`: `true` for game-design nodes requiring discipline_owner approval; `false` for all others. Orchestrator reads this to decide whether to check `approval-records.json` in addition to `exit_artifacts`.
 - `discipline_owner`: Role ID of the approver for human_gate nodes (e.g., `"lead-designer"`); `null` for non-gate nodes.
 
+### CC-superset fields (emit on every node — Codex/OpenCode ignore them)
+
+When writing each node into `workflow.json`, add:
+- `node_spec_path`: relative path to this node's spec under `node-specs/`.
+- `profile_slice`: the subset of `bootstrap-profile.json` this node needs (tech stack, scenario, target paths) — NOT the whole profile.
+- `decision_mode`: `"brainstorm"` if this node's direction is a human decision gathered in Phase A; else `"none"`.
+- `decision_inputs`: paths to the `.allforai/<domain>/decision-<id>.json` artifacts this node consumes (the former `human_gate` is re-expressed here — see below).
+- `closure_verify`: closure types to verify (e.g. `["audio"]`, `["save-load"]`, `["2d-placeholder"]`) when applicable; else omit or `[]`.
+- `soft_retry_max`: integer (default 2) — leave unset to use the engine default.
+
+At the top level of `workflow.json`, add:
+- `expanders`: the list of project-local expander scripts that apply (e.g. `["expand_game_2d_production.py"]`), promoting today's hardcoded invocation to a declared list.
+
+### human_gate → decision_inputs migration
+
+Do NOT emit `human_gate: true` or `approval_record_path` anymore. For any node that
+previously required human approval of a generated artifact, instead:
+1. Move the *direction* decision upstream into Phase A (generation-before).
+2. Reference the resulting `decision-<id>.json` in this node's `decision_inputs`.
+The runtime engine has no gate; a missing `decision_inputs` artifact is a planning bug.
+
 **No entry_requires.** The orchestrator's LLM decides execution order at runtime based on `hard_blocked_by` and artifact existence.
 
 **exit_artifacts 路径规范（重要）：**
@@ -2943,6 +2965,97 @@ Bootstrap 完成。
 ```
 
 User confirms → proceed to Step 4.
+
+---
+
+## G0 — Node-Granularity Audit (right-size for single-task attention)
+
+Runs immediately after node generation, BEFORE A0. Granularity quality is U-shaped:
+too coarse → attention dilution / context overflow; too fine → coordination cost +
+coherence collapse. Target: each node = one coherent, independently-deliverable,
+independently-testable responsibility that fits its attention budget. NOT minimal.
+
+**Acts non-interactively** (split/merge), then batches confirmations into Phase A.
+
+For up to 2 passes:
+1. For each node, measure against its Attention Contract (Primary outcome / Context
+   budget / Non-goals):
+   - **Too coarse → split** when: multiple primary outcomes, exceeds context budget,
+     or bundles independent concerns. Split into right-sized nodes; regenerate their
+     specs, exit_artifacts, and `hard_blocked_by`/`alignment_refs` using the same
+     node-generation machinery.
+   - **Too fine → merge** when: no standalone deliverable, exists only to feed one
+     sibling, or its exit artifact is a fragment. Merge into the coherent parent.
+   - Otherwise → keep.
+2. Write `.allforai/bootstrap/granularity-audit.json`:
+   `{ "split": [{from,into[],rationale}], "merged": [{from[],into,rationale}], "kept": [ids] }`
+   then re-run the pass on the restructured graph.
+3. Stop after 2 passes (convergence cap); log any residual outliers.
+
+Validate the output:
+`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/validate_audit_outputs.py granularity .allforai/bootstrap/granularity-audit.json`
+
+Queue non-trivial restructures for Phase A confirmation (do not ask now).
+
+---
+
+## A0 — Decision-Coverage Audit (catch every decision before the run)
+
+Runs after G0 (over the right-sized graph), before Phase A. Dual-angle; union results.
+
+- **Agent 1 (concept completeness):** enumerate every direction/intent fork implied by
+  the source concept artifacts (art style, monetization model, tech selection, tone,
+  scope tradeoffs, …).
+- **Agent 2 (node reverse-inference):** scan nodes/node-specs for implicit choices NOT
+  marked `decision_mode: "brainstorm"`.
+
+Union the two; write `.allforai/bootstrap/decision-coverage.json`:
+`{ "captured": [{id, node_id}], "missing": [{id, rationale, consumer_node}] }`.
+**Every `missing` entry MUST name its `consumer_node`** (fix C4 — which node will read this
+decision); a decision with no consumer is a planning error, not a decision.
+
+Validate:
+`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/validate_audit_outputs.py decision-coverage .allforai/bootstrap/decision-coverage.json`
+
+Fold every `missing` entry into the Phase A decision queue (and set `decision_mode:
+"brainstorm"` + the future `decision_inputs` path on its `consumer_node`).
+
+---
+
+## Phase A — Decision Gathering (the ONLY place humans are asked)
+
+Runs after A0, as the final interactive step of `/bootstrap`. Iterate the decision
+queue = (nodes with `decision_mode: "brainstorm"`) ∪ (A0 `missing`) ∪ (G0 restructure
+confirmations).
+
+For EACH decision, follow `${CLAUDE_PLUGIN_ROOT}/knowledge/brainstorming-lite.md`:
+one question at a time, intent → 2–3 options with tradeoffs → incremental confirm →
+write `.allforai/<domain>/decision-<id>.json` and validate it:
+`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/validate_audit_outputs.py decision .allforai/<domain>/decision-<id>.json`
+
+**Wire it (fix C4):** after writing each decision artifact, set the `consumer_node`'s
+`decision_inputs` to include that artifact's path in `workflow.json`. (The final invariant
+gate then verifies both directions: no missing, no orphan.)
+
+**G0 overturn → re-audit (fix R1):** Phase A also presents G0's batched restructure
+confirmations. If the user OVERTURNS a G0 split/merge, the node set changed, so **re-run A0**
+on the corrected graph (decision coverage may have shifted) before finalizing the queue.
+
+Generation-before: each decision is gathered BEFORE the node that consumes it (the node
+references it via `decision_inputs`). When the queue is empty, every decision artifact is
+on disk and wired — proceed to the final invariant gate. `/run` will be fully autonomous.
+
+---
+
+## Final gate: decision_inputs invariant
+
+Before declaring bootstrap complete, run:
+`python3 ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/orchestrator/check_decision_inputs.py <project_base>`
+(or the plugin-local copy under `scripts/`). This checks BOTH closure directions (fix C4):
+every node's `decision_inputs` artifact exists, AND every gathered `decision-*.json` is
+referenced by ≥1 node (no orphan decisions). If it reports BLOCKED, either a Phase A decision
+was not gathered (missing) or a gathered decision was not wired to a consumer (orphan) — return
+to Phase A. `/run` must not be offered until this check returns OK.
 
 ---
 

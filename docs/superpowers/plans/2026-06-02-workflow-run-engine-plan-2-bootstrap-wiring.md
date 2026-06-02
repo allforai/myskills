@@ -166,7 +166,7 @@ And in `runNode`, replace the agent prompt with `runNodePrompt(node, strict)`; i
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `node --test claude/meta-skill/knowledge/run-engine/tests/` (the Plan 1 integration tests still pass because the fake agent keys on `label`, not prompt text)
+Run: `node --test 'claude/meta-skill/knowledge/run-engine/tests/**/*.test.js'` (the Plan 1 integration tests still pass because the fake agent keys on `label`, not prompt text)
 Expected: PASS — all suites including the new prompts.test.js.
 
 - [ ] **Step 5: Re-sync the Workflow shell + commit**

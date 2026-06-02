@@ -1003,7 +1003,7 @@ Expected: PASS — the engine from Task 10 already satisfies L2.1–L2.5. (If an
 
 - [ ] **Step 4: Run the full test dir**
 
-Run: `node --test claude/meta-skill/knowledge/run-engine/tests/`
+Run: `node --test 'claude/meta-skill/knowledge/run-engine/tests/**/*.test.js'`
 Expected: PASS — all suites green.
 
 - [ ] **Step 5: Commit**
@@ -1213,7 +1213,7 @@ All suites must be green before invoking the Workflow shell in a real run.
 
 - [ ] **Step 2: Run the whole suite to confirm green**
 
-Run: `node --test claude/meta-skill/knowledge/run-engine/tests/`
+Run: `node --test 'claude/meta-skill/knowledge/run-engine/tests/**/*.test.js'`
 Expected: PASS — every suite (engine-core, harness-doubles, fake-agent, engine-integration, sync-check).
 
 - [ ] **Step 3: Commit**
@@ -1248,7 +1248,7 @@ Expected: three matches with the identical new version (substitute your chosen v
 
 - [ ] **Step 4: Final full-suite run**
 
-Run: `node --test claude/meta-skill/knowledge/run-engine/tests/`
+Run: `node --test 'claude/meta-skill/knowledge/run-engine/tests/**/*.test.js'`
 Expected: PASS — all green.
 
 - [ ] **Step 5: Commit**
