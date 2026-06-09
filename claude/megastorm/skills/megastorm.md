@@ -103,11 +103,26 @@ Stages:
   reruns `acceptance_cmd`. On `done:false`: read the task's `retries` from the ledger;
   **if `retries < 2` → increment and bounce to executor; if `retries == 2` → escalate.** This is
   spec §4.6's "soft-retry ≤2" = the initial attempt plus at most 2 retries (3 dispatches total).
+- **Vacuous auto-recovery:** if the verdict has `vacuous:true` (acceptance passed only because
+  0 tests ran), the bounce to the executor MUST append the anti-vacuous instruction — *"the
+  acceptance selects tests by name and matched 0; create the named test with ≥1 real assertion
+  and confirm a non-zero executed-test count."* Do not escalate a `vacuous` failure to the human
+  until the soft-retry budget is genuinely exhausted — it is almost always self-fixable, and the
+  deterministic `validate_plan_tasks.py` gate should have caught it at §1.3 anyway.
 
 ## Phase 2 — Report
 Update the overview and write a final report: assumptions the autonomous agents made, all
 escalation points + resolutions, the independently-verified completion list (distinguish
 "executor-claimed" from "supervisor-confirmed"), DAG warnings, and learnings.
+
+**Mandatory "Reality gate" section.** Every report MUST split completion into two explicit lists:
+(a) **autonomously verified** — the supervisor reran the real `acceptance_cmd` and it genuinely
+passed; and (b) **requires human / hardware / external verification** — anything whose real-world
+success cannot be proven in CI/simulator (live media, real devices, third-party prod systems,
+physical I/O). For every item in (b), emit a concrete runbook (exact steps, what to observe, pass
+criteria). **"All tasks green" must NEVER be presented as "the feature works" when (b) is
+non-empty.** Mechanical task-completion ≠ verified capability; conflating them is the precise
+honesty failure megastorm exists to prevent.
 
 ## Artifacts (superpowers-native)
 One overview + standard superpowers docs:

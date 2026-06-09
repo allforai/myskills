@@ -70,7 +70,11 @@ Schema of the JSON between the markers:
     "done": { "type": "boolean" },
     "rerun_exit_code": { "type": "integer" },
     "evidence": { "type": "string" },
-    "refutation": { "type": "string" } } }
+    "refutation": { "type": "string" },
+    "vacuous": { "type": "boolean" } } }
 ```
 Rule: `done` is true ONLY if the supervisor independently reran `acceptance_cmd`
 and got exit code 0 with the real output captured in `evidence`.
+`vacuous` = true when the command passed only because 0 tests ran (a name-selector
+matched nothing); it forces `done:false` and signals §1.6 to re-inject the
+anti-vacuous instruction on the executor bounce.
