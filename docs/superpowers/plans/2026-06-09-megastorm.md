@@ -181,7 +181,7 @@ git commit -m "feat(megastorm): plan-task validator (touched_paths + acceptance_
 - Create: `claude/megastorm/scripts/build_task_dag.py`
 - Test: `claude/megastorm/scripts/test_build_task_dag.py`
 
-Output contract: `{ok, errors[], warnings[], layers[[id]], isolate[[a,b]]}` where `layers` are Kahn topo layers over `depends_on`, `isolate` are same-layer task pairs sharing any `touched_path` (need worktree isolation), `warnings` flag same-path mutual writers with no `depends_on`.
+Output contract: `{ok, errors[], warnings[], layers[[id]], isolate[[a,b]], isolate_groups[[id]]}` where `layers` are Kahn topo layers over `depends_on`, `isolate` are same-layer task pairs sharing any `touched_path`, `isolate_groups` are the connected components of those pairs (union-find — §1.6 runs each group sequentially with worktree isolation), `warnings` flag same-path mutual writers with no `depends_on`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -237,6 +237,22 @@ class TestBuildDag(unittest.TestCase):
         r = build_dag(tasks)
         self.assertFalse(r["ok"])
         self.assertTrue(any("ghost" in e for e in r["errors"]))
+
+    def test_isolate_groups_transitive(self):
+        # a-b share s1, b-c share s2 -> all three serialize as one group (b is the bridge)
+        tasks = [_t("a", ["s1.py"]), _t("b", ["s1.py", "s2.py"]), _t("c", ["s2.py"])]
+        r = build_dag(tasks)
+        self.assertEqual(r["isolate_groups"], [["a", "b", "c"]])
+
+    def test_isolate_groups_disjoint(self):
+        tasks = [_t("a", ["x.py"]), _t("b", ["y.py"])]
+        r = build_dag(tasks)
+        self.assertEqual(r["isolate_groups"], [])
+
+    def test_isolate_groups_two_separate_groups(self):
+        tasks = [_t("a", ["p.py"]), _t("b", ["p.py"]), _t("c", ["q.py"]), _t("d", ["q.py"])]
+        r = build_dag(tasks)
+        self.assertEqual(r["isolate_groups"], [["a", "b"], ["c", "d"]])
 
 
 if __name__ == "__main__":
@@ -323,7 +339,32 @@ def build_dag(tasks):
                     warnings.append(
                         f"tasks '{a}' and '{b}' both write {sorted(shared)} with no depends_on; "
                         f"serialized by declaration order, run isolated")
-    return {"ok": True, "errors": errors, "warnings": warnings, "layers": layers, "isolate": isolate}
+    # Union-find the isolate PAIRS into connected GROUPS — §1.6 runs each group
+    # sequentially (declaration order) with worktree isolation + merge-after-confirm.
+    # Pairs alone are not enough: a–b and b–c colliding means all three must serialize
+    # their merges relative to b. Conservative (safe) grouping over max parallelism.
+    parent = {}
+    def find(x):
+        parent.setdefault(x, x)
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+    def union(a, b):
+        parent[find(a)] = find(b)
+    for a, b in isolate:
+        union(a, b)
+    groups = {}
+    for node in {n for pair in isolate for n in pair}:
+        groups.setdefault(find(node), []).append(node)
+    # preserve declaration order within each group, deterministic group order
+    order = {t["id"]: i for i, t in enumerate(tasks)}
+    isolate_groups = sorted(
+        (sorted(g, key=lambda i: order[i]) for g in groups.values()),
+        key=lambda g: order[g[0]])
+
+    return {"ok": True, "errors": errors, "warnings": warnings,
+            "layers": layers, "isolate": isolate, "isolate_groups": isolate_groups}
 
 
 def main(argv):
@@ -344,7 +385,7 @@ if __name__ == "__main__":
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `cd claude/megastorm/scripts && python3 -m pytest test_build_task_dag.py -v`
-Expected: PASS (7 tests)
+Expected: PASS (10 tests)
 
 - [ ] **Step 5: Commit**
 
@@ -558,8 +599,19 @@ halts the pipeline and renders `reason`+`evidence` to the human.
 ```
 
 ## overview-registry (Phase 0 mints this into the overview; frozen before Phase 1)
-The single source of truth for requirement IDs and interface names. The main session
-writes it as a fenced ```json block tagged `megastorm-registry` in the overview doc.
+The single source of truth for requirement IDs and interface names. The main session writes it
+into the overview wrapped in **machine-locatable HTML comment markers** (the overview has many
+other ```json fences — module tables, dep graphs — so the registry needs a unique locator):
+
+```
+<!-- megastorm-registry:start -->
+​```json
+{ "requirements": ["R-auth-01", "R-auth-02"], "interfaces": ["api:createOrder", "event:orderPaid"] }
+​```
+<!-- megastorm-registry:end -->
+```
+
+Schema of the JSON between the markers:
 ```json
 { "type": "object", "required": ["requirements", "interfaces"],
   "properties": {
@@ -857,14 +909,18 @@ and tell the user to install the superpowers marketplace via `/plugin`. Do not p
 3. For EACH module, run `Skill: superpowers:brainstorming` to produce a standard module
    spec/design; the user approves each. Done when all M specs exist and are approved.
 4. **Mint the frozen registry (YOU, the main session, are the single owner — not the
-   brainstorming skill, not the design agents).** After all specs are approved, read them
-   and write a fenced ```json `megastorm-registry` block into the overview containing:
-   `requirements` = an `R-<module>-NN` ID for every requirement across the specs, and
-   `interfaces` = the closed vocabulary of cross-module interface names using the grammar
-   `<kind>:<name>` (kind ∈ api/event/data/ui, lowerCamelCase) from `$ROOT/knowledge/schemas.md`.
+   brainstorming skill, not the design agents).** After all specs are approved, read them and
+   write the registry into the overview wrapped in `<!-- megastorm-registry:start -->` /
+   `<!-- megastorm-registry:end -->` markers (a plain ```json object between them), per
+   `$ROOT/knowledge/schemas.md`. Contents: `requirements` = an `R-<module>-NN` ID for every
+   requirement across the specs; `interfaces` = the closed vocabulary of cross-module interface
+   names using the grammar `<kind>:<name>` (kind ∈ api/event/data/ui, lowerCamelCase).
    This registry is FROZEN before Phase 1 — the design fan-out reads it, never extends it.
-   (Without this single owner, every design `covers_req_ids` becomes an orphan and the §4.2
-   closure gate fails closed on every run — the reverse-review's top finding.)
+   **Err toward a generous interface vocabulary:** a too-thin registry makes the parallel design
+   fan-out throw escalations (each missing interface is a new-human-decision), bouncing control
+   back to you repeatedly and partly defeating "decisions front-loaded." Enumerate every plausible
+   cross-module interface now. (Without this single owner, every design `covers_req_ids` becomes
+   an orphan and the §4.2 closure gate fails closed on every run — the reverse-review's top finding.)
 4. **New-human-decision rule (boundary for Phase 1):** anything changing module boundaries,
    public/cross-module interfaces, or user-visible scope = escalate. Internal-only choices =
    the autonomous agents decide and log. This is what makes Phase 1 safe to run unattended.
@@ -885,22 +941,24 @@ agent the frozen `megastorm-registry` block** (requirements + interfaces) so `co
 and exposes/consumes are drawn from the closed vocabulary, not invented. Collect the manifests.
 
 ### 1.2 Closure check — deterministic then LLM
-- Extract from the overview's frozen `megastorm-registry` block: write `requirements.json`
-  (the `requirements` array) and `registry.json` (the `interfaces` array). Write `manifests.json`
-  (the collected design manifests).
+- Extract the registry deterministically: locate the text between
+  `<!-- megastorm-registry:start -->` and `<!-- megastorm-registry:end -->` in the overview,
+  strip the ```json fence lines, `json.loads` it, then write its `requirements` array to
+  `requirements.json` and its `interfaces` array to `registry.json`. Write the collected design
+  manifests to `manifests.json`.
 - Run `python3 $ROOT/scripts/check_closure.py requirements.json manifests.json registry.json`.
   If it BLOCKs (uncovered req / orphan / dangling or off-registry interface), feed errors to a
   fix `agent` (design-agent prompt) and re-run, ≤3 rounds.
-- Then run a Workflow `agent` with `closure-critic.md` for the prose-level judgment (≤3 rounds).
+- Then run a Workflow `agent` with `$ROOT/knowledge/prompts/closure-critic.md` for the prose-level judgment (≤3 rounds).
 - Unresolved after rounds, or any escalate → HALT to user.
 
 ### 1.3 Plan — Workflow
-`pipeline` over designs; each `agent` uses `plan-agent.md` and emits the plan-task array.
+`pipeline` over designs; each `agent` uses `$ROOT/knowledge/prompts/plan-agent.md` and emits the plan-task array.
 For each plan, run `python3 $ROOT/scripts/validate_plan_tasks.py <tasks.json>`; if BLOCKED,
 bounce back to the plan agent until every task has `touched_paths` + `acceptance_cmd`.
 
 ### 1.4 Reverse review — Workflow
-A Workflow `agent` with `reverse-critic.md` over all spec/design/plan docs (≤3 rounds, self-fix
+A Workflow `agent` with `$ROOT/knowledge/prompts/reverse-critic.md` over all spec/design/plan docs (≤3 rounds, self-fix
 or escalate).
 
 ### 1.5 Orchestrate — deterministic
@@ -910,22 +968,23 @@ plan agent. Keep `layers` (execution order) and `isolate` (same-layer file-colli
 Persist to `orchestration.json`. Surface any `warnings` in the final report.
 
 ### 1.6 Concurrent execute + supervise — Workflow
-Maintain a scratch `retry-ledger.json` (`{task_id: attempts}`) — the soft-retry budget is
+Maintain a scratch `retry-ledger.json` (`{task_id: retries}`) — the soft-retry budget is
 unenforceable without it (a stateless prose loop drifts). Process layers in DAG order. **Within
-a layer, split tasks into two groups using `isolate` from build_task_dag:**
-- **Non-colliding tasks** (in no `isolate` pair): run them together via `pipeline(tasks,
-  executeStage, verifyStage)` — no shared files, safe with no barrier.
-- **Colliding tasks** (each connected `isolate` group): run the group's tasks **sequentially in
-  declaration order** (the §4.5 mutual-write WARN demands serialization), each in its own
+a layer, use `build_task_dag`'s output fields directly:**
+- **Non-colliding tasks** (id in NO `isolate_groups` entry): run them together via
+  `pipeline(tasks, executeStage, verifyStage)` — no shared files, safe with no barrier.
+- **Each `isolate_groups` entry** (a connected component of file-colliding tasks): run that
+  group's tasks **sequentially in the given (declaration) order**, each in its own
   `agent(..., {isolation:'worktree'})`; after the supervisor confirms `done:true`, **merge that
   worktree back to the main tree before starting the next task in the group.** Do NOT use the
   barrier-less `pipeline` to merge colliding worktrees — it has no serialization point.
 
 Stages:
-- executeStage: `agent(executor.md prompt, {model:'sonnet'})` (+ `{isolation:'worktree'}` for colliders).
-- verifyStage: `agent(supervisor.md prompt, {schema: verdict})` — default model, fresh context,
-  reruns `acceptance_cmd`. On `done:false`: increment the task's ledger entry; if `< 2`, bounce
-  to executor; if `>= 2`, escalate (still fake after the budget).
+- executeStage: `agent($ROOT/knowledge/prompts/executor.md prompt, {model:'sonnet'})` (+ `{isolation:'worktree'}` for group members).
+- verifyStage: `agent($ROOT/knowledge/prompts/supervisor.md prompt, {schema: verdict})` — default model, fresh context,
+  reruns `acceptance_cmd`. On `done:false`: read the task's `retries` from the ledger;
+  **if `retries < 2` → increment and bounce to executor; if `retries == 2` → escalate.** This is
+  spec §4.6's "soft-retry ≤2" = the initial attempt plus at most 2 retries (3 dispatches total).
 
 ## Phase 2 — Report
 Update the overview and write a final report: assumptions the autonomous agents made, all
@@ -1153,7 +1212,7 @@ this plugin in those projects.
 - [ ] **Step 6: Run the full megastorm test suite + install dry check**
 
 Run: `cd claude/megastorm/scripts && python3 -m pytest -v && cd - && grep -qE 'for plugin in .*megastorm' claude/install.sh && echo "install wired"`
-Expected: all tests PASS (24 total across the 4 test files) and `install wired`
+Expected: all tests PASS (27 total across the 4 test files) and `install wired`
 (The `-E 'for plugin in .*megastorm'` anchors on the actual loop line — a bare `grep megastorm`
 would match an incidental comment and pass even if the loop were edited wrong.)
 
@@ -1184,7 +1243,7 @@ git commit -m "feat(megastorm): integration self-check + install.sh wiring"
 
 **3. Type consistency:** `touched_paths`/`acceptance_cmd`/`depends_on`/`id` consistent across schemas.md (Task 4), validate_plan_tasks.py (Task 1), build_task_dag.py (Task 2), plan-agent.md (Task 5). `covers_req_ids`/`exposes`/`consumes` consistent across schemas.md, check_closure.py (Task 3), design-agent.md (Task 5). `status`/`reason`/`evidence` escalation consistent across schemas.md and all prompts. verdict `done`/`rerun_exit_code`/`evidence` consistent (Task 4, Task 7 supervisor). check_skill_refs REQUIRED list matches the files created in Tasks 4–9. ✓
 
-**Note on test count:** Task 1 (7) + Task 2 (7) + Task 3 (8) + Task 10 (2) = 24 tests.
+**Note on test count:** Task 1 (7) + Task 2 (10) + Task 3 (8) + Task 10 (2) = 27 tests.
 
 **Reverse-review fixes folded in (§4.4 self-fix loop, 2026-06-09):**
 - Requirement-ID + interface-name **single owner**: Phase 0 main session mints the frozen
@@ -1198,4 +1257,17 @@ git commit -m "feat(megastorm): integration self-check + install.sh wiring"
 - Strengthened two weak acceptance commands: Task 8 step 2 now parses frontmatter + resolves all
   `$ROOT` refs; Task 10 grep anchors on the actual install loop line. Global-availability claim
   softened to what plugin registration actually provides.
+
+**Reverse-review self-fix round 2 (2026-06-09):**
+- `build_task_dag.py` now emits `isolate_groups` (union-find over the collision pairs) as a
+  first-class, unit-tested field; §1.6 consumes groups directly instead of re-deriving them in
+  prose (Finding A). Verified: transitive/disjoint/two-group cases pass.
+- Registry is now wrapped in machine-locatable `<!-- megastorm-registry:start/end -->` markers
+  (a ```json fence + tag is self-contradictory); §1.2 spells out locate→json.loads→split extraction
+  (Finding B).
+- All six prompt refs in the skill are now `$ROOT/knowledge/prompts/<name>` so step-2's ref check
+  actually covers them (Finding C).
+- Retry budget stated explicitly: initial + ≤2 retries, `retries < 2` bounce / `== 2` escalate (Finding D).
+- Phase 0 advised to mint a generous interface vocabulary to avoid escalation thrash (chicken-and-egg
+  mitigation).
 ````
