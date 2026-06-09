@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "Installing myskills Claude Code plugins..."
-for plugin in meta-skill; do
+for plugin in meta-skill megastorm; do
   if [ -d "$SCRIPT_DIR/$plugin" ]; then
     echo "  Adding $plugin..."
     claude plugin add "$SCRIPT_DIR/$plugin" 2>/dev/null || echo "  Warning: could not add $plugin (is claude CLI available?)"
