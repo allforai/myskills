@@ -1,0 +1,76 @@
+# megastorm — Workflow agent JSON schemas
+
+These are the `schema` arguments passed to Workflow `agent()` calls. They force
+structured output so the deterministic scripts have clean JSON to consume.
+
+## escalation (spec §4 shared contract — every autonomous critic/fix agent returns this)
+```json
+{ "type": "object", "required": ["status"],
+  "properties": {
+    "status": { "type": "string", "enum": ["ok", "escalate"] },
+    "reason": { "type": "string" },
+    "evidence": { "type": "string" } } }
+```
+Rule: the skill (main session) reads the Workflow return; ANY `status:"escalate"`
+halts the pipeline and renders `reason`+`evidence` to the human.
+
+## design-manifest (spec §4.1 design agent emits one per module; feeds check_closure.py)
+```json
+{ "type": "object", "required": ["module", "design_path", "covers_req_ids", "exposes", "consumes"],
+  "properties": {
+    "module": { "type": "string" },
+    "design_path": { "type": "string" },
+    "covers_req_ids": { "type": "array", "items": { "type": "string" } },
+    "exposes": { "type": "array", "items": { "type": "string" } },
+    "consumes": { "type": "array", "items": { "type": "string" } } } }
+```
+
+## overview-registry (Phase 0 mints this into the overview; frozen before Phase 1)
+The single source of truth for requirement IDs and interface names. The main session writes it
+into the overview wrapped in **machine-locatable HTML comment markers** (the overview has many
+other ```json fences — module tables, dep graphs — so the registry needs a unique locator):
+
+```
+<!-- megastorm-registry:start -->
+​```json
+{ "requirements": ["R-auth-01", "R-auth-02"], "interfaces": ["api:createOrder", "event:orderPaid"] }
+​```
+<!-- megastorm-registry:end -->
+```
+
+Schema of the JSON between the markers:
+```json
+{ "type": "object", "required": ["requirements", "interfaces"],
+  "properties": {
+    "requirements": { "type": "array", "items": { "type": "string" } },
+    "interfaces": { "type": "array", "items": { "type": "string" } } } }
+```
+- `requirements`: every requirement, ID-shaped `R-<module>-NN` (e.g. `R-auth-01`). One owner: Phase 0.
+- `interfaces`: the closed vocabulary of cross-module interface names.
+- **Interface naming grammar (mandatory):** `<kind>:<name>` where `kind ∈ {api, event, data, ui}`
+  and `name` is lowerCamelCase. e.g. `api:createOrder`, `event:orderPaid`, `data:userProfile`.
+  Design agents MUST use these exact names — `check_closure.py` rejects any exposes/consumes
+  outside the registry (stops `api:createOrder` vs `api:create_order` drift).
+
+## plan-task (spec §4.3; feeds validate_plan_tasks.py + build_task_dag.py)
+```json
+{ "type": "object", "required": ["id", "title", "touched_paths", "acceptance_cmd", "depends_on"],
+  "properties": {
+    "id": { "type": "string" },
+    "title": { "type": "string" },
+    "touched_paths": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "acceptance_cmd": { "type": "string" },
+    "depends_on": { "type": "array", "items": { "type": "string" } } } }
+```
+
+## verdict (spec §4.6 supervisor — anti-fake-completion)
+```json
+{ "type": "object", "required": ["done", "rerun_exit_code", "evidence"],
+  "properties": {
+    "done": { "type": "boolean" },
+    "rerun_exit_code": { "type": "integer" },
+    "evidence": { "type": "string" },
+    "refutation": { "type": "string" } } }
+```
+Rule: `done` is true ONLY if the supervisor independently reran `acceptance_cmd`
+and got exit code 0 with the real output captured in `evidence`.
