@@ -1,4 +1,4 @@
-# Closure critic (Phase 1.2) — 闭环思维 (LLM half) — MODEL: fable (pinned)
+# Closure critic (Phase 1.2) — 闭环思维 (LLM half) — MODEL: THINK tier (ladder in skill)
 
 The deterministic half (coverage / interface / orphan) already ran via `check_closure.py`.
 You judge the part scripts cannot: does each design *actually and adequately* satisfy the

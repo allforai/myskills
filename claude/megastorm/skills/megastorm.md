@@ -49,14 +49,34 @@ After Phase 0, do not stop for the human until an escalation surfaces.
 For every stage, read the Workflow return. If ANY agent returned `status:"escalate"`, HALT,
 render `reason`+`evidence` to the user, get the decision, then re-run that stage. Otherwise continue.
 
-Model policy — every agent's model is pinned explicitly, never inherits the session model:
-- Planning chain (design / closure-critic / plan / reverse-critic) = `{model:'fable'}` — strongest model for the thinking work.
-- Executor = `{model:'sonnet'}` — token thrift on bulk mechanical coding only.
-- Supervisor (验收) = `{model:'opus'}` — verification rigor is the trust root.
+Model tiers — three roles resolved by ladder, never hardcoded to a model generation.
+At the start of Phase 1, read the `model` enum your Workflow tool currently advertises and
+resolve each tier to the FIRST ladder name the enum contains; substitute that literal into
+every `agent()` call for the tier. If an entire ladder misses the enum, omit the `model`
+option (inherit the default) and note it in the final report — a model rename must never
+break the pipeline.
+- **THINK（规划）** = first of `fable → opus → sonnet`. Used by design / closure-critic /
+  plan / reverse-critic — thinking errors are the most expensive, take the strongest available.
+- **VERIFY（验收）** = first of `opus → fable → sonnet`. Used by supervisor — verification
+  rigor is the trust root; must never resolve weaker than BULK.
+- **BULK（执行）** = first of `sonnet → haiku`. Used by executor — token thrift on bulk
+  mechanical coding only.
+
+Downgrade rules:
+- **Availability downgrade (allowed, visible):** falling down a ladder because a name is absent
+  from the enum is the intended mechanism. Any tier that did NOT resolve to its ladder head MUST
+  be listed in the Phase 2 report ("THINK ran on opus — fable unavailable").
+- **Cost downgrade (forbidden by default):** never auto-downgrade a tier to save tokens. megastorm
+  is declared heavy; if the human wants a thrifty run, that is a Phase 0 decision they state
+  explicitly, recorded in the overview — not something the orchestrator decides silently.
+- **Mid-run downgrade (forbidden for VERIFY):** if the VERIFY model errors/rate-limits mid-run,
+  retry, then HALT and escalate — never verify on a weaker model than resolved. A silently weaker
+  verifier is worse than a stopped pipeline. THINK likewise retries then escalates; only BULK may
+  fall one ladder step mid-run (it is already the cheapest work and VERIFY re-checks it anyway).
 
 ### 1.1 Design — Workflow
 Author a Workflow that `pipeline`s/`parallel`s over the M module specs; each `agent` uses
-`$ROOT/knowledge/prompts/design-agent.md` and the design-manifest schema, with `{model:'fable'}`. **Pass every design
+`$ROOT/knowledge/prompts/design-agent.md` and the design-manifest schema, with `{model: THINK}`. **Pass every design
 agent the frozen `megastorm-registry` block** (requirements + interfaces) so `covers_req_ids`
 and exposes/consumes are drawn from the closed vocabulary, not invented. Collect the manifests.
 
@@ -69,16 +89,16 @@ and exposes/consumes are drawn from the closed vocabulary, not invented. Collect
 - Run `python3 $ROOT/scripts/check_closure.py requirements.json manifests.json registry.json`.
   If it BLOCKs (uncovered req / orphan / dangling or off-registry interface), feed errors to a
   fix `agent` (design-agent prompt) and re-run, ≤3 rounds.
-- Then run a Workflow `agent` with `$ROOT/knowledge/prompts/closure-critic.md` and `{model:'fable'}` for the prose-level judgment (≤3 rounds).
+- Then run a Workflow `agent` with `$ROOT/knowledge/prompts/closure-critic.md` and `{model: THINK}` for the prose-level judgment (≤3 rounds).
 - Unresolved after rounds, or any escalate → HALT to user.
 
 ### 1.3 Plan — Workflow
-`pipeline` over designs; each `agent` uses `$ROOT/knowledge/prompts/plan-agent.md` with `{model:'fable'}` and emits the plan-task array.
+`pipeline` over designs; each `agent` uses `$ROOT/knowledge/prompts/plan-agent.md` with `{model: THINK}` and emits the plan-task array.
 For each plan, run `python3 $ROOT/scripts/validate_plan_tasks.py <tasks.json>`; if BLOCKED,
 bounce back to the plan agent until every task has `touched_paths` + `acceptance_cmd`.
 
 ### 1.4 Reverse review — Workflow
-A Workflow `agent` with `$ROOT/knowledge/prompts/reverse-critic.md` and `{model:'fable'}` over all spec/design/plan docs
+A Workflow `agent` with `$ROOT/knowledge/prompts/reverse-critic.md` and `{model: THINK}` over all spec/design/plan docs
 (≤3 rounds, self-fix or escalate).
 
 ### 1.5 Orchestrate — deterministic
@@ -100,8 +120,8 @@ a layer, use `build_task_dag`'s output fields directly:**
   barrier-less `pipeline` to merge colliding worktrees — it has no serialization point.
 
 Stages:
-- executeStage: `agent($ROOT/knowledge/prompts/executor.md prompt, {model:'sonnet'})` (+ `{isolation:'worktree'}` for group members).
-- verifyStage: `agent($ROOT/knowledge/prompts/supervisor.md prompt, {schema: verdict, model:'opus'})` — fresh context,
+- executeStage: `agent($ROOT/knowledge/prompts/executor.md prompt, {model: BULK})` (+ `{isolation:'worktree'}` for group members).
+- verifyStage: `agent($ROOT/knowledge/prompts/supervisor.md prompt, {schema: verdict, model: VERIFY})` — fresh context,
   reruns `acceptance_cmd`. On `done:false`: read the task's `retries` from the ledger;
   **if `retries < 2` → increment and bounce to executor; if `retries == 2` → escalate.** This is
   spec §4.6's "soft-retry ≤2" = the initial attempt plus at most 2 retries (3 dispatches total).

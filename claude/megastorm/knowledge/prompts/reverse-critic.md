@@ -1,4 +1,4 @@
-# Reverse critic (Phase 1.4) — 逆向思维 — MODEL: fable (pinned)
+# Reverse critic (Phase 1.4) — 逆向思维 — MODEL: THINK tier (ladder in skill)
 
 Work BACKWARD from the plans/designs to the specs. Do not read forward and nod along —
 actively try to refute that this will work.
