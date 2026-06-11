@@ -1,6 +1,6 @@
 {
   "name": "megastorm",
   "description": "Large-goal autonomous pipeline: decompose into modules, front-load decisions via brainstorming, then autonomously design → closed-loop validate → plan → reverse-review → orchestrate → concurrently execute with anti-fake-completion supervision. Global command /megastorm.",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "author": { "name": "dv" }
 }

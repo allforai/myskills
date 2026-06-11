@@ -25,11 +25,22 @@ and tell the user to install the superpowers marketplace via `/plugin`. Do not p
    Write the draft overview to `docs/superpowers/specs/<date>-<goal>-overview.md` (module
    table + dependency graph). **If the goal is too big for one run, cut it here:** milestone-1
    scope = this megastorm run; everything deferred goes into a `## Roadmap` section of the
-   overview (future runs). A module that already smells like 20+ tasks should be split or
-   deferred NOW — it is far cheaper than the Phase 1 loop-back.
-3. For EACH module, run `Skill: superpowers:brainstorming` to produce a standard module
+   overview (future runs).
+3. **Granularity review (dedicated step — do not skip):** before brainstorming individual
+   modules, audit the approved breakdown itself, module by module:
+   - **Size:** estimate each module's plan size; anything that smells like > 20 tasks gets
+     split or deferred to `## Roadmap` NOW — §1.3 has a hard size check, and an oversized
+     module discovered there is a guaranteed halt with no automatic recovery.
+   - **Cohesion:** one module = one cohesive subsystem with a single concern; a module whose
+     one-line description needs "and" twice is two modules.
+   - **Balance (don't over-split either):** every new boundary becomes registry interfaces
+     and cross-module decisions; if two candidate modules would share most of their
+     interfaces, merge them.
+   Present the audit as a table (module → est. size → verdict → action) and get the human to
+   approve the adjusted breakdown before proceeding.
+4. For EACH module, run `Skill: superpowers:brainstorming` to produce a standard module
    spec/design; the user approves each. Done when all M specs exist and are approved.
-4. **Mint the frozen registry (YOU, the main session, are the single owner — not the
+5. **Mint the frozen registry (YOU, the main session, are the single owner — not the
    brainstorming skill, not the design agents).** After all specs are approved, read them and
    write the registry into the overview wrapped in `<!-- megastorm-registry:start -->` /
    `<!-- megastorm-registry:end -->` markers (a plain ```json object between them), per
@@ -42,11 +53,11 @@ and tell the user to install the superpowers marketplace via `/plugin`. Do not p
    back to you repeatedly and partly defeating "decisions front-loaded." Enumerate every plausible
    cross-module interface now. (Without this single owner, every design `covers_req_ids` becomes
    an orphan and the §4.2 closure gate fails closed on every run — the reverse-review's top finding.)
-5. **Resolve the three model tiers** (rules in "Model tiers" under Phase 1): take each tier's
+6. **Resolve the three model tiers** (rules in "Model tiers" under Phase 1): take each tier's
    preferred model from the Workflow tool's current `model` enum; AskUserQuestion only if a
    preferred name is missing, or to record an explicitly requested thrifty run. Freeze the three
    literals into the registry's `models` field.
-6. **New-human-decision rule (boundary for Phase 1):** anything changing module boundaries,
+7. **New-human-decision rule (boundary for Phase 1):** anything changing module boundaries,
    public/cross-module interfaces, or user-visible scope = escalate. Internal-only choices =
    the autonomous agents decide and log. This is what makes Phase 1 safe to run unattended.
 
@@ -56,19 +67,10 @@ After Phase 0, do not stop for the human until an escalation surfaces.
 For every stage, read the Workflow return. If ANY agent returned `status:"escalate"`, HALT,
 render `reason`+`evidence` to the user, get the decision, then re-run that stage. Otherwise continue.
 
-**Module-too-large loop-back — the ONE sanctioned return to Phase 0.** Trigger: a design or
-plan agent escalates with `reason:"module-too-large"`, or §1.3's deterministic check trips
-(one module's validated plan > 20 tasks). Handling — do NOT just re-run the stage:
-1. HALT. Re-run `Skill: superpowers:brainstorming` for THAT module only, with the human:
-   split it into sub-modules, or defer scope to the overview's `## Roadmap` section.
-2. Human approves the new breakdown. Update the module specs; re-mint ONLY the affected
-   registry entries (new `R-<submodule>-NN` IDs and interfaces for the split parts; every
-   other entry stays verbatim — do not reopen settled vocabulary).
-3. Re-run §1.1→§1.3 for the new/changed modules only; untouched modules' designs and plans
-   remain valid. Then continue forward.
-Budget: at most ONE loop-back per original module. If a split product is still too large,
-that is a scoping problem — stop and re-plan the roadmap with the human instead of looping.
-Record every loop-back in the Phase 2 report.
+`module-too-large` escalations (from design/plan agents, or §1.3's size check) are ordinary
+escalations: HALT, show the human the evidence (task-count estimate + split seams), and let
+THEM decide how to split or defer — there is no automatic loop-back or re-decomposition.
+Phase 0's granularity review (step 3) exists precisely to make this rare.
 
 Model tiers — three roles, never hardcoded to a model generation. Each tier has a preferred
 model plus fallback candidates; the ladder is a RECOMMENDATION ORDER to present to the human,
@@ -118,7 +120,7 @@ and exposes/consumes are drawn from the closed vocabulary, not invented. Collect
 For each plan, run `python3 $ROOT/scripts/validate_plan_tasks.py <tasks.json>`; if BLOCKED,
 bounce back to the plan agent until every task has `touched_paths` + `acceptance_cmd`.
 Deterministic size check: a validated plan with > 20 tasks for one module = module-too-large →
-take the loop-back above; do NOT bounce it to the plan agent (it cannot fix scoping).
+escalate to the human; do NOT bounce it to the plan agent (it cannot fix scoping).
 
 ### 1.4 Reverse review — Workflow
 A Workflow `agent` with `$ROOT/knowledge/prompts/reverse-critic.md` and `{model: THINK}` over all spec/design/plan docs
