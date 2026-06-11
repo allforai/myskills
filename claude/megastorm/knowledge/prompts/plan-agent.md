@@ -20,3 +20,10 @@ implementation plan as bite-sized TDD tasks. You CANNOT ask the human anything.
 ## Output (array of plan-task schema + escalation)
 Return JSON: `{status, plan_path, tasks: [ {id,title,touched_paths,acceptance_cmd,depends_on} ], reason?, evidence?}`
 Escalate (don't guess) if the design is under-specified in a way that needs a human decision.
+
+## Module-too-large escalation
+If a faithful plan for this module would exceed ~20 tasks, do NOT emit a monster plan and do
+NOT secretly merge tasks to duck the limit. Return `status:"escalate"`, `reason:"module-too-large"`,
+`evidence`: your task-count estimate plus the natural split seams you see (candidate sub-module
+boundaries). Splitting a module is a human decision — the orchestrator has a sanctioned
+loop-back for exactly this.

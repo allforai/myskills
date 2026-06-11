@@ -23,7 +23,10 @@ and tell the user to install the superpowers marketplace via `/plugin`. Do not p
 2. Decompose the goal into M modules + boundaries + inter-module deps by running
    `Skill: superpowers:brainstorming`. Get the user to approve the module breakdown.
    Write the draft overview to `docs/superpowers/specs/<date>-<goal>-overview.md` (module
-   table + dependency graph).
+   table + dependency graph). **If the goal is too big for one run, cut it here:** milestone-1
+   scope = this megastorm run; everything deferred goes into a `## Roadmap` section of the
+   overview (future runs). A module that already smells like 20+ tasks should be split or
+   deferred NOW — it is far cheaper than the Phase 1 loop-back.
 3. For EACH module, run `Skill: superpowers:brainstorming` to produce a standard module
    spec/design; the user approves each. Done when all M specs exist and are approved.
 4. **Mint the frozen registry (YOU, the main session, are the single owner — not the
@@ -52,6 +55,20 @@ After Phase 0, do not stop for the human until an escalation surfaces.
 ## Phase 1 — Autonomous pipeline (call Workflow once per stage; read result; decide next)
 For every stage, read the Workflow return. If ANY agent returned `status:"escalate"`, HALT,
 render `reason`+`evidence` to the user, get the decision, then re-run that stage. Otherwise continue.
+
+**Module-too-large loop-back — the ONE sanctioned return to Phase 0.** Trigger: a design or
+plan agent escalates with `reason:"module-too-large"`, or §1.3's deterministic check trips
+(one module's validated plan > 20 tasks). Handling — do NOT just re-run the stage:
+1. HALT. Re-run `Skill: superpowers:brainstorming` for THAT module only, with the human:
+   split it into sub-modules, or defer scope to the overview's `## Roadmap` section.
+2. Human approves the new breakdown. Update the module specs; re-mint ONLY the affected
+   registry entries (new `R-<submodule>-NN` IDs and interfaces for the split parts; every
+   other entry stays verbatim — do not reopen settled vocabulary).
+3. Re-run §1.1→§1.3 for the new/changed modules only; untouched modules' designs and plans
+   remain valid. Then continue forward.
+Budget: at most ONE loop-back per original module. If a split product is still too large,
+that is a scoping problem — stop and re-plan the roadmap with the human instead of looping.
+Record every loop-back in the Phase 2 report.
 
 Model tiers — three roles, never hardcoded to a model generation. Each tier has a preferred
 model plus fallback candidates; the ladder is a RECOMMENDATION ORDER to present to the human,
@@ -100,6 +117,8 @@ and exposes/consumes are drawn from the closed vocabulary, not invented. Collect
 `pipeline` over designs; each `agent` uses `$ROOT/knowledge/prompts/plan-agent.md` with `{model: THINK}` and emits the plan-task array.
 For each plan, run `python3 $ROOT/scripts/validate_plan_tasks.py <tasks.json>`; if BLOCKED,
 bounce back to the plan agent until every task has `touched_paths` + `acceptance_cmd`.
+Deterministic size check: a validated plan with > 20 tasks for one module = module-too-large →
+take the loop-back above; do NOT bounce it to the plan agent (it cannot fix scoping).
 
 ### 1.4 Reverse review — Workflow
 A Workflow `agent` with `$ROOT/knowledge/prompts/reverse-critic.md` and `{model: THINK}` over all spec/design/plan docs

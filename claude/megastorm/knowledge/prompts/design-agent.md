@@ -16,6 +16,9 @@ all user decisions were front-loaded in Phase 0.
   is a NEW HUMAN DECISION → do NOT decide it; return `status:"escalate"` with the question.
 - A pure internal choice (naming, file org, private structures) → decide it, note it in the
   design's "Assumptions" section.
+- If the module spec clearly bundles several independent subsystems and no coherent single
+  design can cover it, return `status:"escalate"`, `reason:"module-too-large"`, `evidence` =
+  the split seams you see. Do not paper over it with a sprawling design.
 
 ## Frozen registry (read-only inputs you are given)
 You are handed the overview's `megastorm-registry` block: `requirements` (the `R-*` IDs)
