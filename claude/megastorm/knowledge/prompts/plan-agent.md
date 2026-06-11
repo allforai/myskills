@@ -15,7 +15,22 @@ implementation plan as bite-sized TDD tasks. You CANNOT ask the human anything.
 - `touched_paths`: every file the task creates/modifies (non-empty). Drives §4.5 concurrency.
 - `acceptance_cmd`: a machine-checkable command that exits 0 iff the task is truly done
   (e.g. `python3 -m pytest path/test_x.py`, `npm run build`). Drives §4.6 supervisor.
-- `depends_on`: ids of tasks that must complete first ([] if none).
+- `depends_on`: ids of tasks that must complete first ([] if none). INTRA-module only —
+  you cannot see other modules' task ids, so never guess a foreign id (it hard-BLOCKs the DAG).
+
+## Cross-module ordering: implements / requires (registry vocabulary)
+Other modules' plans are written in parallel with yours; interfaces are the only shared
+vocabulary. On top of the design manifest's exposes/consumes:
+- Tag `implements: ["<kind>:<name>"]` on THE task whose `acceptance_cmd` proves that exposed
+  interface actually consumable (usually your module's integration task for it). Every
+  interface your design `exposes` MUST be implemented by exactly one of your tasks — if none
+  fits, your plan missed work.
+- Tag `requires: ["<kind>:<name>"]` on each task that consumes an interface from another
+  module (from your design's `consumes`).
+Names MUST come verbatim from the frozen registry — off-registry values BLOCK validation.
+The orchestrator derives cross-module DAG edges from these tags; mis-tagging `requires` too
+generously only costs parallelism, but omitting it lets your task run before its dependency
+exists.
 
 ## Output (array of plan-task schema + escalation)
 Return JSON: `{status, plan_path, tasks: [ {id,title,touched_paths,acceptance_cmd,depends_on} ], reason?, evidence?}`

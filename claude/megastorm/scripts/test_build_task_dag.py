@@ -61,6 +61,51 @@ class TestBuildDag(unittest.TestCase):
         r = build_dag(tasks)
         self.assertEqual(r["isolate_groups"], [])
 
+    def test_interface_edge_orders_cross_module(self):
+        a = dict(_t("T-auth-01", ["auth/api.py"]), implements=["api:login"])
+        b = dict(_t("T-ui-01", ["ui/login.py"]), requires=["api:login"])
+        r = build_dag([b, a])  # declaration order does not matter
+        self.assertTrue(r["ok"], r["errors"])
+        self.assertEqual(r["layers"], [["T-auth-01"], ["T-ui-01"]])
+        self.assertEqual(r["derived_edges"], [["T-ui-01", "T-auth-01"]])
+
+    def test_required_interface_without_implementer_errors(self):
+        b = dict(_t("T-ui-01", ["ui/login.py"]), requires=["api:login"])
+        r = build_dag([b])
+        self.assertFalse(r["ok"])
+        self.assertTrue(any("api:login" in e and "no task implements" in e for e in r["errors"]))
+
+    def test_self_implements_and_requires_no_self_edge(self):
+        a = dict(_t("T-a-01", ["a.py"]), implements=["api:x"], requires=["api:x"])
+        r = build_dag([a])
+        self.assertTrue(r["ok"], r["errors"])
+        self.assertEqual(r["derived_edges"], [])
+
+    def test_multiple_implementers_all_become_deps(self):
+        a1 = dict(_t("T-a-01", ["a1.py"]), implements=["api:x"])
+        a2 = dict(_t("T-a-02", ["a2.py"]), implements=["api:x"])
+        b = dict(_t("T-b-01", ["b.py"]), requires=["api:x"])
+        r = build_dag([a1, a2, b])
+        self.assertTrue(r["ok"], r["errors"])
+        self.assertEqual(r["layers"], [["T-a-01", "T-a-02"], ["T-b-01"]])
+        self.assertEqual(sorted(r["derived_edges"]),
+                         [["T-b-01", "T-a-01"], ["T-b-01", "T-a-02"]])
+
+    def test_derived_edge_cycle_errors(self):
+        a = dict(_t("T-a-01", ["a.py"]), implements=["api:x"], requires=["api:y"])
+        b = dict(_t("T-b-01", ["b.py"]), implements=["api:y"], requires=["api:x"])
+        r = build_dag([a, b])
+        self.assertFalse(r["ok"])
+        self.assertTrue(any("cycle" in e for e in r["errors"]))
+
+    def test_derived_edge_combines_with_explicit(self):
+        a = dict(_t("T-a-01", ["a.py"]), implements=["api:x"])
+        b = dict(_t("T-b-01", ["b.py"]), requires=["api:x"])
+        c = _t("T-c-01", ["c.py"], ["T-b-01"])
+        r = build_dag([a, b, c])
+        self.assertTrue(r["ok"], r["errors"])
+        self.assertEqual(r["layers"], [["T-a-01"], ["T-b-01"], ["T-c-01"]])
+
     def test_isolate_groups_two_separate_groups(self):
         tasks = [_t("a", ["p.py"]), _t("b", ["p.py"]), _t("c", ["q.py"]), _t("d", ["q.py"])]
         r = build_dag(tasks)

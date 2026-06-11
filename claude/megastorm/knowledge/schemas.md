@@ -68,8 +68,18 @@ Schema of the JSON between the markers:
     "title": { "type": "string" },
     "touched_paths": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
     "acceptance_cmd": { "type": "string" },
-    "depends_on": { "type": "array", "items": { "type": "string" } } } }
+    "depends_on": { "type": "array", "items": { "type": "string" } },
+    "implements": { "type": "array", "items": { "type": "string" } },
+    "requires": { "type": "array", "items": { "type": "string" } } } }
 ```
+- `depends_on` carries INTRA-module ordering (task ids the plan agent can see).
+- `implements` / `requires` (optional) carry CROSS-module ordering, in registry interface
+  vocabulary — parallel plan agents cannot see each other's task ids, so interfaces are the
+  join key. `implements: ["api:createOrder"]` = THE task whose `acceptance_cmd` proves that
+  interface consumable (usually the module's integration task for it). `requires` = registry
+  interfaces this task consumes. `build_task_dag.py` derives a DAG edge from every requirer
+  to every implementer; a required interface nobody implements = hard BLOCK (missed work).
+  Values are validated against the frozen registry (`validate_plan_tasks.py` second arg).
 
 ## verdict (spec §4.6 supervisor — anti-fake-completion)
 ```json

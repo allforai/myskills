@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """§4.5 orchestration: turn validated plan tasks into a deterministic execution
-DAG. Ordering comes ONLY from explicit depends_on (no prose parsing). touched_paths
+DAG. Ordering comes from explicit depends_on PLUS derived interface edges (no prose
+parsing): a task that `requires` registry interface X depends on every task that
+`implements` X — this is how CROSS-MODULE ordering enters the DAG, since parallel
+per-module plan agents cannot know each other's task ids. A required interface with
+no implementing task anywhere is a hard error (the plan missed work). touched_paths
 drives concurrency safety: same-layer tasks sharing any path must run worktree-isolated
 (spec §4.6). Same-path writers with no depends_on are ambiguous -> WARN + still isolate."""
 import itertools
@@ -16,6 +20,29 @@ def _missing_deps(tasks):
             if d not in ids:
                 out.append((t["id"], d))
     return out
+
+
+def _interface_edges(tasks):
+    """Derive (task_id, depends_on_id) edges from implements/requires interface
+    tags. Self-edges are skipped (a task may build and consume its own interface).
+    Returns (edges, errors); a required interface nobody implements is an error."""
+    impl = {}
+    for t in tasks:
+        for x in t.get("implements", []) or []:
+            impl.setdefault(x, []).append(t["id"])
+    edges, errors = [], []
+    for t in tasks:
+        for x in t.get("requires", []) or []:
+            providers = impl.get(x)
+            if not providers:
+                errors.append(
+                    f"task '{t['id']}' requires interface '{x}' but no task implements it "
+                    f"(the exposing module's plan missed work, or the tag is wrong)")
+                continue
+            for p in providers:
+                if p != t["id"]:
+                    edges.append((t["id"], p))
+    return edges, errors
 
 
 def _layers(tasks):
@@ -49,14 +76,22 @@ def build_dag(tasks):
     errors, warnings = [], []
     for tid, missing in _missing_deps(tasks):
         errors.append(f"task '{tid}' depends_on missing task '{missing}'")
-    layers, cyclic = _layers(tasks)
+    derived, ierrs = _interface_edges(tasks)
+    errors.extend(ierrs)
+    extra = {}
+    for tid, dep in derived:
+        extra.setdefault(tid, set()).add(dep)
+    # effective deps = explicit depends_on + derived interface edges
+    aug = [dict(t, depends_on=sorted(set(t.get("depends_on") or []) | extra.get(t["id"], set())))
+           for t in tasks]
+    layers, cyclic = _layers(aug)
     if cyclic:
         errors.append(f"dependency cycle among tasks: {', '.join(cyclic)}")
     if errors:
         return {"ok": False, "errors": errors, "warnings": warnings, "layers": [], "isolate": []}
 
     by_id = {t["id"]: set(t.get("touched_paths", [])) for t in tasks}
-    deps = {t["id"]: set(t.get("depends_on", []) or []) for t in tasks}
+    deps = {t["id"]: set(t.get("depends_on", []) or []) for t in aug}
     isolate = []
     for layer in layers:
         for a, b in itertools.combinations(sorted(layer), 2):
@@ -94,7 +129,8 @@ def build_dag(tasks):
         key=lambda g: order[g[0]])
 
     return {"ok": True, "errors": errors, "warnings": warnings,
-            "layers": layers, "isolate": isolate, "isolate_groups": isolate_groups}
+            "layers": layers, "isolate": isolate, "isolate_groups": isolate_groups,
+            "derived_edges": sorted([list(e) for e in set(derived)])}
 
 
 def main(argv):

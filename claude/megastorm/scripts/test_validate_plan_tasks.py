@@ -8,6 +8,28 @@ def _t(tid, paths=("a.py",), cmd="pytest a.py"):
 
 
 class TestValidateTasks(unittest.TestCase):
+    def test_interface_tags_valid_vocab(self):
+        t = dict(_t("T1"), implements=["api:login"], requires=["data:user"])
+        r = validate_tasks([t], interfaces={"api:login", "data:user"})
+        self.assertTrue(r["ok"], r["errors"])
+
+    def test_interface_tags_off_registry_blocks(self):
+        t = dict(_t("T1"), requires=["api:loginn"])
+        r = validate_tasks([t], interfaces={"api:login"})
+        self.assertFalse(r["ok"])
+        self.assertTrue(any("off-registry" in e and "api:loginn" in e for e in r["errors"]))
+
+    def test_interface_tags_ignored_without_registry(self):
+        t = dict(_t("T1"), requires=["api:whatever"])
+        r = validate_tasks([t])
+        self.assertTrue(r["ok"], r["errors"])
+
+    def test_interface_tags_must_be_string_list(self):
+        t = dict(_t("T1"), implements="api:login")
+        r = validate_tasks([t], interfaces={"api:login"})
+        self.assertFalse(r["ok"])
+        self.assertTrue(any("list of interface names" in e for e in r["errors"]))
+
     def test_all_valid(self):
         r = validate_tasks([_t("T1"), _t("T2", ("b.py",), "npm run build")])
         self.assertTrue(r["ok"], r["errors"])

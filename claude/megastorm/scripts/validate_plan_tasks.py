@@ -68,9 +68,12 @@ def _selector_kind(cmd):
     return None
 
 
-def validate_tasks(tasks):
+def validate_tasks(tasks, interfaces=None):
     """Return {ok, errors, warnings}. Each task needs id, non-empty touched_paths,
-    non-blank acceptance_cmd, and an acceptance_cmd that cannot pass with 0 tests."""
+    non-blank acceptance_cmd, and an acceptance_cmd that cannot pass with 0 tests.
+    Optional implements/requires must be lists of strings; when `interfaces` (the
+    frozen registry vocabulary) is given, every value must be in it — off-registry
+    tags would silently produce wrong DAG edges downstream."""
     errors = []
     warnings = []
     for i, t in enumerate(tasks):
@@ -81,6 +84,19 @@ def validate_tasks(tasks):
         paths = t.get("touched_paths")
         if not isinstance(paths, list) or len(paths) == 0:
             errors.append(f"{label}: missing or empty 'touched_paths'")
+        for field in ("implements", "requires"):
+            vals = t.get(field)
+            if vals is None:
+                continue
+            if not isinstance(vals, list) or not all(isinstance(v, str) for v in vals):
+                errors.append(f"{label}: '{field}' must be a list of interface names")
+                continue
+            if interfaces is not None:
+                for v in vals:
+                    if v not in interfaces:
+                        errors.append(
+                            f"{label}: '{field}' has off-registry interface '{v}' "
+                            f"(must come from the frozen registry vocabulary)")
         cmd = t.get("acceptance_cmd")
         if not isinstance(cmd, str) or not cmd.strip():
             errors.append(f"{label}: missing or blank 'acceptance_cmd'")
@@ -110,7 +126,11 @@ def main(argv):
     tasks = json.loads(raw)
     if isinstance(tasks, dict):
         tasks = tasks.get("tasks", [])
-    result = validate_tasks(tasks)
+    interfaces = None
+    if len(argv) > 2:  # optional registry.json (the frozen interface vocabulary)
+        reg = json.loads(open(argv[2]).read())
+        interfaces = set(reg if isinstance(reg, list) else reg.get("interfaces", []))
+    result = validate_tasks(tasks, interfaces)
     for w in result["warnings"]:
         print(f"WARN: {w}")
     if result["ok"]:

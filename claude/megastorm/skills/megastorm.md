@@ -117,8 +117,10 @@ and exposes/consumes are drawn from the closed vocabulary, not invented. Collect
 
 ### 1.3 Plan — Workflow
 `pipeline` over designs; each `agent` uses `$ROOT/knowledge/prompts/plan-agent.md` with `{model: THINK}` and emits the plan-task array.
-For each plan, run `python3 $ROOT/scripts/validate_plan_tasks.py <tasks.json>`; if BLOCKED,
-bounce back to the plan agent until every task has `touched_paths` + `acceptance_cmd`.
+For each plan, run `python3 $ROOT/scripts/validate_plan_tasks.py <tasks.json> registry.json`
+(registry.json from §1.2 — validates `implements`/`requires` against the frozen vocabulary);
+if BLOCKED, bounce back to the plan agent until every task has `touched_paths` +
+`acceptance_cmd` + on-registry interface tags.
 Deterministic size check: a validated plan with > 20 tasks for one module = module-too-large →
 escalate to the human; do NOT bounce it to the plan agent (it cannot fix scoping).
 
@@ -128,8 +130,11 @@ A Workflow `agent` with `$ROOT/knowledge/prompts/reverse-critic.md` and `{model:
 
 ### 1.5 Orchestrate — deterministic
 Concatenate all plan tasks into one array, run
-`python3 $ROOT/scripts/build_task_dag.py <all-tasks.json>`. BLOCK (cycle/missing dep) → fix via
-plan agent. Keep `layers` (execution order) and `isolate` (same-layer file-colliding pairs).
+`python3 $ROOT/scripts/build_task_dag.py <all-tasks.json>`. Cross-module ordering comes from
+the derived interface edges (`requires` → `implements` join over the registry vocabulary) —
+this is the ONLY mechanism ordering tasks across modules, since `depends_on` is intra-module.
+BLOCK (cycle / missing dep / required interface nobody implements) → fix via plan agent.
+Keep `layers` (execution order) and `isolate` (same-layer file-colliding pairs).
 Persist to `orchestration.json`. Surface any `warnings` in the final report.
 
 ### 1.6 Concurrent execute + supervise — Workflow
