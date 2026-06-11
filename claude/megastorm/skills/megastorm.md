@@ -39,7 +39,11 @@ and tell the user to install the superpowers marketplace via `/plugin`. Do not p
    back to you repeatedly and partly defeating "decisions front-loaded." Enumerate every plausible
    cross-module interface now. (Without this single owner, every design `covers_req_ids` becomes
    an orphan and the §4.2 closure gate fails closed on every run — the reverse-review's top finding.)
-4. **New-human-decision rule (boundary for Phase 1):** anything changing module boundaries,
+5. **Resolve the three model tiers** (rules in "Model tiers" under Phase 1): take each tier's
+   preferred model from the Workflow tool's current `model` enum; AskUserQuestion only if a
+   preferred name is missing, or to record an explicitly requested thrifty run. Freeze the three
+   literals into the registry's `models` field.
+6. **New-human-decision rule (boundary for Phase 1):** anything changing module boundaries,
    public/cross-module interfaces, or user-visible scope = escalate. Internal-only choices =
    the autonomous agents decide and log. This is what makes Phase 1 safe to run unattended.
 
@@ -49,30 +53,30 @@ After Phase 0, do not stop for the human until an escalation surfaces.
 For every stage, read the Workflow return. If ANY agent returned `status:"escalate"`, HALT,
 render `reason`+`evidence` to the user, get the decision, then re-run that stage. Otherwise continue.
 
-Model tiers — three roles resolved by ladder, never hardcoded to a model generation.
-At the start of Phase 1, read the `model` enum your Workflow tool currently advertises and
-resolve each tier to the FIRST ladder name the enum contains; substitute that literal into
-every `agent()` call for the tier. If an entire ladder misses the enum, omit the `model`
-option (inherit the default) and note it in the final report — a model rename must never
-break the pipeline.
-- **THINK（规划）** = first of `fable → opus → sonnet`. Used by design / closure-critic /
-  plan / reverse-critic — thinking errors are the most expensive, take the strongest available.
-- **VERIFY（验收）** = first of `opus → fable → sonnet`. Used by supervisor — verification
-  rigor is the trust root; must never resolve weaker than BULK.
-- **BULK（执行）** = first of `sonnet → haiku`. Used by executor — token thrift on bulk
-  mechanical coding only.
+Model tiers — three roles, never hardcoded to a model generation. Each tier has a preferred
+model plus fallback candidates; the ladder is a RECOMMENDATION ORDER to present to the human,
+never an auto-fall mechanism. Resolve in Phase 0, while the human is present: read the `model`
+enum your Workflow tool currently advertises. For each tier, if the preferred name is in the
+enum, use it. If it is NOT, do not silently fall down the ladder — AskUserQuestion with the
+remaining candidates (plus "inherit session default") and record the choice. Freeze all three
+resolved literals into the overview's registry block; every Phase 1 `agent()` call substitutes
+its tier's frozen literal.
+- **THINK（规划）** = prefer `fable`; candidates `opus → sonnet`. Used by design /
+  closure-critic / plan / reverse-critic — thinking errors are the most expensive.
+- **VERIFY（验收）** = prefer `opus`; candidates `fable → sonnet`. Used by supervisor —
+  verification rigor is the trust root; must never resolve weaker than BULK.
+- **BULK（执行）** = prefer `sonnet`; candidate `haiku`. Used by executor — token thrift on
+  bulk mechanical coding only.
 
-Downgrade rules:
-- **Availability downgrade (allowed, visible):** falling down a ladder because a name is absent
-  from the enum is the intended mechanism. Any tier that did NOT resolve to its ladder head MUST
-  be listed in the Phase 2 report ("THINK ran on opus — fable unavailable").
-- **Cost downgrade (forbidden by default):** never auto-downgrade a tier to save tokens. megastorm
-  is declared heavy; if the human wants a thrifty run, that is a Phase 0 decision they state
-  explicitly, recorded in the overview — not something the orchestrator decides silently.
-- **Mid-run downgrade (forbidden for VERIFY):** if the VERIFY model errors/rate-limits mid-run,
-  retry, then HALT and escalate — never verify on a weaker model than resolved. A silently weaker
-  verifier is worse than a stopped pipeline. THINK likewise retries then escalates; only BULK may
-  fall one ladder step mid-run (it is already the cheapest work and VERIFY re-checks it anyway).
+Downgrade rules — NO automatic downgrade; manual downgrade only:
+- The orchestrator NEVER lowers a tier on its own — not for availability, not for cost, not
+  mid-run. Every downgrade is a human decision.
+- **Manual downgrade (allowed):** the human may pick a lower model for any tier — at Phase 0
+  (e.g. an explicitly declared thrifty run) or at any escalation halt. Record it in the overview;
+  list every below-preference tier in the Phase 2 report ("THINK ran on opus — human-approved").
+- **Mid-run model failure (any tier, including BULK):** retry; if it keeps failing, HALT and
+  escalate — the human decides whether to downgrade or stop. A silently weaker verifier (or
+  planner) is worse than a stopped pipeline.
 
 ### 1.1 Design — Workflow
 Author a Workflow that `pipeline`s/`parallel`s over the M module specs; each `agent` uses

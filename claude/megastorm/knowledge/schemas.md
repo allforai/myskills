@@ -33,7 +33,8 @@ other ```json fences — module tables, dep graphs — so the registry needs a u
 ```
 <!-- megastorm-registry:start -->
 ​```json
-{ "requirements": ["R-auth-01", "R-auth-02"], "interfaces": ["api:createOrder", "event:orderPaid"] }
+{ "requirements": ["R-auth-01", "R-auth-02"], "interfaces": ["api:createOrder", "event:orderPaid"],
+  "models": { "think": "fable", "verify": "opus", "bulk": "sonnet" } }
 ​```
 <!-- megastorm-registry:end -->
 ```
@@ -43,10 +44,17 @@ Schema of the JSON between the markers:
 { "type": "object", "required": ["requirements", "interfaces"],
   "properties": {
     "requirements": { "type": "array", "items": { "type": "string" } },
-    "interfaces": { "type": "array", "items": { "type": "string" } } } }
+    "interfaces": { "type": "array", "items": { "type": "string" } },
+    "models": { "type": "object", "required": ["think", "verify", "bulk"],
+      "properties": { "think": { "type": "string" }, "verify": { "type": "string" },
+                      "bulk": { "type": "string" } } } } }
 ```
 - `requirements`: every requirement, ID-shaped `R-<module>-NN` (e.g. `R-auth-01`). One owner: Phase 0.
 - `interfaces`: the closed vocabulary of cross-module interface names.
+- `models` (optional but recommended): the three tier literals resolved in Phase 0 (see the
+  skill's "Model tiers"). Frozen like everything else here — Phase 1 substitutes these into
+  `agent()` calls and NEVER changes them on its own; any downgrade is a human decision.
+  `check_closure.py` ignores this field.
 - **Interface naming grammar (mandatory):** `<kind>:<name>` where `kind ∈ {api, event, data, ui}`
   and `name` is lowerCamelCase. e.g. `api:createOrder`, `event:orderPaid`, `data:userProfile`.
   Design agents MUST use these exact names — `check_closure.py` rejects any exposes/consumes
