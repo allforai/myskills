@@ -49,12 +49,14 @@ After Phase 0, do not stop for the human until an escalation surfaces.
 For every stage, read the Workflow return. If ANY agent returned `status:"escalate"`, HALT,
 render `reason`+`evidence` to the user, get the decision, then re-run that stage. Otherwise continue.
 
-Model policy: design / closure-critic / plan / reverse-critic / supervisor = default (Opus).
-Executor = `{model:'sonnet'}`. (Token thrift on bulk coding only; verification stays Opus.)
+Model policy — every agent's model is pinned explicitly, never inherits the session model:
+- Planning chain (design / closure-critic / plan / reverse-critic) = `{model:'fable'}` — strongest model for the thinking work.
+- Executor = `{model:'sonnet'}` — token thrift on bulk mechanical coding only.
+- Supervisor (验收) = `{model:'opus'}` — verification rigor is the trust root.
 
 ### 1.1 Design — Workflow
 Author a Workflow that `pipeline`s/`parallel`s over the M module specs; each `agent` uses
-`$ROOT/knowledge/prompts/design-agent.md` and the design-manifest schema. **Pass every design
+`$ROOT/knowledge/prompts/design-agent.md` and the design-manifest schema, with `{model:'fable'}`. **Pass every design
 agent the frozen `megastorm-registry` block** (requirements + interfaces) so `covers_req_ids`
 and exposes/consumes are drawn from the closed vocabulary, not invented. Collect the manifests.
 
@@ -67,17 +69,17 @@ and exposes/consumes are drawn from the closed vocabulary, not invented. Collect
 - Run `python3 $ROOT/scripts/check_closure.py requirements.json manifests.json registry.json`.
   If it BLOCKs (uncovered req / orphan / dangling or off-registry interface), feed errors to a
   fix `agent` (design-agent prompt) and re-run, ≤3 rounds.
-- Then run a Workflow `agent` with `$ROOT/knowledge/prompts/closure-critic.md` for the prose-level judgment (≤3 rounds).
+- Then run a Workflow `agent` with `$ROOT/knowledge/prompts/closure-critic.md` and `{model:'fable'}` for the prose-level judgment (≤3 rounds).
 - Unresolved after rounds, or any escalate → HALT to user.
 
 ### 1.3 Plan — Workflow
-`pipeline` over designs; each `agent` uses `$ROOT/knowledge/prompts/plan-agent.md` and emits the plan-task array.
+`pipeline` over designs; each `agent` uses `$ROOT/knowledge/prompts/plan-agent.md` with `{model:'fable'}` and emits the plan-task array.
 For each plan, run `python3 $ROOT/scripts/validate_plan_tasks.py <tasks.json>`; if BLOCKED,
 bounce back to the plan agent until every task has `touched_paths` + `acceptance_cmd`.
 
 ### 1.4 Reverse review — Workflow
-A Workflow `agent` with `$ROOT/knowledge/prompts/reverse-critic.md` over all spec/design/plan docs (≤3 rounds, self-fix
-or escalate).
+A Workflow `agent` with `$ROOT/knowledge/prompts/reverse-critic.md` and `{model:'fable'}` over all spec/design/plan docs
+(≤3 rounds, self-fix or escalate).
 
 ### 1.5 Orchestrate — deterministic
 Concatenate all plan tasks into one array, run
@@ -99,7 +101,7 @@ a layer, use `build_task_dag`'s output fields directly:**
 
 Stages:
 - executeStage: `agent($ROOT/knowledge/prompts/executor.md prompt, {model:'sonnet'})` (+ `{isolation:'worktree'}` for group members).
-- verifyStage: `agent($ROOT/knowledge/prompts/supervisor.md prompt, {schema: verdict})` — default model, fresh context,
+- verifyStage: `agent($ROOT/knowledge/prompts/supervisor.md prompt, {schema: verdict, model:'opus'})` — fresh context,
   reruns `acceptance_cmd`. On `done:false`: read the task's `retries` from the ledger;
   **if `retries < 2` → increment and bounce to executor; if `retries == 2` → escalate.** This is
   spec §4.6's "soft-retry ≤2" = the initial attempt plus at most 2 retries (3 dispatches total).
