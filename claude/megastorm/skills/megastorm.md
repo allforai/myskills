@@ -148,6 +148,11 @@ a layer, use `build_task_dag`'s output fields directly:**
   `agent(..., {isolation:'worktree'})`; after the supervisor confirms `done:true`, **merge that
   worktree back to the main tree before starting the next task in the group.** Do NOT use the
   barrier-less `pipeline` to merge colliding worktrees — it has no serialization point.
+- **Main-tree commit discipline (learned from a live Codex-port run):** never rely on
+  executors committing their own work — an uncommitted main tree poisons every later
+  worktree branch/merge ("untracked working tree files would be overwritten"). YOU
+  safety-commit the main tree (`git add -A && git commit`) after each confirmed
+  free task and again right before every worktree merge.
 
 Stages:
 - executeStage: `agent($ROOT/knowledge/prompts/executor.md prompt, {model: BULK})` (+ `{isolation:'worktree'}` for group members).
