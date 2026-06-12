@@ -13,6 +13,18 @@ if [ -d "$MCP_DIR" ] && [ ! -d "$MCP_DIR/node_modules" ]; then
   npm install && npm run build
 fi
 
+# Link skills with a SKILL.md entry into codex's native skills directory
+CODEX_SKILLS="$HOME/.codex/skills"
+mkdir -p "$CODEX_SKILLS"
+if [ -f "$SCRIPT_DIR/megastorm-skill/SKILL.md" ]; then
+  ln -sfn "$SCRIPT_DIR/megastorm-skill" "$CODEX_SKILLS/megastorm"
+  echo "Linked megastorm -> $CODEX_SKILLS/megastorm"
+  if [ ! -f "$CODEX_SKILLS/brainstorming/SKILL.md" ]; then
+    echo "WARNING: megastorm requires the 'brainstorming' skill in $CODEX_SKILLS"
+    echo "         (Phase 0 depends on it). Install it before running megastorm."
+  fi
+fi
+
 echo ""
 echo "Codex installation complete."
 echo ""

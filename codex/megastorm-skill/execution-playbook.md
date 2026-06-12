@@ -11,13 +11,18 @@ content + the agent's input JSON appended. The agent's final message must end wi
 exactly one JSON object per `schemas.md`; parse it, re-ask once on garbage, then escalate.
 
 ## Phase -1 — Preflight
-Verify `codex`, `git`, `python3` are on PATH and `prompts/`, `scripts/` exist beside this
-playbook. If not, STOP and tell the user. Do not proceed.
+Verify:
+- `codex`, `git`, `python3` on PATH; `prompts/`, `scripts/` exist beside this playbook.
+- The **brainstorming skill** is installed (a `brainstorming` entry in your available
+  skills / `~/.codex/skills/brainstorming/SKILL.md`) — Phase 0 depends on it for module
+  decomposition and per-module specs.
+If anything is missing, STOP and tell the user how to install it. Do not proceed.
 
 ## Phase 0 — Decisions front-loaded (interactive)
 1. Analyze current state: repo structure, recent commits, docs. Summarize.
-2. Decompose the goal into M modules + boundaries + inter-module deps, brainstorming
-   WITH the human: one question at a time, explore alternatives before settling, YAGNI.
+2. Decompose the goal into M modules + boundaries + inter-module deps by running the
+   **brainstorming skill** with the human (one question at a time, explore alternatives
+   before settling, YAGNI). Get the user to approve the module breakdown.
    Write the draft overview to `docs/superpowers/specs/<date>-<goal>-overview.md`
    (module table + dependency graph). **If the goal is too big for one run, cut it
    here:** milestone-1 scope = this run; defer the rest to a `## Roadmap` section.
@@ -29,7 +34,8 @@ playbook. If not, STOP and tell the user. Do not proceed.
    - **Balance:** don't over-split — two candidate modules sharing most of their
      interfaces should merge.
    Present a table (module → est. size → verdict → action); human approves.
-4. For EACH module, brainstorm a standard module spec with the human; all M approved.
+4. For EACH module, run the **brainstorming skill** to produce a standard module spec
+   with the human; done when all M specs exist and are approved.
 5. **Mint the frozen registry (you are the single owner).** Write into the overview,
    wrapped in `<!-- megastorm-registry:start -->` / `<!-- megastorm-registry:end -->`
    markers, a ```json object per `schemas.md`: `requirements` (`R-<module>-NN` for every
