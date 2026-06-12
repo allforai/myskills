@@ -20,7 +20,7 @@ echo "Usage: Point Codex to this directory. Each plugin has an AGENTS.md"
 echo "entry point that Codex will discover automatically."
 echo ""
 echo "Plugins available:"
-for plugin in product-design-skill dev-forge-skill demo-forge-skill code-tuner-skill code-replicate-skill ui-forge-skill; do
+for plugin in product-design-skill dev-forge-skill demo-forge-skill code-tuner-skill code-replicate-skill ui-forge-skill megastorm-skill; do
   if [ -d "$SCRIPT_DIR/$plugin" ]; then
     echo "  - $plugin (see $plugin/AGENTS.md)"
   fi
