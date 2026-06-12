@@ -105,7 +105,10 @@ class CodexRunner:
             out_path = f.name
         cmd = shlex.split(self.template.format(model=model, cwd=str(cwd), out=out_path))
         cmd.append(prompt)
-        proc = subprocess.run(cmd, capture_output=True, text=True)
+        # stdin MUST be closed: codex exec blocks on "Reading additional input
+        # from stdin..." forever when handed an open pipe with no data.
+        proc = subprocess.run(cmd, capture_output=True, text=True,
+                              stdin=subprocess.DEVNULL)
         try:
             last = open(out_path).read().strip()
         except OSError:
