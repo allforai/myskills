@@ -159,13 +159,27 @@ def _git(args, cwd):
     return subprocess.run(["git"] + args, cwd=str(cwd), capture_output=True, text=True)
 
 
+def safety_commit(repo, message):
+    """Commit anything pending in `repo`. The runner NEVER relies on executors
+    committing their own work — an uncommitted main tree poisons every later
+    worktree branch/merge (untracked files 'would be overwritten by merge')."""
+    _git(["add", "-A"], repo)
+    if _git(["diff", "--cached", "--quiet"], repo).returncode != 0:
+        _git(["commit", "-m", message], repo)
+
+
 def run_task_in_worktree(task, runner, models, root, prompts_dir, merge_lock, log=print):
     """Isolate one file-colliding task in its own worktree; merge back only
     after the supervisor confirms done. Merge conflicts escalate to the human."""
     tid = task["id"]
     branch = f"megastorm/{tid}"
     wt = tempfile.mkdtemp(prefix=f"ms-{tid}-")
-    r = _git(["worktree", "add", "-b", branch, wt, "HEAD"], root)
+    with merge_lock:
+        # main tree must be committed BEFORE branching: concurrent free tasks
+        # leave uncommitted files, and a worktree branched without them will
+        # re-create the same paths and collide on merge.
+        safety_commit(root, f"megastorm: pre-worktree snapshot before {tid}")
+        r = _git(["worktree", "add", "-b", branch, wt, "HEAD"], root)
     if r.returncode != 0:
         return {"task_id": tid, "status": "escalate", "retries": 0,
                 "reason": f"worktree add failed: {r.stderr.strip()[-300:]}"}
@@ -173,16 +187,15 @@ def run_task_in_worktree(task, runner, models, root, prompts_dir, merge_lock, lo
         result = run_task(task, runner, models, wt, prompts_dir, log)
         if result["status"] != "done":
             return result
-        # safety-commit anything the executor left uncommitted, then merge
-        _git(["add", "-A"], wt)
-        if _git(["diff", "--cached", "--quiet"], wt).returncode != 0:
-            _git(["commit", "-m", f"megastorm: {tid}"], wt)
+        safety_commit(wt, f"megastorm: {tid}")
         with merge_lock:  # git index/HEAD ops on the main tree must serialize
+            safety_commit(root, f"megastorm: main-tree snapshot before merging {tid}")
             m = _git(["merge", "--no-ff", "--no-edit", branch], root)
             if m.returncode != 0:
                 _git(["merge", "--abort"], root)
+                detail = (m.stderr.strip() + " " + m.stdout.strip()).strip()
                 return {"task_id": tid, "status": "escalate", "retries": result["retries"],
-                        "reason": f"merge conflict on {branch}: {m.stdout.strip()[-300:]}"}
+                        "reason": f"merge conflict on {branch}: {detail[-300:]}"}
         return result
     finally:
         _git(["worktree", "remove", "--force", wt], root)
@@ -192,10 +205,12 @@ def run_task_in_worktree(task, runner, models, root, prompts_dir, merge_lock, lo
 # ---------- layer scheduling ----------
 
 def schedule(layers, isolate_groups, tasks_by_id, run_free, run_isolated,
-             completed, max_workers=4, log=print):
+             completed, max_workers=4, log=print, on_progress=None):
     """Process layers in DAG order. Within a layer: free tasks run concurrently;
     each isolate group runs sequentially (its own thread). Any escalation
-    finishes the current layer then stops. Returns (results, escalations)."""
+    finishes the current layer then stops. Returns (results, escalations).
+    on_progress(completed) fires after every task — persist state there so a
+    crash mid-run does not lose progress."""
     grouped = {tid for g in isolate_groups for tid in g}
     results, escalations = [], []
     lock = threading.Lock()
@@ -207,6 +222,8 @@ def schedule(layers, isolate_groups, tasks_by_id, run_free, run_isolated,
                 completed.add(res["task_id"])
             else:
                 escalations.append(res)
+            if on_progress:
+                on_progress(set(completed))
 
     for li, layer in enumerate(layers):
         pending = [tid for tid in layer if tid not in completed]
@@ -299,16 +316,23 @@ def main(argv):
         isolate_groups = [[t["id"]] for t in tasks]
 
     def run_free(task):
-        return run_task(task, runner, models, root, prompts_dir)
+        res = run_task(task, runner, models, root, prompts_dir)
+        if res["status"] == "done":
+            with merge_lock:  # concurrent free tasks must not race git index ops
+                safety_commit(root, f"megastorm: {task['id']}")
+        return res
 
     def run_isolated(task):
         return run_task_in_worktree(task, runner, models, root, prompts_dir, merge_lock)
 
+    def persist_state(done_set):
+        json.dump({"completed": sorted(done_set)}, open(args.state, "w"), indent=2)
+
     results, escalations = schedule(
         orch["layers"], isolate_groups, tasks_by_id, run_free, run_isolated,
-        completed, args.max_workers)
+        completed, args.max_workers, on_progress=persist_state)
 
-    json.dump({"completed": sorted(completed)}, open(args.state, "w"), indent=2)
+    persist_state(completed)
     json.dump({"results": results, "escalations": escalations,
                "completed": sorted(completed),
                "total_tasks": len(tasks_by_id)}, open(args.report, "w"),

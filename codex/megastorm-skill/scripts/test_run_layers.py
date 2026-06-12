@@ -147,6 +147,18 @@ class CommitFakeRunner(FakeRunner):
         return super().run(prompt, model, cwd)
 
 
+class NoCommitFakeRunner(FakeRunner):
+    """Executor writes files in cwd but NEVER commits (the live-run failure mode
+    that poisoned worktree merges before the safety-commit fix)."""
+
+    def run(self, prompt, model, cwd):
+        if "anti-fake-completion verifier" not in prompt:
+            tid = json.loads(prompt.split("## Your task (JSON)")[1].split("##")[0])["id"]
+            pathlib.Path(cwd, "pkg").mkdir(exist_ok=True)
+            pathlib.Path(cwd, "pkg", "mod.py").write_text(f"# by {tid}\n")
+        return FakeRunner.run(self, prompt, model, cwd)
+
+
 class TestWorktreeSmoke(unittest.TestCase):
     def test_worktree_isolated_task_merges_back(self):
         with tempfile.TemporaryDirectory() as root:
@@ -162,6 +174,70 @@ class TestWorktreeSmoke(unittest.TestCase):
             wt_list = subprocess.run(["git", "worktree", "list"], cwd=root,
                                      capture_output=True, text=True).stdout
             self.assertEqual(len(wt_list.strip().splitlines()), 1)  # cleaned up
+
+
+class TestMainTreeConsistency(unittest.TestCase):
+    def _repo(self, root):
+        for cmd in (["git", "init", "-q"], ["git", "config", "user.email", "t@t"],
+                    ["git", "config", "user.name", "t"],
+                    ["git", "commit", "-q", "--allow-empty", "-m", "init"]):
+            subprocess.run(cmd, cwd=root, check=True, capture_output=True)
+
+    def test_uncommitted_free_task_does_not_poison_worktree_merge(self):
+        # Regression for the todoscan live run: a free task leaves pkg/mod.py
+        # UNCOMMITTED in main; the next isolated task touches the same path in
+        # its worktree. Without the pre-worktree safety-commit the merge dies
+        # with "untracked working tree files would be overwritten".
+        from run_layers import run_task, safety_commit
+        with tempfile.TemporaryDirectory() as root:
+            self._repo(root)
+            rootp = pathlib.Path(root)
+            free = NoCommitFakeRunner([_v(True)])
+            r1 = run_task(_task("T-a-01", ["pkg/mod.py"]), free, MODELS, rootp,
+                          PROMPTS, log=lambda *_: None)
+            self.assertEqual(r1["status"], "done")
+            # main tree now has uncommitted pkg/mod.py (executor never committed)
+            iso = NoCommitFakeRunner([_v(True)])
+            r2 = run_task_in_worktree(_task("T-b-01", ["pkg/mod.py"]), iso, MODELS,
+                                      rootp, PROMPTS, threading.Lock(),
+                                      log=lambda *_: None)
+            self.assertEqual(r2["status"], "done", r2.get("reason"))
+            self.assertIn("by T-b-01", (rootp / "pkg" / "mod.py").read_text())
+
+    def test_merge_failure_reason_carries_stderr(self):
+        # Force a genuine content conflict and assert the reason is non-empty.
+        from run_layers import _git, safety_commit
+        with tempfile.TemporaryDirectory() as root:
+            self._repo(root)
+            rootp = pathlib.Path(root)
+            (rootp / "pkg").mkdir(); (rootp / "pkg" / "mod.py").write_text("main version\n")
+            safety_commit(rootp, "seed mod.py")
+
+            class Conflicting(FakeRunner):
+                def run(self, prompt, model, cwd):
+                    if "anti-fake-completion verifier" not in prompt:
+                        pathlib.Path(cwd, "pkg", "mod.py").write_text("worktree version\n")
+                    return FakeRunner.run(self, prompt, model, cwd)
+
+            runner = Conflicting([_v(True)])
+            lock = threading.Lock()
+            # diverge main AFTER the worktree branches: patch worktree add to
+            # also advance main — simpler: branch first via direct calls
+            wt_res = run_task_in_worktree  # exercise real path with main advanced mid-flight
+            # advance main between branch and merge by hooking the runner
+            orig_run = runner.run
+            def run_and_diverge(prompt, model, cwd):
+                out = orig_run(prompt, model, cwd)
+                if "anti-fake-completion verifier" in prompt:
+                    (rootp / "pkg" / "mod.py").write_text("diverged on main\n")
+                    safety_commit(rootp, "diverge main")
+                return out
+            runner.run = run_and_diverge
+            r = wt_res(_task("T-c-01", ["pkg/mod.py"]), runner, MODELS, rootp,
+                       PROMPTS, lock, log=lambda *_: None)
+            self.assertEqual(r["status"], "escalate")
+            self.assertTrue(len(r["reason"]) > len("merge conflict on megastorm/T-c-01: "),
+                            r["reason"])
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-# AGENTS.md — megastorm (Codex port, v0.1.0)
+# AGENTS.md — megastorm (Codex port, v0.1.1)
 
 > Drive a large goal end-to-end: decompose into modules, front-load every human
 > decision, then autonomously design → validate (closed-loop) → plan → reverse-review
@@ -39,4 +39,4 @@ except on escalation. No automatic model downgrade, no automatic re-decompositio
    done; exit 1 = escalations in `execution-report.json`, render them to the human.
 
 Requirements: `codex` CLI on PATH, `git`, `python3`. Run script tests with
-`python3 -m pytest scripts/ -q` (59 tests).
+`python3 -m pytest scripts/ -q` (61 tests).
