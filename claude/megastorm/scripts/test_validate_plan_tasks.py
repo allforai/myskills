@@ -65,6 +65,27 @@ class TestValidateTasks(unittest.TestCase):
         self.assertFalse(r["ok"])
         self.assertTrue(any("T2" in e for e in r["errors"]))
 
+    def test_resources_valid_list_passes(self):
+        t = dict(_t("T1"), resources=["sim:default", "stack:shared-test"])
+        r = validate_tasks([t])
+        self.assertTrue(r["ok"], r["errors"])
+
+    def test_resources_absent_passes(self):
+        r = validate_tasks([_t("T1")])
+        self.assertTrue(r["ok"], r["errors"])
+
+    def test_resources_not_a_list_blocks(self):
+        t = dict(_t("T1"), resources="sim:default")
+        r = validate_tasks([t])
+        self.assertFalse(r["ok"])
+        self.assertTrue(any("resources" in e for e in r["errors"]))
+
+    def test_resources_blank_entry_blocks(self):
+        t = dict(_t("T1"), resources=["sim:default", "  "])
+        r = validate_tasks([t])
+        self.assertFalse(r["ok"])
+        self.assertTrue(any("resources" in e for e in r["errors"]))
+
 
 class TestVacuousAcceptance(unittest.TestCase):
     """A name-selective test cmd exits 0 on 0 match (the vacuous-pass failure mode)."""

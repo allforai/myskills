@@ -73,7 +73,8 @@ def validate_tasks(tasks, interfaces=None):
     non-blank acceptance_cmd, and an acceptance_cmd that cannot pass with 0 tests.
     Optional implements/requires must be lists of strings; when `interfaces` (the
     frozen registry vocabulary) is given, every value must be in it — off-registry
-    tags would silently produce wrong DAG edges downstream."""
+    tags would silently produce wrong DAG edges downstream. Optional `resources`
+    (shared-physical-resource mutex tags) must be a list of non-empty strings."""
     errors = []
     warnings = []
     for i, t in enumerate(tasks):
@@ -97,6 +98,14 @@ def validate_tasks(tasks, interfaces=None):
                         errors.append(
                             f"{label}: '{field}' has off-registry interface '{v}' "
                             f"(must come from the frozen registry vocabulary)")
+        res = t.get("resources")  # optional shared-physical-resource mutex tags
+        if res is not None and (
+            not isinstance(res, list)
+            or not all(isinstance(v, str) and v.strip() for v in res)
+        ):
+            errors.append(
+                f"{label}: 'resources' must be a list of non-empty resource name "
+                f"strings (shared physical resources needing exclusive use)")
         cmd = t.get("acceptance_cmd")
         if not isinstance(cmd, str) or not cmd.strip():
             errors.append(f"{label}: missing or blank 'acceptance_cmd'")

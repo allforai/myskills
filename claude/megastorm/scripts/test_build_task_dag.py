@@ -111,6 +111,77 @@ class TestBuildDag(unittest.TestCase):
         r = build_dag(tasks)
         self.assertEqual(r["isolate_groups"], [["a", "b"], ["c", "d"]])
 
+    def test_effective_deps_emitted(self):
+        a = dict(_t("a", ["a.py"]), implements=["api:x"])
+        b = dict(_t("b", ["b.py"], ["a"]), requires=["api:x"])
+        r = build_dag([a, b])
+        self.assertTrue(r["ok"], r["errors"])
+        # explicit depends_on + derived interface edge, deduped
+        self.assertEqual(r["effective_deps"], {"a": [], "b": ["a"]})
+
+    def test_effective_deps_includes_derived_edge(self):
+        a = dict(_t("a", ["a.py"]), implements=["api:x"])
+        b = dict(_t("b", ["b.py"]), requires=["api:x"])
+        r = build_dag([a, b])
+        self.assertEqual(r["effective_deps"]["b"], ["a"])
+
+    def test_cross_layer_concurrent_path_collision_isolated(self):
+        # b (layer 1) and c (layer 0) have no dep path but share a file:
+        # under ready-set scheduling they CAN overlap -> must be isolated.
+        tasks = [_t("a", ["x.py"]), _t("b", ["shared.py"], ["a"]), _t("c", ["shared.py"])]
+        r = build_dag(tasks)
+        self.assertTrue(r["ok"], r["errors"])
+        self.assertIn(["b", "c"], [sorted(p) for p in r["isolate"]])
+
+    def test_transitive_dep_path_collision_not_isolated(self):
+        # a -> b -> c; a and c share a path but can never run concurrently
+        tasks = [_t("a", ["s.py"]), _t("b", ["y.py"], ["a"]), _t("c", ["s.py"], ["b"])]
+        r = build_dag(tasks)
+        self.assertTrue(r["ok"], r["errors"])
+        self.assertEqual(r["isolate"], [])
+
+
+class TestResources(unittest.TestCase):
+    def test_no_resources_backward_compatible(self):
+        r = build_dag([_t("a", ["x.py"]), _t("b", ["y.py"])])
+        self.assertTrue(r["ok"], r["errors"])
+        self.assertEqual(r["resource_groups"], {})
+        self.assertEqual(r["isolate"], [])
+
+    def test_shared_resource_concurrent_tasks_isolated(self):
+        # disjoint files, same physical resource -> mutex group + isolate
+        a = dict(_t("a", ["x.py"]), resources=["sim:default"])
+        b = dict(_t("b", ["y.py"]), resources=["sim:default"])
+        r = build_dag([a, b])
+        self.assertTrue(r["ok"], r["errors"])
+        self.assertEqual(r["resource_groups"], {"sim:default": ["a", "b"]})
+        self.assertEqual([sorted(p) for p in r["isolate"]], [["a", "b"]])
+        self.assertEqual(r["isolate_groups"], [["a", "b"]])
+        # resource-only collision: no shared-path WARN
+        self.assertEqual(r["warnings"], [])
+
+    def test_shared_resource_dep_ordered_not_isolated(self):
+        # dep-ordered tasks never overlap; resource_groups still records the set
+        a = dict(_t("a", ["x.py"]), resources=["ssh:prod"])
+        b = dict(_t("b", ["y.py"], ["a"]), resources=["ssh:prod"])
+        r = build_dag([a, b])
+        self.assertTrue(r["ok"], r["errors"])
+        self.assertEqual(r["isolate"], [])
+        self.assertEqual(r["resource_groups"], {"ssh:prod": ["a", "b"]})
+
+    def test_single_user_resource_no_group(self):
+        a = dict(_t("a", ["x.py"]), resources=["sim:default"])
+        r = build_dag([a, _t("b", ["y.py"])])
+        self.assertEqual(r["resource_groups"], {})
+
+    def test_resource_bridges_isolate_group_with_path_collision(self):
+        # a-b share a resource, b-c share a path -> one transitive group of three
+        a = dict(_t("a", ["x.py"]), resources=["stack:shared-test"])
+        b = dict(_t("b", ["s.py"]), resources=["stack:shared-test"])
+        c = _t("c", ["s.py"])
+        r = build_dag([a, b, c])
+        self.assertEqual(r["isolate_groups"], [["a", "b", "c"]])
+
 
 if __name__ == "__main__":
     unittest.main()

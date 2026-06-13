@@ -4,9 +4,16 @@ DAG. Ordering comes from explicit depends_on PLUS derived interface edges (no pr
 parsing): a task that `requires` registry interface X depends on every task that
 `implements` X — this is how CROSS-MODULE ordering enters the DAG, since parallel
 per-module plan agents cannot know each other's task ids. A required interface with
-no implementing task anywhere is a hard error (the plan missed work). touched_paths
-drives concurrency safety: same-layer tasks sharing any path must run worktree-isolated
-(spec §4.6). Same-path writers with no depends_on are ambiguous -> WARN + still isolate."""
+no implementing task anywhere is a hard error (the plan missed work).
+
+Concurrency safety targets a DEPENDENCY-READY scheduler (skill §1.6), not layer
+barriers: two tasks may run concurrently iff neither is a DAG ancestor of the other
+(layers are emitted as informational output only). Any such concurrent-possible pair
+sharing a touched_path OR a declared `resources` entry (shared physical resource:
+simulator / shared test stack / prod SSH) is folded into `isolate_groups` (mutex,
+declaration order). `effective_deps` (explicit + derived) is what the ready-set
+loop consumes; `resource_groups` lists per-resource mutex sets. Same-path writers
+with no dependency ordering are ambiguous -> WARN + still isolate."""
 import itertools
 import json
 import sys
@@ -72,6 +79,28 @@ def _layers(tasks):
     return layers, cyclic
 
 
+def _ancestors(eff_deps):
+    """Transitive ancestor sets over the effective dep map {tid: [dep_ids]}.
+    Decides which pairs can EVER run concurrently under a dependency-ready
+    scheduler: concurrent-possible iff neither is an ancestor of the other."""
+    memo = {}
+
+    def anc(tid):
+        if tid in memo:
+            return memo[tid]
+        memo[tid] = set()  # cycle guard; real cycles already errored upstream
+        s = set()
+        for d in eff_deps.get(tid, []):
+            s.add(d)
+            s |= anc(d)
+        memo[tid] = s
+        return s
+
+    for tid in eff_deps:
+        anc(tid)
+    return memo
+
+
 def build_dag(tasks):
     errors, warnings = [], []
     for tid, missing in _missing_deps(tasks):
@@ -88,26 +117,40 @@ def build_dag(tasks):
     if cyclic:
         errors.append(f"dependency cycle among tasks: {', '.join(cyclic)}")
     if errors:
-        return {"ok": False, "errors": errors, "warnings": warnings, "layers": [], "isolate": []}
+        return {"ok": False, "errors": errors, "warnings": warnings, "layers": [],
+                "isolate": [], "isolate_groups": [], "effective_deps": {},
+                "resource_groups": {}}
 
-    by_id = {t["id"]: set(t.get("touched_paths", [])) for t in tasks}
-    deps = {t["id"]: set(t.get("depends_on", []) or []) for t in aug}
+    effective_deps = {t["id"]: list(t["depends_on"]) for t in aug}
+    ancestors = _ancestors(effective_deps)
+    paths_by_id = {t["id"]: set(t.get("touched_paths", [])) for t in tasks}
+    res_by_id = {t["id"]: set(t.get("resources", []) or []) for t in tasks}
     isolate = []
-    for layer in layers:
-        for a, b in itertools.combinations(sorted(layer), 2):
-            shared = by_id[a] & by_id[b]
-            if shared:
-                isolate.append([a, b])
-                # same-layer => no dep ordering between them; if neither depends on
-                # the other, ordering of writes to the shared path is undefined.
-                if b not in deps[a] and a not in deps[b]:
-                    warnings.append(
-                        f"tasks '{a}' and '{b}' both write {sorted(shared)} with no depends_on; "
-                        f"serialized by declaration order, run isolated")
-    # Union-find the isolate PAIRS into connected GROUPS — §1.6 runs each group
-    # sequentially (declaration order) with worktree isolation + merge-after-confirm.
-    # Pairs alone are not enough: a–b and b–c colliding means all three must serialize
-    # their merges relative to b. Conservative (safe) grouping over max parallelism.
+    # Concurrent-possible = no dependency path either way (ready-set scheduling;
+    # same-layer is NOT the criterion — cross-layer independents overlap too).
+    for a, b in itertools.combinations([t["id"] for t in tasks], 2):
+        if a in ancestors[b] or b in ancestors[a]:
+            continue  # dep-ordered, never concurrent
+        shared_paths = paths_by_id[a] & paths_by_id[b]
+        shared_res = res_by_id[a] & res_by_id[b]
+        if not shared_paths and not shared_res:
+            continue
+        isolate.append(sorted([a, b]))
+        if shared_paths:
+            warnings.append(
+                f"tasks '{a}' and '{b}' both write {sorted(shared_paths)} with no "
+                f"dependency ordering; serialized by declaration order, run isolated")
+    # Per-resource mutex sets (declaration order); single-user resources need no mutex.
+    resource_groups = {}
+    for t in tasks:
+        for rname in t.get("resources", []) or []:
+            resource_groups.setdefault(rname, []).append(t["id"])
+    resource_groups = {k: v for k, v in resource_groups.items() if len(v) > 1}
+    # Union-find the isolate PAIRS (file- AND resource-colliding) into connected
+    # GROUPS — §1.6 serializes each group (declaration order; worktree isolation +
+    # merge-after-confirm only when target repo == session cwd). Pairs alone are not
+    # enough: a–b and b–c colliding means all three must serialize relative to b.
+    # Conservative (safe) grouping over max parallelism.
     parent = {}
     def find(x):
         parent.setdefault(x, x)
@@ -130,6 +173,7 @@ def build_dag(tasks):
 
     return {"ok": True, "errors": errors, "warnings": warnings,
             "layers": layers, "isolate": isolate, "isolate_groups": isolate_groups,
+            "effective_deps": effective_deps, "resource_groups": resource_groups,
             "derived_edges": sorted([list(e) for e in set(derived)])}
 
 
