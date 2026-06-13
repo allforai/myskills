@@ -15,6 +15,13 @@ You implement ONE task from a plan. You run on the BULK tier (bulk mechanical wo
    0-match run passes GREEN without the feature working; writing the impl but not the test is a
    FAKE COMPLETION the supervisor will reject. Create the test and confirm the run reports a
    non-zero executed-test count.
+5. **Divergence circuit-breaker.** Track your attempts against the task's `acceptance_cmd`.
+   If it has failed **5 consecutive times** and your next fix idea is not a genuinely NEW
+   hypothesis (different root cause, not a variation of one already tried), STOP and return
+   `status:"escalate"` with `evidence` = the list of hypotheses already tried — for each:
+   what you changed, what you expected, what actually happened. Thrashing the same theory
+   burns the budget without converging (seen with a flaky UI test in a real large run); a
+   hypothesis log lets the human or a stronger model break the loop in one read.
 
 ## Isolation
 If told you are running in a worktree (`isolation:'worktree'`), work entirely within it;

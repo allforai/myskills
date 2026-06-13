@@ -64,8 +64,21 @@ and tell the user to install the superpowers marketplace via `/plugin`. Do not p
 After Phase 0, do not stop for the human until an escalation surfaces.
 
 ## Phase 1 — Autonomous pipeline (call Workflow once per stage; read result; decide next)
-For every stage, read the Workflow return. If ANY agent returned `status:"escalate"`, HALT,
+For stages **1.1–1.5**, read the Workflow return. If ANY agent returned `status:"escalate"`, HALT,
 render `reason`+`evidence` to the user, get the decision, then re-run that stage. Otherwise continue.
+(**§1.6 is the exception**: execution-phase escalations do NOT halt the line — see "Escalation
+semantics" in §1.6: record, transitively skip dependents, keep the rest running, report in Phase 2.)
+
+**Workflow invocation rules (apply to EVERY stage):**
+- **Inline task data into script files; launch via `scriptPath`.** Do NOT pass stage payloads
+  (module lists, task arrays, registry blocks) through Workflow `args` — in a real 277-task run,
+  `args.modules` arrived `undefined` mid-pipeline. Write each stage's data INLINE into the
+  orchestration script file itself (a generated `.js`/`.mjs` per stage is fine), then start the
+  Workflow with `scriptPath`. The script must be self-contained: re-readable, re-runnable,
+  resumable without the session's memory.
+- **Model literals are always explicit.** Every `agent()` call writes its tier's frozen literal,
+  e.g. `{model:'opus'}`. NEVER write `'default'` and NEVER omit `model` — both inherit the
+  *session* model, so a non-Opus session silently runs supervisors/critics on the wrong model.
 
 `module-too-large` escalations (from design/plan agents, or §1.3's size check) are ordinary
 escalations: HALT, show the human the evidence (task-count estimate + split seams), and let
@@ -83,7 +96,9 @@ its tier's frozen literal.
 - **THINK（规划）** = prefer `fable`; candidates `opus → sonnet`. Used by design /
   closure-critic / plan / reverse-critic — thinking errors are the most expensive.
 - **VERIFY（验收）** = prefer `opus`; candidates `fable → sonnet`. Used by supervisor —
-  verification rigor is the trust root; must never resolve weaker than BULK.
+  verification rigor is the trust root; must never resolve weaker than BULK. In `agent()` calls
+  this is always the explicit literal (e.g. `{model:'opus'}`) — never `'default'`, never omitted
+  (see "Workflow invocation rules" above; inherited session models are a silent downgrade).
 - **BULK（执行）** = prefer `sonnet`; candidate `haiku`. Used by executor — token thrift on
   bulk mechanical coding only.
 
@@ -134,32 +149,93 @@ Concatenate all plan tasks into one array, run
 the derived interface edges (`requires` → `implements` join over the registry vocabulary) —
 this is the ONLY mechanism ordering tasks across modules, since `depends_on` is intra-module.
 BLOCK (cycle / missing dep / required interface nobody implements) → fix via plan agent.
-Keep `layers` (execution order) and `isolate` (same-layer file-colliding pairs).
-Persist to `orchestration.json`. Surface any `warnings` in the final report.
+Keep `effective_deps` (explicit `depends_on` + derived interface edges — what §1.6's ready-set
+scheduler consumes), `isolate_groups` (file/resource-colliding groups; serialize), and
+`resource_groups` (per-resource mutex sets). `layers` is still emitted but is informational
+only — §1.6 no longer drains layer barriers. Persist to `orchestration.json`. Surface any
+`warnings` in the final report.
 
 ### 1.6 Concurrent execute + supervise — Workflow
 Maintain a scratch `retry-ledger.json` (`{task_id: retries}`) — the soft-retry budget is
-unenforceable without it (a stateless prose loop drifts). Process layers in DAG order. **Within
-a layer, use `build_task_dag`'s output fields directly:**
-- **Non-colliding tasks** (id in NO `isolate_groups` entry): run them together via
-  `pipeline(tasks, executeStage, verifyStage)` — no shared files, safe with no barrier.
-- **Each `isolate_groups` entry** (a connected component of file-colliding tasks): run that
-  group's tasks **sequentially in the given (declaration) order**, each in its own
-  `agent(..., {isolation:'worktree'})`; after the supervisor confirms `done:true`, **merge that
-  worktree back to the main tree before starting the next task in the group.** Do NOT use the
-  barrier-less `pipeline` to merge colliding worktrees — it has no serialization point.
+unenforceable without it (a stateless prose loop drifts).
+
+**Scheduling — dependency-ready, not layer barriers.** Do NOT drain `layers` as barriers — a
+single slow task then stalls every same-layer sibling (in a real 277-task run this idled most
+of the fleet). The orchestration script runs a **ready-set loop** over `orchestration.json`:
+- A task is READY when every id in its `effective_deps` entry is supervisor-confirmed
+  (`done:true`). A dep that was escalated/skipped never satisfies readiness — the dependent is
+  skipped too (see "Escalation semantics" below).
+- Dispatch ready tasks up to an **in-flight cap** (default 4 concurrent executor+supervisor
+  pairs; tune to machine + token budget). Whenever a task confirms, recompute the ready set
+  and refill the slots — no barrier, no waiting for siblings.
+- **Mutex discipline (preserves the isolate-group serial semantics):** at most ONE in-flight
+  task per `isolate_groups` entry and per `resource_groups` entry, members dispatched in
+  declaration order. A ready task whose group has a sibling in flight (or a pending merge)
+  simply waits; it must not hold an in-flight slot while waiting.
+
+**Worktree isolation — know what it actually isolates.** Workflow `isolation:'worktree'`
+snapshots the SESSION's repo (the cwd this skill runs in), NOT an arbitrary target repo. If
+the repo being built is not the session cwd, worktree isolation buys nothing — DISABLE it and
+run each collision group's tasks **serially against the main tree** (the mutex discipline
+above already guarantees one writer at a time). That main-tree-serial mode is the safe
+default for collision groups; only use worktree-per-task + merge-after-confirm when the
+target repo IS the session cwd:
+- **Worktree mode** (target repo == session cwd): each group member runs in its own
+  `agent(..., {isolation:'worktree'})`; after the supervisor confirms `done:true`, **merge
+  that worktree back to the main tree before starting the next task in the group.** Do NOT
+  use the barrier-less `pipeline` to merge colliding worktrees — it has no serialization point.
 - **Main-tree commit discipline (learned from a live Codex-port run):** never rely on
   executors committing their own work — an uncommitted main tree poisons every later
   worktree branch/merge ("untracked working tree files would be overwritten"). YOU
   safety-commit the main tree (`git add -A && git commit`) after each confirmed
   free task and again right before every worktree merge.
 
+**Infrastructure failure ≠ business failure.** An agent process dying, provider quota
+exhaustion, a network error, or a `null`/`undefined` agent return is an INFRASTRUCTURE
+failure, not evidence the task is hard: do NOT decrement that task's soft-retry budget.
+Re-dispatch the same task with backoff (e.g. 1 min, then 5 min); only after ~3 consecutive
+infrastructure failures on the same dispatch treat it as an escalation (record per the
+semantics below). Burning the 2-retry budget on a flaky network turns transient noise into
+fake "task is impossible" verdicts.
+
+**Escalation semantics (execution phase — record, skip, keep going).** Unlike §1.1–1.5, one
+escalating task must not park hundreds of independent ones. When an executor returns
+`status:"escalate"` or a task exhausts its soft-retry budget:
+1. **Record (记账):** append to a scratch `escalation-ledger.json`:
+   `{task_id, reason, evidence, retries, hypotheses_tried?}`.
+2. **Transitively skip (传递跳过):** walk `effective_deps` forward and mark every transitive
+   dependent `skipped(blocked_by=<task_id>)` — they are never dispatched.
+3. **Keep running:** the ready-set loop continues for everything else.
+4. **Report at close (收尾呈报):** after the loop drains, surface the full ledger — every
+   escalation with its reason/evidence AND its complete skipped chain — in the Phase 2 report.
+   Skipped work is enumerated, never silently folded into "done".
+
+**External watchdog (main session — survive zombie runs).** While a §1.6 Workflow runs, the
+main session does not just block on the result: schedule a periodic wakeup (e.g. every 10
+minutes via ScheduleWakeup) and on each tick check two liveness signals — the target repo's
+commit stream (`git log -1 --format=%ct` advancing) and the Workflow run's transcript
+directory mtimes. **Stall criteria:** > 35 min with no agent activity on either signal; OR a
+single agent transcript growing past ~3 MB with no new commits (a context-thrash loop). On
+stall: `TaskStop` the stuck run, then resume the Workflow from the persisted stage script
+with `resumeFromRunId` — the ledgers + `orchestration.json` make the loop re-enterable, which
+is exactly why the stage script must be self-contained (see "Workflow invocation rules").
+
+**Green-push companion (long pipelines, optional).** For multi-hour runs feeding a shared
+remote, start a background loop alongside §1.6: fetch/merge `origin` into a **dedicated
+integration worktree** (never the executors' tree), run the full build + test suite there,
+and push ONLY when everything is green. The remote keeps moving during the run, and a red
+tree is never pushed. The loop has no knowledge of individual tasks — it is a pure
+repo-level companion.
+
 Stages:
 - executeStage: `agent($ROOT/knowledge/prompts/executor.md prompt, {model: BULK})` (+ `{isolation:'worktree'}` for group members).
 - verifyStage: `agent($ROOT/knowledge/prompts/supervisor.md prompt, {schema: verdict, model: VERIFY})` — fresh context,
   reruns `acceptance_cmd`. On `done:false`: read the task's `retries` from the ledger;
-  **if `retries < 2` → increment and bounce to executor; if `retries == 2` → escalate.** This is
-  spec §4.6's "soft-retry ≤2" = the initial attempt plus at most 2 retries (3 dispatches total).
+  **if `retries < 2` → increment and bounce to executor; if `retries == 2` → escalate** (per
+  the escalation semantics above: record in the ledger, skip dependents, keep the line
+  running). This is spec §4.6's "soft-retry ≤2" = the initial attempt plus at most 2 retries
+  (3 dispatches total) — and it counts BUSINESS failures only; infrastructure failures
+  re-dispatch without touching the budget (see above).
 - **Vacuous auto-recovery:** if the verdict has `vacuous:true` (acceptance passed only because
   0 tests ran), the bounce to the executor MUST append the anti-vacuous instruction — *"the
   acceptance selects tests by name and matched 0; create the named test with ≥1 real assertion
@@ -171,6 +247,13 @@ Stages:
 Update the overview and write a final report: assumptions the autonomous agents made, all
 escalation points + resolutions, the independently-verified completion list (distinguish
 "executor-claimed" from "supervisor-confirmed"), DAG warnings, and learnings.
+
+**Mandatory escalation + skip accounting (from §1.6).** The report MUST render the full
+`escalation-ledger.json`: every execution-phase escalation (task id, reason, evidence,
+retries, hypotheses tried) AND, for each one, its complete transitively-skipped chain
+(`skipped(blocked_by=...)` tasks). Completion percentages are computed over dispatched tasks
+only and must state the skipped count alongside — "N done / M skipped via K escalations",
+never a bare "N done".
 
 **Mandatory "Reality gate" section.** Every report MUST split completion into two explicit lists:
 (a) **autonomously verified** — the supervisor reran the real `acceptance_cmd` and it genuinely
