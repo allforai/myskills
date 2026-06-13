@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "megastorm",
-      "version": "0.8.1",
+      "version": "0.9.0",
       "source": "./",
       "description": "Chains superpowers brainstorming/writing-plans/executing-plans into a Workflow-driven pipeline for large goals. Explicit /megastorm trigger."
     }
