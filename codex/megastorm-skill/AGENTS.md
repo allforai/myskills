@@ -1,4 +1,4 @@
-# AGENTS.md — megastorm (Codex port, v0.1.1)
+# AGENTS.md — megastorm (Codex port, v0.2.0)
 
 > Drive a large goal end-to-end: decompose into modules, front-load every human
 > decision, then autonomously design → validate (closed-loop) → plan → reverse-review
@@ -20,7 +20,7 @@ Python runner (a stateless prose loop drifts; the retry ledger must be code).
 | Closure gate | `./scripts/check_closure.py` | Deterministic requirement/interface closure check |
 | Plan gate | `./scripts/validate_plan_tasks.py` | touched_paths + non-vacuous acceptance_cmd + registry vocab |
 | DAG builder | `./scripts/build_task_dag.py` | Layers + isolate_groups + cross-module interface edges |
-| Execution runner | `./scripts/run_layers.py` | §1.6: layers, concurrency, worktrees, retry ledger, supervision |
+| Execution runner | `./scripts/run_layers.py` | §1.6: ready-set scheduling, mutex groups, worktrees, retry ledger, skip-on-escalation, supervision |
 | Model tiers | `./models.example.json` | THINK/VERIFY/BULK — resolved by the HUMAN in Phase 0 |
 
 ## Invariant
@@ -39,4 +39,4 @@ except on escalation. No automatic model downgrade, no automatic re-decompositio
    done; exit 1 = escalations in `execution-report.json`, render them to the human.
 
 Requirements: `codex` CLI on PATH, `git`, `python3`. Run script tests with
-`python3 -m pytest scripts/ -q` (61 tests).
+`python3 -m pytest scripts/ -q` (77 tests).

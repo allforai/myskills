@@ -32,6 +32,14 @@ The orchestrator derives cross-module DAG edges from these tags; mis-tagging `re
 generously only costs parallelism, but omitting it lets your task run before its dependency
 exists.
 
+## Shared physical resources: `resources` (optional)
+If a task needs EXCLUSIVE use of a shared physical resource that file paths cannot express —
+a device simulator, a shared test environment/stack, a production SSH session — declare it:
+`resources: ["sim:default"]`. Use exact, consistent strings (other tasks naming the same
+resource must use the identical string). The orchestrator serializes tasks that share a
+resource; two undeclared tasks fighting over one simulator corrupt each other's runs.
+Omit the field when no exclusive resource is needed.
+
 ## Output (array of plan-task schema + escalation)
 Return JSON: `{status, plan_path, tasks: [ {id,title,touched_paths,acceptance_cmd,depends_on} ], reason?, evidence?}`
 Escalate (don't guess) if the design is under-specified in a way that needs a human decision.

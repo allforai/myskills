@@ -91,19 +91,36 @@ Concatenate all plan tasks into `all-tasks.json`, run
 `python3 scripts/build_task_dag.py all-tasks.json > orchestration.json`.
 Cross-module ordering comes from the derived interface edges (`requires` →
 `implements`). BLOCK (cycle / missing dep / required interface nobody implements) →
-fix via plan agent. Surface `warnings` in the final report.
+fix via plan agent. The DAG emits `effective_deps` (explicit + derived edges — what
+§1.6's ready-set loop consumes), `isolate_groups` (file/resource-colliding mutex groups),
+`resource_groups` (per-resource mutex sets), and `layers` (informational only — §1.6 does
+NOT drain layer barriers). Surface `warnings` in the final report.
 
 ### 1.6 Concurrent execute + supervise — deterministic runner (NOT prose)
 ```
 python3 scripts/run_layers.py orchestration.json all-tasks.json \
     --models models.json --prompts prompts --root <repo-root>
 ```
-The runner owns: layer order, in-layer concurrency, worktree isolation + post-confirm
-merge for file-colliding groups, the soft-retry ledger (initial + ≤2 retries), vacuous
-auto-reinjection, and fresh-context supervision (`verify` model reruns `acceptance_cmd`
-itself; it never sees the executor's narrative). Exit 0 = all supervised done.
-Exit 1 = escalations in `execution-report.json` → render to the human, apply their
-decision, re-run the same command (the state file resumes past completed tasks).
+The runner owns:
+- **Ready-set scheduling (not layer barriers):** a task runs as soon as every id in its
+  `effective_deps` is supervisor-confirmed; dispatched up to `--max-workers` in flight and
+  refilled on each confirm. One slow task never stalls its independent siblings.
+- **Mutex discipline:** at most one in-flight task per `isolate_groups` and per
+  `resource_groups` entry (file or shared-physical-resource collisions), members preferred
+  in declaration order. Isolate-group members run in a per-task git worktree, merged back
+  only after the supervisor confirms; the runner safety-commits the main tree before each
+  worktree branch/merge (executors are not trusted to commit).
+- **Soft-retry ledger** (initial + ≤2 retries), **vacuous auto-reinjection**, and
+  **fresh-context supervision** (`verify` model reruns `acceptance_cmd` itself, never sees
+  the executor's narrative).
+- **Escalation semantics (does NOT halt the line):** a task that escalates is recorded, its
+  transitive dependents are marked `skipped` (blocked_by) and never dispatched, and the loop
+  keeps running everything independent. The full ledger (escalations + skipped chains) lands
+  in `execution-report.json`.
+
+Exit 0 = all supervised done. Exit 1 = escalations/skips in `execution-report.json` →
+render to the human, apply their decision, re-run the same command (the state file resumes
+past completed tasks).
 
 ## Phase 2 — Report
 Update the overview and write a final report: assumptions agents made, escalations and

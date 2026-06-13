@@ -93,7 +93,11 @@ class TestRunTask(unittest.TestCase):
 
 
 class TestSchedule(unittest.TestCase):
-    def _run(self, layers, groups, tasks, results_map, completed=None):
+    """Ready-set scheduler: effective_deps drive readiness, mutex sets serialize
+    collisions, escalations skip transitive dependents but never halt the loop."""
+
+    def _run(self, eff_deps, isolate_groups, resource_groups, tasks, results_map,
+             completed=None, max_workers=4):
         order = []
         lock = threading.Lock()
 
@@ -103,36 +107,107 @@ class TestSchedule(unittest.TestCase):
             return {"task_id": t["id"], "status": results_map.get(t["id"], "done"),
                     "retries": 0, "reason": "x"}
         completed = completed if completed is not None else set()
-        res, esc = schedule(layers, groups, {t["id"]: t for t in tasks},
-                            runner, runner, completed, max_workers=4, log=lambda *_: None)
-        return order, res, esc, completed
+        res, esc, skip = schedule(eff_deps, isolate_groups, resource_groups,
+                                  {t["id"]: t for t in tasks}, runner, runner,
+                                  completed, max_workers=max_workers, log=lambda *_: None)
+        return order, res, esc, skip, completed
 
-    def test_layers_in_order_group_sequential(self):
-        tasks = [_task(t) for t in ("a", "b", "c", "d")]
-        order, _, esc, done = self._run([["a", "b", "c"], ["d"]], [["b", "c"]], tasks, {})
+    def test_dep_order_respected(self):
+        tasks = [_task(t) for t in ("a", "b", "c")]
+        eff = {"a": [], "b": ["a"], "c": ["b"]}
+        order, _, esc, _, done = self._run(eff, [], {}, tasks, {})
         self.assertEqual(esc, [])
-        self.assertEqual(done, {"a", "b", "c", "d"})
-        self.assertLess(order.index("b"), order.index("c"))  # group order kept
-        self.assertEqual(order[-1], "d")  # next layer strictly after
+        self.assertEqual(order, ["a", "b", "c"])
+        self.assertEqual(done, {"a", "b", "c"})
 
-    def test_escalation_stops_next_layer(self):
-        tasks = [_task(t) for t in ("a", "b")]
-        order, _, esc, _ = self._run([["a"], ["b"]], [], tasks, {"a": "escalate"})
+    def test_independents_all_run(self):
+        tasks = [_task(t) for t in ("a", "b", "c")]
+        eff = {"a": [], "b": [], "c": []}
+        order, _, esc, _, done = self._run(eff, [], {}, tasks, {})
+        self.assertEqual(sorted(order), ["a", "b", "c"])
+        self.assertEqual(done, {"a", "b", "c"})
+
+    def test_escalation_skips_transitive_dependents_not_independents(self):
+        # b<-a, c<-b (chain) and independent d. a escalates → b and c skipped,
+        # d still runs. The loop does NOT halt.
+        tasks = [_task(t) for t in ("a", "b", "c", "d")]
+        eff = {"a": [], "b": ["a"], "c": ["b"], "d": []}
+        order, _, esc, skip, done = self._run(eff, [], {}, tasks, {"a": "escalate"})
         self.assertEqual(len(esc), 1)
-        self.assertNotIn("b", order)
+        self.assertEqual(set(skip), {"b", "c"})
+        self.assertEqual(skip["b"], "a")
+        self.assertIn("d", order)        # independent kept running
+        self.assertNotIn("b", order)     # dependent never dispatched
+        self.assertEqual(done, {"d"})
+
+    def test_isolate_group_serializes_concurrent_members(self):
+        # a,b share a file (no dep between them) → never in flight together.
+        tasks = [_task("a", ["s.py"]), _task("b", ["s.py"])]
+        eff = {"a": [], "b": []}
+        inflight_peak = {"n": 0}
+        cur = {"n": 0}
+        lock = threading.Lock()
+
+        def runner(t):
+            with lock:
+                cur["n"] += 1
+                inflight_peak["n"] = max(inflight_peak["n"], cur["n"])
+            import time
+            time.sleep(0.02)
+            with lock:
+                cur["n"] -= 1
+            return {"task_id": t["id"], "status": "done", "retries": 0}
+        res, esc, skip = schedule(eff, [["a", "b"]], {}, {t["id"]: t for t in tasks},
+                                  runner, runner, set(), max_workers=4, log=lambda *_: None)
+        self.assertEqual(inflight_peak["n"], 1)  # mutex held: never 2 at once
+
+    def test_resource_group_serializes(self):
+        tasks = [_task("a"), _task("b")]
+        eff = {"a": [], "b": []}
+        inflight_peak = {"n": 0}
+        cur = {"n": 0}
+        lock = threading.Lock()
+
+        def runner(t):
+            with lock:
+                cur["n"] += 1
+                inflight_peak["n"] = max(inflight_peak["n"], cur["n"])
+            import time
+            time.sleep(0.02)
+            with lock:
+                cur["n"] -= 1
+            return {"task_id": t["id"], "status": "done", "retries": 0}
+        schedule(eff, [], {"sim:default": ["a", "b"]}, {t["id"]: t for t in tasks},
+                 runner, runner, set(), max_workers=4, log=lambda *_: None)
+        self.assertEqual(inflight_peak["n"], 1)
 
     def test_resume_skips_completed(self):
         tasks = [_task(t) for t in ("a", "b")]
-        order, _, _, done = self._run([["a", "b"]], [], tasks, {}, completed={"a"})
+        eff = {"a": [], "b": ["a"]}
+        order, _, _, _, done = self._run(eff, [], {}, tasks, {}, completed={"a"})
         self.assertEqual(order, ["b"])
         self.assertEqual(done, {"a", "b"})
 
-    def test_group_stops_after_member_escalates(self):
-        tasks = [_task(t) for t in ("a", "b", "c")]
-        order, _, esc, _ = self._run([["a", "b", "c"]], [["a", "b", "c"]], tasks,
-                                     {"b": "escalate"})
-        self.assertEqual(order, ["a", "b"])  # c never dispatched
-        self.assertEqual(len(esc), 1)
+    def test_isolate_member_uses_run_isolated(self):
+        # the isolated branch must route through run_isolated, free tasks through run_free
+        tasks = [_task("a", ["s.py"]), _task("b", ["s.py"]), _task("c")]
+        eff = {"a": [], "b": [], "c": []}
+        seen = {"free": [], "iso": []}
+        lock = threading.Lock()
+
+        def free(t):
+            with lock:
+                seen["free"].append(t["id"])
+            return {"task_id": t["id"], "status": "done", "retries": 0}
+
+        def iso(t):
+            with lock:
+                seen["iso"].append(t["id"])
+            return {"task_id": t["id"], "status": "done", "retries": 0}
+        schedule(eff, [["a", "b"]], {}, {t["id"]: t for t in tasks},
+                 free, iso, set(), max_workers=4, log=lambda *_: None)
+        self.assertEqual(sorted(seen["iso"]), ["a", "b"])
+        self.assertEqual(seen["free"], ["c"])
 
 
 class CommitFakeRunner(FakeRunner):

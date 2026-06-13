@@ -18,8 +18,8 @@ Everything you need sits beside it:
 - `scripts/check_closure.py`, `scripts/validate_plan_tasks.py`,
   `scripts/build_task_dag.py` — deterministic gates
 - `scripts/run_layers.py` — the §1.6 execute+supervise runner (the long loop is NEVER
-  driven by prose; this script owns layers, concurrency, worktrees, retry ledger,
-  fresh-context supervision)
+  driven by prose; this script owns ready-set scheduling, mutex groups, worktrees, the
+  retry ledger, skip-on-escalation, and fresh-context supervision)
 - `models.example.json` — copy to the project as `models.json`, fill REAL model names
   with the human in Phase 0 (placeholders refuse to run)
 

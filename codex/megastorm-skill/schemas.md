@@ -71,7 +71,8 @@ Schema of the JSON between the markers:
     "acceptance_cmd": { "type": "string" },
     "depends_on": { "type": "array", "items": { "type": "string" } },
     "implements": { "type": "array", "items": { "type": "string" } },
-    "requires": { "type": "array", "items": { "type": "string" } } } }
+    "requires": { "type": "array", "items": { "type": "string" } },
+    "resources": { "type": "array", "items": { "type": "string" } } } }
 ```
 - `depends_on` carries INTRA-module ordering (task ids the plan agent can see).
 - `implements` / `requires` (optional) carry CROSS-module ordering, in registry interface
@@ -81,6 +82,13 @@ Schema of the JSON between the markers:
   interfaces this task consumes. `build_task_dag.py` derives a DAG edge from every requirer
   to every implementer; a required interface nobody implements = hard BLOCK (missed work).
   Values are validated against the frozen registry (`validate_plan_tasks.py` second arg).
+- `resources` (optional) names SHARED PHYSICAL RESOURCES this task must hold exclusively —
+  things a file-collision check cannot see (a device simulator, a shared test stack, a
+  production SSH session). Free-form strings, but they must match EXACTLY across tasks
+  (e.g. `"sim:default"`, `"stack:shared-test"`, `"ssh:prod"`). `build_task_dag.py` puts
+  tasks sharing a resource into mutex groups (`resource_groups`, and concurrent pairs are
+  folded into `isolate_groups`) so `run_layers.py` never runs them at the same time.
+  Omitting the field means the task needs no exclusive resource — fully backward compatible.
 
 ## verdict (spec §4.6 supervisor — anti-fake-completion)
 ```json
