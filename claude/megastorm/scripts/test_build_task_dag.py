@@ -182,6 +182,23 @@ class TestResources(unittest.TestCase):
         r = build_dag([a, b, c])
         self.assertEqual(r["isolate_groups"], [["a", "b", "c"]])
 
+    def test_reality_gate_flags_passthrough(self):
+        # reality_gate flag is surfaced per task; reality_gate_tasks lists the true ones
+        a = dict(_t("a", ["x.py"]), reality_gate=True)
+        b = _t("b", ["y.py"], ["a"])  # depends on reality_gate task a
+        r = build_dag([a, b])
+        self.assertTrue(r["ok"], r["errors"])
+        self.assertEqual(r["reality_gate_flags"], {"a": True, "b": False})
+        self.assertEqual(r["reality_gate_tasks"], ["a"])
+        # structural edge is still recorded; satisfaction is the scheduler's call (§1.6)
+        self.assertEqual(r["effective_deps"]["b"], ["a"])
+
+    def test_reality_gate_defaults_false(self):
+        # omitting reality_gate => False for every task (backward compatible)
+        r = build_dag([_t("a", ["x.py"]), _t("b", ["y.py"])])
+        self.assertEqual(r["reality_gate_flags"], {"a": False, "b": False})
+        self.assertEqual(r["reality_gate_tasks"], [])
+
 
 if __name__ == "__main__":
     unittest.main()

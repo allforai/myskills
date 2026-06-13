@@ -13,7 +13,14 @@ sharing a touched_path OR a declared `resources` entry (shared physical resource
 simulator / shared test stack / prod SSH) is folded into `isolate_groups` (mutex,
 declaration order). `effective_deps` (explicit + derived) is what the ready-set
 loop consumes; `resource_groups` lists per-resource mutex sets. Same-path writers
-with no dependency ordering are ambiguous -> WARN + still isolate."""
+with no dependency ordering are ambiguous -> WARN + still isolate.
+
+`reality_gate_flags` / `reality_gate_tasks` pass each task's reality_gate flag
+through to the §1.6 scheduler: a reality_gate task's implementation is committed even
+when its autonomous proof is pending human verification, so the scheduler treats it as
+a SATISFIED dependency source rather than an "incomplete dep -> skip downstream"
+trigger. (That readiness/skip logic lives in the scheduler, not this builder; here we
+only surface the flag.)"""
 import itertools
 import json
 import sys
@@ -122,6 +129,14 @@ def build_dag(tasks):
                 "resource_groups": {}}
 
     effective_deps = {t["id"]: list(t["depends_on"]) for t in aug}
+    # Pass through reality_gate flags so the §1.6 ready-set scheduler can read them
+    # without re-parsing the task array. A reality_gate task's IMPLEMENTATION is
+    # committed even when its autonomous proof is pending human verification, so the
+    # scheduler must treat it as a SATISFIED dependency source (not an "incomplete dep
+    # -> skip downstream" trigger). That readiness decision lives in the scheduler
+    # (skill §1.6), which only needs this flag surfaced here.
+    reality_gate_flags = {t["id"]: bool(t.get("reality_gate", False)) for t in tasks}
+    reality_gate_tasks = sorted(tid for tid, v in reality_gate_flags.items() if v)
     ancestors = _ancestors(effective_deps)
     paths_by_id = {t["id"]: set(t.get("touched_paths", [])) for t in tasks}
     res_by_id = {t["id"]: set(t.get("resources", []) or []) for t in tasks}
@@ -174,6 +189,8 @@ def build_dag(tasks):
     return {"ok": True, "errors": errors, "warnings": warnings,
             "layers": layers, "isolate": isolate, "isolate_groups": isolate_groups,
             "effective_deps": effective_deps, "resource_groups": resource_groups,
+            "reality_gate_flags": reality_gate_flags,
+            "reality_gate_tasks": reality_gate_tasks,
             "derived_edges": sorted([list(e) for e in set(derived)])}
 
 

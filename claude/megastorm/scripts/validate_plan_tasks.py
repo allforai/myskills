@@ -106,7 +106,13 @@ def validate_tasks(tasks, interfaces=None):
             errors.append(
                 f"{label}: 'resources' must be a list of non-empty resource name "
                 f"strings (shared physical resources needing exclusive use)")
+        rg = t.get("reality_gate")  # optional: acceptance is device/external/physical-bound
+        if rg is not None and not isinstance(rg, bool):
+            errors.append(f"{label}: 'reality_gate' must be a boolean")
         cmd = t.get("acceptance_cmd")
+        # A reality_gate task STILL needs a real, non-empty acceptance_cmd (the impl must
+        # remain runnable); we just do NOT require it to be non-device-bound — its definitive
+        # pass may need a real device/simulator/external system the supervisor will reality-gate.
         if not isinstance(cmd, str) or not cmd.strip():
             errors.append(f"{label}: missing or blank 'acceptance_cmd'")
             continue

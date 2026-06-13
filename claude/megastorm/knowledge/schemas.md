@@ -71,7 +71,8 @@ Schema of the JSON between the markers:
     "depends_on": { "type": "array", "items": { "type": "string" } },
     "implements": { "type": "array", "items": { "type": "string" } },
     "requires": { "type": "array", "items": { "type": "string" } },
-    "resources": { "type": "array", "items": { "type": "string" } } } }
+    "resources": { "type": "array", "items": { "type": "string" } },
+    "reality_gate": { "type": "boolean" } } }
 ```
 - `depends_on` carries INTRA-module ordering (task ids the plan agent can see).
 - `implements` / `requires` (optional) carry CROSS-module ordering, in registry interface
@@ -88,6 +89,25 @@ Schema of the JSON between the markers:
   tasks sharing a resource into mutex groups (`resource_groups`, and concurrent pairs are
   folded into `isolate_groups`) so they never run at the same time. Omitting the field
   means the task needs no exclusive resource — fully backward compatible.
+- `reality_gate` (optional, default `false`): `true` declares that this task's
+  `acceptance_cmd` depends on a real device/simulator/external live system/physical I/O and
+  therefore **cannot be self-proven in an autonomous CI environment**. Crucial semantics:
+  - **The implementation still runs and still commits** — `reality_gate` changes nothing
+    about whether the code is written. It only marks that the task's *autonomous proof*
+    cannot close the loop.
+  - After ONE autonomous acceptance attempt that fails on environment grounds, the task is
+    routed to the Phase 2 (b) reality-gate list. It is **not soft-retried** (no budget burn)
+    and **does NOT block its dependents** — the implementation is already committed, so the
+    DAG treats its interface output as satisfied (see `build_task_dag.py` + skill §1.6).
+  - A `reality_gate` task must still carry a real, non-empty `acceptance_cmd` (the
+    implementation must remain runnable); it simply may be device-bound.
+  - Omitting the field = `false` = a normal, autonomously-provable gate. Fully backward
+    compatible. Plain server-side unit tests / contracts / pure logic keep `reality_gate`
+    omitted.
+  - **Do NOT use a `reality_gate` task as a hard `depends_on` of other tasks** — its
+    "awaiting human" state would block them. Downstream tasks should depend on the
+    *implementation task / interface* (`implements`/`requires`) that produces the capability,
+    not on the reality-gate proof.
 
 ## verdict (spec §4.6 supervisor — anti-fake-completion)
 ```json
@@ -97,10 +117,19 @@ Schema of the JSON between the markers:
     "rerun_exit_code": { "type": "integer" },
     "evidence": { "type": "string" },
     "refutation": { "type": "string" },
-    "vacuous": { "type": "boolean" } } }
+    "vacuous": { "type": "boolean" },
+    "reality_gated": { "type": "boolean" } } }
 ```
 Rule: `done` is true ONLY if the supervisor independently reran `acceptance_cmd`
 and got exit code 0 with the real output captured in `evidence`.
 `vacuous` = true when the command passed only because 0 tests ran (a name-selector
 matched nothing); it forces `done:false` and signals §1.6 to re-inject the
 anti-vacuous instruction on the executor bounce.
+`reality_gated` = true is set by the supervisor ONLY on a `reality_gate:true` task when the
+acceptance failed AND the failure is attributable to the ENVIRONMENT (a flaky simulator/UI
+gate, an unreachable device, an unavailable external system — not a locatable code defect).
+It travels with `done:false`, but its meaning is distinct: **the implementation is present
+and committed; only the autonomous proof is pending human/hardware verification.** It is NOT
+a business failure. §1.6 reads `reality_gated:true` and routes the task to the reality-gate
+ledger instead of soft-retrying or skipping dependents (see skill §1.6). A genuine code error
+on a `reality_gate` task still returns a plain `done:false` (and must be fixed).

@@ -135,6 +135,28 @@ class TestVacuousAcceptance(unittest.TestCase):
         r = validate_tasks([_t("T", cmd=cmd)])
         self.assertEqual(r["warnings"], [])
 
+    def test_reality_gate_true_device_bound_accepted(self):
+        # reality_gate task keeps a real, non-empty (possibly device-bound) acceptance_cmd
+        t = dict(_t("T-rg", cmd="run-ui-on-simulator"), reality_gate=True)
+        r = validate_tasks([t])
+        self.assertTrue(r["ok"], r["errors"])
+
+    def test_reality_gate_must_be_boolean(self):
+        t = dict(_t("T-bad"), reality_gate="yes")
+        r = validate_tasks([t])
+        self.assertFalse(r["ok"])
+        self.assertTrue(any("reality_gate" in e and "boolean" in e for e in r["errors"]))
+
+    def test_reality_gate_task_still_needs_acceptance_cmd(self):
+        t = dict(_t("T-e", cmd="   "), reality_gate=True)
+        r = validate_tasks([t])
+        self.assertFalse(r["ok"])
+        self.assertTrue(any("acceptance_cmd" in e for e in r["errors"]))
+
+    def test_reality_gate_omitted_backward_compatible(self):
+        r = validate_tasks([_t("T-o")])
+        self.assertTrue(r["ok"], r["errors"])
+
 
 if __name__ == "__main__":
     unittest.main()
