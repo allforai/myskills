@@ -40,8 +40,31 @@ resource must use the identical string). The orchestrator serializes tasks that 
 resource; two undeclared tasks fighting over one simulator corrupt each other's runs.
 Omit the field when no exclusive resource is needed.
 
+## Reality-gate classification (mandatory pass over every task)
+Some acceptance criteria **cannot be self-proven in an autonomous CI environment** — they
+depend on a real device, a device simulator, a real-hardware peripheral, an external live
+system, or physical I/O. **Do NOT plan an autonomous proof your environment cannot run.** For
+any task whose `acceptance_cmd` would need such a resource to genuinely pass, tag it
+`reality_gate: true` instead of pretending it is a normal CI gate. The orchestrator runs ONE
+autonomous attempt, then routes it to a human-verification list — it never burns retry budget
+on it and never lets it block dependents.
+
+- Keep `reality_gate` OMITTED for any acceptance that a headless CI can honestly close:
+  server-side unit tests, contract tests, pure-logic assertions, build/lint commands.
+- A `reality_gate` task STILL needs a real, non-empty `acceptance_cmd` (the implementation
+  must remain runnable) — you simply acknowledge that its definitive pass is device-bound.
+- **Write a human-acceptance runbook into the plan markdown** for every `reality_gate` task:
+  the exact manual steps, what to observe, and the pass criteria. This is what a human (or a
+  device-equipped run) will execute to close the gate that CI could not.
+- **Never make a `reality_gate` task a hard `depends_on` of another task.** Its "awaiting
+  human" state would stall the dependent. Downstream tasks must depend on the *implementation
+  task / interface* that produces the capability (`implements`/`requires`), not on the
+  reality-gate proof task. The implementation commits regardless of whether the proof closes.
+
 ## Output (array of plan-task schema + escalation)
-Return JSON: `{status, plan_path, tasks: [ {id,title,touched_paths,acceptance_cmd,depends_on} ], reason?, evidence?}`
+Return JSON: `{status, plan_path, tasks: [ {id,title,touched_paths,acceptance_cmd,depends_on,reality_gate?} ], reason?, evidence?}`
+where `reality_gate` (optional boolean, default false) appears on any task whose acceptance is
+device/simulator/real-hardware/external-system/physical-I/O bound per the classification above.
 Escalate (don't guess) if the design is under-specified in a way that needs a human decision.
 
 ## Module-too-large escalation

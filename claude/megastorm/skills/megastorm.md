@@ -18,6 +18,22 @@ Verify the Skill registry exposes `superpowers:brainstorming`, `superpowers:writ
 they live under the superpowers plugin cache and the version drifts). If any is missing, STOP
 and tell the user to install the superpowers marketplace via `/plugin`. Do not proceed.
 
+**Environment-capability probe (decides what can be autonomously proven).** Before the run,
+probe which acceptance capabilities THIS environment can actually exercise, and record the
+result into the overview (a `## Environment capabilities` section). This is what lets the §1.3
+plan agent tag `reality_gate` accurately — **so it never plans a proof this environment cannot
+run.** Probe, generically (do not assume any specific stack):
+- **Display/UI:** is there a real display or stable headless display server for UI/E2E, or is
+  the environment headless with no GUI surface?
+- **Device/simulator:** is a device simulator/emulator installed AND launchable to a steady
+  state here, or unavailable / flaky to boot?
+- **Real hardware / physical I/O:** any real peripheral, sensor, or physical-I/O path
+  reachable, or none?
+- **Shared/external systems:** are the shared test stacks, external live services, or their
+  credentials reachable from here, or absent?
+Summarize each as available / flaky / absent. Any acceptance that would depend on an
+absent-or-flaky capability is a `reality_gate` candidate the plan agent should mark in §1.3.
+
 ## Phase 0 — Decisions front-loaded (main session, INTERACTIVE)
 1. Analyze current state: repo structure, recent commits, `docs/`. Summarize.
 2. Decompose the goal into M modules + boundaries + inter-module deps by running
@@ -210,6 +226,29 @@ escalating task must not park hundreds of independent ones. When an executor ret
    escalation with its reason/evidence AND its complete skipped chain — in the Phase 2 report.
    Skipped work is enumerated, never silently folded into "done".
 
+**Reality-gate handling (实现已交,自主证明待人工 — must NOT block the line).** A
+`reality_gate:true` task gets at most ONE autonomous acceptance attempt. When the supervisor
+returns a verdict with `reality_gated:true` (acceptance failed for environmental reasons, not a
+code defect — see prompts/supervisor.md):
+- **Do NOT soft-retry** it (no retry-budget burn — the failure is environmental, not a hard task).
+- **Do NOT transitively skip its dependents.** The implementation is committed, so the DAG
+  treats the task's interface output as satisfied; dependents stay `ready` and keep running.
+  (This is the precise failure mode this release exists to kill — see §1.6.c / Phase 2.)
+- **Record it** in a scratch `reality-gate-ledger.json`: `{task_id, reason, runbook_ptr}`
+  (`runbook_ptr` points at the human-acceptance runbook the plan agent wrote into the plan
+  markdown). This ledger feeds the Phase 2 (b) reality-gate list.
+- A plain `done:false` (no `reality_gated`) on a `reality_gate` task is a real code defect and
+  is soft-retried like any other task — `reality_gate` only changes the ENVIRONMENTAL-failure path.
+
+**Persistent task-state ledger (mid-run observability).** As the ready-set loop runs, write a
+`task-state.json` to disk on every status transition:
+`{task_id: {status: "done"|"failed"|"skipped"|"reality_gated", attempts, last_evidence_excerpt, last_ts}}`.
+This makes a mid-run completeness census and a "re-run only what remains" restart a single file
+read rather than an archaeology dig through transcripts. (Learned the hard way: when verdicts
+carried no `task_id` and the Workflow only returned its ledger at the very end, the run was
+unobservable mid-flight, and cached replays were misread as fresh progress. The on-disk ledger
+closes that observability gap and pairs with the watchdog's `resumeFromRunId` resume.)
+
 **External watchdog (main session — survive zombie runs).** While a §1.6 Workflow runs, the
 main session does not just block on the result: schedule a periodic wakeup (e.g. every 10
 minutes via ScheduleWakeup) and on each tick check two liveness signals — the target repo's
@@ -243,6 +282,28 @@ Stages:
   until the soft-retry budget is genuinely exhausted — it is almost always self-fixable, and the
   deterministic `validate_plan_tasks.py` gate should have caught it at §1.3 anyway.
 
+**Module release judgment (G8) — split in two; a reality gate must NOT block it.** A module's
+release-readiness judgment is computed from its gates, but the gates fall into TWO classes:
+- **Autonomously-provable gates (blocking):** every non-`reality_gate` task in the module must
+  be supervisor-confirmed `done:true`. These genuinely gate the module's release judgment.
+- **Reality-gate items (non-blocking):** every `reality_gate` task that came back
+  `reality_gated:true` goes onto the Phase 2 (b) human-acceptance list. It does **NOT** block
+  the module's release judgment and does **NOT** block downstream.
+
+**Cross-module downstream depends on outputs, never on a release judgment.** A downstream
+module depends on the *artifacts/interfaces* (`implements`/`requires`) an upstream module
+produces — NOT on whether the upstream module "passed G8". So even when an upstream module's
+UI/E2E gate is reality-gated and awaiting human verification, every downstream module that only
+needs the upstream's committed interface keeps advancing.
+
+**Failure mode this release exists to prevent (write it down):** a single environmental gate
+(a flaky simulator/UI gate / a device-bound acceptance) must NEVER block a module's release
+judgment NOR transitively skip the entire downstream chain. In a prior large run, device-bound
+acceptances flaked, soft-retried to exhaustion, drove 0 modules to release-ready, and every
+cross-module downstream was then transitively skipped — one environmental problem paralyzed the
+whole closeout. The reality-gate path (one autonomous attempt → ledger → human list, never a
+soft-retry, never a dependent skip) is the fix.
+
 ## Phase 2 — Report
 Update the overview and write a final report: assumptions the autonomous agents made, all
 escalation points + resolutions, the independently-verified completion list (distinguish
@@ -259,10 +320,14 @@ never a bare "N done".
 (a) **autonomously verified** — the supervisor reran the real `acceptance_cmd` and it genuinely
 passed; and (b) **requires human / hardware / external verification** — anything whose real-world
 success cannot be proven in CI/simulator (live media, real devices, third-party prod systems,
-physical I/O). For every item in (b), emit a concrete runbook (exact steps, what to observe, pass
-criteria). **"All tasks green" must NEVER be presented as "the feature works" when (b) is
-non-empty.** Mechanical task-completion ≠ verified capability; conflating them is the precise
-honesty failure megastorm exists to prevent.
+physical I/O). **The (b) list is fed by `reality-gate-ledger.json`** (§1.6): every
+`reality_gated:true` task, with its recorded reason and the `runbook_ptr` to the
+human-acceptance runbook the plan agent wrote into the plan markdown. For every item in (b),
+emit (or point at) that concrete runbook (exact steps, what to observe, pass criteria). **"All
+tasks green" must NEVER be presented as "the feature works" when (b) is non-empty.** Mechanical
+task-completion ≠ verified capability; conflating them is the precise honesty failure megastorm
+exists to prevent. Reality-gated items in (b) are "implementation committed, proof pending" —
+they are NOT counted as failures and NOT counted as autonomously-verified done.
 
 ## Artifacts (superpowers-native)
 One overview + standard superpowers docs:
