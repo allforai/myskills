@@ -64,7 +64,8 @@ claude/cross-exam/
    明示"无基准，未盘"**，只开集成缝隙 + 细节质量两个镜头（它们不依赖基准）；报告
    `baseline: none`。环境能力探测（能否运行、有无 Playwright）。
    **安全确认：实测靶必须是本地/开发实例**（盘问会造真实调用），起手确认后才放开。
-   **续跑**：intake 检测到目标下已有未收敛的 run 目录时，询问续接还是新开；
+   **续跑**：intake 检测到未收敛 run 目录（判据：`ledger.json` 存在且
+   `completion-report.md` 不存在）时，询问续接还是新开；
    run 目录命名 `docs/cross-exam/<日期>-<目标slug>/`。
 2. **定面（facet map）**：从需求基准 + 代码拓扑摆出交付的面，用户勾选盘哪些、先盘哪个。
 3. **盘问循环**（每轮一个面）：
@@ -95,8 +96,12 @@ claude/cross-exam/
 
 ```json
 {"question": "...", "target": {"how_to_run": "...", "entry": "...", "type": "web|cli|api"},
- "states_to_capture": ["..."], "evidence_dir": "docs/cross-exam/<run>/evidence/qNN/"}
+ "states_to_capture": ["..."], "evidence_dir": "docs/cross-exam/<run>/evidence/qNN/",
+ "context_paths": ["<可选：台账/spec 等只读对账材料的路径，仅当该问需要>"]}
 ```
+
+`context_paths` 只传路径不传盘问官的解读——台账对账类问题靠它拿到材料位置，
+期望隔离原则不破。
 
 纪律：
 
@@ -120,7 +125,8 @@ claude/cross-exam/
 `examined|partial|not_examined`）、entries（q、facet、leak_point、medium、
 evidence{dir, screenshots, key_observation}、verdict、requirement_ref、severity）。
 `severity` 枚举 `high|medium|low`，由盘问官在裁决时判定（依据：需求引用的分量 +
-实测后果的破坏面）；`实证完成` 类 entry 无 severity。
+实测后果的破坏面）；仅 `缺口`/`跑偏` 带 severity——`实证完成` 与 `无法自证` 不带
+（后者不是缺口，是待人工验证项）。
 
 **completion-report.md**（确定性渲染）：
 
