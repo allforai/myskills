@@ -1,0 +1,6 @@
+{
+  "name": "cross-exam",
+  "description": "Evidence-backed completion cross-examination: Socratic question cards from leak points, fresh-context probers test the delivery themselves (code / runtime+screenshots / ledger), deterministic completion report. Audit-only, interactive-only. Global command /cross-exam.",
+  "version": "0.1.0",
+  "author": { "name": "dv" }
+}

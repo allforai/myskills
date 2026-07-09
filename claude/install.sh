@@ -11,7 +11,7 @@ else
   # name == the dir name == the plugin name, so the install ref is <plugin>@<plugin>.
   # (The old 'claude plugin add <path>' verb no longer exists; the CLI now uses
   #  'marketplace add' to register the source, then 'install <name>@<marketplace>'.)
-  for plugin in meta-skill megastorm; do
+  for plugin in meta-skill megastorm cross-exam; do
     dir="$SCRIPT_DIR/$plugin"
     [ -d "$dir" ] || continue
     echo "  Registering marketplace for $plugin..."
