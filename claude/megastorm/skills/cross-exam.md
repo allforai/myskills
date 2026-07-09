@@ -1,14 +1,13 @@
 ---
 name: cross-exam
-description: Evidence-backed completion cross-examination — Socratic question cards from leak points; the skill probes and screenshots the delivery itself, then renders a deterministic completion report. Audit-only (record, never fix), interactive-only (never unattended). Explicitly invoked via /cross-exam.
-version: 0.1.1
+description: Evidence-backed completion cross-examination — Socratic question cards from leak points; the skill probes and screenshots the delivery itself, then renders a deterministic completion report. Audit-only (record, never fix), interactive-only (never unattended). Explicitly invoked via /cross-exam. Generic — works on any delivery, not only megastorm runs.
 ---
 
 # cross-exam — 实证完成度盘问
 
-`$ROOT` = `${CLAUDE_PLUGIN_ROOT}`。四镜头：`$ROOT/knowledge/lenses.md`；
-实测官 prompt：`$ROOT/knowledge/prompts/prober.md`；schema：`$ROOT/knowledge/schemas.md`；
-报告渲染：`$ROOT/scripts/render_report.py`。
+`$ROOT` = `${CLAUDE_PLUGIN_ROOT}`。四镜头：`$ROOT/knowledge/cross-exam/lenses.md`；
+实测官 prompt：`$ROOT/knowledge/cross-exam/prompts/prober.md`；
+schema：`$ROOT/knowledge/cross-exam/schemas.md`；报告渲染：`$ROOT/scripts/render_report.py`。
 
 **不变式：**
 - **只记账不修** — 缺口带证据入台账，修复是用户另一个决定；盘问官没有"把问题修掉"的动机。
@@ -38,7 +37,7 @@ version: 0.1.1
    本地/开发实例后才放开手；生产系统一律拒绝盘问。
 5. **run 目录**：`docs/cross-exam/<日期>-<目标slug>/`。检测到未收敛 run
    （`ledger.json` 存在且 `completion-report.md` 不存在）→ 问用户续接还是新开。
-6. 初始化/载入 `ledger.json`（schema 见 `$ROOT/knowledge/schemas.md`）。
+6. 初始化/载入 `ledger.json`（schema 见 `$ROOT/knowledge/cross-exam/schemas.md`）。
 
 ## 1. 定面（facet map）
 
@@ -55,7 +54,7 @@ AskUserQuestion 让用户勾选盘哪些、先盘哪个。没选的面在 ledger
 
 - **问题牌**：遵守 lenses.md 的 4 条硬约束（挂泄漏点、可实测、覆盖不同疑点、
   UI 牌注明状态清单）。牌用 AskUserQuestion 呈现，用户永远可以走"Other"自己出题。
-- **派实测官**：`Agent(general-purpose)`，prompt = `$ROOT/knowledge/prompts/prober.md`
+- **派实测官**：`Agent(general-purpose)`，prompt = `$ROOT/knowledge/cross-exam/prompts/prober.md`
   全文 + 输入 JSON（question / target / states_to_capture / evidence_dir /
   可选 context_paths——只传路径不传你的解读）。**不夹带怀疑。**
 - **收证据**：把关键观察和截图路径给用户看，再对照需求基准下裁决。

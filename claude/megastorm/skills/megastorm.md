@@ -320,8 +320,7 @@ escalation points + resolutions, the independently-verified completion list (dis
 
 After delivering the report, add one closing line inviting the user to run
 `/cross-exam` for an evidence-backed completion cross-examination of this
-delivery (a standalone, interactive-only skill — do NOT auto-enter it, and
-do not treat it as installed: skip the line if the command is unavailable).
+delivery (ships with this plugin; interactive-only — do NOT auto-enter it).
 
 **Mandatory escalation + skip accounting (from §1.6).** The report MUST render the full
 `escalation-ledger.json`: every execution-phase escalation (task id, reason, evidence,

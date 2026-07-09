@@ -162,6 +162,7 @@ evidence{dir, screenshots, key_observation}、verdict、requirement_ref、severi
 | 证据 | 逐状态截图留档 | 不只留成功图 |
 | 下游 | 只记账不修 | 审计定位，无修复动机 |
 | 落点 | 独立通用技能，CC only | megastorm 仅为数据源 |
+| 落点修订 (2026-07-09) | 并入 megastorm 插件分发（同插件双命令） | 用户裁定：独立安装太麻烦；技能内容保持通用零依赖，仅打包合一。目录：megastorm/knowledge/cross-exam/ + scripts/render_report.py |
 | 命名 | /cross-exam 盘问 | 探针是手段不是目的 |
 | 产出 | 实证完成度报告 | 报告是目的 |
 | 架构 | 盘问官/实测官分离（路线 B） | 测量不被期望污染 |
