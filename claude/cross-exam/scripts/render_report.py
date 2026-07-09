@@ -79,11 +79,10 @@ def render(run_dir):
     out.append("## 逐面完成度")
     for f in examined:
         fe = [e for e in admitted if e.get("facet") == f["id"]]
-        done_fe = [e for e in fe if e.get("verdict") == "done"]
-        done = len(done_fe)
+        done = len([e for e in fe if e.get("verdict") == "done"])
         out.append("")
         out.append(f"### {f['name']}（{f['id']}）— {len(fe)} 问中 {done} 问实证通过")
-        out.extend(_entry_line(e) for e in done_fe)
+        out.extend(_entry_line(e) for e in fe)
 
     gaps = [e for e in admitted if e.get("verdict") in ("gap", "drift")]
     gaps.sort(key=lambda e: SEVERITY_ORDER.get(e.get("severity"), 3))

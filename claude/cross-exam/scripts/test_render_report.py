@@ -95,7 +95,24 @@ class TestRendering(unittest.TestCase):
             run = _mk_run(tmp, [{"id": "F1", "name": "面一", "status": "examined"}],
                           entries)
             report = render(run)
-            self.assertLess(report.index("q-high"), report.index("q-low"))
+            gap_section = report[report.index("## 缺口清单"):report.index("## 无法自证清单")]
+            self.assertIn("q-high", gap_section)
+            self.assertIn("q-low", gap_section)
+            self.assertLess(gap_section.index("q-high"), gap_section.index("q-low"))
+
+    def test_facet_section_lists_all_verdicts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            entries = [
+                _entry("q-done", verdict="done", ev_dir="evidence/q1/"),
+                _entry("q-gap", verdict="gap", ev_dir="evidence/q2/", severity="high"),
+                _entry("q-unprov", verdict="unprovable", ev_dir="evidence/q3/"),
+            ]
+            run = _mk_run(tmp, [{"id": "F1", "name": "面一", "status": "examined"}],
+                          entries)
+            report = render(run)
+            facet_section = report[report.index("## 逐面完成度"):report.index("## 缺口清单")]
+            for q in ("q-done", "q-gap", "q-unprov"):
+                self.assertIn(q, facet_section)
 
     def test_baseline_none_declares_closed_lenses(self):
         with tempfile.TemporaryDirectory() as tmp:
