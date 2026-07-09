@@ -36,7 +36,8 @@ schema：`$ROOT/knowledge/cross-exam/schemas.md`；报告渲染：`$ROOT/scripts
 4. **安全确认（必须）**：实测会造真实调用（退款、删除这类）。与用户确认靶子是
    本地/开发实例后才放开手；生产系统一律拒绝盘问。
 5. **run 目录**：`docs/cross-exam/<日期>-<目标slug>/`。检测到未收敛 run
-   （`ledger.json` 存在且 `completion-report.md` 不存在）→ 问用户续接还是新开。
+   （`ledger.json` 存在且 `completion-report.md` 不存在）→ 问用户续接还是新开；
+   续接时读旧 ledger 的 `open_threads` 作为起手牌候选。
 6. 初始化/载入 `ledger.json`（schema 见 `$ROOT/knowledge/cross-exam/schemas.md`）。
 
 ## 1. 定面（facet map）
@@ -62,7 +63,10 @@ AskUserQuestion 让用户勾选盘哪些、先盘哪个。没选的面在 ledger
   （需真设备/人工，如实挂账不猜）。`gap|drift` 定 severity（high|medium|low，
   依据：需求引用的分量 + 实测后果的破坏面）。
 - **每问立刻落盘 ledger.json**（中断不丢），entry 按 schemas.md。
-- **发散**：挖出缺口后，下一轮的牌从缺口继续发散。
+- **弃牌不蒸发**：每轮发牌后，未被选中的牌**立即**记入 ledger 的 `open_threads`
+  （q/facet/leak_point）；某线后来被实测则移入 entries 并从 open_threads 删除。
+  报告会把它们渲染成"未拉的线"，续盘从这里接手。
+- **发散**：挖出缺口后，下一轮的牌从缺口继续发散（open_threads 里的旧牌也是候选）。
 - **实测官死/超时**：重派一次（基础设施失败不算数）；再失败该问记 `could_not`
   证据（原因文件），裁 `unprovable`，绝不编造。
 - **靶子起不来**：本身就是一条集成缝隙 `gap`（"声称可跑，实测失败"，实测官的
@@ -73,4 +77,5 @@ AskUserQuestion 让用户勾选盘哪些、先盘哪个。没选的面在 ledger
 用户喊停或选中的面盘完 →
 `python3 $ROOT/scripts/render_report.py docs/cross-exam/<run>/` →
 把 completion-report.md 呈给用户。报告四类裁决计数、逐面"X 问中 Y 问实证通过"、
-缺口清单（可直接转修复任务）、无法自证清单、未盘问声明——**没有编造的总百分比**。
+缺口清单（可直接转修复任务）、无法自证清单、未盘问声明、未拉的线（open_threads，
+续盘接手点）——**没有编造的总百分比**。

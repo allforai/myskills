@@ -34,12 +34,17 @@
   `could_not`/无法自证 → 原因文件（尝试了什么、卡在哪）。
 - verdict 语义：`done` 实证完成 / `gap` 缺口（实测打脸）/ `drift` 跑偏（做了但不是需求
   的意思）/ `unprovable` 无法自证（需真设备/人工，如实挂账不猜）。
+- 顶层可选 `open_threads`（防弃牌蒸发）：出过牌但未实测的线，
+  `[{"q": "...", "facet": "F1", "leak_point": "..."}]`。每轮发牌后把未选中的牌
+  **立即**记入；某线后来被实测则移入 entries 并从这里删除。渲染为"未拉的线"专节，
+  不进任何计数；续盘时它是起手牌候选。
 
 ## completion-report.md（仅由 scripts/render_report.py 渲染，禁止口述生成）
 
 依次：总览（面/问/四类裁决计数；baseline=none 时声明关闭的镜头）→ 逐面完成度
 （"X 问中 Y 问实证通过"，逐条链证据）→ 缺口清单（gap+drift 按 severity 排）→
-无法自证清单 → 未盘问声明（not_examined 面）→ 拒渲声明（如有）。
+无法自证清单 → 未盘问声明（not_examined 面）→ 未拉的线（open_threads）→
+拒渲声明（如有）。
 
 ## 诚实性红线（写死在 render_report.py，不是嘱咐）
 

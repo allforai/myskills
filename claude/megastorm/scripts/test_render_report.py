@@ -157,5 +157,35 @@ class TestRendering(unittest.TestCase):
                 render(run)
 
 
+class TestOpenThreads(unittest.TestCase):
+    def test_open_threads_section_rendered_not_counted(self):
+        # 弃牌（未拉的线）进报告专节，不进任何裁决计数
+        with tempfile.TemporaryDirectory() as tmp:
+            run = _mk_run(tmp, [{"id": "F1", "name": "面一", "status": "partial"}],
+                          [_entry("q1")])
+            L = json.loads((run / "ledger.json").read_text(encoding="utf-8"))
+            L["open_threads"] = [
+                {"q": "先存后发真的成立吗？", "facet": "F1",
+                 "leak_point": "顺序约束单测难测"}]
+            (run / "ledger.json").write_text(
+                json.dumps(L, ensure_ascii=False), encoding="utf-8")
+            report = render(run)
+            self.assertIn("## 未拉的线", report)
+            threads_section = report[report.index("## 未拉的线"):]
+            self.assertIn("先存后发真的成立吗？", threads_section)
+            self.assertIn("顺序约束单测难测", threads_section)
+            self.assertIn("实证完成：1", report)  # thread 不进计数
+
+    def test_open_threads_key_absent_renders_none(self):
+        # 旧 ledger 没有 open_threads 键也能渲染，专节显示（无）
+        with tempfile.TemporaryDirectory() as tmp:
+            run = _mk_run(tmp, [{"id": "F1", "name": "面一", "status": "examined"}],
+                          [_entry("q1")])
+            report = render(run)
+            self.assertIn("## 未拉的线", report)
+            threads_section = report[report.index("## 未拉的线"):]
+            self.assertIn("（无）", threads_section.split("\n## ")[0])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -9,6 +9,9 @@
   非法裁决）。合法裁决必有证据（could_not 也要落原因文件），被拒的只可能是
   绕过实测的口头裁决，或试图用"."、run 目录本身等非证据目录蒙混过关。
 
+另渲染 ledger 可选的 `open_threads`（出过牌但未实测的线）为"未拉的线"专节——
+不进任何计数，只为续盘留接手点（防弃牌蒸发）。
+
 Usage: python3 render_report.py <run_dir>    # run_dir 内含 ledger.json
 写出 <run_dir>/completion-report.md。exit 0=渲染成功（有拒渲仍为 0，报告内声明）；
 exit 1=ledger 不可读或缺必填键。
@@ -120,6 +123,15 @@ def render(run_dir):
                    for f in not_examined)
     else:
         out.append("（所有面均已盘问或部分盘问）")
+
+    threads = ledger.get("open_threads", [])
+    out.append("")
+    out.append("## 未拉的线（已发现泄漏点、未实测——续盘从这里接手）")
+    if threads:
+        out.extend(f"- [{t.get('facet', '?')}] {t.get('q', '?')} — "
+                   f"泄漏点：{t.get('leak_point', '')}" for t in threads)
+    else:
+        out.append("（无）")
 
     if refused:
         out.append("")
