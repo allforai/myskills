@@ -103,8 +103,11 @@ python3 scripts/run_layers.py orchestration.json all-tasks.json \
 ```
 The runner owns:
 - **Ready-set scheduling (not layer barriers):** a task runs as soon as every id in its
-  `effective_deps` is supervisor-confirmed; dispatched up to `--max-workers` in flight and
-  refilled on each confirm. One slow task never stalls its independent siblings.
+  `effective_deps` is supervisor-confirmed. Every ready task dispatches immediately —
+  concurrency is UNBOUNDED by default (tasks are LLM calls, not machine-bound work).
+  One slow task never stalls its independent siblings. If tasks run machine-heavy local
+  work (builds, whole test suites, docker), the runner prints a warning; pass
+  `--max-workers N` to cap in-flight tasks — the runner never caps silently on its own.
 - **Mutex discipline:** at most one in-flight task per `isolate_groups` and per
   `resource_groups` entry (file or shared-physical-resource collisions), members preferred
   in declaration order. Isolate-group members run in a per-task git worktree, merged back

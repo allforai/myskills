@@ -181,13 +181,22 @@ of the fleet). The orchestration script runs a **ready-set loop** over `orchestr
 - A task is READY when every id in its `effective_deps` entry is supervisor-confirmed
   (`done:true`). A dep that was escalated/skipped never satisfies readiness — the dependent is
   skipped too (see "Escalation semantics" below).
-- Dispatch ready tasks up to an **in-flight cap** (default 4 concurrent executor+supervisor
-  pairs; tune to machine + token budget). Whenever a task confirms, recompute the ready set
-  and refill the slots — no barrier, no waiting for siblings.
+- Dispatch **every ready task immediately — no skill-level in-flight cap.** Executor and
+  supervisor agents are LLM calls, not machine-bound work; the platform Workflow cap
+  (min(16, CPU cores − 2) per workflow) already queues any excess, so an extra cap here only
+  idles the fleet. Whenever a task confirms, recompute the ready set and dispatch the new
+  ready tasks — no barrier, no waiting for siblings.
+- **Machine-heavy exception (warn, don't silently throttle):** if tasks run heavy LOCAL work
+  (full builds, whole-suite tests, docker builds — typically visible in `acceptance_cmd` or
+  the task description), uncapped dispatch can thrash the machine. When authoring the
+  Workflow, scan the task list for such work; if found, WARN the user before launching and
+  honor a user-chosen `max_concurrency` (a simple in-flight counter in the script). Never
+  lower the cap yourself without telling the user.
 - **Mutex discipline (preserves the isolate-group serial semantics):** at most ONE in-flight
   task per `isolate_groups` entry and per `resource_groups` entry, members dispatched in
   declaration order. A ready task whose group has a sibling in flight (or a pending merge)
-  simply waits; it must not hold an in-flight slot while waiting.
+  simply waits — it is not dispatched until the group frees (and when a user cap is active,
+  it must not hold a slot while waiting).
 
 **Worktree isolation — know what it actually isolates.** Workflow `isolation:'worktree'`
 snapshots the SESSION's repo (the cwd this skill runs in), NOT an arbitrary target repo. If

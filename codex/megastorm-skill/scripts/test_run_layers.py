@@ -6,8 +6,8 @@ import tempfile
 import threading
 import unittest
 
-from run_layers import (ANTI_VACUOUS, build_supervisor_prompt, parse_verdict,
-                        run_task, run_task_in_worktree, schedule)
+from run_layers import (ANTI_VACUOUS, HEAVY_CMD_RE, build_supervisor_prompt,
+                        parse_verdict, run_task, run_task_in_worktree, schedule)
 
 PROMPTS = pathlib.Path(__file__).resolve().parent.parent / "prompts"
 
@@ -40,6 +40,21 @@ def _v(done, **kw):
 
 
 MODELS = {"think": "m-think", "verify": "m-verify", "bulk": "m-bulk"}
+
+
+class TestHeavyCmdHeuristic(unittest.TestCase):
+    """Machine-heavy acceptance_cmd detection backing the unbounded-concurrency
+    warning (warn only — the runner never auto-caps)."""
+
+    def test_matches_heavy_commands(self):
+        for cmd in ("docker build .", "make all", "cargo build --release",
+                    "npm run build", "gradle assemble"):
+            self.assertTrue(HEAVY_CMD_RE.search(cmd), cmd)
+
+    def test_ignores_light_commands(self):
+        for cmd in ("pytest tests/test_x.py -q", "python3 check.py",
+                    "node smoke.js", ""):
+            self.assertFalse(HEAVY_CMD_RE.search(cmd), cmd)
 
 
 class TestParseVerdict(unittest.TestCase):
@@ -160,6 +175,34 @@ class TestSchedule(unittest.TestCase):
         res, esc, skip = schedule(eff, [["a", "b"]], {}, {t["id"]: t for t in tasks},
                                   runner, runner, set(), max_workers=4, log=lambda *_: None)
         self.assertEqual(inflight_peak["n"], 1)  # mutex held: never 2 at once
+
+    def _peak_concurrency(self, n_tasks, max_workers):
+        tasks = [_task(f"t{i}", [f"f{i}.py"]) for i in range(n_tasks)]
+        eff = {t["id"]: [] for t in tasks}
+        peak, cur, lock = {"n": 0}, {"n": 0}, threading.Lock()
+
+        def runner(t):
+            with lock:
+                cur["n"] += 1
+                peak["n"] = max(peak["n"], cur["n"])
+            import time
+            time.sleep(0.05)
+            with lock:
+                cur["n"] -= 1
+            return {"task_id": t["id"], "status": "done", "retries": 0}
+        _, esc, _ = schedule(eff, [], {}, {t["id"]: t for t in tasks},
+                             runner, runner, set(), max_workers=max_workers,
+                             log=lambda *_: None)
+        self.assertEqual(esc, [])
+        return peak["n"]
+
+    def test_unbounded_default_dispatches_all_ready_at_once(self):
+        # max_workers=0 (the default) = no in-flight cap: all 6 independent
+        # tasks must be in flight simultaneously.
+        self.assertEqual(self._peak_concurrency(6, max_workers=0), 6)
+
+    def test_explicit_cap_still_limits_in_flight(self):
+        self.assertLessEqual(self._peak_concurrency(6, max_workers=2), 2)
 
     def test_resource_group_serializes(self):
         tasks = [_task("a"), _task("b")]

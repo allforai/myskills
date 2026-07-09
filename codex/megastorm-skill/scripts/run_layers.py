@@ -3,9 +3,11 @@
 
 Replaces Claude Code's Workflow control flow with plain Python. Scheduling is a
 DEPENDENCY-READY loop, NOT layer barriers: a task runs as soon as every id in its
-`effective_deps` is supervisor-confirmed, dispatched up to an in-flight cap and
-refilled whenever a task confirms (a single slow task never stalls its siblings —
-in a real 277-task run, layer barriers idled most of the fleet). Mutex discipline
+`effective_deps` is supervisor-confirmed. Every ready task dispatches immediately —
+tasks are LLM (`codex exec`) calls, not machine-bound work, so the default in-flight
+cap is UNBOUNDED; pass --max-workers only when tasks run machine-heavy local work
+(a single slow task never stalls its siblings — in a real 277-task run, layer
+barriers idled most of the fleet). Mutex discipline
 preserves serial semantics: at most ONE in-flight task per `isolate_groups` entry
 and per `resource_groups` entry (file- or shared-physical-resource collisions),
 members preferred in declaration order. Isolate-group members run one git worktree
@@ -27,7 +29,7 @@ Usage:
   python3 run_layers.py orchestration.json all-tasks.json \
       --models models.json --prompts ../prompts --root /path/to/repo \
       [--state .megastorm-state.json] [--report execution-report.json] \
-      [--max-workers 4] [--isolation groups|all] [--codex-template '...'] [--dry-run]
+      [--max-workers N] [--isolation groups|all] [--codex-template '...'] [--dry-run]
 
 Exit 0 = all tasks done. Exit 1 = escalation(s) — render report to the human.
 """
@@ -42,6 +44,13 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 SOFT_RETRY_BUDGET = 2  # initial attempt + at most 2 retries = 3 dispatches total
+
+# Heuristic for machine-heavy acceptance commands: with the default unbounded
+# concurrency these can thrash the local machine, so we warn (never auto-cap).
+HEAVY_CMD_RE = re.compile(
+    r"\b(docker|make|cmake|bazel|mvn|gradle|webpack|tsc"
+    r"|cargo\s+build|go\s+build|npm\s+run\s+build|yarn\s+build|pnpm\s+build)\b",
+    re.IGNORECASE)
 
 ANTI_VACUOUS = (
     "IMPORTANT: the previous acceptance run passed only because it selected tests "
@@ -214,12 +223,12 @@ def run_task_in_worktree(task, runner, models, root, prompts_dir, merge_lock, lo
 # ---------- ready-set scheduling ----------
 
 def schedule(effective_deps, isolate_groups, resource_groups, tasks_by_id,
-             run_free, run_isolated, completed, max_workers=4, log=print,
+             run_free, run_isolated, completed, max_workers=0, log=print,
              on_progress=None):
     """Dependency-ready scheduler. A task is READY when every id in its
     `effective_deps` is in `completed`. Ready tasks dispatch up to `max_workers`
-    in flight; when one confirms, the ready set is recomputed and slots refill.
-    No layer barriers.
+    in flight (0 = unbounded: every ready task dispatches at once); when one
+    confirms, the ready set is recomputed and slots refill. No layer barriers.
 
     Mutex: at most one in-flight task per isolate_groups / resource_groups entry,
     members preferred in declaration (task) order. Isolate-group members run via
@@ -297,10 +306,11 @@ def schedule(effective_deps, isolate_groups, resource_groups, tasks_by_id,
     def _terminal_count():
         return len(completed) + len(escalated) + len(skipped)
 
-    with ThreadPoolExecutor(max_workers=max_workers) as ex:
+    cap = max_workers or max(len(all_ids), 1)
+    with ThreadPoolExecutor(max_workers=cap) as ex:
         with cond:
             while _terminal_count() < len(all_ids):
-                picked = _pick(max_workers)
+                picked = _pick(cap)
                 for tid in picked:
                     g = "" if tid not in isolate_members else " [isolated]"
                     log(f"dispatch {tid}{g} "
@@ -338,7 +348,11 @@ def main(argv):
     ap.add_argument("--root", default=".")
     ap.add_argument("--state", default=".megastorm-state.json")
     ap.add_argument("--report", default="execution-report.json")
-    ap.add_argument("--max-workers", type=int, default=4)
+    ap.add_argument("--max-workers", type=int, default=0,
+                    help="in-flight cap; 0 (default) = unbounded — dispatch every "
+                         "ready task at once (tasks are LLM calls, not machine-"
+                         "bound). Set a number when tasks run machine-heavy local "
+                         "work (builds, whole test suites, docker).")
     ap.add_argument("--isolation", choices=["groups", "all"], default="groups",
                     help="'all' worktree-isolates every task (safer when executors "
                          "git-commit concurrently in the main tree)")
@@ -353,6 +367,14 @@ def main(argv):
     if isinstance(tasks, dict):
         tasks = tasks.get("tasks", [])
     tasks_by_id = {t["id"]: t for t in tasks}
+    if not args.max_workers:
+        heavy = [t["id"] for t in tasks
+                 if HEAVY_CMD_RE.search(t.get("acceptance_cmd") or "")]
+        if heavy:
+            shown = ", ".join(heavy[:5]) + ("…" if len(heavy) > 5 else "")
+            print(f"WARNING: concurrency is unbounded (default) but {len(heavy)} "
+                  f"task(s) look machine-heavy ({shown}) — pass --max-workers N "
+                  f"to cap local load.")
     models = load_models(args.models)
     prompts_dir = pathlib.Path(args.prompts)
     root = pathlib.Path(args.root).resolve()
