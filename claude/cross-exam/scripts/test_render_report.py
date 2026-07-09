@@ -58,6 +58,33 @@ class TestRedLines(unittest.TestCase):
             self.assertIn("违规裁决", report)
             self.assertIn("实证完成：0", report)
 
+    def test_evidence_dir_outside_evidence_root_is_refused(self):
+        # "." (run 目录本身非空) 与 evidence/ 之外的目录都不算证据
+        with tempfile.TemporaryDirectory() as tmp:
+            e_dot = _entry("q-dot", ev_dir=".")
+            e_out = _entry("q-out", ev_dir="notes/")
+            run = _mk_run(tmp, [{"id": "F1", "name": "面一", "status": "examined"}],
+                          [e_dot, e_out], make_evidence=False)
+            (run / "notes").mkdir()
+            (run / "notes" / "x.txt").write_text("x", encoding="utf-8")
+            report = render(run)
+            self.assertIn("违规裁决", report)
+            self.assertIn("q-dot", report)
+            self.assertIn("q-out", report)
+            self.assertIn("实证完成：0", report)
+
+    def test_unknown_verdict_is_refused_not_silently_rendered(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("q-weird", verdict="partial", ev_dir="evidence/q1/")
+            run = _mk_run(tmp, [{"id": "F1", "name": "面一", "status": "examined"}],
+                          [e])
+            report = render(run)
+            self.assertIn("违规裁决", report)
+            self.assertIn("q-weird", report)
+            self.assertIn("非法裁决", report)
+            facet_section = report[report.index("## 逐面完成度"):report.index("## 缺口清单")]
+            self.assertNotIn("q-weird", facet_section)
+
     def test_not_examined_facet_excluded_from_stats(self):
         with tempfile.TemporaryDirectory() as tmp:
             run = _mk_run(tmp, [

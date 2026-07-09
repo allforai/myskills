@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "cross-exam",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "source": "./",
       "description": "Socratic completion cross-examination producing an evidence-backed completion report. Explicit /cross-exam trigger."
     }

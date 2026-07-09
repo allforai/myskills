@@ -3,9 +3,11 @@
 
 诚实性红线在这里、在代码里，不在嘱咐里：
 - status=="not_examined" 的面不进任何完成度统计，只进"未盘问声明"；
-- 无证据 entry（缺 evidence.dir / 目录不存在 / 目录为空）拒绝渲染进正文与计数，
-  在"违规裁决"段点名。合法裁决必有证据（could_not 也要落原因文件），被拒的
-  只可能是绕过实测的口头裁决。
+- 无证据 entry（缺 evidence.dir / 目录不在 run 目录的 evidence/ 之下 / 目录不
+  存在 / 目录为空）以及 verdict 不在 done|gap|drift|unprovable 内的 entry，
+  一律拒绝渲染进正文与计数，在"违规裁决"段点名并区分原因（无证据目录 /
+  非法裁决）。合法裁决必有证据（could_not 也要落原因文件），被拒的只可能是
+  绕过实测的口头裁决，或试图用"."、run 目录本身等非证据目录蒙混过关。
 
 Usage: python3 render_report.py <run_dir>    # run_dir 内含 ledger.json
 写出 <run_dir>/completion-report.md。exit 0=渲染成功（有拒渲仍为 0，报告内声明）；
@@ -39,14 +41,19 @@ def _has_evidence(entry, run_dir):
     if not d:
         return False
     p = Path(d) if Path(d).is_absolute() else run_dir / d
+    p = p.resolve()
+    evidence_root = (run_dir / "evidence").resolve()
+    if evidence_root not in p.parents:
+        return False
     return p.is_dir() and any(p.iterdir())
 
 
 def _entry_line(e):
     label = VERDICT_LABELS.get(e.get("verdict"), e.get("verdict"))
+    facet_tag = f" [{e.get('facet', '?')}]"
     ref = f" [{e['requirement_ref']}]" if e.get("requirement_ref") else ""
     ev = e.get("evidence", {})
-    return (f"- **{label}**{ref} {e['q']} — {ev.get('key_observation', '')}"
+    return (f"- **{label}**{facet_tag}{ref} {e.get('q', '?')} — {ev.get('key_observation', '')}"
             f"（证据：{ev.get('dir', '')}）")
 
 
@@ -55,7 +62,12 @@ def render(run_dir):
     ledger = _load(run_dir)
     admitted, refused = [], []
     for e in ledger["entries"]:
-        (admitted if _has_evidence(e, run_dir) else refused).append(e)
+        if e.get("verdict") not in VERDICT_LABELS:
+            refused.append(e)
+        elif _has_evidence(e, run_dir):
+            admitted.append(e)
+        else:
+            refused.append(e)
 
     examined = [f for f in ledger["facets"] if f.get("status") != "not_examined"]
     not_examined = [f for f in ledger["facets"] if f.get("status") == "not_examined"]
@@ -111,10 +123,13 @@ def render(run_dir):
 
     if refused:
         out.append("")
-        out.append("## 违规裁决（无证据，已拒渲）")
-        out.append(f"以下 {len(refused)} 条 entry 无有效证据目录，"
-                   "不计入任何统计：")
-        out.extend(f"- {e.get('q', '?')}" for e in refused)
+        out.append("## 违规裁决（无证据或非法裁决，已拒渲）")
+        out.append(f"以下 {len(refused)} 条 entry 不计入任何统计：")
+        for e in refused:
+            verdict = e.get("verdict")
+            reason = ("无证据目录" if verdict in VERDICT_LABELS
+                      else f"非法裁决：{verdict}")
+            out.append(f"- {e.get('q', '?')}（{reason}）")
 
     out.append("")
     return "\n".join(out)

@@ -1,7 +1,7 @@
 ---
 name: cross-exam
 description: Evidence-backed completion cross-examination — Socratic question cards from leak points; the skill probes and screenshots the delivery itself, then renders a deterministic completion report. Audit-only (record, never fix), interactive-only (never unattended). Explicitly invoked via /cross-exam.
-version: 0.1.0
+version: 0.1.1
 ---
 
 # cross-exam — 实证完成度盘问
