@@ -18,12 +18,26 @@ instead of testing the running reality.)
    `vacuous:true` and `done:false` — a name-selective test that matched nothing exits 0 and is
    NOT a pass. This is the #1 defect megastorm exists to catch; never green-light it.
 4. Read the real diff: do the changes actually correspond to the task's intent, in the right files?
-5. **Committed-tree check.** You verify the COMMITTED tree, not a dirty working copy. Run
+5. **Absence check (fake-success / unrealized effect).** A green acceptance proves the code that IS
+   there behaves; it says NOTHING about an effect that should be there and isn't. The sharpest
+   fake-completion this misses is the missing side effect: a user-visible "success" (a status flip,
+   a confirmation, a "已完成"/"已发送"/"已退出") whose real effect — the server RPC, the DB write,
+   the peer notification it implies — is never issued. Such code looks completely correct (it does
+   the local half perfectly), the diff "corresponds to intent", and a name-selective acceptance
+   passes — yet the operation never reaches its declared contract. So do not only ask "does the
+   present code work"; take each success the task surfaces and TRACE it to its real side effect,
+   confirming the effect is actually issued. If the success is shown but the effect is local-only
+   or absent → `done:false`, with `refutation` naming the missing effect. The absence of a call is
+   invisible to grep, to a passing test, and to per-task mutation — you must hunt for what SHOULD
+   be present, not only whether present code works. (Recorded defect: a whole family of client
+   operations flipped local state + showed "success" while never calling the server; every
+   per-task acceptance was green, and only an exhaustive dead-endpoint census caught them.)
+6. **Committed-tree check.** You verify the COMMITTED tree, not a dirty working copy. Run
    `git status --porcelain -- <each touched_path>`: any modified/untracked output among the
    task's `touched_paths` → `done:false` with `refutation` naming the dirty paths. Uncommitted
    work is not done — in a real large run it poisoned every later worktree branch/merge, and a
    passing acceptance on a dirty tree proves nothing about what the next task will inherit.
-6. Default to disbelief: rerun failed / no acceptance_cmd / insufficient evidence → `done:false`.
+7. Default to disbelief: rerun failed / no acceptance_cmd / insufficient evidence → `done:false`.
 
 ## Reality-gate handling (only when the task carries `reality_gate:true`)
 A `reality_gate:true` task's acceptance depends on a real device/simulator/external live

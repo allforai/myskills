@@ -13,6 +13,11 @@ schema：`$ROOT/knowledge/cross-exam/schemas.md`；报告渲染：`$ROOT/scripts
 - **只记账不修** — 缺口带证据入台账，修复是用户另一个决定；盘问官没有"把问题修掉"的动机。
 - **只在有人在场时运行** — 无人值守不盘；被别的流程在自治阶段调用时直接拒绝。
 - **结论必须来自独立采集的证据** — 每条裁决链到实测官落盘的证据文件；口头裁决会被渲染器拒收。
+- **实测官独立不可降级——缺了就拒跑，绝不自审。** cross-exam 的诚实性完全建立在"每问一个
+  fresh-context 实测官独立取证"上。若本 harness 派不出独立子 agent（如 Codex 未开 `multi_agent`，
+  或任何无并发子 agent 的环境），**当场停，明说"这里跑不了 cross-exam"，绝不降级成"盘问官自己
+  检查自己的交付"**。自审恰恰是 cross-exam 存在要抓的那种假完成——一个没有独立实测官的 cross-exam，
+  看起来盘过了、实际什么都没验，是最坏的假成功。**宁可说跑不了，不可假装盘过。**
 - **通用** — 零项目痕迹、零技术栈硬编码；流水线台账（如 megastorm registry）只是可选数据源。
 - **报告只由 `render_report.py` 渲染** — 禁止口述生成完成度报告。
 
@@ -26,6 +31,12 @@ schema：`$ROOT/knowledge/cross-exam/schemas.md`；报告渲染：`$ROOT/scripts
 
 ## 0. 定靶（intake）
 
+0. **能力前置门（先于一切，硬拒绝）：** 确认本 harness 能派出**独立的 fresh-context 子 agent**
+   （Claude Code: `Agent`；Codex: `spawn_agent`/`wait_agent`，需 `~/.codex/config.toml` 开
+   `[features] multi_agent = true`）。**派不出 → 当场停，告诉用户"这里跑不了 cross-exam：它必须靠
+   独立实测官取证，本环境没有；请开多智能体或换环境，我不会降级成自审"，然后结束。** 不要继续定靶、
+   不要摆面、不要用主会话冒充实测官。（`AskUserQuestion` 有没有结构化选择器**不是**前置门——那只是
+   问法，退成纯文本问答不影响方法；能力门只卡"独立取证"这一件事。）
 1. 确认被测对象与访问方式（怎么跑起来：web/cli/api？入口？）。
 2. **需求基准探测**（依次）：megastorm overview registry（R-*，在
    `docs/superpowers/specs/*-overview.md` 的 registry 标记内）→ `docs/superpowers/specs/`
@@ -42,9 +53,19 @@ schema：`$ROOT/knowledge/cross-exam/schemas.md`；报告渲染：`$ROOT/scripts
 
 ## 1. 定面（facet map）
 
-从需求基准 + 代码拓扑摆出交付的面（如：退款流程、通知、断线重连…），
-AskUserQuestion 让用户勾选盘哪些、先盘哪个。没选的面在 ledger 里记
-`status: "not_examined"`——渲染器会把它们列进"未盘问声明"，绝不算进完成度。
+**先独立 census 播种，再由你摆面——别让"你想到要盘什么"成为覆盖上限。** facet 表最危险的
+盲区是"你根本没想到要盘的那块"：盘问官持怀疑但也带盲区，只凭 hunch + 读代码摆面，交付里整类
+问题会因"没进 facet 表"而永远盘不到（实战教训：一整族假成功操作，只因盘问官碰巧把其中一个做成
+了牌才被抓出，那类本身从没有独立 facet）。所以定面分两步：
+1. **独立 surface 枚举**：派一个 fresh-context agent，用覆盖法（不是 hunch）从代码拓扑穷举交付
+   的操作面——每个用户可触发操作 / 每个端点 / 每个 store 方法 / 每个契约（RPC/handler）。它不看
+   你的怀疑，只产出"这交付一共有哪些面 + 每个面的入口"。死端点/契约 census（见 lenses.md 新增
+   镜头）是最省的播种法。
+2. **合并 + 摆面**：把 census 面与你自己想到的面合并去重，**标出"census 有、你没想到"的面**（那
+   往往正是盲区）。然后 AskUserQuestion 让用户勾选盘哪些、先盘哪个。
+
+没选的面在 ledger 里记 `status: "not_examined"`，**并按风险排序**（需求引用的分量 + 若真坏的破坏
+面），让人清楚把什么留在了桌上——渲染器把它们列进"未盘问声明"，绝不算进完成度。
 
 ## 2. 盘问循环（每轮一个面）
 
@@ -52,6 +73,12 @@ AskUserQuestion 让用户勾选盘哪些、先盘哪个。没选的面在 ledger
 扫泄漏点（读 lenses.md，浅而快）→ 出 3 张问题牌 → 用户选一张（或自己出题）
   → 派实测官（fresh context）→ 带回证据 → 你对证据下裁决 → 入台账 → 下一轮
 ```
+
+**两种模式，按目标选。** 上面的循环是**深挖模式**（Socratic 牌）：逐面出牌、用户选、单实测官
+深证——答"这条线成不成立"。当目标是"消灭某一类 / 交付完整性"时，先切**扫全模式（census
+sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个操作/端点逐条查"契约是否兑现"），拿
+到全集后再对高风险线回到深挖。**深挖答不了"我们有没有到处都看过"——那是扫全模式的活；只做深挖
+等于用 3 张牌去覆盖一整个交付。**
 
 - **问题牌**：遵守 lenses.md 的 4 条硬约束（挂泄漏点、可实测、覆盖不同疑点、
   UI 牌注明状态清单）。牌用 AskUserQuestion 呈现，用户永远可以走"Other"自己出题。
@@ -62,6 +89,9 @@ AskUserQuestion 让用户勾选盘哪些、先盘哪个。没选的面在 ledger
 - **裁决四种**：`done` 实证完成 / `gap` 缺口 / `drift` 跑偏 / `unprovable` 无法自证
   （需真设备/人工，如实挂账不猜）。`gap|drift` 定 severity（high|medium|low，
   依据：需求引用的分量 + 实测后果的破坏面）。
+- **自审 bias-guard（盘问官==交付作者时必开）**：取证独立 ≠ 裁决独立。作者给自己的活定 severity
+  有往轻里判的动机。此时 `gap` 默认从严——把 gap 降成 low 或判 done，需要**额外独立证据**（另一
+  个 fresh agent 复核，或明确的"生产不可达"实证），不能只凭盘问官一句"影响不大"。
 - **每问立刻落盘 ledger.json**（中断不丢），entry 按 schemas.md。
 - **弃牌不蒸发**：每轮发牌后，未被选中的牌**立即**记入 ledger 的 `open_threads`
   （q/facet/leak_point）；某线后来被实测则移入 entries 并从 open_threads 删除。

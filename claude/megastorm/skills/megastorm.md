@@ -77,6 +77,27 @@ absent-or-flaky capability is a `reality_gate` candidate the plan agent should m
    public/cross-module interfaces, or user-visible scope = escalate. Internal-only choices =
    the autonomous agents decide and log. This is what makes Phase 1 safe to run unattended.
 
+8. **Eliminate-a-class goals need a CENSUS, not an audit (anti-fake-completion at the SET level).**
+   When the goal is to remove/eliminate/harden a CLASS — every fabrication, every fake-success,
+   every swallowed error of kind K, every operation of type T that must reach effect M — the task
+   list MUST be derived from an EXHAUSTIVE ENUMERATION of that class, not from a smell-based audit.
+   Pattern-matching (grep the bad shape: `try?`, `isAtEnd ? default`, hardcoded sample data) finds
+   members that have a *tell*; it is structurally blind to members whose defect is an ABSENCE — an
+   operation that shows success but never calls the server looks EXACTLY like correct code, so no
+   grep, no passing test, and no per-task mutation will ever surface it. Absence is invisible; only
+   a coverage method finds it. So for a class goal, produce a **census artifact FIRST**: enumerate
+   the full population (every operation / endpoint / entry point / RPC), then check each against its
+   contract. The cheapest, sharpest census tool is the **dead-endpoint sweep** — a server-contract
+   method (RPC, handler, hook) that is *defined but has zero production call sites* is a
+   fake-success smoking gun (someone built the capability and then faked it locally instead of
+   calling it). Every census member then maps to a task OR is marked verified-clean-with-evidence.
+   A run whose task set was NOT backed by such a census carries LOW completeness confidence into
+   Phase 2 (the class is "instances-fixed", NOT "class-eliminated") — see Phase 2. Corollary for
+   the decomposition: prefer building "every write operation reaches a real effect or is explicitly
+   `localOnly`" as a *structural, machine-checkable invariant* over relying on future vigilance —
+   fake-success has no tell, so the only durable defense is making it either unrepresentable or
+   mechanically detectable.
+
 After Phase 0, do not stop for the human until an escalation surfaces.
 
 ## Phase 1 — Autonomous pipeline (call Workflow once per stage; read result; decide next)
@@ -321,6 +342,12 @@ escalation points + resolutions, the independently-verified completion list (dis
 After delivering the report, add one closing line inviting the user to run
 `/cross-exam` for an evidence-backed completion cross-examination of this
 delivery (ships with this plugin; interactive-only — do NOT auto-enter it).
+**For an eliminate-a-class goal (Phase 0 step 8), cross-exam is not a courtesy — it is the
+completeness gate.** Its `需求覆盖` lens and dead-endpoint reconciliation are exactly the
+absence-detection the per-task supervisor cannot do; treat "class eliminated" as UNPROVEN until a
+census-backed sweep (cross-exam or the Phase 0 census re-run against the delivered tree) confirms
+no class member was missed. Recommend it in the report explicitly, and never let the run's own
+"N/N done" stand in for it.
 
 **Mandatory escalation + skip accounting (from §1.6).** The report MUST render the full
 `escalation-ledger.json`: every execution-phase escalation (task id, reason, evidence,
@@ -341,6 +368,21 @@ tasks green" must NEVER be presented as "the feature works" when (b) is non-empt
 task-completion ≠ verified capability; conflating them is the precise honesty failure megastorm
 exists to prevent. Reality-gated items in (b) are "implementation committed, proof pending" —
 they are NOT counted as failures and NOT counted as autonomously-verified done.
+
+**Mandatory "Completeness confidence" section (SET-level anti-fake-completion).** Per-task
+supervision proves each task was done right; it says nothing about whether the task SET was the
+right set. A green "N/N done" is itself a fake-completion when the population was under-enumerated —
+the run reports the goal met while whole class members were never ticketed. So every report MUST
+state, explicitly: was the task set derived from an **exhaustive census** (Phase 0 step 8:
+enumerate-the-population-then-check-each, e.g. a dead-endpoint sweep) or from a **smell-based
+audit** (grep the bad shape)? 
+- **Census-backed** → you may state the class is covered, and cite the census (population size, how
+  each member was dispositioned: task vs verified-clean).
+- **Audit-based (or unknown)** → completeness is UNVERIFIED. The report must say so in these words,
+  must NOT present "N/N done" as "the class is eliminated", and must recommend the census/cross-exam
+  sweep as the outstanding gate. This is the exact trap the pipeline exists to avoid at the task
+  level, applied one level up: absence has no tell, so an unproven-complete set is guilty until a
+  coverage method proves it innocent.
 
 ## Artifacts (superpowers-native)
 One overview + standard superpowers docs:
