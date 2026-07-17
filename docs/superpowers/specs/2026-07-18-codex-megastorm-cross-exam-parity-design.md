@@ -439,7 +439,10 @@ A later explicit import records a human runbook outcome as `human_verified` or
 `human_rejected`, both with evidence. Verification closes the pending gate
 without rerunning dependents. Rejection reopens the task as a business failure,
 invalidates downstream confirmations, and requires a new planned execution; it
-is never silently rewritten as done.
+is never silently rewritten as done. A rejection marks every earlier final report
+for that run as superseded. The follow-up run records the rejected integration
+commit as its provenance and derives a new controlled baseline from an explicit
+human choice, never by silently moving the old run ref.
 
 ### Cross-exam persistence and probe authorization
 
@@ -450,6 +453,11 @@ entry and open thread has a stable UUID. Resume deduplicates by UUID and content
 hash, rejects conflicting duplicates, and quarantines unreadable snapshots.
 Evidence files are durable before the snapshot references them. A concurrent
 examiner refuses the active run instead of merging ledgers.
+
+A lock is stale only when its recorded process start identity (PID plus platform
+start-time token) is no longer live or its run UUID disagrees with the ledger.
+Stale-lock takeover requires explicit user confirmation, archives the old lock,
+and records a recovery event. PID reuse alone can never authorize takeover.
 
 Audit-only forbids source fixes but does not imply that every runtime probe is
 read-only. Intake records allowed hosts, accounts/tenants, operations, test-data
@@ -463,10 +471,11 @@ the authorized prober, are redacted from logs, and are never copied into evidenc
 
 A task moves through `pending -> dispatched -> implementation_ready -> verifying`.
 Verification transitions to `confirmed`,
-`implementation_merged_proof_pending`, `business_retry`, or
+`implementation_confirmed_proof_pending`, `business_retry`, or
 `infrastructure_retry`. Retries return to `dispatched`; exhausted budgets become
-`escalated`. Only confirmed or proof-pending tasks with a merge-complete event
-satisfy dependencies. Escalation makes nonterminal transitive dependents
+`escalated`. Merge completion changes the proof-pending state to
+`implementation_merged_proof_pending`. Only confirmed or proof-pending tasks
+with a merge-complete event satisfy dependencies. Escalation makes nonterminal transitive dependents
 `skipped`. Cancellation preserves nonterminal state and never creates success.
 
 Each executor and supervisor attempt has a stable attempt ID. Business and
