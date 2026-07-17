@@ -40,6 +40,13 @@ token change, unreadable executable, empty argv, kernel-buffer truncation, or
 executable/argv disagreement fails closed. Unsupported platforms require an
 explicit override.
 
+Linux reads `/proc/<pid>/stat` field 22 before and after the exe/cmdline reads and
+requires the start ticks to match. macOS reads `proc_pidinfo(PROC_PIDTBSDINFO)`
+start seconds/microseconds before and after `KERN_PROCARGS2` and requires both the
+start token and parent PID to match. The ancestor walker similarly rechecks each
+parent link before advancing, so PID reuse cannot splice a different process into
+the discovered chain.
+
 Aliases are not reconstructed because the shell has already expanded them. When a
 wrapper has replaced itself with Codex, the real Codex executable is inherited. If
 a wrapper remains as an ancestor, discovery still selects the nearest actual Codex
@@ -54,9 +61,17 @@ zero-value flags are `--oss`, `--strict-config`,
 `--dangerously-bypass-hook-trust`, `--skip-git-repo-check`,
 `--ignore-user-config`, and `--ignore-rules`. V1 inheritable one-value options are
 `-c/--config`, `--enable`, `--disable`, `-p/--profile`, `--local-provider`,
-`-s/--sandbox`, and `--add-dir`. Repeated options preserve order. Split and equals
+`-s/--sandbox`, and `--add-dir`. Root-only `-a/--ask-for-approval` is also
+inheritable with one value. Repeated options preserve order. Split and equals
 forms are accepted where supported. Unknown options fail closed because their arity
 cannot be inferred safely.
+
+The normalized command has two option partitions. Root-only approval arguments are
+emitted before `exec`; options accepted by `codex exec` are emitted after it:
+
+```text
+<executable> <root options> exec <exec options> <Megastorm task options> <prompt>
+```
 
 It removes or replaces child-specific/interactive arguments:
 
@@ -64,6 +79,9 @@ It removes or replaces child-specific/interactive arguments:
 - `-m`, `--model`, and `--model=<value>`;
 - `-C`, `--cd`, and `--cd=<value>`;
 - `-o`, `--output-last-message`, and equals forms;
+- `--json` (zero values), `--color` (one value), `--output-schema` (one value),
+  and an inherited `--ephemeral` are recognized and removed; Megastorm appends one
+  canonical `--ephemeral` and owns its output contract;
 - `--image`, interactive-only modes, `--`, stdin prompt `-`, and non-`exec`
   subcommands fail closed rather than being partially inherited;
 - prompt payloads and output-stream formatting arguments that conflict with the
@@ -78,7 +96,7 @@ subcommand are rejected.
 The child argv is built as an array:
 
 ```text
-<absolute executable> exec <preserved session args>
+<absolute executable> <preserved root args> exec <preserved exec args>
   --ephemeral -m <tier model> -C <task worktree>
   --output-last-message <temporary path> <prompt>
 ```
@@ -110,7 +128,8 @@ environment override nor template executes a bare executable through PATH.
 
 Execution reports record:
 
-- command source: template, environment, Linux procfs, or POSIX process query;
+- command source: `legacy-template`, `environment`, `linux-procfs`, or
+  `macos-kern-procargs2`;
 - absolute executable;
 - redacted discovered arguments;
 - redacted preserved session arguments.
