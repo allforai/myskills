@@ -23,5 +23,10 @@ Everything you need sits beside it:
 - `models.example.json` — copy to the project as `models.json`, fill REAL model names
   with the human in Phase 0 (placeholders refuse to run)
 
+Parity target: Claude Megastorm v0.14.0. This Codex-native port includes environment
+capability classification, census-backed completeness, reality-gate accounting, separate
+infrastructure/business failures, safe run-owned Git integration, and an invitation to the
+independent `cross-exam` Codex skill after Phase 2. Cross-exam is never auto-entered.
+
 Do not start any design or implementation before Phase 0 is complete (module
 breakdown approved, granularity review done, registry frozen, models resolved).

@@ -7,7 +7,10 @@ import threading
 import unittest
 
 from run_layers import (ANTI_VACUOUS, HEAVY_CMD_RE, build_supervisor_prompt,
-                        parse_verdict, run_task, run_task_in_worktree, schedule)
+                        EventLog, InfrastructureFailure, atomic_write_json, parse_verdict,
+                        main, prepare_integration_workspace, run_task,
+                        recover_confirmed_from_git, run_task_in_worktree, schedule,
+                        undeclared_paths)
 
 PROMPTS = pathlib.Path(__file__).resolve().parent.parent / "prompts"
 
@@ -106,6 +109,149 @@ class TestRunTask(unittest.TestCase):
         self.assertIn("acceptance_cmd", p)
         self.assertNotIn("implemented.", p)  # never sees executor narrative
 
+    def test_reality_gate_does_not_consume_business_retry(self):
+        task = dict(_task("T-rg"), reality_gate=True, runbook_ptr="plan.md#verify")
+        fake = FakeRunner([_v(False, reality_gated=True, evidence="device absent")])
+        r = run_task(task, fake, MODELS, ".", PROMPTS, log=lambda *_: None)
+        self.assertEqual(r["status"], "reality_gated")
+        self.assertEqual(r["retries"], 0)
+        self.assertEqual(r["runbook_ptr"], "plan.md#verify")
+
+    def test_infrastructure_retry_separate_from_business_retry(self):
+        class Flaky(FakeRunner):
+            def __init__(self):
+                super().__init__([_v(True)])
+                self.failed = False
+
+            def run(self, prompt, model, cwd):
+                if not self.failed:
+                    self.failed = True
+                    raise InfrastructureFailure("network")
+                return super().run(prompt, model, cwd)
+
+        r = run_task(_task("T-infra"), Flaky(), MODELS, ".", PROMPTS,
+                     log=lambda *_: None)
+        self.assertEqual(r["status"], "done")
+        self.assertEqual(r["retries"], 0)
+        self.assertEqual(r["infra_retries"], 1)
+
+
+class TestDurabilityAndScope(unittest.TestCase):
+    def test_atomic_json_never_leaves_temp(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = pathlib.Path(td, "state.json")
+            atomic_write_json(path, {"completed": ["a"]})
+            self.assertEqual(json.loads(path.read_text())["completed"], ["a"])
+            self.assertEqual(list(pathlib.Path(td).glob(".megastorm-*.tmp")), [])
+
+    def test_undeclared_path_detection(self):
+        self.assertEqual(undeclared_paths(["src/a.py", "tests/x.py"], ["src"]),
+                         ["tests/x.py"])
+        self.assertEqual(undeclared_paths(["../escape"], ["src"]), ["../escape"])
+
+    def test_event_log_quarantines_partial_tail(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = pathlib.Path(td, "events.jsonl")
+            path.write_text(json.dumps({"run_id": "r", "seq": 1}) + "\n" + '{"bad"')
+            log = EventLog(path, "r", 1)
+            log.append("resumed")
+            lines = [json.loads(line) for line in path.read_text().splitlines()]
+            self.assertEqual([x["seq"] for x in lines], [1, 2])
+            self.assertTrue(pathlib.Path(str(path) + ".partial").exists())
+
+    def test_integration_workspace_preserves_dirty_user_tree(self):
+        with tempfile.TemporaryDirectory() as root:
+            for cmd in (["git", "init", "-q"], ["git", "config", "user.email", "t@t"],
+                        ["git", "config", "user.name", "t"],
+                        ["git", "commit", "-q", "--allow-empty", "-m", "init"]):
+                subprocess.run(cmd, cwd=root, check=True, capture_output=True)
+            dirty = pathlib.Path(root, "user-draft.txt")
+            dirty.write_text("mine")
+            integration, ref, baseline = prepare_integration_workspace(
+                pathlib.Path(root), "12345678-test", {})
+            try:
+                self.assertEqual(dirty.read_text(), "mine")
+                self.assertFalse(pathlib.Path(integration, "user-draft.txt").exists())
+                self.assertTrue(ref.startswith("refs/megastorm/runs/"))
+                self.assertTrue(baseline)
+            finally:
+                subprocess.run(["git", "worktree", "remove", "--force", str(integration)],
+                               cwd=root, capture_output=True)
+
+    def test_confirmation_marker_recovers_after_snapshot_gap(self):
+        with tempfile.TemporaryDirectory() as root:
+            for cmd in (["git", "init", "-q"], ["git", "config", "user.email", "t@t"],
+                        ["git", "config", "user.name", "t"],
+                        ["git", "commit", "-q", "--allow-empty", "-m", "init"]):
+                subprocess.run(cmd, cwd=root, check=True, capture_output=True)
+            baseline = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root,
+                                      capture_output=True, text=True).stdout.strip()
+            subprocess.run(["git", "commit", "--allow-empty", "-m",
+                            "megastorm-confirmed: T1"], cwd=root,
+                           check=True, capture_output=True)
+            self.assertEqual(recover_confirmed_from_git(
+                pathlib.Path(root), baseline, {"T1": {}, "T2": {}}), {"T1": "done"})
+
+    def test_main_publishes_integration_ref_without_touching_user_tree(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = pathlib.Path(td)
+            repo = base / "repo"; repo.mkdir()
+            for cmd in (["git", "init", "-q"], ["git", "config", "user.email", "t@t"],
+                        ["git", "config", "user.name", "t"],
+                        ["git", "commit", "-q", "--allow-empty", "-m", "init"]):
+                subprocess.run(cmd, cwd=repo, check=True, capture_output=True)
+            (repo / "user-draft.txt").write_text("mine")
+            tasks = [{"id": "T1", "title": "write output", "touched_paths": ["out.txt"],
+                      "acceptance_cmd": "test -f out.txt", "depends_on": []}]
+            orch = {"effective_deps": {"T1": []}, "isolate_groups": [],
+                    "resource_groups": {}}
+            (base / "tasks.json").write_text(json.dumps(tasks))
+            (base / "orch.json").write_text(json.dumps(orch))
+            (base / "models.json").write_text(json.dumps(MODELS))
+            fake = base / "fake_agent.py"
+            fake.write_text(
+                "#!/usr/bin/env python3\n"
+                "import json,pathlib,sys\n"
+                "model,cwd,out,prompt=sys.argv[1:]\n"
+                "if 'anti-fake-completion verifier' in prompt:\n"
+                " pathlib.Path(out).write_text(json.dumps({'done':True,'rerun_exit_code':0,'evidence':'ok'}))\n"
+                "else:\n"
+                " pathlib.Path(cwd,'out.txt').write_text('done')\n"
+                " pathlib.Path(out).write_text('implemented')\n")
+            fake.chmod(0o755)
+            args = ["run_layers.py", str(base / "orch.json"), str(base / "tasks.json"),
+                    "--models", str(base / "models.json"), "--prompts", str(PROMPTS),
+                    "--root", str(repo), "--state", str(base / "state.json"),
+                    "--events", str(base / "events.jsonl"),
+                    "--report", str(base / "report.json"),
+                    "--codex-template", f"{fake} {{model}} {{cwd}} {{out}}"]
+            self.assertEqual(main(args), 0)
+            report = json.loads((base / "report.json").read_text())
+            self.assertEqual(report["summary"]["verified"], 1)
+            self.assertTrue(report["integration_ref"].startswith("refs/megastorm/runs/"))
+            self.assertEqual((repo / "user-draft.txt").read_text(), "mine")
+            self.assertFalse((repo / "out.txt").exists())
+
+    def test_safe_mode_keeps_declared_collision_mutexes(self):
+        # Scheduler-level regression: singleton isolation markers must not replace
+        # the original [a,b] mutex group.
+        tasks = [_task("a", ["same.py"]), _task("b", ["same.py"])]
+        peak = {"now": 0, "max": 0}; lock = threading.Lock()
+
+        def isolated(task):
+            import time
+            with lock:
+                peak["now"] += 1; peak["max"] = max(peak["max"], peak["now"])
+            time.sleep(0.02)
+            with lock:
+                peak["now"] -= 1
+            return {"task_id": task["id"], "status": "done", "retries": 0}
+
+        groups = [["a", "b"]] + [["a"], ["b"]]
+        schedule({"a": [], "b": []}, groups, {}, {t["id"]: t for t in tasks},
+                 isolated, isolated, set(), max_workers=2, log=lambda *_: None)
+        self.assertEqual(peak["max"], 1)
+
 
 class TestSchedule(unittest.TestCase):
     """Ready-set scheduler: effective_deps drive readiness, mutex sets serialize
@@ -154,6 +300,16 @@ class TestSchedule(unittest.TestCase):
         self.assertIn("d", order)        # independent kept running
         self.assertNotIn("b", order)     # dependent never dispatched
         self.assertEqual(done, {"d"})
+
+    def test_reality_gated_task_satisfies_dependency(self):
+        tasks = [_task("a"), _task("b")]
+        eff = {"a": [], "b": ["a"]}
+        order, _, esc, skip, done = self._run(
+            eff, [], {}, tasks, {"a": "reality_gated"})
+        self.assertEqual(order, ["a", "b"])
+        self.assertEqual(esc, [])
+        self.assertEqual(skip, {})
+        self.assertEqual(done, {"a", "b"})
 
     def test_isolate_group_serializes_concurrent_members(self):
         # a,b share a file (no dep between them) → never in flight together.

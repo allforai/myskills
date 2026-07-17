@@ -10,8 +10,9 @@ cap is UNBOUNDED; pass --max-workers only when tasks run machine-heavy local wor
 barriers idled most of the fleet). Mutex discipline
 preserves serial semantics: at most ONE in-flight task per `isolate_groups` entry
 and per `resource_groups` entry (file- or shared-physical-resource collisions),
-members preferred in declaration order. Isolate-group members run one git worktree
-per task, merged back only after the supervisor confirms. Executor and supervisor
+members preferred in declaration order. Every task runs in a task worktree and merges
+into a run-owned integration worktree/ref; the user's checkout is never staged or
+modified. Executor and supervisor
 are independent `codex exec` processes — the supervisor never sees the executor's
 narrative, only the task + repo, and reruns acceptance_cmd itself.
 
@@ -19,31 +20,39 @@ Escalation in the execution phase does NOT halt the line (unlike Phase 1.1–1.5
 the failure is recorded, its transitive dependents are skipped, and the ready-set
 loop keeps running everything else. The full ledger surfaces at close.
 
-The soft-retry budget (initial attempt + <=2 retries) is enforced by an
-in-process ledger and a persistent state file — this runner exists because a
+Business soft retries (initial + <=2) and infrastructure retries are separate.
+Reality-gated environmental proof becomes pending without blocking merged dependents.
+Atomic state plus a fsynced JSONL event trail exists because a
 stateless prose loop drifts. NO automatic model downgrade: models.json is
-resolved and frozen by the human in Phase 0; a model failure here is an
-escalation, never a silent substitution.
+resolved and frozen by the human in Phase 0; a model failure never causes silent substitution.
 
 Usage:
   python3 run_layers.py orchestration.json all-tasks.json \
       --models models.json --prompts ../prompts --root /path/to/repo \
       [--state .megastorm-state.json] [--report execution-report.json] \
-      [--max-workers N] [--isolation groups|all] [--codex-template '...'] [--dry-run]
+      [--max-workers N] [--codex-template '...'] [--agent-timeout SEC] [--dry-run]
 
 Exit 0 = all tasks done. Exit 1 = escalation(s) — render report to the human.
 """
 import argparse
+import hashlib
 import json
+import os
+import pathlib
 import re
+import signal
 import shlex
 import subprocess
 import sys
 import tempfile
 import threading
+import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 
 SOFT_RETRY_BUDGET = 2  # initial attempt + at most 2 retries = 3 dispatches total
+INFRA_RETRY_BUDGET = 2  # initial attempt + two infrastructure redispatches
+DEFAULT_AGENT_TIMEOUT = 1800
 
 # Heuristic for machine-heavy acceptance commands: with the default unbounded
 # concurrency these can thrash the local machine, so we warn (never auto-cap).
@@ -110,13 +119,18 @@ def build_supervisor_prompt(prompts_dir, task):
 
 # ---------- agent invocation ----------
 
+class InfrastructureFailure(RuntimeError):
+    """Agent transport/process failure, distinct from a task business failure."""
+
+
 class CodexRunner:
     """Spawns one headless `codex exec` per call. Template is overridable so a
     codex CLI flag rename never bricks the runner (same upgrade-proof stance as
     the model tiers)."""
 
-    def __init__(self, template=DEFAULT_CODEX_TEMPLATE):
+    def __init__(self, template=DEFAULT_CODEX_TEMPLATE, timeout=DEFAULT_AGENT_TIMEOUT):
         self.template = template
+        self.timeout = timeout
 
     def run(self, prompt, model, cwd):
         with tempfile.NamedTemporaryFile("r", suffix=".txt", delete=False) as f:
@@ -125,16 +139,28 @@ class CodexRunner:
         cmd.append(prompt)
         # stdin MUST be closed: codex exec blocks on "Reading additional input
         # from stdin..." forever when handed an open pipe with no data.
-        proc = subprocess.run(cmd, capture_output=True, text=True,
-                              stdin=subprocess.DEVNULL)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                text=True, stdin=subprocess.DEVNULL,
+                                start_new_session=True)
+        try:
+            stdout, stderr = proc.communicate(timeout=self.timeout)
+        except subprocess.TimeoutExpired as exc:
+            os.killpg(proc.pid, signal.SIGTERM)
+            try:
+                stdout, stderr = proc.communicate(timeout=5)
+            except subprocess.TimeoutExpired:
+                os.killpg(proc.pid, signal.SIGKILL)
+                stdout, stderr = proc.communicate()
+            raise InfrastructureFailure(f"codex exec timed out after {self.timeout}s") from exc
         try:
             last = open(out_path).read().strip()
         except OSError:
             last = ""
         if not last:
-            last = proc.stdout.strip()
+            last = stdout.strip()
         if proc.returncode != 0 and not last:
-            raise RuntimeError(f"codex exec failed (exit {proc.returncode}): {proc.stderr[-500:]}")
+            raise InfrastructureFailure(
+                f"codex exec failed (exit {proc.returncode}): {stderr[-500:]}")
         return last
 
 
@@ -145,28 +171,59 @@ def run_task(task, runner, models, cwd, prompts_dir, log=print):
     Returns {task_id, status: 'done'|'escalate', retries, verdict?, reason?}."""
     tid = task["id"]
     retries = 0
+    infra_retries = 0
     feedback = None
     while True:
         log(f"[{tid}] executor attempt {retries + 1} (model={models['bulk']})")
-        runner.run(build_executor_prompt(prompts_dir, task, feedback), models["bulk"], cwd)
+        try:
+            runner.run(build_executor_prompt(prompts_dir, task, feedback), models["bulk"], cwd)
+        except (InfrastructureFailure, OSError, subprocess.SubprocessError) as exc:
+            if infra_retries >= INFRA_RETRY_BUDGET:
+                return {"task_id": tid, "status": "escalate", "retries": retries,
+                        "infra_retries": infra_retries, "failure_kind": "infrastructure",
+                        "reason": str(exc)}
+            infra_retries += 1
+            log(f"[{tid}] infrastructure retry {infra_retries}: {exc}")
+            continue
         log(f"[{tid}] supervisor verify (model={models['verify']}, fresh context)")
         verdict = None
         for _ in range(2):  # one re-ask on unparseable output
-            raw = runner.run(build_supervisor_prompt(prompts_dir, task), models["verify"], cwd)
+            try:
+                raw = runner.run(build_supervisor_prompt(prompts_dir, task), models["verify"], cwd)
+            except (InfrastructureFailure, OSError, subprocess.SubprocessError) as exc:
+                if infra_retries >= INFRA_RETRY_BUDGET:
+                    return {"task_id": tid, "status": "escalate", "retries": retries,
+                            "infra_retries": infra_retries,
+                            "failure_kind": "infrastructure", "reason": str(exc)}
+                infra_retries += 1
+                log(f"[{tid}] infrastructure retry {infra_retries}: {exc}")
+                verdict = "retry-infrastructure"
+                break
             verdict = parse_verdict(raw)
             if verdict is not None:
                 break
+        if verdict == "retry-infrastructure":
+            continue
         if verdict is None:
             return {"task_id": tid, "status": "escalate", "retries": retries,
+                    "infra_retries": infra_retries,
                     "reason": "supervisor verdict unparseable twice"}
         if verdict.get("done") is True:
-            return {"task_id": tid, "status": "done", "retries": retries, "verdict": verdict}
+            return {"task_id": tid, "status": "done", "retries": retries,
+                    "infra_retries": infra_retries, "verdict": verdict}
+        if task.get("reality_gate") is True and verdict.get("reality_gated") is True:
+            return {"task_id": tid, "status": "reality_gated", "retries": retries,
+                    "infra_retries": infra_retries, "verdict": verdict,
+                    "reason": verdict.get("evidence", "environmental proof unavailable"),
+                    "runbook_ptr": task.get("runbook_ptr")}
         pieces = [verdict.get("refutation") or verdict.get("evidence") or "acceptance_cmd failed"]
         if verdict.get("vacuous"):
             pieces.append(ANTI_VACUOUS)
         feedback = "\n".join(pieces)
         if retries >= SOFT_RETRY_BUDGET:
             return {"task_id": tid, "status": "escalate", "retries": retries,
+                    "infra_retries": infra_retries,
+                    "failure_kind": "business",
                     "reason": "soft-retry budget exhausted", "verdict": verdict}
         retries += 1
 
@@ -178,35 +235,77 @@ def _git(args, cwd):
 
 
 def safety_commit(repo, message):
-    """Commit anything pending in `repo`. The runner NEVER relies on executors
-    committing their own work — an uncommitted main tree poisons every later
-    worktree branch/merge (untracked files 'would be overwritten by merge')."""
+    """Commit pending content inside a runner-owned task/integration worktree.
+    Main execution never calls this on the user's checked-out worktree."""
     _git(["add", "-A"], repo)
     if _git(["diff", "--cached", "--quiet"], repo).returncode != 0:
         _git(["commit", "-m", message], repo)
 
 
-def run_task_in_worktree(task, runner, models, root, prompts_dir, merge_lock, log=print):
+def changed_paths(repo, base_commit):
+    committed = _git(["diff", "--name-only", f"{base_commit}..HEAD"], repo)
+    working = _git(["status", "--porcelain", "--untracked-files=all"], repo)
+    paths = set(committed.stdout.splitlines())
+    for line in working.stdout.splitlines():
+        raw = line[3:] if len(line) > 3 else ""
+        if " -> " in raw:
+            raw = raw.split(" -> ", 1)[1]
+        if raw:
+            paths.add(raw.strip('"'))
+    return sorted(p for p in paths if p)
+
+
+def undeclared_paths(actual, declared):
+    """Return repository-relative changes outside exact declared files/dirs."""
+    normalized = [p.strip().rstrip("/") for p in declared if isinstance(p, str)]
+    bad = []
+    for path in actual:
+        if path.startswith("/") or ".." in pathlib.PurePosixPath(path).parts:
+            bad.append(path)
+            continue
+        if not any(path == d or path.startswith(d + "/") for d in normalized):
+            bad.append(path)
+    return bad
+
+
+def run_task_in_worktree(task, runner, models, root, prompts_dir, merge_lock, log=print,
+                         branch_prefix="megastorm", enforce_paths=False):
     """Isolate one file-colliding task in its own worktree; merge back only
     after the supervisor confirms done. Merge conflicts escalate to the human."""
     tid = task["id"]
-    branch = f"megastorm/{tid}"
+    safe_tid = re.sub(r"[^A-Za-z0-9._-]", "-", tid)
+    branch = f"{branch_prefix}/{safe_tid}"
     wt = tempfile.mkdtemp(prefix=f"ms-{tid}-")
     with merge_lock:
-        # main tree must be committed BEFORE branching: concurrent free tasks
-        # leave uncommitted files, and a worktree branched without them will
-        # re-create the same paths and collide on merge.
+        # The runner-owned integration worktree must be clean before branching.
         safety_commit(root, f"megastorm: pre-worktree snapshot before {tid}")
         r = _git(["worktree", "add", "-b", branch, wt, "HEAD"], root)
     if r.returncode != 0:
         return {"task_id": tid, "status": "escalate", "retries": 0,
                 "reason": f"worktree add failed: {r.stderr.strip()[-300:]}"}
     try:
+        base = _git(["rev-parse", "HEAD"], wt).stdout.strip()
         result = run_task(task, runner, models, wt, prompts_dir, log)
-        if result["status"] != "done":
+        if result["status"] not in ("done", "reality_gated"):
             return result
+        actual = changed_paths(wt, base)
+        outside = undeclared_paths(actual, task.get("touched_paths", []))
+        result["actual_touched_paths"] = actual
+        if enforce_paths and outside:
+            return {"task_id": tid, "status": "escalate",
+                    "retries": result.get("retries", 0),
+                    "failure_kind": "scope",
+                    "reason": f"task modified undeclared paths: {outside}",
+                    "actual_touched_paths": actual}
         safety_commit(wt, f"megastorm: {tid}")
-        with merge_lock:  # git index/HEAD ops on the main tree must serialize
+        marker = ("megastorm-reality-gated" if result["status"] == "reality_gated"
+                  else "megastorm-confirmed")
+        marked = _git(["commit", "--allow-empty", "-m", f"{marker}: {tid}"], wt)
+        if marked.returncode != 0:
+            return {"task_id": tid, "status": "escalate",
+                    "retries": result.get("retries", 0), "failure_kind": "git",
+                    "reason": f"cannot write confirmation marker: {marked.stderr.strip()}"}
+        with merge_lock:  # integration-worktree index/HEAD ops must serialize
             safety_commit(root, f"megastorm: main-tree snapshot before merging {tid}")
             m = _git(["merge", "--no-ff", "--no-edit", branch], root)
             if m.returncode != 0:
@@ -224,7 +323,7 @@ def run_task_in_worktree(task, runner, models, root, prompts_dir, merge_lock, lo
 
 def schedule(effective_deps, isolate_groups, resource_groups, tasks_by_id,
              run_free, run_isolated, completed, max_workers=0, log=print,
-             on_progress=None):
+             on_progress=None, on_event=None):
     """Dependency-ready scheduler. A task is READY when every id in its
     `effective_deps` is in `completed`. Ready tasks dispatch up to `max_workers`
     in flight (0 = unbounded: every ready task dispatches at once); when one
@@ -293,12 +392,16 @@ def schedule(effective_deps, isolate_groups, resource_groups, tasks_by_id,
         with cond:
             in_flight.discard(tid)
             results.append(res)
-            if res["status"] == "done":
+            if res["status"] in ("done", "reality_gated"):
                 completed.add(tid)
+                if on_event:
+                    on_event("task_terminal", task_id=tid, status=res["status"], result=res)
             else:
                 escalated.add(tid)
                 escalations.append(res)
                 _propagate_skip(tid)
+                if on_event:
+                    on_event("task_terminal", task_id=tid, status="escalated", result=res)
             if on_progress:
                 on_progress(set(completed))
             cond.notify_all()
@@ -316,6 +419,9 @@ def schedule(effective_deps, isolate_groups, resource_groups, tasks_by_id,
                     log(f"dispatch {tid}{g} "
                         f"({_terminal_count()}/{len(all_ids)} terminal, "
                         f"{len(in_flight)} in flight)")
+                    if on_event:
+                        on_event("task_dispatched", task_id=tid,
+                                 isolated=tid in isolate_members)
                     ex.submit(_work, tid)
                 if not picked:
                     if not in_flight:
@@ -339,6 +445,123 @@ def load_models(path):
     return models
 
 
+def atomic_write_json(path, value):
+    """Publish a JSON snapshot atomically; never expose a partially written state."""
+    path = os.path.abspath(path)
+    parent = os.path.dirname(path) or "."
+    os.makedirs(parent, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix=".megastorm-", suffix=".tmp", dir=parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(value, handle, indent=2, ensure_ascii=False)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp, path)
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+
+
+def input_fingerprint(tasks, orchestration, models, prompts_dir):
+    payload = {
+        "tasks": tasks,
+        "orchestration": orchestration,
+        "models": models,
+        "prompts": {p.name: p.read_text() for p in sorted(prompts_dir.glob("*.md"))},
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+class EventLog:
+    """Serialized, fsynced JSONL audit events with stable sequence numbers."""
+
+    def __init__(self, path, run_id, start_seq=0):
+        self.path = os.path.abspath(path)
+        self.run_id = run_id
+        self.seq = start_seq
+        self.lock = threading.Lock()
+        os.makedirs(os.path.dirname(self.path) or ".", exist_ok=True)
+        if os.path.exists(self.path):
+            raw = pathlib.Path(self.path).read_bytes()
+            valid = []
+            for line in raw.splitlines(keepends=True):
+                if not line.endswith(b"\n"):
+                    pathlib.Path(self.path + ".partial").write_bytes(line)
+                    break
+                try:
+                    event = json.loads(line)
+                except (ValueError, UnicodeDecodeError):
+                    pathlib.Path(self.path + ".partial").write_bytes(line)
+                    break
+                if event.get("run_id") != run_id:
+                    raise ValueError("event log run_id does not match state")
+                valid.append(line)
+            if b"".join(valid) != raw:
+                pathlib.Path(self.path).write_bytes(b"".join(valid))
+
+    def append(self, kind, **payload):
+        with self.lock:
+            self.seq += 1
+            event = {"run_id": self.run_id, "seq": self.seq,
+                     "event_id": f"{self.run_id}:{self.seq}",
+                     "ts": time.time(), "type": kind, "payload": payload}
+            with open(self.path, "a", encoding="utf-8") as handle:
+                handle.write(json.dumps(event, ensure_ascii=False) + "\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+            return event
+
+
+def prepare_integration_workspace(repo, run_id, prior_state):
+    """Create/resume a run-owned detached integration worktree without touching
+    the user's checked-out branch, index, or dirty files."""
+    ref = f"refs/megastorm/runs/{run_id}/integration"
+    baseline_ref = f"refs/megastorm/runs/{run_id}/baseline"
+    baseline = prior_state.get("baseline_commit")
+    if baseline is None:
+        head = _git(["rev-parse", "HEAD"], repo)
+        if head.returncode != 0:
+            raise RuntimeError(f"cannot resolve repository HEAD: {head.stderr.strip()}")
+        baseline = head.stdout.strip()
+        for name in (baseline_ref, ref):
+            created = _git(["update-ref", name, baseline, ""], repo)
+            if created.returncode != 0:
+                raise RuntimeError(f"cannot create run ref {name}: {created.stderr.strip()}")
+    else:
+        actual = _git(["rev-parse", ref], repo)
+        if actual.returncode != 0:
+            raise RuntimeError(f"missing integration ref for resumed run: {ref}")
+
+    recorded = prior_state.get("integration_path")
+    if recorded and pathlib.Path(recorded, ".git").exists():
+        return pathlib.Path(recorded), ref, baseline
+
+    run_root = pathlib.Path(tempfile.mkdtemp(prefix=f"megastorm-{run_id[:8]}-"))
+    integration = run_root / "integration"
+    added = _git(["worktree", "add", "--detach", str(integration), ref], repo)
+    if added.returncode != 0:
+        raise RuntimeError(f"cannot create integration worktree: {added.stderr.strip()}")
+    return integration, ref, baseline
+
+
+def recover_confirmed_from_git(integration, baseline, task_ids):
+    """Recover confirmations committed before a crash but not yet snapshotted."""
+    history = _git(["log", "--format=%s", f"{baseline}..HEAD"], integration)
+    recovered = {}
+    if history.returncode != 0:
+        return recovered
+    valid = set(task_ids)
+    for subject in history.stdout.splitlines():
+        for prefix, status in (("megastorm-confirmed: ", "done"),
+                               ("megastorm-reality-gated: ", "reality_gated")):
+            if subject.startswith(prefix):
+                tid = subject[len(prefix):]
+                if tid in valid:
+                    recovered[tid] = status
+    return recovered
+
+
 def main(argv):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("orchestration")
@@ -348,20 +571,26 @@ def main(argv):
     ap.add_argument("--root", default=".")
     ap.add_argument("--state", default=".megastorm-state.json")
     ap.add_argument("--report", default="execution-report.json")
+    ap.add_argument("--events", default=".megastorm-events.jsonl")
+    ap.add_argument("--agent-timeout", type=int, default=DEFAULT_AGENT_TIMEOUT)
+    ap.add_argument("--completeness", choices=["census", "audit", "unknown"],
+                    default="unknown")
+    ap.add_argument("--census-artifact")
     ap.add_argument("--max-workers", type=int, default=0,
                     help="in-flight cap; 0 (default) = unbounded — dispatch every "
                          "ready task at once (tasks are LLM calls, not machine-"
                          "bound). Set a number when tasks run machine-heavy local "
                          "work (builds, whole test suites, docker).")
-    ap.add_argument("--isolation", choices=["groups", "all"], default="groups",
-                    help="'all' worktree-isolates every task (safer when executors "
-                         "git-commit concurrently in the main tree)")
+    ap.add_argument("--isolation", choices=["groups", "all"], default="all",
+                    help="deprecated compatibility option; safe v0.14 execution always "
+                         "isolates every writer and never writes the user's main tree")
     ap.add_argument("--codex-template", default=DEFAULT_CODEX_TEMPLATE)
     ap.add_argument("--dry-run", action="store_true",
                     help="print the schedule without invoking codex")
     args = ap.parse_args(argv[1:])
+    if args.completeness == "census" and not args.census_artifact:
+        ap.error("--completeness census requires --census-artifact")
 
-    import pathlib
     orch = json.loads(open(args.orchestration).read())
     tasks = json.loads(open(args.tasks).read())
     if isinstance(tasks, dict):
@@ -377,12 +606,24 @@ def main(argv):
                   f"to cap local load.")
     models = load_models(args.models)
     prompts_dir = pathlib.Path(args.prompts)
-    root = pathlib.Path(args.root).resolve()
+    user_root = pathlib.Path(args.root).resolve()
+    user_status = _git(["status", "--porcelain=v1", "--untracked-files=all"], user_root)
+    if user_status.returncode != 0:
+        sys.exit(f"target is not a readable git repository: {user_status.stderr.strip()}")
+    user_dirty_fingerprint = hashlib.sha256(user_status.stdout.encode()).hexdigest()
 
     try:
-        completed = set(json.loads(open(args.state).read()).get("completed", []))
+        prior_state = json.loads(open(args.state).read())
     except (OSError, ValueError):
-        completed = set()
+        prior_state = {}
+    completed = set(prior_state.get("completed", []))
+    run_id = prior_state.get("run_id") or str(uuid.uuid4())
+    fingerprint = input_fingerprint(tasks, orch, models, prompts_dir)
+    old_fingerprint = prior_state.get("input_fingerprint")
+    if completed and old_fingerprint != fingerprint:
+        sys.exit("state input fingerprint differs — refusing to reuse stale confirmations; "
+                 "start a new run with a new --state/--events path")
+    events = EventLog(args.events, run_id, prior_state.get("last_event_seq", 0))
     if completed:
         print(f"resuming: {len(completed)} task(s) already done per {args.state}")
 
@@ -409,32 +650,93 @@ def main(argv):
         print(f"isolate_groups={isolate_groups} resource_groups={resource_groups}")
         return 0
 
-    runner = CodexRunner(args.codex_template)
+    # Safe default: every writer gets a task worktree, and all merges target a
+    # run-owned integration worktree rather than the user's checked-out tree.
+    integration_root, integration_ref, baseline_commit = prepare_integration_workspace(
+        user_root, run_id, prior_state)
+    recovered = recover_confirmed_from_git(integration_root, baseline_commit, tasks_by_id)
+    completed.update(recovered)
+    # Preserve original multi-task mutex groups while adding singleton groups so
+    # every writer routes through task isolation. Replacing the original groups
+    # would accidentally let same-file writers execute concurrently.
+    isolate_groups = list(isolate_groups) + [[t["id"]] for t in tasks]
+
+    runner = CodexRunner(args.codex_template, timeout=args.agent_timeout)
     merge_lock = threading.Lock()
 
     def run_free(task):
-        res = run_task(task, runner, models, root, prompts_dir)
-        if res["status"] == "done":
-            with merge_lock:  # concurrent free tasks must not race git index ops
-                safety_commit(root, f"megastorm: {task['id']}")
-        return res
+        # Kept as a scheduler interface; safe mode routes every task to isolated.
+        return run_isolated(task)
 
     def run_isolated(task):
-        return run_task_in_worktree(task, runner, models, root, prompts_dir, merge_lock)
+        result = run_task_in_worktree(
+            task, runner, models, integration_root, prompts_dir, merge_lock,
+            branch_prefix=f"megastorm-{run_id[:8]}", enforce_paths=True)
+        if result["status"] in ("done", "reality_gated"):
+            with merge_lock:
+                head = _git(["rev-parse", "HEAD"], integration_root)
+                if head.returncode != 0:
+                    return {"task_id": task["id"], "status": "escalate",
+                            "retries": result.get("retries", 0),
+                            "failure_kind": "git",
+                            "reason": f"cannot resolve integration HEAD: {head.stderr.strip()}"}
+                old_ref = _git(["rev-parse", integration_ref], user_root)
+                if old_ref.returncode != 0:
+                    return {"task_id": task["id"], "status": "escalate",
+                            "retries": result.get("retries", 0),
+                            "failure_kind": "git",
+                            "reason": f"integration ref disappeared: {old_ref.stderr.strip()}"}
+                moved = _git(["update-ref", integration_ref, head.stdout.strip(),
+                              old_ref.stdout.strip()], user_root)
+                if moved.returncode != 0:
+                    return {"task_id": task["id"], "status": "escalate",
+                            "retries": result.get("retries", 0),
+                            "failure_kind": "git",
+                            "reason": f"cannot publish integration ref: {moved.stderr.strip()}"}
+                result["integration_commit"] = head.stdout.strip()
+        return result
 
     def persist_state(done_set):
-        json.dump({"completed": sorted(done_set)}, open(args.state, "w"), indent=2)
+        atomic_write_json(args.state, {"schema_version": 2, "run_id": run_id,
+                          "completed": sorted(done_set),
+                          "input_fingerprint": fingerprint,
+                          "last_event_seq": events.seq,
+                          "baseline_commit": baseline_commit,
+                          "user_dirty_fingerprint": user_dirty_fingerprint,
+                          "integration_ref": integration_ref,
+                          "integration_path": str(integration_root)})
 
     results, escalations, skipped = schedule(
         effective_deps, isolate_groups, resource_groups, tasks_by_id,
         run_free, run_isolated, completed, args.max_workers,
-        on_progress=persist_state)
+        on_progress=persist_state, on_event=events.append)
 
     persist_state(completed)
-    json.dump({"results": results, "escalations": escalations,
-               "skipped": skipped, "completed": sorted(completed),
-               "total_tasks": len(tasks_by_id)}, open(args.report, "w"),
-              indent=2, ensure_ascii=False)
+    current_ids = {r.get("task_id") for r in results}
+    results = ([{"task_id": tid, "status": status, "retries": 0,
+                 "recovered_from_git": True}
+                for tid, status in recovered.items() if tid not in current_ids] + results)
+    reality_gated = [r for r in results if r.get("status") == "reality_gated"]
+    events.append("run_drained", completed=sorted(completed),
+                  escalations=len(escalations), reality_gated=len(reality_gated),
+                  skipped=len(skipped))
+    persist_state(completed)
+    atomic_write_json(args.report, {"schema_version": 2, "run_id": run_id,
+                      "results": results, "escalations": escalations,
+                      "reality_gates": reality_gated, "skipped": skipped,
+                      "completed": sorted(completed), "total_tasks": len(tasks_by_id),
+                      "baseline_commit": baseline_commit,
+                      "user_dirty_fingerprint": user_dirty_fingerprint,
+                      "integration_ref": integration_ref,
+                      "integration_commit": _git(["rev-parse", "HEAD"], integration_root).stdout.strip(),
+                      "completeness": {"method": args.completeness,
+                                       "artifact": args.census_artifact,
+                                       "claim": ("census-backed" if args.completeness == "census"
+                                                 else "Completeness unverified")},
+                      "summary": {"verified": len(completed) - len(reality_gated),
+                                  "reality_gated": len(reality_gated),
+                                  "escalated": len(escalations),
+                                  "skipped": len(skipped)}})
     if escalations:
         print(f"ESCALATE: {len(escalations)} task(s) need a human decision; "
               f"{len(skipped)} dependent(s) skipped — see {args.report}")

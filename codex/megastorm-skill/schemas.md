@@ -72,7 +72,9 @@ Schema of the JSON between the markers:
     "depends_on": { "type": "array", "items": { "type": "string" } },
     "implements": { "type": "array", "items": { "type": "string" } },
     "requires": { "type": "array", "items": { "type": "string" } },
-    "resources": { "type": "array", "items": { "type": "string" } } } }
+    "resources": { "type": "array", "items": { "type": "string" } },
+    "reality_gate": { "type": "boolean" },
+    "runbook_ptr": { "type": "string" } } }
 ```
 - `depends_on` carries INTRA-module ordering (task ids the plan agent can see).
 - `implements` / `requires` (optional) carry CROSS-module ordering, in registry interface
@@ -89,6 +91,12 @@ Schema of the JSON between the markers:
   tasks sharing a resource into mutex groups (`resource_groups`, and concurrent pairs are
   folded into `isolate_groups`) so `run_layers.py` never runs them at the same time.
   Omitting the field means the task needs no exclusive resource — fully backward compatible.
+- `reality_gate` (optional, default `false`) marks definitive proof that requires an
+  unavailable device, external system, physical I/O, or human observation. The implementation
+  still runs and merges; environmental failure becomes proof-pending without business retry
+  or dependent blocking.
+- A reality-gated task requires a non-empty `runbook_ptr` to exact human verification steps
+  and still requires a real `acceptance_cmd`. `runbook_ptr` is invalid otherwise.
 
 ## verdict (spec §4.6 supervisor — anti-fake-completion)
 ```json
@@ -98,10 +106,14 @@ Schema of the JSON between the markers:
     "rerun_exit_code": { "type": "integer" },
     "evidence": { "type": "string" },
     "refutation": { "type": "string" },
-    "vacuous": { "type": "boolean" } } }
+    "vacuous": { "type": "boolean" },
+    "reality_gated": { "type": "boolean" } } }
 ```
 Rule: `done` is true ONLY if the supervisor independently reran `acceptance_cmd`
 and got exit code 0 with the real output captured in `evidence`.
 `vacuous` = true when the command passed only because 0 tests ran (a name-selector
 matched nothing); it forces `done:false` and signals §1.6 to re-inject the
 anti-vacuous instruction on the executor bounce.
+`reality_gated:true` is valid only for a `reality_gate:true` task whose code-side
+implementation is sound but whose declared environmental proof cannot run. A locatable code
+defect remains ordinary `done:false`.

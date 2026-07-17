@@ -142,6 +142,10 @@ bash codex/install.sh
 # 例如先执行 product-design，再进入 dev-forge 或 code-tuner
 ```
 
+Codex 安装脚本也会链接 `megastorm` 与独立的 `cross-exam`：Megastorm v0.14
+负责大型目标的隔离执行、Reality Gate 与完整性记账；Cross-exam 只审不修，使用
+fresh-context 独立实测官对任意交付做证据化盘问。
+
 ---
 
 ## 你该从哪个插件开始？

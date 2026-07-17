@@ -40,8 +40,16 @@ resource must use the identical string). The orchestrator serializes tasks that 
 resource; two undeclared tasks fighting over one simulator corrupt each other's runs.
 Omit the field when no exclusive resource is needed.
 
+## Reality-gate classification (mandatory)
+Use the overview's environment capability matrix. When definitive acceptance requires an
+unavailable/flaky device, simulator, external live system, real hardware, physical I/O, or
+human observation, set `reality_gate:true`. Keep it omitted for headless unit, contract,
+build, lint, and pure-logic checks. Every reality-gated task still needs a meaningful
+`acceptance_cmd` and a `runbook_ptr` pointing to exact manual steps, observations, and pass
+criteria written into the plan. Do not invent an autonomous proof the environment cannot run.
+
 ## Output (array of plan-task schema + escalation)
-Return JSON: `{status, plan_path, tasks: [ {id,title,touched_paths,acceptance_cmd,depends_on} ], reason?, evidence?}`
+Return JSON: `{status, plan_path, tasks: [ {id,title,touched_paths,acceptance_cmd,depends_on,reality_gate?,runbook_ptr?} ], reason?, evidence?}`
 Escalate (don't guess) if the design is under-specified in a way that needs a human decision.
 
 ## Module-too-large escalation

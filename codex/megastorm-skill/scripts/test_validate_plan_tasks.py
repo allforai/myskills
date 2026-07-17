@@ -136,5 +136,27 @@ class TestVacuousAcceptance(unittest.TestCase):
         self.assertEqual(r["warnings"], [])
 
 
+    def test_reality_gate_with_runbook_accepted(self):
+        t = dict(_t("T-rg", cmd="run-ui-on-simulator"), reality_gate=True,
+                 runbook_ptr="docs/plan.md#device-check")
+        r = validate_tasks([t])
+        self.assertTrue(r["ok"], r["errors"])
+
+    def test_reality_gate_must_be_boolean(self):
+        r = validate_tasks([dict(_t("T-bad"), reality_gate="yes")])
+        self.assertFalse(r["ok"])
+        self.assertTrue(any("reality_gate" in e and "boolean" in e for e in r["errors"]))
+
+    def test_reality_gate_requires_runbook(self):
+        r = validate_tasks([dict(_t("T-e"), reality_gate=True)])
+        self.assertFalse(r["ok"])
+        self.assertTrue(any("runbook_ptr" in e for e in r["errors"]))
+
+    def test_runbook_forbidden_without_reality_gate(self):
+        r = validate_tasks([dict(_t("T-e"), runbook_ptr="x.md#y")])
+        self.assertFalse(r["ok"])
+        self.assertTrue(any("runbook_ptr" in e for e in r["errors"]))
+
+
 if __name__ == "__main__":
     unittest.main()

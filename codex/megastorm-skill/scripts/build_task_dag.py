@@ -122,6 +122,9 @@ def build_dag(tasks):
                 "resource_groups": {}}
 
     effective_deps = {t["id"]: list(t["depends_on"]) for t in aug}
+    reality_gate_flags = {t["id"]: bool(t.get("reality_gate", False)) for t in tasks}
+    reality_gate_tasks = sorted(tid for tid, enabled in reality_gate_flags.items()
+                                if enabled)
     ancestors = _ancestors(effective_deps)
     paths_by_id = {t["id"]: set(t.get("touched_paths", [])) for t in tasks}
     res_by_id = {t["id"]: set(t.get("resources", []) or []) for t in tasks}
@@ -174,6 +177,8 @@ def build_dag(tasks):
     return {"ok": True, "errors": errors, "warnings": warnings,
             "layers": layers, "isolate": isolate, "isolate_groups": isolate_groups,
             "effective_deps": effective_deps, "resource_groups": resource_groups,
+            "reality_gate_flags": reality_gate_flags,
+            "reality_gate_tasks": reality_gate_tasks,
             "derived_edges": sorted([list(e) for e in set(derived)])}
 
 

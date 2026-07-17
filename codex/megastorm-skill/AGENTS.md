@@ -1,4 +1,4 @@
-# AGENTS.md — megastorm (Codex port, v0.3.0)
+# AGENTS.md — megastorm (Codex port, v0.14.0)
 
 > Drive a large goal end-to-end: decompose into modules, front-load every human
 > decision, then autonomously design → validate (closed-loop) → plan → reverse-review
@@ -20,7 +20,7 @@ Python runner (a stateless prose loop drifts; the retry ledger must be code).
 | Closure gate | `./scripts/check_closure.py` | Deterministic requirement/interface closure check |
 | Plan gate | `./scripts/validate_plan_tasks.py` | touched_paths + non-vacuous acceptance_cmd + registry vocab |
 | DAG builder | `./scripts/build_task_dag.py` | Layers + isolate_groups + cross-module interface edges |
-| Execution runner | `./scripts/run_layers.py` | §1.6: ready-set scheduling, mutex groups, worktrees, retry ledger, skip-on-escalation, supervision |
+| Execution runner | `./scripts/run_layers.py` | §1.6: safe integration/task worktrees, ready scheduling, separate retry budgets, reality gates, atomic state/events |
 | Model tiers | `./models.example.json` | THINK/VERIFY/BULK — resolved by the HUMAN in Phase 0 |
 
 ## Invariant
@@ -38,5 +38,6 @@ except on escalation. No automatic model downgrade, no automatic re-decompositio
    --models models.json --prompts prompts --root <repo>` — exit 0 = all supervised
    done; exit 1 = escalations in `execution-report.json`, render them to the human.
 
-Requirements: `codex` CLI on PATH, `git`, `python3`. Run script tests with
-`python3 -m pytest scripts/ -q` (77 tests).
+The runner publishes to a retained run-owned integration ref; it never checks results out
+over the user's branch. Requirements: `codex` CLI on PATH, `git`, `python3`. Run tests with
+`python3 -m pytest scripts/ -q`.

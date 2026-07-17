@@ -183,5 +183,19 @@ class TestResources(unittest.TestCase):
         self.assertEqual(r["isolate_groups"], [["a", "b", "c"]])
 
 
+    def test_reality_gate_flags_passthrough(self):
+        a = dict(_t("a", ["x.py"]), reality_gate=True, runbook_ptr="plan.md#verify")
+        b = _t("b", ["y.py"], ["a"])
+        r = build_dag([a, b])
+        self.assertTrue(r["ok"], r["errors"])
+        self.assertEqual(r["reality_gate_flags"], {"a": True, "b": False})
+        self.assertEqual(r["reality_gate_tasks"], ["a"])
+
+    def test_reality_gate_defaults_false(self):
+        r = build_dag([_t("a", ["x.py"]), _t("b", ["y.py"])])
+        self.assertEqual(r["reality_gate_flags"], {"a": False, "b": False})
+        self.assertEqual(r["reality_gate_tasks"], [])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -18,6 +18,11 @@ Verify:
   decomposition and per-module specs.
 If anything is missing, STOP and tell the user how to install it. Do not proceed.
 
+Probe and record `## Environment capabilities`: display/UI, simulator/emulator, real
+hardware/physical I/O, and shared/external systems. Classify each `available`, `flaky`, or
+`absent`. Planning must not claim an autonomous proof that depends on a flaky/absent
+capability; mark that acceptance as a reality-gate candidate.
+
 ## Phase 0 — Decisions front-loaded (interactive)
 1. Analyze current state: repo structure, recent commits, docs. Summarize.
 2. Decompose the goal into M modules + boundaries + inter-module deps by running the
@@ -53,6 +58,10 @@ If anything is missing, STOP and tell the user how to install it. Do not proceed
 7. **New-human-decision rule (Phase 1 boundary):** anything changing module boundaries,
    public/cross-module interfaces, or user-visible scope = escalate. Internal-only
    choices = agents decide and log.
+8. **Class-elimination census:** if the goal claims to remove or enforce an entire class,
+   enumerate the complete population first (operations, endpoints, handlers, RPCs, hooks).
+   Every member maps to a task or `verified-clean` evidence. Without this coverage method,
+   the final report must say `Completeness unverified` and may claim only instances fixed.
 
 ## Phase 1 — Autonomous pipeline
 For every stage: collect each agent's JSON; ANY `status:"escalate"` → HALT, render
@@ -81,6 +90,8 @@ For each plan: `python3 scripts/validate_plan_tasks.py <tasks.json> registry.jso
 BLOCKED → bounce to the plan agent. Deterministic size check: > 20 validated tasks for
 one module = module-too-large → escalate to the human (do NOT bounce — the plan agent
 cannot fix scoping).
+Tasks whose definitive proof needs unavailable device/external/physical capability use
+`reality_gate:true` and a non-empty `runbook_ptr` to exact human verification steps.
 
 ### 1.4 Reverse review
 One `codex exec` (`think`) with `prompts/reverse-critic.md` over all spec/design/plan
@@ -108,12 +119,18 @@ The runner owns:
   One slow task never stalls its independent siblings. If tasks run machine-heavy local
   work (builds, whole test suites, docker), the runner prints a warning; pass
   `--max-workers N` to cap in-flight tasks — the runner never caps silently on its own.
+- **Safe Git isolation:** all tasks run in task worktrees and merge into a run-owned
+  integration worktree/ref. The user's checked-out branch, index, and dirty files are never
+  staged, committed, stashed, or overwritten. The final report identifies the retained ref.
 - **Mutex discipline:** at most one in-flight task per `isolate_groups` and per
   `resource_groups` entry (file or shared-physical-resource collisions), members preferred
   in declaration order. Isolate-group members run in a per-task git worktree, merged back
-  only after the supervisor confirms; the runner safety-commits the main tree before each
-  worktree branch/merge (executors are not trusted to commit).
-- **Soft-retry ledger** (initial + ≤2 retries), **vacuous auto-reinjection**, and
+  only after the supervisor confirms.
+- **Separate retry ledgers:** business failures get initial + ≤2 soft retries;
+  infrastructure failures retry separately and never burn that budget. Reality-gated
+  environmental proof failure commits/merges implementation, enters a pending-proof ledger,
+  and satisfies dependencies.
+- **Vacuous auto-reinjection** and
   **fresh-context supervision** (`verify` model reruns `acceptance_cmd` itself, never sees
   the executor's narrative).
 - **Escalation semantics (does NOT halt the line):** a task that escalates is recorded, its
@@ -131,3 +148,12 @@ their resolutions, every module that ran below its preferred tier (with who appr
 DAG `warnings` and `derived_edges`, and a mandatory **Reality gate** section separating
 "autonomously verified" (supervisor-rerun green) from "needs human/hardware
 verification" — an all-green run is NEVER claimed as "the feature works".
+Render `N verified / M reality-gated / K escalated / S skipped`, every skipped chain,
+reality-gate reason/runbook, and a mandatory Completeness Confidence section. Census-backed
+class goals may cite coverage; audit/unknown goals must state `Completeness unverified`.
+Close by inviting the independent `cross-exam` skill; never enter it automatically.
+
+Import a later human reality-gate result with
+`python3 scripts/resolve_reality_gate.py <report> <state> <orchestration> <task-id> verified|rejected <evidence-file>`.
+A rejection supersedes the old report and invalidates the rejected task plus its downstream
+confirmations; it never silently rewrites proof-pending work as done.

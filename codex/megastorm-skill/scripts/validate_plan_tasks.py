@@ -106,6 +106,15 @@ def validate_tasks(tasks, interfaces=None):
             errors.append(
                 f"{label}: 'resources' must be a list of non-empty resource name "
                 f"strings (shared physical resources needing exclusive use)")
+        reality_gate = t.get("reality_gate")
+        if reality_gate is not None and not isinstance(reality_gate, bool):
+            errors.append(f"{label}: 'reality_gate' must be a boolean")
+        runbook_ptr = t.get("runbook_ptr")
+        if reality_gate is True and (not isinstance(runbook_ptr, str)
+                                     or not runbook_ptr.strip()):
+            errors.append(f"{label}: reality_gate task requires non-empty 'runbook_ptr'")
+        if reality_gate is not True and runbook_ptr is not None:
+            errors.append(f"{label}: 'runbook_ptr' requires reality_gate=true")
         cmd = t.get("acceptance_cmd")
         if not isinstance(cmd, str) or not cmd.strip():
             errors.append(f"{label}: missing or blank 'acceptance_cmd'")
