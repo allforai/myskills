@@ -7,7 +7,7 @@ import threading
 import unittest
 
 from run_layers import (ANTI_VACUOUS, HEAVY_CMD_RE, build_supervisor_prompt,
-                        EventLog, InfrastructureFailure, atomic_write_json, parse_verdict,
+                        CodexRunner, EventLog, InfrastructureFailure, atomic_write_json, parse_verdict,
                         main, prepare_integration_workspace, run_task,
                         recover_confirmed_from_git, run_task_in_worktree, schedule,
                         undeclared_paths)
@@ -137,6 +137,16 @@ class TestRunTask(unittest.TestCase):
 
 
 class TestDurabilityAndScope(unittest.TestCase):
+    def test_agent_environment_excludes_ambient_secret(self):
+        import os
+        os.environ["MEGASTORM_TEST_SECRET"] = "hidden"
+        try:
+            self.assertNotIn("MEGASTORM_TEST_SECRET", CodexRunner().env)
+            self.assertEqual(CodexRunner(allow_env=["MEGASTORM_TEST_SECRET"]).env[
+                "MEGASTORM_TEST_SECRET"], "hidden")
+        finally:
+            os.environ.pop("MEGASTORM_TEST_SECRET", None)
+
     def test_atomic_json_never_leaves_temp(self):
         with tempfile.TemporaryDirectory() as td:
             path = pathlib.Path(td, "state.json")

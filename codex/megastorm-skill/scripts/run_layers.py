@@ -68,9 +68,12 @@ ANTI_VACUOUS = (
 )
 
 DEFAULT_CODEX_TEMPLATE = (
-    "codex exec --sandbox workspace-write -m {model} --cd {cwd} "
+    "codex exec --ephemeral --sandbox workspace-write -m {model} --cd {cwd} "
     "--output-last-message {out}"
 )
+BASE_ENV_KEYS = {"PATH", "HOME", "CODEX_HOME", "TMPDIR", "LANG", "LC_ALL", "TERM",
+                 "SHELL", "SSL_CERT_FILE", "SSL_CERT_DIR", "HTTP_PROXY", "HTTPS_PROXY",
+                 "NO_PROXY"}
 
 
 # ---------- verdict parsing ----------
@@ -128,9 +131,12 @@ class CodexRunner:
     codex CLI flag rename never bricks the runner (same upgrade-proof stance as
     the model tiers)."""
 
-    def __init__(self, template=DEFAULT_CODEX_TEMPLATE, timeout=DEFAULT_AGENT_TIMEOUT):
+    def __init__(self, template=DEFAULT_CODEX_TEMPLATE, timeout=DEFAULT_AGENT_TIMEOUT,
+                 allow_env=()):
         self.template = template
         self.timeout = timeout
+        keys = BASE_ENV_KEYS | set(allow_env)
+        self.env = {key: value for key, value in os.environ.items() if key in keys}
 
     def run(self, prompt, model, cwd):
         with tempfile.NamedTemporaryFile("r", suffix=".txt", delete=False) as f:
@@ -141,7 +147,7 @@ class CodexRunner:
         # from stdin..." forever when handed an open pipe with no data.
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 text=True, stdin=subprocess.DEVNULL,
-                                start_new_session=True)
+                                start_new_session=True, env=self.env)
         try:
             stdout, stderr = proc.communicate(timeout=self.timeout)
         except subprocess.TimeoutExpired as exc:
@@ -573,6 +579,9 @@ def main(argv):
     ap.add_argument("--report", default="execution-report.json")
     ap.add_argument("--events", default=".megastorm-events.jsonl")
     ap.add_argument("--agent-timeout", type=int, default=DEFAULT_AGENT_TIMEOUT)
+    ap.add_argument("--allow-env", action="append", default=[], metavar="NAME",
+                    help="explicitly expose one additional environment variable to agents; "
+                         "repeat as needed (ambient secrets are excluded by default)")
     ap.add_argument("--completeness", choices=["census", "audit", "unknown"],
                     default="unknown")
     ap.add_argument("--census-artifact")
@@ -661,7 +670,8 @@ def main(argv):
     # would accidentally let same-file writers execute concurrently.
     isolate_groups = list(isolate_groups) + [[t["id"]] for t in tasks]
 
-    runner = CodexRunner(args.codex_template, timeout=args.agent_timeout)
+    runner = CodexRunner(args.codex_template, timeout=args.agent_timeout,
+                         allow_env=args.allow_env)
     merge_lock = threading.Lock()
 
     def run_free(task):

@@ -130,6 +130,10 @@ The runner owns:
   infrastructure failures retry separately and never burn that budget. Reality-gated
   environmental proof failure commits/merges implementation, enters a pending-proof ledger,
   and satisfies dependencies.
+- **Capability envelope:** `codex exec` uses workspace-write + ephemeral sessions and a
+  minimal environment. Ambient secrets are excluded; Phase 0-approved variables are passed
+  explicitly with repeated `--allow-env NAME`. Network/external/destructive tasks require
+  exact Phase 0 authorization and must be rejected when the host sandbox cannot enforce it.
 - **Vacuous auto-reinjection** and
   **fresh-context supervision** (`verify` model reruns `acceptance_cmd` itself, never sees
   the executor's narrative).
