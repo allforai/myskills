@@ -28,10 +28,17 @@ A new focused module, `scripts/host_command.py`, owns discovery, normalization,
 redaction, and argv construction.
 
 Starting from the runner parent, discovery walks ancestors and selects the nearest
-process whose executable basename is `codex` or whose argv can be unambiguously
-identified as Codex CLI. Linux reads NUL-delimited `/proc/<pid>/cmdline`. macOS and
-other supported POSIX hosts use a non-shell `ps` query and parse its result with
-`shlex.split`. Discovery returns an absolute executable path plus argv.
+process whose resolved executable basename is exactly `codex`. Linux reads the
+executable from `/proc/<pid>/exe` and NUL-delimited argv from
+`/proc/<pid>/cmdline`; both must describe the same live PID before and after the
+read. macOS uses native `sysctl(KERN_PROCARGS2)` through `ctypes`, retaining
+NUL-delimited argument boundaries. `ps` is never used because its rendered output
+can be truncated or lose quoting.
+
+Argv text alone cannot establish process identity. A process exit, PID reuse/start
+token change, unreadable executable, empty argv, kernel-buffer truncation, or
+executable/argv disagreement fails closed. Unsupported platforms require an
+explicit override.
 
 Aliases are not reconstructed because the shell has already expanded them. When a
 wrapper has replaced itself with Codex, the real Codex executable is inherited. If
@@ -41,8 +48,15 @@ process rather than replaying the wrapper.
 ## Command normalization
 
 The discovered argv is separated into executable and session-level arguments.
-Megastorm preserves profiles, config overrides, feature flags, sandbox/approval
-mode, plugin settings, and other non-conflicting host options.
+Normalization uses a versioned allowlist with explicit arity. V1 inheritable
+zero-value flags are `--oss`, `--strict-config`,
+`--dangerously-bypass-approvals-and-sandbox`,
+`--dangerously-bypass-hook-trust`, `--skip-git-repo-check`,
+`--ignore-user-config`, and `--ignore-rules`. V1 inheritable one-value options are
+`-c/--config`, `--enable`, `--disable`, `-p/--profile`, `--local-provider`,
+`-s/--sandbox`, and `--add-dir`. Repeated options preserve order. Split and equals
+forms are accepted where supported. Unknown options fail closed because their arity
+cannot be inferred safely.
 
 It removes or replaces child-specific/interactive arguments:
 
@@ -50,12 +64,16 @@ It removes or replaces child-specific/interactive arguments:
 - `-m`, `--model`, and `--model=<value>`;
 - `-C`, `--cd`, and `--cd=<value>`;
 - `-o`, `--output-last-message`, and equals forms;
+- `--image`, interactive-only modes, `--`, stdin prompt `-`, and non-`exec`
+  subcommands fail closed rather than being partially inherited;
 - prompt payloads and output-stream formatting arguments that conflict with the
   runner's last-message contract.
 
-Unknown option-shaped session arguments are preserved. A positional argument whose
-meaning cannot be safely separated from an interactive prompt causes a closed
-failure rather than guessing.
+For a normal interactive host command, no positional is allowed after option
+parsing because it is an initial prompt. For an ancestor already running `exec`,
+the parser consumes the same v1 grammar, removes exactly one final prompt, and
+rejects `exec resume`, extra positionals, `--`, or `-`. `resume` and every other
+subcommand are rejected.
 
 The child argv is built as an array:
 
@@ -76,12 +94,17 @@ are intentionally replaced.
 ## Explicit override
 
 `MEGASTORM_CODEX_COMMAND` must decode to a non-empty JSON array of non-empty strings.
-Its first element resolves to an executable. Invalid JSON, a scalar value, an empty
+Its first element is resolved once with `shutil.which` when not absolute, then
+replaced by its canonical absolute path; its basename must be `codex`. Invalid JSON, a scalar value, an empty
 array, or non-string members fail preflight.
 
 `--codex-template` remains for compatibility and tests, but it is used only when the
-flag is explicitly supplied. Reports mark it as a legacy template whose inheritance
-cannot be verified.
+flag is explicitly supplied. Its legacy syntax is parsed once with `shlex.split` and
+requires `{model}`, `{cwd}`, and `{out}` placeholders; the prompt is appended as one
+argv element and no shell is invoked. The first token is canonicalized to an absolute
+executable. Templates are trusted overrides and are not normalized as inherited host
+commands. Reports mark them `legacy-template/unverified-inheritance`. Neither an
+environment override nor template executes a bare executable through PATH.
 
 ## Redaction and reporting
 
@@ -93,7 +116,10 @@ Execution reports record:
 - redacted preserved session arguments.
 
 Redaction hides values following or embedded in option names containing `token`,
-`secret`, `password`, `api_key`, `apikey`, `authorization`, or `credential`.
+`secret`, `password`, `api_key`, `apikey`, `authorization`, or `credential`. It also
+parses `-c/--config` assignments and redacts when any dotted key segment is sensitive,
+redacts URI userinfo, and replaces values exactly matching sensitive environment
+values. A structured config value that cannot be parsed is entirely redacted.
 Sensitive environment values are never emitted. Raw prompts and output paths are not
 included in the command metadata.
 
@@ -101,7 +127,8 @@ included in the command metadata.
 
 - No reliable Codex ancestor or explicit override: stop before creating worktrees.
 - Executable cannot be resolved or executed: infrastructure preflight failure.
-- Ambiguous positional argv: stop and identify the unresolved argument.
+- Unknown option, ambiguous positional, `--`, stdin prompt, unsupported subcommand,
+  or malformed option arity: stop and identify only its non-sensitive option name.
 - Conflicting parameters with a missing value: stop as malformed host argv.
 - Unsupported platform without an explicit override: stop and document the override.
 
@@ -117,7 +144,14 @@ Unit tests cover:
 - malformed/ambiguous argv rejection;
 - JSON environment override validation;
 - redaction of secret-bearing options;
-- Linux procfs and macOS/POSIX process-query parsing through injected fixtures;
+- Linux `/proc/<pid>/exe` plus cmdline agreement and macOS `KERN_PROCARGS2`
+  parsing through injected binary fixtures;
+- process exit/PID-reuse races, truncated buffers, spoofed argv identity, and
+  executable disagreement;
+- allowlisted option placement/arity, repeated options, unknown options, `--`, stdin
+  prompt, `exec resume`, and unsupported subcommands;
+- canonicalization/rejection of bare executable overrides and templates;
+- structured config and credential-bearing URL redaction;
 - paths and arguments containing spaces without shell evaluation.
 
 The runner end-to-end fake-agent test uses an explicit argv override so it remains
