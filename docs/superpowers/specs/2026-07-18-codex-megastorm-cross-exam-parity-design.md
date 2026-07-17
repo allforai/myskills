@@ -343,7 +343,7 @@ The examiner assigns one of:
 also authored the delivery, downgrading a gap to low or judging it done requires
 additional independent evidence.
 
-Every judgment is atomically appended to `ledger.json` immediately. Evidence
+Every judgment is atomically persisted to `ledger.json` immediately. Evidence
 must be non-empty, reside under the run's `evidence/` directory, and be referenced
 by the entry. The renderer rejects invalid verdicts, missing evidence, empty
 evidence, and path escape. Rejected entries are disclosed but excluded from all
@@ -363,6 +363,139 @@ counts.
 
 It does not invent a global completion percentage. Reports remain audit outputs,
 not implementation plans or authorization to fix findings.
+
+## Normative Operational Contracts
+
+### Git baseline, refs, publication, and cleanup
+
+The controlled baseline is the target repository's current `HEAD` commit at
+preflight. Dirty tracked and untracked content is excluded because capturing it
+would require staging, stashing, or copying user-owned state. If the goal depends
+on dirty content absent from `HEAD`, preflight stops and asks the user to commit
+it; the runner never chooses how to preserve it.
+
+Each run has an immutable UUID. Internal refs use
+`refs/megastorm/runs/<uuid>/{baseline,integration}` and worktrees live below a
+run-owned temporary root. Ref creation and movement use compare-and-swap rules:
+refs must be absent on first creation; resume must find the persisted object IDs;
+and an update succeeds only if the old value equals the persisted expected value.
+Missing, externally moved, or mismatched refs escalate and are never force-reset.
+
+Successful close retains the integration ref and final commit, removes task
+worktrees, and optionally creates a human-facing branch using a user-approved
+name. An existing human-facing ref causes a closed failure rather than overwrite.
+Cancelled or escalated runs retain internal refs, state, logs, and unmerged
+worktrees required for diagnosis/resume. Explicit cleanup may delete only paths
+under the recorded run root and refs under `refs/megastorm/runs/<uuid>/`; deletion
+of the final handoff ref requires separate confirmation.
+
+### Execution security envelope
+
+Worktrees are not a complete security boundary. Unattended `codex exec` and
+acceptance commands therefore run with workspace-write sandboxing, non-interactive
+approval, closed stdin, bounded timeouts, captured output, and the task worktree
+as cwd. They receive an allowlist of ordinary build variables plus only the
+credentials or task variables explicitly approved in Phase 0. Ambient secrets
+are not forwarded by default.
+
+Network is disabled by default when the available sandbox can enforce it. A task
+requiring network, credentials, destructive behavior, an external system, or a
+write outside the worktree must declare the exact capability and target in Phase
+0 and receive explicit authorization. Production targets, elevation, undeclared
+external mutation, path/symlink escape, and capabilities the current sandbox
+cannot safely constrain are refused or escalated. The preflight discloses when
+the host cannot enforce the requested boundary instead of claiming safety.
+
+Symlinks are resolved before repository-path policy checks. Submodules are
+read-only by default; a writable submodule is a separate controlled repository
+with its own baseline/ref lifecycle and an explicit touched resource.
+
+### Event and summary durability
+
+The JSONL event stream is the audit trail; the atomic JSON summary is the
+authoritative resume snapshot. A single coordinator owns both files. Workers
+return results through an in-process queue and never write persistent state.
+Every event carries `run_id`, monotonic `seq`, stable `event_id`, task and attempt
+IDs, timestamp, type, and payload.
+
+The coordinator writes and `fsync`s a complete JSON line, then atomically
+publishes a summary containing `last_applied_seq`. On recovery, an invalid or
+unterminated final line is quarantined and ignored. Later valid events are
+replayed only when their stable ID, payload hash, and expected pre-state make the
+transition idempotent. Duplicate IDs with the same hash are ignored; conflicting
+duplicates stop recovery as corruption. Merge-intent and merge-complete events
+record expected parent and resulting Git object IDs, preventing duplicate merges.
+
+### Reality-gate lifecycle
+
+A reality-gated result is permitted only after the supervisor confirms the
+code-side implementation and every autonomously executable check passed, with
+only the declared environmental proof remaining. Its changes are committed and
+merged exactly like a confirmed task. Only the merge-complete transition makes
+dependents ready. The autonomous terminal state is
+`implementation_merged_proof_pending`.
+
+A later explicit import records a human runbook outcome as `human_verified` or
+`human_rejected`, both with evidence. Verification closes the pending gate
+without rerunning dependents. Rejection reopens the task as a business failure,
+invalidates downstream confirmations, and requires a new planned execution; it
+is never silently rewritten as done.
+
+### Cross-exam persistence and probe authorization
+
+`ledger.json` is a versioned JSON snapshot written by whole-file temporary write,
+`fsync`, and atomic replace; it is not append-in-place. Only the interactive
+examiner writes it, under a run lock containing examiner PID and run UUID. Every
+entry and open thread has a stable UUID. Resume deduplicates by UUID and content
+hash, rejects conflicting duplicates, and quarantines unreadable snapshots.
+Evidence files are durable before the snapshot references them. A concurrent
+examiner refuses the active run instead of merging ledgers.
+
+Audit-only forbids source fixes but does not imply that every runtime probe is
+read-only. Intake records allowed hosts, accounts/tenants, operations, test-data
+namespace, credential sources, and cleanup obligations. A mutating card displays
+its exact side effect and rollback/cleanup plan and requires authorization before
+dispatch. Shared valuable data, irreversible calls, production credentials or
+hosts, and mutations outside the envelope are refused. Credentials go only to
+the authorized prober, are redacted from logs, and are never copied into evidence.
+
+### State machines
+
+A task moves through `pending -> dispatched -> implementation_ready -> verifying`.
+Verification transitions to `confirmed`,
+`implementation_merged_proof_pending`, `business_retry`, or
+`infrastructure_retry`. Retries return to `dispatched`; exhausted budgets become
+`escalated`. Only confirmed or proof-pending tasks with a merge-complete event
+satisfy dependencies. Escalation makes nonterminal transitive dependents
+`skipped`. Cancellation preserves nonterminal state and never creates success.
+
+Each executor and supervisor attempt has a stable attempt ID. Business and
+infrastructure counters are independent. Commit and merge transitions are
+idempotent and keyed by expected parent/resulting object ID.
+
+Cross-exam entries move through
+`question_selected -> probing -> evidence_ready -> judged`. Infrastructure
+redispatch retains the entry UUID and creates a new probe-attempt ID. Exhaustion
+can become `judged:unprovable` only after a `could_not` evidence file exists.
+Open threads are stable non-judgment records and become entries when selected.
+Renderer admission is derived and never mutates the ledger.
+
+### Exact compatibility and invalidation rules
+
+- Missing `reality_gate` means `false`. A `runbook_ptr` is forbidden unless it
+  is true; true without a non-empty pointer fails validation.
+- Old DAGs without reality maps derive them from the task array.
+- Old state without schema version or fingerprints is report-readable but not
+  resumable; the user starts a new run from its recorded baseline.
+- Task content changes invalidate that task and its transitive dependents.
+- Effective dependency or ancestor-closure changes invalidate affected tasks.
+- Executor prompt or BULK model changes invalidate unverified/executor-run work;
+  supervisor prompt or VERIFY model changes invalidate all confirmations.
+- Planning, registry, or THINK changes regenerate the plan and invalidate the
+  entire execution plan.
+- Integration baseline movement invalidates the complete execution run.
+- Timeout, backoff, and report-format-only changes do not invalidate confirmed
+  work.
 
 ## Error Handling
 
@@ -399,8 +532,12 @@ and resume. Verify independent retry budgets and exact terminal accounting.
 
 Exercise dirty user worktrees, untracked files, concurrent tasks editing the same
 file, undeclared changes, renames/deletions, merge conflicts, interrupted merges,
-and resume. Before and after assertions must prove the user's checked-out branch,
-HEAD, index, and pre-existing file content are unchanged.
+external movement of run refs, ref-name collisions, symlink escapes, writable
+submodule declarations, commands attempting writes outside task worktrees, and
+resume. Before and after assertions must prove the user's checked-out branch,
+HEAD, index, and pre-existing file content are unchanged. Durability tests inject
+partial JSONL tails, duplicate/conflicting event IDs, concurrent Cross-exam lock
+attempts, and crashes between event `fsync` and summary replacement.
 
 ### Protocol parity tests
 
@@ -436,8 +573,8 @@ syntax.
 
 ## Migration and Compatibility
 
-Existing `orchestration.json`, plan-task arrays, and model files remain accepted.
-New fields are optional when reading old data and receive conservative defaults.
+Existing `orchestration.json`, plan-task arrays, and model files remain accepted
+under the exact compatibility rules above.
 State files gain an explicit schema version; unsupported or unsafe legacy state
 is rejected with recovery instructions rather than guessed into the new format.
 
@@ -445,4 +582,3 @@ The previous default that permitted shared main-tree writers is not preserved as
 normal behavior. If a temporary compatibility flag is necessary, it must be
 explicit, prominently warn that isolation guarantees are disabled, and be
 excluded from recommended documentation.
-
