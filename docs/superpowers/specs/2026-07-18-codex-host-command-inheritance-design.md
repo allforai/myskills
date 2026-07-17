@@ -75,13 +75,14 @@ emitted before `exec`; options accepted by `codex exec` are emitted after it:
 
 It removes or replaces child-specific/interactive arguments:
 
-- `exec` or `resume` subcommands and their payload;
+- an `exec` subcommand and its single prompt payload; every `resume` form is rejected;
 - `-m`, `--model`, and `--model=<value>`;
 - `-C`, `--cd`, and `--cd=<value>`;
 - `-o`, `--output-last-message`, and equals forms;
 - `--json` (zero values), `--color` (one value), `--output-schema` (one value),
   and an inherited `--ephemeral` are recognized and removed; Megastorm appends one
-  canonical `--ephemeral` and owns its output contract;
+  canonical `--ephemeral` and owns its output contract. Split and equals forms of
+  the recognized one-value options are accepted;
 - `--image`, interactive-only modes, `--`, stdin prompt `-`, and non-`exec`
   subcommands fail closed rather than being partially inherited;
 - prompt payloads and output-stream formatting arguments that conflict with the
