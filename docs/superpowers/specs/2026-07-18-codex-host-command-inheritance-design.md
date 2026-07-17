@@ -62,7 +62,8 @@ zero-value flags are `--oss`, `--strict-config`,
 `--ignore-user-config`, and `--ignore-rules`. V1 inheritable one-value options are
 `-c/--config`, `--enable`, `--disable`, `-p/--profile`, `--local-provider`,
 `-s/--sandbox`, and `--add-dir`. Root-only `-a/--ask-for-approval` is also
-inheritable with one value. Repeated options preserve order. Split and equals
+inheritable with one value, and root-only `--search` is inheritable with zero
+values. Repeated options preserve order. Split and equals
 forms are accepted where supported. Unknown options fail closed because their arity
 cannot be inferred safely.
 
@@ -79,7 +80,7 @@ It removes or replaces child-specific/interactive arguments:
 - `-m`, `--model`, and `--model=<value>`;
 - `-C`, `--cd`, and `--cd=<value>`;
 - `-o`, `--output-last-message`, and equals forms;
-- `--json` (zero values), `--color` (one value), `--output-schema` (one value),
+- `--json`, `--no-alt-screen` (zero values), `--color` (one value), `--output-schema` (one value),
   and an inherited `--ephemeral` are recognized and removed; Megastorm appends one
   canonical `--ephemeral` and owns its output contract. Split and equals forms of
   the recognized one-value options are accepted;

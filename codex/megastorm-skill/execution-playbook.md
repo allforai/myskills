@@ -5,14 +5,18 @@ All human interaction is in Phase 0. After Phase 0, do not stop for the human un
 escalation surfaces. You (the interactive Codex session) are the orchestration brain;
 every headless agent below is a fresh `codex exec` process.
 
-Spawning an agent: `codex exec --sandbox workspace-write -m <model> --cd <dir>
---output-last-message <tmpfile> "<prompt>"` — prompt = the relevant `prompts/*.md` file
-content + the agent's input JSON appended. The agent's final message must end with
+Spawning an agent: inherit the actual Codex executable and allowlisted session argv
+(profile/config/features/sandbox/approval) discovered from the current host, insert `exec`,
+then append the task model/cwd/output/prompt. Never invoke a bare hard-coded `codex` or
+silently replace the host permission mode. `MEGASTORM_CODEX_COMMAND` JSON argv is the
+explicit override; `--codex-template` is legacy-only. Prompt = the relevant `prompts/*.md`
+file content + the agent's input JSON appended. The agent's final message must end with
 exactly one JSON object per `schemas.md`; parse it, re-ask once on garbage, then escalate.
 
 ## Phase -1 — Preflight
 Verify:
-- `codex`, `git`, `python3` on PATH; `prompts/`, `scripts/` exist beside this playbook.
+- a reliable current Codex host argv (or explicit override), `git`, `python3`; `prompts/`,
+  `scripts/` exist beside this playbook.
 - The **brainstorming skill** is installed (a `brainstorming` entry in your available
   skills / `~/.codex/skills/brainstorming/SKILL.md`) — Phase 0 depends on it for module
   decomposition and per-module specs.

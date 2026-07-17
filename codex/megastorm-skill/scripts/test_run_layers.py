@@ -141,8 +141,10 @@ class TestDurabilityAndScope(unittest.TestCase):
         import os
         os.environ["MEGASTORM_TEST_SECRET"] = "hidden"
         try:
-            self.assertNotIn("MEGASTORM_TEST_SECRET", CodexRunner().env)
-            self.assertEqual(CodexRunner(allow_env=["MEGASTORM_TEST_SECRET"]).env[
+            template = "/bin/echo {model} {cwd} {out}"
+            self.assertNotIn("MEGASTORM_TEST_SECRET", CodexRunner(template=template).env)
+            self.assertEqual(CodexRunner(template=template,
+                                         allow_env=["MEGASTORM_TEST_SECRET"]).env[
                 "MEGASTORM_TEST_SECRET"], "hidden")
         finally:
             os.environ.pop("MEGASTORM_TEST_SECRET", None)

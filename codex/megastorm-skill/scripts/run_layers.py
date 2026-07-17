@@ -41,7 +41,6 @@ import os
 import pathlib
 import re
 import signal
-import shlex
 import subprocess
 import sys
 import tempfile
@@ -49,6 +48,8 @@ import threading
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+
+from host_command import HostCommandError, resolve_invocation
 
 SOFT_RETRY_BUDGET = 2  # initial attempt + at most 2 retries = 3 dispatches total
 INFRA_RETRY_BUDGET = 2  # initial attempt + two infrastructure redispatches
@@ -67,10 +68,6 @@ ANTI_VACUOUS = (
     "assertion and confirm a non-zero executed-test count before declaring done."
 )
 
-DEFAULT_CODEX_TEMPLATE = (
-    "codex exec --ephemeral --sandbox workspace-write -m {model} --cd {cwd} "
-    "--output-last-message {out}"
-)
 BASE_ENV_KEYS = {"PATH", "HOME", "CODEX_HOME", "TMPDIR", "LANG", "LC_ALL", "TERM",
                  "SHELL", "SSL_CERT_FILE", "SSL_CERT_DIR", "HTTP_PROXY", "HTTPS_PROXY",
                  "NO_PROXY"}
@@ -131,9 +128,9 @@ class CodexRunner:
     codex CLI flag rename never bricks the runner (same upgrade-proof stance as
     the model tiers)."""
 
-    def __init__(self, template=DEFAULT_CODEX_TEMPLATE, timeout=DEFAULT_AGENT_TIMEOUT,
-                 allow_env=()):
-        self.template = template
+    def __init__(self, invocation=None, template=None, timeout=DEFAULT_AGENT_TIMEOUT,
+                 allow_env=(), environ=None):
+        self.invocation = invocation or resolve_invocation(template=template, environ=environ)
         self.timeout = timeout
         keys = BASE_ENV_KEYS | set(allow_env)
         self.env = {key: value for key, value in os.environ.items() if key in keys}
@@ -141,8 +138,7 @@ class CodexRunner:
     def run(self, prompt, model, cwd):
         with tempfile.NamedTemporaryFile("r", suffix=".txt", delete=False) as f:
             out_path = f.name
-        cmd = shlex.split(self.template.format(model=model, cwd=str(cwd), out=out_path))
-        cmd.append(prompt)
+        cmd = self.invocation.build(model, cwd, out_path, prompt)
         # stdin MUST be closed: codex exec blocks on "Reading additional input
         # from stdin..." forever when handed an open pipe with no data.
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -468,12 +464,13 @@ def atomic_write_json(path, value):
             os.unlink(tmp)
 
 
-def input_fingerprint(tasks, orchestration, models, prompts_dir):
+def input_fingerprint(tasks, orchestration, models, prompts_dir, host_command=None):
     payload = {
         "tasks": tasks,
         "orchestration": orchestration,
         "models": models,
         "prompts": {p.name: p.read_text() for p in sorted(prompts_dir.glob("*.md"))},
+        "host_command": host_command,
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
@@ -593,7 +590,8 @@ def main(argv):
     ap.add_argument("--isolation", choices=["groups", "all"], default="all",
                     help="deprecated compatibility option; safe v0.14 execution always "
                          "isolates every writer and never writes the user's main tree")
-    ap.add_argument("--codex-template", default=DEFAULT_CODEX_TEMPLATE)
+    ap.add_argument("--codex-template", default=None,
+                    help="explicit legacy override; default inherits the current Codex host argv")
     ap.add_argument("--dry-run", action="store_true",
                     help="print the schedule without invoking codex")
     args = ap.parse_args(argv[1:])
@@ -620,6 +618,11 @@ def main(argv):
     if user_status.returncode != 0:
         sys.exit(f"target is not a readable git repository: {user_status.stderr.strip()}")
     user_dirty_fingerprint = hashlib.sha256(user_status.stdout.encode()).hexdigest()
+    try:
+        invocation = resolve_invocation(template=args.codex_template)
+    except HostCommandError as exc:
+        sys.exit(f"Codex host command preflight failed: {exc}")
+    command_metadata = invocation.metadata()
 
     try:
         prior_state = json.loads(open(args.state).read())
@@ -627,7 +630,7 @@ def main(argv):
         prior_state = {}
     completed = set(prior_state.get("completed", []))
     run_id = prior_state.get("run_id") or str(uuid.uuid4())
-    fingerprint = input_fingerprint(tasks, orch, models, prompts_dir)
+    fingerprint = input_fingerprint(tasks, orch, models, prompts_dir, command_metadata)
     old_fingerprint = prior_state.get("input_fingerprint")
     if completed and old_fingerprint != fingerprint:
         sys.exit("state input fingerprint differs — refusing to reuse stale confirmations; "
@@ -670,7 +673,7 @@ def main(argv):
     # would accidentally let same-file writers execute concurrently.
     isolate_groups = list(isolate_groups) + [[t["id"]] for t in tasks]
 
-    runner = CodexRunner(args.codex_template, timeout=args.agent_timeout,
+    runner = CodexRunner(invocation=invocation, timeout=args.agent_timeout,
                          allow_env=args.allow_env)
     merge_lock = threading.Lock()
 
@@ -714,7 +717,8 @@ def main(argv):
                           "baseline_commit": baseline_commit,
                           "user_dirty_fingerprint": user_dirty_fingerprint,
                           "integration_ref": integration_ref,
-                          "integration_path": str(integration_root)})
+                          "integration_path": str(integration_root),
+                          "host_command": command_metadata})
 
     results, escalations, skipped = schedule(
         effective_deps, isolate_groups, resource_groups, tasks_by_id,
@@ -739,6 +743,7 @@ def main(argv):
                       "user_dirty_fingerprint": user_dirty_fingerprint,
                       "integration_ref": integration_ref,
                       "integration_commit": _git(["rev-parse", "HEAD"], integration_root).stdout.strip(),
+                      "host_command": command_metadata,
                       "completeness": {"method": args.completeness,
                                        "artifact": args.census_artifact,
                                        "claim": ("census-backed" if args.completeness == "census"

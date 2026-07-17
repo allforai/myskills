@@ -8,7 +8,8 @@
 ## Architecture (minimal-compat port of the Claude Code plugin)
 
 The interactive Codex session is the orchestration brain for Phases -1/0/2 and
-the short Phase 1 stages; each headless agent is a fresh `codex exec` process.
+the short Phase 1 stages; each headless agent inherits the current host executable,
+profile/config/features and permission argv before entering `exec` mode.
 The long §1.6 execute+supervise loop is NOT prose — it runs in a deterministic
 Python runner (a stateless prose loop drifts; the retry ledger must be code).
 
