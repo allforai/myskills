@@ -178,12 +178,13 @@ prompt/permission-injecting wrappers.
 
 ### Inherited options and child security policy
 
-Preserve non-security host options whose omission could change the intended
-runtime, including model/profile/config selection, plugin/config roots, effort,
-and relevant feature flags. Strip interactive-only and per-request state such
-as the original prompt, `--cwd`, output format, session IDs, resume/continue
-flags, worktree/ref flags, and alternate-screen controls before adding the
-runner-owned values.
+Preserve safe scalar host options whose omission could change the intended
+runtime, including model and effort. Profile, config, and plugin roots are only
+inheritance candidates until their fully resolved behavior passes the effective-
+configuration gate below. Strip interactive-only and per-request state such as
+the original prompt, `--cwd`, output format, session IDs, resume/continue flags,
+worktree/ref flags, and alternate-screen controls before adding the runner-owned
+values.
 
 Security flags are normalized, not blindly inherited. `--always-approve`,
 `--yolo`, bypass aliases, ambient `--allow`, sandbox, tool lists, system-prompt
@@ -197,6 +198,29 @@ denies can never be relaxed. Contradictory, unknown, or unparseable security
 policy stops preflight. A closed-stdin child that requests an approval terminates
 as a structured configuration/infrastructure failure; it never hangs awaiting
 input or retries as a business failure.
+
+Argv inspection alone is insufficient because Grok configuration can enable
+hooks, MCPs, plugins, credential-provider commands, tools, memory, web/network,
+system prompts, and permission modes. Preflight therefore resolves the exact
+child configuration using the verified CLI's `inspect --json` plus all referenced
+managed, user, project, profile, plugin, and requirements files. It fingerprints
+their canonical paths and contents, expands no secret values into logs, and
+validates the resolved result against the Phase 0 capability envelope. Undeclared
+hooks, external command/auth providers, MCP servers, plugins, tools, writable
+paths outside the worktree, memory, web/network, and approval bypass are disabled
+where the verified CLI exposes a reliable override; otherwise their presence is
+refused. Managed policy that cannot be restricted also fails closed.
+
+The preferred child uses a runner-owned temporary Grok home/config and explicit
+`--plugin-dir` with an allowlist containing only the selected model/effort,
+Megastorm plugin, worktree-local tools, and Phase 0-approved capabilities.
+Authentication is forwarded only through the separately approved credential
+source; arbitrary ambient credential-provider commands are never copied. An
+inherited profile/config/plugin root may be used instead only when its fully
+resolved, fingerprinted contents are proven equivalent to or stricter than this
+runner-owned envelope. The fingerprint is part of resume invalidation. Tests
+must fail closed when benign-looking argv resolves to always-approve, a mutating
+hook, an MCP filesystem root outside the worktree, or an external auth command.
 
 Launcher prefixes and arguments are preserved. For example, if the current
 session was started through a wrapper, the child starts through the same
@@ -213,10 +237,12 @@ environment assignments. Tests must cover split and `--key=value` forms.
 The runner reads stdout as newline-delimited JSON and treats stderr as
 diagnostic transport only. Because xAI's public documentation promises NDJSON
 but does not publish the record schema, support is version-and-fixture gated.
-Every supported CLI version/range has a checked-in, redacted fixture captured
+Every supported exact CLI version has a checked-in, redacted fixture captured
 from that real CLI, with provenance containing exact version, capture command,
-platform, timestamp, and SHA-256. No inferred fake-only event dialect may be
-added to the supported-version table.
+platform, timestamp, and SHA-256. A bounded version range is supported only when
+real fixtures from every included released version prove the identical
+descriptor; a single capture is never extrapolated. No inferred fake-only event
+dialect may be added to the supported-version table.
 
 For each supported fixture the adapter enumerates the concrete accepted record
 types and field paths in a versioned protocol descriptor: assistant text chunks,
@@ -437,6 +463,11 @@ The change is complete only when:
     the CLI is absent or streaming capture cannot authenticate, the final status
     is exactly `Grok host conformance unverified`; fake tests, a parity matrix,
     or a thought-test report cannot upgrade that status.
+
+The acceptance report presents two separate top-level status fields:
+`Repository contract verification` and `Grok host conformance`. It may show the
+first as verified while the second remains unverified, but must not collapse
+them into a visually green overall parity status.
 
 ## Delivery Sequence
 
