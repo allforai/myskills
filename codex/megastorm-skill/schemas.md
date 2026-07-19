@@ -63,7 +63,7 @@ Schema of the JSON between the markers:
 
 ## plan-task (spec §4.3; feeds validate_plan_tasks.py + build_task_dag.py)
 ```json
-{ "type": "object", "required": ["id", "title", "touched_paths", "acceptance_cmd", "depends_on"],
+{ "type": "object", "required": ["id", "title", "touched_paths", "acceptance_cmd", "depends_on", "artifact_contract"],
   "properties": {
     "id": { "type": "string" },
     "title": { "type": "string" },
@@ -74,8 +74,15 @@ Schema of the JSON between the markers:
     "requires": { "type": "array", "items": { "type": "string" } },
     "resources": { "type": "array", "items": { "type": "string" } },
     "reality_gate": { "type": "boolean" },
-    "runbook_ptr": { "type": "string" } } }
+    "runbook_ptr": { "type": "string" },
+    "artifact_contract": { "type": "object" } } }
 ```
+- `artifact_contract` is schema version 1 and frozen before dispatch. It contains exact
+  `path_rules` (`literal|glob` plus allowed `create|modify|delete|rename` operations),
+  `required_outputs`, `forbidden_paths`, `max_files_changed`, the SHA-256 of
+  `acceptance_cmd`, and typed `interface_assertions` pinned to verifier hashes. Both rename
+  endpoints must be allowed. The runner additionally freezes orchestration/task/model/prompt/
+  runner/state/policy paths. Legacy `allowed_paths` is rejected in verified execution.
 - `depends_on` carries INTRA-module ordering (task ids the plan agent can see).
 - `implements` / `requires` (optional) carry CROSS-module ordering, in registry interface
   vocabulary — parallel plan agents cannot see each other's task ids, so interfaces are the

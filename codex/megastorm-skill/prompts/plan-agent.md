@@ -17,6 +17,10 @@ implementation plan as bite-sized TDD tasks. You CANNOT ask the human anything.
   (e.g. `python3 -m pytest path/test_x.py`, `npm run build`). Drives §4.6 supervisor.
 - `depends_on`: ids of tasks that must complete first ([] if none). INTRA-module only —
   you cannot see other modules' task ids, so never guess a foreign id (it hard-BLOCKs the DAG).
+- `artifact_contract`: schema version 1, with this exact task id, operation-level literal/glob
+  path rules, required outputs, forbidden paths, maximum changed-file count, SHA-256 of the exact
+  `acceptance_cmd`, and typed interface assertions pinned to verifier hashes. Do not authorize
+  DAG/tasks/models/prompts/runner/state/policy. Both endpoints of a rename need permission.
 
 ## Cross-module ordering: implements / requires (registry vocabulary)
 Other modules' plans are written in parallel with yours; interfaces are the only shared
@@ -49,7 +53,7 @@ build, lint, and pure-logic checks. Every reality-gated task still needs a meani
 criteria written into the plan. Do not invent an autonomous proof the environment cannot run.
 
 ## Output (array of plan-task schema + escalation)
-Return JSON: `{status, plan_path, tasks: [ {id,title,touched_paths,acceptance_cmd,depends_on,reality_gate?,runbook_ptr?} ], reason?, evidence?}`
+Return JSON: `{status, plan_path, tasks: [ {id,title,touched_paths,acceptance_cmd,depends_on,artifact_contract,reality_gate?,runbook_ptr?} ], reason?, evidence?}`
 Escalate (don't guess) if the design is under-specified in a way that needs a human decision.
 
 ## Module-too-large escalation

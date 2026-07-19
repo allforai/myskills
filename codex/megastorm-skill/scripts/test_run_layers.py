@@ -9,7 +9,8 @@ import unittest
 from run_layers import (ANTI_VACUOUS, HEAVY_CMD_RE, build_supervisor_prompt,
                         CodexRunner, EventLog, InfrastructureFailure, atomic_write_json, parse_verdict,
                         main, prepare_integration_workspace, run_task,
-                        recover_confirmed_from_git, run_task_in_worktree, schedule,
+                        pending_merge_intents, recover_confirmed_from_git,
+                        run_task_in_worktree, schedule,
                         undeclared_paths)
 
 PROMPTS = pathlib.Path(__file__).resolve().parent.parent / "prompts"
@@ -76,6 +77,17 @@ class TestParseVerdict(unittest.TestCase):
 
 
 class TestRunTask(unittest.TestCase):
+    def test_supervisor_cannot_mutate_previously_admitted_artifacts(self):
+        calls = []
+        def gate(_base):
+            calls.append(len(calls))
+            return {"artifact_sha256": "before" if len(calls) == 1 else "after"}
+        result = run_task(_task("T-mutate"), FakeRunner([_v(True)]), MODELS,
+                          ".", PROMPTS, log=lambda *_: None, artifact_gate=gate)
+        self.assertEqual(result["status"], "escalate")
+        self.assertEqual(result["failure_kind"], "artifact")
+        self.assertIn("supervisor mutated", result["reason"])
+
     def test_done_first_try(self):
         r = run_task(_task("T1"), FakeRunner([_v(True)]), MODELS, ".", PROMPTS, log=lambda *_: None)
         self.assertEqual((r["status"], r["retries"]), ("done", 0))
@@ -137,6 +149,21 @@ class TestRunTask(unittest.TestCase):
 
 
 class TestDurabilityAndScope(unittest.TestCase):
+    def test_only_uncompleted_merge_intents_are_recovered(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = pathlib.Path(td, "events.jsonl")
+            events = [
+                {"run_id": "r", "type": "merge-intent", "payload": {
+                    "task_id": "T1", "transaction_id": "x", "candidate_commit": "a"}},
+                {"run_id": "r", "type": "merge-intent", "payload": {
+                    "task_id": "T2", "transaction_id": "y", "candidate_commit": "b"}},
+                {"run_id": "r", "type": "merge-complete", "payload": {
+                    "task_id": "T2", "transaction_id": "y", "candidate_commit": "b"}},
+            ]
+            path.write_text("".join(json.dumps(event) + "\n" for event in events))
+            self.assertEqual([item["task_id"] for item in pending_merge_intents(path, "r")],
+                             ["T1"])
+
     def test_agent_environment_excludes_ambient_secret(self):
         import os
         os.environ["MEGASTORM_TEST_SECRET"] = "hidden"

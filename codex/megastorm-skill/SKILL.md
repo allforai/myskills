@@ -20,8 +20,8 @@ Everything you need sits beside it:
 - `scripts/run_layers.py` — the §1.6 execute+supervise runner (the long loop is NEVER
   driven by prose; this script owns ready-set scheduling, mutex groups, worktrees, the
   retry ledger, skip-on-escalation, and fresh-context supervision)
-- `models.example.json` — copy to the project as `models.json`, fill REAL model names
-  with the human in Phase 0 (placeholders refuse to run)
+- `models.example.json` — tier mappings used only when Phase 0 proves every effective
+  model source is unlocked; otherwise freeze `inherited` and add no model override
 
 Parity target: Claude Megastorm v0.14.0. This Codex-native port includes environment
 capability classification, census-backed completeness, reality-gate accounting, separate
@@ -30,3 +30,11 @@ independent `cross-exam` Codex skill after Phase 2. Cross-exam is never auto-ent
 
 Do not start any design or implementation before Phase 0 is complete (module
 breakdown approved, granularity review done, registry frozen, models resolved).
+
+Codex host inheritance is a security boundary. Preserve the current direct command and its
+arguments. A custom alias/wrapper is replayed only with an explicit versioned wrapper contract;
+unknown wrapper/profile/config model ownership forces `inherited`. Before workers run, freeze a
+human-confirmed model-policy artifact. Workers are untrusted: they may emit `needs_replan`, but
+must never edit DAG/tasks/models/prompts/runner/state/policy. Admit only strict schema-bound output
+and operation-level artifact contracts, then publish through checked candidate refs with CAS.
+All owned automation uses `python3` or `sys.executable` for macOS compatibility.

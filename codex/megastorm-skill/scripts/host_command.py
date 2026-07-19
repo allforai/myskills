@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Discover the current Codex host and build inherited, non-shell child argv."""
 from dataclasses import dataclass
+import hashlib
+import hmac
 import ctypes
 import ctypes.util
 import json
@@ -18,21 +20,21 @@ class HostCommandError(RuntimeError):
     pass
 
 
-ZERO_INHERIT = {
-    "--oss", "--strict-config", "--dangerously-bypass-approvals-and-sandbox",
-    "--dangerously-bypass-hook-trust", "--skip-git-repo-check",
-    "--ignore-user-config", "--ignore-rules",
+ZERO_INHERIT = {"--oss", "--strict-config"}
+DANGEROUS_ZERO = {
+    "--dangerously-bypass-approvals-and-sandbox", "--dangerously-bypass-hook-trust",
+    "--skip-git-repo-check", "--ignore-user-config", "--ignore-rules",
 }
 ROOT_ZERO = {"--search"}
 ONE_INHERIT = {
     "-c", "--config", "--enable", "--disable", "-p", "--profile",
-    "--local-provider", "-s", "--sandbox", "--add-dir",
+    "--local-provider", "--add-dir",
 }
 ROOT_ONE = {"-a", "--ask-for-approval"}
 ZERO_DROP = {"--json", "--ephemeral", "--no-alt-screen"}
 ONE_DROP = {
     "-m", "--model", "-C", "--cd", "-o", "--output-last-message",
-    "--color", "--output-schema",
+    "--color", "--output-schema", "-s", "--sandbox",
 }
 SENSITIVE = re.compile(
     r"(?:^|[._-])(token|secret|password|api[_-]?key|apikey|authorization|credential)(?:$|[._-])",
@@ -57,9 +59,21 @@ class InvocationSpec:
     source: str
     discovered_argv: tuple
     legacy_template: str = ""
+    launch_prefix: tuple = ()
+    argv_model: str = ""
+    executable_pins: tuple = ()
+    wrapper_contract_hash: str = ""
+    secret_placeholders: tuple = ()
+    dangerous_args: tuple = ()
+    verified: bool = True
+    wrapper_model_ownership: str = ""
+    wrapper_model_evidence: str = ""
 
-    def build(self, model, cwd, out, prompt):
+    def build(self, model, cwd, out, prompt, model_policy="tiered", environ=None,
+              integrity_key=None, approved_argv_hmac=None, output_flags=None):
         if self.legacy_template:
+            if self.verified:
+                raise HostCommandError("legacy templates are not a normal verified path")
             try:
                 rendered = self.legacy_template.format(model=model, cwd=str(cwd), out=str(out))
             except KeyError as exc:
@@ -69,9 +83,70 @@ class InvocationSpec:
                 raise HostCommandError("legacy template rendered an empty command")
             argv[0] = canonical_executable(argv[0], require_codex=False)
             return argv + [prompt]
-        return [self.executable, *self.root_args, "exec", *self.exec_args,
-                "--ephemeral", "-m", model, "-C", str(cwd),
-                "--output-last-message", str(out), prompt]
+        self.verify_executables()
+        prefix = self._materialize_prefix(environ)
+        if integrity_key is not None and approved_argv_hmac is not None:
+            actual = argv_hmac(prefix, integrity_key)
+            if not hmac.compare_digest(actual, approved_argv_hmac):
+                raise HostCommandError("materialized wrapper argv HMAC mismatch")
+        if model_policy not in {"tiered", "inherited"}:
+            raise HostCommandError("unknown model policy")
+        model_args = ["-m", model] if model_policy == "tiered" else []
+        if model_policy == "inherited" and self.argv_model:
+            model_args = ["-m", self.argv_model]
+        channel = (["--output-last-message", str(out)] if output_flags is None
+                   else list(output_flags))
+        result_dir = str(Path(out).resolve().parent)
+        return [*prefix, *self.root_args, "exec", *self.exec_args,
+                "--ephemeral", *model_args, "--sandbox", "workspace-write",
+                "-c", "sandbox_workspace_write.writable_roots=[]",
+                "-c", "sandbox_workspace_write.exclude_tmpdir_env_var=true",
+                "-c", "sandbox_workspace_write.exclude_slash_tmp=true",
+                "-c", "sandbox_workspace_write.network_access=false",
+                "--add-dir", result_dir,
+                "-C", str(cwd),
+                *channel, prompt]
+
+    def _materialize_prefix(self, environ=None):
+        env = os.environ if environ is None else environ
+        if not self.launch_prefix:
+            return [self.executable]
+        out = []
+        for token in self.launch_prefix:
+            if isinstance(token, dict):
+                if token.get("kind") != "env" or token.get("sensitive") is not True:
+                    raise HostCommandError("invalid wrapper secret placeholder")
+                name = token.get("name")
+                value = env.get(name, "")
+                if not value:
+                    raise HostCommandError(f"missing approved wrapper secret environment: {name}")
+                out.append(value)
+            else:
+                out.append(token)
+        return out
+
+    def materialized_discovered_argv(self, environ=None):
+        if not self.secret_placeholders:
+            return list(self.discovered_argv)
+        env = os.environ if environ is None else environ
+        values = iter(self.secret_placeholders)
+        result = list(self.discovered_argv)
+        # Contract validation guarantees placeholder order equals fixed-token order.
+        boundary = result.index("--")
+        fixed = self.launch_prefix[1:self.launch_prefix.index("--")]
+        for index, declared in enumerate(fixed, 1):
+            if isinstance(declared, dict):
+                name = next(values)
+                value = env.get(name, "")
+                if not value:
+                    raise HostCommandError(f"missing approved wrapper secret environment: {name}")
+                result[index] = value
+        return result
+
+    def verify_executables(self):
+        for path, expected in self.executable_pins:
+            if file_sha256(path) != expected:
+                raise HostCommandError(f"executable fingerprint drift: {path}")
 
     def metadata(self, environ=None):
         env = os.environ if environ is None else environ
@@ -81,6 +156,9 @@ class InvocationSpec:
             "discovered_argv": redact_argv(self.discovered_argv, env),
             "preserved_root_args": redact_argv(self.root_args, env),
             "preserved_exec_args": redact_argv(self.exec_args, env),
+            "model_source": "argv" if self.argv_model else "default",
+            "wrapper_contract_hash": self.wrapper_contract_hash,
+            "verified": self.verified,
         }
 
 
@@ -88,10 +166,23 @@ def canonical_executable(value, require_codex=True):
     resolved = value if os.path.isabs(value) else shutil.which(value)
     if not resolved:
         raise HostCommandError(f"executable cannot be resolved: {value}")
-    resolved = os.path.abspath(resolved)
     if require_codex and os.path.basename(resolved) != "codex":
         raise HostCommandError("resolved host executable is not codex")
-    return resolved
+    return os.path.realpath(resolved)
+
+
+def file_sha256(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def argv_hmac(argv, key):
+    payload = json.dumps(list(argv), ensure_ascii=False, separators=(",", ":")).encode()
+    return hmac.new(key if isinstance(key, bytes) else key.encode(), payload,
+                    hashlib.sha256).hexdigest()
 
 
 def _split_option(token):
@@ -100,12 +191,85 @@ def _split_option(token):
     return token, None
 
 
-def normalize_host_argv(argv, source, executable=None):
+def _canonical_contract(contract):
+    return json.dumps(contract, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def _wrapper_prefix(argv, contract, environ):
+    if not isinstance(contract, dict) or contract.get("schema_version") != 1:
+        raise HostCommandError("wrapper replay requires a versioned contract")
+    if contract.get("replay_safe") is not True:
+        raise HostCommandError("wrapper contract is not replay-safe")
+    if not contract.get("wrapper_version") or not contract.get("model_evidence"):
+        raise HostCommandError("wrapper contract lacks version/model evidence")
+    boundary = contract.get("child_boundary_index")
+    if not isinstance(boundary, int) or boundary <= 0 or boundary >= len(argv) - 1:
+        raise HostCommandError("invalid wrapper child boundary")
+    if argv[boundary] != "--":
+        raise HostCommandError("wrapper boundary mismatch")
+    wrapper = canonical_executable(argv[0], require_codex=False)
+    codex = canonical_executable(argv[boundary + 1])
+    if wrapper != canonical_executable(contract.get("wrapper_path", ""), require_codex=False):
+        raise HostCommandError("wrapper path does not match contract")
+    if codex != canonical_executable(contract.get("codex_path", "")):
+        raise HostCommandError("Codex path does not match wrapper contract")
+    fixed = contract.get("fixed_wrapper_args")
+    if not isinstance(fixed, list) or len(fixed) != boundary - 1:
+        raise HostCommandError("wrapper fixed-token arity mismatch")
+    arities = contract.get("fixed_wrapper_arities")
+    if (not isinstance(arities, list) or len(arities) != len(fixed) or
+            any(not isinstance(value, int) or value < 0 for value in arities)):
+        raise HostCommandError("wrapper option arity contract is invalid")
+    materialized, placeholders = [wrapper], []
+    env = os.environ if environ is None else environ
+    for observed, declared in zip(argv[1:boundary], fixed):
+        if isinstance(declared, str):
+            if observed != declared:
+                raise HostCommandError("wrapper fixed token mismatch")
+            materialized.append(declared)
+        elif isinstance(declared, dict):
+            if declared.get("kind") != "env" or declared.get("sensitive") is not True:
+                raise HostCommandError("invalid typed wrapper placeholder")
+            name = declared.get("name")
+            if not isinstance(name, str) or not env.get(name) or observed != env[name]:
+                raise HostCommandError("wrapper secret substitution mismatch")
+            materialized.append(dict(declared)); placeholders.append(name)
+        else:
+            raise HostCommandError("invalid wrapper contract token")
+    pins = []
+    for path, field in ((wrapper, "wrapper_sha256"), (codex, "codex_sha256")):
+        expected = contract.get(field)
+        if not isinstance(expected, str) or not hmac.compare_digest(file_sha256(path), expected):
+            raise HostCommandError(f"wrapper contract executable pin mismatch: {field}")
+        pins.append((path, expected))
+    ownership = contract.get("model_ownership")
+    if ownership not in {"locked", "unlocked", "unknown"}:
+        raise HostCommandError("invalid wrapper model ownership")
+    return (tuple([*materialized, "--", codex]), argv[boundary + 2:], codex,
+            tuple(pins), hashlib.sha256(_canonical_contract(contract).encode()).hexdigest(),
+            tuple(placeholders), ownership, contract["model_evidence"])
+
+
+def normalize_host_argv(argv, source, executable=None, wrapper_contract=None,
+                        environ=None, capability_approvals=()):
     if not argv or not all(isinstance(v, str) and v for v in argv):
         raise HostCommandError("host argv must be a non-empty string array")
-    exe = canonical_executable(executable or argv[0])
+    argv = list(argv)
+    if "--" in argv or wrapper_contract is not None:
+        if executable is not None:
+            raise HostCommandError("wrapper discovery cannot override executable identity")
+        (prefix, child_args, exe, pins, contract_hash, placeholders,
+         wrapper_ownership, wrapper_evidence) = _wrapper_prefix(
+            argv, wrapper_contract, environ)
+        args = list(child_args)
+    else:
+        exe = canonical_executable(executable or argv[0])
+        prefix, pins, contract_hash, placeholders = (exe,), ((exe, file_sha256(exe)),), "", ()
+        wrapper_ownership, wrapper_evidence = "", ""
+        args = list(argv[1:])
     root_args, exec_args = [], []
-    args = list(argv[1:])
+    dangerous_args, argv_model = [], ""
+    approvals = set(capability_approvals)
     in_exec = False
     prompt_seen = False
     i = 0
@@ -120,6 +284,12 @@ def normalize_host_argv(argv, source, executable=None):
         if token == "--" or token == "-":
             raise HostCommandError(f"unsupported host argument: {token}")
         name, equals_value = _split_option(token)
+        if name in DANGEROUS_ZERO:
+            if equals_value is not None:
+                raise HostCommandError(f"flag does not take a value: {name}")
+            if name not in approvals:
+                raise HostCommandError(f"dangerous host capability not approved: {name}")
+            dangerous_args.append(name); i += 1; continue
         if name in ZERO_INHERIT:
             if equals_value is not None:
                 raise HostCommandError(f"flag does not take a value: {name}")
@@ -143,6 +313,10 @@ def normalize_host_argv(argv, source, executable=None):
                 root_args.extend([name, value])
             elif name in ONE_INHERIT:
                 exec_args.extend([name, value])
+            elif name in ("-m", "--model"):
+                if argv_model:
+                    raise HostCommandError("multiple host model flags")
+                argv_model = value
             continue
         if name == "--image" or name == "-i":
             raise HostCommandError("image-bearing host commands cannot be inherited")
@@ -153,7 +327,12 @@ def normalize_host_argv(argv, source, executable=None):
         if prompt_seen or i != len(args) - 1:
             raise HostCommandError("exec host command has ambiguous positional arguments")
         prompt_seen = True; i += 1
-    return InvocationSpec(exe, tuple(root_args), tuple(exec_args), source, tuple(argv))
+    return InvocationSpec(
+        exe, tuple(root_args), tuple(exec_args), source, tuple(argv),
+        launch_prefix=prefix, argv_model=argv_model, executable_pins=pins,
+        wrapper_contract_hash=contract_hash, secret_placeholders=placeholders,
+        dangerous_args=tuple(dangerous_args), wrapper_model_ownership=wrapper_ownership,
+        wrapper_model_evidence=wrapper_evidence)
 
 
 def _linux_snapshot(pid, proc_root="/proc"):
@@ -238,7 +417,8 @@ def _darwin_snapshot(pid):
     return ProcessSnapshot(pid, ppid1, executable, argv, start1)
 
 
-def discover_host(start_pid=None, platform=None, snapshot_reader=None):
+def discover_host(start_pid=None, platform=None, snapshot_reader=None,
+                  wrapper_contract=None, environ=None, capability_approvals=()):
     platform = platform or sys.platform
     reader = snapshot_reader
     if reader is None:
@@ -254,38 +434,64 @@ def discover_host(start_pid=None, platform=None, snapshot_reader=None):
         seen.add(pid)
         snap = reader(pid)
         try:
-            invoked_exe = canonical_executable(snap.argv[0])
+            invoked_exe = canonical_executable(snap.argv[0], require_codex=False)
             same_binary = os.path.samefile(invoked_exe, snap.executable)
         except (HostCommandError, OSError):
             same_binary = False
-        if same_binary:
+        if same_binary and os.path.basename(snap.argv[0]) == "codex":
             return normalize_host_argv(
                 snap.argv, "linux-procfs" if platform.startswith("linux")
-                else "macos-kern-procargs2", executable=invoked_exe)
+                else "macos-kern-procargs2")
+        if same_binary and wrapper_contract is not None:
+            try:
+                return normalize_host_argv(
+                    snap.argv, "linux-procfs" if platform.startswith("linux")
+                    else "macos-kern-procargs2", wrapper_contract=wrapper_contract,
+                    environ=environ, capability_approvals=capability_approvals)
+            except HostCommandError:
+                pass
         pid = snap.ppid
     raise HostCommandError("no reliable Codex process found in ancestor chain")
 
 
 def resolve_invocation(template=None, environ=None, start_pid=None,
-                       platform=None, snapshot_reader=None):
+                       platform=None, snapshot_reader=None, wrapper_contract=None,
+                       capability_approvals=(), allow_unsafe_template=False,
+                       legacy_model_policy="tiered"):
     env = os.environ if environ is None else environ
     if template is not None:
-        for required in ("{model}", "{cwd}", "{out}"):
+        # Supplying the separately named template input is the legacy unsafe
+        # opt-in. The resulting invocation remains permanently unverified.
+        required_fields = ["{cwd}", "{out}"]
+        if legacy_model_policy == "tiered":
+            required_fields.append("{model}")
+        elif legacy_model_policy != "inherited":
+            raise HostCommandError("legacy template has invalid model policy")
+        for required in required_fields:
             if required not in template:
                 raise HostCommandError(f"legacy template missing placeholder: {required}")
         tokens = shlex.split(template)
         if not tokens:
             raise HostCommandError("legacy template is empty")
         exe = canonical_executable(tokens[0], require_codex=False)
-        return InvocationSpec(exe, (), (), "legacy-template", tuple(tokens), template)
+        return InvocationSpec(exe, (), (), "legacy-template", tuple(tokens), template,
+                              verified=False)
     raw = env.get("MEGASTORM_CODEX_COMMAND")
     if raw is not None:
         try:
             argv = json.loads(raw)
         except ValueError as exc:
             raise HostCommandError("MEGASTORM_CODEX_COMMAND is not valid JSON") from exc
-        return normalize_host_argv(argv, "environment")
-    return discover_host(start_pid, platform, snapshot_reader)
+        contract = wrapper_contract
+        if contract is None and env.get("MEGASTORM_CODEX_WRAPPER_CONTRACT"):
+            try:
+                contract = json.loads(env["MEGASTORM_CODEX_WRAPPER_CONTRACT"])
+            except ValueError as exc:
+                raise HostCommandError("wrapper contract is not valid JSON") from exc
+        return normalize_host_argv(argv, "environment", wrapper_contract=contract,
+                                   environ=env, capability_approvals=capability_approvals)
+    return discover_host(start_pid, platform, snapshot_reader, wrapper_contract,
+                         env, capability_approvals)
 
 
 def _redact_url(value):

@@ -50,6 +50,12 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 
 from host_command import HostCommandError, resolve_invocation
+from artifact_gateway import ArtifactViolation, admit_artifacts, git_changes
+from candidate_integration import (CASConflict, CandidateIntegrationError, Check,
+                                   admit_candidate, recover_intent)
+from output_channel import (OutputChannelError, build_output_flags, cleanup,
+                            parse_result, prepare_result_channel, provenance)
+from model_policy import (ModelPolicyError, ModelSource, validate_policy_artifact)
 
 SOFT_RETRY_BUDGET = 2  # initial attempt + at most 2 retries = 3 dispatches total
 INFRA_RETRY_BUDGET = 2  # initial attempt + two infrastructure redispatches
@@ -129,16 +135,37 @@ class CodexRunner:
     the model tiers)."""
 
     def __init__(self, invocation=None, template=None, timeout=DEFAULT_AGENT_TIMEOUT,
-                 allow_env=(), environ=None):
+                 allow_env=(), environ=None, run_id="standalone", model_policy="tiered",
+                 codex_version="unknown", result_root=None):
         self.invocation = invocation or resolve_invocation(template=template, environ=environ)
         self.timeout = timeout
+        self.run_id = run_id
+        self.model_policy = model_policy
+        self.codex_version = codex_version
+        self.result_root = pathlib.Path(result_root or tempfile.mkdtemp(prefix="megastorm-results-"))
         keys = BASE_ENV_KEYS | set(allow_env)
         self.env = {key: value for key, value in os.environ.items() if key in keys}
 
-    def run(self, prompt, model, cwd):
-        with tempfile.NamedTemporaryFile("r", suffix=".txt", delete=False) as f:
-            out_path = f.name
-        cmd = self.invocation.build(model, cwd, out_path, prompt)
+    def run(self, prompt, model, cwd, *, role="executor", task_id="standalone",
+            attempt_id=None, diff_base=None):
+        if not self.invocation.verified:
+            with tempfile.NamedTemporaryFile("r", suffix=".txt", delete=False) as handle:
+                out_path = handle.name
+            cmd = self.invocation.build(model, cwd, out_path, prompt,
+                                        model_policy=self.model_policy)
+            return self._communicate_legacy(cmd, out_path)
+        attempt_id = attempt_id or str(uuid.uuid4())
+        channel = prepare_result_channel(
+            self.result_root, run_id=self.run_id, task_id=task_id,
+            attempt_id=attempt_id, role=role, codex_version=self.codex_version)
+        flags = build_output_flags(channel)
+        identity = json.dumps({"run_id": self.run_id, "task_id": task_id,
+                               "attempt_id": attempt_id, "role": role},
+                              ensure_ascii=False)
+        bound_prompt = (prompt + "\n\n## Runner-owned output identity\nUse these exact "
+                        f"identity values in the schema-bound result: {identity}")
+        cmd = self.invocation.build(model, cwd, channel.result_path, bound_prompt,
+                                    model_policy=self.model_policy, output_flags=flags)
         # stdin MUST be closed: codex exec blocks on "Reading additional input
         # from stdin..." forever when handed an open pipe with no data.
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -155,20 +182,58 @@ class CodexRunner:
                 stdout, stderr = proc.communicate()
             raise InfrastructureFailure(f"codex exec timed out after {self.timeout}s") from exc
         try:
-            last = open(out_path).read().strip()
+            actual = None
+            if role == "executor":
+                if not diff_base:
+                    raise InfrastructureFailure("executor dispatch lacks a frozen diff base")
+                changes = git_changes(cwd, diff_base)
+                actual = sorted({c.path for c in changes} |
+                                {c.source for c in changes if c.source})
+            value = parse_result(channel, actual_diff=actual, stdout=stdout, stderr=stderr)
+            value["_channel_provenance"] = provenance(channel)
+            if proc.returncode != 0 and value.get("outcome") != "infrastructure_failure":
+                raise InfrastructureFailure(
+                    f"codex exec failed (exit {proc.returncode}): {stderr[-500:]}")
+            return value
+        except OutputChannelError as exc:
+            raise InfrastructureFailure(f"invalid structured Codex result: {exc}") from exc
+        finally:
+            cleanup(channel)
+
+    def _communicate_legacy(self, cmd, out_path):
+        """Explicit unsafe-template compatibility; never used by verified execution."""
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                text=True, stdin=subprocess.DEVNULL,
+                                start_new_session=True, env=self.env)
+        try:
+            stdout, stderr = proc.communicate(timeout=self.timeout)
+        except subprocess.TimeoutExpired as exc:
+            os.killpg(proc.pid, signal.SIGTERM)
+            raise InfrastructureFailure(
+                f"legacy agent timed out after {self.timeout}s") from exc
+        try:
+            last = pathlib.Path(out_path).read_text().strip()
         except OSError:
             last = ""
+        pathlib.Path(out_path).unlink(missing_ok=True)
         if not last:
             last = stdout.strip()
         if proc.returncode != 0 and not last:
             raise InfrastructureFailure(
-                f"codex exec failed (exit {proc.returncode}): {stderr[-500:]}")
+                f"legacy agent failed (exit {proc.returncode}): {stderr[-500:]}")
         return last
 
 
 # ---------- single-task execute + supervise loop ----------
 
-def run_task(task, runner, models, cwd, prompts_dir, log=print):
+def _agent_call(runner, prompt, model, cwd, role, task_id, attempt_id, diff_base=None):
+    if isinstance(runner, CodexRunner):
+        return runner.run(prompt, model, cwd, role=role, task_id=task_id,
+                          attempt_id=attempt_id, diff_base=diff_base)
+    return runner.run(prompt, model, cwd)
+
+
+def run_task(task, runner, models, cwd, prompts_dir, log=print, artifact_gate=None):
     """Execute one task with adversarial supervision and the soft-retry budget.
     Returns {task_id, status: 'done'|'escalate', retries, verdict?, reason?}."""
     tid = task["id"]
@@ -178,7 +243,10 @@ def run_task(task, runner, models, cwd, prompts_dir, log=print):
     while True:
         log(f"[{tid}] executor attempt {retries + 1} (model={models['bulk']})")
         try:
-            runner.run(build_executor_prompt(prompts_dir, task, feedback), models["bulk"], cwd)
+            diff_base = _git(["rev-parse", "HEAD"], cwd).stdout.strip()
+            executor = _agent_call(
+                runner, build_executor_prompt(prompts_dir, task, feedback), models["bulk"],
+                cwd, "executor", tid, f"executor-{retries}-{infra_retries}", diff_base)
         except (InfrastructureFailure, OSError, subprocess.SubprocessError) as exc:
             if infra_retries >= INFRA_RETRY_BUDGET:
                 return {"task_id": tid, "status": "escalate", "retries": retries,
@@ -187,11 +255,45 @@ def run_task(task, runner, models, cwd, prompts_dir, log=print):
             infra_retries += 1
             log(f"[{tid}] infrastructure retry {infra_retries}: {exc}")
             continue
+        if isinstance(executor, dict):
+            outcome = executor["outcome"]
+            if outcome == "needs_replan":
+                return {"task_id": tid, "status": "needs_replan", "retries": retries,
+                        "infra_retries": infra_retries, "reason": executor["summary"]}
+            if outcome == "infrastructure_failure":
+                if infra_retries >= INFRA_RETRY_BUDGET:
+                    return {"task_id": tid, "status": "escalate", "retries": retries,
+                            "infra_retries": infra_retries,
+                            "failure_kind": "infrastructure", "reason": executor["summary"]}
+                infra_retries += 1
+                continue
+            if outcome == "business_reject":
+                feedback = executor["summary"]
+                if retries >= SOFT_RETRY_BUDGET:
+                    return {"task_id": tid, "status": "escalate", "retries": retries,
+                            "infra_retries": infra_retries, "failure_kind": "business",
+                            "reason": executor["summary"]}
+                retries += 1
+                continue
+            if outcome == "reality_gated":
+                return {"task_id": tid, "status": "reality_gated", "retries": retries,
+                        "infra_retries": infra_retries, "reason": executor["summary"],
+                        "runbook_ptr": task.get("runbook_ptr")}
+        pre_admission = None
+        if artifact_gate is not None:
+            try:
+                pre_admission = artifact_gate(diff_base)
+            except ArtifactViolation as exc:
+                return {"task_id": tid, "status": "escalate", "retries": retries,
+                        "infra_retries": infra_retries, "failure_kind": "artifact",
+                        "reason": str(exc)}
         log(f"[{tid}] supervisor verify (model={models['verify']}, fresh context)")
         verdict = None
         for _ in range(2):  # one re-ask on unparseable output
             try:
-                raw = runner.run(build_supervisor_prompt(prompts_dir, task), models["verify"], cwd)
+                raw = _agent_call(
+                    runner, build_supervisor_prompt(prompts_dir, task), models["verify"], cwd,
+                    "supervisor", tid, f"supervisor-{retries}-{infra_retries}")
             except (InfrastructureFailure, OSError, subprocess.SubprocessError) as exc:
                 if infra_retries >= INFRA_RETRY_BUDGET:
                     return {"task_id": tid, "status": "escalate", "retries": retries,
@@ -201,7 +303,17 @@ def run_task(task, runner, models, cwd, prompts_dir, log=print):
                 log(f"[{tid}] infrastructure retry {infra_retries}: {exc}")
                 verdict = "retry-infrastructure"
                 break
-            verdict = parse_verdict(raw)
+            if isinstance(raw, dict):
+                verdict = {
+                    "done": raw["verdict"] == "confirmed",
+                    "rerun_exit_code": raw["rerun_exit_code"],
+                    "evidence": raw["evidence"],
+                    "vacuous": raw["vacuous"],
+                    "reality_gated": raw["reality_gated"],
+                    "refutation": raw["summary"],
+                }
+            else:
+                verdict = parse_verdict(raw)
             if verdict is not None:
                 break
         if verdict == "retry-infrastructure":
@@ -210,6 +322,17 @@ def run_task(task, runner, models, cwd, prompts_dir, log=print):
             return {"task_id": tid, "status": "escalate", "retries": retries,
                     "infra_retries": infra_retries,
                     "reason": "supervisor verdict unparseable twice"}
+        if artifact_gate is not None:
+            try:
+                post_admission = artifact_gate(diff_base)
+            except ArtifactViolation as exc:
+                return {"task_id": tid, "status": "escalate", "retries": retries,
+                        "infra_retries": infra_retries, "failure_kind": "artifact",
+                        "reason": f"post-supervisor artifact violation: {exc}"}
+            if post_admission != pre_admission:
+                return {"task_id": tid, "status": "escalate", "retries": retries,
+                        "infra_retries": infra_retries, "failure_kind": "artifact",
+                        "reason": "supervisor mutated admitted worker artifacts"}
         if verdict.get("done") is True:
             return {"task_id": tid, "status": "done", "retries": retries,
                     "infra_retries": infra_retries, "verdict": verdict}
@@ -271,7 +394,8 @@ def undeclared_paths(actual, declared):
 
 
 def run_task_in_worktree(task, runner, models, root, prompts_dir, merge_lock, log=print,
-                         branch_prefix="megastorm", enforce_paths=False):
+                         branch_prefix="megastorm", enforce_paths=False,
+                         control_hashes=None, integration_ref=None, event_log=None):
     """Isolate one file-colliding task in its own worktree; merge back only
     after the supervisor confirms done. Merge conflicts escalate to the human."""
     tid = task["id"]
@@ -287,12 +411,32 @@ def run_task_in_worktree(task, runner, models, root, prompts_dir, merge_lock, lo
                 "reason": f"worktree add failed: {r.stderr.strip()[-300:]}"}
     try:
         base = _git(["rev-parse", "HEAD"], wt).stdout.strip()
-        result = run_task(task, runner, models, wt, prompts_dir, log)
+        contract = task.get("artifact_contract")
+        admission = {}
+
+        def artifact_gate(frozen_base):
+            if contract is None:
+                if enforce_paths:
+                    raise ArtifactViolation("verified task lacks artifact_contract")
+                return
+            if contract.get("task_id") != tid:
+                raise ArtifactViolation("artifact_contract task_id mismatch")
+            changes = git_changes(wt, frozen_base)
+            evidence = admit_artifacts(
+                wt, contract, changes, task.get("acceptance_cmd", ""),
+                control_hashes or {})
+            admission.clear(); admission.update(evidence)
+            return evidence
+
+        result = run_task(task, runner, models, wt, prompts_dir, log,
+                          artifact_gate=artifact_gate)
         if result["status"] not in ("done", "reality_gated"):
             return result
         actual = changed_paths(wt, base)
         outside = undeclared_paths(actual, task.get("touched_paths", []))
         result["actual_touched_paths"] = actual
+        if admission:
+            result["artifact_admission"] = admission
         if enforce_paths and outside:
             return {"task_id": tid, "status": "escalate",
                     "retries": result.get("retries", 0),
@@ -307,14 +451,43 @@ def run_task_in_worktree(task, runner, models, root, prompts_dir, merge_lock, lo
             return {"task_id": tid, "status": "escalate",
                     "retries": result.get("retries", 0), "failure_kind": "git",
                     "reason": f"cannot write confirmation marker: {marked.stderr.strip()}"}
-        with merge_lock:  # integration-worktree index/HEAD ops must serialize
-            safety_commit(root, f"megastorm: main-tree snapshot before merging {tid}")
-            m = _git(["merge", "--no-ff", "--no-edit", branch], root)
-            if m.returncode != 0:
-                _git(["merge", "--abort"], root)
-                detail = (m.stderr.strip() + " " + m.stdout.strip()).strip()
-                return {"task_id": tid, "status": "escalate", "retries": result["retries"],
-                        "reason": f"merge conflict on {branch}: {detail[-300:]}"}
+        with merge_lock:  # integration ref publication and worktree reset serialize
+            safety_commit(root, f"megastorm: integration snapshot before admitting {tid}")
+            expected = _git(["rev-parse", "HEAD"], root).stdout.strip()
+            task_commit = _git(["rev-parse", "HEAD"], wt).stdout.strip()
+            if integration_ref and event_log and contract:
+                try:
+                    admitted = admit_candidate(
+                        repo=root, integration_ref=integration_ref,
+                        expected_integration_commit=expected, task_commit=task_commit,
+                        task_base_commit=base,
+                        task_id=tid, transaction_id=str(uuid.uuid4()),
+                        contract_hash=admission["contract_sha256"],
+                        post_merge_validator=lambda candidate_root, candidate_base:
+                            admit_artifacts(
+                                candidate_root, contract,
+                                git_changes(candidate_root, candidate_base),
+                                task.get("acceptance_cmd", ""), control_hashes or {}),
+                        post_merge_checks=(Check("acceptance", (
+                            "/bin/sh", "-lc", task["acceptance_cmd"])),),
+                        event_writer=lambda kind, payload: event_log.append(kind, **payload))
+                    reset = _git(["reset", "--hard", admitted.integration_commit], root)
+                    if reset.returncode != 0:
+                        raise CandidateIntegrationError(
+                            f"published integration ref but worktree reset failed: {reset.stderr}")
+                    result["candidate_admission"] = dict(admitted.evidence)
+                except (CandidateIntegrationError, CASConflict) as exc:
+                    return {"task_id": tid, "status": "escalate",
+                            "retries": result["retries"], "failure_kind": "integration",
+                            "reason": str(exc), "evidence": getattr(exc, "evidence", {})}
+            else:
+                m = _git(["merge", "--no-ff", "--no-edit", branch], root)
+                if m.returncode != 0:
+                    _git(["merge", "--abort"], root)
+                    detail = (m.stderr.strip() + " " + m.stdout.strip()).strip()
+                    return {"task_id": tid, "status": "escalate",
+                            "retries": result["retries"],
+                            "reason": f"merge conflict on {branch}: {detail[-300:]}"}
         return result
     finally:
         _git(["worktree", "remove", "--force", wt], root)
@@ -403,7 +576,9 @@ def schedule(effective_deps, isolate_groups, resource_groups, tasks_by_id,
                 escalations.append(res)
                 _propagate_skip(tid)
                 if on_event:
-                    on_event("task_terminal", task_id=tid, status="escalated", result=res)
+                    terminal = ("needs_replan" if res["status"] == "needs_replan"
+                                else "escalated")
+                    on_event("task_terminal", task_id=tid, status=terminal, result=res)
             if on_progress:
                 on_progress(set(completed))
             cond.notify_all()
@@ -565,6 +740,49 @@ def recover_confirmed_from_git(integration, baseline, task_ids):
     return recovered
 
 
+def pending_merge_intents(path, run_id):
+    """Return durable intents lacking a matching durable completion event."""
+    intents, completed = {}, set()
+    try:
+        lines = pathlib.Path(path).read_text().splitlines()
+    except OSError:
+        return []
+    for line in lines:
+        event = json.loads(line)
+        if event.get("run_id") != run_id:
+            continue
+        payload = event.get("payload", {})
+        key = (payload.get("task_id"), payload.get("transaction_id"),
+               payload.get("candidate_commit"))
+        if event.get("type") == "merge-intent":
+            intents[key] = payload
+        elif event.get("type") == "merge-complete":
+            completed.add(key)
+    return [intent for key, intent in intents.items() if key not in completed]
+
+
+def frozen_repo_controls(root, paths):
+    """Hash tracked control inputs that are present in every task worktree."""
+    root = pathlib.Path(root).resolve()
+    controls = {}
+    for raw in paths:
+        if not raw:
+            continue
+        path = pathlib.Path(raw).resolve()
+        candidates = sorted(path.rglob("*")) if path.is_dir() else [path]
+        for candidate in candidates:
+            if not candidate.is_file():
+                continue
+            try:
+                rel = candidate.relative_to(root).as_posix()
+            except ValueError:
+                continue
+            tracked = _git(["ls-files", "--error-unmatch", "--", rel], root)
+            if tracked.returncode == 0:
+                controls[rel] = hashlib.sha256(candidate.read_bytes()).hexdigest()
+    return controls
+
+
 def main(argv):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("orchestration")
@@ -592,6 +810,14 @@ def main(argv):
                          "isolates every writer and never writes the user's main tree")
     ap.add_argument("--codex-template", default=None,
                     help="explicit legacy override; default inherits the current Codex host argv")
+    ap.add_argument("--wrapper-contract",
+                    help="versioned replay contract for a custom Codex wrapper")
+    ap.add_argument("--model-policy-artifact",
+                    help="human-confirmed Phase 0 inherited/tiered policy artifact")
+    ap.add_argument("--model-sources",
+                    help="current model-source evidence used to detect drift")
+    ap.add_argument("--policy-key-file",
+                    help="0600 HMAC key used to bind the policy to host argv")
     ap.add_argument("--dry-run", action="store_true",
                     help="print the schedule without invoking codex")
     args = ap.parse_args(argv[1:])
@@ -619,10 +845,54 @@ def main(argv):
         sys.exit(f"target is not a readable git repository: {user_status.stderr.strip()}")
     user_dirty_fingerprint = hashlib.sha256(user_status.stdout.encode()).hexdigest()
     try:
-        invocation = resolve_invocation(template=args.codex_template)
+        wrapper_contract = (json.loads(pathlib.Path(args.wrapper_contract).read_text())
+                            if args.wrapper_contract else None)
+        invocation = resolve_invocation(template=args.codex_template,
+                                        wrapper_contract=wrapper_contract)
     except HostCommandError as exc:
         sys.exit(f"Codex host command preflight failed: {exc}")
     command_metadata = invocation.metadata()
+    if invocation.verified and (invocation.dangerous_args or
+                                "--add-dir" in invocation.exec_args):
+        sys.exit("verified workers reject sandbox-bypass and --add-dir host arguments; "
+                 "the runner enforces a non-relaxable worktree-only sandbox")
+    model_policy = "tiered"
+    policy_fingerprint = "legacy-unsafe"
+    version_result = subprocess.run([invocation.executable, "--version"],
+                                    capture_output=True, text=True, check=False)
+    codex_version = ((version_result.stdout or version_result.stderr).strip()
+                     if version_result.returncode == 0 else "")
+    if invocation.verified and not codex_version:
+        sys.exit("cannot determine Codex version for frozen policy")
+    if invocation.verified:
+        missing = [name for name, value in (
+            ("--model-policy-artifact", args.model_policy_artifact),
+            ("--model-sources", args.model_sources),
+            ("--policy-key-file", args.policy_key_file)) if not value]
+        if missing:
+            sys.exit("verified execution requires Phase 0 confirmation inputs: " +
+                     ", ".join(missing))
+        key_path = pathlib.Path(args.policy_key_file)
+        try:
+            if key_path.stat().st_mode & 0o077:
+                sys.exit("policy key file must have mode 0600")
+            artifact = json.loads(pathlib.Path(args.model_policy_artifact).read_text())
+            sources = [ModelSource(item["name"], item["status"], item["evidence"],
+                                   tuple(item.get("paths", ())))
+                       for item in json.loads(pathlib.Path(args.model_sources).read_text())]
+            validated = validate_policy_artifact(
+                artifact, invocation, sources, key_path.read_bytes(),
+                codex_version=codex_version)
+        except (OSError, ValueError, KeyError, ModelPolicyError) as exc:
+            sys.exit(f"model policy preflight failed: {exc}")
+        model_policy = validated["model_policy"]
+        policy_fingerprint = validated["fingerprint"]
+        if model_policy == "tiered":
+            models = {key.lower(): value for key, value in
+                      validated["model_mappings"].items()}
+        else:
+            models = {"think": "<host-owned>", "verify": "<host-owned>",
+                      "bulk": "<host-owned>"}
 
     try:
         prior_state = json.loads(open(args.state).read())
@@ -630,7 +900,9 @@ def main(argv):
         prior_state = {}
     completed = set(prior_state.get("completed", []))
     run_id = prior_state.get("run_id") or str(uuid.uuid4())
-    fingerprint = input_fingerprint(tasks, orch, models, prompts_dir, command_metadata)
+    fingerprint = input_fingerprint(tasks, orch, models, prompts_dir,
+                                    {**command_metadata,
+                                     "model_policy_fingerprint": policy_fingerprint})
     old_fingerprint = prior_state.get("input_fingerprint")
     if completed and old_fingerprint != fingerprint:
         sys.exit("state input fingerprint differs — refusing to reuse stale confirmations; "
@@ -666,15 +938,31 @@ def main(argv):
     # run-owned integration worktree rather than the user's checked-out tree.
     integration_root, integration_ref, baseline_commit = prepare_integration_workspace(
         user_root, run_id, prior_state)
-    recovered = recover_confirmed_from_git(integration_root, baseline_commit, tasks_by_id)
-    completed.update(recovered)
+    def recovery_event_exists(kind, key):
+        return not any((intent["task_id"], intent["transaction_id"],
+                        intent["candidate_commit"]) == key
+                       for intent in pending_merge_intents(args.events, run_id))
+    recovered_results = {}
+    for intent in pending_merge_intents(args.events, run_id):
+        recovered = recover_intent(
+            repo=user_root, integration_ref=integration_ref, intent=intent,
+            event_writer=lambda kind, payload: events.append(kind, **payload),
+            event_exists=recovery_event_exists)
+        completed.add(recovered.task_id)
+        recovered_results[recovered.task_id] = "done"
+    integration_head = _git(["rev-parse", integration_ref], user_root).stdout.strip()
+    _git(["reset", "--hard", integration_head], integration_root)
     # Preserve original multi-task mutex groups while adding singleton groups so
     # every writer routes through task isolation. Replacing the original groups
     # would accidentally let same-file writers execute concurrently.
     isolate_groups = list(isolate_groups) + [[t["id"]] for t in tasks]
 
+    control_hashes = frozen_repo_controls(user_root, (
+        args.orchestration, args.tasks, args.models, args.prompts,
+        args.wrapper_contract, args.model_policy_artifact, args.model_sources))
     runner = CodexRunner(invocation=invocation, timeout=args.agent_timeout,
-                         allow_env=args.allow_env)
+                         allow_env=args.allow_env, run_id=run_id,
+                         model_policy=model_policy, codex_version=codex_version or "legacy")
     merge_lock = threading.Lock()
 
     def run_free(task):
@@ -684,7 +972,9 @@ def main(argv):
     def run_isolated(task):
         result = run_task_in_worktree(
             task, runner, models, integration_root, prompts_dir, merge_lock,
-            branch_prefix=f"megastorm-{run_id[:8]}", enforce_paths=True)
+            branch_prefix=f"megastorm-{run_id[:8]}",
+            enforce_paths=invocation.verified, integration_ref=integration_ref,
+            event_log=events, control_hashes=control_hashes)
         if result["status"] in ("done", "reality_gated"):
             with merge_lock:
                 head = _git(["rev-parse", "HEAD"], integration_root)
@@ -718,7 +1008,9 @@ def main(argv):
                           "user_dirty_fingerprint": user_dirty_fingerprint,
                           "integration_ref": integration_ref,
                           "integration_path": str(integration_root),
-                          "host_command": command_metadata})
+                          "host_command": command_metadata,
+                          "model_policy": model_policy,
+                          "model_policy_fingerprint": policy_fingerprint})
 
     results, escalations, skipped = schedule(
         effective_deps, isolate_groups, resource_groups, tasks_by_id,
@@ -729,7 +1021,8 @@ def main(argv):
     current_ids = {r.get("task_id") for r in results}
     results = ([{"task_id": tid, "status": status, "retries": 0,
                  "recovered_from_git": True}
-                for tid, status in recovered.items() if tid not in current_ids] + results)
+                for tid, status in recovered_results.items()
+                if tid not in current_ids] + results)
     reality_gated = [r for r in results if r.get("status") == "reality_gated"]
     events.append("run_drained", completed=sorted(completed),
                   escalations=len(escalations), reality_gated=len(reality_gated),

@@ -28,6 +28,15 @@ hardware/physical I/O, and shared/external systems. Classify each `available`, `
 capability; mark that acceptance as a reality-gate candidate.
 
 ## Phase 0 — Decisions front-loaded (interactive)
+
+Freeze the discovered host command before dispatch. Direct Codex argv is inherited exactly;
+custom aliases/wrappers require a versioned replay-safe wrapper contract with an explicit `--`
+child boundary, executable hashes, fixed argument arity, secret placeholders, and model-ownership
+evidence. Present one confirmation: use `inherited` whenever any model source is locked or
+unknown; permit `tiered` only when wrapper, argv, profile, config, project/user config, and default
+are all positively proven unlocked. Persist the signed policy artifact and revalidate argv,
+executables, configs, profile and wrapper version on every run. `inherited` adds no `-m` unless
+the approved host argv already owns one. Use `python3`/`sys.executable`; never assume `python`.
 1. Analyze current state: repo structure, recent commits, docs. Summarize.
 2. Decompose the goal into M modules + boundaries + inter-module deps by running the
    **brainstorming skill** with the human (one question at a time, explore alternatives
@@ -129,7 +138,20 @@ The runner owns:
 - **Mutex discipline:** at most one in-flight task per `isolate_groups` and per
   `resource_groups` entry (file or shared-physical-resource collisions), members preferred
   in declaration order. Isolate-group members run in a per-task git worktree, merged back
-  only after the supervisor confirms.
+  only after the artifact gateway and supervisor confirm, and a post-merge candidate passes.
+
+- The worker plane is untrusted. It cannot modify DAG/tasks/models/prompts/runner/state/policy.
+  Every task carries a versioned operation-level `artifact_contract`; the runner compares the
+  executor envelope with the real Git diff, validates paths, links, control hashes and typed
+  interfaces, then supervises. A required contract change yields `needs_replan` and blocks the
+  affected subgraph.
+- The runner, not the host profile, owns the worker security envelope: CLI-precedence
+  `workspace-write`, empty configured writable roots, no ambient temp-directory writes, and no
+  network. Inherited sandbox flags, bypass flags, and host `--add-dir` are rejected/dropped. A
+  single runner-owned `--add-dir` exposes only the attempt's schema-bound result directory.
+- Integration is transactional: merge into a candidate ref/worktree, rerun post-merge checks,
+  durably record merge intent, CAS-publish the integration ref, durably record completion, then
+  release dependents. Conflicts or crashes never publish unchecked content.
 - **Separate retry ledgers:** business failures get initial + ≤2 soft retries;
   infrastructure failures retry separately and never burn that budget. Reality-gated
   environmental proof failure commits/merges implementation, enters a pending-proof ledger,

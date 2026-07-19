@@ -11,7 +11,7 @@ instead of testing the running reality.)
 
 ## Verify
 1. Rerun `acceptance_cmd` yourself. Capture the real exit code and stdout/stderr.
-2. `done` is true ONLY if exit code == 0 AND the output shows the task's behavior genuinely works
+2. `verdict:"confirmed"` is allowed ONLY if exit code == 0 AND the output shows the task's behavior genuinely works
    (not an empty/tautological pass).
 3. **Vacuous check (0-test vacuous pass).** If the rerun reports "No matching test
    cases were run", "no tests to run", "Executed 0 tests", or otherwise ran 0 tests, set
@@ -31,9 +31,9 @@ environment is unavailable, return `done:false,reality_gated:true` with the exac
 symptom. A compile error, assertion mismatch, wrong logic, or other locatable code defect is
 ordinary `done:false`; never set `reality_gated` for a non-reality-gate task.
 
-## Output (verdict schema)
-`{done, rerun_exit_code, evidence: "<real captured output>", refutation?, vacuous?, reality_gated?}`.
-On `done:false`, `refutation` says exactly what failed. Set `vacuous:true` specifically when the
-acceptance passed only because 0 tests ran (so the orchestrator re-injects the anti-vacuous
-instruction on the bounce). The orchestrator bounces the task back to the executor (shared
-soft-retry budget ≤2); still fake → escalate to the human.
+## Output (strict verdict schema)
+Write exactly one JSON object through the runner-owned output channel, with no extra keys/prose:
+`{"schema_version":1,"role":"supervisor","run_id":"<given>","task_id":"<given>","attempt_id":"<given>","verdict":"confirmed|rejected","summary":"non-empty","acceptance_executed":true,"rerun_exit_code":0,"evidence":"real captured evidence","acceptance_kind":"test|non_test|reality","executed_test_count":1,"vacuous":false,"reality_gated":false}`.
+For non-test acceptance, `executed_test_count` is `null`. A confirmed test requires at least one
+executed test. A reality-gated result is rejected, never confirmed. Stdout/stderr and narrative
+are diagnostics only; only this schema-bound file is parsed.
