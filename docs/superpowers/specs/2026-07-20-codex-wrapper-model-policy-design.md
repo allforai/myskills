@@ -83,6 +83,17 @@ The contract contains:
 Both executables and the contract are checked before every child launch. A token,
 path, hash, version, or boundary mismatch fails closed.
 
+Secret-bearing fixed tokens use typed placeholders rather than serialized values,
+for example `{"kind":"env","name":"TEAM_TOKEN","sensitive":true}`. Contract
+matching compares every non-secret token byte-for-byte and requires every secret
+placeholder to have exactly one approved, non-empty environment source; missing,
+extra, renamed, or ambiguous substitutions fail. Immediately before launch the
+runner materializes argv only in memory, computes the per-run HMAC over that exact
+argv, compares it with the approved policy artifact, then discards the materialized
+copy after process creation. Every diagnostic, exception, metadata record, and
+process display operates on the placeholder/redacted representation, never the
+materialized value.
+
 Wrapper fixed arguments are accepted only from an explicit JSON argv override
 plus its matching contract. A lossless process snapshot must match that already
 approved contract byte-for-byte. Unknown, boundary-less, side-effectful, or
@@ -128,7 +139,8 @@ The pinned supported Codex CLI grammar is normative:
 | `-a/--ask-for-approval` | 1 | before `exec` | inherit |
 | `--search` | 0 | before `exec` | inherit |
 | `-c/--config`, `--enable`, `--disable`, `-p/--profile`, `--local-provider`, `-s/--sandbox`, `--add-dir` | 1 | after `exec` | inherit, preserve order |
-| `--oss`, `--strict-config`, `--dangerously-bypass-approvals-and-sandbox`, `--dangerously-bypass-hook-trust`, `--skip-git-repo-check`, `--ignore-user-config`, `--ignore-rules` | 0 | after `exec` | inherit |
+| `--oss`, `--strict-config` | 0 | after `exec` | inherit after effective-config validation |
+| `--dangerously-bypass-approvals-and-sandbox`, `--dangerously-bypass-hook-trust`, `--skip-git-repo-check`, `--ignore-user-config`, `--ignore-rules` | 0 | after `exec` | reject by default; capability-gated only |
 | `-m/--model` | 1 | after `exec` | keep exactly once for `inherited` when argv-owned; strip and replace for `tiered` |
 | `-C/--cd`, `-o/--output-last-message`, prompt | 1 | runner-owned | strip host value, append task value |
 | `--json`, `--ephemeral`, `--no-alt-screen` | 0 | runner-owned/transport | strip; append canonical form where required |
@@ -138,6 +150,16 @@ The pinned supported Codex CLI grammar is normative:
 Split and equals forms are normalized according to this table. Direct and
 post-wrapper Codex argv use the identical grammar. Command-shape fixtures are
 pinned to the supported Codex CLI version and prove semantic placement.
+
+Capability-gated flags require an exact Phase 0 declaration, risk disclosure,
+and explicit approval. Even then, the effective worker policy is the intersection
+of host restrictions and a runner-owned non-relaxable envelope: task-worktree-only
+writes, immutable control plane, closed stdin, bounded process lifetime, approved
+environment, and declared network/tool capabilities. Host flags may add denies but
+never weaken runner or managed denies. If the platform cannot enforce the
+intersection, execution stops. Tests begin from hostile host argv containing each
+bypass/ignore flag and prove it cannot escape task scope or mutate the control
+plane.
 
 ### Legacy template migration
 
@@ -227,11 +249,41 @@ executor's `touched_paths` report. Path escape, forbidden/control-plane change,
 undeclared output, missing required output, excessive file count, or changed
 acceptance hash rejects the artifact before the supervisor sees it.
 
+All paths are normalized from raw Git bytes to repository-relative POSIX paths:
+absolute paths, `..`, NUL, empty segments, and normalization outside the task
+worktree are invalid. Matching is case-sensitive regardless of the host filesystem
+and uses the frozen `pathspec`-style glob grammar documented with the task schema;
+literal paths remain literal. Allowed operation kinds are declared per rule from
+`create|modify|delete|rename`. A rename must admit both its source and destination
+and the `rename` operation. Directories are never admitted as a shortcut for
+undeclared descendants unless an explicit recursive glob is present. Generated and
+mechanical files must be declared by an explicit literal or glob.
+
+Symlinks are checked at every path component and at the final target; any resolved
+target outside the task worktree is rejected. Hardlinks to files outside the
+worktree/repository are rejected by device/inode policy. Submodules are read-only
+unless the task declares a separate controlled-repository contract with its own
+baseline/ref/touched paths. Case-fold collisions are rejected even on a
+case-sensitive host so results remain portable.
+
+`expected_interfaces` is replaced with typed `interface_assertions`. Each assertion
+names a schema version, kind, stable interface ID, artifact path, coordinator-owned
+verifier ID, and verifier content hash. Only the pinned deterministic verifier may
+admit it; an unknown kind/verifier or unextractable assertion rejects the task.
+
 ### Strict result channel
 
 Executor and supervisor use versioned JSON envelopes validated against strict
-schemas. The parser consumes the declared machine-output channel, not arbitrary
-terminal prose or a greedy final `{...}` span. It rejects:
+schemas. The exact supported channel is runner-owned
+`--output-schema <frozen-attempt-schema.json>` together with
+`--output-last-message <attempt-owned-result.json>`. The schema path/content hash,
+result path, role, run/task/attempt IDs, and supported Codex version are frozen
+before launch. The result path must not exist before dispatch, must be created as
+a regular file owned by the current attempt, and is opened without following
+symlinks. Stdout/stderr are bounded diagnostic transport only and can never supply
+the verdict. The output file must contain exactly one UTF-8 JSON value with no
+leading/trailing non-whitespace, partial second value, or trailing bytes. It is
+schema-validated before any semantic use. It rejects:
 
 - leading/trailing narrative in the machine result;
 - missing, extra-forbidden, or incorrectly typed fields;
@@ -246,6 +298,16 @@ Valid executor terminal outcomes are `complete`, `business_reject`,
 supervisor can return `confirmed` or `rejected`; neither process can mutate DAG
 state directly.
 
+The child command therefore always appends both runner-owned output flags:
+
+```text
+--output-schema <attempt-owned-frozen-schema>
+--output-last-message <attempt-owned-new-result-file>
+```
+
+An inherited value for either flag is stripped. Channel and schema fixtures are
+verified against the pinned Codex CLI version.
+
 ### Transactional admission
 
 A task advances the DAG only after all gates succeed:
@@ -255,13 +317,21 @@ A task advances the DAG only after all gates succeed:
 3. fresh supervisor reruns the frozen acceptance command and inspects the real
    worktree/diff without executor narrative;
 4. task commit contains exactly the admitted artifact;
-5. CAS merge into the integration ref succeeds;
-6. post-merge integration checks validate the affected interfaces and acceptance
-   smoke set.
+5. merge the task onto a task-specific candidate/staging ref rooted at the current
+   expected integration commit;
+6. run post-merge interface and acceptance smoke checks on a staging worktree;
+7. prepare and durably write the admission/merge-intent event containing expected
+   parent, candidate commit, contract hash, and check evidence;
+8. CAS-advance the integration ref from the expected parent to the checked
+   candidate, then durably write merge-complete;
+9. release dependents only after merge-complete is durable.
 
-Failure before merge leaves the integration ref unchanged. Failure after a
-tentative merge prevents publication and records an escalation/replan event;
-dependents are not released until the post-merge event is durable.
+Any failure before the final CAS leaves the integration ref unchanged. A CAS
+conflict discards/quarantines the candidate and requires rebasing/rechecking from
+the new expected integration commit; it never force-moves or rolls back a shared
+ref. Recovery may replay a prepared intent only when expected parent, candidate,
+contract hash, and evidence match. Thus the integration ref never contains a
+failed admission.
 
 ## Failure behavior
 
@@ -318,9 +388,17 @@ unavailable.
 - Strict-channel fixtures cover narrative-wrapped JSON, greedy-brace payloads,
   unknown outcomes, identity mismatch, fake evidence, zero-test acceptance, and
   executor/supervisor disagreement.
+- Output-channel fixtures cover pre-existing result paths, symlinks, multiple JSON
+  values, partial writes, wrong ownership/attempt identity, changed schema hashes,
+  and stdout-only fake verdicts.
+- Path-contract fixtures cover POSIX normalization, case-fold collision,
+  create/modify/delete/rename, both rename endpoints, recursive versus literal
+  directories, generated files, hardlinks, symlinks, and submodules.
 - A `needs_replan` fixture proves the affected subgraph stops and cannot resume
   until new independently reviewed fingerprints are supplied.
 - Post-merge failure prevents dependent release and publication.
+- Candidate-ref checks, CAS conflict/recheck, crash between intent/CAS/complete,
+  and recovery prove a failed candidate never enters the integration ref.
 - A macOS-style PATH fixture containing `python3` but no `python` passes all
   Megastorm-owned commands. A scoped repository check covers owned `.py`, shell,
   Markdown, generated commands, and subprocess argv while explicitly excluding
