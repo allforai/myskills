@@ -113,7 +113,8 @@ For `tiered`:
 ```text
 <verified launch chain> <root args> exec <safe exec args>
   --ephemeral -m <task-tier-model> -C <worktree>
-  --output-last-message <path> <prompt>
+  --output-schema <frozen-attempt-schema.json>
+  --output-last-message <attempt-result.json> <prompt>
 ```
 
 For `inherited`:
@@ -121,12 +122,17 @@ For `inherited`:
 ```text
 <verified launch chain> <root args> exec <safe exec args>
   --ephemeral -C <worktree>
-  --output-last-message <path> <prompt>
+  --output-schema <frozen-attempt-schema.json>
+  --output-last-message <attempt-result.json> <prompt>
 ```
 
 If the inherited host model is represented by `-m/--model`, it remains exactly
 once in the correct Codex argument partition. If model ownership comes from a
 profile/config/wrapper, no model flag is synthesized.
+
+These are the canonical constructions and include the strict-channel contract
+defined below; it is not an alternative command form. Stdout and stderr are
+bounded diagnostic-only streams and never supply task status or a verdict.
 
 The implementation constructs argv arrays and never evaluates a shell string.
 
@@ -233,12 +239,25 @@ Each frozen task includes a coordinator-authored contract:
 
 ```json
 {
+  "schema_version": 1,
   "task_id": "T-auth-01",
-  "allowed_paths": ["src/auth/**", "tests/auth/**"],
+  "path_rules": [
+    {"pattern": "src/auth/**", "kind": "glob", "operations": ["create", "modify", "delete", "rename"]},
+    {"pattern": "tests/auth/**", "kind": "glob", "operations": ["create", "modify", "delete", "rename"]}
+  ],
   "required_outputs": ["src/auth/service.py"],
   "forbidden_paths": ["orchestration.json", ".megastorm/**"],
   "acceptance_cmd_sha256": "...",
-  "expected_interfaces": ["api:createSession"],
+  "interface_assertions": [
+    {
+      "schema_version": 1,
+      "kind": "api",
+      "interface_id": "api:createSession",
+      "artifact_path": "schemas/auth-api.json",
+      "verifier_id": "openapi-contract-v1",
+      "verifier_sha256": "..."
+    }
+  ],
   "max_files_changed": 12
 }
 ```
@@ -270,6 +289,8 @@ case-sensitive host so results remain portable.
 names a schema version, kind, stable interface ID, artifact path, coordinator-owned
 verifier ID, and verifier content hash. Only the pinned deterministic verifier may
 admit it; an unknown kind/verifier or unextractable assertion rejects the task.
+Legacy `expected_interfaces` and operation-less `allowed_paths` entries fail schema
+validation; the runner never infers path operations or upgrades them implicitly.
 
 ### Strict result channel
 
