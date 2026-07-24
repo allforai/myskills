@@ -1,4 +1,4 @@
-# AGENTS.md — megastorm (Codex port, v0.16.0)
+# AGENTS.md — megastorm (Codex port, v0.17.0)
 
 > Drive a large goal end-to-end: decompose into modules, front-load every human
 > decision, then autonomously design → validate (closed-loop) → plan → reverse-review

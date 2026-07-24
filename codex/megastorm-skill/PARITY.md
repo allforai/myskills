@@ -1,4 +1,4 @@
-# Claude v0.16.0 → Codex capability parity
+# Claude v0.17.0 → Codex capability parity
 
 | Capability | Codex implementation |
 |---|---|
@@ -15,6 +15,7 @@
 | Reality/completeness final accounting | runner report + Phase 2 playbook |
 | Independent Cross-exam | `codex/cross-exam-skill/` |
 | Evidence renderer and open threads | Cross-exam protocol/scripts |
+| Progressive-disclosure entry | `SKILL.md` + `execution-playbook.md` |
 
 Claude Workflow APIs, plugin manifests, and slash commands are intentionally replaced by
 Codex skills, `codex exec`, Python orchestration, and Codex fresh-context agents.

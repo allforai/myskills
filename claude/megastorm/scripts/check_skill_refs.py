@@ -6,6 +6,7 @@ import sys
 
 # The files skills/megastorm.md references via $ROOT/...
 REQUIRED = [
+    "knowledge/execution-playbook.md",
     "knowledge/schemas.md",
     "knowledge/prompts/design-agent.md",
     "knowledge/prompts/plan-agent.md",

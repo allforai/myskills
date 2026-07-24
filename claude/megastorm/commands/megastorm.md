@@ -9,4 +9,5 @@ arguments:
 
 Invoke the megastorm skill to run the full large-goal pipeline for: $ARGUMENTS
 
-> Read ${CLAUDE_PLUGIN_ROOT}/skills/megastorm.md and follow its protocol, starting at Phase -1 (preflight).
+> Read ${CLAUDE_PLUGIN_ROOT}/skills/megastorm.md and follow its entry-state selection. A new run
+> starts at Phase -1; an existing valid run resumes at its first incomplete gate.
