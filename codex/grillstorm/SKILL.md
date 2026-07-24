@@ -1,0 +1,399 @@
+---
+name: grillstorm
+description: Adaptive, self-contained end-to-end software delivery pipeline that works backward from observable completion, routes small fixes through only the necessary Matt Pocock skill stages, and gives large goals intensive one-question-at-a-time grilling, module specs, interfaces, and test seams. It runs local and global spec closure, reuses or extracts justified modules before consumers, runs local and reverse task closure, simulates the workflow, then performs worktree-isolated concurrent coding, independent supervision, testing, diagnosis, review, repair, runtime validation, and commit. Also provides durable cross-machine handoff and resume modes. Use when the user explicitly invokes grillstorm, wants the complete scattered Grill workflow behind one entry point, wants to decide everything up front and approve one uninterrupted implementation run, or asks Grillstorm to hand off or resume work.
+---
+
+# Grillstorm
+
+Turn a large goal into decisions first, an execution contract second, and verified code last.
+
+**Invariant:** discover facts -> grill and freeze all known human decisions -> one launch
+approval -> autonomously recommend and record unforeseen decisions -> implement, review,
+repair, and prove without interrupting the run.
+
+Resolve all linked files relative to this `SKILL.md`. This skill is self-contained and
+must not require external `grill-me`, `grilling`, `domain-modeling`, `to-spec`,
+`setup-matt-pocock-skills`, `to-tickets`, `implement`, `tdd`, `diagnosing-bugs`, or
+`code-review` skills.
+
+Read `references/upstream-flow.md` first. Its parity rules are binding: Grillstorm may
+sequence, repeat per module, persist, resume, and autonomously repair the original workflow,
+but must not replace an original stage with a different methodology.
+
+## Entry modes
+
+- **Run:** `$grillstorm <goal>` starts a new adaptively routed delivery run or resumes the
+  matching unfinished run.
+- **Handoff:** `$grillstorm handoff [next-session focus]` reads `references/handoff.md`,
+  writes a durable repository checkpoint, optionally updates the configured tracker when
+  authorized, reports its portability status, and stops. Use `$grillstorm handoff local`
+  only for a temporary same-machine handoff. Do not run setup, planning, or implementation
+  in either handoff mode.
+- **Resume from handoff:** `$grillstorm resume <handoff path>` reads the handoff in its
+  declared order, then follows its durable run pointers and resumes from `state.json`.
+  When source and target hosts differ, verify `execution-checkpoint.json`, create a fresh
+  target-host workflow state and model policy, and continue only from its confirmed
+  integration commit. The handoff is a context boundary, not a new source of truth.
+
+Use handoff when the user pauses, requests a fresh context, changes machine/agent/model, or
+the current session cannot safely finish the next work unit. Starting a fresh session is
+what releases conversation context; writing a handoff does not erase the current session.
+
+## Artifacts
+
+For the `program` route, create one resumable run at `docs/grillstorm/<goal-slug>/`:
+
+```text
+state.json
+decisions.md
+program-spec.md
+modules/<module-id>-spec.md
+tasks/catalog.md
+tasks/<module-id>.md
+tasks/workflow-tasks.json
+tasks/interfaces.json
+tasks/orchestration.json
+tasks/workflow-simulation.json
+launch-contract.md
+autonomous-decisions.md
+reviews/reuse-radar.md
+reviews/standards.md
+reviews/spec.md
+reviews/spec-grill.md
+reviews/spec-closure.md
+reviews/task-grill.md
+reviews/task-closure.md
+reviews/workflow-grill.md
+reviews/workflow-dry-run.md
+reviews/runtime.md
+workflow-state.json
+workflow-events.jsonl
+workflow-report.json
+execution-checkpoint.json
+model-policy.md
+execution-report.md
+```
+
+`catalog.md` is the sole execution index. Each module task file is independently
+executable. Do not create one monolithic task document.
+
+Compact routes create only the artifacts required by `references/routing.md`; do not emit
+empty program-scale placeholders. All routes keep minimal route and resume state.
+
+Update `state.json` after every accepted answer and phase transition. Record the phase,
+current module, approved modules, invalidated modules, execution status, and monotonic
+`spec_revision`, `task_revision`, `workflow_revision`, and `launch_revision`. On invocation,
+resume an unfinished matching run instead of restarting unless the user requests a new run.
+
+## Token discipline
+
+- Keep this file as the orchestrator. Read only the reference for the active phase.
+- During a module grill, load only `program-spec.md`, `decisions.md`, the current module,
+  and contracts that touch it.
+- Persist the accepted answer immediately, then rely on the artifact instead of replaying
+  conversation history.
+- Never ask for facts available from the repository, tools, documentation, or existing
+  artifacts.
+- Ask one decision question per turn. Do not bundle questions.
+- Stop grilling a branch once its closure checklist is satisfied.
+- Reference existing artifacts instead of duplicating their prose.
+
+## Phase -1: Set up the repository
+
+Read `references/project-setup.md` and run its setup before creating a Grillstorm run.
+Reuse valid existing `docs/agents/` configuration; do not ask the same setup questions on
+every invocation.
+
+Explore first, then resolve only missing configuration one section and one question at a
+time: issue tracker, triage label vocabulary, domain-doc layout, and the repository
+instruction file to update. Show the complete draft once, obtain confirmation, then write
+the setup artifacts.
+
+This phase reproduces `setup-matt-pocock-skills` locally. Never require users to install or
+invoke it separately.
+
+## Phase 0: Orient
+
+Inspect repository instructions, structure, code, tests, docs, current terminology, and
+recent relevant changes. Detect an existing run. Establish the goal and execution mode:
+`full` by default, `plan-only` only when explicitly requested, or `resume`.
+
+Initialize the artifact directory and state. Do not ask the user to repeat discoverable
+repository facts. Capture the starting Git ref and pre-existing dirty paths so autonomous
+work never overwrites, stages, or misattributes user changes.
+
+Read `references/routing.md`, classify the work from repository evidence, record the route
+and reasons in `state.json`, and follow only that route's stages. Announce the selected route
+briefly; do not ask the user to choose an internal workflow. Promote automatically when new
+evidence exceeds the current route. Never force a small change through program-scale
+catalog ceremony.
+
+Read `references/reverse-closure.md`. Before module decomposition, define observable global
+completion, real side effects, failure/recovery behavior, and proof. Run the early reuse
+radar against the repository. Persist `reviews/reuse-radar.md` for `program`, or a compact
+state entry for smaller routes. Treat extraction candidates as non-binding until complete
+consumer specs exist.
+
+Read `references/model-policy.md`. Resolve the route-aware `THINK`, `BUILD`, and `VERIFY`
+roles from current host capabilities, record their exact effective model literals and
+evidence, and freeze them as part of the one launch contract. Do not ask a separate model
+question unless the user explicitly overrides the recommendation.
+
+## Phase 1: Grill the program
+
+Run this program-scale form only for the `program` route. Compact routes still run the same
+`grill-with-docs` discipline, but only across decisions relevant to their smaller scope.
+
+Read `references/grilling.md`, `references/domain-modeling.md`, and
+`references/spec-and-seams.md`. Load `references/supporting-disciplines.md` only when
+research, a prototype, or codebase-design work is actually needed.
+
+Grill the top-level goal one question at a time. Resolve problem, user-visible scope,
+non-goals, module decomposition, ownership boundaries, dependency direction,
+cross-module interfaces, highest useful test seams, and the outcome-first completion record.
+Use the reuse radar when proposing boundaries. For every question, include a recommended
+answer and its main tradeoff.
+
+Write decisions as they are accepted. Maintain the repository glossary and sparse ADRs
+using the bundled domain-modeling protocol.
+
+Synthesize `program-spec.md` using the bundled template. Present a compact module,
+interface, and test-seam summary. Continue grilling unresolved branches. Phase 1 ends only
+when the user confirms shared understanding and approves the program spec.
+
+## Phase 2: Grill each module
+
+Run this phase only for the `program` route. Other routes have one natural work scope and
+must not invent modules merely to satisfy this template.
+
+Process modules in dependency order. For the current module:
+
+1. Explore its present code and prior test patterns.
+2. Load only relevant parent decisions and interface contracts.
+3. Grill unresolved behavior, states, errors, data ownership, integration obligations,
+   migration concerns, observability, and acceptance behavior one question at a time.
+4. Write `modules/<module-id>-spec.md`.
+5. Run the module closure checklist and fix local gaps.
+6. Ask for confirmation that this module has reached shared understanding.
+
+If an answer changes a frozen boundary, public interface, or user-visible scope, update
+`program-spec.md` and invalidate every affected downstream module spec. Re-grill those
+modules; never silently patch around contract drift.
+
+After every module reaches shared understanding, persist the approved local program and
+module specs. Do not publish tickets or begin execution planning yet.
+
+## Phase 2.5: Close the spec graph and front-load abstractions
+
+Run the full pass for `program`; run its compact single-scope form for `direct` and
+`ticketed` before their final `to-spec` publication. Read
+`references/spec-closure-and-abstraction.md` and, when module/seam design is implicated, the
+codebase-design section of `references/supporting-disciplines.md`.
+
+Freeze the locally approved program/module spec snapshot, then run
+`prompts/spec-reverse-grill.md` in a fresh `THINK` context. Work backward from every global
+outcome using problem, domain/design, cross-spec consistency, exception, reuse/abstraction,
+and proof lenses.
+
+Resolve `discover` and unambiguous `spec-repair` findings without asking the user. For every
+true unresolved product/design decision, re-enter the bundled Grill loop: ask exactly one
+question, provide one recommended answer and its main tradeoff, persist the answer
+immediately, invalidate/update affected specs, then continue with the next dependency-ready
+question. Write the issue inventory, evidence, answers, and repairs to
+`reviews/spec-grill.md`.
+
+When the reverse Grill has no unresolved issue, run the closure and abstraction critics
+independently in separate fresh `THINK` contexts. Trace every requirement through ownership,
+interfaces, failure behavior, test seams, runtime observation, and completion evidence, then
+trace every proposed artifact back to an approved requirement.
+
+Inspect the existing codebase for reusable modules before extracting a new one. When a new
+deep module is justified, specify it completely, place it before its consumers, update all
+affected contracts and seams, resolve only newly introduced user decisions, and rerun the
+reverse Grill plus both critics. Do not defer an undecided shared-module extraction into
+implementation tasks.
+
+Write `reviews/spec-closure.md`. After any answer or repair, discard all prior global
+verdicts and rerun the complete reverse Grill and both independent critics. This phase ends
+only when the reverse Grill is closed, both critics have zero blocking findings, and the
+full spec graph is stable.
+
+Then run the original `to-spec` synthesis discipline without another broad interview:
+finalize the specs, publish or update the final spec in the configured issue tracker, and
+apply its configured `ready-for-agent` label.
+
+## Phase 3: Build and grill task documents
+
+Run the full catalog plus per-module document form only for the `program` route. For
+`ticketed`, use the compact tracker-ticket/catalog form in `routing.md`. Skip this phase for
+`direct` and `diagnostic`.
+
+After the spec closure and abstraction gate passes, read `references/task-documents.md`.
+
+Create:
+
+- `tasks/catalog.md`: goal, source artifacts, module DAG, interface registry, test-seam
+  registry, execution frontier, per-module status, and global completion gates.
+- `tasks/<module-id>.md`: the complete executable tasks for exactly one module.
+
+Each task must declare its outcome, dependencies, touched paths, implementation steps,
+test seam, acceptance command, expected evidence, and status. Prefer end-to-end vertical
+slices. Keep interface-producing tasks ahead of consumers.
+
+For each module task document, grill only unresolved task-level decisions: granularity,
+blocking edges, implementation constraints, migration order, environment access,
+destructive/external actions, runtime acceptance, Git policy, and completion gates. Update
+the document after each answer, then run its local closure before moving to the next module.
+
+After the catalog and all directory/module task documents are locally closed, freeze the
+planning snapshot. Run `prompts/task-reverse-grill.md` in a fresh `THINK` context, working
+backward from every global runtime outcome through integration ownership, directories,
+consumers, interface producers, shared modules, migrations, configuration, deployment,
+cleanup, and prerequisites.
+
+Resolve `discover`, `task-repair`, and unambiguous `spec-repair` findings without asking the
+user. For every true unresolved product/design decision, re-enter the bundled Grill loop:
+ask exactly one question, provide one recommended answer and its main tradeoff, persist the
+answer immediately, update/invalidate affected artifacts, then continue with the next
+dependency-ready question. Write the issue inventory, answers, repairs, and checked exception
+lenses to `reviews/task-grill.md`.
+
+When the reverse Grill has no unresolved issue, run the independent
+`prompts/task-closure-critic.md` in another fresh `THINK` context and write
+`reviews/task-closure.md`.
+
+If global task closure exposes a spec, boundary, ownership, interface, behavior, or abstraction
+defect, increment `spec_revision`, mark affected task/workflow/launch artifacts stale, return
+to Phase 2.5, and regenerate only the affected subgraph. Never repair an architectural gap
+only in task prose.
+
+For task-level defects, repair and locally re-close the affected catalog/module documents,
+then rerun both the reverse Grill and the independent global closure critic from final
+outcomes. Do not publish tickets or compile the workflow until the reverse Grill is closed
+and the fresh critic verdict has no blocking finding, orphan task, orphan directory, or
+catalog/document/DAG disagreement.
+
+Then publish every approved vertical-slice ticket to the configured tracker in dependency
+order, using native blocking links where available and the original minimal ticket format.
+Store tracker identifiers in `catalog.md`. The richer per-module task files are Grillstorm's
+long-run execution layer; they do not replace the original tracker tickets.
+
+For `ticketed` and `program`, read `references/concurrency.md`. Only after task closure,
+generate and validate the machine workflow inputs, then run the bundled deterministic
+workflow simulator without agents or Git mutation. Store its raw output in
+`tasks/workflow-simulation.json` and summarize initial readiness, dependency waves, resource
+mutexes, merge-collision groups, unreachable work, and failure blast radius in
+`reviews/workflow-dry-run.md`. Repair and repeat until the simulation closes.
+
+After tickets are published and the DAG/simulation close deterministically, freeze that
+projection and run `prompts/workflow-reverse-grill.md` in a fresh `THINK` context. Work
+backward from global runtime proof through actual gates, machine tasks, compiled edges,
+tracker blockers, resources, and the initial ready frontier. Check projection fidelity,
+graph/scheduling safety, executable proof, operational closure, and cross-artifact
+consistency.
+
+Resolve discoveries and projection-only repairs internally. A task-level issue returns to
+the task reverse Grill and closure gate; a spec-level issue returns to Phase 2.5. Ask exactly
+one recommended Grill question only for a genuinely new decision. Write findings, answers,
+repairs, and the final verdict to `reviews/workflow-grill.md`.
+
+After any repair, regenerate affected tickets/workflow artifacts, rerun deterministic
+validation/simulation, and rerun the complete workflow reverse Grill. Phase 3 ends only when
+task closure, simulation, and workflow reverse Grill are closed at matching revisions.
+
+Concurrency is an execution choice derived from the approved graph; do not ask a second
+launch question for it.
+
+## Phase 4: Freeze and launch
+
+Perform an adversarial readiness pass over the entire artifact graph:
+
+- every requirement has an implementation task and observable proof;
+- every interface has one producer, known consumers, and a contract test;
+- every user-visible state has runtime acceptance;
+- migrations, compatibility, rollback, security, data handling, and deployment choices are
+  settled where relevant;
+- commands and required environment capabilities are available or have explicit reality gates;
+- spec/task/workflow revisions match and no artifact is stale;
+- workflow simulation has no unreachable task or hidden resource/merge constraint;
+- workflow reverse Grill proves tickets and the executable DAG preserve approved tasks;
+- no open decision can change scope, boundaries, interfaces, acceptance, or execution safety.
+
+Establish a launch contract containing the frozen decisions, allowed autonomous choices,
+authorized side effects, Git policy, reality gates, autonomous decision policy, and exact
+completion definition. Include the frozen model-role mapping and capability evidence. Ask
+one final question: approve this launch contract and start the uninterrupted run?
+
+For `direct` and `diagnostic`, present the same contract as one compact launch summary and
+store it in `state.json`; do not create program-scale documents. For `ticketed` and
+`program`, write `launch-contract.md`.
+
+After approval, do not ask implementation questions. For any unforeseen decision, choose
+the recommended option using the autonomous decision policy, update affected artifacts,
+record it in `autonomous-decisions.md`, and continue.
+
+## Phase 5: Implement, review, and prove
+
+Skip this phase in `plan-only` mode. After approval, read
+`references/execution.md`, `references/implementation-and-diagnosis.md`, and
+`references/review-and-validation.md`. For an eligible `ticketed` or `program` run, also
+read `references/concurrency.md`. Execute without further routine confirmation.
+
+Work the route's execution source: the diagnosed fix and regression seam for `diagnostic`,
+the approved spec for `direct`, tracker tickets and compact catalog for `ticketed`, or the
+module catalog for `program`. For every work unit, write the production code and its
+behavioral tests. Run red-green cycles at approved seams, diagnose failures with a tight
+feedback loop, and record commands and evidence immediately.
+
+Run routine implementation workers as `BUILD`. Run supervisors, acceptance reruns, and the
+final Standards and Spec reviews as fresh `VERIFY` contexts that receive repository state
+and frozen acceptance inputs, never executor narrative. Use `THINK` only for synthesis,
+closure, or replan work. Do not silently substitute models after launch.
+
+At each applicable work-unit or module gate, run focused tests, typechecking/static checks,
+interface contract tests, and relevant runtime acceptance. Then review the diff against
+both repository standards and the approved spec. Fix every blocking finding and repeat the
+failed gate.
+
+After all work units, run full-suite checks plus applicable integration and real user-flow
+validation. Review the complete diff against standards and spec in separate passes, repair
+findings, and rerun affected checks until closure.
+
+Never pause merely because an unforeseen product, architecture, boundary, interface, or
+acceptance decision appears. Choose the recommended option, preferring compatibility,
+reversibility, minimal scope, and existing project conventions. Update and revalidate every
+affected downstream artifact, increment the appropriate revision, rerun the affected
+closure/simulation gates, then continue. Never execute stale task or workflow revisions.
+
+When an action requires unavailable credentials or explicit authority for destructive,
+production, paid, or external effects, choose the safest non-destructive path: finish all
+local implementation and proof possible, create an exact reality-gate runbook, and continue
+independent work. Never invent authorization or claim that gate passed.
+
+After all review and verification gates pass, follow the original `implement` closeout and
+commit Grillstorm-owned work to the current branch. Phase 3 must front-load any user
+exception to committing. Never push, deploy, or modify production/external systems unless
+the launch contract explicitly authorizes it.
+
+## Phase 6: Close
+
+Write `execution-report.md` with completed modules, acceptance evidence, unresolved or
+human-only gates, review findings and fixes, deviations, and exact resume pointers.
+Include an `Autonomous decisions` section listing each unforeseen decision, recommendation,
+alternatives considered, rationale, affected artifacts/code, and validation performed.
+
+**Document production is never completion.** Mark the run complete only when required code
+exists, every task and catalog gate has evidence, blocking review findings are fixed, the
+full required test suite passes, and runtime behavior is proven or explicitly reality-gated.
+
+If work remains for another session, or the user requests a clean context boundary, run the
+bundled handoff mode after updating `state.json` and the execution report. A fully completed
+run ends with the execution report; do not manufacture follow-up work merely to justify a
+handoff.
+
+## Bundled sources
+
+The bundled workflow reproduces and adapts project setup, Grill, domain-modeling, spec,
+ticketing, implementation, TDD, diagnosis, codebase design, research, prototyping,
+merge-conflict resolution, and code-review methods under the MIT license. See
+`references/third-party-notices.md`.

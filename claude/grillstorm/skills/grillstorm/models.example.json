@@ -1,0 +1,6 @@
+{
+  "_comment": "Reference only. Phase 0 probes the active launcher and freezes real literals in a private policy directory. Current Codex preference: THINK=gpt-5.6-sol, VERIFY=codex-auto-review, BUILD=gpt-5.6-luna (or gpt-5.6-terra when Luna is unavailable). No mid-run substitution.",
+  "think": "REPLACE: strongest available agentic coding/reasoning model",
+  "verify": "REPLACE: independent rigorous review model, never weaker than bulk",
+  "bulk": "REPLACE: efficient repository-coding model"
+}

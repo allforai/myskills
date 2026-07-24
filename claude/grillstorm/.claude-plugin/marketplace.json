@@ -1,0 +1,14 @@
+{
+  "name": "grillstorm",
+  "owner": {
+    "name": "dv"
+  },
+  "plugins": [
+    {
+      "name": "grillstorm",
+      "version": "0.16.0",
+      "source": "./",
+      "description": "Work backward from completion, then run supervised worktree delivery with verified Claude/Codex continuation."
+    }
+  ]
+}

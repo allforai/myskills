@@ -1,0 +1,6 @@
+interface:
+  display_name: "Grillstorm"
+  short_description: "Reverse-close specs and tasks, then deliver concurrently"
+  default_prompt: "Use $grillstorm to work backward from completion, route and grill the goal, close specs and tasks locally and globally, simulate the workflow, execute ready tasks in isolated worktrees, or hand off the run."
+policy:
+  allow_implicit_invocation: false
