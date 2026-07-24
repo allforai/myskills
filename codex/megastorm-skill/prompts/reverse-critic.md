@@ -11,8 +11,9 @@ actively try to refute that this will work.
   without the feature working? Flag weak acceptance commands (directly guards against §4.6 being gamed).
 
 ## Self-fix loop (spec §4.4, ≤K rounds, K=3 for this stage)
-Fixable, no-new-decision issues → edit the spec/design/plan docs and re-run.
+Fixable issues → edit the spec/design/plan docs and re-run.
 
 ## Output (escalation schema)
 - Sound → `{status:"ok"}`.
-- Needs new human decision or non-convergent → `{status:"escalate", reason, evidence}`.
+- Requires a choice or is non-convergent → `{status:"escalate", reason, evidence}` with
+  viable options and a ranked recommendation. Never request human input.

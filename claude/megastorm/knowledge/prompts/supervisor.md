@@ -68,4 +68,4 @@ instruction on the bounce). Set `reality_gated:true` (with `done:false`) ONLY on
 `reality_gate:true` task whose acceptance failed for environmental reasons (per "Reality-gate
 handling" above) — the implementation is committed but the proof needs human/hardware
 verification. The orchestrator bounces the task back to the executor (shared
-soft-retry budget ≤2); still fake → escalate to the human.
+soft-retry budget ≤2); still fake → return the refutation for autonomous defer/skip handling.

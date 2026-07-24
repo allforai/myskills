@@ -65,10 +65,13 @@ on it and never lets it block dependents.
 Return JSON: `{status, plan_path, tasks: [ {id,title,touched_paths,acceptance_cmd,depends_on,reality_gate?} ], reason?, evidence?}`
 where `reality_gate` (optional boolean, default false) appears on any task whose acceptance is
 device/simulator/real-hardware/external-system/physical-I/O bound per the classification above.
-Escalate (don't guess) if the design is under-specified in a way that needs a human decision.
+If the design is under-specified, return a decision proposal with viable options and a ranked
+recommendation. Never ask the human; the orchestrator records the authorized choice or defers
+only the affected branch.
 
 ## Module-too-large escalation
 If a faithful plan for this module would exceed ~20 tasks, do NOT emit a monster plan and do
 NOT secretly merge tasks to duck the limit. Return `status:"escalate"`, `reason:"module-too-large"`,
 `evidence`: your task-count estimate plus the natural split seams you see (candidate sub-module
-boundaries). Splitting a module is a human decision.
+boundaries) ranked by package/component, acceptance, interface, lowest touched-path cut, then
+canonical path name. The orchestrator selects and records the split autonomously.

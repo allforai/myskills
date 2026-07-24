@@ -13,24 +13,27 @@ all user decisions were front-loaded in Phase 0.
 
 ## Decision boundary (spec §3 classifier)
 - A choice that would change module boundaries / public interfaces / user-visible scope
-  is a NEW HUMAN DECISION → do NOT decide it; return `status:"escalate"` with the question.
+  returns `status:"escalate"` as a decision proposal with viable options, recommendation,
+  assumptions, risk, reversibility, and affected artifacts. Never ask the human.
 - A pure internal choice (naming, file org, private structures) → decide it, note it in the
   design's "Assumptions" section.
 - If the module spec clearly bundles several independent subsystems and no coherent single
   design can cover it, return `status:"escalate"`, `reason:"module-too-large"`, `evidence` =
-  the split seams you see. Do not paper over it with a sprawling design.
+  ranked split seams. Prefer package/component, acceptance, interface, lowest touched-path
+  cut, then canonical path name. Do not paper over it with a sprawling design.
 
 ## Frozen registry (read-only inputs you are given)
 You are handed the overview's `megastorm-registry` block: `requirements` (the `R-*` IDs)
 and `interfaces` (the closed interface vocabulary). You MUST draw from these — do NOT invent
 requirement IDs or interface names. If your module genuinely needs a requirement or interface
-not in the registry, that is a NEW HUMAN DECISION (it changes scope/public interface) →
-`status:"escalate"`, do not silently coin a new name.
+not in the registry, propose an evidence-backed exact contract with `status:"escalate"`;
+the orchestrator will record an authorized addition or defer the branch.
 
 ## Output (design-manifest schema + escalation)
 Return JSON: `{status, module, design_path, covers_req_ids, exposes, consumes, reason?, evidence?}`
 - `covers_req_ids`: `R-*` IDs (from the registry) this design satisfies.
 - `exposes`: interface names (from the registry) this module offers others. Grammar `<kind>:<name>`.
 - `consumes`: interface names (from the registry) this module needs from others.
-- On a blocking new-human-decision (incl. a missing registry entry): `status:"escalate"`,
-  `reason` = the decision, `evidence` = context.
+- On an unresolved choice (incl. a missing registry entry): `status:"escalate"`,
+  `reason` = the decision, `evidence` = context + options + recommendation. This is an
+  autonomous decision proposal, not a request for human input.

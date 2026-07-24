@@ -1,4 +1,4 @@
-# AGENTS.md — megastorm (Codex port, v0.14.0)
+# AGENTS.md — megastorm (Codex port, v0.16.0)
 
 > Drive a large goal end-to-end: decompose into modules, front-load every human
 > decision, then autonomously design → validate (closed-loop) → plan → reverse-review
@@ -22,13 +22,15 @@ Python runner (a stateless prose loop drifts; the retry ledger must be code).
 | Plan gate | `./scripts/validate_plan_tasks.py` | touched_paths + non-vacuous acceptance_cmd + registry vocab |
 | DAG builder | `./scripts/build_task_dag.py` | Layers + isolate_groups + cross-module interface edges |
 | Execution runner | `./scripts/run_layers.py` | §1.6: safe integration/task worktrees, ready scheduling, separate retry budgets, reality gates, atomic state/events |
-| Model tiers | `./models.example.json` | THINK/VERIFY/BULK — resolved by the HUMAN in Phase 0 |
+| Decision ledger | `./scripts/decision_ledger.py` | Frozen authority envelope + unattended choices |
+| Model tiers | `./models.example.json` | THINK/VERIFY/BULK — frozen in Phase 0 |
 
 ## Invariant
 
-Decisions front-loaded → autonomous → self-fix loop, escalate-to-stop.
-All human interaction happens in Phase 0; Phase 1 runs without human stops
-except on escalation. No automatic model downgrade, no automatic re-decomposition.
+Decisions front-loaded → autonomous → self-fix loop → disclose at close.
+All human interaction happens in Phase 0. Phase 1 never asks for a decision:
+it selects and records the recommended authorized path, or defers only the affected
+branch and continues. No unauthorized model downgrade or scope expansion.
 
 ## Quickstart
 

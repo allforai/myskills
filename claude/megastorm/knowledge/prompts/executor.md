@@ -21,7 +21,7 @@ You implement ONE task from a plan. You run on the BULK tier (bulk mechanical wo
    `status:"escalate"` with `evidence` = the list of hypotheses already tried — for each:
    what you changed, what you expected, what actually happened. Thrashing the same theory
    burns the budget without converging (seen with a flaky UI test in a real large run); a
-   hypothesis log lets the human or a stronger model break the loop in one read.
+   hypothesis log lets the orchestrator choose and record the recommended next action.
 
 ## Isolation
 If told you are running in a worktree (`isolation:'worktree'`), work entirely within it;
@@ -30,4 +30,5 @@ the orchestrator merges after the supervisor confirms.
 ## Output
 Return JSON: `{status:"ok"|"escalate", task_id, acceptance_cmd, self_reported_done, notes, reason?, evidence?}`.
 Your self-report is NOT trusted — an independent supervisor will rerun acceptance_cmd. Do not
-inflate. If blocked on a real ambiguity, escalate rather than guess.
+inflate. If blocked on a real ambiguity, return options and a recommendation for autonomous
+orchestrator resolution; never request human input.

@@ -1,8 +1,9 @@
 # Execution Playbook — megastorm pipeline (Codex)
 
-**Invariant:** decisions front-loaded → autonomous → self-fix loop, escalate-to-stop.
-All human interaction is in Phase 0. After Phase 0, do not stop for the human until an
-escalation surfaces. You (the interactive Codex session) are the orchestration brain;
+**Invariant:** decisions front-loaded → autonomous → self-fix loop → disclose at close.
+All human interaction is in Phase 0. After Phase 0, never ask, request approval, wait for
+input, or return merely because a stage completes or a new choice appears. You (the
+interactive Codex session) are the orchestration brain;
 every headless agent below is a fresh `codex exec` process.
 
 Spawning an agent: inherit the actual Codex executable and allowlisted session argv
@@ -68,18 +69,23 @@ the approved host argv already owns one. Use `python3`/`sys.executable`; never a
    - `bulk` (executor): cheap/fast coding model.
    Also record the choices in the registry `models` field. NO automatic downgrade —
    ever. A mid-run model failure is retry-then-escalate, never silent substitution.
-7. **New-human-decision rule (Phase 1 boundary):** anything changing module boundaries,
-   public/cross-module interfaces, or user-visible scope = escalate. Internal-only
-   choices = agents decide and log.
+7. **Freeze authority and decision policy.** Persist `<run-dir>/decision-envelope.json`
+   with scope, write roots, destructive limits, external systems, network, secrets,
+   spending, model substitutions, and acceptance authority. Initialize the run ledger:
+   `python3 scripts/decision_ledger.py init <run-dir> <envelope.json>`. This is the final
+   ordinary human decision point.
 8. **Class-elimination census:** if the goal claims to remove or enforce an entire class,
    enumerate the complete population first (operations, endpoints, handlers, RPCs, hooks).
    Every member maps to a task or `verified-clean` evidence. Without this coverage method,
    the final report must say `Completeness unverified` and may claim only instances fixed.
 
 ## Phase 1 — Autonomous pipeline
-For every stage: collect each agent's JSON; ANY `status:"escalate"` → HALT, render
-`reason`+`evidence` to the user, get the decision, re-run that stage. `module-too-large`
-is an ordinary escalation: stop and ask — no automatic re-decomposition.
+For every stage, `status:"escalate"` is a decision proposal, never a human-interaction
+instruction. Generate viable alternatives; rank by authority, safety, reversibility,
+repository convention, blast radius, evidence, maintenance cost, then stable name.
+Persist the recommended authorized choice before acting and finalize it with an
+artifact/event reference. If no choice is authorized, record `deferred`, skip only that
+branch and its dependents, and continue all independent work.
 
 ### 1.1 Design — fan-out
 One `codex exec` (`think` model) per module: `prompts/design-agent.md` + the module spec
@@ -93,7 +99,7 @@ collect M design manifests (JSON per `schemas.md`).
 - `python3 scripts/check_closure.py requirements.json manifests.json registry.json` —
   BLOCK → feed errors to a fix agent (design-agent prompt), re-run, ≤3 rounds.
 - Then one `codex exec` (`think`) with `prompts/closure-critic.md` for the prose-level
-  judgment, ≤3 rounds. Unresolved → HALT to user.
+  judgment, ≤3 rounds. Unresolved → recorded autonomous fix/replan or deferred branch.
 
 ### 1.3 Plan — fan-out
 One `codex exec` (`think`) per design: `prompts/plan-agent.md` → plan-task array
@@ -101,8 +107,10 @@ One `codex exec` (`think`) per design: `prompts/plan-agent.md` → plan-task arr
 `depends_on` is intra-module only).
 For each plan: `python3 scripts/validate_plan_tasks.py <tasks.json> registry.json` —
 BLOCKED → bounce to the plan agent. Deterministic size check: > 20 validated tasks for
-one module = module-too-large → escalate to the human (do NOT bounce — the plan agent
-cannot fix scoping).
+one module = module-too-large → automatically split at the first stable package/component,
+independent-acceptance, or non-cyclic interface boundary; prefer the lowest touched-path
+cut then canonical path name. Record the choice. If every split changes user-visible
+scope, defer only the excess branch.
 Tasks whose definitive proof needs unavailable device/external/physical capability use
 `reality_gate:true` and a non-empty `runbook_ptr` to exact human verification steps.
 
@@ -169,8 +177,8 @@ The runner owns:
   in `execution-report.json`.
 
 Exit 0 = all supervised done. Exit 1 = escalations/skips in `execution-report.json` →
-render to the human, apply their decision, re-run the same command (the state file resumes
-past completed tasks).
+convert each unresolved item to a decision/defer record, continue any viable independent
+work, then proceed to Phase 2. Never pause for a decision.
 
 ## Phase 2 — Report
 Update the overview and write a final report: assumptions agents made, escalations and
@@ -181,7 +189,11 @@ verification" — an all-green run is NEVER claimed as "the feature works".
 Render `N verified / M reality-gated / K escalated / S skipped`, every skipped chain,
 reality-gate reason/runbook, and a mandatory Completeness Confidence section. Census-backed
 class goals may cite coverage; audit/unknown goals must state `Completeness unverified`.
-Close by inviting the independent `cross-exam` skill; never enter it automatically.
+Add mandatory **Autonomous decisions**, **Assumptions made**, and **Deferred by authority
+boundary** sections by merging normal ledger, emergency journal, and degraded in-memory
+records. Include options, chosen recommendation, reason, risk, authority basis, outcome,
+affected artifacts, fallback, and complete skipped chains exactly once. End the run;
+do not invoke or suggest another interactive workflow.
 
 Import a later human reality-gate result with
 `python3 scripts/resolve_reality_gate.py <report> <state> <orchestration> <task-id> verified|rejected <evidence-file>`.

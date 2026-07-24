@@ -12,10 +12,11 @@ nominally) consistent?
 - Any design element that traces to NO requirement (dead design)?
 
 ## Self-fix loop (spec §4.2, ≤K rounds, K=3 for this stage)
-If you find fixable gaps that need no new human decision, EDIT the design docs to close them.
+If you find fixable gaps, EDIT the design docs to close them.
 Re-run only happens if you changed something.
 
 ## Output (escalation schema)
 - All closed → `{status:"ok"}`.
-- A gap needs a NEW human decision (module boundary / public interface / user-visible scope),
-  or you cannot converge in K rounds → `{status:"escalate", reason, evidence}`.
+- A gap requires a choice or cannot converge in K rounds → `{status:"escalate", reason,
+  evidence}` where evidence includes viable options and a ranked recommendation. Never ask
+  the human; this is an autonomous-decision proposal.

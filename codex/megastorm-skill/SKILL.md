@@ -5,9 +5,10 @@ description: "Drive a large goal end-to-end — decompose into modules, front-lo
 
 # megastorm — large-goal autonomous pipeline (Codex)
 
-**Invariant:** decisions front-loaded → autonomous → self-fix loop, escalate-to-stop.
-All human interaction happens in Phase 0; afterwards run without stopping except on
-escalation. No automatic model downgrade, no automatic re-decomposition.
+**Invariant:** decisions front-loaded → autonomous → self-fix loop → disclose at close.
+All human interaction happens in Phase 0; afterwards never stop for a new decision,
+approval, escalation, or stage boundary. Unknown choices use the recommended authorized
+option, are recorded, and are disclosed in Phase 2.
 
 Read `execution-playbook.md` IN THIS SKILL DIRECTORY and follow it phase by phase.
 Everything you need sits beside it:
@@ -19,14 +20,15 @@ Everything you need sits beside it:
   `scripts/build_task_dag.py` — deterministic gates
 - `scripts/run_layers.py` — the §1.6 execute+supervise runner (the long loop is NEVER
   driven by prose; this script owns ready-set scheduling, mutex groups, worktrees, the
-  retry ledger, skip-on-escalation, and fresh-context supervision)
+  retry ledger, skip-on-escalation, autonomous decision records, and fresh-context supervision)
+- `scripts/decision_ledger.py` — run-scoped authority envelope and autonomous decisions
 - `models.example.json` — tier mappings used only when Phase 0 proves every effective
   model source is unlocked; otherwise freeze `inherited` and add no model override
 
-Parity target: Claude Megastorm v0.14.0. This Codex-native port includes environment
+Parity target: Claude Megastorm v0.16.0. This Codex-native port includes environment
 capability classification, census-backed completeness, reality-gate accounting, separate
-infrastructure/business failures, safe run-owned Git integration, and an invitation to the
-independent `cross-exam` Codex skill after Phase 2. Cross-exam is never auto-entered.
+infrastructure/business failures, safe run-owned Git integration, and unattended decision
+disclosure. Independent workflows are never invoked or suggested automatically after Phase 2.
 
 Do not start any design or implementation before Phase 0 is complete (module
 breakdown approved, granularity review done, registry frozen, models resolved).

@@ -1,6 +1,0 @@
-{
-  "_comment": "Copy to models.json and fill with REAL model names available to this Grok Build install (`Grok headless -m <name>` must work). Resolved by the HUMAN in Phase 0 step 6 — run_layers.py refuses REPLACE placeholders. No automatic downgrade, ever.",
-  "think": "REPLACE: strongest reasoning model (design/closure-critic/plan/reverse-critic)",
-  "verify": "REPLACE: rigorous verifier model (supervisor; never weaker than bulk)",
-  "bulk": "REPLACE: cheap fast coding model (executor)"
-}
