@@ -7,6 +7,8 @@ test('exports schemas and functions', () => {
   assert.equal(core.DAG_SCHEMA.type, 'object')
   assert.equal(core.NODE_RESULT_SCHEMA.type, 'object')
   assert.equal(core.EXPAND_SCHEMA.type, 'object')
+  assert.equal(core.NODE_GATE_SCHEMA.type, 'object')
+  assert.equal(core.READINESS_SCHEMA.type, 'object')
   for (const fn of ['computeReady','routeOutcome','mergeExpanded','pickExit','convergenceCheck','serializeCommit','runNode','commitNode','runEngine']) {
     assert.equal(typeof core[fn], 'function', `missing ${fn}`)
   }
@@ -39,6 +41,11 @@ test('computeReady: alignment_refs do NOT block', () => {
 test('routeOutcome: passed -> done', () => {
   assert.equal(core.routeOutcome({ outcome: 'passed', blocking_findings: [] }), 'done')
 })
+test('routeOutcome: passed with blocking findings is not done', () => {
+  assert.equal(core.routeOutcome({
+    outcome: 'passed', blocking_findings: [{ type: 'code_gaps' }]
+  }), 'soft')
+})
 test('routeOutcome: hard_fail -> hard', () => {
   assert.equal(core.routeOutcome({ outcome: 'hard_fail', blocking_findings: [] }), 'hard')
 })
@@ -59,6 +66,15 @@ test('mergeExpanded: appends new nodes', () => {
 test('mergeExpanded: idempotent on existing node_id', () => {
   const out = core.mergeExpanded([{ node_id: 'a' }], [{ node_id: 'a' }, { node_id: 'b' }])
   assert.deepEqual(out.map(n => n.node_id), ['a', 'b'])
+})
+test('mergeExpanded: repairs an existing node definition', () => {
+  const out = core.mergeExpanded(
+    [{ node_id: 'a', hard_blocked_by: ['old'], capability: 'x' }],
+    [{ node_id: 'a', hard_blocked_by: ['new'] }]
+  )
+  assert.deepEqual(out[0], {
+    node_id: 'a', hard_blocked_by: ['new'], capability: 'x'
+  })
 })
 
 test('pickExit: all done -> complete', () => {
@@ -86,6 +102,7 @@ test('runNode: passes first try -> returns passed', async () => {
   const r = await core.runNode({ node_id: 'a' }, agent)
   assert.equal(r.outcome, 'passed')
   assert.equal(agent.counters.a, 1)
+  assert.equal(agent.counters['verify:a'], 1)
 })
 
 test('runNode: soft-fails then passes within retry budget', async () => {
@@ -112,4 +129,36 @@ test('runNode: exhausts soft retries -> hard_fail', async () => {
   assert.equal(r.outcome, 'hard_fail')
   assert.equal(r.blocking_findings[0].type, 'exhausted_retries')
   assert.equal(agent.counters.d, 3) // initial + 2 retries
+})
+
+test('runNode: artifact gaps invoke repair loop and rerun QA', async () => {
+  const agent = makeFakeAgent({
+    qa: [
+      { node_id: 'qa', outcome: 'passed', artifacts_written: ['qa.json'],
+        blocking_findings: [] },
+      { node_id: 'qa', outcome: 'passed', artifacts_written: ['qa.json'],
+        blocking_findings: [] }
+    ],
+    'verify:qa': [
+      { node_id: 'qa', status: 'repair',
+        blocking_findings: [{ type: 'code_gaps', detail: 'missing retry path' }] },
+      { node_id: 'qa', status: 'passed', blocking_findings: [] }
+    ],
+    'repair:qa:1': {}
+  })
+  const result = await core.runNode({ node_id: 'qa' }, agent)
+  assert.equal(result.outcome, 'passed')
+  assert.equal(agent.counters.qa, 2)
+  assert.equal(agent.counters['repair:qa:1'], 1)
+  assert.equal(agent.counters['verify:qa'], 2)
+})
+
+test('runNode: missing artifact gate is a hard failure', async () => {
+  const agent = makeFakeAgent({
+    x: { node_id: 'x', outcome: 'passed', artifacts_written: [], blocking_findings: [] },
+    'verify:x': null
+  })
+  const result = await core.runNode({ node_id: 'x' }, agent)
+  assert.equal(result.outcome, 'hard_fail')
+  assert.equal(result.blocking_findings[0].type, 'invalid_artifact_gate')
 })

@@ -14,6 +14,13 @@ function makeFakeAgent(responses) {
     counters[label] = (counters[label] || 0) + 1
     const idx = counters[label] - 1
     let spec = responses[label]
+    if (spec === undefined && label.startsWith('verify:')) {
+      spec = {
+        node_id: label.slice('verify:'.length),
+        status: 'passed',
+        blocking_findings: []
+      }
+    }
     if (typeof spec === 'function') spec = spec(idx, prompt)
     if (Array.isArray(spec)) spec = spec[Math.min(idx, spec.length - 1)]
     if (spec && spec.__promise) return spec.__promise

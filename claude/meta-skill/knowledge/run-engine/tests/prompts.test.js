@@ -10,11 +10,20 @@ test('loadDagPrompt references workflow.json + bootstrap-profile + profile_slice
   assert.match(p, /completed/)
 })
 
-test('expandPrompt names the expander, asks for new_nodes, and records applied_expanders (fix C5 write-back)', () => {
+test('expandPrompt names the expander and requires wave-by-wave reconciliation', () => {
   const p = core.expandPrompt('expand_game_2d_production.py')
   assert.match(p, /expand_game_2d_production\.py/)
   assert.match(p, /new_nodes/)
-  assert.match(p, /applied_expanders/)
+  assert.match(p, /after every execution wave/)
+  assert.doesNotMatch(p, /applied_expanders/)
+})
+
+test('gate and repair prompts require real artifact checks and rerun evidence', () => {
+  const node = { node_id: 'qa' }
+  assert.match(core.gateNodePrompt(node), /check_artifacts\.py/)
+  assert.match(core.gateNodePrompt(node), /code_gaps/)
+  assert.match(core.repairPrompt(node, []), /execution-repair-loop/)
+  assert.match(core.repairPrompt(node, []), /Rerun affected QA evidence/)
 })
 
 test('runNodePrompt includes node_spec_path, decision_inputs, no-placeholder rule, closure_verify', () => {

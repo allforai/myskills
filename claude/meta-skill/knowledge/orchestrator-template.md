@@ -45,6 +45,23 @@ before re-running `/run`.
 Before stopping, record `preflight_blocked` with
 `record_run_event.py`, then run `summarize_run_log.py --write-report`.
 
+### Dynamic preflight reconciliation
+
+Before every execution wave, run every idempotent expander declared by
+`workflow.json.expanders`, including `expand_game_2d_production.py`. An expander may add or
+repair nodes after an upstream node creates a trigger artifact. Re-read the changed DAG and
+rerun `validate_unattended_readiness.py`; do not execute newly exposed work when readiness
+is not `ready`.
+
+### Generic QA repair loop
+
+After a node reports success, independently run `check_artifacts.py --node <node_id> --json`.
+Non-empty `code_gaps` or `test_gaps`, partial/conditional status, placeholders, failed
+validation, or other blocking findings cannot be committed as complete. Invoke the
+`execution-repair-loop`, repair within its three-attempt budget, and **Rerun affected QA evidence**
+through the original node plus the independent artifact gate. Exhaustion is a hard failure;
+never waive, downgrade, or hide a gap.
+
 ## Phase B execution (CC: Workflow engine)
 
 `/run` is fully autonomous — no questions, no human stops. Drive it as:

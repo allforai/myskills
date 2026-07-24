@@ -19,8 +19,7 @@ const DAG_SCHEMA = {
         soft_retry_max: { type: 'integer' }
       } } },
     completed: { type: 'array', items: { type: 'string' } },
-    expanders: { type: 'array', items: { type: 'string' } },
-    applied_expanders: { type: 'array', items: { type: 'string' } } // fix C5: cross-session double-expansion guard
+    expanders: { type: 'array', items: { type: 'string' } }
   }
 }
 
@@ -50,6 +49,25 @@ const EXPAND_SCHEMA = {
   properties: { new_nodes: { type: 'array', items: { type: 'object' } } }
 }
 
+const NODE_GATE_SCHEMA = {
+  type: 'object',
+  required: ['node_id', 'status', 'blocking_findings'],
+  properties: {
+    node_id: { type: 'string' },
+    status: { type: 'string', enum: ['passed', 'repair', 'hard_fail'] },
+    blocking_findings: { type: 'array', items: { type: 'object' } }
+  }
+}
+
+const READINESS_SCHEMA = {
+  type: 'object',
+  required: ['status', 'blockers'],
+  properties: {
+    status: { type: 'string', enum: ['ready', 'not_ready'] },
+    blockers: { type: 'array', items: { type: 'object' } }
+  }
+}
+
 function computeReady(nodes, done) {
   return nodes.filter(n =>
     !done.has(n.node_id) &&
@@ -57,16 +75,20 @@ function computeReady(nodes, done) {
 }
 
 function routeOutcome(result) {
-  if (result.outcome === 'passed') return 'done'
-  if (result.outcome === 'hard_fail') return 'hard'
   const findings = result.blocking_findings || []
+  if (result.outcome === 'passed' && findings.length === 0) return 'done'
+  if (result.outcome === 'hard_fail') return 'hard'
   if (findings.some(f => f.type === 'cross_node' || f.suspected_root_node)) return 'hard'
   return 'soft'
 }
 
 function mergeExpanded(nodes, newNodes) {
-  const seen = new Set(nodes.map(n => n.node_id))
-  return [...nodes, ...(newNodes || []).filter(n => !seen.has(n.node_id))]
+  const updates = new Map((newNodes || []).map(node => [node.node_id, node]))
+  const merged = nodes.map(node => updates.has(node.node_id)
+    ? { ...node, ...updates.get(node.node_id) }
+    : node)
+  const seen = new Set(nodes.map(node => node.node_id))
+  return [...merged, ...(newNodes || []).filter(node => !seen.has(node.node_id))]
 }
 
 function pickExit(remaining, hardFailures) {
@@ -94,7 +116,7 @@ function loadDagPrompt() {
     'exit_artifacts, node_spec_path, decision_mode, decision_inputs, closure_verify, soft_retry_max,',
     'and a profile_slice carrying only the bootstrap-profile fields that node needs — tech stack,',
     'scenario, target paths); completed[] = node_ids whose transition_log status is "completed";',
-    'expanders[] = the declared expander scripts; applied_expanders[] = expanders already run.',
+    'expanders[] = the declared idempotent expander scripts.',
     'Do not execute any node. Read and summarize only.'
   ].join(' ')
 }
@@ -104,9 +126,39 @@ function expandPrompt(expander) {
     `Run the project-local expander ${expander} (it mutates .allforai/bootstrap/workflow.json in place,`,
     'the existing behavior). Then return { new_nodes: [...] } listing the nodes it added',
     '(node_id, capability, hard_blocked_by, exit_artifacts, and any superset fields).',
-    'Do not duplicate nodes that already exist.',
-    `Finally, append "${expander}" to workflow.json applied_expanders (create the array if absent;`,
-    'do not duplicate) so this expander is NOT re-run on a later resume (fix C5 write-back).'
+    'Return both added and repaired nodes. Do not duplicate node IDs. The controller runs',
+    'expanders again after every execution wave because new trigger artifacts may appear mid-run.'
+  ].join(' ')
+}
+
+function readinessPrompt() {
+  return [
+    'Run python3 .allforai/bootstrap/scripts/validate_unattended_readiness.py . --write-report.',
+    'Read .allforai/bootstrap/unattended-run-readiness.json. Return status "ready" only when',
+    'the command succeeds and the report status is exactly "ready"; otherwise return',
+    '{status:"not_ready", blockers:[...]}. Never weaken or bypass a blocker.'
+  ].join(' ')
+}
+
+function gateNodePrompt(node) {
+  return [
+    `Run python3 .allforai/bootstrap/scripts/check_artifacts.py`,
+    `.allforai/bootstrap/workflow.json --node ${node.node_id} --json.`,
+    'Read the JSON, every declared exit artifact, and every validation command result.',
+    'Return status "passed" only when all_exist is true and there are no unresolved gaps.',
+    'Any code_gaps or test_gaps, conditional/partial/warning status, placeholder, fallback,',
+    'missing side effect, or failed validation returns status "repair". Cross-node,',
+    'environment, authority, or unsafe blockers return "hard_fail".'
+  ].join(' ')
+}
+
+function repairPrompt(node, findings) {
+  return [
+    `Read ${'${CLAUDE_PLUGIN_ROOT}'}/skills/meta-orchestration/40-qa/execution-repair-loop/SKILL.md.`,
+    `Repair node ${node.node_id} findings: ${JSON.stringify(findings || [])}.`,
+    'Apply the generic repair loop to all code_gaps and test_gaps. Do not downgrade, waive,',
+    'or hide them. Rerun affected QA evidence, but do not mark the workflow node complete;',
+    'the controller will rerun the original node and its independent artifact gate.'
   ].join(' ')
 }
 
@@ -158,12 +210,39 @@ function commitFailuresPrompt(hardFailures) {
 
 async function runNode(node, agent) {
   const max = node.soft_retry_max ?? 2
+  const repairMax = node.repair_retry_max ?? 3
   let attempt = 0
+  let repairAttempt = 0
   let strict = ''
   while (true) {
     const r = await agent(runNodePrompt(node, strict), { schema: NODE_RESULT_SCHEMA, label: node.node_id })
     const cls = routeOutcome(r)
-    if (cls === 'done') return r
+    if (cls === 'done') {
+      const gate = await agent(gateNodePrompt(node), {
+        schema: NODE_GATE_SCHEMA, label: `verify:${node.node_id}`
+      })
+      if (!gate || gate.node_id !== node.node_id) {
+        return { ...r, outcome: 'hard_fail', blocking_findings: [{
+          type: 'invalid_artifact_gate', detail: 'independent artifact gate missing or mismatched'
+        }] }
+      }
+      if (gate.status === 'passed' && (gate.blocking_findings || []).length === 0) return r
+      if (gate.status === 'hard_fail') {
+        return { ...r, outcome: 'hard_fail', blocking_findings: gate.blocking_findings || [] }
+      }
+      if (repairAttempt >= repairMax) {
+        return { ...r, outcome: 'hard_fail', blocking_findings: [{
+          type: 'exhausted_repair_loop',
+          detail: `artifact repair loop exhausted after ${repairMax} attempts`
+        }] }
+      }
+      repairAttempt += 1
+      await agent(repairPrompt(node, gate.blocking_findings), {
+        label: `repair:${node.node_id}:${repairAttempt}`
+      })
+      strict = ` [repair ${repairAttempt}: rerun affected QA evidence; all gaps must be empty]`
+      continue
+    }
     if (cls === 'hard') return { ...r, outcome: 'hard_fail' }
     if (attempt >= max) {
       return { ...r, outcome: 'hard_fail',
@@ -185,18 +264,34 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
   phase('Load')
   const dag = await agent(loadDagPrompt(), { schema: DAG_SCHEMA, label: 'load-dag' })
   const done = new Set(dag.completed || [])
-  const applied = new Set(dag.applied_expanders || [])   // fix C5
-
-  phase('Expand')
-  for (const exp of (dag.expanders || [])) {
-    if (applied.has(exp)) continue                        // fix C5: don't re-run on resume
-    const r = await agent(expandPrompt(exp), { schema: EXPAND_SCHEMA, label: `expand:${exp}` })
-    dag.nodes = mergeExpanded(dag.nodes, (r && r.new_nodes) || [])
-    applied.add(exp)
-  }
 
   phase('Execute')
   while (true) {
+    phase('Expand')
+    let expanded = false
+    for (const exp of (dag.expanders || [])) {
+      const r = await agent(expandPrompt(exp), {
+        schema: EXPAND_SCHEMA, label: `expand:${exp}`
+      })
+      const changed = (r && r.new_nodes) || []
+      dag.nodes = mergeExpanded(dag.nodes, changed)
+      expanded = expanded || changed.length > 0
+    }
+    if (expanded) {
+      const readiness = await agent(readinessPrompt(), {
+        schema: READINESS_SCHEMA, label: 'validate-readiness'
+      })
+      if (!readiness || readiness.status !== 'ready') {
+        return { status: 'needs_diagnosis', hardFailures: [{
+          node_id: 'dynamic-expansion-readiness',
+          outcome: 'hard_fail',
+          blocking_findings: (readiness && readiness.blockers) || [{
+            type: 'invalid_readiness_gate', detail: 'readiness gate missing'
+          }]
+        }] }
+      }
+    }
+    phase('Execute')
     const ready = computeReady(dag.nodes, done)
     if (ready.length === 0) break
     log(`running ${ready.length} ready node(s)`)
@@ -229,8 +324,9 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
 // <<<ENGINE-CORE-END>>>
 
 module.exports = {
-  DAG_SCHEMA, NODE_RESULT_SCHEMA, EXPAND_SCHEMA,
+  DAG_SCHEMA, NODE_RESULT_SCHEMA, EXPAND_SCHEMA, NODE_GATE_SCHEMA, READINESS_SCHEMA,
   computeReady, routeOutcome, mergeExpanded, pickExit, convergenceCheck,
   serializeCommit, runNode, commitNode, runEngine,
-  loadDagPrompt, expandPrompt, runNodePrompt, commitPrompt, commitFailuresPrompt
+  loadDagPrompt, expandPrompt, readinessPrompt, gateNodePrompt, repairPrompt,
+  runNodePrompt, commitPrompt, commitFailuresPrompt
 }

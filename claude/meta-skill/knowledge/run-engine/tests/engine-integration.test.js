@@ -40,6 +40,7 @@ test('runEngine: expander adds a node that then runs', async () => {
   const agent = makeFakeAgent({
     'load-dag': dag,
     'expand:mk_b': { new_nodes: [{ node_id: 'b', capability: 'x', hard_blocked_by: ['a'], exit_artifacts: [] }] },
+    'validate-readiness': { status: 'ready', blockers: [] },
     a: passed('a'), b: passed('b'), 'commit:a': {}, 'commit:b': {}
   })
   const res = await core.runEngine({ agent, pipeline })
@@ -47,14 +48,43 @@ test('runEngine: expander adds a node that then runs', async () => {
   assert.equal(agent.counters.b, 1) // expanded node executed
 })
 
-test('runEngine: applied_expanders are NOT re-run (fix C5)', async () => {
+test('runEngine: expander reruns after a wave and discovers a late node', async () => {
   const dag = { nodes: [
     { node_id: 'a', capability: 'x', hard_blocked_by: [], exit_artifacts: [] }
-  ], completed: ['a'], expanders: ['mk_b'], applied_expanders: ['mk_b'] }
-  const agent = makeFakeAgent({ 'load-dag': dag })
+  ], completed: [], expanders: ['mk_b'] }
+  const agent = makeFakeAgent({
+    'load-dag': dag,
+    'expand:mk_b': [
+      { new_nodes: [] },
+      { new_nodes: [{ node_id: 'b', capability: 'x',
+        hard_blocked_by: ['a'], exit_artifacts: [] }] },
+      { new_nodes: [] }
+    ],
+    'validate-readiness': { status: 'ready', blockers: [] },
+    a: passed('a'), b: passed('b'), 'commit:a': {}, 'commit:b': {}
+  })
   const res = await core.runEngine({ agent, pipeline })
   assert.equal(res.status, 'complete')
-  assert.equal(agent.counters['expand:mk_b'], undefined) // already applied -> skipped
+  assert.equal(agent.counters['expand:mk_b'], 3)
+  assert.equal(agent.counters.b, 1)
+})
+
+test('runEngine: dynamic expansion readiness failure blocks execution', async () => {
+  const dag = { nodes: [
+    { node_id: 'a', capability: 'x', hard_blocked_by: [], exit_artifacts: [] }
+  ], completed: [], expanders: ['mk_b'] }
+  const agent = makeFakeAgent({
+    'load-dag': dag,
+    'expand:mk_b': { new_nodes: [{ node_id: 'b', capability: 'x',
+      hard_blocked_by: ['a'], exit_artifacts: [] }] },
+    'validate-readiness': {
+      status: 'not_ready', blockers: [{ type: 'missing_command', detail: 'build unavailable' }]
+    }
+  })
+  const res = await core.runEngine({ agent, pipeline })
+  assert.equal(res.status, 'needs_diagnosis')
+  assert.equal(res.hardFailures[0].node_id, 'dynamic-expansion-readiness')
+  assert.equal(agent.counters.a, undefined)
 })
 
 test('runEngine: stuck graph -> needs_diagnosis with synthesized deadlock (fix C3)', async () => {

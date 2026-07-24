@@ -6,9 +6,9 @@
   "plugins": [
     {
       "name": "meta-skill",
-      "version": "0.11.1",
+      "version": "0.11.2",
       "source": "./",
-      "description": "Meta-skill generator: analyzes projects, generates project-specific node-specs and orchestrator configs. Two commands: /bootstrap (analyze + generate) and /run (execute). Replaces 6 specialized plugins."
+      "description": "Meta-skill generator: /bootstrap analyzes projects and generates project-specific node-specs, orchestrator configs, and the project-local /run entry. Replaces 6 specialized plugins."
     }
   ]
 }
