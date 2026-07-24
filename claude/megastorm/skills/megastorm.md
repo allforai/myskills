@@ -63,7 +63,9 @@ absent-or-flaky capability is a `reality_gate` candidate the plan agent should m
    `$ROOT/knowledge/schemas.md`. Contents: `requirements` = an `R-<module>-NN` ID for every
    requirement across the specs; `interfaces` = the closed vocabulary of cross-module interface
    names using the grammar `<kind>:<name>` (kind ∈ api/event/data/ui, lowerCamelCase).
-   This registry is FROZEN before Phase 1 — the design fan-out reads it, never extends it.
+   This registry is FROZEN to workers before Phase 1 — design agents never extend it.
+   During Phase 1 only the main orchestrator may revise an exact evidence-backed contract,
+   and only after persisting an in-envelope autonomous decision record; otherwise defer the branch.
    **Err toward a generous interface vocabulary:** a too-thin registry makes the parallel design
    fan-out throw escalations (each missing interface is a new-human-decision), bouncing control
    back to you repeatedly and partly defeating "decisions front-loaded." Enumerate every plausible

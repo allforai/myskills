@@ -2,9 +2,11 @@
 """Run-scoped autonomous decision ledger for unattended Megastorm phases."""
 
 import argparse
+import fcntl
 import json
 import os
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 
 TERMINAL_OUTCOMES = {"action-taken", "fallback-taken", "deferred"}
@@ -31,6 +33,29 @@ def _atomic_json(path, value):
     finally:
         if os.path.exists(tmp):
             os.unlink(tmp)
+
+
+def _atomic_json_retry(path, value):
+    last_error = None
+    for _ in range(3):
+        try:
+            _atomic_json(path, value)
+            return
+        except OSError as exc:
+            last_error = exc
+    raise last_error
+
+
+@contextmanager
+def _single_writer(run_dir):
+    lock_path = Path(run_dir) / "decision-ledger.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with lock_path.open("a+", encoding="utf-8") as lock:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
 
 def init_run(run_dir, envelope):
@@ -69,31 +94,32 @@ def record_decision(run_dir, proposal):
     envelope = _read_json(run_dir / "decision-envelope.json", {})
     _validate_proposal(proposal, envelope)
     ledger_path = run_dir / "decision-ledger.json"
-    ledger = _read_json(ledger_path, {"run_id": envelope["run_id"], "records": []})
-    record = dict(proposal)
-    record.update({
-        "decision_id": f"D-{len(ledger['records']) + 1:04d}",
-        "run_id": envelope["run_id"],
-        "task_id": proposal.get("task_id"),
-        "fallback": proposal.get("fallback"),
-        "outcome": None,
-        "result_ref": None,
-        "skipped_dependents": proposal.get("skipped_dependents", []),
-    })
-    ledger["records"].append(record)
-    try:
-        _atomic_json(ledger_path, ledger)
-    except OSError:
-        record["decision_id"] = f"E-{len(unified_records(run_dir)) + 1:04d}"
-        record["authority"] = "deferred"
-        record["outcome"] = "deferred"
-        record["result_ref"] = f"emergency:{record['decision_id']}"
-        record["durability"] = "emergency"
-        emergency = run_dir / "decision-emergency.ndjson"
-        with emergency.open("a", encoding="utf-8") as f:
-            f.write(json.dumps(record, ensure_ascii=False) + "\n")
-            f.flush()
-            os.fsync(f.fileno())
+    with _single_writer(run_dir):
+        ledger = _read_json(ledger_path, {"run_id": envelope["run_id"], "records": []})
+        record = dict(proposal)
+        record.update({
+            "decision_id": f"D-{len(ledger['records']) + 1:04d}",
+            "run_id": envelope["run_id"],
+            "task_id": proposal.get("task_id"),
+            "fallback": proposal.get("fallback"),
+            "outcome": None,
+            "result_ref": None,
+            "skipped_dependents": proposal.get("skipped_dependents", []),
+        })
+        ledger["records"].append(record)
+        try:
+            _atomic_json_retry(ledger_path, ledger)
+        except OSError:
+            record["decision_id"] = f"E-{len(unified_records(run_dir)) + 1:04d}"
+            record["authority"] = "deferred"
+            record["outcome"] = "deferred"
+            record["result_ref"] = f"emergency:{record['decision_id']}"
+            record["durability"] = "emergency"
+            emergency = run_dir / "decision-emergency.ndjson"
+            with emergency.open("a", encoding="utf-8") as f:
+                f.write(json.dumps(record, ensure_ascii=False) + "\n")
+                f.flush()
+                os.fsync(f.fileno())
     return record
 
 
@@ -101,18 +127,19 @@ def finalize_decision(run_dir, decision_id, outcome, result_ref, skipped=None):
     if outcome not in TERMINAL_OUTCOMES or not result_ref:
         raise ValueError("terminal outcome and result_ref are required")
     path = Path(run_dir) / "decision-ledger.json"
-    ledger = _read_json(path, {})
-    matches = [r for r in ledger.get("records", []) if r["decision_id"] == decision_id]
-    if len(matches) != 1:
-        raise ValueError("decision_id not found or duplicated")
-    record = matches[0]
-    if record["outcome"] is not None:
-        raise ValueError("decision already finalized")
-    record["outcome"] = outcome
-    record["result_ref"] = result_ref
-    if skipped is not None:
-        record["skipped_dependents"] = skipped
-    _atomic_json(path, ledger)
+    with _single_writer(run_dir):
+        ledger = _read_json(path, {})
+        matches = [r for r in ledger.get("records", []) if r["decision_id"] == decision_id]
+        if len(matches) != 1:
+            raise ValueError("decision_id not found or duplicated")
+        record = matches[0]
+        if record["outcome"] is not None:
+            raise ValueError("decision already finalized")
+        record["outcome"] = outcome
+        record["result_ref"] = result_ref
+        if skipped is not None:
+            record["skipped_dependents"] = skipped
+        _atomic_json_retry(path, ledger)
     return record
 
 

@@ -60,7 +60,9 @@ the approved host argv already owns one. Use `python3`/`sys.executable`; never a
    markers, a ```json object per `schemas.md`: `requirements` (`R-<module>-NN` for every
    requirement) + `interfaces` (closed vocabulary, grammar `<kind>:<name>`, kind ∈
    api/event/data/ui, lowerCamelCase). Err toward a GENEROUS interface vocabulary — a
-   thin registry makes the design fan-out throw escalations. FROZEN before Phase 1.
+   thin registry makes the design fan-out throw escalations. FROZEN to workers before
+   Phase 1: only the main orchestrator may revise an exact evidence-backed contract after
+   persisting an in-envelope decision record; otherwise defer the branch.
 6. **Resolve the three model tiers WITH the human** — never automatically:
    copy `models.example.json` → `models.json`, fill each tier with a real model name
    available to this codex install (`codex exec -m <name>` must work):

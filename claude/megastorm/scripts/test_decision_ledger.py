@@ -61,9 +61,14 @@ def test_unified_records_reads_emergency_journal(tmp_path):
 
 def test_ledger_write_failure_defers_to_emergency_journal(tmp_path, monkeypatch):
     init_run(tmp_path, _envelope())
-    monkeypatch.setattr(dl, "_atomic_json", lambda *_: (_ for _ in ()).throw(
-        OSError("disk failure")))
+    attempts = []
+    def fail(*_):
+        attempts.append(1)
+        raise OSError("disk failure")
+    monkeypatch.setattr(dl, "_atomic_json", fail)
     record = record_decision(tmp_path, _proposal())
+    assert len(attempts) == 3
     assert record["outcome"] == "deferred"
     assert record["durability"] == "emergency"
     assert unified_records(tmp_path)[0]["decision_id"].startswith("E-")
+    assert (tmp_path / "decision-ledger.lock").exists()
