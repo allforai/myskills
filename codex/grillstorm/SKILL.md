@@ -24,6 +24,9 @@ but must not replace an original stage with a different methodology.
 
 - **Run:** `$grillstorm <goal>` starts a new adaptively routed delivery run or resumes the
   matching unfinished run.
+- **Audit completed delivery:** `$grillstorm audit [run path]` enters Phase 7 directly for
+  an implementation-complete run, preserving its frozen delivery evidence. This is a mode
+  of the existing command, not another command entry.
 - **Handoff:** `$grillstorm handoff [next-session focus]` reads `references/handoff.md`,
   writes a durable repository checkpoint, optionally updates the configured tracker when
   authorized, reports its portability status, and stops. Use `$grillstorm handoff local`
@@ -66,6 +69,13 @@ reviews/task-closure.md
 reviews/workflow-grill.md
 reviews/workflow-dry-run.md
 reviews/runtime.md
+reviews/logic-alignment.md
+reviews/feature-state-completeness.md
+reviews/outcome-probe.md
+probes/sampling-frame.md
+probes/rounds/<round-id>.md
+gaps/catalog.md
+gaps/<gap-id>.md
 workflow-state.json
 workflow-events.jsonl
 workflow-report.json
@@ -84,12 +94,16 @@ Update `state.json` after every accepted answer and phase transition. Record the
 current module, approved modules, invalidated modules, execution status, and monotonic
 `spec_revision`, `task_revision`, `workflow_revision`, and `launch_revision`. On invocation,
 resume an unfinished matching run instead of restarting unless the user requests a new run.
+During post-delivery audit also record probe round, sampled strata, gap families,
+audit status, and parent/child run pointers.
 
 ## Token discipline
 
 - Keep this file as the orchestrator. Read only the reference for the active phase.
 - During a module grill, load only `program-spec.md`, `decisions.md`, the current module,
   and contracts that touch it.
+- During outcome critique, load only one probe evidence bundle, its approved intent, and
+  related prior answers; do not replay the whole delivery.
 - Persist the accepted answer immediately, then rely on the artifact instead of replaying
   conversation history.
 - Never ask for facts available from the repository, tools, documentation, or existing
@@ -375,21 +389,68 @@ commit Grillstorm-owned work to the current branch. Phase 3 must front-load any 
 exception to committing. Never push, deploy, or modify production/external systems unless
 the launch contract explicitly authorizes it.
 
-## Phase 6: Close
+## Phase 6: Record implementation completion
 
 Write `execution-report.md` with completed modules, acceptance evidence, unresolved or
 human-only gates, review findings and fixes, deviations, and exact resume pointers.
 Include an `Autonomous decisions` section listing each unforeseen decision, recommendation,
 alternatives considered, rationale, affected artifacts/code, and validation performed.
 
-**Document production is never completion.** Mark the run complete only when required code
-exists, every task and catalog gate has evidence, blocking review findings are fixed, the
-full required test suite passes, and runtime behavior is proven or explicitly reality-gated.
+**Document production is never implementation completion.** Set
+`implementation_status: complete` only when required code exists, every task and catalog
+gate has evidence, blocking review findings are fixed, the full required test suite passes,
+and runtime behavior is proven or explicitly reality-gated. Do not yet set the overall run
+to `complete`.
 
 If work remains for another session, or the user requests a clean context boundary, run the
 bundled handoff mode after updating `state.json` and the execution report. A fully completed
-run ends with the execution report; do not manufacture follow-up work merely to justify a
-handoff.
+implementation run proceeds to the post-delivery audit below.
+
+## Phase 7: Probe, Grill, and discover gaps
+
+Skip this phase only in `plan-only` mode or when the user explicitly requested implementation
+without outcome critique. Read `references/post-delivery-probing.md`.
+
+In a fresh `THINK` context, use `prompts/probe-sampler.md` to construct the full sampling
+frame, a census-backed requirement-by-state matrix, and a stratified, risk-weighted round
+across two axes:
+
+- **logic alignment:** whether domain logic, ownership, algorithms, policies, interfaces,
+  state/lifecycle, and architecture match what the user intended;
+- **feature/state completeness:** whether functionality and details work across all
+  applicable success, empty, loading, degraded, invalid, denied, failure, retry,
+  concurrency, migration, rollback, cleanup, and recovery states.
+
+Persist `probes/sampling-frame.md`. Execute each selected probe in a fresh `VERIFY` context
+using the real runtime/inspection medium and capture reproducible evidence. Write the
+axis-specific cumulative results to `reviews/logic-alignment.md` and
+`reviews/feature-state-completeness.md`. Green samples never imply exhaustive coverage.
+
+For one probe at a time, use `prompts/outcome-critique-grill.md` and the bundled Grill
+protocol to show a compact intended-versus-observed evidence bundle. Ask the user exactly
+one fault-finding question with a recommended judgment and tradeoff. Persist the answer
+before showing the next sample. Distinguish an approved-intent gap from a new preference;
+do not silently expand scope.
+
+For every confirmed gap seed, use `prompts/gap-expander.md` in a fresh `THINK` context to
+search related invariants, transitions, interfaces, consumers, sibling surfaces, error/
+recovery patterns, duplicated implementations, and test seams. Convert candidates into
+new probes, verify them, and group only confirmed instances into gap families.
+
+Run at least two rotating rounds. Continue until two consecutive rounds produce no new gap
+family, no new blocking member of an existing family, and no unexplored high-risk stratum.
+Then ask one final Grill question confirming practical saturation. Write each round to
+`probes/rounds/<round-id>.md` and the cumulative audit to `reviews/outcome-probe.md`.
+
+If no confirmed gap remains, mark the run `audited-clean`. If evidence is unavailable, mark
+it `audit-reality-gated` with exact runbooks. For confirmed gaps, write `gaps/catalog.md` and
+one `gaps/<gap-id>.md` per family, mark the parent `audited-with-gaps`, then create a linked
+child Grillstorm run using the gap catalog as discovery input. Route that child by its real
+blast radius and run the normal spec/task/execution closure cycle. Do not rewrite the
+completed parent's historical specs or tasks.
+
+The overall parent run becomes `complete` only after its post-delivery audit reaches one of
+those explicit terminal statuses and every confirmed gap has a durable child-run pointer.
 
 ## Bundled sources
 

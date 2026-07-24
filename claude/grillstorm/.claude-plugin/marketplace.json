@@ -6,9 +6,9 @@
   "plugins": [
     {
       "name": "grillstorm",
-      "version": "0.16.0",
+      "version": "0.17.0",
       "source": "./",
-      "description": "Work backward from completion, then run supervised worktree delivery with verified Claude/Codex continuation."
+      "description": "Work backward from completion, deliver concurrently, then probe and Grill the result into linked gap cycles."
     }
   ]
 }

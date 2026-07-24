@@ -1,6 +1,6 @@
 ---
 name: grillstorm
-description: Start or resume an adaptively routed, worktree-concurrent Grillstorm run.
+description: Start, resume, or post-delivery audit an adaptive Grillstorm run.
 arguments:
   - name: goal
     description: The goal to deliver, or a resume instruction

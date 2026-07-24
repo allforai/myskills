@@ -36,6 +36,7 @@ Grillstorm's only structural extensions are:
 - a separately invoked durable `handoff` mode for crossing session and machine boundaries;
 - autonomous adoption and logging of recommended unforeseen decisions;
 - repair loops that consume the original review findings.
+- a post-delivery probe-sampling and user critique loop that produces linked gap runs.
 
 Routing may skip `to-tickets`/catalog for a direct single-module change or use the diagnostic
 path for a bug, because the upstream skills are explicitly composable. Routing must never

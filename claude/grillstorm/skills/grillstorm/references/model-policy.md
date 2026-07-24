@@ -78,6 +78,9 @@ question unless the user explicitly wants to override the recommendation.
 ## Token discipline
 
 - THINK does not implement routine tasks.
+- Post-delivery probe sampling and related-gap expansion use THINK; probe execution and
+  evidence capture use fresh VERIFY contexts; interactive critique stays in the root Grill
+  context.
 - BUILD receives only one task, relevant specs/interfaces, and supervisor feedback.
 - VERIFY receives only the frozen task, repository state, acceptance command, and diff.
 - Escalation changes the work state, not the model silently. A failed BUILD task is retried
