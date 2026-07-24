@@ -339,15 +339,11 @@ Update the overview and write a final report: assumptions the autonomous agents 
 escalation points + resolutions, the independently-verified completion list (distinguish
 "executor-claimed" from "supervisor-confirmed"), DAG warnings, and learnings.
 
-After delivering the report, add one closing line inviting the user to run
-`/cross-exam` for an evidence-backed completion cross-examination of this
-delivery (ships with this plugin; interactive-only — do NOT auto-enter it).
-**For an eliminate-a-class goal (Phase 0 step 8), cross-exam is not a courtesy — it is the
-completeness gate.** Its `需求覆盖` lens and dead-endpoint reconciliation are exactly the
-absence-detection the per-task supervisor cannot do; treat "class eliminated" as UNPROVEN until a
-census-backed sweep (cross-exam or the Phase 0 census re-run against the delivered tree) confirms
-no class member was missed. Recommend it in the report explicitly, and never let the run's own
-"N/N done" stand in for it.
+After delivering the report, end the megastorm run. Do not invoke, suggest, or invite
+`/cross-exam`; it remains a separate command that runs only when the user explicitly requests it.
+For an eliminate-a-class goal (Phase 0 step 8), treat "class eliminated" as UNPROVEN until the
+Phase 0 census is rerun against the delivered tree and confirms no class member was missed. Never
+let the run's own "N/N done" stand in for that census.
 
 **Mandatory escalation + skip accounting (from §1.6).** The report MUST render the full
 `escalation-ledger.json`: every execution-phase escalation (task id, reason, evidence,
@@ -379,8 +375,8 @@ audit** (grep the bad shape)?
 - **Census-backed** → you may state the class is covered, and cite the census (population size, how
   each member was dispositioned: task vs verified-clean).
 - **Audit-based (or unknown)** → completeness is UNVERIFIED. The report must say so in these words,
-  must NOT present "N/N done" as "the class is eliminated", and must recommend the census/cross-exam
-  sweep as the outstanding gate. This is the exact trap the pipeline exists to avoid at the task
+  must NOT present "N/N done" as "the class is eliminated", and must identify the census sweep as
+  the outstanding gate. This is the exact trap the pipeline exists to avoid at the task
   level, applied one level up: absence has no tell, so an unproven-complete set is guilty until a
   coverage method proves it innocent.
 

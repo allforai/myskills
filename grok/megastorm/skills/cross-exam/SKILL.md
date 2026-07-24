@@ -33,7 +33,13 @@ examiner's suspicion, desired verdict, conversation history, and severity.
    sweep. Store unselected cards as `open_threads`.
 6. Persist raw evidence before ledger entries. Use `done`, `gap`, `drift`, or
    `unprovable`; gaps/drift require severity.
-7. Generate the report only with
+7. For every `gap`/`drift`, answer "isolated or a class?" before the next round.
+   If it is an instance of a structural pattern, immediately record a
+   `patterns` entry (hypothesis + sites, schema in cross-exam.md) and dispatch a
+   fresh enumeration prober with a neutral structural description — never the
+   first instance's verdict. Sibling suspicions live only in `patterns`, never
+   in `open_threads`; the renderer names every unexamined site.
+8. Generate the report only with
    `$GROK_PLUGIN_ROOT/scripts/render_report.py`.
 
 Native dispatch writes the session manifest and the trusted Grok host integration

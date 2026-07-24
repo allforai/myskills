@@ -195,5 +195,94 @@ class TestOpenThreads(unittest.TestCase):
             self.assertIn("（无）", threads_section.split("\n## ")[0])
 
 
+class TestPatterns(unittest.TestCase):
+    def _run_with_patterns(self, tmp, entries, patterns):
+        run = _mk_run(tmp, [{"id": "F1", "name": "面一", "status": "examined"},
+                            {"id": "F2", "name": "面二", "status": "partial"}],
+                      entries)
+        L = json.loads((run / "ledger.json").read_text(encoding="utf-8"))
+        L["patterns"] = patterns
+        (run / "ledger.json").write_text(
+            json.dumps(L, ensure_ascii=False), encoding="utf-8")
+        return run
+
+    def test_patterns_section_counts_and_unexamined_sites_listed(self):
+        # 3 位点：1 个链到被采信的 gap entry → 实证 1；2 个无 entry → 未查 2，逐个点名
+        with tempfile.TemporaryDirectory() as tmp:
+            gap = _entry("退款重复提交会双扣吗？", verdict="gap",
+                         ev_dir="evidence/q3/", severity="high")
+            run = self._run_with_patterns(tmp, [gap], [{
+                "pattern_id": "P1", "hypothesis": "写端点普遍缺幂等键",
+                "sites": [
+                    {"site": "POST /api/refunds", "facet": "F1",
+                     "entry_q": "退款重复提交会双扣吗？"},
+                    {"site": "POST /api/orders", "facet": "F2"},
+                    {"site": "POST /api/coupons/redeem", "facet": "F2"},
+                ]}])
+            report = render(run)
+            self.assertIn("## 缺陷模式", report)
+            self.assertIn("写端点普遍缺幂等键", report)
+            self.assertIn("共 3 位点", report)
+            self.assertIn("实证 1", report)
+            self.assertIn("未查 2", report)
+            pat = report[report.index("## 缺陷模式"):]
+            pat = pat.split("\n## ")[0]
+            self.assertIn("POST /api/orders", pat)
+            self.assertIn("POST /api/coupons/redeem", pat)
+
+    def test_site_linked_to_refused_entry_counts_as_unexamined(self):
+        # entry_q 指向被拒渲（无证据）的 entry → 该位点算未查，不算实证
+        with tempfile.TemporaryDirectory() as tmp:
+            oral = _entry("下单重复提交会双扣吗？", verdict="gap",
+                          ev_dir="evidence/q9/", severity="high")
+            run = self._run_with_patterns(tmp, [oral], [{
+                "pattern_id": "P1", "hypothesis": "写端点普遍缺幂等键",
+                "sites": [{"site": "POST /api/orders", "facet": "F2",
+                           "entry_q": "下单重复提交会双扣吗？"}]}])
+            import shutil
+            shutil.rmtree(Path(tmp) / "evidence/q9", ignore_errors=True)
+            report = render(run)
+            pat = report[report.index("## 缺陷模式"):].split("\n## ")[0]
+            self.assertIn("实证 0", pat)
+            self.assertIn("未查 1", pat)
+
+    def test_site_with_unmatched_entry_q_counts_as_unexamined(self):
+        # entry_q 对不上任何 entry（口头声称查过）→ 未查
+        with tempfile.TemporaryDirectory() as tmp:
+            run = self._run_with_patterns(tmp, [_entry("q1")], [{
+                "pattern_id": "P1", "hypothesis": "写端点普遍缺幂等键",
+                "sites": [{"site": "POST /api/orders", "facet": "F2",
+                           "entry_q": "根本没问过的问题"}]}])
+            report = render(run)
+            pat = report[report.index("## 缺陷模式"):].split("\n## ")[0]
+            self.assertIn("实证 0", pat)
+            self.assertIn("未查 1", pat)
+
+    def test_patterns_do_not_inflate_overall_counts(self):
+        # patterns 引用的 entry 不重复计数；未查位点不进任何裁决计数
+        with tempfile.TemporaryDirectory() as tmp:
+            gap = _entry("退款重复提交会双扣吗？", verdict="gap",
+                         ev_dir="evidence/q3/", severity="high")
+            run = self._run_with_patterns(tmp, [gap], [{
+                "pattern_id": "P1", "hypothesis": "写端点普遍缺幂等键",
+                "sites": [
+                    {"site": "POST /api/refunds", "facet": "F1",
+                     "entry_q": "退款重复提交会双扣吗？"},
+                    {"site": "POST /api/orders", "facet": "F2"},
+                ]}])
+            report = render(run)
+            self.assertIn("缺口：1", report)
+            self.assertIn("实证完成：0", report)
+
+    def test_patterns_key_absent_renders_none(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = _mk_run(tmp, [{"id": "F1", "name": "面一", "status": "examined"}],
+                          [_entry("q1")])
+            report = render(run)
+            self.assertIn("## 缺陷模式", report)
+            pat = report[report.index("## 缺陷模式"):].split("\n## ")[0]
+            self.assertIn("（无）", pat)
+
+
 if __name__ == "__main__":
     unittest.main()

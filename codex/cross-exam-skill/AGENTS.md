@@ -1,4 +1,4 @@
-# AGENTS.md — Cross-exam (Codex port, v0.14.0)
+# AGENTS.md — Cross-exam (Codex port, v0.15.0)
 
 Independent, evidence-backed delivery audit for Codex. Read `SKILL.md` first.
 The main session is the examiner; every probe must be a fresh-context sub-agent.

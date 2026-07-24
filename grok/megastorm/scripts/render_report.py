@@ -12,6 +12,11 @@
 另渲染 ledger 可选的 `open_threads`（出过牌但未实测的线）为"未拉的线"专节——
 不进任何计数，只为续盘留接手点（防弃牌蒸发）。
 
+可选 `patterns`（缺陷模式=同类位点清点）渲染为"缺陷模式"专节。位点不许自报
+"已查"：一个位点算实证，当且仅当它的 `entry_q` 精确匹配到一条被采信（有证据）
+的 entry；对不上、或对上的是被拒渲的口头裁决，一律算未查并逐个点名。未查位点
+不进任何裁决计数——同类嫌疑不许蒸发，也不许口头销账。
+
 Usage: python3 render_report.py <run_dir>    # run_dir 内含 ledger.json
 写出 <run_dir>/completion-report.md。exit 0=渲染成功（有拒渲仍为 0，报告内声明）；
 exit 1=ledger 不可读或缺必填键。
@@ -190,6 +195,31 @@ def render(run_dir, attestation_verifier=None):
     if threads:
         out.extend(f"- [{t.get('facet', '?')}] {t.get('q', '?')} — "
                    f"泄漏点：{t.get('leak_point', '')}" for t in threads)
+    else:
+        out.append("（无）")
+
+    patterns = ledger.get("patterns", [])
+    out.append("")
+    out.append("## 缺陷模式（同类位点清点——未查位点不进任何完成度）")
+    if patterns:
+        admitted_by_q = {e.get("q"): e for e in admitted}
+        for p in patterns:
+            sites = p.get("sites", [])
+            proven = [(s, admitted_by_q[s["entry_q"]]) for s in sites
+                      if s.get("entry_q") in admitted_by_q]
+            unexamined = [s for s in sites
+                          if s.get("entry_q") not in admitted_by_q]
+            out.append("")
+            out.append(f"### {p.get('pattern_id', '?')} {p.get('hypothesis', '?')}"
+                       f" — 共 {len(sites)} 位点：实证 {len(proven)}，"
+                       f"未查 {len(unexamined)}")
+            for s, e in proven:
+                label = VERDICT_LABELS.get(e.get("verdict"), e.get("verdict"))
+                out.append(f"- **{label}** {s.get('site', '?')}"
+                           f" — {e.get('q', '?')}")
+            for s in unexamined:
+                out.append(f"- **未查** {s.get('site', '?')}"
+                           f"（[{s.get('facet', '?')}] 同类嫌疑，未实证）")
     else:
         out.append("（无）")
 
