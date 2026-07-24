@@ -1,8 +1,8 @@
 # Post-Delivery Probe And Critique Loop
 
-Run this only after implementation, integration, runtime validation, and both review axes
-have passed. It audits the delivered result from the user's perspective; it does not replace
-the earlier completion evidence.
+Run this only after a delivery run has reached its terminal `delivery_status: complete`.
+The audit has its own lifecycle and audits the delivered result from the user's perspective;
+it never replaces or revokes the earlier completion evidence.
 
 ## Sampling frame
 
@@ -14,12 +14,12 @@ Build a complete frame before choosing probes:
 - success, empty, loading, degraded, invalid, denied, partial-failure, timeout,
   cancellation, retry, recovery, stale, concurrent, migration, rollback, and cleanup states;
 - external side effects and operational lifecycle;
-- test seams, runtime surfaces, and reality gates.
+- test seams, runtime surfaces, startup dependencies, and execution environments.
 
-First build a census-backed requirement-by-state matrix. Every approved requirement and
-applicable state must be present even when it will not be sampled in the current round.
-Missing implementation/evidence discovered by the census is already a gap candidate; do
-not hide it behind sampling.
+Use the frozen `requirements-state-registry.json` produced by spec closure as the census.
+Every approved requirement and applicable state must be present even when it will not be
+sampled in the current round. Missing implementation/evidence discovered by the census is
+already a gap candidate; do not hide it behind sampling.
 
 Then use stratified, risk-weighted sampling for depth. Select at least one probe from every applicable
 stratum, oversample high-blast-radius boundaries and previously repaired areas, and rotate
@@ -41,9 +41,16 @@ result and captured evidence
 related-neighborhood keys
 ```
 
-Use the real medium: browser/DOM/network/screenshot, API request and side effect, CLI
-invocation/exit code, public library consumer, database/event trace, logs/metrics, or an
-approved human reality-gate runbook.
+Logic probes inspect code and frozen documents. Feature/state probes must use the real
+medium: browser/DOM/network/screenshot, API request and side effect, CLI invocation/exit
+code, public library consumer, database/event trace, or device/external development system.
+Static inspection, tests, and a proposed runbook alone cannot pass a feature/state probe.
+
+Every feature probe records a real runtime attempt, integer exit code, and at least one
+runtime evidence artifact. A `pass` requires the target to have started. Missing
+dependencies, unavailable environments, and failed startup are blocking gaps with captured
+failure evidence. The controller must resolve every evidence path beneath the run directory
+and recompute its SHA-256; a worker-supplied hash string is not evidence.
 
 ## Axis A: Logic alignment
 
@@ -65,7 +72,8 @@ implementation logic matches what the user meant, not merely whether tests pass.
 
 Build a requirement-by-state matrix. Probe behavior details, transitions, feedback, and side
 effects across applicable states. Include cross-module and recovery paths, not only isolated
-happy paths. Explicitly list unprobed cells and why they remain reality-gated.
+happy paths. Explicitly list cells deferred to a later round; none may remain when the audit
+closes.
 
 Report completeness separately:
 
@@ -73,7 +81,7 @@ Report completeness separately:
 - `implemented-evidence-only`;
 - `missing`;
 - `contradictory`;
-- `unverifiable/reality-gated`;
+- `verification-failed`;
 - `not-applicable` with rationale.
 
 Grill whether the delivered behavior feels complete and correct in detail. A feature name
@@ -89,9 +97,9 @@ can discover. Persist each answer before continuing.
 Classify feedback as:
 
 - `confirmed`: matches intent;
-- `gap-seed`: observed or suspected mismatch;
+- `gap-seed`: observed or suspected mismatch, including inability to start or execute the
+  required runtime;
 - `preference`: a newly expressed preference outside the approved goal;
-- `reality-gate`: cannot be resolved in the current environment.
 
 A preference becomes a gap only after the user accepts the scope change.
 
@@ -121,9 +129,18 @@ Each round:
 5. update gap families and the remaining sampling frame.
 
 Run at least two rounds. Continue until two consecutive rounds produce no new gap family,
-no new blocking member of an existing family, and no unexplored high-risk stratum. Then ask
+no new blocking member of an existing family, and no unexplored registry cell. Then ask
 one final Grill question confirming that the critique has reached practical saturation.
 Never claim exhaustive coverage from sampling.
+
+Persist the machine control plane:
+
+- `probes/probe-plan.json`;
+- `probes/probe-results.jsonl`;
+- `probes/probe-state.json`;
+- `gaps/gap-manifest.json`.
+
+Run `scripts/validate_probe_artifacts.py` after each round and before declaring saturation.
 
 ## Gap documents and the next cycle
 
@@ -146,8 +163,12 @@ Write `gaps/catalog.md` and one `gaps/<gap-id>.md` per confirmed gap family:
 ## Source rounds
 ```
 
-Do not rewrite the completed parent's historical specs/tasks. Mark it `audited-clean`,
-`audited-with-gaps`, or `audit-reality-gated`. For confirmed gaps, create a linked child
-Grillstorm run using the gap catalog as discovery input, route it by actual blast radius,
-and begin the normal spec/task/execution closure cycle. Preserve parent and child pointers
-in both states.
+Do not rewrite the completed parent's historical specs/tasks or change its delivery status.
+Close the independent audit as `clean` or `gaps`. Missing runtime evidence is a gap. For
+confirmed gaps, create a linked remediation delivery run using the gap catalog as discovery
+input, route it by actual blast radius, and begin the normal spec/task/execution closure
+cycle. Each machine manifest entry records affected requirement/state IDs, recommended
+scope, acceptance probes, child delivery run ID, and child state path. Validate it with
+`--require-child-links` after child creation. Preserve parent/audit/child pointers in all
+states. Every remediation run has its own delivery endpoint and may start a later audit
+cycle.

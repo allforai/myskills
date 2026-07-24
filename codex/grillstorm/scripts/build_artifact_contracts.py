@@ -7,12 +7,7 @@ import sys
 
 
 CONTROL_PATHS = [
-    "docs/grillstorm/**/tasks/workflow-tasks.json",
-    "docs/grillstorm/**/tasks/orchestration.json",
-    "docs/grillstorm/**/workflow-state*.json",
-    "docs/grillstorm/**/workflow-events*.jsonl",
-    "docs/grillstorm/**/workflow-report*.json",
-    "docs/grillstorm/**/execution-checkpoint.json",
+    "docs/grillstorm/**",
 ]
 
 

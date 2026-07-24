@@ -16,10 +16,13 @@ class ArtifactViolation(RuntimeError):
 
 OPERATIONS = {"create", "modify", "delete", "rename"}
 CONTROL_PLANE_DEFAULTS = (
+    "docs/grillstorm/**",
     "orchestration.json", "all-tasks.json", "models.json",
     "tasks.json", "model-policy*.json", "model-sources*.json",
     "execution-checkpoint.json", "workflow-state*.json",
     "workflow-events*.jsonl", "workflow-report*.json",
+    "requirements-state-registry.json", "probe-plan.json",
+    "probe-results.jsonl", "probe-state.json", "gap-manifest.json",
     ".grillstorm/**", "prompts/**", "**/prompts/**",
     "scripts/run_layers.py", "**/scripts/run_layers.py",
     "scripts/model_policy.py", "**/scripts/model_policy.py",

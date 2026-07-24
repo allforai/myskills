@@ -64,6 +64,19 @@ the gate at the end without claiming it passed.
 
 Tool failures, test failures, and ordinary bugs are not decisions; diagnose and repair them.
 
+## No internal fallback
+
+An implementation, adapter, worker, controller, or verifier must not conceal failure by
+returning a default/empty value, stale cache, mock result, partial success, alternate
+algorithm, weaker model, skipped side effect, or fabricated evidence unless that exact
+degraded behavior was approved in the spec. Catching an error is valid only to add context,
+clean up, retry the unchanged contract within its budget, or propagate a typed failure.
+
+When the approved path cannot work, fail visibly and preserve the evidence. Repair it,
+replan affected artifacts, or create a blocking gap and linked remediation run. The
+autonomous recommendation policy chooses among legitimate implementations; it never
+authorizes weakening requirements or proof.
+
 ## Completion
 
 A work unit is verified only when its production code, tests, applicable gate, runtime

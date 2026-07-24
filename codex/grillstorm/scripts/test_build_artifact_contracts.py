@@ -21,6 +21,7 @@ class ArtifactContractTests(unittest.TestCase):
             contract["acceptance_cmd_sha256"],
             hashlib.sha256(task["acceptance_cmd"].encode()).hexdigest(),
         )
+        self.assertEqual(contract["forbidden_paths"], ["docs/grillstorm/**"])
         self.assertEqual(contract["path_rules"][0]["kind"], "literal")
 
     def test_glob_path_is_declared_as_glob(self):

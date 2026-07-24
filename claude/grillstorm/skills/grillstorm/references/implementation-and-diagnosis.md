@@ -2,6 +2,18 @@
 
 Implement the approved task documents; do not stop at producing them.
 
+## Coding invariant
+
+Write the primary approved behavior, not a hidden substitute. Do not swallow exceptions,
+return convenient zero/empty/default values, reuse stale data, install no-op adapters,
+silently skip required side effects, switch algorithms/providers, or make partial work look
+successful. Error translation must preserve failure semantics and causal evidence.
+
+Every fallback-looking branch must trace to an explicit requirement with its own observable
+state, interface contract, runtime behavior, and tests. If it cannot, delete it. If the
+primary implementation cannot satisfy the contract, keep the failing test, return
+`needs_replan`, and repair the plan instead of coding around it.
+
 ## Test-driven slices
 
 Tests verify observable behavior through approved public seams, not private implementation.

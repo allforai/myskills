@@ -61,7 +61,8 @@ local handoff may preserve an already-present value when the user explicitly req
 - Branch/base/checkpoint: <branch and SHAs>
 - Run and route: <path and diagnostic|direct|ticketed|program>
 - Phase/current work unit: <resume pointer>
-- Probe round/audit status: <not-started|round and next probe|audited status>
+- Delivery status and terminal commit: <complete|incomplete; SHA>
+- Independent audit cycle: <none|cycle ID, round, next probe, status>
 - Completed proof: <references, not copied evidence>
 - Open or reality gates: <references>
 - Pre-existing dirty paths to preserve: <paths or none>
@@ -148,7 +149,10 @@ can resume code which exists only in the current working tree.
 
 - Do not mark a task or run complete because a handoff exists.
 - During post-delivery audit, preserve the current sampling frame, next probe, answered
-  critique questions, gap families, and child-run pointers.
+  critique questions, structured probe state/results, evidence hashes, gap manifest, gap
+  families, and child-run pointers.
+- Never change a completed parent's delivery status while checkpointing an audit or
+  remediation cycle.
 - Do not make new product decisions while summarizing.
 - Do not copy the conversation transcript.
 - Never include pre-existing user changes in a checkpoint commit.

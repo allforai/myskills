@@ -62,6 +62,7 @@ Module states are `pending`, `ready`, `in_progress`, `blocked`, `verified`, or `
 - Acceptance command: `<non-vacuous command>`
 - Expected evidence: <test count/output/artifact>
 - Runtime check: <command/flow or not-applicable reason>
+- Failure contract: <typed visible failure, or explicitly approved and tested degradation>
 - Review gate: standards + spec
 
 ### Steps
@@ -85,6 +86,8 @@ Module states are `pending`, `ready`, `in_progress`, `blocked`, `verified`, or `
 - Every interface has one producing task; consumers depend on that production.
 - Each acceptance command must select at least one real assertion and exit nonzero on failure.
 - Every behavioral task includes production-code work; documentation alone cannot complete it.
+- Every task names its failure contract. No task may authorize an implicit default, empty,
+  stale, mock, no-op, partial-success, or silent alternate path.
 - Use a human runbook only for proof that genuinely requires hardware, external systems, or
   visual judgment unavailable in the environment.
 - Expected paths guide execution but do not authorize silent boundary changes.

@@ -1,7 +1,7 @@
 {
   "name": "grillstorm",
   "description": "Outcome-first delivery with reverse Grill gates, supervised concurrency, cross-host continuation, and post-delivery probe critique.",
-  "version": "0.17.0",
+  "version": "0.18.2",
   "author": {
     "name": "dv"
   },

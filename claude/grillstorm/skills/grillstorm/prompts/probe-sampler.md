@@ -3,9 +3,11 @@
 Build a stratified, risk-weighted probe plan from the approved specs, decisions, tasks,
 runtime evidence, implementation diff, and current repository.
 
-Before sampling, enumerate the complete requirement-by-state population and classify each
-cell as `implemented-and-probed`, `implemented-evidence-only`, `missing`, `contradictory`,
-`unverifiable`, or `not-applicable`. Sampling deepens this census; it does not replace it.
+Use the supplied frozen `requirements-state-registry.json` as the complete population. Do
+not add, omit, or rename requirement/state cells. Classify each cell as
+`implemented-and-probed`, `implemented-evidence-only`, `missing`, `contradictory`,
+`verification-failed`, or `not-applicable`. Sampling deepens this census; it does not
+replace it.
 
 Produce two independent sample banks:
 
@@ -27,7 +29,7 @@ Return only:
     {
       "requirement": "R-001",
       "state": "success|empty|loading|degraded|invalid|denied|failure|retry|concurrent|recovery|other",
-      "status": "implemented-and-probed|implemented-evidence-only|missing|contradictory|unverifiable|not-applicable",
+      "status": "implemented-and-probed|implemented-evidence-only|missing|contradictory|verification-failed|not-applicable",
       "evidence": ["paths, tests, runtime artifacts, or rationale"]
     }
   ],
@@ -36,16 +38,22 @@ Return only:
     {
       "id": "P-001",
       "axis": "logic-alignment|feature-state-completeness",
-      "target": "requirement/state/invariant/interface ID",
+      "targets": [{"requirement": "R-001", "state": "success"}],
       "hypothesis": "claim under test",
-      "stimulus": "inspection or runtime action",
-      "observation_channel": "code|browser|api|cli|library|data|logs|human-gate",
+      "action": "inspection or runtime action",
+      "observation_channel": "code|document|browser|api|cli|library|data|device|external",
       "expected_evidence": "observable result",
       "falsifier": "what would show a gap",
       "selection_reason": "stratum/risk/rotation",
       "related_neighborhood_keys": ["symbols, IDs, states, paths"]
     }
   ],
-  "unsampled": [{"target": "ID", "reason": "rotation|reality-gate|lower-risk"}]
+  "unsampled": [
+    {"requirement": "R-002", "state": "error",
+     "reason": "rotation|lower-risk"}
+  ]
 }
 ```
+
+Logic-alignment probes use only `code` or `document`. Feature-state-completeness probes must
+use a runtime channel. Every high-risk registry cell must be probed in the current plan.

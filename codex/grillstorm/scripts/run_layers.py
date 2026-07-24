@@ -642,6 +642,54 @@ def atomic_write_json(path, value):
             os.unlink(tmp)
 
 
+def validate_census_artifact(path, tasks):
+    """Bind a completeness claim to the frozen requirement-state registry."""
+    try:
+        artifact = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise ValueError(f"invalid census artifact: {exc}") from exc
+    if (not isinstance(artifact, dict) or artifact.get("schema_version") != 1 or
+            not artifact.get("delivery_run_id")):
+        raise ValueError("census artifact must be a version 1 requirement-state registry")
+    requirements = artifact.get("requirements")
+    if not isinstance(requirements, list) or not requirements:
+        raise ValueError("census artifact has no requirements")
+    registry_ids = set()
+    for requirement in requirements:
+        rid = requirement.get("id") if isinstance(requirement, dict) else None
+        states = requirement.get("states") if isinstance(requirement, dict) else None
+        if (not isinstance(rid, str) or not rid or rid in registry_ids or
+                not isinstance(requirement.get("source"), str) or
+                not requirement["source"] or not isinstance(states, list) or not states):
+            raise ValueError("census artifact contains an invalid requirement")
+        registry_ids.add(rid)
+        state_ids = set()
+        for state in states:
+            sid = state.get("id") if isinstance(state, dict) else None
+            if (not isinstance(sid, str) or not sid or sid in state_ids or
+                    state.get("risk") not in {"high", "medium", "low"}):
+                raise ValueError(f"census artifact contains an invalid state for {rid}")
+            state_ids.add(sid)
+    task_requirement_ids = set()
+    for task in tasks:
+        task_requirements = task.get("requirements")
+        if not isinstance(task_requirements, list) or not task_requirements:
+            raise ValueError(f"{task.get('id', '<missing id>')}: requirements are required "
+                             "for census-backed completeness")
+        for rid in task_requirements:
+            if not isinstance(rid, str) or not rid:
+                raise ValueError(f"{task.get('id', '<missing id>')}: invalid requirement ID")
+            task_requirement_ids.add(rid)
+    if task_requirement_ids != registry_ids:
+        missing = sorted(registry_ids - task_requirement_ids)
+        unknown = sorted(task_requirement_ids - registry_ids)
+        raise ValueError(f"task/registry requirement mismatch; missing={missing}, "
+                         f"unknown={unknown}")
+    return hashlib.sha256(
+        json.dumps(artifact, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
 def input_fingerprint(tasks, orchestration, models, prompts_dir, host_command=None):
     payload = {
         "tasks": tasks,
@@ -849,6 +897,12 @@ def main(argv):
     if isinstance(tasks, dict):
         tasks = tasks.get("tasks", [])
     tasks_by_id = {t["id"]: t for t in tasks}
+    census_fingerprint = None
+    if args.completeness == "census":
+        try:
+            census_fingerprint = validate_census_artifact(args.census_artifact, tasks)
+        except ValueError as exc:
+            ap.error(str(exc))
     if not args.max_workers:
         heavy = [t["id"] for t in tasks
                  if HEAVY_CMD_RE.search(t.get("acceptance_cmd") or "")]
@@ -1081,6 +1135,7 @@ def main(argv):
                       "host_command": command_metadata,
                       "completeness": {"method": args.completeness,
                                        "artifact": args.census_artifact,
+                                       "artifact_sha256": census_fingerprint,
                                        "claim": ("census-backed" if args.completeness == "census"
                                                  else "Completeness unverified")},
                       "summary": {"verified": len(completed) - len(reality_gated),

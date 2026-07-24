@@ -7,7 +7,7 @@ arguments:
     required: true
 ---
 
-Invoke the Grillstorm run mode for: $ARGUMENTS
+Invoke the Grillstorm mode selected by: $ARGUMENTS
 
-> Read `${CLAUDE_PLUGIN_ROOT}/skills/grillstorm/SKILL.md` and follow its run or resume
-> protocol. Do not enter handoff mode unless explicitly requested.
+> Read `${CLAUDE_PLUGIN_ROOT}/skills/grillstorm/SKILL.md` and follow its run, resume, or
+> post-delivery audit protocol. Do not enter handoff mode unless explicitly requested.

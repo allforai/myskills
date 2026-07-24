@@ -18,7 +18,7 @@
     },
     {
       "name": "grillstorm",
-      "version": "0.17.0",
+      "version": "0.18.2",
       "source": "./claude/grillstorm/",
       "description": "Outcome-first pipeline with reverse Grill gates, worktree concurrency, cross-host continuation, and post-delivery probe critique."
     }

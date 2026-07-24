@@ -88,7 +88,8 @@ The goal is complete only when:
 - focused, module, integration, type/static, and full required suites pass;
 - standards and spec reviews have no blocking findings;
 - user-visible flows pass runtime validation;
-- placeholders, dead endpoints, fake success paths, and debug instrumentation are absent;
+- placeholders, dead endpoints, fake success paths, hidden fallback/default/mock paths, and
+  debug instrumentation are absent;
 - reality-gated items are reported separately and never presented as autonomously verified.
 
 The final report must also summarize every entry in `autonomous-decisions.md` and identify

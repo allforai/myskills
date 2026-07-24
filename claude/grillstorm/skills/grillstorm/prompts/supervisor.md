@@ -22,7 +22,10 @@ instead of testing the running reality.)
    confirmation without its required RPC/write/notification is `done:false`, even when the
    present code and tests are green.
 6. Verify the actual diff is confined to declared scope and substantive where mutation was expected.
-7. Default to disbelief: rerun failed / no acceptance_cmd / insufficient evidence → `done:false`.
+7. Reject unapproved internal fallbacks: swallowed errors, default/empty/stale/mock results,
+   no-op adapters, skipped side effects, partial-success disguises, or silent provider/
+   algorithm switches. Every degraded branch must trace to a requirement and direct test.
+8. Default to disbelief: rerun failed / no acceptance_cmd / insufficient evidence → `done:false`.
 
 ## Reality-gate handling
 Only for `reality_gate:true`: rerun acceptance once. A genuine pass is ordinary `done:true`.

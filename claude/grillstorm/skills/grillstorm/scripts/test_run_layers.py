@@ -11,7 +11,7 @@ from run_layers import (ANTI_VACUOUS, HEAVY_CMD_RE, build_supervisor_prompt,
                         main, prepare_integration_workspace, run_task,
                         pending_merge_intents, recover_confirmed_from_git,
                         run_task_in_worktree, schedule,
-                        undeclared_paths)
+                        undeclared_paths, validate_census_artifact)
 
 PROMPTS = pathlib.Path(__file__).resolve().parent.parent / "prompts"
 
@@ -59,6 +59,36 @@ class TestHeavyCmdHeuristic(unittest.TestCase):
         for cmd in ("pytest tests/test_x.py -q", "python3 check.py",
                     "node smoke.js", ""):
             self.assertFalse(HEAVY_CMD_RE.search(cmd), cmd)
+
+
+class TestCensusCompleteness(unittest.TestCase):
+    def _registry(self):
+        return {
+            "schema_version": 1,
+            "delivery_run_id": "run-1",
+            "requirements": [
+                {"id": "R1", "source": "spec.md#r1",
+                 "states": [{"id": "success", "risk": "high"}]},
+            ],
+        }
+
+    def test_valid_registry_is_bound_to_task_requirements(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = pathlib.Path(td, "registry.json")
+            path.write_text(json.dumps(self._registry()))
+            digest = validate_census_artifact(
+                path, [dict(_task("T1"), requirements=["R1"])]
+            )
+            self.assertEqual(len(digest), 64)
+
+    def test_rejects_requirement_mismatch(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = pathlib.Path(td, "registry.json")
+            path.write_text(json.dumps(self._registry()))
+            with self.assertRaisesRegex(ValueError, "mismatch"):
+                validate_census_artifact(
+                    path, [dict(_task("T1"), requirements=["R2"])]
+                )
 
 
 class TestParseVerdict(unittest.TestCase):

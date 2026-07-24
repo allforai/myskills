@@ -101,6 +101,20 @@ Every confirmed candidate receives a marker commit named
 uses `grillstorm-reality-gated: <task-id>`. These markers are the portable completion
 authority shared by Claude and Codex.
 
+When `run_layers.py --completeness census` is used, `--census-artifact` must point to the
+frozen version 1 `requirements-state-registry.json`. Every task must declare non-empty
+`requirements`, their union must exactly equal the registry requirement IDs, and every
+registry requirement must contain a source plus at least one risk-ranked state. The runner
+validates and hashes that artifact before it emits `claim: census-backed`; a path alone is
+never completeness evidence.
+
+When `run_layers.py --completeness census` is used, `--census-artifact` must point to the
+frozen version 1 `requirements-state-registry.json`. Every task must declare non-empty
+`requirements`, their union must exactly equal the registry requirement IDs, and every
+registry requirement must contain a source plus at least one risk-ranked state. The runner
+validates and hashes that artifact before it emits `claim: census-backed`; a path alone is
+never completeness evidence.
+
 Never stage, stash, commit, or modify the user's checked-out worktree. Pre-existing dirty
 files remain untouched. Do not merge the integration ref into the user's branch until all
 applicable global checks and final two-axis review pass.

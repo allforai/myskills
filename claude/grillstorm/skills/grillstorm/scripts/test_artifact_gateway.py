@@ -28,7 +28,9 @@ class ContractTests(unittest.TestCase):
         from artifact_gateway import _forbidden, CONTROL_PLANE_DEFAULTS
         for path in ("prompts/executor.md", "x/prompts/executor.md",
                      "scripts/run_layers.py", "x/scripts/run_layers.py",
-                     "tasks.json", "model-policy.json"):
+                     "tasks.json", "model-policy.json",
+                     "docs/grillstorm/run/specs/module.md",
+                     "docs/grillstorm/run/probes/probe-state.json"):
             self.assertTrue(_forbidden(path, CONTROL_PLANE_DEFAULTS), path)
 
     def test_rejects_legacy_and_operationless_contracts(self):
