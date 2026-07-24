@@ -173,7 +173,11 @@ and exact completion in a compact state contract or `launch-contract.md`. Ask on
 question to approve the uninterrupted run.
 
 After approval, implementation does not ask routine questions. Record unforeseen choices in
-`autonomous-decisions.md`, update revisions and dependencies, and rerun affected closure.
+`autonomous-decisions.md`, update revisions and dependencies, and rerun affected closure. For
+each choice, consider viable options, adopt the recommended option that remains inside the launch
+authority, record its assumptions/risk/affected artifacts before acting, and record its outcome
+afterward. Never pause merely because the choice concerns product behavior, architecture,
+boundaries, interfaces, or replanning.
 
 **Exit:** one approved, internally consistent launch contract.
 
@@ -191,8 +195,12 @@ contract, module, integration, full-suite, and real runtime checks as applicable
 independent Standards and Spec reviews; repair and repeat to closure.
 
 Unavailable authority for destructive, paid, production, or external action is not
-permission. Preserve the failure and exact evidence; never claim a pass. Commit only
-Grillstorm-owned work under the approved Git policy. Never push or deploy without authority.
+permission. Gather only non-mutating evidence for that action, record the affected branch as
+deferred, transitively skip only its dependents, and continue every independent authorized branch.
+Where useful, complete the local reversible implementation and write an exact reality-gate
+runbook without performing the unauthorized action. Preserve the failure and exact evidence;
+never claim a pass. Commit only Grillstorm-owned work under the approved Git policy. Never push
+or deploy without authority.
 
 **Exit:** all applicable work-unit and global gates pass on current revisions.
 
@@ -206,7 +214,10 @@ code exists, tasks/catalog are evidenced, blocking findings are fixed, required 
 runtime behavior is proven, and the report/terminal commit are durable. This is the delivery
 endpoint; a later audit appends history but does not rewrite it.
 
-If incomplete or pausing, update state/report and use handoff. After completion, enter Phase
+If incomplete after all viable branches drain, update state/report with every deferred/skipped
+chain and a precise resume pointer. Do not use handoff merely because one branch is blocked or an
+unforeseen decision arose. Handoff occurs only on explicit user request or when a terminal
+infrastructure failure makes all further safe progress impossible. After completion, enter Phase
 7 when requested or when the default full workflow continues with the user present.
 
 ## Phase 7: Audit Outcomes

@@ -41,6 +41,26 @@ class TestMegastormContract(unittest.TestCase):
         for phrase in required:
             self.assertIn(phrase, combined)
 
+    def test_decisions_cannot_bypass_durable_gateway(self):
+        combined = read("skills/megastorm.md") + read("knowledge/execution-playbook.md")
+        required = (
+            "decision_ledger.py record",
+            "decision_ledger.py finalize",
+            "Never edit `decision-ledger.json` directly",
+            "three",
+            "emergency journal",
+            "perform no further mutations",
+            "degraded",
+        )
+        for phrase in required:
+            self.assertIn(phrase, combined)
+
+    def test_phase1_concurrency_never_requires_a_question(self):
+        playbook = read("knowledge/execution-playbook.md")
+        self.assertIn("machine-load policy", playbook)
+        self.assertIn("continue without asking", playbook)
+        self.assertNotIn("user-chosen `max_concurrency`", playbook)
+
 
 if __name__ == "__main__":
     unittest.main()

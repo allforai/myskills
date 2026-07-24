@@ -97,6 +97,9 @@ End the run after the report. `/cross-exam` remains an explicit, separate comman
   `scriptPath`.
 - Never ask the user during Phase 1. Choose the best authorized recommendation, record it, and
   continue; if authority is insufficient, defer only that branch and its dependents.
+- Never edit `decision-ledger.json` directly. Use `decision_ledger.py record/finalize`; if neither
+  its normal ledger nor emergency journal is writable, stop new mutations and close with a
+  degraded report.
 - Never treat infrastructure failure as business failure or spend business retry budget on it.
 - Never treat environmental proof failure as a code defect. Record a reality gate and keep
   independent/downstream work running when committed interfaces exist.

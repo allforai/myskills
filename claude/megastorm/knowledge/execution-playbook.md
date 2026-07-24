@@ -62,6 +62,9 @@ This phase is interactive.
    `docs/superpowers/runs/<date>-<goal>/`. Persist its `decision-envelope.json` with scope, write
    roots, destructive limits,
    external systems, network, secrets, spending, model substitutions, and acceptance authority.
+   Also freeze a machine-load policy: explicit `max_concurrency` when known, or permission for the
+   orchestrator to select and record a safe value from observed CPU/memory and acceptance-command
+   cost. Phase 1 never asks for this value.
    Initialize with:
    `python3 $ROOT/scripts/decision_ledger.py init <run-dir> <envelope.json>`.
 8. For a goal that eliminates or enforces a whole class, create an exhaustive census before tasks:
@@ -79,6 +82,14 @@ dependents, and continue independent work.
 For stages 1.1-1.5, `status:"escalate"` is a decision proposal. Select, record, apply, and finalize
 the best authorized recommendation; otherwise defer only the affected branch. Stage 1.6 records an
 escalating task, skips its dependent chain, and keeps the rest running.
+
+Every autonomous decision MUST use `decision_ledger.py record` before its action and
+`decision_ledger.py finalize` after the observable outcome. Never edit `decision-ledger.json`
+directly. The script owns authority-basis validation, the single-writer lock, monotonic IDs, three
+atomic write attempts, emergency-journal fallback, and one-time finalization. If both the normal
+ledger and emergency journal are unwritable, perform no further mutations: retain a schema-complete
+degraded in-memory record, drain no new work, and transition directly to the Phase 2 degraded
+report. Lack of durable decision state never grants permission to continue mutating.
 
 Every Workflow stage must:
 
@@ -171,7 +182,9 @@ Persist `retry-ledger.json`, `escalation-ledger.json`, `reality-gate-ledger.json
 - Dispatch every ready task immediately; recompute readiness after every confirmation. Do not add
   a skill-level cap over the Workflow platform cap.
 - If acceptance commands contain machine-heavy local work such as full builds, whole suites, or
-  Docker builds, warn before launch and honor a user-chosen `max_concurrency`; never silently cap.
+  Docker builds, apply the Phase 0 machine-load policy. If no explicit value was frozen, select a
+  safe recommendation from observed CPU/memory and command cost, persist it as an autonomous
+  decision, and continue without asking. Never silently cap.
 - At most one task per isolate/resource group may be in flight. Waiting on a mutex consumes no
   concurrency slot and follows declaration order.
 
