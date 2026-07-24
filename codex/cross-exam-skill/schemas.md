@@ -41,6 +41,21 @@
   `[{"id":"stable UUID", "q": "...", "facet": "F1", "leak_point": "..."}]`。每轮发牌后把未选中的牌
   **立即**记入；某线后来被实测则移入 entries 并从这里删除。渲染为"未拉的线"专节，
   不进任何计数；续盘时它是起手牌候选。
+- 顶层可选 `patterns`（缺陷模式=同类位点清点，防同类嫌疑蒸发）：
+
+  ```json
+  {"pattern_id": "P1", "hypothesis": "写端点普遍缺幂等键",
+   "sites": [
+     {"site": "POST /api/refunds", "facet": "F1", "entry_q": "同一笔订单退两次会怎样？"},
+     {"site": "POST /api/orders", "facet": "F2"}
+   ]}
+  ```
+
+  某条 `gap|drift` 被判为"一类的实例"时建 pattern：`hypothesis` 一句话缺陷模式，
+  `sites` 由枚举官覆盖法列出的全部同类位点。位点**没有 status 字段——不许自报
+  "已查"**：某位点被实测后，把它的 `entry_q` 指到那条 entry 的 `q`（精确匹配）；
+  渲染器只认"entry_q 匹配到被采信 entry"为实证，其余（无 entry_q / 对不上 /
+  对上的是被拒渲裁决）一律算未查并逐个点名。
 
 `ledger.json` 通过 `scripts/ledger_store.py` 整文件原子替换，不做文本 append。
 同一 run 只允许一个 examiner lock；entry/open-thread 按 UUID + 内容去重，冲突拒绝。
@@ -50,6 +65,7 @@
 依次：总览（面/问/四类裁决计数；baseline=none 时声明关闭的镜头）→ 逐面完成度
 （"X 问中 Y 问实证通过"，逐条链证据）→ 缺口清单（gap+drift 按 severity 排）→
 无法自证清单 → 未盘问声明（not_examined 面）→ 未拉的线（open_threads）→
+缺陷模式（patterns：每类"共 N 位点，实证 M，未查 K"，未查位点逐个点名）→
 拒渲声明（如有）。
 
 ## 诚实性红线（写死在 render_report.py，不是嘱咐）
@@ -61,3 +77,5 @@
    run 目录本身 / 逃逸路径一律拒收，即使目录非空也不算证据）；verdict 不在
    done|gap|drift|unprovable 内的 entry 同样拒渲并点名（非法裁决），即使它带着
    看似合法的证据目录。
+3. patterns 的位点没有自报"已查"的通道：`entry_q` 精确匹配到被采信 entry 才算
+   实证，匹配不上（含匹配到被拒渲裁决）一律渲染为"未查"并逐个点名，不进任何计数。

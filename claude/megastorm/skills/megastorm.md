@@ -5,8 +5,8 @@ description: Drive a large goal end-to-end — decompose into modules, front-loa
 
 # megastorm — large-goal autonomous pipeline
 
-**Invariant:** decisions front-loaded → autonomous → self-fix loop, escalate-to-stop.
-All human interaction is in Phase 0. Phase 1 runs without human stops except on escalation.
+**Invariant:** decisions front-loaded → autonomous → self-fix loop → disclose at close.
+All human interaction is in Phase 0. Phase 1 never stops for a new decision or approval.
 Spec: `docs/superpowers/specs/2026-06-09-megastorm-pipeline-design.md`.
 
 `$ROOT` = `${CLAUDE_PLUGIN_ROOT}`. Schemas: `$ROOT/knowledge/schemas.md`. Prompts: `$ROOT/knowledge/prompts/`.
@@ -63,7 +63,9 @@ absent-or-flaky capability is a `reality_gate` candidate the plan agent should m
    `$ROOT/knowledge/schemas.md`. Contents: `requirements` = an `R-<module>-NN` ID for every
    requirement across the specs; `interfaces` = the closed vocabulary of cross-module interface
    names using the grammar `<kind>:<name>` (kind ∈ api/event/data/ui, lowerCamelCase).
-   This registry is FROZEN before Phase 1 — the design fan-out reads it, never extends it.
+   This registry is FROZEN to workers before Phase 1 — design agents never extend it.
+   During Phase 1 only the main orchestrator may revise an exact evidence-backed contract,
+   and only after persisting an in-envelope autonomous decision record; otherwise defer the branch.
    **Err toward a generous interface vocabulary:** a too-thin registry makes the parallel design
    fan-out throw escalations (each missing interface is a new-human-decision), bouncing control
    back to you repeatedly and partly defeating "decisions front-loaded." Enumerate every plausible
@@ -73,9 +75,11 @@ absent-or-flaky capability is a `reality_gate` candidate the plan agent should m
    preferred model from the Workflow tool's current `model` enum; AskUserQuestion only if a
    preferred name is missing, or to record an explicitly requested thrifty run. Freeze the three
    literals into the registry's `models` field.
-7. **New-human-decision rule (boundary for Phase 1):** anything changing module boundaries,
-   public/cross-module interfaces, or user-visible scope = escalate. Internal-only choices =
-   the autonomous agents decide and log. This is what makes Phase 1 safe to run unattended.
+7. **Freeze the authority and decision policy.** Persist `<run-dir>/decision-envelope.json`
+   with scope, write roots, destructive-operation limits, external systems, network, secrets,
+   spending, model substitutions, and acceptance authority. Initialize `decision-ledger.json`
+   with `python3 $ROOT/scripts/decision_ledger.py init <run-dir> <envelope.json>`.
+   This is the last ordinary human decision point.
 
 8. **Eliminate-a-class goals need a CENSUS, not an audit (anti-fake-completion at the SET level).**
    When the goal is to remove/eliminate/harden a CLASS — every fabrication, every fake-success,
@@ -98,11 +102,19 @@ absent-or-flaky capability is a `reality_gate` candidate the plan agent should m
    fake-success has no tell, so the only durable defense is making it either unrepresentable or
    mechanically detectable.
 
-After Phase 0, do not stop for the human until an escalation surfaces.
+After Phase 0, do not ask, request approval, wait for input, or return at a stage boundary.
+Every unseen choice becomes an autonomous decision record: rank viable options by authority,
+safety, reversibility, repository convention, blast radius, evidence, maintenance cost, then
+stable name; persist the recommended in-envelope choice before acting. If no option is
+authorized, collect only non-mutating evidence, defer that branch, transitively skip its
+dependents, and continue everything independent. Phase 2 discloses all such choices.
 
 ## Phase 1 — Autonomous pipeline (call Workflow once per stage; read result; decide next)
-For stages **1.1–1.5**, read the Workflow return. If ANY agent returned `status:"escalate"`, HALT,
-render `reason`+`evidence` to the user, get the decision, then re-run that stage. Otherwise continue.
+For stages **1.1–1.5**, `status:"escalate"` means **decision proposed**, never "ask the human."
+The main session generates alternatives, selects the highest-ranked authorized recommendation,
+records it through `decision_ledger.py`, applies/fixes/replans, finalizes the record with an
+artifact/event reference, and continues. If none is authorized, record `deferred`, skip only the
+affected branch and dependents, and continue.
 (**§1.6 is the exception**: execution-phase escalations do NOT halt the line — see "Escalation
 semantics" in §1.6: record, transitively skip dependents, keep the rest running, report in Phase 2.)
 
@@ -117,10 +129,10 @@ semantics" in §1.6: record, transitively skip dependents, keep the rest running
   e.g. `{model:'opus'}`. NEVER write `'default'` and NEVER omit `model` — both inherit the
   *session* model, so a non-Opus session silently runs supervisors/critics on the wrong model.
 
-`module-too-large` escalations (from design/plan agents, or §1.3's size check) are ordinary
-escalations: HALT, show the human the evidence (task-count estimate + split seams), and let
-THEM decide how to split or defer — there is no automatic loop-back or re-decomposition.
-Phase 0's granularity review (step 3) exists precisely to make this rare.
+`module-too-large` is resolved autonomously: split at the first stable package/component,
+independent-acceptance, or non-cyclic interface boundary; then prefer the lowest touched-path
+cut and canonical path name. Record the split. If every split changes user-visible scope,
+defer only the excess branch.
 
 Model tiers — three roles, never hardcoded to a model generation. Each tier has a preferred
 model plus fallback candidates; the ladder is a RECOMMENDATION ORDER to present to the human,
@@ -139,15 +151,13 @@ its tier's frozen literal.
 - **BULK（执行）** = prefer `sonnet`; candidate `haiku`. Used by executor — token thrift on
   bulk mechanical coding only.
 
-Downgrade rules — NO automatic downgrade; manual downgrade only:
-- The orchestrator NEVER lowers a tier on its own — not for availability, not for cost, not
-  mid-run. Every downgrade is a human decision.
-- **Manual downgrade (allowed):** the human may pick a lower model for any tier — at Phase 0
-  (e.g. an explicitly declared thrifty run) or at any escalation halt. Record it in the overview;
-  list every below-preference tier in the Phase 2 report ("THINK ran on opus — human-approved").
-- **Mid-run model failure (any tier, including BULK):** retry; if it keeps failing, HALT and
-  escalate — the human decides whether to downgrade or stop. A silently weaker verifier (or
-  planner) is worse than a stopped pipeline.
+Downgrade rules — only Phase 0-authorized substitutions:
+- Phase 0 may authorize explicit fallback literals and ordering. The orchestrator never uses
+  an unlisted model.
+- Record every substituted tier in the decision ledger and Phase 2 report.
+- **Mid-run model failure:** retry, then use only a substitution explicitly authorized by the
+  frozen decision envelope and record it. Without an authorized substitution, defer the
+  affected branch and continue; never silently downgrade and never pause for approval.
 
 ### 1.1 Design — Workflow
 Author a Workflow that `pipeline`s/`parallel`s over the M module specs; each `agent` uses
@@ -165,7 +175,8 @@ and exposes/consumes are drawn from the closed vocabulary, not invented. Collect
   If it BLOCKs (uncovered req / orphan / dangling or off-registry interface), feed errors to a
   fix `agent` (design-agent prompt) and re-run, ≤3 rounds.
 - Then run a Workflow `agent` with `$ROOT/knowledge/prompts/closure-critic.md` and `{model: THINK}` for the prose-level judgment (≤3 rounds).
-- Unresolved after rounds, or any escalate → HALT to user.
+- Unresolved after rounds becomes a recorded autonomous fix/replan decision or a deferred
+  affected branch; it never halts for user input.
 
 ### 1.3 Plan — Workflow
 `pipeline` over designs; each `agent` uses `$ROOT/knowledge/prompts/plan-agent.md` with `{model: THINK}` and emits the plan-task array.
@@ -173,8 +184,8 @@ For each plan, run `python3 $ROOT/scripts/validate_plan_tasks.py <tasks.json> re
 (registry.json from §1.2 — validates `implements`/`requires` against the frozen vocabulary);
 if BLOCKED, bounce back to the plan agent until every task has `touched_paths` +
 `acceptance_cmd` + on-registry interface tags.
-Deterministic size check: a validated plan with > 20 tasks for one module = module-too-large →
-escalate to the human; do NOT bounce it to the plan agent (it cannot fix scoping).
+Deterministic size check: a validated plan with > 20 tasks invokes the autonomous split rule
+above; record the chosen seam or defer only the excess branch.
 
 ### 1.4 Reverse review — Workflow
 A Workflow `agent` with `$ROOT/knowledge/prompts/reverse-critic.md` and `{model: THINK}` over all spec/design/plan docs
@@ -339,15 +350,16 @@ Update the overview and write a final report: assumptions the autonomous agents 
 escalation points + resolutions, the independently-verified completion list (distinguish
 "executor-claimed" from "supervisor-confirmed"), DAG warnings, and learnings.
 
-After delivering the report, add one closing line inviting the user to run
-`/cross-exam` for an evidence-backed completion cross-examination of this
-delivery (ships with this plugin; interactive-only — do NOT auto-enter it).
-**For an eliminate-a-class goal (Phase 0 step 8), cross-exam is not a courtesy — it is the
-completeness gate.** Its `需求覆盖` lens and dead-endpoint reconciliation are exactly the
-absence-detection the per-task supervisor cannot do; treat "class eliminated" as UNPROVEN until a
-census-backed sweep (cross-exam or the Phase 0 census re-run against the delivered tree) confirms
-no class member was missed. Recommend it in the report explicitly, and never let the run's own
-"N/N done" stand in for it.
+The report MUST merge normal ledger, emergency-journal, and degraded in-memory decision records
+and include: **Autonomous decisions** (options, chosen recommendation, reason, risk, authority
+basis, outcome, affected artifacts), **Assumptions made**, and **Deferred by authority boundary**
+(fallback, reason, and complete skipped-dependent chains). Every decision appears exactly once.
+
+After delivering the report, end the megastorm run. Do not invoke, suggest, or invite
+`/cross-exam`; it remains a separate command that runs only when the user explicitly requests it.
+For an eliminate-a-class goal (Phase 0 step 8), treat "class eliminated" as UNPROVEN until the
+Phase 0 census is rerun against the delivered tree and confirms no class member was missed. Never
+let the run's own "N/N done" stand in for that census.
 
 **Mandatory escalation + skip accounting (from §1.6).** The report MUST render the full
 `escalation-ledger.json`: every execution-phase escalation (task id, reason, evidence,
@@ -379,8 +391,8 @@ audit** (grep the bad shape)?
 - **Census-backed** → you may state the class is covered, and cite the census (population size, how
   each member was dispositioned: task vs verified-clean).
 - **Audit-based (or unknown)** → completeness is UNVERIFIED. The report must say so in these words,
-  must NOT present "N/N done" as "the class is eliminated", and must recommend the census/cross-exam
-  sweep as the outstanding gate. This is the exact trap the pipeline exists to avoid at the task
+  must NOT present "N/N done" as "the class is eliminated", and must identify the census sweep as
+  the outstanding gate. This is the exact trap the pipeline exists to avoid at the task
   level, applied one level up: absence has no tell, so an unproven-complete set is guilty until a
   coverage method proves it innocent.
 

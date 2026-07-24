@@ -133,3 +133,35 @@ and committed; only the autonomous proof is pending human/hardware verification.
 a business failure. §1.6 reads `reality_gated:true` and routes the task to the reality-gate
 ledger instead of soft-retrying or skipping dependents (see skill §1.6). A genuine code error
 on a `reality_gate` task still returns a plain `done:false` (and must be fixed).
+## Autonomous decision record
+
+Phase 1 never requests human input. Workers may propose a decision; the main orchestrator
+is the sole writer of the run-scoped unified decision record:
+
+```json
+{
+  "decision_id": "D-0001",
+  "run_id": "stable-run-id",
+  "phase": "1.3",
+  "branch_id": "module-or-task-branch",
+  "task_id": null,
+  "question": "decision that arose",
+  "options_considered": ["A", "B"],
+  "chosen": "A",
+  "reason": "ranked recommendation",
+  "assumptions": [],
+  "risk": "low",
+  "reversible": true,
+  "authority": "inside-envelope",
+  "authority_basis": {"field": "scope", "value": ["repo"]},
+  "fallback": null,
+  "outcome": null,
+  "result_ref": null,
+  "affected_artifacts": [],
+  "skipped_dependents": []
+}
+```
+
+`outcome` starts null and terminates as `action-taken|fallback-taken|deferred`;
+`result_ref` then points to evidence. Normal ledger, emergency journal, and degraded
+in-memory terminal entries are one unified record set and appear exactly once in Phase 2.
