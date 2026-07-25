@@ -1,4 +1,4 @@
-# Claude v0.17.0 → Codex capability parity
+# Claude v0.17.1 → Codex capability parity
 
 | Capability | Codex implementation |
 |---|---|

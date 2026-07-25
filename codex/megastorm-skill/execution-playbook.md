@@ -73,7 +73,9 @@ the approved host argv already owns one. Use `python3`/`sys.executable`; never a
    ever. A mid-run model failure is retry-then-escalate, never silent substitution.
 7. **Freeze authority and decision policy.** Persist `<run-dir>/decision-envelope.json`
    with scope, write roots, destructive limits, external systems, network, secrets,
-   spending, model substitutions, and acceptance authority. Initialize the run ledger:
+   spending, model substitutions, acceptance authority, and a machine-load policy with an
+   explicit `max_concurrency` or permission to select and record one from observed resource
+   capacity. Initialize the run ledger:
    `python3 scripts/decision_ledger.py init <run-dir> <envelope.json>`. This is the final
    ordinary human decision point.
 8. **Class-elimination census:** if the goal claims to remove or enforce an entire class,
@@ -88,6 +90,12 @@ repository convention, blast radius, evidence, maintenance cost, then stable nam
 Persist the recommended authorized choice before acting and finalize it with an
 artifact/event reference. If no choice is authorized, record `deferred`, skip only that
 branch and its dependents, and continue all independent work.
+
+Every autonomous decision MUST use `scripts/decision_ledger.py record` before action and
+`finalize` after its observable outcome. Never edit `decision-ledger.json` directly. The
+script owns authority validation, locking, monotonic IDs, three atomic write attempts,
+emergency fallback, and one-time finalization. If both normal and emergency storage are
+unwritable, perform no further mutations and transition directly to a degraded Phase 2 report.
 
 ### 1.1 Design — fan-out
 One `codex exec` (`think` model) per module: `prompts/design-agent.md` + the module spec
@@ -140,8 +148,9 @@ The runner owns:
   `effective_deps` is supervisor-confirmed. Every ready task dispatches immediately —
   concurrency is UNBOUNDED by default (tasks are LLM calls, not machine-bound work).
   One slow task never stalls its independent siblings. If tasks run machine-heavy local
-  work (builds, whole test suites, docker), the runner prints a warning; pass
-  `--max-workers N` to cap in-flight tasks — the runner never caps silently on its own.
+  work (builds, whole test suites, docker), apply the frozen machine-load policy. When it
+  delegates selection, choose a safe value from observed resources, record it autonomously,
+  and pass `--max-workers N` without asking. The runner never caps silently on its own.
 - **Safe Git isolation:** all tasks run in task worktrees and merge into a run-owned
   integration worktree/ref. The user's checked-out branch, index, and dirty files are never
   staged, committed, stashed, or overwritten. The final report identifies the retained ref.

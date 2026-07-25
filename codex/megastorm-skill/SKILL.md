@@ -25,7 +25,7 @@ Everything you need sits beside it:
 - `models.example.json` — tier mappings used only when Phase 0 proves every effective
   model source is unlocked; otherwise freeze `inherited` and add no model override
 
-Parity target: Claude Megastorm v0.17.0. This Codex-native port includes environment
+Parity target: Claude Megastorm v0.17.1. This Codex-native port includes environment
 capability classification, census-backed completeness, reality-gate accounting, separate
 infrastructure/business failures, safe run-owned Git integration, and unattended decision
 disclosure. Independent workflows are never invoked or suggested automatically after Phase 2.
