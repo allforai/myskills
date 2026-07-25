@@ -72,8 +72,8 @@ Record in `model-policy.md`:
 - Failure policy: retry infrastructure; no model substitution
 ```
 
-Include this policy in the single launch-contract approval. Do not ask a separate model
-question unless the user explicitly wants to override the recommendation.
+Include this policy in the launch contract. Do not ask a separate model or launch
+question unless the user explicitly requests an override before ordinary interaction ends.
 
 ## Token discipline
 

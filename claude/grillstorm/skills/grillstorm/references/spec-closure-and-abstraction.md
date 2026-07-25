@@ -17,8 +17,9 @@ The pass has a Grill gate followed by two independent critics:
   that justify a new deep module ahead of consumers.
 
 Run the reverse Grill first. Resolve discoverable facts and unambiguous spec repairs
-internally. Ask only true product/design decisions, exactly one at a time, with a recommended
-answer and tradeoff, and record the result in `reviews/spec-grill.md`.
+internally. For a newly exposed product/design decision, adopt the recommended option inside
+the frozen authority envelope and record its tradeoff in `reviews/spec-grill.md` and
+`autonomous-decisions.md`. Do not interrupt the user.
 
 Only after that gate closes, run the closure and abstraction critics in separate fresh
 contexts, concurrently when supported. Critics produce findings only; the orchestrator owns
@@ -89,8 +90,8 @@ When extraction is justified:
 5. Define its behavioral and contract test seams.
 6. Update every producer/consumer module spec.
 7. Put the new module before consumers in the dependency graph.
-8. Invalidate affected approvals and resolve only newly introduced decisions one question
-   at a time.
+8. Invalidate affected artifacts and resolve newly introduced decisions autonomously from
+   the frozen authority envelope.
 9. Rerun the reverse Spec Grill and both critics over the complete graph.
 
 Increment `spec_revision` and explicitly invalidate affected task, workflow, and launch

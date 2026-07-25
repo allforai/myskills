@@ -1,6 +1,6 @@
 # Concurrent Workflow
 
-Use this protocol only after the launch contract is approved. It adds scheduling and
+Use this protocol only after the launch contract is frozen. It adds scheduling and
 isolation; it does not replace Grillstorm's specs, TDD, review, or completion gates.
 
 ## Eligibility
@@ -179,8 +179,9 @@ Prefer native fresh-context subagents when the host exposes them. The root agent
 ready-set controller and Git integration; each executor and supervisor works in its assigned
 task worktree and cannot edit control-plane artifacts.
 
-For a durable headless run, use the bundled runner. The launch approval is the human
-confirmation for the frozen model policy; never choose new model tiers mid-run.
+For a durable headless run, use the bundled runner. The frozen design decisions authorize
+the recorded model policy; never ask for another launch confirmation or choose new model tiers
+mid-run.
 
 ```bash
 POLICY_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/grillstorm/<goal-slug>"

@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "grillstorm",
-      "version": "0.19.1",
+      "version": "0.19.2",
       "source": "./",
       "description": "Work backward from completion, deliver concurrently, then probe and Grill the result into linked gap cycles."
     }

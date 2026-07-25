@@ -40,7 +40,7 @@ setup if missing
 -> compact grill-with-docs
 -> compact spec closure + abstraction review
 -> to-spec + publish ready-for-agent
--> one launch approval
+-> freeze launch contract and continue
 -> implement directly from spec with TDD
 -> focused/type/full checks
 -> independent Standards || Spec review
@@ -62,7 +62,7 @@ setup if missing
 -> to-spec + publish ready-for-agent
 -> to-tickets + publish blocking edges
 -> compact catalog for resume
--> one launch approval
+-> freeze launch contract and continue
 -> concurrently implement the ready frontier with isolated worktrees and TDD
 -> focused/type/full checks
 -> independent Standards || Spec review

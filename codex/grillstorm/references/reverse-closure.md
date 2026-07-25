@@ -86,10 +86,10 @@ Every downstream artifact records the upstream revision it was generated from.
 - Task change: invalidate tracker synchronization for affected tasks, workflow, and launch
   contract.
 - Workflow change: invalidate its dry-run report and launch contract.
-- Launch-policy change: invalidate only launch approval unless it changes scope/spec/tasks.
+- Launch-policy change: invalidate only the launch contract unless it changes scope/spec/tasks.
 - Model-role mapping, model-source evidence, or launcher capability change: invalidate the
   local model-policy binding and every worker fingerprint; do not resume old workers under
-  a new model. A verified cross-host continuation may retain the goal launch approval when
+  a new model. A verified cross-host continuation may retain the goal authority when
   it resolves inside the approved recommendation ladder; record the rebinding as an
   autonomous infrastructure decision.
 
@@ -108,7 +108,7 @@ goal decisions
 -> module/spec confirmation
 -> newly surfaced closure decisions
 -> task/execution summary
--> one launch approval
+-> freeze launch contract and continue
 -> final report or handoff
 ```
 

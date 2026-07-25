@@ -9,11 +9,11 @@ Turn goals into frozen decisions, executable contracts, verified code, and evide
 
 ## Invariants
 
-1. Discover facts; Grill and freeze human decisions; approve one launch; implement and prove.
+1. Discover facts; Grill and freeze human decisions; freeze one launch contract; implement and prove.
 2. Ask one decision question at a time with a recommendation and its main tradeoff.
 3. Persist each accepted answer immediately; artifacts, not conversation, are durable truth.
-4. For unforeseen decisions after launch, adopt and record the recommended choice without
-   interrupting. Revalidate everything it affects.
+4. After the last interactive design confirmation, adopt and record every unforeseen
+   in-scope decision without interrupting. Revalidate everything it affects.
 5. Never ask for facts available from the repository, tools, documentation, or run artifacts.
 6. Never turn failure into default, empty, stale, cached, mocked, partial, or successful
    behavior. Retry the same contract, repair, replan, or create a gap. Only explicitly
@@ -114,14 +114,17 @@ touching decisions/contracts, Grill unresolved behavior and integration obligati
 A changed scope, boundary, or public interface invalidates the parent and every affected
 downstream spec. Update and re-Grill them; never patch around drift.
 
-**Exit:** every module spec is locally closed at the same spec revision.
+**Exit:** every module spec is locally closed at the same spec revision. This is the end of
+ordinary interaction; all later in-scope decisions are autonomous and disclosed at completion.
 
 ## Phase 2.5: Close The Spec Graph
 
-Read `references/spec-closure-and-abstraction.md`. Run `prompts/spec-reverse-grill.md` in a
+Read `references/spec-closure-and-abstraction.md` and `references/review-budgets.md`. Run
+`prompts/spec-reverse-grill.md` in a
 fresh `THINK` context, then independent spec-closure and abstraction critics. Resolve facts
-and unambiguous repairs internally. For each true new decision, re-enter the one-question
-Grill, persist it, invalidate affected artifacts, and rerun all global verdicts.
+and unambiguous repairs internally. For each true new decision, adopt the recommended option
+inside the frozen authority envelope, persist it in `autonomous-decisions.md`, invalidate
+affected artifacts, and rerun all global verdicts without asking the user.
 
 Inspect existing reuse before extracting. Any justified shared module must be fully
 specified, placed before consumers, and included in interfaces and test seams before task
@@ -137,7 +140,7 @@ spec graph, abstractions, and registry are stable.
 
 ## Phase 3: Close Tasks And Workflow
 
-Skip for `direct`/`diagnostic`; use the compact form from `references/routing.md` for
+Skip for `direct`/`diagnostic`; read `references/review-budgets.md` and use the compact form from `references/routing.md` for
 `ticketed`. For `program`, read `references/task-documents.md` and create:
 
 - `tasks/catalog.md`, the sole execution index;
@@ -169,17 +172,19 @@ coverage; runtime states; migration/security/rollback/deployment choices; enviro
 capabilities; revision consistency; simulation; and zero open execution-changing decision.
 
 Freeze decisions, model roles, side-effect authority, Git policy, autonomous decision policy,
-and exact completion in a compact state contract or `launch-contract.md`. Ask one final
-question to approve the uninterrupted run.
+and exact completion in a compact state contract or `launch-contract.md`, then enter Phase 5
+immediately. Do not ask for a redundant start approval, offer an "open now" choice, or pause at
+this stage boundary: the decisions already approved during the Grill authorize the run.
 
-After approval, implementation does not ask routine questions. Record unforeseen choices in
+Implementation does not ask routine questions. Record unforeseen choices in
 `autonomous-decisions.md`, update revisions and dependencies, and rerun affected closure. For
 each choice, consider viable options, adopt the recommended option that remains inside the launch
 authority, record its assumptions/risk/affected artifacts before acting, and record its outcome
 afterward. Never pause merely because the choice concerns product behavior, architecture,
 boundaries, interfaces, or replanning.
 
-**Exit:** one approved, internally consistent launch contract.
+**Exit:** one internally consistent launch contract, persisted and launched without another
+question.
 
 ## Phase 5: Implement, Review, Prove
 
@@ -217,8 +222,9 @@ endpoint; a later audit appends history but does not rewrite it.
 If incomplete after all viable branches drain, update state/report with every deferred/skipped
 chain and a precise resume pointer. Do not use handoff merely because one branch is blocked or an
 unforeseen decision arose. Handoff occurs only on explicit user request or when a terminal
-infrastructure failure makes all further safe progress impossible. After completion, enter Phase
-7 when requested or when the default full workflow continues with the user present.
+infrastructure failure makes all further safe progress impossible. Phase 6 is the default
+unattended endpoint. Enter Phase 7 only when the user explicitly requests `$grillstorm audit`;
+never continue into an interactive audit implicitly.
 
 ## Phase 7: Audit Outcomes
 

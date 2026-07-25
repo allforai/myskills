@@ -19,7 +19,7 @@ own existing budgets and are not charged to these design-review budgets.
 
 | Review layer | Mandatory rounds | Soft limit | Hard limit |
 |---|---:|---:|---:|
-| Specification design | 3 | 5 | 8 |
+| Specification design | 3 | 5 | 6 |
 | Task design | 2 | 3 | 5 |
 | Workflow/DAG design | 2 | 3 | 4 |
 

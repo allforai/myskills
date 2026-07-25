@@ -118,8 +118,8 @@ proof.
 
 Write `reviews/workflow-grill.md`. Resolve `discover` and `projection-repair` issues
 internally. Route `task-repair` through the task reverse Grill and closure critic; route
-`spec-repair` through spec closure. Ask one recommended question at a time only for a
-genuinely new decision exposed by the executable graph.
+`spec-repair` through spec closure. For a genuinely new decision exposed by the executable
+graph, adopt the recommended authorized option, record it, and continue without a question.
 
 Any repair invalidates the previous workflow verdict. Regenerate the affected projection,
 rerun validation and simulation, then rerun the workflow reverse Grill from global runtime
@@ -154,8 +154,8 @@ planning snapshot and run two distinct passes:
    the resulting complete graph.
 
 Write `reviews/task-grill.md` with the issue inventory, evidence, questions, recommended
-answers, accepted answers, and repairs. Ask the user only issues classified as true
-decisions, exactly one at a time, using the original Grill recommendation/tradeoff format.
+answers, adopted answers, and repairs. Resolve true decisions with the recommended option
+inside the frozen authority envelope and record the tradeoff; do not interrupt the user.
 Discoverable facts and unambiguous repairs are resolved internally.
 
 Write `reviews/task-closure.md` with the checked reverse chains, directory/module coverage
@@ -193,11 +193,12 @@ Before approval, verify:
 16. Published tickets and the compiled/simulated DAG are semantically equivalent to the
     approved catalog/module task documents.
 
-Fix planning defects directly. Return to grilling for any defect that requires a new user
-decision.
+Fix planning defects directly. Resolve any newly exposed in-scope decision with the
+recommended option and record it in `autonomous-decisions.md`.
 
-After the user approves the breakdown, publish one concise tracker ticket per vertical slice
-in dependency order. Use native blocking/sub-issue relationships where available, otherwise
+After task and workflow closure, publish one concise tracker ticket per vertical slice in
+dependency order when tracker mutation is authorized. Do not request a separate task-list,
+start, or publication approval. Use native blocking/sub-issue relationships where available, otherwise
 write `Blocked by` references. Apply the configured `ready-for-agent` label and store IDs/URLs
 in `catalog.md`.
 

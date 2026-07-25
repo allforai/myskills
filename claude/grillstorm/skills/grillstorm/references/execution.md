@@ -1,6 +1,6 @@
 # Autonomous Execution Protocol
 
-Execute only after the route's launch contract is approved. For `direct` and `diagnostic`,
+Execute only after the route's launch contract is frozen. For `direct` and `diagnostic`,
 the compact contract lives in `state.json`; for `ticketed` and `program`, it lives in
 `launch-contract.md`. Treat the approved behavior, work units, and contract as frozen
 inputs. The purpose of this phase is working, reviewed code.
