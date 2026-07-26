@@ -36,9 +36,11 @@ surrounding invariants. Classify the result:
 - `accidental_behavior`: no protected purpose is found and evidence indicates incidental behavior;
 - `unknown_intent`: plausible purpose exists but evidence cannot distinguish it.
 
-`unknown_intent` cannot silently become a requirement. If changing it could affect a material
-outcome or compatibility constraint, resolve it through the front-loaded user decision Grill or
-leave the affected scope blocked.
+`unknown_intent` cannot silently become a requirement. If it could affect route selection or the
+meaning of existing scope, resolve it at a narrowly bounded pre-route decision boundary: present
+one purpose question with evidence, recommendation, and tradeoff, then rerun orientation
+confirmation. This asks for product intent, never a discoverable repository fact. Unknown intent
+that affects only future behavior proceeds to the normal Phase 1 decision Grill.
 
 ## Position In The Workflow
 
@@ -174,6 +176,13 @@ For every material behavior whose intent affects downstream work, coverage also 
 intent classification is evidenced, contradicted, or still unknown. A critic must challenge the
 investigator's preferred explanation and name the strongest counterfactual interpretation.
 
+Treat each material intent assessment as a governed subclaim. `contradicted` or `still_unknown`
+cannot close orientation: it creates an open material family, requires investigation or the
+bounded pre-route purpose decision, and follows the same round-continuation rules as any other
+material claim. A repaired intent classification becomes `corrected_pending_confirmation` and
+requires a later independent `evidenced` verdict. At closure, every route-affecting material intent
+subclaim must be independently evidenced or user-resolved and confirmed.
+
 ## Human Decision Intent Grill
 
 When the user proposes a feature, constraint, or solution, internally separate:
@@ -211,8 +220,16 @@ uncertainty instead of inventing purpose.
 
 ## Downstream Purpose Trace
 
-Every material spec requirement and task must trace backward to an accepted purpose chain and
-forward to observable acceptance:
+Every material spec requirement and task must trace backward to an authoritative purpose chain and
+forward to observable acceptance. Its source is one of:
+
+- `evidence_verified`: repository intent independently confirmed by the orientation critic;
+- `user_confirmed`: purpose and tradeoff accepted during the front-loaded decision Grill;
+- `autonomous_post_freeze`: a purpose-preserving interpretation chosen later inside frozen
+  authority and disclosed at completion.
+
+Evidence-verified repository intent does not require user approval. A change to either repository
+evidence or a user decision invalidates every downstream purpose chain that depends on it.
 
 ```text
 code change
@@ -226,6 +243,11 @@ code change
 Spec, task, workflow, and implementation critics must test purpose fidelity, not only literal
 coverage. A review blocks when the system faithfully implements the requested mechanism but fails
 the underlying purpose, drops its protected constraint, or proves only implementation details.
+
+After the ordinary interaction boundary, intent archaeology never reopens a user interview.
+Choose and record the best purpose-preserving interpretation inside frozen authority, then
+revalidate affected artifacts. If no interpretation is authorized, defer only that scope and its
+transitive dependents while independent work continues.
 
 ## Repair And Review Budget
 
@@ -284,6 +306,12 @@ Destructive, paid, production, secret-bearing, or externally mutating diagnostic
 authority. Lack of that authority leaves the claim `unknown`; it does not justify fabricated
 evidence.
 
+Repository intent archaeology stops when all concrete goal-relevant evidence sources have been
+checked and no named remaining source could change a material interpretation. Do not search
+history, issues, or adjacent modules without a specific competing explanation to test. When
+evidence is exhausted, classify `unknown_intent` and route it through the material rules above
+rather than continuing an open-ended historical audit.
+
 ## Reporting And Resume
 
 Persist the evidence map, critic verdicts, repairs, round ledger, final orientation status, and
@@ -312,6 +340,7 @@ Add contract tests for both Claude and Codex copies proving:
 - the evidence map requires `observed|inferred|unknown`;
 - material behavior claims require intent class, protected constraint, alternative explanation,
   and counterfactual;
+- material intent verdicts participate in validity, continuation, confirmation, and closure;
 - the review budget is exactly mandatory 1, soft 2, hard 3;
 - material repairs require independent confirmation;
 - `orientation_blocked` prevents specs, tickets, and implementation;
@@ -320,8 +349,13 @@ Add contract tests for both Claude and Codex copies proving:
   evidence;
 - goal-relative scoping prevents a compact route from becoming an unconditional repository audit;
 - material decisions persist a complete purpose chain;
+- purpose chains distinguish evidence-verified, user-confirmed, and autonomous sources without
+  adding a repository-summary approval;
 - spec/task/review closure rejects literal compliance that misses the underlying purpose;
 - “why” questioning stops at observable outcomes, non-negotiable constraints, or immaterial depth;
+- repository archaeology stops when no named remaining evidence source could change a material
+  interpretation;
+- late intent ambiguity never reopens user interaction and blocks only unauthorized affected scope;
 - Claude and Codex artifacts remain in parity.
 
 Run pressure tests against:
