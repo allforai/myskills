@@ -1,4 +1,4 @@
-# Grillstorm Evidence-Backed Orientation Grill
+# Grillstorm Orientation Grill And Intent Archaeology
 
 ## Goal
 
@@ -8,6 +8,37 @@ implementation with a mistaken model of the repository's current state.
 The startup phase must investigate first, explicitly distinguish observation from inference, and
 survive independent adversarial cross-examination. This is an internal evidence gate, not another
 user approval or a broad interview.
+
+Grillstorm must also reconstruct why important existing behavior and user requirements exist.
+Understanding only the literal code or requested solution is insufficient: downstream work must
+trace to the underlying purpose, protected constraint, and observable outcome.
+
+## Global Intent-Archaeology Invariant
+
+Intent archaeology is a reasoning protocol applied across orientation, human decisions, specs,
+tasks, reviews, and acceptance. It is not another sequential phase.
+
+For every material existing behavior or request, distinguish:
+
+```text
+implementation or requested solution
+<- behavior, pain, or constraint it addresses
+<- underlying purpose
+<- observable user outcome
+```
+
+Do not infer purpose from code shape alone. Reconstruct it from the strongest available combination
+of runtime behavior, tests, commit history, blame, ADRs, documentation, issues, configuration, and
+surrounding invariants. Classify the result:
+
+- `intentional_design`: purpose is supported by direct historical or behavioral evidence;
+- `historical_compromise`: evidence shows a constraint or workaround that may no longer apply;
+- `accidental_behavior`: no protected purpose is found and evidence indicates incidental behavior;
+- `unknown_intent`: plausible purpose exists but evidence cannot distinguish it.
+
+`unknown_intent` cannot silently become a requirement. If changing it could affect a material
+outcome or compatibility constraint, resolve it through the front-loaded user decision Grill or
+leave the affected scope blocked.
 
 ## Position In The Workflow
 
@@ -61,6 +92,19 @@ Every material claim has:
 }
 ```
 
+Material behavior claims also record:
+
+```json
+{
+  "observed_behavior": "what actually happens",
+  "intent_class": "intentional_design|historical_compromise|accidental_behavior|unknown_intent",
+  "likely_intent": "purpose supported or hypothesized",
+  "protected_constraint": "what must not be lost",
+  "alternative_explanation": "strongest competing interpretation",
+  "counterfactual": "what would break or improve if removed"
+}
+```
+
 `observed` requires direct repository, command, history, or runtime evidence. `inferred` names the
 reasoning and competing interpretation. `unknown` remains unknown and cannot silently become a
 fact, requirement, route premise, or task premise.
@@ -107,6 +151,9 @@ must inspect raw evidence independently and attempt to falsify the current-state
 8. What failure, degraded, migration, operational, or external-system behavior is absent from the
    model?
 9. Which unknowns could change scope, architecture, interfaces, acceptance, or execution?
+10. Which alleged business rule is only a workaround or historical compromise?
+11. Which test protects an observable purpose versus an accidental implementation detail?
+12. Which existing capability is being scheduled for reconstruction because its intent was missed?
 
 The critic returns:
 
@@ -122,6 +169,63 @@ inspectable, and the schema is well formed. Zero findings may close only with co
 claim coverage. An empty findings list without that coverage, prose-only approval, an
 `unreviewed` row, or missing coverage cannot establish closure. The critic cannot accept a claim
 merely because the artifact is well written.
+
+For every material behavior whose intent affects downstream work, coverage also states whether the
+intent classification is evidenced, contradicted, or still unknown. A critic must challenge the
+investigator's preferred explanation and name the strongest counterfactual interpretation.
+
+## Human Decision Intent Grill
+
+When the user proposes a feature, constraint, or solution, internally separate:
+
+1. the literal requested mechanism;
+2. the behavior or pain being changed;
+3. the underlying purpose and non-negotiable constraint;
+4. the observable success condition.
+
+Ask only when different plausible purposes would materially change scope, architecture, public
+interfaces, acceptance, or external authority. Keep the one-question format, but summarize the
+inferred purpose and recommend the solution that best serves it. Do not interrogate internal,
+reversible implementation details.
+
+Persist each material decision as a purpose chain:
+
+```text
+decision
+-> why requested
+-> underlying purpose
+-> evidence
+-> protected constraint
+-> rejected alternative and tradeoff
+-> observable acceptance
+```
+
+User confirmation accepts the purpose, protected constraint, and tradeoff—not merely the proposed
+mechanism. If the literal mechanism conflicts with the confirmed purpose, explain the mismatch and
+recommend the purpose-preserving option.
+
+Stop asking “why” when the chain reaches an observable user outcome, a non-negotiable
+safety/compatibility/legal/operational constraint, or a depth at which another answer would not
+change a material design or acceptance decision. If further depth would be speculation, record the
+uncertainty instead of inventing purpose.
+
+## Downstream Purpose Trace
+
+Every material spec requirement and task must trace backward to an accepted purpose chain and
+forward to observable acceptance:
+
+```text
+code change
+-> task
+-> requirement
+-> decision
+-> underlying purpose
+-> observable outcome
+```
+
+Spec, task, workflow, and implementation critics must test purpose fidelity, not only literal
+coverage. A review blocks when the system faithfully implements the requested mechanism but fails
+the underlying purpose, drops its protected constraint, or proves only implementation details.
 
 ## Repair And Review Budget
 
@@ -195,7 +299,10 @@ routes follow the same rule. Do not replay a valid orientation gate merely to re
 conversation context.
 
 The final execution report includes a compact list of corrected misunderstandings and unresolved
-unknowns. Routine confirmed facts are referenced through `reviews/orientation.md`, not duplicated.
+unknowns. It also discloses important reconstructed intentions, user mechanisms reinterpreted in
+light of their purpose, autonomous purpose-preserving choices, and intent classifications that
+remain uncertain. Routine confirmed facts are referenced through `reviews/orientation.md`, not
+duplicated.
 
 ## Validation
 
@@ -203,6 +310,8 @@ Add contract tests for both Claude and Codex copies proving:
 
 - Phase 0 routes through the orientation gate before Phase 1;
 - the evidence map requires `observed|inferred|unknown`;
+- material behavior claims require intent class, protected constraint, alternative explanation,
+  and counterfactual;
 - the review budget is exactly mandatory 1, soft 2, hard 3;
 - material repairs require independent confirmation;
 - `orientation_blocked` prevents specs, tickets, and implementation;
@@ -210,6 +319,9 @@ Add contract tests for both Claude and Codex copies proving:
 - critic input proves fresh-context independence and requires inspection of raw repository
   evidence;
 - goal-relative scoping prevents a compact route from becoming an unconditional repository audit;
+- material decisions persist a complete purpose chain;
+- spec/task/review closure rejects literal compliance that misses the underlying purpose;
+- “why” questioning stops at observable outcomes, non-negotiable constraints, or immaterial depth;
 - Claude and Codex artifacts remain in parity.
 
 Run pressure tests against:
@@ -220,3 +332,6 @@ Run pressure tests against:
 4. dirty worktree changes that alter the apparent baseline;
 5. a round-3 material repair without confirmation;
 6. unavailable external/runtime evidence that must remain `unknown`.
+7. a workaround incorrectly treated as an enduring business requirement;
+8. a user-requested mechanism that conflicts with the user's stated underlying purpose;
+9. a test that locks an implementation detail while failing to prove the protected outcome.
