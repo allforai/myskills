@@ -30,8 +30,9 @@ the reasoning or evidence requirements.
 
 ## Current-State Evidence Map
 
-Persist `reviews/orientation.md` for a program run, or the equivalent structured state entry for a
-compact route. Scope investigation to facts material to the user's goal and its reachable
+Persist `reviews/orientation.md` before route selection for every run. A later compact route may
+mirror its terminal status and artifact pointer into compact state, but the evidence map remains
+the canonical source. Scope investigation to facts material to the user's goal and its reachable
 dependency, interface, runtime, and acceptance surfaces. Expand outward only when repository
 evidence or a critic finding shows that another surface could change a material conclusion; this
 is not a default whole-repository audit. Within that boundary, record:
@@ -68,6 +69,19 @@ cross-module interface, acceptance, execution ordering, destructive/external aut
 reuse-versus-rebuild decision. Materiality is sticky. Downgrading a material claim requires new
 direct evidence and independent confirmation. A corrected claim remains
 `corrected_pending_confirmation` until a later complete valid critic round verifies it.
+
+Claim transitions are:
+
+- investigation creates `open` with classification `observed`, `inferred`, or `unknown`;
+- an `observed` claim becomes `verified` only when its direct evidence is inspectable and the
+  critic returns `supported`;
+- an `inferred` claim becomes `verified` only when its premises are directly evidenced, its
+  competing interpretation is recorded, and the critic independently returns `supported`;
+- a repaired material claim becomes `corrected_pending_confirmation`, then `verified` only after
+  a later complete valid round returns `supported`;
+- an `unknown` claim remains `unknown` and can never be `verified`; if material, it blocks.
+
+No other classification/status combination is terminal.
 
 ## Independent Orientation Grill
 
@@ -126,7 +140,8 @@ family. A finding remains material until direct counter-evidence plus an indepen
 supports downgrade. Material repairs require a fresh independent confirmation round when budget
 remains.
 
-Run round 1 always. Close after round 1 only if it is complete and valid, all material claims are
+Run round 1 always. After any invalid round, run the next round when budget remains regardless of
+the soft-limit continuation criteria. Close after round 1 only if it is complete and valid, all material claims are
 supported, no material claim is missing or unknown, and no material repair followed the verdict.
 Run round 2 for any new/open material family or material repair needing confirmation. At the soft
 limit, run round 3 only for an open/new material family or the single confirmation required by the
@@ -169,11 +184,12 @@ source Git state. `state.json` must point to them so a resumed or cross-host run
 the baseline is still current.
 
 If the source revision, relevant dirty paths, environment capability, or runtime configuration
-changes before any downstream design or execution action, invalidate affected orientation claims
-and every derived route, decision, spec, task, workflow, and launch artifact. Rerun the necessary
-orientation investigation and independent review, then regenerate only the affected downstream
-subgraph. Direct and diagnostic routes follow the same rule. Do not replay a valid orientation
-gate merely to reconstruct conversation context.
+changes before any downstream design or execution action, identify the affected orientation
+claims and invalidate the transitive route, decisions, specs, tasks, workflow, and launch
+artifacts that cite or depend on those claims. Rerun the necessary orientation investigation and
+independent review, then regenerate that affected downstream subgraph. Direct and diagnostic
+routes follow the same rule. Do not replay a valid orientation gate merely to reconstruct
+conversation context.
 
 The final execution report includes a compact list of corrected misunderstandings and unresolved
 unknowns. Routine confirmed facts are referenced through `reviews/orientation.md`, not duplicated.
