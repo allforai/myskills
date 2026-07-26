@@ -11,15 +11,17 @@ user approval or a broad interview.
 
 ## Position In The Workflow
 
-Add an orientation-closure gate inside Phase 0 after repository/environment discovery and route
-selection, but before Phase 1 asks product questions.
+Add an orientation-closure gate inside Phase 0 after initial repository/environment discovery but
+before route selection or Phase 1 product questions. Route selection is a downstream conclusion
+and must be derived from the verified current-state model.
 
 ```text
 inspect repository and runtime
 -> build current-state evidence map
 -> independent fresh-context orientation Grill
 -> repair misunderstandings and missing evidence
--> independent confirmation
+-> independent confirmation when a material repair occurred
+-> select route from the verified baseline
 -> begin user decision Grill
 ```
 
@@ -29,7 +31,10 @@ the reasoning or evidence requirements.
 ## Current-State Evidence Map
 
 Persist `reviews/orientation.md` for a program run, or the equivalent structured state entry for a
-compact route. It records:
+compact route. Scope investigation to facts material to the user's goal and its reachable
+dependency, interface, runtime, and acceptance surfaces. Expand outward only when repository
+evidence or a critic finding shows that another surface could change a material conclusion; this
+is not a default whole-repository audit. Within that boundary, record:
 
 - actual user-visible capabilities and known non-capabilities;
 - real entry points, important call chains, data flows, state stores, and external dependencies;
@@ -50,13 +55,19 @@ Every material claim has:
   "evidence": ["path:line", "command and result", "commit", "runtime artifact"],
   "confidence": "high|medium|low",
   "impact_if_wrong": "scope|architecture|interface|acceptance|execution|low",
-  "status": "open|verified|corrected|unknown"
+  "status": "open|verified|corrected_pending_confirmation|unknown"
 }
 ```
 
 `observed` requires direct repository, command, history, or runtime evidence. `inferred` names the
 reasoning and competing interpretation. `unknown` remains unknown and cannot silently become a
-fact, requirement, or task premise.
+fact, requirement, route premise, or task premise.
+
+A claim is **material** when being wrong could change scope, route, architecture, a public or
+cross-module interface, acceptance, execution ordering, destructive/external authority, or the
+reuse-versus-rebuild decision. Materiality is sticky. Downgrading a material claim requires new
+direct evidence and independent confirmation. A corrected claim remains
+`corrected_pending_confirmation` until a later complete valid critic round verifies it.
 
 ## Independent Orientation Grill
 
@@ -82,9 +93,19 @@ must inspect raw evidence independently and attempt to falsify the current-state
    model?
 9. Which unknowns could change scope, architecture, interfaces, acceptance, or execution?
 
-The critic returns stable finding-family IDs, severity, affected claim IDs, direct evidence,
-alternative interpretation, and required investigation. It cannot accept a claim merely because
-the artifact is well written.
+The critic returns:
+
+- one coverage row for every material claim ID with
+  `verdict: supported|refuted|insufficient|unreviewed`, raw evidence checked, and rationale;
+- stable finding-family IDs, `material|residual` severity, affected claim IDs, direct evidence,
+  alternative interpretation, and required investigation;
+- explicit checks for missing material claims in each orientation category.
+
+A result is complete and valid only when every existing material claim has exactly one coverage
+row, every required category has been checked for omissions, evidence paths or command results are
+inspectable, and the schema is well formed. An empty findings list, prose-only approval,
+`unreviewed` row, or missing coverage cannot establish closure. The critic cannot accept a claim
+merely because the artifact is well written.
 
 ## Repair And Review Budget
 
@@ -95,22 +116,37 @@ Orientation review has:
 | 1 | 2 | 3 |
 
 A round starts with critic dispatch and consumes the round even if the critic fails or returns an
-invalid result. One infrastructure retry may complete the same round.
+invalid result. One infrastructure retry may complete the same round. If it still fails, the round
+cannot close; continue to the next available round to obtain a valid review. An invalid review at
+the hard limit yields `orientation_blocked`.
 
 The investigator resolves findings by inspecting more raw evidence, running safe diagnostics, and
-correcting or downgrading claims. Rewording the same root cause is the same finding family.
-Material repairs require a fresh independent confirmation round when budget remains.
+correcting claims or their classifications. Rewording the same root cause is the same finding
+family. A finding remains material until direct counter-evidence plus an independent critic
+supports downgrade. Material repairs require a fresh independent confirmation round when budget
+remains.
+
+Run round 1 always. Close after round 1 only if it is complete and valid, all material claims are
+supported, no material claim is missing or unknown, and no material repair followed the verdict.
+Run round 2 for any new/open material family or material repair needing confirmation. At the soft
+limit, run round 3 only for an open/new material family or the single confirmation required by the
+latest material repair. Never run round 4.
+
+If a known material conflict has no safe diagnostic, obtainable evidence, or concrete
+investigation step, stop early as `orientation_blocked`; do not spend the remaining rounds
+rephrasing it. Record the exact missing evidence and why downstream work would be unsafe.
 
 Close only when a complete valid critic round confirms:
 
-- every scope-, architecture-, interface-, acceptance-, or execution-affecting claim is verified
-  or explicitly unknown;
+- every material claim is `verified` and independently supported;
 - no material contradiction or misunderstood baseline remains;
-- unknowns are visible inputs to the later decision Grill rather than hidden assumptions.
+- every remaining `unknown` is demonstrably non-material and is visible rather than a hidden
+  assumption.
 
-If round 3 ends with an unresolved material conflict, invalid review, or unconfirmed material
-repair, record `orientation_blocked`. Do not begin product questioning, specification, ticket
-generation, launch, or implementation.
+If any material claim is `unknown`, insufficient, refuted, unreviewed, missing, or awaiting
+confirmation, the gate remains open. If round 3 ends with such a condition, an invalid review, or
+an unconfirmed material repair, record `orientation_blocked`. Do not select a route or begin
+product questioning, specification, ticket generation, launch, or implementation.
 
 ## Interaction And Authority
 
@@ -133,9 +169,11 @@ source Git state. `state.json` must point to them so a resumed or cross-host run
 the baseline is still current.
 
 If the source revision, relevant dirty paths, environment capability, or runtime configuration
-changes before task execution, invalidate affected orientation claims and rerun only the necessary
-orientation review before continuing. Do not replay a valid orientation gate merely to reconstruct
-conversation context.
+changes before any downstream design or execution action, invalidate affected orientation claims
+and every derived route, decision, spec, task, workflow, and launch artifact. Rerun the necessary
+orientation investigation and independent review, then regenerate only the affected downstream
+subgraph. Direct and diagnostic routes follow the same rule. Do not replay a valid orientation
+gate merely to reconstruct conversation context.
 
 The final execution report includes a compact list of corrected misunderstandings and unresolved
 unknowns. Routine confirmed facts are referenced through `reviews/orientation.md`, not duplicated.
@@ -150,6 +188,9 @@ Add contract tests for both Claude and Codex copies proving:
 - material repairs require independent confirmation;
 - `orientation_blocked` prevents specs, tickets, and implementation;
 - the gate does not ask for current-state facts or a new start approval;
+- critic input proves fresh-context independence and requires inspection of raw repository
+  evidence;
+- goal-relative scoping prevents a compact route from becoming an unconditional repository audit;
 - Claude and Codex artifacts remain in parity.
 
 Run pressure tests against:
