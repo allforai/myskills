@@ -118,7 +118,8 @@ The critic returns:
 
 A result is complete and valid only when every existing material claim has exactly one coverage
 row, every required category has been checked for omissions, evidence paths or command results are
-inspectable, and the schema is well formed. An empty findings list, prose-only approval,
+inspectable, and the schema is well formed. Zero findings may close only with complete supported
+claim coverage. An empty findings list without that coverage, prose-only approval, an
 `unreviewed` row, or missing coverage cannot establish closure. The critic cannot accept a claim
 merely because the artifact is well written.
 
