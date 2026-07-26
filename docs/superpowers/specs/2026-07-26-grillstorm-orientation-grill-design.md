@@ -42,6 +42,50 @@ one purpose question with evidence, recommendation, and tradeoff, then rerun ori
 confirmation. This asks for product intent, never a discoverable repository fact. Unknown intent
 that affects only future behavior proceeds to the normal Phase 1 decision Grill.
 
+## Purpose-Complete Minimalism
+
+Grillstorm's “use as little code as necessary” philosophy means the minimum implementation that
+fully preserves the confirmed purpose, protected constraints, failure semantics, and proof. It
+does not optimize source-line count.
+
+Choose the design with the fewest concepts, states, branches, abstractions, and long-term
+maintenance obligations that still delivers and proves the observable outcome. A small explicit
+error path may be more minimal than a shorter generic abstraction because it hides less behavior.
+
+Remove or avoid:
+
+- abstractions with no current consumer or protected invariant;
+- speculative extension points and compatibility layers for hypothetical futures;
+- duplicated ownership or repeated expression of one business rule;
+- historical compromises whose original constraint is evidenced to be gone;
+- tests that lock incidental implementation details without proving an outcome;
+- modules, interfaces, configuration, or fallback behavior added only for architectural symmetry.
+
+Never minimize away:
+
+- observable success, empty, failure, degraded, recovery, or rollback behavior;
+- compatibility, security, privacy, authority, and data-integrity constraints;
+- explicit cross-module contracts and ownership;
+- evidence required to prove the underlying purpose;
+- material behavior whose removal risk remains unresolved.
+
+For every material simplification, record the counterfactual and classify it:
+
+- `remove`: no current purpose or protected constraint remains;
+- `simplify`: the purpose remains but the mechanism is heavier than necessary;
+- `retain`: both purpose and mechanism remain justified;
+- `replace`: the purpose remains and a smaller mechanism preserves it;
+- `unknown`: intent or removal impact is unresolved.
+
+`unknown` is not permanent immunity for dead code. Investigate it within the same goal-relative,
+bounded evidence budget. If it remains material and unknown, block or defer only the affected
+simplification; do not expand scope or preserve a speculative abstraction as a new requirement.
+
+Every proposed abstraction or extra mechanism bears the burden of proof: name its current
+consumer, protected invariant, hidden complexity, and independent test seam. Every removal bears
+the symmetric burden of proving that the underlying purpose and constraint are absent or preserved
+elsewhere.
+
 ## Position In The Workflow
 
 Add an orientation-closure gate inside Phase 0 after initial repository/environment discovery but
@@ -244,6 +288,13 @@ Spec, task, workflow, and implementation critics must test purpose fidelity, not
 coverage. A review blocks when the system faithfully implements the requested mechanism but fails
 the underlying purpose, drops its protected constraint, or proves only implementation details.
 
+They must also test minimality symmetrically:
+
+- reject unnecessary concepts, speculative abstractions, and duplicated mechanisms;
+- reject simplifications that erase purpose, failure semantics, compatibility, authority, or
+  proof;
+- demand evidence both for adding complexity and for deleting material behavior.
+
 After the ordinary interaction boundary, intent archaeology never reopens a user interview.
 Choose and record the best purpose-preserving interpretation inside frozen authority, then
 revalidate affected artifacts. If no interpretation is authorized, defer only that scope and its
@@ -340,6 +391,8 @@ Add contract tests for both Claude and Codex copies proving:
 - the evidence map requires `observed|inferred|unknown`;
 - material behavior claims require intent class, protected constraint, alternative explanation,
   and counterfactual;
+- material simplifications use `remove|simplify|retain|replace|unknown` with symmetric evidence
+  burdens for addition and deletion;
 - material intent verdicts participate in validity, continuation, confirmation, and closure;
 - the review budget is exactly mandatory 1, soft 2, hard 3;
 - material repairs require independent confirmation;
@@ -356,6 +409,8 @@ Add contract tests for both Claude and Codex copies proving:
 - repository archaeology stops when no named remaining evidence source could change a material
   interpretation;
 - late intent ambiguity never reopens user interaction and blocks only unauthorized affected scope;
+- minimalism removes unsupported complexity without deleting purpose, failure semantics,
+  compatibility, authority, or proof;
 - Claude and Codex artifacts remain in parity.
 
 Run pressure tests against:
@@ -369,3 +424,6 @@ Run pressure tests against:
 7. a workaround incorrectly treated as an enduring business requirement;
 8. a user-requested mechanism that conflicts with the user's stated underlying purpose;
 9. a test that locks an implementation detail while failing to prove the protected outcome.
+10. a shorter implementation that silently drops recovery or compatibility behavior;
+11. dead-looking code with unknown intent that must be investigated but not preserved forever;
+12. a speculative abstraction whose only defense is possible future reuse.
