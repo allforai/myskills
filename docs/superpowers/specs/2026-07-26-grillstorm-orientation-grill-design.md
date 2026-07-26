@@ -61,13 +61,17 @@ Remove or avoid:
 - tests that lock incidental implementation details without proving an outcome;
 - modules, interfaces, configuration, or fallback behavior added only for architectural symmetry.
 
-Never minimize away:
+Never minimize away behavior that still serves a confirmed purpose or protected constraint:
 
 - observable success, empty, failure, degraded, recovery, or rollback behavior;
 - compatibility, security, privacy, authority, and data-integrity constraints;
-- explicit cross-module contracts and ownership;
+- applicable cross-module contracts and ownership;
 - evidence required to prove the underlying purpose;
 - material behavior whose removal risk remains unresolved.
+
+Obsolete contracts, accidental state paths, and incidental fallback/degraded behavior may be
+removed or replaced when symmetric evidence shows that no current purpose or constraint depends on
+them, or that the smaller mechanism preserves the same purpose and observable semantics.
 
 For every material simplification, record the counterfactual and classify it:
 
