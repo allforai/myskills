@@ -25,8 +25,9 @@ inspect repository and runtime
 -> begin user decision Grill
 ```
 
-The gate applies to every route. Compact routes may use a compact artifact, but they may not skip
-the reasoning or evidence requirements.
+The gate applies before and independently of every route. A later compact route may mirror the
+canonical orientation record but may not replace it or skip the reasoning and evidence
+requirements.
 
 ## Current-State Evidence Map
 
@@ -143,9 +144,10 @@ remains.
 Run round 1 always. After any invalid round, run the next round when budget remains regardless of
 the soft-limit continuation criteria. Close after round 1 only if it is complete and valid, all material claims are
 supported, no material claim is missing or unknown, and no material repair followed the verdict.
-Run round 2 for any new/open material family or material repair needing confirmation. At the soft
-limit, run round 3 only for an open/new material family or the single confirmation required by the
-latest material repair. Never run round 4.
+Run the next available round for any non-closing condition: invalid review; `refuted`,
+`insufficient`, `unreviewed`, missing, or material-unknown coverage; a new/open material family; or
+a material repair needing confirmation. At the soft limit, round 3 uses exactly these same
+continuation triggers. Never run round 4.
 
 If a known material conflict has no safe diagnostic, obtainable evidence, or concrete
 investigation step, stop early as `orientation_blocked`; do not spend the remaining rounds
