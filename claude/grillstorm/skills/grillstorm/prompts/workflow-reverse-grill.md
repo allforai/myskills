@@ -21,6 +21,9 @@ Apply these lenses:
    cleanup, observability, recovery, handoff, and cross-host continuation have explicit gates.
 6. **Cross-artifact consistency:** tracker blockers, catalog state, IDs, paths, DAG edges,
    simulation output, and revision counters agree.
+7. **Purpose fidelity:** each material executable chain preserves its authoritative purpose,
+   protected constraints, and observable outcome without unsupported complexity or semantic loss
+   disguised as fewer tasks/code.
 
 Classify every issue:
 

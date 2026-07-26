@@ -40,6 +40,11 @@ Trace the diff backward to approved requirements, module specs, interfaces, and 
 - mismatched producer/consumer contracts;
 - error, empty, loading, degraded, migration, or compatibility states omitted;
 - tests that pass without proving the requirement.
+- material changes that do not reach an authoritative purpose chain and observable outcome;
+- additions or deletions lacking symmetric evidence for purpose, protected constraints, failure
+  semantics, compatibility, authority, and proof;
+- line-count simplification that collapses distinct recovery/error semantics or adds a generic
+  fallback.
 
 Write findings with severity, file/line evidence, violated source, and required repair.
 Preserve the two axis reports separately and do not merge or rerank their findings.

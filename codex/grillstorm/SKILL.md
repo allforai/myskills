@@ -9,6 +9,9 @@ Turn goals into frozen decisions, executable contracts, verified code, and evide
 
 ## Invariants
 
+0. Subject to safety, authority, and honest evidence, once the final material decision is
+   answered, run unattended to a terminal state. No artifact, stage, or external workflow may
+   demand confirmation without a new decision or new authority.
 1. Discover facts; Grill and freeze human decisions; freeze one launch contract; implement and prove.
 2. Ask one decision question at a time with a recommendation and its main tradeoff.
 3. Persist each accepted answer immediately; artifacts, not conversation, are durable truth.
@@ -19,6 +22,8 @@ Turn goals into frozen decisions, executable contracts, verified code, and evide
    behavior. Retry the same contract, repair, replan, or create a gap. Only explicitly
    approved product degradation is valid.
 7. Documents are not delivery. Code and real acceptance evidence are required.
+8. Reconstruct why material code and requests exist. Preserve confirmed purpose with the
+   fewest necessary concepts, not merely the fewest lines.
 
 Resolve links relative to this file. Read `references/upstream-flow.md` first; its parity
 rules are binding. This skill embeds the original setup, Grill, domain, spec, ticket,
@@ -69,10 +74,11 @@ artifacts instead of copying them.
 
 Read `references/project-setup.md`. Reuse valid `docs/agents/` configuration. Explore first;
 ask only for missing tracker, label, domain-doc, or repository-instruction decisions, one at
-a time. Confirm the complete draft once, then write it. This embeds
+a time. After the last real decision, write the complete draft without a summary confirmation.
+This embeds
 `setup-matt-pocock-skills`.
 
-**Exit:** required repository configuration exists and is confirmed.
+**Exit:** required repository configuration exists and is durable.
 
 ## Phase 0: Orient And Route
 
@@ -82,15 +88,20 @@ explicitly requested.
 
 Read:
 
-- `references/routing.md`: choose `diagnostic`, `direct`, `ticketed`, or `program` from
-  evidence; announce, do not ask. Promote when scope grows.
+- `references/orientation-and-intent.md`: build `reviews/orientation.md`, trace real call
+  paths/effective configuration/test proof and material intent, then dispatch
+  `prompts/orientation-critic.md` in a fresh `THINK` context. Repair and independently confirm
+  within its `1 / 2 / 3` budget. Do not choose a route while orientation is open.
 - `references/reverse-closure.md`: define observable completion, side effects,
   failure/recovery, proof, and an early reuse radar.
 - `references/model-policy.md`: resolve and freeze effective `THINK`, `BUILD`, and `VERIFY`
   literals. Ask only for an explicit override; never substitute models after launch.
+- `references/routing.md`: only after orientation closes, choose `diagnostic`, `direct`,
+  `ticketed`, or `program` from the verified baseline; announce, do not ask. Promote when scope
+  grows.
 
-**Exit:** route, completion target, reuse candidates, model policy, and clean ownership
-baseline are durable.
+**Exit:** independently closed orientation and intent evidence, route, completion target, reuse
+candidates, model policy, and clean ownership baseline are durable.
 
 ## Phase 1: Grill The Goal
 
@@ -101,21 +112,25 @@ needed.
 
 Resolve user outcome, scope/non-goals, domain language, modules, ownership, dependency
 direction, interfaces, test seams, states, failure behavior, and completion proof. Write
-decisions as accepted and synthesize `program-spec.md`.
+decisions as accepted and synthesize `program-spec.md`. For every material request, separate
+the proposed mechanism from its pain, underlying purpose, protected constraint, and observable
+acceptance. Prefer the smallest purpose-complete option and persist its purpose chain.
 
-**Exit:** the user confirms shared understanding and the program spec.
+**Exit:** every material human decision is answered and persisted; the program spec is internally
+closed. Do not ask the user to approve or confirm the synthesized document.
 
 ## Phase 2: Grill Modules
 
 For `program`, process modules in dependency order. Explore the current code, load only
 touching decisions/contracts, Grill unresolved behavior and integration obligations, write
-`modules/<id>-spec.md`, run local closure, and confirm shared understanding.
+`modules/<id>-spec.md`, and run local closure without a module-summary confirmation.
 
 A changed scope, boundary, or public interface invalidates the parent and every affected
 downstream spec. Update and re-Grill them; never patch around drift.
 
-**Exit:** every module spec is locally closed at the same spec revision. This is the end of
-ordinary interaction; all later in-scope decisions are autonomous and disclosed at completion.
+**Exit:** every module spec is locally closed at the same spec revision. When the last material
+decision was answered earlier, ordinary interaction ended there; all later in-scope decisions are
+autonomous and disclosed at completion.
 
 ## Phase 2.5: Close The Spec Graph
 
@@ -125,6 +140,10 @@ fresh `THINK` context, then independent spec-closure and abstraction critics. Re
 and unambiguous repairs internally. For each true new decision, adopt the recommended option
 inside the frozen authority envelope, persist it in `autonomous-decisions.md`, invalidate
 affected artifacts, and rerun all global verdicts without asking the user.
+
+Require every material requirement and abstraction to cite an authoritative purpose chain from
+`references/orientation-and-intent.md`. Reject literal compliance that misses the purpose and
+reject complexity with no current consumer or protected invariant.
 
 Inspect existing reuse before extracting. Any justified shared module must be fully
 specified, placed before consumers, and included in interfaces and test seams before task
@@ -162,6 +181,9 @@ After local task closure:
 
 Write task/workflow Grill, closure, and dry-run reviews.
 
+Every material task traces requirement -> purpose -> observable outcome. Task and workflow reviews
+apply purpose-complete minimalism symmetrically to additions and deletions.
+
 **Exit:** task closure, tickets, machine inputs, simulation, and workflow reverse Grill are
 closed at matching revisions with no unreachable work or missing proof.
 
@@ -182,6 +204,11 @@ each choice, consider viable options, adopt the recommended option that remains 
 authority, record its assumptions/risk/affected artifacts before acting, and record its outcome
 afterward. Never pause merely because the choice concerns product behavior, architecture,
 boundaries, interfaces, or replanning.
+
+If another skill, template, or stage protocol requests design, spec, module, ticket, launch, or
+implementation confirmation without adding a material decision or authority grant, skip that gate
+and record the conflict. Grillstorm is self-contained; do not layer generic brainstorming or
+artifact-approval gates over its own front-loaded decision protocol.
 
 **Exit:** one internally consistent launch contract, persisted and launched without another
 question.
@@ -212,7 +239,8 @@ or deploy without authority.
 ## Phase 6: Complete Delivery
 
 Write `execution-report.md`: completed scope, proof, reviews/repairs, deviations, autonomous
-decisions, remaining gates, and resume pointers.
+decisions, corrected misunderstandings, material intent classifications and simplifications,
+remaining gates, and resume pointers.
 
 Set `delivery_status: complete` and overall delivery `status: complete` only when required
 code exists, tasks/catalog are evidenced, blocking findings are fixed, required suites pass,

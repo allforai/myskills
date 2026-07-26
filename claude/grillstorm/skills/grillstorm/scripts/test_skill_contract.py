@@ -71,7 +71,7 @@ def test_post_design_decisions_are_autonomous():
     tasks = " ".join(
         (ROOT / "references/task-documents.md").read_text(encoding="utf-8").split()
     )
-    assert "This is the end of ordinary interaction" in skill
+    assert "ordinary interaction ended there" in skill
     assert "without asking the user" in skill
     assert "Do not interrupt the user" in spec
     assert "continue without a question" in tasks
@@ -82,3 +82,58 @@ def test_interactive_audit_is_opt_in_only():
     assert "Phase 6 is the default unattended endpoint" in skill
     assert "only when the user explicitly requests `$grillstorm audit`" in skill
     assert "never continue into an interactive audit implicitly" in skill
+
+
+def test_orientation_gate_precedes_route_selection():
+    skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+    normalized = " ".join(skill.split())
+    assert "references/orientation-and-intent.md" in skill
+    assert "prompts/orientation-critic.md" in skill
+    assert "Do not choose a route while orientation is open" in normalized
+    assert "only after orientation closes" in normalized
+    assert (ROOT / "references/orientation-and-intent.md").is_file()
+    assert (ROOT / "prompts/orientation-critic.md").is_file()
+
+
+def test_orientation_contract_is_evidence_backed_bounded_and_independent():
+    contract = (ROOT / "references/orientation-and-intent.md").read_text(encoding="utf-8")
+    critic = (ROOT / "prompts/orientation-critic.md").read_text(encoding="utf-8")
+    for phrase in (
+        "observed|inferred|unknown",
+        "intentional_design|historical_compromise|accidental_behavior|unknown_intent",
+        "| 1 | 2 | 3 |",
+        "orientation_blocked",
+        "corrected_pending_confirmation",
+        "fresh `THINK` context",
+        "never ask the user for a discoverable repository fact",
+    ):
+        assert phrase in contract
+    assert "Do not trust README text, test names" in critic
+    assert "raw_evidence_checked" in critic
+    assert "supported|refuted|insufficient|unreviewed" in critic
+
+
+def test_intent_archaeology_and_purpose_complete_minimalism_propagate():
+    contract = (ROOT / "references/orientation-and-intent.md").read_text(encoding="utf-8")
+    normalized_contract = " ".join(contract.split())
+    grilling = (ROOT / "references/grilling.md").read_text(encoding="utf-8")
+    tasks = (ROOT / "references/task-documents.md").read_text(encoding="utf-8")
+    review = (ROOT / "references/review-and-validation.md").read_text(encoding="utf-8")
+    assert "evidence_verified`, `user_confirmed`, or `autonomous_post_freeze`" in contract
+    assert "remove|simplify|retain|replace|unknown" in contract
+    assert "Additions and deletions bear symmetric evidence burdens" in normalized_contract
+    assert "Intent before mechanism" in grilling
+    assert "Purpose chain:" in tasks
+    assert "symmetric evidence" in review
+
+
+def test_unattended_is_highest_workflow_invariant_and_summary_gates_are_forbidden():
+    skill = " ".join((ROOT / "SKILL.md").read_text(encoding="utf-8").split())
+    grilling = " ".join((ROOT / "references/grilling.md").read_text(encoding="utf-8").split())
+    assert "once the final material decision is answered, run unattended to a terminal state" in skill
+    assert "No artifact, stage, or external workflow may demand confirmation" in skill
+    assert "without a module-summary confirmation" in skill
+    assert "Do not ask the user to approve or confirm the synthesized document" in skill
+    assert "do not layer generic brainstorming or artifact-approval gates" in skill
+    assert "The answer to each decision is its approval" in grilling
+    assert "Green closure advances automatically" in grilling

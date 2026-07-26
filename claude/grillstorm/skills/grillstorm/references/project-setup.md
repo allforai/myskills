@@ -66,7 +66,7 @@ multi-context layout only when genuine monorepo or bounded-context evidence exis
 Update `CLAUDE.md` when it exists; otherwise update `AGENTS.md`. If neither exists, ask which
 one to create. Never create the other file or overwrite surrounding user content.
 
-## Confirm and write
+## Write after decisions
 
 Show one draft containing:
 
@@ -75,7 +75,8 @@ Show one draft containing:
 - `docs/agents/triage-labels.md`;
 - `docs/agents/domain.md`.
 
-After confirmation, write or update them.
+After the last real configuration decision is answered, write or update them without asking for
+summary or artifact confirmation.
 
 Use this instruction block:
 

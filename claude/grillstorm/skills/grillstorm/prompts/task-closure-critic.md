@@ -19,6 +19,10 @@ Also verify:
 - the catalog, module documents, interface registry, test-seam registry, and task DAG agree;
 - every completed-looking leaf traces to global proof, and every prerequisite is reachable
   from at least one approved outcome.
+- every material task traces through its requirement to an authoritative purpose chain and
+  observable outcome;
+- additions and simplifications preserve protected constraints with symmetric evidence and no
+  speculative complexity.
 
 Return only:
 

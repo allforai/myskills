@@ -57,7 +57,7 @@ the glossary and sparse ADRs inline, and do no implementation before shared unde
 ### To spec
 
 Do not interview again. Synthesize the approved conversation and codebase understanding,
-confirm the highest practical test seams, publish the spec to the configured tracker, and
+select the highest practical test seams, publish the spec to the configured tracker, and
 apply `ready-for-agent`.
 
 ### To tickets

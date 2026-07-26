@@ -55,6 +55,7 @@ Module states are `pending`, `ready`, `in_progress`, `blocked`, `verified`, or `
 - Status: pending
 - Depends on: none
 - Requirements: <IDs>
+- Purpose chain: <evidence_verified|user_confirmed|autonomous_post_freeze source and ID>
 - Interfaces: implements <IDs>; requires <IDs>
 - Exclusive resources: <resource IDs or none>
 - Test seam: <ID>
@@ -93,6 +94,8 @@ Module states are `pending`, `ready`, `in_progress`, `blocked`, `verified`, or `
 - Expected paths guide execution but do not authorize silent boundary changes.
 - Every task declares exact `touched_paths`, `implements`, `requires`, and exclusive
   `resources` so the workflow can derive safe ordering and isolation.
+- Every material task traces its requirement to an authoritative purpose chain and observable
+  outcome; no task exists only to reproduce a requested mechanism.
 
 ## Machine workflow after closure
 
@@ -192,6 +195,8 @@ Before approval, verify:
     disconnected from an approved outcome.
 16. Published tickets and the compiled/simulated DAG are semantically equivalent to the
     approved catalog/module task documents.
+17. Every material task preserves its purpose and protected constraint with no unsupported
+    complexity or semantic loss disguised as simplification.
 
 Fix planning defects directly. Resolve any newly exposed in-scope decision with the
 recommended option and record it in `autonomous-decisions.md`.

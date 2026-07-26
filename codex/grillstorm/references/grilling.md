@@ -16,7 +16,24 @@ If a fact can be found by exploring the environment, filesystem, tools, code, te
 docs, look it up instead of asking. Decisions belong to the user: put each decision to
 them and wait for the answer.
 
-Do not implement the goal until the user confirms shared understanding.
+Do not implement until every material decision is answered. The answer to each decision is its
+approval; do not ask for a later summary, document, phase, or start confirmation.
+
+## Intent before mechanism
+
+For every material request, distinguish the proposed mechanism from the behavior or pain,
+underlying purpose, protected constraint, and observable success. When plausible purposes would
+change scope, architecture, public interfaces, acceptance, or authority, make the purpose the
+one-question decision. Otherwise adopt the evidenced interpretation.
+
+State the inferred purpose before the question and recommend the smallest purpose-complete option.
+Persist a purpose chain with source `evidence_verified|user_confirmed`, why requested, evidence,
+protected constraint, rejected alternative/tradeoff, and observable acceptance. Confirmation
+accepts the purpose and tradeoff, not merely the initial mechanism.
+
+Stop asking why at an observable outcome, a non-negotiable safety/compatibility/legal/operational
+constraint, or when another answer would not change a material decision. Record uncertainty rather
+than inventing deeper purpose.
 
 ## Question shape
 
@@ -58,5 +75,5 @@ Do not keep asking cosmetic or internal implementation questions after closure. 
 naming, private data structures, and local file organization are autonomous unless they
 affect an approved boundary or acceptance criterion.
 
-At program and module boundaries, summarize accepted decisions and remaining open branches.
-Ask whether shared understanding has been reached only when the closure checks are green.
+At program and module boundaries, persist accepted decisions and remaining open branches
+internally. Green closure advances automatically.

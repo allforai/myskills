@@ -53,6 +53,8 @@ Block on:
 - orphan modules, interfaces, abstractions, or tests with no requirement;
 - dependency cycles or a consumer that must know a provider's implementation details;
 - duplicated responsibility or invariant enforcement across module boundaries.
+- requirements or artifacts with no authoritative purpose chain and observable outcome;
+- literal satisfaction of a requested mechanism that fails its confirmed purpose.
 
 ## Reuse and abstraction review
 
@@ -77,6 +79,11 @@ A new module is justified only when all are true:
 Reject speculative second implementations, generic `utils` buckets, thin pass-through
 wrappers, abstraction based only on similar syntax, and modules whose callers still need to
 understand their internals.
+
+Apply purpose-complete minimalism. Each added abstraction names a current consumer, protected
+invariant, hidden complexity, and independent seam. Each material simplification classifies
+`remove|simplify|retain|replace|unknown` and proves the purpose/constraint absent or preserved.
+Unknown intent is neither deletion permission nor permanent immunity.
 
 ## Extracting a module
 

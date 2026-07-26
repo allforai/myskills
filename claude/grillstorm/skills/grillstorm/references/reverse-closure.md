@@ -105,8 +105,8 @@ Expose only decisions and compact gate summaries:
 
 ```text
 goal decisions
--> module/spec confirmation
--> newly surfaced closure decisions
+-> internally closed modules/specs
+-> autonomous closure repairs and recorded recommendations
 -> task/execution summary
 -> freeze launch contract and continue
 -> final report or handoff

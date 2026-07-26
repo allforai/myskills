@@ -18,7 +18,8 @@ For each seam, record:
 - automated command, or exact human runbook
 - failures it cannot detect
 
-Confirm the proposed seam with the user because it determines what "done" means.
+When viable seams imply materially different definitions of “done,” ask that seam choice as one
+front-loaded decision. Otherwise select the evidenced seam without a confirmation question.
 
 ## `program-spec.md`
 
