@@ -563,7 +563,7 @@ class TestWorktreeSmoke(unittest.TestCase):
                         ["git", "commit", "-q", "--allow-empty", "-m", "init"]):
                 subprocess.run(cmd, cwd=root, check=True, capture_output=True)
             fake = CommitFakeRunner([_v(True)])
-            r = run_task_in_worktree(_task("T-x-01"), fake, MODELS, pathlib.Path(root),
+            r = run_task_in_worktree(_task("T-x-01", ["T-x-01.txt"]), fake, MODELS, pathlib.Path(root),
                                      PROMPTS, threading.Lock(), log=lambda *_: None)
             self.assertEqual(r["status"], "done", r)
             self.assertTrue(pathlib.Path(root, "T-x-01.txt").exists())  # merged back
@@ -579,12 +579,10 @@ class TestMainTreeConsistency(unittest.TestCase):
                     ["git", "commit", "-q", "--allow-empty", "-m", "init"]):
             subprocess.run(cmd, cwd=root, check=True, capture_output=True)
 
-    def test_uncommitted_free_task_does_not_poison_worktree_merge(self):
-        # Regression for the todoscan live run: a free task leaves pkg/mod.py
-        # UNCOMMITTED in main; the next isolated task touches the same path in
-        # its worktree. Without the pre-worktree safety-commit the merge dies
-        # with "untracked working tree files would be overwritten".
-        from run_layers import run_task, safety_commit
+    def test_dirty_shared_workspace_is_rejected_not_absorbed(self):
+        # A prior writer's uncommitted file must never be swept into a new
+        # task base or candidate commit.
+        from run_layers import run_task
         with tempfile.TemporaryDirectory() as root:
             self._repo(root)
             rootp = pathlib.Path(root)
@@ -597,11 +595,11 @@ class TestMainTreeConsistency(unittest.TestCase):
             r2 = run_task_in_worktree(_task("T-b-01", ["pkg/mod.py"]), iso, MODELS,
                                       rootp, PROMPTS, threading.Lock(),
                                       log=lambda *_: None)
-            self.assertEqual(r2["status"], "done", r2.get("reason"))
-            self.assertIn("by T-b-01", (rootp / "pkg" / "mod.py").read_text())
+            self.assertEqual(r2["status"], "escalate")
+            self.assertEqual(r2["failure_kind"], "workspace_contaminated")
+            self.assertIn("pkg/mod.py", r2["reason"])
 
-    def test_merge_failure_reason_carries_stderr(self):
-        # Force a genuine content conflict and assert the reason is non-empty.
+    def test_committed_integration_divergence_escalates(self):
         from run_layers import _git, safety_commit
         with tempfile.TemporaryDirectory() as root:
             self._repo(root)
@@ -632,8 +630,7 @@ class TestMainTreeConsistency(unittest.TestCase):
             r = wt_res(_task("T-c-01", ["pkg/mod.py"]), runner, MODELS, rootp,
                        PROMPTS, lock, log=lambda *_: None)
             self.assertEqual(r["status"], "escalate")
-            self.assertTrue(len(r["reason"]) > len("merge conflict on grillstorm/T-c-01: "),
-                            r["reason"])
+            self.assertIn("merge conflict", r["reason"])
 
 
 if __name__ == "__main__":

@@ -80,6 +80,11 @@ Create one run-owned integration ref/worktree from the frozen starting commit. E
 task branches into its own task worktree from the current integration baseline. Executors
 write only inside their task worktree.
 
+This is a hard writer-isolation invariant. Concurrent writers never share a Git working tree,
+even when declared paths do not overlap. If task worktrees cannot be created, serialize writers;
+never emulate isolation with prompts. A dirty integration worktree is
+`workspace_contaminated`: do not stage, commit, clean, or absorb it into another task.
+
 Worktrees permit all ready writers to execute concurrently, including tasks whose expected
 paths overlap. They do not remove semantic dependencies or merge conflicts:
 
@@ -90,6 +95,9 @@ paths overlap. They do not remove semantic dependencies or merge conflicts:
 5. integrate against the latest integration ref, rerun post-merge acceptance, then publish
    the new integration ref atomically;
 6. a conflict or stale-baseline failure reopens only that task for replay and revalidation.
+
+Task commits stage only their declared `touched_paths`; repository-wide `git add -A`, stash, or
+cleanup is forbidden. Foreign changed paths reject admission as `workspace_contaminated`.
 
 `isolate_groups` emitted for overlapping paths are merge-collision hints in the default
 all-worktree mode, not execution mutexes. Only `resource_groups` block concurrent dispatch.
@@ -228,7 +236,7 @@ launch contract selected one.
 
 After the concurrent runner finishes:
 
-1. run the full suite and cross-module/runtime acceptance in the integration worktree;
+1. run the full suite once and cross-module/runtime acceptance in the integration worktree;
 2. run independent Standards and Spec reviews over the fixed integration ref;
 3. repair and revalidate through the same task isolation where ownership is clear;
 4. merge the verified integration ref into the authorized target branch;
@@ -237,3 +245,22 @@ After the concurrent runner finishes:
 
 Worker completion, a green focused test, or a successful Git merge is never global
 completion.
+
+## Validation pyramid
+
+- **Task:** executor and supervisor run only focused task acceptance and directly affected
+  contract/static checks.
+- **Module:** after all module tasks integrate, run the module suite once.
+- **Integration:** after a producer/consumer or dependency batch integrates, run affected
+  cross-module contracts and runtime flows.
+- **Global:** after all viable tasks integrate, the controller runs the full required suite and
+  global runtime acceptance once on the fixed integration ref.
+
+Only the controller may schedule module, integration, or global gates. A task may request an
+extra global run only when its declared `blast_radius: global` is evidenced by a build-system,
+repository-wide schema/configuration, dependency, or widely shared core change. Record every gate
+run and reason; “for safety” is not evidence.
+
+Store complete stdout/stderr as evidence artifacts. Agent context receives exit code, executed-test
+count, failure summary, relevant excerpts, artifact path, and hash; load full logs only for scoped
+diagnosis.

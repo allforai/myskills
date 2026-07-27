@@ -10,7 +10,8 @@ reruns. (This directly addresses the recorded #1 defect: verification that reads
 instead of testing the running reality.)
 
 ## Verify
-1. Rerun `acceptance_cmd` yourself. Capture the real exit code and stdout/stderr.
+1. Rerun `acceptance_cmd` yourself. Capture the real exit code and stdout/stderr. Verify only the
+   task and directly affected contracts; never run the full repository suite.
 2. `verdict:"confirmed"` is allowed ONLY if exit code == 0 AND the output shows the task's behavior genuinely works
    (not an empty/tautological pass).
 3. **Vacuous check (0-test vacuous pass).** If the rerun reports "No matching test

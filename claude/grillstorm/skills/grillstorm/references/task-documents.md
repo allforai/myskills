@@ -61,6 +61,8 @@ Module states are `pending`, `ready`, `in_progress`, `blocked`, `verified`, or `
 - Test seam: <ID>
 - Touched paths: <expected paths>
 - Acceptance command: `<non-vacuous command>`
+- Validation level: task
+- Blast radius: local|module|integration|global with evidence
 - Expected evidence: <test count/output/artifact>
 - Runtime check: <command/flow or not-applicable reason>
 - Failure contract: <typed visible failure, or explicitly approved and tested degradation>
@@ -96,6 +98,8 @@ Module states are `pending`, `ready`, `in_progress`, `blocked`, `verified`, or `
   `resources` so the workflow can derive safe ordering and isolation.
 - Every material task traces its requirement to an authoritative purpose chain and observable
   outcome; no task exists only to reproduce a requested mechanism.
+- Task acceptance is focused. Module, integration, and global commands belong to controller gates;
+  a task cannot run the full suite merely for reassurance.
 
 ## Machine workflow after closure
 

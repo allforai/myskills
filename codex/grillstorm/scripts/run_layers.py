@@ -362,11 +362,24 @@ def _git(args, cwd):
 
 
 def safety_commit(repo, message):
-    """Commit pending content inside a runner-owned task/integration worktree.
-    Main execution never calls this on the user's checked-out worktree."""
+    """Legacy/test helper. Production task admission uses explicit paths."""
     _git(["add", "-A"], repo)
     if _git(["diff", "--cached", "--quiet"], repo).returncode != 0:
         _git(["commit", "-m", message], repo)
+
+
+def commit_declared_paths(repo, declared, message):
+    """Stage only the task contract's explicit paths; never use repository-wide add."""
+    paths = [p for p in declared if isinstance(p, str) and p.strip()]
+    if not paths:
+        raise RuntimeError("task has no declared paths to commit")
+    added = _git(["add", "-A", "--", *paths], repo)
+    if added.returncode != 0:
+        raise RuntimeError(f"cannot stage declared paths: {added.stderr.strip()}")
+    if _git(["diff", "--cached", "--quiet"], repo).returncode != 0:
+        committed = _git(["commit", "-m", message], repo)
+        if committed.returncode != 0:
+            raise RuntimeError(f"cannot commit declared paths: {committed.stderr.strip()}")
 
 
 def changed_paths(repo, base_commit):
@@ -405,10 +418,16 @@ def run_task_in_worktree(task, runner, models, root, prompts_dir, merge_lock, lo
     branch = f"{branch_prefix}/{safe_tid}"
     wt = tempfile.mkdtemp(prefix=f"ms-{tid}-")
     with merge_lock:
-        # The runner-owned integration worktree must be clean before branching.
-        safety_commit(root, f"grillstorm: pre-worktree snapshot before {tid}")
+        # Never absorb another task's uncommitted output into this task's base.
+        contamination = changed_paths(root, _git(["rev-parse", "HEAD"], root).stdout.strip())
+        if contamination:
+            pathlib.Path(wt).rmdir()
+            return {"task_id": tid, "status": "escalate", "retries": 0,
+                    "failure_kind": "workspace_contaminated",
+                    "reason": f"integration worktree has foreign changes: {contamination}"}
         r = _git(["worktree", "add", "-b", branch, wt, "HEAD"], root)
     if r.returncode != 0:
+        pathlib.Path(wt).rmdir()
         return {"task_id": tid, "status": "escalate", "retries": 0,
                 "reason": f"worktree add failed: {r.stderr.strip()[-300:]}"}
     try:
@@ -439,13 +458,18 @@ def run_task_in_worktree(task, runner, models, root, prompts_dir, merge_lock, lo
         result["actual_touched_paths"] = actual
         if admission:
             result["artifact_admission"] = admission
-        if enforce_paths and outside:
+        if outside:
             return {"task_id": tid, "status": "escalate",
                     "retries": result.get("retries", 0),
-                    "failure_kind": "scope",
+                    "failure_kind": "workspace_contaminated",
                     "reason": f"task modified undeclared paths: {outside}",
                     "actual_touched_paths": actual}
-        safety_commit(wt, f"grillstorm: {tid}")
+        try:
+            commit_declared_paths(wt, task.get("touched_paths", []), f"grillstorm: {tid}")
+        except RuntimeError as exc:
+            return {"task_id": tid, "status": "escalate",
+                    "retries": result.get("retries", 0), "failure_kind": "git",
+                    "reason": str(exc), "actual_touched_paths": actual}
         marker = ("grillstorm-reality-gated" if result["status"] == "reality_gated"
                   else "grillstorm-confirmed")
         marked = _git(["commit", "--allow-empty", "-m", f"{marker}: {tid}"], wt)
@@ -454,7 +478,13 @@ def run_task_in_worktree(task, runner, models, root, prompts_dir, merge_lock, lo
                     "retries": result.get("retries", 0), "failure_kind": "git",
                     "reason": f"cannot write confirmation marker: {marked.stderr.strip()}"}
         with merge_lock:  # integration ref publication and worktree reset serialize
-            safety_commit(root, f"grillstorm: integration snapshot before admitting {tid}")
+            contamination = changed_paths(
+                root, _git(["rev-parse", "HEAD"], root).stdout.strip())
+            if contamination:
+                return {"task_id": tid, "status": "escalate",
+                        "retries": result.get("retries", 0),
+                        "failure_kind": "workspace_contaminated",
+                        "reason": f"integration worktree changed during task: {contamination}"}
             expected = _git(["rev-parse", "HEAD"], root).stdout.strip()
             task_commit = _git(["rev-parse", "HEAD"], wt).stdout.strip()
             if integration_ref and event_log and contract:

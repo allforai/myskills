@@ -137,3 +137,22 @@ def test_unattended_is_highest_workflow_invariant_and_summary_gates_are_forbidde
     assert "do not layer generic brainstorming or artifact-approval gates" in skill
     assert "The answer to each decision is its approval" in grilling
     assert "Green closure advances automatically" in grilling
+
+
+def test_writer_isolation_and_validation_pyramid_are_mandatory():
+    concurrency = " ".join(
+        (ROOT / "references/concurrency.md").read_text(encoding="utf-8").split()
+    )
+    executor = " ".join((ROOT / "prompts/executor.md").read_text(encoding="utf-8").split()).lower()
+    supervisor = " ".join((ROOT / "prompts/supervisor.md").read_text(encoding="utf-8").split()).lower()
+    runner = (ROOT / "scripts/run_layers.py").read_text(encoding="utf-8")
+    assert "Concurrent writers never share a Git working tree" in concurrency
+    assert "If task worktrees cannot be created, serialize writers" in concurrency
+    assert "workspace_contaminated" in concurrency
+    assert "repository-wide `git add -A`" in concurrency
+    assert "## Validation pyramid" in concurrency
+    assert "runs the full required suite" in concurrency
+    assert "never run the full repository suite" in executor
+    assert "never run the full repository suite" in supervisor
+    assert "def commit_declared_paths" in runner
+    assert 'failure_kind": "workspace_contaminated"' in runner
