@@ -96,3 +96,28 @@ def test_reverse_grills_close_on_classified_not_designed():
             "A lens is applied when every mode is classified, not when every mode is designed"
             in read(path)
         )
+
+
+CLOSURE_CRITICS = ("prompts/spec-closure-critic.md", "prompts/task-closure-critic.md")
+
+
+def test_closure_critics_accept_the_expansion_table():
+    for path in CLOSURE_CRITICS:
+        prompt = read(path)
+        assert "references/failure-proportionality.md" in prompt
+        assert (
+            "Accept `expansion: none` and a proved `guard-only` as closed" in prompt
+        )
+        assert "Do not demand per-mode treatment of a mode the table exempts" in prompt
+
+
+def test_closure_critics_may_still_challenge_the_classification():
+    for path in CLOSURE_CRITICS:
+        prompt = read(path)
+        for phrase in (
+            "`durable` damage recorded as `reenterable`",
+            "`rare` without an admissible evidenced basis",
+            "placeholder `reentry_proof`",
+            "a `guard-only` defense with no proof it holds",
+        ):
+            assert phrase in prompt
