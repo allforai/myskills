@@ -71,4 +71,5 @@ Return only:
 
 Return `closed` only when every lens was applied to every global outcome and no unresolved
 issue remains. A lens is applied when every mode is classified, not when every mode is designed.
-Order issues by `blast_radius` — `contract`, then `module`, then `local`.
+Dependency order governs. Among ready issues, order by `blast_radius` — `contract`, then
+`module`, then `local`.
