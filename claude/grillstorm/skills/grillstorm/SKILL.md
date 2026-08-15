@@ -134,7 +134,8 @@ autonomous and disclosed at completion.
 
 ## Phase 2.5: Close The Spec Graph
 
-Read `references/spec-closure-and-abstraction.md` and `references/review-budgets.md`. Run
+Read `references/spec-closure-and-abstraction.md`, `references/failure-proportionality.md`, and
+`references/review-budgets.md`. Run
 `prompts/spec-reverse-grill.md` in a
 fresh `THINK` context, then independent spec-closure and abstraction critics. Resolve facts
 and unambiguous repairs internally. For each true new decision, adopt the recommended option
@@ -179,7 +180,9 @@ After local task closure:
    proof. Route defects backward to their owning phase.
 6. After any repair, regenerate affected projections and rerun the complete relevant gates.
 
-Write task/workflow Grill, closure, and dry-run reviews.
+Write task/workflow Grill, closure, and dry-run reviews. Bound exceptional-behavior expansion with
+`references/failure-proportionality.md` and validate `reviews/failure-classification.json` before
+closure.
 
 Every material task traces requirement -> purpose -> observable outcome. Task and workflow reviews
 apply purpose-complete minimalism symmetrically to additions and deletions.
