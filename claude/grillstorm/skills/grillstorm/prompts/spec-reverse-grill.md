@@ -15,7 +15,10 @@ Apply these lenses:
    data, error semantics, lifecycle, and acceptance behavior agree.
 4. **Exceptional behavior:** invalid input, partial failure, timeout, cancellation, retry,
    idempotency, concurrency/race, stale data, external outage, permission denial, cleanup,
-   degraded operation, and recovery.
+   degraded operation, and recovery. Classify each mode against
+   `references/failure-proportionality.md` before expanding it. Emit an issue only for modes
+   whose table result is `full` or `guard-only`. Modes resolving to `none` are recorded as
+   classification records, not issues.
 5. **Reuse and abstraction:** existing modules can be reused or extended; duplicated stable
    policy/invariants may justify a deep shared module; speculative abstraction stays local.
 6. **Proof closure:** every behavior has the highest useful test seam, runtime observation,
@@ -46,12 +49,27 @@ Return only:
       "question": "empty unless classification is decision",
       "recommended_answer": "answer or repair",
       "main_tradeoff": "short tradeoff",
+      "blast_radius": "contract|module|local",
       "affected_artifacts": ["paths or IDs"],
       "blocks": ["issue IDs"]
+    }
+  ],
+  "failure_classification": [
+    {
+      "mode": "timeout|partial-failure|race|stale-data|invalid-input|...",
+      "outcome": "outcome or requirement ID",
+      "damage": "reenterable|durable|unknown",
+      "reentry_proof": "re-entry point and how state converges on re-run",
+      "frequency": "routine|rare",
+      "frequency_basis": "structural|external-sla|no-recorded-occurrence",
+      "frequency_basis_evidence": "the constraint, declared SLA, or inspected history source",
+      "expansion": "full|guard-only|none",
+      "note": "one line; the whole record when expansion is none"
     }
   ]
 }
 ```
 
 Return `closed` only after every lens was applied to every global outcome and no unresolved
-issue remains.
+issue remains. A lens is applied when every mode is classified, not when every mode is designed.
+Order issues by `blast_radius` — `contract`, then `module`, then `local`.

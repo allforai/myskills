@@ -53,3 +53,46 @@ def test_reference_names_the_validator():
 def test_skill_routes_the_new_reference():
     skill = read("SKILL.md")
     assert "references/failure-proportionality.md" in skill
+
+
+REVERSE_GRILLS = ("prompts/spec-reverse-grill.md", "prompts/task-reverse-grill.md")
+
+
+def test_reverse_grills_classify_before_expanding():
+    for path in REVERSE_GRILLS:
+        prompt = read(path)
+        assert "references/failure-proportionality.md" in prompt
+        assert "Classify each mode" in prompt
+        assert "before expanding it" in prompt
+
+
+def test_reverse_grills_suppress_modes_that_resolve_to_none():
+    for path in REVERSE_GRILLS:
+        prompt = read(path)
+        assert (
+            "Emit an issue only for modes whose table result is `full` or `guard-only`"
+            in prompt
+        )
+        assert "Modes resolving to `none` are recorded as classification records, not issues" in prompt
+
+
+def test_reverse_grills_emit_classification_records():
+    for path in REVERSE_GRILLS:
+        prompt = read(path)
+        assert '"failure_classification": [' in prompt
+        assert '"damage": "reenterable|durable|unknown"' in prompt
+        assert '"frequency": "routine|rare"' in prompt
+        assert '"expansion": "full|guard-only|none"' in prompt
+
+
+def test_reverse_grill_issues_carry_blast_radius():
+    for path in REVERSE_GRILLS:
+        assert '"blast_radius": "contract|module|local"' in read(path)
+
+
+def test_reverse_grills_close_on_classified_not_designed():
+    for path in REVERSE_GRILLS:
+        assert (
+            "A lens is applied when every mode is classified, not when every mode is designed"
+            in read(path)
+        )
