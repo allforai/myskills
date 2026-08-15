@@ -121,3 +121,28 @@ def test_closure_critics_may_still_challenge_the_classification():
             "a `guard-only` defense with no proof it holds",
         ):
             assert phrase in prompt
+
+
+def test_spec_closure_gate_scopes_the_failure_block_to_expanded_modes():
+    doc = read("references/spec-closure-and-abstraction.md")
+    assert (
+        "failure/degraded/rollback behavior that cannot return to a safe state, for every mode "
+        "whose `references/failure-proportionality.md` result is `full` or `guard-only`" in doc
+    )
+
+
+def test_spec_exit_gate_requires_the_validator():
+    doc = read("references/spec-closure-and-abstraction.md")
+    assert (
+        "every failure mode is classified and "
+        "`scripts/validate_failure_classification.py` passes" in doc
+    )
+
+
+def test_task_closure_applies_the_expansion_table():
+    doc = read("references/task-documents.md")
+    assert "references/failure-proportionality.md" in doc
+    assert "classify each mode, expand only per the table" in doc
+    assert (
+        "validate `reviews/failure-classification.json` before ticket publication" in doc
+    )
