@@ -49,7 +49,8 @@ Block on:
 - requirements without observable proof;
 - interfaces without producer, consumer, error semantics, or compatibility policy;
 - success paths whose real side effect is not verified;
-- failure/degraded/rollback behavior that cannot return to a safe state;
+- failure/degraded/rollback behavior that cannot return to a safe state, for every mode whose
+  `references/failure-proportionality.md` result is `full` or `guard-only`;
 - orphan modules, interfaces, abstractions, or tests with no requirement;
 - dependency cycles or a consumer that must know a provider's implementation details;
 - duplicated responsibility or invariant enforcement across module boundaries.
@@ -117,6 +118,8 @@ The pass closes only when:
 - the reverse Spec Grill has applied every lens to every global outcome and has no
   unresolved issue or decision;
 - every matrix row is closed or explicitly reality-gated;
+- every failure mode is classified and `scripts/validate_failure_classification.py` passes over
+  `reviews/failure-classification.json`; `expansion: none` and a proved `guard-only` are closed;
 - backward tracing finds no unjustified artifact;
 - reuse candidates have an explicit reuse/extend/extract decision;
 - any extracted module is fully specified and precedes its consumers;

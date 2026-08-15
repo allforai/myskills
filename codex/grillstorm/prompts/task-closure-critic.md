@@ -9,6 +9,12 @@ is preceded by its interface producer, every extracted shared module precedes mi
 and every prerequisite, migration, failure path, and reality gate is represented. Check that
 tasks remain vertical, independently verifiable, and suitable for isolated execution.
 
+Failure paths follow `references/failure-proportionality.md`. Accept `expansion: none` and a
+proved `guard-only` as closed. Do not demand per-mode treatment of a mode the table exempts.
+Challenge only misclassification, a bypassed lock, or an unproved defense: `durable` damage
+recorded as `reenterable`, `rare` without an admissible evidenced basis, placeholder
+`reentry_proof`, or a `guard-only` defense with no proof it holds.
+
 Also verify:
 
 - every task belongs to exactly one catalog entry and owning module;

@@ -155,7 +155,9 @@ planning snapshot and run two distinct passes:
    outcome backward through integration tasks, directory ownership, consumers, interface
    producers, shared modules, migrations, configuration, deployment, cleanup, and
    prefactoring. Apply problem, design, consistency, exception, and execution-reality
-   lenses.
+   lenses. For the exception lens, follow `references/failure-proportionality.md`: classify
+   each mode, expand only per the table, and validate
+   `reviews/failure-classification.json` before ticket publication.
 2. **Independent closure:** after every discovered fact, repair, and Grill decision has
    been incorporated, use `prompts/task-closure-critic.md` from a fresh context to challenge
    the resulting complete graph.
