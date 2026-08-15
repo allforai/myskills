@@ -50,12 +50,61 @@ def test_reference_names_the_validator():
     assert "A failing run blocks the closure gate" in doc
 
 
+def test_reference_uses_the_skill_script_invocation_convention():
+    doc = read("references/failure-proportionality.md")
+    assert "python3 <skill>/scripts/validate_failure_classification.py" in doc
+
+
+def test_reference_states_who_writes_the_file_and_who_runs_the_validator():
+    doc = read("references/failure-proportionality.md")
+    for phrase in (
+        "The orchestrator persists the reverse Grill's `failure_classification` array and "
+        "the outcomes it checked to `reviews/failure-classification.json`",
+        "The orchestrator, not the Grill subagent, runs the validator before the closure gate",
+    ):
+        assert phrase in doc
+
+
+def test_reference_states_a_validator_error_is_a_grill_repair():
+    doc = read("references/failure-proportionality.md")
+    assert (
+        "A validator error is a Grill repair that reruns the reverse Grill for the affected "
+        "outcomes, not a prose override" in doc
+    )
+
+
 def test_skill_routes_the_new_reference():
     skill = read("SKILL.md")
     assert "references/failure-proportionality.md" in skill
 
 
+def test_reference_gives_dependency_order_before_blast_radius():
+    doc = read("references/failure-proportionality.md")
+    assert (
+        "Dependency order governs. Among ready issues, order by `blast_radius` — `contract`, "
+        "then `module`, then `local`." in doc
+    )
+    assert "Consume issues in that order" not in doc
+
+
+def test_reference_locks_local_blast_radius_to_a_named_call_site():
+    doc = read("references/failure-proportionality.md")
+    assert (
+        "`local` requires naming that single call site; a `local` claim that cannot name it "
+        "falls back to `module`." in doc
+    )
+
+
 REVERSE_GRILLS = ("prompts/spec-reverse-grill.md", "prompts/task-reverse-grill.md")
+
+
+def test_reverse_grills_lock_local_blast_radius_to_a_named_call_site():
+    for path in REVERSE_GRILLS:
+        prompt = read(path)
+        assert (
+            "A `local` claim must name the single call site it changes; a claim that cannot "
+            "name it falls back to `module`." in prompt
+        )
 
 
 def test_reverse_grills_classify_before_expanding():

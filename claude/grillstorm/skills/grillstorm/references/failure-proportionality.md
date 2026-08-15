@@ -68,9 +68,18 @@ for an evidenced reason.
 `damage: unknown` counts as `durable`. Investigate inside the same bounded gate; if it stays
 unknown, defer that one mode without blocking the rest of the graph.
 
-Run `scripts/validate_failure_classification.py reviews/failure-classification.json`. It applies
-the fallbacks and the table deterministically, and rejects a self-reported `expansion` that
-disagrees with the lookup. A failing run blocks the closure gate. The validator makes no
+The orchestrator persists the reverse Grill's `failure_classification` array and the outcomes it
+checked to `reviews/failure-classification.json`. The orchestrator, not the Grill subagent, runs
+the validator before the closure gate:
+
+```bash
+python3 <skill>/scripts/validate_failure_classification.py reviews/failure-classification.json
+```
+
+It applies the fallbacks and the table deterministically, checks that every mode was classified
+for every checked outcome, and rejects a self-reported `expansion` that disagrees with the
+lookup. A failing run blocks the closure gate. A validator error is a Grill repair that reruns
+the reverse Grill for the affected outcomes, not a prose override. The validator makes no
 probability judgment of its own.
 
 ## Lens closure
@@ -81,8 +90,10 @@ designed. `expansion: none` and a proved `guard-only` are closed states.
 ## Issue ordering
 
 Every issue from any lens carries `blast_radius`: `contract` when being wrong changes a
-cross-module contract or acceptance, `module` when it changes one module's internals, `local` when
-it changes a single call site. Consume issues in that order. Record `local` issues in
+cross-module contract or acceptance, `module` when it changes one module's internals, `local`
+when it changes a single call site. `local` requires naming that single call site; a `local`
+claim that cannot name it falls back to `module`. Dependency order governs. Among ready issues,
+order by `blast_radius` — `contract`, then `module`, then `local`. Record `local` issues in
 `reviews/spec-grill.md` or `reviews/task-grill.md` without expanding them.
 
 No lens outside exceptional behavior gains a skip permission. Ordering defers expansion, never

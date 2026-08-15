@@ -1,8 +1,14 @@
+import json
+
 import pytest
 
 from validate_failure_classification import (
+    FAILURE_MODES,
     FailureClassificationError,
+    load_classification,
+    main,
     resolve_record,
+    validate_coverage,
     validate_records,
 )
 
@@ -162,3 +168,159 @@ def test_valid_records_return_resolved_entries():
 def test_empty_record_list_is_rejected():
     with pytest.raises(FailureClassificationError):
         validate_records([])
+
+
+# --- coverage: the record SET, not just each record's inside (Finding 1) ---
+
+
+def test_shared_mode_enumeration_is_the_union_of_both_reverse_grill_prompts():
+    # spec-reverse-grill.md lens 4 + task-reverse-grill.md lens 4, union, stable slugs.
+    assert set(FAILURE_MODES) == {
+        "invalid-input",
+        "partial-failure",
+        "timeout",
+        "cancellation",
+        "retry",
+        "idempotency",
+        "concurrency-race",
+        "stale-data",
+        "external-outage",
+        "permission-denial",
+        "cleanup",
+        "degraded-operation",
+        "observability",
+        "recovery",
+    }
+
+
+def test_validate_coverage_reports_the_single_missing_pair():
+    modes = ("timeout", "race")
+    records = [
+        {"outcome": "R1", "mode": "timeout"},
+        {"outcome": "R1", "mode": "race"},
+        {"outcome": "R2", "mode": "timeout"},
+        # R2/race is omitted entirely.
+    ]
+    with pytest.raises(FailureClassificationError) as excinfo:
+        validate_coverage(records, ["R1", "R2"], modes=modes)
+    message = str(excinfo.value)
+    assert "R2" in message
+    assert "race" in message
+
+
+def test_validate_coverage_truncates_many_missing_pairs():
+    modes = tuple(f"mode-{i:02d}" for i in range(15))
+    with pytest.raises(FailureClassificationError) as excinfo:
+        validate_coverage([], ["R1"], modes=modes)
+    message = str(excinfo.value)
+    for mode in modes[:10]:
+        assert mode in message
+    for mode in modes[10:]:
+        assert mode not in message
+    assert "5 more" in message
+
+
+def test_validate_coverage_passes_with_full_coverage():
+    modes = ("timeout", "race")
+    records = [
+        {"outcome": "R1", "mode": "timeout"},
+        {"outcome": "R1", "mode": "race"},
+    ]
+    assert validate_coverage(records, ["R1"], modes=modes) is None
+
+
+def test_validate_coverage_extra_unlisted_mode_neither_breaks_nor_substitutes():
+    modes = ("timeout", "race")
+    records = [
+        {"outcome": "R1", "mode": "timeout"},
+        {"outcome": "R1", "mode": "an-extra-mode-outside-the-enumeration"},
+    ]
+    with pytest.raises(FailureClassificationError) as excinfo:
+        validate_coverage(records, ["R1"], modes=modes)
+    assert "race" in str(excinfo.value)
+
+
+def test_validate_coverage_defaults_to_the_shared_mode_enumeration():
+    with pytest.raises(FailureClassificationError) as excinfo:
+        validate_coverage([], ["R1"])
+    message = str(excinfo.value)
+    for mode in FAILURE_MODES[:10]:
+        assert mode in message
+
+
+# --- load_classification: two accepted array keys, required outcomes (Findings 1 & 2a) ---
+
+
+def test_load_classification_accepts_records_key(tmp_path):
+    path = tmp_path / "classification.json"
+    path.write_text(
+        json.dumps({"records": [{"mode": "timeout", "outcome": "R1"}], "outcomes": ["R1"]})
+    )
+    records, outcomes = load_classification(path)
+    assert records == [{"mode": "timeout", "outcome": "R1"}]
+    assert outcomes == ["R1"]
+
+
+def test_load_classification_accepts_failure_classification_key(tmp_path):
+    path = tmp_path / "classification.json"
+    path.write_text(
+        json.dumps(
+            {
+                "failure_classification": [{"mode": "timeout", "outcome": "R1"}],
+                "outcomes": ["R1"],
+            }
+        )
+    )
+    records, outcomes = load_classification(path)
+    assert records == [{"mode": "timeout", "outcome": "R1"}]
+    assert outcomes == ["R1"]
+
+
+def test_load_classification_rejects_a_document_with_neither_key(tmp_path):
+    path = tmp_path / "classification.json"
+    path.write_text(json.dumps({"outcomes": ["R1"]}))
+    with pytest.raises(FailureClassificationError):
+        load_classification(path)
+
+
+def test_load_classification_requires_outcomes(tmp_path):
+    path = tmp_path / "classification.json"
+    path.write_text(json.dumps({"records": [{"mode": "timeout", "outcome": "R1"}]}))
+    with pytest.raises(FailureClassificationError):
+        load_classification(path)
+
+
+# --- main: wires validate_records then validate_coverage ---
+
+
+def _full_record(mode, outcome):
+    return {
+        "mode": mode,
+        "outcome": outcome,
+        "damage": "reenterable",
+        "reentry_proof": "the queue redelivers; the row is upserted by request id",
+        "frequency": "rare",
+        "frequency_basis": "structural",
+        "frequency_basis_evidence": "the unique index makes this unreachable",
+        "expansion": "none",
+    }
+
+
+def test_main_rejects_incomplete_coverage(tmp_path):
+    path = tmp_path / "classification.json"
+    path.write_text(
+        json.dumps(
+            {"records": [_full_record("timeout", "R1")], "outcomes": ["R1"]}
+        )
+    )
+    with pytest.raises(SystemExit):
+        main([str(path)])
+
+
+def test_main_passes_with_full_coverage(tmp_path, capsys):
+    records = [_full_record(mode, "R1") for mode in FAILURE_MODES]
+    path = tmp_path / "classification.json"
+    path.write_text(json.dumps({"records": records, "outcomes": ["R1"]}))
+    exit_code = main([str(path)])
+    assert exit_code == 0
+    assert f"{len(FAILURE_MODES)} records" in capsys.readouterr().out

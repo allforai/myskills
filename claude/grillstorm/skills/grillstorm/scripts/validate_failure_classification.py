@@ -16,6 +16,31 @@ EXPANSION_TABLE = {
 }
 PLACEHOLDERS = {"", "-", "?", "n/a", "na", "tba", "tbd", "todo", "unknown"}
 
+# Shared exceptional-behavior lens enumeration (lens 4 of both reverse-Grill prompts),
+# expressed as stable slugs. The two prompts word two entries differently:
+#   prompts/spec-reverse-grill.md: "external outage" -> external-outage;
+#     "degraded operation" -> degraded-operation (no "observability" entry).
+#   prompts/task-reverse-grill.md: "external dependency outage" -> external-outage;
+#     "observability" -> observability (no "degraded operation" entry).
+# FAILURE_MODES is the union of both enumerations, so coverage is checked against every
+# mode either prompt can produce, regardless of which prompt wrote the record.
+FAILURE_MODES = (
+    "invalid-input",
+    "partial-failure",
+    "timeout",
+    "cancellation",
+    "retry",
+    "idempotency",
+    "concurrency-race",
+    "stale-data",
+    "external-outage",
+    "permission-denial",
+    "cleanup",
+    "degraded-operation",
+    "observability",
+    "recovery",
+)
+
 
 class FailureClassificationError(ValueError):
     pass
@@ -105,11 +130,61 @@ def validate_records(records):
     return resolved
 
 
+def validate_coverage(records, outcomes, modes=None):
+    """Reject any `(outcome, mode)` pair in `outcomes` x `modes` with no matching record.
+
+    A record covers a pair only when both its `outcome` and `mode` match exactly. A record
+    whose `mode` falls outside `modes` is allowed to exist but covers nothing — it neither
+    breaks coverage nor substitutes for a listed mode.
+    """
+    modes = tuple(modes) if modes is not None else FAILURE_MODES
+    covered = {
+        (record.get("outcome"), record.get("mode"))
+        for record in records
+        if isinstance(record, dict)
+    }
+    missing = [
+        (outcome, mode)
+        for outcome in outcomes
+        for mode in modes
+        if (outcome, mode) not in covered
+    ]
+    if not missing:
+        return None
+
+    shown = missing[:10]
+    grouped = {}
+    for outcome, mode in shown:
+        grouped.setdefault(outcome, []).append(mode)
+    parts = [
+        f"{outcome}: {', '.join(grouped[outcome])}"
+        for outcome in outcomes
+        if outcome in grouped
+    ]
+    remaining = len(missing) - len(shown)
+    suffix = f"; and {remaining} more missing pair{'s' if remaining != 1 else ''}" if remaining else ""
+    raise FailureClassificationError(
+        "failure classification is missing coverage for: " + "; ".join(parts) + suffix
+    )
+
+
 def load_classification(path):
     document = json.loads(Path(path).read_text(encoding="utf-8"))
-    if not isinstance(document, dict) or "records" not in document:
+    if not isinstance(document, dict):
         raise FailureClassificationError("classification file needs a records list")
-    return document["records"]
+    records = document.get("records")
+    if records is None:
+        records = document.get("failure_classification")
+    if records is None:
+        raise FailureClassificationError(
+            "classification file needs a records or failure_classification list"
+        )
+    outcomes = document.get("outcomes")
+    if not isinstance(outcomes, list):
+        raise FailureClassificationError(
+            "classification file needs an outcomes list naming what it covers"
+        )
+    return records, outcomes
 
 
 def main(argv=None):
@@ -117,7 +192,9 @@ def main(argv=None):
     parser.add_argument("classification")
     args = parser.parse_args(argv)
     try:
-        resolved = validate_records(load_classification(args.classification))
+        records, outcomes = load_classification(args.classification)
+        resolved = validate_records(records)
+        validate_coverage(resolved, outcomes)
     except (OSError, ValueError) as exc:
         parser.error(str(exc))
     print(f"failure classification: valid ({len(resolved)} records)")
