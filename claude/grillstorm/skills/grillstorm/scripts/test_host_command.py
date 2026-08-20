@@ -81,7 +81,7 @@ class HostCommandTests(unittest.TestCase):
         spec = resolve_invocation(template="/bin/echo {model} {cwd} {out}", environ={},
                                   allow_unsafe_template=True)
         argv = spec.build("m", "/with space", "/tmp/o", "prompt with space")
-        self.assertEqual(argv[0], "/bin/echo")
+        self.assertEqual(argv[0], str(Path("/bin/echo").resolve()))
         self.assertEqual(argv[-1], "prompt with space")
         self.assertEqual(spec.source, "legacy-template")
         self.assertFalse(spec.verified)
