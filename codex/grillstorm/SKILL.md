@@ -1,6 +1,7 @@
 ---
 name: grillstorm
-description: Self-contained, adaptive Grill delivery for Claude and Codex. Routes small work through only needed stages and drives large goals through one-question grilling, modular specs, interface/test seams, global closure, task/DAG simulation, supervised worktree execution, runtime proof, durable handoff, and post-delivery gap audits. Use when the user invokes Grillstorm, wants the scattered Matt Pocock workflow behind one autonomous entry, wants decisions front-loaded before one uninterrupted implementation run, or asks to audit, hand off, or resume a run.
+description: Self-contained, adaptive Grill delivery for Claude and Codex. Routes small work through only needed stages and drives large goals through dependency-safe frontier-round grilling, modular specs, interface/test seams, global closure, task/DAG simulation, supervised worktree execution, runtime proof, durable handoff, and post-delivery gap audits. Use only when the user explicitly invokes $grillstorm, including its audit, handoff, and resume modes.
+disable-model-invocation: true
 ---
 
 # Grillstorm
@@ -13,7 +14,8 @@ Turn goals into frozen decisions, executable contracts, verified code, and evide
    answered, run unattended to a terminal state. No artifact, stage, or external workflow may
    demand confirmation without a new decision or new authority.
 1. Discover facts; Grill and freeze human decisions; freeze one launch contract; implement and prove.
-2. Ask one decision question at a time with a recommendation and its main tradeoff.
+2. Ask every currently independent decision in one numbered frontier round, each with a
+   recommendation and its main tradeoff. Never ask a question whose prerequisite is unsettled.
 3. Persist each accepted answer immediately; artifacts, not conversation, are durable truth.
 4. After the last interactive design confirmation, adopt and record every unforeseen
    in-scope decision without interrupting. Revalidate everything it affects.
@@ -73,8 +75,9 @@ artifacts instead of copying them.
 ## Phase -1: Setup
 
 Read `references/project-setup.md`. Reuse valid `docs/agents/` configuration. Explore first;
-ask only for missing tracker, label, domain-doc, or repository-instruction decisions, one at
-a time. After the last real decision, write the complete draft without a summary confirmation.
+ask only for missing tracker, label, domain-doc, or repository-instruction decisions. Ask all
+currently independent decisions in one frontier round. After the last real decision, write the
+complete draft without a summary confirmation.
 This embeds
 `setup-matt-pocock-skills`.
 

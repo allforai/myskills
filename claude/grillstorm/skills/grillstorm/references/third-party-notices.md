@@ -31,6 +31,11 @@ adapted from `mattpocock/skills`:
 
 Source: https://github.com/mattpocock/skills
 
+Last upstream review: 2026-08-21 at commit
+`0ab1b63a410a03d3627979a109c8695de27af954`. Grillstorm preserves its documented autonomous,
+self-contained adaptations where upstream confirmation or cross-skill invocation semantics
+conflict with its launch contract.
+
 MIT License
 
 Copyright (c) 2026 Matt Pocock

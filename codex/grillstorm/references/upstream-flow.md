@@ -51,8 +51,9 @@ that configuration.
 
 ### Grill with docs
 
-Ask one decision at a time, recommend an answer, discover facts instead of asking, update
-the glossary and sparse ADRs inline, and do no implementation before shared understanding.
+Map decisions as a dependency tree. Ask every currently independent decision in one numbered
+frontier round, recommend an answer for each, discover facts instead of asking, update the
+glossary and sparse ADRs inline, and do no implementation before shared understanding.
 
 ### To spec
 

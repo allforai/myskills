@@ -108,7 +108,7 @@ exploration proves the apparent complexity does not exist; record why.
 All routes:
 
 - discover facts instead of asking;
-- grill one decision at a time and maintain domain docs;
+- grill dependency-safe decision frontiers in numbered rounds and maintain domain docs;
 - agree test seams before TDD;
 - publish specs/tickets when that route includes those stages;
 - run typechecking, focused tests, and the full required suite;

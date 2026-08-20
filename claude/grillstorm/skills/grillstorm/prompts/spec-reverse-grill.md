@@ -32,7 +32,9 @@ Classify every issue:
 
 Do not turn discoverable facts or mechanical corrections into user questions. For each true
 decision, propose one recommended answer, its main tradeoff, and affected artifacts. Order
-decisions by dependency and blast radius so the orchestrator asks exactly one at a time.
+decisions by dependency and blast radius into ready frontiers. Before interaction freezes, the
+orchestrator asks every independent ready decision in one round; afterward it adopts the ready
+recommended answers inside the frozen authority envelope without asking.
 
 Return only:
 

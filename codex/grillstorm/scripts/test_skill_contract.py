@@ -4,6 +4,30 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_skill_requires_explicit_command_invocation():
+    skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+    frontmatter = skill.split("---", 2)[1]
+    assert "disable-model-invocation: true" in frontmatter
+    assert "Use only when the user explicitly invokes $grillstorm" in frontmatter
+
+
+def test_upstream_grilling_frontier_rounds_and_diagnostic_redaction_are_preserved():
+    skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+    grilling = (ROOT / "references/grilling.md").read_text(encoding="utf-8")
+    diagnosis = (ROOT / "references/implementation-and-diagnosis.md").read_text(
+        encoding="utf-8"
+    )
+    notices = (ROOT / "references/third-party-notices.md").read_text(encoding="utf-8")
+    assert "every currently independent decision in one numbered frontier round" in skill
+    assert "Ask the whole frontier in one numbered round" in grilling
+    assert "A question that depends on another open question belongs to a later round" in grilling
+    assert "❓ **Q1**" in grilling
+    assert "---" in grilling
+    assert "redact API keys, tokens, passwords, cookies, session IDs" in diagnosis
+    assert "Keep credentials\nin environment variables" in diagnosis
+    assert "0ab1b63a410a03d3627979a109c8695de27af954" in notices
+
+
 def test_post_launch_unforeseen_choices_do_not_pause():
     skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
     normalized = " ".join(skill.split())

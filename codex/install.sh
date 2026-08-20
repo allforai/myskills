@@ -2,6 +2,8 @@
 # Install myskills for Codex
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CODEX_ROOT_DIR="${CODEX_HOME:-$HOME/.codex}"
+CODEX_SKILLS="$CODEX_ROOT_DIR/skills"
 
 echo "Installing myskills for Codex..."
 
@@ -12,14 +14,13 @@ if [ -d "$MCP_DIR" ] && [ ! -d "$MCP_DIR/node_modules" ]; then
   cd "$MCP_DIR"
   npm install && npm run build
 fi
+
+# Link skills with a SKILL.md entry into Codex's native skills directory.
+mkdir -p "$CODEX_SKILLS"
 if [ -f "$SCRIPT_DIR/cross-exam-skill/SKILL.md" ]; then
   ln -sfn "$SCRIPT_DIR/cross-exam-skill" "$CODEX_SKILLS/cross-exam"
   echo "Linked cross-exam -> $CODEX_SKILLS/cross-exam"
 fi
-
-# Link skills with a SKILL.md entry into codex's native skills directory
-CODEX_SKILLS="$HOME/.codex/skills"
-mkdir -p "$CODEX_SKILLS"
 if [ -f "$SCRIPT_DIR/megastorm-skill/SKILL.md" ]; then
   ln -sfn "$SCRIPT_DIR/megastorm-skill" "$CODEX_SKILLS/megastorm"
   echo "Linked megastorm -> $CODEX_SKILLS/megastorm"
@@ -28,17 +29,20 @@ if [ -f "$SCRIPT_DIR/megastorm-skill/SKILL.md" ]; then
     echo "         (Phase 0 depends on it). Install it before running megastorm."
   fi
 fi
+if [ -f "$SCRIPT_DIR/grillstorm/SKILL.md" ]; then
+  ln -sfn "$SCRIPT_DIR/grillstorm" "$CODEX_SKILLS/grillstorm"
+  echo "Linked grillstorm -> $CODEX_SKILLS/grillstorm"
+fi
 
 echo ""
 echo "Codex installation complete."
 echo ""
-echo "Usage: Point Codex to this directory. Each plugin has an AGENTS.md"
-echo "entry point that Codex will discover automatically."
+echo "Usage: linked skills are available from Codex's native skills directory."
 echo ""
 echo "Plugins available:"
-for plugin in product-design-skill dev-forge-skill demo-forge-skill code-tuner-skill code-replicate-skill ui-forge-skill megastorm-skill cross-exam-skill; do
+for plugin in product-design-skill dev-forge-skill demo-forge-skill code-tuner-skill code-replicate-skill ui-forge-skill megastorm-skill cross-exam-skill grillstorm; do
   if [ -d "$SCRIPT_DIR/$plugin" ]; then
-    echo "  - $plugin (see $plugin/AGENTS.md)"
+    echo "  - $plugin"
   fi
 done
 echo ""

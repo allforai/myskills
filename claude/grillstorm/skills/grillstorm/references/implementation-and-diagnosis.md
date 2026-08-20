@@ -52,6 +52,14 @@ behavioral proof.
 
 ## Failure diagnosis
 
+Before showing or persisting any diagnostic command, output, request, log, trace, HAR, payload,
+or captured artifact, redact API keys, tokens, passwords, cookies, session IDs, connection
+strings, signed URLs, authorization headers, and private keys as `<REDACTED>`. Keep credentials
+in environment variables so runnable loops refer to variable names rather than literal values.
+Quote only the redacted lines that carry the diagnostic signal. If redaction removes evidence
+needed to proceed, request the narrow missing access or a redacted artifact; never expose the
+secret as a workaround.
+
 When implementation or a gate fails, build a tight feedback loop before theorizing:
 
 1. Create or identify one fast command that catches the exact symptom.

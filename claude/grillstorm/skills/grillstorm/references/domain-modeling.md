@@ -4,6 +4,10 @@ Actively build and sharpen the project's domain model while grilling. Challenge 
 terms, invent concrete edge cases, compare claims with code, and record language and
 important decisions as soon as they crystallize.
 
+This is the active discipline for changing codebase terminology, writing or editing a
+`CONTEXT.md`, or recording or editing an ADR. Merely reading an existing glossary for vocabulary
+does not authorize a domain-model change.
+
 ## Locate the context
 
 Most repositories use one root `CONTEXT.md`. If `CONTEXT-MAP.md` exists, use it to locate

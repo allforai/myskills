@@ -6,15 +6,19 @@ finite closure rules for a resumable multi-module run.
 ## Core protocol
 
 Interview the user relentlessly about every aspect of the goal until shared understanding
-is reached. Walk down each branch of the decision tree, resolving dependencies between
-decisions one by one. For every question, provide a recommended answer.
+is reached. Map the work as a design tree: every decision branches into the decisions that
+depend on it.
 
-Ask exactly one question per turn and wait for feedback before continuing. Multiple
-questions at once are bewildering and make accepted decisions ambiguous.
+Work the tree in rounds. The frontier is every decision whose prerequisites are settled.
+Ask the whole frontier in one numbered round, then wait for the user's answers before
+recomputing it. A question that depends on another open question belongs to a later round.
+If the user answers only part of a round, persist those answers and keep the unanswered
+questions open; never guess them.
 
 If a fact can be found by exploring the environment, filesystem, tools, code, tests, or
-docs, look it up instead of asking. Decisions belong to the user: put each decision to
-them and wait for the answer.
+docs, look it up instead of asking. A running fact investigation is an unsettled prerequisite:
+defer only its downstream questions and ask the rest of the ready frontier. Decisions belong
+to the user: put every ready decision to them and wait for the answer.
 
 Do not implement until every material decision is answered. The answer to each decision is its
 approval; do not ask for a later summary, document, phase, or start confirmation.
@@ -24,7 +28,7 @@ approval; do not ask for a later summary, document, phase, or start confirmation
 For every material request, distinguish the proposed mechanism from the behavior or pain,
 underlying purpose, protected constraint, and observable success. When plausible purposes would
 change scope, architecture, public interfaces, acceptance, or authority, make the purpose the
-one-question decision. Otherwise adopt the evidenced interpretation.
+frontier decision. Otherwise adopt the evidenced interpretation.
 
 State the inferred purpose before the question and recommend the smallest purpose-complete option.
 Persist a purpose chain with source `evidence_verified|user_confirmed`, why requested, evidence,
@@ -37,16 +41,25 @@ than inventing deeper purpose.
 
 ## Question shape
 
-Use this compact shape:
+Use this compact round shape. Separate questions with a horizontal rule:
 
 ```text
-Question: <one decision>
-Recommendation: <the answer you recommend>
+❓ **Q1** - **<question title>**: <one independent decision, with real choices when useful>
+
+➡️ <the answer you recommend>
+Tradeoff: <the most important consequence>
+
+---
+
+❓ **Q2** - **<question title>**: <another independent decision>
+
+➡️ <the answer you recommend>
 Tradeoff: <the most important consequence>
 ```
 
-Do not present a questionnaire. Alternatives are useful only when they represent real
-tradeoffs. Lead with the recommendation.
+Do not present a flat questionnaire: every question in a round must be independently answerable
+from the settled tree. Alternatives are useful only when they represent real tradeoffs. Lead
+with the recommendation.
 
 ## Decision order
 
@@ -76,4 +89,5 @@ naming, private data structures, and local file organization are autonomous unle
 affect an approved boundary or acceptance criterion.
 
 At program and module boundaries, persist accepted decisions and remaining open branches
-internally. Green closure advances automatically.
+internally. The Grill closes when the frontier is empty. Green closure advances automatically
+without a separate shared-understanding or start confirmation.
