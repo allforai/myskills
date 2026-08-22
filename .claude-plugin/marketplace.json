@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "meta-skill",
-      "version": "0.11.2",
+      "version": "0.12.0",
       "source": "./claude/meta-skill/",
       "description": "Meta-skill generator: analyzes projects, generates project-specific node-specs and orchestrator configs. /bootstrap + /run workflow. Replaces 6 specialized plugins."
     },
@@ -18,9 +18,9 @@
     },
     {
       "name": "grillstorm",
-      "version": "0.21.0",
+      "version": "0.22.2",
       "source": "./claude/grillstorm/",
-      "description": "Outcome-first pipeline with reverse Grill gates, worktree concurrency, cross-host continuation, and post-delivery probe critique."
+      "description": "Official-skill orchestrator plus concurrent unattended execution. Routes design through installed Matt Pocock skills and executes approved work in isolated worktrees."
     }
   ]
 }
