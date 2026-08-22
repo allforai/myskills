@@ -106,7 +106,7 @@ never waive, downgrade, or hide a gap.
 
 4. Repeat until `complete` or an UNRESOLVED stop.
 
-This template is CC-only. Codex/OpenCode keep their existing markdown loop (frozen).
+This template is CC-only. Codex keeps its existing markdown loop (frozen).
 
 ## Recording Transitions
 

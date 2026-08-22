@@ -4,7 +4,7 @@
 
 **Goal:** Wire the Plan 1 engine into the real pipeline — bootstrap emits the CC-superset fields, the engine's `agent()` calls carry real prompts, a bootstrap-time invariant guards decision artifacts, and the generated `/run` orchestrator invokes the Workflow engine and handles its two exits with diagnosis-resume.
 
-**Architecture:** Three seams. (1) **Prompt builders** move from inline strings in `engine-core.js` into tested functions, so the engine's load/expand/run/commit agents get substantive, asserted prompts. (2) **Bootstrap** (`skills/bootstrap.md`) emits `decision_mode`/`decision_inputs`/`closure_verify`/`soft_retry_max`/`profile_slice`/`expanders` and converts former `human_gate` nodes to `decision_inputs`; a new Python invariant check asserts every `decision_inputs` artifact exists before `/run`. (3) **The orchestrator template** (`knowledge/orchestrator-template.md`) is rewritten so the generated `/run` invokes the Workflow engine and routes `complete` / `needs_diagnosis` (→ `diagnosis.md` → repair → resume). Existing orchestrator validators are hardened to ignore unknown superset fields (Codex/OpenCode tolerance).
+**Architecture:** Three seams. (1) **Prompt builders** move from inline strings in `engine-core.js` into tested functions, so the engine's load/expand/run/commit agents get substantive, asserted prompts. (2) **Bootstrap** (`skills/bootstrap.md`) emits `decision_mode`/`decision_inputs`/`closure_verify`/`soft_retry_max`/`profile_slice`/`expanders` and converts former `human_gate` nodes to `decision_inputs`; a new Python invariant check asserts every `decision_inputs` artifact exists before `/run`. (3) **The orchestrator template** (`knowledge/orchestrator-template.md`) is rewritten so the generated `/run` invokes the Workflow engine and routes `complete` / `needs_diagnosis` (→ `diagnosis.md` → repair → resume). Existing orchestrator validators are hardened to ignore unknown superset fields (Codex tolerance).
 
 **Tech Stack:** Node.js v26 (`node:test`) for engine prompt-builders; Python 3 (`unittest`, matching `shared/scripts/orchestrator/test_*.py`) for the invariant + tolerance checks; markdown skill authoring for bootstrap + orchestrator template.
 
@@ -414,7 +414,7 @@ git commit -m "feat(orchestrator): compute_reset_closure for repair cascade (fix
 
 ---
 
-## Task 3: Superset-field tolerance for existing validators (Codex/OpenCode safety)
+## Task 3: Superset-field tolerance for existing validators (Codex safety)
 
 **Files:**
 - Create: `shared/scripts/orchestrator/test_superset_tolerance.py`
@@ -429,7 +429,7 @@ import json, tempfile, os, unittest, subprocess, sys
 
 SUPERSET_NODE = {
     "node_id": "n1", "capability": "x", "hard_blocked_by": [], "exit_artifacts": [],
-    # CC-only superset fields that Codex/OpenCode validators must IGNORE, not choke on:
+    # CC-only superset fields that Codex validators must IGNORE, not choke on:
     "decision_mode": "brainstorm", "decision_inputs": [".allforai/x/decision-n1.json"],
     "closure_verify": ["audio"], "soft_retry_max": 2, "profile_slice": {"stack": "unity"}
 }
@@ -478,7 +478,7 @@ Expected: PASS — including the existing `test_validate_bootstrap.py`, `test_ch
 ```bash
 git add shared/scripts/orchestrator/test_superset_tolerance.py
 # add validate_bootstrap.py / check_requires.py too ONLY if you modified them
-git commit -m "test(orchestrator): superset-field tolerance for Codex/OpenCode validators"
+git commit -m "test(orchestrator): superset-field tolerance for Codex validators"
 ```
 
 ---
@@ -500,7 +500,7 @@ Read the workflow.json schema block (around line 544) and the node-spec generati
 In the node-generation section, insert this directive block (verbatim) where nodes are written:
 
 ```markdown
-### CC-superset fields (emit on every node — Codex/OpenCode ignore them)
+### CC-superset fields (emit on every node — Codex ignore them)
 
 When writing each node into `workflow.json`, add:
 - `node_spec_path`: relative path to this node's spec under `node-specs/`.
@@ -611,7 +611,7 @@ Replace the "execution loop" portion of the template with this (verbatim):
 
 4. Repeat until `complete` or an UNRESOLVED stop.
 
-This template is CC-only. Codex/OpenCode keep their existing markdown loop (frozen).
+This template is CC-only. Codex keeps its existing markdown loop (frozen).
 ```
 
 - [ ] **Step 3: Structural check of the template**
@@ -739,7 +739,7 @@ git commit -m "chore(meta-skill): bump version for run-engine Plan 2"
 | §4.1 human_gate removal → decision_inputs invariant (bootstrap-time check) | Tasks 2, 4 |
 | §9 bootstrap emits decision_mode/decision_inputs/closure_verify/soft_retry_max/expanders | Task 4 |
 | §4.1 profile_slice emission | Task 4 |
-| §2 Codex/OpenCode ignore superset fields | Task 3 |
+| §2 Codex ignore superset fields | Task 3 |
 | §4.5 main-loop exit handling (complete / needs_diagnosis + diagnosis resume) | Task 5 |
 | §4.9 Phase C report reads assumed-decisions.json | Task 5 |
 | §3.2 `/run` invokes engine; CC-only, others frozen | Tasks 5, 6 |

@@ -1287,7 +1287,7 @@ git commit -m "chore(meta-skill): bump version for run-engine Plan 1"
 | §8.1 C5 applied_expanders skip | Tasks 1, 10 |
 | §8.1 R2 L3 fixture at canonical path | Task 13 |
 
-**Deferred to Plan 2/3 (intentionally NOT in this plan):** load-DAG/expander/commit *agents'* real prompts + file I/O (Plan 2 wires real agents; Plan 1 uses fakes), `/run` skill exit-handling + diagnosis resume (§4.5, Plan 2), bootstrap emitting superset fields + `expanders` list (§9, Plan 2), G0/A0/Phase A audits (§4.6–4.8, Plan 3), `human_gate`→`decision_inputs` migration in bootstrap (Plan 2), Codex/OpenCode superset-ignore check (Plan 2).
+**Deferred to Plan 2/3 (intentionally NOT in this plan):** load-DAG/expander/commit *agents'* real prompts + file I/O (Plan 2 wires real agents; Plan 1 uses fakes), `/run` skill exit-handling + diagnosis resume (§4.5, Plan 2), bootstrap emitting superset fields + `expanders` list (§9, Plan 2), G0/A0/Phase A audits (§4.6–4.8, Plan 3), `human_gate`→`decision_inputs` migration in bootstrap (Plan 2), Codex superset-ignore check (Plan 2).
 
 **2. Placeholder scan:** No "TBD"/"handle errors"/"similar to". Task 12 intentionally instructs a verbatim copy (the only correct way to inline for the sandbox) and Task 13's L3 is a manual runbook by design (real-agent E2E can't run in `node --test`). Both are explicit, not placeholders.
 

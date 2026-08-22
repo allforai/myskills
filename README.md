@@ -2,15 +2,14 @@
 
 ## Multi-Platform Layout
 
-This repository is organized as three native platform directories:
+This repository is organized as two native platform directories:
 
 - `claude/` for Claude Code plugins
 - `codex/` for Codex-native skills discovered through `AGENTS.md`
-- `opencode/` for OpenCode-native skills discovered through `SKILL.md`
 
 Shared scripts and MCP services live under `shared/`.
 
-**Claude Code + Codex + OpenCode** 三平台插件集合，覆盖 **产品设计 → 开发锻造 → QA 验证 → 架构治理** 全链路。
+**Claude Code + Codex** 双平台插件集合，覆盖 **产品设计 → 开发锻造 → QA 验证 → 架构治理** 全链路。
 
 ## ✨ 新增：UI Forge（实现后 UI 锻造）
 
@@ -81,70 +80,38 @@ Shared scripts and MCP services live under `shared/`.
 
 ## 30 秒上手
 
-### OpenCode（远程 Git 安装，推荐）
+### Claude Code
 
-```bash
-# 1) 运行远程安装脚本（从 GitHub 克隆）
-curl -fsSL https://raw.githubusercontent.com/allforai/myskills/main/install-remote.sh | bash
+每个插件目录自带 marketplace。用 Claude 自己的 plugin CLI 注册并安装：
 
-# 或者手动执行
-git clone git@github.com:allforai/myskills.git ~/.opencode/skills/myskills
-~/.opencode/skills/myskills/install-remote.sh
+```text
+claude plugin marketplace add /path/to/myskills/claude/meta-skill
+claude plugin install meta-skill@meta-skill
 
-# 2) 在任意项目中创建项目配置
-mkdir -p your-project/.opencode
-cp ~/.opencode/skills/myskills/.opencode.template your-project/.opencode/config.json
-
-# 3) 开始使用
-/product-map              # 产品功能地图
-/design-to-spec           # 设计转规格
-/task-execute             # 执行开发任务
-/ui-forge                 # 功能完成后做 UI 增强 / 设计还原
+claude plugin marketplace add /path/to/myskills/claude/megastorm
+claude plugin install megastorm@megastorm
 ```
 
-### OpenCode（本地路径安装，开发测试用）
+可选：`claude/grillstorm` → `grillstorm@grillstorm`。装完重启 `claude`。
 
-```bash
-# 仅建议在本地开发调试时使用
-cd /path/to/myskills
-./install-opencode.sh
+```text
+/bootstrap                # 分析目标项目并生成工作流
+/product-map              # 或从产品地图起手
 ```
 
-### Claude Code（全局插件）
+### Codex
 
-```bash
-# 1) 安装四个插件（统一使用 add）
-claude plugin add /path/to/myskills/product-design-skill
-claude plugin add /path/to/myskills/dev-forge-skill
-claude plugin add /path/to/myskills/code-tuner-skill
+Codex 从 `$CODEX_HOME/skills/`（默认 `~/.codex/skills/`）发现带 `SKILL.md` 的目录。把本仓对应 skill 链进去即可：
 
-# 2) 启用插件（~/.claude/settings.json）
-# 添加："product-design@myskills": true
-
-# 3) 先做产品建模（建议起手）
-/product-map
-
-# 4) 需要全链路时，直接执行
-/product-design full
+```text
+~/.codex/skills/meta-skill   →  myskills/codex/meta-skill
+~/.codex/skills/megastorm    →  myskills/codex/megastorm-skill
+~/.codex/skills/cross-exam   →  myskills/codex/cross-exam-skill
+~/.codex/skills/grillstorm   →  myskills/codex/grillstorm
 ```
 
-### Codex（原生目录发现）
-
-```bash
-# 1) 安装共享依赖
-cd /path/to/myskills
-bash codex/install.sh
-
-# 2) 将 Codex 指向 codex/ 目录
-# Codex 会自动发现每个插件下的 AGENTS.md 入口
-
-# 3) 开始使用对应工作流
-# 例如先执行 product-design，再进入 dev-forge 或 code-tuner
-```
-
-Codex 安装脚本也会链接 `megastorm` 与独立的 `cross-exam`：Megastorm v0.14
-负责大型目标的隔离执行、Reality Gate 与完整性记账；Cross-exam 只审不修，使用
-fresh-context 独立实测官对任意交付做证据化盘问。
+其余 `codex/*-skill` 带 `AGENTS.md`，把 Codex 工作目录指到该插件目录即可发现。
+Megastorm 还依赖本机已安装的 `brainstorming` skill。
 
 ---
 

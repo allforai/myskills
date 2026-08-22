@@ -1,5 +1,0 @@
-{"tasks": [
-  {"name": "List Users", "owner_role": "R001", "frequency": "high", "risk_level": "low", "main_flow": ["Request list", "Query DB", "Return paginated"], "status": "active", "category": "basic"},
-  {"name": "Get User Profile", "owner_role": "R002", "frequency": "high", "risk_level": "low", "main_flow": ["Request profile", "Query DB", "Return data"], "status": "active", "category": "basic"},
-  {"name": "Update User Profile", "owner_role": "R002", "frequency": "medium", "risk_level": "medium", "main_flow": ["Submit changes", "Validate", "Update DB"], "status": "active", "category": "core"}
-]}

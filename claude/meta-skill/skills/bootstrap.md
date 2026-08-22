@@ -2113,7 +2113,7 @@ is likely too large for a single workflow execution. Suggest decomposition:
 - `human_gate`: `true` for game-design nodes requiring discipline_owner approval; `false` for all others. Orchestrator reads this to decide whether to check `approval-records.json` in addition to `exit_artifacts`.
 - `discipline_owner`: Role ID of the approver for human_gate nodes (e.g., `"lead-designer"`); `null` for non-gate nodes.
 
-### CC-superset fields (emit on every node — Codex/OpenCode ignore them)
+### CC-superset fields (emit on every node — Codex ignore them)
 
 When writing each node into `workflow.json`, add:
 - `node_spec_path`: relative path to this node's spec under `node-specs/`.

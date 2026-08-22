@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Purpose
 
-This is **myskills** — a tri-platform (Claude Code / Codex / OpenCode) plugin collection covering the full pipeline from product design → development forge → QA validation → architecture governance. It is a **plugin development repository**, not a product codebase. The plugins are applied to external user projects.
+This is **myskills** — a dual-platform (Claude Code / Codex) plugin collection covering the full pipeline from product design → development forge → QA validation → architecture governance. It is a **plugin development repository**, not a product codebase. The plugins are applied to external user projects.
 
 ## Directory Structure
 
@@ -15,17 +15,13 @@ myskills/
 │   │   ├── .claude-plugin/   # Plugin + marketplace manifests
 │   │   ├── skills/           # bootstrap.md (project analysis + generation)
 │   │   └── knowledge/        # Capability templates, orchestrator, protocols
-│   └── install.sh
+│   ├── megastorm/
+│   └── grillstorm/
 │
 ├── codex/                    # Codex platform (fully native)
-│   ├── product-design-skill/ # AGENTS.md entry + execution-playbook
-│   ├── ...
-│   └── install.sh
-│
-├── opencode/                 # OpenCode platform (fully native)
-│   ├── product-design-skill/ # SKILL.md entry + execution-playbook
-│   ├── ...
-│   └── install.sh
+│   ├── meta-skill/           # AGENTS.md + SKILL.md
+│   ├── megastorm-skill/
+│   └── ...
 │
 ├── shared/                   # Platform-agnostic assets
 │   ├── scripts/
@@ -112,16 +108,30 @@ All plugins read/write to a project-local `.allforai/` directory. This is the in
 
 ## Installing Plugins
 
-```bash
-# Claude Code
-bash claude/install.sh
+Follow each harness's own install surface. Do not use repo `install.sh` scripts.
 
-# Codex
-bash codex/install.sh
+**Claude Code** — each plugin dir is a marketplace; register then install:
 
-# OpenCode
-bash opencode/install.sh
+```text
+claude plugin marketplace add /path/to/myskills/claude/meta-skill
+claude plugin install meta-skill@meta-skill
+
+claude plugin marketplace add /path/to/myskills/claude/megastorm
+claude plugin install megastorm@megastorm
 ```
+
+Optional: `claude/grillstorm` → `grillstorm@grillstorm`. Restart `claude` after install.
+
+**Codex** — discover `SKILL.md` folders from `$CODEX_HOME/skills` (default `~/.codex/skills`):
+
+```text
+~/.codex/skills/meta-skill   →  myskills/codex/meta-skill
+~/.codex/skills/megastorm    →  myskills/codex/megastorm-skill
+~/.codex/skills/cross-exam   →  myskills/codex/cross-exam-skill
+~/.codex/skills/grillstorm   →  myskills/codex/grillstorm
+```
+
+AGENTS.md plugins under `codex/*-skill` are discovered when Codex's cwd is that plugin directory.
 
 ## Key Dependency: mcp-ai-gateway
 
@@ -166,12 +176,12 @@ Claude plugins also keep a copy in their own `scripts/` directory (since `${CLAU
 
 ## Platform-Specific Notes
 
-| Aspect | Claude Code | Codex | OpenCode |
-|--------|------------|-------|----------|
-| Entry point | SKILL.md (plugin auto-load) | AGENTS.md | skills.json → SKILL.md |
-| Interaction | AskUserQuestion (structured) | Assume + declare | Natural conversation |
-| Tools | `${CLAUDE_PLUGIN_ROOT}` paths | Relative paths | Relative paths |
-| MCP naming | `mcp__plugin_{name}_{server}__*` | Generic descriptions | `mcp__{server}__*` |
+| Aspect | Claude Code | Codex |
+|--------|------------|-------|
+| Entry point | SKILL.md (plugin auto-load) | AGENTS.md |
+| Interaction | AskUserQuestion (structured) | Assume + declare |
+| Tools | `${CLAUDE_PLUGIN_ROOT}` paths | Relative paths |
+| MCP naming | `mcp__plugin_{name}_{server}__*` | Generic descriptions |
 
 ## Recommended Workflow (for users of the plugins)
 
@@ -199,3 +209,17 @@ Claude plugins also keep a copy in their own `scripts/` directory (since `${CLAU
 ```
 
 Or run `/product-design full` / `/project-forge full` / `/demo-forge` for automated end-to-end orchestration.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues for `allforai/myskills` via `gh`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default roles: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.

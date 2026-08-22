@@ -1,8 +1,19 @@
-# Migration Guide — Multi-Platform Restructure
+# Migration Guide
 
-## What Changed
+## OpenCode support removed
 
-The repository has been reorganized from a single Claude Code plugin directory into three fully native platform directories. Each platform (Claude Code, Codex, OpenCode) now has its own complete, independently optimized copy of all 6 plugins.
+OpenCode is no longer a supported platform. The `opencode/` tree, `install-opencode.sh`,
+`install-remote.sh`, and `.opencode.template` are gone. Existing clones that still have a
+local OpenCode install under `~/.config/opencode` or `~/.opencode/skills/myskills` are
+outside this repo; uninstall those yourself if you no longer need them.
+
+This repository now ships two native platform directories: `claude/` and `codex/`.
+
+## What Changed (earlier multi-platform restructure)
+
+The repository was reorganized from a single Claude Code plugin directory into native
+platform directories. Each remaining platform (Claude Code, Codex) has its own complete,
+independently optimized copy of the plugins.
 
 ```
 BEFORE                          AFTER
@@ -13,72 +24,43 @@ myskills/                       myskills/
 ├── code-tuner-skill/           ├── codex/
 ├── code-replicate-skill/       │   ├── product-design-skill/
 ├── ui-forge-skill/             │   └── ...
-├── codex-native/               ├── opencode/
-├── opencode-native/            │   ├── product-design-skill/
-└── .claude-plugin/             │   └── ...
-                                └── shared/
-                                    ├── scripts/
-                                    └── mcp-ai-gateway/
+├── codex-native/               └── shared/
+├── opencode-native/                ├── scripts/
+└── .claude-plugin/                 └── mcp-ai-gateway/
 ```
 
 ## Re-install Steps
 
 ### Claude Code Users
 
-```bash
-# Remove old plugins
-claude plugin remove product-design
-claude plugin remove dev-forge
-claude plugin remove demo-forge
-claude plugin remove code-tuner
-claude plugin remove code-replicate
-claude plugin remove ui-forge
+Remove the old plugin names (`product-design`, `dev-forge`, …), then install from the
+new marketplaces with Claude's own CLI:
 
-# Re-install from new location
-cd /path/to/myskills
-bash claude/install.sh
+```text
+claude plugin marketplace add /path/to/myskills/claude/meta-skill
+claude plugin install meta-skill@meta-skill
+
+claude plugin marketplace add /path/to/myskills/claude/megastorm
+claude plugin install megastorm@megastorm
 ```
-
-### OpenCode Users
-
-```bash
-cd /path/to/myskills
-bash opencode/install.sh
-```
-
-This overwrites `~/.config/opencode/skills.json` with updated paths.
 
 ### Codex Users
 
-```bash
-cd /path/to/myskills
-bash codex/install.sh
-```
-
-Point Codex to the `codex/` directory. Each plugin has an `AGENTS.md` entry point.
-
-### Remote Install Users
-
-The old `install-remote.sh` has been removed. To update:
-
-```bash
-cd ~/.opencode/skills/myskills   # or wherever you cloned
-git pull
-bash opencode/install.sh         # or claude/install.sh or codex/install.sh
-```
+Link `SKILL.md` packages into `$CODEX_HOME/skills` (default `~/.codex/skills`):
+`codex/meta-skill`, `codex/megastorm-skill`, `codex/cross-exam-skill`, `codex/grillstorm`.
+Point Codex at a `codex/*-skill` directory to pick up that plugin's `AGENTS.md`.
 
 ## Breaking Changes
 
 | Affected | Change | User Action |
 |----------|--------|-------------|
-| Claude Code | Plugin path moved into `claude/` subdirectory | Re-run `claude/install.sh` |
-| OpenCode | skills.json paths changed | Re-run `opencode/install.sh` |
-| Codex | New directory structure with `AGENTS.md` entry | Run `codex/install.sh` |
-| Remote users | `install-remote.sh` removed | `git pull` then re-run platform install |
+| Claude Code | Plugin path moved into `claude/` subdirectory | `claude plugin marketplace add` + `install <name>@<marketplace>` |
+| Codex | New directory structure with `AGENTS.md` / `SKILL.md` | Place skills under `~/.codex/skills` |
+| OpenCode | Platform support removed | Stop using `opencode/install.sh` / `install-remote.sh` |
 
 ## Version Bump
 
-All plugins received a major version bump with this restructure:
+All plugins received a major version bump with the original restructure:
 
 | Plugin | Old Version | New Version |
 |--------|-------------|-------------|

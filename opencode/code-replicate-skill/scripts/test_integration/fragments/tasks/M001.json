@@ -1,4 +1,0 @@
-{"tasks": [
-  {"name": "User Login", "owner_role": "R001", "frequency": "high", "risk_level": "high", "main_flow": ["Enter credentials", "Validate", "Return token"], "status": "active", "category": "core", "inputs": {"email": "string", "password": "string"}, "outputs": {"token": "string"}, "exceptions": ["Invalid credentials", "Account locked"]},
-  {"name": "User Register", "owner_role": "R001", "frequency": "medium", "risk_level": "medium", "main_flow": ["Submit form", "Validate", "Create account"], "status": "active", "category": "core"}
-]}

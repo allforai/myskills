@@ -19,7 +19,7 @@ cross-exam 反向解决：以**泄漏点**（"如果 X 真做完了就不该长�
 
 ## 2. 形态与边界（用户已冻结的决策）
 
-- **独立通用技能** `/cross-exam`，新插件 `claude/cross-exam/`（CC 平台，暂不移植 Codex/OpenCode）。
+- **独立通用技能** `/cross-exam`，新插件 `claude/cross-exam/`（CC 平台，暂不移植 Codex）。
   技能本体**零项目痕迹、零技术栈硬编码**；megastorm 只是可选数据源之一。
 - **只在有人在场时运行**：run 全部收尾后（megastorm Phase 2 报告末尾一句邀请，不自动进入）
   或用户随时主动发起。执行中绝不插盘。

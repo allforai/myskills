@@ -3,7 +3,7 @@
 **Date:** 2026-06-02
 **Status:** Design (pending implementation plan)
 **Scope:** `claude/meta-skill/` — rewrite the `/run` execution engine on top of Claude Code's `Workflow` tool.
-**Platform:** Claude Code only. Codex/OpenCode retain the existing markdown loop (see Non-Goals).
+**Platform:** Claude Code only. Codex retain the existing markdown loop (see Non-Goals).
 
 ---
 
@@ -40,7 +40,7 @@ This drives the whole architecture, taken to its conclusion: **all human interac
 
 ## 2. Non-Goals
 
-- **Tri-platform parity.** Platform priority is **CC first, Codex second, OpenCode least**. We do **not** compromise CC's optimal design to keep the other two in sync. Codex/OpenCode keep their markdown loop and simply **ignore CC-only superset fields** in `workflow.json`. Capabilities expressible only in the JS engine are CC-only by design.
+- **Cross-platform parity.** Platform priority is **CC first, Codex second**. We do **not** compromise CC's optimal design to keep Codex in sync. Codex keeps its markdown loop and simply **ignores CC-only superset fields** in `workflow.json`. Capabilities expressible only in the JS engine are CC-only by design.
 - **Replacing `workflow.json` as the schema/ground truth.** The Workflow engine is an *executor* that reads/writes the same file.
 - **Replacing Claude-driven failure diagnosis.** Hard failures still surface to `diagnosis.md` (the engine routes, it does not diagnose).
 - **A general workflow authoring tool.** This is one specific engine for meta-skill's generated DAGs.
@@ -396,5 +396,5 @@ Pass criteria: engine invoked ≥2× (initial → post-diagnosis resume); final 
 - How `closure_verify` enum values (`audio`/`save-load`/`2d-placeholder`) map to the existing closure-gate capability nodes (`bootstrap.md` audio/2D production closure QA) vs. become inline subagent instructions.
 - G0 granularity audit: concrete split/merge thresholds and how it reuses bootstrap's node-generation machinery to regenerate specs after a restructure.
 - Bootstrap-time invariant check: every node's `decision_inputs` artifacts exist before `/run` is allowed to start.
-- Codex/OpenCode: confirm they gracefully ignore the new superset fields (no parsing errors).
+- Codex: confirm they gracefully ignore the new superset fields (no parsing errors).
 ```

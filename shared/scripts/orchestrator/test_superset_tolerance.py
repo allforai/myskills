@@ -2,7 +2,7 @@ import json, tempfile, os, unittest, subprocess, sys
 
 SUPERSET_NODE = {
     "node_id": "n1", "capability": "x", "hard_blocked_by": [], "exit_artifacts": [],
-    # CC-only superset fields that Codex/OpenCode validators must IGNORE, not choke on:
+    # CC-only superset fields that Codex validators must IGNORE, not choke on:
     "decision_mode": "brainstorm", "decision_inputs": [".allforai/x/decision-n1.json"],
     "closure_verify": ["audio"], "soft_retry_max": 2, "profile_slice": {"stack": "unity"}
 }
