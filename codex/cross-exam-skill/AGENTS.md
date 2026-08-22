@@ -1,4 +1,4 @@
-# AGENTS.md — Cross-exam package (Codex, v0.16.0)
+# AGENTS.md — Cross-exam package (Codex, v0.17.0)
 
 One install. Two explicit commands. Do not mix them.
 

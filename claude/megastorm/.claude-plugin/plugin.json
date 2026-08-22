@@ -1,7 +1,7 @@
 {
   "name": "megastorm",
   "description": "Large-goal autonomous pipeline: decompose into modules, front-load decisions via brainstorming, then autonomously design → closed-loop validate → plan → reverse-review → orchestrate → concurrently execute with anti-fake-completion supervision. Global command /megastorm. Also ships /cross-exam (completion audit) and /product-review (product-thinking critique, advice only).",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "author": {
     "name": "dv"
   }

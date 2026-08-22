@@ -1,6 +1,6 @@
 ---
 name: cross-exam
-description: Package with two explicit commands. cross-exam — evidence-backed completion cross-examination. product-review — product-thinking critique and competitor borrow notes, advice only. Neither is automatic. If the user named product-review, read product-review.md and stop; do not run this completion protocol.
+description: Package with two explicit commands. cross-exam — evidence-backed completion cross-examination. product-review — product-thinking critique, commercial UI/interaction, and competitor borrow notes, advice only. Neither is automatic. If the user named product-review, read product-review.md and stop; do not run this completion protocol.
 ---
 
 # Package router

@@ -1,6 +1,6 @@
 ---
 name: product-review
-description: 用产品思维审视交付：工作在不在、走不走得完、竞品有没有可借鉴的定位。只出意见，不改代码。
+description: 用产品思维审视交付：工作在不在、走不走得完、商业级 UI/交互够不够、竞品有没有可借鉴的定位。只出意见，不改代码。
 arguments:
   - name: target
     description: 被审视的产品/项目（可留空，进入定靶）
