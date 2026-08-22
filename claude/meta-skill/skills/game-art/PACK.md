@@ -92,8 +92,8 @@ Layer numbers indicate directory organization and default execution order for ne
 | `20-spec` | `asset-acceptance-criteria` | Project- and runtime-specific acceptance standards for every art asset family before production. |
 | `20-spec` | `asset-pack-search-spec` | Search and select existing 2D/3D asset packs with license, style, coverage, adaptation, and downstream fit constraints. |
 | `20-spec` | `artifact-handoff-contract` | Shared cross-skill artifact handoff schema, downstream routes, QA/runtime status, and repair routes. |
-| `20-spec` | `character-layer-sheet` | Character part decomposition, layer-sheet prompt/spec, pivots, validation. |
-| `20-spec` | `engine-export-profile` | Engine/tool export contracts for atlases, pivots, clips, tilemaps, skeletons, and runtime import. |
+| `20-spec` | `character-layer-sheet` | Optional outfit/part sheet. Only when `character.use_layer_sheet === true`. Not default character animation. |
+| `20-spec` | `engine-export-profile` | Engine/tool export contracts for atlases, pivots, clips, tilemaps, and runtime import. |
 | `20-spec` | `existing-asset-adaptation-spec` | Normalize, edit, recolor, resize, rerender, or route existing 2D/3D assets into project art contracts. |
 | `20-spec` | `lora-identity-style-lock-spec` | Decide whether strict identity/style lock requires LoRA, and choose local GPU, remote GPU rental, provider API training, existing LoRA, or fallback. |
 | `20-spec` | `tileset-spec` | Tilemap mode selection, terrain vocabulary, tile rules, collision/walkability contracts. |
@@ -122,11 +122,10 @@ Layer numbers indicate directory organization and default execution order for ne
 | `30-generate` | `shader-vfx-generation` | Shader/material VFX parameter specs, placeholders, previews, reduced fallbacks. |
 | `30-generate` | `decal-generation` | Impact marks, projected decals, scorch/blood/crack specs, textures, validation. |
 | `30-generate` | `screen-effect-generation` | Flash, shake, vignette, radial burst, accessibility-safe screen-space effects. |
-| `30-generate` | `mesh-burst-generation` | 3D shard/debris burst specs, placeholder meshes, timing, physics-lite validation. |
+| `30-generate` | `mesh-burst-generation` | Retired. Remap to sprite/particle VFX; do not produce 3D mesh bursts. |
 | `30-generate` | `light-pulse-generation` | 2.5D/3D light pulse specs, intensity curves, color timing, accessibility caps. |
 | `30-generate` | `animation-event-fx` | Footstep, landing, weapon, cast, and hit FX bound to animation timeline events. |
-| `30-generate` | `vfx-generation` | VFX orchestration across particle, sprite-sheet, trail, shader, decal, screen-effect, mesh-burst, light-pulse, and animation-event branches. |
-| `30-generate` | `skeletal-animation` | Bone hierarchy, transform timelines, rendered preview loop, visual validation, repair. |
+| `30-generate` | `vfx-generation` | VFX orchestration across particle, sprite-sheet, trail, shader, decal, screen-effect, light-pulse, and animation-event branches. |
 | `40-qa` | `art-preview-qa` | Cross-asset visual QA, downstream feedback, issue classification, repair routing. |
 | `40-qa` | `visual-acceptance-review` | Task-list-based visual acceptance using actual images, Codex CLI independent review, and Claude Code closure audit. |
 | `40-qa` | `asset-family-consistency-qa` | Benchmark-driven QA for whole asset families and cross-family cohesion, not isolated image acceptance. |
@@ -200,7 +199,6 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/mesh-burst-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/light-pulse-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/animation-event-fx/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/vfx-generation/SKILL.md
-${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/skeletal-animation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/art-preview-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/visual-acceptance-review/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-family-consistency-qa/SKILL.md
@@ -348,47 +346,6 @@ tests, and visual runtime regression QA.
 
 ## Example Role Chains
 
-Skeletal character animation:
-
-```text
-10-design/art-direction-input-contract
--> 00-env/asset-registry
--> 00-env/2d-animation-toolchain-env
--> 00-env/production-tool-capability-registry
--> 20-spec/visual-style-tokens
--> 20-spec/2d-view-mode-spec
--> 20-spec/2d-layering-spec
--> 20-spec/engine-export-profile
--> 10-design/2d-animation-production-plan
--> 10-design/motion-design
--> 20-spec/character-layer-sheet
--> 20-spec/animation-state-machine-spec
--> 30-generate/skeletal-animation
--> 40-qa/art-preview-qa
--> 40-qa/2d-style-consistency-qa
--> 40-qa/runtime-import-check
--> 40-qa/engine-ready-art-output-contract
-```
-
-Legacy skeletal character animation:
-
-```text
-00-env/asset-registry
--> 00-env/2d-animation-toolchain-env
--> 10-design/2d-animation-production-plan
--> 10-design/motion-design
--> 20-spec/2d-view-mode-spec
--> 20-spec/2d-layering-spec
--> 20-spec/engine-export-profile
--> 20-spec/character-layer-sheet
--> 20-spec/animation-state-machine-spec
--> 30-generate/skeletal-animation
--> 40-qa/art-preview-qa
--> 40-qa/2d-style-consistency-qa
--> 40-qa/runtime-import-check
--> 40-qa/engine-ready-art-output-contract
-```
-
 Light 2D indie character production:
 
 ```text
@@ -401,9 +358,9 @@ Light 2D indie character production:
 -> 20-spec/engine-export-profile
 -> 10-design/2d-animation-production-plan
 -> 10-design/motion-design
--> 20-spec/frame-animation-spec | 20-spec/character-layer-sheet
+-> 20-spec/frame-animation-spec
 -> 20-spec/animation-state-machine-spec
--> 30-generate/frame-animation-generation | 30-generate/skeletal-animation
+-> 30-generate/frame-animation-generation | 30-generate/motion-video-to-sprite-animation
 -> 40-qa/art-preview-qa
 -> 40-qa/2d-style-consistency-qa
 -> 40-qa/atlas-packaging
@@ -489,9 +446,9 @@ Legacy light 2D indie character production:
 -> 10-design/2d-animation-production-plan
 -> 10-design/motion-design
 -> 20-spec/engine-export-profile
--> 20-spec/frame-animation-spec | 20-spec/character-layer-sheet
+-> 20-spec/frame-animation-spec
 -> 20-spec/animation-state-machine-spec
--> 30-generate/frame-animation-generation | 30-generate/skeletal-animation
+-> 30-generate/frame-animation-generation | 30-generate/motion-video-to-sprite-animation
 -> 40-qa/art-preview-qa
 -> 40-qa/2d-style-consistency-qa
 -> 40-qa/atlas-packaging
@@ -529,7 +486,6 @@ VFX generation:
    -> 30-generate/shader-vfx-generation
    -> 30-generate/decal-generation
    -> 30-generate/screen-effect-generation
-   -> 30-generate/mesh-burst-generation
    -> 30-generate/light-pulse-generation
    -> 30-generate/animation-event-fx
 -> 40-qa/art-preview-qa          (future)

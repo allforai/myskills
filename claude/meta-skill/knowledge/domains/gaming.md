@@ -205,9 +205,9 @@ balance-testing（数值平衡测试：蒙特卡洛模拟 + Playtest）
 `art_overview` 为必填字段，缺少将阻塞下游 art-concept skill 执行：
 ```json
 {
-  "dimension": "2d",           // "2d" | "3d" | "2.5d"
+  "dimension": "2d",           // "2d" | "2.5d"  // remap 3d → 2d
   "style": "cartoon",          // "cartoon" | "pixel" | "realistic" | "hand_drawn" | "vector"
-  "animation_system": "dragonbones", // "frame" | "dragonbones" | "3d_skeletal" | "mixed"
+  "animation_system": "frame", // "frame" | "mixed"
   "notes": "<一句话说明选择理由>"
 }
 ```

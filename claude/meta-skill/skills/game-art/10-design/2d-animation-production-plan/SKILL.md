@@ -11,8 +11,8 @@ description: Internal bundled meta-skill module for game-art/10-design/2d-animat
 
 Chooses the animation production strategy for light-animation 2D indie games.
 It decides when to use frame animation, motion video to sprite extraction,
-skeletal animation, separated-part tweening, static pose swaps, UI tweening,
-VFX-only motion, or hybrid fallback.
+static pose swaps, UI tweening, VFX-only motion, or hybrid fallback. Do not
+select skeletal, DragonBones, Spine, part-tween, or 3D mesh animation.
 
 Use this before detailed animation specs when the project has multiple asset
 classes or when production cost, tool support, and runtime constraints matter.
@@ -43,8 +43,6 @@ Allowed `animation_method` values:
 
 - `frame_animation`
 - `motion_video_to_sprite`
-- `skeletal_animation`
-- `part_tween`
 - `pose_swap`
 - `ui_tween`
 - `vfx_only`
@@ -54,9 +52,9 @@ Allowed `animation_method` values:
 Allowed states: `draft`, `validated`, `needs_revision`, `blocked_by_assets`,
 `blocked_by_runtime`, `automation_limited`.
 
-Downstream consumers: `motion-design`, `character-layer-sheet`,
+Downstream consumers: `motion-design`,
 `frame-animation-spec`, `animation-state-machine-spec`,
-`engine-export-profile`, `skeletal-animation`, `frame-animation-generation`,
+`engine-export-profile`, `frame-animation-generation`,
 `motion-video-to-sprite-animation`, `2d-layering-spec`, `animation-event-fx`, `art-preview-qa`,
 `2d-style-consistency-qa`, `runtime-import-check`, and runtime implementation
 nodes.
@@ -68,13 +66,13 @@ Plan entries must also carry a `decision_evidence` object:
   "asset_id": "player",
   "view_mode_ref": "side_view",
   "layering_ref": "player_layering",
-  "animation_method": "skeletal_animation",
-  "method_reason": ["many_reused_actions", "outfit_swaps", "low_frame_budget"],
+  "animation_method": "frame_animation",
+  "method_reason": ["readable_loop", "identity_lock", "no_skeletal_production"],
   "complexity": "low | medium | high",
   "direction_count": 1,
   "required_animation_sets": ["idle", "run", "jump", "fall", "attack", "hit"],
-  "fallback_method": "part_tween",
-  "fallback_trigger": "rig_or_preview_validation_failed",
+  "fallback_method": "pose_swap",
+  "fallback_trigger": "frame_or_preview_validation_failed",
   "toolchain_report_ref": ".allforai/game-design/art/env/2d-animation-toolchain-report.json",
   "max_generation_attempts": 3,
   "acceptance_gates": ["preview_readability", "runtime_import", "style_consistency"]
@@ -107,21 +105,21 @@ change or feedback strategy. UI motion must route to UI specs rather than
 character animation specs.
 
 For light 2D games, prefer the lowest-cost method that preserves readability:
-static or pose-swap for minor NPCs, frame animation for small pixel/hand-drawn
-loops, skeletal or part-tween animation for reusable characters, and VFX-only
-motion for simple feedback assets.
+static or pose-swap for minor NPCs, frame animation for characters and short
+loops, motion-video-to-sprite for organic one-off actions, and VFX-only motion
+for simple feedback assets.
 
 Method selection rules:
 
 | Condition | Prefer | Avoid unless required |
 |---|---|---|
-| Pixel art, exact silhouettes, short loops | `frame_animation` | `skeletal_animation` |
-| Short action needs organic motion but no runtime rig | `motion_video_to_sprite` | `skeletal_animation` or hand-authored large frame sets |
-| Many outfits/equipment swaps | `skeletal_animation` or `part_tween` | full redraw frame sets |
+| Pixel art, exact silhouettes, short loops | `frame_animation` | video extraction |
+| Short action needs organic motion but no large hand-authored set | `motion_video_to_sprite` | oversized unique frame sets |
+| Many outfits/equipment swaps | extra `frame_animation` variants | layer-sheet rigs or part_tween |
 | Small props with open/close/on/off | `pose_swap` | full animation sheets |
 | UI affordance or button feedback | `ui_tween` | character animation pipeline |
 | Impact, pickup, sparkle, warning | `vfx_only` | persistent rig assets |
-| Boss or hero with many reusable actions | `skeletal_animation` or `hybrid` | one-off pose swaps |
+| Boss or hero with many reusable actions | `frame_animation` or `hybrid` | one-off pose swaps |
 
 State progression gates:
 
@@ -134,18 +132,27 @@ draft
 -> automation_limited        method is valid but generation or preview tools are unavailable
 ```
 
-The plan must not select `skeletal_animation` without either a layer contract or
-a declared fallback to `part_tween`, `pose_swap`, or `frame_animation`. It must
-not select `frame_animation` without frame count, FPS, anchor, and direction
-requirements in downstream refs. It must not select `motion_video_to_sprite`
-without source strategy, provenance/license rules, target FPS, duration,
-looping policy, frame size, anchor, visual acceptance route, and runtime export
-requirements.
+Canonical remap, apply before planning and record every change:
+
+```text
+skeletal_animation | dragonbones | dragonbones_mesh | dragonbones_fx |
+spine | skeletal_3d | 3d_skeletal | part_tween
+  → animation_system = frame
+  → character.rig = frame_sequence
+  → animation_method = frame_animation
+
+dimension = 3d → 2d
+```
+
+Do not keep the legacy value. The plan must not select `frame_animation`
+without frame count, FPS, anchor, and direction requirements in downstream
+refs. It must not select `motion_video_to_sprite` without source strategy,
+provenance/license rules, target FPS, duration, looping policy, frame size,
+anchor, visual acceptance route, and runtime export requirements.
 
 The plan must require `game-art/00-env/2d-animation-toolchain-env` before any
-downstream skeletal, frame, part-tween, pose-swap, UI-tween, or VFX-only
-animation generation, including `motion-video-to-sprite-animation`. If the
-toolchain report later returns
+downstream frame, video-to-sprite, pose-swap, UI-tween, or VFX-only
+animation generation. If the toolchain report later returns
 `blocked_by_missing_toolchain`, do not silently switch methods; only activate a
 fallback method that was already declared in this plan.
 

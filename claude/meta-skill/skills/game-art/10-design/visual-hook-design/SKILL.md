@@ -46,7 +46,7 @@ Allowed `hook_type` values: `character_silhouette`, `world_signature`,
 Allowed states: `draft`, `validated`, `needs_revision`,
 `blocked_by_product_concept`, `blocked_by_art_direction`.
 
-Downstream consumers: `visual-style-tokens`, `character-layer-sheet`,
+Downstream consumers: `visual-style-tokens`,
 `background-generation`, `portrait-generation`, `icon-generation`,
 `vfx-spec`, `juice-feedback-art-spec`, `game-ui`, `art-preview-qa`,
 `silhouette-readability-qa`, and store/screenshot generation nodes.

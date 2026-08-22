@@ -52,7 +52,7 @@ Combat schema:
 Allowed states: `draft`, `validated`, `needs_revision`, `blocked_by_core_loop`.
 
 Downstream consumers: `game-systems/balance-sanity-qa`,
-`motion-design`, `skeletal-animation`, `sprite-vfx-generation`,
+`motion-design`, `frame-animation-generation`, `sprite-vfx-generation`,
 `particle-system`, `trail-generation`, `game-audio/sfx-spec`,
 `game-ui/ui-mockup-generation`, `game-level/level-layout-spec`, and runtime
 combat import.

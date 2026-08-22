@@ -85,8 +85,9 @@ improve consistency:
   damage/poison/freeze, and theme variants.
 - `atlas_slicing`: sprite atlas, texture pack, nine-slice panels, tilemap
   sheets, animation spritesheets, UI component atlases.
-- `skeletal_or_part_animation`: bones, pivots, part tweening, pose swap,
-  DragonBones/Spine-compatible data, or runtime tween animation.
+- `skeletal_or_part_animation`: pivots, part tweening, pose swap, or runtime
+  tween animation. The name is historical; do not generate skeletal,
+  DragonBones, or Spine data.
 - `frame_sequence_processing`: keyframe cleanup, alignment, anchor, bounding
   box, alpha cleanup, FPS, loop metadata, GIF/WebM previews.
 - `tile_rule_generation`: autotile, Wang tile, bitmask, edges/corners,

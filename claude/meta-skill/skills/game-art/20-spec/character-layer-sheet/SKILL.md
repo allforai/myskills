@@ -12,11 +12,10 @@ description: Internal bundled meta-skill module for game-art/20-spec/character-l
 
 ## Overview
 
-This sub-skill converts a character asset into a layer-sheet specification for
-rigging, skeletal animation, frame animation, expression sets, and outfit/skin
-variants. It decides which body and accessory parts must be separated, how they
-should be named, where pivots can be placed, and how generated layer-sheet
-images are validated and repaired.
+This sub-skill converts a character asset into a layer-sheet specification only
+when outfit, skin, or equipment variants need part recolor or swap. It is not
+part of default character animation. Do not use it to prepare a skeleton or
+part-tween rig.
 
 This is not a simple character image generator. It is a structured
 decomposition workflow:
@@ -33,7 +32,11 @@ asset registry + character context + motion needs
 
 ## Scope
 
-Use this skill when a downstream art flow needs separated character parts.
+Use this skill only when `.allforai/game-design/art-pipeline-config.json`
+`character.use_layer_sheet === true` from an explicit art-concept user choice.
+If the flag is missing or false, return `NOT_APPLICABLE`. Invented outfit, skin,
+or equipment lists are not authorization. Default `character-art-gen` must skip
+this skill.
 
 In scope:
 - character part decomposition,
@@ -46,7 +49,7 @@ In scope:
 
 Out of scope:
 - final polished character art,
-- skeletal hierarchy or animation timelines,
+- animation timelines,
 - frame animation generation,
 - manual paint cleanup,
 - human approval.
@@ -207,7 +210,7 @@ component separation. It must include exact part list, target view, style source
 output path, positive prompt, negative prompt, part-separation acceptance checks,
 crop checks, pivot feasibility checks, and `downstream_feedback.enabled=true`.
 
-If skeletal animation, image slicing, rig planning, or visual QA reports
+If frame animation, image slicing, or visual QA reports
 `MISSING_REQUIRED_PART`, `MERGED_PARTS`, `CROPPED_SUBJECT`, `WRONG_VIEW`,
 `WRONG_SCALE`, or `STYLE_DRIFT`, process the downstream feedback through
 `image-generation-contract`. Regenerate the layer sheet when the root cause is
@@ -244,7 +247,7 @@ part list that downstream animation can still consume.
 
 | Output | Required | Purpose | Consumed by |
 |---|---:|---|---|
-| `.allforai/game-design/systems/layer-sheet-plan.json` | yes | Canonical part list, pivots, image paths, validation. | skeletal-animation, sprite-frame-animation, expression-set. |
+| `.allforai/game-design/systems/layer-sheet-plan.json` | yes | Canonical part list, pivots, image paths, validation. | frame-animation-generation, expression-set. |
 | `.allforai/game-design/systems/layer-sheet-report.json` | yes | Acceptance verdict, issues, repair log, next actions. | QA, diagnostics. |
 | `.allforai/game-design/art/layers/*_layer_sheet.png` | when generated | Visual layer sheet. | image slicing, rig planning, visual QA. |
 
@@ -263,7 +266,7 @@ Minimal invocation context:
   },
   "asset_filter": {
     "asset_ids": [],
-    "asset_types": ["character", "actor_3d"]
+    "asset_types": ["character"]
   },
   "generation": {
     "image_generation_available": true,
@@ -380,7 +383,7 @@ Write `.allforai/game-design/systems/layer-sheet-report.json`:
 ## Downstream Usage
 
 Downstream skills must consume this output as follows:
-- `skeletal-animation` uses `parts[]`, `pivot_hint`, and `layer_sheet.path`.
+- `frame-animation-generation` uses `parts[]`, `pivot_hint`, and `layer_sheet.path` when a sheet is built from separated layers.
 - `sprite-frame-animation` uses `parts[]` only when frame animation is built
   from separated layers.
 - `character-expression-set` uses face-related parts such as eyes, brows, mouth.

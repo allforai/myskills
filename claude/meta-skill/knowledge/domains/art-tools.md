@@ -3,6 +3,9 @@
 > 以 AI 可调用性为第一维度组织。
 > 不按工具用途分类，而按"AI 如何调用它"分类。
 > 供 art-concept skill 和各 art-gen 节点执行时选择策略。
+>
+> 本管线只生产 2D / 2.5D。Blender 仅用于把 3D 源烘成 2D。
+> 不要用本节去开 3D 游戏、PBR 精修、ZBrush 高模或角色 3D 建模产线。
 
 ---
 
@@ -284,14 +287,14 @@ def pack_atlas(image_paths: list, output_image: str, output_json: str, padding: 
         json.dump({"frames": frames, "meta": {"image": output_image}}, f, indent=2)
 ```
 
-### 程序化占位帧生成（DragonBones/人工资产的占位）
+### 程序化占位帧生成（帧动画/人工资产的占位）
 
 ```python
 from PIL import Image, ImageDraw, ImageFont
 
 def generate_placeholder_frame(width: int, height: int, label: str, output_path: str,
                                  bg_color=(180, 180, 200), text_color=(60, 60, 80)):
-    """生成带尺寸标注的占位帧，用于 DragonBones 复杂动画/3D 资产的 human_gate 期间"""
+    """生成带尺寸标注的占位帧，用于复杂帧动画的 human_gate 期间"""
     img = Image.new("RGBA", (width, height), bg_color + (255,))
     draw = ImageDraw.Draw(img)
     
@@ -340,40 +343,29 @@ AI 直接编写 SVG XML 文件，无需调用任何工具：
 
 ### JSON 规格文档
 
-art-gen 节点对复杂动画/3D高模资产生成规格文档或直接生成 DragonBones JSON：
+art-gen 节点对复杂动画生成帧序列计划，不生成骨骼 JSON 或 3D 网格动画：
 
-**变换类 VFX（AI 直接生成 DragonBones JSON）：**
+**变换类 VFX（帧序列/粒子参数）：**
 ```json
 {
-  "frameRate": 30,
-  "name": "fx_tile_disappear",
-  "armature": [{
-    "type": "Armature",
-    "frameRate": 30,
-    "bone": [{"name": "root"}, {"name": "tile", "parent": "root"}],
-    "animation": [{
-      "duration": 12,
-      "name": "disappear",
-      "bone": [{
-        "name": "tile",
-        "frame": [
-          {"duration": 3, "tweenEasing": 0, "transform": {"scX": 1.15, "scY": 1.15, "a": 1}},
-          {"duration": 5, "tweenEasing": 0, "transform": {"scX": 0.3, "scY": 0.3, "a": 0.6}},
-          {"duration": 4, "tweenEasing": 0, "transform": {"scX": 0, "scY": 0, "a": 0}}
-        ]
-      }]
-    }]
-  }]
+  "asset_id": "fx_tile_disappear",
+  "type": "frame_animation",
+  "fps": 30,
+  "frames": [
+    {"index": 0, "scale": 1.15, "alpha": 1.0},
+    {"index": 3, "scale": 0.3, "alpha": 0.6},
+    {"index": 8, "scale": 0.0, "alpha": 0.0}
+  ]
 }
 ```
 
-**复杂动画（IK/网格变形，仍需人工，生成规格文档）：**
+**复杂动画（仍需人工，生成规格文档）：**
 ```json
 {
   "asset_id": "fx_firefly_chain",
-  "type": "dragonbones_animation",
+  "type": "frame_animation",
   "status": "spec_ready_pending_production",
-  "production_notes": "IK 粒子路径动画，需 DragonBones GUI 制作",
+  "production_notes": "长路径光链用帧序列或粒子系统，不走骨骼",
   "keyframes": [
     {"frame": 1, "desc": "萤火虫从触发点聚集"},
     {"frame": 12, "desc": "光链完全延伸，全屏覆盖"}
@@ -389,7 +381,7 @@ art-qa、art-gen 各节点输出的 HTML 报告由 AI 直接生成（静态 HTML
 
 ## 五、无头模式（需安装）
 
-### Blender --background --python
+### Blender --background --python（仅 2.5D 烘 2D）
 
 ```
 invoke:  Bash — blender --background --python script.py
@@ -398,17 +390,15 @@ requires_install: true
   检测:   which blender  或  test -f /Applications/Blender.app/Contents/MacOS/blender
   PATH:   macOS 需 export PATH="/Applications/Blender.app/Contents/MacOS:$PATH"
 
-能力（通过 Python bpy 模块）:
-  - 程序化低多边形 3D 模型生成（几何体/参数化形状）
-  - 材质/贴图应用（通过 Python 设置节点）
-  - GLB/FBX/OBJ 导出
-  - 批量渲染（生成参考图）
-  - UV 自动展开（Smart UV Project）
+允许用途:
+  - dimension=2.5d 时渲染/烘出 2D 精灵、阴影、参考图
 
-示例：生成一个低模房子
+禁止用途:
+  - 3D 游戏角色网格动画
+  - 作为 dimension=3d 产线入口
+  - 导出供运行时播放的 GLB/FBX 角色动画
 
-fallback: 输出 3D 规格文档（JSON），标记 human_gate=true，等待外包建模交付
-limitation: 程序化只适合规律性几何体（建筑/道具）；有机形体（角色）必须手工
+fallback: 改走 2D 帧序列 / 视频抽帧，不要改开 3D 游戏分支
 ```
 
 ---
@@ -419,12 +409,9 @@ limitation: 程序化只适合规律性几何体（建筑/道具）；有机形�
 
 | 资产类型 | 原因 | 节点策略 |
 |---|---|---|
-| DragonBones 复杂动画（IK/网格） | 复杂骨骼/网格变形需 DragonBones GUI | AI 生成变换类 JSON + 关键帧参考图；复杂部分 human_gate |
+| 复杂角色动作 | 自动绑骨质量不可用 | 帧序列或视频抽帧；复杂部分 human_gate |
 | 高质量像素手绘 | 色相偏移/手工描边/精细抖动需人眼判断 | 生成低质量程序化像素化占位 |
-| PBR 贴图精修 | Substance Painter 无 CLI；质量靠审美 | 生成贴图规格 JSON + AI 参考图 |
-| ZBrush 高模雕刻 | 纯 GUI，无自动化接口 | 生成低模占位（Blender）+ 规格文档 |
-| Live2D 面部动画 | Live2D Cubism 无 CLI | 生成 Live2D 参数规格 JSON |
-| 复杂角色 3D 建模 | 有机形体需艺术家审美和技巧 | Blender 生成几何占位 + 详细规格 |
+| PBR / ZBrush / 3D 角色建模 / Live2D | 超出本管线 | 不要开这些节点；remap 到 2D 帧或标记 out of scope |
 
 ---
 
@@ -435,11 +422,9 @@ limitation: 程序化只适合规律性几何体（建筑/道具）；有机形�
 | 2D 地砖（卡通） | ✅ flux | - | - | - | QA |
 | 2D 地砖（像素风） | ⚠️ 生高分图→降采样 | ✅ pngquant | ✅ resize(NEAREST) | - | QA |
 | 角色立绘（卡通） | ✅ flux | - | - | - | QA |
-| 角色骨骼分层参考 | ✅ flux(分层参考) | - | - | - | QA → DragonBones制作 |
-| DragonBones 变换动画 | ❌ | ❌ | ❌ | ✅ 直接生成JSON | QA 验收 |
-| DragonBones IK/网格动画 | ❌ | ❌ | ❌ | ✅ 规格JSON | ✅ 人工GUI制作 |
-| 3D 低模（程序化） | ❌ | ✅ Blender无头 | - | ✅ 规格JSON | QA |
-| 3D 高质量模型 | ❌ | ❌ | ❌ | ✅ 规格JSON | ✅ |
+| 角色分层参考 | ✅ flux(分层参考) | - | - | - | 仅当 use_layer_sheet=true |
+| 角色帧动画 | ✅ flux | ✅ ffmpeg抽帧 | ✅ 合图 | - | QA 验收 |
+| 3D 低模 / 高模 | ❌ | ❌ | ❌ | ❌ | 超出本管线 |
 | UI 图标（矢量形状） | - | - | - | ✅ SVG | QA |
 | UI 图标（质感类） | ✅ flux | - | - | - | QA |
 | VFX 参考帧 | ✅ flux | - | - | - | QA |

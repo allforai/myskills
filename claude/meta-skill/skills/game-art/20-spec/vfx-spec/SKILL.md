@@ -36,7 +36,7 @@ Use this skill when a game needs:
 Out of scope:
 - final rendered VFX images or engine configs,
 - audio-only feedback,
-- character skeletal animation,
+- character animation production,
 - UI layout,
 - manual artist or technical artist approval.
 

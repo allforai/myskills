@@ -61,7 +61,7 @@ Allowed states: `draft`, `validated`, `needs_revision`,
 `blocked_by_gameplay`, `blocked_by_level_structure`, `blocked_by_runtime`.
 
 Downstream consumers: `2d-animation-production-plan`, `motion-design`,
-`2d-layering-spec`, `frame-animation-spec`, `character-layer-sheet`, `tileset-spec`,
+`2d-layering-spec`, `frame-animation-spec`, `tileset-spec`,
 `background-generation`, `prop-generation`, `level-layout-spec`,
 `screen-layout-spec`, `engine-export-profile`, `2d-style-consistency-qa`, and
 runtime implementation nodes.

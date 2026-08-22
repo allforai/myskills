@@ -23,7 +23,7 @@ engine integration consumes art assets.
 Required: asset registry, engine export profile, runtime import check report,
 and at least one asset manifest.
 
-Optional: atlas manifests, animation state machine spec, skeletal manifests,
+Optional: atlas manifests, animation state machine spec,
 frame animation manifests, tileset manifests, UI registry, VFX manifests,
 2D layering spec, 2D style consistency QA report, art preview QA report,
 image-generation report, and level/UI/runtime consumer requirements.
@@ -40,7 +40,7 @@ Writes:
 The output contract must include `contract_id`, `target_runtime`,
 `engine_export_profile_ref`, `adapter_policy`, `format_decisions`,
 `asset_manifest_refs`, `atlas_refs`, `animation_refs`, `state_machine_refs`,
-`skeleton_refs`, `tilemap_refs`, `ui_asset_refs`, `vfx_refs`, `layering_refs`,
+`tilemap_refs`, `ui_asset_refs`, `vfx_refs`, `layering_refs`,
 `source_3d_refs`, `runtime_excluded_source_refs`, `import_paths`,
 `runtime_ids`, `pivot_anchor_policy`, `sorting_policy`, `collision_helper_refs`,
 `qa_summary`, `fallback_summary`,

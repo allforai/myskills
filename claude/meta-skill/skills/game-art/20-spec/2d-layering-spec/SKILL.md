@@ -10,7 +10,7 @@ description: Internal bundled meta-skill module for game-art/20-spec/2d-layering
 ## Overview
 
 Defines the unified layer contract for 2D game art. It covers scene layers,
-character outfit layers, skeletal part layers, frame-animation overlays, UI
+character outfit layers, character part layers, frame-animation overlays, UI
 layers, VFX layers, collision/helper layers, export draw order, and runtime
 sorting metadata.
 
@@ -70,8 +70,8 @@ Allowed states: `draft`, `validated`, `needs_revision`,
 `blocked_by_view_mode`, `blocked_by_asset_registry`,
 `blocked_by_runtime_profile`.
 
-Downstream consumers: `character-layer-sheet`, `background-generation`,
-`prop-generation`, `frame-animation-generation`, `skeletal-animation`,
+Downstream consumers: `background-generation`,
+`prop-generation`, `frame-animation-generation`,
 `expression-set-generation`, `vfx-generation`, `game-ui` specs,
 `atlas-packaging`, `engine-export-profile`, `2d-style-consistency-qa`,
 `runtime-import-check`, and runtime rendering/import nodes.
@@ -166,8 +166,9 @@ draft
 ```
 
 Repair routing: missing asset IDs return to `asset-registry`; missing spatial
-rules return to `2d-view-mode-spec`; missing outfit/body decomposition returns
-to `character-layer-sheet`; runtime sorting or atlas group failures route to
+rules return to `2d-view-mode-spec`; missing outfit/body variants route to extra
+`frame-animation-generation` sheets, not `character-layer-sheet`, unless
+`character.use_layer_sheet === true`; runtime sorting or atlas group failures route to
 `engine-export-profile` or `atlas-packaging`; visual layer conflicts route to
 `2d-style-consistency-qa` and then the relevant producer.
 

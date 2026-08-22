@@ -47,7 +47,6 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/motion-video-to-sprite-animati
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/particle-system/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/portrait-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/prop-generation/SKILL.md
-${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/skeletal-animation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/sprite-vfx-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/tileset-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/trail-generation/SKILL.md
@@ -420,18 +419,15 @@ selected_model
         "claude/meta-skill/skills/game-art/00-env/2d-animation-toolchain-env/SKILL.md",
         """.allforai/game-design/art/env/2d-animation-toolchain-report.json
 .allforai/game-design/art/env/2d-animation-toolchain-registry.json
-DragonBones
-Spine
-DragonBones-compatible JSON/atlas generation
-DragonBones Pro GUI
+frame animation
+motion_video_to_sprite
 required=false
-project-local generator/adapter
+Do not produce skeletal or DragonBones character animation
 GUI app presence without an automated export/import adapter
 blocked_by_missing_toolchain
 blocked_by_missing_runtime_profile
 validation_evidence
 install_policy
-Do not silently switch DragonBones
 """,
     )
     _write(
@@ -585,7 +581,6 @@ must not silently fall back to prompt-only generation
         "30-generate/particle-system",
         "30-generate/portrait-generation",
         "30-generate/prop-generation",
-        "30-generate/skeletal-animation",
         "30-generate/sprite-vfx-generation",
         "30-generate/tileset-generation",
         "30-generate/trail-generation",

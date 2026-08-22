@@ -29,7 +29,7 @@ particle branch to `game-art/particle-system`.
 In scope:
 - particle branch delegation and result integration,
 - sprite-sheet prompt/spec generation,
-- trail, decal, shader, mesh-burst, light-pulse, animation-event, and
+- trail, decal, shader, light-pulse, animation-event, and
   screen-effect specs,
 - generated or registered preview assets,
 - manifests for world/UI/screen-space outputs,
@@ -81,7 +81,7 @@ Route generated artifact types by implementation mode:
 | `shader` | shader parameter JSON or placeholder material spec. |
 | `decal` | decal image/spec and projection metadata. |
 | `screen_effect` | screen-effect JSON with accessibility fallback. |
-| `mesh_burst` | mesh-burst spec and placeholder refs. |
+| `mesh_burst` | remap to `sprite_sheet` or `particle`; do not call `mesh-burst-generation`. |
 | `light_pulse` | light pulse JSON. |
 | `animation_event_fx` | animation-timeline event binding plus child VFX branch refs. |
 | `hybrid` | combination manifest with synchronized child artifacts. |
@@ -91,7 +91,7 @@ Route generated artifact types by implementation mode:
 | Stage | Purpose | Main output |
 |---|---|---|
 | 1. Load VFX contract | Normalize layer, dimension, mode, timing, anchor. | `normalized_vfx[]` |
-| 2. Build branch plan | Decide particle, sprite, trail, shader, decal, screen-effect, mesh-burst, light-pulse, and animation-event branches. | `branch_plan[]` |
+| 2. Build branch plan | Decide particle, sprite, trail, shader, decal, screen-effect, light-pulse, and animation-event branches. Remap `mesh_burst` to sprite or particle. | `branch_plan[]` |
 | 3. Delegate/generate branches | Call the matching branch sub-skill when needed; generate/register branch outputs. | VFX files by layer. |
 | 4. Build previews | Static frames, GIF specs, HTML preview, or preview map. | `previews[]` |
 | 5. Write manifest | Paths, metadata, timing, engine-neutral config. | `vfx-manifest.json` |
@@ -193,8 +193,8 @@ Run deterministic checks:
 8. Particle VFX has a `particle-system` branch output or an explicit
   branch output; `automation_limited` is a production blocker unless the effect
   is explicitly optional or accessibility-only.
-9. Mesh-burst VFX has a `mesh-burst-generation` branch output; fallback-only
-   mesh bursts block production VFX completion.
+9. Incoming `mesh_burst` / `mesh` VFX remaps to `sprite_sheet` or `particle`.
+   Do not invoke `mesh-burst-generation`.
 10. Light-pulse VFX has a `light-pulse-generation` branch output; fallback-only
     light pulses block production VFX completion.
 11. Animation-event FX has an `animation-event-fx` branch output; timing

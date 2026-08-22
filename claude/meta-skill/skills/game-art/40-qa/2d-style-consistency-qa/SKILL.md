@@ -10,7 +10,7 @@ description: Internal bundled meta-skill module for game-art/40-qa/2d-style-cons
 ## Overview
 
 Validates that 2D game art reads as one coherent visual system across
-characters, frame animations, skeletal animation previews, tiles, props,
+characters, frame animations, tiles, props,
 backgrounds, UI icons, portraits, item art, and VFX.
 
 This is a lightweight indie-game QA pass focused on practical consistency:
@@ -133,7 +133,7 @@ generic "style mismatch" without naming the failed style axis and evidence.
 Repair routing: unclear or contradictory style rules return to
 `visual-style-tokens`; generated-image defects route through
 `image-generation-contract` and the producing skill; animation jitter routes to
-`frame-animation-generation` or `skeletal-animation`; atlas spacing or bleed
+`frame-animation-generation` or `motion-video-to-sprite-animation`; atlas spacing or bleed
 routes to `atlas-packaging`; view/projection defects route to
 `2d-view-mode-spec`; layer ordering, outfit masking, or foreground occlusion
 defects route to `2d-layering-spec`; runtime-only scale/pivot issues route to

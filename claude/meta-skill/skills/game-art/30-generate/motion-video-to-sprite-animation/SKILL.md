@@ -15,14 +15,12 @@ actual visual output. The video is an upstream motion source, not the final
 asset. Final consumers receive spritesheets, frame metadata, previews, and
 engine-ready manifests.
 
-Use this for light 2D game actions where motion continuity matters but full
-skeletal production is unnecessary or too costly: mascot idles, enemy actions,
-NPC gestures, UI character stingers, attack/skill windups, celebration/fail
-loops, ambient props, and stylized VFX-like character motion.
-
-Do not use this as a replacement for skeletal animation when the game requires
-runtime outfit swaps, bone-driven hitboxes, strict interactive IK, or many
-shared actions from the same rig.
+Use this for light 2D game actions where motion continuity matters more than
+hand-authored frame drawing: mascot idles, enemy actions, NPC gestures, UI
+character stingers, attack/skill windups, celebration/fail loops, ambient props,
+and stylized VFX-like character motion. This is an allowed character animation
+path alongside `frame-animation-generation`. Do not route leftover skeletal,
+DragonBones, or Spine requests into a rig generator; extract frames instead.
 
 ## Input Contract
 
@@ -46,7 +44,7 @@ Optional inputs:
 - local asset library indexes and user-provided motion references
 - web/marketplace search candidates with license reports
 - AI video generation provider/task descriptors
-- Blender, engine, DragonBones, Spine, or browser preview capture outputs
+- Blender, engine, or browser preview capture outputs
 
 ## Output Contract
 

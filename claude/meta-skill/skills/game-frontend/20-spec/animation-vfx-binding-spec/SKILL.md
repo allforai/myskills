@@ -9,7 +9,7 @@ description: Internal bundled meta-skill module for game-frontend/20-spec/animat
 
 ## Overview
 
-Maps animation state machines, clips, sprite sheets, skeletal timelines, VFX,
+Maps animation state machines, clips, sprite sheets, VFX,
 particles, and event bindings into frontend runtime events and validation
 probes.
 
@@ -66,7 +66,7 @@ VFX frames/configs, timing placeholders, tween-only substitutions, or
 fallback-only effects must block and route to the producing animation/VFX skill.
 
 Repair routing: missing clips route to `game-art/frame-animation-generation` or
-`game-art/skeletal-animation`; missing effects route to `game-art/vfx-generation`;
+`game-art/frame-animation-generation`; missing effects route to `game-art/vfx-generation`;
 runtime binding ambiguity routes to `asset-import-binding-spec`.
 
 ## Completion Conditions

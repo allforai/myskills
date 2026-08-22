@@ -11,9 +11,10 @@
 ### 2D 通用（卡通 / 写实 / 手绘）
 
 资产形式：PNG 位图，支持透明通道  
-动画形式：帧序列（PNG 序列） 或 DragonBones 骨骼动画（JSON）  
+动画形式：帧序列（PNG 序列）或视频抽帧转序列  
 典型资产：角色立绘、地砖图集、UI 图标、背景场景  
-AI 生图可用性：**直接可用**（FLUX / Imagen 均支持）
+AI 生图可用性：**直接可用**（FLUX / Imagen 均支持）  
+硬约束：2D 角色不做骨骼/DragonBones/Spine 生产，当前自动绑骨效果不可用。
 
 ### 2D 像素风（独立子类，特殊约束）
 
@@ -33,27 +34,15 @@ AI 生图可用性：**间接可用**（AI 生高分辨率图 → 程序化降�
 典型用途：UI 图标、简单几何形状角色  
 AI 生图可用性：**AI 直接写 SVG XML**（适合简单几何形图标，不适合质感类）
 
-### 3D（低模 / 写实 / NPR 卡通渲染）
+### 3D 游戏（不支持）
 
-资产形式：GLB / FBX 网格 + 贴图（PNG/KTX）  
-动画形式：骨骼动画（3D skeletal，存于 GLB 或单独 .anim 文件）  
-典型格式：Blender → GLB/FBX → 游戏引擎  
-AI 生图可用性：**不可直接生成**（AI 生参考图，程序化 Blender 脚本生低模占位）
-
-### DragonBones 2D 骨骼动画
-
-资产形式：DragonBones-compatible JSON + Atlas PNG；DragonBones 工程文件只是可选编辑源  
-制作工具：项目内 JSON/Atlas 生成器 + Cocos Creator 内置运行时；DragonBones Pro GUI 只是可选人工编辑器  
-AI 生图可用性：**部分可用**  
-- AI 可直接生成 DragonBones-compatible JSON（变换动画：缩放/透明度/位移）  
-- AI 可生成分层参考图（各骨骼部件独立层）  
-- 复杂 IK/网格变形动画若无自动生成器与运行时验证，必须降级为自动 fallback 或标记 automation_limited；不得要求人工 GUI 作为自动闭环
+本管线不生产 3D 游戏。若上游 `dimension=3d`，改写为 `2d` 并记录 remap。  
+2.5D 只表示用 3D 源烘成 2D 运行时资产，运行时仍是 2D。
 
 ### VFX 特效
 
 常见形式：
 - 帧序列（PNG sequence）：AI + ffmpeg 可生成
-- DragonBones FX：简单变换可 AI 生成 JSON；复杂粒子路径需人工
 - Shader 粒子：引擎内置，无需外部资产
 - 程序化粒子：引擎粒子系统参数配置（AI 可生成配置文档）
 
@@ -91,10 +80,10 @@ AI 生图可用性：**部分可用**
 **动画12原则**（Thomas & Johnston《生命的幻觉》1981）
 - 压扁拉伸（Squash & Stretch）：赋予物体重量感和弹性 → 消除特效的弹跳
 - 预备动作（Anticipation）：动作前的反向运动 → 按钮按下前的微压缩
-- 缓入缓出（Slow In & Out）：动作首尾慢、中间快 → DragonBones 动画曲线设置
+- 缓入缓出（Slow In & Out）：动作首尾慢、中间快 → 帧间距/中间帧密度设置
 - 弧线运动（Arcs）：有机物体沿弧线运动，而非直线
 - 夸张（Exaggeration）：强化动作幅度以增强表达力 → VFX 的尺寸夸张
-- **游戏应用**：DragonBones 动画曲线应遵循缓入缓出；VFX 的消除特效应有压扁-拉伸弹跳
+- **游戏应用**：帧序列关键帧应遵循缓入缓出；VFX 的消除特效应有压扁-拉伸弹跳
 
 **游戏手感 / Juice**（Nijman, GDC 2013《The Art of Screenshake》）
 - 核心原则：每个玩家操作都应有即时、夸张的多感官反馈
@@ -177,14 +166,9 @@ AI 生图可用性：**部分可用**
   AI 生高分辨率参考图 → PIL 降采样（最近邻插值）→ pngquant 调色板量化
   → [可选] Aseprite 手工修整 → Atlas 打包 → 引擎导入
 
-DragonBones 骨骼动画:
-  分层参考图（AI 生成各部件）→ 项目脚本生成 DragonBones-compatible JSON + Atlas
-  → Preview 渲染 → Runtime 导入验证
-  [可选] DragonBones Pro GUI 仅作为人工编辑器，不是自动化必需项
-
-3D:
-  概念图（AI参考）→ Blender 建模 → UV 展开 → 贴图绘制（PBR/手绘）
-  → FBX/GLB 导出 → 引擎导入 → LOD 设置
+2D 角色动画:
+  姿态/动作参考 → 帧序列生图或视频抽帧 → Atlas 打包 → Preview → Runtime 导入验证
+  不得走骨骼/DragonBones/Spine/part_tween/3D 网格动画
 
 矢量 UI 图标:
   AI 直写 SVG XML（几何形状）或 AI 生图（质感图标）→ 导出 PNG → Atlas 打包
@@ -200,8 +184,8 @@ DragonBones 骨骼动画:
 dimension = "2d" AND style ≠ "pixel":
   → 地砖系统（grid/isometric/无地砖）
       └─ 无地砖 → 移除 tile-art-gen from active_nodes
-  → 角色动画方案（frame/dragonbones-compatible/dragonbones_mesh 自动降级）
-  → 特效方案（sprite_sheet/dragonbones_fx/shader_particle）
+  → 角色动画方案（frame_sequence / motion_video_to_sprite / pose_swap）
+  → 特效方案（sprite_sheet / particle / shader）
   → 场景层次（1层/2-3层/多层视差）
   → 概念原画需求（无/角色/场景/两者）
       └─ 有需求 → 加入 concept-art-gen（须先生成 node-spec）
@@ -215,52 +199,33 @@ dimension = "2d" AND style = "pixel":
   → 概念原画需求（同上）
   → 工具链约束（自动化优先，GUI 仅可选）
 
+dimension = "2.5d":
+  → 走对应 2D 分支
+  → bootstrap 才注入烘 2D 节点
+
 dimension = "3d":
-  → 面数预算（低模/中模/不限）
-  → 贴图工作流（PBR/卡通平涂/手绘）
-  → 骨骼动画来源（Blender无头/外包）
-  → VFX方案（引擎粒子/帧序列叠加/Shader）
-  → 场景构建（手工/程序化/混合）
+  → remap 为 2d，不进入 3D 问答
 ```
 
 ---
 
 ## 五、权衡框架
 
-### DragonBones vs 帧序列
+### 为什么 2D 角色只用帧序列
 
-| 维度 | DragonBones 胜出 | 帧序列胜出 |
-|---|---|---|
-| 换装/染色 | ✅（运行时替换纹理/骨骼） | ❌（需为每套服装单独制作） |
-| 表情变体 | ✅（面部骨骼独立控制） | 中等（多表情需多帧） |
-| 补间平滑 | ✅（骨骼自动插值） | ❌（帧间过渡不自然） |
-| 手工质感 | ❌（骨骼动画有"数字感"） | ✅（帧帧手绘，有纸张感） |
-| 复杂 VFX | ❌（骨骼不适合碎片/粒子） | ✅（帧序列可表达任意效果） |
-| **LLM 可生成性**（主因） | ✅ **开放 JSON 格式，LLM 可直接生成变换动画** | ⚠️ 帧内容需逐帧生图，LLM 不擅长 |
-| 工具授权成本 | ✅（格式/运行时可自动化；Pro GUI 可选） | 低（PIL/脚本可自动化；Aseprite GUI 可选） |
-| 动画师学习曲线 | 中 | 低（逐帧绘制） |
+当前自动骨骼/DragonBones/Spine 人物生成质量不可用：部件错位、绑骨漂移、身份锁不住。
+生产默认：
+- 角色与关键动作 → 帧序列
+- 需要更自然的短动作 → 视频抽帧转序列
+- NPC/道具状态 → 姿态切换
+- 换装/染色 → 额外帧变体或图层换色，不靠骨骼插槽
 
-**推荐规则**：
-- AI/LLM 主导生产管线 → **DragonBones**（开放 JSON，LLM 可直接生成变换动画，是首选的核心理由）
-- 角色数量多、有换装需求 → DragonBones
-- 小团队、像素风 → 帧序列
-- 简单 VFX（缩放/透明度/位移变换）→ DragonBones JSON（LLM 直接生成）
-- 复杂 VFX（粒子/碎片/流体）→ 帧序列
+不要因为“换装方便”或“JSON 好生成”重新打开骨骼生产。
 
-### 2D vs 3D（移动端）
+### 本管线只做 2D / 2.5D
 
-| 维度 | 2D 胜出 | 3D 胜出 |
-|---|---|---|
-| 制作周期 | ✅（美术资产快速迭代） | ❌（建模/绑骨周期长） |
-| 文件体积 | ✅（PNG Atlas 可压缩） | ❌（网格+贴图体积大） |
-| 视觉精细度 | 取决于风格 | ✅（光照/阴影更真实） |
-| 摄像机自由 | ❌（固定视角或有限旋转） | ✅（任意角度） |
-| 资产复用 | 中（换色/镜像） | ✅（不同贴图共用同骨骼） |
-| 渲染性能 | ✅（Draw Call 可优化） | 视实现，通常更重 |
-
-**推荐规则**：
-- 休闲/卡通/故事驱动游戏 → 2D
-- 需要摄像机旋转、深度感玩法、大量角色复用 → 3D
+不要因为摄像机旋转、深度感或角色复用推荐 3D 游戏。那些需求超出本管线；把 `dimension=3d` 改写为 `2d` 并记录 remap。
+2.5D 只表示用 3D 源烘成 2D 运行时，不是 3D 游戏。
 
 ### AI 生图 vs 人工（AI 可用性边界）
 
@@ -269,11 +234,9 @@ dimension = "3d":
 | 2D 卡通角色立绘 | ✅ 生成后需 QA | 最终精修 |
 | 2D 环境背景 | ✅ Imagen 4 擅长 | 最终精修 |
 | 像素风地砖 | ⚠️ 间接（降采样管道） | 精细像素手工 |
-| DragonBones 骨骼动画 | ⚠️ 变换类 AI 可生成 JSON | ✅ 复杂动画需人工 |
-| 3D 网格模型 | ❌（低模可 Blender 脚本） | 高质量必须人工 |
+| 2D 角色动画 | ⚠️ 逐帧/抽帧可生成 | 身份锁与关键帧精修 |
 | UI 矢量图标 | ✅ 直写 SVG | 品牌级图标需精修 |
 | 概念原画 | ✅ 参考用 | 最终稿需人工 |
-| PBR 贴图 | ❌ | ✅ 必须人工 |
 
 ---
 
@@ -326,7 +289,7 @@ is immutable — do not regenerate it; if replacement is needed, create a new as
 |---|---|---|
 | 过早细化 | art-concept 阶段就定死像素级数值，样本验收后无法调整 | Step 1 只问方向性决策，具体数值留 art-spec-design |
 | 风格混搭 | 不同资产类别使用不同风格参考图，导致视觉割裂 | 所有 AI 生图 prompt 共享同一 `style_prompt_prefix` |
-| 忽略工具链约束 | 选了 dragonbones_mesh 但没有自动生成器/运行时导入 adapter，或选了 Aseprite CLI 但未安装 | Step 1 Q6 明确问自动化工具链约束，写入 config 后节点执行时检查 |
-| 低估特效复杂度 | 将 DragonBones FX 粒子路径动画标记为 AI 可完全自动化，但没有可执行生成器与预览验收 | 区分变换类（AI 可生成）vs 网格/IK/粒子路径（需自动 fallback 或 automation_limited） |
+| 忽略工具链约束 | 选了视频抽帧但没有 ffmpeg，或选了 Aseprite CLI 但未安装 | Step 1 Q6 明确问自动化工具链约束，写入 config 后节点执行时检查 |
+| 走回骨骼生产 | 上游残留 dragonbones/spine 字段后继续绑骨 | 一律 remap 到 frame_sequence，并记录 remap |
 | 像素化参数错误 | PIL resize 使用双线性插值（BILINEAR）而非最近邻（NEAREST），导致边缘模糊 | art-concept skill 中明确注明 `Image.NEAREST` |
 | 忽略整数缩放 | 像素风地砖在非整数倍分辨率屏幕上显示模糊 | 验收时必须在目标设备分辨率测试，而非 PC 模拟器 |

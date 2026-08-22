@@ -21,8 +21,8 @@ that gameplay code can import without guessing names or transition behavior.
 Required: 2D animation production plan, motion design, and target animated
 assets.
 
-Optional: frame animation spec, skeletal animation manifests, frame animation
-manifests, character layer sheet, combat spec, UI component states, engine
+Optional: frame animation spec, frame animation manifests, character layer
+sheet, combat spec, UI component states, engine
 export profile, 2D layering spec, and runtime input/action list.
 
 ## Output Contract
@@ -116,7 +116,7 @@ Event frame validation:
 
 Repair routing: missing gameplay events return to combat/core-loop specs;
 missing animation assets return to `frame-animation-generation` or
-`skeletal-animation`; invalid state topology repairs here; export naming or
+`motion-video-to-sprite-animation`; invalid state topology repairs here; export naming or
 format failures route to `engine-export-profile`; style/readability failures
 route to `2d-style-consistency-qa` and then the relevant producer.
 

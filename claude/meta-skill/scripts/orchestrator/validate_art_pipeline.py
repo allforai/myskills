@@ -516,18 +516,15 @@ REQUIRED_LORA_ADAPTER_TRAINING_TERMS = {
 REQUIRED_2D_ANIMATION_TOOLCHAIN_TERMS = {
     ANIMATION_TOOLCHAIN_REPORT,
     ANIMATION_TOOLCHAIN_REGISTRY,
-    "DragonBones",
-    "Spine",
-    "DragonBones-compatible JSON/atlas generation",
-    "DragonBones Pro GUI",
+    "frame animation",
+    "motion_video_to_sprite",
     "required=false",
-    "project-local generator/adapter",
+    "Do not produce skeletal or DragonBones character animation",
     "GUI app presence without an automated export/import adapter",
     "blocked_by_missing_toolchain",
     "blocked_by_missing_runtime_profile",
     "validation_evidence",
     "install_policy",
-    "Do not silently switch DragonBones",
 }
 
 REQUIRED_PRODUCTION_TOOL_RULE_TERMS = {
@@ -552,7 +549,6 @@ IMAGE_UPSTREAM_CONSUMER_SKILLS = {
     "game-art/30-generate/particle-system/SKILL.md",
     "game-art/30-generate/portrait-generation/SKILL.md",
     "game-art/30-generate/prop-generation/SKILL.md",
-    "game-art/30-generate/skeletal-animation/SKILL.md",
     "game-art/30-generate/sprite-vfx-generation/SKILL.md",
     "game-art/30-generate/tileset-generation/SKILL.md",
     "game-art/30-generate/trail-generation/SKILL.md",
@@ -561,7 +557,7 @@ IMAGE_UPSTREAM_CONSUMER_SKILLS = {
 
 ANIMATION_TOOLCHAIN_CONSUMER_SKILLS = {
     "game-art/10-design/2d-animation-production-plan/SKILL.md",
-    "game-art/30-generate/skeletal-animation/SKILL.md",
+    "game-art/30-generate/frame-animation-generation/SKILL.md",
     "game-art/30-generate/motion-video-to-sprite-animation/SKILL.md",
 }
 

@@ -136,8 +136,8 @@ Output-to-downstream routing:
 |---|---|
 | `character_sprite_sheet` | `frame-animation-generation`, `animation-state-machine-spec`, `atlas-packaging`, `3d-assisted-2d-qa`, `runtime-import-check` |
 | `multi_direction_character_sheet` | `frame-animation-generation`, `animation-state-machine-spec`, `2d-view-mode-spec`, `atlas-packaging`, `runtime-import-check` |
-| `pose_sheet` | `motion-design`, `frame-animation-spec`, `character-layer-sheet`, `3d-assisted-2d-qa` |
-| `character_part_render_set` | `character-layer-sheet`, `2d-layering-spec`, `skeletal-animation`, `atlas-packaging` |
+| `pose_sheet` | `motion-design`, `frame-animation-spec`, `3d-assisted-2d-qa` |
+| `character_part_render_set` | `2d-layering-spec`, `frame-animation-generation`, `atlas-packaging`. Add `character-layer-sheet` only when `character.use_layer_sheet === true`. |
 | `prop_render` | `prop-generation`, `2d-layering-spec`, `atlas-packaging`, `runtime-import-check` |
 | `building_render` | `prop-generation`, `tileset-generation` when tile-like, `level-layout-spec`, `atlas-packaging` |
 | `isometric_tile_render` | `tileset-generation`, `level-layout-spec`, `atlas-packaging`, `runtime-import-check` |

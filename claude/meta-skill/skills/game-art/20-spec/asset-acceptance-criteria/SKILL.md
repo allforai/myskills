@@ -36,7 +36,7 @@ Technology variation changes what "usable" means:
   require different atlas formats, pivots, alpha policy, texture compression,
   import manifests, animation formats, safe areas, DPI scales, and runtime
   preview evidence;
-- generated sprites, DragonBones-compatible skeletons, frame animations,
+- generated sprites, frame animations,
   tilemaps, UI mockups, VFX sprite sheets, particle textures, and 3D-rendered
   2D assets each need different measurable acceptance checks.
 

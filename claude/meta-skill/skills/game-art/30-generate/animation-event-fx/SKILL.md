@@ -15,7 +15,7 @@ description: Internal bundled meta-skill module for game-art/30-generate/animati
 This sub-skill binds small VFX to animation timeline events such as footstep
 dust, landing impact, weapon spark, cast glow, hit flash, breath puff, cloth
 snap, and attack contact cues. It is called by `vfx-generation` when a VFX must
-sync to skeletal or frame-animation events.
+sync to frame-animation events.
 
 ## Scope
 
@@ -39,14 +39,14 @@ Out of scope:
 |---|---|---|
 | Animation event FX request | `vfx_id`, `file_prefix`, `animation_id`, `event`, `time`, `implementation_mode` | Return `UPSTREAM_DEFECT`. |
 
-Optional inputs: `skeletal-animation-plan.json`, `motion-design.json`,
+Optional inputs: `frame-animation-spec.json`, `motion-design.json`,
 `vfx-spec.json`, `art-style-guide.json`, and existing animation previews.
 
 ## Output Contract
 
 | Output | Required | Purpose | Consumed by |
 |---|---:|---|---|
-| `.allforai/game-design/art/vfx/animation-events/animation-event-fx-spec.json` | yes | Animation event bindings and child VFX branch specs. | vfx-generation, skeletal-animation, runtime import, QA. |
+| `.allforai/game-design/art/vfx/animation-events/animation-event-fx-spec.json` | yes | Animation event bindings and child VFX branch specs. | vfx-generation, frame-animation-generation, runtime import, QA. |
 | `.allforai/game-design/art/vfx/animation-events/animation-event-fx-manifest.json` | yes | Bound effects, paths, timing, previews, states. | vfx-generation and animation import. |
 | `.allforai/game-design/art/vfx/animation-events/animation-event-fx-report.json` | yes | Validation and repair results. | diagnostics and QA. |
 
@@ -58,7 +58,7 @@ Optional inputs: `skeletal-animation-plan.json`, `motion-design.json`,
   "mode": "spec_generate_validate",
   "input_paths": {
     "vfx_spec": ".allforai/game-design/art/vfx/vfx-spec.json",
-    "skeletal_animation": ".allforai/game-design/systems/skeletal-animation-plan.json",
+    "frame_animation": ".allforai/game-design/systems/frame-animation-spec.json",
     "motion_design": ".allforai/game-design/systems/motion-design.json",
     "art_style_guide": ".allforai/game-design/art-style-guide.json"
   },

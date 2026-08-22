@@ -18,8 +18,8 @@ single machine-readable source of truth for asset IDs, file prefixes, paths,
 states, variants, dependencies, and validation status.
 
 The registry is not just a filename list. It is the coordination layer that
-allows granular art sub-skills such as skeletal animation, layer sheet
-generation, sprite frame animation, tileset generation, VFX generation, icon
+allows granular art sub-skills such as layer sheet generation, sprite frame
+animation, tileset generation, VFX generation, icon
 generation, and art QA to share stable asset references without inventing names.
 
 ## Scope
@@ -64,13 +64,13 @@ Before writing outputs, normalize all input into this internal shape:
   "schema_version": "1.0",
   "output_root": ".allforai/game-design",
   "style_context": {
-    "dimension": "2d | 3d | 2.5d | unknown",
+    "dimension": "2d | 2.5d | unknown",
     "style": "cartoon | pixel | realistic | hand_drawn | vector | unknown"
   },
   "assets": [
     {
       "asset_id": "<stable slug>",
-      "type": "character | tile | environment | ui | vfx | icon | background | animation-frame | audio-cover | prop | actor_3d | other",
+      "type": "character | tile | environment | ui | vfx | icon | background | animation-frame | audio-cover | prop | other",
       "name": "<display name>",
       "file_prefix": "<resolved deterministic prefix>",
       "source": "concept_contract | derived",
@@ -91,7 +91,6 @@ asset type:
 | Type | Prefix rule |
 |---|---|
 | `character` | `char_{asset_id}` |
-| `actor_3d` | `actor_{asset_id}` |
 | `tile` | `tile_{asset_id}` |
 | `environment` | `env_{asset_id}` |
 | `background` | `bg_{asset_id}` |
@@ -102,6 +101,10 @@ asset type:
 | `audio-cover` | `aud_{asset_id}` |
 | `prop` | `prop_{asset_id}` |
 | `other` | `{asset_id}` |
+
+If an upstream list still uses `actor_3d`, remap the type to `character`, use
+the `char_` prefix unless concept-contract already set `file_prefix`, and record
+the remap. Do not keep `actor_3d` in the registry.
 
 Rules:
 - `asset_id` must be lowercase snake/kebab-compatible slug text.
@@ -199,7 +202,7 @@ Write `.allforai/game-design/asset-registry.json`:
   "assets": [
     {
       "asset_id": "<stable id>",
-      "type": "character | tile | environment | ui | vfx | icon | background | animation-frame | audio-cover | prop | actor_3d | other",
+      "type": "character | tile | environment | ui | vfx | icon | background | animation-frame | audio-cover | prop | other",
       "name": "<display name>",
       "file_prefix": "<stable prefix>",
       "state": "planned | spec_ready | generated | preview_ready | approved | needs_revision | automation_limited | not_applicable",

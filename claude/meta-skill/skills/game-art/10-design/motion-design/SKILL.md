@@ -17,10 +17,10 @@ It decides what each motion communicates, which key poses are required, where
 gameplay events occur, how timing should feel, and how the motion degrades when
 full animation is not feasible.
 
-It does not generate final art, frame sequences, DragonBones JSON, particle
-effects, or 3D animation clips. Downstream implementation skills consume its
-motion plan and convert it into skeletal animation, sprite frame animation, VFX,
-UI mascot motion, audio cues, or runtime state-machine hooks.
+It does not generate final art, frame sequences, particle effects, or 3D
+animation clips. Downstream implementation skills consume its motion plan and
+convert it into sprite frame animation, video-to-sprite clips, VFX, UI mascot
+motion, audio cues, or runtime state-machine hooks.
 
 ## Scope
 
@@ -277,7 +277,7 @@ Write:
 
 | Output | Required | Purpose | Consumed by |
 |---|---:|---|---|
-| `.allforai/game-design/systems/motion-design.json` | yes | Canonical motion intent, poses, timing, events, fallbacks. | skeletal-animation, sprite-frame-animation, vfx-animation, audio-design, QA. |
+| `.allforai/game-design/systems/motion-design.json` | yes | Canonical motion intent, poses, timing, events, fallbacks. | frame-animation-generation, motion-video-to-sprite-animation, vfx-animation, audio-design, QA. |
 | `.allforai/game-design/systems/motion-design-report.json` | yes | Acceptance verdict, failed checks, repair attempts, next actions. | caller diagnostics and QA. |
 
 ## Invocation Contract
@@ -408,10 +408,10 @@ Write `.allforai/game-design/systems/motion-design-report.json`:
 ## Downstream Usage
 
 Downstream skills must consume motion design as follows:
-- `skeletal-animation` turns `key_poses`, `events`, and `curve` into bones,
-  pivots, transform timelines, and render validation.
-- `sprite-frame-animation` turns `key_poses` and `duration_ms` into frame counts
-  and sprite sheets.
+- `frame-animation-generation` turns `key_poses` and `duration_ms` into frame
+  counts and sprite sheets.
+- `motion-video-to-sprite-animation` turns `key_poses`, `events`, and `curve`
+  into source-video extraction and normalized sheets.
 - `vfx-animation` turns `events`, `curve`, and fallback strategy into VFX beats.
 - `audio-design` uses `events[]` to place SFX cues.
 - QA uses `readability_rules[]` and fallback notes for validation.

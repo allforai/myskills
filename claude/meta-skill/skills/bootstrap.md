@@ -1302,7 +1302,7 @@ art-concept skill 完成后，依次调用以下 game-art 子 skill 细化策略
 
 2. **动画生产计划：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md`
    - 输入：参见 SKILL.md 的 Invocation Contract
-   - 输出：动画方案选择（帧动画/DragonBones/Tween/混合）及降级路径
+   - 输出：动画方案选择（帧动画/视频抽帧/姿态切换/Tween/混合）及降级路径。不得选择骨骼动画。
 
 3. **动效设计**（当游戏有动效需求时，即 art-pipeline-config.json 中存在动画资产时）：`${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/motion-design/SKILL.md`
    - 输入：`art-pipeline-config.json`、`art-style-guide.json.art_overview`
@@ -1367,7 +1367,8 @@ concept-contract capability 完成后，依次调用以下 game-art 子 skill（
 
 3. **2D 动画工具链检测：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/2d-animation-toolchain-env/SKILL.md`
    - （输入/输出：参见 SKILL.md 的 Invocation Contract；依赖动画生产计划与 `asset-registry.json`）
-   - 当动画生产计划包含 `skeletal_animation`、`frame_animation`、`part_tween`、`pose_swap`、`ui_tween` 或 `vfx_only` 时，验证 DragonBones/Spine/帧动画/图集/预览/运行时导入工具链；缺少必需工具时返回 `blocked_by_missing_toolchain`，不得让下游动画节点假装完成。
+   - 当动画生产计划包含 `frame_animation`、`motion_video_to_sprite`、`pose_swap`、`ui_tween` 或 `vfx_only` 时，验证帧动画/视频抽帧/图集/预览/运行时导入工具链；缺少必需工具时返回 `blocked_by_missing_toolchain`，不得让下游动画节点假装完成。
+   - Canonical remap：`skeletal_animation` / `dragonbones` / `dragonbones_mesh` / `spine` / `skeletal_3d` / `3d_skeletal` / `part_tween` → `animation_system=frame`、`character.rig=frame_sequence`、`animation_method=frame_animation`。`dimension=3d` → `2d`。记录 remap，不得继续骨骼或 3D 网格动画生产。
 
 4. **资产来源策略：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/asset-source-strategy-spec/SKILL.md`
    - （输入/输出：参见 SKILL.md 的 Invocation Contract；依赖上一步生成的 `asset-registry.json`）
@@ -1393,11 +1394,12 @@ After injecting `concept-freeze`, read `art-pipeline-config.json.active_nodes` a
 |-----------|----------------------------------|--------------------------------|-----------|
 | `tile-art-gen` | `skills/game-art/20-spec/tileset-spec/SKILL.md` | `skills/game-art/30-generate/tileset-generation/SKILL.md` | always |
 | `tile-art-gen` | + `skills/game-art/20-spec/2-5d-production-mode-spec/SKILL.md` + `skills/game-art/20-spec/2-5d-lighting-shadow-spec/SKILL.md` | + `skills/game-art/30-generate/render-to-2d-asset-generation/SKILL.md` | when `dimension=2.5d` |
-| `character-art-gen` | `skills/game-art/00-env/2d-animation-toolchain-env/SKILL.md` + `skills/game-art/20-spec/character-layer-sheet/SKILL.md` + `skills/game-art/20-spec/visual-style-tokens/SKILL.md` | `skills/game-art/30-generate/skeletal-animation/SKILL.md` | when `character.rig` = `dragonbones`, `dragonbones_mesh`, or `skeletal_3d` |
-| `character-art-gen` | same pre-spec | `skills/game-art/30-generate/frame-animation-generation/SKILL.md` | when `character.rig=frame_sequence` |
+| `character-art-gen` | `skills/game-art/00-env/2d-animation-toolchain-env/SKILL.md` + `skills/game-art/20-spec/visual-style-tokens/SKILL.md` + `skills/game-art/20-spec/frame-animation-spec/SKILL.md` | `skills/game-art/30-generate/frame-animation-generation/SKILL.md` | always. Apply canonical remap first. Do not invoke `character-layer-sheet` by default. |
+| `character-art-gen` | + `skills/game-art/20-spec/character-layer-sheet/SKILL.md` | — | only when `art-pipeline-config.json` `character.use_layer_sheet === true` from an explicit art-concept user choice. Invented outfit/skin fields are not enough. Not a rig. |
+| `character-art-gen` | same default pre-spec | + `skills/game-art/30-generate/motion-video-to-sprite-animation/SKILL.md` | when the animation plan selects `motion_video_to_sprite` |
 | `character-art-gen` | — | + `skills/game-art/30-generate/expression-set-generation/SKILL.md` | when `character.expressions=true` (append after primary generate) |
 | `environment-art-gen` | `skills/game-art/20-spec/2d-view-mode-spec/SKILL.md` | `skills/game-art/30-generate/background-generation/SKILL.md` + `skills/game-art/30-generate/prop-generation/SKILL.md` | always |
-| `environment-art-gen` | + `skills/game-art/20-spec/3d-source-asset-spec/SKILL.md` | + `skills/game-art/30-generate/render-to-2d-asset-generation/SKILL.md` | when `dimension=3d` or `2.5d` |
+| `environment-art-gen` | + `skills/game-art/20-spec/3d-source-asset-spec/SKILL.md` | + `skills/game-art/30-generate/render-to-2d-asset-generation/SKILL.md` | when `dimension=2.5d` only. Remap `dimension=3d` to `2d` and skip this row. |
 | `ui-art-gen` | `skills/game-ui/00-env/ui-registry/SKILL.md` + `skills/game-ui/10-design/hud-information-design/SKILL.md` + `skills/game-ui/20-spec/component-state-spec/SKILL.md` + `skills/game-ui/20-spec/screen-layout-spec/SKILL.md` + `skills/game-art/20-spec/visual-style-tokens/SKILL.md` | `skills/game-ui/30-generate/ui-mockup-generation/SKILL.md` + `skills/game-art/30-generate/icon-generation/SKILL.md` | always |
 | `ui-art-gen` | — | + `skills/game-art/30-generate/portrait-generation/SKILL.md` | when `concept_art.needed=true` |
 | `vfx-art-gen` | `skills/game-art/20-spec/vfx-spec/SKILL.md` | `skills/game-art/30-generate/vfx-generation/SKILL.md` | always |
@@ -1407,7 +1409,6 @@ After injecting `concept-freeze`, read `art-pipeline-config.json.active_nodes` a
 | `vfx-art-gen` | — | + `skills/game-art/30-generate/trail-generation/SKILL.md` | when `vfx.approach` includes `trail` |
 | `vfx-art-gen` | — | + `skills/game-art/30-generate/screen-effect-generation/SKILL.md` | when `vfx.approach` includes `screen` or `postprocess` |
 | `vfx-art-gen` | — | + `skills/game-art/30-generate/light-pulse-generation/SKILL.md` | when `vfx.approach` includes `light` |
-| `vfx-art-gen` | — | + `skills/game-art/30-generate/mesh-burst-generation/SKILL.md` | when `vfx.approach` includes `mesh` |
 | `vfx-art-gen` | — | + `skills/game-art/30-generate/decal-generation/SKILL.md` | when `vfx.approach` includes `decal` |
 | `vfx-art-gen` | — | + `skills/game-art/30-generate/animation-event-fx/SKILL.md` | when VFX must bind to animation events |
 

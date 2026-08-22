@@ -18,7 +18,9 @@ Required: target assets with `asset_id`, animation intent or gameplay state, and
 art style. Optional: `motion-design.json`, `asset-registry.json`,
 `art-style-guide.json`, requested FPS/frame counts.
 
-If a project requires skeletal animation instead, return `NOT_APPLICABLE`.
+This is the default 2D character animation path. If an upstream config still
+names skeletal, DragonBones, or Spine production, remap to frame animation and
+continue. Do not return `NOT_APPLICABLE` just because a rig field is stale.
 
 ## Output Contract
 

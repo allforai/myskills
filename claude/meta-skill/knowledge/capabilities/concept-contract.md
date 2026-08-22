@@ -100,9 +100,9 @@ Stamp with `frozen_at` (ISO timestamp) and `schema_version: "1.0"`.
   "project": {
     "genre": "<from product-concept.json>",
     "target_platform": "<from product-concept.json>",
-    "dimension": "<2d | 3d | 2.5d>",
+    "dimension": "<2d | 2.5d>",
     "style": "<cartoon | pixel | realistic | hand_drawn | vector>",
-    "animation_system": "<frame | dragonbones | 3d_skeletal | mixed>"
+    "animation_system": "<frame | mixed>"
   },
   "canonical_registry": {
     "characters": [

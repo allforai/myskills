@@ -27,7 +27,7 @@ downstream workarounds.
 This skill does not decide which asset should exist. Asset-specific skills such
 as `icon-generation`, `tileset-generation`, `character-layer-sheet`,
 `sprite-vfx-generation`, `decal-generation`, `particle-system`,
-`trail-generation`, `skeletal-animation`, and `ui-mockup-generation` decide the
+`trail-generation`, `frame-animation-generation`, and `ui-mockup-generation` decide the
 asset purpose and then use this contract for image requests and acceptance.
 
 For bulk LLM image production, this contract must delegate execution to

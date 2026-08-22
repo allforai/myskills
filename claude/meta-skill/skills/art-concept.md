@@ -27,9 +27,13 @@
 
 ```
 检查字段：
-  ✓ art_overview.dimension: "2d" | "3d" | "2.5d"
+  ✓ art_overview.dimension: "2d" | "2.5d"
+    不支持 3D 游戏。若上游写成 3d，改写为 2d 并记录 remap。
   ✓ art_overview.style: "cartoon" | "pixel" | "realistic" | "hand_drawn" | "vector"
-  ✓ art_overview.animation_system: "frame" | "dragonbones" | "3d_skeletal" | "mixed"
+  ✓ art_overview.animation_system: "frame" | "mixed"
+    角色动画只允许帧序列或视频抽帧。
+    Remap：dragonbones / dragonbones_mesh / spine / skeletal_3d / 3d_skeletal / part_tween
+    → animation_system=frame，character.rig=frame_sequence。
 
 若字段缺失：
   → 提示 art-direction 节点需补充 art_overview 字段，暂停执行
@@ -63,7 +67,7 @@
 
 **铁律：从不问开放性问题。每问提供 2-4 个选项，选项必须来自 Step 0.5 搜索结论，附带证据。**
 
-根据 `art_overview.dimension` 和 `art_overview.style` 选择分支：
+根据 `art_overview.dimension` 和 `art_overview.style` 选择分支。`2.5d` 走 2D 分支（按 style 选 A 或 B），不另开 3D 问答。不存在分支 C。
 
 ---
 
@@ -77,14 +81,19 @@
 → 驱动：`tileset.type`；选"无地砖"时 active_nodes 移除 `tile-art-gen`
 
 **Q2：角色动画方案？**
-- 无骨骼（帧序列，手工质感，文件较大）
-- DragonBones-compatible 标准（自动生成骨骼 JSON + Atlas，Cocos 运行时导入验证）
-- DragonBones 高级网格（仅当存在自动生成/导入 adapter；否则降级为标准变换骨骼）
-→ 驱动：`character.rig`
+- 短循环帧序列（idle/walk/attack，当前默认）
+- 视频抽帧转序列（动作更自然，需要视频源或可验证抽帧工具）
+- 关键姿态切换（NPC/道具，不做完整循环）
+→ 驱动：`character.rig`（只允许 `frame_sequence` / `motion_video_to_sprite` / `pose_swap`）。不得提供骨骼/DragonBones/Spine 选项。
+
+**Q2b：需要角色分层换装表吗？**
+- 不需要（默认；服装做成独立帧变体）
+- 需要（仅换色/换件，不是骨骼；必须用户点这一项）
+→ 驱动：`character.use_layer_sheet`。默认 `false`。不得因类型推断或自编换装清单设为 `true`。
 
 **Q3：特效方案？**
 - 帧序列（AI/脚本生成 PNG 序列，Aseprite/Photoshop 仅可选人工编辑）
-- DragonBones-compatible FX（变换类 AI 可生成；粒子路径无自动生成器时降级到粒子/VFX skill）
+- 引擎粒子（粒子系统参数，无需骨骼数据）
 - Shader 粒子（引擎内置，实时，无需额外资产）
 → 驱动：`vfx.approach`
 
@@ -102,9 +111,9 @@
 → 驱动：`concept_art.types[]`；非"不需要"时 active_nodes 加入 `concept-art-gen`
 
 **Q6：工具链约束？**
-- 使用 DragonBones-compatible 自动数据生成 + Cocos 导入验证
-- 仅使用无骨骼自动化方案（帧序列/part tween，最简）
-- 有可验证外部产线 adapter（可接受高级网格/人工编辑源，但必须有自动导出与导入验证）
+- 使用帧序列自动化（PIL/脚本/图集/预览/运行时导入）
+- 使用视频抽帧（ffmpeg + 图集/预览/运行时导入）
+- 有可验证外部产线 adapter（必须能自动导出与导入验证）
 → 驱动：`toolchain.constraints`
 
 ---
@@ -138,40 +147,7 @@
 
 **Q5：需要概念原画？**（同分支A Q5）
 
-**Q6：工具链约束？**（同分支A Q6，但骨骼选项改为"不需要骨骼动画（纯帧序列）"）
-
----
-
-#### 分支 C：3D（dimension=3d）
-
-**Q1：多边形面数预算？**
-- 移动端低模（角色 500-2000 面，兼顾低端设备）
-- 移动端中模（2000-5000 面，中高端设备）
-- 不限制（PC/主机，开发期不考虑面数）
-→ 驱动：`model_3d.poly_budget`
-
-**Q2：贴图工作流？**
-- PBR 金属度/粗糙度（写实风格行业标准）
-- 卡通平涂（手绘/低多边形风格，无高光贴图）
-- 手绘风格（纹理手绘感，接近 2D 油画）
-→ 驱动：`model_3d.texture_workflow`
-
-**Q3：骨骼动画来源？**
-- Blender 无头导出（程序化+人工建模均可，需安装 Blender）
-- 外包动画师（AI 只生成规格文档，human_gate 等待交付）
-→ 驱动：`model_3d.anim_source`
-
-**Q4：VFX 方案？**
-- 引擎粒子系统（Unity VFX Graph / Cocos 内置）
-- 帧序列叠加（2D sprite 覆盖在 3D 场景）
-- Shader 特效（程序化，无额外资产）
-→ 驱动：`vfx.approach`
-
-**Q5：场景构建方式？**
-- 手工建模（外包/团队建模，AI 生成规格文档）
-- 程序化生成（Blender Python 脚本，AI 可执行）
-- 混合（关键场景手工，背景程序化）
-→ 驱动：`environment.build_method`
+**Q6：工具链约束？**（同分支A Q6；像素风只允许纯帧序列）
 
 ---
 
@@ -179,16 +155,16 @@
 
 > 参见 `knowledge/capabilities/concept-visualization.md` — 「工具层：结论更新序列」
 
-Step 1 每问结论确认后，按下表调用结论更新序列（分支 A / B / C 均适用）：
+Step 1 每问结论确认后，按下表调用结论更新序列（分支 A / B）：
 
 | 问题 | 目标看板列 slug | 线框触发 |
 |---|---|---|
-| Q1（地砖系统 / 地砖分辨率 / 多边形面数） | `shijue`（视觉方向） | **低保真**（此列第1张卡片写入时触发） |
-| Q2（动画方案 / 调色板大小 / 贴图工作流） | `shijue`（视觉方向） | — |
-| Q3（特效方案 / 动画帧数 / 骨骼动画来源） | `guige`（技术规格） | **中保真**（此列第1张卡片写入时触发） |
-| Q4（场景层次 / Aseprite安装 / VFX方案） | `guige`（技术规格） | — |
-| Q5（概念原画需求 / 场景构建方式） | `qingdan`（资产清单） | — |
-| Q6（工具链约束，仅分支 A / B） | `gongju`（工具链） | — |
+| Q1（地砖系统 / 地砖分辨率） | `shijue`（视觉方向） | **低保真**（此列第1张卡片写入时触发） |
+| Q2（动画方案 / 调色板大小） | `shijue`（视觉方向） | — |
+| Q3（特效方案 / 动画帧数） | `guige`（技术规格） | **中保真**（此列第1张卡片写入时触发） |
+| Q4（场景层次 / Aseprite安装） | `guige`（技术规格） | — |
+| Q5（概念原画需求） | `qingdan`（资产清单） | — |
+| Q6（工具链约束） | `gongju`（工具链） | — |
 
 ---
 
@@ -199,18 +175,17 @@ Step 1 每问结论确认后，按下表调用结论更新序列（分支 A / B 
 **active_nodes 生成规则：**
 
 ```
-基础集合（根据 dimension 选择）：
-  2D 游戏:  ["character-art-gen", "environment-art-gen", "ui-art-gen", "vfx-art-gen"]
-  3D 游戏:  ["environment-art-gen", "ui-art-gen", "vfx-art-gen"]
+基础集合（`2d` 与 `2.5d` 相同）：
+  ["character-art-gen", "environment-art-gen", "ui-art-gen", "vfx-art-gen"]
 
 条件加入：
   Q1 选"正交网格"或"等距"→ 加入 "tile-art-gen"
   Q5 选非"不需要"       → 加入 "concept-art-gen"（首次出现须在 bootstrap 先生成 node-spec）
-  3D Q3 选"Blender 无头" → 加入 "3d-model-gen"（首次出现须先生成 node-spec）
 
 条件移除：
   Q1 选"无地砖"          → 移除 "tile-art-gen"（若存在）
-  Q2 选"无骨骼"          → character-art-gen 保留但 rig="frame_sequence"
+  Q2 任意选项            → character-art-gen 保留；`character.rig` 只能是 frame_sequence / motion_video_to_sprite / pose_swap
+  Q2b 未选或未问         → `character.use_layer_sheet=false`
 ```
 
 **skipped_nodes 填写**：从全集（所有可能节点）中减去 active_nodes。
@@ -262,20 +237,20 @@ Step 1 每问结论确认后，按下表调用结论更新序列（分支 A / B 
   "status": "final",
   "dimension": "2d",
   "style": "cartoon",
-  "animation_system": "dragonbones",
+  "animation_system": "frame",
   "tileset": {
     "type": "grid",
     "tile_size": 128,
     "atlas": true
   },
   "character": {
-    "rig": "dragonbones",
-    "expressions": true,
-    "bone_limit": 30
+    "rig": "frame_sequence",
+    "use_layer_sheet": false,
+    "expressions": true
   },
   "vfx": {
-    "approach": "dragonbones_fx",
-    "ai_generatable": "transform_only"
+    "approach": "sprite_sheet",
+    "ai_generatable": "frames"
   },
   "environment": {
     "parallax_layers": 3
@@ -285,7 +260,6 @@ Step 1 每问结论确认后，按下表调用结论更新序列（分支 A / B 
     "types": []
   },
   "toolchain": {
-    "dragonbones_available": true,
     "aseprite_available": false,
     "constraints": []
   },
@@ -321,6 +295,7 @@ Step 1 每问结论确认后，按下表调用结论更新序列（分支 A / B 
   },
   "character": {
     "rig": "frame_sequence",
+    "use_layer_sheet": false,
     "expressions": true
   },
   "vfx": {
@@ -356,9 +331,9 @@ Step 1 每问结论确认后，按下表调用结论更新序列（分支 A / B 
 
 | 下游节点 | 从 art-pipeline-config.json 读取的字段 | 用途 |
 |---|---|---|
-| `art-spec-design` | `tileset.*`, `character.*`, `vfx.*`, `pixel.*` | 生成资产清单时对齐规格（尺寸/骨骼/帧数） |
+| `art-spec-design` | `tileset.*`, `character.*`, `vfx.*`, `pixel.*` | 生成资产清单时对齐规格（尺寸/帧数） |
 | `tile-art-gen` | `style`, `tileset.type`, `tileset.tile_size`, `pixel.*` | 切换生图策略（正常生图 vs 像素化管道） |
-| `character-art-gen` | `character.rig`, `character.expressions` | 生成分层骨骼参考图 vs 帧动画参考图 |
-| `vfx-art-gen` | `vfx.approach`, `vfx.ai_generatable` | 决定 AI 生成 DragonBones JSON vs 帧序列 vs 规格文档 |
-| `environment-art-gen` | `environment.parallax_layers`, `model_3d.*` | 图层数 / 3D 场景规格 |
+| `character-art-gen` | `character.rig`, `character.expressions` | 生成帧动画参考图或视频抽帧规格 |
+| `vfx-art-gen` | `vfx.approach`, `vfx.ai_generatable` | 决定 AI 生成帧序列 vs 粒子/Shader vs 规格文档 |
+| `environment-art-gen` | `environment.parallax_layers` | 图层数 |
 | `ui-art-gen` | `style`, `toolchain.*` | 矢量图标 vs AI 生图图标策略 |

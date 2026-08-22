@@ -14,9 +14,11 @@ including frame metadata, anchors, previews, and repair loops.
 
 ## Input Contract
 
-Required: `.allforai/game-design/systems/frame-animation-spec.json`. Optional:
+Required: `.allforai/game-design/systems/frame-animation-spec.json` and a
+validated `2d-animation-toolchain-env` report. Optional:
 `asset-registry.json`, `art-style-guide.json`, `image-generation-contract`,
-existing sprite sheets.
+existing sprite sheets. Return `blocked_by_missing_toolchain` when required
+frame/atlas/preview tools are missing.
 
 ## Output Contract
 
@@ -52,7 +54,8 @@ is final.
   "input_paths": {
     "frame_animation_spec": ".allforai/game-design/systems/frame-animation-spec.json",
     "asset_registry": ".allforai/game-design/asset-registry.json",
-    "image_generation_contract": "${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/image-generation-contract/SKILL.md"
+    "image_generation_contract": "${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/image-generation-contract/SKILL.md",
+    "animation_toolchain": "${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/2d-animation-toolchain-env/SKILL.md"
   },
   "output_root": ".allforai/game-design"
 }

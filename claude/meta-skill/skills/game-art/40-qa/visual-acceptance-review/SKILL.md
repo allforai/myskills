@@ -213,7 +213,7 @@ task and not one prompt per tiny asset:
 - UI state clarity and layout fit;
 - VFX frame or preview readability;
 - background/gameplay foreground separation;
-- animation frame or skeletal preview continuity.
+- animation frame preview continuity.
 
 Each batch must point to actual images or preview sheets. If individual assets
 are too numerous, first create contact sheets, preview maps, or animation

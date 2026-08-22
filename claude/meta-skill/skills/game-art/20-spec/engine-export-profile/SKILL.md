@@ -11,25 +11,20 @@ description: Internal bundled meta-skill module for game-art/20-spec/engine-expo
 
 Defines engine and tool export decisions for 2D art assets before runtime
 import. It normalizes the decisions that must be made for atlas metadata,
-pivots, frame naming, animation metadata, tilemap exports, skeleton formats,
-compression, validation, and fallback behavior.
+pivots, frame naming, animation metadata, tilemap exports, compression,
+validation, and fallback behavior.
 
 Use this when the art pipeline must target Godot, Unity, Phaser, Pixi, Cocos,
-Defold, Love2D, Tiled, Aseprite, TexturePacker, DragonBones, or a custom
-runtime adapter.
-
-For 2D skeletal animation and transform-style VFX, DragonBones is the default
-LLM-friendly format because its JSON-style contracts can be planned, generated,
-inspected, and repaired by Claude Code. Spine is not the default. Only mention
-or select Spine when the target project already uses Spine at runtime or the
-user explicitly requires Spine compatibility.
+Defold, Love2D, Tiled, Aseprite, TexturePacker, or a custom runtime adapter.
+2D character animation exports as sprite sheets / flipbooks / SpriteFrames, not
+DragonBones or Spine skeletons.
 
 ## Input Contract
 
 Required: target runtime or engine, asset classes, and desired import surface.
 
 Optional: asset registry, atlas manifests, tilemap specs, animation state
-machine spec, skeletal animation manifests, frame animation manifests, UI
+machine spec, frame animation manifests, UI
 registry, 2D view mode, 2D layering spec, performance budget, and existing
 project conventions.
 
@@ -43,7 +38,7 @@ Writes:
 The profile must include `profile_id`, `target_runtime`, `coordinate_system`,
 `unit_scale`, `pivot_policy`, `anchor_policy`, `atlas_policy`,
 `animation_clip_policy`, `state_machine_policy`, `tilemap_policy`,
-`skeleton_policy`, `ui_asset_policy`, `naming_policy`, `compression_policy`,
+`ui_asset_policy`, `naming_policy`, `compression_policy`,
 `format_decisions`, `format_decision_rationale`, `import_validation`,
 `fallback_policy`, `adapter_policy`, `native_project_mutation`, `state`, and
 `consumer_refs`.
@@ -52,7 +47,7 @@ Allowed states: `draft`, `validated`, `needs_revision`,
 `blocked_by_runtime_choice`, `blocked_by_tooling`, `automation_limited`.
 
 Downstream consumers: `atlas-packaging`, `runtime-import-check`,
-`2d-layering-spec`, `animation-state-machine-spec`, `skeletal-animation`,
+`2d-layering-spec`, `animation-state-machine-spec`,
 `frame-animation-generation`, `tileset-generation`, `game-ui` export surfaces,
 and runtime implementation nodes.
 
@@ -66,8 +61,7 @@ The profile must normalize these runtime-sensitive policies:
   "format_decisions": {
     "atlas_manifest": "<LLM-selected format for this runtime/project>",
     "animation_manifest": "<LLM-selected format for this runtime/project>",
-    "tilemap_manifest": "<LLM-selected format or none>",
-    "skeleton_manifest": "<LLM-selected format or none>"
+    "tilemap_manifest": "<LLM-selected format or none>"
   },
   "format_decision_rationale": [],
   "coordinate_system": {"origin": "top_left | bottom_left | center", "y_axis": "down | up"},
@@ -106,12 +100,12 @@ Supported modes: `profile_validate`, `validate_existing`, `repair_existing`.
 Check that the profile names one target runtime or adapter, one coordinate
 system, one pivot convention, one atlas metadata format, one animation clip
 naming rule, and one runtime import validation path. Tilemap projects must
-declare map format and tile ID conventions. Skeletal projects must declare
-whether the runtime consumes DragonBones, generated JSON, simplified transform
-timelines, or Spine only when Spine is already an explicit project constraint.
+declare map format and tile ID conventions. 2D animation projects must declare
+sprite-sheet / flipbook / SpriteFrames import, not skeletal skeleton formats.
 
-Selection rule: for LLM-led 2D animation or VFX, prefer DragonBones /
-DragonBones-compatible JSON. Do not route new VFX work to Spine by default.
+Selection rule: for LLM-led 2D animation or VFX, prefer frame sheets, atlas
+metadata, and particle/shader configs. Do not emit DragonBones or Spine
+character rigs.
 
 Common runtime defaults:
 

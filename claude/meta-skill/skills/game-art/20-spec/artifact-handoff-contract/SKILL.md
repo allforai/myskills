@@ -118,7 +118,7 @@ Consumer acceptance rules:
 | Consumer class | Required handoff fields |
 |---|---|
 | animation/frame skill | frame grid, FPS, pivot, anchor, alpha, action/state refs |
-| skeletal/layer skill | part IDs, pivots, z-order, masks, source refs |
+| layer/part skill | part IDs, pivots, z-order, masks, source refs |
 | tileset/level skill | tile size, projection, collision/walkability, preview map refs |
 | atlas packaging | image paths, dimensions, padding/trim policy, atlas group |
 | UI/icon skill | size, crop, alpha/background, UI consumer refs |

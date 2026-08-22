@@ -18,8 +18,8 @@ style locks, runtime constraints, negative prompts, and repair metadata.
 Prefer material-first generation. When a downstream deterministic process can
 assemble, crop, layer, recolor, atlas, rig, animate, or compose the final
 runtime asset, the prompt should ask the LLM for stable raw material rather
-than a fully final in-game asset. Examples: character parts for skeletal
-animation, clean pose references for motion extraction, scene layers for
+than a fully final in-game asset. Examples: character parts for frame or
+part-tween animation, clean pose references for motion extraction, scene layers for
 parallax, tile source motifs for procedural variants, icon foreground symbols
 for programmatic frame/background composition, VFX source sprites for generated
 emitters, and background plates with separate foreground/midground/background
@@ -126,7 +126,7 @@ Reject with `FAILED_VALIDATION` when:
 - prompts omit benchmark anti-reference rules or acceptance criteria;
 - prompt files contain contradictory style tokens;
 - strict identity locks are routed to prompt-only generation;
-- material-first opportunities are ignored without explanation for skeletal
+- material-first opportunities are ignored without explanation for frame
   animation, scene layering, tile variants, icons, VFX, or other programmatic
   assembly-friendly outputs;
 - raw material prompts omit isolation, layer separation, alpha/background,
