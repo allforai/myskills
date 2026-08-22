@@ -147,41 +147,11 @@ Each gap item records: check_id, task_id, name, missing_in (which downstream lay
 
 ---
 
-### Dimension 7: Interaction Type Consistency (交互类型一致性)
+### Dimension 7: Interaction Type Consistency (retired)
 
-**Purpose**: Screens sharing the same interaction type follow unified layout constraints.
+The MG/CT type catalog is retired. Skip this dimension. Do not infer or validate MG/CT codes.
 
-**Activation condition**: experience-map screens contain `interaction_type` field.
-
-**Check items**:
-
-| ID | Check | Logic |
-|----|-------|-------|
-| 5.7a | Same-type layout consistency | Extract layout constraints per interaction type. Check each screen against allowed/forbidden layouts. Forbidden layout -> `LAYOUT_FORBIDDEN`. Non-allowed layout -> `LAYOUT_DRIFT` |
-| 5.7b | Same-type layout drift detection | For screens sharing an interaction_type, detect if layouts diverge (e.g., 4 use table but 1 uses card). Divergence -> `INCONSISTENT_LAYOUT` |
-| 5.7c | Type-context match validation | Verify interaction_type matches expected frequency for product_type x audience x platform. Excluded type appearing -> `TYPE_CONTEXT_MISMATCH`. Low-frequency types exceeding 30% -> `LOW_TYPE_OVERREPRESENTED` |
-
-**Layout constraints reference** (selected types):
-
-| Type | Allowed Layout | Forbidden |
-|------|---------------|-----------|
-| MG1 Read-only list | list/table/grid | form, wizard |
-| MG2-L List | list/table | inline form (create should be separate page/modal) |
-| MG2-C Create | form page/modal | -- |
-| MG2-E Edit | form page/modal (must prefill old values) | -- |
-| MG3 State machine | status label (dedicated column) + action dropdown/swipe | -- |
-| MG5 Master-detail | master entity area + child entity tabs | single-layer detail without child entities |
-| MG6 Tree management | tree component + linked edit area | -- |
-| EC1 Content detail | image carousel + spec selection + bottom action bar | no spec selection |
-| WK1 Chat/IM | message stream + bottom input box | -- |
-| WK5 Kanban | horizontal multi-column + cards | single-column list |
-
-**Severity levels**:
-- `HIGH` -- `LAYOUT_FORBIDDEN` / `TYPE_CONTEXT_MISMATCH`
-- `MEDIUM` -- `INCONSISTENT_LAYOUT` / `LAYOUT_DRIFT`
-- `LOW` -- `LOW_TYPE_OVERREPRESENTED`
-
----
+**Activation condition**: never.
 
 ### Dimension 8: Consumer Maturity Consistency (用户端成熟度一致性)
 
@@ -375,15 +345,16 @@ Missing optional layers -> skip related checks, annotate "layer missing, skipped
 
 ### Phase B: 3 Parallel LLM Agents (Semantic Audit)
 
-After Phase A completes, three agents run in parallel via a single message with 3 Agent tool calls. Each reads Phase A's `audit-report.json` as read-only context.
+After Phase A completes, two agents run in parallel via a single message with 2 Agent tool calls. Each reads Phase A's `audit-report.json` as read-only context.
 
 | Agent | Audit Dimensions | Shard Output |
 |-------|-----------------|--------------|
 | Agent 1 | Step 5: Pattern Consistency + Step 5.5: Innovation Fidelity | `audit-shard-pattern.json` |
 | Agent 2 | Step 5.6: Behavioral Consistency | `audit-shard-behavioral.json` |
-| Agent 3 | Step 5.7: Interaction Type Consistency | `audit-shard-interaction.json` |
 
-**Barrier synchronization**: All 3 agents must complete before Phase C begins.
+Do not dispatch an interaction-type agent. Dimension 7 is retired.
+
+**Barrier synchronization**: Both agents must complete before Phase C begins.
 
 **Shard JSON schema**:
 ```json
@@ -408,14 +379,14 @@ After Phase A completes, three agents run in parallel via a single message with 
 
 ### Phase C: Merge and Reconcile
 
-After all 3 agents complete, the orchestrator merges results.
+After both agents complete, the orchestrator merges results.
 
 **Merge steps**:
 1. Read Phase A baseline: `audit-report.json`
-2. Read 3 shard files (missing shards treated as skipped):
+2. Read 2 shard files (missing shards treated as skipped):
    - `audit-shard-pattern.json` -> merge into `pattern_consistency` + `innovation_fidelity`
    - `audit-shard-behavioral.json` -> merge into `behavioral_consistency`
-   - `audit-shard-interaction.json` -> merge into `interaction_type_consistency`
+   - do not merge or require `audit-shard-interaction.json`
 3. Merge shard `sections` content into `audit-report.json` summary and top-level fields
 4. Regenerate `audit-report.md` (including all dimensions)
 5. Delete shard files (already merged into main report)
@@ -424,7 +395,7 @@ After all 3 agents complete, the orchestrator merges results.
 ```python
 report = load_json("audit-report.json")  # Phase A baseline
 
-for shard_name in ["pattern", "behavioral", "interaction"]:
+for shard_name in ["pattern", "behavioral"]:
     shard_path = f"audit-shard-{shard_name}.json"
     if not exists(shard_path):
         continue
@@ -510,20 +481,13 @@ Threshold based on task count:
       "total_categories_checked": 0,
       "compliant_screens": 0,
       "violating_screens": 0
-    },
-    "interaction_type_consistency": {
-      "status": "pass|issues_found|skipped",
-      "total_types_checked": 0,
-      "consistent_types": 0,
-      "drift_types": 0
     }
   },
   "trace_issues": [],
   "coverage_issues": [],
   "cross_issues": [],
   "pattern_consistency_issues": [],
-  "behavioral_consistency_issues": [],
-  "interaction_type_consistency_issues": []
+  "behavioral_consistency_issues": []
 }
 ```
 
@@ -538,6 +502,5 @@ Sections in order:
 6. BROKEN_REF (reference breakage)
 7. Pattern Consistency (PATTERN_DRIFT, CRUD_INCONSISTENCY, etc.)
 8. Behavioral Consistency (BEHAVIORAL_DRIFT, BEHAVIORAL_VIOLATION)
-9. Interaction Type Consistency (LAYOUT_FORBIDDEN, LAYOUT_DRIFT, TYPE_CONTEXT_MISMATCH)
-10. Innovation Fidelity (INNOVATION_DILUTED, INNOVATION_INCOMPLETE)
-11. Consumer Maturity (when applicable)
+9. Innovation Fidelity (INNOVATION_DILUTED, INNOVATION_INCOMPLETE)
+10. Consumer Maturity (when applicable)

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Playwright-driven wireframe verification.
+"""Leftover review-hub helper. MG/CT interaction types are retired.
+
+Playwright-driven wireframe verification.
 
 Architecture:
   This script handles the MECHANICAL parts (start hub, collect screen list,

@@ -49,7 +49,7 @@ Each operation_line has at least one node. Each node has at least one screen. Sc
               "app": "string — independent application name (website, merchant, admin, etc.)",
               "layout_type": "string — semantic layout name from business purpose",
               "layout_description": "string — 1-2 sentences: specific spatial layout, unique per screen",
-              "interaction_type": "string — from renderer support list",
+              "interaction_type": "string — optional opaque label, no catalog",
               "tasks": ["string — task_id references"],
               "actions": ["string — user-performable operations"],
               "components": [
@@ -135,7 +135,7 @@ Each operation_line has at least one node. Each node has at least one screen. Sc
 | `app` | string | Independent application name. Derived from **node role**, not operation line role. `app` != `platform` |
 | `layout_type` | string | Semantic layout name from business purpose (e.g., `auth_card`, `priority_queue`, `structured_editor`, `visual_card_grid`, `status_timeline`). Must NOT copy interaction_type or be generic |
 | `layout_description` | string | 1-2 sentences: specific spatial layout with region positions, size ratios, visual weights. Unique per screen |
-| `interaction_type` | string | From renderer support list (see below). Affects wireframe layout template selection |
+| `interaction_type` | string | Optional free-form label. No canonical type catalog. |
 | `tasks` | array | Referenced task_id array |
 | `actions` | array | User-performable operations list |
 | `components` | array | LLM-designed component objects (see components section) |
@@ -406,50 +406,10 @@ LLM loads journey-emotion-map.json alongside experience-map.json and checks:
 
 ---
 
-## interaction_type Renderer Support List
+## interaction_type (optional, no catalog)
 
-Screens must select from this list. Free design intent goes in `description` and `interaction_pattern`.
+Do not assign MG/CT/EC codes from the retired type list. If an older artifact still has `interaction_type`, treat it as an opaque label. Free design intent goes in `description` and `interaction_pattern`.
 
-| Type | Name | Layout Slots | Use For |
-|------|------|-------------|---------|
-| **MG1** | Read-only list | header, filter-chips, read-only-list, pagination | Browse-only lists, logs |
-| **MG2-L** | CRUD list | header, search-bar, filter-chips, table, pagination, action-bar | Data tables with CRUD |
-| **MG2-C** | Create form | header, form-body, field-group, action-bar | New entity forms |
-| **MG2-E** | Edit form | header, form-body, field-group, action-bar | Edit entity forms |
-| **MG2-D** | Detail page | header, detail-fields, action-bar | Read-only entity detail |
-| **MG2-ST** | State transition | header, detail-fields, state-badge, action-bar | Approval/rejection triggers |
-| **MG3** | State machine list | header, state-tabs, table, action-bar | Status-tabbed list + inline actions |
-| **MG4** | Approval queue | header, pending-badge, approval-cards, action-bar | Pending/approved queues |
-| **MG5** | Master-detail | header, master-info, sub-tabs, sub-list | Parent entity + child tabs |
-| **MG6** | Tree management | header, tree-toolbar, tree-view | Hierarchical CRUD |
-| **MG7** | Dashboard | header, kpi-cards, charts, date-filter | KPIs + charts |
-| **MG8** | Config page | header, config-sections, save-bar | Grouped settings |
-| **SY1** | Onboarding | illustration, step-content, dots, action-bar | Step-by-step guide |
-| **SY2** | Wizard form | progress-steps, form-body, action-bar | Multi-step forms |
-| **CT1** | Content feed | search-bar, filter-chips, feed-cards | Searchable card feeds |
-| **CT2** | Content reader | cover-image, title, meta, body-content, action-bar | Immersive reading, chat |
-| **CT3** | Profile page | avatar-header, profile-fields, action-bar | User profile |
-| **CT4** | Card flip | progress, card-main, action-buttons | Swipe/flip per-item review |
-| **CT5** | Media player | player-screen, progress-bar, controls | Audio/video playback |
-| **CT6** | Gallery | gallery-grid, action-bar | Image grid + lightbox |
-| **CT7** | Search results | search-bar, filter-chips, results-list, pagination | Search + filter + results |
-| **EC1** | Item detail | product-image, title-price, specs, features, action-bar | Product/pricing page |
-| **EC2** | Checkout | item-list, total, payment-options, action-bar | Cart/payment flow |
-| **WK3** | Document editor | editor-toolbar, editor-area, preview, status-bar | Dual-pane editor |
-| **SB1** | Submit form | form-body, action-bar | Feedback/report/apply |
-| **RT4** | Notification center | notif-tabs, notif-list | Categorized notifications |
-
-**Selection guide**:
-- Chat/conversation -> **CT2** (body-content renders chat bubbles)
-- Workspace/editor -> **WK3** (editor-area + preview dual-pane)
-- Dashboard/monitoring -> **MG7** (KPI + charts)
-- AI generation flow -> **SY2** (wizard) or **SB1** (submit + result)
-- Approval workspace -> **MG4** or **MG3**
-- Log viewer -> **MG1**
-- Registration/login -> **MG2-C**
-- Subscription/payment -> **EC1** + **EC2**
-
----
 
 ## Backend Screen Archetype (multi_function_per_page)
 
@@ -469,14 +429,14 @@ For professional roles with `screen_granularity = "multi_function_per_page"`:
 **Merge algorithm** (LLM must execute for backend roles after skeleton generation):
 1. Identify same-entity screens (entity-model reference)
 2. Merge list/create/edit/detail/status-change into one screen
-3. Convert original interaction_types to view_modes
-4. Merged screen's interaction_type = list type (MG2-L or MG3), tasks = union of all original tasks
+3. Convert former per-task screens into view_modes
+4. Merged screen keeps one task union; do not assign a retired type code
 
 ---
 
 ## Layout Differentiation Principle
 
-`interaction_type` is the renderer's template selector, **not the screen's design identity**. Same interaction_type must produce different layouts for different business purposes.
+Do not use a retired interaction_type code as the screen's design identity. Layout follows business purpose.
 
 **Business Purpose Three Questions** (answer before designing each screen):
 
@@ -488,8 +448,7 @@ For professional roles with `screen_granularity = "multi_function_per_page"`:
 
 **Self-check after batch generation**:
 1. No single `layout_type` > 15% of total screens -- review if exceeded
-2. Same `interaction_type` screens with component jaccard similarity > 50% must justify
-3. `layout_type` must never copy `interaction_type` names
+2. `layout_type` is a business-purpose name, not a retired MG/CT code
 
 ---
 

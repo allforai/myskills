@@ -17,7 +17,7 @@ If `$CODEX_HOME/skills` still points at a deleted pack, remove that symlink.
 
 **Follow-up (not in this cut):** the old `/review` hub (`review_hub_server.py:18900`) was not migrated into meta-skill. The shared copy remains at `shared/scripts/product-design/review_hub_server.py` if someone later wants to wire it.
 
-The 37-type interaction catalog moved to `claude/meta-skill/knowledge/interaction-types.md`.
+The 37-type / MG-CT interaction catalog is retired. Do not assign screens from that list.
 
 ## OpenCode support removed
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Review Hub Server — unified review server for all product-design artifacts.
+"""Leftover review hub. MG/CT interaction types are retired; do not infer them.
+
+Review Hub Server — unified review server for all product-design artifacts.
 
 Serves 6 tabs (concept, map, data-model, wireframe, ui, spec) on a single port.
 Auto-detects which tabs have data available and renders interactive mind maps

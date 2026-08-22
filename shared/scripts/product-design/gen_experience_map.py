@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Leftover review-hub helper. Do not treat MG/CT codes as live. Interaction types are retired.
 # Skeleton generator — LLM enrichment required after running
 """Generate experience-map skeleton from business-flows + task-inventory.
 

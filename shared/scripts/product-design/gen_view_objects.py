@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Step 8: Generate CRUD-aware View Objects from entity-model + task-inventory.
+"""Leftover review-hub helper. MG/CT interaction types are retired.
+
+Step 8: Generate CRUD-aware View Objects from entity-model + task-inventory.
 
 Creates multiple VOs per entity based on task operations:
-- list VO (CT1/MG2-L) for browsing tasks
-- detail VO (CT2/MG1) for viewing tasks
-- create_form VO (MG2-C) for creation tasks
-- edit_form VO (MG2-E) for editing tasks
+- list VO for browsing tasks
+- detail VO for viewing tasks
+- create_form VO for creation tasks
+- edit_form VO for editing tasks
 - state_action VO (MG3) for state management tasks
 
 Each VO gets fields filtered by view_type (list shows summary fields,

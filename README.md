@@ -21,45 +21,6 @@ Shared scripts and MCP services live under `shared/`.
 
 它活在 meta-skill 的 capability 里，不再作为独立插件安装。适合专业研发团队在真实代码库中做 post-implementation UI refinement。
 
-## ✨ 新增：页面交互类型体系 v2（三轴模型）
-
-将 product-design 的交互类型从 8 种（A-H）全量升级为 **37 种 × 三轴模型**，覆盖全平台、全产品类型、全用户属性。
-
-### 三轴模型
-
-| 轴 | 内容 | 说明 |
-|---|---|---|
-| **第一轴** | 37 种交互类型（8 大分类） | 纯行为契约，不含任何 UI 描述 |
-| **第二轴** | 5 平台实现矩阵 | Web 桌面 / Mobile Web / iOS+Android / Windows / TUI |
-| **第三轴** | 上下文预设 | 8 种产品类型 × 3 种用户属性 → 高/中/低频类型分布 |
-
-**8 大分类（MG / CT / EC / WK / RT / SB / SY / TU）：**
-
-| 前缀 | 分类 | 典型类型 |
-|-----|------|---------|
-| MG | 管理/CRUD | 只读列表、CRUD 集群、状态机、审批流、主从详情、树形管理、仪表盘、配置页 |
-| CT | 内容消费 | Feed 流、内容阅读、Profile、卡片探索、媒体播放器、相册、搜索、Story |
-| EC | 电商交易 | 商品详情、购物车、订单追踪 |
-| WK | 协作办公 | IM 对话、频道、文档编辑、画布白板、看板、甘特图、文件管理 |
-| RT | 通讯实时 | 通话、直播间、邮件、通知中心 |
-| SB | 审核提交 | 审核型提交（提交方视角，与 MG4 审批流互为镜像） |
-| SY | 引导系统 | Onboarding 引导、向导多步表单 |
-| TU | TUI/CLI | 命令行、交互式菜单、日志流、进度任务流 |
-
-### 行为原语索引（Behavioral Primitives）
-
-交互类型之间共享底层行为单元。**凡共用同一原语的界面，前端实现可共享组件或逻辑。**
-
-18 种原语（`VirtualList` / `InfiniteScroll` / `PullToRefresh` / `SwipeAction` / `DragAndDrop` / `StateMachine` / `AppendOnlyStream` / `RealtimeSync` / `FormWithValidation` / `MultiStepWizard` / `TreeNavigation` / `MediaPlayer` / `BatchSelection` 等）记录在 `claude/meta-skill/knowledge/interaction-types.md`，并在 `design-to-spec` 阶段自动消费：
-
-**design-to-spec 新增 Step 2：行为原语识别 → 共享组件规划**
-- 汇总项目中所有 `interaction_type`，查原语索引，找出 ≥2 个界面共用的原语
-- 在逐页规格生成之前，先输出「共享组件规划表」（YAGNI：只出现 1 次的原语不封装）
-
-### 全链路代号升级
-
-`experience-map.md` / `ui-design.md` / `design-to-spec.md` 全部升级为新编码体系，旧 A-H 代号已清除，不保留向后兼容。
-
 ---
 
 ## 创新保真 + 状态闭环机制（v3.2.0）
