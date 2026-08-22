@@ -1,7 +1,8 @@
 # Program And Module Specs
 
-Synthesize approved decisions; do not use spec writing as another broad interview. Grill
-only unresolved decisions.
+Synthesize approved decisions. Publication is official `to-spec`, which may confirm seams.
+Do not use spec writing as another broad interview beyond that official skill. Grill only
+unresolved decisions through official grilling.
 
 ## Test-seam rule
 

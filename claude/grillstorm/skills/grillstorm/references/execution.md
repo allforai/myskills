@@ -3,7 +3,9 @@
 Execute only after the route's launch contract is frozen. For `direct` and `diagnostic`,
 the compact contract lives in `state.json`; for `ticketed` and `program`, it lives in
 `launch-contract.md`. Treat the approved behavior, work units, and contract as frozen
-inputs. The purpose of this phase is working, reviewed code.
+inputs. The purpose of this phase is working, reviewed code. Do not load official `grilling`,
+`grill-me`, `grill-with-docs`, or official `implement`. Load official `tdd` inside each slice and
+official `code-review` after each verified unit.
 
 ## Resume loop
 

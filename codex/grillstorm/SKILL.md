@@ -1,6 +1,6 @@
 ---
 name: grillstorm
-description: Self-contained, adaptive Grill delivery for Claude and Codex. Routes small work through only needed stages and drives large goals through dependency-safe frontier-round grilling, modular specs, interface/test seams, global closure, task/DAG simulation, supervised worktree execution, runtime proof, durable handoff, and post-delivery gap audits. Use only when the user explicitly invokes $grillstorm, including its audit, handoff, and resume modes.
+description: Official-skill orchestrator plus concurrent unattended execution for Claude and Codex. Routes design through installed Matt Pocock skills and executes approved work in isolated worktrees. Use only when the user explicitly invokes $grillstorm, including its audit, handoff, and resume modes.
 disable-model-invocation: true
 ---
 
@@ -10,14 +10,14 @@ Turn goals into frozen decisions, executable contracts, verified code, and evide
 
 ## Invariants
 
-0. Subject to safety, authority, and honest evidence, once the final material decision is
-   answered, run unattended to a terminal state. No artifact, stage, or external workflow may
-   demand confirmation without a new decision or new authority.
-1. Discover facts; Grill and freeze human decisions; freeze one launch contract; implement and prove.
+0. Official design skills may ask. After those stages complete, subject to safety, authority,
+   and honest evidence, run unattended to a terminal state. Execution may not reopen grilling.
+1. Discover facts; official Grill freezes human decisions; freeze one launch contract;
+   implement and prove with Grillstorm execution.
 2. Ask every currently independent decision in one numbered frontier round, each with a
    recommendation and its main tradeoff. Never ask a question whose prerequisite is unsettled.
 3. Persist each accepted answer immediately; artifacts, not conversation, are durable truth.
-4. After the last interactive design confirmation, adopt and record every unforeseen
+4. After the last official design confirmation, adopt and record every unforeseen
    in-scope decision without interrupting. Revalidate everything it affects.
 5. Never ask for facts available from the repository, tools, documentation, or run artifacts.
 6. Never turn failure into default, empty, stale, cached, mocked, partial, or successful
@@ -27,10 +27,11 @@ Turn goals into frozen decisions, executable contracts, verified code, and evide
 8. Reconstruct why material code and requests exist. Preserve confirmed purpose with the
    fewest necessary concepts, not merely the fewest lines.
 
-Resolve links relative to this file. Read `references/upstream-flow.md` first; its parity
-rules are binding. This skill embeds the original setup, Grill, domain, spec, ticket,
-implementation, TDD, diagnosis, and review disciplines. Do not require their external skills
-or replace their methods.
+Resolve links relative to this file. Read `references/upstream-flow.md` and
+`references/official-skills.md` first. Load official skills by name for setup, grilling,
+domain modeling, spec publication, ticketing, TDD, code-review, and diagnosis. Never invoke
+official `implement`. Reverse-grill, routing, DAG, concurrency, resume, and handoff stay
+Grillstorm-owned.
 
 ## Modes
 
@@ -74,14 +75,13 @@ artifacts instead of copying them.
 
 ## Phase -1: Setup
 
-Read `references/project-setup.md`. Reuse valid `docs/agents/` configuration. Explore first;
-ask only for missing tracker, label, domain-doc, or repository-instruction decisions. Ask all
-currently independent decisions in one frontier round. After the last real decision, write the
-complete draft without a summary confirmation.
-This embeds
-`setup-matt-pocock-skills`.
+Read `references/official-skills.md` and `references/project-setup.md`. If official skills
+are missing, ask to install them and run `scripts/install_official_skills.py` on yes. Load
+official `setup-matt-pocock-skills` when `docs/agents/` is missing or invalid. Reuse a valid
+existing setup. Ask only the questions that official setup asks.
 
-**Exit:** required repository configuration exists and is durable.
+**Exit:** required official skills are installed and required repository configuration exists
+and is durable.
 
 ## Phase 0: Orient And Route
 
@@ -108,32 +108,34 @@ candidates, model policy, and clean ownership baseline are durable.
 
 ## Phase 1: Grill The Goal
 
-Compact routes Grill only their natural scope. For `program`, read `references/grilling.md`,
-`references/domain-modeling.md`, and `references/spec-and-seams.md`; load
-`references/supporting-disciplines.md` only when research, prototyping, or codebase design is
-needed.
+Compact routes Grill only their natural scope. For `program`, follow `references/grilling.md`
+and load official `grill-with-docs` or official `grilling` plus `domain-modeling`. Load
+`references/supporting-disciplines.md` only when official `research`, `prototype`, or
+`codebase-design` is needed.
 
 Resolve user outcome, scope/non-goals, domain language, modules, ownership, dependency
-direction, interfaces, test seams, states, failure behavior, and completion proof. Write
-decisions as accepted and synthesize `program-spec.md`. For every material request, separate
-the proposed mechanism from its pain, underlying purpose, protected constraint, and observable
-acceptance. Prefer the smallest purpose-complete option and persist its purpose chain.
+direction, interfaces, test seams, states, failure behavior, and completion proof. Persist
+accepted decisions and synthesize `program-spec.md`. Official grilling may confirm shared
+understanding. For every material request, separate the proposed mechanism from its pain,
+underlying purpose, protected constraint, and observable acceptance. Prefer the smallest
+purpose-complete option and persist its purpose chain.
 
-**Exit:** every material human decision is answered and persisted; the program spec is internally
-closed. Do not ask the user to approve or confirm the synthesized document.
+**Exit:** every material human decision required by the official grill is answered and
+persisted; the program spec is internally closed.
 
 ## Phase 2: Grill Modules
 
 For `program`, process modules in dependency order. Explore the current code, load only
-touching decisions/contracts, Grill unresolved behavior and integration obligations, write
-`modules/<id>-spec.md`, and run local closure without a module-summary confirmation.
+touching decisions/contracts, run official grilling for unresolved behavior and integration
+obligations, write `modules/<id>-spec.md`, and allow the official skill's own exit
+confirmation.
 
 A changed scope, boundary, or public interface invalidates the parent and every affected
 downstream spec. Update and re-Grill them; never patch around drift.
 
-**Exit:** every module spec is locally closed at the same spec revision. When the last material
-decision was answered earlier, ordinary interaction ended there; all later in-scope decisions are
-autonomous and disclosed at completion.
+**Exit:** every module spec is locally closed at the same spec revision. When the last official
+design confirmation is done, ordinary interaction ended there; all later in-scope execution
+decisions are autonomous and disclosed at completion.
 
 ## Phase 2.5: Close The Spec Graph
 
@@ -141,9 +143,11 @@ Read `references/spec-closure-and-abstraction.md`, `references/failure-proportio
 `references/review-budgets.md`. Run
 `prompts/spec-reverse-grill.md` in a
 fresh `THINK` context, then independent spec-closure and abstraction critics. Resolve facts
-and unambiguous repairs internally. For each true new decision, adopt the recommended option
-inside the frozen authority envelope, persist it in `autonomous-decisions.md`, invalidate
-affected artifacts, and rerun all global verdicts without asking the user.
+and unambiguous repairs internally. A reverse-grill finding that is a true new product
+decision goes back to official grilling. After official design is closed, adopt recommended
+in-scope repairs inside the frozen authority envelope, persist them in
+`autonomous-decisions.md`, invalidate affected artifacts, and rerun all global verdicts
+without asking the user.
 
 Require every material requirement and abstraction to cite an authoritative purpose chain from
 `references/orientation-and-intent.md`. Reject literal compliance that misses the purpose and
@@ -155,11 +159,11 @@ planning.
 
 Write `reviews/spec-grill.md` and `reviews/spec-closure.md`. Export
 `requirements-state-registry.json` with stable requirement/source/state/risk cells at the
-current spec revision. Then perform the bundled `to-spec` publication and configured
-`ready-for-agent` label.
+current spec revision. Then load official `to-spec` for publication and the configured
+`ready-for-agent` label. Official `to-spec` may confirm seams.
 
 **Exit:** reverse Grill has no unresolved issue; both critics have no blocking finding; the
-spec graph, abstractions, and registry are stable.
+spec graph, abstractions, and registry are stable; official publication is done.
 
 ## Phase 3: Close Tasks And Workflow
 
@@ -176,7 +180,8 @@ After local task closure:
 
 1. Run `prompts/task-reverse-grill.md`, then an independent task-closure critic.
 2. Route spec/boundary/abstraction defects back to Phase 2.5; repair task defects locally.
-3. Publish minimal tracker tickets and preserve richer module task files locally.
+3. Load official `to-tickets` to publish tracker tickets. Official `to-tickets` may quiz
+   granularity. Preserve richer module task files locally.
 4. For `ticketed`/`program`, read `references/concurrency.md`; validate tasks/interfaces,
    compile the DAG, and run deterministic simulation.
 5. Run `prompts/workflow-reverse-grill.md` over tickets, DAG, resources, gates, and runtime
@@ -190,7 +195,7 @@ closure.
 Every material task traces requirement -> purpose -> observable outcome. Task and workflow reviews
 apply purpose-complete minimalism symmetrically to additions and deletions.
 
-**Exit:** task closure, tickets, machine inputs, simulation, and workflow reverse Grill are
+**Exit:** task closure, official tickets, machine inputs, simulation, and workflow reverse Grill are
 closed at matching revisions with no unreachable work or missing proof.
 
 ## Phase 4: Freeze And Launch
@@ -202,7 +207,7 @@ capabilities; revision consistency; simulation; and zero open execution-changing
 Freeze decisions, model roles, side-effect authority, Git policy, autonomous decision policy,
 and exact completion in a compact state contract or `launch-contract.md`, then enter Phase 5
 immediately. Do not ask for a redundant start approval, offer an "open now" choice, or pause at
-this stage boundary: the decisions already approved during the Grill authorize the run.
+this stage boundary: the decisions already approved during official design authorize the run.
 
 Implementation does not ask routine questions. Record unforeseen choices in
 `autonomous-decisions.md`, update revisions and dependencies, and rerun affected closure. For
@@ -211,10 +216,9 @@ authority, record its assumptions/risk/affected artifacts before acting, and rec
 afterward. Never pause merely because the choice concerns product behavior, architecture,
 boundaries, interfaces, or replanning.
 
-If another skill, template, or stage protocol requests design, spec, module, ticket, launch, or
-implementation confirmation without adding a material decision or authority grant, skip that gate
-and record the conflict. Grillstorm is self-contained; do not layer generic brainstorming or
-artifact-approval gates over its own front-loaded decision protocol.
+Do not load official `grilling`, `grill-me`, `grill-with-docs`, `to-spec`, `to-tickets`, or
+`implement` after launch. Official `tdd`, `code-review`, and `diagnosing-bugs` remain available
+as execution methods.
 
 **Exit:** one internally consistent launch contract, persisted and launched without another
 question.
@@ -226,11 +230,14 @@ Skip in `plan-only`. Read `references/execution.md`,
 `references/review-and-validation.md`; also read `references/concurrency.md` for eligible
 ticketed/program runs.
 
-Implement production code and behavioral tests at approved seams. `BUILD` writers operate
+Implement production code and behavioral tests at approved seams using official `tdd`.
+`BUILD` writers operate
 from frozen tasks; fresh `VERIFY` supervisors rerun acceptance from repository state, never
 executor narrative. Use `THINK` only for synthesis, closure, or replan. Run focused,
-contract, module, integration, full-suite, and real runtime checks as applicable. Run
-independent Standards and Spec reviews; repair and repeat to closure.
+contract, module, integration, full-suite, and real runtime checks as applicable. After each
+verified work unit and at global close, load official `code-review` for independent Standards
+and Spec reviews; repair and repeat to closure. On a hard bug, load official
+`diagnosing-bugs`.
 
 Unavailable authority for destructive, paid, production, or external action is not
 permission. Gather only non-mutating evidence for that action, record the affected branch as

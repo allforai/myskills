@@ -121,6 +121,7 @@ claude plugin install megastorm@megastorm
 ```
 
 Optional: `claude/grillstorm` → `grillstorm@grillstorm`. Restart `claude` after install.
+Grillstorm requires official Matt Pocock skills (`grilling`, `to-spec`, `to-tickets`, `tdd`, `code-review`, …). If they are missing, it asks once and can install them via `scripts/install_official_skills.py`. It never calls official `implement`.
 
 **Codex** — discover `SKILL.md` folders from `$CODEX_HOME/skills` (default `~/.codex/skills`):
 

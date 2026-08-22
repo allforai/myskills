@@ -112,6 +112,7 @@ Codex 从 `$CODEX_HOME/skills/`（默认 `~/.codex/skills/`）发现带 `SKILL.m
 
 其余 `codex/*-skill` 带 `AGENTS.md`，把 Codex 工作目录指到该插件目录即可发现。
 Megastorm 还依赖本机已安装的 `brainstorming` skill。
+Grillstorm requires official Matt Pocock skills (`grilling`, `grill-with-docs`, `to-spec`, `to-tickets`, `tdd`, `code-review`, ...). If they are missing, `$grillstorm` asks once and can install them via `scripts/install_official_skills.py`. Execution never calls official `implement`.
 
 ---
 

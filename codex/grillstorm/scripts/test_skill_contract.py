@@ -14,15 +14,18 @@ def test_skill_requires_explicit_command_invocation():
 def test_upstream_grilling_frontier_rounds_and_diagnostic_redaction_are_preserved():
     skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
     grilling = (ROOT / "references/grilling.md").read_text(encoding="utf-8")
+    official = (ROOT / "references/official-skills.md").read_text(encoding="utf-8")
     diagnosis = (ROOT / "references/implementation-and-diagnosis.md").read_text(
         encoding="utf-8"
     )
     notices = (ROOT / "references/third-party-notices.md").read_text(encoding="utf-8")
     assert "every currently independent decision in one numbered frontier round" in skill
-    assert "Ask the whole frontier in one numbered round" in grilling
-    assert "A question that depends on another open question belongs to a later round" in grilling
-    assert "❓ **Q1**" in grilling
-    assert "---" in grilling
+    assert "This is not a second grilling protocol" in grilling
+    assert "load official `grill-with-docs`" in grilling
+    assert "Never invoke official `implement`" in official
+    assert "do not load `grilling`, `grill-me`, `grill-with-docs`" in official
+    assert "Install them now? Recommended: **yes**" in official
+    assert "scripts/install_official_skills.py" in official
     assert "redact API keys, tokens, passwords, cookies, session IDs" in diagnosis
     assert "Keep credentials\nin environment variables" in diagnosis
     assert "0ab1b63a410a03d3627979a109c8695de27af954" in notices
@@ -54,6 +57,7 @@ def test_progressive_disclosure_references_are_routed():
     skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
     required = (
         "references/upstream-flow.md",
+        "references/official-skills.md",
         "references/project-setup.md",
         "references/routing.md",
         "references/spec-closure-and-abstraction.md",
@@ -140,27 +144,29 @@ def test_orientation_contract_is_evidence_backed_bounded_and_independent():
 def test_intent_archaeology_and_purpose_complete_minimalism_propagate():
     contract = (ROOT / "references/orientation-and-intent.md").read_text(encoding="utf-8")
     normalized_contract = " ".join(contract.split())
-    grilling = (ROOT / "references/grilling.md").read_text(encoding="utf-8")
+    official = (ROOT / "references/official-skills.md").read_text(encoding="utf-8")
     tasks = (ROOT / "references/task-documents.md").read_text(encoding="utf-8")
     review = (ROOT / "references/review-and-validation.md").read_text(encoding="utf-8")
     assert "evidence_verified`, `user_confirmed`, or `autonomous_post_freeze`" in contract
     assert "remove|simplify|retain|replace|unknown" in contract
     assert "Additions and deletions bear symmetric evidence burdens" in normalized_contract
-    assert "Intent before mechanism" in grilling
+    assert "intent before mechanism" in official
     assert "Purpose chain:" in tasks
     assert "symmetric evidence" in review
 
 
 def test_unattended_is_highest_workflow_invariant_and_summary_gates_are_forbidden():
     skill = " ".join((ROOT / "SKILL.md").read_text(encoding="utf-8").split())
-    grilling = " ".join((ROOT / "references/grilling.md").read_text(encoding="utf-8").split())
-    assert "once the final material decision is answered, run unattended to a terminal state" in skill
-    assert "No artifact, stage, or external workflow may demand confirmation" in skill
-    assert "without a module-summary confirmation" in skill
-    assert "Do not ask the user to approve or confirm the synthesized document" in skill
-    assert "do not layer generic brainstorming or artifact-approval gates" in skill
-    assert "The answer to each decision is its approval" in grilling
-    assert "Green closure advances automatically" in grilling
+    official = " ".join(
+        (ROOT / "references/official-skills.md").read_text(encoding="utf-8").split()
+    )
+    assert "Official design skills may ask" in skill
+    assert "run unattended to a terminal state" in skill
+    assert "Execution may not reopen grilling" in skill
+    assert "Never invoke official `implement`" in skill
+    assert "Do not ask for a redundant start approval" in skill
+    assert "Official design skills may ask" in official
+    assert "Never invoke official `implement`" in official
 
 
 def test_writer_isolation_and_validation_pyramid_are_mandatory():
@@ -180,3 +186,38 @@ def test_writer_isolation_and_validation_pyramid_are_mandatory():
     assert "never run the full repository suite" in supervisor
     assert "def commit_declared_paths" in runner
     assert 'failure_kind": "workspace_contaminated"' in runner
+
+
+def test_method_files_are_official_adapters_not_second_protocols():
+    grilling = (ROOT / "references/grilling.md").read_text(encoding="utf-8")
+    domain = (ROOT / "references/domain-modeling.md").read_text(encoding="utf-8")
+    setup = (ROOT / "references/project-setup.md").read_text(encoding="utf-8")
+    supporting = (ROOT / "references/supporting-disciplines.md").read_text(encoding="utf-8")
+    tdd = (ROOT / "references/implementation-and-diagnosis.md").read_text(encoding="utf-8")
+    review = (ROOT / "references/review-and-validation.md").read_text(encoding="utf-8")
+    assert "This is not a second grilling protocol" in grilling
+    assert "❓ **Q1**" not in grilling
+    assert "Load official `domain-modeling`" in domain
+    assert "_Avoid_: Purchase, transaction" not in domain
+    assert "Load official `setup-matt-pocock-skills`" in setup
+    assert "Ask one section at a time with a recommended answer." not in setup
+    assert "Load the matching official skill" in supporting
+    assert "Prefer fewer methods and parameters" not in supporting
+    assert "Load official `tdd`" in tdd
+    assert "Write one focused test at the approved seam." not in tdd
+    assert "Load official `code-review`" in review
+    assert "mysterious names and duplicated logic" not in review
+
+
+def test_execution_workers_load_official_tdd_and_code_review():
+    executor = (ROOT / "prompts/executor.md").read_text(encoding="utf-8")
+    supervisor = (ROOT / "prompts/supervisor.md").read_text(encoding="utf-8")
+    concurrency = (ROOT / "references/concurrency.md").read_text(encoding="utf-8")
+    execution = (ROOT / "references/execution.md").read_text(encoding="utf-8")
+    assert "Load official `tdd`" in executor
+    assert "Never load official `implement`" in executor
+    assert "official `code-review`" in supervisor
+    assert "Never load official `implement`" in supervisor
+    assert "official `tdd`" in concurrency
+    assert "official `code-review`" in concurrency
+    assert "official `implement`" in execution

@@ -1,7 +1,8 @@
 # Concurrent Workflow
 
 Use this protocol only after the launch contract is frozen. It adds scheduling and
-isolation; it does not replace Grillstorm's specs, TDD, review, or completion gates.
+isolation; it does not replace Grillstorm's specs, official `tdd`, official `code-review`,
+or completion gates. Never load official `implement`.
 
 ## Eligibility
 

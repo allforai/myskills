@@ -1,7 +1,8 @@
 # Third-Party Notices
 
-The grilling, domain-modeling, glossary/ADR, and spec synthesis methods in this skill are
-adapted from `mattpocock/skills`:
+Grillstorm now invokes the installed official skills from `mattpocock/skills` at runtime.
+Local references remain only for orchestration, reverse-grill, concurrency, and persistence.
+Upstream sources last reviewed:
 
 - `skills/productivity/grill-me/SKILL.md`
 - `skills/productivity/grilling/SKILL.md`
@@ -32,9 +33,8 @@ adapted from `mattpocock/skills`:
 Source: https://github.com/mattpocock/skills
 
 Last upstream review: 2026-08-21 at commit
-`0ab1b63a410a03d3627979a109c8695de27af954`. Grillstorm preserves its documented autonomous,
-self-contained adaptations where upstream confirmation or cross-skill invocation semantics
-conflict with its launch contract.
+`0ab1b63a410a03d3627979a109c8695de27af954`. Official design skills keep their own questions.
+Grillstorm keeps autonomous execution, concurrency, and reverse-grill after launch.
 
 MIT License
 

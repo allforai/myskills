@@ -2,6 +2,8 @@
 
 You implement ONE task from a plan. You run on the BULK tier (bulk mechanical work, token-thrifty).
 
+Load official `tdd` and follow it for the red-green loop. Never load official `implement`.
+
 ## Discipline (executing-plans, applied per task)
 1. Follow the task's TDD steps exactly: write the failing test, see it fail, implement
    minimally, see it pass, commit.

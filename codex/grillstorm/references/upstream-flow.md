@@ -1,7 +1,7 @@
 # Upstream Workflow Parity
 
-Grillstorm orchestrates Matt Pocock's small composable skills. It does not reinterpret their
-inner disciplines.
+Grillstorm orchestrates Matt Pocock's official skills. It does not reinterpret their
+inner disciplines, and it does not vendor a second copy of them.
 
 ## Canonical delivery chain
 
@@ -9,23 +9,23 @@ inner disciplines.
 setup-matt-pocock-skills                       once per repository
   -> grill-with-docs                           every software change
        -> grilling + domain-modeling
-  -> to-spec                                   synthesize, do not re-interview
-  -> to-tickets                                vertical tracer bullets + blocking edges
-  -> implement
-       -> tdd at pre-agreed seams
+  -> to-spec                                   official synthesis; may confirm seams
+  -> to-tickets                                official slices; may quiz granularity
+  -> Grillstorm execution                      never official implement
+       -> official tdd at pre-agreed seams
        -> regular focused/type/full checks
-       -> code-review: Standards || Spec
-       -> commit current branch
+       -> official code-review: Standards || Spec
+       -> commit owned work under the launch Git policy
 ```
 
 Grillstorm's only structural extensions are:
 
-- adaptive routing that omits entire original stages when their trigger is absent;
+- adaptive routing that omits entire official stages when their trigger is absent;
 - outcome-first reverse closure and a non-binding early reuse radar;
-- top-level decomposition followed by the same grilling loop per module;
-- `program-spec.md` plus linked module specs;
-- a post-spec reverse Grill, closed-loop, and reusable-module review before final
-  publication/ticketing;
+- top-level official grilling followed by the same official loop per module;
+- `program-spec.md` plus linked module specs as local durable copies;
+- a post-spec reverse Grill, closed-loop, and reusable-module review before or after
+  official publication;
 - local task closure, reverse Grill, independent global task closure, and deterministic
   workflow simulation;
 - a post-ticket/DAG reverse Grill proving the executable projection preserves approved work;
@@ -34,77 +34,53 @@ Grillstorm's only structural extensions are:
 - worktree-isolated concurrent execution of dependency-ready tasks;
 - state/resume across context windows;
 - a separately invoked durable `handoff` mode for crossing session and machine boundaries;
-- autonomous adoption and logging of recommended unforeseen decisions;
-- repair loops that consume the original review findings.
+- autonomous adoption and logging of recommended unforeseen decisions after launch;
+- repair loops that consume official `code-review` findings.
 - a post-delivery probe-sampling and user critique loop that produces linked gap runs.
 
 Routing may skip `to-tickets`/catalog for a direct single-module change or use the diagnostic
-path for a bug, because the upstream skills are explicitly composable. Routing must never
+path for a bug, because the official skills are explicitly composable. Routing must never
 partially execute or weaken a stage that it does select.
 
-## Non-negotiable stage semantics
+## Stage ownership
 
 ### Setup
 
-Configure the issue tracker, triage vocabulary, and domain-doc layout once. Later stages read
-that configuration.
+Load official `setup-matt-pocock-skills`. Later stages read `docs/agents/`.
 
 ### Grill with docs
 
-Map decisions as a dependency tree. Ask every currently independent decision in one numbered
-frontier round, recommend an answer for each, discover facts instead of asking, update the
-glossary and sparse ADRs inline, and do no implementation before shared understanding.
+Load official `grill-with-docs` or `grilling` plus `domain-modeling`. Official questions are
+allowed. Do no implementation before that official stage exits.
 
 ### To spec
 
-Do not interview again. Synthesize the approved conversation and codebase understanding,
-select the highest practical test seams, publish the spec to the configured tracker, and
-apply `ready-for-agent`.
+Load official `to-spec`. Do not interview again except for questions that skill itself asks,
+including seam confirmation. Publish to the configured tracker and apply `ready-for-agent`.
+Keep a local copy under `docs/grillstorm/<goal-slug>/`.
 
 ### To tickets
 
-Create narrow, complete, demoable vertical slices, each small enough for one fresh context.
-Record blocking edges. Quiz granularity and edges before publishing. Publish one tracker
-ticket per slice.
+Load official `to-tickets`. Allow its granularity quiz. Publish one tracker ticket per
+slice. Grillstorm's local module execution documents may add paths, interfaces, and
+acceptance commands because that is the long-task extension official tickets omit.
 
-Tracker tickets stay concise: outcome, blockers, acceptance criteria, and parent reference.
-Do not put volatile file paths or implementation code in tracker tickets. Grillstorm's local
-module execution documents may contain expected paths and detailed steps because that is the
-explicit long-task extension.
+### Execution
 
-### Implement
+Do not load official `implement`. Read `execution.md` and, when eligible, `concurrency.md`.
+Inside each work unit, load official `tdd`. After the unit is coded, load official
+`code-review`. On a hard bug, load official `diagnosing-bugs`.
 
-Use TDD at the pre-agreed seams. Run typechecking and focused tests regularly, then the full
-suite once at the end. Run two-axis code review. Commit owned work to the current branch
-after review and repairs.
+## Conditional official disciplines
 
-### TDD
+Load the official skill only when its trigger exists:
 
-Test public behavior, not implementation details. Work one vertical red-green slice at a
-time. Do not batch all tests before implementation. Do not refactor inside the red-green
-cycle; refactor during the review/repair stage.
+- `research`
+- `prototype`
+- `codebase-design`
+- `diagnosing-bugs`
+- `resolving-merge-conflicts`
 
-### Code review
-
-Pin one fixed point. Run Standards and Spec reviews in independent contexts, in parallel
-when the host supports it. Preserve the two reports separately; do not merge or rerank one
-axis against the other.
-
-## Conditional supporting disciplines
-
-Use these only when their trigger exists:
-
-- `research`: an external fact needs primary-source investigation.
-- `prototype`: a design question needs a throwaway runnable artifact.
-- `codebase-design`: module depth, interface, or seam placement needs design work.
-- `diagnosing-bugs`: implementation or a check exposes a hard bug.
-- `resolving-merge-conflicts`: an actual merge/rebase conflict occurs.
-
-Do not automatically run unrelated user-invoked alternatives such as `triage`,
-`improve-codebase-architecture`, `wayfinder`, or `teach`. They solve different entry
-conditions. Grillstorm exposes `handoff` only as a separate context-boundary mode. It
-preserves the original compaction, reference-not-duplication, suggested-skill, and next-focus
-semantics. Its deliberate long-run adaptation makes the repository handoff the default,
-adds checkpoint and tracker pointers, and keeps the original temporary-file behavior as
-`handoff local`. It is not inserted as a delivery or completion gate. Grillstorm's
-state/catalog layer remains the durable source for long-run continuity.
+Do not automatically run unrelated official skills such as `triage`,
+`improve-codebase-architecture`, `wayfinder`, or `teach`. Grillstorm `handoff` remains a
+separate context-boundary mode, not a delivery gate.

@@ -2,7 +2,8 @@
 
 Choose by work shape, not by lines changed or an arbitrary task count. Routing is an
 orchestration choice, so select and record the recommendation without asking the user.
-Every route preserves the original atomic skill semantics.
+Every route preserves the official atomic skill semantics. Execution never calls official
+`implement`.
 
 ## Routes
 
@@ -41,7 +42,7 @@ setup if missing
 -> compact spec closure + abstraction review
 -> to-spec + publish ready-for-agent
 -> freeze launch contract and continue
--> implement directly from spec with TDD
+-> Grillstorm execution from spec with official tdd
 -> focused/type/full checks
 -> independent Standards || Spec review
 -> repair
@@ -63,7 +64,7 @@ setup if missing
 -> to-tickets + publish blocking edges
 -> compact catalog for resume
 -> freeze launch contract and continue
--> concurrently implement the ready frontier with isolated worktrees and TDD
+-> Grillstorm concurrent execution of the ready frontier with isolated worktrees and official tdd
 -> focused/type/full checks
 -> independent Standards || Spec review
 -> repair
@@ -83,10 +84,11 @@ Use when any is true:
 - the decision tree or implementation cannot fit safely in one context;
 - several module-level task sets have meaningful dependency edges.
 
-Run the complete Grillstorm phases: top-level grill, per-module grills, program/module
-specs, closed-loop and abstraction review, final spec publication, tracker tickets, catalog,
-per-module execution documents, launch contract, concurrent ready-set implementation in
-isolated worktrees, review, repair, runtime validation, and commit.
+Run the complete Grillstorm phases: official top-level grill, official per-module grills,
+program/module specs, closed-loop and abstraction review, official `to-spec`, official
+`to-tickets`, catalog, per-module execution documents, launch contract, concurrent ready-set
+implementation in isolated worktrees, official `code-review`, repair, runtime validation, and
+commit.
 
 ## Promotion
 
@@ -108,7 +110,7 @@ exploration proves the apparent complexity does not exist; record why.
 All routes:
 
 - discover facts instead of asking;
-- grill dependency-safe decision frontiers in numbered rounds and maintain domain docs;
+- run official grilling for dependency-safe decision frontiers and maintain domain docs;
 - agree test seams before TDD;
 - publish specs/tickets when that route includes those stages;
 - run typechecking, focused tests, and the full required suite;
