@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-version: "0.11.2"
+version: "0.12.0"
 description: >
   Internal skill for /bootstrap command. Performs lightweight project analysis,
   generates project-specific node-specs and workflow.json, validates products,
