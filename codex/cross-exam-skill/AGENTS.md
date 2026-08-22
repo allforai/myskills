@@ -1,8 +1,14 @@
-# AGENTS.md — Cross-exam (Codex port, v0.15.0)
+# AGENTS.md — Cross-exam package (Codex, v0.16.0)
 
-Independent, evidence-backed delivery audit for Codex. Read `SKILL.md` first.
-The main session is the examiner; every probe must be a fresh-context sub-agent.
-The skill is audit-only and interactive-only. It writes only under the selected
-`docs/cross-exam` run directory and never edits the audited delivery.
+One install. Two explicit commands. Do not mix them.
 
-Run deterministic renderer tests with `python3 -m pytest scripts/ -q`.
+| Invoke | Protocol | Writes |
+|--------|----------|--------|
+| `cross-exam` | `SKILL.md` (below the router) | `docs/cross-exam/<run>/` |
+| `product-review` | `product-review.md` | `docs/product-review/<run>/` |
+
+`cross-exam` is an evidence-backed completion audit. The main session is the examiner; every probe is a fresh-context sub-agent. Audit-only, interactive-only. Never edits the audited delivery.
+
+`product-review` is a product-thinking critique plus competitor borrow notes. Advice only. No `.allforai/`. After `recommendations.md`, stop and offer `$grill-me` on that file.
+
+Run cross-exam renderer tests with `python3 -m pytest scripts/ -q`.

@@ -1,7 +1,16 @@
 ---
 name: cross-exam
-description: Evidence-backed completion cross-examination — Socratic question cards from leak points; the skill probes and screenshots the delivery itself, then renders a deterministic completion report. Audit-only (record, never fix), interactive-only (never unattended). Explicitly invoked by naming cross-exam; not automatic. Generic — works on any delivery, not only megastorm runs.
+description: Package with two explicit commands. cross-exam — evidence-backed completion cross-examination. product-review — product-thinking critique and competitor borrow notes, advice only. Neither is automatic. If the user named product-review, read product-review.md and stop; do not run this completion protocol.
 ---
+
+# Package router
+
+This directory is one Codex install (`cross-exam`) with two protocols.
+
+- User named **product-review** → read `./product-review.md` only. Stop.
+- User named **cross-exam** → continue this file.
+
+Do not mix ledgers, verdicts, or loops.
 
 # cross-exam — 实证完成度盘问
 

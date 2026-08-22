@@ -124,6 +124,7 @@ Grillstorm requires official Matt Pocock skills (`grilling`, `grill-with-docs`, 
 | 大目标自治交付 | megastorm | `/megastorm` |
 | 官方 grilling + 隔离执行 | grillstorm | `$grillstorm` |
 | 实证完成度盘问 | cross-exam | `/cross-exam` |
+| 产品思维审视（不改代码） | 同一包 | `/product-review`，意见可交给 `$grill-me` |
 
 ---
 
@@ -148,7 +149,7 @@ QA 层       meta-skill        产品验收→测试锻造→完整性扫描
 
 ### megastorm / grillstorm / cross-exam
 
-大目标自治、官方 grilling 编排、实证完成度盘问。它们不是层插件，继续独立安装。
+大目标自治、官方 grilling 编排、实证完成度盘问。`/product-review` 和 `/cross-exam` 同一包：产品思维审视，只出意见。它们不是层插件，继续独立安装。
 
 ---
 

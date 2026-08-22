@@ -193,7 +193,7 @@ Claude plugins also keep a copy in their own `scripts/` directory (since `${CLAU
 /run <goal>               # Execute generated nodes (Codex: .codex/commands/run.md)
 ```
 
-Optional explicit plugins: `/megastorm`, `$grillstorm`, `/cross-exam`.
+Optional explicit plugins: `/megastorm`, `$grillstorm`, `/cross-exam`, `/product-review` (same package as cross-exam).
 Product, implementation, demo, verify, and tune jobs are meta-skill capabilities, not standalone slash commands.
 
 ## Agent skills
