@@ -13,13 +13,13 @@ Shared scripts and MCP services live under `shared/`.
 
 ## ✨ 新增：UI Forge（实现后 UI 锻造）
 
-`ui-forge` 是从 `frontend-design` 思路 fork 出来的独立插件，但定位更收敛：
+`ui-forge` 是从 `frontend-design` 思路 fork 出来的能力，但定位更收敛：
 
 - 不负责首次实现功能
-- 不替代 `dev-forge`
+- 不替代实现链路
 - 专门处理功能完成后的界面增强与设计还原
 
-适合专业研发团队在真实代码库中做 post-implementation UI refinement。
+它活在 meta-skill 的 capability 里，不再作为独立插件安装。适合专业研发团队在真实代码库中做 post-implementation UI refinement。
 
 ## ✨ 新增：页面交互类型体系 v2（三轴模型）
 
@@ -50,7 +50,7 @@ Shared scripts and MCP services live under `shared/`.
 
 交互类型之间共享底层行为单元。**凡共用同一原语的界面，前端实现可共享组件或逻辑。**
 
-18 种原语（`VirtualList` / `InfiniteScroll` / `PullToRefresh` / `SwipeAction` / `DragAndDrop` / `StateMachine` / `AppendOnlyStream` / `RealtimeSync` / `FormWithValidation` / `MultiStepWizard` / `TreeNavigation` / `MediaPlayer` / `BatchSelection` 等）记录在 `product-design-skill/docs/interaction-types.md`，并在 `design-to-spec` 阶段自动消费：
+18 种原语（`VirtualList` / `InfiniteScroll` / `PullToRefresh` / `SwipeAction` / `DragAndDrop` / `StateMachine` / `AppendOnlyStream` / `RealtimeSync` / `FormWithValidation` / `MultiStepWizard` / `TreeNavigation` / `MediaPlayer` / `BatchSelection` 等）记录在 `claude/meta-skill/knowledge/interaction-types.md`，并在 `design-to-spec` 阶段自动消费：
 
 **design-to-spec 新增 Step 2：行为原语识别 → 共享组件规划**
 - 汇总项目中所有 `interaction_type`，查原语索引，找出 ≥2 个界面共用的原语
@@ -96,7 +96,7 @@ claude plugin install megastorm@megastorm
 
 ```text
 /bootstrap                # 分析目标项目并生成工作流
-/product-map              # 或从产品地图起手
+/run <goal>               # 执行生成的工作流
 ```
 
 ### Codex
@@ -110,7 +110,7 @@ Codex 从 `$CODEX_HOME/skills/`（默认 `~/.codex/skills/`）发现带 `SKILL.m
 ~/.codex/skills/grillstorm   →  myskills/codex/grillstorm
 ```
 
-其余 `codex/*-skill` 带 `AGENTS.md`，把 Codex 工作目录指到该插件目录即可发现。
+Codex 正门是 `meta-skill`（`bootstrap` → 生成的 `.codex/commands/run.md`）。`megastorm` / `grillstorm` / `cross-exam` 仍是显式独立 skill。
 Megastorm 还依赖本机已安装的 `brainstorming` skill。
 Grillstorm requires official Matt Pocock skills (`grilling`, `grill-with-docs`, `to-spec`, `to-tickets`, `tdd`, `code-review`, ...). If they are missing, `$grillstorm` asks once and can install them via `scripts/install_official_skills.py`. Execution never calls official `implement`.
 
@@ -118,48 +118,37 @@ Grillstorm requires official Matt Pocock skills (`grilling`, `grill-with-docs`, 
 
 ## 你该从哪个插件开始？
 
-| 你的目标 | 推荐插件 | 第一条命令 |
+| 你的目标 | 推荐入口 | 第一条命令 |
 |---|---|---|
-| 梳理产品功能、角色、任务 | product-design | `/product-map` |
-| 生成高质量测试数据并验收实现 | dev-forge | `/seed-forge` / `/product-verify` |
-| 做产品验收与测试锻造 | dev-forge | `/product-verify` / `/testforge` |
-| 分析后端架构质量并给重构任务 | code-tuner | `/code-tuner full` |
-| 一次跑完整链路 | product-design full 模式 | `/product-design full` |
+| 梳理产品、实现、验收、调优 | meta-skill | `/bootstrap` 然后 `/run`（Codex：`bootstrap` → `.codex/commands/run.md`） |
+| 大目标自治交付 | megastorm | `/megastorm` |
+| 官方 grilling + 隔离执行 | grillstorm | `$grillstorm` |
+| 实证完成度盘问 | cross-exam | `/cross-exam` |
 
 ---
 
 ## 四层架构
 
 ```
-层级        插件              覆盖范围
+层级        入口              覆盖范围
 ─────────  ────────────────  ─────────────────────────────────────────────
-产品层      product-design    概念→定义→交互→视觉→用例→查漏→剪枝→审计
-开发层      dev-forge         种子数据锻造→产品验收（seed-forge / product-verify）
-QA 层       dev-forge         产品验收→测试锻造→完整性扫描
-架构层      code-tuner        合规→重复→抽象→评分
+产品层      meta-skill        概念→定义→交互→视觉→用例→查漏→剪枝→审计
+开发层      meta-skill        规格→实现→种子数据→产品验收
+QA 层       meta-skill        产品验收→测试锻造→完整性扫描
+架构层      meta-skill        合规→重复→抽象→评分
 ```
 
 ## 插件概览
 
-### product-design (v4.16.1)
+### meta-skill
 
-8 个技能，核心是先建图再分析：
+统一入口。`/bootstrap` 分析目标项目并生成 node-spec + `workflow.json`；`/run`（Codex 为生成的 `.codex/commands/run.md`）执行。原先的层插件现在是 capability：
 
-`product-concept / product-map / journey-emotion / experience-map / interaction-gate / use-case / feature-gap / feature-prune / ui-design / design-audit`
+`product-concept / product-map / journey-emotion / experience-map / feature-gap / feature-prune / ui-design / design-to-spec / demo-forge / product-verify / quality-checks / tune / ui-forge / translate / discovery`
 
-### dev-forge (v5.9.1)
+### megastorm / grillstorm / cross-exam
 
-8 个技能，覆盖从设计规格到验收的完整开发链路：
-
-`design-to-spec`（设计转实现规格）→ `project-setup`（环境初始化）→ `task-execute`（任务执行）→ `seed-forge`（种子数据锻造）→ `product-verify`（静态+动态验收）→ `testforge`（测试锻造）→ `shared-utilities`（公共工具）
-
-### code-tuner (v1.1.1)
-
-服务端架构分析：合规检查、重复检测、抽象机会、综合评分（0-100）。
-
-### ui-forge (v0.1.2)
-
-实现后 UI 锻造：在页面功能完成后，做界面 polish 或 design restore。
+大目标自治、官方 grilling 编排、实证完成度盘问。它们不是层插件，继续独立安装。
 
 ---
 
@@ -168,20 +157,20 @@ QA 层       dev-forge         产品验收→测试锻造→完整性扫描
 所有插件共享 `.allforai/` 作为层间输入/输出：
 
 ```
-product-design 产出 → .allforai/product-map/
-                     .allforai/experience-map/
-                     .allforai/use-case/
-                     .allforai/feature-gap/
-                     .allforai/feature-prune/
-                     .allforai/design-audit/
-
-dev-forge 产出     → .allforai/seed-forge/
-                     .allforai/product-verify/
-                     .allforai/deadhunt/
-                     code-tuner 产出    → .allforai/code-tuner/
+meta-skill 产出 → .allforai/product-map/
+                  .allforai/experience-map/
+                  .allforai/use-case/
+                  .allforai/feature-gap/
+                  .allforai/feature-prune/
+                  .allforai/design-audit/
+                  .allforai/demo-forge/
+                  .allforai/product-verify/
+                  .allforai/deadhunt/
+                  .allforai/code-tuner/
+                  .allforai/bootstrap/
 ```
 
-> 建议：先跑 product-design，再跑 dev-forge / code-tuner。
+> 建议：先 `/bootstrap`，再 `/run`。层间仍通过 `.allforai/` JSON 解耦。
 
 ---
 
@@ -272,7 +261,7 @@ dev-forge 产出     → .allforai/seed-forge/
    最宽泛             逐步具体            行为断言             质量评分
 ```
 
-每一层只回答自己该回答的问题，不越界。product-design 不碰代码，code-tuner 不评判产品。层间通过 `.allforai/` 目录的 JSON 文件解耦通信。
+每一层只回答自己该回答的问题，不越界。产品能力不碰代码，架构调优不评判产品。层间通过 `.allforai/` 目录的 JSON 文件解耦通信。
 
 ### 13 条核心设计原则
 

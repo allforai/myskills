@@ -19,9 +19,10 @@ myskills/
 │   └── grillstorm/
 │
 ├── codex/                    # Codex platform (fully native)
-│   ├── meta-skill/           # AGENTS.md + SKILL.md
+│   ├── meta-skill/           # AGENTS.md + SKILL.md adapter
 │   ├── megastorm-skill/
-│   └── ...
+│   ├── grillstorm/
+│   └── cross-exam-skill/
 │
 ├── shared/                   # Platform-agnostic assets
 │   ├── scripts/
@@ -132,7 +133,7 @@ Grillstorm requires official Matt Pocock skills (`grilling`, `to-spec`, `to-tick
 ~/.codex/skills/grillstorm   →  myskills/codex/grillstorm
 ```
 
-AGENTS.md plugins under `codex/*-skill` are discovered when Codex's cwd is that plugin directory.
+Do not install retired Codex layer packs (`product-design`, `dev-forge`, `demo-forge`, `code-tuner`, `code-replicate`, `ui-forge`). Those jobs go through `codex/meta-skill`.
 
 ## Key Dependency: mcp-ai-gateway
 
@@ -152,10 +153,10 @@ Four optional API keys enhance plugin capabilities. Configure all at once with `
 
 | Service | Env Variable | Used By | Purpose |
 |---------|-------------|---------|---------|
-| OpenRouter | `OPENROUTER_API_KEY` | product-design, demo-forge | Cross-model XV + image generation (GPT-5 Image) |
-| Brave Search | `BRAVE_API_KEY` | demo-forge | Media search (images/videos) |
-| Google AI | `GOOGLE_API_KEY` | demo-forge | Imagen 4 (image) + Veo 3.1 (video) + TTS |
-| fal.ai | `FAL_KEY` | demo-forge | FLUX 2 Pro (image) + Kling (video) |
+| OpenRouter | `OPENROUTER_API_KEY` | meta-skill capabilities | Cross-model XV + image generation (GPT-5 Image) |
+| Brave Search | `BRAVE_API_KEY` | demo-forge capability | Media search (images/videos) |
+| Google AI | `GOOGLE_API_KEY` | demo-forge capability | Imagen 4 (image) + Veo 3.1 (video) + TTS |
+| fal.ai | `FAL_KEY` | demo-forge capability | FLUX 2 Pro (image) + Kling (video) |
 
 All services are optional — plugins work without them, skipping enhanced features.
 
@@ -187,29 +188,13 @@ Claude plugins also keep a copy in their own `scripts/` directory (since `${CLAU
 ## Recommended Workflow (for users of the plugins)
 
 ```
-/product-concept          # Discover product vision (optional, from scratch)
+/bootstrap                # Analyze the target project and generate the workflow
     ↓
-/review                   # Unified review hub (http://localhost:18900/) — concept tab
-    ↓
-/product-map              # Build product map (always first if no concept)
-    ↓
-/journey-emotion          # Emotion journey mapping (human decision point)
-    ↓
-/experience-map           # Experience map
-    ↓
-/use-case / /feature-gap / /feature-prune / /ui-design   # Any order
-    ↓
-/design-audit             # Final cross-layer consistency check
-    ↓
-/design-to-spec           # Convert design artifacts to dev specs
-/task-execute             # Execute tasks with progress tracking
-    ↓
-/demo-forge               # Demo-ready data with multi-round iteration
-    ↓
-/deadhunt / /fieldcheck / /code-tuner   # Quality checks
+/run <goal>               # Execute generated nodes (Codex: .codex/commands/run.md)
 ```
 
-Or run `/product-design full` / `/project-forge full` / `/demo-forge` for automated end-to-end orchestration.
+Optional explicit plugins: `/megastorm`, `$grillstorm`, `/cross-exam`.
+Product, implementation, demo, verify, and tune jobs are meta-skill capabilities, not standalone slash commands.
 
 ## Agent skills
 

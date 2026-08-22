@@ -33,14 +33,18 @@ if [ -f "$SCRIPT_DIR/grillstorm/SKILL.md" ]; then
   ln -sfn "$SCRIPT_DIR/grillstorm" "$CODEX_SKILLS/grillstorm"
   echo "Linked grillstorm -> $CODEX_SKILLS/grillstorm"
 fi
+if [ -f "$SCRIPT_DIR/meta-skill/SKILL.md" ]; then
+  ln -sfn "$SCRIPT_DIR/meta-skill" "$CODEX_SKILLS/meta-skill"
+  echo "Linked meta-skill -> $CODEX_SKILLS/meta-skill"
+fi
 
 echo ""
 echo "Codex installation complete."
-echo ""
+
 echo "Usage: linked skills are available from Codex's native skills directory."
 echo ""
-echo "Plugins available:"
-for plugin in product-design-skill dev-forge-skill demo-forge-skill code-tuner-skill code-replicate-skill ui-forge-skill megastorm-skill cross-exam-skill grillstorm; do
+echo "Skills available:"
+for plugin in meta-skill megastorm-skill cross-exam-skill grillstorm; do
   if [ -d "$SCRIPT_DIR/$plugin" ]; then
     echo "  - $plugin"
   fi

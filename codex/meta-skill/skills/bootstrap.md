@@ -104,6 +104,18 @@ The generated workflow must still copy project-local helper assets into the targ
 Those copied assets must reference only project-local paths at run time.
 When product inference is emitted, include a project-local `check_product_summary.py` validator in `.allforai/bootstrap/scripts/`.
 
+Copy the current orchestrator helper set from `./scripts/orchestrator/` (the shared Claude tree via this adapter's symlink), at least:
+
+- `check_artifacts.py`
+- `validate_bootstrap.py`
+- `expand_game_2d_production.py`
+- `reconcile_bootstrap_workflow.py`
+- `validate_unattended_readiness.py`
+- `record_run_event.py`
+- `summarize_run_log.py`
+- `record_meta_skill_feedback.py`
+- `check_product_summary.py` when product inference is emitted
+
 Codex-only runtime helpers must not be mixed into the shared bootstrap tree.
 
 Write Codex-only execution helpers under:

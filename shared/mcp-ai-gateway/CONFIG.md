@@ -14,13 +14,13 @@ API Key 配置在插件 `.mcp.json` 的 `env` 块中（通过 `/setup` 命令管
 ## MCP 服务器位置
 
 ```
-product-design-skill/mcp-ai-gateway/
+shared/mcp-ai-gateway/
 ```
 
 ## 配置文件
 
 ### 1. MCP 服务器配置
-`product-design-skill/.mcp.json`
+`claude/meta-skill/.mcp.json` or `codex/meta-skill/.mcp.json`
 ```json
 {
   "mcpServers": {
@@ -84,7 +84,7 @@ product-design-skill/mcp-ai-gateway/
 ## 测试连接
 
 ```bash
-cd product-design-skill/mcp-ai-gateway
+cd shared/mcp-ai-gateway
 npm run build
 # 重启 Claude Code 后工具自动可用
 ```
@@ -99,7 +99,7 @@ npm run build
 
 ### 3. MCP 服务器未编译
 ```bash
-cd product-design-skill/mcp-ai-gateway
+cd shared/mcp-ai-gateway
 npm install && npm run build
 ```
 

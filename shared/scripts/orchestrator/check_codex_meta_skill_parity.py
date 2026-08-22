@@ -134,6 +134,10 @@ def main() -> int:
         errors.append("flow template does not record diagnosis_history")
     if "diagnosis.md" not in flow_template_text:
         errors.append("flow template does not use the diagnosis protocol after repeated failures")
+    if "validate_unattended_readiness.py" not in run_template_text + flow_template_text:
+        errors.append("Codex run contract does not wire unattended readiness preflight")
+    if "check_artifacts.py" not in run_template_text + flow_template_text:
+        errors.append("Codex run contract does not wire check_artifacts.py")
 
     install_text = read_text(CODEX_META / "install.sh") if (CODEX_META / "install.sh").exists() else ""
     if (

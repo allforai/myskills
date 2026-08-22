@@ -52,6 +52,8 @@ def main() -> int:
             errors.append("generated run does not reference workflow.json")
         if ".allforai/bootstrap/scripts/check_artifacts.py" not in text:
             errors.append("generated run does not reference project-local check_artifacts.py")
+        if "validate_unattended_readiness.py" not in text:
+            errors.append("generated run does not reference unattended readiness preflight")
         if ".allforai/bootstrap/node-specs/" not in text:
             errors.append("generated run does not reference project-local node-specs")
         if ".allforai/codex/flow.py" not in text:

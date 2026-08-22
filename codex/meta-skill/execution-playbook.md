@@ -39,12 +39,15 @@ The generated Codex orchestrator entry is written to `.codex/commands/run.md` in
 
 It must:
 
-1. Read `.allforai/bootstrap/workflow.json` at every iteration.
-2. Use project-local helper scripts under `.allforai/bootstrap/scripts/`.
-3. Read node-specs from `.allforai/bootstrap/node-specs/`.
-4. Record transitions to `workflow.json`.
-5. Resume safely from current project-local artifacts.
-6. If the same node fails 3 times, stop retries, read `.allforai/bootstrap/protocols/diagnosis.md`, and record `diagnosis_history`.
-7. If 5 consecutive transitions produce no new artifacts, stop and report stagnation instead of looping forever.
+1. Run unattended-readiness preflight (`record_run_event.py`, `validate_unattended_readiness.py`) before the first node.
+2. Read `.allforai/bootstrap/workflow.json` at every iteration.
+3. Use project-local helper scripts under `.allforai/bootstrap/scripts/`.
+4. Run any `workflow.json.expanders` before each execution wave.
+5. Read node-specs from `.allforai/bootstrap/node-specs/`.
+6. After a node reports success, independently run `check_artifacts.py .allforai/bootstrap/workflow.json --node <id> --json`.
+7. Record transitions to `workflow.json`.
+8. Resume safely from current project-local artifacts.
+9. If the same node fails 3 times, stop retries, read `.allforai/bootstrap/protocols/diagnosis.md`, and record `diagnosis_history`.
+10. If 5 consecutive transitions produce no new artifacts, stop and report stagnation instead of looping forever.
 
 `state-machine.json` is not the primary contract. It may only be read for backward compatibility while older bootstrap outputs still exist.

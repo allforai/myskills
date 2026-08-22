@@ -346,6 +346,62 @@ def stagnant_iteration_count(workflow: dict) -> int:
     return count
 
 
+def script_path(project_root: Path, name: str) -> Path:
+    return project_root / ".allforai/bootstrap/scripts" / name
+
+
+def run_script(project_root: Path, name: str, args: list[str]) -> subprocess.CompletedProcess[str] | None:
+    path = script_path(project_root, name)
+    if not path.exists():
+        return None
+    return subprocess.run([sys.executable, str(path), *args], cwd=project_root, text=True, capture_output=True)
+
+
+def run_preflight(project_root: Path) -> int:
+    run_script(project_root, "record_run_event.py", [".", "--event", "run_started", "--status", "started", "--message", "codex flow.py invoked"])
+    readiness = run_script(project_root, "validate_unattended_readiness.py", [".", "--write-report"])
+    report = project_root / ".allforai/bootstrap/unattended-run-readiness.json"
+    status = ""
+    if report.exists():
+        try:
+            status = str(load_json(report).get("status") or "")
+        except Exception:
+            status = ""
+    if readiness is not None and readiness.returncode != 0:
+        run_script(project_root, "record_run_event.py", [".", "--event", "preflight_blocked", "--status", "blocked", "--message", "unattended readiness failed"])
+        run_script(project_root, "summarize_run_log.py", [".", "--write-report"])
+        return 6
+    if report.exists() and status and status != "ready":
+        run_script(project_root, "record_run_event.py", [".", "--event", "preflight_blocked", "--status", "blocked", "--message", f"unattended readiness status={status}" ])
+        run_script(project_root, "summarize_run_log.py", [".", "--write-report"])
+        return 6
+    return 0
+
+
+def run_expanders(project_root: Path, workflow: dict) -> None:
+    expanders = workflow.get("expanders") or ["expand_game_2d_production.py"]
+    for expander in expanders:
+        name = Path(str(expander)).name
+        if not name.endswith(".py"):
+            continue
+        run_script(project_root, name, ["."])
+
+
+def independent_artifact_gate(project_root: Path, node_id: str) -> bool:
+    result = run_script(
+        project_root,
+        "check_artifacts.py",
+        [str(project_root / ".allforai/bootstrap/workflow.json"), "--node", node_id, "--json"],
+    )
+    if result is None or not result.stdout.strip():
+        return True
+    try:
+        payload = json.loads(result.stdout)
+    except Exception:
+        return result.returncode == 0
+    return bool(payload.get("all_exist"))
+
+
 def run_post_checks(project_root: Path) -> None:
     scripts = project_root / ".allforai/bootstrap/scripts"
     bootstrap_dir = project_root / ".allforai/bootstrap"
@@ -353,6 +409,7 @@ def run_post_checks(project_root: Path) -> None:
     product_summary = bootstrap_dir / "product-summary.json"
     if product_summary.exists():
         subprocess.run([sys.executable, str(scripts / "check_product_summary.py"), str(product_summary)], cwd=project_root, check=False)
+    run_script(project_root, "summarize_run_log.py", [".", "--write-report"])
 
 
 def goal_based_completion_required(project_root: Path) -> bool:
@@ -459,8 +516,25 @@ def main() -> int:
     project_root = find_project_root(Path.cwd())
     goal, max_iterations = parse_legacy_args(sys.argv, project_root)
     workflow_path = project_root / ".allforai/bootstrap/workflow.json"
+    preflight = run_preflight(project_root)
+    if preflight != 0:
+        print(
+            json.dumps(
+                {
+                    "passed": False,
+                    "done": False,
+                    "error": "unattended readiness preflight blocked execution",
+                },
+                indent=2,
+                ensure_ascii=False,
+            ),
+            file=sys.stderr,
+        )
+        return preflight
 
     for iteration in range(1, max_iterations + 1):
+        workflow = load_json(workflow_path)
+        run_expanders(project_root, workflow)
         workflow = load_json(workflow_path)
         node = first_pending_node(project_root, workflow)
         if node is None:
@@ -545,7 +619,10 @@ def main() -> int:
             for path in node.get("exit_artifacts", [])
             if artifact_ready(project_root, artifact_path(path))
         ]
-        all_ready = len(artifacts_created) == len(node.get("exit_artifacts", []))
+        gate_node_id = str(node.get("node_id") or node_id)
+        all_ready = len(artifacts_created) == len(node.get("exit_artifacts", [])) and independent_artifact_gate(
+            project_root, gate_node_id
+        )
 
         if all_ready:
             append_transition_if_missing(

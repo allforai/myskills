@@ -6,12 +6,13 @@ description: >
   a Codex run entry at .codex/commands/run.md. Bootstrap also emits a research-backed
   product inference summary for reverse-product understanding. Use bootstrap to generate
   the workflow, then invoke the generated run entry to execute it.
-version: "0.4.0-codex.1"
+version: "0.12.0-codex.1"
 ---
 
-# Meta-Skill v0.4.0-codex.1
+# Meta-Skill v0.12.0-codex.1
 
 > Unified workflow generator for Codex: bootstrap a project once, then execute the generated run entry.
+> Layer plugins (product-design, dev-forge, demo-forge, code-tuner, code-replicate, ui-forge) are capabilities inside this adapter, not separate Codex skills.
 > Specialization is research-first: use real project evidence and LLM synthesis whenever possible, with hard responsibility packs only for high-risk domains.
 
 ## Commands
@@ -42,6 +43,7 @@ Layer 2: Orchestrator (generated run entry)
 - Codex-only runtime helpers should be written under `.allforai/codex/` to avoid mixing platform-specific files with shared bootstrap artifacts.
 - Bootstrap should also write `.allforai/bootstrap/product-summary.json` when the project can be reverse-inferred from repository evidence.
 - The generated `.allforai/codex/flow.py` is a Codex-only supervisor: it uses `transition_log` as runtime state, stops after repeated node failures, and records `diagnosis_history` instead of looping forever.
+- Generated run and `flow.py` share the current orchestrator contract: `workflow.json`, copied `scripts/orchestrator` helpers, unattended-readiness preflight, and `check_artifacts.py` as the completion gate. They do not invoke the Claude Workflow JS engine.
 
 ## Shared Semantic Assets
 

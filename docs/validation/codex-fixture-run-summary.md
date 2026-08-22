@@ -26,8 +26,8 @@ Design intent:
 ### 1. `minimal-product-map`
 
 Commands executed:
-- `python3 codex/code-replicate-skill/scripts/cr_gen_indexes.py fixtures/codex/minimal-product-map`
-- `python3 codex/code-replicate-skill/scripts/cr_validate.py fixtures/codex/minimal-product-map`
+- `python3 shared/scripts/code-replicate/cr_gen_indexes.py fixtures/codex/minimal-product-map`
+- `python3 shared/scripts/code-replicate/cr_validate.py fixtures/codex/minimal-product-map`
 
 Result:
 - PASS
@@ -54,9 +54,9 @@ Interpretation:
 ### 2. `minimal-replicate-source`
 
 Commands executed:
-- `python3 codex/code-replicate-skill/scripts/cr_gen_product_map.py fixtures/codex/minimal-replicate-source`
-- `python3 codex/code-replicate-skill/scripts/cr_gen_indexes.py fixtures/codex/minimal-replicate-source`
-- `python3 codex/code-replicate-skill/scripts/cr_validate.py fixtures/codex/minimal-replicate-source --fullstack`
+- `python3 shared/scripts/code-replicate/cr_gen_product_map.py fixtures/codex/minimal-replicate-source`
+- `python3 shared/scripts/code-replicate/cr_gen_indexes.py fixtures/codex/minimal-replicate-source`
+- `python3 shared/scripts/code-replicate/cr_validate.py fixtures/codex/minimal-replicate-source --fullstack`
 
 Result:
 - PASS

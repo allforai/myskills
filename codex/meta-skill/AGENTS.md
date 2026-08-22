@@ -2,6 +2,7 @@
 
 > Codex-native adapter entry for the meta-skill generator.
 > The canonical workflow graph contract is `workflow.json`.
+> Former layer plugins are capabilities under this adapter, not separate install units.
 
 ## Commands
 
@@ -36,6 +37,7 @@
 - `state-machine.json` may only be read for backward compatibility during migration.
 - The generated Codex orchestrator entry is `.codex/commands/run.md`, not `.claude/commands/run.md`.
 - Shared contracts belong under `.allforai/bootstrap/`; Codex-only runtime helpers belong under `.allforai/codex/`.
+- Generated run and `flow.py` consume the current orchestrator helpers: `validate_unattended_readiness.py`, `check_artifacts.py`, `record_run_event.py`, `summarize_run_log.py`, and any `workflow.json.expanders`.
 
 ## Shared Asset Strategy
 

@@ -1,7 +1,8 @@
 #!/bin/bash
 # 测试 OpenRouter MCP 服务器连接
 
-cd /home/hello/Documents/myskills/product-design-skill/mcp-openrouter
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
 
 echo "=== OpenRouter MCP 连接测试 ==="
 echo ""

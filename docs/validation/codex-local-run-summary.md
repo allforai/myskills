@@ -88,7 +88,7 @@ Conclusion:
 ### 1. Code-Replicate script test suite
 
 Execution method:
-- Run each `codex/code-replicate-skill/scripts/test_*.py` file directly with `python3`
+- Run each `shared/scripts/code-replicate/test_*.py` file directly with `python3`
 
 Result:
 - PASS
@@ -120,7 +120,7 @@ Conclusion:
 ### 2. Product-Design full-context script test
 
 Execution method:
-- Run `codex/product-design-skill/scripts/test_full_context.py` directly with `python3`
+- Historical: `codex/product-design-skill/scripts/test_full_context.py` (pack retired; do not re-run from that path)
 
 Result:
 - PASS
@@ -135,7 +135,7 @@ Conclusion:
 ### 3. UI-Forge eval asset structure check
 
 Execution method:
-- Parse `codex/ui-forge-skill/evals/evals.json`
+- Historical: `codex/ui-forge-skill/evals/evals.json` (pack retired; do not re-run from that path)
 
 Result:
 - PASS
@@ -151,7 +151,7 @@ Conclusion:
 
 Execution method:
 - Verify existence of:
-  - all 6 plugin `AGENTS.md`
+  - Codex install surface: `meta-skill`, `megastorm-skill`, `grillstorm`, `cross-exam-skill`
   - all 5 Codex test prompts
 
 Result:
