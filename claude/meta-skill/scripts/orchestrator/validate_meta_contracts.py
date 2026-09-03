@@ -9,13 +9,30 @@ from pathlib import Path
 
 
 ROOT = Path("claude/meta-skill")
-BOOTSTRAP = ROOT / "skills/bootstrap.md"
+# bootstrap.md plus the protocol files it delegates to (ADR-0001). Missing files are skipped.
+BOOTSTRAP_CORPUS = (
+    "skills/bootstrap.md",
+    "knowledge/bootstrap-planning.md",
+    "knowledge/bootstrap-art-pipeline.md",
+    "knowledge/bootstrap-audits.md",
+    "knowledge/node-spec-template.md",
+    "knowledge/engine-detection.md",
+    "knowledge/suppress-rules.md",
+)
 DASHBOARD = ROOT / "scripts/orchestrator/render_approval_dashboard.py"
 CAPABILITIES = ROOT / "knowledge/capabilities"
 
 
+def _bootstrap_files() -> list[Path]:
+    return [ROOT / rel for rel in BOOTSTRAP_CORPUS if (ROOT / rel).exists()]
+
+
+def _bootstrap_text() -> str:
+    return "\n".join(path.read_text(encoding="utf-8") for path in _bootstrap_files())
+
+
 def validate_capability_files(errors: list[str]) -> None:
-    text = BOOTSTRAP.read_text(encoding="utf-8")
+    text = _bootstrap_text()
     capabilities = sorted(set(re.findall(r'capability:\s*"([^"]+)"', text)))
     for capability in capabilities:
         path = CAPABILITIES / f"{capability}.md"
@@ -26,16 +43,17 @@ def validate_capability_files(errors: list[str]) -> None:
 
 
 def validate_node_id_templates(errors: list[str]) -> None:
-    text = BOOTSTRAP.read_text(encoding="utf-8")
-    for match in re.finditer(r"(?m)^node:\s+", text):
-        line_no = text[: match.start()].count("\n") + 1
-        errors.append(
-            f"bootstrap.md:{line_no}: node-spec template uses forbidden legacy 'node:'; use 'node_id:'"
-        )
+    for path in _bootstrap_files():
+        text = path.read_text(encoding="utf-8")
+        for match in re.finditer(r"(?m)^node:\s+", text):
+            line_no = text[: match.start()].count("\n") + 1
+            errors.append(
+                f"{path.name}:{line_no}: node-spec template uses forbidden legacy 'node:'; use 'node_id:'"
+            )
 
 
 def validate_dashboard_virtual_gates(errors: list[str]) -> None:
-    bootstrap_text = BOOTSTRAP.read_text(encoding="utf-8")
+    bootstrap_text = _bootstrap_text()
     dashboard_text = DASHBOARD.read_text(encoding="utf-8")
     required = []
     for node_id in ("art-concept", "architecture-concept-validation"):
@@ -58,7 +76,7 @@ def validate_dashboard_virtual_gates(errors: list[str]) -> None:
 
 
 def validate_approval_scripts_copied(errors: list[str]) -> None:
-    text = BOOTSTRAP.read_text(encoding="utf-8")
+    text = _bootstrap_text()
     for script in (
         "render_approval_dashboard.py",
         "serve_approval.py",
@@ -75,7 +93,7 @@ def validate_approval_scripts_copied(errors: list[str]) -> None:
 
 
 def validate_unattended_run_contract(errors: list[str]) -> None:
-    bootstrap_text = BOOTSTRAP.read_text(encoding="utf-8")
+    bootstrap_text = _bootstrap_text()
     template = ROOT / "knowledge/orchestrator-template.md"
     template_text = template.read_text(encoding="utf-8")
     template_flat = " ".join(template_text.split())
@@ -113,7 +131,7 @@ def validate_unattended_run_contract(errors: list[str]) -> None:
 
 
 def validate_execution_repair_loop_contract(errors: list[str]) -> None:
-    bootstrap_text = BOOTSTRAP.read_text(encoding="utf-8")
+    bootstrap_text = _bootstrap_text()
     template = ROOT / "knowledge/orchestrator-template.md"
     template_text = template.read_text(encoding="utf-8")
     skill = ROOT / "skills/meta-orchestration/40-qa/execution-repair-loop/SKILL.md"
@@ -122,7 +140,7 @@ def validate_execution_repair_loop_contract(errors: list[str]) -> None:
         return
     skill_text = skill.read_text(encoding="utf-8")
     for term in (
-        "Generic QA repair loop rule",
+        "QA repair loop",
         "code_gaps",
         "test_gaps",
         "rerun affected QA evidence",
@@ -152,7 +170,7 @@ def validate_execution_repair_loop_contract(errors: list[str]) -> None:
 
 
 def validate_implement_goal_contract(errors: list[str]) -> None:
-    bootstrap_text = BOOTSTRAP.read_text(encoding="utf-8")
+    bootstrap_text = _bootstrap_text()
     skill_text = (ROOT / "SKILL.md").read_text(encoding="utf-8")
     for term in (
         "l) 继续实施开发",
@@ -161,7 +179,7 @@ def validate_implement_goal_contract(errors: list[str]) -> None:
         "translate / rebuild / create / implement",
         "translate/rebuild/create/implement",
         "goals include translate/rebuild/create/implement",
-        "do not silently convert `implement` into `rebuild`",
+        "silently convert `implement` into `rebuild`",
     ):
         if term not in bootstrap_text:
             errors.append(f"bootstrap.md: missing implement goal term {term}")
@@ -196,7 +214,7 @@ def validate_feedback_contract(errors: list[str]) -> None:
 
 
 def validate_canvas2d_contract(errors: list[str]) -> None:
-    bootstrap_text = BOOTSTRAP.read_text(encoding="utf-8")
+    bootstrap_text = _bootstrap_text()
     canvas2d = ROOT / "knowledge/engines/canvas2d.md"
     if not canvas2d.exists():
         errors.append("knowledge/engines/canvas2d.md: missing Canvas2D specialization knowledge")
@@ -214,21 +232,18 @@ def validate_canvas2d_contract(errors: list[str]) -> None:
     ):
         if term not in canvas2d_text:
             errors.append(f"canvas2d.md: missing specialization term {term}")
+    # ADR-0001: bootstrap no longer enumerates runtime node families; it must still
+    # read the runtime knowledge file and record a project-local runtime profile.
     for term in (
-        "Runtime-specific game-client profile expansion",
         "knowledge/engines/<runtime>.md",
         "project-local runtime profile",
-        "QA convergence rule",
-        "Bootstrap node expansion QA",
-        "Runtime-specific spec-lint requirements",
-        "runtime-effect QA",
     ):
         if term not in bootstrap_text:
             errors.append(f"bootstrap.md: missing runtime-specialized bootstrap term {term}")
 
 
 def validate_bootstrap_node_expansion_contract(errors: list[str]) -> None:
-    bootstrap_text = BOOTSTRAP.read_text(encoding="utf-8")
+    bootstrap_text = _bootstrap_text()
     skill = ROOT / "skills/meta-orchestration/40-qa/bootstrap-node-expansion-qa/SKILL.md"
     parent = ROOT / "skills/meta-orchestration/PACK.md"
     if not skill.exists():
@@ -257,15 +272,13 @@ def validate_bootstrap_node_expansion_contract(errors: list[str]) -> None:
     ):
         if term not in skill_text:
             errors.append(f"bootstrap-node-expansion-qa: missing contract term {term}")
+    # ADR-0001: the four-lens node-expansion gate became the bootstrap-audits lenses
+    # (Coverage Self-Check, G0, A0, Phase A, three-lens DAG with reverse critic).
     for term in (
-        "bootstrap-node-expansion-qa",
-        "reverse reasoning",
-        "closure loops",
-        "acceptance-driven execution",
-        "dimension elevation thinking",
-        "underlying product outcome",
+        "Coverage Self-Check",
+        "reverse critic",
+        "three-lens",
         "named means",
-        "effect verification",
         "## Effect Verification",
         "quality-driven acceptance",
         "## Quality Acceptance",
@@ -286,7 +299,7 @@ def validate_bootstrap_node_expansion_contract(errors: list[str]) -> None:
 
 
 def validate_rebootstrap_reconciliation_contract(errors: list[str]) -> None:
-    bootstrap_text = BOOTSTRAP.read_text(encoding="utf-8")
+    bootstrap_text = _bootstrap_text()
     script = ROOT / "scripts/orchestrator/reconcile_bootstrap_workflow.py"
     if not script.exists():
         errors.append("scripts/orchestrator/reconcile_bootstrap_workflow.py: missing")

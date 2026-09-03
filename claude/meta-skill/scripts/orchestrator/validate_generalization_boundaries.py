@@ -9,6 +9,25 @@ from pathlib import Path
 
 ROOT = Path("claude/meta-skill")
 
+# skills/bootstrap.md rules apply to bootstrap.md plus the protocol files it
+# delegates to (ADR-0001). Missing files are skipped.
+BOOTSTRAP_CORPUS = (
+    "skills/bootstrap.md",
+    "knowledge/bootstrap-planning.md",
+    "knowledge/bootstrap-art-pipeline.md",
+    "knowledge/bootstrap-audits.md",
+    "knowledge/node-spec-template.md",
+    "knowledge/engine-detection.md",
+    "knowledge/suppress-rules.md",
+)
+
+
+def _files(rel: str) -> list[Path]:
+    if rel == "skills/bootstrap.md":
+        return [ROOT / r for r in BOOTSTRAP_CORPUS if (ROOT / r).exists()]
+    path = ROOT / rel
+    return [path] if path.exists() else []
+
 
 RULES = {
     "skills/bootstrap.md": (
@@ -109,27 +128,28 @@ REQUIRED_GENERIC_TERMS = {
 def main() -> int:
     errors: list[str] = []
     for rel, forbidden_terms in RULES.items():
-        path = ROOT / rel
-        if not path.exists():
-            errors.append(f"{path}: missing file for generalization boundary check")
+        paths = _files(rel)
+        if not paths:
+            errors.append(f"{ROOT / rel}: missing file for generalization boundary check")
             continue
-        text = path.read_text(encoding="utf-8")
-        for term in forbidden_terms:
-            if term in text:
-                errors.append(
-                    f"{path}: generic layer contains project/screen-specific term "
-                    f"{term!r}; move concrete rules to runtime knowledge or "
-                    "project-local specialized skills"
-                )
+        for path in paths:
+            text = path.read_text(encoding="utf-8")
+            for term in forbidden_terms:
+                if term in text:
+                    errors.append(
+                        f"{path}: generic layer contains project/screen-specific term "
+                        f"{term!r}; move concrete rules to runtime knowledge or "
+                        "project-local specialized skills"
+                    )
 
     for rel, required_terms in REQUIRED_GENERIC_TERMS.items():
-        path = ROOT / rel
-        if not path.exists():
+        paths = _files(rel)
+        if not paths:
             continue
-        text = path.read_text(encoding="utf-8")
+        text = "\n".join(path.read_text(encoding="utf-8") for path in paths)
         for term in required_terms:
             if term not in text:
-                errors.append(f"{path}: missing generic specialization boundary term {term!r}")
+                errors.append(f"{ROOT / rel}: missing generic specialization boundary term {term!r}")
 
     if errors:
         for error in errors:
