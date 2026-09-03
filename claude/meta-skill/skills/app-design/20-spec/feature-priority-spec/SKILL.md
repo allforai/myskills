@@ -5,7 +5,7 @@ description: Define MVP scope, release cuts, priority rationale, dependency orde
 
 # Feature Priority Spec Skill
 
-> Internal sub-skill for app-design pipelines. Status: bundled, bootstrap-wired, invoked by app-design node-specs.
+> Internal sub-skill for app-design pipelines. Status: bundled.
 
 ## Overview
 

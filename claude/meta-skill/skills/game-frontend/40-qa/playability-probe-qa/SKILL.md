@@ -5,7 +5,7 @@ description: Run a short automated gameplay probe beyond scene smoke (move, inte
 
 # Playability Probe QA Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

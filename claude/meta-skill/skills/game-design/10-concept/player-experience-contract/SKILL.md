@@ -5,7 +5,7 @@ description: "Define the player-facing contract: target player, play context, se
 
 # Player Experience Contract Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

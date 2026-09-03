@@ -5,7 +5,7 @@ description: "Combine multiple genres into one coherent concept: primary loop, s
 
 # Genre Hybridization Spec Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

@@ -5,7 +5,7 @@ description: Define music cues, loops, stems, transitions, intensity states, men
 
 # Music Cue Spec Skill
 
-> Internal sub-skill for game-audio pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-audio pipelines. Status: bundled.
 
 ## Overview
 

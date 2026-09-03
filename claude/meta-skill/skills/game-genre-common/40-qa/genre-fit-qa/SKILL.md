@@ -5,7 +5,7 @@ description: Validate that selected genre-common contracts fit the chosen genre,
 
 # Genre Fit QA Skill
 
-> Internal sub-skill for game-genre-common pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-genre-common pipelines. Status: bundled.
 
 ## Overview
 

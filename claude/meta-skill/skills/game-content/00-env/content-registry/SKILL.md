@@ -5,7 +5,7 @@ description: Create canonical content IDs, packs, cadence, owners, dependencies,
 
 # Content Registry Skill
 
-> Internal sub-skill for game-content pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-content pipelines. Status: bundled.
 
 ## Overview
 

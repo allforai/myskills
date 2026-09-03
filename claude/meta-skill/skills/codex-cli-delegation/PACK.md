@@ -1,12 +1,12 @@
 ---
 name: codex-cli-delegation
-description: Internal bundled meta-skill module for low-token ClaudeCode orchestration of Codex CLI delegated tasks; use when Claude should delegate file-reading, visual review, generation, QA, or repair work to Codex CLI without copying input file contents into Claude context.
+description: "Contract for Claude Code delegating bounded tasks to Codex CLI: short path-based prompts, pull-mode inputs, sandbox controls, and final-report-only output."
 ---
 
 # Codex CLI Delegation Skill Pack
 
 > Internal bundled sub-skill pack for meta-skill.
-> Status: bundled, inactive, not wired.
+> Status: bundled.
 
 ## Purpose
 

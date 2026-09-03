@@ -5,8 +5,8 @@ description: Validate actual level layout, encounters, hazards, rewards, recover
 
 # Level Difficulty Validation QA Skill
 
-> Internal sub-skill for game-level pipelines. Status: bundled,
-> bootstrap-wired through level-design sub-skill mapping.
+> Internal sub-skill for game-level pipelines. Status: bundled.
+> Reached through the level-design sub-skill mapping.
 
 ## Overview
 

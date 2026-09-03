@@ -5,7 +5,7 @@ description: Validate that the design is implementable with the declared engine,
 
 # Implementation Feasibility QA Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

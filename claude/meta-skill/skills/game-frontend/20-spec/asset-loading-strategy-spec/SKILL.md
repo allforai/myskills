@@ -5,7 +5,7 @@ description: "Decide when and how bound assets load: preload/lazy groups, cache 
 
 # Asset Loading Strategy Spec Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

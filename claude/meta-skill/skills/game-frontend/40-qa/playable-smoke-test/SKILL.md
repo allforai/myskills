@@ -5,7 +5,7 @@ description: Run the assembled client and verify a playable scene loads, assets 
 
 # Playable Smoke Test Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

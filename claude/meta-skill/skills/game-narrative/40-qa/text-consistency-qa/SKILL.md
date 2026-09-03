@@ -5,7 +5,7 @@ description: Validate narrative, dialogue, quest, tutorial, UI, and reward text 
 
 # Text Consistency QA Skill
 
-> Internal sub-skill for game-narrative pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-narrative pipelines. Status: bundled.
 
 ## Overview
 

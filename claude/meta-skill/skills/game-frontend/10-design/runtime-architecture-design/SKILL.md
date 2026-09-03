@@ -5,7 +5,7 @@ description: "Define client runtime architecture before assembly: engine surface
 
 # Runtime Architecture Design Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

@@ -5,7 +5,7 @@ description: Map engine-ready art manifest entries into loader keys, runtime IDs
 
 # Asset Import Binding Spec Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

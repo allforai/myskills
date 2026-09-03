@@ -5,7 +5,7 @@ description: Validate that every content requirement has data, art, UI, audio, l
 
 # Content Coverage QA Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

@@ -5,7 +5,7 @@ description: Generate item and equipment art for inventories, shops, loot, craft
 
 # Item Art Generation Skill
 
-> Internal sub-skill for game art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game art pipelines. Status: bundled.
 
 ## Overview
 

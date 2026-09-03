@@ -5,7 +5,7 @@ description: Define XP, levels, unlocks, gates, difficulty pacing, reward cadenc
 
 # Progression Spec Skill
 
-> Internal sub-skill for game-systems pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-systems pipelines. Status: bundled.
 
 ## Overview
 

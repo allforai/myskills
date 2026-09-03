@@ -5,7 +5,7 @@ description: Define acts, beats, branches, convergence, endings, emotional pacin
 
 # Story Structure Spec Skill
 
-> Internal sub-skill for game-narrative pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-narrative pipelines. Status: bundled.
 
 ## Overview
 

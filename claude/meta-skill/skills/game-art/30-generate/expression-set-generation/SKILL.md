@@ -5,7 +5,7 @@ description: Generate character expression sets for dialogue portraits, UI react
 
 # Expression Set Generation Skill
 
-> Internal sub-skill for game art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game art pipelines. Status: bundled.
 
 ## Overview
 

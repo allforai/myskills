@@ -5,7 +5,7 @@ description: Validate runtime screenshots and probes against scene composition, 
 
 # Visual Runtime Regression QA Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

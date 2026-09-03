@@ -5,7 +5,7 @@ description: Build the project-specific art direction benchmark that defines com
 
 # Art Direction Benchmark Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive,
+> Internal sub-skill for game-art pipelines. Status: bundled,
 > bootstrap-invoked when game art matters.
 
 ## Purpose

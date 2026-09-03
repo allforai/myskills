@@ -5,7 +5,7 @@ description: "Generate level plan contracts: layout diagrams, tile/map metadata,
 
 # Level Plan Generation Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

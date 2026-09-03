@@ -5,8 +5,8 @@ description: Define the target player skill baseline that lets an LLM produce ef
 
 # Player Skill Model Spec Skill
 
-> Internal sub-skill for game-level pipelines. Status: bundled,
-> bootstrap-wired through level-design sub-skill mapping.
+> Internal sub-skill for game-level pipelines. Status: bundled.
+> Reached through the level-design sub-skill mapping.
 
 ## Overview
 

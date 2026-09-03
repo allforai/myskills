@@ -1,11 +1,11 @@
 ---
 name: game-onboarding
-description: Internal bundled meta-skill module for game-onboarding; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Onboarding pack: first-session experience, feature-unlock teaching, tutorial steps, and FTUE friction QA."
 ---
 
 # Game Onboarding Skill Pack
 
-> Internal bundled sub-skill pack for meta-skill. Status: bundled, inactive, not wired.
+> Internal bundled sub-skill pack for meta-skill. Status: bundled.
 
 ## Purpose
 

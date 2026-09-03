@@ -5,8 +5,8 @@ description: Generate and validate a human-readable HTML gate that checks art co
 
 # Art Concept Validation Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled,
-> bootstrap-wired through art-concept node injection.
+> Internal sub-skill for game-art pipelines. Status: bundled.
+> Reached through the art-concept node.
 
 ## Overview
 

@@ -5,7 +5,7 @@ description: Define seeded procedural content rules, constraints, distributions,
 
 # Procedural Content Spec Skill
 
-> Internal sub-skill for game-genre-common pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-genre-common pipelines. Status: bundled.
 
 ## Overview
 

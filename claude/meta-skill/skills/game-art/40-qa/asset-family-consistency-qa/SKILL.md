@@ -5,7 +5,7 @@ description: Validate that generated game art works as coherent asset families, 
 
 # Asset Family Consistency QA Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive,
+> Internal sub-skill for game-art pipelines. Status: bundled,
 > art-qa invoked.
 
 ## Purpose

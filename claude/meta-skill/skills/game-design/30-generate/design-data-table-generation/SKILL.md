@@ -5,7 +5,7 @@ description: Generate program-readable design data tables (resources, items, ski
 
 # Game Design Data Table Generation Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

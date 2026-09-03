@@ -5,7 +5,7 @@ description: Define product-level combat rules when the game has conflict, hazar
 
 # Combat Spec Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

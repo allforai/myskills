@@ -5,7 +5,7 @@ description: Define the shared artifact handoff schema between game-art sub-skil
 
 # Artifact Handoff Contract Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-art pipelines. Status: bundled.
 
 ## Overview
 

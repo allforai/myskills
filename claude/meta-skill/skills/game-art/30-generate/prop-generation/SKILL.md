@@ -5,7 +5,7 @@ description: Generate or register reusable props (chests, rocks, signs, barrels,
 
 # Prop Generation Skill
 
-> Internal sub-skill for game art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game art pipelines. Status: bundled.
 
 ## Overview
 

@@ -1,11 +1,11 @@
 ---
 name: game-balance
-description: Internal bundled meta-skill module for game-balance; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Numeric balance pack: balance goals, damage, drop, economy source/sink, progression curve, and reward pricing specs, table generation, and combat balance QA."
 ---
 
 # Game Balance Skill Pack
 
-> Internal bundled sub-skill pack for meta-skill. Status: bundled, inactive, not wired.
+> Internal bundled sub-skill pack for meta-skill. Status: bundled.
 
 ## Purpose
 

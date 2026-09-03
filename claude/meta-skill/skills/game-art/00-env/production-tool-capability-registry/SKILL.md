@@ -5,7 +5,7 @@ description: Record which local production tools exist for 3D-assisted 2D produc
 
 # Production Tool Capability Registry Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-art pipelines. Status: bundled.
 
 ## Overview
 

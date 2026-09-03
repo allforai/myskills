@@ -5,7 +5,7 @@ description: Define sound effects for gameplay, UI, VFX, rewards, errors, impact
 
 # SFX Spec Skill
 
-> Internal sub-skill for game-audio pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-audio pipelines. Status: bundled.
 
 ## Overview
 

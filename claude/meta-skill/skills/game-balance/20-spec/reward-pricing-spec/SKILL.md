@@ -5,7 +5,7 @@ description: Specify rewards, prices, upgrade costs, offer values, affordability
 
 # Reward Pricing Spec Skill
 
-> Internal sub-skill for game-balance pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-balance pipelines. Status: bundled.
 
 ## Overview
 

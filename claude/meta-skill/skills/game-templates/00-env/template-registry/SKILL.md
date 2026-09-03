@@ -5,7 +5,7 @@ description: Create the registry of template kinds, schema IDs, owners, consumer
 
 # Template Registry Skill
 
-> Internal sub-skill for game-templates pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-templates pipelines. Status: bundled.
 
 ## Overview
 

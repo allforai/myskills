@@ -5,7 +5,7 @@ description: Define how levels teach mechanics through layout, enemy placement, 
 
 # Teaching Beat Spec Skill
 
-> Internal sub-skill for game-level pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-level pipelines. Status: bundled.
 
 ## Overview
 

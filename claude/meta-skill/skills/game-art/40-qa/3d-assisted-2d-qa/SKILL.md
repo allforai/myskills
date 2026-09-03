@@ -5,7 +5,7 @@ description: "Validate 3D-derived renders behave as coherent 2D art: perspective
 
 # 3D Assisted 2D QA Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-art pipelines. Status: bundled.
 
 ## Overview
 

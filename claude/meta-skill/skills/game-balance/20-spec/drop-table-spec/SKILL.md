@@ -5,7 +5,7 @@ description: Specify loot/drop probability, rarity, pity, guarantees, expected v
 
 # Drop Table Spec Skill
 
-> Internal sub-skill for game-balance pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-balance pipelines. Status: bundled.
 
 ## Overview
 

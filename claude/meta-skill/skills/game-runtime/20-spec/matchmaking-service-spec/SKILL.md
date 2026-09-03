@@ -5,7 +5,7 @@ description: "Define the matchmaking service: queues, rating inputs, eligibility
 
 # Matchmaking Service Spec Skill
 
-> Internal sub-skill for game-runtime pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-runtime pipelines. Status: bundled.
 
 ## Overview
 

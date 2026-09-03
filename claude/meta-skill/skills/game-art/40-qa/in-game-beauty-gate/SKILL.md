@@ -5,7 +5,7 @@ description: Validate that accepted art looks commercially appealing inside the 
 
 # In-Game Beauty Gate Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive,
+> Internal sub-skill for game-art pipelines. Status: bundled,
 > art-qa and runtime visual QA invoked.
 
 ## Purpose

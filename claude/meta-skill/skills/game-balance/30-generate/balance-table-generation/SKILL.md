@@ -5,7 +5,7 @@ description: Generate JSON/CSV balance tables from validated numeric specs; writ
 
 # Balance Table Generation Skill
 
-> Internal sub-skill for game-balance pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-balance pipelines. Status: bundled.
 
 ## Overview
 

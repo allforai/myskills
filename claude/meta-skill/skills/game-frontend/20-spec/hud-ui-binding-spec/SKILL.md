@@ -5,7 +5,7 @@ description: Map game UI/HUD design and art into runtime screens, overlays, safe
 
 # HUD UI Binding Spec Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

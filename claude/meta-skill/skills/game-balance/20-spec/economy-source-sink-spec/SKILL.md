@@ -5,7 +5,7 @@ description: Specify numeric resource sources, sinks, caps, exchange rates, earn
 
 # Economy Source Sink Spec Skill
 
-> Internal sub-skill for game-balance pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-balance pipelines. Status: bundled.
 
 ## Overview
 

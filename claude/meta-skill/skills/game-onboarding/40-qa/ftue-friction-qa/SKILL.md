@@ -5,7 +5,7 @@ description: "Validate first-time-user friction: cognitive load, controls, UI, p
 
 # FTUE Friction QA Skill
 
-> Internal sub-skill for game-onboarding pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-onboarding pipelines. Status: bundled.
 
 ## Overview
 

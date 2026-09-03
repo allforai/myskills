@@ -5,7 +5,7 @@ description: "Validate that players can read combat: telegraphs, hit feedback, s
 
 # Combat Readability QA Skill
 
-> Internal sub-skill for game-combat pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-combat pipelines. Status: bundled.
 
 ## Overview
 

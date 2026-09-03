@@ -27,3 +27,8 @@ _Avoid_: node injection, template
 **Suppress rule**:
 A detection-triggered prohibition on emitting a class of nodes (for example library-sdk omits demo-forge). Breaking it is a planning error, not a style choice.
 _Avoid_: skip, omit, optional
+
+**Bundled**:
+A skill or pack shipped inside meta-skill. Nothing bundled is auto-invoked: a skill runs when a node-spec names its canonical path from the pack's `PACK.md`, and bootstrap finds those paths through capability Sub-Skill Mapping tables and the planning protocols. `retired` marks a tombstone kept only so old node-specs resolve.
+_Avoid_: wired, inactive, active
+

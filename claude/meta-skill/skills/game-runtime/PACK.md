@@ -1,12 +1,12 @@
 ---
 name: game-runtime
-description: Internal bundled meta-skill module for game-runtime; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Runtime and server architecture specs: faction AI, anti-cheat, matchmaking, network architecture, and procedural generators."
 ---
 
 # Game Runtime Skill Pack
 
 > Internal bundled sub-skill pack for meta-skill.
-> Status: bundled, inactive, not wired.
+> Status: bundled.
 
 ## Purpose
 

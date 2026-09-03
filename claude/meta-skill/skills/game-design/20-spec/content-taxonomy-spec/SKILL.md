@@ -5,7 +5,7 @@ description: "Define the content taxonomy: characters, enemies, items, skills, l
 
 # Content Taxonomy Spec Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

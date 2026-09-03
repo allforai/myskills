@@ -5,7 +5,7 @@ description: Define buffs, debuffs, DOT/HOT, crowd control, shields, immunities,
 
 # Status Effect Spec Skill
 
-> Internal sub-skill for game-combat pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-combat pipelines. Status: bundled.
 
 ## Overview
 

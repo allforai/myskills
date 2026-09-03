@@ -1,12 +1,11 @@
 ---
 name: app-design
-description: Internal bundled meta-skill module for app-design; use within generated bootstrap node-specs when this exact contract is selected.
+description: "App product design pack for non-game projects: audience and job stories, then IA, flow, screen, interaction, data, content, permission, and monetization specs, then UI and program handoffs, then closure QA."
 ---
 
 # App Design Skill Pack
 
-> Internal bundled sub-skill pack for app product design. Status: bundled,
-> bootstrap-wired, invoked by app-design node-specs.
+> Internal bundled sub-skill pack for app product design. Status: bundled.
 
 ## Purpose
 

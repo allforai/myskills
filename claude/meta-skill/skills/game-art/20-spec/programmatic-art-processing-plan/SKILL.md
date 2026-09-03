@@ -5,7 +5,7 @@ description: Define the deterministic 2D art processing plan that turns LLM raw 
 
 # Programmatic Art Processing Plan Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive,
+> Internal sub-skill for game-art pipelines. Status: bundled,
 > image-generation upstream.
 
 ## Purpose

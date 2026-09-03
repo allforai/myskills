@@ -5,7 +5,7 @@ description: Generate design entries for items, equipment, skills, upgrades, and
 
 # Item Skill Design Generation Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

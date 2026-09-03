@@ -5,7 +5,7 @@ description: Define resources, currencies, sinks, sources, prices, rewards, inve
 
 # Economy Spec Skill
 
-> Internal sub-skill for game-systems pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-systems pipelines. Status: bundled.
 
 ## Overview
 

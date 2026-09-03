@@ -5,7 +5,7 @@ description: "Define non-technical social features: friends, parties, guilds, ch
 
 # Social System Spec Skill
 
-> Internal sub-skill for game-systems pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-systems pipelines. Status: bundled.
 
 ## Overview
 

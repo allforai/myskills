@@ -5,7 +5,7 @@ description: "Define run/session structure for roguelike, dungeon, ladder, chall
 
 # Run Structure Spec Skill
 
-> Internal sub-skill for game-genre-common pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-genre-common pipelines. Status: bundled.
 
 ## Overview
 

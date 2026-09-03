@@ -5,7 +5,7 @@ description: Run first-pass sanity checks over economy, progression, combat, lev
 
 # Balance Sanity QA Skill
 
-> Internal sub-skill for game-systems pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-systems pipelines. Status: bundled.
 
 ## Overview
 

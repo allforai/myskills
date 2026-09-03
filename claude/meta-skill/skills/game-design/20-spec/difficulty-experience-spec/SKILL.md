@@ -5,7 +5,7 @@ description: "Define how difficulty should feel before numbers are tuned: pressu
 
 # Difficulty Experience Spec Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

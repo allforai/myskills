@@ -5,7 +5,7 @@ description: Define design pillars as enforceable tradeoff constraints, not slog
 
 # Game Pillar Spec Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

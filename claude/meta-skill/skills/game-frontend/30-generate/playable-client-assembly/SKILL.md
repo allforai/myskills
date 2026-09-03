@@ -5,7 +5,7 @@ description: Apply approved bindings to the client codebase so a playable scene 
 
 # Playable Client Assembly Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

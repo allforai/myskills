@@ -5,7 +5,7 @@ description: Create canonical IDs, file prefixes, paths, lifecycle states, owner
 
 # Audio Registry Skill
 
-> Internal sub-skill for game-audio pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-audio pipelines. Status: bundled.
 
 ## Overview
 

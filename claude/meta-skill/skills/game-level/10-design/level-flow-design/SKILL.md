@@ -5,7 +5,7 @@ description: Define level order, pacing, objectives, failure/retry flow, unlocks
 
 # Level Flow Design Skill
 
-> Internal sub-skill for game-level pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-level pipelines. Status: bundled.
 
 ## Overview
 

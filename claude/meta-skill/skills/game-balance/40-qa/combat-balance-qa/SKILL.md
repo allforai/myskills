@@ -5,7 +5,7 @@ description: "Validate combat numbers: time-to-kill, DPS, survivability, counter
 
 # Combat Balance QA Skill
 
-> Internal sub-skill for game-balance pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-balance pipelines. Status: bundled.
 
 ## Overview
 

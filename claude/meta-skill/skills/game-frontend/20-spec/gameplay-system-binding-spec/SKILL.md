@@ -5,7 +5,7 @@ description: Bind rules, levels, objectives, mechanics, item/economy/progression
 
 # Gameplay System Binding Spec Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

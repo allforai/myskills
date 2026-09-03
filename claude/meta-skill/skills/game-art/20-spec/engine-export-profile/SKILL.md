@@ -5,7 +5,7 @@ description: "Define engine/tool export decisions for 2D art before runtime impo
 
 # Engine Export Profile Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-art pipelines. Status: bundled.
 
 ## Overview
 

@@ -1,12 +1,12 @@
 ---
 name: visual-qa
-description: Internal bundled meta-skill module for reusable visual QA workflows; use when any project artifact needs batch screenshot/image/contact-sheet review through dual independent visual review (Codex CLI and Claude Code) with auditable reports and repair loops.
+description: "Reusable visual QA: visual model capability registry, acceptance criteria, and batch visual acceptance with dual independent review (Codex CLI and Claude Code each inspect the evidence)."
 ---
 
 # Visual QA Skill Pack
 
 > Internal bundled sub-skill pack for meta-skill.
-> Status: bundled, inactive, not wired.
+> Status: bundled.
 
 ## Purpose
 

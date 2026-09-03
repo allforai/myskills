@@ -5,7 +5,7 @@ description: Define how scenes are entered, exited, restored, and probed across 
 
 # Scene Flow Spec Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

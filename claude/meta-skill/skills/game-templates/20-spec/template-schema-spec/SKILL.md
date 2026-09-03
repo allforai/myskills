@@ -5,7 +5,7 @@ description: "Define the common template envelope and per-kind schemas: fields, 
 
 # Template Schema Spec Skill
 
-> Internal sub-skill for game-templates pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-templates pipelines. Status: bundled.
 
 ## Overview
 

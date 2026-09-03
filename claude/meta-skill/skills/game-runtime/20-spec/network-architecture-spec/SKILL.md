@@ -5,7 +5,7 @@ description: "Define multiplayer architecture: topology, authority, replication,
 
 # Network Architecture Spec Skill
 
-> Internal sub-skill for game-runtime pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-runtime pipelines. Status: bundled.
 
 ## Overview
 

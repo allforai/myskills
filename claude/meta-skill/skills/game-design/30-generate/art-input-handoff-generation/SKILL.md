@@ -5,7 +5,7 @@ description: Aggregate concept and planning outputs into one validated, traceabl
 
 # Production Handoff Generation Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

@@ -5,7 +5,7 @@ description: Define factions, relations, reputation, diplomacy, territory, confl
 
 # Faction System Spec Skill
 
-> Internal sub-skill for game-genre-common pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-genre-common pipelines. Status: bundled.
 
 ## Overview
 

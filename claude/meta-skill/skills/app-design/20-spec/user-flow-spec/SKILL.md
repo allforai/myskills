@@ -5,7 +5,7 @@ description: "Define step-by-step user flows per job: happy path, alternates, em
 
 # User Flow Spec Skill
 
-> Internal sub-skill for app-design pipelines. Status: bundled, bootstrap-wired, invoked by app-design node-specs.
+> Internal sub-skill for app-design pipelines. Status: bundled.
 
 ## Overview
 

@@ -5,7 +5,7 @@ description: Specify damage, defense, crit, scaling, status, healing, survivabil
 
 # Damage Formula Spec Skill
 
-> Internal sub-skill for game-balance pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-balance pipelines. Status: bundled.
 
 ## Overview
 

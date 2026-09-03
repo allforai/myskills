@@ -5,7 +5,7 @@ description: Define how goals are created, tracked, completed, failed, displayed
 
 # Objective System Spec Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

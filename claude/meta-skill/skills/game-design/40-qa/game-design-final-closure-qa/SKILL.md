@@ -5,7 +5,7 @@ description: Validate that the whole game design is closed enough for art, audio
 
 # Game Design Final Closure QA Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

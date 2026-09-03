@@ -5,7 +5,7 @@ description: Define character motivations, relationships, arcs, state changes, v
 
 # Character Arc Spec Skill
 
-> Internal sub-skill for game-narrative pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-narrative pipelines. Status: bundled.
 
 ## Overview
 

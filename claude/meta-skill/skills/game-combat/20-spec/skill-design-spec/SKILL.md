@@ -5,7 +5,7 @@ description: "Define player skills: activation, targeting, cost, cooldown, range
 
 # Skill Design Spec Skill
 
-> Internal sub-skill for game-combat pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-combat pipelines. Status: bundled.
 
 ## Overview
 

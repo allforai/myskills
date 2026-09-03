@@ -5,7 +5,7 @@ description: Classify the 2D view mode (side, top-down, 3/4, isometric, lane dep
 
 # 2D View Mode Spec Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-art pipelines. Status: bundled.
 
 ## Overview
 

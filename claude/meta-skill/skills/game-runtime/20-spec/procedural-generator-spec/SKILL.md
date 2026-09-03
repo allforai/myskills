@@ -5,7 +5,7 @@ description: "Define executable procedural generation: seed replay, generator st
 
 # Procedural Generator Spec Skill
 
-> Internal sub-skill for game-runtime pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-runtime pipelines. Status: bundled.
 
 ## Overview
 

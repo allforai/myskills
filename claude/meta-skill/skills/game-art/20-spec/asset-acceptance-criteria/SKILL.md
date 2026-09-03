@@ -5,7 +5,7 @@ description: Turn concept, gameplay, art direction, registry, specialization, an
 
 # Asset Acceptance Criteria Skill
 
-> Internal sub-skill for game art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game art pipelines. Status: bundled.
 
 ## Overview
 

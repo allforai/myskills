@@ -1,11 +1,18 @@
+---
+name: game-art-10-design-art-concept
+description: Interactive, search-driven confirmation of a game's art technical specification after art-direction is approved; writes .allforai/game-design/art-pipeline-config.json (asset types, tools, active art-gen nodes) that art-spec-design and every art-gen node read.
+---
+
 # Art Concept Skill
+
+> Internal sub-skill for game-art pipelines. Status: bundled, invoked by the `art-concept` node.
 
 > 美术概念确认阶段。在游戏文档设计（art-direction）完成后、art-spec-design 执行前运行。
 > 通过搜索驱动的交互式对话确定美术技术规格，产出 `art-pipeline-config.json`。
 >
 > **触发方式：**
 > - Bootstrap 自动串联（art-direction approved → 检查 art-pipeline-config.json → 不存在则调起此 skill）
-> - 用户手动运行 `/art-concept` 修订美术决策
+> - 需要修订美术决策时，重新运行 `art-concept` 节点（没有独立的 slash 命令）
 
 ## 知识库加载
 

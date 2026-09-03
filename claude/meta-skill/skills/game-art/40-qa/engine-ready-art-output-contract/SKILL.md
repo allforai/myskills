@@ -5,7 +5,7 @@ description: "Assemble the final importable art delivery: stable IDs, paths, man
 
 # Engine-Ready Art Output Contract Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-art pipelines. Status: bundled.
 
 ## Overview
 

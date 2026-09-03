@@ -5,7 +5,7 @@ description: "Define runtime faction AI: state model, behavior tree or utility m
 
 # AI Faction Runtime Spec Skill
 
-> Internal sub-skill for game-runtime pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-runtime pipelines. Status: bundled.
 
 ## Overview
 

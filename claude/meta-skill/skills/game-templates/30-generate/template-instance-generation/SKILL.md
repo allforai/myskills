@@ -5,7 +5,7 @@ description: Generate concrete template instances from approved schemas, inherit
 
 # Template Instance Generation Skill
 
-> Internal sub-skill for game-templates pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-templates pipelines. Status: bundled.
 
 ## Overview
 

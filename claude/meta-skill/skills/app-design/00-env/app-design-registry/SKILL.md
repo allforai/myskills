@@ -5,7 +5,7 @@ description: Create the app-design registry (product type, target surfaces, sele
 
 # App Design Registry Skill
 
-> Internal sub-skill for app-design pipelines. Status: bundled, bootstrap-wired, invoked by app-design node-specs.
+> Internal sub-skill for app-design pipelines. Status: bundled.
 
 ## Overview
 

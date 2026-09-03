@@ -5,7 +5,7 @@ description: Select, reject, cluster, and register generated image candidates af
 
 # Generated Candidate Selection Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive,
+> Internal sub-skill for game-art pipelines. Status: bundled,
 > image-generation downstream.
 
 ## Purpose

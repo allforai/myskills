@@ -5,7 +5,7 @@ description: "Define anti-cheat architecture: trust boundaries, threat controls,
 
 # Anti-Cheat Architecture Spec Skill
 
-> Internal sub-skill for game-runtime pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-runtime pipelines. Status: bundled.
 
 ## Overview
 

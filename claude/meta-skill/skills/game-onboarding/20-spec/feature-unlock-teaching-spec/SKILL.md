@@ -5,7 +5,7 @@ description: Define when and how each feature unlocks, is taught, reinforced, an
 
 # Feature Unlock Teaching Spec Skill
 
-> Internal sub-skill for game-onboarding pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-onboarding pipelines. Status: bundled.
 
 ## Overview
 

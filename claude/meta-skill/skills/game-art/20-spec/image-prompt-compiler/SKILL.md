@@ -5,7 +5,7 @@ description: Compile project art direction, asset specs, model routing, LoRA/ref
 
 # Image Prompt Compiler Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive,
+> Internal sub-skill for game-art pipelines. Status: bundled,
 > image-generation upstream.
 
 ## Purpose

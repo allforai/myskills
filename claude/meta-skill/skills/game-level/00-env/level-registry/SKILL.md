@@ -5,7 +5,7 @@ description: Create canonical level, map, room, encounter, and blockout IDs with
 
 # Level Registry Skill
 
-> Internal sub-skill for game-level pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-level pipelines. Status: bundled.
 
 ## Overview
 

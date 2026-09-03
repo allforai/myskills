@@ -5,7 +5,7 @@ description: Specify level, XP, unlock, power, mastery, and session pacing curve
 
 # Progression Curve Spec Skill
 
-> Internal sub-skill for game-balance pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-balance pipelines. Status: bundled.
 
 ## Overview
 

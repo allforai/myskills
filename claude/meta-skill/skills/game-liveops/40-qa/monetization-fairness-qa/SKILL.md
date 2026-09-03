@@ -5,7 +5,7 @@ description: "Validate monetization fairness: pay-to-win risk, pressure tactics,
 
 # Monetization Fairness QA Skill
 
-> Internal sub-skill for game-liveops pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-liveops pipelines. Status: bundled.
 
 ## Overview
 

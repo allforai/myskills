@@ -5,7 +5,7 @@ description: Define enemy roles, states, transitions, telegraphs, attacks, movem
 
 # Enemy Behavior Spec Skill
 
-> Internal sub-skill for game-combat pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-combat pipelines. Status: bundled.
 
 ## Overview
 

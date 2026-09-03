@@ -5,7 +5,7 @@ description: Generate or register SFX files and manifests from sfx-spec.json; wr
 
 # SFX Generation Skill
 
-> Internal sub-skill for game-audio pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-audio pipelines. Status: bundled.
 
 ## Overview
 

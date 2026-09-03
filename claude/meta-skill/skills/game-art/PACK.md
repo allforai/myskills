@@ -1,12 +1,12 @@
 ---
 name: game-art
-description: Internal bundled meta-skill module for game-art; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Game art production pack: environment and tool registries, art direction and visual tokens, view/layer/animation/VFX/tileset specs, image, animation, VFX, icon, prop, and LoRA generation, and QA through engine-ready output."
 ---
 
 # Game Art Skill Pack
 
 > Internal bundled sub-skill pack for meta-skill.
-> Status: bundled, inactive, not wired.
+> Status: bundled.
 > This directory is installed with meta-skill but is not automatically invoked by
 > `/bootstrap` or `/run` until a node-spec explicitly reads a child skill path.
 > These are Claude Code-readable sub-skills, not separately installed top-level
@@ -77,6 +77,7 @@ Layer numbers indicate directory organization and default execution order for ne
 | `00-env` | `production-tool-capability-registry` | Detect, auto-install, and validate Blender CLI/Python, image, atlas, importer, and probe tools before use. |
 | `10-design` | `2d-animation-production-plan` | Light 2D animation method selection, fallback strategy, downstream routing, QA requirements. |
 | `10-design` | `2d-art-style-taxonomy` | Bootstrap-facing 2D art style families, tradeoffs, LLM fit, processing fit, and selected preference contract. |
+| `10-design` | `art-concept` | Interactive confirmation of the art technical spec after art-direction; writes `art-pipeline-config.json` with the active art-gen nodes. |
 | `10-design` | `art-concept-validation` | Human-readable HTML/JSON gate that validates product concept to art concept alignment before bulk art generation. |
 | `10-design` | `art-direction-benchmark` | Project-specific commercial visual benchmark, reference/anti-reference rules, scoring axes, and runtime screenshot standards. |
 | `10-design` | `art-direction-input-contract` | Product concept, gameplay, runtime constraints, and human visual preferences as art input. |
@@ -150,6 +151,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/image-model-capability-registry/SKI
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/production-tool-capability-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-art-style-taxonomy/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept-validation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-direction-benchmark/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-direction-input-contract/SKILL.md

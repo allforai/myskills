@@ -5,7 +5,7 @@ description: "Define core interaction mechanics as executable product rules: inp
 
 # Mechanics Spec Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

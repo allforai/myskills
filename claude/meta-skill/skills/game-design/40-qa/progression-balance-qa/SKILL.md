@@ -5,7 +5,7 @@ description: Validate progression pacing, unlock usefulness, difficulty ramp, co
 
 # Progression Balance QA Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

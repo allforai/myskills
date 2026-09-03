@@ -5,7 +5,7 @@ description: "Generate or register 2D runtime assets from 3D sources: sprite she
 
 # Render To 2D Asset Generation Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-art pipelines. Status: bundled.
 
 ## Overview
 

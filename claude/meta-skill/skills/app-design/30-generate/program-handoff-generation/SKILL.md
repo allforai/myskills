@@ -5,7 +5,7 @@ description: Generate implementation-node handoff for every deployable surface a
 
 # Program Handoff Generation Skill
 
-> Internal sub-skill for app-design pipelines. Status: bundled, bootstrap-wired, invoked by app-design node-specs.
+> Internal sub-skill for app-design pipelines. Status: bundled.
 
 ## Overview
 

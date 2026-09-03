@@ -5,7 +5,7 @@ description: Define layout grammar for maps, rooms, lanes, platforms, grids, rou
 
 # Level Layout Spec Skill
 
-> Internal sub-skill for game-level pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-level pipelines. Status: bundled.
 
 ## Overview
 

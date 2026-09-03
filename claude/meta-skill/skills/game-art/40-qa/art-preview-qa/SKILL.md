@@ -5,7 +5,7 @@ description: Run cross-asset visual QA over generated art, previews, screenshots
 
 # Art Preview QA Skill
 
-> Internal sub-skill for game art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game art pipelines. Status: bundled.
 
 ## Overview
 

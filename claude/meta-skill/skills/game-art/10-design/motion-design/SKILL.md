@@ -6,7 +6,7 @@ description: "Define motion at the gameplay and readability level: what each mot
 # Motion Design Skill
 
 > Internal sub-skill for game art pipelines.
-> Status: bundled, inactive, not wired.
+> Status: bundled.
 > This file is installed with meta-skill but is not automatically invoked by
 > `/bootstrap` or `/run` until a node-spec explicitly reads this path.
 

@@ -5,7 +5,7 @@ description: Choose per asset class between frame animation, motion-video-to-spr
 
 # 2D Animation Production Plan Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-art pipelines. Status: bundled.
 
 ## Overview
 

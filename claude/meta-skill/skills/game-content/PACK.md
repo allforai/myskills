@@ -1,11 +1,11 @@
 ---
 name: game-content
-description: Internal bundled meta-skill module for game-content; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Content pack: content registry, activities, roadmap, quest chains, content pack plans, and pacing QA."
 ---
 
 # Game Content Skill Pack
 
-> Internal bundled sub-skill pack for meta-skill. Status: bundled, inactive, not wired.
+> Internal bundled sub-skill pack for meta-skill. Status: bundled.
 
 ## Purpose
 

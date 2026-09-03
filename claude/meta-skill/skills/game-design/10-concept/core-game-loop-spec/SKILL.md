@@ -5,7 +5,7 @@ description: "Define the player's repeated loop: goal, choice, action, feedback,
 
 # Core Game Loop Spec Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

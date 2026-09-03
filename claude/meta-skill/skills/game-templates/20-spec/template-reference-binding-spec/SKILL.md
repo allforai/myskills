@@ -5,7 +5,7 @@ description: Define how templates reference design, balance, art, UI, audio, lev
 
 # Template Reference Binding Spec Skill
 
-> Internal sub-skill for game-templates pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-templates pipelines. Status: bundled.
 
 ## Overview
 

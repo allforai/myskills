@@ -5,7 +5,7 @@ description: Define target audience, market positioning, comparable games, playe
 
 # Audience Positioning Spec Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

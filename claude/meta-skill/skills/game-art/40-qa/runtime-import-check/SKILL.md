@@ -5,7 +5,7 @@ description: Validate that exported art manifests import into the target runtime
 
 # Runtime Import Check Skill
 
-> Internal sub-skill for game art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game art pipelines. Status: bundled.
 
 ## Overview
 

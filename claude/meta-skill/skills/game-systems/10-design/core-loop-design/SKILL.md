@@ -5,7 +5,7 @@ description: Define the primary game loop, session structure, goals, failure/ret
 
 # Core Loop Design Skill
 
-> Internal sub-skill for game-systems pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-systems pipelines. Status: bundled.
 
 ## Overview
 

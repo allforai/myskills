@@ -5,7 +5,7 @@ description: Define achievements, challenges, trophies, milestones, tracking con
 
 # Achievement System Spec Skill
 
-> Internal sub-skill for game-systems pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-systems pipelines. Status: bundled.
 
 ## Overview
 

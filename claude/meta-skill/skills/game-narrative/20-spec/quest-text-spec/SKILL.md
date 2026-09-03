@@ -5,7 +5,7 @@ description: Define quest, objective, tutorial, reward, error, and progression t
 
 # Quest Text Spec Skill
 
-> Internal sub-skill for game-narrative pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-narrative pipelines. Status: bundled.
 
 ## Overview
 

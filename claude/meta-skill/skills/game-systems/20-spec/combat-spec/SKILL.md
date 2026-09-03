@@ -5,7 +5,7 @@ description: Define combat actors, stats, actions, damage/heal rules, cooldowns,
 
 # Combat Spec Skill
 
-> Internal sub-skill for game-systems pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-systems pipelines. Status: bundled.
 
 ## Overview
 

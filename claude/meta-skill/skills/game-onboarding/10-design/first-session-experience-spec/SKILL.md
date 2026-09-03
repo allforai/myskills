@@ -5,7 +5,7 @@ description: "Define the first session: opening promise, first goal, emotional a
 
 # First Session Experience Spec Skill
 
-> Internal sub-skill for game-onboarding pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-onboarding pipelines. Status: bundled.
 
 ## Overview
 

@@ -5,7 +5,7 @@ description: "Define building/base/construction: placement, grid, costs, require
 
 # Building System Spec Skill
 
-> Internal sub-skill for game-systems pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-systems pipelines. Status: bundled.
 
 ## Overview
 

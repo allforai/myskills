@@ -5,7 +5,7 @@ description: "Define the product-level economy: resources, sources, sinks, rewar
 
 # Economy Spec Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

@@ -5,7 +5,7 @@ description: Validate that mapped game-design sub-skills actually exchange artif
 
 # Contract Wiring QA Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

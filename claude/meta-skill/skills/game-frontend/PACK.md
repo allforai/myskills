@@ -1,12 +1,12 @@
 ---
 name: game-frontend
-description: Internal bundled meta-skill module for game-frontend; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Playable client pack: runtime detection, architecture, fourteen binding specs (assets, loading, audio, data, state, gameplay, HUD, input/camera, performance, debug bridge, save, scene composition, scene flow), client assembly, and seven runtime QAs including dual-reviewer screenshot acceptance."
 ---
 
 # Game Frontend Skill Pack
 
 > Internal bundled sub-skill pack for meta-skill.
-> Status: bundled, inactive, not wired.
+> Status: bundled.
 
 ## Purpose
 

@@ -5,8 +5,7 @@ description: Define a QA-only debug bridge so automation, Codex CLI, or Claude C
 
 # Runtime Debug Bridge Contract Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive,
-> not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

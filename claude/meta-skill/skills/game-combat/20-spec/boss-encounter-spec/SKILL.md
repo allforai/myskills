@@ -5,7 +5,7 @@ description: "Define boss encounters: phases, mechanics, arena constraints, adds
 
 # Boss Encounter Spec Skill
 
-> Internal sub-skill for game-combat pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-combat pipelines. Status: bundled.
 
 ## Overview
 

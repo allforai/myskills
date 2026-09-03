@@ -5,7 +5,7 @@ description: Gate 2D animation production on the executable toolchain actually p
 
 # 2D Animation Toolchain Env Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-art pipelines. Status: bundled.
 
 ## Overview
 

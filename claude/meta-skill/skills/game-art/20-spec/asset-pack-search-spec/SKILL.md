@@ -5,7 +5,7 @@ description: "Define the search contract for local libraries, user bundles, exis
 
 # Asset Pack Search Spec Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-art pipelines. Status: bundled.
 
 ## Overview
 

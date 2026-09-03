@@ -1,12 +1,12 @@
 ---
 name: game-templates
-description: Internal bundled meta-skill module for game-templates; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Shared data-container pack: template registry, inheritance, reference binding, schemas, instance generation, reference-closure and runtime-load QA."
 ---
 
 # Game Templates Skill Pack
 
 > Internal bundled sub-skill pack for meta-skill.
-> Status: bundled, inactive, not wired.
+> Status: bundled.
 
 ## Purpose
 

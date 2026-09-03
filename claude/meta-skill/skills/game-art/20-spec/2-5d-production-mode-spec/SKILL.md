@@ -5,7 +5,7 @@ description: "Decide whether and how 3D-assisted production feeds a 2D runtime: 
 
 # 2.5D Production Mode Spec Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-art pipelines. Status: bundled.
 
 ## Overview
 

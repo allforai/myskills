@@ -5,7 +5,7 @@ description: "Define reward placement in levels: pickups, chests, exits, secrets
 
 # Reward Placement Spec Skill
 
-> Internal sub-skill for game-level pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-level pipelines. Status: bundled.
 
 ## Overview
 

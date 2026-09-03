@@ -5,7 +5,7 @@ description: Turn app intent into concrete jobs, use cases, triggers, desired ou
 
 # Job Story Spec Skill
 
-> Internal sub-skill for app-design pipelines. Status: bundled, bootstrap-wired, invoked by app-design node-specs.
+> Internal sub-skill for app-design pipelines. Status: bundled.
 
 ## Overview
 

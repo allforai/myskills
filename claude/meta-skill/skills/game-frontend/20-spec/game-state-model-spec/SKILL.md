@@ -5,7 +5,7 @@ description: "Define the frontend state model: boot, scene, in-level, meta progr
 
 # Game State Model Spec Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

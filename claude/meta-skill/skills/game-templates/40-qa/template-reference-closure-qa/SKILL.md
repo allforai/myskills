@@ -5,7 +5,7 @@ description: Validate that template schemas and instances are closed over source
 
 # Template Reference Closure QA Skill
 
-> Internal sub-skill for game-templates pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-templates pipelines. Status: bundled.
 
 ## Overview
 

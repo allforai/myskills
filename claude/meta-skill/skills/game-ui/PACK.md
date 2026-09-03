@@ -1,12 +1,12 @@
 ---
 name: game-ui
-description: Internal bundled meta-skill module for game-ui; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Game UI pack: UI registry, HUD information design, UI flow, component states, screen layout, mockup generation, and readability QA. Owns screens, component states, and UI flow on game projects."
 ---
 
 # Game UI Skill Pack
 
 > Internal bundled sub-skill pack for meta-skill.
-> Status: bundled, inactive, not wired.
+> Status: bundled.
 > This directory is installed with meta-skill but is not automatically invoked by
 > `/bootstrap` or `/run` until a node-spec explicitly reads a child skill path.
 

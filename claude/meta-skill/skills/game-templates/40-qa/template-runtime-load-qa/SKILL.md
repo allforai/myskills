@@ -5,7 +5,7 @@ description: Validate that template instances parse, resolve, and load through t
 
 # Template Runtime Load QA Skill
 
-> Internal sub-skill for game-templates pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-templates pipelines. Status: bundled.
 
 ## Overview
 

@@ -5,7 +5,7 @@ description: Define time-limited events, seasons, rotations, eligibility, reward
 
 # Event Operation Spec Skill
 
-> Internal sub-skill for game-liveops pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-liveops pipelines. Status: bundled.
 
 ## Overview
 

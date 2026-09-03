@@ -5,7 +5,7 @@ description: Define lighting, shadow, and helper-map rules so 3D-assisted render
 
 # 2.5D Lighting Shadow Spec Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-art pipelines. Status: bundled.
 
 ## Overview
 

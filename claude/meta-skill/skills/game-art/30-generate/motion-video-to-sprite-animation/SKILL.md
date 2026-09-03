@@ -5,7 +5,7 @@ description: Source a short motion video, extract and normalize frames into a sp
 
 # Motion Video To Sprite Animation Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-art pipelines. Status: bundled.
 
 ## Overview
 

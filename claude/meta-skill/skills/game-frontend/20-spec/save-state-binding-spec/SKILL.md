@@ -5,7 +5,7 @@ description: Define save/local state bindings for settings, progress, unlocked c
 
 # Save State Binding Spec Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

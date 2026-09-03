@@ -5,7 +5,7 @@ description: Validate content cadence, repetition, coverage, dependency order, n
 
 # Content Pacing QA Skill
 
-> Internal sub-skill for game-content pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-content pipelines. Status: bundled.
 
 ## Overview
 

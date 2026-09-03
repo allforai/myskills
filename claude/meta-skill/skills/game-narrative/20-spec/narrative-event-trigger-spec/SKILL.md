@@ -5,7 +5,7 @@ description: Define narrative triggers, conditions, flags, variables, rewards, U
 
 # Narrative Event Trigger Spec Skill
 
-> Internal sub-skill for game-narrative pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-narrative pipelines. Status: bundled.
 
 ## Overview
 

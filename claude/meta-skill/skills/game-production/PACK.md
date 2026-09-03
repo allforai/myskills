@@ -1,12 +1,12 @@
 ---
 name: game-production
-description: Internal bundled meta-skill module for game-production; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Ownership map for every game pack: which pack owns which concern and what it must not own. A routing reference that executes nothing."
 ---
 
 # Game Production Skill Map
 
 > Internal bundled routing map for game-related sub-skill packs.
-> Status: bundled, inactive, not wired.
+> Status: bundled.
 
 ## Purpose
 

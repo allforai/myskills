@@ -6,7 +6,7 @@ description: Validate that game UI outputs are readable, tappable, visually cons
 # UI Readability QA Skill
 
 > Internal sub-skill for game UI pipelines.
-> Status: bundled, inactive, not wired.
+> Status: bundled.
 > This file is installed with meta-skill but is not automatically invoked by
 > `/bootstrap` or `/run` until a node-spec explicitly reads this path.
 

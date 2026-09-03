@@ -5,7 +5,7 @@ description: Detect the playable client stack, runnable commands, asset loader s
 
 # Frontend Runtime Detection Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

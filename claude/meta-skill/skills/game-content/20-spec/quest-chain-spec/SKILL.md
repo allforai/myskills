@@ -5,7 +5,7 @@ description: Define quest chains with prerequisites, objectives, rewards, narrat
 
 # Quest Chain Spec Skill
 
-> Internal sub-skill for game-content pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-content pipelines. Status: bundled.
 
 ## Overview
 

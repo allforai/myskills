@@ -5,7 +5,7 @@ description: Define affinity, trust, romance, rivalry, loyalty, gifts, dialogue 
 
 # Relationship System Spec Skill
 
-> Internal sub-skill for game-genre-common pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-genre-common pipelines. Status: bundled.
 
 ## Overview
 

@@ -5,7 +5,7 @@ description: Drive gameplay with automation, capture screenshots at declared mil
 
 # Runtime Gameplay Visual Acceptance Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

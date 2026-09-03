@@ -5,7 +5,7 @@ description: "Define what appears inside each scene: scene list, layer order, sp
 
 # Scene Composition Spec Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

@@ -8,7 +8,7 @@
 该 capability 是 `art-concept` 节点的能力占位与上下文入口。实际执行由内置 skill 完成：
 
 ```text
-${CLAUDE_PLUGIN_ROOT}/skills/art-concept.md
+${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept-validation/SKILL.md
 ```
 

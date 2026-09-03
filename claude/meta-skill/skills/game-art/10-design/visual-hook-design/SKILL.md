@@ -5,7 +5,7 @@ description: "Define the game's primary visual hooks: memorable shapes, moments,
 
 # Visual Hook Design Skill
 
-> Internal sub-skill for game art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game art pipelines. Status: bundled.
 
 ## Overview
 

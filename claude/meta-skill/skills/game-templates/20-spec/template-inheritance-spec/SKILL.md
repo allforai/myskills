@@ -5,7 +5,7 @@ description: Define base templates, variants, inheritance, override rules, merge
 
 # Template Inheritance Spec Skill
 
-> Internal sub-skill for game-templates pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-templates pipelines. Status: bundled.
 
 ## Overview
 

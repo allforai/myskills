@@ -5,7 +5,7 @@ description: "Define research/tech trees: prerequisites, unlocks, eras, costs, p
 
 # Tech Tree Spec Skill
 
-> Internal sub-skill for game-genre-common pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-genre-common pipelines. Status: bundled.
 
 ## Overview
 

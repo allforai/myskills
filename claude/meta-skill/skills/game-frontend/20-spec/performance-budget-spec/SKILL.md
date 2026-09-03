@@ -5,7 +5,7 @@ description: Translate platform, genre, art, VFX, audio, scene, and loading cons
 
 # Performance Budget Spec Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

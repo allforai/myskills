@@ -6,7 +6,7 @@ description: Cross-disciplinary game creative quality gate; reads game-design, a
 # Game Creative Skill Pack
 
 > Internal bundled sub-skill pack for meta-skill.
-> Status: bundled, bootstrap-wired. `bootstrap-planning.md` rule 8 (creative
+> Status: bundled. `bootstrap-planning.md` rule 8 (creative
 > quality gate) places `creative-quality-critique` after `game-design-finalize`
 > and before `concept-acceptance` on game projects.
 

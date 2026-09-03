@@ -1,12 +1,12 @@
 ---
 name: game-design
-description: Internal bundled meta-skill module for game-design; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Game product design pack: registry, audience, pillars, core loop, player experience contract, system specs (mechanics, combat, economy, progression, modes, levels, narrative, objectives, meta game), data/enemy/item/level generation, and seven closure QAs."
 ---
 
 # Game Design Skill Pack
 
 > Internal bundled sub-skill pack for meta-skill.
-> Status: bundled, inactive, not wired.
+> Status: bundled.
 > This directory is installed with meta-skill but is not automatically invoked by
 > `/bootstrap` or `/run` until a node-spec explicitly reads a child skill path.
 

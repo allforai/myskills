@@ -5,7 +5,7 @@ description: Validate level pacing across teaching, encounters, rewards, rest po
 
 # Level Pacing QA Skill
 
-> Internal sub-skill for game-level pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-level pipelines. Status: bundled.
 
 ## Overview
 

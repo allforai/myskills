@@ -5,7 +5,7 @@ description: Define numeric design goals for pacing, difficulty, economy pressur
 
 # Balance Goal Spec Skill
 
-> Internal sub-skill for game-balance pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-balance pipelines. Status: bundled.
 
 ## Overview
 

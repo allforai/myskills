@@ -5,7 +5,7 @@ description: Generate level blockouts, tile maps, room graphs, route maps, colli
 
 # Level Blockout Generation Skill
 
-> Internal sub-skill for game-level pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-level pipelines. Status: bundled.
 
 ## Overview
 

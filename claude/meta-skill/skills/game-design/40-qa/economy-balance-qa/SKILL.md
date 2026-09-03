@@ -5,7 +5,7 @@ description: Validate economy source/sink closure, affordability, inflation, exp
 
 # Economy Balance QA Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

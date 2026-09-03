@@ -5,7 +5,7 @@ description: Define keyboard/touch/gamepad controls, camera follow/framing, view
 
 # Input Camera Binding Spec Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

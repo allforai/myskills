@@ -5,7 +5,7 @@ description: "Define repeatable or optional activities: objective, cadence, entr
 
 # Activity Design Spec Skill
 
-> Internal sub-skill for game-content pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-content pipelines. Status: bundled.
 
 ## Overview
 

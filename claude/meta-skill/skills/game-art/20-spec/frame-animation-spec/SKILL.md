@@ -5,7 +5,7 @@ description: Define frame-sequence animation contracts for pixel art, non-rigged
 
 # Frame Animation Spec Skill
 
-> Internal sub-skill for game art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game art pipelines. Status: bundled.
 
 ## Overview
 

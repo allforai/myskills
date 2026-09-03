@@ -5,7 +5,7 @@ description: Define player growth, unlocks, difficulty ramp, chapters, mastery, 
 
 # Progression Spec Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

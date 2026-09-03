@@ -5,7 +5,7 @@ description: Plan and validate texture atlases for icons, tilesets, sprites, VFX
 
 # Atlas Packaging Skill
 
-> Internal sub-skill for game art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game art pipelines. Status: bundled.
 
 ## Overview
 

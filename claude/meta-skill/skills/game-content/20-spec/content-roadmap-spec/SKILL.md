@@ -5,7 +5,7 @@ description: Define content sequence, scope, release order, dependency plan, cov
 
 # Content Roadmap Spec Skill
 
-> Internal sub-skill for game-content pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-content pipelines. Status: bundled.
 
 ## Overview
 

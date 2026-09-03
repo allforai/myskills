@@ -5,7 +5,7 @@ description: Define daily/weekly task cadence, objective pools, reset rules, rew
 
 # Daily Weekly Task Spec Skill
 
-> Internal sub-skill for game-liveops pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-liveops pipelines. Status: bundled.
 
 ## Overview
 

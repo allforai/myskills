@@ -5,7 +5,7 @@ description: Plan LLM image generation batches by asset family, model profile, p
 
 # Image Batch Generation Plan Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive,
+> Internal sub-skill for game-art pipelines. Status: bundled,
 > image-generation upstream.
 
 ## Purpose

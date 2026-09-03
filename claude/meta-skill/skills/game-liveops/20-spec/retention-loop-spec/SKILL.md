@@ -5,7 +5,7 @@ description: Define daily, weekly, monthly, comeback, streak, social, and collec
 
 # Retention Loop Spec Skill
 
-> Internal sub-skill for game-liveops pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-liveops pipelines. Status: bundled.
 
 ## Overview
 

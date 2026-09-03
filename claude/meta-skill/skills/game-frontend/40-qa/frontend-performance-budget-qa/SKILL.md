@@ -5,7 +5,7 @@ description: Validate startup, asset loading, frame stability, texture/atlas cou
 
 # Frontend Performance Budget QA Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

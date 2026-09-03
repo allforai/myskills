@@ -5,7 +5,7 @@ description: Map audio cue manifests into loader keys, scene/UI triggers, animat
 
 # Audio Binding Spec Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

@@ -5,7 +5,7 @@ description: Create canonical IDs, names, owners, lifecycle states, and cross-sk
 
 # Game Design Registry Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

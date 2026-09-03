@@ -5,7 +5,7 @@ description: Decide whether the project needs LoRA or a cheaper identity lock su
 
 # LoRA Identity Style Lock Spec Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-art pipelines. Status: bundled.
 > Reached only through `game-art/PACK.md` when a node-spec selects LoRA identity locking.
 
 ## Overview

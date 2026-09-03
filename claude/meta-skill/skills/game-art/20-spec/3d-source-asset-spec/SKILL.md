@@ -5,7 +5,7 @@ description: "Define 3D source assets used only to produce 2D art: model purpose
 
 # 3D Source Asset Spec Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-art pipelines. Status: bundled.
 
 ## Overview
 

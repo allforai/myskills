@@ -5,7 +5,7 @@ description: "Define the long-term game outside a single run: collection, accoun
 
 # Meta Game Spec Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 

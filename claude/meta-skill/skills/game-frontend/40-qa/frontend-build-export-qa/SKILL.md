@@ -5,7 +5,7 @@ description: "Validate the production build/export path: build command, output d
 
 # Frontend Build Export QA Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

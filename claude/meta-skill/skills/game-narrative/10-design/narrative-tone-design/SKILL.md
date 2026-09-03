@@ -5,7 +5,7 @@ description: Define narrative voice, world language, humor/drama level, characte
 
 # Narrative Tone Design Skill
 
-> Internal sub-skill for game-narrative pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-narrative pipelines. Status: bundled.
 
 ## Overview
 

@@ -5,7 +5,7 @@ description: Define product-level data entities, fields, relationships, lifecycl
 
 # Data Model Spec Skill
 
-> Internal sub-skill for app-design pipelines. Status: bundled, bootstrap-wired, invoked by app-design node-specs.
+> Internal sub-skill for app-design pipelines. Status: bundled.
 
 ## Overview
 

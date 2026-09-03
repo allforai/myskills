@@ -5,7 +5,7 @@ description: Generate concrete content pack plans from roadmap, quest, activity,
 
 # Content Pack Plan Generation Skill
 
-> Internal sub-skill for game-content pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-content pipelines. Status: bundled.
 
 ## Overview
 

@@ -5,7 +5,7 @@ description: Define runtime animation states, transitions, priorities, interrupt
 
 # Animation State Machine Spec Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-art pipelines. Status: bundled.
 
 ## Overview
 

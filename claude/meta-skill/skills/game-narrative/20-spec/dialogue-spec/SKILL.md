@@ -5,7 +5,7 @@ description: Define dialogue nodes, speakers, triggers, variables, branches, emo
 
 # Dialogue Spec Skill
 
-> Internal sub-skill for game-narrative pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-narrative pipelines. Status: bundled.
 
 ## Overview
 

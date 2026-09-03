@@ -1,11 +1,11 @@
 ---
 name: game-narrative
-description: Internal bundled meta-skill module for game-narrative; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Narrative pack: character arcs, tone, world bible, dialogue, event-trigger, quest-text, and story-structure specs, dialogue generation, and text consistency QA."
 ---
 
 # Game Narrative Skill Pack
 
-> Internal bundled sub-skill pack for meta-skill. Status: bundled, inactive, not wired.
+> Internal bundled sub-skill pack for meta-skill. Status: bundled.
 
 ## Purpose
 

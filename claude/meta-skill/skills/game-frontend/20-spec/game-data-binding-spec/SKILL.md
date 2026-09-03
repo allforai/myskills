@@ -5,7 +5,7 @@ description: Map design data tables, system specs, and template instances into r
 
 # Game Data Binding Spec Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

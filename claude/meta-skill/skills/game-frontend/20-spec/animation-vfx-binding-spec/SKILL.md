@@ -5,7 +5,7 @@ description: Map animation state machines, clips, sprite sheets, VFX, particles,
 
 # Animation VFX Binding Spec Skill
 
-> Internal sub-skill for game-frontend pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-frontend pipelines. Status: bundled.
 
 ## Overview
 

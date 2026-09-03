@@ -5,8 +5,7 @@ description: Define what a project must look like and what must be rejected befo
 
 # Visual Acceptance Criteria Skill
 
-> Internal sub-skill for reusable visual QA pipelines. Status: bundled,
-> inactive, not wired.
+> Internal sub-skill for reusable visual QA pipelines. Status: bundled.
 
 ## Overview
 

@@ -5,7 +5,7 @@ description: Register numeric tables, curves, formulas, balance entities, owners
 
 # Balance Registry Skill
 
-> Internal sub-skill for game-balance pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-balance pipelines. Status: bundled.
 
 ## Overview
 

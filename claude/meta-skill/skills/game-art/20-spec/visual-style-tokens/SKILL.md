@@ -5,7 +5,7 @@ description: Convert art direction into shared visual tokens (palette, line, sha
 
 # Visual Style Tokens Skill
 
-> Internal sub-skill for game art pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game art pipelines. Status: bundled.
 
 ## Overview
 

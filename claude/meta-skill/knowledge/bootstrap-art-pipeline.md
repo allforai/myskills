@@ -34,7 +34,7 @@ exit_artifacts:
 
 ## 执行方法
 
-读取并执行 `${CLAUDE_PLUGIN_ROOT}/skills/art-concept.md` skill，完成交互式 Q&A 并产出 `art-pipeline-config.json`。
+读取并执行 `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept/SKILL.md` skill，完成交互式 Q&A 并产出 `art-pipeline-config.json`。
 
 art-concept skill 完成后，依次调用以下 game-art 子 skill 细化策略（读取对应 SKILL.md 并执行）：
 

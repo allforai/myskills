@@ -5,7 +5,7 @@ description: Validate audio outputs for loudness, clipping, silence, duration, l
 
 # Audio Loudness QA Skill
 
-> Internal sub-skill for game-audio pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-audio pipelines. Status: bundled.
 
 ## Overview
 

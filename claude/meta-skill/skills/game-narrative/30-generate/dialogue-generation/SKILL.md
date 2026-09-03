@@ -5,7 +5,7 @@ description: Generate dialogue lines, barks, tutorial lines, and variants from d
 
 # Dialogue Generation Skill
 
-> Internal sub-skill for game-narrative pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-narrative pipelines. Status: bundled.
 
 ## Overview
 

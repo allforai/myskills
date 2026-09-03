@@ -5,7 +5,7 @@ description: Define tutorial steps with triggers, prompts, required player actio
 
 # Tutorial Step Spec Skill
 
-> Internal sub-skill for game-onboarding pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-onboarding pipelines. Status: bundled.
 
 ## Overview
 

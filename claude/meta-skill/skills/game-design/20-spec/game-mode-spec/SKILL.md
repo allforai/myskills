@@ -5,7 +5,7 @@ description: Define playable modes (campaign, stage, challenge, endless, practic
 
 # Game Mode Spec Skill
 
-> Internal sub-skill for game-design pipelines. Status: bundled, inactive, not wired.
+> Internal sub-skill for game-design pipelines. Status: bundled.
 
 ## Overview
 
