@@ -11,6 +11,12 @@ description: Audit every generated node-spec before /run for completion standard
 
 ## Overview
 
+Bootstrap can fail silently by generating a small legal-looking workflow that
+does not represent a mature product. This skill validates the generated
+workflow before `/run`: it checks whether bootstrap expanded the guiding
+philosophy into concrete nodes, dependencies, artifacts, and verification
+evidence.
+
 The three-lens DAG gate proves the node *graph* is sound: decisions closed,
 no cycles, every goal traced. This skill proves each *node-spec* is sound. A
 graph can pass every structural lens while its nodes still say "done when the
@@ -114,6 +120,7 @@ Optional:
 
 ```text
 .allforai/bootstrap/dag-critique.json
+.allforai/bootstrap/<runtime>-game-client-profile.json
 .allforai/orchestration/skill-composition-plan.json
 .allforai/game-design/game-design-doc.json
 .allforai/app-design/app-design-doc.json
@@ -170,6 +177,9 @@ Allowed blocker codes:
 - `unbounded_context_pull`
 - `missing_visual_acceptance`
 - `missing_runtime_probe`
+- `missing_io_effect_qa`
+- `missing_platform_qa`
+- `missing_runtime_family`
 - `missing_repair_loop`
 - `repair_loop_not_blocked_by_qa`
 - `acceptance_not_blocked_by_repair_loop`
@@ -206,6 +216,8 @@ Reject the workflow when any production node-spec matches one of these:
   acceptance evidence;
 - an I/O node has only mocks or function-call assertions, without real effect
   proof;
+- a platform target (mobile, desktop, WebView, console, store build) has no
+  platform QA node proving the build runs and renders on that target;
 - a generated module node does not require production consumer wiring proof;
 - a rewritten module node does not require import/export compatibility checks;
 - a QA node's repairable findings have no repair-and-revalidation node, or that
@@ -213,10 +225,30 @@ Reject the workflow when any production node-spec matches one of these:
 - final acceptance or closure is not `hard_blocked_by` the repair node;
 - a QA node may pass on a prior report without rerunning after repair.
 
+## Runtime Specialization
+
+When the detected runtime has a knowledge file, delegate the concrete node
+family matrix to it:
+
+```text
+${CLAUDE_PLUGIN_ROOT}/knowledge/engines/<runtime>.md
+.allforai/bootstrap/<runtime>-game-client-profile.json
+```
+
+The workflow must include or explicitly block every node family that file
+declares for a mature client of that runtime (typically runtime core,
+interface contracts, asset bundle, scenes, gameplay systems, runtime QA,
+gameplay visual QA, performance QA, platform QA, repair loop, and concept
+acceptance). A family that is neither present nor blocked with a reason in the
+project-local runtime profile is `missing_runtime_family`. Mobile and
+high-density targets must include high-DPR screenshot QA before native build
+acceptance. This audit does not enumerate families itself; the runtime file
+and the profile own the list.
+
 Runtime-specific evidence requirements (DPR screenshots, probe schemas, build
-export checks) come from the project-local runtime profile and specialized
-skills that bootstrap already wrote; this audit checks that the node-spec
-references them, not what they contain.
+export checks) also come from that file and the specialized skills bootstrap
+already wrote; this audit checks that the node-spec references them, not what
+they contain.
 
 ## Completion Conditions
 

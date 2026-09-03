@@ -275,6 +275,11 @@ def validate_bootstrap_node_expansion_contract(errors: list[str]) -> None:
         "repair_loop_not_blocked_by_qa",
         "acceptance_not_blocked_by_repair_loop",
         "qa_report_without_revalidation",
+        "missing_io_effect_qa",
+        "missing_platform_qa",
+        "missing_runtime_family",
+        "knowledge/engines/<runtime>.md",
+        "small legal-looking workflow",
     ):
         if term not in skill_text:
             errors.append(f"bootstrap-node-expansion-qa: missing contract term {term}")
