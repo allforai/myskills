@@ -8,6 +8,33 @@
 Transform experience-map + product-map into concrete UI specifications:
 design tokens, per-screen layouts, component specs, and optional interactive previews.
 
+## Single Source Of Screens, Flows, And Interactions
+
+ui-design reads screens and flows from **exactly one place** — the product-analysis
+artifacts. It must not read design-phase JSON directly.
+
+| What ui-design needs | The only file it reads | Who wrote the content |
+|---|---|---|
+| Screen inventory | `.allforai/experience-map/experience-map.json` → `screens[]` | app-design / game-design authored it; product-analysis aggregated it |
+| User flows | `.allforai/product-map/business-flows.json` → `flows[]` | same |
+| Component states, gestures, feedback | `.allforai/app-design/interaction-design.json` (games: game-design equivalent) | app-design owns it |
+
+Rules:
+
+1. **Do not read `app-design/ia-design.json` or `app-design/user-flow-design.json`
+   directly.** Their content reaches ui-design through product-analysis; reading
+   both creates two competing screen lists with no precedence rule.
+2. **Do not invent screens.** If a screen is needed but absent from
+   `experience-map.json`, return `UPSTREAM_DEFECT` naming the missing screen —
+   do not add it locally.
+3. **Do not redefine component states, gesture models, or loading strategy.**
+   `interaction-design.json` owns those. ui-design references its
+   `components[].states[]` by `component_id`; it never restates them.
+4. When app-design ran, `app-design/handoff/ui-design-input-handoff.json` is a
+   convenience index into the above files, not a fourth source. Where it
+   disagrees with `experience-map.json`, `experience-map.json` wins and the
+   disagreement is reported as `UPSTREAM_DEFECT`.
+
 ## What LLM Must Accomplish (not how)
 
 ### Required Outputs
@@ -23,7 +50,7 @@ design tokens, per-screen layouts, component specs, and optional interactive pre
 |--------|------|
 | `preview/*.html` | Interactive HTML previews (if user wants visual validation) |
 | `art-direction.md` | For games or visually-driven products |
-| `interaction-spec.md` | For products with significant dynamic interactions (IM, collaborative tools, games). Covers: transition animations, gesture interactions (swipe-to-reply, long-press menus), real-time update patterns (typing indicators, live cursors), micro-interactions (message send animation, pull-to-refresh), loading/skeleton states with timing. |
+| `interaction-spec.md` | For products with significant dynamic interactions (IM, collaborative tools, games). **Visual/motion layer only** — it must not restate what `interaction-design.json` already owns (component state lists, `gesture_model`, `loading_strategy`); it references those by `component_id` and adds only the visual realization: transition animation curves and durations, real-time update rendering (typing indicators, live cursors), micro-interaction motion (message send animation, pull-to-refresh), and skeleton/loading visual treatment with timing. If `interaction-design.json` is missing, ui-design defines these itself and says so in the file header. |
 
 ### Required Quality
 
@@ -42,14 +69,36 @@ design tokens, per-screen layouts, component specs, and optional interactive pre
 - **Don't over-specify**: Describe intent and constraints, not pixel coordinates
 - **Component reuse**: Identify shared components across screens, define once
 
+## Domain Gate: app projects vs game projects
+
+ui-design owns screen specs and design tokens **only for non-game projects**.
+For game projects (`bootstrap-profile.json.is_game_project = true`) the
+`game-ui` skill pack owns the same ground, and running both produces two screen
+layouts, two component-state lists, and two token files for one product.
+
+| Concern | Non-game project | Game project |
+|---|---|---|
+| Screen inventory + layout | ui-design → `ui-design-spec.md` | `game-ui/20-spec/screen-layout-spec` |
+| Component states | app-design `interaction-design.json` | `game-ui/20-spec/component-state-spec` |
+| Screen/UI flow | product-analysis `business-flows.json` | `game-ui/10-design/ui-flow-design` |
+| Design tokens | ui-design → `tokens.json` | `game-art/20-spec/visual-style-tokens` → `visual-style-tokens.json` |
+
+On a game project ui-design does not author these. It runs only if the workflow
+needs a token bridge, and then its `tokens.json` is **derived from**
+`.allforai/game-design/art/visual-style-tokens.json` — mapped, not re-invented —
+so downstream implementation nodes that consume `tokens.json` still work. Every
+derived value must carry a `source_token` reference. If
+`visual-style-tokens.json` is missing on a game project, return
+`UPSTREAM_DEFECT`; do not invent a parallel palette.
+
 ## Specialization Guidance
 
 | Project Type | UI Design Differences |
 |-------------|----------------------|
 | Consumer mobile app | Mobile-first, touch targets, thumb zones, offline states |
 | Admin dashboard | Data density, table/form patterns, multi-action pages |
-| Casual / narrative game | Art direction replaces UI design; mood board, style guide, character design |
-| Multiplayer / action game with HUD | Produce both art direction AND interaction-spec covering HUD components (health/stamina bars, minimap, scoreboard, inventory grid, toast notifications) plus UI screens (lobby, matchmaking, settings) |
+| Casual / narrative game | Owned by `game-art` art direction + `game-ui`; ui-design only bridges tokens |
+| Multiplayer / action game with HUD | Owned by `game-ui` (HUD, screens) + `game-art` (art direction); ui-design only bridges tokens |
 | SDK/Library | Documentation design replaces UI design (Diátaxis framework) |
 | CLI | No UI design needed — skip entirely |
 

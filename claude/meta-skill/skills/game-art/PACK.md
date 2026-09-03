@@ -293,6 +293,9 @@ Rules:
   `.allforai/game-design/art/qa/visual-acceptance-batches/`,
   `.allforai/game-design/art/qa/codex-visual-review.json`,
   `.allforai/game-design/art/qa/codex-visual-review.md`,
+  `.allforai/game-design/art/qa/claude-code-visual-review.json`,
+  `.allforai/game-design/art/qa/claude-code-visual-review.md`,
+  `.allforai/game-design/art/qa/visual-review-reconciliation.json`,
   `.allforai/game-design/art/qa/visual-review-closure-audit.json`, and
   `.allforai/game-design/art/qa/visual-review-closure-audit.md`. If visual
   defects require repair, the loop must also write

@@ -157,7 +157,8 @@ Gameplay Screenshot Plan
 before/after pairs
 Codex CLI
 pull mode
-Claude Code must not re-score visual quality
+Claude Code independently inspects the same runtime screenshots
+union of both reviews
 Repair And Revalidation Loop
 rerun the same affected gameplay screenshot tasks
 production_visual_binding

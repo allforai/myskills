@@ -17,6 +17,28 @@ orchestrator. It only handles UI quality issues after functionality is complete:
 - Pages are functionally correct but deviate from design spec / tokens / screenshots
 - Need to increase production quality without changing business semantics
 
+## Boundary: ui-forge vs visual-verify
+
+Both capabilities compare a running UI against a reference and then change code.
+The reference is what separates them, and the split is binding:
+
+| | ui-forge | visual-verify |
+|---|---|---|
+| Reference | `ui-design/ui-design-spec.md` + `tokens.json` | screenshots of a **source app** |
+| Needs a source app | No | Yes — without one, skip |
+| Question answered | "Does the build match the design we specified?" | "Does the build match the app we are replicating?" |
+| In scope to fix | Token values, layout vs spec, component states, visual polish | Layout/style diffs, data-content diffs, navigation/link diffs |
+| Out of scope | Data content, navigation targets, link behavior | Polish work with no source-app counterpart |
+| Order | Runs first | Runs last (see visual-verify Rules) |
+
+If a project has both a design spec and a source app, both run, in that order,
+and neither re-fixes the other's category. A defect ui-forge already closed must
+not reappear as a visual-verify repair item; visual-verify reads
+`ui-forge/fidelity-assessment.json` to skip them.
+
+If a project has a source app but no design spec, only visual-verify runs.
+If it has a design spec but no source app, only ui-forge runs.
+
 ## Phases
 
 ### Phase 1: Fidelity Check

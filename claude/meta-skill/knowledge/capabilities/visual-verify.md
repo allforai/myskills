@@ -26,6 +26,28 @@ identify layout/style/content discrepancies, fix in repair loop.
 5. Report: aggregate scores
 6. Repair loop: fix -> re-capture -> re-compare -> Claude Code review (max 30 rounds)
 
+## Boundary: ui-forge vs visual-verify
+
+Both capabilities compare a running UI against a reference and then change code.
+The reference is what separates them, and the split is binding:
+
+| | ui-forge | visual-verify |
+|---|---|---|
+| Reference | `ui-design/ui-design-spec.md` + `tokens.json` | screenshots of a **source app** |
+| Needs a source app | No | Yes — without one, skip |
+| Question answered | "Does the build match the design we specified?" | "Does the build match the app we are replicating?" |
+| In scope to fix | Token values, layout vs spec, component states, visual polish | Layout/style diffs, data-content diffs, navigation/link diffs |
+| Out of scope | Data content, navigation targets, link behavior | Polish work with no source-app counterpart |
+| Order | Runs first | Runs last (see visual-verify Rules) |
+
+If a project has both a design spec and a source app, both run, in that order,
+and neither re-fixes the other's category. A defect ui-forge already closed must
+not reappear as a visual-verify repair item; visual-verify reads
+`ui-forge/fidelity-assessment.json` to skip them.
+
+If a project has a source app but no design spec, only visual-verify runs.
+If it has a design spec but no source app, only ui-forge runs.
+
 ## Modes
 
 | Mode | What |
@@ -41,7 +63,7 @@ identify layout/style/content discrepancies, fix in repair loop.
 3. **Multi-role**: role-view-matrix.json triggers per-role comparison.
 4. **5-layer validation**: Static page, CRUD states, dynamic effects, API logs, composite milestones.
 5. **Data injection tiers**: User interaction > ViewModel call > Network mock > UNREACHABLE.
-6. **Pre-condition**: Visual verify runs last — after cr-fidelity + product-verify + testforge all pass.
+6. **Pre-condition**: Visual verify runs last — after cr-fidelity + product-verify + testforge all pass, and after ui-forge when that capability is in the workflow.
 7. **Encoding**: All output files must use UTF-8. JSON with `ensure_ascii=False`. Scrub GBK mojibake on read-back.
 8. **Linkage verify**: If `.allforai/visual-verify/interaction-recordings.json` exists, execute same business flow chains (not just screenshots).
 9. **Claude Code review required**: screenshot diff or DOM-derived comparison is not enough. Claude Code must inspect the screenshots and produce a visual review report before the node can pass.

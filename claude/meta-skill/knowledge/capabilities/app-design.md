@@ -233,10 +233,19 @@ Bootstrap initialises one `pending` record per selected app-design node at boots
 
 ## Downstream Consumers
 
+> **Screens and flows reach ui-design through product-analysis, not directly.**
+> app-design authors them; `product-analysis` aggregates them into
+> `experience-map.json.screens[]` and `business-flows.json.flows[]`; ui-design
+> reads only those. `handoff/ui-design-input-handoff.json` is an index into the
+> same content, not an independent source. This keeps exactly one screen list in
+> the pipeline. `interaction-design.json` is the one exception: ui-design
+> references it directly because no aggregation step owns component states.
+
 | Consumer | Reads from | Fields |
 |----------|-----------|--------|
-| `ui-design` | `ia-design.json` | `screens[]`, `nav_model` |
-| `ui-design` | `user-flow-design.json` | `flows[]` → wireframe sequence |
+| `product-analysis` | `ia-design.json` | `screens[]`, `nav_model` → aggregated into `experience-map.json.screens[]` |
+| `product-analysis` | `user-flow-design.json` | `flows[]` → aggregated into `business-flows.json.flows[]` |
+| `ui-design` | `interaction-design.json` | `components[].states[]`, `gesture_model`, `loading_strategy` — referenced, never restated |
 | `product-verify` | `app-design-doc.json` | Expected screens and flows for verification |
 | `product-verify` | `handoff/program-development-node-handoff.json` | Implementation and validation-node coverage |
 | `concept-acceptance` | `app-design-doc.json` | Baseline for concept vs. implementation comparison |

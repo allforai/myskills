@@ -14,6 +14,12 @@ and game UI generators. It is the source for palette, line, shape, material,
 camera, lighting, typography feel, icon language, effect intensity, and motion
 tone.
 
+**It is the only token author on a game project.** `game-ui` consumes these
+tokens rather than defining its own, and the `ui-design` capability's
+`tokens.json` must be derived from `visual-style-tokens.json` with a
+`source_token` reference per value, never invented in parallel. On a non-game
+project this skill does not run and `ui-design/tokens.json` is the authority.
+
 ## Input Contract
 
 Required: `.allforai/game-design/art-style-guide.json` or equivalent art

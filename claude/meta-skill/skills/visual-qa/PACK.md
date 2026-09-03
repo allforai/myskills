@@ -1,6 +1,6 @@
 ---
 name: visual-qa
-description: Internal bundled meta-skill module for reusable visual QA workflows; use when any project artifact needs batch screenshot/image/contact-sheet review through Codex CLI with auditable reports and repair loops.
+description: Internal bundled meta-skill module for reusable visual QA workflows; use when any project artifact needs batch screenshot/image/contact-sheet review through dual independent visual review (Codex CLI and Claude Code) with auditable reports and repair loops.
 ---
 
 # Visual QA Skill Pack
@@ -13,8 +13,8 @@ description: Internal bundled meta-skill module for reusable visual QA workflows
 Visual QA owns reusable visual evidence review mechanics. Domain packs such as
 `game-art`, `game-ui`, `game-frontend`, app verification, and design gates
 provide domain inputs; this pack derives explicit visual acceptance criteria
-and handles batching, Codex CLI inspection, reports, feedback, and rerun
-closure.
+and handles batching, dual independent visual inspection, reports, feedback,
+and rerun closure.
 
 ## Current Children
 
@@ -22,7 +22,7 @@ closure.
 |---|---|---|
 | `00-env` | `visual-model-capability-registry` | Detect Codex CLI visual model availability and route batch tasks to suitable visual model profiles. |
 | `20-spec` | `visual-acceptance-criteria` | Generate project/scene/asset/state visual standards, forbidden placeholders, evidence requirements, failure codes, and repair routes. |
-| `40-qa` | `batch-visual-acceptance` | Batch Markdown visual review, mandatory Codex CLI inspection, JSON/Markdown report output, feedback, rerun, and closure audit. |
+| `40-qa` | `batch-visual-acceptance` | Batch Markdown visual review, two independent inspections (Codex CLI + Claude Code), JSON/Markdown report output, reconciliation, feedback, rerun, and closure audit. |
 
 ## Canonical Invocation Paths
 
@@ -51,9 +51,10 @@ Do not run visual QA from screenshots alone when
 `.allforai/visual-qa/visual-acceptance-criteria.json` is missing for the visual
 scope. Return `blocked_by_missing_visual_criteria` or `UPSTREAM_DEFECT`.
 
-Codex CLI is the required visual reviewer. Claude Code should not duplicate the
-visual judgment; it may audit closure, evidence references, feedback routing,
-and rerun records.
+Visual review is dual-reviewer. Codex CLI and Claude Code each inspect the
+evidence independently and each write their own report; neither is skipped to
+save tokens, and neither reads the other's findings first. Blocking findings are
+the **union** of both reports. Reconciliation and closure audit run after both.
 
 High-risk visual batches must be routed through
 `visual-model-capability-registry` before review. If model capability is missing

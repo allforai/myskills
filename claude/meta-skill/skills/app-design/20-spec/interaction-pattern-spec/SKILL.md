@@ -9,6 +9,13 @@ description: Internal bundled meta-skill module for app-design/20-spec/interacti
 
 ## Overview
 
+**Owns component states for the whole pipeline.** `interaction-design.json`
+produced here is the single definition of `components[].states[]`,
+`gesture_model`, and `loading_strategy`. The `ui-design` capability references
+these by `component_id` and adds only visual/motion realization; it must not
+restate or extend the state lists. On game projects this skill does not run and
+`game-ui/20-spec/component-state-spec` owns the same ground instead.
+
 Defines interactive component behavior, state transitions, feedback, gestures,
 loading, accessibility, and error recovery patterns.
 

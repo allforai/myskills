@@ -1606,7 +1606,7 @@ Run quality assurance across all generated art assets. Invoke the appropriate ga
 Read and follow each applicable sub-skill SKILL.md in order:
 
 1. **Preview evidence (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/art-preview-qa/SKILL.md`
-2. **Visual acceptance batch documents + Codex CLI review document + Claude Code closure audit document (always for generated/adapted bitmap assets):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/visual-acceptance-review/SKILL.md`
+2. **Visual acceptance batch documents + two independent review documents (Codex CLI and Claude Code) + reconciliation + closure audit (always for generated/adapted bitmap assets):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/visual-acceptance-review/SKILL.md`
 3. **Asset family consistency (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-family-consistency-qa/SKILL.md`
 4. **Style consistency (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/2d-style-consistency-qa/SKILL.md`
 5. **UI readability** (when `ui-art-gen` ran): `${CLAUDE_PLUGIN_ROOT}/skills/game-ui/40-qa/ui-readability-qa/SKILL.md`
@@ -1620,9 +1620,9 @@ Read and follow each applicable sub-skill SKILL.md in order:
 
 ## Completion Condition
 
-`art-qa-report.html` exists, `.allforai/game-runtime/art/engine-ready-art-manifest.json` exists, `.allforai/game-design/art/qa/visual-acceptance-task-list.json` exists, `.allforai/game-design/art/qa/visual-acceptance-batches/` contains Markdown batch documents, `.allforai/game-design/art/qa/codex-visual-review.json` exists, `.allforai/game-design/art/qa/codex-visual-review.md` exists, `.allforai/game-design/art/qa/visual-review-closure-audit.json` exists, `.allforai/game-design/art/qa/visual-review-closure-audit.md` exists, `.allforai/game-design/art/qa/asset-family-consistency-report.json` exists with `status == "passed"`, `.allforai/game-design/art/qa/in-game-beauty-gate-report.json` exists with `status == "passed"` when runtime screenshots are available, and if any Codex blocker/major visual issue was found then `.allforai/game-design/art/qa/visual-repair-loop-report.json` and `.allforai/game-design/art/qa/visual-repair-loop-report.md` exist showing regenerate/repair plus rerun Codex CLI review and Claude Code closure audit for affected batches. No sub-skill may return `UPSTREAM_DEFECT`, `FAILED_VALIDATION`, `blocked_by_missing_visual_evidence`, `blocked_by_missing_codex_cli`, `blocked_by_missing_runtime_screenshots`, `quality_gaps`, `visual_quality_gaps`, `beauty_gaps`, or `runtime_visual_gaps`.
+`art-qa-report.html` exists, `.allforai/game-runtime/art/engine-ready-art-manifest.json` exists, `.allforai/game-design/art/qa/visual-acceptance-task-list.json` exists, `.allforai/game-design/art/qa/visual-acceptance-batches/` contains Markdown batch documents, `.allforai/game-design/art/qa/codex-visual-review.json` exists, `.allforai/game-design/art/qa/codex-visual-review.md` exists, `.allforai/game-design/art/qa/claude-code-visual-review.json` exists, `.allforai/game-design/art/qa/claude-code-visual-review.md` exists, `.allforai/game-design/art/qa/visual-review-reconciliation.json` exists, `.allforai/game-design/art/qa/visual-review-closure-audit.json` exists, `.allforai/game-design/art/qa/visual-review-closure-audit.md` exists, `.allforai/game-design/art/qa/asset-family-consistency-report.json` exists with `status == "passed"`, `.allforai/game-design/art/qa/in-game-beauty-gate-report.json` exists with `status == "passed"` when runtime screenshots are available, and if either reviewer found a blocker/major visual issue then `.allforai/game-design/art/qa/visual-repair-loop-report.json` and `.allforai/game-design/art/qa/visual-repair-loop-report.md` exist showing regenerate/repair plus rerun of both independent visual reviews, reconciliation, and Claude Code closure audit for affected batches. No sub-skill may return `UPSTREAM_DEFECT`, `FAILED_VALIDATION`, `blocked_by_missing_visual_evidence`, `blocked_by_missing_codex_cli`, `blocked_by_missing_runtime_screenshots`, `quality_gaps`, `visual_quality_gaps`, `beauty_gaps`, or `runtime_visual_gaps`.
 
-`COMPLETED_WITH_LIMITS` cannot pass art-qa when the limit is missing images, missing contact sheets, missing screenshots, missing Codex CLI visual review, or missing Claude Code closure audit.
+`COMPLETED_WITH_LIMITS` cannot pass art-qa when the limit is missing images, missing contact sheets, missing screenshots, missing Codex CLI visual review, missing Claude Code visual review, missing reconciliation, or missing Claude Code closure audit.
 
 **Gate action on any art QA failure:**
 For each failing asset, asset family, or runtime screenshot, first execute the
@@ -1631,7 +1631,7 @@ visual repair loop. The loop must write an owner-specific feedback report
 `.allforai/game-frontend/qa/runtime-visual-feedback-report.json` for
 runtime/UI-owned failures, or an equivalent import/binding feedback report),
 repair the narrowest upstream owner, rebuild affected previews/contact sheets or
-runtime screenshots, rerun Codex CLI visual review for the affected evidence,
+runtime screenshots, rerun both independent visual reviews for the affected evidence,
 and rerun the specific QA gate that failed. Append every iteration to
 `.allforai/game-design/art/qa/visual-repair-loop-report.json` and
 `.allforai/game-design/art/qa/visual-repair-loop-report.md`.
@@ -2408,19 +2408,25 @@ Required node-spec obligations:
   `${CLAUDE_PLUGIN_ROOT}/skills/visual-qa/40-qa/batch-visual-acceptance/SKILL.md`
   and delegate visual inspection through
   `${CLAUDE_PLUGIN_ROOT}/skills/codex-cli-delegation/30-execute/codex-cli-task/SKILL.md`.
-- The node must write Codex visual review reports:
+- Visual review is dual-reviewer. The node must write both reviewers' reports
+  plus reconciliation and closure audit:
   - `.allforai/verify/codex-ui-visual-review.json`
   - `.allforai/verify/codex-ui-visual-review.md`
+  - `.allforai/verify/claude-code-visual-review.json`
+  - `.allforai/verify/claude-code-visual-review.md`
+  - `.allforai/verify/ui-visual-reconciliation.json`
   - `.allforai/verify/ui-visual-closure-audit.json`
   - `.allforai/verify/ui-visual-closure-audit.md`
-- Codex CLI must check blank screens, loading stuck states, clipped/overlapped
+- Both reviewers must check blank screens, loading stuck states, clipped/overlapped
   text, unreadable contrast, missing required content, broken navigation state,
   modal/keyboard obstruction, wrong language, and responsive layout breakage.
-- Claude Code only performs closure audit: report existence, inspected evidence
-  paths, failure routing, repair execution, and rerun records. Claude Code must
-  not re-score screenshot quality when Codex CLI has produced the visual review.
+- Claude Code inspects the screenshots itself and writes its own review; it must
+  not read the Codex report before doing so, and it must not skip its own review
+  to save tokens. Blocking findings are the union of both reviews. Claude Code
+  then performs reconciliation plus closure audit: report existence, inspected
+  evidence paths, failure routing, repair execution, and rerun records.
 - The node cannot pass when screenshots are missing, unreadable, stale, or when
-  Codex CLI reports blocker/major visual issues. Return
+  either reviewer reports blocker/major visual issues. Return
   `blocked_by_missing_screenshots`, `blocked_by_unreadable_screenshot`, or
   `failed_visual_review` instead. Return `blocked_by_missing_codex_cli` when
   Codex CLI cannot run.

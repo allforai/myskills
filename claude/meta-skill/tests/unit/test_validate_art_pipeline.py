@@ -72,6 +72,9 @@ blocked_by_missing_visual_model_capability
 .allforai/game-design/art/qa/visual-acceptance-batches/
 .allforai/game-design/art/qa/codex-visual-review.json
 .allforai/game-design/art/qa/codex-visual-review.md
+.allforai/game-design/art/qa/claude-code-visual-review.json
+.allforai/game-design/art/qa/claude-code-visual-review.md
+.allforai/game-design/art/qa/visual-review-reconciliation.json
 .allforai/game-design/art/qa/visual-review-closure-audit.json
 .allforai/game-design/art/qa/visual-review-closure-audit.md
 .allforai/game-design/art/qa/visual-repair-loop-report.json
@@ -155,6 +158,9 @@ actual visual evidence was inspected
 .allforai/game-design/art/qa/visual-acceptance-batches/
 .allforai/game-design/art/qa/codex-visual-review.json
 .allforai/game-design/art/qa/codex-visual-review.md
+.allforai/game-design/art/qa/claude-code-visual-review.json
+.allforai/game-design/art/qa/claude-code-visual-review.md
+.allforai/game-design/art/qa/visual-review-reconciliation.json
 .allforai/game-design/art/qa/visual-review-closure-audit.json
 .allforai/game-design/art/qa/visual-review-closure-audit.md
 .allforai/game-design/art/qa/visual-repair-loop-report.json
@@ -168,16 +174,17 @@ visual-qa/00-env/visual-model-capability-registry/SKILL.md
 visual_model_routing
 blocked_by_missing_visual_model_capability
 Codex CLI
-Claude Code closure audit
-Claude Code does not re-judge visual quality
-without re-scoring visual quality
+Claude Code Visual Review
+Reconciliation And Closure Audit
+must not read the Codex report first
+union of the two
 audit_verdict
 Repair And Revalidation Loop
 image-feedback-report.json
 process_downstream_feedback
 repair_coverage_shortage
 coverage_shortage
-rerun Codex CLI review
+Re-run both independent reviews
 too few visually accepted candidates
 batch Markdown documents
 .allforai/bootstrap/specialized-skills/<specialization_id>-art-generation/SKILL.md
@@ -278,7 +285,8 @@ codex-cli-delegation/30-execute/codex-cli-task/SKILL.md
 .allforai/game-frontend/qa/runtime-visual-closure-audit.md
 Codex CLI must inspect screenshots
 do not pass from probes or metadata alone
-Claude Code performs only closure audit
+Claude Code performs its own independent screenshot review
+blocking findings are the union of the two
 blocked_by_missing_codex_cli
 """,
     )
@@ -696,6 +704,9 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/engine-ready-art-output-contract/SKI
 .allforai/game-design/art/qa/visual-acceptance-batches/
 .allforai/game-design/art/qa/codex-visual-review.json
 .allforai/game-design/art/qa/codex-visual-review.md
+.allforai/game-design/art/qa/claude-code-visual-review.json
+.allforai/game-design/art/qa/claude-code-visual-review.md
+.allforai/game-design/art/qa/visual-review-reconciliation.json
 .allforai/game-design/art/qa/visual-review-closure-audit.json
 .allforai/game-design/art/qa/visual-review-closure-audit.md
 .allforai/game-design/art/qa/visual-repair-loop-report.json
@@ -710,14 +721,14 @@ Do not advance to `art-qa`
 FAILED_VALIDATION
 blocked_by_missing_visual_evidence
 blocked_by_missing_codex_cli
-regenerate/repair plus rerun Codex CLI review and Claude Code closure audit
+regenerate/repair plus rerun of both independent visual reviews, reconciliation, and Claude Code closure audit
 image-feedback-report.json
 asset-family-consistency-report.json
 in-game-beauty-gate-report.json
 beauty_gaps
 runtime_visual_gaps
 owner-specific feedback report
-rerun Codex CLI visual review
+rerun both independent visual reviews
 rerun the specific QA gate
 Do not let `art-qa` unlock `game-design-finalize`
 UI screenshot + Codex CLI visual review hard gate
@@ -725,10 +736,14 @@ visual-qa/40-qa/batch-visual-acceptance/SKILL.md
 codex-cli-delegation/30-execute/codex-cli-task/SKILL.md
 .allforai/verify/codex-ui-visual-review.json
 .allforai/verify/codex-ui-visual-review.md
+.allforai/verify/claude-code-visual-review.json
+.allforai/verify/claude-code-visual-review.md
+.allforai/verify/ui-visual-reconciliation.json
 .allforai/verify/ui-visual-closure-audit.json
 .allforai/verify/ui-visual-closure-audit.md
-Claude Code only performs closure audit
-not re-score screenshot quality
+Visual review is dual-reviewer
+must not skip its own review
+union of both reviews
 **App Design Node Injection
 """,
     )

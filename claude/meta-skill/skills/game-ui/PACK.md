@@ -116,6 +116,29 @@ HUD-only integration:
 -> 40-qa/ui-readability-qa
 ```
 
+## Boundary With Non-Game UI Capabilities
+
+This pack is the game-project owner of screen layout, component states, and UI
+flow. On a game project it replaces the `ui-design` capability's authoring role;
+`ui-design` then only bridges `visual-style-tokens.json` into `tokens.json` for
+downstream implementation nodes. The `app-design` pack does not run on game
+projects at all. Do not run `game-ui` and `app-design`/`ui-design` authoring on
+the same product.
+
+Three flow artifacts exist and are **not** interchangeable. Each owns one layer,
+reads the one above it, and must not restate it:
+
+| Skill | Layer | Owns |
+|---|---|---|
+| `game-ui/10-design/ui-flow-design` | Design | Screen graph, transitions, modal rules, recovery paths |
+| `game-frontend/20-spec/scene-flow-spec` | Runtime binding | Scene routing, entry/exit conditions, loading states, navigation probes |
+| `game-2d-production/20-spec/session-flow-contract` | Session | Launch → gameplay → completion → retry → continue → exit |
+
+`scene-flow-spec` reads `ui-flow-design` output and binds it to runtime scenes;
+it does not redesign the screen graph. `session-flow-contract` reads both and
+describes the end-to-end player session; it does not redefine screens or scenes.
+A contradiction between layers is `UPSTREAM_DEFECT`, not a local override.
+
 ## Non-Goals
 
 This pack does not install tools, mutate bootstrap behavior, register a

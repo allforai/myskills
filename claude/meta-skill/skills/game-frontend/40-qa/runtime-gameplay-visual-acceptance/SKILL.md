@@ -182,9 +182,13 @@ must identify whether the root cause is wrong entrypoint, missing scene binding,
 missing asset loader mapping, placeholder fallback, or ungenerated/unimported
 art.
 
-Claude Code must not re-score visual quality. Claude Code only checks closure:
-review files exist, screenshot evidence paths are present, findings have repair
-targets, failed batches were rerun, and unresolved blockers remain blocking.
+Claude Code independently inspects the same runtime screenshots and writes its
+own review alongside the Codex report, per
+`${CLAUDE_PLUGIN_ROOT}/skills/visual-qa/40-qa/batch-visual-acceptance/SKILL.md`.
+Blocking findings are the union of both reviews. Claude Code then reconciles the
+two reports and checks closure: both review files exist, screenshot evidence
+paths are present in both, findings have repair targets, failed batches were
+rerun by both reviewers, and unresolved blockers remain blocking.
 
 ## Repair And Revalidation Loop
 

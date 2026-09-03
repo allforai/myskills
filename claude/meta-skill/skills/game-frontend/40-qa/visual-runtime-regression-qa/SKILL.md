@@ -13,10 +13,11 @@ Validates runtime screenshots and probes against expected scene composition,
 asset visibility, HUD placement, layer order, scale, animation/VFX readability,
 and known baseline screenshots.
 
-Screenshot-based visual judgment must be delegated to Codex CLI through the
-shared batch visual acceptance workflow. This skill owns game-frontend standards,
-evidence preparation, and repair routing; it should not re-score screenshots
-inside Claude Code.
+Screenshot-based visual judgment runs through the shared batch visual acceptance
+workflow, which is dual-reviewer: Codex CLI and Claude Code each inspect the
+screenshots independently and blocking findings are the union of the two. This
+skill owns game-frontend standards, evidence preparation, and repair routing, not
+the review mechanics.
 
 ## Input Contract
 
@@ -88,10 +89,11 @@ scene composition spec, asset import bindings, and screenshot evidence by path.
 The finding must name the repair target: wrong entrypoint, prototype component,
 missing scene binding, missing asset loader mapping, or missing runtime art.
 
-Claude Code performs only closure audit: Codex report exists, inspected
-evidence paths are listed, blocker/major findings have repair targets, affected
-batches were rerun after repair, and unresolved blockers remain
-`FAILED_VALIDATION`.
+Claude Code performs its own independent screenshot review and then the
+reconciliation and closure audit: both review reports exist, inspected evidence
+paths are listed in both, blocker/major findings from either reviewer have repair
+targets, affected batches were rerun by both reviewers after repair, and
+unresolved blockers remain `FAILED_VALIDATION`.
 
 Repair routing: missing assets route to asset import binding; visual asset
 defects route to game-art QA; layout/HUD defects route to HUD/UI binding or
@@ -101,7 +103,7 @@ binding.
 ## Completion Conditions
 
 Return `COMPLETED` when runtime visuals match the declared scene and UI
-contracts and Codex CLI has no unresolved blocker/major findings. Return
-`FAILED_VALIDATION` when screenshots/probes are missing, Codex CLI reports
+contracts and neither reviewer has unresolved blocker/major findings. Return
+`FAILED_VALIDATION` when screenshots/probes are missing, either reviewer reports
 blocking visual regressions after the repair budget, or the closure audit is
 incomplete. Return `blocked_by_missing_codex_cli` when Codex CLI cannot run.

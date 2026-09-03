@@ -1,6 +1,6 @@
 ---
 name: game-art-40-qa-visual-acceptance-review
-description: Internal bundled meta-skill module for game-art/40-qa/visual-acceptance-review; use when generated or adapted game art must be visually inspected through task lists, Codex CLI review, and Claude Code closure audit before downstream acceptance.
+description: Internal bundled meta-skill module for game-art/40-qa/visual-acceptance-review; use when generated or adapted game art must be visually inspected through task lists, two independent visual reviews (Codex CLI and Claude Code), reconciliation, and closure audit before downstream acceptance.
 ---
 
 # Visual Acceptance Review Skill
@@ -14,8 +14,10 @@ acceptance criteria, evidence manifests, output paths, and repair routing, then
 delegates the actual batch review mechanics to
 `${CLAUDE_PLUGIN_ROOT}/skills/visual-qa/40-qa/batch-visual-acceptance/SKILL.md`.
 
-Codex CLI remains the required visual reviewer. Claude Code only audits closure
-through the delegated visual-qa skill. Claude Code does not re-judge visual quality.
+Visual review is dual-reviewer, per the delegated visual-qa skill: Codex CLI and
+Claude Code each inspect the art independently and each write their own report.
+Blocking findings are the union of the two. Reconciliation and closure audit run
+after both reports exist.
 
 This skill must run for generated, searched, adapted, user-provided, local, or
 3D-rendered bitmap assets before they can be treated as visually accepted.
@@ -52,6 +54,9 @@ Write:
 .allforai/game-design/art/qa/visual-acceptance-batches/
 .allforai/game-design/art/qa/codex-visual-review.json
 .allforai/game-design/art/qa/codex-visual-review.md
+.allforai/game-design/art/qa/claude-code-visual-review.json
+.allforai/game-design/art/qa/claude-code-visual-review.md
+.allforai/game-design/art/qa/visual-review-reconciliation.json
 .allforai/game-design/art/qa/visual-review-closure-audit.json
 .allforai/game-design/art/qa/visual-review-closure-audit.md
 .allforai/game-design/art/qa/visual-repair-loop-report.json
@@ -244,28 +249,44 @@ codex exec --json --output .allforai/game-design/art/qa/codex-visual-review.json
 If the local Codex CLI cannot be called, return `blocked_by_missing_codex_cli`.
 Do not replace this step with the same agent's prose summary.
 
-## Claude Code Closure Audit
+## Claude Code Visual Review
 
-After Codex CLI writes its report, Claude Code audits the process closure
-without re-scoring visual quality. Codex CLI is the visual judge. Claude Code
-checks whether the report is usable and whether the pipeline reacted correctly:
-- every Codex finding cites existing image/contact-sheet/preview evidence;
-- every blocker/major Codex finding has `asset_id`, `task_id`, `failure_code`,
+Claude Code opens the same art evidence as images and writes its own independent
+review to `.allforai/game-design/art/qa/claude-code-visual-review.json` and
+`.allforai/game-design/art/qa/claude-code-visual-review.md`, following
+`${CLAUDE_PLUGIN_ROOT}/skills/visual-qa/40-qa/batch-visual-acceptance/SKILL.md`
+section "Claude Code Visual Review". It must not read the Codex report first.
+
+Art-specific things Claude Code must judge for itself: character identity drift
+across a set, expression-set consistency, crop and dialogue-box fit, small-size
+icon and portrait readability, tile/piece family distinguishability, VFX and
+animation-frame readability, and background/foreground separation.
+
+## Reconciliation And Closure Audit
+
+After both reviews exist, reconcile them and audit process closure. Blocking
+findings are the **union** of the two reports; a finding raised by only one
+reviewer is not downgraded for being unilateral, and a direct contradiction
+resolves in favour of the blocking claim.
+
+Closure checks:
+- every finding from either reviewer cites existing image/contact-sheet/preview
+  evidence;
+- every blocker/major finding has `asset_id`, `task_id`, `failure_code`,
   severity, and recommended fix;
+- reconciliation exists and covers both reports;
 - blocker/major findings were written to
   `.allforai/game-design/art/image-generation/image-feedback-report.json` or
   explicitly routed to a non-image owner;
 - repair/re-generation happened for affected assets when required;
 - affected batch documents were rebuilt when their evidence changed;
-- Codex CLI was rerun for affected batches;
-- final Codex output has no unresolved blocker/major findings, or the remaining
-  issues are reported as `FAILED_VALIDATION`.
+- both reviewers were rerun for affected batches;
+- final output has no unresolved blocker/major findings from either reviewer, or
+  the remaining issues are reported as `FAILED_VALIDATION`.
 
-Claude Code must not override Codex's visual judgment with a second subjective
-visual judgment. If the Codex report is malformed, lacks evidence references, or
-does not support repair routing, the audit returns `malformed_report` or
-`missing_evidence` and the Codex review must be rerun with a corrected batch
-document.
+If either report is malformed, lacks evidence references, or does not support
+repair routing, the audit returns `malformed_report` or `missing_evidence` and
+that review must be rerun with a corrected batch document.
 
 ## Repair And Revalidation Loop
 
@@ -275,9 +296,10 @@ is exhausted.
 
 Loop:
 1. Codex CLI reviews batch documents and image evidence.
-2. Claude Code audits the Codex report for evidence references, structure, and
-   repair routing; it does not re-score the images.
-3. For every Codex blocker/major issue that passes closure-audit structure
+2. Claude Code independently inspects the same image evidence and writes its own
+   review, then reconciles the two reports and audits closure structure and
+   repair routing.
+3. For every reconciled blocker/major issue that passes closure-audit structure
    checks, write downstream feedback to
    `.allforai/game-design/art/image-generation/image-feedback-report.json`.
 4. Route the defect by root cause:
@@ -300,9 +322,9 @@ Loop:
    - `runtime_tooling`: route to atlas, import, or engine output skills; do not
      regenerate images by default.
 5. Rebuild only the affected contact sheets, preview maps, or batch documents.
-6. Re-run Codex CLI review for the affected batches; this is the required
-   rerun Codex CLI review step.
-7. Re-run Claude Code closure audit for the affected Codex report.
+6. Re-run both independent reviews for the affected batches: Codex CLI and
+   Claude Code.
+7. Re-run reconciliation and Claude Code closure audit for the affected reports.
 8. Append the iteration to
    `.allforai/game-design/art/qa/visual-repair-loop-report.json` and
    `.allforai/game-design/art/qa/visual-repair-loop-report.md`.
@@ -318,11 +340,17 @@ Before returning success:
 1. Confirm every batch document references at least one existing visual evidence
    path.
 2. Confirm Codex CLI produced both JSON and Markdown review outputs.
-3. Confirm Claude Code closure audit produced both JSON and Markdown outputs.
-4. Confirm every Codex blocker/major issue is covered by the Claude Code closure
-   audit and either has feedback/repair routing or remains `FAILED_VALIDATION`.
-5. Confirm no asset is marked visually accepted unless Codex CLI inspected the
-   evidence and Claude Code closure audit passed with `audit_verdict: closed`.
+3. Confirm Claude Code produced its own JSON and Markdown visual review outputs,
+   and that they are an independent inspection rather than a restatement of the
+   Codex report.
+4. Confirm reconciliation exists and its blocking set is the union of both
+   reports.
+5. Confirm Claude Code closure audit produced both JSON and Markdown outputs.
+6. Confirm every blocker/major issue from either reviewer is covered by the
+   closure audit and either has feedback/repair routing or remains
+   `FAILED_VALIDATION`.
+7. Confirm no asset is marked visually accepted unless both reviewers inspected
+   the evidence and the closure audit passed with `audit_verdict: closed`.
 6. Confirm manifest-only, spec-only, or path-existence-only review returns
    `blocked_by_missing_visual_evidence`.
 7. Confirm all required visual evidence paths were inspected and recorded.
@@ -337,11 +365,13 @@ Before returning success:
 ## Completion Conditions
 
 Return `COMPLETED` only when the batch documents, task index, Codex CLI review,
-Claude Code closure audit, and any required repair loop reports exist, all visual
-evidence paths were inspected by Codex CLI, the closure audit is `closed`, and no
-Codex blocker or major visual issues remain after revalidation.
+Claude Code visual review, reconciliation, closure audit, and any required repair
+loop reports exist, all visual evidence paths were inspected by both reviewers,
+the closure audit is `closed`, and no blocker or major visual issues from either
+reviewer remain after revalidation.
 
-Return `FAILED_VALIDATION` when Codex blocker/major visual issues remain.
+Return `FAILED_VALIDATION` when blocker/major visual issues from either reviewer
+remain.
 Return `blocked_by_missing_visual_evidence` when required images, previews, or
 contact sheets are missing or unreadable.
 Return `blocked_by_missing_codex_cli` when Codex CLI cannot be invoked.
