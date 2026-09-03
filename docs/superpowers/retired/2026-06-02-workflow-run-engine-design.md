@@ -1,7 +1,7 @@
 # Workflow-Based `/run` Engine — Design Spec
 
 **Date:** 2026-06-02
-**Status:** Design (pending implementation plan)
+**Status:** Retired — superseded by `docs/adr/0001-bootstrap-free-planning.md`. Not authority.
 **Scope:** `claude/meta-skill/` — rewrite the `/run` execution engine on top of Claude Code's `Workflow` tool.
 **Platform:** Claude Code only. Codex retain the existing markdown loop (see Non-Goals).
 

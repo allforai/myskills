@@ -1,7 +1,8 @@
 # run-engine
 
-Deterministic Workflow-based executor for meta-skill `/run` (Phase B). See the
-design spec at `docs/superpowers/specs/2026-06-02-workflow-run-engine-design.md`.
+Deterministic Workflow-based executor for meta-skill `/run` (Phase B).
+Authority: `docs/adr/0001-bootstrap-free-planning.md`. Retired design notes live
+under `docs/superpowers/retired/`.
 
 ## Files
 - `engine-core.js` — canonical logic (pure fns + `runEngine`). Edit logic HERE.

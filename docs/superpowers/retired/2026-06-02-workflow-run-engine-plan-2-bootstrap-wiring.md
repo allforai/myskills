@@ -1,5 +1,7 @@
 # Workflow Run-Engine — Plan 2: Bootstrap Wiring & `/run` Rewrite Implementation Plan
 
+> **Retired.** Not authority. See `docs/adr/0001-bootstrap-free-planning.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Wire the Plan 1 engine into the real pipeline — bootstrap emits the CC-superset fields, the engine's `agent()` calls carry real prompts, a bootstrap-time invariant guards decision artifacts, and the generated `/run` orchestrator invokes the Workflow engine and handles its two exits with diagnosis-resume.

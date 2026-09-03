@@ -578,8 +578,24 @@ SKILL_REF_RE = re.compile(
 )
 
 
+BOOTSTRAP_CORPUS = (
+    "claude/meta-skill/skills/bootstrap.md",
+    "claude/meta-skill/knowledge/bootstrap-art-pipeline.md",
+    "claude/meta-skill/knowledge/bootstrap-planning.md",
+)
+
+
 def _read(path: Path) -> str:
     return path.read_text()
+
+
+def _bootstrap_corpus(root: Path) -> str:
+    parts = []
+    for rel in BOOTSTRAP_CORPUS:
+        path = root / rel
+        if path.exists():
+            parts.append(_read(path))
+    return "\n".join(parts)
 
 
 def _skill_ref_to_path(root: Path, ref: str) -> Path:
@@ -681,7 +697,7 @@ def validate_art_pipeline(repo_root: str) -> list:
         return errors
 
     game_art_text = _read(game_art_pack)
-    bootstrap_text = _read(bootstrap)
+    bootstrap_text = _bootstrap_corpus(root)
     game_design_text = _read(game_design)
     engine_ready_text = _read(engine_ready)
     asset_binding_text = _read(asset_binding)

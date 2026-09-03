@@ -1,5 +1,7 @@
 # Workflow Run-Engine — Plan 1: Engine Core & Tests Implementation Plan
 
+> **Retired.** Not authority. See `docs/adr/0001-bootstrap-free-planning.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build the deterministic, unit-tested core of the Workflow-based `/run` engine — pure scheduling logic plus a thin Workflow shell — verified against hand-authored fixtures with zero dependency on bootstrap.

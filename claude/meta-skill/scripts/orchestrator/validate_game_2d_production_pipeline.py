@@ -136,8 +136,23 @@ REQUIRED_GAME_PRODUCTION_TERMS = {
 }
 
 
+BOOTSTRAP_CORPUS = (
+    "claude/meta-skill/skills/bootstrap.md",
+    "claude/meta-skill/knowledge/bootstrap-planning.md",
+)
+
+
 def _read(path: Path) -> str:
     return path.read_text()
+
+
+def _bootstrap_corpus(root: Path) -> str:
+    parts = []
+    for rel in BOOTSTRAP_CORPUS:
+        path = root / rel
+        if path.exists():
+            parts.append(_read(path))
+    return "\n".join(parts)
 
 
 def _has_term(text: str, term: str) -> bool:
@@ -184,7 +199,7 @@ def validate_game_2d_production_pipeline(repo_root: str) -> list[str]:
     asset_binding_text = _read(asset_binding_qa)
     asset_contract_text = _read(asset_contract)
     game_design_text = _read(game_design)
-    bootstrap_text = _read(bootstrap)
+    bootstrap_text = _bootstrap_corpus(root)
     game_production_text = _read(game_production)
 
     listed_refs = _canonical_refs(parent_text)

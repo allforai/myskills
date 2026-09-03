@@ -1,5 +1,7 @@
 # Workflow Run-Engine — Plan 3: Planning Audits (G0 / A0 / Phase A) Implementation Plan
 
+> **Retired.** Not authority. See `docs/adr/0001-bootstrap-free-planning.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add the three planning-time audits that run inside `/bootstrap` before any execution: G0 node-granularity audit (right-size nodes), A0 decision-coverage audit (catch every decision), and Phase A brainstorming-lite (gather all decisions up front) — so `/run` can be fully autonomous.
