@@ -1,14 +1,14 @@
 ---
 name: game-creative
-description: Internal bundled meta-skill module for cross-disciplinary game creative quality critique; use within generated bootstrap node-specs when this exact contract is selected.
+description: Cross-disciplinary game creative quality gate; reads game-design, art, UI, audio, and frontend outputs and judges whether they add up to a clear, attractive, memorable game, with evidence-typed findings and repair routing. Runs after game-design-finalize and before concept-acceptance.
 ---
 
 # Game Creative Skill Pack
 
 > Internal bundled sub-skill pack for meta-skill.
-> Status: bundled, inactive, not wired.
-> This directory is installed with meta-skill but is not automatically invoked by
-> `/bootstrap` or `/run` until a node-spec explicitly reads a child skill path.
+> Status: bundled, bootstrap-wired. `bootstrap-planning.md` rule 8 (creative
+> quality gate) places `creative-quality-critique` after `game-design-finalize`
+> and before `concept-acceptance` on game projects.
 
 ## Purpose
 

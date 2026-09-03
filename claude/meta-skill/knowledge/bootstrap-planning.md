@@ -23,6 +23,7 @@ Design the smallest node graph that achieves the user's goals for *this* project
 5. **Maximum realism.** Real credentials ⇒ real services. Stubs only when credentials are absent.
 6. **Every module gets a verifier** matching its role. Load `${CLAUDE_PLUGIN_ROOT}/knowledge/node-spec-template.md` plus the verification notes in engine-detection. Playwright is not a native-mobile or game-client test.
 7. **Runtime knowledge.** When the detected game runtime has `${CLAUDE_PLUGIN_ROOT}/knowledge/engines/<runtime>.md`, read it before designing nodes and record which runtime node families it declares are covered or explicitly omitted (with reason) in a project-local runtime profile artifact. A game workflow with only scaffold/build/smoke nodes is incomplete for production or unattended goals.
+8. **Creative quality gate (game projects).** Specialist contracts can all pass while the game still feels generic. After `game-design-finalize`, and again after the last art/UI/audio/frontend QA when goals include implementation, run `${CLAUDE_PLUGIN_ROOT}/skills/game-creative/40-qa/creative-quality-critique/SKILL.md`. `concept-acceptance` is `hard_blocked_by` it; `must_fix_*` findings route to the owning pack's repair loop.
 
 ## Game implementation handoff expansion
 

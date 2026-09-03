@@ -44,8 +44,22 @@ REQUIRED_CRITIQUE_TERMS = {
 }
 
 
+# bootstrap.md plus the protocol files it delegates to; missing files are skipped.
+BOOTSTRAP_CORPUS = (
+    "claude/meta-skill/skills/bootstrap.md",
+    "claude/meta-skill/knowledge/bootstrap-planning.md",
+    "claude/meta-skill/knowledge/bootstrap-art-pipeline.md",
+    "claude/meta-skill/knowledge/capabilities/game-design.md",
+)
+CRITIQUE_PATH = "skills/game-creative/40-qa/creative-quality-critique/SKILL.md"
+
+
 def _read(path: Path) -> str:
     return path.read_text()
+
+
+def _bootstrap_corpus(root: Path) -> str:
+    return "\n".join(_read(root / rel) for rel in BOOTSTRAP_CORPUS if (root / rel).exists())
 
 
 def _has_term(text: str, term: str) -> bool:
@@ -90,6 +104,12 @@ def validate_game_creative_pipeline(repo_root: str) -> list[str]:
     for term in sorted(REQUIRED_CRITIQUE_TERMS):
         if not _has_term(critique_text, term):
             errors.append(f"creative-quality-critique: missing required term {term}")
+
+    if CRITIQUE_PATH not in _bootstrap_corpus(root):
+        errors.append(
+            "bootstrap corpus: creative-quality-critique is not wired; "
+            "bootstrap-planning.md or game-design.md must reference " + CRITIQUE_PATH
+        )
 
     return errors
 

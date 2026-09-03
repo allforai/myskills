@@ -755,7 +755,9 @@ listed in §Finalize Exit Artifacts. Only include fields whose source JSON exist
 ### Full Pipeline (new game from scratch)
 All nodes for detected scenario. `art-direction` + `art-concept`(skill，自动调起) +
 `art-spec-design` + `[art-gen nodes from active_nodes]` + `art-qa` +
-`game-design-finalize` always appended.
+`game-design-finalize` always appended, followed by `creative-quality-critique`
+(`${CLAUDE_PLUGIN_ROOT}/skills/game-creative/40-qa/creative-quality-critique/SKILL.md`,
+bootstrap-planning.md rule 8) before any concept-acceptance node.
 
 **art-gen nodes** are determined by `art-pipeline-config.json.active_nodes` at art-concept
 completion time. Bootstrap writes only the listed nodes into `workflow.json`.

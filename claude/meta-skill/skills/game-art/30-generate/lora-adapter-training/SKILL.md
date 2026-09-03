@@ -5,6 +5,9 @@ description: Train, register, or validate LoRA adapters for strict identity/styl
 
 # LoRA Adapter Training Skill
 
+> Internal sub-skill for game-art pipelines. Status: bundled, inactive, not wired.
+> Reached only through `game-art/PACK.md` after `lora-identity-style-lock-spec` decides LoRA is required.
+
 ## Overview
 
 Train, purchase/register, or validate LoRA adapters for strict game art

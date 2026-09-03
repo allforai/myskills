@@ -15,6 +15,11 @@ def _write(root, rel, text):
 def _minimal_repo(tmp_path):
     _write(
         tmp_path,
+        "claude/meta-skill/knowledge/bootstrap-planning.md",
+        "8. Creative quality gate: ${CLAUDE_PLUGIN_ROOT}/skills/game-creative/40-qa/creative-quality-critique/SKILL.md\n",
+    )
+    _write(
+        tmp_path,
         "claude/meta-skill/skills/game-creative/PACK.md",
         """${CLAUDE_PLUGIN_ROOT}/skills/game-creative/40-qa/creative-quality-critique/SKILL.md
 creative-quality-critique

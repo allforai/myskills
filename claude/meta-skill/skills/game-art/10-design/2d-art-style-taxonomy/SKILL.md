@@ -5,7 +5,7 @@ description: Present and select 2D game art style families during bootstrap so u
 
 # 2D Art Style Taxonomy Skill
 
-> Internal sub-skill for game-art pipelines. Status: bundled, bootstrap-facing.
+> Internal sub-skill for game-art pipelines. Status: bundled, bootstrap-wired, invoked by the `art-concept` node during bootstrap.
 
 ## Purpose
 
