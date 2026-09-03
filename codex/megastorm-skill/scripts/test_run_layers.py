@@ -121,6 +121,32 @@ class TestRunTask(unittest.TestCase):
         self.assertIn("acceptance_cmd", p)
         self.assertNotIn("implemented.", p)  # never sees executor narrative
 
+    def test_trusted_host_acceptance_skips_sandbox_supervisor(self):
+        task = dict(_task("T-host"), acceptance_executor="trusted-host")
+        fake = FakeRunner([])
+        gates = []
+        result = run_task(task, fake, MODELS, ".", PROMPTS,
+                          log=lambda *_: None,
+                          artifact_gate=lambda base: gates.append(base) or {"ok": True})
+        self.assertEqual(result["status"], "done")
+        self.assertTrue(result["verdict"]["host_acceptance_pending"])
+        self.assertEqual(len(fake.executor_prompts), 1)
+        self.assertIn("Trusted-host acceptance boundary", fake.executor_prompts[0])
+        self.assertEqual(len(gates), 1)
+
+    def test_trusted_host_reality_gate_stays_pending_and_admits_artifacts(self):
+        task = dict(_task("T-reality"), acceptance_executor="trusted-host",
+                    reality_gate=True, runbook_ptr="runbook.md")
+        fake = FakeRunner([])
+        gates = []
+        result = run_task(task, fake, MODELS, ".", PROMPTS,
+                          log=lambda *_: None,
+                          artifact_gate=lambda base: gates.append(base) or {"ok": True})
+        self.assertEqual(result["status"], "reality_gated")
+        self.assertFalse(result["verdict"]["host_acceptance_pending"])
+        self.assertEqual(result["runbook_ptr"], "runbook.md")
+        self.assertEqual(len(gates), 1)
+
     def test_reality_gate_does_not_consume_business_retry(self):
         task = dict(_task("T-rg"), reality_gate=True, runbook_ptr="plan.md#verify")
         fake = FakeRunner([_v(False, reality_gated=True, evidence="device absent")])
@@ -339,6 +365,26 @@ class TestSchedule(unittest.TestCase):
         self.assertIn("d", order)        # independent kept running
         self.assertNotIn("b", order)     # dependent never dispatched
         self.assertEqual(done, {"d"})
+
+    def test_unexpected_worker_exception_is_terminal_and_does_not_hang(self):
+        tasks = [_task(t) for t in ("a", "b", "c")]
+        eff = {"a": [], "b": ["a"], "c": []}
+
+        def runner(task):
+            if task["id"] == "a":
+                raise RuntimeError("deterministic boom")
+            return {"task_id": task["id"], "status": "done", "retries": 0}
+
+        completed = set()
+        results, escalations, skipped = schedule(
+            eff, [], {}, {t["id"]: t for t in tasks}, runner, runner,
+            completed, max_workers=3, log=lambda *_: None)
+        self.assertEqual(completed, {"c"})
+        self.assertEqual(len(escalations), 1)
+        self.assertEqual(escalations[0]["task_id"], "a")
+        self.assertIn("deterministic boom", escalations[0]["reason"])
+        self.assertEqual(skipped, {"b": "a"})
+        self.assertEqual({r["task_id"] for r in results}, {"a", "c"})
 
     def test_reality_gated_task_satisfies_dependency(self):
         tasks = [_task("a"), _task("b")]

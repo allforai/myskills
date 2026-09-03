@@ -41,11 +41,13 @@ import os
 import pathlib
 import re
 import signal
+import shutil
 import subprocess
 import sys
 import tempfile
 import threading
 import time
+import traceback
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 
@@ -106,6 +108,18 @@ def parse_verdict(text):
 def build_executor_prompt(prompts_dir, task, feedback=None):
     base = (prompts_dir / "executor.md").read_text()
     parts = [base, "\n## Your task (JSON)\n", json.dumps(task, ensure_ascii=False, indent=2)]
+    if task.get("acceptance_executor") == "trusted-host":
+        parts += [
+            "\n## Trusted-host acceptance boundary\n",
+            "The canonical acceptance_cmd needs host-only capabilities (for example "
+            "loopback CDP, desktop UI, keychain, or packaging caches). Do not run that "
+            "canonical command inside your network-disabled sandbox. Implement the task, "
+            "run every useful non-privileged focused check you can, and return outcome "
+            "complete when the candidate is ready. The runner-owned candidate admission "
+            "will independently execute the exact hashed acceptance_cmd on the trusted "
+            "host before publishing. Do not run git commit; the runner owns commits and "
+            "confirmation markers.\n",
+        ]
     if feedback:
         parts += ["\n## Supervisor feedback on your previous attempt\n", feedback]
     return "".join(parts)
@@ -158,7 +172,9 @@ class CodexRunner:
         channel = prepare_result_channel(
             self.result_root, run_id=self.run_id, task_id=task_id,
             attempt_id=attempt_id, role=role, codex_version=self.codex_version)
-        flags = build_output_flags(channel)
+        scratch = pathlib.Path(tempfile.mkdtemp(prefix=f"megastorm-scratch-{task_id}-"))
+        scratch_info = scratch.lstat()
+        flags = ["--add-dir", str(scratch), *build_output_flags(channel)]
         identity = json.dumps({"run_id": self.run_id, "task_id": task_id,
                                "attempt_id": attempt_id, "role": role},
                               ensure_ascii=False)
@@ -170,7 +186,8 @@ class CodexRunner:
         # from stdin..." forever when handed an open pipe with no data.
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 text=True, stdin=subprocess.DEVNULL,
-                                start_new_session=True, env=self.env)
+                                start_new_session=True,
+                                env={**self.env, "TMPDIR": str(scratch)})
         try:
             stdout, stderr = proc.communicate(timeout=self.timeout)
         except subprocess.TimeoutExpired as exc:
@@ -198,7 +215,15 @@ class CodexRunner:
         except OutputChannelError as exc:
             raise InfrastructureFailure(f"invalid structured Codex result: {exc}") from exc
         finally:
-            cleanup(channel)
+            try:
+                cleanup(channel)
+            finally:
+                current = scratch.lstat()
+                if (scratch.is_symlink() or not scratch.is_dir() or
+                        (current.st_dev, current.st_ino, current.st_uid) !=
+                        (scratch_info.st_dev, scratch_info.st_ino, scratch_info.st_uid)):
+                    raise InfrastructureFailure("agent scratch root identity changed")
+                shutil.rmtree(scratch)
 
     def _communicate_legacy(self, cmd, out_path):
         """Explicit unsafe-template compatibility; never used by verified execution."""
@@ -276,6 +301,13 @@ def run_task(task, runner, models, cwd, prompts_dir, log=print, artifact_gate=No
                 retries += 1
                 continue
             if outcome == "reality_gated":
+                if artifact_gate is not None:
+                    try:
+                        artifact_gate(diff_base)
+                    except ArtifactViolation as exc:
+                        return {"task_id": tid, "status": "escalate",
+                                "retries": retries, "infra_retries": infra_retries,
+                                "failure_kind": "artifact", "reason": str(exc)}
                 return {"task_id": tid, "status": "reality_gated", "retries": retries,
                         "infra_retries": infra_retries, "reason": executor["summary"],
                         "runbook_ptr": task.get("runbook_ptr")}
@@ -287,6 +319,14 @@ def run_task(task, runner, models, cwd, prompts_dir, log=print, artifact_gate=No
                 return {"task_id": tid, "status": "escalate", "retries": retries,
                         "infra_retries": infra_retries, "failure_kind": "artifact",
                         "reason": str(exc)}
+        if task.get("acceptance_executor") == "trusted-host":
+            status = "reality_gated" if task.get("reality_gate") is True else "done"
+            return {"task_id": tid, "status": status, "retries": retries,
+                    "infra_retries": infra_retries,
+                    "verdict": {"host_acceptance_pending": status == "done"},
+                    "reason": ("physical signoff remains pending" if status == "reality_gated"
+                               else "trusted-host acceptance pending"),
+                    "runbook_ptr": task.get("runbook_ptr")}
         log(f"[{tid}] supervisor verify (model={models['verify']}, fresh context)")
         verdict = None
         for _ in range(2):  # one re-ask on unparseable output
@@ -468,8 +508,9 @@ def run_task_in_worktree(task, runner, models, root, prompts_dir, merge_lock, lo
                                 candidate_root, contract,
                                 git_changes(candidate_root, candidate_base),
                                 task.get("acceptance_cmd", ""), control_hashes or {}),
-                        post_merge_checks=(Check("acceptance", (
-                            "/bin/sh", "-lc", task["acceptance_cmd"])),),
+                        post_merge_checks=(() if result["status"] == "reality_gated" else
+                                           (Check("acceptance", (
+                                               "/bin/sh", "-lc", task["acceptance_cmd"])),)),
                         event_writer=lambda kind, payload: event_log.append(kind, **payload))
                     reset = _git(["reset", "--hard", admitted.integration_commit], root)
                     if reset.returncode != 0:
@@ -563,7 +604,21 @@ def schedule(effective_deps, isolate_groups, resource_groups, tasks_by_id,
 
     def _work(tid):
         fn = run_isolated if tid in isolate_members else run_free
-        res = fn(tasks_by_id[tid])
+        try:
+            res = fn(tasks_by_id[tid])
+        except Exception as exc:
+            # ThreadPoolExecutor stores an uncaught exception in a Future. The
+            # scheduler intentionally does not retain those Futures, so without
+            # this boundary the task stays in_flight forever and the coordinator
+            # waits on the condition variable indefinitely.
+            res = {
+                "task_id": tid,
+                "status": "escalate",
+                "retries": 0,
+                "failure_kind": "infrastructure",
+                "reason": (f"unexpected worker exception: {exc}\n"
+                           f"{traceback.format_exc()}"),
+            }
         with cond:
             in_flight.discard(tid)
             results.append(res)

@@ -105,6 +105,11 @@ class OutputChannelTests(unittest.TestCase):
         with self.assertRaisesRegex(OutputChannelError, "actual diff"):
             parse_result(channel, actual_diff=["src/b.py"])
         cleanup(channel)
+        channel = self.channel()
+        self.write(channel, self.executor(touched_paths=["src/a.py", "src/a.py"]))
+        with self.assertRaisesRegex(OutputChannelError, "must be unique"):
+            parse_result(channel, actual_diff=["src/a.py"])
+        cleanup(channel)
         for outcome in ("complete", "business_reject", "infrastructure_failure",
                         "needs_replan", "reality_gated"):
             channel = self.channel(); self.write(channel, self.executor(outcome=outcome))

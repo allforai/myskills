@@ -33,7 +33,9 @@ _SCHEMAS = {
                 "complete", "business_reject", "infrastructure_failure",
                 "needs_replan", "reality_gated"]},
             "summary": {"type": "string", "minLength": 1},
-            "touched_paths": {"type": "array", "uniqueItems": True,
+            # The Responses structured-output dialect rejects JSON Schema's
+            # `uniqueItems`. Enforce uniqueness after decoding instead.
+            "touched_paths": {"type": "array",
                               "items": {"type": "string", "minLength": 1}},
         },
     },
@@ -260,6 +262,8 @@ def parse_result(channel, *, actual_diff=None, stdout=None, stderr=None):
     if channel.role == "executor":
         if actual_diff is None:
             raise OutputChannelError("executor result requires the actual diff")
+        if len(value["touched_paths"]) != len(set(value["touched_paths"])):
+            raise OutputChannelError("executor touched_paths must be unique")
         reported = set(value["touched_paths"])
         observed = set(actual_diff)
         if reported != observed:
