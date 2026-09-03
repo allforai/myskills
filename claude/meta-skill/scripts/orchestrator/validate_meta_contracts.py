@@ -252,29 +252,30 @@ def validate_bootstrap_node_expansion_contract(errors: list[str]) -> None:
     skill_text = skill.read_text(encoding="utf-8")
     parent_text = parent.read_text(encoding="utf-8")
     for term in (
-        "bootstrap-node-expansion-qa",
-        "reverse reasoning",
-        "Closure loops",
+        "bootstrap-audits.md",
         "Acceptance-driven execution",
-        "Dimension elevation thinking",
-        "underlying desired product outcome",
+        "Quality-driven acceptance",
+        "Attention management",
+        "Bootstrap context compression",
+        "Closure wiring",
         "named means",
         "effect verification",
         "code-only or existence-only completion",
-        "Quality-driven acceptance",
         "existence-only completion",
         "quality_gaps",
-        "Attention management",
         "missing_attention_contract",
         "unbounded_context_pull",
         "missing_stop_conditions",
-        "Bootstrap context compression",
+        "repair_loop_not_blocked_by_qa",
+        "acceptance_not_blocked_by_repair_loop",
+        "qa_report_without_revalidation",
     ):
         if term not in skill_text:
             errors.append(f"bootstrap-node-expansion-qa: missing contract term {term}")
     # ADR-0001: the four-lens node-expansion gate became the bootstrap-audits lenses
     # (Coverage Self-Check, G0, A0, Phase A, three-lens DAG with reverse critic).
     for term in (
+        "bootstrap-node-expansion-qa",
         "Coverage Self-Check",
         "reverse critic",
         "three-lens",
