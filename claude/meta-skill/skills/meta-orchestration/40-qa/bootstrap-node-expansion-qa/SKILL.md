@@ -19,9 +19,58 @@ file exists". This audit reads every node-spec in
 node has a weak completion standard, an unbounded attention contract, or a QA
 finding with nowhere to go.
 
-This is not a domain implementation skill and it does not judge graph coverage
-(Coverage Self-Check and the reverse critic own that). It judges node
-completion standards, attention boundaries, and repair wiring.
+This is not a domain implementation skill. It is a meta QA gate. The Guiding
+Philosophy below is how the auditor thinks about any project; the checks after
+it are the known failure modes that thinking has already caught. When a
+node-spec is wrong in a way no listed blocker code names, reason from the
+philosophy, reject it anyway, and record the finding under the closest code.
+
+## Guiding Philosophy
+
+Every production workflow must be expanded through these lenses:
+
+- **Reverse reasoning**: infer the shipped product surfaces, runtime modules,
+  data containers, assets, integrations, and acceptance evidence from the final
+  user experience, then backfill required nodes. Coverage Self-Check and the
+  reverse critic in `bootstrap-audits.md` run this over the graph; this audit
+  applies it per node and reports what they missed as under-expansion.
+- **Closure loops**: every QA, visual review, runtime smoke, platform test, or
+  artifact audit must route repairable findings into a repair-and-revalidation
+  loop with a bounded retry budget, and closure must depend on that loop.
+- **Acceptance-driven execution**: node completion must include effect
+  verification. "Code was written", "file exists", or "function is callable" is
+  implementation evidence, not completion evidence.
+- **Quality-driven acceptance**: node completion must ask "is it good enough
+  for the approved project promise?" not only "does it exist?" Bootstrap must
+  generate project-specific quality questions, evidence requirements, failure
+  codes, and repair routes for user-facing, runtime, visual, audio, content,
+  and integration deliverables.
+- **Attention management**: every node must declare what it is optimizing for,
+  what it is not doing, which inputs are mandatory, which inputs are optional,
+  which quality questions stay in focus, when it must stop, and which repair
+  targets it may emit. A node-spec that invites broad repository reading,
+  vague context gathering, or unbounded "improve this" work is not suitable for
+  unattended execution.
+- **Bootstrap context compression**: do more project understanding, routing,
+  specialization, and contract writing in bootstrap so `/run` can execute by
+  pulling exact inputs instead of re-reading the whole project. Bootstrap should
+  spend context to create durable node-specs, interface cards, visual
+  acceptance standards, and repair loops; execution nodes should spend context
+  only on their declared attention contract and current evidence.
+- **Dimension elevation thinking**: raise the reasoning level above the current
+  node list and above the user's named means. Do not merely add more
+  categories. First distinguish the user's goal from the proposed route: "buy a
+  plane ticket" may actually mean "arrive at a destination on time", where a
+  train ticket could satisfy the goal better. For product automation, do not
+  treat "use Cocos", "generate Canvas2D nodes", or "add this module" as the
+  final objective until the underlying desired product outcome is clear. Model
+  the workflow as an automated production system: what invariants, contracts,
+  evidence, dependency closures, and failure-recovery mechanisms must exist for
+  the system to reliably produce that outcome unattended? Then project that
+  higher-level model back down into required nodes, node completion standards,
+  validators, and repair routes. When the better route differs from the user's
+  named means, the finding is a Phase A decision input with the alternative,
+  never a silent swap.
 
 ## What Every Production Node Must Carry
 
@@ -88,6 +137,8 @@ The JSON report must include:
   "status": "passed | failed",
   "checked_at": "<iso8601>",
   "nodes_checked": 0,
+  "reverse_reasoning_findings": [],
+  "dimension_elevation_findings": [],
   "node_completion_findings": [],
   "attention_management_findings": [],
   "closure_wiring_findings": [],
@@ -101,6 +152,11 @@ add a `hard_blocked_by` edge).
 
 Allowed blocker codes:
 
+- `underexpanded_product_surface`
+- `missing_reverse_inference_node`
+- `missing_runtime_or_surface_node`
+- `missing_dimension_elevation_review`
+- `missing_high_level_product_dimension`
 - `code_only_completion`
 - `existence_only_completion`
 - `missing_effect_verification`
@@ -123,6 +179,14 @@ Allowed blocker codes:
 
 Reject the workflow when any production node-spec matches one of these:
 
+- product/runtime evidence implies multiple surfaces/modules, but bootstrap only
+  generated scaffold/build/smoke nodes;
+- bootstrap treats a named means, technology, module, or requested node as the
+  final goal without checking the underlying product outcome and alternative
+  routes, or swaps the route without a Phase A decision input;
+- the workflow only follows the current implementation path and does not raise
+  the reasoning level to production-system invariants, contract closure,
+  evidence quality, dependency closure, and failure-recovery requirements;
 - completion says `done`, `implemented`, or `file exists` without an effect
   verification artifact;
 - completion uses existence/structure/function-call checks without

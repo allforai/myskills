@@ -253,6 +253,12 @@ def validate_bootstrap_node_expansion_contract(errors: list[str]) -> None:
     parent_text = parent.read_text(encoding="utf-8")
     for term in (
         "bootstrap-audits.md",
+        "## Guiding Philosophy",
+        "Reverse reasoning",
+        "Closure loops",
+        "Dimension elevation thinking",
+        "underlying desired product outcome",
+        "Phase A decision input",
         "Acceptance-driven execution",
         "Quality-driven acceptance",
         "Attention management",
