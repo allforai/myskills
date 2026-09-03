@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-motion-video-to-sprite-animation
-description: Internal bundled meta-skill module for game-art/30-generate/motion-video-to-sprite-animation; use within generated bootstrap node-specs when a 2D runtime sprite animation should be produced from local video, web/reference video, AI video, 3D render capture, or engine capture.
+description: Source a short motion video, extract and normalize frames into a spritesheet, and validate the visual result for light 2D actions (idles, gestures, enemy actions); writes art/animations/video-to-sprite/ manifests. The video is a source, not the asset.
 ---
 
 # Motion Video To Sprite Animation Skill

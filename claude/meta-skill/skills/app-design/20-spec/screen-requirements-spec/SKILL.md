@@ -1,6 +1,6 @@
 ---
 name: app-design-20-spec-screen-requirements-spec
-description: Internal bundled meta-skill module for app-design/20-spec/screen-requirements-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define per-screen purpose, data, actions, UI states, validation, accessibility, analytics, and handoff needs; writes spec/screen-requirements-spec.json from IA, user-flow, and priority specs.
 ---
 
 # Screen Requirements Spec Skill

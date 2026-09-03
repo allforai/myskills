@@ -1,6 +1,6 @@
 ---
 name: game-art-20-spec-artifact-handoff-contract
-description: Internal bundled meta-skill module for game-art/20-spec/artifact-handoff-contract; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define the shared artifact handoff schema between game-art sub-skills so generated, registered, QAed, packed, and runtime-bound assets carry validatable structured data; writes art/handoff/artifact-handoff-contract.json.
 ---
 
 # Artifact Handoff Contract Skill

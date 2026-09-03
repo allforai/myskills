@@ -1,6 +1,6 @@
 ---
 name: game-systems-20-spec-progression-spec
-description: Internal bundled meta-skill module for game-systems/20-spec/progression-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define XP, levels, unlocks, gates, difficulty pacing, reward cadence, content sequence, and progression events from core loop, economy, and level flow; writes systems/progression-spec.json.
 ---
 
 # Progression Spec Skill

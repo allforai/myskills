@@ -1,6 +1,6 @@
 ---
 name: app-design-20-spec-feature-priority-spec
-description: Internal bundled meta-skill module for app-design/20-spec/feature-priority-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define MVP scope, release cuts, priority rationale, dependency order, non-goals, and tradeoffs from job stories; writes spec/feature-priority-spec.json.
 ---
 
 # Feature Priority Spec Skill

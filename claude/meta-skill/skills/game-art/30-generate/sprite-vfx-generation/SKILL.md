@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-sprite-vfx-generation
-description: Internal bundled meta-skill module for game-art/30-generate/sprite-vfx-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Produce sprite-sheet VFX (explosions, impacts, shockwaves, casts, slash arcs, reward pops); writes art/vfx/sprites/sprite-vfx-manifest.json. Called by vfx-generation when implementation_mode includes sprite_sheet.
 ---
 
 # Sprite VFX Generation Skill

@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-batch-image-generation
-description: Internal bundled meta-skill module for game-art/30-generate/batch-image-generation; use when multiple image requests should be generated through the mcp-image-batch long-task MCP using file-based input/output contracts.
+description: Execute bulk image generation and editing through the mcp-image-batch MCP with file handoff only, never pasted prompts or image payloads; writes art/image-generation/accepted-image-manifest.json. Batch adapter for image-generation-contract.
 ---
 
 # Batch Image Generation Skill

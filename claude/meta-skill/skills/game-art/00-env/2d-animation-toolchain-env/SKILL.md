@@ -1,6 +1,6 @@
 ---
 name: game-art-00-env-2d-animation-toolchain-env
-description: Internal bundled meta-skill module for game-art/00-env/2d-animation-toolchain-env; use within generated bootstrap node-specs when 2D animation production needs frame animation, video-to-sprite, atlas, preview, or runtime import tooling validation.
+description: Gate 2D animation production on the executable toolchain actually present for frame animation, video-to-sprite extraction, UI tweens, and VFX-bound motion; writes art/env/2d-animation-toolchain-registry.json. No skeletal or DragonBones animation.
 ---
 
 # 2D Animation Toolchain Env Skill

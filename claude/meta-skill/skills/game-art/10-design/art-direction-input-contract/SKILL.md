@@ -1,6 +1,6 @@
 ---
 name: game-art-10-design-art-direction-input-contract
-description: Internal bundled meta-skill module for game-art/10-design/art-direction-input-contract; use within generated bootstrap node-specs when this exact contract is selected.
+description: Normalize product concept, gameplay, audience, platform, narrative tone, technical constraints, and human visual preferences into one stable art direction contract; writes art/art-direction-input-contract.json. Entry boundary of game-art.
 ---
 
 # Art Direction Input Contract Skill

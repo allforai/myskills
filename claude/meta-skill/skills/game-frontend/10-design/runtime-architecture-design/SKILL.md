@@ -1,6 +1,6 @@
 ---
 name: game-frontend-10-design-runtime-architecture-design
-description: Internal bundled meta-skill module for game-frontend/10-design/runtime-architecture-design; use within generated bootstrap node-specs when a game client needs frontend runtime architecture, module boundaries, engine adapter strategy, and runnable validation gates before implementation.
+description: "Define client runtime architecture before assembly: engine surface, scene model, loop ownership, module boundaries, data/resource flow, validation surfaces, repair routes; writes game-frontend/design/runtime-architecture-design.json. Frontend contract, not game design or backend."
 ---
 
 # Runtime Architecture Design Skill

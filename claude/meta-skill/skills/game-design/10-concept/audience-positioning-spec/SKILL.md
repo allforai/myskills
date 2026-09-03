@@ -1,6 +1,6 @@
 ---
 name: game-design-10-concept-audience-positioning-spec
-description: Internal bundled meta-skill module for game-design/10-concept/audience-positioning-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define target audience, market positioning, comparable games, player preferences, platform expectations, content boundaries, and design implications; writes design/audience-positioning-spec.json.
 ---
 
 # Audience Positioning Spec Skill

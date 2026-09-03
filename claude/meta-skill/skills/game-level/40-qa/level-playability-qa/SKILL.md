@@ -1,6 +1,6 @@
 ---
 name: game-level-40-qa-level-playability-qa
-description: Internal bundled meta-skill module for game-level/40-qa/level-playability-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Validate level blockouts for reachability, pacing, collisions, objectives, enemy/resource placement, camera bounds, and known failure cases; writes levels/level-playability-qa-report.json.
 ---
 
 # Level Playability QA Skill

@@ -1,6 +1,6 @@
 ---
 name: game-design-40-qa-content-coverage-qa
-description: Internal bundled meta-skill module for game-design/40-qa/content-coverage-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Validate that every content requirement has data, art, UI, audio, level, narrative, and runtime ownership; writes content/content-coverage-qa-report.json.
 ---
 
 # Content Coverage QA Skill

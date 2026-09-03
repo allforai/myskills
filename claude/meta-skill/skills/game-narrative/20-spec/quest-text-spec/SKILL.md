@@ -1,6 +1,6 @@
 ---
 name: game-narrative-20-spec-quest-text-spec
-description: Internal bundled meta-skill module for game-narrative/20-spec/quest-text-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define quest, objective, tutorial, reward, error, and progression text contracts with variables, states, and UI length limits; writes narrative/quest-text-spec.json.
 ---
 
 # Quest Text Spec Skill

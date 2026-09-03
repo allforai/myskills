@@ -1,6 +1,6 @@
 ---
 name: game-design-10-concept-core-game-loop-spec
-description: Internal bundled meta-skill module for game-design/10-concept/core-game-loop-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define the player's repeated loop: goal, choice, action, feedback, reward, progression, failure recovery, next motivation; writes design/core-game-loop-spec.json from pillars and the player experience contract."
 ---
 
 # Core Game Loop Spec Skill

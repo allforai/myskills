@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-expression-set-generation
-description: Internal bundled meta-skill module for game-art/30-generate/expression-set-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Generate character expression sets for dialogue portraits, UI reactions, NPC states, and cutscene thumbnails; writes art/expressions/expression-set-manifest.json.
 ---
 
 # Expression Set Generation Skill

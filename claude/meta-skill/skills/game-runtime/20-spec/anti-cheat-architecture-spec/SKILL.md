@@ -1,6 +1,6 @@
 ---
 name: game-runtime-20-spec-anti-cheat-architecture-spec
-description: Internal bundled meta-skill module for game-runtime/20-spec/anti-cheat-architecture-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define anti-cheat architecture: trust boundaries, threat controls, server validation, client hardening, telemetry, privacy, false-positive handling, penalty/appeal, validation; writes game-runtime/security/anti-cheat-architecture-spec.json. A program/security contract, not product design."
 ---
 
 # Anti-Cheat Architecture Spec Skill

@@ -1,6 +1,6 @@
 ---
 name: game-systems-20-spec-economy-spec
-description: Internal bundled meta-skill module for game-systems/20-spec/economy-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define resources, currencies, sinks, sources, prices, rewards, inventory constraints, shop/crafting rules, and economy events; writes systems/economy-spec.json.
 ---
 
 # Economy Spec Skill

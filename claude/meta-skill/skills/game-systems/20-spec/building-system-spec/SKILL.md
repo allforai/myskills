@@ -1,6 +1,6 @@
 ---
 name: game-systems-20-spec-building-system-spec
-description: Internal bundled meta-skill module for game-systems/20-spec/building-system-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define building/base/construction: placement, grid, costs, requirements, upgrades, adjacency, production, destruction, UI/runtime needs; writes systems/building-system-spec.json."
 ---
 
 # Building System Spec Skill

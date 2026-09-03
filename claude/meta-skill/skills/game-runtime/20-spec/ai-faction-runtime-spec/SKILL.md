@@ -1,6 +1,6 @@
 ---
 name: game-runtime-20-spec-ai-faction-runtime-spec
-description: Internal bundled meta-skill module for game-runtime/20-spec/ai-faction-runtime-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define runtime faction AI: state model, behavior tree or utility model, perception, resource simulation, decision cadence, difficulty scaling, debug state, scenario tests; writes game-runtime/simulation/ai-faction-runtime-spec.json."
 ---
 
 # AI Faction Runtime Spec Skill

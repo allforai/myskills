@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-item-art-generation
-description: Internal bundled meta-skill module for game-art/30-generate/item-art-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Generate item and equipment art for inventories, shops, loot, crafting, cards, and pickups; writes art/items/item-art-manifest.json. Icons stay with icon-generation.
 ---
 
 # Item Art Generation Skill

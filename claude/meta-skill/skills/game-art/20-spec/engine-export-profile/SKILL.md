@@ -1,6 +1,6 @@
 ---
 name: game-art-20-spec-engine-export-profile
-description: Internal bundled meta-skill module for game-art/20-spec/engine-export-profile; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define engine/tool export decisions for 2D art before runtime import: atlas metadata, pivots, frame naming, animation metadata, tilemap exports, compression, fallbacks for Godot, Unity, Phaser, Pixi, Cocos, Defold, Love2D, Tiled, or custom; writes art/export/engine-export-profile.json."
 ---
 
 # Engine Export Profile Skill

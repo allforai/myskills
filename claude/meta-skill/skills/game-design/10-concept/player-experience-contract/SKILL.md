@@ -1,6 +1,6 @@
 ---
 name: game-design-10-concept-player-experience-contract
-description: Internal bundled meta-skill module for game-design/10-concept/player-experience-contract; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define the player-facing contract: target player, play context, session length, platform, motivation, emotional arc, complexity budget, accessibility, monetization stance, human preferences; writes design/player-experience-contract.json."
 ---
 
 # Player Experience Contract Skill

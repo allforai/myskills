@@ -1,6 +1,6 @@
 ---
 name: visual-qa-20-spec-visual-acceptance-criteria
-description: Internal bundled meta-skill module for visual-qa/20-spec/visual-acceptance-criteria; use before screenshot, generated-image, HTML gate, runtime visual, art, UI, or app visual QA to define project-specific acceptance standards, forbidden placeholders, evidence requirements, failure codes, and repair routes.
+description: Define what a project must look like and what must be rejected before any visual review runs (art, UI, runtime screenshots, HTML gates, contact sheets); writes .allforai/visual-qa criteria. Answers 'what standard', batch-visual-acceptance answers 'how to inspect'.
 ---
 
 # Visual Acceptance Criteria Skill

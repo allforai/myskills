@@ -1,6 +1,6 @@
 ---
 name: game-content-40-qa-content-pacing-qa
-description: Internal bundled meta-skill module for game-content/40-qa/content-pacing-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Validate content cadence, repetition, coverage, dependency order, novelty, and fatigue risk; writes content/content-pacing-qa-report.json.
 ---
 
 # Content Pacing QA Skill

@@ -1,6 +1,6 @@
 ---
 name: game-design-20-spec-objective-system-spec
-description: Internal bundled meta-skill module for game-design/20-spec/objective-system-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define how goals are created, tracked, completed, failed, displayed, rewarded, and chained across main, side, moment-to-moment, quest, achievement, daily, tutorial, and mode win conditions; writes systems/objective-system-spec.json.
 ---
 
 # Objective System Spec Skill

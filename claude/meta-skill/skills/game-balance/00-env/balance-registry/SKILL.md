@@ -1,6 +1,6 @@
 ---
 name: game-balance-00-env-balance-registry
-description: Internal bundled meta-skill module for game-balance/00-env/balance-registry; use within generated bootstrap node-specs when this exact contract is selected.
+description: Register numeric tables, curves, formulas, balance entities, owners, states, and downstream consumers; writes balance/balance-registry.json.
 ---
 
 # Balance Registry Skill

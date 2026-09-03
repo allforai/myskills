@@ -1,6 +1,6 @@
 ---
 name: game-art-00-env-image-model-capability-registry
-description: Internal bundled meta-skill module for game-art/00-env/image-model-capability-registry; use within generated bootstrap node-specs when image generation providers or MCP-backed image models must be detected, ranked, and validated.
+description: Detect image-generation providers, MCP tools, SDK/HTTP paths, API keys, model catalogs, capabilities, pricing hints, and routing suitability; writes art/image-generation/image-model-capability-registry.json. Generates no art itself.
 ---
 
 # Image Model Capability Registry Skill

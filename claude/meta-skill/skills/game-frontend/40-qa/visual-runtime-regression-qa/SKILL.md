@@ -1,6 +1,6 @@
 ---
 name: game-frontend-40-qa-visual-runtime-regression-qa
-description: Internal bundled meta-skill module for game-frontend/40-qa/visual-runtime-regression-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Validate runtime screenshots and probes against scene composition, asset visibility, HUD placement, layer order, scale, animation/VFX readability, and baselines through dual independent visual review; writes game-frontend/qa/codex-runtime-visual-review.json and runtime-visual-closure-audit.json.
 ---
 
 # Visual Runtime Regression QA Skill

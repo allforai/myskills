@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-light-pulse-generation
-description: Internal bundled meta-skill module for game-art/30-generate/light-pulse-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Produce light-pulse VFX specs (explosion flash, charge glow, hit flash, warnings, glints, environment pulses) for 2.5D/3D; writes art/vfx/lights/light-pulse-manifest.json. Called by vfx-generation when implementation_mode includes light_pulse.
 ---
 
 # Light Pulse Generation Skill

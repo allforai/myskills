@@ -1,6 +1,6 @@
 ---
 name: game-balance-20-spec-reward-pricing-spec
-description: Internal bundled meta-skill module for game-balance/20-spec/reward-pricing-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Specify rewards, prices, upgrade costs, offer values, affordability, and value anchors; writes balance/reward-pricing-spec.json.
 ---
 
 # Reward Pricing Spec Skill

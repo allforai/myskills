@@ -1,6 +1,6 @@
 ---
 name: game-art-40-qa-asset-pack-integration-qa
-description: Internal bundled meta-skill module for game-art/40-qa/asset-pack-integration-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Validate that searched, licensed, adapted, or user-provided packs are usable as coherent pipeline art: completeness, style fit, dimensions, animation, tileability, metadata, atlas and import readiness; writes art/sourcing/asset-pack-integration-qa-report.json."
 ---
 
 # Asset Pack Integration QA Skill

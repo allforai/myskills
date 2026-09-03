@@ -1,6 +1,6 @@
 ---
 name: game-frontend-20-spec-runtime-debug-bridge-contract
-description: Internal bundled meta-skill module for game-frontend/20-spec/runtime-debug-bridge-contract; use when a game/app runtime needs a QA-only debug bridge or MCP-readable interface for scene trees, runtime-created objects, asset bindings, logs, screenshots, invariants, and safe diagnostic actions.
+description: Define a QA-only debug bridge so automation, Codex CLI, or Claude Code can query the running game's scene tree, bindings, and state instead of guessing from source; writes game-frontend/bindings/runtime-debug-bridge-contract.json. Diagnostic only, never an in-memory editor.
 ---
 
 # Runtime Debug Bridge Contract Skill

@@ -1,6 +1,6 @@
 ---
 name: game-ui-10-design-hud-information-design
-description: Internal bundled meta-skill module for game-ui/10-design/hud-information-design; use within generated bootstrap node-specs when this exact contract is selected.
+description: Decide what gameplay information the HUD shows, when, at what priority, and how it avoids hiding the playfield; writes ui/hud-information-design.json as an implementation-agnostic contract.
 ---
 
 # HUD Information Design Skill

@@ -1,6 +1,6 @@
 ---
 name: app-design-20-spec-monetization-subscription-spec
-description: Internal bundled meta-skill module for app-design/20-spec/monetization-subscription-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define pricing, trials, subscription tiers, paywalls, entitlements, cancellation, billing states, and monetization fairness for apps; writes spec/monetization-subscription-spec.json.
 ---
 
 # Monetization Subscription Spec Skill

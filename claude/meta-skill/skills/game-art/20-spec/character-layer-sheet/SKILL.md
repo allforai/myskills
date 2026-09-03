@@ -1,6 +1,6 @@
 ---
 name: game-art-20-spec-character-layer-sheet
-description: Internal bundled meta-skill module for game-art/20-spec/character-layer-sheet; use within generated bootstrap node-specs when this exact contract is selected.
+description: Decompose a character into a layer-sheet spec only when outfit, skin, or equipment variants need part recolor or swap; writes systems/layer-sheet-plan.json and layer sheet images. Not for skeleton or part-tween rigs.
 ---
 
 # Character Layer Sheet Skill

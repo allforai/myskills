@@ -1,6 +1,6 @@
 ---
 name: game-level-20-spec-reward-placement-spec
-description: Internal bundled meta-skill module for game-level/20-spec/reward-placement-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define reward placement in levels: pickups, chests, exits, secrets, shops, quest rewards, and economy/progression pacing; writes levels/reward-placement-spec.json."
 ---
 
 # Reward Placement Spec Skill

@@ -1,6 +1,6 @@
 ---
 name: game-narrative-20-spec-story-structure-spec
-description: Internal bundled meta-skill module for game-narrative/20-spec/story-structure-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define acts, beats, branches, convergence, endings, emotional pacing, and links to quests, levels, and content packs; writes narrative/story-structure-spec.json.
 ---
 
 # Story Structure Spec Skill

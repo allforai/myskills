@@ -1,6 +1,6 @@
 ---
 name: game-onboarding-40-qa-ftue-friction-qa
-description: Internal bundled meta-skill module for game-onboarding/40-qa/ftue-friction-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Validate first-time-user friction: cognitive load, controls, UI, pacing, failure recovery, skip safety, and drop-off risk; writes onboarding/ftue-friction-qa-report.json."
 ---
 
 # FTUE Friction QA Skill

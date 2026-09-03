@@ -1,6 +1,6 @@
 ---
 name: game-frontend-20-spec-save-state-binding-spec
-description: Internal bundled meta-skill module for game-frontend/20-spec/save-state-binding-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define save/local state bindings for settings, progress, unlocked content, checkpoints, accessibility preferences, and smoke-test reset; writes game-frontend/bindings/save-state-binding-spec.json.
 ---
 
 # Save State Binding Spec Skill

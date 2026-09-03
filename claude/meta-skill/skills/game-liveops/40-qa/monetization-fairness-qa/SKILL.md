@@ -1,6 +1,6 @@
 ---
 name: game-liveops-40-qa-monetization-fairness-qa
-description: Internal bundled meta-skill module for game-liveops/40-qa/monetization-fairness-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Validate monetization fairness: pay-to-win risk, pressure tactics, value disclosure, regional constraints, player trust; writes liveops/monetization-fairness-qa-report.json."
 ---
 
 # Monetization Fairness QA Skill

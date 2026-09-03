@@ -1,6 +1,6 @@
 ---
 name: game-genre-common-20-spec-tech-tree-spec
-description: Internal bundled meta-skill module for game-genre-common/20-spec/tech-tree-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define research/tech trees: prerequisites, unlocks, eras, costs, pacing, branches, exclusive choices, UI/data needs; writes genre-common/tech-tree-spec.json."
 ---
 
 # Tech Tree Spec Skill

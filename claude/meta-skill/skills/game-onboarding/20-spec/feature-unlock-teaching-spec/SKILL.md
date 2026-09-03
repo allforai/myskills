@@ -1,6 +1,6 @@
 ---
 name: game-onboarding-20-spec-feature-unlock-teaching-spec
-description: Internal bundled meta-skill module for game-onboarding/20-spec/feature-unlock-teaching-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define when and how each feature unlocks, is taught, reinforced, and validated without overloading the player; writes onboarding/feature-unlock-teaching-spec.json.
 ---
 
 # Feature Unlock Teaching Spec Skill

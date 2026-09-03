@@ -1,6 +1,6 @@
 ---
 name: game-design-40-qa-game-design-final-closure-qa
-description: Internal bundled meta-skill module for game-design/40-qa/game-design-final-closure-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Validate that the whole game design is closed enough for art, audio, UI, engine import, implementation, and testing to proceed without conversation state; writes design/game-design-final-closure-qa-report.json.
 ---
 
 # Game Design Final Closure QA Skill

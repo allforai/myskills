@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-lora-adapter-training
-description: Internal bundled meta-skill module for game-art/30-generate/lora-adapter-training; use to train, purchase/register, validate, and hand off LoRA adapters for strict game art identity/style locking.
+description: Train, register, or validate LoRA adapters for strict identity/style locking; writes art/lora/lora-adapter-registry.json for the image model registry and generation contract. Returns blocked rather than falling back to prompt-only.
 ---
 
 # LoRA Adapter Training Skill

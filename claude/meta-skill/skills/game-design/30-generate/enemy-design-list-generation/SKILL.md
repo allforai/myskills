@@ -1,6 +1,6 @@
 ---
 name: game-design-30-generate-enemy-design-list-generation
-description: Internal bundled meta-skill module for game-design/30-generate/enemy-design-list-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Generate a coherent enemy roster from combat, level, progression, economy, and content taxonomy specs; writes content/enemy-roster.json.
 ---
 
 # Enemy Design List Generation Skill

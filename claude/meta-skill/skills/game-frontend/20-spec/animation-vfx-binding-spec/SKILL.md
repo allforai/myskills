@@ -1,6 +1,6 @@
 ---
 name: game-frontend-20-spec-animation-vfx-binding-spec
-description: Internal bundled meta-skill module for game-frontend/20-spec/animation-vfx-binding-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Map animation state machines, clips, sprite sheets, VFX, particles, and event bindings into frontend runtime events and probes; writes game-frontend/bindings/animation-vfx-binding-spec.json.
 ---
 
 # Animation VFX Binding Spec Skill

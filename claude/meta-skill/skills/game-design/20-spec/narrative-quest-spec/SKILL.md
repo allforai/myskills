@@ -1,6 +1,6 @@
 ---
 name: game-design-20-spec-narrative-quest-spec
-description: Internal bundled meta-skill module for game-design/20-spec/narrative-quest-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define story, quest, objective, dialogue, trigger, reward, and branch contracts for games with narrative, missions, tutorials, or task chains; writes content/narrative-quest-spec.json.
 ---
 
 # Narrative Quest Spec Skill

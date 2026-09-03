@@ -1,6 +1,6 @@
 ---
 name: game-combat-20-spec-skill-design-spec
-description: Internal bundled meta-skill module for game-combat/20-spec/skill-design-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define player skills: activation, targeting, cost, cooldown, range, scaling, risk/reward, counterplay, feedback, and downstream assets; writes combat/skill-design-spec.json."
 ---
 
 # Skill Design Spec Skill

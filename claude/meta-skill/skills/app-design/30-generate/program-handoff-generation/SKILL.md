@@ -1,6 +1,6 @@
 ---
 name: app-design-30-generate-program-handoff-generation
-description: Internal bundled meta-skill module for app-design/30-generate/program-handoff-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Generate implementation-node handoff for every deployable surface and runtime module (frontend, mobile, desktop, backend, BaaS, data, auth, payment, QA); writes handoff/program-development-node-handoff.json.
 ---
 
 # Program Handoff Generation Skill

@@ -1,6 +1,6 @@
 ---
 name: game-level-40-qa-level-pacing-qa
-description: Internal bundled meta-skill module for game-level/40-qa/level-pacing-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Validate level pacing across teaching, encounters, rewards, rest points, difficulty spikes, psychological curve, and objective progress; writes levels/level-pacing-qa-report.json.
 ---
 
 # Level Pacing QA Skill

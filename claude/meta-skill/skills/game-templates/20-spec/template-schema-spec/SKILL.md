@@ -1,6 +1,6 @@
 ---
 name: game-templates-20-spec-template-schema-spec
-description: Internal bundled meta-skill module for game-templates/20-spec/template-schema-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define the common template envelope and per-kind schemas: fields, required refs, defaults, localizable fields, runtime IDs, validation rules; writes game-templates/schemas/<template_kind>.schema.json."
 ---
 
 # Template Schema Spec Skill

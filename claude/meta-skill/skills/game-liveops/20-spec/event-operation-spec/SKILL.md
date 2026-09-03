@@ -1,6 +1,6 @@
 ---
 name: game-liveops-20-spec-event-operation-spec
-description: Internal bundled meta-skill module for game-liveops/20-spec/event-operation-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define time-limited events, seasons, rotations, eligibility, rewards, content needs, schedule, and operational risks; writes liveops/event-operation-spec.json.
 ---
 
 # Event Operation Spec Skill

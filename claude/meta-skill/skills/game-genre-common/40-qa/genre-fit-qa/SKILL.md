@@ -1,6 +1,6 @@
 ---
 name: game-genre-common-40-qa-genre-fit-qa
-description: Internal bundled meta-skill module for game-genre-common/40-qa/genre-fit-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Validate that selected genre-common contracts fit the chosen genre, player promise, session model, and production scope; writes genre-common/genre-fit-qa-report.json.
 ---
 
 # Genre Fit QA Skill

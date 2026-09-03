@@ -1,6 +1,6 @@
 ---
 name: game-audio-20-spec-music-cue-spec
-description: Internal bundled meta-skill module for game-audio/20-spec/music-cue-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define music cues, loops, stems, transitions, intensity states, menu/gameplay/victory/failure cues, and ambience relationships; writes audio/music-cue-spec.json.
 ---
 
 # Music Cue Spec Skill

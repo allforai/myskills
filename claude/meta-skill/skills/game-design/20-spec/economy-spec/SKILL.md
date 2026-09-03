@@ -1,6 +1,6 @@
 ---
 name: game-design-20-spec-economy-spec
-description: Internal bundled meta-skill module for game-design/20-spec/economy-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define the product-level economy: resources, sources, sinks, rewards, prices, inventory constraints, exchange rules, exploit risks, UI/art/data needs; writes systems/product-economy-spec.json."
 ---
 
 # Economy Spec Skill

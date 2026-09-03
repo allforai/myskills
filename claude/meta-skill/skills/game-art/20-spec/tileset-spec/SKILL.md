@@ -1,6 +1,6 @@
 ---
 name: game-art-20-spec-tileset-spec
-description: Internal bundled meta-skill module for game-art/20-spec/tileset-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define the tilemap contract: mode, terrain vocabulary, tile sizes, connectivity, collision/walkability metadata, atlas layout, preview-map acceptance; writes art/tilesets/tileset-spec.json. For cell-assembled maps, not backgrounds."
 ---
 
 # Tileset Spec Skill

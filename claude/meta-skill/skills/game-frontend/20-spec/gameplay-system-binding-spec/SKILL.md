@@ -1,6 +1,6 @@
 ---
 name: game-frontend-20-spec-gameplay-system-binding-spec
-description: Internal bundled meta-skill module for game-frontend/20-spec/gameplay-system-binding-spec; use within generated bootstrap node-specs when a game client needs design rules, levels, economy, items, abilities, objectives, and templates bound to frontend runtime systems.
+description: Bind rules, levels, objectives, mechanics, item/economy/progression data, templates, rewards, and failure/retry loops to code modules and probes; writes game-frontend/bindings/gameplay-system-binding-spec.json.
 ---
 
 # Gameplay System Binding Spec Skill

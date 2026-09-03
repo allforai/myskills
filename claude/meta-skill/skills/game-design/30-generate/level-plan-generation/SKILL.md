@@ -1,6 +1,6 @@
 ---
 name: game-design-30-generate-level-plan-generation
-description: Internal bundled meta-skill module for game-design/30-generate/level-plan-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Generate level plan contracts: layout diagrams, tile/map metadata, spawn points, goals, rewards, encounters, collision/walkability, preview needs; writes levels/level-blockout-manifest.json."
 ---
 
 # Level Plan Generation Skill

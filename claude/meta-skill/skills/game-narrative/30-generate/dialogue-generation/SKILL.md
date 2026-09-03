@@ -1,6 +1,6 @@
 ---
 name: game-narrative-30-generate-dialogue-generation
-description: Internal bundled meta-skill module for game-narrative/30-generate/dialogue-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Generate dialogue lines, barks, tutorial lines, and variants from dialogue-spec.json and narrative tone; writes narrative/dialogue-generation-manifest.json.
 ---
 
 # Dialogue Generation Skill

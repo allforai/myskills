@@ -1,6 +1,6 @@
 ---
 name: game-frontend-20-spec-performance-budget-spec
-description: Internal bundled meta-skill module for game-frontend/20-spec/performance-budget-spec; use within generated bootstrap node-specs when a game client needs FPS, startup, memory, bundle, draw call, particle, audio, and loading budgets before implementation.
+description: Translate platform, genre, art, VFX, audio, scene, and loading constraints into measurable frontend budgets that performance QA verifies; writes game-frontend/bindings/performance-budget-spec.json.
 ---
 
 # Performance Budget Spec Skill

@@ -1,6 +1,6 @@
 ---
 name: game-balance-30-generate-balance-table-generation
-description: Internal bundled meta-skill module for game-balance/30-generate/balance-table-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Generate JSON/CSV balance tables from validated numeric specs; writes balance/balance-table-manifest.json.
 ---
 
 # Balance Table Generation Skill

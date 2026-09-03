@@ -1,6 +1,6 @@
 ---
 name: app-design-40-qa-flow-coverage-qa
-description: Internal bundled meta-skill module for app-design/40-qa/flow-coverage-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Validate that user flows cover every job, screen, data need, permission, empty/error state, and recovery path; writes qa/flow-coverage-qa-report.json.
 ---
 
 # Flow Coverage QA Skill

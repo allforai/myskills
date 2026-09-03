@@ -1,6 +1,6 @@
 ---
 name: game-genre-common-20-spec-faction-system-spec
-description: Internal bundled meta-skill module for game-genre-common/20-spec/faction-system-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define factions, relations, reputation, diplomacy, territory, conflict, resource behavior, and narrative/system consequences; writes genre-common/faction-system-spec.json.
 ---
 
 # Faction System Spec Skill

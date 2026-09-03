@@ -1,6 +1,6 @@
 ---
 name: game-frontend-20-spec-hud-ui-binding-spec
-description: Internal bundled meta-skill module for game-frontend/20-spec/hud-ui-binding-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Map game UI/HUD design and art into runtime screens, overlays, safe areas, data bindings, interaction states, and probes; writes game-frontend/bindings/hud-ui-binding-spec.json.
 ---
 
 # HUD UI Binding Spec Skill

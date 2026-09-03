@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-particle-system
-description: Internal bundled meta-skill module for game-art/30-generate/particle-system; use within generated bootstrap node-specs when this exact contract is selected.
+description: Turn particle requirements from vfx-spec.json into engine-neutral emitter specs, optional textures, previews, validation, and repair decisions; writes art/vfx/particles/particle-system-manifest.json. Does not decide whether an effect exists.
 ---
 
 # Particle System Skill

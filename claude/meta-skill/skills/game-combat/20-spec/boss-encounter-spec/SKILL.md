@@ -1,6 +1,6 @@
 ---
 name: game-combat-20-spec-boss-encounter-spec
-description: Internal bundled meta-skill module for game-combat/20-spec/boss-encounter-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define boss encounters: phases, mechanics, arena constraints, adds, tells, failure recovery, rewards, narrative hooks, and asset needs; writes combat/boss-encounter-spec.json."
 ---
 
 # Boss Encounter Spec Skill

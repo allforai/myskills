@@ -1,6 +1,6 @@
 ---
 name: game-liveops-20-spec-monetization-spec
-description: Internal bundled meta-skill module for game-liveops/20-spec/monetization-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define the game revenue model: offers, SKUs, ads, battle pass, gacha, value anchors, regional constraints, fairness rules; writes liveops/monetization-spec.json."
 ---
 
 # Monetization Spec Skill

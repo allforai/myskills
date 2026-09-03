@@ -1,6 +1,6 @@
 ---
 name: app-design-10-concept-job-story-spec
-description: Internal bundled meta-skill module for app-design/10-concept/job-story-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Turn app intent into concrete jobs, use cases, triggers, desired outcomes, success signals, and failure/recovery expectations; writes concept/job-story-spec.json. Downstream flows and screens must trace to these jobs.
 ---
 
 # Job Story Spec Skill

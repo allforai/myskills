@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-image-generation-contract
-description: Internal bundled meta-skill module for game-art/30-generate/image-generation-contract; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define the shared contract for LLM image generation and other bitmap acquisition: constrain, validate, repair, and record every image before consumption, plus the downstream feedback loop; writes art/image-generation/accepted-image-manifest.json."
 ---
 
 # Image Generation Contract Skill

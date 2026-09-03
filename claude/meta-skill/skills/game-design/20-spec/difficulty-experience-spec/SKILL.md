@@ -1,6 +1,6 @@
 ---
 name: game-design-20-spec-difficulty-experience-spec
-description: Internal bundled meta-skill module for game-design/20-spec/difficulty-experience-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define how difficulty should feel before numbers are tuned: pressure curve, failure frequency, skill learning, readability, recovery, assists, modes, dynamic rules; writes design/difficulty-experience-spec.json."
 ---
 
 # Difficulty Experience Spec Skill

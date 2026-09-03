@@ -1,6 +1,6 @@
 ---
 name: game-genre-common-20-spec-relationship-system-spec
-description: Internal bundled meta-skill module for game-genre-common/20-spec/relationship-system-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define affinity, trust, romance, rivalry, loyalty, gifts, dialogue thresholds, relationship events, and consequences; writes genre-common/relationship-system-spec.json.
 ---
 
 # Relationship System Spec Skill

@@ -1,6 +1,6 @@
 ---
 name: game-narrative-10-design-narrative-tone-design
-description: Internal bundled meta-skill module for game-narrative/10-design/narrative-tone-design; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define narrative voice, world language, humor/drama level, character voice rules, terminology, and forbidden wording from the concept contract; writes narrative/narrative-tone-design.json.
 ---
 
 # Narrative Tone Design Skill

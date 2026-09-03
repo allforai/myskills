@@ -1,6 +1,6 @@
 ---
 name: game-combat-20-spec-status-effect-spec
-description: Internal bundled meta-skill module for game-combat/20-spec/status-effect-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define buffs, debuffs, DOT/HOT, crowd control, shields, immunities, stacking, duration, cleanse rules, icons, VFX, and balance limits; writes combat/status-effect-spec.json.
 ---
 
 # Status Effect Spec Skill

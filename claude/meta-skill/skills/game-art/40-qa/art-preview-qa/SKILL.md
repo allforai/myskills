@@ -1,6 +1,6 @@
 ---
 name: game-art-40-qa-art-preview-qa
-description: Internal bundled meta-skill module for game-art/40-qa/art-preview-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Run cross-asset visual QA over generated art, previews, screenshots, and manifests, classify defects, and route repair to the owning upstream skill; writes art/qa/art-preview-qa-report.json.
 ---
 
 # Art Preview QA Skill

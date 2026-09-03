@@ -1,6 +1,6 @@
 ---
 name: game-audio-10-design-audio-style-design
-description: Internal bundled meta-skill module for game-audio/10-design/audio-style-design; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define sonic palette, mood, instrumentation, texture, intensity levels, UI sound language, and mix priorities from the concept contract; writes audio/audio-style-design.json.
 ---
 
 # Audio Style Design Skill

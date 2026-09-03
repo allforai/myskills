@@ -1,6 +1,6 @@
 ---
 name: game-frontend-40-qa-playable-smoke-test
-description: Internal bundled meta-skill module for game-frontend/40-qa/playable-smoke-test; use within generated bootstrap node-specs when this exact contract is selected.
+description: Run the assembled client and verify a playable scene loads, assets are visible, input works, camera frames, HUD renders, animation/VFX trigger, and logs have no blocking errors; writes game-frontend/qa/playable-smoke-test-report.json.
 ---
 
 # Playable Smoke Test Skill

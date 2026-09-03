@@ -1,6 +1,6 @@
 ---
 name: game-liveops-20-spec-daily-weekly-task-spec
-description: Internal bundled meta-skill module for game-liveops/20-spec/daily-weekly-task-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define daily/weekly task cadence, objective pools, reset rules, rewards, fatigue limits, and UI needs; writes liveops/daily-weekly-task-spec.json.
 ---
 
 # Daily Weekly Task Spec Skill

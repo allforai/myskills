@@ -1,6 +1,6 @@
 ---
 name: game-narrative-20-spec-narrative-event-trigger-spec
-description: Internal bundled meta-skill module for game-narrative/20-spec/narrative-event-trigger-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define narrative triggers, conditions, flags, variables, rewards, UI cues, and runtime handoff for story and quest events; writes narrative/narrative-event-trigger-spec.json.
 ---
 
 # Narrative Event Trigger Spec Skill

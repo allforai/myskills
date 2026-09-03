@@ -1,6 +1,6 @@
 ---
 name: game-frontend-40-qa-frontend-build-export-qa
-description: Internal bundled meta-skill module for game-frontend/40-qa/frontend-build-export-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Validate the production build/export path: build command, output dir, asset refs, base path, bundle layout, launch from built output, smoke evidence; writes game-frontend/qa/frontend-build-export-report.json."
 ---
 
 # Frontend Build Export QA Skill

@@ -1,6 +1,6 @@
 ---
 name: game-frontend-20-spec-asset-import-binding-spec
-description: Internal bundled meta-skill module for game-frontend/20-spec/asset-import-binding-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Map engine-ready art manifest entries into loader keys, runtime IDs, atlas/animation frames, tilemap refs, UI/icon refs, VFX configs, fallbacks, and file checks; writes game-frontend/bindings/asset-import-binding-spec.json.
 ---
 
 # Asset Import Binding Spec Skill

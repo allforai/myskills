@@ -1,6 +1,6 @@
 ---
 name: game-art-40-qa-visual-acceptance-review
-description: Internal bundled meta-skill module for game-art/40-qa/visual-acceptance-review; use when generated or adapted game art must be visually inspected through task lists, two independent visual reviews (Codex CLI and Claude Code), reconciliation, and closure audit before downstream acceptance.
+description: "Game-art wrapper for batch visual acceptance: supplies art criteria, evidence manifests, output paths, and repair routing, then runs dual independent review (Codex CLI and Claude Code), reconciliation, and closure audit; writes art/qa/codex-visual-review.json, claude-code-visual-review.json, and visual-review-reconciliation.json."
 ---
 
 # Visual Acceptance Review Skill

@@ -1,6 +1,6 @@
 ---
 name: game-art-10-design-visual-hook-design
-description: Internal bundled meta-skill module for game-art/10-design/visual-hook-design; use within generated bootstrap node-specs when the game needs visual selling points, screenshot-level appeal, and recognizable art hooks before asset production.
+description: "Define the game's primary visual hooks: memorable shapes, moments, contrasts, transformations, feedback motifs, signatures, screenshot compositions; writes art/visual-hook-design.json before bulk asset generation."
 ---
 
 # Visual Hook Design Skill

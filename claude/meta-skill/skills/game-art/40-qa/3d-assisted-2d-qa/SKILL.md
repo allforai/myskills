@@ -1,6 +1,6 @@
 ---
 name: game-art-40-qa-3d-assisted-2d-qa
-description: Internal bundled meta-skill module for game-art/40-qa/3d-assisted-2d-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Validate 3D-derived renders behave as coherent 2D art: perspective, projection, scale, light, shadow, edges, pivots, anchors, layers, atlas metadata, style fit, and exclusion of raw 3D sources; writes art/2-5d/qa/3d-assisted-2d-qa-report.json."
 ---
 
 # 3D Assisted 2D QA Skill

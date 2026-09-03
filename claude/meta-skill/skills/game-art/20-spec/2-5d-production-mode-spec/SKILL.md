@@ -1,6 +1,6 @@
 ---
 name: game-art-20-spec-2-5d-production-mode-spec
-description: Internal bundled meta-skill module for game-art/20-spec/2-5d-production-mode-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Decide whether and how 3D-assisted production feeds a 2D runtime: which assets come from 3D sources, which stay native 2D, required render passes, allowed final artifacts; writes art/2-5d/2-5d-production-mode-spec.json."
 ---
 
 # 2.5D Production Mode Spec Skill

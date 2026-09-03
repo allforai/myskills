@@ -1,6 +1,6 @@
 ---
 name: game-frontend-40-qa-frontend-performance-budget-qa
-description: Internal bundled meta-skill module for game-frontend/40-qa/frontend-performance-budget-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Validate startup, asset loading, frame stability, texture/atlas count, memory, bundle size, draw/update pressure, and low-end targets against performance-budget-spec; writes game-frontend/qa/frontend-performance-budget-report.json.
 ---
 
 # Frontend Performance Budget QA Skill

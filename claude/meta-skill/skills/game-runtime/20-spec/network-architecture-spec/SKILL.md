@@ -1,6 +1,6 @@
 ---
 name: game-runtime-20-spec-network-architecture-spec
-description: Internal bundled meta-skill module for game-runtime/20-spec/network-architecture-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define multiplayer architecture: topology, authority, replication, prediction, reconciliation, persistence, reconnect, failure handling, observability, validation; writes game-runtime/network/network-architecture-spec.json from game-design network requirements."
 ---
 
 # Network Architecture Spec Skill

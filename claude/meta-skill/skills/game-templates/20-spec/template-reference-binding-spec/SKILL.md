@@ -1,6 +1,6 @@
 ---
 name: game-templates-20-spec-template-reference-binding-spec
-description: Internal bundled meta-skill module for game-templates/20-spec/template-reference-binding-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define how templates reference design, balance, art, UI, audio, level, and runtime contracts without embedding or duplicating them; writes game-templates/template-reference-map.json.
 ---
 
 # Template Reference Binding Spec Skill

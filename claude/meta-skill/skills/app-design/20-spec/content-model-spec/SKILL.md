@@ -1,6 +1,6 @@
 ---
 name: app-design-20-spec-content-model-spec
-description: Internal bundled meta-skill module for app-design/20-spec/content-model-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define content entities, voice, microcopy, empty/error/loading copy, localization hooks, and editorial ownership; writes spec/content-model-spec.json from IA and screen-requirements specs.
 ---
 
 # Content Model Spec Skill

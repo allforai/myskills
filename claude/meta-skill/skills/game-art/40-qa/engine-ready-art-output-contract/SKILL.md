@@ -1,6 +1,6 @@
 ---
 name: game-art-40-qa-engine-ready-art-output-contract
-description: Internal bundled meta-skill module for game-art/40-qa/engine-ready-art-output-contract; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Assemble the final importable art delivery: stable IDs, paths, manifests, atlas metadata, clips, state machines, tile metadata, UI/icon refs, VFX configs, pivots, sorting layers, QA and fallback status; writes game-runtime/art/engine-ready-art-manifest.json. Exit boundary of game-art."
 ---
 
 # Engine-Ready Art Output Contract Skill

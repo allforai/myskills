@@ -1,6 +1,6 @@
 ---
 name: app-design-40-qa-app-design-closure-qa
-description: Internal bundled meta-skill module for app-design/40-qa/app-design-closure-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Run final closure over all app-design contracts before approval, UI handoff, and program handoff; writes qa/app-design-closure-qa-report.json and blocks handoff on any open contract gap.
 ---
 
 # App Design Closure QA Skill

@@ -1,6 +1,6 @@
 ---
 name: game-design-40-qa-economy-balance-qa
-description: Internal bundled meta-skill module for game-design/40-qa/economy-balance-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Validate economy source/sink closure, affordability, inflation, exploit loops, resource deadlocks, and monetization constraints; writes systems/economy-balance-qa-report.json.
 ---
 
 # Economy Balance QA Skill

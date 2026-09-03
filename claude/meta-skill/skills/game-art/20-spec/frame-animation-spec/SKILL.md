@@ -1,6 +1,6 @@
 ---
 name: game-art-20-spec-frame-animation-spec
-description: Internal bundled meta-skill module for game-art/20-spec/frame-animation-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define frame-sequence animation contracts for pixel art, non-rigged sprites, simple effects, UI mascots, and small characters from motion-design.json; writes systems/frame-animation-spec.json.
 ---
 
 # Frame Animation Spec Skill

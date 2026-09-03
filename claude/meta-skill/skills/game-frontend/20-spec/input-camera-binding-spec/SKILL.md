@@ -1,6 +1,6 @@
 ---
 name: game-frontend-20-spec-input-camera-binding-spec
-description: Internal bundled meta-skill module for game-frontend/20-spec/input-camera-binding-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define keyboard/touch/gamepad controls, camera follow/framing, viewport constraints, dead zones, zoom, shake limits, and smoke actions; writes game-frontend/bindings/input-camera-binding-spec.json.
 ---
 
 # Input Camera Binding Spec Skill

@@ -1,6 +1,6 @@
 ---
 name: game-art-40-qa-runtime-import-check
-description: Internal bundled meta-skill module for game-art/40-qa/runtime-import-check; use within generated bootstrap node-specs when this exact contract is selected.
+description: Validate that exported art manifests import into the target runtime or frontend, executing an automatic import path when available; writes art/qa/runtime-import-check-report.json.
 ---
 
 # Runtime Import Check Skill

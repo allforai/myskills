@@ -1,6 +1,6 @@
 ---
 name: game-design-40-qa-contract-wiring-qa
-description: Internal bundled meta-skill module for game-design/40-qa/contract-wiring-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Validate that mapped game-design sub-skills actually exchange artifacts through the bootstrap workflow, final aggregation, and product-analysis handoff, not merely exist on disk; writes design/contract-wiring-qa-report.json.
 ---
 
 # Contract Wiring QA Skill

@@ -1,6 +1,6 @@
 ---
 name: game-design-40-qa-progression-balance-qa
-description: Internal bundled meta-skill module for game-design/40-qa/progression-balance-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Validate progression pacing, unlock usefulness, difficulty ramp, content gates, grind risk, and dead ends; writes systems/progression-balance-qa-report.json.
 ---
 
 # Progression Balance QA Skill

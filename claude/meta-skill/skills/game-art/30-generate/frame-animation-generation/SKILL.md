@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-frame-animation-generation
-description: Internal bundled meta-skill module for game-art/30-generate/frame-animation-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Generate or register frame-animation sheets from frame-animation-spec.json with frame metadata, anchors, previews, and repair loops; writes art/animations/frame-animation-manifest.json.
 ---
 
 # Frame Animation Generation Skill

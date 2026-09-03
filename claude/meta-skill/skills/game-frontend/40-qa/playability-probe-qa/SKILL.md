@@ -1,6 +1,6 @@
 ---
 name: game-frontend-40-qa-playability-probe-qa
-description: Internal bundled meta-skill module for game-frontend/40-qa/playability-probe-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Run a short automated gameplay probe beyond scene smoke (move, interact, trigger objective feedback, collect or defeat) and verify state changes match design contracts; writes game-frontend/qa/playability-probe-report.json.
 ---
 
 # Playability Probe QA Skill

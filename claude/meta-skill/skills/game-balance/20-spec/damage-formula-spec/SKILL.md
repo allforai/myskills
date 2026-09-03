@@ -1,6 +1,6 @@
 ---
 name: game-balance-20-spec-damage-formula-spec
-description: Internal bundled meta-skill module for game-balance/20-spec/damage-formula-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Specify damage, defense, crit, scaling, status, healing, survivability, and time-to-kill formulas; writes balance/damage-formula-spec.json.
 ---
 
 # Damage Formula Spec Skill

@@ -1,6 +1,6 @@
 ---
 name: app-design-20-spec-app-surface-topology-spec
-description: Internal bundled meta-skill module for app-design/20-spec/app-surface-topology-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define deployable surfaces, client/backend shape, technology stacks, shared modules, ownership boundaries, and specialization rules before UI, data, and implementation handoff; writes spec/app-surface-topology-spec.json.
 ---
 
 # App Surface Topology Spec Skill

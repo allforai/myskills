@@ -1,6 +1,6 @@
 ---
 name: game-level-20-spec-level-difficulty-budget-spec
-description: Internal bundled meta-skill module for game-level/20-spec/level-difficulty-budget-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Translate the global difficulty experience into per-level, per-region, or per-room difficulty and psychological budgets with validation probes; writes levels/level-difficulty-budget-spec.json. Use before encounter/reward placement QA.
 ---
 
 # Level Difficulty Budget Spec Skill

@@ -1,6 +1,6 @@
 ---
 name: game-content-30-generate-content-pack-plan-generation
-description: Internal bundled meta-skill module for game-content/30-generate/content-pack-plan-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Generate concrete content pack plans from roadmap, quest, activity, level, narrative, economy, and art/UI/audio requirements; writes content/content-pack-plan-manifest.json.
 ---
 
 # Content Pack Plan Generation Skill

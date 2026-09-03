@@ -1,6 +1,6 @@
 ---
 name: game-narrative-20-spec-dialogue-spec
-description: Internal bundled meta-skill module for game-narrative/20-spec/dialogue-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define dialogue nodes, speakers, triggers, variables, branches, emotion states, and UI constraints before dialogue generation; writes narrative/dialogue-spec.json.
 ---
 
 # Dialogue Spec Skill

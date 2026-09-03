@@ -1,6 +1,6 @@
 ---
 name: game-templates-20-spec-template-inheritance-spec
-description: Internal bundled meta-skill module for game-templates/20-spec/template-inheritance-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define base templates, variants, inheritance, override rules, merge policy, reference override policy, and cycle prevention; writes game-templates/schemas/template-inheritance-spec.json.
 ---
 
 # Template Inheritance Spec Skill

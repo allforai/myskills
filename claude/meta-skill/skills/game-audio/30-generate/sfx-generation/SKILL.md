@@ -1,6 +1,6 @@
 ---
 name: game-audio-30-generate-sfx-generation
-description: Internal bundled meta-skill module for game-audio/30-generate/sfx-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Generate or register SFX files and manifests from sfx-spec.json; writes audio/sfx/sfx-manifest.json and a generation report.
 ---
 
 # SFX Generation Skill

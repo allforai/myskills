@@ -1,6 +1,6 @@
 ---
 name: game-level-00-env-level-registry
-description: Internal bundled meta-skill module for game-level/00-env/level-registry; use within generated bootstrap node-specs when this exact contract is selected.
+description: Create canonical level, map, room, encounter, and blockout IDs with paths, states, dependencies, and validation; writes levels/level-registry.json.
 ---
 
 # Level Registry Skill

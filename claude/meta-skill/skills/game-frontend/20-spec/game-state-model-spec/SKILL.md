@@ -1,6 +1,6 @@
 ---
 name: game-frontend-20-spec-game-state-model-spec
-description: Internal bundled meta-skill module for game-frontend/20-spec/game-state-model-spec; use within generated bootstrap node-specs when a game client needs runtime state, scene state, gameplay state, UI state, save state, and probeable state transitions before implementation.
+description: "Define the frontend state model: boot, scene, in-level, meta progression, UI modal, settings/save, transient effects, and probeable transitions; writes game-frontend/bindings/game-state-model-spec.json."
 ---
 
 # Game State Model Spec Skill

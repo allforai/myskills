@@ -1,6 +1,6 @@
 ---
 name: app-design-00-env-app-design-registry
-description: Internal bundled meta-skill module for app-design/00-env/app-design-registry; use within generated bootstrap node-specs when this exact contract is selected.
+description: Create the app-design registry (product type, target surfaces, selected design nodes, owners, artifact paths, approval records, consumers) that every later app-design sub-skill reads; writes app-design-registry.json.
 ---
 
 # App Design Registry Skill

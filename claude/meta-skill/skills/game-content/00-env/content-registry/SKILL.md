@@ -1,6 +1,6 @@
 ---
 name: game-content-00-env-content-registry
-description: Internal bundled meta-skill module for game-content/00-env/content-registry; use within generated bootstrap node-specs when this exact contract is selected.
+description: Create canonical content IDs, packs, cadence, owners, dependencies, states, and downstream routes for quests, activities, levels, items, enemies, events, and seasonal content; writes content/content-registry.json.
 ---
 
 # Content Registry Skill

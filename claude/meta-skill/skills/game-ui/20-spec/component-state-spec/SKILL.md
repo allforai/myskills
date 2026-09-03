@@ -1,6 +1,6 @@
 ---
 name: game-ui-20-spec-component-state-spec
-description: Internal bundled meta-skill module for game-ui/20-spec/component-state-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define game UI components and every state needed for menus, HUDs, overlays, and feedback; writes ui/component-state-spec.json. Sole component-state author on game projects.
 ---
 
 # Component State Spec Skill

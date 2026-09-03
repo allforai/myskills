@@ -1,6 +1,6 @@
 ---
 name: game-art-40-qa-atlas-packaging
-description: Internal bundled meta-skill module for game-art/40-qa/atlas-packaging; use within generated bootstrap node-specs when this exact contract is selected.
+description: Plan and validate texture atlases for icons, tilesets, sprites, VFX sheets, props, and UI art; writes art/atlases/atlas-manifest.json.
 ---
 
 # Atlas Packaging Skill

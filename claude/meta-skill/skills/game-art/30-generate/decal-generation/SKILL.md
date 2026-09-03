@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-decal-generation
-description: Internal bundled meta-skill module for game-art/30-generate/decal-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Produce decal VFX (scorch, cracks, blood, bullet holes, ice, runes, markers, stains); writes art/vfx/decals/decal-manifest.json. Called by vfx-generation when implementation_mode includes decal.
 ---
 
 # Decal Generation Skill

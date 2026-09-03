@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-portrait-generation
-description: Internal bundled meta-skill module for game-art/30-generate/portrait-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Generate or register character portraits, busts, dialogue portraits, emotion variants, speaker icons, and profile images; writes art/portraits/portrait-manifest.json.
 ---
 
 # Portrait Generation Skill

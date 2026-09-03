@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-vfx-generation
-description: Internal bundled meta-skill module for game-art/30-generate/vfx-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Orchestrate VFX production from vfx-spec.json across particle, sprite-sheet, trail, shader, screen-effect, decal, light-pulse, and animation-event branches with previews and QA; writes art/vfx/vfx-manifest.json. Fallback VFX never counts as final coverage.
 ---
 
 # VFX Generation Skill

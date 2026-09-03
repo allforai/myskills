@@ -1,6 +1,6 @@
 ---
 name: game-genre-common-20-spec-deck-building-spec
-description: Internal bundled meta-skill module for game-genre-common/20-spec/deck-building-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define deck, card pool, hand, draw, discard, exhaust, upgrade, rarity, draft, and build-archetype rules; writes genre-common/deck-building-spec.json.
 ---
 
 # Deck Building Spec Skill

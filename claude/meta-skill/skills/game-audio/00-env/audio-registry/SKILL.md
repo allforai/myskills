@@ -1,6 +1,6 @@
 ---
 name: game-audio-00-env-audio-registry
-description: Internal bundled meta-skill module for game-audio/00-env/audio-registry; use within generated bootstrap node-specs when this exact contract is selected.
+description: Create canonical IDs, file prefixes, paths, lifecycle states, owners, and consumers for SFX, music, ambience, UI sounds, and voice placeholders; writes audio/audio-registry.json.
 ---
 
 # Audio Registry Skill

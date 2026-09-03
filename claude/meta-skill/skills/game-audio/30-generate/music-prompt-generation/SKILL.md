@@ -1,6 +1,6 @@
 ---
 name: game-audio-30-generate-music-prompt-generation
-description: Internal bundled meta-skill module for game-audio/30-generate/music-prompt-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Produce music generation prompts, stem specs, loop instructions, transition notes, and manifests from music-cue-spec.json; writes audio/music/music-manifest.json.
 ---
 
 # Music Prompt Generation Skill

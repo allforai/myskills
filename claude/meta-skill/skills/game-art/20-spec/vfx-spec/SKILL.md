@@ -1,6 +1,6 @@
 ---
 name: game-art-20-spec-vfx-spec
-description: Internal bundled meta-skill module for game-art/20-spec/vfx-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Turn gameplay, UI, and screen feedback needs into a VFX contract with semantics, timing, layer, dimension, implementation mode, anchors, readability and accessibility budgets; writes art/vfx/vfx-spec.json. Particles are one mode inside it.
 ---
 
 # VFX Spec Skill

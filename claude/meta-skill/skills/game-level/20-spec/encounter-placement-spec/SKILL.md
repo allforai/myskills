@@ -1,6 +1,6 @@
 ---
 name: game-level-20-spec-encounter-placement-spec
-description: Internal bundled meta-skill module for game-level/20-spec/encounter-placement-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define encounter placement, enemy/hazard composition, spawn rules, difficulty beats, counterplay, and pacing constraints per level; writes levels/encounter-placement-spec.json.
 ---
 
 # Encounter Placement Spec Skill

@@ -1,6 +1,6 @@
 ---
 name: game-frontend-20-spec-asset-loading-strategy-spec
-description: Internal bundled meta-skill module for game-frontend/20-spec/asset-loading-strategy-spec; use within generated bootstrap node-specs when a game client needs preload, lazy-load, cache, bundle, remote/local asset, atlas, audio, and failure handling strategy.
+description: "Decide when and how bound assets load: preload/lazy groups, cache lifetime, loading screens, fallbacks, remote/local policy, probes; writes game-frontend/bindings/asset-loading-strategy-spec.json. Import binding maps keys; this schedules them."
 ---
 
 # Asset Loading Strategy Spec Skill

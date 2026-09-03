@@ -1,6 +1,6 @@
 ---
 name: game-design-30-generate-design-data-table-generation
-description: Internal bundled meta-skill module for game-design/30-generate/design-data-table-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Generate program-readable design data tables (resources, items, skills, enemies, levels, quests, progression, economy, runtime config) from game design specs; writes data/game-data-table-manifest.json and data/tables/.
 ---
 
 # Game Design Data Table Generation Skill

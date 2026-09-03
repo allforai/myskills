@@ -1,6 +1,6 @@
 ---
 name: game-balance-20-spec-progression-curve-spec
-description: Internal bundled meta-skill module for game-balance/20-spec/progression-curve-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Specify level, XP, unlock, power, mastery, and session pacing curves as numbers; writes balance/progression-curve-spec.json.
 ---
 
 # Progression Curve Spec Skill

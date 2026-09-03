@@ -1,6 +1,6 @@
 ---
 name: game-art-20-spec-2d-view-mode-spec
-description: Internal bundled meta-skill module for game-art/20-spec/2d-view-mode-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Classify the 2D view mode (side, top-down, 3/4, isometric, lane depth, fixed room, grid, visual novel, scrolling shooter, hybrid) and its camera, facing, projection, layering, collision, and sorting rules; writes art/view/2d-view-mode-spec.json.
 ---
 
 # 2D View Mode Spec Skill

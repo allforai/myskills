@@ -1,6 +1,6 @@
 ---
 name: game-design-40-qa-core-loop-closure-qa
-description: Internal bundled meta-skill module for game-design/40-qa/core-loop-closure-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Validate that loops close: goal, action, feedback, reward, progression, failure recovery, next motivation; writes design/core-loop-closure-qa-report.json."
 ---
 
 # Core Loop Closure QA Skill

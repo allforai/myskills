@@ -1,6 +1,6 @@
 ---
 name: game-frontend-20-spec-audio-binding-spec
-description: Internal bundled meta-skill module for game-frontend/20-spec/audio-binding-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Map audio cue manifests into loader keys, scene/UI triggers, animation/VFX sync points, volume groups, fallback policy, and probes; writes game-frontend/bindings/audio-binding-spec.json.
 ---
 
 # Audio Binding Spec Skill

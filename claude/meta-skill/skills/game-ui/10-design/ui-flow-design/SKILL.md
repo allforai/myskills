@@ -1,6 +1,6 @@
 ---
 name: game-ui-10-design-ui-flow-design
-description: Internal bundled meta-skill module for game-ui/10-design/ui-flow-design; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define how players move between screens, overlays, modals, and gameplay states: entry points, exits, transitions, blocked states, recovery; writes ui/ui-flow-map.json. Design layer only; scene-flow-spec binds it to runtime."
 ---
 
 # UI Flow Design Skill

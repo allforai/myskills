@@ -1,6 +1,6 @@
 ---
 name: game-genre-common-20-spec-collection-system-spec
-description: Internal bundled meta-skill module for game-genre-common/20-spec/collection-system-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define collectable catalogues, rarity, ownership, duplicates, completion, display, rewards, album UI, and collection-driven progression; writes genre-common/collection-system-spec.json.
 ---
 
 # Collection System Spec Skill

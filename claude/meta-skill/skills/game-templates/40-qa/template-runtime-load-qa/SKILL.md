@@ -1,6 +1,6 @@
 ---
 name: game-templates-40-qa-template-runtime-load-qa
-description: Internal bundled meta-skill module for game-templates/40-qa/template-runtime-load-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Validate that template instances parse, resolve, and load through the frontend/runtime data layer with executable evidence, not static inspection; writes game-templates/qa/template-runtime-load-qa-report.json.
 ---
 
 # Template Runtime Load QA Skill

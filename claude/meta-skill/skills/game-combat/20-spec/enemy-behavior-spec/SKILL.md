@@ -1,6 +1,6 @@
 ---
 name: game-combat-20-spec-enemy-behavior-spec
-description: Internal bundled meta-skill module for game-combat/20-spec/enemy-behavior-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define enemy roles, states, transitions, telegraphs, attacks, movement, detection, counterplay, and runtime AI needs; writes combat/enemy-behavior-spec.json.
 ---
 
 # Enemy Behavior Spec Skill

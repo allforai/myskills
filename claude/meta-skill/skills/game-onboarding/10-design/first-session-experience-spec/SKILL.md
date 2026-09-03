@@ -1,6 +1,6 @@
 ---
 name: game-onboarding-10-design-first-session-experience-spec
-description: Internal bundled meta-skill module for game-onboarding/10-design/first-session-experience-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define the first session: opening promise, first goal, emotional arc, expected duration, success criteria, failure recovery, and handoff to the main loop; writes onboarding/first-session-experience-spec.json."
 ---
 
 # First Session Experience Spec Skill

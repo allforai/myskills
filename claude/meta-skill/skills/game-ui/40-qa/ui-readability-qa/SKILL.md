@@ -1,6 +1,6 @@
 ---
 name: game-ui-40-qa-ui-readability-qa
-description: Internal bundled meta-skill module for game-ui/40-qa/ui-readability-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Validate that game UI outputs are readable, tappable, visually consistent, and do not harm gameplay, combining artifact checks with screenshot/mockup review; writes ui/ui-readability-qa-report.json.
 ---
 
 # UI Readability QA Skill

@@ -1,6 +1,6 @@
 ---
 name: game-design-20-spec-mechanics-spec
-description: Internal bundled meta-skill module for game-design/20-spec/mechanics-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define core interaction mechanics as executable product rules: inputs, constraints, risks, rewards, feedback, runtime refs, content dependencies; writes systems/mechanics-spec.json."
 ---
 
 # Mechanics Spec Skill

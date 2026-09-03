@@ -1,6 +1,6 @@
 ---
 name: game-runtime-20-spec-matchmaking-service-spec
-description: Internal bundled meta-skill module for game-runtime/20-spec/matchmaking-service-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define the matchmaking service: queues, rating inputs, eligibility, party/region/platform logic, expansion timeline, bot/backfill policy, abuse hooks, observability, validation; writes game-runtime/server/matchmaking-service-spec.json."
 ---
 
 # Matchmaking Service Spec Skill

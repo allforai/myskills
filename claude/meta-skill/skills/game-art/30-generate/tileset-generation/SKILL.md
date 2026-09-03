@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-tileset-generation
-description: Internal bundled meta-skill module for game-art/30-generate/tileset-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Produce tileset prompts/specs, tile sheets, atlas manifests, metadata, preview maps, and validation from tileset-spec.json, proving tiles join cleanly and carry collision metadata; writes art/tilesets/tileset-generation-report.json.
 ---
 
 # Tileset Generation Skill

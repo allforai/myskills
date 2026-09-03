@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-screen-effect-generation
-description: Internal bundled meta-skill module for game-art/30-generate/screen-effect-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Produce screen-space VFX specs (flash, shake, vignette, radial burst, blur, low-health warning, reward burst, slow-motion, global damage) with accessibility and UI readability limits; writes art/vfx/screen/screen-effect-manifest.json.
 ---
 
 # Screen Effect Generation Skill

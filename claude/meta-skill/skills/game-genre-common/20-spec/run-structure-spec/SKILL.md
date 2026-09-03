@@ -1,6 +1,6 @@
 ---
 name: game-genre-common-20-spec-run-structure-spec
-description: Internal bundled meta-skill module for game-genre-common/20-spec/run-structure-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define run/session structure for roguelike, dungeon, ladder, challenge, survival, and repeatable modes: start, branches, encounters, shops, rewards, rest, bosses, failure, completion; writes genre-common/run-structure-spec.json."
 ---
 
 # Run Structure Spec Skill

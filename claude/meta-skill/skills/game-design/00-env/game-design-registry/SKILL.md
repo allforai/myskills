@@ -1,6 +1,6 @@
 ---
 name: game-design-00-env-game-design-registry
-description: Internal bundled meta-skill module for game-design/00-env/game-design-registry; use within generated bootstrap node-specs when this exact contract is selected.
+description: Create canonical IDs, names, owners, lifecycle states, and cross-skill routes for game-design entities (features, systems, loops, resources, levels, enemies, items, skills, quests, events, packs); writes design/game-design-registry.json.
 ---
 
 # Game Design Registry Skill

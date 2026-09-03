@@ -1,6 +1,6 @@
 ---
 name: game-content-20-spec-quest-chain-spec
-description: Internal bundled meta-skill module for game-content/20-spec/quest-chain-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define quest chains with prerequisites, objectives, rewards, narrative beats, level refs, and progression gates; writes content/quest-chain-spec.json.
 ---
 
 # Quest Chain Spec Skill

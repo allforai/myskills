@@ -1,6 +1,6 @@
 ---
 name: game-systems-10-design-core-loop-design
-description: Internal bundled meta-skill module for game-systems/10-design/core-loop-design; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define the primary game loop, session structure, goals, failure/retry rules, player decisions, rewards, and mode boundaries; writes systems/core-loop-design.json.
 ---
 
 # Core Loop Design Skill

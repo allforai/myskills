@@ -1,6 +1,6 @@
 ---
 name: game-frontend-00-env-frontend-runtime-detection
-description: Internal bundled meta-skill module for game-frontend/00-env/frontend-runtime-detection; use within generated bootstrap node-specs when this exact contract is selected.
+description: Detect the playable client stack, runnable commands, asset loader surface, browser/engine test tools, and strongest validation method before binding or assembly; writes game-frontend/env/frontend-runtime-profile.json.
 ---
 
 # Frontend Runtime Detection Skill

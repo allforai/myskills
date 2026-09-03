@@ -1,6 +1,6 @@
 ---
 name: game-frontend-20-spec-scene-flow-spec
-description: Internal bundled meta-skill module for game-frontend/20-spec/scene-flow-spec; use within generated bootstrap node-specs when a game client needs scene routing, screen transitions, entry/exit conditions, loading states, and automated navigation probes.
+description: Define how scenes are entered, exited, restored, and probed across boot, menu, map, gameplay, result, shop, settings, narrative, loading, error; writes game-frontend/bindings/scene-flow-spec.json. Runtime binding of ui-flow-design.
 ---
 
 # Scene Flow Spec Skill

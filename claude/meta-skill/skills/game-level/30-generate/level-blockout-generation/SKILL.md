@@ -1,6 +1,6 @@
 ---
 name: game-level-30-generate-level-blockout-generation
-description: Internal bundled meta-skill module for game-level/30-generate/level-blockout-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Generate level blockouts, tile maps, room graphs, route maps, collision maps, and previews from level-layout-spec.json; writes levels/blockouts/level-blockout-manifest.json.
 ---
 
 # Level Blockout Generation Skill

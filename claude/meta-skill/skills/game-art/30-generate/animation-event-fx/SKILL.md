@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-animation-event-fx
-description: Internal bundled meta-skill module for game-art/30-generate/animation-event-fx; use within generated bootstrap node-specs when this exact contract is selected.
+description: Bind small VFX to animation timeline events (footstep dust, landing, spark, cast glow, hit flash, cloth snap, contact cues); writes art/vfx/animation-events/animation-event-fx-manifest.json. Called by vfx-generation.
 ---
 
 # Animation Event FX Skill

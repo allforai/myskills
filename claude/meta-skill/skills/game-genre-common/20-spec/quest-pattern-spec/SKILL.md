@@ -1,6 +1,6 @@
 ---
 name: game-genre-common-20-spec-quest-pattern-spec
-description: Internal bundled meta-skill module for game-genre-common/20-spec/quest-pattern-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define a reusable quest pattern grammar (fetch, escort, defend, explore, investigate, craft, social, timed, branching, repeatable); writes genre-common/quest-pattern-spec.json.
 ---
 
 # Quest Pattern Spec Skill

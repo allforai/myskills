@@ -1,6 +1,6 @@
 ---
 name: game-systems-40-qa-balance-sanity-qa
-description: Internal bundled meta-skill module for game-systems/40-qa/balance-sanity-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Run first-pass sanity checks over economy, progression, combat, level flow, and reward pacing for contradictions, exploits, and impossible states; writes systems/balance-sanity-qa-report.json.
 ---
 
 # Balance Sanity QA Skill

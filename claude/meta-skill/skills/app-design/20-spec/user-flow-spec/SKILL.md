@@ -1,6 +1,6 @@
 ---
 name: app-design-20-spec-user-flow-spec
-description: Internal bundled meta-skill module for app-design/20-spec/user-flow-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define step-by-step user flows per job: happy path, alternates, empty and error states, recovery, and completion signals; writes spec/user-flow-spec.json. Flows reach ui-design only through business-flows.json."
 ---
 
 # User Flow Spec Skill

@@ -1,6 +1,6 @@
 ---
 name: game-design-30-generate-item-skill-design-generation
-description: Internal bundled meta-skill module for game-design/30-generate/item-skill-design-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Generate design entries for items, equipment, skills, upgrades, and status effects with their data, icon, VFX, animation, UI, economy, and runtime needs; writes content/item-skill-set.json.
 ---
 
 # Item Skill Design Generation Skill

@@ -1,6 +1,6 @@
 ---
 name: game-systems-20-spec-achievement-system-spec
-description: Internal bundled meta-skill module for game-systems/20-spec/achievement-system-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define achievements, challenges, trophies, milestones, tracking conditions, rewards, visibility, hidden rules, and UI/content ownership; writes systems/achievement-system-spec.json.
 ---
 
 # Achievement System Spec Skill

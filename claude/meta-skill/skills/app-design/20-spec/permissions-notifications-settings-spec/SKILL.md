@@ -1,6 +1,6 @@
 ---
 name: app-design-20-spec-permissions-notifications-settings-spec
-description: Internal bundled meta-skill module for app-design/20-spec/permissions-notifications-settings-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define account, consent, permissions, privacy controls, notifications, settings, preference management, and trust-sensitive flows; writes spec/permissions-notifications-settings-spec.json.
 ---
 
 # Permissions Notifications Settings Spec Skill

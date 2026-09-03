@@ -1,6 +1,6 @@
 ---
 name: game-art-20-spec-existing-asset-adaptation-spec
-description: Internal bundled meta-skill module for game-art/20-spec/existing-asset-adaptation-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define how existing or user-provided 2D/3D assets are adapted to project art, metadata, engine, and handoff contracts (rename, resize, palette, slice, pivots, animation/tile metadata); writes art/sourcing/existing-asset-adaptation-spec.json. Runs only after license QA.
 ---
 
 # Existing Asset Adaptation Spec Skill

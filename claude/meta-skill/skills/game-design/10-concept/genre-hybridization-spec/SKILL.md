@@ -1,6 +1,6 @@
 ---
 name: game-design-10-concept-genre-hybridization-spec
-description: Internal bundled meta-skill module for game-design/10-concept/genre-hybridization-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Combine multiple genres into one coherent concept: primary loop, supporting genre roles, system interfaces, risk controls, downstream constraints; writes design/genre-hybridization-spec.json."
 ---
 
 # Genre Hybridization Spec Skill

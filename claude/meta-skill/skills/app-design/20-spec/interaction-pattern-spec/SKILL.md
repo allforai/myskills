@@ -1,6 +1,6 @@
 ---
 name: app-design-20-spec-interaction-pattern-spec
-description: Internal bundled meta-skill module for app-design/20-spec/interaction-pattern-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define interactive component behavior, state transitions, gesture model, and loading strategy; writes spec/interaction-pattern-spec.json. Sole author of component states for non-game projects; game projects use game-ui component-state-spec.
 ---
 
 # Interaction Pattern Spec Skill

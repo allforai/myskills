@@ -1,6 +1,6 @@
 ---
 name: game-art-20-spec-lora-identity-style-lock-spec
-description: Internal bundled meta-skill module for game-art/20-spec/lora-identity-style-lock-spec; use when a project must decide whether LoRA is required and whether to train locally, rent remote GPU, or use provider/API LoRA training.
+description: Decide whether the project needs LoRA or a cheaper identity lock such as reference edit mode, and where training runs (local, remote, API); writes art/lora/lora-identity-style-lock-spec.json. Decision only, no generation.
 ---
 
 # LoRA Identity Style Lock Spec Skill

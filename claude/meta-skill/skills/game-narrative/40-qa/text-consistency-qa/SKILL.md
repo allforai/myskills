@@ -1,6 +1,6 @@
 ---
 name: game-narrative-40-qa-text-consistency-qa
-description: Internal bundled meta-skill module for game-narrative/40-qa/text-consistency-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Validate narrative, dialogue, quest, tutorial, UI, and reward text for tone, terminology, variable safety, length, continuity, and localization readiness; writes narrative/text-consistency-qa-report.json.
 ---
 
 # Text Consistency QA Skill

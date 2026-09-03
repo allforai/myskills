@@ -1,6 +1,6 @@
 ---
 name: game-templates-40-qa-template-reference-closure-qa
-description: Internal bundled meta-skill module for game-templates/40-qa/template-reference-closure-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Validate that template schemas and instances are closed over source refs, resource refs, consumers, inheritance, defaults, and repair targets; writes game-templates/qa/template-reference-closure-qa-report.json.
 ---
 
 # Template Reference Closure QA Skill

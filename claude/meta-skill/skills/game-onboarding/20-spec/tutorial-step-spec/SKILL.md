@@ -1,6 +1,6 @@
 ---
 name: game-onboarding-20-spec-tutorial-step-spec
-description: Internal bundled meta-skill module for game-onboarding/20-spec/tutorial-step-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define tutorial steps with triggers, prompts, required player actions, validation, skip rules, recovery, and UI/narrative needs; writes onboarding/tutorial-step-spec.json.
 ---
 
 # Tutorial Step Spec Skill

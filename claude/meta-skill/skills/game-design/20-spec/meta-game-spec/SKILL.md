@@ -1,6 +1,6 @@
 ---
 name: game-design-20-spec-meta-game-spec
-description: Internal bundled meta-skill module for game-design/20-spec/meta-game-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define the long-term game outside a single run: collection, account progression, daily/weekly loops, social surfaces, seasonal goals, mastery, cosmetics, re-entry motivation; writes systems/meta-game-spec.json."
 ---
 
 # Meta Game Spec Skill

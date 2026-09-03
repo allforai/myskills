@@ -1,6 +1,6 @@
 ---
 name: game-design-20-spec-game-mode-spec
-description: Internal bundled meta-skill module for game-design/20-spec/game-mode-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define playable modes (campaign, stage, challenge, endless, practice, co-op, PvP, daily, event, sandbox, tutorial) and how each uses the loop, content, rewards, difficulty, UI, and runtime state; writes design/game-mode-spec.json.
 ---
 
 # Game Mode Spec Skill

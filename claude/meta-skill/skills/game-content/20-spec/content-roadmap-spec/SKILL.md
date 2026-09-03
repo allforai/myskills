@@ -1,6 +1,6 @@
 ---
 name: game-content-20-spec-content-roadmap-spec
-description: Internal bundled meta-skill module for game-content/20-spec/content-roadmap-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define content sequence, scope, release order, dependency plan, coverage, and cadence for campaign, live, or staged content; writes content/content-roadmap-spec.json.
 ---
 
 # Content Roadmap Spec Skill

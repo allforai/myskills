@@ -1,6 +1,6 @@
 ---
 name: game-design-10-concept-game-pillar-spec
-description: Internal bundled meta-skill module for game-design/10-concept/game-pillar-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define design pillars as enforceable tradeoff constraints, not slogans; writes design/game-pillar-spec.json.
 ---
 
 # Game Pillar Spec Skill

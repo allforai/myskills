@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-render-to-2d-asset-generation
-description: Internal bundled meta-skill module for game-art/30-generate/render-to-2d-asset-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Generate or register 2D runtime assets from 3D sources: sprite sheets, prop and tile renders, plates, turnarounds, shadow passes, normal/depth maps, thumbnails; writes art/2-5d/renders/render-to-2d-manifest.json. Raw 3D files are never engine-ready art."
 ---
 
 # Render To 2D Asset Generation Skill

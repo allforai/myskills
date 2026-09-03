@@ -1,6 +1,6 @@
 ---
 name: game-art-40-qa-asset-license-provenance-qa
-description: Internal bundled meta-skill module for game-art/40-qa/asset-license-provenance-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Validate license, provenance, modification rights, commercial use, attribution, and source evidence for existing assets and packs; writes art/sourcing/asset-license-provenance-qa-report.json. Hard gate before engine-ready output.
 ---
 
 # Asset License Provenance QA Skill

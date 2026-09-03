@@ -1,6 +1,6 @@
 ---
 name: app-design-30-generate-ui-input-handoff-generation
-description: Internal bundled meta-skill module for app-design/30-generate/ui-input-handoff-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Generate the index handoff ui-design consumes: screens, flows, states, copy, priorities, interaction behavior, accessibility, and constraints; writes handoff/ui-design-input-handoff.json. An index of upstream specs, not a fourth source."
 ---
 
 # UI Input Handoff Generation Skill

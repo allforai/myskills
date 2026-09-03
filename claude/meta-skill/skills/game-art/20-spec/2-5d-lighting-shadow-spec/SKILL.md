@@ -1,6 +1,6 @@
 ---
 name: game-art-20-spec-2-5d-lighting-shadow-spec
-description: Internal bundled meta-skill module for game-art/20-spec/2-5d-lighting-shadow-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define lighting, shadow, and helper-map rules so 3D-assisted renders stay readable as one 2D visual system with sprites, tiles, VFX, and UI; writes art/2-5d/2-5d-lighting-shadow-spec.json.
 ---
 
 # 2.5D Lighting Shadow Spec Skill

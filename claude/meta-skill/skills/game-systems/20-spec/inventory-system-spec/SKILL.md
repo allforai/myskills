@@ -1,6 +1,6 @@
 ---
 name: game-systems-20-spec-inventory-system-spec
-description: Internal bundled meta-skill module for game-systems/20-spec/inventory-system-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define inventory rules: storage, stack limits, categories, sorting, capacity, equipment slots, loss rules, UI needs, data schema; writes systems/inventory-system-spec.json."
 ---
 
 # Inventory System Spec Skill

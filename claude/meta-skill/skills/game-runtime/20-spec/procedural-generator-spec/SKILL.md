@@ -1,6 +1,6 @@
 ---
 name: game-runtime-20-spec-procedural-generator-spec
-description: Internal bundled meta-skill module for game-runtime/20-spec/procedural-generator-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define executable procedural generation: seed replay, generator stages, content pools, constraints, rejection rules, debug visualization, sample validation, runtime contracts; writes game-runtime/simulation/procedural-generator-spec.json."
 ---
 
 # Procedural Generator Spec Skill

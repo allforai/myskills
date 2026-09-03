@@ -1,6 +1,6 @@
 ---
 name: game-design-20-spec-combat-spec
-description: Internal bundled meta-skill module for game-design/20-spec/combat-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define product-level combat rules when the game has conflict, hazards, damage, enemies, skills, statuses, or bosses; writes systems/combat-spec.json from core loop and mechanics specs.
 ---
 
 # Combat Spec Skill

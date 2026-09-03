@@ -1,6 +1,6 @@
 ---
 name: game-art-20-spec-asset-pack-search-spec
-description: Internal bundled meta-skill module for game-art/20-spec/asset-pack-search-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define the search contract for local libraries, user bundles, existing assets, web results, and asset packs: source order, queries, ranking, budget, license needs, style fit; writes art/sourcing/asset-pack-search-spec.json. Found assets are unusable until license QA passes."
 ---
 
 # Asset Pack Search Spec Skill

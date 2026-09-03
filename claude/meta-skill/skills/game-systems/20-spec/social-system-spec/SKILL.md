@@ -1,6 +1,6 @@
 ---
 name: game-systems-20-spec-social-system-spec
-description: Internal bundled meta-skill module for game-systems/20-spec/social-system-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define non-technical social features: friends, parties, guilds, chat needs, gifts, leaderboards, co-op hooks, social rewards, moderation, UI needs; writes systems/social-system-spec.json."
 ---
 
 # Social System Spec Skill

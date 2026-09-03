@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-icon-generation
-description: Internal bundled meta-skill module for game-art/30-generate/icon-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Produce consistent icon specs, prompts, images, atlases, and validation for skills, items, currencies, buffs, achievements, menus, HUD indicators; writes art/icons/icon-manifest.json. game-ui references these, never regenerates them.
 ---
 
 # Icon Generation Skill

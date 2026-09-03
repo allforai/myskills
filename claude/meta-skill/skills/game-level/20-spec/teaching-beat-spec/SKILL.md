@@ -1,6 +1,6 @@
 ---
 name: game-level-20-spec-teaching-beat-spec
-description: Internal bundled meta-skill module for game-level/20-spec/teaching-beat-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define how levels teach mechanics through layout, enemy placement, hazards, repetition, and safe practice; writes levels/teaching-beat-spec.json.
 ---
 
 # Teaching Beat Spec Skill

@@ -1,6 +1,6 @@
 ---
 name: game-art-10-design-motion-design
-description: Internal bundled meta-skill module for game-art/10-design/motion-design; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define motion at the gameplay and readability level: what each motion communicates, key poses, event frames, timing feel, degradation; writes systems/motion-design.json. Produces no frames, particles, or clips."
 ---
 
 # Motion Design Skill

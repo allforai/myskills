@@ -1,6 +1,6 @@
 ---
 name: game-art-40-qa-2d-style-consistency-qa
-description: Internal bundled meta-skill module for game-art/40-qa/2d-style-consistency-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Validate that all 2D art reads as one system: palette, outline, silhouette, scale, camera angle, resolution, lighting, UI/game separation, small-size readability, import readiness; writes art/qa/2d-style-consistency-qa-report.json."
 ---
 
 # 2D Style Consistency QA Skill

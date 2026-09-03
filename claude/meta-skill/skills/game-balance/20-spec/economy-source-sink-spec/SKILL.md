@@ -1,6 +1,6 @@
 ---
 name: game-balance-20-spec-economy-source-sink-spec
-description: Internal bundled meta-skill module for game-balance/20-spec/economy-source-sink-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Specify numeric resource sources, sinks, caps, exchange rates, earning and spending rates, and deadlock prevention; writes balance/economy-source-sink-spec.json.
 ---
 
 # Economy Source Sink Spec Skill

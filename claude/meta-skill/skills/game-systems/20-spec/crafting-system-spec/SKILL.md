@@ -1,6 +1,6 @@
 ---
 name: game-systems-20-spec-crafting-system-spec
-description: Internal bundled meta-skill module for game-systems/20-spec/crafting-system-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define crafting and upgrading: recipes, stations, materials, unlocks, success rules, costs, outputs, economy constraints; writes systems/crafting-system-spec.json."
 ---
 
 # Crafting System Spec Skill

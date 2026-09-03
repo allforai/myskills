@@ -1,6 +1,6 @@
 ---
 name: game-art-20-spec-visual-style-tokens
-description: Internal bundled meta-skill module for game-art/20-spec/visual-style-tokens; use within generated bootstrap node-specs when this exact contract is selected.
+description: Convert art direction into shared visual tokens (palette, line, shape, material, camera, lighting, typography feel, icon language, effect intensity, motion tone); writes art/visual-style-tokens.json. Sole token author on game projects.
 ---
 
 # Visual Style Tokens Skill

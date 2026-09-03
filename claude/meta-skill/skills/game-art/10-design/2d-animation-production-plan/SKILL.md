@@ -1,6 +1,6 @@
 ---
 name: game-art-10-design-2d-animation-production-plan
-description: Internal bundled meta-skill module for game-art/10-design/2d-animation-production-plan; use within generated bootstrap node-specs when this exact contract is selected.
+description: Choose per asset class between frame animation, motion-video-to-sprite, static pose swaps, UI tweening, VFX-only motion, or hybrid fallback for light-animation 2D games; writes art/animation/2d-animation-production-plan.json.
 ---
 
 # 2D Animation Production Plan Skill

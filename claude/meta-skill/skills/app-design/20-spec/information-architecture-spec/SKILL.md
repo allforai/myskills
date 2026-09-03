@@ -1,6 +1,6 @@
 ---
 name: app-design-20-spec-information-architecture-spec
-description: Internal bundled meta-skill module for app-design/20-spec/information-architecture-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define app navigation, screen hierarchy, route taxonomy, entry points, and information grouping; writes spec/information-architecture-spec.json. Screens listed here reach ui-design only through experience-map.json.
 ---
 
 # Information Architecture Spec Skill

@@ -1,6 +1,6 @@
 ---
 name: game-art-20-spec-3d-source-asset-spec
-description: Internal bundled meta-skill module for game-art/20-spec/3d-source-asset-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define 3D source assets used only to produce 2D art: model purpose, cameras, materials, lighting hooks, render passes, ownership, explicit runtime exclusion; writes art/2-5d/3d-source-asset-spec.json."
 ---
 
 # 3D Source Asset Spec Skill

@@ -1,6 +1,6 @@
 ---
 name: game-narrative-10-design-world-bible-spec
-description: Internal bundled meta-skill module for game-narrative/10-design/world-bible-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define world setting, rules, factions, locations, terminology, tone, and constraints that narrative, level, art, UI, and content must preserve; writes narrative/world-bible-spec.json.
 ---
 
 # World Bible Spec Skill

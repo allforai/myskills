@@ -1,6 +1,6 @@
 ---
 name: game-design-30-generate-art-input-handoff-generation
-description: Internal bundled meta-skill module for game-design/30-generate/art-input-handoff-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Aggregate concept and planning outputs into one validated, traceable input package for art, UI, animation, VFX, icon, tileset, audio, and runtime pipelines; writes design/art-input-handoff.json. Serializes decisions; does not design art.
 ---
 
 # Production Handoff Generation Skill

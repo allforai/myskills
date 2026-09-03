@@ -1,6 +1,6 @@
 ---
 name: game-balance-40-qa-combat-balance-qa
-description: Internal bundled meta-skill module for game-balance/40-qa/combat-balance-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Validate combat numbers: time-to-kill, DPS, survivability, counterplay, skill cost, and outliers; writes balance/combat-balance-qa-report.json."
 ---
 
 # Combat Balance QA Skill

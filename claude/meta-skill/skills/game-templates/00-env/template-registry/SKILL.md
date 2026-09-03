@@ -1,6 +1,6 @@
 ---
 name: game-templates-00-env-template-registry
-description: Internal bundled meta-skill module for game-templates/00-env/template-registry; use within generated bootstrap node-specs when this exact contract is selected.
+description: Create the registry of template kinds, schema IDs, owners, consumers, source domains, lifecycle states, and output paths; writes game-templates/template-registry.json.
 ---
 
 # Template Registry Skill

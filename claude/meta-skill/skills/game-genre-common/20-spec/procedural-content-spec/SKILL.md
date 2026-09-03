@@ -1,6 +1,6 @@
 ---
 name: game-genre-common-20-spec-procedural-content-spec
-description: Internal bundled meta-skill module for game-genre-common/20-spec/procedural-content-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define seeded procedural content rules, constraints, distributions, rejection rules, validation criteria, and repair loops for maps, runs, loot, encounters, quests, or factions; writes genre-common/procedural-content-spec.json.
 ---
 
 # Procedural Content Spec Skill

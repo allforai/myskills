@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-background-generation
-description: Internal bundled meta-skill module for game-art/30-generate/background-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Generate or register backgrounds, scene plates, parallax layers, menu backgrounds, and environment backdrops; writes art/backgrounds/background-manifest.json. Does not replace tilesets or props.
 ---
 
 # Background Generation Skill

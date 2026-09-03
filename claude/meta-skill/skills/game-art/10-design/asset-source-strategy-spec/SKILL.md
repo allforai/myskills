@@ -1,6 +1,6 @@
 ---
 name: game-art-10-design-asset-source-strategy-spec
-description: Internal bundled meta-skill module for game-art/10-design/asset-source-strategy-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Choose per asset or group between local libraries, user files, asset packs, web search, LLM generation, motion video, 3D-assisted rendering, adaptation, or mixed sourcing; writes art/sourcing/asset-source-strategy-spec.json.
 ---
 
 # Asset Source Strategy Spec Skill

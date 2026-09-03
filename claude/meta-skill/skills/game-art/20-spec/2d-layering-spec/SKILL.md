@@ -1,6 +1,6 @@
 ---
 name: game-art-20-spec-2d-layering-spec
-description: Internal bundled meta-skill module for game-art/20-spec/2d-layering-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define the unified 2D layer contract: scene, outfit, part, animation overlay, UI, VFX, collision/helper layers, draw order, runtime sorting metadata; writes art/layers/2d-layering-spec.json."
 ---
 
 # 2D Layering Spec Skill

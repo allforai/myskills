@@ -1,6 +1,6 @@
 ---
 name: game-templates-30-generate-template-instance-generation
-description: Internal bundled meta-skill module for game-templates/30-generate/template-instance-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Generate concrete template instances from approved schemas, inheritance rules, reference bindings, and upstream content/system requirements; writes game-templates/instances/<template_kind>.json.
 ---
 
 # Template Instance Generation Skill

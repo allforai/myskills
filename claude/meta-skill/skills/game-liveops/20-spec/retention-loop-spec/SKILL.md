@@ -1,6 +1,6 @@
 ---
 name: game-liveops-20-spec-retention-loop-spec
-description: Internal bundled meta-skill module for game-liveops/20-spec/retention-loop-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define daily, weekly, monthly, comeback, streak, social, and collection hooks that motivate return sessions; writes liveops/retention-loop-spec.json.
 ---
 
 # Retention Loop Spec Skill

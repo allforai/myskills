@@ -1,6 +1,6 @@
 ---
 name: game-ui-00-env-ui-registry
-description: Internal bundled meta-skill module for game-ui/00-env/ui-registry; use within generated bootstrap node-specs when this exact contract is selected.
+description: Create the canonical registry of game UI screens, components, assets, and file prefixes so downstream UI, code, art, and QA skills share one naming source; writes ui/ui-registry.json.
 ---
 
 # UI Registry Skill

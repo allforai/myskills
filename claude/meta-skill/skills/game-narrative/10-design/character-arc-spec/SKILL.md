@@ -1,6 +1,6 @@
 ---
 name: game-narrative-10-design-character-arc-spec
-description: Internal bundled meta-skill module for game-narrative/10-design/character-arc-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define character motivations, relationships, arcs, state changes, voice needs, portrait needs, and quest/story dependencies; writes narrative/character-arc-spec.json.
 ---
 
 # Character Arc Spec Skill

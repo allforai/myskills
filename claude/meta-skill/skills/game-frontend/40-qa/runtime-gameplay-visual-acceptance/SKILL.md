@@ -1,6 +1,6 @@
 ---
 name: game-frontend-40-qa-runtime-gameplay-visual-acceptance
-description: Internal bundled meta-skill module for game-frontend/40-qa/runtime-gameplay-visual-acceptance; use to validate playable game functionality through repeated runtime screenshots, Codex CLI visual review, and repair/revalidation loops.
+description: Drive gameplay with automation, capture screenshots at declared milestones, and run dual independent visual review (Codex CLI and Claude Code) plus state assertions; writes game-frontend/qa/codex-gameplay-visual-review.json and the Claude review. Screenshots are mandatory for visible gameplay acceptance.
 ---
 
 # Runtime Gameplay Visual Acceptance Skill

@@ -1,6 +1,6 @@
 ---
 name: app-design-20-spec-data-model-spec
-description: Internal bundled meta-skill module for app-design/20-spec/data-model-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define product-level data entities, fields, relationships, lifecycle, ownership, permissions, and API implications; writes spec/data-model-spec.json. Product data shape only, not database schema.
 ---
 
 # Data Model Spec Skill

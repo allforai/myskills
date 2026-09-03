@@ -1,6 +1,6 @@
 ---
 name: game-design-20-spec-content-taxonomy-spec
-description: Internal bundled meta-skill module for game-design/20-spec/content-taxonomy-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define the content taxonomy: characters, enemies, items, skills, levels, quests, events, UI surfaces, art, audio, and runtime needs; writes content/content-taxonomy-spec.json."
 ---
 
 # Content Taxonomy Spec Skill

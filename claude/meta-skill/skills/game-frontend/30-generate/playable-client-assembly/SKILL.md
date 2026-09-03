@@ -1,6 +1,6 @@
 ---
 name: game-frontend-30-generate-playable-client-assembly
-description: Internal bundled meta-skill module for game-frontend/30-generate/playable-client-assembly; use within generated bootstrap node-specs when this exact contract is selected.
+description: Apply approved bindings to the client codebase so a playable scene loads, renders assets, accepts input, shows HUD, triggers animation/VFX, and exposes a smoke route; writes game-frontend/assembly/playable-client-assembly-report.json.
 ---
 
 # Playable Client Assembly Skill

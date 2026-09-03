@@ -1,6 +1,6 @@
 ---
 name: game-design-40-qa-implementation-feasibility-qa
-description: Internal bundled meta-skill module for game-design/40-qa/implementation-feasibility-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Validate that the design is implementable with the declared engine, tools, runtime constraints, data contracts, and verification paths; writes design/implementation-feasibility-qa-report.json.
 ---
 
 # Implementation Feasibility QA Skill

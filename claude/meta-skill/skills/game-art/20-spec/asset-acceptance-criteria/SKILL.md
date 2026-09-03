@@ -1,6 +1,6 @@
 ---
 name: game-art-20-spec-asset-acceptance-criteria
-description: Internal bundled meta-skill module for game-art/20-spec/asset-acceptance-criteria; use before game art generation to define project-specific and runtime-specific acceptance standards for each asset family.
+description: Turn concept, gameplay, art direction, registry, specialization, and runtime constraints into explicit per-asset acceptance criteria before production; writes art/asset-acceptance-criteria.json and .md. No asset is consumer_ready without criteria.
 ---
 
 # Asset Acceptance Criteria Skill

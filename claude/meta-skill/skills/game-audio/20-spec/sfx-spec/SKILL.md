@@ -1,6 +1,6 @@
 ---
 name: game-audio-20-spec-sfx-spec
-description: Internal bundled meta-skill module for game-audio/20-spec/sfx-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define sound effects for gameplay, UI, VFX, rewards, errors, impacts, movement, and feedback events, bound to the VFX spec and audio registry; writes audio/sfx-spec.json.
 ---
 
 # SFX Spec Skill

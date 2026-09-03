@@ -1,6 +1,6 @@
 ---
 name: game-art-00-env-production-tool-capability-registry
-description: Internal bundled meta-skill module for game-art/00-env/production-tool-capability-registry; use within generated bootstrap node-specs when this exact contract is selected.
+description: Record which local production tools exist for 3D-assisted 2D production, atlas packaging, image processing, runtime import, and engine-ready output; writes art/tools/production-tool-capability-registry.json. Blender CLI is the 3D production path.
 ---
 
 # Production Tool Capability Registry Skill

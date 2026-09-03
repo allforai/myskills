@@ -1,6 +1,6 @@
 ---
 name: game-combat-40-qa-combat-readability-qa
-description: Internal bundled meta-skill module for game-combat/40-qa/combat-readability-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Validate that players can read combat: telegraphs, hit feedback, states, status effects, VFX/audio/UI clarity, failure cause, fairness; writes combat/combat-readability-qa-report.json."
 ---
 
 # Combat Readability QA Skill

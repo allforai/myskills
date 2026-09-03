@@ -1,6 +1,6 @@
 ---
 name: game-frontend-20-spec-scene-composition-spec
-description: Internal bundled meta-skill module for game-frontend/20-spec/scene-composition-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define what appears inside each scene: scene list, layer order, spawn points, camera bounds, visible assets, HUD overlays, audio cues, smoke targets; writes game-frontend/bindings/scene-composition-spec.json."
 ---
 
 # Scene Composition Spec Skill

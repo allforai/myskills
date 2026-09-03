@@ -1,6 +1,6 @@
 ---
 name: game-balance-20-spec-drop-table-spec
-description: Internal bundled meta-skill module for game-balance/20-spec/drop-table-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Specify loot/drop probability, rarity, pity, guarantees, expected value, and content ownership; writes balance/drop-table-spec.json.
 ---
 
 # Drop Table Spec Skill

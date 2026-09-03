@@ -1,6 +1,6 @@
 ---
 name: game-level-20-spec-level-layout-spec
-description: Internal bundled meta-skill module for game-level/20-spec/level-layout-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define layout grammar for maps, rooms, lanes, platforms, grids, routes, spawns, goals, hazards, checkpoints, and collision metadata; writes levels/level-layout-spec.json.
 ---
 
 # Level Layout Spec Skill

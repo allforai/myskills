@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-trail-generation
-description: Internal bundled meta-skill module for game-art/30-generate/trail-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Produce trail and ribbon VFX (projectiles, swings, dashes, speed lines, beams, cursor streaks, UI accents); writes art/vfx/trails/trail-manifest.json. Called by vfx-generation when implementation_mode includes trail.
 ---
 
 # Trail Generation Skill

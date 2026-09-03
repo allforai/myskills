@@ -1,6 +1,6 @@
 ---
 name: app-design-10-concept-audience-positioning-spec
-description: Internal bundled meta-skill module for app-design/10-concept/audience-positioning-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define who the app is for, why they choose it, their usage context, and the human preferences that must shape design decisions; writes concept/audience-positioning-spec.json from concept-baseline.json.
 ---
 
 # Audience Positioning Spec Skill

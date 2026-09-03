@@ -1,6 +1,6 @@
 ---
 name: game-systems-20-spec-combat-spec
-description: Internal bundled meta-skill module for game-systems/20-spec/combat-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define combat actors, stats, actions, damage/heal rules, cooldowns, status effects, telegraphs, hit reactions, and VFX/audio/UI hooks from core-loop and motion design; writes systems/combat-spec.json.
 ---
 
 # Combat Spec Skill

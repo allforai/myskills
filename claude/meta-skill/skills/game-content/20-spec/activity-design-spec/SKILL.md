@@ -1,6 +1,6 @@
 ---
 name: game-content-20-spec-activity-design-spec
-description: Internal bundled meta-skill module for game-content/20-spec/activity-design-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define repeatable or optional activities: objective, cadence, entry cost, reward, failure rules, fatigue limits, content needs; writes content/activity-design-spec.json."
 ---
 
 # Activity Design Spec Skill

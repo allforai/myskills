@@ -1,6 +1,6 @@
 ---
 name: game-ui-20-spec-screen-layout-spec
-description: Internal bundled meta-skill module for game-ui/20-spec/screen-layout-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Convert UI flow and HUD contracts into responsive screen layouts: regions, hierarchy, safe zones, breakpoints, navigation placement, playfield protection; writes ui/screen-layout-spec.json without runtime code."
 ---
 
 # Screen Layout Spec Skill

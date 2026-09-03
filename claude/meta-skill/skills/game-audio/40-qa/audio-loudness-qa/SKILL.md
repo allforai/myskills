@@ -1,6 +1,6 @@
 ---
 name: game-audio-40-qa-audio-loudness-qa
-description: Internal bundled meta-skill module for game-audio/40-qa/audio-loudness-qa; use within generated bootstrap node-specs when this exact contract is selected.
+description: Validate audio outputs for loudness, clipping, silence, duration, loopability, mix priority, and event alignment; writes audio/audio-loudness-qa-report.json.
 ---
 
 # Audio Loudness QA Skill

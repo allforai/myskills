@@ -1,6 +1,6 @@
 ---
 name: game-design-20-spec-progression-spec
-description: Internal bundled meta-skill module for game-design/20-spec/progression-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define player growth, unlocks, difficulty ramp, chapters, mastery, rewards, and meta progression at product level; writes systems/progression-spec.json.
 ---
 
 # Progression Spec Skill

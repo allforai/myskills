@@ -1,6 +1,6 @@
 ---
 name: game-art-20-spec-animation-state-machine-spec
-description: Internal bundled meta-skill module for game-art/20-spec/animation-state-machine-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: Define runtime animation states, transitions, priorities, interrupts, event frames, fallbacks, and asset refs for characters, props, UI, and VFX-driven animation; writes art/animation/animation-state-machine-spec.json.
 ---
 
 # Animation State Machine Spec Skill

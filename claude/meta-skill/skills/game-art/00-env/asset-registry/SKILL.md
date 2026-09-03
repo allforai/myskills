@@ -1,6 +1,6 @@
 ---
 name: game-art-00-env-asset-registry
-description: Internal bundled meta-skill module for game-art/00-env/asset-registry; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Create the canonical game-art asset registry: IDs, file prefixes, paths, states, variants, dependencies, validation status; writes asset-registry.json. The coordination layer every art generation and QA sub-skill reads."
 ---
 
 # Asset Registry Skill

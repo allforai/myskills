@@ -1,6 +1,6 @@
 ---
 name: game-design-20-spec-level-design-spec
-description: Internal bundled meta-skill module for game-design/20-spec/level-design-spec; use within generated bootstrap node-specs when this exact contract is selected.
+description: "Define product-level level requirements: view mode, level grammar, objectives, pacing beats, encounters, rewards, teaching points, art/runtime needs; writes design/level-design-spec.json."
 ---
 
 # Level Design Spec Skill

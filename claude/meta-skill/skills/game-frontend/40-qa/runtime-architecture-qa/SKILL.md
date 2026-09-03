@@ -1,6 +1,6 @@
 ---
 name: game-frontend-40-qa-runtime-architecture-qa
-description: Internal bundled meta-skill module for game-frontend/40-qa/runtime-architecture-qa; use within generated bootstrap node-specs when a game client needs automatic validation that frontend architecture, state, scenes, loading, systems, and probes are mutually consistent.
+description: "Validate frontend contracts as one graph: architecture, state model, scene flow, composition, loading, gameplay bindings, save, UI, VFX, audio, performance budgets; writes game-frontend/qa/runtime-architecture-qa-report.json."
 ---
 
 # Runtime Architecture QA Skill

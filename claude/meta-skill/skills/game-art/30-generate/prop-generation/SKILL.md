@@ -1,6 +1,6 @@
 ---
 name: game-art-30-generate-prop-generation
-description: Internal bundled meta-skill module for game-art/30-generate/prop-generation; use within generated bootstrap node-specs when this exact contract is selected.
+description: Generate or register reusable props (chests, rocks, signs, barrels, doors, decorations, pickups, obstacles, interactables); writes art/props/prop-manifest.json.
 ---
 
 # Prop Generation Skill
