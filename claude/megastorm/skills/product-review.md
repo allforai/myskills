@@ -1,10 +1,14 @@
 ---
 name: product-review
+argument-hint: [target]
 description: Product-thinking critique of a shipped or running product. Names missing jobs, broken journeys, commercial UI/interaction gaps, and borrowable competitor positioning. Advice only — never edits product code. Explicitly invoked via /product-review. Same package as cross-exam; different protocol.
 disable-model-invocation: true
 ---
 
 # product-review — 产品思维审视
+
+> Invoked only by the user as `/product-review [target]`. Claude must not start it on its own.
+> Arguments: $ARGUMENTS (the product to review; empty means enter 定靶). Follow this skill from intake. Do not load the cross-exam skill.
 
 `$ROOT` = `${CLAUDE_PLUGIN_ROOT}`. This file is the whole protocol.
 

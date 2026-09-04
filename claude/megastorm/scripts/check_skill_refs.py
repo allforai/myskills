@@ -18,10 +18,8 @@ REQUIRED = [
     "scripts/build_task_dag.py",
     "scripts/check_closure.py",
     "skills/megastorm.md",
-    "commands/megastorm.md",
     # cross-exam (bundled skill) — files skills/cross-exam.md references via $ROOT/...
     "skills/cross-exam.md",
-    "commands/cross-exam.md",
     "knowledge/cross-exam/lenses.md",
     "knowledge/cross-exam/prompts/prober.md",
     "knowledge/cross-exam/schemas.md",

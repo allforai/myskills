@@ -1,10 +1,14 @@
 ---
 name: grillstorm
+argument-hint: [goal | resume instruction]
 description: Official-skill orchestrator plus concurrent unattended execution for Claude and Codex. Routes design through installed Matt Pocock skills and executes approved work in isolated worktrees. Use only when the user explicitly invokes $grillstorm, including its audit, handoff, and resume modes.
 disable-model-invocation: true
 ---
 
 # Grillstorm
+
+> Invoked only by the user as `/grillstorm [goal | resume instruction]`. Claude must not start it on its own.
+> Arguments: $ARGUMENTS. Select run, resume, or post-delivery audit from them. Do not enter handoff mode unless explicitly requested.
 
 Turn goals into frozen decisions, executable contracts, verified code, and evidence.
 

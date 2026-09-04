@@ -1,9 +1,14 @@
 ---
 name: megastorm
+disable-model-invocation: true
+argument-hint: [goal]
 description: Drive a large goal end-to-end — decompose into modules, front-load all decisions via brainstorming, then autonomously design, validate, plan, reverse-review, orchestrate, concurrently execute, and independently verify. Explicitly invoked via /megastorm; heavy and token-intensive.
 ---
 
 # Megastorm
+
+> Invoked only by the user as `/megastorm [goal]`. Claude must not start it on its own.
+> Arguments: $ARGUMENTS. Run the full large-goal pipeline for that goal, following the entry-state selection below. A new run starts at Phase -1; an existing valid run resumes at its first incomplete gate.
 
 Large-goal autonomous pipeline:
 

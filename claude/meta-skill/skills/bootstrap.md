@@ -1,5 +1,7 @@
 ---
 name: bootstrap
+disable-model-invocation: true
+argument-hint: [path]
 version: "0.13.0"
 description: >
   Internal skill for /bootstrap command. Performs lightweight project analysis,
@@ -8,6 +10,9 @@ description: >
 ---
 
 # Bootstrap Protocol v0.3.0
+
+> Invoked only by the user as `/bootstrap [path]`. Claude must not start it on its own.
+> Arguments: $ARGUMENTS (target project path; default is the current directory). Analyze the project and generate its workflow, node-specs, and run command by following this protocol.
 
 ## Overview
 

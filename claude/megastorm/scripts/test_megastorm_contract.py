@@ -22,8 +22,8 @@ class TestMegastormContract(unittest.TestCase):
         self.assertIn("$ROOT/knowledge/execution-playbook.md", router)
         self.assertIn("follow it exactly", router)
 
-    def test_command_preserves_new_and_resume_entry_states(self):
-        command = read("commands/megastorm.md")
+    def test_skill_preserves_new_and_resume_entry_states(self):
+        command = read("skills/megastorm.md")
         self.assertIn("entry-state selection", command)
         self.assertIn("A new run", command)
         self.assertIn("existing valid run resumes", command)

@@ -343,7 +343,14 @@ def validate_rebootstrap_reconciliation_contract(errors: list[str]) -> None:
 
 def validate_public_entrypoint_surface(errors: list[str]) -> None:
     commands_dir = ROOT / "commands"
-    allowed_commands = {"setup.md", "bootstrap.md"}
+    allowed_commands = {"setup.md"}
+    # /bootstrap is the skill itself (skills/bootstrap.md); a commands/ twin would
+    # list the same name twice in the picker. User-only: never model-invoked.
+    bootstrap_skill = ROOT / "skills/bootstrap.md"
+    if not bootstrap_skill.exists():
+        errors.append("skills/bootstrap.md: required public skill missing")
+    elif "disable-model-invocation: true" not in bootstrap_skill.read_text(encoding="utf-8")[:600]:
+        errors.append("skills/bootstrap.md: must set disable-model-invocation: true (user-invoked only)")
     actual_commands = {path.name for path in commands_dir.glob("*.md")}
     extra_commands = sorted(actual_commands - allowed_commands)
     missing_commands = sorted(allowed_commands - actual_commands)
@@ -351,7 +358,7 @@ def validate_public_entrypoint_surface(errors: list[str]) -> None:
         errors.append(f"commands/{name}: required public command missing")
     for name in extra_commands:
         errors.append(
-            f"commands/{name}: unexpected public command; only setup/bootstrap are installed, and run is generated per project"
+            f"commands/{name}: unexpected public command; only setup is a command, bootstrap is the skill, and run is generated per project"
         )
 
     public_pack_skills = sorted((ROOT / "skills").glob("*/SKILL.md"))

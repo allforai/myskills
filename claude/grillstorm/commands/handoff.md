@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: handoff
 description: Checkpoint the active Grillstorm run so another session or machine can resume it.
 arguments:

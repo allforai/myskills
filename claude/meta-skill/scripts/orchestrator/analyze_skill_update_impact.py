@@ -126,7 +126,7 @@ def _changed_skill_slugs(changed_files: list[str]) -> list[str]:
 
 def _domain_rules(path: str) -> list[dict]:
     rules = []
-    if "claude/meta-skill/skills/bootstrap.md" in path or "commands/bootstrap.md" in path:
+    if "claude/meta-skill/skills/bootstrap.md" in path:
         rules.append({
             "scope": "bootstrap",
             "reason": "bootstrap workflow generation changed",

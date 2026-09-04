@@ -1,9 +1,14 @@
 ---
 name: cross-exam
+disable-model-invocation: true
+argument-hint: [target]
 description: Evidence-backed completion cross-examination — Socratic question cards from leak points; the skill probes and screenshots the delivery itself, then renders a deterministic completion report. Audit-only (record, never fix), interactive-only (never unattended). Explicitly invoked via /cross-exam. Generic — works on any delivery, not only megastorm runs.
 ---
 
 # cross-exam — 实证完成度盘问
+
+> Invoked only by the user as `/cross-exam [target]`. Claude must not start it on its own.
+> Arguments: $ARGUMENTS (the delivery to cross-examine; empty means enter the 定靶 intake dialogue). Start at 定靶.
 
 `$ROOT` = `${CLAUDE_PLUGIN_ROOT}`。四镜头：`$ROOT/knowledge/cross-exam/lenses.md`；
 实测官 prompt：`$ROOT/knowledge/cross-exam/prompts/prober.md`；
