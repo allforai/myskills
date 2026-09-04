@@ -1,0 +1,7 @@
+interface:
+  display_name: "Meta-Skill Bootstrap"
+  short_description: "Bootstrap a product pipeline for Codex"
+  default_prompt: "Use $meta-skill to bootstrap this project's product-to-verification workflow."
+
+policy:
+  allow_implicit_invocation: false

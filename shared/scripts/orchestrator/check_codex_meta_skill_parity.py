@@ -9,12 +9,14 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[3]
 CODEX_META = ROOT / "codex" / "meta-skill"
+CLAUDE_META = ROOT / "claude" / "meta-skill"
 ORCH = ROOT / "shared" / "scripts" / "orchestrator"
 
 
@@ -33,6 +35,7 @@ def main() -> int:
 
     required_paths = [
         (CODEX_META / "SKILL.md", "SKILL.md"),
+        (CODEX_META / "agents" / "openai.yaml", "agents/openai.yaml"),
         (CODEX_META / ".mcp.json", ".mcp.json"),
         (CODEX_META / "install.sh", "install.sh"),
         (CODEX_META / "commands" / "bootstrap.md", "commands/bootstrap.md"),
@@ -66,6 +69,7 @@ def main() -> int:
 
     # Canonical contract checks.
     skill_text = read_text(CODEX_META / "SKILL.md") if (CODEX_META / "SKILL.md").exists() else ""
+    invocation_policy_text = read_text(CODEX_META / "agents" / "openai.yaml") if (CODEX_META / "agents" / "openai.yaml").exists() else ""
     agents_text = read_text(CODEX_META / "AGENTS.md") if (CODEX_META / "AGENTS.md").exists() else ""
     playbook_text = read_text(CODEX_META / "execution-playbook.md") if (CODEX_META / "execution-playbook.md").exists() else ""
     bootstrap_text = read_text(CODEX_META / "skills" / "bootstrap.md") if (CODEX_META / "skills" / "bootstrap.md").exists() else ""
@@ -75,6 +79,38 @@ def main() -> int:
     replication_text = read_text(CODEX_META / "knowledge" / "replication-specialization.md") if (CODEX_META / "knowledge" / "replication-specialization.md").exists() else ""
     product_inference_text = read_text(CODEX_META / "knowledge" / "product-inference.md") if (CODEX_META / "knowledge" / "product-inference.md").exists() else ""
     flow_template_text = read_text(CODEX_META / "knowledge" / "flow-template.py") if (CODEX_META / "knowledge" / "flow-template.py").exists() else ""
+
+    # Release and invocation parity.
+    claude_bootstrap = CLAUDE_META / "skills" / "bootstrap.md"
+    claude_bootstrap_text = read_text(claude_bootstrap) if claude_bootstrap.exists() else ""
+    claude_version = re.search(r'^\s*version:\s*["\']?([^"\'\n]+)', claude_bootstrap_text, re.MULTILINE)
+    codex_version = re.search(r'^\s*version:\s*["\']?([^"\'\n]+)', skill_text, re.MULTILINE)
+    if not claude_version or not codex_version:
+        errors.append("could not determine Claude/Codex meta-skill versions")
+    elif not codex_version.group(1).startswith(f"{claude_version.group(1)}-codex."):
+        errors.append(
+            f"Codex meta-skill version {codex_version.group(1)!r} does not track "
+            f"Claude meta-skill version {claude_version.group(1)!r}"
+        )
+
+    if "allow_implicit_invocation: false" not in invocation_policy_text:
+        errors.append("agents/openai.yaml does not disable implicit invocation")
+    if "User-invoked only" not in skill_text:
+        errors.append("SKILL.md does not state the explicit invocation boundary")
+
+    disclosed_protocols = [
+        "engine-detection.md",
+        "suppress-rules.md",
+        "bootstrap-planning.md",
+        "bootstrap-art-pipeline.md",
+        "node-spec-template.md",
+        "bootstrap-audits.md",
+    ]
+    for name in disclosed_protocols:
+        check_exists(CLAUDE_META / "knowledge" / name, f"canonical knowledge/{name}", errors)
+
+    if "./canonical/" not in bootstrap_text or "../../claude/meta-skill/" not in bootstrap_text:
+        errors.append("Codex bootstrap adapter does not define source and installed canonical roots")
 
     for name, text in {
         "SKILL.md": skill_text,
@@ -140,6 +176,10 @@ def main() -> int:
         errors.append("Codex run contract does not wire check_artifacts.py")
 
     install_text = read_text(CODEX_META / "install.sh") if (CODEX_META / "install.sh").exists() else ""
+    if 'copy_dir "$CANONICAL_SOURCE/skills" "$INSTALL_DIR/canonical/skills"' not in install_text:
+        errors.append("install.sh does not bundle canonical skills")
+    if 'copy_dir "$CANONICAL_SOURCE/knowledge" "$INSTALL_DIR/canonical/knowledge"' not in install_text:
+        errors.append("install.sh does not bundle canonical knowledge")
     if (
         "~/.codex/skills/meta-skill" not in install_text
         and ".codex/skills/meta-skill" not in install_text

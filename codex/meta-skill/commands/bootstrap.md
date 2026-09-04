@@ -14,6 +14,9 @@ The canonical bootstrap protocol lives at:
 
 - `./skills/bootstrap.md`
 
+That adapter resolves the shared semantic source from `../../claude/meta-skill/` in a
+source checkout or `./canonical/` in a standalone installation.
+
 That adapter file binds the shared meta-skill protocol to Codex by applying these rules:
 
 - use `workflow.json` as the canonical bootstrap graph

@@ -10,9 +10,12 @@ description: >
 
 ## Canonical Source
 
-The canonical bootstrap protocol is maintained at:
+Resolve the canonical meta-skill root in this order:
 
-- `../../claude/meta-skill/skills/bootstrap.md`
+1. `../../claude/meta-skill/` from the Codex plugin root (source checkout)
+2. `./canonical/` from the Codex plugin root (standalone installed snapshot)
+
+Read `<canonical-root>/skills/bootstrap.md` in full.
 
 Use that protocol in full, but apply the Codex-specific substitutions below.
 
@@ -63,14 +66,14 @@ Default rules:
 
 ### 1. Plugin Root Resolution
 
-Whenever the canonical protocol references a Claude-specific plugin-root variable, resolve it as:
+Whenever the canonical protocol uses its Claude-specific plugin-root placeholder, resolve
+semantic assets relative to `<canonical-root>`. Use Codex-local runtime assets where this
+adapter explicitly substitutes them.
 
-- `codex/meta-skill/`
+Examples:
 
-Repository-relative examples:
-
-- `../../claude/meta-skill/knowledge/...` for canonical knowledge text
-- `./scripts/...` or `./mcp-ai-gateway/...` for Codex-local linked runtime helpers
+- `<canonical-root>/knowledge/...` and `<canonical-root>/skills/...` for canonical text
+- `./scripts/...` or `./mcp-ai-gateway/...` for Codex-local runtime helpers
 
 ### 2. Generated Run Entry
 

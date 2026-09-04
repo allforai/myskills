@@ -1,17 +1,19 @@
 ---
 name: meta-skill
 description: >
-  Codex-native adapter for the myskills meta-skill generator. Analyze a target project,
-  generate project-specific node-specs plus .allforai/bootstrap/workflow.json, and emit
-  a Codex run entry at .codex/commands/run.md. Bootstrap also emits a research-backed
-  product inference summary for reverse-product understanding. Use bootstrap to generate
-  the workflow, then invoke the generated run entry to execute it.
-version: "0.12.0-codex.1"
+  Explicitly invoked Codex adapter for the myskills product pipeline. Use only when the
+  user invokes $meta-skill or asks to bootstrap a project that needs product, experience,
+  art, or game design before implementation and verification. Generate project-specific
+  node-specs, .allforai/bootstrap/workflow.json, and .codex/commands/run.md. For one large
+  engineering goal without a product-design phase, use megastorm or grillstorm instead.
+metadata:
+  version: "0.13.0-codex.1"
 ---
 
-# Meta-Skill v0.12.0-codex.1
+# Meta-Skill v0.13.0-codex.1
 
 > Unified workflow generator for Codex: bootstrap a project once, then execute the generated run entry.
+> User-invoked only. Do not start bootstrap implicitly; the user must invoke `$meta-skill` or explicitly ask to bootstrap the project.
 > Layer plugins (product-design, dev-forge, demo-forge, code-tuner, code-replicate, ui-forge) are capabilities inside this adapter, not separate Codex skills.
 > Specialization is research-first: use real project evidence and LLM synthesis whenever possible, with hard responsibility packs only for high-risk domains.
 
@@ -45,17 +47,21 @@ Layer 2: Orchestrator (generated run entry)
 - The generated `.allforai/codex/flow.py` is a Codex-only supervisor: it uses `transition_log` as runtime state, stops after repeated node failures, and records `diagnosis_history` instead of looping forever.
 - Generated run and `flow.py` share the current orchestrator contract: `workflow.json`, copied `scripts/orchestrator` helpers, unattended-readiness preflight, and `check_artifacts.py` as the completion gate. They do not invoke the Claude Workflow JS engine.
 
-## Shared Semantic Assets
+## Canonical Semantic Assets
 
-The Codex adapter reuses the repository's shared meta-skill content through local links:
+The Codex adapter reuses the Claude meta-skill as its canonical semantic source:
 
-- `./knowledge/` -> canonical meta-skill knowledge base
-- `./skills/` -> canonical meta-skill protocol source plus Codex wrapper guidance
+- source checkout: `../../claude/meta-skill/`
+- installed snapshot: `./canonical/`
+- `./skills/bootstrap.md` -> Codex substitutions layered over the canonical bootstrap protocol
+- `./knowledge/` -> Codex-local extensions plus compatibility links
 - `./scripts/` -> bootstrap/orchestrator helpers
 - `./tests/` -> prompts, expected outputs, and fixtures
 - `./mcp-ai-gateway/` -> MCP-backed optional capability gateway
 
-Platform-specific behavior is defined only by Codex-local files in this directory.
+The installer materializes canonical `skills/` and `knowledge/` into the snapshot so the
+skill remains usable without the source repository. Platform-specific behavior remains in
+Codex-local files.
 
 ## Codex-Specific Specialization
 

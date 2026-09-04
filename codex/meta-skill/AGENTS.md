@@ -41,9 +41,11 @@
 
 ## Shared Asset Strategy
 
-This Codex adapter intentionally reuses the Claude meta-skill knowledge, helper scripts,
-tests, and MCP gateway from the same repository so capability content stays aligned.
-Platform-specific behavior is handled by Codex-local wrapper files in this directory.
+This Codex adapter intentionally reuses the Claude meta-skill knowledge, skills, helper
+scripts, tests, and MCP gateway so capability content stays aligned. In a source checkout,
+the canonical root is `../../claude/meta-skill/`; a standalone installation carries the
+same semantic source under `./canonical/`. Platform-specific behavior is handled by
+Codex-local wrapper files in this directory.
 
 ## Codex-Only Extensions
 

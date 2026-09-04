@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-INSTALL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/meta-skill"
+INSTALL_DIR="${MYSKILLS_CODEX_INSTALL_DIR:-${CODEX_HOME:-$HOME/.codex}/skills/meta-skill}"
 SOURCE_REPO="${SOURCE_REPO:-https://github.com/allforai/myskills.git}"
 SOURCE_REF="${SOURCE_REF:-refs/heads/main}"
 SOURCE_COMMIT="${SOURCE_COMMIT:-}"
@@ -21,6 +21,20 @@ copy_dir() {
   cp -R "$src" "$dst"
 }
 
+CANONICAL_SOURCE="$SCRIPT_DIR/../../claude/meta-skill"
+if [ ! -d "$CANONICAL_SOURCE/skills" ] || [ ! -d "$CANONICAL_SOURCE/knowledge" ]; then
+  echo "ERROR: canonical Claude meta-skill assets are unavailable at $CANONICAL_SOURCE" >&2
+  echo "Run this installer from a complete myskills source checkout." >&2
+  exit 1
+fi
+
+case "$INSTALL_DIR" in
+  ""|/|"$HOME"|"$SCRIPT_DIR")
+    echo "ERROR: refusing unsafe install target: $INSTALL_DIR" >&2
+    exit 1
+    ;;
+esac
+
 echo "Installing Codex meta-skill adapter to $INSTALL_DIR ..."
 
 if [ -d "$SCRIPT_DIR/mcp-ai-gateway" ] && [ ! -d "$SCRIPT_DIR/mcp-ai-gateway/node_modules" ]; then
@@ -34,6 +48,12 @@ rm -rf "$INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
 cp -R "$SCRIPT_DIR"/. "$INSTALL_DIR"/
 
+# Bundle the canonical semantic source. Codex wrappers refer to this snapshot when the
+# source checkout is no longer present.
+mkdir -p "$INSTALL_DIR/canonical"
+copy_dir "$CANONICAL_SOURCE/skills" "$INSTALL_DIR/canonical/skills"
+copy_dir "$CANONICAL_SOURCE/knowledge" "$INSTALL_DIR/canonical/knowledge"
+
 # The repository version may use relative symlinks for shared assets. Expand them so
 # the installed snapshot remains usable outside the source checkout.
 for rel in scripts tests mcp-ai-gateway; do
@@ -42,6 +62,19 @@ for rel in scripts tests mcp-ai-gateway; do
     target="$(cd "$(dirname "$source_link")" && cd "$(readlink "$source_link")" && pwd)"
     rm -f "$INSTALL_DIR/$rel"
     copy_dir "$target" "$INSTALL_DIR/$rel"
+  fi
+done
+
+# Expand compatibility links in knowledge so no installed path points back into the
+# source checkout. Canonical content above remains the primary standalone source.
+for installed_link in "$INSTALL_DIR"/knowledge/*; do
+  if [ -L "$installed_link" ]; then
+    rel="knowledge/$(basename "$installed_link")"
+    source_link="$SCRIPT_DIR/$rel"
+    source_parent="$(cd "$(dirname "$source_link")" && pwd)"
+    target="$source_parent/$(readlink "$source_link")"
+    rm -f "$installed_link"
+    copy_dir "$target" "$installed_link"
   fi
 done
 
