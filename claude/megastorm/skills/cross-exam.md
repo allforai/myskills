@@ -2,7 +2,7 @@
 name: cross-exam
 disable-model-invocation: true
 argument-hint: [target]
-description: Evidence-backed completion cross-examination — Socratic question cards from leak points; the skill probes and screenshots the delivery itself, then renders a deterministic completion report. Audit-only (record, never fix), interactive-only (never unattended). Explicitly invoked via /cross-exam. Generic — works on any delivery, not only megastorm runs.
+description: Evidence-backed completion cross-examination — Socratic question cards from leak points; the skill probes and screenshots the delivery itself, then renders a deterministic completion report. Audit-only (record, never fix), interactive-only (never unattended). Explicitly invoked via /cross-exam. Generic — works on any delivery, not only megastorm runs. Asks "is it really done"; /product-review asks "is it good for the user" and usually follows.
 ---
 
 # cross-exam — 实证完成度盘问
@@ -126,3 +126,5 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
 缺口清单（可直接转修复任务）、无法自证清单、未盘问声明、缺陷模式（patterns：每类
 "共 N 位点，实证 M，未查 K"，未查位点逐个点名）、未拉的线（open_threads，
 续盘接手点）——**没有编造的总百分比**。
+
+报告呈完后提一句：完成度之外想看产品层面（用户要做的事做不做得成、商业级够不够），用 `/product-review`；那是另一套协议，本技能不启动它。

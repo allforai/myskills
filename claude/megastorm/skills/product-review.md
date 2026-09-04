@@ -1,7 +1,7 @@
 ---
 name: product-review
 argument-hint: [target]
-description: Product-thinking critique of a shipped or running product. Names missing jobs, broken journeys, commercial UI/interaction gaps, and borrowable competitor positioning. Advice only — never edits product code. Explicitly invoked via /product-review. Same package as cross-exam; different protocol.
+description: Product-thinking critique of a shipped or running product. Names missing jobs, broken journeys, commercial UI/interaction gaps, and borrowable competitor positioning. Advice only — never edits product code. Explicitly invoked via /product-review. Same package as cross-exam; different protocol. Asks "is it good for the user's jobs"; /cross-exam asks "is it really done" and usually comes first.
 disable-model-invocation: true
 ---
 
@@ -12,7 +12,7 @@ disable-model-invocation: true
 
 `$ROOT` = `${CLAUDE_PLUGIN_ROOT}`. This file is the whole protocol.
 
-Not cross-exam. Do not read `skills/cross-exam.md`, do not write a completion ledger, do not use done/gap/drift/unprovable.
+Not cross-exam. Do not read `skills/cross-exam.md`, do not write a completion ledger, do not use done/gap/drift/unprovable. If the user has not yet verified the delivery is complete, say once that `/cross-exam` does that and continue with this review.
 
 ## Invariants
 

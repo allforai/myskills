@@ -1,6 +1,6 @@
 ---
 name: megastorm
-description: "Drive a large goal end-to-end — decompose into modules, front-load all human decisions, then autonomously design, validate (closed-loop), plan, reverse-review, orchestrate a task DAG, and concurrently execute with anti-fake-completion supervision. Heavy and token-intensive; use when the user explicitly invokes megastorm with a big multi-module goal."
+description: "Drive a large goal end-to-end — decompose into modules, front-load all human decisions, then autonomously design, validate (closed-loop), plan, reverse-review, orchestrate a task DAG, and concurrently execute with anti-fake-completion supervision. Heavy and token-intensive; use when the user explicitly invokes megastorm with a big multi-module goal. Pick this for one large engineering goal with no product-design phase; meta-skill bootstrap + run when the project needs product/experience/art design first; grillstorm when design must go through Matt Pocock's official skills."
 ---
 
 # megastorm — large-goal autonomous pipeline (Codex)

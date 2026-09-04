@@ -1,7 +1,7 @@
 ---
 name: grillstorm
 argument-hint: [goal | resume instruction]
-description: Official-skill orchestrator plus concurrent unattended execution for Claude and Codex. Routes design through installed Matt Pocock skills and executes approved work in isolated worktrees. Use only when the user explicitly invokes $grillstorm, including its audit, handoff, and resume modes.
+description: Official-skill orchestrator plus concurrent unattended execution for Claude and Codex. Routes design through installed Matt Pocock skills and executes approved work in isolated worktrees. Use only when the user explicitly invokes $grillstorm, including its audit, handoff, and resume modes. Same delivery shape as /megastorm (front-loaded decisions, DAG, concurrent worktrees) but design runs through the official grilling → to-spec → to-tickets → tdd → code-review chain; use /bootstrap + /run when the project needs product/experience/art design first.
 disable-model-invocation: true
 ---
 

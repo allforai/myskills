@@ -193,8 +193,21 @@ Claude plugins also keep a copy in their own `scripts/` directory (since `${CLAU
 /run <goal>               # Execute generated nodes (Codex: .codex/commands/run.md)
 ```
 
-Optional explicit plugins: `/megastorm`, `$grillstorm`, `/cross-exam`, `/product-review` (same package as cross-exam).
 Product, implementation, demo, verify, and tune jobs are meta-skill capabilities, not standalone slash commands.
+
+### Which entry for which situation
+
+Every entry below is user-invoked only (`disable-model-invocation: true`); never suggest or start one on the user's behalf.
+
+| Situation | Entry | Why this one |
+|---|---|---|
+| A project that must go from product design through implementation to verification (product concept, experience map, art, game design, verify nodes) | `/bootstrap` → `/run` | The only pipeline with the product-design capabilities and the `.allforai/` data bus |
+| One large engineering goal to finish autonomously, decisions front-loaded, no product-design phase | `/megastorm` | superpowers brainstorming/plans as the design front end; artifacts under `docs/superpowers/` |
+| Same goal shape, but design must follow Matt Pocock's official skills (grilling → to-spec → to-tickets → tdd → code-review) | `/grillstorm` | Official skills own design; Grillstorm owns routing, DAG, worktree execution, resume, handoff; artifacts under `docs/grillstorm/` |
+| A finished delivery that may be fake-complete; independent evidence wanted | `/cross-exam` | Fresh-context probers gather evidence, deterministic report, records only, refuses to run unattended |
+| A finished product; is it useful and sellable for the jobs the user names | `/product-review` | Product-thinking critique, competitor comparison, advice only; same package as cross-exam, different protocol |
+
+`/megastorm` and `/grillstorm` share the execution shape (front-loaded decisions, DAG, concurrent worktrees, supervision, resume); they differ only in the design front end. `/cross-exam` then `/product-review` is the natural order after any of the three: first "is it done", then "is it good".
 
 ## Agent skills
 
