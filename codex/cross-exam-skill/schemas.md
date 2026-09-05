@@ -30,6 +30,18 @@
       "requirement_ref": "R-09（可选）",
       "severity": "high|medium|low（仅 gap|drift；done/unprovable 不带）"
     }
+  ],
+  "journeys": [
+    {"id": "J1",
+     "who": "回头客", "circumstance": "购物车里已有一件商品", "progress": "完成支付并拿到订单号",
+     "preconditions": ["已登录测试账号", "购物车非空"],
+     "waypoints": ["支付确认页"],
+     "oracle": {"done_looks_like": ["URL 含 /orders/", "页面含订单号文本"],
+                "stuck_looks_like": ["仍在 /cart", "出现 role=alert 的支付失败"]},
+     "step_budget": 15,
+     "status": "examined|not_examined",
+     "risk": {"level": "high|medium|low", "why": "仅 not_examined：这份工作的分量 + 若真走不通的破坏面"},
+     "entry_q": "J1 走得通吗？"}
   ]
 }
 ```
@@ -65,14 +77,27 @@
   "已查"**：某位点被实测后，把它的 `entry_q` 指到那条 entry 的 `q`（精确匹配）；
   渲染器只认"entry_q 匹配到被采信 entry"为实证，其余（无 entry_q / 对不上 /
   对上的是被拒渲裁决）一律算未查并逐个点名。
+- 顶层可选 `journeys`（旅程声明=用户口述的意图基线）：`who / circumstance / progress` 三元组与
+  product-review 的 job 同格式；`oracle.done_looks_like` 与 `oracle.stuck_looks_like` 都必填非空，
+  写不出 `stuck_looks_like` 的旅程不入台账；`waypoints` 可选，是用户点名必经的状态；`step_budget`
+  必填，默认 15。**oracle 只给盘问官看，绝不进探针输入。**
+  旅程的实证 entry 带 `journey: "J1"` 与 `steps[]`（每步 `{n, action, observed, status: done|stuck|could_not,
+  evidence}`，`evidence` 是该 entry `evidence.dir` 下的文件名），web 目标另带 `terminal_state: {url, snapshot}`。
+  旅程 `gap` 必填 `stuck_kind` ∈ `no_entry`（无入口）| `not_found`（找不到）| `misleading`（误导）|
+  `no_feedback`（无反馈）| `no_recovery`（无恢复路径）| `broken`（系统报错）；旅程 `drift` 必填
+  `missed_waypoints[]`。
+  旅程**没有自报"已查"的通道**：`journeys[].entry_q` 精确匹配到一条被采信 entry 且该 entry 的
+  `journey` 等于旅程 id 才算已盘问；`status` 字段照写但渲染器不看它。未盘问旅程按 `risk` 与未盘问面
+  同列渲染，前缀"旅程"，不进任何计数。
 
 `ledger.json` 通过 `scripts/ledger_store.py` 整文件原子替换，不做文本 append。
 同一 run 只允许一个 examiner lock；entry/open-thread 按 UUID + 内容去重，冲突拒绝。
 
 ## completion-report.md（仅由 scripts/render_report.py 渲染，禁止口述生成）
 
-依次：总览（面/问/四类裁决计数；baseline=none 时声明关闭的镜头）→ 逐面完成度
-（"X 问中 Y 问实证通过"，逐条链证据）→ 缺口清单（gap+drift 按 severity 排）→
+依次：总览（面/问/四类裁决计数，旅程裁决计数与普通裁决计数分列；baseline=none 时声明关闭的镜头）→
+逐面完成度（只含普通 entry）→ 旅程完成度（每条已盘问旅程：走通 N 步 / 卡在第 K 步加卡死类型 /
+绕过的 waypoint / 无法自证原因，逐步状态列表）→ 缺口清单（含旅程 gap，行首 `[J1]`）→
 无法自证清单 → 未盘问声明（not_examined 面）→ 未拉的线（open_threads）→
 缺陷模式（patterns：每类"共 N 位点，实证 M，未查 K"，未查位点逐个点名）→
 拒渲声明（如有）。
@@ -88,3 +113,5 @@
    看似合法的证据目录。
 3. patterns 的位点没有自报"已查"的通道：`entry_q` 精确匹配到被采信 entry 才算
    实证，匹配不上（含匹配到被拒渲裁决）一律渲染为"未查"并逐个点名，不进任何计数。
+4. 旅程同样没有自报"已查"的通道：`entry_q` 匹配不到被采信 entry 一律渲染为未盘问；entry 带
+   `journey` 但 journeys 里查无此 id、或旅程 gap 的 `stuck_kind` 不在六种之内，拒渲并点名。
