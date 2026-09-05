@@ -110,16 +110,19 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
 **旅程轮（用户选中一条旅程时）**：不出三张牌，问题固定是"`<id>` 走得通吗？"。
 
 - **派实测官**：输入 JSON 加 `journey` 块——只含 `goal`（三元组拼成一句话）、`preconditions`、
-  `waypoints`、`step_budget`；`states_to_capture` 写"起点"、各 waypoint、"终态"。**oracle 绝不进
-  输入**：探针不知道"做成"长什么样，到了就到了，到不了就如实记——这是旅程版的期望隔离。
+  `step_budget`；`states_to_capture` 写"起点"、"终态"。**oracle 和 waypoints 都绝不进输入**：
+  探针不知道"做成"长什么样，也不知道你点名了哪些必经点，自选路径，到了就到了，到不了就如实记——
+  这是旅程版的期望隔离。waypoints 是给你事后对 `steps[]` 查的：探针若被告知必经点就会主动绕过去
+  经过它，产品允许跳过该点这件事就永远测不出来。
 - **收证据**：把 `steps[]` 和终态截图给用户看。
 - **裁决**（对着 `journeys[].oracle`）：
   `done` = `done_looks_like` 全部命中、`stuck_looks_like` 无一命中、每个 waypoint 都在某步
-  `observed` 里出现过；
+  `observed` 或截图里出现过；
   `gap` = 任一 `stuck_looks_like` 命中，或探针 `could_not` 含 `budget_exhausted`，或任一步 `stuck`；
   必填 `stuck_kind`（no_entry 无入口 / not_found 找不到 / misleading 误导 / no_feedback 无反馈 /
   no_recovery 无恢复路径 / broken 系统报错）与 severity；
-  `drift` = 终态满足 `done_looks_like` 但绕过了某个 waypoint，必填 `missed_waypoints`；
+  `drift` = 终态满足 `done_looks_like` 但 `steps[]` 从未经过某个 waypoint——产品允许用户跳过你点名
+  的必经点（如未经支付确认页就下了单），必填 `missed_waypoints`；
   `unprovable` = 前置条件造不出来，或探针因环境原因 `could_not`（起不来、缺依赖、缺浏览器）。
   预算用尽不是 unprovable：预算内到不了进展是产品的问题。
 - **落账**：entry 带 `journey`、`steps`、`terminal_state`；`journeys[].entry_q` 指到该 entry 的 `q`，

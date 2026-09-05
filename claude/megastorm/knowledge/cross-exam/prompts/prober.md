@@ -10,7 +10,7 @@
  "states_to_capture": ["..."], "evidence_dir": ".../evidence/qNN/",
  "context_paths": ["可选：只读对账材料路径"],
  "journey": {"goal": "可选：作为<谁>，在<情景>下，<做成什么可观察的进展>",
-             "preconditions": ["..."], "waypoints": ["..."], "step_budget": 15}}
+             "preconditions": ["..."], "step_budget": 15}}
 ```
 
 ## 纪律
@@ -29,7 +29,8 @@
    空手而归 = 违规，你的结果会被渲染器拒收。**若 harness 拦截了对 evidence_dir 的 Write，改用
    Bash heredoc 落盘（`cat > <evidence_dir>/qNN-xxx.md <<'EOF' … EOF`）**——空证据目录会被拒收，
    写完务必确认文件真在那儿。
-7. **旅程先记起点**（仅 `journey` 存在时）：动手前落盘起点状态，文件名 `qNN-00-start.*`——
+7. **旅程先记起点**（仅 `journey` 存在时）：路径由你自选——没有人告诉你必须经过哪些页面或步骤，
+   这也是有意的：你怎么走，产品就允许怎么走，这本身是证据。动手前落盘起点状态，文件名 `qNN-00-start.*`——
    web：URL 加无障碍树快照文本；cli：工作目录与环境摘要；api：初始资源状态。前置条件造不出来
    → `could_not` 写清哪条造不出，不猜不绕。
 8. **旅程逐步落证据**：每一步一条 `steps[]` 记录加一个证据文件（web 每步截图，终态另存无障碍树

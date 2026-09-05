@@ -58,7 +58,7 @@
 
 - `who` / `circumstance` / `progress` 必填，格式与 product-review 的 job 三元组相同。
 - `oracle.done_looks_like` 和 `oracle.stuck_looks_like` 都必填且非空。写不出 `stuck_looks_like` 的旅程不入台账，退回用户补。
-- `preconditions` 可空数组。`waypoints` 可选，是用户点名必须经过的状态。
+- `preconditions` 可空数组。`waypoints` 可选，是用户点名必须经过的状态。只给盘问官看，不进探针输入（2026-09-06 修订：原设计把 waypoints 发给探针并要求逐个截图，探针会主动经过它们，drift 只在 waypoint 不可达时触发，测不出"产品允许跳过必经点"）。
 - `step_budget` 必填，默认 15，盘问官按旅程长度调整。
 - `entry_q` 指向 `entries[]` 里那条实证 entry 的 `q`，精确匹配。规则与 `patterns[].sites[].entry_q` 相同：渲染器只认匹配到被采信 entry 的旅程为已盘问，其余一律算未盘问。`status` 字段仍写，但渲染器以 `entry_q` 匹配为准。
 - `risk` 只对 `not_examined` 有意义，语义同 `facets[].risk`。
@@ -112,12 +112,12 @@ Codex 孪生版的 `journeys[]` 条目和 `steps[]` 不加 UUID；`entry_q` 已�
 
 旅程不走三张问题牌。它的问题固定是"`<id>` 走得通吗？"，用户在 §1b 已经选过。用户选一条旅程或一个面进入本轮；选旅程时：
 
-- **派探针**：`Agent(general-purpose)`，prompt = prober.md 全文 + 输入 JSON。输入的 `journey` 块只含 `goal`（三元组拼成一句话）、`preconditions`、`waypoints`、`step_budget`。**不含 oracle。** `states_to_capture` 写 waypoints 加"起点"和"终态"。
+- **派探针**：`Agent(general-purpose)`，prompt = prober.md 全文 + 输入 JSON。输入的 `journey` 块只含 `goal`（三元组拼成一句话）、`preconditions`、`step_budget`。**不含 oracle，也不含 waypoints。** `states_to_capture` 写"起点"和"终态"；探针每步都截图，waypoint 是否经过由盘问官事后对 steps 查。
 - **收证据**：把 steps 和终态截图给用户看。
 - **裁决**：
   - `done`：`done_looks_like` 全部命中，`stuck_looks_like` 无一命中，每个 waypoint 都在 `steps[].observed` 里出现过。
   - `gap`：任一 `stuck_looks_like` 命中，或探针报 `budget_exhausted`，或任一步 `stuck`。必填 `stuck_kind` 和 `severity`。
-  - `drift`：终态满足 `done_looks_like`，但绕过了某个 waypoint。
+  - `drift`：终态满足 `done_looks_like`，但 `steps[]` 从未经过某个 waypoint，即产品允许用户跳过声明为必经的状态。
   - `unprovable`：前置条件造不出来，或探针因环境原因 `could_not`（起不来、缺依赖、缺浏览器）。`budget_exhausted` 不属于这一类：预算内到不了进展是产品的问题，裁 `gap`。
 - **落账**：entry 带 `journey` 和 `steps`；`journeys[].entry_q` 指到它，`status` 改 `examined`。
 - **扫全模式**：所有 `not_examined` 旅程并行扇出探针，一条旅程一个 fresh-context agent，收齐后逐条裁决。
@@ -130,7 +130,7 @@ Codex 孪生版的 `journeys[]` 条目和 `steps[]` 不加 UUID；`entry_q` 已�
 
 ```json
 "journey": {"goal": "作为回头客，购物车里已有一件商品，完成支付并拿到订单号",
-            "preconditions": ["…"], "waypoints": ["…"], "step_budget": 15}
+            "preconditions": ["…"], "step_budget": 15}
 ```
 
 纪律新增：

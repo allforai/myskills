@@ -77,7 +77,8 @@
 - 顶层可选 `journeys`（旅程声明=用户口述的意图基线）：`who / circumstance / progress` 三元组与
   product-review 的 job 同格式；`oracle.done_looks_like` 与 `oracle.stuck_looks_like` 都必填非空，
   写不出 `stuck_looks_like` 的旅程不入台账；`waypoints` 可选，是用户点名必经的状态；`step_budget`
-  必填，默认 15。**oracle 只给盘问官看，绝不进探针输入。**
+  必填，默认 15。**oracle 和 waypoints 都只给盘问官看，绝不进探针输入**——探针自选路径，盘问官事后
+  对 `steps[]` 查有没有经过 waypoint；探针若知道必经点就会主动经过它，"产品允许跳过"永远测不出来。
   旅程的实证 entry 带 `journey: "J1"` 与 `steps[]`（每步 `{n, action, observed, status: done|stuck|could_not,
   evidence}`，`evidence` 是该 entry `evidence.dir` 下的文件名），web 目标另带 `terminal_state: {url, snapshot}`。
   旅程 `gap` 必填 `stuck_kind` ∈ `no_entry`（无入口）| `not_found`（找不到）| `misleading`（误导）|
