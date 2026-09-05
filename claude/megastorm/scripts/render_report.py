@@ -21,6 +21,9 @@
 续盘只追加不重排所以编号稳定；被拒渲的不占号；旅程 entry 只带 `J` 号。product-review 的
 `depends_on` 引用的就是这两种号。
 
+旅程 entry 另有逐步证据合同：`steps[].evidence` 每步必写且文件必须真在 `evidence.dir` 下，
+`terminal_state.snapshot` 同理；缺一个就整条拒渲并点名缺的文件——编造的步骤列表过不了这一层。
+
 可选 `journeys`（旅程声明）渲染为"旅程完成度"专节。旅程没有自报"已查"的通道：
 `entry_q` 精确匹配到被采信 entry 且该 entry 的 `journey` 等于旅程 id 才算已盘问，
 否则进"未盘问声明"（前缀"旅程"）并按 risk 排序。entry 带 `journey` 但 journeys 里
@@ -73,6 +76,25 @@ def _has_evidence(entry, run_dir):
 def _risk_key(facet):
     level = (facet.get("risk") or {}).get("level")
     return SEVERITY_ORDER.get(level, 3)
+
+
+def _missing_step_files(e, run_dir):
+    """旅程 entry 的逐步证据合同：steps[].evidence 与 terminal_state.snapshot 必须真在 evidence.dir 下。"""
+    if not e.get("journey"):
+        return []
+    d = (e.get("evidence") or {}).get("dir") or ""
+    base = Path(d) if Path(d).is_absolute() else run_dir / d
+    missing = []
+    for st in e.get("steps", []):
+        name = st.get("evidence")
+        if not name:
+            missing.append(f"第 {st.get('n', '?')} 步未写 evidence")
+        elif not (base / name).is_file():
+            missing.append(name)
+    snap = (e.get("terminal_state") or {}).get("snapshot")
+    if snap and not (base / snap).is_file():
+        missing.append(snap)
+    return missing
 
 
 def _not_examined_line(name, item):
@@ -155,7 +177,7 @@ def _journey_block(j, e):
         label = f"{label}（{e.get('severity', '?')}）"
         head = "走通但绕过 waypoint：" + "、".join(e.get("missed_waypoints", []))
     else:
-        head = f"无法自证：{ev.get('key_observation', '')}"
+        head = ev.get("key_observation", "")
     out = ["", f"### {_journey_title(j)} — {label}",
            f"{head}（证据：{ev.get('dir', '')}）"]
     out.extend(f"- {s.get('n', '?')} {s.get('status', '?')} {s.get('action', '')}"
@@ -171,12 +193,17 @@ def render(run_dir):
     admitted, refused = [], []
     for e in ledger["entries"]:
         reason = _refusal_reason(e, journey_ids)
+        if not reason and not _has_evidence(e, run_dir):
+            reason = "无证据目录"
+        if not reason:
+            missing = _missing_step_files(e, run_dir)
+            if missing:
+                reason = "步骤证据文件缺失：" + "、".join(missing)
         if reason:
+            e["refusal_reason"] = reason
             refused.append(e)
-        elif _has_evidence(e, run_dir):
-            admitted.append(e)
         else:
-            refused.append(e)
+            admitted.append(e)
     plain = [e for e in admitted if not e.get("journey")]
     _assign_gap_ids(plain)
     admitted_by_q = {e.get("q"): e for e in admitted}
@@ -252,13 +279,13 @@ def render(run_dir):
 
     out.append("")
     out.append("## 未盘问声明（按风险排序）")
-    unexamined_items = ([(f["name"], f) for f in not_examined]
-                        + [("旅程 " + _journey_body(j), j) for j in unexamined_j])
+    unexamined_items = ([(f["name"], f, "facet") for f in not_examined]
+                        + [("旅程 " + _journey_body(j), j, "journey") for j in unexamined_j])
     if unexamined_items:
         unexamined_items.sort(key=lambda it: _risk_key(it[1]))
-        for name, item in unexamined_items:
+        for name, item, kind in unexamined_items:
             line = _not_examined_line(name, item)
-            if "oracle" in item:
+            if kind == "journey":
                 line += _dangling_note(item, admitted)
             out.append(line)
     else:
@@ -304,7 +331,7 @@ def render(run_dir):
         out.append("## 违规裁决（无证据或非法裁决，已拒渲）")
         out.append(f"以下 {len(refused)} 条 entry 不计入任何统计：")
         for e in refused:
-            out.append(f"- {e.get('q', '?')}（{_refusal_reason(e, journey_ids) or '无证据目录'}）")
+            out.append(f"- {e.get('q', '?')}（{e.get('refusal_reason', '?')}）")
 
     out.append("")
     return "\n".join(out)

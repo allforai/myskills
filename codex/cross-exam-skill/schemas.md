@@ -117,3 +117,5 @@ N 步 / 卡在第 K 步加卡死类型 / 绕过的 waypoint / 无法自证原因
 4. 旅程同样没有自报"已查"的通道：`entry_q` 匹配不到被采信 entry 一律渲染为未盘问；entry 带
    `journey` 但 journeys 里查无此 id、或旅程 gap 的 `stuck_kind` 不在六种之内，拒渲并点名。
    旅程 drift 缺 `missed_waypoints` 同样拒渲并点名。
+   旅程 entry 的 `steps[].evidence` 每步必写且文件必须真在 `evidence.dir` 下，`terminal_state.snapshot`
+   同理；缺一个整条拒渲并点名缺的文件——编造的步骤列表过不了渲染器。

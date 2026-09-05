@@ -15,6 +15,12 @@ def _mk_run(tmp, facets, entries, baseline="spec", make_evidence=True):
             p = run / d
             p.mkdir(parents=True, exist_ok=True)
             (p / "note.txt").write_text("evidence", encoding="utf-8")
+            for st in e.get("steps", []):
+                if st.get("evidence"):
+                    (p / st["evidence"]).write_text("step", encoding="utf-8")
+            snap = (e.get("terminal_state") or {}).get("snapshot")
+            if snap:
+                (p / snap).write_text("a11y", encoding="utf-8")
     (run / "ledger.json").write_text(json.dumps({
         "target": "demo", "baseline": baseline, "started": "2026-07-09",
         "facets": facets, "entries": entries}, ensure_ascii=False), encoding="utf-8")
@@ -501,7 +507,8 @@ class TestJourneys(unittest.TestCase):
             _with_journeys(run, [_journey()])
             report = render(run)
             sec = report[report.index("## 旅程完成度"):report.index("## 缺口清单")]
-            self.assertIn("无法自证：测试账号无法登录，前置条件造不出", sec)
+            self.assertIn("— 无法自证\n测试账号无法登录，前置条件造不出（证据：", sec)
+            self.assertNotIn("无法自证：测试账号", sec)
 
     def test_journey_drift_without_missed_waypoints_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -594,6 +601,50 @@ class TestGapIds(unittest.TestCase):
             self.assertIn("违规裁决", report)
             self.assertIn("[G1] [F1] q-real", report)
             self.assertNotIn("[G2]", report)
+
+
+class TestStepEvidenceFiles(unittest.TestCase):
+    FACETS = [{"id": "F1", "name": "面一", "status": "examined"}]
+
+    def test_missing_step_evidence_file_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _jentry()
+            run = _mk_run(tmp, self.FACETS, [e])
+            _with_journeys(run, [_journey()])
+            (run / "evidence/q5/q05-02-order.png").unlink()
+            report = render(run)
+            self.assertIn("违规裁决", report)
+            self.assertIn("步骤证据文件缺失：q05-02-order.png", report)
+            self.assertIn("旅程 1 条，盘问 0 条", report)
+
+    def test_missing_terminal_snapshot_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _jentry()
+            e["terminal_state"] = {"url": "/orders/1001", "snapshot": "q05-terminal-a11y.txt"}
+            run = _mk_run(tmp, self.FACETS, [e])
+            _with_journeys(run, [_journey()])
+            (run / "evidence/q5/q05-terminal-a11y.txt").unlink()
+            report = render(run)
+            self.assertIn("步骤证据文件缺失：q05-terminal-a11y.txt", report)
+
+    def test_step_without_evidence_name_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            steps = [{"n": 1, "action": "打开 /cart", "observed": "ok", "status": "done"}]
+            e = _jentry(steps=steps)
+            run = _mk_run(tmp, self.FACETS, [e])
+            _with_journeys(run, [_journey()])
+            report = render(run)
+            self.assertIn("步骤证据文件缺失：第 1 步未写 evidence", report)
+
+    def test_all_step_files_present_is_admitted(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _jentry()
+            e["terminal_state"] = {"url": "/orders/1001", "snapshot": "q05-terminal-a11y.txt"}
+            run = _mk_run(tmp, self.FACETS, [e])
+            _with_journeys(run, [_journey()])
+            report = render(run)
+            self.assertNotIn("违规裁决", report)
+            self.assertIn("旅程裁决：实证完成：1", report)
 
 
 if __name__ == "__main__":
