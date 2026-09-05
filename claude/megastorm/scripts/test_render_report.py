@@ -157,6 +157,46 @@ class TestRendering(unittest.TestCase):
                 render(run)
 
 
+class TestNotExaminedRisk(unittest.TestCase):
+    def test_not_examined_sorted_by_risk_with_why(self):
+        # 未盘问面按 risk.level 排序并打印 why；缺 risk 的排最后标"未评估风险"
+        with tempfile.TemporaryDirectory() as tmp:
+            run = _mk_run(tmp, [
+                {"id": "F1", "name": "面一", "status": "examined"},
+                {"id": "F2", "name": "低风险面", "status": "not_examined",
+                 "risk": {"level": "low", "why": "无需求引用"}},
+                {"id": "F3", "name": "无风险字段面", "status": "not_examined"},
+                {"id": "F4", "name": "高风险面", "status": "not_examined",
+                 "risk": {"level": "high", "why": "触碰资金对账"}}],
+                [_entry("q1")])
+            report = render(run)
+            sec = report[report.index("## 未盘问声明"):report.index("## 未拉的线")]
+            self.assertLess(sec.index("高风险面"), sec.index("低风险面"))
+            self.assertLess(sec.index("低风险面"), sec.index("无风险字段面"))
+            self.assertIn("触碰资金对账", sec)
+            self.assertIn("未评估风险", sec)
+            self.assertIn("盘问 1 面", report)  # 仍不计入
+
+    def test_examiner_is_author_declared_in_overview(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = _mk_run(tmp, [{"id": "F1", "name": "面一", "status": "examined"}],
+                          [_entry("q1")])
+            L = json.loads((run / "ledger.json").read_text(encoding="utf-8"))
+            L["examiner_is_author"] = True
+            (run / "ledger.json").write_text(
+                json.dumps(L, ensure_ascii=False), encoding="utf-8")
+            report = render(run)
+            overview = report[:report.index("## 逐面完成度")]
+            self.assertIn("examiner_is_author", overview)
+            self.assertIn("bias-guard", overview)
+
+    def test_examiner_is_author_absent_is_silent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = _mk_run(tmp, [{"id": "F1", "name": "面一", "status": "examined"}],
+                          [_entry("q1")])
+            self.assertNotIn("bias-guard", render(run))
+
+
 class TestOpenThreads(unittest.TestCase):
     def test_open_threads_section_rendered_not_counted(self):
         # 弃牌（未拉的线）进报告专节，不进任何裁决计数
@@ -265,6 +305,21 @@ class TestPatterns(unittest.TestCase):
             report = render(run)
             self.assertIn("缺口：1", report)
             self.assertIn("实证完成：0", report)
+
+    def test_pattern_not_enumerated_is_declared(self):
+        # 枚举官无返回：enumerated=false → 标题标"全集未清点"，"未查 0"不被误读为只有一处
+        with tempfile.TemporaryDirectory() as tmp:
+            gap = _entry("退款重复提交会双扣吗？", verdict="gap",
+                         ev_dir="evidence/q3/", severity="high")
+            run = self._run_with_patterns(tmp, [gap], [{
+                "pattern_id": "P1", "hypothesis": "写端点普遍缺幂等键",
+                "enumerated": False,
+                "sites": [{"site": "POST /api/refunds", "facet": "F1",
+                           "entry_q": "退款重复提交会双扣吗？"}]}])
+            report = render(run)
+            pat = report[report.index("## 缺陷模式"):].split("\n## ")[0]
+            self.assertIn("全集未清点", pat)
+            self.assertIn("实证 1", pat)
 
     def test_patterns_key_absent_renders_none(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -28,6 +28,8 @@ from pathlib import Path
 VERDICT_LABELS = {"done": "实证完成", "gap": "缺口",
                   "drift": "跑偏", "unprovable": "无法自证"}
 SEVERITY_ORDER = {"high": 0, "medium": 1, "low": 2}
+AUTHOR_NOTE = ("盘问官即交付作者（examiner_is_author）：bias-guard 生效——gap 从严，"
+               "降级为 low 或 done 需额外独立证据。")
 BASELINE_NONE_NOTE = ("需求基准缺失（baseline: none）：需求覆盖、需求跑偏两镜头"
                       "因无基准关闭，本报告未盘问这两个维度。")
 
@@ -54,6 +56,21 @@ def _has_evidence(entry, run_dir):
     if evidence_root not in p.parents:
         return False
     return p.is_dir() and any(p.iterdir())
+
+
+def _risk_key(facet):
+    level = (facet.get("risk") or {}).get("level")
+    return SEVERITY_ORDER.get(level, 3)
+
+
+def _not_examined_line(facet):
+    risk = facet.get("risk") or {}
+    level = risk.get("level")
+    if level in SEVERITY_ORDER:
+        tag = f"风险 {level}：{risk.get('why', '')}"
+    else:
+        tag = "未评估风险"
+    return f"- {facet['name']}（{facet['id']}）— 未盘问，不计入任何完成度 · {tag}"
 
 
 def _entry_line(e):
@@ -94,6 +111,9 @@ def render(run_dir):
     if ledger["baseline"] == "none":
         out.append("")
         out.append(f"> {BASELINE_NONE_NOTE}")
+    if ledger.get("examiner_is_author"):
+        out.append("")
+        out.append(f"> {AUTHOR_NOTE}")
 
     out.append("")
     out.append("## 逐面完成度")
@@ -122,10 +142,10 @@ def render(run_dir):
         out.append("（无）")
 
     out.append("")
-    out.append("## 未盘问声明")
+    out.append("## 未盘问声明（按风险排序）")
     if not_examined:
-        out.extend(f"- {f['name']}（{f['id']}）— 未盘问，不计入任何完成度"
-                   for f in not_examined)
+        not_examined.sort(key=_risk_key)
+        out.extend(_not_examined_line(f) for f in not_examined)
     else:
         out.append("（所有面均已盘问或部分盘问）")
 
@@ -150,9 +170,11 @@ def render(run_dir):
             unexamined = [s for s in sites
                           if s.get("entry_q") not in admitted_by_q]
             out.append("")
+            not_enum = ("" if p.get("enumerated", True)
+                        else "（枚举官无返回，同类位点全集未清点）")
             out.append(f"### {p.get('pattern_id', '?')} {p.get('hypothesis', '?')}"
                        f" — 共 {len(sites)} 位点：实证 {len(proven)}，"
-                       f"未查 {len(unexamined)}")
+                       f"未查 {len(unexamined)}{not_enum}")
             for s, e in proven:
                 label = VERDICT_LABELS.get(e.get("verdict"), e.get("verdict"))
                 out.append(f"- **{label}** {s.get('site', '?')}"

@@ -7,8 +7,10 @@
   "target": "被盘问对象（人类可读名）",
   "baseline": "megastorm-registry|spec|readme|user|none",
   "started": "YYYY-MM-DD",
+  "examiner_is_author": false,
   "facets": [
-    {"id": "F1", "name": "退款流程", "status": "examined|partial|not_examined"}
+    {"id": "F1", "name": "退款流程", "status": "examined|partial|not_examined",
+     "risk": {"level": "high|medium|low", "why": "仅 not_examined 面：需求引用的分量 + 若真坏的破坏面"}}
   ],
   "entries": [
     {
@@ -29,6 +31,10 @@
 }
 ```
 
+- 顶层可选 `examiner_is_author`：盘问官==交付作者时为 true，渲染器在总览点明"作者自审，
+  bias-guard 生效"，续盘时该条件不丢。
+- `facets[].risk` 可选，只对 `not_examined` 面有意义：渲染器按 level 排序未盘问声明并打印 why；
+  缺 risk 的未盘问面排在最后并标"未评估风险"。
 - `evidence.dir` 相对 run 目录；**每个 entry 必有非空 evidence 目录**（spec §6.6）：
   runtime → 截图/输出文件；code → 摘录文件（路径+行号+原文引用）；ledger → 对账摘录；
   `could_not`/无法自证 → 原因文件（尝试了什么、卡在哪）。
@@ -42,12 +48,15 @@
 
   ```json
   {"pattern_id": "P1", "hypothesis": "写端点普遍缺幂等键",
+   "enumerated": true,
    "sites": [
      {"site": "POST /api/refunds", "facet": "F1", "entry_q": "同一笔订单退两次会怎样？"},
      {"site": "POST /api/orders", "facet": "F2"}
    ]}
   ```
 
+  `enumerated` 可选：枚举官两次派发都无返回时写 false，`sites` 只含已实测的首例；渲染器在该
+  pattern 标题标"同类位点全集未清点"，让"未查 0"不被误读为"只有这一处"。
   某条 `gap|drift` 被判为"一类的实例"时建 pattern：`hypothesis` 一句话缺陷模式，
   `sites` 由枚举官覆盖法列出的全部同类位点。位点**没有 status 字段——不许自报
   "已查"**：某位点被实测后，把它的 `entry_q` 指到那条 entry 的 `q`（精确匹配）；
