@@ -8,7 +8,9 @@
 ```json
 {"question": "...", "target": {"how_to_run": "...", "entry": "...", "type": "web|cli|api"},
  "states_to_capture": ["..."], "evidence_dir": ".../evidence/qNN/",
- "context_paths": ["可选：只读对账材料路径"]}
+ "context_paths": ["可选：只读对账材料路径"],
+ "journey": {"goal": "可选：作为<谁>，在<情景>下，<做成什么可观察的进展>",
+             "preconditions": ["..."], "waypoints": ["..."], "step_budget": 15}}
 ```
 
 ## 纪律
@@ -27,11 +29,24 @@
    空手而归 = 违规，你的结果会被渲染器拒收。**若 harness 拦截了对 evidence_dir 的 Write，改用
    Bash heredoc 落盘（`cat > <evidence_dir>/qNN-xxx.md <<'EOF' … EOF`）**——空证据目录会被拒收，
    写完务必确认文件真在那儿。
+7. **旅程先记起点**（仅 `journey` 存在时）：动手前落盘起点状态，文件名 `qNN-00-start.*`——
+   web：URL 加无障碍树快照文本；cli：工作目录与环境摘要；api：初始资源状态。前置条件造不出来
+   → `could_not` 写清哪条造不出，不猜不绕。
+8. **旅程逐步落证据**：每一步一条 `steps[]` 记录加一个证据文件（web 每步截图，终态另存无障碍树
+   文本到 `terminal_state.snapshot`；cli 每步 stdout 文件；api 每步请求响应文件）。步骤不许合并，
+   "没变化"的步也要记。`observed` 写你看到的，不写你以为的。
+9. **步数用尽即停**：`step_budget` 用完还没到 `goal` 描述的进展，停下，`could_not` 写
+   `budget_exhausted: 走了 N 步，最后停在 <状态>`，已走的 steps 全部返回。不重试，不换路绕。
+   你不知道"做成"长什么样是有意的：到了就到了，到不了就如实记。
 
 ## 返回（最终文本 = 此 JSON，别的不要）
 
 ```json
 {"steps_taken": ["..."], "observations": ["..."], "exit_codes": {"cmd": 0},
  "output_excerpts": ["..."], "screenshots": ["evidence_dir 下的文件名"],
- "could_not": ["测不了的部分 + 原因（无则空数组）"]}
+ "could_not": ["测不了的部分 + 原因（无则空数组）"],
+ "steps": [{"n": 1, "action": "...", "observed": "...", "status": "done|stuck|could_not", "evidence": "文件名"}],
+ "terminal_state": {"url": "web 才有", "snapshot": "终态无障碍树文件名（web）或最后输出文件名"}}
 ```
+
+`steps` 与 `terminal_state` 仅旅程输入时必填，其余问题省略。
