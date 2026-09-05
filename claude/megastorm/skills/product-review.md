@@ -73,7 +73,7 @@ Completion: evidence limits recorded; prior evidence folded in; every job has ev
 
 **Evidence limits, before opening anything.** Record three facts: can the product run here; is a browser or screenshot tool available; is WebSearch available. These become the report's `Evidence limits` line. Without a browser, every `ui_friction` / `interaction_gap` item carries `evidence: code-only` and says so. Never describe an inspection method you did not use.
 
-**Prior evidence.** If `docs/cross-exam/*/completion-report.md` exists, read the newest one. Its gap list is prior evidence: for each gap that blocks a job in scope, list it on the `Prior evidence` line with that job. A known gap never becomes an `R` item; items that wait on it write its id in `depends_on` (`G1`). Absent → write `Prior evidence: none`.
+**Prior evidence.** If `docs/cross-exam/*/completion-report.md` exists, read the newest one. Its gap list and its 旅程完成度 section are prior evidence: for each gap (`G` id) or journey verdict (`J` id) that blocks a job in scope, list it on the `Prior evidence` line with that job. A journey that cross-exam walked through (`done`) is evidence for 在不在 and 走不走得完 on the matching job; a journey `gap` with its `stuck_kind` is the observation, do not re-probe it. A known gap or blocked journey never becomes an `R` item; items that wait on it write its id in `depends_on` (`G1`, `J1`). Absent → write `Prior evidence: none`.
 
 Find facts yourself (repo, running UI, WebSearch). Do not ask the user for anything look-up-able.
 
@@ -99,7 +99,7 @@ Each item:
 - `id` stable (`R1`…)
 - `job` one triple from Jobs in scope, by its label
 - `kind`: `missing_job` | `broken_path` | `ui_friction` | `interaction_gap` | `borrow_positioning` | `borrow_feature`
-- `depends_on` other `R` ids, cross-exam `G` ids, or empty
+- `depends_on` other `R` ids, cross-exam `G` or `J` ids, or empty
 - `recommend`: `adopt` | `defer` for kinds observed in the product; `adopt` | `defer` | `reject` for `borrow_*`
 - `tradeoff` one sentence
 - `evidence` paths, URLs, or UI observations — not vibes; `code-only` when no browser
@@ -124,13 +124,13 @@ Write `docs/product-review/<run>/recommendations.md`:
 # Product review — <product>
 
 ## Jobs in scope
-- J1 — who: … / circumstance: … / progress: …
+- JOB1 — who: … / circumstance: … / progress: …
 
 ## Evidence limits
 runs here: yes|no · browser: yes|no · WebSearch: yes|no · consequence: <one clause>
 
 ## Prior evidence
-docs/cross-exam/<run>/completion-report.md — G1 blocks J1; G2, G3 no job in scope | none
+docs/cross-exam/<run>/completion-report.md — G1 blocks JOB1; J2 (gap, no_feedback) blocks JOB1; G2, G3 no job in scope | none
 
 ## Inspection plan
 <one short paragraph: what you chose to open on THIS product and why>
@@ -138,7 +138,7 @@ docs/cross-exam/<run>/completion-report.md — G1 blocks J1; G2, G3 no job in sc
 ## Decision tree
 
 ### R1 — <title>
-- job: J1
+- job: JOB1
 - kind:
 - depends_on:
 - recommend: adopt | defer | reject
@@ -147,7 +147,7 @@ docs/cross-exam/<run>/completion-report.md — G1 blocks J1; G2, G3 no job in sc
 
 <!-- when no item survives the self-check, the tree is exactly: -->
 No item survived the self-check.
-- J1 · 在不在: <observation> · 走不走得完: <observation> · 该不该有: <observation> · 商业级: <observation>
+- JOB1 · 在不在: <observation> · 走不走得完: <observation> · 该不该有: <observation> · 商业级: <observation>
 
 ## Competitors (jobs in scope only)
 - <name> [P1..P4]: positioning. how it makes the same progress. borrow or reject, why.
