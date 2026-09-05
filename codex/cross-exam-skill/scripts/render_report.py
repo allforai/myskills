@@ -17,6 +17,12 @@
 的 entry；对不上、或对上的是被拒渲的口头裁决，一律算未查并逐个点名。未查位点
 不进任何裁决计数——同类嫌疑不许蒸发，也不许口头销账。
 
+可选 `journeys`（旅程声明）渲染为"旅程完成度"专节。旅程没有自报"已查"的通道：
+`entry_q` 精确匹配到被采信 entry 且该 entry 的 `journey` 等于旅程 id 才算已盘问，
+否则进"未盘问声明"（前缀"旅程"）并按 risk 排序。entry 带 `journey` 但 journeys 里
+查无此 id、或旅程 gap 的 `stuck_kind` 不在六种之内，一律拒渲并点名。旅程裁决计数与
+普通裁决计数分列，互不掺入。
+
 Usage: python3 render_report.py <run_dir>    # run_dir 内含 ledger.json
 写出 <run_dir>/completion-report.md。exit 0=渲染成功（有拒渲仍为 0，报告内声明）；
 exit 1=ledger 不可读或缺必填键。
@@ -28,6 +34,8 @@ from pathlib import Path
 VERDICT_LABELS = {"done": "实证完成", "gap": "缺口",
                   "drift": "跑偏", "unprovable": "无法自证"}
 SEVERITY_ORDER = {"high": 0, "medium": 1, "low": 2}
+STUCK_KINDS = {"no_entry": "无入口", "not_found": "找不到", "misleading": "误导",
+               "no_feedback": "无反馈", "no_recovery": "无恢复路径", "broken": "系统报错"}
 AUTHOR_NOTE = ("盘问官即交付作者（examiner_is_author）：bias-guard 生效——gap 从严，"
                "降级为 low 或 done 需额外独立证据。")
 BASELINE_NONE_NOTE = ("需求基准缺失（baseline: none）：需求覆盖、需求跑偏两镜头"
@@ -63,54 +71,115 @@ def _risk_key(facet):
     return SEVERITY_ORDER.get(level, 3)
 
 
-def _not_examined_line(facet):
-    risk = facet.get("risk") or {}
+def _not_examined_line(item, prefix=""):
+    risk = item.get("risk") or {}
     level = risk.get("level")
     if level in SEVERITY_ORDER:
         tag = f"风险 {level}：{risk.get('why', '')}"
     else:
         tag = "未评估风险"
-    return f"- {facet['name']}（{facet['id']}）— 未盘问，不计入任何完成度 · {tag}"
+    name = f"{prefix}{item.get('name') or _journey_title(item)}"
+    return f"- {name}（{item['id']}）— 未盘问，不计入任何完成度 · {tag}"
 
 
 def _entry_line(e):
     label = VERDICT_LABELS.get(e.get("verdict"), e.get("verdict"))
+    jtag = f" [{e['journey']}]" if e.get("journey") else ""
     facet_tag = f" [{e.get('facet', '?')}]"
     ref = f" [{e['requirement_ref']}]" if e.get("requirement_ref") else ""
     ev = e.get("evidence", {})
-    return (f"- **{label}**{facet_tag}{ref} {e.get('q', '?')} — {ev.get('key_observation', '')}"
+    return (f"- **{label}**{jtag}{facet_tag}{ref} {e.get('q', '?')} — {ev.get('key_observation', '')}"
             f"（证据：{ev.get('dir', '')}）")
+
+
+def _refusal_reason(e, journey_ids):
+    verdict = e.get("verdict")
+    if verdict not in VERDICT_LABELS:
+        return f"非法裁决：{verdict}"
+    if verdict in ("gap", "drift") and e.get("severity") not in SEVERITY_ORDER:
+        return f"非法严重度：{e.get('severity')}"
+    if e.get("journey") and e["journey"] not in journey_ids:
+        return f"旅程引用不存在：{e['journey']}"
+    if e.get("journey") and verdict == "gap" and e.get("stuck_kind") not in STUCK_KINDS:
+        return f"非法卡死类型：{e.get('stuck_kind')}"
+    return "无证据目录"
+
+
+def _journey_title(j):
+    return (f"{j.get('id', '?')} {j.get('who', '?')} · {j.get('circumstance', '?')}"
+            f" · {j.get('progress', '?')}")
+
+
+def _journey_block(j, e):
+    steps = e.get("steps", [])
+    verdict = e.get("verdict")
+    label = VERDICT_LABELS[verdict]
+    ev = e.get("evidence", {})
+    if verdict == "done":
+        head = f"走通，{len(steps)} 步"
+    elif verdict == "gap":
+        label = f"{label}（{e.get('severity', '?')}，{STUCK_KINDS.get(e.get('stuck_kind'))}）"
+        stuck = next((s for s in steps if s.get("status") == "stuck"), None)
+        if stuck:
+            head = (f"走了 {len(steps)} 步，卡在第 {stuck.get('n', '?')} 步："
+                    f"{stuck.get('action', '')} → {stuck.get('observed', '')}")
+        else:
+            head = f"走了 {len(steps)} 步，预算内未到进展"
+    elif verdict == "drift":
+        label = f"{label}（{e.get('severity', '?')}）"
+        head = "走通但绕过 waypoint：" + "、".join(e.get("missed_waypoints", []))
+    else:
+        head = f"无法自证：{ev.get('key_observation', '')}"
+    out = ["", f"### {_journey_title(j)} — {label}",
+           f"{head}（证据：{ev.get('dir', '')}）"]
+    out.extend(f"- {s.get('n', '?')} {s.get('status', '?')} {s.get('action', '')}"
+               f" → {s.get('observed', '')}" for s in steps)
+    return out
 
 
 def render(run_dir):
     run_dir = Path(run_dir)
     ledger = _load(run_dir)
+    journeys = ledger.get("journeys") or []
+    journey_ids = {j.get("id") for j in journeys}
     admitted, refused = [], []
     for e in ledger["entries"]:
-        if e.get("verdict") not in VERDICT_LABELS:
-            refused.append(e)
-        elif (e.get("verdict") in ("gap", "drift")
-              and e.get("severity") not in SEVERITY_ORDER):
+        if _refusal_reason(e, journey_ids) != "无证据目录":
             refused.append(e)
         elif _has_evidence(e, run_dir):
             admitted.append(e)
         else:
             refused.append(e)
+    plain = [e for e in admitted if not e.get("journey")]
+    admitted_by_q = {e.get("q"): e for e in admitted}
+    examined_j = [(j, admitted_by_q[j.get("entry_q")]) for j in journeys
+                  if j.get("entry_q") in admitted_by_q
+                  and admitted_by_q[j.get("entry_q")].get("journey") == j.get("id")]
+    examined_j_ids = {j["id"] for j, _ in examined_j}
+    unexamined_j = [j for j in journeys if j.get("id") not in examined_j_ids]
 
     examined = [f for f in ledger["facets"] if f.get("status") != "not_examined"]
     not_examined = [f for f in ledger["facets"] if f.get("status") == "not_examined"]
     counts = {v: 0 for v in VERDICT_LABELS}
-    for e in admitted:
-        if e.get("verdict") in counts:
-            counts[e["verdict"]] += 1
+    for e in plain:
+        counts[e["verdict"]] += 1
+    jcounts = {v: 0 for v in VERDICT_LABELS}
+    for _, e in examined_j:
+        jcounts[e["verdict"]] += 1
 
     out = [f"# 完成度报告 — {ledger['target']}", ""]
-    out.append(f"需求基准：{ledger['baseline']} · 共 {len(ledger['facets'])} 面，"
-               f"盘问 {len(examined)} 面 · 实测 {len(admitted)} 问")
+    head = (f"需求基准：{ledger['baseline']} · 共 {len(ledger['facets'])} 面，"
+            f"盘问 {len(examined)} 面 · 实测 {len(plain)} 问")
+    if journeys:
+        head += f" · 旅程 {len(journeys)} 条，盘问 {len(examined_j)} 条"
+    out.append(head)
     out.append("")
     out.append("## 总览")
     out.append("")
     out.append(" · ".join(f"{VERDICT_LABELS[v]}：{counts[v]}" for v in VERDICT_LABELS))
+    if journeys:
+        out.append("旅程裁决：" + " · ".join(f"{VERDICT_LABELS[v]}：{jcounts[v]}"
+                                          for v in VERDICT_LABELS))
     if ledger["baseline"] == "none":
         out.append("")
         out.append(f"> {BASELINE_NONE_NOTE}")
@@ -121,11 +190,19 @@ def render(run_dir):
     out.append("")
     out.append("## 逐面完成度")
     for f in examined:
-        fe = [e for e in admitted if e.get("facet") == f["id"]]
+        fe = [e for e in plain if e.get("facet") == f["id"]]
         done = len([e for e in fe if e.get("verdict") == "done"])
         out.append("")
         out.append(f"### {f['name']}（{f['id']}）— {len(fe)} 问中 {done} 问实证通过")
         out.extend(_entry_line(e) for e in fe)
+
+    out.append("")
+    out.append("## 旅程完成度")
+    if examined_j:
+        for j, e in examined_j:
+            out.extend(_journey_block(j, e))
+    else:
+        out.append("（无旅程声明）" if not journeys else "（旅程均未盘问，见未盘问声明）")
 
     gaps = [e for e in admitted if e.get("verdict") in ("gap", "drift")]
     gaps.sort(key=lambda e: SEVERITY_ORDER.get(e.get("severity"), 3))
@@ -146,9 +223,11 @@ def render(run_dir):
 
     out.append("")
     out.append("## 未盘问声明（按风险排序）")
-    if not_examined:
-        not_examined.sort(key=_risk_key)
-        out.extend(_not_examined_line(f) for f in not_examined)
+    unexamined_items = ([(f, "") for f in not_examined]
+                        + [(j, "旅程 ") for j in unexamined_j])
+    if unexamined_items:
+        unexamined_items.sort(key=lambda it: _risk_key(it[0]))
+        out.extend(_not_examined_line(it, prefix) for it, prefix in unexamined_items)
     else:
         out.append("（所有面均已盘问或部分盘问）")
 
@@ -165,7 +244,6 @@ def render(run_dir):
     out.append("")
     out.append("## 缺陷模式（同类位点清点——未查位点不进任何完成度）")
     if patterns:
-        admitted_by_q = {e.get("q"): e for e in admitted}
         for p in patterns:
             sites = p.get("sites", [])
             proven = [(s, admitted_by_q[s["entry_q"]]) for s in sites
@@ -193,14 +271,7 @@ def render(run_dir):
         out.append("## 违规裁决（无证据或非法裁决，已拒渲）")
         out.append(f"以下 {len(refused)} 条 entry 不计入任何统计：")
         for e in refused:
-            verdict = e.get("verdict")
-            if verdict not in VERDICT_LABELS:
-                reason = f"非法裁决：{verdict}"
-            elif verdict in ("gap", "drift") and e.get("severity") not in SEVERITY_ORDER:
-                reason = f"非法严重度：{e.get('severity')}"
-            else:
-                reason = "无证据目录"
-            out.append(f"- {e.get('q', '?')}（{reason}）")
+            out.append(f"- {e.get('q', '?')}（{_refusal_reason(e, journey_ids)}）")
 
     out.append("")
     return "\n".join(out)
