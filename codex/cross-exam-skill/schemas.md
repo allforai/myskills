@@ -116,3 +116,4 @@ N 步 / 卡在第 K 步加卡死类型 / 绕过的 waypoint / 无法自证原因
    实证，匹配不上（含匹配到被拒渲裁决）一律渲染为"未查"并逐个点名，不进任何计数。
 4. 旅程同样没有自报"已查"的通道：`entry_q` 匹配不到被采信 entry 一律渲染为未盘问；entry 带
    `journey` 但 journeys 里查无此 id、或旅程 gap 的 `stuck_kind` 不在六种之内，拒渲并点名。
+   旅程 drift 缺 `missed_waypoints` 同样拒渲并点名。

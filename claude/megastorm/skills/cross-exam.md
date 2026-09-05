@@ -10,7 +10,7 @@ description: Evidence-backed completion cross-examination — Socratic question 
 > Invoked only by the user as `/cross-exam [target]`. Claude must not start it on its own.
 > Arguments: $ARGUMENTS (the delivery to cross-examine; empty means enter the 定靶 intake dialogue). Start at 定靶.
 
-`$ROOT` = `${CLAUDE_PLUGIN_ROOT}`。四镜头：`$ROOT/knowledge/cross-exam/lenses.md`；
+`$ROOT` = `${CLAUDE_PLUGIN_ROOT}`。镜头：`$ROOT/knowledge/cross-exam/lenses.md`；
 实测官 / 普查官 / 枚举官 prompt：`$ROOT/knowledge/cross-exam/prompts/{prober,census,sites}.md`；
 schema：`$ROOT/knowledge/cross-exam/schemas.md`；报告渲染：`$ROOT/scripts/render_report.py`。
 
@@ -46,7 +46,7 @@ schema：`$ROOT/knowledge/cross-exam/schemas.md`；报告渲染：`$ROOT/scripts
 2. **需求基准探测**（依次）：megastorm overview registry（R-*，在
    `docs/superpowers/specs/*-overview.md` 的 registry 标记内）→ `docs/superpowers/specs/`
    下相关 spec → README → 问用户 → **无基准模式**（需求覆盖/跑偏两镜头关闭，
-   报告声明，只开集成缝隙+细节质量）。
+   报告声明，只开集成缝隙+细节质量+契约 census+旅程）。
 3. 环境能力探测：能否真跑起来；有无浏览器自动化（截图能力）。缺截图能力时
    UI 类问题只能裁"无法自证"，起手就告诉用户。
 4. **安全确认（必须）**：实测会造真实调用（退款、删除这类）。与用户确认靶子是
@@ -84,7 +84,8 @@ schema：`$ROOT/knowledge/cross-exam/schemas.md`；报告渲染：`$ROOT/scripts
 1. **整理候选**：把 census 的操作面按"入口 → 能推进到的终态"归成候选旅程，加上需求基准里的任务
    （registry、spec、README；`.allforai/product-map/task-inventory.json` 存在也读，它只是可选数据源）。
    每条候选写成三元组草稿。**不另派 agent 读代码，也不凭印象读代码定候选**——census 已经用覆盖法
-   列过入口了。
+   列过入口了。census 失败（ledger 顶层 `census: "failed"`）时，候选只来自需求基准与用户补充，
+   并在报告里声明旅程候选未经 census 播种。
 2. **摆给用户**：AskUserQuestion 多选，勾选要盘的候选；用户永远可以走 Other 补自己的旅程。零勾选
    零补充不阻塞：ledger 写 `journeys: []`，报告声明"无旅程声明"。
 3. **改写读回**：每条选中的旅程改写成三元组加 oracle（`done_looks_like` + `stuck_looks_like`），读
@@ -125,7 +126,9 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
   `status` 改 `examined`。
 - **扫全模式下**：所有 `not_examined` 旅程并行扇出，一条旅程一个 fresh-context 实测官，收齐后逐条裁决。
 - **发散与 bias-guard 照旧**：旅程 gap 后下一轮从卡死点纵向出牌进 `open_threads`；多条旅程在同一种
-  `stuck_kind` 卡死，走"孤例还是一类"建 pattern；盘问官==作者时旅程 gap 从严。
+  `stuck_kind` 卡死，走"孤例还是一类"建 pattern；盘问官==交付作者时旅程 gap 从严。
+
+**深挖轮（按面出牌）的通用规则：**
 
 - **问题牌**：遵守 lenses.md 的 4 条硬约束（挂泄漏点、可实测、覆盖不同疑点、
   UI 牌注明状态清单）。牌用 AskUserQuestion 呈现，用户永远可以走"Other"自己出题。

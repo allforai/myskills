@@ -421,7 +421,8 @@ class TestJourneys(unittest.TestCase):
             self.assertIn("非法卡死类型：lost", report)
             self.assertIn("旅程 1 条，盘问 0 条", report)
             unex = report[report.index("## 未盘问声明"):report.index("## 未拉的线")]
-            self.assertIn("旅程 J1", unex)
+            self.assertIn("旅程 回头客", unex)
+            self.assertIn("（J1）", unex)
 
     def test_entry_referencing_unknown_journey_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -440,7 +441,8 @@ class TestJourneys(unittest.TestCase):
             report = render(run)
             self.assertIn("旅程 1 条，盘问 0 条", report)
             unex = report[report.index("## 未盘问声明"):report.index("## 未拉的线")]
-            self.assertIn("旅程 J1", unex)
+            self.assertIn("旅程 回头客", unex)
+            self.assertIn("（J1）", unex)
             self.assertIn("未评估风险", unex)
 
     def test_journey_linked_to_refused_entry_is_unexamined(self):
@@ -451,7 +453,8 @@ class TestJourneys(unittest.TestCase):
             self.assertIn("违规裁决", report)
             self.assertIn("旅程 1 条，盘问 0 条", report)
             unex = report[report.index("## 未盘问声明"):report.index("## 未拉的线")]
-            self.assertIn("旅程 J1", unex)
+            self.assertIn("旅程 回头客", unex)
+            self.assertIn("（J1）", unex)
 
     def test_not_examined_journeys_sorted_by_risk_after_facets(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -464,8 +467,8 @@ class TestJourneys(unittest.TestCase):
                 _journey("J3", entry_q="", status="not_examined")])
             report = render(run)
             unex = report[report.index("## 未盘问声明"):report.index("## 未拉的线")]
-            self.assertLess(unex.index("旅程 J2"), unex.index("旅程 J1"))
-            self.assertLess(unex.index("旅程 J1"), unex.index("旅程 J3"))
+            self.assertLess(unex.index("（J2）"), unex.index("（J1）"))
+            self.assertLess(unex.index("（J1）"), unex.index("（J3）"))
             self.assertIn("主线收入", unex)
             self.assertIn("未评估风险", unex)
             self.assertIn("实证完成：1", report)   # 未盘问旅程不进计数
@@ -499,6 +502,39 @@ class TestJourneys(unittest.TestCase):
             report = render(run)
             sec = report[report.index("## 旅程完成度"):report.index("## 缺口清单")]
             self.assertIn("无法自证：测试账号无法登录，前置条件造不出", sec)
+
+    def test_journey_drift_without_missed_waypoints_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _jentry(verdict="drift", severity="medium", missed_waypoints=[])
+            run = _mk_run(tmp, self.FACETS, [e])
+            _with_journeys(run, [_journey()])
+            report = render(run)
+            self.assertIn("违规裁决", report)
+            self.assertIn("缺 missed_waypoints", report)
+            self.assertIn("旅程 1 条，盘问 0 条", report)
+            unex = report[report.index("## 未盘问声明"):report.index("## 未拉的线")]
+            self.assertIn("（J1）", unex)
+
+    def test_journey_without_id_does_not_match_plain_entry(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = _mk_run(tmp, self.FACETS, [_entry("q1")])
+            j = _journey(entry_q="q1")
+            del j["id"]
+            _with_journeys(run, [j])
+            report = render(run)
+            self.assertIn("实证完成：1", report)
+            unex = report[report.index("## 未盘问声明"):report.index("## 未拉的线")]
+            self.assertIn("（?）", unex)
+
+    def test_journey_entry_with_mismatched_entry_q_is_named_on_unexamined_line(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _jentry(q="J1 走通了吗？")
+            run = _mk_run(tmp, self.FACETS, [e])
+            _with_journeys(run, [_journey()])
+            report = render(run)
+            self.assertIn("旅程 1 条，盘问 0 条", report)
+            unex = report[report.index("## 未盘问声明"):report.index("## 未拉的线")]
+            self.assertIn("entry_q 对不上：J1 走通了吗？", unex)
 
     def test_journey_gap_without_severity_is_refused_codex(self):
         with tempfile.TemporaryDirectory() as tmp:

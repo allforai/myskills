@@ -20,8 +20,8 @@
 可选 `journeys`（旅程声明）渲染为"旅程完成度"专节。旅程没有自报"已查"的通道：
 `entry_q` 精确匹配到被采信 entry 且该 entry 的 `journey` 等于旅程 id 才算已盘问，
 否则进"未盘问声明"（前缀"旅程"）并按 risk 排序。entry 带 `journey` 但 journeys 里
-查无此 id、或旅程 gap 的 `stuck_kind` 不在六种之内，一律拒渲并点名。旅程裁决计数与
-普通裁决计数分列，互不掺入。
+查无此 id、或旅程 gap 的 `stuck_kind` 不在六种之内，一律拒渲并点名；旅程 drift 缺
+`missed_waypoints` 同样拒渲并点名。旅程裁决计数与普通裁决计数分列，互不掺入。
 
 Usage: python3 render_report.py <run_dir>    # run_dir 内含 ledger.json
 写出 <run_dir>/completion-report.md。exit 0=渲染成功（有拒渲仍为 0，报告内声明）；
@@ -71,15 +71,14 @@ def _risk_key(facet):
     return SEVERITY_ORDER.get(level, 3)
 
 
-def _not_examined_line(item, prefix=""):
+def _not_examined_line(name, item):
     risk = item.get("risk") or {}
     level = risk.get("level")
     if level in SEVERITY_ORDER:
         tag = f"风险 {level}：{risk.get('why', '')}"
     else:
         tag = "未评估风险"
-    name = f"{prefix}{item.get('name') or _journey_title(item)}"
-    return f"- {name}（{item['id']}）— 未盘问，不计入任何完成度 · {tag}"
+    return f"- {name}（{item.get('id', '?')}）— 未盘问，不计入任何完成度 · {tag}"
 
 
 def _entry_line(e):
@@ -102,12 +101,26 @@ def _refusal_reason(e, journey_ids):
         return f"旅程引用不存在：{e['journey']}"
     if e.get("journey") and verdict == "gap" and e.get("stuck_kind") not in STUCK_KINDS:
         return f"非法卡死类型：{e.get('stuck_kind')}"
-    return "无证据目录"
+    if e.get("journey") and verdict == "drift" and not e.get("missed_waypoints"):
+        return "缺 missed_waypoints"
+    return None
+
+
+def _journey_body(j):
+    return f"{j.get('who', '?')} · {j.get('circumstance', '?')} · {j.get('progress', '?')}"
 
 
 def _journey_title(j):
-    return (f"{j.get('id', '?')} {j.get('who', '?')} · {j.get('circumstance', '?')}"
-            f" · {j.get('progress', '?')}")
+    return f"{j.get('id', '?')} {_journey_body(j)}"
+
+
+def _dangling_note(j, admitted):
+    jid = j.get("id")
+    if not jid:
+        return ""
+    notes = [e.get("q", "?") for e in admitted
+             if e.get("journey") == jid and e.get("q") != j.get("entry_q")]
+    return "".join(f" · 有 journey={jid} 的 entry 但 entry_q 对不上：{q}" for q in notes)
 
 
 def _journey_block(j, e):
@@ -144,7 +157,8 @@ def render(run_dir):
     journey_ids = {j.get("id") for j in journeys}
     admitted, refused = [], []
     for e in ledger["entries"]:
-        if _refusal_reason(e, journey_ids) != "无证据目录":
+        reason = _refusal_reason(e, journey_ids)
+        if reason:
             refused.append(e)
         elif _has_evidence(e, run_dir):
             admitted.append(e)
@@ -154,8 +168,9 @@ def render(run_dir):
     admitted_by_q = {e.get("q"): e for e in admitted}
     examined_j = [(j, admitted_by_q[j.get("entry_q")]) for j in journeys
                   if j.get("entry_q") in admitted_by_q
-                  and admitted_by_q[j.get("entry_q")].get("journey") == j.get("id")]
-    examined_j_ids = {j["id"] for j, _ in examined_j}
+                  and admitted_by_q[j.get("entry_q")].get("journey") == j.get("id")
+                  and j.get("id")]
+    examined_j_ids = {j.get("id") for j, _ in examined_j}
     unexamined_j = [j for j in journeys if j.get("id") not in examined_j_ids]
 
     examined = [f for f in ledger["facets"] if f.get("status") != "not_examined"]
@@ -223,11 +238,15 @@ def render(run_dir):
 
     out.append("")
     out.append("## 未盘问声明（按风险排序）")
-    unexamined_items = ([(f, "") for f in not_examined]
-                        + [(j, "旅程 ") for j in unexamined_j])
+    unexamined_items = ([(f["name"], f) for f in not_examined]
+                        + [("旅程 " + _journey_body(j), j) for j in unexamined_j])
     if unexamined_items:
-        unexamined_items.sort(key=lambda it: _risk_key(it[0]))
-        out.extend(_not_examined_line(it, prefix) for it, prefix in unexamined_items)
+        unexamined_items.sort(key=lambda it: _risk_key(it[1]))
+        for name, item in unexamined_items:
+            line = _not_examined_line(name, item)
+            if "oracle" in item:
+                line += _dangling_note(item, admitted)
+            out.append(line)
     else:
         out.append("（所有面均已盘问或部分盘问）")
 
@@ -271,7 +290,7 @@ def render(run_dir):
         out.append("## 违规裁决（无证据或非法裁决，已拒渲）")
         out.append(f"以下 {len(refused)} 条 entry 不计入任何统计：")
         for e in refused:
-            out.append(f"- {e.get('q', '?')}（{_refusal_reason(e, journey_ids)}）")
+            out.append(f"- {e.get('q', '?')}（{_refusal_reason(e, journey_ids) or '无证据目录'}）")
 
     out.append("")
     return "\n".join(out)
