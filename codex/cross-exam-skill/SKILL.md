@@ -1,6 +1,6 @@
 ---
 name: cross-exam
-description: Package with two explicit commands. cross-exam — evidence-backed completion cross-examination. product-review — product-thinking critique, commercial UI/interaction, and competitor borrow notes, advice only. Neither is automatic. If the user named product-review, read product-review.md and stop; do not run this completion protocol. cross-exam asks "is it really done", product-review asks "is it good for the user"; the usual order is cross-exam first.
+description: Package with two explicit commands. cross-exam — evidence-backed completion cross-examination, including user-declared journeys walked end-to-end. product-review — product-thinking critique, commercial UI/interaction, and competitor borrow notes, advice only. Neither is automatic. If the user named product-review, read product-review.md and stop; do not run this completion protocol. cross-exam asks "is it really done", product-review asks "is it good for the user"; the usual order is cross-exam first.
 ---
 
 # Package router
@@ -78,6 +78,24 @@ Do not mix ledgers, verdicts, or loops.
 "未盘问声明"，绝不算进完成度。盘问官==交付作者时，ledger 顶层写 `examiner_is_author: true`，
 渲染器会在总览点明。
 
+## 1b. 旅程采集（定面之后，盘问循环之前）
+
+旅程 = 用户声明的意图基线：`who / circumstance / progress` 三元组（与 product-review 的 job 同格式）
+加 oracle。它回答"这份工作在这个交付里走不走得通"，是 product-review "在不在、走不走得完"两问的
+独立取证来源。
+
+1. **整理候选**：把 census 的操作面按"入口 → 能推进到的终态"归成候选旅程，加上需求基准里的任务
+   （registry、spec、README；`.allforai/product-map/task-inventory.json` 存在也读，它只是可选数据源）。
+   每条候选写成三元组草稿。**不另派 agent 读代码，也不凭印象读代码定候选**——census 已经用覆盖法
+   列过入口了。
+2. **一次只问用户一个选择，逐条确认要盘的候选；用户永远可以补自己的旅程。** 零选择不阻塞：ledger
+   写 `journeys: []`，报告声明"无旅程声明"。
+3. **改写读回**：每条选中的旅程改写成三元组加 oracle（`done_looks_like` + `stuck_looks_like`），读
+   回用户确认。一轮改写后仍无 `who` 或 `progress` 的不是旅程——说明缺哪部分，用户补一次，仍缺就
+   不收。`stuck_looks_like` 空的同样退回补一次："没报错"不是 oracle，要写出卡死长什么样。
+4. **落盘**：确认的旅程写入 `journeys[]`，`status: not_examined`，带 `risk`（这份工作的分量 + 若真走
+   不通的破坏面）。未选的候选不入台账。`step_budget` 默认 15，按旅程长度调。
+
 ## 2. 盘问循环（每轮一个面）
 
 ```
@@ -90,6 +108,27 @@ Do not mix ledgers, verdicts, or loops.
 sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个操作/端点逐条查"契约是否兑现"），拿
 到全集后再对高风险线回到深挖。**深挖答不了"我们有没有到处都看过"——那是扫全模式的活；只做深挖
 等于用 3 张牌去覆盖一整个交付。** 深挖中途抓到"一类的实例"时也会升级——见下面"孤例还是一类"。
+
+**旅程轮（用户选中一条旅程时）**：不出三张牌，问题固定是"`<id>` 走得通吗？"。
+
+- **派实测官**：输入 JSON 加 `journey` 块——只含 `goal`（三元组拼成一句话）、`preconditions`、
+  `waypoints`、`step_budget`；`states_to_capture` 写"起点"、各 waypoint、"终态"。**oracle 绝不进
+  输入**：探针不知道"做成"长什么样，到了就到了，到不了就如实记——这是旅程版的期望隔离。
+- **收证据**：把 `steps[]` 和终态截图给用户看。
+- **裁决**（对着 `journeys[].oracle`）：
+  `done` = `done_looks_like` 全部命中、`stuck_looks_like` 无一命中、每个 waypoint 都在某步
+  `observed` 里出现过；
+  `gap` = 任一 `stuck_looks_like` 命中，或探针 `could_not` 含 `budget_exhausted`，或任一步 `stuck`；
+  必填 `stuck_kind`（no_entry 无入口 / not_found 找不到 / misleading 误导 / no_feedback 无反馈 /
+  no_recovery 无恢复路径 / broken 系统报错）与 severity；
+  `drift` = 终态满足 `done_looks_like` 但绕过了某个 waypoint，必填 `missed_waypoints`；
+  `unprovable` = 前置条件造不出来，或探针因环境原因 `could_not`（起不来、缺依赖、缺浏览器）。
+  预算用尽不是 unprovable：预算内到不了进展是产品的问题。
+- **落账**：entry 带 `journey`、`steps`、`terminal_state`；`journeys[].entry_q` 指到该 entry 的 `q`，
+  `status` 改 `examined`。
+- **扫全模式下**：所有 `not_examined` 旅程并行扇出，一条旅程一个 fresh-context 实测官，收齐后逐条裁决。
+- **发散与 bias-guard 照旧**：旅程 gap 后下一轮从卡死点纵向出牌进 `open_threads`；多条旅程在同一种
+  `stuck_kind` 卡死，走"孤例还是一类"建 pattern；盘问官==作者时旅程 gap 从严。
 
 - **问题牌**：遵守 lenses.md 的 4 条硬约束（挂泄漏点、可实测、覆盖不同疑点、
   UI 牌注明状态清单）。牌一次呈现一组，用户永远可以自己出题。
@@ -135,7 +174,7 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
 
 用户喊停或选中的面盘完 →
 `python3 $ROOT/scripts/render_report.py docs/cross-exam/<run>/` →
-把 completion-report.md 呈给用户。报告四类裁决计数、逐面"X 问中 Y 问实证通过"、
-缺口清单（可直接转修复任务）、无法自证清单、未盘问声明、缺陷模式（patterns：每类
+把 completion-report.md 呈给用户。报告四类裁决计数（普通与旅程分列）、逐面"X 问中 Y 问实证通过"、
+旅程完成度（每条走通 N 步或卡在第 K 步加卡死类型）、缺口清单（可直接转修复任务）、无法自证清单、未盘问声明、缺陷模式（patterns：每类
 "共 N 位点，实证 M，未查 K"，未查位点逐个点名）、未拉的线（open_threads，
 续盘接手点）——**没有编造的总百分比**。
