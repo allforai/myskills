@@ -546,5 +546,55 @@ class TestJourneys(unittest.TestCase):
             self.assertIn("旅程 1 条，盘问 0 条", report)
 
 
+class TestGapIds(unittest.TestCase):
+    FACETS = [{"id": "F1", "name": "面一", "status": "examined"}]
+
+    def test_gap_ids_follow_ledger_order_not_severity(self):
+        # 缺口按 ledger 先后编 G 号；缺口清单按严重度排序时编号跟着条目走
+        with tempfile.TemporaryDirectory() as tmp:
+            entries = [
+                _entry("q-low", verdict="gap", ev_dir="evidence/q1/", severity="low"),
+                _entry("q-done", verdict="done", ev_dir="evidence/q2/"),
+                _entry("q-high", verdict="drift", ev_dir="evidence/q3/", severity="high"),
+            ]
+            run = _mk_run(tmp, self.FACETS, entries)
+            report = render(run)
+            gap_sec = report[report.index("## 缺口清单"):report.index("## 无法自证清单")]
+            self.assertIn("[G1]", gap_sec)
+            self.assertIn("[G2]", gap_sec)
+            self.assertLess(gap_sec.index("[G2]"), gap_sec.index("[G1]"))   # high 在前
+            self.assertIn("[G2] [F1] q-high", gap_sec)
+            self.assertIn("[G1] [F1] q-low", gap_sec)
+            facet_sec = report[report.index("## 逐面完成度"):report.index("## 旅程完成度")]
+            self.assertIn("[G1] [F1] q-low", facet_sec)     # 逐面里同样带号，便于对照
+            self.assertNotIn("[G", facet_sec[facet_sec.index("q-done") - 20:facet_sec.index("q-done")])
+
+    def test_journey_gap_uses_J_not_G_and_does_not_consume_a_number(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            jgap = _jentry(verdict="gap", severity="high", stuck_kind="no_feedback",
+                           ev_dir="evidence/q5/")
+            plain = _entry("q-plain", verdict="gap", ev_dir="evidence/q6/", severity="low")
+            run = _mk_run(tmp, self.FACETS, [jgap, plain])
+            _with_journeys(run, [_journey()])
+            report = render(run)
+            gap_sec = report[report.index("## 缺口清单"):report.index("## 无法自证清单")]
+            self.assertIn("[J1] [F1] J1 走得通吗？", gap_sec)
+            self.assertNotIn("[G1] [J1]", gap_sec)
+            self.assertIn("[G1] [F1] q-plain", gap_sec)
+            self.assertNotIn("[G2]", report)
+
+    def test_refused_gap_does_not_consume_a_number(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            oral = _entry("q-oral", verdict="gap", ev_dir="evidence/q1/", severity="high")
+            real = _entry("q-real", verdict="gap", ev_dir="evidence/q2/", severity="low")
+            run = _mk_run(tmp, self.FACETS, [oral, real], make_evidence=False)
+            (run / "evidence/q2").mkdir(parents=True)
+            (run / "evidence/q2/note.txt").write_text("x", encoding="utf-8")
+            report = render(run)
+            self.assertIn("违规裁决", report)
+            self.assertIn("[G1] [F1] q-real", report)
+            self.assertNotIn("[G2]", report)
+
+
 if __name__ == "__main__":
     unittest.main()

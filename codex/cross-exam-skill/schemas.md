@@ -97,8 +97,7 @@
 
 依次：总览（面/问/四类裁决计数，旅程裁决计数与普通裁决计数分列；baseline=none 时声明关闭的镜头）→
 逐面完成度（只含普通 entry，"X 问中 Y 问实证通过"，逐条链证据）→ 旅程完成度（每条已盘问旅程：走通
-N 步 / 卡在第 K 步加卡死类型 / 绕过的 waypoint / 无法自证原因，逐步状态列表）→ 缺口清单（gap+drift
-按 severity 排，含旅程 gap，行首 `[J1]`）→
+N 步 / 卡在第 K 步加卡死类型 / 绕过的 waypoint / 无法自证原因，逐步状态列表）→ 缺口清单（gap+drift 按 severity 排；普通缺口行首带 `[G1]`——G 号由渲染器按 ledger 里 entries 的先后顺序编，不按严重度，续盘只追加不重排所以稳定，被拒渲的不占号；旅程 gap 行首带 `[J1]`，不占 G 号。product-review 的 `depends_on` 引用的就是 G/J 号）→
 无法自证清单 → 未盘问声明（not_examined 面与未盘问旅程，按 risk 同列）→ 未拉的线（open_threads）→
 缺陷模式（patterns：每类"共 N 位点，实证 M，未查 K"，未查位点逐个点名）→
 拒渲声明（如有）。

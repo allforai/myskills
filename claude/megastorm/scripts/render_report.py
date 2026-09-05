@@ -17,6 +17,10 @@
 的 entry；对不上、或对上的是被拒渲的口头裁决，一律算未查并逐个点名。未查位点
 不进任何裁决计数——同类嫌疑不许蒸发，也不许口头销账。
 
+缺口清单里的普通 gap|drift 带 `G` 号：按 ledger 里 entries 的先后顺序编，不按严重度，
+续盘只追加不重排所以编号稳定；被拒渲的不占号；旅程 entry 只带 `J` 号。product-review 的
+`depends_on` 引用的就是这两种号。
+
 可选 `journeys`（旅程声明）渲染为"旅程完成度"专节。旅程没有自报"已查"的通道：
 `entry_q` 精确匹配到被采信 entry 且该 entry 的 `journey` 等于旅程 id 才算已盘问，
 否则进"未盘问声明"（前缀"旅程"）并按 risk 排序。entry 带 `journey` 但 journeys 里
@@ -84,11 +88,22 @@ def _not_examined_line(name, item):
 def _entry_line(e):
     label = VERDICT_LABELS.get(e.get("verdict"), e.get("verdict"))
     jtag = f" [{e['journey']}]" if e.get("journey") else ""
+    gtag = f" [{e['gap_id']}]" if e.get("gap_id") else ""
     facet_tag = f" [{e.get('facet', '?')}]"
     ref = f" [{e['requirement_ref']}]" if e.get("requirement_ref") else ""
     ev = e.get("evidence", {})
-    return (f"- **{label}**{jtag}{facet_tag}{ref} {e.get('q', '?')} — {ev.get('key_observation', '')}"
+    return (f"- **{label}**{jtag}{gtag}{facet_tag}{ref} {e.get('q', '?')} — {ev.get('key_observation', '')}"
             f"（证据：{ev.get('dir', '')}）")
+
+
+def _assign_gap_ids(plain):
+    """按 ledger 先后给普通 gap|drift 编 G 号（不按严重度）。续盘只追加不重排，编号稳定；
+    被拒渲的不占号；旅程 entry 用 J 号，不占 G 号。product-review 的 depends_on 引用它。"""
+    n = 0
+    for e in plain:
+        if e.get("verdict") in ("gap", "drift"):
+            n += 1
+            e["gap_id"] = f"G{n}"
 
 
 def _refusal_reason(e, journey_ids):
@@ -163,6 +178,7 @@ def render(run_dir):
         else:
             refused.append(e)
     plain = [e for e in admitted if not e.get("journey")]
+    _assign_gap_ids(plain)
     admitted_by_q = {e.get("q"): e for e in admitted}
     examined_j = [(j, admitted_by_q[j.get("entry_q")]) for j in journeys
                   if j.get("entry_q") in admitted_by_q
