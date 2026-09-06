@@ -579,7 +579,7 @@ SKILL_REF_RE = re.compile(
 
 
 BOOTSTRAP_CORPUS = (
-    "claude/meta-skill/skills/bootstrap.md",
+    "claude/meta-skill/skills/bootstrap/SKILL.md",
     "claude/meta-skill/knowledge/bootstrap-art-pipeline.md",
     "claude/meta-skill/knowledge/bootstrap-planning.md",
 )
@@ -632,7 +632,7 @@ def validate_art_pipeline(repo_root: str) -> list:
     skills_root = root / "claude/meta-skill/skills"
     game_art_root = skills_root / "game-art"
     game_art_pack = game_art_root / "PACK.md"
-    bootstrap = root / "claude/meta-skill/skills/bootstrap.md"
+    bootstrap = root / "claude/meta-skill/skills/bootstrap/SKILL.md"
     game_design = root / "claude/meta-skill/knowledge/capabilities/game-design.md"
     engine_ready = game_art_root / "40-qa/engine-ready-art-output-contract/SKILL.md"
     asset_binding = skills_root / "game-frontend/20-spec/asset-import-binding-spec/SKILL.md"

@@ -137,7 +137,7 @@ REQUIRED_GAME_PRODUCTION_TERMS = {
 
 
 BOOTSTRAP_CORPUS = (
-    "claude/meta-skill/skills/bootstrap.md",
+    "claude/meta-skill/skills/bootstrap/SKILL.md",
     "claude/meta-skill/knowledge/bootstrap-planning.md",
 )
 
@@ -181,7 +181,7 @@ def validate_game_2d_production_pipeline(repo_root: str) -> list[str]:
     asset_binding_qa = production_root / "40-qa/asset-binding-visual-qa/SKILL.md"
     asset_contract = production_root / "20-spec/asset-runtime-binding-contract/SKILL.md"
     game_design = root / "claude/meta-skill/knowledge/capabilities/game-design.md"
-    bootstrap = root / "claude/meta-skill/skills/bootstrap.md"
+    bootstrap = root / "claude/meta-skill/skills/bootstrap/SKILL.md"
     game_production = skills_root / "game-production/PACK.md"
 
     required_files = [parent, closure, asset_binding_qa, asset_contract, game_design, bootstrap, game_production]

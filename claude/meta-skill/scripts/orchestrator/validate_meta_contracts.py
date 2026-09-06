@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path("claude/meta-skill")
 # bootstrap.md plus the protocol files it delegates to (ADR-0001). Missing files are skipped.
 BOOTSTRAP_CORPUS = (
-    "skills/bootstrap.md",
+    "skills/bootstrap/SKILL.md",
     "knowledge/bootstrap-planning.md",
     "knowledge/bootstrap-art-pipeline.md",
     "knowledge/bootstrap-audits.md",
@@ -344,13 +344,33 @@ def validate_rebootstrap_reconciliation_contract(errors: list[str]) -> None:
 def validate_public_entrypoint_surface(errors: list[str]) -> None:
     commands_dir = ROOT / "commands"
     allowed_commands = {"setup.md"}
-    # /bootstrap is the skill itself (skills/bootstrap.md); a commands/ twin would
-    # list the same name twice in the picker. User-only: never model-invoked.
-    bootstrap_skill = ROOT / "skills/bootstrap.md"
-    if not bootstrap_skill.exists():
-        errors.append("skills/bootstrap.md: required public skill missing")
-    elif "disable-model-invocation: true" not in bootstrap_skill.read_text(encoding="utf-8")[:600]:
-        errors.append("skills/bootstrap.md: must set disable-model-invocation: true (user-invoked only)")
+    # /bootstrap is the skill itself (skills/bootstrap/SKILL.md); a commands/ twin would
+    # list the same name twice in the picker. Both public entries are user-only, but
+    # they must stay visible to the model: no disable-model-invocation (that would drop
+    # them from the model's skill list entirely). The model-side Skill call is refused
+    # by hooks/user-only-skills.sh instead; a user-typed /name never reaches that hook.
+    user_only = {"bootstrap": ROOT / "skills/bootstrap/SKILL.md", "setup": ROOT / "commands/setup.md"}
+    for name, path in user_only.items():
+        rel = path.relative_to(ROOT)
+        if not path.exists():
+            errors.append(f"{rel}: required public entry missing")
+            continue
+        head = path.read_text(encoding="utf-8")[:800]
+        if "disable-model-invocation" in head:
+            errors.append(f"{rel}: must not set disable-model-invocation; user-only is enforced by hooks/user-only-skills.sh so the entry stays in the model's skill list")
+        if f"/{name}" not in head or "显式调用" not in head and "User-invoked only" not in head:
+            errors.append(f"{rel}: description must say it is user-invoked only via /{name}")
+    hook = ROOT / "hooks/user-only-skills.sh"
+    if not hook.exists():
+        errors.append("hooks/user-only-skills.sh: missing user-only Skill gate")
+    else:
+        match = re.search(r'^USER_ONLY="([^"]*)"', hook.read_text(encoding="utf-8"), re.M)
+        listed = set(match.group(1).split()) if match else set()
+        for name in user_only:
+            if name not in listed:
+                errors.append(f"hooks/user-only-skills.sh: USER_ONLY must list {name}")
+    if not (ROOT / "hooks/hooks.json").exists():
+        errors.append("hooks/hooks.json: missing PreToolUse Skill hook registration")
     actual_commands = {path.name for path in commands_dir.glob("*.md")}
     extra_commands = sorted(actual_commands - allowed_commands)
     missing_commands = sorted(allowed_commands - actual_commands)
@@ -361,7 +381,9 @@ def validate_public_entrypoint_surface(errors: list[str]) -> None:
             f"commands/{name}: unexpected public command; only setup is a command, bootstrap is the skill, and run is generated per project"
         )
 
-    public_pack_skills = sorted((ROOT / "skills").glob("*/SKILL.md"))
+    public_pack_skills = sorted(
+        path for path in (ROOT / "skills").glob("*/SKILL.md") if path.parent.name != "bootstrap"
+    )
     for path in public_pack_skills:
         errors.append(
             f"{path.relative_to(ROOT)}: unexpected public pack skill; use PACK.md so internal packs do not appear in the skill picker"

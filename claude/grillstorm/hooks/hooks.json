@@ -1,0 +1,16 @@
+{
+  "description": "Refuse model-side Skill calls to the user-only entries (/grillstorm). User-typed slash commands bypass this hook.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/user-only-skills.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

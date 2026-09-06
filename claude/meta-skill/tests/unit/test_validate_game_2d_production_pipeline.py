@@ -47,7 +47,7 @@ def _minimal_repo(tmp_path):
     )
     _write(
         tmp_path,
-        "claude/meta-skill/skills/bootstrap.md",
+        "claude/meta-skill/skills/bootstrap/SKILL.md",
         "\n".join(sorted(REQUIRED_BOOTSTRAP_TERMS)),
     )
     _write(

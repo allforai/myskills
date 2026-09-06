@@ -1,6 +1,5 @@
 ---
-disable-model-invocation: true
-description: "检测和配置所有外部能力：Playwright（UI 自动化）+ OpenRouter（跨模型 XV）+ Brave Search（媒体搜索）+ Google AI（生图/生视频）+ Stitch UI（视觉稿）。一站式状态仪表板 + 引导配置 + 一键更新所有插件/MCP/技能。"
+description: "检测和配置外部能力（Playwright、OpenRouter、Brave Search、Google AI、Stitch UI），状态仪表板加引导配置加一键更新。仅由用户 /setup 显式调用，模型不得自行调用。"
 argument-hint: "[check|reset|update|impact]"
 allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 ---

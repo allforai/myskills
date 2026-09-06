@@ -53,7 +53,7 @@ the project-local `.allforai/bootstrap/learned/blind-spots.md`.
   + `knowledge/capabilities/quality-checks.md` Contract-Parity section
 - **Status**: `closed` — `runtime-smoke-verify` auto-added to all
   goals that include code implementation or launch-prep (see
-  `skills/bootstrap.md` Step 1.5 goal mapping). Contract-Parity check
+  `skills/bootstrap/SKILL.md` Step 1.5 goal mapping). Contract-Parity check
   runs as part of every quality-checks invocation.
 - **First reported in**: 2026-04-14 retrospective
 

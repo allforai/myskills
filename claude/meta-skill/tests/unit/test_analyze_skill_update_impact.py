@@ -66,7 +66,7 @@ def test_analyze_skill_update_impact_writes_reports(tmp_path):
     result = analyze(
         str(repo),
         str(project),
-        changed_file=["claude/meta-skill/skills/bootstrap.md"],
+        changed_file=["claude/meta-skill/skills/bootstrap/SKILL.md"],
     )
     json_path, md_path = write_reports(result, str(project / ".allforai/setup"))
 

@@ -1,8 +1,7 @@
 ---
 name: cross-exam
-disable-model-invocation: true
 argument-hint: [target]
-description: Evidence-backed completion cross-examination — Socratic question cards from leak points; the skill probes and screenshots the delivery itself, then renders a deterministic completion report. Audit-only (record, never fix), interactive-only (never unattended). Explicitly invoked via /cross-exam. Accepts user-declared journeys (who / circumstance / progress + oracle) and walks each one end-to-end with a fresh-context prober. Generic — works on any delivery, not only megastorm runs. Asks "is it really done"; /product-review asks "is it good for the user" and usually follows.
+description: Evidence-backed completion audit of a delivery, including user-declared journeys; records, never fixes. User-invoked only via /cross-exam; never invoke it yourself.
 ---
 
 # cross-exam — 实证完成度盘问

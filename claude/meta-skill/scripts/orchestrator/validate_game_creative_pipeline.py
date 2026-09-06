@@ -46,7 +46,7 @@ REQUIRED_CRITIQUE_TERMS = {
 
 # bootstrap.md plus the protocol files it delegates to; missing files are skipped.
 BOOTSTRAP_CORPUS = (
-    "claude/meta-skill/skills/bootstrap.md",
+    "claude/meta-skill/skills/bootstrap/SKILL.md",
     "claude/meta-skill/knowledge/bootstrap-planning.md",
     "claude/meta-skill/knowledge/bootstrap-art-pipeline.md",
     "claude/meta-skill/knowledge/capabilities/game-design.md",

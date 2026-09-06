@@ -5,7 +5,7 @@
 - `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/capabilities/concept-contract.md`
 - `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/capabilities/app-design.md`
 - `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/capabilities/game-design.md`
-- `/Users/aa/workspace/myskills/claude/meta-skill/skills/bootstrap.md`
+- `/Users/aa/workspace/myskills/claude/meta-skill/skills/bootstrap/SKILL.md`
 - `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/orchestrator-template.md`
 - `/Users/aa/workspace/myskills/claude/meta-skill/scripts/orchestrator/check_artifacts.py`
 

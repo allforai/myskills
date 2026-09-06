@@ -64,7 +64,7 @@ def validate_specialization_contracts(repo_root: str) -> list[str]:
     root = Path(repo_root)
     errors: list[str] = []
 
-    bootstrap = root / "claude/meta-skill/skills/bootstrap.md"
+    bootstrap = root / "claude/meta-skill/skills/bootstrap/SKILL.md"
     game_design = root / "claude/meta-skill/knowledge/capabilities/game-design.md"
     specialization = root / "claude/meta-skill/knowledge/domains/game-genre-specialization.md"
     skills_root = root / "claude/meta-skill/skills"

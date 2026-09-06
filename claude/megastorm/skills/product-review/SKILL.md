@@ -1,8 +1,7 @@
 ---
 name: product-review
 argument-hint: [target]
-description: Product-thinking critique of a shipped or running product. Names missing jobs, broken journeys, commercial UI/interaction gaps, and borrowable competitor positioning. Advice only — never edits product code. Explicitly invoked via /product-review. Same package as cross-exam; different protocol. Asks "is it good for the user's jobs"; /cross-exam asks "is it really done" and usually comes first.
-disable-model-invocation: true
+description: Product-thinking critique of a shipped product (missing jobs, broken journeys, competitor positioning); advice only. User-invoked only via /product-review; never invoke it yourself.
 ---
 
 # product-review — 产品思维审视
@@ -12,7 +11,7 @@ disable-model-invocation: true
 
 This file is the whole protocol. The lenses below are compressed from meta-skill's `product-design-theory.md` and `consumer-maturity-patterns.md`; nothing here requires those files to be installed.
 
-Not cross-exam. Do not read `skills/cross-exam.md`, do not write a completion ledger, do not use done/gap/drift/unprovable. If the user has not yet verified the delivery is complete, say once that `/cross-exam` does that and continue with this review.
+Not cross-exam. Do not read `skills/cross-exam/SKILL.md`, do not write a completion ledger, do not use done/gap/drift/unprovable. If the user has not yet verified the delivery is complete, say once that `/cross-exam` does that and continue with this review.
 
 ## Invariants
 

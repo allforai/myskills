@@ -4,7 +4,7 @@ exist on disk. Run after editing the skill or moving files (run-engine sync-chec
 import os
 import sys
 
-# The files skills/megastorm.md references via $ROOT/...
+# The files skills/megastorm/SKILL.md references via $ROOT/...
 REQUIRED = [
     "knowledge/execution-playbook.md",
     "knowledge/schemas.md",
@@ -17,9 +17,9 @@ REQUIRED = [
     "scripts/validate_plan_tasks.py",
     "scripts/build_task_dag.py",
     "scripts/check_closure.py",
-    "skills/megastorm.md",
-    # cross-exam (bundled skill) — files skills/cross-exam.md references via $ROOT/...
-    "skills/cross-exam.md",
+    "skills/megastorm/SKILL.md",
+    # cross-exam (bundled skill) — files skills/cross-exam/SKILL.md references via $ROOT/...
+    "skills/cross-exam/SKILL.md",
     "knowledge/cross-exam/lenses.md",
     "knowledge/cross-exam/prompts/prober.md",
     "knowledge/cross-exam/schemas.md",

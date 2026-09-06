@@ -647,7 +647,7 @@ not a game-design node
     )
     _write(
         tmp_path,
-        "claude/meta-skill/skills/bootstrap.md",
+        "claude/meta-skill/skills/bootstrap/SKILL.md",
         """**Art Concept Node Injection
 Game frontend handoff
 .allforai/game-design/design/program-development-node-handoff.json

@@ -9,10 +9,10 @@ from pathlib import Path
 
 ROOT = Path("claude/meta-skill")
 
-# skills/bootstrap.md rules apply to bootstrap.md plus the protocol files it
+# skills/bootstrap/SKILL.md rules apply to bootstrap.md plus the protocol files it
 # delegates to (ADR-0001). Missing files are skipped.
 BOOTSTRAP_CORPUS = (
-    "skills/bootstrap.md",
+    "skills/bootstrap/SKILL.md",
     "knowledge/bootstrap-planning.md",
     "knowledge/bootstrap-art-pipeline.md",
     "knowledge/bootstrap-audits.md",
@@ -23,14 +23,14 @@ BOOTSTRAP_CORPUS = (
 
 
 def _files(rel: str) -> list[Path]:
-    if rel == "skills/bootstrap.md":
+    if rel == "skills/bootstrap/SKILL.md":
         return [ROOT / r for r in BOOTSTRAP_CORPUS if (ROOT / r).exists()]
     path = ROOT / rel
     return [path] if path.exists() else []
 
 
 RULES = {
-    "skills/bootstrap.md": (
+    "skills/bootstrap/SKILL.md": (
         "Canvas2D",
         "canvas2d",
         "deviceScaleFactor",
@@ -88,7 +88,7 @@ RULES = {
 
 
 REQUIRED_GENERIC_TERMS = {
-    "skills/bootstrap.md": (
+    "skills/bootstrap/SKILL.md": (
         "screen archetype",
         "project-local criteria artifact",
         "project's concept, UI registry, art direction, scene flow, and runtime handoff",

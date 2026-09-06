@@ -1,8 +1,7 @@
 ---
 name: megastorm
-disable-model-invocation: true
 argument-hint: [goal]
-description: Drive a large goal end-to-end — decompose into modules, front-load all decisions via brainstorming, then autonomously design, validate, plan, reverse-review, orchestrate, concurrently execute, and independently verify. Explicitly invoked via /megastorm; heavy and token-intensive. Pick this for one large engineering goal with no product-design phase; /bootstrap + /run when the project needs product/experience/art design first; /grillstorm when design must go through Matt Pocock's official skills.
+description: Autonomous end-to-end delivery of one large engineering goal (front-loaded decisions, DAG, concurrent worktrees, independent verify). User-invoked only via /megastorm; never invoke it yourself.
 ---
 
 # Megastorm

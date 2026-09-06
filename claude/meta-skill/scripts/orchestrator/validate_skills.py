@@ -154,6 +154,9 @@ def _referenced_skill_paths(skill_root: Path) -> set[str]:
     return refs
 
 
+PUBLIC_SKILL_FILES = {"bootstrap/SKILL.md"}
+
+
 def validate_skill_tree(skill_root: str) -> list:
     root = Path(skill_root)
     errors = []
@@ -173,6 +176,12 @@ def validate_skill_tree(skill_root: str) -> list:
         rel = path.relative_to(root)
         rel_str = rel.as_posix()
         slug = rel_str.removesuffix("/SKILL.md")
+        if rel_str in PUBLIC_SKILL_FILES:
+            # The public /bootstrap entry must sit at skills/bootstrap/SKILL.md so the
+            # plugin loader registers it and the model sees it in its skill list (a flat
+            # skills/bootstrap.md never enters that list). Its frontmatter and user-only
+            # hook are checked by validate_meta_contracts.py; its JSON blocks are prose.
+            continue
         if len(rel.parts) == 2:
             errors.append(
                 f"{rel}: top-level pack must use PACK.md, not SKILL.md; only /setup, /bootstrap, and generated /run are public entrypoints"

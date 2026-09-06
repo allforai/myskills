@@ -12,24 +12,24 @@ def read(relative_path):
 
 class TestMegastormContract(unittest.TestCase):
     def test_progressive_disclosure_budget(self):
-        router = read("skills/megastorm.md")
+        router = read("skills/megastorm/SKILL.md")
         playbook = read("knowledge/execution-playbook.md")
         self.assertLessEqual(len(router.split()), 1000)
         self.assertLessEqual(len(playbook.split()), 2000)
 
     def test_router_references_normative_playbook(self):
-        router = read("skills/megastorm.md")
+        router = read("skills/megastorm/SKILL.md")
         self.assertIn("$ROOT/knowledge/execution-playbook.md", router)
         self.assertIn("follow it exactly", router)
 
     def test_skill_preserves_new_and_resume_entry_states(self):
-        command = read("skills/megastorm.md")
+        command = read("skills/megastorm/SKILL.md")
         self.assertIn("entry-state selection", command)
         self.assertIn("A new run", command)
         self.assertIn("existing valid run resumes", command)
 
     def test_failure_and_portability_rules_remain_explicit(self):
-        combined = read("skills/megastorm.md") + read("knowledge/execution-playbook.md")
+        combined = read("skills/megastorm/SKILL.md") + read("knowledge/execution-playbook.md")
         required = (
             "Never silently substitute",
             "vacuous:true",
@@ -42,7 +42,7 @@ class TestMegastormContract(unittest.TestCase):
             self.assertIn(phrase, combined)
 
     def test_decisions_cannot_bypass_durable_gateway(self):
-        combined = read("skills/megastorm.md") + read("knowledge/execution-playbook.md")
+        combined = read("skills/megastorm/SKILL.md") + read("knowledge/execution-playbook.md")
         required = (
             "decision_ledger.py record",
             "decision_ledger.py finalize",

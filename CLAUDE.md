@@ -13,7 +13,7 @@ myskills/
 ├── claude/                   # Claude Code platform
 │   ├── meta-skill/           # Unified meta-skill (replaces 6 static plugins)
 │   │   ├── .claude-plugin/   # Plugin + marketplace manifests
-│   │   ├── skills/           # bootstrap.md (project analysis + generation)
+│   │   ├── skills/           # bootstrap/SKILL.md (project analysis + generation)
 │   │   └── knowledge/        # Capability templates, orchestrator, protocols
 │   ├── megastorm/
 │   └── grillstorm/
@@ -53,7 +53,10 @@ claude/meta-skill/
 │   ├── plugin.json          # Plugin manifest
 │   └── marketplace.json     # Marketplace listing
 ├── skills/
-│   └── bootstrap.md         # Project analysis + node-spec generation
+│   └── bootstrap/SKILL.md   # Project analysis + node-spec generation
+├── hooks/
+│   ├── hooks.json           # PreToolUse Skill gate registration
+│   └── user-only-skills.sh  # Refuses model-side calls to /bootstrap and /setup
 ├── knowledge/
 │   ├── capabilities/        # 15 capability templates (discovery, translate, tune, etc.)
 │   ├── orchestrator-template.md  # Template for generating run.md
@@ -171,7 +174,7 @@ Claude plugins also keep a copy in their own `scripts/` directory (since `${CLAU
 
 ## Skill Development Conventions
 
-- **Skill files** (`skills/*.md`) use YAML frontmatter with `name:` and `description:` fields. The description is the trigger text that determines when Claude invokes the skill.
+- **Skill files** live at `skills/<name>/SKILL.md` and use YAML frontmatter with `name:` and `description:` fields. The description is the trigger text that determines when Claude invokes the skill. A flat `skills/<name>.md` still works as a user-typed `/name` but never enters the model's skill list, so do not use that layout.
 - **Command files** (`commands/*.md`) define slash commands. They support YAML frontmatter for arguments and can include `AskUserQuestion` patterns for interactive flows.
 - **`${CLAUDE_PLUGIN_ROOT}`** is the runtime variable resolving to the plugin's root directory. Use it in Claude skill files to reference sibling files.
 - Skills reference sub-documents with `> 详见 ${CLAUDE_PLUGIN_ROOT}/docs/xxx.md` — these are loaded on demand, not eagerly.
@@ -197,7 +200,7 @@ Product, implementation, demo, verify, and tune jobs are meta-skill capabilities
 
 ### Which entry for which situation
 
-Every entry below is user-invoked only (`disable-model-invocation: true`); never suggest or start one on the user's behalf.
+Every entry below is user-invoked only. Do **not** set `disable-model-invocation` on them: that drops the entry from the model's skill list entirely, and the user wants them listed. Instead each plugin ships `hooks/user-only-skills.sh`, a `PreToolUse` gate on the Skill tool that refuses model-side calls to these names; a user-typed `/name` is expanded by the CLI and never reaches the hook. Never start one yourself; if it fits, tell the user the command exists.
 
 | Situation | Entry | Why this one |
 |---|---|---|

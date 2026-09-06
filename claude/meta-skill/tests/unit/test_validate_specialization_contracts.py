@@ -24,7 +24,7 @@ def _minimal_repo(tmp_path):
     required_refs = _required_section_refs()
     _write(
         tmp_path,
-        "claude/meta-skill/skills/bootstrap.md",
+        "claude/meta-skill/skills/bootstrap/SKILL.md",
         f"""Read knowledge/domains/game-genre-specialization.md.
 Write project-local skills under .allforai/bootstrap/specialized-skills/.
 Each generated specialized skill must include:

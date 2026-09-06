@@ -1,15 +1,8 @@
 ---
 name: bootstrap
-disable-model-invocation: true
 argument-hint: [path]
-version: "0.13.0"
-description: >
-  Internal skill for /bootstrap command. Performs lightweight project analysis,
-  generates project-specific node-specs and workflow.json, validates products,
-  and writes to target project. Use when user runs /bootstrap. This is the
-  product pipeline (product concept, experience map, art, game design, verify
-  nodes on the .allforai/ data bus); a single engineering goal without that
-  design phase is /megastorm or /grillstorm instead.
+version: "0.14.0"
+description: Analyze the target project and generate its .allforai/ workflow (product concept, experience map, art, game design, verify nodes) for /run. User-invoked only via /bootstrap; never invoke it yourself.
 ---
 
 # Bootstrap Protocol v0.3.0
