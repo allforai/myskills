@@ -1,7 +1,7 @@
 {
   "name": "grillstorm",
   "description": "Orchestrates official Matt Pocock design skills, then delivers with reverse-grill gates, supervised concurrency, and post-delivery probe critique.",
-  "version": "0.24.0",
+  "version": "0.24.1",
   "author": {
     "name": "dv"
   },

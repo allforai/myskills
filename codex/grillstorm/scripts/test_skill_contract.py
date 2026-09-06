@@ -5,10 +5,15 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_skill_requires_explicit_command_invocation():
+    # Codex only recognises the Agent Skills frontmatter keys; the Claude-only
+    # disable-model-invocation key makes its validator warn and does nothing here.
+    # Explicit-only invocation on Codex is agents/openai.yaml policy.allow_implicit_invocation.
     skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
     frontmatter = skill.split("---", 2)[1]
-    assert "disable-model-invocation: true" in frontmatter
+    assert "disable-model-invocation" not in frontmatter
     assert "Use only when the user explicitly invokes $grillstorm" in frontmatter
+    manifest = (ROOT / "agents/openai.yaml").read_text(encoding="utf-8")
+    assert "allow_implicit_invocation: false" in manifest
 
 
 def test_upstream_grilling_frontier_rounds_and_diagnostic_redaction_are_preserved():
