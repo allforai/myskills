@@ -1,9 +1,31 @@
 import os
 import sys
 import time
+import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/orchestrator"))
 from check_artifacts import check_node_artifacts
+
+
+@pytest.mark.parametrize('content', ['{broken', '', 'NaN invalid'])
+def test_invalid_json_without_validator_rejected(tmp_path, content):
+    path = tmp_path / 'report.json'
+    path.write_text(content)
+    assert not check_node_artifacts(_make_node([str(path)]))['all_exist']
+
+
+def test_empty_artifact_list_and_directory_rejected(tmp_path):
+    assert not check_node_artifacts(_make_node([]))['all_exist']
+    assert not check_node_artifacts(_make_node([str(tmp_path)]))['all_exist']
+
+
+@pytest.mark.parametrize('content,passed', [('{"status":"passed","evidence":[]}', True),
+    ('{"status":"unknown","evidence":[]}', False), ('{"status":"passed"}', False), ('[]', False)])
+def test_explicit_report_contract(tmp_path, content, passed):
+    path = tmp_path / 'report.json'
+    path.write_text(content)
+    item = {'path':str(path), 'required_fields':['status','evidence'], 'accepted_statuses':['passed']}
+    assert check_node_artifacts(_make_node([item]))['all_exist'] is passed
 
 
 def _make_node(artifacts):

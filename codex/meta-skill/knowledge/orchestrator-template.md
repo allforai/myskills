@@ -40,6 +40,7 @@ python3 .allforai/bootstrap/scripts/validate_unattended_readiness.py . --write-r
 ```
 
 If the readiness command exits non-zero or `.allforai/bootstrap/unattended-run-readiness.json` has `status != "ready"`, stop immediately. Do not start partial execution and do not silently weaken validation. Report the blockers from `.allforai/bootstrap/unattended-run-readiness.md`.
+Missing scripts, missing/invalid readiness reports, and failed expanders also block execution.
 Before stopping, record `preflight_blocked` with `record_run_event.py`, then run `summarize_run_log.py --write-report`.
 
 ### Dynamic preflight reconciliation
@@ -56,13 +57,14 @@ Before every execution wave, run every idempotent expander declared by `workflow
    - prefer nodes whose `hard_blocked_by` nodes are complete
    - prefer nodes whose upstream artifacts already exist
    - parallelize only when exit artifacts do not overlap
-   - skip a node if its goal is already satisfied by current project state
+   - skip a node only when the same independent artifact gate passes on current project state
    - re-run a failed node only after addressing the cause
 5. Read `.allforai/bootstrap/node-specs/<node-id>.md`
 6. Dispatch execution using that node-spec as the task contract
 7. After the node reports success, independently run:
    `python3 .allforai/bootstrap/scripts/check_artifacts.py .allforai/bootstrap/workflow.json --node <node_id> --json`
    Non-empty production gaps, blocking status values, or `all_exist != true` cannot be recorded as complete.
+   Missing checker, nonzero exit, empty/invalid JSON, mismatched node identity or non-boolean success are failures, never implicit passes. Final bootstrap validation must also succeed before reporting the workflow complete.
 8. On success: append a completed transition entry to `workflow.json`
 9. On failure: append a failed transition entry, then read `.allforai/bootstrap/protocols/diagnosis.md`
 10. Repeat

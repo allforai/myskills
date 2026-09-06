@@ -9,6 +9,8 @@ while Codex-only runtime helpers live under `.allforai/codex/`.
 from __future__ import annotations
 
 import json
+import os
+import signal
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -177,7 +179,7 @@ def artifact_status_error(path: Path, project_root: Path | None = None) -> str |
     try:
         data = load_json(path)
     except Exception:
-        return None
+        return "invalid or unreadable JSON artifact"
     if not isinstance(data, dict):
         return None
     if not data:
@@ -260,7 +262,7 @@ def diagnosis_protocol_path(project_root: Path) -> Path:
 
 def first_pending_node(project_root: Path, workflow: dict) -> dict | None:
     for node in workflow.get("nodes", []):
-        if not all(artifact_ready(project_root, artifact_path(path)) for path in node.get("exit_artifacts", [])):
+        if not independent_artifact_gate(project_root, str(node.get("node_id") or node.get("id") or "")):
             return node
     return None
 
@@ -276,8 +278,17 @@ def append_transition_if_missing(
 ) -> None:
     workflow = load_json(workflow_path)
     transition_log = workflow.setdefault("transition_log", [])
-    if len(transition_log) > before_count:
-        return
+    # The supervisor owns the verdict; a worker's self-reported completion cannot
+    # conceal a failed gate or prevent the consecutive-failure stop condition.
+    for entry in transition_log[before_count:]:
+        if entry.get("node") == node_id:
+            entry.update(status=status, completed_at=now_iso(), artifacts_created=artifacts_created)
+            if error:
+                entry["error"] = error
+            else:
+                entry.pop("error", None)
+            save_json(workflow_path, workflow)
+            return
 
     entry = {
         "node": node_id,
@@ -350,11 +361,56 @@ def script_path(project_root: Path, name: str) -> Path:
     return project_root / ".allforai/bootstrap/scripts" / name
 
 
+def execution_policy(project_root: Path) -> dict:
+    path = project_root / ".allforai/codex/execution-policy.json"
+    policy = {"sandbox": "workspace-write", "node_timeout_seconds": 1800, "helper_timeout_seconds": 300}
+    if path.exists():
+        supplied = load_json(path)
+        if not isinstance(supplied, dict) or set(supplied) - set(policy):
+            raise ValueError("invalid execution-policy.json")
+        policy.update(supplied)
+    if policy["sandbox"] not in {"read-only", "workspace-write"}:
+        raise ValueError("unsupported sandbox: permission escalation must not be automatic")
+    for key in ("node_timeout_seconds", "helper_timeout_seconds"):
+        if type(policy[key]) is not int or not 1 <= policy[key] <= 86400:
+            raise ValueError(f"{key} must be an integer between 1 and 86400")
+    return policy
+
+
+def run_bounded(command: list[str], project_root: Path, timeout: int) -> subprocess.CompletedProcess[str]:
+    """Bound the whole subprocess group, including children of CLI/helper processes."""
+    try:
+        proc = subprocess.Popen(command, cwd=project_root, text=True, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, start_new_session=(os.name == "posix"))
+    except OSError as exc:
+        return subprocess.CompletedProcess(command, 127, "", str(exc))
+    def stop():
+        if os.name == "posix":
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        else:
+            proc.kill()
+    try:
+        out, err = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        stop()
+        out, err = proc.communicate()
+        return subprocess.CompletedProcess(command, 124, out, err + f"\nTimed out after {timeout}s")
+    except KeyboardInterrupt:
+        stop()
+        out, err = proc.communicate()
+        return subprocess.CompletedProcess(command, 130, out, err + "\nInterrupted by user")
+    return subprocess.CompletedProcess(command, proc.returncode, out, err)
+
+
 def run_script(project_root: Path, name: str, args: list[str]) -> subprocess.CompletedProcess[str] | None:
     path = script_path(project_root, name)
     if not path.exists():
         return None
-    return subprocess.run([sys.executable, str(path), *args], cwd=project_root, text=True, capture_output=True)
+    return run_bounded([sys.executable, str(path), *args], project_root,
+                       execution_policy(project_root)["helper_timeout_seconds"])
 
 
 def run_preflight(project_root: Path) -> int:
@@ -367,24 +423,27 @@ def run_preflight(project_root: Path) -> int:
             status = str(load_json(report).get("status") or "")
         except Exception:
             status = ""
-    if readiness is not None and readiness.returncode != 0:
+    if readiness is None or readiness.returncode != 0:
         run_script(project_root, "record_run_event.py", [".", "--event", "preflight_blocked", "--status", "blocked", "--message", "unattended readiness failed"])
         run_script(project_root, "summarize_run_log.py", [".", "--write-report"])
         return 6
-    if report.exists() and status and status != "ready":
+    if status != "ready":
         run_script(project_root, "record_run_event.py", [".", "--event", "preflight_blocked", "--status", "blocked", "--message", f"unattended readiness status={status}" ])
         run_script(project_root, "summarize_run_log.py", [".", "--write-report"])
         return 6
     return 0
 
 
-def run_expanders(project_root: Path, workflow: dict) -> None:
-    expanders = workflow.get("expanders") or ["expand_game_2d_production.py"]
+def run_expanders(project_root: Path, workflow: dict) -> bool:
+    expanders = workflow.get("expanders", ["expand_game_2d_production.py"])
     for expander in expanders:
         name = Path(str(expander)).name
         if not name.endswith(".py"):
-            continue
-        run_script(project_root, name, ["."])
+            return False
+        result = run_script(project_root, name, ["."])
+        if result is None or result.returncode != 0:
+            return False
+    return True
 
 
 def independent_artifact_gate(project_root: Path, node_id: str) -> bool:
@@ -393,23 +452,29 @@ def independent_artifact_gate(project_root: Path, node_id: str) -> bool:
         "check_artifacts.py",
         [str(project_root / ".allforai/bootstrap/workflow.json"), "--node", node_id, "--json"],
     )
-    if result is None or not result.stdout.strip():
-        return True
+    if result is None or result.returncode != 0 or not result.stdout.strip():
+        return False
     try:
         payload = json.loads(result.stdout)
     except Exception:
-        return result.returncode == 0
-    return bool(payload.get("all_exist"))
+        return False
+    return (isinstance(payload, dict) and payload.get("node_id") == node_id
+            and payload.get("all_exist") is True
+            and isinstance(payload.get("artifacts"), list) and bool(payload["artifacts"]))
 
 
-def run_post_checks(project_root: Path) -> None:
-    scripts = project_root / ".allforai/bootstrap/scripts"
+def run_post_checks(project_root: Path) -> bool:
     bootstrap_dir = project_root / ".allforai/bootstrap"
-    subprocess.run([sys.executable, str(scripts / "validate_bootstrap.py"), str(bootstrap_dir)], cwd=project_root, check=False)
+    result = run_script(project_root, "validate_bootstrap.py", [str(bootstrap_dir)])
+    if result is None or result.returncode != 0:
+        return False
     product_summary = bootstrap_dir / "product-summary.json"
     if product_summary.exists():
-        subprocess.run([sys.executable, str(scripts / "check_product_summary.py"), str(product_summary)], cwd=project_root, check=False)
+        result = run_script(project_root, "check_product_summary.py", [str(product_summary)])
+        if result is None or result.returncode != 0:
+            return False
     run_script(project_root, "summarize_run_log.py", [".", "--write-report"])
+    return True
 
 
 def goal_based_completion_required(project_root: Path) -> bool:
@@ -483,16 +548,18 @@ Requirements:
 
 
 def run_codex(project_root: Path, prompt: str) -> subprocess.CompletedProcess[str]:
+    policy = execution_policy(project_root)
     command = [
         "codex",
         "exec",
-        "--dangerously-bypass-approvals-and-sandbox",
+        "--sandbox", policy["sandbox"],
+        "-c", 'approval_policy="never"',
         "-C",
         str(project_root),
         "--skip-git-repo-check",
         prompt,
     ]
-    return subprocess.run(command, cwd=project_root, text=True, capture_output=True)
+    return run_bounded(command, project_root, policy["node_timeout_seconds"])
 
 
 def run_diagnosis(project_root: Path, node_id: str, attempt_count: int) -> subprocess.CompletedProcess[str]:
@@ -534,7 +601,9 @@ def main() -> int:
 
     for iteration in range(1, max_iterations + 1):
         workflow = load_json(workflow_path)
-        run_expanders(project_root, workflow)
+        if not run_expanders(project_root, workflow):
+            print(json.dumps({"passed": False, "done": False, "error": "workflow expander failed"}), file=sys.stderr)
+            return 6
         workflow = load_json(workflow_path)
         node = first_pending_node(project_root, workflow)
         if node is None:
@@ -552,11 +621,13 @@ def main() -> int:
                     file=sys.stderr,
                 )
                 return 5
-            run_post_checks(project_root)
+            if not workflow.get("nodes") or not run_post_checks(project_root):
+                print(json.dumps({"passed": False, "done": False, "error": "final validation failed"}), file=sys.stderr)
+                return 6
             print(json.dumps({"passed": True, "done": True, "iterations": iteration - 1}, indent=2, ensure_ascii=False))
             return 0
 
-        node_id = node["id"]
+        node_id = str(node.get("node_id") or node.get("id"))
         failure_count = count_consecutive_failures(workflow, node_id)
         if failure_count >= MAX_CONSECUTIVE_FAILURES_PER_NODE:
             diagnosis_path = diagnosis_protocol_path(project_root)
@@ -620,7 +691,7 @@ def main() -> int:
             if artifact_ready(project_root, artifact_path(path))
         ]
         gate_node_id = str(node.get("node_id") or node_id)
-        all_ready = len(artifacts_created) == len(node.get("exit_artifacts", [])) and independent_artifact_gate(
+        all_ready = result.returncode == 0 and independent_artifact_gate(
             project_root, gate_node_id
         )
 
@@ -664,6 +735,10 @@ def main() -> int:
             "returncode": result.returncode,
             "all_exit_artifacts_ready": all_ready,
         }, ensure_ascii=False))
+        if result.returncode in {124, 130}:
+            print(json.dumps({"passed": False, "done": False, "node": node_id,
+                              "error": "execution timed out or was interrupted; revalidate on resume"}), file=sys.stderr)
+            return result.returncode
 
     print(json.dumps({
         "passed": False,

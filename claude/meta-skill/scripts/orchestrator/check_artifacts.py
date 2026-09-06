@@ -160,8 +160,8 @@ def _artifact_status_error(path: str, project_root: Path | None = None) -> dict 
     try:
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
-    except Exception:
-        return None
+    except Exception as exc:
+        return {"field": "$", "value": None, "reason": "invalid or unreadable JSON artifact: " + str(exc)}
     if not isinstance(data, dict):
         return None
     if not data:
@@ -304,19 +304,37 @@ def check_node_artifacts(node: dict, project_root: Path | None = None) -> dict:
             path = item
             validation_commands = []
         resolved_path = _resolve_path(path, project_root)
-        entry = {"path": path, "exists": os.path.exists(resolved_path)}
+        entry = {"path": path, "exists": os.path.isfile(resolved_path)}
         if entry["exists"]:
             status_error = _artifact_status_error(resolved_path, project_root)
             if status_error:
                 entry["status_error"] = status_error
+            if isinstance(item, dict) and (item.get("required_fields") or item.get("accepted_statuses")):
+                try:
+                    with open(resolved_path, encoding="utf-8") as handle:
+                        data = json.load(handle)
+                    if not isinstance(data, dict):
+                        raise ValueError("report must be a JSON object")
+                    if any(key not in data for key in item.get("required_fields", [])):
+                        raise ValueError("report missing required fields")
+                    allowed = item.get("accepted_statuses")
+                    if allowed and data.get("status") not in allowed:
+                        raise ValueError("report status is not explicitly accepted")
+                except (ValueError, TypeError, OSError) as exc:
+                    entry["status_error"] = {"field": "$", "reason": str(exc)}
         if validation_commands and entry["exists"]:
             for cmd in validation_commands:
-                proc = subprocess.run(
-                    cmd,
-                    shell=True,
-                    capture_output=True,
-                    cwd=str(project_root) if project_root else None,
-                )
+                try:
+                    proc = subprocess.run(
+                        cmd,
+                        shell=True,
+                        capture_output=True,
+                        cwd=str(project_root) if project_root else None,
+                        timeout=300,
+                    )
+                except (subprocess.TimeoutExpired, OSError) as exc:
+                    entry["validation_error"] = {"command": cmd, "stderr": str(exc)}
+                    break
                 if proc.returncode != 0:
                     entry["validation_error"] = {
                         "command": cmd,
@@ -327,7 +345,7 @@ def check_node_artifacts(node: dict, project_root: Path | None = None) -> dict:
     return {
         "node_id": node_id,
         "goal": node.get("goal", ""),
-        "all_exist": all(
+        "all_exist": bool(results) and all(
             r["exists"] and "validation_error" not in r and "status_error" not in r
             for r in results
         ),

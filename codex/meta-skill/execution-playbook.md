@@ -50,4 +50,30 @@ It must:
 9. If the same node fails 3 times, stop retries, read `.allforai/bootstrap/protocols/diagnosis.md`, and record `diagnosis_history`.
 10. If 5 consecutive transitions produce no new artifacts, stop and report stagnation instead of looping forever.
 
+### Execution policy and recovery
+
+The generated driver defaults to `workspace-write` with approvals disabled (requests requiring
+more permission fail; they are not auto-approved). It never uses the bypass flag. If a task
+needs more access, stop and ask the user to choose an appropriately isolated environment.
+Do not broaden permissions in response to a failed node.
+
+Optional `.allforai/codex/execution-policy.json` accepts only:
+
+```json
+{"sandbox": "workspace-write", "node_timeout_seconds": 1800, "helper_timeout_seconds": 300}
+```
+
+`sandbox` may also be `read-only`; timeouts must be integers from 1 to 86400 seconds.
+Bootstrap should record user-selected overrides, not silently infer them. A timeout terminates
+the subprocess group on POSIX, records a failed attempt and stops the driver. Ctrl-C terminates the active group and stops as well;
+rerun the driver to revalidate existing artifacts before resuming. Validators must be repeatable
+and non-mutating: resume runs the same completion gate as initial execution.
+Missing checkers, failed/invalid checker output, missing readiness evidence, failed expanders,
+and failed final checks block completion. Worker self-reported success never overrides the gate.
+
+For JSON completion reports, declare `required_fields` and `accepted_statuses` on the
+`exit_artifacts` object (for example `["status", "evidence"]` and `["passed"]`). Domain data
+files need not invent a status field; use a domain validator in `validation_commands` instead.
+Malformed JSON is always rejected. Validation commands have a 300-second per-command timeout.
+
 `state-machine.json` is not the primary contract. It may only be read for backward compatibility while older bootstrap outputs still exist.

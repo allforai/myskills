@@ -15,7 +15,7 @@ Resolve the canonical meta-skill root in this order:
 1. `../../claude/meta-skill/` from the Codex plugin root (source checkout)
 2. `./canonical/` from the Codex plugin root (standalone installed snapshot)
 
-Read `<canonical-root>/skills/bootstrap.md` in full.
+Read `<canonical-root>/skills/bootstrap/SKILL.md` in full.
 
 Use that protocol in full, but apply the Codex-specific substitutions below.
 
@@ -146,7 +146,7 @@ Goal-completion rule:
 Generation rule:
 
 - materialize `../knowledge/flow-template.py` into `.allforai/codex/flow.py`
-- the generated file must invoke `codex exec --dangerously-bypass-approvals-and-sandbox`
+- the generated file must use the bounded execution policy in `../knowledge/flow-template.py`: default `workspace-write`, no automatic permission escalation, configurable finite timeouts; see `../execution-playbook.md`
 - it should work with zero arguments by default
 - it may accept legacy positional arguments `<goal> <max_iterations>` for compatibility, but must not require them
 - when no goal argument is provided, it should default to the captured bootstrap task goal from `.allforai/bootstrap/bootstrap-profile.json`

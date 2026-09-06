@@ -591,11 +591,12 @@ If total nodes > 30, offer phased `/bootstrap` → `/run` cycles in Step 3.4.
   game nodes. Such nodes are complete only when their effect verification also
   passes and the result is written into an exit artifact.
   Each entry has:
-  - `path`: Project-relative file path. Node is complete when this file exists.
+  - `path`: Project-relative file path. The file must exist and pass its completion checks.
   - `validation_commands` (optional): Shell commands that must exit 0 after the file exists.
     Use for format checks beyond mere existence (e.g., `python3 -c "import json,sys; json.load(open('file.json'))"` for JSON validity,
     `grep -q '"status": "final"' file.json` for specific field checks).
-    Empty array = existence check only. Bootstrap should populate these for JSON output files.
+    Empty array skips external commands, not built-in JSON and status checks. Bootstrap should populate these for JSON output files.
+  - `required_fields` and `accepted_statuses` (optional): For JSON completion reports, declare required top-level fields and accepted values of `status` (for example `["status", "evidence"]` and `["passed"]`). Use domain validation commands for data artifacts that have no status field. Malformed JSON is always invalid; an empty exit-artifact list cannot prove node completion. Validation commands must be repeatable, non-mutating, and finish within 300 seconds.
   
   **Shorthand:** Bootstrap may also use the string form `"<path>"` for artifacts with no
   validation_commands. check_artifacts.py accepts both forms.
@@ -808,5 +809,3 @@ Bootstrap 完成。
 ```
 
 ---
-
-

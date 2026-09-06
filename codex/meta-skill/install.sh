@@ -27,6 +27,10 @@ if [ ! -d "$CANONICAL_SOURCE/skills" ] || [ ! -d "$CANONICAL_SOURCE/knowledge" ]
   echo "Run this installer from a complete myskills source checkout." >&2
   exit 1
 fi
+if [ ! -f "$CANONICAL_SOURCE/skills/bootstrap/SKILL.md" ]; then
+  echo "ERROR: canonical bootstrap entry is missing" >&2
+  exit 1
+fi
 
 case "$INSTALL_DIR" in
   ""|/|"$HOME"|"$SCRIPT_DIR")
