@@ -34,8 +34,7 @@ if [ -f "$SCRIPT_DIR/grillstorm/SKILL.md" ]; then
   echo "Linked grillstorm -> $CODEX_SKILLS/grillstorm"
 fi
 if [ -f "$SCRIPT_DIR/meta-skill/SKILL.md" ]; then
-  ln -sfn "$SCRIPT_DIR/meta-skill" "$CODEX_SKILLS/meta-skill"
-  echo "Linked meta-skill -> $CODEX_SKILLS/meta-skill"
+  MYSKILLS_CODEX_INSTALL_DIR="$CODEX_SKILLS/meta-skill" bash "$SCRIPT_DIR/meta-skill/install.sh"
 fi
 
 echo ""

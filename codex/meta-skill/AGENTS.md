@@ -47,6 +47,10 @@ the canonical root is `../../claude/meta-skill/`; a standalone installation carr
 same semantic source under `./canonical/`. Platform-specific behavior is handled by
 Codex-local wrapper files in this directory.
 
+Installation separates discovery from payload: `skills/meta-skill/` contains one routing
+entry; `skill-bundles/meta-skill/` contains this adapter and canonical assets. The router
+sets the bundle root for all relative paths. Never link the full bundle back into `skills/`.
+
 ## Codex-Only Extensions
 
 Codex may carry local specialization guidance without forcing the same change onto other platforms.

@@ -7,10 +7,10 @@ description: >
   node-specs, .allforai/bootstrap/workflow.json, and .codex/commands/run.md. For one large
   engineering goal without a product-design phase, use superstorm or grillstorm instead.
 metadata:
-  version: "0.13.0-codex.1"
+  version: "0.14.2-codex.1"
 ---
 
-# Meta-Skill v0.13.0-codex.1
+# Meta-Skill v0.14.2-codex.1
 
 > Unified workflow generator for Codex: bootstrap a project once, then execute the generated run entry.
 > User-invoked only. Do not start bootstrap implicitly; the user must invoke `$meta-skill` or explicitly ask to bootstrap the project.
@@ -59,9 +59,11 @@ The Codex adapter reuses the Claude meta-skill as its canonical semantic source:
 - `./tests/` -> prompts, expected outputs, and fixtures
 - `./mcp-ai-gateway/` -> MCP-backed optional capability gateway
 
-The installer materializes canonical `skills/` and `knowledge/` into the snapshot so the
-skill remains usable without the source repository. Platform-specific behavior remains in
-Codex-local files.
+The installer puts this full bundle under `$CODEX_HOME/skill-bundles/meta-skill/` and
+only a routing SKILL.md plus the original agents metadata under `$CODEX_HOME/skills/meta-skill/`.
+The router supplies the bundle root; all paths above resolve inside that root.
+Canonical `skills/` and `knowledge/` stay intact in the bundle, usable without the source
+repository and without registering internal capabilities as independent Codex skills.
 
 ## Codex-Specific Specialization
 

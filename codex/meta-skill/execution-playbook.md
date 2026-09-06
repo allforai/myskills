@@ -1,5 +1,20 @@
 # Meta-Skill Execution Playbook (Codex)
 
+## Installation layout
+
+Run `bash codex/meta-skill/install.sh` from a complete checkout downloaded from the desired
+remote revision. `codex/install.sh` delegates to the same installer for meta-skill.
+Only the lightweight entry and unchanged invocation metadata go under `skills/meta-skill/`;
+the complete standalone payload goes under the sibling `skill-bundles/meta-skill/`.
+Do not install the whole adapter with a generic recursive skill copy or symlink.
+
+`MYSKILLS_CODEX_INSTALL_DIR` overrides the entry location (leaf must be `meta-skill`).
+`MYSKILLS_CODEX_BUNDLE_DIR` optionally overrides the payload location (under `skill-bundles`,
+outside skill discovery roots). Defaults follow `CODEX_HOME`. Existing directory installs
+and source symlinks migrate automatically; source symlink targets are never removed.
+The installer builds and validates a staged payload before replacement, restores the old
+installation on promotion failure, and removes obsolete files after successful replacement.
+
 ## Bootstrap
 
 1. Capture the concrete task goal for this bootstrap run.

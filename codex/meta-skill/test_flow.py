@@ -146,12 +146,16 @@ def test_standalone_installer_keeps_canonical_entry(tmp_path):
     (adapter / 'skills').mkdir()
     (canonical / 'skills/bootstrap').mkdir(parents=True)
     (canonical / 'knowledge').mkdir()
-    for relative in ('install.sh', 'knowledge/flow-template.py', 'skills/bootstrap.md'):
+    for relative in ('install.sh', 'install_bundle.py', 'SKILL.md', 'AGENTS.md', 'knowledge/flow-template.py', 'skills/bootstrap.md'):
         shutil.copyfile(ROOT / relative, adapter / relative)
     (canonical / 'skills/bootstrap/SKILL.md').write_text('canonical test entry')
     target = tmp_path / 'installed/meta-skill'
+    bundle = tmp_path / 'skill-bundles/meta-skill'
     result = subprocess.run(['bash', str(adapter / 'install.sh')], capture_output=True, text=True,
-        env={**os.environ, 'MYSKILLS_CODEX_INSTALL_DIR':str(target), 'SOURCE_COMMIT':'fixture'})
+        env={**os.environ, 'MYSKILLS_CODEX_INSTALL_DIR':str(target),
+             'MYSKILLS_CODEX_BUNDLE_DIR':str(bundle), 'SOURCE_COMMIT':'fixture'})
     assert result.returncode == 0, result.stderr
-    assert (target / 'canonical/skills/bootstrap/SKILL.md').read_text() == 'canonical test entry'
+    assert (bundle / 'canonical/skills/bootstrap/SKILL.md').read_text() == 'canonical test entry'
+    assert list(target.rglob('SKILL.md')) == [target / 'SKILL.md']
+    assert str(bundle) in (target / 'SKILL.md').read_text()
     assert not any(p.is_symlink() for p in target.rglob('*'))

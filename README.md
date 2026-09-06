@@ -62,10 +62,14 @@ claude plugin install superstorm@superstorm
 
 ### Codex
 
-Codex 从 `$CODEX_HOME/skills/`（默认 `~/.codex/skills/`）发现带 `SKILL.md` 的目录。把本仓对应 skill 链进去即可：
+Codex 从 `$CODEX_HOME/skills/`（默认 `~/.codex/skills/`）发现带 `SKILL.md` 的目录。
+从远程获取完整仓库后运行 `bash codex/meta-skill/install.sh` 安装 meta-skill，
+或用 `bash codex/install.sh` 安装整套入口。不要把整个 meta-skill 目录链接或复制进扫描目录：
+其内部能力库含大量 `SKILL.md`，会被误注册为独立 Skill。
 
 ```text
-~/.codex/skills/meta-skill   →  myskills/codex/meta-skill
+~/.codex/skills/meta-skill/       # 仅轻量入口和调用策略
+~/.codex/skill-bundles/meta-skill/ # 完整远程安装包，按需读取
 ~/.codex/skills/superstorm    →  myskills/codex/superstorm-skill
 ~/.codex/skills/cross-exam   →  myskills/codex/cross-exam-skill
 ~/.codex/skills/grillstorm   →  myskills/codex/grillstorm
