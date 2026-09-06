@@ -15,6 +15,9 @@ def expand(surfaces):
         if sid in seen:
             raise ValueError('duplicate surface: ' + sid)
         seen.add(sid)
+        groups = surface.get('groups', [])
+        if not isinstance(groups, list) or any(not isinstance(g, str) or not g for g in groups) or len(set(groups)) != len(groups):
+            raise ValueError('invalid comparison groups: ' + sid)
         axes = surface['axes']
         for axis in AXES:
             values = axes.get(axis)
@@ -27,7 +30,8 @@ def expand(surfaces):
             identity = json.dumps({'surface': sid, **row}, sort_keys=True, ensure_ascii=False)
             case_id = 'V-' + hashlib.sha256(identity.encode()).hexdigest()
             cases.append({'id': case_id, 'surface': sid, **row,
-                          'motion': row['state'] in surface.get('motion_states', [])})
+                          'motion': row['state'] in surface.get('motion_states', []),
+                          'groups': sorted(groups)})
     return cases
 
 

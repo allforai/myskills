@@ -50,3 +50,14 @@
 - 缺口 3：新增 `platforms/web.md`，定义七个维度对浏览器的取值（视口加 DPR、引擎加主版本、prefers-color-scheme、缩放或根字号、语言、方向、状态）、施加后在页面内核对生效、普查路由与弹层、并发与副作用约束；协议首段指向它；自检清单加入。
 
 验证：`smoke_swiftui.py` 真跑一次，选中 iOS 26.5 加 iPhone 17e，8 张 1170x2532 PNG 全部可解码，临时模拟器已删。复测 V14：ui_surfaces、七维取值、生效核对都直接引到 web.md 原句；剩下唯一要推断的是 dev server 怎么起，这是设计如此（"从工程已有命令确定"）。
+
+## 第三批：外部意见四条（2026-09-06，未提交）
+
+采纳方式与结果：
+
+1. 录屏证据门槛：manifest 的 motion capture 必含 `recording`（非空、非帧文件）与 `recording_digest`，缺一拒渲；report 加 `inspected_recordings` / `recording_unreadable`；所有 reviewer 都没审阅录屏时含 motion 用例的 entry 不能判 done（gap 可，unprovable 拆单独 entry）。"静态与动态区分"不另加，用例本就按 `motion` 分行。测试 `test_dynamic_frames` 扩到 13 个参数。
+2. 跨页一致性：inventory 的 surface 可标 `groups`，矩阵行透传（不改用例 id）；校验器 `split_groups()` 要求同组同环境（除 state 外六维相同）的用例在同一条 entry；reviewer 同组并排、按组报告。测试 `test_comparison_group_must_not_be_split_across_entries`、`test_groups_pass_through_and_do_not_change_ids`。
+3. 维度级不适用：不加新结构，修法相反——维度永远取具体值（桌面 orientation 取 `landscape`，不响应缩放取 `zoom 100%`），依据记在 environment 类；整条用例的 not_applicable 只留给组合不可能存在的情况。web.md 改写。
+4. Web 构建标识：commit 加工作树快照摘要（`git diff HEAD` 与未跟踪文件内容的 SHA-256），有产物再加 dist 摘要；采集前后各算一次，不一致该批作废。web.md 改写，校验器只比字符串相等无需改。
+
+思维测试：W1 比较组分批（按页面拆批被拒，About 无组不受约束，reviewer 同组并排）通过；W2 reviewer 读不了 .mov（写 recording_unreadable、不宣称节奏正常）通过，并由此发现校验器原本允许无人审阅录屏的 motion entry 判 done，已收紧。

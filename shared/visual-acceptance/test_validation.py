@@ -165,7 +165,9 @@ def test_frozen_matrix_itself_cannot_drop_a_surface(sample):
     assert '未覆盖完整页面清单' in visual_reason(entry, ledger, root)
 
 
-@pytest.mark.parametrize('bad', ['repeated_path', 'same_pixels', 'reencoded_pixels', 'missing_time', 'reversed_time', 'nan_time', 'negative_time', None])
+@pytest.mark.parametrize('bad', ['repeated_path', 'same_pixels', 'reencoded_pixels', 'missing_time', 'reversed_time', 'nan_time', 'negative_time',
+                                 'missing_recording', 'recording_digest', 'recording_is_frame', 'reviewer_skipped_recording',
+                                 'reviewer_unreadable_done', 'reviewer_unreadable_gap', None])
 def test_dynamic_frames(sample, bad):
     root, write, cfg, case, report, entry, ledger = sample
     inv = json.loads((root / cfg['inventory_ref']).read_text())
@@ -182,13 +184,30 @@ def test_dynamic_frames(sample, bad):
     if bad == 'negative_time': cap['frame_times_ms'] = [-100, 0]
     for key in ('matrix_digest','inventory_digest'):
         cap[key] = report[key] = cfg[key]
+    clip = root / 'evidence/q1/clip.mov'
+    clip.write_bytes(b'not really a movie but non-empty')
+    cap['recording'] = 'q1/clip.mov'
+    cap['recording_digest'] = hashlib.sha256(clip.read_bytes()).hexdigest()
+    if bad == 'missing_recording': del cap['recording']
+    if bad == 'recording_digest': cap['recording_digest'] = 'f' * 64
+    if bad == 'recording_is_frame': cap['recording'] = 'q1/frame2.png'
     report['inspected_images'] = cap['images']
     report['image_digests'] = cap['image_digests']
+    unreadable = bad in {'reviewer_unreadable_done', 'reviewer_unreadable_gap'}
+    report['inspected_recordings'] = [] if bad == 'reviewer_skipped_recording' or unreadable else ['q1/clip.mov']
+    if unreadable: report['recording_unreadable'] = 'codex exec 无视频读取工具，只审了帧序列'
+    if bad == 'reviewer_unreadable_gap':
+        report['status'] = 'findings'
+        report['findings'] = [{'id': 'M1', 'severity': 'medium', 'rule': 'motion', 'observation': '帧 2 与帧 3 之间 Sheet 位置跳变', 'images': ['q1/frame2.png']}]
+        entry['verdict'] = 'gap'
     write('evidence/q1/manifest.json', {'captures':[cap]})
     write('evidence/q1/review.json', report)
     reason = visual_reason(entry, ledger, root)
-    if bad: assert reason and ('动态' in reason or '重复截图' in reason)
-    else: assert reason is None
+    if bad in {None, 'reviewer_unreadable_gap'}: assert reason is None
+    elif bad == 'reviewer_unreadable_done': assert reason and '录屏无人审阅' in reason
+    elif bad in {'missing_recording', 'recording_digest', 'recording_is_frame'}: assert reason and '录屏' in reason
+    elif bad == 'reviewer_skipped_recording': assert reason and '未审阅录屏' in reason
+    else: assert reason and ('动态' in reason or '重复截图' in reason)
 
 
 def test_renderer_rejects_visual_done_without_images(sample):
@@ -344,3 +363,35 @@ def test_verified_images_are_decoded_once_per_content(sample, monkeypatch):
     Image.new('RGB', (16, 16), 'blue').save(image)
     assert image_digest(image) != first
     assert len(opened) == 4
+
+
+def test_comparison_group_must_not_be_split_across_entries(sample):
+    root, write, cfg, _, report, entry, ledger = sample
+    axes = {a: ['default'] for a in AXES}
+    inventory = {'surfaces': [{'id': 'home', 'axes': axes, 'groups': ['buttons']},
+                              {'id': 'settings', 'axes': axes, 'groups': ['buttons']},
+                              {'id': 'about', 'axes': axes}]}
+    cases = expand(inventory['surfaces'])
+    cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
+    cfg['matrix_digest'] = write(cfg['matrix_ref'], cases)
+    ledger['visual_cases'] = cases
+    bound = {k: cfg[k] for k in ('build', 'baseline_digest', 'interaction_digest', 'inventory_digest', 'matrix_digest')}
+    home, settings, about = cases
+    shot = root / 'evidence/q1/settings.png'
+    Image.new('RGB', (16, 16), 'green').save(shot)
+    hashes = {'q1/image.png': report['image_digests']['q1/image.png'],
+              'q1/settings.png': hashlib.sha256(shot.read_bytes()).hexdigest()}
+    write('evidence/q1/manifest.json', {'captures': [
+        {**home, 'case_id': home['id'], **bound, 'captured_at': 'now', 'images': ['q1/image.png'],
+         'image_digests': {'q1/image.png': hashes['q1/image.png']}},
+        {**settings, 'case_id': settings['id'], **bound, 'captured_at': 'now', 'images': ['q1/settings.png'],
+         'image_digests': {'q1/settings.png': hashes['q1/settings.png']}},
+        {**about, 'case_id': about['id'], **bound, 'captured_at': 'now', 'images': ['q1/image.png'],
+         'image_digests': {'q1/image.png': hashes['q1/image.png']}}]})
+    write('evidence/q1/review.json', {**report, **bound, 'inspected_images': list(hashes), 'image_digests': hashes})
+    alone = {**entry, 'visual_case_ids': [home['id']], 'verdict': 'done'}
+    assert '比较组被拆开' in visual_reason(alone, ledger, root) and 'settings' in visual_reason(alone, ledger, root)
+    together = {**entry, 'visual_case_ids': [home['id'], settings['id']], 'verdict': 'done'}
+    assert visual_reason(together, ledger, root) is None
+    ungrouped = {**entry, 'visual_case_ids': [about['id']], 'verdict': 'done'}
+    assert visual_reason(ungrouped, ledger, root) is None

@@ -8,11 +8,13 @@
 - device：视口宽高加设备像素比，如 `1440x900@2`、`390x844@3`；不写"桌面"或"所有手机"。
 - os：浏览器引擎与主版本，如 `Chromium 131`、`WebKit 18`；同一引擎不同版本按用户确认是否分列。
 - appearance：`prefers-color-scheme` 的 light / dark，另加站点自身主题开关的值（如果有）。
-- dynamic_type：浏览器缩放或根字号，如 `zoom 100%`、`zoom 150%`、`font-size 20px`；桌面站点不支持时写 not_applicable 并给出 basis（例如 CSS 未使用 rem/em）。
+- dynamic_type：浏览器缩放或根字号，如 `zoom 100%`、`zoom 150%`、`font-size 20px`；站点不响应缩放时取单一值 `zoom 100%`，依据（例如 CSS 未使用 rem/em）记在 environment 类的确认里。
 - locale：浏览器语言加站点语言开关的值。
-- orientation：`landscape` / `portrait`，只对移动视口有意义；桌面视口写 not_applicable，basis 写视口尺寸。
+- orientation：`landscape` / `portrait`；桌面视口取单一值 `landscape`，依据记在 environment 类的确认里。
 - state：加载、空、错误、权限拒绝、离线、键盘弹出（移动）等，按页面归入。
+
+维度没有"不适用"：每个维度都是非空的具体值列表，某维度对该产品无意义就取一个值并记依据。整条用例的 applicability: not_applicable 只留给组合本身不可能存在的情况（如某页面在某设备上根本不可达），须有 reason 与 basis。
 
 施加与核对：优先本机可见窗口工具或页面自动化工具（Playwright MCP、Chrome DevTools MCP、playwright-cli），用它们的 resize / emulate / 颜色方案 / locale 接口设置维度，然后在页面里核对真正生效（`window.innerWidth`、`matchMedia('(prefers-color-scheme: dark)')`、`document.documentElement.lang`、计算后的根字号），核对结果写进 capture。无法施加的维度记无法自证，不凭截图元数据补。截图取全页或视口，按用例记录；motion 用录屏或按时间戳抓帧，静态截图不证明动画。
 
-只操作本地/开发实例；写请求造成的副作用限于该实例。测试数据优先用已有合成数据；页面含真实敏感数据时停该项并交用户处理。同一浏览器上下文一次只由一个 prober 操作，独立上下文才可并发。构建标识用当前 commit 加 dirty 状态，dev server 热更新期间不采集。
+只操作本地/开发实例；写请求造成的副作用限于该实例。测试数据优先用已有合成数据；页面含真实敏感数据时停该项并交用户处理。同一浏览器上下文一次只由一个 prober 操作，独立上下文才可并发。构建标识 = commit 加工作树快照摘要（`git diff HEAD` 输出与全部未跟踪文件内容合并后的 SHA-256），有构建产物时再加 dist 目录摘要；同一提交上两次不同的未提交修改必须得到不同的 build，只写 commit 加 dirty 不够。dev server 热更新期间不采集，采集前后各算一次快照摘要，不一致则该批作废。

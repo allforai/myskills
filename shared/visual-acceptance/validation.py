@@ -133,6 +133,22 @@ def baseline(run, config):
     return references
 
 
+ENV_AXES = tuple(a for a in AXES if a != 'state')
+
+
+def split_groups(cases, ids):
+    """Cases sharing a comparison group in the same environment must be judged in one entry, or nobody compared them."""
+    chosen = [cases[i] for i in ids]
+    for case in chosen:
+        for group in case.get('groups') or []:
+            env = tuple(case.get(a) for a in ENV_AXES)
+            peers = [c for c in cases.values() if group in (c.get('groups') or [])
+                     and tuple(c.get(a) for a in ENV_AXES) == env and c.get('id') not in ids]
+            if peers:
+                return group + ' 缺 ' + ', '.join(sorted(p.get('surface', '?') for p in peers))
+    return ''
+
+
 def _visual_facets(config):
     facets = config.get('facet_ids') or []
     return facets if isinstance(facets, list) else [facets]
@@ -165,6 +181,7 @@ def visual_reason(entry, ledger, run):
         manifest = read(evidence, entry.get('evidence_manifest'))
         images = set()
         image_hashes = {}
+        recordings = {}
         captures = {c['case_id']: c for c in manifest['captures']}
         if len(captures) != len(manifest['captures']):
             raise ValueError('截图用例 id 重复')
@@ -195,6 +212,18 @@ def visual_reason(entry, ledger, run):
                         or any(a >= b for a, b in zip(times, times[1:]))
                         or len({frame_digest(artifact(evidence, r)) for r in refs}) < 2):
                     raise ValueError('动态证据缺有效时序或不同帧内容')
+                clip = capture.get('recording')
+                if not clip or clip in refs:
+                    raise ValueError('动态用例缺录屏: ' + cid)
+                clip_path = artifact(evidence, clip)
+                if clip_path.stat().st_size == 0:
+                    raise ValueError('动态用例缺录屏: ' + cid)
+                if capture.get('recording_digest') != digest(clip_path):
+                    raise ValueError('录屏摘要不匹配: ' + cid)
+                recordings[clip] = capture['recording_digest']
+        peers_missing = split_groups(cases, ids)
+        if peers_missing:
+            raise ValueError('比较组被拆开，同组同环境用例须同批: ' + peers_missing)
         reports = [read(evidence, p) for p in entry.get('review_reports', [])]
         mode = entry.get('review_mode', config.get('review_mode'))
         locked = config.get('review_mode')
@@ -210,6 +239,7 @@ def visual_reason(entry, ledger, run):
                     not all(a.get('reason') and a.get('attempted_at') for a in failure['attempts'])):
                 raise ValueError('降级缺两次实际失败记录')
         platforms, sessions, blocking = set(), set(), set()
+        recordings_reviewed = False
         for report in reports:
             bindings(report, config)
             if any(report.get('image_digests', {}).get(r) != h for r, h in image_hashes.items()):
@@ -224,6 +254,11 @@ def visual_reason(entry, ledger, run):
                 raise ValueError('reviewer 使用过期基线')
             if not images <= set(report.get('inspected_images', [])):
                 raise ValueError('reviewer 未检查全部原图')
+            if recordings and set(recordings) <= set(report.get('inspected_recordings') or []):
+                recordings_reviewed = True
+            elif recordings:
+                if not (isinstance(report.get('recording_unreadable'), str) and report['recording_unreadable'].strip()):
+                    raise ValueError('reviewer 未审阅录屏也未说明无法读取')
             if report.get('status') not in {'passed', 'findings'}:
                 raise ValueError('reviewer 未完成')
             inspected = set(report.get('inspected_images', []))
@@ -250,6 +285,8 @@ def visual_reason(entry, ledger, run):
                 raise ValueError('缺双审分歧记录')
         if blocking and entry.get('verdict') == 'done':
             raise ValueError('存在未解决阻断发现')
+        if recordings and not recordings_reviewed and entry.get('verdict') == 'done':
+            raise ValueError('录屏无人审阅，动态用例不能判 done')
     except (ValueError, KeyError, TypeError, AttributeError, IndexError, OSError) as exc:
         return '视觉证据无效: ' + str(exc)
     return None
