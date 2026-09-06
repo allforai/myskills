@@ -6,11 +6,16 @@
 ## 输入合同
 
 ```json
-{"target": {"root": "...", "how_to_run": "...", "type": "web|cli|api"},
+{"target": {"root": "...", "how_to_run": "...", "type": "web|cli|api|native"},
  "scope": "整个交付 | 某个子系统的一句话描述"}
 ```
 
 ## 纪律
+
+UI 目标（type 为 web 或 native，即有人类会看的界面）：额外返回 ui_surfaces，每项含稳定 id、name、
+entry、kind（screen/component/overlay）、states、适用平台与环境分支。
+从 App/Scene、路由、Tab、弹层及条件注册出发；公共 View 不自动算页面，
+动态不可枚举类别进 could_not。只列事实，运行探索交给独立 prober。
 
 1. **从代码拓扑走，不从直觉走**：路由注册表 / handler 表 / 命令树 / 定时任务注册 / 导出的
    store 方法 / RPC·事件·hook 契约。凡注册了的都列，不管它看起来重不重要。

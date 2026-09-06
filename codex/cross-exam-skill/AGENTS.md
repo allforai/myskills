@@ -1,4 +1,7 @@
-# AGENTS.md — Cross-exam package (Codex, v0.20.0)
+# AGENTS.md — Cross-exam package (Codex, v0.21.0)
+
+Optional visual acceptance uses bundled visual/visual-acceptance.md and SwiftUI references.
+User-confirmed baselines, runtime images and independent image review are required.
 
 One install. Two explicit commands. Do not mix them.
 

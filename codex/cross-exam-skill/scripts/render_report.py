@@ -38,6 +38,16 @@ import json
 import sys
 from pathlib import Path
 
+import importlib.util
+
+# Load this package's own visual validator by path under a unique module name: a `validation`
+# module already on sys.path (another package, a test process) must never stand in for it.
+_VISUAL_VALIDATION = Path(__file__).resolve().parents[1] / "visual/validation.py"
+_spec = importlib.util.spec_from_file_location("cross_exam_visual_validation", _VISUAL_VALIDATION)
+_visual = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_visual)
+visual_reason, visual_section = _visual.visual_reason, _visual.visual_section
+
 VERDICT_LABELS = {"done": "实证完成", "gap": "缺口",
                   "drift": "跑偏", "unprovable": "无法自证"}
 SEVERITY_ORDER = {"high": 0, "medium": 1, "low": 2}
@@ -195,6 +205,8 @@ def render(run_dir):
     admitted, refused = [], []
     for e in ledger["entries"]:
         reason = _refusal_reason(e, journey_ids)
+        if not reason:
+            reason = visual_reason(e, ledger, run_dir)
         if not reason and not _has_evidence(e, run_dir):
             reason = "无证据目录"
         if not reason:
@@ -327,6 +339,8 @@ def render(run_dir):
                            f"（[{s.get('facet', '?')}] 同类嫌疑，未实证）")
     else:
         out.append("（无）")
+
+    out.extend(visual_section(ledger, admitted, run_dir))
 
     if refused:
         out.append("")

@@ -6,7 +6,7 @@
 ## 输入合同
 
 ```json
-{"question": "...", "target": {"how_to_run": "...", "entry": "...", "type": "web|cli|api"},
+{"question": "...", "target": {"how_to_run": "...", "entry": "...", "type": "web|cli|api|native"},
  "states_to_capture": ["..."], "evidence_dir": ".../evidence/qNN/",
  "context_paths": ["可选：只读对账材料路径"],
  "journey": {"goal": "可选：作为<谁>，在<情景>下，<做成什么可观察的进展>",
@@ -14,6 +14,11 @@
 ```
 
 ## 纪律
+
+输入含 visual_cases 时，读取输入指定的 visual/visual-acceptance.md 和平台适配器。
+type 为 web 或 native；每例只能真实运行取证，保存 PNG/JPEG 并返回 evidence manifest。
+输入只含用例、入口、构建、基线摘要和 evidence_dir；不读 Golden 或 reviewer 结论。
+源码不能代替图片。此任务与 journey 分开，入口定位权限不适用于旅程。
 
 1. **自选介质并翻译为动作**：读代码即可实证的问题不必起服务；需要运行时行为的，
    起服务/调接口/用浏览器自动化走 UI/造边角输入。用户不动手。

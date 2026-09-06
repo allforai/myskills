@@ -61,6 +61,11 @@ Do not mix ledgers, verdicts, or loops.
 
 ## 1. 定面（facet map）
 
+**UI 目标**：自动列出可选 `visual-acceptance` facet。用户选中后读取
+`$ROOT/visual/visual-acceptance.md`，执行实图采集、逐类基线确认、全矩阵和独立视觉评审。
+该模式的视觉裁决必须通过 renderer 的视觉证据校验；不能降级为源码通过。
+用户未选择则记录未验收。SwiftUI 规则内置，按需读取，无需另装 Skill。
+
 **先独立 census 播种，再由你摆面——别让"你想到要盘什么"成为覆盖上限。** facet 表最危险的
 盲区是"你根本没想到要盘的那块"：盘问官持怀疑但也带盲区，只凭 hunch + 读代码摆面，交付里整类
 问题会因"没进 facet 表"而永远盘不到（实战教训：一整族假成功操作，只因盘问官碰巧把其中一个做成

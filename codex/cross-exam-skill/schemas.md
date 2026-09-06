@@ -1,5 +1,18 @@
 # cross-exam — ledger 与报告结构
 
+## 可选视觉扩展
+
+视觉模式的数据合同见 [visual/visual-acceptance.md](visual/visual-acceptance.md)。
+新增 visual_acceptance、visual_cases，以及 entry 的 visual_case_ids、
+evidence_manifest、review_reports、review_mode、reconciliation_ref、degradation_ref、
+visual_failure_ref。旧 ledger 无需这些字段。所有视觉 facet 必须登记 facet_ids，
+防止遗漏 visual_case_ids 绕过证据校验。基线引用相对 run，其余视觉文件引用相对
+run/evidence；现有 evidence.dir 仍遵循原合同。
+
+visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名、原图审查覆盖、
+双审身份和阻断项并集；失败裁决拒渲，未关联有效裁决的用例一律未验收。
+文件结构校验无法证明图片来源或模型确实看图，主会话必须核对取证工具记录。
+
 ## ledger.json（盘问官逐问实时落盘，中断不丢）
 
 ```json
