@@ -31,6 +31,7 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
       "facet": "F1",
       "leak_point": "接口返回无幂等键，测试名单里无 duplicate 字样",
       "medium": "runtime|code|ledger",
+      "agent_model": "sonnet（取证该 entry 的子 agent 模型字面量；Codex 如 gpt-5.6-luna）",
       "evidence": {
         "dir": "evidence/q03/",
         "files": ["q03-01-first-refund.png", "q03-02-second-refund.png"],
@@ -56,6 +57,10 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
 }
 ```
 
+- `entries[].agent_model` 新 entry 必填（分层前的旧 run 可缺，渲染器不拒）：派发取证的子 agent 实际用的模型字面量（实测官取证档、视觉 reviewer
+  判断档；harness 不能按 agent 指定模型时记会话模型名加 `(session)`）。顶层 `census_model` 与
+  `patterns[].enumerator_model` 同理。档位表见 SKILL.md "模型分层"；这些字段让报告读者能核对
+  "这条裁决的证据是谁取的"，渲染器不据此改任何计数。
 - 顶层可选 `examiner_is_author`：盘问官==交付作者时为 true，渲染器在总览点明"作者自审，
   bias-guard 生效"，续盘时该条件不丢。
 - `facets[].risk` 可选，只对 `not_examined` 面有意义：渲染器按 level 排序未盘问声明并打印 why；

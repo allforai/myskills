@@ -38,6 +38,30 @@ Do not mix ledgers, verdicts, or loops.
   看不到你的怀疑与对话史。带回原始观察，不下结论。
   **期望隔离是本技能的诚实性根基：绝不在派发输入里夹带你预期的答案。**
 
+## 模型分层（按"观察还是判断"定档）
+
+派发子 agent 时按角色产出的性质定模型，不按"省不省"随手选。原则：**产出原始观察、盘问官自己会
+解读的角色用取证档；产出盘问官无法复核的判断、错了直接进裁决的角色用判断档；最终裁决和对盘问官
+动机的制衡留在会话模型。**
+
+| 档位 | Codex 字面量 | 角色 | 为什么 |
+|---|---|---|---|
+| 会话档 | 会话模型（`spawn_agent` 不传 `model`，子 agent 继承） | 盘问官本人；作者自审时的独立复核官 | 裁决、severity、"孤例还是一类"都在这里；复核官是对盘问官动机的制衡，不传 `model` 就自然不比盘问官弱 |
+| 判断档 | `gpt-5.6-sol` | 普查官（census）；视觉 reviewer | 普查漏一个面就是永久盲区，盘问官查不出"没列出来的"；视觉 finding 直接决定阻断 |
+| 取证档 | `gpt-5.6-luna`（不可用则 `gpt-5.6-terra`） | 实测官（逐问与旅程）；同类位点枚举官 | 跑目标、走浏览器、记 steps 和截图，不下结论；枚举官只列位点与契约现状 |
+
+规则：
+- 字面量以定靶时探测到的可用模型为准（与 grillstorm 的 model-policy 同一套命名：sol 最强、luna/terra
+  高效）。本版 `spawn_agent` 若不暴露 `model` 参数，所有子 agent 用会话模型，并在下面三个字段（`agent_model` /
+  `census_model` / `enumerator_model`）里都记实际生效的会话模型名加 `(session)` 后缀，报告读者能看出没有分层。
+- **重派沿用同档。** 实测官返回残缺重派时不许"保险起见"升到 sol——那会让同一问的证据质量取决于
+  运气；也不许降档省钱。档位只在这张表里改。
+- **每次派发都落盘用了什么模型**：`entries[].agent_model`（实测官或视觉 reviewer 的字面量）、顶层
+  `census_model`、`patterns[].enumerator_model`。事后核对"这条裁决的证据是谁取的"要能一眼看到。
+- 会话模型是什么就用什么裁决，技能不猜用户能拿到哪些模型，也不提醒换模型。
+- Claude 主控时同一张表映射为 `opus`（判断档）/ `sonnet`（取证档）；跨平台双审的外部 reviewer
+  按对方平台的判断档字面量调用（`claude -p --model opus` / `codex exec -m gpt-5.6-sol`）。
+
 ## 0. 定靶（intake）
 
 0. **能力前置门（先于一切，硬拒绝）：** 确认本 harness 能派出**独立的 fresh-context 子 agent**
@@ -70,7 +94,7 @@ Do not mix ledgers, verdicts, or loops.
 盲区是"你根本没想到要盘的那块"：盘问官持怀疑但也带盲区，只凭 hunch + 读代码摆面，交付里整类
 问题会因"没进 facet 表"而永远盘不到（实战教训：一整族假成功操作，只因盘问官碰巧把其中一个做成
 了牌才被抓出，那类本身从没有独立 facet）。所以定面分两步：
-1. **独立 surface 枚举**：派一个 fresh-context agent，prompt = `$ROOT/prompts/census.md` 全文 +
+1. **独立 surface 枚举**：派一个 fresh-context agent（`spawn_agent` 带 `model: gpt-5.6-sol`，判断档），prompt = `$ROOT/prompts/census.md` 全文 +
    输入 JSON（target / scope）。它用覆盖法（不是 hunch）从代码拓扑穷举交付的操作面——每个用户可触发
    操作 / 每个端点 / 每个 store 方法 / 每个契约（RPC/handler）。它不看你的怀疑，只产出"这交付一共
    有哪些面 + 每个面的入口"，外加零调用点的 `dead_contracts`。死端点/契约 census（见 lenses.md）
@@ -135,7 +159,7 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
   预算用尽不是 unprovable：预算内到不了进展是产品的问题。
 - **落账**：entry 带 `journey`、`steps`、`terminal_state`；`journeys[].entry_q` 指到该 entry 的 `q`，
   `status` 改 `examined`。
-- **扫全模式下**：所有 `not_examined` 旅程并行扇出，一条旅程一个 fresh-context 实测官，收齐后逐条裁决。
+- **扫全模式下**：所有 `not_examined` 旅程并行扇出，一条旅程一个 fresh-context 实测官（同样取证档），收齐后逐条裁决。
 - **发散与 bias-guard 照旧**：旅程 gap 后下一轮从卡死点纵向出牌进 `open_threads`；多条旅程在同一种
   `stuck_kind` 卡死，走"孤例还是一类"建 pattern；盘问官==交付作者时旅程 gap 从严。
 
@@ -143,7 +167,7 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
 
 - **问题牌**：遵守 lenses.md 的 4 条硬约束（挂泄漏点、可实测、覆盖不同疑点、
   UI 牌注明状态清单）。牌一次呈现一组，用户永远可以自己出题。
-- **派实测官**：`spawn_agent` with `fork_turns:"none"`, followed by `wait_agent`，prompt = `$ROOT/prompts/prober.md`
+- **派实测官**：`spawn_agent` with `fork_turns:"none"` and `model: gpt-5.6-luna`（取证档）, followed by `wait_agent`，prompt = `$ROOT/prompts/prober.md`
   全文 + 输入 JSON（question / target / states_to_capture / evidence_dir /
   可选 context_paths——只传路径不传你的解读）。**不夹带怀疑。需求基准文件（spec / registry /
   README 的需求段）不进 context_paths：它写着预期答案。** 对账类问题例外，且只传对账所需的那一段。
@@ -153,7 +177,7 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
   依据：需求引用的分量 + 实测后果的破坏面）。
 - **自审 bias-guard（盘问官==交付作者时必开）**：取证独立 ≠ 裁决独立。作者给自己的活定 severity
   有往轻里判的动机。此时 `gap` 默认从严——把 gap 降成 low 或判 done，需要**额外独立证据**（另一
-  个 fresh agent 复核，或明确的"生产不可达"实证），不能只凭盘问官一句"影响不大"。
+  个 fresh agent 复核——不传 `model`，继承会话模型，制衡者不能比盘问官弱；或明确的"生产不可达"实证），不能只凭盘问官一句"影响不大"。
 - **每问立刻落盘 ledger.json**（中断不丢），entry 按 schemas.md。
 - **弃牌不蒸发**：每轮发牌后，未被选中的牌**立即**记入 ledger 的 `open_threads`
   （q/facet/leak_point）；某线后来被实测则移入 entries 并从 open_threads 删除。
@@ -162,7 +186,7 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
 - **孤例还是一类（每条 `gap|drift` 落账时必答）**：这个缺口是这一处独有，还是某个结构模式的
   实例（一个契约类缺同一种防护/接线）？判"一类"则**当即两个动作**，不等用户表态：
   ① `ledger.patterns` 建 pattern（`hypothesis` 一句话缺陷模式，schema 见 schemas.md）；
-  ② 派**同类位点枚举官**（fresh-context，只枚举不取证，成本一问一 agent）：prompt =
+  ② 派**同类位点枚举官**（fresh-context，`model: gpt-5.6-luna` 取证档，只枚举不取证，成本一问一 agent）：prompt =
   `$ROOT/prompts/sites.md` 全文 + 输入 JSON（target / structure / contract），structure 和
   contract 都是中立描述（"接受写请求并持久化的端点" / "重复提交的防护现状"），**绝不夹带首例的
   裁决**（"我们发现 A 坏了，看看别的坏没坏"就是把期望塞给它）——期望隔离在横向扫描时最容易破。
