@@ -10,7 +10,7 @@ description: Evidence-backed completion audit of a delivery, including user-decl
 > Arguments: $ARGUMENTS (the delivery to cross-examine; empty means enter the 定靶 intake dialogue). Start at 定靶.
 
 `$ROOT` = `${CLAUDE_PLUGIN_ROOT}`。镜头：`$ROOT/knowledge/cross-exam/lenses.md`；
-实测官 / 普查官 / 枚举官 prompt：`$ROOT/knowledge/cross-exam/prompts/{prober,census,sites}.md`；
+实测官 / 普查官 / 枚举官 / 扫全 prompt：`$ROOT/knowledge/cross-exam/prompts/{prober,census,sites,sweep}.md`；
 schema：`$ROOT/knowledge/cross-exam/schemas.md`；报告渲染：`$ROOT/scripts/render_report.py`。
 
 **不变式：**
@@ -43,7 +43,7 @@ schema：`$ROOT/knowledge/cross-exam/schemas.md`；报告渲染：`$ROOT/scripts
 |---|---|---|---|
 | 会话档 | 主会话模型（不传 `model`，子 agent 继承） | 盘问官本人；作者自审时的独立复核官 | 裁决、severity、"孤例还是一类"都在这里；复核官是对盘问官动机的制衡，不传 `model` 就自然不比盘问官弱 |
 | 判断档 | `opus` | 普查官（census）；视觉 reviewer | 普查漏一个面就是永久盲区，盘问官查不出"没列出来的"；视觉 finding 直接决定阻断 |
-| 取证档 | `sonnet` | 实测官（逐问与旅程）；同类位点枚举官 | 跑目标、走浏览器、记 steps 和截图，不下结论；枚举官只列位点与契约现状 |
+| 取证档 | `sonnet` | 实测官（逐问、旅程与扫全）；同类位点枚举官 | 跑目标、走浏览器、记 steps 和截图，不下结论；枚举官只列位点与契约现状 |
 
 规则：
 - **重派沿用同档。** 实测官返回残缺重派时不许"保险起见"升到 opus——那会让同一问的证据质量取决于
@@ -66,7 +66,9 @@ schema：`$ROOT/knowledge/cross-exam/schemas.md`；报告渲染：`$ROOT/scripts
 2. **需求基准探测**（依次）：superstorm overview registry（R-*，在
    `docs/superpowers/specs/*-overview.md` 的 registry 标记内）→ `docs/superpowers/specs/`
    下相关 spec → README → 问用户 → **无基准模式**（需求覆盖/跑偏两镜头关闭，
-   报告声明，只开集成缝隙+细节质量+契约 census+旅程）。
+   报告声明，只开集成缝隙+细节质量+契约 census+旅程）。**找到基准就把需求逐条落进 ledger
+   顶层 `requirements[]`**（`id` + 一句原文）：这是需求侧的点名册，渲染器据此出"需求覆盖"专节；
+   没有它，一条需求只要没进 facet 表就整条蒸发，连"未盘问声明"都进不去。无基准模式不写。
 3. 环境能力探测：能否真跑起来；有无浏览器自动化（截图能力）。缺截图能力时
    UI 类问题只能裁"无法自证"，起手就告诉用户。
 4. **安全确认（必须）**：实测会造真实调用（退款、删除这类）。与用户确认靶子是
@@ -91,14 +93,26 @@ schema：`$ROOT/knowledge/cross-exam/schemas.md`；报告渲染：`$ROOT/scripts
    输入 JSON（target / scope）。它用覆盖法（不是 hunch）从代码拓扑穷举交付的操作面——每个用户可触发
    操作 / 每个端点 / 每个 store 方法 / 每个契约（RPC/handler）。它不看你的怀疑，只产出"这交付一共
    有哪些面 + 每个面的入口"，外加零调用点的 `dead_contracts`。死端点/契约 census（见 lenses.md）
-   是最省的播种法。不要即兴写普查 prompt：措辞变了，覆盖面就变了。
+   是最省的播种法。不要即兴写普查 prompt：措辞变了，覆盖面就变了。**普查官返回后把 `surfaces`
+   原样写进 ledger 顶层 `surfaces[]`**（`dead_contracts` 也各作一行，`entry` 用它的 `defined_at`），
+   不改名、不合并、不删：这是操作面的分母，渲染器据此算"操作面 K 个，裁决触及 T 个，未触及逐个
+   点名"。分母不入账，覆盖就没有数，只剩盘问官一句"盘过了"。
 2. **合并 + 摆面**：把 census 面与你自己想到的面合并去重，**标出"census 有、你没想到"的面**（那
-   往往正是盲区）。然后 AskUserQuestion 让用户勾选盘哪些、先盘哪个。
+   往往正是盲区）。facet 表每面两个槽位必填：`surface_ids`（它包含的 census 面 id）与
+   `requirement_refs`（它承接的需求 id）——粒度随你摆，但每个 census 面必须落在至少一个 facet 里，
+   报告才能对每个面说"K 个操作面触及了 T 个"；粒度再粗也藏不住没盘过的操作面。
+   **再反向对账需求基准**：`requirements[]` 每条至少落一个 facet；census 一个 surface 都对不上（或只
+   对上 `dead_contracts`）的需求**单独成面并标"需求有、census 无"**（该需求的类别出现在 census `could_not`
+   里时改标"类别未枚举"——"没枚举到"和"枚举了没有"是两种强度），与"census 有、你没想到"并列摆给
+   用户——facet 表有两个盲区方向，census 只补代码侧那一个，需求侧这一步没人替你做。
+   **横切面**（身份边界、角色权限、离线与重试、并发、数据生命周期，见 lenses.md 横切轴）不住在任何一个
+   入口里，census 结构上列不出它；由你从需求与代码观察摆出，`surface_ids` 写它横跨的全部 census 面。然后 AskUserQuestion 让用户勾选盘哪些、先盘哪个。
 
 没选的面在 ledger 里记 `status: "not_examined"`，**并写 `risk`**（`level` high|medium|low +
 `why` 一句：需求引用的分量 + 若真坏的破坏面），让人清楚把什么留在了桌上——渲染器按 risk 排序列进
 "未盘问声明"，绝不算进完成度。盘问官==交付作者时，ledger 顶层写 `examiner_is_author: true`，
-渲染器会在总览点明。
+渲染器会在总览点明。**facet 的"盘过"由渲染器按被采信 entry 推导，不看你手写的 `status`**：一问
+都没落账的面，写了 examined 也进"未盘问声明"。
 
 ## 1b. 旅程采集（定面之后，盘问循环之前）
 
@@ -131,6 +145,13 @@ schema：`$ROOT/knowledge/cross-exam/schemas.md`；报告渲染：`$ROOT/scripts
 sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个操作/端点逐条查"契约是否兑现"），拿
 到全集后再对高风险线回到深挖。**深挖答不了"我们有没有到处都看过"——那是扫全模式的活；只做深挖
 等于用 3 张牌去覆盖一整个交付。** 深挖中途抓到"一类的实例"时也会升级——见下面"孤例还是一类"。
+
+**扫全实测官的输入不即兴。** 一面一个 fresh-context 实测官（取证档），prompt = prober.md 全文 +
+`$ROOT/knowledge/cross-exam/prompts/sweep.md` 全文 + 输入 JSON；`question` 与 `states_to_capture` 只许用 sweep.md 的固定
+模板填入该面的名字与入口。扇出前把填好的模板整句用 AskUserQuestion 给用户过目一次——这是扫全模式的
+"选牌"——然后原文一字不改落进每条 entry 的 `q`，`surfaces` 写该面 id。理由与普查官相同：深挖里一张
+牌措辞差一点只影响一问，扫全把同一句盖 N 个面，模板漏一个观察口，N 个面一起漏，而且没有用户逐张
+选牌那道复核。
 
 **旅程轮（用户选中一条旅程时）**：不出三张牌，问题固定是"`<id>` 走得通吗？"。
 
@@ -167,11 +188,15 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
 - **收证据**：把关键观察和截图路径给用户看，再对照需求基准下裁决。
 - **裁决四种**：`done` 实证完成 / `gap` 缺口 / `drift` 跑偏 / `unprovable` 无法自证
   （需真设备/人工，如实挂账不猜）。`gap|drift` 定 severity（high|medium|low，
-  依据：需求引用的分量 + 实测后果的破坏面）。
+  依据：需求引用的分量 + 实测后果的破坏面）。**问题问的是运行时结果**（服务端收没收到、界面变没变、
+  数据落没落）**而证据只有代码摘录时，最高裁 `unprovable`**，不裁 `done`：链路在代码里接好了不等于
+  它跑通了。报告把实证完成按介质分列（运行时 / 代码 / 台账），读者要能一眼分辨这两种证据强度。
 - **自审 bias-guard（盘问官==交付作者时必开）**：取证独立 ≠ 裁决独立。作者给自己的活定 severity
   有往轻里判的动机。此时 `gap` 默认从严——把 gap 降成 low 或判 done，需要**额外独立证据**（另一
   个 fresh agent 复核——不传 `model`，继承会话模型，制衡者不能比盘问官弱；或明确的"生产不可达"实证），不能只凭盘问官一句"影响不大"。
-- **每问立刻落盘 ledger.json**（中断不丢），entry 按 schemas.md。
+- **每问立刻落盘 ledger.json**（中断不丢），entry 按 schemas.md。entry 必写 `surfaces[]`（这问的证据
+  实际触及了 `surfaces[]` 里的哪些面——渲染器只认登记过的 id，没写的逐条点名）与 `requirement_refs[]`
+  （引用了 `requirements[]` 的哪些条）。这两个槽位是覆盖分子；没有它们，分母白记。
 - **弃牌不蒸发**：每轮发牌后，未被选中的牌**立即**记入 ledger 的 `open_threads`
   （q/facet/leak_point）；某线后来被实测则移入 entries 并从 open_threads 删除。
   报告会把它们渲染成"未拉的线"，续盘从这里接手。**gap 落账后用户随即喊停**：把本该下一轮
@@ -204,7 +229,9 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
 
 用户喊停或选中的面盘完 →
 `python3 $ROOT/scripts/render_report.py docs/cross-exam/<run>/` →
-把 completion-report.md 呈给用户。报告四类裁决计数（普通与旅程分列）、逐面"X 问中 Y 问实证通过"、
+把 completion-report.md 呈给用户。报告四类裁决计数（普通与旅程分列，实证完成按介质分列）、需求覆盖
+（基准 N 条，有裁决 M 条；无裁决的按落在哪个面点名，没落面的单独点名）、逐面"X 问中 Y 问实证通过 ·
+操作面 K 个，裁决触及 T 个，未触及逐个点名"、
 旅程完成度（每条走通 N 步或卡在第 K 步加卡死类型）、缺口清单（可直接转修复任务）、无法自证清单、未盘问声明、缺陷模式（patterns：每类
 "共 N 位点，实证 M，未查 K"，未查位点逐个点名）、未拉的线（open_threads，
 续盘接手点）——**没有编造的总百分比**。

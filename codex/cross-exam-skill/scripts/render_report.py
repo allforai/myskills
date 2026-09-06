@@ -30,11 +30,20 @@
 查无此 id、或旅程 gap 的 `stuck_kind` 不在六种之内，一律拒渲并点名；旅程 drift 缺
 `missed_waypoints` 同样拒渲并点名。旅程裁决计数与普通裁决计数分列，互不掺入。
 
+覆盖分母（可选 `surfaces` / `requirements`）：census 的操作面原样入账后，facet 的"操作面 K 个，
+裁决触及 T 个，未触及：…"由渲染器按被采信 entry 的 `surfaces[]` 算，facet 的 examined 也由
+"有没有被采信 entry"推导——手写的 `status` 只保留 not_examined 的意图，不能把零证据的面算成盘过。
+entry 引用了 `surfaces` 里没有的 id 一律不算触及并点名；没写 `surfaces` 的 entry 逐条点名。
+`requirements`（需求基准逐条入账）渲染为"需求覆盖"专节：一条需求有裁决，当且仅当某条被采信 entry
+的 `requirement_refs`/`requirement_ref` 引用了它；无裁决的按"落在哪个面、该面盘没盘"点名，
+没落任何面的单独点名——需求侧的蒸发和操作面侧的蒸发一样，都必须在报告里留下名字。
+
 Usage: python3 render_report.py <run_dir>    # run_dir 内含 ledger.json
 写出 <run_dir>/completion-report.md。exit 0=渲染成功（有拒渲仍为 0，报告内声明）；
 exit 1=ledger 不可读或缺必填键。
 """
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -128,6 +137,39 @@ def _entry_line(e):
             f"（证据：{ev.get('dir', '')}）")
 
 
+def _requirement_ids(e):
+    """entry 引用的需求 id：`requirement_refs` 列表为准，`requirement_ref` 字符串按分隔符切成 token 兼容旧账。"""
+    ids = set(e.get("requirement_refs") or [])
+    ref = e.get("requirement_ref")
+    if ref:
+        ids.update(t for t in re.split(r"[,，/、\s]+", ref) if t)
+    return ids
+
+
+def _requirement_section(requirements, facets, examined_ids, admitted):
+    by_req = {}
+    for e in admitted:
+        for rid in _requirement_ids(e):
+            by_req.setdefault(rid, []).append(e)
+    covered = [r for r in requirements if r.get("id") in by_req]
+    uncovered = [r for r in requirements if r.get("id") not in by_req]
+    out = ["", f"## 需求覆盖（基准 {len(requirements)} 条，有裁决 {len(covered)} 条，"
+               f"无裁决 {len(uncovered)} 条）"]
+    for r in covered:
+        verdicts = " · ".join(f"{VERDICT_LABELS[e['verdict']]}（{e.get('q', '?')}）"
+                              for e in by_req[r["id"]])
+        out.append(f"- {r['id']} {r.get('text', '')} — {verdicts}")
+    for r in uncovered:
+        holders = [f for f in facets if r.get("id") in (f.get("requirement_refs") or [])]
+        if not holders:
+            why = "未落任何面"
+        else:
+            why = "；".join(f"面 {f['id']} {'已盘问但无裁决引用它' if f['id'] in examined_ids else '未盘问'}"
+                           for f in holders)
+        out.append(f"- {r['id']} {r.get('text', '')} — 无裁决（{why}）")
+    return out
+
+
 def _assign_gap_ids(plain):
     """按 ledger 先后给普通 gap|drift 编 G 号（不按严重度）。续盘只追加不重排，编号稳定；
     被拒渲的不占号；旅程 entry 用 J 号，不占 G 号。product-review 的 depends_on 引用它。"""
@@ -142,14 +184,14 @@ def _refusal_reason(e, journey_ids):
     verdict = e.get("verdict")
     if verdict not in VERDICT_LABELS:
         return f"非法裁决：{verdict}"
-    if verdict in ("gap", "drift") and e.get("severity") not in SEVERITY_ORDER:
-        return f"非法严重度：{e.get('severity')}"
     if e.get("journey") and e["journey"] not in journey_ids:
         return f"旅程引用不存在：{e['journey']}"
     if e.get("journey") and verdict == "gap" and e.get("stuck_kind") not in STUCK_KINDS:
         return f"非法卡死类型：{e.get('stuck_kind')}"
     if e.get("journey") and verdict == "drift" and not e.get("missed_waypoints"):
         return "缺 missed_waypoints"
+    if verdict in ("gap", "drift") and e.get("severity") not in SEVERITY_ORDER:
+        return f"非法严重度：{e.get('severity')}"
     return None
 
 
@@ -228,8 +270,20 @@ def render(run_dir):
     examined_j_ids = {j.get("id") for j, _ in examined_j}
     unexamined_j = [j for j in journeys if j.get("id") not in examined_j_ids]
 
-    examined = [f for f in ledger["facets"] if f.get("status") != "not_examined"]
-    not_examined = [f for f in ledger["facets"] if f.get("status") == "not_examined"]
+    facets_with_entry = {e.get("facet") for e in admitted}
+    examined = [f for f in ledger["facets"] if f.get("id") in facets_with_entry]
+    not_examined = [f for f in ledger["facets"] if f.get("id") not in facets_with_entry]
+    examined_ids = {f.get("id") for f in examined}
+
+    surfaces = ledger.get("surfaces")
+    surface_by_id = {s.get("id"): s for s in (surfaces or [])}
+    touched, unknown_by_facet = set(), {}
+    for e in admitted:
+        for sid in e.get("surfaces") or []:
+            if sid in surface_by_id:
+                touched.add(sid)
+            else:
+                unknown_by_facet.setdefault(e.get("facet"), []).append(sid)
     counts = {v: 0 for v in VERDICT_LABELS}
     for e in plain:
         counts[e["verdict"]] += 1
@@ -242,11 +296,21 @@ def render(run_dir):
             f"盘问 {len(examined)} 面 · 实测 {len(plain)} 问")
     if journeys:
         head += f" · 旅程 {len(journeys)} 条，盘问 {len(examined_j)} 条"
+    if surfaces is not None:
+        head += f" · 操作面 {len(surface_by_id)} 个，裁决触及 {len(touched)} 个"
     out.append(head)
     out.append("")
     out.append("## 总览")
     out.append("")
-    out.append(" · ".join(f"{VERDICT_LABELS[v]}：{counts[v]}" for v in VERDICT_LABELS))
+    by_medium = {m: 0 for m in ("runtime", "code", "ledger")}
+    for e in plain:
+        if e.get("verdict") == "done" and e.get("medium") in by_medium:
+            by_medium[e["medium"]] += 1
+    done_split = (f"（运行时 {by_medium['runtime']} · 代码 {by_medium['code']}"
+                  f" · 台账 {by_medium['ledger']}）")
+    out.append(" · ".join(f"{VERDICT_LABELS[v]}：{counts[v]}"
+                          + (done_split if v == "done" and counts[v] else "")
+                          for v in VERDICT_LABELS))
     if journeys:
         out.append("旅程裁决：" + " · ".join(f"{VERDICT_LABELS[v]}：{jcounts[v]}"
                                           for v in VERDICT_LABELS))
@@ -257,14 +321,35 @@ def render(run_dir):
         out.append("")
         out.append(f"> {AUTHOR_NOTE}")
 
+    requirements = ledger.get("requirements")
+    if requirements is not None:
+        out.extend(_requirement_section(requirements, ledger["facets"], examined_ids, admitted))
+
     out.append("")
     out.append("## 逐面完成度")
     for f in examined:
         fe = [e for e in plain if e.get("facet") == f["id"]]
         done = len([e for e in fe if e.get("verdict") == "done"])
+        title = f"### {f['name']}（{f['id']}）— {len(fe)} 问中 {done} 问实证通过"
+        if surfaces is not None:
+            sids = [sid for sid in (f.get("surface_ids") or []) if sid in surface_by_id]
+            if sids:
+                missed = [sid for sid in sids if sid not in touched]
+                title += f" · 操作面 {len(sids)} 个，裁决触及 {len(sids) - len(missed)} 个"
+                if missed:
+                    title += "，未触及：" + "、".join(
+                        f"{sid} {surface_by_id[sid].get('name', '')}" for sid in missed)
+            else:
+                title += " · 操作面未登记，覆盖不可算"
+            if unknown_by_facet.get(f["id"]):
+                title += " · 未登记的操作面 id：" + "、".join(unknown_by_facet[f["id"]])
         out.append("")
-        out.append(f"### {f['name']}（{f['id']}）— {len(fe)} 问中 {done} 问实证通过")
-        out.extend(_entry_line(e) for e in fe)
+        out.append(title)
+        for e in fe:
+            line = _entry_line(e)
+            if surfaces is not None and "surfaces" not in e:
+                line += " · 本问未登记触及的操作面"
+            out.append(line)
 
     out.append("")
     out.append("## 旅程完成度")

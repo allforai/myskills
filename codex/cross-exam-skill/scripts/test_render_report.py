@@ -647,5 +647,145 @@ class TestStepEvidenceFiles(unittest.TestCase):
             self.assertIn("旅程裁决：实证完成：1", report)
 
 
+def _with_top(run, **keys):
+    ledger = json.loads((run / "ledger.json").read_text(encoding="utf-8"))
+    ledger.update(keys)
+    (run / "ledger.json").write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
+
+
+class TestSurfaceCoverage(unittest.TestCase):
+    """覆盖分母：census 的 surfaces 原样入账，facet 的操作面覆盖由渲染器按被采信 entry 算，不许自报。"""
+    SURFACES = [{"id": "S1", "name": "创建订单", "entry": "POST /api/orders"},
+                {"id": "S2", "name": "订单列表", "entry": "GET /api/orders"},
+                {"id": "S3", "name": "退款", "entry": "POST /api/orders/:id/refund"},
+                {"id": "S4", "name": "登录", "entry": "POST /api/auth/login"}]
+    FACETS = [{"id": "F1", "name": "订单", "status": "examined", "surface_ids": ["S1", "S2", "S3"]},
+              {"id": "F2", "name": "账户", "status": "not_examined", "surface_ids": ["S4"],
+               "risk": {"level": "high", "why": "全部面的前置"}}]
+
+    def _run(self, tmp, entries, facets=None):
+        run = _mk_run(tmp, facets or self.FACETS, entries)
+        _with_top(run, surfaces=self.SURFACES)
+        return run
+
+    def test_facet_line_names_untouched_surfaces(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("q-refund"); e["surfaces"] = ["S3"]
+            report = render(self._run(tmp, [e]))
+            self.assertIn("订单（F1）— 1 问中 1 问实证通过 · 操作面 3 个，裁决触及 1 个", report)
+            self.assertIn("未触及：S1 创建订单、S2 订单列表", report)
+
+    def test_overview_counts_surfaces_touched(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("q-refund"); e["surfaces"] = ["S3", "S1"]
+            report = render(self._run(tmp, [e]))
+            self.assertIn("操作面 4 个，裁决触及 2 个", report)
+
+    def test_unknown_surface_id_does_not_count(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("q-x"); e["surfaces"] = ["S3", "S99"]
+            report = render(self._run(tmp, [e]))
+            self.assertIn("裁决触及 1 个", report)
+            self.assertIn("未登记的操作面 id：S99", report)
+
+    def test_refused_entry_touches_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            good = _entry("q-good"); good["surfaces"] = ["S3"]
+            oral = _entry("q-oral", ev_dir="evidence/q2/"); oral["surfaces"] = ["S1"]
+            run = self._run(tmp, [good, oral])
+            import shutil; shutil.rmtree(run / "evidence/q2", ignore_errors=True)
+            report = render(run)
+            self.assertIn("裁决触及 1 个", report)
+
+    def test_entry_without_surfaces_is_flagged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report = render(self._run(tmp, [_entry("q-nosurf")]))
+            self.assertIn("未登记触及的操作面", report)
+            self.assertIn("裁决触及 0 个", report)
+
+    def test_facet_without_surface_ids_says_coverage_unknown(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            facets = [{"id": "F1", "name": "横切", "status": "examined"}]
+            e = _entry("q-1"); e["surfaces"] = ["S1"]
+            report = render(self._run(tmp, [e], facets=facets))
+            self.assertIn("横切（F1）— 1 问中 1 问实证通过 · 操作面未登记，覆盖不可算", report)
+
+    def test_facet_status_is_derived_not_self_reported(self):
+        # status 写 examined 但零 entry：进未盘问声明，不算盘问过的面
+        with tempfile.TemporaryDirectory() as tmp:
+            facets = [{"id": "F1", "name": "订单", "status": "examined", "surface_ids": ["S1"]},
+                      {"id": "F2", "name": "账户", "status": "examined", "surface_ids": ["S4"]}]
+            e = _entry("q-1"); e["surfaces"] = ["S1"]
+            report = render(self._run(tmp, [e], facets=facets))
+            self.assertIn("盘问 1 面", report)
+            unex = report[report.index("## 未盘问声明"):report.index("## 未拉的线")]
+            self.assertIn("账户（F2）", unex)
+            self.assertIn("未评估风险", unex)
+
+    def test_journey_entry_counts_toward_surface_coverage(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            je = _jentry(); je["surfaces"] = ["S1", "S3"]
+            run = self._run(tmp, [je])
+            _with_journeys(run, [_journey()])
+            report = render(run)
+            self.assertIn("操作面 4 个，裁决触及 2 个", report)
+
+    def test_old_ledger_without_surfaces_renders_as_before(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = _mk_run(tmp, [{"id": "F1", "name": "面一", "status": "examined"}], [_entry("q1")])
+            report = render(run)
+            self.assertNotIn("操作面", report)
+            self.assertIn("面一（F1）— 1 问中 1 问实证通过", report)
+
+
+class TestDoneByMedium(unittest.TestCase):
+    def test_overview_splits_done_by_medium(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            a = _entry("q-rt", ev_dir="evidence/q1/")
+            b = _entry("q-code", ev_dir="evidence/q2/"); b["medium"] = "code"
+            c = _entry("q-code2", ev_dir="evidence/q3/"); c["medium"] = "code"
+            run = _mk_run(tmp, [{"id": "F1", "name": "面一", "status": "examined"}], [a, b, c])
+            report = render(run)
+            self.assertIn("实证完成：3（运行时 1 · 代码 2 · 台账 0）", report)
+
+
+class TestRequirementCoverage(unittest.TestCase):
+    REQS = [{"id": "R-01", "text": "提交工单"}, {"id": "R-04", "text": "导出 CSV"},
+            {"id": "R-08", "text": "通知邮件"}, {"id": "R-09", "text": "审计日志"}]
+    FACETS = [{"id": "F1", "name": "提交", "status": "examined", "requirement_refs": ["R-01"]},
+              {"id": "F2", "name": "导出", "status": "not_examined", "requirement_refs": ["R-04"],
+               "risk": {"level": "medium", "why": "财务对账"}},
+              {"id": "F3", "name": "通知", "status": "examined", "requirement_refs": ["R-08"]}]
+
+    def test_requirement_section_lists_verdicts_and_gaps(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            a = _entry("q-submit"); a["requirement_refs"] = ["R-01"]
+            b = _entry("q-notify", facet="F3", verdict="gap", severity="high", ev_dir="evidence/q2/")
+            b["requirement_ref"] = "R-08"
+            run = _mk_run(tmp, self.FACETS, [a, b])
+            _with_top(run, requirements=self.REQS)
+            report = render(run)
+            sec = report[report.index("## 需求覆盖"):report.index("## 逐面完成度")]
+            self.assertIn("基准 4 条，有裁决 2 条，无裁决 2 条", sec)
+            self.assertIn("R-01 提交工单 — 实证完成", sec)
+            self.assertIn("R-08 通知邮件 — 缺口", sec)
+            self.assertIn("R-04 导出 CSV — 无裁决（面 F2 未盘问）", sec)
+            self.assertIn("R-09 审计日志 — 无裁决（未落任何面）", sec)
+
+    def test_requirement_covered_only_by_admitted_entry(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            oral = _entry("q-oral"); oral["requirement_refs"] = ["R-01"]
+            run = _mk_run(tmp, self.FACETS, [oral], make_evidence=False)
+            _with_top(run, requirements=self.REQS)
+            report = render(run)
+            self.assertIn("有裁决 0 条", report)
+
+    def test_no_requirements_key_means_no_section(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = _mk_run(tmp, self.FACETS, [_entry("q1")])
+            self.assertNotIn("## 需求覆盖", render(run))
+
+
+
 if __name__ == "__main__":
     unittest.main()

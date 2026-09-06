@@ -21,8 +21,15 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
   "baseline": "superstorm-registry|spec|readme|user|none",
   "started": "YYYY-MM-DD",
   "examiner_is_author": false,
+  "requirements": [
+    {"id": "R-09", "text": "退款可追踪"}
+  ],
+  "surfaces": [
+    {"id": "S5", "name": "退款", "entry": "POST /api/orders/:id/refund"}
+  ],
   "facets": [
     {"id": "F1", "name": "退款流程", "status": "examined|partial|not_examined",
+     "surface_ids": ["S5"], "requirement_refs": ["R-09"],
      "risk": {"level": "high|medium|low", "why": "仅 not_examined 面：需求引用的分量 + 若真坏的破坏面"}}
   ],
   "entries": [
@@ -38,7 +45,9 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
         "key_observation": "第二次退款返回 200 且重复扣减"
       },
       "verdict": "done|gap|drift|unprovable",
-      "requirement_ref": "R-09（可选）",
+      "surfaces": ["S5"],
+      "requirement_refs": ["R-09"],
+      "requirement_ref": "R-09（旧字段，可选）",
       "severity": "high|medium|low（仅 gap|drift；done/unprovable 不带）"
     }
   ],
@@ -61,6 +70,18 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
   判断档；harness 不能按 agent 指定模型时记会话模型名加 `(session)`）。顶层 `census_model` 与
   `patterns[].enumerator_model` 同理。档位表见 SKILL.md "模型分层"；这些字段让报告读者能核对
   "这条裁决的证据是谁取的"，渲染器不据此改任何计数。
+- 顶层 `surfaces[]`（覆盖分母，新 run 必填；旧 ledger 可缺，渲染器不据此拒渲）：普查官返回的操作面
+  **原样**入账（`dead_contracts` 也各作一行）。`facets[].surface_ids` 写该面包含的 surface id；
+  `entries[].surfaces` 写这问的证据实际触及的 surface id。**操作面的"触及"没有自报通道**：渲染器只认
+  被采信 entry 的 `surfaces` 里、且在顶层 `surfaces[]` 登记过的 id；未登记的 id 不算触及并点名，
+  没写 `surfaces` 的 entry 逐条点名。逐面标题渲染"操作面 K 个，裁决触及 T 个，未触及：…逐个点名"；
+  facet 没写 `surface_ids` 时标"操作面未登记，覆盖不可算"。
+- **facet 的"盘过"由渲染器推导**：有至少一条被采信 entry 的面才算盘问过；`status` 照写，但一问都没落账的
+  面无论写什么都进"未盘问声明"（缺 risk 则标"未评估风险"）。
+- 顶层 `requirements[]`（需求侧点名册；baseline 非 none 时必填，旧 ledger 可缺）：需求基准逐条
+  `{id, text}`。`facets[].requirement_refs` 写该面承接的需求；`entries[].requirement_refs` 写这问引用的需求
+  （旧字段 `requirement_ref` 字符串仍认，按分隔符切 token 匹配）。渲染器出"需求覆盖"专节：一条需求有裁决，
+  当且仅当某条被采信 entry 引用了它；无裁决的按"落在哪个面、该面盘没盘"点名，没落任何面的单独点名。
 - 顶层可选 `examiner_is_author`：盘问官==交付作者时为 true，渲染器在总览点明"作者自审，
   bias-guard 生效"，续盘时该条件不丢。
 - `facets[].risk` 可选，只对 `not_examined` 面有意义：渲染器按 level 排序未盘问声明并打印 why；
@@ -109,8 +130,11 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
 
 ## completion-report.md（仅由 scripts/render_report.py 渲染，禁止口述生成）
 
-依次：总览（面/问/四类裁决计数，旅程裁决计数与普通裁决计数分列；baseline=none 时声明关闭的镜头）→
-逐面完成度（只含普通 entry，"X 问中 Y 问实证通过"，逐条链证据）→ 旅程完成度（每条已盘问旅程：走通
+依次：总览（面/问/四类裁决计数，实证完成按介质分列"运行时 / 代码 / 台账"，旅程裁决计数与普通裁决计数
+分列；有 `surfaces` 时加"操作面 N 个，裁决触及 M 个"；baseline=none 时声明关闭的镜头）→
+需求覆盖（有 `requirements` 时："基准 N 条，有裁决 M 条，无裁决 K 条"，逐条列裁决或点名落在哪个面）→
+逐面完成度（只含普通 entry，"X 问中 Y 问实证通过 · 操作面 K 个，裁决触及 T 个，未触及逐个点名"，
+逐条链证据）→ 旅程完成度（每条已盘问旅程：走通
 N 步 / 卡在第 K 步加卡死类型 / 绕过的 waypoint / 无法自证原因，逐步状态列表）→ 缺口清单（gap+drift 按 severity 排；普通缺口行首带 `[G1]`——G 号由渲染器按 ledger 里 entries 的先后顺序编，不按严重度，续盘只追加不重排所以稳定，被拒渲的不占号；旅程 gap 行首带 `[J1]`，不占 G 号。product-review 的 `depends_on` 引用的就是 G/J 号）→
 无法自证清单 → 未盘问声明（not_examined 面与未盘问旅程，按 risk 同列）→ 未拉的线（open_threads）→
 缺陷模式（patterns：每类"共 N 位点，实证 M，未查 K"，未查位点逐个点名）→
@@ -132,3 +156,6 @@ N 步 / 卡在第 K 步加卡死类型 / 绕过的 waypoint / 无法自证原因
    旅程 drift 缺 `missed_waypoints` 同样拒渲并点名。
    旅程 entry 的 `steps[].evidence` 每步必写且文件必须真在 `evidence.dir` 下，`terminal_state.snapshot`
    同理；缺一个整条拒渲并点名缺的文件——编造的步骤列表过不了渲染器。
+5. 覆盖没有自报通道：facet 的"盘过"按被采信 entry 推导；操作面的"触及"只认被采信 entry 引用的、
+   且在 `surfaces[]` 登记过的 id；需求的"有裁决"只认被采信 entry 的引用。零证据的面、未登记的
+   面 id、没人引用的需求，一律渲染为未盘问 / 未触及 / 无裁决并逐个点名，不进任何计数。
