@@ -151,7 +151,7 @@ Conclusion:
 
 Execution method:
 - Verify existence of:
-  - Codex install surface: `meta-skill`, `megastorm-skill`, `grillstorm`, `cross-exam-skill`
+  - Codex install surface: `meta-skill`, `superstorm-skill`, `grillstorm`, `cross-exam-skill`
   - all 5 Codex test prompts
 
 Result:

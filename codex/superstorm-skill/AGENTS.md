@@ -1,0 +1,46 @@
+# AGENTS.md — superstorm (Codex port, v0.17.1)
+
+> Drive a large goal end-to-end: decompose into modules, front-load every human
+> decision, then autonomously design → validate (closed-loop) → plan → reverse-review
+> → orchestrate a task DAG → concurrently execute with anti-fake-completion
+> supervision. Heavy and token-intensive; invoke explicitly ("superstorm <goal>").
+
+## Architecture (minimal-compat port of the Claude Code plugin)
+
+The interactive Codex session is the orchestration brain for Phases -1/0/2 and
+the short Phase 1 stages; each headless agent inherits the current host executable,
+profile/config/features and permission argv before entering `exec` mode.
+The long §1.6 execute+supervise loop is NOT prose — it runs in a deterministic
+Python runner (a stateless prose loop drifts; the retry ledger must be code).
+
+| Piece | File | Role |
+|---|---|---|
+| Playbook | `./execution-playbook.md` | Full phase-by-phase orchestration (read this first) |
+| Agent prompts | `./prompts/*.md` | 6 inlined-methodology prompts for headless `codex exec` agents |
+| Schemas | `./schemas.md` | JSON contracts: registry, design-manifest, plan-task, verdict |
+| Closure gate | `./scripts/check_closure.py` | Deterministic requirement/interface closure check |
+| Plan gate | `./scripts/validate_plan_tasks.py` | touched_paths + non-vacuous acceptance_cmd + registry vocab |
+| DAG builder | `./scripts/build_task_dag.py` | Layers + isolate_groups + cross-module interface edges |
+| Execution runner | `./scripts/run_layers.py` | §1.6: safe integration/task worktrees, ready scheduling, separate retry budgets, reality gates, atomic state/events |
+| Decision ledger | `./scripts/decision_ledger.py` | Frozen authority envelope + unattended choices |
+| Model tiers | `./models.example.json` | THINK/VERIFY/BULK — frozen in Phase 0 |
+
+## Invariant
+
+Decisions front-loaded → autonomous → self-fix loop → disclose at close.
+All human interaction happens in Phase 0. Phase 1 never asks for a decision:
+it selects and records the recommended authorized path, or defers only the affected
+branch and continues. No unauthorized model downgrade or scope expansion.
+
+## Quickstart
+
+1. Read `./execution-playbook.md` and follow it phase by phase.
+2. Phase 0 produces: overview doc with frozen registry + `models.json` (copy
+   `models.example.json`, fill real model names with the human).
+3. Phase 1 ends with: `python3 scripts/run_layers.py orchestration.json all-tasks.json
+   --models models.json --prompts prompts --root <repo>` — exit 0 = all supervised
+   done; exit 1 = escalations in `execution-report.json`, render them to the human.
+
+The runner publishes to a retained run-owned integration ref; it never checks results out
+over the user's branch. Requirements: `codex` CLI on PATH, `git`, `python3`. Run tests with
+`python3 -m pytest scripts/ -q`.

@@ -49,8 +49,8 @@ Shared scripts and MCP services live under `shared/`.
 claude plugin marketplace add /path/to/myskills/claude/meta-skill
 claude plugin install meta-skill@meta-skill
 
-claude plugin marketplace add /path/to/myskills/claude/megastorm
-claude plugin install megastorm@megastorm
+claude plugin marketplace add /path/to/myskills/claude/superstorm
+claude plugin install superstorm@superstorm
 ```
 
 可选：`claude/grillstorm` → `grillstorm@grillstorm`。装完重启 `claude`。
@@ -66,13 +66,13 @@ Codex 从 `$CODEX_HOME/skills/`（默认 `~/.codex/skills/`）发现带 `SKILL.m
 
 ```text
 ~/.codex/skills/meta-skill   →  myskills/codex/meta-skill
-~/.codex/skills/megastorm    →  myskills/codex/megastorm-skill
+~/.codex/skills/superstorm    →  myskills/codex/superstorm-skill
 ~/.codex/skills/cross-exam   →  myskills/codex/cross-exam-skill
 ~/.codex/skills/grillstorm   →  myskills/codex/grillstorm
 ```
 
-Codex 正门是 `meta-skill`（`bootstrap` → 生成的 `.codex/commands/run.md`）。`megastorm` / `grillstorm` / `cross-exam` 仍是显式独立 skill。
-Megastorm 还依赖本机已安装的 `brainstorming` skill。
+Codex 正门是 `meta-skill`（`bootstrap` → 生成的 `.codex/commands/run.md`）。`superstorm` / `grillstorm` / `cross-exam` 仍是显式独立 skill。
+Superstorm 还依赖本机已安装的 `brainstorming` skill。
 Grillstorm requires official Matt Pocock skills (`grilling`, `grill-with-docs`, `to-spec`, `to-tickets`, `tdd`, `code-review`, ...). If they are missing, `$grillstorm` asks once and can install them via `scripts/install_official_skills.py`. Execution never calls official `implement`.
 
 ---
@@ -82,7 +82,7 @@ Grillstorm requires official Matt Pocock skills (`grilling`, `grill-with-docs`, 
 | 你的目标 | 推荐入口 | 第一条命令 |
 |---|---|---|
 | 梳理产品、实现、验收、调优 | meta-skill | `/bootstrap` 然后 `/run`（Codex：`bootstrap` → `.codex/commands/run.md`） |
-| 大目标自治交付 | megastorm | `/megastorm` |
+| 大目标自治交付 | superstorm | `/superstorm` |
 | 官方 grilling + 隔离执行 | grillstorm | `$grillstorm` |
 | 实证完成度盘问 | cross-exam | `/cross-exam` |
 | 产品思维审视（不改代码） | 同一包 | `/product-review`，意见可交给 `$grill-me` |
@@ -108,7 +108,7 @@ QA 层       meta-skill        产品验收→测试锻造→完整性扫描
 
 `product-concept / product-map / journey-emotion / experience-map / feature-gap / feature-prune / ui-design / design-to-spec / demo-forge / product-verify / quality-checks / tune / ui-forge / translate / discovery`
 
-### megastorm / grillstorm / cross-exam
+### superstorm / grillstorm / cross-exam
 
 大目标自治、官方 grilling 编排、实证完成度盘问。`/product-review` 和 `/cross-exam` 同一包：产品思维审视，只出意见。它们不是层插件，继续独立安装。
 

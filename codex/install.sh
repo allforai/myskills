@@ -21,12 +21,12 @@ if [ -f "$SCRIPT_DIR/cross-exam-skill/SKILL.md" ]; then
   ln -sfn "$SCRIPT_DIR/cross-exam-skill" "$CODEX_SKILLS/cross-exam"
   echo "Linked cross-exam -> $CODEX_SKILLS/cross-exam"
 fi
-if [ -f "$SCRIPT_DIR/megastorm-skill/SKILL.md" ]; then
-  ln -sfn "$SCRIPT_DIR/megastorm-skill" "$CODEX_SKILLS/megastorm"
-  echo "Linked megastorm -> $CODEX_SKILLS/megastorm"
+if [ -f "$SCRIPT_DIR/superstorm-skill/SKILL.md" ]; then
+  ln -sfn "$SCRIPT_DIR/superstorm-skill" "$CODEX_SKILLS/superstorm"
+  echo "Linked superstorm -> $CODEX_SKILLS/superstorm"
   if [ ! -f "$CODEX_SKILLS/brainstorming/SKILL.md" ]; then
-    echo "WARNING: megastorm requires the 'brainstorming' skill in $CODEX_SKILLS"
-    echo "         (Phase 0 depends on it). Install it before running megastorm."
+    echo "WARNING: superstorm requires the 'brainstorming' skill in $CODEX_SKILLS"
+    echo "         (Phase 0 depends on it). Install it before running superstorm."
   fi
 fi
 if [ -f "$SCRIPT_DIR/grillstorm/SKILL.md" ]; then
@@ -44,7 +44,7 @@ echo "Codex installation complete."
 echo "Usage: linked skills are available from Codex's native skills directory."
 echo ""
 echo "Skills available:"
-for plugin in meta-skill megastorm-skill cross-exam-skill grillstorm; do
+for plugin in meta-skill superstorm-skill cross-exam-skill grillstorm; do
   if [ -d "$SCRIPT_DIR/$plugin" ]; then
     echo "  - $plugin"
   fi

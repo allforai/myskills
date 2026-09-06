@@ -1,6 +1,6 @@
 # cross-exam journey declarations — 思维测试记录
 
-日期：2026-09-05。被测文本：`claude/megastorm/skills/cross-exam.md`、`knowledge/cross-exam/prompts/prober.md`、`knowledge/cross-exam/schemas.md`，提交 e2575e8。
+日期：2026-09-05。被测文本：`claude/superstorm/skills/cross-exam.md`、`knowledge/cross-exam/prompts/prober.md`、`knowledge/cross-exam/schemas.md`，提交 e2575e8。
 方法：每个场景一个 fresh-context 子 agent，只给三份文本和场景描述，不给期望答案，要求按条文说明下一步并引用原句。判定由主会话对照计划里的通过判据。
 
 | 场景 | 通过判据 | agent 回答摘要 | 判定 |

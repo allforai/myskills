@@ -216,7 +216,7 @@ def test_renderer_rejects_visual_done_without_images(sample):
     repo = next((p for p in Path(__file__).resolve().parents if (p / 'codex/cross-exam-skill').is_dir()), None)
     if repo is None:
         pytest.skip('repository integration test')
-    for relative in ('codex/cross-exam-skill/scripts/render_report.py', 'claude/megastorm/scripts/render_report.py'):
+    for relative in ('codex/cross-exam-skill/scripts/render_report.py', 'claude/superstorm/scripts/render_report.py'):
         spec = importlib.util.spec_from_file_location('visual_renderer_test', repo / relative)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
@@ -338,7 +338,7 @@ def test_renderers_load_their_own_mirror_validation():
     if repo is None:
         pytest.skip('repository integration test')
     for relative, mirror in (('codex/cross-exam-skill/scripts/render_report.py', 'codex/cross-exam-skill/visual'),
-                             ('claude/megastorm/scripts/render_report.py', 'claude/megastorm/knowledge/cross-exam/visual')):
+                             ('claude/superstorm/scripts/render_report.py', 'claude/superstorm/knowledge/cross-exam/visual')):
         spec = importlib.util.spec_from_file_location('visual_renderer_probe', repo / relative)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)

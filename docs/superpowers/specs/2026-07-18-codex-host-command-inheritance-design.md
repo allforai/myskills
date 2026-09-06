@@ -2,7 +2,7 @@
 
 ## Goal
 
-Megastorm child Codex processes must inherit the actual executable and effective
+Superstorm child Codex processes must inherit the actual executable and effective
 session-level arguments that launched the current Codex host. The runner must not
 silently fall back to a bare `codex` command or impose a different sandbox/profile.
 
@@ -15,7 +15,7 @@ Cross-exam behavior remain unchanged.
 ## Resolution priority
 
 1. Explicit legacy `--codex-template` when supplied by the caller.
-2. `MEGASTORM_CODEX_COMMAND`, encoded as a non-empty JSON array of argv strings.
+2. `SUPERSTORM_CODEX_COMMAND`, encoded as a non-empty JSON array of argv strings.
 3. Automatic discovery of the nearest real Codex process in the ancestor chain.
 4. Fail preflight with an actionable error. Never use a bare-command fallback.
 
@@ -71,7 +71,7 @@ The normalized command has two option partitions. Root-only approval arguments a
 emitted before `exec`; options accepted by `codex exec` are emitted after it:
 
 ```text
-<executable> <root options> exec <exec options> <Megastorm task options> <prompt>
+<executable> <root options> exec <exec options> <Superstorm task options> <prompt>
 ```
 
 It removes or replaces child-specific/interactive arguments:
@@ -81,7 +81,7 @@ It removes or replaces child-specific/interactive arguments:
 - `-C`, `--cd`, and `--cd=<value>`;
 - `-o`, `--output-last-message`, and equals forms;
 - `--json`, `--no-alt-screen` (zero values), `--color` (one value), `--output-schema` (one value),
-  and an inherited `--ephemeral` are recognized and removed; Megastorm appends one
+  and an inherited `--ephemeral` are recognized and removed; Superstorm appends one
   canonical `--ephemeral` and owns its output contract. Split and equals forms of
   the recognized one-value options are accepted;
 - `--image`, interactive-only modes, `--`, stdin prompt `-`, and non-`exec`
@@ -106,14 +106,14 @@ The child argv is built as an array:
 No shell string is constructed. The runner passes the array directly to
 `subprocess.Popen`.
 
-The current host's sandbox and approval mode win. Megastorm does not inject
+The current host's sandbox and approval mode win. Superstorm does not inject
 `workspace-write` when the parent uses another mode, including
 `--dangerously-bypass-approvals-and-sandbox`. Model and cwd remain task-level and
 are intentionally replaced.
 
 ## Explicit override
 
-`MEGASTORM_CODEX_COMMAND` must decode to a non-empty JSON array of non-empty strings.
+`SUPERSTORM_CODEX_COMMAND` must decode to a non-empty JSON array of non-empty strings.
 Its first element is resolved once with `shutil.which` when not absolute, then
 replaced by its canonical absolute path; its basename must be `codex`. Invalid JSON, a scalar value, an empty
 array, or non-string members fail preflight.
@@ -176,7 +176,7 @@ Unit tests cover:
 - paths and arguments containing spaces without shell evaluation.
 
 The runner end-to-end fake-agent test uses an explicit argv override so it remains
-independent from the test process ancestry. All existing focused Megastorm and
+independent from the test process ancestry. All existing focused Superstorm and
 Cross-exam tests must remain green.
 
 ## Completion criteria

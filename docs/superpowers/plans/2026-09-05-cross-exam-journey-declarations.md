@@ -4,7 +4,7 @@
 
 **Goal:** cross-exam 新增"旅程"声明：用户口述三元组加 oracle，fresh-context 探针端到端走一遍并逐步落证据，盘问官对 oracle 裁决，渲染器出"旅程完成度"节。
 
-**Architecture:** 数据进 `ledger.json` 顶层 `journeys[]`，实证 entry 带 `journey` 与 `steps[]`；渲染器只认 `entry_q` 精确匹配到被采信 entry 的旅程为已盘问。协议在定面之后加 §1b 旅程采集，盘问循环加旅程轮；探针只拿目标不拿 oracle。Claude（`claude/megastorm/`）与 Codex（`codex/cross-exam-skill/`）两个孪生版同步改。
+**Architecture:** 数据进 `ledger.json` 顶层 `journeys[]`，实证 entry 带 `journey` 与 `steps[]`；渲染器只认 `entry_q` 精确匹配到被采信 entry 的旅程为已盘问。协议在定面之后加 §1b 旅程采集，盘问循环加旅程轮；探针只拿目标不拿 oracle。Claude（`claude/superstorm/`）与 Codex（`codex/cross-exam-skill/`）两个孪生版同步改。
 
 **Tech Stack:** Python 3 标准库（渲染器）、unittest、Markdown skill 文件。
 
@@ -24,7 +24,7 @@
   Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
   Claude-Session: https://claude.ai/code/session_01WMtG82xCvdD6Q4BbWm5YXR
   ```
-- 渲染器测试运行方式：`cd claude/megastorm/scripts && python3 -m pytest test_render_report.py -q`；Codex 版 `cd codex/cross-exam-skill/scripts && python3 -m pytest test_render_report.py -q`。pre-commit 会跑 meta-skill 测试和 skill 校验，提交失败即修。
+- 渲染器测试运行方式：`cd claude/superstorm/scripts && python3 -m pytest test_render_report.py -q`；Codex 版 `cd codex/cross-exam-skill/scripts && python3 -m pytest test_render_report.py -q`。pre-commit 会跑 meta-skill 测试和 skill 校验，提交失败即修。
 
 ---
 
@@ -32,26 +32,26 @@
 
 | 文件 | 改动 |
 |---|---|
-| `claude/megastorm/scripts/render_report.py` | journeys 采信、旅程完成度节、计数分列、未盘问旅程、拒渲原因 |
-| `claude/megastorm/scripts/test_render_report.py` | 新增 `TestJourneys` |
+| `claude/superstorm/scripts/render_report.py` | journeys 采信、旅程完成度节、计数分列、未盘问旅程、拒渲原因 |
+| `claude/superstorm/scripts/test_render_report.py` | 新增 `TestJourneys` |
 | `codex/cross-exam-skill/scripts/render_report.py` | 同上，保留 severity 校验 |
 | `codex/cross-exam-skill/scripts/test_render_report.py` | 同上 |
-| `claude/megastorm/knowledge/cross-exam/schemas.md`、`codex/cross-exam-skill/schemas.md` | `journeys[]`、entry 新字段、红线第 4 条 |
-| `claude/megastorm/knowledge/cross-exam/prompts/prober.md`、`codex/cross-exam-skill/prompts/prober.md` | `journey` 输入块、纪律 7 至 9、返回字段 |
-| `claude/megastorm/knowledge/cross-exam/lenses.md`、`codex/cross-exam-skill/lenses.md` | 旅程镜头一行 |
-| `claude/megastorm/skills/cross-exam.md`、`codex/cross-exam-skill/SKILL.md` | description、§1b、§2 旅程轮 |
-| `claude/megastorm/skills/product-review.md`、`codex/cross-exam-skill/product-review.md` | Prior evidence 认 `J` 编号 |
+| `claude/superstorm/knowledge/cross-exam/schemas.md`、`codex/cross-exam-skill/schemas.md` | `journeys[]`、entry 新字段、红线第 4 条 |
+| `claude/superstorm/knowledge/cross-exam/prompts/prober.md`、`codex/cross-exam-skill/prompts/prober.md` | `journey` 输入块、纪律 7 至 9、返回字段 |
+| `claude/superstorm/knowledge/cross-exam/lenses.md`、`codex/cross-exam-skill/lenses.md` | 旅程镜头一行 |
+| `claude/superstorm/skills/cross-exam.md`、`codex/cross-exam-skill/SKILL.md` | description、§1b、§2 旅程轮 |
+| `claude/superstorm/skills/product-review.md`、`codex/cross-exam-skill/product-review.md` | Prior evidence 认 `J` 编号 |
 | `codex/cross-exam-skill/AGENTS.md` | 一句提到旅程 |
 | `CLAUDE.md` | cross-exam 行补旅程 |
-| `claude/megastorm/.claude-plugin/plugin.json`、`marketplace.json` | 版本 0.22.0 → 0.23.0 |
+| `claude/superstorm/.claude-plugin/plugin.json`、`marketplace.json` | 版本 0.22.0 → 0.23.0 |
 
 ---
 
 ### Task 1: Claude 渲染器支持 journeys
 
 **Files:**
-- Modify: `claude/megastorm/scripts/render_report.py`
-- Test: `claude/megastorm/scripts/test_render_report.py`
+- Modify: `claude/superstorm/scripts/render_report.py`
+- Test: `claude/superstorm/scripts/test_render_report.py`
 
 **Interfaces:**
 - Consumes: 现有 `render(run_dir) -> str`、`_has_evidence`、`_risk_key`、`VERDICT_LABELS`、`SEVERITY_ORDER`。
@@ -229,7 +229,7 @@ class TestJourneys(unittest.TestCase):
 
 - [ ] **Step 2: 跑测试确认失败**
 
-Run: `cd claude/megastorm/scripts && python3 -m pytest test_render_report.py -q -k Journeys`
+Run: `cd claude/superstorm/scripts && python3 -m pytest test_render_report.py -q -k Journeys`
 Expected: 10 个用例 FAIL（`## 旅程完成度` 不存在、`旅程裁决` 不存在等）。现有用例仍 PASS。
 
 - [ ] **Step 3: 实现渲染器**
@@ -417,13 +417,13 @@ patterns 节里已有的 `admitted_by_q` 定义删掉，复用上面的。
 
 - [ ] **Step 4: 跑全部渲染器测试**
 
-Run: `cd claude/megastorm/scripts && python3 -m pytest test_render_report.py -q`
+Run: `cd claude/superstorm/scripts && python3 -m pytest test_render_report.py -q`
 Expected: 全部 PASS，含原有用例（`test_not_examined_sorted_by_risk_with_why` 仍通过，因为面的行文案未变）。
 
 - [ ] **Step 5: 提交**
 
 ```bash
-git add claude/megastorm/scripts/render_report.py claude/megastorm/scripts/test_render_report.py
+git add claude/superstorm/scripts/render_report.py claude/superstorm/scripts/test_render_report.py
 git commit -m "cross-exam: renderer reads journeys, separate journey verdict counts.
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
@@ -502,7 +502,7 @@ Claude-Session: https://claude.ai/code/session_01WMtG82xCvdD6Q4BbWm5YXR"
 ### Task 3: schemas.md 两个孪生版
 
 **Files:**
-- Modify: `claude/megastorm/knowledge/cross-exam/schemas.md`
+- Modify: `claude/superstorm/knowledge/cross-exam/schemas.md`
 - Modify: `codex/cross-exam-skill/schemas.md`
 
 **Interfaces:**
@@ -557,13 +557,13 @@ Claude-Session: https://claude.ai/code/session_01WMtG82xCvdD6Q4BbWm5YXR"
 
 - [ ] **Step 5: 校验两个文件差异只在 UUID 处**
 
-Run: `diff claude/megastorm/knowledge/cross-exam/schemas.md codex/cross-exam-skill/schemas.md`
+Run: `diff claude/superstorm/knowledge/cross-exam/schemas.md codex/cross-exam-skill/schemas.md`
 Expected: 只有原有的 `schema_version`、`run_id`、`id: stable UUID`、`ledger_store.py` 段差异。
 
 - [ ] **Step 6: 提交**
 
 ```bash
-git add claude/megastorm/knowledge/cross-exam/schemas.md codex/cross-exam-skill/schemas.md
+git add claude/superstorm/knowledge/cross-exam/schemas.md codex/cross-exam-skill/schemas.md
 git commit -m "cross-exam: schema for journey declarations and step evidence.
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
@@ -575,7 +575,7 @@ Claude-Session: https://claude.ai/code/session_01WMtG82xCvdD6Q4BbWm5YXR"
 ### Task 4: prober.md 两个孪生版
 
 **Files:**
-- Modify: `claude/megastorm/knowledge/cross-exam/prompts/prober.md`
+- Modify: `claude/superstorm/knowledge/cross-exam/prompts/prober.md`
 - Modify: `codex/cross-exam-skill/prompts/prober.md`
 
 **Interfaces:**
@@ -624,13 +624,13 @@ Claude-Session: https://claude.ai/code/session_01WMtG82xCvdD6Q4BbWm5YXR"
 
 - [ ] **Step 4: 两个文件保持完全相同**
 
-Run: `diff claude/megastorm/knowledge/cross-exam/prompts/prober.md codex/cross-exam-skill/prompts/prober.md && echo identical`
+Run: `diff claude/superstorm/knowledge/cross-exam/prompts/prober.md codex/cross-exam-skill/prompts/prober.md && echo identical`
 Expected: `identical`
 
 - [ ] **Step 5: 提交**
 
 ```bash
-git add claude/megastorm/knowledge/cross-exam/prompts/prober.md codex/cross-exam-skill/prompts/prober.md
+git add claude/superstorm/knowledge/cross-exam/prompts/prober.md codex/cross-exam-skill/prompts/prober.md
 git commit -m "cross-exam: prober walks journeys step by step within a budget, never sees the oracle.
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
@@ -642,7 +642,7 @@ Claude-Session: https://claude.ai/code/session_01WMtG82xCvdD6Q4BbWm5YXR"
 ### Task 5: lenses.md 旅程镜头
 
 **Files:**
-- Modify: `claude/megastorm/knowledge/cross-exam/lenses.md`
+- Modify: `claude/superstorm/knowledge/cross-exam/lenses.md`
 - Modify: `codex/cross-exam-skill/lenses.md`
 
 - [ ] **Step 1: 镜头表加一行（契约 census 行之后）**
@@ -661,11 +661,11 @@ Claude-Session: https://claude.ai/code/session_01WMtG82xCvdD6Q4BbWm5YXR"
 
 - [ ] **Step 3: 校验两文件相同并提交**
 
-Run: `diff claude/megastorm/knowledge/cross-exam/lenses.md codex/cross-exam-skill/lenses.md && echo identical`
+Run: `diff claude/superstorm/knowledge/cross-exam/lenses.md codex/cross-exam-skill/lenses.md && echo identical`
 Expected: `identical`
 
 ```bash
-git add claude/megastorm/knowledge/cross-exam/lenses.md codex/cross-exam-skill/lenses.md
+git add claude/superstorm/knowledge/cross-exam/lenses.md codex/cross-exam-skill/lenses.md
 git commit -m "cross-exam: journey lens.
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
@@ -677,7 +677,7 @@ Claude-Session: https://claude.ai/code/session_01WMtG82xCvdD6Q4BbWm5YXR"
 ### Task 6: 协议文本（cross-exam.md 与 Codex SKILL.md）
 
 **Files:**
-- Modify: `claude/megastorm/skills/cross-exam.md`
+- Modify: `claude/superstorm/skills/cross-exam.md`
 - Modify: `codex/cross-exam-skill/SKILL.md`
 - Modify: `codex/cross-exam-skill/AGENTS.md:10`
 
@@ -753,11 +753,11 @@ Codex 版同文（派发方式沿用其 `spawn_agent` 措辞）。
 
 - [ ] **Step 5: 校验 skill 文件引用与提交**
 
-Run: `cd claude/megastorm/scripts && python3 check_skill_refs.py 2>&1 | tail -3`
+Run: `cd claude/superstorm/scripts && python3 check_skill_refs.py 2>&1 | tail -3`
 Expected: 无错误（脚本存在时）。若脚本要求参数，按其 `--help`。
 
 ```bash
-git add claude/megastorm/skills/cross-exam.md codex/cross-exam-skill/SKILL.md codex/cross-exam-skill/AGENTS.md
+git add claude/superstorm/skills/cross-exam.md codex/cross-exam-skill/SKILL.md codex/cross-exam-skill/AGENTS.md
 git commit -m "cross-exam: journey intake after census, journey round in the loop.
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
@@ -769,7 +769,7 @@ Claude-Session: https://claude.ai/code/session_01WMtG82xCvdD6Q4BbWm5YXR"
 ### Task 7: product-review 认 J 编号
 
 **Files:**
-- Modify: `claude/megastorm/skills/product-review.md:76,102,132-133`
+- Modify: `claude/superstorm/skills/product-review.md:76,102,132-133`
 - Modify: `codex/cross-exam-skill/product-review.md`（对应段落）
 
 - [ ] **Step 1: Prior evidence 段改写**
@@ -790,13 +790,13 @@ Claude-Session: https://claude.ai/code/session_01WMtG82xCvdD6Q4BbWm5YXR"
 
 - [ ] **Step 3: Codex 版同样改动，diff 确认两版只差平台措辞**
 
-Run: `diff claude/megastorm/skills/product-review.md codex/cross-exam-skill/product-review.md`
+Run: `diff claude/superstorm/skills/product-review.md codex/cross-exam-skill/product-review.md`
 Expected: 仅原有的平台差异（AskUserQuestion 等）。
 
 - [ ] **Step 4: 提交**
 
 ```bash
-git add claude/megastorm/skills/product-review.md codex/cross-exam-skill/product-review.md
+git add claude/superstorm/skills/product-review.md codex/cross-exam-skill/product-review.md
 git commit -m "product-review: consume cross-exam journey verdicts as prior evidence; job ids become JOBn.
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
@@ -808,15 +808,15 @@ Claude-Session: https://claude.ai/code/session_01WMtG82xCvdD6Q4BbWm5YXR"
 ### Task 8: 版本、CLAUDE.md、发布检查
 
 **Files:**
-- Modify: `claude/megastorm/.claude-plugin/plugin.json:5`
-- Modify: `claude/megastorm/.claude-plugin/marketplace.json:9`
+- Modify: `claude/superstorm/.claude-plugin/plugin.json:5`
+- Modify: `claude/superstorm/.claude-plugin/marketplace.json:9`
 - Modify: `CLAUDE.md:207`
 
 - [ ] **Step 1: 版本 0.22.0 → 0.23.0 两处**
 
 ```bash
-sed -i '' 's/"version": "0.22.0"/"version": "0.23.0"/' claude/megastorm/.claude-plugin/plugin.json claude/megastorm/.claude-plugin/marketplace.json
-grep -n '"version"' claude/megastorm/.claude-plugin/plugin.json claude/megastorm/.claude-plugin/marketplace.json
+sed -i '' 's/"version": "0.22.0"/"version": "0.23.0"/' claude/superstorm/.claude-plugin/plugin.json claude/superstorm/.claude-plugin/marketplace.json
+grep -n '"version"' claude/superstorm/.claude-plugin/plugin.json claude/superstorm/.claude-plugin/marketplace.json
 ```
 
 Expected: 两处均 `0.23.0`。
@@ -828,7 +828,7 @@ Expected: 两处均 `0.23.0`。
 - [ ] **Step 3: 全量测试**
 
 ```bash
-cd claude/megastorm/scripts && python3 -m pytest -q
+cd claude/superstorm/scripts && python3 -m pytest -q
 cd ../../../codex/cross-exam-skill/scripts && python3 -m pytest -q
 ```
 
@@ -837,8 +837,8 @@ Expected: 全部 PASS。
 - [ ] **Step 4: 提交**
 
 ```bash
-git add claude/megastorm/.claude-plugin/plugin.json claude/megastorm/.claude-plugin/marketplace.json CLAUDE.md
-git commit -m "megastorm 0.23.0: cross-exam journey declarations.
+git add claude/superstorm/.claude-plugin/plugin.json claude/superstorm/.claude-plugin/marketplace.json CLAUDE.md
+git commit -m "superstorm 0.23.0: cross-exam journey declarations.
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01WMtG82xCvdD6Q4BbWm5YXR"
@@ -849,7 +849,7 @@ Claude-Session: https://claude.ai/code/session_01WMtG82xCvdD6Q4BbWm5YXR"
 ### Task 9: 思维测试（skill 文本的失败场景）
 
 **Files:**
-- Read: `claude/megastorm/skills/cross-exam.md`、`claude/megastorm/knowledge/cross-exam/prompts/prober.md`、`schemas.md`
+- Read: `claude/superstorm/skills/cross-exam.md`、`claude/superstorm/knowledge/cross-exam/prompts/prober.md`、`schemas.md`
 - Create: `docs/superpowers/plans/2026-09-05-cross-exam-journey-thought-tests.md`（记录结果）
 
 每个场景派一个 fresh-context `Agent(general-purpose)`，prompt 只给：cross-exam.md 全文、prober.md 全文、schemas.md 全文、场景描述、要求"按 skill 文本说明你下一步会做什么，引用具体条文"。不给期望答案。判定标准写在下面，由主会话对照。
@@ -889,7 +889,7 @@ Claude-Session: https://claude.ai/code/session_01WMtG82xCvdD6Q4BbWm5YXR"
 把六个场景的 agent 回答摘要与判定写入 `docs/superpowers/plans/2026-09-05-cross-exam-journey-thought-tests.md`。任一场景不通过 → 修 skill 文本对应条文，重跑该场景，直到通过。提交：
 
 ```bash
-git add docs/superpowers/plans/2026-09-05-cross-exam-journey-thought-tests.md claude/megastorm codex/cross-exam-skill
+git add docs/superpowers/plans/2026-09-05-cross-exam-journey-thought-tests.md claude/superstorm codex/cross-exam-skill
 git commit -m "cross-exam: journey thought tests and wording fixes.
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>

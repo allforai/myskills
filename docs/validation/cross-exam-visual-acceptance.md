@@ -6,7 +6,7 @@
 
 ```sh
 python3 -m pytest codex/cross-exam-skill/scripts codex/cross-exam-skill/visual -q
-python3 -m pytest claude/megastorm/scripts/test_render_report.py claude/megastorm/scripts/test_check_skill_refs.py claude/megastorm/knowledge/cross-exam/visual -q
+python3 -m pytest claude/superstorm/scripts/test_render_report.py claude/superstorm/scripts/test_check_skill_refs.py claude/superstorm/knowledge/cross-exam/visual -q
 python3 shared/visual-acceptance/sync.py --check
 ```
 

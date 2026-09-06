@@ -1,4 +1,4 @@
-# Grok Build Megastorm and Cross-exam acceptance
+# Grok Build Superstorm and Cross-exam acceptance
 
 Date: 2026-07-18
 
@@ -13,8 +13,8 @@ authentication, and a real streaming capture were not run.
 
 ## Delivered surface
 
-- One Claude-compatible Grok plugin root at `grok/megastorm/`.
-- Two independent user-invocable skills: `megastorm` and `cross-exam`.
+- One Claude-compatible Grok plugin root at `grok/superstorm/`.
+- Two independent user-invocable skills: `superstorm` and `cross-exam`.
 - Verified current-launcher discovery for direct and bounded wrapper grammar,
   including Linux `/proc`, macOS `KERN_PROCARGS2`, trusted executable SHA pins,
   capability probes, and TOCTOU checks.
@@ -34,7 +34,7 @@ authentication, and a real streaming capture were not run.
 
 RED baselines were captured before either Grok skill existed.
 
-- Megastorm baseline skipped mandatory capability/census discipline under time
+- Superstorm baseline skipped mandatory capability/census discipline under time
   pressure and accepted task-list green as class-wide completion.
 - Cross-exam baseline continued author self-review and considered a headless
   subprocess when native subagents were unavailable.
@@ -102,14 +102,14 @@ context traversal and counterexample test were added, the auditor confirmed:
 ## Verification commands
 
 ```text
-python3 -m pytest -q grok/megastorm/scripts
+python3 -m pytest -q grok/superstorm/scripts
 193 passed
 
-python3 -m pytest -q codex/megastorm-skill/scripts codex/cross-exam-skill/scripts
+python3 -m pytest -q codex/superstorm-skill/scripts codex/cross-exam-skill/scripts
 126 passed
 
-bash -n grok/megastorm/install.sh
-python3 -m py_compile grok/megastorm/scripts/*.py
+bash -n grok/superstorm/install.sh
+python3 -m py_compile grok/superstorm/scripts/*.py
 git diff --check
 ```
 

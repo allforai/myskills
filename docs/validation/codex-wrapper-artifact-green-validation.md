@@ -30,7 +30,7 @@ The corrected implementation now:
 
 ## Automated evidence
 
-The full Codex Megastorm plus Cross-exam script suite passes under `python3 -m pytest`; Python
+The full Codex Superstorm plus Cross-exam script suite passes under `python3 -m pytest`; Python
 byte-compilation and `git diff --check` also pass. Targeted tests include same-path supervisor
 replacement, control-plane mutations, stdout/JSON spoofing, alias/wrapper replay, inherited model
 ownership, candidate CAS races/crashes, concurrent stale-baseline candidates, and macOS-style

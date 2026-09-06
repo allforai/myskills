@@ -1,8 +1,8 @@
-# Megastorm Unattended Decisions Design
+# Superstorm Unattended Decisions Design
 
 ## Goal
 
-Megastorm front-loads human decisions in Phase 0. After Phase 0 it never pauses for a
+Superstorm front-loads human decisions in Phase 0. After Phase 0 it never pauses for a
 new design choice, stage transition, model failure, oversized module, or non-convergent
 agent. It chooses the recommended safe path, records the choice, continues all viable
 work, and discloses every autonomous decision in the final report.
@@ -23,7 +23,7 @@ After Phase 0, every previously unseen decision is handled as follows:
 5. Continue without asking the user.
 
 Every fallback must also remain inside the Phase 0 authority envelope; reversibility
-does not confer permission. If no option is authorized, Megastorm may collect
+does not confer permission. If no option is authorized, Superstorm may collect
 non-mutating evidence, records the item as `deferred`, skips only its dependent
 subgraph, and continues all independent work. Lack of authority never grants authority
 implicitly.
@@ -139,8 +139,8 @@ The report ends the run. It does not invoke or suggest another interactive workf
 
 ## Scope
 
-Implement this behavior in the Claude and Codex Megastorm variants. Remove the Grok
-Megastorm variant in full at the user's request; Git history remains the recovery path.
+Implement this behavior in the Claude and Codex Superstorm variants. Remove the Grok
+Superstorm variant in full at the user's request; Git history remains the recovery path.
 
 ## Validation
 
@@ -154,4 +154,4 @@ Megastorm variant in full at the user's request; Git history remains the recover
   model failure, oversized modules, persistence failure, registry gaps, and reality
   gates. They cover null pre-execution fields, recovery to terminal fields, emergency
   records, and degraded in-memory records.
-- No tracked file remains under `grok/megastorm/`.
+- No tracked file remains under `grok/superstorm/`.

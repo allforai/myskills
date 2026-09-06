@@ -4,7 +4,7 @@
 
 Implement the approved design in
 `docs/superpowers/specs/2026-07-20-codex-wrapper-model-policy-design.md` while
-preserving existing Codex Megastorm/Cross-exam behavior and macOS `python3`
+preserving existing Codex Superstorm/Cross-exam behavior and macOS `python3`
 compatibility.
 
 ## Tasks
@@ -64,14 +64,14 @@ compatibility.
 
 - Update skill/playbook/schemas/model examples from observed RED failures.
 - Re-run the identical pressure scenario and close remaining loopholes.
-- Add scoped static/runtime tests proving Megastorm-owned commands use
+- Add scoped static/runtime tests proving Superstorm-owned commands use
   `python3`/`sys.executable`, with a PATH fixture lacking `python`.
 
 ### 8. Regression and acceptance
 
 - Run focused host, channel, artifact, runner, Git, cancellation, resume, and
   skill-pressure suites.
-- Run all existing Codex Megastorm and Cross-exam tests.
+- Run all existing Codex Superstorm and Cross-exam tests.
 - Perform independent adversarial thought-test acceptance.
 - Write a report separating verified contracts from remaining reality gates.
 - Commit and push `main` after approval-grade evidence.

@@ -4,7 +4,7 @@
 
 ## 1. 问题与目标
 
-大目标流水线（如 megastorm）跑完后经常"漏东漏西"：任务全绿，但交付物存在
+大目标流水线（如 superstorm）跑完后经常"漏东漏西"：任务全绿，但交付物存在
 **需求覆盖缺口**（某需求无任务覆盖）、**集成缝隙**（单任务验收全过、端到端串不起来）、
 **需求跑偏**（做出来的不是想要的）、**细节质量马虎**（边角状态、错误处理粗糙）。
 现有验收全部是**任务级、正向**的（supervisor 重跑 acceptance_cmd），回答"任务 T 过没过"，
@@ -20,8 +20,8 @@ cross-exam 反向解决：以**泄漏点**（"如果 X 真做完了就不该长�
 ## 2. 形态与边界（用户已冻结的决策）
 
 - **独立通用技能** `/cross-exam`，新插件 `claude/cross-exam/`（CC 平台，暂不移植 Codex）。
-  技能本体**零项目痕迹、零技术栈硬编码**；megastorm 只是可选数据源之一。
-- **只在有人在场时运行**：run 全部收尾后（megastorm Phase 2 报告末尾一句邀请，不自动进入）
+  技能本体**零项目痕迹、零技术栈硬编码**；superstorm 只是可选数据源之一。
+- **只在有人在场时运行**：run 全部收尾后（superstorm Phase 2 报告末尾一句邀请，不自动进入）
   或用户随时主动发起。执行中绝不插盘。
 - **交互模式：苏格拉底式提问教练**——技能根据泄漏点生成"你该问这个系统的问题"，
   用户选题（或自己出题），技能实测作答，缺口在问答中浮现。
@@ -29,8 +29,8 @@ cross-exam 反向解决：以**泄漏点**（"如果 X 真做完了就不该长�
   有的问题读代码即可实证，有的必须跑起来逐状态截图，有的对台账对账即可。
 - **证据纪律**：涉及运行时的问题，**逐状态截图留档**（不是只留成功图）。
 - **下游**：只记账不修。缺口带证据入台账，修复由用户另行决定。
-- **megastorm 邀请句在本计划范围内**：megastorm Phase 2 报告末尾加一句
-  "可运行 /cross-exam 对本次交付做实证盘问"——这是对 megastorm 插件的附带小改
+- **superstorm 邀请句在本计划范围内**：superstorm Phase 2 报告末尾加一句
+  "可运行 /cross-exam 对本次交付做实证盘问"——这是对 superstorm 插件的附带小改
   （skill 一行 + 三处 manifest patch bump），排进实现计划，避免漏排或越界争议。
 
 ## 3. 架构 — 盘问官 / 实测官硬分离
@@ -51,7 +51,7 @@ claude/cross-exam/
 - **实测官**（每问一个 fresh-context 子 agent）：只拿到问题 + 访问方式 + 证据落盘位置，
   **看不到盘问官的怀疑与对话史**。只带回原始观察，不下结论。
 
-原理与 megastorm supervisor 同源反用：**测量者不能被期望污染**。
+原理与 superstorm supervisor 同源反用：**测量者不能被期望污染**。
 （正对头号教训：验收诚实性 > 引擎机制。）
 
 产物落被测项目：`docs/cross-exam/<日期>-<目标>/{ledger.json, evidence/, completion-report.md}`。
@@ -59,7 +59,7 @@ claude/cross-exam/
 ## 4. 会话流程
 
 1. **定靶（intake）**：确认被测对象、访问方式、需求基准
-   （自动探测顺序：megastorm overview registry（R-*）→ specs → README → 问用户 → 无基准模式）。
+   （自动探测顺序：superstorm overview registry（R-*）→ specs → README → 问用户 → 无基准模式）。
    **无基准模式定义**：完全没有需求基准时，需求覆盖、需求跑偏两个镜头**关闭并在报告中
    明示"无基准，未盘"**，只开集成缝隙 + 细节质量两个镜头（它们不依赖基准）；报告
    `baseline: none`。环境能力探测（能否运行、有无 Playwright）。
@@ -161,8 +161,8 @@ evidence{dir, screenshots, key_observation}、verdict、requirement_ref、severi
 | 取证介质 | 运行时+静态+台账，LLM 自选 | git 历史不要 |
 | 证据 | 逐状态截图留档 | 不只留成功图 |
 | 下游 | 只记账不修 | 审计定位，无修复动机 |
-| 落点 | 独立通用技能，CC only | megastorm 仅为数据源 |
-| 落点修订 (2026-07-09) | 并入 megastorm 插件分发（同插件双命令） | 用户裁定：独立安装太麻烦；技能内容保持通用零依赖，仅打包合一。目录：megastorm/knowledge/cross-exam/ + scripts/render_report.py |
+| 落点 | 独立通用技能，CC only | superstorm 仅为数据源 |
+| 落点修订 (2026-07-09) | 并入 superstorm 插件分发（同插件双命令） | 用户裁定：独立安装太麻烦；技能内容保持通用零依赖，仅打包合一。目录：superstorm/knowledge/cross-exam/ + scripts/render_report.py |
 | 命名 | /cross-exam 盘问 | 探针是手段不是目的 |
 | 产出 | 实证完成度报告 | 报告是目的 |
 | 架构 | 盘问官/实测官分离（路线 B） | 测量不被期望污染 |

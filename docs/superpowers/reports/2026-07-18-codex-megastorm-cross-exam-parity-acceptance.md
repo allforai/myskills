@@ -1,8 +1,8 @@
-# Codex Megastorm + Cross-exam parity acceptance
+# Codex Superstorm + Cross-exam parity acceptance
 
 ## Result
 
-The Codex-native Megastorm protocol is aligned to the Claude v0.14.0 capability
+The Codex-native Superstorm protocol is aligned to the Claude v0.14.0 capability
 surface, Cross-exam is available as an independent skill, and the runner's normal
 execution path no longer writes or commits through the user's checked-out worktree.
 
@@ -13,13 +13,13 @@ Focused result: **117 passed**.
 Command:
 
 ```text
-python3 -m pytest codex/megastorm-skill/scripts codex/cross-exam-skill/scripts -q
+python3 -m pytest codex/superstorm-skill/scripts codex/cross-exam-skill/scripts -q
 ```
 
 Additional gates:
 
 ```text
-python3 -m py_compile codex/megastorm-skill/scripts/*.py codex/cross-exam-skill/scripts/*.py
+python3 -m py_compile codex/superstorm-skill/scripts/*.py codex/cross-exam-skill/scripts/*.py
 bash -n codex/install.sh
 git diff --check
 ```
@@ -48,7 +48,7 @@ All focused gates passed.
 
 ## Parity accounting
 
-The parity map is maintained in `codex/megastorm-skill/PARITY.md`. Host-specific
+The parity map is maintained in `codex/superstorm-skill/PARITY.md`. Host-specific
 Claude Workflow calls, manifests, and slash commands are intentionally not copied;
 Codex uses skills, `codex exec`, Python orchestration, and fresh-context agents.
 
@@ -59,7 +59,7 @@ Codex uses skills, `codex exec`, Python orchestration, and fresh-context agents.
   duplicate top-level test module names. The focused changed-scope suite is isolated and
   green; the root collection failure was not caused or modified by this change.
 - Workspace-write sandboxing cannot prove that every arbitrary command lacks remote side
-  effects. Megastorm therefore requires Phase 0 capability authorization, strips ambient
+  effects. Superstorm therefore requires Phase 0 capability authorization, strips ambient
   secrets by default, and must refuse unattended work when the host cannot enforce the
   requested boundary.
 - Cross-exam itself was not auto-run against this delivery: its protocol is explicitly

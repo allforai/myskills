@@ -15,12 +15,12 @@ myskills/
 │   │   ├── .claude-plugin/   # Plugin + marketplace manifests
 │   │   ├── skills/           # bootstrap/SKILL.md (project analysis + generation)
 │   │   └── knowledge/        # Capability templates, orchestrator, protocols
-│   ├── megastorm/
+│   ├── superstorm/
 │   └── grillstorm/
 │
 ├── codex/                    # Codex platform (fully native)
 │   ├── meta-skill/           # AGENTS.md + SKILL.md adapter
-│   ├── megastorm-skill/
+│   ├── superstorm-skill/
 │   ├── grillstorm/
 │   └── cross-exam-skill/
 │
@@ -120,8 +120,8 @@ Follow each harness's own install surface. Do not use repo `install.sh` scripts.
 claude plugin marketplace add /path/to/myskills/claude/meta-skill
 claude plugin install meta-skill@meta-skill
 
-claude plugin marketplace add /path/to/myskills/claude/megastorm
-claude plugin install megastorm@megastorm
+claude plugin marketplace add /path/to/myskills/claude/superstorm
+claude plugin install superstorm@superstorm
 ```
 
 Optional: `claude/grillstorm` → `grillstorm@grillstorm`. Restart `claude` after install.
@@ -131,7 +131,7 @@ Grillstorm requires official Matt Pocock skills (`grilling`, `to-spec`, `to-tick
 
 ```text
 ~/.codex/skills/meta-skill   →  myskills/codex/meta-skill
-~/.codex/skills/megastorm    →  myskills/codex/megastorm-skill
+~/.codex/skills/superstorm    →  myskills/codex/superstorm-skill
 ~/.codex/skills/cross-exam   →  myskills/codex/cross-exam-skill
 ~/.codex/skills/grillstorm   →  myskills/codex/grillstorm
 ```
@@ -205,12 +205,12 @@ Every entry below is user-invoked only. Do **not** set `disable-model-invocation
 | Situation | Entry | Why this one |
 |---|---|---|
 | A project that must go from product design through implementation to verification (product concept, experience map, art, game design, verify nodes) | `/bootstrap` → `/run` | The only pipeline with the product-design capabilities and the `.allforai/` data bus |
-| One large engineering goal to finish autonomously, decisions front-loaded, no product-design phase | `/megastorm` | superpowers brainstorming/plans as the design front end; artifacts under `docs/superpowers/` |
+| One large engineering goal to finish autonomously, decisions front-loaded, no product-design phase | `/superstorm` | superpowers brainstorming/plans as the design front end; artifacts under `docs/superpowers/` |
 | Same goal shape, but design must follow Matt Pocock's official skills (grilling → to-spec → to-tickets → tdd → code-review) | `/grillstorm` | Official skills own design; Grillstorm owns routing, DAG, worktree execution, resume, handoff; artifacts under `docs/grillstorm/` |
 | A finished delivery that may be fake-complete; independent evidence wanted | `/cross-exam` | Fresh-context probers gather evidence, deterministic report, records only, refuses to run unattended; user-declared journeys walked end-to-end and judged against an oracle |
 | A finished product; is it useful and sellable for the jobs the user names | `/product-review` | Product-thinking critique, competitor comparison, advice only; same package as cross-exam, different protocol |
 
-`/megastorm` and `/grillstorm` share the execution shape (front-loaded decisions, DAG, concurrent worktrees, supervision, resume); they differ only in the design front end. `/cross-exam` then `/product-review` is the natural order after any of the three: first "is it done", then "is it good".
+`/superstorm` and `/grillstorm` share the execution shape (front-loaded decisions, DAG, concurrent worktrees, supervision, resume); they differ only in the design front end. `/cross-exam` then `/product-review` is the natural order after any of the three: first "is it done", then "is it good".
 
 ## Agent skills
 

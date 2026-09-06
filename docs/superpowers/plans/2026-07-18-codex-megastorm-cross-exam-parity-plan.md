@@ -1,4 +1,4 @@
-# Codex Megastorm and Cross-exam Parity Implementation Plan
+# Codex Superstorm and Cross-exam Parity Implementation Plan
 
 1. Port v0.14 task, supervisor, planning, DAG, reality-gate, census, environment,
    and reporting contracts into the Codex skill and add parity tests.
@@ -8,7 +8,7 @@
    checked refs, actual-diff validation, and safe publication/cleanup metadata.
 4. Add `codex/cross-exam-skill` with Codex-native hard gate, intake protocol,
    census/deep-dive workflows, evidence schemas, deterministic renderer, and tests.
-5. Update Megastorm documentation, schemas, prompts, version metadata, installation
+5. Update Superstorm documentation, schemas, prompts, version metadata, installation
    guidance, parity matrix, migration notes, and Cross-exam invitation.
 6. Run focused unit/integration tests, full repository tests, static checks, dirty
    worktree/Git fault simulations, then perform a structured thought-test review

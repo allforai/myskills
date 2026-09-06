@@ -1,8 +1,8 @@
-# Codex Megastorm and Cross-exam Parity Design
+# Codex Superstorm and Cross-exam Parity Design
 
 ## Goal
 
-Bring the Codex implementation to behavioral parity with the Claude Megastorm
+Bring the Codex implementation to behavioral parity with the Claude Superstorm
 v0.14.0 protocol, add Cross-exam as an independent Codex skill, and harden the
 Codex execution runner for safe unattended operation.
 
@@ -16,15 +16,15 @@ Codex multi-agent support for independent Cross-exam probing.
 
 This change covers three related deliverables:
 
-1. Extend `codex/megastorm-skill/` from its current v0.3.0 protocol to the
-   capabilities present in Claude Megastorm v0.14.0.
+1. Extend `codex/superstorm-skill/` from its current v0.3.0 protocol to the
+   capabilities present in Claude Superstorm v0.14.0.
 2. Add an independent `codex/cross-exam-skill/` that can audit any delivery and
-   can optionally consume Megastorm artifacts.
+   can optionally consume Superstorm artifacts.
 3. Replace unsafe runner behavior with isolated execution, protected user Git
    state, controlled processes, durable state, and auditable events.
 
 The change does not introduce a shared Claude/Codex runtime, automatically run
-Cross-exam after Megastorm, perform fixes during Cross-exam, or silently choose
+Cross-exam after Superstorm, perform fixes during Cross-exam, or silently choose
 or downgrade models.
 
 ## Chosen Approach
@@ -42,7 +42,7 @@ Claude expose different orchestration primitives.
 
 ```text
 codex/
-├── megastorm-skill/
+├── superstorm-skill/
 │   ├── SKILL.md
 │   ├── AGENTS.md
 │   ├── execution-playbook.md
@@ -63,10 +63,10 @@ codex/
 ```
 
 The skills communicate through files, not imports or hidden session state.
-Cross-exam may read a Megastorm registry and report but remains fully usable
+Cross-exam may read a Superstorm registry and report but remains fully usable
 with a spec, README, user-provided baseline, or no baseline.
 
-## Megastorm Protocol Parity
+## Superstorm Protocol Parity
 
 ### Environment capability probe
 
@@ -174,7 +174,7 @@ must not use `git add -A && git commit` to capture arbitrary pre-existing user
 changes.
 
 At startup it records the user's current branch, HEAD, worktree status, and a
-content fingerprint for existing modifications. It creates a Megastorm-owned
+content fingerprint for existing modifications. It creates a Superstorm-owned
 integration branch/worktree from a controlled baseline. Every writing task runs
 in its own task worktree derived from the latest eligible integration state.
 
@@ -190,7 +190,7 @@ Task flow is:
    the user's current branch.
 
 Existing dirty state remains in the user's worktree and is never staged or
-committed by Megastorm. If Git cannot create a safe baseline without modifying
+committed by Superstorm. If Git cannot create a safe baseline without modifying
 that state, preflight stops with an actionable explanation rather than stashing
 or committing it implicitly.
 
@@ -286,7 +286,7 @@ expectation are excluded from the prober input.
 
 Intake determines the target, how to run it, the evidence baseline, environment
 capabilities, and whether runtime/screenshots are possible. Baseline discovery
-order is Megastorm registry, related specs, README, user-provided requirements,
+order is Superstorm registry, related specs, README, user-provided requirements,
 then no-baseline mode.
 
 No-baseline mode disables requirement-coverage and requirement-drift judgments
@@ -375,7 +375,7 @@ on dirty content absent from `HEAD`, preflight stops and asks the user to commit
 it; the runner never chooses how to preserve it.
 
 Each run has an immutable UUID. Internal refs use
-`refs/megastorm/runs/<uuid>/{baseline,integration}` and worktrees live below a
+`refs/superstorm/runs/<uuid>/{baseline,integration}` and worktrees live below a
 run-owned temporary root. Ref creation and movement use compare-and-swap rules:
 refs must be absent on first creation; resume must find the persisted object IDs;
 and an update succeeds only if the old value equals the persisted expected value.
@@ -386,7 +386,7 @@ worktrees, and optionally creates a human-facing branch using a user-approved
 name. An existing human-facing ref causes a closed failure rather than overwrite.
 Cancelled or escalated runs retain internal refs, state, logs, and unmerged
 worktrees required for diagnosis/resume. Explicit cleanup may delete only paths
-under the recorded run root and refs under `refs/megastorm/runs/<uuid>/`; deletion
+under the recorded run root and refs under `refs/superstorm/runs/<uuid>/`; deletion
 of the final handoff ref requires separate confirmation.
 
 ### Execution security envelope
@@ -566,7 +566,7 @@ syntax.
 
 ## Completion Criteria
 
-- All existing Codex Megastorm tests continue to pass.
+- All existing Codex Superstorm tests continue to pass.
 - New parity and reliability tests pass.
 - A documented parity matrix has no unexplained Claude v0.14 capability gaps.
 - Cross-exam refuses to run without an independent fresh-context agent.

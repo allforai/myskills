@@ -1,28 +1,28 @@
-# megastorm Skill Implementation Plan
+# superstorm Skill Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build `megastorm` — a Claude Code plugin (global command `/megastorm <goal>`) in the myskills repo that chains superpowers brainstorming/writing-plans/executing-plans into an autonomous, Workflow-driven pipeline for large goals.
+**Goal:** Build `superstorm` — a Claude Code plugin (global command `/superstorm <goal>`) in the myskills repo that chains superpowers brainstorming/writing-plans/executing-plans into an autonomous, Workflow-driven pipeline for large goals.
 
-**Architecture:** A plugin at `claude/megastorm/` with (1) three deterministic Python scripts (plan-task validation, task-DAG orchestration, closure checking) that are the testable core, (2) a `skills/megastorm.md` orchestration brain that drives the phase-by-phase CC Workflow pipeline, (3) six prompt-template knowledge files that inline the brainstorming/writing-plans/executing-plans methodologies into headless Workflow agents, and (4) JSON schemas pinning the agent contracts. The LLM produces structured JSON via Workflow `schema`; the Python scripts are pure functions over that JSON.
+**Architecture:** A plugin at `claude/superstorm/` with (1) three deterministic Python scripts (plan-task validation, task-DAG orchestration, closure checking) that are the testable core, (2) a `skills/superstorm.md` orchestration brain that drives the phase-by-phase CC Workflow pipeline, (3) six prompt-template knowledge files that inline the brainstorming/writing-plans/executing-plans methodologies into headless Workflow agents, and (4) JSON schemas pinning the agent contracts. The LLM produces structured JSON via Workflow `schema`; the Python scripts are pure functions over that JSON.
 
 **Tech Stack:** Python 3 (`unittest`, mirroring `shared/scripts/orchestrator/` convention), Markdown skill/command files with YAML frontmatter, the built-in CC Workflow tool (`agent`/`pipeline`/`parallel`).
 
-**Spec:** `docs/superpowers/specs/2026-06-09-megastorm-pipeline-design.md`
+**Spec:** `docs/superpowers/specs/2026-06-09-superstorm-pipeline-design.md`
 
 ---
 
 ## File Structure
 
 ```
-claude/megastorm/
+claude/superstorm/
 ├── .claude-plugin/
 │   ├── plugin.json              # plugin manifest (v0.1.0)
 │   └── marketplace.json         # marketplace listing
 ├── commands/
-│   └── megastorm.md             # /megastorm command entry
+│   └── superstorm.md             # /superstorm command entry
 ├── skills/
-│   └── megastorm.md             # orchestration brain: Phase -1..2, Workflow templates
+│   └── superstorm.md             # orchestration brain: Phase -1..2, Workflow templates
 ├── knowledge/
 │   ├── schemas.md               # escalation / closure-manifest / task / verdict JSON schemas
 │   └── prompts/
@@ -43,20 +43,20 @@ claude/megastorm/
     └── test_check_skill_refs.py
 ```
 
-**Responsibility split:** scripts = deterministic pure functions over JSON (unit-tested). knowledge/prompts = the methodology the headless Workflow agents follow. skills/megastorm.md = the only orchestration prose, glues scripts + prompts + Workflow calls. Phase→primitive mapping is fixed by spec §0.
+**Responsibility split:** scripts = deterministic pure functions over JSON (unit-tested). knowledge/prompts = the methodology the headless Workflow agents follow. skills/superstorm.md = the only orchestration prose, glues scripts + prompts + Workflow calls. Phase→primitive mapping is fixed by spec §0.
 
 ---
 
 ## Task 1: `validate_plan_tasks.py` — §4.3 plan hard-constraint
 
 **Files:**
-- Create: `claude/megastorm/scripts/validate_plan_tasks.py`
-- Test: `claude/megastorm/scripts/test_validate_plan_tasks.py`
+- Create: `claude/superstorm/scripts/validate_plan_tasks.py`
+- Test: `claude/superstorm/scripts/test_validate_plan_tasks.py`
 
 - [ ] **Step 1: Write the failing test**
 
 ```python
-# claude/megastorm/scripts/test_validate_plan_tasks.py
+# claude/superstorm/scripts/test_validate_plan_tasks.py
 import unittest
 from validate_plan_tasks import validate_tasks
 
@@ -108,13 +108,13 @@ if __name__ == "__main__":
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd claude/megastorm/scripts && python3 -m pytest test_validate_plan_tasks.py -v`
+Run: `cd claude/superstorm/scripts && python3 -m pytest test_validate_plan_tasks.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'validate_plan_tasks'`
 
 - [ ] **Step 3: Write minimal implementation**
 
 ```python
-# claude/megastorm/scripts/validate_plan_tasks.py
+# claude/superstorm/scripts/validate_plan_tasks.py
 #!/usr/bin/env python3
 """§4.3 gate: every plan task MUST carry a non-empty touched_paths list and a
 non-blank acceptance_cmd. touched_paths feeds the §4.5 concurrency DAG;
@@ -163,14 +163,14 @@ if __name__ == "__main__":
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd claude/megastorm/scripts && python3 -m pytest test_validate_plan_tasks.py -v`
+Run: `cd claude/superstorm/scripts && python3 -m pytest test_validate_plan_tasks.py -v`
 Expected: PASS (7 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add claude/megastorm/scripts/validate_plan_tasks.py claude/megastorm/scripts/test_validate_plan_tasks.py
-git commit -m "feat(megastorm): plan-task validator (touched_paths + acceptance_cmd gate)"
+git add claude/superstorm/scripts/validate_plan_tasks.py claude/superstorm/scripts/test_validate_plan_tasks.py
+git commit -m "feat(superstorm): plan-task validator (touched_paths + acceptance_cmd gate)"
 ```
 
 ---
@@ -178,15 +178,15 @@ git commit -m "feat(megastorm): plan-task validator (touched_paths + acceptance_
 ## Task 2: `build_task_dag.py` — §4.5 deterministic orchestration
 
 **Files:**
-- Create: `claude/megastorm/scripts/build_task_dag.py`
-- Test: `claude/megastorm/scripts/test_build_task_dag.py`
+- Create: `claude/superstorm/scripts/build_task_dag.py`
+- Test: `claude/superstorm/scripts/test_build_task_dag.py`
 
 Output contract: `{ok, errors[], warnings[], layers[[id]], isolate[[a,b]], isolate_groups[[id]]}` where `layers` are Kahn topo layers over `depends_on`, `isolate` are same-layer task pairs sharing any `touched_path`, `isolate_groups` are the connected components of those pairs (union-find — §1.6 runs each group sequentially with worktree isolation), `warnings` flag same-path mutual writers with no `depends_on`.
 
 - [ ] **Step 1: Write the failing test**
 
 ```python
-# claude/megastorm/scripts/test_build_task_dag.py
+# claude/superstorm/scripts/test_build_task_dag.py
 import unittest
 from build_task_dag import build_dag
 
@@ -261,13 +261,13 @@ if __name__ == "__main__":
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd claude/megastorm/scripts && python3 -m pytest test_build_task_dag.py -v`
+Run: `cd claude/superstorm/scripts && python3 -m pytest test_build_task_dag.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'build_task_dag'`
 
 - [ ] **Step 3: Write minimal implementation**
 
 ```python
-# claude/megastorm/scripts/build_task_dag.py
+# claude/superstorm/scripts/build_task_dag.py
 #!/usr/bin/env python3
 """§4.5 orchestration: turn validated plan tasks into a deterministic execution
 DAG. Ordering comes ONLY from explicit depends_on (no prose parsing). touched_paths
@@ -384,14 +384,14 @@ if __name__ == "__main__":
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd claude/megastorm/scripts && python3 -m pytest test_build_task_dag.py -v`
+Run: `cd claude/superstorm/scripts && python3 -m pytest test_build_task_dag.py -v`
 Expected: PASS (10 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add claude/megastorm/scripts/build_task_dag.py claude/megastorm/scripts/test_build_task_dag.py
-git commit -m "feat(megastorm): deterministic task-DAG builder (layers + collision isolation)"
+git add claude/superstorm/scripts/build_task_dag.py claude/superstorm/scripts/test_build_task_dag.py
+git commit -m "feat(superstorm): deterministic task-DAG builder (layers + collision isolation)"
 ```
 
 ---
@@ -399,8 +399,8 @@ git commit -m "feat(megastorm): deterministic task-DAG builder (layers + collisi
 ## Task 3: `check_closure.py` — §4.2 deterministic closure lens
 
 **Files:**
-- Create: `claude/megastorm/scripts/check_closure.py`
-- Test: `claude/megastorm/scripts/test_check_closure.py`
+- Create: `claude/superstorm/scripts/check_closure.py`
+- Test: `claude/superstorm/scripts/test_check_closure.py`
 
 Inputs (assembled by the skill from the Phase-0 frozen registry + Workflow structured outputs): `requirements` = all `R-*` IDs minted into the overview in Phase 0; `manifests` = per-design `{module, covers_req_ids[], exposes[], consumes[]}`; optional `interface_registry` = the frozen interface vocabulary from the overview. Deterministic checks: every requirement covered (forward); no design covers a ghost requirement (orphan→spec); every `consumes` matches some `exposes` (interface consistency); with a registry, every exposes/consumes name is in it (naming-drift guard). `exposes` never consumed = WARN (advisory). The prose-level "does the design truly satisfy the requirement" judgment stays in the LLM critic (closure-critic.md), not here.
 
@@ -409,7 +409,7 @@ Inputs (assembled by the skill from the Phase-0 frozen registry + Workflow struc
 - [ ] **Step 1: Write the failing test**
 
 ```python
-# claude/megastorm/scripts/test_check_closure.py
+# claude/superstorm/scripts/test_check_closure.py
 import unittest
 from check_closure import check_closure
 
@@ -474,13 +474,13 @@ if __name__ == "__main__":
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd claude/megastorm/scripts && python3 -m pytest test_check_closure.py -v`
+Run: `cd claude/superstorm/scripts && python3 -m pytest test_check_closure.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'check_closure'`
 
 - [ ] **Step 3: Write minimal implementation**
 
 ```python
-# claude/megastorm/scripts/check_closure.py
+# claude/superstorm/scripts/check_closure.py
 #!/usr/bin/env python3
 """§4.2 闭环 (closed-loop) deterministic lens. Operates on structured manifests the
 design agents emit alongside their markdown (covers_req_ids / exposes / consumes),
@@ -551,14 +551,14 @@ if __name__ == "__main__":
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd claude/megastorm/scripts && python3 -m pytest test_check_closure.py -v`
+Run: `cd claude/superstorm/scripts && python3 -m pytest test_check_closure.py -v`
 Expected: PASS (8 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add claude/megastorm/scripts/check_closure.py claude/megastorm/scripts/test_check_closure.py
-git commit -m "feat(megastorm): deterministic closure lens (coverage/interface/orphan)"
+git add claude/superstorm/scripts/check_closure.py claude/superstorm/scripts/test_check_closure.py
+git commit -m "feat(superstorm): deterministic closure lens (coverage/interface/orphan)"
 ```
 
 ---
@@ -566,12 +566,12 @@ git commit -m "feat(megastorm): deterministic closure lens (coverage/interface/o
 ## Task 4: `knowledge/schemas.md` — agent contracts
 
 **Files:**
-- Create: `claude/megastorm/knowledge/schemas.md`
+- Create: `claude/superstorm/knowledge/schemas.md`
 
 - [ ] **Step 1: Write the file (complete content)**
 
 ````markdown
-# megastorm — Workflow agent JSON schemas
+# superstorm — Workflow agent JSON schemas
 
 These are the `schema` arguments passed to Workflow `agent()` calls. They force
 structured output so the deterministic scripts have clean JSON to consume.
@@ -604,11 +604,11 @@ into the overview wrapped in **machine-locatable HTML comment markers** (the ove
 other ```json fences — module tables, dep graphs — so the registry needs a unique locator):
 
 ```
-<!-- megastorm-registry:start -->
+<!-- superstorm-registry:start -->
 ​```json
 { "requirements": ["R-auth-01", "R-auth-02"], "interfaces": ["api:createOrder", "event:orderPaid"] }
 ​```
-<!-- megastorm-registry:end -->
+<!-- superstorm-registry:end -->
 ```
 
 Schema of the JSON between the markers:
@@ -652,8 +652,8 @@ and got exit code 0 with the real output captured in `evidence`.
 - [ ] **Step 2: Commit**
 
 ```bash
-git add claude/megastorm/knowledge/schemas.md
-git commit -m "feat(megastorm): agent JSON schemas (escalation/manifest/task/verdict)"
+git add claude/superstorm/knowledge/schemas.md
+git commit -m "feat(superstorm): agent JSON schemas (escalation/manifest/task/verdict)"
 ```
 
 ---
@@ -661,8 +661,8 @@ git commit -m "feat(megastorm): agent JSON schemas (escalation/manifest/task/ver
 ## Task 5: design + plan agent prompts
 
 **Files:**
-- Create: `claude/megastorm/knowledge/prompts/design-agent.md`
-- Create: `claude/megastorm/knowledge/prompts/plan-agent.md`
+- Create: `claude/superstorm/knowledge/prompts/design-agent.md`
+- Create: `claude/superstorm/knowledge/prompts/plan-agent.md`
 
 These inline the brainstorming / writing-plans *methodology* so headless Workflow agents produce the same artifacts the interactive skills would, without blocking on a human (spec §0).
 
@@ -689,7 +689,7 @@ all user decisions were front-loaded in Phase 0.
   design's "Assumptions" section.
 
 ## Frozen registry (read-only inputs you are given)
-You are handed the overview's `megastorm-registry` block: `requirements` (the `R-*` IDs)
+You are handed the overview's `superstorm-registry` block: `requirements` (the `R-*` IDs)
 and `interfaces` (the closed interface vocabulary). You MUST draw from these — do NOT invent
 requirement IDs or interface names. If your module genuinely needs a requirement or interface
 not in the registry, that is a NEW HUMAN DECISION (it changes scope/public interface) →
@@ -734,8 +734,8 @@ Escalate (don't guess) if the design is under-specified in a way that needs a hu
 - [ ] **Step 3: Commit**
 
 ```bash
-git add claude/megastorm/knowledge/prompts/design-agent.md claude/megastorm/knowledge/prompts/plan-agent.md
-git commit -m "feat(megastorm): design + plan agent prompts (inlined methodology)"
+git add claude/superstorm/knowledge/prompts/design-agent.md claude/superstorm/knowledge/prompts/plan-agent.md
+git commit -m "feat(superstorm): design + plan agent prompts (inlined methodology)"
 ```
 
 ---
@@ -743,8 +743,8 @@ git commit -m "feat(megastorm): design + plan agent prompts (inlined methodology
 ## Task 6: closure + reverse critic prompts
 
 **Files:**
-- Create: `claude/megastorm/knowledge/prompts/closure-critic.md`
-- Create: `claude/megastorm/knowledge/prompts/reverse-critic.md`
+- Create: `claude/superstorm/knowledge/prompts/closure-critic.md`
+- Create: `claude/superstorm/knowledge/prompts/reverse-critic.md`
 
 - [ ] **Step 1: Write `closure-critic.md` (complete content)**
 
@@ -798,8 +798,8 @@ Fixable, no-new-decision issues → edit the spec/design/plan docs and re-run.
 - [ ] **Step 3: Commit**
 
 ```bash
-git add claude/megastorm/knowledge/prompts/closure-critic.md claude/megastorm/knowledge/prompts/reverse-critic.md
-git commit -m "feat(megastorm): closure + reverse critic prompts"
+git add claude/superstorm/knowledge/prompts/closure-critic.md claude/superstorm/knowledge/prompts/reverse-critic.md
+git commit -m "feat(superstorm): closure + reverse critic prompts"
 ```
 
 ---
@@ -807,8 +807,8 @@ git commit -m "feat(megastorm): closure + reverse critic prompts"
 ## Task 7: executor + supervisor prompts
 
 **Files:**
-- Create: `claude/megastorm/knowledge/prompts/executor.md`
-- Create: `claude/megastorm/knowledge/prompts/supervisor.md`
+- Create: `claude/superstorm/knowledge/prompts/executor.md`
+- Create: `claude/superstorm/knowledge/prompts/supervisor.md`
 
 - [ ] **Step 1: Write `executor.md` (complete content)**
 
@@ -864,16 +864,16 @@ to the executor (shared soft-retry budget ≤2); still fake → escalate to the 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add claude/megastorm/knowledge/prompts/executor.md claude/megastorm/knowledge/prompts/supervisor.md
-git commit -m "feat(megastorm): executor (sonnet) + supervisor (opus) prompts"
+git add claude/superstorm/knowledge/prompts/executor.md claude/superstorm/knowledge/prompts/supervisor.md
+git commit -m "feat(superstorm): executor (sonnet) + supervisor (opus) prompts"
 ```
 
 ---
 
-## Task 8: `skills/megastorm.md` — orchestration brain
+## Task 8: `skills/superstorm.md` — orchestration brain
 
 **Files:**
-- Create: `claude/megastorm/skills/megastorm.md`
+- Create: `claude/superstorm/skills/superstorm.md`
 
 This is the only orchestration prose. It references the scripts and prompts and contains the per-phase Workflow templates. It is written for the main session (which has the Workflow tool).
 
@@ -881,15 +881,15 @@ This is the only orchestration prose. It references the scripts and prompts and 
 
 ````markdown
 ---
-name: megastorm
-description: Drive a large goal end-to-end — decompose into modules, front-load all decisions via brainstorming, then autonomously produce designs, validate (closed-loop), plan, reverse-review, orchestrate, and concurrently execute with anti-fake-completion supervision. Explicitly invoked via /megastorm; heavy and token-intensive.
+name: superstorm
+description: Drive a large goal end-to-end — decompose into modules, front-load all decisions via brainstorming, then autonomously produce designs, validate (closed-loop), plan, reverse-review, orchestrate, and concurrently execute with anti-fake-completion supervision. Explicitly invoked via /superstorm; heavy and token-intensive.
 ---
 
-# megastorm — large-goal autonomous pipeline
+# superstorm — large-goal autonomous pipeline
 
 **Invariant:** decisions front-loaded → autonomous → self-fix loop, escalate-to-stop.
 All human interaction is in Phase 0. Phase 1 runs without human stops except on escalation.
-Spec: `docs/superpowers/specs/2026-06-09-megastorm-pipeline-design.md`.
+Spec: `docs/superpowers/specs/2026-06-09-superstorm-pipeline-design.md`.
 
 `$ROOT` = `${CLAUDE_PLUGIN_ROOT}`. Schemas: `$ROOT/knowledge/schemas.md`. Prompts: `$ROOT/knowledge/prompts/`.
 Scripts: `$ROOT/scripts/`.
@@ -910,8 +910,8 @@ and tell the user to install the superpowers marketplace via `/plugin`. Do not p
    spec/design; the user approves each. Done when all M specs exist and are approved.
 4. **Mint the frozen registry (YOU, the main session, are the single owner — not the
    brainstorming skill, not the design agents).** After all specs are approved, read them and
-   write the registry into the overview wrapped in `<!-- megastorm-registry:start -->` /
-   `<!-- megastorm-registry:end -->` markers (a plain ```json object between them), per
+   write the registry into the overview wrapped in `<!-- superstorm-registry:start -->` /
+   `<!-- superstorm-registry:end -->` markers (a plain ```json object between them), per
    `$ROOT/knowledge/schemas.md`. Contents: `requirements` = an `R-<module>-NN` ID for every
    requirement across the specs; `interfaces` = the closed vocabulary of cross-module interface
    names using the grammar `<kind>:<name>` (kind ∈ api/event/data/ui, lowerCamelCase).
@@ -937,12 +937,12 @@ Executor = `{model:'sonnet'}`. (Token thrift on bulk coding only; verification s
 ### 1.1 Design — Workflow
 Author a Workflow that `pipeline`s/`parallel`s over the M module specs; each `agent` uses
 `$ROOT/knowledge/prompts/design-agent.md` and the design-manifest schema. **Pass every design
-agent the frozen `megastorm-registry` block** (requirements + interfaces) so `covers_req_ids`
+agent the frozen `superstorm-registry` block** (requirements + interfaces) so `covers_req_ids`
 and exposes/consumes are drawn from the closed vocabulary, not invented. Collect the manifests.
 
 ### 1.2 Closure check — deterministic then LLM
 - Extract the registry deterministically: locate the text between
-  `<!-- megastorm-registry:start -->` and `<!-- megastorm-registry:end -->` in the overview,
+  `<!-- superstorm-registry:start -->` and `<!-- superstorm-registry:end -->` in the overview,
   strip the ```json fence lines, `json.loads` it, then write its `requirements` array to
   `requirements.json` and its `interfaces` array to `registry.json`. Write the collected design
   manifests to `manifests.json`.
@@ -1002,17 +1002,17 @@ One overview + standard superpowers docs:
 Run:
 ```bash
 python3 - <<'PY'
-t = open('claude/megastorm/skills/megastorm.md').read()
+t = open('claude/superstorm/skills/superstorm.md').read()
 assert t.startswith('---\n'), "no opening frontmatter fence"
 end = t.index('\n---', 4)                      # block must CLOSE
 block = t[4:end]
 fm = dict(line.split(':', 1) for line in block.strip().splitlines() if ':' in line)
-assert fm.get('name', '').strip() == 'megastorm', fm.get('name')
+assert fm.get('name', '').strip() == 'superstorm', fm.get('name')
 assert fm.get('description', '').strip(), "empty description"
 # every $ROOT/... path referenced in the body must be a real file in the source tree
 import re, os
 for rel in sorted(set(re.findall(r'\$ROOT/([\w./-]+\.(?:py|md|json))', t))):
-    assert os.path.isfile(os.path.join('claude/megastorm', rel)), f"missing ref: {rel}"
+    assert os.path.isfile(os.path.join('claude/superstorm', rel)), f"missing ref: {rel}"
 print("frontmatter parses + all $ROOT refs resolve")
 PY
 ```
@@ -1023,8 +1023,8 @@ pass, not by a unit test — this check guarantees the file is well-formed and i
 - [ ] **Step 3: Commit**
 
 ```bash
-git add claude/megastorm/skills/megastorm.md
-git commit -m "feat(megastorm): orchestration brain skill (Phase -1..2 + Workflow templates)"
+git add claude/superstorm/skills/superstorm.md
+git commit -m "feat(superstorm): orchestration brain skill (Phase -1..2 + Workflow templates)"
 ```
 
 ---
@@ -1032,16 +1032,16 @@ git commit -m "feat(megastorm): orchestration brain skill (Phase -1..2 + Workflo
 ## Task 9: plugin manifest + marketplace + command
 
 **Files:**
-- Create: `claude/megastorm/.claude-plugin/plugin.json`
-- Create: `claude/megastorm/.claude-plugin/marketplace.json`
-- Create: `claude/megastorm/commands/megastorm.md`
+- Create: `claude/superstorm/.claude-plugin/plugin.json`
+- Create: `claude/superstorm/.claude-plugin/marketplace.json`
+- Create: `claude/superstorm/commands/superstorm.md`
 
 - [ ] **Step 1: Write `plugin.json`**
 
 ```json
 {
-  "name": "megastorm",
-  "description": "Large-goal autonomous pipeline: decompose into modules, front-load decisions via brainstorming, then autonomously design → closed-loop validate → plan → reverse-review → orchestrate → concurrently execute with anti-fake-completion supervision. Global command /megastorm.",
+  "name": "superstorm",
+  "description": "Large-goal autonomous pipeline: decompose into modules, front-load decisions via brainstorming, then autonomously design → closed-loop validate → plan → reverse-review → orchestrate → concurrently execute with anti-fake-completion supervision. Global command /superstorm.",
   "version": "0.1.0",
   "author": { "name": "dv" }
 }
@@ -1051,26 +1051,26 @@ git commit -m "feat(megastorm): orchestration brain skill (Phase -1..2 + Workflo
 
 ```json
 {
-  "name": "megastorm",
+  "name": "superstorm",
   "owner": {
     "name": "dv"
   },
   "plugins": [
     {
-      "name": "megastorm",
+      "name": "superstorm",
       "version": "0.1.0",
       "source": "./",
-      "description": "Chains superpowers brainstorming/writing-plans/executing-plans into a Workflow-driven pipeline for large goals. Explicit /megastorm trigger."
+      "description": "Chains superpowers brainstorming/writing-plans/executing-plans into a Workflow-driven pipeline for large goals. Explicit /superstorm trigger."
     }
   ]
 }
 ```
 
-- [ ] **Step 3: Write `commands/megastorm.md`**
+- [ ] **Step 3: Write `commands/superstorm.md`**
 
 ```markdown
 ---
-name: megastorm
+name: superstorm
 description: Drive a large goal end-to-end — decompose, front-load decisions, then autonomously design/validate/plan/review/execute with supervision.
 arguments:
   - name: goal
@@ -1078,21 +1078,21 @@ arguments:
     required: true
 ---
 
-Invoke the megastorm skill to run the full large-goal pipeline for: $ARGUMENTS
+Invoke the superstorm skill to run the full large-goal pipeline for: $ARGUMENTS
 
-> Read ${CLAUDE_PLUGIN_ROOT}/skills/megastorm.md and follow its protocol, starting at Phase -1 (preflight).
+> Read ${CLAUDE_PLUGIN_ROOT}/skills/superstorm.md and follow its protocol, starting at Phase -1 (preflight).
 ```
 
 - [ ] **Step 4: Validate JSON**
 
-Run: `python3 -c "import json; json.load(open('claude/megastorm/.claude-plugin/plugin.json')); json.load(open('claude/megastorm/.claude-plugin/marketplace.json')); print('JSON OK')"`
+Run: `python3 -c "import json; json.load(open('claude/superstorm/.claude-plugin/plugin.json')); json.load(open('claude/superstorm/.claude-plugin/marketplace.json')); print('JSON OK')"`
 Expected: `JSON OK`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add claude/megastorm/.claude-plugin/ claude/megastorm/commands/
-git commit -m "feat(megastorm): plugin manifest, marketplace listing, /megastorm command"
+git add claude/superstorm/.claude-plugin/ claude/superstorm/commands/
+git commit -m "feat(superstorm): plugin manifest, marketplace listing, /superstorm command"
 ```
 
 ---
@@ -1100,8 +1100,8 @@ git commit -m "feat(megastorm): plugin manifest, marketplace listing, /megastorm
 ## Task 10: integration self-check + install wiring
 
 **Files:**
-- Create: `claude/megastorm/scripts/check_skill_refs.py`
-- Create: `claude/megastorm/scripts/test_check_skill_refs.py`
+- Create: `claude/superstorm/scripts/check_skill_refs.py`
+- Create: `claude/superstorm/scripts/test_check_skill_refs.py`
 - Modify: `claude/install.sh:7` (the `for plugin in ...` loop)
 
 This guards against the SKILL.md referencing a script/prompt file that doesn't exist (the run-engine "sync-check" spirit).
@@ -1109,7 +1109,7 @@ This guards against the SKILL.md referencing a script/prompt file that doesn't e
 - [ ] **Step 1: Write the failing test**
 
 ```python
-# claude/megastorm/scripts/test_check_skill_refs.py
+# claude/superstorm/scripts/test_check_skill_refs.py
 import os
 import unittest
 from check_skill_refs import check_refs
@@ -1135,20 +1135,20 @@ if __name__ == "__main__":
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd claude/megastorm/scripts && python3 -m pytest test_check_skill_refs.py -v`
+Run: `cd claude/superstorm/scripts && python3 -m pytest test_check_skill_refs.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'check_skill_refs'`
 
 - [ ] **Step 3: Write minimal implementation**
 
 ```python
-# claude/megastorm/scripts/check_skill_refs.py
+# claude/superstorm/scripts/check_skill_refs.py
 #!/usr/bin/env python3
-"""Integration self-check: every script + prompt the megastorm skill relies on must
+"""Integration self-check: every script + prompt the superstorm skill relies on must
 exist on disk. Run after editing the skill or moving files (run-engine sync-check spirit)."""
 import os
 import sys
 
-# The files skills/megastorm.md references via $ROOT/...
+# The files skills/superstorm.md references via $ROOT/...
 REQUIRED = [
     "knowledge/schemas.md",
     "knowledge/prompts/design-agent.md",
@@ -1160,8 +1160,8 @@ REQUIRED = [
     "scripts/validate_plan_tasks.py",
     "scripts/build_task_dag.py",
     "scripts/check_closure.py",
-    "skills/megastorm.md",
-    "commands/megastorm.md",
+    "skills/superstorm.md",
+    "commands/superstorm.md",
     ".claude-plugin/plugin.json",
     ".claude-plugin/marketplace.json",
 ]
@@ -1191,36 +1191,36 @@ if __name__ == "__main__":
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd claude/megastorm/scripts && python3 -m pytest test_check_skill_refs.py -v`
+Run: `cd claude/superstorm/scripts && python3 -m pytest test_check_skill_refs.py -v`
 Expected: PASS (2 tests)
 
 - [ ] **Step 5: Wire install.sh**
 
-Modify `claude/install.sh` line 7 — change the plugin loop to include megastorm:
+Modify `claude/install.sh` line 7 — change the plugin loop to include superstorm:
 
 ```bash
-for plugin in meta-skill megastorm; do
+for plugin in meta-skill superstorm; do
 ```
 
-Registering the plugin via `claude plugin add` exposes the bundled `/megastorm` command and
+Registering the plugin via `claude plugin add` exposes the bundled `/superstorm` command and
 skill to the Claude session. **Availability claim is not auto-verifiable in a unit test** — the
-human running install should confirm `/megastorm` appears via `claude plugin list` (or the
+human running install should confirm `/superstorm` appears via `claude plugin list` (or the
 in-session command list). Do not assert cross-project global availability beyond what the
 registration actually provides; the spec §1 "any project" wording depends on the user installing
 this plugin in those projects.
 
-- [ ] **Step 6: Run the full megastorm test suite + install dry check**
+- [ ] **Step 6: Run the full superstorm test suite + install dry check**
 
-Run: `cd claude/megastorm/scripts && python3 -m pytest -v && cd - && grep -qE 'for plugin in .*megastorm' claude/install.sh && echo "install wired"`
+Run: `cd claude/superstorm/scripts && python3 -m pytest -v && cd - && grep -qE 'for plugin in .*superstorm' claude/install.sh && echo "install wired"`
 Expected: all tests PASS (27 total across the 4 test files) and `install wired`
-(The `-E 'for plugin in .*megastorm'` anchors on the actual loop line — a bare `grep megastorm`
+(The `-E 'for plugin in .*superstorm'` anchors on the actual loop line — a bare `grep superstorm`
 would match an incidental comment and pass even if the loop were edited wrong.)
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add claude/megastorm/scripts/check_skill_refs.py claude/megastorm/scripts/test_check_skill_refs.py claude/install.sh
-git commit -m "feat(megastorm): integration self-check + install.sh wiring"
+git add claude/superstorm/scripts/check_skill_refs.py claude/superstorm/scripts/test_check_skill_refs.py claude/install.sh
+git commit -m "feat(superstorm): integration self-check + install.sh wiring"
 ```
 
 ---
@@ -1247,7 +1247,7 @@ git commit -m "feat(megastorm): integration self-check + install.sh wiring"
 
 **Reverse-review fixes folded in (§4.4 self-fix loop, 2026-06-09):**
 - Requirement-ID + interface-name **single owner**: Phase 0 main session mints the frozen
-  `megastorm-registry` (requirements + interfaces) into the overview before the Phase-1 fan-out;
+  `superstorm-registry` (requirements + interfaces) into the overview before the Phase-1 fan-out;
   design agents draw from it and never invent (Task 8 Phase 0 step 4, Task 5). Closes the
   top finding where the §4.2 closure gate failed closed on every run.
 - `check_closure.py` gains a closed-vocabulary `interface_registry` check (Task 3) — stops
@@ -1262,7 +1262,7 @@ git commit -m "feat(megastorm): integration self-check + install.sh wiring"
 - `build_task_dag.py` now emits `isolate_groups` (union-find over the collision pairs) as a
   first-class, unit-tested field; §1.6 consumes groups directly instead of re-deriving them in
   prose (Finding A). Verified: transitive/disjoint/two-group cases pass.
-- Registry is now wrapped in machine-locatable `<!-- megastorm-registry:start/end -->` markers
+- Registry is now wrapped in machine-locatable `<!-- superstorm-registry:start/end -->` markers
   (a ```json fence + tag is self-contradictory); §1.2 spells out locate→json.loads→split extraction
   (Finding B).
 - All six prompt refs in the skill are now `$ROOT/knowledge/prompts/<name>` so step-2's ref check

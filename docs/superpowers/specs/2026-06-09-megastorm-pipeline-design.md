@@ -1,4 +1,4 @@
-# megastorm — 大目标全自治流水线 skill 设计
+# superstorm — 大目标全自治流水线 skill 设计
 
 **日期**: 2026-06-09
 **状态**: 设计已收敛,spec review 通过(2 轮,✅ Approved)
@@ -6,7 +6,7 @@
 
 ## 目标
 
-提供一个 skill / 全局命令 `/megastorm <目标>`,把 superpowers 的 `brainstorming` /
+提供一个 skill / 全局命令 `/superstorm <目标>`,把 superpowers 的 `brainstorming` /
 `writing-plans` / `executing-plans` 串成一条流水线,承接**比单次 brainstorming 更大的目标**:
 
 > 给一个目标 → 分析现状 → 拆成 M 个模块 → 逐模块 brainstorming 出多份 spec →
@@ -33,7 +33,7 @@ spec/design/plan 词汇与产物风格,不碰 meta-skill 的 node-spec / `.allfo
   - `agent(prompt, {schema, model, isolation, label, phase})` — 派一个 subagent;`schema` 强制结构化返回。
   - `pipeline(items, stage1, stage2, …)` — 每个 item 独立流过各 stage,无 barrier。
   - `parallel(thunks)` — 并发 + barrier。
-  - Workflow **只能由主会话(我)调用**;用户敲 `/megastorm` 即显式 opt-in,我在主循环里调它。
+  - Workflow **只能由主会话(我)调用**;用户敲 `/superstorm` 即显式 opt-in,我在主循环里调它。
 - **交互式 skill 只在主会话跑,绝不塞进 Workflow agent**(这是本设计最关键的边界):
   - `superpowers:brainstorming`、`superpowers:writing-plans` 是**强交互、要用户拍板**的,
     无法在 headless 的 Workflow `agent()` 里阻塞等人。
@@ -65,13 +65,13 @@ spec/design/plan 词汇与产物风格,不碰 meta-skill 的 node-spec / `.allfo
 
 ## 形态与打包(§1)
 
-- **源码**放 myskills repo:`claude/megastorm/`
+- **源码**放 myskills repo:`claude/superstorm/`
   - `.claude-plugin/plugin.json` + `marketplace.json`(插件 + 市场清单)
-  - `skills/megastorm.md`(主 skill,流水线编排指令)
-  - `commands/megastorm.md`(`/megastorm` 命令入口)
-- **全局调用**:`install.sh` 把 `/megastorm` 命令安装到 `~/.claude/`(形态对标 `/brainstorming`),
-  任何项目里 `/megastorm <目标>` 都能显式启动。
-- **触发方式**:重型、烧 token,**只显式触发**(用户敲 `/megastorm`),不靠 model 描述自动触发。
+  - `skills/superstorm.md`(主 skill,流水线编排指令)
+  - `commands/superstorm.md`(`/superstorm` 命令入口)
+- **全局调用**:`install.sh` 把 `/superstorm` 命令安装到 `~/.claude/`(形态对标 `/brainstorming`),
+  任何项目里 `/superstorm <目标>` 都能显式启动。
+- **触发方式**:重型、烧 token,**只显式触发**(用户敲 `/superstorm`),不靠 model 描述自动触发。
 - **依赖**:全局 superpowers 的 `brainstorming` / `writing-plans` / `executing-plans`。
 
 ## Phase -1 — 预检(§2)
@@ -216,7 +216,7 @@ docs/superpowers/plans/
 
 ## 默认值
 
-- skill 名:`megastorm`
+- skill 名:`superstorm`
 - 自修复环轮数上限 K:3(**每个校验 stage 各自 3 轮**,§4.2 与 §4.4 不共用预算)
 - §4.2 闭环的覆盖/接口/孤儿检查:脚本化(确定性);产物闭合性:LLM critic。
 - 模型:规划/思考/校验/验收 = 默认模型(Opus);**仅 Phase 1.6 执行 agent = Sonnet**。
@@ -224,7 +224,7 @@ docs/superpowers/plans/
 ## 流程总览
 
 ```
-/megastorm <目标>
+/superstorm <目标>
   └─ Phase -1 预检(brainstorming 等是否安装,缺则引导安装)
   └─ Phase 0 决策全前置(交互):析现状 → 拆模块(用户拍板)→ 逐模块 brainstorming(逐份批准)
   └─ Phase 1 自治(逐阶段 Workflow,人不在环):

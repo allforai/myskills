@@ -76,5 +76,5 @@ jobs:
           HOME="$smoke_home" bash codex/install.sh
           test -L "$smoke_home/.codex/skills/grillstorm"
           test -f "$smoke_home/.codex/skills/grillstorm/SKILL.md"
-          test -L "$smoke_home/.codex/skills/megastorm"
+          test -L "$smoke_home/.codex/skills/superstorm"
           test -L "$smoke_home/.codex/skills/cross-exam"

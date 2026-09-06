@@ -3,7 +3,7 @@ import argparse
 from pathlib import Path
 
 SOURCE = Path(__file__).resolve().parent
-TARGETS = [SOURCE.parents[1] / 'claude/megastorm/knowledge/cross-exam/visual',
+TARGETS = [SOURCE.parents[1] / 'claude/superstorm/knowledge/cross-exam/visual',
            SOURCE.parents[1] / 'codex/cross-exam-skill/visual']
 SUFFIXES = {'.md', '.py', '.swift'}
 EXTRA = ('swiftui/LICENSE', 'requirements.txt')

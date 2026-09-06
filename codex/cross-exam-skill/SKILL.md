@@ -27,7 +27,7 @@ Do not mix ledgers, verdicts, or loops.
   或任何无并发子 agent 的环境），**当场停，明说"这里跑不了 cross-exam"，绝不降级成"盘问官自己
   检查自己的交付"**。自审恰恰是 cross-exam 存在要抓的那种假完成——一个没有独立实测官的 cross-exam，
   看起来盘过了、实际什么都没验，是最坏的假成功。**宁可说跑不了，不可假装盘过。**
-- **通用** — 零项目痕迹、零技术栈硬编码；流水线台账（如 megastorm registry）只是可选数据源。
+- **通用** — 零项目痕迹、零技术栈硬编码；流水线台账（如 superstorm registry）只是可选数据源。
 - **报告只由 `render_report.py` 渲染** — 禁止口述生成完成度报告。
 
 ## 两个角色，硬分离
@@ -46,7 +46,7 @@ Do not mix ledgers, verdicts, or loops.
    不要摆面、不要用主会话冒充实测官。（结构化提问工具有没有选择器**不是**前置门——那只是
    问法，退成纯文本问答不影响方法；能力门只卡"独立取证"这一件事。）
 1. 确认被测对象与访问方式（怎么跑起来：web/cli/api？入口？）。
-2. **需求基准探测**（依次）：megastorm overview registry（R-*，在
+2. **需求基准探测**（依次）：superstorm overview registry（R-*，在
    `docs/superpowers/specs/*-overview.md` 的 registry 标记内）→ `docs/superpowers/specs/`
    下相关 spec → README → 问用户 → **无基准模式**（需求覆盖/跑偏两镜头关闭，
    报告声明，只开集成缝隙+细节质量+契约 census+旅程）。

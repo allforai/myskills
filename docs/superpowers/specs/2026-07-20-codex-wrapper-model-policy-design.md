@@ -2,7 +2,7 @@
 
 ## Goal
 
-Make Codex Megastorm preserve the command shape that launched the current Codex
+Make Codex Superstorm preserve the command shape that launched the current Codex
 session, including safe alias-expanded or wrapper-owned arguments, without
 overriding a host-fixed model. Resolve the behavior once in Phase 0, freeze it in
 run metadata, and never ask again during task execution.
@@ -220,7 +220,7 @@ tasks:
 - model-policy and model-mapping artifacts;
 - Phase 0 registry, wrapper contract, and effective command policy;
 - executor/supervisor prompts and schemas;
-- Megastorm runner, deterministic gates, state, and event paths;
+- Superstorm runner, deterministic gates, state, and event paths;
 - acceptance commands and their hashes.
 
 Task worktrees do not contain writable run-state/event files. The coordinator is
@@ -246,7 +246,7 @@ Each frozen task includes a coordinator-authored contract:
     {"pattern": "tests/auth/**", "kind": "glob", "operations": ["create", "modify", "delete", "rename"]}
   ],
   "required_outputs": ["src/auth/service.py"],
-  "forbidden_paths": ["orchestration.json", ".megastorm/**"],
+  "forbidden_paths": ["orchestration.json", ".superstorm/**"],
   "acceptance_cmd_sha256": "...",
   "interface_assertions": [
     {
@@ -381,7 +381,7 @@ generated commands, test commands, subprocess launches, and recovery runbooks us
 When one Python script launches another, it prefers `sys.executable` so the child
 uses the same virtual environment/interpreter as the runner. User-authored task
 `acceptance_cmd` values are not rewritten, but Phase 0 validation warns or rejects
-a generated Megastorm command that relies on bare `python` on a host where it is
+a generated Superstorm command that relies on bare `python` on a host where it is
 unavailable.
 
 ## Tests
@@ -421,17 +421,17 @@ unavailable.
 - Candidate-ref checks, CAS conflict/recheck, crash between intent/CAS/complete,
   and recovery prove a failed candidate never enters the integration ref.
 - A macOS-style PATH fixture containing `python3` but no `python` passes all
-  Megastorm-owned commands. A scoped repository check covers owned `.py`, shell,
+  Superstorm-owned commands. A scoped repository check covers owned `.py`, shell,
   Markdown, generated commands, and subprocess argv while explicitly excluding
   fixtures and user-authored `acceptance_cmd`; it rejects bare-Python shebangs and
   commands.
-- Existing Codex Megastorm and Cross-exam regressions remain green.
+- Existing Codex Superstorm and Cross-exam regressions remain green.
 
 ## Acceptance criteria
 
 1. A user-started profile/alias command is preserved where process semantics
    make it observable.
-2. A host-fixed model is never overwritten by Megastorm.
+2. A host-fixed model is never overwritten by Superstorm.
 3. Tiered models remain available when the host does not own model selection.
 4. Ambiguity causes one Phase 0 decision, not guessing or per-task prompts.
 5. Resume uses the frozen policy and detects command/policy drift.

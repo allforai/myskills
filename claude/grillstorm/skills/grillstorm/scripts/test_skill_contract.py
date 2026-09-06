@@ -5,10 +5,17 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_skill_requires_explicit_command_invocation():
+    # User-only, but it must stay in the model's skill list: no disable-model-invocation
+    # (that hides the entry entirely). The plugin's PreToolUse hook refuses model-side
+    # Skill calls instead; a user-typed /grillstorm never reaches that hook.
     skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
     frontmatter = skill.split("---", 2)[1]
-    assert "disable-model-invocation: true" in frontmatter
-    assert "Use only when the user explicitly invokes $grillstorm" in frontmatter
+    assert "disable-model-invocation" not in frontmatter
+    assert "User-invoked only via /grillstorm" in frontmatter
+    plugin_root = ROOT.parents[1]
+    hook = (plugin_root / "hooks/user-only-skills.sh").read_text(encoding="utf-8")
+    assert 'USER_ONLY="grillstorm"' in hook
+    assert (plugin_root / "hooks/hooks.json").exists()
 
 
 def test_upstream_grilling_frontier_rounds_and_diagnostic_redaction_are_preserved():

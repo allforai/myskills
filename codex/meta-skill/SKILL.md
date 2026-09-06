@@ -5,7 +5,7 @@ description: >
   user invokes $meta-skill or asks to bootstrap a project that needs product, experience,
   art, or game design before implementation and verification. Generate project-specific
   node-specs, .allforai/bootstrap/workflow.json, and .codex/commands/run.md. For one large
-  engineering goal without a product-design phase, use megastorm or grillstorm instead.
+  engineering goal without a product-design phase, use superstorm or grillstorm instead.
 metadata:
   version: "0.13.0-codex.1"
 ---

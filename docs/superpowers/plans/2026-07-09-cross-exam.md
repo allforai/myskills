@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 新建独立通用插件 `claude/cross-exam` v0.1.0（苏格拉底式实证完成度盘问），附带 megastorm Phase 2 一句邀请（patch bump 0.11.1）。
+**Goal:** 新建独立通用插件 `claude/cross-exam` v0.1.0（苏格拉底式实证完成度盘问），附带 superstorm Phase 2 一句邀请（patch bump 0.11.1）。
 
 **Architecture:** 盘问官（主会话 skill）与实测官（fresh-context 子 agent，prompts/prober.md）硬分离；证据逐问落盘；完成度报告由确定性脚本 `render_report.py` 从 `ledger.json` 渲染，诚实性红线写死在脚本里。
 
@@ -12,13 +12,13 @@
 
 ## Global Constraints
 
-- **通用性**：技能本体零项目痕迹、零技术栈硬编码；megastorm 只是可选数据源之一（spec §2）。
+- **通用性**：技能本体零项目痕迹、零技术栈硬编码；superstorm 只是可选数据源之一（spec §2）。
 - **只记账不修**；**只在有人在场时运行**（无人值守不盘）（spec §2）。
 - **每问必落证据目录，无一例外**：`could_not` 落原因文件；读代码介质落"路径+行号+原文引用"摘录文件（spec §6.6）。
 - **实测官期望隔离**：输入仅 spec §6 的 JSON 合同（含可选 `context_paths`，只传路径不传解读）；禁止对项目源码 Edit/Write，唯一可写路径 `evidence_dir`（spec §6.7）。
 - **诚实性红线在脚本**：`not_examined` 面不进统计；无证据 entry 拒渲（spec §7）。
-- **版本**：新插件 0.1.0 三处一致（plugin.json / marketplace.json / skills/cross-exam.md frontmatter）；megastorm 0.11.0 → 0.11.1 两处 manifest。
-- 文档/skill 正文语言：中文为主、术语英文，风格对齐 `claude/megastorm/skills/megastorm.md`。
+- **版本**：新插件 0.1.0 三处一致（plugin.json / marketplace.json / skills/cross-exam.md frontmatter）；superstorm 0.11.0 → 0.11.1 两处 manifest。
+- 文档/skill 正文语言：中文为主、术语英文，风格对齐 `claude/superstorm/skills/superstorm.md`。
 - python 脚本测试跑法：`cd claude/cross-exam/scripts && python3 test_render_report.py`。
 
 ---
@@ -86,13 +86,13 @@ Invoke the cross-exam skill to cross-examine the delivery: $ARGUMENTS
 `claude/install.sh` 中：
 
 ```bash
-  for plugin in meta-skill megastorm; do
+  for plugin in meta-skill superstorm; do
 ```
 
 改为：
 
 ```bash
-  for plugin in meta-skill megastorm cross-exam; do
+  for plugin in meta-skill superstorm cross-exam; do
 ```
 
 - [ ] **Step 5: 验证**
@@ -130,7 +130,7 @@ git commit -m "feat(cross-exam): plugin scaffold, manifests, /cross-exam entry, 
 ```json
 {
   "target": "被盘问对象（人类可读名）",
-  "baseline": "megastorm-registry|spec|readme|user|none",
+  "baseline": "superstorm-registry|spec|readme|user|none",
   "started": "YYYY-MM-DD",
   "facets": [
     {"id": "F1", "name": "退款流程", "status": "examined|partial|not_examined"}
@@ -574,7 +574,7 @@ version: 0.1.0
 - **只记账不修** — 缺口带证据入台账，修复是用户另一个决定；盘问官没有"把问题修掉"的动机。
 - **只在有人在场时运行** — 无人值守不盘；被别的流程在自治阶段调用时直接拒绝。
 - **结论必须来自独立采集的证据** — 每条裁决链到实测官落盘的证据文件；口头裁决会被渲染器拒收。
-- **通用** — 零项目痕迹、零技术栈硬编码；流水线台账（如 megastorm registry）只是可选数据源。
+- **通用** — 零项目痕迹、零技术栈硬编码；流水线台账（如 superstorm registry）只是可选数据源。
 - **报告只由 `render_report.py` 渲染** — 禁止口述生成完成度报告。
 
 ## 两个角色，硬分离
@@ -588,7 +588,7 @@ version: 0.1.0
 ## 0. 定靶（intake）
 
 1. 确认被测对象与访问方式（怎么跑起来：web/cli/api？入口？）。
-2. **需求基准探测**（依次）：megastorm overview registry（R-*，在
+2. **需求基准探测**（依次）：superstorm overview registry（R-*，在
    `docs/superpowers/specs/*-overview.md` 的 registry 标记内）→ `docs/superpowers/specs/`
    下相关 spec → README → 问用户 → **无基准模式**（需求覆盖/跑偏两镜头关闭，
    报告声明，只开集成缝隙+细节质量）。
@@ -651,20 +651,20 @@ git commit -m "feat(cross-exam): interrogator protocol skill — intake, facet m
 
 ---
 
-### Task 5: megastorm Phase 2 邀请句 + patch bump 0.11.1
+### Task 5: superstorm Phase 2 邀请句 + patch bump 0.11.1
 
 **Files:**
-- Modify: `claude/megastorm/skills/megastorm.md`（Phase 2 — Report 节末尾）
-- Modify: `claude/megastorm/.claude-plugin/plugin.json`（version）
-- Modify: `claude/megastorm/.claude-plugin/marketplace.json`（version）
+- Modify: `claude/superstorm/skills/superstorm.md`（Phase 2 — Report 节末尾）
+- Modify: `claude/superstorm/.claude-plugin/plugin.json`（version）
+- Modify: `claude/superstorm/.claude-plugin/marketplace.json`（version）
 
 **Interfaces:**
 - Consumes: `/cross-exam` 命令存在（Task 1）。
-- Produces: megastorm 收尾报告邀请一句，不自动进入、不产生依赖。
+- Produces: superstorm 收尾报告邀请一句，不自动进入、不产生依赖。
 
 - [ ] **Step 1: 邀请句**
 
-`claude/megastorm/skills/megastorm.md` 的 "## Phase 2 — Report" 节内、
+`claude/superstorm/skills/superstorm.md` 的 "## Phase 2 — Report" 节内、
 "**Mandatory escalation + skip accounting**" 段之前，在
 "Update the overview and write a final report: ..." 段落末尾追加一句：
 
@@ -677,19 +677,19 @@ do not treat it as installed: skip the line if the command is unavailable).
 
 - [ ] **Step 2: bump 两处 manifest**
 
-`claude/megastorm/.claude-plugin/plugin.json` 与 `marketplace.json`：
+`claude/superstorm/.claude-plugin/plugin.json` 与 `marketplace.json`：
 `"version": "0.11.0"` → `"version": "0.11.1"`（各一处）。
 
 - [ ] **Step 3: 验证**
 
-Run: `grep -c '"version": "0.11.1"' claude/megastorm/.claude-plugin/plugin.json claude/megastorm/.claude-plugin/marketplace.json && grep -c "cross-exam" claude/megastorm/skills/megastorm.md && cd claude/megastorm/scripts && python3 check_skill_refs.py`
-Expected: 两个 manifest 各计数 1；megastorm.md 计数 ≥1；`OK: all 14 referenced files present`
+Run: `grep -c '"version": "0.11.1"' claude/superstorm/.claude-plugin/plugin.json claude/superstorm/.claude-plugin/marketplace.json && grep -c "cross-exam" claude/superstorm/skills/superstorm.md && cd claude/superstorm/scripts && python3 check_skill_refs.py`
+Expected: 两个 manifest 各计数 1；superstorm.md 计数 ≥1；`OK: all 14 referenced files present`
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add claude/megastorm/
-git commit -m "chore(megastorm): 0.11.1 — invite /cross-exam after Phase 2 report"
+git add claude/superstorm/
+git commit -m "chore(superstorm): 0.11.1 — invite /cross-exam after Phase 2 report"
 ```
 
 ---
@@ -716,7 +716,7 @@ Expected: 报告含——总览计数"实证完成：1 · 缺口：1 · 跑偏�
 
 - [ ] **Step 2: 全量测试回归**
 
-Run: `cd claude/cross-exam/scripts && python3 test_render_report.py && cd ../../megastorm/scripts && python3 test_build_task_dag.py && python3 test_check_closure.py`
+Run: `cd claude/cross-exam/scripts && python3 test_render_report.py && cd ../../superstorm/scripts && python3 test_build_task_dag.py && python3 test_check_closure.py`
 Expected: 全部 `OK`
 
 - [ ] **Step 3: 本地安装并确认命令可见**

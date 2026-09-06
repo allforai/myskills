@@ -16,7 +16,7 @@
 - 不做像素基线或截图 diff。旅程裁决对的是语义 oracle，不是上次的截图。
 - 不做审美判断。"这个页面好不好看"是 product-review 的事。
 - 不给探针 CI 级约束（固定模型、温度 0、种子数据）。cross-exam 是有人在场的取证，不是回归测试。
-- 不改 megastorm、grillstorm、meta-skill 的 visual-verify。visual-verify 保留复刻语义。
+- 不改 superstorm、grillstorm、meta-skill 的 visual-verify。visual-verify 保留复刻语义。
 
 ## Sources borrowed
 

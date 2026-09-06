@@ -1,10 +1,10 @@
-# Grok Build Megastorm and Cross-exam Native Design
+# Grok Build Superstorm and Cross-exam Native Design
 
 ## Goal
 
 Add first-class support for the official xAI Grok Build programming CLI to this
 repository. One Grok plugin must expose two independent user-invocable skills:
-Megastorm and Cross-exam. The Grok implementation must match the behavioral
+Superstorm and Cross-exam. The Grok implementation must match the behavioral
 contracts already enforced by the Claude and Codex editions while using Grok's
 own skills, subagents, headless mode, streaming JSON, configuration, and plugin
 discovery conventions.
@@ -38,7 +38,7 @@ calling a Grok model through an unrelated provider.
 
 This change adds:
 
-1. A Grok-native plugin with Megastorm and Cross-exam skills.
+1. A Grok-native plugin with Superstorm and Cross-exam skills.
 2. Grok host-command discovery and safe child-command inheritance.
 3. A deterministic Phase 1.6 runner backed by fresh headless Grok sessions.
 4. Grok-native Cross-exam orchestration using independent subagents.
@@ -46,7 +46,7 @@ This change adds:
 
 It does not:
 
-- automatically run Cross-exam after Megastorm;
+- automatically run Cross-exam after Superstorm;
 - let Cross-exam modify the audited repository;
 - silently downgrade or choose a model tier;
 - overwrite the user's Grok configuration;
@@ -58,13 +58,13 @@ It does not:
 
 ```text
 grok/
-└── megastorm/
+└── superstorm/
     ├── .claude-plugin/plugin.json
     ├── AGENTS.md
     ├── README.md
     ├── install.sh
     ├── skills/
-    │   ├── megastorm/
+    │   ├── superstorm/
     │   │   └── SKILL.md
     │   └── cross-exam/
     │       └── SKILL.md
@@ -81,7 +81,7 @@ grok/
 The plugin deliberately uses the Claude-compatible manifest that Grok Build
 officially promises to load. `.claude-plugin/plugin.json` contains, at minimum,
 the string fields `name`, `version`, and `description`; `name` is
-`megastorm`, and the copied plugin root is the directory containing that
+`superstorm`, and the copied plugin root is the directory containing that
 `.claude-plugin/` directory and `skills/`. This choice is pinned rather than
 calling an undocumented manifest format “Grok-native.” Grok-native behavior
 comes from Grok discovery, skills, subagents, and CLI integration.
@@ -95,7 +95,7 @@ Grok host conformance.
 
 Both skills live in one installable plugin but remain logically independent.
 They exchange data only through documented files. Cross-exam may consume a
-Megastorm report or registry, but it also accepts a specification, README,
+Superstorm report or registry, but it also accepts a specification, README,
 user-supplied baseline, or an explicitly baseline-free audit.
 
 ## Orchestration Model
@@ -107,7 +107,7 @@ orchestration steps. It probes environmental proof capabilities, front-loads
 human decisions, validates the overview, assigns explicit model tiers, and
 launches native subagents for Phase 1.1 through Phase 1.5.
 
-The native-subagent stages retain the existing Megastorm contracts:
+The native-subagent stages retain the existing Superstorm contracts:
 
 - independent design and validation;
 - closed-loop plan review;
@@ -142,7 +142,7 @@ session identifier.
 
 ### Resolution order
 
-1. If `MEGASTORM_GROK_COMMAND` is set, parse it as a JSON array of argv tokens.
+1. If `SUPERSTORM_GROK_COMMAND` is set, parse it as a JSON array of argv tokens.
    Reject strings, empty arrays, non-string tokens, prompt-bearing commands,
    and commands that cannot be identified as official `grok` or `grx` launchers.
 2. Otherwise inspect the current process ancestry and recover the nearest
@@ -213,7 +213,7 @@ refused. Managed policy that cannot be restricted also fails closed.
 
 The preferred child uses a runner-owned temporary Grok home/config and explicit
 `--plugin-dir` with an allowlist containing only the selected model/effort,
-Megastorm plugin, worktree-local tools, and Phase 0-approved capabilities.
+Superstorm plugin, worktree-local tools, and Phase 0-approved capabilities.
 Authentication is forwarded only through the separately approved credential
 source; arbitrary ambient credential-provider commands are never copied. An
 inherited profile/config/plugin root may be used instead only when its fully
@@ -284,7 +284,7 @@ or substitute a different provider.
 
 The sections `Normative Operational Contracts`, `Error Handling`, `Testing
 Strategy`, and `Migration and Compatibility` in
-`docs/superpowers/specs/2026-07-18-codex-megastorm-cross-exam-parity-design.md`
+`docs/superpowers/specs/2026-07-18-codex-superstorm-cross-exam-parity-design.md`
 are normative MUST requirements for the Grok runner. This includes the exact
 CAS ref rules, execution security envelope, credential/network restrictions,
 JSONL replay and idempotency rules, reality-gate lifecycle, state machines,
@@ -322,7 +322,7 @@ present but proof requires unavailable hardware, external systems, or human
 observation, the runner records the runbook and does not count the outcome as
 verified or as a business failure.
 
-## Megastorm Completion Semantics
+## Superstorm Completion Semantics
 
 The Grok skill must implement the parity protocol already defined for Codex:
 
@@ -374,9 +374,9 @@ open-thread records. Claims without valid evidence cannot be rendered as done.
 
 ## Installation and Discovery
 
-`grok/megastorm/install.sh` installs the complete plugin as
-`${GROK_HOME}/plugins/megastorm` when `GROK_HOME` is set, otherwise as
-`~/.grok/plugins/megastorm`. The copied root is exactly `grok/megastorm/`, the
+`grok/superstorm/install.sh` installs the complete plugin as
+`${GROK_HOME}/plugins/superstorm` when `GROK_HOME` is set, otherwise as
+`~/.grok/plugins/superstorm`. The copied root is exactly `grok/superstorm/`, the
 directory that owns `.claude-plugin/plugin.json` and `skills/`. It must:
 
 - support a non-mutating dry-run or explicit destination for tests;
@@ -386,7 +386,7 @@ directory that owns `.claude-plugin/plugin.json` and `skills/`. It must:
 - fail clearly when the source package is incomplete;
 - print the exact `grok inspect` and plugin validation commands for verification.
 
-One installation must make both `/megastorm` and `/cross-exam` discoverable.
+One installation must make both `/superstorm` and `/cross-exam` discoverable.
 Where the CLI is installed, automated checks use `grok inspect --json` and
 `grok plugin validate`. Otherwise structural validation and a fake CLI provide
 deterministic coverage, and the final report states that real discovery was not
@@ -437,7 +437,7 @@ executed.
 - plugin metadata, internal references, install ownership, and discovery layout;
 - both skills visible after one test installation;
 - protocol matrix across Claude, Codex, and Grok with no unexplained gap;
-- all existing Codex Megastorm and Cross-exam regressions remain green.
+- all existing Codex Superstorm and Cross-exam regressions remain green.
 
 ## Acceptance Criteria
 

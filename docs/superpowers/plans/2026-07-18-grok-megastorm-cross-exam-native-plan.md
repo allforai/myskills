@@ -1,9 +1,9 @@
-# Grok Build Megastorm and Cross-exam Native Implementation Plan
+# Grok Build Superstorm and Cross-exam Native Implementation Plan
 
 ## Objective
 
 Implement the approved Grok Build design in
-`docs/superpowers/specs/2026-07-18-grok-megastorm-cross-exam-native-design.md`
+`docs/superpowers/specs/2026-07-18-grok-superstorm-cross-exam-native-design.md`
 without weakening the existing Codex contracts or claiming real-host
 conformance on this machine.
 
@@ -11,14 +11,14 @@ conformance on this machine.
 
 ### 1. RED skill-pressure baselines
 
-- Run a Megastorm pressure scenario without the future Grok skill.
+- Run a Superstorm pressure scenario without the future Grok skill.
 - Run a Cross-exam pressure scenario without the future Grok skill.
 - Record concrete unsafe shortcuts/rationalizations as test fixtures.
 - Do not create either `SKILL.md` until its baseline is captured.
 
 ### 2. Package and static contracts
 
-- Add `grok/megastorm/.claude-plugin/plugin.json`, `AGENTS.md`, and README.
+- Add `grok/superstorm/.claude-plugin/plugin.json`, `AGENTS.md`, and README.
 - Add structural validators for manifest fields, owned references, and two-skill
   discovery layout.
 - Add install tests first, then `install.sh` with `GROK_HOME` and explicit
@@ -43,7 +43,7 @@ conformance on this machine.
   exit, and invalid envelopes.
 - Implement strict semantic assembly without terminal-text scraping.
 
-### 5. Megastorm deterministic runner
+### 5. Superstorm deterministic runner
 
 - Port the proven Codex deterministic gates and runner into the self-contained
   Grok plugin.
@@ -52,9 +52,9 @@ conformance on this machine.
   retry taxonomy, reality gates, state/events, cancellation, and resume.
 - Drive end-to-end tests through a fake Grok CLI.
 
-### 6. Megastorm skill GREEN/REFACTOR
+### 6. Superstorm skill GREEN/REFACTOR
 
-- Write the Grok Megastorm `SKILL.md` from the approved protocol and observed RED
+- Write the Grok Superstorm `SKILL.md` from the approved protocol and observed RED
   rationalizations.
 - Run the same pressure test with the skill supplied.
 - Tighten loopholes until the agent respects Phase -1/0, census, native

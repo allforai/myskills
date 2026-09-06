@@ -11,10 +11,10 @@
       "description": "Meta-skill generator: analyzes projects, generates project-specific node-specs and orchestrator configs. /bootstrap + /run workflow. Replaces 6 specialized plugins."
     },
     {
-      "name": "megastorm",
+      "name": "superstorm",
       "version": "0.22.0",
-      "source": "./claude/megastorm/",
-      "description": "Large-goal autonomous pipeline: decompose into modules, front-load decisions via brainstorming, then design → closed-loop validate → plan → reverse-review → orchestrate → concurrently execute with anti-fake-completion supervision. Global command /megastorm."
+      "source": "./claude/superstorm/",
+      "description": "Large-goal autonomous pipeline: decompose into modules, front-load decisions via brainstorming, then design → closed-loop validate → plan → reverse-review → orchestrate → concurrently execute with anti-fake-completion supervision. Global command /superstorm."
     },
     {
       "name": "grillstorm",

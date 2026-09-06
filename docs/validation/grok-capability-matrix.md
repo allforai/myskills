@@ -1,4 +1,4 @@
-# Grok Build Megastorm capability matrix
+# Grok Build Superstorm capability matrix
 
 Status date: 2026-07-18
 

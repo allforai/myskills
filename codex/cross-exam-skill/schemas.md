@@ -20,7 +20,7 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
   "schema_version": 1,
   "run_id": "stable UUID",
   "target": "被盘问对象（人类可读名）",
-  "baseline": "megastorm-registry|spec|readme|user|none",
+  "baseline": "superstorm-registry|spec|readme|user|none",
   "started": "YYYY-MM-DD",
   "examiner_is_author": false,
   "facets": [
