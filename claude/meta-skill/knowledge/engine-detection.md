@@ -200,9 +200,11 @@ From this, identify:
 - Monorepo structure (if applicable)
 - Frontend/backend separation pattern
 
-### 1.3 Sample Core Files (3-5 files)
+### 1.3 Sample Core Files
 
-Read these (pick the most informative):
+Read the most informative files until the profile's remaining questions are answered — there
+is no required sample count; a monorepo needs a sample per module, a single service may need
+three files. Typically:
 - Main entry point (main.go, index.ts, app.py, App.tsx, etc.)
 - Primary router/route definition file
 - One data model / schema file

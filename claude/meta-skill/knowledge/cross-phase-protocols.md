@@ -415,9 +415,11 @@ Confirmation interaction adapts to the scale of the project:
 
 | Scale | Condition | Confirmation Strategy |
 |-------|-----------|----------------------|
-| **small** | items <= 30 | Show each item, confirm step-by-step |
-| **medium** | items 31-80 | Summary mode, confirm by module/role groups |
+| **small** | items <= 30 | Show the full list once; confirm by exception — only flagged items get a question |
+| **medium** | items 31-80 | Summary by module/role group; expand and confirm only flagged items |
 | **large** | items > 80 | Script generates output file + statistical summary + only expand problematic items |
+
+At every scale the human confirms exceptions, not each item; the full list is shown so nothing is hidden.
 
 ### Closed-Loop Input Audit at Confirmation Points
 

@@ -63,7 +63,7 @@ Completion: target named; every job in scope written as a triple and read back; 
 2. Name the product and how to inspect it (repo, running local app, public site). Production write-actions are forbidden; read-only public marketing pages are allowed.
 3. Jobs. The user names jobs; you rewrite each into a **triple** and read it back for confirmation:
    `who` / `in what circumstance` / `what observable progress`.
-   A wish that stays a wish after one rewrite round ("make search better" with no who or circumstance) is not a job; say which part is missing and let the user supply it once. Still missing → leave it out. No jobs → ask once; still none → stop.
+   A wish that stays a wish after one rewrite round ("make search better" with no who or circumstance) is not a job yet. Say which part is missing, and if you have already looked at the product, propose the triple you can see it implying ("as a returning shopper, on the results page, find the item I bought last month") for the user to confirm or reject. A confirmed proposal is a job; a rejected or unconfirmed one is left out. You never enter a job into scope on your own authority. No jobs after that → stop.
 4. Run directory `docs/product-review/<YYYY-MM-DD>-<slug>/`. If `recommendations.md` already exists there, ask once: continue (keep ids, append) or new run (suffix the slug).
 
 ## 1. Facts
@@ -72,7 +72,7 @@ Completion: evidence limits recorded; prior evidence folded in; every job has ev
 
 **Evidence limits, before opening anything.** Record three facts: can the product run here; is a browser or screenshot tool available; is WebSearch available. These become the report's `Evidence limits` line. Without a browser, every `ui_friction` / `interaction_gap` item carries `evidence: code-only` and says so. Never describe an inspection method you did not use.
 
-**Prior evidence.** If `docs/cross-exam/*/completion-report.md` exists, read the newest one. Its gap list and its 旅程完成度 section are prior evidence: for each gap (`G` id) or journey verdict (`J` id) that blocks a job in scope, list it on the `Prior evidence` line with that job. A journey that cross-exam walked through (`done`) is evidence for 在不在 and 走不走得完 on the matching job; a journey `gap` with its `stuck_kind` is the observation, do not re-probe it. A known gap or blocked journey never becomes an `R` item; items that wait on it write its id in `depends_on` (`G1`, `J1`). Absent → write `Prior evidence: none`.
+**Prior evidence.** If `docs/cross-exam/*/completion-report.md` exists, read the newest one. Its gap list and its 旅程完成度 section are prior evidence: for each gap (`G` id) or journey verdict (`J` id) that blocks a job in scope, list it on the `Prior evidence` line with that job. A journey that cross-exam walked through (`done`) is evidence for 在不在 and 走不走得完 on the matching job; a journey `gap` with its `stuck_kind` is the observation. You may re-probe it when the product has moved since that report: note the report date and what you observed differently, and the newer observation stands beside the old one, never silently replacing it. A known gap or blocked journey never becomes an `R` item; items that wait on it write its id in `depends_on` (`G1`, `J1`). Absent → write `Prior evidence: none`.
 
 Find facts yourself (repo, running UI, WebSearch). Do not ask the user for anything look-up-able.
 
