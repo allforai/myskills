@@ -248,7 +248,8 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
   `evidence/qNN.rejected-1/`**（留痕；不进 ledger，不被任何 entry 引用，渲染器不读它），让 `evidence_dir` 原路径空着
   交给新实测官——残留文件会撞 transcript 核对，也会给第二个实测官示范"不适用"这类写法。最终落账的 entry 写
   `redispatched: 1`（重派次数）；首派用的是降档模型时再写 `first_agent_model`，报告读者一眼看出两次派发换了模型；渲染器不据此改计数。被拒返回里的原始观察
-  （如"结算时弹了 OAuth 窗"）可以作为下一轮的牌候选进 `open_threads`，但不作任何裁决依据。**普查官/枚举官无返回**同样重派一次；普查官再失败
+  （如"结算时弹了 OAuth 窗"）可以作为下一轮的牌候选进 `open_threads`，但不作任何裁决依据。**两次都残缺时**的 `could_not` 原因文件由你写在
+  `evidence_dir` 里，文件首行注明"盘问官记录，非取证"并列出两个 rejected 目录，`agent_task` 记第二次的 transcript。**普查官/枚举官无返回**同样重派一次；普查官再失败
   → 只能按自己的面摆表，并在 ledger 顶层记 `census: "failed"`、向用户明说覆盖上限是你的 hunch；
   枚举官再失败 → pattern 写 `enumerated: false`，sites 只留首例，不造哨兵位点。
 - **靶子起不来**：本身就是一条集成缝隙 `gap`（"声称可跑，实测失败"，实测官的
