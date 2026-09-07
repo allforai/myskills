@@ -86,6 +86,21 @@ The six `test_admit_evidence.py` cases are explicitly synthetic helper tests and
 
 The coordinator initialized Git metadata in the first Claude large-code project for Orca placement (synthetic initial commit `eb52d16`). Exclude `.git` runtime metadata from source preservation checks and compare original source paths with `source-before.json`; generated product/workflow documents have their own change history. Initial no-document and new-product conditions remain unchanged by Git metadata.
 
+## Raw Orca capture recorder
+
+The coordinator requested `capture_worker.py` as a bounded recorder. Run it against the exact real actor Dispatch, never a guessed provider session or transcript path:
+
+```text
+python3 /Users/aa/orca/workspaces/myskills/meta-intent-t9/docs/grillstorm/meta-intent/replan-2/T15/capture_worker.py <actor-dispatch> <new-capture-directory> --orca orca
+python3 /Users/aa/orca/workspaces/myskills/meta-intent-t9/docs/grillstorm/meta-intent/replan-2/T15/capture_worker.py <same-actor-dispatch> <next-new-capture-directory> --orca orca --after <previous-capture-directory>/capture.json
+```
+
+Substitute the already selected executable if this Orca environment requires one. Each invocation runs only `orchestration worker-read --dispatch <exact-id> --source auto --limit 100 --json`, optionally followed by Orca's returned opaque cursor. It saves raw stdout JSON bytes, stderr bytes and exact command/exit/hash records per page, with a `capture.json` index. No actor launches, injections, session guessing, cursor synthesis, transcript editing or semantic grading occur. Output directories must be new to preserve previous pages. `--pages` bounds each capture; it stops when the returned cursor is absent/unchanged and can be continued later using `--after`.
+
+The index preserves hook-attested `provider`, `sourceIdentity`, source, per-page warnings/fallback reasons, the returned cursor and a hash-linked previous capture. Exit 1 flags runtime warnings (including clipped blocks), an initially limited history window, terminal fallback, absent source identity, changed source/dispatch, command failure/timeout, invalid runtime JSON or exhausted page budget. A source change stops the capture; begin a separate fresh capture without `--after` as Orca directs, and do not combine identities into a fake continuous session. Raw pages remain available even when capture is incomplete. Exit 0 means only that this bounded read reported no such limitation; `full_dialogue_proven` is always false until the evaluator separately checks chronology and all turns.
+
+Runtime discovery on the evaluator's own Dispatch showed that an initial limit-1 read returned the latest message. It is not a from-start guarantee. Capture actors early, preserve every subsequently returned cursor, and corroborate earlier turns or clipping with actual host/artifact evidence. Own-Dispatch discovery is not T15 host evidence. The recorder's six CLI tests use a fake Orca executable at the process boundary and synthetic source identities; they prove recording/error behavior only, adding zero executed scenario cells.
+
 ## Completion
 
 Each cell requires source/candidate identity, raw multi-turn dialogue, artifacts, source diff, gate output and a semantic verdict with concrete cited observations. All fourteen cells plus required resume/control observations must pass before T15 succeeds. Preparation alone is incomplete. Current state: zero executed, all fourteen unverified.
