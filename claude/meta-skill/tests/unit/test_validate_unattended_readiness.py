@@ -137,3 +137,17 @@ def test_unattended_readiness_blocks_broken_repair_loop_contract(tmp_path):
 
     assert report["status"] == "not_ready"
     assert any(item["code"] == "missing_repair_loop_node" for item in report["blockers"])
+
+
+def test_missing_codex_cli_is_a_warning_not_a_blocker(tmp_path, monkeypatch):
+    # ADR-0003: the cross-platform CLI is reviewer two's preferred backend; when absent, reviewer two
+    # runs as a second fresh-context sub-agent. Readiness records the warning and stays ready.
+    import validate_unattended_readiness as m
+    monkeypatch.setattr(m.shutil, "which", lambda name: None)
+    _minimal_project(tmp_path, node_spec="capture screenshot then run visual-acceptance batches")
+    report = validate_unattended_readiness(tmp_path)
+    codes = {b["code"] for b in report["blockers"]}
+    assert "missing_codex_cli" not in codes
+    assert report["status"] == "ready"
+    assert any(w.get("code") == "missing_cross_platform_cli" for w in report["warnings"])
+    assert any(f.get("reviewer_two_backend") == "session-subagent" for f in report["external_tool_findings"])

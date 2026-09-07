@@ -6,18 +6,26 @@
 
 ## A. Adversarial Multi-Model Generation
 
-A 4-model protocol for generating breakthrough innovation concepts. Uses OpenRouter MCP to call external models in parallel, with Claude as the final integrator.
+A four-role protocol for generating breakthrough innovation concepts. The value is in the
+roles and their independence, not in which vendor plays them: each role runs in its own
+context, sees only its inputs, and never reads another role's draft. Roles may run on external
+models through the ai-gateway `ask_model` routing or on fresh-context sub-agents of the session
+model; which model actually ran is recorded in the output's `source_model`, never prescribed
+here (model names and temperatures age faster than any protocol).
 
-### Model Roles & Configuration
+### Roles
 
-| Role | Model Family | Temperature | Mission |
-|------|-------------|-------------|---------|
-| **Disruptor** | gpt | 1.2 | Propose the most radical alternatives for each core mechanism. Break all industry conventions. Output: 3 "crazy" concepts |
-| **Guardian** | gemini | 0.3 | Find violations of physics/law/human-nature baselines. Draw non-negotiable boundaries. Output: boundary-constraints.json |
-| **Archaeologist** | deepseek | 0.9 | Search other domains for analogous problem solutions. Fixed 3 cross-domain cases. Output: cross-domain-cases.json |
-| **Pre-Synthesizer** | qwen | 0.8 | Initial integration of Disruptor/Guardian/Archaeologist outputs. Output: pre-synthesis.json |
+| Role | Mission | Independence requirement |
+|------|---------|--------------------------|
+| **Disruptor** | Propose the most radical alternatives for each core mechanism. Break all industry conventions. Output: 3 "crazy" concepts | Sees the problem statement only; never the Guardian's boundaries |
+| **Guardian** | Find violations of physics/law/human-nature baselines. Draw non-negotiable boundaries. Output: boundary-constraints.json | Sees the problem statement only; never the Disruptor's concepts |
+| **Archaeologist** | Search other domains for analogous problem solutions. Fixed 3 cross-domain cases. Output: cross-domain-cases.json | Sees the problem statement only |
+| **Pre-Synthesizer** | Initial integration of Disruptor/Guardian/Archaeologist outputs. Output: pre-synthesis.json | A context that produced none of the three inputs |
 
-### Claude as Alchemist (temp=0.8)
+If only one model is reachable, the roles still run as separate fresh contexts; the protocol
+degrades in diversity, never in independence, and the report says so.
+
+### The session model as Alchemist
 
 After receiving all 4 model outputs, Claude:
 1. Reads all 4 outputs
@@ -48,10 +56,10 @@ The Archaeologist searches for cross-domain analogues based on the problem essen
   "generated_at": "ISO timestamp",
   "multi_model_collaboration": {
     "models_used": [
-      { "role": "disruptor", "model_family": "gpt", "temperature": 1.2 },
-      { "role": "guardian", "model_family": "gemini", "temperature": 0.3 },
-      { "role": "archaeologist", "model_family": "deepseek", "temperature": 0.9 },
-      { "role": "pre_synthesizer", "model_family": "qwen", "temperature": 0.8 }
+      { "role": "disruptor", "source_model": "<recorded at run time from the gateway response>", "context": "independent" },
+      { "role": "guardian", "source_model": "<recorded at run time>", "context": "independent" },
+      { "role": "archaeologist", "source_model": "<recorded at run time>", "context": "independent" },
+      { "role": "pre_synthesizer", "source_model": "<recorded at run time>", "context": "independent" }
     ],
     "integration_method": "main_model_synthesis",
     "disagreements": [
@@ -133,18 +141,18 @@ Before searching competitors, break the constraints of "industry consensus". Use
 ### Phase C Execution
 
 ```
-Model A (gpt, temp=1.0): Challenger
+Role A (Challenger, independent context)
   -> List 5-10 "industry consensus" statements for the domain
   -> Example: "Collaboration tools must have folders", "Social products must have friend systems"
   -> Output: industry_assumptions[]
 
-Model B (gemini, temp=0.5): Guardian
+Role B (Guardian, independent context)
   -> Challenge each: Is this a law of physics or a human convention?
   -> Physics law -> must obey (e.g., network latency, information entropy)
   -> Human convention -> can challenge (e.g., folders, friend lists)
   -> Output: constraint_classification[]
 
-Main model (Claude): Integrator
+Session model: Integrator
   -> Weigh both opinions, adjudicate disagreements
   -> Output: assumption-zeroing.json
 ```
@@ -156,19 +164,19 @@ Main model (Claude): Integrator
 
 ### Innovation Opportunity Exploration (Phase B+)
 
-Based on the assumption-zeroing list, two models independently search for unconstrained solutions:
+Based on the assumption-zeroing list, two independent contexts search for unconstrained solutions (different models when the gateway offers them, otherwise two fresh contexts of the session model; the report records which):
 
 ```
-Model A (gpt, temp=0.9): Explorer
+Role A (Explorer, independent context)
   -> "If constraint X didn't exist, how would the problem be solved?"
   -> 3-4 rounds of deep search per direction
   -> Output: innovation_opportunities_A[]
 
-Model B (gemini, temp=0.9): Explorer (independent)
+Role B (Explorer, a second independent context)
   -> Same task, independent search
   -> Output: innovation_opportunities_B[]
 
-Main model (Claude): Integrator
+Session model: Integrator
   -> Merge, deduplicate, mark disagreement points
   -> Output: innovation-opportunities.json
 ```
@@ -237,12 +245,15 @@ How to use multiple models for independent review at validation points throughou
 
 ### Per-Phase Validation Points
 
-| Phase | Validation Point | task_type | Model | Content Sent | Target Field |
-|-------|-----------------|-----------|-------|-------------|-------------|
-| product-concept Step 4 | Assumption challenge | `competitive_analysis` | gemini | Concept summary: core problem + value proposition + key assumptions + ERRC matrix | `cross_model_review.assumption_challenges` |
-| product-concept Step 4 | Persona blindspot | `user_persona_validation` | gpt | Role list + VPC (Jobs/Pains/Gains) + target user personas | `cross_model_review.persona_blindspots` |
-| product-map Step 5 | Task completeness | `task_completeness_review` | gemini | Role list + high-frequency task list + discovered conflicts | `cross_model_review.missing_tasks` |
-| product-map Step 5 | Hidden conflicts | `conflict_detection` | gpt | Role list + high-freq tasks + task dependencies + business rules | `cross_model_review.hidden_conflicts` |
+Each validation point runs in a context that did not produce the artifact under review; the
+gateway's `task_type` routing picks the model, and `source_model` records which one ran.
+
+| Phase | Validation Point | task_type | Content Sent | Target Field |
+|-------|-----------------|-----------|-------------|-------------|
+| product-concept Step 4 | Assumption challenge | `competitive_analysis` | Concept summary: core problem + value proposition + key assumptions + ERRC matrix | `cross_model_review.assumption_challenges` |
+| product-concept Step 4 | Persona blindspot | `user_persona_validation` | Role list + VPC (Jobs/Pains/Gains) + target user personas | `cross_model_review.persona_blindspots` |
+| product-map Step 5 | Task completeness | `task_completeness_review` | Role list + high-frequency task list + discovered conflicts | `cross_model_review.missing_tasks` |
+| product-map Step 5 | Hidden conflicts | `conflict_detection` | Role list + high-freq tasks + task dependencies + business rules | `cross_model_review.hidden_conflicts` |
 | journey-emotion | Intensity distribution | (optional) | second model | Emotion annotation summary | Independent review of intensity distribution |
 | experience-map | Architecture review | (optional) | second model | Summary (operation line count, screen count, task coverage, platform distribution) | Information architecture reasonableness |
 
@@ -263,7 +274,7 @@ How to use multiple models for independent review at validation points throughou
       {
         "assumption": "The challenged assumption",
         "challenge": "Why it may not hold",
-        "source_model": "gemini",
+        "source_model": "<recorded from the gateway response>",
         "severity": "high | medium | low"
       }
     ],
@@ -271,7 +282,7 @@ How to use multiple models for independent review at validation points throughou
       {
         "blindspot": "What was overlooked",
         "suggestion": "Alternative perspective",
-        "source_model": "gpt"
+        "source_model": "<recorded from the gateway response>"
       }
     ],
     "missing_tasks": [],

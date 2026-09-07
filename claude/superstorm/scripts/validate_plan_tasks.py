@@ -6,7 +6,8 @@ acceptance_cmd feeds the §4.6 anti-fake-completion supervisor's objective rerun
 Plans failing this are bounced back to the plan agent.
 
 VACUOUS-PASSABLE acceptance: a test command that selects a subset BY NAME exits
-0 when the name matches nothing, so a 0-test run masquerades as green.
+0 when the name matches nothing, so a 0-test run masquerades as green. Such commands
+are reported as WARNINGS (exit 0), never as blocks: the regex cannot read run output.
 
 superstorm is LANGUAGE-AGNOSTIC. A static script cannot read run output, so this
 early check is necessarily a best-effort heuristic over a NON-EXHAUSTIVE,
@@ -31,7 +32,8 @@ _VACUOUS_RUNNERS = [
     (r"swift\s+test\b[^|;&]*--filter\b", "hard"),       # swift
     (r"go\s+test\b[^|;&]*\s-run\b", "hard"),            # go
     (r"\b(jest|vitest)\b[^|;&]*\s-t\b", "hard"),        # js/ts
-    (r"\bcargo\s+test\b[^|;&]*\s[\w:]+\s*$", "hard"),   # rust: cargo test <name>
+    # rust: cargo test <name> — but not a value that belongs to -p/--package/--test/--bin/--example
+    (r"\bcargo\s+test\b(?:[^|;&]*\s)?(?<!-p )(?<!--package )(?<!--test )(?<!--bin )(?<!--example )[\w:]+\s*$", "hard"),
     (r"-only-testing[:=]", "warn"),                      # xcodebuild
 ]
 _SELECTIVE_HARD = re.compile(
@@ -118,13 +120,15 @@ def validate_tasks(tasks, interfaces=None):
             continue
         kind = _selector_kind(cmd)
         if kind == "hard":
-            errors.append(
+            # A warning, not a block: this is a regex over a non-exhaustive runner list. The
+            # authoritative zero-test gate is the supervisor reading the real rerun output.
+            warnings.append(
                 f"{label}: VACUOUS-PASSABLE acceptance_cmd — it selects tests by name "
                 f"with no zero-test guard, so a 0-match run exits 0 and passes green "
                 f"without the feature working. Append an "
                 f"assertion that >0 tests actually ran (fail on a 'no tests'/'0 tests' "
                 f"line, or assert a positive executed-test count), or restructure so the "
-                f"named test is provably created."
+                f"named test is provably created. The supervisor will reject a 0-test pass."
             )
         elif kind == "warn":
             warnings.append(
@@ -149,7 +153,8 @@ def main(argv):
     for w in result["warnings"]:
         print(f"WARN: {w}")
     if result["ok"]:
-        print(f"OK: {len(tasks)} tasks carry touched_paths + non-vacuous acceptance_cmd")
+        print(f"OK: {len(tasks)} tasks carry touched_paths + acceptance_cmd"
+              + (f" ({len(result['warnings'])} vacuous-runner warnings for the plan agent)" if result["warnings"] else ""))
         return 0
     print("BLOCKED: plan tasks failed validation (return to plan agent):")
     for e in result["errors"]:

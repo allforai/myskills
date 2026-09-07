@@ -2,7 +2,7 @@
   "schema_version": 1,
   "protocol": "implement",
   "authorization": "$implement 并发",
-  "main_base": "fa2447b20199fa6f8199cdbbe2c05692e283f08c",
+  "main_base": "a37ca40a548bd748b416b908157223a7287ad720",
   "max_concurrency": 3,
   "status": "running",
   "tasks": {
@@ -117,11 +117,21 @@
     "scenario_proof": false
   },
   "review_scope": {
-    "base": "88e7becaf30522ef29dd2fa168b62045affcb782",
+    "base": "a37ca40a548bd748b416b908157223a7287ad720",
+    "previous_accepted_scope_base": "88e7becaf30522ef29dd2fa168b62045affcb782",
     "issues": [
       11,
       12
     ],
-    "status": "merging_and_verifying"
-  }
+    "status": "verifying_refreshed_combined_candidate",
+    "integration_before_main_refresh": "0c10c285"
+  },
+  "initial_main_base": "fa2447b20199fa6f8199cdbbe2c05692e283f08c",
+  "synchronized_related_issues": [
+    24,
+    25,
+    27,
+    40,
+    41
+  ]
 }

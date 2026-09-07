@@ -1,5 +1,5 @@
 {
-  "_comment": "Reference only. Phase 0 probes the active launcher and freezes real literals in a private policy directory. Current Codex preference: THINK=gpt-5.6-sol, VERIFY=codex-auto-review, BUILD=gpt-5.6-luna (or gpt-5.6-terra when Luna is unavailable). No mid-run substitution.",
+  "_comment": "Reference only. Phase 0 reads the host's model list and freezes the policy in a private policy directory: THINK and VERIFY are always host-owned (inherited); BUILD is host-owned, or the literal the user chose from that list after the recommendation in references/model-policy.md. No model name is written in the skill. No mid-run substitution except back to the host model.",
   "think": "REPLACE: strongest available agentic coding/reasoning model",
   "verify": "REPLACE: independent rigorous review model, never weaker than bulk",
   "bulk": "REPLACE: efficient repository-coding model"

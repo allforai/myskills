@@ -56,6 +56,14 @@ _SCHEMAS = {
             "executed_test_count": {"type": ["integer", "null"], "minimum": 0},
             "vacuous": {"type": "boolean"},
             "reality_gated": {"type": "boolean"},
+            # Optional: what the supervisor saw beyond THIS task. Never changes the verdict;
+            # the controller appends every entry to the run's observations ledger.
+            "observations": {"type": "array", "items": {
+                "type": "object", "additionalProperties": False,
+                "required": ["scope", "finding", "evidence"],
+                "properties": {"scope": {"type": "string", "minLength": 1},
+                               "finding": {"type": "string", "minLength": 1},
+                               "evidence": {"type": "string", "minLength": 1}}}},
         },
     },
 }

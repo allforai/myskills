@@ -96,9 +96,13 @@ Loading gap-tasks.json:
 
 | Scale | Condition | Interaction Strategy |
 |-------|-----------|---------------------|
-| **small** | items <= 30 | Show each item, step-by-step confirmation |
-| **medium** | items 31-80 | Summary mode, confirm by module/role groups |
+| **small** | items <= 30 | Show the full list once; confirm by exception — only items you flagged get a question |
+| **medium** | items 31-80 | Summary by module/role group; expand and confirm only flagged items |
 | **large** | items > 80 | Script generates output file + statistical summary + only expand problematic items |
+
+At every scale the human confirms exceptions, never each item: the list is shown so nothing is
+hidden, the questions go only to what you flagged (a conflict, a guess, a gap). Item-by-item
+confirmation was a check on weak generation; it is serial waiting now.
 
 **Unit of measurement varies by skill**:
 

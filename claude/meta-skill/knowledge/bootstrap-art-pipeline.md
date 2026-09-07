@@ -2,7 +2,15 @@
 
 Load this file only when the planned graph includes art-direction, art-concept, concept-freeze, art-gen, or art-qa.
 
-Bootstrap does not invent this chain from memory. Follow the injection and node-spec contracts below.
+Bootstrap does not invent this chain from memory. Follow the injection and node contracts below.
+
+**Contract, not body.** Each block below is a node *contract*: the graph wiring (frontmatter),
+the sub-skill invocation contract (which bundled skills, their inputs and outputs), and the
+completion acceptance. Bootstrap writes every art node-spec from `node-spec-template.md` —
+Attention Contract, Context Pull, Effect Verification, Quality Acceptance and the rest, filled
+for this project — and carries these contract fields into it. Nothing here is copied as the
+node-spec body; a node-spec that lacks an Attention Contract fails `bootstrap-node-expansion-qa`,
+whatever it was copied from.
 
 **Art Concept Node Injection (always applies when `art-direction` is in the selected workflow):**
 
@@ -11,7 +19,7 @@ After inserting the `art-direction` node, also insert an `art-concept` node imme
 - `hard_blocked_by: ["art-direction"]`; update `art-spec-design` to `hard_blocked_by: ["art-concept"]` (remove `art-direction` from its hard_blocked_by list)
 - `unlocks: ["art-spec-design"]`
 - **No approval-records entry** (art-concept is a skill invocation, not a human-reviewed document)
-- **Node-spec content** for art-concept (write verbatim to `.allforai/bootstrap/node-specs/art-concept.md`):
+- **Node contract** for art-concept (bootstrap generates `.allforai/bootstrap/node-specs/art-concept.md` from `node-spec-template.md` and carries these fields into it):
 
 ```markdown
 ---
@@ -30,9 +38,9 @@ exit_artifacts:
   - .allforai/game-design/art/art-direction-benchmark.md
 ---
 
-# Task: 美术技术规格确认（Art Concept Skill Invocation）
+# Contract: art-concept（美术技术规格确认）
 
-## 执行方法
+## Sub-skill invocation contract
 
 读取并执行 `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept/SKILL.md` skill，完成交互式 Q&A 并产出 `art-pipeline-config.json`。
 
@@ -40,7 +48,7 @@ art-concept skill 完成后，依次调用以下 game-art 子 skill 细化策略
 
 1. **2D 美术风格分类与偏好契约：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-art-style-taxonomy/SKILL.md`
    - 输入：产品/游戏概念、已有美术偏好、项目摘要
-   - 输出：`.allforai/game-design/art/2d-art-style-taxonomy.html`（中文，人类阅读）、`.allforai/game-design/art/2d-art-style-taxonomy.json`、`.allforai/game-design/art/human-visual-preferences.json`
+   - 输出：`.allforai/game-design/art/2d-art-style-taxonomy.html`（项目工作语言，人类阅读）、`.allforai/game-design/art/2d-art-style-taxonomy.json`、`.allforai/game-design/art/human-visual-preferences.json`
    - 要求：在项目启动前向用户交代可选 2D 美术风格族、适合类型、生产成本、LLM 生图难度、LoRA/参考图/编辑模式需求、程序加工适配度、运行时风险和禁止风格；不得把具体项目标准写死到全局 skill。
 
 2. **动画生产计划：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md`
@@ -53,7 +61,7 @@ art-concept skill 完成后，依次调用以下 game-art 子 skill 细化策略
 
 4. **美术概念验证 HTML Gate：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-concept-validation/SKILL.md`
    - 输入：产品/游戏概念、美术方向输入契约、art-pipeline-config、style tokens 或 art-style-guide、人类偏好
-   - 输出：`.allforai/game-design/art/art-concept-validation.html`（中文，人类阅读）和 `.allforai/game-design/art/art-concept-validation.json`
+   - 输出：`.allforai/game-design/art/art-concept-validation.html`（项目工作语言，人类阅读）和 `.allforai/game-design/art/art-concept-validation.json`
    - 要求：验证美术方向与产品概念、玩法可读性、目标受众、UI/世界观一致性、VFX/动效、运行时约束和人类偏好是否闭合；未通过则不得进入 concept-freeze / art-gen。
 
 5. **美术导演基准：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/art-direction-benchmark/SKILL.md`
@@ -61,13 +69,13 @@ art-concept skill 完成后，依次调用以下 game-art 子 skill 细化策略
    - 输出：`.allforai/game-design/art/art-direction-benchmark.json` 和 `.allforai/game-design/art/art-direction-benchmark.md`
    - 要求：定义项目级商业视觉承诺、参考/反参考、视觉质量评分轴、资产家族标准、运行时截图标准和禁止通过项。这个基准回答“好不好看、像不像本游戏、有没有商业卖相”，不是回答“文件有没有生成”。
 
-## 完成条件
+## Completion (acceptance)
 
 `.allforai/game-design/art-pipeline-config.json` 存在且 `status == "final"`，
-`.allforai/game-design/art/2d-art-style-taxonomy.html` 存在且为中文，
-`.allforai/game-design/art/2d-art-style-taxonomy.json` 存在且 `status in ["ready", "pending_user_choice"]`，
+`.allforai/game-design/art/2d-art-style-taxonomy.html` 存在且使用项目的工作语言，
+`.allforai/game-design/art/2d-art-style-taxonomy.json` 存在且 `status == "ready"`（`pending_user_choice` 不是完成态：用户尚未选风格族时节点返回 `blocked_needs_user`，config 也不得为 `final`），
 `.allforai/game-design/art/art-concept-validation.html` 存在，
-`.allforai/game-design/art/art-concept-validation.json` 存在且 `state in ["passed", "passed_with_warnings"]`，
+`.allforai/game-design/art/art-concept-validation.json` 存在且 `state in ["passed", "passed_with_warnings"]`（`passed_with_warnings` 只在每条 warning 点名对象、写明为何不阻断 `art-spec-design`、且 `quality_gaps` / `experience_gaps` / `visual_quality_gaps` 全空时成立；会改变任何资产规格的 warning 是 gap，不是 warning），
 `.allforai/game-design/art/art-direction-benchmark.json` 存在且 `status == "ready"`，
 `.allforai/game-design/art/art-direction-benchmark.md` 存在。
 ```
@@ -79,7 +87,7 @@ After inserting `art-spec-design`, also insert a `concept-freeze` node immediate
 - `hard_blocked_by: ["art-spec-design"]`; update all art-gen nodes (`ai-art-generation`, `tile-art-gen`, `character-art-gen`, `environment-art-gen`, `vfx-art-gen`, etc.) to `hard_blocked_by: ["concept-freeze"]` (remove `art-spec-design` from their hard_blocked_by)
 - `unlocks`: all art-gen nodes
 - **No approval-records entry** (concept-freeze has `human_gate: false` — no discipline_owner review needed)
-- **Node-spec content** for concept-freeze (write verbatim to `.allforai/bootstrap/node-specs/concept-freeze.md`):
+- **Node contract** for concept-freeze (bootstrap generates `.allforai/bootstrap/node-specs/concept-freeze.md` from `node-spec-template.md` and carries these fields into it):
 
 ```markdown
 ---
@@ -92,9 +100,9 @@ exit_artifacts:
   - .allforai/game-design/asset-registry.json
 ---
 
-# Task: 概念合约冻结（Concept Freeze）
+# Contract: concept-freeze（概念合约冻结）
 
-## 执行方法
+## Sub-skill invocation contract
 
 读取并执行 `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/concept-contract.md` capability，完成 canonical_registry 构建并写入 `concept-contract.json`。
 
@@ -117,7 +125,7 @@ concept-contract capability 完成后，依次调用以下 game-art 子 skill（
    - （输入/输出：参见 SKILL.md 的 Invocation Contract；依赖上一步生成的 `asset-registry.json`）
    - 输出：每类资产的 `source_strategy`（`existing_asset_pack` / `existing_3d_source_asset` / `user_provided_asset` / `adapt_existing_asset` / `hybrid` / `placeholder_only`）写入 `asset-registry.json`
 
-## 完成条件
+## Completion (acceptance)
 
 `.allforai/concept-contract.json` 存在且 `schema_version == "1.0"` 且 `.allforai/game-design/asset-registry.json` 存在。
 如果 `.allforai/game-design/art/art-concept-validation.json` 不存在或状态不是 `passed` / `passed_with_warnings`，必须返回 `UPSTREAM_DEFECT`，不得冻结概念或推进 art-gen。
@@ -155,9 +163,9 @@ After injecting `concept-freeze`, read `art-pipeline-config.json.active_nodes` a
 | `vfx-art-gen` | — | + `skills/game-art/30-generate/decal-generation/SKILL.md` | when `vfx.approach` includes `decal` |
 | `vfx-art-gen` | — | + `skills/game-art/30-generate/animation-event-fx/SKILL.md` | when VFX must bind to animation events |
 
-**Node-spec template for each `active_node` entry:**
+**Node contract for each `active_node` entry:**
 
-Write `.allforai/bootstrap/node-specs/<node_id>.md` using this template, substituting `<TYPE>`, `<REGISTRY_KEY>`, `<CONFIG_SECTION>`, and `<DISCIPLINE_OWNER>` from the table below:
+Bootstrap generates `.allforai/bootstrap/node-specs/<node_id>.md` from `node-spec-template.md` and carries the contract below into it, substituting `<TYPE>`, `<REGISTRY_KEY>`, `<CONFIG_SECTION>`, and `<DISCIPLINE_OWNER>` from the table:
 
 | `node_id` | `<TYPE>` | `<REGISTRY_KEY>` | `<CONFIG_SECTION>` | `<DISCIPLINE_OWNER>` |
 |-----------|----------|-----------------|-------------------|---------------------|
@@ -314,7 +322,7 @@ After injecting all art-gen nodes, inject the `art-qa` node:
 - `approval_record_path: ".allforai/game-design/approval-records.json"`
 - `review_checklist:` ["全资产风格一致性（调色板/线条/光影）", "所有资产均有 alpha/final 状态", "Atlas 打包无越界/重叠", "运行时导入通过（无丢失引用）", "3D 衍生资产透视/枢轴正确（若 dimension=2.5d）"]
 
-**Node-spec for art-qa** (write verbatim to `.allforai/bootstrap/node-specs/art-qa.md`):
+**Node contract for art-qa** (bootstrap generates `.allforai/bootstrap/node-specs/art-qa.md` from `node-spec-template.md` and carries these fields into it):
 
 ```markdown
 ---
@@ -349,7 +357,7 @@ Run quality assurance across all generated art assets. Invoke the appropriate ga
 Read and follow each applicable sub-skill SKILL.md in order:
 
 1. **Preview evidence (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/art-preview-qa/SKILL.md`
-2. **Visual acceptance batch documents + two independent review documents (Codex CLI and Claude Code) + reconciliation + closure audit (always for generated/adapted bitmap assets):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/visual-acceptance-review/SKILL.md`
+2. **Visual acceptance batch documents + two independent review documents (reviewer two and reviewer one) + reconciliation + closure audit (always for generated/adapted bitmap assets):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/visual-acceptance-review/SKILL.md`
 3. **Asset family consistency (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-family-consistency-qa/SKILL.md`
 4. **Style consistency (always):** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/2d-style-consistency-qa/SKILL.md`
 5. **UI readability** (when `ui-art-gen` ran): `${CLAUDE_PLUGIN_ROOT}/skills/game-ui/40-qa/ui-readability-qa/SKILL.md`
@@ -363,9 +371,9 @@ Read and follow each applicable sub-skill SKILL.md in order:
 
 ## Completion Condition
 
-`art-qa-report.html` exists, `.allforai/game-runtime/art/engine-ready-art-manifest.json` exists, `.allforai/game-design/art/qa/visual-acceptance-task-list.json` exists, `.allforai/game-design/art/qa/visual-acceptance-batches/` contains Markdown batch documents, `.allforai/game-design/art/qa/codex-visual-review.json` exists, `.allforai/game-design/art/qa/codex-visual-review.md` exists, `.allforai/game-design/art/qa/claude-code-visual-review.json` exists, `.allforai/game-design/art/qa/claude-code-visual-review.md` exists, `.allforai/game-design/art/qa/visual-review-reconciliation.json` exists, `.allforai/game-design/art/qa/visual-review-closure-audit.json` exists, `.allforai/game-design/art/qa/visual-review-closure-audit.md` exists, `.allforai/game-design/art/qa/asset-family-consistency-report.json` exists with `status == "passed"`, `.allforai/game-design/art/qa/in-game-beauty-gate-report.json` exists with `status == "passed"` when runtime screenshots are available, and if either reviewer found a blocker/major visual issue then `.allforai/game-design/art/qa/visual-repair-loop-report.json` and `.allforai/game-design/art/qa/visual-repair-loop-report.md` exist showing regenerate/repair plus rerun of both independent visual reviews, reconciliation, and Claude Code closure audit for affected batches. No sub-skill may return `UPSTREAM_DEFECT`, `FAILED_VALIDATION`, `blocked_by_missing_visual_evidence`, `blocked_by_missing_codex_cli`, `blocked_by_missing_runtime_screenshots`, `quality_gaps`, `visual_quality_gaps`, `beauty_gaps`, or `runtime_visual_gaps`.
+`art-qa-report.html` exists, `.allforai/game-runtime/art/engine-ready-art-manifest.json` exists, `.allforai/game-design/art/qa/visual-acceptance-task-list.json` exists, `.allforai/game-design/art/qa/visual-acceptance-batches/` contains Markdown batch documents, `.allforai/game-design/art/qa/visual-review-2.json` exists, `.allforai/game-design/art/qa/visual-review-2.md` exists, `.allforai/game-design/art/qa/visual-review-1.json` exists, `.allforai/game-design/art/qa/visual-review-1.md` exists, `.allforai/game-design/art/qa/visual-review-reconciliation.json` exists, `.allforai/game-design/art/qa/visual-review-closure-audit.json` exists, `.allforai/game-design/art/qa/visual-review-closure-audit.md` exists, `.allforai/game-design/art/qa/asset-family-consistency-report.json` exists with `status == "passed"`, `.allforai/game-design/art/qa/in-game-beauty-gate-report.json` exists with `status == "passed"` when runtime screenshots are available, and if either reviewer found a blocker/major visual issue then `.allforai/game-design/art/qa/visual-repair-loop-report.json` and `.allforai/game-design/art/qa/visual-repair-loop-report.md` exist showing regenerate/repair plus rerun of both independent visual reviews, reconciliation, and closure audit for affected batches. No sub-skill may return `UPSTREAM_DEFECT`, `FAILED_VALIDATION`, `blocked_by_missing_visual_evidence`, `blocked_by_missing_second_review`, `blocked_by_missing_runtime_screenshots`, `quality_gaps`, `visual_quality_gaps`, `beauty_gaps`, or `runtime_visual_gaps`.
 
-`COMPLETED_WITH_LIMITS` cannot pass art-qa when the limit is missing images, missing contact sheets, missing screenshots, missing Codex CLI visual review, missing Claude Code visual review, missing reconciliation, or missing Claude Code closure audit.
+`COMPLETED_WITH_LIMITS` cannot pass art-qa when the limit is missing images, missing contact sheets, missing screenshots, fewer than two independent visual reviews, missing reconciliation, or missing closure audit. `missing_cross_platform_cli` is a routing-report warning (reviewer two then runs as a second fresh-context sub-agent), never a completion status.
 
 **Gate action on any art QA failure:**
 For each failing asset, asset family, or runtime screenshot, first execute the

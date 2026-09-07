@@ -29,7 +29,7 @@ Required:
 Optional:
 
 ```text
-.allforai/game-frontend/qa/codex-runtime-visual-review.json
+.allforai/game-frontend/qa/runtime-visual-review-2.json
 .allforai/game-design/art/qa/asset-family-consistency-report.json
 .allforai/visual-qa/visual-acceptance-criteria.json
 .allforai/bootstrap/specialized-skills/
@@ -106,7 +106,7 @@ Loop:
    camera, binding, or capture failures unless the image itself is the root
    cause.
 3. Rebuild affected runtime screens and capture fresh runtime screenshots.
-4. Rerun Codex CLI runtime visual review for affected screenshots.
+4. Rerun reviewer two runtime visual review for affected screenshots.
 5. Rerun this in-game beauty gate.
 6. Append the iteration to
    `.allforai/game-design/art/qa/visual-repair-loop-report.json` and

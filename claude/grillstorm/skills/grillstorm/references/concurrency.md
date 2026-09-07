@@ -117,13 +117,6 @@ registry requirement must contain a source plus at least one risk-ranked state. 
 validates and hashes that artifact before it emits `claim: census-backed`; a path alone is
 never completeness evidence.
 
-When `run_layers.py --completeness census` is used, `--census-artifact` must point to the
-frozen version 1 `requirements-state-registry.json`. Every task must declare non-empty
-`requirements`, their union must exactly equal the registry requirement IDs, and every
-registry requirement must contain a source plus at least one risk-ranked state. The runner
-validates and hashes that artifact before it emits `claim: census-backed`; a path alone is
-never completeness evidence.
-
 Never stage, stash, commit, or modify the user's checked-out worktree. Pre-existing dirty
 files remain untouched. Do not merge the integration ref into the user's branch until all
 applicable global checks and final two-axis review pass.
@@ -141,8 +134,8 @@ portable commit, re-resolves its local model policy, and schedules only remainin
 tasks. Unmerged source worktrees are discarded and their tasks rerun.
 
 A host/model rebinding is logged as an autonomous infrastructure decision. It does not
-reopen product decisions or require another launch question when it remains inside the
-approved recommendation ladder.
+reopen product decisions or require another launch question when it resolves to the recorded
+policy: inherited, or the user's BUILD literal, or its declared fallback.
 
 ## Ready-set controller
 
@@ -173,9 +166,9 @@ the ready set:
 - keep integration publication in the controller, never in workers;
 - resume using `workflow-state.json`, not conversation history.
 
-Use the exact Phase 0 literals in each call: closure/replan agents use `THINK`, writers use
-`BUILD`, and supervisors/reviewers use `VERIFY`. The current preferred mapping is
-Fable 5 / Sonnet 5 / Opus 4.8 when those literals are exposed by the Workflow model enum.
+Closure/replan agents (`THINK`) and supervisors/reviewers (`VERIFY`) omit `model` and inherit
+the session model; writers (`BUILD`) pass the frozen literal only when the launch policy is
+option B. Literals come from the model policy record, never from this file.
 
 If native Workflow or worktree isolation is unavailable, use the bundled deterministic
 runner only when a compatible headless Codex command is explicitly configured. Otherwise
@@ -214,12 +207,13 @@ all effective model sources are proven unlocked:
 ```bash
 python3 <skill>/scripts/prepare_codex_policy.py "$POLICY_DIR" \
   --model-sources-input /private/model-sources.json \
-  --think-model gpt-5.6-sol \
-  --build-model gpt-5.6-luna \
-  --verify-model codex-auto-review
+  --available-models /private/host-models.json \
+  --build-model "<the BUILD literal the user chose from that list>"
 ```
 
-If the active launcher does not expose Luna, resolve BUILD to `gpt-5.6-terra` before launch.
+`--available-models` is the model list read from the host at orientation; a `--build-model`
+that is not in it fails here, at launch, not in the first worker. THINK and VERIFY are never
+passed: they inherit.
 Partial mappings, unknown ownership, or locked sources fail closed to prevent a model flag
 from being silently ignored or overridden.
 

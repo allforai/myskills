@@ -141,6 +141,7 @@ def _validate_required_capabilities(
     project_root: Path,
     spec: dict,
     blockers: list[dict],
+    warnings: list[dict],
     external_tool_findings: list[dict],
 ) -> None:
     capabilities = spec.get("required_capabilities") if isinstance(spec, dict) else None
@@ -162,10 +163,15 @@ def _validate_required_capabilities(
             continue
 
         if capability == "codex_cli":
+            # ADR-0003: the cross-platform CLI is reviewer two's preferred backend, not a
+            # requirement. Its absence is recorded and warned; a second fresh-context
+            # sub-agent takes reviewer two's seat. Never a blocker.
             codex_path = shutil.which("codex")
-            external_tool_findings.append({"capability": "codex_cli", "path": codex_path, "source": "spec"})
+            external_tool_findings.append({"capability": "codex_cli", "path": codex_path, "source": "spec",
+                                           "reviewer_two_backend": "codex-cli" if codex_path else "session-subagent"})
             if not codex_path:
-                _add(blockers, "missing_codex_cli", "Codex CLI is required by unattended spec")
+                warnings.append({"code": "missing_cross_platform_cli",
+                                 "message": "Codex CLI not found; reviewer two runs as a second fresh-context sub-agent"})
         elif capability == "mcp_image_batch":
             settings = project_root / ".claude/settings.json"
             has_image_batch = False
@@ -389,15 +395,17 @@ def validate_unattended_readiness(project_root: Path) -> dict:
     blob = json.dumps(workflow, ensure_ascii=False) + "\n" + "\n".join(all_node_text)
     lower_blob = blob.lower()
 
-    _validate_required_capabilities(project_root, readiness_spec, blockers, external_tool_findings)
+    _validate_required_capabilities(project_root, readiness_spec, blockers, warnings, external_tool_findings)
     if not scope_blockers:
         _validate_repair_loop_spec(readiness_spec, nodes, blockers)
 
     if "codex" in lower_blob or "visual-acceptance" in lower_blob or "screenshot" in lower_blob:
         codex_path = shutil.which("codex")
-        external_tool_findings.append({"capability": "codex_cli", "path": codex_path})
+        external_tool_findings.append({"capability": "codex_cli", "path": codex_path,
+                                       "reviewer_two_backend": "codex-cli" if codex_path else "session-subagent"})
         if not codex_path:
-            _add(blockers, "missing_codex_cli", "Codex CLI is required for visual review but not found in PATH")
+            warnings.append({"code": "missing_cross_platform_cli",
+                             "message": "Codex CLI not found in PATH; visual gates run reviewer two as a second fresh-context sub-agent (ADR-0003)"})
 
     if "mcp-image-batch" in lower_blob or "image-batch" in lower_blob:
         settings = project_root / ".claude/settings.json"

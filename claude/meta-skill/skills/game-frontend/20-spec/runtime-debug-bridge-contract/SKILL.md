@@ -1,6 +1,6 @@
 ---
 name: game-frontend-20-spec-runtime-debug-bridge-contract
-description: Define a QA-only debug bridge so automation, Codex CLI, or Claude Code can query the running game's scene tree, bindings, and state instead of guessing from source; writes game-frontend/bindings/runtime-debug-bridge-contract.json. Diagnostic only, never an in-memory editor.
+description: Define a QA-only debug bridge so automation, reviewer two, or reviewer one can query the running game's scene tree, bindings, and state instead of guessing from source; writes game-frontend/bindings/runtime-debug-bridge-contract.json. Diagnostic only, never an in-memory editor.
 ---
 
 # Runtime Debug Bridge Contract Skill
@@ -9,7 +9,7 @@ description: Define a QA-only debug bridge so automation, Codex CLI, or Claude C
 
 ## Overview
 
-Defines a QA-only runtime debug bridge that lets automation, Codex CLI, Claude
+Defines a QA-only runtime debug bridge that lets automation, reviewer two, Claude
 Code, or a future MCP server query the actual running game/app instead of
 guessing from static source files. This is required when important visible
 objects are created at runtime and static review cannot prove the real scene,
@@ -156,7 +156,7 @@ Recommended diagnostic tools:
 
 MCP tools must return paths or compact JSON, not huge screenshots or logs in the
 chat payload. Screenshots and large logs should be written to files and
-referenced by path for Codex CLI batch review.
+referenced by path for reviewer two batch review.
 
 ## Release Gate
 

@@ -90,9 +90,11 @@ concurrency, or recovery behavior is missing or wrong.
 
 ## Grill loop
 
-Use `prompts/outcome-critique-grill.md`. Present one evidence bundle and one question per
-turn with a recommended judgment and main tradeoff. Do not ask the user for facts that probes
-can discover. Persist each answer before continuing.
+Use `prompts/outcome-critique-grill.md` once per evidence bundle, then batch every bundle whose
+question does not depend on another bundle's answer into one numbered frontier round, each with
+its recommended judgment and main tradeoff — the same one-round rule the launch Grill obeys.
+Serialize only a bundle whose question needs an earlier answer. Do not ask the user for facts
+that probes can discover. Persist each answer before continuing.
 
 Classify feedback as:
 
@@ -128,10 +130,10 @@ Each round:
 4. probe expansion candidates;
 5. update gap families and the remaining sampling frame.
 
-Run at least two rounds. Continue until two consecutive rounds produce no new gap family,
-no new blocking member of an existing family, and no unexplored registry cell. Then ask
-one final Grill question confirming that the critique has reached practical saturation.
-Never claim exhaustive coverage from sampling.
+Saturation is proven by coverage, not by a round count: either one round that leaves no
+unexplored registry cell and produces no new gap family and no new blocking member, or two
+consecutive rounds with none of the three. Then ask one final Grill question confirming that
+the critique has reached practical saturation. Never claim exhaustive coverage from sampling.
 
 Persist the machine control plane:
 

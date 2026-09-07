@@ -33,6 +33,7 @@ infrastructure architecture document that implementation nodes consume.
 | Caching | Redis / Memcached / application-level cache | Product has hot data or expensive queries |
 | Load balancing | Nginx / HAProxy / cloud LB / service mesh | Product expects concurrent users |
 | Service discovery | DNS / Consul / Kubernetes / etcd | Product has multiple services |
+| Observability | Error reporting / log retention and search / metrics / tracing | Every product that runs unattended anywhere; the table is not exhaustive — a dimension the project evidently needs is asked even if unlisted |
 
 ### Required Quality
 
@@ -43,17 +44,13 @@ infrastructure architecture document that implementation nodes consume.
 
 ## Interaction Mode
 
-**Search-driven selection questions (mandatory for each relevant dimension):**
+**Evidence-backed options, one round (for every design dimension that applies):**
 
-For each design dimension that applies to this project, LLM MUST:
-
-1. **WebSearch** 1-2 rounds: benchmarks, case studies, production war stories for the candidate technologies at the project's expected scale
-2. **Present 2-4 options** as a selection question, each with:
-   - Technology name + one-line positioning (e.g., "NATS — lightweight, no persistence, <1ms latency")
-   - Evidence from search ("Used by Cloudflare for 10M+ msg/s", "Benchmark shows X vs Y at N scale")
-   - Fit assessment for THIS project ("your scale is ~1K msg/s, so Kafka's overhead is unnecessary")
-3. **User selects** — LLM does NOT decide for the user
-4. **"Other" response** → WebSearch with user's input → new selection question with refined options
+1. **Evidence first**: read what the repository and upstream artifacts already decide; search (benchmarks, production case studies, failure reports at this project's scale) only for what they leave open. A choice the repository shows already working in production (a live deploy workflow, a provisioned datastore) is stated as inherited with its evidence — the user may overrule it, but it is not reopened as an open question.
+2. **Present 2-4 options** per dimension, each with a name and one-line positioning, the evidence, and a fit assessment for THIS project; lead with a recommended default and its reason. Dimensions that constrain each other (a pay-per-request cache and a polling queue) cross-reference in their option text.
+3. **All applicable dimensions in one structured round** — the user answers a form, not a queue. A dimension whose options depend on another answer waits for it, unless the other dimension's default has strong evidence: then ask it in the same round conditioned on that default and say the question is re-issued if the default is overruled.
+4. **User decides** — the LLM does not choose architecture-level options for the user; an open question is allowed exactly when evidence cannot produce options, and says so.
+5. **"Other" response** → search or inspect with the user's input → refined options in the same round.
 
 **When to skip interaction:**
 - Dimension has only one viable option at the project's scale (e.g., APNs for iOS push — no real alternative)

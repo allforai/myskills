@@ -49,17 +49,13 @@ that implementation and verification nodes consume.
 
 ## Interaction Mode
 
-**Search-driven selection questions (mandatory for auth, authorization, and encryption dimensions):**
+**Evidence-backed options, one round (for every design dimension that applies):**
 
-For each design dimension where multiple viable options exist, LLM MUST:
-
-1. **WebSearch** 1-2 rounds: security best practices, real-world breach case studies, and framework ecosystem support for the candidate approaches
-2. **Present 2-4 options** as a selection question, each with:
-   - Approach name + one-line positioning (e.g., "Passkeys — phishing-resistant, no password to leak, WebAuthn standard")
-   - Evidence from search ("Apple/Google adopted 2023, 40% faster login in Kayak case study")
-   - Fit assessment for THIS project ("your app has mobile + web clients — Passkeys need fallback for older Android")
-3. **User selects** — LLM does NOT decide for the user
-4. **"Other" response** → WebSearch with user's input → new selection question with refined options
+1. **Evidence first**: read what the repository and upstream artifacts already decide; search (benchmarks, production case studies, failure reports at this project's scale) only for what they leave open. A choice the repository shows already working in production (a live deploy workflow, a provisioned datastore) is stated as inherited with its evidence — the user may overrule it, but it is not reopened as an open question.
+2. **Present 2-4 options** per dimension, each with a name and one-line positioning, the evidence, and a fit assessment for THIS project; lead with a recommended default and its reason. Dimensions that constrain each other (a pay-per-request cache and a polling queue) cross-reference in their option text.
+3. **All applicable dimensions in one structured round** — the user answers a form, not a queue. A dimension whose options depend on another answer waits for it, unless the other dimension's default has strong evidence: then ask it in the same round conditioned on that default and say the question is re-issued if the default is overruled.
+4. **User decides** — the LLM does not choose architecture-level options for the user; an open question is allowed exactly when evidence cannot produce options, and says so.
+5. **"Other" response** → search or inspect with the user's input → refined options in the same round.
 
 **When to skip interaction:**
 - Dimension has an industry-standard default with no meaningful tradeoff (e.g., TLS for transport, parameterized queries for SQL injection)

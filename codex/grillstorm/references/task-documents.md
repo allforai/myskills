@@ -69,11 +69,10 @@ Module states are `pending`, `ready`, `in_progress`, `blocked`, `verified`, or `
 - Review gate: standards + spec
 
 ### Steps
-1. Add the failing behavioral test.
-2. Run it and confirm the expected failure.
-3. Implement the minimum behavior.
-4. Run the focused check.
-5. Stop the red-green cycle; defer refactoring to review and repair.
+<by the task's nature: a behavioural change follows official `tdd` (failing test, minimal
+implementation, focused check); a migration, generated artifact, configuration or prefactoring
+task states the check that proves it instead. Steps are not a fixed script; the acceptance
+command is the contract and must be non-vacuous.>
 
 ### Evidence
 <filled during execution>

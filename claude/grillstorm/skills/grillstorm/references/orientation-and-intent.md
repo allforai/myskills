@@ -59,17 +59,23 @@ claim or intent, open/new material family, or material repair needing confirmati
 round 4. Rewording one root cause is not a new family.
 
 Repairs become `corrected_pending_confirmation`. Close only after a later complete valid round
-supports them and every material claim/intent is verified. A known material conflict with no
-obtainable evidence or safe investigation stops early. Any non-closing condition at round 3 yields
-`orientation_blocked`; do not select a route, write specs/tickets, or implement.
+supports them and every material claim/intent is verified. At round 3, whatever is still not
+supported is recorded claim by claim — `unknown` for a claim with no supporting evidence, and
+`corrected_unconfirmed` for a correction whose own evidence is on record but which no later round
+covered (planning treats it as existing-but-unproven, not as absent) — and orientation closes with
+those items attached: choose the most conservative route consistent with them and
+say which unknowns drove the choice. `orientation_blocked` is reserved for a known material
+conflict with no obtainable evidence and no safe investigation — not for running out of rounds
+on a large or messy repository.
 
 Route-affecting `unknown_intent` may trigger one narrowly bounded pre-route purpose decision with
 evidence, recommendation, and tradeoff; never ask the user for a discoverable repository fact.
 Future-only purpose belongs to the normal decision Grill.
 
 Stop repository archaeology when every named goal-relevant evidence source is checked and no
-concrete remaining source could change a material interpretation. Do not browse history or
-adjacent modules without a competing explanation to test.
+concrete remaining source could change a material interpretation. History and adjacent modules
+are evidence sources like any other: read them when they could change a material interpretation
+and record what you read and what it settled.
 
 ## Intent archaeology
 

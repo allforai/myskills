@@ -6,19 +6,19 @@
   "plugins": [
     {
       "name": "meta-skill",
-      "version": "0.14.2",
+      "version": "0.15.0",
       "source": "./claude/meta-skill/",
       "description": "Meta-skill generator: analyzes projects, generates project-specific node-specs and orchestrator configs. /bootstrap + /run workflow. Replaces 6 specialized plugins."
     },
     {
       "name": "superstorm",
-      "version": "0.33.0",
+      "version": "0.35.0",
       "source": "./claude/superstorm/",
       "description": "Large-goal autonomous pipeline: decompose into modules, front-load decisions via brainstorming, then design → closed-loop validate → plan → reverse-review → orchestrate → concurrently execute with anti-fake-completion supervision. Global command /superstorm."
     },
     {
       "name": "grillstorm",
-      "version": "0.24.1",
+      "version": "0.25.0",
       "source": "./claude/grillstorm/",
       "description": "Official-skill orchestrator plus concurrent unattended execution. Routes design through installed Matt Pocock skills and executes approved work in isolated worktrees."
     }

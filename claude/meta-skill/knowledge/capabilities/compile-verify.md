@@ -31,7 +31,7 @@ Catches cross-component integration issues that per-component loops may miss
 1. **Build commands from node-spec**: Not hardcoded. Bootstrap generates them per platform.
 2. **Full build, not incremental**: Catches cross-component integration issues that incremental builds hide.
 3. **Error categorization before retry**: LLM must classify each error before feeding back — prevents random fix attempts.
-4. **Max 3 fix-and-rebuild cycles**: If not green after 3 cycles, surface unresolved errors as UPSTREAM_DEFECT.
+4. **Fix loop stops on no progress, not on a count**: a cycle that does not shrink the classified error set, or would re-fix at the same boundary an error class an earlier cycle already fixed, ends the loop; surface what remains as UPSTREAM_DEFECT with the trajectory (error classes per cycle). A cycle that is still shrinking the set, or that meets a class not seen before (a linker error surfacing once type errors are gone), is worth running, whatever its number. Errors the build environment cannot satisfy at all (missing C toolchain, no SDK, no network for a required fetch) are `BLOCKED_ENV`, not UPSTREAM_DEFECT: they route to setup, not back to translate.
 5. **No silent partial success**: If build emits warnings that indicate runtime failure (deprecations, missing peer deps), treat as failure.
 6. **Artifact path recording**: On success, record output artifact paths (dist/, build/, apk, etc.) for test-verify.
 
@@ -49,7 +49,7 @@ This node covers the R1 (Build) layer of the cr-fidelity runtime verification st
 
 ## Platform-Specific Build Commands
 
-Bootstrap MUST generate the correct build commands per platform:
+Bootstrap derives build commands from the project's own evidence first — `package.json` scripts, Makefile, CI workflow, Xcode schemes, Gradle tasks, `pubspec`, `Cargo.toml` — because that is what the project actually runs. The table below is a reference for platform pitfalls (ordering, generated code, workspace setup) to check against when the repository is silent or contradicts itself; it is not a source to copy commands from, and its entries age.
 
 | Platform | Build Command | Output |
 |----------|--------------|--------|

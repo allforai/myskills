@@ -6,6 +6,7 @@ from host_command import InvocationSpec
 from model_policy import ModelSource, PRECEDENCE
 from prepare_codex_policy import (
     build_sources,
+    ensure_available,
     ensure_outside_repository,
     select_policy,
 )
@@ -69,3 +70,14 @@ class PreparePolicyTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EnsureAvailableTests(unittest.TestCase):
+    def test_literal_outside_host_list_fails_at_launch(self):
+        with self.assertRaises(ValueError) as ctx:
+            ensure_available({"BULD": "x"} and {"BUILD": "gpt-old-name"}, ["gpt-a", "gpt-b"])
+        self.assertIn("gpt-old-name", str(ctx.exception))
+
+    def test_literals_in_host_list_pass_and_no_list_is_permissive(self):
+        ensure_available({"BUILD": "gpt-b"}, ["gpt-a", "gpt-b"])
+        ensure_available({"BUILD": "anything"}, None)

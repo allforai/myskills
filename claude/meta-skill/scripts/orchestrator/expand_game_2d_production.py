@@ -79,7 +79,7 @@ NODE_DEFS = [
     {
         "node_id": "game-2d-asset-binding-visual-qa",
         "skill": "game-2d-production/40-qa/asset-binding-visual-qa",
-        "goal": "使用运行时截图和 Codex CLI 验证 2D 资产真实绑定且可读",
+        "goal": "使用运行时截图和两位独立审稿人（审稿人一为本会话 fresh-context 子 agent，审稿人二为跨平台 CLI 或第二个 fresh-context 子 agent）验证 2D 资产真实绑定且可读",
         "exit_artifacts": [".allforai/game-2d/qa/asset-binding-visual-qa-report.json"],
     },
     {
@@ -299,7 +299,7 @@ exit_artifacts:{_yaml_list(exit_artifacts)}
 ## Required Behavior
 
 - 使用目标项目真实运行时；如果无法运行，输出阻塞状态，不使用替代验收。
-- 需要视觉判断时，使用运行时截图和 Codex CLI 视觉验收文档。
+- 需要视觉判断时，使用运行时截图和两位独立审稿人的视觉验收文档（ADR-0003：缺跨平台 CLI 只是警告，审稿人二改由第二个 fresh-context 子 agent 承担）。
 - 不允许只凭 JSON、日志、源码阅读或静态截图通过可玩性验收。
 - 输出必须写到 frontmatter 中声明的 `exit_artifacts`。
 

@@ -1,6 +1,6 @@
 ---
 name: visual-qa-40-qa-batch-visual-acceptance
-description: Reusable batch visual acceptance workflow with dual independent visual review (Codex CLI and Claude Code each inspect the evidence), auditable Markdown batches, JSON/Markdown reports, reconciliation, feedback routing, reruns, and closure audit.
+description: Reusable batch visual acceptance workflow with dual independent visual review (reviewer two and reviewer one each inspect the evidence), auditable Markdown batches, JSON/Markdown reports, reconciliation, feedback routing, reruns, and closure audit.
 ---
 
 # Batch Visual Acceptance Skill
@@ -19,18 +19,26 @@ should prefer this skill for visual judgment, including UI automation tests,
 browser/Electron/Tauri screenshots, Android/iOS/Flutter/React Native screenshots,
 game client smoke-test captures, HTML approval gates, and generated art review.
 
-Visual judgment is **dual-reviewer by design**. Codex CLI and Claude Code each
-inspect the same visual evidence independently and each write their own review
-report. Neither review substitutes for the other, and neither is skipped to save
-tokens — visual defects are exactly the class of problem a single reviewer
-misses.
+Visual judgment is **dual-reviewer by design** (ADR-0003). Two reviewers inspect the same
+visual evidence independently and each write their own review report:
+
+- **Reviewer one** is a fresh-context sub-agent of the current session. It has not produced
+  the images and has not read the other report.
+- **Reviewer two** is the other platform's CLI when it is installed and can actually open
+  images (Codex CLI on Claude hosts, `claude -p` on Codex hosts); otherwise a second
+  fresh-context sub-agent on the current platform. Which backend ran is recorded in the routing
+  report's `reviewer_two_backend` and inside the report's `reviewer` field.
+
+Neither review substitutes for the other, and neither is skipped to save tokens — visual
+defects are exactly the class of problem a single reviewer misses. Neither reviewer may be the
+context that produced the evidence; same-context self-review is a downgrade, never a review.
 
 Independence is the point: neither reviewer may read the other's findings before
 writing its own report. A third step reconciles the two reports and audits
 process closure: report completeness, evidence references, feedback routing,
 repair execution, and rerun records.
 
-All Codex CLI execution must follow
+All reviewer two execution must follow
 `${CLAUDE_PLUGIN_ROOT}/skills/codex-cli-delegation/30-execute/codex-cli-task/SKILL.md`
 so ClaudeCode passes only a short, path-based prompt and Codex reads files from
 the target workspace.
@@ -72,11 +80,14 @@ stale, or not tied to the screenshot task id, return
 
 If acceptance criteria are missing, stale, generic, or do not cover the current
 visual scope, return `blocked_by_missing_visual_criteria` or
-`UPSTREAM_DEFECT`. Do not run Codex CLI with an implicit standard such as
+`UPSTREAM_DEFECT`. Do not run reviewer two with an implicit standard such as
 "looks good" or "canvas exists".
 
-If Codex CLI cannot be invoked, return `blocked_by_missing_codex_cli`. Do not
-replace Codex CLI with a same-agent prose summary.
+If the cross-platform CLI cannot be invoked, record `missing_cross_platform_cli` in the routing
+report and seat reviewer two as a second fresh-context sub-agent. Return
+`blocked_by_missing_second_review` only when two independent reports cannot be produced, and
+`blocked_by_missing_visual_reviewer` when no reviewer can open the evidence as images. Never
+replace a reviewer with the producing context's own prose summary.
 
 If a high-risk batch lacks a capable routed visual model, return
 `blocked_by_missing_visual_model_capability`.
@@ -95,10 +106,10 @@ Required outputs:
 <output_root>/visual-acceptance-task-list.json
 <output_root>/visual-acceptance-batches/
 <output_root>/visual-model-routing-report.json
-<output_root>/codex-visual-review.json
-<output_root>/codex-visual-review.md
-<output_root>/claude-code-visual-review.json
-<output_root>/claude-code-visual-review.md
+<output_root>/visual-review-2.json
+<output_root>/visual-review-2.md
+<output_root>/visual-review-1.json
+<output_root>/visual-review-1.md
 <output_root>/visual-review-reconciliation.json
 <output_root>/visual-review-closure-audit.json
 <output_root>/visual-review-closure-audit.md
@@ -106,7 +117,7 @@ Required outputs:
 <output_root>/visual-repair-loop-report.md
 ```
 
-`visual-repair-loop-report.*` is required only when Codex reports blocker/major
+`visual-repair-loop-report.*` is required only when reviewer two reports blocker/major
 issues or when a previous run had unresolved issues.
 
 ## Invocation Contract
@@ -114,20 +125,20 @@ issues or when a previous run had unresolved issues.
 ```json
 {
   "skill": "visual-qa/batch-visual-acceptance",
-  "mode": "batch_docs_codex_cli_audit",
+  "mode": "batch_docs_dual_review_audit",
   "input_paths": {
     "acceptance_criteria": ".allforai/.../acceptance-criteria.json",
     "acceptance_criteria_doc": ".allforai/.../acceptance-criteria.md",
     "visual_model_routing": ".allforai/visual-qa/visual-model-routing-report.json",
     "evidence_manifest": ".allforai/.../visual-evidence-manifest.json",
-    "previous_review": ".allforai/.../codex-visual-review.json",
+    "previous_review": ".allforai/.../visual-review-2.json",
     "previous_feedback": ".allforai/.../visual-feedback-report.json"
   },
   "output_root": ".allforai/visual-qa"
 }
 ```
 
-Supported modes: `batch_docs_codex_cli_audit`, `audit_existing_codex_report`,
+Supported modes: `batch_docs_dual_review_audit`, `audit_existing_reviewer_two_report`,
 `rerun_failed_batches`.
 
 ## Batch Documents
@@ -167,30 +178,30 @@ Batching rules:
 - keep paths relative and auditable;
 - keep domain-specific details in the caller's criteria document.
 
-## Codex CLI Review (independent review 1 of 2)
+## Reviewer two (independent review 2 of 2: cross-platform CLI, else a second fresh context)
 
-Invoke Codex CLI after batch documents exist. The command must point Codex at
+Invoke reviewer two after batch documents exist. The command must point Codex at
 the batch documents and visual evidence paths.
 
 Read and follow
 `${CLAUDE_PLUGIN_ROOT}/skills/codex-cli-delegation/30-execute/codex-cli-task/SKILL.md`
-before invoking Codex CLI. Do not paste batch contents, acceptance criteria, or
+before invoking reviewer two. Do not paste batch contents, acceptance criteria, or
 image metadata into the ClaudeCode prompt; pass paths and output contracts.
 
-If Codex CLI supports model selection, pass the routed `selected_visual_model`
+If reviewer two supports model selection, pass the routed `selected_visual_model`
 for each batch or batch group. If only the CLI default is available, the routing
 report must state that the default satisfies the batch's minimum capability.
 
 Use a command shape equivalent to:
 
 ```bash
-codex exec --json --output <output_root>/codex-visual-review.json \
-  "Read every Markdown batch under <output_root>/visual-acceptance-batches/, inspect the referenced visual evidence, and write <output_root>/codex-visual-review.md with blockers, major issues, minor issues, evidence refs, failure codes, and repair suggestions. Do not pass artifacts you did not visually inspect."
+codex exec --json --output <output_root>/visual-review-2.json \
+  "Read every Markdown batch under <output_root>/visual-acceptance-batches/, inspect the referenced visual evidence, and write <output_root>/visual-review-2.md with blockers, major issues, minor issues, evidence refs, failure codes, and repair suggestions. Do not pass artifacts you did not visually inspect."
 ```
 
 Do not enable `--return-all-messages`; ClaudeCode should read the final report files and closure-relevant fields only.
 
-Codex output must include:
+Reviewer two's output must include:
 - reviewed batch ids;
 - inspected evidence paths;
 - blocker/major/minor findings;
@@ -199,18 +210,18 @@ Codex output must include:
 - recommended repair;
 - pass/fail summary.
 
-## Claude Code Visual Review (independent review 2 of 2)
+## Reviewer one (independent review 1 of 2: a fresh-context sub-agent of the session)
 
-Claude Code opens the same visual evidence as images and writes its own review to
-`<output_root>/claude-code-visual-review.json` and
-`<output_root>/claude-code-visual-review.md`.
+reviewer one opens the same visual evidence as images and writes its own review to
+`<output_root>/visual-review-1.json` and
+`<output_root>/visual-review-1.md`.
 
-This is a real visual inspection, not a summary of the Codex report. Claude Code
-must not read `codex-visual-review.json` or `codex-visual-review.md` before its
+This is a real visual inspection, not a summary of the reviewer two report. reviewer one
+must not read `visual-review-2.json` or `visual-review-2.md` before its
 own report is written; ordering between the two reviews is free, but they must
 not be allowed to contaminate each other.
 
-Claude Code review must cover, per batch:
+reviewer one review must cover, per batch:
 - every evidence path actually opened, listed in `inspected_evidence_paths`;
 - blocker/major/minor findings against the same acceptance criteria and failure
   codes the batch document gives Codex;
@@ -228,7 +239,7 @@ JSON state must be one of:
 - `blocked_by_missing_visual_evidence`
 - `blocked_by_unreadable_evidence`
 
-If Claude Code cannot open an evidence file as an image, it returns
+If reviewer one cannot open an evidence file as an image, it returns
 `blocked_by_unreadable_evidence` for that batch rather than judging it from the
 batch document text.
 
@@ -245,7 +256,7 @@ Reconciliation rules:
 - Findings that both reviewers raise for the same artifact and failure code are
   merged into one repair item with `agreed: true`.
 - Findings raised by only one reviewer are kept with
-  `raised_by: codex | claude-code` and `agreed: false`. They are NOT downgraded
+  `raised_by: reviewer-one | reviewer-two` and `agreed: false`. They are NOT downgraded
   for being unilateral.
 - Direct contradictions (one reviewer passes what the other blocks) are recorded
   in `disagreements[]` with both claims and both evidence refs, and resolve in
@@ -255,7 +266,7 @@ The reconciliation JSON must include `batch_id`, `merged_findings[]`,
 `disagreements[]`, `union_blocking_count`, and `reviewer_agreement_rate`.
 
 Closure audit checks:
-- both the Codex report and the Claude Code report exist and are parseable;
+- both the reviewer two report and the reviewer one report exist and are parseable;
 - every reviewed batch has inspected evidence paths in **both** reports;
 - every blocker/major finding has artifact id, failure code, evidence refs, and
   repair suggestion;
@@ -280,7 +291,7 @@ reconciliation):
    candidate count rather than a single-image defect.
 2. Route repair to the caller-provided owner skill/node.
 3. Rebuild only affected evidence and batch documents.
-4. Rerun **both** reviews for affected batches: Codex CLI and Claude Code
+4. Rerun **both** reviews for affected batches: reviewer two and reviewer one
    independent visual review.
 5. Reconcile and audit closure again.
 6. Append the iteration to `visual-repair-loop-report.json` and
@@ -296,8 +307,8 @@ Before returning success:
 1. Every batch document references existing visual evidence.
 2. Visual model routing exists for every batch.
 3. High-risk batches are not accepted with unknown visual model capability.
-4. Codex CLI was invoked and produced JSON and Markdown reports.
-5. Claude Code produced its own JSON and Markdown visual review reports.
+4. reviewer two was invoked and produced JSON and Markdown reports.
+5. reviewer one produced its own JSON and Markdown visual review reports.
 6. Both reports list inspected evidence paths, and neither is a restatement of
    the other.
 7. Reconciliation exists and its blocking set is the union of both reviewers'
@@ -317,7 +328,7 @@ Before returning success:
 
 ## Completion Conditions
 
-Return `COMPLETED` when batches, Codex reports, Claude Code reports,
+Return `COMPLETED` when batches, reviewer two reports, reviewer one reports,
 reconciliation, closure audit, and any required repair loop reports exist, and
 **neither** reviewer has unresolved blocker/major findings.
 
@@ -325,8 +336,10 @@ Return `FAILED_VALIDATION` when blocker/major findings from either reviewer
 remain after the repair budget or when feedback/rerun closure is incomplete.
 
 Return `blocked_by_missing_visual_evidence` when required evidence is missing or
-unreadable. Return `blocked_by_missing_codex_cli` when Codex CLI cannot run.
-Return `blocked_by_unreadable_evidence` when Claude Code cannot open required
+unreadable. Return `blocked_by_missing_second_review` when two independent reports cannot be
+produced and `blocked_by_missing_visual_reviewer` when no reviewer can open the evidence; a
+missing cross-platform CLI alone is the warning `missing_cross_platform_cli`, not a return status.
+Return `blocked_by_unreadable_evidence` when reviewer one cannot open required
 evidence as images.
 Return `blocked_by_missing_visual_model_capability` when required visual model
 capability is unavailable or unknown. Return

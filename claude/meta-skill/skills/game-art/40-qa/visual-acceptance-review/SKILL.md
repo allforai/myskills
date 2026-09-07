@@ -1,6 +1,6 @@
 ---
 name: game-art-40-qa-visual-acceptance-review
-description: "Game-art wrapper for batch visual acceptance: supplies art criteria, evidence manifests, output paths, and repair routing, then runs dual independent review (Codex CLI and Claude Code), reconciliation, and closure audit; writes art/qa/codex-visual-review.json, claude-code-visual-review.json, and visual-review-reconciliation.json."
+description: "Game-art wrapper for batch visual acceptance: supplies art criteria, evidence manifests, output paths, and repair routing, then runs dual independent review (reviewer two and reviewer one), reconciliation, and closure audit; writes art/qa/visual-review-2.json, visual-review-1.json, and visual-review-reconciliation.json."
 ---
 
 # Visual Acceptance Review Skill
@@ -14,8 +14,8 @@ acceptance criteria, evidence manifests, output paths, and repair routing, then
 delegates the actual batch review mechanics to
 `${CLAUDE_PLUGIN_ROOT}/skills/visual-qa/40-qa/batch-visual-acceptance/SKILL.md`.
 
-Visual review is dual-reviewer, per the delegated visual-qa skill: Codex CLI and
-Claude Code each inspect the art independently and each write their own report.
+Visual review is dual-reviewer, per the delegated visual-qa skill: reviewer two and
+reviewer one each inspect the art independently and each write their own report.
 Blocking findings are the union of the two. Reconciliation and closure audit run
 after both reports exist.
 
@@ -52,10 +52,10 @@ Write:
 ```text
 .allforai/game-design/art/qa/visual-acceptance-task-list.json
 .allforai/game-design/art/qa/visual-acceptance-batches/
-.allforai/game-design/art/qa/codex-visual-review.json
-.allforai/game-design/art/qa/codex-visual-review.md
-.allforai/game-design/art/qa/claude-code-visual-review.json
-.allforai/game-design/art/qa/claude-code-visual-review.md
+.allforai/game-design/art/qa/visual-review-2.json
+.allforai/game-design/art/qa/visual-review-2.md
+.allforai/game-design/art/qa/visual-review-1.json
+.allforai/game-design/art/qa/visual-review-1.md
 .allforai/game-design/art/qa/visual-review-reconciliation.json
 .allforai/game-design/art/qa/visual-review-closure-audit.json
 .allforai/game-design/art/qa/visual-review-closure-audit.md
@@ -99,7 +99,7 @@ Codex review findings must include:
 - `failure_code`
 - `recommended_fix`
 
-Claude Code closure audit must include:
+closure audit must include:
 - `audit_id`
 - `codex_review_ref`
 - `audit_verdict`: `closed | incomplete | malformed_report | missing_evidence | missing_feedback | missing_rerun`
@@ -126,7 +126,7 @@ The repair loop report must include:
 ```json
 {
   "skill": "game-art/visual-acceptance-review",
-  "mode": "batch_docs_codex_cli_audit",
+  "mode": "batch_docs_dual_review_audit",
   "input_paths": {
     "accepted_image_manifest": ".allforai/game-design/art/image-generation/accepted-image-manifest.json",
     "asset_acceptance_criteria": ".allforai/game-design/art/asset-acceptance-criteria.json",
@@ -141,7 +141,7 @@ The repair loop report must include:
 }
 ```
 
-Supported modes: `batch_docs_codex_cli_audit`, `audit_existing_codex_report`.
+Supported modes: `batch_docs_dual_review_audit`, `audit_existing_reviewer_two_report`.
 
 ## Batch Review Documents
 
@@ -160,7 +160,7 @@ Invoke it with:
 ```json
 {
   "skill": "visual-qa/batch-visual-acceptance",
-  "mode": "batch_docs_codex_cli_audit",
+  "mode": "batch_docs_dual_review_audit",
   "input_paths": {
     "acceptance_criteria": ".allforai/game-design/art/asset-acceptance-criteria.json",
     "acceptance_criteria_doc": ".allforai/game-design/art/asset-acceptance-criteria.md",
@@ -232,9 +232,9 @@ Batching rules:
 - store every batch as a Markdown document so the review is auditable and can
   be reused without reloading all upstream specs into context.
 
-## Codex CLI Review
+## reviewer two Review
 
-Invoke Codex CLI as an independent reviewer after the batch documents are
+Invoke reviewer two as an independent reviewer after the batch documents are
 written. The reviewer must receive the batch document paths and image evidence
 paths, not only the source specs. Instruct it to inspect the images and return
 structured JSON plus a Markdown review document.
@@ -242,22 +242,23 @@ structured JSON plus a Markdown review document.
 Use a command shape equivalent to:
 
 ```bash
-codex exec --json --output .allforai/game-design/art/qa/codex-visual-review.json \
-  "Read every Markdown batch under .allforai/game-design/art/qa/visual-acceptance-batches/, inspect the referenced images, and write .allforai/game-design/art/qa/codex-visual-review.md with visual blockers, major issues, and repair suggestions. Do not pass assets you did not visually inspect."
+codex exec --json --output .allforai/game-design/art/qa/visual-review-2.json \
+  "Read every Markdown batch under .allforai/game-design/art/qa/visual-acceptance-batches/, inspect the referenced images, and write .allforai/game-design/art/qa/visual-review-2.md with visual blockers, major issues, and repair suggestions. Do not pass assets you did not visually inspect."
 ```
 
-If the local Codex CLI cannot be called, return `blocked_by_missing_codex_cli`.
-Do not replace this step with the same agent's prose summary.
+If the cross-platform CLI cannot be called, record `missing_cross_platform_cli` in the routing
+report and run reviewer two as a second fresh-context sub-agent. Do not replace this step with
+the producing agent's own prose summary.
 
-## Claude Code Visual Review
+## Reviewer One
 
-Claude Code opens the same art evidence as images and writes its own independent
-review to `.allforai/game-design/art/qa/claude-code-visual-review.json` and
-`.allforai/game-design/art/qa/claude-code-visual-review.md`, following
+reviewer one opens the same art evidence as images and writes its own independent
+review to `.allforai/game-design/art/qa/visual-review-1.json` and
+`.allforai/game-design/art/qa/visual-review-1.md`, following
 `${CLAUDE_PLUGIN_ROOT}/skills/visual-qa/40-qa/batch-visual-acceptance/SKILL.md`
-section "Claude Code Visual Review". It must not read the Codex report first.
+section "Reviewer One". It must not read the other reviewer's report first.
 
-Art-specific things Claude Code must judge for itself: character identity drift
+Art-specific things reviewer one must judge for itself: character identity drift
 across a set, expression-set consistency, crop and dialogue-box fit, small-size
 icon and portrait readability, tile/piece family distinguishability, VFX and
 animation-frame readability, and background/foreground separation.
@@ -295,8 +296,8 @@ produce comments; it must drive repair and revalidation until the repair budget
 is exhausted.
 
 Loop:
-1. Codex CLI reviews batch documents and image evidence.
-2. Claude Code independently inspects the same image evidence and writes its own
+1. reviewer two reviews batch documents and image evidence.
+2. reviewer one independently inspects the same image evidence and writes its own
    review, then reconciles the two reports and audits closure structure and
    repair routing.
 3. For every reconciled blocker/major issue that passes closure-audit structure
@@ -322,9 +323,9 @@ Loop:
    - `runtime_tooling`: route to atlas, import, or engine output skills; do not
      regenerate images by default.
 5. Rebuild only the affected contact sheets, preview maps, or batch documents.
-6. Re-run both independent reviews for the affected batches: Codex CLI and
-   Claude Code.
-7. Re-run reconciliation and Claude Code closure audit for the affected reports.
+6. Re-run both independent reviews for the affected batches: reviewer two and
+   reviewer one.
+7. Re-run reconciliation and closure audit for the affected reports.
 8. Append the iteration to
    `.allforai/game-design/art/qa/visual-repair-loop-report.json` and
    `.allforai/game-design/art/qa/visual-repair-loop-report.md`.
@@ -339,13 +340,13 @@ target. Do not downgrade a Codex blocker to a warning just to pass.
 Before returning success:
 1. Confirm every batch document references at least one existing visual evidence
    path.
-2. Confirm Codex CLI produced both JSON and Markdown review outputs.
-3. Confirm Claude Code produced its own JSON and Markdown visual review outputs,
+2. Confirm reviewer two produced both JSON and Markdown review outputs.
+3. Confirm reviewer one produced its own JSON and Markdown visual review outputs,
    and that they are an independent inspection rather than a restatement of the
-   Codex report.
+   reviewer two report.
 4. Confirm reconciliation exists and its blocking set is the union of both
    reports.
-5. Confirm Claude Code closure audit produced both JSON and Markdown outputs.
+5. Confirm closure audit produced both JSON and Markdown outputs.
 6. Confirm every blocker/major issue from either reviewer is covered by the
    closure audit and either has feedback/repair routing or remains
    `FAILED_VALIDATION`.
@@ -364,8 +365,8 @@ Before returning success:
 
 ## Completion Conditions
 
-Return `COMPLETED` only when the batch documents, task index, Codex CLI review,
-Claude Code visual review, reconciliation, closure audit, and any required repair
+Return `COMPLETED` only when the batch documents, task index, reviewer two review,
+reviewer one visual review, reconciliation, closure audit, and any required repair
 loop reports exist, all visual evidence paths were inspected by both reviewers,
 the closure audit is `closed`, and no blocker or major visual issues from either
 reviewer remain after revalidation.
@@ -374,4 +375,5 @@ Return `FAILED_VALIDATION` when blocker/major visual issues from either reviewer
 remain.
 Return `blocked_by_missing_visual_evidence` when required images, previews, or
 contact sheets are missing or unreadable.
-Return `blocked_by_missing_codex_cli` when Codex CLI cannot be invoked.
+Return `blocked_by_missing_second_review` when two independent reviews cannot be produced;
+a missing cross-platform CLI alone is the warning `missing_cross_platform_cli`.

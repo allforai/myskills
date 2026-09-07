@@ -29,5 +29,7 @@ in environment variables so runnable loops refer to variable names rather than l
 ## Autonomous diagnosis
 
 During the autonomous run, write ranked hypotheses and outcomes into task evidence. Do not
-interrupt the user. After three distinct failed hypotheses, stop repeating that approach and
-adopt the next recommended safe path or an explicit reality gate.
+interrupt the user. Track hypotheses by family (same suspected root cause, however worded).
+When the next idea belongs to a family already refuted, that family is exhausted: move to the
+next recommended safe path or an explicit reality gate. A genuinely new family is always worth
+one attempt — hard bugs are often solved by the fourth or fifth root cause, not the third.

@@ -46,8 +46,9 @@ the approved host argv already owns one. Use `python3`/`sys.executable`; never a
    (module table + dependency graph). **If the goal is too big for one run, cut it
    here:** milestone-1 scope = this run; defer the rest to a `## Roadmap` section.
 3. **Granularity review (dedicated step — do not skip):** audit the breakdown itself:
-   - **Size:** any module smelling like > 20 tasks gets split or deferred NOW — §1.3
-     has a hard size check and an oversized module there is a guaranteed halt.
+   - **Size:** past roughly 20 tasks, look for a cohesion seam; split only where each interface
+     stays on one side and each half has its own acceptance. A cohesive module that is simply
+     large stays whole — never defer user-visible scope to satisfy a count.
    - **Cohesion:** one module = one cohesive subsystem; a one-line description that
      needs "and" twice is two modules.
    - **Balance:** don't over-split — two candidate modules sharing most of their
@@ -64,14 +65,20 @@ the approved host argv already owns one. Use `python3`/`sys.executable`; never a
    thin registry makes the design fan-out throw escalations. FROZEN to workers before
    Phase 1: only the main orchestrator may revise an exact evidence-backed contract after
    persisting an in-envelope decision record; otherwise defer the branch.
-6. **Resolve the three model tiers WITH the human** — never automatically:
-   copy `models.example.json` → `models.json`, fill each tier with a real model name
-   available to this codex install (`codex exec -m <name>` must work):
-   - `think` (design/closure-critic/plan/reverse-critic): strongest reasoning model.
-   - `verify` (supervisor): strong + rigorous; never weaker than `bulk`.
-   - `bulk` (executor): cheap/fast coding model.
-   Also record the choices in the registry `models` field. NO automatic downgrade —
-   ever. A mid-run model failure is retry-then-escalate, never silent substitution.
+6. **Freeze the model policy, with a recommendation.** Default `inherited` for all three
+   roles in `models.json` (the host session model runs designers, critics, planners,
+   supervisors and executors). `think` and `verify` are never set below the host model. The only
+   optional downgrade is `bulk`: read the model list this codex install exposes, order it by what
+   you know of those models, name the tier one step below the host model (never the cheapest),
+   and offer two concrete options with a stated recommendation — A evidence-first (all
+   inherited) or B cost-first (`bulk` = next tier down). Recommend B when the user mentioned cost
+   or the plan fans out many small well-specified tasks; recommend A for exploratory,
+   cross-cutting or UI-driving work, where a weaker executor fails and is redispatched on the
+   inherited model at a net loss; when both rules apply, recommend A and say why, the user can
+   still choose B. Literals come from the host list read now, never from this
+   file; say the ordering is your knowledge. Record the outcome, the recommendation and the
+   user's words in the registry `models` field. A mid-run model failure retries once, then falls
+   back to the inherited model and records it; no other substitution.
 7. **Freeze authority and decision policy.** Persist `<run-dir>/decision-envelope.json`
    with scope, write roots, destructive limits, external systems, network, secrets,
    spending, model substitutions, acceptance authority, and a machine-load policy with an
@@ -117,11 +124,12 @@ One `codex exec` (`think`) per design: `prompts/plan-agent.md` → plan-task arr
 (`implements`/`requires` tags from the registry vocabulary carry cross-module ordering;
 `depends_on` is intra-module only).
 For each plan: `python3 scripts/validate_plan_tasks.py <tasks.json> registry.json` —
-BLOCKED → bounce to the plan agent. Deterministic size check: > 20 validated tasks for
-one module = module-too-large → automatically split at the first stable package/component,
-independent-acceptance, or non-cyclic interface boundary; prefer the lowest touched-path
-cut then canonical path name. Record the choice. If every split changes user-visible
-scope, defer only the excess branch.
+BLOCKED → bounce to the plan agent; vacuous-runner warnings go to the plan agent once, the
+supervisor rerun is the authority. On a `size_warning`, split only at a stable
+package/component, independent-acceptance, or non-cyclic interface boundary; prefer the lowest
+touched-path cut then canonical path name. Record the choice. If no such boundary exists, record
+the size as an accepted assumption and keep the module whole; a count never justifies deferring
+scope or cutting an interface in two.
 Tasks whose definitive proof needs unavailable device/external/physical capability use
 `reality_gate:true` and a non-empty `runbook_ptr` to exact human verification steps.
 
@@ -194,7 +202,8 @@ work, then proceed to Phase 2. Never pause for a decision.
 
 ## Phase 2 — Report
 Update the overview and write a final report: assumptions agents made, escalations and
-their resolutions, every module that ran below its preferred tier (with who approved),
+their resolutions, the frozen model policy (recommendation, choice, who confirmed it) and every
+task redispatched from a downgraded executor to the inherited model,
 DAG `warnings` and `derived_edges`, and a mandatory **Reality gate** section separating
 "autonomously verified" (supervisor-rerun green) from "needs human/hardware
 verification" — an all-green run is NEVER claimed as "the feature works".

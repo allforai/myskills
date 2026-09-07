@@ -29,7 +29,8 @@ and "the code actually does X".
   "decisions_checked": [
     {
       "decision": "<string — from security-design>",
-      "category": "<enum: auth | authorization | encryption | rate_limiting | input_validation | key_management>",
+      "category": "<enum: auth | authorization | encryption | rate_limiting | input_validation | key_management | supply_chain | other>",
+      "category_label": "<string — required when category is other>",
       "status": "<enum: implemented | missing | partial>",
       "evidence": "<string — file:line if implemented, 'missing' if not>",
       "risk": "<enum: critical | high | medium | low>"
@@ -88,6 +89,7 @@ and "the code actually does X".
 - Critical missing items (auth bypass, no encryption on sensitive data) flagged as critical risk
 - Evidence is file:line based, not self-reported
 - No silent skips — every decision must be checked
+- `observations[]` (top level, free form: `{scope, finding, evidence}`) carries anything the verifier saw beyond the checked decisions — a pattern across files, a hollow control, a risk no decision named; it never changes a decision's status and is never dropped
 
 ## Methodology Guidance (not steps)
 

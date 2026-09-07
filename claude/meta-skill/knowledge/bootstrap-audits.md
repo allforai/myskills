@@ -280,8 +280,9 @@ Resolve any remaining decisions after A0, as the final interactive step of `/boo
 queue = (nodes with `decision_mode: "brainstorm"`) ∪ (A0 `missing`) ∪ (G0 restructure
 confirmations).
 
-For EACH decision, follow `${CLAUDE_PLUGIN_ROOT}/knowledge/brainstorming-lite.md`:
-one question at a time, intent → 2–3 options with tradeoffs → incremental confirm →
+Follow `${CLAUDE_PLUGIN_ROOT}/knowledge/brainstorming-lite.md`: group independent decisions
+by topic, one message per topic, each decision with 2–3 options, tradeoffs and a recommended
+default; serialize only dependent forks → incremental confirm →
 write `.allforai/<domain>/decision-<id>.json` and validate it:
 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/validate_audit_outputs.py decision .allforai/<domain>/decision-<id>.json`
 

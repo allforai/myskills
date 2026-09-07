@@ -61,7 +61,9 @@ validation placement correctness.
   "abstraction_score": "<number 0-100>",
   "validation_score": "<number 0-100>",
   "data_model_score": "<number 0-100>",
-  "composite_score": "<number 0-100 — compliance*0.25 + duplication*0.25 + abstraction*0.20 + validation*0.15 + data_model*0.15>",
+  "composite_score": "<number 0-100 — compliance*0.25 + duplication*0.25 + abstraction*0.20 + validation*0.15 + data_model*0.15; reference only>",
+  "verdict": "<enum: healthy | needs_tuning | blocked — authoritative; set from the findings, not from the arithmetic>",
+  "observations": ["<{scope, finding, evidence} — anything seen outside the five phases; never dropped>"],
   "tuner_tasks": [
     {
       "id": "<string>",

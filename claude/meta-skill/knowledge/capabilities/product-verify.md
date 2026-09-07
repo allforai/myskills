@@ -27,7 +27,7 @@ After code is written, verify it actually implements what was designed:
 ### Dynamic Verification (per module type)
 
 Every module in the project must be verified using its appropriate tool.
-**Playwright CANNOT test native mobile apps** — this is a hard constraint.
+**Playwright CANNOT test native mobile apps** — this is a hard constraint. Derive the verification tool from the module's own test setup and CI first; the table below is a reference of platform pitfalls, not a lookup to copy.
 
 | Module Type | Tool | Method |
 |-------------|------|--------|
@@ -60,18 +60,18 @@ For each module:
 - Form submission: fill + submit → verify response
 - Error states: trigger errors → verify error UI renders
 - Empty states: verify empty state when no data
-- Capture screenshots for every required UI state and run Claude Code visual review before accepting the module.
+- Capture screenshots for every required UI state and run reviewer one visual review before accepting the module.
 
-### UI Screenshot Evidence And Claude Code Visual Review
+### UI Screenshot Evidence And Reviewer One
 
-Product verification for UI modules requires a screenshot-backed visual review pass. A route existing, a selector being found, or a form submission returning success is not sufficient; Claude Code must inspect the screenshots after the automation run.
+Product verification for UI modules requires a screenshot-backed visual review pass. A route existing, a selector being found, or a form submission returning success is not sufficient; reviewer one must inspect the screenshots after the automation run.
 
 Required outputs for any UI module:
 
 - `.allforai/product-verify/screenshots/<module_id>/...`
 - `.allforai/product-verify/ui-screenshot-manifest.json`
-- `.allforai/product-verify/claude-code-visual-review.json`
-- `.allforai/product-verify/claude-code-visual-review.md`
+- `.allforai/product-verify/visual-review-1.json`
+- `.allforai/product-verify/visual-review-1.md`
 
 The manifest must map every screenshot to product/design sources:
 
@@ -93,7 +93,7 @@ The manifest must map every screenshot to product/design sources:
 }
 ```
 
-Claude Code visual review must check:
+reviewer one visual review must check:
 
 - 页面不是空白、崩溃页、开发错误页或加载骨架停滞；
 - 关键标题、导航、按钮、表单、状态反馈真实可见；
@@ -103,7 +103,7 @@ Claude Code visual review must check:
 - 多端产品的同一角色核心能力没有明显缺失；
 - 对中文项目，用户可见文案应为中文，除非是世界观专有名词或品牌名。
 
-如果截图缺失或 Claude Code 视觉复核失败，`verify-report.json.dynamic_score` 不能按通过计算。必须把问题写入 `issues[]`，并设置对应严重级别。
+如果截图缺失或 reviewer one 视觉复核失败，`verify-report.json.dynamic_score` 不能按通过计算。必须把问题写入 `issues[]`，并设置对应严重级别。
 
 **Real-time delivery verification** (applies when product has messaging, collaborative editing, live notifications, or any feature where one user's action must appear to another user): single-session testing CANNOT verify delivery. The verification node MUST open **two simultaneous sessions** (two browser tabs, two emulator instances, two API clients) — one as sender, one as receiver — and assert the event appears on the receiver side within an acceptable timeout. Single-session tests that only verify the sender side give false confidence.
 
@@ -205,10 +205,13 @@ Output: `.allforai/product-verify/verify-report.json` + `.allforai/product-verif
 {
   "static_score": "<number 0-100>",
   "dynamic_score": "<number 0-100>",
-  "composite_score": "<number 0-100 — weighted average>",
+  "composite_score": "<number 0-100 — weighted average; reference only, never the gate>",
+  "verdict": "<enum: pass | fail | blocked — authoritative; fail whenever any critical issue or failed visual review exists>",
+  "observations": ["<{scope, finding, evidence} — findings outside the checked modules; never dropped, never change verdict>"],
   "issues": [
     {
-      "type": "<enum: route_missing | api_missing | field_mismatch | permission_gap | render_fail | form_fail>",
+      "type": "<enum: route_missing | api_missing | field_mismatch | permission_gap | render_fail | form_fail | hollow_success | delivery_missing | other>",
+      "type_label": "<string — required when type is other>",
       "severity": "<enum: critical | major | minor>",
       "description": "<string>",
       "evidence": "<string — screenshot path or response body reference>"
@@ -216,7 +219,7 @@ Output: `.allforai/product-verify/verify-report.json` + `.allforai/product-verif
   ],
   "screenshots": ["<string — file path, required for UI modules>"],
   "ui_screenshot_manifest": ".allforai/product-verify/ui-screenshot-manifest.json",
-  "claude_code_visual_review": ".allforai/product-verify/claude-code-visual-review.json"
+  "visual_review_1": ".allforai/product-verify/visual-review-1.json"
 }
 ```
 `static_score`, `dynamic_score`, `composite_score` are consumed by code-tuner and launch-prep.
@@ -249,7 +252,7 @@ Parity modes from product-concept:
 2. **Per-role verification**: Each role's journey tested independently.
 3. **App must be running**: Dynamic verification requires live app. Fail if app can't start.
 4. **Evidence-based**: Each check records screenshot or response body as proof.
-5. **Screenshot-backed UI acceptance**: UI modules require screenshots plus Claude Code visual review. DOM-only or assertion-only product verification is incomplete.
+5. **Screenshot-backed UI acceptance**: UI modules require screenshots plus reviewer one visual review. DOM-only or assertion-only product verification is incomplete.
 
 ## Knowledge References
 

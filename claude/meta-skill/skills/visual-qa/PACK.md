@@ -1,6 +1,6 @@
 ---
 name: visual-qa
-description: "Reusable visual QA: visual model capability registry, acceptance criteria, and batch visual acceptance with dual independent review (Codex CLI and Claude Code each inspect the evidence)."
+description: "Reusable visual QA: visual model capability registry, acceptance criteria, and batch visual acceptance with dual independent review (reviewer two and reviewer one each inspect the evidence)."
 ---
 
 # Visual QA Skill Pack
@@ -20,9 +20,9 @@ and rerun closure.
 
 | Layer | Child skill | Responsibility |
 |---|---|---|
-| `00-env` | `visual-model-capability-registry` | Detect Codex CLI visual model availability and route batch tasks to suitable visual model profiles. |
+| `00-env` | `visual-model-capability-registry` | Detect reviewer two visual model availability and route batch tasks to suitable visual model profiles. |
 | `20-spec` | `visual-acceptance-criteria` | Generate project/scene/asset/state visual standards, forbidden placeholders, evidence requirements, failure codes, and repair routes. |
-| `40-qa` | `batch-visual-acceptance` | Batch Markdown visual review, two independent inspections (Codex CLI + Claude Code), JSON/Markdown report output, reconciliation, feedback, rerun, and closure audit. |
+| `40-qa` | `batch-visual-acceptance` | Batch Markdown visual review, two independent inspections (reviewer two + reviewer one), JSON/Markdown report output, reconciliation, feedback, rerun, and closure audit. |
 
 ## Canonical Invocation Paths
 
@@ -51,7 +51,7 @@ Do not run visual QA from screenshots alone when
 `.allforai/visual-qa/visual-acceptance-criteria.json` is missing for the visual
 scope. Return `blocked_by_missing_visual_criteria` or `UPSTREAM_DEFECT`.
 
-Visual review is dual-reviewer. Codex CLI and Claude Code each inspect the
+Visual review is dual-reviewer. reviewer two and reviewer one each inspect the
 evidence independently and each write their own report; neither is skipped to
 save tokens, and neither reads the other's findings first. Blocking findings are
 the **union** of both reports. Reconciliation and closure audit run after both.

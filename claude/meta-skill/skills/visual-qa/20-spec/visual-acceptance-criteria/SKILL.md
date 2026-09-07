@@ -9,7 +9,7 @@ description: Define what a project must look like and what must be rejected befo
 
 ## Overview
 
-Defines the standard that visual QA must apply before Codex CLI reviews images
+Defines the standard that visual QA must apply before reviewer two reviews images
 or screenshots. This skill answers "what should this project look like, and what
 must be rejected?" The batch visual acceptance skill answers "how to inspect
 and report it."
@@ -122,7 +122,7 @@ roots, but the canonical reusable standard lives under `.allforai/visual-qa/`.
 ```
 
 The Markdown file must be Chinese when the project/user-facing docs are Chinese.
-It is the document Codex CLI should read first for human-readable standards.
+It is the document reviewer two should read first for human-readable standards.
 
 ## Invocation Contract
 
@@ -232,7 +232,7 @@ The probe must capture runtime truth needed for QA:
 - screenshot task id and timestamp.
 
 The probe is supporting evidence, not a pass condition by itself. Final visual
-acceptance still requires real screenshots inspected by Codex CLI. However, if
+acceptance still requires real screenshots inspected by reviewer two. However, if
 the probe is missing for runtime-created core objects, return
 `blocked_by_missing_runtime_probe` instead of relying on static inspection.
 
@@ -242,7 +242,7 @@ the probe is missing for runtime-created core objects, return
 document through `acceptance_criteria` and `acceptance_criteria_doc`.
 
 Batch documents must quote or link the relevant criteria sections and preserve
-failure codes. Codex CLI must not invent a weaker standard. If the criteria
+failure codes. reviewer two must not invent a weaker standard. If the criteria
 document is missing, stale, or does not cover the visual evidence type being
 reviewed, return `UPSTREAM_DEFECT` or `blocked_by_missing_visual_criteria`.
 

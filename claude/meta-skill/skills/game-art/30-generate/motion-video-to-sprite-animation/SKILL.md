@@ -85,7 +85,7 @@ Writes under `.allforai/game-design/art/animations/video-to-sprite/`:
   "state": "generated | preview_ready | qa_passed | needs_revision | blocked",
   "validation": {
     "visual_evidence_inspected": true,
-    "codex_visual_review_ref": ".allforai/game-design/art/qa/codex-visual-review.json",
+    "visual_review_2_ref": ".allforai/game-design/art/qa/visual-review-2.json",
     "runtime_import_ref": ".allforai/game-design/art/qa/runtime-import-check.json"
   },
   "consumers": ["frame-animation-generation", "animation-state-machine-spec", "runtime-import-check"]
@@ -162,7 +162,7 @@ Source rules:
    loop policy, frame size, anchor, view mode, and runtime export profile.
 2. Ensure toolchain capabilities: video sourcing/generation when needed, frame
    extraction such as `ffmpeg`, image processing, alpha/background removal or
-   crop tools, atlas packing, preview rendering, Codex CLI visual review, and
+   crop tools, atlas packing, preview rendering, reviewer two visual review, and
    runtime import when available.
 3. Acquire or generate the source video by the selected source strategy and
    write provenance in `motion-video-source-manifest.json`.
@@ -174,7 +174,7 @@ Source rules:
 7. Render a preview at target in-game size and playback speed.
 8. Run batch visual acceptance through
    `visual-qa/40-qa/batch-visual-acceptance/SKILL.md` or
-   `game-art/40-qa/visual-acceptance-review/SKILL.md`; Codex CLI must inspect
+   `game-art/40-qa/visual-acceptance-review/SKILL.md`; reviewer two must inspect
    actual frame/contact-sheet/preview evidence.
 9. Run runtime import validation when the engine profile provides an executable
    command. If it cannot run, return `blocked_by_runtime_import`; do not replace
@@ -233,7 +233,7 @@ changed animation. Do not mark completion from a manifest-only report.
 ## Completion Conditions
 
 Return `COMPLETED` only when source provenance, extracted frames, normalized
-sheet/atlas, preview, Codex CLI visual acceptance, image-generation registration,
+sheet/atlas, preview, reviewer two visual acceptance, image-generation registration,
 and required runtime import validation all pass.
 
 Return `COMPLETED_WITH_LIMITS` only for explicitly accepted reduced frame count,

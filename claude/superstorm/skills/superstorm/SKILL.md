@@ -58,7 +58,8 @@ Interactively:
 2. Brainstorm and approve module boundaries, dependencies, milestone scope, and granularity.
 3. Brainstorm and approve one standard design spec per module.
 4. Reconcile all specs and mint the single frozen requirements/interface registry.
-5. Resolve and freeze explicit THINK, VERIFY, and BULK model literals.
+5. Freeze the model policy: all roles inherit the session model unless the user, given the
+   playbook's recommendation, chooses a next-tier-down executor.
 6. Persist the decision envelope and initialize the decision ledger.
 7. For eliminate-a-class goals, create an exhaustive census before deriving tasks.
 
@@ -96,7 +97,8 @@ End the run after the report. `/cross-exam` remains an explicit, separate comman
 
 ## Hard Rules
 
-- Never silently substitute or inherit a model. Use the Phase 0 frozen literal in every `agent()`.
+- Never change a model mid-run except back to the session model, and record every dispatch's
+  effective model. Model names live in the frozen policy, never in this skill.
 - Never send large stage payloads through Workflow args. Persist a self-contained script and use
   `scriptPath`.
 - Never ask the user during Phase 1. Choose the best authorized recommendation, record it, and

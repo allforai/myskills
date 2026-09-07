@@ -373,8 +373,9 @@ Load only what this run needs:
    and add any `open`/`scheduled` prevention capability in Step 3.
 7. Iteration feedback / product-concept / decision-journal when the matching
    `has_*` flag from Step 1.0 is true. Respect journal decisions; do not re-ask.
-8. Knowledge-gap research (max 5 gaps × 2 queries) only when domain files do
-   not cover a named subsystem or the target stack is unfamiliar.
+8. Knowledge-gap research only when domain files do not cover a named subsystem or the
+   target stack is unfamiliar. Per gap, record what was searched, the conclusion, and a
+   confidence; stop a gap when the conclusion stops changing, not at a query count.
 
 Proceed to planning with confirmed inputs. Missing product decisions return to the interactive Phase A queue before dependent work is offered; they never become run-time interviews.
 

@@ -124,6 +124,6 @@ when it preserves the same rules:
 Return `COMPLETED` when Codex CLI exits successfully and all required output
 paths exist.
 
-Return `blocked_by_missing_codex_cli` when Codex CLI is unavailable.
+Return `missing_cross_platform_cli` when Codex CLI is unavailable; callers treat it as a warning and fall back per ADR-0003, never as a blocker of their own gate.
 Return `FAILED_VALIDATION` when Codex CLI exits nonzero, omits required outputs,
 or returns only prose without the required files.

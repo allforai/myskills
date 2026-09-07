@@ -143,3 +143,14 @@ class OutputChannelTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ObservationsSlotTests(unittest.TestCase):
+    def test_supervisor_schema_accepts_optional_observations_and_rejects_bad_shape(self):
+        from output_channel import _SCHEMAS
+        props = _SCHEMAS["supervisor"]["properties"]
+        self.assertIn("observations", props)
+        self.assertNotIn("observations", _SCHEMAS["supervisor"]["required"])
+        item = props["observations"]["items"]
+        self.assertEqual(sorted(item["required"]), ["evidence", "finding", "scope"])
+        self.assertFalse(item["additionalProperties"])
