@@ -100,8 +100,10 @@ Read:
   within its `1 / 2 / 3` budget. Do not choose a route while orientation is open.
 - `references/reverse-closure.md`: define observable completion, side effects,
   failure/recovery, proof, and an early reuse radar.
-- `references/model-policy.md`: resolve and freeze effective `THINK`, `BUILD`, and `VERIFY`
-  literals. Ask only for an explicit override; never substitute models after launch.
+- `references/model-policy.md`: freeze the model policy — all roles inherit the host model
+  unless the user, given the stated recommendation, chooses a next-tier-down `BUILD` from the
+  host's model list. No model name lives in the skill; never substitute after launch except back
+  to the host model.
 - `references/routing.md`: only after orientation closes, choose `diagnostic`, `direct`,
   `ticketed`, or `program` from the verified baseline; announce, do not ask. Promote when scope
   grows.

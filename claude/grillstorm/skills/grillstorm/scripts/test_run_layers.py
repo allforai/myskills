@@ -635,3 +635,17 @@ class TestMainTreeConsistency(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FingerprintExcludesModels(unittest.TestCase):
+    def test_model_change_alone_does_not_change_the_work_fingerprint(self):
+        from run_layers import input_fingerprint
+        tasks = [{"id": "T1", "touched_paths": ["a.py"], "acceptance_cmd": "true", "depends_on": []}]
+        orch = {"effective_deps": {"T1": []}, "isolate_groups": [], "resource_groups": {}}
+        a = input_fingerprint(tasks, orch, {"think": "x", "verify": "x", "bulk": "x"}, PROMPTS,
+                              {"exe": "codex", "model_policy_fingerprint": "p1"})
+        b = input_fingerprint(tasks, orch, {"think": "y", "verify": "y", "bulk": "z"}, PROMPTS,
+                              {"exe": "codex", "model_policy_fingerprint": "p2"})
+        self.assertEqual(a, b)
+        c = input_fingerprint([{**tasks[0], "acceptance_cmd": "false"}], orch, {}, PROMPTS, {"exe": "codex"})
+        self.assertNotEqual(a, c)

@@ -90,14 +90,17 @@ Every downstream artifact records the upstream revision it was generated from.
 - Model-role mapping, model-source evidence, or launcher capability change: invalidate the
   local model-policy binding and every worker fingerprint; do not resume old workers under
   a new model. A verified cross-host continuation may retain the goal authority when
-  it resolves inside the approved recommendation ladder; record the rebinding as an
+  it resolves to the recorded model policy (inherited, the user's BUILD literal, or its
+  declared fallback); record the rebinding as an
   autonomous infrastructure decision.
 
 Mark stale artifacts explicitly; never silently edit them in place and retain an approved
 status. Regenerate only the affected subgraph, then rerun its local and global gates. No
 worker may execute when task/workflow revisions do not match the current spec revision.
-The approved model ladder is part of `launch_revision`; each host's effective mapping and
-worker fingerprint are local bindings beneath that revision.
+The recorded model policy is part of `launch_revision`; each host's effective mapping is a
+local binding beneath that revision. Worker fingerprints cover tasks, orchestration and prompts
+only, so a model rebinding does not invalidate confirmed tasks; changing the policy itself is an
+explicit re-freeze.
 
 ## External interaction
 

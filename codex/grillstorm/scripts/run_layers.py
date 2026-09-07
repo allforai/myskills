@@ -721,10 +721,17 @@ def validate_census_artifact(path, tasks):
 
 
 def input_fingerprint(tasks, orchestration, models, prompts_dir, host_command=None):
+    """Fingerprint of the WORK, not of who did it: tasks, orchestration, prompts and the host
+    command. The model mapping is deliberately excluded — a confirmed task carries its
+    `grillstorm-confirmed:` marker and an independent supervisor rerun, and neither depends on
+    which model produced the diff. A model-policy change is handled separately as an explicit
+    re-freeze (see --accept-model-policy-change), never by discarding confirmed work."""
+    del models  # kept in the signature for callers; intentionally not part of the payload
+    if host_command:
+        host_command = {k: v for k, v in host_command.items() if k != "model_policy_fingerprint"}
     payload = {
         "tasks": tasks,
         "orchestration": orchestration,
-        "models": models,
         "prompts": {p.name: p.read_text() for p in sorted(prompts_dir.glob("*.md"))},
         "host_command": host_command,
     }
@@ -914,6 +921,9 @@ def main(argv):
                     help="outer state.json used to verify checkpoint revision counters")
     ap.add_argument("--policy-key-file",
                     help="0600 HMAC key used to bind the policy to host argv")
+    ap.add_argument("--accept-model-policy-change", action="store_true",
+                    help="resume with a different frozen model policy; confirmed tasks are kept, "
+                         "the new policy fingerprint is recorded (explicit re-freeze)")
     ap.add_argument("--dry-run", action="store_true",
                     help="print the schedule without invoking codex")
     args = ap.parse_args(argv[1:])
@@ -1030,6 +1040,14 @@ def main(argv):
     if completed and old_fingerprint != fingerprint and not portable_resume:
         sys.exit("state input fingerprint differs — refusing to reuse stale confirmations; "
                  "start a new run with a new --state/--events path")
+    old_policy = prior_state.get("model_policy_fingerprint")
+    if (completed and old_policy and old_policy != policy_fingerprint
+            and not args.accept_model_policy_change):
+        sys.exit("model policy changed since this state was written (confirmed work is kept; "
+                 "models are not part of the work fingerprint). Re-freeze explicitly: rerun with "
+                 "--accept-model-policy-change to record the new policy on resume, or start a new run.")
+    if completed and old_policy and old_policy != policy_fingerprint:
+        print(f"model policy re-frozen on resume: {old_policy[:12]} -> {policy_fingerprint[:12]}")
     events = EventLog(args.events, run_id, prior_state.get("last_event_seq", 0))
     if completed:
         print(f"resuming: {len(completed)} task(s) already done per {args.state}")

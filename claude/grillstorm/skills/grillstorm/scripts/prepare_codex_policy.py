@@ -51,6 +51,18 @@ def build_sources(invocation):
     return records
 
 
+def ensure_available(mappings, available):
+    """Every literal the user chose must be in the model list read from the host at
+    orientation. Fail here, at launch, rather than in the first worker that cannot start."""
+    if available is None:
+        return
+    available = set(available)
+    missing = sorted(v for v in mappings.values() if v not in available)
+    if missing:
+        raise ValueError("model literal(s) not in the host's model list read at orientation: "
+                         + ", ".join(missing) + f" (available: {', '.join(sorted(available))})")
+
+
 def select_policy(think, verify, build, sources):
     values = (think, verify, build)
     if not any(values):
@@ -93,6 +105,9 @@ def main(argv=None):
     parser.add_argument("--think-model")
     parser.add_argument("--verify-model")
     parser.add_argument("--build-model")
+    parser.add_argument("--available-models",
+                        help="JSON array of model literals the host exposes, read at orientation; "
+                             "any --*-model literal must be in it")
     args = parser.parse_args(argv)
 
     output = Path(args.output_dir).resolve()
@@ -124,6 +139,12 @@ def main(argv=None):
         )
     except (ValueError, ModelPolicyError) as exc:
         parser.error(str(exc))
+    if args.available_models:
+        try:
+            available = json.loads(Path(args.available_models).read_text(encoding="utf-8"))
+            ensure_available(mappings, available)
+        except (OSError, ValueError) as exc:
+            parser.error(str(exc))
     key = os.urandom(32)
     version = subprocess.run(
         [invocation.executable, "--version"],
