@@ -21,6 +21,11 @@ def validate_scope(project_root, workflow, *, consumed_sources=None):
             raise ValueError("workflow.json nodes must be a list")
         if any(not isinstance(node, dict) for node in nodes):
             raise ValueError("workflow.json nodes must contain objects")
+        for node in nodes:
+            inputs = node.get("decision_inputs", [])
+            if not isinstance(inputs, list) or any(
+                    not isinstance(value, str) or not value.strip() for value in inputs):
+                raise ValueError("decision_inputs must be an array of non-empty paths, including retained nodes")
         history = workflow.get("transition_log", [])
         if not isinstance(history, list):
             raise ValueError("workflow.json transition_log must be a list")

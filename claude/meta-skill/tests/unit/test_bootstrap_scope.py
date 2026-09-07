@@ -20,6 +20,33 @@ REQUIREMENTS = ".allforai/bootstrap/local-requirements.json"
 REF = {"path": REQUIREMENTS, "id": "export", "revision": 1}
 
 
+@pytest.mark.parametrize("host", ["claude", "codex"])
+@pytest.mark.parametrize("malformed", [42, None, {}, "decision.json", [42], [""], ["  "]])
+def test_retained_input_shape_rejects_stale_ready_and_recovers(tmp_path, host, malformed):
+    project(tmp_path, confirmed=True, host=host)
+    workflow_path = ".allforai/bootstrap/workflow.json"
+    workflow = json.loads((tmp_path / workflow_path).read_text())
+    retained = {"node_id": "warehouse", "goal": "Keep warehouse history",
+                "capability": "implement", "decision_inputs": [],
+                "exit_artifacts": [".allforai/bootstrap/stock.json"]}
+    workflow["nodes"].append(retained)
+    workflow["transition_log"] = [{"node" if host == "codex" else "node_id": "warehouse",
+                                   "status": "completed"}]
+    write(tmp_path, ".allforai/bootstrap/stock.json", {"status": "passed"})
+    for inputs, expected in [([], 0), (malformed, 1), ([], 0)]:
+        retained["decision_inputs"] = inputs
+        write(tmp_path, workflow_path, workflow)
+        (tmp_path / ".allforai/bootstrap/node-specs/warehouse.md").write_text(
+            "---\n" + json.dumps(retained) + "\n---\n" + ATTENTION_CONTRACT_BODY)
+        for name in ("validate_bootstrap.py", "check_decision_inputs.py", "validate_unattended_readiness.py"):
+            options = ("--write-report",) if name == "validate_unattended_readiness.py" else ()
+            result = gate(tmp_path, name, *options)
+            assert result.returncode == expected, (name, result.stdout, result.stderr)
+            assert not result.stderr
+        report = json.loads((tmp_path / ".allforai/bootstrap/unattended-run-readiness.json").read_text())
+        assert report["status"] == ("not_ready" if expected else "ready")
+
+
 def write(root, path, value):
     target = root / path
     target.parent.mkdir(parents=True, exist_ok=True)
