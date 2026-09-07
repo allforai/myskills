@@ -315,6 +315,11 @@ def validate_unattended_readiness(project_root: Path) -> dict:
 
     scope_blockers = validate_scope(project_root, workflow)
     blockers.extend(scope_blockers)
+    if (bootstrap_root / 'evidence-freshness.json').exists() or any(isinstance(n, dict) and 'source_inputs' in n for n in nodes):
+        from evidence_freshness import evaluate
+        for node_id, freshness in evaluate(project_root)['nodes'].items():
+            if freshness['readiness_status'] != 'valid':
+                _add(blockers, 'stale_evidence', 'Reconcile inputs and reverify affected evidence', node_id=node_id)
     if scope_blockers:
         # Defer shape-dependent checks, retaining rejection in the report below.
         nodes = []

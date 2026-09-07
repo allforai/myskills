@@ -35,16 +35,25 @@
       ]
     },
     "11": {
-      "status": "pending",
+      "status": "candidate_pending_review",
       "dependencies": [
         10
-      ]
+      ],
+      "base": "88e7becaf30522ef29dd2fa168b62045affcb782",
+      "candidate": "67446ad15a5e8adc329a0b0c9f8f3c45d1d359e9"
     },
     "12": {
-      "status": "pending",
+      "status": "candidate_pending_review",
       "dependencies": [
         10
-      ]
+      ],
+      "base": "88e7becaf30522ef29dd2fa168b62045affcb782",
+      "candidate": "b6357a013415db2012b73d89792955f2afc5d4aa",
+      "root_findings": [
+        "selected_baseline_payload_freshness",
+        "fixture_git_context_escape"
+      ],
+      "root_findings_corrections": "Builder corrections and root targeted recheck passed; combined candidate review pending"
     },
     "13": {
       "status": "pending",
@@ -60,11 +69,12 @@
       ]
     },
     "15": {
-      "status": "pending",
+      "status": "preparing_actual_host_tests",
       "dependencies": [
         9,
         10
-      ]
+      ],
+      "base": "88e7becaf30522ef29dd2fa168b62045affcb782"
     },
     "16": {
       "status": "pending",
@@ -86,7 +96,15 @@
       ]
     }
   },
-  "active": [],
+  "active": [
+    {
+      "issue": 15,
+      "task": "task_53c1b6f2754a",
+      "dispatch": "ctx_50de403c39ba",
+      "checkout": "meta-intent-t9",
+      "role": "evaluator"
+    }
+  ],
   "completed": [
     9,
     10
@@ -97,5 +115,13 @@
     "task": "task_83a7942a3a09",
     "dispatch": "ctx_6a592f7a670e",
     "scenario_proof": false
+  },
+  "review_scope": {
+    "base": "88e7becaf30522ef29dd2fa168b62045affcb782",
+    "issues": [
+      11,
+      12
+    ],
+    "status": "merging_and_verifying"
   }
 }

@@ -1060,6 +1060,10 @@ def validate_node_spec_contracts(bdir: str) -> list:
             if node.get("requirement_refs") and data.get(field) != node.get(field):
                 errors.append(f"node-specs/{node_id}.md: frontmatter {field} must match workflow {field}")
 
+        for field in ('source_inputs', 'input_dependencies', 'required_documents'):
+            if field in node and data.get(field) != node[field]:
+                errors.append(f"node-specs/{node_id}.md: frontmatter {field} must match workflow {field}")
+
         for term in NODE_SPEC_REQUIRED_ATTENTION_TERMS:
             if term not in text:
                 errors.append(

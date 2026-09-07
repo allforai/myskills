@@ -386,6 +386,12 @@ Proceed to planning with confirmed inputs. Missing product decisions return to t
 
 ### 3.0 Incremental Re-Planning (when concept-drift exists)
 
+At every bootstrap/resume boundary, follow `${CLAUDE_PLUGIN_ROOT}/knowledge/input-freshness.md`
+even when concept-drift is absent. Declare each node's `source_inputs`, consumed
+`input_dependencies` and `required_documents`; observe inputs before generating
+documents, publish verified contract observations before readiness, and consume
+freshness through reconciliation. Preserve unaffected evidence and journal authority.
+
 > This section only applies when `has_concept_drift` is true AND an existing
 > `workflow.json` exists. Otherwise, skip to 3.1 for full planning.
 
@@ -713,6 +719,8 @@ mkdir -p .allforai/bootstrap/scripts
 mkdir -p .allforai/bootstrap/protocols
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/check_artifacts.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/product_intent.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/evidence_freshness.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/knowledge/input-freshness.md .allforai/bootstrap/protocols/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/check_decision_inputs.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/validate_bootstrap.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/expand_game_2d_production.py .allforai/bootstrap/scripts/

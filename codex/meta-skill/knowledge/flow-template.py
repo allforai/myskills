@@ -532,6 +532,7 @@ Requirements:
 7. If the node fails, write a one-line `error` field explaining the blocker.
 8. Stop only after this node is truly completed or a failed transition has been written.
 9. Record non-blocking safety warnings as a warnings array of strings in `.allforai/bootstrap/run-warnings.json`; the supervisor applies the recorded Run Policy. Hard safety or unresolved product requirements remain failures, never warnings.
+10. Follow `.allforai/bootstrap/protocols/input-freshness.md`: after implementation settles, observe current inputs, register additional reads, refresh required documents, and publish the evidence observation with the actual acceptance command. Reobserve and reverify stale input; contract-only publication cannot prove completion. The independent artifact gate consumes this freshness state.
 
 Do not ask for acceptance. Execute the work directly."""
 

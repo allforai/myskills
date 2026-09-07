@@ -214,9 +214,14 @@ def build_state_index(project_root: Path, workflow_path: Path | None = None) -> 
     workflow = _load_json(workflow_path)
     if not isinstance(workflow, dict):
         workflow = {"nodes": []}
-    nodes = workflow.get("nodes") if isinstance(workflow.get("nodes"), list) else []
+    raw_nodes = workflow.get("nodes")
+    nodes = raw_nodes if isinstance(raw_nodes, list) else []
     run_latest = _load_run_log(project_root)
     specs_dir = project_root / NODE_SPECS_DIR
+    freshness = {}
+    if (project_root / BOOTSTRAP_DIR / 'evidence-freshness.json').exists() or any(isinstance(n, dict) and 'source_inputs' in n for n in nodes):
+        from evidence_freshness import evaluate
+        freshness = evaluate(project_root)['nodes']
 
     indexed_nodes = []
     workflow_node_ids: set[str] = set()
@@ -237,6 +242,12 @@ def build_state_index(project_root: Path, workflow_path: Path | None = None) -> 
             readiness = "blocked"
         else:
             readiness = "complete"
+        node_freshness = freshness.get(node_id)
+        if node_freshness and node_freshness['status'] != 'valid':
+            readiness = 'blocked'
+            for artifact in artifacts:
+                artifact['status'] = 'stale'
+                artifact['blockers'].append('input_freshness')
         indexed_nodes.append({
             "node_id": node_id,
             "goal": node.get("goal"),
@@ -248,6 +259,7 @@ def build_state_index(project_root: Path, workflow_path: Path | None = None) -> 
             "spec_hash": _sha256_text(spec_text) if spec_text else None,
             "spec_frontmatter": _frontmatter(spec_text),
             "artifact_readiness": readiness,
+            "freshness": node_freshness,
             "artifacts": artifacts,
             "latest_run_event": run_latest.get(node_id),
         })
@@ -281,7 +293,8 @@ def _candidate_nodes(project_root: Path, candidate_workflow: Path | None) -> dic
     workflow = _load_json(candidate_workflow)
     if not isinstance(workflow, dict):
         return {}
-    nodes = workflow.get("nodes") if isinstance(workflow.get("nodes"), list) else []
+    raw_nodes = workflow.get("nodes")
+    nodes = raw_nodes if isinstance(raw_nodes, list) else []
     return {
         str(node.get("node_id")): node
         for node in nodes
@@ -310,6 +323,9 @@ def build_reconciliation_plan(project_root: Path, state_index: dict[str, Any], c
                     reasons.append("exit_artifacts_changed")
                 if current.get("artifact_readiness") in {"blocked", "missing"}:
                     reasons.append(f"current_artifacts_{current.get('artifact_readiness')}")
+                if current.get('freshness') and current['freshness']['status'] != 'valid':
+                    action = 'invalidate'
+                    reasons.append('input_freshness')
                 plan_items.append({"node_id": node_id, "action": action, "reasons": reasons})
             elif candidate:
                 plan_items.append({"node_id": node_id, "action": "add", "reasons": ["candidate_only"]})

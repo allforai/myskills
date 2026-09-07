@@ -342,10 +342,15 @@ def check_node_artifacts(node: dict, project_root: Path | None = None) -> dict:
                     }
                     break
         results.append(entry)
+    freshness = None
+    if project_root and ('source_inputs' in node or (project_root / '.allforai/bootstrap/evidence-freshness.json').exists()):
+        from evidence_freshness import evaluate
+        freshness = evaluate(project_root)['nodes'].get(node_id)
     return {
         "node_id": node_id,
         "goal": node.get("goal", ""),
-        "all_exist": bool(results) and all(
+        "freshness": freshness,
+        "all_exist": (not freshness or freshness['status'] == 'valid') and bool(results) and all(
             r["exists"] and "validation_error" not in r and "status_error" not in r
             for r in results
         ),

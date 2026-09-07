@@ -79,6 +79,13 @@ is not `ready`.
 
 ### Generic QA repair loop
 
+Every node follows `.allforai/bootstrap/protocols/input-freshness.md`: after its
+implementation settles, observe current inputs, track newly consumed files with
+the public `read` operation, refresh required documents and publish evidence with
+its actual acceptance command. A stale publication requires re-observation and
+reverification, never a success transition. Contract-only freshness permits work
+but does not prove completion. The independent artifact gate consumes this state.
+
 After a node reports success, independently run `check_artifacts.py --node <node_id> --json`.
 Non-empty `code_gaps` or `test_gaps`, partial/conditional status, placeholders, failed
 validation, or other blocking findings cannot be committed as complete. Invoke the
