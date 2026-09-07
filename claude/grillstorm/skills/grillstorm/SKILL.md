@@ -71,10 +71,12 @@ Each phase owns its artifacts:
 Compact routes create only required outputs from `references/routing.md`. Never emit empty
 program placeholders or one monolithic task document.
 
-Load only the active phase's reference, current scope, touching contracts, and required
-evidence. During a module Grill, load only parent decisions, that module, and touching
-interfaces. During critique, load one probe bundle and its approved intent. Point to existing
-artifacts instead of copying them.
+Load the active phase's reference, current scope, touching contracts, and required evidence as
+the minimum, and any other reference whose constraints the artifact you are writing must satisfy
+(task documents must satisfy `failure-proportionality.md` and `concurrency.md`; loading them is
+not optional). During a module Grill, load parent decisions, that module, and touching
+interfaces. During critique, load the probe bundles of the current frontier and their approved
+intent. Point to existing artifacts instead of copying them.
 
 ## Phase -1: Setup
 

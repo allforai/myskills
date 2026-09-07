@@ -4,11 +4,16 @@ Use this contract for the adversarial review loops in specification design, task
 workflow/DAG design. Implementation review, diagnosis, test repair, and post-delivery probing keep
 their own budgets and do not consume these rounds.
 
-| Layer | Mandatory rounds | Soft limit | Hard limit |
+| Layer | Minimum rounds | Soft limit | Hard limit |
 | --- | ---: | ---: | ---: |
-| Specification design | 3 | 5 | 6 |
-| Task design | 2 | 3 | 5 |
-| Workflow/DAG design | 2 | 3 | 4 |
+| Specification design | 1 | 5 | 6 |
+| Task design | 1 | 3 | 5 |
+| Workflow/DAG design | 1 | 3 | 4 |
+
+One complete, valid round whose critics cover every material claim with supported evidence and
+raise no material finding closes the layer. More rounds are bought only by findings, never by a
+count: a minimum above one would spend critics confirming a result the first round already
+proved. The hard limit is the anti-thrash guard and never moves.
 
 A round starts when the first required critic is dispatched and increments exactly once. All
 required critics for that layer belong to the same round. A failed, timed-out, cancelled,
@@ -24,7 +29,7 @@ starts a new epoch and fresh budget.
 
 ## Stop policy
 
-- Run every mandatory round.
+- Run the first round in full.
 - Before the soft limit, continue when a material finding is new, remains open, or a material
   repair still needs confirmation.
 - At or after the soft limit, continue only for an open material blocker, a new material family,

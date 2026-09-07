@@ -183,3 +183,14 @@ class ProbeArtifactTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SingleRoundSaturationTests(unittest.TestCase):
+    def test_one_fully_covering_clean_round_saturates(self):
+        validate_saturation({"schema_version": 1, "status": "saturated", "rounds": [
+            {"new_gap_families": 0, "new_blocking_members": 0, "unexplored_cells": 0}]})
+
+    def test_one_round_with_unexplored_cells_does_not(self):
+        with self.assertRaises(ProbeValidationError):
+            validate_saturation({"schema_version": 1, "status": "saturated", "rounds": [
+                {"new_gap_families": 0, "new_blocking_members": 0, "unexplored_cells": 3}]})

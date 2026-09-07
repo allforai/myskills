@@ -212,12 +212,21 @@ def validate_saturation(state):
     if state.get("schema_version") != 1 or state.get("status") != "saturated":
         raise ProbeValidationError("audit state is not saturated")
     rounds = state.get("rounds")
-    if not isinstance(rounds, list) or len(rounds) < 2:
-        raise ProbeValidationError("saturation requires at least two rounds")
+    if not isinstance(rounds, list) or not rounds:
+        raise ProbeValidationError("saturation requires at least one round")
+
+    def clean(item):
+        return (item.get("new_gap_families") == 0 and item.get("new_blocking_members") == 0
+                and item.get("unexplored_cells") == 0)
+    # Saturation is coverage, not a round count: one round that covers every registry cell with
+    # nothing new proves it; otherwise the last two rounds must both be clean.
+    if len(rounds) == 1:
+        if not clean(rounds[0]):
+            raise ProbeValidationError("a single round proves saturation only when it leaves no "
+                                       "unexplored cell and finds nothing new")
+        return
     for item in rounds[-2:]:
-        if (item.get("new_gap_families") != 0 or
-                item.get("new_blocking_members") != 0 or
-                item.get("unexplored_cells") != 0):
+        if not clean(item):
             raise ProbeValidationError("last two rounds do not prove saturation")
 
 
