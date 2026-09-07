@@ -523,6 +523,7 @@ Requirements:
 6. Do not write `completed` when any exit artifact says `conditional_pass`, `partial`, `accepted_with_warnings`, `passed_with_warnings`, `blocked_by_*`, or contains unresolved `gaps`, `code_gaps`, `asset_gaps`, `audio_gaps`, `remaining_gaps`, `blockers`, `major_findings`, or `unresolved_findings`. Continue repairing and rerunning validation inside this node when it owns the fix; otherwise write `failed` with the exact blocker and repair owner.
 7. If the node fails, write a one-line `error` field explaining the blocker.
 8. Stop only after this node is truly completed or a failed transition has been written.
+9. Follow `.allforai/bootstrap/protocols/input-freshness.md`: after implementation settles, observe current inputs, register additional reads, refresh required documents, and publish the evidence observation with the actual acceptance command. Reobserve and reverify stale input; contract-only publication cannot prove completion. The independent artifact gate consumes this freshness state.
 
 Do not ask for acceptance. Execute the work directly."""
 

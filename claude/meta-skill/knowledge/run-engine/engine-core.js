@@ -170,6 +170,7 @@ function runNodePrompt(node, strict) {
     di.length ? `First read these required decision inputs: ${di.join(', ')} — if any is missing, return outcome "hard_fail".` : '',
     `Project context (profile_slice): ${JSON.stringify(node.profile_slice || {})}.`,
     'Write all exit_artifacts and run their validation_commands to self-check.',
+    'Follow .allforai/bootstrap/protocols/input-freshness.md: after implementation settles, observe current inputs, register additional reads, refresh required documents and publish evidence with the actual acceptance command. Reobserve and reverify stale inputs; contract-only publication cannot prove completion.',
     cv.length ? `Additionally run closure verification for: ${cv.join(', ')}.` : '',
     'STRICTLY forbid placeholder / stub / debug-residue / pure-color placeholder outputs.',
     'VERIFICATION (epistemic honesty): if you actually exercised the real built behavior, capture',

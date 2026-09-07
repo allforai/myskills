@@ -122,14 +122,23 @@ Copy the current orchestrator helper set from `./scripts/orchestrator/` (the sha
 
 - `check_artifacts.py`
 - `product_intent.py`
+- `evidence_freshness.py`
 - `validate_bootstrap.py`
 - `expand_game_2d_production.py`
 - `reconcile_bootstrap_workflow.py`
+
 - `validate_unattended_readiness.py`
 - `record_run_event.py`
 - `summarize_run_log.py`
 - `record_meta_skill_feedback.py`
 - `check_product_summary.py` when product inference is emitted
+
+Copy `knowledge/input-freshness.md` from the canonical root into
+`.allforai/bootstrap/protocols/`. Follow it on every bootstrap/resume, including
+unchanged product intent: declare source and consumed-input dependencies, observe
+before generating documents, publish verified contract observations, then consume
+reconciliation and readiness. Use the same evidence publication CLI after actual
+verification; preserve journal authority and unrelated valid work.
 
 Also copy `<canonical-root>/scripts/check_decision_inputs.py` into the same
 project-local scripts directory. It imports the same scope owner there.
