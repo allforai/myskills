@@ -77,14 +77,14 @@ def test_progressive_disclosure_references_are_routed():
         assert (ROOT / phrase).is_file()
 
 
-def test_design_reviews_are_bounded_and_never_exceed_six():
+def test_design_reviews_have_a_hard_cap_and_named_blocked_states():
+    # Guard: the hard cap (anti-thrash) and the two blocked terminal states. The per-layer
+    # minimum-round figures are scaffolding and are deliberately not pinned here.
     contract = (ROOT / "references/review-budgets.md").read_text(encoding="utf-8")
-    assert "| Specification design | 3 | 5 | 6 |" in contract
-    assert "| Task design | 2 | 3 | 5 |" in contract
-    assert "| Workflow/DAG design | 2 | 3 | 4 |" in contract
     assert "No design-review layer may set a hard limit above 6" in contract
     assert "blocked_unrepaired" in contract
     assert "budget_exhausted_blocked" in contract
+    assert "consumes the round and cannot establish closure" in " ".join(contract.split())
 
 
 def test_no_redundant_start_or_task_breakdown_approval():
@@ -133,11 +133,11 @@ def test_orientation_gate_precedes_route_selection():
 def test_orientation_contract_is_evidence_backed_bounded_and_independent():
     contract = (ROOT / "references/orientation-and-intent.md").read_text(encoding="utf-8")
     critic = (ROOT / "prompts/orientation-critic.md").read_text(encoding="utf-8")
+    # Guards only: evidence classes, intent classes, independent critic context, and "never ask
+    # for a discoverable fact". The round budget and the round-3 outcome are scaffolding.
     for phrase in (
         "observed|inferred|unknown",
         "intentional_design|historical_compromise|accidental_behavior|unknown_intent",
-        "| 1 | 2 | 3 |",
-        "orientation_blocked",
         "corrected_pending_confirmation",
         "fresh `THINK` context",
         "never ask the user for a discoverable repository fact",
@@ -228,3 +228,88 @@ def test_execution_workers_load_official_tdd_and_code_review():
     assert "official `tdd`" in concurrency
     assert "official `code-review`" in concurrency
     assert "official `implement`" in execution
+
+
+# ---------------------------------------------------------------------------------------------
+# Guard table. A guard constrains information flow or motive and holds regardless of model
+# strength; removing one must fail CI. Method text (tiers, counts, templates, rhythm) is not
+# pinned anywhere in this file. Any one anchor matching in the named files satisfies a guard.
+# ---------------------------------------------------------------------------------------------
+import re
+
+GUARDS = {
+    "VERIFY never receives executor narrative": (
+        ["references/model-policy.md", "prompts/supervisor.md"],
+        [r"never receive executor narrative", r"Do not equate model identity with independence"],
+        "Expectation isolation: a verifier that reads the claim is anchored by it.",
+    ),
+    "zero executed tests is not a pass": (
+        ["prompts/supervisor.md", "prompts/executor.md"],
+        [r"Executed 0 tests", r"ran 0 tests", r"non-zero executed-test count"],
+        "Evidence gate: a selector that matched nothing exits 0 and proves nothing.",
+    ),
+    "failed critic consumes the round": (
+        ["references/review-budgets.md"],
+        [r"consumes the round and cannot establish closure"],
+        "Defective returns are discarded whole; a retry is a new fresh context, not a patch.",
+    ),
+    "frequency never rewrites damage": (
+        ["references/failure-proportionality.md"],
+        [r"Frequency never rewrites damage"],
+        "Anti-rationalisation: 'rarely happens' must not downgrade what the failure destroys.",
+    ),
+    "no default, empty, stale, or mock result as success": (
+        ["references/execution.md", "prompts/executor.md", "prompts/supervisor.md"],
+        [r"default/empty/stale/mock", r"default/empty value"],
+        "Motive gate: a fallback turns a failure into a fake success.",
+    ),
+    "environmental failure is a reality gate, not permission to guess": (
+        ["references/execution.md", "references/concurrency.md"],
+        [r"not permission to guess", r"reality gate"],
+        "Honesty gate: proof pending is neither verified nor failed.",
+    ),
+    "portable completion is the confirmed commit marker": (
+        ["references/concurrency.md", "references/handoff.md"],
+        [r"grillstorm-confirmed:"],
+        "Evidence gate: a handoff file or transcript is not completion; a reachable marker is.",
+    ),
+    "locked or unknown model source forces inherited": (
+        ["references/model-policy.md"],
+        [r"locked or unknown source -> `inherited`", r"Otherwise use `inherited`"],
+        "Never override a host-owned model selection silently, whatever names are in play.",
+    ),
+    "zero findings valid only with full supported coverage": (
+        ["prompts/orientation-critic.md"],
+        [r"Zero findings is valid only when"],
+        "Zero hits are a question, not a conclusion.",
+    ),
+    "concurrent writers never share a working tree": (
+        ["references/concurrency.md"],
+        [r"Concurrent writers never share a Git working tree"],
+        "Concurrency isolation: prompt-level promises are not isolation.",
+    ),
+    "controller owns the global validation gate": (
+        ["references/concurrency.md", "prompts/executor.md", "prompts/supervisor.md"],
+        [r"runs the full required suite", r"never run the full repository suite"],
+        "Gate ownership: N workers each running the whole suite is neither isolation nor proof.",
+    ),
+    "credentials never enter Git or trackers": (
+        ["references/handoff.md", "references/implementation-and-diagnosis.md"],
+        [r"redact API keys", r"Keep credentials"],
+        "Safety.",
+    ),
+    "no permission is not permission": (
+        ["SKILL.md", "references/execution.md"],
+        [r"not permission to guess", r"non-changing evidence", r"reality-gate runbook"],
+        "Safety: without authority, collect evidence and write the runbook; never push or deploy.",
+    ),
+}
+
+
+def test_every_guard_is_present():
+    missing = []
+    for name, (files, anchors, why) in GUARDS.items():
+        text = "\n".join((ROOT / f).read_text(encoding="utf-8") for f in files)
+        if not any(re.search(a, text, flags=re.IGNORECASE | re.DOTALL) for a in anchors):
+            missing.append(f"{name}: files={files} why={why}")
+    assert not missing, "guards removed from the skill text:\n" + "\n".join(missing)
