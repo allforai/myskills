@@ -231,6 +231,28 @@ class TestNotExaminedRisk(unittest.TestCase):
             self.assertIn("examiner_is_author", overview)
             self.assertIn("bias-guard", overview)
 
+    def test_model_policy_declared_in_overview(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = _mk_run(tmp, [{"id": "F1", "name": "面一", "status": "examined"}], [_entry("q1")])
+            L = json.loads((run / "ledger.json").read_text(encoding="utf-8"))
+            L["model_policy"] = {"observation": "sonnet", "judgment": "session",
+                                 "confirmed_by_user": "实测官用 sonnet 就行", "confirmed_at": "2026-09-07T15:10:00+08:00"}
+            (run / "ledger.json").write_text(json.dumps(L, ensure_ascii=False), encoding="utf-8")
+            report = render(run)
+            overview = report[:report.index("## 逐面完成度")]
+            self.assertIn("取证类子 agent（实测官、枚举官）用 sonnet", overview)
+            self.assertIn("实测官用 sonnet 就行", overview)
+            self.assertNotIn("非法模型策略", overview)
+            L["model_policy"]["history"] = [{"observation": "haiku", "confirmed_by_user": "省", "confirmed_at": "2026-09-01T09:00:00+08:00"}]
+            (run / "ledger.json").write_text(json.dumps(L, ensure_ascii=False), encoding="utf-8")
+            self.assertIn("此前策略：取证用 haiku，用户于 2026-09-01T09:00:00+08:00 确认", render(run))
+            L["model_policy"]["judgment"] = "haiku"
+            (run / "ledger.json").write_text(json.dumps(L, ensure_ascii=False), encoding="utf-8")
+            self.assertIn("非法模型策略：judgment 只能是 session，ledger 写了 haiku", render(run))
+        with tempfile.TemporaryDirectory() as tmp:
+            run = _mk_run(tmp, [{"id": "F1", "name": "面一", "status": "examined"}], [_entry("q1")])
+            self.assertNotIn("取证类子 agent", render(run))
+
     def test_examiner_is_author_absent_is_silent(self):
         with tempfile.TemporaryDirectory() as tmp:
             run = _mk_run(tmp, [{"id": "F1", "name": "面一", "status": "examined"}],

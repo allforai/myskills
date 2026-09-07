@@ -25,6 +25,9 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
   "baseline": "superstorm-registry|spec|readme|user|none",
   "started": "YYYY-MM-DD",
   "examiner_is_author": false,
+  "model_policy": {"observation": "sonnet", "judgment": "session",
+                   "confirmed_by_user": "实测官用 sonnet 就行，普查官别省", "confirmed_at": "2026-09-07T15:10:00+08:00",
+                   "history": [{"observation": "haiku", "confirmed_by_user": "…", "confirmed_at": "…"}]},
   "requirements": [
     {"id": "R-09", "text": "退款可追踪"}
   ],
@@ -88,13 +91,18 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
     transcript 里，**或** transcript 提到过该证据目录路径（脚本循环生成的文件名不会逐个出现在 transcript 里，
     但写入目录会）；两者都没有才拒渲。文件不在（换机器、临时目录已清）只在报告标"transcript 不可核"，不拒渲。
   - 重派前首派产物挪到 `evidence/qNN.rejected-N/`，不被任何 entry 引用；渲染器只读 entry 引用的目录。
-    重派后落账的 entry 带 `redispatched: N`（可选，纯记录）。
+    重派后落账的 entry 带 `redispatched: N`（可选，纯记录）；首派是降档模型时再带 `first_agent_model`。
   - `probed_at` 每条必写（ISO 8601）；渲染器在总览打印首末问时间与最短间隔，间隔不足 60 秒的 runtime 相邻问点名。
 - 顶层 `target_backend`：intake 安全确认时一并确认开发实例的后端是真实服务、mock 还是混合，记 `kind` 与依据；
   `mock` 或 `mixed` 时报告总览点明"本 run 的 runtime 裁决经过 mock 层"。
-- `entries[].agent_model` 新 entry 必填（分层前的旧 run 可缺，渲染器不拒）：派发取证的子 agent 实际用的模型字面量（实测官取证档、视觉 reviewer
-  判断档；harness 不能按 agent 指定模型时记会话模型名加 `(session)`）。顶层 `census_model` 与
-  `patterns[].enumerator_model` 同理。档位表见 SKILL.md "模型分层"；这些字段让报告读者能核对
+- 顶层 `model_policy`（可选；缺省 = 全部继承会话模型）：定靶时用户选择的成本策略。`observation` 是取证类角色
+  （实测官、枚举官、扫全实测官）用的模型字面量或 `"session"`；`judgment` 固定 `"session"`（普查官、视觉
+  reviewer、复核官不可降）；`confirmed_by_user` 用户原话；`confirmed_at` ISO 8601；`history[]` 续盘改口时推入的旧值。渲染器在总览点明
+  "本 run 取证类子 agent 用 X，用户于 T 确认"；`judgment` 不是 `"session"` 时总览点名为非法策略（不改任何计数，
+  但报告读者会看到普查或复核被降过档）。模型名只住在这里，不住在技能文本里。
+- `entries[].agent_model` 新 entry 必填（分层前的旧 run 可缺，渲染器不拒）：派发取证的子 agent 实际用的模型字面量
+  （继承会话时记会话模型名加 `(session)`；harness 不能按 agent 指定模型时同样）。顶层 `census_model` 与
+  `patterns[].enumerator_model` 同理。策略见 SKILL.md "模型"；这些字段让报告读者能核对
   "这条裁决的证据是谁取的"，渲染器不据此改任何计数。
 - 顶层 `surfaces[]`（覆盖分母，新 run 必填；旧 ledger 可缺，渲染器不据此拒渲）：普查官返回的操作面
   **原样**入账（`dead_contracts` 也各作一行）。`facets[].surface_ids` 写该面包含的 surface id；

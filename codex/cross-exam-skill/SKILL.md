@@ -46,7 +46,8 @@ Do not mix ledgers, verdicts, or loops.
 动机的制衡。把最难、最不可逆的活交给比会话弱的模型，省的是钱，赔的是证据。技能不写死任何模型字面量：
 写死的那一刻，它就比下一代会话模型弱一档。
 
-**降档只是可选的成本控制，且只许降取证类角色。** 用户明确要省成本时，只有"产出原始观察、盘问官自己会
+**降档只是可选的成本控制，且只许降取证类角色；模型名由用户在定靶时给，落在 ledger 顶层 `model_policy`，
+不落在技能里。** 用户明确要省成本时，只有"产出原始观察、盘问官自己会
 解读"的角色（实测官、枚举官）可以用定靶时探测到的更便宜模型；产出盘问官无法复核的判断的角色（普查官、
 视觉 reviewer）和作者自审时的复核官永远继承会话模型。哪怕降了档，也要遵守：
 - **重派回到会话模型。** 残缺重派时若首派用的是降档模型，重派不传 `model`；首派已是会话模型则原样重派。
@@ -54,6 +55,8 @@ Do not mix ledgers, verdicts, or loops.
 - **每次派发都落盘用了什么模型**：`entries[].agent_model`（实测官或视觉 reviewer 的字面量，继承会话时写
   会话模型名加 `(session)`）、顶层 `census_model`、`patterns[].enumerator_model`。事后核对"这条裁决的证据是
   谁取的"要能一眼看到。本版 `spawn_agent` 若不暴露 `model` 参数，一律记会话模型名加 `(session)`。
+- **派发时读 `model_policy`，不读记忆里的模型名。** `model_policy.observation` 是字面量就给实测官、枚举官、扫全
+  实测官传它；是 `"session"` 或整个键不存在就不传。普查官、视觉 reviewer、复核官从不读这个键。
 - 会话模型是什么就用什么裁决，技能不猜用户能拿到哪些模型，也不提醒换模型。
 - 跨平台双审的外部 reviewer 用对方平台**当时可用的最强模型**（定靶时用 `--help` / 模型列表探测），
   字面量记进 `agent_model`；不在技能里写死。
@@ -65,6 +68,12 @@ Do not mix ledgers, verdicts, or loops.
    独立实测官取证，本环境没有；请开多智能体或换环境，我不会降级成自审"，然后结束。** 不要继续定靶、
    不要摆面、不要用主会话冒充实测官。（结构化提问工具有没有选择器**不是**前置门——那只是
    问法，退成纯文本问答不影响方法；能力门只卡"独立取证"这一件事。）
+0b. **模型策略（一问，默认不省）**：把本 harness 能派的模型列表摆给用户（Claude Code：Agent 工具 `model` 的
+   枚举；Codex：`codex --help` / 模型列表），问一句"取证类角色（实测官、枚举官）要不要用更便宜的模型"，第一个
+   选项是"全部继承会话模型"。用户选了字面量就写 ledger 顶层 `model_policy`（`observation` 字面量、`judgment`
+   固定 `"session"`、`confirmed_by_user` 用户原话、`confirmed_at`）；选默认则不写这个键。用户没提省钱你不主动
+   劝省，也不替用户选。报告总览会点明本 run 取证用了哪个模型、谁在什么时候确认的；续盘沿用旧 ledger 的策略，
+   用户改口时把旧值推进 `model_policy.history[]` 再改键并更新原话与时间——前半段证据是谁取的不能从总览消失。
 1. 确认被测对象与访问方式（怎么跑起来：web/cli/api？入口？）。
 2. **需求基准探测**（依次）：superstorm overview registry（R-*，在
    `docs/superpowers/specs/*-overview.md` 的 registry 标记内）→ `docs/superpowers/specs/`
@@ -156,7 +165,7 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
 到全集后再对高风险线回到深挖。**深挖答不了"我们有没有到处都看过"——那是扫全模式的活；只做深挖
 等于用 3 张牌去覆盖一整个交付。** 深挖中途抓到"一类的实例"时也会升级——见下面"孤例还是一类"。
 
-**扫全实测官的输入不即兴。** 一面一个 fresh-context 实测官（不传 `model`），prompt = prober.md 全文 +
+**扫全实测官的输入不即兴。** 一面一个 fresh-context 实测官（`model` 按 `model_policy`），prompt = prober.md 全文 +
 `$ROOT/prompts/sweep.md` 全文 + 输入 JSON；`question` 与 `states_to_capture` 只许用 sweep.md 的固定
 模板填入该面的名字与入口——模板按面的种类分三个变体（界面操作 / 命令与接口 / 后台任务与消费者），
 你只做"选哪个变体"这一件事，不润色措辞。扇出前把填好的模板整句用 AskUserQuestion 给用户过目一次——这是扫全模式的
@@ -184,7 +193,7 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
   预算用尽不是 unprovable：预算内到不了进展是产品的问题。
 - **落账**：entry 带 `journey`、`steps`、`terminal_state`；`journeys[].entry_q` 指到该 entry 的 `q`，
   `status` 改 `examined`。
-- **扫全模式下**：所有 `not_examined` 旅程并行扇出，一条旅程一个 fresh-context 实测官（同样不传 `model`），收齐后逐条裁决。
+- **扫全模式下**：所有 `not_examined` 旅程并行扇出，一条旅程一个 fresh-context 实测官（同样按 `model_policy`），收齐后逐条裁决。
 - **发散与 bias-guard 照旧**：旅程 gap 后下一轮从卡死点纵向出牌进 `open_threads`；多条旅程在同一种
   `stuck_kind` 卡死，走"孤例还是一类"建 pattern；盘问官==交付作者时旅程 gap 从严。
 
@@ -192,7 +201,7 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
 
 - **问题牌**：遵守 lenses.md 的 4 条硬约束（挂泄漏点、可实测、覆盖不同疑点、
   UI 牌注明状态清单）。牌一次呈现一组，用户永远可以自己出题。
-- **派实测官**：`spawn_agent` with `fork_turns:"none"`（不传 `model`）, followed by `wait_agent`，prompt = `$ROOT/prompts/prober.md`
+- **派实测官**：`spawn_agent` with `fork_turns:"none"`（`model` 按 `model_policy`，缺省不传）, followed by `wait_agent`，prompt = `$ROOT/prompts/prober.md`
   全文 + 输入 JSON（question / target / states_to_capture / evidence_dir /
   可选 context_paths——只传路径不传你的解读）。**不夹带怀疑。需求基准文件（spec / registry /
   README 的需求段）不进 context_paths：它写着预期答案。** 对账类问题例外，且只传对账所需的那一段。
@@ -220,7 +229,7 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
 - **孤例还是一类（每条 `gap|drift` 落账时必答）**：这个缺口是这一处独有，还是某个结构模式的
   实例（一个契约类缺同一种防护/接线）？判"一类"则**当即两个动作**，不等用户表态：
   ① `ledger.patterns` 建 pattern（`hypothesis` 一句话缺陷模式，schema 见 schemas.md）；
-  ② 派**同类位点枚举官**（fresh-context，不传 `model`，只枚举不取证，成本一问一 agent）：prompt =
+  ② 派**同类位点枚举官**（fresh-context，`model` 按 `model_policy`，只枚举不取证，成本一问一 agent）：prompt =
   `$ROOT/prompts/sites.md` 全文 + 输入 JSON（target / structure / contract），structure 和
   contract 都是中立描述（"接受写请求并持久化的端点" / "重复提交的防护现状"），**绝不夹带首例的
   裁决**（"我们发现 A 坏了，看看别的坏没坏"就是把期望塞给它）——期望隔离在横向扫描时最容易破。
@@ -238,7 +247,7 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
   改措辞（那是你在替实测官取证），只能按同一输入重派一个 fresh-context 实测官。**重派前先把首派产物整目录挪到
   `evidence/qNN.rejected-1/`**（留痕；不进 ledger，不被任何 entry 引用，渲染器不读它），让 `evidence_dir` 原路径空着
   交给新实测官——残留文件会撞 transcript 核对，也会给第二个实测官示范"不适用"这类写法。最终落账的 entry 写
-  `redispatched: 1`（重派次数，报告读者要看得见这问跑过两次；渲染器不据此改计数）。被拒返回里的原始观察
+  `redispatched: 1`（重派次数）；首派用的是降档模型时再写 `first_agent_model`，报告读者一眼看出两次派发换了模型；渲染器不据此改计数。被拒返回里的原始观察
   （如"结算时弹了 OAuth 窗"）可以作为下一轮的牌候选进 `open_threads`，但不作任何裁决依据。**普查官/枚举官无返回**同样重派一次；普查官再失败
   → 只能按自己的面摆表，并在 ledger 顶层记 `census: "failed"`、向用户明说覆盖上限是你的 hunch；
   枚举官再失败 → pattern 写 `enumerated: false`，sites 只留首例，不造哨兵位点。
