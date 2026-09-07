@@ -68,8 +68,8 @@ Record in `model-policy.md`:
 - Recommended: A|B — <one-sentence reason>
 - Confirmed by user: "<their words>" at <ISO time>
 - Evidence: <host model list read at orientation; model-source evidence>
-- Failure policy: retry infrastructure once; a failed BUILD task on a downgraded model is
-  retried on the host model and recorded; no other substitution
+- Failure policy: retry infrastructure once; a BUILD task rejected on a downgraded model is
+  retried once there, then on the host model, each step recorded; no other substitution
 ```
 
 Include this policy in the launch contract. The model options are one item of the single

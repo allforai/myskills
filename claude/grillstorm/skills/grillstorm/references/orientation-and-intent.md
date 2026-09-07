@@ -60,8 +60,10 @@ round 4. Rewording one root cause is not a new family.
 
 Repairs become `corrected_pending_confirmation`. Close only after a later complete valid round
 supports them and every material claim/intent is verified. At round 3, whatever is still not
-supported is recorded as `unknown` in the orientation report, claim by claim, and orientation
-closes with those unknowns attached: choose the most conservative route consistent with them and
+supported is recorded claim by claim — `unknown` for a claim with no supporting evidence, and
+`corrected_unconfirmed` for a correction whose own evidence is on record but which no later round
+covered (planning treats it as existing-but-unproven, not as absent) — and orientation closes with
+those items attached: choose the most conservative route consistent with them and
 say which unknowns drove the choice. `orientation_blocked` is reserved for a known material
 conflict with no obtainable evidence and no safe investigation — not for running out of rounds
 on a large or messy repository.

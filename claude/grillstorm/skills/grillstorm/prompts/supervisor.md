@@ -44,7 +44,7 @@ Write exactly one JSON object through the runner-owned output channel, with no e
 `observations` (optional) is where anything outside THIS task goes: a defect in an already-confirmed
 neighbour (`scope: "task:<id>"`), a pattern repeated across files you did not verify (`scope: "repo"`),
 a census candidate. One entry per finding: `{scope, finding, evidence: "<path:line or captured output>"}`.
-It never changes `verdict`; `summary` is only about this task. Prose outside the JSON is not read.
+It never changes `verdict`; `summary` is only about this task. An observation's `evidence` may list several `path:line` separated by `;` when one pattern repeats. Where this file says `done:true` / `done:false`, write `verdict: confirmed` / `verdict: rejected` — the schema has no `done` key and rejects extra keys. Prose outside the JSON is not read.
 For non-test acceptance, `executed_test_count` is `null`. A confirmed test requires at least one
 executed test. A reality-gated result is rejected, never confirmed. Stdout/stderr and narrative
 are diagnostics only; only this schema-bound file is parsed.

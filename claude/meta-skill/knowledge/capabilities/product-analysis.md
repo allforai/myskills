@@ -94,11 +94,11 @@ but produces purely descriptive artifacts without evaluative judgment.
 |--------|------|----------------------------------|
 | `role-profiles.json` | Who uses this product (roles, permissions, audience_type) | one role per distinct permission set or audience the input names or implies |
 | `task-inventory.json` | What can be done (tasks with inputs/outputs/constraints) | every task the concept, code or user names; none invented to fill a list |
-| `business-flows.json` | How tasks connect into user journeys | every journey that connects the tasks above; a task no flow reaches is flagged |
+| `business-flows.json` | How tasks connect into user journeys | every journey that connects the tasks above; a task the user runs on its own gets a single-step flow, an internal helper no user runs directly is listed in `unreached_tasks` — never silently absent |
 | `experience-map.json` | What screens exist, what states, what interactions | every screen a flow needs, with its states; zero screens for a CLI, and said so |
 | `use-case-tree.json` | Given/When/Then scenarios (happy + exception + boundary) | happy, exception and boundary case per flow; a flow without an exception case is flagged |
 
-Write the counts you produced and why they are complete for this input; numbers are evidence of coverage, never a target to reach.
+Write the counts you produced and why they are complete for this input; numbers are evidence of coverage, never a target to reach. Operations that closure thinking says *should* exist but the input does not name (a create without its delete, a convert without its reverse) are findings for `_gaps`, never entries in the task table.
 
 **task-inventory.json field schema (minimum required fields):**
 ```json
@@ -181,7 +181,7 @@ LLM should apply these principles in whatever order and combination works:
 | Archetype | Analysis Differences |
 |-----------|---------------------|
 | **Web/Mobile app** | Standard: roles, tasks, flows, screens, use-cases |
-| **CLI tool** | No roles (single user). Command tree replaces tasks. No screens. |
+| **CLI tool** | One implicit role (the operator) so `role_ref` has a root. Command tree replaces tasks. Zero screens, said so; the terminal contract (stdout/stderr/exit codes per subcommand) is the experience surface. |
 | **Data pipeline** | No roles. DAG spec replaces flows. Transform catalog replaces tasks. |
 | **Game** | Roles = player types. System spec replaces tasks. Config schema replaces constraints. |
 | **Library/SDK** | No roles. API surface replaces tasks. Usage patterns replace use-cases. |
