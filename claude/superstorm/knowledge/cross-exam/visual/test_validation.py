@@ -490,10 +490,12 @@ AR = {'supported': ['ar'], 'default': 'ar', 'rtl': ['ar'], 'basis': 'Localizable
 
 def test_rtl_case_requires_direction_read_back(sample):
     root, write = sample[0], sample[1]
-    root, entry, ledger = _locale_case(sample, write, 'ar', {}, AR)
+    root, entry, ledger = _locale_case(sample, write, 'ar', {'readback': {'locale': 'ar'}}, AR)
     assert 'RTL 语言用例须读回 direction=rtl' in visual_reason(entry, ledger, root)
-    root, entry, ledger = _locale_case(sample, write, 'ar', {'direction': 'rtl'}, AR)
+    root, entry, ledger = _locale_case(sample, write, 'ar', {'readback': {'locale': 'ar', 'direction': 'rtl'}}, AR)
     assert visual_reason(entry, ledger, root) is None
+    root, entry, ledger = _locale_case(sample, write, 'ar', {'readback': {'direction': 'rtl'}}, AR)
+    assert 'locale 轴缺应用内读回值' in visual_reason(entry, ledger, root)
 
 
 def test_declined_locales_are_declared_in_the_visual_section(sample):
@@ -526,3 +528,79 @@ def test_inventory_cannot_drop_a_census_locale(sample):
                                     'matrix_digest': cfg['matrix_digest']})
     write('evidence/q1/manifest.json', manifest)
     assert '删掉了普查官列出的语言: de' in visual_reason(entry, ledger, root)
+
+
+def _support_case(sample, write, axis, value, axis_support, capture_extra):
+    root, _, cfg, case, report, entry, ledger = sample
+    inventory = {'axis_support': axis_support,
+                 'surfaces': [{'id': 'home', 'axes': {**{a: ['default'] for a in AXES}, axis: [value]}}]}
+    scase = expand(inventory['surfaces'], axis_support=axis_support)[0]
+    cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
+    cfg['matrix_digest'] = write(cfg['matrix_ref'], [scase])
+    bound = {k: cfg[k] for k in ('build','baseline_digest','interaction_digest','inventory_digest','matrix_digest')}
+    image_hash = report['image_digests']['q1/image.png']
+    cap = {**scase, 'case_id': scase['id'], **bound, 'captured_at': 'now',
+           'images': ['q1/image.png'], 'image_digests': {'q1/image.png': image_hash}, **capture_extra}
+    write('evidence/q1/manifest.json', {'captures': [cap]})
+    write('evidence/q1/review.json', {**report, **bound})
+    entry['visual_case_ids'] = [scase['id']]
+    ledger['visual_cases'] = [scase]
+    return root, entry, ledger
+
+
+DARK = {'appearance': {'supported': ['dark'], 'basis': 'values-night/',
+                       'declined': []}}
+
+
+def test_supported_axis_requires_in_app_readback(sample):
+    root, write = sample[0], sample[1]
+    root, entry, ledger = _support_case(sample, write, 'appearance', 'dark', DARK, {})
+    assert 'appearance 轴缺应用内读回值' in visual_reason(entry, ledger, root)
+    root, entry, ledger = _support_case(sample, write, 'appearance', 'dark', DARK, {'readback': {'appearance': 'light'}})
+    assert 'appearance 轴读回值 light 与用例 dark 不符' in visual_reason(entry, ledger, root)
+    root, entry, ledger = _support_case(sample, write, 'appearance', 'dark', DARK, {'readback': {'appearance': 'dark'}})
+    assert visual_reason(entry, ledger, root) is None
+
+
+def test_compound_case_value_is_proven_by_its_readback(sample):
+    root, write = sample[0], sample[1]
+    both = {'appearance': {'supported': ['light', 'dark'], 'basis': 'darkMode: class',
+                           'declined': [{'value': 'light', 'confirmation': 'x'}]}}
+    root, entry, ledger = _support_case(sample, write, 'appearance', 'system dark + app light', both,
+                                        {'readback': {'appearance': 'light'}})
+    assert visual_reason(entry, ledger, root) is None
+    root, entry, ledger = _support_case(sample, write, 'appearance', 'system dark + app light', both,
+                                        {'readback': {'appearance': 'sepia'}})
+    assert '与用例' in visual_reason(entry, ledger, root)
+
+
+def test_declined_axis_values_are_declared_in_the_visual_section(sample):
+    root, write, cfg, case, report, entry, ledger = sample
+    inventory = json.loads((root / cfg['inventory_ref']).read_text())
+    inventory['axis_support'] = {'appearance': {'supported': ['light', 'dark'], 'basis': 'darkMode: class',
+                                                'declined': [{'value': 'dark', 'confirmation': '用户：深色下版再验'}]}}
+    inventory['surfaces'][0]['axes']['appearance'] = ['light']
+    cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
+    scase = expand(inventory['surfaces'], axis_support=inventory['axis_support'])[0]
+    cfg['matrix_digest'] = write(cfg['matrix_ref'], [scase])
+    ledger['visual_cases'] = [scase]
+    section = '\n'.join(visual_section(ledger, [], root))
+    assert '未验收 appearance 值（用户确认放弃，不进任何计数）：dark — 用户：深色下版再验' in section
+
+
+def test_inventory_cannot_drop_a_census_axis_value(sample):
+    root, write, cfg, case, report, entry, ledger = sample
+    ledger['axis_support'] = {'appearance': {'supported': ['light', 'dark'], 'basis': 'values-night/'}}
+    inventory = json.loads((root / cfg['inventory_ref']).read_text())
+    inventory['axis_support'] = {'appearance': {'supported': ['dark'], 'basis': 'values-night/'}}   # light removed
+    inventory['surfaces'][0]['axes']['appearance'] = ['dark']
+    cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
+    scase = expand(inventory['surfaces'], axis_support=inventory['axis_support'])[0]
+    cfg['matrix_digest'] = write(cfg['matrix_ref'], [scase])
+    ledger['visual_cases'] = [scase]
+    entry['visual_case_ids'] = [scase['id']]
+    manifest = json.loads((root / 'evidence/q1/manifest.json').read_text())
+    manifest['captures'][0].update({**scase, 'case_id': scase['id'], 'inventory_digest': cfg['inventory_digest'],
+                                    'matrix_digest': cfg['matrix_digest'], 'readback': {'appearance': 'dark'}})
+    write('evidence/q1/manifest.json', manifest)
+    assert '删掉了普查官列出的appearance 值: light' in visual_reason(entry, ledger, root)

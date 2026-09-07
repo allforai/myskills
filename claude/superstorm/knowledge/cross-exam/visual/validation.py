@@ -15,7 +15,8 @@ def _sibling(name):
 
 
 _matrix = _sibling('matrix')
-expand, locale_tokens = _matrix.expand, _matrix.locale_tokens
+expand, value_tokens, merged_support = _matrix.expand, _matrix.value_tokens, _matrix.merged_support
+locale_tokens = value_tokens
 ANNOTATION_KEYS = {'applicability', 'reason', 'basis'}
 _VERIFIED_IMAGES = set()   # content digests already decoded and verified in this process
 
@@ -62,7 +63,7 @@ def frozen_cases(run, config):
     inventory = read(run, config['inventory_ref'])
     expected = {c['id']: c for c in expand(inventory['surfaces'], inventory.get('layout_thresholds'),
                                            inventory.get('width_range'), inventory.get('devices'),
-                                           inventory.get('locales'))}
+                                           inventory.get('locales'), inventory.get('axis_support'))}
     rows = read(run, config['matrix_ref'])
     actual = {c.get('id'): c for c in rows}
     if len(rows) != len(actual) or actual.keys() != expected.keys():
@@ -155,12 +156,30 @@ def split_groups(cases, ids):
     return ''
 
 
+def _readback(capture):
+    rb = capture.get('readback')
+    return rb if isinstance(rb, dict) else {}
+
+
 def rtl_reason(case, capture, rtl_locales):
     """An RTL locale is only proven rendered RTL by the page's own read-back, not by the locale setting."""
-    if not rtl_locales or not (locale_tokens(str(case.get('locale', ''))) & set(rtl_locales)):
+    if not rtl_locales or not (value_tokens(str(case.get('locale', ''))) & set(rtl_locales)):
         return ''
-    if capture.get('direction') != 'rtl':
+    if _readback(capture).get('direction', capture.get('direction')) != 'rtl':
         return 'RTL 语言用例须读回 direction=rtl: ' + case.get('id', '?')
+    return ''
+
+
+def readback_reason(case, capture, support):
+    """Setting an axis is not the same as the app rendering it: for every axis the code declares support on,
+    the capture must carry the value read back inside the app, and it must be one the case claims."""
+    rb = _readback(capture)
+    for axis in support:
+        got = rb.get(axis)
+        if not isinstance(got, str) or not got.strip():
+            return '%s 轴缺应用内读回值: %s' % (axis, case.get('id', '?'))
+        if got.strip() not in value_tokens(str(case.get(axis, ''))):
+            return '%s 轴读回值 %s 与用例 %s 不符: %s' % (axis, got, case.get(axis), case.get('id', '?'))
     return ''
 
 
@@ -207,14 +226,19 @@ def visual_reason(entry, ledger, run):
         frozen = frozen_cases(run, config)
         if not same_matrix(ledger_rows, frozen):
             raise ValueError('ledger 用例与冻结完整矩阵不一致')
-        inv_locales = read(run, config['inventory_ref']).get('locales') or {}
+        inventory = read(run, config['inventory_ref'])
+        inv_locales = inventory.get('locales') or {}
         rtl_locales = inv_locales.get('rtl') or []
+        support = merged_support(inventory.get('axis_support'), inventory.get('locales'))
         # The census output sits verbatim in the ledger; the inventory may decline a shipped locale
         # on the record, but it may not drop one from `supported` to make the matrix smaller.
-        census_supported = set((ledger.get('locales') or {}).get('supported') or [])
-        dropped = census_supported - set(inv_locales.get('supported') or [])
-        if dropped:
-            raise ValueError('inventory 删掉了普查官列出的语言: ' + ', '.join(sorted(dropped)))
+        census_support = merged_support(ledger.get('axis_support'), ledger.get('locales'))
+        for axis, spec in census_support.items():
+            declared = support.get(axis) or {}
+            dropped = set((spec or {}).get('supported') or []) - set(declared.get('supported') or [])
+            if dropped:
+                noun = '语言' if axis == 'locale' else axis + ' 值'
+                raise ValueError('inventory 删掉了普查官列出的%s: %s' % (noun, ', '.join(sorted(dropped))))
         reference_images = baseline(run, config)
         if entry.get('medium') != 'runtime':
             raise ValueError('视觉裁决必须使用运行证据')
@@ -234,9 +258,10 @@ def visual_reason(entry, ledger, run):
                 raise ValueError('截图环境与用例不匹配: ' + cid)
             if not capture.get('build') or not capture.get('captured_at'):
                 raise ValueError('缺构建或截图时间')
-            bad_scroll = scroll_reason(case, capture) or rtl_reason(case, capture, rtl_locales)
-            if bad_scroll:
-                raise ValueError(bad_scroll)
+            bad = (scroll_reason(case, capture) or rtl_reason(case, capture, rtl_locales)
+                   or readback_reason(case, capture, support))
+            if bad:
+                raise ValueError(bad)
             if capture.get('baseline_digest') != config['baseline_digest']:
                 raise ValueError('截图引用过期基线')
             refs = capture.get('images', [])
@@ -347,12 +372,14 @@ def visual_section(ledger, admitted, run=None):
     rows = [c for c in (ledger.get('visual_cases') or []) if isinstance(c, dict)]
     if run is not None:
         try:
-            locales = read(run, config['inventory_ref']).get('locales') or {}
-            declined = locales.get('declined') or []
-            if declined:
-                out.append('未验收语言（用户确认放弃，不进任何计数）：' + '；'.join(
-                    f"{d.get('locale')} — {d.get('confirmation', '')}" for d in declined))
-                out.append('')
+            inventory = read(run, config['inventory_ref'])
+            for axis, spec in merged_support(inventory.get('axis_support'), inventory.get('locales')).items():
+                declined = [d for d in (spec.get('declined') or []) if isinstance(d, dict)]
+                if declined:
+                    label = '未验收语言' if axis == 'locale' else f'未验收 {axis} 值'
+                    out.append(f'{label}（用户确认放弃，不进任何计数）：' + '；'.join(
+                        f"{d.get('locale') or d.get('value')} — {d.get('confirmation', '')}" for d in declined))
+                    out.append('')
             frozen = frozen_cases(run, config)
             # Frozen cases remain visible even when an examiner omitted ledger rows;
             # ledger rows keep their not_applicable annotation on top of the frozen identity.

@@ -7,10 +7,10 @@
 七个维度对 Web 的取值，全部在 environment 类由用户确认为具体值：
 - device：视口宽高加设备像素比，如 `1440x900@2`、`390x844@3`；不写"桌面"或"所有手机"。取值下限见下文"布局阈值"。
 - os：浏览器引擎与主版本，如 `Chromium 131`、`WebKit 18`；同一引擎不同版本按用户确认是否分列。
-- appearance：`prefers-color-scheme` 的 light / dark，另加站点自身主题开关的值（如果有）。
-- dynamic_type：浏览器缩放或根字号，如 `zoom 100%`、`zoom 150%`、`font-size 20px`；站点不响应缩放时取单一值 `zoom 100%`，依据（例如 CSS 未使用 rem/em）记在 environment 类的确认里。
+- appearance：`prefers-color-scheme` 的 light / dark，另加站点自身主题开关的值（如果有）；两者是两个值，轴值写"系统 dark + 站点 light"。支持哪些由代码定（普查官 `axis_support.appearance`：`prefers-color-scheme` 媒体查询、Tailwind `darkMode`、`data-theme` / `class="dark"` 切换点），没有任何深色代码就是单值 light 带出处；读回 `matchMedia('(prefers-color-scheme: dark)').matches` 与 `document.documentElement` 的 `data-theme` / `class`，写进 `readback.appearance`。
+- dynamic_type：浏览器缩放或根字号，如 `zoom 100%`、`zoom 150%`、`font-size 20px`；站点不响应缩放时取单一值 `zoom 100%`，依据（例如 CSS 未使用 rem/em）记在 environment 类的确认里。支持档位来自普查官 `axis_support.dynamic_type`（rem / em / `clamp()` 用法、`font-size` 设置点）；读回计算后的根字号与 `visualViewport.scale`，写进 `readback.dynamic_type`。
 - locale：浏览器语言加站点语言开关的值。取值下限见下文"打包语言"。
-- orientation：`landscape` / `portrait`；桌面视口取单一值 `landscape`，依据记在 environment 类的确认里。
+- orientation：`landscape` / `portrait`；桌面视口取单一值 `landscape`，依据记在 environment 类的确认里。移动 Web 的支持值来自 `axis_support.orientation`（CSS `(orientation:)` 查询、`screen.orientation.lock`）；读回 `screen.orientation.type`，写进 `readback.orientation`。
 - state：加载、空、错误、权限拒绝、离线、键盘弹出（移动）等，按页面归入。
 
 维度没有"不适用"：每个维度都是非空的具体值列表，某维度对该产品无意义就取一个值并记依据。整条用例的 applicability: not_applicable 只留给组合本身不可能存在的情况（如某页面在某设备上根本不可达），须有 reason 与 basis。
@@ -27,7 +27,7 @@ device 轴每个阈值两侧各一个值、并触到 `width_range` 两端，`mat
 
 普查时读出 `locales`：next.config `i18n.locales` / next-intl · i18next 的 `locales` · `supportedLngs` · `resources` 键 / vue-i18n `messages` 键 / `public/locales/*`、`src/locales/*` 目录名；默认语言与回落链（`defaultLocale`、`fallbackLng`）；RTL 语言看 `dir` 的设置点（`<html dir>`、`document.dir`、`dir` 属性随 locale 切换的代码）。`translation_keys` 以默认语言文件的 key 全集为点名册，逐语言 diff。
 
-施加：Playwright / DevTools 的 `locale` 上下文选项设浏览器语言，再操作站点自己的语言开关（有的话）；两者是两个值，轴值写成"浏览器 xx + 站点 yy"。读回写进 capture 的 `locale_readback`：`document.documentElement.lang`、`navigator.language`、`Intl.DateTimeFormat().resolvedOptions().locale`，以及 `direction`：`getComputedStyle(document.documentElement).direction`。设了语言、页面 `lang` 没变，那是一条 gap，不是"施加失败"。
+施加：Playwright / DevTools 的 `locale` 上下文选项设浏览器语言，再操作站点自己的语言开关（有的话）；两者是两个值，轴值写成"浏览器 xx + 站点 yy"。读回写进 capture 的 `readback.locale`：`document.documentElement.lang`（另记 `navigator.language`、`Intl.DateTimeFormat().resolvedOptions().locale`），以及 `readback.direction`：`getComputedStyle(document.documentElement).direction`。设了语言、页面 `lang` 没变，那是一条 gap，不是"施加失败"。
 
 ## 截图模式与滚动：无头全页截图不是用户看到的画面
 

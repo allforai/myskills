@@ -21,6 +21,13 @@ entry、kind（screen/component/overlay）、states、适用平台与环境分�
 `values-xx/`·`resConfigs`，含 default、回落链、RTL 语言，带出处）和 translation_keys（以默认语言的 key 全集为
 点名册，逐语言列缺失 key 与多余 key，带资源文件路径）——缺 key 运行时静默回落成默认语言，界面混语，代码
 长得和正确的一样，只有点名册抓得到。
+其它轴同样返回代码支持的值 axis_support：appearance（`prefers-color-scheme` 媒体查询 / Tailwind `darkMode` /
+`data-theme` 切换点 / Info.plist `UIUserInterfaceStyle` / `.preferredColorScheme` / Asset Catalog dark appearance /
+`values-night/` / `DayNight` 主题）、dynamic_type（rem·em 与 `font-size` 缩放 / `.dynamicTypeSize` 上下限 / `sp`
+与 `fontScale` 使用）、orientation（CSS orientation 查询 / `UISupportedInterfaceOrientations` /
+`android:screenOrientation`），每轴 `{supported, basis}`；写死单一值的照写单一值并给出处。appearance 另带
+dark_variant_gaps：支持深色时没有深色变体的资源与硬编码颜色（Asset Catalog 无 dark 的 image set / color set、
+`values/` 有而 `values-night/` 没有的 color、源码里的字面量颜色），逐个点名——半做的深色模式没有味道，只有点名册。
 从 App/Scene、路由、Tab、弹层及条件注册出发；公共 View 不自动算页面，
 动态不可枚举类别进 could_not。只列事实，运行探索交给独立 prober。
 
@@ -43,8 +50,12 @@ entry、kind（screen/component/overlay）、states、适用平台与环境分�
  "locales": {"supported": ["zh-CN", "en", "ar"], "default": "zh-CN", "fallback": ["en"], "rtl": ["ar"], "basis": "path:line"},
  "translation_keys": {"total": 133, "basis": "public/locales/zh-CN/*.json",
                       "missing": {"ar": ["billing.invoice.title", "..."]}, "extra": {"en": ["..."]}},
+ "axis_support": {"appearance": {"supported": ["light", "dark"], "basis": "tailwind.config.js:7 darkMode"},
+                  "dynamic_type": {"supported": ["zoom 100%", "zoom 150%"], "basis": "styles use rem"},
+                  "orientation": {"supported": ["portrait"], "basis": "Info.plist UISupportedInterfaceOrientations"}},
+ "dark_variant_gaps": [{"asset": "logo", "path": "Assets.xcassets/logo.imageset", "why": "no dark appearance"}],
  "could_not": ["没枚举到的类别 + 原因（无则空数组）"]}
 ```
 
-`ui_surfaces` / `layout_thresholds` / `width_range` / `locales` / `translation_keys` 仅 UI 目标返回；没有 i18n
+`ui_surfaces` / `layout_thresholds` / `width_range` / `locales` / `translation_keys` / `axis_support` / `dark_variant_gaps` 仅 UI 目标返回；没有 i18n
 资源的产品 `locales` 写 `{"supported": [<源码硬编码的那一种>], "basis": "..."}`，不空着。

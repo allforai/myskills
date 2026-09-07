@@ -163,3 +163,51 @@ def test_rtl_must_be_subset_of_supported_and_locales_need_basis():
         expand([{'id': 'home', 'axes': _laxes(['zh-CN'])}], locales={'supported': ['zh-CN'], 'rtl': ['ar'], 'basis': 'x'})
     with pytest.raises(ValueError, match='invalid locales'):
         expand([{'id': 'home', 'axes': _laxes(['zh-CN'])}], locales={'supported': ['zh-CN']})
+
+
+APPEARANCE = {'supported': ['light', 'dark'], 'basis': 'tailwind.config.js darkMode: class; values-night/'}
+
+
+def _axes_with(**over):
+    return {**{a: ['default'] for a in AXES}, **{k: list(v) for k, v in over.items()}}
+
+
+def test_generic_axis_support_requires_every_supported_value():
+    with pytest.raises(ValueError, match='appearance axis misses supported value light'):
+        expand([{'id': 'home', 'axes': _axes_with(appearance=['dark'])}], axis_support={'appearance': APPEARANCE})
+    expand([{'id': 'home', 'axes': _axes_with(appearance=['light', 'dark'])}], axis_support={'appearance': APPEARANCE})
+
+
+def test_generic_declined_values_with_confirmation():
+    spec = {**APPEARANCE, 'declined': [{'value': 'light', 'confirmation': '用户 2026-09-07：我们只发深色'}]}
+    expand([{'id': 'home', 'axes': _axes_with(appearance=['dark'])}], axis_support={'appearance': spec})
+    with pytest.raises(ValueError, match="declined appearance needs a supported value"):
+        expand([{'id': 'home', 'axes': _axes_with(appearance=['dark'])}],
+               axis_support={'appearance': {**APPEARANCE, 'declined': [{'value': 'light'}]}})
+
+
+def test_compound_values_match_by_segment():
+    dt = {'supported': ['zoom 100%', 'zoom 150%'], 'basis': 'rem-based sizing'}
+    expand([{'id': 'home', 'axes': _axes_with(dynamic_type=['zoom 100%', 'zoom 150% + 字号 20px'])}],
+           axis_support={'dynamic_type': dt})
+    with pytest.raises(ValueError, match='dynamic_type axis misses supported value zoom 150%'):
+        expand([{'id': 'home', 'axes': _axes_with(dynamic_type=['zoom 100%', 'zoom 125%'])}],
+               axis_support={'dynamic_type': dt})
+    # system dark + in-app light is one value that carries both tokens; the readback check at capture
+    # time is what decides which one it actually proves
+    expand([{'id': 'home', 'axes': _axes_with(appearance=['system dark + app light', 'dark'])}],
+           axis_support={'appearance': APPEARANCE})
+
+
+def test_axis_scope_and_unknown_axis():
+    scope = {'id': 'print', 'axis_scope': {'appearance': {'only': ['light'], 'basis': 'print preview is light-only'}},
+             'axes': _axes_with(appearance=['light'])}
+    expand([scope], axis_support={'appearance': APPEARANCE})
+    with pytest.raises(ValueError, match='unknown axis'):
+        expand([{'id': 'home', 'axes': _axes_with()}], axis_support={'theme': APPEARANCE})
+
+
+def test_locales_and_axis_support_locale_cannot_both_be_declared():
+    with pytest.raises(ValueError, match='declare the locale axis once'):
+        expand([{'id': 'home', 'axes': _axes_with(locale=['zh-CN'])}], locales=LOCALES,
+               axis_support={'locale': LOCALES})

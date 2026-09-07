@@ -103,10 +103,11 @@ Do not mix ledgers, verdicts, or loops.
    是最省的播种法。不要即兴写普查 prompt：措辞变了，覆盖面就变了。**普查官返回后把 `surfaces`
    原样写进 ledger 顶层 `surfaces[]`**（`dead_contracts` 也各作一行，`entry` 用它的 `defined_at`），
    不改名、不合并、不删：这是操作面的分母，渲染器据此算"操作面 K 个，裁决触及 T 个，未触及逐个
-   点名"。分母不入账，覆盖就没有数，只剩盘问官一句"盘过了"。UI 目标的 `locales` 与 `translation_keys` 同样
-   原样入账（顶层同名键）：`translation_keys.missing` 非空时按"孤例还是一类"直接建 pattern（hypothesis
-   "某语言翻译回落"，sites = 缺失 key），不等哪张牌碰巧撞上；语言要不要验收由用户在视觉验收的 environment
-   类确认，放弃的语言记 `declined` 带原话，报告列"未验收语言"，不进计数（见 visual-acceptance.md）。
+   点名"。分母不入账，覆盖就没有数，只剩盘问官一句"盘过了"。UI 目标的 `locales`、`axis_support`、`translation_keys`、
+   `dark_variant_gaps` 同样原样入账（顶层同名键）：`translation_keys.missing` 或 `dark_variant_gaps` 非空时按
+   "孤例还是一类"直接建 pattern（hypothesis "某语言翻译回落" / "深色模式资源半做"，sites = 缺失 key / 无深色
+   变体的资源），不等哪张牌碰巧撞上；语言、深浅色、字号、方向要不要验收，由用户在视觉验收的 environment 类
+   逐轴确认，放弃的值记 `declined` 带原话，报告列"未验收"，不进计数（见 visual-acceptance.md）。
 2. **合并 + 摆面**：把 census 面与你自己想到的面合并去重，**标出"census 有、你没想到"的面**（那
    往往正是盲区）。facet 表每面两个槽位必填：`surface_ids`（它包含的 census 面 id）与
    `requirement_refs`（它承接的需求 id）——粒度随你摆，但每个 census 面必须落在至少一个 facet 里，

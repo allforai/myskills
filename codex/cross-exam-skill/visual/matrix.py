@@ -62,54 +62,85 @@ def check_widths(surface, thresholds, width_range, devices):
             raise ValueError('device axis misses layout threshold %d: %s' % (w, sid))
 
 
-LOCALE_SPLIT = re.compile(r'[\s+/,;]+')
+SEGMENT_SPLIT = re.compile(r'[+/,;]')
+TOKEN_SPLIT = re.compile(r'[\s+/,;]+')
 
 
-def locale_tokens(value):
-    """A locale axis value may be compound ("zh-CN + 站点 en"); the tag must appear as its own token."""
-    return set(LOCALE_SPLIT.split(value.strip()))
+def value_tokens(value):
+    """An axis value may be compound ("浏览器 zh-CN + 站点 en", "zoom 150% + 字号 20px"). A supported value
+    is present when it equals the whole value, one of its separator-delimited segments, or one whitespace token."""
+    v = value.strip()
+    return {v} | {s.strip() for s in SEGMENT_SPLIT.split(v) if s.strip()} | set(TOKEN_SPLIT.split(v))
 
 
-def required_locales(locales):
-    """Locales the product ships minus the ones the user declined on the record."""
-    if not isinstance(locales, dict) or not isinstance(locales.get('supported'), list) or not locales['supported'] \
-            or any(not isinstance(l, str) or not l for l in locales['supported']) \
-            or not isinstance(locales.get('basis'), str) or not locales['basis']:
-        raise ValueError('invalid locales (needs non-empty supported list and basis)')
-    supported = locales['supported']
+locale_tokens = value_tokens   # kept for callers written against the locale-only version
+
+
+def required_values(axis, spec):
+    """Values the code supports on this axis minus the ones the user declined on the record."""
+    key = 'locale' if axis == 'locale' else 'value'
+    noun = 'locales' if axis == 'locale' else axis + ' support'
+    if not isinstance(spec, dict) or not isinstance(spec.get('supported'), list) or not spec['supported'] \
+            or any(not isinstance(v, str) or not v for v in spec['supported']) \
+            or not isinstance(spec.get('basis'), str) or not spec['basis']:
+        raise ValueError('invalid %s (needs non-empty supported list and basis)' % noun)
+    supported = spec['supported']
     if len(set(supported)) != len(supported):
-        raise ValueError('duplicate supported locale')
+        raise ValueError('duplicate supported value on ' + axis)
     declined = set()
-    for d in locales.get('declined') or []:
-        if not isinstance(d, dict) or d.get('locale') not in supported \
-                or not isinstance(d.get('confirmation'), str) or not d['confirmation'].strip():
-            raise ValueError('declined locale needs a supported tag and the user\'s confirmation')
-        declined.add(d['locale'])
-    rtl = locales.get('rtl') or []
-    if not set(rtl) <= set(supported):
+    for d in spec.get('declined') or []:
+        tag = d.get(key) if isinstance(d, dict) else None
+        if tag is None and isinstance(d, dict):
+            tag = d.get('value') or d.get('locale')
+        if tag not in supported or not isinstance(d.get('confirmation'), str) or not d['confirmation'].strip():
+            raise ValueError("declined %s needs a supported %s and the user's confirmation"
+                             % (axis, 'tag' if axis == 'locale' else 'value'))
+        declined.add(tag)
+    if axis == 'locale' and not set(spec.get('rtl') or []) <= set(supported):
         raise ValueError('rtl locale not in supported list')
-    return [l for l in supported if l not in declined]
+    return [v for v in supported if v not in declined]
 
 
-def check_locales(surface, locales):
+required_locales = lambda locales: required_values('locale', locales)
+
+
+def check_axis_support(surface, axis, spec):
     sid = surface['id']
-    required = required_locales(locales)
-    scope = surface.get('locales')
+    if axis not in AXES:
+        raise ValueError('axis_support names an unknown axis: ' + axis)
+    required = required_values(axis, spec)
+    scope = surface.get('locales') if axis == 'locale' else (surface.get('axis_scope') or {}).get(axis)
     if scope is not None:
         if not isinstance(scope, dict) or not isinstance(scope.get('only'), list) or not scope['only'] \
                 or not isinstance(scope.get('basis'), str) or not scope['basis'] \
-                or not set(scope['only']) <= set(locales['supported']):
-            raise ValueError('invalid surface locales scope (needs only[] within supported and basis): ' + sid)
-        required = [l for l in required if l in scope['only']]
+                or not set(scope['only']) <= set(spec['supported']):
+            raise ValueError('invalid surface %s scope (needs only[] within supported and basis): %s'
+                             % ('locales' if axis == 'locale' else axis, sid))
+        required = [v for v in required if v in scope['only']]
     present = set()
-    for v in surface['axes']['locale']:
-        present |= locale_tokens(v)
-    missing = [l for l in required if l not in present]
+    for v in surface['axes'][axis]:
+        present |= value_tokens(v)
+    missing = [v for v in required if v not in present]
     if missing:
-        raise ValueError('locale axis misses shipped locale %s: %s' % (', '.join(missing), sid))
+        raise ValueError('%s axis misses %s %s: %s' % (axis, 'shipped locale' if axis == 'locale' else 'supported value',
+                                                     ', '.join(missing), sid))
 
 
-def expand(surfaces, thresholds=None, width_range=None, devices=None, locales=None):
+def check_locales(surface, locales):
+    check_axis_support(surface, 'locale', locales)
+
+
+def merged_support(axis_support, locales):
+    """`locales` is the locale axis's support declaration; `axis_support` carries every other axis."""
+    support = dict(axis_support or {})
+    if locales is not None:
+        if 'locale' in support:
+            raise ValueError('declare the locale axis once: locales or axis_support.locale')
+        support['locale'] = locales
+    return support
+
+
+def expand(surfaces, thresholds=None, width_range=None, devices=None, locales=None, axis_support=None):
     cases = []
     seen = set()
     for surface in surfaces:
@@ -132,8 +163,8 @@ def expand(surfaces, thresholds=None, width_range=None, devices=None, locales=No
                 raise ValueError('duplicate axis values: ' + axis)
         if thresholds or width_range or surface.get('width_range'):
             check_widths(surface, thresholds, width_range, devices)
-        if locales is not None:
-            check_locales(surface, locales)
+        for axis, spec in merged_support(axis_support, locales).items():
+            check_axis_support(surface, axis, spec)
         for values in itertools.product(*(axes[a] for a in AXES)):
             row = dict(zip(AXES, values))
             identity = json.dumps({'surface': sid, **row}, sort_keys=True, ensure_ascii=False)
@@ -150,4 +181,4 @@ if __name__ == '__main__':
     args = p.parse_args()
     inv = json.loads(Path(args.inventory).read_text())
     print(json.dumps(expand(inv['surfaces'], inv.get('layout_thresholds'), inv.get('width_range'), inv.get('devices'),
-                            inv.get('locales')), ensure_ascii=False, indent=2))
+                            inv.get('locales'), inv.get('axis_support')), ensure_ascii=False, indent=2))
