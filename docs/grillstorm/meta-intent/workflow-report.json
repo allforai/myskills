@@ -1,8 +1,10 @@
 {
-  "status": "running",
+  "status": "incomplete",
   "completed": [],
-  "pending": [
-    "T9",
+  "escalated": [
+    "T9"
+  ],
+  "skipped": [
     "T10",
     "T11",
     "T12",
@@ -13,5 +15,25 @@
     "T17",
     "T18"
   ],
-  "proof": "not yet executed"
+  "pending": [],
+  "candidate": "459022e02f5bf1dc98e37d3b40d38c69c59513e3",
+  "integration_production_base": "cadac5525abf2407fdcd0588252336cba8f60a01",
+  "proof": {
+    "focused_tests": 106,
+    "affected_tests": 63,
+    "native_flow_tests": 2,
+    "independent_cli_checks_passed": 114,
+    "standards_blockers": 0,
+    "standards_judgements": 1,
+    "spec_blockers": 1,
+    "blocking_findings": [
+      "T9-SPEC-01"
+    ],
+    "root_public_reproduction": "reviews/T9-journal-root-recheck.json",
+    "actual_host_scenario_cells_executed": 0,
+    "actual_host_scenario_cells_required": 60,
+    "global_acceptance": "not_run_no_task_verified"
+  },
+  "report": "execution-report-resume-1.md",
+  "resume": "resume-authorization.md"
 }

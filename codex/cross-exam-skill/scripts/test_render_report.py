@@ -239,6 +239,28 @@ class TestNotExaminedRisk(unittest.TestCase):
             self.assertIn("examiner_is_author", overview)
             self.assertIn("bias-guard", overview)
 
+    def test_model_policy_declared_in_overview(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = _mk_run(tmp, [{"id": "F1", "name": "面一", "status": "examined"}], [_entry("q1")])
+            L = json.loads((run / "ledger.json").read_text(encoding="utf-8"))
+            L["model_policy"] = {"observation": "sonnet", "judgment": "session",
+                                 "confirmed_by_user": "实测官用 sonnet 就行", "confirmed_at": "2026-09-07T15:10:00+08:00"}
+            (run / "ledger.json").write_text(json.dumps(L, ensure_ascii=False), encoding="utf-8")
+            report = render(run)
+            overview = report[:report.index("## 逐面完成度")]
+            self.assertIn("取证类子 agent（实测官、枚举官）用 sonnet", overview)
+            self.assertIn("实测官用 sonnet 就行", overview)
+            self.assertNotIn("非法模型策略", overview)
+            L["model_policy"]["history"] = [{"observation": "haiku", "confirmed_by_user": "省", "confirmed_at": "2026-09-01T09:00:00+08:00"}]
+            (run / "ledger.json").write_text(json.dumps(L, ensure_ascii=False), encoding="utf-8")
+            self.assertIn("此前策略：取证用 haiku，用户于 2026-09-01T09:00:00+08:00 确认", render(run))
+            L["model_policy"]["judgment"] = "haiku"
+            (run / "ledger.json").write_text(json.dumps(L, ensure_ascii=False), encoding="utf-8")
+            self.assertIn("非法模型策略：judgment 只能是 session，ledger 写了 haiku", render(run))
+        with tempfile.TemporaryDirectory() as tmp:
+            run = _mk_run(tmp, [{"id": "F1", "name": "面一", "status": "examined"}], [_entry("q1")])
+            self.assertNotIn("取证类子 agent", render(run))
+
     def test_examiner_is_author_absent_is_silent(self):
         with tempfile.TemporaryDirectory() as tmp:
             run = _mk_run(tmp, [{"id": "F1", "name": "面一", "status": "examined"}],
@@ -785,6 +807,162 @@ class TestRequirementCoverage(unittest.TestCase):
             run = _mk_run(tmp, self.FACETS, [_entry("q1")])
             self.assertNotIn("## 需求覆盖", render(run))
 
+
+
+class TestLedgerV2ContentGate(unittest.TestCase):
+    """ledger_version 2：目录非空不再够，证据内容要像取证。"""
+    FACETS = [{"id": "F1", "name": "面一", "status": "examined"}]
+
+    def _run(self, tmp, entry, files):
+        run = _mk_run(tmp, self.FACETS, [entry], make_evidence=False)
+        d = run / entry["evidence"]["dir"]; d.mkdir(parents=True)
+        for name, body in files.items():
+            (d / name).write_bytes(body if isinstance(body, bytes) else body.encode("utf-8"))
+        ledger = json.loads((run / "ledger.json").read_text(encoding="utf-8"))
+        ledger["ledger_version"] = 2
+        for x in ledger["entries"]:
+            x.setdefault("probed_at", "2026-09-07T10:00:00+08:00")
+        (run / "ledger.json").write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
+        return run
+
+    def test_note_saying_looks_fine_is_refused_for_code_medium(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("q-note"); e["medium"] = "code"
+            report = render(self._run(tmp, e, {"note.txt": "看过了，没问题"}))
+            self.assertIn("代码摘录无 路径:行号", report)
+            self.assertIn("实证完成：0", report)
+
+    def test_code_excerpt_with_path_line_is_admitted(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("q-code"); e["medium"] = "code"
+            report = render(self._run(tmp, e, {"q01-excerpt.md": "src/api/refund.ts:42\n  if (order.refunded) return 409"}))
+            self.assertNotIn("违规裁决", report)
+
+    def test_runtime_needs_served_by_and_rejects_mocked_done(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("q-rt")
+            report = render(self._run(tmp, e, {"q01-01.png": b"\x89PNG"}))
+            self.assertIn("缺请求去向 served_by", report)
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("q-rt"); e["served_by"] = {"host": "localhost:3000", "process": "node next dev", "mock_layers": ["msw"]}
+            report = render(self._run(tmp, e, {"q01-01.png": b"\x89PNG"}))
+            self.assertIn("经 mock 层（msw）的 runtime 不能判 done", report)
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("q-rt", verdict="gap", severity="high")
+            e["served_by"] = {"host": "localhost:3000", "process": "node next dev", "mock_layers": ["msw"]}
+            report = render(self._run(tmp, e, {"q01-01.png": b"\x89PNG"}))
+            self.assertNotIn("违规裁决", report)   # gap through a mock is still a gap
+        with tempfile.TemporaryDirectory() as tmp:
+            # layers that were checked and found inactive live in checked_absent, not mock_layers: done stays admissible
+            e = _entry("q-rt")
+            e["served_by"] = {"host": "localhost:3000", "process": "node next dev", "mock_layers": [],
+                              "checked_absent": ["msw 在 devDependencies，service worker 未注册"]}
+            report = render(self._run(tmp, e, {"q01-01.png": b"\x89PNG"}))
+            self.assertNotIn("违规裁决", report)
+
+    def test_runtime_file_count_must_reach_requested_states(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("q-rt"); e["states_to_capture"] = ["00", "01", "02"]
+            e["served_by"] = {"host": "localhost:3000", "process": "node", "mock_layers": []}
+            report = render(self._run(tmp, e, {"q01-00.png": b"\x89PNG", "q01-01.png": b"\x89PNG"}))
+            self.assertIn("要求 3 个状态只落了 2 个文件", report)
+
+    def test_unprovable_reason_must_be_substantive(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("q-u", verdict="unprovable")
+            report = render(self._run(tmp, e, {"reason.md": "起不来"}))
+            self.assertIn("无法自证缺原因文件", report)
+
+    def test_transcript_linkage(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            transcript = Path(tmp) / "agent.output"
+            transcript.write_text("... wrote evidence/q1/q01-excerpt.md ...", encoding="utf-8")
+            e = _entry("q-t"); e["medium"] = "code"; e["agent_task"] = {"output_file": str(transcript)}
+            report = render(self._run(tmp, e, {"q01-excerpt.md": "a/b.ts:1 x"}))
+            self.assertNotIn("违规裁决", report)
+        with tempfile.TemporaryDirectory() as tmp:
+            transcript = Path(tmp) / "agent.output"
+            transcript.write_text("... wrote docs/other-run/evidence/q9/q01-excerpt.md ...", encoding="utf-8")
+            e2 = _entry("q-t2"); e2["medium"] = "code"; e2["agent_task"] = {"output_file": str(transcript)}
+            report = render(self._run(tmp, e2, {"q02-other.md": "a/b.ts:1 x"}))
+            self.assertIn("证据文件未出现在实测官 transcript，transcript 也未提及证据目录 evidence/q1：q02-other.md", report)
+        with tempfile.TemporaryDirectory() as tmp:
+            # scripted prober: filenames built in a loop never appear literally, but the directory does
+            transcript = Path(tmp) / "agent.output"
+            transcript.write_text('for i, s in enumerate(states):\n    page.screenshot(path=f"{evidence_dir}/q01-{s}.png")\n'
+                                  "Files written to evidence/q1/.", encoding="utf-8")
+            e4 = _entry("q-t4"); e4["agent_task"] = {"output_file": str(transcript)}
+            e4["states_to_capture"] = ["00", "01"]
+            e4["served_by"] = {"host": "localhost:3000", "process": "node", "mock_layers": []}
+            report = render(self._run(tmp, e4, {"q01-00.png": b"\x89PNG", "q01-01.png": b"\x89PNG"}))
+            self.assertNotIn("违规裁决", report)
+        with tempfile.TemporaryDirectory() as tmp:
+            e3 = _entry("q-t3"); e3["medium"] = "code"; e3["agent_task"] = {"output_file": str(Path(tmp) / "gone.output")}
+            report = render(self._run(tmp, e3, {"q03.md": "a/b.ts:1 x"}))
+            self.assertNotIn("违规裁决", report)
+
+    def test_v1_ledger_keeps_old_behaviour(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("q-old"); e["medium"] = "code"
+            run = _mk_run(tmp, self.FACETS, [e], make_evidence=False)
+            d = run / "evidence/q1"; d.mkdir(parents=True); (d / "note.txt").write_text("看过了", encoding="utf-8")
+            self.assertNotIn("违规裁决", render(run))
+
+
+class TestSmallHonestyFixes(unittest.TestCase):
+    FACETS = [{"id": "F1", "name": "面一", "status": "examined"}, {"id": "F2", "name": "面二", "status": "examined"}]
+
+    def test_header_separates_facets_with_only_unprovable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = _mk_run(tmp, self.FACETS, [_entry("q1"), _entry("q2", facet="F2", verdict="unprovable", ev_dir="evidence/q2/")])
+            self.assertIn("盘问 1 面（另 1 面仅无法自证）", render(run))
+
+    def test_legacy_shorthand_requirement_refs_expand(self):
+        from render_report import _requirement_ids
+        self.assertEqual(_requirement_ids({"requirement_ref": "R-moment-01/03/07"}),
+                         {"R-moment-01", "R-moment-03", "R-moment-07"})
+        self.assertEqual(_requirement_ids({"requirement_ref": "R-09, R-10"}), {"R-09", "R-10"})
+        self.assertEqual(_requirement_ids({"requirement_ref": "R-09（可选）"}), {"R-09（可选）"})
+
+    def test_git_author_overlap_flags_undeclared_self_review(self):
+        import subprocess
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            subprocess.run(["git", "init", "-q", str(repo)], check=True)
+            subprocess.run(["git", "-C", str(repo), "config", "user.email", "dev@example.com"], check=True)
+            subprocess.run(["git", "-C", str(repo), "config", "user.name", "dev"], check=True)
+            (repo / "a.txt").write_text("x", encoding="utf-8")
+            subprocess.run(["git", "-C", str(repo), "add", "."], check=True)
+            subprocess.run(["git", "-C", str(repo), "commit", "-q", "-m", "init"], check=True)
+            run = _mk_run(str(repo / "docs/cross-exam/run"), self.FACETS[:1], [_entry("q1")])
+            report = render(run)
+            self.assertIn("检测到当前 git 用户 dev@example.com", report)
+            self.assertIn("bias-guard 应生效", report)
+
+    def test_probed_at_required_in_v2_and_fast_runtime_pairs_named(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            a = _entry("q-a", ev_dir="evidence/q1/"); b = _entry("q-b", ev_dir="evidence/q2/")
+            for e, t in ((a, "2026-09-07T10:00:00+08:00"), (b, "2026-09-07T10:00:20+08:00")):
+                e["probed_at"] = t; e["served_by"] = {"host": "localhost", "process": "node", "mock_layers": []}
+            run = _mk_run(tmp, self.FACETS[:1], [a, b], make_evidence=False)
+            for q in ("q1", "q2"):
+                (run / "evidence" / q).mkdir(parents=True); (run / "evidence" / q / "shot.png").write_bytes(b"\x89PNG")
+            ledger = json.loads((run / "ledger.json").read_text(encoding="utf-8")); ledger["ledger_version"] = 2
+            (run / "ledger.json").write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
+            report = render(run)
+            self.assertIn("相邻 runtime 问间隔不足 60 秒", report)
+            self.assertIn("q-a → q-b（20 秒）", report)
+            ledger["entries"][0].pop("probed_at")
+            (run / "ledger.json").write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
+            self.assertIn("缺 probed_at", render(run))
+
+    def test_mock_backend_is_declared_in_overview(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = _mk_run(tmp, self.FACETS[:1], [_entry("q1")])
+            ledger = json.loads((run / "ledger.json").read_text(encoding="utf-8"))
+            ledger["target_backend"] = {"kind": "mock", "how_known": "用户确认 MSW"}
+            (run / "ledger.json").write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
+            self.assertIn("开发实例后端为 mock", render(run))
 
 
 if __name__ == "__main__":

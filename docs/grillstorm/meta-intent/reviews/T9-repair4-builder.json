@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "task": "T9",
+  "dispatch_task_id": "task_12807de89243",
+  "dispatch_id": "ctx_e8ca5335d3b6",
+  "role": "build",
+  "submission": "repair candidate only",
+  "repair_attempt": 4,
+  "base": "44b3bb645ed2dd065bc2c5433c22bb9b9a12db84",
+  "candidate": "459022e02f5bf1dc98e37d3b40d38c69c59513e3",
+  "finding": "T9-S4-01",
+  "cause": "Unchecked history iteration silently treated {} as an empty list; empty and ambiguous entries were accepted before retained-work admission.",
+  "change": "Validate transition_log list and object entries with nonempty native node identity and status before profile admission or history folding; reject conflicting native identity aliases.",
+  "files_modified": [
+    "claude/meta-skill/scripts/orchestrator/product_intent.py",
+    "claude/meta-skill/tests/unit/test_bootstrap_scope.py"
+  ],
+  "file_hashes": {
+    "claude/meta-skill/scripts/orchestrator/product_intent.py": "69ee8fc933f3a1de10528ec1f3d58a97f1dd307ced86e5f07c2f568f3dbff617",
+    "claude/meta-skill/tests/unit/test_bootstrap_scope.py": "c614a7d914386c7e808d13372a8c9e56817139ccc63faaa1d853067779252aa9"
+  },
+  "worktree": "/Users/aa/orca/workspaces/myskills/meta-intent-t9",
+  "worktree_clean": true,
+  "tdd": [
+    {
+      "red": "red-container.json",
+      "green": "green-container.json"
+    },
+    {
+      "red": "red-entry.json",
+      "green": "green-entry.json"
+    },
+    {
+      "red": "red-ambiguous-entry.json",
+      "green": "green-history-shapes.json"
+    }
+  ],
+  "validation": {
+    "acceptance": "106 passed; acceptance.json",
+    "directly_affected": "63 passed; affected.json",
+    "automatic_commit_hooks": "206 unit tests passed plus all bundled/wiring/contract validators; commit.json",
+    "exact_supervisor_fixture": "36 CLI calls: six base false admissions, six candidate invalid_scope rejections, successful ready/corrected controls on both adapters; notify-cli.json",
+    "shape_matrix": "32 host/shape cases cover all three gates and persisted ready -> not_ready -> ready, byte preservation",
+    "existing_native_and_scope_regressions": "All 74 previous acceptance cases retained and passing, including mixed native latest-state and Codex zero-iteration preflight"
+  },
+  "reproduce_command": [
+    "python3",
+    "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-repair4-qwl2miru/reproduce.py",
+    "/Users/aa/orca/workspaces/myskills/meta-intent-t9"
+  ],
+  "original_failure_history": "prior-supervisor-4.json copied unchanged; preceding repair commits remain ancestors; baseline-cli.json and notify-cli.json preserve this attempt red admissions",
+  "input_hashes": "input-hashes.json",
+  "limitations": [
+    "Scripted generated-project CLI fixtures, not actual T15\u2013T18 host dialogue proof.",
+    "Invalid JSON decision-input traceback remains the explicitly nonblocking baseline observation."
+  ],
+  "remaining": "Coordinator-owned fresh supervisor, Standards/Spec review and serialized integration gates.",
+  "report_path": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-repair4-qwl2miru/report.json"
+}

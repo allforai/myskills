@@ -1,0 +1,30 @@
+{
+  "candidate": "405705f97213397c4f8c53d7eb2e27c1df6c44ca",
+  "exit_code": 0,
+  "result": {
+    "fixture": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-malformed-feedback-kps3mrzz",
+    "passed": true,
+    "prior_ready_retained": false,
+    "results": [
+      {
+        "gate": "validate_bootstrap.py",
+        "exit": 1,
+        "stdout": "{\n  \"errors\": [\n    \"invalid_scope: /var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-malformed-feedback-kps3mrzz/.allforai/bootstrap/bootstrap-profile.json: workflow.json nodes must contain objects\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": ""
+      },
+      {
+        "gate": "check_decision_inputs.py",
+        "exit": 1,
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - invalid_scope: /var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-malformed-feedback-kps3mrzz/.allforai/bootstrap/bootstrap-profile.json: workflow.json nodes must contain objects\n",
+        "stderr": ""
+      },
+      {
+        "gate": "validate_unattended_readiness.py",
+        "exit": 1,
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:54:04.739536+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"invalid_scope\",\n      \"message\": \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-malformed-feedback-kps3mrzz/.allforai/bootstrap/bootstrap-profile.json: workflow.json nodes must contain objects\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": ""
+      }
+    ],
+    "restored_exit": 0
+  }
+}

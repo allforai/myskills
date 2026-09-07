@@ -1,0 +1,3 @@
+# User-authorized continuation
+
+The user clarified “并发完成之前那批开发票” and answered “y” to continuing repairs after the prior retry limit. Resume the same approved task set without redesign or duplicate tickets. T9 receives two additional business repair attempts (maximum total 4); preserve the two already consumed attempts and all rejection history. Other task budgets, acceptance, model policy, cap 3, worktree isolation and side-effect limits remain unchanged. This explicit continuation supersedes the prior stopped execution report, not its historical evidence. T10–T18 return to pending and remain dependency-blocked until verified producer markers exist. No push/install/tracker changes are authorized.

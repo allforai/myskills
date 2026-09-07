@@ -1,7 +1,7 @@
 {
   "name": "superstorm",
   "description": "Large-goal autonomous pipeline: decompose into modules, front-load decisions via brainstorming, then autonomously design → closed-loop validate → plan → reverse-review → orchestrate → concurrently execute with anti-fake-completion supervision. Global command /superstorm. Also ships /cross-exam (completion audit) and /product-review (product-thinking critique, advice only).",
-  "version": "0.29.0",
+  "version": "0.33.0",
   "author": {
     "name": "dv"
   }

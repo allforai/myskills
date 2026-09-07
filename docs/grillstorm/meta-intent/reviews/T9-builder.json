@@ -1,0 +1,23 @@
+{
+  "source": "builder narrative, not independent acceptance",
+  "message": {
+    "id": "msg_f503f7f5d753",
+    "run_id": "run_a2a61121adfb",
+    "from_handle": "term_cfa2291d-192e-418d-86e7-d2540721dd16",
+    "to_handle": "run:run_a2a61121adfb",
+    "subject": "T9 candidate f00c61b1 ready for supervision",
+    "body": "Built T9 in candidate f00c61b1c349b6c5c1ba167851f018b732c5269b on frozen base cadac5525abf2407fdcd0588252336cba8f60a01, changing exactly the 11 listed owned paths to connect goal-scoped requirements, canonical and Codex planning guidance, copied runtime helpers and shared CLI gates, with a clean worktree and no scope expansion. Vertical red-before-green evidence is in the tool transcript; python3 -m pytest claude/meta-skill/tests/unit/test_bootstrap_scope.py -q passed 20 tests, python3 -m pytest claude/meta-skill/tests/unit/test_validate_bootstrap.py claude/meta-skill/tests/unit/test_validate_unattended_readiness.py claude/meta-skill/tests/unit/test_check_artifacts.py claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py -q passed 63 tests, git diff --check passed, the automatic commit hook independently passed 120 unit tests plus compilation and all its contract validators after one repaired wording-contract rejection, and the runnable fixture /var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/meta-intent-t9-cli-ixhhsopy showed all three copied gates changing from exit 1 pending to exit 0 after explicit scripted confirmation and remaining stable without source mutation or whole-product baseline creation. Fresh supervision, two-axis review, root integration and actual host dialogue proof remain outstanding; the stock skill-creator quick_validate command rejects the pre-existing Claude argument-hint/version frontmatter although repository skill validation passes, and this candidate does not implement later product-confirmation, scoped runtime scheduling or freshness tasks and is not claimed verified.",
+    "type": "worker_done",
+    "priority": "normal",
+    "thread_id": null,
+    "payload": "{\"taskId\":\"task_41c0e6f17ea6\",\"dispatchId\":\"ctx_823a0469b439\",\"outcome\":\"succeeded\",\"filesModified\":[\"claude/meta-skill/knowledge/bootstrap-audits.md\",\"claude/meta-skill/knowledge/bootstrap-planning.md\",\"claude/meta-skill/knowledge/node-spec-template.md\",\"claude/meta-skill/scripts/check_decision_inputs.py\",\"claude/meta-skill/scripts/orchestrator/product_intent.py\",\"claude/meta-skill/scripts/orchestrator/validate_bootstrap.py\",\"claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py\",\"claude/meta-skill/skills/bootstrap/SKILL.md\",\"claude/meta-skill/tests/unit/test_bootstrap_scope.py\",\"codex/meta-skill/knowledge/product-inference.md\",\"codex/meta-skill/skills/bootstrap.md\"]}",
+    "read": 0,
+    "sequence": 282,
+    "created_at": "2026-09-07T09:19:20Z",
+    "delivered_at": null,
+    "sender_pane_key": "1bf3ece8-073d-4d2d-a692-12bb3ba1dd60:02b08656-a363-45ba-a07b-aaab0eafe08c",
+    "delivery_contract": "current_delivery"
+  },
+  "candidate": "f00c61b1c349b6c5c1ba167851f018b732c5269b",
+  "scope_admission": "11 exact allowed paths, clean candidate worktree"
+}

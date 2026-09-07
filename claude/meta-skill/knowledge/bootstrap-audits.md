@@ -295,7 +295,7 @@ on the corrected graph (decision coverage may have shifted) before finalizing th
 
 Generation-before: each decision is gathered BEFORE the node that consumes it (the node
 references it via `decision_inputs`). When the queue is empty, every decision artifact is
-on disk and wired — proceed to the final invariant gate. `/run` will be fully autonomous.
+on disk and wired — proceed to the final invariant gate. `/run` asks its Run Policy questions once before the first node and is fully autonomous after that.
 
 ---
 

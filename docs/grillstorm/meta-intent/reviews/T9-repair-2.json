@@ -1,0 +1,14 @@
+{
+  "task": "T9",
+  "candidate": "c93fc9419db540277aa6925aae0b588f3b7a6128",
+  "business_retry": 2,
+  "family": "T9 malformed workflow public-boundary failure (same family as T9-SUP-001; T9-S2-F1)",
+  "evidence": [
+    "reviews/T9-supervisor-2.json",
+    "reviews/T9-diagnosis.md",
+    "reviews/T9-malformed-feedback-red.json"
+  ],
+  "repro": "reviews/probes/T9-malformed-node.py",
+  "repair": "Validate workflow object, nodes array and node object shapes BEFORE every unsafe consumer traversal in all three owned public gates. An existing shared blocker must stop unsafe shape-dependent checks while preserving a typed result and current --write-report not_ready. Do not substitute empty success. Cover at least nodes:null, nodes:[null], nodes:[string], malformed root/container shapes using public copied-CLI tests and valid corrected reentry; preserve source, requirements, unrelated completed branches and scope refusal. Inspect the whole same-class consumer path rather than only the named null example.",
+  "scope": "No new paths, interfaces, product choices or later task implementation; ordinary bug repair."
+}

@@ -1,0 +1,267 @@
+{
+  "task_id": "T9",
+  "role": "supervisor",
+  "spec_revision": 2,
+  "task_revision": 1,
+  "workflow_revision": 2,
+  "task": {
+    "id": "T9",
+    "title": "meta-skill：局部需求确认后进入范围匹配的工作流",
+    "issue": 9,
+    "requirements": [
+      "R01",
+      "R02",
+      "R17",
+      "R18",
+      "R30"
+    ],
+    "touched_paths": [
+      "claude/meta-skill/skills/bootstrap/SKILL.md",
+      "claude/meta-skill/knowledge/bootstrap-planning.md",
+      "claude/meta-skill/knowledge/bootstrap-audits.md",
+      "claude/meta-skill/knowledge/node-spec-template.md",
+      "claude/meta-skill/scripts/check_decision_inputs.py",
+      "claude/meta-skill/scripts/orchestrator/product_intent.py",
+      "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+      "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+      "codex/meta-skill/skills/bootstrap.md",
+      "codex/meta-skill/knowledge/product-inference.md",
+      "claude/meta-skill/tests/unit/test_validate_bootstrap.py",
+      "claude/meta-skill/tests/unit/test_validate_unattended_readiness.py",
+      "claude/meta-skill/tests/unit/test_check_artifacts.py",
+      "claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py",
+      "claude/meta-skill/tests/unit/test_bootstrap_scope.py"
+    ],
+    "acceptance_cmd": "python3 -m pytest claude/meta-skill/tests/unit/test_bootstrap_scope.py -q",
+    "depends_on": [],
+    "implements": [
+      "I-scope"
+    ],
+    "requires": [],
+    "resources": [],
+    "reality_gate": false,
+    "validation_level": "task",
+    "blast_radius": "integration",
+    "module": "intent",
+    "spec_revision": 2,
+    "required_outputs": [
+      "claude/meta-skill/tests/unit/test_bootstrap_scope.py"
+    ],
+    "artifact_contract": {
+      "schema_version": 1,
+      "task_id": "T9",
+      "path_rules": [
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/skills/bootstrap/SKILL.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/bootstrap-planning.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/bootstrap-audits.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/node-spec-template.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/check_decision_inputs.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/product_intent.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/skills/bootstrap.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/knowledge/product-inference.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_validate_bootstrap.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_validate_unattended_readiness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_check_artifacts.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_bootstrap_scope.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        }
+      ],
+      "required_outputs": [
+        "claude/meta-skill/tests/unit/test_bootstrap_scope.py"
+      ],
+      "forbidden_paths": [
+        "docs/grillstorm/**"
+      ],
+      "max_files_changed": 30,
+      "acceptance_cmd_sha256": "103ad6e810da5ba2ad27ce09d52639917280496a21d7619bd5435ae7008456f2",
+      "interface_assertions": []
+    },
+    "workflow_revision": 2,
+    "dispatch_inputs": [
+      {
+        "path": "program-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "modules/intent-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/catalog.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/intent.md",
+        "focus": "T9"
+      },
+      {
+        "path": "sources/issue-8.json",
+        "focus": "complete"
+      },
+      {
+        "path": "sources/issue-9.json",
+        "focus": "complete"
+      },
+      {
+        "path": "reviews/failure-classification.json",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/dispatch-contract.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/scenario-matrix.json",
+        "focus": "complete"
+      }
+    ]
+  },
+  "input_hashes": {
+    "program-spec.md": "b860a0a357babf5264196ab57edb360fd6c647952324b49360cfa7ed02827237",
+    "modules/intent-spec.md": "5a564dc8af7021342530e108df7558bf65afa6567a8cccb89f00706a5987eee4",
+    "tasks/catalog.md": "64498f549e3abe7f35cd07d7fcb72cfd00a733540bddb292d5a8e8af11a8d3a0",
+    "tasks/intent.md": "be7cc1a0894963152224bccf4d52a62357aa0ca14d39117fdf943de5bfa6aeeb",
+    "sources/issue-8.json": "09a6d044aaf4ec293f75ba3d5b51a1a8576435b270764f9cbcdf6ec0e7dfc773",
+    "sources/issue-9.json": "aaf6ca7617c4711156c43e978d358d7e461ea62da624ae456c38f50f216c45c6",
+    "reviews/failure-classification.json": "009a855705833537679250e9f6822a9e7fa4f7adf0503a0b503995800dc2ec07",
+    "tasks/dispatch-contract.md": "b1adb504b324acbe783870a38d1d9a1ff6bd8e13816205e008e9db0aa734b02d",
+    "tasks/scenario-matrix.json": "d8d3b9dd401a961375bafa3b684d1f912155dd7a6e08d0e24535d1b0818bf9a5"
+  },
+  "prompt": "Read every dispatch_inputs file completely; task document focus is section T9. Resolve paths under /Users/aa/orca/workspaces/myskills/grillstorm-meta-intent/docs/grillstorm/meta-intent. These are mandatory approved scope, purpose, failure, runtime and review obligations, not optional background. Use source body AND comments. Preserve exact frozen artifact contract. Builders use official TDD; evaluators execute the complete scenario matrix on actual candidate-loaded Claude and Codex with oracle withheld from subjects. Supervisors independently rerun acceptance and inspect real evidence; no executor narrative. Standards/Spec review the fixed candidate diff on their separate axes. No marker/merge/main/tracker/push/install by workers. Follow dispatch-contract.md for completion and side effects. Controller supplies candidate/base SHA and assigned worktree; do not change referenced frozen control artifacts."
+}

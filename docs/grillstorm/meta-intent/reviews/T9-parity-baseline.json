@@ -1,0 +1,27 @@
+{
+  "reason": "Investigate reported cross-platform check failure without expanding installer/version scope",
+  "command": "python3 shared/scripts/orchestrator/check_codex_meta_skill_parity.py",
+  "baseline": "cadac5525abf2407fdcd0588252336cba8f60a01",
+  "candidate": "c93fc9419db540277aa6925aae0b588f3b7a6128",
+  "same_output": true,
+  "results": [
+    {
+      "workdir": "/Users/aa/orca/workspaces/myskills/grillstorm-meta-intent",
+      "chunk_id": "15074b",
+      "wall_time_seconds": 0.000004334,
+      "exit_code": 1,
+      "original_token_count": 125,
+      "output": "{\n  \"passed\": false,\n  \"errors\": [\n    \"could not determine Claude/Codex meta-skill versions\",\n    \"flow template does not use Codex highest-permission execution\",\n    \"install.sh does not bundle canonical skills\",\n    \"install.sh does not bundle canonical knowledge\",\n    \"install.sh does not install into the local Codex skills directory\",\n    \"install.sh does not record installation source metadata\",\n    \"install.sh usage text does not mention the Codex non-stop driver\"\n  ],\n  \"warnings\": []\n}\n"
+    },
+    {
+      "workdir": "/Users/aa/orca/workspaces/myskills/meta-intent-t9",
+      "chunk_id": "ea42c2",
+      "wall_time_seconds": 0.000001625,
+      "exit_code": 1,
+      "original_token_count": 125,
+      "output": "{\n  \"passed\": false,\n  \"errors\": [\n    \"could not determine Claude/Codex meta-skill versions\",\n    \"flow template does not use Codex highest-permission execution\",\n    \"install.sh does not bundle canonical skills\",\n    \"install.sh does not bundle canonical knowledge\",\n    \"install.sh does not install into the local Codex skills directory\",\n    \"install.sh does not record installation source metadata\",\n    \"install.sh usage text does not mention the Codex non-stop driver\"\n  ],\n  \"warnings\": []\n}\n"
+    }
+  ],
+  "status": "preexisting failed diagnostic, not a passing gate",
+  "disposition": "Keep seven failures visible; do not alter unrelated versions/installer/permissions. Required real-host semantic parity remains mandatory at T15-T18."
+}

@@ -13,6 +13,7 @@ Design the smallest node graph that achieves the user's goals for *this* project
 - Parallelize siblings that only read a shared predecessor (`alignment_refs`); use `hard_blocked_by` only for true data dependencies.
 - Goal combination order: reverse-concept → analyze → implement/translate/rebuild/create → demo → verify/tune/quality-checks → launch-prep.
 - Separate outcome from route. When the user's named means (an engine, a module, a requested node) may not be the best route to the underlying product outcome, record it as a Phase A decision input with the alternative and let the human choose. Never silently swap the route.
+  Exception, and the only one: art dimension is a pipeline capability limit, not a route. This pipeline produces 2D / 2.5D assets only because 3D assets cannot be generated; `dimension=3d` and skeletal-animation requests are remapped to 2D frame animation (see `bootstrap-art-pipeline.md`). That remap is never a Phase A option, but it is stated to the user once in the Phase A summary — a recorded remap that nobody was told about is still a silent swap.
 
 ## Goal and requirement scope
 

@@ -1,0 +1,23 @@
+{
+  "source": "builder narrative, not independent acceptance",
+  "message": {
+    "id": "msg_242888617dfc",
+    "run_id": "run_a2a61121adfb",
+    "from_handle": "term_2cc644e7-76d7-4d37-a722-106f948ff9ef",
+    "to_handle": "run:run_a2a61121adfb",
+    "subject": "T9 repair candidate 405705f9 committed",
+    "body": "Committed T9 caller-boundary repair as 405705f97213397c4f8c53d7eb2e27c1df6c44ca with a clean worktree and four owned changed paths; the commit records the confirmed cause of traversing malformed workflow nodes before or despite shared validation rejection. Reproduced the original red loop and 18 failing regression cases before repair, then passed 70 focused tests, 63 directly affected tests, four decision-input tests, both controller probes and all 90 supervisor CLI invocations with typed rejection, current not_ready reports, corrected reentry and preserved authority/unrelated completed work; native hooks remained enabled and passed their 170-test run plus validators, with exact commands, paths, hashes and raw probe results in the report. Fresh supervisor, independent Standards/Spec, root integration and later actual-host proof remain required; the seven documented baseline parity failures and unrelated metadata/version/installer/permission files remain untouched, so this is a candidate rather than a task-verification claim.",
+    "type": "worker_done",
+    "priority": "normal",
+    "thread_id": null,
+    "payload": "{\"taskId\":\"task_6a1d54e9c99b\",\"dispatchId\":\"ctx_6c534a3453b3\",\"outcome\":\"succeeded\",\"filesModified\":[\"claude/meta-skill/scripts/check_decision_inputs.py\",\"claude/meta-skill/scripts/orchestrator/validate_bootstrap.py\",\"claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py\",\"claude/meta-skill/tests/unit/test_bootstrap_scope.py\"],\"reportPath\":\"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-9b4zq2sk/repair-evidence.json\"}",
+    "read": 0,
+    "sequence": 292,
+    "created_at": "2026-09-07T09:52:40Z",
+    "delivered_at": null,
+    "sender_pane_key": "718b0c00-7f7b-4688-9062-37c8aa4ee3f6:2507cef6-7155-4e37-a415-fe507a9766e0",
+    "delivery_contract": "current_delivery"
+  },
+  "raw_report_path": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-9b4zq2sk/repair-evidence.json",
+  "scope_admission": "11 cumulative declared paths; clean fixed candidate"
+}

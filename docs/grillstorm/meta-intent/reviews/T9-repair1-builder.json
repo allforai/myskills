@@ -1,0 +1,21 @@
+{
+  "source": "builder report, not independent verdict",
+  "message": {
+    "id": "msg_0a9da72beffc",
+    "run_id": "run_a2a61121adfb",
+    "from_handle": "term_2f8241de-6fb8-44cb-9b87-7f4eb696909b",
+    "to_handle": "run:run_a2a61121adfb",
+    "subject": "T9 repair committed c93fc941",
+    "body": "Committed candidate c93fc9419db540277aa6925aae0b588f3b7a6128 (parent f00c61b1c349b6c5c1ba167851f018b732c5269b, fixed review base cadac5525abf2407fdcd0588252336cba8f60a01) in the four listed owned files: malformed workflow scans now return typed failure, bootstrap preserves diagnostics, and every new scoped node needs requirement references while unrelated completed history remains valid. Red/green evidence in terminal: python3 -m pytest claude/meta-skill/tests/unit/test_bootstrap_scope.py -q -k null_workflow failed 2 then passed 2 after also guarding downstream bootstrap checks; the same command with -k new_unscoped --tb=short failed 12 then passed 12; final focused command without -k passed 42; python3 -m pytest claude/meta-skill/tests/unit/test_validate_bootstrap.py claude/meta-skill/tests/unit/test_validate_unattended_readiness.py claude/meta-skill/tests/unit/test_check_artifacts.py claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py -q passed 63; python3 -m pytest shared/scripts/orchestrator/test_check_decision_inputs.py -q passed 4; python3 claude/meta-skill/scripts/orchestrator/validate_skills.py claude/meta-skill/skills and git diff --check exited 0; commit hook automatically passed 142 unit tests and native contract/wiring validators; copied readiness fixtures at /var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-repair-reentry-rmz0dtck show ready/not_ready/ready with source and requirements preserved on both adapters, and the exact controller T9-unscoped-node probe now rejects through all three gates at /var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/meta-intent-t9-unscoped-1jg94ur1. Fresh supervisor, Standards/Spec and root integration remain (not task verified), actual host scenario proof belongs to T15-T18, system quick_validate preexisting Claude-key incompatibility remains recorded without metadata removal, and python3 shared/scripts/orchestrator/check_codex_meta_skill_parity.py still exits 1 with seven version/installer/permission failures reproduced identically on archived f00c61b at /var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-baseline-parity-wxd7dwd3; working tree is clean, and the preceding completion command was rejected locally for mixing payload flags so no completion had been recorded.",
+    "type": "worker_done",
+    "priority": "normal",
+    "thread_id": null,
+    "payload": "{\"taskId\":\"task_64a5e1917c9c\",\"dispatchId\":\"ctx_500dd2ae19bb\",\"outcome\":\"succeeded\",\"filesModified\":[\"claude/meta-skill/knowledge/bootstrap-planning.md\",\"claude/meta-skill/scripts/orchestrator/product_intent.py\",\"claude/meta-skill/scripts/orchestrator/validate_bootstrap.py\",\"claude/meta-skill/tests/unit/test_bootstrap_scope.py\"]}",
+    "read": 0,
+    "sequence": 286,
+    "created_at": "2026-09-07T09:35:54Z",
+    "delivered_at": null,
+    "sender_pane_key": "d98d4477-f68a-4703-bace-c77920f15ca6:eca29dc8-5cdb-4ccd-9d18-f65499b708a5",
+    "delivery_contract": "current_delivery"
+  }
+}

@@ -19,10 +19,15 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
 {
   "schema_version": 1,
   "run_id": "stable UUID",
+  "ledger_version": 2,
   "target": "被盘问对象（人类可读名）",
+  "target_backend": {"kind": "real|mock|mixed", "how_known": "intake 时用户确认 + 普查官 mock_layers"},
   "baseline": "superstorm-registry|spec|readme|user|none",
   "started": "YYYY-MM-DD",
   "examiner_is_author": false,
+  "model_policy": {"observation": "sonnet", "judgment": "session",
+                   "confirmed_by_user": "实测官用 sonnet 就行，普查官别省", "confirmed_at": "2026-09-07T15:10:00+08:00",
+                   "history": [{"observation": "haiku", "confirmed_by_user": "…", "confirmed_at": "…"}]},
   "requirements": [
     {"id": "R-09", "text": "退款可追踪"}
   ],
@@ -42,6 +47,11 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
       "leak_point": "接口返回无幂等键，测试名单里无 duplicate 字样",
       "medium": "runtime|code|ledger",
       "agent_model": "sonnet（取证该 entry 的子 agent 模型字面量；Codex 如 gpt-5.6-luna）",
+      "agent_task": {"output_file": "子 agent transcript 路径（Claude Code 的 Agent 工具结果里给出；Codex 记 agent id）"},
+      "probed_at": "2026-09-07T11:32:08+08:00",
+      "states_to_capture": ["派发时要求的状态清单（runtime 必写，code 可空）"],
+      "served_by": {"host": "localhost:3000", "process": "node next dev (pid 4242)", "mock_layers": [],
+                    "checked_absent": ["msw 在 devDependencies，service worker 未注册"]},
       "evidence": {
         "dir": "evidence/q03/",
         "files": ["q03-01-first-refund.png", "q03-02-second-refund.png"],
@@ -69,9 +79,30 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
 }
 ```
 
-- `entries[].agent_model` 新 entry 必填（分层前的旧 run 可缺，渲染器不拒）：派发取证的子 agent 实际用的模型字面量（实测官取证档、视觉 reviewer
-  判断档；harness 不能按 agent 指定模型时记会话模型名加 `(session)`）。顶层 `census_model` 与
-  `patterns[].enumerator_model` 同理。档位表见 SKILL.md "模型分层"；这些字段让报告读者能核对
+- **`ledger_version: 2`**（新 run 必写；旧 ledger 缺此键按 1 渲染，不受下列门槛影响）。v2 的证据内容门写死在渲染器里：
+  - `code` 介质的摘录文件至少含一个 `路径:行号`；"看过了没问题"这种 note 拒渲。
+  - `runtime` 介质至少一张截图或一个输出文件；entry 记 `states_to_capture`（派发时要的状态清单），证据文件数
+    不少于状态数；必记 `served_by`（请求打到的 host、服务进程、**正在生效**的 mock 层列表——MSW service worker
+    已注册 / json-server / miragejs / nock 在监听 / 显式 stub 开关已打开，无则空数组；检查过但未生效的层写
+    `checked_absent`，不进 `mock_layers`）。**`mock_layers` 非空的 runtime 不能判 `done`**（gap 照记：
+    mock 下都坏，真后端只会更坏），只能 unprovable 或 gap。
+  - `unprovable` 的原因文件至少 40 字（尝试了什么、卡在哪）。
+  - `agent_task.output_file` 存在时，transcript 必须能证明证据是实测官写的：证据目录里每个文件名都出现在
+    transcript 里，**或** transcript 提到过该证据目录路径（脚本循环生成的文件名不会逐个出现在 transcript 里，
+    但写入目录会）；两者都没有才拒渲。文件不在（换机器、临时目录已清）只在报告标"transcript 不可核"，不拒渲。
+  - 重派前首派产物挪到 `evidence/qNN.rejected-N/`，不被任何 entry 引用；渲染器只读 entry 引用的目录。
+    重派后落账的 entry 带 `redispatched: N`（可选，纯记录）；首派是降档模型时再带 `first_agent_model`。
+  - `probed_at` 每条必写（ISO 8601）；渲染器在总览打印首末问时间与最短间隔，间隔不足 60 秒的 runtime 相邻问点名。
+- 顶层 `target_backend`：intake 安全确认时一并确认开发实例的后端是真实服务、mock 还是混合，记 `kind` 与依据；
+  `mock` 或 `mixed` 时报告总览点明"本 run 的 runtime 裁决经过 mock 层"。
+- 顶层 `model_policy`（可选；缺省 = 全部继承会话模型）：定靶时用户选择的成本策略。`observation` 是取证类角色
+  （实测官、枚举官、扫全实测官）用的模型字面量或 `"session"`；`judgment` 固定 `"session"`（普查官、视觉
+  reviewer、复核官不可降）；`confirmed_by_user` 用户原话；`confirmed_at` ISO 8601；`history[]` 续盘改口时推入的旧值。渲染器在总览点明
+  "本 run 取证类子 agent 用 X，用户于 T 确认"；`judgment` 不是 `"session"` 时总览点名为非法策略（不改任何计数，
+  但报告读者会看到普查或复核被降过档）。模型名只住在这里，不住在技能文本里。
+- `entries[].agent_model` 新 entry 必填（分层前的旧 run 可缺，渲染器不拒）：派发取证的子 agent 实际用的模型字面量
+  （继承会话时记会话模型名加 `(session)`；harness 不能按 agent 指定模型时同样）。顶层 `census_model` 与
+  `patterns[].enumerator_model` 同理。策略见 SKILL.md "模型"；这些字段让报告读者能核对
   "这条裁决的证据是谁取的"，渲染器不据此改任何计数。
 - 顶层 `surfaces[]`（覆盖分母，新 run 必填；旧 ledger 可缺，渲染器不据此拒渲）：普查官返回的操作面
   **原样**入账（`dead_contracts` 也各作一行）。`facets[].surface_ids` 写该面包含的 surface id；
@@ -86,7 +117,8 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
   （旧字段 `requirement_ref` 字符串仍认，按分隔符切 token 匹配）。渲染器出"需求覆盖"专节：一条需求有裁决，
   当且仅当某条被采信 entry 引用了它；无裁决的按"落在哪个面、该面盘没盘"点名，没落任何面的单独点名。
 - 顶层可选 `examiner_is_author`：盘问官==交付作者时为 true，渲染器在总览点明"作者自审，
-  bias-guard 生效"，续盘时该条件不丢。
+  bias-guard 生效"，续盘时该条件不丢。**没写也躲不掉**：渲染器查 run 目录所在仓库，当前 git 用户是最近 50 次
+  提交的作者之一而 ledger 未标，总览照样点明"按作者自审处理"——自审是事实，不是申报项。
 - `facets[].risk` 可选，只对 `not_examined` 面有意义：渲染器按 level 排序未盘问声明并打印 why；
   缺 risk 的未盘问面排在最后并标"未评估风险"。
 - `evidence.dir` 相对 run 目录；**每个 entry 必有非空 evidence 目录**（spec §6.6）：
@@ -136,7 +168,7 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
 
 ## completion-report.md（仅由 scripts/render_report.py 渲染，禁止口述生成）
 
-依次：总览（面/问/四类裁决计数，实证完成按介质分列"运行时 / 代码 / 台账"，旅程裁决计数与普通裁决计数
+依次：总览（面/问/四类裁决计数——"盘问 N 面"只数有 done|gap|drift 的面，仅无法自证的面另计；实证完成按介质分列"运行时 / 代码 / 台账"，旅程裁决计数与普通裁决计数
 分列；有 `surfaces` 时加"操作面 N 个，裁决触及 M 个"；baseline=none 时声明关闭的镜头）→
 需求覆盖（有 `requirements` 时："基准 N 条，有裁决 M 条，无裁决 K 条"，逐条列裁决或点名落在哪个面）→
 逐面完成度（只含普通 entry，"X 问中 Y 问实证通过 · 操作面 K 个，裁决触及 T 个，未触及逐个点名"，
@@ -162,6 +194,12 @@ N 步 / 卡在第 K 步加卡死类型 / 绕过的 waypoint / 无法自证原因
    旅程 drift 缺 `missed_waypoints` 同样拒渲并点名。
    旅程 entry 的 `steps[].evidence` 每步必写且文件必须真在 `evidence.dir` 下，`terminal_state.snapshot`
    同理；缺一个整条拒渲并点名缺的文件——编造的步骤列表过不了渲染器。
-5. 覆盖没有自报通道：facet 的"盘过"按被采信 entry 推导；操作面的"触及"只认被采信 entry 引用的、
+5. 目录非空不是证据（v2）：代码摘录要有 路径:行号，运行时要有截图或输出且不少于要求的状态数并记请求去向，
+   经 mock 层的 runtime 不得 done，无法自证要有像样的原因；记了 transcript 的 entry，证据文件名必须出现在
+   transcript 里。
+6. 覆盖的**链接**仍是盘问官声明：entry 的 `surfaces` / `requirement_refs` 说的是"这份证据我归到哪个面、哪条需求"，
+   渲染器核对 id 存在、只认被采信 entry，不核对证据内容确实触及了那个面——这是已知残余，报告读者据此理解
+   "触及"二字的分量。
+7. 覆盖没有自报通道：facet 的"盘过"按被采信 entry 推导；操作面的"触及"只认被采信 entry 引用的、
    且在 `surfaces[]` 登记过的 id；需求的"有裁决"只认被采信 entry 的引用。零证据的面、未登记的
    面 id、没人引用的需求，一律渲染为未盘问 / 未触及 / 无裁决并逐个点名，不进任何计数。
