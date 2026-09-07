@@ -11,11 +11,18 @@ def validate_scope(project_root, workflow):
     """
     root = Path(project_root)
     path = root / ".allforai/bootstrap/bootstrap-profile.json"
-    scoped_nodes = any("requirement_refs" in node for node in workflow.get("nodes", []))
-    if not path.exists():
-        return ([{"code": "invalid_scope", "message": "Scoped nodes require bootstrap-profile.json"}]
-                if scoped_nodes else [])
     try:
+        if not isinstance(workflow, dict):
+            raise ValueError("workflow.json must be an object")
+        nodes = workflow.get("nodes", [])
+        if not isinstance(nodes, list):
+            raise ValueError("workflow.json nodes must be a list")
+        if any(not isinstance(node, dict) for node in nodes):
+            raise ValueError("workflow.json nodes must contain objects")
+        scoped_nodes = any("requirement_refs" in node for node in nodes)
+        if not path.exists():
+            return ([{"code": "invalid_scope", "message": "Scoped nodes require bootstrap-profile.json"}]
+                    if scoped_nodes else [])
         profile = json.loads(path.read_text(encoding="utf-8"))
         scope = profile.get("task_scope")
         if "task_scope" not in profile and "task_route" not in profile:
@@ -98,7 +105,12 @@ def validate_scope(project_root, workflow):
         for node in workflow.get("nodes", []):
             if node.get("node_id") in retained:
                 continue
-            for ref in node.get("requirement_refs", []):
+            refs = node.get("requirement_refs")
+            if not isinstance(refs, list) or not refs:
+                blockers.append({"code": "scope_requirement_unwired", "node_id": node.get("node_id"),
+                                 "message": f"{node.get('node_id')}: new scoped work needs non-empty requirement_refs"})
+                continue
+            for ref in refs:
                 if ref not in scope["requirement_refs"] or ref["path"] not in node.get("decision_inputs", []):
                     blockers.append({"code": "scope_requirement_unwired", "node_id": node.get("node_id"),
                                      "message": "Node requirement must be in task_scope and consumed through decision_inputs"})

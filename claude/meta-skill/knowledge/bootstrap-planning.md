@@ -77,7 +77,10 @@ product approval, and the local record does not replace full product discovery.
 
 For each local requirement, freely design implementation, documentation and
 verification responsibilities. Nodes may combine these obligations or divide
-them across dependencies. On each consuming node emit `requirement_refs`,
+them across dependencies. Every new node in this scoped workflow, including
+a prerequisite, must consume at least one in-scope requirement; absent or empty
+references cannot authorize extra work. Retained unrelated completed branches
+keep their historical contracts. On each consuming node emit `requirement_refs`,
 `responsibilities` (the applicable entries from `implementation`, `documentation`,
 `verification`) and the reference paths in `decision_inputs`. The Node-spec
 mirrors these fields and explains the actual code boundary, relevant document

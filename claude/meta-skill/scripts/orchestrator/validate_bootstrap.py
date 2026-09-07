@@ -1342,20 +1342,23 @@ def main():
 
     wf_path = os.path.join(bdir, "workflow.json")
     if os.path.exists(wf_path):
-        errors.extend(validate_workflow(wf_path))
+        workflow_errors = validate_workflow(wf_path)
+        errors.extend(workflow_errors)
         try:
             errors.extend(f"{b['code']}: {b['message']}" for b in validate_scope(
                 _project_root_from_bootstrap_dir(bdir), _load_json(wf_path)))
         except (OSError, ValueError):
             pass  # validate_workflow already reports parse errors
-        errors.extend(validate_node_spec_coverage(bdir))
-        errors.extend(validate_node_spec_contracts(bdir))
-        errors.extend(validate_approval_records(bdir))
-        errors.extend(validate_app_design_flow(bdir))
-        errors.extend(validate_game_2d_production_flow(bdir))
-        errors.extend(validate_canvas2d_game_client_profile_flow(bdir))
-        errors.extend(validate_game_visual_acceptance_standard_flow(bdir))
-        errors.extend(validate_mobile_ui_coverage(bdir))
+        # Cross-node checks require a valid workflow schema.
+        if not workflow_errors:
+            errors.extend(validate_node_spec_coverage(bdir))
+            errors.extend(validate_node_spec_contracts(bdir))
+            errors.extend(validate_approval_records(bdir))
+            errors.extend(validate_app_design_flow(bdir))
+            errors.extend(validate_game_2d_production_flow(bdir))
+            errors.extend(validate_canvas2d_game_client_profile_flow(bdir))
+            errors.extend(validate_game_visual_acceptance_standard_flow(bdir))
+            errors.extend(validate_mobile_ui_coverage(bdir))
     else:
         sm_path = os.path.join(bdir, "state-machine.json")
         if os.path.exists(sm_path):

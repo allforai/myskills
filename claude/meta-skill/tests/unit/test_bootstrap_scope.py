@@ -68,9 +68,9 @@ def project(root, *, confirmed=False, documents=False, host="claude"):
     return requirement
 
 
-def gate(root, name):
+def gate(root, name, *options):
     arg = root / ".allforai/bootstrap" if name == "validate_bootstrap.py" else root
-    return subprocess.run([sys.executable, str(root / ".allforai/bootstrap/scripts" / name), str(arg)],
+    return subprocess.run([sys.executable, str(root / ".allforai/bootstrap/scripts" / name), str(arg), *options],
                           text=True, capture_output=True, cwd=root)
 
 
@@ -242,7 +242,8 @@ def test_missing_profile_cannot_disable_scope_checks_for_generated_nodes(tmp_pat
 
 @pytest.mark.parametrize("documents", [False, True])
 @pytest.mark.parametrize("host", ["claude", "codex"])
-def test_confirmed_local_change_reuses_decision_and_preserves_unrelated_work(tmp_path, documents, host):
+@pytest.mark.parametrize("historical_refs", ["present", "absent", "empty"])
+def test_confirmed_local_change_reuses_decision_and_preserves_unrelated_work(tmp_path, documents, host, historical_refs):
     project(tmp_path, confirmed=True, documents=documents, host=host)
     workflow_path = tmp_path / ".allforai/bootstrap/workflow.json"
     workflow = json.loads(workflow_path.read_text())
@@ -252,6 +253,10 @@ def test_confirmed_local_change_reuses_decision_and_preserves_unrelated_work(tmp
            "decision_inputs": [old_ref["path"]], "responsibilities": ["implementation"]}
     write(tmp_path, old_ref["path"], {"requirements": [{"id": "stock", "revision": 1, "status": "confirmed"}]})
     write(tmp_path, ".allforai/bootstrap/stock.json", {"status": "passed", "count": 3})
+    if historical_refs == "absent":
+        old.pop("requirement_refs")
+    elif historical_refs == "empty":
+        old["requirement_refs"] = []
     workflow["nodes"].append(old)
     workflow["transition_log"] = [{"node_id": "warehouse", "status": "completed"}]
     write(tmp_path, ".allforai/bootstrap/workflow.json", workflow)
@@ -263,3 +268,72 @@ def test_confirmed_local_change_reuses_decision_and_preserves_unrelated_work(tmp
         assert result.returncode == 0, (name, result.stdout, result.stderr)
     assert all(p.read_bytes() == content for p, content in before.items())
     assert not (tmp_path / ".allforai/product-concept/concept-baseline.json").exists()
+
+
+@pytest.mark.parametrize("host", ["claude", "codex"])
+def test_null_workflow_nodes_replaces_ready_report_and_allows_corrected_reentry(tmp_path, host):
+    project(tmp_path, confirmed=True, host=host)
+    workflow_path = tmp_path / ".allforai/bootstrap/workflow.json"
+    report_path = tmp_path / ".allforai/bootstrap/unattended-run-readiness.json"
+    original = workflow_path.read_bytes()
+    preserved = {p: p.read_bytes() for p in (tmp_path / REQUIREMENTS, tmp_path / "orders.py")}
+    ready = gate(tmp_path, "validate_unattended_readiness.py", "--write-report")
+    assert ready.returncode == 0, (ready.stdout, ready.stderr)
+    assert json.loads(report_path.read_text())["status"] == "ready"
+
+    write(tmp_path, ".allforai/bootstrap/workflow.json", {"nodes": None})
+    rejected = gate(tmp_path, "validate_unattended_readiness.py", "--write-report")
+    assert rejected.returncode == 1
+    assert not rejected.stderr, rejected.stderr
+    report = json.loads(rejected.stdout)
+    assert report["status"] == "not_ready"
+    assert {"code": "missing_workflow", "message": "workflow.json nodes must be a list"} in report["blockers"]
+    assert json.loads(report_path.read_text()) == report
+    bootstrap = gate(tmp_path, "validate_bootstrap.py")
+    assert bootstrap.returncode == 1
+    assert not bootstrap.stderr, bootstrap.stderr
+    assert json.loads(bootstrap.stdout)["passed"] is False
+    assert all(p.read_bytes() == content for p, content in preserved.items())
+
+    workflow_path.write_bytes(original)
+    corrected = gate(tmp_path, "validate_unattended_readiness.py", "--write-report")
+    assert corrected.returncode == 0, (corrected.stdout, corrected.stderr)
+    assert json.loads(report_path.read_text())["status"] == "ready"
+    assert gate(tmp_path, "validate_bootstrap.py").returncode == 0
+
+
+@pytest.mark.parametrize("host", ["claude", "codex"])
+@pytest.mark.parametrize("refs", [None, []], ids=["absent", "empty"])
+@pytest.mark.parametrize("name", ["validate_bootstrap.py", "validate_unattended_readiness.py", "check_decision_inputs.py"])
+def test_new_unscoped_work_is_rejected_but_scoped_prerequisite_can_reenter(tmp_path, host, refs, name):
+    project(tmp_path, confirmed=True, host=host)
+    workflow_path = tmp_path / ".allforai/bootstrap/workflow.json"
+    workflow = json.loads(workflow_path.read_text())
+    node = {"node_id": "prepare-export", "goal": "Prepare export prerequisite",
+            "capability": "implement", "exit_artifacts": [".allforai/bootstrap/preparation.json"]}
+    if refs is not None:
+        node["requirement_refs"] = refs
+    workflow["nodes"].append(node)
+    workflow["nodes"][0]["hard_blocked_by"] = [node["node_id"]]
+    spec_dir = tmp_path / ".allforai/bootstrap/node-specs"
+
+    def publish():
+        write(tmp_path, ".allforai/bootstrap/workflow.json", workflow)
+        for item in workflow["nodes"]:
+            (spec_dir / (item["node_id"] + ".md")).write_text(
+                "---\n" + json.dumps(item) + "\n---\n" + ATTENTION_CONTRACT_BODY)
+
+    publish()
+    before = {p: p.read_bytes() for p in (tmp_path / REQUIREMENTS, tmp_path / "orders.py")}
+    rejected = gate(tmp_path, name)
+    assert rejected.returncode == 1, (rejected.stdout, rejected.stderr)
+    assert "scope_requirement_unwired" in rejected.stdout
+    assert "prepare-export" in rejected.stdout
+    assert not rejected.stderr, rejected.stderr
+
+    node["requirement_refs"] = [REF]
+    node["decision_inputs"] = [REQUIREMENTS]
+    publish()
+    corrected = gate(tmp_path, name)
+    assert corrected.returncode == 0, (corrected.stdout, corrected.stderr)
+    assert all(p.read_bytes() == content for p, content in before.items())
