@@ -7,17 +7,31 @@
   "status": "running",
   "tasks": {
     "9": {
-      "status": "reviewing",
+      "status": "implementation_accepted",
       "candidate": "ea046abc8e0a479d736d332e5e5d15514d3ff294",
       "dependencies": [],
       "review_corrections": [
         "T9-SPEC-02"
+      ],
+      "integration_commit": "54ba9127a07506024700fde12ddd273f3690b963",
+      "proof_pending": [
+        15
       ]
     },
     "10": {
-      "status": "pending",
+      "status": "implementation_accepted",
       "dependencies": [
         9
+      ],
+      "base": "54ba9127a07506024700fde12ddd273f3690b963",
+      "candidate": "3f66d7acc367cdb39ee12ae10827c8d81298ae0a",
+      "findings": [
+        "question_identity_collision",
+        "retained_unrelated_product_nodes"
+      ],
+      "findings_resolved": true,
+      "proof_pending": [
+        15
       ]
     },
     "11": {
@@ -72,20 +86,16 @@
       ]
     }
   },
-  "active": [
-    {
-      "ticket": 9,
-      "task": "task_8840de57d86b",
-      "dispatch": "ctx_436f60922674",
-      "role": "standards"
-    },
-    {
-      "ticket": 9,
-      "task": "task_2dc3a7c9944a",
-      "dispatch": "ctx_0ce50dc4fcb4",
-      "role": "spec"
-    }
+  "active": [],
+  "completed": [
+    9,
+    10
   ],
-  "completed": [],
-  "historical_records": "../workflow-state.json tasks and ../reviews remain historical; no old acceptance reused"
+  "historical_records": "../workflow-state.json tasks and ../reviews remain historical; no old acceptance reused",
+  "completion_scope": "Implementation acceptance unlocks DAG; actual host proof and final tracker closure remain separate.",
+  "claude_host_available": {
+    "task": "task_83a7942a3a09",
+    "dispatch": "ctx_6a592f7a670e",
+    "scenario_proof": false
+  }
 }
