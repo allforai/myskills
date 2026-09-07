@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "protocol": "implement",
+  "authorization": "$implement 并发",
+  "main_base": "fa2447b20199fa6f8199cdbbe2c05692e283f08c",
+  "max_concurrency": 3,
+  "status": "running",
+  "tasks": {
+    "9": {
+      "status": "implementing",
+      "dependencies": []
+    },
+    "10": {
+      "status": "pending",
+      "dependencies": [
+        9
+      ]
+    },
+    "11": {
+      "status": "pending",
+      "dependencies": [
+        10
+      ]
+    },
+    "12": {
+      "status": "pending",
+      "dependencies": [
+        10
+      ]
+    },
+    "13": {
+      "status": "pending",
+      "dependencies": [
+        12
+      ]
+    },
+    "14": {
+      "status": "pending",
+      "dependencies": [
+        11,
+        13
+      ]
+    },
+    "15": {
+      "status": "pending",
+      "dependencies": [
+        9,
+        10
+      ]
+    },
+    "16": {
+      "status": "pending",
+      "dependencies": [
+        11
+      ]
+    },
+    "17": {
+      "status": "pending",
+      "dependencies": [
+        12,
+        13
+      ]
+    },
+    "18": {
+      "status": "pending",
+      "dependencies": [
+        14
+      ]
+    }
+  },
+  "active": [
+    {
+      "ticket": 9,
+      "task": "task_8df9e791c652",
+      "dispatch": "ctx_b3cb28beda42",
+      "base": "c1893395b8ea49084a6bbb9a63c671868d236a56"
+    }
+  ],
+  "completed": [],
+  "historical_records": "../workflow-state.json tasks and ../reviews remain historical; no old acceptance reused"
+}

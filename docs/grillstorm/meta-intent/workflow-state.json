@@ -7,7 +7,14 @@
   "workflow_revision": 2,
   "launch_revision": 1,
   "max_concurrency": 3,
-  "status": "incomplete",
+  "status": "implementing",
+  "dispatch_enabled": true,
+  "execution_protocol": "user-invoked implement with orchestration; prior grillstorm launch retained as history",
+  "current_execution_state": "replan-2/execution.json",
+  "replan_draft": "replan-2/README.md",
+  "synced_main_sha": "fa2447b20199fa6f8199cdbbe2c05692e283f08c",
+  "synced_integration_sha": "6e509173",
+  "retained_candidate_after_sync": "c1893395b8ea49084a6bbb9a63c671868d236a56",
   "integration_ref": "j08069099777/grillstorm-meta-intent",
   "tasks": {
     "T9": {
@@ -205,5 +212,5 @@
   "completed": [],
   "integration_sha": "ad69a0cd45486d214dc62f8e8ebdc7ff93c784bb",
   "terminal_report": "execution-report-resume-1.md",
-  "resume_requires": "Additional user direction for a repair cycle beyond four consumed business repairs; do not reset history."
+  "resume_requires": "User approved revised work with $implement 并发. Current implementation DAG is replan-2/execution.json; old launch, task records and retries are historical, not current acceptance."
 }
