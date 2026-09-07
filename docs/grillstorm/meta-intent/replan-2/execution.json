@@ -8,8 +8,11 @@
   "tasks": {
     "9": {
       "status": "reviewing",
-      "candidate": "ed3313c7b729c4f9575968c08eaec2bfb4312e3e",
-      "dependencies": []
+      "candidate": "ea046abc8e0a479d736d332e5e5d15514d3ff294",
+      "dependencies": [],
+      "review_corrections": [
+        "T9-SPEC-02"
+      ]
     },
     "10": {
       "status": "pending",
@@ -72,14 +75,14 @@
   "active": [
     {
       "ticket": 9,
-      "task": "task_c0ffebde1af3",
-      "dispatch": "ctx_9d9f4affa348",
+      "task": "task_8840de57d86b",
+      "dispatch": "ctx_436f60922674",
       "role": "standards"
     },
     {
       "ticket": 9,
-      "task": "task_da8cf470afc1",
-      "dispatch": "ctx_c455bc17a84c",
+      "task": "task_2dc3a7c9944a",
+      "dispatch": "ctx_0ce50dc4fcb4",
       "role": "spec"
     }
   ],
