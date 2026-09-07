@@ -14,7 +14,9 @@ def _sibling(name):
     return module
 
 
-expand = _sibling('matrix').expand
+_matrix = _sibling('matrix')
+expand, value_tokens, merged_support = _matrix.expand, _matrix.value_tokens, _matrix.merged_support
+locale_tokens = value_tokens
 ANNOTATION_KEYS = {'applicability', 'reason', 'basis'}
 _VERIFIED_IMAGES = set()   # content digests already decoded and verified in this process
 
@@ -60,7 +62,10 @@ def frozen_cases(run, config):
             raise ValueError('页面清单/矩阵摘要不匹配')
     inventory = read(run, config['inventory_ref'])
     expected = {c['id']: c for c in expand(inventory['surfaces'], inventory.get('layout_thresholds'),
-                                           inventory.get('width_range'), inventory.get('devices'))}
+                                           inventory.get('width_range'), inventory.get('devices'),
+                                           inventory.get('locales'), inventory.get('axis_support'),
+                                           inventory.get('abstractions'), inventory.get('anchor'),
+                                           inventory.get('platform'))}
     rows = read(run, config['matrix_ref'])
     actual = {c.get('id'): c for c in rows}
     if len(rows) != len(actual) or actual.keys() != expected.keys():
@@ -153,6 +158,43 @@ def split_groups(cases, ids):
     return ''
 
 
+def _readback(capture):
+    rb = capture.get('readback')
+    return rb if isinstance(rb, dict) else {}
+
+
+def rtl_reason(case, capture, rtl_locales):
+    """An RTL locale is only proven rendered RTL by the page's own read-back, not by the locale setting."""
+    if not rtl_locales or not (value_tokens(str(case.get('locale', ''))) & set(rtl_locales)):
+        return ''
+    if _readback(capture).get('direction', capture.get('direction')) != 'rtl':
+        return 'RTL 语言用例须读回 direction=rtl: ' + case.get('id', '?')
+    return ''
+
+
+def readback_reason(case, capture, support):
+    """Setting an axis is not the same as the app rendering it: for every axis the code declares support on,
+    the capture must carry the value read back inside the app, and it must be one the case claims."""
+    rb = _readback(capture)
+    for axis in support:
+        got = rb.get(axis)
+        if not isinstance(got, str) or not got.strip():
+            return '%s 轴缺应用内读回值: %s' % (axis, case.get('id', '?'))
+        if got.strip() not in value_tokens(str(case.get(axis, ''))):
+            return '%s 轴读回值 %s 与用例 %s 不符: %s' % (axis, got, case.get(axis), case.get('id', '?'))
+    return ''
+
+
+WEB_CAPTURE_KEYS = ('capture_mode', 'headless', 'scrollbars', 'scroll_profile', 'capture_tool')
+
+
+def web_capture_reason(case, capture, platform):
+    if platform != 'web':
+        return ''
+    missing = [k for k in WEB_CAPTURE_KEYS if k not in capture]
+    return ('Web capture 缺 ' + ', '.join(missing) + ': ' + case.get('id', '?')) if missing else ''
+
+
 def scroll_reason(case, capture):
     """A scroll-state case is only provable from a real viewport with native scrollbars; a headless
     full-page image has neither scrollbars nor a fold, so it cannot support the claim."""
@@ -196,6 +238,20 @@ def visual_reason(entry, ledger, run):
         frozen = frozen_cases(run, config)
         if not same_matrix(ledger_rows, frozen):
             raise ValueError('ledger 用例与冻结完整矩阵不一致')
+        inventory = read(run, config['inventory_ref'])
+        inv_locales = inventory.get('locales') or {}
+        rtl_locales = inv_locales.get('rtl') or []
+        support = merged_support(inventory.get('axis_support'), inventory.get('locales'))
+        platform = inventory.get('platform')
+        # The census output sits verbatim in the ledger; the inventory may decline a shipped locale
+        # on the record, but it may not drop one from `supported` to make the matrix smaller.
+        census_support = merged_support(ledger.get('axis_support'), ledger.get('locales'))
+        for axis, spec in census_support.items():
+            declared = support.get(axis) or {}
+            dropped = set((spec or {}).get('supported') or []) - set(declared.get('supported') or [])
+            if dropped:
+                noun = '语言' if axis == 'locale' else axis + ' 值'
+                raise ValueError('inventory 删掉了普查官列出的%s: %s' % (noun, ', '.join(sorted(dropped))))
         reference_images = baseline(run, config)
         if entry.get('medium') != 'runtime':
             raise ValueError('视觉裁决必须使用运行证据')
@@ -215,9 +271,10 @@ def visual_reason(entry, ledger, run):
                 raise ValueError('截图环境与用例不匹配: ' + cid)
             if not capture.get('build') or not capture.get('captured_at'):
                 raise ValueError('缺构建或截图时间')
-            bad_scroll = scroll_reason(case, capture)
-            if bad_scroll:
-                raise ValueError(bad_scroll)
+            bad = (web_capture_reason(case, capture, platform) or scroll_reason(case, capture)
+                   or rtl_reason(case, capture, rtl_locales) or readback_reason(case, capture, support))
+            if bad:
+                raise ValueError(bad)
             if capture.get('baseline_digest') != config['baseline_digest']:
                 raise ValueError('截图引用过期基线')
             refs = capture.get('images', [])
@@ -324,10 +381,18 @@ def visual_section(ledger, admitted, run=None):
     out = ['', '## 视觉基线与矩阵覆盖', '',
            f"基线：{config.get('baseline_status')} · {config.get('baseline_ref')} · {config.get('interaction_ref')}",
            f"审查模式：{config.get('review_mode')}；文件校验不代替实际看图。", '']
-    counts = dict.fromkeys(['done','gap','drift','unprovable','not_examined','not_applicable'], 0)
+    counts = dict.fromkeys(['done','gap','drift','unprovable','not_examined','not_applicable','abstracted'], 0)
     rows = [c for c in (ledger.get('visual_cases') or []) if isinstance(c, dict)]
     if run is not None:
         try:
+            inventory = read(run, config['inventory_ref'])
+            for axis, spec in merged_support(inventory.get('axis_support'), inventory.get('locales')).items():
+                declined = [d for d in (spec.get('declined') or []) if isinstance(d, dict)]
+                if declined:
+                    label = '未验收语言' if axis == 'locale' else f'未验收 {axis} 值'
+                    out.append(f'{label}（用户确认放弃，不进任何计数）：' + '；'.join(
+                        f"{d.get('locale') or d.get('value')} — {d.get('confirmation', '')}" for d in declined))
+                    out.append('')
             frozen = frozen_cases(run, config)
             # Frozen cases remain visible even when an examiner omitted ledger rows;
             # ledger rows keep their not_applicable annotation on top of the frozen identity.
@@ -336,6 +401,17 @@ def visual_section(ledger, admitted, run=None):
                     for cid, base in frozen.items()] + [c for c in rows if c.get('id') not in frozen]
         except (ValueError, KeyError, TypeError, AttributeError, OSError) as exc:
             out.append('矩阵无法自证，不能声称完整覆盖：' + str(exc))
+    # An abstraction says two axes need not be crossed. A gap on a kept case that varies an independent
+    # axis is evidence against exactly that independence: the cases it abstracted away must be re-expanded.
+    doubted = {}
+    for case in rows:
+        cid = case.get('id')
+        if case.get('abstracted_by'):
+            continue
+        if any(e['verdict'] in ('gap', 'drift') for e in admitted if cid in (e.get('visual_case_ids') or [])):
+            for axis, spec in _independent_axes(rows, case).items():
+                doubted.setdefault(axis, []).append(cid)
+    per_axis = {a: {} for a in AXES}
     for case in rows:
         cid = case.get('id') or '（无 id）'
         matches = [e for e in admitted if cid in (e.get('visual_case_ids') or [])]
@@ -346,13 +422,51 @@ def visual_section(ledger, admitted, run=None):
                          if any(e['verdict'] == v for e in matches))
         elif case.get('applicability') == 'not_applicable' and case.get('reason') and case.get('basis'):
             state = 'not_applicable'
+        elif case.get('abstracted_by'):
+            state = 'abstracted'
         counts[state] += 1
+        tag = ''
+        if case.get('abstracted_by'):
+            hit = [a for a in case['abstracted_by'] if a in doubted]
+            tag = ' · 已抽象（' + '×'.join(case['abstracted_by']) + '）' + ('，独立性存疑，需重展开' if hit else '')
+        if state not in ('abstracted', 'not_applicable'):
+            for axis in AXES:
+                bucket = per_axis[axis].setdefault(str(case.get(axis, '?')), {'total': 0, 'judged': 0})
+                bucket['total'] += 1
+                bucket['judged'] += state in ('done', 'gap', 'drift', 'unprovable')
         out.append(f"- {cid} {case.get('surface')} — {state} · " +
-                   ' / '.join(str(case.get(k, '?')) for k in AXES))
+                   ' / '.join(str(case.get(k, '?')) for k in AXES) + tag)
         for entry in matches:
             out.append(f"  证据：{entry.get('evidence_manifest', entry.get('visual_failure_ref'))} · "
                        f"reviewers：{entry.get('review_reports', [])} · "
                        f"模式：{entry.get('review_mode', config.get('review_mode'))} · "
                        f"分歧：{entry.get('reconciliation_ref', '无')} · 降级：{entry.get('degradation_ref', '无')}")
     out.insert(5, ' · '.join(f'{k}: {v}' for k, v in counts.items()))
+    if doubted:
+        out.insert(6, '独立性假设存疑（该轴的用例出了缺口，被它抽象掉的用例需重展开）：' +
+                   '；'.join(f"{axis} ← {', '.join(ids)}" for axis, ids in doubted.items()))
+    axis_lines = ['', '逐轴覆盖（已抽象与不适用不计）：']
+    for axis in AXES:
+        if per_axis[axis]:
+            axis_lines.append(f"- {axis}：" + ' · '.join(f"{v} {b['judged']}/{b['total']}"
+                                                        for v, b in sorted(per_axis[axis].items())))
+    out.extend(axis_lines)
     return out
+
+
+def _independent_axes(rows, case):
+    """Axes on which this kept case is the one-factor-at-a-time variant: it is off-anchor on exactly that axis
+    while some sibling row of the same surface was abstracted by it."""
+    surface_rows = [r for r in rows if r.get('surface') == case.get('surface')]
+    abstracted_axes = {a for r in surface_rows for a in (r.get('abstracted_by') or [])}
+    if not abstracted_axes:
+        return {}
+    kept = [r for r in surface_rows if not r.get('abstracted_by')]
+    result = {}
+    for axis in abstracted_axes:
+        values = {r.get(axis) for r in kept}
+        # the anchor is the value the other kept rows share; this case is off it
+        anchor = max(values, key=lambda v: sum(1 for r in kept if r.get(axis) == v))
+        if case.get(axis) != anchor:
+            result[axis] = True
+    return result

@@ -45,6 +45,21 @@ before re-running `/run`.
 Before stopping, record `preflight_blocked` with
 `record_run_event.py`, then run `summarize_run_log.py --write-report`.
 
+## Run Policy (the only questions `/run` asks, and only before the first node)
+
+Everything a human could be asked mid-run is asked here instead, once, in one
+`AskUserQuestion`, and written to `.allforai/bootstrap/run-policy.json`. If that file already
+exists (a resumed run), reuse it without asking. Three decisions, each with a default:
+
+| key | question | options (first = default) |
+|---|---|---|
+| `on_repeated_failure` | The same node fails 3 times, the diagnosis is neither out-of-scope nor converged. | `continue` (keep diagnosing until the caps below stop it) / `halt` (stop and report on the third failure) |
+| `on_needs_iteration` | concept-acceptance returns `needs_iteration`. | `halt_with_report` (write acceptance-report.md, stop; the fix / re-bootstrap / accept choice is made by the human afterwards) / `auto_fix_once` (run one repair loop on the named gaps, re-verify, then stop either way) / `accept` (record `accepted_with_gaps` in assumed-decisions.json and finish the run) |
+| `on_safety_warning` | A non-blocking safety warning fires (see safety.md). | `continue` (log the warning and go on) / `halt` (stop at the first warning) |
+
+After this section there are no more questions: every later branch reads
+`run-policy.json`, and a branch that would need a fourth answer halts with a report instead.
+
 ### Dynamic preflight reconciliation
 
 Before every execution wave, run every idempotent expander declared by
@@ -64,7 +79,7 @@ never waive, downgrade, or hide a gap.
 
 ## Phase B execution (CC: Workflow engine)
 
-`/run` is fully autonomous — no questions, no human stops. Drive it as:
+`/run` is fully autonomous after the Run Policy section — no further questions, no human stops. Drive it as:
 
 1. Invoke the Workflow engine script at
    `${CLAUDE_PLUGIN_ROOT}/knowledge/run-engine/run-engine.workflow.js`.
@@ -135,16 +150,23 @@ On first iteration if transition_log is non-empty:
 - Same node fails 3 times → **before warning**, check `workflow.json.diagnosis_history` for that node:
   - If any entry has `"out_of_scope": true` → mark workflow halted, output TODO list, do NOT retry or ask user
   - If 2+ entries share the same `root_cause.node` → convergence cap reached, mark UNRESOLVED, output TODO list, halt
-  - Otherwise → warn user, ask if they want to continue
+  - Otherwise → apply `run-policy.json.on_repeated_failure`: `continue` keeps the diagnosis
+    loop going (the global and per-cause caps still stop it); `halt` marks UNRESOLVED, outputs
+    the TODO list, and stops. Never ask here.
 - 5 iterations with no new artifacts → output current state + TODO list
 - Single node running > 10 minutes → warn but don't kill
 
 ## Termination
 
 - All nodes' exit_artifacts are ready → success report
-- concept-acceptance verdict = needs_iteration → output acceptance-report.md, present iteration options (fix/re-bootstrap/accept), stop
+- concept-acceptance verdict = needs_iteration → apply `run-policy.json.on_needs_iteration`:
+  `halt_with_report` writes acceptance-report.md (with the fix / re-bootstrap / accept options
+  listed for the human to pick afterwards) and stops; `auto_fix_once` runs one repair loop on
+  the named gaps, re-runs concept-acceptance, then stops whatever the verdict; `accept` records
+  `accepted_with_gaps` in assumed-decisions.json and continues to the success report. Never ask here.
 - User interrupts → transition_log is already saved, resume with /run
-- Safety warning acknowledged → continue or stop per user choice
+- Safety warning → apply `run-policy.json.on_safety_warning`: `continue` logs it and goes on,
+  `halt` stops with the warning in the report. Never ask here.
 
 ## Post-Completion
 

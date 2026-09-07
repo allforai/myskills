@@ -111,7 +111,7 @@ concept-contract capability 完成后，依次调用以下 game-art 子 skill（
 3. **2D 动画工具链检测：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/2d-animation-toolchain-env/SKILL.md`
    - （输入/输出：参见 SKILL.md 的 Invocation Contract；依赖动画生产计划与 `asset-registry.json`）
    - 当动画生产计划包含 `frame_animation`、`motion_video_to_sprite`、`pose_swap`、`ui_tween` 或 `vfx_only` 时，验证帧动画/视频抽帧/图集/预览/运行时导入工具链；缺少必需工具时返回 `blocked_by_missing_toolchain`，不得让下游动画节点假装完成。
-   - Canonical remap：`skeletal_animation` / `dragonbones` / `dragonbones_mesh` / `spine` / `skeletal_3d` / `3d_skeletal` / `part_tween` → `animation_system=frame`、`character.rig=frame_sequence`、`animation_method=frame_animation`。`dimension=3d` → `2d`。记录 remap，不得继续骨骼或 3D 网格动画生产。
+   - Canonical remap：`skeletal_animation` / `dragonbones` / `dragonbones_mesh` / `spine` / `skeletal_3d` / `3d_skeletal` / `part_tween` → `animation_system=frame`、`character.rig=frame_sequence`、`animation_method=frame_animation`。`dimension=3d` → `2d`。记录 remap，并在 Phase A 摘要里向用户明示一次（这是管线能力约束，不是可选路线：3D 资产无法生成，所以不摆成选项，但也不许只写在 registry 里让人事后才发现）；不得继续骨骼或 3D 网格动画生产。
 
 4. **资产来源策略：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/asset-source-strategy-spec/SKILL.md`
    - （输入/输出：参见 SKILL.md 的 Invocation Contract；依赖上一步生成的 `asset-registry.json`）

@@ -44,8 +44,13 @@ exit 1=ledger 不可读或缺必填键。
 """
 import json
 import re
+import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
+
+PATH_LINE = re.compile(r'[\w./\-]+\.[A-Za-z0-9]+:\d+')
+IMAGE_SUFFIXES = {'.png', '.jpg', '.jpeg'}
 
 import importlib.util
 
@@ -62,6 +67,8 @@ VERDICT_LABELS = {"done": "实证完成", "gap": "缺口",
 SEVERITY_ORDER = {"high": 0, "medium": 1, "low": 2}
 STUCK_KINDS = {"no_entry": "无入口", "not_found": "找不到", "misleading": "误导",
                "no_feedback": "无反馈", "no_recovery": "无恢复路径", "broken": "系统报错"}
+AUTHOR_DETECTED_NOTE = ("检测到当前 git 用户 {email} 是目标仓库最近 50 次提交的作者之一，而 ledger 未标 "
+                        "examiner_is_author：按作者自审处理，bias-guard 应生效（gap 从严，降级需额外独立证据）。")
 AUTHOR_NOTE = ("盘问官即交付作者（examiner_is_author）：bias-guard 生效——gap 从严，"
                "降级为 low 或 done 需额外独立证据。")
 BASELINE_NONE_NOTE = ("需求基准缺失（baseline: none）：需求覆盖、需求跑偏两镜头"
@@ -90,6 +97,66 @@ def _has_evidence(entry, run_dir):
     if evidence_root not in p.parents:
         return False
     return p.is_dir() and any(p.iterdir())
+
+
+def _evidence_files(entry, run_dir):
+    d = (entry.get("evidence") or {}).get("dir") or ""
+    p = Path(d) if Path(d).is_absolute() else run_dir / d
+    return [f for f in p.iterdir() if f.is_file()] if p.is_dir() else []
+
+
+def _content_reason(e, run_dir):
+    """ledger_version 2 的证据内容门：目录非空只说明有文件，不说明有取证。
+    code 介质要有 路径:行号 的摘录；runtime 介质要有截图或输出文件、且不少于当初要求的状态数，并记请求去向；
+    unprovable 的原因文件要写得出尝试了什么；经过 mock 层的 runtime 不能算 done。"""
+    if not _parse_time(e.get("probed_at")):
+        return "缺 probed_at（ISO 8601）"
+    files = _evidence_files(e, run_dir)
+    medium, verdict = e.get("medium"), e.get("verdict")
+    text = "".join(f.read_text(encoding="utf-8", errors="ignore") for f in files if f.suffix not in IMAGE_SUFFIXES)
+    if verdict == "unprovable":
+        return "" if len(text.strip()) >= 40 else "无法自证缺原因文件（尝试了什么、卡在哪）"
+    if medium == "code" and not PATH_LINE.search(text):
+        return "代码摘录无 路径:行号"
+    if medium == "runtime":
+        images = [f for f in files if f.suffix.lower() in IMAGE_SUFFIXES]
+        outputs = [f for f in files if f.suffix.lower() in {".txt", ".log", ".json", ".md"}]
+        if not images and not outputs:
+            return "运行时证据无截图或输出文件"
+        wanted = e.get("states_to_capture")
+        if isinstance(wanted, list) and wanted and len(files) < len(wanted):
+            return f"要求 {len(wanted)} 个状态只落了 {len(files)} 个文件"
+        served = e.get("served_by")
+        if not isinstance(served, dict) or not served.get("host") or not served.get("process") \
+                or not isinstance(served.get("mock_layers"), list):
+            return "缺请求去向 served_by（host / process / mock_layers）"
+        if served["mock_layers"] and verdict == "done":
+            return "经 mock 层（" + ", ".join(map(str, served["mock_layers"])) + "）的 runtime 不能判 done"
+    return ""
+
+
+def _transcript_reason(e, run_dir):
+    """实测官 transcript 核对：ledger 记了子 agent 的 output_file，transcript 就必须能证明证据是实测官写的——
+    证据目录里每个文件名都出现在 transcript 里，或 transcript 提到过该证据目录（脚本循环生成的文件名不会
+    逐个出现，但写入目录会）。两者都没有，拒渲。文件不在（换机器、临时目录已清）只标不可核，不拒渲。"""
+    task = e.get("agent_task") or {}
+    out = task.get("output_file")
+    if not out:
+        return ""
+    p = Path(out)
+    if not p.is_file():
+        e["transcript_note"] = "transcript 不可核（文件不在）"
+        return ""
+    body = p.read_text(encoding="utf-8", errors="ignore")
+    names = [f.name for f in _evidence_files(e, run_dir)]
+    absent = [n for n in names if n not in body]
+    if not names or not absent:
+        return ""
+    d = ((e.get("evidence") or {}).get("dir") or "").strip().rstrip("/")
+    d = d[2:] if d.startswith("./") else d
+    if d and d in body:
+        return ""
+    return "证据文件未出现在实测官 transcript，transcript 也未提及证据目录 %s：%s" % (d or "?", "、".join(absent))
 
 
 def _risk_key(facet):
@@ -137,13 +204,62 @@ def _entry_line(e):
             f"（证据：{ev.get('dir', '')}）")
 
 
+SHORTHAND = re.compile(r"^(.*?-)(\d+)((?:/\d+)+)$")
+
+
 def _requirement_ids(e):
-    """entry 引用的需求 id：`requirement_refs` 列表为准，`requirement_ref` 字符串按分隔符切成 token 兼容旧账。"""
+    """entry 引用的需求 id：`requirement_refs` 列表为准；旧字段 `requirement_ref` 兼容"R-09"、"R-09, R-10"，
+    以及 "R-moment-01/03/07" 这种共享前缀的简写（展开成 R-moment-01、R-moment-03、R-moment-07）。"""
     ids = set(e.get("requirement_refs") or [])
     ref = e.get("requirement_ref")
-    if ref:
-        ids.update(t for t in re.split(r"[,，/、\s]+", ref) if t)
+    for chunk in re.split(r"[,，、\s]+", ref or ""):
+        if not chunk:
+            continue
+        m = SHORTHAND.match(chunk)
+        if m:
+            prefix, first, rest = m.groups()
+            ids.add(prefix + first)
+            ids.update(prefix + n for n in rest.strip("/").split("/"))
+        else:
+            ids.update(t for t in chunk.split("/") if t)
     return ids
+
+
+def _git_author_overlap(run_dir):
+    """run 目录所在仓库：当前 git 用户是否是最近 50 次提交的作者之一。任何失败都当作"不可判"。"""
+    try:
+        git = lambda *a: subprocess.run(["git", "-C", str(run_dir), *a], capture_output=True, text=True,
+                                        timeout=5, check=True).stdout.strip()
+        email = git("config", "user.email")
+        authors = set(git("log", "-n", "50", "--format=%ae").splitlines())
+        return email if email and email in authors else ""
+    except Exception:
+        return ""
+
+
+def _parse_time(value):
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+
+
+def _timing_lines(admitted):
+    """v2 的 probed_at：打印取证跨度，相邻 runtime 问间隔不足 60 秒逐对点名——不是证据，是让人看一眼的线索。"""
+    stamped = [(e, _parse_time(e.get("probed_at"))) for e in admitted]
+    stamped = [(e, t) for e, t in stamped if t]
+    if not stamped:
+        return []
+    times = [t for _, t in stamped]
+    span = max(times) - min(times)
+    out = [f"取证时间：首问 {min(times).isoformat()} · 末问 {max(times).isoformat()} · 跨 {int(span.total_seconds() // 60)} 分钟"]
+    fast = []
+    for (a, ta), (b, tb) in zip(stamped, stamped[1:]):
+        if a.get("medium") == "runtime" and b.get("medium") == "runtime" and abs((tb - ta).total_seconds()) < 60:
+            fast.append(f"{a.get('q', '?')} → {b.get('q', '?')}（{int(abs((tb - ta).total_seconds()))} 秒）")
+    if fast:
+        out.append("相邻 runtime 问间隔不足 60 秒，请核对是否真实取证：" + "；".join(fast))
+    return out
 
 
 def _requirement_section(requirements, facets, examined_ids, admitted):
@@ -249,6 +365,8 @@ def render(run_dir):
             reason = visual_reason(e, ledger, run_dir)
         if not reason and not _has_evidence(e, run_dir):
             reason = "无证据目录"
+        if not reason and ledger.get("ledger_version", 1) >= 2:
+            reason = _content_reason(e, run_dir) or _transcript_reason(e, run_dir)
         if not reason:
             missing = _missing_step_files(e, run_dir)
             if missing:
@@ -269,7 +387,9 @@ def render(run_dir):
     unexamined_j = [j for j in journeys if j.get("id") not in examined_j_ids]
 
     facets_with_entry = {e.get("facet") for e in admitted}
+    facets_with_verdict = {e.get("facet") for e in admitted if e.get("verdict") in ("done", "gap", "drift")}
     examined = [f for f in ledger["facets"] if f.get("id") in facets_with_entry]
+    only_unprovable = [f for f in examined if f.get("id") not in facets_with_verdict]
     not_examined = [f for f in ledger["facets"] if f.get("id") not in facets_with_entry]
     examined_ids = {f.get("id") for f in examined}
 
@@ -291,7 +411,9 @@ def render(run_dir):
 
     out = [f"# 完成度报告 — {ledger['target']}", ""]
     head = (f"需求基准：{ledger['baseline']} · 共 {len(ledger['facets'])} 面，"
-            f"盘问 {len(examined)} 面 · 实测 {len(plain)} 问")
+            f"盘问 {len(examined) - len(only_unprovable)} 面"
+            + (f"（另 {len(only_unprovable)} 面仅无法自证）" if only_unprovable else "")
+            + f" · 实测 {len(plain)} 问")
     if journeys:
         head += f" · 旅程 {len(journeys)} 条，盘问 {len(examined_j)} 条"
     if surfaces is not None:
@@ -315,9 +437,35 @@ def render(run_dir):
     if ledger["baseline"] == "none":
         out.append("")
         out.append(f"> {BASELINE_NONE_NOTE}")
+    detected = "" if ledger.get("examiner_is_author") else _git_author_overlap(run_dir)
     if ledger.get("examiner_is_author"):
         out.append("")
         out.append(f"> {AUTHOR_NOTE}")
+    elif detected:
+        out.append("")
+        out.append(f"> {AUTHOR_DETECTED_NOTE.format(email=detected)}")
+    policy = ledger.get("model_policy")
+    if isinstance(policy, dict):
+        out.append("")
+        judgment = policy.get("judgment", "session")
+        if judgment != "session":
+            out.append(f"> 非法模型策略：judgment 只能是 session，ledger 写了 {judgment}——普查官 / 视觉 reviewer / 复核官不可降档。")
+        obs = policy.get("observation") or "session"
+        out.append(f"> 本 run 取证类子 agent（实测官、枚举官）用 {obs}，用户于 {policy.get('confirmed_at', '?')} 确认："
+                   f"「{policy.get('confirmed_by_user', '')}」。裁决与普查仍用会话模型。")
+        for past in policy.get("history") or []:
+            if isinstance(past, dict):
+                out.append(f"> 此前策略：取证用 {past.get('observation', '?')}，用户于 {past.get('confirmed_at', '?')} 确认；"
+                           f"那段时间落账的 entry 以各自 `agent_model` 为准。")
+    backend = ledger.get("target_backend") or {}
+    if backend.get("kind") in ("mock", "mixed"):
+        out.append("")
+        out.append(f"> 本 run 的开发实例后端为 {backend['kind']}（{backend.get('how_known', '')}）：runtime 裁决经过 mock 层，"
+                   "渲染器已拒收经 mock 的 done。")
+    timing = _timing_lines(admitted)
+    if timing:
+        out.append("")
+        out.extend(timing)
 
     requirements = ledger.get("requirements")
     if requirements is not None:

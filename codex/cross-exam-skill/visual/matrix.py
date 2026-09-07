@@ -62,10 +62,132 @@ def check_widths(surface, thresholds, width_range, devices):
             raise ValueError('device axis misses layout threshold %d: %s' % (w, sid))
 
 
-def expand(surfaces, thresholds=None, width_range=None, devices=None):
+SEGMENT_SPLIT = re.compile(r'[+/,;]')
+TOKEN_SPLIT = re.compile(r'[\s+/,;]+')
+
+
+def value_tokens(value):
+    """An axis value may be compound ("浏览器 zh-CN + 站点 en", "zoom 150% + 字号 20px"). A supported value
+    is present when it equals the whole value, one of its separator-delimited segments, or one whitespace token."""
+    v = value.strip()
+    return {v} | {s.strip() for s in SEGMENT_SPLIT.split(v) if s.strip()} | set(TOKEN_SPLIT.split(v))
+
+
+locale_tokens = value_tokens   # kept for callers written against the locale-only version
+
+
+def required_values(axis, spec):
+    """Values the code supports on this axis minus the ones the user declined on the record."""
+    key = 'locale' if axis == 'locale' else 'value'
+    noun = 'locales' if axis == 'locale' else axis + ' support'
+    if not isinstance(spec, dict) or not isinstance(spec.get('supported'), list) or not spec['supported'] \
+            or any(not isinstance(v, str) or not v for v in spec['supported']) \
+            or not isinstance(spec.get('basis'), str) or not spec['basis']:
+        raise ValueError('invalid %s (needs non-empty supported list and basis)' % noun)
+    supported = spec['supported']
+    if len(set(supported)) != len(supported):
+        raise ValueError('duplicate supported value on ' + axis)
+    declined = set()
+    for d in spec.get('declined') or []:
+        tag = d.get(key) if isinstance(d, dict) else None
+        if tag is None and isinstance(d, dict):
+            tag = d.get('value') or d.get('locale')
+        if tag not in supported or not isinstance(d.get('confirmation'), str) or not d['confirmation'].strip():
+            raise ValueError("declined %s needs a supported %s and the user's confirmation"
+                             % (axis, 'tag' if axis == 'locale' else 'value'))
+        declined.add(tag)
+    if axis == 'locale' and not set(spec.get('rtl') or []) <= set(supported):
+        raise ValueError('rtl locale not in supported list')
+    return [v for v in supported if v not in declined]
+
+
+required_locales = lambda locales: required_values('locale', locales)
+
+
+def check_axis_support(surface, axis, spec):
+    sid = surface['id']
+    if axis not in AXES:
+        raise ValueError('axis_support names an unknown axis: ' + axis)
+    required = required_values(axis, spec)
+    scope = surface.get('locales') if axis == 'locale' else (surface.get('axis_scope') or {}).get(axis)
+    if scope is not None:
+        if not isinstance(scope, dict) or not isinstance(scope.get('only'), list) or not scope['only'] \
+                or not isinstance(scope.get('basis'), str) or not scope['basis'] \
+                or not set(scope['only']) <= set(spec['supported']):
+            raise ValueError('invalid surface %s scope (needs only[] within supported and basis): %s'
+                             % ('locales' if axis == 'locale' else axis, sid))
+        required = [v for v in required if v in scope['only']]
+    present = set()
+    for v in surface['axes'][axis]:
+        present |= value_tokens(v)
+    missing = [v for v in required if v not in present]
+    if missing:
+        raise ValueError('%s axis misses %s %s: %s' % (axis, 'shipped locale' if axis == 'locale' else 'supported value',
+                                                     ', '.join(missing), sid))
+
+
+def check_locales(surface, locales):
+    check_axis_support(surface, 'locale', locales)
+
+
+def merged_support(axis_support, locales):
+    """`locales` is the locale axis's support declaration; `axis_support` carries every other axis."""
+    support = dict(axis_support or {})
+    if locales is not None:
+        if 'locale' in support:
+            raise ValueError('declare the locale axis once: locales or axis_support.locale')
+        support['locale'] = locales
+    return support
+
+
+def _abstraction_plan(surface, abstractions, anchor):
+    """Which axes are declared independent for this surface, which of their values stay coupled (e.g. an RTL
+    locale), and the anchor value every other axis sits at while one independent axis varies."""
+    axes = surface['axes']
+    plan = {}
+    for ab in list(abstractions or []) + list(surface.get('abstractions') or []):
+        axis = ab.get('axis') if isinstance(ab, dict) else None
+        if axis not in AXES or not isinstance(ab.get('basis'), str) or not ab['basis'] \
+                or not isinstance(ab.get('confirmation'), str) or not ab['confirmation'].strip():
+            raise ValueError('invalid abstraction (needs axis, basis and the user\'s confirmation): ' + surface['id'])
+        keep = ab.get('keep_coupled') or []
+        if not set(keep) <= set(axes[axis]):
+            raise ValueError('keep_coupled names a value not on the axis: %s/%s' % (surface['id'], axis))
+        cross = ab.get('cross_with', ['state'])
+        if not isinstance(cross, list) or not set(cross) <= set(AXES) or axis in cross:
+            raise ValueError('cross_with must list other axes: %s/%s' % (surface['id'], axis))
+        plan[axis] = {'keep': set(keep), 'cross': set(cross)}
+    anchors = {}
+    for axis in AXES:
+        value = (surface.get('anchor') or anchor or {}).get(axis, axes[axis][0])
+        if value not in axes[axis]:
+            raise ValueError('anchor value not on the axis: %s/%s' % (surface['id'], axis))
+        anchors[axis] = value
+    return plan, anchors
+
+
+def _abstracted_by(row, plan, anchors):
+    """[] keeps the case. Otherwise the independent axes whose off-anchor values this case crosses with
+    something else that is also off-anchor — the combination the abstraction says need not be looked at."""
+    off_independent = [a for a, spec in plan.items() if row[a] != anchors[a] and row[a] not in spec['keep']]
+    if not off_independent:
+        return []                                   # full product over the coupled part
+    if len(off_independent) == 1:
+        axis = off_independent[0]
+        cross = plan[axis]['cross']
+        others_at_anchor = all(row[a] == anchors[a] or a in cross for a in AXES if a != axis)
+        if others_at_anchor:
+            return []                               # one independent axis varied, crossed only with cross_with
+    return sorted(off_independent)
+
+
+def expand(surfaces, thresholds=None, width_range=None, devices=None, locales=None, axis_support=None,
+           abstractions=None, anchor=None, platform=None):
     cases = []
     seen = set()
     for surface in surfaces:
+        if platform == 'web' and not isinstance(surface.get('scrollable'), bool):
+            raise ValueError('web surface must declare scrollable true|false: ' + surface['id'])
         sid = surface['id']
         if sid in seen:
             raise ValueError('duplicate surface: ' + sid)
@@ -85,13 +207,19 @@ def expand(surfaces, thresholds=None, width_range=None, devices=None):
                 raise ValueError('duplicate axis values: ' + axis)
         if thresholds or width_range or surface.get('width_range'):
             check_widths(surface, thresholds, width_range, devices)
+        for axis, spec in merged_support(axis_support, locales).items():
+            check_axis_support(surface, axis, spec)
+        plan, anchors = _abstraction_plan(surface, abstractions, anchor)
         for values in itertools.product(*(axes[a] for a in AXES)):
             row = dict(zip(AXES, values))
             identity = json.dumps({'surface': sid, **row}, sort_keys=True, ensure_ascii=False)
             case_id = 'V-' + hashlib.sha256(identity.encode()).hexdigest()
-            cases.append({'id': case_id, 'surface': sid, **row,
-                          'motion': row['state'] in surface.get('motion_states', []),
-                          'groups': sorted(groups)})
+            case = {'id': case_id, 'surface': sid, **row,
+                    'motion': row['state'] in surface.get('motion_states', []),
+                    'groups': sorted(groups)}
+            if plan:
+                case['abstracted_by'] = _abstracted_by(row, plan, anchors)
+            cases.append(case)
     return cases
 
 
@@ -100,5 +228,15 @@ if __name__ == '__main__':
     p.add_argument('inventory')
     args = p.parse_args()
     inv = json.loads(Path(args.inventory).read_text())
-    print(json.dumps(expand(inv['surfaces'], inv.get('layout_thresholds'), inv.get('width_range'), inv.get('devices')),
-                     ensure_ascii=False, indent=2))
+    rows = expand(inv['surfaces'], inv.get('layout_thresholds'), inv.get('width_range'), inv.get('devices'),
+                  inv.get('locales'), inv.get('axis_support'), inv.get('abstractions'), inv.get('anchor'),
+                  inv.get('platform'))
+    kept = [c for c in rows if not c.get('abstracted_by')]
+    import sys
+    print('cases: %d total, %d to capture, %d abstracted' % (len(rows), len(kept), len(rows) - len(kept)), file=sys.stderr)
+    for axis in AXES:
+        counts = {}
+        for c in kept:
+            counts[c[axis]] = counts.get(c[axis], 0) + 1
+        print('  %s: %s' % (axis, ', '.join('%s=%d' % kv for kv in sorted(counts.items()))), file=sys.stderr)
+    print(json.dumps(rows, ensure_ascii=False, indent=2))
