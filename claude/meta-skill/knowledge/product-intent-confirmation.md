@@ -41,6 +41,8 @@ not additional product authorities.
   objects, and `uncertainty` for inference. Topic names: `target-users`,
   `scenarios`, `core-problem`, `value-proposition`, `business-loop`, `tradeoffs`.
   Questions have `id`, `topic`, `question`, `kind`, and `depends_on` intent IDs.
+  Question IDs are unique and distinct from all intent IDs, including generated
+  gap questions; an ambiguous identity is rejected, never counted as an answer.
   Missing dimensions produce pending gap questions. Draft always stays pending.
 - `resume`: `{operation: "resume"}` returns only pending topics/items/questions.
   Use it on re-entry; never replace existing intent history with a new draft.

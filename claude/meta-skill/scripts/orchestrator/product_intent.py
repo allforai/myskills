@@ -75,15 +75,10 @@ def validate_scope(project_root, workflow, *, consumed_sources=None):
         # request. Reconciliation still owns whether its evidence is reusable.
         # Claude records node_id; the native Codex producer records node.
         # Fold both histories together in log order so reopened work is not retained.
-        last_status = {event.get("node_id", event.get("node")): event.get("status")
-                       for event in history}
-        retained = {node.get("node_id") for node in workflow.get("nodes", [])
-                    if last_status.get(node.get("node_id")) == "completed"
-                    and not any(ref in scope["requirement_refs"]
-                                for ref in node.get("requirement_refs", []))}
+        retained = _retained_nodes(workflow, scope["requirement_refs"])
         blockers = []
         if profile["task_route"] in ("product-reconstruction", "new-product") and scope["requirement_refs"]:
-            _product_contract(root, workflow, profile)
+            _product_contract(root, workflow, profile, retained=retained)
         if profile["task_route"] != "product-reconstruction":
             for node in workflow.get("nodes", []):
                 if node.get("capability") == "reverse-concept" and node.get("node_id") not in retained:
@@ -254,7 +249,17 @@ def _confirmed(root, item):
         raise ValueError("Product decision is superseded")
 
 
-def _product_contract(root, workflow, profile):
+def _retained_nodes(workflow, refs):
+    """Consume reconciled history, folding both native formats in log order."""
+    last_status = {event.get("node_id", event.get("node")): event.get("status")
+                   for event in workflow.get("transition_log", [])}
+    return {node.get("node_id") for node in workflow.get("nodes", [])
+            if last_status.get(node.get("node_id")) == "completed"
+            and not any(ref in refs for ref in node.get("requirement_refs", []))}
+
+
+def _product_contract(root, workflow, profile, *, retained=()):
+    _validate_question_ids(_read(root, CONCEPT))
     baseline = _read(root, BASELINE, {}).get("intent_baseline")
     if not isinstance(baseline, dict):
         raise ValueError("Product work needs a frozen product baseline")
@@ -296,6 +301,8 @@ def _product_contract(root, workflow, profile):
         if stages - covered - omitted.keys():
             raise ValueError("Product plan lacks applicable full-process responsibilities")
     for node in workflow["nodes"]:
+        if node.get("node_id") in retained:
+            continue
         node_refs = node.get("requirement_refs", [])
         if not node_refs or any(ref not in refs for ref in node_refs):
             raise ValueError("Product node consumes excluded or unconfirmed intent")
@@ -304,6 +311,16 @@ def _product_contract(root, workflow, profile):
                 or node.get("acceptance") != [a for i in expected for a in i["acceptance"]]):
             raise ValueError("Product goals and acceptance differ from confirmed intent")
     return baseline, latest
+
+
+def _validate_question_ids(concept):
+    intent_ids = set(_latest(concept))
+    question_ids = set()
+    for question in concept.get("intent_questions", []):
+        identity = question.get("id")
+        if not _text(identity) or identity in intent_ids or identity in question_ids:
+            raise ValueError("Question identities must be unique and separate from intent identities")
+        question_ids.add(identity)
 
 
 def _discussion(root, concept):
@@ -328,6 +345,7 @@ def _discussion(root, concept):
 def session(root, request):
     """Apply explicit interactive bootstrap input; never called by unattended run."""
     concept = _read(root, CONCEPT, {})
+    _validate_question_ids(concept)
     operation = request["operation"]
     if operation == "resume":
         return _discussion(root, concept)
@@ -341,15 +359,22 @@ def session(root, request):
         workflow.pop("operation")
         workflow["product_baseline"] = baseline
         workflow.setdefault("transition_log", [])
+        for node in workflow["nodes"]:
+            if "intent_ids" in node:
+                node["requirement_refs"] = [refs_by_id[i] for i in node.pop("intent_ids")]
+        retained = _retained_nodes(workflow, baseline["requirement_refs"])
         bodies = {}
         for node in workflow["nodes"]:
             identity = node["node_id"]
             if not isinstance(identity, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", identity) or identity in bodies:
                 raise ValueError("Node identity must be unique and filename-safe")
-            bodies[identity] = node.pop("body")
+            bodies[identity] = node.pop("body", None)
+            if identity in retained:
+                if not (root / ".allforai/bootstrap/node-specs" / (identity + ".md")).is_file() and not _text(bodies[identity]):
+                    raise ValueError("Retained node needs its historical Node-spec or task brief")
+                continue
             if not _text(bodies[identity]):
                 raise ValueError("Node needs a project-specific task brief")
-            node["requirement_refs"] = [refs_by_id[i] for i in node.pop("intent_ids")]
             node["decision_inputs"] = list(dict.fromkeys([*node.get("decision_inputs", []), CONCEPT, BASELINE]))
             selected = [latest[r["id"]] for r in node["requirement_refs"]]
             node["product_goals"] = [i["goal"] for i in selected]
@@ -358,9 +383,14 @@ def session(root, request):
         if blockers:
             raise ValueError(json.dumps(blockers))
         for node in workflow["nodes"]:
+            path = root / ".allforai/bootstrap/node-specs" / (node["node_id"] + ".md")
+            if node["node_id"] in retained:
+                if not path.exists():
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_text("---\n" + json.dumps(node, ensure_ascii=False) + "\n---\n" + bodies[node["node_id"]], encoding="utf-8")
+                continue
             body = bodies[node["node_id"]] + "\n\nConfirmed product goals:\n" + "\n".join("- " + v for v in node["product_goals"])
             body += "\n\nAcceptance:\n" + "\n".join("- " + v for v in node["acceptance"]) + "\n"
-            path = root / ".allforai/bootstrap/node-specs" / (node["node_id"] + ".md")
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("---\n" + json.dumps(node, ensure_ascii=False) + "\n---\n" + body, encoding="utf-8")
         for path in (root / ".allforai/bootstrap/node-specs").glob("*.md"):
@@ -474,6 +504,7 @@ def session(root, request):
                                        "chosen": item.get("goal", item.get("answer")),
                                        "rationale": action["reason"], "operation": op,
                                        "supersedes": previous, "intent": copy.deepcopy(item)})
+        _validate_question_ids(concept)
         journal["batches"].append(batch)
         _write(root, JOURNAL, journal)
         _write(root, CONCEPT, concept)
@@ -517,6 +548,7 @@ def session(root, request):
                 questions.append({"id": "gap-" + topic, "topic": topic, "kind": "gap",
                                   "question": "What is the desired " + topic + "?", "status": "pending", "depends_on": []})
         concept.update(requirements=items, intent_facts=facts, intent_questions=questions)
+        _validate_question_ids(concept)
         profile = _read(root, PROFILE, {})
         profile.update(task_goal=request["goal"], task_route=request["route"],
                        task_scope={"areas": sorted({a for i in items for a in i["scope"]}) or ["product"], "requirement_refs": []})
