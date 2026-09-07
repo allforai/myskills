@@ -17,7 +17,9 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
 
 ```json
 {
+  "ledger_version": 2,
   "target": "被盘问对象（人类可读名）",
+  "target_backend": {"kind": "real|mock|mixed", "how_known": "intake 时用户确认 + 普查官 mock_layers"},
   "baseline": "superstorm-registry|spec|readme|user|none",
   "started": "YYYY-MM-DD",
   "examiner_is_author": false,
@@ -39,6 +41,10 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
       "leak_point": "接口返回无幂等键，测试名单里无 duplicate 字样",
       "medium": "runtime|code|ledger",
       "agent_model": "sonnet（取证该 entry 的子 agent 模型字面量；Codex 如 gpt-5.6-luna）",
+      "agent_task": {"output_file": "子 agent transcript 路径（Claude Code 的 Agent 工具结果里给出；Codex 记 agent id）"},
+      "probed_at": "2026-09-07T11:32:08+08:00",
+      "states_to_capture": ["派发时要求的状态清单（runtime 必写，code 可空）"],
+      "served_by": {"host": "localhost:3000", "process": "node next dev (pid 4242)", "mock_layers": []},
       "evidence": {
         "dir": "evidence/q03/",
         "files": ["q03-01-first-refund.png", "q03-02-second-refund.png"],
@@ -66,6 +72,18 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
 }
 ```
 
+- **`ledger_version: 2`**（新 run 必写；旧 ledger 缺此键按 1 渲染，不受下列门槛影响）。v2 的证据内容门写死在渲染器里：
+  - `code` 介质的摘录文件至少含一个 `路径:行号`；"看过了没问题"这种 note 拒渲。
+  - `runtime` 介质至少一张截图或一个输出文件；entry 记 `states_to_capture`（派发时要的状态清单），证据文件数
+    不少于状态数；必记 `served_by`（请求打到的 host、服务进程、检测到的 mock 层列表——MSW / json-server /
+    miragejs / nock / 显式 stub 开关，无则空数组）。**`mock_layers` 非空的 runtime 不能判 `done`**（gap 照记：
+    mock 下都坏，真后端只会更坏），只能 unprovable 或 gap。
+  - `unprovable` 的原因文件至少 40 字（尝试了什么、卡在哪）。
+  - `agent_task.output_file` 存在时，证据目录里每个文件名都必须出现在那份 transcript 里，否则拒渲（不是实测官
+    写的证据）；文件不在（换机器、临时目录已清）只在报告标"transcript 不可核"，不拒渲。
+  - `probed_at` 每条必写（ISO 8601）；渲染器在总览打印首末问时间与最短间隔，间隔不足 60 秒的 runtime 相邻问点名。
+- 顶层 `target_backend`：intake 安全确认时一并确认开发实例的后端是真实服务、mock 还是混合，记 `kind` 与依据；
+  `mock` 或 `mixed` 时报告总览点明"本 run 的 runtime 裁决经过 mock 层"。
 - `entries[].agent_model` 新 entry 必填（分层前的旧 run 可缺，渲染器不拒）：派发取证的子 agent 实际用的模型字面量（实测官取证档、视觉 reviewer
   判断档；harness 不能按 agent 指定模型时记会话模型名加 `(session)`）。顶层 `census_model` 与
   `patterns[].enumerator_model` 同理。档位表见 SKILL.md "模型分层"；这些字段让报告读者能核对
@@ -156,6 +174,9 @@ N 步 / 卡在第 K 步加卡死类型 / 绕过的 waypoint / 无法自证原因
    旅程 drift 缺 `missed_waypoints` 同样拒渲并点名。
    旅程 entry 的 `steps[].evidence` 每步必写且文件必须真在 `evidence.dir` 下，`terminal_state.snapshot`
    同理；缺一个整条拒渲并点名缺的文件——编造的步骤列表过不了渲染器。
-5. 覆盖没有自报通道：facet 的"盘过"按被采信 entry 推导；操作面的"触及"只认被采信 entry 引用的、
+5. 目录非空不是证据（v2）：代码摘录要有 路径:行号，运行时要有截图或输出且不少于要求的状态数并记请求去向，
+   经 mock 层的 runtime 不得 done，无法自证要有像样的原因；记了 transcript 的 entry，证据文件名必须出现在
+   transcript 里。
+6. 覆盖没有自报通道：facet 的"盘过"按被采信 entry 推导；操作面的"触及"只认被采信 entry 引用的、
    且在 `surfaces[]` 登记过的 id；需求的"有裁决"只认被采信 entry 的引用。零证据的面、未登记的
    面 id、没人引用的需求，一律渲染为未盘问 / 未触及 / 无裁决并逐个点名，不进任何计数。

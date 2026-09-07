@@ -43,7 +43,11 @@ type 为 web 或 native；每例只能真实运行取证，保存 PNG/JPEG 并�
 8. **旅程逐步落证据**：每一步一条 `steps[]` 记录加一个证据文件（web 每步截图，终态另存无障碍树
    文本到 `terminal_state.snapshot`；cli 每步 stdout 文件；api 每步请求响应文件）。步骤不许合并，
    "没变化"的步也要记。`observed` 写你看到的，不写你以为的。
-9. **步数用尽即停**：`step_budget` 用完还没到 `goal` 描述的进展，停下，`could_not` 写
+9. **请求去向必记**（runtime 介质）：每次运行时取证都记下请求实际打到的 host:port 与服务进程（`lsof -i :<port>` /
+   `ps` 看到的命令行），以及是否有拦截层在工作——浏览器里 `navigator.serviceWorker.getRegistrations()`（MSW）、
+   `window.__MSW__`、页面或进程环境里的 `MOCK` / `USE_MOCK` / `STUB` 开关、依赖里的 json-server / miragejs / nock
+   是否在跑。写进返回的 `served_by`，并落一个 `qNN-served-by.md`。你不判断 mock 好不好，只报告请求去了哪。
+10. **步数用尽即停**：`step_budget` 用完还没到 `goal` 描述的进展，停下，`could_not` 写
    `budget_exhausted: 走了 N 步，最后停在 <状态>`，已走的 steps 全部返回。不重试，不换路绕。
    你不知道"做成"长什么样是有意的：到了就到了，到不了就如实记。
 
@@ -51,6 +55,7 @@ type 为 web 或 native；每例只能真实运行取证，保存 PNG/JPEG 并�
 
 ```json
 {"steps_taken": ["..."], "observations": ["..."], "exit_codes": {"cmd": 0},
+ "served_by": {"host": "localhost:3000", "process": "node next dev (pid 4242)", "mock_layers": ["msw: service worker 已注册"]},
  "output_excerpts": ["..."], "screenshots": ["evidence_dir 下的文件名"],
  "could_not": ["测不了的部分 + 原因（无则空数组）"],
  "steps": [{"n": 1, "action": "...", "observed": "...", "status": "done|stuck|could_not", "evidence": "文件名"}],

@@ -35,7 +35,8 @@ dark_variant_gaps：支持深色时没有深色变体的资源与硬编码颜色
    store 方法 / RPC·事件·hook 契约。凡注册了的都列，不管它看起来重不重要。
 2. **每个面一行**：稳定 id、人类可读名、入口（文件路径:符号或路由）。
 3. **只列不判**：不评价它做没做完、好不好、有没有调用点。零调用点的契约照列，
-   在 `dead_contracts` 单独点名，不下结论。
+   在 `dead_contracts` 单独点名，不下结论。另列 `mock_layers`：依赖与配置里能看到的拦截层
+   （msw / json-server / miragejs / nock / 显式 stub 开关、`*.mock.ts` 注册点），带路径，不判它开没开。
 4. **只读**：不修改任何文件，不起服务，不调接口。
 5. **列不全如实说**：某类面找不到注册点就写进 `could_not`，不猜。
 
@@ -54,6 +55,7 @@ dark_variant_gaps：支持深色时没有深色变体的资源与硬编码颜色
                   "dynamic_type": {"supported": ["zoom 100%", "zoom 150%"], "basis": "styles use rem"},
                   "orientation": {"supported": ["portrait"], "basis": "Info.plist UISupportedInterfaceOrientations"}},
  "dark_variant_gaps": [{"asset": "logo", "path": "Assets.xcassets/logo.imageset", "why": "no dark appearance"}],
+ "mock_layers": [{"name": "msw", "evidence": "package.json:devDependencies; src/mocks/browser.ts:3"}],
  "could_not": ["没枚举到的类别 + 原因（无则空数组）"]}
 ```
 

@@ -47,6 +47,9 @@ import re
 import sys
 from pathlib import Path
 
+PATH_LINE = re.compile(r'[\w./\-]+\.[A-Za-z0-9]+:\d+')
+IMAGE_SUFFIXES = {'.png', '.jpg', '.jpeg'}
+
 import importlib.util
 
 # Load this package's own visual validator by path under a unique module name: a `validation`
@@ -90,6 +93,59 @@ def _has_evidence(entry, run_dir):
     if evidence_root not in p.parents:
         return False
     return p.is_dir() and any(p.iterdir())
+
+
+def _evidence_files(entry, run_dir):
+    d = (entry.get("evidence") or {}).get("dir") or ""
+    p = Path(d) if Path(d).is_absolute() else run_dir / d
+    return [f for f in p.iterdir() if f.is_file()] if p.is_dir() else []
+
+
+def _content_reason(e, run_dir):
+    """ledger_version 2 的证据内容门：目录非空只说明有文件，不说明有取证。
+    code 介质要有 路径:行号 的摘录；runtime 介质要有截图或输出文件、且不少于当初要求的状态数，并记请求去向；
+    unprovable 的原因文件要写得出尝试了什么；经过 mock 层的 runtime 不能算 done。"""
+    files = _evidence_files(e, run_dir)
+    medium, verdict = e.get("medium"), e.get("verdict")
+    text = "".join(f.read_text(encoding="utf-8", errors="ignore") for f in files if f.suffix not in IMAGE_SUFFIXES)
+    if verdict == "unprovable":
+        return "" if len(text.strip()) >= 40 else "无法自证缺原因文件（尝试了什么、卡在哪）"
+    if medium == "code" and not PATH_LINE.search(text):
+        return "代码摘录无 路径:行号"
+    if medium == "runtime":
+        images = [f for f in files if f.suffix.lower() in IMAGE_SUFFIXES]
+        outputs = [f for f in files if f.suffix.lower() in {".txt", ".log", ".json", ".md"}]
+        if not images and not outputs:
+            return "运行时证据无截图或输出文件"
+        wanted = e.get("states_to_capture")
+        if isinstance(wanted, list) and wanted and len(files) < len(wanted):
+            return f"要求 {len(wanted)} 个状态只落了 {len(files)} 个文件"
+        served = e.get("served_by")
+        if not isinstance(served, dict) or not served.get("host") or not served.get("process") \
+                or not isinstance(served.get("mock_layers"), list):
+            return "缺请求去向 served_by（host / process / mock_layers）"
+        if served["mock_layers"] and verdict == "done":
+            return "经 mock 层（" + ", ".join(map(str, served["mock_layers"])) + "）的 runtime 不能判 done"
+    return ""
+
+
+def _transcript_reason(e, run_dir):
+    """实测官 transcript 核对：ledger 记了子 agent 的 output_file，证据文件名就必须真出现在那份 transcript 里。
+    文件不在（换机器、临时目录已清）只标不可核，不拒渲；在而对不上，拒渲。"""
+    task = e.get("agent_task") or {}
+    out = task.get("output_file")
+    if not out:
+        return ""
+    p = Path(out)
+    if not p.is_file():
+        e["transcript_note"] = "transcript 不可核（文件不在）"
+        return ""
+    body = p.read_text(encoding="utf-8", errors="ignore")
+    names = [f.name for f in _evidence_files(e, run_dir)]
+    absent = [n for n in names if n not in body]
+    if names and absent:
+        return "证据文件未出现在实测官 transcript：" + "、".join(absent)
+    return ""
 
 
 def _risk_key(facet):
@@ -251,6 +307,8 @@ def render(run_dir):
             reason = visual_reason(e, ledger, run_dir)
         if not reason and not _has_evidence(e, run_dir):
             reason = "无证据目录"
+        if not reason and ledger.get("ledger_version", 1) >= 2:
+            reason = _content_reason(e, run_dir) or _transcript_reason(e, run_dir)
         if not reason:
             missing = _missing_step_files(e, run_dir)
             if missing:

@@ -787,5 +787,86 @@ class TestRequirementCoverage(unittest.TestCase):
 
 
 
+class TestLedgerV2ContentGate(unittest.TestCase):
+    """ledger_version 2：目录非空不再够，证据内容要像取证。"""
+    FACETS = [{"id": "F1", "name": "面一", "status": "examined"}]
+
+    def _run(self, tmp, entry, files):
+        run = _mk_run(tmp, self.FACETS, [entry], make_evidence=False)
+        d = run / entry["evidence"]["dir"]; d.mkdir(parents=True)
+        for name, body in files.items():
+            (d / name).write_bytes(body if isinstance(body, bytes) else body.encode("utf-8"))
+        ledger = json.loads((run / "ledger.json").read_text(encoding="utf-8"))
+        ledger["ledger_version"] = 2
+        (run / "ledger.json").write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
+        return run
+
+    def test_note_saying_looks_fine_is_refused_for_code_medium(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("q-note"); e["medium"] = "code"
+            report = render(self._run(tmp, e, {"note.txt": "看过了，没问题"}))
+            self.assertIn("代码摘录无 路径:行号", report)
+            self.assertIn("实证完成：0", report)
+
+    def test_code_excerpt_with_path_line_is_admitted(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("q-code"); e["medium"] = "code"
+            report = render(self._run(tmp, e, {"q01-excerpt.md": "src/api/refund.ts:42\n  if (order.refunded) return 409"}))
+            self.assertNotIn("违规裁决", report)
+
+    def test_runtime_needs_served_by_and_rejects_mocked_done(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("q-rt")
+            report = render(self._run(tmp, e, {"q01-01.png": b"\x89PNG"}))
+            self.assertIn("缺请求去向 served_by", report)
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("q-rt"); e["served_by"] = {"host": "localhost:3000", "process": "node next dev", "mock_layers": ["msw"]}
+            report = render(self._run(tmp, e, {"q01-01.png": b"\x89PNG"}))
+            self.assertIn("经 mock 层（msw）的 runtime 不能判 done", report)
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("q-rt", verdict="gap", severity="high")
+            e["served_by"] = {"host": "localhost:3000", "process": "node next dev", "mock_layers": ["msw"]}
+            report = render(self._run(tmp, e, {"q01-01.png": b"\x89PNG"}))
+            self.assertNotIn("违规裁决", report)   # gap through a mock is still a gap
+
+    def test_runtime_file_count_must_reach_requested_states(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("q-rt"); e["states_to_capture"] = ["00", "01", "02"]
+            e["served_by"] = {"host": "localhost:3000", "process": "node", "mock_layers": []}
+            report = render(self._run(tmp, e, {"q01-00.png": b"\x89PNG", "q01-01.png": b"\x89PNG"}))
+            self.assertIn("要求 3 个状态只落了 2 个文件", report)
+
+    def test_unprovable_reason_must_be_substantive(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("q-u", verdict="unprovable")
+            report = render(self._run(tmp, e, {"reason.md": "起不来"}))
+            self.assertIn("无法自证缺原因文件", report)
+
+    def test_transcript_linkage(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            transcript = Path(tmp) / "agent.output"
+            transcript.write_text("... wrote evidence/q1/q01-excerpt.md ...", encoding="utf-8")
+            e = _entry("q-t"); e["medium"] = "code"; e["agent_task"] = {"output_file": str(transcript)}
+            report = render(self._run(tmp, e, {"q01-excerpt.md": "a/b.ts:1 x"}))
+            self.assertNotIn("违规裁决", report)
+        with tempfile.TemporaryDirectory() as tmp:
+            transcript = Path(tmp) / "agent.output"
+            transcript.write_text("... wrote evidence/q1/q01-excerpt.md ...", encoding="utf-8")
+            e2 = _entry("q-t2"); e2["medium"] = "code"; e2["agent_task"] = {"output_file": str(transcript)}
+            report = render(self._run(tmp, e2, {"q02-other.md": "a/b.ts:1 x"}))
+            self.assertIn("证据文件未出现在实测官 transcript：q02-other.md", report)
+        with tempfile.TemporaryDirectory() as tmp:
+            e3 = _entry("q-t3"); e3["medium"] = "code"; e3["agent_task"] = {"output_file": str(Path(tmp) / "gone.output")}
+            report = render(self._run(tmp, e3, {"q03.md": "a/b.ts:1 x"}))
+            self.assertNotIn("违规裁决", report)
+
+    def test_v1_ledger_keeps_old_behaviour(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("q-old"); e["medium"] = "code"
+            run = _mk_run(tmp, self.FACETS, [e], make_evidence=False)
+            d = run / "evidence/q1"; d.mkdir(parents=True); (d / "note.txt").write_text("看过了", encoding="utf-8")
+            self.assertNotIn("违规裁决", render(run))
+
+
 if __name__ == "__main__":
     unittest.main()

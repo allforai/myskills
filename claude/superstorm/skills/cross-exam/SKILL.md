@@ -72,11 +72,14 @@ schema：`$ROOT/knowledge/cross-exam/schemas.md`；报告渲染：`$ROOT/scripts
 3. 环境能力探测：能否真跑起来；有无浏览器自动化（截图能力）。缺截图能力时
    UI 类问题只能裁"无法自证"，起手就告诉用户。
 4. **安全确认（必须）**：实测会造真实调用（退款、删除这类）。与用户确认靶子是
-   本地/开发实例后才放开手；生产系统一律拒绝盘问。
+   本地/开发实例后才放开手；生产系统一律拒绝盘问。**同一次确认里问清开发实例的后端是什么**：真实服务、
+   mock（MSW / json-server / miragejs / 显式 stub 开关）还是混合，连同普查官报的 `mock_layers` 写进 ledger 顶层
+   `target_backend`。安全规则把探针推向开发环境，而 mock 正好住在那里——请求返回 200 和真的一模一样；
+   经 mock 层取到的 runtime 证据最高裁 unprovable，渲染器会拒收这种 done。
 5. **run 目录**：`docs/cross-exam/<日期>-<目标slug>/`。检测到未收敛 run
    （`ledger.json` 存在且 `completion-report.md` 不存在）→ 问用户续接还是新开；
    续接时读旧 ledger 的 `open_threads` 作为起手牌候选。
-6. 初始化/载入 `ledger.json`（schema 见 `$ROOT/knowledge/cross-exam/schemas.md`）。
+6. 初始化/载入 `ledger.json`（schema 见 `$ROOT/knowledge/cross-exam/schemas.md`），新 run 写 `ledger_version: 2`。
 
 ## 1. 定面（facet map）
 
@@ -200,7 +203,10 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
   个 fresh agent 复核——不传 `model`，继承会话模型，制衡者不能比盘问官弱；或明确的"生产不可达"实证），不能只凭盘问官一句"影响不大"。
 - **每问立刻落盘 ledger.json**（中断不丢），entry 按 schemas.md。entry 必写 `surfaces[]`（这问的证据
   实际触及了 `surfaces[]` 里的哪些面——渲染器只认登记过的 id，没写的逐条点名）与 `requirement_refs[]`
-  （引用了 `requirements[]` 的哪些条）。这两个槽位是覆盖分子；没有它们，分母白记。
+  （引用了 `requirements[]` 的哪些条）。这两个槽位是覆盖分子；没有它们，分母白记。**v2 每条 entry 另必写**
+  `probed_at`、`states_to_capture`（派发时要的状态清单原样）、`agent_task`（Claude Code 的 Agent 工具结果里给出 `output_file` 路径，原样记入）；runtime 介质再写
+  `served_by`（实测官带回的请求去向与 mock 层）。这些不是文书：渲染器用 transcript 核对证据文件是不是实测官写的，
+  用状态数核对有没有少截，用 mock 层拒收假 done。
 - **弃牌不蒸发**：每轮发牌后，未被选中的牌**立即**记入 ledger 的 `open_threads`
   （q/facet/leak_point）；某线后来被实测则移入 entries 并从 open_threads 删除。
   报告会把它们渲染成"未拉的线"，续盘从这里接手。**gap 落账后用户随即喊停**：把本该下一轮
