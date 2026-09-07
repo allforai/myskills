@@ -99,7 +99,7 @@ must preserve their output paths and blocking statuses.
 ## Automatic Validation
 
 Validation must include runtime screenshot evidence, functional assertions, and
-Codex CLI screenshot review where visible gameplay is involved; do not accept
+reviewer two screenshot review where visible gameplay is involved; do not accept
 static review, logs, source inspection, DOM state, canvas probes, or manifest
 presence as a replacement for visible runtime evidence.
 
@@ -130,7 +130,7 @@ Blocking statuses:
 - `blocked_by_unrunnable_client`
 - `blocked_by_missing_runtime_command`
 - `blocked_by_missing_screenshot`
-- `blocked_by_missing_codex_cli`
+- `blocked_by_missing_second_review`
 - `blocked_by_missing_visual_model_capability`
 - `blocked_by_missing_upstream_contract`
 - `failed_validation`

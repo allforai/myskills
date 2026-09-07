@@ -22,9 +22,9 @@ identify layout/style/content discrepancies, fix in repair loop.
 1. Capture: source + target screenshots per screen per role
 2. Plan: enumerate comparison subtasks
 3. Execute: parallel per-screen (structural + data + linkage)
-4. Claude Code visual review: inspect captured screenshots and classify visible UI defects
+4. reviewer one visual review: inspect captured screenshots and classify visible UI defects
 5. Report: aggregate scores
-6. Repair loop: fix -> re-capture -> re-compare -> Claude Code review (max 30 rounds)
+6. Repair loop: fix -> re-capture -> re-compare -> reviewer one review (max 30 rounds)
 
 ## Boundary: ui-forge vs visual-verify
 
@@ -66,7 +66,7 @@ If it has a design spec but no source app, only ui-forge runs.
 6. **Pre-condition**: Visual verify runs last — after cr-fidelity + product-verify + testforge all pass, and after ui-forge when that capability is in the workflow.
 7. **Encoding**: All output files must use UTF-8. JSON with `ensure_ascii=False`. Scrub GBK mojibake on read-back.
 8. **Linkage verify**: If `.allforai/visual-verify/interaction-recordings.json` exists, execute same business flow chains (not just screenshots).
-9. **Claude Code review required**: screenshot diff or DOM-derived comparison is not enough. Claude Code must inspect the screenshots and produce a visual review report before the node can pass.
+9. **reviewer one review required**: screenshot diff or DOM-derived comparison is not enough. reviewer one must inspect the screenshots and produce a visual review report before the node can pass.
 
 ## Phases
 
@@ -87,9 +87,9 @@ Per-screen agents run in parallel:
 - Data integrity: actual data values, empty/loading/error states
 - Linkage: navigation targets, action handlers (when interaction-recordings.json present)
 
-### Phase D: Claude Code Visual Review
+### Phase D: Reviewer One
 
-After automated comparison, Claude Code reviews the actual screenshots as images.
+After automated comparison, reviewer one reviews the actual screenshots as images.
 This review is a separate gate because pixel diff and selector assertions can miss
 obvious product-quality issues such as blank regions, clipped text, unreadable
 contrast, modal/keyboard obstruction, wrong visual state, or incoherent responsive
@@ -98,8 +98,8 @@ layout.
 Required outputs:
 
 - `.allforai/visual-verify/screenshot-manifest.json`
-- `.allforai/visual-verify/claude-code-visual-review.json`
-- `.allforai/visual-verify/claude-code-visual-review.md`
+- `.allforai/visual-verify/visual-review-1.json`
+- `.allforai/visual-verify/visual-review-1.md`
 
 The JSON state must be one of:
 
@@ -109,12 +109,12 @@ The JSON state must be one of:
 - `blocked_by_missing_screenshots`
 - `blocked_by_unreadable_screenshot`
 
-Any `blocker` or `major` issue in Claude Code review blocks visual-verify pass.
+Any `blocker` or `major` issue in reviewer one review blocks visual-verify pass.
 
 ### Phase E: Report + Repair
 
 - Aggregate per-screen scores into composite visual fidelity score
-- `full` mode: auto-repair -> re-capture -> re-compare -> Claude Code review until convergence (max 30 rounds)
+- `full` mode: auto-repair -> re-capture -> re-compare -> reviewer one review until convergence (max 30 rounds)
 
 ## Downstream Consumers
 
@@ -125,7 +125,7 @@ Any `blocker` or `major` issue in Claude Code review blocks visual-verify pass.
 |----------|------------|---------------------|----------|--------|
 | `.allforai/visual-verify/visual-verify-report.json` | composite visual fidelity score | pipeline-closure-verify | optional | 管道闭合检查读取视觉验证综合分 |
 | `.allforai/visual-verify/visual-verify-report.json` | per-screen scores | launch-prep | optional | 上架准备参考视觉还原度是否达标 |
-| `.allforai/visual-verify/claude-code-visual-review.json` | state, blocking issues | pipeline-closure-verify | required | 闭环验证必须知道截图是否被 Claude Code 视觉复核通过 |
+| `.allforai/visual-verify/visual-review-1.json` | state, blocking issues | pipeline-closure-verify | required | 闭环验证必须知道截图是否被 reviewer one 视觉复核通过 |
 | `.allforai/visual-verify/screenshot-manifest.json` | screenshot paths, refs | launch-prep | required | 上线前必须保留可追溯截图证据 |
 
 ## Knowledge References

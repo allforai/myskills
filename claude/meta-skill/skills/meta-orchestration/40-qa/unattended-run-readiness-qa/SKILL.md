@@ -76,7 +76,6 @@ Allowed blocker codes:
 - `missing_node_spec`
 - `missing_workflow`
 - `missing_bootstrap_validator`
-- `missing_codex_cli`
 - `missing_visual_model_route`
 - `missing_mcp_image_batch`
 - `missing_google_key`
@@ -147,7 +146,7 @@ Bootstrap must generate `.allforai/bootstrap/unattended-run-readiness-spec.json`
 before writing `run.md`. The spec declares which capabilities are required by
 the selected workflow, including:
 - human gates that must already be approved or converted to final-only review;
-- Codex CLI visual review requirements;
+- reviewer two visual review requirements;
 - Playwright, engine, or UI automation requirements;
 - `mcp-image-batch` image generation requirements;
 - Google/fal/OpenRouter/audio provider key requirements;
@@ -180,7 +179,7 @@ The readiness check must reject:
 - any node-spec that permits `AskUserQuestion`, interactive approval, or
   runtime user prompts during execution;
 - any node-spec missing from the workflow;
-- visual QA workflows without Codex CLI or visual model routing;
+- visual QA workflows without reviewer two or visual model routing;
 - generated image workflows without a valid image provider or `mcp-image-batch`
   route when batch generation is required;
 - audio workflows without required provider keys when audio generation is

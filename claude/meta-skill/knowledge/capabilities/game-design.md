@@ -553,11 +553,11 @@ of the implementation goal:
     "blocking_statuses": [
       "blocked_by_unrunnable_client",
       "blocked_by_missing_screenshot",
-      "blocked_by_missing_codex_cli",
+      "blocked_by_missing_second_review",
       "blocked_by_missing_visual_model_capability",
       "failed_validation"
     ],
-    "visual_acceptance_rule": "functional assertions and Codex CLI screenshot review must both pass; do not accept logs, DOM, probes, or state deltas alone for visible gameplay."
+    "visual_acceptance_rule": "functional assertions and reviewer two screenshot review must both pass; do not accept logs, DOM, probes, or state deltas alone for visible gameplay."
   }
 }
 ```
@@ -607,7 +607,7 @@ contracts exist:
       "blocked_by_unrunnable_client",
       "blocked_by_missing_runtime_command",
       "blocked_by_missing_screenshot",
-      "blocked_by_missing_codex_cli",
+      "blocked_by_missing_second_review",
       "blocked_by_missing_visual_model_capability",
       "failed_validation"
     ],

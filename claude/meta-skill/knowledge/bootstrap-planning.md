@@ -90,10 +90,10 @@ Write `.allforai/bootstrap/unattended-run-readiness-spec.json` with exact
 commands, keys, MCP servers, QA/repair/closure node ids, and human decisions
 that must already exist. `/run` begins with readiness validation.
 
-**UI screenshot + Codex CLI visual review hard gate:**
+**UI screenshot + reviewer two visual review hard gate:**
 
 Every verification node that exercises a user-facing UI MUST include screenshot
-capture and Codex CLI visual review in its node-spec. This applies to Web
+capture and reviewer two visual review in its node-spec. This applies to Web
 Playwright, Electron, Tauri WebView, browser extensions, Flutter, iOS, Android,
 React Native, HarmonyOS, and game clients with visible runtime scenes.
 
@@ -109,12 +109,14 @@ Required node-spec obligations:
   `${CLAUDE_PLUGIN_ROOT}/skills/visual-qa/40-qa/batch-visual-acceptance/SKILL.md`
   and delegate visual inspection through
   `${CLAUDE_PLUGIN_ROOT}/skills/codex-cli-delegation/30-execute/codex-cli-task/SKILL.md`.
-- Visual review is dual-reviewer. The node must write both reviewers' reports
-  plus reconciliation and closure audit:
-  - `.allforai/verify/codex-ui-visual-review.json`
-  - `.allforai/verify/codex-ui-visual-review.md`
-  - `.allforai/verify/claude-code-visual-review.json`
-  - `.allforai/verify/claude-code-visual-review.md`
+- Visual review is dual-reviewer (ADR-0003): reviewer one is a fresh-context sub-agent of the
+  session; reviewer two is the other platform's CLI when it is installed and can open images,
+  otherwise a second fresh-context sub-agent. Neither may be the context that produced the
+  screenshots. The node must write both reviewers' reports plus reconciliation and closure audit:
+  - `.allforai/verify/visual-review-2.json`
+  - `.allforai/verify/visual-review-2.md`
+  - `.allforai/verify/visual-review-1.json`
+  - `.allforai/verify/visual-review-1.md`
   - `.allforai/verify/ui-visual-reconciliation.json`
   - `.allforai/verify/ui-visual-closure-audit.json`
   - `.allforai/verify/ui-visual-closure-audit.md`
@@ -122,16 +124,18 @@ Required node-spec obligations:
   clipped/overlapped text, unreadable contrast, missing required content, broken
   navigation state, modal/keyboard obstruction, wrong language, and responsive
   layout breakage.
-- Claude Code inspects the screenshots itself and writes its own review; it must
-  not read the Codex report before doing so, and it must not skip its own review
-  to save tokens. Blocking findings are the union of both reviews. Claude Code
+- reviewer one inspects the screenshots itself and writes its own review; it must
+  not read the reviewer two report before doing so, and it must not skip its own review
+  to save tokens. Blocking findings are the union of both reviews. reviewer one
   then performs reconciliation plus closure audit: report existence, inspected
   evidence paths, failure routing, repair execution, and rerun records.
 - The node cannot pass when screenshots are missing, unreadable, stale, or when
   either reviewer reports blocker/major visual issues. Return
   `blocked_by_missing_screenshots`, `blocked_by_unreadable_screenshot`, or
-  `failed_visual_review` instead. Return `blocked_by_missing_codex_cli` when
-  Codex CLI cannot run.
+  `failed_visual_review` instead. When the cross-platform CLI cannot run, record
+  `missing_cross_platform_cli` in the visual model routing report and run reviewer two as a
+  second fresh-context sub-agent; return `blocked_by_missing_second_review` only when two
+  independent reports cannot be produced at all (ADR-0003).
 - If the browser, emulator, simulator, device, or game runtime cannot launch,
   return `BLOCKED_ENV` / `FAILED_ENV`. Do not substitute DOM inspection, static
   code review, or manual prose for screenshot-based acceptance.

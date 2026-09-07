@@ -55,7 +55,7 @@ REQUIRED_CLOSURE_TERMS = {
     "code-repair-loop report",
     "revalidation report",
     "runtime-gameplay-visual-acceptance",
-    "functional assertions and Codex CLI screenshot review",
+    "functional assertions and reviewer two screenshot review",  # ADR-0003 reviewer-neutral phrasing
     "blocked_by_unrunnable_client",
     "blocked_by_missing_screenshot",
     "blocked_by_missing_runtime_command",

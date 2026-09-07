@@ -128,7 +128,7 @@ Layer numbers indicate directory organization and default execution order for ne
 | `30-generate` | `animation-event-fx` | Footstep, landing, weapon, cast, and hit FX bound to animation timeline events. |
 | `30-generate` | `vfx-generation` | VFX orchestration across particle, sprite-sheet, trail, shader, decal, screen-effect, light-pulse, and animation-event branches. |
 | `40-qa` | `art-preview-qa` | Cross-asset visual QA, downstream feedback, issue classification, repair routing. |
-| `40-qa` | `visual-acceptance-review` | Task-list-based visual acceptance using actual images, Codex CLI independent review, and Claude Code closure audit. |
+| `40-qa` | `visual-acceptance-review` | Task-list-based visual acceptance using actual images, reviewer two independent review, and closure audit. |
 | `40-qa` | `asset-family-consistency-qa` | Benchmark-driven QA for whole asset families and cross-family cohesion, not isolated image acceptance. |
 | `40-qa` | `in-game-beauty-gate` | Runtime screenshot beauty gate that blocks closure when the actual game still looks like a prototype. |
 | `40-qa` | `generated-candidate-selection` | Select, reject, cluster, and register generated image candidates before downstream consumers see them. |
@@ -293,10 +293,10 @@ Rules:
   Required visual acceptance artifacts are
   `.allforai/game-design/art/qa/visual-acceptance-task-list.json`,
   `.allforai/game-design/art/qa/visual-acceptance-batches/`,
-  `.allforai/game-design/art/qa/codex-visual-review.json`,
-  `.allforai/game-design/art/qa/codex-visual-review.md`,
-  `.allforai/game-design/art/qa/claude-code-visual-review.json`,
-  `.allforai/game-design/art/qa/claude-code-visual-review.md`,
+  `.allforai/game-design/art/qa/visual-review-2.json`,
+  `.allforai/game-design/art/qa/visual-review-2.md`,
+  `.allforai/game-design/art/qa/visual-review-1.json`,
+  `.allforai/game-design/art/qa/visual-review-1.md`,
   `.allforai/game-design/art/qa/visual-review-reconciliation.json`,
   `.allforai/game-design/art/qa/visual-review-closure-audit.json`, and
   `.allforai/game-design/art/qa/visual-review-closure-audit.md`. If visual

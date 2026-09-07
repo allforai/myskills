@@ -29,7 +29,7 @@ Optional:
 
 ```text
 .allforai/game-design/art/qa/visual-acceptance-batches/
-.allforai/game-design/art/qa/codex-visual-review.json
+.allforai/game-design/art/qa/visual-review-2.json
 .allforai/game-design/art/image-generation/image-feedback-report.json
 .allforai/game-design/art/qa/contact-sheets/
 ```

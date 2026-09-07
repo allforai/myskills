@@ -24,7 +24,7 @@ Required:
 .allforai/game-design/art/asset-acceptance-criteria.json
 .allforai/game-design/art/image-generation/accepted-image-manifest.json
 .allforai/game-design/asset-registry.json
-.allforai/game-design/art/qa/codex-visual-review.json
+.allforai/game-design/art/qa/visual-review-2.json
 ```
 
 Optional:
@@ -111,7 +111,7 @@ Loop:
      binding, not image regeneration by default.
 3. Regenerate, edit, adapt, repack, or rebind only the affected family.
 4. Rebuild the affected contact sheets or preview maps.
-5. Rerun Codex CLI review for the affected visual batches.
+5. Rerun reviewer two review for the affected visual batches.
 6. Rerun this family consistency QA on the repaired evidence.
 7. Append the iteration to
    `.allforai/game-design/art/qa/visual-repair-loop-report.json` and
@@ -136,7 +136,7 @@ Reject with `FAILED_VALIDATION` when:
 - failed family findings were not written to
   `image-feedback-report.json` or another owner-specific feedback report;
 - repaired families were not revalidated with fresh contact sheets, rerun
-  Codex CLI review, and a new family consistency report.
+  reviewer two review, and a new family consistency report.
 
 ## Completion Conditions
 

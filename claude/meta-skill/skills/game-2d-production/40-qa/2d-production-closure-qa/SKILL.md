@@ -20,7 +20,7 @@ Write:
 - `.allforai/game-2d/qa/2d-production-closure.html`
 
 The report must include status, blockers, major findings, screenshots reviewed,
-functional assertions, Codex CLI review paths, repair loop count, and final
+functional assertions, reviewer two review paths, repair loop count, and final
 accept/reject decision.
 
 ## Invocation Contract
@@ -59,7 +59,7 @@ Require:
 - gameplay invariant checks from core-loop playability QA
 - runtime-gameplay-visual-acceptance
 - frontend build/export or explicit `blocked_by_unrunnable_client`
-- functional assertions and Codex CLI screenshot review
+- functional assertions and reviewer two screenshot review
 - prototype/placeholder rejection proving the accepted screenshots are not
   prototype-only components, pure-color blocks, black debug backgrounds,
   generic placeholder geometry, or a core loop without production HUD/art
@@ -122,7 +122,7 @@ scope cut and removal evidence is a blocker. Do not allow QA to rewrite
 Do not accept static review. Do not accept logs, DOM, probes, source inspection,
 or manifest existence alone. If validation cannot run, report
 `blocked_by_unrunnable_client`, `blocked_by_missing_screenshot`,
-`blocked_by_missing_runtime_command`, `blocked_by_missing_codex_cli`,
+`blocked_by_missing_runtime_command`, `blocked_by_missing_second_review`,
 `blocked_by_missing_visual_model_capability`, or `failed_validation`.
 
 ## Completion Conditions

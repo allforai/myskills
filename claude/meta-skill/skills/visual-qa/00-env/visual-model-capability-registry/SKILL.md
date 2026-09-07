@@ -1,14 +1,16 @@
 ---
 name: visual-qa-00-env-visual-model-capability-registry
-description: Detect and route Codex CLI visual model capabilities for batch visual acceptance, including task-risk model selection and blocked states when required visual capability is unavailable.
+description: Detect and route reviewer two visual model capabilities for batch visual acceptance, including task-risk model selection and blocked states when required visual capability is unavailable.
 ---
 
 # Visual Model Capability Registry
 
 ## Overview
 
-Detects whether Codex CLI can perform visual inspection and records which visual
-model profile should be used for each batch visual QA task.
+Detects which backend reviewer two will run on — the cross-platform CLI when it is installed
+and can open images, otherwise a second fresh-context sub-agent — and records which visual
+model profile should be used for each batch visual QA task. Reviewer one is always a
+fresh-context sub-agent of the session and needs no routing.
 
 This skill does not judge images. It prepares model routing for
 `visual-qa/40-qa/batch-visual-acceptance/SKILL.md`.
@@ -16,7 +18,7 @@ This skill does not judge images. It prepares model routing for
 ## Input Contract
 
 Required:
-- Codex CLI availability;
+- reviewer two availability;
 - batch task list or planned batch categories;
 - caller-provided risk classification or enough batch metadata to infer risk.
 
@@ -39,7 +41,9 @@ The routing report must include:
 ```json
 {
   "schema_version": "1.0",
-  "codex_cli_available": true,
+  "cross_platform_cli_available": true,
+  "reviewer_two_backend": "codex-cli|claude-cli|session-subagent",
+  "warnings": ["missing_cross_platform_cli when the CLI is absent; reviewer two then runs as session-subagent"],
   "available_visual_models": [],
   "batch_routes": [
     {
@@ -82,7 +86,7 @@ Use stronger visual model capability for high-risk batches:
 - VFX occlusion, brightness, and gameplay readability;
 - subtle style drift across a family.
 
-Medium-risk batches may use the Codex CLI default visual model when it supports
+Medium-risk batches may use the reviewer two default visual model when it supports
 multi-image inspection and evidence-grounded reporting.
 
 Low-risk batches may use the fastest available visual model when checking:
@@ -91,9 +95,9 @@ Low-risk batches may use the fastest available visual model when checking:
 - contact-sheet existence;
 - broad visual mismatch.
 
-## Codex CLI Model Selection
+## reviewer two Model Selection
 
-If Codex CLI exposes a model parameter, record and use the selected model in the
+If reviewer two exposes a model parameter, record and use the selected model in the
 Codex invocation. If the installed CLI only supports its default model, record
 `selected_visual_model: "codex-default"` and whether that default satisfies the
 batch's `minimum_capabilities`.
@@ -105,7 +109,9 @@ batches.
 ## Automatic Validation
 
 Before completion:
-1. Confirm Codex CLI is callable or return `blocked_by_missing_codex_cli`.
+1. Determine `reviewer_two_backend`; when the cross-platform CLI is absent record the warning
+   `missing_cross_platform_cli` and route reviewer two to `session-subagent` — this is not a
+   blocked state.
 2. Confirm every batch has `task_risk`, `minimum_capabilities`,
    `selected_visual_model`, and `model_reason`.
 3. Confirm high-risk batches are not routed to unknown-capability models.
@@ -117,6 +123,5 @@ Before completion:
 Return `COMPLETED` when model capability and routing reports exist and every
 batch has a valid route.
 
-Return `blocked_by_missing_codex_cli` when Codex CLI cannot be invoked.
 Return `blocked_by_missing_visual_model_capability` when a high-risk task cannot
 be routed to a capable visual model.

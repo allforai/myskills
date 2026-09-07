@@ -1,6 +1,6 @@
 ---
 name: game-frontend-40-qa-runtime-gameplay-visual-acceptance
-description: Drive gameplay with automation, capture screenshots at declared milestones, and run dual independent visual review (Codex CLI and Claude Code) plus state assertions; writes game-frontend/qa/codex-gameplay-visual-review.json and the Claude review. Screenshots are mandatory for visible gameplay acceptance.
+description: Drive gameplay with automation, capture screenshots at declared milestones, and run dual independent visual review (reviewer two and reviewer one) plus state assertions; writes game-frontend/qa/runtime-gameplay-visual-review-2.json and the reviewer-one review. Screenshots are mandatory for visible gameplay acceptance.
 ---
 
 # Runtime Gameplay Visual Acceptance Skill
@@ -13,7 +13,7 @@ Validates that automated gameplay actions produce a playable and readable visual
 experience, not only correct state transitions. This skill bridges functional
 automation and visual acceptance: Playwright or engine automation drives the
 game, captures screenshots at declared gameplay milestones, and delegates visual
-judgment to Codex CLI through the shared batch visual acceptance workflow.
+judgment to reviewer two through the shared batch visual acceptance workflow.
 
 State assertions remain mandatory. Screenshot review is mandatory for visible
 gameplay acceptance. A node must not pass from logs, DOM, canvas probes, or
@@ -48,8 +48,8 @@ Writes:
 .allforai/game-frontend/qa/runtime-gameplay-visual-acceptance-plan.json
 .allforai/game-frontend/qa/runtime-gameplay-screenshot-manifest.json
 .allforai/game-frontend/qa/runtime-gameplay-visual-batches/
-.allforai/game-frontend/qa/codex-gameplay-visual-review.json
-.allforai/game-frontend/qa/codex-gameplay-visual-review.md
+.allforai/game-frontend/qa/runtime-gameplay-visual-review-2.json
+.allforai/game-frontend/qa/runtime-gameplay-visual-review-2.md
 .allforai/game-frontend/qa/runtime-gameplay-visual-repair-loop-report.json
 .allforai/game-frontend/qa/runtime-gameplay-visual-repair-loop-report.md
 .allforai/game-frontend/qa/runtime-gameplay-visual-acceptance-report.json
@@ -67,7 +67,7 @@ and `acceptance_state`.
 
 Allowed states: `passed`, `passed_with_warnings`, `needs_revision`,
 `failed_validation`, `blocked_by_unrunnable_client`,
-`blocked_by_missing_screenshot`, `blocked_by_missing_codex_cli`,
+`blocked_by_missing_screenshot`, `blocked_by_missing_second_review`,
 `blocked_by_missing_visual_model_capability`.
 
 ## Invocation Contract
@@ -144,21 +144,21 @@ ${CLAUDE_PLUGIN_ROOT}/skills/visual-qa/40-qa/batch-visual-acceptance/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/codex-cli-delegation/30-execute/codex-cli-task/SKILL.md
 ```
 
-Use Codex CLI in pull mode with short, path-based prompts. Codex CLI must inspect
+Use reviewer two in pull mode with short, path-based prompts. reviewer two must inspect
 the actual screenshots for visible playability: blank canvas, missing assets,
 unclear selection/target feedback, weak or absent action feedback, HUD overlap,
 wrong z-order, unreadable text, indistinguishable tiles/icons, broken animation
 frames, VFX hiding gameplay, camera/framing errors, and viewport-specific
 interaction risk.
 
-Codex CLI must also run a prototype/placeholder rejection check. The review
+reviewer two must also run a prototype/placeholder rejection check. The review
 must fail the batch when screenshots show pure-color blocks, black debug
 backgrounds, generic geometric tiles, sample/prototype boards, missing HUD, or
 visuals that do not match the declared art direction and engine-ready asset
 manifest. If the game is playable but the screenshot is still a prototype scene,
 return `failed_validation`; do not downgrade it to a warning.
 
-For specialized screens, Codex CLI must evaluate the project-local screen
+For specialized screens, reviewer two must evaluate the project-local screen
 archetype contract from `visual-acceptance-criteria` and game-ui specs. The
 batch must fail when the screen is only a functional placeholder: generic
 controls, repeated filler backgrounds, debug-looking geometry, labels hidden by
@@ -168,7 +168,7 @@ controls and correct data is not enough.
 
 Metric-only visual checks are insufficient. Pixel statistics, color counts,
 edge detection, OCR, object counts, or DOM/canvas probes can support the report,
-but they cannot decide visual acceptance alone. Codex CLI must answer the
+but they cannot decide visual acceptance alone. reviewer two must answer the
 project-level perceptual question from the visual criteria, such as whether the
 screen looks like the approved game promise, art direction, scene context, and
 genre-specific play surface. A screenshot with acceptable color variety but a
@@ -182,10 +182,10 @@ must identify whether the root cause is wrong entrypoint, missing scene binding,
 missing asset loader mapping, placeholder fallback, or ungenerated/unimported
 art.
 
-Claude Code independently inspects the same runtime screenshots and writes its
-own review alongside the Codex report, per
+reviewer one independently inspects the same runtime screenshots and writes its
+own review alongside the reviewer two report, per
 `${CLAUDE_PLUGIN_ROOT}/skills/visual-qa/40-qa/batch-visual-acceptance/SKILL.md`.
-Blocking findings are the union of both reviews. Claude Code then reconciles the
+Blocking findings are the union of both reviews. reviewer one then reconciles the
 two reports and checks closure: both review files exist, screenshot evidence
 paths are present in both, findings have repair targets, failed batches were
 rerun by both reviewers, and unresolved blockers remain blocking.
@@ -213,20 +213,20 @@ Prototype/placeholder findings route as follows:
 
 After repair, rerun the same affected gameplay screenshot tasks. Do not close
 from an edited report or partial evidence. The loop completes only when the
-functional assertion and Codex CLI visual review both pass for affected
+functional assertion and reviewer two visual review both pass for affected
 milestones.
 
 ## Completion Conditions
 
 Return `COMPLETED` when all required gameplay screenshot tasks were captured,
-functional assertions passed, Codex CLI visual review has no unresolved blocker
+functional assertions passed, reviewer two visual review has no unresolved blocker
 or major finding, and rerun evidence exists for repaired batches.
 
 Return `FAILED_VALIDATION` when the game runs but gameplay visuals remain
 unacceptable after the repair budget.
 
 Return `blocked_by_missing_screenshot` when required screenshots are absent.
-Return `blocked_by_missing_codex_cli` when Codex CLI cannot run. Return
+When the cross-platform CLI is absent, record `missing_cross_platform_cli` in the routing report and run reviewer two as a second fresh-context sub-agent; return `blocked_by_missing_second_review` only if two independent reports cannot be produced. Return
 `blocked_by_missing_visual_model_capability` when no usable visual model route
 exists for review. Return `blocked_by_missing_visual_criteria` when no explicit
 visual acceptance criteria cover the gameplay screenshot batch.

@@ -12,13 +12,13 @@ Run test suites against translated code. Entry point is a passing compile-verify
 
 1. Run test command(s)
 2. Capture results (pass/fail counts, error details)
-3. For every UI automation path, capture screenshot evidence and run Claude Code visual review
+3. For every UI automation path, capture screenshot evidence and run reviewer one visual review
 4. On failure: categorize (logic error vs missing mock vs integration issue vs visual/UI defect)
 5. Feed failures back to translate or compile-verify as appropriate
 
-## UI Screenshot Evidence And Claude Code Review
+## UI Screenshot Evidence And reviewer one Review
 
-任何带用户界面的测试节点，不能只依赖 DOM 断言、测试框架断言或接口返回。只要节点覆盖 Web、移动端、桌面端、游戏客户端、管理后台、商户后台、浏览器扩展等 UI 表面，就必须产出截图证据，并由 Claude Code 对截图进行二次视觉验收。
+任何带用户界面的测试节点，不能只依赖 DOM 断言、测试框架断言或接口返回。只要节点覆盖 Web、移动端、桌面端、游戏客户端、管理后台、商户后台、浏览器扩展等 UI 表面，就必须产出截图证据，并由 reviewer one 对截图进行二次视觉验收。
 
 ### 最低输出
 
@@ -26,10 +26,10 @@ UI 测试节点必须写入：
 
 - `.allforai/verify/ui-screenshots/<module_id>/...`：关键路径截图，至少覆盖启动页、主导航页、核心表单/操作页、成功状态、错误/空状态；
 - `.allforai/verify/ui-screenshot-manifest.json`：截图清单，记录 module、surface、role、flow、step、viewport/device、screenshot_path、expected_source_ref；
-- `.allforai/verify/claude-code-visual-review.json`：Claude Code 对截图的视觉验收结果；
-- `.allforai/verify/claude-code-visual-review.md`：中文人类可读复核报告。
+- `.allforai/verify/visual-review-1.json`：reviewer one 对截图的视觉验收结果；
+- `.allforai/verify/visual-review-1.md`：中文人类可读复核报告。
 
-`claude-code-visual-review.json` 最低结构：
+`visual-review-1.json` 最低结构：
 
 ```json
 {
@@ -61,7 +61,7 @@ UI 测试节点必须写入：
 
 - UI 自动化节点没有截图，不能通过；返回 `blocked_by_missing_screenshots`。
 - 截图空白、无法读取、被遮挡或不是目标页面，不能通过；返回 `blocked_by_unreadable_screenshot`。
-- Claude Code 视觉复核发现 blocker / major UI 问题时，测试节点不能标记为通过，即使 Playwright / XCUITest / Espresso / Detox / Maestro 的断言全部通过。
+- reviewer one 视觉复核发现 blocker / major UI 问题时，测试节点不能标记为通过，即使 Playwright / XCUITest / Espresso / Detox / Maestro 的断言全部通过。
 - 如果运行环境无法启动浏览器、模拟器或设备，必须暴露 `BLOCKED_ENV`，不得用静态检查或人工文字说明替代截图验收。
 - 截图验收不是替代测试断言；它是 UI 自动化测试之后的额外质量 gate。
 
@@ -142,7 +142,7 @@ If not resolved → surface as UPSTREAM_DEFECT with per-layer breakdown.
     }
   ],
   "ui_screenshot_manifest": ".allforai/verify/ui-screenshot-manifest.json",
-  "claude_code_visual_review": ".allforai/verify/claude-code-visual-review.json"
+  "visual_review_1": ".allforai/verify/visual-review-1.json"
 }
 ```
 `composite_score` is consumed by downstream nodes (visual-verify, code-tuner, launch-prep).
@@ -157,7 +157,7 @@ If not resolved → surface as UPSTREAM_DEFECT with per-layer breakdown.
 5. **Failure routing before retry**: Classify failure type before retrying — prevents misdirected fixes.
 6. **Score persistence**: Write composite score to test-verify-report.json for downstream nodes (visual-verify, tune) to reference.
 7. **Playwright constraint**: Playwright CANNOT test native mobile apps. Never assign Playwright to Flutter/iOS/Android/React Native modules. Each mobile module MUST use its platform-native test framework (see Platform-Specific Test Commands table). This is a hard constraint — assigning Playwright to mobile silently produces passing CI with zero mobile coverage.
-8. **UI screenshot review gate**: Every UI automation result must include screenshots plus Claude Code visual review. Missing screenshots or failed visual review blocks acceptance.
+8. **UI screenshot review gate**: Every UI automation result must include screenshots plus reviewer one visual review. Missing screenshots or failed visual review blocks acceptance.
 
 ## Knowledge References
 
