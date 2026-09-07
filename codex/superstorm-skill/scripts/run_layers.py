@@ -351,6 +351,7 @@ def run_task(task, runner, models, cwd, prompts_dir, log=print, artifact_gate=No
                     "vacuous": raw["vacuous"],
                     "reality_gated": raw["reality_gated"],
                     "refutation": raw["summary"],
+                    "observations": raw.get("observations") or [],
                 }
             else:
                 verdict = parse_verdict(raw)
@@ -1079,6 +1080,9 @@ def main(argv):
                 for tid, status in recovered_results.items()
                 if tid not in current_ids] + results)
     reality_gated = [r for r in results if r.get("status") == "reality_gated"]
+    # Supervisor observations: findings outside the verified task. Never change a verdict; never dropped.
+    observations = [{"task_id": r.get("task_id"), **o}
+                    for r in results for o in ((r.get("verdict") or {}).get("observations") or [])]
     events.append("run_drained", completed=sorted(completed),
                   escalations=len(escalations), reality_gated=len(reality_gated),
                   skipped=len(skipped))
@@ -1086,6 +1090,7 @@ def main(argv):
     atomic_write_json(args.report, {"schema_version": 2, "run_id": run_id,
                       "results": results, "escalations": escalations,
                       "reality_gates": reality_gated, "skipped": skipped,
+                      "observations": observations,
                       "completed": sorted(completed), "total_tasks": len(tasks_by_id),
                       "baseline_commit": baseline_commit,
                       "user_dirty_fingerprint": user_dirty_fingerprint,

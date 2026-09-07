@@ -33,7 +33,12 @@ ordinary `done:false`; never set `reality_gated` for a non-reality-gate task.
 
 ## Output (strict verdict schema)
 Write exactly one JSON object through the runner-owned output channel, with no extra keys/prose:
-`{"schema_version":1,"role":"supervisor","run_id":"<given>","task_id":"<given>","attempt_id":"<given>","verdict":"confirmed|rejected","summary":"non-empty","acceptance_executed":true,"rerun_exit_code":0,"evidence":"real captured evidence","acceptance_kind":"test|non_test|reality","executed_test_count":1,"vacuous":false,"reality_gated":false}`.
+`{"schema_version":1,"role":"supervisor","run_id":"<given>","task_id":"<given>","attempt_id":"<given>","verdict":"confirmed|rejected","summary":"non-empty","acceptance_executed":true,"rerun_exit_code":0,"evidence":"real captured evidence","acceptance_kind":"test|non_test|reality","executed_test_count":1,"vacuous":false,"reality_gated":false,"observations":[]}`.
+`observations` (optional) is where anything outside THIS task goes: a defect in an already-confirmed
+neighbour (`scope: "task:<id>"`), a pattern repeated across files you did not verify (`scope: "repo"`),
+a census candidate. One entry per finding: `{scope, finding, evidence: "<path:line or captured output>"}`;
+`evidence` may list several `path:line` separated by `;`. It never changes `verdict`; `summary` is only
+about this task. Where this file says `done:true` / `done:false`, write `verdict: confirmed` / `rejected`.
 For non-test acceptance, `executed_test_count` is `null`. A confirmed test requires at least one
 executed test. A reality-gated result is rejected, never confirmed. Stdout/stderr and narrative
 are diagnostics only; only this schema-bound file is parsed.
