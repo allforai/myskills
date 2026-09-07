@@ -52,7 +52,9 @@ def validate_scope(project_root, workflow):
                 raise ValueError("requirement paths must stay inside the project")
         # A retained completed branch is historical work, not approval for this
         # request. Reconciliation still owns whether its evidence is reusable.
-        last_status = {event.get("node_id"): event.get("status")
+        # Claude records node_id; the native Codex producer records node.
+        # Fold both histories together in log order so reopened work is not retained.
+        last_status = {event.get("node_id", event.get("node")): event.get("status")
                        for event in workflow.get("transition_log", [])}
         retained = {node.get("node_id") for node in workflow.get("nodes", [])
                     if last_status.get(node.get("node_id")) == "completed"

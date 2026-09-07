@@ -3,6 +3,7 @@
 The agent chooses the route and graph; these tests supply its explicit artifacts,
 not a substitute semantic planner. Actual host dialogue proof belongs to T15.
 """
+import importlib.util
 import json
 from pathlib import Path
 import shutil
@@ -66,6 +67,21 @@ def project(root, *, confirmed=False, documents=False, host="claude"):
     spec = "---\n" + json.dumps(node) + "\n---\n" + ATTENTION_CONTRACT_BODY
     (root / ".allforai/bootstrap/node-specs/deliver-export.md").write_text(spec)
     return requirement
+
+
+def codex_transition(root, node_id, status):
+    """Use the native generated runtime's completion producer."""
+    flow_path = root / ".allforai/codex/flow.py"
+    flow_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(Path(__file__).resolve().parents[4] /
+                 "codex/meta-skill/knowledge/flow-template.py", flow_path)
+    spec = importlib.util.spec_from_file_location("generated_flow", flow_path)
+    flow = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(flow)
+    workflow_path = root / ".allforai/bootstrap/workflow.json"
+    before_count = len(json.loads(workflow_path.read_text())["transition_log"])
+    flow.append_transition_if_missing(workflow_path, before_count, node_id, status,
+                                      "2026-09-07T10:00:00Z", [])
 
 
 def gate(root, name, *options):
@@ -258,8 +274,11 @@ def test_confirmed_local_change_reuses_decision_and_preserves_unrelated_work(tmp
     elif historical_refs == "empty":
         old["requirement_refs"] = []
     workflow["nodes"].append(old)
-    workflow["transition_log"] = [{"node_id": "warehouse", "status": "completed"}]
+    workflow["transition_log"] = ([] if host == "codex" else
+                                  [{"node_id": "warehouse", "status": "completed"}])
     write(tmp_path, ".allforai/bootstrap/workflow.json", workflow)
+    if host == "codex":
+        codex_transition(tmp_path, "warehouse", "completed")
     (tmp_path / ".allforai/bootstrap/node-specs/warehouse.md").write_text(
         "---\n" + json.dumps(old) + "\n---\n" + ATTENTION_CONTRACT_BODY)
     before = {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}
@@ -364,3 +383,50 @@ def test_new_unscoped_work_is_rejected_but_scoped_prerequisite_can_reenter(tmp_p
     corrected = gate(tmp_path, name)
     assert corrected.returncode == 0, (corrected.stdout, corrected.stderr)
     assert all(p.read_bytes() == content for p, content in before.items())
+
+
+@pytest.mark.parametrize("host", ["claude", "codex"])
+@pytest.mark.parametrize("first_writer", ["node_id", "node"])
+def test_mixed_native_history_uses_latest_state_without_changing_authority(tmp_path, host, first_writer):
+    project(tmp_path, confirmed=True, documents=True, host=host)
+    workflow_path = tmp_path / ".allforai/bootstrap/workflow.json"
+    workflow = json.loads(workflow_path.read_text())
+    retained = {"node_id": "warehouse", "goal": "Retain completed warehouse work",
+                "capability": "implement", "exit_artifacts": [".allforai/bootstrap/stock.json"]}
+    workflow["nodes"].append(retained)
+    write(tmp_path, ".allforai/bootstrap/workflow.json", workflow)
+    write(tmp_path, ".allforai/bootstrap/stock.json", {"status": "passed", "count": 3})
+    (tmp_path / ".allforai/bootstrap/node-specs/warehouse.md").write_text(
+        "---\n" + json.dumps(retained) + "\n---\n" + ATTENTION_CONTRACT_BODY)
+    preserved = {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file() and p != workflow_path}
+    writers = [first_writer, "node" if first_writer == "node_id" else "node_id", first_writer]
+    for writer, status in zip(writers, ["completed", "failed", "completed"]):
+        if writer == "node":
+            codex_transition(tmp_path, "warehouse", status)
+        else:
+            workflow = json.loads(workflow_path.read_text())
+            workflow["transition_log"].append({"node_id": "warehouse", "status": status})
+            write(tmp_path, ".allforai/bootstrap/workflow.json", workflow)
+        # A different node's event must not replace warehouse's latest state.
+        codex_transition(tmp_path, "deliver-export", "failed")
+        history = workflow_path.read_bytes()
+        for name in ("validate_bootstrap.py", "check_decision_inputs.py", "validate_unattended_readiness.py"):
+            options = ("--write-report",) if name == "validate_unattended_readiness.py" else ()
+            result = gate(tmp_path, name, *options)
+            assert result.returncode == (1 if status == "failed" else 0), (name, result.stdout, result.stderr)
+            if status == "failed":
+                assert "scope_requirement_unwired" in result.stdout
+                assert "warehouse" in result.stdout
+            assert not result.stderr
+        report = json.loads((tmp_path / ".allforai/bootstrap/unattended-run-readiness.json").read_text())
+        assert report["status"] == ("not_ready" if status == "failed" else "ready")
+        # Zero iterations exercises real run preflight without invoking a host.
+        if host == "codex":
+            result = subprocess.run([sys.executable, str(tmp_path / ".allforai/codex/flow.py"),
+                                     "Add order CSV export", "0"], cwd=tmp_path, text=True, capture_output=True)
+            assert result.returncode == (6 if status == "failed" else 2), (result.stdout, result.stderr)
+            assert json.loads(result.stderr)["error"] == (
+                "unattended readiness preflight blocked execution" if status == "failed"
+                else "max iterations reached: 0")
+        assert workflow_path.read_bytes() == history
+        assert all(p.read_bytes() == content for p, content in preserved.items())
