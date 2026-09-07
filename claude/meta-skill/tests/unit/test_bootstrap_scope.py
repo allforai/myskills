@@ -430,3 +430,41 @@ def test_mixed_native_history_uses_latest_state_without_changing_authority(tmp_p
                 else "max iterations reached: 0")
         assert workflow_path.read_bytes() == history
         assert all(p.read_bytes() == content for p, content in preserved.items())
+
+
+@pytest.mark.parametrize("host", ["claude", "codex"])
+@pytest.mark.parametrize("malformed_history", [
+    {}, None, "", False, 42, [None], ["bad"], [[]], [False], [{}],
+    [{"node_id": "deliver-export"}],
+    [{"node_id": [], "status": "completed"}],
+    [{"node": " ", "status": "completed"}],
+    [{"node": "deliver-export", "status": None}],
+    [{"node_id": "deliver-export", "status": " "}],
+    [{"node_id": "deliver-export", "node": "warehouse", "status": "completed"}],
+], ids=["object-history", "null-history", "string-history", "boolean-history", "number-history",
+        "null-entry", "string-entry", "array-entry", "boolean-entry", "empty-entry",
+        "missing-status", "array-node-id", "empty-node", "null-status", "empty-status",
+        "conflicting-native-ids"])
+def test_invalid_history_replaces_ready_report_and_corrected_history_reenters(tmp_path, host, malformed_history):
+    project(tmp_path, confirmed=True, documents=True, host=host)
+    workflow_path = tmp_path / ".allforai/bootstrap/workflow.json"
+    report_path = tmp_path / ".allforai/bootstrap/unattended-run-readiness.json"
+    workflow = json.loads(workflow_path.read_text())
+    preserved = {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file() and p != workflow_path}
+    for history, expected in (([], 0), (malformed_history, 1), ([], 0)):
+        workflow["transition_log"] = history
+        write(tmp_path, ".allforai/bootstrap/workflow.json", workflow)
+        before = workflow_path.read_bytes()
+        for name in ("validate_bootstrap.py", "check_decision_inputs.py", "validate_unattended_readiness.py"):
+            options = ("--write-report",) if name == "validate_unattended_readiness.py" else ()
+            result = gate(tmp_path, name, *options)
+            assert result.returncode == expected, (name, history, result.stdout, result.stderr)
+            assert not result.stderr
+            if expected:
+                assert "invalid_scope" in result.stdout
+        report = json.loads(report_path.read_text())
+        assert report["status"] == ("not_ready" if expected else "ready")
+        if expected:
+            assert any(b["code"] == "invalid_scope" for b in report["blockers"])
+        assert workflow_path.read_bytes() == before
+        assert all(p.read_bytes() == content for p, content in preserved.items())

@@ -19,6 +19,19 @@ def validate_scope(project_root, workflow):
             raise ValueError("workflow.json nodes must be a list")
         if any(not isinstance(node, dict) for node in nodes):
             raise ValueError("workflow.json nodes must contain objects")
+        history = workflow.get("transition_log", [])
+        if not isinstance(history, list):
+            raise ValueError("workflow.json transition_log must be a list")
+        for index, event in enumerate(history):
+            if not isinstance(event, dict):
+                raise ValueError(f"transition_log[{index}] must be an object")
+            node_id = event.get("node_id", event.get("node"))
+            if not isinstance(node_id, str) or not node_id.strip():
+                raise ValueError(f"transition_log[{index}] needs a non-empty node_id or node")
+            if "node_id" in event and "node" in event and event["node"] != node_id:
+                raise ValueError(f"transition_log[{index}] has conflicting node_id and node")
+            if not isinstance(event.get("status"), str) or not event["status"].strip():
+                raise ValueError(f"transition_log[{index}] needs a non-empty status")
         scoped_nodes = any("requirement_refs" in node for node in nodes)
         if not path.exists():
             return ([{"code": "invalid_scope", "message": "Scoped nodes require bootstrap-profile.json"}]
@@ -55,7 +68,7 @@ def validate_scope(project_root, workflow):
         # Claude records node_id; the native Codex producer records node.
         # Fold both histories together in log order so reopened work is not retained.
         last_status = {event.get("node_id", event.get("node")): event.get("status")
-                       for event in workflow.get("transition_log", [])}
+                       for event in history}
         retained = {node.get("node_id") for node in workflow.get("nodes", [])
                     if last_status.get(node.get("node_id")) == "completed"
                     and not any(ref in scope["requirement_refs"]
