@@ -7,59 +7,100 @@
   "workflow_revision": 2,
   "launch_revision": 1,
   "max_concurrency": 3,
-  "status": "running",
+  "status": "incomplete",
   "integration_ref": "j08069099777/grillstorm-meta-intent",
   "tasks": {
     "T9": {
-      "status": "pending",
+      "status": "escalated",
       "attempts": {
         "infrastructure": 0,
-        "business": 0
+        "business": 2
       },
-      "dependencies": []
+      "dependencies": [],
+      "orca_task": "task_41c0e6f17ea6",
+      "dispatch": "ctx_823a0469b439",
+      "worktree": "/Users/aa/orca/workspaces/myskills/meta-intent-t9",
+      "base_sha": "cadac5525abf2407fdcd0588252336cba8f60a01",
+      "candidate_sha": "405705f97213397c4f8c53d7eb2e27c1df6c44ca",
+      "supervisor_dispatch": "ctx_1ed9dea32a7c",
+      "blocking_findings": [
+        {
+          "id": "T9-ROOT-01",
+          "status": "rechecked_fixed",
+          "evidence": "reviews/T9-root-scope-probe.json",
+          "summary": "New unscoped unrelated node is admitted by all copied gates",
+          "resolution_evidence": "reviews/T9-supervisor-3.json"
+        },
+        {
+          "id": "T9-SUP-001",
+          "status": "rechecked_fixed",
+          "evidence": "reviews/T9-supervisor-1.json",
+          "resolution_evidence": "reviews/T9-supervisor-3.json"
+        },
+        {
+          "id": "T9-S2-F1",
+          "family": "T9-SUP-001",
+          "status": "rechecked_fixed",
+          "evidence": "reviews/T9-supervisor-2.json",
+          "resolution_evidence": "reviews/T9-supervisor-3.json"
+        },
+        {
+          "id": "T9-S3-01",
+          "status": "open",
+          "evidence": "reviews/T9-supervisor-3.json",
+          "summary": "Codex native node completion history is not recognized by new node_id-only retained-scope validator"
+        }
+      ],
+      "repair_task": "task_6a1d54e9c99b",
+      "repair_dispatch": "ctx_6c534a3453b3",
+      "escalation_reason": "business_retry_budget_exhausted"
     },
     "T10": {
-      "status": "pending",
+      "status": "skipped",
       "attempts": {
         "infrastructure": 0,
         "business": 0
       },
       "dependencies": [
         "T9"
-      ]
+      ],
+      "reason": "transitive_dependency_T9_escalated"
     },
     "T11": {
-      "status": "pending",
+      "status": "skipped",
       "attempts": {
         "infrastructure": 0,
         "business": 0
       },
       "dependencies": [
         "T10"
-      ]
+      ],
+      "reason": "transitive_dependency_T9_escalated"
     },
     "T12": {
-      "status": "pending",
+      "status": "skipped",
       "attempts": {
         "infrastructure": 0,
         "business": 0
       },
       "dependencies": [
         "T10"
-      ]
+      ],
+      "reason": "transitive_dependency_T9_escalated"
     },
     "T13": {
-      "status": "pending",
+      "status": "skipped",
       "attempts": {
         "infrastructure": 0,
         "business": 0
       },
       "dependencies": [
         "T12"
-      ]
+      ],
+      "reason": "transitive_dependency_T9_escalated"
     },
     "T14": {
-      "status": "pending",
+      "status": "skipped",
       "attempts": {
         "infrastructure": 0,
         "business": 0
@@ -67,10 +108,11 @@
       "dependencies": [
         "T11",
         "T13"
-      ]
+      ],
+      "reason": "transitive_dependency_T9_escalated"
     },
     "T15": {
-      "status": "pending",
+      "status": "skipped",
       "attempts": {
         "infrastructure": 0,
         "business": 0
@@ -78,20 +120,22 @@
       "dependencies": [
         "T9",
         "T10"
-      ]
+      ],
+      "reason": "transitive_dependency_T9_escalated"
     },
     "T16": {
-      "status": "pending",
+      "status": "skipped",
       "attempts": {
         "infrastructure": 0,
         "business": 0
       },
       "dependencies": [
         "T11"
-      ]
+      ],
+      "reason": "transitive_dependency_T9_escalated"
     },
     "T17": {
-      "status": "pending",
+      "status": "skipped",
       "attempts": {
         "infrastructure": 0,
         "business": 0
@@ -99,20 +143,25 @@
       "dependencies": [
         "T12",
         "T13"
-      ]
+      ],
+      "reason": "transitive_dependency_T9_escalated"
     },
     "T18": {
-      "status": "pending",
+      "status": "skipped",
       "attempts": {
         "infrastructure": 0,
         "business": 0
       },
       "dependencies": [
         "T14"
-      ]
+      ],
+      "reason": "transitive_dependency_T9_escalated"
     }
   },
   "live_workers": [],
   "merge_queue": [],
-  "completed": []
+  "completed": [],
+  "integration_sha": "cadac5525abf2407fdcd0588252336cba8f60a01",
+  "resume_requires": "User direction to authorize another repair cycle; preserve frozen task contract and retry history.",
+  "terminal_report": "execution-report.md"
 }

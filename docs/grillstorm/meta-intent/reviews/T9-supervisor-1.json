@@ -1,0 +1,1734 @@
+{
+  "schema_version": 1,
+  "task_id": "T9",
+  "role": "supervisor",
+  "verdict": "rejected",
+  "candidate": "f00c61b1c349b6c5c1ba167851f018b732c5269b",
+  "base": "cadac5525abf2407fdcd0588252336cba8f60a01",
+  "spec_revision": 2,
+  "task_revision": 1,
+  "workflow_revision": 2,
+  "worktree": "/Users/aa/orca/workspaces/myskills/meta-intent-t9",
+  "summary": "Focused acceptance and affected tests pass, and independent copied-project gates enforce normal T9 local requirement contracts across both adapter asset paths. Rejected because the new shared scope call regresses malformed-workflow handling: nodes:null raises before readiness can publish a typed not_ready report, leaving an earlier ready report untouched. No source changes or repairs were made.",
+  "scope": {
+    "included": [
+      "R01/R02/R17/R18/R30 and I-scope at the T9 bootstrap/generated-project CLI seam",
+      "Full issue-8 and issue-9 bodies and comments (both comment lists are empty), complete frozen dispatch inputs, task document with T9 focus",
+      "Fixed candidate diff, declared-path contract, nonvacuous focused tests, shared helper consumers, both platform guidance, copied runtime gates",
+      "T9 O1 invalid-input guard, preserved authority and corrected reentry"
+    ],
+    "excluded": [
+      "T10 product-intent operations and atomic publication",
+      "T11 scoped dependency eligibility and legacy/resume implementation",
+      "T12-T14 synchronization and external drift",
+      "T15-T18 actual candidate-loaded Claude/Codex adversarial scenario execution and SG-02 proof"
+    ],
+    "scenario_matrix": "Read complete 30-scenario/60-cell matrix; all cells belong to T15-T18. No cell is credited from this supervisor's Python CLI runs. Actual host dialogue coverage remains the later evaluator obligation, as explicitly specified by tasks/intent.md T9 Runtime check and the dispatch.",
+    "independence": "No executor narrative, executor report, or other review report was read. reviews/failure-classification.json was read only as a required frozen contract. No subagents, installs, tracker changes, pushes, commits or source fixes."
+  },
+  "frozen_inputs": {
+    "root": "/Users/aa/orca/workspaces/myskills/grillstorm-meta-intent/docs/grillstorm/meta-intent",
+    "hashes": {
+      "program-spec.md": "b860a0a357babf5264196ab57edb360fd6c647952324b49360cfa7ed02827237",
+      "modules/intent-spec.md": "5a564dc8af7021342530e108df7558bf65afa6567a8cccb89f00706a5987eee4",
+      "tasks/catalog.md": "64498f549e3abe7f35cd07d7fcb72cfd00a733540bddb292d5a8e8af11a8d3a0",
+      "tasks/intent.md": "be7cc1a0894963152224bccf4d52a62357aa0ca14d39117fdf943de5bfa6aeeb",
+      "sources/issue-8.json": "09a6d044aaf4ec293f75ba3d5b51a1a8576435b270764f9cbcdf6ec0e7dfc773",
+      "sources/issue-9.json": "aaf6ca7617c4711156c43e978d358d7e461ea62da624ae456c38f50f216c45c6",
+      "reviews/failure-classification.json": "009a855705833537679250e9f6822a9e7fa4f7adf0503a0b503995800dc2ec07",
+      "tasks/dispatch-contract.md": "b1adb504b324acbe783870a38d1d9a1ff6bd8e13816205e008e9db0aa734b02d",
+      "tasks/scenario-matrix.json": "d8d3b9dd401a961375bafa3b684d1f912155dd7a6e08d0e24535d1b0818bf9a5"
+    },
+    "all_match_packet": true,
+    "all_read_completely": true
+  },
+  "artifact_contract": {
+    "changed_file_count": 11,
+    "max_files_changed": 30,
+    "changed_paths": [
+      "claude/meta-skill/knowledge/bootstrap-audits.md",
+      "claude/meta-skill/knowledge/bootstrap-planning.md",
+      "claude/meta-skill/knowledge/node-spec-template.md",
+      "claude/meta-skill/scripts/check_decision_inputs.py",
+      "claude/meta-skill/scripts/orchestrator/product_intent.py",
+      "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+      "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+      "claude/meta-skill/skills/bootstrap/SKILL.md",
+      "claude/meta-skill/tests/unit/test_bootstrap_scope.py",
+      "codex/meta-skill/knowledge/product-inference.md",
+      "codex/meta-skill/skills/bootstrap.md"
+    ],
+    "all_changed_paths_declared": true,
+    "required_output_present": true,
+    "required_output": "claude/meta-skill/tests/unit/test_bootstrap_scope.py",
+    "candidate_control_plane_changes": [],
+    "candidate_clean_before": true,
+    "candidate_clean_after": true,
+    "diff_check_exit": 0,
+    "report_only_edit": "/Users/aa/orca/workspaces/myskills/grillstorm-meta-intent/docs/grillstorm/meta-intent/reviews/T9-supervisor-1.json"
+  },
+  "candidate_file_hashes": {
+    "claude/meta-skill/knowledge/bootstrap-audits.md": "e6d211684040f9216927540fe7c3bb4f1120aab3ad2666ab71b9a06857e7dc71",
+    "claude/meta-skill/knowledge/bootstrap-planning.md": "97138f036cb01ba1d823ed6ca9bf95d4334dc8f7e3bae1adea70079a91cd18ba",
+    "claude/meta-skill/knowledge/node-spec-template.md": "021974abee0f55d4aad687f6faa42052649b45c6886381995748d6308cc5be27",
+    "claude/meta-skill/scripts/check_decision_inputs.py": "9a420ad0cd16b3827b1bbbff735d43a1b71f2b7cfb501e7fe08ff3b05e653d29",
+    "claude/meta-skill/scripts/orchestrator/product_intent.py": "4132651f7311ff0d89debf75f420cb6d10030d6bfbda70cc53974fb3d9031c52",
+    "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py": "7fef3be74d9c613fe26cc72bb69df432bfea8fcdb40afdbe0fb1c388b6fee8ba",
+    "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py": "22fb5b5dca3c0c813b85efc71c245c4f5af99f3a70083066976670468abaf767",
+    "claude/meta-skill/skills/bootstrap/SKILL.md": "fdbd7474acde929dc9e8e332a57c986a53f5223b1e2f06401c8c5f32e5c27949",
+    "claude/meta-skill/tests/unit/test_bootstrap_scope.py": "2b7b05c95394047a41bd5e746ec2e155f1ba3613fb8b78793ff06e611dd0e48c",
+    "codex/meta-skill/knowledge/product-inference.md": "d1567a24970e6fc68168766a91f404289f30ef705261efccf28762971858e325",
+    "codex/meta-skill/skills/bootstrap.md": "0d2915deb3248570f6bed6ffcb60598e9cab24b553b7d64ffcfda91704924541"
+  },
+  "tests": {
+    "total_passed": 85,
+    "total_failed": 0,
+    "total_skipped": 0,
+    "total_deselected": 22,
+    "commands": [
+      {
+        "command": "python3 -m pytest claude/meta-skill/tests/unit/test_bootstrap_scope.py -q",
+        "cwd": "/Users/aa/orca/workspaces/myskills/meta-intent-t9",
+        "stdout": "....................                                                     [100%]\n20 passed in 0.95s\n",
+        "stderr": "",
+        "exit": 0,
+        "passed": 20,
+        "failed": 0,
+        "skipped": 0,
+        "exit_observation": "Initial PTY result returned session 53204 with all output; final write_stdin completed with exit 0 and no additional output."
+      },
+      {
+        "command": "python3 -m pytest claude/meta-skill/tests/unit/test_validate_bootstrap.py claude/meta-skill/tests/unit/test_validate_unattended_readiness.py claude/meta-skill/tests/unit/test_check_artifacts.py claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py -q",
+        "cwd": "/Users/aa/orca/workspaces/myskills/meta-intent-t9",
+        "stdout": "...............................................................          [100%]\n63 passed in 0.15s\n",
+        "stderr": "",
+        "exit": 0,
+        "passed": 63,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "command": "python3 -m pytest codex/meta-skill/test_flow.py -q -k 'missing_preflight or preflight_requires_report'",
+        "cwd": "/Users/aa/orca/workspaces/myskills/meta-intent-t9",
+        "stdout": "..                                                                       [100%]\n2 passed, 22 deselected in 0.02s\n",
+        "stderr": "",
+        "exit": 0,
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0,
+        "deselected": 22
+      }
+    ],
+    "nonvacuity": {
+      "verdict": "nonvacuous, with malformed-workflow coverage gap",
+      "observations": [
+        "20 acceptance cases execute copied real CLI scripts in subprocesses; they do not mock validate_scope or assert prompt regexes.",
+        "Negative cases assert nonzero exits and specific pending/stale/invalid/unwired/missing-responsibility codes. Positive cases require all three CLI gates to exit zero.",
+        "Both adapter source paths and product-document presence are parametrized in the positive local tests. They assert preexisting file bytes remain unchanged and no concept baseline is fabricated.",
+        "The accepted test graph combines implementation/documentation/verification in one node; the independent supervisor fixture instead splits the three responsibilities across dependency-linked nodes with concrete code, docs and verification instructions.",
+        "The tests supply explicit agent-produced artifacts; they are meaningful contract/gate tests, not evidence that an actual Claude or Codex planner conducted an interview.",
+        "Malformed scope tests exercise invalid areas and boolean revisions, but no acceptance test exercises a malformed workflow nodes container; the independent regression below demonstrates this missing guard."
+      ]
+    }
+  },
+  "obligations": [
+    {
+      "obligation": "Same bootstrap entry; goal-driven three routes; clarify ambiguity without presence-based expansion",
+      "evidence": [
+        "Canonical bootstrap Step 1.0 captures task_goal and task_route before code analysis; Step 1.5 separates the routes.",
+        "Acceptance ambiguous-route and reverse-node-conflict tests pass; independent new-product and product-reconstruction empty-confirmation cases stay not_ready."
+      ],
+      "status": "verified_at_T9_contract_and_guidance_seam"
+    },
+    {
+      "obligation": "Local change with code and no product documents stays scoped",
+      "evidence": [
+        "Canonical planning and audits explicitly limit local analysis/coverage to task_scope.",
+        "Independent confirmed local fixtures with and without product-concept.json pass all three gates for both adapter asset paths; no reverse node or new whole-product baseline is introduced."
+      ],
+      "status": "verified_at_T9_contract_and_guidance_seam"
+    },
+    {
+      "obligation": "Traceable goals, business rules, acceptance and necessary user decisions",
+      "evidence": [
+        "Shared owner requires nonempty goal/scope/business_rules/acceptance and user-source reference/decision_id/reason.",
+        "Acceptance rejects code-derived confirmation and empty acceptance; independent pending case returns pending_requirement and preserves authority files."
+      ],
+      "status": "verified_at_T9_contract_seam"
+    },
+    {
+      "obligation": "Reuse applicable decisions and explicitly confirm changed requirements",
+      "evidence": [
+        "Acceptance confirms scope mismatch and stale revision rejection; positive cases reuse confirmed input and preserve completed warehouse branch.",
+        "Independent revision-3 decision is accepted; adding pending revision 4 makes all gates reject revision 3 as stale_requirement; restoring the unchanged approved input restores readiness."
+      ],
+      "status": "verified_at_T9_contract_seam"
+    },
+    {
+      "obligation": "Workflow and Node-spec express implementation, documentation and verification responsibilities",
+      "evidence": [
+        "Shared helper checks per-requirement responsibility coverage and decision-input wiring; bootstrap checks frontmatter mirrors workflow.",
+        "Acceptance tests remove documentation responsibility, decision wiring and Node-spec refs independently and observe failure.",
+        "Independent reservation fixture uses three freely named dependency-linked nodes and passes with actual source boundary, document path, verification command and repair owners in Node-spec body."
+      ],
+      "status": "verified_at_T9_contract_seam"
+    },
+    {
+      "obligation": "Product-wide routes do not pretend product confirmation is complete",
+      "evidence": [
+        "Independent empty requirement_refs on both product-wide routes return pending_product_confirmation.",
+        "Canonical and Codex guidance make inference provisional and new-product skip reverse inference."
+      ],
+      "status": "verified_at_T9_boundary"
+    },
+    {
+      "obligation": "ADR-0001 free planning, suppress rules and front-loaded interaction",
+      "evidence": [
+        "Read docs/adr/0001-bootstrap-free-planning.md; candidate keeps free node planning and suppress-rule application.",
+        "Requirements may share or split nodes; neither validator manufactures a fixed graph or solicits a runtime answer."
+      ],
+      "status": "verified_by_guidance_inspection_and_contract_execution"
+    },
+    {
+      "obligation": "Both platform semantics",
+      "evidence": [
+        "Codex adapter reads canonical bootstrap and requires the same scope contract and three copied gates.",
+        "codex/meta-skill/scripts resolves to canonical Claude scripts; 8 inspected copied helpers byte-match the candidate.",
+        "Normal and negative cases have matching semantic results through both adapter asset paths."
+      ],
+      "status": "verified_for_shared_contract_integration_only; actual host scenarios deferred to T15-T18"
+    },
+    {
+      "obligation": "Malformed inputs produce typed visible failure without stale success",
+      "evidence": [
+        "regression_records: candidate-null-nodes-after-ready versus base-null-nodes"
+      ],
+      "status": "failed",
+      "finding": "T9-SUP-001"
+    }
+  ],
+  "consumers": {
+    "owner": "claude/meta-skill/scripts/orchestrator/product_intent.py:validate_scope",
+    "direct": [
+      "check_decision_inputs.py:main calls validate_scope and prints its typed blockers",
+      "validate_bootstrap.py:main calls validate_scope and compares Node-spec requirement fields",
+      "validate_unattended_readiness.py:validate_unattended_readiness extends report blockers from validate_scope"
+    ],
+    "runtime": [
+      "Codex flow-template.py:run_preflight invokes copied validate_unattended_readiness.py with --write-report and checks both exit and persisted status.",
+      "Claude run-engine engine-core.js and run-engine.workflow.js instruct the run to execute the same copied readiness preflight.",
+      "Both bootstrap adapters copy product_intent.py into the flattened generated-project scripts directory; check_decision_inputs.py resolves it successfully there."
+    ],
+    "limitation": "The malformed readiness regression does not prove Codex dispatches work: run_preflight checks the nonzero exit and remains blocked. The demonstrated defect is loss of the structured failure/report contract and retention of misleading old ready output.",
+    "copied_asset_identity": [
+      {
+        "host_adapter": "claude",
+        "source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/product_intent.py",
+        "copied_path": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs/.allforai/bootstrap/scripts/product_intent.py",
+        "sha256": "4132651f7311ff0d89debf75f420cb6d10030d6bfbda70cc53974fb3d9031c52",
+        "matches_candidate": true
+      },
+      {
+        "host_adapter": "claude",
+        "source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+        "copied_path": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
+        "sha256": "7fef3be74d9c613fe26cc72bb69df432bfea8fcdb40afdbe0fb1c388b6fee8ba",
+        "matches_candidate": true
+      },
+      {
+        "host_adapter": "claude",
+        "source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+        "copied_path": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+        "sha256": "22fb5b5dca3c0c813b85efc71c245c4f5af99f3a70083066976670468abaf767",
+        "matches_candidate": true
+      },
+      {
+        "host_adapter": "claude",
+        "source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/check_decision_inputs.py",
+        "copied_path": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
+        "sha256": "9a420ad0cd16b3827b1bbbff735d43a1b71f2b7cfb501e7fe08ff3b05e653d29",
+        "matches_candidate": true
+      },
+      {
+        "host_adapter": "codex",
+        "source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/product_intent.py",
+        "copied_path": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-docs/.allforai/bootstrap/scripts/product_intent.py",
+        "sha256": "4132651f7311ff0d89debf75f420cb6d10030d6bfbda70cc53974fb3d9031c52",
+        "matches_candidate": true
+      },
+      {
+        "host_adapter": "codex",
+        "source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+        "copied_path": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
+        "sha256": "7fef3be74d9c613fe26cc72bb69df432bfea8fcdb40afdbe0fb1c388b6fee8ba",
+        "matches_candidate": true
+      },
+      {
+        "host_adapter": "codex",
+        "source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+        "copied_path": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+        "sha256": "22fb5b5dca3c0c813b85efc71c245c4f5af99f3a70083066976670468abaf767",
+        "matches_candidate": true
+      },
+      {
+        "host_adapter": "codex",
+        "source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/check_decision_inputs.py",
+        "copied_path": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
+        "sha256": "9a420ad0cd16b3827b1bbbff735d43a1b71f2b7cfb501e7fe08ff3b05e653d29",
+        "matches_candidate": true
+      }
+    ]
+  },
+  "independent_runtime": {
+    "fixture_root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91",
+    "fixture_description": "Supervisor-authored reservation cancellation contract, unrelated billing direction retained in optional existing product document, independent of acceptance fixture helpers. Three nodes divide implementation/documentation/verification and consume revision 3 with explicit user provenance.",
+    "fixture_generation_and_run_command": "python3 - <<'PY'\nimport copy, hashlib, json, os, shutil, subprocess, sys, tempfile\nfrom pathlib import Path\nrepo=Path.cwd()\nsuite=Path(tempfile.mkdtemp(prefix=\"t9-supervisor-\"))\nrecords=[]\ndef write(root, rel, data):\n p=root/rel; p.parent.mkdir(parents=True,exist_ok=True); p.write_text(json.dumps(data))\nreqpath=\".allforai/bootstrap/local-requirements.json\"\nref={\"path\":reqpath,\"id\":\"cancel-reservation\",\"revision\":3}\nrequirement={\"id\":ref[\"id\"],\"revision\":3,\"scope\":[\"reservations\"],\"goal\":\"Let an owner cancel an unstarted reservation\",\"business_rules\":[\"Only its owner can cancel\",\"Started reservations cannot be cancelled\"],\"acceptance\":[\"Non-owner cancellation returns forbidden\",\"Started reservation is unchanged\",\"Owner can cancel before start\"],\"status\":\"confirmed\",\"confirmation\":{\"source\":\"user\",\"reference\":\"synthetic user response 4: only the owner before start\",\"decision_id\":\"reservation-owner-3\",\"reason\":\"Prevent others disrupting reservations\"}}\nprofile={\"task_goal\":\"Add owner cancellation before reservation start\",\"task_route\":\"local-change\",\"task_scope\":{\"areas\":[\"reservations\"],\"requirement_refs\":[ref]}}\nnodes=[]\nfor name,role,deps in [(\"cancel\",\"implementation\",[]),(\"cancel-docs\",\"documentation\",[\"cancel\"]),(\"cancel-verify\",\"verification\",[\"cancel\",\"cancel-docs\"])]:\n nodes.append({\"node_id\":name,\"goal\":role+\" for owner reservation cancellation\",\"capability\":\"implement\" if role==\"implementation\" else \"quality-checks\",\"requirement_refs\":[ref],\"decision_inputs\":[reqpath],\"responsibilities\":[role],\"hard_blocked_by\":deps,\"exit_artifacts\":[\".allforai/bootstrap/\"+name+\"-report.json\"]})\nbody=\"\"\"\n## Attention Contract\n- Primary outcome: owner cancellation before reservation start.\n- Non-goals / out-of-scope: payment and existing inventory remain unchanged.\n- Must-read inputs: local-requirements.json cancel-reservation revision 3, synthetic user response 4.\n- Optional inputs: docs/reservations.md.\n- Context budget: reservations.py and cancellation test inputs only.\n- Quality questions: do non-owner and already-started requests leave state unchanged?\n- Stop conditions: return a blocker when confirmed requirement input is unavailable.\n- Repair targets: cancel owns implementation repair; cancel-docs owns docs; cancel-verify reruns tests.\n## Implementation and Documentation\nUpdate reservations.py cancellation handler and docs/reservations.md ownership/error contract.\n## Quality Acceptance\nExecute python3 -m unittest test_reservations; inspect owner, non-owner, and started reservation results.\n\"\"\"\ndef setup(host,docs=False):\n root=suite/(host+(\"-docs\" if docs else \"-no-docs\")); root.mkdir()\n scripts=root/\".allforai/bootstrap/scripts\"; scripts.mkdir(parents=True)\n src=repo/host/\"meta-skill/scripts\"\n for name in (\"validate_bootstrap.py\",\"validate_unattended_readiness.py\",\"check_artifacts.py\",\"product_intent.py\"):\n  shutil.copy2(src/\"orchestrator\"/name,scripts/name)\n shutil.copy2(src/\"check_decision_inputs.py\",scripts/\"check_decision_inputs.py\")\n write(root,\".allforai/bootstrap/bootstrap-profile.json\",profile)\n write(root,reqpath,{\"requirements\":[requirement]})\n write(root,\".allforai/bootstrap/workflow.json\",{\"nodes\":nodes,\"transition_log\":[]})\n for n in nodes:\n  p=root/\".allforai/bootstrap/node-specs\"/(n[\"node_id\"]+\".md\");p.parent.mkdir(exist_ok=True)\n  p.write_text(\"---\\n\"+json.dumps(n)+\"\\n---\\n\"+body)\n write(root,\".allforai/bootstrap/unattended-run-readiness-spec.json\",{\"version\":1,\"run_mode\":\"unattended\",\"forbid_mid_run_user_prompts\":True,\"forbid_hidden_fallback_completion\":True,\"max_repair_attempts\":3,\"required_capabilities\":[],\"required_repair_loops\":[],\"long_task_policy\":{k:True for k in [\"file_based_handoff\",\"polling\",\"timeout\",\"retry\",\"resume\"]}})\n (root/\"reservations.py\").write_text(\"def reservations(owner): return []\\n\")\n if docs: write(root,\".allforai/product-concept/product-concept.json\",{\"vision\":\"Retain booking service direction\",\"unrelated\":[\"billing\"]})\n return root\ndef run(root,case, expected):\n before={str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for p in root.rglob(\"*\") if p.is_file() and \"__pycache__\" not in str(p) and \"unattended-run-readiness.\" not in p.name}\n for name in [\"validate_bootstrap.py\",\"check_decision_inputs.py\",\"validate_unattended_readiness.py\"]:\n  cmd=[sys.executable,str(root/\".allforai/bootstrap/scripts\"/name),str(root/\".allforai/bootstrap\" if name==\"validate_bootstrap.py\" else root)]\n  if name==\"validate_unattended_readiness.py\":cmd.append(\"--write-report\")\n  r=subprocess.run(cmd,cwd=root,capture_output=True,text=True,env={**os.environ,\"PYTHONDONTWRITEBYTECODE\":\"1\"})\n  rec={\"case\":case,\"root\":str(root),\"command\":cmd,\"cwd\":str(root),\"stdout\":r.stdout,\"stderr\":r.stderr,\"exit\":r.returncode,\"expected_exit\":expected}\n  if name==\"validate_unattended_readiness.py\":\n   report=root/\".allforai/bootstrap/unattended-run-readiness.json\"\n   rec[\"persisted_report\"]=json.loads(report.read_text()) if report.exists() else None\n  records.append(rec)\n after={str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for p in root.rglob(\"*\") if p.is_file() and \"__pycache__\" not in str(p) and \"unattended-run-readiness.\" not in p.name}\n assert before==after,(case,\"authority/source modified\")\nfor host in [\"claude\",\"codex\"]:\n for docs in [False,True]:\n  root=setup(host,docs)\n  run(root,\"confirmed-local-\"+host+(\"-docs\" if docs else \"-no-docs\"),0)\n root=suite/(host+\"-no-docs\")\n pending=copy.deepcopy(requirement);pending[\"status\"]=\"pending\";pending.pop(\"confirmation\")\n write(root,reqpath,{\"requirements\":[pending]});run(root,\"pending-\"+host,1)\n write(root,reqpath,{\"requirements\":[requirement]});run(root,\"restored-\"+host,0)\n malformed=copy.deepcopy(profile);malformed[\"task_scope\"][\"requirement_refs\"][0][\"revision\"]=True\n write(root,\".allforai/bootstrap/bootstrap-profile.json\",malformed);run(root,\"invalid-revision-\"+host,1)\n write(root,\".allforai/bootstrap/bootstrap-profile.json\",profile)\n changed=copy.deepcopy(requirement);changed[\"revision\"]=4;changed[\"status\"]=\"pending\";changed[\"goal\"]=\"Permit every staff member to cancel\"\n write(root,reqpath,{\"requirements\":[requirement,changed]});run(root,\"changed-pending-\"+host,1)\n write(root,reqpath,{\"requirements\":[requirement]})\n for route in [\"new-product\",\"product-reconstruction\"]:\n  p=copy.deepcopy(profile);p[\"task_route\"]=route;p[\"task_scope\"][\"requirement_refs\"]=[]\n  write(root,\".allforai/bootstrap/bootstrap-profile.json\",p);run(root,route+\"-\"+host,1)\n write(root,\".allforai/bootstrap/bootstrap-profile.json\",profile)\n write(root,\".allforai/bootstrap/workflow.json\",{\"nodes\":None})\n run(root,\"malformed-nodes-\"+host,1)\nprint(json.dumps({\"fixture_root\":str(suite),\"records\":records}))\n\nPY",
+    "command_count": 54,
+    "exit_expectations_matched": 54,
+    "structured_semantic_cases": 16,
+    "malformed_container_cases": 2,
+    "semantics": "All 48 non-malformed-container gate invocations behaved as expected. Six malformed-container invocations exited 1 with traceback instead of a typed result; four are the new shared-helper regression across bootstrap/readiness and two originate in preexisting decision-wiring iteration. Exit agreement alone is not treated as success.",
+    "authority_preservation": "Fixture script hashes all preexisting non-report, non-bytecode files before and after each three-gate run and asserts equality; all assertions passed.",
+    "records": [
+      {
+        "case": "confirmed-local-claude-no-docs",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+        "stderr": "",
+        "exit": 0,
+        "expected_exit": 0
+      },
+      {
+        "case": "confirmed-local-claude-no-docs",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+        "stderr": "",
+        "exit": 0,
+        "expected_exit": 0
+      },
+      {
+        "case": "confirmed-local-claude-no-docs",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+          "--write-report"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:23:35.252531+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+        "stderr": "",
+        "exit": 0,
+        "expected_exit": 0,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:23:35.252531+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "case": "confirmed-local-claude-docs",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs/.allforai/bootstrap"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs",
+        "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+        "stderr": "",
+        "exit": 0,
+        "expected_exit": 0
+      },
+      {
+        "case": "confirmed-local-claude-docs",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs",
+        "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+        "stderr": "",
+        "exit": 0,
+        "expected_exit": 0
+      },
+      {
+        "case": "confirmed-local-claude-docs",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs",
+          "--write-report"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs",
+        "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:23:35.337407+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+        "stderr": "",
+        "exit": 0,
+        "expected_exit": 0,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:23:35.337407+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "case": "pending-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "{\n  \"errors\": [\n    \"pending_requirement: cancel-reservation: return to interactive bootstrap for confirmation\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "pending-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - pending_requirement: cancel-reservation: return to interactive bootstrap for confirmation\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "pending-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+          "--write-report"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:23:35.419530+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"pending_requirement\",\n      \"message\": \"cancel-reservation: return to interactive bootstrap for confirmation\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:23:35.419530+00:00",
+          "blockers": [
+            {
+              "code": "pending_requirement",
+              "message": "cancel-reservation: return to interactive bootstrap for confirmation"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "case": "restored-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+        "stderr": "",
+        "exit": 0,
+        "expected_exit": 0
+      },
+      {
+        "case": "restored-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+        "stderr": "",
+        "exit": 0,
+        "expected_exit": 0
+      },
+      {
+        "case": "restored-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+          "--write-report"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:23:35.502345+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+        "stderr": "",
+        "exit": 0,
+        "expected_exit": 0,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:23:35.502345+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "case": "invalid-revision-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "{\n  \"errors\": [\n    \"invalid_scope: /var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/bootstrap-profile.json: requirement_refs need path, id and a positive integer revision\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "invalid-revision-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - invalid_scope: /var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/bootstrap-profile.json: requirement_refs need path, id and a positive integer revision\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "invalid-revision-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+          "--write-report"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:23:35.583734+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"invalid_scope\",\n      \"message\": \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/bootstrap-profile.json: requirement_refs need path, id and a positive integer revision\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:23:35.583734+00:00",
+          "blockers": [
+            {
+              "code": "invalid_scope",
+              "message": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/bootstrap-profile.json: requirement_refs need path, id and a positive integer revision"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "case": "changed-pending-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "{\n  \"errors\": [\n    \"stale_requirement: cancel-reservation: reference does not select the current requirement revision\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "changed-pending-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - stale_requirement: cancel-reservation: reference does not select the current requirement revision\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "changed-pending-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+          "--write-report"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:23:35.667870+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"stale_requirement\",\n      \"message\": \"cancel-reservation: reference does not select the current requirement revision\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:23:35.667870+00:00",
+          "blockers": [
+            {
+              "code": "stale_requirement",
+              "message": "cancel-reservation: reference does not select the current requirement revision"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "case": "new-product-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "{\n  \"errors\": [\n    \"pending_product_confirmation: No confirmed requirements in the selected scope; return to bootstrap\",\n    \"scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\",\n    \"scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\",\n    \"scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "new-product-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - pending_product_confirmation: No confirmed requirements in the selected scope; return to bootstrap\n  - scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\n  - scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\n  - scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "new-product-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+          "--write-report"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:23:35.750927+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"pending_product_confirmation\",\n      \"message\": \"No confirmed requirements in the selected scope; return to bootstrap\"\n    },\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"cancel\",\n      \"message\": \"Node requirement must be in task_scope and consumed through decision_inputs\"\n    },\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"cancel-docs\",\n      \"message\": \"Node requirement must be in task_scope and consumed through decision_inputs\"\n    },\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"cancel-verify\",\n      \"message\": \"Node requirement must be in task_scope and consumed through decision_inputs\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:23:35.750927+00:00",
+          "blockers": [
+            {
+              "code": "pending_product_confirmation",
+              "message": "No confirmed requirements in the selected scope; return to bootstrap"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "cancel",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "cancel-docs",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "cancel-verify",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "case": "product-reconstruction-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "{\n  \"errors\": [\n    \"pending_product_confirmation: No confirmed requirements in the selected scope; return to bootstrap\",\n    \"scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\",\n    \"scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\",\n    \"scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "product-reconstruction-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - pending_product_confirmation: No confirmed requirements in the selected scope; return to bootstrap\n  - scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\n  - scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\n  - scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "product-reconstruction-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+          "--write-report"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:23:35.840580+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"pending_product_confirmation\",\n      \"message\": \"No confirmed requirements in the selected scope; return to bootstrap\"\n    },\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"cancel\",\n      \"message\": \"Node requirement must be in task_scope and consumed through decision_inputs\"\n    },\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"cancel-docs\",\n      \"message\": \"Node requirement must be in task_scope and consumed through decision_inputs\"\n    },\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"cancel-verify\",\n      \"message\": \"Node requirement must be in task_scope and consumed through decision_inputs\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:23:35.840580+00:00",
+          "blockers": [
+            {
+              "code": "pending_product_confirmation",
+              "message": "No confirmed requirements in the selected scope; return to bootstrap"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "cancel",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "cancel-docs",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "cancel-verify",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "case": "malformed-nodes-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_bootstrap.py\", line 1395, in <module>\n    main()\n    ~~~~^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_bootstrap.py\", line 1347, in main\n    errors.extend(f\"{b['code']}: {b['message']}\" for b in validate_scope(\n                                                          ~~~~~~~~~~~~~~^\n        _project_root_from_bootstrap_dir(bdir), _load_json(wf_path)))\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/product_intent.py\", line 14, in validate_scope\n    scoped_nodes = any(\"requirement_refs\" in node for node in workflow.get(\"nodes\", []))\n                                                              ~~~~~~~~~~~~^^^^^^^^^^^^^\nTypeError: 'NoneType' object is not iterable\n",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "malformed-nodes-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 60, in <module>\n    sys.exit(main(sys.argv))\n             ~~~~^^^^^^^^^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 40, in main\n    missing = check_decision_inputs(workflow, base_dir=base)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 16, in check_decision_inputs\n    for node in workflow.get(\"nodes\", []):\n                ~~~~~~~~~~~~^^^^^^^^^^^^^\nTypeError: 'NoneType' object is not iterable\n",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "malformed-nodes-claude",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+          "--write-report"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs",
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 499, in <module>\n    raise SystemExit(main())\n                     ~~~~^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 489, in main\n    report = validate_unattended_readiness(root)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 316, in validate_unattended_readiness\n    blockers.extend(validate_scope(project_root, workflow))\n                    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-no-docs/.allforai/bootstrap/scripts/product_intent.py\", line 14, in validate_scope\n    scoped_nodes = any(\"requirement_refs\" in node for node in workflow.get(\"nodes\", []))\n                                                              ~~~~~~~~~~~~^^^^^^^^^^^^^\nTypeError: 'NoneType' object is not iterable\n",
+        "exit": 1,
+        "expected_exit": 1,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:23:35.840580+00:00",
+          "blockers": [
+            {
+              "code": "pending_product_confirmation",
+              "message": "No confirmed requirements in the selected scope; return to bootstrap"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "cancel",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "cancel-docs",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "cancel-verify",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "case": "confirmed-local-codex-no-docs",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+        "stderr": "",
+        "exit": 0,
+        "expected_exit": 0
+      },
+      {
+        "case": "confirmed-local-codex-no-docs",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+        "stderr": "",
+        "exit": 0,
+        "expected_exit": 0
+      },
+      {
+        "case": "confirmed-local-codex-no-docs",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+          "--write-report"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:23:36.033023+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+        "stderr": "",
+        "exit": 0,
+        "expected_exit": 0,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:23:36.033023+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "case": "confirmed-local-codex-docs",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-docs/.allforai/bootstrap"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-docs",
+        "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+        "stderr": "",
+        "exit": 0,
+        "expected_exit": 0
+      },
+      {
+        "case": "confirmed-local-codex-docs",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-docs"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-docs",
+        "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+        "stderr": "",
+        "exit": 0,
+        "expected_exit": 0
+      },
+      {
+        "case": "confirmed-local-codex-docs",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-docs",
+          "--write-report"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-docs",
+        "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:23:36.125253+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+        "stderr": "",
+        "exit": 0,
+        "expected_exit": 0,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:23:36.125253+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "case": "pending-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "{\n  \"errors\": [\n    \"pending_requirement: cancel-reservation: return to interactive bootstrap for confirmation\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "pending-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - pending_requirement: cancel-reservation: return to interactive bootstrap for confirmation\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "pending-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+          "--write-report"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:23:36.217173+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"pending_requirement\",\n      \"message\": \"cancel-reservation: return to interactive bootstrap for confirmation\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:23:36.217173+00:00",
+          "blockers": [
+            {
+              "code": "pending_requirement",
+              "message": "cancel-reservation: return to interactive bootstrap for confirmation"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "case": "restored-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+        "stderr": "",
+        "exit": 0,
+        "expected_exit": 0
+      },
+      {
+        "case": "restored-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+        "stderr": "",
+        "exit": 0,
+        "expected_exit": 0
+      },
+      {
+        "case": "restored-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+          "--write-report"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:23:36.308564+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+        "stderr": "",
+        "exit": 0,
+        "expected_exit": 0,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:23:36.308564+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "case": "invalid-revision-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "{\n  \"errors\": [\n    \"invalid_scope: /var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/bootstrap-profile.json: requirement_refs need path, id and a positive integer revision\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "invalid-revision-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - invalid_scope: /var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/bootstrap-profile.json: requirement_refs need path, id and a positive integer revision\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "invalid-revision-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+          "--write-report"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:23:36.400154+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"invalid_scope\",\n      \"message\": \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/bootstrap-profile.json: requirement_refs need path, id and a positive integer revision\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:23:36.400154+00:00",
+          "blockers": [
+            {
+              "code": "invalid_scope",
+              "message": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/bootstrap-profile.json: requirement_refs need path, id and a positive integer revision"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "case": "changed-pending-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "{\n  \"errors\": [\n    \"stale_requirement: cancel-reservation: reference does not select the current requirement revision\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "changed-pending-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - stale_requirement: cancel-reservation: reference does not select the current requirement revision\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "changed-pending-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+          "--write-report"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:23:36.488593+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"stale_requirement\",\n      \"message\": \"cancel-reservation: reference does not select the current requirement revision\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:23:36.488593+00:00",
+          "blockers": [
+            {
+              "code": "stale_requirement",
+              "message": "cancel-reservation: reference does not select the current requirement revision"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "case": "new-product-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "{\n  \"errors\": [\n    \"pending_product_confirmation: No confirmed requirements in the selected scope; return to bootstrap\",\n    \"scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\",\n    \"scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\",\n    \"scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "new-product-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - pending_product_confirmation: No confirmed requirements in the selected scope; return to bootstrap\n  - scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\n  - scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\n  - scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "new-product-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+          "--write-report"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:23:36.580877+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"pending_product_confirmation\",\n      \"message\": \"No confirmed requirements in the selected scope; return to bootstrap\"\n    },\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"cancel\",\n      \"message\": \"Node requirement must be in task_scope and consumed through decision_inputs\"\n    },\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"cancel-docs\",\n      \"message\": \"Node requirement must be in task_scope and consumed through decision_inputs\"\n    },\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"cancel-verify\",\n      \"message\": \"Node requirement must be in task_scope and consumed through decision_inputs\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:23:36.580877+00:00",
+          "blockers": [
+            {
+              "code": "pending_product_confirmation",
+              "message": "No confirmed requirements in the selected scope; return to bootstrap"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "cancel",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "cancel-docs",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "cancel-verify",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "case": "product-reconstruction-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "{\n  \"errors\": [\n    \"pending_product_confirmation: No confirmed requirements in the selected scope; return to bootstrap\",\n    \"scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\",\n    \"scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\",\n    \"scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "product-reconstruction-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - pending_product_confirmation: No confirmed requirements in the selected scope; return to bootstrap\n  - scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\n  - scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\n  - scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "product-reconstruction-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+          "--write-report"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:23:36.674537+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"pending_product_confirmation\",\n      \"message\": \"No confirmed requirements in the selected scope; return to bootstrap\"\n    },\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"cancel\",\n      \"message\": \"Node requirement must be in task_scope and consumed through decision_inputs\"\n    },\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"cancel-docs\",\n      \"message\": \"Node requirement must be in task_scope and consumed through decision_inputs\"\n    },\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"cancel-verify\",\n      \"message\": \"Node requirement must be in task_scope and consumed through decision_inputs\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "exit": 1,
+        "expected_exit": 1,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:23:36.674537+00:00",
+          "blockers": [
+            {
+              "code": "pending_product_confirmation",
+              "message": "No confirmed requirements in the selected scope; return to bootstrap"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "cancel",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "cancel-docs",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "cancel-verify",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "case": "malformed-nodes-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_bootstrap.py\", line 1395, in <module>\n    main()\n    ~~~~^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_bootstrap.py\", line 1347, in main\n    errors.extend(f\"{b['code']}: {b['message']}\" for b in validate_scope(\n                                                          ~~~~~~~~~~~~~~^\n        _project_root_from_bootstrap_dir(bdir), _load_json(wf_path)))\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/product_intent.py\", line 14, in validate_scope\n    scoped_nodes = any(\"requirement_refs\" in node for node in workflow.get(\"nodes\", []))\n                                                              ~~~~~~~~~~~~^^^^^^^^^^^^^\nTypeError: 'NoneType' object is not iterable\n",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "malformed-nodes-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 60, in <module>\n    sys.exit(main(sys.argv))\n             ~~~~^^^^^^^^^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 40, in main\n    missing = check_decision_inputs(workflow, base_dir=base)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 16, in check_decision_inputs\n    for node in workflow.get(\"nodes\", []):\n                ~~~~~~~~~~~~^^^^^^^^^^^^^\nTypeError: 'NoneType' object is not iterable\n",
+        "exit": 1,
+        "expected_exit": 1
+      },
+      {
+        "case": "malformed-nodes-codex",
+        "root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+          "--write-report"
+        ],
+        "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs",
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 499, in <module>\n    raise SystemExit(main())\n                     ~~~~^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 489, in main\n    report = validate_unattended_readiness(root)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 316, in validate_unattended_readiness\n    blockers.extend(validate_scope(project_root, workflow))\n                    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-no-docs/.allforai/bootstrap/scripts/product_intent.py\", line 14, in validate_scope\n    scoped_nodes = any(\"requirement_refs\" in node for node in workflow.get(\"nodes\", []))\n                                                              ~~~~~~~~~~~~^^^^^^^^^^^^^\nTypeError: 'NoneType' object is not iterable\n",
+        "exit": 1,
+        "expected_exit": 1,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:23:36.674537+00:00",
+          "blockers": [
+            {
+              "code": "pending_product_confirmation",
+              "message": "No confirmed requirements in the selected scope; return to bootstrap"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "cancel",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "cancel-docs",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "cancel-verify",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      }
+    ]
+  },
+  "blocking_findings": [
+    {
+      "id": "T9-SUP-001",
+      "severity": "P2",
+      "owner_task": "T9",
+      "title": "Guard workflow shape before the new scope scan so readiness still publishes typed failure",
+      "locations": [
+        {
+          "path": "claude/meta-skill/scripts/orchestrator/product_intent.py",
+          "line": 14
+        },
+        {
+          "path": "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+          "line": 316
+        },
+        {
+          "path": "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+          "line": 1347
+        }
+      ],
+      "requirement_basis": [
+        "program-spec.md State/failure: validate malformed/ambiguous contracts visibly; no empty/default success; preserve exact diagnostic",
+        "tasks/intent.md T9 Failure contract: typed visible pending/stale/invalid/conflict/error",
+        "reviews/failure-classification.json O1 invalid-input guard: rejected input followed by corrected scoped reentry"
+      ],
+      "trigger": "A generated workflow is valid JSON but has nodes:null. The existing readiness validator already recognizes non-list nodes and adds missing_workflow, but the new call passes the original malformed workflow to validate_scope.",
+      "actual": "validate_scope's any(...) executes before its try/except and raises TypeError. Readiness exits 1 with empty stdout and a traceback before --write-report runs. If an earlier report was ready, it remains byte-for-byte ready. Bootstrap likewise loses its normal structured diagnostic to the same new helper crash.",
+      "expected": "Return/publish a current not_ready report with a typed malformed-workflow/scope blocker and retain source/approved requirement records; correcting the workflow should restore readiness.",
+      "fixed_base_comparison": "The exact fixed-base readiness script on the same malformed fixture exits 1, prints and writes status:not_ready with code:missing_workflow and message:'workflow.json nodes must be a list'.",
+      "repro_steps": [
+        "Run the independent fixture command in independent_runtime.fixture_generation_and_run_command.",
+        "On claude-docs, run copied validate_unattended_readiness.py <project> --write-report to establish ready.",
+        "Save workflow.json bytes; replace its content with {\"nodes\": null}; rerun the same command.",
+        "Observe empty stdout, TypeError in stderr, exit 1 and unchanged ready report. Compare the fixed-base script via git show as in regression_reproduction_command.",
+        "Restore the saved workflow and rerun; candidate is ready again."
+      ],
+      "evidence_cases": [
+        "candidate-valid",
+        "candidate-null-nodes-after-ready",
+        "base-null-nodes",
+        "candidate-corrected"
+      ],
+      "scope_note": "This is a regression introduced in T9's common helper integration, not a demand for T10-T18 behavior. Preexisting check_decision_inputs malformed-container failure is not counted as a second new finding.",
+      "suggested_repair": "Validate workflow/node container types before scanning and route malformed values through the existing typed blocker path; add a focused copied-CLI regression including prior-ready report and corrected reentry. No repair was performed."
+    }
+  ],
+  "regression_reproduction_command": "python3 - <<'PY'\nimport hashlib,json,os,subprocess,sys\nfrom pathlib import Path\nrepo=Path.cwd()\nroot=Path(\"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91\")/\"claude-docs\"\nwf=root/\".allforai/bootstrap/workflow.json\"\noriginal=wf.read_bytes()\nreport=root/\".allforai/bootstrap/unattended-run-readiness.json\"\nscript=root/\".allforai/bootstrap/scripts/validate_unattended_readiness.py\"\nbase_path=root.parent/\"base-validate_unattended_readiness.py\"\nbase_result=subprocess.run([\"git\",\"show\",\"cadac5525abf2407fdcd0588252336cba8f60a01:claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py\"],cwd=repo,capture_output=True,text=True)\nassert base_result.returncode==0\nbase_path.write_text(base_result.stdout)\nrecords=[]\ndef run(label,path):\n cmd=[sys.executable,str(path),str(root),\"--write-report\"]\n before=report.read_bytes() if report.exists() else b\"\"\n r=subprocess.run(cmd,capture_output=True,text=True,cwd=root,env={**os.environ,\"PYTHONDONTWRITEBYTECODE\":\"1\"})\n after=report.read_bytes() if report.exists() else b\"\"\n records.append({\"case\":label,\"command\":cmd,\"cwd\":str(root),\"stdout\":r.stdout,\"stderr\":r.stderr,\"exit\":r.returncode,\"report_unchanged\":before==after,\"persisted_report\":json.loads(after) if after else None})\nrun(\"candidate-valid\",script)\nwf.write_text('{\"nodes\": null}')\nrun(\"candidate-null-nodes-after-ready\",script)\nrun(\"base-null-nodes\",base_path)\nwf.write_bytes(original)\nrun(\"candidate-corrected\",script)\nprint(json.dumps({\"records\":records,\"source_restore\":wf.read_bytes()==original,\"base_script_sha256\":hashlib.sha256(base_path.read_bytes()).hexdigest()}))\n\nPY",
+  "regression_records": [
+    {
+      "case": "candidate-valid",
+      "command": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+        "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs",
+        "--write-report"
+      ],
+      "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs",
+      "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:24:21.298110+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+      "stderr": "",
+      "exit": 0,
+      "report_unchanged": false,
+      "persisted_report": {
+        "status": "ready",
+        "checked_at": "2026-09-07T09:24:21.298110+00:00",
+        "blockers": [],
+        "warnings": [],
+        "required_capabilities": [],
+        "approval_gate_findings": [],
+        "non_interactive_findings": [],
+        "external_tool_findings": [],
+        "fallback_findings": [],
+        "long_task_findings": [],
+        "recommended_pre_run_actions": []
+      }
+    },
+    {
+      "case": "candidate-null-nodes-after-ready",
+      "command": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+        "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs",
+        "--write-report"
+      ],
+      "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs",
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 499, in <module>\n    raise SystemExit(main())\n                     ~~~~^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 489, in main\n    report = validate_unattended_readiness(root)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 316, in validate_unattended_readiness\n    blockers.extend(validate_scope(project_root, workflow))\n                    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs/.allforai/bootstrap/scripts/product_intent.py\", line 14, in validate_scope\n    scoped_nodes = any(\"requirement_refs\" in node for node in workflow.get(\"nodes\", []))\n                                                              ~~~~~~~~~~~~^^^^^^^^^^^^^\nTypeError: 'NoneType' object is not iterable\n",
+      "exit": 1,
+      "report_unchanged": true,
+      "persisted_report": {
+        "status": "ready",
+        "checked_at": "2026-09-07T09:24:21.298110+00:00",
+        "blockers": [],
+        "warnings": [],
+        "required_capabilities": [],
+        "approval_gate_findings": [],
+        "non_interactive_findings": [],
+        "external_tool_findings": [],
+        "fallback_findings": [],
+        "long_task_findings": [],
+        "recommended_pre_run_actions": []
+      }
+    },
+    {
+      "case": "base-null-nodes",
+      "command": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/base-validate_unattended_readiness.py",
+        "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs",
+        "--write-report"
+      ],
+      "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs",
+      "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:24:21.360171+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"missing_workflow\",\n      \"message\": \"workflow.json nodes must be a list\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+      "stderr": "",
+      "exit": 1,
+      "report_unchanged": false,
+      "persisted_report": {
+        "status": "not_ready",
+        "checked_at": "2026-09-07T09:24:21.360171+00:00",
+        "blockers": [
+          {
+            "code": "missing_workflow",
+            "message": "workflow.json nodes must be a list"
+          }
+        ],
+        "warnings": [],
+        "required_capabilities": [],
+        "approval_gate_findings": [],
+        "non_interactive_findings": [],
+        "external_tool_findings": [],
+        "fallback_findings": [],
+        "long_task_findings": [],
+        "recommended_pre_run_actions": [
+          "Approve or revise pending human gates before /run.",
+          "Run /setup check and configure missing external tools or keys.",
+          "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+          "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+        ]
+      }
+    },
+    {
+      "case": "candidate-corrected",
+      "command": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+        "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs",
+        "--write-report"
+      ],
+      "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs",
+      "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:24:21.393653+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+      "stderr": "",
+      "exit": 0,
+      "report_unchanged": false,
+      "persisted_report": {
+        "status": "ready",
+        "checked_at": "2026-09-07T09:24:21.393653+00:00",
+        "blockers": [],
+        "warnings": [],
+        "required_capabilities": [],
+        "approval_gate_findings": [],
+        "non_interactive_findings": [],
+        "external_tool_findings": [],
+        "fallback_findings": [],
+        "long_task_findings": [],
+        "recommended_pre_run_actions": []
+      }
+    }
+  ],
+  "regression_count": 4,
+  "regression_base_script_sha256": "81c2267753253fbe274759d41b40ff0f9f0ff3f1ad15b096e9ab6f3bff864d2c",
+  "identity_and_cleanliness_commands": [
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "HEAD"
+      ],
+      "stdout": "f00c61b1c349b6c5c1ba167851f018b732c5269b\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "command": [
+        "git",
+        "status",
+        "--porcelain"
+      ],
+      "stdout": "",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--name-status",
+        "cadac5525abf2407fdcd0588252336cba8f60a01",
+        "f00c61b1c349b6c5c1ba167851f018b732c5269b"
+      ],
+      "stdout": "M\tclaude/meta-skill/knowledge/bootstrap-audits.md\nM\tclaude/meta-skill/knowledge/bootstrap-planning.md\nM\tclaude/meta-skill/knowledge/node-spec-template.md\nM\tclaude/meta-skill/scripts/check_decision_inputs.py\nA\tclaude/meta-skill/scripts/orchestrator/product_intent.py\nM\tclaude/meta-skill/scripts/orchestrator/validate_bootstrap.py\nM\tclaude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py\nM\tclaude/meta-skill/skills/bootstrap/SKILL.md\nA\tclaude/meta-skill/tests/unit/test_bootstrap_scope.py\nM\tcodex/meta-skill/knowledge/product-inference.md\nM\tcodex/meta-skill/skills/bootstrap.md\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "cadac5525abf2407fdcd0588252336cba8f60a01",
+        "f00c61b1c349b6c5c1ba167851f018b732c5269b"
+      ],
+      "stdout": "",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "final_state": {
+    "candidate_unchanged": true,
+    "report_saved_by": "apply_patch",
+    "temporary_fixture_changes_only_outside_report": true,
+    "semantic_work_remaining": "T9 owner repairs T9-SUP-001, then fresh focused acceptance and independent malformed-input reproduction. Root-owned Standards/Spec/integration and later actual-host matrix remain separate obligations."
+  }
+}

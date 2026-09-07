@@ -1,0 +1,59 @@
+{
+  "task": "T9",
+  "rejected_candidate": "f00c61b1c349b6c5c1ba167851f018b732c5269b",
+  "business_retry": 1,
+  "findings": [
+    {
+      "id": "T9-SUP-001",
+      "severity": "P2",
+      "owner_task": "T9",
+      "title": "Guard workflow shape before the new scope scan so readiness still publishes typed failure",
+      "locations": [
+        {
+          "path": "claude/meta-skill/scripts/orchestrator/product_intent.py",
+          "line": 14
+        },
+        {
+          "path": "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+          "line": 316
+        },
+        {
+          "path": "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+          "line": 1347
+        }
+      ],
+      "requirement_basis": [
+        "program-spec.md State/failure: validate malformed/ambiguous contracts visibly; no empty/default success; preserve exact diagnostic",
+        "tasks/intent.md T9 Failure contract: typed visible pending/stale/invalid/conflict/error",
+        "reviews/failure-classification.json O1 invalid-input guard: rejected input followed by corrected scoped reentry"
+      ],
+      "trigger": "A generated workflow is valid JSON but has nodes:null. The existing readiness validator already recognizes non-list nodes and adds missing_workflow, but the new call passes the original malformed workflow to validate_scope.",
+      "actual": "validate_scope's any(...) executes before its try/except and raises TypeError. Readiness exits 1 with empty stdout and a traceback before --write-report runs. If an earlier report was ready, it remains byte-for-byte ready. Bootstrap likewise loses its normal structured diagnostic to the same new helper crash.",
+      "expected": "Return/publish a current not_ready report with a typed malformed-workflow/scope blocker and retain source/approved requirement records; correcting the workflow should restore readiness.",
+      "fixed_base_comparison": "The exact fixed-base readiness script on the same malformed fixture exits 1, prints and writes status:not_ready with code:missing_workflow and message:'workflow.json nodes must be a list'.",
+      "repro_steps": [
+        "Run the independent fixture command in independent_runtime.fixture_generation_and_run_command.",
+        "On claude-docs, run copied validate_unattended_readiness.py <project> --write-report to establish ready.",
+        "Save workflow.json bytes; replace its content with {\"nodes\": null}; rerun the same command.",
+        "Observe empty stdout, TypeError in stderr, exit 1 and unchanged ready report. Compare the fixed-base script via git show as in regression_reproduction_command.",
+        "Restore the saved workflow and rerun; candidate is ready again."
+      ],
+      "evidence_cases": [
+        "candidate-valid",
+        "candidate-null-nodes-after-ready",
+        "base-null-nodes",
+        "candidate-corrected"
+      ],
+      "scope_note": "This is a regression introduced in T9's common helper integration, not a demand for T10-T18 behavior. Preexisting check_decision_inputs malformed-container failure is not counted as a second new finding.",
+      "suggested_repair": "Validate workflow/node container types before scanning and route malformed values through the existing typed blocker path; add a focused copied-CLI regression including prior-ready report and corrected reentry. No repair was performed."
+    },
+    {
+      "id": "T9-ROOT-01",
+      "title": "Every new scoped-workflow node must have a valid in-scope requirement reference; unrelated empty-ref node is accepted",
+      "evidence": "reviews/T9-root-scope-probe.json",
+      "reproduction": "reviews/probes/T9-unscoped-node.py",
+      "expected": "Reject new work with absent/empty requirement_refs; preserve actual unrelated historical completed branches. Do not forbid legitimate requirement-scoped prerequisite nodes."
+    }
+  ],
+  "scope": "Same frozen T9 artifact paths and obligations; no new product decision, no later task implementation."
+}

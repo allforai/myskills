@@ -1,0 +1,1971 @@
+{
+  "schema_version": 1,
+  "task_id": "T9",
+  "role": "supervisor",
+  "verdict": "rejected",
+  "verified": false,
+  "fixed_candidate": "c93fc9419db540277aa6925aae0b588f3b7a6128",
+  "fixed_base": "cadac5525abf2407fdcd0588252336cba8f60a01",
+  "worktree": "/Users/aa/orca/workspaces/myskills/meta-intent-t9",
+  "scope": {
+    "requirements": [
+      "R01",
+      "R02",
+      "R17",
+      "R18",
+      "R30"
+    ],
+    "interface": "I-scope",
+    "task_only": true,
+    "excluded": "T10–T18 implementation and actual host scenario execution are not due for this T9 supervisor. Copied Claude/Codex helpers are public CLI integration evidence, not actual host dialogue proof.",
+    "frozen_inputs": {
+      "program-spec.md": "b860a0a357babf5264196ab57edb360fd6c647952324b49360cfa7ed02827237",
+      "modules/intent-spec.md": "5a564dc8af7021342530e108df7558bf65afa6567a8cccb89f00706a5987eee4",
+      "tasks/catalog.md": "64498f549e3abe7f35cd07d7fcb72cfd00a733540bddb292d5a8e8af11a8d3a0",
+      "tasks/intent.md": "be7cc1a0894963152224bccf4d52a62357aa0ca14d39117fdf943de5bfa6aeeb",
+      "sources/issue-8.json": "09a6d044aaf4ec293f75ba3d5b51a1a8576435b270764f9cbcdf6ec0e7dfc773",
+      "sources/issue-9.json": "aaf6ca7617c4711156c43e978d358d7e461ea62da624ae456c38f50f216c45c6",
+      "reviews/failure-classification.json": "009a855705833537679250e9f6822a9e7fa4f7adf0503a0b503995800dc2ec07",
+      "tasks/dispatch-contract.md": "b1adb504b324acbe783870a38d1d9a1ff6bd8e13816205e008e9db0aa734b02d",
+      "tasks/scenario-matrix.json": "d8d3b9dd401a961375bafa3b684d1f912155dd7a6e08d0e24535d1b0818bf9a5"
+    },
+    "all_input_hashes_match_packet": true,
+    "source_bodies_and_comments_read": true,
+    "prohibited_narratives_read": false,
+    "artifact_contract": "11 changed paths, all within the 15 frozen allowed paths; required test file exists; no forbidden candidate paths; max 30 respected."
+  },
+  "summary": "Focused acceptance and affected checks are nonvacuous and green, and normal scoped admission works through copied generated-project CLIs. Independently malformed node elements bypass structured failure handling and leave a prior ready report current on disk. Reject T9 until all three public gates validate malformed workflows before unsafe traversal and readiness replaces stale ready reports with typed not_ready outcomes.",
+  "blocking_findings": [
+    {
+      "id": "T9-S2-F1",
+      "priority": "P1",
+      "title": "Malformed node elements crash public gates and retain prior ready report",
+      "owner": "T9",
+      "scope_basis": "T9 runtime/failure contract and O1 invalid-input guard: visibly validate malformed bootstrap contracts, preserve authority, and support corrected reentry; user explicitly requires malformed workflow after prior ready report.",
+      "locations": [
+        "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py:315",
+        "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py:329",
+        "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py:489",
+        "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py:1345",
+        "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py:492",
+        "claude/meta-skill/scripts/check_decision_inputs.py:40"
+      ],
+      "reproduction": [
+        "Run independent_probe.command below to construct raw invoice requirement/workflow fixtures and copy actual candidate helpers through each host asset path; no candidate test fixture imports are used.",
+        "First run validate_unattended_readiness.py PROJECT --write-report on valid scoped inputs; exit 0 and persisted status ready.",
+        "Replace PROJECT/.allforai/bootstrap/workflow.json with {\"nodes\":[null]} (also reproduced with {\"nodes\":[\"bad\"]}).",
+        "Invoke all three copied gates. Each exits 1 with empty stdout and an AttributeError traceback on stderr; readiness leaves the prior status ready report unchanged.",
+        "Restore the valid workflow and rerun: all gates exit 0 and readiness is ready. Product source and requirement authority hashes remain unchanged throughout.",
+        "Additional shape {\"nodes\":null} yields typed not_ready from bootstrap/readiness but check_decision_inputs still crashes with TypeError before reaching validate_scope."
+      ],
+      "expected": "Each public gate returns a structured/typed invalid-workflow blocker without traceback; --write-report publishes current not_ready even after prior ready state, then accepts valid corrected reentry.",
+      "actual": "validate_scope detects non-object nodes, but readiness proceeds to _node_id on them; bootstrap calls unsafe validate_workflow before validate_scope; decision-input CLI traverses malformed nodes before invoking the shared validator.",
+      "impact": "Durable misleading readiness evidence and missing typed diagnostics on ordinary malformed generated contracts. Codex run_preflight additionally checks subprocess exit status, so these observations do not claim actual unattended execution bypass; the public report/failure contract itself is broken.",
+      "evidence_cases": [
+        "malformed-{\"nodes\": [null]}",
+        "malformed-{\"nodes\": [\"bad\"]}",
+        "malformed-{\"nodes\": null}",
+        "malformed-corrected-reentry"
+      ],
+      "repair_expectation": "Validate object/list/node-element shapes before all consumer traversal, stop unsafe checks on invalid inputs, publish not_ready on malformed input, and extend public copied-project tests beyond nodes:null. Fresh independent supervisor rerun required."
+    }
+  ],
+  "observations": [
+    "42 focused tests and 63 directly affected tests passed; neither command skipped or collected zero tests. Focused tests run subprocess CLIs on actual copied helpers and assert outputs/preservation, not only prompt text.",
+    "Independent 90 CLI invocations across 15 ordered states per helper source and three gates. Valid local invoice scope without product documents passes all gates; missing confirmation.reason blocks all gates; restoring the same recorded requirement accepts reentry.",
+    "New unscoped warehouse node with absent or empty requirement_refs is rejected through all three gates with scope_requirement_unwired. A retained warehouse node with completed transition history and existing report remains accepted for both shapes.",
+    "Reconstruction and new-product with empty confirmed scope remain pending_product_confirmation, rather than being labeled approved.",
+    "All 90 probes preserved synthetic product source and current requirement file bytes. Candidate public tests also exercise existing product docs, unrelated historical requirements/reports and non-rewrite preservation.",
+    "Shared helper validates goal, route, scope/reference shape and project-relative path containment, latest revision, confirmation provenance, node wiring and responsibility coverage. Scope-less legacy contracts intentionally return legacy-compatible results; mere existence is not treated as user confirmation in guidance.",
+    "Canonical bootstrap captures goal before code analysis, restricts missing-doc analysis to local scope, front-loads decisions, mirrors requirement fields into Node-specs, and directs all gates plus helper copying. Codex adapter loads the canonical Skill, carries the same scope/consent rules, explicitly prevents assume-and-declare consent, and copies the shared helpers.",
+    "Codex scripts symlink resolves to canonical Claude scripts; all 10 copied helper files match candidate source SHA256. Readiness helper is used by Codex run_preflight and referenced by Claude engine preflight guidance.",
+    "Runtime implementations of later intent projection, freshness and actual Claude/Codex scenario matrix were not evaluated or demanded as T9 completion."
+  ],
+  "candidate_identity": {
+    "assets": [
+      {
+        "host": "claude",
+        "name": "product_intent.py",
+        "resolved_source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/product_intent.py",
+        "sha256": "eac6454de23d61ea97d1260be7bfaf2d78f8874fd7013ae7478da2b5dc3cd664",
+        "copy_matches": true
+      },
+      {
+        "host": "claude",
+        "name": "validate_bootstrap.py",
+        "resolved_source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+        "sha256": "58765c502521eba705971dfe6c33677249b69f43fa7d9e505b6456cd5f8a72eb",
+        "copy_matches": true
+      },
+      {
+        "host": "claude",
+        "name": "validate_unattended_readiness.py",
+        "resolved_source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+        "sha256": "22fb5b5dca3c0c813b85efc71c245c4f5af99f3a70083066976670468abaf767",
+        "copy_matches": true
+      },
+      {
+        "host": "claude",
+        "name": "check_artifacts.py",
+        "resolved_source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/check_artifacts.py",
+        "sha256": "4791d59a2d8a2084bf5cd46247ebe2cce1f13eca33f1d002d59b944d50e3721d",
+        "copy_matches": true
+      },
+      {
+        "host": "claude",
+        "name": "check_decision_inputs.py",
+        "resolved_source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/check_decision_inputs.py",
+        "sha256": "9a420ad0cd16b3827b1bbbff735d43a1b71f2b7cfb501e7fe08ff3b05e653d29",
+        "copy_matches": true
+      },
+      {
+        "host": "codex",
+        "name": "product_intent.py",
+        "resolved_source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/product_intent.py",
+        "sha256": "eac6454de23d61ea97d1260be7bfaf2d78f8874fd7013ae7478da2b5dc3cd664",
+        "copy_matches": true
+      },
+      {
+        "host": "codex",
+        "name": "validate_bootstrap.py",
+        "resolved_source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+        "sha256": "58765c502521eba705971dfe6c33677249b69f43fa7d9e505b6456cd5f8a72eb",
+        "copy_matches": true
+      },
+      {
+        "host": "codex",
+        "name": "validate_unattended_readiness.py",
+        "resolved_source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+        "sha256": "22fb5b5dca3c0c813b85efc71c245c4f5af99f3a70083066976670468abaf767",
+        "copy_matches": true
+      },
+      {
+        "host": "codex",
+        "name": "check_artifacts.py",
+        "resolved_source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/check_artifacts.py",
+        "sha256": "4791d59a2d8a2084bf5cd46247ebe2cce1f13eca33f1d002d59b944d50e3721d",
+        "copy_matches": true
+      },
+      {
+        "host": "codex",
+        "name": "check_decision_inputs.py",
+        "resolved_source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/check_decision_inputs.py",
+        "sha256": "9a420ad0cd16b3827b1bbbff735d43a1b71f2b7cfb501e7fe08ff3b05e653d29",
+        "copy_matches": true
+      }
+    ],
+    "head": "c93fc9419db540277aa6925aae0b588f3b7a6128",
+    "status": "",
+    "diff_check": 0
+  },
+  "tests": [
+    {
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "claude/meta-skill/tests/unit/test_bootstrap_scope.py",
+        "-q"
+      ],
+      "stdout": "..........................................                               [100%]\n42 passed in 2.76s\n",
+      "stderr": "",
+      "exit": 0,
+      "count": 42
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "claude/meta-skill/tests/unit/test_validate_bootstrap.py",
+        "claude/meta-skill/tests/unit/test_validate_unattended_readiness.py",
+        "claude/meta-skill/tests/unit/test_check_artifacts.py",
+        "claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py",
+        "-q"
+      ],
+      "stdout": "...............................................................          [100%]\n63 passed in 0.15s\n",
+      "stderr": "",
+      "exit": 0,
+      "count": 63
+    }
+  ],
+  "initial_test_runs": [
+    {
+      "command": "python3 -m pytest claude/meta-skill/tests/unit/test_bootstrap_scope.py -q",
+      "chunk_id": "0dd44e",
+      "wall_time_seconds": 2.7567965,
+      "exit_code": 0,
+      "original_token_count": 25,
+      "output": "..........................................                               [100%]\n42 passed in 2.72s\n"
+    },
+    {
+      "command": "python3 -m pytest claude/meta-skill/tests/unit/test_validate_bootstrap.py claude/meta-skill/tests/unit/test_validate_unattended_readiness.py claude/meta-skill/tests/unit/test_check_artifacts.py claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py -q",
+      "chunk_id": "74ab98",
+      "wall_time_seconds": 0.265148625,
+      "exit_code": 0,
+      "original_token_count": 25,
+      "output": "...............................................................          [100%]\n63 passed in 0.16s\n"
+    }
+  ],
+  "test_repeat_reason": "Repeated under subprocess capture to retain separate complete stdout/stderr streams for the required report.",
+  "independent_probe": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 python3 - <<'PY'\nimport json, tempfile, shutil, subprocess, sys, hashlib\nfrom pathlib import Path\nsource=Path.cwd()\nroot=Path(tempfile.mkdtemp(prefix=\"t9-independent-\"))\nrecords=[]\nref={\"path\":\".allforai/bootstrap/local-requirements.json\",\"id\":\"invoice-download\",\"revision\":1}\nreq={\"id\":\"invoice-download\",\"revision\":1,\"scope\":[\"invoices\"],\"goal\":\"Download my invoices\",\"business_rules\":[\"Only owner invoices are accessible\"],\"acceptance\":[\"Different owner request denied\"],\"status\":\"confirmed\",\"confirmation\":{\"source\":\"user\",\"reference\":\"synthetic user turn 1\",\"decision_id\":\"invoice-approved\",\"reason\":\"Keep customer invoices private\"}}\nnode={\"node_id\":\"invoice\",\"goal\":\"Deliver private invoice download\",\"capability\":\"implement\",\"exit_artifacts\":[\".allforai/bootstrap/invoice-report.json\"],\"requirement_refs\":[ref],\"responsibilities\":[\"implementation\",\"documentation\",\"verification\"],\"decision_inputs\":[ref[\"path\"]]}\nprofile={\"task_goal\":\"Add invoice download\",\"task_route\":\"local-change\",\"task_scope\":{\"areas\":[\"invoices\"],\"requirement_refs\":[ref]}}\nspecbody=\"\"\"## Attention Contract\n- Primary outcome: private invoice download.\n- Non-goals / out-of-scope: warehouse changes.\n- Must-read inputs: local requirements invoice-download revision 1.\n- Optional inputs: none.\n- Context budget: invoice source only.\n- Quality questions: are other owners denied?\n- Stop conditions: pending decisions.\n- Repair targets: invoice implementation.\n\"\"\"\npolicy={\"version\":1,\"run_mode\":\"unattended\",\"forbid_mid_run_user_prompts\":True,\"forbid_hidden_fallback_completion\":True,\"max_repair_attempts\":3,\"required_capabilities\":[],\"required_repair_loops\":[],\"long_task_policy\":dict.fromkeys([\"file_based_handoff\",\"polling\",\"timeout\",\"retry\",\"resume\"],True)}\ndef write(p,obj):\n p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(obj))\nfor host in [\"claude\",\"codex\"]:\n p=root/host;b=p/\".allforai/bootstrap\";s=b/\"scripts\";s.mkdir(parents=True)\n for name in [\"product_intent.py\",\"validate_bootstrap.py\",\"validate_unattended_readiness.py\",\"check_artifacts.py\"]:\n  shutil.copy2(source/host/\"meta-skill/scripts/orchestrator\"/name,s/name)\n shutil.copy2(source/host/\"meta-skill/scripts/check_decision_inputs.py\",s/\"check_decision_inputs.py\")\n (p/\"invoices.py\").write_text(\"def invoices(owner): return []\\n\")\n write(b/\"bootstrap-profile.json\",profile);write(b/\"local-requirements.json\",{\"requirements\":[req]});write(b/\"unattended-run-readiness-spec.json\",policy)\n def publish(w):\n  write(b/\"workflow.json\",w)\n  for n in w.get(\"nodes\",[]) or []:\n   if isinstance(n,dict):\n    path=b/\"node-specs\"/(n[\"node_id\"]+\".md\");path.parent.mkdir(exist_ok=True);path.write_text(\"---\\n\"+json.dumps(n)+\"\\n---\\n\"+specbody)\n def gates(case):\n  for name in [\"validate_bootstrap.py\",\"check_decision_inputs.py\",\"validate_unattended_readiness.py\"]:\n   cmd=[sys.executable,str(s/name),str(b if name==\"validate_bootstrap.py\" else p)]\n   if name==\"validate_unattended_readiness.py\":cmd+=[\"--write-report\"]\n   before={str(x):hashlib.sha256(x.read_bytes()).hexdigest() for x in [p/\"invoices.py\",b/\"local-requirements.json\"]}\n   r=subprocess.run(cmd,cwd=p,text=True,capture_output=True)\n   rec={\"host_asset_path\":str(source/host/\"meta-skill/scripts\"),\"case\":case,\"command\":cmd,\"exit\":r.returncode,\"stdout\":r.stdout,\"stderr\":r.stderr,\"protected_unchanged\":all(hashlib.sha256(Path(x).read_bytes()).hexdigest()==v for x,v in before.items())}\n   report=b/\"unattended-run-readiness.json\"\n   if name==\"validate_unattended_readiness.py\" and report.exists():rec[\"persisted_report\"]=json.loads(report.read_text())\n   records.append(rec)\n publish({\"nodes\":[node],\"transition_log\":[]});gates(\"valid-local\")\n incomplete=json.loads(json.dumps(req));del incomplete[\"confirmation\"][\"reason\"]\n write(b/\"local-requirements.json\",{\"requirements\":[incomplete]});gates(\"incomplete-confirmation\")\n write(b/\"local-requirements.json\",{\"requirements\":[req]});gates(\"confirmation-reentry\")\n for malformed in [{\"nodes\":None},{\"nodes\":[None]},{\"nodes\":[\"bad\"]}]:\n  write(b/\"workflow.json\",malformed);gates(\"malformed-\"+json.dumps(malformed))\n  publish({\"nodes\":[node],\"transition_log\":[]});gates(\"malformed-corrected-reentry\")\n for refs in [\"absent\",\"empty\"]:\n  extra={\"node_id\":\"warehouse\",\"goal\":\"Change warehouse inventory\",\"capability\":\"implement\",\"exit_artifacts\":[\".allforai/bootstrap/stock.json\"]}\n  if refs==\"empty\":extra[\"requirement_refs\"]=[]\n  publish({\"nodes\":[node,extra],\"transition_log\":[]});gates(\"new-unscoped-\"+refs)\n  write(b/\"stock.json\",{\"status\":\"passed\",\"observations\":[\"existing warehouse counts verified\"]})\n  publish({\"nodes\":[node,extra],\"transition_log\":[{\"node_id\":\"warehouse\",\"status\":\"completed\"}]});gates(\"retained-completed-\"+refs)\n publish({\"nodes\":[node],\"transition_log\":[]})\n for route in [\"product-reconstruction\",\"new-product\"]:\n  pr=json.loads(json.dumps(profile));pr[\"task_route\"]=route;pr[\"task_scope\"]={\"areas\":[\"product\"],\"requirement_refs\":[]};write(b/\"bootstrap-profile.json\",pr);gates(route+\"-unconfirmed\")\n write(b/\"bootstrap-profile.json\",profile)\nprint(json.dumps({\"fixture_root\":str(root),\"records\":records}))\n\nPY",
+    "harness_exit": 0,
+    "harness_stderr": "",
+    "fixture_root": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w",
+    "invocation_count": 90,
+    "scope": "Raw synthetic generated-project contracts; no executor fixture imports or host role-play.",
+    "records": [
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "valid-local",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "valid-local",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude"
+        ],
+        "exit": 0,
+        "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "valid-local",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude",
+          "--write-report"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:39:05.976104+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:39:05.976104+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "incomplete-confirmation",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"errors\": [\n    \"pending_requirement: invoice-download: return to interactive bootstrap for confirmation\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "incomplete-confirmation",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude"
+        ],
+        "exit": 1,
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - pending_requirement: invoice-download: return to interactive bootstrap for confirmation\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "incomplete-confirmation",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude",
+          "--write-report"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:39:06.060580+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"pending_requirement\",\n      \"message\": \"invoice-download: return to interactive bootstrap for confirmation\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:39:06.060580+00:00",
+          "blockers": [
+            {
+              "code": "pending_requirement",
+              "message": "invoice-download: return to interactive bootstrap for confirmation"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "confirmation-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "confirmation-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude"
+        ],
+        "exit": 0,
+        "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "confirmation-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude",
+          "--write-report"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:39:06.144948+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:39:06.144948+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "malformed-{\"nodes\": null}",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"errors\": [\n    \"workflow.json: 'nodes' array missing or not a list\",\n    \"invalid_scope: /var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/bootstrap-profile.json: workflow.json nodes must be a list\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "malformed-{\"nodes\": null}",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude"
+        ],
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 60, in <module>\n    sys.exit(main(sys.argv))\n             ~~~~^^^^^^^^^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 40, in main\n    missing = check_decision_inputs(workflow, base_dir=base)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 16, in check_decision_inputs\n    for node in workflow.get(\"nodes\", []):\n                ~~~~~~~~~~~~^^^^^^^^^^^^^\nTypeError: 'NoneType' object is not iterable\n",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "malformed-{\"nodes\": null}",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude",
+          "--write-report"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:39:06.234620+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"missing_workflow\",\n      \"message\": \"workflow.json nodes must be a list\"\n    },\n    {\n      \"code\": \"invalid_scope\",\n      \"message\": \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/bootstrap-profile.json: workflow.json nodes must be a list\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:39:06.234620+00:00",
+          "blockers": [
+            {
+              "code": "missing_workflow",
+              "message": "workflow.json nodes must be a list"
+            },
+            {
+              "code": "invalid_scope",
+              "message": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/bootstrap-profile.json: workflow.json nodes must be a list"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "malformed-corrected-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "malformed-corrected-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude"
+        ],
+        "exit": 0,
+        "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "malformed-corrected-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude",
+          "--write-report"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:39:06.319612+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:39:06.319612+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "malformed-{\"nodes\": [null]}",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap"
+        ],
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py\", line 1398, in <module>\n    main()\n    ~~~~^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py\", line 1345, in main\n    workflow_errors = validate_workflow(wf_path)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py\", line 492, in validate_workflow\n    node_ids = {_node_id(n) for n in wf[\"nodes\"] if _node_id(n)}\n                                                    ~~~~~~~~^^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py\", line 32, in _node_id\n    return node.get(\"node_id\") or fallback\n           ^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'get'\n",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "malformed-{\"nodes\": [null]}",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude"
+        ],
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 60, in <module>\n    sys.exit(main(sys.argv))\n             ~~~~^^^^^^^^^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 40, in main\n    missing = check_decision_inputs(workflow, base_dir=base)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 17, in check_decision_inputs\n    for path in node.get(\"decision_inputs\", []) or []:\n                ^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'get'\n",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "malformed-{\"nodes\": [null]}",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude",
+          "--write-report"
+        ],
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 499, in <module>\n    raise SystemExit(main())\n                     ~~~~^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 489, in main\n    report = validate_unattended_readiness(root)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 329, in validate_unattended_readiness\n    nid = _node_id(node)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 37, in _node_id\n    return node.get(\"node_id\") or \"<missing-node-id>\"\n           ^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'get'\n",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:39:06.319612+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "malformed-corrected-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "malformed-corrected-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude"
+        ],
+        "exit": 0,
+        "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "malformed-corrected-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude",
+          "--write-report"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:39:06.502042+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:39:06.502042+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "malformed-{\"nodes\": [\"bad\"]}",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap"
+        ],
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py\", line 1398, in <module>\n    main()\n    ~~~~^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py\", line 1345, in main\n    workflow_errors = validate_workflow(wf_path)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py\", line 492, in validate_workflow\n    node_ids = {_node_id(n) for n in wf[\"nodes\"] if _node_id(n)}\n                                                    ~~~~~~~~^^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py\", line 32, in _node_id\n    return node.get(\"node_id\") or fallback\n           ^^^^^^^^\nAttributeError: 'str' object has no attribute 'get'\n",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "malformed-{\"nodes\": [\"bad\"]}",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude"
+        ],
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 60, in <module>\n    sys.exit(main(sys.argv))\n             ~~~~^^^^^^^^^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 40, in main\n    missing = check_decision_inputs(workflow, base_dir=base)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 17, in check_decision_inputs\n    for path in node.get(\"decision_inputs\", []) or []:\n                ^^^^^^^^\nAttributeError: 'str' object has no attribute 'get'\n",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "malformed-{\"nodes\": [\"bad\"]}",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude",
+          "--write-report"
+        ],
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 499, in <module>\n    raise SystemExit(main())\n                     ~~~~^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 489, in main\n    report = validate_unattended_readiness(root)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 329, in validate_unattended_readiness\n    nid = _node_id(node)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 37, in _node_id\n    return node.get(\"node_id\") or \"<missing-node-id>\"\n           ^^^^^^^^\nAttributeError: 'str' object has no attribute 'get'\n",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:39:06.502042+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "malformed-corrected-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "malformed-corrected-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude"
+        ],
+        "exit": 0,
+        "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "malformed-corrected-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude",
+          "--write-report"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:39:06.681563+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:39:06.681563+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "new-unscoped-absent",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"errors\": [\n    \"scope_requirement_unwired: warehouse: new scoped work needs non-empty requirement_refs\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "new-unscoped-absent",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude"
+        ],
+        "exit": 1,
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - scope_requirement_unwired: warehouse: new scoped work needs non-empty requirement_refs\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "new-unscoped-absent",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude",
+          "--write-report"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:39:06.765310+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"warehouse\",\n      \"message\": \"warehouse: new scoped work needs non-empty requirement_refs\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:39:06.765310+00:00",
+          "blockers": [
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "warehouse",
+              "message": "warehouse: new scoped work needs non-empty requirement_refs"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "retained-completed-absent",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "retained-completed-absent",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude"
+        ],
+        "exit": 0,
+        "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "retained-completed-absent",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude",
+          "--write-report"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:39:06.848533+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:39:06.848533+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "new-unscoped-empty",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"errors\": [\n    \"scope_requirement_unwired: warehouse: new scoped work needs non-empty requirement_refs\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "new-unscoped-empty",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude"
+        ],
+        "exit": 1,
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - scope_requirement_unwired: warehouse: new scoped work needs non-empty requirement_refs\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "new-unscoped-empty",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude",
+          "--write-report"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:39:06.932900+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"warehouse\",\n      \"message\": \"warehouse: new scoped work needs non-empty requirement_refs\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:39:06.932900+00:00",
+          "blockers": [
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "warehouse",
+              "message": "warehouse: new scoped work needs non-empty requirement_refs"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "retained-completed-empty",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "retained-completed-empty",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude"
+        ],
+        "exit": 0,
+        "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "retained-completed-empty",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude",
+          "--write-report"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:39:07.017518+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:39:07.017518+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "product-reconstruction-unconfirmed",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"errors\": [\n    \"pending_product_confirmation: No confirmed requirements in the selected scope; return to bootstrap\",\n    \"scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\",\n    \"node-specs/warehouse.md: no matching workflow node\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "product-reconstruction-unconfirmed",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude"
+        ],
+        "exit": 1,
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - pending_product_confirmation: No confirmed requirements in the selected scope; return to bootstrap\n  - scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "product-reconstruction-unconfirmed",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude",
+          "--write-report"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:39:07.101099+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"pending_product_confirmation\",\n      \"message\": \"No confirmed requirements in the selected scope; return to bootstrap\"\n    },\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"invoice\",\n      \"message\": \"Node requirement must be in task_scope and consumed through decision_inputs\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:39:07.101099+00:00",
+          "blockers": [
+            {
+              "code": "pending_product_confirmation",
+              "message": "No confirmed requirements in the selected scope; return to bootstrap"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "invoice",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "new-product-unconfirmed",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"errors\": [\n    \"pending_product_confirmation: No confirmed requirements in the selected scope; return to bootstrap\",\n    \"scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\",\n    \"node-specs/warehouse.md: no matching workflow node\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "new-product-unconfirmed",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude"
+        ],
+        "exit": 1,
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - pending_product_confirmation: No confirmed requirements in the selected scope; return to bootstrap\n  - scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "case": "new-product-unconfirmed",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/claude",
+          "--write-report"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:39:07.184847+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"pending_product_confirmation\",\n      \"message\": \"No confirmed requirements in the selected scope; return to bootstrap\"\n    },\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"invoice\",\n      \"message\": \"Node requirement must be in task_scope and consumed through decision_inputs\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:39:07.184847+00:00",
+          "blockers": [
+            {
+              "code": "pending_product_confirmation",
+              "message": "No confirmed requirements in the selected scope; return to bootstrap"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "invoice",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "valid-local",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "valid-local",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex"
+        ],
+        "exit": 0,
+        "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "valid-local",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex",
+          "--write-report"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:39:07.272430+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:39:07.272430+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "incomplete-confirmation",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"errors\": [\n    \"pending_requirement: invoice-download: return to interactive bootstrap for confirmation\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "incomplete-confirmation",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex"
+        ],
+        "exit": 1,
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - pending_requirement: invoice-download: return to interactive bootstrap for confirmation\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "incomplete-confirmation",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex",
+          "--write-report"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:39:07.357348+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"pending_requirement\",\n      \"message\": \"invoice-download: return to interactive bootstrap for confirmation\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:39:07.357348+00:00",
+          "blockers": [
+            {
+              "code": "pending_requirement",
+              "message": "invoice-download: return to interactive bootstrap for confirmation"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "confirmation-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "confirmation-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex"
+        ],
+        "exit": 0,
+        "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "confirmation-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex",
+          "--write-report"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:39:07.438531+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:39:07.438531+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "malformed-{\"nodes\": null}",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"errors\": [\n    \"workflow.json: 'nodes' array missing or not a list\",\n    \"invalid_scope: /var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/bootstrap-profile.json: workflow.json nodes must be a list\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "malformed-{\"nodes\": null}",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex"
+        ],
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 60, in <module>\n    sys.exit(main(sys.argv))\n             ~~~~^^^^^^^^^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 40, in main\n    missing = check_decision_inputs(workflow, base_dir=base)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 16, in check_decision_inputs\n    for node in workflow.get(\"nodes\", []):\n                ~~~~~~~~~~~~^^^^^^^^^^^^^\nTypeError: 'NoneType' object is not iterable\n",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "malformed-{\"nodes\": null}",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex",
+          "--write-report"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:39:07.528730+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"missing_workflow\",\n      \"message\": \"workflow.json nodes must be a list\"\n    },\n    {\n      \"code\": \"invalid_scope\",\n      \"message\": \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/bootstrap-profile.json: workflow.json nodes must be a list\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:39:07.528730+00:00",
+          "blockers": [
+            {
+              "code": "missing_workflow",
+              "message": "workflow.json nodes must be a list"
+            },
+            {
+              "code": "invalid_scope",
+              "message": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/bootstrap-profile.json: workflow.json nodes must be a list"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "malformed-corrected-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "malformed-corrected-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex"
+        ],
+        "exit": 0,
+        "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "malformed-corrected-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex",
+          "--write-report"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:39:07.615669+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:39:07.615669+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "malformed-{\"nodes\": [null]}",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap"
+        ],
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py\", line 1398, in <module>\n    main()\n    ~~~~^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py\", line 1345, in main\n    workflow_errors = validate_workflow(wf_path)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py\", line 492, in validate_workflow\n    node_ids = {_node_id(n) for n in wf[\"nodes\"] if _node_id(n)}\n                                                    ~~~~~~~~^^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py\", line 32, in _node_id\n    return node.get(\"node_id\") or fallback\n           ^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'get'\n",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "malformed-{\"nodes\": [null]}",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex"
+        ],
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 60, in <module>\n    sys.exit(main(sys.argv))\n             ~~~~^^^^^^^^^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 40, in main\n    missing = check_decision_inputs(workflow, base_dir=base)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 17, in check_decision_inputs\n    for path in node.get(\"decision_inputs\", []) or []:\n                ^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'get'\n",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "malformed-{\"nodes\": [null]}",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex",
+          "--write-report"
+        ],
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 499, in <module>\n    raise SystemExit(main())\n                     ~~~~^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 489, in main\n    report = validate_unattended_readiness(root)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 329, in validate_unattended_readiness\n    nid = _node_id(node)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 37, in _node_id\n    return node.get(\"node_id\") or \"<missing-node-id>\"\n           ^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'get'\n",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:39:07.615669+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "malformed-corrected-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "malformed-corrected-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex"
+        ],
+        "exit": 0,
+        "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "malformed-corrected-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex",
+          "--write-report"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:39:07.798800+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:39:07.798800+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "malformed-{\"nodes\": [\"bad\"]}",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap"
+        ],
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py\", line 1398, in <module>\n    main()\n    ~~~~^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py\", line 1345, in main\n    workflow_errors = validate_workflow(wf_path)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py\", line 492, in validate_workflow\n    node_ids = {_node_id(n) for n in wf[\"nodes\"] if _node_id(n)}\n                                                    ~~~~~~~~^^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py\", line 32, in _node_id\n    return node.get(\"node_id\") or fallback\n           ^^^^^^^^\nAttributeError: 'str' object has no attribute 'get'\n",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "malformed-{\"nodes\": [\"bad\"]}",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex"
+        ],
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 60, in <module>\n    sys.exit(main(sys.argv))\n             ~~~~^^^^^^^^^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 40, in main\n    missing = check_decision_inputs(workflow, base_dir=base)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py\", line 17, in check_decision_inputs\n    for path in node.get(\"decision_inputs\", []) or []:\n                ^^^^^^^^\nAttributeError: 'str' object has no attribute 'get'\n",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "malformed-{\"nodes\": [\"bad\"]}",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex",
+          "--write-report"
+        ],
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 499, in <module>\n    raise SystemExit(main())\n                     ~~~~^^\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 489, in main\n    report = validate_unattended_readiness(root)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 329, in validate_unattended_readiness\n    nid = _node_id(node)\n  File \"/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py\", line 37, in _node_id\n    return node.get(\"node_id\") or \"<missing-node-id>\"\n           ^^^^^^^^\nAttributeError: 'str' object has no attribute 'get'\n",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:39:07.798800+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "malformed-corrected-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "malformed-corrected-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex"
+        ],
+        "exit": 0,
+        "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "malformed-corrected-reentry",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex",
+          "--write-report"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:39:07.991807+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:39:07.991807+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "new-unscoped-absent",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"errors\": [\n    \"scope_requirement_unwired: warehouse: new scoped work needs non-empty requirement_refs\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "new-unscoped-absent",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex"
+        ],
+        "exit": 1,
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - scope_requirement_unwired: warehouse: new scoped work needs non-empty requirement_refs\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "new-unscoped-absent",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex",
+          "--write-report"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:39:08.079798+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"warehouse\",\n      \"message\": \"warehouse: new scoped work needs non-empty requirement_refs\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:39:08.079798+00:00",
+          "blockers": [
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "warehouse",
+              "message": "warehouse: new scoped work needs non-empty requirement_refs"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "retained-completed-absent",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "retained-completed-absent",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex"
+        ],
+        "exit": 0,
+        "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "retained-completed-absent",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex",
+          "--write-report"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:39:08.167079+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:39:08.167079+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "new-unscoped-empty",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"errors\": [\n    \"scope_requirement_unwired: warehouse: new scoped work needs non-empty requirement_refs\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "new-unscoped-empty",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex"
+        ],
+        "exit": 1,
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - scope_requirement_unwired: warehouse: new scoped work needs non-empty requirement_refs\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "new-unscoped-empty",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex",
+          "--write-report"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:39:08.255112+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"warehouse\",\n      \"message\": \"warehouse: new scoped work needs non-empty requirement_refs\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:39:08.255112+00:00",
+          "blockers": [
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "warehouse",
+              "message": "warehouse: new scoped work needs non-empty requirement_refs"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "retained-completed-empty",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "retained-completed-empty",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex"
+        ],
+        "exit": 0,
+        "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "retained-completed-empty",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex",
+          "--write-report"
+        ],
+        "exit": 0,
+        "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:39:08.340193+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "ready",
+          "checked_at": "2026-09-07T09:39:08.340193+00:00",
+          "blockers": [],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": []
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "product-reconstruction-unconfirmed",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"errors\": [\n    \"pending_product_confirmation: No confirmed requirements in the selected scope; return to bootstrap\",\n    \"scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\",\n    \"node-specs/warehouse.md: no matching workflow node\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "product-reconstruction-unconfirmed",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex"
+        ],
+        "exit": 1,
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - pending_product_confirmation: No confirmed requirements in the selected scope; return to bootstrap\n  - scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "product-reconstruction-unconfirmed",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex",
+          "--write-report"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:39:08.424271+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"pending_product_confirmation\",\n      \"message\": \"No confirmed requirements in the selected scope; return to bootstrap\"\n    },\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"invoice\",\n      \"message\": \"Node requirement must be in task_scope and consumed through decision_inputs\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:39:08.424271+00:00",
+          "blockers": [
+            {
+              "code": "pending_product_confirmation",
+              "message": "No confirmed requirements in the selected scope; return to bootstrap"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "invoice",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "new-product-unconfirmed",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_bootstrap.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"errors\": [\n    \"pending_product_confirmation: No confirmed requirements in the selected scope; return to bootstrap\",\n    \"scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\",\n    \"node-specs/warehouse.md: no matching workflow node\"\n  ],\n  \"passed\": false\n}\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "new-product-unconfirmed",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/check_decision_inputs.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex"
+        ],
+        "exit": 1,
+        "stdout": "BLOCKED: decision wiring incomplete:\n  - pending_product_confirmation: No confirmed requirements in the selected scope; return to bootstrap\n  - scope_requirement_unwired: Node requirement must be in task_scope and consumed through decision_inputs\n",
+        "stderr": "",
+        "protected_unchanged": true
+      },
+      {
+        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "case": "new-product-unconfirmed",
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
+          "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w/codex",
+          "--write-report"
+        ],
+        "exit": 1,
+        "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:39:08.507085+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"pending_product_confirmation\",\n      \"message\": \"No confirmed requirements in the selected scope; return to bootstrap\"\n    },\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"invoice\",\n      \"message\": \"Node requirement must be in task_scope and consumed through decision_inputs\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+        "stderr": "",
+        "protected_unchanged": true,
+        "persisted_report": {
+          "status": "not_ready",
+          "checked_at": "2026-09-07T09:39:08.507085+00:00",
+          "blockers": [
+            {
+              "code": "pending_product_confirmation",
+              "message": "No confirmed requirements in the selected scope; return to bootstrap"
+            },
+            {
+              "code": "scope_requirement_unwired",
+              "node_id": "invoice",
+              "message": "Node requirement must be in task_scope and consumed through decision_inputs"
+            }
+          ],
+          "warnings": [],
+          "required_capabilities": [],
+          "approval_gate_findings": [],
+          "non_interactive_findings": [],
+          "external_tool_findings": [],
+          "fallback_findings": [],
+          "long_task_findings": [],
+          "recommended_pre_run_actions": [
+            "Approve or revise pending human gates before /run.",
+            "Run /setup check and configure missing external tools or keys.",
+            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
+            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run."
+          ]
+        }
+      }
+    ]
+  },
+  "side_effects": {
+    "candidate_source_modified": false,
+    "candidate_git_status": "",
+    "report_only_repository_edit": true,
+    "isolated_fixtures": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-independent-i1xkx89w",
+    "no_commits_push_install_subagents_tracker_edits": true
+  },
+  "remaining": "Owner repair for T9-S2-F1, followed by fresh public-boundary acceptance/supervision. Later actual host proof remains separately owned."
+}

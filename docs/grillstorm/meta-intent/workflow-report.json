@@ -1,8 +1,10 @@
 {
-  "status": "running",
+  "status": "incomplete",
   "completed": [],
-  "pending": [
-    "T9",
+  "escalated": [
+    "T9"
+  ],
+  "skipped": [
     "T10",
     "T11",
     "T12",
@@ -13,5 +15,20 @@
     "T17",
     "T18"
   ],
-  "proof": "not yet executed"
+  "pending": [],
+  "candidate": "405705f97213397c4f8c53d7eb2e27c1df6c44ca",
+  "integration_production_base": "cadac5525abf2407fdcd0588252336cba8f60a01",
+  "proof": {
+    "focused_tests": 70,
+    "affected_tests": 63,
+    "independent_fixture_gate_invocations": 126,
+    "blocking_findings": [
+      "T9-S3-01"
+    ],
+    "standards_spec_review": "not_run_candidate_rejected",
+    "actual_host_scenario_cells_executed": 0,
+    "actual_host_scenario_cells_required": 60,
+    "global_acceptance": "not_run_no_task_verified"
+  },
+  "report": "execution-report.md"
 }

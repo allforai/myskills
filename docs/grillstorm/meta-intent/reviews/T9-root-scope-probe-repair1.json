@@ -1,0 +1,32 @@
+{
+  "fixture": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/meta-intent-t9-unscoped-nrixzxu7",
+  "expected": "new work without any scoped requirement is rejected",
+  "unscoped_work_accepted": false,
+  "results": [
+    {
+      "command": [
+        "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/meta-intent-t9-unscoped-nrixzxu7/.allforai/bootstrap/scripts/validate_bootstrap.py"
+      ],
+      "exit_code": 1,
+      "stdout": "{\n  \"errors\": [\n    \"scope_requirement_unwired: replace-warehouse: new scoped work needs non-empty requirement_refs\"\n  ],\n  \"passed\": false\n}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/meta-intent-t9-unscoped-nrixzxu7/.allforai/bootstrap/scripts/validate_unattended_readiness.py"
+      ],
+      "exit_code": 1,
+      "stdout": "{\n  \"status\": \"not_ready\",\n  \"checked_at\": \"2026-09-07T09:35:15.272502+00:00\",\n  \"blockers\": [\n    {\n      \"code\": \"scope_requirement_unwired\",\n      \"node_id\": \"replace-warehouse\",\n      \"message\": \"replace-warehouse: new scoped work needs non-empty requirement_refs\"\n    }\n  ],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": [\n    \"Approve or revise pending human gates before /run.\",\n    \"Run /setup check and configure missing external tools or keys.\",\n    \"Re-bootstrap if program handoff or frontend QA nodes are not expanded.\",\n    \"Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.\"\n  ]\n}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/meta-intent-t9-unscoped-nrixzxu7/.allforai/bootstrap/scripts/check_decision_inputs.py"
+      ],
+      "exit_code": 1,
+      "stdout": "BLOCKED: decision wiring incomplete:\n  - scope_requirement_unwired: replace-warehouse: new scoped work needs non-empty requirement_refs\n",
+      "stderr": ""
+    }
+  ],
+  "candidate": "c93fc9419db540277aa6925aae0b588f3b7a6128"
+}
