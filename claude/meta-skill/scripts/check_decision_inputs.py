@@ -37,12 +37,13 @@ def main(argv):
     wf_path = os.path.join(base, ".allforai/bootstrap/workflow.json")
     with open(wf_path) as f:
         workflow = json.load(f)
-    missing = check_decision_inputs(workflow, base_dir=base)
+    scope_blockers = validate_scope(base, workflow)
+    # A rejected contract cannot safely be traversed for decision wiring.
+    missing = check_decision_inputs(workflow, base_dir=base) if not scope_blockers else []
     # Orphan direction (fix C4): every gathered decision-*.json must be referenced by a node.
     gathered = [os.path.relpath(p, base) for p in
                 glob.glob(os.path.join(base, ".allforai/**/decision-*.json"), recursive=True)]
-    orphans = find_orphan_decisions(workflow, gathered)
-    scope_blockers = validate_scope(base, workflow)
+    orphans = find_orphan_decisions(workflow, gathered) if not scope_blockers else []
     if missing or orphans or scope_blockers:
         print("BLOCKED: decision wiring incomplete:")
         for blocker in scope_blockers:

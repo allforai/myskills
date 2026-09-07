@@ -1342,15 +1342,16 @@ def main():
 
     wf_path = os.path.join(bdir, "workflow.json")
     if os.path.exists(wf_path):
-        workflow_errors = validate_workflow(wf_path)
-        errors.extend(workflow_errors)
         try:
             errors.extend(f"{b['code']}: {b['message']}" for b in validate_scope(
                 _project_root_from_bootstrap_dir(bdir), _load_json(wf_path)))
-        except (OSError, ValueError):
-            pass  # validate_workflow already reports parse errors
-        # Cross-node checks require a valid workflow schema.
-        if not workflow_errors:
+        except (OSError, ValueError) as exc:
+            errors.append(f"workflow.json: cannot parse: {exc}")
+        # Scope validation checks container shapes before any node traversal.
+        if not errors:
+            errors.extend(validate_workflow(wf_path))
+        # Cross-node checks require a valid scope and workflow schema.
+        if not errors:
             errors.extend(validate_node_spec_coverage(bdir))
             errors.extend(validate_node_spec_contracts(bdir))
             errors.extend(validate_approval_records(bdir))

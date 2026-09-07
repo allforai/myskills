@@ -271,35 +271,62 @@ def test_confirmed_local_change_reuses_decision_and_preserves_unrelated_work(tmp
 
 
 @pytest.mark.parametrize("host", ["claude", "codex"])
-def test_null_workflow_nodes_replaces_ready_report_and_allows_corrected_reentry(tmp_path, host):
-    project(tmp_path, confirmed=True, host=host)
+@pytest.mark.parametrize("malformed", [
+    {"nodes": None}, {"nodes": [None]}, {"nodes": ["bad"]},
+    {"nodes": {}}, {"nodes": "bad"}, {"nodes": False},
+    None, [], "bad", 42,
+    {"nodes": [{}, None]}, {"nodes": [[]]}, {"nodes": [False]},
+    {"nodes": [{"node_id": []}]}, {"nodes": [{}], "transition_log": [None]},
+], ids=["null-nodes", "null-node", "string-node", "object-nodes", "string-nodes",
+        "boolean-nodes", "null-root", "array-root", "string-root", "number-root",
+        "mixed-nodes", "array-node", "boolean-node", "array-node-id", "null-transition"])
+def test_malformed_workflow_replaces_ready_report_and_allows_corrected_reentry(tmp_path, host, malformed):
+    project(tmp_path, confirmed=True, documents=True, host=host)
     workflow_path = tmp_path / ".allforai/bootstrap/workflow.json"
     report_path = tmp_path / ".allforai/bootstrap/unattended-run-readiness.json"
+    workflow = json.loads(workflow_path.read_text())
+    retained = {"node_id": "warehouse", "goal": "Retain completed warehouse work",
+                "capability": "implement", "exit_artifacts": [".allforai/bootstrap/stock.json"]}
+    workflow["nodes"].append(retained)
+    workflow["transition_log"] = [{"node_id": "warehouse", "status": "completed"}]
+    write(tmp_path, ".allforai/bootstrap/workflow.json", workflow)
+    write(tmp_path, ".allforai/bootstrap/stock.json", {"status": "passed", "count": 3})
+    (tmp_path / ".allforai/bootstrap/node-specs/warehouse.md").write_text(
+        "---\n" + json.dumps(retained) + "\n---\n" + ATTENTION_CONTRACT_BODY)
     original = workflow_path.read_bytes()
-    preserved = {p: p.read_bytes() for p in (tmp_path / REQUIREMENTS, tmp_path / "orders.py")}
+    preserved = {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file() and p != workflow_path}
     ready = gate(tmp_path, "validate_unattended_readiness.py", "--write-report")
     assert ready.returncode == 0, (ready.stdout, ready.stderr)
     assert json.loads(report_path.read_text())["status"] == "ready"
 
-    write(tmp_path, ".allforai/bootstrap/workflow.json", {"nodes": None})
-    rejected = gate(tmp_path, "validate_unattended_readiness.py", "--write-report")
-    assert rejected.returncode == 1
-    assert not rejected.stderr, rejected.stderr
-    report = json.loads(rejected.stdout)
-    assert report["status"] == "not_ready"
-    assert {"code": "missing_workflow", "message": "workflow.json nodes must be a list"} in report["blockers"]
-    assert json.loads(report_path.read_text()) == report
-    bootstrap = gate(tmp_path, "validate_bootstrap.py")
-    assert bootstrap.returncode == 1
-    assert not bootstrap.stderr, bootstrap.stderr
-    assert json.loads(bootstrap.stdout)["passed"] is False
+    write(tmp_path, ".allforai/bootstrap/workflow.json", malformed)
+    for name in ("validate_bootstrap.py", "check_decision_inputs.py", "validate_unattended_readiness.py"):
+        options = ("--write-report",) if name == "validate_unattended_readiness.py" else ()
+        rejected = gate(tmp_path, name, *options)
+        assert rejected.returncode == 1, (name, rejected.stdout, rejected.stderr)
+        assert not rejected.stderr, (name, rejected.stderr)
+        if name == "validate_bootstrap.py":
+            result = json.loads(rejected.stdout)
+            assert result["passed"] is False
+            assert any(error.startswith("invalid_scope:") for error in result["errors"])
+        elif name == "check_decision_inputs.py":
+            assert rejected.stdout.startswith("BLOCKED:")
+            assert "invalid_scope:" in rejected.stdout
+        else:
+            report = json.loads(rejected.stdout)
+            assert report["status"] == "not_ready"
+            assert any(b["code"] == "invalid_scope" for b in report["blockers"])
+            assert json.loads(report_path.read_text()) == report
+    assert json.loads(workflow_path.read_text()) == malformed
     assert all(p.read_bytes() == content for p, content in preserved.items())
 
     workflow_path.write_bytes(original)
-    corrected = gate(tmp_path, "validate_unattended_readiness.py", "--write-report")
-    assert corrected.returncode == 0, (corrected.stdout, corrected.stderr)
+    for name in ("validate_bootstrap.py", "check_decision_inputs.py", "validate_unattended_readiness.py"):
+        options = ("--write-report",) if name == "validate_unattended_readiness.py" else ()
+        corrected = gate(tmp_path, name, *options)
+        assert corrected.returncode == 0, (name, corrected.stdout, corrected.stderr)
     assert json.loads(report_path.read_text())["status"] == "ready"
-    assert gate(tmp_path, "validate_bootstrap.py").returncode == 0
+    assert all(p.read_bytes() == content for p, content in preserved.items())
 
 
 @pytest.mark.parametrize("host", ["claude", "codex"])
