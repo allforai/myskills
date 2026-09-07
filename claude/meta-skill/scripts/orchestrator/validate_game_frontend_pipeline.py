@@ -88,17 +88,17 @@ REQUIRED_GAMEPLAY_VISUAL_ACCEPTANCE_TERMS = {
     ".allforai/game-frontend/qa/runtime-gameplay-visual-acceptance-plan.json",
     ".allforai/game-frontend/qa/runtime-gameplay-screenshot-manifest.json",
     ".allforai/game-frontend/qa/runtime-gameplay-visual-batches/",
-    ".allforai/game-frontend/qa/codex-gameplay-visual-review.json",
-    ".allforai/game-frontend/qa/codex-gameplay-visual-review.md",
+    (".allforai/game-frontend/qa/codex-gameplay-visual-review.json", ".allforai/game-frontend/qa/runtime-gameplay-visual-review-2.json"),
+    (".allforai/game-frontend/qa/codex-gameplay-visual-review.md", ".allforai/game-frontend/qa/runtime-gameplay-visual-review-2.md"),
     ".allforai/game-frontend/qa/runtime-gameplay-visual-repair-loop-report.json",
     ".allforai/game-frontend/qa/runtime-gameplay-visual-acceptance-report.json",
     "Screenshot review is mandatory for visible gameplay acceptance",
     "must not pass from logs, DOM, canvas probes, or state deltas alone",
     "Gameplay Screenshot Plan",
     "before/after pairs",
-    "Codex CLI",
+    ("Codex CLI", "reviewer two"),
     "pull mode",
-    "Claude Code independently inspects the same runtime screenshots",
+    ("Claude Code independently inspects the same runtime screenshots", "reviewer one independently inspects the same runtime screenshots"),
     "union of both reviews",
     "Repair And Revalidation Loop",
     "rerun the same affected gameplay screenshot tasks",
@@ -112,17 +112,91 @@ REQUIRED_GAMEPLAY_VISUAL_ACCEPTANCE_TERMS = {
     "prototype component",
     "missing asset loader mapping",
     "blocked_by_missing_screenshot",
-    "blocked_by_missing_codex_cli",
+    ("blocked_by_missing_codex_cli", "missing_cross_platform_cli"),
     "blocked_by_missing_visual_model_capability",
 }
+
+
+
+# ADR-0003 transition table: legacy reviewer-named vocabulary -> reviewer-neutral vocabulary.
+# Every REQUIRED_* term whose neutral form differs is accepted in either form until the emitters
+# migrate (#40); the contract step (#41) drops the legacy form. Longest keys first.
+ADR3_NEUTRAL = {
+    ".allforai/game-design/art/qa/codex-visual-review.json": ".allforai/game-design/art/qa/visual-review-2.json",
+    ".allforai/game-design/art/qa/codex-visual-review.md": ".allforai/game-design/art/qa/visual-review-2.md",
+    ".allforai/game-design/art/qa/claude-code-visual-review.json": ".allforai/game-design/art/qa/visual-review-1.json",
+    ".allforai/game-design/art/qa/claude-code-visual-review.md": ".allforai/game-design/art/qa/visual-review-1.md",
+    ".allforai/verify/codex-ui-visual-review.json": ".allforai/verify/visual-review-2.json",
+    ".allforai/verify/codex-ui-visual-review.md": ".allforai/verify/visual-review-2.md",
+    ".allforai/verify/claude-code-visual-review.json": ".allforai/verify/visual-review-1.json",
+    ".allforai/verify/claude-code-visual-review.md": ".allforai/verify/visual-review-1.md",
+    ".allforai/game-frontend/qa/codex-runtime-visual-review.json": ".allforai/game-frontend/qa/runtime-visual-review-2.json",
+    ".allforai/game-frontend/qa/codex-runtime-visual-review.md": ".allforai/game-frontend/qa/runtime-visual-review-2.md",
+    ".allforai/game-frontend/qa/codex-gameplay-visual-review.json": ".allforai/game-frontend/qa/runtime-gameplay-visual-review-2.json",
+    ".allforai/game-frontend/qa/codex-gameplay-visual-review.md": ".allforai/game-frontend/qa/runtime-gameplay-visual-review-2.md",
+    "blocked_by_missing_codex_cli": "missing_cross_platform_cli",
+    "Codex CLI must inspect screenshots": "reviewer two must inspect screenshots",
+    "Claude Code performs its own independent screenshot review": "reviewer one performs its own independent screenshot review",
+    "Claude Code independently inspects the same runtime screenshots": "reviewer one independently inspects the same runtime screenshots",
+    "must not read the Codex report first": "must not read the other reviewer's report first",
+    "Claude Code Visual Review": "Reviewer One",
+    "Claude Code closure audit": "closure audit",
+    "Codex CLI": "reviewer two",
+    "Claude Code": "reviewer one",
+}
+
+
+def neutral_form(term: str) -> str:
+    for old, new in ADR3_NEUTRAL.items():
+        term = term.replace(old, new)
+    return term
+
+
+def _has(text: str, term) -> bool:
+    """`term` is a string or a tuple of accepted alternatives; matches raw or whitespace-flattened text."""
+    alts = term if isinstance(term, tuple) else (term,)
+    flat = " ".join(text.split())
+    return any(alt in text or alt in flat for alt in alts)
+
+
+def _key(term) -> str:
+    return term[0] if isinstance(term, tuple) else term
+
+
+def _with_neutral(terms):
+    out = set()
+    for t in terms:
+        if isinstance(t, tuple):
+            out.add(t)
+        elif neutral_form(t) != t:
+            out.add((t, neutral_form(t)))
+        else:
+            out.add(t)
+    return out
+
+
+REQUIRED_ARCH_QA_TERMS = _with_neutral(REQUIRED_ARCH_QA_TERMS)
+REQUIRED_ASSEMBLY_TERMS = _with_neutral(REQUIRED_ASSEMBLY_TERMS)
+REQUIRED_AUDIO_BINDING_TERMS = _with_neutral(REQUIRED_AUDIO_BINDING_TERMS)
+REQUIRED_GAMEPLAY_BINDING_TERMS = _with_neutral(REQUIRED_GAMEPLAY_BINDING_TERMS)
+REQUIRED_GAMEPLAY_VISUAL_ACCEPTANCE_TERMS = _with_neutral(REQUIRED_GAMEPLAY_VISUAL_ACCEPTANCE_TERMS)
+REQUIRED_PARENT_TERMS = _with_neutral(REQUIRED_PARENT_TERMS)
+REQUIRED_PERFORMANCE_TERMS = _with_neutral(REQUIRED_PERFORMANCE_TERMS)
+REQUIRED_RUNTIME_ARCH_TERMS = _with_neutral(REQUIRED_RUNTIME_ARCH_TERMS)
+REQUIRED_SMOKE_TERMS = _with_neutral(REQUIRED_SMOKE_TERMS)
 
 
 def _read(path: Path) -> str:
     return path.read_text()
 
 
-def _has_term(text: str, term: str) -> bool:
-    return term in text or term in " ".join(text.split())
+def _has_term(text: str, term) -> bool:
+    """`term` is a string or a tuple of accepted alternatives (ADR-0003 transition: legacy
+    reviewer-named form and reviewer-neutral form both accepted until #40 migrates emitters)."""
+    alts = term if isinstance(term, tuple) else (term,)
+    flat = " ".join(text.split())
+    return any(alt in text or alt in flat for alt in alts)
+
 
 
 def _canonical_refs(text: str) -> set[str]:
@@ -186,33 +260,33 @@ def validate_game_frontend_pipeline(repo_root: str) -> list[str]:
         if ref not in listed_refs:
             errors.append(f"game-frontend/PACK.md: missing canonical child path skills/{ref}")
 
-    for term in sorted(REQUIRED_PARENT_TERMS):
-        if not _has_term(parent_text, term):
-            errors.append(f"game-frontend/PACK.md: missing frontend architecture term {term}")
-    for term in sorted(REQUIRED_ASSEMBLY_TERMS):
-        if not _has_term(assembly_text, term):
-            errors.append(f"playable-client-assembly: missing required input term {term}")
-    for term in sorted(REQUIRED_ARCH_QA_TERMS):
-        if not _has_term(arch_qa_text, term):
-            errors.append(f"runtime-architecture-qa: missing graph closure term {term}")
-    for term in sorted(REQUIRED_RUNTIME_ARCH_TERMS):
-        if not _has_term(runtime_arch_text, term):
-            errors.append(f"runtime-architecture-design: missing specialization term {term}")
-    for term in sorted(REQUIRED_GAMEPLAY_VISUAL_ACCEPTANCE_TERMS):
-        if not _has_term(gameplay_visual_acceptance_text, term):
-            errors.append(f"runtime-gameplay-visual-acceptance: missing gameplay visual term {term}")
-    for term in sorted(REQUIRED_AUDIO_BINDING_TERMS):
-        if not _has_term(audio_binding_text, term):
-            errors.append(f"audio-binding-spec: missing Canvas2D audio runtime term {term}")
-    for term in sorted(REQUIRED_GAMEPLAY_BINDING_TERMS):
-        if not _has_term(gameplay_binding_text, term):
-            errors.append(f"gameplay-system-binding-spec: missing game rule constraint term {term}")
-    for term in sorted(REQUIRED_SMOKE_TERMS):
-        if not _has_term(smoke_test_text, term):
-            errors.append(f"playable-smoke-test: missing Canvas2D smoke term {term}")
-    for term in sorted(REQUIRED_PERFORMANCE_TERMS):
+    for term in sorted(REQUIRED_PARENT_TERMS, key=_key):
+        if not _has(parent_text, term):
+            errors.append(f"game-frontend/PACK.md: missing frontend architecture term {_key(term)}")
+    for term in sorted(REQUIRED_ASSEMBLY_TERMS, key=_key):
+        if not _has(assembly_text, term):
+            errors.append(f"playable-client-assembly: missing required input term {_key(term)}")
+    for term in sorted(REQUIRED_ARCH_QA_TERMS, key=_key):
+        if not _has(arch_qa_text, term):
+            errors.append(f"runtime-architecture-qa: missing graph closure term {_key(term)}")
+    for term in sorted(REQUIRED_RUNTIME_ARCH_TERMS, key=_key):
+        if not _has(runtime_arch_text, term):
+            errors.append(f"runtime-architecture-design: missing specialization term {_key(term)}")
+    for term in sorted(REQUIRED_GAMEPLAY_VISUAL_ACCEPTANCE_TERMS, key=_key):
+        if not _has(gameplay_visual_acceptance_text, term):
+            errors.append(f"runtime-gameplay-visual-acceptance: missing gameplay visual term {_key(term)}")
+    for term in sorted(REQUIRED_AUDIO_BINDING_TERMS, key=_key):
+        if not _has(audio_binding_text, term):
+            errors.append(f"audio-binding-spec: missing Canvas2D audio runtime term {_key(term)}")
+    for term in sorted(REQUIRED_GAMEPLAY_BINDING_TERMS, key=_key):
+        if not _has(gameplay_binding_text, term):
+            errors.append(f"gameplay-system-binding-spec: missing game rule constraint term {_key(term)}")
+    for term in sorted(REQUIRED_SMOKE_TERMS, key=_key):
+        if not _has(smoke_test_text, term):
+            errors.append(f"playable-smoke-test: missing Canvas2D smoke term {_key(term)}")
+    for term in sorted(REQUIRED_PERFORMANCE_TERMS, key=_key):
         if not _has_term(performance_spec_text, term) and not _has_term(performance_qa_text, term):
-            errors.append(f"performance Canvas2D DPR term missing {term}")
+            errors.append(f"performance Canvas2D DPR term missing {_key(term)}")
 
     return errors
 

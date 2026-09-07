@@ -33,10 +33,10 @@ REQUIRED_ART_QA_EXIT_ARTIFACTS = {
     ".allforai/game-design/art-qa-report.html",
     ".allforai/game-design/art/qa/visual-acceptance-task-list.json",
     ".allforai/game-design/art/qa/visual-acceptance-batches/",
-    ".allforai/game-design/art/qa/codex-visual-review.json",
-    ".allforai/game-design/art/qa/codex-visual-review.md",
-    ".allforai/game-design/art/qa/claude-code-visual-review.json",
-    ".allforai/game-design/art/qa/claude-code-visual-review.md",
+    (".allforai/game-design/art/qa/codex-visual-review.json", ".allforai/game-design/art/qa/visual-review-2.json"),
+    (".allforai/game-design/art/qa/codex-visual-review.md", ".allforai/game-design/art/qa/visual-review-2.md"),
+    (".allforai/game-design/art/qa/claude-code-visual-review.json", ".allforai/game-design/art/qa/visual-review-1.json"),
+    (".allforai/game-design/art/qa/claude-code-visual-review.md", ".allforai/game-design/art/qa/visual-review-1.md"),
     ".allforai/game-design/art/qa/visual-review-reconciliation.json",
     ".allforai/game-design/art/qa/visual-review-closure-audit.json",
     ".allforai/game-design/art/qa/visual-review-closure-audit.md",
@@ -310,19 +310,19 @@ REQUIRED_VISUAL_ACCEPTANCE_TERMS = {
     "blocked_by_missing_visual_model_capability",
     ".allforai/game-design/art/qa/visual-acceptance-task-list.json",
     ".allforai/game-design/art/qa/visual-acceptance-batches/",
-    ".allforai/game-design/art/qa/codex-visual-review.json",
-    ".allforai/game-design/art/qa/codex-visual-review.md",
-    ".allforai/game-design/art/qa/claude-code-visual-review.json",
-    ".allforai/game-design/art/qa/claude-code-visual-review.md",
+    (".allforai/game-design/art/qa/codex-visual-review.json", ".allforai/game-design/art/qa/visual-review-2.json"),
+    (".allforai/game-design/art/qa/codex-visual-review.md", ".allforai/game-design/art/qa/visual-review-2.md"),
+    (".allforai/game-design/art/qa/claude-code-visual-review.json", ".allforai/game-design/art/qa/visual-review-1.json"),
+    (".allforai/game-design/art/qa/claude-code-visual-review.md", ".allforai/game-design/art/qa/visual-review-1.md"),
     ".allforai/game-design/art/qa/visual-review-reconciliation.json",
     ".allforai/game-design/art/qa/visual-review-closure-audit.json",
     ".allforai/game-design/art/qa/visual-review-closure-audit.md",
     ".allforai/game-design/art/qa/visual-repair-loop-report.json",
     ".allforai/game-design/art/qa/visual-repair-loop-report.md",
-    "Codex CLI",
-    "Claude Code Visual Review",
+    ("Codex CLI", "reviewer two"),
+    ("Claude Code Visual Review", "Reviewer One"),
     "Reconciliation And Closure Audit",
-    "must not read the Codex report first",
+    ("must not read the Codex report first", "must not read the other reviewer's report first"),
     "union of the two",
     "audit_verdict",
     "Repair And Revalidation Loop",
@@ -337,7 +337,7 @@ REQUIRED_VISUAL_ACCEPTANCE_TERMS = {
     "Project-Specific Acceptance",
     ASSET_ACCEPTANCE_CRITERIA_JSON,
     ASSET_ACCEPTANCE_CRITERIA_MD,
-    "blocked_by_missing_codex_cli",
+    ("blocked_by_missing_codex_cli", "missing_cross_platform_cli"),
     "blocked_by_missing_visual_evidence",
     "Do not accept manifest-only review",
     "visual evidence paths",
@@ -370,15 +370,15 @@ REQUIRED_CODEX_DELEGATION_SKILL_TERMS = {
 REQUIRED_FRONTEND_VISUAL_RUNTIME_TERMS = {
     "visual-qa/40-qa/batch-visual-acceptance/SKILL.md",
     "codex-cli-delegation/30-execute/codex-cli-task/SKILL.md",
-    ".allforai/game-frontend/qa/codex-runtime-visual-review.json",
-    ".allforai/game-frontend/qa/codex-runtime-visual-review.md",
+    (".allforai/game-frontend/qa/codex-runtime-visual-review.json", ".allforai/game-frontend/qa/runtime-visual-review-2.json"),
+    (".allforai/game-frontend/qa/codex-runtime-visual-review.md", ".allforai/game-frontend/qa/runtime-visual-review-2.md"),
     ".allforai/game-frontend/qa/runtime-visual-closure-audit.json",
     ".allforai/game-frontend/qa/runtime-visual-closure-audit.md",
-    "Codex CLI must inspect screenshots",
+    ("Codex CLI must inspect screenshots", "reviewer two must inspect screenshots"),
     "do not pass from probes or metadata alone",
-    "Claude Code performs its own independent screenshot review",
+    ("Claude Code performs its own independent screenshot review", "reviewer one performs its own independent screenshot review"),
     "blocking findings are the union of the two",
-    "blocked_by_missing_codex_cli",
+    ("blocked_by_missing_codex_cli", "missing_cross_platform_cli"),
 }
 
 REQUIRED_GAME_FRONTEND_HANDOFF_TERMS = {
@@ -585,6 +585,97 @@ BOOTSTRAP_CORPUS = (
 )
 
 
+
+# ADR-0003 transition table: legacy reviewer-named vocabulary -> reviewer-neutral vocabulary.
+# Every REQUIRED_* term whose neutral form differs is accepted in either form until the emitters
+# migrate (#40); the contract step (#41) drops the legacy form. Longest keys first.
+ADR3_NEUTRAL = {
+    ".allforai/game-design/art/qa/codex-visual-review.json": ".allforai/game-design/art/qa/visual-review-2.json",
+    ".allforai/game-design/art/qa/codex-visual-review.md": ".allforai/game-design/art/qa/visual-review-2.md",
+    ".allforai/game-design/art/qa/claude-code-visual-review.json": ".allforai/game-design/art/qa/visual-review-1.json",
+    ".allforai/game-design/art/qa/claude-code-visual-review.md": ".allforai/game-design/art/qa/visual-review-1.md",
+    ".allforai/verify/codex-ui-visual-review.json": ".allforai/verify/visual-review-2.json",
+    ".allforai/verify/codex-ui-visual-review.md": ".allforai/verify/visual-review-2.md",
+    ".allforai/verify/claude-code-visual-review.json": ".allforai/verify/visual-review-1.json",
+    ".allforai/verify/claude-code-visual-review.md": ".allforai/verify/visual-review-1.md",
+    ".allforai/game-frontend/qa/codex-runtime-visual-review.json": ".allforai/game-frontend/qa/runtime-visual-review-2.json",
+    ".allforai/game-frontend/qa/codex-runtime-visual-review.md": ".allforai/game-frontend/qa/runtime-visual-review-2.md",
+    ".allforai/game-frontend/qa/codex-gameplay-visual-review.json": ".allforai/game-frontend/qa/runtime-gameplay-visual-review-2.json",
+    ".allforai/game-frontend/qa/codex-gameplay-visual-review.md": ".allforai/game-frontend/qa/runtime-gameplay-visual-review-2.md",
+    "blocked_by_missing_codex_cli": "missing_cross_platform_cli",
+    "Codex CLI must inspect screenshots": "reviewer two must inspect screenshots",
+    "Claude Code performs its own independent screenshot review": "reviewer one performs its own independent screenshot review",
+    "Claude Code independently inspects the same runtime screenshots": "reviewer one independently inspects the same runtime screenshots",
+    "must not read the Codex report first": "must not read the other reviewer's report first",
+    "Claude Code Visual Review": "Reviewer One",
+    "Claude Code closure audit": "closure audit",
+    "Codex CLI": "reviewer two",
+    "Claude Code": "reviewer one",
+}
+
+
+def neutral_form(term: str) -> str:
+    for old, new in ADR3_NEUTRAL.items():
+        term = term.replace(old, new)
+    return term
+
+
+def _has(text: str, term) -> bool:
+    """`term` is a string or a tuple of accepted alternatives; matches raw or whitespace-flattened text."""
+    alts = term if isinstance(term, tuple) else (term,)
+    flat = " ".join(text.split())
+    return any(alt in text or alt in flat for alt in alts)
+
+
+def _key(term) -> str:
+    return term[0] if isinstance(term, tuple) else term
+
+
+def _with_neutral(terms):
+    out = set()
+    for t in terms:
+        if isinstance(t, tuple):
+            out.add(t)
+        elif neutral_form(t) != t:
+            out.add((t, neutral_form(t)))
+        else:
+            out.add(t)
+    return out
+
+
+REQUIRED_2D_ANIMATION_TOOLCHAIN_TERMS = _with_neutral(REQUIRED_2D_ANIMATION_TOOLCHAIN_TERMS)
+REQUIRED_2D_ART_STYLE_TAXONOMY_TERMS = _with_neutral(REQUIRED_2D_ART_STYLE_TAXONOMY_TERMS)
+REQUIRED_ACCEPTANCE_CRITERIA_TERMS = _with_neutral(REQUIRED_ACCEPTANCE_CRITERIA_TERMS)
+REQUIRED_ART_CONCEPT_ARTIFACTS = _with_neutral(REQUIRED_ART_CONCEPT_ARTIFACTS)
+REQUIRED_ART_DIRECTION_BENCHMARK_TERMS = _with_neutral(REQUIRED_ART_DIRECTION_BENCHMARK_TERMS)
+REQUIRED_ART_GEN_COMPLETION_TERMS = _with_neutral(REQUIRED_ART_GEN_COMPLETION_TERMS)
+REQUIRED_ART_PREVIEW_QA_TERMS = _with_neutral(REQUIRED_ART_PREVIEW_QA_TERMS)
+REQUIRED_ART_QA_EXIT_ARTIFACTS = _with_neutral(REQUIRED_ART_QA_EXIT_ARTIFACTS)
+REQUIRED_ART_QA_SKILLS = _with_neutral(REQUIRED_ART_QA_SKILLS)
+REQUIRED_ASSET_FAMILY_CONSISTENCY_TERMS = _with_neutral(REQUIRED_ASSET_FAMILY_CONSISTENCY_TERMS)
+REQUIRED_ASSET_SEARCH_TERMS = _with_neutral(REQUIRED_ASSET_SEARCH_TERMS)
+REQUIRED_BATCH_IMAGE_GENERATION_TERMS = _with_neutral(REQUIRED_BATCH_IMAGE_GENERATION_TERMS)
+REQUIRED_BOOTSTRAP_FRONTEND_HANDOFF_TERMS = _with_neutral(REQUIRED_BOOTSTRAP_FRONTEND_HANDOFF_TERMS)
+REQUIRED_BOOTSTRAP_UI_VISUAL_TERMS = _with_neutral(REQUIRED_BOOTSTRAP_UI_VISUAL_TERMS)
+REQUIRED_CANDIDATE_SELECTION_TERMS = _with_neutral(REQUIRED_CANDIDATE_SELECTION_TERMS)
+REQUIRED_CODEX_DELEGATION_SKILL_TERMS = _with_neutral(REQUIRED_CODEX_DELEGATION_SKILL_TERMS)
+REQUIRED_CODEX_DELEGATION_TERMS = _with_neutral(REQUIRED_CODEX_DELEGATION_TERMS)
+REQUIRED_FRONTEND_VISUAL_RUNTIME_TERMS = _with_neutral(REQUIRED_FRONTEND_VISUAL_RUNTIME_TERMS)
+REQUIRED_GAME_FRONTEND_HANDOFF_TERMS = _with_neutral(REQUIRED_GAME_FRONTEND_HANDOFF_TERMS)
+REQUIRED_IMAGE_BATCH_PLAN_TERMS = _with_neutral(REQUIRED_IMAGE_BATCH_PLAN_TERMS)
+REQUIRED_IMAGE_CONTRACT_TERMS = _with_neutral(REQUIRED_IMAGE_CONTRACT_TERMS)
+REQUIRED_IMAGE_MODEL_REGISTRY_TERMS = _with_neutral(REQUIRED_IMAGE_MODEL_REGISTRY_TERMS)
+REQUIRED_IMAGE_PROMPT_COMPILER_TERMS = _with_neutral(REQUIRED_IMAGE_PROMPT_COMPILER_TERMS)
+REQUIRED_IN_GAME_BEAUTY_GATE_TERMS = _with_neutral(REQUIRED_IN_GAME_BEAUTY_GATE_TERMS)
+REQUIRED_LORA_ADAPTER_TRAINING_TERMS = _with_neutral(REQUIRED_LORA_ADAPTER_TRAINING_TERMS)
+REQUIRED_LORA_LOCK_SPEC_TERMS = _with_neutral(REQUIRED_LORA_LOCK_SPEC_TERMS)
+REQUIRED_PRODUCTION_TOOL_RULE_TERMS = _with_neutral(REQUIRED_PRODUCTION_TOOL_RULE_TERMS)
+REQUIRED_PROGRAMMATIC_PROCESSING_TERMS = _with_neutral(REQUIRED_PROGRAMMATIC_PROCESSING_TERMS)
+REQUIRED_SOURCE_STRATEGY_TERMS = _with_neutral(REQUIRED_SOURCE_STRATEGY_TERMS)
+REQUIRED_TILESET_GENERATION_TERMS = _with_neutral(REQUIRED_TILESET_GENERATION_TERMS)
+REQUIRED_VISUAL_ACCEPTANCE_TERMS = _with_neutral(REQUIRED_VISUAL_ACCEPTANCE_TERMS)
+
+
 def _read(path: Path) -> str:
     return path.read_text()
 
@@ -752,9 +843,9 @@ def validate_art_pipeline(repo_root: str) -> list:
             errors.append("bootstrap.md: art-concept does not invoke 2d-art-style-taxonomy")
         if "game-art/10-design/art-direction-benchmark/SKILL.md" not in art_concept_section:
             errors.append("bootstrap.md: art-concept does not invoke art-direction-benchmark")
-        for artifact in sorted(REQUIRED_ART_CONCEPT_ARTIFACTS):
-            if artifact not in art_concept_section:
-                errors.append(f"bootstrap.md: art-concept missing exit artifact {artifact}")
+        for artifact in sorted(REQUIRED_ART_CONCEPT_ARTIFACTS, key=_key):
+            if not _has(art_concept_section, artifact):
+                errors.append(f"bootstrap.md: art-concept missing exit artifact {_key(artifact)}")
         if 'state in ["passed", "passed_with_warnings"]' not in art_concept_section:
             errors.append("bootstrap.md: art-concept completion does not gate validation state")
 
@@ -780,21 +871,22 @@ def validate_art_pipeline(repo_root: str) -> list:
         errors.append("bootstrap.md: Art-QA Node Injection section missing")
     else:
         art_qa_refs = {_skill_ref_to_slug(ref) for ref in SKILL_REF_RE.findall(art_qa_section)}
-        for required in sorted(REQUIRED_ART_QA_SKILLS):
+        for required in sorted(REQUIRED_ART_QA_SKILLS, key=_key):
             if required not in art_qa_refs:
                 errors.append(f"bootstrap.md: art-qa missing required QA skill {required}")
-        for artifact in sorted(REQUIRED_ART_QA_EXIT_ARTIFACTS):
-            if artifact not in art_qa_section:
-                errors.append(f"bootstrap.md: art-qa missing exit artifact {artifact}")
+        for artifact in sorted(REQUIRED_ART_QA_EXIT_ARTIFACTS, key=_key):
+            if not _has(art_qa_section, artifact):
+                errors.append(f"bootstrap.md: art-qa missing exit artifact {_key(artifact)}")
         if "Do not advance to `art-qa`" not in bootstrap_text:
             errors.append("bootstrap.md: art-gen UPSTREAM_DEFECT halt rule missing")
-        for term in sorted(REQUIRED_ART_GEN_COMPLETION_TERMS):
-            if term not in bootstrap_text:
-                errors.append(f"bootstrap.md: art-gen completion missing visual closure term {term}")
-        for term in ["FAILED_VALIDATION", "blocked_by_missing_visual_evidence", "blocked_by_missing_codex_cli"]:
-            if term not in art_qa_section:
-                errors.append(f"bootstrap.md: art-qa completion missing blocking status {term}")
-        for term in [
+        for term in sorted(REQUIRED_ART_GEN_COMPLETION_TERMS, key=_key):
+            if not _has(bootstrap_text, term):
+                errors.append(f"bootstrap.md: art-gen completion missing visual closure term {_key(term)}")
+        for term in ["FAILED_VALIDATION", "blocked_by_missing_visual_evidence",
+                     ("blocked_by_missing_codex_cli", "missing_cross_platform_cli")]:
+            if not _has(art_qa_section, term):
+                errors.append(f"bootstrap.md: art-qa completion missing blocking status {_key(term)}")
+        for term in _with_neutral([
             "asset-acceptance-criteria/SKILL.md",
             ASSET_ACCEPTANCE_CRITERIA_JSON,
             ASSET_ACCEPTANCE_CRITERIA_MD,
@@ -809,10 +901,10 @@ def validate_art_pipeline(repo_root: str) -> list:
             "generated-candidate-selection/SKILL.md",
             GENERATED_CANDIDATE_SELECTION_REPORT,
             "material_first",
-        ]:
-            if term not in bootstrap_text:
-                errors.append(f"bootstrap.md: art-gen missing acceptance criteria term {term}")
-        for term in [
+        ]):
+            if not _has(bootstrap_text, term):
+                errors.append(f"bootstrap.md: art-gen missing acceptance criteria term {_key(term)}")
+        for term in _with_neutral([
             ".allforai/game-design/art/qa/visual-repair-loop-report.json",
             ".allforai/game-design/art/qa/visual-repair-loop-report.md",
             "regenerate/repair plus rerun of both independent visual reviews, reconciliation, and Claude Code closure audit",
@@ -825,20 +917,20 @@ def validate_art_pipeline(repo_root: str) -> list:
             "rerun both independent visual reviews",
             "rerun the specific QA gate",
             "Do not let `art-qa` unlock `game-design-finalize`",
-        ]:
-            if term not in art_qa_section:
-                errors.append(f"bootstrap.md: art-qa missing visual repair loop term {term}")
+        ]):
+            if not _has(art_qa_section, term):
+                errors.append(f"bootstrap.md: art-qa missing visual repair loop term {_key(term)}")
 
-    for term in sorted(REQUIRED_BOOTSTRAP_UI_VISUAL_TERMS):
-        if term not in bootstrap_text:
-            errors.append(f"bootstrap.md: UI screenshot visual gate missing term {term}")
-    for term in sorted(REQUIRED_BOOTSTRAP_FRONTEND_HANDOFF_TERMS):
-        if term not in bootstrap_text:
-            errors.append(f"bootstrap.md: frontend handoff missing term {term}")
+    for term in sorted(REQUIRED_BOOTSTRAP_UI_VISUAL_TERMS, key=_key):
+        if not _has(bootstrap_text, term):
+            errors.append(f"bootstrap.md: UI screenshot visual gate missing term {_key(term)}")
+    for term in sorted(REQUIRED_BOOTSTRAP_FRONTEND_HANDOFF_TERMS, key=_key):
+        if not _has(bootstrap_text, term):
+            errors.append(f"bootstrap.md: frontend handoff missing term {_key(term)}")
 
-    for artifact in REQUIRED_ART_QA_EXIT_ARTIFACTS:
-        if artifact not in game_art_text and artifact not in engine_ready_text:
-            errors.append(f"game-art: required program-facing artifact not documented: {artifact}")
+    for artifact in sorted(REQUIRED_ART_QA_EXIT_ARTIFACTS, key=_key):
+        if not _has(game_art_text, artifact) and not _has(engine_ready_text, artifact):
+            errors.append(f"game-art: required program-facing artifact not documented: {_key(artifact)}")
 
     if ENGINE_READY_MANIFEST not in engine_ready_text:
         errors.append("engine-ready-art-output-contract: does not write engine-ready manifest")
@@ -846,12 +938,12 @@ def validate_art_pipeline(repo_root: str) -> list:
         errors.append("asset-import-binding-spec: does not consume engine-ready manifest")
     if ENGINE_READY_MANIFEST not in game_design_text:
         errors.append("game-design.md: does not route program implementation through engine-ready manifest")
-    for term in sorted(REQUIRED_GAME_FRONTEND_HANDOFF_TERMS):
-        if term not in game_design_text:
-            errors.append(f"game-design.md: missing frontend handoff term {term}")
-    for artifact in sorted(REQUIRED_ART_CONCEPT_ARTIFACTS - {".allforai/game-design/art-pipeline-config.json"}):
-        if artifact not in game_design_text and artifact not in game_art_text:
-            errors.append(f"game-design/game-art: art concept gate artifact not documented: {artifact}")
+    for term in sorted(REQUIRED_GAME_FRONTEND_HANDOFF_TERMS, key=_key):
+        if not _has(game_design_text, term):
+            errors.append(f"game-design.md: missing frontend handoff term {_key(term)}")
+    for artifact in sorted(REQUIRED_ART_CONCEPT_ARTIFACTS - {".allforai/game-design/art-pipeline-config.json"}, key=_key):
+        if not _has(game_design_text, artifact) and not _has(game_art_text, artifact):
+            errors.append(f"game-design/game-art: art concept gate artifact not documented: {_key(artifact)}")
 
     if "runtime_id" not in engine_ready_text or "asset_id" not in engine_ready_text:
         errors.append("engine-ready-art-output-contract: missing runtime_id/asset_id contract")
@@ -860,83 +952,83 @@ def validate_art_pipeline(repo_root: str) -> list:
     if "blocked_by_runtime_import" not in engine_ready_text:
         errors.append("engine-ready-art-output-contract: missing blocked_by_runtime_import state")
 
-    for term in sorted(REQUIRED_IMAGE_CONTRACT_TERMS):
-        if term not in image_contract_text:
-            errors.append(f"image-generation-contract: missing closure term {term}")
-    for term in sorted(REQUIRED_BATCH_IMAGE_GENERATION_TERMS):
-        if term not in batch_image_generation_text:
-            errors.append(f"batch-image-generation: missing MCP batch term {term}")
-    for term in sorted(REQUIRED_ART_PREVIEW_QA_TERMS):
-        if term not in art_preview_qa_text:
-            errors.append(f"art-preview-qa: missing visual evidence term {term}")
-    for term in sorted(REQUIRED_2D_ART_STYLE_TAXONOMY_TERMS):
-        if term not in art_style_taxonomy_text:
-            errors.append(f"2d-art-style-taxonomy: missing taxonomy term {term}")
-    for term in sorted(REQUIRED_ART_DIRECTION_BENCHMARK_TERMS):
-        if term not in art_direction_benchmark_text:
-            errors.append(f"art-direction-benchmark: missing benchmark term {term}")
-    for term in sorted(REQUIRED_PROGRAMMATIC_PROCESSING_TERMS):
-        if term not in programmatic_processing_text:
-            errors.append(f"programmatic-art-processing-plan: missing processing term {term}")
-    for term in sorted(REQUIRED_IMAGE_PROMPT_COMPILER_TERMS):
-        if term not in image_prompt_compiler_text:
-            errors.append(f"image-prompt-compiler: missing prompt compiler term {term}")
-    for term in sorted(REQUIRED_IMAGE_BATCH_PLAN_TERMS):
-        if term not in image_batch_plan_text:
-            errors.append(f"image-batch-generation-plan: missing batch plan term {term}")
-    for term in sorted(REQUIRED_CANDIDATE_SELECTION_TERMS):
-        if term not in candidate_selection_text:
-            errors.append(f"generated-candidate-selection: missing candidate selection term {term}")
-    for term in sorted(REQUIRED_ASSET_FAMILY_CONSISTENCY_TERMS):
-        if term not in asset_family_consistency_text:
-            errors.append(f"asset-family-consistency-qa: missing family QA term {term}")
-    for term in sorted(REQUIRED_IN_GAME_BEAUTY_GATE_TERMS):
-        if term not in in_game_beauty_gate_text:
-            errors.append(f"in-game-beauty-gate: missing runtime beauty term {term}")
-    for term in sorted(REQUIRED_VISUAL_ACCEPTANCE_TERMS):
-        if term not in visual_acceptance_text:
-            errors.append(f"visual-acceptance-review: missing review closure term {term}")
+    for term in sorted(REQUIRED_IMAGE_CONTRACT_TERMS, key=_key):
+        if not _has(image_contract_text, term):
+            errors.append(f"image-generation-contract: missing closure term {_key(term)}")
+    for term in sorted(REQUIRED_BATCH_IMAGE_GENERATION_TERMS, key=_key):
+        if not _has(batch_image_generation_text, term):
+            errors.append(f"batch-image-generation: missing MCP batch term {_key(term)}")
+    for term in sorted(REQUIRED_ART_PREVIEW_QA_TERMS, key=_key):
+        if not _has(art_preview_qa_text, term):
+            errors.append(f"art-preview-qa: missing visual evidence term {_key(term)}")
+    for term in sorted(REQUIRED_2D_ART_STYLE_TAXONOMY_TERMS, key=_key):
+        if not _has(art_style_taxonomy_text, term):
+            errors.append(f"2d-art-style-taxonomy: missing taxonomy term {_key(term)}")
+    for term in sorted(REQUIRED_ART_DIRECTION_BENCHMARK_TERMS, key=_key):
+        if not _has(art_direction_benchmark_text, term):
+            errors.append(f"art-direction-benchmark: missing benchmark term {_key(term)}")
+    for term in sorted(REQUIRED_PROGRAMMATIC_PROCESSING_TERMS, key=_key):
+        if not _has(programmatic_processing_text, term):
+            errors.append(f"programmatic-art-processing-plan: missing processing term {_key(term)}")
+    for term in sorted(REQUIRED_IMAGE_PROMPT_COMPILER_TERMS, key=_key):
+        if not _has(image_prompt_compiler_text, term):
+            errors.append(f"image-prompt-compiler: missing prompt compiler term {_key(term)}")
+    for term in sorted(REQUIRED_IMAGE_BATCH_PLAN_TERMS, key=_key):
+        if not _has(image_batch_plan_text, term):
+            errors.append(f"image-batch-generation-plan: missing batch plan term {_key(term)}")
+    for term in sorted(REQUIRED_CANDIDATE_SELECTION_TERMS, key=_key):
+        if not _has(candidate_selection_text, term):
+            errors.append(f"generated-candidate-selection: missing candidate selection term {_key(term)}")
+    for term in sorted(REQUIRED_ASSET_FAMILY_CONSISTENCY_TERMS, key=_key):
+        if not _has(asset_family_consistency_text, term):
+            errors.append(f"asset-family-consistency-qa: missing family QA term {_key(term)}")
+    for term in sorted(REQUIRED_IN_GAME_BEAUTY_GATE_TERMS, key=_key):
+        if not _has(in_game_beauty_gate_text, term):
+            errors.append(f"in-game-beauty-gate: missing runtime beauty term {_key(term)}")
+    for term in sorted(REQUIRED_VISUAL_ACCEPTANCE_TERMS, key=_key):
+        if not _has(visual_acceptance_text, term):
+            errors.append(f"visual-acceptance-review: missing review closure term {_key(term)}")
     batch_visual_acceptance = skills_root / "visual-qa/40-qa/batch-visual-acceptance/SKILL.md"
     if not batch_visual_acceptance.exists():
         errors.append(f"{batch_visual_acceptance}: required visual-qa batch skill missing")
     else:
         batch_visual_acceptance_text = _read(batch_visual_acceptance)
-        for term in sorted(REQUIRED_CODEX_DELEGATION_TERMS):
-            if term not in batch_visual_acceptance_text:
-                errors.append(f"batch-visual-acceptance: missing codex delegation term {term}")
-    for term in sorted(REQUIRED_CODEX_DELEGATION_SKILL_TERMS):
-        if term not in codex_delegation_text:
-            errors.append(f"codex-cli-task: missing pull-mode delegation term {term}")
-    for term in sorted(REQUIRED_FRONTEND_VISUAL_RUNTIME_TERMS):
-        if term not in frontend_visual_runtime_text:
-            errors.append(f"visual-runtime-regression-qa: missing Codex screenshot review term {term}")
-    for term in sorted(REQUIRED_TILESET_GENERATION_TERMS):
-        if term not in tileset_generation_text:
-            errors.append(f"tileset-generation: missing spec-only closure term {term}")
-    for term in sorted(REQUIRED_ACCEPTANCE_CRITERIA_TERMS):
-        if term not in acceptance_criteria_text:
-            errors.append(f"asset-acceptance-criteria: missing standards term {term}")
-    for term in sorted(REQUIRED_IMAGE_MODEL_REGISTRY_TERMS):
-        if term not in image_model_registry_text:
-            errors.append(f"image-model-capability-registry: missing model routing term {term}")
-    for term in sorted(REQUIRED_LORA_LOCK_SPEC_TERMS):
-        if term not in lora_lock_spec_text:
-            errors.append(f"lora-identity-style-lock-spec: missing LoRA decision term {term}")
-    for term in sorted(REQUIRED_LORA_ADAPTER_TRAINING_TERMS):
-        if term not in lora_training_text:
-            errors.append(f"lora-adapter-training: missing LoRA training term {term}")
-    for term in sorted(REQUIRED_2D_ANIMATION_TOOLCHAIN_TERMS):
-        if term not in animation_toolchain_env_text:
-            errors.append(f"2d-animation-toolchain-env: missing toolchain closure term {term}")
-    for term in sorted(REQUIRED_PRODUCTION_TOOL_RULE_TERMS):
-        if term not in production_tool_registry_text:
-            errors.append(f"production-tool-capability-registry: missing tool capability rule term {term}")
-    for term in sorted(REQUIRED_SOURCE_STRATEGY_TERMS):
-        if term not in source_strategy_text:
-            errors.append(f"asset-source-strategy-spec: missing source priority term {term}")
-    for term in sorted(REQUIRED_ASSET_SEARCH_TERMS):
-        if term not in asset_search_text:
-            errors.append(f"asset-pack-search-spec: missing search cascade term {term}")
+        for term in sorted(REQUIRED_CODEX_DELEGATION_TERMS, key=_key):
+            if not _has(batch_visual_acceptance_text, term):
+                errors.append(f"batch-visual-acceptance: missing codex delegation term {_key(term)}")
+    for term in sorted(REQUIRED_CODEX_DELEGATION_SKILL_TERMS, key=_key):
+        if not _has(codex_delegation_text, term):
+            errors.append(f"codex-cli-task: missing pull-mode delegation term {_key(term)}")
+    for term in sorted(REQUIRED_FRONTEND_VISUAL_RUNTIME_TERMS, key=_key):
+        if not _has(frontend_visual_runtime_text, term):
+            errors.append(f"visual-runtime-regression-qa: missing independent screenshot review term {_key(term)}")
+    for term in sorted(REQUIRED_TILESET_GENERATION_TERMS, key=_key):
+        if not _has(tileset_generation_text, term):
+            errors.append(f"tileset-generation: missing spec-only closure term {_key(term)}")
+    for term in sorted(REQUIRED_ACCEPTANCE_CRITERIA_TERMS, key=_key):
+        if not _has(acceptance_criteria_text, term):
+            errors.append(f"asset-acceptance-criteria: missing standards term {_key(term)}")
+    for term in sorted(REQUIRED_IMAGE_MODEL_REGISTRY_TERMS, key=_key):
+        if not _has(image_model_registry_text, term):
+            errors.append(f"image-model-capability-registry: missing model routing term {_key(term)}")
+    for term in sorted(REQUIRED_LORA_LOCK_SPEC_TERMS, key=_key):
+        if not _has(lora_lock_spec_text, term):
+            errors.append(f"lora-identity-style-lock-spec: missing LoRA decision term {_key(term)}")
+    for term in sorted(REQUIRED_LORA_ADAPTER_TRAINING_TERMS, key=_key):
+        if not _has(lora_training_text, term):
+            errors.append(f"lora-adapter-training: missing LoRA training term {_key(term)}")
+    for term in sorted(REQUIRED_2D_ANIMATION_TOOLCHAIN_TERMS, key=_key):
+        if not _has(animation_toolchain_env_text, term):
+            errors.append(f"2d-animation-toolchain-env: missing toolchain closure term {_key(term)}")
+    for term in sorted(REQUIRED_PRODUCTION_TOOL_RULE_TERMS, key=_key):
+        if not _has(production_tool_registry_text, term):
+            errors.append(f"production-tool-capability-registry: missing tool capability rule term {_key(term)}")
+    for term in sorted(REQUIRED_SOURCE_STRATEGY_TERMS, key=_key):
+        if not _has(source_strategy_text, term):
+            errors.append(f"asset-source-strategy-spec: missing source priority term {_key(term)}")
+    for term in sorted(REQUIRED_ASSET_SEARCH_TERMS, key=_key):
+        if not _has(asset_search_text, term):
+            errors.append(f"asset-pack-search-spec: missing search cascade term {_key(term)}")
     if ACCEPTED_IMAGE_MANIFEST not in game_art_text:
         errors.append("game-art/PACK.md: missing accepted image manifest closure rule")
     if "game-art/20-spec/asset-acceptance-criteria/SKILL.md" not in game_art_text:

@@ -774,3 +774,23 @@ def test_validate_art_pipeline_rejects_missing_engine_ready_consumer(tmp_path):
     )
     errors = validate_art_pipeline(str(tmp_path))
     assert any("does not consume engine-ready manifest" in error for error in errors)
+
+
+from validate_art_pipeline import ADR3_NEUTRAL as _ADR3_NEUTRAL
+
+
+def _migrate_fixture_to_neutral_names(tmp_path):
+    """Rewrite every fixture file to the ADR-0003 reviewer-neutral vocabulary (expand step:
+    validators must accept both forms until the emitters migrate)."""
+    for path in tmp_path.rglob("*"):
+        if path.is_file():
+            text = path.read_text()
+            for old, new in _ADR3_NEUTRAL.items():
+                text = text.replace(old, new)
+            path.write_text(text)
+
+
+def test_validate_art_pipeline_accepts_reviewer_neutral_names(tmp_path):
+    _minimal_repo(tmp_path)
+    _migrate_fixture_to_neutral_names(tmp_path)
+    assert validate_art_pipeline(str(tmp_path)) == []
