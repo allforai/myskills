@@ -136,8 +136,9 @@ def _content_reason(e, run_dir):
 
 
 def _transcript_reason(e, run_dir):
-    """实测官 transcript 核对：ledger 记了子 agent 的 output_file，证据文件名就必须真出现在那份 transcript 里。
-    文件不在（换机器、临时目录已清）只标不可核，不拒渲；在而对不上，拒渲。"""
+    """实测官 transcript 核对：ledger 记了子 agent 的 output_file，transcript 就必须能证明证据是实测官写的——
+    证据目录里每个文件名都出现在 transcript 里，或 transcript 提到过该证据目录（脚本循环生成的文件名不会
+    逐个出现，但写入目录会）。两者都没有，拒渲。文件不在（换机器、临时目录已清）只标不可核，不拒渲。"""
     task = e.get("agent_task") or {}
     out = task.get("output_file")
     if not out:
@@ -149,9 +150,13 @@ def _transcript_reason(e, run_dir):
     body = p.read_text(encoding="utf-8", errors="ignore")
     names = [f.name for f in _evidence_files(e, run_dir)]
     absent = [n for n in names if n not in body]
-    if names and absent:
-        return "证据文件未出现在实测官 transcript：" + "、".join(absent)
-    return ""
+    if not names or not absent:
+        return ""
+    d = ((e.get("evidence") or {}).get("dir") or "").strip().rstrip("/")
+    d = d[2:] if d.startswith("./") else d
+    if d and d in body:
+        return ""
+    return "证据文件未出现在实测官 transcript，transcript 也未提及证据目录 %s：%s" % (d or "?", "、".join(absent))
 
 
 def _risk_key(facet):

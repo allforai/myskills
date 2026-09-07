@@ -830,6 +830,13 @@ class TestLedgerV2ContentGate(unittest.TestCase):
             e["served_by"] = {"host": "localhost:3000", "process": "node next dev", "mock_layers": ["msw"]}
             report = render(self._run(tmp, e, {"q01-01.png": b"\x89PNG"}))
             self.assertNotIn("违规裁决", report)   # gap through a mock is still a gap
+        with tempfile.TemporaryDirectory() as tmp:
+            # layers that were checked and found inactive live in checked_absent, not mock_layers: done stays admissible
+            e = _entry("q-rt")
+            e["served_by"] = {"host": "localhost:3000", "process": "node next dev", "mock_layers": [],
+                              "checked_absent": ["msw 在 devDependencies，service worker 未注册"]}
+            report = render(self._run(tmp, e, {"q01-01.png": b"\x89PNG"}))
+            self.assertNotIn("违规裁决", report)
 
     def test_runtime_file_count_must_reach_requested_states(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -853,10 +860,20 @@ class TestLedgerV2ContentGate(unittest.TestCase):
             self.assertNotIn("违规裁决", report)
         with tempfile.TemporaryDirectory() as tmp:
             transcript = Path(tmp) / "agent.output"
-            transcript.write_text("... wrote evidence/q1/q01-excerpt.md ...", encoding="utf-8")
+            transcript.write_text("... wrote docs/other-run/evidence/q9/q01-excerpt.md ...", encoding="utf-8")
             e2 = _entry("q-t2"); e2["medium"] = "code"; e2["agent_task"] = {"output_file": str(transcript)}
             report = render(self._run(tmp, e2, {"q02-other.md": "a/b.ts:1 x"}))
-            self.assertIn("证据文件未出现在实测官 transcript：q02-other.md", report)
+            self.assertIn("证据文件未出现在实测官 transcript，transcript 也未提及证据目录 evidence/q1：q02-other.md", report)
+        with tempfile.TemporaryDirectory() as tmp:
+            # scripted prober: filenames built in a loop never appear literally, but the directory does
+            transcript = Path(tmp) / "agent.output"
+            transcript.write_text('for i, s in enumerate(states):\n    page.screenshot(path=f"{evidence_dir}/q01-{s}.png")\n'
+                                  "Files written to evidence/q1/.", encoding="utf-8")
+            e4 = _entry("q-t4"); e4["agent_task"] = {"output_file": str(transcript)}
+            e4["states_to_capture"] = ["00", "01"]
+            e4["served_by"] = {"host": "localhost:3000", "process": "node", "mock_layers": []}
+            report = render(self._run(tmp, e4, {"q01-00.png": b"\x89PNG", "q01-01.png": b"\x89PNG"}))
+            self.assertNotIn("违规裁决", report)
         with tempfile.TemporaryDirectory() as tmp:
             e3 = _entry("q-t3"); e3["medium"] = "code"; e3["agent_task"] = {"output_file": str(Path(tmp) / "gone.output")}
             report = render(self._run(tmp, e3, {"q03.md": "a/b.ts:1 x"}))

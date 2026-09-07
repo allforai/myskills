@@ -44,7 +44,8 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
       "agent_task": {"output_file": "子 agent transcript 路径（Claude Code 的 Agent 工具结果里给出；Codex 记 agent id）"},
       "probed_at": "2026-09-07T11:32:08+08:00",
       "states_to_capture": ["派发时要求的状态清单（runtime 必写，code 可空）"],
-      "served_by": {"host": "localhost:3000", "process": "node next dev (pid 4242)", "mock_layers": []},
+      "served_by": {"host": "localhost:3000", "process": "node next dev (pid 4242)", "mock_layers": [],
+                    "checked_absent": ["msw 在 devDependencies，service worker 未注册"]},
       "evidence": {
         "dir": "evidence/q03/",
         "files": ["q03-01-first-refund.png", "q03-02-second-refund.png"],
@@ -75,12 +76,16 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
 - **`ledger_version: 2`**（新 run 必写；旧 ledger 缺此键按 1 渲染，不受下列门槛影响）。v2 的证据内容门写死在渲染器里：
   - `code` 介质的摘录文件至少含一个 `路径:行号`；"看过了没问题"这种 note 拒渲。
   - `runtime` 介质至少一张截图或一个输出文件；entry 记 `states_to_capture`（派发时要的状态清单），证据文件数
-    不少于状态数；必记 `served_by`（请求打到的 host、服务进程、检测到的 mock 层列表——MSW / json-server /
-    miragejs / nock / 显式 stub 开关，无则空数组）。**`mock_layers` 非空的 runtime 不能判 `done`**（gap 照记：
+    不少于状态数；必记 `served_by`（请求打到的 host、服务进程、**正在生效**的 mock 层列表——MSW service worker
+    已注册 / json-server / miragejs / nock 在监听 / 显式 stub 开关已打开，无则空数组；检查过但未生效的层写
+    `checked_absent`，不进 `mock_layers`）。**`mock_layers` 非空的 runtime 不能判 `done`**（gap 照记：
     mock 下都坏，真后端只会更坏），只能 unprovable 或 gap。
   - `unprovable` 的原因文件至少 40 字（尝试了什么、卡在哪）。
-  - `agent_task.output_file` 存在时，证据目录里每个文件名都必须出现在那份 transcript 里，否则拒渲（不是实测官
-    写的证据）；文件不在（换机器、临时目录已清）只在报告标"transcript 不可核"，不拒渲。
+  - `agent_task.output_file` 存在时，transcript 必须能证明证据是实测官写的：证据目录里每个文件名都出现在
+    transcript 里，**或** transcript 提到过该证据目录路径（脚本循环生成的文件名不会逐个出现在 transcript 里，
+    但写入目录会）；两者都没有才拒渲。文件不在（换机器、临时目录已清）只在报告标"transcript 不可核"，不拒渲。
+  - 重派前首派产物挪到 `evidence/qNN.rejected-N/`，不被任何 entry 引用；渲染器只读 entry 引用的目录。
+    重派后落账的 entry 带 `redispatched: N`（可选，纯记录）。
   - `probed_at` 每条必写（ISO 8601）；渲染器在总览打印首末问时间与最短间隔，间隔不足 60 秒的 runtime 相邻问点名。
 - 顶层 `target_backend`：intake 安全确认时一并确认开发实例的后端是真实服务、mock 还是混合，记 `kind` 与依据；
   `mock` 或 `mixed` 时报告总览点明"本 run 的 runtime 裁决经过 mock 层"。
