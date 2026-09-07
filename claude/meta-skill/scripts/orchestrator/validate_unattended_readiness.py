@@ -10,6 +10,8 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
+from product_intent import validate_scope
+
 
 BLOCKING_STATUS = "not_ready"
 READY_STATUS = "ready"
@@ -311,6 +313,12 @@ def validate_unattended_readiness(project_root: Path) -> dict:
             workflow = {}
             nodes = []
 
+    scope_blockers = validate_scope(project_root, workflow)
+    blockers.extend(scope_blockers)
+    if scope_blockers:
+        # Defer shape-dependent checks, retaining rejection in the report below.
+        nodes = []
+
     for rel in (
         "scripts/validate_bootstrap.py",
         "scripts/check_artifacts.py",
@@ -377,7 +385,8 @@ def validate_unattended_readiness(project_root: Path) -> dict:
     lower_blob = blob.lower()
 
     _validate_required_capabilities(project_root, readiness_spec, blockers, external_tool_findings)
-    _validate_repair_loop_spec(readiness_spec, nodes, blockers)
+    if not scope_blockers:
+        _validate_repair_loop_spec(readiness_spec, nodes, blockers)
 
     if "codex" in lower_blob or "visual-acceptance" in lower_blob or "screenshot" in lower_blob:
         codex_path = shutil.which("codex")

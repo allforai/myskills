@@ -2,6 +2,20 @@
 
 Write each `.allforai/bootstrap/node-specs/<node_id>.md` from this skeleton. Fill project-specific fields. Do not omit Attention Contract, Exit Artifacts, or Effect Verification on implementation/runtime/UI/art nodes.
 
+## Scoped requirement contract
+
+For a node consuming `task_scope` requirements, mirror workflow
+`requirement_refs`, `responsibilities` and `decision_inputs` in YAML frontmatter.
+In Must-read inputs, name the exact requirement path/id/revision and its user
+confirmation provenance. Derive Quality Acceptance from its goal/business rules/
+acceptance, never from what the current code happens to do. A pending, stale or
+unconfirmed requirement returns a blocker to interactive bootstrap.
+
+For local changes specify the relevant source boundary, document paths to update,
+verification command or observable journey, and repair responsibility. Preserve
+unrelated product directions and completed work. These obligations may share a
+node; they do not require a generic three-node graph.
+
 ## Project Context
 <From bootstrap-profile: tech stack, modules, architecture>
 
