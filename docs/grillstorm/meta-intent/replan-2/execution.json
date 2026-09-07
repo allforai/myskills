@@ -7,7 +7,8 @@
   "status": "running",
   "tasks": {
     "9": {
-      "status": "implementing",
+      "status": "reviewing",
+      "candidate": "ed3313c7b729c4f9575968c08eaec2bfb4312e3e",
       "dependencies": []
     },
     "10": {
@@ -71,9 +72,15 @@
   "active": [
     {
       "ticket": 9,
-      "task": "task_8df9e791c652",
-      "dispatch": "ctx_b3cb28beda42",
-      "base": "c1893395b8ea49084a6bbb9a63c671868d236a56"
+      "task": "task_c0ffebde1af3",
+      "dispatch": "ctx_9d9f4affa348",
+      "role": "standards"
+    },
+    {
+      "ticket": 9,
+      "task": "task_da8cf470afc1",
+      "dispatch": "ctx_c455bc17a84c",
+      "role": "spec"
     }
   ],
   "completed": [],
