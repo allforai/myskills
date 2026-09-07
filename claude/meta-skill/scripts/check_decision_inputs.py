@@ -21,10 +21,11 @@ def check_decision_inputs(workflow, base_dir="."):
     return missing
 
 
-def find_orphan_decisions(workflow, decision_paths):
+def find_orphan_decisions(workflow, decision_paths, consumed_sources=()):
     """Fix C4 (reverse direction): every gathered decision-*.json must be referenced by
-    >=1 node's decision_inputs. Return decision paths that no node consumes."""
-    referenced = set()
+    >=1 node's decision_inputs, directly or through validated scope provenance.
+    Return decision paths that no node consumes."""
+    referenced = {os.path.normpath(path) for path in consumed_sources}
     for node in workflow.get("nodes", []):
         for path in node.get("decision_inputs", []) or []:
             referenced.add(os.path.normpath(path))
@@ -37,13 +38,14 @@ def main(argv):
     wf_path = os.path.join(base, ".allforai/bootstrap/workflow.json")
     with open(wf_path) as f:
         workflow = json.load(f)
-    scope_blockers = validate_scope(base, workflow)
+    consumed_sources: set[str] = set()
+    scope_blockers = validate_scope(base, workflow, consumed_sources=consumed_sources)
     # A rejected contract cannot safely be traversed for decision wiring.
     missing = check_decision_inputs(workflow, base_dir=base) if not scope_blockers else []
     # Orphan direction (fix C4): every gathered decision-*.json must be referenced by a node.
     gathered = [os.path.relpath(p, base) for p in
                 glob.glob(os.path.join(base, ".allforai/**/decision-*.json"), recursive=True)]
-    orphans = find_orphan_decisions(workflow, gathered) if not scope_blockers else []
+    orphans = find_orphan_decisions(workflow, gathered, consumed_sources) if not scope_blockers else []
     if missing or orphans or scope_blockers:
         print("BLOCKED: decision wiring incomplete:")
         for blocker in scope_blockers:

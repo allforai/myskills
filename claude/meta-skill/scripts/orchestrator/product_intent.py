@@ -3,11 +3,13 @@ from pathlib import Path
 import json
 
 
-def validate_scope(project_root, workflow):
+def validate_scope(project_root, workflow, *, consumed_sources=None):
     """Return typed blockers for the scope consumed by a generated workflow.
 
     Profiles without the scope contract remain legacy inputs. Their existence is
     not evidence of approval; bootstrap must capture scope before generating new work.
+    If supplied, consumed_sources collects journal paths reached through scoped
+    requirements; callers may use them only when the returned blockers are empty.
     """
     root = Path(project_root)
     path = root / ".allforai/bootstrap/bootstrap-profile.json"
@@ -117,6 +119,39 @@ def validate_scope(project_root, workflow):
                                    for key in ("reference", "decision_id", "reason"))):
                         blockers.append({"code": "pending_requirement", "message":
                                          f"{ref['id']}: return to interactive bootstrap for confirmation"})
+                    else:
+                        source, separator, fragment = confirmation["reference"].partition("#")
+                        if Path(source).name == "decision-journal.json":
+                            if (Path(source).is_absolute() or not separator
+                                    or not (root / source).resolve().is_relative_to(root.resolve())):
+                                raise ValueError("Journal reference needs a project-local path and decision fragment")
+                            journal = json.loads((root / source).read_text(encoding="utf-8"))
+                            if journal.get("schema_version") != "1.0" or not isinstance(journal.get("batches"), list):
+                                raise ValueError("Journal must use schema 1.0 batches")
+                            batch_id, marker, index = fragment.split("/")
+                            batches = [batch for batch in journal["batches"]
+                                       if batch["batch_id"] == batch_id]
+                            if marker != "decisions" or len(batches) != 1:
+                                raise ValueError("Journal reference must select one decision")
+                            batch = batches[0]
+                            if (batch.get("source") != "user_session"
+                                    or batch.get("status", "confirmed") != "confirmed"
+                                    or not isinstance(batch.get("decisions"), list)):
+                                raise ValueError("Journal reference needs a confirmed user-session batch")
+                            if not index.isdecimal() or int(index) >= len(batch["decisions"]):
+                                raise ValueError("Journal decision index is invalid")
+                            decision = batch["decisions"][int(index)]
+                            if (decision.get("status", "confirmed") != "confirmed"
+                                    or any(not isinstance(decision.get(key), str) or not decision[key].strip()
+                                           for key in ("question", "chosen"))):
+                                raise ValueError("Journal reference needs an explicit user choice")
+                            for recorded_batch in journal["batches"]:
+                                for recorded in recorded_batch["decisions"]:
+                                    if recorded.get("supersedes") in (
+                                            fragment, confirmation["reference"]):
+                                        raise ValueError("Journal decision was superseded; reconfirm the current requirement")
+                            if consumed_sources is not None:
+                                consumed_sources.add(source)
         for node in workflow.get("nodes", []):
             if node.get("node_id") in retained:
                 continue

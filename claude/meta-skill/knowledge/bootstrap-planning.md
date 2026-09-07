@@ -35,6 +35,16 @@ otherwise keep a local requirement projection at
 not a replacement decision journal or a second whole-product baseline. Preserve
 old journal batches and concept files. When reusing a journal decision, retain
 its original identity and source reference; never fabricate a new user decision.
+Use `confirmation.reference` in the form
+`.allforai/product-concept/decision-journal.json#<batch_id>/decisions/<zero-based-index>`
+for canonical schema `1.0` journals. The selected batch must come from
+`user_session` and contain an explicit choice; pending, removed or superseded
+decisions cannot authorize the projection. A `supersedes` reference may use the
+same full reference or its `<batch_id>/decisions/<index>` fragment.
+All three public gates validate that source. The decision-input gate counts
+the validated journal as consumed through the scoped requirement projection;
+other gathered decision files still need consumers, including retained nodes
+for historical work. Do not wire an unrelated journal merely to silence a gate.
 
 Example of an explicitly confirmed local requirement (replace every example
 value with the actual user request/decision):
@@ -215,4 +225,3 @@ Required node-spec obligations:
 - If the browser, emulator, simulator, device, or game runtime cannot launch,
   return `BLOCKED_ENV` / `FAILED_ENV`. Do not substitute DOM inspection, static
   code review, or manual prose for screenshot-based acceptance.
-

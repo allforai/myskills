@@ -90,6 +90,81 @@ def gate(root, name, *options):
                           text=True, capture_output=True, cwd=root)
 
 
+@pytest.mark.parametrize("host", ["claude", "codex"])
+def test_journal_backed_local_requirement_is_consumed_at_all_public_gates(tmp_path, host):
+    requirement = project(tmp_path, confirmed=True, documents=True, host=host)
+    journal = ".allforai/product-concept/decision-journal.json"
+    write(tmp_path, journal, {"schema_version": "1.0", "batches": [{
+        "batch_id": "export-choice", "source": "user_session", "topic": "Order export",
+        "decisions": [{"question": "Which orders may be exported?",
+                       "chosen": "Only the signed-in account's orders",
+                       "rationale": "Account isolation is required", "supersedes": None}]
+    }]})
+    requirement["confirmation"]["reference"] = journal + "#export-choice/decisions/0"
+    write(tmp_path, REQUIREMENTS, {"requirements": [requirement]})
+    before = {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}
+    for name in ("validate_bootstrap.py", "validate_unattended_readiness.py", "check_decision_inputs.py"):
+        result = gate(tmp_path, name)
+        assert result.returncode == 0, (name, result.stdout, result.stderr)
+    assert all(p.read_bytes() == content for p, content in before.items())
+    # Reusing history must not hide a newly collected, applicable decision.
+    unwired = ".allforai/bootstrap/decision-export-format.json"
+    write(tmp_path, unwired, {"scope": ["orders"], "status": "confirmed",
+                             "chosen": "Include a header row"})
+    rejected = gate(tmp_path, "check_decision_inputs.py")
+    assert rejected.returncode == 1, (rejected.stdout, rejected.stderr)
+    assert "orphan (unwired): " + unwired in rejected.stdout
+    assert "orphan (unwired): " + journal not in rejected.stdout
+    (tmp_path / unwired).unlink()
+    assert gate(tmp_path, "check_decision_inputs.py").returncode == 0
+
+
+@pytest.mark.parametrize("host", ["claude", "codex"])
+@pytest.mark.parametrize("fault", ["missing", "schema", "source", "pending", "empty-choice",
+                                  "duplicate-batch", "missing-fragment", "outside-project",
+                                  "removed", "superseded"])
+def test_forged_journal_reference_cannot_authorize_local_requirement(tmp_path, host, fault):
+    requirement = project(tmp_path, confirmed=True, host=host)
+    journal = ".allforai/product-concept/decision-journal.json"
+    batch = {"batch_id": "export-choice", "source": "user_session", "topic": "Order export",
+             "decisions": [{"question": "Which orders?", "chosen": "Account orders",
+                            "rationale": "Account isolation", "supersedes": None}]}
+    data = {"schema_version": "1.0", "batches": [batch]}
+    reference = journal + "#export-choice/decisions/0"
+    if fault == "schema":
+        data["schema_version"] = "invented"
+    elif fault == "source":
+        batch["source"] = "code_inference"
+    elif fault == "pending":
+        batch["decisions"][0]["status"] = "pending"
+    elif fault == "removed":
+        batch["decisions"][0]["status"] = "removed"
+    elif fault == "superseded":
+        data["batches"].append({"batch_id": "revised-export", "source": "user_session",
+                                "topic": "Cancel export", "decisions": [{
+                                    "question": "Keep export?", "chosen": "Remove export",
+                                    "rationale": "No longer wanted", "supersedes": reference}]})
+    elif fault == "empty-choice":
+        batch["decisions"][0]["chosen"] = ""
+    elif fault == "duplicate-batch":
+        data["batches"].append(batch)
+    elif fault == "missing-fragment":
+        reference = journal
+    elif fault == "outside-project":
+        external = tmp_path.parent / "decision-journal.json"
+        external.write_text(json.dumps(data))
+        reference = str(external) + "#export-choice/decisions/0"
+    if fault != "missing":
+        write(tmp_path, journal, data)
+    requirement["confirmation"]["reference"] = reference
+    write(tmp_path, REQUIREMENTS, {"requirements": [requirement]})
+    for name in ("validate_bootstrap.py", "validate_unattended_readiness.py", "check_decision_inputs.py"):
+        result = gate(tmp_path, name)
+        assert result.returncode == 1, (name, result.stdout, result.stderr)
+        assert "invalid_scope" in result.stdout
+        assert not result.stderr
+
+
 def test_unanswered_local_requirement_blocks_generated_bootstrap(tmp_path):
     project(tmp_path)
     result = gate(tmp_path, "validate_bootstrap.py")
@@ -263,7 +338,7 @@ def test_confirmed_local_change_reuses_decision_and_preserves_unrelated_work(tmp
     project(tmp_path, confirmed=True, documents=documents, host=host)
     workflow_path = tmp_path / ".allforai/bootstrap/workflow.json"
     workflow = json.loads(workflow_path.read_text())
-    old_ref = {"path": ".allforai/bootstrap/warehouse-requirements.json", "id": "stock", "revision": 1}
+    old_ref = {"path": ".allforai/bootstrap/decision-warehouse.json", "id": "stock", "revision": 1}
     old = {"node_id": "warehouse", "goal": "Retain completed warehouse work", "capability": "implement",
            "exit_artifacts": [".allforai/bootstrap/stock.json"], "requirement_refs": [old_ref],
            "decision_inputs": [old_ref["path"]], "responsibilities": ["implementation"]}
