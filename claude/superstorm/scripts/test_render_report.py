@@ -781,6 +781,8 @@ class TestLedgerV2ContentGate(unittest.TestCase):
             (d / name).write_bytes(body if isinstance(body, bytes) else body.encode("utf-8"))
         ledger = json.loads((run / "ledger.json").read_text(encoding="utf-8"))
         ledger["ledger_version"] = 2
+        for x in ledger["entries"]:
+            x.setdefault("probed_at", "2026-09-07T10:00:00+08:00")
         (run / "ledger.json").write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
         return run
 
@@ -849,6 +851,62 @@ class TestLedgerV2ContentGate(unittest.TestCase):
             run = _mk_run(tmp, self.FACETS, [e], make_evidence=False)
             d = run / "evidence/q1"; d.mkdir(parents=True); (d / "note.txt").write_text("看过了", encoding="utf-8")
             self.assertNotIn("违规裁决", render(run))
+
+
+class TestSmallHonestyFixes(unittest.TestCase):
+    FACETS = [{"id": "F1", "name": "面一", "status": "examined"}, {"id": "F2", "name": "面二", "status": "examined"}]
+
+    def test_header_separates_facets_with_only_unprovable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = _mk_run(tmp, self.FACETS, [_entry("q1"), _entry("q2", facet="F2", verdict="unprovable", ev_dir="evidence/q2/")])
+            self.assertIn("盘问 1 面（另 1 面仅无法自证）", render(run))
+
+    def test_legacy_shorthand_requirement_refs_expand(self):
+        from render_report import _requirement_ids
+        self.assertEqual(_requirement_ids({"requirement_ref": "R-moment-01/03/07"}),
+                         {"R-moment-01", "R-moment-03", "R-moment-07"})
+        self.assertEqual(_requirement_ids({"requirement_ref": "R-09, R-10"}), {"R-09", "R-10"})
+        self.assertEqual(_requirement_ids({"requirement_ref": "R-09（可选）"}), {"R-09（可选）"})
+
+    def test_git_author_overlap_flags_undeclared_self_review(self):
+        import subprocess
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            subprocess.run(["git", "init", "-q", str(repo)], check=True)
+            subprocess.run(["git", "-C", str(repo), "config", "user.email", "dev@example.com"], check=True)
+            subprocess.run(["git", "-C", str(repo), "config", "user.name", "dev"], check=True)
+            (repo / "a.txt").write_text("x", encoding="utf-8")
+            subprocess.run(["git", "-C", str(repo), "add", "."], check=True)
+            subprocess.run(["git", "-C", str(repo), "commit", "-q", "-m", "init"], check=True)
+            run = _mk_run(str(repo / "docs/cross-exam/run"), self.FACETS[:1], [_entry("q1")])
+            report = render(run)
+            self.assertIn("检测到当前 git 用户 dev@example.com", report)
+            self.assertIn("bias-guard 应生效", report)
+
+    def test_probed_at_required_in_v2_and_fast_runtime_pairs_named(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            a = _entry("q-a", ev_dir="evidence/q1/"); b = _entry("q-b", ev_dir="evidence/q2/")
+            for e, t in ((a, "2026-09-07T10:00:00+08:00"), (b, "2026-09-07T10:00:20+08:00")):
+                e["probed_at"] = t; e["served_by"] = {"host": "localhost", "process": "node", "mock_layers": []}
+            run = _mk_run(tmp, self.FACETS[:1], [a, b], make_evidence=False)
+            for q in ("q1", "q2"):
+                (run / "evidence" / q).mkdir(parents=True); (run / "evidence" / q / "shot.png").write_bytes(b"\x89PNG")
+            ledger = json.loads((run / "ledger.json").read_text(encoding="utf-8")); ledger["ledger_version"] = 2
+            (run / "ledger.json").write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
+            report = render(run)
+            self.assertIn("相邻 runtime 问间隔不足 60 秒", report)
+            self.assertIn("q-a → q-b（20 秒）", report)
+            ledger["entries"][0].pop("probed_at")
+            (run / "ledger.json").write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
+            self.assertIn("缺 probed_at", render(run))
+
+    def test_mock_backend_is_declared_in_overview(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = _mk_run(tmp, self.FACETS[:1], [_entry("q1")])
+            ledger = json.loads((run / "ledger.json").read_text(encoding="utf-8"))
+            ledger["target_backend"] = {"kind": "mock", "how_known": "用户确认 MSW"}
+            (run / "ledger.json").write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
+            self.assertIn("开发实例后端为 mock", render(run))
 
 
 if __name__ == "__main__":
