@@ -21,6 +21,9 @@ _VERIFIED_IMAGES = set()   # content digests already decoded and verified in thi
 CATEGORIES = {'direction', 'color', 'typography', 'layout', 'spacing', 'icons',
               'components', 'navigation', 'feedback', 'states', 'motion', 'environment'}
 AXES = ('state', 'device', 'os', 'appearance', 'dynamic_type', 'locale', 'orientation')
+CAPTURE_MODES = {'viewport', 'full_page'}
+SCROLLBARS = {'native', 'hidden', 'overlay'}
+SCROLL_PROFILE_KEYS = ('scroll_width', 'client_width', 'scroll_height', 'client_height', 'gutter_px')
 
 
 def digest(path):
@@ -149,6 +152,24 @@ def split_groups(cases, ids):
     return ''
 
 
+def scroll_reason(case, capture):
+    """A scroll-state case is only provable from a real viewport with native scrollbars; a headless
+    full-page image has neither scrollbars nor a fold, so it cannot support the claim."""
+    mode = capture.get('capture_mode')
+    if mode is not None and mode not in CAPTURE_MODES:
+        return '截图模式无效: ' + str(mode)
+    bars = capture.get('scrollbars')
+    if bars is not None and bars not in SCROLLBARS:
+        return '滚动条状态无效: ' + str(bars)
+    if not str(case.get('state', '')).startswith('scroll-'):
+        return ''
+    profile = capture.get('scroll_profile')
+    if (mode != 'viewport' or bars != 'native' or not isinstance(profile, dict)
+            or any(type(profile.get(k)) not in (int, float) for k in SCROLL_PROFILE_KEYS)):
+        return '滚动态用例须视口截图、原生滚动条与页面读回的 scroll_profile: ' + case.get('id', '?')
+    return ''
+
+
 def _visual_facets(config):
     facets = config.get('facet_ids') or []
     return facets if isinstance(facets, list) else [facets]
@@ -193,6 +214,9 @@ def visual_reason(entry, ledger, run):
                 raise ValueError('截图环境与用例不匹配: ' + cid)
             if not capture.get('build') or not capture.get('captured_at'):
                 raise ValueError('缺构建或截图时间')
+            bad_scroll = scroll_reason(case, capture)
+            if bad_scroll:
+                raise ValueError(bad_scroll)
             if capture.get('baseline_digest') != config['baseline_digest']:
                 raise ValueError('截图引用过期基线')
             refs = capture.get('images', [])

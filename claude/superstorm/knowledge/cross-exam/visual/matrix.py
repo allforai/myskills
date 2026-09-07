@@ -19,6 +19,9 @@ def expand(surfaces):
         if not isinstance(groups, list) or any(not isinstance(g, str) or not g for g in groups) or len(set(groups)) != len(groups):
             raise ValueError('invalid comparison groups: ' + sid)
         axes = surface['axes']
+        if surface.get('scrollable') is True and not any(
+                isinstance(s, str) and s.startswith('scroll-') for s in (axes.get('state') or [])):
+            raise ValueError('scrollable surface without scroll- state: ' + sid)
         for axis in AXES:
             values = axes.get(axis)
             if not isinstance(values, list) or not values or any(not isinstance(v, str) or not v for v in values):

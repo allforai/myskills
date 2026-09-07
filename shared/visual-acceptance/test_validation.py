@@ -395,3 +395,62 @@ def test_comparison_group_must_not_be_split_across_entries(sample):
     assert visual_reason(together, ledger, root) is None
     ungrouped = {**entry, 'visual_case_ids': [about['id']], 'verdict': 'done'}
     assert visual_reason(ungrouped, ledger, root) is None
+
+
+def _scroll_case(sample, write, capture_extra):
+    """Rebuild the frozen matrix around a single scroll-state case and one capture for it."""
+    root, _, cfg, case, report, entry, ledger = sample
+    inventory = {'surfaces': [{'id': 'feed', 'scrollable': True,
+                               'axes': {**{a: ['default'] for a in AXES}, 'state': ['scroll-bottom']}}]}
+    scase = expand(inventory['surfaces'])[0]
+    cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
+    cfg['matrix_digest'] = write(cfg['matrix_ref'], [scase])
+    bound = {k: cfg[k] for k in ('build','baseline_digest','interaction_digest','inventory_digest','matrix_digest')}
+    image_hash = report['image_digests']['q1/image.png']
+    cap = {**scase, 'case_id': scase['id'], **bound, 'captured_at': 'now',
+           'images': ['q1/image.png'], 'image_digests': {'q1/image.png': image_hash}, **capture_extra}
+    write('evidence/q1/manifest.json', {'captures': [cap]})
+    write('evidence/q1/review.json', {**report, **bound})
+    entry['visual_case_ids'] = [scase['id']]
+    ledger['visual_cases'] = [scase]
+    return root, entry, ledger
+
+
+PROFILE = {'scroll_width': 1440, 'client_width': 1425, 'scroll_height': 4200, 'client_height': 900,
+           'gutter_px': 15, 'overflow_x': 'visible', 'overflow_y': 'auto', 'nested_scrollers': []}
+
+
+@pytest.mark.parametrize('extra', [
+    {},                                                                    # 旧式 capture，没声明模式
+    {'capture_mode': 'full_page', 'headless': True, 'scrollbars': 'hidden', 'scroll_profile': PROFILE},
+    {'capture_mode': 'viewport', 'headless': True, 'scrollbars': 'hidden', 'scroll_profile': PROFILE},
+    {'capture_mode': 'viewport', 'headless': False, 'scrollbars': 'native'},   # 缺 scroll_profile
+])
+def test_scroll_state_refuses_headless_full_page(sample, extra):
+    root, write = sample[0], sample[1]
+    root, entry, ledger = _scroll_case(sample, write, extra)
+    assert '滚动态用例须视口截图' in visual_reason(entry, ledger, root)
+
+
+def test_scroll_state_accepts_viewport_native_capture(sample):
+    root, write = sample[0], sample[1]
+    root, entry, ledger = _scroll_case(sample, write, {
+        'capture_mode': 'viewport', 'headless': False, 'scrollbars': 'native',
+        'scroll_profile': PROFILE, 'capture_tool': 'playwright headed'})
+    assert visual_reason(entry, ledger, root) is None
+
+
+def test_non_scroll_case_still_accepts_full_page(sample):
+    root, write, cfg, case, report, entry, ledger = sample
+    manifest = json.loads((root / 'evidence/q1/manifest.json').read_text())
+    manifest['captures'][0].update({'capture_mode': 'full_page', 'headless': True, 'scrollbars': 'hidden'})
+    write('evidence/q1/manifest.json', manifest)
+    assert visual_reason(entry, ledger, root) is None
+
+
+def test_invalid_capture_mode_is_refused(sample):
+    root, write, cfg, case, report, entry, ledger = sample
+    manifest = json.loads((root / 'evidence/q1/manifest.json').read_text())
+    manifest['captures'][0]['capture_mode'] = 'fullscreen'
+    write('evidence/q1/manifest.json', manifest)
+    assert '截图模式无效' in visual_reason(entry, ledger, root)

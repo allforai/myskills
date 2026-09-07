@@ -5,6 +5,8 @@
 
 读取两份基线；实际使用图像工具打开每个用例所有原图及目标参考图。逐张观察；用例带 groups 时把同组同环境的页面并排比较，差异按组报告。Contact sheet 仅作索引，小字与局部必须看原图。motion 看连续帧及录屏：实际打开过的录屏写进 inspected_recordings；你的工具读不了视频就写 recording_unreadable 说明原因，只审帧序列，不宣称节奏正确。证据不足返回无法检查原因，不宣称通过。
 
+manifest 每条 capture 带 capture_mode / headless / scrollbars：`full_page` 或 `scrollbars` 非 native 的图上没有滚动条、没有折叠线、sticky 元素只出现一次、横向溢出被画布吞掉——不要对这类图提出滚动条、吸顶、折叠线以下、横向滚动的 finding，也不要据它判这些规则通过；这些规则只在 state 以 `scroll-` 开头、capture_mode 为 viewport 的图上审。`scroll_profile` 是文本证据，`scroll_width > client_width` 可作横向溢出的 finding 依据并注明来源。
+
 只依据确认规则提出具体观察：图片路径、区域、差异、规则。Token 一致不证明图像一致，不从文件名推断内容。保留有理由的设计例外。只读源证据，不读其他 reviewer 目录、不修复产品。
 
 报告里的图片键必须逐字等于输入里的字符串，校验器做精确字符串比对，主会话不许替你改写：`inspected_images`、`image_digests` 的键与 manifest 的 `images` 条目完全一致（相对 run/evidence，如 `q05/01-home.png`）；`reference_images` 的键与基线文件里 `reference_images` 的键完全一致（相对 run，如 `visual/refs/home-light.png`）。不要写绝对路径，不要相对你自己的工作目录，不要做任何规范化。

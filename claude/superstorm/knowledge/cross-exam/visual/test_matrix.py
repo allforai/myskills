@@ -32,3 +32,12 @@ def test_groups_pass_through_and_do_not_change_ids():
     assert plain['groups'] == [] and grouped['groups'] == ['buttons', 'nav']
     with pytest.raises(ValueError):
         expand([{'id': 'home', 'axes': axes, 'groups': ['nav', 'nav']}])
+
+
+def test_scrollable_surface_requires_scroll_state():
+    axes = {a: ['default'] for a in AXES}
+    with pytest.raises(ValueError, match='scrollable surface without scroll- state'):
+        expand([{'id': 'feed', 'scrollable': True, 'axes': axes}])
+    ok = expand([{'id': 'feed', 'scrollable': True,
+                  'axes': {**axes, 'state': ['default', 'scroll-bottom']}}])
+    assert {c['state'] for c in ok} == {'default', 'scroll-bottom'}

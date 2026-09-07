@@ -21,7 +21,7 @@
 
 ## 数据接口（路径约定）
 
-surface-inventory.json 的 surfaces 每行含 id、entry、kind、axes（上述七维到字符串数组）、motion_states，以及可选 groups（比较组名列表，如 buttons、navigation、forms；共用同一组件或模式的页面标同一组名）。
+surface-inventory.json 的 surfaces 每行含 id、entry、kind、axes（上述七维到字符串数组）、motion_states、scrollable（Web 必填：目标视口下 scroll_height > client_height；为 true 时 state 轴必须含至少一个 `scroll-` 开头的滚动位置状态，矩阵展开拒绝缺它的页面），以及可选 groups（比较组名列表，如 buttons、navigation、forms；共用同一组件或模式的页面标同一组名）。
 运行 `python3 VISUAL_ROOT/matrix.py <inventory>` 输出完整矩阵，原样保存 case-matrix.json 并写入 ledger.visual_cases。
 增加页面/状态必须重新展开、保留原未测清单，不手工删减组合。
 用例 ID 根据页面和环境组合内容生成，重排页面不改变身份。冻结 inventory、matrix 原始字节摘要；校验器重新展开清单核对完整矩阵，renderer 即使遇到 ledger 漏页也展示冻结矩阵中的未测项。
@@ -34,7 +34,7 @@ visual_cases 每行：{id, surface, state, device, os, appearance, dynamic_type,
 
 视觉 entry：保留 facet/medium/evidence/verdict 等现有字段，增加 visual_case_ids、evidence_manifest、review_reports（路径列表）、review_mode；双审加 reconciliation_ref；降级加 degradation_ref。unprovable 可无图，但必有 visual_failure_ref 原因文件。每批问题 q 唯一，方便现有 G 编号与 product-review 引用。
 
-manifest = {captures: [{case_id, state, device, os, appearance, dynamic_type, locale, orientation, build, captured_at, baseline_digest, interaction_digest, inventory_digest, matrix_digest, images: [原图路径], image_digests: {原图路径: SHA-256}}]}。每条 capture 的 build 与四个摘要必须等于冻结运行配置。构建含 commit 与 dirty 状态及可识别当前产物的构建标识；截图必须能追到该构建。PNG/JPEG 原图保留，附图的缩放裁剪不覆盖原文件。motion 另含与 images 一一对应的 frame_times_ms（非负、有限、严格递增），至少两张不同像素内容的帧；复制文件、更换编码或重复路径不算新帧；还必含 recording（相对 run/evidence 的录屏路径，非空文件，不能是某张帧）与 recording_digest（SHA-256），缺一拒渲。关键帧检查不证明节奏正确，录屏才是节奏证据。
+manifest = {captures: [{case_id, state, device, os, appearance, dynamic_type, locale, orientation, build, captured_at, baseline_digest, interaction_digest, inventory_digest, matrix_digest, images: [原图路径], image_digests: {原图路径: SHA-256}}]}。Web capture 另必含 capture_mode（viewport | full_page）、headless、scrollbars（native | hidden | overlay）、scroll_profile（platforms/web.md 定义的页面读回值）、capture_tool；state 以 `scroll-` 开头的用例只接受 capture_mode viewport 且 scrollbars native 的 capture，否则拒渲——无头全页截图里没有滚动条也没有折叠线，滚动类断言不能从它推断。每条 capture 的 build 与四个摘要必须等于冻结运行配置。构建含 commit 与 dirty 状态及可识别当前产物的构建标识；截图必须能追到该构建。PNG/JPEG 原图保留，附图的缩放裁剪不覆盖原文件。motion 另含与 images 一一对应的 frame_times_ms（非负、有限、严格递增），至少两张不同像素内容的帧；复制文件、更换编码或重复路径不算新帧；还必含 recording（相对 run/evidence 的录屏路径，非空文件，不能是某张帧）与 recording_digest（SHA-256），缺一拒渲。关键帧检查不证明节奏正确，录屏才是节奏证据。
 
 review report = {platform: claude|codex, session_id, independent: true, build, baseline_digest, interaction_digest, inventory_digest, matrix_digest, inspected_images: [原图路径], image_digests: {原图路径: SHA-256}, reference_images: {基线参考图路径: SHA-256}, status: passed|findings, findings: [{id, severity: high|medium|low, rule, observation, images: [原图路径]}], inspected_recordings: [实际打开过的录屏路径], recording_unreadable: 原因}。本批含 motion 用例时，该批全部录屏必须出现在 inspected_recordings，或写 recording_unreadable 说明该 reviewer 为何读不了视频（此时它只审了帧序列）。所有 reviewer 都没审阅录屏时，含 motion 用例的 entry 不能判 done：有帧序列上的发现可判 gap，否则把 motion 用例拆成单独 entry 记 unprovable（visual_failure_ref 写明无视频读取能力），静态用例照常裁决。reviewer 独立读取并计算摘要，五项绑定必须匹配冻结运行，且覆盖该批全部原图及全部基线参考图。图片键逐字沿用 manifest 的 images 字符串（相对 run/evidence）和基线的 reference_images 键（相对 run），校验器精确比对，主会话不得改写报告。
 degradation_ref 指向 {platform: 失败平台 claude|codex, attempts: [{attempted_at, reason}, {attempted_at, reason}]}；必须保留实际调用记录以供核查，降级后留下的报告不能来自失败平台。dual_degraded 只用于原先冻结为 dual 的 entry。
