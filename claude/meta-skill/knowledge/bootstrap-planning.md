@@ -14,6 +14,83 @@ Design the smallest node graph that achieves the user's goals for *this* project
 - Goal combination order: reverse-concept → analyze → implement/translate/rebuild/create → demo → verify/tune/quality-checks → launch-prep.
 - Separate outcome from route. When the user's named means (an engine, a module, a requested node) may not be the best route to the underlying product outcome, record it as a Phase A decision input with the alternative and let the human choose. Never silently swap the route.
 
+## Goal and requirement scope
+
+Capture `bootstrap-profile.json.task_goal` from the current user request and
+select `task_route` by its meaning: `local-change`, `product-reconstruction`, or
+`new-product`. Ask a concise goal question only if needed. Do not derive the route
+from `has_code`, missing documents, or the old capability goal list.
+
+For local work, inspect only relevant code, documents and recorded decisions.
+Capture goal, business rules and observable acceptance before planning dependent
+work. A clear user request can itself supply confirmation; ask only for missing
+or changed product choices. Existing decisions are reusable only for their
+applicable scope and with actual user provenance. Legacy/code-derived records
+without that provenance remain evidence; they do not require a full interview.
+
+Use the existing product record if it exposes the requirement contract below;
+otherwise keep a local requirement projection at
+`.allforai/bootstrap/local-requirements.json`. This is scoped requirement input,
+not a replacement decision journal or a second whole-product baseline. Preserve
+old journal batches and concept files. When reusing a journal decision, retain
+its original identity and source reference; never fabricate a new user decision.
+
+Example of an explicitly confirmed local requirement (replace every example
+value with the actual user request/decision):
+
+```json
+{
+  "requirements": [{
+    "id": "order-export",
+    "revision": 1,
+    "scope": ["orders"],
+    "goal": "Export the current account's orders as CSV",
+    "business_rules": ["Only the signed-in account's orders may be exported"],
+    "acceptance": ["Another account's orders never appear in the CSV"],
+    "status": "confirmed",
+    "confirmation": {
+      "source": "user",
+      "reference": "<actual user turn or existing journal decision reference>",
+      "decision_id": "<stable original decision identity>",
+      "reason": "<recorded purpose or reason for this decision>"
+    }
+  }]
+}
+```
+
+`goal` is non-empty text; `scope`, `business_rules` and `acceptance` are non-empty
+arrays of concrete statements. An unfinished record has `status: pending` and
+no invented confirmation. A changed requirement gets a new positive integer
+revision with fresh confirmation, retaining earlier revisions. Do not edit
+confirmed content in place or relabel code observations as user decisions.
+User additions need no implementation evidence. Discussion does not change
+product source. Validate proposed input before replacing any approved record;
+interruption preserves the prior authority and leaves unanswered items pending.
+
+In the profile write `task_scope: {areas: [...], requirement_refs: [...]}`.
+Each reference is `{path, id, revision}` with a project-relative JSON path and
+current requirement revision. Empty references leave local requirements or
+product confirmation pending. `areas` name the relevant boundaries, and each
+referenced requirement must apply to at least one of them. Product-reconstruction
+and new-product continue their own product confirmation process; routing is not
+product approval, and the local record does not replace full product discovery.
+
+For each local requirement, freely design implementation, documentation and
+verification responsibilities. Nodes may combine these obligations or divide
+them across dependencies. On each consuming node emit `requirement_refs`,
+`responsibilities` (the applicable entries from `implementation`, `documentation`,
+`verification`) and the reference paths in `decision_inputs`. The Node-spec
+mirrors these fields and explains the actual code boundary, relevant document
+updates, acceptance evidence and repair owner. This is a responsibility contract,
+not a fixed node menu. Audits inspect semantic adequacy; labels alone are not proof.
+
+Preserve unrelated nodes, artifacts, decisions and transition history through
+reconciliation. Never fill whole-product gaps during a local request. Apply
+visual/runtime verification and suppress rules to the work actually requested.
+Shared `product_intent.py` validates scope for bootstrap, decision-input and
+unattended-readiness gates; copy it with those scripts. Failure returns to the
+interactive prerequisite, with no prompt or inferred answer inside `/run`.
+
 ## Musts (Protocol)
 
 1. **Visual acceptance before screenshot QA.** Any workflow that implements or verifies visible UI/runtime must produce visual acceptance criteria first. Downstream screenshot QA hard-blocks on that node. Per-screen archetype standards (map-like, list-like, board-like, combat-like, dialogue-like, shop-like, or other specialized screens) are generated from the project's concept, UI registry, art direction, scene flow, and runtime handoff into the project-local criteria artifact before `/run`; runtime visual QA must not invent them.
@@ -21,7 +98,7 @@ Design the smallest node graph that achieves the user's goals for *this* project
 3. **Suppress rules.** After classification, apply `${CLAUDE_PLUGIN_ROOT}/knowledge/suppress-rules.md`. Emitting a suppressed node is a planning error.
 4. **Verification honesty.** Node-specs follow `${CLAUDE_PLUGIN_ROOT}/knowledge/verification-protocol.md`. Existence is not completion when the artifact declares `blocked`, `placeholder`, or non-empty quality/effect gaps. This is quality-driven acceptance: reports may not use `existence_only`, `structure_only`, `function_only`, `not_good_enough`, or `quality_failed` as a passing state, and non-empty `quality_gaps`, `effect_gaps`, `experience_gaps`, `visual_quality_gaps`, or `perceptual_gaps` block production unless scope was explicitly lowered before `/run`.
 5. **Maximum realism.** Real credentials ⇒ real services. Stubs only when credentials are absent.
-6. **Every module gets a verifier** matching its role. Load `${CLAUDE_PLUGIN_ROOT}/knowledge/node-spec-template.md` plus the verification notes in engine-detection. Playwright is not a native-mobile or game-client test.
+6. **Every affected module gets a verifier** matching its role. Load `${CLAUDE_PLUGIN_ROOT}/knowledge/node-spec-template.md` plus the verification notes in engine-detection. Playwright is not a native-mobile or game-client test.
 7. **Runtime knowledge.** When the detected game runtime has `${CLAUDE_PLUGIN_ROOT}/knowledge/engines/<runtime>.md`, read it before designing nodes and record which runtime node families it declares are covered or explicitly omitted (with reason) in a project-local runtime profile artifact. A game workflow with only scaffold/build/smoke nodes is incomplete for production or unattended goals.
 8. **Creative quality gate (game projects).** Specialist contracts can all pass while the game still feels generic. After `game-design-finalize`, and again after the last art/UI/audio/frontend QA when goals include implementation, run `${CLAUDE_PLUGIN_ROOT}/skills/game-creative/40-qa/creative-quality-critique/SKILL.md`. `concept-acceptance` is `hard_blocked_by` it; `must_fix_*` findings route to the owning pack's repair loop.
 

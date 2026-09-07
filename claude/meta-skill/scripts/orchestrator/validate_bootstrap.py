@@ -18,6 +18,8 @@ import os
 import re
 import sys
 
+from product_intent import validate_scope
+
 try:
     import yaml
     _HAS_YAML = True
@@ -1054,6 +1056,10 @@ def validate_node_spec_contracts(bdir: str) -> list:
                         f"does not match workflow {field} {workflow_value}"
                     )
 
+        for field in ("requirement_refs", "responsibilities", "decision_inputs"):
+            if node.get("requirement_refs") and data.get(field) != node.get(field):
+                errors.append(f"node-specs/{node_id}.md: frontmatter {field} must match workflow {field}")
+
         for term in NODE_SPEC_REQUIRED_ATTENTION_TERMS:
             if term not in text:
                 errors.append(
@@ -1337,6 +1343,11 @@ def main():
     wf_path = os.path.join(bdir, "workflow.json")
     if os.path.exists(wf_path):
         errors.extend(validate_workflow(wf_path))
+        try:
+            errors.extend(f"{b['code']}: {b['message']}" for b in validate_scope(
+                _project_root_from_bootstrap_dir(bdir), _load_json(wf_path)))
+        except (OSError, ValueError):
+            pass  # validate_workflow already reports parse errors
         errors.extend(validate_node_spec_coverage(bdir))
         errors.extend(validate_node_spec_contracts(bdir))
         errors.extend(validate_approval_records(bdir))

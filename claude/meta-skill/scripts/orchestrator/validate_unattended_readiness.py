@@ -10,6 +10,8 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
+from product_intent import validate_scope
+
 
 BLOCKING_STATUS = "not_ready"
 READY_STATUS = "ready"
@@ -310,6 +312,8 @@ def validate_unattended_readiness(project_root: Path) -> dict:
             _add(blockers, "missing_workflow", f"workflow.json cannot be parsed: {exc}")
             workflow = {}
             nodes = []
+
+    blockers.extend(validate_scope(project_root, workflow))
 
     for rel in (
         "scripts/validate_bootstrap.py",

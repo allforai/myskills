@@ -3,13 +3,31 @@
 Run after the candidate workflow and node-specs exist, before offering `/run`.
 Order: Coverage Self-Check → G0 → A0 → Phase A → three-lens DAG gate → node-spec audit.
 
+### Scope boundary for every audit
+
+Read `bootstrap-profile.json.task_goal`, `task_route` and `task_scope` first.
+For `local-change`, audit only the referenced requirements and affected nodes;
+use their confirmed goal/rules/acceptance as the coverage basis. Check real
+implementation, documentation and verification responsibilities in Node-specs,
+including document paths and observable tests, not just responsibility labels.
+Do not run the whole-product feature inventory or add unrelated game/art/product
+work because a concept or domain file exists. G0/A0/Phase A and reverse critique
+have the same boundary. Reuse applicable confirmed decisions and ask only missing
+or changed choices. Code observations never authorize product changes.
+
+Before offering `/run`, execute the copied `validate_bootstrap.py`,
+`check_decision_inputs.py <project_base>` and `validate_unattended_readiness.py`.
+They share `product_intent.py` for scope and requirement validation. A pending,
+stale, conflicting or malformed requirement blocks its requested work; file
+existence or a code-derived "confirmed" label does not satisfy this gate.
+
 ### 3.5 Coverage Self-Check (Concept → Workflow Closure)
 
 > Goal: Verify that all features in product-concept.json are covered by at least one
 > workflow node. Auto-fix gaps using Closure Thinking and Reverse Backfill convergence
 > rules. Runs silently — no user confirmation needed.
 
-**Trigger**: `has_product_concept` is true (from Step 1.0). If false AND `is_game_project` is true, run **Game Design Coverage Check** (§3.5.0) instead. If both false, skip to Step 3.4 (Confirm with User).
+**Trigger**: for product-wide routes after product confirmation, `has_product_concept` is true (from Step 1.0). If false AND `is_game_project` is true, run **Game Design Coverage Check** (§3.5.0) instead. If both false, skip to Step 3.4 (Confirm with User).
 
 #### 3.5.0 Game Design Coverage Check (game projects without product-concept.json)
 
@@ -256,9 +274,9 @@ Fold every `missing` entry into the Phase A decision queue (and set `decision_mo
 
 ---
 
-## Phase A — Decision Gathering (the ONLY place humans are asked)
+## Phase A — Decision Gathering (interactive bootstrap only)
 
-Runs after A0, as the final interactive step of `/bootstrap`. Iterate the decision
+Resolve any remaining decisions after A0, as the final interactive step of `/bootstrap`. Iterate the decision
 queue = (nodes with `decision_mode: "brainstorm"`) ∪ (A0 `missing`) ∪ (G0 restructure
 confirmations).
 

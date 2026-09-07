@@ -5,6 +5,10 @@ import json
 import os
 import sys
 
+# Source tree and flattened generated-project copies share the same owner.
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "orchestrator"))
+from product_intent import validate_scope
+
 
 def check_decision_inputs(workflow, base_dir="."):
     """Return list of {node_id, missing} for nodes whose decision_inputs are absent."""
@@ -38,8 +42,11 @@ def main(argv):
     gathered = [os.path.relpath(p, base) for p in
                 glob.glob(os.path.join(base, ".allforai/**/decision-*.json"), recursive=True)]
     orphans = find_orphan_decisions(workflow, gathered)
-    if missing or orphans:
+    scope_blockers = validate_scope(base, workflow)
+    if missing or orphans or scope_blockers:
         print("BLOCKED: decision wiring incomplete:")
+        for blocker in scope_blockers:
+            print(f"  - {blocker['code']}: {blocker['message']}")
         for m in missing:
             print(f"  - missing: {m['node_id']} -> {m['missing']}")
         for o in orphans:

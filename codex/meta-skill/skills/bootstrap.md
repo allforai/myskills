@@ -32,6 +32,11 @@ Rules:
 - do not let `flow.py` become the first place where the real task goal appears
 - the captured task goal must shape workflow design, specialization detection, and node selection
 - write the captured task goal into `.allforai/bootstrap/bootstrap-profile.json`
+- use canonical `task_route` and `task_scope` semantics and the requirement contract
+  in `<canonical-root>/knowledge/bootstrap-planning.md`; local missing documents
+  never trigger full reconstruction, and code inference never confirms intent
+- use real recorded user decisions for local requirements and keep unanswered
+  choices pending; the Codex assume-and-declare convention cannot supply consent
 
 For replication and migration work, task capture must also classify fidelity intent before workflow generation.
 
@@ -110,6 +115,7 @@ When product inference is emitted, include a project-local `check_product_summar
 Copy the current orchestrator helper set from `./scripts/orchestrator/` (the shared Claude tree via this adapter's symlink), at least:
 
 - `check_artifacts.py`
+- `product_intent.py`
 - `validate_bootstrap.py`
 - `expand_game_2d_production.py`
 - `reconcile_bootstrap_workflow.py`
@@ -118,6 +124,11 @@ Copy the current orchestrator helper set from `./scripts/orchestrator/` (the sha
 - `summarize_run_log.py`
 - `record_meta_skill_feedback.py`
 - `check_product_summary.py` when product inference is emitted
+
+Also copy `<canonical-root>/scripts/check_decision_inputs.py` into the same
+project-local scripts directory. It imports the same scope owner there.
+Run all three shared gates (bootstrap, decision inputs, unattended readiness)
+against the generated project before presenting it as executable.
 
 Codex-only runtime helpers must not be mixed into the shared bootstrap tree.
 
@@ -224,7 +235,11 @@ Important:
 
 ### 9. Reverse Product Inference
 
-When the repository contains enough evidence to infer the product shape:
+Only when the selected task needs product inference: for reconstruction use the
+relevant product evidence; for a local change restrict inference to its affected
+scope, and omit a whole-product summary when it does not help that task.
+New-product work starts from user intent without a reconstruction phase.
+When relevant repository evidence exists:
 
 - read `../knowledge/product-inference.md`
 - synthesize an evidence-backed product picture from real code, protocols, UI/page names, configs, and runtime modules
@@ -232,7 +247,7 @@ When the repository contains enough evidence to infer the product shape:
 
 Rules:
 
-- this is a standard bootstrap output when supported by evidence
+- this is supporting evidence when needed by the selected scope, never approval
 - prefer generating `product-summary.json` during bootstrap itself when the evidence is already obvious from repository docs and current artifacts
 - do not spend a mainline workflow node on product inference if it does not unblock the next implementation or verification decision
 - it should describe user-facing systems, not just tech stacks
@@ -253,7 +268,7 @@ Rules:
 - `## Spec` defines goal, evidence scope, exit artifacts, and acceptance constraints
 - `## Design` records current approach, tradeoffs, and open risks
 - `## Task` defines the immediate executable work
-- YAML frontmatter with `node:` remains required
+- YAML frontmatter with `node_id:` remains required; mirror scoped requirement fields from the canonical contract
 - generated run continues to read `node-specs/*.md` first during this phase
 
 For UI-related replication nodes, `## Spec` must additionally include:
@@ -301,7 +316,7 @@ Recommended shape:
 
 ```md
 ---
-node: <node-id>
+node_id: <node-id>
 ---
 
 # Node
@@ -353,7 +368,7 @@ For Phase 1 structured node-spec migration, also verify:
 - each non-trivial node-spec includes `## Design`
 - each non-trivial node-spec includes `## Task`
 
-When product inference is supported by repository evidence, also verify:
+When scoped product inference is emitted, also verify:
 
 - `.allforai/bootstrap/product-summary.json` exists
 - `.allforai/bootstrap/scripts/check_product_summary.py` exists

@@ -17,7 +17,7 @@ Bootstrap analyzes a target project and generates project-specific configuration
 - workflow.json (node graph + transition log)
 - .claude/commands/run.md (orchestrator entry point)
 
-Products are disposable — regenerate anytime with `/bootstrap`.
+Generated contracts can be reconciled through `/bootstrap`; preserve recorded user decisions and unrelated completed work.
 See `docs/adr/0001-bootstrap-free-planning.md`.
 
 ## Disclosed Protocols
@@ -43,7 +43,21 @@ Read these when the matching branch fires. Do not load all of them up front.
 
 > Goal: Understand the project enough to generate good node-specs.
 
-### 1.0 Detect Existing State
+### 1.0 Capture the Task, Then Detect Existing State
+
+Before code analysis, capture the user's concrete `task_goal` from the invoking
+message. If it is unclear, ask only what outcome or boundary is missing. Select
+`task_route` from that goal: `local-change`, `product-reconstruction`, or
+`new-product`. Existing code and missing product documents cannot choose the
+route. A maintenance, verification, migration or implementation request can be
+local to its stated scope; do not reinterpret it as product redesign.
+
+Read `${CLAUDE_PLUGIN_ROOT}/knowledge/bootstrap-planning.md` § Goal and requirement scope before
+collecting local requirements. Limit analysis and classification to the modules,
+interfaces and product questions needed for this task. Record unrelated areas as
+non-goals; preserve their existing decisions and workflow progress.
+
+### Detect Existing State
 
 Before analyzing code, check if this project already has artifacts:
 
@@ -74,7 +88,7 @@ Record what exists:
 This affects Step 1.5 options:
 - has_product_artifacts + has_code → verification/demo/tune options are relevant
 - has_bootstrap → offer to reuse or regenerate
-- no code + no artifacts → only "create" option
+- no code + no artifacts → ask for missing context only if the stated goal needs it; do not infer the route
 - has_iteration_feedback → LLM reads feedback in Step 2, prioritizes fixing previous gaps in Step 3
 - has_concept_drift → Step 3 uses incremental re-planning (Step 3.0) instead of full planning
 
@@ -94,79 +108,24 @@ Read whatever files the profile still needs. There is no required sample count.
 
 ### 1.5 Collect Target Information (Interactive)
 
-Ask the user ONE combined question. Format depends on detected state (from Step 1.0):
+Use the captured goal and route, asking only necessary scope questions:
 
-**If code + artifacts exist (has_code + has_product_artifacts):**
+- `local-change`: clarify the requested outcome, relevant business rules,
+  acceptance conditions and impact boundary. Reuse applicable recorded user
+  decisions. Missing documents require local investigation and focused questions,
+  not whole-product reverse-concept. Persist confirmed requirements using the
+  contract in `bootstrap-planning.md`; unanswered items remain pending.
+- `product-reconstruction`: enter reverse-concept's evidence-backed draft and
+  interactive product confirmation process. Inference is provisional, including
+  high-confidence code facts; it cannot authorize downstream execution.
+- `new-product`: establish intent directly from the user's vision and decisions,
+  then use the applicable product-concept/downstream process without reverse-concept.
 
-```
-检测到已有代码和 .allforai/ 产物。请确认目标（可多选）：
+Record target stacks, fidelity constraints and domain choices only when they
+matter to the requested work. The following engine/domain questions apply only
+when their answer is needed for this scope and is not already known.
 
-   a) 逆向分析（重新生成 .allforai/ 产物）
-   b) 跨栈复刻（翻译到目标技术栈）
-   c) 同栈重建（按目标架构重新生成）
-   l) 继续实施开发（按现有产品/美术/技术框架补齐未完成功能并自测）
-   e) 代码治理（架构合规 + 重复检测 + 抽象分析）
-   f) 演示数据（生成 demo-ready 数据集）
-   g) UI 精修（UI 还原度修复）
-   h) 功能验收（静态 + 全模块 E2E 动态验证）
-   i) 视觉验收（截图对比）
-   j) 质量检查（死链 + 字段一致性）
-   k) 上架准备（竞品调研 → 概念定稿 → 缺口实现 → 合规 → 上架清单）
-```
-
-**If code exists but no artifacts (has_code, no has_product_artifacts):**
-
-```
-Bootstrap 分析完成。请确认目标（可多选）：
-
-   a) 逆向分析（生成 .allforai/ 产物，理解业务）
-   b) 跨栈复刻（分析 + 翻译到目标技术栈）
-   c) 同栈重建（分析 + 按目标架构重新生成）
-   d) 从零构建新产品（忽略已有代码，以产品愿景为起点重新设计）
-   l) 继续实施开发（先补齐 .allforai/ 设计产物，再实施未完成功能并自测）
-   e) 代码治理（架构合规 + 重复检测 + 抽象分析）
-   j) 质量检查（死链 + 字段一致性）
-   k) 上架准备（竞品调研 → 概念定稿 → 缺口实现 → 合规 → 上架清单）
-
-目标技术栈（仅 b/c/d 需回答）：
-   前端：___
-   后端：___
-
-产品愿景（仅 d 需回答 — 一句话描述你要做什么）：
-   ___
-
-UI 还原度（仅有前端翻译时）：
-   a) faithful — 像素级还原
-   b) native — 允许平台风格差异
-```
-
-**If no code exists (empty project or only README):**
-
-```
-当前目录没有检测到已有代码。请确认目标：
-
-1. 目标：
-   d) 从零构建新产品
-
-2. 产品愿景（一句话描述你要做什么）：
-   ___
-
-3. 目标技术栈：
-   前端：___
-   后端：___
-   移动端：___（如有）
-
-4. 业务领域：
-   a) 电商  b) 金融  c) 医疗  d) SaaS  e) 社交  f) 游戏  g) 其他：___
-
-5. 基础设施需求（可选，复杂项目建议回答）：
-   实时通信：___（如 WebSocket/gRPC/SSE/无）
-   消息队列：___（如 Kafka/NATS/Redis Pub-Sub/无）
-   文件存储：___（如 S3/MinIO/本地/无）
-   搜索引擎：___（如 Elasticsearch/Meilisearch/无）
-```
-
-**If game engine detected in Step 1.1 AND user has NOT explicitly selected 业务领域 f) 游戏:**
+**If game engine detected in Step 1.1 AND the user has not explicitly identified it as a game:**
 
 **If `game_engines_detected` has 2+ entries (multiple engines detected):** First disambiguate before game/non-game confirmation:
 
@@ -196,7 +155,7 @@ If user selects (d): set `is_game_project = false`, record user's description in
 For all non-game selections: skip game scenario selection entirely and proceed with normal bootstrap flow.
 
 **If business_domain = "gaming" confirmed (user selected (a) above, or explicitly chose
-业务领域 f) 游戏 in the no-code prompt):**
+gaming in the task description):**
 
 After confirming the main goal, ask ONE additional question.
 
@@ -222,7 +181,7 @@ If the user's game doesn't fit any template exactly, suggest the closest match:
 - 放置 RPG (AFK-style idle with hero collection) → d) 肉鸽/Roguelite OR b) 动作/卡牌/RPG depending on whether each run is discrete; note: distinguish from pure idle (no runs, continuous offline progression)
 - 教育/严肃游戏 (EdTech/serious game) → a) 超休闲/中度手游 (FTUE + session design focus); note to user: "combat-system-design 对教育类游戏通常不适用，请在可选节点中跳过"
 - PICO-8 / 幻想主机 / 复古风格游戏 → a) 超休闲/中度手游; note: despite the "mobile" label, treat as general casual — apply platform capability guard below
-- 平台移植 (same-engine platform port, e.g., Unity PC → Unity mobile) → goal (c) 同栈重建; add note: "platform port = rebuild with target platform constraints (touch input, resolution, performance budget)"
+- 平台移植 (same-engine platform port, e.g., Unity PC → Unity mobile) → `rebuild` within the requested port boundary; add note: "platform port = rebuild with target platform constraints (touch input, resolution, performance budget)"
 
 **Platform capability guard (applies during Step 3.1 node injection):**
 Some game engines/platforms structurally cannot support IAP, push notifications, or retention systems.
@@ -263,41 +222,36 @@ After the user selects a scenario, bootstrap reads the selected template's `boot
 
 **Ad-hoc optional nodes** (those listed in `bootstrap_note` but NOT in `node_order`) MUST be explicitly presented to the user for opt-in. When parsing `bootstrap_note`, identify ad-hoc nodes as those with phrases like "not in canonical node registry" or those absent from `node_order`. Do NOT re-present canonical optional nodes (already in `node_order`) in the user opt-in question — they are handled automatically by bootstrap's context judgment.
 
-**Goal mapping (can combine multiple):**
-- (a) → `goals: ["reverse-concept", "analyze"]`. reverse-concept is mandatory for analyze — without it, product-analysis has no independent baseline and becomes circular (checking code against code-derived artifacts). reverse-concept produces concept-baseline.json which all downstream phases auto-load.
-- (b) → `goals: ["analyze", "translate", "demo", "concept-acceptance"]`, record target_stacks. demo-forge is auto-included because translate produces code that needs integration testing. concept-acceptance is auto-included when product-concept.json exists. **Auto-prepend `reverse-concept` when `concept-baseline.json` does not exist** (required for analyze — without it product-analysis has no independent baseline; if concept-baseline.json already exists from a prior run, skip).
-- (c) → `goals: ["analyze", "rebuild", "demo", "concept-acceptance"]`, record target_stacks. demo-forge is auto-included because rebuild produces code that needs integration testing. concept-acceptance is auto-included when product-concept.json exists. **Auto-prepend `reverse-concept` when `concept-baseline.json` does not exist** (same baseline requirement as (b)).
-- (d) → `goals: ["create", "demo", "concept-acceptance"]`, record target_stacks + product_vision. demo-forge is auto-included because new code needs integration testing. concept-acceptance is auto-included when product-concept.json exists.
-- (l) → `goals: ["implement", "demo", "product-verify", "visual-verify", "quality-checks", "concept-acceptance"]`. Use when product/design/art/technology framework already exists and the request is to continue implementation, fill incomplete features, connect generated handoff contracts to code, and self-test. If `.allforai/product-concept/concept-baseline.json` and `.allforai/game-design/game-design-doc.json` are both missing, auto-prepend `reverse-concept` + `analyze` because implementation needs an independent baseline. Do not treat `implement` as `rebuild`: preserve existing code and only create implementation nodes for missing or stale functionality.
-- (e) → `goals: ["tune"]`
-- (f) → `goals: ["demo"]`
-- (g) → `goals: ["ui-forge"]`
-- (h) → `goals: ["product-verify"]`
-- (i) → `goals: ["visual-verify"]`
-- (j) → `goals: ["quality-checks"]`
-- (k) → `goals: ["launch-prep"]`. When product-concept artifacts don't exist, auto-prepend `reverse-concept` (need concept baseline before making launch decisions). launch-prep includes competitive research → concept finalization → gap implementation → compliance → checklist. The competitive research phase MUST run before any pricing/tier decisions are presented to the user — never ask the user to pick a price without data.
-- Combinations: user can select e.g. "a + e" or "h + i + j" (full verification suite)
+**Map the requested work to capability goals after selecting the route.**
 
-**Goal Combination Ordering Rules (enforced in generated workflow.json):**
-When the user selects multiple goals, the generated workflow MUST enforce this dependency order:
-```
-1. reverse-concept           (if needed as baseline — auto-prepended for analyze/launch-prep)
-2. analyze / product-analysis (depends on reverse-concept)
-3. translate / rebuild / create / implement (depends on analyze if present)
-4. demo-forge (depends on implementation)
-5. quality-checks / tune     (can run on any completed implementation)
-6. product-verify            (depends on implementation)
-7. launch-prep               (depends on all: code + verify + concept)
-```
-Example: goal (a) + (j) → workflow order: reverse-concept → product-analysis → quality-checks (NOT quality-checks first)
-Example: goal (b) + (k) → workflow order: analyze → translate → demo → product-verify → launch-prep (launch-prep BLOCKED BY product-verify)
-Example: goal (l) → implement missing/stale features → demo → product-verify + visual-verify + quality-checks → concept-acceptance
-Example: goal (h) + (i) + (j) → product-verify → visual-verify → quality-checks (can run in parallel after implementation)
-These ordering rules are enforced via `hard_blocked_by` in workflow.json — not left to LLM judgment at /run time.
-- **demo-forge is automatically added** to any goal that includes code implementation (translate/rebuild/create/implement). Reason: API-driven data population is the strongest integration test — it exposes runtime issues that compile-verify cannot catch (wrong routes, missing fields, broken relationships, auth failures).
-- **concept-acceptance is automatically added** to any goal that includes code implementation (translate/rebuild/create/implement) AND (`has_product_concept` is true OR `is_game_project` is true). For game projects, concept-acceptance uses `game-design-doc.json` as baseline (see `capabilities/concept-acceptance.md § Prerequisite`). Reason: without verifying the final product experience against the original concept, the development loop never closes — product-verify checks code vs design artifacts, but not experience vs concept.
-- **runtime-smoke-verify is automatically added** to any goal that includes code implementation (translate/rebuild/create/implement) OR launch-prep. Reason: test-harness verification cannot catch runtime contract bugs that only surface when the artifact launches outside the harness (env-var dual-contracts, URL prefix drift, missing signing / provisioning, deep-link breakage). See `knowledge/capabilities/runtime-smoke-verify.md`. Ordering: runs **after** product-verify passes (when product-verify is in the graph) OR immediately **before** launch-checklist (when goals include launch-prep but NOT product-verify — no product-verify gate to wait for). Added 2026-04-14 after a retrospective incident where a full UI test suite passed but manual app launch hit a 404 on the first request — same env-var name parsed differently between tests and the production runtime.
+Use `implement` for adding or changing behavior while preserving existing code;
+use `translate` or `rebuild` only for the requested migration/rebuild boundary.
+Do not treat `implement` as `rebuild`: preserve existing code and plan only
+missing or changed behavior in the requested boundary. The legacy selection
+`l) 继续实施开发` maps to this same scoped implementation path.
+Other requested outcomes can use `analyze`, `tune`, `demo`, `ui-forge`,
+`product-verify`, `visual-verify`, `quality-checks` or `launch-prep`. These are
+methodologies, not automatic node bundles.
 
+For an implementation scope that actually needs all of these responsibilities,
+the goal list can remain `["implement", "demo", "product-verify", "visual-verify", "quality-checks", "concept-acceptance"]`.
+Select the relevant subset for local work and apply suppress rules; absence of
+product documents does not expand that list or request full reconstruction.
+
+Only `product-reconstruction` selects whole-product `reverse-concept`; it
+produces provisional input for interactive confirmation, never an independent
+approved baseline by itself. `new-product` starts with `create` and user intent.
+Missing concept/baseline/design files never auto-prepend reconstruction to a
+local request. For local `analyze` or `implement`, use the confirmed local
+requirement record as the basis for planning and acceptance.
+
+Plan dependencies from actual inputs: confirmed requirements precede the
+selected translate / rebuild / create / implement work, applicable integration/effect verification follows implementation,
+and launch acceptance follows its required verification. Apply suppress rules.
+Preserve real runtime, UI and quality obligations within the selected scope;
+do not add whole-product demo/discovery/acceptance solely because a local change
+produces code. Before pricing/tier decisions in launch work, perform the relevant
+competitive research. Any new product choice still needs recorded confirmation.
 
 ### 1.6 Output bootstrap-profile.json
 
@@ -307,6 +261,12 @@ Write to `.allforai/bootstrap/bootstrap-profile.json`:
 {
   "schema_version": "1.0",
   "project_name": "<from directory name or package.json name>",
+  "task_goal": "<the user's concrete requested outcome>",
+  "task_route": "local-change | product-reconstruction | new-product",
+  "task_scope": {
+    "areas": ["<relevant business/module boundary>"],
+    "requirement_refs": [{"path": ".allforai/bootstrap/local-requirements.json", "id": "<stable requirement id>", "revision": 1}]
+  },
   "business_domain": "<inferred: ecommerce/fintech/healthcare/saas/social/gaming/...>",
   "business_context": "<1-2 sentence description of what this project does>",
   "tech_stacks": [
@@ -407,7 +367,7 @@ Load only what this run needs:
 8. Knowledge-gap research (max 5 gaps × 2 queries) only when domain files do
    not cover a named subsystem or the target stack is unfamiliar.
 
-After Step 2, do not ask the user anything. Proceed to planning.
+Proceed to planning with confirmed inputs. Missing product decisions return to the interactive Phase A queue before dependent work is offered; they never become run-time interviews.
 
 ## Step 3: Plan Workflow (LLM Free Planning)
 
@@ -617,6 +577,8 @@ When writing each node into `workflow.json`, add:
 - `node_spec_path`: relative path to this node's spec under `node-specs/`.
 - `profile_slice`: the subset of `bootstrap-profile.json` this node needs (tech stack, scenario, target paths) — NOT the whole profile.
 - `decision_mode`: `"brainstorm"` if this node's direction is a human decision gathered in Phase A; else `"none"`.
+- `requirement_refs`: exact `{path, id, revision}` references from `task_scope` for this node; mirror them in its Node-spec.
+- `responsibilities`: scoped obligations this node owns (`implementation`, `documentation`, `verification`); combine or split by actual work, not fixed node names.
 - `decision_inputs`: paths to the `.allforai/<domain>/decision-<id>.json` artifacts this node consumes (the former `human_gate` is re-expressed here — see below).
 - `closure_verify`: closure types to verify (e.g. `["audio"]`, `["save-load"]`, `["2d-placeholder"]`) when applicable; else omit or `[]`.
 - `soft_retry_max`: integer (default 2) — leave unset to use the engine default.
@@ -693,6 +655,11 @@ reads workflow.json at runtime, which already contains all project-specific info
 
 ## Step 5: Validate
 
+Ensure the candidate profile, requirement records, workflow and Node-specs are
+on disk and copy the helper set in Step 6.2 before invoking the validators.
+Preserve prior approved records and apply the reconciliation plan when publishing
+updates; validation failure never authorizes replacing them with empty defaults.
+
 Run:
 ```bash
 python3 .allforai/bootstrap/scripts/validate_bootstrap.py .allforai/bootstrap/
@@ -736,6 +703,8 @@ Copy scripts and protocol files to the target project so `/run` works independen
 mkdir -p .allforai/bootstrap/scripts
 mkdir -p .allforai/bootstrap/protocols
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/check_artifacts.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/product_intent.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/check_decision_inputs.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/validate_bootstrap.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/expand_game_2d_production.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/reconcile_bootstrap_workflow.py .allforai/bootstrap/scripts/
@@ -757,12 +726,12 @@ cp ${CLAUDE_PLUGIN_ROOT}/knowledge/feedback-protocol.md .allforai/bootstrap/prot
 
 ### 6.3 Write Files
 
-Write these files (they were generated in memory during Steps 3-5, now persist them):
+Persist the validated files from Steps 3–5 and required runtime assets:
 
 1. `.allforai/bootstrap/bootstrap-profile.json`
 2. `.allforai/bootstrap/workflow.json`
 3. `.allforai/bootstrap/coverage-matrix.json` (from Step 3.5, only if product-concept.json exists)
-4. `.allforai/bootstrap/node-specs/*.md` — **always overwrite existing files**, even on rebuild
+4. `.allforai/bootstrap/node-specs/*.md` — update only as authorized by the reconciliation plan
 5. `.claude/commands/run.md`
 6. `.allforai/bootstrap/scripts/check_artifacts.py`
 7. `.allforai/bootstrap/scripts/validate_bootstrap.py`
@@ -790,6 +759,11 @@ Write these files (they were generated in memory during Steps 3-5, now persist t
     审批看板是实时审批操作界面。不要等到 `game-design-finalize` 才创建它；`game-design-dashboard.html` 只作为最终汇总产物。
 
 ### 6.4 Confirm Completion
+
+If any scope, decision, audit or readiness gate blocks, report that status and
+its specific missing input instead of the success text below. Keep unanswered
+requirements pending for interactive bootstrap reentry; do not offer `/run` as ready.
+
 
 ```
 Bootstrap 完成。
