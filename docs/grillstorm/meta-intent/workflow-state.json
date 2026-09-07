@@ -7,100 +7,120 @@
   "workflow_revision": 2,
   "launch_revision": 1,
   "max_concurrency": 3,
-  "status": "incomplete",
+  "status": "running",
   "integration_ref": "j08069099777/grillstorm-meta-intent",
   "tasks": {
     "T9": {
-      "status": "escalated",
+      "status": "reviewing",
       "attempts": {
         "infrastructure": 0,
-        "business": 2
+        "business": 4
       },
       "dependencies": [],
       "orca_task": "task_41c0e6f17ea6",
       "dispatch": "ctx_823a0469b439",
       "worktree": "/Users/aa/orca/workspaces/myskills/meta-intent-t9",
       "base_sha": "cadac5525abf2407fdcd0588252336cba8f60a01",
-      "candidate_sha": "405705f97213397c4f8c53d7eb2e27c1df6c44ca",
-      "supervisor_dispatch": "ctx_1ed9dea32a7c",
+      "candidate_sha": "459022e02f5bf1dc98e37d3b40d38c69c59513e3",
+      "supervisor_dispatch": "ctx_18f246fe41f2",
       "blocking_findings": [
         {
           "id": "T9-ROOT-01",
           "status": "rechecked_fixed",
           "evidence": "reviews/T9-root-scope-probe.json",
           "summary": "New unscoped unrelated node is admitted by all copied gates",
-          "resolution_evidence": "reviews/T9-supervisor-3.json"
+          "resolution_evidence": "reviews/T9-supervisor-5.json"
         },
         {
           "id": "T9-SUP-001",
           "status": "rechecked_fixed",
           "evidence": "reviews/T9-supervisor-1.json",
-          "resolution_evidence": "reviews/T9-supervisor-3.json"
+          "resolution_evidence": "reviews/T9-supervisor-5.json"
         },
         {
           "id": "T9-S2-F1",
           "family": "T9-SUP-001",
           "status": "rechecked_fixed",
           "evidence": "reviews/T9-supervisor-2.json",
-          "resolution_evidence": "reviews/T9-supervisor-3.json"
+          "resolution_evidence": "reviews/T9-supervisor-5.json"
         },
         {
           "id": "T9-S3-01",
-          "status": "open",
+          "status": "rechecked_fixed",
           "evidence": "reviews/T9-supervisor-3.json",
-          "summary": "Codex native node completion history is not recognized by new node_id-only retained-scope validator"
+          "summary": "Codex native node completion history is not recognized by new node_id-only retained-scope validator",
+          "resolution_evidence": "reviews/T9-supervisor-5.json"
+        },
+        {
+          "id": "T9-S4-01",
+          "status": "rechecked_fixed",
+          "evidence": "reviews/T9-supervisor-4.json",
+          "resolution_evidence": "reviews/T9-supervisor-5.json"
         }
       ],
-      "repair_task": "task_6a1d54e9c99b",
-      "repair_dispatch": "ctx_6c534a3453b3",
-      "escalation_reason": "business_retry_budget_exhausted"
+      "repair_task": "task_12807de89243",
+      "repair_dispatch": "ctx_e8ca5335d3b6",
+      "retry_extension": {
+        "source": "user_confirmed",
+        "user_answer": "y",
+        "context": "追加修复轮次，继续完成这批票",
+        "additional_business_retries": 2,
+        "total_business_retry_limit": 4
+      },
+      "acceptance_evidence": "reviews/T9-supervisor-5.json",
+      "review_dispatches": [
+        {
+          "role": "standards",
+          "dispatch": "ctx_ffb0bbb332aa"
+        },
+        {
+          "role": "spec",
+          "dispatch": "ctx_07564cc7329a"
+        }
+      ]
     },
     "T10": {
-      "status": "skipped",
+      "status": "pending",
       "attempts": {
         "infrastructure": 0,
         "business": 0
       },
       "dependencies": [
         "T9"
-      ],
-      "reason": "transitive_dependency_T9_escalated"
+      ]
     },
     "T11": {
-      "status": "skipped",
+      "status": "pending",
       "attempts": {
         "infrastructure": 0,
         "business": 0
       },
       "dependencies": [
         "T10"
-      ],
-      "reason": "transitive_dependency_T9_escalated"
+      ]
     },
     "T12": {
-      "status": "skipped",
+      "status": "pending",
       "attempts": {
         "infrastructure": 0,
         "business": 0
       },
       "dependencies": [
         "T10"
-      ],
-      "reason": "transitive_dependency_T9_escalated"
+      ]
     },
     "T13": {
-      "status": "skipped",
+      "status": "pending",
       "attempts": {
         "infrastructure": 0,
         "business": 0
       },
       "dependencies": [
         "T12"
-      ],
-      "reason": "transitive_dependency_T9_escalated"
+      ]
     },
     "T14": {
-      "status": "skipped",
+      "status": "pending",
       "attempts": {
         "infrastructure": 0,
         "business": 0
@@ -108,11 +128,10 @@
       "dependencies": [
         "T11",
         "T13"
-      ],
-      "reason": "transitive_dependency_T9_escalated"
+      ]
     },
     "T15": {
-      "status": "skipped",
+      "status": "pending",
       "attempts": {
         "infrastructure": 0,
         "business": 0
@@ -120,22 +139,20 @@
       "dependencies": [
         "T9",
         "T10"
-      ],
-      "reason": "transitive_dependency_T9_escalated"
+      ]
     },
     "T16": {
-      "status": "skipped",
+      "status": "pending",
       "attempts": {
         "infrastructure": 0,
         "business": 0
       },
       "dependencies": [
         "T11"
-      ],
-      "reason": "transitive_dependency_T9_escalated"
+      ]
     },
     "T17": {
-      "status": "skipped",
+      "status": "pending",
       "attempts": {
         "infrastructure": 0,
         "business": 0
@@ -143,25 +160,33 @@
       "dependencies": [
         "T12",
         "T13"
-      ],
-      "reason": "transitive_dependency_T9_escalated"
+      ]
     },
     "T18": {
-      "status": "skipped",
+      "status": "pending",
       "attempts": {
         "infrastructure": 0,
         "business": 0
       },
       "dependencies": [
         "T14"
-      ],
-      "reason": "transitive_dependency_T9_escalated"
+      ]
     }
   },
-  "live_workers": [],
+  "live_workers": [
+    {
+      "task": "T9",
+      "role": "standards",
+      "dispatch": "ctx_ffb0bbb332aa"
+    },
+    {
+      "task": "T9",
+      "role": "spec",
+      "dispatch": "ctx_07564cc7329a"
+    }
+  ],
   "merge_queue": [],
   "completed": [],
-  "integration_sha": "cadac5525abf2407fdcd0588252336cba8f60a01",
-  "resume_requires": "User direction to authorize another repair cycle; preserve frozen task contract and retry history.",
+  "integration_sha": "ad69a0cd45486d214dc62f8e8ebdc7ff93c784bb",
   "terminal_report": "execution-report.md"
 }

@@ -1,10 +1,10 @@
 {
-  "status": "incomplete",
+  "status": "running",
   "completed": [],
-  "escalated": [
-    "T9"
-  ],
-  "skipped": [
+  "escalated": [],
+  "skipped": [],
+  "pending": [
+    "T9",
     "T10",
     "T11",
     "T12",
@@ -15,7 +15,6 @@
     "T17",
     "T18"
   ],
-  "pending": [],
   "candidate": "405705f97213397c4f8c53d7eb2e27c1df6c44ca",
   "integration_production_base": "cadac5525abf2407fdcd0588252336cba8f60a01",
   "proof": {
@@ -30,5 +29,6 @@
     "actual_host_scenario_cells_required": 60,
     "global_acceptance": "not_run_no_task_verified"
   },
-  "report": "execution-report.md"
+  "report": "execution-report.md",
+  "resume": "resume-authorization.md"
 }
