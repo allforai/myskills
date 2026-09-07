@@ -9,10 +9,13 @@ structured output so the deterministic scripts have clean JSON to consume.
   "properties": {
     "status": { "type": "string", "enum": ["ok", "escalate"] },
     "reason": { "type": "string" },
-    "evidence": { "type": "string" } } }
+    "evidence": { "type": "string" },
+    "proposed_touched_paths": { "type": "array", "items": { "type": "string" } } } }
 ```
-Rule: the skill (main session) reads the Workflow return; ANY `status:"escalate"`
-halts the pipeline and renders `reason`+`evidence` to the human.
+Rule: `status:"escalate"` is a decision proposal, never a halt. The orchestrator selects, records
+(`decision_ledger.py`), applies and finalizes the best authorized recommendation, or defers only the
+affected branch; nothing is rendered to a human until Phase 2. An executor may add
+`proposed_touched_paths` (array of paths) to say which files its contract was missing.
 
 ## design-manifest (spec §4.1 design agent emits one per module; feeds check_closure.py)
 ```json
@@ -34,7 +37,8 @@ other ```json fences — module tables, dep graphs — so the registry needs a u
 <!-- superstorm-registry:start -->
 ​```json
 { "requirements": ["R-auth-01", "R-auth-02"], "interfaces": ["api:createOrder", "event:orderPaid"],
-  "models": { "think": "fable", "verify": "opus", "bulk": "sonnet" } }
+  "models": { "executor": "session", "recommended": "A", "why": "cross-cutting UI-driving tasks",
+              "confirmed_by_user": "证据优先", "confirmed_at": "2026-09-08T10:00:00+08:00" } }
 ​```
 <!-- superstorm-registry:end -->
 ```
@@ -45,16 +49,18 @@ Schema of the JSON between the markers:
   "properties": {
     "requirements": { "type": "array", "items": { "type": "string" } },
     "interfaces": { "type": "array", "items": { "type": "string" } },
-    "models": { "type": "object", "required": ["think", "verify", "bulk"],
-      "properties": { "think": { "type": "string" }, "verify": { "type": "string" },
-                      "bulk": { "type": "string" } } } } }
+    "models": { "type": "object", "required": ["executor"],
+      "properties": { "executor": { "type": "string" }, "recommended": { "type": "string" },
+                      "why": { "type": "string" }, "confirmed_by_user": { "type": "string" },
+                      "confirmed_at": { "type": "string" } } } } }
 ```
 - `requirements`: every requirement, ID-shaped `R-<module>-NN` (e.g. `R-auth-01`). One owner: Phase 0.
 - `interfaces`: the closed vocabulary of cross-module interface names.
-- `models` (optional but recommended): the three tier literals resolved in Phase 0 (see the
-  skill's "Model tiers"). Frozen like everything else here — Phase 1 substitutes these into
-  `agent()` calls and NEVER changes them on its own; any downgrade is a human decision.
-  `check_closure.py` ignores this field.
+- `models` (optional; absent means everything inherits): the Phase 0 model policy. `executor` is
+  `"session"` or the literal the user chose for executors after the playbook's recommendation;
+  every other role always inherits the session model. Frozen like everything else here — Phase 1
+  never moves to another model on its own, only back to the session model (recorded as
+  `first_model` on the task). `check_closure.py` ignores this field.
 - **Interface naming grammar (mandatory):** `<kind>:<name>` where `kind ∈ {api, event, data, ui}`
   and `name` is lowerCamelCase. e.g. `api:createOrder`, `event:orderPaid`, `data:userProfile`.
   Design agents MUST use these exact names — `check_closure.py` rejects any exposes/consumes
@@ -118,10 +124,20 @@ Schema of the JSON between the markers:
     "evidence": { "type": "string" },
     "refutation": { "type": "string" },
     "vacuous": { "type": "boolean" },
-    "reality_gated": { "type": "boolean" } } }
+    "reality_gated": { "type": "boolean" },
+    "observations": { "type": "array", "items": { "type": "object",
+      "required": ["scope", "finding", "evidence"],
+      "properties": { "scope": { "type": "string" }, "finding": { "type": "string" },
+                      "evidence": { "type": "string" } } } } } }
 ```
 Rule: `done` is true ONLY if the supervisor independently reran `acceptance_cmd`
 and got exit code 0 with the real output captured in `evidence`.
+`observations` (optional) carries what the supervisor saw beyond this task — a defect in an
+already-confirmed task (`scope: "task:<id>"`), a repository-wide pattern (`scope: "repo"`), a
+census candidate. It never changes `done`. The orchestrator appends every entry to
+`<run-dir>/observations-ledger.json`; an entry naming a confirmed task opens a decision (reopen
+that task with the observation as its refutation, or carry it to Phase 2) recorded through
+`decision_ledger.py`. Nothing in this list is dropped.
 `vacuous` = true when the command passed only because 0 tests ran (a name-selector
 matched nothing); it forces `done:false` and signals §1.6 to re-inject the
 anti-vacuous instruction on the executor bounce.

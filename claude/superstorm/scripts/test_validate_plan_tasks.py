@@ -90,20 +90,36 @@ class TestValidateTasks(unittest.TestCase):
 class TestVacuousAcceptance(unittest.TestCase):
     """A name-selective test cmd exits 0 on 0 match (the vacuous-pass failure mode)."""
 
-    def test_swift_filter_without_guard_blocks(self):
-        # name-selective test, no zero-test guard
+    def test_swift_filter_without_guard_warns_not_blocks(self):
+        # name-selective test, no zero-test guard: a warning for the plan agent; the supervisor
+        # rerun is the authority on a 0-test pass
         r = validate_tasks([_t("T", cmd="cd x && swift test --filter SomeFeatureTests")])
-        self.assertFalse(r["ok"])
-        self.assertTrue(any("VACUOUS" in e for e in r["errors"]))
+        self.assertTrue(r["ok"], r["errors"])
+        self.assertTrue(any("VACUOUS" in w for w in r["warnings"]))
 
-    def test_go_test_run_without_guard_blocks(self):
+    def test_go_test_run_without_guard_warns(self):
         r = validate_tasks([_t("T", cmd="go test -run TestInvite ./...")])
-        self.assertFalse(r["ok"])
-        self.assertTrue(any("VACUOUS" in e for e in r["errors"]))
+        self.assertTrue(r["ok"])
+        self.assertTrue(any("VACUOUS" in w for w in r["warnings"]))
 
-    def test_jest_t_without_guard_blocks(self):
+    def test_jest_t_without_guard_warns(self):
         r = validate_tasks([_t("T", cmd="npx jest -t 'call flow'")])
-        self.assertFalse(r["ok"])
+        self.assertTrue(r["ok"])
+        self.assertTrue(r["warnings"])
+
+    def test_cargo_package_selector_is_not_a_name_selector(self):
+        # --package / -p / --test values are crates and targets: cargo exits non-zero when they
+        # do not exist, so they are not vacuous-passable. Underscore names must not be flagged either.
+        for cmd in ("cargo test --package payments_adapter", "cargo test -p payments_adapter",
+                    "cargo test --package payments-adapter", "cargo test --test integration_suite"):
+            r = validate_tasks([_t("T", cmd=cmd)])
+            self.assertTrue(r["ok"], cmd)
+            self.assertFalse(r["warnings"], cmd)
+
+    def test_cargo_bare_name_still_warns(self):
+        r = validate_tasks([_t("T", cmd="cargo test refund_twice")])
+        self.assertTrue(r["ok"])
+        self.assertTrue(any("VACUOUS" in w for w in r["warnings"]))
 
     def test_swift_filter_with_executed_guard_passes(self):
         cmd = "swift test --filter SomeFeatureTests 2>&1 | grep -q 'Executed [1-9]'"

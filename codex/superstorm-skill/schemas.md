@@ -12,8 +12,9 @@ structured output so the deterministic scripts have clean JSON to consume.
     "reason": { "type": "string" },
     "evidence": { "type": "string" } } }
 ```
-Rule: the orchestrator (main session or run_layers.py) reads each agent's JSON; ANY `status:"escalate"`
-halts the pipeline and renders `reason`+`evidence` to the human.
+Rule: `status:"escalate"` is a decision proposal, never a halt. The orchestrator (main session or
+run_layers.py) selects, records, applies and finalizes the best authorized recommendation, or defers
+only the affected branch; nothing is rendered to a human until Phase 2.
 
 ## design-manifest (spec §4.1 design agent emits one per module; feeds check_closure.py)
 ```json
@@ -35,7 +36,7 @@ other ```json fences — module tables, dep graphs — so the registry needs a u
 <!-- superstorm-registry:start -->
 ​```json
 { "requirements": ["R-auth-01", "R-auth-02"], "interfaces": ["api:createOrder", "event:orderPaid"],
-  "models": { "think": "fable", "verify": "opus", "bulk": "sonnet" } }
+  "models": { "think": "inherited", "verify": "inherited", "bulk": "inherited" } }
 ​```
 <!-- superstorm-registry:end -->
 ```
@@ -52,10 +53,11 @@ Schema of the JSON between the markers:
 ```
 - `requirements`: every requirement, ID-shaped `R-<module>-NN` (e.g. `R-auth-01`). One owner: Phase 0.
 - `interfaces`: the closed vocabulary of cross-module interface names.
-- `models` (optional but recommended): the three tier literals resolved in Phase 0 (see the
-  skill's "Model tiers"). Frozen like everything else here — Phase 1 substitutes these into
-  `agent()` calls and NEVER changes them on its own; any downgrade is a human decision.
-  `check_closure.py` ignores this field.
+- `models` (optional; absent means everything inherits): the Phase 0 model policy as the runner
+  reads it. `think` and `verify` are always `inherited` (judgment roles never run below the
+  session model); `bulk` is `inherited` or the executor literal the user chose after the
+  playbook's recommendation. Frozen like everything else here — Phase 1 never moves to another
+  model on its own, only back to the inherited model. `check_closure.py` ignores this field.
 - **Interface naming grammar (mandatory):** `<kind>:<name>` where `kind ∈ {api, event, data, ui}`
   and `name` is lowerCamelCase. e.g. `api:createOrder`, `event:orderPaid`, `data:userProfile`.
   Design agents MUST use these exact names — `check_closure.py` rejects any exposes/consumes
