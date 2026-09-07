@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "superstorm",
-      "version": "0.32.0",
+      "version": "0.33.0",
       "source": "./",
       "description": "Chains superpowers brainstorming/writing-plans/executing-plans into a Workflow-driven pipeline for large goals. Explicit /superstorm trigger."
     }
