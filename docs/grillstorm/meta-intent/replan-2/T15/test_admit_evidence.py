@@ -73,7 +73,8 @@ def synthetic_receipt(tmp_path):
     raw.write_text("Synthetic unit-test text, NOT actual host evidence.\n")
     manifest = tmp_path / "manifest.json"
     receipt = tmp_path / "receipt.json"
-    write(manifest, {"sha256": {entry: digest}, "symlinks": {}})
+    path.chmod(0o644)
+    write(manifest, {"sha256": {entry: digest}, "symlinks": {}, "git_modes": {entry: "100644"}})
     record = {"host": "codex", "session_id": "synthetic-unit-session",
               "source_root": str(root), "loaded_files": [{"path": str(path), "sha256": digest}],
               "raw_dialogue": {"path": str(raw), "sha256": hashlib.sha256(raw.read_bytes()).hexdigest()}}
@@ -100,3 +101,24 @@ def test_rejects_candidate_mismatch_then_admits_only_for_semantic_review(tmp_pat
     report = json.loads(admitted.stdout)
     assert report["status"] == "admissible-for-evaluation"
     assert report["semantic_verdict"] == "not-evaluated"
+
+
+@pytest.mark.parametrize("fault", ["mode", "symlink-target"])
+def test_rejects_changed_git_mode_or_symlink_target(tmp_path, fault):
+    root, manifest, receipt, record = synthetic_receipt(tmp_path)
+    link = root / "linked-entry"
+    link.symlink_to("codex/meta-skill/SKILL.md")
+    identity = json.loads(manifest.read_text())
+    identity["git_modes"]["linked-entry"] = "120000"
+    identity["symlinks"]["linked-entry"] = "codex/meta-skill/SKILL.md"
+    write(manifest, identity)
+    if fault == "mode":
+        Path(record["loaded_files"][0]["path"]).chmod(0o755)
+    else:
+        link.unlink()
+        link.symlink_to("different-candidate.md")
+    rejected = subprocess.run([sys.executable, str(CLI), str(manifest), str(root), str(receipt)],
+                              capture_output=True, text=True)
+    assert rejected.returncode == 1, rejected.stdout
+    reason = "candidate-mode-mismatch" if fault == "mode" else "candidate-symlink-mismatch"
+    assert reason in json.loads(rejected.stdout)["reasons"]

@@ -32,26 +32,28 @@ def fingerprint(root):
 
 
 def candidate(destination):
+    git_modes = {}
     paths = subprocess.check_output(["git", "ls-tree", "-r", "--name-only", COMMIT,
         "claude/meta-skill", "codex/meta-skill", "docs/adr"], cwd=SOURCE, text=True).splitlines()
     for path in paths:
         if "/tests/" in path or path.endswith("/tests"):
             continue
         entry = subprocess.check_output(["git", "ls-tree", COMMIT, path], cwd=SOURCE, text=True)
+        git_modes[path] = entry.split()[0]
         data = subprocess.check_output(["git", "show", f"{COMMIT}:{path}"], cwd=SOURCE)
         target = destination / path
         target.parent.mkdir(parents=True, exist_ok=True)
-        if entry.startswith("120000"):
+        if git_modes[path] == "120000":
             target.symlink_to(data.decode())
         else:
             target.write_bytes(data)
-            target.chmod(0o755 if entry.startswith("100755") else 0o644)
+            target.chmod(int(git_modes[path], 8) & 0o777)
     hashes = fingerprint(destination)
     links = {str(p.relative_to(destination)): str(p.readlink())
              for p in sorted(destination.rglob("*")) if p.is_symlink()}
     return {"source_commit": COMMIT, "production_commit": PRODUCER,
-            "sha256": hashes, "symlinks": links,
-            "tree_sha256": hashlib.sha256(json.dumps({"files": hashes, "links": links},
+            "sha256": hashes, "symlinks": links, "git_modes": git_modes,
+            "tree_sha256": hashlib.sha256(json.dumps({"files": hashes, "links": links, "git_modes": git_modes},
                 sort_keys=True, separators=(",", ":")).encode()).hexdigest()}
 
 

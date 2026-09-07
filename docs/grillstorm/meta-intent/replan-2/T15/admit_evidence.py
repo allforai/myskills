@@ -21,6 +21,26 @@ def main():
         manifest = json.load(stream)
     root = Path(args.candidate_root).resolve()
     reasons = []
+    git_modes = manifest.get("git_modes", {})
+    links = manifest.get("symlinks", {})
+    if set(git_modes) != set(manifest.get("sha256", {})) | set(links):
+        reasons.append("missing-manifest-git-modes")
+    mode_mismatches = []
+    symlink_mismatches = []
+    for relative, expected_mode in git_modes.items():
+        path = root / relative
+        actual_mode = "120000" if path.is_symlink() else format(path.lstat().st_mode & 0o170777, "06o")
+        if actual_mode != expected_mode:
+            reasons.append("candidate-mode-mismatch")
+            mode_mismatches.append({"path": relative, "source_git_mode": expected_mode,
+                                    "observed_mode": actual_mode})
+    for relative, expected_target in links.items():
+        path = root / relative
+        actual_target = str(path.readlink()) if path.is_symlink() else None
+        if actual_target != expected_target:
+            reasons.append("candidate-symlink-mismatch")
+            symlink_mismatches.append({"path": relative, "source_target": expected_target,
+                                       "observed_target": actual_target})
     if not receipt.get("session_id"):
         reasons.append("missing-session-identity")
     if not receipt.get("raw_dialogue"):
@@ -51,7 +71,8 @@ def main():
     if entry not in paths:
         reasons.append("candidate-mismatch")
     print(json.dumps({"status": "unverified" if reasons else "admissible-for-evaluation",
-                      "reasons": sorted(set(reasons)), "semantic_verdict": "not-evaluated"}))
+                      "reasons": sorted(set(reasons)), "semantic_verdict": "not-evaluated",
+                      "mode_mismatches": mode_mismatches, "symlink_mismatches": symlink_mismatches}))
     return 1 if reasons else 0
 
 
