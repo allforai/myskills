@@ -55,7 +55,11 @@ local to its stated scope; do not reinterpret it as product redesign.
 For product reconstruction and new products, read and execute
 `${CLAUDE_PLUGIN_ROOT}/knowledge/product-intent-confirmation.md` before planning
 dependent work. Copy its interactive CLI at discussion entry; use `resume` on
-re-entry and bind generated plans to the frozen user-confirmed baseline.
+re-entry to restore history/reasons and explicitly excluded scope, asking only
+the returned pending topics. For a local request against legacy documents,
+use its `admit` operation for relevant projections, then local decide/freeze/plan;
+never overwrite old concept/baseline documents or expand the interview globally.
+Bind generated plans to the frozen user-confirmed scope.
 
 Read `${CLAUDE_PLUGIN_ROOT}/knowledge/bootstrap-planning.md` § Goal and requirement scope before
 collecting local requirements. Limit analysis and classification to the modules,

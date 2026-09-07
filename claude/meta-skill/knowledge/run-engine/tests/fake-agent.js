@@ -14,6 +14,11 @@ function makeFakeAgent(responses) {
     counters[label] = (counters[label] || 0) + 1
     const idx = counters[label] - 1
     let spec = responses[label]
+    if (spec === undefined && label === 'run-policy') {
+      spec = { status: 'run_policy_ready', policy: {
+        on_repeated_failure: 'halt', on_needs_iteration: 'halt_with_report', on_safety_warning: 'continue'
+      } }
+    }
     if (spec === undefined && label.startsWith('verify:')) {
       spec = {
         node_id: label.slice('verify:'.length),

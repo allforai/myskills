@@ -86,6 +86,12 @@ def test_post_check_and_expander_missing(tmp_path):
 
 @pytest.mark.parametrize('returncode', [124, 130])
 def test_timeout_or_interrupt_records_failure_and_stops(tmp_path, monkeypatch, returncode):
+    import shutil
+    scripts = tmp_path / '.allforai/bootstrap/scripts'
+    scripts.mkdir(parents=True)
+    shutil.copy2(ROOT / '../../claude/meta-skill/scripts/orchestrator/product_intent.py', scripts)
+    write(tmp_path / '.allforai/bootstrap/run-policy.json', {
+        'on_repeated_failure': 'halt', 'on_needs_iteration': 'halt_with_report', 'on_safety_warning': 'continue'})
     node = {'node_id':'n1', 'exit_artifacts':['report.json']}
     path = tmp_path / '.allforai/bootstrap/workflow.json'
     write(path, {'nodes':[node]})

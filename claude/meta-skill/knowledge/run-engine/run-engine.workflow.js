@@ -49,7 +49,9 @@ const NODE_RESULT_SCHEMA = {
         verifier: { type: 'string' },      // identity that verified — must differ from the generator
         claim: { type: 'string' }          // one line: what was proven to actually work
       } },
-    summary: { type: 'string' }
+    summary: { type: 'string' },
+    safety_warnings: { type: 'array', items: { type: 'string' } },
+    acceptance_verdict: { type: 'string' }
   }
 }
 
@@ -85,6 +87,7 @@ function computeReady(nodes, done) {
 }
 
 function routeOutcome(result) {
+  if (result.outcome === 'accepted_with_gaps') return 'accepted'
   const findings = result.blocking_findings || []
   if (result.outcome === 'passed' && findings.length === 0) return 'done'
   if (result.outcome === 'hard_fail') return 'hard'
@@ -193,6 +196,8 @@ function runNodePrompt(node, strict) {
     'Return a NODE_RESULT { node_id, outcome (passed|soft_fail|hard_fail), artifacts_written,',
     'blocking_findings: [{type, detail, suspected_root_node?}], assumed_decisions? }. Attach',
     'suspected_root_node when the root cause is in another node.',
+    'Return safety_warnings[] for non-blocking warnings and acceptance_verdict "needs_iteration" when concept-acceptance needs another pass.',
+    'Product requirements can only come from recorded user decision_inputs; an unresolved product choice is a hard failure, never an assumed decision.',
     strict || ''
   ].filter(Boolean).join(' ')
 }
@@ -218,14 +223,38 @@ function commitFailuresPrompt(hardFailures) {
   ].join(' ')
 }
 
-async function runNode(node, agent) {
+async function runNode(node, agent, policy = {}) {
   const max = node.soft_retry_max ?? 2
   const repairMax = node.repair_retry_max ?? 3
   let attempt = 0
   let repairAttempt = 0
+  let iterationRepair = false
   let strict = ''
   while (true) {
     const r = await agent(runNodePrompt(node, strict), { schema: NODE_RESULT_SCHEMA, label: node.node_id })
+    if (routeOutcome(r) === 'hard') return { ...r, outcome: 'hard_fail' }
+    if ((r.safety_warnings || []).length) {
+      await agent(`Record these safety warnings without asking a question: ${JSON.stringify(r.safety_warnings)}.`, { label: `safety-report:${node.node_id}` })
+      if (policy.on_safety_warning !== 'continue') return { ...r, outcome: 'hard_fail',
+        blocking_findings: [{ type: 'safety_warning', detail: 'Recorded Run Policy requires halt' }] }
+    }
+    if (r.acceptance_verdict === 'needs_iteration') {
+      const event = await agent('Run python3 .allforai/bootstrap/scripts/product_intent.py . --policy-event on_needs_iteration. Return its JSON verbatim; do not ask questions.', {
+        label: 'policy:on_needs_iteration', schema: { type: 'object', required: ['action'], properties: { action: { type: 'string' } } }
+      })
+      const action = event && event.action
+      await agent('Write concept-acceptance/acceptance-report.md with the actual gaps and recorded policy action ' + action + '. ' +
+        (action === 'accept' ? 'Append accepted_with_gaps to .allforai/bootstrap/assumed-decisions.json; do not mark the node completed or verified.' :
+          'List fix / re-bootstrap / accept for the next interactive entry; never ask now.'), { label: `iteration-report:${node.node_id}` })
+      if (action === 'accept') return { ...r, outcome: 'accepted_with_gaps' }
+      if (action === 'auto_fix_once' && !iterationRepair) {
+        iterationRepair = true
+        await agent(repairPrompt(node, r.blocking_findings), { label: `iteration-repair:${node.node_id}` })
+        strict = 'Rerun concept-acceptance and its independent verification after the one recorded repair; then stop.'
+        continue
+      }
+      return { ...r, outcome: 'hard_fail', blocking_findings: [{ type: 'needs_iteration', detail: 'Recorded policy halted with report' }] }
+    }
     const cls = routeOutcome(r)
     if (cls === 'done') {
       const gate = await agent(gateNodePrompt(node), {
@@ -236,7 +265,7 @@ async function runNode(node, agent) {
           type: 'invalid_artifact_gate', detail: 'independent artifact gate missing or mismatched'
         }] }
       }
-      if (gate.status === 'passed' && (gate.blocking_findings || []).length === 0) return r
+      if (gate.status === 'passed' && (gate.blocking_findings || []).length === 0) return iterationRepair ? { ...r, iteration_repair_stopped: true } : r
       if (gate.status === 'hard_fail') {
         return { ...r, outcome: 'hard_fail', blocking_findings: gate.blocking_findings || [] }
       }
@@ -254,7 +283,7 @@ async function runNode(node, agent) {
       continue
     }
     if (cls === 'hard') return { ...r, outcome: 'hard_fail' }
-    if (attempt >= max) {
+    if (attempt >= max && (policy.on_repeated_failure !== 'continue' || attempt >= 4)) {
       return { ...r, outcome: 'hard_fail',
         blocking_findings: [{ type: 'exhausted_retries', detail: `soft retried ${max}x without passing` }] }
     }
@@ -272,6 +301,19 @@ async function commitNode(result, agent, done) {
 
 async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) {
   phase('Load')
+  const recorded = await agent(
+    'Run python3 .allforai/bootstrap/scripts/product_intent.py . --run-policy and return its JSON verbatim. ' +
+    'Missing or invalid policy blocks execution; return to the interactive run entry, never ask or choose defaults here.',
+    { label: 'run-policy', schema: { type: 'object', required: ['status'], properties: {
+      status: { type: 'string' }, policy: { type: 'object' }
+    } } })
+  const policy = recorded && recorded.policy
+  if (!recorded || recorded.status !== 'run_policy_ready' || !policy ||
+      !['continue', 'halt'].includes(policy.on_repeated_failure) ||
+      !['continue', 'halt'].includes(policy.on_safety_warning) ||
+      !['halt_with_report', 'auto_fix_once', 'accept'].includes(policy.on_needs_iteration)) {
+    return { status: 'needs_run_policy', hardFailures: [] }
+  }
   const dag = await agent(loadDagPrompt(), { schema: DAG_SCHEMA, label: 'load-dag' })
   const done = new Set(dag.completed || [])
 
@@ -307,17 +349,21 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
     log(`running ${ready.length} ready node(s)`)
     const outcomes = await pipeline(
       ready,
-      node => runNode(node, agent),
+      node => runNode(node, agent, policy),
       result => routeOutcome(result) === 'done'
         ? serializeCommit(() => commitNode(result, agent, done)).then(() => result)  // fix C1: serialized
         : result,
-      result => routeOutcome(result) === 'done' ? null : result
+      result => routeOutcome(result) === 'done' && !result.iteration_repair_stopped ? null : result
     )
     const hardFailures = outcomes.filter(r => r && routeOutcome(r) === 'hard')
     if (hardFailures.length > 0) {
       await agent(commitFailuresPrompt(hardFailures), { label: 'commit-failures' })
       return { status: 'needs_diagnosis', hardFailures }
     }
+    if (outcomes.some(r => r && routeOutcome(r) === 'accepted')) {
+      return { status: 'accepted_with_gaps', verified: false }
+    }
+    if (outcomes.some(result => result && result.iteration_repair_stopped)) return { status: 'iteration_repair_stopped' }
   }
   const remaining = dag.nodes.filter(n => !done.has(n.node_id))
   if (pickExit(remaining, []) === 'needs_diagnosis') {

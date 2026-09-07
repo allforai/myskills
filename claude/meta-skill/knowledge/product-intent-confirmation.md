@@ -44,7 +44,11 @@ not additional product authorities.
   Question IDs are unique and distinct from all intent IDs, including generated
   gap questions; an ambiguous identity is rejected, never counted as an answer.
   Missing dimensions produce pending gap questions. Draft always stays pending.
-- `resume`: `{operation: "resume"}` returns only pending topics/items/questions.
+- `resume`: `{operation: "resume"}` returns pending `topics` plus the complete
+  requirement `history`, current `questions`, and journal-verified `excluded`
+  scope with its reasons. Present only `topics` as questions; use history to
+  restore context, not to repeat confirmed interviews. Explicitly excluded
+  questions remain pending in storage and are distinct from answered questions.
   Use it on re-entry; never replace existing intent history with a new draft.
 - `decide`: `{operation, batch_id, topic, user_reference, actions}` records one
   explicit topic batch. Each action needs the user's `reason`: `confirm`/`remove`
@@ -54,6 +58,21 @@ not additional product authorities.
   New needs require user provenance, never code evidence. Adjustments retain
   revision lineage; removals retain the old item and journal history. Reuse valid
   existing journal decisions and do not resubmit confirmed items.
+  `reopen` selects an intent or question and records the user's reconsideration
+  without an answer; dependent work blocks. `restore` explicitly restores a
+  removed intention as a new confirmed revision with its reason. Never restore
+  by relabeling old code or interpreting continue/accept as a product choice.
+- `admit`: `{operation, route: "local-change", goal, areas, items, questions?}`
+  admits only the relevant legacy projections to the existing local-requirements
+  contract. Each item uses the draft item fields and any actual prior journal
+  confirmation reference. Valid recorded choices are reused; unsupported ones
+  are presented as pending. Missing whole-product dimensions do not generate a
+  questionnaire. Old concept/baseline files stay unchanged; existing local
+  requirement history must be resumed instead of overwritten. `decide`, `freeze`
+  and `plan` then operate on this local session and require implementation,
+  documentation and verification coverage, without whole-product stages.
+  The user explicitly binds the complete reused local projection at scope freeze;
+  a legacy recorded goal alone cannot approve newly inferred acceptance details.
 - `freeze`: `{operation, batch_id, user_reference, reason, include, exclude}`.
   `include` names confirmed intent IDs. `exclude` maps every other intent and
   pending question ID to an explicit exclusion reason. Excluding a question
@@ -97,3 +116,14 @@ Input declarations are a reading minimum; additional relevant reads are allowed,
 but reading facts never expands authorization. Preserve main's one-time Run Policy
 questions before execution, autonomous execution thereafter, ADR3 independent
 visual-review semantics, and the 2D/2.5D limit disclosure: no revived 3D route choice.
+
+At the interactive run entry, check `python3 .allforai/bootstrap/scripts/product_intent.py . --run-policy`.
+`needs_run_policy` exits 1 and returns the three recorded-policy questions and
+options; collect actual responses together before the first node. Persist via
+`{operation: "run-policy", answers: {on_repeated_failure, on_needs_iteration,
+on_safety_warning}, user_reference}`. Existing valid policy returns no questions;
+invalid policy blocks for interactive repair, never defaults. These operations
+never write the product journal or requirement confirmations. Runtime consumers
+use `--policy-event <key>`; `auto_fix_once` consumption is persisted before repair
+in run-policy-state.json, so interruption cannot grant a second repair. Accepted
+gaps are an explicitly qualified run outcome, not verified/completed work.

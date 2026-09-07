@@ -25,7 +25,8 @@ If no goal argument is provided, reuse the task goal captured during `bootstrap`
 
 Read `.allforai/bootstrap/workflow.json` at every iteration.
 Trust project-local artifacts over conversation history.
-If `.allforai/bootstrap/product-summary.json` exists, treat it as the current best product inference baseline.
+If `.allforai/bootstrap/product-summary.json` exists, treat it as provisional inference;
+recorded user decision_inputs remain the product authority.
 
 Treat `.allforai/bootstrap/*` artifacts as the canonical completion surface for workflow nodes.
 Project docs under `docs/bootstrap/` may be updated, but they should not be the only completion signal for a node.
@@ -42,6 +43,19 @@ python3 .allforai/bootstrap/scripts/validate_unattended_readiness.py . --write-r
 If the readiness command exits non-zero or `.allforai/bootstrap/unattended-run-readiness.json` has `status != "ready"`, stop immediately. Do not start partial execution and do not silently weaken validation. Report the blockers from `.allforai/bootstrap/unattended-run-readiness.md`.
 Missing scripts, missing/invalid readiness reports, and failed expanders also block execution.
 Before stopping, record `preflight_blocked` with `record_run_event.py`, then run `summarize_run_log.py --write-report`.
+
+## Run Policy — once before the first node
+
+Run `python3 .allforai/bootstrap/scripts/product_intent.py . --run-policy`.
+Reuse `run_policy_ready` with zero questions. On `needs_run_policy`, collect
+the returned three choices together from the user: repeated failure
+continue/halt; needs_iteration halt_with_report/auto_fix_once/accept; safety
+warning continue/halt. First options are displayed defaults, never automatic
+answers. Persist JSON `{operation: "run-policy", answers: {...}, user_reference}`
+through that CLI. Invalid policy blocks for interactive repair. Both the markdown
+loop and flow.py consume it; execution never opens another interview.
+Continue/accept cannot confirm product intent. Missing product decisions return
+to interactive bootstrap and block affected work regardless of Run Policy.
 
 ### Dynamic preflight reconciliation
 
@@ -100,14 +114,23 @@ On the first iteration, if `transition_log` is non-empty:
 
 ## Safety
 
-- Same node fails 3 times: stop automatic retries, run diagnosis, and record `diagnosis_history`
+- Same node fails 3 times: diagnose and record `diagnosis_history`; consume
+  `product_intent.py . --policy-event on_repeated_failure`. Continue retries only
+  for recorded `continue`; out-of-scope, convergence and stagnation caps still halt.
+- For non-blocking safety warnings, consume `--policy-event on_safety_warning`:
+  continue logs, halt stops with a report. In native flow.py, nodes publish a
+  `warnings` array of strings to `.allforai/bootstrap/run-warnings.json`; the
+  supervisor consumes it before the next wave. Hard safety blockers remain failures.
 - 5 iterations with no new artifacts: stop and output current best state plus TODOs
 - Single node running too long: warn, do not silently discard work
 
 ## Termination
 
 - All required exit artifacts are ready: report success
-- `concept-acceptance` verdict = `needs_iteration`: output acceptance summary, stop, and ask whether to fix, re-bootstrap, or accept
+- `concept-acceptance` verdict = `needs_iteration`: consume `--policy-event on_needs_iteration`.
+  halt_with_report writes the summary and stops; auto_fix_once durably consumes
+  one repair, reruns acceptance, then stops; accept records accepted_with_gaps
+  without claiming verified/completed work. Never ask during execution.
 - for goal-based replication workflows, do not treat an accepted current slice as final success when the acceptance artifact says major requested fidelity surfaces remain open
 - User interrupts: the next run resumes from `workflow.json`
 
@@ -131,7 +154,7 @@ This Codex-only outer driver repeatedly relaunches Codex against pending nodes u
 
 - all required exit artifacts exist
 - unattended readiness is not `ready`
-- the same node fails 3 times and a diagnosis record is written
+- recorded failure policy or an existing convergence/stagnation cap stops retries
 - 5 consecutive transitions create no new artifacts
 - or the driver's max-iteration safety limit is reached
 ~~~

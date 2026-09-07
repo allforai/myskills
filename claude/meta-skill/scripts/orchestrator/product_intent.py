@@ -77,6 +77,23 @@ def validate_scope(project_root, workflow, *, consumed_sources=None):
         # Fold both histories together in log order so reopened work is not retained.
         retained = _retained_nodes(workflow, scope["requirement_refs"])
         blockers = []
+        if profile.get("intent_session_path") == LOCAL and scope["requirement_refs"]:
+            local = _read(root, LOCAL)
+            _validate_question_ids(local)
+            _discussion(root, local)  # Verify the journal-backed local scope.
+            baseline = profile["intent_scope"]
+            refs = baseline["requirement_refs"]
+            latest = _latest(local)
+            if (refs != scope["requirement_refs"]
+                    or baseline["intents"] != [latest[r["id"]] for r in refs]):
+                raise ValueError("Local projection differs from the confirmed scope")
+            for ref in refs:
+                if ref["path"] != LOCAL or ref["revision"] != latest[ref["id"]]["revision"]:
+                    raise ValueError("Local scope selects stale intent")
+                _confirmed(root, latest[ref["id"]])
+            if any(_question_pending(root, q) and set(q.get("depends_on", [])) & {r["id"] for r in refs}
+                   for q in local.get("intent_questions", [])):
+                raise ValueError("Local work depends on an unresolved decision")
         if profile["task_route"] in ("product-reconstruction", "new-product") and scope["requirement_refs"]:
             _product_contract(root, workflow, profile, retained=retained)
         if profile["task_route"] != "product-reconstruction":
@@ -186,7 +203,45 @@ CONCEPT = ".allforai/product-concept/product-concept.json"
 JOURNAL = ".allforai/product-concept/decision-journal.json"
 BASELINE = ".allforai/product-concept/concept-baseline.json"
 PROFILE = ".allforai/bootstrap/bootstrap-profile.json"
+LOCAL = ".allforai/bootstrap/local-requirements.json"
 TOPICS = ("target-users", "scenarios", "core-problem", "value-proposition", "business-loop", "tradeoffs")
+RUN_POLICY = ".allforai/bootstrap/run-policy.json"
+POLICY_OPTIONS = {
+    "on_repeated_failure": ["continue", "halt"],
+    "on_needs_iteration": ["halt_with_report", "auto_fix_once", "accept"],
+    "on_safety_warning": ["continue", "halt"],
+}
+
+
+def run_policy(root, request):
+    """Run choices are separate from the product journal and never approve intent."""
+    policy = _read(root, RUN_POLICY)
+    if policy is None:
+        if "answers" not in request:
+            return {"status": "needs_run_policy", "questions": POLICY_OPTIONS,
+                    "return_to": "interactive run entry before the first node"}
+        if not _text(request.get("user_reference")):
+            raise ValueError("Run Policy requires an actual user response")
+        policy = request["answers"]
+    if (not isinstance(policy, dict) or any(policy.get(k) not in options for k, options in POLICY_OPTIONS.items())):
+        raise ValueError("Invalid Run Policy; repair it at the interactive entry without guessing answers")
+    if not (root / RUN_POLICY).exists():
+        _write(root, RUN_POLICY, policy)
+    if request["operation"] == "run-event":
+        event = request["event"]
+        if event not in POLICY_OPTIONS:
+            raise ValueError("Unknown run event requires a report, never a new unattended interview")
+        action = policy[event]
+        if event == "on_needs_iteration" and action == "auto_fix_once" and request.get("consume") is True:
+            state_path = ".allforai/bootstrap/run-policy-state.json"
+            state = _read(root, state_path, {})
+            if state.get("iteration_policy_consumed"):
+                action = "halt_with_report"
+            else:
+                state["iteration_policy_consumed"] = True
+                _write(root, state_path, state)
+        return {"status": "policy_action", "event": event, "action": action, "questions": []}
+    return {"status": "run_policy_ready", "policy": policy, "questions": []}
 
 
 def _read(root, path, default=None):
@@ -220,7 +275,7 @@ def _latest(concept):
     return latest
 
 
-def _confirmed(root, item):
+def _confirmed(root, item, *, statuses=("confirmed",)):
     """Product projections must equal the journal's explicit decision payload."""
     reference = item.get("confirmation", {}).get("reference", "")
     source, separator, fragment = reference.partition("#")
@@ -242,7 +297,7 @@ def _confirmed(root, item):
                        and _text(decision.get("rationale")))
     if (batch.get("source") != "user_session" or batch.get("status", "confirmed") != "confirmed"
             or decision.get("status", "confirmed") != "confirmed" or not matches_payload
-            or item.get("status") != "confirmed" or confirmation.get("source") != "user"
+            or item.get("status") not in statuses or confirmation.get("source") != "user"
             or not _text(confirmation.get("decision_id")) or not _text(confirmation.get("reason"))):
         raise ValueError("Product projection differs from confirmed journal decision")
     if any(d.get("supersedes") in (fragment, reference) for b in journal["batches"] for d in b["decisions"]):
@@ -259,7 +314,12 @@ def _retained_nodes(workflow, refs):
 
 
 def _product_contract(root, workflow, profile, *, retained=()):
-    _validate_question_ids(_read(root, CONCEPT))
+    concept = _read(root, CONCEPT)
+    _validate_question_ids(concept)
+    included = {r["id"] for r in profile["task_scope"]["requirement_refs"]}
+    if any(_question_pending(root, q) and set(q.get("depends_on", [])) & included
+           for q in concept.get("intent_questions", [])):
+        raise ValueError("Included work depends on an unresolved decision; return to interactive bootstrap")
     baseline = _read(root, BASELINE, {}).get("intent_baseline")
     if not isinstance(baseline, dict):
         raise ValueError("Product work needs a frozen product baseline")
@@ -323,41 +383,139 @@ def _validate_question_ids(concept):
         question_ids.add(identity)
 
 
+def _question_pending(root, question):
+    if question.get("status", "pending") != "resolved":
+        return True
+    try:
+        reference = question["confirmation"]["reference"]
+        source, fragment = reference.split("#")
+        batch_id, marker, index = fragment.split("/")
+        journal = _read(root, JOURNAL)
+        batches = [b for b in journal["batches"] if b["batch_id"] == batch_id]
+        return (source != JOURNAL or marker != "decisions" or not index.isdecimal()
+                or journal.get("schema_version") != "1.0" or len(batches) != 1
+                or batches[0].get("source") != "user_session"
+                or batches[0].get("status", "confirmed") != "confirmed"
+                or batches[0]["decisions"][int(index)].get("intent") != question
+                or batches[0]["decisions"][int(index)].get("status", "confirmed") != "confirmed"
+                or any(d.get("supersedes") in (reference, fragment)
+                       for b in journal["batches"] for d in b["decisions"]))
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError):
+        return True
+
+
 def _discussion(root, concept):
     import copy
     concept = copy.deepcopy(concept)
+    profile = _read(root, PROFILE, {})
+    baseline = (profile.get("intent_scope", {}) if profile.get("intent_session_path") == LOCAL
+                else _read(root, BASELINE, {}).get("intent_baseline", {}))
+    excluded = {}
+    if baseline:
+        source, fragment = baseline["confirmation"].split("#")
+        batch_id, marker, index = fragment.split("/")
+        journal = _read(root, JOURNAL, {})
+        batches = [b for b in journal.get("batches", []) if b["batch_id"] == batch_id]
+        if (source != JOURNAL or marker != "decisions" or not index.isdecimal()
+                or journal.get("schema_version") != "1.0"
+                or len(batches) != 1 or batches[0].get("source") != "user_session"
+                or batches[0].get("status", "confirmed") != "confirmed"
+                or batches[0]["decisions"][int(index)].get("status", "confirmed") != "confirmed"
+                or batches[0]["decisions"][int(index)].get("baseline") != baseline
+                or any(d.get("supersedes") in (fragment, baseline["confirmation"])
+                       for b in journal["batches"] for d in b["decisions"])):
+            raise ValueError("Cannot resume unverified scope exclusions")
+        excluded = dict(baseline["excluded"])
+        # A later explicit reconsideration replaces only that exclusion. The
+        # frozen baseline remains historical until the user freezes a new scope.
+        after_scope = False
+        reopened = set()
+        for batch in journal["batches"]:
+            if batch["batch_id"] == batch_id:
+                after_scope = True
+                continue
+            if (not after_scope or batch.get("source") != "user_session"
+                    or batch.get("status", "confirmed") != "confirmed"):
+                continue
+            for decision in batch["decisions"]:
+                if decision.get("operation") == "reopen" and decision.get("status", "confirmed") == "confirmed":
+                    identity = decision["intent"]["id"]
+                    excluded.pop(identity, None)
+                    reopened.add(identity)
+        for question in concept.get("intent_questions", []):
+            if set(question.get("depends_on", [])) & reopened:
+                excluded.pop(question["id"], None)
     for item in _latest(concept).values():
-        if item.get("status") == "confirmed":
+        if item.get("status") in ("confirmed", "removed"):
             try:
-                _confirmed(root, item)
+                _confirmed(root, item, statuses=("confirmed", "removed"))
             except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError):
                 item["status"] = "pending"
                 item["pending_reason"] = "Missing or invalid user confirmation provenance"
     topics = []
     for topic in dict.fromkeys([*TOPICS, *(i["topic"] for i in _latest(concept).values())]):
-        items = [i for i in _latest(concept).values() if i["topic"] == topic and i["status"] == "pending"]
-        questions = [q for q in concept.get("intent_questions", []) if q["topic"] == topic and q.get("status", "pending") == "pending"]
+        items = [i for i in _latest(concept).values() if i["topic"] == topic and i["status"] == "pending" and i["id"] not in excluded]
+        questions = [dict(q, status="pending") for q in concept.get("intent_questions", [])
+                     if q["topic"] == topic and _question_pending(root, q) and q["id"] not in excluded]
         if items or questions:
             topics.append({"topic": topic, "items": items, "questions": questions})
-    return {"status": "discussion", "topics": topics}
+    return {"status": "discussion", "topics": topics, "history": concept.get("requirements", []),
+            "excluded": excluded, "questions": concept.get("intent_questions", [])}
 
 
 def session(root, request):
     """Apply explicit interactive bootstrap input; never called by unattended run."""
-    concept = _read(root, CONCEPT, {})
+    if request.get("operation") in ("run-policy", "run-event"):
+        return run_policy(root, request)
+    profile = _read(root, PROFILE, {})
+    concept_path = LOCAL if profile.get("intent_session_path") == LOCAL else CONCEPT
+    concept = _read(root, concept_path, {})
     _validate_question_ids(concept)
     operation = request["operation"]
+    if operation == "admit":
+        import copy
+        if (request.get("route") != "local-change" or not _text(request.get("goal"))
+                or not isinstance(request.get("areas"), list) or not request["areas"]
+                or not all(_text(a) for a in request["areas"])):
+            raise ValueError("Legacy admission needs the explicit local goal and areas")
+        if _read(root, LOCAL, {}).get("requirements"):
+            raise ValueError("Existing local history must be resumed, not overwritten")
+        items = copy.deepcopy(request["items"])
+        if not isinstance(items, list) or not items:
+            raise ValueError("Supply only relevant legacy projections and missing local requirements")
+        for item in items:
+            _item(item)
+            if not set(item["scope"]) & set(request["areas"]):
+                raise ValueError("Legacy projection is outside the requested local scope")
+            item.setdefault("revision", 1)
+            try:
+                _confirmed(root, item)
+            except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError):
+                item["status"] = "pending"
+                item["pending_reason"] = "Legacy intent needs user verification"
+        if len({i["id"] for i in items}) != len(items):
+            raise ValueError("Legacy projection identities must be unique")
+        concept = {"requirements": items, "intent_questions": request.get("questions", [])}
+        _validate_question_ids(concept)
+        profile.update(task_route="local-change", task_goal=request["goal"], intent_session_path=LOCAL,
+                       task_scope={"areas": request["areas"], "requirement_refs": []})
+        profile.pop("intent_scope", None)
+        _write(root, LOCAL, concept)
+        _write(root, PROFILE, profile)
+        return _discussion(root, concept)
     if operation == "resume":
         return _discussion(root, concept)
     if operation == "plan":
         import copy
         import re
-        baseline = _read(root, BASELINE, {})["intent_baseline"]
+        baseline = (profile["intent_scope"] if concept_path == LOCAL
+                    else _read(root, BASELINE, {})["intent_baseline"])
         latest = _latest(concept)
         refs_by_id = {r["id"]: r for r in baseline["requirement_refs"]}
         workflow = copy.deepcopy(request)
         workflow.pop("operation")
-        workflow["product_baseline"] = baseline
+        if concept_path == CONCEPT:
+            workflow["product_baseline"] = baseline
         workflow.setdefault("transition_log", [])
         for node in workflow["nodes"]:
             if "intent_ids" in node:
@@ -375,7 +533,8 @@ def session(root, request):
                 continue
             if not _text(bodies[identity]):
                 raise ValueError("Node needs a project-specific task brief")
-            node["decision_inputs"] = list(dict.fromkeys([*node.get("decision_inputs", []), CONCEPT, BASELINE]))
+            scope_inputs = [LOCAL] if concept_path == LOCAL else [CONCEPT, BASELINE]
+            node["decision_inputs"] = list(dict.fromkeys([*node.get("decision_inputs", []), *scope_inputs]))
             selected = [latest[r["id"]] for r in node["requirement_refs"]]
             node["product_goals"] = [i["goal"] for i in selected]
             node["acceptance"] = [a for i in selected for a in i["acceptance"]]
@@ -406,7 +565,7 @@ def session(root, request):
             raise ValueError("Freeze needs explicit included identities and exclusion reasons")
         latest = _latest(concept)
         questions = concept.get("intent_questions", [])
-        pending = {q["id"] for q in questions if q.get("status", "pending") == "pending"}
+        pending = {q["id"] for q in questions if _question_pending(root, q)}
         if (set(include) - latest.keys() or set(include) & exclude.keys()
                 or (latest.keys() | pending) - (set(include) | exclude.keys())
                 or exclude.keys() - (latest.keys() | pending)):
@@ -422,8 +581,9 @@ def session(root, request):
         if any(b["batch_id"] == request["batch_id"] for b in journal["batches"]):
             raise ValueError("Scope batch identity already exists")
         baseline = _read(root, BASELINE, {})
-        refs = [{"path": CONCEPT, "id": i, "revision": latest[i]["revision"]} for i in include]
-        contract = {"version": baseline.get("intent_baseline", {}).get("version", 0) + 1,
+        refs = [{"path": concept_path, "id": i, "revision": latest[i]["revision"]} for i in include]
+        previous_scope = profile.get("intent_scope", {}) if concept_path == LOCAL else baseline.get("intent_baseline", {})
+        contract = {"version": previous_scope.get("version", 0) + 1,
                     "requirement_refs": refs, "excluded": exclude,
                     "intents": [latest[i] for i in include],
                     "confirmation": JOURNAL + "#" + request["batch_id"] + "/decisions/0"}
@@ -435,7 +595,10 @@ def session(root, request):
         profile = _read(root, PROFILE, {})
         profile["task_scope"] = {"areas": sorted({a for i in include for a in latest[i]["scope"]}), "requirement_refs": refs}
         _write(root, JOURNAL, journal)
-        _write(root, BASELINE, baseline)
+        if concept_path == LOCAL:
+            profile["intent_scope"] = contract
+        else:
+            _write(root, BASELINE, baseline)
         _write(root, PROFILE, profile)
         return {"status": "frozen", "baseline": contract}
     if operation == "decide":
@@ -469,11 +632,19 @@ def session(root, request):
                     raise ValueError("Added intent needs an unused stable identity")
                 item.update(revision=1, origin="user-request", evidence=[], status="confirmed", confirmation=confirmation)
                 concept.setdefault("requirements", []).append(item)
-            elif op in ("confirm", "adjust", "remove"):
+            elif op in ("confirm", "adjust", "remove", "restore") or (op == "reopen" and action["id"] in _latest(concept)):
                 item = _latest(concept)[action["id"]]
                 previous = item.get("confirmation", {}).get("reference")
-                if item["status"] == "removed":
-                    raise ValueError("Removed intent cannot be silently restored")
+                if item["status"] == "removed" and op != "restore":
+                    try:
+                        _confirmed(root, item, statuses=("removed",))
+                    except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError):
+                        if op != "confirm":
+                            raise ValueError("Unverified legacy removal needs explicit confirmation")
+                    else:
+                        raise ValueError("Removed intent cannot be silently restored")
+                if op == "restore" and item["status"] != "removed":
+                    raise ValueError("Restore requires a removed intention")
                 if op == "adjust":
                     replacement = copy.deepcopy(item)
                     changes = action["changes"]
@@ -485,6 +656,14 @@ def session(root, request):
                     item["status"] = "superseded"
                     concept["requirements"].append(replacement)
                     item = replacement
+                elif op in ("remove", "restore", "reopen") and item.get("confirmation"):
+                    replacement = copy.deepcopy(item)
+                    replacement.update(revision=item["revision"] + 1,
+                                       supersedes={"id": item["id"], "revision": item["revision"]})
+                    if item["status"] != "removed":
+                        item["status"] = "superseded"
+                    concept["requirements"].append(replacement)
+                    item = replacement
                 elif op == "confirm" and item["status"] != "pending":
                     try:
                         _confirmed(root, item)
@@ -492,22 +671,28 @@ def session(root, request):
                         item["prior_confirmation"] = item.get("confirmation")
                     else:
                         raise ValueError("Reuse recorded confirmation; do not reconfirm it")
-                item.update(status="removed" if op == "remove" else "confirmed", confirmation=confirmation)
-            elif op == "answer":
+                item.update(status="removed" if op == "remove" else "pending" if op == "reopen" else "confirmed",
+                            confirmation=confirmation)
+            elif op in ("answer", "reopen"):
                 item = next(q for q in concept["intent_questions"] if q["id"] == action["id"])
-                if not _text(action.get("answer")):
+                previous = item.get("confirmation", {}).get("reference")
+                if op == "answer" and not _text(action.get("answer")):
                     raise ValueError("Unanswered question remains pending")
-                item.update(status="resolved", answer=action["answer"], confirmation=confirmation)
+                if op == "answer":
+                    item.update(status="resolved", answer=action["answer"], confirmation=confirmation)
+                else:
+                    item.pop("answer", None)
+                    item.update(status="pending", confirmation=confirmation)
             else:
                 raise ValueError("Only explicit confirm/add/adjust/remove/answer operations are supported")
             batch["decisions"].append({"question": action.get("id", item["id"]),
-                                       "chosen": item.get("goal", item.get("answer")),
+                                       "chosen": item.get("goal", item.get("answer", "Reopen decision")),
                                        "rationale": action["reason"], "operation": op,
                                        "supersedes": previous, "intent": copy.deepcopy(item)})
         _validate_question_ids(concept)
         journal["batches"].append(batch)
         _write(root, JOURNAL, journal)
-        _write(root, CONCEPT, concept)
+        _write(root, concept_path, concept)
         return _discussion(root, concept)
     if operation == "draft":
         if request.get("route") not in ("product-reconstruction", "new-product") or not _text(request.get("goal")):
@@ -561,8 +746,13 @@ def session(root, request):
 if __name__ == "__main__":
     import sys
     try:
-        result = session(Path(sys.argv[1]).resolve(), json.load(sys.stdin))
+        request = ({"operation": "run-policy"} if sys.argv[2:] == ["--run-policy"] else
+                   {"operation": "run-event", "event": sys.argv[3], "consume": True} if len(sys.argv) == 4 and sys.argv[2] == "--policy-event"
+                   else json.load(sys.stdin))
+        result = session(Path(sys.argv[1]).resolve(), request)
         print(json.dumps(result, ensure_ascii=False))
+        if result.get("status") == "needs_run_policy":
+            sys.exit(1)
     except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError, StopIteration) as exc:
         print(json.dumps({"status": "blocked", "error": str(exc)}))
         sys.exit(1)

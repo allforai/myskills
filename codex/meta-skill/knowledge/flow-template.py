@@ -489,6 +489,14 @@ def goal_based_completion_required(project_root: Path) -> bool:
 
 
 def acceptance_requires_iteration(project_root: Path) -> bool:
+    report = project_root / ".allforai/concept-acceptance/acceptance-report.json"
+    if report.exists():
+        try:
+            data = load_json(report)
+            if data.get("verdict", data.get("status")) == "needs_iteration":
+                return True
+        except (ValueError, OSError, AttributeError):
+            return True
     acceptance_path = project_root / ".allforai/bootstrap/artifacts/parity-acceptance.md"
     if not acceptance_path.exists():
         return False
@@ -523,6 +531,7 @@ Requirements:
 6. Do not write `completed` when any exit artifact says `conditional_pass`, `partial`, `accepted_with_warnings`, `passed_with_warnings`, `blocked_by_*`, or contains unresolved `gaps`, `code_gaps`, `asset_gaps`, `audio_gaps`, `remaining_gaps`, `blockers`, `major_findings`, or `unresolved_findings`. Continue repairing and rerunning validation inside this node when it owns the fix; otherwise write `failed` with the exact blocker and repair owner.
 7. If the node fails, write a one-line `error` field explaining the blocker.
 8. Stop only after this node is truly completed or a failed transition has been written.
+9. Record non-blocking safety warnings as a warnings array of strings in `.allforai/bootstrap/run-warnings.json`; the supervisor applies the recorded Run Policy. Hard safety or unresolved product requirements remain failures, never warnings.
 
 Do not ask for acceptance. Execute the work directly."""
 
@@ -566,6 +575,49 @@ def run_diagnosis(project_root: Path, node_id: str, attempt_count: int) -> subpr
     return run_codex(project_root, build_diagnosis_prompt(node_id, attempt_count))
 
 
+def policy_action(project_root: Path, event: str | None = None) -> str:
+    args = [".", "--policy-event", event] if event else [".", "--run-policy"]
+    result = run_script(project_root, "product_intent.py", args)
+    if result is None or result.returncode:
+        return "blocked"
+    try:
+        data = json.loads(result.stdout)
+        return data["action"] if event else ("ready" if data["status"] == "run_policy_ready" else "blocked")
+    except (ValueError, KeyError, TypeError):
+        return "blocked"
+
+
+def handle_iteration(project_root: Path) -> int:
+    action = policy_action(project_root, "on_needs_iteration")
+    report = project_root / ".allforai/concept-acceptance/acceptance-report.md"
+    report.parent.mkdir(parents=True, exist_ok=True)
+    if action == "accept":
+        path = project_root / ".allforai/bootstrap/assumed-decisions.json"
+        data = load_json(path) if path.exists() else {"decisions": []}
+        entry = {"status": "accepted_with_gaps", "source": ".allforai/bootstrap/run-policy.json",
+                 "scope": "run outcome only; no product requirement is approved"}
+        if entry not in data.setdefault("decisions", []):
+            data["decisions"].append(entry)
+            path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
+        # A qualified acceptance does not pass the artifact gate or complete a
+        # node. Recheck product prerequisites; leave failing exit artifacts intact.
+        return 0 if run_preflight(project_root) == 0 else 6
+    report.write_text("Acceptance needs iteration. Review acceptance-report.json for the gaps.\n"
+                      "At the next interactive entry choose fix, re-bootstrap, or accept; execution asks no new questions.\n")
+    if action == "auto_fix_once":
+        state_path = project_root / ".allforai/bootstrap/run-policy-state.json"
+        state = load_json(state_path) if state_path.exists() else {}
+        if not state.get("iteration_repair_started"):
+            state["iteration_repair_started"] = True
+            state_path.write_text(json.dumps(state) + "\n")
+            repaired = run_codex(project_root, "Apply the recorded auto_fix_once Run Policy: read the current concept-acceptance report, "
+                "repair only its named gaps authorized by existing decision_inputs, rerun concept-acceptance and its independent "
+                "verification, then stop. Do not ask questions or change product requirements; unresolved product choices block repair.")
+            if repaired.returncode == 0 and not acceptance_requires_iteration(project_root) and run_post_checks(project_root):
+                return 0
+    return 5
+
+
 def parse_legacy_args(argv: list[str], project_root: Path) -> tuple[str, int]:
     goal = load_bootstrap_goal(project_root) or DEFAULT_GOAL
     max_iterations = DEFAULT_MAX_ITERATIONS
@@ -599,28 +651,51 @@ def main() -> int:
         )
         return preflight
 
+    if max_iterations > 0 and policy_action(project_root) != "ready":
+        print(json.dumps({"passed": False, "done": False,
+                          "error": "Run Policy missing or invalid; return to interactive run entry before the first node"}), file=sys.stderr)
+        return 6
+
     for iteration in range(1, max_iterations + 1):
+        warning_path = project_root / ".allforai/bootstrap/run-warnings.json"
+        if warning_path.exists():
+            try:
+                warnings = load_json(warning_path)["warnings"]
+                if not isinstance(warnings, list) or not all(isinstance(w, str) and w.strip() for w in warnings):
+                    raise ValueError("warnings must be an array of non-empty strings")
+            except (OSError, ValueError, KeyError, TypeError):
+                print(json.dumps({"passed": False, "done": False, "error": "invalid safety warning report"}), file=sys.stderr)
+                return 6
+            if warnings:
+                run_script(project_root, "record_run_event.py", [".", "--event", "safety_warning", "--status", "warning", "--message", "; ".join(warnings)])
+                if policy_action(project_root, "on_safety_warning") != "continue":
+                    print(json.dumps({"passed": False, "done": False, "error": "recorded Run Policy halted on safety warning", "warnings": warnings}), file=sys.stderr)
+                    return 4
         workflow = load_json(workflow_path)
         if not run_expanders(project_root, workflow):
             print(json.dumps({"passed": False, "done": False, "error": "workflow expander failed"}), file=sys.stderr)
             return 6
         workflow = load_json(workflow_path)
         node = first_pending_node(project_root, workflow)
+        acceptance_node = node is None or any(artifact_path(a) == ".allforai/concept-acceptance/acceptance-report.json"
+                                               for a in node.get("exit_artifacts", []))
+        if acceptance_node and acceptance_requires_iteration(project_root):
+            outcome = handle_iteration(project_root)
+            accepted = outcome == 0 and load_json(project_root / ".allforai/bootstrap/run-policy.json")["on_needs_iteration"] == "accept"
+            print(
+                json.dumps(
+                    {
+                        "passed": outcome == 0 and not accepted,
+                        "done": outcome == 0 and not accepted,
+                        "run_policy_outcome": "accepted_with_gaps" if accepted else "repair verified" if outcome == 0 else "iteration halted with report",
+                    },
+                    indent=2,
+                    ensure_ascii=False,
+                ),
+                file=sys.stderr,
+            )
+            return outcome
         if node is None:
-            if goal_based_completion_required(project_root) and acceptance_requires_iteration(project_root):
-                print(
-                    json.dumps(
-                        {
-                            "passed": False,
-                            "done": False,
-                            "error": "acceptance indicates the current slice completed but the overall goal remains open",
-                        },
-                        indent=2,
-                        ensure_ascii=False,
-                    ),
-                    file=sys.stderr,
-                )
-                return 5
             if not workflow.get("nodes") or not run_post_checks(project_root):
                 print(json.dumps({"passed": False, "done": False, "error": "final validation failed"}), file=sys.stderr)
                 return 6
@@ -649,22 +724,30 @@ def main() -> int:
                 f"Repeated node failure reached threshold {MAX_CONSECUTIVE_FAILURES_PER_NODE}.",
                 diagnosis_text[:4000],
             )
-            print(
-                json.dumps(
-                    {
-                        "passed": False,
-                        "done": False,
-                        "node": node_id,
-                        "error": "failure threshold reached",
-                        "consecutive_failures": failure_count,
-                        "diagnosis_recorded": True,
-                    },
-                    indent=2,
-                    ensure_ascii=False,
-                ),
-                file=sys.stderr,
-            )
-            return 3
+            history = load_json(workflow_path).get("diagnosis_history", [])
+            related = [d for d in history if d.get("node_id", d.get("node")) == node_id]
+            causes = [d.get("root_cause", {}).get("node") for d in related]
+            capped = any(d.get("out_of_scope") is True for d in related) or any(
+                cause and causes.count(cause) >= 2 for cause in causes)
+            if not capped and policy_action(project_root, "on_repeated_failure") == "continue":
+                pass
+            else:
+                print(
+                    json.dumps(
+                        {
+                            "passed": False,
+                            "done": False,
+                            "node": node_id,
+                            "error": "failure threshold reached",
+                            "consecutive_failures": failure_count,
+                            "diagnosis_recorded": True,
+                        },
+                        indent=2,
+                        ensure_ascii=False,
+                    ),
+                    file=sys.stderr,
+                )
+                return 3
 
         if stagnant_iteration_count(workflow) >= MAX_STAGNANT_ITERATIONS:
             print(

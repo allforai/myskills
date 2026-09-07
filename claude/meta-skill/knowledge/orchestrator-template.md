@@ -48,8 +48,13 @@ Before stopping, record `preflight_blocked` with
 ## Run Policy (the only questions `/run` asks, and only before the first node)
 
 Everything a human could be asked mid-run is asked here instead, once, in one
-`AskUserQuestion`, and written to `.allforai/bootstrap/run-policy.json`. If that file already
-exists (a resumed run), reuse it without asking. Three decisions, each with a default:
+`AskUserQuestion`, and written to `.allforai/bootstrap/run-policy.json` through
+the shared copied CLI. First run `python3 .allforai/bootstrap/scripts/product_intent.py . --run-policy`.
+If it returns `run_policy_ready`, reuse the validated policy without asking.
+For `needs_run_policy`, collect the three answers and submit JSON operation
+`run-policy` with `answers` and the actual `user_reference`. Invalid policy blocks
+for interactive repair. Three decisions, each with a displayed default (never
+submitted automatically):
 
 | key | question | options (first = default) |
 |---|---|---|
@@ -59,6 +64,10 @@ exists (a resumed run), reuse it without asking. Three decisions, each with a de
 
 After this section there are no more questions: every later branch reads
 `run-policy.json`, and a branch that would need a fourth answer halts with a report instead.
+The Workflow engine checks this policy before loading the DAG and consumes
+`product_intent.py . --policy-event on_needs_iteration` for durable one-repair
+semantics. Run Policy is never a product decision: unresolved decision_inputs
+return to interactive bootstrap and cannot be approved by continue/accept.
 
 ### Dynamic preflight reconciliation
 
@@ -163,7 +172,8 @@ On first iteration if transition_log is non-empty:
   `halt_with_report` writes acceptance-report.md (with the fix / re-bootstrap / accept options
   listed for the human to pick afterwards) and stops; `auto_fix_once` runs one repair loop on
   the named gaps, re-runs concept-acceptance, then stops whatever the verdict; `accept` records
-  `accepted_with_gaps` in assumed-decisions.json and continues to the success report. Never ask here.
+  `accepted_with_gaps` in assumed-decisions.json and returns a qualified outcome,
+  without marking that node completed or verified. Never ask here.
 - User interrupts → transition_log is already saved, resume with /run
 - Safety warning → apply `run-policy.json.on_safety_warning`: `continue` logs it and goes on,
   `halt` stops with the warning in the report. Never ask here.
