@@ -1,0 +1,28 @@
+{
+  "status": "closed",
+  "reverse_chains_checked": [
+    "O1/R01/R02/R17/R18 and O3/R30 global bootstrap proof <- T15 local routing scenarios on actual Claude and Codex <- T9 workflow/Node-spec output and scoped confirmation <- I-scope in canonical bootstrap, bootstrap-planning, validate_bootstrap and Codex bootstrap/product-inference <- approved issue8 and issue9; existing code or missing documentation alone cannot select reconstruction.",
+    "O1/R03-R14/R16/R19/R22 and O3/R30 global confirmed-intent proof <- T15 reconstruction/adversarial scenarios and T10 public bootstrap behavior tests <- T10 four operations, desired baseline and applicable full downstream planning <- I-intent canonical product-concept/reverse-concept, cross-phase concept-baseline projection and both journal wrappers <- T9/I-scope; discussion preserves product source and explicit exclusions.",
+    "O1/R14/R15/R29 and O3/R30 global resume proof <- T16 interrupted, superseded and legacy decision scenarios <- T11 interactive reentry and scoped unattended eligibility <- I-resume shared authority/readiness plus Claude engine-core/run-engine.workflow and Codex flow-template <- T10/I-intent and existing compute_reset_closure traversal; unrelated eligible branches survive and unresolved required work blocks overall completion.",
+    "O2/R23/R26/R27 and O3/R30 global freshness proof <- T17 dirty-state, baseline-only, transitive-impact and unchanged-repeat scenarios <- T12 public reconciliation/artifact/readiness checks <- I-freshness input_freshness, reconcile_bootstrap_workflow, check_artifacts, check_evidence/compute_completeness and both engines <- T10/I-intent; actual relevant content identifies inputs and generated outputs cannot cause self-invalidation.",
+    "O2/R20/R21/R22/R28 and O3/R30 global coherent-completion proof <- T17 stale-document refusal followed by repair/sync/reverification <- T13 completion and owner-directed recovery <- I-sync canonical completion, capture_evidence and both runtime consumers <- T12/I-freshness <- T10 confirmed authority; code-test success alone cannot certify required stale documentation.",
+    "O2/R23-R25/R29 and O3/R30 global external-recovery proof <- T18 fact-only, accept, reject, defer, interruption and stable-repeat scenarios <- T14 bootstrap/resume conflict disposition and scoped repair <- I-drift consuming I-resume and I-sync <- T11 and T13; no external-drift-only acceptance engine or implicit baseline adoption.",
+    "O1/O3 final candidate proof <- controller final integration and current relevant evidence gates <- T15 scenario-local evaluator with 6 required scenarios x 2 actual hosts <- verified T9 and T10 candidates; raw scenario and scripted turns reach fresh subjects while criteria remain evaluator-owned.",
+    "O1/O3 final candidate proof <- controller final integration and current relevant evidence gates <- T16 scenario-local evaluator with 7 required scenarios x 2 actual hosts <- verified T11 candidate; continuation carries only authorized persistent scenario state and preserves decision history.",
+    "O2/O3 final candidate proof <- controller final integration and current relevant evidence gates <- T17 scenario-local evaluator with 8 required scenarios x 2 actual hosts <- verified T12 and T13 candidates; old reports, refreshed timestamps and one-host-only coverage cannot satisfy acceptance.",
+    "O2/O3 final candidate proof <- controller final integration and current relevant evidence gates <- T18 scenario-local evaluator with 8 required scenarios x 2 actual hosts <- verified T14 candidate; report-only recovery, unresolved failures and unavailable hosts remain unverified.",
+    "SG-01 observation identity <- T17 plus T12/T13 public completion/reconciliation fault-injection proof <- observed A cannot be published as B, affected closure is blocked, B is actually reverified and unchanged B converges <- capture_evidence/input_freshness and shared completion consumers; the program contract and failure ledger are explicitly inherited by task steps.",
+    "SG-02 candidate identity <- all T15-T18 evaluator acceptance gates and controller current-input rechecks <- actual resolved candidate Skill/adapter/helper paths, hashes, host/session provenance and tool traces <- isolated verified-stable candidate checkout; deliberate installed/candidate mismatch and changed-candidate rejection require affected fresh-context runs on both hosts without installed-skill updates.",
+    "O1/O2/O3 failure closure <- declared public tests, scenario evidence and controlled fault injection <- task failure-contract inheritance of the 42-record ledger <- program revision2 recovery/publication ordering and proportionality table; validator passed all 42 records, guard-only rows name defenses and assigned proof seams, and no exempt mode was expanded into speculative production scope.",
+    "Global integration <- controller serialized merge, post-merge focused acceptance, final canonical/Codex/Claude suites and independent review <- 10 unique task owners in 3 catalog modules and 17 declared source/test directories <- acyclic native issue9-issue18 dependencies and six matching interface IDs; canonical scripts are reused by the Codex scripts symlink and bundle strategy, generated project helpers are delivered through owned bootstrap adapters, and proof tickets have no hidden shared-harness dependency. Machine DAG compilation is intentionally subsequent to this gate; this review closes the proposed task graph, not implementation or runtime proof."
+  ],
+  "coverage": {
+    "catalog_entries": 3,
+    "module_documents": 3,
+    "tasks": 10,
+    "owned_directories": 17,
+    "orphan_tasks": [],
+    "orphan_directories": []
+  },
+  "findings": []
+}

@@ -1,0 +1,18 @@
+{
+  "layer": "workflow",
+  "epoch": 1,
+  "limits": {"mandatory": 2, "soft": 3, "hard": 4},
+  "spec_revision": 2,
+  "task_revision": 1,
+  "workflow_revision": 2,
+  "status": "closed",
+  "rounds": [{"round": 1, "status": "continue", "report": "workflow-reverse-r1.json", "new_families": ["WG-01", "WG-02", "WG-03"]}, {"round": 2, "status": "closed", "report": "workflow-reverse-r2.json", "verified_families": ["WG-01", "WG-02", "WG-03"], "open_families": []}],
+  "new_families": ["WG-01", "WG-02", "WG-03"],
+  "rechecked_families": [],
+  "verified_families": ["WG-01", "WG-02", "WG-03"],
+  "open_families": [],
+  "residual_families": [],
+  "repairs": ["AD-02 / workflow revision2 hash-bound packets, role-aware admission and parent-plus-child scenario denominator"],
+  "confirmation_required": false,
+  "stop_reason": "independent round2 confirmed all three projection repairs; zero unresolved issues"
+}

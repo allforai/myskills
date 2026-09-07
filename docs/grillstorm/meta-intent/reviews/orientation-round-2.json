@@ -1,0 +1,135 @@
+{
+  "status": "closed",
+  "coverage": [
+    {
+      "claim_id": "OS-001",
+      "verdict": "supported",
+      "raw_evidence_checked": [
+        "claude/meta-skill/skills/bootstrap/SKILL.md:271 and 521-535",
+        "claude/meta-skill/knowledge/capabilities/reverse-concept.md: Purpose, Required Outputs, Evidence-Based Extraction and Skip Entirely",
+        "codex/meta-skill/skills/bootstrap.md: Canonical Source, Task Capture and Reverse Product Inference",
+        "GitHub allforai/myskills#8 Implementation Decisions and Further Notes; source snapshot docs/grillstorm/meta-intent/sources/issue-8.json"
+      ],
+      "rationale": "The implement mapping explicitly prepends reverse-concept and analyze when both named baseline files are missing, even though later planning asks for targeted handoff regeneration. Codex imports that canonical protocol and adds a code-backed product summary. The protection against circular verification is documented, but neither code evidence nor file presence establishes approved desired intent. The approved goal expressly rejects unconditional reconstruction, so scoped confirmation is a required change rather than a currently demonstrated capability."
+    },
+    {
+      "claim_id": "OS-002",
+      "verdict": "supported",
+      "raw_evidence_checked": [
+        "codex/meta-skill/AGENTS.md: Contract Notes and Shared Asset Strategy; scripts and knowledge/capabilities symlinks resolve into claude/meta-skill",
+        "claude/meta-skill/scripts/orchestrator/reconcile_bootstrap_workflow.py: _scan_report_status, _artifact_state, build_state_index and build_reconciliation_plan",
+        "Independent python3 -B in-memory probe: _scan_report_status({}) and _scan_report_status({'notes':'no evidence'}) both returned ('complete', [])",
+        "claude/meta-skill/scripts/orchestrator/check_artifacts.py:154-185 rejects an empty dictionary artifact",
+        "claude/meta-skill/internal/commands/journal.md: schema_version 1.0 and append-only batches with question/chosen/rationale/supersedes",
+        "claude/meta-skill/scripts/check_decision_inputs.py: check_decision_inputs and find_orphan_decisions",
+        "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py and validate_unattended_readiness.py"
+      ],
+      "rationale": "The corrections accurately identify distinct planning and execution gates. Reconciliation labels status-less JSON complete, stores artifact size/mtime and Node-spec hashes, and can keep or supersede such nodes; this does not establish valid runtime completion or source-plus-approved-baseline freshness. Existing decision wiring checks existence and consumer references, not confirmation authority. Reusing the journal, shared contracts and validators is justified; the specified freshness and authority extensions remain implementation work."
+    },
+    {
+      "claim_id": "OS-003",
+      "verdict": "supported",
+      "raw_evidence_checked": [
+        "docs/adr/0001-bootstrap-free-planning.md",
+        "claude/meta-skill/skills/bootstrap/SKILL.md: goal mapping and Step 3.1",
+        "claude/meta-skill/knowledge/capabilities/reverse-concept.md: conflict resolution before downstream execution",
+        "claude/meta-skill/knowledge/orchestrator-template.md: Preflight Gate and Phase B execution",
+        "codex/meta-skill/knowledge/orchestrator-template.md: Preflight Gate and Core Loop steps 5-7",
+        "codex/meta-skill/knowledge/flow-template.py:416-433 and main preflight handling",
+        "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py:282-368"
+      ],
+      "rationale": "The ADR and run templates require unattended execution, but the mapped reverse-concept Capability still requires user conflict resolution. Readiness scans selected interactive wording and existing approval records; it does not establish a general confirmed-product-intent barrier. Both templates stop on global readiness failure and Codex returns exit 6. The corrected map properly treats upstream confirmation and blocking only dependent work as requested behavior, without claiming those mechanisms already exist or proposing replacement approval machinery."
+    },
+    {
+      "claim_id": "OS-004",
+      "verdict": "supported",
+      "raw_evidence_checked": [
+        "Read-only collection: PYTHONDONTWRITEBYTECODE=1 python3 -m pytest claude/meta-skill/tests/unit codex/meta-skill/test_flow.py codex/meta-skill/test_install.py --collect-only -q -p no:cacheprovider returned 131 tests collected in 0.08s",
+        "AST inspection: canonical unit suite has 14 files, 95 test functions and 177 assert statements; Codex suite has 2 files, 20 test functions and 47 assert statements; parametrization expands the case count",
+        "claude/meta-skill/tests/unit/test_validate_unattended_readiness.py: real report assertions for ready, pending approval, interactive Node-spec and missing prerequisites",
+        "codex/meta-skill/test_flow.py: parametrized fail-closed gate, real validation command, failed final validation and interruption assertions",
+        "docs/grillstorm/meta-intent/reviews/orientation.md: reported historical 100+31 passing baseline and explicit exclusion of live acceptance"
+      ],
+      "rationale": "The test selection and combined case count independently match the corrected map, and assertions exercise deterministic helper behavior rather than establishing actual platform conversations. This dispatch did not rerun tests that create temporary fixtures because only the verdict file may be written; historical pass timings and the earlier zero-test command's exit-code attribution are not independently re-certified. That limitation does not alter the material conclusion: deterministic baseline evidence and startup probes cannot close the planned bootstrap/resume interaction acceptance."
+    },
+    {
+      "claim_id": "OS-005",
+      "verdict": "supported",
+      "raw_evidence_checked": [
+        "Live gh issue list --repo allforai/myskills --state open --limit 100 --json number,title returned #8 through #18",
+        "Live GET repos/allforai/myskills/issues/{8..18}/dependencies/blocked_by on 2026-09-07 returned 8:[], 9:[], 10:[9], 11:[10], 12:[10], 13:[12], 14:[11,13], 15:[9,10], 16:[11], 17:[12,13], 18:[14]",
+        "docs/grillstorm/meta-intent/sources/issue-8.json through issue-18.json: issue identities and stored native dependency arrays",
+        "docs/agents/issue-tracker.md: native issue dependencies are the canonical execution gate"
+      ],
+      "rationale": "The current native graph exactly matches every listed edge, including the dependency-free #9. Producers of scope, confirmation, freshness and synchronization contracts precede their consumers; the thought-test issues attach to those same producing slices. Concurrent execution must honor these live dependencies and verified producer outputs. No missing or contradictory dependency was found."
+    },
+    {
+      "claim_id": "OS-006",
+      "verdict": "supported",
+      "raw_evidence_checked": [
+        "git rev-parse HEAD returned 81acdddca29ab6dde95a1ab72decc2067f3a0f9a; git diff --stat empty; git status --short showed only ?? docs/grillstorm/ before verdict persistence",
+        "git log -3 --oneline includes the latest cross-exam device-axis and screenshot changes",
+        "git -C /Users/aa/workspace/myskills status --short returned no changes",
+        "orca status --json: runtime ready/reachable, appVersion 1.4.197",
+        "Installed grillstorm/scripts/install_official_skills.py status returned missing_required=[] without installing anything",
+        "claude --version returned 2.1.263; codex --version returned codex-cli 0.153.4",
+        "Orca archived runtime probe ctx_e53bbe574a03: raw pwd and git rev-parse HEAD tool result matches this integration checkout and starting ref",
+        "Current live Codex dispatch ctx_adca3d24d5e5 executes read-only repository and CLI tools successfully",
+        "docs/agents/issue-tracker.md, docs/agents/domain.md and CONTEXT.md"
+      ],
+      "rationale": "Effective state matches the correction: tracked implementation is unchanged, while coordinator review artifacts make the integration checkout untracked-dirty. The original checkout is clean and the starting ref includes recent unrelated work. Runtime and actual tool execution are demonstrated for both providers, which supports launch feasibility but says nothing about feature-level bootstrap interactions. Isolated writers and serialized integration remain execution constraints, not completed implementation claims."
+    }
+  ],
+  "category_checks": [
+    {"category": "capability", "missing_material_claims": []},
+    {"category": "entry_call_path", "missing_material_claims": []},
+    {"category": "state_data", "missing_material_claims": []},
+    {"category": "dependency", "missing_material_claims": []},
+    {"category": "config", "missing_material_claims": []},
+    {"category": "test_proof", "missing_material_claims": []},
+    {"category": "docs_runtime", "missing_material_claims": []},
+    {"category": "git_dirty", "missing_material_claims": []},
+    {"category": "reuse", "missing_material_claims": []},
+    {"category": "failure_recovery", "missing_material_claims": []},
+    {"category": "intent", "missing_material_claims": []}
+  ],
+  "intent_coverage": [
+    {
+      "claim_id": "OS-001",
+      "verdict": "evidenced",
+      "alternative_explanation": "Missing concept documents could intentionally mandate full product reconstruction for every local change.",
+      "evidence": ["Bootstrap mapping explicitly cites independent-baseline protection; reverse-concept Purpose identifies circular verification; approved #8 explicitly rejects mandatory reconstruction for a local request. The safeguard's motivation is documented, but code-derived baseline authority is not justified."]
+    },
+    {
+      "claim_id": "OS-002",
+      "verdict": "evidenced",
+      "alternative_explanation": "The reconciliation scanner may intentionally provide a permissive audit projection rather than duplicate runtime validation, and separate host contracts might be deliberate.",
+      "evidence": ["Reconciliation module docstring and write_policy establish audit/planning purpose; the correction preserves that distinction. Codex AGENTS.md, canonical symlinks and ADR-0001 explicitly require shared semantics. The scanner discrepancy's historical origin remains unknown, but #8 rejects existence/mtime-only acceptance, so that behavior is not a protected completion contract."]
+    },
+    {
+      "claim_id": "OS-003",
+      "verdict": "evidenced",
+      "alternative_explanation": "The reverse-concept interview wording could be a deliberate exception allowing mid-run product decisions, or readiness could already provide the required general confirmation barrier.",
+      "evidence": ["ADR-0001 and both run templates reject mid-run interviews; reverse-concept nevertheless requires user resolution. Actual readiness checks and Codex run_preflight show no general confirmation authority check and a whole-run stop. #8 explicitly assigns decisions to interactive bootstrap while preserving approval machinery; the correction does not invent a historical cause for the conflict."]
+    },
+    {
+      "claim_id": "OS-004",
+      "verdict": "evidenced",
+      "alternative_explanation": "Passing deterministic tests or text assertions might be sufficient evidence that Claude and Codex honor the new interaction semantics.",
+      "evidence": ["Read assertions in test_validate_unattended_readiness.py and test_flow.py exercise fixtures, helper outputs and mocked process boundaries. #8 Testing Decisions require observable bootstrap/resume scenarios with scripted user decisions and equivalent platform outcomes. The orientation explicitly reserves that future acceptance rather than presenting the 131-case baseline as feature proof."]
+    },
+    {
+      "claim_id": "OS-005",
+      "verdict": "evidenced",
+      "alternative_explanation": "The execution sequence might be an arbitrary layering that prevents useful concurrency or lacks real dependency enforcement.",
+      "evidence": ["Live native GitHub dependency endpoints exactly match the contract-producing and consuming issue graph. Issue titles and #8 responsibilities connect scope, confirmation, freshness, synchronization and recovery; docs/agents/issue-tracker.md makes native blockers authoritative. This supports parallel execution only across ready independent slices."]
+    },
+    {
+      "claim_id": "OS-006",
+      "verdict": "evidenced",
+      "alternative_explanation": "The older conversational ref might still be the intended baseline, or installed binaries and runtime readiness could be treated as actual feature acceptance.",
+      "evidence": ["The dispatched task explicitly names ref81acdddc and the integration checkout; current HEAD matches and includes unrelated cross-exam changes. Original checkout status is clean. Runtime probe tool output and the current Codex dispatch prove startup/tool use only, as the corrected map explicitly states."]
+    }
+  ],
+  "findings": []
+}

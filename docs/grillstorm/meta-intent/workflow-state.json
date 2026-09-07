@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "controller": "root-orca",
+  "run_id": "run_a2a61121adfb",
+  "spec_revision": 2,
+  "task_revision": 1,
+  "workflow_revision": 2,
+  "launch_revision": 1,
+  "max_concurrency": 3,
+  "status": "running",
+  "integration_ref": "j08069099777/grillstorm-meta-intent",
+  "tasks": {
+    "T9": {
+      "status": "pending",
+      "attempts": {
+        "infrastructure": 0,
+        "business": 0
+      },
+      "dependencies": []
+    },
+    "T10": {
+      "status": "pending",
+      "attempts": {
+        "infrastructure": 0,
+        "business": 0
+      },
+      "dependencies": [
+        "T9"
+      ]
+    },
+    "T11": {
+      "status": "pending",
+      "attempts": {
+        "infrastructure": 0,
+        "business": 0
+      },
+      "dependencies": [
+        "T10"
+      ]
+    },
+    "T12": {
+      "status": "pending",
+      "attempts": {
+        "infrastructure": 0,
+        "business": 0
+      },
+      "dependencies": [
+        "T10"
+      ]
+    },
+    "T13": {
+      "status": "pending",
+      "attempts": {
+        "infrastructure": 0,
+        "business": 0
+      },
+      "dependencies": [
+        "T12"
+      ]
+    },
+    "T14": {
+      "status": "pending",
+      "attempts": {
+        "infrastructure": 0,
+        "business": 0
+      },
+      "dependencies": [
+        "T11",
+        "T13"
+      ]
+    },
+    "T15": {
+      "status": "pending",
+      "attempts": {
+        "infrastructure": 0,
+        "business": 0
+      },
+      "dependencies": [
+        "T9",
+        "T10"
+      ]
+    },
+    "T16": {
+      "status": "pending",
+      "attempts": {
+        "infrastructure": 0,
+        "business": 0
+      },
+      "dependencies": [
+        "T11"
+      ]
+    },
+    "T17": {
+      "status": "pending",
+      "attempts": {
+        "infrastructure": 0,
+        "business": 0
+      },
+      "dependencies": [
+        "T12",
+        "T13"
+      ]
+    },
+    "T18": {
+      "status": "pending",
+      "attempts": {
+        "infrastructure": 0,
+        "business": 0
+      },
+      "dependencies": [
+        "T14"
+      ]
+    }
+  },
+  "live_workers": [],
+  "merge_queue": [],
+  "completed": []
+}

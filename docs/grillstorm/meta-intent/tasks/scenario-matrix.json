@@ -1,0 +1,513 @@
+{
+  "schema_version": 1,
+  "spec_revision": 2,
+  "task_revision": 1,
+  "workflow_revision": 2,
+  "hosts": [
+    "claude",
+    "codex"
+  ],
+  "required_scenario_count": 30,
+  "required_cell_count": 60,
+  "scenarios": [
+    {
+      "id": "T15/large-code-local-button",
+      "task": "T15",
+      "requirements": [
+        "R01",
+        "R02",
+        "R17",
+        "R30"
+      ],
+      "source": "sources/issue-15.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T15/missing-product-docs",
+      "task": "T15",
+      "requirements": [
+        "R18",
+        "R30"
+      ],
+      "source": "sources/issue-15.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T15/reshape-business-model",
+      "task": "T15",
+      "requirements": [
+        "R03",
+        "R04",
+        "R05",
+        "R06",
+        "R07",
+        "R09",
+        "R12",
+        "R13",
+        "R16",
+        "R22",
+        "R30"
+      ],
+      "source": "sources/issue-15.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T15/add-unimplemented-need",
+      "task": "T15",
+      "requirements": [
+        "R08",
+        "R16",
+        "R30"
+      ],
+      "source": "sources/issue-15.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T15/deny-inferred-intent",
+      "task": "T15",
+      "requirements": [
+        "R06",
+        "R09",
+        "R10",
+        "R11",
+        "R30"
+      ],
+      "source": "sources/issue-15.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T15/interrupted-confirmation",
+      "task": "T15",
+      "requirements": [
+        "R14",
+        "R29",
+        "R30"
+      ],
+      "source": "sources/issue-15.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T15/new-product",
+      "task": "T15",
+      "requirements": [
+        "R19",
+        "R07",
+        "R16",
+        "R30"
+      ],
+      "source": "sources/issue-8.json#Testing Decisions / Routing scenarios",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T16/no-answer",
+      "task": "T16",
+      "requirements": [
+        "R14",
+        "R29",
+        "R30"
+      ],
+      "source": "sources/issue-16.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T16/partial-resume",
+      "task": "T16",
+      "requirements": [
+        "R14",
+        "R15",
+        "R30"
+      ],
+      "source": "sources/issue-16.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T16/reverse-prior-decision",
+      "task": "T16",
+      "requirements": [
+        "R09",
+        "R15",
+        "R30"
+      ],
+      "source": "sources/issue-16.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T16/legacy-provenance",
+      "task": "T16",
+      "requirements": [
+        "R05",
+        "R07",
+        "R15",
+        "R30"
+      ],
+      "source": "sources/issue-16.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T16/removed-not-resurrected",
+      "task": "T16",
+      "requirements": [
+        "R10",
+        "R15",
+        "R30"
+      ],
+      "source": "sources/issue-16.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T16/discussion-preserves-source",
+      "task": "T16",
+      "requirements": [
+        "R11",
+        "R30"
+      ],
+      "source": "sources/issue-16.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T16/unattended-pending",
+      "task": "T16",
+      "requirements": [
+        "R14",
+        "R29",
+        "R30"
+      ],
+      "source": "sources/issue-16.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T17/two-dirty-states",
+      "task": "T17",
+      "requirements": [
+        "R23",
+        "R27",
+        "R30"
+      ],
+      "source": "sources/issue-17.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T17/baseline-only-change",
+      "task": "T17",
+      "requirements": [
+        "R22",
+        "R26",
+        "R27",
+        "R30"
+      ],
+      "source": "sources/issue-17.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T17/generated-sync-no-loop",
+      "task": "T17",
+      "requirements": [
+        "R21",
+        "R26",
+        "R30"
+      ],
+      "source": "sources/issue-17.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T17/tests-pass-docs-stale",
+      "task": "T17",
+      "requirements": [
+        "R20",
+        "R21",
+        "R28",
+        "R30"
+      ],
+      "source": "sources/issue-17.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T17/transitive-unrelated-impact",
+      "task": "T17",
+      "requirements": [
+        "R26",
+        "R30"
+      ],
+      "source": "sources/issue-17.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T17/copied-old-evidence",
+      "task": "T17",
+      "requirements": [
+        "R27",
+        "R28",
+        "R30"
+      ],
+      "source": "sources/issue-17.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T17/unchanged-idempotency",
+      "task": "T17",
+      "requirements": [
+        "R26",
+        "R27",
+        "R30"
+      ],
+      "source": "sources/issue-17.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T17/uncertain-impact",
+      "task": "T17",
+      "requirements": [
+        "R23",
+        "R26",
+        "R28",
+        "R30"
+      ],
+      "source": "sources/issue-17.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T18/fact-only-vs-behavior",
+      "task": "T18",
+      "requirements": [
+        "R23",
+        "R24",
+        "R30"
+      ],
+      "source": "sources/issue-18.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T18/accept-full-recovery",
+      "task": "T18",
+      "requirements": [
+        "R22",
+        "R25",
+        "R28",
+        "R30"
+      ],
+      "source": "sources/issue-18.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T18/reject-repair-full-recovery",
+      "task": "T18",
+      "requirements": [
+        "R25",
+        "R28",
+        "R30"
+      ],
+      "source": "sources/issue-18.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T18/defer",
+      "task": "T18",
+      "requirements": [
+        "R25",
+        "R29",
+        "R30"
+      ],
+      "source": "sources/issue-18.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T18/interrupted-recovery",
+      "task": "T18",
+      "requirements": [
+        "R15",
+        "R23",
+        "R25",
+        "R30"
+      ],
+      "source": "sources/issue-18.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T18/unattended-conflict",
+      "task": "T18",
+      "requirements": [
+        "R29",
+        "R30"
+      ],
+      "source": "sources/issue-18.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T18/report-only-not-done",
+      "task": "T18",
+      "requirements": [
+        "R21",
+        "R28",
+        "R30"
+      ],
+      "source": "sources/issue-18.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    },
+    {
+      "id": "T18/stable-repeat",
+      "task": "T18",
+      "requirements": [
+        "R26",
+        "R27",
+        "R30"
+      ],
+      "source": "sources/issue-18.json#Acceptance criteria",
+      "hosts": [
+        "claude",
+        "codex"
+      ]
+    }
+  ],
+  "parent_testing_mapping": {
+    "reconstruction": [
+      "T15/reshape-business-model",
+      "T15/add-unimplemented-need",
+      "T15/deny-inferred-intent"
+    ],
+    "uncertainty": [
+      "T15/interrupted-confirmation",
+      "T16/no-answer",
+      "T16/partial-resume"
+    ],
+    "routing": [
+      "T15/large-code-local-button",
+      "T15/missing-product-docs",
+      "T15/new-product"
+    ],
+    "planning": [
+      "T15/reshape-business-model",
+      "T15/add-unimplemented-need",
+      "T15/deny-inferred-intent",
+      "T15/new-product"
+    ],
+    "in_workflow_change": [
+      "T17/tests-pass-docs-stale",
+      "T17/baseline-only-change"
+    ],
+    "external_change": [
+      "T17/two-dirty-states",
+      "T18/fact-only-vs-behavior",
+      "T18/accept-full-recovery",
+      "T18/reject-repair-full-recovery"
+    ],
+    "incrementality": [
+      "T17/transitive-unrelated-impact",
+      "T17/unchanged-idempotency"
+    ],
+    "legacy": [
+      "T16/legacy-provenance"
+    ],
+    "platform_execution": [
+      "all scenarios on both actual hosts",
+      "T16/unattended-pending",
+      "T18/unattended-conflict"
+    ]
+  },
+  "additional_guards": {
+    "SG01": {
+      "owners": [
+        "T12",
+        "T13",
+        "T17"
+      ],
+      "proof": "public gate observes A, input changes B before publication, rejects A, actually verifies B, stable repeat"
+    },
+    "SG02": {
+      "owners": [
+        "T15",
+        "T16",
+        "T17",
+        "T18"
+      ],
+      "proof": "each task evidence gate rejects loaded installed/candidate mismatch and affected candidate change; restore valid current evidence only by real fresh affected host runs"
+    }
+  },
+  "interpretation": "Case IDs group child acceptance bullets without weakening them; evaluator reads full source criteria plus parent testing decisions. All complete raw scenarios, not label coverage, required. Compound legacy case exercises both valid old decisions and unconfirmed legacy artifacts."
+}

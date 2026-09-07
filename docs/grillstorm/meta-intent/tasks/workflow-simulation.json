@@ -1,0 +1,140 @@
+{
+  "ok": true,
+  "initial_ready": [
+    "T9"
+  ],
+  "dependency_waves_informational": [
+    [
+      "T9"
+    ],
+    [
+      "T10"
+    ],
+    [
+      "T11",
+      "T12",
+      "T15"
+    ],
+    [
+      "T13",
+      "T16"
+    ],
+    [
+      "T14",
+      "T17"
+    ],
+    [
+      "T18"
+    ]
+  ],
+  "max_ready_width": 3,
+  "path_merge_groups": [
+    [
+      "T11",
+      "T12",
+      "T13"
+    ]
+  ],
+  "resource_mutexes": {},
+  "derived_edges": [
+    [
+      "T10",
+      "T9"
+    ],
+    [
+      "T11",
+      "T10"
+    ],
+    [
+      "T12",
+      "T10"
+    ],
+    [
+      "T13",
+      "T12"
+    ],
+    [
+      "T14",
+      "T11"
+    ],
+    [
+      "T14",
+      "T13"
+    ],
+    [
+      "T15",
+      "T10"
+    ],
+    [
+      "T15",
+      "T9"
+    ],
+    [
+      "T16",
+      "T11"
+    ],
+    [
+      "T17",
+      "T12"
+    ],
+    [
+      "T17",
+      "T13"
+    ],
+    [
+      "T18",
+      "T14"
+    ]
+  ],
+  "failure_blast_radius": {
+    "T9": [
+      "T10",
+      "T11",
+      "T12",
+      "T13",
+      "T14",
+      "T15",
+      "T16",
+      "T17",
+      "T18"
+    ],
+    "T10": [
+      "T11",
+      "T12",
+      "T13",
+      "T14",
+      "T15",
+      "T16",
+      "T17",
+      "T18"
+    ],
+    "T11": [
+      "T14",
+      "T16",
+      "T18"
+    ],
+    "T12": [
+      "T13",
+      "T14",
+      "T17",
+      "T18"
+    ],
+    "T13": [
+      "T14",
+      "T17",
+      "T18"
+    ],
+    "T14": [
+      "T18"
+    ],
+    "T15": [],
+    "T16": [],
+    "T17": [],
+    "T18": []
+  },
+  "unreachable": [],
+  "warnings": [
+    "tasks 'T11' and 'T12' both write ['claude/meta-skill/knowledge/bootstrap-audits.md', 'claude/meta-skill/knowledge/bootstrap-planning.md', 'claude/meta-skill/knowledge/node-spec-template.md', 'claude/meta-skill/knowledge/orchestrator-template.md', 'claude/meta-skill/knowledge/run-engine/engine-core.js', 'claude/meta-skill/knowledge/run-engine/run-engine.workflow.js', 'claude/meta-skill/knowledge/run-engine/tests/engine-core.test.js', 'claude/meta-skill/knowledge/run-engine/tests/engine-integration.test.js', 'claude/meta-skill/scripts/check_decision_inputs.py', 'claude/meta-skill/scripts/compute_reset_closure.py', 'claude/meta-skill/scripts/orchestrator/product_intent.py', 'claude/meta-skill/scripts/orchestrator/validate_bootstrap.py', 'claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py', 'claude/meta-skill/skills/bootstrap/SKILL.md', 'claude/meta-skill/tests/unit/test_check_artifacts.py', 'claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py', 'claude/meta-skill/tests/unit/test_validate_bootstrap.py', 'claude/meta-skill/tests/unit/test_validate_unattended_readiness.py', 'codex/meta-skill/knowledge/flow-template.py', 'codex/meta-skill/knowledge/orchestrator-template.md', 'codex/meta-skill/knowledge/product-inference.md', 'codex/meta-skill/skills/bootstrap.md', 'codex/meta-skill/test_flow.py'] with no dependency ordering; run in separate worktrees and serialize integration",
+    "tasks 'T11' and 'T13' both write ['claude/meta-skill/knowledge/bootstrap-audits.md', 'claude/meta-skill/knowledge/bootstrap-planning.md', 'claude/meta-skill/knowledge/node-spec-template.md', 'claude/meta-skill/knowledge/orchestrator-template.md', 'claude/meta-skill/knowledge/run-engine/engine-core.js', 'claude/meta-skill/knowledge/run-engine/run-engine.workflow.js', 'claude/meta-skill/knowledge/run-engine/tests/engine-core.test.js', 'claude/meta-skill/knowledge/run-engine/tests/engine-integration.test.js', 'claude/meta-skill/scripts/check_decision_inputs.py', 'claude/meta-skill/scripts/compute_reset_closure.py', 'claude/meta-skill/scripts/orchestrator/product_intent.py', 'claude/meta-skill/scripts/orchestrator/validate_bootstrap.py', 'claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py', 'claude/meta-skill/skills/bootstrap/SKILL.md', 'claude/meta-skill/tests/unit/test_check_artifacts.py', 'claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py', 'claude/meta-skill/tests/unit/test_validate_bootstrap.py', 'claude/meta-skill/tests/unit/test_validate_unattended_readiness.py', 'codex/meta-skill/knowledge/flow-template.py', 'codex/meta-skill/knowledge/orchestrator-template.md', 'codex/meta-skill/knowledge/product-inference.md', 'codex/meta-skill/skills/bootstrap.md', 'codex/meta-skill/test_flow.py'] with no dependency ordering; run in separate worktrees and serialize integration"
+  ]
+}

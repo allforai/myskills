@@ -1,0 +1,587 @@
+{
+  "schema_version": 1,
+  "delivery_run_id": "meta-intent",
+  "spec_revision": 2,
+  "status": "spec_closed",
+  "requirements": [
+    {
+      "id": "R01",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a project owner, I want bootstrap to remain the single entry point, so that I do not need to choose a new command for each kind of task.",
+      "owner": "intent",
+      "tasks": [
+        "T9"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "unconfirmed-or-resumed",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R02",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a project owner, I want task routing to follow my stated goal, so that existing code does not automatically trigger full product reconstruction.",
+      "owner": "intent",
+      "tasks": [
+        "T9"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "unconfirmed-or-resumed",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R03",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a product owner, I want code-derived product intent presented as a draft, so that I can challenge it before it becomes authoritative.",
+      "owner": "intent",
+      "tasks": [
+        "T10"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "unconfirmed-or-resumed",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R04",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a product owner, I want the draft to describe users, situations, problems, value propositions, business loops and tradeoffs, so that I can discuss the product rather than merely review a feature inventory.",
+      "owner": "intent",
+      "tasks": [
+        "T10"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "unconfirmed-or-resumed",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R05",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a product owner, I want observed facts separated from inferred intent and unknowns, so that I know what the evidence does and does not establish.",
+      "owner": "intent",
+      "tasks": [
+        "T10"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "unconfirmed-or-resumed",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R06",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a product owner, I want evidence and uncertainty attached to inferred claims, so that I can correct weak or misleading conclusions.",
+      "owner": "intent",
+      "tasks": [
+        "T10"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "unconfirmed-or-resumed",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R07",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a product owner, I want to confirm an inferred intention, so that useful existing decisions can be retained explicitly.",
+      "owner": "intent",
+      "tasks": [
+        "T10"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "unconfirmed-or-resumed",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R08",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a product owner, I want to add intentions absent from the code, so that unmet needs can shape the future product.",
+      "owner": "intent",
+      "tasks": [
+        "T10"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "unconfirmed-or-resumed",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R09",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a product owner, I want to adjust inferred intentions, so that historical implementation choices do not constrain the desired direction.",
+      "owner": "intent",
+      "tasks": [
+        "T10"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "unconfirmed-or-resumed",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R10",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a product owner, I want to remove intentions from the proposed product baseline, so that unwanted capabilities are not silently retained as requirements.",
+      "owner": "intent",
+      "tasks": [
+        "T10"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "unconfirmed-or-resumed",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R11",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a project owner, I want removing a product intention during discussion to leave source code untouched, so that implementation changes remain deliberate and scoped.",
+      "owner": "intent",
+      "tasks": [
+        "T10"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "unconfirmed-or-resumed",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R12",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a product owner, I want contradictions and missing product questions raised proactively, so that the discussion does not depend on me spotting every omission.",
+      "owner": "intent",
+      "tasks": [
+        "T10"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "unconfirmed-or-resumed",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R13",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a product owner, I want focused discussion by topic, so that I can make meaningful decisions without completing a generic exhaustive questionnaire.",
+      "owner": "intent",
+      "tasks": [
+        "T10"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "unconfirmed-or-resumed",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R14",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a product owner, I want unresolved questions to remain unresolved, so that silence or interruption is never mistaken for approval.",
+      "owner": "intent",
+      "tasks": [
+        "T10",
+        "T11"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "unconfirmed-or-resumed",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R15",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a returning user, I want confirmed decisions and their reasons preserved across sessions, so that I do not repeat completed discussions.",
+      "owner": "intent",
+      "tasks": [
+        "T11"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "unconfirmed-or-resumed",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R16",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a product owner, I want downstream design and acceptance to use the confirmed baseline, so that the workflow builds the desired product rather than rationalizing the old one.",
+      "owner": "intent",
+      "tasks": [
+        "T10"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "unconfirmed-or-resumed",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R17",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a feature requester, I want a new feature scoped against relevant code and product decisions, so that a local change does not restart whole-product discovery.",
+      "owner": "intent",
+      "tasks": [
+        "T9"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "unconfirmed-or-resumed",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R18",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a feature requester, I want missing documentation handled with local analysis and necessary questions, so that documentation gaps do not force an unrelated full redesign.",
+      "owner": "intent",
+      "tasks": [
+        "T9"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "unconfirmed-or-resumed",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R19",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a new-product owner, I want to establish intent without a code-reconstruction phase, so that new projects enter the same downstream process naturally.",
+      "owner": "intent",
+      "tasks": [
+        "T10"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "unconfirmed-or-resumed",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R20",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a developer, I want affected documentation identified before implementation, so that synchronization is part of the task rather than an afterthought.",
+      "owner": "synchronization",
+      "tasks": [
+        "T13"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "stale-or-recovered",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R21",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a developer, I want implementation facts and verification evidence updated after a change, so that the documentation describes the delivered state.",
+      "owner": "synchronization",
+      "tasks": [
+        "T13"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "stale-or-recovered",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R22",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a product owner, I want changed product behavior grounded in my recorded decisions, so that implementation cannot silently rewrite requirements.",
+      "owner": "synchronization",
+      "tasks": [
+        "T10",
+        "T13"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "stale-or-recovered",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R23",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a maintainer, I want the next bootstrap or resume to detect changes made outside the workflow, so that external edits do not leave stale documents and acceptance results unnoticed.",
+      "owner": "synchronization",
+      "tasks": [
+        "T12",
+        "T14"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "stale-or-recovered",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R24",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a maintainer, I want fact-only changes distinguished from product conflicts, so that harmless implementation updates do not cause unnecessary product interviews.",
+      "owner": "synchronization",
+      "tasks": [
+        "T14"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "stale-or-recovered",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R25",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a product owner, I want to choose whether to accept an external behavior change or restore the intended behavior, so that the confirmed baseline remains authoritative.",
+      "owner": "synchronization",
+      "tasks": [
+        "T14"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "stale-or-recovered",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R26",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a maintainer, I want only affected tasks, documents and evidence invalidated, so that unrelated completed work remains reusable.",
+      "owner": "synchronization",
+      "tasks": [
+        "T12"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "stale-or-recovered",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R27",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a maintainer, I want documents and evidence tied to code and baseline versions, so that I can determine whether an earlier result still applies.",
+      "owner": "synchronization",
+      "tasks": [
+        "T12"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "stale-or-recovered",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R28",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a workflow user, I want code, documentation and acceptance mismatches to prevent false completion, so that a completed task represents a coherent delivery.",
+      "owner": "synchronization",
+      "tasks": [
+        "T13"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "stale-or-recovered",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R29",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As an unattended-run user, I want necessary product decisions handled before autonomous execution, so that execution does not introduce surprise interviews or invent answers.",
+      "owner": "synchronization",
+      "tasks": [
+        "T11",
+        "T14"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "stale-or-recovered",
+          "risk": "high"
+        }
+      ]
+    },
+    {
+      "id": "R30",
+      "source": "https://github.com/allforai/myskills/issues/8#user-stories",
+      "description": "As a Claude or Codex user, I want the same routing, confirmation and synchronization semantics, so that changing platforms does not change product authority.",
+      "owner": "proof",
+      "tasks": [
+        "T9",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14"
+      ],
+      "states": [
+        {
+          "id": "observable-contract",
+          "risk": "high"
+        },
+        {
+          "id": "stale-or-recovered",
+          "risk": "high"
+        }
+      ]
+    }
+  ]
+}

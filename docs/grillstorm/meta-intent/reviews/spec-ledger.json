@@ -1,0 +1,50 @@
+{
+  "layer": "specification",
+  "epoch": 1,
+  "limits": {
+    "mandatory": 3,
+    "soft": 5,
+    "hard": 6
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "status": "continue",
+      "new_families": [
+        "SG-01",
+        "SG-02"
+      ],
+      "repair": "spec revision2 observed/candidate identity bindings",
+      "confirmation_required": true
+    },
+    {
+      "round": 2,
+      "status": "continue",
+      "verified_families": [
+        "SG-01",
+        "SG-02"
+      ],
+      "open_families": [],
+      "reverse": "closed",
+      "closure": "closed",
+      "abstraction": "stable",
+      "confirmation_required": false,
+      "stop_reason": "mandatory third round remains"
+    },
+    {
+      "round": 3,
+      "status": "closed",
+      "spec_revision": 2,
+      "reverse": "closed",
+      "closure": "closed",
+      "abstraction": "stable",
+      "open_families": [],
+      "verified_families": [
+        "SG-01",
+        "SG-02"
+      ],
+      "confirmation_required": false
+    }
+  ],
+  "status": "closed"
+}

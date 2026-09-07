@@ -1,0 +1,82 @@
+{
+  "status": "stable",
+  "decisions": [
+    {
+      "concept": "Confirmed intent, decision history and baseline projection",
+      "recommendation": "extend",
+      "evidence": [
+        "program-spec.md revision 2: I-scope, I-intent and I-resume; modules/intent-spec.md; source issues 8-11 and 16",
+        "claude/meta-skill/internal/commands/journal.md and journal-merge.md already own journal batches, concept projection and merge history; codex/meta-skill/commands/journal.md and journal-merge.md expose the corresponding host entry points",
+        "claude/meta-skill/scripts/check_decision_inputs.py currently checks decision artifact existence and consumer wiring; requirements-state-registry.json R01-R19 retain intent ownership"
+      ],
+      "proposed_owner": "intent",
+      "interface_and_seam": "Keep one authority validation/projection contract behind the existing journal and bootstrap procedures. Extend it with explicit decisions, stable identities, lineage and revision preconditions; local requirements and reconstructed/new-product intent consume this same authority rule. Prove interrupted publication, replay, removal followed by reconstruction and scoped legacy admission at bootstrap/resume and journal boundaries. The approved spec already requires these extensions; current existence-only validation is implementation work, not a missing design requirement.",
+      "tradeoff": "Preserving old journal batches and both command adapters requires compatibility work, but a second approval store would duplicate authority. Semantic inference and user dialogue remain agent responsibilities rather than a deterministic intent classifier.",
+      "blocking": false
+    },
+    {
+      "concept": "Current evidence and a single completion authority",
+      "recommendation": "extend",
+      "evidence": [
+        "program-spec.md I-freshness, I-sync and SG-01; modules/synchronization-spec.md; source issues 12-13 and 17; reviews/reuse-radar.md",
+        "claude/meta-skill/scripts/orchestrator/reconcile_bootstrap_workflow.py:_scan_report_status can classify an empty object as complete, while check_artifacts.py:_artifact_status_error rejects empty JSON",
+        "check_artifacts.py:check_node_artifacts already owns required fields, accepted statuses and validation commands; codex/meta-skill/knowledge/flow-template.py:independent_artifact_gate consumes its result; Claude run-engine/engine-core.js:gateNodePrompt invokes the same helper"
+      ],
+      "proposed_owner": "synchronization",
+      "interface_and_seam": "Extend the existing completion gate and its shared freshness contract so reconciliation and readiness consume the same acceptance semantics. Audit summaries remain observations rather than a second source of completion. Bind each observation to its consumed source/baseline/dependency manifest and compare it with current inputs at acceptance. Exercise empty and copied reports, stale required documents, and the A-observation/B-publication interleaving through public reconciliation/completion seams. Revision 2 explicitly covers both the current disagreement and input-identity risk.",
+      "tradeoff": "A focused shared helper is justified by several current consumers and hides manifest comparison and acceptance invariants. A generic evidence framework or separate external-drift verification engine would add competing policy without a new approved consumer.",
+      "blocking": false
+    },
+    {
+      "concept": "Affected dependency closure and scoped execution eligibility",
+      "recommendation": "reuse",
+      "evidence": [
+        "program-spec.md I-resume and I-freshness distinguish scoped pending prerequisites from globally unsafe failures; source issues 11-12, 16-17",
+        "claude/meta-skill/scripts/compute_reset_closure.py:reset_closure already computes transitive hard_blocked_by descendants from root node IDs",
+        "codex/meta-skill/knowledge/flow-template.py:run_preflight and claude/meta-skill/knowledge/run-engine/engine-core.js currently consume coarse readiness outcomes; both engine paths are explicitly owned surfaces in the module specs"
+      ],
+      "proposed_owner": "synchronization for shared graph impact; intent for decision eligibility",
+      "interface_and_seam": "Reuse the existing closure traversal for roots identified by decision or freshness policy, without importing reset side effects into prerequisite handling. Intent identifies pending decision roots; synchronization identifies stale-input roots; the engines consume resulting eligibility while preserving independent evidence. Prove direct and transitive blocking, independent branch execution, interactive resolution and blocked overall completion at both host seams. The spec already calls for the necessary engine changes.",
+      "tradeoff": "Sharing the established graph relation avoids divergent traversal rules, while keeping decision authority and freshness policy with their existing owners. No general scheduler abstraction or human-approval redesign is needed.",
+      "blocking": false
+    },
+    {
+      "concept": "External drift resolution",
+      "recommendation": "reuse",
+      "evidence": [
+        "program-spec.md I-drift delegates accepted changes to journal-backed intent and recovery to I-sync; modules/synchronization-spec.md; source issues 14 and 18",
+        "Existing journal-merge commands already produce concept-drift.json and merge-audit.json; reconciliation and artifact gates already provide downstream integration boundaries"
+      ],
+      "proposed_owner": "synchronization",
+      "interface_and_seam": "Keep drift detection and disposition orchestration local to synchronization. Verified implementation-only observations refresh facts; accept invokes intent publication then synchronization; reject repairs against preserved authority; defer remains a scoped prerequisite. Prove each path, interrupted continuation and unchanged repetition through bootstrap/resume without a second decision journal or acceptance engine.",
+      "tradeoff": "The existing commands require alignment with the approved provenance and no-repeat-question contract, but a drift-specific authority model would duplicate the same decisions and recovery transitions.",
+      "blocking": false
+    },
+    {
+      "concept": "Candidate-bound cross-host proof and scenario evaluation",
+      "recommendation": "keep-local",
+      "evidence": [
+        "program-spec.md SG-02; modules/proof-spec.md; source issues 15-18 and issue 8 Testing Decisions; failure-classification.json O3 stale-data and idempotency records",
+        "codex/meta-skill/scripts and tests are symlinks to canonical Claude assets; codex/meta-skill/install_bundle.py copies canonical assets into standalone payloads",
+        "Existing canonical tests and run-engine/tests provide fixture and public-boundary examples; source issues 15-18 have independent implementation dependencies rather than a shared new harness producer"
+      ],
+      "proposed_owner": "proof",
+      "interface_and_seam": "Retain per-ticket scenarios and evaluator expectations locally, reusing existing fixture helpers. Use the declared evidence index responsibilities to record actual loaded candidate dependencies, host/session identity and raw behavioral evidence. Exercise installed/candidate mismatch and relevant candidate changes, then require fresh affected scenarios on both hosts while preserving applicable unaffected proofs. Keep the evaluator oracle outside subject context.",
+      "tradeoff": "Some scenario-specific setup repetition is preferable to an unapproved harness dependency between independent thought tickets. The stable shared concept is evidence applicability, already assigned by SG-02, not a new orchestration platform.",
+      "blocking": false
+    },
+    {
+      "concept": "Failure defenses and recovery ownership",
+      "recommendation": "keep-local",
+      "evidence": [
+        "Installed grillstorm/references/failure-proportionality.md requires guard-only modes to use exactly one defense plus proof and rejects per-mode recovery expansion",
+        "reviews/failure-classification.json assigns failures across O1-O3 to existing authority publication, synchronization and scenario evidence seams",
+        "program-spec.md explicitly requires failure proofs through existing public seams and controlled fault injection rather than a production feature per failure mode"
+      ],
+      "proposed_owner": "intent, synchronization and proof within their existing contracts",
+      "interface_and_seam": "Implement each ledger defense at its actual owner boundary and exercise full recovery transitions through the already specified journeys. Keep cleanup guards within existing staging/fixture operations and revision guards within publication. Do not extract cleanup, retries or recovery orchestration merely because multiple ledger rows mention them.",
+      "tradeoff": "Multiple failure modes can legitimately share one invariant and proof journey. Preserving their distinct ledger classifications does not justify duplicated implementation branches, a generic recovery manager or new cleanup API; revision 2 already establishes this boundary.",
+      "blocking": false
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "status": "needs_work",
+  "outcomes_checked": [
+    "O1: goal-based routing, confirmed intent, scoped readiness and interactive resume",
+    "O2: incremental source/baseline/document/evidence synchronization and external recovery",
+    "O3: actual Claude/Codex authority, routing and readiness parity",
+    "R01", "R02", "R03", "R04", "R05", "R06", "R07", "R08", "R09", "R10",
+    "R11", "R12", "R13", "R14", "R15", "R16", "R17", "R18", "R19", "R20",
+    "R21", "R22", "R23", "R24", "R25", "R26", "R27", "R28", "R29", "R30",
+    "SG-01: observation-to-publication input identity and unchanged rerun",
+    "SG-02: actual candidate loading, installed mismatch rejection and affected retest",
+    "T9-T18: source blockers, module paths, acceptance hashes and required outputs match machine tasks",
+    "Graph: regenerated DAG equals frozen orchestration; initial ready T9; all tasks reachable; requirement union equals registry",
+    "Scheduling: isolated writers, overlapping-path merge groups, cap3, subjects/reviewers, serialized publication, retries and failure propagation",
+    "Completion: root review/post-merge acceptance/confirmed markers, current candidate proof and final full-suite/two-axis gates",
+    "Operations and purpose: no push/install/main edits, retained authority/history, scoped recovery and portable continuation constraints"
+  ],
+  "issues": [
+    {
+      "id": "WG-01",
+      "lens": "projection",
+      "classification": "projection-repair",
+      "broken_reverse_chain": "Approved behavior and real-host proof <- supervisor/Standards/Spec assessment <- dispatched task instructions <- frozen machine task <- source ticket and module task document. All ten workflow-tasks.json entries preserve titles, issue numbers, requirements, paths and commands, but carry neither the approved steps/acceptance/runtime/failure/purpose obligations nor an explicit frozen document-loading contract. In particular T15-T18 contain no instruction to execute actual hosts, exclude the oracle, verify loaded candidate identity, or reject missing scenario cells. The installed run_layers.py build_executor_prompt/build_supervisor_prompt functions append only the task JSON to generic prompts; that available assembly path does not restore these omissions. The selected root Orca controller has no frozen dispatch assembly contract in the reviewed inputs that restores them either. A bare issue number and green test_evidence.py are insufficient to establish semantic equivalence.",
+      "question": "",
+      "recommended_answer": "Before launch, bind each evaluator/builder/supervisor/reviewer dispatch to its exact task section, source snapshot including comments, program/module contracts and required proof obligations, with frozen paths/revisions or hashes. Preserve the root Orca controller and existing task topology; a controller-owned dispatch contract can resolve these references without duplicating the specification or adopting the headless runner. Keep the raw subject brief separate so subject dispatches receive no acceptance oracle. Dry-run the assembled T9 and T15 payloads and verify that review and candidate-bound actual-host obligations survive projection.",
+      "main_tradeoff": "Adds explicit dispatch provenance and a payload check while preserving the approved tasks and minimal subject context.",
+      "affected_artifacts": [
+        "docs/grillstorm/meta-intent/tasks/workflow-tasks.json:T9-T18",
+        "docs/grillstorm/meta-intent/tasks/intent.md",
+        "docs/grillstorm/meta-intent/tasks/synchronization.md",
+        "docs/grillstorm/meta-intent/tasks/proof.md",
+        "docs/grillstorm/meta-intent/tasks/catalog.md",
+        "installed grillstorm/scripts/run_layers.py:build_executor_prompt/build_supervisor_prompt",
+        "root Orca dispatch contract"
+      ],
+      "invalidation_level": "workflow",
+      "blocks": []
+    },
+    {
+      "id": "WG-02",
+      "lens": "scheduling",
+      "classification": "projection-repair",
+      "broken_reverse_chain": "All required Claude/Codex cells verified <- fresh subject can run <- root services evaluator launch request <- a worker slot is available <- ready-set admission. The catalog and proof spec cap all evaluators, subjects and reviewers together at three, but define no reservation or admission rule for workers that synchronously wait for another worker. A reachable schedule retains slow T15 while T11/T12/T13 integrate, then admits T16 and T17: all three evaluators can wait for subjects, leaving zero capacity to run any subject. A similar admission problem can starve the supervisor/review stage needed to publish another producer. workflow-simulation.json models task dependency waves only and does not exercise these role-level waits.",
+      "question": "",
+      "recommended_answer": "Freeze a role-aware admission rule in the root controller that keeps at least one slot available for demanded subjects or completion reviews whenever admitted evaluators are waiting, and prioritizes servicing those requests over admitting more waiting evaluators. Keep max concurrency three and all writer isolation; do not add false product dependency edges or raise the cap. Extend the dry-run with the T15/T16/T17 waiting schedule and demonstrate finite progress through subject execution, review and serialized integration, including release of settled worker capacity.",
+      "main_tradeoff": "May delay admission of another ready evaluator while preserving three-slot throughput and preventing a hold-and-wait deadlock.",
+      "affected_artifacts": [
+        "docs/grillstorm/meta-intent/tasks/catalog.md:Ready Frontier and Global Gates",
+        "docs/grillstorm/meta-intent/modules/proof-spec.md",
+        "docs/grillstorm/meta-intent/tasks/workflow-simulation.json",
+        "T15",
+        "T16",
+        "T17",
+        "T18",
+        "root Orca ready-set controller"
+      ],
+      "invalidation_level": "workflow",
+      "blocks": []
+    },
+    {
+      "id": "WG-03",
+      "lens": "proof",
+      "classification": "projection-repair",
+      "broken_reverse_chain": "R19 plus R30 new-product parity <- global required scenario/host denominator <- T15 candidate evidence acceptance <- source-scenario mapping. T15 declares R19, and source issues 8, 9 and 10 require a new-product bootstrap path with equivalent host semantics. However, proof.md tells T15 to execute every scenario from its ticket, whose six listed scenarios contain no new-product case; T16-T18 do not supply it either. Implementation runtime instructions defer extended actual-host proof to T15-T18, and the machine records contain no scenario-to-requirement mapping. Consequently all explicitly listed thought-ticket cells can pass while the approved new-product actual-host outcome has never been observed. The requirement union check passes because it counts labels, not executable cells.",
+      "question": "",
+      "recommended_answer": "Freeze the required scenario/host denominator from both the parent testing decisions and the child tickets, explicitly mapping the already-approved new-product outcome to T15 or its existing implementation-owned proof. Bind that cell to actual candidate-loaded Claude and Codex observations and require it in the global evidence gate. Check the remaining parent acceptance outcomes against the same mapping so child-ticket scenario lists cannot silently narrow approved scope; keep existing tickets and scenario directories rather than creating a new framework.",
+      "main_tradeoff": "Makes the approved proof scope explicit and adds the already-required real-host observations without changing product behavior or task dependencies.",
+      "affected_artifacts": [
+        "docs/grillstorm/meta-intent/sources/issue-8.json:Testing Decisions routing/platform scenarios",
+        "docs/grillstorm/meta-intent/sources/issue-9.json",
+        "docs/grillstorm/meta-intent/sources/issue-10.json",
+        "docs/grillstorm/meta-intent/sources/issue-15.json",
+        "docs/grillstorm/meta-intent/tasks/proof.md:T15",
+        "docs/grillstorm/meta-intent/tasks/workflow-tasks.json:T15",
+        "docs/grillstorm/meta-intent/tasks/catalog.md:Global Gates",
+        "R19",
+        "R30"
+      ],
+      "invalidation_level": "workflow",
+      "blocks": []
+    }
+  ]
+}

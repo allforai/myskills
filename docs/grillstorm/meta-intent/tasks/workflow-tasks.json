@@ -1,0 +1,2820 @@
+[
+  {
+    "id": "T9",
+    "title": "meta-skill\uff1a\u5c40\u90e8\u9700\u6c42\u786e\u8ba4\u540e\u8fdb\u5165\u8303\u56f4\u5339\u914d\u7684\u5de5\u4f5c\u6d41",
+    "issue": 9,
+    "requirements": [
+      "R01",
+      "R02",
+      "R17",
+      "R18",
+      "R30"
+    ],
+    "touched_paths": [
+      "claude/meta-skill/skills/bootstrap/SKILL.md",
+      "claude/meta-skill/knowledge/bootstrap-planning.md",
+      "claude/meta-skill/knowledge/bootstrap-audits.md",
+      "claude/meta-skill/knowledge/node-spec-template.md",
+      "claude/meta-skill/scripts/check_decision_inputs.py",
+      "claude/meta-skill/scripts/orchestrator/product_intent.py",
+      "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+      "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+      "codex/meta-skill/skills/bootstrap.md",
+      "codex/meta-skill/knowledge/product-inference.md",
+      "claude/meta-skill/tests/unit/test_validate_bootstrap.py",
+      "claude/meta-skill/tests/unit/test_validate_unattended_readiness.py",
+      "claude/meta-skill/tests/unit/test_check_artifacts.py",
+      "claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py",
+      "claude/meta-skill/tests/unit/test_bootstrap_scope.py"
+    ],
+    "acceptance_cmd": "python3 -m pytest claude/meta-skill/tests/unit/test_bootstrap_scope.py -q",
+    "depends_on": [],
+    "implements": [
+      "I-scope"
+    ],
+    "requires": [],
+    "resources": [],
+    "reality_gate": false,
+    "validation_level": "task",
+    "blast_radius": "integration",
+    "module": "intent",
+    "spec_revision": 2,
+    "required_outputs": [
+      "claude/meta-skill/tests/unit/test_bootstrap_scope.py"
+    ],
+    "artifact_contract": {
+      "schema_version": 1,
+      "task_id": "T9",
+      "path_rules": [
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/skills/bootstrap/SKILL.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/bootstrap-planning.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/bootstrap-audits.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/node-spec-template.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/check_decision_inputs.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/product_intent.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/skills/bootstrap.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/knowledge/product-inference.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_validate_bootstrap.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_validate_unattended_readiness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_check_artifacts.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_bootstrap_scope.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        }
+      ],
+      "required_outputs": [
+        "claude/meta-skill/tests/unit/test_bootstrap_scope.py"
+      ],
+      "forbidden_paths": [
+        "docs/grillstorm/**"
+      ],
+      "max_files_changed": 30,
+      "acceptance_cmd_sha256": "103ad6e810da5ba2ad27ce09d52639917280496a21d7619bd5435ae7008456f2",
+      "interface_assertions": []
+    },
+    "workflow_revision": 2,
+    "dispatch_inputs": [
+      {
+        "path": "program-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "modules/intent-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/catalog.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/intent.md",
+        "focus": "T9"
+      },
+      {
+        "path": "sources/issue-8.json",
+        "focus": "complete"
+      },
+      {
+        "path": "sources/issue-9.json",
+        "focus": "complete"
+      },
+      {
+        "path": "reviews/failure-classification.json",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/dispatch-contract.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/scenario-matrix.json",
+        "focus": "complete"
+      }
+    ]
+  },
+  {
+    "id": "T10",
+    "title": "meta-skill\uff1a\u4ea7\u54c1\u610f\u56fe\u521d\u7a3f\u7ecf\u7528\u6237\u91cd\u5851\u540e\u9a71\u52a8\u5b8c\u6574\u6d41\u7a0b",
+    "issue": 10,
+    "requirements": [
+      "R03",
+      "R04",
+      "R05",
+      "R06",
+      "R07",
+      "R08",
+      "R09",
+      "R10",
+      "R11",
+      "R12",
+      "R13",
+      "R14",
+      "R16",
+      "R19",
+      "R22",
+      "R30"
+    ],
+    "touched_paths": [
+      "claude/meta-skill/skills/bootstrap/SKILL.md",
+      "claude/meta-skill/knowledge/bootstrap-planning.md",
+      "claude/meta-skill/knowledge/bootstrap-audits.md",
+      "claude/meta-skill/knowledge/node-spec-template.md",
+      "claude/meta-skill/scripts/check_decision_inputs.py",
+      "claude/meta-skill/scripts/orchestrator/product_intent.py",
+      "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+      "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+      "codex/meta-skill/skills/bootstrap.md",
+      "codex/meta-skill/knowledge/product-inference.md",
+      "claude/meta-skill/tests/unit/test_validate_bootstrap.py",
+      "claude/meta-skill/tests/unit/test_validate_unattended_readiness.py",
+      "claude/meta-skill/tests/unit/test_check_artifacts.py",
+      "claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py",
+      "claude/meta-skill/tests/unit/test_bootstrap_confirmation.py",
+      "claude/meta-skill/internal/commands/journal.md",
+      "claude/meta-skill/internal/commands/journal-merge.md",
+      "claude/meta-skill/knowledge/capabilities/reverse-concept.md",
+      "claude/meta-skill/knowledge/capabilities/product-concept.md",
+      "claude/meta-skill/knowledge/cross-phase-protocols.md",
+      "codex/meta-skill/commands/journal.md",
+      "codex/meta-skill/commands/journal-merge.md"
+    ],
+    "acceptance_cmd": "python3 -m pytest claude/meta-skill/tests/unit/test_bootstrap_confirmation.py -q",
+    "depends_on": [
+      "T9"
+    ],
+    "implements": [
+      "I-intent"
+    ],
+    "requires": [
+      "I-scope"
+    ],
+    "resources": [],
+    "reality_gate": false,
+    "validation_level": "task",
+    "blast_radius": "integration",
+    "module": "intent",
+    "spec_revision": 2,
+    "required_outputs": [
+      "claude/meta-skill/tests/unit/test_bootstrap_confirmation.py"
+    ],
+    "artifact_contract": {
+      "schema_version": 1,
+      "task_id": "T10",
+      "path_rules": [
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/skills/bootstrap/SKILL.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/bootstrap-planning.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/bootstrap-audits.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/node-spec-template.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/check_decision_inputs.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/product_intent.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/skills/bootstrap.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/knowledge/product-inference.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_validate_bootstrap.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_validate_unattended_readiness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_check_artifacts.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_bootstrap_confirmation.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/internal/commands/journal.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/internal/commands/journal-merge.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/capabilities/reverse-concept.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/capabilities/product-concept.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/cross-phase-protocols.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/commands/journal.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/commands/journal-merge.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        }
+      ],
+      "required_outputs": [
+        "claude/meta-skill/tests/unit/test_bootstrap_confirmation.py"
+      ],
+      "forbidden_paths": [
+        "docs/grillstorm/**"
+      ],
+      "max_files_changed": 44,
+      "acceptance_cmd_sha256": "d7703021597aa65122c995fd4f1c436997cd01fb3c5cdecf1d4715464ea1a916",
+      "interface_assertions": []
+    },
+    "workflow_revision": 2,
+    "dispatch_inputs": [
+      {
+        "path": "program-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "modules/intent-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/catalog.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/intent.md",
+        "focus": "T10"
+      },
+      {
+        "path": "sources/issue-8.json",
+        "focus": "complete"
+      },
+      {
+        "path": "sources/issue-10.json",
+        "focus": "complete"
+      },
+      {
+        "path": "reviews/failure-classification.json",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/dispatch-contract.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/scenario-matrix.json",
+        "focus": "complete"
+      }
+    ]
+  },
+  {
+    "id": "T11",
+    "title": "meta-skill\uff1a\u4ea7\u54c1\u51b3\u5b9a\u4e2d\u65ad\u7eed\u63a5\u4e0e\u65e7\u57fa\u51c6\u5b89\u5168\u63a5\u5165",
+    "issue": 11,
+    "requirements": [
+      "R14",
+      "R15",
+      "R29",
+      "R30"
+    ],
+    "touched_paths": [
+      "claude/meta-skill/skills/bootstrap/SKILL.md",
+      "claude/meta-skill/knowledge/bootstrap-planning.md",
+      "claude/meta-skill/knowledge/bootstrap-audits.md",
+      "claude/meta-skill/knowledge/node-spec-template.md",
+      "claude/meta-skill/scripts/check_decision_inputs.py",
+      "claude/meta-skill/scripts/orchestrator/product_intent.py",
+      "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+      "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+      "codex/meta-skill/skills/bootstrap.md",
+      "codex/meta-skill/knowledge/product-inference.md",
+      "claude/meta-skill/tests/unit/test_validate_bootstrap.py",
+      "claude/meta-skill/tests/unit/test_validate_unattended_readiness.py",
+      "claude/meta-skill/tests/unit/test_check_artifacts.py",
+      "claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py",
+      "claude/meta-skill/tests/unit/test_bootstrap_resume.py",
+      "claude/meta-skill/internal/commands/journal.md",
+      "claude/meta-skill/internal/commands/journal-merge.md",
+      "claude/meta-skill/knowledge/capabilities/reverse-concept.md",
+      "claude/meta-skill/knowledge/capabilities/product-concept.md",
+      "claude/meta-skill/knowledge/cross-phase-protocols.md",
+      "claude/meta-skill/knowledge/orchestrator-template.md",
+      "claude/meta-skill/knowledge/run-engine/engine-core.js",
+      "claude/meta-skill/knowledge/run-engine/run-engine.workflow.js",
+      "claude/meta-skill/knowledge/run-engine/tests/engine-core.test.js",
+      "claude/meta-skill/knowledge/run-engine/tests/engine-integration.test.js",
+      "codex/meta-skill/knowledge/orchestrator-template.md",
+      "codex/meta-skill/knowledge/flow-template.py",
+      "codex/meta-skill/test_flow.py",
+      "codex/meta-skill/commands/journal.md",
+      "codex/meta-skill/commands/journal-merge.md",
+      "claude/meta-skill/scripts/compute_reset_closure.py"
+    ],
+    "acceptance_cmd": "python3 -m pytest claude/meta-skill/tests/unit/test_bootstrap_resume.py -q",
+    "depends_on": [
+      "T10"
+    ],
+    "implements": [
+      "I-resume"
+    ],
+    "requires": [
+      "I-intent"
+    ],
+    "resources": [],
+    "reality_gate": false,
+    "validation_level": "task",
+    "blast_radius": "integration",
+    "module": "intent",
+    "spec_revision": 2,
+    "required_outputs": [
+      "claude/meta-skill/tests/unit/test_bootstrap_resume.py"
+    ],
+    "artifact_contract": {
+      "schema_version": 1,
+      "task_id": "T11",
+      "path_rules": [
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/skills/bootstrap/SKILL.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/bootstrap-planning.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/bootstrap-audits.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/node-spec-template.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/check_decision_inputs.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/product_intent.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/skills/bootstrap.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/knowledge/product-inference.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_validate_bootstrap.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_validate_unattended_readiness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_check_artifacts.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_bootstrap_resume.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/internal/commands/journal.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/internal/commands/journal-merge.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/capabilities/reverse-concept.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/capabilities/product-concept.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/cross-phase-protocols.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/orchestrator-template.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/run-engine/engine-core.js",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/run-engine/run-engine.workflow.js",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/run-engine/tests/engine-core.test.js",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/run-engine/tests/engine-integration.test.js",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/knowledge/orchestrator-template.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/knowledge/flow-template.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/test_flow.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/commands/journal.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/commands/journal-merge.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/compute_reset_closure.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        }
+      ],
+      "required_outputs": [
+        "claude/meta-skill/tests/unit/test_bootstrap_resume.py"
+      ],
+      "forbidden_paths": [
+        "docs/grillstorm/**"
+      ],
+      "max_files_changed": 62,
+      "acceptance_cmd_sha256": "30460f06aa2c6952aa6cbd3e68cc74dede7d5c1c7946f80d2b10a37f3d12bd6d",
+      "interface_assertions": []
+    },
+    "workflow_revision": 2,
+    "dispatch_inputs": [
+      {
+        "path": "program-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "modules/intent-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/catalog.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/intent.md",
+        "focus": "T11"
+      },
+      {
+        "path": "sources/issue-8.json",
+        "focus": "complete"
+      },
+      {
+        "path": "sources/issue-11.json",
+        "focus": "complete"
+      },
+      {
+        "path": "reviews/failure-classification.json",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/dispatch-contract.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/scenario-matrix.json",
+        "focus": "complete"
+      }
+    ]
+  },
+  {
+    "id": "T12",
+    "title": "meta-skill\uff1a\u6e90\u7801\u4e0e\u4ea7\u54c1\u57fa\u51c6\u53d8\u5316\u89e6\u53d1\u7cbe\u51c6\u8bc1\u636e\u5931\u6548",
+    "issue": 12,
+    "requirements": [
+      "R23",
+      "R26",
+      "R27",
+      "R30"
+    ],
+    "touched_paths": [
+      "claude/meta-skill/skills/bootstrap/SKILL.md",
+      "claude/meta-skill/knowledge/bootstrap-planning.md",
+      "claude/meta-skill/knowledge/bootstrap-audits.md",
+      "claude/meta-skill/knowledge/node-spec-template.md",
+      "claude/meta-skill/scripts/check_decision_inputs.py",
+      "claude/meta-skill/scripts/orchestrator/product_intent.py",
+      "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+      "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+      "codex/meta-skill/skills/bootstrap.md",
+      "codex/meta-skill/knowledge/product-inference.md",
+      "claude/meta-skill/tests/unit/test_validate_bootstrap.py",
+      "claude/meta-skill/tests/unit/test_validate_unattended_readiness.py",
+      "claude/meta-skill/tests/unit/test_check_artifacts.py",
+      "claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py",
+      "claude/meta-skill/tests/unit/test_bootstrap_freshness.py",
+      "claude/meta-skill/knowledge/orchestrator-template.md",
+      "claude/meta-skill/knowledge/run-engine/engine-core.js",
+      "claude/meta-skill/knowledge/run-engine/run-engine.workflow.js",
+      "claude/meta-skill/knowledge/run-engine/tests/engine-core.test.js",
+      "claude/meta-skill/knowledge/run-engine/tests/engine-integration.test.js",
+      "codex/meta-skill/knowledge/orchestrator-template.md",
+      "codex/meta-skill/knowledge/flow-template.py",
+      "codex/meta-skill/test_flow.py",
+      "claude/meta-skill/scripts/orchestrator/input_freshness.py",
+      "claude/meta-skill/scripts/orchestrator/reconcile_bootstrap_workflow.py",
+      "claude/meta-skill/scripts/orchestrator/check_artifacts.py",
+      "claude/meta-skill/scripts/check_evidence.py",
+      "claude/meta-skill/scripts/compute_completeness.py",
+      "claude/meta-skill/scripts/capture_evidence.py",
+      "claude/meta-skill/scripts/compute_reset_closure.py"
+    ],
+    "acceptance_cmd": "python3 -m pytest claude/meta-skill/tests/unit/test_bootstrap_freshness.py -q",
+    "depends_on": [
+      "T10"
+    ],
+    "implements": [
+      "I-freshness"
+    ],
+    "requires": [
+      "I-intent"
+    ],
+    "resources": [],
+    "reality_gate": false,
+    "validation_level": "task",
+    "blast_radius": "integration",
+    "module": "synchronization",
+    "spec_revision": 2,
+    "required_outputs": [
+      "claude/meta-skill/tests/unit/test_bootstrap_freshness.py"
+    ],
+    "artifact_contract": {
+      "schema_version": 1,
+      "task_id": "T12",
+      "path_rules": [
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/skills/bootstrap/SKILL.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/bootstrap-planning.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/bootstrap-audits.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/node-spec-template.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/check_decision_inputs.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/product_intent.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/skills/bootstrap.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/knowledge/product-inference.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_validate_bootstrap.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_validate_unattended_readiness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_check_artifacts.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_bootstrap_freshness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/orchestrator-template.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/run-engine/engine-core.js",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/run-engine/run-engine.workflow.js",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/run-engine/tests/engine-core.test.js",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/run-engine/tests/engine-integration.test.js",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/knowledge/orchestrator-template.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/knowledge/flow-template.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/test_flow.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/input_freshness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/reconcile_bootstrap_workflow.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/check_artifacts.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/check_evidence.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/compute_completeness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/capture_evidence.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/compute_reset_closure.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        }
+      ],
+      "required_outputs": [
+        "claude/meta-skill/tests/unit/test_bootstrap_freshness.py"
+      ],
+      "forbidden_paths": [
+        "docs/grillstorm/**"
+      ],
+      "max_files_changed": 60,
+      "acceptance_cmd_sha256": "8ae4ddd6a56d66d04b52c2788c18681fba950cdc0b85959762671238dd149346",
+      "interface_assertions": []
+    },
+    "workflow_revision": 2,
+    "dispatch_inputs": [
+      {
+        "path": "program-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "modules/synchronization-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/catalog.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/synchronization.md",
+        "focus": "T12"
+      },
+      {
+        "path": "sources/issue-8.json",
+        "focus": "complete"
+      },
+      {
+        "path": "sources/issue-12.json",
+        "focus": "complete"
+      },
+      {
+        "path": "reviews/failure-classification.json",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/dispatch-contract.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/scenario-matrix.json",
+        "focus": "complete"
+      }
+    ]
+  },
+  {
+    "id": "T13",
+    "title": "meta-skill\uff1a\u6d41\u7a0b\u5185\u5b9e\u73b0\u4e0e\u6587\u6863\u540c\u6b65\u540e\u624d\u80fd\u5b8c\u6210",
+    "issue": 13,
+    "requirements": [
+      "R20",
+      "R21",
+      "R22",
+      "R28",
+      "R30"
+    ],
+    "touched_paths": [
+      "claude/meta-skill/skills/bootstrap/SKILL.md",
+      "claude/meta-skill/knowledge/bootstrap-planning.md",
+      "claude/meta-skill/knowledge/bootstrap-audits.md",
+      "claude/meta-skill/knowledge/node-spec-template.md",
+      "claude/meta-skill/scripts/check_decision_inputs.py",
+      "claude/meta-skill/scripts/orchestrator/product_intent.py",
+      "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+      "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+      "codex/meta-skill/skills/bootstrap.md",
+      "codex/meta-skill/knowledge/product-inference.md",
+      "claude/meta-skill/tests/unit/test_validate_bootstrap.py",
+      "claude/meta-skill/tests/unit/test_validate_unattended_readiness.py",
+      "claude/meta-skill/tests/unit/test_check_artifacts.py",
+      "claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py",
+      "claude/meta-skill/tests/unit/test_bootstrap_synchronization.py",
+      "claude/meta-skill/knowledge/orchestrator-template.md",
+      "claude/meta-skill/knowledge/run-engine/engine-core.js",
+      "claude/meta-skill/knowledge/run-engine/run-engine.workflow.js",
+      "claude/meta-skill/knowledge/run-engine/tests/engine-core.test.js",
+      "claude/meta-skill/knowledge/run-engine/tests/engine-integration.test.js",
+      "codex/meta-skill/knowledge/orchestrator-template.md",
+      "codex/meta-skill/knowledge/flow-template.py",
+      "codex/meta-skill/test_flow.py",
+      "claude/meta-skill/scripts/orchestrator/input_freshness.py",
+      "claude/meta-skill/scripts/orchestrator/reconcile_bootstrap_workflow.py",
+      "claude/meta-skill/scripts/orchestrator/check_artifacts.py",
+      "claude/meta-skill/scripts/check_evidence.py",
+      "claude/meta-skill/scripts/compute_completeness.py",
+      "claude/meta-skill/scripts/capture_evidence.py",
+      "claude/meta-skill/scripts/compute_reset_closure.py"
+    ],
+    "acceptance_cmd": "python3 -m pytest claude/meta-skill/tests/unit/test_bootstrap_synchronization.py -q",
+    "depends_on": [
+      "T12"
+    ],
+    "implements": [
+      "I-sync"
+    ],
+    "requires": [
+      "I-freshness"
+    ],
+    "resources": [],
+    "reality_gate": false,
+    "validation_level": "task",
+    "blast_radius": "integration",
+    "module": "synchronization",
+    "spec_revision": 2,
+    "required_outputs": [
+      "claude/meta-skill/tests/unit/test_bootstrap_synchronization.py"
+    ],
+    "artifact_contract": {
+      "schema_version": 1,
+      "task_id": "T13",
+      "path_rules": [
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/skills/bootstrap/SKILL.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/bootstrap-planning.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/bootstrap-audits.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/node-spec-template.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/check_decision_inputs.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/product_intent.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/skills/bootstrap.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/knowledge/product-inference.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_validate_bootstrap.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_validate_unattended_readiness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_check_artifacts.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_bootstrap_synchronization.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/orchestrator-template.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/run-engine/engine-core.js",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/run-engine/run-engine.workflow.js",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/run-engine/tests/engine-core.test.js",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/run-engine/tests/engine-integration.test.js",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/knowledge/orchestrator-template.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/knowledge/flow-template.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/test_flow.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/input_freshness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/reconcile_bootstrap_workflow.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/check_artifacts.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/check_evidence.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/compute_completeness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/capture_evidence.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/compute_reset_closure.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        }
+      ],
+      "required_outputs": [
+        "claude/meta-skill/tests/unit/test_bootstrap_synchronization.py"
+      ],
+      "forbidden_paths": [
+        "docs/grillstorm/**"
+      ],
+      "max_files_changed": 60,
+      "acceptance_cmd_sha256": "fe181327b71bdfd43fb7c8297e0ce104860232e2d523bb8d2ccf547317eb1e42",
+      "interface_assertions": []
+    },
+    "workflow_revision": 2,
+    "dispatch_inputs": [
+      {
+        "path": "program-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "modules/synchronization-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/catalog.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/synchronization.md",
+        "focus": "T13"
+      },
+      {
+        "path": "sources/issue-8.json",
+        "focus": "complete"
+      },
+      {
+        "path": "sources/issue-13.json",
+        "focus": "complete"
+      },
+      {
+        "path": "reviews/failure-classification.json",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/dispatch-contract.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/scenario-matrix.json",
+        "focus": "complete"
+      }
+    ]
+  },
+  {
+    "id": "T14",
+    "title": "meta-skill\uff1a\u5916\u90e8\u4ee3\u7801\u6f02\u79fb\u7ecf\u7528\u6237\u51b3\u7b56\u6062\u590d\u6267\u884c",
+    "issue": 14,
+    "requirements": [
+      "R23",
+      "R24",
+      "R25",
+      "R29",
+      "R30"
+    ],
+    "touched_paths": [
+      "claude/meta-skill/skills/bootstrap/SKILL.md",
+      "claude/meta-skill/knowledge/bootstrap-planning.md",
+      "claude/meta-skill/knowledge/bootstrap-audits.md",
+      "claude/meta-skill/knowledge/node-spec-template.md",
+      "claude/meta-skill/scripts/check_decision_inputs.py",
+      "claude/meta-skill/scripts/orchestrator/product_intent.py",
+      "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+      "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+      "codex/meta-skill/skills/bootstrap.md",
+      "codex/meta-skill/knowledge/product-inference.md",
+      "claude/meta-skill/tests/unit/test_validate_bootstrap.py",
+      "claude/meta-skill/tests/unit/test_validate_unattended_readiness.py",
+      "claude/meta-skill/tests/unit/test_check_artifacts.py",
+      "claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py",
+      "claude/meta-skill/tests/unit/test_bootstrap_external_drift.py",
+      "claude/meta-skill/internal/commands/journal.md",
+      "claude/meta-skill/internal/commands/journal-merge.md",
+      "claude/meta-skill/knowledge/capabilities/reverse-concept.md",
+      "claude/meta-skill/knowledge/capabilities/product-concept.md",
+      "claude/meta-skill/knowledge/cross-phase-protocols.md",
+      "claude/meta-skill/knowledge/orchestrator-template.md",
+      "claude/meta-skill/knowledge/run-engine/engine-core.js",
+      "claude/meta-skill/knowledge/run-engine/run-engine.workflow.js",
+      "claude/meta-skill/knowledge/run-engine/tests/engine-core.test.js",
+      "claude/meta-skill/knowledge/run-engine/tests/engine-integration.test.js",
+      "codex/meta-skill/knowledge/orchestrator-template.md",
+      "codex/meta-skill/knowledge/flow-template.py",
+      "codex/meta-skill/test_flow.py",
+      "claude/meta-skill/scripts/orchestrator/input_freshness.py",
+      "claude/meta-skill/scripts/orchestrator/reconcile_bootstrap_workflow.py",
+      "claude/meta-skill/scripts/orchestrator/check_artifacts.py",
+      "claude/meta-skill/scripts/check_evidence.py",
+      "claude/meta-skill/scripts/compute_completeness.py",
+      "claude/meta-skill/scripts/capture_evidence.py",
+      "codex/meta-skill/commands/journal.md",
+      "codex/meta-skill/commands/journal-merge.md",
+      "claude/meta-skill/scripts/compute_reset_closure.py"
+    ],
+    "acceptance_cmd": "python3 -m pytest claude/meta-skill/tests/unit/test_bootstrap_external_drift.py -q",
+    "depends_on": [
+      "T11",
+      "T13"
+    ],
+    "implements": [
+      "I-drift"
+    ],
+    "requires": [
+      "I-resume",
+      "I-sync"
+    ],
+    "resources": [],
+    "reality_gate": false,
+    "validation_level": "task",
+    "blast_radius": "integration",
+    "module": "synchronization",
+    "spec_revision": 2,
+    "required_outputs": [
+      "claude/meta-skill/tests/unit/test_bootstrap_external_drift.py"
+    ],
+    "artifact_contract": {
+      "schema_version": 1,
+      "task_id": "T14",
+      "path_rules": [
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/skills/bootstrap/SKILL.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/bootstrap-planning.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/bootstrap-audits.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/node-spec-template.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/check_decision_inputs.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/product_intent.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/skills/bootstrap.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/knowledge/product-inference.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_validate_bootstrap.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_validate_unattended_readiness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_check_artifacts.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/tests/unit/test_bootstrap_external_drift.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/internal/commands/journal.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/internal/commands/journal-merge.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/capabilities/reverse-concept.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/capabilities/product-concept.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/cross-phase-protocols.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/orchestrator-template.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/run-engine/engine-core.js",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/run-engine/run-engine.workflow.js",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/run-engine/tests/engine-core.test.js",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/knowledge/run-engine/tests/engine-integration.test.js",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/knowledge/orchestrator-template.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/knowledge/flow-template.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/test_flow.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/input_freshness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/reconcile_bootstrap_workflow.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/orchestrator/check_artifacts.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/check_evidence.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/compute_completeness.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/capture_evidence.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/commands/journal.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "codex/meta-skill/commands/journal-merge.md",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        },
+        {
+          "kind": "literal",
+          "pattern": "claude/meta-skill/scripts/compute_reset_closure.py",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        }
+      ],
+      "required_outputs": [
+        "claude/meta-skill/tests/unit/test_bootstrap_external_drift.py"
+      ],
+      "forbidden_paths": [
+        "docs/grillstorm/**"
+      ],
+      "max_files_changed": 74,
+      "acceptance_cmd_sha256": "5cd11ac795a3a02309498aac836e384fe92bbe7a44a3488a9d8e51d8a7bbee63",
+      "interface_assertions": []
+    },
+    "workflow_revision": 2,
+    "dispatch_inputs": [
+      {
+        "path": "program-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "modules/synchronization-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/catalog.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/synchronization.md",
+        "focus": "T14"
+      },
+      {
+        "path": "sources/issue-8.json",
+        "focus": "complete"
+      },
+      {
+        "path": "sources/issue-14.json",
+        "focus": "complete"
+      },
+      {
+        "path": "reviews/failure-classification.json",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/dispatch-contract.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/scenario-matrix.json",
+        "focus": "complete"
+      }
+    ]
+  },
+  {
+    "id": "T15",
+    "title": "meta-skill \u601d\u7ef4\u6d4b\u8bd5\uff1a\u4efb\u52a1\u5206\u6d41\u4e0e\u9700\u6c42\u786e\u8ba4\u53cd\u4f8b",
+    "issue": 15,
+    "requirements": [
+      "R01",
+      "R02",
+      "R03",
+      "R04",
+      "R05",
+      "R06",
+      "R07",
+      "R08",
+      "R09",
+      "R10",
+      "R11",
+      "R12",
+      "R13",
+      "R14",
+      "R15",
+      "R16",
+      "R17",
+      "R18",
+      "R19",
+      "R29",
+      "R30"
+    ],
+    "touched_paths": [
+      "claude/meta-skill/tests/scenarios/T15/**"
+    ],
+    "acceptance_cmd": "python3 -m pytest claude/meta-skill/tests/scenarios/T15/test_evidence.py -q",
+    "depends_on": [
+      "T9",
+      "T10"
+    ],
+    "implements": [],
+    "requires": [
+      "I-scope",
+      "I-intent"
+    ],
+    "resources": [],
+    "reality_gate": false,
+    "validation_level": "task",
+    "blast_radius": "module",
+    "module": "proof",
+    "spec_revision": 2,
+    "max_files_changed": 600,
+    "required_outputs": [
+      "claude/meta-skill/tests/scenarios/T15/test_evidence.py"
+    ],
+    "artifact_contract": {
+      "schema_version": 1,
+      "task_id": "T15",
+      "path_rules": [
+        {
+          "kind": "glob",
+          "pattern": "claude/meta-skill/tests/scenarios/T15/**",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        }
+      ],
+      "required_outputs": [
+        "claude/meta-skill/tests/scenarios/T15/test_evidence.py"
+      ],
+      "forbidden_paths": [
+        "docs/grillstorm/**"
+      ],
+      "max_files_changed": 600,
+      "acceptance_cmd_sha256": "fadf58570784f84ce02c52a0c48d537253845a70f135f967a55ee01a81acbd8c",
+      "interface_assertions": []
+    },
+    "workflow_revision": 2,
+    "dispatch_inputs": [
+      {
+        "path": "program-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "modules/proof-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/catalog.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/proof.md",
+        "focus": "T15"
+      },
+      {
+        "path": "sources/issue-8.json",
+        "focus": "complete"
+      },
+      {
+        "path": "sources/issue-15.json",
+        "focus": "complete"
+      },
+      {
+        "path": "reviews/failure-classification.json",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/dispatch-contract.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/scenario-matrix.json",
+        "focus": "complete"
+      }
+    ],
+    "required_scenarios": [
+      "T15/large-code-local-button",
+      "T15/missing-product-docs",
+      "T15/reshape-business-model",
+      "T15/add-unimplemented-need",
+      "T15/deny-inferred-intent",
+      "T15/interrupted-confirmation",
+      "T15/new-product"
+    ]
+  },
+  {
+    "id": "T16",
+    "title": "meta-skill \u601d\u7ef4\u6d4b\u8bd5\uff1a\u4e2d\u65ad\u53cd\u6094\u4e0e\u65e7\u8d44\u6599\u51b2\u7a81",
+    "issue": 16,
+    "requirements": [
+      "R01",
+      "R02",
+      "R03",
+      "R04",
+      "R05",
+      "R06",
+      "R07",
+      "R08",
+      "R09",
+      "R10",
+      "R11",
+      "R12",
+      "R13",
+      "R14",
+      "R15",
+      "R16",
+      "R17",
+      "R18",
+      "R19",
+      "R29",
+      "R30"
+    ],
+    "touched_paths": [
+      "claude/meta-skill/tests/scenarios/T16/**"
+    ],
+    "acceptance_cmd": "python3 -m pytest claude/meta-skill/tests/scenarios/T16/test_evidence.py -q",
+    "depends_on": [
+      "T11"
+    ],
+    "implements": [],
+    "requires": [
+      "I-resume"
+    ],
+    "resources": [],
+    "reality_gate": false,
+    "validation_level": "task",
+    "blast_radius": "module",
+    "module": "proof",
+    "spec_revision": 2,
+    "max_files_changed": 600,
+    "required_outputs": [
+      "claude/meta-skill/tests/scenarios/T16/test_evidence.py"
+    ],
+    "artifact_contract": {
+      "schema_version": 1,
+      "task_id": "T16",
+      "path_rules": [
+        {
+          "kind": "glob",
+          "pattern": "claude/meta-skill/tests/scenarios/T16/**",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        }
+      ],
+      "required_outputs": [
+        "claude/meta-skill/tests/scenarios/T16/test_evidence.py"
+      ],
+      "forbidden_paths": [
+        "docs/grillstorm/**"
+      ],
+      "max_files_changed": 600,
+      "acceptance_cmd_sha256": "2ce483ffa94b71ef63be92d13f09ebb2b076272dff828439401eb4809f2d8f76",
+      "interface_assertions": []
+    },
+    "workflow_revision": 2,
+    "dispatch_inputs": [
+      {
+        "path": "program-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "modules/proof-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/catalog.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/proof.md",
+        "focus": "T16"
+      },
+      {
+        "path": "sources/issue-8.json",
+        "focus": "complete"
+      },
+      {
+        "path": "sources/issue-16.json",
+        "focus": "complete"
+      },
+      {
+        "path": "reviews/failure-classification.json",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/dispatch-contract.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/scenario-matrix.json",
+        "focus": "complete"
+      }
+    ],
+    "required_scenarios": [
+      "T16/no-answer",
+      "T16/partial-resume",
+      "T16/reverse-prior-decision",
+      "T16/legacy-provenance",
+      "T16/removed-not-resurrected",
+      "T16/discussion-preserves-source",
+      "T16/unattended-pending"
+    ]
+  },
+  {
+    "id": "T17",
+    "title": "meta-skill \u601d\u7ef4\u6d4b\u8bd5\uff1a\u589e\u91cf\u540c\u6b65\u4e0e\u5047\u5b8c\u6210\u538b\u529b",
+    "issue": 17,
+    "requirements": [
+      "R20",
+      "R21",
+      "R22",
+      "R23",
+      "R24",
+      "R25",
+      "R26",
+      "R27",
+      "R28",
+      "R29",
+      "R30"
+    ],
+    "touched_paths": [
+      "claude/meta-skill/tests/scenarios/T17/**"
+    ],
+    "acceptance_cmd": "python3 -m pytest claude/meta-skill/tests/scenarios/T17/test_evidence.py -q",
+    "depends_on": [
+      "T12",
+      "T13"
+    ],
+    "implements": [],
+    "requires": [
+      "I-freshness",
+      "I-sync"
+    ],
+    "resources": [],
+    "reality_gate": false,
+    "validation_level": "task",
+    "blast_radius": "module",
+    "module": "proof",
+    "spec_revision": 2,
+    "max_files_changed": 600,
+    "required_outputs": [
+      "claude/meta-skill/tests/scenarios/T17/test_evidence.py"
+    ],
+    "artifact_contract": {
+      "schema_version": 1,
+      "task_id": "T17",
+      "path_rules": [
+        {
+          "kind": "glob",
+          "pattern": "claude/meta-skill/tests/scenarios/T17/**",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        }
+      ],
+      "required_outputs": [
+        "claude/meta-skill/tests/scenarios/T17/test_evidence.py"
+      ],
+      "forbidden_paths": [
+        "docs/grillstorm/**"
+      ],
+      "max_files_changed": 600,
+      "acceptance_cmd_sha256": "f756ecd963eb3545f99c53e4473efb98263ef448fdd4163357cd8919d7db88bd",
+      "interface_assertions": []
+    },
+    "workflow_revision": 2,
+    "dispatch_inputs": [
+      {
+        "path": "program-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "modules/proof-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/catalog.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/proof.md",
+        "focus": "T17"
+      },
+      {
+        "path": "sources/issue-8.json",
+        "focus": "complete"
+      },
+      {
+        "path": "sources/issue-17.json",
+        "focus": "complete"
+      },
+      {
+        "path": "reviews/failure-classification.json",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/dispatch-contract.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/scenario-matrix.json",
+        "focus": "complete"
+      }
+    ],
+    "required_scenarios": [
+      "T17/two-dirty-states",
+      "T17/baseline-only-change",
+      "T17/generated-sync-no-loop",
+      "T17/tests-pass-docs-stale",
+      "T17/transitive-unrelated-impact",
+      "T17/copied-old-evidence",
+      "T17/unchanged-idempotency",
+      "T17/uncertain-impact"
+    ]
+  },
+  {
+    "id": "T18",
+    "title": "meta-skill \u601d\u7ef4\u6d4b\u8bd5\uff1a\u5916\u90e8\u6f02\u79fb\u7684\u5b8c\u6574\u6062\u590d\u8def\u5f84",
+    "issue": 18,
+    "requirements": [
+      "R20",
+      "R21",
+      "R22",
+      "R23",
+      "R24",
+      "R25",
+      "R26",
+      "R27",
+      "R28",
+      "R29",
+      "R30"
+    ],
+    "touched_paths": [
+      "claude/meta-skill/tests/scenarios/T18/**"
+    ],
+    "acceptance_cmd": "python3 -m pytest claude/meta-skill/tests/scenarios/T18/test_evidence.py -q",
+    "depends_on": [
+      "T14"
+    ],
+    "implements": [],
+    "requires": [
+      "I-drift"
+    ],
+    "resources": [],
+    "reality_gate": false,
+    "validation_level": "task",
+    "blast_radius": "module",
+    "module": "proof",
+    "spec_revision": 2,
+    "max_files_changed": 600,
+    "required_outputs": [
+      "claude/meta-skill/tests/scenarios/T18/test_evidence.py"
+    ],
+    "artifact_contract": {
+      "schema_version": 1,
+      "task_id": "T18",
+      "path_rules": [
+        {
+          "kind": "glob",
+          "pattern": "claude/meta-skill/tests/scenarios/T18/**",
+          "operations": [
+            "create",
+            "modify",
+            "delete",
+            "rename"
+          ]
+        }
+      ],
+      "required_outputs": [
+        "claude/meta-skill/tests/scenarios/T18/test_evidence.py"
+      ],
+      "forbidden_paths": [
+        "docs/grillstorm/**"
+      ],
+      "max_files_changed": 600,
+      "acceptance_cmd_sha256": "1c03b1dd6966abfbe76456f24e2afb5073ae154ae21f85eec95353debb09ee71",
+      "interface_assertions": []
+    },
+    "workflow_revision": 2,
+    "dispatch_inputs": [
+      {
+        "path": "program-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "modules/proof-spec.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/catalog.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/proof.md",
+        "focus": "T18"
+      },
+      {
+        "path": "sources/issue-8.json",
+        "focus": "complete"
+      },
+      {
+        "path": "sources/issue-18.json",
+        "focus": "complete"
+      },
+      {
+        "path": "reviews/failure-classification.json",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/dispatch-contract.md",
+        "focus": "complete"
+      },
+      {
+        "path": "tasks/scenario-matrix.json",
+        "focus": "complete"
+      }
+    ],
+    "required_scenarios": [
+      "T18/fact-only-vs-behavior",
+      "T18/accept-full-recovery",
+      "T18/reject-repair-full-recovery",
+      "T18/defer",
+      "T18/interrupted-recovery",
+      "T18/unattended-conflict",
+      "T18/report-only-not-done",
+      "T18/stable-repeat"
+    ]
+  }
+]
