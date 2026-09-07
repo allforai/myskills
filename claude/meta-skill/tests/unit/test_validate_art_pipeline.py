@@ -12,7 +12,7 @@ def _write(root, rel, text):
     return path
 
 
-def _minimal_repo(tmp_path):
+def _minimal_repo_legacy(tmp_path):
     _write(
         tmp_path,
         "claude/meta-skill/skills/game-art/PACK.md",
@@ -794,3 +794,15 @@ def test_validate_art_pipeline_accepts_reviewer_neutral_names(tmp_path):
     _minimal_repo(tmp_path)
     _migrate_fixture_to_neutral_names(tmp_path)
     assert validate_art_pipeline(str(tmp_path)) == []
+
+
+def _minimal_repo(tmp_path, **kw):
+    """Fixtures in the ADR-0003 reviewer-neutral vocabulary (the only form accepted since #41)."""
+    _minimal_repo_legacy(tmp_path, **kw)
+    _migrate_fixture_to_neutral_names(tmp_path)
+
+
+def test_validate_art_pipeline_rejects_legacy_reviewer_names(tmp_path):
+    _minimal_repo_legacy(tmp_path)
+    errors = validate_art_pipeline(str(tmp_path))
+    assert errors, "legacy codex-/claude-code- reviewer names must no longer satisfy the validator"

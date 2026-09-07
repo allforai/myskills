@@ -88,17 +88,17 @@ REQUIRED_GAMEPLAY_VISUAL_ACCEPTANCE_TERMS = {
     ".allforai/game-frontend/qa/runtime-gameplay-visual-acceptance-plan.json",
     ".allforai/game-frontend/qa/runtime-gameplay-screenshot-manifest.json",
     ".allforai/game-frontend/qa/runtime-gameplay-visual-batches/",
-    (".allforai/game-frontend/qa/codex-gameplay-visual-review.json", ".allforai/game-frontend/qa/runtime-gameplay-visual-review-2.json"),
-    (".allforai/game-frontend/qa/codex-gameplay-visual-review.md", ".allforai/game-frontend/qa/runtime-gameplay-visual-review-2.md"),
+    ".allforai/game-frontend/qa/runtime-gameplay-visual-review-2.json",
+    ".allforai/game-frontend/qa/runtime-gameplay-visual-review-2.md",
     ".allforai/game-frontend/qa/runtime-gameplay-visual-repair-loop-report.json",
     ".allforai/game-frontend/qa/runtime-gameplay-visual-acceptance-report.json",
     "Screenshot review is mandatory for visible gameplay acceptance",
     "must not pass from logs, DOM, canvas probes, or state deltas alone",
     "Gameplay Screenshot Plan",
     "before/after pairs",
-    ("Codex CLI", "reviewer two"),
+    "reviewer two",
     "pull mode",
-    ("Claude Code independently inspects the same runtime screenshots", "reviewer one independently inspects the same runtime screenshots"),
+    "reviewer one independently inspects the same runtime screenshots",
     "union of both reviews",
     "Repair And Revalidation Loop",
     "rerun the same affected gameplay screenshot tasks",
@@ -112,7 +112,7 @@ REQUIRED_GAMEPLAY_VISUAL_ACCEPTANCE_TERMS = {
     "prototype component",
     "missing asset loader mapping",
     "blocked_by_missing_screenshot",
-    ("blocked_by_missing_codex_cli", "missing_cross_platform_cli"),
+    "missing_cross_platform_cli",
     "blocked_by_missing_visual_model_capability",
 }
 
@@ -164,14 +164,14 @@ def _key(term) -> str:
 
 
 def _with_neutral(terms):
+    """ADR-0003 contract step (#41): only the reviewer-neutral form is accepted. Legacy
+    codex-*/claude-code-* names and Codex-CLI-as-reviewer phrases no longer satisfy a term."""
     out = set()
     for t in terms:
         if isinstance(t, tuple):
-            out.add(t)
-        elif neutral_form(t) != t:
-            out.add((t, neutral_form(t)))
+            out.add(neutral_form(t[0]) if len(t) == 2 and neutral_form(t[0]) == t[1] else t)
         else:
-            out.add(t)
+            out.add(neutral_form(t))
     return out
 
 

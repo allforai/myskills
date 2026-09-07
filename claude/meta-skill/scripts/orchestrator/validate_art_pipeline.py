@@ -33,10 +33,10 @@ REQUIRED_ART_QA_EXIT_ARTIFACTS = {
     ".allforai/game-design/art-qa-report.html",
     ".allforai/game-design/art/qa/visual-acceptance-task-list.json",
     ".allforai/game-design/art/qa/visual-acceptance-batches/",
-    (".allforai/game-design/art/qa/codex-visual-review.json", ".allforai/game-design/art/qa/visual-review-2.json"),
-    (".allforai/game-design/art/qa/codex-visual-review.md", ".allforai/game-design/art/qa/visual-review-2.md"),
-    (".allforai/game-design/art/qa/claude-code-visual-review.json", ".allforai/game-design/art/qa/visual-review-1.json"),
-    (".allforai/game-design/art/qa/claude-code-visual-review.md", ".allforai/game-design/art/qa/visual-review-1.md"),
+    ".allforai/game-design/art/qa/visual-review-2.json",
+    ".allforai/game-design/art/qa/visual-review-2.md",
+    ".allforai/game-design/art/qa/visual-review-1.json",
+    ".allforai/game-design/art/qa/visual-review-1.md",
     ".allforai/game-design/art/qa/visual-review-reconciliation.json",
     ".allforai/game-design/art/qa/visual-review-closure-audit.json",
     ".allforai/game-design/art/qa/visual-review-closure-audit.md",
@@ -310,19 +310,19 @@ REQUIRED_VISUAL_ACCEPTANCE_TERMS = {
     "blocked_by_missing_visual_model_capability",
     ".allforai/game-design/art/qa/visual-acceptance-task-list.json",
     ".allforai/game-design/art/qa/visual-acceptance-batches/",
-    (".allforai/game-design/art/qa/codex-visual-review.json", ".allforai/game-design/art/qa/visual-review-2.json"),
-    (".allforai/game-design/art/qa/codex-visual-review.md", ".allforai/game-design/art/qa/visual-review-2.md"),
-    (".allforai/game-design/art/qa/claude-code-visual-review.json", ".allforai/game-design/art/qa/visual-review-1.json"),
-    (".allforai/game-design/art/qa/claude-code-visual-review.md", ".allforai/game-design/art/qa/visual-review-1.md"),
+    ".allforai/game-design/art/qa/visual-review-2.json",
+    ".allforai/game-design/art/qa/visual-review-2.md",
+    ".allforai/game-design/art/qa/visual-review-1.json",
+    ".allforai/game-design/art/qa/visual-review-1.md",
     ".allforai/game-design/art/qa/visual-review-reconciliation.json",
     ".allforai/game-design/art/qa/visual-review-closure-audit.json",
     ".allforai/game-design/art/qa/visual-review-closure-audit.md",
     ".allforai/game-design/art/qa/visual-repair-loop-report.json",
     ".allforai/game-design/art/qa/visual-repair-loop-report.md",
-    ("Codex CLI", "reviewer two"),
-    ("Claude Code Visual Review", "Reviewer One"),
+    "reviewer two",
+    "Reviewer One",
     "Reconciliation And Closure Audit",
-    ("must not read the Codex report first", "must not read the other reviewer's report first"),
+    "must not read the other reviewer's report first",
     "union of the two",
     "audit_verdict",
     "Repair And Revalidation Loop",
@@ -337,7 +337,7 @@ REQUIRED_VISUAL_ACCEPTANCE_TERMS = {
     "Project-Specific Acceptance",
     ASSET_ACCEPTANCE_CRITERIA_JSON,
     ASSET_ACCEPTANCE_CRITERIA_MD,
-    ("blocked_by_missing_codex_cli", "missing_cross_platform_cli"),
+    "missing_cross_platform_cli",
     "blocked_by_missing_visual_evidence",
     "Do not accept manifest-only review",
     "visual evidence paths",
@@ -370,15 +370,15 @@ REQUIRED_CODEX_DELEGATION_SKILL_TERMS = {
 REQUIRED_FRONTEND_VISUAL_RUNTIME_TERMS = {
     "visual-qa/40-qa/batch-visual-acceptance/SKILL.md",
     "codex-cli-delegation/30-execute/codex-cli-task/SKILL.md",
-    (".allforai/game-frontend/qa/codex-runtime-visual-review.json", ".allforai/game-frontend/qa/runtime-visual-review-2.json"),
-    (".allforai/game-frontend/qa/codex-runtime-visual-review.md", ".allforai/game-frontend/qa/runtime-visual-review-2.md"),
+    ".allforai/game-frontend/qa/runtime-visual-review-2.json",
+    ".allforai/game-frontend/qa/runtime-visual-review-2.md",
     ".allforai/game-frontend/qa/runtime-visual-closure-audit.json",
     ".allforai/game-frontend/qa/runtime-visual-closure-audit.md",
-    ("Codex CLI must inspect screenshots", "reviewer two must inspect screenshots"),
+    "reviewer two must inspect screenshots",
     "do not pass from probes or metadata alone",
-    ("Claude Code performs its own independent screenshot review", "reviewer one performs its own independent screenshot review"),
+    "reviewer one performs its own independent screenshot review",
     "blocking findings are the union of the two",
-    ("blocked_by_missing_codex_cli", "missing_cross_platform_cli"),
+    "missing_cross_platform_cli",
 }
 
 REQUIRED_GAME_FRONTEND_HANDOFF_TERMS = {
@@ -632,14 +632,14 @@ def _key(term) -> str:
 
 
 def _with_neutral(terms):
+    """ADR-0003 contract step (#41): only the reviewer-neutral form is accepted. Legacy
+    codex-*/claude-code-* names and Codex-CLI-as-reviewer phrases no longer satisfy a term."""
     out = set()
     for t in terms:
         if isinstance(t, tuple):
-            out.add(t)
-        elif neutral_form(t) != t:
-            out.add((t, neutral_form(t)))
+            out.add(neutral_form(t[0]) if len(t) == 2 and neutral_form(t[0]) == t[1] else t)
         else:
-            out.add(t)
+            out.add(neutral_form(t))
     return out
 
 
@@ -883,7 +883,7 @@ def validate_art_pipeline(repo_root: str) -> list:
             if not _has(bootstrap_text, term):
                 errors.append(f"bootstrap.md: art-gen completion missing visual closure term {_key(term)}")
         for term in ["FAILED_VALIDATION", "blocked_by_missing_visual_evidence",
-                     ("blocked_by_missing_codex_cli", "missing_cross_platform_cli")]:
+                     "missing_cross_platform_cli"]:
             if not _has(art_qa_section, term):
                 errors.append(f"bootstrap.md: art-qa completion missing blocking status {_key(term)}")
         for term in _with_neutral([
