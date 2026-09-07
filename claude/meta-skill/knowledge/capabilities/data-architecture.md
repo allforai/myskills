@@ -45,17 +45,13 @@ document that implementation nodes consume.
 
 ## Interaction Mode
 
-**Search-driven selection questions (mandatory for each relevant dimension):**
+**Evidence-backed options, one round (for every design dimension that applies):**
 
-For each design dimension that applies to this project, LLM MUST:
-
-1. **WebSearch** 1-2 rounds: benchmarks, production case studies, and scale-specific comparisons for the candidate technologies
-2. **Present 2-4 options** as a selection question, each with:
-   - Technology name + one-line positioning (e.g., "Meilisearch — instant setup, <10M docs, typo-tolerant")
-   - Evidence from search ("Benchmark: Meilisearch 50ms p99 at 5M docs vs ES 120ms with tuning")
-   - Fit assessment for THIS project ("your entity count is ~500K, full-text on 3 fields — PG tsvector is sufficient, no external service needed")
-3. **User selects** — LLM does NOT decide for the user
-4. **"Other" response** → WebSearch with user's input → new selection question with refined options
+1. **Evidence first**: read what the repository and upstream artifacts already decide; search (benchmarks, production case studies, failure reports at this project's scale) only for what they leave open.
+2. **Present 2-4 options** per dimension, each with a name and one-line positioning, the evidence, and a fit assessment for THIS project; lead with a recommended default and its reason.
+3. **All applicable dimensions in one structured round** — the user answers a form, not a queue; only a dimension whose options depend on another answer waits for it.
+4. **User decides** — the LLM does not choose architecture-level options for the user; an open question is allowed exactly when evidence cannot produce options, and says so.
+5. **"Other" response** → search or inspect with the user's input → refined options in the same round.
 
 **When to skip interaction:**
 - Dimension has only one viable option (e.g., framework's built-in migration tool)

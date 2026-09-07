@@ -74,7 +74,7 @@ UI 测试节点必须写入：
 | R3 | Test vectors | Known input→output | Execute extracted test vectors against target |
 | R4 | Protocol compat | Custom protocol behavior | Protocol-specific test suite (only if discovery flagged custom protocols) |
 
-Composite score = static * 0.5 + runtime * 0.5. R1 failure = everything fails.
+Composite score = static * 0.5 + runtime * 0.5, for reference; the authoritative result is `verdict` (pass | fail | blocked): R1 failure, any layer below its threshold, or a failed visual review is `fail` regardless of the number.
 
 ### Adaptive Dimension Selection
 
@@ -114,8 +114,8 @@ No silent skips — every layer must appear in reasoning, either `applicable: tr
 ## Pass Threshold
 
 Bootstrap sets `min_pass_rate` per layer (default: R2 = 100%, R3 = 90%, R4 = 100%).
-If actual rate < threshold → trigger fix loop (max 3 cycles).
-If not resolved → surface as UPSTREAM_DEFECT with per-layer breakdown.
+If actual rate < threshold → fix loop until a cycle fixes nothing new or reintroduces a fixed failure (progress, not a count, ends it).
+If not resolved → surface as UPSTREAM_DEFECT with per-layer breakdown and the per-cycle trajectory.
 
 ## Output Contract
 
@@ -166,7 +166,7 @@ If not resolved → surface as UPSTREAM_DEFECT with per-layer breakdown.
 
 ## Platform-Specific Test Commands
 
-Bootstrap MUST generate the correct test commands per platform:
+Bootstrap derives test commands from the project's own evidence first — test scripts, CI workflow, detected test frameworks and their config files. The table below is a reference for platform pitfalls (mobile frameworks, E2E prerequisites, platforms with no runner) to check against, not a source to copy from.
 
 | Platform | Unit/Widget Tests | Integration/E2E Tests |
 |----------|------------------|-----------------------|

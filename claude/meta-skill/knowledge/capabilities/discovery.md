@@ -28,7 +28,7 @@ For rebuild/translate goals, also:
 
 ### Required Coverage
 
-- File coverage >= 50% per module (header scan for uncovered files)
+- Per module: every entry point, router, data model, configuration and cross-cutting middleware read in full; remaining files header-scanned and listed as unread with a one-line reason (coverage is what was understood, not a file percentage)
 - Infrastructure components documented (what user sees if missing, periodic behaviors, lifecycle)
 - Config-as-code included (nginx.conf, routes.yaml, OpenAPI spec = potential business logic)
 - Event bus inventory (if exists: all event types + publishers + subscribers)
@@ -56,7 +56,7 @@ LLM should apply these principles, in whatever order makes sense:
 - **Breadth first, depth second**: Scan directories before reading file internals
 - **Infrastructure before business**: Understand the runtime foundation before business logic
 - **Never skip by name**: Can't guess importance from filename — sample-read first
-- **Quiz validation**: After reading a key file, ask 3 self-check questions to verify understanding
+- **Record what a file could not settle**: after reading a key file, write down the questions it leaves open (who calls this, where is the config, is this path live) — those drive the next reads; no self-quiz that nobody consumes
 - **Config is code**: Configuration files may contain business logic
 - **Cross-cutting first**: Middleware, auth, logging affect everything — understand early
 

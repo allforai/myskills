@@ -24,7 +24,7 @@ identify layout/style/content discrepancies, fix in repair loop.
 3. Execute: parallel per-screen (structural + data + linkage)
 4. reviewer one visual review: inspect captured screenshots and classify visible UI defects
 5. Report: aggregate scores
-6. Repair loop: fix -> re-capture -> re-compare -> reviewer one review (max 30 rounds)
+6. Repair loop: fix -> re-capture -> re-compare -> reviewer one review, until a round changes no screen score or a repair regresses another screen
 
 ## Boundary: ui-forge vs visual-verify
 
@@ -114,7 +114,7 @@ Any `blocker` or `major` issue in reviewer one review blocks visual-verify pass.
 ### Phase E: Report + Repair
 
 - Aggregate per-screen scores into composite visual fidelity score
-- `full` mode: auto-repair -> re-capture -> re-compare -> reviewer one review until convergence (max 30 rounds)
+- `full` mode: auto-repair -> re-capture -> re-compare -> reviewer one review until convergence (a round that changes no score, or a repair that regresses another screen, ends it)
 
 ## Downstream Consumers
 

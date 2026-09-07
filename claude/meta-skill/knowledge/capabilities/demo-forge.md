@@ -22,7 +22,7 @@ it exposes runtime issues that compile-verify cannot catch.
 - Demo data set designed from product map entities and flows
 - Data populated via API calls (not direct DB inserts — validates the API)
 - Visual verification: populated data visible on all screens
-- >= 95% verification pass rate (max 3 rounds of fix + re-verify)
+- Every designed data item is visible on every screen that should show it; the fix loop ends when a round makes nothing newly visible, and every still-invisible item is listed by name (never averaged into a pass rate)
 
 ### Data Design Principles (LLM applies based on project)
 

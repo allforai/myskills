@@ -206,7 +206,7 @@ Note on `revision_notes` vs `reviewer_notes`: `revision_notes` is written by the
 
 Gate rules:
 - `gate_status == "pending"` AND node's `exit_artifacts` all exist → `/run` automatically sets `gate_status` to `"in-review"` and notifies `discipline_owner` that the output is ready for review. (Bootstrap initializes all records as `pending`; node execution produces the artifacts; `/run` transitions to `in-review` — this is the only way to reach `in-review`.)
-- `gate_status == "in-review"` → wait for `discipline_owner` to review the HTML output and either approve or request revision. `/run` does not advance to next game-design node while any predecessor is `in-review`.
+- `gate_status == "in-review"` → wait for `discipline_owner` to review the HTML output and either approve or request revision. The gate sits at the **consumption** of this node's output: its `unlocks[]` and `game-design-finalize` do not run until it is `approved`. Sibling nodes whose inputs are already approved keep running, so the owner reviews drafts in batches instead of one node per round-trip.
 - `gate_status == "approved"` → unlock all `unlocks[]` nodes
 - `gate_status == "revision-requested"` → re-execute node with `revision_notes` as instruction; after re-execution completes, reset `gate_status` to `"in-review"` (awaiting fresh approval from `discipline_owner`)
 - `discipline_owner` must approve (drives `gate_status`); `discipline_reviewers` approval is advisory — reviewers may add `reviewer_notes` but cannot change `gate_status` unilaterally; if reviewer flags an issue post-approval, they must coordinate with `discipline_owner` to reset `gate_status` to `"revision-requested"`
@@ -273,8 +273,10 @@ Bootstrap MUST inject this policy into every generated game-design node-spec.
 | JSON field **keys** | English snake_case (schema convention — do not translate) |
 | JSON ID / enum values | English snake_case |
 
-**Enforcement rule:** Any HTML output that uses English for navigation tabs, section titles, or
-descriptive labels is a policy violation and must be requested for revision.
+**Enforcement rule:** human-facing text follows the language table above. A term the game world
+or the engine natively uses in English (an asset id, an engine node type, a proper noun the world
+keeps in English) is not a violation; a navigation tab or section title written in English on a
+Chinese-language project is, and is requested for revision.
 
 ## Design Integrity Rules
 
@@ -299,9 +301,11 @@ provide the authoritative values.
 Output HTML and JSON MUST NOT contain any reference to systems, mechanics, or values that are
 not currently active in the project design. This includes:
 
-- **Never** reference old mechanic names even as historical context (e.g., "旧版 X", "previously X", "replaced by Y")
-- **Never** include currency types, item names, or SKUs that are not in the current concept-baseline
-- **Never** include color swatches, UI components, or asset entries for removed systems
+- Present nothing as current that concept-baseline.json / core-mechanics.json do not contain: no
+  currency types, item names, SKUs, colour swatches, UI components or asset entries for systems
+  that are not in the authoritative inputs. Provenance, not vocabulary, is the test: a sentence
+  that explains what a mechanic replaces is fine when both names trace to the inputs' history;
+  a mechanic that traces to nothing is not, whatever words surround it.
 - If a sub-skill template contains placeholder examples with generic game design patterns (e.g.,
   "hard currency", "bomb tile"), those placeholders MUST be replaced with the actual values from
   the project's input files — never output the placeholder itself
@@ -313,7 +317,8 @@ is a violation. The node must re-read the input files and remove the reference b
 
 After invoking each sub-skill, the orchestrating node MUST verify that the sub-skill's output:
 1. Does not contain system/mechanic names absent from the project's authoritative input files
-2. Does not include "旧版", "deprecated", "old version", "previously", "replaced" in visible UI text
+2. Does not present a superseded system or value as current — checked by tracing each named
+   system to the inputs, not by scanning for words
 3. Color palettes, icon lists, and asset tables only reference currently-active game systems
 
 If a violation is found, the node corrects it before writing the final exit artifact — it does NOT
@@ -454,10 +459,11 @@ one.
 
 **Path validation:** For every sub-skill path from §Sub-Skill Mapping or this
 section, verify `${CLAUDE_PLUGIN_ROOT}/skills/<path>/SKILL.md` exists before
-writing node-specs. The file must include `Input Contract`, `Output Contract`,
-`Invocation Contract`, `Automatic Validation`, and `Completion Conditions`.
-If any required file or section is missing, fail bootstrap with
-`BOOTSTRAP_SUB_SKILL_MAPPING_INVALID` and list the missing path/section. Do not
+writing node-specs. The file must exist and substantively define its inputs, its outputs, how
+it is invoked (the JSON invocation block `validate_skills.py` checks), how it validates itself,
+and when it is complete — judged by content, not by the exact spelling of a heading. A missing
+file, or a file that defines none of these, fails bootstrap with
+`BOOTSTRAP_SUB_SKILL_MAPPING_INVALID` naming the path and the missing substance. Do not
 fall back to generic LLM execution for a path that is explicitly mapped.
 
 **Level design:** The `level-design` chain owns level flow, layout, player

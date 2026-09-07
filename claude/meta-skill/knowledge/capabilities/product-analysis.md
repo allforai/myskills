@@ -90,13 +90,15 @@ but produces purely descriptive artifacts without evaluative judgment.
 
 ### Required Outputs
 
-| Output | What | Minimum |
-|--------|------|---------|
-| `role-profiles.json` | Who uses this product (roles, permissions, audience_type) | >= 2 roles |
-| `task-inventory.json` | What can be done (tasks with inputs/outputs/constraints) | >= 10 tasks |
-| `business-flows.json` | How tasks connect into user journeys | >= 5 flows |
-| `experience-map.json` | What screens exist, what states, what interactions | >= 5 screens |
-| `use-case-tree.json` | Given/When/Then scenarios (happy + exception + boundary) | >= 15 cases |
+| Output | What | Coverage criterion (not a count) |
+|--------|------|----------------------------------|
+| `role-profiles.json` | Who uses this product (roles, permissions, audience_type) | one role per distinct permission set or audience the input names or implies |
+| `task-inventory.json` | What can be done (tasks with inputs/outputs/constraints) | every task the concept, code or user names; none invented to fill a list |
+| `business-flows.json` | How tasks connect into user journeys | every journey that connects the tasks above; a task no flow reaches is flagged |
+| `experience-map.json` | What screens exist, what states, what interactions | every screen a flow needs, with its states; zero screens for a CLI, and said so |
+| `use-case-tree.json` | Given/When/Then scenarios (happy + exception + boundary) | happy, exception and boundary case per flow; a flow without an exception case is flagged |
+
+Write the counts you produced and why they are complete for this input; numbers are evidence of coverage, never a target to reach.
 
 **task-inventory.json field schema (minimum required fields):**
 ```json
@@ -172,7 +174,7 @@ LLM should apply these principles in whatever order and combination works:
 - **Journey-emotion informs experience**: Emotional journey should inform interaction quality expectations
 - **Interaction gate before downstream**: Experience-map quality checked before use-cases/UI-design proceed
 - **Conflict detection at two layers**: Task-level contradictions AND screen-level contradictions
-- **4D self-check per fragment**: conclusion / evidence / constraint / decision
+- **Per fragment, record the gaps**: conclusion / evidence / constraint / decision — which is missing and where it will come from
 
 ## Specialization Guidance
 

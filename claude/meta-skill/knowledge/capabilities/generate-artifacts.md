@@ -34,7 +34,7 @@ that downstream nodes (translate, rebuild, demo-forge, ui-design) consume.
 - **Business intent only**: Extract "what it does", not "how it's implemented"
 - **Abstraction transfer**: High-reuse source patterns must map to target equivalents
 - **UI-driven closure**: Compare artifacts with screenshots/API logs to verify completeness
-- **4D self-check per fragment**: Fix issues during generation, not after
+- **Per fragment, record the gaps**: which of conclusion / evidence / constraint / decision is missing, so it is fixed during generation, not after
 - **Archetype-driven artifact freedom**: Non-standard projects produce custom schemas
 
 ## Specialization Guidance

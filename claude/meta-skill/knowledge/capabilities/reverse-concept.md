@@ -245,7 +245,7 @@ acknowledge before reverse-concept marks itself complete.
 - Every role must trace to auth/middleware code
 - Governance style must trace to status fields + admin endpoints
 - Business model must trace to payment/subscription entities (or explicitly "none detected")
-- Concept-baseline must be under 2KB
+- Concept-baseline holds only what code proves, no narrative; its size follows the product, not a byte cap
 
 ## Composition Hints
 

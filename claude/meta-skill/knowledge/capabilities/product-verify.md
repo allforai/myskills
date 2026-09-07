@@ -27,7 +27,7 @@ After code is written, verify it actually implements what was designed:
 ### Dynamic Verification (per module type)
 
 Every module in the project must be verified using its appropriate tool.
-**Playwright CANNOT test native mobile apps** — this is a hard constraint.
+**Playwright CANNOT test native mobile apps** — this is a hard constraint. Derive the verification tool from the module's own test setup and CI first; the table below is a reference of platform pitfalls, not a lookup to copy.
 
 | Module Type | Tool | Method |
 |-------------|------|--------|
@@ -205,10 +205,13 @@ Output: `.allforai/product-verify/verify-report.json` + `.allforai/product-verif
 {
   "static_score": "<number 0-100>",
   "dynamic_score": "<number 0-100>",
-  "composite_score": "<number 0-100 — weighted average>",
+  "composite_score": "<number 0-100 — weighted average; reference only, never the gate>",
+  "verdict": "<enum: pass | fail | blocked — authoritative; fail whenever any critical issue or failed visual review exists>",
+  "observations": ["<{scope, finding, evidence} — findings outside the checked modules; never dropped, never change verdict>"],
   "issues": [
     {
-      "type": "<enum: route_missing | api_missing | field_mismatch | permission_gap | render_fail | form_fail>",
+      "type": "<enum: route_missing | api_missing | field_mismatch | permission_gap | render_fail | form_fail | hollow_success | delivery_missing | other>",
+      "type_label": "<string — required when type is other>",
       "severity": "<enum: critical | major | minor>",
       "description": "<string>",
       "evidence": "<string — screenshot path or response body reference>"

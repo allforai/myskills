@@ -22,8 +22,8 @@ and a **method** (how to execute).
 **What it does:**
 1. Decompose user's vague description into the **deepest underlying need**
    (not "I want to build a platform" but "certain people can't do X in scenario Y")
-2. WebSearch 2-3 rounds: industry pain points, academic research, market reports
-3. Present as selection questions (never open-ended)
+2. WebSearch until the problem statement has evidence: industry pain points, academic research, market reports
+3. Present the decisions with evidence-backed options, all in one round
 
 **Output:** `problem-domain.json` (problem essence, opportunity tree skeleton)
 
@@ -56,7 +56,7 @@ another challenges them). Single-model fallback: self-debate with explicit frami
 **Theory anchors:** Blue Ocean ERRC, Porter's Five Forces
 
 **What it does:**
-1. WebSearch 3+ rounds: direct competitors, indirect competitors, failed products
+1. WebSearch until direct competitors, indirect competitors and failed products are each covered
 2. Per competitor: positioning, features, pricing, user reviews, strengths/weaknesses
 3. Map competitive landscape: who does what, where are the gaps
 4. ERRC matrix: what to Eliminate, Reduce, Raise, Create vs competitors
@@ -211,7 +211,7 @@ before concept crystallization locks the MVP scope.
    - Multi-platform push → unified service or per-platform?
    - Spaced repetition / scheduling → background job infrastructure?
 
-2. **WebSearch per technical decision**: 1-2 rounds per decision point — benchmarks,
+2. **WebSearch per technical decision**: until the decision has benchmark or case evidence —
    production case studies, scale-appropriate comparisons. Search for failure cases too
    ("XX at scale problems", "migrating away from XX").
 
@@ -385,11 +385,12 @@ Full theory reference: `${CLAUDE_PLUGIN_ROOT}/knowledge/product-design-theory.md
 
 ## Interaction Mode
 
-**Search-driven selection questions (from old product-concept skill):**
-- Never ask open-ended questions
-- Every question has 2-4 options generated from WebSearch results
-- Each option has evidence ("based on XX report...", "XX competitor does...")
-- "Other" response → WebSearch with user's input → new selection question
+**Evidence-backed decisions, one round:**
+- Architecture-level and product-level choices belong to the user; the LLM never decides them silently.
+- Every option carries evidence ("based on XX report...", "XX competitor does...", "your repo already uses..."); repository evidence counts before a web search.
+- All dimensions that apply are asked in one structured round with a recommended default each; only a choice whose options depend on another answer waits.
+- An open question is allowed exactly when no option can be justified from evidence — say so.
+- "Other" response → search or inspect with the user's input → refined options in the same round
 
 ## Downstream Consumers
 

@@ -139,7 +139,7 @@ Compare finalized concept against current implementation. Gap categories vary by
 
 ### Phase 4: Platform Compliance (平台合规)
 
-Check platform-specific requirements based on target launch platform (read from bootstrap-profile.json `architecture_pattern` and user input):
+Read the target platform's current review guidelines and store policies first (they change faster than any checklist) and check the project against them; the lists below are a dated reference of requirements that have tripped launches before, to make sure the reading did not miss a class. Read from bootstrap-profile.json `architecture_pattern` and user input which platforms apply:
 
 **iOS App Store:**
 - Privacy policy URL required
