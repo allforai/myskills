@@ -604,3 +604,45 @@ def test_inventory_cannot_drop_a_census_axis_value(sample):
                                     'matrix_digest': cfg['matrix_digest'], 'readback': {'appearance': 'dark'}})
     write('evidence/q1/manifest.json', manifest)
     assert '删掉了普查官列出的appearance 值: light' in visual_reason(entry, ledger, root)
+
+
+def test_web_platform_captures_need_mode_fields(sample):
+    root, write, cfg, case, report, entry, ledger = sample
+    inventory = json.loads((root / cfg['inventory_ref']).read_text())
+    inventory['platform'] = 'web'
+    inventory['surfaces'][0]['scrollable'] = False
+    cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
+    scase = expand(inventory['surfaces'], platform='web')[0]
+    cfg['matrix_digest'] = write(cfg['matrix_ref'], [scase])
+    ledger['visual_cases'] = [scase]
+    manifest = json.loads((root / 'evidence/q1/manifest.json').read_text())
+    manifest['captures'][0].update({'inventory_digest': cfg['inventory_digest'], 'matrix_digest': cfg['matrix_digest']})
+    write('evidence/q1/manifest.json', manifest)
+    assert 'Web capture 缺 capture_mode, headless, scrollbars, scroll_profile, capture_tool' in visual_reason(entry, ledger, root)
+    manifest['captures'][0].update({'capture_mode': 'viewport', 'headless': False, 'scrollbars': 'native',
+                                    'scroll_profile': {}, 'capture_tool': 'playwright headed'})
+    write('evidence/q1/manifest.json', manifest)
+    write('evidence/q1/review.json', {**report, 'inventory_digest': cfg['inventory_digest'],
+                                      'matrix_digest': cfg['matrix_digest']})
+    assert visual_reason(entry, ledger, root) is None
+
+
+def test_abstracted_cases_are_counted_apart_and_doubted_on_gap(sample):
+    root, write, cfg, case, report, entry, ledger = sample
+    inventory = json.loads((root / cfg['inventory_ref']).read_text())
+    inventory['surfaces'][0]['axes']['locale'] = ['zh-CN', 'en']
+    inventory['surfaces'][0]['axes']['appearance'] = ['light', 'dark']
+    inventory['abstractions'] = [{'axis': 'locale', 'basis': 'strings only', 'confirmation': '用户确认'}]
+    cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
+    rows = expand(inventory['surfaces'], abstractions=inventory['abstractions'])
+    cfg['matrix_digest'] = write(cfg['matrix_ref'], rows)
+    ledger['visual_cases'] = rows
+    section = '\n'.join(visual_section(ledger, [], root))
+    assert 'abstracted: 1' in section                       # en × dark is the crossed case
+    assert '已抽象（locale）' in section
+    assert '逐轴覆盖' in section and 'locale：' in section
+    en_kept = next(r for r in rows if r['locale'] == 'en' and not r['abstracted_by'])
+    gap = {'verdict': 'gap', 'visual_case_ids': [en_kept['id']]}
+    section = '\n'.join(visual_section(ledger, [gap], root))
+    assert '独立性假设存疑' in section and 'locale ←' in section
+    assert '独立性存疑，需重展开' in section

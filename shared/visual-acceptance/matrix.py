@@ -140,10 +140,54 @@ def merged_support(axis_support, locales):
     return support
 
 
-def expand(surfaces, thresholds=None, width_range=None, devices=None, locales=None, axis_support=None):
+def _abstraction_plan(surface, abstractions, anchor):
+    """Which axes are declared independent for this surface, which of their values stay coupled (e.g. an RTL
+    locale), and the anchor value every other axis sits at while one independent axis varies."""
+    axes = surface['axes']
+    plan = {}
+    for ab in list(abstractions or []) + list(surface.get('abstractions') or []):
+        axis = ab.get('axis') if isinstance(ab, dict) else None
+        if axis not in AXES or not isinstance(ab.get('basis'), str) or not ab['basis'] \
+                or not isinstance(ab.get('confirmation'), str) or not ab['confirmation'].strip():
+            raise ValueError('invalid abstraction (needs axis, basis and the user\'s confirmation): ' + surface['id'])
+        keep = ab.get('keep_coupled') or []
+        if not set(keep) <= set(axes[axis]):
+            raise ValueError('keep_coupled names a value not on the axis: %s/%s' % (surface['id'], axis))
+        cross = ab.get('cross_with', ['state'])
+        if not isinstance(cross, list) or not set(cross) <= set(AXES) or axis in cross:
+            raise ValueError('cross_with must list other axes: %s/%s' % (surface['id'], axis))
+        plan[axis] = {'keep': set(keep), 'cross': set(cross)}
+    anchors = {}
+    for axis in AXES:
+        value = (surface.get('anchor') or anchor or {}).get(axis, axes[axis][0])
+        if value not in axes[axis]:
+            raise ValueError('anchor value not on the axis: %s/%s' % (surface['id'], axis))
+        anchors[axis] = value
+    return plan, anchors
+
+
+def _abstracted_by(row, plan, anchors):
+    """[] keeps the case. Otherwise the independent axes whose off-anchor values this case crosses with
+    something else that is also off-anchor — the combination the abstraction says need not be looked at."""
+    off_independent = [a for a, spec in plan.items() if row[a] != anchors[a] and row[a] not in spec['keep']]
+    if not off_independent:
+        return []                                   # full product over the coupled part
+    if len(off_independent) == 1:
+        axis = off_independent[0]
+        cross = plan[axis]['cross']
+        others_at_anchor = all(row[a] == anchors[a] or a in cross for a in AXES if a != axis)
+        if others_at_anchor:
+            return []                               # one independent axis varied, crossed only with cross_with
+    return sorted(off_independent)
+
+
+def expand(surfaces, thresholds=None, width_range=None, devices=None, locales=None, axis_support=None,
+           abstractions=None, anchor=None, platform=None):
     cases = []
     seen = set()
     for surface in surfaces:
+        if platform == 'web' and not isinstance(surface.get('scrollable'), bool):
+            raise ValueError('web surface must declare scrollable true|false: ' + surface['id'])
         sid = surface['id']
         if sid in seen:
             raise ValueError('duplicate surface: ' + sid)
@@ -165,13 +209,17 @@ def expand(surfaces, thresholds=None, width_range=None, devices=None, locales=No
             check_widths(surface, thresholds, width_range, devices)
         for axis, spec in merged_support(axis_support, locales).items():
             check_axis_support(surface, axis, spec)
+        plan, anchors = _abstraction_plan(surface, abstractions, anchor)
         for values in itertools.product(*(axes[a] for a in AXES)):
             row = dict(zip(AXES, values))
             identity = json.dumps({'surface': sid, **row}, sort_keys=True, ensure_ascii=False)
             case_id = 'V-' + hashlib.sha256(identity.encode()).hexdigest()
-            cases.append({'id': case_id, 'surface': sid, **row,
-                          'motion': row['state'] in surface.get('motion_states', []),
-                          'groups': sorted(groups)})
+            case = {'id': case_id, 'surface': sid, **row,
+                    'motion': row['state'] in surface.get('motion_states', []),
+                    'groups': sorted(groups)}
+            if plan:
+                case['abstracted_by'] = _abstracted_by(row, plan, anchors)
+            cases.append(case)
     return cases
 
 
@@ -180,5 +228,15 @@ if __name__ == '__main__':
     p.add_argument('inventory')
     args = p.parse_args()
     inv = json.loads(Path(args.inventory).read_text())
-    print(json.dumps(expand(inv['surfaces'], inv.get('layout_thresholds'), inv.get('width_range'), inv.get('devices'),
-                            inv.get('locales'), inv.get('axis_support')), ensure_ascii=False, indent=2))
+    rows = expand(inv['surfaces'], inv.get('layout_thresholds'), inv.get('width_range'), inv.get('devices'),
+                  inv.get('locales'), inv.get('axis_support'), inv.get('abstractions'), inv.get('anchor'),
+                  inv.get('platform'))
+    kept = [c for c in rows if not c.get('abstracted_by')]
+    import sys
+    print('cases: %d total, %d to capture, %d abstracted' % (len(rows), len(kept), len(rows) - len(kept)), file=sys.stderr)
+    for axis in AXES:
+        counts = {}
+        for c in kept:
+            counts[c[axis]] = counts.get(c[axis], 0) + 1
+        print('  %s: %s' % (axis, ', '.join('%s=%d' % kv for kv in sorted(counts.items()))), file=sys.stderr)
+    print(json.dumps(rows, ensure_ascii=False, indent=2))

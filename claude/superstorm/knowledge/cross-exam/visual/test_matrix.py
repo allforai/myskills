@@ -211,3 +211,72 @@ def test_locales_and_axis_support_locale_cannot_both_be_declared():
     with pytest.raises(ValueError, match='declare the locale axis once'):
         expand([{'id': 'home', 'axes': _axes_with(locale=['zh-CN'])}], locales=LOCALES,
                axis_support={'locale': LOCALES})
+
+
+def _big_axes():
+    return {'state': ['default', 'empty', 'error'], 'device': ['1440x900@2', '390x844@3'],
+            'os': ['Chromium 131'], 'appearance': ['light', 'dark'], 'dynamic_type': ['zoom 100%', 'zoom 150%'],
+            'locale': ['zh-CN', 'en', 'ar'], 'orientation': ['landscape']}
+
+
+ABS = [{'axis': 'locale', 'basis': 'locale only swaps strings; RTL kept coupled', 'confirmation': '用户 2026-09-07 确认',
+        'keep_coupled': ['ar']},
+       {'axis': 'dynamic_type', 'basis': 'rem sizing, no layout branches on zoom', 'confirmation': '用户确认'}]
+
+
+def test_abstraction_keeps_ofat_slice_and_marks_the_rest():
+    rows = expand([{'id': 'home', 'axes': _big_axes()}], abstractions=ABS)
+    assert len(rows) == 3 * 2 * 2 * 2 * 3            # full product still emitted (72)
+    kept = [r for r in rows if not r['abstracted_by']]
+    # coupled part: state × device × appearance × {zh-CN, ar} at zoom 100%  = 3*2*2*2 = 24
+    # plus one-factor variants crossed with state (default cross_with): en×3 states + zoom 150%×3 states
+    assert len(kept) == 30
+    en = [r for r in kept if r['locale'] == 'en']
+    assert len(en) == 3 and {r['state'] for r in en} == {'default', 'empty', 'error'}
+    assert all(r['appearance'] == 'light' and r['device'] == '1440x900@2' for r in en)
+    ar_dark = [r for r in kept if r['locale'] == 'ar' and r['appearance'] == 'dark']
+    assert len(ar_dark) == 3 * 2                    # RTL stays fully coupled
+    crossed = next(r for r in rows if r['locale'] == 'en' and r['appearance'] == 'dark')
+    assert crossed['abstracted_by'] == ['locale']
+    both = next(r for r in rows if r['locale'] == 'en' and r['dynamic_type'] == 'zoom 150%')
+    assert both['abstracted_by'] == ['dynamic_type', 'locale']
+
+
+def test_abstraction_does_not_change_case_ids():
+    plain = {r['id'] for r in expand([{'id': 'home', 'axes': _big_axes()}])}
+    ruled = {r['id'] for r in expand([{'id': 'home', 'axes': _big_axes()}], abstractions=ABS)}
+    assert plain == ruled
+
+
+def test_abstraction_needs_basis_confirmation_and_valid_values():
+    with pytest.raises(ValueError, match='invalid abstraction'):
+        expand([{'id': 'home', 'axes': _big_axes()}], abstractions=[{'axis': 'locale', 'basis': 'x'}])
+    with pytest.raises(ValueError, match='keep_coupled names a value not on the axis'):
+        expand([{'id': 'home', 'axes': _big_axes()}],
+               abstractions=[{'axis': 'locale', 'basis': 'x', 'confirmation': 'y', 'keep_coupled': ['fr']}])
+    with pytest.raises(ValueError, match='anchor value not on the axis'):
+        expand([{'id': 'home', 'axes': _big_axes()}], abstractions=ABS, anchor={'appearance': 'sepia'})
+
+
+def test_cross_with_can_be_narrowed_or_widened():
+    only_anchor = [{**ABS[0], 'cross_with': []}, ABS[1]]
+    rows = expand([{'id': 'home', 'axes': _big_axes()}], abstractions=only_anchor)
+    assert len([r for r in rows if r['locale'] == 'en' and not r['abstracted_by']]) == 1
+    wide = [{**ABS[0], 'cross_with': ['state', 'device']}, ABS[1]]
+    rows = expand([{'id': 'home', 'axes': _big_axes()}], abstractions=wide)
+    assert len([r for r in rows if r['locale'] == 'en' and not r['abstracted_by']]) == 6
+    with pytest.raises(ValueError, match='cross_with must list other axes'):
+        expand([{'id': 'home', 'axes': _big_axes()}], abstractions=[{**ABS[0], 'cross_with': ['locale']}])
+
+
+def test_anchor_can_be_chosen():
+    rows = expand([{'id': 'home', 'axes': _big_axes()}], abstractions=ABS, anchor={'appearance': 'dark'})
+    en = next(r for r in rows if r['locale'] == 'en' and not r['abstracted_by'])
+    assert en['appearance'] == 'dark'
+
+
+def test_web_platform_requires_scrollable_declaration():
+    axes = {a: ['default'] for a in AXES}
+    with pytest.raises(ValueError, match='web surface must declare scrollable'):
+        expand([{'id': 'home', 'axes': axes}], platform='web')
+    expand([{'id': 'home', 'scrollable': False, 'axes': axes}], platform='web')

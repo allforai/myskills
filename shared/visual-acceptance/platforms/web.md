@@ -1,5 +1,7 @@
 # Web 运行适配
 
+inventory 顶层写 `platform: "web"`：校验器据此要求每个页面声明 `scrollable`、每条 capture 带 capture_mode / headless / scrollbars / scroll_profile / capture_tool。
+
 这是取证适配，视觉规则仍按 visual-acceptance.md 逐类与用户确认；本文只定义 Web 目标怎么普查、怎么把七个维度施加到真实浏览器、怎么留证据。先检测包管理器与启动命令（package.json scripts、Vite/Next/CRA 配置、Docker compose），从工程已有命令确定如何起本地服务；不猜端口，以启动日志或配置为准。
 
 普查页面与实际入口：路由表（React Router / Next app 或 pages 目录 / Vue Router / SvelteKit routes）、导航与 Tab、Modal / Drawer / Toast / Popover、受权限与登录态影响的分支、响应式断点下出现或消失的入口。组件不都等于页面，标明顶级页面、组件、弹层及实际可达性；动态注册（运行时拉取的菜单、按角色下发的路由）未知需 could_not。
