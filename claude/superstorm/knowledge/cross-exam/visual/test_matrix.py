@@ -41,3 +41,77 @@ def test_scrollable_surface_requires_scroll_state():
     ok = expand([{'id': 'feed', 'scrollable': True,
                   'axes': {**axes, 'state': ['default', 'scroll-bottom']}}])
     assert {c['state'] for c in ok} == {'default', 'scroll-bottom'}
+
+
+THRESHOLDS = [{'width': 768, 'basis': 'tailwind.config.js:5'}, {'width': 1024, 'basis': 'tailwind.config.js:5'}]
+RANGE = {'min': 900, 'max': 1920, 'basis': 'main.ts:12 minWidth 900; 外接显示器 1920'}
+
+
+def _axes(devices, orientation=('landscape',)):
+    return {**{a: ['default'] for a in AXES}, 'device': list(devices), 'orientation': list(orientation)}
+
+
+def test_single_screen_size_cannot_satisfy_thresholds():
+    with pytest.raises(ValueError, match='misses layout threshold 768'):
+        expand([{'id': 'chat', 'axes': _axes(['1512x982@2'])}], THRESHOLDS)
+
+
+def test_device_axis_must_straddle_every_threshold_and_reach_range_ends():
+    ok = expand([{'id': 'chat', 'axes': _axes(['900x600@2', '1000x700@2', '1512x982@2', '1920x1080@1'])}],
+                THRESHOLDS, RANGE)
+    assert len(ok) == 4
+    with pytest.raises(ValueError, match='misses width range end 900..1920'):
+        expand([{'id': 'chat', 'axes': _axes(['900x600@2', '1000x700@2', '1512x982@2'])}], THRESHOLDS, RANGE)
+
+
+def test_threshold_outside_range_is_skipped():
+    # 768 lies below the declared minimum window width, so no device can straddle it
+    ok = expand([{'id': 'chat', 'axes': _axes(['900x600@2', '1024x700@2', '1920x1080@1'])}], THRESHOLDS, RANGE)
+    assert len(ok) == 3
+
+
+def test_orientation_changes_effective_width():
+    # iPad 1024x768: portrait width 768 (< 1024), landscape width 1024 (>= 1024) → straddles with one device
+    expand([{'id': 'home', 'axes': _axes(['1024x768@2'], ('portrait', 'landscape'))}],
+           [{'width': 1024, 'basis': 'HomeView.swift:40 horizontalSizeClass'}])
+    with pytest.raises(ValueError, match='misses layout threshold 1024'):
+        expand([{'id': 'home', 'axes': _axes(['1024x768@2'], ('portrait',))}],
+               [{'width': 1024, 'basis': 'HomeView.swift:40'}])
+
+
+def test_named_devices_resolve_through_inventory_table():
+    devices = {'iPhone SE (3rd generation)': {'width': 375, 'height': 667, 'scale': 2, 'basis': 'simctl devicetypes'},
+               'iPad Pro 13-inch (M4)': {'width': 1032, 'height': 1376, 'scale': 2, 'basis': 'simctl devicetypes'}}
+    t = [{'width': 600, 'basis': 'ContentView.swift:18 GeometryReader width > 600'}]
+    expand([{'id': 'home', 'axes': _axes(list(devices), ('portrait',))}], t, devices=devices)
+    with pytest.raises(ValueError, match='neither WxH@scale nor a mapped device'):
+        expand([{'id': 'home', 'axes': _axes(['Pixel 8'], ('portrait',))}], t, devices=devices)
+
+
+def test_surface_width_range_narrows_thresholds():
+    # a desktop-only admin page declares its own range; the 768 threshold no longer applies to it
+    admin = {'id': 'admin', 'width_range': {'min': 1200, 'max': 1920, 'basis': 'admin route gated to desktop'},
+             'axes': _axes(['1200x800@2', '1920x1080@1'])}
+    assert len(expand([admin], THRESHOLDS, RANGE)) == 2
+
+
+def test_threshold_without_basis_is_refused():
+    with pytest.raises(ValueError, match='invalid layout threshold'):
+        expand([{'id': 'chat', 'axes': _axes(['700x500@2', '1920x1080@1'])}], [{'width': 768}])
+
+
+def test_thresholds_do_not_change_case_ids():
+    plain = expand([{'id': 'chat', 'axes': _axes(['700x500@2', '1920x1080@1'])}])[0]
+    ruled = expand([{'id': 'chat', 'axes': _axes(['700x500@2', '1920x1080@1'])}], THRESHOLDS)[0]
+    assert plain['id'] == ruled['id']
+
+
+def test_fixed_width_window_ignores_orientation():
+    # a Slide Over window is 320pt wide in both orientations; without the flag landscape would read 1376
+    devices = {'iPad Pro 13 slide-over': {'width': 320, 'height': 1376, 'scale': 2, 'fixed_width': True,
+                                          'basis': 'Slide Over on iPad Pro 13'}}
+    t = [{'width': 700, 'basis': 'RootView.swift:15 horizontalSizeClass'}]
+    with pytest.raises(ValueError, match='misses layout threshold 700'):
+        expand([{'id': 'home', 'axes': _axes(list(devices), ('portrait', 'landscape'))}], t, devices=devices)
+    devices['iPad Pro 13 slide-over']['fixed_width'] = False
+    expand([{'id': 'home', 'axes': _axes(list(devices), ('portrait', 'landscape'))}], t, devices=devices)

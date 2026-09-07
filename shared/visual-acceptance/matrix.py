@@ -3,11 +3,66 @@ import argparse
 import itertools
 import hashlib
 import json
+import re
 from pathlib import Path
 AXES = ('state', 'device', 'os', 'appearance', 'dynamic_type', 'locale', 'orientation')
+DEVICE_RE = re.compile(r'^(\d+)x(\d+)@(\d+(?:\.\d+)?)$')
 
 
-def expand(surfaces):
+def device_dims(value, devices=None):
+    """`WxH@scale` or a name mapped in the inventory's `devices` table → (width, height) in logical units."""
+    m = DEVICE_RE.match(value)
+    if m:
+        return int(m.group(1)), int(m.group(2))
+    entry = (devices or {}).get(value)
+    if not isinstance(entry, dict) or not all(isinstance(entry.get(k), int) and entry[k] > 0 for k in ('width', 'height')):
+        raise ValueError('device value is neither WxH@scale nor a mapped device: ' + value)
+    return entry['width'], entry['height']
+
+
+def effective_width(device, orientation, devices=None):
+    """Layout width the page actually gets: the short side in portrait, the long side in landscape.
+    A multitasking window (Slide Over, split screen, free-form) keeps its width when the device
+    rotates: mark it `fixed_width: true` in the devices table and its width is used as declared."""
+    w, h = device_dims(device, devices)
+    if (devices or {}).get(device, {}).get('fixed_width') is True:
+        return w
+    if 'portrait' in orientation:
+        return min(w, h)
+    if 'landscape' in orientation:
+        return max(w, h)
+    return w
+
+
+def _check_range(rng, label):
+    if not isinstance(rng, dict) or not all(isinstance(rng.get(k), int) and rng[k] > 0 for k in ('min', 'max')) \
+            or rng['min'] > rng['max'] or not isinstance(rng.get('basis'), str) or not rng['basis']:
+        raise ValueError('invalid width_range (needs int min <= max and basis): ' + label)
+
+
+def check_widths(surface, thresholds, width_range, devices):
+    """The device axis must straddle every layout threshold and reach both ends of the width range,
+    or the adaptive layout at those widths is untested by construction."""
+    sid = surface['id']
+    axes = surface['axes']
+    widths = {effective_width(d, o, devices) for d in axes['device'] for o in axes['orientation']}
+    rng = surface.get('width_range', width_range)
+    if rng is not None:
+        _check_range(rng, sid)
+        if min(widths) > rng['min'] or max(widths) < rng['max']:
+            raise ValueError('device axis misses width range end %d..%d: %s' % (rng['min'], rng['max'], sid))
+    for t in thresholds or []:
+        if not isinstance(t, dict) or not isinstance(t.get('width'), int) or t['width'] <= 0 \
+                or not isinstance(t.get('basis'), str) or not t['basis']:
+            raise ValueError('invalid layout threshold (needs int width and basis)')
+        w = t['width']
+        if rng is not None and not (rng['min'] < w <= rng['max']):
+            continue   # outside this surface's declared width range: cannot be hit
+        if not any(x < w for x in widths) or not any(x >= w for x in widths):
+            raise ValueError('device axis misses layout threshold %d: %s' % (w, sid))
+
+
+def expand(surfaces, thresholds=None, width_range=None, devices=None):
     cases = []
     seen = set()
     for surface in surfaces:
@@ -28,6 +83,8 @@ def expand(surfaces):
                 raise ValueError('missing concrete axis: ' + sid + '/' + axis)
             if len(set(values)) != len(values):
                 raise ValueError('duplicate axis values: ' + axis)
+        if thresholds or width_range or surface.get('width_range'):
+            check_widths(surface, thresholds, width_range, devices)
         for values in itertools.product(*(axes[a] for a in AXES)):
             row = dict(zip(AXES, values))
             identity = json.dumps({'surface': sid, **row}, sort_keys=True, ensure_ascii=False)
@@ -42,4 +99,6 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('inventory')
     args = p.parse_args()
-    print(json.dumps(expand(json.loads(Path(args.inventory).read_text())['surfaces']), ensure_ascii=False, indent=2))
+    inv = json.loads(Path(args.inventory).read_text())
+    print(json.dumps(expand(inv['surfaces'], inv.get('layout_thresholds'), inv.get('width_range'), inv.get('devices')),
+                     ensure_ascii=False, indent=2))

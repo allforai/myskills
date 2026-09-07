@@ -59,7 +59,8 @@ def frozen_cases(run, config):
         if digest(path) != config.get(key + '_digest'):
             raise ValueError('页面清单/矩阵摘要不匹配')
     inventory = read(run, config['inventory_ref'])
-    expected = {c['id']: c for c in expand(inventory['surfaces'])}
+    expected = {c['id']: c for c in expand(inventory['surfaces'], inventory.get('layout_thresholds'),
+                                           inventory.get('width_range'), inventory.get('devices'))}
     rows = read(run, config['matrix_ref'])
     actual = {c.get('id'): c for c in rows}
     if len(rows) != len(actual) or actual.keys() != expected.keys():

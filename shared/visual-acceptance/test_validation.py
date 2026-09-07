@@ -454,3 +454,14 @@ def test_invalid_capture_mode_is_refused(sample):
     manifest['captures'][0]['capture_mode'] = 'fullscreen'
     write('evidence/q1/manifest.json', manifest)
     assert '截图模式无效' in visual_reason(entry, ledger, root)
+
+
+def test_frozen_inventory_thresholds_are_enforced_on_replay(sample):
+    """An inventory that declares layout thresholds its device axis cannot straddle is refused at
+    validation time too — freezing a bad matrix does not launder it."""
+    root, write, cfg, case, report, entry, ledger = sample
+    inventory = json.loads((root / cfg['inventory_ref']).read_text())
+    inventory['layout_thresholds'] = [{'width': 1024, 'basis': 'tailwind.config.js:5'}]
+    inventory['surfaces'][0]['axes']['device'] = ['1512x982@2']
+    cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
+    assert 'misses layout threshold 1024' in visual_reason(entry, ledger, root)

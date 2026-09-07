@@ -1,16 +1,16 @@
 # Visual acceptance — 可选视觉验收 facet
 
-本文件所在目录记为 VISUAL_ROOT。仅用户选择视觉 facet 后加载。协议通用；SwiftUI 再读 swiftui/baseline-guide.md、review-criteria.md、brand-spec-template.md 和 platforms/swiftui.md；Web 再读 platforms/web.md（七个维度对浏览器的取值与施加方式）。其他平台先按本文通用步骤做，维度取值在 environment 类逐项与用户确认。不需要安装外部 Skill。
+本文件所在目录记为 VISUAL_ROOT。仅用户选择视觉 facet 后加载。协议通用；SwiftUI 再读 swiftui/baseline-guide.md、review-criteria.md、brand-spec-template.md 和 platforms/swiftui.md；Web 再读 platforms/web.md（七个维度对浏览器的取值与施加方式）；Android 再读 platforms/android.md。其他平台先按本文通用步骤做，维度取值在 environment 类逐项与用户确认。不需要安装外部 Skill。
 
 ## 运行合同
 
 沿用 cross-exam 交互、独立取证、本地/开发靶、只记录不修复的约束。唯一审计输出根是 docs/cross-exam/<run>/；不修改产品源码。发现 UI 时自动列为候选 facet，先由用户选中。已知没有取证/看图能力时声明限制，视觉问题无法自证，其他 facet 可继续。
 
-1. 独立 census 从代码枚举页面/弹层/入口/状态，运行探索补齐动态入口。记录无法枚举的类别；未完成普查不能声称全 App 覆盖。
+1. 独立 census 从代码枚举页面/弹层/入口/状态，运行探索补齐动态入口。记录无法枚举的类别；未完成普查不能声称全 App 覆盖。**同一次普查还要从代码读出布局宽度阈值**（`layout_thresholds`：布局在哪些逻辑宽度上会变，每条带 `path:line` 出处）和**支持的宽度范围**（`width_range`：最小与最大宽度，出处是窗口最小尺寸、支持的设备家族或最大显示器）——各平台在哪找见 platforms/*.md。分辨率自适应不是一个"面"，它是每个面在每个宽度上的另一副样子；阈值不入账，device 轴就只剩用户随手说的那一个尺寸。
 2. 独立 prober 打开代表性页面并截图；主会话结合源码、设计文档与实图生成 visual/observed-style.md。截图中的缺陷不是基准。真实敏感数据改用已有合成数据；无法避免时停该项，要求用户处理。
 3. 逐类展示候选规则、冲突和参考图，让用户确认 direction/color/typography/layout/spacing/icons/components/navigation/feedback/states/motion/environment。每次确认记录用户原意与时间。颜色等规则不能靠安装自带偏好自动获准。
 4. 冻结 visual/visual-baseline.json 与 interaction-baseline.json，每个文件含 categories 映射；每类含 rules（非空规则列表）或 reason（该类不适用的原因，此时 rules 可为空列表），二者必有其一；另含 reference_images、confirmation、confirmed_at。保留用户批准图片的范围和例外。SHA-256 按文件原始字节计算，两个摘要独立存储。
-5. 生成 visual/surface-inventory.json 与 case-matrix.json，并把同一矩阵写入 ledger.visual_cases。每个页面按适用 state/device/os/appearance/dynamic_type/locale/orientation 完整笛卡尔积；键盘、权限等归入 state。具体环境值在 environment 类确认，不能用“所有”代替枚举。无数量上限，分批但不抽样。不适用项须有 reason 与 basis（出处），构造不了不等于不适用。
+5. 生成 visual/surface-inventory.json 与 case-matrix.json，并把同一矩阵写入 ledger.visual_cases。每个页面按适用 state/device/os/appearance/dynamic_type/locale/orientation 完整笛卡尔积；键盘、权限等归入 state。具体环境值在 environment 类确认，不能用“所有”代替枚举。**device 轴的下限由阈值定，不由用户的屏幕定**：每个阈值两侧各至少一个有效宽度（portrait 取短边、landscape 取长边），且要触到 `width_range` 的两端；用户的实际屏幕只是其中一个值。`matrix.py` 拒绝展开不满足的清单，校验器回放冻结清单时同样拒绝。无数量上限，分批但不抽样。不适用项须有 reason 与 basis（出处），构造不了不等于不适用。
 6. 逐批派 fresh-context prober。传具体用例、设备和状态、基线摘要，不传 Golden、预期结论或怀疑。视觉定位可读入口代码，但不与禁止读源码找路的 journey 探针混用。一个模拟器/设备一次只由一个 prober 操作，独立设备才可并发。分批以比较组为界：同一比较组、同一环境（除 state 外六维相同）的用例必须在同一条 entry 里裁决，校验器拒绝被拆开的组；单页各自通过不等于全局一致。每例实图；motion 用例至少两张带时间顺序的原始关键帧，另存录屏用于节奏判断。不能用 Preview、模拟图、Token 或截图元数据代替实际 App。
 7. 对每批原图运行独立 visual-reviewer（读 prompts/visual-reviewer.md）。传冻结基线、用例和图片，不传作者观点、其他审查报告。主会话自身不能替代 reviewer。
 8. 当前平台 fresh-context reviewer 必需。另一平台 CLI 经只读版本/帮助检查和实际看图调用可用时双审。Claude 主控用 Agent（`model: opus`）+ `codex exec -m gpt-5.6-sol`；Codex 主控用 spawn_agent（`model: gpt-5.6-sol`）+ `claude -p --model opus`。reviewer 是判断档：finding 直接决定阻断，档位见 SKILL.md "模型分层"，entry 的 `agent_model` 记当前平台 reviewer 的字面量。不用 resume/fork 既有会话；CLI 参数按当前 --help，只读工具/沙箱，不开启 bypass。外部 reviewer 通过标准输出返回 JSON，由主会话原样保存；不得把 JSONL 事件流当报告。单独 evidence 子目录，每个 reviewer 报告完成前不暴露另一份。
@@ -21,7 +21,7 @@
 
 ## 数据接口（路径约定）
 
-surface-inventory.json 的 surfaces 每行含 id、entry、kind、axes（上述七维到字符串数组）、motion_states、scrollable（Web 必填：目标视口下 scroll_height > client_height；为 true 时 state 轴必须含至少一个 `scroll-` 开头的滚动位置状态，矩阵展开拒绝缺它的页面），以及可选 groups（比较组名列表，如 buttons、navigation、forms；共用同一组件或模式的页面标同一组名）。
+surface-inventory.json 顶层含 layout_thresholds（[{width, basis}]，逻辑单位：CSS px / pt / dp）、width_range（{min, max, basis}）、可选 devices（设备名 → {width, height, scale, basis, 可选 fixed_width}，让 device 轴可以写模拟器/机型名而不只写 `WxH@scale`；fixed_width 为 true 的条目——Slide Over、分屏、自由窗口——旋转不改宽度）；单个页面可用自己的 width_range（带 basis）收窄适用阈值，如只在桌面可达的管理页。surfaces 每行含 id、entry、kind、axes（上述七维到字符串数组）、motion_states、scrollable（Web 必填：目标视口下 scroll_height > client_height；为 true 时 state 轴必须含至少一个 `scroll-` 开头的滚动位置状态，矩阵展开拒绝缺它的页面），以及可选 groups（比较组名列表，如 buttons、navigation、forms；共用同一组件或模式的页面标同一组名）。
 运行 `python3 VISUAL_ROOT/matrix.py <inventory>` 输出完整矩阵，原样保存 case-matrix.json 并写入 ledger.visual_cases。
 增加页面/状态必须重新展开、保留原未测清单，不手工删减组合。
 用例 ID 根据页面和环境组合内容生成，重排页面不改变身份。冻结 inventory、matrix 原始字节摘要；校验器重新展开清单核对完整矩阵，renderer 即使遇到 ledger 漏页也展示冻结矩阵中的未测项。

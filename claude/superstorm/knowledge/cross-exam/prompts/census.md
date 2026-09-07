@@ -13,7 +13,10 @@
 ## 纪律
 
 UI 目标（type 为 web 或 native，即有人类会看的界面）：额外返回 ui_surfaces，每项含稳定 id、name、
-entry、kind（screen/component/overlay）、states、适用平台与环境分支。
+entry、kind（screen/component/overlay）、states、适用平台与环境分支；另返回 layout_thresholds（布局会随宽度
+改变的每个逻辑宽度：CSS 断点与主列 max-width / 尺寸类与 GeometryReader 比较 / 资源限定符与 WindowSizeClass，
+每条 `{width, unit, basis: path:line}`）和 width_range（`{min, max, basis}`：窗口最小尺寸或最窄支持设备到最大
+支持设备或显示器）。阈值是覆盖法读样式与尺寸分支得到的，不是猜的；读不到的类别写 could_not。
 从 App/Scene、路由、Tab、弹层及条件注册出发；公共 View 不自动算页面，
 动态不可枚举类别进 could_not。只列事实，运行探索交给独立 prober。
 
@@ -30,5 +33,10 @@ entry、kind（screen/component/overlay）、states、适用平台与环境分�
 ```json
 {"surfaces": [{"id": "S1", "name": "...", "entry": "path:symbol | METHOD /route"}],
  "dead_contracts": [{"name": "...", "entry": "...", "defined_at": "path:line"}],
+ "ui_surfaces": [{"id": "U1", "name": "...", "entry": "...", "kind": "screen", "states": ["..."]}],
+ "layout_thresholds": [{"width": 1024, "unit": "px|pt|dp", "basis": "path:line"}],
+ "width_range": {"min": 900, "max": 1920, "basis": "path:line 或 设备家族/显示器依据"},
  "could_not": ["没枚举到的类别 + 原因（无则空数组）"]}
 ```
+
+`ui_surfaces` / `layout_thresholds` / `width_range` 仅 UI 目标返回。

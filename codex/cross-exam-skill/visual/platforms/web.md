@@ -5,7 +5,7 @@
 普查页面与实际入口：路由表（React Router / Next app 或 pages 目录 / Vue Router / SvelteKit routes）、导航与 Tab、Modal / Drawer / Toast / Popover、受权限与登录态影响的分支、响应式断点下出现或消失的入口。组件不都等于页面，标明顶级页面、组件、弹层及实际可达性；动态注册（运行时拉取的菜单、按角色下发的路由）未知需 could_not。
 
 七个维度对 Web 的取值，全部在 environment 类由用户确认为具体值：
-- device：视口宽高加设备像素比，如 `1440x900@2`、`390x844@3`；不写"桌面"或"所有手机"。
+- device：视口宽高加设备像素比，如 `1440x900@2`、`390x844@3`；不写"桌面"或"所有手机"。取值下限见下文"布局阈值"。
 - os：浏览器引擎与主版本，如 `Chromium 131`、`WebKit 18`；同一引擎不同版本按用户确认是否分列。
 - appearance：`prefers-color-scheme` 的 light / dark，另加站点自身主题开关的值（如果有）。
 - dynamic_type：浏览器缩放或根字号，如 `zoom 100%`、`zoom 150%`、`font-size 20px`；站点不响应缩放时取单一值 `zoom 100%`，依据（例如 CSS 未使用 rem/em）记在 environment 类的确认里。
@@ -16,6 +16,12 @@
 维度没有"不适用"：每个维度都是非空的具体值列表，某维度对该产品无意义就取一个值并记依据。整条用例的 applicability: not_applicable 只留给组合本身不可能存在的情况（如某页面在某设备上根本不可达），须有 reason 与 basis。
 
 施加与核对：优先本机可见窗口工具或页面自动化工具（Playwright MCP、Chrome DevTools MCP、playwright-cli），用它们的 resize / emulate / 颜色方案 / locale 接口设置维度，然后在页面里核对真正生效（`window.innerWidth`、`matchMedia('(prefers-color-scheme: dark)')`、`document.documentElement.lang`、计算后的根字号），核对结果写进 capture。无法施加的维度记无法自证，不凭截图元数据补。motion 用录屏或按时间戳抓帧，静态截图不证明动画。截图模式见下一节：全页与视口不是两种存法，是两种不同的画面。
+
+## 布局阈值：device 轴从代码来，不从用户的屏幕来
+
+普查时从代码读出 `layout_thresholds`，每条带出处：CSS `@media (min-width|max-width)` 与 `@container` 的宽度；Tailwind / UnoCSS / MUI / Ant 等框架的 `screens` / `breakpoints` 配置；主内容列的 `max-width`（列被截住居中之后，比它宽的窗口都是另一副样子，所以 max-width 本身是一个阈值）；JS 里对 `window.innerWidth` / `matchMedia` 的条件分支；侧栏折叠、栅格列数变化的宽度。`width_range`：桌面 Web 与 Electron / Tauri 的最小值取 `minWidth`（没有声明就取代码里最小的阈值之下一档），最大值不小于 1920（外接显示器），用户有更宽的显示器就取那个；移动 Web 的最小值取最窄的目标设备。
+
+device 轴每个阈值两侧各一个值、并触到 `width_range` 两端，`matrix.py` 拒绝不满足的清单。用户说"我用 1512x982"，那只是其中一个值。可拉伸的桌面窗口另加 `resize-` 开头的状态（如 `resize-shrink-to-min`、`resize-grow-to-max`），录屏取证：拉动过程中的布局抖动和拉完后的重排是静态图看不到的。
 
 ## 截图模式与滚动：无头全页截图不是用户看到的画面
 
