@@ -12,6 +12,11 @@ their applicable scope, and new/changed requirements need recorded user consent
 under the canonical bootstrap planning contract. This summary never replaces
 that contract or supplies acceptance criteria from implementation alone.
 
+For reconstruction, supply the six-topic draft, source quotes, uncertainties and
+contradiction/gap questions to canonical `product-intent-confirmation.md`. Its
+interactive copied CLI owns persistence and resume; inferred summary fields never
+substitute for the journal-backed frozen product baseline.
+
 ## Goal
 
 Produce a compact, evidence-backed product summary that helps Codex understand:

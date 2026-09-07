@@ -1056,7 +1056,7 @@ def validate_node_spec_contracts(bdir: str) -> list:
                         f"does not match workflow {field} {workflow_value}"
                     )
 
-        for field in ("requirement_refs", "responsibilities", "decision_inputs"):
+        for field in ("requirement_refs", "responsibilities", "decision_inputs", "product_goals", "acceptance"):
             if node.get("requirement_refs") and data.get(field) != node.get(field):
                 errors.append(f"node-specs/{node_id}.md: frontmatter {field} must match workflow {field}")
 

@@ -1,5 +1,20 @@
 # Reverse Concept Capability
 
+## Product authority at bootstrap
+
+For reconstruction and new-product routes, `knowledge/product-intent-confirmation.md`
+is the confirmation contract. Reverse inference supplies provisional draft items,
+source facts, uncertainties and contradiction/gap questions; it cannot publish an
+approved baseline. Bootstrap records the user's topic decisions into the existing
+decision journal and freezes explicit scope. Product-concept then synthesizes the
+normal concept fields from the confirmed `product-concept.json.requirements` and
+`concept-baseline.json.intent_baseline` version, preserving both and their history.
+Legacy inferred mission/roles/features and product-summary never override those
+confirmed requirements. Later methodology questions that affect product choices
+must return to interactive bootstrap; unattended nodes consume recorded decisions.
+The output schemas below describe content, not permission to approve inferred intent.
+
+
 > Reverse-engineer product concept from existing code. Extracts the "why" and
 > "for whom" that the code implicitly encodes but never explicitly states.
 > Output is schema-compatible with product-concept, so downstream phases

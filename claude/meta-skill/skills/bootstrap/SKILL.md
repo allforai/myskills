@@ -52,6 +52,11 @@ message. If it is unclear, ask only what outcome or boundary is missing. Select
 route. A maintenance, verification, migration or implementation request can be
 local to its stated scope; do not reinterpret it as product redesign.
 
+For product reconstruction and new products, read and execute
+`${CLAUDE_PLUGIN_ROOT}/knowledge/product-intent-confirmation.md` before planning
+dependent work. Copy its interactive CLI at discussion entry; use `resume` on
+re-entry and bind generated plans to the frozen user-confirmed baseline.
+
 Read `${CLAUDE_PLUGIN_ROOT}/knowledge/bootstrap-planning.md` § Goal and requirement scope before
 collecting local requirements. Limit analysis and classification to the modules,
 interfaces and product questions needed for this task. Record unrelated areas as

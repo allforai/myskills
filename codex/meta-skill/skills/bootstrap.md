@@ -38,6 +38,12 @@ Rules:
 - use real recorded user decisions for local requirements and keep unanswered
   choices pending; the Codex assume-and-declare convention cannot supply consent
 
+For product reconstruction and new products, execute the canonical
+`knowledge/product-intent-confirmation.md` interactive CLI protocol, including
+resume, journal-backed decisions, scope freezing and plan projection. The native
+Codex adapter uses the same copied `product_intent.py`; assume-and-declare never
+approves intent.
+
 For replication and migration work, task capture must also classify fidelity intent before workflow generation.
 
 Minimum classification fields to record in `.allforai/bootstrap/bootstrap-profile.json` when the project is a reproduction / port / migration:
