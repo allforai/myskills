@@ -453,6 +453,9 @@ def render(run_dir):
         obs = policy.get("observation") or "session"
         out.append(f"> 本 run 取证类子 agent（实测官、枚举官）用 {obs}，用户于 {policy.get('confirmed_at', '?')} 确认："
                    f"「{policy.get('confirmed_by_user', '')}」。裁决与普查仍用会话模型。")
+        rec = policy.get("recommended")
+        if isinstance(rec, dict) and rec.get("option"):
+            out.append(f"> 定靶时盘问官推荐的是选项 {rec['option']}（{rec.get('why', '')}）。")
         for past in policy.get("history") or []:
             if isinstance(past, dict):
                 out.append(f"> 此前策略：取证用 {past.get('observation', '?')}，用户于 {past.get('confirmed_at', '?')} 确认；"

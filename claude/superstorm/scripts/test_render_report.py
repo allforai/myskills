@@ -243,6 +243,9 @@ class TestNotExaminedRisk(unittest.TestCase):
             self.assertIn("取证类子 agent（实测官、枚举官）用 sonnet", overview)
             self.assertIn("实测官用 sonnet 就行", overview)
             self.assertNotIn("非法模型策略", overview)
+            L["model_policy"]["recommended"] = {"option": "B", "why": "扫全模式"}
+            (run / "ledger.json").write_text(json.dumps(L, ensure_ascii=False), encoding="utf-8")
+            self.assertIn("推荐的是选项 B（扫全模式）", render(run))
             L["model_policy"]["history"] = [{"observation": "haiku", "confirmed_by_user": "省", "confirmed_at": "2026-09-01T09:00:00+08:00"}]
             (run / "ledger.json").write_text(json.dumps(L, ensure_ascii=False), encoding="utf-8")
             self.assertIn("此前策略：取证用 haiku，用户于 2026-09-01T09:00:00+08:00 确认", render(run))

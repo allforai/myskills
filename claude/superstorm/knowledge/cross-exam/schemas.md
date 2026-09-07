@@ -25,6 +25,7 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
   "examiner_is_author": false,
   "model_policy": {"observation": "sonnet", "judgment": "session",
                    "confirmed_by_user": "实测官用 sonnet 就行，普查官别省", "confirmed_at": "2026-09-07T15:10:00+08:00",
+                   "recommended": {"option": "B", "why": "用户提了成本且本 run 走扫全模式"},
                    "history": [{"observation": "haiku", "confirmed_by_user": "…", "confirmed_at": "…"}]},
   "requirements": [
     {"id": "R-09", "text": "退款可追踪"}
@@ -94,7 +95,7 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
   `mock` 或 `mixed` 时报告总览点明"本 run 的 runtime 裁决经过 mock 层"。
 - 顶层 `model_policy`（可选；缺省 = 全部继承会话模型）：定靶时用户选择的成本策略。`observation` 是取证类角色
   （实测官、枚举官、扫全实测官）用的模型字面量或 `"session"`；`judgment` 固定 `"session"`（普查官、视觉
-  reviewer、复核官不可降）；`confirmed_by_user` 用户原话；`confirmed_at` ISO 8601；`history[]` 续盘改口时推入的旧值。渲染器在总览点明
+  reviewer、复核官不可降）；`confirmed_by_user` 用户原话；`confirmed_at` ISO 8601；`recommended` 盘问官当时推荐的选项与一句理由（可选）；`history[]` 续盘改口时推入的旧值。渲染器在总览点明
   "本 run 取证类子 agent 用 X，用户于 T 确认"；`judgment` 不是 `"session"` 时总览点名为非法策略（不改任何计数，
   但报告读者会看到普查或复核被降过档）。模型名只住在这里，不住在技能文本里。
 - `entries[].agent_model` 新 entry 必填（分层前的旧 run 可缺，渲染器不拒）：派发取证的子 agent 实际用的模型字面量
