@@ -7,11 +7,11 @@
   "workflow_revision": 2,
   "launch_revision": 1,
   "max_concurrency": 3,
-  "status": "running",
+  "status": "incomplete",
   "integration_ref": "j08069099777/grillstorm-meta-intent",
   "tasks": {
     "T9": {
-      "status": "reviewing",
+      "status": "escalated",
       "attempts": {
         "infrastructure": 0,
         "business": 4
@@ -56,6 +56,13 @@
           "status": "rechecked_fixed",
           "evidence": "reviews/T9-supervisor-4.json",
           "resolution_evidence": "reviews/T9-supervisor-5.json"
+        },
+        {
+          "id": "T9-SPEC-01",
+          "status": "open",
+          "summary": "Preserved journal-backed local requirements rejected by project-wide orphan scan",
+          "evidence": "reviews/T9-spec-1.md",
+          "root_evidence": "reviews/T9-journal-root-recheck.json"
         }
       ],
       "repair_task": "task_12807de89243",
@@ -77,50 +84,65 @@
           "role": "spec",
           "dispatch": "ctx_07564cc7329a"
         }
-      ]
+      ],
+      "standards": {
+        "blocking": 0,
+        "judgement": 1,
+        "evidence": "reviews/T9-standards-1.md"
+      },
+      "escalation_reason": "extended_business_retry_budget_exhausted_with_blocking_spec_review",
+      "spec": {
+        "blocking": 1,
+        "judgement": 0,
+        "evidence": "reviews/T9-spec-1.md"
+      }
     },
     "T10": {
-      "status": "pending",
+      "status": "skipped",
       "attempts": {
         "infrastructure": 0,
         "business": 0
       },
       "dependencies": [
         "T9"
-      ]
+      ],
+      "reason": "transitive_dependency_T9_escalated"
     },
     "T11": {
-      "status": "pending",
+      "status": "skipped",
       "attempts": {
         "infrastructure": 0,
         "business": 0
       },
       "dependencies": [
         "T10"
-      ]
+      ],
+      "reason": "transitive_dependency_T9_escalated"
     },
     "T12": {
-      "status": "pending",
+      "status": "skipped",
       "attempts": {
         "infrastructure": 0,
         "business": 0
       },
       "dependencies": [
         "T10"
-      ]
+      ],
+      "reason": "transitive_dependency_T9_escalated"
     },
     "T13": {
-      "status": "pending",
+      "status": "skipped",
       "attempts": {
         "infrastructure": 0,
         "business": 0
       },
       "dependencies": [
         "T12"
-      ]
+      ],
+      "reason": "transitive_dependency_T9_escalated"
     },
     "T14": {
-      "status": "pending",
+      "status": "skipped",
       "attempts": {
         "infrastructure": 0,
         "business": 0
@@ -128,10 +150,11 @@
       "dependencies": [
         "T11",
         "T13"
-      ]
+      ],
+      "reason": "transitive_dependency_T9_escalated"
     },
     "T15": {
-      "status": "pending",
+      "status": "skipped",
       "attempts": {
         "infrastructure": 0,
         "business": 0
@@ -139,20 +162,22 @@
       "dependencies": [
         "T9",
         "T10"
-      ]
+      ],
+      "reason": "transitive_dependency_T9_escalated"
     },
     "T16": {
-      "status": "pending",
+      "status": "skipped",
       "attempts": {
         "infrastructure": 0,
         "business": 0
       },
       "dependencies": [
         "T11"
-      ]
+      ],
+      "reason": "transitive_dependency_T9_escalated"
     },
     "T17": {
-      "status": "pending",
+      "status": "skipped",
       "attempts": {
         "infrastructure": 0,
         "business": 0
@@ -160,33 +185,25 @@
       "dependencies": [
         "T12",
         "T13"
-      ]
+      ],
+      "reason": "transitive_dependency_T9_escalated"
     },
     "T18": {
-      "status": "pending",
+      "status": "skipped",
       "attempts": {
         "infrastructure": 0,
         "business": 0
       },
       "dependencies": [
         "T14"
-      ]
+      ],
+      "reason": "transitive_dependency_T9_escalated"
     }
   },
-  "live_workers": [
-    {
-      "task": "T9",
-      "role": "standards",
-      "dispatch": "ctx_ffb0bbb332aa"
-    },
-    {
-      "task": "T9",
-      "role": "spec",
-      "dispatch": "ctx_07564cc7329a"
-    }
-  ],
+  "live_workers": [],
   "merge_queue": [],
   "completed": [],
   "integration_sha": "ad69a0cd45486d214dc62f8e8ebdc7ff93c784bb",
-  "terminal_report": "execution-report.md"
+  "terminal_report": "execution-report-resume-1.md",
+  "resume_requires": "Additional user direction for a repair cycle beyond four consumed business repairs; do not reset history."
 }

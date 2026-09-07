@@ -1,0 +1,11 @@
+## Standards
+
+Reviewed the cumulative diff `git diff cadac5525abf2407fdcd0588252336cba8f60a01...HEAD`, with HEAD fixed at `459022e02f5bf1dc98e37d3b40d38c69c59513e3` (all five supplied commits). Read the actual changed files, relevant surrounding source, and frozen dispatch inputs, including issue bodies/comments; no builder, supervisor, or other reviewer reports were consulted.
+
+**Documented-standard violations: 0; blocking findings: 0.** Checked `CLAUDE.md`, `CONTEXT.md`, `codex/meta-skill/AGENTS.md`, and both specified ADRs. ADR-0001 says bootstrap “designs a project-specific node graph from goals and detections” and “does not stop for humans” during run. The changes retain freely composed responsibilities and interactive bootstrap decisions. The Codex AGENTS shared-asset rule says it “intentionally reuses the Claude meta-skill knowledge, skills, helper scripts, tests”; scope admission has one canonical helper consumed by both adapters. No changed hunk contradicts the documented terminology, artifact authority, or independent visual-review policy. Tooling-enforced checks were excluded.
+
+**Judgement finding 1 — possible Duplicated Code (non-blocking).** In `claude/meta-skill/tests/unit/test_bootstrap_scope.py:307` and `:394`, both new scenarios construct the same warehouse branch: `retained = {"node_id": "warehouse", "goal": "Retain completed warehouse work", ...}`, followed by `workflow["nodes"].append(retained)`, the same stock artifact, and the same Node-spec serialization. Changes to the historical-branch fixture contract now require synchronized edits. Consider extracting a small fixture helper that adds that branch and its artifacts, leaving each scenario's transition history and assertions explicit. This is a maintainability heuristic, not a documented-rule breach; separate histories and public CLI assertions are appropriate and should remain independent.
+
+All twelve baseline smells were considered; no additional actionable smell was identified. Review scope is T9/I-scope, with later T10–T18 obligations left to their owners; this report does not establish overall program completion or runtime scenario acceptance.
+
+**Counts: 1 finding — 0 documented violations/blockers, 1 judgement smell. Worst issue in this axis: duplicated historical-branch test setup (non-blocking).**

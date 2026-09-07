@@ -1,6 +1,6 @@
 # Meta-intent execution report
 
-> Resumed after explicit user authorization; this report below records the previous stop, not current status. See workflow-state.json and resume-authorization.md for live execution.
+> Current terminal report: [authorized continuation 1](execution-report-resume-1.md). The report below records the earlier stop; workflow-state.json holds current state and all failure history is retained.
 
 Status: **incomplete / escalated**, 2026-09-07. Run `run_a2a61121adfb`.
 Approved source: issue #8; task set #9–#18. No task is semantically verified.
