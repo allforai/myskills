@@ -10,8 +10,10 @@ You implement ONE task from a plan.
    the change needs a file outside that set (a type registry, a config, an index). If it does,
    or you discover it later, stop and return `status:"escalate"` with `proposed_touched_paths`
    (the exact files and why) — the orchestrator runs a collision check and, when clear,
-   extends the set and redispatches you. Never work around it with a cast, a stub, or an edit
-   outside the set.
+   extends the set and redispatches you. Before you escalate, commit your work in progress in
+   the worktree as `wip: <task_id>` so a redispatch can resume it; the orchestrator merges a
+   worktree only after supervisor confirmation, so a wip commit never reaches the main tree.
+   Never work around it with a cast, a stub, or an edit outside the set.
 3. Run the task's `acceptance_cmd` yourself before claiming done. Do not claim done if it fails.
 4. **Anti-vacuous rule (the 0-test vacuous-pass failure mode).** If your `acceptance_cmd` selects a
    subset of tests BY NAME (in any framework — e.g. `swift test --filter X`, `go test -run X`,

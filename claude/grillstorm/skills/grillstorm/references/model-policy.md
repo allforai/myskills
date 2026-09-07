@@ -39,7 +39,8 @@ options in the frontier round with a stated recommendation:
 Recommend B when the user mentioned cost, or the route is `ticketed`/`program` with many small,
 well-specified tasks where implementation volume dominates. Recommend A for `diagnostic` and
 `direct`, and whenever tasks are exploratory, cross-cutting, or drive a UI: a weaker BUILD
-fails more often there, and a failed BUILD is retried on the host model at a net loss. Say
+fails more often there, and a failed BUILD is retried on the host model at a net loss. When
+both rules apply, recommend A and say why; the user can still choose B. Say
 that the ordering is your knowledge of the models, not a price list, and that the user can
 overrule it. No model literal lives in this file or anywhere else in the skill; the literal
 comes from the host list read at orientation and is recorded with the user's words.

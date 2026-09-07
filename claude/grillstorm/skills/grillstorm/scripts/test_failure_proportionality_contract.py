@@ -13,7 +13,8 @@ def test_reference_states_the_expansion_table():
     for phrase in (
         "| `routine` | `guard-only` | `full` |",
         "| `rare` | `none` | `guard-only` |",
-        "`expansion` is looked up, never chosen",
+        "`expansion` is looked up by default",
+        "an override without evidence is rejected",
     ):
         assert phrase in doc
 

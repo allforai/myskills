@@ -66,7 +66,9 @@ This phase is interactive.
    Recommend B when the user mentioned cost or the plan fans out many small, well-specified
    tasks; recommend A when tasks are exploratory, cross-cutting, or UI-driving, where a weaker
    executor is more likely to fail and be redispatched on the session model, which costs more
-   than it saved. The literal comes from the enum read now, never from memory or from this file;
+   than it saved. When both rules apply (the user asked to save and the work is the kind where a
+   weaker executor fails), recommend A and say why: the saving is small, the redispatch cost is
+   real, and the user can still choose B. The literal comes from the enum read now, never from memory or from this file;
    say that the ordering is your knowledge, not a price list. Record the outcome in the registry
    `models` field (`executor`: literal or `"session"`; `recommended`; the user's words; time). A
    thrifty request is answered here and nowhere else.
@@ -275,7 +277,9 @@ completeness section and, for class goals, the census rerun.
 Write every transition atomically to `task-state.json`:
 
 ```json
-{"task_id":{"status":"done|failed|skipped|reality_gated","attempts":1,"last_evidence_excerpt":"...","last_ts":"..."}}
+{"task_id":{"status":"dispatched|redispatched|done|failed|skipped|reality_gated","attempts":1,
+ "effective_model":"session|<literal>","first_model":null,"stall_threshold_min":35,
+ "last_evidence_excerpt":"...","last_ts":"..."}}
 ```
 
 While Workflow runs, schedule a roughly ten-minute watchdog over four progress signals:

@@ -74,7 +74,8 @@ the approved host argv already owns one. Use `python3`/`sys.executable`; never a
    inherited) or B cost-first (`bulk` = next tier down). Recommend B when the user mentioned cost
    or the plan fans out many small well-specified tasks; recommend A for exploratory,
    cross-cutting or UI-driving work, where a weaker executor fails and is redispatched on the
-   inherited model at a net loss. Literals come from the host list read now, never from this
+   inherited model at a net loss; when both rules apply, recommend A and say why, the user can
+   still choose B. Literals come from the host list read now, never from this
    file; say the ordering is your knowledge. Record the outcome, the recommendation and the
    user's words in the registry `models` field. A mid-run model failure retries once, then falls
    back to the inherited model and records it; no other substitution.

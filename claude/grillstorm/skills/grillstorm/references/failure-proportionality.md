@@ -36,7 +36,13 @@ for an evidenced reason.
 
 ## Expansion table
 
-`expansion` is looked up, never chosen.
+`expansion` is looked up by default. A different judgment may stand only as an explicit
+`expansion_override: {expansion, evidence}` — the evidence names the concrete guard or the
+concrete reason the default is wrong (an idempotency key that already covers the mode; a branch
+whose damage is bounded by a constraint the table cannot see). The validator records the table
+result, the override and its evidence side by side; an override without evidence is rejected.
+The three locks below are never overridden: they resolve damage and frequency, the override only
+moves the expansion budget.
 
 | | `reenterable` | `durable` |
 |---|---|---|

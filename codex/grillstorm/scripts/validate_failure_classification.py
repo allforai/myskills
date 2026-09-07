@@ -116,14 +116,26 @@ def validate_records(records):
             errors.append(str(exc))
             continue
         claimed = record.get("expansion")
+        override = record.get("expansion_override")
         if claimed != entry["expansion"]:
-            detail = (
-                f" after {'; '.join(entry['fallbacks'])}" if entry["fallbacks"] else ""
-            )
-            errors.append(
-                f"{entry['mode']}@{entry['outcome']}: expansion {claimed!r} "
-                f"contradicts the table result {entry['expansion']!r}{detail}"
-            )
+            if isinstance(override, dict) and not _blank(override.get("evidence")) \
+                    and override.get("expansion") == claimed \
+                    and claimed in {"none", "guard-only", "full"}:
+                # The three locks resolved damage and frequency; the table gave the default
+                # expansion. A judgment that differs may stand only with evidence, and it is
+                # recorded, never silent: the report shows table result, override and evidence.
+                entry["expansion_table"] = entry["expansion"]
+                entry["expansion"] = claimed
+                entry["expansion_override"] = {"evidence": override["evidence"].strip()}
+            else:
+                detail = (
+                    f" after {'; '.join(entry['fallbacks'])}" if entry["fallbacks"] else ""
+                )
+                errors.append(
+                    f"{entry['mode']}@{entry['outcome']}: expansion {claimed!r} "
+                    f"contradicts the table result {entry['expansion']!r}{detail}"
+                    " (an expansion_override with evidence would be recorded instead)"
+                )
         resolved.append(entry)
     if errors:
         raise FailureClassificationError("; ".join(errors))

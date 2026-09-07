@@ -324,3 +324,23 @@ def test_main_passes_with_full_coverage(tmp_path, capsys):
     exit_code = main([str(path)])
     assert exit_code == 0
     assert f"{len(FAILURE_MODES)} records" in capsys.readouterr().out
+
+
+def test_expansion_override_with_evidence_is_recorded_not_rejected():
+    from validate_failure_classification import validate_records
+    rec = record(expansion="none")  # table says guard-only for routine/reenterable
+    rec["expansion_override"] = {"expansion": "none",
+                                 "evidence": "re-entry is covered by the idempotency key on order_id (src/orders/repo.py:41)"}
+    resolved = validate_records([rec])[0]
+    assert resolved["expansion"] == "none"
+    assert resolved["expansion_table"] == "guard-only"
+    assert "idempotency" in resolved["expansion_override"]["evidence"]
+
+
+def test_expansion_override_without_evidence_is_rejected():
+    from validate_failure_classification import validate_records, FailureClassificationError
+    import pytest
+    rec = record(expansion="none")
+    rec["expansion_override"] = {"expansion": "none", "evidence": "tbd"}
+    with pytest.raises(FailureClassificationError):
+        validate_records([rec])
