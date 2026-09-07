@@ -19,9 +19,12 @@ goal.
   guessing.
 - Optional inputs: artifacts that may improve quality but must not become
   hidden blockers.
-- Context budget: the smallest set of files/evidence the executor should read.
-  Do not ask the executor to scan the whole repository unless repository-wide
-  evidence is the actual task.
+- Context budget: the files/evidence the executor must read before starting —
+  a declared floor, not a ceiling. The executor may read beyond it on demand
+  (an integration point, a registry, a caller) and logs what it read and why
+  in its report; the declaration exists so the reading is auditable, not so
+  the executor works blind. Do not ask for a whole-repository scan unless
+  repository-wide evidence is the actual task.
 - Quality questions: 2-5 project-specific questions the executor must keep in
   focus while working.
 - Stop conditions: conditions that require stopping or returning blocked rather
@@ -31,10 +34,11 @@ goal.
   `experience_gaps`.>
 
 Bootstrap should spend context once to produce this contract; `/run` should
-then execute in pull mode by reading only the listed inputs and evidence. Do
-not force execution nodes to rediscover the project, infer missing standards,
-or scan broad context that bootstrap could have converted into durable
-contracts.
+then execute in pull mode: start from the listed inputs and evidence, pull more
+only when the work needs it, and record each pull. Do not force execution
+nodes to rediscover the project or infer missing standards that bootstrap could
+have converted into durable contracts — and do not forbid them from opening the
+one extra file the task turns out to need.
 
 ## Context Pull
 
@@ -59,21 +63,24 @@ Example:
 Bootstrap writes this section by reading the loaded capability file's own
 `## Knowledge References → Phase-Specific` list and extracting the theory
 framework names (e.g., "JTBD", "ERRC", "Clean Architecture"). List 2-4
-framework names with a one-line description of how they apply to this node.
-The subagent treats this as a complete reference — do NOT ask it to re-read
-the capability file to find frameworks.>
+framework names, one line each on how they apply to this node, plus the
+capability file and section they came from so the executor can go deeper
+when a framework matters to a decision.>
 
 ## Knowledge References
 <Relevant sections from cross-phase-protocols, defensive-patterns,
  domain knowledge, capability methodology — embedded, not just linked.
 
-Bootstrap embeds the specific subsections of cross-phase-protocols.md and
+Bootstrap names the specific subsections of cross-phase-protocols.md and
 defensive-patterns.md relevant to this node's capability (e.g., §B.3 Closure
 Thinking for implementation nodes, §D User Confirmation Gate for decision
-nodes). Do NOT just list file names — copy the relevant paragraph/table
-verbatim so the subagent has complete context without re-reading source files.
-The subagent treats this section as complete and does not re-read source files
-unless the node-spec explicitly says to.>
+nodes). For each: the exact `${CLAUDE_PLUGIN_ROOT}/knowledge/<file>.md#<section>`
+anchor plus the two or three load-bearing sentences the node must satisfy —
+not the whole paragraph or table. Bare file names are not enough (the executor
+cannot tell which rule applies); full copies are too much (N nodes carry N
+copies of the same protocol, and the copy goes stale when the protocol moves).
+The executor reads the anchored section when the sentences are not enough and
+notes that it did.>
 
 ## Guidance
 <LLM-generated execution guidance based on absorbed knowledge.

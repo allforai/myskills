@@ -208,8 +208,10 @@ Reject the workflow when any production node-spec matches one of these:
   or fallback completion while still unlocking downstream production nodes;
 - the node-spec lacks an `Attention Contract` with primary outcome, non-goals,
   must-read inputs, quality questions, stop conditions, and repair targets;
-- the node-spec asks the executor to read broad context or scan the whole
-  repository without justifying repository-wide evidence as the task itself;
+- the node-spec declares no must-read inputs or no context budget at all (an
+  undeclared reading set is unauditable); a declared floor that the executor may
+  exceed on demand is correct and is not a finding — only a whole-repository scan
+  presented as the task without repository-wide evidence being the task is;
 - the node-spec has no stop condition for missing inputs, unavailable runtime,
   failed effect evidence, unresolved quality gaps, or environment blockers;
 - a visible runtime node has no screenshot, runtime probe, or visual
