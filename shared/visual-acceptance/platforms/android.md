@@ -6,12 +6,14 @@
 
 布局阈值（写进 inventory 的 `layout_thresholds`，单位 dp）从代码读：资源限定符目录 `layout-sw600dp` / `values-w840dp` / `layout-land` 等的宽度；`WindowSizeClass`（compact < 600、medium 600–840、expanded ≥ 840）的使用点；Compose `BoxWithConstraints` / `LocalConfiguration.screenWidthDp` 的比较；`ConstraintLayout` 的 `layout_constraintWidth_max`；折叠屏 `WindowLayoutInfo` / posture 分支。`width_range`：最小值取 `<supports-screens>` 或最窄目标机型（常见 320–360 dp），最大值取最大平板或桌面模式（Chromebook / DeX 1280 dp 以上）；`resizeableActivity=true` 时分屏与自由窗口的宽度也是 device 值，在 inventory 顶层 `devices` 表里作独立条目（如 `"pixel-8-split-1/2": {"width": 412, "height": 445, "scale": 2.625, "fixed_width": true}`），`fixed_width: true` 表示旋转不改宽度。device 轴写 AVD / 机型名时同样在 `devices` 表给出 dp 宽高与 density；`WindowSizeClass` 的 medium 段（600–840）要有一个真正落在段内的宽度，不能只靠两侧跨过去。
 
+打包语言（写进 inventory 的 `locales`）从工程读：`res/values-xx/strings.xml` 目录、`resConfigs` / `localeFilters`、`locales_config.xml`（Android 13+ 应用内语言）、`android:supportsRtl`；`translation_keys` 以 `values/strings.xml` 为点名册逐语言 diff（`translatable="false"` 的 key 排除）。
+
 七个维度对 Android 的取值，全部在 environment 类由用户确认为具体值：
 - device：dp 宽高加密度，如 `411x914@2.625`、`800x1280@2`；施加：`adb shell wm size WxH`（px）与 `adb shell wm density D`，读回 `adb shell wm size` / `wm density` 与页面内 `resources.displayMetrics` / `LocalConfiguration.screenWidthDp`。
 - os：Android 版本与 API 级别（`adb shell getprop ro.build.version.release` / `sdk`），厂商皮肤（One UI、MIUI）按用户确认是否分列。
 - appearance：`adb shell cmd uimode night yes|no`，读回 `Configuration.uiMode`。
 - dynamic_type：`adb shell settings put system font_scale 1.0|1.3|2.0`，读回 `Configuration.fontScale`；显示大小 `wm density` 另算一档。
-- locale：`adb shell setprop persist.sys.locale` 或系统设置切换，读回 `Locale.getDefault()` 与 `Configuration.locales`。
+- locale：`adb shell setprop persist.sys.locale` 或系统设置切换，Android 13+ 另可 `adb shell cmd locale set-app-locales <package> --locales ja`；读回 `Locale.getDefault()` 与 `Configuration.locales` 写进 `locale_readback`，`direction` 取 `Configuration.layoutDirection` / `View.layoutDirection`（`supportsRtl=false` 时 RTL 语言永远读回 ltr，那是一条 gap）。
 - orientation：`adb shell settings put system accelerometer_rotation 0` 加 `user_rotation 0|1`，读回 `Configuration.orientation`。
 - state：加载、空、错误、权限拒绝、离线、键盘弹出、进程被杀后恢复（`adb shell am kill` 再回前台），按页面归入。
 

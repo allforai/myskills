@@ -465,3 +465,64 @@ def test_frozen_inventory_thresholds_are_enforced_on_replay(sample):
     inventory['surfaces'][0]['axes']['device'] = ['1512x982@2']
     cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
     assert 'misses layout threshold 1024' in visual_reason(entry, ledger, root)
+
+
+def _locale_case(sample, write, locale, capture_extra, locales):
+    root, _, cfg, case, report, entry, ledger = sample
+    inventory = {'locales': locales,
+                 'surfaces': [{'id': 'home', 'axes': {**{a: ['default'] for a in AXES}, 'locale': [locale]}}]}
+    lcase = expand(inventory['surfaces'], locales=locales)[0]
+    cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
+    cfg['matrix_digest'] = write(cfg['matrix_ref'], [lcase])
+    bound = {k: cfg[k] for k in ('build','baseline_digest','interaction_digest','inventory_digest','matrix_digest')}
+    image_hash = report['image_digests']['q1/image.png']
+    cap = {**lcase, 'case_id': lcase['id'], **bound, 'captured_at': 'now',
+           'images': ['q1/image.png'], 'image_digests': {'q1/image.png': image_hash}, **capture_extra}
+    write('evidence/q1/manifest.json', {'captures': [cap]})
+    write('evidence/q1/review.json', {**report, **bound})
+    entry['visual_case_ids'] = [lcase['id']]
+    ledger['visual_cases'] = [lcase]
+    return root, entry, ledger
+
+
+AR = {'supported': ['ar'], 'default': 'ar', 'rtl': ['ar'], 'basis': 'Localizable.xcstrings'}
+
+
+def test_rtl_case_requires_direction_read_back(sample):
+    root, write = sample[0], sample[1]
+    root, entry, ledger = _locale_case(sample, write, 'ar', {}, AR)
+    assert 'RTL 语言用例须读回 direction=rtl' in visual_reason(entry, ledger, root)
+    root, entry, ledger = _locale_case(sample, write, 'ar', {'direction': 'rtl'}, AR)
+    assert visual_reason(entry, ledger, root) is None
+
+
+def test_declined_locales_are_declared_in_the_visual_section(sample):
+    root, write, cfg, case, report, entry, ledger = sample
+    inventory = json.loads((root / cfg['inventory_ref']).read_text())
+    inventory['locales'] = {'supported': ['zh-CN', 'de'], 'basis': 'i18n.ts',
+                            'declined': [{'locale': 'de', 'confirmation': '用户 2026-09-07：德语区暂不上线'}]}
+    inventory['surfaces'][0]['axes']['locale'] = ['zh-CN']
+    cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
+    lcase = expand(inventory['surfaces'], locales=inventory['locales'])[0]
+    cfg['matrix_digest'] = write(cfg['matrix_ref'], [lcase])
+    ledger['visual_cases'] = [lcase]
+    section = '\n'.join(visual_section(ledger, [], root))
+    assert '未验收语言（用户确认放弃，不进任何计数）：de — 用户 2026-09-07：德语区暂不上线' in section
+
+
+def test_inventory_cannot_drop_a_census_locale(sample):
+    root, write, cfg, case, report, entry, ledger = sample
+    ledger['locales'] = {'supported': ['zh-CN', 'de'], 'basis': 'i18n.ts'}     # census, verbatim
+    inventory = json.loads((root / cfg['inventory_ref']).read_text())
+    inventory['locales'] = {'supported': ['zh-CN'], 'basis': 'i18n.ts'}        # de silently removed
+    inventory['surfaces'][0]['axes']['locale'] = ['zh-CN']
+    cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
+    lcase = expand(inventory['surfaces'], locales=inventory['locales'])[0]
+    cfg['matrix_digest'] = write(cfg['matrix_ref'], [lcase])
+    ledger['visual_cases'] = [lcase]
+    entry['visual_case_ids'] = [lcase['id']]
+    manifest = json.loads((root / 'evidence/q1/manifest.json').read_text())
+    manifest['captures'][0].update({**lcase, 'case_id': lcase['id'], 'inventory_digest': cfg['inventory_digest'],
+                                    'matrix_digest': cfg['matrix_digest']})
+    write('evidence/q1/manifest.json', manifest)
+    assert '删掉了普查官列出的语言: de' in visual_reason(entry, ledger, root)

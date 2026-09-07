@@ -62,7 +62,54 @@ def check_widths(surface, thresholds, width_range, devices):
             raise ValueError('device axis misses layout threshold %d: %s' % (w, sid))
 
 
-def expand(surfaces, thresholds=None, width_range=None, devices=None):
+LOCALE_SPLIT = re.compile(r'[\s+/,;]+')
+
+
+def locale_tokens(value):
+    """A locale axis value may be compound ("zh-CN + 站点 en"); the tag must appear as its own token."""
+    return set(LOCALE_SPLIT.split(value.strip()))
+
+
+def required_locales(locales):
+    """Locales the product ships minus the ones the user declined on the record."""
+    if not isinstance(locales, dict) or not isinstance(locales.get('supported'), list) or not locales['supported'] \
+            or any(not isinstance(l, str) or not l for l in locales['supported']) \
+            or not isinstance(locales.get('basis'), str) or not locales['basis']:
+        raise ValueError('invalid locales (needs non-empty supported list and basis)')
+    supported = locales['supported']
+    if len(set(supported)) != len(supported):
+        raise ValueError('duplicate supported locale')
+    declined = set()
+    for d in locales.get('declined') or []:
+        if not isinstance(d, dict) or d.get('locale') not in supported \
+                or not isinstance(d.get('confirmation'), str) or not d['confirmation'].strip():
+            raise ValueError('declined locale needs a supported tag and the user\'s confirmation')
+        declined.add(d['locale'])
+    rtl = locales.get('rtl') or []
+    if not set(rtl) <= set(supported):
+        raise ValueError('rtl locale not in supported list')
+    return [l for l in supported if l not in declined]
+
+
+def check_locales(surface, locales):
+    sid = surface['id']
+    required = required_locales(locales)
+    scope = surface.get('locales')
+    if scope is not None:
+        if not isinstance(scope, dict) or not isinstance(scope.get('only'), list) or not scope['only'] \
+                or not isinstance(scope.get('basis'), str) or not scope['basis'] \
+                or not set(scope['only']) <= set(locales['supported']):
+            raise ValueError('invalid surface locales scope (needs only[] within supported and basis): ' + sid)
+        required = [l for l in required if l in scope['only']]
+    present = set()
+    for v in surface['axes']['locale']:
+        present |= locale_tokens(v)
+    missing = [l for l in required if l not in present]
+    if missing:
+        raise ValueError('locale axis misses shipped locale %s: %s' % (', '.join(missing), sid))
+
+
+def expand(surfaces, thresholds=None, width_range=None, devices=None, locales=None):
     cases = []
     seen = set()
     for surface in surfaces:
@@ -85,6 +132,8 @@ def expand(surfaces, thresholds=None, width_range=None, devices=None):
                 raise ValueError('duplicate axis values: ' + axis)
         if thresholds or width_range or surface.get('width_range'):
             check_widths(surface, thresholds, width_range, devices)
+        if locales is not None:
+            check_locales(surface, locales)
         for values in itertools.product(*(axes[a] for a in AXES)):
             row = dict(zip(AXES, values))
             identity = json.dumps({'surface': sid, **row}, sort_keys=True, ensure_ascii=False)
@@ -100,5 +149,5 @@ if __name__ == '__main__':
     p.add_argument('inventory')
     args = p.parse_args()
     inv = json.loads(Path(args.inventory).read_text())
-    print(json.dumps(expand(inv['surfaces'], inv.get('layout_thresholds'), inv.get('width_range'), inv.get('devices')),
-                     ensure_ascii=False, indent=2))
+    print(json.dumps(expand(inv['surfaces'], inv.get('layout_thresholds'), inv.get('width_range'), inv.get('devices'),
+                            inv.get('locales')), ensure_ascii=False, indent=2))

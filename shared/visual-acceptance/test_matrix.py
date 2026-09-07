@@ -115,3 +115,51 @@ def test_fixed_width_window_ignores_orientation():
         expand([{'id': 'home', 'axes': _axes(list(devices), ('portrait', 'landscape'))}], t, devices=devices)
     devices['iPad Pro 13 slide-over']['fixed_width'] = False
     expand([{'id': 'home', 'axes': _axes(list(devices), ('portrait', 'landscape'))}], t, devices=devices)
+
+
+LOCALES = {'supported': ['zh-CN', 'en', 'ja', 'de', 'ar'], 'default': 'zh-CN', 'rtl': ['ar'],
+           'basis': 'next.config.js:i18n.locales'}
+
+
+def _laxes(locales):
+    return {**{a: ['default'] for a in AXES}, 'locale': list(locales)}
+
+
+def test_locale_axis_must_cover_every_shipped_locale():
+    with pytest.raises(ValueError, match='misses shipped locale en, ja, de, ar'):
+        expand([{'id': 'home', 'axes': _laxes(['zh-CN'])}], locales=LOCALES)
+    expand([{'id': 'home', 'axes': _laxes(['zh-CN', 'en', 'ja', 'de', 'ar'])}], locales=LOCALES)
+
+
+def test_declined_locales_need_the_users_confirmation():
+    declined = {**LOCALES, 'declined': [{'locale': 'de', 'confirmation': '用户 2026-09-07：德语区暂不上线'},
+                                        {'locale': 'ar', 'confirmation': '用户 2026-09-07：阿语先不做'}]}
+    expand([{'id': 'home', 'axes': _laxes(['zh-CN', 'en', 'ja'])}], locales=declined)
+    bad = {**LOCALES, 'declined': [{'locale': 'de'}]}
+    with pytest.raises(ValueError, match="needs a supported tag and the user's confirmation"):
+        expand([{'id': 'home', 'axes': _laxes(['zh-CN', 'en', 'ja', 'ar'])}], locales=bad)
+    unknown = {**LOCALES, 'declined': [{'locale': 'fr', 'confirmation': 'x'}]}
+    with pytest.raises(ValueError):
+        expand([{'id': 'home', 'axes': _laxes(['zh-CN', 'en', 'ja', 'de', 'ar'])}], locales=unknown)
+
+
+def test_compound_locale_values_match_by_token():
+    axes = _laxes(['浏览器 zh-CN', 'zh-CN + 站点 en', 'ja/站点 ja', 'de', 'ar'])
+    expand([{'id': 'home', 'axes': axes}], locales=LOCALES)
+    with pytest.raises(ValueError, match='misses shipped locale en'):
+        expand([{'id': 'home', 'axes': _laxes(['zh-CN', 'english', 'ja', 'de', 'ar'])}], locales=LOCALES)
+
+
+def test_surface_locale_scope_narrows_with_basis():
+    admin = {'id': 'admin', 'locales': {'only': ['zh-CN', 'en'], 'basis': 'admin routes are not localized beyond en'},
+             'axes': _laxes(['zh-CN', 'en'])}
+    expand([admin], locales=LOCALES)
+    with pytest.raises(ValueError, match='invalid surface locales scope'):
+        expand([{**admin, 'locales': {'only': ['zh-CN', 'en']}}], locales=LOCALES)
+
+
+def test_rtl_must_be_subset_of_supported_and_locales_need_basis():
+    with pytest.raises(ValueError, match='rtl locale not in supported'):
+        expand([{'id': 'home', 'axes': _laxes(['zh-CN'])}], locales={'supported': ['zh-CN'], 'rtl': ['ar'], 'basis': 'x'})
+    with pytest.raises(ValueError, match='invalid locales'):
+        expand([{'id': 'home', 'axes': _laxes(['zh-CN'])}], locales={'supported': ['zh-CN']})

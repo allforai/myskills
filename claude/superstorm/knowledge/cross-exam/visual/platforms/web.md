@@ -9,7 +9,7 @@
 - os：浏览器引擎与主版本，如 `Chromium 131`、`WebKit 18`；同一引擎不同版本按用户确认是否分列。
 - appearance：`prefers-color-scheme` 的 light / dark，另加站点自身主题开关的值（如果有）。
 - dynamic_type：浏览器缩放或根字号，如 `zoom 100%`、`zoom 150%`、`font-size 20px`；站点不响应缩放时取单一值 `zoom 100%`，依据（例如 CSS 未使用 rem/em）记在 environment 类的确认里。
-- locale：浏览器语言加站点语言开关的值。
+- locale：浏览器语言加站点语言开关的值。取值下限见下文"打包语言"。
 - orientation：`landscape` / `portrait`；桌面视口取单一值 `landscape`，依据记在 environment 类的确认里。
 - state：加载、空、错误、权限拒绝、离线、键盘弹出（移动）等，按页面归入。
 
@@ -22,6 +22,12 @@
 普查时从代码读出 `layout_thresholds`，每条带出处：CSS `@media (min-width|max-width)` 与 `@container` 的宽度；Tailwind / UnoCSS / MUI / Ant 等框架的 `screens` / `breakpoints` 配置；主内容列的 `max-width`（列被截住居中之后，比它宽的窗口都是另一副样子，所以 max-width 本身是一个阈值）；JS 里对 `window.innerWidth` / `matchMedia` 的条件分支；侧栏折叠、栅格列数变化的宽度。`width_range`：桌面 Web 与 Electron / Tauri 的最小值取 `minWidth`（没有声明就取代码里最小的阈值之下一档），最大值不小于 1920（外接显示器），用户有更宽的显示器就取那个；移动 Web 的最小值取最窄的目标设备。
 
 device 轴每个阈值两侧各一个值、并触到 `width_range` 两端，`matrix.py` 拒绝不满足的清单。用户说"我用 1512x982"，那只是其中一个值。可拉伸的桌面窗口另加 `resize-` 开头的状态（如 `resize-shrink-to-min`、`resize-grow-to-max`），录屏取证：拉动过程中的布局抖动和拉完后的重排是静态图看不到的。
+
+## 打包语言：locale 轴从 i18n 资源来，不从用户的母语来
+
+普查时读出 `locales`：next.config `i18n.locales` / next-intl · i18next 的 `locales` · `supportedLngs` · `resources` 键 / vue-i18n `messages` 键 / `public/locales/*`、`src/locales/*` 目录名；默认语言与回落链（`defaultLocale`、`fallbackLng`）；RTL 语言看 `dir` 的设置点（`<html dir>`、`document.dir`、`dir` 属性随 locale 切换的代码）。`translation_keys` 以默认语言文件的 key 全集为点名册，逐语言 diff。
+
+施加：Playwright / DevTools 的 `locale` 上下文选项设浏览器语言，再操作站点自己的语言开关（有的话）；两者是两个值，轴值写成"浏览器 xx + 站点 yy"。读回写进 capture 的 `locale_readback`：`document.documentElement.lang`、`navigator.language`、`Intl.DateTimeFormat().resolvedOptions().locale`，以及 `direction`：`getComputedStyle(document.documentElement).direction`。设了语言、页面 `lang` 没变，那是一条 gap，不是"施加失败"。
 
 ## 截图模式与滚动：无头全页截图不是用户看到的画面
 

@@ -17,6 +17,10 @@ entry、kind（screen/component/overlay）、states、适用平台与环境分�
 改变的每个逻辑宽度：CSS 断点与主列 max-width / 尺寸类与 GeometryReader 比较 / 资源限定符与 WindowSizeClass，
 每条 `{width, unit, basis: path:line}`）和 width_range（`{min, max, basis}`：窗口最小尺寸或最窄支持设备到最大
 支持设备或显示器）。阈值是覆盖法读样式与尺寸分支得到的，不是猜的；读不到的类别写 could_not。
+再返回 locales（产品实际打包的语言：i18n 配置的 locales / `locales/*` 目录 / `.xcstrings`·`.lproj` /
+`values-xx/`·`resConfigs`，含 default、回落链、RTL 语言，带出处）和 translation_keys（以默认语言的 key 全集为
+点名册，逐语言列缺失 key 与多余 key，带资源文件路径）——缺 key 运行时静默回落成默认语言，界面混语，代码
+长得和正确的一样，只有点名册抓得到。
 从 App/Scene、路由、Tab、弹层及条件注册出发；公共 View 不自动算页面，
 动态不可枚举类别进 could_not。只列事实，运行探索交给独立 prober。
 
@@ -36,7 +40,11 @@ entry、kind（screen/component/overlay）、states、适用平台与环境分�
  "ui_surfaces": [{"id": "U1", "name": "...", "entry": "...", "kind": "screen", "states": ["..."]}],
  "layout_thresholds": [{"width": 1024, "unit": "px|pt|dp", "basis": "path:line"}],
  "width_range": {"min": 900, "max": 1920, "basis": "path:line 或 设备家族/显示器依据"},
+ "locales": {"supported": ["zh-CN", "en", "ar"], "default": "zh-CN", "fallback": ["en"], "rtl": ["ar"], "basis": "path:line"},
+ "translation_keys": {"total": 133, "basis": "public/locales/zh-CN/*.json",
+                      "missing": {"ar": ["billing.invoice.title", "..."]}, "extra": {"en": ["..."]}},
  "could_not": ["没枚举到的类别 + 原因（无则空数组）"]}
 ```
 
-`ui_surfaces` / `layout_thresholds` / `width_range` 仅 UI 目标返回。
+`ui_surfaces` / `layout_thresholds` / `width_range` / `locales` / `translation_keys` 仅 UI 目标返回；没有 i18n
+资源的产品 `locales` 写 `{"supported": [<源码硬编码的那一种>], "basis": "..."}`，不空着。
