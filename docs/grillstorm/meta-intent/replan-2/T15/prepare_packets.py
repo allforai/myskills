@@ -45,6 +45,7 @@ def candidate(destination):
             target.symlink_to(data.decode())
         else:
             target.write_bytes(data)
+            target.chmod(0o755 if entry.startswith("100755") else 0o644)
     hashes = fingerprint(destination)
     links = {str(p.relative_to(destination)): str(p.readlink())
              for p in sorted(destination.rglob("*")) if p.is_symlink()}

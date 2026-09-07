@@ -12,6 +12,8 @@ For each host and scene, launch a fresh real host session in its `project` folde
 
 Keep candidate bytes unchanged across the campaign. Any later producer correction requires a new accepted candidate and fresh affected host executions. Do not load a newer installation and label it this candidate. Only the coordinator may schedule actors. Deliver relevant answers below when asked, without revealing evaluator explanations. For an unanticipated product question, forward its raw wording to the evaluator rather than inventing a decision or giving blanket approval.
 
+Before any actor launch, exporter validation found that the first unused packet export lost executable modes (the user-invocation hook was 0644 instead of Git's 0755). `prepare_packets.py` now preserves Git modes; the public exporter test was red before that correction and green afterward. Existing packet directories were not modified, and no host evidence existed. Use the corrected exporter for the coordinator's refreshed accepted candidate; do not launch the original unused snapshot. The content-only hash remains a byte fingerprint, not a claim about file modes. Preparation/helper checks now total thirteen tests, still zero real-host cells.
+
 Collect a snapshot before and after every user decision. While an actor is blocked asking a necessary question, preserve the pending state before replying. That is the silence observation; do not send a message pretending that silence is an approval. Save product-source diffs separately from generated workflow/document diffs. The bootstrap may generate artifacts but must not implement, remove, or redesign product code.
 
 ## Scripted user answers and private observations
