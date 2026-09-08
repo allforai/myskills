@@ -15,6 +15,8 @@ Run from the development checkout root:
 | #11 once-per-session Run Policy | `python3 -m pytest claude/meta-skill/tests/unit/test_run_policy_session.py -q` |
 | #11 independent review regressions | `python3 -m pytest claude/meta-skill/tests/unit/test_intent_review_corrections.py -q` |
 | #11 local reopen isolation and recovery | `python3 -m pytest claude/meta-skill/tests/unit/test_local_reopen_scope.py -q` |
+| #11 legacy projection authorization boundary | `python3 -m pytest claude/meta-skill/tests/unit/test_legacy_projection_authority.py -q` |
+| #11/#12 unchanged scope freeze idempotence | `python3 -m pytest claude/meta-skill/tests/unit/test_freeze_idempotence.py -q` |
 | #12 input drift, publication races and Git containment | `python3 -m pytest claude/meta-skill/tests/unit/test_evidence_freshness.py -q` |
 | #12 dynamically read and globbed producer dependencies | `python3 -m pytest claude/meta-skill/tests/unit/test_dynamic_input_dependencies.py -q` |
 | #12 local baseline provenance | `python3 -m pytest claude/meta-skill/tests/unit/test_local_freshness_provenance.py -q` |
@@ -22,6 +24,7 @@ Run from the development checkout root:
 | #12 diagnostic provenance status | `python3 -m pytest claude/meta-skill/tests/unit/test_freshness_diagnostic.py -q` |
 | #12 declaration downgrade and legacy boundary | `python3 -m pytest claude/meta-skill/tests/unit/test_freshness_downgrade.py -q` |
 | #12 CLI target-root resolution | `python3 -m pytest claude/meta-skill/tests/unit/test_gate_project_root.py -q` |
+| #12 corrupt dynamic-read register and recovery | `python3 -m pytest claude/meta-skill/tests/unit/test_corrupt_freshness_reads.py -q` |
 
 These suites exercise copied public helpers for both adapters. They are not
 real Claude/Codex dialogue evidence and cannot discharge #15–#18 or any cell of

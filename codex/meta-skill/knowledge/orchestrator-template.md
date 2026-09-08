@@ -33,6 +33,9 @@ Every scoped node declares `source_inputs` (project-relative product source; exp
 none applies) and follows `.allforai/bootstrap/protocols/input-freshness.md`. Readiness reports
 `missing_source_inputs` / `invalid_source_inputs` as blockers and the artifact gate withholds
 completion for such nodes; return them to `bootstrap` instead of declaring inside the run.
+Retained legacy nodes without provenance are warning-only when dependency declarations
+and recorded freshness state are valid. Malformed declarations or unreadable state block
+even retained nodes because their dependency impact cannot be established.
 Project docs under `docs/bootstrap/` may be updated, but they should not be the only completion signal for a node.
 
 ## Preflight Gate

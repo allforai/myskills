@@ -164,12 +164,21 @@ def test_local_legacy_admission_reuses_only_supported_choice_and_preserves_old_d
         "areas": ["orders"], "items": [item]})
     assert result.returncode == 0, result.stdout
     output = json.loads(result.stdout)
-    assert [i["id"] for t in output["topics"] for i in t["items"]] == ([] if trusted else ["export"])
+    # A goal-only journal choice evidences the goal, never the inferred scope, rules and
+    # acceptance: both variants are presented, the trusted one with its evidenced goal kept.
+    exposed = [i for t in output["topics"] for i in t["items"]]
+    assert [i["id"] for i in exposed] == ["export"]
+    assert ("legacy_reuse" in exposed[0]) is trusted, exposed
+    if trusted:
+        assert exposed[0]["legacy_reuse"]["evidenced"] == ["goal"]
+        assert exposed[0]["confirmation"] == item["confirmation"]
     assert not [q for t in output["topics"] for q in t["questions"]]
     assert json.loads((tmp_path / JOURNAL).read_text()) == prior
     assert gate(tmp_path, "validate_unattended_readiness.py").returncode == 1
-    if not trusted:
-        assert decide(tmp_path, [{"operation": "confirm", "id": "export", "reason": "Privacy approved"}], "missing-choice").returncode == 0
+    blocked = invoke(tmp_path, {"operation": "freeze", "include": ["export"], "exclude": {}, "batch_id": "local-scope",
+        "user_reference": "local scope turn", "reason": "Account export only"})
+    assert blocked.returncode == 1, blocked.stdout
+    assert decide(tmp_path, [{"operation": "confirm", "id": "export", "reason": "Privacy approved"}], "missing-choice").returncode == 0
     frozen = invoke(tmp_path, {"operation": "freeze", "include": ["export"], "exclude": {}, "batch_id": "local-scope",
         "user_reference": "local scope turn", "reason": "Account export only"})
     assert frozen.returncode == 0, frozen.stdout

@@ -217,8 +217,11 @@ def test_existing_canonical_user_choice_is_reused_without_new_intent_decision(tm
     item.update(status="confirmed", confirmation={"source": "user", "reference": JOURNAL + "#prior/decisions/0",
                 "decision_id": "prior/decisions/0", "reason": "Existing explicit choice"})
     write(tmp_path, CONCEPT, concept)
+    # Reuse without a new decision needs the complete recorded payload; a goal-only
+    # choice is exposed for projection confirmation (test_legacy_projection_authority).
     prior = {"batch_id": "prior", "source": "user_session", "topic": "Users", "decisions": [
-        {"question": "Who are our customers?", "chosen": item["goal"], "rationale": "Existing explicit choice"}]}
+        {"question": "Who are our customers?", "chosen": item["goal"], "rationale": "Existing explicit choice",
+         "intent": dict(item)}]}
     write(tmp_path, JOURNAL, {"schema_version": "1.0", "batches": [prior]})
     result = invoke(tmp_path, {"operation": "freeze", "include": ["target-users"],
         "exclude": {t: "Later scope" for t in TOPICS[1:]}, "batch_id": "scope",

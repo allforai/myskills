@@ -313,8 +313,9 @@ def _confirmed(root, item, *, statuses=("confirmed",)):
     batch = matches[0]
     decision = batch["decisions"][int(index)]
     confirmation = item.get("confirmation", {})
-    # Legacy schema-1.0 choices have no intent payload. Reuse the exact recorded
-    # choice/rationale; scope freezing explicitly binds the complete projection.
+    # Legacy schema-1.0 choices have no intent payload. The recorded choice and
+    # rationale evidence the goal only; scope, business rules and acceptance are
+    # still the model's projection until the user confirms them explicitly.
     matches_payload = (decision["intent"] == item if "intent" in decision else
                        decision.get("chosen") == item.get("goal")
                        and decision.get("rationale") == confirmation.get("reason")
@@ -326,6 +327,26 @@ def _confirmed(root, item, *, statuses=("confirmed",)):
         raise ValueError("Product projection differs from confirmed journal decision")
     if any(d.get("supersedes") in (fragment, reference) for b in journal["batches"] for d in b["decisions"]):
         raise ValueError("Product decision is superseded")
+    if "intent" not in decision:
+        raise LegacyProjection(reference)
+
+
+class LegacyProjection(ValueError):
+    """A journal choice evidences the goal only; the remaining projection needs the user."""
+
+    EVIDENCED = ["goal"]
+    UNCONFIRMED = ["scope", "business_rules", "acceptance"]
+
+    def __init__(self, reference):
+        self.reference = reference
+        super().__init__("Legacy journal choice evidences the goal only; confirm scope, business_rules and "
+                         "acceptance at interactive bootstrap")
+
+    def expose(self, item):
+        item["status"] = "pending"
+        item["pending_reason"] = str(self)
+        item["legacy_reuse"] = {"reference": self.reference, "evidenced": list(self.EVIDENCED),
+                                "unconfirmed": list(self.UNCONFIRMED)}
 
 
 def _consumers(workflow, ref):
@@ -351,6 +372,8 @@ def _reuse_legacy_choice(root, item):
         raise ValueError("Legacy intent revision must be a positive integer")
     try:
         _confirmed(root, item)
+    except LegacyProjection as exc:
+        exc.expose(item)
     except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError):
         item["status"] = "pending"
         item["pending_reason"] = "Legacy intent needs user verification"
@@ -519,6 +542,33 @@ def _question_pending(root, question):
         return True
 
 
+def _frozen_scope_batch(root, baseline):
+    """Return the journal and batch identity that still confirm a frozen scope, else raise."""
+    source, fragment = baseline["confirmation"].split("#")
+    batch_id, marker, index = fragment.split("/")
+    journal = _read(root, JOURNAL, {})
+    batches = [b for b in journal.get("batches", []) if b["batch_id"] == batch_id]
+    if (source != JOURNAL or marker != "decisions" or not index.isdecimal()
+            or journal.get("schema_version") != "1.0"
+            or len(batches) != 1 or batches[0].get("source") != "user_session"
+            or batches[0].get("status", "confirmed") != "confirmed"
+            or batches[0]["decisions"][int(index)].get("status", "confirmed") != "confirmed"
+            or batches[0]["decisions"][int(index)].get("baseline") != baseline
+            or any(d.get("supersedes") in (fragment, baseline["confirmation"])
+                   for b in journal["batches"] for d in b["decisions"])):
+        raise ValueError("Cannot resume unverified scope exclusions")
+    return journal, batch_id
+
+
+def _same_selection(previous, refs, exclude, intents):
+    """True when a verified previous scope already binds exactly this confirmed selection."""
+    by_id = lambda values: {v["id"]: v for v in values}  # noqa: E731
+    return (isinstance(previous, dict)
+            and by_id(previous.get("requirement_refs", [])) == by_id(refs)
+            and previous.get("excluded") == exclude
+            and by_id(previous.get("intents", [])) == by_id(intents))
+
+
 def _discussion(root, concept):
     import copy
     concept = copy.deepcopy(concept)
@@ -527,19 +577,7 @@ def _discussion(root, concept):
                 else _read(root, BASELINE, {}).get("intent_baseline", {}))
     excluded = {}
     if baseline:
-        source, fragment = baseline["confirmation"].split("#")
-        batch_id, marker, index = fragment.split("/")
-        journal = _read(root, JOURNAL, {})
-        batches = [b for b in journal.get("batches", []) if b["batch_id"] == batch_id]
-        if (source != JOURNAL or marker != "decisions" or not index.isdecimal()
-                or journal.get("schema_version") != "1.0"
-                or len(batches) != 1 or batches[0].get("source") != "user_session"
-                or batches[0].get("status", "confirmed") != "confirmed"
-                or batches[0]["decisions"][int(index)].get("status", "confirmed") != "confirmed"
-                or batches[0]["decisions"][int(index)].get("baseline") != baseline
-                or any(d.get("supersedes") in (fragment, baseline["confirmation"])
-                       for b in journal["batches"] for d in b["decisions"])):
-            raise ValueError("Cannot resume unverified scope exclusions")
+        journal, batch_id = _frozen_scope_batch(root, baseline)
         excluded = dict(baseline["excluded"])
         # A later explicit reconsideration replaces only that exclusion. The
         # frozen baseline remains historical until the user freezes a new scope.
@@ -564,6 +602,8 @@ def _discussion(root, concept):
         if item.get("status") in ("confirmed", "removed"):
             try:
                 _confirmed(root, item, statuses=("confirmed", "removed"))
+            except LegacyProjection as exc:
+                exc.expose(item)
             except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError):
                 item["status"] = "pending"
                 item["pending_reason"] = "Missing or invalid user confirmation provenance"
@@ -688,11 +728,23 @@ def session(root, request):
         if any(not _text(request.get(k)) for k in ("batch_id", "user_reference", "reason")):
             raise ValueError("Scope needs explicit user reference and reason")
         journal = _read(root, JOURNAL)
-        if any(b["batch_id"] == request["batch_id"] for b in journal["batches"]):
-            raise ValueError("Scope batch identity already exists")
         baseline = _read(root, BASELINE, {})
         refs = [{"path": concept_path, "id": i, "revision": latest[i]["revision"]} for i in include]
         previous_scope = profile.get("intent_scope", {}) if concept_path == LOCAL else baseline.get("intent_baseline", {})
+        # The same confirmed selection re-frozen converges: no new decision, version or
+        # replan. A changed selection, a new revision, any user decision recorded after
+        # the scope batch, or an unverifiable previous scope freezes a new version.
+        if (_same_selection(previous_scope, refs, exclude, [latest[i] for i in include])
+                and profile.get("task_scope", {}).get("requirement_refs") == previous_scope["requirement_refs"]):
+            try:
+                _, scope_batch = _frozen_scope_batch(root, previous_scope)
+            except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError):
+                pass
+            else:
+                if journal["batches"][-1]["batch_id"] == scope_batch:
+                    return {"status": "frozen", "baseline": previous_scope, "unchanged": True}
+        if any(b["batch_id"] == request["batch_id"] for b in journal["batches"]):
+            raise ValueError("Scope batch identity already exists")
         contract = {"version": previous_scope.get("version", 0) + 1,
                     "requirement_refs": refs, "excluded": exclude,
                     "intents": [latest[i] for i in include],
@@ -781,6 +833,11 @@ def session(root, request):
                         item["prior_confirmation"] = item.get("confirmation")
                     else:
                         raise ValueError("Reuse recorded confirmation; do not reconfirm it")
+                elif op == "confirm" and item.get("confirmation"):
+                    # Keep the historical goal-only or unverified provenance for context.
+                    item["prior_confirmation"] = item["confirmation"]
+                for stale in ("pending_reason", "legacy_reuse"):
+                    item.pop(stale, None)
                 item.update(status="removed" if op == "remove" else "pending" if op == "reopen" else "confirmed",
                             confirmation=confirmation)
             elif op in ("answer", "reopen"):
