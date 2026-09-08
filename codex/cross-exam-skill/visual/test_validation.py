@@ -29,7 +29,7 @@ def sample(tmp_path):
            'interaction_ref': 'visual/baseline.json', 'interaction_digest': digest,
            'review_mode': 'single', 'build': 'abc-clean',
            'inventory_ref': 'visual/inventory.json', 'matrix_ref': 'visual/matrix.json'}
-    inventory = {'surfaces': [{'id': 'home', 'axes': {a: ['default'] for a in AXES}}]}
+    inventory = {'platform': 'ios', 'surfaces': [{'id': 'home', 'axes': {a: ['default'] for a in AXES}}]}
     case = expand(inventory['surfaces'])[0]
     cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
     cfg['matrix_digest'] = write(cfg['matrix_ref'], [case])
@@ -235,7 +235,7 @@ def test_renderer_rejects_visual_done_without_images(sample):
 def test_blocking_findings_scoped_to_entry_images(sample):
     # 一批两个用例共用一份报告；high 只指向 error 图 → default 用例的 entry 可 done，error 用例的不可。
     root, write, cfg, _, report, entry, ledger = sample
-    inventory = {'surfaces': [{'id': 'home', 'axes': {**{a: ['default'] for a in AXES},
+    inventory = {'platform': 'ios', 'surfaces': [{'id': 'home', 'axes': {**{a: ['default'] for a in AXES},
                                                      'state': ['default', 'error']}}]}
     cases = expand(inventory['surfaces'])
     cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
@@ -269,7 +269,7 @@ def test_blocking_findings_scoped_to_entry_images(sample):
 def test_not_applicable_rows_survive_frozen_comparison(sample):
     # 文档要求不适用行加 applicability/reason/basis；这不能让整个 run 的视觉 entry 被拒
     root, write, cfg, _, report, entry, ledger = sample
-    inventory = {'surfaces': [{'id': 'home', 'axes': {**{a: ['default'] for a in AXES},
+    inventory = {'platform': 'ios', 'surfaces': [{'id': 'home', 'axes': {**{a: ['default'] for a in AXES},
                                                      'state': ['default', 'landscape-only']}}]}
     cases = expand(inventory['surfaces'])
     cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
@@ -368,7 +368,7 @@ def test_verified_images_are_decoded_once_per_content(sample, monkeypatch):
 def test_comparison_group_must_not_be_split_across_entries(sample):
     root, write, cfg, _, report, entry, ledger = sample
     axes = {a: ['default'] for a in AXES}
-    inventory = {'surfaces': [{'id': 'home', 'axes': axes, 'groups': ['buttons']},
+    inventory = {'platform': 'ios', 'surfaces': [{'id': 'home', 'axes': axes, 'groups': ['buttons']},
                               {'id': 'settings', 'axes': axes, 'groups': ['buttons']},
                               {'id': 'about', 'axes': axes}]}
     cases = expand(inventory['surfaces'])
@@ -400,7 +400,7 @@ def test_comparison_group_must_not_be_split_across_entries(sample):
 def _scroll_case(sample, write, capture_extra):
     """Rebuild the frozen matrix around a single scroll-state case and one capture for it."""
     root, _, cfg, case, report, entry, ledger = sample
-    inventory = {'surfaces': [{'id': 'feed', 'scrollable': True,
+    inventory = {'platform': 'ios', 'surfaces': [{'id': 'feed', 'scrollable': True,
                                'axes': {**{a: ['default'] for a in AXES}, 'state': ['scroll-bottom']}}]}
     scase = expand(inventory['surfaces'])[0]
     cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
@@ -469,7 +469,7 @@ def test_frozen_inventory_thresholds_are_enforced_on_replay(sample):
 
 def _locale_case(sample, write, locale, capture_extra, locales):
     root, _, cfg, case, report, entry, ledger = sample
-    inventory = {'locales': locales,
+    inventory = {'platform': 'ios', 'locales': locales,
                  'surfaces': [{'id': 'home', 'axes': {**{a: ['default'] for a in AXES}, 'locale': [locale]}}]}
     lcase = expand(inventory['surfaces'], locales=locales)[0]
     cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
@@ -532,7 +532,7 @@ def test_inventory_cannot_drop_a_census_locale(sample):
 
 def _support_case(sample, write, axis, value, axis_support, capture_extra):
     root, _, cfg, case, report, entry, ledger = sample
-    inventory = {'axis_support': axis_support,
+    inventory = {'platform': 'ios', 'axis_support': axis_support,
                  'surfaces': [{'id': 'home', 'axes': {**{a: ['default'] for a in AXES}, axis: [value]}}]}
     scase = expand(inventory['surfaces'], axis_support=axis_support)[0]
     cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
@@ -679,7 +679,8 @@ def _layout_reason(sample, rules, width_range='global', surfaces=None):
         if width_range is not None:
             inventory['width_range'] = width_range
             for s in inventory['surfaces']:
-                s['axes']['device'] = ['1024x768@1', '1920x1080@1']
+                r = s.get('width_range') or width_range
+                s['axes']['device'] = ['%dx768@1' % r['min'], '%dx1080@1' % r['max']]
         cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
         rows = expand(inventory['surfaces'], width_range=inventory.get('width_range'))
         cfg['matrix_digest'] = write(cfg['matrix_ref'], rows)
@@ -809,3 +810,54 @@ def test_odd_layout_shapes_name_the_problem_not_the_python_error(sample):
         write(ref, obj)
     reason = visual_reason(entry, ledger, root)
     assert reason and 'has no attribute' not in reason
+
+
+def test_fixed_size_window_accepts_one_end(sample):
+    rng = {'min': 1024, 'max': 1024, 'basis': 'kiosk window'}
+    root, write, cfg, case, report, entry, ledger = sample
+    rule = {'rule': '消息列 820px 居中', 'ends': {'1024': {'empty': '两侧各 ≤ 10%'}}}
+    baseline = json.loads((root / cfg['baseline_ref']).read_text())
+    baseline['categories']['layout']['rules'] = [rule]
+    cfg['baseline_digest'] = cfg['interaction_digest'] = write(cfg['baseline_ref'], baseline)
+    inventory = json.loads((root / cfg['inventory_ref']).read_text())
+    inventory['width_range'] = rng
+    inventory['surfaces'][0]['axes']['device'] = ['1024x768@1']
+    cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
+    rows = expand(inventory['surfaces'], width_range=rng, platform='ios')
+    cfg['matrix_digest'] = write(cfg['matrix_ref'], rows)
+    ledger['visual_cases'] = rows
+    entry['visual_case_ids'] = [rows[0]['id']]
+    for ref in ('evidence/q1/manifest.json', 'evidence/q1/review.json'):
+        obj = json.loads((root / ref).read_text())
+        for holder in obj.get('captures', [obj]):
+            holder.update({k: cfg[k] for k in ('baseline_digest', 'interaction_digest', 'inventory_digest', 'matrix_digest')})
+            if 'case_id' in holder:
+                holder['case_id'] = rows[0]['id']
+                holder.update({a: rows[0][a] for a in AXES})
+        write(ref, obj)
+    assert visual_reason(entry, ledger, root) is None
+
+
+def test_dangling_surface_is_refused_even_without_ends(sample):
+    reason = _layout_reason(sample, [{'rule': '侧栏固定在左侧', 'surface': 'ghost'}], surfaces=_two_surfaces())
+    assert reason and 'ghost' in reason
+
+
+def test_interaction_baseline_layout_literals_are_not_window_pins(sample):
+    root, write, cfg, case, report, entry, ledger = sample
+    interaction = {'categories': {k: {'rules': ['approved'], 'confirmation': 'ok', 'confirmed_at': '2026-09-06',
+                                      'reference_images': {}} for k in CATEGORIES}}
+    interaction['categories']['layout']['rules'] = ['抽屉从左侧滑出 280px', '下拉刷新阈值 80pt']
+    cfg['interaction_ref'] = 'visual/interaction.json'
+    cfg['interaction_digest'] = write(cfg['interaction_ref'], interaction)
+    for ref in ('evidence/q1/manifest.json', 'evidence/q1/review.json'):
+        obj = json.loads((root / ref).read_text())
+        for holder in obj.get('captures', [obj]):
+            holder['interaction_digest'] = cfg['interaction_digest']
+        write(ref, obj)
+    assert visual_reason(entry, ledger, root) is None
+
+
+@pytest.mark.parametrize('text', ['视口 1440x900px 下侧栏展开', 'x820px 无意义', '版本 H.264 pt 无关'])
+def test_width_literal_needs_a_whole_number(sample, text):
+    assert _layout_reason(sample, [text]) is None

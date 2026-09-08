@@ -1,5 +1,6 @@
 """Expand explicitly approved per-surface axes; never sample or cap cases."""
 import argparse
+import inspect
 import itertools
 import hashlib
 import json
@@ -34,6 +35,7 @@ def effective_width(device, orientation, devices=None):
     return w
 
 
+PLATFORMS = ('web', 'ios', 'android', 'macos')
 DESKTOP_WIDTH_FLOOR = 1920           # an external display; the widest common desktop window
 FORM_FACTORS = ('desktop', 'mobile', 'both')
 IMPLIED_FORM_FACTOR = {'macos': 'desktop', 'ios': 'mobile', 'android': 'mobile'}
@@ -72,16 +74,25 @@ def _check_range(rng, label):
 
 
 def check_widths(surface, thresholds, width_range, devices):
-    """The device axis must straddle every layout threshold and reach both ends of the width range,
-    or the adaptive layout at those widths is untested by construction."""
+    """The device axis must straddle every layout threshold, reach both ends of the width range and stay
+    inside it, or the adaptive layout at those widths is untested by construction. Returns the range the
+    surface was checked against (its own narrowed one, or the global one)."""
     sid = surface['id']
     axes = surface['axes']
     widths = {effective_width(d, o, devices) for d in axes['device'] for o in axes['orientation']}
-    rng = surface.get('width_range', width_range)
+    rng = surface.get('width_range') or width_range
     if rng is not None:
         _check_range(rng, sid)
+        if width_range is not None and rng is not width_range:
+            _check_range(width_range, 'inventory')
+            if rng['min'] < width_range['min'] or rng['max'] > width_range['max']:
+                raise ValueError('surface width_range %d..%d outside the global width_range %d..%d: %s'
+                                 % (rng['min'], rng['max'], width_range['min'], width_range['max'], sid))
         if min(widths) > rng['min'] or max(widths) < rng['max']:
             raise ValueError('device axis misses width range end %d..%d: %s' % (rng['min'], rng['max'], sid))
+        if min(widths) < rng['min'] or max(widths) > rng['max']:
+            raise ValueError('device axis outside width range %d..%d (widen the range or drop the device): %s'
+                             % (rng['min'], rng['max'], sid))
     for t in thresholds or []:
         if not isinstance(t, dict) or not isinstance(t.get('width'), int) or t['width'] <= 0 \
                 or not isinstance(t.get('basis'), str) or not t['basis']:
@@ -91,6 +102,7 @@ def check_widths(surface, thresholds, width_range, devices):
             continue   # outside this surface's declared width range: cannot be hit
         if not any(x < w for x in widths) or not any(x >= w for x in widths):
             raise ValueError('device axis misses layout threshold %d: %s' % (w, sid))
+    return rng
 
 
 SEGMENT_SPLIT = re.compile(r'[+/,;]')
@@ -214,9 +226,12 @@ def _abstracted_by(row, plan, anchors):
 
 def expand(surfaces, layout_thresholds=None, width_range=None, devices=None, locales=None, axis_support=None,
            abstractions=None, anchor=None, platform=None, form_factor=None):
+    if platform is not None and platform not in PLATFORMS:
+        raise ValueError('unknown platform %r (web|ios|android|macos)' % (platform,))
     check_desktop_floor(width_range, effective_form_factor(platform, form_factor))
     cases = []
     seen = set()
+    reached_max = width_range is None
     for surface in surfaces:
         if platform == 'web' and not isinstance(surface.get('scrollable'), bool):
             raise ValueError('web surface must declare scrollable true|false: ' + surface['id'])
@@ -238,7 +253,9 @@ def expand(surfaces, layout_thresholds=None, width_range=None, devices=None, loc
             if len(set(values)) != len(values):
                 raise ValueError('duplicate axis values: ' + axis)
         if layout_thresholds or width_range or surface.get('width_range'):
-            check_widths(surface, layout_thresholds, width_range, devices)
+            rng = check_widths(surface, layout_thresholds, width_range, devices)
+            if width_range is not None and rng is not None and rng['max'] >= width_range['max']:
+                reached_max = True
         for axis, spec in merged_support(axis_support, locales).items():
             check_axis_support(surface, axis, spec)
         plan, anchors = _abstraction_plan(surface, abstractions, anchor)
@@ -252,16 +269,21 @@ def expand(surfaces, layout_thresholds=None, width_range=None, devices=None, loc
             if plan:
                 case['abstracted_by'] = _abstracted_by(row, plan, anchors)
             cases.append(case)
+    if not reached_max:
+        raise ValueError('no surface reaches width_range.max %d: every surface narrowed its range, so the wide '
+                         'end is untested' % width_range['max'])
     return cases
 
 
-INVENTORY_KEYS = ('layout_thresholds', 'width_range', 'devices', 'locales', 'axis_support',
-                  'abstractions', 'anchor', 'platform', 'form_factor')
+# every keyword of expand() is an inventory top-level key of the same name
+INVENTORY_KEYS = tuple(p for p in inspect.signature(expand).parameters if p != 'surfaces')
 
 
 def expand_inventory(inventory):
     """Expand a surface inventory as frozen on disk: the one place that knows which top-level keys feed
     expansion, so the CLI and the validator's replay cannot drift apart."""
+    if not isinstance(inventory.get('platform'), str):
+        raise ValueError('inventory must declare platform (web|ios|android|macos)')
     return expand(inventory['surfaces'], **{k: inventory.get(k) for k in INVENTORY_KEYS})
 
 

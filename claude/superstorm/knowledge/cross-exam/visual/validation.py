@@ -122,11 +122,13 @@ def baseline(run, config):
         raise ValueError('视觉基线未确认')
     confirmed = set()
     references = {}
+    docs = {}
     for key in ('baseline', 'interaction'):
         path = artifact(run, config.get(key + '_ref'))
         if hashlib.sha256(path.read_bytes()).hexdigest() != config.get(key + '_digest'):
             raise ValueError('基线摘要不匹配')
-        for category, value in json.loads(path.read_text()).get('categories', {}).items():
+        docs[key] = json.loads(path.read_text())
+        for category, value in docs[key].get('categories', {}).items():
             if not isinstance(value, dict):
                 raise ValueError('基线类别 %s 须是含 rules 或 reason 的对象' % category)
             if value.get('confirmed_at') and value.get('confirmation') and (value.get('rules') or value.get('reason')):
@@ -139,12 +141,12 @@ def baseline(run, config):
         raise ValueError('基线缺逐类确认: ' + ', '.join(sorted(CATEGORIES - confirmed)))
     if not references:
         raise ValueError('视觉基线缺可解码的参考图片')
-    return references
+    return references, docs
 
 
 # a width literal: digits, optional space, px/pt/dp, not followed by another ASCII letter; CJK text may
 # touch it on either side ("820px居中") and case is not meaningful ("820PX")
-WIDTH_LITERAL = re.compile(r'(?<![A-Za-z])\d+\s*(px|pt|dp)(?![A-Za-z])', re.IGNORECASE)
+WIDTH_LITERAL = re.compile(r'(?<![A-Za-z0-9.])\d+\s*(px|pt|dp)(?![A-Za-z])', re.IGNORECASE)
 
 
 def _rule_text(rule):
@@ -156,12 +158,7 @@ def pinned_layout_reason(baseline_obj, inventory):
     must be an object {rule, ends} whose ends are the applicable width range's min and max, each with a
     non-empty allowed empty area. Otherwise "820px centered" freezes as a rule a wide window trivially
     satisfies and the reviewer has no sentence to cite. Returns '' or the refusal reason."""
-    layout = (baseline_obj.get('categories') or {}).get('layout')
-    if layout is None:
-        return ''
-    if not isinstance(layout, dict):
-        return 'layout 类须是含 rules 的对象'
-    rules = layout.get('rules')
+    rules = ((baseline_obj.get('categories') or {}).get('layout') or {}).get('rules')
     if rules is None:
         return ''
     if not isinstance(rules, list):
@@ -174,23 +171,23 @@ def pinned_layout_reason(baseline_obj, inventory):
         if not isinstance(rule, dict) or not isinstance(rule.get('rule'), str) or not rule['rule'].strip():
             return 'layout 规则形状无效: ' + _rule_text(rule)
         text = rule['rule']
-        if 'ends' not in rule:
-            if WIDTH_LITERAL.search(text):
-                return 'layout 规则钉死了宽度却没写两端空区（须写成 {rule, ends} 对象）: ' + text
-            continue
         rng = inventory.get('width_range')
         if 'surface' in rule:
             surfaces = {sf.get('id'): sf for sf in inventory.get('surfaces') or [] if isinstance(sf, dict)}
             if not isinstance(rule['surface'], str) or rule['surface'] not in surfaces:
                 return 'layout 规则指向 inventory 里没有的页面 %s: %s' % (rule['surface'], text)
-            rng = surfaces[rule['surface']].get('width_range', rng)
+            rng = surfaces[rule['surface']].get('width_range') or rng
+        if 'ends' not in rule:
+            if WIDTH_LITERAL.search(text):
+                return 'layout 规则钉死了宽度却没写两端空区（须写成 {rule, ends} 对象）: ' + text
+            continue
         if not isinstance(rng, dict) or any(not isinstance(rng.get(k), int) or isinstance(rng.get(k), bool)
                                              for k in ('min', 'max')):
             return 'layout 规则钉死了宽度但 inventory 未声明 width_range: ' + text
-        expected = [str(rng['min']), str(rng['max'])]
+        expected = {str(rng['min']), str(rng['max'])}     # one key when the window has a fixed width
         ends = rule['ends']
-        if not isinstance(ends, dict) or sorted(ends.keys()) != sorted(expected):
-            return 'layout 规则两端须是 width_range 的 %s 与 %s: %s' % (expected[0], expected[1], text)
+        if not isinstance(ends, dict) or set(ends.keys()) != expected:
+            return 'layout 规则两端须是 width_range 的 %d 与 %d: %s' % (rng['min'], rng['max'], text)
         for width, end in ends.items():
             if not isinstance(end, dict) or not isinstance(end.get('empty'), str) or not end['empty'].strip():
                 return 'layout 规则在 %s 宽度处缺允许空区 empty: %s' % (width, text)
@@ -307,11 +304,11 @@ def visual_reason(entry, ledger, run):
             if dropped:
                 noun = '语言' if axis == 'locale' else axis + ' 值'
                 raise ValueError('inventory 删掉了普查官列出的%s: %s' % (noun, ', '.join(sorted(dropped))))
-        reference_images = baseline(run, config)
-        for key in ('baseline_ref', 'interaction_ref'):
-            problem = pinned_layout_reason(read(run, config[key]), inventory)
-            if problem:
-                raise ValueError(problem)
+        reference_images, docs = baseline(run, config)
+        # the interaction baseline's layout category holds gesture distances, not window widths
+        problem = pinned_layout_reason(docs['baseline'], inventory)
+        if problem:
+            raise ValueError(problem)
         if entry.get('medium') != 'runtime':
             raise ValueError('视觉裁决必须使用运行证据')
         evidence = run / 'evidence'
