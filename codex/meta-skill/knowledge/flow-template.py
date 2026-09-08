@@ -23,6 +23,7 @@ MAX_STAGNANT_ITERATIONS = 5
 DEFAULT_GOAL = "Complete the entire generated workflow end-to-end. Do not stop to ask what to do next. Keep executing nodes until the workflow is done, then stop for unified acceptance."
 
 BLOCKING_STATUS_VALUES = {
+    "accepted_with_gaps",
     "accepted_with_warnings",
     "blocked",
     "conditional_pass",
@@ -37,6 +38,9 @@ BLOCKING_STATUS_VALUES = {
     "partial",
     "partial_pass",
     "placeholder",
+    "existence_only",
+    "not_good_enough",
+    "quality_failed",
     "passed_with_warnings",
     "revision-requested",
     "spec_only",
@@ -528,7 +532,7 @@ Requirements:
 3. Complete exactly this node end-to-end. Do not stop after planning.
 4. Create or update any project files required to satisfy the node's exit artifacts.
 5. Append a `transition_log` entry to `.allforai/bootstrap/workflow.json` with `completed` or `failed`.
-6. Do not write `completed` when any exit artifact says `conditional_pass`, `partial`, `accepted_with_warnings`, `passed_with_warnings`, `blocked_by_*`, or contains unresolved `gaps`, `code_gaps`, `asset_gaps`, `audio_gaps`, `remaining_gaps`, `blockers`, `major_findings`, or `unresolved_findings`. Continue repairing and rerunning validation inside this node when it owns the fix; otherwise write `failed` with the exact blocker and repair owner.
+6. Do not write `completed` when any exit artifact says `conditional_pass`, `partial`, `accepted_with_gaps`, `accepted_with_warnings`, `passed_with_warnings`, `blocked_by_*`, or contains unresolved `gaps`, `code_gaps`, `asset_gaps`, `audio_gaps`, `remaining_gaps`, `blockers`, `major_findings`, or `unresolved_findings`. Continue repairing and rerunning validation inside this node when it owns the fix; otherwise write `failed` with the exact blocker and repair owner.
 7. If the node fails, write a one-line `error` field explaining the blocker.
 8. Stop only after this node is truly completed or a failed transition has been written.
 9. Record non-blocking safety warnings as a warnings array of strings in `.allforai/bootstrap/run-warnings.json`; the supervisor applies the recorded Run Policy. Hard safety or unresolved product requirements remain failures, never warnings.

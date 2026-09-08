@@ -396,6 +396,9 @@ even when concept-drift is absent. Declare each node's `source_inputs`, consumed
 `input_dependencies` and `required_documents`; observe inputs before generating
 documents, publish verified contract observations before readiness, and consume
 freshness through reconciliation. Preserve unaffected evidence and journal authority.
+Invalidated items name a `diff` and `repair_owner`: resolve `interactive-bootstrap`
+items here (answer the pending decision, or refreeze and replan the recorded
+change), and leave node-owned items for `/run` to repair and republish.
 
 > This section only applies when `has_concept_drift` is true AND an existing
 > `workflow.json` exists. Otherwise, skip to 3.1 for full planning.
@@ -602,7 +605,7 @@ When writing each node into `workflow.json`, add:
 - `responsibilities`: scoped obligations this node owns (`implementation`, `documentation`, `verification`); combine or split by actual work, not fixed node names.
 - `decision_inputs`: paths to the `.allforai/<domain>/decision-<id>.json` artifacts this node consumes (the former `human_gate` is re-expressed here — see below).
 - `source_inputs`: the product source (files, directories or globs, project-relative) that this node's documents, contract and evidence trace to. Required on every node that consumes `requirement_refs`; write explicit `[]` only when no product source is relevant. Omission or a malformed value is refused by all public gates (`missing_source_inputs` / `invalid_source_inputs`) — never a silent skip of freshness. Do not declare the whole repository to silence drift; extra files consumed during execution are registered through the freshness `read` operation. Retained completed legacy nodes keep their historical contract and no provenance is invented for them.
-- `input_dependencies`: additional consumed files (generated artifacts, policies) beyond `source_inputs`; `required_documents`: generated fact documents that must accompany delivery. Mirror all three in the Node-spec frontmatter.
+- `input_dependencies`: additional consumed files (generated artifacts, policies) beyond `source_inputs`; `required_documents`: generated fact documents that must accompany delivery; `document_verification`: for each required document, a project-specific argv that executes its stated facts against the current source (a doctest of its examples, an interface or schema comparison, a behavior probe), never mere existence or a status field. Every gate refuses a required document without it (`missing_document_verification`), and evidence publication runs it so a code-only acceptance cannot complete a delivery with outdated facts. Mirror all four in the Node-spec frontmatter.
 - `closure_verify`: closure types to verify (e.g. `["audio"]`, `["save-load"]`, `["2d-placeholder"]`) when applicable; else omit or `[]`.
 - `soft_retry_max`: integer (default 2) — leave unset to use the engine default.
 

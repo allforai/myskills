@@ -11,6 +11,7 @@ from pathlib import Path
 import sys
 import tempfile
 import time
+from typing import Any
 
 WORKFLOW = '.allforai/bootstrap/workflow.json'
 STATE = '.allforai/bootstrap/evidence-freshness.json'
@@ -168,13 +169,146 @@ def dependencies(root, node, workflow):
 
 
 def outputs(root, node, kind='evidence'):
-    paths = list(node.get('required_documents', []))
+    """Outputs a publication binds: the Node-spec for a contract; the required
+    fact documents, Node-spec and exit artifacts for delivered evidence."""
+    paths = []
     spec = '.allforai/bootstrap/node-specs/' + node['node_id'] + '.md'
+    if kind == 'evidence':
+        paths.extend(node.get('required_documents', []))
     if (root / spec).exists() or kind == 'contract':
         paths.append(spec)
     if kind == 'evidence':
         paths.extend(item['path'] if isinstance(item, dict) else item for item in node.get('exit_artifacts', []))
     return {p: fingerprint(root, p) for p in paths}
+
+
+def input_diff(recorded, current):
+    """Explicit differences between a recorded input snapshot and the current one."""
+    diff: dict[str, Any] = {}
+    files = {}
+    for path in sorted(set(recorded.get('files', {})) | set(current.get('files', {}))):
+        if recorded.get('files', {}).get(path) != current.get('files', {}).get(path):
+            files[path] = ('added' if path not in recorded.get('files', {}) else
+                           'removed' if path not in current.get('files', {}) else 'changed')
+    if files:
+        diff['files'] = files
+    requirements = sorted(key for key in set(recorded.get('requirements', {})) | set(current.get('requirements', {}))
+                          if recorded.get('requirements', {}).get(key) != current.get('requirements', {}).get(key))
+    if requirements:
+        diff['requirements'] = requirements
+    if recorded.get('baseline_scope') != current.get('baseline_scope'):
+        diff['baseline_scope'] = 'changed'
+    if recorded.get('contract') != current.get('contract'):
+        diff['contract'] = 'changed'
+    upstream = sorted(dep for dep in set(recorded.get('upstream', {})) | set(current.get('upstream', {}))
+                      if recorded.get('upstream', {}).get(dep) != current.get('upstream', {}).get(dep))
+    if upstream:
+        diff['upstream'] = upstream
+    return diff
+
+
+def output_diff(recorded, current):
+    """Missing or changed published outputs, keyed by path."""
+    diff = {}
+    for path in sorted(set(recorded) | set(current)):
+        if current.get(path) is None:
+            diff[path] = 'missing'
+        elif recorded.get(path) != current.get(path):
+            diff[path] = 'changed' if path in recorded else 'added'
+    return diff
+
+
+def missing_outputs(current):
+    return {path: 'missing' for path, value in current.items() if value is None}
+
+
+def document_checks(node):
+    """Declared project-specific verification argv per required document.
+
+    A document is synchronized only when its stated facts are executed against
+    the current source; a fingerprint, timestamp or report refresh proves nothing.
+    """
+    declared = node.get('document_verification')
+    checks = {}
+    for path in node.get('required_documents', []):
+        argv = declared.get(path) if isinstance(declared, dict) else None
+        if isinstance(argv, list) and argv and all(isinstance(s, str) and s for s in argv):
+            checks[path] = argv
+    return checks
+
+
+def project_file_identity(root, token):
+    """The project-relative identity of an argv token naming an existing project
+    file (relative, ./relative or absolute inside the project), else None.
+    Files outside the project are not read or resolved further."""
+    if not isinstance(token, str) or not token:
+        return None
+    candidate = Path(token) if Path(token).is_absolute() else root / token
+    try:
+        if not candidate.is_file():
+            return None
+        resolved = candidate.resolve()
+    except OSError:
+        return None
+    if not resolved.is_relative_to(root.resolve()):
+        return None
+    return resolved.relative_to(root.resolve()).as_posix()
+
+
+def unverified_documents(node, record):
+    """Required documents whose declared check did not verify this record."""
+    checks = document_checks(node)
+    verified = ((record or {}).get('verification') or {}).get('documents', {})
+    return {path: 'unverified' for path in node.get('required_documents', [])
+            if path not in checks or (record is not None and verified.get(path, {}).get('command') != checks[path])}
+
+
+def scope_blockers(root, workflow):
+    """The shared scope contract's blockers, keyed by consuming node (None = global)."""
+    try:
+        from product_intent import validate_scope
+    except ImportError:
+        return {}
+    grouped: dict[str | None, set[str]] = {}
+    for blocker in validate_scope(root, workflow):
+        grouped.setdefault(blocker.get('node_id'), set()).add(blocker.get('code'))
+    return grouped
+
+
+def repair_responsibility(root, node, diff, blockers=None):
+    """Who repairs an inconsistency and which responsibility drifted.
+
+    An unresolved or unreplanned product decision belongs to interactive
+    bootstrap; stale producers repair before their consumers; everything else
+    returns to the node that owns the delivery. A diff never authorizes a
+    product choice, and a Run Policy never resolves one.
+    """
+    if blockers is None:
+        blockers = scope_blockers(root, read_json(root, WORKFLOW, {}))
+    codes = blockers.get(None, set()) | blockers.get(node['node_id'], set())
+    if 'pending_requirement' in codes or 'pending_product_confirmation' in codes:
+        return {'owner': 'interactive-bootstrap', 'responsibilities': ['product-decision']}
+    if 'stale_requirement' in codes:
+        return {'owner': 'interactive-bootstrap', 'responsibilities': ['replan']}
+    own = {k: v for k, v in diff.items() if k != 'upstream'}
+    if not own and diff.get('upstream'):
+        return {'owner': diff['upstream'][0], 'responsibilities': ['upstream']}
+    responsibilities = []
+    spec = '.allforai/bootstrap/node-specs/' + node['node_id'] + '.md'
+    documents = set(node.get('required_documents', []))
+    changed_outputs = diff.get('outputs', {})
+    if 'requirements' in diff or 'baseline_scope' in diff:
+        responsibilities.append('requirement-sync')
+    if 'contract' in diff or spec in changed_outputs:
+        responsibilities.append('contract')
+    if 'files' in diff:
+        responsibilities.append('implementation')
+    if any(path in documents for path in changed_outputs) or diff.get('documents'):
+        responsibilities.append('documentation')
+    if (any(path not in documents and path != spec for path in changed_outputs) or diff.get('evidence') == 'unpublished'
+            or diff.get('documents')):
+        responsibilities.append('verification')
+    return {'owner': node['node_id'], 'responsibilities': responsibilities}
 
 
 def inventory(root, workflow):
@@ -196,7 +330,7 @@ def inventory(root, workflow):
 def evaluate(root):
     workflow = read_json(root, WORKFLOW, {})
     state = read_json(root, STATE, {'nodes': {}})
-    result = {}
+    result: dict[str, dict[str, Any]] = {}
     current = inventory(root, workflow)
     owned = {p for n in workflow.get('nodes', [])
              for field in ('source_inputs', 'input_dependencies')
@@ -205,6 +339,7 @@ def evaluate(root):
     owned.update(p for record in state['nodes'].values() for p in record.get('inputs', {}).get('files', {}))
     owned.update(p for paths in observed_reads(root).values() for p in paths)
     uncertain_inputs = set()
+    blockers = scope_blockers(root, workflow)
     for node in workflow.get('nodes', []):
         evidence = state['nodes'].get(node['node_id'])
         contract = state.get('contracts', {}).get(node['node_id'])
@@ -217,8 +352,26 @@ def evaluate(root):
         valid = valid and record.get('outputs') == outputs(root, node, record.get('kind', 'evidence'))
         evidence_valid = (valid and evidence and evidence['inputs'] == snapshot(root, node, evidence.get('extra', []))
                           and evidence['outputs'] == outputs(root, node))
+        diff: dict[str, Any]
+        if record is None:
+            diff = {'contract': 'unpublished'}
+        else:
+            bound = evidence or record
+            diff = input_diff(bound['inputs'], snapshot(root, node, bound.get('extra', [])))
+            changed = output_diff(bound.get('outputs', {}), outputs(root, node, bound.get('kind', 'evidence')))
+            if evidence is None:
+                diff['evidence'] = 'unpublished'
+                changed.update(missing_outputs(outputs(root, node)))
+            if changed:
+                diff['outputs'] = changed
+            unverified = unverified_documents(node, evidence)
+            if unverified:
+                diff['documents'] = unverified
+                evidence_valid = False
         result[node['node_id']] = {'status': 'valid' if evidence_valid else 'stale',
-                                  'readiness_status': 'valid' if valid else 'stale'}
+                                  'readiness_status': 'valid' if valid else 'stale', 'diff': diff}
+        if not evidence_valid:
+            result[node['node_id']]['repair'] = repair_responsibility(root, node, diff, blockers)
         if record:
             previous = record.get('source_snapshot', {})
             unknown = {p for p in set(previous) | set(current) if previous.get(p) != current.get(p)} - owned
@@ -228,9 +381,16 @@ def evaluate(root):
                                           'reason': 'Unmapped product input changed'}
     for _ in workflow.get('nodes', []):
         for node in workflow['nodes']:
-            if any(result.get(dep, {}).get('status') != 'valid' for dep in dependencies(root, node, workflow)):
-                result[node['node_id']]['status'] = 'stale'
-                result[node['node_id']]['reason'] = 'Upstream evidence is stale or missing'
+            stale_upstream = [dep for dep in dependencies(root, node, workflow)
+                              if result.get(dep, {}).get('status') != 'valid']
+            if stale_upstream:
+                entry = result[node['node_id']]
+                entry['status'] = 'stale'
+                entry['reason'] = 'Upstream evidence is stale or missing'
+                if entry.get('status') != 'undeclared':
+                    stale_diff = entry.setdefault('diff', {})
+                    stale_diff['upstream'] = sorted(set(stale_diff.get('upstream', [])) | set(stale_upstream))
+                    entry['repair'] = repair_responsibility(root, node, stale_diff, blockers)
             if any(result.get(dep, {}).get('readiness_status') != 'valid' for dep in dependencies(root, node, workflow)):
                 result[node['node_id']]['readiness_status'] = 'stale'
     return {'nodes': result, 'uncertain_inputs': sorted(uncertain_inputs)}
@@ -311,14 +471,56 @@ def session(root, request):
                                            'stdout': verified.stdout, 'stderr': verified.stderr}
             observation['outputs'] = outputs(root, node, observation['kind'])
             if any(value is None for value in observation['outputs'].values()):
-                raise ValueError('Cannot publish missing documents or evidence')
+                diff = {'outputs': missing_outputs(observation['outputs'])}
+                return {'status': 'inconsistent', 'diff': diff, 'repair': repair_responsibility(root, node, diff),
+                        'reason': 'Required documents or evidence are missing; delivery is incomplete'}
+            if observation['kind'] == 'evidence':
+                checks = document_checks(node)
+                undeclared = {p: 'unverified' for p in node.get('required_documents', []) if p not in checks}
+                if undeclared:
+                    diff = {'documents': undeclared}
+                    return {'status': 'inconsistent', 'diff': diff, 'repair': repair_responsibility(root, node, diff),
+                            'reason': 'Required documents need a declared project-specific verification against '
+                                      'current source; declare document_verification at planning'}
+                # A checker script is part of the delivery's inputs: an unobserved one
+                # could change without invalidating the evidence it produced.
+                unobserved: dict[str, str] = {}
+                for path, argv in checks.items():
+                    for token in argv:
+                        identity = project_file_identity(root, token)
+                        if (identity is not None and identity not in observation['outputs']
+                                and identity not in observation['inputs']['files']):
+                            unobserved.setdefault(path, 'unobserved-check:' + identity)
+                if unobserved:
+                    diff = {'documents': unobserved}
+                    return {'status': 'inconsistent', 'diff': diff, 'repair': repair_responsibility(root, node, diff),
+                            'reason': 'Document verification scripts must be consumed inputs; declare them in '
+                                      'input_dependencies or register them with read, then reobserve'}
+                documents = {}
+                for path, argv in checks.items():
+                    checked = subprocess.run(argv, cwd=root, capture_output=True, text=True, timeout=300)
+                    if checked.returncode:
+                        return {'status': 'failed_verification', 'document': path, 'command': argv,
+                                'returncode': checked.returncode, 'stdout': checked.stdout, 'stderr': checked.stderr,
+                                'repair': {'owner': node['node_id'], 'responsibilities': ['documentation']},
+                                'reason': 'Required document does not verify against the current source; '
+                                          'synchronize its facts, then reverify'}
+                    documents[path] = {'command': argv, 'returncode': 0}
+                # Recheck every current input after the last check ran: a checker that
+                # rewrites source A into B must not publish A's evidence for B.
+                if (observation['inputs'] != snapshot(root, node, observation.get('extra', []))
+                        or observation['source_snapshot'] != inventory(root, workflow)
+                        or outputs(root, node, observation['kind']) != observation['outputs']):
+                    return {'status': 'stale', 'reason': 'Inputs or outputs changed during document verification; '
+                                                         'a check reads, it does not modify; reobserve current inputs'}
+                observation['verification']['documents'] = documents
             state = read_json(root, STATE, {'nodes': {}})
             bucket = 'contracts' if observation['kind'] == 'contract' else 'nodes'
             state.setdefault(bucket, {})[node['node_id']] = observation
             if bucket == 'nodes':
                 state.get('contracts', {}).pop(node['node_id'], None)
             write_json(root, STATE, state)
-        return {'status': 'valid'}
+        return {'status': 'valid', 'verified_documents': sorted(observation['verification'].get('documents', {}))}
     raise ValueError('Unknown operation')
 
 
@@ -328,7 +530,7 @@ def main():
     except (ValueError, KeyError, TypeError, OSError, StopIteration, subprocess.TimeoutExpired) as exc:
         result = {'status': 'invalid', 'reason': str(exc)}
     print(json.dumps(result, sort_keys=True))
-    return 1 if result.get('status') in {'stale', 'invalid', 'failed_verification'} else 0
+    return 1 if result.get('status') in {'stale', 'invalid', 'inconsistent', 'failed_verification'} else 0
 
 
 if __name__ == '__main__':

@@ -25,6 +25,7 @@ Run from the development checkout root:
 | #12 declaration downgrade and legacy boundary | `python3 -m pytest claude/meta-skill/tests/unit/test_freshness_downgrade.py -q` |
 | #12 CLI target-root resolution | `python3 -m pytest claude/meta-skill/tests/unit/test_gate_project_root.py -q` |
 | #12 corrupt dynamic-read register and recovery | `python3 -m pytest claude/meta-skill/tests/unit/test_corrupt_freshness_reads.py -q` |
+| #13 implementation, document sync and re-acceptance closure | `python3 -m pytest claude/meta-skill/tests/unit/test_delivery_closure.py -q` |
 
 These suites exercise copied public helpers for both adapters. They are not
 real Claude/Codex dialogue evidence and cannot discharge #15–#18 or any cell of

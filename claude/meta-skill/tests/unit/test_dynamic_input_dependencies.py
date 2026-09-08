@@ -16,6 +16,9 @@ def test_consumed_artifact_producer_invalidates_transitive_consumers(tmp_path, h
     workflow = json.loads((tmp_path / WORKFLOW).read_text())
     if produced_as == 'required_documents':
         workflow['nodes'][0]['required_documents'] = workflow['nodes'][0].pop('exit_artifacts')
+        # A required document declares how it is checked against current source (#13).
+        workflow['nodes'][0]['document_verification'] = {'.allforai/bootstrap/export-report.json': [
+            sys.executable, '-c', "import json; assert json.load(open('.allforai/bootstrap/export-report.json'))['status'] == 'passed'"]}
     consumer = {'node_id': 'consumer', 'source_inputs': [],
                 'exit_artifacts': ['.allforai/bootstrap/consumer-report.json']}
     if binding == 'declared-glob':

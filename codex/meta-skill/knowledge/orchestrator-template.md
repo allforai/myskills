@@ -113,7 +113,7 @@ On the first iteration, if `transition_log` is non-empty:
 2. trust artifact readiness over the saved transition log; a JSON report with
    blocking status, fallback/placeholder/prototype gaps, or failed validation is
    not complete merely because the file exists. `conditional_pass`, `partial`,
-   `accepted_with_warnings`, `passed_with_warnings`, `blocked_by_*`, or any
+   `accepted_with_gaps`, `accepted_with_warnings`, `passed_with_warnings`, `blocked_by_*`, or any
    non-empty `gaps`, `code_gaps`, `test_gaps`, `asset_gaps`, `audio_gaps`,
    `remaining_gaps`, `blockers`, `major_findings`, or `unresolved_findings`
    means the workflow must continue repair/revalidation.
@@ -137,7 +137,16 @@ On the first iteration, if `transition_log` is non-empty:
 - `concept-acceptance` verdict = `needs_iteration`: consume `--policy-event on_needs_iteration`.
   halt_with_report writes the summary and stops; auto_fix_once durably consumes
   one repair, reruns acceptance, then stops; accept records accepted_with_gaps
-  without claiming verified/completed work. Never ask during execution.
+  without claiming verified/completed work; the artifact gate treats an
+  `accepted_with_gaps` report status as blocking. Never ask during execution.
+- A node withheld by freshness carries `freshness.diff` and `freshness.repair`:
+  repair at the named `owner` (the node, a stale producer, or `interactive-bootstrap`
+  for a pending or unreplanned product decision), re-observe and republish. A
+  missing, drifted or outdated required document is that node's documentation
+  inconsistency: publication executes each document's declared `document_verification`
+  against the current source, so a code-only acceptance cannot complete a delivery
+  whose facts are stale, and rewriting a document without correcting its facts fails
+  the same check. A product-decision owner returns to `bootstrap`, never to an in-run answer.
 - for goal-based replication workflows, do not treat an accepted current slice as final success when the acceptance artifact says major requested fidelity surfaces remain open
 - User interrupts: the next run resumes from `workflow.json`
 
