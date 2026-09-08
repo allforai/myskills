@@ -610,9 +610,10 @@ def test_web_platform_captures_need_mode_fields(sample):
     root, write, cfg, case, report, entry, ledger = sample
     inventory = json.loads((root / cfg['inventory_ref']).read_text())
     inventory['platform'] = 'web'
+    inventory['form_factor'] = 'mobile'
     inventory['surfaces'][0]['scrollable'] = False
     cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
-    scase = expand(inventory['surfaces'], platform='web')[0]
+    scase = expand(inventory['surfaces'], platform='web', form_factor='mobile')[0]
     cfg['matrix_digest'] = write(cfg['matrix_ref'], [scase])
     ledger['visual_cases'] = [scase]
     manifest = json.loads((root / 'evidence/q1/manifest.json').read_text())
@@ -646,3 +647,13 @@ def test_abstracted_cases_are_counted_apart_and_doubted_on_gap(sample):
     section = '\n'.join(visual_section(ledger, [gap], root))
     assert '独立性假设存疑' in section and 'locale ←' in section
     assert '独立性存疑，需重展开' in section
+
+
+def test_frozen_inventory_desktop_floor_is_enforced_on_replay(sample):
+    root, write, cfg, case, report, entry, ledger = sample
+    inventory = json.loads((root / cfg['inventory_ref']).read_text())
+    inventory.update({'platform': 'macos', 'width_range': {'min': 1024, 'max': 1440, 'basis': 'display'}})
+    inventory['surfaces'][0]['axes']['device'] = ['1024x768@1', '1440x900@2']
+    cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
+    reason = visual_reason(entry, ledger, root)
+    assert '1920' in reason and '1440' in reason

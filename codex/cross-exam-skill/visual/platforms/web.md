@@ -21,7 +21,7 @@ inventory 顶层写 `platform: "web"`：校验器据此要求每个页面声明 
 
 ## 布局阈值：device 轴从代码来，不从用户的屏幕来
 
-普查时从代码读出 `layout_thresholds`，每条带出处：CSS `@media (min-width|max-width)` 与 `@container` 的宽度；Tailwind / UnoCSS / MUI / Ant 等框架的 `screens` / `breakpoints` 配置；主内容列的 `max-width`（列被截住居中之后，比它宽的窗口都是另一副样子，所以 max-width 本身是一个阈值）；JS 里对 `window.innerWidth` / `matchMedia` 的条件分支；侧栏折叠、栅格列数变化的宽度。`width_range`：桌面 Web 与 Electron / Tauri 的最小值取 `minWidth`（没有声明就取代码里最小的阈值之下一档），最大值不小于 1920（外接显示器），用户有更宽的显示器就取那个；移动 Web 的最小值取最窄的目标设备。
+普查时从代码读出 `layout_thresholds`，每条带出处：CSS `@media (min-width|max-width)` 与 `@container` 的宽度；Tailwind / UnoCSS / MUI / Ant 等框架的 `screens` / `breakpoints` 配置；主内容列的 `max-width`（列被截住居中之后，比它宽的窗口都是另一副样子，所以 max-width 本身是一个阈值）；JS 里对 `window.innerWidth` / `matchMedia` 的条件分支；侧栏折叠、栅格列数变化的宽度。`width_range`：桌面 Web 与 Electron / Tauri 的最小值取 `minWidth`（没有声明就取代码里最小的阈值之下一档），最大值不小于 1920（外接显示器；inventory 顶层 `form_factor` 为 desktop 或 both 时 `matrix.py` 按常量 `DESKTOP_WIDTH_FLOOR` 拒绝更小的 max），用户有更宽的显示器就取那个；移动 Web（`form_factor: mobile`）的最小值取最窄的目标设备，不受桌面下限约束。Web 的 inventory 必须写 `form_factor`：桌面窗口 `desktop`、手机 `mobile`、两者都发 `both`。
 
 device 轴每个阈值两侧各一个值、并触到 `width_range` 两端，`matrix.py` 拒绝不满足的清单。用户说"我用 1512x982"，那只是其中一个值。可拉伸的桌面窗口另加 `resize-` 开头的状态（如 `resize-shrink-to-min`、`resize-grow-to-max`），录屏取证：拉动过程中的布局抖动和拉完后的重排是静态图看不到的。
 

@@ -34,6 +34,34 @@ def effective_width(device, orientation, devices=None):
     return w
 
 
+DESKTOP_WIDTH_FLOOR = 1920           # an external display; the widest common desktop window
+FORM_FACTORS = ('desktop', 'mobile', 'both')
+IMPLIED_FORM_FACTOR = {'macos': 'desktop', 'ios': 'mobile', 'android': 'mobile'}
+
+
+def effective_form_factor(platform, form_factor):
+    """web must say whether it targets a desktop window, a phone, or both; native platforms imply it."""
+    implied = IMPLIED_FORM_FACTOR.get(platform)
+    if form_factor is None:
+        if platform == 'web':
+            raise ValueError('web inventory must declare form_factor desktop|mobile|both')
+        return implied
+    if form_factor not in FORM_FACTORS:
+        raise ValueError('invalid form_factor (desktop|mobile|both): ' + str(form_factor))
+    if implied and form_factor != implied:
+        raise ValueError('form_factor %s contradicts platform %s (implies %s)' % (form_factor, platform, implied))
+    return form_factor
+
+
+def check_desktop_floor(width_range, form_factor):
+    """A desktop target that never reaches a wide display has an untested wide end by construction."""
+    if form_factor in ('desktop', 'both') and width_range is not None:
+        _check_range(width_range, 'inventory')
+        if width_range['max'] < DESKTOP_WIDTH_FLOOR:
+            raise ValueError('desktop width floor %d not reached: width_range.max is %d'
+                             % (DESKTOP_WIDTH_FLOOR, width_range['max']))
+
+
 def _check_range(rng, label):
     if not isinstance(rng, dict) or not all(isinstance(rng.get(k), int) and rng[k] > 0 for k in ('min', 'max')) \
             or rng['min'] > rng['max'] or not isinstance(rng.get('basis'), str) or not rng['basis']:
@@ -182,7 +210,8 @@ def _abstracted_by(row, plan, anchors):
 
 
 def expand(surfaces, layout_thresholds=None, width_range=None, devices=None, locales=None, axis_support=None,
-           abstractions=None, anchor=None, platform=None):
+           abstractions=None, anchor=None, platform=None, form_factor=None):
+    check_desktop_floor(width_range, effective_form_factor(platform, form_factor))
     cases = []
     seen = set()
     for surface in surfaces:
@@ -224,7 +253,7 @@ def expand(surfaces, layout_thresholds=None, width_range=None, devices=None, loc
 
 
 INVENTORY_KEYS = ('layout_thresholds', 'width_range', 'devices', 'locales', 'axis_support',
-                  'abstractions', 'anchor', 'platform')
+                  'abstractions', 'anchor', 'platform', 'form_factor')
 
 
 def expand_inventory(inventory):

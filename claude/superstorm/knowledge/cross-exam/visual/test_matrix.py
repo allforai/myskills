@@ -278,14 +278,14 @@ def test_anchor_can_be_chosen():
 def test_web_platform_requires_scrollable_declaration():
     axes = {a: ['default'] for a in AXES}
     with pytest.raises(ValueError, match='web surface must declare scrollable'):
-        expand([{'id': 'home', 'axes': axes}], platform='web')
-    expand([{'id': 'home', 'scrollable': False, 'axes': axes}], platform='web')
+        expand([{'id': 'home', 'axes': axes}], platform='web', form_factor='mobile')
+    expand([{'id': 'home', 'scrollable': False, 'axes': axes}], platform='web', form_factor='mobile')
 
 
 def test_expand_inventory_reads_every_top_level_key():
     from matrix import expand_inventory
     axes = {a: ['default'] for a in AXES}
-    inv = {'platform': 'web', 'surfaces': [{'id': 'home', 'axes': axes}]}
+    inv = {'platform': 'web', 'form_factor': 'mobile', 'surfaces': [{'id': 'home', 'axes': axes}]}
     with pytest.raises(ValueError, match='must declare scrollable'):
         expand_inventory(inv)
     inv['surfaces'][0]['scrollable'] = False
@@ -294,4 +294,52 @@ def test_expand_inventory_reads_every_top_level_key():
     with pytest.raises(ValueError, match='misses width range end'):
         expand_inventory(inv)
     inv['surfaces'][0]['axes']['device'] = ['1024x768@1']
-    assert expand_inventory(inv) == expand(inv['surfaces'], width_range=inv['width_range'], platform='web')
+    assert expand_inventory(inv) == expand(inv['surfaces'], width_range=inv['width_range'], platform='web',
+                                           form_factor='mobile')
+
+
+def _desktop_inventory(platform='web', form_factor='desktop', max_width=1440, **extra):
+    axes = {a: ['default'] for a in AXES}
+    axes['device'] = ['1024x768@1', '%dx900@2' % max_width]
+    surface = {'id': 'home', 'axes': axes, 'scrollable': False}
+    inv = {'platform': platform, 'width_range': {'min': 1024, 'max': max_width, 'basis': 'minWidth + display'},
+           'surfaces': [surface], **extra}
+    if form_factor is not None:
+        inv['form_factor'] = form_factor
+    return inv
+
+
+def test_web_inventory_must_declare_form_factor():
+    from matrix import expand_inventory
+    with pytest.raises(ValueError, match='form_factor'):
+        expand_inventory(_desktop_inventory(form_factor=None))
+    with pytest.raises(ValueError, match='form_factor'):
+        expand_inventory(_desktop_inventory(form_factor='tablet'))
+
+
+def test_desktop_width_range_must_reach_the_floor():
+    from matrix import expand_inventory, DESKTOP_WIDTH_FLOOR
+    assert DESKTOP_WIDTH_FLOOR == 1920
+    with pytest.raises(ValueError, match='1920.*1440'):
+        expand_inventory(_desktop_inventory())
+    with pytest.raises(ValueError, match='1920'):
+        expand_inventory(_desktop_inventory(form_factor='both'))
+    assert expand_inventory(_desktop_inventory(form_factor='mobile'))
+    assert expand_inventory(_desktop_inventory(max_width=1920))
+
+
+def test_platform_implies_form_factor():
+    from matrix import expand_inventory
+    with pytest.raises(ValueError, match='1920'):
+        expand_inventory(_desktop_inventory(platform='macos', form_factor=None))
+    assert expand_inventory(_desktop_inventory(platform='ios', form_factor=None))
+    with pytest.raises(ValueError, match='form_factor.*ios'):
+        expand_inventory(_desktop_inventory(platform='ios', form_factor='desktop'))
+    assert expand_inventory(_desktop_inventory(platform='android', form_factor='mobile'))
+
+
+def test_surface_range_may_narrow_below_the_floor():
+    from matrix import expand_inventory
+    inv = _desktop_inventory(max_width=1920)
+    inv['surfaces'][0]['width_range'] = {'min': 1024, 'max': 1440, 'basis': 'admin page, desktop only'}
+    assert expand_inventory(inv)
