@@ -11,6 +11,7 @@ from pathlib import Path
 import sys
 import tempfile
 import time
+from typing import Any
 
 WORKFLOW = '.allforai/bootstrap/workflow.json'
 STATE = '.allforai/bootstrap/evidence-freshness.json'
@@ -168,13 +169,104 @@ def dependencies(root, node, workflow):
 
 
 def outputs(root, node, kind='evidence'):
-    paths = list(node.get('required_documents', []))
+    """Outputs a publication binds: the Node-spec for a contract; the required
+    fact documents, Node-spec and exit artifacts for delivered evidence."""
+    paths = []
     spec = '.allforai/bootstrap/node-specs/' + node['node_id'] + '.md'
+    if kind == 'evidence':
+        paths.extend(node.get('required_documents', []))
     if (root / spec).exists() or kind == 'contract':
         paths.append(spec)
     if kind == 'evidence':
         paths.extend(item['path'] if isinstance(item, dict) else item for item in node.get('exit_artifacts', []))
     return {p: fingerprint(root, p) for p in paths}
+
+
+def input_diff(recorded, current):
+    """Explicit differences between a recorded input snapshot and the current one."""
+    diff: dict[str, Any] = {}
+    files = {}
+    for path in sorted(set(recorded.get('files', {})) | set(current.get('files', {}))):
+        if recorded.get('files', {}).get(path) != current.get('files', {}).get(path):
+            files[path] = ('added' if path not in recorded.get('files', {}) else
+                           'removed' if path not in current.get('files', {}) else 'changed')
+    if files:
+        diff['files'] = files
+    requirements = sorted(key for key in set(recorded.get('requirements', {})) | set(current.get('requirements', {}))
+                          if recorded.get('requirements', {}).get(key) != current.get('requirements', {}).get(key))
+    if requirements:
+        diff['requirements'] = requirements
+    if recorded.get('baseline_scope') != current.get('baseline_scope'):
+        diff['baseline_scope'] = 'changed'
+    if recorded.get('contract') != current.get('contract'):
+        diff['contract'] = 'changed'
+    upstream = sorted(dep for dep in set(recorded.get('upstream', {})) | set(current.get('upstream', {}))
+                      if recorded.get('upstream', {}).get(dep) != current.get('upstream', {}).get(dep))
+    if upstream:
+        diff['upstream'] = upstream
+    return diff
+
+
+def output_diff(recorded, current):
+    """Missing or changed published outputs, keyed by path."""
+    diff = {}
+    for path in sorted(set(recorded) | set(current)):
+        if current.get(path) is None:
+            diff[path] = 'missing'
+        elif recorded.get(path) != current.get(path):
+            diff[path] = 'changed' if path in recorded else 'added'
+    return diff
+
+
+def missing_outputs(current):
+    return {path: 'missing' for path, value in current.items() if value is None}
+
+
+def scope_blockers(root, workflow):
+    """The shared scope contract's blockers, keyed by consuming node (None = global)."""
+    try:
+        from product_intent import validate_scope
+    except ImportError:
+        return {}
+    grouped: dict[str | None, set[str]] = {}
+    for blocker in validate_scope(root, workflow):
+        grouped.setdefault(blocker.get('node_id'), set()).add(blocker.get('code'))
+    return grouped
+
+
+def repair_responsibility(root, node, diff, blockers=None):
+    """Who repairs an inconsistency and which responsibility drifted.
+
+    An unresolved or unreplanned product decision belongs to interactive
+    bootstrap; stale producers repair before their consumers; everything else
+    returns to the node that owns the delivery. A diff never authorizes a
+    product choice, and a Run Policy never resolves one.
+    """
+    if blockers is None:
+        blockers = scope_blockers(root, read_json(root, WORKFLOW, {}))
+    codes = blockers.get(None, set()) | blockers.get(node['node_id'], set())
+    if 'pending_requirement' in codes or 'pending_product_confirmation' in codes:
+        return {'owner': 'interactive-bootstrap', 'responsibilities': ['product-decision']}
+    if 'stale_requirement' in codes:
+        return {'owner': 'interactive-bootstrap', 'responsibilities': ['replan']}
+    own = {k: v for k, v in diff.items() if k != 'upstream'}
+    if not own and diff.get('upstream'):
+        return {'owner': diff['upstream'][0], 'responsibilities': ['upstream']}
+    responsibilities = []
+    spec = '.allforai/bootstrap/node-specs/' + node['node_id'] + '.md'
+    documents = set(node.get('required_documents', []))
+    changed_outputs = diff.get('outputs', {})
+    if 'requirements' in diff or 'baseline_scope' in diff:
+        responsibilities.append('requirement-sync')
+    if 'contract' in diff or spec in changed_outputs:
+        responsibilities.append('contract')
+    if 'files' in diff:
+        responsibilities.append('implementation')
+    if any(path in documents for path in changed_outputs):
+        responsibilities.append('documentation')
+    if any(path not in documents and path != spec for path in changed_outputs) or diff.get('evidence') == 'unpublished':
+        responsibilities.append('verification')
+    return {'owner': node['node_id'], 'responsibilities': responsibilities}
 
 
 def inventory(root, workflow):
@@ -196,7 +288,7 @@ def inventory(root, workflow):
 def evaluate(root):
     workflow = read_json(root, WORKFLOW, {})
     state = read_json(root, STATE, {'nodes': {}})
-    result = {}
+    result: dict[str, dict[str, Any]] = {}
     current = inventory(root, workflow)
     owned = {p for n in workflow.get('nodes', [])
              for field in ('source_inputs', 'input_dependencies')
@@ -205,6 +297,7 @@ def evaluate(root):
     owned.update(p for record in state['nodes'].values() for p in record.get('inputs', {}).get('files', {}))
     owned.update(p for paths in observed_reads(root).values() for p in paths)
     uncertain_inputs = set()
+    blockers = scope_blockers(root, workflow)
     for node in workflow.get('nodes', []):
         evidence = state['nodes'].get(node['node_id'])
         contract = state.get('contracts', {}).get(node['node_id'])
@@ -217,8 +310,22 @@ def evaluate(root):
         valid = valid and record.get('outputs') == outputs(root, node, record.get('kind', 'evidence'))
         evidence_valid = (valid and evidence and evidence['inputs'] == snapshot(root, node, evidence.get('extra', []))
                           and evidence['outputs'] == outputs(root, node))
+        diff: dict[str, Any]
+        if record is None:
+            diff = {'contract': 'unpublished'}
+        else:
+            bound = evidence or record
+            diff = input_diff(bound['inputs'], snapshot(root, node, bound.get('extra', [])))
+            changed = output_diff(bound.get('outputs', {}), outputs(root, node, bound.get('kind', 'evidence')))
+            if evidence is None:
+                diff['evidence'] = 'unpublished'
+                changed.update(missing_outputs(outputs(root, node)))
+            if changed:
+                diff['outputs'] = changed
         result[node['node_id']] = {'status': 'valid' if evidence_valid else 'stale',
-                                  'readiness_status': 'valid' if valid else 'stale'}
+                                  'readiness_status': 'valid' if valid else 'stale', 'diff': diff}
+        if not evidence_valid:
+            result[node['node_id']]['repair'] = repair_responsibility(root, node, diff, blockers)
         if record:
             previous = record.get('source_snapshot', {})
             unknown = {p for p in set(previous) | set(current) if previous.get(p) != current.get(p)} - owned
@@ -228,9 +335,16 @@ def evaluate(root):
                                           'reason': 'Unmapped product input changed'}
     for _ in workflow.get('nodes', []):
         for node in workflow['nodes']:
-            if any(result.get(dep, {}).get('status') != 'valid' for dep in dependencies(root, node, workflow)):
-                result[node['node_id']]['status'] = 'stale'
-                result[node['node_id']]['reason'] = 'Upstream evidence is stale or missing'
+            stale_upstream = [dep for dep in dependencies(root, node, workflow)
+                              if result.get(dep, {}).get('status') != 'valid']
+            if stale_upstream:
+                entry = result[node['node_id']]
+                entry['status'] = 'stale'
+                entry['reason'] = 'Upstream evidence is stale or missing'
+                if entry.get('status') != 'undeclared':
+                    stale_diff = entry.setdefault('diff', {})
+                    stale_diff['upstream'] = sorted(set(stale_diff.get('upstream', [])) | set(stale_upstream))
+                    entry['repair'] = repair_responsibility(root, node, stale_diff, blockers)
             if any(result.get(dep, {}).get('readiness_status') != 'valid' for dep in dependencies(root, node, workflow)):
                 result[node['node_id']]['readiness_status'] = 'stale'
     return {'nodes': result, 'uncertain_inputs': sorted(uncertain_inputs)}
@@ -311,7 +425,9 @@ def session(root, request):
                                            'stdout': verified.stdout, 'stderr': verified.stderr}
             observation['outputs'] = outputs(root, node, observation['kind'])
             if any(value is None for value in observation['outputs'].values()):
-                raise ValueError('Cannot publish missing documents or evidence')
+                diff = {'outputs': missing_outputs(observation['outputs'])}
+                return {'status': 'inconsistent', 'diff': diff, 'repair': repair_responsibility(root, node, diff),
+                        'reason': 'Required documents or evidence are missing; delivery is incomplete'}
             state = read_json(root, STATE, {'nodes': {}})
             bucket = 'contracts' if observation['kind'] == 'contract' else 'nodes'
             state.setdefault(bucket, {})[node['node_id']] = observation
@@ -328,7 +444,7 @@ def main():
     except (ValueError, KeyError, TypeError, OSError, StopIteration, subprocess.TimeoutExpired) as exc:
         result = {'status': 'invalid', 'reason': str(exc)}
     print(json.dumps(result, sort_keys=True))
-    return 1 if result.get('status') in {'stale', 'invalid', 'failed_verification'} else 0
+    return 1 if result.get('status') in {'stale', 'invalid', 'inconsistent', 'failed_verification'} else 0
 
 
 if __name__ == '__main__':

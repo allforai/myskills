@@ -392,6 +392,9 @@ even when concept-drift is absent. Declare each node's `source_inputs`, consumed
 `input_dependencies` and `required_documents`; observe inputs before generating
 documents, publish verified contract observations before readiness, and consume
 freshness through reconciliation. Preserve unaffected evidence and journal authority.
+Invalidated items name a `diff` and `repair_owner`: resolve `interactive-bootstrap`
+items here (answer the pending decision, or refreeze and replan the recorded
+change), and leave node-owned items for `/run` to repair and republish.
 
 > This section only applies when `has_concept_drift` is true AND an existing
 > `workflow.json` exists. Otherwise, skip to 3.1 for full planning.

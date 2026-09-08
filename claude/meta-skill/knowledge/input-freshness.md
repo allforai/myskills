@@ -46,12 +46,16 @@ Use JSON on stdin to `python3 .allforai/bootstrap/scripts/evidence_freshness.py 
    contract/documents; file existence or a no-op is not verification. The helper
    executes it and rejects nonzero exit, missing outputs, or inputs changed
    before/during verification. Contract publication permits execution but cannot
-   prove completion.
+   prove completion; it binds the Node-spec, while required documents and exit
+   artifacts are bound only when evidence is published.
 4. After implementation has settled, observe again with `kind:"evidence"` before
    running acceptance and refreshing required documents. Publish that token with
    the real project-specific acceptance command. A newly observed snapshot alone
    cannot refresh old evidence: publication runs verification against that input.
-   If the source changes, re-observe and actually reverify the new state.
+   If the source changes, re-observe and actually reverify the new state. A
+   missing required document or exit artifact returns `inconsistent` with the
+   missing `diff.outputs` and its `repair` owner: passing tests do not complete
+   a delivery whose facts are absent.
 5. On bootstrap/resume send `{"operation":"check"}`, then run reconciliation
    with `--write`. `check_artifacts.py` consumes evidence freshness and
    `validate_unattended_readiness.py` consumes contract readiness. Do not bypass
@@ -64,5 +68,21 @@ and affected documents rather than claiming zero impact or rebuilding everything
 Revalidating a producer does not refresh its consumers. Reconcile only affected
 work, preserve unrelated valid records, and reverify affected consumers in order.
 Repeated checks are read-only and identical publication does not rewrite state.
+
+Every withheld completion is an explicit difference with a repair owner, never a
+bare warning. `check`, `check_artifacts.py`, the readiness `stale_evidence`
+blocker and reconciliation `invalidate` items carry `diff` (changed `files`,
+`requirements`, `baseline_scope`, `contract`, `outputs`, stale `upstream`, or an
+`unpublished` contract/evidence) and `repair` (`owner` plus the drifted
+`responsibilities`). A pending or not-yet-replanned product decision names
+`interactive-bootstrap` (`product-decision` / `replan`); a stale producer names
+that producer (`upstream`); everything else returns to the owning node
+(`implementation`, `documentation`, `verification`, `contract`,
+`requirement-sync`). Repair at the owner, re-observe, and republish against the
+current inputs; the new evidence restores completion while unrelated valid
+records keep their provenance. An approved product change is applied through
+its recorded decision, refreeze and replan; it is never asked again and never
+rewritten by implementation. `accepted_with_gaps` is a qualified Run Policy
+outcome and a blocking artifact status: it cannot become verified or completed.
 Unattended execution reports unresolved freshness prerequisites; product choices
 return to interactive bootstrap. Existing Run Policy and visual-review rules apply.

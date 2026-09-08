@@ -145,7 +145,9 @@ relevant) plus consumed `input_dependencies` and `required_documents`, observe
 before generating documents, publish verified contract observations, then consume
 reconciliation and readiness. The shared gates refuse a scoped node that omits or
 malforms these declarations; freshness is never opt-in. Use the same evidence publication CLI after actual
-verification; preserve journal authority and unrelated valid work.
+verification; preserve journal authority and unrelated valid work. Invalidated items name a `diff` and
+`repair_owner`: resolve `interactive-bootstrap` items here (answer the pending decision, or refreeze and
+replan the recorded change) and leave node-owned items for the run to repair and republish.
 
 Also copy `<canonical-root>/scripts/check_decision_inputs.py` into the same
 project-local scripts directory. It imports the same scope owner there.

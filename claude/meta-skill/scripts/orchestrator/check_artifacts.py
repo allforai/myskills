@@ -17,6 +17,7 @@ from pathlib import Path
 
 
 BLOCKING_STATUS_VALUES = {
+    "accepted_with_gaps",
     "accepted_with_warnings",
     "blocked",
     "conditional_pass",
@@ -420,7 +421,15 @@ def freshness_states(project_root: Path, workflow: dict) -> dict:
     recorded, state_error = _load_records(project_root)
     admissions = {n["node_id"]: _admission(n, completed, scope_refs, recorded or set()) for n in nodes}
     if not (project_root / FRESHNESS_STATE).exists() and all(a == "legacy" for a in admissions.values()):
-        return {}
+        # Legacy history keeps its pre-freshness gate only while the dynamic-read
+        # register is readable: an unreadable register hides dependency impact.
+        from evidence_freshness import observed_reads
+        try:
+            observed_reads(project_root)
+        except (ValueError, OSError):
+            pass
+        else:
+            return {}
     states = {}
     invalid = {n["node_id"]: input_declaration_errors(n) for n in nodes if admissions[n["node_id"]] == "invalid"}
     evaluated: dict = {}

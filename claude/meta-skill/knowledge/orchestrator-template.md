@@ -85,6 +85,12 @@ the public `read` operation, refresh required documents and publish evidence wit
 its actual acceptance command. A stale publication requires re-observation and
 reverification, never a success transition. Contract-only freshness permits work
 but does not prove completion. The independent artifact gate consumes this state.
+A withheld completion carries `freshness.diff` and `freshness.repair`: repair at
+the named `owner` (the node, a stale producer, or `interactive-bootstrap` for a
+pending or unreplanned product decision), then re-observe and republish. A
+missing or drifted required document is a documentation inconsistency of that
+node; a product-decision owner is a preflight blocker for the next `/run`, never
+something to answer or invent inside the run.
 A node whose freshness is `undeclared` (missing `source_inputs`) or `invalid`
 (malformed declaration) cannot start or be committed: return it to interactive
 bootstrap to declare its product source (explicit `[]` only when none applies).
@@ -188,7 +194,8 @@ On first iteration if transition_log is non-empty:
   listed for the human to pick afterwards) and stops; `auto_fix_once` runs one repair loop on
   the named gaps, re-runs concept-acceptance, then stops whatever the verdict; `accept` records
   `accepted_with_gaps` in assumed-decisions.json and returns a qualified outcome,
-  without marking that node completed or verified. Never ask here.
+  without marking that node completed or verified; the artifact gate treats an
+  `accepted_with_gaps` report status as blocking. Never ask here.
 - User interrupts → transition_log is already saved, resume with /run
 - Safety warning → apply `run-policy.json.on_safety_warning`: `continue` logs it and goes on,
   `halt` stops with the warning in the report. Never ask here.

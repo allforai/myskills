@@ -37,6 +37,7 @@ BLOCKING_STATUS_VALUES = {
     "invalid",
     "partial",
     "conditional_pass",
+    "accepted_with_gaps",
     "accepted_with_warnings",
     "passed_with_warnings",
     "existence_only",
@@ -295,6 +296,18 @@ def _freshness_blocker(freshness: dict | None) -> str:
     return "input_freshness"
 
 
+def _repair_fields(freshness: dict | None) -> dict[str, Any]:
+    """The explicit difference and repair owner of withheld completion, when known."""
+    fields: dict[str, Any] = {}
+    if isinstance(freshness, dict):
+        if isinstance(freshness.get("diff"), dict):
+            fields["diff"] = freshness["diff"]
+        if isinstance(freshness.get("repair"), dict):
+            fields["repair_owner"] = freshness["repair"].get("owner")
+            fields["repair_responsibilities"] = freshness["repair"].get("responsibilities", [])
+    return fields
+
+
 def _candidate_nodes(project_root: Path, candidate_workflow: Path | None) -> dict[str, dict[str, Any]]:
     if not candidate_workflow:
         return {}
@@ -331,10 +344,12 @@ def build_reconciliation_plan(project_root: Path, state_index: dict[str, Any], c
                     reasons.append("exit_artifacts_changed")
                 if current.get("artifact_readiness") in {"blocked", "missing"}:
                     reasons.append(f"current_artifacts_{current.get('artifact_readiness')}")
+                item = {"node_id": node_id, "action": action, "reasons": reasons}
                 if not freshness_admits(current.get('freshness')):
-                    action = 'invalidate'
+                    item["action"] = 'invalidate'
                     reasons.append(_freshness_blocker(current['freshness']))
-                plan_items.append({"node_id": node_id, "action": action, "reasons": reasons})
+                    item.update(_repair_fields(current['freshness']))
+                plan_items.append(item)
             elif candidate:
                 plan_items.append({"node_id": node_id, "action": "add", "reasons": ["candidate_only"]})
             else:
@@ -352,10 +367,12 @@ def build_reconciliation_plan(project_root: Path, state_index: dict[str, Any], c
             if readiness in {"blocked", "missing"}:
                 action = "invalidate"
                 reasons.append(f"artifact_readiness={readiness}")
+            item = {"node_id": node["node_id"], "action": action, "reasons": reasons}
             if not freshness_admits(node.get("freshness")):
-                action = "invalidate"
+                item["action"] = "invalidate"
                 reasons.append(_freshness_blocker(node.get("freshness")))
-            plan_items.append({"node_id": node["node_id"], "action": action, "reasons": reasons})
+                item.update(_repair_fields(node.get("freshness")))
+            plan_items.append(item)
 
     for orphan in state_index.get("orphan_specs", []):
         plan_items.append({

@@ -334,8 +334,12 @@ def validate_unattended_readiness(project_root: Path) -> dict:
         elif admission == "legacy" and freshness.get("readiness_status") == "undeclared":
             _add(warnings, "undeclared_source_inputs", freshness["reason"], node_id=node_id)
         elif freshness.get("readiness_status") != "valid":
-            _add(blockers, "stale_evidence", freshness.get("reason") or "Reconcile inputs and reverify affected evidence",
-                 node_id=node_id)
+            message = freshness.get("reason") or "Reconcile inputs and reverify affected evidence"
+            repair = freshness.get("repair") if isinstance(freshness.get("repair"), dict) else None
+            if repair:
+                message += (f"; repair owner {repair.get('owner')} "
+                            f"({', '.join(repair.get('responsibilities') or [])}); diff {json.dumps(freshness.get('diff', {}), ensure_ascii=False)}")
+            _add(blockers, "stale_evidence", message, node_id=node_id)
     if scope_blockers:
         # Defer shape-dependent checks, retaining rejection in the report below.
         nodes = []
