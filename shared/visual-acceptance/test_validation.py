@@ -737,3 +737,33 @@ def test_malformed_layout_rule_shapes_yield_reasons(sample):
     for rules in ([42], [{'ends': GOOD_ENDS}], [{'rule': '', 'ends': GOOD_ENDS}], 'not a list'):
         reason = _layout_reason(sample, rules)
         assert isinstance(reason, str) and reason
+
+
+def _two_surfaces():
+    axes = {a: ['default'] for a in AXES}
+    admin = {'id': 'admin', 'axes': {**axes}, 'width_range': {'min': 1280, 'max': 1920, 'basis': 'desktop-only route'}}
+    return [{'id': 'home', 'axes': {**axes}}, admin]
+
+
+ADMIN_ENDS = {'1280': {'empty': '表格撑满'}, '1920': {'empty': '表格撑满，右侧 ≤ 20% 留给筛选栏'}}
+
+
+def test_surface_scoped_pinned_rule_checks_that_surface_range(sample):
+    rule = {'rule': '管理表格最小 1200px', 'surface': 'admin', 'ends': ADMIN_ENDS}
+    assert _layout_reason(sample, [rule], surfaces=_two_surfaces()) is None
+    against_global = {**rule, 'ends': GOOD_ENDS}
+    reason = _layout_reason(sample, [against_global], surfaces=_two_surfaces())
+    assert reason and '1280' in reason and '1920' in reason
+
+
+def test_surface_without_own_range_uses_the_global_range(sample):
+    rule = {'rule': '消息列 820px 居中', 'surface': 'home', 'ends': GOOD_ENDS}
+    assert _layout_reason(sample, [rule], surfaces=_two_surfaces()) is None
+    reason = _layout_reason(sample, [{**rule, 'ends': ADMIN_ENDS}], surfaces=_two_surfaces())
+    assert reason and '1024' in reason
+
+
+def test_unknown_surface_on_a_pinned_rule_is_refused(sample):
+    rule = {'rule': '消息列 820px 居中', 'surface': 'ghost', 'ends': GOOD_ENDS}
+    reason = _layout_reason(sample, [rule], surfaces=_two_surfaces())
+    assert reason and 'ghost' in reason

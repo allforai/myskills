@@ -170,6 +170,11 @@ def pinned_layout_reason(baseline_obj, inventory):
                 return 'layout 规则钉死了宽度却没写两端空区（须写成 {rule, ends} 对象）: ' + text
             continue
         rng = inventory.get('width_range')
+        if 'surface' in rule:
+            surfaces = {sf.get('id'): sf for sf in inventory.get('surfaces') or [] if isinstance(sf, dict)}
+            if rule['surface'] not in surfaces:
+                return 'layout 规则指向 inventory 里没有的页面 %s: %s' % (rule['surface'], text)
+            rng = surfaces[rule['surface']].get('width_range', rng)
         if not isinstance(rng, dict) or not isinstance(rng.get('min'), int) or not isinstance(rng.get('max'), int):
             return 'layout 规则钉死了宽度但 inventory 未声明 width_range: ' + text
         expected = [str(rng['min']), str(rng['max'])]
