@@ -37,3 +37,21 @@ by this current command map, not by rewriting the frozen past. The numbered
 observation/publication messages in `knowledge/input-freshness.md` specify the
 public API lifecycle and its invariants; they do not prescribe product design
 choices or a fixed workflow graph.
+
+## T15 packet preparation (not host proof)
+
+`python3 -m pytest docs/grillstorm/meta-intent/replan-2/T15 -q` checks only packet
+export and evidence-capture helpers. The exporter now requires an explicit
+`--candidate <commit>` and resolves it once to a full Git commit before creating
+the destination. Both manifest commit fields identify that exported commit;
+they do not assert implementation acceptance. Use the coordinator-accepted
+candidate for actual actors, not a stale installation or the former hardcoded
+`88e7beca` preparation snapshot.
+
+Root TDD for this correction: the new CLI test first failed because omitting
+the candidate silently exported the old version; after the correction, all 3
+export tests passed in 34.29s. Export tests verify source bytes, manifest
+identity, executable mode and symlink targets, and still report `executed: 0`.
+No scenario input or evaluator criterion was changed.
+The complete preparation-only suite after the exporter change passed:
+**17 passed in 35.68s**. It still does not execute any actor.

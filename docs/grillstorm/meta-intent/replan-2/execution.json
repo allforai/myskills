@@ -43,20 +43,24 @@
       "candidate": "67446ad15a5e8adc329a0b0c9f8f3c45d1d359e9"
     },
     "12": {
-      "status": "candidate_pending_review",
+      "status": "implementation_accepted",
       "dependencies": [
         10
       ],
       "base": "88e7becaf30522ef29dd2fa168b62045affcb782",
-      "candidate": "b6357a013415db2012b73d89792955f2afc5d4aa",
+      "candidate": "ed430dfcebed485b913b54d7785f02cc86998303",
+      "original_builder_candidate": "b6357a013415db2012b73d89792955f2afc5d4aa",
+      "proof_pending": [17],
       "root_findings": [
         "selected_baseline_payload_freshness",
         "fixture_git_context_escape"
       ],
-      "root_findings_corrections": "Builder corrections and root targeted recheck passed; combined candidate review pending"
+      "root_findings_corrections": "Independent final review accepts #12/A1/C2; non-blocking all-legacy READS short-circuit note carried to #13; #11 C1-prime remains separate"
     },
     "13": {
-      "status": "pending",
+      "status": "running",
+      "base": "ed430dfcebed485b913b54d7785f02cc86998303",
+      "checkout": "meta-intent-t13",
       "dependencies": [
         12
       ]
@@ -70,6 +74,7 @@
     },
     "15": {
       "status": "preparing_actual_host_tests",
+      "host_prompt": "Codex evaluator waits for user to select Keep current model; Orca terminal input rejected with agent_prompt_blocked, no model change applied",
       "dependencies": [
         9,
         10
@@ -103,11 +108,26 @@
       "dispatch": "ctx_50de403c39ba",
       "checkout": "meta-intent-t9",
       "role": "evaluator"
+    },
+    {
+      "issue": 11,
+      "role": "legacy_profile_correction",
+      "task": "task_4c9efd633470",
+      "dispatch": "ctx_8ae581fcb4a6",
+      "checkout": "meta-intent-t12"
+    },
+    {
+      "issue": 13,
+      "role": "implementation",
+      "task": "task_0b9e3008065b",
+      "dispatch": "ctx_592495fd6926",
+      "checkout": "meta-intent-t13"
     }
   ],
   "completed": [
     9,
-    10
+    10,
+    12
   ],
   "historical_records": "../workflow-state.json tasks and ../reviews remain historical; no old acceptance reused",
   "completion_scope": "Implementation acceptance unlocks DAG; actual host proof and final tracker closure remain separate.",
@@ -123,8 +143,17 @@
       11,
       12
     ],
-    "status": "verifying_refreshed_combined_candidate",
-    "integration_before_main_refresh": "0c10c285"
+    "status": "12_accepted_11_legacy_profile_correction_running",
+    "formal_standards_result": "ed430dfc: 0 hard breaches, 0 soft, 0 nits; 6 optional smell judgements, not acceptance blockers",
+    "formal_spec_result": "ed430dfc: #12/A1/C2 accepted; #11 C1 fixed on CLI routes, C1-prime documented hand-projection route remains blocking. See final report and repro.",
+    "preparation_tests": {"passed": 17, "actual_host_proof": false, "candidate_argument_required": true},
+    "correction_results": {"python": 581, "node": 55, "typechecked_core_files": 3, "independent_recheck_pending": true},
+    "integration_before_main_refresh": "0c10c285",
+    "candidate": "ed430dfcebed485b913b54d7785f02cc86998303",
+    "delta_base": "90257b1504d1c009d6e0f8a920fe0cf389f18463",
+    "correction_commit_hook_python": 557,
+    "regression_results": {"python": 519, "node": 55, "commit_hook_python": 495},
+    "unorchestrated_worker_recheck": "Supplemental only; excluded from formal acceptance. See T11-local-reopen-corrections.md attribution correction."
   },
   "initial_main_base": "fa2447b20199fa6f8199cdbbe2c05692e283f08c",
   "synchronized_related_issues": [
