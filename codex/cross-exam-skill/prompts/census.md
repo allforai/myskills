@@ -50,7 +50,7 @@ dark_variant_gaps：支持深色时没有深色变体的资源与硬编码颜色
  "dead_contracts": [{"name": "...", "entry": "...", "defined_at": "path:line"}],
  "ui_surfaces": [{"id": "U1", "name": "...", "entry": "...", "kind": "screen", "states": ["..."],
                   "width_range": {"min": 1280, "max": 1920, "basis": "path:line（仅代码本身限制该面宽度时才写）"}}],
- "layout_thresholds": [{"width": 1024, "unit": "px|pt|dp", "basis": "path:line"}],
+ "layout_thresholds": [{"width": 1024, "unit": "px|pt|dp|rem|em", "basis": "path:line"}],
  "form_factor": {"value": "desktop", "basis": "path:line 或 平台本身"},
  "width_range": {"min": 900, "max": 1920, "basis": "path:line 或 设备家族/显示器依据"},
  "locales": {"supported": ["zh-CN", "en", "ar"], "default": "zh-CN", "fallback": ["en"], "rtl": ["ar"], "basis": "path:line"},

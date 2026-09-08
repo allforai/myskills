@@ -35,6 +35,8 @@ def sample(tmp_path):
     case = expand(inventory['surfaces'])[0]
     cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
     cfg['matrix_digest'] = write(cfg['matrix_ref'], [case])
+    cfg['census_ref'] = 'visual/census.json'
+    cfg['census_digest'] = write(cfg['census_ref'], {})     # a non-UI census: nothing to cross-check
     bound = {k: cfg[k] for k in ('build','baseline_digest','interaction_digest','inventory_digest','matrix_digest')}
     cap = {**case, 'case_id': case['id'], **bound, 'captured_at': 'now',
            'images': ['q1/image.png'], 'image_digests': {'q1/image.png': image_hash}}
@@ -514,9 +516,20 @@ def test_declined_locales_are_declared_in_the_visual_section(sample):
     assert '未验收语言（用户确认放弃，不进任何计数）：de — 用户 2026-09-07：德语区暂不上线' in section
 
 
+
+
+def _bind_census(sample, census, copy_to_ledger=False):
+    """Save the census return as the run's digest-bound file; optionally mirror its keys to the ledger top level."""
+    root, write, cfg, case, report, entry, ledger = sample
+    cfg['census_ref'] = 'visual/census.json'
+    cfg['census_digest'] = write(cfg['census_ref'], census)
+    if copy_to_ledger:
+        ledger.update(census)
+
+
 def test_inventory_cannot_drop_a_census_locale(sample):
     root, write, cfg, case, report, entry, ledger = sample
-    ledger['locales'] = {'supported': ['zh-CN', 'de'], 'basis': 'i18n.ts'}     # census, verbatim
+    _bind_census(sample, {'locales': {'supported': ['zh-CN', 'de'], 'basis': 'i18n.ts'}})     # census, verbatim
     inventory = json.loads((root / cfg['inventory_ref']).read_text())
     inventory['locales'] = {'supported': ['zh-CN'], 'basis': 'i18n.ts'}        # de silently removed
     inventory['surfaces'][0]['axes']['locale'] = ['zh-CN']
@@ -592,7 +605,7 @@ def test_declined_axis_values_are_declared_in_the_visual_section(sample):
 
 def test_inventory_cannot_drop_a_census_axis_value(sample):
     root, write, cfg, case, report, entry, ledger = sample
-    ledger['axis_support'] = {'appearance': {'supported': ['light', 'dark'], 'basis': 'values-night/'}}
+    _bind_census(sample, {'axis_support': {'appearance': {'supported': ['light', 'dark'], 'basis': 'values-night/'}}})
     inventory = json.loads((root / cfg['inventory_ref']).read_text())
     inventory['axis_support'] = {'appearance': {'supported': ['dark'], 'basis': 'values-night/'}}   # light removed
     inventory['surfaces'][0]['axes']['appearance'] = ['dark']
@@ -787,7 +800,7 @@ def _two_surfaces():
     return [{'id': 'home', 'axes': {**axes}}, admin]
 
 
-ADMIN_ENDS = {'1280': {'empty': '表格撑满'}, '1920': {'empty': '表格撑满，右侧 ≤ 20% 留给筛选栏'}}
+ADMIN_ENDS = {'1280': {'empty': '表格撑满，两侧 ≤ 0px'}, '1920': {'empty': '表格撑满，右侧 ≤ 20% 留给筛选栏'}}
 
 
 def test_surface_scoped_pinned_rule_checks_that_surface_range(sample):
@@ -934,6 +947,19 @@ def test_invisible_allowance_is_not_an_allowance(sample, blank):
     assert reason and 'empty' in reason
 
 
+@pytest.mark.parametrize('empty', ['无限制', '用户说没事', '.', '两侧随意', '≤ 内容宽'])
+def test_unquantified_allowance_is_refused(sample, empty):
+    ends = {'1024': {'empty': '两侧各 ≤ 10%'}, '1920': {'empty': empty}}
+    reason = _layout_reason(sample, [{**PINNED, 'ends': ends}])
+    assert reason and '1920' in reason and '可量' in reason and '2000px' in reason
+
+
+@pytest.mark.parametrize('empty', ['≤ 100% 内容宽', '≤ 240px', '两侧各 ≤ 主列宽 50%', '≤ 12.5rem', '不超过 200 像素'])
+def test_quantified_allowance_is_accepted(sample, empty):
+    ends = {'1024': {'empty': '两侧各 ≤ 10%'}, '1920': {'empty': empty}}
+    assert _layout_reason(sample, [{**PINNED, 'ends': ends}]) is None
+
+
 @pytest.mark.parametrize('text', ['消息列 820 像素 居中', 'column 820 pixels centred', '主列 51.25rem 居中',
                                   '消息列 max-width: 820，居中'])
 def test_a_width_written_around_the_literal_is_still_a_width(sample, text):
@@ -970,10 +996,16 @@ def test_hidden_width_is_refused_even_when_layout_category_has_no_rules(sample):
 
 
 def _census_reason(sample, census, platform='ios', form_factor=None, thresholds=None,
-                   width_range='global', surfaces=None, readback_width='auto'):
-    """Put the census's verbatim width facts on the ledger top level and freeze an inventory against them."""
+                   width_range='global', surfaces=None, readback_width='auto', bind='file'):
+    """Freeze an inventory against the census's width facts: digest-bound file (`file`), ledger top-level
+    keys only as an old run wrote them (`ledger`), or the file plus a verbatim ledger copy (`both`)."""
     root, write, cfg, case, report, entry, ledger = sample
-    ledger.update(census)
+    if bind == 'ledger':
+        cfg.pop('census_ref', None)
+        cfg.pop('census_digest', None)
+        ledger.update(census)
+    else:
+        _bind_census(sample, census, copy_to_ledger=bind == 'both')
     inventory = json.loads((root / cfg['inventory_ref']).read_text())
     inventory['platform'] = platform
     inventory.pop('form_factor', None)               # calls within one test must not inherit each other's keys
@@ -1031,9 +1063,9 @@ def test_inventory_without_width_range_cannot_hide_a_census_range(sample):
 
 
 def test_inventory_cannot_drop_a_census_layout_threshold(sample):
-    census = {'layout_thresholds': [{'width': 1280, 'unit': 'px', 'basis': 'app.css:3'},
-                                    {'width': 1440, 'unit': 'px', 'basis': 'app.css:9'}]}
-    reason = _census_reason(sample, census, thresholds=[{'width': 1280, 'basis': 'app.css:3'}])
+    census = {'layout_thresholds': [{'width': 1280, 'unit': 'pt', 'basis': 'Sizes.swift:3'},
+                                    {'width': 1440, 'unit': 'pt', 'basis': 'Sizes.swift:9'}]}
+    reason = _census_reason(sample, census, thresholds=[{'width': 1280, 'basis': 'Sizes.swift:3'}])
     assert reason and '1440' in reason and '1280' not in reason
     added = [{'width': 1280, 'basis': 'app.css:3'}, {'width': 1440, 'basis': 'app.css:9'},
              {'width': 1600, 'basis': 'user: 1600 wide dock'}]
@@ -1072,6 +1104,95 @@ def test_narrowed_surface_matching_the_census_is_accepted_and_narrower_is_refuse
 def test_missing_census_keys_are_not_checked(sample):
     assert _census_reason(sample, {}) is None
     assert _census_reason(sample, {}, surfaces=_narrowed()) is None          # narrowing unchecked without a census range
+
+
+def test_census_file_digest_mismatch_is_refused(sample):
+    root, write, cfg, case, report, entry, ledger = sample
+    assert _census_reason(sample, {'width_range': CENSUS_RANGE}) is None
+    write(cfg['census_ref'], {'width_range': {**CENSUS_RANGE, 'max': 1600}})   # edited after freezing
+    reason = visual_reason(entry, ledger, root)
+    assert reason and '普查官原件摘要不匹配' in reason
+
+
+def test_ledger_copy_diverging_from_the_census_file_is_refused_by_name(sample):
+    root, write, cfg, case, report, entry, ledger = sample
+    assert _census_reason(sample, {'width_range': CENSUS_RANGE, 'form_factor': 'mobile'}, bind='both') is None
+    ledger['width_range'] = {**CENSUS_RANGE, 'max': 1600}                  # the copy says less than the file
+    reason = visual_reason(entry, ledger, root)
+    assert reason and 'width_range' in reason and '普查官原件' in reason
+    ledger['width_range'] = CENSUS_RANGE
+    assert visual_reason(entry, ledger, root) is None
+    del ledger['width_range']                                              # a missing copy is fine; a wrong one is not
+    ledger['locales'] = {'supported': ['en']}                              # a key the file never had
+    reason = visual_reason(entry, ledger, root)
+    assert reason and 'locales' in reason and '普查官原件' in reason
+
+
+def test_deleting_a_ledger_key_no_longer_disables_the_check(sample):
+    root, write, cfg, case, report, entry, ledger = sample
+    census = {'width_range': {**CENSUS_RANGE, 'max': 2560}}
+    reason = _census_reason(sample, census, bind='both')
+    assert reason and '2560' in reason
+    del ledger['width_range']                                              # the interrogator's old escape hatch
+    reason = visual_reason(entry, ledger, root)
+    assert reason and '2560' in reason
+
+
+def test_unbound_census_keeps_the_old_behaviour_and_the_report_says_so(sample):
+    root, write, cfg, case, report, entry, ledger = sample
+    census = {'width_range': {**CENSUS_RANGE, 'max': 2560}}
+    reason = _census_reason(sample, census, bind='ledger')
+    assert reason and '2560' in reason and 'census_ref' not in cfg
+    del ledger['width_range']                                              # on an unbound run this still disables it
+    ledger['form_factor'] = 'mobile'
+    assert visual_reason(entry, ledger, root) is None
+    section = '\n'.join(visual_section(ledger, [entry], root))
+    assert '未绑定 census_ref' in section
+    _bind_census(sample, {'form_factor': 'mobile'})
+    section = '\n'.join(visual_section(ledger, [entry], root))
+    assert '未绑定' not in section and 'visual/census.json' in section
+
+
+def test_ui_target_with_neither_binding_nor_ledger_copy_is_refused(sample):
+    reason = _census_reason(sample, {}, bind='ledger')                     # inventory declares a width_range
+    assert reason and '普查官原件缺失（census_ref）' in reason
+
+
+def test_non_ui_target_needs_no_census(sample):
+    root, write, cfg, case, report, entry, ledger = sample
+    del cfg['census_ref'], cfg['census_digest']
+    assert visual_reason(entry, ledger, root) is None                      # the fixture inventory has no width facts
+
+
+def test_rem_threshold_is_not_a_droppable_width(sample):
+    census = {'layout_thresholds': [{'width': 1280, 'unit': 'pt', 'basis': 'Sizes.swift:3'},
+                                    {'width': 64, 'unit': 'rem', 'basis': 'app.css:9'},
+                                    {'width': 1440, 'basis': 'Sizes.swift:9'}]}
+    kept = [{'width': 1280, 'basis': 'Sizes.swift:3'}, {'width': 1440, 'basis': 'Sizes.swift:9'}]
+    assert _census_reason(sample, census, thresholds=kept) is None           # ios: pt and unit-less compare, rem skipped
+    reason = _census_reason(sample, census, thresholds=kept[:1])
+    assert reason and '1440' in reason and '64' not in reason
+    px = {'layout_thresholds': [{'width': 1280, 'unit': 'px', 'basis': 'app.css:3'}]}
+    assert _census_reason(sample, px, thresholds=[]) is None                 # a px threshold is not an ios width
+    reason = _census_reason(sample, px, thresholds=[], platform='macos', form_factor='both')
+    assert reason is None
+    dp = {'layout_thresholds': [{'width': 840, 'unit': 'dp', 'basis': 'values-w840dp/'}]}
+    reason = _census_reason(sample, dp, thresholds=[], platform='android')   # dp is android's own unit
+    assert reason and '840' in reason
+    reason = _census_reason(sample, {'layout_thresholds': [{'width': 1280, 'unit': 'vw'}]}, thresholds=[])
+    assert reason and '普查官的 layout_thresholds 形状无效' in reason
+
+
+def test_census_id_names_the_census_surface(sample):
+    read = {'id': 'U4', 'name': 'Admin', 'entry': 'src/routes/admin.tsx:Admin',
+            'width_range': {'min': 1280, 'max': 1920, 'basis': 'router.tsx:40 innerWidth >= 1280'}}
+    census = {'width_range': CENSUS_RANGE, 'ui_surfaces': [read]}
+    surfaces = _narrowed()
+    surfaces[1]['census_id'] = 'U4'
+    assert _census_reason(sample, census, surfaces=surfaces) is None
+    surfaces[1]['census_id'] = 'U9'
+    reason = _census_reason(sample, census, surfaces=surfaces)
+    assert reason and 'admin' in reason and 'census_id' in reason and 'entry' in reason and 'id' in reason
 
 
 @pytest.mark.parametrize('census', [

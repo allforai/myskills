@@ -158,6 +158,10 @@ def _visible(text):
                    and ch not in '\u2800\u3164\uffa0')
 
 
+# a checkable bound: a number followed by a unit or a percent sign; "any whitespace is fine" is a number too
+QUANTITY = re.compile(r'\d+(?:\.\d+)?\s*(?:px|pt|dp|r?em|%|像素)', re.IGNORECASE)
+
+
 WIDTH_CATEGORIES = ('spacing', 'components', 'direction', 'typography', 'navigation', 'states', 'feedback',
                     'icons', 'color', 'motion', 'environment')
 
@@ -210,6 +214,9 @@ def pinned_layout_reason(baseline_obj, inventory):
         for width, end in ends.items():
             if not isinstance(end, dict) or not isinstance(end.get('empty'), str) or not _visible(end['empty']):
                 return 'layout 规则在 %s 宽度处缺允许空区 empty: %s' % (width, text)
+            if not QUANTITY.search(end['empty']):
+                return ('layout 规则在 %s 宽度处的空区 empty 没有可量的界（须写数字加单位，如 "≤ 100%% 内容宽" 或 '
+                        '"≤ 2000px"；"多宽都行"也写成数字）: %s' % (width, text))
     for category in WIDTH_CATEGORIES:
         other = (baseline_obj.get('categories') or {}).get(category)
         for rule in (other.get('rules') if isinstance(other, dict) else None) or []:
@@ -227,20 +234,53 @@ def _int_range(rng):
 
 
 def _census_surface(surface, read):
-    """The census entry this inventory surface came from: same id, or the same entry when ids were renamed."""
+    """The census entry this inventory surface came from: same id, the same entry when ids were renamed, or
+    the entry the surface names in `census_id`."""
     for cs in read:
         if isinstance(cs, dict) and (cs.get('id') == surface.get('id')
-                                     or (surface.get('entry') and cs.get('entry') == surface.get('entry'))):
+                                     or (surface.get('entry') and cs.get('entry') == surface.get('entry'))
+                                     or (isinstance(surface.get('census_id'), str) and cs.get('id') == surface['census_id'])):
             return cs
     return None
 
 
-def census_width_reason(ledger, inventory):
-    """The census's form factor, width range, thresholds and per-surface width bands sit verbatim on the
-    ledger top level; the inventory may widen every one of them (the user may know a display the code does
-    not) but never narrow one, or the wide end leaves the matrix on the interrogator's say-so. A key the
-    ledger does not carry is not checked. Returns '' or the refusal reason."""
-    read_ff = ledger.get('form_factor')
+CENSUS_KEYS = ('form_factor', 'width_range', 'layout_thresholds', 'ui_surfaces',
+               'locales', 'axis_support', 'translation_keys')
+LOGICAL_UNIT = {'web': 'px', 'ios': 'pt', 'macos': 'pt', 'android': 'dp'}   # the inventory's threshold unit
+THRESHOLD_UNITS = {'px', 'pt', 'dp', 'rem', 'em'}
+
+
+def census(ledger, run):
+    """The census return the cross-checks read, and whether it is digest-bound. Bound: the file at
+    `visual_acceptance.census_ref`, whose digest must match and whose keys the ledger top level may only
+    copy verbatim. Unbound (no census_ref): the ledger top-level keys, so a run frozen before the binding
+    renders as before — and a key that is not there is not checked, which is the gap the binding closes."""
+    config = ledger.get('visual_acceptance') or {}
+    ref = config.get('census_ref')
+    if ref is None:
+        return {k: ledger[k] for k in CENSUS_KEYS if k in ledger}, False
+    path = artifact(run, ref)
+    if digest(path) != config.get('census_digest'):
+        raise ValueError('普查官原件摘要不匹配')
+    read = json.loads(path.read_text())
+    if not isinstance(read, dict):
+        raise ValueError('普查官原件不是对象')
+    for key in CENSUS_KEYS:
+        if key in ledger and ledger[key] != read.get(key):
+            raise ValueError('ledger 顶层的 %s 与普查官原件不一致' % key)
+    return read, True
+
+
+def _ui_target(inventory):
+    return bool(inventory.get('surfaces')) and any(inventory.get(k) for k in ('width_range', 'locales', 'axis_support'))
+
+
+def census_width_reason(read, inventory):
+    """The census's form factor, width range, thresholds and per-surface width bands (`read`: the census
+    return, see census()); the inventory may widen every one of them (the user may know a display the code
+    does not) but never narrow one, or the wide end leaves the matrix on the interrogator's say-so. A key the
+    census does not carry is not checked. Returns '' or the refusal reason."""
+    read_ff = read.get('form_factor')
     if read_ff is not None:
         if isinstance(read_ff, dict):          # the census writes {value, basis}; the inventory a bare value
             read_ff = read_ff.get('value')
@@ -251,7 +291,7 @@ def census_width_reason(ledger, inventory):
         covers = {'desktop': {'desktop'}, 'mobile': {'mobile'}, 'both': {'desktop', 'mobile'}}
         if not covers.get(read_ff, set()) <= covers.get(declared, set()):
             return 'inventory 的 form_factor %s 弱于普查官读出的 %s' % (declared, read_ff)
-    read_range = ledger.get('width_range')
+    read_range = read.get('width_range')
     if read_range is not None:
         got = _int_range(read_range)
         if got is None:
@@ -263,7 +303,7 @@ def census_width_reason(ledger, inventory):
             return 'inventory 的 width_range.max %d 低于普查官读出的 %d' % (mine[1], got[1])
         if mine[0] > got[0]:
             return 'inventory 的 width_range.min %d 高于普查官读出的 %d' % (mine[0], got[0])
-        read_surfaces = ledger.get('ui_surfaces', [])
+        read_surfaces = read.get('ui_surfaces', [])
         if not isinstance(read_surfaces, list):
             return '普查官的 ui_surfaces 形状无效'
         for sf in inventory.get('surfaces') or []:
@@ -273,20 +313,25 @@ def census_width_reason(ledger, inventory):
             narrowed = _int_range(sf['width_range'])
             counterpart = _census_surface(sf, read_surfaces)
             if counterpart is None or counterpart.get('width_range') is None:
-                return '页面 %s 收窄了 width_range，普查官没有从代码读到该页面的宽度限制' % sid
+                return ('页面 %s 收窄了 width_range，普查官没有从代码读到该页面的宽度限制'
+                        '（按 id、entry 或 census_id 对上普查官 ui_surfaces 里带 width_range 的面）' % sid)
             band = _int_range(counterpart['width_range'])
             if band is None:
                 return '普查官的 ui_surfaces[%s].width_range 形状无效' % sid
             if narrowed is not None and (narrowed[0] > band[0] or narrowed[1] < band[1]):
                 return '页面 %s 的 width_range %d..%d 窄于普查官读出的 %d..%d' % (sid, *narrowed, *band)
-    read_thresholds = ledger.get('layout_thresholds')
+    read_thresholds = read.get('layout_thresholds')
     if read_thresholds is not None:
         if not isinstance(read_thresholds, list) or any(
                 not isinstance(t, dict) or not isinstance(t.get('width'), int) or isinstance(t.get('width'), bool)
+                or (t.get('unit') is not None and t.get('unit') not in THRESHOLD_UNITS)
                 for t in read_thresholds):
             return '普查官的 layout_thresholds 形状无效'
         kept = {t.get('width') for t in inventory.get('layout_thresholds') or [] if isinstance(t, dict)}
-        dropped = sorted({t['width'] for t in read_thresholds} - kept)
+        # the inventory writes thresholds in the platform's logical unit; a rem/em threshold is converted
+        # there and the validator cannot know the root size, so it is not a droppable width here
+        comparable = (None, LOGICAL_UNIT.get(inventory.get('platform')))
+        dropped = sorted({t['width'] for t in read_thresholds if t.get('unit') in comparable} - kept)
         if dropped:
             return 'inventory 删掉了普查官读出的布局阈值: ' + ', '.join(str(w) for w in dropped)
     return ''
@@ -408,9 +453,13 @@ def visual_reason(entry, ledger, run):
         rtl_locales = inv_locales.get('rtl') or []
         support = merged_support(inventory.get('axis_support'), inventory.get('locales'))
         platform = inventory.get('platform')
-        # The census output sits verbatim in the ledger; the inventory may decline a shipped locale
-        # on the record, but it may not drop one from `supported` to make the matrix smaller.
-        census_support = merged_support(ledger.get('axis_support'), ledger.get('locales'))
+        # The census return is digest-bound (or, on an older run, copied to the ledger top level); the
+        # inventory may decline a shipped locale on the record, but it may not drop one from `supported`
+        # to make the matrix smaller.
+        census_obj, bound = census(ledger, run)
+        if not bound and not census_obj and _ui_target(inventory):
+            raise ValueError('普查官原件缺失（census_ref）')
+        census_support = merged_support(census_obj.get('axis_support'), census_obj.get('locales'))
         for axis, spec in census_support.items():
             declared = support.get(axis) or {}
             dropped = set((spec or {}).get('supported') or []) - set(declared.get('supported') or [])
@@ -418,7 +467,7 @@ def visual_reason(entry, ledger, run):
                 noun = '语言' if axis == 'locale' else axis + ' 值'
                 raise ValueError('inventory 删掉了普查官列出的%s: %s' % (noun, ', '.join(sorted(dropped))))
         # same for what the census read about width: the inventory may widen, never narrow
-        problem = census_width_reason(ledger, inventory)
+        problem = census_width_reason(census_obj, inventory)
         if problem:
             raise ValueError(problem)
         reference_images, docs = baseline(run, config)
@@ -554,7 +603,9 @@ def visual_section(ledger, admitted, run=None):
         return []
     out = ['', '## 视觉基线与矩阵覆盖', '',
            f"基线：{config.get('baseline_status')} · {config.get('baseline_ref')} · {config.get('interaction_ref')}",
-           f"审查模式：{config.get('review_mode')}；文件校验不代替实际看图。", '']
+           f"审查模式：{config.get('review_mode')}；文件校验不代替实际看图。",
+           (f"普查官原件：{config.get('census_ref')}（摘要绑定）" if config.get('census_ref') is not None else
+            '普查官原件：未绑定 census_ref，宽度与支持值只按 ledger 顶层键比对，缺键即不比。'), '']
     counts = dict.fromkeys(['done','gap','drift','unprovable','not_examined','not_applicable','abstracted'], 0)
     rows = [c for c in (ledger.get('visual_cases') or []) if isinstance(c, dict)]
     if run is not None:
@@ -615,9 +666,9 @@ def visual_section(ledger, admitted, run=None):
                        f"reviewers：{entry.get('review_reports', [])} · "
                        f"模式：{entry.get('review_mode', config.get('review_mode'))} · "
                        f"分歧：{entry.get('reconciliation_ref', '无')} · 降级：{entry.get('degradation_ref', '无')}")
-    out.insert(5, ' · '.join(f'{k}: {v}' for k, v in counts.items()))
+    out.insert(6, ' · '.join(f'{k}: {v}' for k, v in counts.items()))
     if doubted:
-        out.insert(6, '独立性假设存疑（该轴的用例出了缺口，被它抽象掉的用例需重展开）：' +
+        out.insert(7, '独立性假设存疑（该轴的用例出了缺口，被它抽象掉的用例需重展开）：' +
                    '；'.join(f"{axis} ← {', '.join(ids)}" for axis, ids in doubted.items()))
     axis_lines = ['', '逐轴覆盖（已抽象与不适用不计）：']
     for axis in AXES:

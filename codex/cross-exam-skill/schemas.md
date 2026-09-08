@@ -5,7 +5,9 @@
 视觉模式的数据合同见 [visual/visual-acceptance.md](visual/visual-acceptance.md)。
 新增 visual_acceptance、visual_cases，以及 entry 的 visual_case_ids、
 evidence_manifest、review_reports、review_mode、reconciliation_ref、degradation_ref、
-visual_failure_ref。旧 ledger 无需这些字段。所有视觉 facet 必须登记 facet_ids，
+visual_failure_ref。visual_acceptance 里引用与摘要成对：baseline_ref / baseline_digest、interaction_ref /
+interaction_digest、inventory_ref / inventory_digest、matrix_ref / matrix_digest、census_ref / census_digest
+（普查官返回原样保存的文件，run 下 visual/census.json；顶层的 form_factor 等原件键只是它的副本）。旧 ledger 无需这些字段。所有视觉 facet 必须登记 facet_ids，
 防止遗漏 visual_case_ids 绕过证据校验。基线引用相对 run，其余视觉文件引用相对
 run/evidence；现有 evidence.dir 仍遵循原合同。
 
