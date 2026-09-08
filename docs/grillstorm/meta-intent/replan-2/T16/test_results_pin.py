@@ -94,3 +94,13 @@ def test_launch_request_pins_the_same_candidate_as_the_ledger():
     assert recorded["candidate_tree_sha256"] in launch
     for cell in recorded["cells"]:
         assert cell["packet"] in launch, f"{cell['scenario']}/{cell['host']} is missing a prompt path"
+
+
+def test_ledger_cannot_call_the_issue_complete_without_full_host_evidence():
+    recorded = ledger()
+    complete = recorded["passed_cells"] == recorded["required_cells"]
+    assert recorded["issue_accepted_complete"] is complete, (
+        "issue acceptance must track actual host evidence, never preparation status")
+    if not complete:
+        assert recorded["launch_decision"], "a cell left unlaunched must record who decided and why"
+        assert recorded["blockers"], "the uncleared blockers must be named"

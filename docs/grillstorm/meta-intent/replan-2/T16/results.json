@@ -24,7 +24,7 @@
   "passed_cells": 0,
   "host_evidence": "0/14",
   "preparation_status": "prepared; 14 candidate-bound blind packets exported and guarded by tests",
-  "proof_status": "no host evidence; no actor has run",
+  "proof_status": "no host evidence; no actor has run; issue #16 is not accepted as complete",
   "evidence_boundary": "The integration full regression was still running when this candidate was assigned, so 0340eccf is the accepted producer for testing, not final joint acceptance.",
   "launch_ownership": "coordinator only; this worker never launches actors or nested dispatches",
   "cells": [
@@ -252,5 +252,11 @@
       "project": "/private/tmp/meta-intent-T16-0340eccf/codex/unattended-pending/project",
       "attempts": []
     }
+  ],
+  "issue_accepted_complete": false,
+  "launch_decision": "Coordinator declined launch on 2026-09-09 (reply to this dispatch's ask): workspace-trust and Codex quota blockers not cleared. Preparation closed out only; real-host execution requires a new dispatch.",
+  "blockers": [
+    "New synthetic Claude projects stop at the workspace trust prompt; not bypassed.",
+    "Codex quota; not bypassed."
   ]
 }
