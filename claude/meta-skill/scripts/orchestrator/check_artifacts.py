@@ -452,6 +452,10 @@ def freshness_states(project_root: Path, workflow: dict) -> dict:
     if not (project_root / FRESHNESS_STATE).exists() and all(a == "legacy" for a in admissions.values()):
         # Legacy history keeps its pre-freshness gate only while the dynamic-read
         # register is readable: an unreadable register hides dependency impact.
+        # Older projects may copy this gate alone. An absent register needs no
+        # freshness helper; a present register still requires full validation.
+        if not (project_root / ".allforai/bootstrap/observed-input-dependencies.json").exists():
+            return {}
         from evidence_freshness import observed_reads
         try:
             observed_reads(project_root)
