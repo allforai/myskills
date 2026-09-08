@@ -16,6 +16,7 @@ def _sibling(name):
 
 _matrix = _sibling('matrix')
 expand, value_tokens, merged_support = _matrix.expand, _matrix.value_tokens, _matrix.merged_support
+expand_inventory = _matrix.expand_inventory
 locale_tokens = value_tokens
 ANNOTATION_KEYS = {'applicability', 'reason', 'basis'}
 _VERIFIED_IMAGES = set()   # content digests already decoded and verified in this process
@@ -61,11 +62,7 @@ def frozen_cases(run, config):
         if digest(path) != config.get(key + '_digest'):
             raise ValueError('页面清单/矩阵摘要不匹配')
     inventory = read(run, config['inventory_ref'])
-    expected = {c['id']: c for c in expand(inventory['surfaces'], inventory.get('layout_thresholds'),
-                                           inventory.get('width_range'), inventory.get('devices'),
-                                           inventory.get('locales'), inventory.get('axis_support'),
-                                           inventory.get('abstractions'), inventory.get('anchor'),
-                                           inventory.get('platform'))}
+    expected = {c['id']: c for c in expand_inventory(inventory)}
     rows = read(run, config['matrix_ref'])
     actual = {c.get('id'): c for c in rows}
     if len(rows) != len(actual) or actual.keys() != expected.keys():

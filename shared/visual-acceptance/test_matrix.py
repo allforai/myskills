@@ -280,3 +280,18 @@ def test_web_platform_requires_scrollable_declaration():
     with pytest.raises(ValueError, match='web surface must declare scrollable'):
         expand([{'id': 'home', 'axes': axes}], platform='web')
     expand([{'id': 'home', 'scrollable': False, 'axes': axes}], platform='web')
+
+
+def test_expand_inventory_reads_every_top_level_key():
+    from matrix import expand_inventory
+    axes = {a: ['default'] for a in AXES}
+    inv = {'platform': 'web', 'surfaces': [{'id': 'home', 'axes': axes}]}
+    with pytest.raises(ValueError, match='must declare scrollable'):
+        expand_inventory(inv)
+    inv['surfaces'][0]['scrollable'] = False
+    inv['width_range'] = {'min': 1024, 'max': 1024, 'basis': 'x'}
+    inv['surfaces'][0]['axes']['device'] = ['1440x900@2']
+    with pytest.raises(ValueError, match='misses width range end'):
+        expand_inventory(inv)
+    inv['surfaces'][0]['axes']['device'] = ['1024x768@1']
+    assert expand_inventory(inv) == expand(inv['surfaces'], width_range=inv['width_range'], platform='web')

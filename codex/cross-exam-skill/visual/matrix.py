@@ -181,7 +181,7 @@ def _abstracted_by(row, plan, anchors):
     return sorted(off_independent)
 
 
-def expand(surfaces, thresholds=None, width_range=None, devices=None, locales=None, axis_support=None,
+def expand(surfaces, layout_thresholds=None, width_range=None, devices=None, locales=None, axis_support=None,
            abstractions=None, anchor=None, platform=None):
     cases = []
     seen = set()
@@ -205,8 +205,8 @@ def expand(surfaces, thresholds=None, width_range=None, devices=None, locales=No
                 raise ValueError('missing concrete axis: ' + sid + '/' + axis)
             if len(set(values)) != len(values):
                 raise ValueError('duplicate axis values: ' + axis)
-        if thresholds or width_range or surface.get('width_range'):
-            check_widths(surface, thresholds, width_range, devices)
+        if layout_thresholds or width_range or surface.get('width_range'):
+            check_widths(surface, layout_thresholds, width_range, devices)
         for axis, spec in merged_support(axis_support, locales).items():
             check_axis_support(surface, axis, spec)
         plan, anchors = _abstraction_plan(surface, abstractions, anchor)
@@ -223,14 +223,22 @@ def expand(surfaces, thresholds=None, width_range=None, devices=None, locales=No
     return cases
 
 
+INVENTORY_KEYS = ('layout_thresholds', 'width_range', 'devices', 'locales', 'axis_support',
+                  'abstractions', 'anchor', 'platform')
+
+
+def expand_inventory(inventory):
+    """Expand a surface inventory as frozen on disk: the one place that knows which top-level keys feed
+    expansion, so the CLI and the validator's replay cannot drift apart."""
+    return expand(inventory['surfaces'], **{k: inventory.get(k) for k in INVENTORY_KEYS})
+
+
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('inventory')
     args = p.parse_args()
     inv = json.loads(Path(args.inventory).read_text())
-    rows = expand(inv['surfaces'], inv.get('layout_thresholds'), inv.get('width_range'), inv.get('devices'),
-                  inv.get('locales'), inv.get('axis_support'), inv.get('abstractions'), inv.get('anchor'),
-                  inv.get('platform'))
+    rows = expand_inventory(inv)
     kept = [c for c in rows if not c.get('abstracted_by')]
     import sys
     print('cases: %d total, %d to capture, %d abstracted' % (len(rows), len(kept), len(rows) - len(kept)), file=sys.stderr)
