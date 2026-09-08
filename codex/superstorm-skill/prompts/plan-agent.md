@@ -61,7 +61,9 @@ unavailable/flaky device, simulator, external live system, real hardware, physic
 human observation, set `reality_gate:true`. Keep it omitted for headless unit, contract,
 build, lint, and pure-logic checks. Every reality-gated task still needs a meaningful
 `acceptance_cmd` and a `runbook_ptr` pointing to exact manual steps, observations, and pass
-criteria written into the plan. Do not invent an autonomous proof the environment cannot run.
+criteria written into the plan; for a UI surface the runbook observes both ends of the design's
+supported width range, not only the developer's screen. Do not invent an autonomous proof the
+environment cannot run.
 
 ## Output (array of plan-task schema + escalation)
 Return JSON: `{status, plan_path, tasks: [ {id,title,touched_paths,acceptance_cmd,depends_on,artifact_contract,reality_gate?,runbook_ptr?} ], size_warning?, reason?, evidence?}`

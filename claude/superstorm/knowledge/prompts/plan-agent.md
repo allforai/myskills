@@ -66,7 +66,9 @@ on it and never lets it block dependents.
   must remain runnable) — you simply acknowledge that its definitive pass is device-bound.
 - **Write a human-acceptance runbook into the plan markdown** for every `reality_gate` task:
   the exact manual steps, what to observe, and the pass criteria. This is what a human (or a
-  device-equipped run) will execute to close the gate that CI could not.
+  device-equipped run) will execute to close the gate that CI could not. For a UI surface the
+  runbook observes both ends of the design's supported width range, not only the developer's
+  screen.
 - **Never make a `reality_gate` task a hard `depends_on` of another task.** Its "awaiting
   human" state would stall the dependent. Downstream tasks must depend on the *implementation
   task / interface* that produces the capability (`implements`/`requires`), not on the
