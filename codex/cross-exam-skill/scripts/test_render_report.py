@@ -1,9 +1,13 @@
 # codex/cross-exam-skill/scripts/test_render_report.py
 import json
+import os
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
+from unittest import mock
 
+import render_report
 from render_report import render
 
 
@@ -903,6 +907,87 @@ class TestLedgerV2ContentGate(unittest.TestCase):
             e3 = _entry("q-t3"); e3["medium"] = "code"; e3["agent_task"] = {"output_file": str(Path(tmp) / "gone.output")}
             report = render(self._run(tmp, e3, {"q03.md": "a/b.ts:1 x"}))
             self.assertNotIn("违规裁决", report)
+
+    # 探查窗口：probed_at 起、transcript 写完（mtime）加容差止；mtime 全用 os.utime 设定，不依赖墙钟
+    PROBED_AT = "2026-09-07T10:00:00+08:00"
+    T0 = datetime.fromisoformat(PROBED_AT).timestamp()
+    T_END = T0 + 600          # transcript 落盘时刻
+    TOL = render_report.PROBE_WINDOW_TOLERANCE
+
+    def _window_run(self, tmp, files, mtimes, body="Files written to evidence/q1/.", transcript_mtime=None):
+        transcript = Path(tmp) / "agent.output"
+        transcript.write_text(body, encoding="utf-8")
+        e = _entry("q-w"); e["agent_task"] = {"output_file": str(transcript)}
+        e["served_by"] = {"host": "localhost:3000", "process": "node", "mock_layers": []}
+        run = self._run(tmp, e, files)
+        for name, ts in mtimes.items():
+            os.utime(run / "evidence/q1" / name, (ts, ts))
+        ts = self.T_END if transcript_mtime is None else transcript_mtime
+        os.utime(transcript, (ts, ts))
+        return run
+
+    def _iso(self, ts):
+        return datetime.fromtimestamp(ts, tz=datetime.fromisoformat(self.PROBED_AT).tzinfo).isoformat(timespec="seconds")
+
+    def test_file_written_after_probe_window_is_refused_naming_file_and_window(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = self._window_run(tmp, {"q01-00.png": b"\x89PNG", "q01-01.png": b"\x89PNG"},
+                                   {"q01-00.png": self.T0 + 300, "q01-01.png": self.T_END + self.TOL + 1})
+            report = render(run)
+            self.assertIn("违规裁决", report)
+            self.assertIn("证据文件 q01-01.png 写于 %s，不在探查窗口 [%s, %s] 内"
+                          % (self._iso(self.T_END + self.TOL + 1), self.PROBED_AT, self._iso(self.T_END + self.TOL)), report)
+
+    def test_file_written_before_probed_at_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = self._window_run(tmp, {"q01-00.png": b"\x89PNG"}, {"q01-00.png": self.T0 - 10})
+            report = render(run)
+            self.assertIn("证据文件 q01-00.png 写于 %s，不在探查窗口" % self._iso(self.T0 - 10), report)
+
+    def test_scripted_files_inside_window_pass_on_directory_mention(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = self._window_run(tmp, {"q01-00.png": b"\x89PNG", "q01-01.png": b"\x89PNG"},
+                                   {"q01-00.png": self.T0, "q01-01.png": self.T0 + 300})
+            self.assertNotIn("违规裁决", render(run))
+
+    def test_file_named_in_transcript_but_outside_window_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = self._window_run(tmp, {"q01-00.png": b"\x89PNG"}, {"q01-00.png": self.T_END + self.TOL + 5},
+                                   body="page.screenshot(path='evidence/q1/q01-00.png')")
+            report = render(run)
+            self.assertIn("证据文件 q01-00.png 写于", report)
+            self.assertIn("违规裁决", report)
+
+    def test_file_within_tolerance_after_transcript_mtime_passes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = self._window_run(tmp, {"q01-00.png": b"\x89PNG"}, {"q01-00.png": self.T_END + self.TOL - 1})
+            self.assertNotIn("违规裁决", render(run))
+
+    def test_probed_at_after_transcript_mtime_is_an_empty_window(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = self._window_run(tmp, {"q01-00.png": b"\x89PNG"}, {"q01-00.png": self.T0 - 300},
+                                   transcript_mtime=self.T0 - self.TOL - 60)
+            self.assertIn("证据文件 q01-00.png 写于", render(run))
+
+    def test_missing_transcript_keeps_note_and_skips_window(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = self._window_run(tmp, {"q01-00.png": b"\x89PNG"}, {"q01-00.png": self.T_END + self.TOL + 999})
+            (Path(tmp) / "agent.output").unlink()
+            report = render(run)
+            self.assertNotIn("违规裁决", report)
+            self.assertNotIn("探查窗口", report)
+            self.assertIn("transcript 不可核（文件不在）", report)
+
+    def test_unreadable_file_mtime_is_a_note_not_a_refusal(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = self._window_run(tmp, {"q01-00.png": b"\x89PNG"}, {"q01-00.png": self.T0 + 300})
+            real = render_report._evidence_files
+            ghost = run / "evidence/q1/ghost.png"   # listed but never on disk: stat() fails like a stripped-mtime fs
+            with mock.patch.object(render_report, "_evidence_files", lambda e, r: real(e, r) + [ghost]):
+                report = render(run)
+            self.assertNotIn("违规裁决", report)
+            self.assertIn("ghost.png", report)
+            self.assertIn("修改时间不可读", report)
 
     def test_v1_ledger_keeps_old_behaviour(self):
         with tempfile.TemporaryDirectory() as tmp:

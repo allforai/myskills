@@ -135,10 +135,14 @@ def _content_reason(e, run_dir):
     return ""
 
 
+PROBE_WINDOW_TOLERANCE = 120   # 秒：实测官最后一次落盘与 transcript 最终刷出之间的容差，只加在窗口上界
+
+
 def _transcript_reason(e, run_dir):
     """实测官 transcript 核对：ledger 记了子 agent 的 output_file，transcript 就必须能证明证据是实测官写的——
     证据目录里每个文件名都出现在 transcript 里，或 transcript 提到过该证据目录（脚本循环生成的文件名不会
-    逐个出现，但写入目录会）。两者都没有，拒渲。文件不在（换机器、临时目录已清）只标不可核，不拒渲。"""
+    逐个出现，但写入目录会）。两者都没有，拒渲。文件不在（换机器、临时目录已清）只标不可核，不拒渲。
+    名字对上之后再核探查窗口（见 _probe_window_reason）：提过目录不等于目录里后来加的文件也是实测官写的。"""
     task = e.get("agent_task") or {}
     out = task.get("output_file")
     if not out:
@@ -148,15 +152,40 @@ def _transcript_reason(e, run_dir):
         e["transcript_note"] = "transcript 不可核（文件不在）"
         return ""
     body = p.read_text(encoding="utf-8", errors="ignore")
-    names = [f.name for f in _evidence_files(e, run_dir)]
-    absent = [n for n in names if n not in body]
-    if not names or not absent:
-        return ""
+    files = _evidence_files(e, run_dir)
+    absent = [f.name for f in files if f.name not in body]
     d = ((e.get("evidence") or {}).get("dir") or "").strip().rstrip("/")
     d = d[2:] if d.startswith("./") else d
-    if d and d in body:
-        return ""
-    return "证据文件未出现在实测官 transcript，transcript 也未提及证据目录 %s：%s" % (d or "?", "、".join(absent))
+    if absent and not (d and d in body):
+        return "证据文件未出现在实测官 transcript，transcript 也未提及证据目录 %s：%s" % (d or "?", "、".join(absent))
+    return _probe_window_reason(e, files, p)
+
+
+def _probe_window_reason(e, files, transcript):
+    """探查窗口（probe window）：entry 的 probed_at 起，transcript 文件写完（mtime）加容差止。实测官的取证只能
+    发生在这段时间里；证据目录中任何一个文件的修改时间落在窗口外都拒渲——包括 transcript 点过名的文件（点名
+    证明实测官打算写它，不证明磁盘上这份就是它写的）。probed_at 晚于 transcript mtime 即空窗口，逐个拒。
+    修改时间读不出来只记 note 不拒渲：文件系统的脾气不是造假。窗口不从 ledger 自身时间戳凭空造：transcript
+    不在就不核（上游已标不可核）。"""
+    start = _parse_time(e.get("probed_at"))
+    if start.tzinfo is None:
+        start = start.astimezone()
+    tz = start.tzinfo
+    end = datetime.fromtimestamp(transcript.stat().st_mtime + PROBE_WINDOW_TOLERANCE, tz=tz)
+    unreadable = []
+    for f in files:
+        try:
+            written = datetime.fromtimestamp(f.stat().st_mtime, tz=tz)
+        except OSError:
+            unreadable.append(f.name)
+            continue
+        if not start <= written <= end:
+            return "证据文件 %s 写于 %s，不在探查窗口 [%s, %s] 内" % (
+                f.name, written.isoformat(timespec="seconds"),
+                start.isoformat(timespec="seconds"), end.isoformat(timespec="seconds"))
+    if unreadable:
+        e["transcript_note"] = "证据文件 %s 修改时间不可读，探查窗口未核" % "、".join(unreadable)
+    return ""
 
 
 def _risk_key(facet):
@@ -200,8 +229,9 @@ def _entry_line(e):
     facet_tag = f" [{e.get('facet', '?')}]"
     ref = f" [{e['requirement_ref']}]" if e.get("requirement_ref") else ""
     ev = e.get("evidence", {})
+    note = f" · {e['transcript_note']}" if e.get("transcript_note") else ""
     return (f"- **{label}**{jtag}{gtag}{facet_tag}{ref} {e.get('q', '?')} — {ev.get('key_observation', '')}"
-            f"（证据：{ev.get('dir', '')}）")
+            f"（证据：{ev.get('dir', '')}）{note}")
 
 
 SHORTHAND = re.compile(r"^(.*?-)(\d+)((?:/\d+)+)$")
