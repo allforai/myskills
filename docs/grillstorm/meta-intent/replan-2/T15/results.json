@@ -1,125 +1,168 @@
 {
   "task": "T15",
-  "source_commit": "88e7becaf30522ef29dd2fa168b62045affcb782",
-  "production_commit": "3f66d7acc367cdb39ee12ae10827c8d81298ae0a",
-  "packet_root": "/private/tmp/meta-intent-T15-88e7beca",
-  "candidate_tree_sha256": "4977a12b3759ebe704c29280d5df5262bafcc3352e81d3349a7bb4315083106a",
+  "source_commit": "ed430dfcebed485b913b54d7785f02cc86998303",
+  "production_commit": "ed430dfcebed485b913b54d7785f02cc86998303",
+  "packet_root": "/private/tmp/meta-intent-T15-ed430dfc",
+  "candidate_tree_sha256": "27d6e62247293dbe1829b48b8741582290d718718c87ddc57eb6bbc26b8e4eb5",
+  "candidate_entries": {
+    "claude": "claude/meta-skill/skills/bootstrap/SKILL.md",
+    "codex": "codex/meta-skill/SKILL.md"
+  },
   "required_cells": 14,
   "executed_cells": 0,
   "passed_cells": 0,
-  "status": "awaiting-real-host-execution",
+  "status": "prepared; blocked by host workspace-trust before any scenario input",
+  "evaluation_owner": "Claude Opus evaluator replacement, authorized by the user for evaluation only",
+  "superseded_preparation": {
+    "packet_root": "/private/tmp/meta-intent-T15-88e7beca",
+    "source_commit": "88e7becaf30522ef29dd2fa168b62045affcb782",
+    "recorded_tree_sha256": "4977a12b3759ebe704c29280d5df5262bafcc3352e81d3349a7bb4315083106a",
+    "reason": "Superseded by accepted producer ed430dfc; its recorded hash is also not reproducible from its own pinned commit under the current manifest format",
+    "host_proof": "none"
+  },
   "cells": [
     {
       "scenario": "T15/large-code-local-button",
       "host": "claude",
       "status": "unverified",
-      "reason": "No real host receipt or raw dialogue received",
-      "packet": "/private/tmp/meta-intent-T15-88e7beca/claude/large-code-local-button/actor-input.md",
+      "reason": "Launch failed at dispatch_input with agent_prompt_stalled on a workspace trust check; the scenario prompt was never delivered and nothing executed",
+      "packet": "/private/tmp/meta-intent-T15-ed430dfc/claude/large-code-local-button/actor-input.md",
       "attempts": []
     },
     {
       "scenario": "T15/large-code-local-button",
       "host": "codex",
       "status": "unverified",
-      "reason": "No real host receipt or raw dialogue received",
-      "packet": "/private/tmp/meta-intent-T15-88e7beca/codex/large-code-local-button/actor-input.md",
+      "reason": "No genuine Codex host session; Opus evaluator replacement is not Codex host coverage",
+      "packet": "/private/tmp/meta-intent-T15-ed430dfc/codex/large-code-local-button/actor-input.md",
       "attempts": []
     },
     {
       "scenario": "T15/missing-product-docs",
       "host": "claude",
       "status": "unverified",
-      "reason": "No real host receipt or raw dialogue received",
-      "packet": "/private/tmp/meta-intent-T15-88e7beca/claude/missing-product-docs/actor-input.md",
+      "reason": "Launch failed at dispatch_input with agent_prompt_stalled on a workspace trust check; the scenario prompt was never delivered and nothing executed",
+      "packet": "/private/tmp/meta-intent-T15-ed430dfc/claude/missing-product-docs/actor-input.md",
       "attempts": []
     },
     {
       "scenario": "T15/missing-product-docs",
       "host": "codex",
       "status": "unverified",
-      "reason": "No real host receipt or raw dialogue received",
-      "packet": "/private/tmp/meta-intent-T15-88e7beca/codex/missing-product-docs/actor-input.md",
+      "reason": "No genuine Codex host session; Opus evaluator replacement is not Codex host coverage",
+      "packet": "/private/tmp/meta-intent-T15-ed430dfc/codex/missing-product-docs/actor-input.md",
       "attempts": []
     },
     {
       "scenario": "T15/reshape-business-model",
       "host": "claude",
       "status": "unverified",
-      "reason": "No real host receipt or raw dialogue received",
-      "packet": "/private/tmp/meta-intent-T15-88e7beca/claude/reshape-business-model/actor-input.md",
+      "reason": "No actor launched yet; coordinator owns scenario actor launch",
+      "packet": "/private/tmp/meta-intent-T15-ed430dfc/claude/reshape-business-model/actor-input.md",
       "attempts": []
     },
     {
       "scenario": "T15/reshape-business-model",
       "host": "codex",
       "status": "unverified",
-      "reason": "No real host receipt or raw dialogue received",
-      "packet": "/private/tmp/meta-intent-T15-88e7beca/codex/reshape-business-model/actor-input.md",
+      "reason": "No genuine Codex host session; Opus evaluator replacement is not Codex host coverage",
+      "packet": "/private/tmp/meta-intent-T15-ed430dfc/codex/reshape-business-model/actor-input.md",
       "attempts": []
     },
     {
       "scenario": "T15/add-unimplemented-need",
       "host": "claude",
       "status": "unverified",
-      "reason": "No real host receipt or raw dialogue received",
-      "packet": "/private/tmp/meta-intent-T15-88e7beca/claude/add-unimplemented-need/actor-input.md",
+      "reason": "No actor launched yet; coordinator owns scenario actor launch",
+      "packet": "/private/tmp/meta-intent-T15-ed430dfc/claude/add-unimplemented-need/actor-input.md",
       "attempts": []
     },
     {
       "scenario": "T15/add-unimplemented-need",
       "host": "codex",
       "status": "unverified",
-      "reason": "No real host receipt or raw dialogue received",
-      "packet": "/private/tmp/meta-intent-T15-88e7beca/codex/add-unimplemented-need/actor-input.md",
+      "reason": "No genuine Codex host session; Opus evaluator replacement is not Codex host coverage",
+      "packet": "/private/tmp/meta-intent-T15-ed430dfc/codex/add-unimplemented-need/actor-input.md",
       "attempts": []
     },
     {
       "scenario": "T15/deny-inferred-intent",
       "host": "claude",
       "status": "unverified",
-      "reason": "No real host receipt or raw dialogue received",
-      "packet": "/private/tmp/meta-intent-T15-88e7beca/claude/deny-inferred-intent/actor-input.md",
+      "reason": "No actor launched yet; coordinator owns scenario actor launch",
+      "packet": "/private/tmp/meta-intent-T15-ed430dfc/claude/deny-inferred-intent/actor-input.md",
       "attempts": []
     },
     {
       "scenario": "T15/deny-inferred-intent",
       "host": "codex",
       "status": "unverified",
-      "reason": "No real host receipt or raw dialogue received",
-      "packet": "/private/tmp/meta-intent-T15-88e7beca/codex/deny-inferred-intent/actor-input.md",
+      "reason": "No genuine Codex host session; Opus evaluator replacement is not Codex host coverage",
+      "packet": "/private/tmp/meta-intent-T15-ed430dfc/codex/deny-inferred-intent/actor-input.md",
       "attempts": []
     },
     {
       "scenario": "T15/interrupted-confirmation",
       "host": "claude",
       "status": "unverified",
-      "reason": "No real host receipt or raw dialogue received",
-      "packet": "/private/tmp/meta-intent-T15-88e7beca/claude/interrupted-confirmation/actor-input.md",
+      "reason": "No actor launched yet; coordinator owns scenario actor launch",
+      "packet": "/private/tmp/meta-intent-T15-ed430dfc/claude/interrupted-confirmation/actor-input.md",
       "attempts": []
     },
     {
       "scenario": "T15/interrupted-confirmation",
       "host": "codex",
       "status": "unverified",
-      "reason": "No real host receipt or raw dialogue received",
-      "packet": "/private/tmp/meta-intent-T15-88e7beca/codex/interrupted-confirmation/actor-input.md",
+      "reason": "No genuine Codex host session; Opus evaluator replacement is not Codex host coverage",
+      "packet": "/private/tmp/meta-intent-T15-ed430dfc/codex/interrupted-confirmation/actor-input.md",
       "attempts": []
     },
     {
       "scenario": "T15/new-product",
       "host": "claude",
       "status": "unverified",
-      "reason": "No real host receipt or raw dialogue received",
-      "packet": "/private/tmp/meta-intent-T15-88e7beca/claude/new-product/actor-input.md",
+      "reason": "No actor launched yet; coordinator owns scenario actor launch",
+      "packet": "/private/tmp/meta-intent-T15-ed430dfc/claude/new-product/actor-input.md",
       "attempts": []
     },
     {
       "scenario": "T15/new-product",
       "host": "codex",
       "status": "unverified",
-      "reason": "No real host receipt or raw dialogue received",
-      "packet": "/private/tmp/meta-intent-T15-88e7beca/codex/new-product/actor-input.md",
+      "reason": "No genuine Codex host session; Opus evaluator replacement is not Codex host coverage",
+      "packet": "/private/tmp/meta-intent-T15-ed430dfc/codex/new-product/actor-input.md",
       "attempts": []
     }
-  ]
+  ],
+  "launch_failures": [
+    {
+      "scenario": "T15/large-code-local-button",
+      "host": "claude",
+      "task": "task_740bad25b0e1",
+      "dispatch": "ctx_b01c8c14e0cd",
+      "stage": "dispatch_input",
+      "error": "agent_prompt_stalled",
+      "observed": "Claude workspace trust safety check then shell prompt; the actor-input prompt was never delivered",
+      "scenario_executed": false
+    },
+    {
+      "scenario": "T15/missing-product-docs",
+      "host": "claude",
+      "task": "task_7e078fb1f7c3",
+      "dispatch": "ctx_953577ecf61b",
+      "stage": "dispatch_input",
+      "error": "agent_prompt_stalled",
+      "observed": "Claude workspace trust safety check then shell prompt; the actor-input prompt was never delivered",
+      "scenario_executed": false
+    }
+  ],
+  "packet_integrity_after_failed_launches": {
+    "checked": [
+      "T15/large-code-local-button claude",
+      "T15/missing-product-docs claude"
+    ],
+    "result": "every project file still matches source-before.json; no receipt.json exists",
+    "only_difference": ".git metadata the coordinator initialized for Orca registration",
+    "conclusion": "launch failures produced no host evidence and did not contaminate the packets"
+  }
 }

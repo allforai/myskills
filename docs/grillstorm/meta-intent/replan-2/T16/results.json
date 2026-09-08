@@ -1,0 +1,262 @@
+{
+  "task": "T16",
+  "issue": "docs/grillstorm/meta-intent/replan-2/issues/16.md",
+  "source_commit": "0340eccf277f6727b2b49e67a45178f1c57b9a7c",
+  "production_commit": "0340eccf277f6727b2b49e67a45178f1c57b9a7c",
+  "accepted_producer": {
+    "implementation": "d622402cb1f5cc2b34a53854deaf058c41a4c676",
+    "boundary_report": "3c6e12019cc638153459944d91bf94279402b768",
+    "integrated_as": "0340eccf277f6727b2b49e67a45178f1c57b9a7c",
+    "assigned_by": "coordinator msg_1de975dc057c"
+  },
+  "packet_root": "/private/tmp/meta-intent-T16-0340eccf",
+  "candidate_tree_sha256": "768193be0fbb8e327eba26c4f3c4e0484b17a99b1edd1e002d646a422e917d40",
+  "candidate_entries": {
+    "claude": "claude/meta-skill/skills/bootstrap/SKILL.md",
+    "codex": "codex/meta-skill/SKILL.md"
+  },
+  "candidate_entry_sha256": {
+    "claude": "700729ec58f46e6411d0dc8693a3ab594b0847dc14aa67012e238ae2d1b7971e",
+    "codex": "526dc0958a9c174a07d9b98d54de8cd1f2561790dbbf759853b45e13086c6065"
+  },
+  "required_cells": 14,
+  "executed_cells": 0,
+  "passed_cells": 0,
+  "host_evidence": "0/14",
+  "preparation_status": "prepared; 14 candidate-bound blind packets exported and guarded by tests",
+  "proof_status": "no host evidence; no actor has run; issue #16 is not accepted as complete",
+  "evidence_boundary": "The integration full regression was still running when this candidate was assigned, so 0340eccf is the accepted producer for testing, not final joint acceptance.",
+  "launch_ownership": "coordinator only; this worker never launches actors or nested dispatches",
+  "cells": [
+    {
+      "scenario": "T16/no-answer",
+      "host": "claude",
+      "status": "unverified",
+      "requirements": [
+        "R14",
+        "R29",
+        "R30"
+      ],
+      "phases": 2,
+      "reason": "No actor launched. The coordinator alone launches real actors; the known blocker is that new synthetic Claude projects stop at the workspace trust prompt, which must not be bypassed.",
+      "packet": "/private/tmp/meta-intent-T16-0340eccf/claude/no-answer/actor-input.md",
+      "phase2_packet": "/private/tmp/meta-intent-T16-0340eccf/claude/no-answer/actor-input-phase2.md",
+      "project": "/private/tmp/meta-intent-T16-0340eccf/claude/no-answer/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T16/no-answer",
+      "host": "codex",
+      "status": "unverified",
+      "requirements": [
+        "R14",
+        "R29",
+        "R30"
+      ],
+      "phases": 2,
+      "reason": "No actor launched. The coordinator alone launches real actors; the known blocker is Codex quota, which must not be bypassed.",
+      "packet": "/private/tmp/meta-intent-T16-0340eccf/codex/no-answer/actor-input.md",
+      "phase2_packet": "/private/tmp/meta-intent-T16-0340eccf/codex/no-answer/actor-input-phase2.md",
+      "project": "/private/tmp/meta-intent-T16-0340eccf/codex/no-answer/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T16/partial-resume",
+      "host": "claude",
+      "status": "unverified",
+      "requirements": [
+        "R14",
+        "R15",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. The coordinator alone launches real actors; the known blocker is that new synthetic Claude projects stop at the workspace trust prompt, which must not be bypassed.",
+      "packet": "/private/tmp/meta-intent-T16-0340eccf/claude/partial-resume/actor-input.md",
+      "phase2_packet": null,
+      "project": "/private/tmp/meta-intent-T16-0340eccf/claude/partial-resume/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T16/partial-resume",
+      "host": "codex",
+      "status": "unverified",
+      "requirements": [
+        "R14",
+        "R15",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. The coordinator alone launches real actors; the known blocker is Codex quota, which must not be bypassed.",
+      "packet": "/private/tmp/meta-intent-T16-0340eccf/codex/partial-resume/actor-input.md",
+      "phase2_packet": null,
+      "project": "/private/tmp/meta-intent-T16-0340eccf/codex/partial-resume/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T16/reverse-prior-decision",
+      "host": "claude",
+      "status": "unverified",
+      "requirements": [
+        "R09",
+        "R15",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. The coordinator alone launches real actors; the known blocker is that new synthetic Claude projects stop at the workspace trust prompt, which must not be bypassed.",
+      "packet": "/private/tmp/meta-intent-T16-0340eccf/claude/reverse-prior-decision/actor-input.md",
+      "phase2_packet": null,
+      "project": "/private/tmp/meta-intent-T16-0340eccf/claude/reverse-prior-decision/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T16/reverse-prior-decision",
+      "host": "codex",
+      "status": "unverified",
+      "requirements": [
+        "R09",
+        "R15",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. The coordinator alone launches real actors; the known blocker is Codex quota, which must not be bypassed.",
+      "packet": "/private/tmp/meta-intent-T16-0340eccf/codex/reverse-prior-decision/actor-input.md",
+      "phase2_packet": null,
+      "project": "/private/tmp/meta-intent-T16-0340eccf/codex/reverse-prior-decision/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T16/legacy-provenance",
+      "host": "claude",
+      "status": "unverified",
+      "requirements": [
+        "R05",
+        "R07",
+        "R15",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. The coordinator alone launches real actors; the known blocker is that new synthetic Claude projects stop at the workspace trust prompt, which must not be bypassed.",
+      "packet": "/private/tmp/meta-intent-T16-0340eccf/claude/legacy-provenance/actor-input.md",
+      "phase2_packet": null,
+      "project": "/private/tmp/meta-intent-T16-0340eccf/claude/legacy-provenance/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T16/legacy-provenance",
+      "host": "codex",
+      "status": "unverified",
+      "requirements": [
+        "R05",
+        "R07",
+        "R15",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. The coordinator alone launches real actors; the known blocker is Codex quota, which must not be bypassed.",
+      "packet": "/private/tmp/meta-intent-T16-0340eccf/codex/legacy-provenance/actor-input.md",
+      "phase2_packet": null,
+      "project": "/private/tmp/meta-intent-T16-0340eccf/codex/legacy-provenance/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T16/removed-not-resurrected",
+      "host": "claude",
+      "status": "unverified",
+      "requirements": [
+        "R10",
+        "R15",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. The coordinator alone launches real actors; the known blocker is that new synthetic Claude projects stop at the workspace trust prompt, which must not be bypassed.",
+      "packet": "/private/tmp/meta-intent-T16-0340eccf/claude/removed-not-resurrected/actor-input.md",
+      "phase2_packet": null,
+      "project": "/private/tmp/meta-intent-T16-0340eccf/claude/removed-not-resurrected/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T16/removed-not-resurrected",
+      "host": "codex",
+      "status": "unverified",
+      "requirements": [
+        "R10",
+        "R15",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. The coordinator alone launches real actors; the known blocker is Codex quota, which must not be bypassed.",
+      "packet": "/private/tmp/meta-intent-T16-0340eccf/codex/removed-not-resurrected/actor-input.md",
+      "phase2_packet": null,
+      "project": "/private/tmp/meta-intent-T16-0340eccf/codex/removed-not-resurrected/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T16/discussion-preserves-source",
+      "host": "claude",
+      "status": "unverified",
+      "requirements": [
+        "R11",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. The coordinator alone launches real actors; the known blocker is that new synthetic Claude projects stop at the workspace trust prompt, which must not be bypassed.",
+      "packet": "/private/tmp/meta-intent-T16-0340eccf/claude/discussion-preserves-source/actor-input.md",
+      "phase2_packet": null,
+      "project": "/private/tmp/meta-intent-T16-0340eccf/claude/discussion-preserves-source/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T16/discussion-preserves-source",
+      "host": "codex",
+      "status": "unverified",
+      "requirements": [
+        "R11",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. The coordinator alone launches real actors; the known blocker is Codex quota, which must not be bypassed.",
+      "packet": "/private/tmp/meta-intent-T16-0340eccf/codex/discussion-preserves-source/actor-input.md",
+      "phase2_packet": null,
+      "project": "/private/tmp/meta-intent-T16-0340eccf/codex/discussion-preserves-source/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T16/unattended-pending",
+      "host": "claude",
+      "status": "unverified",
+      "requirements": [
+        "R14",
+        "R29",
+        "R30"
+      ],
+      "phases": 2,
+      "reason": "No actor launched. The coordinator alone launches real actors; the known blocker is that new synthetic Claude projects stop at the workspace trust prompt, which must not be bypassed.",
+      "packet": "/private/tmp/meta-intent-T16-0340eccf/claude/unattended-pending/actor-input.md",
+      "phase2_packet": "/private/tmp/meta-intent-T16-0340eccf/claude/unattended-pending/actor-input-phase2.md",
+      "project": "/private/tmp/meta-intent-T16-0340eccf/claude/unattended-pending/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T16/unattended-pending",
+      "host": "codex",
+      "status": "unverified",
+      "requirements": [
+        "R14",
+        "R29",
+        "R30"
+      ],
+      "phases": 2,
+      "reason": "No actor launched. The coordinator alone launches real actors; the known blocker is Codex quota, which must not be bypassed.",
+      "packet": "/private/tmp/meta-intent-T16-0340eccf/codex/unattended-pending/actor-input.md",
+      "phase2_packet": "/private/tmp/meta-intent-T16-0340eccf/codex/unattended-pending/actor-input-phase2.md",
+      "project": "/private/tmp/meta-intent-T16-0340eccf/codex/unattended-pending/project",
+      "attempts": []
+    }
+  ],
+  "issue_accepted_complete": false,
+  "launch_decision": "Coordinator declined launch on 2026-09-09 (reply to this dispatch's ask): workspace-trust and Codex quota blockers not cleared. Preparation closed out only; real-host execution requires a new dispatch.",
+  "blockers": [
+    "New synthetic Claude projects stop at the workspace trust prompt; not bypassed.",
+    "Codex quota; not bypassed."
+  ]
+}
