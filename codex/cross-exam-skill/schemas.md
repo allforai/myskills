@@ -99,7 +99,7 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
     自身时间戳造窗口）；某个文件的修改时间读不出来只在报告标 note 点名该文件，不拒渲。
   - 重派前首派产物挪到 `evidence/qNN.rejected-N/`，不被任何 entry 引用；渲染器只读 entry 引用的目录。
     重派后落账的 entry 带 `redispatched: N`（可选，纯记录）；首派是降档模型时再带 `first_agent_model`。
-  - `probed_at` 每条必写（ISO 8601）；渲染器在总览打印首末问时间与最短间隔，间隔不足 60 秒的 runtime 相邻问点名。
+  - `probed_at` 每条必写（ISO 8601，**必带时区偏移**，如 `+08:00`；无偏移的值拒渲——探测窗口的下界不能随渲染机的时区变）；渲染器在总览打印首末问时间与最短间隔，间隔不足 60 秒的 runtime 相邻问点名。
 - 顶层 `target_backend`：intake 安全确认时一并确认开发实例的后端是真实服务、mock 还是混合，记 `kind` 与依据；
   `mock` 或 `mixed` 时报告总览点明"本 run 的 runtime 裁决经过 mock 层"。
 - 顶层 `model_policy`（可选；缺省 = 全部继承会话模型）：定靶时用户选择的成本策略。`observation` 是取证类角色

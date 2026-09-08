@@ -926,6 +926,21 @@ class TestProbeWindow(unittest.TestCase):
             self.assertIn("窗口 [2026-09-07T10:00:00+08:00, 2026-09-07T10:12:00+08:00]", report)
             self.assertIn("实证完成：0", report)
 
+    def test_naive_probed_at_is_refused_before_the_window_is_computed(self):
+        # a probed_at without an offset means a different window on every machine that renders the run
+        with tempfile.TemporaryDirectory() as tmp:
+            report = render(self._run(tmp, "Files written to evidence/q1/.", {"q01.md": 60}, 600,
+                                      probed_at="2026-09-07T10:00:00"))
+            self.assertIn("probed_at 缺时区偏移", report)
+            self.assertIn("实证完成：0", report)
+
+    def test_every_offending_file_is_named(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report = render(self._run(tmp, "Files written to evidence/q1/.",
+                                      {"q01-a.md": 900, "q01-b.md": 901, "q01-ok.md": 60}, 600))
+            self.assertIn("q01-a.md", report); self.assertIn("q01-b.md", report)
+            self.assertNotIn("q01-ok.md（", report)
+
     def test_file_before_probed_at_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             report = render(self._run(tmp, "Files written to evidence/q1/.", {"q01-stale.md": -60}, 600))

@@ -109,8 +109,11 @@ def _content_reason(e, run_dir):
     """ledger_version 2 的证据内容门：目录非空只说明有文件，不说明有取证。
     code 介质要有 路径:行号 的摘录；runtime 介质要有截图或输出文件、且不少于当初要求的状态数，并记请求去向；
     unprovable 的原因文件要写得出尝试了什么；经过 mock 层的 runtime 不能算 done。"""
-    if not _parse_time(e.get("probed_at")):
+    probed = _parse_time(e.get("probed_at"))
+    if not probed:
         return "缺 probed_at（ISO 8601）"
+    if probed.tzinfo is None:   # 无偏移的时间在每台渲染机上都是另一个探测窗口
+        return "probed_at 缺时区偏移（如 +08:00）"
     files = _evidence_files(e, run_dir)
     medium, verdict = e.get("medium"), e.get("verdict")
     text = "".join(f.read_text(encoding="utf-8", errors="ignore") for f in files if f.suffix not in IMAGE_SUFFIXES)
@@ -172,7 +175,7 @@ def _probe_window_reason(e, files, transcript):
         start = start.astimezone()
     tz = start.tzinfo
     end = datetime.fromtimestamp(transcript.stat().st_mtime + PROBE_WINDOW_TOLERANCE, tz=tz)
-    unreadable = []
+    unreadable, outside = [], []
     for f in files:
         try:
             written = datetime.fromtimestamp(f.stat().st_mtime, tz=tz)
@@ -180,9 +183,10 @@ def _probe_window_reason(e, files, transcript):
             unreadable.append(f.name)
             continue
         if not start <= written <= end:
-            return "证据文件 %s 写于 %s，不在探测窗口 [%s, %s] 内" % (
-                f.name, written.isoformat(timespec="seconds"),
-                start.isoformat(timespec="seconds"), end.isoformat(timespec="seconds"))
+            outside.append("%s 写于 %s" % (f.name, written.isoformat(timespec="seconds")))
+    if outside:   # name every offender: one at a time is a slower argument with the same ending
+        return "证据文件 %s，不在探测窗口 [%s, %s] 内" % (
+            "、".join(outside), start.isoformat(timespec="seconds"), end.isoformat(timespec="seconds"))
     if unreadable:
         e["transcript_note"] = "证据文件 %s 修改时间不可读，探测窗口未核" % "、".join(unreadable)
     return ""

@@ -111,8 +111,11 @@ def _content_reason(e, run_dir):
     """ledger_version 2 的证据内容门：目录非空只说明有文件，不说明有取证。
     code 介质要有 路径:行号 的摘录；runtime 介质要有截图或输出文件、且不少于当初要求的状态数，并记请求去向；
     unprovable 的原因文件要写得出尝试了什么；经过 mock 层的 runtime 不能算 done。"""
-    if not _parse_time(e.get("probed_at")):
+    probed = _parse_time(e.get("probed_at"))
+    if not probed:
         return "缺 probed_at（ISO 8601）"
+    if probed.tzinfo is None:   # 无偏移的时间在每台渲染机上都是另一个探测窗口
+        return "probed_at 缺时区偏移（如 +08:00）"
     files = _evidence_files(e, run_dir)
     medium, verdict = e.get("medium"), e.get("verdict")
     text = "".join(f.read_text(encoding="utf-8", errors="ignore") for f in files if f.suffix not in IMAGE_SUFFIXES)

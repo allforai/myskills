@@ -938,6 +938,27 @@ class TestLedgerV2ContentGate(unittest.TestCase):
             self.assertIn("证据文件 q01-01.png 写于 %s，不在探测窗口 [%s, %s] 内"
                           % (self._iso(self.T_END + self.TOL + 1), self.PROBED_AT, self._iso(self.T_END + self.TOL)), report)
 
+    def test_naive_probed_at_is_refused_before_the_window_is_computed(self):
+        # a probed_at without an offset means a different window on every machine that renders the run
+        with tempfile.TemporaryDirectory() as tmp:
+            transcript = Path(tmp) / "agent.output"
+            transcript.write_text("Files written to evidence/q1/.", encoding="utf-8")
+            e = _entry("q-n"); e["agent_task"] = {"output_file": str(transcript)}
+            e["served_by"] = {"host": "localhost:3000", "process": "node", "mock_layers": []}
+            e["probed_at"] = "2026-09-07T10:00:00"
+            run = self._run(tmp, e, {"q01-00.png": b"\x89PNG"})
+            report = render(run)
+            self.assertIn("probed_at 缺时区偏移", report)
+
+    def test_every_offending_file_is_named(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = self._window_run(tmp, {"a.png": b"\x89PNG", "b.png": b"\x89PNG", "ok.png": b"\x89PNG"},
+                                   {"a.png": self.T_END + self.TOL + 5, "b.png": self.T_END + self.TOL + 6,
+                                    "ok.png": self.T0 + 5})
+            report = render(run)
+            self.assertIn("a.png", report); self.assertIn("b.png", report)
+            self.assertNotIn("ok.png 写于", report)
+
     def test_file_written_before_probed_at_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             run = self._window_run(tmp, {"q01-00.png": b"\x89PNG"}, {"q01-00.png": self.T0 - 10})
