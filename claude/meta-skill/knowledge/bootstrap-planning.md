@@ -47,6 +47,21 @@ for canonical schema `1.0` journals. The selected batch must come from
 `user_session` and contain an explicit choice; pending, removed or superseded
 decisions cannot authorize the projection. A `supersedes` reference may use the
 same full reference or its `<batch_id>/decisions/<index>` fragment.
+The referenced decision must also record this projection: a decision carrying
+the full `intent` payload must equal the requirement; a goal-only choice
+(`chosen`/`rationale` without `intent`, the shape the Codex `journal` command
+records) must match the requirement's `goal` and `confirmation.reason`, and even
+then evidences the goal alone. Its scope, business rules and acceptance stay the
+model's projection: the gates report `pending_requirement` for the consuming nodes
+until the user confirms them, and `product_intent.py` `resume` presents the item
+pending with `legacy_reuse` (evidenced `goal`; unconfirmed `scope`,
+`business_rules`, `acceptance`) and its retained reference. A mismatched choice is
+pending without `legacy_reuse`. One explicit `decide` `confirm` records the full
+payload in a new journal batch, keeps the old reference as `prior_confirmation`,
+leaves earlier batches and the file's revisions unchanged, and the gates pass
+again without a session marker or plan rewrite. `resume` reads this file whenever
+the profile has no `intent_session_path` and the route is not a product route;
+`admit` still refuses to overwrite it.
 All three public gates validate that source. The decision-input gate counts
 the validated journal as consumed through the scoped requirement projection;
 other gathered decision files still need consumers, including retained nodes

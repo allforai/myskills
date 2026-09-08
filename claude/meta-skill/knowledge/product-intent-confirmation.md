@@ -58,6 +58,25 @@ not additional product authorities.
   restore context, not to repeat confirmed interviews. Explicitly excluded
   questions remain pending in storage and are distinct from answered questions.
   Use it on re-entry; never replace existing intent history with a new draft.
+  Without a session marker, `resume` reads an existing hand-projected
+  `local-requirements.json` on a non-product route and verifies each item exactly
+  as the public gates do: an actual user-turn reference or a journal decision with
+  the full `intent` payload stays confirmed; a goal-only journal choice matching
+  the goal and reason is pending with `legacy_reuse`; a mismatched or invalid one
+  is pending with its reason. A removed item with that provenance stays removed
+  history, never pending or new work, and needs explicit `restore` to revive it.
+  An invalid tombstone is pending verification, not authoritative removal or approval.
+  If the user confirms the removal, record `remove` directly: retain the old
+  tombstone and append a confirmed removed revision without activating it first.
+  `confirm` then recovers the gates without a
+  session marker, freeze or plan. A later local `freeze` records the marker and is
+  journal-backed: a user-turn item it includes must first be recorded with one
+  `confirm` whose batch `user_reference` is the original user turn and whose
+  `reason` is the recorded one. That records the already evidenced payload
+  unchanged, with the old reference kept as `prior_confirmation`; it is not a
+  fresh approval and asks no question. The freeze names the item until then.
+  A removal excluded at that freeze stays removed history; ordinary `confirm`
+  cannot revive it after the session marker changes.
 - `decide`: `{operation, batch_id, topic, user_reference, actions}` records one
   explicit topic batch. Each action needs the user's `reason`: `confirm`/`remove`
   select `id`; `add` supplies `item`; `adjust` selects `id` and supplies `changes`
