@@ -11,7 +11,7 @@
   "required_cells": 14,
   "executed_cells": 0,
   "passed_cells": 0,
-  "status": "awaiting-coordinator-launched-actors",
+  "status": "prepared; blocked by host workspace-trust before any scenario input",
   "evaluation_owner": "Claude Opus evaluator replacement, authorized by the user for evaluation only",
   "superseded_preparation": {
     "packet_root": "/private/tmp/meta-intent-T15-88e7beca",
@@ -25,7 +25,7 @@
       "scenario": "T15/large-code-local-button",
       "host": "claude",
       "status": "unverified",
-      "reason": "No actor launched yet; coordinator owns scenario actor launch",
+      "reason": "Launch failed at dispatch_input with agent_prompt_stalled on a workspace trust check; the scenario prompt was never delivered and nothing executed",
       "packet": "/private/tmp/meta-intent-T15-ed430dfc/claude/large-code-local-button/actor-input.md",
       "attempts": []
     },
@@ -41,7 +41,7 @@
       "scenario": "T15/missing-product-docs",
       "host": "claude",
       "status": "unverified",
-      "reason": "No actor launched yet; coordinator owns scenario actor launch",
+      "reason": "Launch failed at dispatch_input with agent_prompt_stalled on a workspace trust check; the scenario prompt was never delivered and nothing executed",
       "packet": "/private/tmp/meta-intent-T15-ed430dfc/claude/missing-product-docs/actor-input.md",
       "attempts": []
     },
@@ -133,5 +133,36 @@
       "packet": "/private/tmp/meta-intent-T15-ed430dfc/codex/new-product/actor-input.md",
       "attempts": []
     }
-  ]
+  ],
+  "launch_failures": [
+    {
+      "scenario": "T15/large-code-local-button",
+      "host": "claude",
+      "task": "task_740bad25b0e1",
+      "dispatch": "ctx_b01c8c14e0cd",
+      "stage": "dispatch_input",
+      "error": "agent_prompt_stalled",
+      "observed": "Claude workspace trust safety check then shell prompt; the actor-input prompt was never delivered",
+      "scenario_executed": false
+    },
+    {
+      "scenario": "T15/missing-product-docs",
+      "host": "claude",
+      "task": "task_7e078fb1f7c3",
+      "dispatch": "ctx_953577ecf61b",
+      "stage": "dispatch_input",
+      "error": "agent_prompt_stalled",
+      "observed": "Claude workspace trust safety check then shell prompt; the actor-input prompt was never delivered",
+      "scenario_executed": false
+    }
+  ],
+  "packet_integrity_after_failed_launches": {
+    "checked": [
+      "T15/large-code-local-button claude",
+      "T15/missing-product-docs claude"
+    ],
+    "result": "every project file still matches source-before.json; no receipt.json exists",
+    "only_difference": ".git metadata the coordinator initialized for Orca registration",
+    "conclusion": "launch failures produced no host evidence and did not contaminate the packets"
+  }
 }
