@@ -127,6 +127,8 @@ def baseline(run, config):
         if hashlib.sha256(path.read_bytes()).hexdigest() != config.get(key + '_digest'):
             raise ValueError('基线摘要不匹配')
         for category, value in json.loads(path.read_text()).get('categories', {}).items():
+            if not isinstance(value, dict):
+                raise ValueError('基线类别 %s 须是含 rules 或 reason 的对象' % category)
             if value.get('confirmed_at') and value.get('confirmation') and (value.get('rules') or value.get('reason')):
                 confirmed.add(category)
             for ref, expected_digest in value.get('reference_images', {}).items():
@@ -140,7 +142,9 @@ def baseline(run, config):
     return references
 
 
-WIDTH_LITERAL = re.compile(r'\d+\s*(px|pt|dp)\b')
+# a width literal: digits, optional space, px/pt/dp, not followed by another ASCII letter; CJK text may
+# touch it on either side ("820px居中") and case is not meaningful ("820PX")
+WIDTH_LITERAL = re.compile(r'(?<![A-Za-z])\d+\s*(px|pt|dp)(?![A-Za-z])', re.IGNORECASE)
 
 
 def _rule_text(rule):
@@ -152,7 +156,12 @@ def pinned_layout_reason(baseline_obj, inventory):
     must be an object {rule, ends} whose ends are the applicable width range's min and max, each with a
     non-empty allowed empty area. Otherwise "820px centered" freezes as a rule a wide window trivially
     satisfies and the reviewer has no sentence to cite. Returns '' or the refusal reason."""
-    rules = ((baseline_obj.get('categories') or {}).get('layout') or {}).get('rules')
+    layout = (baseline_obj.get('categories') or {}).get('layout')
+    if layout is None:
+        return ''
+    if not isinstance(layout, dict):
+        return 'layout 类须是含 rules 的对象'
+    rules = layout.get('rules')
     if rules is None:
         return ''
     if not isinstance(rules, list):
@@ -172,10 +181,11 @@ def pinned_layout_reason(baseline_obj, inventory):
         rng = inventory.get('width_range')
         if 'surface' in rule:
             surfaces = {sf.get('id'): sf for sf in inventory.get('surfaces') or [] if isinstance(sf, dict)}
-            if rule['surface'] not in surfaces:
+            if not isinstance(rule['surface'], str) or rule['surface'] not in surfaces:
                 return 'layout 规则指向 inventory 里没有的页面 %s: %s' % (rule['surface'], text)
             rng = surfaces[rule['surface']].get('width_range', rng)
-        if not isinstance(rng, dict) or not isinstance(rng.get('min'), int) or not isinstance(rng.get('max'), int):
+        if not isinstance(rng, dict) or any(not isinstance(rng.get(k), int) or isinstance(rng.get(k), bool)
+                                             for k in ('min', 'max')):
             return 'layout 规则钉死了宽度但 inventory 未声明 width_range: ' + text
         expected = [str(rng['min']), str(rng['max'])]
         ends = rule['ends']

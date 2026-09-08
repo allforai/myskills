@@ -767,3 +767,45 @@ def test_unknown_surface_on_a_pinned_rule_is_refused(sample):
     rule = {'rule': '消息列 820px 居中', 'surface': 'ghost', 'ends': GOOD_ENDS}
     reason = _layout_reason(sample, [rule], surfaces=_two_surfaces())
     assert reason and 'ghost' in reason
+
+
+def test_old_run_without_form_factor_and_with_pinned_string_is_refused_readably(sample):
+    """A run frozen before these checks: web inventory without form_factor, a pinned string layout rule."""
+    root, write, cfg, case, report, entry, ledger = sample
+    inventory = json.loads((root / cfg['inventory_ref']).read_text())
+    inventory.update({'platform': 'web', 'width_range': {'min': 1200, 'max': 1512, 'basis': '用户显示器'}})
+    inventory['surfaces'][0].update({'scrollable': False})
+    inventory['surfaces'][0]['axes']['device'] = ['1200x800@2', '1512x982@2']
+    cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
+    reason = visual_reason(entry, ledger, root)
+    assert reason.startswith('视觉证据无效') and 'form_factor' in reason
+    inventory['form_factor'] = 'desktop'
+    cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
+    reason = visual_reason(entry, ledger, root)
+    assert '1920' in reason and '1512' in reason
+
+
+@pytest.mark.parametrize('text', ['消息列820px居中', '消息列 820PX 居中', '列宽 820 px', '最小 600pt 宽', '卡片 360dp'])
+def test_width_literal_is_found_without_spaces_or_ascii_boundaries(sample, text):
+    reason = _layout_reason(sample, [text])
+    assert reason and '两端' in reason
+
+
+def test_width_literal_ignores_non_width_tokens(sample):
+    assert _layout_reason(sample, ['pxl 图标', 'dpi 设置跟随系统', '2dpx']) is None
+
+
+def test_odd_layout_shapes_name_the_problem_not_the_python_error(sample):
+    reason = _layout_reason(sample, [{'rule': '消息列 820px 居中', 'surface': ['home'], 'ends': GOOD_ENDS}])
+    assert reason and '页面' in reason and 'unhashable' not in reason
+    root, write, cfg, case, report, entry, ledger = sample
+    baseline = json.loads((root / cfg['baseline_ref']).read_text())
+    baseline['categories']['layout'] = 'approved'
+    cfg['baseline_digest'] = cfg['interaction_digest'] = write(cfg['baseline_ref'], baseline)
+    for ref in ('evidence/q1/manifest.json', 'evidence/q1/review.json'):
+        obj = json.loads((root / ref).read_text())
+        for holder in obj.get('captures', [obj]):
+            holder['baseline_digest'] = holder['interaction_digest'] = cfg['baseline_digest']
+        write(ref, obj)
+    reason = visual_reason(entry, ledger, root)
+    assert reason and 'has no attribute' not in reason

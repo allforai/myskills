@@ -55,7 +55,10 @@ def effective_form_factor(platform, form_factor):
 
 def check_desktop_floor(width_range, form_factor):
     """A desktop target that never reaches a wide display has an untested wide end by construction."""
-    if form_factor in ('desktop', 'both') and width_range is not None:
+    if form_factor in ('desktop', 'both'):
+        if width_range is None:
+            raise ValueError('%s inventory must declare a global width_range (its max is checked against '
+                             'the desktop floor %d)' % (form_factor, DESKTOP_WIDTH_FLOOR))
         _check_range(width_range, 'inventory')
         if width_range['max'] < DESKTOP_WIDTH_FLOOR:
             raise ValueError('desktop width floor %d not reached: width_range.max is %d'

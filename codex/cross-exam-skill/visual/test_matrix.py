@@ -343,3 +343,13 @@ def test_surface_range_may_narrow_below_the_floor():
     inv = _desktop_inventory(max_width=1920)
     inv['surfaces'][0]['width_range'] = {'min': 1024, 'max': 1440, 'basis': 'admin page, desktop only'}
     assert expand_inventory(inv)
+
+
+def test_desktop_inventory_must_declare_a_width_range():
+    from matrix import expand_inventory
+    inv = _desktop_inventory(max_width=1920)
+    del inv['width_range']
+    with pytest.raises(ValueError, match='width_range'):
+        expand_inventory(inv)
+    inv['form_factor'] = 'mobile'
+    assert expand_inventory(inv)
