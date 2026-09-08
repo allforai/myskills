@@ -167,6 +167,9 @@ through `product_intent.py`'s `external-change` operation with an actual user
 reference and reason. A deferred or interrupted decision keeps the conflict and
 blocks only the work that depends on it; unrelated valid records are preserved.
 A Run Policy `accept` is a run choice and never accepts a product behavior change.
+The freshness, artifact, reconciliation and readiness gates run the same
+comparison themselves, so an interrupted boundary still routes the conflict to
+the interactive decision instead of reporting it as node-owned repair.
 
 Also copy `<canonical-root>/scripts/check_decision_inputs.py` into the same
 project-local scripts directory. It imports the same scope owner there.

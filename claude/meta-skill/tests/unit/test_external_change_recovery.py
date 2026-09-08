@@ -264,7 +264,8 @@ def test_deferred_conflict_holds_only_dependent_work_and_resumes_without_rebuild
     resolution = json.loads((tmp_path / STORE).read_text())["changes"][change["change_id"]]["resolution"]
     assert resolution == {"resolution": "defer", "reason": "The partner contract is not signed yet",
                           "user_reference": "user turn: decide after the contract",
-                          "baseline_version": change["baseline_version"]}
+                          "baseline_version": change["baseline_version"],
+                          "requirement_binding": change["requirement_binding"]}
 
     # Only the dependent work is held; the unrelated completed branch keeps its evidence.
     code, readiness = _readiness(tmp_path)
@@ -372,7 +373,31 @@ def test_unreadable_freshness_state_cannot_report_or_decide_external_changes(tmp
     assert "unreadable" in json.loads(refused.stdout)["error"]
     assert not [b for b in json.loads((tmp_path / JOURNAL).read_text())["batches"]
                 if b["batch_id"] == "external-3"]
-    assert _readiness(tmp_path)[0] == 1
+
+    # The gates fail closed on the same state: unreadable is never read as settled.
+    code, readiness = _readiness(tmp_path)
+    assert code == 1 and readiness["status"] == "not_ready" and readiness["blockers"]
+    assert not [b for b in readiness["blockers"] if b["code"] == "external_change_repair_pending"]
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_a_corrupt_change_store_reopens_the_conflict_instead_of_claiming_a_decision(tmp_path, host):
+    drift_project(tmp_path, host)
+    (tmp_path / "orders.py").write_text(CONFLICTING)
+    change = external(tmp_path)[1]["changes"][0]
+    assert _reject(tmp_path, change["change_id"]).returncode == 0
+
+    # The recorded store is damaged: a lost decision is asked again, never assumed.
+    write(tmp_path, STORE, {"schema_version": "1.0", "changes": "corrupt"})
+    result, again = external(tmp_path)
+    assert result.returncode == 1 and again["status"] == "conflict", again
+    assert again["changes"][0]["change_id"] == change["change_id"]
+    assert again["changes"][0]["resolution"] is None
+    code, readiness = _readiness(tmp_path)
+    assert code == 1
+    assert not [b for b in readiness["blockers"] if b["code"] == "external_change_repair_pending"]
+    assert [b["node_id"] for b in readiness["blockers"]
+            if b["code"] == "unresolved_external_change"] == [NODE]
 
 
 @pytest.mark.parametrize("host", HOSTS)
@@ -402,3 +427,145 @@ def test_accepting_an_unmapped_change_records_consent_without_inventing_intent(t
     assert NODE in [b["node_id"] for b in readiness["blockers"] if b["code"] == "stale_evidence"]
     assert _artifacts(tmp_path)["freshness"]["status"] == "uncertain"
     assert external(tmp_path)[1]["status"] == "decided"
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_a_rejected_change_survives_the_next_baseline_freeze(tmp_path, host):
+    """A decision is about changed source content, not about the baseline version
+    that happened to be current when it was recorded."""
+    from .test_delivery_closure import _freeze
+
+    drift_project(tmp_path, host)
+    (tmp_path / "orders.py").write_text(CONFLICTING)
+    change = external(tmp_path)[1]["changes"][0]
+    assert _reject(tmp_path, change["change_id"]).returncode == 0
+
+    # Refreezing the same confirmed scope advances the baseline version (the
+    # rejection's own journal batch is newer than the frozen scope batch).
+    assert _freeze(tmp_path, "scope-9")["version"] == 2
+
+    # The unchanged source keeps its identity, so the settled decision is still reachable.
+    result, again = external(tmp_path)
+    assert result.returncode == 0 and again["status"] == "decided", again
+    assert [c["change_id"] for c in again["changes"]] == [change["change_id"]]
+    resolution = again["changes"][0]["resolution"]
+    assert resolution["resolution"] == "reject"
+    assert resolution["repair_task"]["files"] == ["orders.py"]
+
+    # The scoped repair still blocks; the user is not asked the settled question again.
+    code, readiness = _readiness(tmp_path)
+    assert code == 1
+    assert not [b for b in readiness["blockers"] if b["code"] == "unresolved_external_change"]
+    assert [b["node_id"] for b in readiness["blockers"]
+            if b["code"] == "external_change_repair_pending"] == [NODE]
+    assert _artifacts(tmp_path)["freshness"]["repair"] == {"owner": NODE, "responsibilities": ["implementation"]}
+
+    # Deciding again is refused: the recorded decision was never orphaned.
+    refused = _reject(tmp_path, change["change_id"], batch="external-9")
+    assert refused.returncode == 1 and "already rejected" in json.loads(refused.stdout)["error"], refused.stdout
+
+    # Repairing the implementation closes it through the existing loop.
+    (tmp_path / "orders.py").write_text("def list_orders(account): return [account] if account else []\n")
+    code, published = _publish_evidence(tmp_path, command=ISOLATION)
+    assert code == 0 and published["status"] == "valid", published
+    assert external(tmp_path)[1] == {"status": "clear", "changes": []}
+    assert _readiness(tmp_path)[1]["status"] == "ready"
+    _unrelated_is_valid(tmp_path)
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_a_revised_confirmed_intent_supersedes_the_earlier_decision(tmp_path, host):
+    """A settled decision travels with the confirmed intent it was made against.
+    When the user revises that intent, the old decision is history, not consent."""
+    from .test_delivery_closure import decide
+
+    drift_project(tmp_path, host)
+    (tmp_path / "orders.py").write_text(CONFLICTING)
+    change = external(tmp_path)[1]["changes"][0]
+    assert _reject(tmp_path, change["change_id"]).returncode == 0
+
+    # The user later revises the very requirement the rejection preserved.
+    assert decide(tmp_path, [{"operation": "adjust", "id": "export", "reason": "Partner accounts were merged",
+                              "changes": {"acceptance": PARTNER_ACCEPTANCE,
+                                          "business_rules": ["The partner group's orders are exported together"]}}],
+                  batch="revise-1").returncode == 0
+
+    result, again = external(tmp_path)
+    assert result.returncode == 1 and again["status"] == "conflict", again
+    settled = again["changes"][0]
+    assert settled["change_id"] == change["change_id"]
+    assert settled["resolution"] is None
+    # The superseded decision and its reason are preserved, not erased.
+    history = settled["superseded_resolutions"]
+    assert [item["resolution"] for item in history] == ["reject"]
+    assert history[0]["reason"] == "Account isolation is a legal requirement"
+
+    # The stale rejection no longer scopes a repair; the question returns to the user.
+    code, readiness = _readiness(tmp_path)
+    assert code == 1
+    assert not [b for b in readiness["blockers"] if b["code"] == "external_change_repair_pending"]
+    reopened = [b for b in readiness["blockers"] if b["code"] == "unresolved_external_change"]
+    assert [b["node_id"] for b in reopened] == [NODE]
+    assert "revised" in reopened[0]["message"] and "interactive" in reopened[0]["message"]
+    # The revised requirement is not yet refrozen, so the interactive entry owns it.
+    assert _artifacts(tmp_path)["freshness"]["repair"]["owner"] == "interactive-bootstrap"
+    _unrelated_is_valid(tmp_path)
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_drift_reaches_the_product_decision_owner_without_a_prior_detection_call(tmp_path, host):
+    """The bootstrap/resume gates own the boundary comparison themselves: a conflict
+    is routed to the interactive product decision even when nothing ran detection."""
+    drift_project(tmp_path, host)
+    journal_before = (tmp_path / JOURNAL).read_bytes()
+    (tmp_path / "orders.py").write_text(CONFLICTING)
+
+    code, readiness = _readiness(tmp_path)
+    assert code == 1 and readiness["status"] == "not_ready"
+    blocker = next(b for b in readiness["blockers"] if b["code"] == "unresolved_external_change")
+    assert blocker["node_id"] == NODE and "interactive" in blocker["message"]
+    assert _artifacts(tmp_path)["freshness"]["repair"] == {"owner": "interactive-bootstrap",
+                                                          "responsibilities": ["product-decision"]}
+    assert _reconcile(tmp_path)[1]["repair_owner"] == "interactive-bootstrap"
+
+    # Nothing was decided or interviewed on the way, and the repeat is stable.
+    assert (tmp_path / JOURNAL).read_bytes() == journal_before
+    store = (tmp_path / STORE).read_bytes()
+    again = _readiness(tmp_path)
+    assert (again[0], again[1]["blockers"]) == (code, readiness["blockers"])
+    assert (tmp_path / STORE).read_bytes() == store
+    _unrelated_is_valid(tmp_path)
+
+    # The user resolves the conflict the gate reported, without redetecting first.
+    change_id = next(iter(json.loads((tmp_path / STORE).read_text())["changes"]))
+    assert _reject(tmp_path, change_id).returncode == 0
+    assert [b["code"] for b in _readiness(tmp_path)[1]["blockers"]
+            if b["node_id"] == NODE and b["code"].startswith("external")] == ["external_change_repair_pending"]
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_implementation_only_drift_keeps_its_node_owner_at_the_same_gates(tmp_path, host):
+    """Routing the boundary comparison through the gates never turns a verified
+    implementation fact into a product question."""
+    drift_project(tmp_path, host)
+    journal_before = (tmp_path / JOURNAL).read_bytes()
+    requirement_before = (tmp_path / REQUIREMENT).read_bytes()
+    (tmp_path / "orders.py").write_text("def list_orders(account): return [account, account]\n")
+
+    code, readiness = _readiness(tmp_path)
+    assert code == 1
+    assert not [b for b in readiness["blockers"] if b["code"].startswith("external_change")
+                or b["code"] == "unresolved_external_change"]
+    assert [b["node_id"] for b in readiness["blockers"] if b["code"] == "stale_evidence"] == [NODE]
+    repair = _artifacts(tmp_path)["freshness"]["repair"]
+    assert repair["owner"] == NODE and "implementation" in repair["responsibilities"]
+
+    assert (tmp_path / JOURNAL).read_bytes() == journal_before
+    assert (tmp_path / REQUIREMENT).read_bytes() == requirement_before
+
+    # Synchronizing the fact document and republishing closes it: no decision was needed.
+    (tmp_path / DOC).write_text(_doc("['acme', 'acme']"))
+    code, published = _publish_evidence(tmp_path, command=ISOLATION)
+    assert code == 0 and published["status"] == "valid", published
+    assert _readiness(tmp_path)[1]["status"] == "ready"
+    _unrelated_is_valid(tmp_path)

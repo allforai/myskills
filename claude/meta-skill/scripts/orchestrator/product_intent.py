@@ -725,7 +725,7 @@ def _external_change(root, request):
     other product decision.
     """
     # One canonical writer keeps the recorded store byte-identical across boundaries.
-    from evidence_freshness import detect_external_changes, write_json as write_external
+    from evidence_freshness import carried_resolution, detect_external_changes, write_json as write_external
     change_id, resolution = request.get("change_id"), request.get("resolution")
     if resolution not in ("accept", "reject", "defer"):
         raise ValueError("An external change is accepted, rejected or deferred by explicit user decision")
@@ -736,12 +736,15 @@ def _external_change(root, request):
     entry = changes.get(change_id)
     if not isinstance(entry, dict):
         raise ValueError("Unknown external change; detect it at the bootstrap or resume boundary first")
-    if change_id not in {c["change_id"] for c in detect_external_changes(root)}:
+    detected = {c["change_id"]: c for c in detect_external_changes(root)}
+    if change_id not in detected:
         raise ValueError("This external change is not present in the current source; redetect before deciding")
     if entry.get("classification") == "fact-update":
         raise ValueError("A verified implementation-only change is synchronized through its fact documents "
                          "and republished evidence, not through a product decision")
-    settled = (entry.get("resolution") or {}).get("resolution")
+    # A decision the user's own later intent revision superseded is history, not consent.
+    standing, superseded = carried_resolution(entry, detected[change_id]["requirement_binding"])
+    settled = (standing or {}).get("resolution")
     if settled in ("accept", "reject"):
         raise ValueError(f"This external change is already {settled}ed; record a new product decision instead")
     record = {"resolution": resolution, "reason": request["reason"],
@@ -793,7 +796,14 @@ def _external_change(root, request):
                                      "product_decisions": entry.get("impact", {}).get("product_decisions", [])}
     else:
         result = {"status": "external_change_recorded"}
+    # The decision binds the confirmed requirement content it was made against, so a
+    # later baseline version carries it while a later intent revision retires it.
+    record["requirement_binding"] = next((c["requirement_binding"] for c in detect_external_changes(root)
+                                          if c["change_id"] == change_id),
+                                         detected[change_id]["requirement_binding"])
     entry["resolution"] = record
+    if superseded:
+        entry["superseded_resolutions"] = superseded
     changes[change_id] = entry
     write_external(root, EXTERNAL, {"schema_version": "1.0", "changes": changes})
     return {**result, "external_change": {"change_id": change_id, "node_id": entry.get("node_id"),

@@ -310,8 +310,10 @@ def validate_unattended_readiness(project_root: Path) -> dict:
     else:
         try:
             workflow = _load_json(workflow_path)
-            nodes = workflow.get("nodes") if isinstance(workflow, dict) else []
-            if not isinstance(nodes, list):
+            raw_nodes = workflow.get("nodes") if isinstance(workflow, dict) else []
+            if isinstance(raw_nodes, list):
+                nodes = raw_nodes
+            else:
                 _add(blockers, "missing_workflow", "workflow.json nodes must be a list")
                 nodes = []
         except Exception as exc:
@@ -352,11 +354,13 @@ def validate_unattended_readiness(project_root: Path) -> dict:
         conflicts = external_conflicts(project_root)
         for node_id in sorted(conflicts):
             for change in undecided_conflicts(conflicts, node_id):
-                deferred = (change["resolution"] or {}).get("resolution") == "defer"
+                state = ("deferred" if (change["resolution"] or {}).get("resolution") == "defer"
+                         else "reopened, because the requirement its earlier decision was made against was revised"
+                         if change.get("superseded_resolutions") else "undecided")
                 _add(blockers, "unresolved_external_change",
                      f"External source change {change['change_id']} ({change['classification']}) to "
                      f"{', '.join(sorted(change['files']))} is "
-                     f"{'deferred' if deferred else 'undecided'}; resolve it at the interactive bootstrap entry "
+                     f"{state}; resolve it at the interactive bootstrap entry "
                      "(accept, reject or defer). Unattended execution cannot decide it or assume acceptance.",
                      node_id=node_id)
             for change in rejected_conflicts(conflicts, node_id):

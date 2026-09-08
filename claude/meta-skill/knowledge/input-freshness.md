@@ -95,6 +95,14 @@ recorded acceptance argv against the changed code, and records what it found in
 `.allforai/bootstrap/external-changes.json`. This is the same boundary comparison,
 not a background watcher, and it never writes the decision journal.
 
+The freshness `check`, `check_artifacts.py`, reconciliation and readiness gates run
+that same comparison themselves, so drift reaches its repair owner even when the
+explicit operation was never sent: no gate depends on someone having refreshed the
+store first, and none of them interviews or decides. Classification executes the
+delivery's own recorded acceptance once per change identity and reuses it
+afterwards, so repeated boundary checks on unchanged source are stable and leave
+the store byte-identical.
+
 - Recorded acceptance still passes: `fact-update`. The change is implementation
   only. Update the required fact documents and republish evidence; no product
   decision is asked for and none is required.
@@ -123,11 +131,17 @@ plus an actual `user_reference` and `reason`:
   valid records keep their provenance and are not replanned or reset. The next
   boundary reports the same change identity with its resolution intact.
 
-A change identity binds the node, the confirmed baseline version and the current
-content of the changed files, so a later edit is a different change and an earlier
-decision cannot travel to it. Detection never invents, reopens or recomputes a
-recorded resolution, and a verified implementation-only change is synchronized
-through its documents rather than through a product decision. Run Policy answers
+A change identity binds the node and the current content of the changed files, so
+a later edit is a different change and an earlier decision cannot travel to it.
+Advancing the confirmed baseline version for other work never changes that
+identity: the decision was about this source, and an unrelated refreeze must not
+orphan it or ask the user again. What a resolution does bind is the confirmed
+requirement content it was decided against; when the user revises those very
+requirements, the resolution is retained as `superseded_resolutions` history and
+the change is presented for a fresh decision rather than carrying old consent to
+a question the user has since changed. Detection never invents, reopens or
+recomputes a recorded resolution, and a verified implementation-only change is
+synchronized through its documents rather than through a product decision. Run Policy answers
 are run choices: `accept` there is not acceptance of a changed product behavior.
 Unattended execution reports unresolved conflicts and refuses the affected work; it
 never interviews and never assumes acceptance. Resolution returns to the
