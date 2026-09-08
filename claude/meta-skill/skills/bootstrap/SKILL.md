@@ -59,6 +59,10 @@ re-entry to restore history/reasons and explicitly excluded scope, asking only
 the returned pending topics. For a local request against legacy documents,
 use its `admit` operation for relevant projections, then local decide/freeze/plan;
 never overwrite old concept/baseline documents or expand the interview globally.
+An existing hand-projected `local-requirements.json` without `intent_session_path`
+is resumed with `resume`, not re-admitted: it returns only the projections whose
+journal choice evidences the goal alone (`legacy_reuse`) or no longer verifies,
+and one `confirm` per item recovers the gates in place.
 Bind generated plans to the frozen user-confirmed scope.
 
 Read `${CLAUDE_PLUGIN_ROOT}/knowledge/bootstrap-planning.md` § Goal and requirement scope before

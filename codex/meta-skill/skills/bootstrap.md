@@ -48,6 +48,10 @@ reasons and explicit exclusions as context. For local requests with legacy
 documents, use the canonical `admit` operation for relevant projections and
 then local decide/freeze/plan; preserve the old concept and baseline files.
 Unsupported legacy approval remains pending, without whole-product questions.
+An existing hand-projected `local-requirements.json` without `intent_session_path`
+is resumed with `resume`, not re-admitted; a goal-only journal batch (the shape
+the `journal` command records) evidences the goal alone, so the CLI presents that
+item pending with `legacy_reuse` and one `confirm` recovers the gates in place.
 
 For replication and migration work, task capture must also classify fidelity intent before workflow generation.
 

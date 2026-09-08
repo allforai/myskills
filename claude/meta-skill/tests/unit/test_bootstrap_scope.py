@@ -151,13 +151,16 @@ def gate(root, name, *options):
 def test_journal_backed_local_requirement_is_consumed_at_all_public_gates(tmp_path, host):
     requirement = project(tmp_path, confirmed=True, documents=True, host=host)
     journal = ".allforai/product-concept/decision-journal.json"
+    requirement["confirmation"]["reference"] = journal + "#export-choice/decisions/0"
+    # The recorded decision carries the full requirement payload; a goal-only choice
+    # would evidence the goal alone (test_legacy_profile_authority.py).
     write(tmp_path, journal, {"schema_version": "1.0", "batches": [{
         "batch_id": "export-choice", "source": "user_session", "topic": "Order export",
         "decisions": [{"question": "Which orders may be exported?",
                        "chosen": "Only the signed-in account's orders",
-                       "rationale": "Account isolation is required", "supersedes": None}]
+                       "rationale": "Account isolation is required", "supersedes": None,
+                       "intent": dict(requirement)}]
     }]})
-    requirement["confirmation"]["reference"] = journal + "#export-choice/decisions/0"
     write(tmp_path, REQUIREMENTS, {"requirements": [requirement]})
     publish_contract(tmp_path)  # The consumed requirement changed; the contract observes it again.
     before = {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}

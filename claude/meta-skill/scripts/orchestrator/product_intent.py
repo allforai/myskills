@@ -124,39 +124,20 @@ def validate_scope(project_root, workflow, *, consumed_sources=None):
                                    for key in ("reference", "decision_id", "reason"))):
                         _scoped(blockers, "pending_requirement",
                                 f"{ref['id']}: return to interactive bootstrap for confirmation", consumers)
-                    else:
-                        source, separator, fragment = confirmation["reference"].partition("#")
-                        if Path(source).name == "decision-journal.json":
-                            if (Path(source).is_absolute() or not separator
-                                    or not (root / source).resolve().is_relative_to(root.resolve())):
-                                raise ValueError("Journal reference needs a project-local path and decision fragment")
-                            journal = json.loads((root / source).read_text(encoding="utf-8"))
-                            if journal.get("schema_version") != "1.0" or not isinstance(journal.get("batches"), list):
-                                raise ValueError("Journal must use schema 1.0 batches")
-                            batch_id, marker, index = fragment.split("/")
-                            batches = [batch for batch in journal["batches"]
-                                       if batch["batch_id"] == batch_id]
-                            if marker != "decisions" or len(batches) != 1:
-                                raise ValueError("Journal reference must select one decision")
-                            batch = batches[0]
-                            if (batch.get("source") != "user_session"
-                                    or batch.get("status", "confirmed") != "confirmed"
-                                    or not isinstance(batch.get("decisions"), list)):
-                                raise ValueError("Journal reference needs a confirmed user-session batch")
-                            if not index.isdecimal() or int(index) >= len(batch["decisions"]):
-                                raise ValueError("Journal decision index is invalid")
-                            decision = batch["decisions"][int(index)]
-                            if (decision.get("status", "confirmed") != "confirmed"
-                                    or any(not isinstance(decision.get(key), str) or not decision[key].strip()
-                                           for key in ("question", "chosen"))):
-                                raise ValueError("Journal reference needs an explicit user choice")
-                            for recorded_batch in journal["batches"]:
-                                for recorded in recorded_batch["decisions"]:
-                                    if recorded.get("supersedes") in (
-                                            fragment, confirmation["reference"]):
-                                        raise ValueError("Journal decision was superseded; reconfirm the current requirement")
-                            if consumed_sources is not None:
-                                consumed_sources.add(source)
+                    elif _journal_reference(confirmation["reference"]):
+                        # A forged or malformed reference invalidates the whole scope; a
+                        # verified decision that does not record this projection leaves
+                        # only its consumers pending until the user confirms it.
+                        source, decision = _journal_decision(root, confirmation["reference"])
+                        try:
+                            _journal_payload(item, decision)
+                        except LegacyProjection as exc:
+                            _scoped(blockers, "pending_requirement", f"{ref['id']}: {exc}", consumers)
+                        except ValueError as exc:
+                            _scoped(blockers, "pending_requirement",
+                                    f"{ref['id']}: {exc}; return to interactive bootstrap", consumers)
+                        if consumed_sources is not None:
+                            consumed_sources.add(source)
         for node in workflow.get("nodes", []):
             if node.get("node_id") in retained:
                 continue
@@ -190,6 +171,7 @@ BASELINE = ".allforai/product-concept/concept-baseline.json"
 PROFILE = ".allforai/bootstrap/bootstrap-profile.json"
 LOCAL = ".allforai/bootstrap/local-requirements.json"
 TOPICS = ("target-users", "scenarios", "core-problem", "value-proposition", "business-loop", "tradeoffs")
+LOCAL_TOPIC = "local-requirements"  # Grouping label for hand-projected local requirements without a topic.
 RUN_POLICY = ".allforai/bootstrap/run-policy.json"
 RUN_POLICY_REPAIRS = ".allforai/bootstrap/run-policy-repairs.json"
 POLICY_OPTIONS = {
@@ -347,6 +329,107 @@ class LegacyProjection(ValueError):
         item["pending_reason"] = str(self)
         item["legacy_reuse"] = {"reference": self.reference, "evidenced": list(self.EVIDENCED),
                                 "unconfirmed": list(self.UNCONFIRMED)}
+
+
+def _journal_reference(reference):
+    """True when a hand-projected confirmation cites a decision journal rather than a user turn."""
+    return Path(reference.partition("#")[0]).name == "decision-journal.json"
+
+
+def _journal_decision(root, reference):
+    """Resolve a hand-projected journal reference to its confirmed user decision, else raise.
+
+    Structural faults (missing file, wrong schema, non-user source, pending, removed,
+    superseded, ambiguous or out-of-project references) are forged authority.
+    """
+    source, separator, fragment = reference.partition("#")
+    if (Path(source).is_absolute() or not separator
+            or not (root / source).resolve().is_relative_to(root.resolve())):
+        raise ValueError("Journal reference needs a project-local path and decision fragment")
+    journal = json.loads((root / source).read_text(encoding="utf-8"))
+    if journal.get("schema_version") != "1.0" or not isinstance(journal.get("batches"), list):
+        raise ValueError("Journal must use schema 1.0 batches")
+    batch_id, marker, index = fragment.split("/")
+    batches = [batch for batch in journal["batches"] if batch["batch_id"] == batch_id]
+    if marker != "decisions" or len(batches) != 1:
+        raise ValueError("Journal reference must select one decision")
+    batch = batches[0]
+    if (batch.get("source") != "user_session" or batch.get("status", "confirmed") != "confirmed"
+            or not isinstance(batch.get("decisions"), list)):
+        raise ValueError("Journal reference needs a confirmed user-session batch")
+    if not index.isdecimal() or int(index) >= len(batch["decisions"]):
+        raise ValueError("Journal decision index is invalid")
+    decision = batch["decisions"][int(index)]
+    if (decision.get("status", "confirmed") != "confirmed"
+            or any(not _text(decision.get(key)) for key in ("question", "chosen"))):
+        raise ValueError("Journal reference needs an explicit user choice")
+    for recorded_batch in journal["batches"]:
+        for recorded in recorded_batch["decisions"]:
+            if recorded.get("supersedes") in (fragment, reference):
+                raise ValueError("Journal decision was superseded; reconfirm the current requirement")
+    return source, decision
+
+
+def _journal_payload(item, decision):
+    """Raise unless the resolved journal decision records this hand-projected requirement.
+
+    A decision with the full `intent` payload must equal the projection. A goal-only
+    choice must record the projection's goal and reason, and even then evidences the
+    goal alone: scope, business rules and acceptance remain the model's projection.
+    """
+    confirmation = item.get("confirmation", {})
+    if "intent" in decision:
+        if decision["intent"] != item:
+            raise ValueError("requirement differs from the confirmed journal payload")
+        return
+    if (decision.get("chosen") != item.get("goal") or not _text(decision.get("rationale"))
+            or decision.get("rationale") != confirmation.get("reason")):
+        raise ValueError("journal choice does not record this requirement's goal and reason")
+    raise LegacyProjection(confirmation["reference"])
+
+
+def _hand_projection(root, item, *, statuses=("confirmed",)):
+    """Verify a legacy hand-projected local requirement exactly as the public gates do.
+
+    A removed item verifies against the same provenance; an invalid tombstone gains
+    no authority and is presented pending, never as approval or as new work.
+    """
+    confirmation = item.get("confirmation") or {}
+    if (item.get("status") not in statuses or confirmation.get("source") != "user"
+            or any(not _text(confirmation.get(key)) for key in ("reference", "decision_id", "reason"))):
+        raise ValueError("Missing or invalid user confirmation provenance")
+    if _journal_reference(confirmation["reference"]):
+        _, decision = _journal_decision(root, confirmation["reference"])
+        _journal_payload(item, decision)
+
+
+def _session_path(root, profile):
+    """The intent file an interactive session operates on.
+
+    The session marker is authoritative. Without it, an existing hand-projected
+    `local-requirements.json` on a non-product route is legacy local history that
+    must be resumable in place; anything else is the product concept.
+    """
+    if profile.get("intent_session_path") == LOCAL:
+        return LOCAL
+    if (not profile.get("intent_session_path")
+            and profile.get("task_route") not in ("product-reconstruction", "new-product")
+            and _read(root, LOCAL, {}).get("requirements")):
+        return LOCAL
+    return CONCEPT
+
+
+def _legacy_local(root, profile):
+    """True when the session operates on a hand-projected local file without a session marker."""
+    return _session_path(root, profile) == LOCAL and profile.get("intent_session_path") != LOCAL
+
+
+def _verified(root, item, *, statuses=("confirmed",), legacy=False):
+    """Verify an item's recorded provenance by route: gate rule for legacy files, journal payload otherwise."""
+    if legacy:
+        _hand_projection(root, item, statuses=statuses)
+    else:
+        _confirmed(root, item, statuses=statuses)
 
 
 def _consumers(workflow, ref):
@@ -573,8 +656,12 @@ def _discussion(root, concept):
     import copy
     concept = copy.deepcopy(concept)
     profile = _read(root, PROFILE, {})
-    baseline = (profile.get("intent_scope", {}) if profile.get("intent_session_path") == LOCAL
+    session_path = _session_path(root, profile)
+    baseline = (profile.get("intent_scope", {}) if session_path == LOCAL
                 else _read(root, BASELINE, {}).get("intent_baseline", {}))
+    # A hand-projected legacy local file (no session marker) is verified exactly as
+    # the public gates verify it, so resume exposes what they block and nothing more.
+    legacy = _legacy_local(root, profile)
     excluded = {}
     if baseline:
         journal, batch_id = _frozen_scope_batch(root, baseline)
@@ -599,17 +686,22 @@ def _discussion(root, concept):
             if set(question.get("depends_on", [])) & reopened:
                 excluded.pop(question["id"], None)
     for item in _latest(concept).values():
+        # A removal the user already excluded at freeze is journal-backed history; it
+        # authorizes nothing and is not re-labelled pending, whatever its own provenance.
+        if item.get("status") == "removed" and item["id"] in excluded:
+            continue
         if item.get("status") in ("confirmed", "removed"):
             try:
-                _confirmed(root, item, statuses=("confirmed", "removed"))
+                _verified(root, item, statuses=("confirmed", "removed"), legacy=legacy)
             except LegacyProjection as exc:
                 exc.expose(item)
-            except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError):
+            except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError) as exc:
                 item["status"] = "pending"
-                item["pending_reason"] = "Missing or invalid user confirmation provenance"
+                item["pending_reason"] = str(exc) if legacy else "Missing or invalid user confirmation provenance"
     topics = []
-    for topic in dict.fromkeys([*TOPICS, *(i["topic"] for i in _latest(concept).values())]):
-        items = [i for i in _latest(concept).values() if i["topic"] == topic and i["status"] == "pending" and i["id"] not in excluded]
+    latest = {identity: dict(item, topic=item.get("topic", LOCAL_TOPIC)) for identity, item in _latest(concept).items()}
+    for topic in dict.fromkeys([*TOPICS, *(i["topic"] for i in latest.values())]):
+        items = [i for i in latest.values() if i["topic"] == topic and i["status"] == "pending" and i["id"] not in excluded]
         questions = [dict(q, status="pending") for q in concept.get("intent_questions", [])
                      if q["topic"] == topic and _question_pending(root, q) and q["id"] not in excluded]
         if items or questions:
@@ -623,10 +715,13 @@ def session(root, request):
     if request.get("operation") in ("run-policy", "run-event"):
         return run_policy(root, request)
     profile = _read(root, PROFILE, {})
-    concept_path = LOCAL if profile.get("intent_session_path") == LOCAL else CONCEPT
+    operation = request["operation"]
+    # draft and admit name their own route; the other operations continue the
+    # recorded session, or a legacy hand-projected local file awaiting recovery.
+    concept_path = ((LOCAL if profile.get("intent_session_path") == LOCAL else CONCEPT)
+                    if operation in ("draft", "admit") else _session_path(root, profile))
     concept = _read(root, concept_path, {})
     _validate_question_ids(concept)
-    operation = request["operation"]
     if operation == "admit":
         import copy
         if (request.get("route") != "local-change" or not _text(request.get("goal"))
@@ -634,7 +729,8 @@ def session(root, request):
                 or not all(_text(a) for a in request["areas"])):
             raise ValueError("Legacy admission needs the explicit local goal and areas")
         if _read(root, LOCAL, {}).get("requirements"):
-            raise ValueError("Existing local history must be resumed, not overwritten")
+            raise ValueError("Existing local history must be resumed, not overwritten; "
+                             "use resume, then confirm its pending projections")
         items = copy.deepcopy(request["items"])
         if not isinstance(items, list) or not items:
             raise ValueError("Supply only relevant legacy projections and missing local requirements")
@@ -724,7 +820,18 @@ def session(root, request):
             if q["id"] in pending and set(q.get("depends_on", [])) & set(include):
                 raise ValueError("Included work depends on an unresolved decision")
         for identity in include:
-            _confirmed(root, latest[identity])
+            try:
+                _confirmed(root, latest[identity])
+            except LegacyProjection:
+                raise
+            except ValueError:
+                # A frozen scope is journal-backed. A hand-projected user-turn item is
+                # valid for its legacy gates but enters the session only once recorded.
+                reference = latest[identity].get("confirmation", {}).get("reference", "")
+                if (_legacy_local(root, profile) and _text(reference) and not _journal_reference(reference)):
+                    raise ValueError(f"Legacy user-turn projection {identity} must be recorded with one confirm "
+                                     "decision (same user reference, no new question) before a local freeze")
+                raise
         if any(not _text(request.get(k)) for k in ("batch_id", "user_reference", "reason")):
             raise ValueError("Scope needs explicit user reference and reason")
         journal = _read(root, JOURNAL)
@@ -758,6 +865,9 @@ def session(root, request):
         profile["task_scope"] = {"areas": sorted({a for i in include for a in latest[i]["scope"]}), "requirement_refs": refs}
         _write(root, JOURNAL, journal)
         if concept_path == LOCAL:
+            # A frozen local scope is a session contract from here on, also for a
+            # legacy hand-projected file that was resumed and confirmed in place.
+            profile["intent_session_path"] = LOCAL
             profile["intent_scope"] = contract
         else:
             _write(root, BASELINE, baseline)
@@ -798,8 +908,10 @@ def session(root, request):
                 item = _latest(concept)[action["id"]]
                 previous = item.get("confirmation", {}).get("reference")
                 if item["status"] == "removed" and op != "restore":
+                    if item["id"] in _discussion(root, concept)["excluded"]:
+                        raise ValueError("Removed intent excluded by the confirmed scope needs explicit restore")
                     try:
-                        _confirmed(root, item, statuses=("removed",))
+                        _verified(root, item, statuses=("removed",), legacy=_legacy_local(root, profile))
                     except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError):
                         if op != "confirm":
                             raise ValueError("Unverified legacy removal needs explicit confirmation")
