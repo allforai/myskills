@@ -147,6 +147,13 @@ On the first iteration, if `transition_log` is non-empty:
   against the current source, so a code-only acceptance cannot complete a delivery
   whose facts are stale, and rewriting a document without correcting its facts fails
   the same check. A product-decision owner returns to `bootstrap`, never to an in-run answer.
+- An `unresolved_external_change` or `external_change_repair_pending` readiness
+  blocker is source changed outside the delivery flow. Both are preflight blockers:
+  report and refuse the affected work. Never interview during execution, never read
+  the changed code as the approved requirement, and never let a Run Policy `accept`
+  stand in for that decision. The user resolves it at the interactive `bootstrap`
+  entry; a rejected change leaves scoped implementation repair whose confirmed
+  acceptance must republish before the node completes.
 - for goal-based replication workflows, do not treat an accepted current slice as final success when the acceptance artifact says major requested fidelity surfaces remain open
 - User interrupts: the next run resumes from `workflow.json`
 

@@ -344,6 +344,29 @@ def validate_unattended_readiness(project_root: Path) -> dict:
                 message += (f"; repair owner {repair.get('owner')} "
                             f"({', '.join(repair.get('responsibilities') or [])}); diff {json.dumps(freshness.get('diff', {}), ensure_ascii=False)}")
             _add(blockers, "stale_evidence", message, node_id=node_id)
+    if well_formed:
+        # A product conflict raised by an external source change is a user decision.
+        # Unattended execution reports it and refuses the affected work; it never
+        # interviews, and it never reads changed code as an approved requirement.
+        from evidence_freshness import external_conflicts, rejected_conflicts, undecided_conflicts
+        conflicts = external_conflicts(project_root)
+        for node_id in sorted(conflicts):
+            for change in undecided_conflicts(conflicts, node_id):
+                deferred = (change["resolution"] or {}).get("resolution") == "defer"
+                _add(blockers, "unresolved_external_change",
+                     f"External source change {change['change_id']} ({change['classification']}) to "
+                     f"{', '.join(sorted(change['files']))} is "
+                     f"{'deferred' if deferred else 'undecided'}; resolve it at the interactive bootstrap entry "
+                     "(accept, reject or defer). Unattended execution cannot decide it or assume acceptance.",
+                     node_id=node_id)
+            for change in rejected_conflicts(conflicts, node_id):
+                task = (change["resolution"] or {}).get("repair_task", {})
+                _add(blockers, "external_change_repair_pending",
+                     f"The user rejected external source change {change['change_id']}; restore the confirmed "
+                     f"behavior in {', '.join(sorted(change['files']))}, resynchronize the affected documents and "
+                     "republish the confirmed acceptance "
+                     f"({' '.join(task.get('restore_acceptance') or []) or 'recorded acceptance unavailable'}).",
+                     node_id=node_id)
     if scope_blockers:
         # Defer shape-dependent checks, retaining rejection in the report below.
         nodes = []

@@ -17,6 +17,7 @@ WORKFLOW = '.allforai/bootstrap/workflow.json'
 STATE = '.allforai/bootstrap/evidence-freshness.json'
 OBSERVATIONS = '.allforai/bootstrap/input-observations'
 READS = '.allforai/bootstrap/observed-input-dependencies.json'
+EXTERNAL = '.allforai/bootstrap/external-changes.json'
 
 
 def digest(value):
@@ -275,7 +276,46 @@ def scope_blockers(root, workflow):
     return grouped
 
 
-def repair_responsibility(root, node, diff, blockers=None):
+def external_conflicts(root):
+    """Currently detected external changes classified as needing a user decision.
+
+    Only a change whose identity is still present in the source and whose
+    recorded classification is a conflict appears here; a verified fact update
+    and a change the source has moved past are not decisions.
+    """
+    try:
+        detected = detect_external_changes(root)
+    except (ValueError, KeyError, TypeError, AttributeError, OSError, StopIteration):
+        # Other gates already fail closed on the same unreadable state; an
+        # undeterminable comparison never invents or hides a user decision.
+        return {}
+    store = read_json(root, EXTERNAL, {}) or {}
+    recorded = store.get('changes', {}) if isinstance(store.get('changes'), dict) else {}
+    result: dict[str, list[dict[str, Any]]] = {}
+    for change in detected:
+        entry = recorded.get(change['change_id'])
+        if not isinstance(entry, dict) or entry.get('classification') in (None, 'fact-update'):
+            continue
+        resolution = entry.get('resolution') if isinstance(entry.get('resolution'), dict) else None
+        settled = {**change, 'classification': entry['classification'], 'resolution': resolution}
+        # An unmapped change belongs to every delivery whose provenance it touches.
+        for target in ([change['node_id']] if change['node_id'] else change['impact']['tasks']):
+            result.setdefault(target, []).append(settled)
+    return result
+
+
+def undecided_conflicts(external, node_id):
+    """Conflicts on a node that no recorded user decision has settled yet."""
+    return [c for c in external.get(node_id, [])
+            if (c['resolution'] or {}).get('resolution') not in ('accept', 'reject')]
+
+
+def rejected_conflicts(external, node_id):
+    """Conflicts the user rejected, whose scoped implementation repair is outstanding."""
+    return [c for c in external.get(node_id, []) if (c['resolution'] or {}).get('resolution') == 'reject']
+
+
+def repair_responsibility(root, node, diff, blockers=None, external=None):
     """Who repairs an inconsistency and which responsibility drifted.
 
     An unresolved or unreplanned product decision belongs to interactive
@@ -290,6 +330,10 @@ def repair_responsibility(root, node, diff, blockers=None):
         return {'owner': 'interactive-bootstrap', 'responsibilities': ['product-decision']}
     if 'stale_requirement' in codes:
         return {'owner': 'interactive-bootstrap', 'responsibilities': ['replan']}
+    if external is None:
+        external = external_conflicts(root)
+    if undecided_conflicts(external, node['node_id']):
+        return {'owner': 'interactive-bootstrap', 'responsibilities': ['product-decision']}
     own = {k: v for k, v in diff.items() if k != 'upstream'}
     if not own and diff.get('upstream'):
         return {'owner': diff['upstream'][0], 'responsibilities': ['upstream']}
@@ -309,6 +353,145 @@ def repair_responsibility(root, node, diff, blockers=None):
             or diff.get('documents')):
         responsibilities.append('verification')
     return {'owner': node['node_id'], 'responsibilities': responsibilities}
+
+
+def consumers(root, node_id, workflow):
+    """Every node whose work transitively depends on ``node_id``."""
+    edges = {n['node_id']: set(dependencies(root, n, workflow)) for n in workflow.get('nodes', [])}
+    reached, frontier = set(), {node_id}
+    while frontier:
+        current = frontier.pop()
+        for consumer, deps in edges.items():
+            if current in deps and consumer not in reached:
+                reached.add(consumer)
+                frontier.add(consumer)
+    return reached
+
+
+def change_impact(root, node, workflow, files):
+    """What a changed source file reaches: facts, product decisions, documents,
+    dependent tasks and the acceptance artifacts bound to this delivery."""
+    return {'facts': sorted(files),
+            'documents': list(node.get('required_documents', [])),
+            'product_decisions': [ref['path'] + '#' + ref['id'] for ref in node.get('requirement_refs', [])],
+            'tasks': sorted({node['node_id']} | consumers(root, node['node_id'], workflow)),
+            'acceptance': [item['path'] if isinstance(item, dict) else item
+                           for item in node.get('exit_artifacts', [])]}
+
+
+def unmapped_changes(root, workflow, state):
+    """Source that changed outside every declared input, and the nodes it reaches.
+
+    Nothing maps this content to a delivery, so its impact is undetermined: it is
+    reported as uncertain rather than assumed harmless or treated as a rebuild.
+    """
+    current = inventory(root, workflow)
+    owned = {p for n in workflow.get('nodes', [])
+             for field in ('source_inputs', 'input_dependencies')
+             for p in expand_paths(root, n.get(field, []))}
+    owned.update(p for record in state['nodes'].values() for p in record.get('extra', []))
+    owned.update(p for record in state['nodes'].values() for p in record.get('inputs', {}).get('files', {}))
+    owned.update(p for paths in observed_reads(root).values() for p in paths)
+    files: dict[str, str] = {}
+    tasks = set()
+    for node_id, record in state['nodes'].items():
+        previous = record.get('source_snapshot', {})
+        unknown = {p for p in set(previous) | set(current) if previous.get(p) != current.get(p)} - owned
+        if not unknown:
+            continue
+        tasks.add(node_id)
+        for path in unknown:
+            files[path] = ('added' if path not in previous else
+                           'removed' if path not in current else 'changed')
+    return files, sorted(tasks)
+
+
+def detect_external_changes(root):
+    """Source changed since a node published its evidence, keyed by content.
+
+    This is a boundary comparison, not a watcher: it reads the recorded
+    observation and the current source, and never runs or decides anything.
+    A change identity binds the node, the confirmed baseline version and the
+    current content of the changed files, so a later edit is a different change
+    and an earlier decision cannot travel to it.
+    """
+    workflow = read_json(root, WORKFLOW, {})
+    state = read_json(root, STATE, {'nodes': {}})
+    # An unreadable record cannot establish what changed outside the flow; the
+    # comparison fails closed instead of reporting an empty, reassuring result.
+    if (not isinstance(state, dict) or not isinstance(state.get('nodes'), dict)
+            or not all(isinstance(v, dict) for v in state['nodes'].values())):
+        raise ValueError('Freshness state is unreadable; external source changes cannot be determined')
+    baseline = intent_baseline(root).get('version')
+    detected = []
+    for node in workflow.get('nodes', []):
+        record = state['nodes'].get(node['node_id'])
+        if not record:
+            continue
+        files = input_diff(record['inputs'], snapshot(root, node, record.get('extra', []))).get('files', {})
+        if not files:
+            continue
+        detected.append({'change_id': digest({'node_id': node['node_id'], 'baseline_version': baseline,
+                                              'files': {p: fingerprint(root, p) for p in sorted(files)}}),
+                         'node_id': node['node_id'], 'files': files, 'baseline_version': baseline,
+                         'impact': change_impact(root, node, workflow, files)})
+    unmapped, tasks = unmapped_changes(root, workflow, state)
+    if unmapped:
+        detected.append({'change_id': digest({'node_id': None, 'baseline_version': baseline,
+                                              'files': {p: fingerprint(root, p) for p in sorted(unmapped)}}),
+                         'node_id': None, 'files': unmapped, 'baseline_version': baseline,
+                         'impact': {'facts': sorted(unmapped), 'documents': [], 'product_decisions': [],
+                                    'tasks': tasks, 'acceptance': []}})
+    return detected
+
+
+def classify_external_change(root, record):
+    if record is None:
+        return 'uncertain', {'reason': 'Changed source is not covered by any declared input; coordinate the '
+                                       'input mapping and the affected documents before claiming impact'}
+    """Verify a detected change against the baseline's own recorded acceptance.
+
+    Passing acceptance establishes an implementation-only change whose facts are
+    updated in place. A failing one, or a delivery with no rerunnable acceptance,
+    is a product conflict: code behavior never becomes the desired behavior here.
+    """
+    command = (record.get('verification') or {}).get('command')
+    if not isinstance(command, list) or not command or not all(isinstance(s, str) and s for s in command):
+        return 'uncertain', {'reason': 'No recorded acceptance command binds this delivery; '
+                                       'the semantic impact of the change is undetermined'}
+    try:
+        verified = subprocess.run(command, cwd=root, capture_output=True, text=True, timeout=300)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return 'uncertain', {'command': command, 'reason': 'Recorded acceptance could not be executed: ' + str(exc)}
+    return ('fact-update' if verified.returncode == 0 else 'product-conflict',
+            {'command': command, 'returncode': verified.returncode,
+             'stdout': verified.stdout, 'stderr': verified.stderr})
+
+
+def external_changes(root):
+    """Detect, verify and record source changed outside the delivery flow.
+
+    Recorded user resolutions are preserved: redetecting the same change never
+    reopens a decision, and detection never writes to the product journal.
+    """
+    state = read_json(root, STATE, {'nodes': {}})
+    store = read_json(root, EXTERNAL, {}) or {}
+    changes = store.get('changes', {}) if isinstance(store.get('changes'), dict) else {}
+    detected = detect_external_changes(root)
+    for change in detected:
+        previous = changes.get(change['change_id'], {})
+        classification, verification = classify_external_change(
+            root, state['nodes'].get(change['node_id']) if change['node_id'] else None)
+        change.update(classification=classification, verification=verification,
+                      resolution=previous.get('resolution'))
+        changes[change['change_id']] = change
+    write_json(root, EXTERNAL, {'schema_version': '1.0', 'changes': changes})
+    # A deferred conflict is still undecided: postponement is not acceptance.
+    undecided = [c for c in detected if c['classification'] != 'fact-update'
+                 and (c['resolution'] or {}).get('resolution') not in ('accept', 'reject')]
+    status = ('conflict' if undecided else 'clear' if not detected else
+              'fact_update' if all(c['classification'] == 'fact-update' for c in detected) else 'decided')
+    return {'status': status, 'changes': detected}
 
 
 def inventory(root, workflow):
@@ -340,6 +523,7 @@ def evaluate(root):
     owned.update(p for paths in observed_reads(root).values() for p in paths)
     uncertain_inputs = set()
     blockers = scope_blockers(root, workflow)
+    external = external_conflicts(root)
     for node in workflow.get('nodes', []):
         evidence = state['nodes'].get(node['node_id'])
         contract = state.get('contracts', {}).get(node['node_id'])
@@ -371,7 +555,7 @@ def evaluate(root):
         result[node['node_id']] = {'status': 'valid' if evidence_valid else 'stale',
                                   'readiness_status': 'valid' if valid else 'stale', 'diff': diff}
         if not evidence_valid:
-            result[node['node_id']]['repair'] = repair_responsibility(root, node, diff, blockers)
+            result[node['node_id']]['repair'] = repair_responsibility(root, node, diff, blockers, external)
         if record:
             previous = record.get('source_snapshot', {})
             unknown = {p for p in set(previous) | set(current) if previous.get(p) != current.get(p)} - owned
@@ -390,7 +574,7 @@ def evaluate(root):
                 if entry.get('status') != 'undeclared':
                     stale_diff = entry.setdefault('diff', {})
                     stale_diff['upstream'] = sorted(set(stale_diff.get('upstream', [])) | set(stale_upstream))
-                    entry['repair'] = repair_responsibility(root, node, stale_diff, blockers)
+                    entry['repair'] = repair_responsibility(root, node, stale_diff, blockers, external)
             if any(result.get(dep, {}).get('readiness_status') != 'valid' for dep in dependencies(root, node, workflow)):
                 result[node['node_id']]['readiness_status'] = 'stale'
     return {'nodes': result, 'uncertain_inputs': sorted(uncertain_inputs)}
@@ -400,6 +584,8 @@ def session(root, request):
     operation = request['operation']
     if operation == 'check':
         return evaluate(root)
+    if operation == 'external-changes':
+        return external_changes(root)
     workflow = read_json(root, WORKFLOW, {})
     if operation == 'observe':
         node = next(n for n in workflow['nodes'] if n['node_id'] == request['node_id'])
@@ -530,7 +716,8 @@ def main():
     except (ValueError, KeyError, TypeError, OSError, StopIteration, subprocess.TimeoutExpired) as exc:
         result = {'status': 'invalid', 'reason': str(exc)}
     print(json.dumps(result, sort_keys=True))
-    return 1 if result.get('status') in {'stale', 'invalid', 'inconsistent', 'failed_verification'} else 0
+    return 1 if result.get('status') in {'stale', 'invalid', 'inconsistent', 'failed_verification',
+                                         'conflict'} else 0
 
 
 if __name__ == '__main__':

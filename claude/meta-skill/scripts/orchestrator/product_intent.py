@@ -174,6 +174,7 @@ TOPICS = ("target-users", "scenarios", "core-problem", "value-proposition", "bus
 LOCAL_TOPIC = "local-requirements"  # Grouping label for hand-projected local requirements without a topic.
 RUN_POLICY = ".allforai/bootstrap/run-policy.json"
 RUN_POLICY_REPAIRS = ".allforai/bootstrap/run-policy-repairs.json"
+EXTERNAL = ".allforai/bootstrap/external-changes.json"
 POLICY_OPTIONS = {
     "on_repeated_failure": ["continue", "halt"],
     "on_needs_iteration": ["halt_with_report", "auto_fix_once", "accept"],
@@ -710,10 +711,101 @@ def _discussion(root, concept):
             "excluded": excluded, "questions": concept.get("intent_questions", [])}
 
 
+
+def _external_change(root, request):
+    """Record the user's decision about source changed outside the delivery flow.
+
+    Only a detected, verified conflict reaches a decision: a verified
+    implementation-only change is synchronized through its fact documents, and a
+    change the source has already moved past is redetected rather than decided.
+    Accepting one requires the explicit desired intent it establishes; the code
+    change never supplies its own requirement, and no Run Policy answer stands in
+    for this decision. The resolution is recorded beside the change; accepted
+    intent changes go through the same journal, refreeze and replan loop as any
+    other product decision.
+    """
+    # One canonical writer keeps the recorded store byte-identical across boundaries.
+    from evidence_freshness import detect_external_changes, write_json as write_external
+    change_id, resolution = request.get("change_id"), request.get("resolution")
+    if resolution not in ("accept", "reject", "defer"):
+        raise ValueError("An external change is accepted, rejected or deferred by explicit user decision")
+    if any(not _text(request.get(key)) for key in ("change_id", "reason", "user_reference")):
+        raise ValueError("An external change decision needs its identity, actual user reference and reason")
+    store = _read(root, EXTERNAL, {})
+    changes = store.get("changes", {}) if isinstance(store.get("changes"), dict) else {}
+    entry = changes.get(change_id)
+    if not isinstance(entry, dict):
+        raise ValueError("Unknown external change; detect it at the bootstrap or resume boundary first")
+    if change_id not in {c["change_id"] for c in detect_external_changes(root)}:
+        raise ValueError("This external change is not present in the current source; redetect before deciding")
+    if entry.get("classification") == "fact-update":
+        raise ValueError("A verified implementation-only change is synchronized through its fact documents "
+                         "and republished evidence, not through a product decision")
+    settled = (entry.get("resolution") or {}).get("resolution")
+    if settled in ("accept", "reject"):
+        raise ValueError(f"This external change is already {settled}ed; record a new product decision instead")
+    record = {"resolution": resolution, "reason": request["reason"],
+              "user_reference": request["user_reference"], "baseline_version": entry.get("baseline_version")}
+    tag = {"change_id": change_id, "node_id": entry.get("node_id"),
+           "resolution": resolution, "files": entry.get("files", {})}
+    if resolution in ("accept", "reject"):
+        if not _text(request.get("batch_id")):
+            raise ValueError(f"A{'n accepted' if resolution == 'accept' else ' rejected'} external change "
+                             "needs its decision batch identity")
+        actions = request.get("actions", []) if resolution == "accept" else []
+        if not isinstance(actions, list):
+            raise ValueError("actions must be an explicit array")
+        if resolution == "accept" and not actions and entry.get("impact", {}).get("product_decisions"):
+            raise ValueError("Accepting this change needs the explicit desired product intent it establishes; "
+                             "changed code is not a requirement")
+        if actions:
+            # Intent the change establishes is recorded through the ordinary decision
+            # path, so identity, provenance and supersession rules apply unchanged.
+            result = session(root, {"operation": "decide", "batch_id": request["batch_id"],
+                                    "topic": "External source change",
+                                    "user_reference": request["user_reference"], "actions": actions})
+            journal = _read(root, JOURNAL)
+            next(b for b in journal["batches"] if b["batch_id"] == request["batch_id"])["external_change"] = tag
+        else:
+            # No confirmed intent changes: the decision itself is still recorded.
+            journal = _read(root, JOURNAL, {"schema_version": "1.0", "batches": []})
+            if journal.get("schema_version") != "1.0" or not isinstance(journal.get("batches"), list):
+                raise ValueError("Preserve canonical schema 1.0 journal batches")
+            if any(b["batch_id"] == request["batch_id"] for b in journal["batches"]):
+                raise ValueError("Batch identity already exists; resume before submitting new decisions")
+            journal["batches"].append({
+                "batch_id": request["batch_id"], "topic": "External source change", "source": "user_session",
+                "user_reference": request["user_reference"], "external_change": tag,
+                "decisions": [{"question": "Accept the changed source or restore the confirmed behavior?",
+                               "chosen": ("Accept the changed source" if resolution == "accept"
+                                          else "Restore the confirmed behavior"),
+                               "rationale": request["reason"], "supersedes": None}]})
+            result = {"status": "external_change_recorded"}
+        _write(root, JOURNAL, journal)
+        record.update(batch_id=request["batch_id"],
+                      decision=JOURNAL + "#" + request["batch_id"] + "/decisions/0")
+        if resolution == "reject":
+            # The confirmed baseline stands; what remains is scoped implementation work,
+            # not another product question. Its acceptance is the one already confirmed.
+            record["repair_task"] = {"node_id": entry.get("node_id"), "responsibilities": ["implementation"],
+                                     "files": sorted(entry.get("files", {})),
+                                     "restore_acceptance": (entry.get("verification") or {}).get("command"),
+                                     "product_decisions": entry.get("impact", {}).get("product_decisions", [])}
+    else:
+        result = {"status": "external_change_recorded"}
+    entry["resolution"] = record
+    changes[change_id] = entry
+    write_external(root, EXTERNAL, {"schema_version": "1.0", "changes": changes})
+    return {**result, "external_change": {"change_id": change_id, "node_id": entry.get("node_id"),
+                                          "classification": entry.get("classification"), "resolution": record}}
+
+
 def session(root, request):
     """Apply explicit interactive bootstrap input; never called by unattended run."""
     if request.get("operation") in ("run-policy", "run-event"):
         return run_policy(root, request)
+    if request.get("operation") == "external-change":
+        return _external_change(root, request)
     profile = _read(root, PROFILE, {})
     operation = request["operation"]
     # draft and admit name their own route; the other operations continue the

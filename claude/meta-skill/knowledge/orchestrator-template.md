@@ -95,6 +95,13 @@ cannot complete a delivery whose facts are stale; rewriting a document without
 correcting its facts fails the same check. A product-decision owner is a
 preflight blocker for the next `/run`, never something to answer or invent
 inside the run.
+An `unresolved_external_change` or `external_change_repair_pending` readiness
+blocker is source changed outside the delivery flow. Both are preflight blockers
+for the next `/run`: report and refuse the affected work. Never interview the user
+inside the run, never treat the changed code as the approved requirement, and never
+let a Run Policy `accept` stand in for that decision. The user resolves it at the
+interactive bootstrap entry; a rejected change leaves scoped implementation repair
+whose confirmed acceptance must republish before the node completes.
 A node whose freshness is `undeclared` (missing `source_inputs`) or `invalid`
 (malformed declaration) cannot start or be committed: return it to interactive
 bootstrap to declare its product source (explicit `[]` only when none applies).

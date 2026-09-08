@@ -400,6 +400,17 @@ Invalidated items name a `diff` and `repair_owner`: resolve `interactive-bootstr
 items here (answer the pending decision, or refreeze and replan the recorded
 change), and leave node-owned items for `/run` to repair and republish.
 
+At the same boundary, send `{"operation":"external-changes"}` to detect code
+changed outside the delivery flow. A change whose recorded acceptance still passes
+is an implementation fact: resynchronize its documents and republish. A failing one,
+or changed source no node declares, is a conflict reported to the user, never a new
+requirement. Record the user's `accept` (with the explicit desired intent it
+establishes), `reject` (baseline kept, scoped implementation repair) or `defer`
+through `product_intent.py`'s `external-change` operation with an actual user
+reference and reason. A deferred or interrupted decision keeps the conflict and
+blocks only the work that depends on it; unrelated valid records are preserved.
+A Run Policy `accept` is a run choice and never accepts a product behavior change.
+
 > This section only applies when `has_concept_drift` is true AND an existing
 > `workflow.json` exists. Otherwise, skip to 3.1 for full planning.
 

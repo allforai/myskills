@@ -87,6 +87,52 @@ Revalidating a producer does not refresh its consumers. Reconcile only affected
 work, preserve unrelated valid records, and reverify affected consumers in order.
 Repeated checks are read-only and identical publication does not rewrite state.
 
+## Source changed outside the delivery flow
+
+At bootstrap/resume, after `check`, send `{"operation":"external-changes"}`. It
+compares each published record with the current source, runs that delivery's own
+recorded acceptance argv against the changed code, and records what it found in
+`.allforai/bootstrap/external-changes.json`. This is the same boundary comparison,
+not a background watcher, and it never writes the decision journal.
+
+- Recorded acceptance still passes: `fact-update`. The change is implementation
+  only. Update the required fact documents and republish evidence; no product
+  decision is asked for and none is required.
+- Recorded acceptance fails: `product-conflict`. Changed code never becomes the
+  desired behavior. The affected node's repair owner is `interactive-bootstrap`
+  (`product-decision`) and readiness reports `unresolved_external_change`.
+- Changed source that no node declares: `uncertain`, reported against every
+  delivery whose provenance it touches. Coordinate the input mapping and the
+  affected documents; zero impact is never assumed and nothing is rebuilt wholesale.
+
+A conflict is settled only by the user, through `product_intent.py` with
+`{"operation":"external-change","change_id":...,"resolution":"accept|reject|defer"}`
+plus an actual `user_reference` and `reason`:
+
+- `accept` carries the explicit intent `actions` that the change establishes and
+  records them in one journal batch tagged with the change. Those intent changes
+  then follow the ordinary refreeze, replan, resynchronize and reverify loop; the
+  baseline version advances there, not in the acceptance itself. Accepting a change
+  that touches confirmed decisions without stating the desired intent is refused.
+- `reject` keeps the confirmed baseline, records the decision and its reason, and
+  produces a scoped implementation repair task naming the node, the changed files
+  and the confirmed acceptance to restore. Readiness reports
+  `external_change_repair_pending` until that acceptance republishes.
+- `defer`, and an interrupted interaction that records nothing at all, keep the
+  conflict and its context. Work depending on the decision stays blocked; unrelated
+  valid records keep their provenance and are not replanned or reset. The next
+  boundary reports the same change identity with its resolution intact.
+
+A change identity binds the node, the confirmed baseline version and the current
+content of the changed files, so a later edit is a different change and an earlier
+decision cannot travel to it. Detection never invents, reopens or recomputes a
+recorded resolution, and a verified implementation-only change is synchronized
+through its documents rather than through a product decision. Run Policy answers
+are run choices: `accept` there is not acceptance of a changed product behavior.
+Unattended execution reports unresolved conflicts and refuses the affected work; it
+never interviews and never assumes acceptance. Resolution returns to the
+interactive bootstrap entry and continues from the retained conflict.
+
 Every withheld completion is an explicit difference with a repair owner, never a
 bare warning. `check`, `check_artifacts.py`, the readiness `stale_evidence`
 blocker and reconciliation `invalidate` items carry `diff` (changed `files`,
