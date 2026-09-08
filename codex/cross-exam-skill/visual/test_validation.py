@@ -657,3 +657,83 @@ def test_frozen_inventory_desktop_floor_is_enforced_on_replay(sample):
     cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
     reason = visual_reason(entry, ledger, root)
     assert '1920' in reason and '1440' in reason
+
+
+def _layout_reason(sample, rules, width_range='global', surfaces=None):
+    """Freeze a baseline whose layout rules are `rules` over an inventory with the given width range."""
+    root, write, cfg, case, report, entry, ledger = sample
+    baseline = json.loads((root / cfg['baseline_ref']).read_text())
+    baseline['categories']['layout']['rules'] = rules
+    cfg['baseline_digest'] = cfg['interaction_digest'] = write(cfg['baseline_ref'], baseline)
+    for ref in ('evidence/q1/manifest.json', 'evidence/q1/review.json'):
+        obj = json.loads((root / ref).read_text())
+        for holder in obj.get('captures', [obj]):
+            holder['baseline_digest'] = holder['interaction_digest'] = cfg['baseline_digest']
+        write(ref, obj)
+    if width_range == 'global':
+        width_range = {'min': 1024, 'max': 1920, 'basis': 'minWidth + display'}
+    if width_range is not None or surfaces is not None:
+        inventory = json.loads((root / cfg['inventory_ref']).read_text())
+        if surfaces is not None:
+            inventory['surfaces'] = surfaces
+        if width_range is not None:
+            inventory['width_range'] = width_range
+            for s in inventory['surfaces']:
+                s['axes']['device'] = ['1024x768@1', '1920x1080@1']
+        cfg['inventory_digest'] = write(cfg['inventory_ref'], inventory)
+        rows = expand(inventory['surfaces'], width_range=inventory.get('width_range'))
+        cfg['matrix_digest'] = write(cfg['matrix_ref'], rows)
+        ledger['visual_cases'] = rows
+        entry['visual_case_ids'] = [rows[0]['id']]
+        for ref in ('evidence/q1/manifest.json', 'evidence/q1/review.json'):
+            obj = json.loads((root / ref).read_text())
+            for holder in obj.get('captures', [obj]):
+                holder['inventory_digest'] = cfg['inventory_digest']
+                holder['matrix_digest'] = cfg['matrix_digest']
+                if 'case_id' in holder:
+                    holder['case_id'] = rows[0]['id']
+                    holder.update({a: rows[0][a] for a in AXES})
+            write(ref, obj)
+    return visual_reason(entry, ledger, root)
+
+
+GOOD_ENDS = {'1024': {'empty': '两侧各 ≤ 内容宽度 10%'}, '1920': {'empty': '两侧各 ≤ 内容宽度 40%，其余由侧栏与附件栏填充'}}
+
+
+def test_pinned_string_layout_rule_is_refused(sample):
+    reason = _layout_reason(sample, ['消息列 820px 居中'])
+    assert reason and '820px' in reason and '两端' in reason
+
+
+def test_pinned_object_rule_with_both_ends_is_accepted(sample):
+    assert _layout_reason(sample, [{'rule': '消息列 820px 居中', 'ends': GOOD_ENDS}]) is None
+    assert _layout_reason(sample, ['侧栏固定在左侧', {'rule': '消息列 820px 居中', 'ends': GOOD_ENDS}]) is None
+
+
+@pytest.mark.parametrize('ends', [
+    {'1024': {'empty': 'x'}},                                              # missing an end
+    {'1024': {'empty': 'x'}, '1920': {'empty': 'x'}, '1440': {'empty': 'x'}},  # extra key
+    {'1200': {'empty': 'x'}, '2000': {'empty': 'x'}},                      # not the frozen range's ends
+    {'1024': {'empty': 'x'}, '1920': {'empty': '   '}},                    # blank allowance
+    {'1024': 'x', '1920': {'empty': 'x'}},                                 # malformed end
+    'wide ok',                                                             # malformed ends
+])
+def test_bad_ends_are_refused_with_a_reason(sample, ends):
+    reason = _layout_reason(sample, [{'rule': '消息列 820px 居中', 'ends': ends}])
+    assert reason and '消息列 820px 居中' in reason
+
+
+def test_pinned_rule_without_width_range_is_refused(sample):
+    reason = _layout_reason(sample, [{'rule': '消息列 820px 居中', 'ends': GOOD_ENDS}], width_range=None)
+    assert reason and 'width_range' in reason
+
+
+def test_unpinned_string_rule_stays_a_string(sample):
+    assert _layout_reason(sample, ['主列随窗口拉伸，侧栏固定']) is None
+    assert _layout_reason(sample, ['主列随窗口拉伸，侧栏固定'], width_range=None) is None
+
+
+def test_malformed_layout_rule_shapes_yield_reasons(sample):
+    for rules in ([42], [{'ends': GOOD_ENDS}], [{'rule': '', 'ends': GOOD_ENDS}], 'not a list'):
+        reason = _layout_reason(sample, rules)
+        assert isinstance(reason, str) and reason

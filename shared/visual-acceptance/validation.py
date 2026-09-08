@@ -3,6 +3,7 @@ import hashlib
 import importlib.util
 import json
 import math
+import re
 from pathlib import Path
 
 
@@ -139,6 +140,48 @@ def baseline(run, config):
     return references
 
 
+WIDTH_LITERAL = re.compile(r'\d+\s*(px|pt|dp)\b')
+
+
+def _rule_text(rule):
+    return rule if isinstance(rule, str) else json.dumps(rule, ensure_ascii=False)[:120]
+
+
+def pinned_layout_reason(baseline_obj, inventory):
+    """A layout rule that pins a width (a width literal in its text, or an `ends` mapping) is *pinned*: it
+    must be an object {rule, ends} whose ends are the applicable width range's min and max, each with a
+    non-empty allowed empty area. Otherwise "820px centered" freezes as a rule a wide window trivially
+    satisfies and the reviewer has no sentence to cite. Returns '' or the refusal reason."""
+    rules = ((baseline_obj.get('categories') or {}).get('layout') or {}).get('rules')
+    if rules is None:
+        return ''
+    if not isinstance(rules, list):
+        return 'layout 规则须是列表'
+    for rule in rules:
+        if isinstance(rule, str):
+            if WIDTH_LITERAL.search(rule):
+                return 'layout 规则钉死了宽度却没写两端空区（须写成 {rule, ends} 对象）: ' + rule
+            continue
+        if not isinstance(rule, dict) or not isinstance(rule.get('rule'), str) or not rule['rule'].strip():
+            return 'layout 规则形状无效: ' + _rule_text(rule)
+        text = rule['rule']
+        if 'ends' not in rule:
+            if WIDTH_LITERAL.search(text):
+                return 'layout 规则钉死了宽度却没写两端空区（须写成 {rule, ends} 对象）: ' + text
+            continue
+        rng = inventory.get('width_range')
+        if not isinstance(rng, dict) or not isinstance(rng.get('min'), int) or not isinstance(rng.get('max'), int):
+            return 'layout 规则钉死了宽度但 inventory 未声明 width_range: ' + text
+        expected = [str(rng['min']), str(rng['max'])]
+        ends = rule['ends']
+        if not isinstance(ends, dict) or sorted(ends.keys()) != sorted(expected):
+            return 'layout 规则两端须是 width_range 的 %s 与 %s: %s' % (expected[0], expected[1], text)
+        for width, end in ends.items():
+            if not isinstance(end, dict) or not isinstance(end.get('empty'), str) or not end['empty'].strip():
+                return 'layout 规则在 %s 宽度处缺允许空区 empty: %s' % (width, text)
+    return ''
+
+
 ENV_AXES = tuple(a for a in AXES if a != 'state')
 
 
@@ -250,6 +293,10 @@ def visual_reason(entry, ledger, run):
                 noun = '语言' if axis == 'locale' else axis + ' 值'
                 raise ValueError('inventory 删掉了普查官列出的%s: %s' % (noun, ', '.join(sorted(dropped))))
         reference_images = baseline(run, config)
+        for key in ('baseline_ref', 'interaction_ref'):
+            problem = pinned_layout_reason(read(run, config[key]), inventory)
+            if problem:
+                raise ValueError(problem)
         if entry.get('medium') != 'runtime':
             raise ValueError('视觉裁决必须使用运行证据')
         evidence = run / 'evidence'
