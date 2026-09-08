@@ -64,6 +64,16 @@ def test_accepted_with_gaps_is_not_reported_as_a_ready_artifact(tmp_path):
     assert flow.artifact_ready(tmp_path, 'report.json')
 
 
+@pytest.mark.parametrize('status', ['existence_only', 'not_good_enough', 'quality_failed'])
+def test_unverified_or_failed_quality_is_not_a_ready_artifact(tmp_path, status):
+    report = tmp_path / 'report.json'
+    write(report, {'status': status})
+    assert not flow.artifact_ready(tmp_path, 'report.json')
+    assert status in flow.artifact_status_error(report, tmp_path)
+    write(report, {'status': 'passed'})
+    assert flow.artifact_ready(tmp_path, 'report.json')
+
+
 def test_missing_preflight_blocks(tmp_path):
     assert flow.run_preflight(tmp_path) == 6
 
