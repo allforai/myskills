@@ -7,8 +7,6 @@ import shutil
 import subprocess
 
 SOURCE = Path(__file__).resolve().parents[5]
-COMMIT = "88e7becaf30522ef29dd2fa168b62045affcb782"
-PRODUCER = "3f66d7acc367cdb39ee12ae10827c8d81298ae0a"
 SCENES = {
     "large-code-local-button": "Add an Export CSV button to the merchant orders page. Use the recorded export decisions. Bootstrap the work for this feature.",
     "missing-product-docs": "Bootstrap a change to add an Export CSV button to the merchant orders page.",
@@ -31,16 +29,16 @@ def fingerprint(root):
             for p in sorted(root.rglob("*")) if p.is_file() and not p.is_symlink()}
 
 
-def candidate(destination):
+def candidate(destination, commit):
     git_modes = {}
-    paths = subprocess.check_output(["git", "ls-tree", "-r", "--name-only", COMMIT,
+    paths = subprocess.check_output(["git", "ls-tree", "-r", "--name-only", commit,
         "claude/meta-skill", "codex/meta-skill", "docs/adr"], cwd=SOURCE, text=True).splitlines()
     for path in paths:
         if "/tests/" in path or path.endswith("/tests"):
             continue
-        entry = subprocess.check_output(["git", "ls-tree", COMMIT, path], cwd=SOURCE, text=True)
+        entry = subprocess.check_output(["git", "ls-tree", commit, path], cwd=SOURCE, text=True)
         git_modes[path] = entry.split()[0]
-        data = subprocess.check_output(["git", "show", f"{COMMIT}:{path}"], cwd=SOURCE)
+        data = subprocess.check_output(["git", "show", f"{commit}:{path}"], cwd=SOURCE)
         target = destination / path
         target.parent.mkdir(parents=True, exist_ok=True)
         if git_modes[path] == "120000":
@@ -51,7 +49,7 @@ def candidate(destination):
     hashes = fingerprint(destination)
     links = {str(p.relative_to(destination)): str(p.readlink())
              for p in sorted(destination.rglob("*")) if p.is_symlink()}
-    return {"source_commit": COMMIT, "production_commit": PRODUCER,
+    return {"source_commit": commit, "production_commit": commit,
             "sha256": hashes, "symlinks": links, "git_modes": git_modes,
             "tree_sha256": hashlib.sha256(json.dumps({"files": hashes, "links": links, "git_modes": git_modes},
                 sort_keys=True, separators=(",", ":")).encode()).hexdigest()}
@@ -130,10 +128,17 @@ def summarize(records):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("destination", type=Path)
+    parser.add_argument("--candidate", required=True, help="Explicit candidate Git commit to export; never inferred from an installation")
     args = parser.parse_args()
+    try:
+        commit = subprocess.check_output(["git", "rev-parse", "--verify", "--end-of-options",
+                                          args.candidate + "^{commit}"], cwd=SOURCE, text=True,
+                                         stderr=subprocess.PIPE).strip()
+    except subprocess.CalledProcessError:
+        parser.error("--candidate must resolve to a Git commit")
     destination = args.destination.resolve()
     destination.mkdir(parents=True, exist_ok=False)
-    manifest = candidate(destination / "candidate")
+    manifest = candidate(destination / "candidate", commit)
     put(destination, "candidate-manifest.json", manifest)
     for host in ("claude", "codex"):
         for scene, request in SCENES.items():
