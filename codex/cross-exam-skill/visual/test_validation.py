@@ -967,3 +967,110 @@ def test_hidden_width_is_refused_even_when_layout_category_has_no_rules(sample):
         write(ref, obj)
     reason = visual_reason(entry, ledger, root)
     assert reason and 'spacing' in reason
+
+
+def _census_reason(sample, census, platform='ios', form_factor=None, thresholds=None,
+                   width_range='global', surfaces=None, readback_width='auto'):
+    """Put the census's verbatim width facts on the ledger top level and freeze an inventory against them."""
+    root, write, cfg, case, report, entry, ledger = sample
+    ledger.update(census)
+    inventory = json.loads((root / cfg['inventory_ref']).read_text())
+    inventory['platform'] = platform
+    if form_factor is not None:
+        inventory['form_factor'] = form_factor
+    if thresholds is not None:
+        inventory['layout_thresholds'] = thresholds
+    write(cfg['inventory_ref'], inventory)          # digest follows in _layout_reason
+    if surfaces is None:
+        surfaces = [{'id': 'home', 'axes': {**{a: ['default'] for a in AXES}, 'state': ['default', 'resize-drag']}}]
+    return _layout_reason(sample, ['approved'], width_range=width_range, surfaces=surfaces,
+                          readback_width=readback_width)
+
+
+CENSUS_RANGE = {'min': 1024, 'max': 1920, 'basis': 'electron main.ts:12 minWidth; 1920 display'}
+
+
+def test_inventory_form_factor_cannot_be_weaker_than_census(sample):
+    for read in ('desktop', 'both'):
+        reason = _census_reason(sample, {'form_factor': read})            # ios implies mobile
+        assert reason and 'mobile' in reason and read in reason
+    reason = _census_reason(sample, {'form_factor': {'value': 'desktop', 'basis': 'electron main.ts:12'}})
+    assert reason and 'mobile' in reason and 'desktop' in reason
+
+
+def test_inventory_form_factor_may_be_stronger_than_census(sample):
+    assert _census_reason(sample, {'form_factor': 'mobile'}, platform='macos') is None
+    assert _census_reason(sample, {'form_factor': 'desktop'}, platform='macos', form_factor='both') is None
+    assert _census_reason(sample, {'form_factor': {'value': 'desktop', 'basis': 'main.ts:12'}}, platform='macos') is None
+
+
+def test_inventory_width_range_may_widen_but_never_narrow_the_census(sample):
+    reason = _census_reason(sample, {'width_range': {**CENSUS_RANGE, 'max': 2560}})
+    assert reason and '1920' in reason and '2560' in reason
+    reason = _census_reason(sample, {'width_range': {**CENSUS_RANGE, 'min': 900}})
+    assert reason and '1024' in reason and '900' in reason
+    assert _census_reason(sample, {'width_range': {**CENSUS_RANGE, 'min': 1200, 'max': 1600}}) is None
+    assert _census_reason(sample, {'width_range': CENSUS_RANGE}) is None
+
+
+def test_inventory_without_width_range_cannot_hide_a_census_range(sample):
+    surfaces = [{'id': 'home', 'axes': {a: ['default'] for a in AXES}}]
+    reason = _census_reason(sample, {'width_range': CENSUS_RANGE}, width_range=None, surfaces=surfaces,
+                            readback_width=None)
+    assert reason and 'width_range' in reason and '1920' in reason
+
+
+def test_inventory_cannot_drop_a_census_layout_threshold(sample):
+    census = {'layout_thresholds': [{'width': 1280, 'unit': 'px', 'basis': 'app.css:3'},
+                                    {'width': 1440, 'unit': 'px', 'basis': 'app.css:9'}]}
+    reason = _census_reason(sample, census, thresholds=[{'width': 1280, 'basis': 'app.css:3'}])
+    assert reason and '1440' in reason and '1280' not in reason
+    added = [{'width': 1280, 'basis': 'app.css:3'}, {'width': 1440, 'basis': 'app.css:9'},
+             {'width': 1600, 'basis': 'user: 1600 wide dock'}]
+    assert _census_reason(sample, census, thresholds=added) is None
+
+
+def _narrowed(min_width=1280, entry=None):
+    axes = {a: ['default'] for a in AXES}
+    admin = {'id': 'admin', 'axes': {**axes, 'state': ['default', 'resize-drag']},
+             'width_range': {'min': min_width, 'max': 1920, 'basis': 'desktop-only route'}}
+    if entry:
+        admin['entry'] = entry
+    return [{'id': 'home', 'axes': {**axes, 'state': ['default', 'resize-drag']}}, admin]
+
+
+def test_narrowed_surface_needs_a_census_counterpart_with_a_width_range(sample):
+    reason = _census_reason(sample, {'width_range': CENSUS_RANGE, 'ui_surfaces': []}, surfaces=_narrowed())
+    assert reason and 'admin' in reason
+    no_range = {'width_range': CENSUS_RANGE, 'ui_surfaces': [{'id': 'admin', 'name': 'Admin', 'entry': 'admin.tsx'}]}
+    reason = _census_reason(sample, no_range, surfaces=_narrowed())
+    assert reason and 'admin' in reason
+
+
+def test_narrowed_surface_matching_the_census_is_accepted_and_narrower_is_refused(sample):
+    read = {'id': 'U4', 'name': 'Admin', 'entry': 'src/routes/admin.tsx:Admin',
+            'width_range': {'min': 1280, 'max': 1920, 'basis': 'router.tsx:40 innerWidth >= 1280'}}
+    by_id = {'width_range': CENSUS_RANGE, 'ui_surfaces': [{**read, 'id': 'admin'}]}
+    assert _census_reason(sample, by_id, surfaces=_narrowed()) is None
+    by_entry = {'width_range': CENSUS_RANGE, 'ui_surfaces': [read]}
+    assert _census_reason(sample, by_entry, surfaces=_narrowed(entry=read['entry'])) is None
+    assert _census_reason(sample, by_id, surfaces=_narrowed(min_width=1200)) is None     # wider than read
+    reason = _census_reason(sample, by_id, surfaces=_narrowed(min_width=1440))
+    assert reason and 'admin' in reason and '1440' in reason and '1280' in reason
+
+
+def test_missing_census_keys_are_not_checked(sample):
+    assert _census_reason(sample, {}) is None
+    assert _census_reason(sample, {}, surfaces=_narrowed()) is None          # narrowing unchecked without a census range
+
+
+@pytest.mark.parametrize('census', [
+    {'form_factor': 42}, {'form_factor': 'tablet'}, {'form_factor': {'basis': 'main.ts:12'}},
+    {'width_range': 'wide'}, {'width_range': {'min': 'a', 'max': 1920}},
+    {'layout_thresholds': 'x'}, {'layout_thresholds': [{'width': '1280'}]},
+    {'width_range': CENSUS_RANGE, 'ui_surfaces': 'x'},
+    {'width_range': CENSUS_RANGE, 'ui_surfaces': [{'id': 'admin', 'width_range': {'min': 'a', 'max': 1920}}]},
+])
+def test_malformed_census_shapes_yield_reasons(sample, census):
+    reason = _census_reason(sample, census, surfaces=_narrowed())
+    assert isinstance(reason, str) and '普查官' in reason
