@@ -839,3 +839,135 @@ def test_an_unwritable_store_keeps_the_conflict_it_could_not_record(tmp_path, ho
     assert [b["code"] for b in _readiness(tmp_path)[1]["blockers"]
             if b["node_id"] == NODE and "external" in b["code"]] == ["unresolved_external_change"]
     assert _reject(tmp_path, external(tmp_path)[1]["changes"][0]["change_id"]).returncode == 0
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_an_accepted_change_recovers_once_its_required_document_is_synchronized(tmp_path, host):
+    """Recording the decision is what settles a conflict; a verdict only reports.
+
+    Accepting a change is followed by the synchronization the acceptance itself
+    demands — the delivery's required document is rewritten to the newly confirmed
+    behavior — and then by refreeze, replan and republication. That document belongs to
+    the flow, so rewriting it must not reopen the settled question as unknown drift and
+    demand a verification the recovery never listed."""
+    from .test_bootstrap_scope import publish_contract
+    from .test_delivery_closure import _freeze, _plan
+
+    drift_project(tmp_path, host)
+    (tmp_path / "orders.py").write_text(CONFLICTING)
+    change = external(tmp_path)[1]["changes"][0]
+    accepted = _accept(tmp_path, change["change_id"],
+                       [{"operation": "adjust", "id": "export", "reason": "Partner accounts were merged",
+                         "changes": {"acceptance": PARTNER_ACCEPTANCE,
+                                     "business_rules": ["The partner group's orders are exported together"]}}])
+    assert accepted.returncode == 0, accepted.stdout
+
+    # Synchronizing the delivery's required document is part of the accepted change's
+    # own propagation, not new drift: the decision still stands over it.
+    (tmp_path / DOC).write_text(_doc("['acme', 'other-account']"))
+    code, readiness = _readiness(tmp_path)
+    assert code == 1 and not [b for b in readiness["blockers"] if "external" in b["code"]]
+    assert external(tmp_path)[1]["changes"][0]["resolution"]["resolution"] == "accept"
+
+    # The rest of the recorded recovery runs unchanged, and execution resumes without
+    # another verification step or a repeated product question.
+    assert _freeze(tmp_path, "scope-2")["version"] == 2
+    _plan(tmp_path)
+    publish_contract(tmp_path)
+    code, readiness = _readiness(tmp_path)
+    assert (code, readiness["status"]) == (0, "ready"), readiness["blockers"]
+    code, published = _publish_evidence(tmp_path, command=PARTNER)
+    assert code == 0 and published["status"] == "valid", published
+    assert external(tmp_path)[1] == {"status": "clear", "changes": []}
+    assert _readiness(tmp_path)[1]["status"] == "ready"
+    # The user was asked about this change exactly once, at the interactive entry.
+    assert [b["batch_id"] for b in json.loads((tmp_path / JOURNAL).read_text())["batches"]
+            if b["topic"] == "External source change"] == ["external-1"]
+    _unrelated_is_valid(tmp_path)
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_a_rejected_change_keeps_its_scoped_repair_while_other_documents_move(tmp_path, host):
+    """A rejection scopes implementation repair, and that scope is the user's decision.
+
+    Other source and other generated documents keep moving while the repair is
+    outstanding. None of that movement is new information about this change, so it
+    must not replace the scoped repair with unknown drift that sends the user back to
+    the interactive entry for a question they already answered."""
+    drift_project(tmp_path, host)
+    (tmp_path / "orders.py").write_text(CONFLICTING)
+    change = external(tmp_path)[1]["changes"][0]
+    assert _reject(tmp_path, change["change_id"]).returncode == 0
+
+    # Repair is under way: the delivery's own generated document is being resynchronized,
+    # and another delivery's declared source moves for its own reasons.
+    (tmp_path / DOC).write_text(_doc("['acme']"))
+    (tmp_path / "warehouse.py").write_text("stock = 12\n")
+
+    code, readiness = _readiness(tmp_path)
+    assert code == 1
+    repair = next(b for b in readiness["blockers"] if b["code"] == "external_change_repair_pending")
+    assert repair["node_id"] == NODE and "orders.py" in repair["message"]
+    assert " ".join(ISOLATION) in repair["message"], "the confirmed acceptance still scopes the repair"
+    assert not [b for b in readiness["blockers"] if b["code"] == "unverified_external_change"
+                and b["node_id"] == NODE]
+    assert _artifacts(tmp_path)["freshness"]["repair"] == {"owner": NODE, "responsibilities": ["implementation"]}
+    resolution = external(tmp_path)[1]["changes"][0]["resolution"]
+    assert resolution["resolution"] == "reject"
+    assert resolution["reason"] == "Account isolation is a legal requirement"
+    assert resolution["repair_task"]["files"] == ["orders.py"]
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_a_deferred_change_keeps_its_hold_and_its_context_while_other_source_moves(tmp_path, host):
+    """Deferring holds the dependent work with the conflict that caused the hold.
+
+    The user comes back to a question, so the report must still say what the change
+    was found to be and that they deferred it. Source moving elsewhere is not a reason
+    to forget either."""
+    drift_project(tmp_path, host)
+    (tmp_path / "orders.py").write_text(CONFLICTING)
+    change = external(tmp_path)[1]["changes"][0]
+    deferred = invoke(tmp_path, {"operation": "external-change", "change_id": change["change_id"],
+                                 "resolution": "defer", "user_reference": "user turn: decide after the contract",
+                                 "reason": "The partner contract is not signed yet"})
+    assert deferred.returncode == 0, deferred.stdout
+
+    (tmp_path / DOC).write_text(_doc("['acme', 'other-account']"))
+    (tmp_path / "warehouse.py").write_text("stock = 12\n")
+
+    code, readiness = _readiness(tmp_path)
+    assert code == 1
+    held = next(b for b in readiness["blockers"]
+                if b["code"] == "unresolved_external_change" and b["node_id"] == NODE)
+    assert "deferred" in held["message"] and "product-conflict" in held["message"]
+    assert change["change_id"] in held["message"]
+    deferred_again = next(c for c in external(tmp_path)[1]["changes"] if c["node_id"] == NODE)
+    assert deferred_again["resolution"]["resolution"] == "defer"
+    assert deferred_again["resolution"]["reason"] == "The partner contract is not signed yet"
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_a_verified_fact_update_survives_synchronizing_the_document_it_requires(tmp_path, host):
+    """A verdict is established against the project's source, not against the flow's
+    own output.
+
+    Verifying an implementation-only change prescribes exactly one recovery:
+    resynchronize its fact documents and republish. Writing that document is the flow
+    obeying its own verdict, so it cannot invalidate the verdict and re-raise the work
+    as unverified drift halfway through."""
+    drift_project(tmp_path, host)
+    (tmp_path / "orders.py").write_text("def list_orders(account): return [account, account]\n")
+    assert external(tmp_path)[1]["changes"][0]["classification"] == "fact-update"
+
+    (tmp_path / DOC).write_text(_doc("['acme', 'acme']"))
+    code, readiness = _readiness(tmp_path)
+    assert code == 1 and not [b for b in readiness["blockers"] if "external" in b["code"]]
+    assert "external" not in _artifacts(tmp_path)["freshness"]
+    repair = _artifacts(tmp_path)["freshness"]["repair"]
+    assert repair["owner"] == NODE and "implementation" in repair["responsibilities"]
+
+    code, published = _publish_evidence(tmp_path, command=ISOLATION)
+    assert code == 0 and published["status"] == "valid", published
+    assert _readiness(tmp_path)[1]["status"] == "ready"
+    _unrelated_is_valid(tmp_path)

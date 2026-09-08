@@ -291,11 +291,15 @@ def routed_external_changes(root):
     so every gate fails closed on the undeterminable state, rather than returning an
     empty result that silently hands affected work back to its node.
     """
-    detected, _, _ = standing_changes(root)
+    detected, _ = standing_changes(root)
     conflicts: dict[str, list[dict[str, Any]]] = {}
     unverified: dict[str, list[dict[str, Any]]] = {}
     for change in detected:
-        group = (conflicts if change['classification'] in ('product-conflict', 'uncertain')
+        # A change the user has already decided is routed by that decision, whatever a
+        # verdict currently says: an accepted one stops holding work, a rejected one keeps
+        # its scoped repair, a deferred one keeps its hold. Only a change nobody decided
+        # and no verification covers is unknown.
+        group = (conflicts if change['resolution'] or change['classification'] in ('product-conflict', 'uncertain')
                  else unverified if change['classification'] is None else None)
         if group is None:
             continue
@@ -523,6 +527,11 @@ def classification_basis(record, source):
     question. The basis also stays out of ``change_identity``: a decision is about
     this source, and unrelated source moving must not orphan it.
 
+    The source here is what the flow consumes rather than what it produces. A
+    verdict prescribes its own recovery — resynchronize the required documents and
+    republish — so counting those documents would let the flow invalidate the verdict
+    it is obeying and reopen a settled change as unknown drift.
+
     What the basis cannot observe — an installed dependency, a service, the
     environment — is why re-running the verification is always a fresh execution.
     """
@@ -550,34 +559,40 @@ def cache_classifications(root, changes):
 def standing_changes(root):
     """Detected changes, each carrying the verdict that currently stands for it.
 
-    This observes and never acts: it reads the recorded store, keeps a verdict only
-    while the basis it was established against still holds, and never executes the
-    project's acceptance. A change with no standing verdict carries
+    This observes and never acts: it reads the recorded store, keeps an undecided
+    verdict only while the basis it was established against still holds, and never
+    executes the project's acceptance. A change with no standing verdict carries
     ``classification: None`` — unknown, which the gates route as unverified rather
     than repeating a verdict for a state nobody verified. Recorded user resolutions
     are carried forward regardless: a decision was made about this change identity
-    and the intent of that moment, not about the freshness of a classification.
+    and the intent of that moment, not about the freshness of a classification, and
+    it keeps the finding it was made against so the report still says what was found.
     """
     workflow = read_json(root, WORKFLOW, {})
     state = read_json(root, STATE, {'nodes': {}})
     store = read_json(root, EXTERNAL, {}) or {}
     recorded = store.get('changes', {}) if isinstance(store.get('changes'), dict) else {}
     detected = detect_external_changes(root)
-    source = digest(source_tree(root))
+    source = digest(inventory(root, workflow))
     for change in detected:
         record = state['nodes'].get(change['node_id']) if change['node_id'] else None
         basis = classification_basis(record, source)
         previous = recorded.get(change['change_id']) or {}
         previous = previous if isinstance(previous, dict) else {}
-        standing = (previous['classification']
-                    if previous.get('classification') in ('fact-update', 'product-conflict', 'uncertain')
-                    and previous.get('classification_basis') == basis else None)
+        verdict = (previous['classification']
+                   if previous.get('classification') in ('fact-update', 'product-conflict', 'uncertain') else None)
         resolution, history = carried_resolution(previous, change['requirement_binding'])
+        # An undecided verdict stands only while the basis it was established against
+        # does. A decided one is different in kind: the user answered this change against
+        # that finding, so the finding stays as the decision's context and later movement
+        # elsewhere is not new information about it. Reasking would demand a verification
+        # nobody needs and put a settled product question back to the user.
+        standing = verdict if resolution or previous.get('classification_basis') == basis else None
         change.update(classification=standing, classification_basis=basis, resolution=resolution,
                       verification=previous.get('verification') if standing else None)
         if history:
             change['superseded_resolutions'] = history
-    return detected, recorded, source
+    return detected, recorded
 
 
 def resolve_external_changes(root):
@@ -593,14 +608,15 @@ def resolve_external_changes(root):
     carried, never recomputed.
     """
     state = read_json(root, STATE, {'nodes': {}})
-    detected, recorded, source = standing_changes(root)
+    before = digest(source_tree(root))
+    detected, recorded = standing_changes(root)
     changes = dict(recorded)
     for change in detected:
         classification, verification = classify_external_change(
             root, state['nodes'].get(change['node_id']) if change['node_id'] else None)
         change.update(classification=classification, verification=verification)
         changes[change['change_id']] = change
-    if detected and digest(source_tree(root)) != source:
+    if detected and digest(source_tree(root)) != before:
         # Verification runs source that changed outside the flow, so the check can
         # move its own subject. A verdict for a snapshot that no longer exists is not
         # evidence: nothing is recorded and the comparison fails closed. The source is
@@ -626,8 +642,8 @@ def external_changes(root):
 def source_tree(root):
     """Every project file outside the flow's own working directories.
 
-    Workflow-independent on purpose: it is the state a verification was run
-    against, so replanning or refreezing must not appear to move it.
+    Workflow-independent on purpose: a verification must not appear to move the
+    source merely because the plan around it changed.
     """
     result = {}
     for directory, dirs, files in os.walk(root):

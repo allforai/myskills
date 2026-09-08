@@ -147,13 +147,17 @@ On the first iteration, if `transition_log` is non-empty:
   against the current source, so a code-only acceptance cannot complete a delivery
   whose facts are stale, and rewriting a document without correcting its facts fails
   the same check. A product-decision owner returns to `bootstrap`, never to an in-run answer.
-- An `unresolved_external_change`, `unverified_external_change` or
-  `external_change_repair_pending` readiness blocker is source changed outside the
-  delivery flow. All three are preflight blockers: report and refuse the affected
-  work. An `unverified_external_change` means no verification stands for the current
-  source; the gates deliberately do not run the project's acceptance to find out, so
-  it is settled at the interactive `bootstrap` entry, never by executing anything
-  inside the run. Never interview during execution, never read
+- An `unresolved_external_change`, `unverified_external_change`,
+  `external_change_repair_pending` or `undetermined_external_change` readiness blocker
+  is source changed outside the delivery flow. All four are preflight blockers: report
+  and refuse the affected work. An `unverified_external_change` means no verification
+  stands for the current source; the gates deliberately do not run the project's
+  acceptance to find out, so it is settled at the interactive `bootstrap` entry, never
+  by executing anything inside the run. An `undetermined_external_change` is
+  project-wide rather than node-scoped: the comparison itself could not be completed,
+  so no delivery can be shown to be free of a waiting product conflict. Repair the
+  unreadable state at the interactive `bootstrap` entry; never read an undeterminable
+  comparison as a clear one. Never interview during execution, never read
   the changed code as the approved requirement, and never let a Run Policy `accept`
   stand in for that decision. The user resolves it at the interactive `bootstrap`
   entry; a rejected change leaves scoped implementation repair whose confirmed

@@ -134,6 +134,20 @@ and discard a change nobody decided.
   decide whether a decision is needed. Repair routing stays with the owning node, so
   an implementation fact still recovers through documents and republication without
   anyone being interviewed.
+- The comparison itself cannot be completed — unreadable freshness state, an
+  unparseable change store: readiness reports `undetermined_external_change`,
+  project-wide rather than against one node, because no delivery can be shown to be
+  free of a waiting product conflict. Repair the unreadable state at the interactive
+  bootstrap entry. An undeterminable comparison is never read as a clear one.
+
+A verdict is what a verification found, so it stands only while the source that
+verification ran against still does. That source is what the flow consumes, not what
+it produces: a `fact-update` prescribes resynchronizing the required documents, and
+obeying a verdict cannot invalidate it. A change the user has already decided is
+routed by the decision, not by the verdict's freshness — an accepted change stops
+holding work, a rejected one keeps its scoped repair, a deferred one keeps its hold,
+and each keeps the finding it was decided against. Only revised confirmed intent
+retires a decision.
 
 A conflict is settled only by the user, through `product_intent.py` with
 `{"operation":"external-change","change_id":...,"resolution":"accept|reject|defer"}`
