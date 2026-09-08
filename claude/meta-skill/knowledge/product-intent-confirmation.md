@@ -44,10 +44,14 @@ not additional product authorities.
   Question IDs are unique and distinct from all intent IDs, including generated
   gap questions; an ambiguous identity is rejected, never counted as an answer.
   Missing dimensions produce pending gap questions. New inferences stay pending.
-  A legacy confirmed item may retain its revision and confirmation only when its
-  canonical journal choice still verifies; otherwise it is pending with a reason.
-  Reusing a recorded goal does not approve newly inferred details: the user still
-  explicitly confirms the complete selected projection at scope freeze.
+  A legacy confirmed item stays confirmed only when its canonical journal decision
+  records the complete `intent` payload; otherwise it is pending with a reason.
+  A goal-only journal choice (recorded `chosen`/`rationale`, no `intent`) evidences
+  the goal alone: the item is returned pending with `legacy_reuse` naming the
+  evidenced field (`goal`) and the unconfirmed ones (`scope`, `business_rules`,
+  `acceptance`), keeps its goal and prior reference for context, and needs an
+  explicit `confirm` decision before freeze; `confirm` retains that reference as
+  `prior_confirmation`. Reusing a recorded goal never approves inferred details.
 - `resume`: `{operation: "resume"}` returns pending `topics` plus the complete
   requirement `history`, current `questions`, and journal-verified `excluded`
   scope with its reasons. Present only `topics` as questions; use history to
@@ -75,13 +79,18 @@ not additional product authorities.
   requirement history must be resumed instead of overwritten. `decide`, `freeze`
   and `plan` then operate on this local session and require implementation,
   documentation and verification coverage, without whole-product stages.
-  The user explicitly binds the complete reused local projection at scope freeze;
-  a legacy recorded goal alone cannot approve newly inferred acceptance details.
+  A legacy recorded goal alone cannot approve newly inferred scope, rules or
+  acceptance: such an item is presented pending with `legacy_reuse` and needs one
+  explicit `confirm` decision, not a whole-product interview, before freeze.
 - `freeze`: `{operation, batch_id, user_reference, reason, include, exclude}`.
   `include` names confirmed intent IDs. `exclude` maps every other intent and
   pending question ID to an explicit exclusion reason. Excluding a question
   cannot authorize work that depends on its unanswered choice. The scope and
   increasing version are journal-backed; no inferred scope or silent approval.
+  Re-freezing the identical confirmed selection (same intents, revisions and
+  exclusions under a still-verified scope) returns the existing version with
+  `unchanged: true` and writes nothing; a changed selection, exclusion or intent
+  revision freezes the next version and the affected plan must be regenerated.
 - `plan`: `{operation, nodes, not_applicable, ...workflow_fields}` consumes the
   frozen baseline. Freely design the smallest applicable full process, using
   capability guidance, suppress rules and project detections. Each node has its

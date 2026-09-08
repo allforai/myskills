@@ -89,7 +89,10 @@ A node whose freshness is `undeclared` (missing `source_inputs`) or `invalid`
 (malformed declaration) cannot start or be committed: return it to interactive
 bootstrap to declare its product source (explicit `[]` only when none applies).
 Never add a declaration inside `/run` to pass the gate. Retained legacy nodes
-report `undeclared` as a warning only; no provenance is claimed for them.
+report `undeclared` as a warning only when dependency declarations and recorded
+freshness state are readable and valid; no provenance is claimed for them.
+Malformed declarations or unreadable freshness state block even retained nodes:
+dependency impact is unknown, so legacy compatibility cannot waive that failure.
 
 After a node reports success, independently run `check_artifacts.py --node <node_id> --json`.
 Non-empty `code_gaps` or `test_gaps`, partial/conditional status, placeholders, failed

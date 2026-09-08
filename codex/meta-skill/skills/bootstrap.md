@@ -131,7 +131,6 @@ Copy the current orchestrator helper set from `./scripts/orchestrator/` (the sha
 - `validate_bootstrap.py`
 - `expand_game_2d_production.py`
 - `reconcile_bootstrap_workflow.py`
-
 - `validate_unattended_readiness.py`
 - `record_run_event.py`
 - `summarize_run_log.py`

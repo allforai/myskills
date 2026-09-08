@@ -201,21 +201,29 @@ def test_product_draft_reuses_legacy_choice_only_with_canonical_journal_provenan
     output = json.loads(result.stdout)
     pending = [i for t in output["topics"] for i in t["items"]]
     trusted = variant.startswith("trusted")
-    assert ("target-users" in [i["id"] for i in pending]) is not trusted, output
+    # The goal-only journal choice evidences the goal, not the drafted scope, rules and
+    # acceptance: every variant is presented, and only trusted provenance keeps the goal.
+    assert "target-users" in [i["id"] for i in pending], output
     stored = next(i for i in json.loads((tmp_path / CONCEPT).read_text())["requirements"] if i["id"] == "target-users")
-    assert stored["status"] == ("confirmed" if trusted else "pending")
-    if not trusted:
-        assert stored["pending_reason"]
-        assert next(i for i in pending if i["id"] == "target-users")["pending_reason"]
+    assert stored["status"] == "pending"
+    assert stored["pending_reason"]
+    assert next(i for i in pending if i["id"] == "target-users")["pending_reason"]
+    assert ("legacy_reuse" in stored) is trusted, stored
     if variant != "missing-journal":
         assert json.loads((tmp_path / JOURNAL).read_text()) == journal
     freeze = {"operation": "freeze", "include": ["target-users"], "exclude": {t: "Later scope" for t in TOPICS[1:]},
               "batch_id": "scope", "user_reference": "scope user turn", "reason": "Choose release scope"}
     frozen = invoke(tmp_path, freeze)
-    assert (frozen.returncode == 0) is trusted, frozen.stdout
+    assert frozen.returncode == 1, frozen.stdout
     if trusted:
+        assert decide(tmp_path, [{"operation": "confirm", "id": "target-users", "reason": "Projection approved"}],
+                      "projection").returncode == 0
+        stored = next(i for i in json.loads((tmp_path / CONCEPT).read_text())["requirements"] if i["id"] == "target-users")
+        assert stored["prior_confirmation"] == item["confirmation"]
+        frozen = invoke(tmp_path, freeze)
+        assert frozen.returncode == 0, frozen.stdout
         batches = json.loads((tmp_path / JOURNAL).read_text())["batches"]
-        assert batches[0] == journal["batches"][0] and len(batches) == 2
+        assert batches[0] == journal["batches"][0] and [b["batch_id"] for b in batches] == ["prior", "projection", "scope"]
     else:
         assert decide(tmp_path, [{"operation": "confirm", "id": "target-users", "reason": "Verified"}]).returncode == 0
         assert invoke(tmp_path, freeze).returncode == 0

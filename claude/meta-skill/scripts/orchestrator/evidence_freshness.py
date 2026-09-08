@@ -83,6 +83,33 @@ def expand_paths(root, paths):
     return expanded
 
 
+def observed_reads(root):
+    """The dynamic-read register: {node_id: [project paths]} recorded by ``read``.
+
+    A malformed register is refused, never treated as empty: dropping a recorded
+    read would let evidence claim provenance it no longer tracks. The file is
+    left in place for repair.
+    """
+    prefix = 'Malformed observed-input dependencies (' + READS + '): '
+    try:
+        reads = read_json(root, READS, {})
+    except ValueError as exc:
+        raise ValueError(prefix + 'not valid JSON; restore recorded dependencies before retrying: ' + str(exc)) from None
+    if not isinstance(reads, dict):
+        raise ValueError(prefix + 'top level must be an object keyed by node_id; restore recorded dependencies before retrying')
+    for node_id, paths in reads.items():
+        if not isinstance(node_id, str) or not node_id:
+            raise ValueError(prefix + 'node ids must be non-empty strings; restore recorded dependencies before retrying')
+        if not isinstance(paths, list) or not all(isinstance(p, str) and p for p in paths):
+            raise ValueError(prefix + 'entry for ' + node_id + ' must be a list of project paths; '
+                             'restore recorded dependencies before retrying')
+        for path in paths:
+            if Path(path).is_absolute() or '..' in Path(path).parts:
+                raise ValueError(prefix + 'entry for ' + node_id + ' must use relative project paths, not ' + path
+                                 + '; restore recorded dependencies before retrying')
+    return reads
+
+
 def intent_baseline(root):
     profile = read_json(root, '.allforai/bootstrap/bootstrap-profile.json', {})
     if profile.get('intent_session_path') == '.allforai/bootstrap/local-requirements.json':
@@ -93,7 +120,7 @@ def intent_baseline(root):
 def snapshot(root, node, extra=(), seen=()):
     if node['node_id'] in seen:
         raise ValueError('Cyclic input dependency; impact is uncertain')
-    extra = set(extra) | set(read_json(root, READS, {}).get(node['node_id'], []))
+    extra = set(extra) | set(observed_reads(root).get(node['node_id'], []))
     workflow = read_json(root, WORKFLOW, {})
     source_files = expand_paths(root, node.get('source_inputs', []))
     product_files = inventory(root, workflow)
@@ -133,7 +160,7 @@ def dependencies(root, node, workflow):
                  for item in [*n.get('exit_artifacts', []), *n.get('required_documents', [])]}
     state = read_json(root, STATE, {'nodes': {}})
     consumed = expand_paths(root, node.get('input_dependencies', []))
-    consumed.update(read_json(root, READS, {}).get(node['node_id'], []))
+    consumed.update(observed_reads(root).get(node['node_id'], []))
     for bucket in ('nodes', 'contracts'):
         consumed.update(state.get(bucket, {}).get(node['node_id'], {}).get('extra', []))
     return sorted(set(node.get('hard_blocked_by', [])) |
@@ -176,7 +203,7 @@ def evaluate(root):
              for p in expand_paths(root, n.get(field, []))}
     owned.update(p for record in state['nodes'].values() for p in record.get('extra', []))
     owned.update(p for record in state['nodes'].values() for p in record.get('inputs', {}).get('files', {}))
-    owned.update(p for paths in read_json(root, READS, {}).values() for p in paths)
+    owned.update(p for paths in observed_reads(root).values() for p in paths)
     uncertain_inputs = set()
     for node in workflow.get('nodes', []):
         evidence = state['nodes'].get(node['node_id'])
@@ -221,7 +248,7 @@ def session(root, request):
         state = read_json(root, STATE, {'nodes': {}})
         extra = sorted(set(state['nodes'].get(node['node_id'], {}).get('extra', [])) |
                        set(state.get('contracts', {}).get(node['node_id'], {}).get('extra', [])) |
-                       set(read_json(root, READS, {}).get(node['node_id'], [])))
+                       set(observed_reads(root).get(node['node_id'], [])))
         kind = request.get('kind', 'evidence')
         if kind not in {'contract', 'evidence'}:
             raise ValueError('Observation kind must be contract or evidence')
@@ -249,7 +276,7 @@ def session(root, request):
             observation['extra'] = sorted(set(observation.get('extra', [])) | {path})
             observation['inputs']['files'][path] = hashlib.sha256(content).hexdigest()
             with publication_lock(root):
-                reads = read_json(root, READS, {})
+                reads = observed_reads(root)
                 reads[node['node_id']] = sorted(set(reads.get(node['node_id'], [])) | {path})
                 write_json(root, READS, reads)
             expanded = snapshot(root, node, observation['extra'])
