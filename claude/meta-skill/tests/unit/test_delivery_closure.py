@@ -331,6 +331,27 @@ def test_required_document_without_verification_is_refused_at_every_gate(tmp_pat
     assert _artifacts(tmp_path)["all_exist"] is True
 
 
+@pytest.mark.parametrize("host", HOSTS)
+@pytest.mark.parametrize("mismatch", ["missing", "different"])
+def test_document_verification_must_match_the_node_spec(tmp_path, host, mismatch):
+    closure_project(tmp_path, host)
+    assert _bootstrap(tmp_path)[0] == 0
+    workflow = json.loads((tmp_path / WORKFLOW).read_text())
+    node = dict(next(n for n in workflow["nodes"] if n["node_id"] == NODE))
+    spec_path = tmp_path / ".allforai/bootstrap/node-specs" / (NODE + ".md")
+    original = spec_path.read_bytes()
+    if mismatch == "missing":
+        node.pop("document_verification")
+    else:
+        node["document_verification"] = {DOC: [sys.executable, "-c", "pass"]}
+    spec_path.write_text("---\n" + json.dumps(node) + "\n---\n" + ATTENTION_CONTRACT_BODY)
+    code, errors = _bootstrap(tmp_path)
+    assert code == 1 and any("frontmatter document_verification must match" in e for e in errors), errors
+    assert json.loads((tmp_path / WORKFLOW).read_text()) == workflow
+    spec_path.write_bytes(original)
+    assert _bootstrap(tmp_path)[0] == 0
+
+
 MUTATE_SOURCE = [sys.executable, "-c", "open('orders.py', 'a').write('\\n# rewritten by a document check\\n')"]
 
 

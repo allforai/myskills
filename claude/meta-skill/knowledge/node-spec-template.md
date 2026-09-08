@@ -6,10 +6,12 @@ Write each `.allforai/bootstrap/node-specs/<node_id>.md` from this skeleton. Fil
 
 For a node consuming `task_scope` requirements, mirror workflow
 `requirement_refs`, `responsibilities`, `decision_inputs` and `source_inputs`
-(plus `input_dependencies` and `required_documents` when declared) in YAML
+(plus `input_dependencies`, `required_documents` and `document_verification` when declared) in YAML
 frontmatter. `source_inputs` names the project-relative product source the
 node's documents and evidence trace to; write explicit `[]` only when no
 product source is relevant. A scoped node without it cannot pass any gate.
+For each required document, `document_verification` names its project-specific
+check against current source; mirror the workflow's command unchanged.
 In Must-read inputs, name the exact requirement path/id/revision and its user
 confirmation provenance. Derive Quality Acceptance from its goal/business rules/
 acceptance, never from what the current code happens to do. A pending, stale or
@@ -343,4 +345,3 @@ wire protocol — NOT just REST routes. Include in the stitch node-spec:
 - Authoritative server state synchronization: which game state fields the server owns vs. client predicts
 - Client reconciliation flow: how server corrections are applied to client-side predicted state
 - Verify: every message type the client sends has a matching server handler; every server broadcast has a matching client receiver
-
