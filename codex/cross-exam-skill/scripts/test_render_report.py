@@ -908,7 +908,7 @@ class TestLedgerV2ContentGate(unittest.TestCase):
             report = render(self._run(tmp, e3, {"q03.md": "a/b.ts:1 x"}))
             self.assertNotIn("违规裁决", report)
 
-    # 探查窗口：probed_at 起、transcript 写完（mtime）加容差止；mtime 全用 os.utime 设定，不依赖墙钟
+    # 探测窗口：probed_at 起、transcript 写完（mtime）加容差止；mtime 全用 os.utime 设定，不依赖墙钟
     PROBED_AT = "2026-09-07T10:00:00+08:00"
     T0 = datetime.fromisoformat(PROBED_AT).timestamp()
     T_END = T0 + 600          # transcript 落盘时刻
@@ -935,14 +935,14 @@ class TestLedgerV2ContentGate(unittest.TestCase):
                                    {"q01-00.png": self.T0 + 300, "q01-01.png": self.T_END + self.TOL + 1})
             report = render(run)
             self.assertIn("违规裁决", report)
-            self.assertIn("证据文件 q01-01.png 写于 %s，不在探查窗口 [%s, %s] 内"
+            self.assertIn("证据文件 q01-01.png 写于 %s，不在探测窗口 [%s, %s] 内"
                           % (self._iso(self.T_END + self.TOL + 1), self.PROBED_AT, self._iso(self.T_END + self.TOL)), report)
 
     def test_file_written_before_probed_at_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             run = self._window_run(tmp, {"q01-00.png": b"\x89PNG"}, {"q01-00.png": self.T0 - 10})
             report = render(run)
-            self.assertIn("证据文件 q01-00.png 写于 %s，不在探查窗口" % self._iso(self.T0 - 10), report)
+            self.assertIn("证据文件 q01-00.png 写于 %s，不在探测窗口" % self._iso(self.T0 - 10), report)
 
     def test_scripted_files_inside_window_pass_on_directory_mention(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -975,7 +975,7 @@ class TestLedgerV2ContentGate(unittest.TestCase):
             (Path(tmp) / "agent.output").unlink()
             report = render(run)
             self.assertNotIn("违规裁决", report)
-            self.assertNotIn("探查窗口", report)
+            self.assertNotIn("探测窗口", report)
             self.assertIn("transcript 不可核（文件不在）", report)
 
     def test_unreadable_file_mtime_is_a_note_not_a_refusal(self):
