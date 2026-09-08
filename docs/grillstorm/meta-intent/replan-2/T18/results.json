@@ -1,0 +1,313 @@
+{
+  "task": "T18",
+  "issue": "docs/grillstorm/meta-intent/replan-2/issues/18.md",
+  "parent_issue": "https://github.com/allforai/myskills/issues/8",
+  "blocked_by": "https://github.com/allforai/myskills/issues/14",
+  "reference_commit": "5c02e24cf993c36591458f87f1c7dcfb66be3a35",
+  "reference_status": "Development reference for the external-change API only. #14 is under active production repair and is not accepted; this commit is not accepted and no evidence gathered against it counts toward #18.",
+  "candidate_accepted": false,
+  "launch_candidate": null,
+  "launch_candidate_tree_sha256": null,
+  "launch_packet_root": null,
+  "launch_precondition": "Before any actor runs, the fixed #14 candidate must be regenerated with prepare_packets.py --candidate <fixed sha> and its tree re-fingerprinted; the reference export below must not be used for evidence.",
+  "reference_packet_root": "/private/tmp/meta-intent-T18-5c02e24c",
+  "reference_tree_sha256": "ef02cd1aa0f078c89dcc5689f5b1c8af8e24e9a490863af5f139ae09cc292bfb",
+  "reference_entry_sha256": {
+    "claude": "1741fbc13f23108c0ae79205521b40679e02859de467f8dee6978e28bf63baf5",
+    "codex": "526dc0958a9c174a07d9b98d54de8cd1f2561790dbbf759853b45e13086c6065"
+  },
+  "candidate_entries": {
+    "claude": "claude/meta-skill/skills/bootstrap/SKILL.md",
+    "codex": "codex/meta-skill/SKILL.md"
+  },
+  "required_cells": 16,
+  "executed_cells": 0,
+  "passed_cells": 0,
+  "host_evidence": "0/16",
+  "preparation_status": "prepared; 16 blind packets materialized against an unaccepted development reference and guarded by tests",
+  "proof_status": "no host evidence; no actor has run; issue #18 is not accepted as complete",
+  "launch_ownership": "root/coordinator only, after the fixed candidate is accepted; this worker never launches actors or nested dispatches",
+  "launch_decision": "Not launched. Preparation only: #14 production repair is active and unaccepted, so no fixed candidate exists to bind evidence to.",
+  "blockers": [
+    {
+      "code": "claude-workspace-trust",
+      "detail": "In earlier tasks new synthetic Claude projects stopped at the workspace trust prompt.",
+      "status": "historic-unrevalidated",
+      "revalidation": "Open one regenerated cell project on a real Claude host and record whether the trust prompt appears; do not bypass it and do not carry the earlier result forward as fact."
+    },
+    {
+      "code": "codex-quota",
+      "detail": "In earlier tasks Codex launches were refused for quota.",
+      "status": "historic-unrevalidated",
+      "revalidation": "Attempt one regenerated Codex cell and record the actual response; a quota refusal is recorded per attempt, never assumed."
+    }
+  ],
+  "preparation_limitations": [
+    "The interruption scenario is delivered as the persisted residue of an interrupted recovery rather than by interrupting a live phase-1 actor; that residue is exactly what the issue permits handing to a resume-shaped cell, but no live interruption was exercised during preparation.",
+    "Seeded prior-session user references name turns that a real earlier session would have delivered. Per the #11 A2 accepted boundary the CLI cannot authenticate them, so the evaluator judges the actor's own new references against the turns actually relayed, not the seeded ones.",
+    "Preparation drove the candidate's public gate CLIs only. No Claude or Codex host dialogue was produced, so nothing here is host evidence for any cell."
+  ],
+  "preparation_blocked_steps": [],
+  "preparation_blocked_note": "Every seeded state was produced by driving the candidate's own public gate CLIs. No preparation step was blocked by a known candidate bug, and no fixture was patched to simulate behavior the candidate does not have.",
+  "issue_accepted_complete": false,
+  "cells": [
+    {
+      "scenario": "T18/fact-only-vs-behavior",
+      "host": "claude",
+      "status": "unverified",
+      "requirements": [
+        "R23",
+        "R24",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. #14 is under active production repair, so no fixed candidate exists yet; the packets below are bound to an unaccepted development reference and the coordinator alone launches actors, against a regenerated candidate.",
+      "reference_packet": "/private/tmp/meta-intent-T18-5c02e24c/claude/fact-only-vs-behavior/actor-input.md",
+      "reference_phase2_packet": null,
+      "reference_project": "/private/tmp/meta-intent-T18-5c02e24c/claude/fact-only-vs-behavior/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T18/fact-only-vs-behavior",
+      "host": "codex",
+      "status": "unverified",
+      "requirements": [
+        "R23",
+        "R24",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. #14 is under active production repair, so no fixed candidate exists yet; the packets below are bound to an unaccepted development reference and the coordinator alone launches actors, against a regenerated candidate.",
+      "reference_packet": "/private/tmp/meta-intent-T18-5c02e24c/codex/fact-only-vs-behavior/actor-input.md",
+      "reference_phase2_packet": null,
+      "reference_project": "/private/tmp/meta-intent-T18-5c02e24c/codex/fact-only-vs-behavior/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T18/accept-full-recovery",
+      "host": "claude",
+      "status": "unverified",
+      "requirements": [
+        "R22",
+        "R25",
+        "R28",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. #14 is under active production repair, so no fixed candidate exists yet; the packets below are bound to an unaccepted development reference and the coordinator alone launches actors, against a regenerated candidate.",
+      "reference_packet": "/private/tmp/meta-intent-T18-5c02e24c/claude/accept-full-recovery/actor-input.md",
+      "reference_phase2_packet": null,
+      "reference_project": "/private/tmp/meta-intent-T18-5c02e24c/claude/accept-full-recovery/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T18/accept-full-recovery",
+      "host": "codex",
+      "status": "unverified",
+      "requirements": [
+        "R22",
+        "R25",
+        "R28",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. #14 is under active production repair, so no fixed candidate exists yet; the packets below are bound to an unaccepted development reference and the coordinator alone launches actors, against a regenerated candidate.",
+      "reference_packet": "/private/tmp/meta-intent-T18-5c02e24c/codex/accept-full-recovery/actor-input.md",
+      "reference_phase2_packet": null,
+      "reference_project": "/private/tmp/meta-intent-T18-5c02e24c/codex/accept-full-recovery/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T18/reject-repair-full-recovery",
+      "host": "claude",
+      "status": "unverified",
+      "requirements": [
+        "R25",
+        "R28",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. #14 is under active production repair, so no fixed candidate exists yet; the packets below are bound to an unaccepted development reference and the coordinator alone launches actors, against a regenerated candidate.",
+      "reference_packet": "/private/tmp/meta-intent-T18-5c02e24c/claude/reject-repair-full-recovery/actor-input.md",
+      "reference_phase2_packet": null,
+      "reference_project": "/private/tmp/meta-intent-T18-5c02e24c/claude/reject-repair-full-recovery/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T18/reject-repair-full-recovery",
+      "host": "codex",
+      "status": "unverified",
+      "requirements": [
+        "R25",
+        "R28",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. #14 is under active production repair, so no fixed candidate exists yet; the packets below are bound to an unaccepted development reference and the coordinator alone launches actors, against a regenerated candidate.",
+      "reference_packet": "/private/tmp/meta-intent-T18-5c02e24c/codex/reject-repair-full-recovery/actor-input.md",
+      "reference_phase2_packet": null,
+      "reference_project": "/private/tmp/meta-intent-T18-5c02e24c/codex/reject-repair-full-recovery/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T18/defer",
+      "host": "claude",
+      "status": "unverified",
+      "requirements": [
+        "R25",
+        "R29",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. #14 is under active production repair, so no fixed candidate exists yet; the packets below are bound to an unaccepted development reference and the coordinator alone launches actors, against a regenerated candidate.",
+      "reference_packet": "/private/tmp/meta-intent-T18-5c02e24c/claude/defer/actor-input.md",
+      "reference_phase2_packet": null,
+      "reference_project": "/private/tmp/meta-intent-T18-5c02e24c/claude/defer/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T18/defer",
+      "host": "codex",
+      "status": "unverified",
+      "requirements": [
+        "R25",
+        "R29",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. #14 is under active production repair, so no fixed candidate exists yet; the packets below are bound to an unaccepted development reference and the coordinator alone launches actors, against a regenerated candidate.",
+      "reference_packet": "/private/tmp/meta-intent-T18-5c02e24c/codex/defer/actor-input.md",
+      "reference_phase2_packet": null,
+      "reference_project": "/private/tmp/meta-intent-T18-5c02e24c/codex/defer/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T18/interrupted-recovery",
+      "host": "claude",
+      "status": "unverified",
+      "requirements": [
+        "R15",
+        "R23",
+        "R25",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. #14 is under active production repair, so no fixed candidate exists yet; the packets below are bound to an unaccepted development reference and the coordinator alone launches actors, against a regenerated candidate.",
+      "reference_packet": "/private/tmp/meta-intent-T18-5c02e24c/claude/interrupted-recovery/actor-input.md",
+      "reference_phase2_packet": null,
+      "reference_project": "/private/tmp/meta-intent-T18-5c02e24c/claude/interrupted-recovery/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T18/interrupted-recovery",
+      "host": "codex",
+      "status": "unverified",
+      "requirements": [
+        "R15",
+        "R23",
+        "R25",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. #14 is under active production repair, so no fixed candidate exists yet; the packets below are bound to an unaccepted development reference and the coordinator alone launches actors, against a regenerated candidate.",
+      "reference_packet": "/private/tmp/meta-intent-T18-5c02e24c/codex/interrupted-recovery/actor-input.md",
+      "reference_phase2_packet": null,
+      "reference_project": "/private/tmp/meta-intent-T18-5c02e24c/codex/interrupted-recovery/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T18/unattended-conflict",
+      "host": "claude",
+      "status": "unverified",
+      "requirements": [
+        "R29",
+        "R30"
+      ],
+      "phases": 2,
+      "reason": "No actor launched. #14 is under active production repair, so no fixed candidate exists yet; the packets below are bound to an unaccepted development reference and the coordinator alone launches actors, against a regenerated candidate.",
+      "reference_packet": "/private/tmp/meta-intent-T18-5c02e24c/claude/unattended-conflict/actor-input.md",
+      "reference_phase2_packet": "/private/tmp/meta-intent-T18-5c02e24c/claude/unattended-conflict/actor-input-phase2.md",
+      "reference_project": "/private/tmp/meta-intent-T18-5c02e24c/claude/unattended-conflict/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T18/unattended-conflict",
+      "host": "codex",
+      "status": "unverified",
+      "requirements": [
+        "R29",
+        "R30"
+      ],
+      "phases": 2,
+      "reason": "No actor launched. #14 is under active production repair, so no fixed candidate exists yet; the packets below are bound to an unaccepted development reference and the coordinator alone launches actors, against a regenerated candidate.",
+      "reference_packet": "/private/tmp/meta-intent-T18-5c02e24c/codex/unattended-conflict/actor-input.md",
+      "reference_phase2_packet": "/private/tmp/meta-intent-T18-5c02e24c/codex/unattended-conflict/actor-input-phase2.md",
+      "reference_project": "/private/tmp/meta-intent-T18-5c02e24c/codex/unattended-conflict/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T18/report-only-not-done",
+      "host": "claude",
+      "status": "unverified",
+      "requirements": [
+        "R21",
+        "R28",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. #14 is under active production repair, so no fixed candidate exists yet; the packets below are bound to an unaccepted development reference and the coordinator alone launches actors, against a regenerated candidate.",
+      "reference_packet": "/private/tmp/meta-intent-T18-5c02e24c/claude/report-only-not-done/actor-input.md",
+      "reference_phase2_packet": null,
+      "reference_project": "/private/tmp/meta-intent-T18-5c02e24c/claude/report-only-not-done/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T18/report-only-not-done",
+      "host": "codex",
+      "status": "unverified",
+      "requirements": [
+        "R21",
+        "R28",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. #14 is under active production repair, so no fixed candidate exists yet; the packets below are bound to an unaccepted development reference and the coordinator alone launches actors, against a regenerated candidate.",
+      "reference_packet": "/private/tmp/meta-intent-T18-5c02e24c/codex/report-only-not-done/actor-input.md",
+      "reference_phase2_packet": null,
+      "reference_project": "/private/tmp/meta-intent-T18-5c02e24c/codex/report-only-not-done/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T18/stable-repeat",
+      "host": "claude",
+      "status": "unverified",
+      "requirements": [
+        "R26",
+        "R27",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. #14 is under active production repair, so no fixed candidate exists yet; the packets below are bound to an unaccepted development reference and the coordinator alone launches actors, against a regenerated candidate.",
+      "reference_packet": "/private/tmp/meta-intent-T18-5c02e24c/claude/stable-repeat/actor-input.md",
+      "reference_phase2_packet": null,
+      "reference_project": "/private/tmp/meta-intent-T18-5c02e24c/claude/stable-repeat/project",
+      "attempts": []
+    },
+    {
+      "scenario": "T18/stable-repeat",
+      "host": "codex",
+      "status": "unverified",
+      "requirements": [
+        "R26",
+        "R27",
+        "R30"
+      ],
+      "phases": 1,
+      "reason": "No actor launched. #14 is under active production repair, so no fixed candidate exists yet; the packets below are bound to an unaccepted development reference and the coordinator alone launches actors, against a regenerated candidate.",
+      "reference_packet": "/private/tmp/meta-intent-T18-5c02e24c/codex/stable-repeat/actor-input.md",
+      "reference_phase2_packet": null,
+      "reference_project": "/private/tmp/meta-intent-T18-5c02e24c/codex/stable-repeat/project",
+      "attempts": []
+    }
+  ]
+}
