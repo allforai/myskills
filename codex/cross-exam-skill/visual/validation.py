@@ -247,7 +247,9 @@ def census_width_reason(ledger, inventory):
         if read_ff not in _matrix.FORM_FACTORS:
             return '普查官的 form_factor 形状无效: ' + str(read_ff)
         declared = _matrix.effective_form_factor(inventory.get('platform'), inventory.get('form_factor'))
-        if read_ff in ('desktop', 'both') and declared == 'mobile':
+        # the inventory may add a form factor (the user knows a display the code does not), never drop one
+        covers = {'desktop': {'desktop'}, 'mobile': {'mobile'}, 'both': {'desktop', 'mobile'}}
+        if not covers.get(read_ff, set()) <= covers.get(declared, set()):
             return 'inventory 的 form_factor %s 弱于普查官读出的 %s' % (declared, read_ff)
     read_range = ledger.get('width_range')
     if read_range is not None:

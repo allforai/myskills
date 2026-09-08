@@ -976,6 +976,8 @@ def _census_reason(sample, census, platform='ios', form_factor=None, thresholds=
     ledger.update(census)
     inventory = json.loads((root / cfg['inventory_ref']).read_text())
     inventory['platform'] = platform
+    inventory.pop('form_factor', None)               # calls within one test must not inherit each other's keys
+    inventory.pop('layout_thresholds', None)
     if form_factor is not None:
         inventory['form_factor'] = form_factor
     if thresholds is not None:
@@ -983,7 +985,7 @@ def _census_reason(sample, census, platform='ios', form_factor=None, thresholds=
     write(cfg['inventory_ref'], inventory)          # digest follows in _layout_reason
     if surfaces is None:
         surfaces = [{'id': 'home', 'axes': {**{a: ['default'] for a in AXES}, 'state': ['default', 'resize-drag']}}]
-    return _layout_reason(sample, ['approved'], width_range=width_range, surfaces=surfaces,
+    return _layout_reason(sample, [FLUID], width_range=width_range, surfaces=surfaces,
                           readback_width=readback_width)
 
 
@@ -998,10 +1000,18 @@ def test_inventory_form_factor_cannot_be_weaker_than_census(sample):
     assert reason and 'mobile' in reason and 'desktop' in reason
 
 
-def test_inventory_form_factor_may_be_stronger_than_census(sample):
-    assert _census_reason(sample, {'form_factor': 'mobile'}, platform='macos') is None
+def test_inventory_may_add_a_form_factor_but_never_drop_one(sample):
+    # census mobile, inventory both: adds the wide end, allowed; inventory desktop: drops the phone, refused
+    assert _census_reason(sample, {'form_factor': 'mobile'}, platform='macos', form_factor='both') is None
+    reason = _census_reason(sample, {'form_factor': 'mobile'}, platform='macos')
+    assert reason and 'desktop' in reason and 'mobile' in reason
     assert _census_reason(sample, {'form_factor': 'desktop'}, platform='macos', form_factor='both') is None
     assert _census_reason(sample, {'form_factor': {'value': 'desktop', 'basis': 'main.ts:12'}}, platform='macos') is None
+    # census both: either single value drops an end
+    for declared_platform in ('macos', 'ios'):
+        reason = _census_reason(sample, {'form_factor': 'both'}, platform=declared_platform)
+        assert reason and 'both' in reason
+    assert _census_reason(sample, {'form_factor': 'both'}, platform='macos', form_factor='both') is None
 
 
 def test_inventory_width_range_may_widen_but_never_narrow_the_census(sample):
