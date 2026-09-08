@@ -85,6 +85,11 @@ the public `read` operation, refresh required documents and publish evidence wit
 its actual acceptance command. A stale publication requires re-observation and
 reverification, never a success transition. Contract-only freshness permits work
 but does not prove completion. The independent artifact gate consumes this state.
+A node whose freshness is `undeclared` (missing `source_inputs`) or `invalid`
+(malformed declaration) cannot start or be committed: return it to interactive
+bootstrap to declare its product source (explicit `[]` only when none applies).
+Never add a declaration inside `/run` to pass the gate. Retained legacy nodes
+report `undeclared` as a warning only; no provenance is claimed for them.
 
 After a node reports success, independently run `check_artifacts.py --node <node_id> --json`.
 Non-empty `code_gaps` or `test_gaps`, partial/conditional status, placeholders, failed

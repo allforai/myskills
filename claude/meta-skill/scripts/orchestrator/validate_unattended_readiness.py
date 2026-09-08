@@ -321,11 +321,21 @@ def validate_unattended_readiness(project_root: Path) -> dict:
 
     scope_blockers = validate_scope(project_root, workflow)
     blockers.extend(scope_blockers)
-    if (bootstrap_root / 'evidence-freshness.json').exists() or any(isinstance(n, dict) and 'source_inputs' in n for n in nodes):
-        from evidence_freshness import evaluate
-        for node_id, freshness in evaluate(project_root)['nodes'].items():
-            if freshness['readiness_status'] != 'valid':
-                _add(blockers, 'stale_evidence', 'Reconcile inputs and reverify affected evidence', node_id=node_id)
+    from check_artifacts import freshness_states
+    # Freshness needs a well-formed node list; shape rejection above already fails closed.
+    well_formed = (isinstance(workflow, dict) and isinstance(workflow.get("nodes"), list)
+                   and all(isinstance(n, dict) for n in workflow["nodes"]))
+    for node_id, freshness in (freshness_states(project_root, workflow) if well_formed else {}).items():
+        admission = freshness.get("admission")
+        if admission == "invalid":
+            _add(blockers, "invalid_source_inputs", freshness["reason"], node_id=node_id)
+        elif admission == "missing":
+            _add(blockers, "missing_source_inputs", freshness["reason"], node_id=node_id)
+        elif admission == "legacy" and freshness.get("readiness_status") == "undeclared":
+            _add(warnings, "undeclared_source_inputs", freshness["reason"], node_id=node_id)
+        elif freshness.get("readiness_status") != "valid":
+            _add(blockers, "stale_evidence", freshness.get("reason") or "Reconcile inputs and reverify affected evidence",
+                 node_id=node_id)
     if scope_blockers:
         # Defer shape-dependent checks, retaining rejection in the report below.
         nodes = []

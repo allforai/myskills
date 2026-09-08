@@ -140,9 +140,12 @@ Copy the current orchestrator helper set from `./scripts/orchestrator/` (the sha
 
 Copy `knowledge/input-freshness.md` from the canonical root into
 `.allforai/bootstrap/protocols/`. Follow it on every bootstrap/resume, including
-unchanged product intent: declare source and consumed-input dependencies, observe
+unchanged product intent: declare each scoped node's `source_inputs` (project-relative
+product source files, directories or globs; explicit `[]` only when no product source is
+relevant) plus consumed `input_dependencies` and `required_documents`, observe
 before generating documents, publish verified contract observations, then consume
-reconciliation and readiness. Use the same evidence publication CLI after actual
+reconciliation and readiness. The shared gates refuse a scoped node that omits or
+malforms these declarations; freshness is never opt-in. Use the same evidence publication CLI after actual
 verification; preserve journal authority and unrelated valid work.
 
 Also copy `<canonical-root>/scripts/check_decision_inputs.py` into the same

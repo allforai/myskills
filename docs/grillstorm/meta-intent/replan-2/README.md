@@ -54,3 +54,6 @@ execution.json 为准。
 
 再次同步后的组合候选已通过 387 项 Python 测试和 55 项执行引擎测试；
 main 工作区仍干净且为非 bare 仓库。独立审查与真实宿主验收继续分别记录。
+
+当前已交付测试的命令映射见 [validation-commands.md](validation-commands.md)。
+旧冻结票据中的拟定测试文件名保留为历史，不再作为本轮执行入口。

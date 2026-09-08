@@ -78,24 +78,9 @@ def validate_scope(project_root, workflow, *, consumed_sources=None):
         retained = _retained_nodes(workflow, scope["requirement_refs"])
         blockers = []
         if profile.get("intent_session_path") == LOCAL and scope["requirement_refs"]:
-            local = _read(root, LOCAL)
-            _validate_question_ids(local)
-            _discussion(root, local)  # Verify the journal-backed local scope.
-            baseline = profile["intent_scope"]
-            refs = baseline["requirement_refs"]
-            latest = _latest(local)
-            if (refs != scope["requirement_refs"]
-                    or baseline["intents"] != [latest[r["id"]] for r in refs]):
-                raise ValueError("Local projection differs from the confirmed scope")
-            for ref in refs:
-                if ref["path"] != LOCAL or ref["revision"] != latest[ref["id"]]["revision"]:
-                    raise ValueError("Local scope selects stale intent")
-                _confirmed(root, latest[ref["id"]])
-            if any(_question_pending(root, q) and set(q.get("depends_on", [])) & {r["id"] for r in refs}
-                   for q in local.get("intent_questions", [])):
-                raise ValueError("Local work depends on an unresolved decision")
+            blockers.extend(_local_contract(root, workflow, profile, retained=retained))
         if profile["task_route"] in ("product-reconstruction", "new-product") and scope["requirement_refs"]:
-            _product_contract(root, workflow, profile, retained=retained)
+            blockers.extend(_product_contract(root, workflow, profile, retained=retained))
         if profile["task_route"] != "product-reconstruction":
             for node in workflow.get("nodes", []):
                 if node.get("capability") == "reverse-concept" and node.get("node_id") not in retained:
@@ -109,15 +94,15 @@ def validate_scope(project_root, workflow, *, consumed_sources=None):
             data = json.loads((root / ref["path"]).read_text(encoding="utf-8"))
             related = [item for item in data["requirements"] if item["id"] == ref["id"]]
             revisions = [item["revision"] for item in related]
+            consumers = _consumers(workflow, ref)
             if any(type(revision) is not int or revision < 1 for revision in revisions):
                 raise ValueError(f"{ref['id']}: invalid requirement revision")
             if not revisions or max(revisions) != ref["revision"]:
-                blockers.append({"code": "stale_requirement", "message":
-                                 f"{ref['id']}: reference does not select the current requirement revision"})
+                _scoped(blockers, "stale_requirement",
+                        f"{ref['id']}: reference does not select the current requirement revision", consumers)
                 continue
             if len(revisions) != len(set(revisions)):
-                blockers.append({"code": "invalid_requirement", "message":
-                                 f"{ref['id']}: duplicate requirement revisions"})
+                _scoped(blockers, "invalid_requirement", f"{ref['id']}: duplicate requirement revisions", consumers)
                 continue
             for item in related:
                 if item["id"] == ref["id"] and item["revision"] == ref["revision"]:
@@ -126,19 +111,19 @@ def validate_scope(project_root, workflow, *, consumed_sources=None):
                                    or any(not isinstance(value, str) or not value.strip()
                                           for value in item[key])
                                    for key in ("business_rules", "acceptance", "scope"))):
-                        blockers.append({"code": "invalid_requirement", "message":
-                                         f"{ref['id']}: goal, scope, business_rules and acceptance must be non-empty"})
+                        _scoped(blockers, "invalid_requirement",
+                                f"{ref['id']}: goal, scope, business_rules and acceptance must be non-empty", consumers)
                     if not set(item.get("scope", [])).intersection(scope.get("areas", [])):
-                        blockers.append({"code": "requirement_scope_conflict", "message":
-                                         f"{ref['id']}: confirmed decision does not apply to this task scope"})
+                        _scoped(blockers, "requirement_scope_conflict",
+                                f"{ref['id']}: confirmed decision does not apply to this task scope", consumers)
                     confirmation = item.get("confirmation") or {}
                     if (item.get("status") != "confirmed"
                             or confirmation.get("source") != "user"
                             or any(not isinstance(confirmation.get(key), str)
                                    or not confirmation[key].strip()
                                    for key in ("reference", "decision_id", "reason"))):
-                        blockers.append({"code": "pending_requirement", "message":
-                                         f"{ref['id']}: return to interactive bootstrap for confirmation"})
+                        _scoped(blockers, "pending_requirement",
+                                f"{ref['id']}: return to interactive bootstrap for confirmation", consumers)
                     else:
                         source, separator, fragment = confirmation["reference"].partition("#")
                         if Path(source).name == "decision-journal.json":
@@ -206,6 +191,7 @@ PROFILE = ".allforai/bootstrap/bootstrap-profile.json"
 LOCAL = ".allforai/bootstrap/local-requirements.json"
 TOPICS = ("target-users", "scenarios", "core-problem", "value-proposition", "business-loop", "tradeoffs")
 RUN_POLICY = ".allforai/bootstrap/run-policy.json"
+RUN_POLICY_REPAIRS = ".allforai/bootstrap/run-policy-repairs.json"
 POLICY_OPTIONS = {
     "on_repeated_failure": ["continue", "halt"],
     "on_needs_iteration": ["halt_with_report", "auto_fix_once", "accept"],
@@ -213,19 +199,57 @@ POLICY_OPTIONS = {
 }
 
 
+def _policy_invalid(policy):
+    return not isinstance(policy, dict) or any(policy.get(k) not in options for k, options in POLICY_OPTIONS.items())
+
+
+def _recorded_policy(root):
+    """Return (policy, previous content, problem); an unusable file is reported, never trusted."""
+    target = root / RUN_POLICY
+    if not target.exists():
+        return None, None, None
+    previous = target.read_text(encoding="utf-8")
+    try:
+        policy = json.loads(previous)
+    except ValueError as exc:
+        return None, previous, f"Recorded Run Policy is not JSON: {exc}"
+    if _policy_invalid(policy):
+        return None, policy, "Recorded Run Policy has missing or unknown choices"
+    return policy, policy, None
+
+
 def run_policy(root, request):
-    """Run choices are separate from the product journal and never approve intent."""
-    policy = _read(root, RUN_POLICY)
+    """Run choices are separate from the product journal and never approve intent.
+
+    Only the interactive run entry collects or repairs a policy, with explicit
+    answers and an actual user reference. A repair records the invalid prior
+    content in an audit file; unattended events never rewrite the policy.
+    """
+    policy, previous, problem = _recorded_policy(root)
     if policy is None:
+        if request["operation"] != "run-policy":
+            if problem:
+                raise ValueError(f"Invalid Run Policy; repair it at the interactive entry without guessing answers ({problem})")
+            if "answers" in request:
+                raise ValueError("Run events consume a recorded Run Policy; they never collect or repair one")
         if "answers" not in request:
-            return {"status": "needs_run_policy", "questions": POLICY_OPTIONS,
-                    "return_to": "interactive run entry before the first node"}
+            result = {"status": "needs_run_policy", "questions": POLICY_OPTIONS,
+                      "return_to": "interactive run entry before the first node"}
+            if problem:
+                result["invalid_policy"] = f"{problem}; repair it at the interactive entry without guessing answers"
+            return result
         if not _text(request.get("user_reference")):
             raise ValueError("Run Policy requires an actual user response")
         policy = request["answers"]
-    if (not isinstance(policy, dict) or any(policy.get(k) not in options for k, options in POLICY_OPTIONS.items())):
-        raise ValueError("Invalid Run Policy; repair it at the interactive entry without guessing answers")
-    if not (root / RUN_POLICY).exists():
+        if _policy_invalid(policy):
+            raise ValueError("Invalid Run Policy; repair it at the interactive entry without guessing answers")
+        if problem:
+            repairs = _read(root, RUN_POLICY_REPAIRS, [])
+            if not isinstance(repairs, list):
+                raise ValueError("Run Policy repair audit must stay a list")
+            repairs.append({"previous": previous, "reason": problem, "answers": policy,
+                            "user_reference": request["user_reference"]})
+            _write(root, RUN_POLICY_REPAIRS, repairs)
         _write(root, RUN_POLICY, policy)
     if request["operation"] == "run-event":
         event = request["event"]
@@ -304,6 +328,34 @@ def _confirmed(root, item, *, statuses=("confirmed",)):
         raise ValueError("Product decision is superseded")
 
 
+def _consumers(workflow, ref):
+    """Current nodes that consume one scoped requirement reference."""
+    return [node.get("node_id") for node in workflow.get("nodes", []) if ref in node.get("requirement_refs", [])]
+
+
+def _scoped(blockers, code, message, node_ids):
+    """Bind a requirement blocker to its consumers so unrelated work stays executable.
+
+    A requirement nobody consumes still blocks globally; silence is not approval.
+    """
+    if not node_ids:
+        blockers.append({"code": code, "message": message})
+    for node_id in node_ids:
+        blockers.append({"code": code, "node_id": node_id, "message": f"{node_id}: {message}"})
+
+
+def _reuse_legacy_choice(root, item):
+    """Keep a confirmed legacy intent only when its journal choice verifies; else it is pending."""
+    revision = item.setdefault("revision", 1)
+    if type(revision) is not int or revision < 1:
+        raise ValueError("Legacy intent revision must be a positive integer")
+    try:
+        _confirmed(root, item)
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError):
+        item["status"] = "pending"
+        item["pending_reason"] = "Legacy intent needs user verification"
+
+
 def _retained_nodes(workflow, refs):
     """Consume reconciled history, folding both native formats in log order."""
     last_status = {event.get("node_id", event.get("node")): event.get("status")
@@ -314,12 +366,14 @@ def _retained_nodes(workflow, refs):
 
 
 def _product_contract(root, workflow, profile, *, retained=()):
+    """Verify the frozen product scope; bind per-intent drift to the nodes that consume it.
+
+    Freeze-level problems (provenance, scope, workflow baseline, plan shape) raise and
+    block globally. One reopened, adjusted, removed or unverifiable intent, or an
+    unresolved decision it depends on, returns blockers only for its consumers.
+    """
     concept = _read(root, CONCEPT)
     _validate_question_ids(concept)
-    included = {r["id"] for r in profile["task_scope"]["requirement_refs"]}
-    if any(_question_pending(root, q) and set(q.get("depends_on", [])) & included
-           for q in concept.get("intent_questions", [])):
-        raise ValueError("Included work depends on an unresolved decision; return to interactive bootstrap")
     baseline = _read(root, BASELINE, {}).get("intent_baseline")
     if not isinstance(baseline, dict):
         raise ValueError("Product work needs a frozen product baseline")
@@ -341,14 +395,9 @@ def _product_contract(root, workflow, profile, *, retained=()):
     refs = baseline["requirement_refs"]
     if refs != profile["task_scope"]["requirement_refs"]:
         raise ValueError("Product task scope differs from frozen baseline")
-    latest = _latest(_read(root, CONCEPT))
-    if baseline.get("intents") != [latest[ref["id"]] for ref in refs]:
-        raise ValueError("Product projection differs from the frozen user-confirmed scope")
-    for ref in refs:
-        item = latest[ref["id"]]
-        if ref["path"] != CONCEPT or ref["revision"] != item["revision"]:
-            raise ValueError("Product baseline selects stale intent")
-        _confirmed(root, item)
+    frozen = baseline.get("intents")
+    if not isinstance(frozen, list) or len(frozen) != len(refs):
+        raise ValueError("Product baseline intents must match its requirement refs")
     if workflow.get("product_baseline") != baseline:
         raise ValueError("Product workflow must consume current frozen baseline")
     stages = {"product", "experience", "technical", "implementation", "documentation", "verification"}
@@ -360,17 +409,83 @@ def _product_contract(root, workflow, profile, *, retained=()):
         covered = {r for n in consumers for r in n.get("responsibilities", [])}
         if stages - covered - omitted.keys():
             raise ValueError("Product plan lacks applicable full-process responsibilities")
+    return _intent_drift(root, workflow, concept, refs, frozen, label="Product", path=CONCEPT, retained=retained)
+
+
+def _local_contract(root, workflow, profile, *, retained=()):
+    """Verify the frozen local scope; bind per-intent drift to the nodes that consume it.
+
+    The same two levels as the product route: unverifiable journal provenance of the
+    frozen scope, a task scope differing from the frozen refs, or a malformed scope
+    raise and block globally; one reopened, adjusted or unverifiable local intent, or
+    an unresolved decision it depends on, returns blockers only for its consumers.
+    """
+    local = _read(root, LOCAL)
+    _validate_question_ids(local)
+    _discussion(root, local)  # Verify the journal-backed frozen local scope.
+    baseline = profile["intent_scope"]
+    refs = baseline["requirement_refs"]
+    if refs != profile["task_scope"]["requirement_refs"]:
+        raise ValueError("Local task scope differs from the frozen scope")
+    frozen = baseline.get("intents")
+    if not isinstance(frozen, list) or len(frozen) != len(refs):
+        raise ValueError("Local scope intents must match its requirement refs")
+    return _intent_drift(root, workflow, local, refs, frozen, label="Local", path=LOCAL, retained=retained)
+
+
+def _intent_drift(root, workflow, concept, refs, frozen, *, label, path, retained=()):
+    """Bind each frozen intent's drift to the current nodes that consume it.
+
+    A reopened intent (latest revision pending) is pending work; an adjusted, removed,
+    restored or silently changed one is stale; a journal choice that no longer verifies
+    is pending with its reason; a pending question an intent depends on names the
+    unresolved decision. Node projections are then checked against the confirmed
+    intent so unrelated nodes keep their validity.
+    """
+    latest = _latest(concept)
+    blockers: list[dict] = []
+    drifted = set()
+    for ref, intent in zip(refs, frozen):
+        item = latest.get(ref["id"])
+        consumers = _consumers(workflow, ref)
+        if item is None or item != intent or ref["path"] != path or ref["revision"] != item["revision"]:
+            drifted.add(ref["id"])
+            if item is not None and item.get("status") == "pending":
+                _scoped(blockers, "pending_requirement", f"{label} intent {ref['id']} was reopened after the freeze; "
+                        "confirm it at interactive bootstrap, then refreeze and replan", consumers)
+            else:
+                _scoped(blockers, "stale_requirement", f"{label} intent {ref['id']} differs from the frozen "
+                        "user-confirmed scope; refreeze and replan the affected work", consumers)
+            continue
+        try:
+            _confirmed(root, item)
+        except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError) as exc:
+            drifted.add(ref["id"])
+            _scoped(blockers, "pending_requirement",
+                    f"{label} intent {ref['id']}: {exc}; return to interactive bootstrap", consumers)
+    for question in concept.get("intent_questions", []):
+        if not _question_pending(root, question):
+            continue
+        for ref in refs:
+            if ref["id"] in set(question.get("depends_on", [])):
+                _scoped(blockers, "pending_requirement", f"{label} intent {ref['id']} depends on unresolved decision "
+                        f"{question['id']}; answer it at interactive bootstrap, then refreeze and replan",
+                        _consumers(workflow, ref))
     for node in workflow["nodes"]:
-        if node.get("node_id") in retained:
+        node_id = node.get("node_id")
+        if node_id in retained:
             continue
         node_refs = node.get("requirement_refs", [])
         if not node_refs or any(ref not in refs for ref in node_refs):
-            raise ValueError("Product node consumes excluded or unconfirmed intent")
+            _scoped(blockers, "scope_requirement_unwired", f"{label} node consumes excluded or unconfirmed intent", [node_id])
+            continue
+        if any(ref["id"] in drifted for ref in node_refs):
+            continue
         expected = [latest[r["id"]] for r in node_refs]
         if (node.get("product_goals") != [i["goal"] for i in expected]
                 or node.get("acceptance") != [a for i in expected for a in i["acceptance"]]):
-            raise ValueError("Product goals and acceptance differ from confirmed intent")
-    return baseline, latest
+            _scoped(blockers, "stale_requirement", f"{label} goals and acceptance differ from confirmed intent", [node_id])
+    return blockers
 
 
 def _validate_question_ids(concept):
@@ -487,12 +602,7 @@ def session(root, request):
             _item(item)
             if not set(item["scope"]) & set(request["areas"]):
                 raise ValueError("Legacy projection is outside the requested local scope")
-            item.setdefault("revision", 1)
-            try:
-                _confirmed(root, item)
-            except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError):
-                item["status"] = "pending"
-                item["pending_reason"] = "Legacy intent needs user verification"
+            _reuse_legacy_choice(root, item)
         if len({i["id"] for i in items}) != len(items):
             raise ValueError("Legacy projection identities must be unique")
         concept = {"requirements": items, "intent_questions": request.get("questions", [])}
@@ -684,7 +794,7 @@ def session(root, request):
                     item.pop("answer", None)
                     item.update(status="pending", confirmation=confirmation)
             else:
-                raise ValueError("Only explicit confirm/add/adjust/remove/answer operations are supported")
+                raise ValueError("Only explicit confirm/add/adjust/remove/answer/reopen/restore operations are supported")
             batch["decisions"].append({"question": action.get("id", item["id"]),
                                        "chosen": item.get("goal", item.get("answer", "Reopen decision")),
                                        "rationale": action["reason"], "operation": op,
@@ -714,8 +824,12 @@ def session(root, request):
                 raise ValueError("Inference needs evidence and uncertainty")
             if request["route"] == "new-product" and item["origin"] == "inference":
                 raise ValueError("New products start from user intent, not reverse inference")
-            item.update(revision=1, status="pending")
-            item.pop("confirmation", None)
+            if item.get("status") == "confirmed" or "confirmation" in item:
+                # A legacy confirmed projection is reused only with canonical journal
+                # provenance; the draft never strips or invents confirmation.
+                _reuse_legacy_choice(root, item)
+            else:
+                item.update(revision=1, status="pending")
         facts = request.get("facts", [])
         for evidence in [*facts, *(e for i in items for e in i.get("evidence", []))]:
             path = Path(evidence["path"])

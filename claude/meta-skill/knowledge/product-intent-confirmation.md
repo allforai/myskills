@@ -43,7 +43,11 @@ not additional product authorities.
   Questions have `id`, `topic`, `question`, `kind`, and `depends_on` intent IDs.
   Question IDs are unique and distinct from all intent IDs, including generated
   gap questions; an ambiguous identity is rejected, never counted as an answer.
-  Missing dimensions produce pending gap questions. Draft always stays pending.
+  Missing dimensions produce pending gap questions. New inferences stay pending.
+  A legacy confirmed item may retain its revision and confirmation only when its
+  canonical journal choice still verifies; otherwise it is pending with a reason.
+  Reusing a recorded goal does not approve newly inferred details: the user still
+  explicitly confirms the complete selected projection at scope freeze.
 - `resume`: `{operation: "resume"}` returns pending `topics` plus the complete
   requirement `history`, current `questions`, and journal-verified `excluded`
   scope with its reasons. Present only `topics` as questions; use history to
@@ -81,10 +85,13 @@ not additional product authorities.
 - `plan`: `{operation, nodes, not_applicable, ...workflow_fields}` consumes the
   frozen baseline. Freely design the smallest applicable full process, using
   capability guidance, suppress rules and project detections. Each node has its
-  normal workflow fields plus `intent_ids`, `responsibilities`, and a substantive
+  normal workflow fields plus `intent_ids`, `responsibilities`, `source_inputs`, and a substantive
   `body` following the normal Node-spec contract. Responsibilities cover product,
   experience, technical, implementation, documentation and verification for each
-  included intent; combine nodes freely. `not_applicable` may explain experience
+  included intent; combine nodes freely. Source inputs are relevant project-relative
+  paths or globs, with explicit `[]` only when no product source is relevant;
+  declaration alone is not verified contract or completion evidence.
+  `not_applicable` may explain experience
   or technical omissions (for example a headless API has no UI experience work).
   This does not mandate every Capability. Emit a complete graph, including
   dependency edges, repair ownership and domain-specific acceptance; the helper
@@ -122,7 +129,10 @@ At the interactive run entry, check `python3 .allforai/bootstrap/scripts/product
 options; collect actual responses together before the first node. Persist via
 `{operation: "run-policy", answers: {on_repeated_failure, on_needs_iteration,
 on_safety_warning}, user_reference}`. Existing valid policy returns no questions;
-invalid policy blocks for interactive repair, never defaults. These operations
+invalid policy returns the questions with its invalidity reason for interactive
+repair, never defaults. Explicit answers and the actual user response reference
+repair it while retaining the prior content in `run-policy-repairs.json`.
+Unattended policy events cannot collect or repair these choices. These operations
 never write the product journal or requirement confirmations. Runtime consumers
 use `--policy-event <key>`; `auto_fix_once` consumption is persisted before repair
 in run-policy-state.json, so interruption cannot grant a second repair. Accepted

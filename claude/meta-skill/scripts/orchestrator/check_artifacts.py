@@ -289,6 +289,203 @@ def _production_gap_error(data: dict) -> dict | None:
     return None
 
 
+FRESHNESS_FIELDS = ("source_inputs", "input_dependencies", "required_documents")
+FRESHNESS_STATE = ".allforai/bootstrap/evidence-freshness.json"
+BOOTSTRAP_PROFILE = ".allforai/bootstrap/bootstrap-profile.json"
+DECLARE_HINT = "declare project-relative source paths or globs, or explicit [] when no product source is relevant"
+
+
+def input_declaration_errors(node: dict) -> list:
+    """Shape errors for a node's freshness declarations; empty when well-formed.
+
+    A declaration is a list of non-empty project-relative paths or globs. An
+    explicit empty list is a valid statement that no such input exists.
+    """
+    errors = []
+    for field in FRESHNESS_FIELDS:
+        if field not in node:
+            continue
+        value = node[field]
+        if not isinstance(value, list) or any(not isinstance(p, str) or not p.strip() for p in value):
+            errors.append(f"'{field}' must be a list of non-empty project-relative paths or globs; {DECLARE_HINT}")
+            continue
+        for path in value:
+            if os.path.isabs(path) or ".." in path.replace(os.sep, "/").split("/"):
+                errors.append(f"'{field}' entry {path!r} must be a relative project path without '..'")
+    return errors
+
+
+def _completed_nodes(workflow: dict) -> set:
+    """Nodes whose latest transition is completed, folding both native log formats.
+
+    Malformed history never completes a node: scope validation rejects it
+    separately, and an unreadable label cannot exempt work from declaring.
+    """
+    last_status: dict = {}
+    log = workflow.get("transition_log")
+    for event in log if isinstance(log, list) else []:
+        if not isinstance(event, dict):
+            continue
+        node_id = event.get("node_id", event.get("node"))
+        if isinstance(node_id, str):
+            last_status[node_id] = event.get("status")
+    return {node_id for node_id, status in last_status.items() if status == "completed"}
+
+
+def _scope_refs(project_root: Path) -> list | None:
+    """Current task_scope requirement refs from the bootstrap profile; None when unknown."""
+    try:
+        with open(project_root / BOOTSTRAP_PROFILE, encoding="utf-8") as handle:
+            profile = json.load(handle)
+    except (OSError, ValueError):
+        return None
+    scope = profile.get("task_scope") if isinstance(profile, dict) else None
+    refs = scope.get("requirement_refs") if isinstance(scope, dict) else None
+    return refs if isinstance(refs, list) else None
+
+
+def _load_records(project_root: Path) -> tuple:
+    """(recorded node ids, error). A missing state file records nothing; an
+    unreadable or unknown-shaped one returns (None, reason) so gates fail closed."""
+    path = project_root / FRESHNESS_STATE
+    if not path.exists():
+        return set(), None
+    try:
+        with open(path, encoding="utf-8") as handle:
+            state = json.load(handle)
+    except (OSError, ValueError) as exc:
+        return None, f"{FRESHNESS_STATE} is unreadable: {exc}"
+    if not isinstance(state, dict):
+        return None, f"{FRESHNESS_STATE} must be a JSON object"
+    recorded: set = set()
+    for bucket in ("nodes", "contracts"):
+        records = state.get(bucket, {})
+        if not isinstance(records, dict) or not all(
+                isinstance(k, str) and isinstance(v, dict) for k, v in records.items()):
+            return None, f"{FRESHNESS_STATE} '{bucket}' has an unknown record shape"
+        recorded.update(records)
+    return recorded, None
+
+
+def _current_scope_work(node: dict, completed: set, scope_refs: list | None) -> bool:
+    """Whether the node consumes requirements as current work: any consumer that
+    is not completed, or a completed consumer of the current task scope. Unknown
+    scope cannot prove a completed consumer historical, so it counts as current."""
+    refs = node.get("requirement_refs")
+    if not refs:
+        return False
+    if node.get("node_id") not in completed:
+        return True
+    return scope_refs is None or not isinstance(refs, list) or any(ref in scope_refs for ref in refs)
+
+
+def _admission(node: dict, completed: set, scope_refs: list | None, recorded: set) -> str:
+    if input_declaration_errors(node):
+        return "invalid"
+    if "source_inputs" in node:
+        return "declared"
+    partial = any(field in node for field in FRESHNESS_FIELDS)
+    withdrawn = node.get("node_id") in recorded
+    return "missing" if partial or withdrawn or _current_scope_work(node, completed, scope_refs) else "legacy"
+
+
+def freshness_admission(node: dict, workflow: dict, project_root: Path | None = None) -> str:
+    """How freshness admits a node: declared, missing, invalid, or legacy.
+
+    Intent-aware work must declare source_inputs: any node consuming
+    requirement_refs that is not completed, a completed consumer of the current
+    task scope, and any node with a published freshness record. A completion
+    label alone is not provenance. Only retained history outside the current
+    scope with no record is legacy, and no provenance is claimed for it. Without
+    ``project_root`` the scope and records are read from the working directory,
+    where the generated runtime runs its gates.
+    """
+    root = Path(project_root) if project_root is not None else Path.cwd()
+    recorded, _ = _load_records(root)
+    return _admission(node, _completed_nodes(workflow), _scope_refs(root), recorded or set())
+
+
+def freshness_states(project_root: Path, workflow: dict) -> dict:
+    """Per-node freshness consumed by the artifact, readiness and reconciliation gates.
+
+    Returns {} for a legacy workflow with no declarations and no freshness state.
+    Otherwise every node gets a dict with status, readiness_status, admission and
+    reason. Malformed declarations, an unreadable freshness state, or a failing
+    evaluation fail closed as ``invalid`` for every admitted node instead of
+    crashing or passing.
+    """
+    nodes = [n for n in (workflow.get("nodes") or []) if isinstance(n, dict) and n.get("node_id")]
+    completed = _completed_nodes(workflow)
+    scope_refs = _scope_refs(project_root)
+    recorded, state_error = _load_records(project_root)
+    admissions = {n["node_id"]: _admission(n, completed, scope_refs, recorded or set()) for n in nodes}
+    if not (project_root / FRESHNESS_STATE).exists() and all(a == "legacy" for a in admissions.values()):
+        return {}
+    states = {}
+    invalid = {n["node_id"]: input_declaration_errors(n) for n in nodes if admissions[n["node_id"]] == "invalid"}
+    evaluated: dict = {}
+    failure = None
+    if invalid:
+        failure = "malformed declaration on " + ", ".join(f"{k}: {'; '.join(v)}" for k, v in sorted(invalid.items()))
+    elif state_error:
+        failure = "freshness state unreadable: " + state_error
+    else:
+        from evidence_freshness import evaluate
+        try:
+            evaluated = evaluate(project_root)["nodes"]
+        except (ValueError, KeyError, TypeError, AttributeError, OSError, StopIteration) as exc:
+            failure = f"freshness evaluation failed: {exc}"
+    for node in nodes:
+        node_id = node["node_id"]
+        admission = admissions[node_id]
+        if admission == "invalid":
+            states[node_id] = {"status": "invalid", "readiness_status": "invalid", "admission": admission,
+                               "reason": "Malformed input declaration: " + "; ".join(invalid[node_id])}
+        elif admission == "missing":
+            reason = ("Missing source_inputs: the node was published with a declaration that is now absent; "
+                      if node_id in (recorded or set()) else "Missing source_inputs: impact is uncertain; ")
+            states[node_id] = {"status": "undeclared", "readiness_status": "undeclared", "admission": admission,
+                               "reason": reason + DECLARE_HINT}
+        elif failure:
+            states[node_id] = {"status": "invalid", "readiness_status": "invalid", "admission": admission,
+                               "reason": "Freshness cannot be evaluated: " + failure}
+        elif admission == "legacy":
+            states[node_id] = {"status": "undeclared", "readiness_status": "undeclared", "admission": admission,
+                               "reason": "Retained legacy node without source declarations; no provenance claimed"}
+        else:
+            states[node_id] = {**evaluated.get(node_id, {"status": "stale", "readiness_status": "stale"}),
+                               "admission": admission}
+    return states
+
+
+def freshness_admits(freshness) -> bool:
+    """True when freshness does not withhold completion.
+
+    Absent freshness keeps the pre-freshness gate; a declared node admits only
+    ``valid``; a legacy node admits only its own ``undeclared`` state, never an
+    evaluated stale, invalid or unknown status. Anything else fails closed.
+    """
+    if freshness is None:
+        return True
+    if not isinstance(freshness, dict):
+        return False
+    admission = freshness.get("admission", "declared")
+    status = freshness.get("status")
+    if admission == "legacy":
+        return status == "undeclared"
+    return admission == "declared" and status == "valid"
+
+
+def _load_workflow(project_root: Path):
+    path = project_root / ".allforai/bootstrap/workflow.json"
+    try:
+        with open(path, encoding="utf-8") as handle:
+            workflow = json.load(handle)
+    except (OSError, ValueError):
+        return None
+    return workflow if isinstance(workflow, dict) else None
+
+
 def check_node_artifacts(node: dict, project_root: Path | None = None) -> dict:
     """Check if a node's exit_artifacts all exist."""
     node_id = node.get("node_id")
@@ -343,14 +540,18 @@ def check_node_artifacts(node: dict, project_root: Path | None = None) -> dict:
                     break
         results.append(entry)
     freshness = None
-    if project_root and ('source_inputs' in node or (project_root / '.allforai/bootstrap/evidence-freshness.json').exists()):
-        from evidence_freshness import evaluate
-        freshness = evaluate(project_root)['nodes'].get(node_id)
+    if project_root:
+        workflow = _load_workflow(project_root)
+        if workflow is None:
+            workflow = {"nodes": [node]}
+        elif not any(isinstance(n, dict) and n.get("node_id") == node_id for n in workflow.get("nodes") or []):
+            workflow = {**workflow, "nodes": [*(workflow.get("nodes") or []), node]}
+        freshness = freshness_states(project_root, workflow).get(node_id)
     return {
         "node_id": node_id,
         "goal": node.get("goal", ""),
         "freshness": freshness,
-        "all_exist": (not freshness or freshness['status'] == 'valid') and bool(results) and all(
+        "all_exist": freshness_admits(freshness) and bool(results) and all(
             r["exists"] and "validation_error" not in r and "status_error" not in r
             for r in results
         ),

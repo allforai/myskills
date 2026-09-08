@@ -27,7 +27,7 @@ def invoke(root, operation, **request):
 
 
 def setup(root, host):
-    project(root, confirmed=True, host=host)
+    project(root, confirmed=True, host=host, source_inputs=None)
     source = SCRIPTS if host == 'claude' else Path(__file__).resolve().parents[4] / 'codex/meta-skill/scripts'
     for name in ('evidence_freshness.py', 'reconcile_bootstrap_workflow.py'):
         shutil.copy2(source / 'orchestrator' / name, root / '.allforai/bootstrap/scripts' / name)

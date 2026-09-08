@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from .test_bootstrap_scope import project, gate
+from .test_bootstrap_scope import project, gate, publish_contract
 from .test_product_intent_session import invoke, draft, decide, TOPICS, CONCEPT, JOURNAL
 from .test_validate_bootstrap import ATTENTION_CONTRACT_BODY
 from .test_bootstrap_scope import write
@@ -14,11 +14,14 @@ def freeze_and_plan(root, batch="scope"):
         "batch_id": batch, "user_reference": "user scope", "reason": "Release"})
     if frozen.returncode:
         return frozen
-    return invoke(root, {"operation": "plan", "nodes": [{"node_id": "deliver", "capability": "implement",
-        "goal": "Deliver orders", "intent_ids": TOPICS,
+    planned = invoke(root, {"operation": "plan", "nodes": [{"node_id": "deliver", "capability": "implement",
+        "goal": "Deliver orders", "intent_ids": TOPICS, "source_inputs": ["orders.py"],
         "responsibilities": ["product", "technical", "implementation", "documentation", "verification"],
         "exit_artifacts": [".allforai/bootstrap/verified.json"], "body": ATTENTION_CONTRACT_BODY}],
         "not_applicable": {"experience": "Headless API"}})
+    if planned.returncode == 0:
+        publish_contract(root, "deliver")
+    return planned
 
 
 @pytest.mark.parametrize("host", ["claude", "codex"])
@@ -172,8 +175,10 @@ def test_local_legacy_admission_reuses_only_supported_choice_and_preserves_old_d
     assert frozen.returncode == 0, frozen.stdout
     planned = invoke(tmp_path, {"operation": "plan", "nodes": [{"node_id": "export", "capability": "implement",
         "goal": "Deliver CSV export", "intent_ids": ["export"], "responsibilities": ["implementation", "documentation", "verification"],
+        "source_inputs": ["orders.py"],
         "exit_artifacts": [".allforai/bootstrap/export-result.json"], "body": ATTENTION_CONTRACT_BODY}]})
     assert planned.returncode == 0, planned.stdout
+    publish_contract(tmp_path, "export")
     for name in ("validate_bootstrap.py", "check_decision_inputs.py", "validate_unattended_readiness.py"):
         result = gate(tmp_path, name)
         assert result.returncode == 0, result.stdout

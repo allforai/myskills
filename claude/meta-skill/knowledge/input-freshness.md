@@ -12,6 +12,15 @@ for generated fact documents that must accompany delivery. Keep existing
 other generated files in workflow `generated_outputs`; never classify product
 source as generated merely to silence drift. Missing dependency knowledge is
 uncertain impact and must be coordinated before affected work can proceed.
+Every node that consumes `requirement_refs` must carry `source_inputs`; the
+bootstrap, artifact, readiness and reconciliation gates report
+`missing_source_inputs` or `invalid_source_inputs` for an omitted or malformed
+declaration instead of skipping freshness or passing. Retained completed nodes
+outside the current scope, without declarations or recorded observations, keep
+their legacy gate behavior and are reported as `undeclared` with no provenance
+claimed. A completion label cannot exempt current scoped work; removing a
+previously recorded input declaration cannot downgrade verification to legacy.
+Reopening historical work requires a declaration.
 
 The source inventory excludes `.allforai`, generated host configuration, Git
 metadata, dependency/cache directories and explicitly declared outputs. Inputs

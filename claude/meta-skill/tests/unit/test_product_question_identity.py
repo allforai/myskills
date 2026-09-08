@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from .test_bootstrap_scope import project, write, gate
+from .test_bootstrap_scope import project, write, gate, publish_contract
 from .test_product_intent_session import CONCEPT, JOURNAL, TOPICS, draft, invoke, decide
 from .test_validate_bootstrap import ATTENTION_CONTRACT_BODY
 
@@ -74,7 +74,7 @@ def test_public_gates_reject_persisted_question_alias_and_restore_readiness(tmp_
     assert invoke(tmp_path, {"operation": "plan", "nodes": [{
         "node_id": "deliver", "capability": "implement", "goal": "Deliver confirmed product",
         "intent_ids": TOPICS, "responsibilities": ["product", "experience", "technical",
-            "implementation", "documentation", "verification"],
+            "implementation", "documentation", "verification"], "source_inputs": ["orders.py"],
         "exit_artifacts": [".allforai/bootstrap/delivery.json"], "body": ATTENTION_CONTRACT_BODY}]}).returncode == 0
     concept = json.loads((tmp_path / CONCEPT).read_text())
     alias = {"id": "tradeoffs", "topic": "tradeoffs", "question": "An unresolved choice",
@@ -82,6 +82,8 @@ def test_public_gates_reject_persisted_question_alias_and_restore_readiness(tmp_
     for questions, expected in [([], 0), ([alias], 1), ([], 0)]:
         concept["intent_questions"] = questions
         write(tmp_path, CONCEPT, concept)
+        if expected == 0:
+            publish_contract(tmp_path, "deliver")  # The consumed concept changed; re-observe before readiness.
         before = (tmp_path / CONCEPT).read_bytes()
         for name in ("validate_bootstrap.py", "check_decision_inputs.py", "validate_unattended_readiness.py"):
             options = ("--write-report",) if name == "validate_unattended_readiness.py" else ()

@@ -83,6 +83,13 @@ def expand_paths(root, paths):
     return expanded
 
 
+def intent_baseline(root):
+    profile = read_json(root, '.allforai/bootstrap/bootstrap-profile.json', {})
+    if profile.get('intent_session_path') == '.allforai/bootstrap/local-requirements.json':
+        return profile.get('intent_scope', {})
+    return read_json(root, '.allforai/product-concept/concept-baseline.json', {}).get('intent_baseline', {})
+
+
 def snapshot(root, node, extra=(), seen=()):
     if node['node_id'] in seen:
         raise ValueError('Cyclic input dependency; impact is uncertain')
@@ -103,7 +110,7 @@ def snapshot(root, node, extra=(), seen=()):
         data = read_json(root, ref['path'], {})
         items = [item for item in data.get('requirements', []) if item.get('id') == ref['id']]
         requirements[ref['path'] + '#' + ref['id']] = digest(items)
-    baseline = read_json(root, '.allforai/product-concept/concept-baseline.json', {}).get('intent_baseline', {})
+    baseline = intent_baseline(root)
     selected = {ref['id'] for ref in refs}
     baseline_scope = {'requirement_refs': [ref for ref in baseline.get('requirement_refs', []) if ref['id'] in selected],
                       'intents': [item for item in baseline.get('intents', []) if item['id'] in selected],
@@ -111,7 +118,7 @@ def snapshot(root, node, extra=(), seen=()):
     by_id = {n['node_id']: n for n in workflow.get('nodes', [])}
     state = read_json(root, STATE, {'nodes': {}})
     upstream = {}
-    for dep in dependencies(node, workflow):
+    for dep in dependencies(root, node, workflow):
         if dep not in by_id:
             raise ValueError('Missing dependency ' + dep + '; impact is uncertain')
         upstream[dep] = snapshot(root, by_id[dep], state['nodes'].get(dep, {}).get('extra', []),
@@ -120,11 +127,17 @@ def snapshot(root, node, extra=(), seen=()):
             'baseline_scope': baseline_scope, 'upstream': upstream}
 
 
-def dependencies(node, workflow):
+def dependencies(root, node, workflow):
     producers = {item['path'] if isinstance(item, dict) else item: n['node_id']
-                 for n in workflow.get('nodes', []) for item in n.get('exit_artifacts', [])}
+                 for n in workflow.get('nodes', [])
+                 for item in [*n.get('exit_artifacts', []), *n.get('required_documents', [])]}
+    state = read_json(root, STATE, {'nodes': {}})
+    consumed = expand_paths(root, node.get('input_dependencies', []))
+    consumed.update(read_json(root, READS, {}).get(node['node_id'], []))
+    for bucket in ('nodes', 'contracts'):
+        consumed.update(state.get(bucket, {}).get(node['node_id'], {}).get('extra', []))
     return sorted(set(node.get('hard_blocked_by', [])) |
-                  {producers[p] for p in node.get('input_dependencies', []) if p in producers and producers[p] != node['node_id']})
+                  {producers[p] for p in consumed if p in producers and producers[p] != node['node_id']})
 
 
 def outputs(root, node, kind='evidence'):
@@ -158,7 +171,9 @@ def evaluate(root):
     state = read_json(root, STATE, {'nodes': {}})
     result = {}
     current = inventory(root, workflow)
-    owned = {p for n in workflow.get('nodes', []) for p in expand_paths(root, n.get('source_inputs', []) + n.get('input_dependencies', []))}
+    owned = {p for n in workflow.get('nodes', [])
+             for field in ('source_inputs', 'input_dependencies')
+             for p in expand_paths(root, n.get(field, []))}
     owned.update(p for record in state['nodes'].values() for p in record.get('extra', []))
     owned.update(p for record in state['nodes'].values() for p in record.get('inputs', {}).get('files', {}))
     owned.update(p for paths in read_json(root, READS, {}).values() for p in paths)
@@ -167,6 +182,10 @@ def evaluate(root):
         evidence = state['nodes'].get(node['node_id'])
         contract = state.get('contracts', {}).get(node['node_id'])
         record = contract or evidence
+        if record is None and 'source_inputs' not in node:
+            result[node['node_id']] = {'status': 'undeclared', 'readiness_status': 'undeclared',
+                                      'reason': 'No source declaration or observation; no provenance claimed'}
+            continue
         valid = record and record['inputs'] == snapshot(root, node, record.get('extra', []))
         valid = valid and record.get('outputs') == outputs(root, node, record.get('kind', 'evidence'))
         evidence_valid = (valid and evidence and evidence['inputs'] == snapshot(root, node, evidence.get('extra', []))
@@ -182,10 +201,10 @@ def evaluate(root):
                                           'reason': 'Unmapped product input changed'}
     for _ in workflow.get('nodes', []):
         for node in workflow['nodes']:
-            if any(result.get(dep, {}).get('status') != 'valid' for dep in dependencies(node, workflow)):
+            if any(result.get(dep, {}).get('status') != 'valid' for dep in dependencies(root, node, workflow)):
                 result[node['node_id']]['status'] = 'stale'
                 result[node['node_id']]['reason'] = 'Upstream evidence is stale or missing'
-            if any(result.get(dep, {}).get('readiness_status') != 'valid' for dep in dependencies(node, workflow)):
+            if any(result.get(dep, {}).get('readiness_status') != 'valid' for dep in dependencies(root, node, workflow)):
                 result[node['node_id']]['readiness_status'] = 'stale'
     return {'nodes': result, 'uncertain_inputs': sorted(uncertain_inputs)}
 
@@ -208,8 +227,7 @@ def session(root, request):
             raise ValueError('Observation kind must be contract or evidence')
         observation = {'node_id': node['node_id'], 'inputs': snapshot(root, node, extra), 'extra': extra,
                        'source_snapshot': inventory(root, workflow), 'kind': kind,
-                       'baseline_version': read_json(root, '.allforai/product-concept/concept-baseline.json', {})
-                           .get('intent_baseline', {}).get('version')}
+                       'baseline_version': intent_baseline(root).get('version')}
         token = digest(observation)
         write_json(root, OBSERVATIONS + '/' + token + '.json', observation)
         return {'observation': token, **observation}
@@ -234,6 +252,13 @@ def session(root, request):
                 reads = read_json(root, READS, {})
                 reads[node['node_id']] = sorted(set(reads.get(node['node_id'], [])) | {path})
                 write_json(root, READS, reads)
+            expanded = snapshot(root, node, observation['extra'])
+            prior = observation['inputs']
+            if (any(expanded[key] != prior[key] for key in ('files', 'requirements', 'contract', 'baseline_scope'))
+                    or any(expanded['upstream'].get(dep) != value for dep, value in prior['upstream'].items())
+                    or observation['source_snapshot'] != inventory(root, workflow)):
+                return {'status': 'stale', 'reason': 'Inputs changed while registering dependency; reobserve current inputs'}
+            observation['inputs']['upstream'] = expanded['upstream']
             token = digest(observation)
             write_json(root, OBSERVATIONS + '/' + token + '.json', observation)
             return {'observation': token, 'content': content.decode()}
@@ -250,6 +275,11 @@ def session(root, request):
             if (observation['inputs'] != snapshot(root, node, observation.get('extra', []))
                     or observation['source_snapshot'] != inventory(root, workflow)):
                 return {'status': 'stale', 'reason': 'Inputs changed during verification; reverify current inputs'}
+            upstream = evaluate(root)['nodes']
+            required_status = 'readiness_status' if observation['kind'] == 'contract' else 'status'
+            if any(upstream.get(dep, {}).get(required_status) != 'valid'
+                   for dep in dependencies(root, node, workflow)):
+                return {'status': 'stale', 'reason': 'Upstream verification is stale or missing; repair it before publishing consumer evidence'}
             observation['verification'] = {'command': command, 'returncode': 0,
                                            'stdout': verified.stdout, 'stderr': verified.stderr}
             observation['outputs'] = outputs(root, node, observation['kind'])

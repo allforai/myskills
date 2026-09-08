@@ -37,7 +37,7 @@
 - `state-machine.json` may only be read for backward compatibility during migration.
 - The generated Codex orchestrator entry is `.codex/commands/run.md`, not `.claude/commands/run.md`.
 - Shared contracts belong under `.allforai/bootstrap/`; Codex-only runtime helpers belong under `.allforai/codex/`.
-- Generated run and `flow.py` consume the current orchestrator helpers: `validate_unattended_readiness.py`, `check_artifacts.py`, `record_run_event.py`, `summarize_run_log.py`, and any `workflow.json.expanders`.
+- Generated run and `flow.py` consume the current orchestrator helpers: `product_intent.py`, `evidence_freshness.py`, `validate_unattended_readiness.py`, `check_artifacts.py`, `record_run_event.py`, `summarize_run_log.py`, and any `workflow.json.expanders`.
 
 ## Shared Asset Strategy
 

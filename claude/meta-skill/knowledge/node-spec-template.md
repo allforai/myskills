@@ -5,7 +5,11 @@ Write each `.allforai/bootstrap/node-specs/<node_id>.md` from this skeleton. Fil
 ## Scoped requirement contract
 
 For a node consuming `task_scope` requirements, mirror workflow
-`requirement_refs`, `responsibilities` and `decision_inputs` in YAML frontmatter.
+`requirement_refs`, `responsibilities`, `decision_inputs` and `source_inputs`
+(plus `input_dependencies` and `required_documents` when declared) in YAML
+frontmatter. `source_inputs` names the project-relative product source the
+node's documents and evidence trace to; write explicit `[]` only when no
+product source is relevant. A scoped node without it cannot pass any gate.
 In Must-read inputs, name the exact requirement path/id/revision and its user
 confirmation provenance. Derive Quality Acceptance from its goal/business rules/
 acceptance, never from what the current code happens to do. A pending, stale or

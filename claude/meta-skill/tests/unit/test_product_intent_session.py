@@ -5,7 +5,7 @@ import sys
 
 import pytest
 
-from .test_bootstrap_scope import project, write, gate
+from .test_bootstrap_scope import project, write, gate, publish_contract
 from .test_validate_bootstrap import ATTENTION_CONTRACT_BODY
 
 CONCEPT = ".allforai/product-concept/product-concept.json"
@@ -60,10 +60,12 @@ def test_revised_baseline_generates_full_applicable_plan_and_gates_reject_drift(
     plan = {"operation": "plan", "nodes": [{"node_id": "deliver-orders", "capability": "implement",
              "goal": "Deliver revised order service", "intent_ids": freeze["include"],
              "responsibilities": ["product", "technical", "implementation", "documentation", "verification"],
+             "source_inputs": ["orders.py"],
              "exit_artifacts": [".allforai/bootstrap/order-verification.json"], "body": ATTENTION_CONTRACT_BODY}],
             "not_applicable": {"experience": "Headless API; no user interface in this scope"}}
     result = invoke(tmp_path, plan)
     assert result.returncode == 0, (result.stdout, result.stderr)
+    publish_contract(tmp_path, "deliver-orders")  # Planned work observes its declared source before readiness.
     workflow = json.loads((tmp_path / ".allforai/bootstrap/workflow.json").read_text())
     node = workflow["nodes"][0]
     assert node["acceptance"][-1] == "Reconnect sends exactly one order"

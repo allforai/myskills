@@ -53,12 +53,15 @@ def write(root, path, value):
     target.write_text(json.dumps(value), encoding="utf-8")
 
 
-def project(root, *, confirmed=False, documents=False, host="claude"):
+def project(root, *, confirmed=False, documents=False, host="claude", source_inputs=("orders.py",)):
+    """Scoped fixture. Intent-aware nodes declare source_inputs and publish a
+    verified contract; pass source_inputs=None to omit the declaration."""
     _minimal_project(root)
     scripts = root / ".allforai/bootstrap/scripts"
     source_scripts = (SCRIPTS if host == "claude" else
                       Path(__file__).resolve().parents[4] / "codex/meta-skill/scripts")
-    for name in ("check_artifacts.py", "validate_bootstrap.py", "validate_unattended_readiness.py", "product_intent.py"):
+    for name in ("check_artifacts.py", "validate_bootstrap.py", "validate_unattended_readiness.py", "product_intent.py",
+                 "evidence_freshness.py", "reconcile_bootstrap_workflow.py"):
         shutil.copy2(source_scripts / "orchestrator" / name, scripts / name)
     shutil.copy2(source_scripts / "check_decision_inputs.py", scripts / "check_decision_inputs.py")
     write(root, ".allforai/bootstrap/bootstrap-profile.json", {
@@ -89,11 +92,38 @@ def project(root, *, confirmed=False, documents=False, host="claude"):
         "responsibilities": ["implementation", "documentation", "verification"],
         "decision_inputs": [REQUIREMENTS],
     }
+    if source_inputs is not None:
+        node["source_inputs"] = list(source_inputs)
     write(root, ".allforai/bootstrap/workflow.json", {"nodes": [node], "transition_log": []})
     (root / ".allforai/bootstrap/node-specs/design.md").unlink()
     spec = "---\n" + json.dumps(node) + "\n---\n" + ATTENTION_CONTRACT_BODY
     (root / ".allforai/bootstrap/node-specs/deliver-export.md").write_text(spec)
+    if source_inputs is not None:
+        # A pending requirement cannot pass the bootstrap validator yet; verify the contract shape only.
+        publish_contract(root, verification_command=None if confirmed else [
+            sys.executable, "-c", "import json; json.load(open('.allforai/bootstrap/workflow.json'))['nodes']"])
     return requirement
+
+
+def freshness(root, request):
+    return subprocess.run([sys.executable, str(root / ".allforai/bootstrap/scripts/evidence_freshness.py"), str(root)],
+                          input=json.dumps(request), text=True, capture_output=True, cwd=root)
+
+
+def publish_contract(root, node_id="deliver-export", kind="contract", verification_command=None):
+    """Observe and publish one node through the copied freshness CLI.
+
+    The default verifier is the copied bootstrap validator, a real check of the
+    generated contract; evidence publication must pass the node's own acceptance argv.
+    """
+    observed = freshness(root, {"operation": "observe", "node_id": node_id, "kind": kind})
+    assert observed.returncode == 0, (observed.stdout, observed.stderr)
+    command = verification_command or [sys.executable, ".allforai/bootstrap/scripts/validate_bootstrap.py",
+                                       ".allforai/bootstrap"]
+    published = freshness(root, {"operation": "publish", "observation": json.loads(observed.stdout)["observation"],
+                                 "verification_command": command})
+    assert published.returncode == 0, (published.stdout, published.stderr)
+    return json.loads(published.stdout)
 
 
 def codex_transition(root, node_id, status):
@@ -129,6 +159,7 @@ def test_journal_backed_local_requirement_is_consumed_at_all_public_gates(tmp_pa
     }]})
     requirement["confirmation"]["reference"] = journal + "#export-choice/decisions/0"
     write(tmp_path, REQUIREMENTS, {"requirements": [requirement]})
+    publish_contract(tmp_path)  # The consumed requirement changed; the contract observes it again.
     before = {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}
     for name in ("validate_bootstrap.py", "validate_unattended_readiness.py", "check_decision_inputs.py"):
         result = gate(tmp_path, name)
@@ -481,7 +512,10 @@ def test_new_unscoped_work_is_rejected_but_scoped_prerequisite_can_reenter(tmp_p
 
     node["requirement_refs"] = [REF]
     node["decision_inputs"] = [REQUIREMENTS]
+    node["source_inputs"] = ["orders.py"]  # Scoped work declares its source; the gates refuse omission.
     publish()
+    for node_id in ("prepare-export", "deliver-export"):
+        publish_contract(tmp_path, node_id)
     corrected = gate(tmp_path, name)
     assert corrected.returncode == 0, (corrected.stdout, corrected.stderr)
     assert all(p.read_bytes() == content for p, content in before.items())

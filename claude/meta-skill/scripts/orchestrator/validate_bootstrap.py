@@ -15,10 +15,12 @@ Checks:
 
 import json
 import os
+from pathlib import Path
 import re
 import sys
 
 from product_intent import validate_scope
+from check_artifacts import DECLARE_HINT, freshness_admission, input_declaration_errors
 
 try:
     import yaml
@@ -519,6 +521,14 @@ def validate_workflow(wf_path: str) -> list:
                         f"looks like a bare filename — use full project-relative "
                         f"path (e.g., 'subdir/{artifact_path}' not '{artifact_path}')"
                     )
+
+        for problem in input_declaration_errors(node):
+            errors.append(f"workflow.json: {nid} {problem}")
+        if freshness_admission(node, wf, Path(wf_path).resolve().parents[2]) == "missing":
+            errors.append(
+                f"workflow.json: {nid} missing 'source_inputs'; intent-aware work must {DECLARE_HINT} "
+                f"so evidence freshness can trace it"
+            )
 
         for field in REFERENCE_FIELDS:
             if field not in node:

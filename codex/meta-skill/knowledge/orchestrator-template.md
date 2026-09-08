@@ -29,6 +29,10 @@ If `.allforai/bootstrap/product-summary.json` exists, treat it as provisional in
 recorded user decision_inputs remain the product authority.
 
 Treat `.allforai/bootstrap/*` artifacts as the canonical completion surface for workflow nodes.
+Every scoped node declares `source_inputs` (project-relative product source; explicit `[]` only when
+none applies) and follows `.allforai/bootstrap/protocols/input-freshness.md`. Readiness reports
+`missing_source_inputs` / `invalid_source_inputs` as blockers and the artifact gate withholds
+completion for such nodes; return them to `bootstrap` instead of declaring inside the run.
 Project docs under `docs/bootstrap/` may be updated, but they should not be the only completion signal for a node.
 
 ## Preflight Gate

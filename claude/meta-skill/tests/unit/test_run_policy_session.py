@@ -8,11 +8,18 @@ import sys
 
 import pytest
 
-from .test_bootstrap_scope import project, gate
+from .test_bootstrap_scope import project, gate, publish_contract
 from .test_product_intent_session import invoke
 from .test_bootstrap_scope import write
 
 POLICY = {"on_repeated_failure": "continue", "on_needs_iteration": "accept", "on_safety_warning": "halt"}
+ACCEPTANCE = [sys.executable, "-c",
+              "import json; assert json.load(open('.allforai/bootstrap/export-report.json'))['status'] == 'passed'"]
+
+
+def publish_evidence(root):
+    """Stand in for the executor's acceptance publication required by input-freshness.md."""
+    return publish_contract(root, kind="evidence", verification_command=ACCEPTANCE)
 
 
 @pytest.mark.parametrize("host", ["claude", "codex"])
@@ -53,11 +60,12 @@ def test_generated_driver_requires_policy_and_consumes_repeated_failure_choice(t
     workflow["transition_log"] = [{"node": "deliver-export", "status": "failed", "artifacts_created": []}] * 3
     write(tmp_path, path, workflow)
     # Only the external host process is substituted; the generated driver and all gates are real.
-    bin_dir = tmp_path / "bin"
+    # The substitute and its call log live outside the project so they are not product source.
+    bin_dir = tmp_path.parent / (tmp_path.name + "-host")
     bin_dir.mkdir()
     host = bin_dir / "codex"
     host.write_text("#!" + sys.executable + "\nfrom pathlib import Path\nimport sys\n"
-                    "p=Path('host-calls.txt')\np.write_text((p.read_text() if p.exists() else '') + sys.argv[-1] + '\\n')\n"
+                    "p=Path(__file__).with_name('host-calls.txt')\np.write_text((p.read_text() if p.exists() else '') + sys.argv[-1] + '\\n')\n"
                     "print('diagnosis: retry the scoped work')\nsys.exit(1)\n")
     host.chmod(0o755)
     env = dict(os.environ, PATH=str(bin_dir) + os.pathsep + os.environ["PATH"])
@@ -66,12 +74,12 @@ def test_generated_driver_requires_policy_and_consumes_repeated_failure_choice(t
                               env=env, text=True, capture_output=True)
     blocked = run()
     assert blocked.returncode == 6, (blocked.stdout, blocked.stderr)
-    assert not (tmp_path / "host-calls.txt").exists()
+    assert not (bin_dir / "host-calls.txt").exists()
     assert invoke(tmp_path, {"operation": "run-policy", "answers": dict(POLICY, on_repeated_failure=choice),
                              "user_reference": "Run entry choice"}).returncode == 0
     result = run()
     assert result.returncode == expected, (result.stdout, result.stderr)
-    calls = (tmp_path / "host-calls.txt").read_text()
+    calls = (bin_dir / "host-calls.txt").read_text()
     assert ("Selected node: deliver-export" in calls) == (choice == "continue")
 
 
@@ -92,12 +100,13 @@ def test_generated_driver_consumes_iteration_policy_without_new_interviews(tmp_p
     write(tmp_path, ".allforai/bootstrap/workflow.json", workflow)
     write(tmp_path, ".allforai/bootstrap/export-report.json", {"status": "passed"})
     write(tmp_path, ".allforai/concept-acceptance/acceptance-report.json", {"verdict": "needs_iteration", "gaps": ["CSV labels need improvement"]})
+    publish_evidence(tmp_path)  # Declared evidence is verified and published before the policy branch is exercised.
     assert invoke(tmp_path, {"operation": "run-policy", "answers": dict(POLICY, on_needs_iteration=choice),
                              "user_reference": "Run entry"}).returncode == 0
-    bin_dir = tmp_path / "bin"
+    bin_dir = tmp_path.parent / (tmp_path.name + "-host")
     bin_dir.mkdir()
     host = bin_dir / "codex"
-    host.write_text("#!" + sys.executable + "\nfrom pathlib import Path\np=Path('repair-count')\np.write_text(str(int(p.read_text())+1) if p.exists() else '1')\n")
+    host.write_text("#!" + sys.executable + "\nfrom pathlib import Path\np=Path(__file__).with_name('repair-count')\np.write_text(str(int(p.read_text())+1) if p.exists() else '1')\n")
     host.chmod(0o755)
     env = dict(os.environ, PATH=str(bin_dir) + os.pathsep + os.environ["PATH"])
     for _ in range(2):
@@ -108,9 +117,9 @@ def test_generated_driver_consumes_iteration_policy_without_new_interviews(tmp_p
             assert json.loads(result.stderr)["passed"] is False
             assert json.loads(result.stderr)["done"] is False
     if choice == "auto_fix_once":
-        assert (tmp_path / "repair-count").read_text() == "1"
+        assert (bin_dir / "repair-count").read_text() == "1"
     else:
-        assert not (tmp_path / "repair-count").exists()
+        assert not (bin_dir / "repair-count").exists()
     if choice == "accept":
         assert "accepted_with_gaps" in (tmp_path / ".allforai/bootstrap/assumed-decisions.json").read_text()
     else:
@@ -202,6 +211,7 @@ def test_codex_driver_consumes_recorded_nonblocking_safety_warning(tmp_path, cho
     workflow["expanders"] = []
     write(tmp_path, ".allforai/bootstrap/workflow.json", workflow)
     write(tmp_path, ".allforai/bootstrap/export-report.json", {"status": "passed"})
+    publish_evidence(tmp_path)
     write(tmp_path, ".allforai/bootstrap/run-warnings.json", {"warnings": ["Slow staging API"]})
     assert invoke(tmp_path, {"operation": "run-policy", "answers": dict(POLICY, on_safety_warning=choice), "user_reference": "run entry"}).returncode == 0
     result = subprocess.run([sys.executable, str(driver), "Export orders", "1"], cwd=tmp_path, text=True, capture_output=True)

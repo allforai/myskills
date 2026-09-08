@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from .test_bootstrap_scope import project, write, gate, codex_transition
+from .test_bootstrap_scope import project, write, gate, codex_transition, publish_contract
 from .test_product_intent_session import invoke, draft, decide, TOPICS
 from .test_validate_bootstrap import ATTENTION_CONTRACT_BODY
 
@@ -37,6 +37,7 @@ def prepared_plan(root, host):
     return {"operation": "plan", "nodes": [historical, {
         "node_id": "deliver-orders", "capability": "implement", "goal": "Deliver confirmed orders",
         "intent_ids": list(TOPICS), "responsibilities": ["product", "technical", "implementation", "documentation", "verification"],
+        "source_inputs": ["orders.py"],
         "exit_artifacts": [".allforai/bootstrap/order-verification.json"], "body": ATTENTION_CONTRACT_BODY}],
         "transition_log": history, "not_applicable": {"experience": "Headless API"}}
 
@@ -62,6 +63,8 @@ def test_product_plan_preserves_unrelated_completed_work_and_provenance(tmp_path
     workflow = json.loads(result.stdout)["workflow"]
     assert workflow["nodes"][0] == plan["nodes"][0]
     assert workflow["transition_log"] == plan["transition_log"]
+    assert all((tmp_path / p).read_bytes() == content for p, content in before.items())
+    publish_contract(tmp_path, "deliver-orders")  # Only the new scoped node observes; history keeps its contract.
     assert all((tmp_path / p).read_bytes() == content for p, content in before.items())
     for name in GATES:
         result = gate(tmp_path, name)
@@ -121,6 +124,7 @@ def test_supplied_completed_brief_keeps_historical_acceptance(tmp_path, host):
     assert historical["acceptance"] == ["Historical inventory reconciles"]
     assert historical["decision_inputs"] == []
     assert "Historical inventory reconciles" in spec.read_text()
+    publish_contract(tmp_path, "deliver-orders")
     for name in GATES:
         result = gate(tmp_path, name)
         assert result.returncode == 0, (name, result.stdout, result.stderr)

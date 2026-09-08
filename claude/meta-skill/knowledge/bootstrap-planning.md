@@ -99,7 +99,10 @@ a prerequisite, must consume at least one in-scope requirement; absent or empty
 references cannot authorize extra work. Retained unrelated completed branches
 keep their historical contracts. On each consuming node emit `requirement_refs`,
 `responsibilities` (the applicable entries from `implementation`, `documentation`,
-`verification`) and the reference paths in `decision_inputs`. The Node-spec
+`verification`), the reference paths in `decision_inputs`, and `source_inputs`:
+the project-relative product source the node traces to, or explicit `[]` only
+when no product source is relevant. The public gates refuse a scoped node that
+omits or malforms this declaration; freshness is not opt-in. The Node-spec
 mirrors these fields and explains the actual code boundary, relevant document
 updates, acceptance evidence and repair owner. This is a responsibility contract,
 not a fixed node menu. Audits inspect semantic adequacy; labels alone are not proof.
