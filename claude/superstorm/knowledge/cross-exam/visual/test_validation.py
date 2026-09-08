@@ -659,7 +659,7 @@ def test_frozen_inventory_desktop_floor_is_enforced_on_replay(sample):
     assert '1920' in reason and '1440' in reason
 
 
-def _layout_reason(sample, rules, width_range='global', surfaces=None):
+def _layout_reason(sample, rules, width_range='global', surfaces=None, readback_width='auto'):
     """Freeze a baseline whose layout rules are `rules` over an inventory with the given width range."""
     root, write, cfg, case, report, entry, ledger = sample
     baseline = json.loads((root / cfg['baseline_ref']).read_text())
@@ -694,6 +694,11 @@ def _layout_reason(sample, rules, width_range='global', surfaces=None):
                 if 'case_id' in holder:
                     holder['case_id'] = rows[0]['id']
                     holder.update({a: rows[0][a] for a in AXES})
+                    width = inventory['width_range']['min'] if readback_width == 'auto' else readback_width
+                    if width is not None:
+                        holder.setdefault('readback', {})['width'] = width
+                    else:
+                        holder.pop('readback', None)
             write(ref, obj)
     return visual_reason(entry, ledger, root)
 
@@ -834,6 +839,7 @@ def test_fixed_size_window_accepts_one_end(sample):
             if 'case_id' in holder:
                 holder['case_id'] = rows[0]['id']
                 holder.update({a: rows[0][a] for a in AXES})
+                holder['readback'] = {'width': 1024}
         write(ref, obj)
     assert visual_reason(entry, ledger, root) is None
 
@@ -861,3 +867,41 @@ def test_interaction_baseline_layout_literals_are_not_window_pins(sample):
 @pytest.mark.parametrize('text', ['视口 1440x900px 下侧栏展开', 'x820px 无意义', '版本 H.264 pt 无关'])
 def test_width_literal_needs_a_whole_number(sample, text):
     assert _layout_reason(sample, [text]) is None
+
+
+def test_a_pinned_width_hidden_in_another_category_is_refused(sample):
+    root, write, cfg, case, report, entry, ledger = sample
+    baseline = json.loads((root / cfg['baseline_ref']).read_text())
+    baseline['categories']['spacing']['rules'] = ['消息列 820px 居中，两侧留白']
+    cfg['baseline_digest'] = cfg['interaction_digest'] = write(cfg['baseline_ref'], baseline)
+    for ref in ('evidence/q1/manifest.json', 'evidence/q1/review.json'):
+        obj = json.loads((root / ref).read_text())
+        for holder in obj.get('captures', [obj]):
+            holder['baseline_digest'] = holder['interaction_digest'] = cfg['baseline_digest']
+        write(ref, obj)
+    reason = visual_reason(entry, ledger, root)
+    assert reason and 'spacing' in reason and '820px' in reason
+
+
+@pytest.mark.parametrize('blank', ['​', '﻿ ‍', '⠀'])
+def test_invisible_allowance_is_not_an_allowance(sample, blank):
+    ends = {'1024': {'empty': '两侧各 ≤ 10%'}, '1920': {'empty': blank}}
+    reason = _layout_reason(sample, [{'rule': '消息列 820px 居中', 'ends': ends}])
+    assert reason and 'empty' in reason
+
+
+@pytest.mark.parametrize('text', ['消息列 820 像素 居中', 'column 820 pixels centred', '主列 51.25rem 居中',
+                                  '消息列 max-width: 820，居中'])
+def test_a_width_written_around_the_literal_is_still_pinned(sample, text):
+    reason = _layout_reason(sample, [text])
+    assert reason and '两端' in reason
+
+
+def test_capture_must_read_back_the_width_it_claims(sample):
+    """A device value is a claim about the window; only the app can say how wide it actually rendered."""
+    rule = {'rule': '消息列 820px 居中', 'ends': GOOD_ENDS}
+    assert _layout_reason(sample, [rule], readback_width=1024) is None
+    reason = _layout_reason(sample, [rule], readback_width=None)
+    assert reason and 'width' in reason
+    reason = _layout_reason(sample, [rule], readback_width=2000)
+    assert reason and '1024' in reason

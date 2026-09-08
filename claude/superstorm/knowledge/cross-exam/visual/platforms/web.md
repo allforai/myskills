@@ -17,7 +17,7 @@ inventory 顶层写 `platform: "web"`：校验器据此要求每个页面声明 
 
 维度没有"不适用"：每个维度都是非空的具体值列表，某维度对该产品无意义就取一个值并记依据。整条用例的 applicability: not_applicable 只留给组合本身不可能存在的情况（如某页面在某设备上根本不可达），须有 reason 与 basis。
 
-施加与核对：优先本机可见窗口工具或页面自动化工具（Playwright MCP、Chrome DevTools MCP、playwright-cli），用它们的 resize / emulate / 颜色方案 / locale 接口设置维度，然后在页面里核对真正生效（`window.innerWidth`、`matchMedia('(prefers-color-scheme: dark)')`、`document.documentElement.lang`、计算后的根字号），核对结果写进 capture。无法施加的维度记无法自证，不凭截图元数据补。motion 用录屏或按时间戳抓帧，静态截图不证明动画。截图模式见下一节：全页与视口不是两种存法，是两种不同的画面。
+施加与核对：优先本机可见窗口工具或页面自动化工具（Playwright MCP、Chrome DevTools MCP、playwright-cli），用它们的 resize / emulate / 颜色方案 / locale 接口设置维度，然后在页面里核对真正生效（`window.innerWidth` 写进 `readback.width`，须等于用例设备值的宽度——inventory 有 `width_range` 时校验器拒缺项与不符项、`matchMedia('(prefers-color-scheme: dark)')`、`document.documentElement.lang`、计算后的根字号），核对结果写进 capture。无法施加的维度记无法自证，不凭截图元数据补。motion 用录屏或按时间戳抓帧，静态截图不证明动画。截图模式见下一节：全页与视口不是两种存法，是两种不同的画面。
 
 ## 布局阈值：device 轴从代码来，不从用户的屏幕来
 

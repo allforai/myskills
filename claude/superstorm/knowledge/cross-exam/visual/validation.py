@@ -4,6 +4,7 @@ import importlib.util
 import json
 import math
 import re
+import unicodedata
 from pathlib import Path
 
 
@@ -146,7 +147,19 @@ def baseline(run, config):
 
 # a width literal: digits, optional space, px/pt/dp, not followed by another ASCII letter; CJK text may
 # touch it on either side ("820px居中") and case is not meaningful ("820PX")
-WIDTH_LITERAL = re.compile(r'(?<![A-Za-z0-9.])\d+\s*(px|pt|dp)(?![A-Za-z])', re.IGNORECASE)
+WIDTH_LITERAL = re.compile(
+    r'(?<![A-Za-z0-9.])\d+(?:\.\d+)?\s*(?:px|pt|dp|r?em|像素|pixels?)(?![A-Za-z])'
+    r'|(?:max-|min-)?width\s*[:：=]\s*\d+(?:\.\d+)?', re.IGNORECASE)
+
+
+def _visible(text):
+    """An allowance is text a human can read: strip whitespace and every format/invisible code point."""
+    return ''.join(ch for ch in text if not ch.isspace() and unicodedata.category(ch) not in ('Cf', 'Cc', 'Zs')
+                   and ch not in '\u2800\u3164\uffa0')
+
+
+WIDTH_CATEGORIES = ('spacing', 'components', 'direction', 'typography', 'navigation', 'states', 'feedback',
+                    'icons', 'color', 'motion', 'environment')
 
 
 def _rule_text(rule):
@@ -189,8 +202,13 @@ def pinned_layout_reason(baseline_obj, inventory):
         if not isinstance(ends, dict) or set(ends.keys()) != expected:
             return 'layout 规则两端须是 width_range 的 %d 与 %d: %s' % (rng['min'], rng['max'], text)
         for width, end in ends.items():
-            if not isinstance(end, dict) or not isinstance(end.get('empty'), str) or not end['empty'].strip():
+            if not isinstance(end, dict) or not isinstance(end.get('empty'), str) or not _visible(end['empty']):
                 return 'layout 规则在 %s 宽度处缺允许空区 empty: %s' % (width, text)
+    for category in WIDTH_CATEGORIES:
+        other = (baseline_obj.get('categories') or {}).get(category)
+        for rule in (other.get('rules') if isinstance(other, dict) else None) or []:
+            if isinstance(rule, str) and WIDTH_LITERAL.search(rule):
+                return '%s 类里藏着钉死宽度的规则，须移到 layout 类并写两端: %s' % (category, rule)
     return ''
 
 
@@ -221,6 +239,21 @@ def rtl_reason(case, capture, rtl_locales):
         return ''
     if _readback(capture).get('direction', capture.get('direction')) != 'rtl':
         return 'RTL 语言用例须读回 direction=rtl: ' + case.get('id', '?')
+    return ''
+
+
+def width_readback_reason(case, capture, inventory):
+    """A device value is a claim about the window; only the app can say how wide it rendered. Required
+    whenever the inventory declares a width range, the check the pinned rules hang on."""
+    if not inventory.get('width_range') and not any(isinstance(sf, dict) and sf.get('width_range')
+                                                     for sf in inventory.get('surfaces') or []):
+        return ''
+    got = _readback(capture).get('width')
+    if not isinstance(got, int) or isinstance(got, bool):
+        return 'capture 缺应用内读回的 width: ' + case.get('id', '?')
+    want = _matrix.effective_width(case.get('device', ''), case.get('orientation', ''), inventory.get('devices'))
+    if got != want:
+        return 'width 读回值 %d 与用例设备宽度 %d 不符: %s' % (got, want, case.get('id', '?'))
     return ''
 
 
@@ -328,7 +361,8 @@ def visual_reason(entry, ledger, run):
             if not capture.get('build') or not capture.get('captured_at'):
                 raise ValueError('缺构建或截图时间')
             bad = (web_capture_reason(case, capture, platform) or scroll_reason(case, capture)
-                   or rtl_reason(case, capture, rtl_locales) or readback_reason(case, capture, support))
+                   or rtl_reason(case, capture, rtl_locales) or readback_reason(case, capture, support)
+                   or width_readback_reason(case, capture, inventory))
             if bad:
                 raise ValueError(bad)
             if capture.get('baseline_digest') != config['baseline_digest']:

@@ -13,6 +13,7 @@
 - os：Android 版本与 API 级别（`adb shell getprop ro.build.version.release` / `sdk`），厂商皮肤（One UI、MIUI）按用户确认是否分列。
 - appearance：`adb shell cmd uimode night yes|no`，应用内主题开关另算一个值；读回 `Configuration.uiMode & UI_MODE_NIGHT_MASK` 写进 `readback.appearance`。
 - dynamic_type：`adb shell settings put system font_scale 1.0|1.3|2.0`，读回 `Configuration.fontScale` 写进 `readback.dynamic_type`；显示大小 `wm density` 另算一档。
+- width：`Resources.configuration.screenWidthDp` 或 `WindowMetricsCalculator` 的宽度换算成 dp，写 `readback.width`，须等于用例设备在该方向下的有效宽度。
 - locale：`adb shell setprop persist.sys.locale` 或系统设置切换，Android 13+ 另可 `adb shell cmd locale set-app-locales <package> --locales ja`；读回 `Configuration.locales[0]` 写进 `readback.locale`，`readback.direction` 取 `Configuration.layoutDirection` / `View.layoutDirection`（`supportsRtl=false` 时 RTL 语言永远读回 ltr，那是一条 gap）。
 - orientation：`adb shell settings put system accelerometer_rotation 0` 加 `user_rotation 0|1`，读回 `Configuration.orientation` 写进 `readback.orientation`。
 - state：加载、空、错误、权限拒绝、离线、键盘弹出、进程被杀后恢复（`adb shell am kill` 再回前台），按页面归入。

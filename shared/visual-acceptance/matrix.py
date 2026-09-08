@@ -50,7 +50,7 @@ def effective_form_factor(platform, form_factor):
         return implied
     if form_factor not in FORM_FACTORS:
         raise ValueError('invalid form_factor (desktop|mobile|both): ' + str(form_factor))
-    if implied and form_factor != implied:
+    if implied and form_factor not in (implied, 'both'):
         raise ValueError('form_factor %s contradicts platform %s (implies %s)' % (form_factor, platform, implied))
     return form_factor
 
@@ -62,6 +62,10 @@ def check_desktop_floor(width_range, form_factor):
             raise ValueError('%s inventory must declare a global width_range (its max is checked against '
                              'the desktop floor %d)' % (form_factor, DESKTOP_WIDTH_FLOOR))
         _check_range(width_range, 'inventory')
+        if width_range.get('fixed_window') is True:
+            if width_range['min'] != width_range['max']:
+                raise ValueError('fixed_window width_range must have min == max')
+            return          # a window the user cannot resize has no wide end to test
         if width_range['max'] < DESKTOP_WIDTH_FLOOR:
             raise ValueError('desktop width floor %d not reached: width_range.max is %d'
                              % (DESKTOP_WIDTH_FLOOR, width_range['max']))

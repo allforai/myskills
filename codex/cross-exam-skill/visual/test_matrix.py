@@ -414,3 +414,25 @@ def test_inventory_keys_track_expand_signature():
     from matrix import INVENTORY_KEYS, expand
     params = [p for p in inspect.signature(expand).parameters if p != 'surfaces']
     assert sorted(INVENTORY_KEYS) == sorted(params)
+
+
+def test_tablet_and_desktop_modes_may_declare_both():
+    from matrix import expand_inventory
+    assert expand_inventory(_desktop_inventory(platform='ios', form_factor='both', max_width=1920))
+    assert expand_inventory(_desktop_inventory(platform='android', form_factor='both', max_width=1920))
+    assert expand_inventory(_desktop_inventory(platform='macos', form_factor='both', max_width=1920))
+    with pytest.raises(ValueError, match='contradicts'):
+        expand_inventory(_desktop_inventory(platform='ios', form_factor='desktop', max_width=1920))
+    with pytest.raises(ValueError, match='contradicts'):
+        expand_inventory(_desktop_inventory(platform='macos', form_factor='mobile'))
+
+
+def test_a_window_that_cannot_be_resized_is_exempt_from_the_floor():
+    from matrix import expand_inventory
+    inv = _desktop_inventory(max_width=1200)
+    inv['width_range'] = {'min': 1200, 'max': 1200, 'basis': 'BrowserWindow resizable:false', 'fixed_window': True}
+    inv['surfaces'][0]['axes']['device'] = ['1200x800@2']
+    assert expand_inventory(inv)
+    del inv['width_range']['fixed_window']
+    with pytest.raises(ValueError, match='1920'):
+        expand_inventory(inv)
