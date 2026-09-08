@@ -913,7 +913,7 @@ def session(root, request):
                     try:
                         _verified(root, item, statuses=("removed",), legacy=_legacy_local(root, profile))
                     except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError):
-                        if op != "confirm":
+                        if op not in ("confirm", "remove"):
                             raise ValueError("Unverified legacy removal needs explicit confirmation")
                     else:
                         raise ValueError("Removed intent cannot be silently restored")
@@ -939,6 +939,18 @@ def session(root, request):
                     concept["requirements"].append(replacement)
                     item = replacement
                 elif op == "confirm" and item["status"] != "pending":
+                    if (_legacy_local(root, profile) and item["status"] == "confirmed"
+                            and not _journal_reference(previous or "")):
+                        try:
+                            _hand_projection(root, item)
+                        except (ValueError, TypeError, KeyError, AttributeError):
+                            pass  # Unverified provenance still needs a fresh explicit decision.
+                        else:
+                            original = item["confirmation"]
+                            if (request["user_reference"] != original["reference"]
+                                    or action["reason"] != original["reason"]):
+                                raise ValueError("Record the original user reference and reason unchanged; "
+                                                 "legacy reuse is not new consent")
                     try:
                         _confirmed(root, item)
                     except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError):

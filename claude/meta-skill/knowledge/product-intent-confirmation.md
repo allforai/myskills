@@ -66,6 +66,8 @@ not additional product authorities.
   is pending with its reason. A removed item with that provenance stays removed
   history, never pending or new work, and needs explicit `restore` to revive it.
   An invalid tombstone is pending verification, not authoritative removal or approval.
+  If the user confirms the removal, record `remove` directly: retain the old
+  tombstone and append a confirmed removed revision without activating it first.
   `confirm` then recovers the gates without a
   session marker, freeze or plan. A later local `freeze` records the marker and is
   journal-backed: a user-turn item it includes must first be recorded with one

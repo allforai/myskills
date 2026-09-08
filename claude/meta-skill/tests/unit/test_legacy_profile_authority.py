@@ -338,3 +338,43 @@ def test_legacy_removed_history_resumes_as_removed_not_as_new_work(tmp_path, hos
     before.pop(tmp_path / ".allforai/bootstrap/unattended-run-readiness.json", None)
     if provenance == "invalid":
         assert all(p.read_bytes() == content for p, content in before.items())
+
+
+@pytest.mark.parametrize("host", ["claude", "codex"])
+@pytest.mark.parametrize("changed", ["user_reference", "reason"])
+def test_recording_legacy_confirmation_cannot_invent_a_new_consent_source(tmp_path, host, changed):
+    requirement = project(tmp_path, confirmed=True, host=host)
+    confirmation = requirement["confirmation"]
+    request = {"operation": "decide", "batch_id": "record", "topic": "Record existing confirmation",
+               "user_reference": confirmation["reference"],
+               "actions": [{"operation": "confirm", "id": "export", "reason": confirmation["reason"]}]}
+    if changed == "user_reference":
+        request["user_reference"] = "INVENTED new user turn"
+    else:
+        request["actions"][0]["reason"] = "INVENTED new reason"
+    before = snapshot(tmp_path)
+    refused = invoke(tmp_path, request)
+    assert refused.returncode == 1 and "original" in json.loads(refused.stdout)["error"], refused.stdout
+    assert snapshot(tmp_path) == before
+    request["user_reference"] = confirmation["reference"]
+    request["actions"][0]["reason"] = confirmation["reason"]
+    recorded = invoke(tmp_path, request)
+    assert recorded.returncode == 0, recorded.stdout
+    stored = json.loads((tmp_path / REQUIREMENTS).read_text())["requirements"][0]
+    assert stored["prior_confirmation"] == confirmation
+    assert stored["confirmation"]["user_reference"] == confirmation["reference"]
+
+
+@pytest.mark.parametrize("host", ["claude", "codex"])
+def test_unverified_removal_can_be_confirmed_as_removed_without_activation(tmp_path, host):
+    requirement = project(tmp_path, confirmed=True, host=host)
+    tombstone = dict(requirement, id="old", status="removed",
+                     confirmation={"source": "code", "reference": "unverified history", "reason": "Unknown"})
+    write(tmp_path, REQUIREMENTS, {"requirements": [requirement, tombstone]})
+    removed = decide(tmp_path, [{"operation": "remove", "id": "old", "reason": "The prior removal is correct"}],
+                     "verify-removal")
+    assert removed.returncode == 0, removed.stdout
+    history = [i for i in json.loads((tmp_path / REQUIREMENTS).read_text())["requirements"] if i["id"] == "old"]
+    assert [(i["revision"], i["status"]) for i in history] == [(1, "removed"), (2, "removed")]
+    assert history[0] == tombstone
+    assert "old" not in pending_items(json.loads(invoke(tmp_path, {"operation": "resume"}).stdout))
