@@ -91,6 +91,12 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
   - `agent_task.output_file` 存在时，transcript 必须能证明证据是实测官写的：证据目录里每个文件名都出现在
     transcript 里，**或** transcript 提到过该证据目录路径（脚本循环生成的文件名不会逐个出现在 transcript 里，
     但写入目录会）；两者都没有才拒渲。文件不在（换机器、临时目录已清）只在报告标"transcript 不可核"，不拒渲。
+  - 名字对上之后还要落在**探查窗口（probe window）**里：窗口 = [entry 的 `probed_at`，transcript 文件的修改时间
+    + 120 秒容差]，即实测官从被派到返回的那段时间。证据目录里**每个**文件的修改时间都核，落在窗口外就整条拒渲，
+    理由点名文件、它的时间和窗口——transcript 点过名的文件同样核（点名证明实测官打算写它，不证明磁盘上这份
+    就是它写的）；提过目录之后再往目录里加的文件由此拦下，脚本循环在窗口内写的文件照旧凭目录提及放行。
+    `probed_at` 晚于 transcript 修改时间即空窗口，全部拒渲。transcript 不在就不核窗口（只标不可核，不从 ledger
+    自身时间戳造窗口）；某个文件的修改时间读不出来只在报告标 note 点名该文件，不拒渲。
   - 重派前首派产物挪到 `evidence/qNN.rejected-N/`，不被任何 entry 引用；渲染器只读 entry 引用的目录。
     重派后落账的 entry 带 `redispatched: N`（可选，纯记录）；首派是降档模型时再带 `first_agent_model`。
   - `probed_at` 每条必写（ISO 8601）；渲染器在总览打印首末问时间与最短间隔，间隔不足 60 秒的 runtime 相邻问点名。
