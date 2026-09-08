@@ -7,6 +7,8 @@ from validation import AXES, CATEGORIES, visual_reason, visual_section
 from matrix import expand
 from PIL import Image
 
+FLUID = {'rule': 'approved', 'pinned': False}   # every layout rule declares pinned or fluid (#51)
+
 
 @pytest.fixture
 def sample(tmp_path):
@@ -21,8 +23,8 @@ def sample(tmp_path):
     image_hash = hashlib.sha256(image.read_bytes()).hexdigest()
     references = {'evidence/q1/image.png': image_hash}
     digest = write('visual/baseline.json', {'categories': {
-        k: {'rules': ['approved'], 'confirmation': 'user approved', 'confirmed_at': '2026-09-06',
-            'reference_images': references}
+        k: {'rules': [FLUID] if k == 'layout' else ['approved'], 'confirmation': 'user approved',
+            'confirmed_at': '2026-09-06', 'reference_images': references}
         for k in CATEGORIES}})
     cfg = {'facet_ids': ['F1'], 'baseline_status': 'confirmed',
            'baseline_ref': 'visual/baseline.json', 'baseline_digest': digest,
@@ -704,16 +706,48 @@ def _layout_reason(sample, rules, width_range='global', surfaces=None, readback_
 
 
 GOOD_ENDS = {'1024': {'empty': '两侧各 ≤ 内容宽度 10%'}, '1920': {'empty': '两侧各 ≤ 内容宽度 40%，其余由侧栏与附件栏填充'}}
+PINNED = {'rule': '消息列 820px 居中', 'pinned': True, 'ends': GOOD_ENDS}
 
 
-def test_pinned_string_layout_rule_is_refused(sample):
-    reason = _layout_reason(sample, ['消息列 820px 居中'])
-    assert reason and '820px' in reason and '两端' in reason
+@pytest.mark.parametrize('text', ['消息列 820px 居中', '侧栏固定在左侧', 'approved'])
+def test_pinned_string_layout_rule_is_refused(sample, text):
+    """A bare string in the layout category declares nothing; the reason names both shapes."""
+    reason = _layout_reason(sample, [text])
+    assert reason and text in reason and 'pinned: false' in reason and 'pinned: true, ends' in reason
 
 
 def test_pinned_object_rule_with_both_ends_is_accepted(sample):
-    assert _layout_reason(sample, [{'rule': '消息列 820px 居中', 'ends': GOOD_ENDS}]) is None
-    assert _layout_reason(sample, ['侧栏固定在左侧', {'rule': '消息列 820px 居中', 'ends': GOOD_ENDS}]) is None
+    assert _layout_reason(sample, [PINNED]) is None
+    assert _layout_reason(sample, [{'rule': '侧栏固定在左侧', 'pinned': False}, PINNED]) is None
+
+
+def test_pinned_rule_without_ends_is_refused(sample):
+    reason = _layout_reason(sample, [{'rule': '消息列 820px 居中', 'pinned': True}])
+    assert reason and '820px' in reason and 'ends' in reason
+
+
+def test_fluid_rule_naming_a_width_is_refused(sample):
+    reason = _layout_reason(sample, [{'rule': '消息列 820px 居中', 'pinned': False}])
+    assert reason and '820px' in reason and '流式' in reason
+
+
+def test_fluid_rule_carrying_ends_is_refused(sample):
+    reason = _layout_reason(sample, [{'rule': '侧栏固定在左侧', 'pinned': False, 'ends': GOOD_ENDS}])
+    assert reason and '侧栏固定在左侧' in reason and '流式' in reason
+
+
+def test_pinned_rule_without_a_literal_is_checked_by_its_ends(sample):
+    """'列宽等于设计稿' pins a width the text cannot show; the declaration makes it checkable."""
+    assert _layout_reason(sample, [{'rule': '列宽等于设计稿', 'pinned': True, 'ends': GOOD_ENDS}]) is None
+    reason = _layout_reason(sample, [{'rule': '列宽等于设计稿', 'pinned': True, 'ends': {'1024': {'empty': 'x'}}}])
+    assert reason and '1920' in reason
+
+
+@pytest.mark.parametrize('rule', [{'rule': '侧栏固定在左侧'}, {'rule': '侧栏固定在左侧', 'pinned': 'yes'},
+                                  {'rule': '侧栏固定在左侧', 'pinned': 1}, {'rule': '侧栏固定在左侧', 'pinned': None}])
+def test_undeclared_pinned_is_refused(sample, rule):
+    reason = _layout_reason(sample, [rule])
+    assert reason and 'pinned' in reason and '侧栏固定在左侧' in reason
 
 
 @pytest.mark.parametrize('ends', [
@@ -725,22 +759,24 @@ def test_pinned_object_rule_with_both_ends_is_accepted(sample):
     'wide ok',                                                             # malformed ends
 ])
 def test_bad_ends_are_refused_with_a_reason(sample, ends):
-    reason = _layout_reason(sample, [{'rule': '消息列 820px 居中', 'ends': ends}])
+    reason = _layout_reason(sample, [{**PINNED, 'ends': ends}])
     assert reason and '消息列 820px 居中' in reason
 
 
 def test_pinned_rule_without_width_range_is_refused(sample):
-    reason = _layout_reason(sample, [{'rule': '消息列 820px 居中', 'ends': GOOD_ENDS}], width_range=None)
+    reason = _layout_reason(sample, [PINNED], width_range=None)
     assert reason and 'width_range' in reason
 
 
-def test_unpinned_string_rule_stays_a_string(sample):
-    assert _layout_reason(sample, ['主列随窗口拉伸，侧栏固定']) is None
-    assert _layout_reason(sample, ['主列随窗口拉伸，侧栏固定'], width_range=None) is None
+def test_fluid_rule_needs_no_width_range(sample):
+    fluid = {'rule': '主列随窗口拉伸，侧栏固定', 'pinned': False}
+    assert _layout_reason(sample, [fluid]) is None
+    assert _layout_reason(sample, [fluid], width_range=None) is None
 
 
 def test_malformed_layout_rule_shapes_yield_reasons(sample):
-    for rules in ([42], [{'ends': GOOD_ENDS}], [{'rule': '', 'ends': GOOD_ENDS}], 'not a list'):
+    for rules in ([42], [None], [{'pinned': True, 'ends': GOOD_ENDS}], [{'rule': '', 'pinned': True, 'ends': GOOD_ENDS}],
+                  [{'rule': ['a'], 'pinned': False}], 'not a list', [{'rule': 'x', 'pinned': True, 'ends': None}]):
         reason = _layout_reason(sample, rules)
         assert isinstance(reason, str) and reason
 
@@ -755,7 +791,7 @@ ADMIN_ENDS = {'1280': {'empty': '表格撑满'}, '1920': {'empty': '表格撑满
 
 
 def test_surface_scoped_pinned_rule_checks_that_surface_range(sample):
-    rule = {'rule': '管理表格最小 1200px', 'surface': 'admin', 'ends': ADMIN_ENDS}
+    rule = {'rule': '管理表格最小 1200px', 'pinned': True, 'surface': 'admin', 'ends': ADMIN_ENDS}
     assert _layout_reason(sample, [rule], surfaces=_two_surfaces()) is None
     against_global = {**rule, 'ends': GOOD_ENDS}
     reason = _layout_reason(sample, [against_global], surfaces=_two_surfaces())
@@ -763,20 +799,20 @@ def test_surface_scoped_pinned_rule_checks_that_surface_range(sample):
 
 
 def test_surface_without_own_range_uses_the_global_range(sample):
-    rule = {'rule': '消息列 820px 居中', 'surface': 'home', 'ends': GOOD_ENDS}
+    rule = {**PINNED, 'surface': 'home'}
     assert _layout_reason(sample, [rule], surfaces=_two_surfaces()) is None
     reason = _layout_reason(sample, [{**rule, 'ends': ADMIN_ENDS}], surfaces=_two_surfaces())
     assert reason and '1024' in reason
 
 
 def test_unknown_surface_on_a_pinned_rule_is_refused(sample):
-    rule = {'rule': '消息列 820px 居中', 'surface': 'ghost', 'ends': GOOD_ENDS}
+    rule = {**PINNED, 'surface': 'ghost'}
     reason = _layout_reason(sample, [rule], surfaces=_two_surfaces())
     assert reason and 'ghost' in reason
 
 
-def test_old_run_without_form_factor_and_with_pinned_string_is_refused_readably(sample):
-    """A run frozen before these checks: web inventory without form_factor, a pinned string layout rule."""
+def test_old_run_without_form_factor_is_refused_readably(sample):
+    """A run frozen before these checks: web inventory without form_factor and below the desktop floor."""
     root, write, cfg, case, report, entry, ledger = sample
     inventory = json.loads((root / cfg['inventory_ref']).read_text())
     inventory.update({'platform': 'web', 'width_range': {'min': 1200, 'max': 1512, 'basis': '用户显示器'}})
@@ -791,18 +827,25 @@ def test_old_run_without_form_factor_and_with_pinned_string_is_refused_readably(
     assert '1920' in reason and '1512' in reason
 
 
+def test_old_baseline_with_string_layout_rules_is_refused_readably(sample):
+    """A baseline frozen before #51 wrote layout rules as strings: refused with the two shapes, not a crash."""
+    reason = _layout_reason(sample, ['approved', '主列随窗口拉伸'])
+    assert reason.startswith('视觉证据无效') and 'pinned: false' in reason and 'approved' in reason
+
+
 @pytest.mark.parametrize('text', ['消息列820px居中', '消息列 820PX 居中', '列宽 820 px', '最小 600pt 宽', '卡片 360dp'])
 def test_width_literal_is_found_without_spaces_or_ascii_boundaries(sample, text):
-    reason = _layout_reason(sample, [text])
-    assert reason and '两端' in reason
+    reason = _layout_reason(sample, [{'rule': text, 'pinned': False}])
+    assert reason and '流式' in reason
 
 
 def test_width_literal_ignores_non_width_tokens(sample):
-    assert _layout_reason(sample, ['pxl 图标', 'dpi 设置跟随系统', '2dpx']) is None
+    fluid = [{'rule': t, 'pinned': False} for t in ('pxl 图标', 'dpi 设置跟随系统', '2dpx')]
+    assert _layout_reason(sample, fluid) is None
 
 
 def test_odd_layout_shapes_name_the_problem_not_the_python_error(sample):
-    reason = _layout_reason(sample, [{'rule': '消息列 820px 居中', 'surface': ['home'], 'ends': GOOD_ENDS}])
+    reason = _layout_reason(sample, [{**PINNED, 'surface': ['home']}])
     assert reason and '页面' in reason and 'unhashable' not in reason
     root, write, cfg, case, report, entry, ledger = sample
     baseline = json.loads((root / cfg['baseline_ref']).read_text())
@@ -820,7 +863,7 @@ def test_odd_layout_shapes_name_the_problem_not_the_python_error(sample):
 def test_fixed_size_window_accepts_one_end(sample):
     rng = {'min': 1024, 'max': 1024, 'basis': 'kiosk window'}
     root, write, cfg, case, report, entry, ledger = sample
-    rule = {'rule': '消息列 820px 居中', 'ends': {'1024': {'empty': '两侧各 ≤ 10%'}}}
+    rule = {'rule': '消息列 820px 居中', 'pinned': True, 'ends': {'1024': {'empty': '两侧各 ≤ 10%'}}}
     baseline = json.loads((root / cfg['baseline_ref']).read_text())
     baseline['categories']['layout']['rules'] = [rule]
     cfg['baseline_digest'] = cfg['interaction_digest'] = write(cfg['baseline_ref'], baseline)
@@ -845,7 +888,8 @@ def test_fixed_size_window_accepts_one_end(sample):
 
 
 def test_dangling_surface_is_refused_even_without_ends(sample):
-    reason = _layout_reason(sample, [{'rule': '侧栏固定在左侧', 'surface': 'ghost'}], surfaces=_two_surfaces())
+    reason = _layout_reason(sample, [{'rule': '侧栏固定在左侧', 'pinned': False, 'surface': 'ghost'}],
+                            surfaces=_two_surfaces())
     assert reason and 'ghost' in reason
 
 
@@ -866,7 +910,7 @@ def test_interaction_baseline_layout_literals_are_not_window_pins(sample):
 
 @pytest.mark.parametrize('text', ['视口 1440x900px 下侧栏展开', 'x820px 无意义', '版本 H.264 pt 无关'])
 def test_width_literal_needs_a_whole_number(sample, text):
-    assert _layout_reason(sample, [text]) is None
+    assert _layout_reason(sample, [{'rule': text, 'pinned': False}]) is None
 
 
 def test_a_pinned_width_hidden_in_another_category_is_refused(sample):
@@ -886,20 +930,20 @@ def test_a_pinned_width_hidden_in_another_category_is_refused(sample):
 @pytest.mark.parametrize('blank', ['​', '﻿ ‍', '⠀'])
 def test_invisible_allowance_is_not_an_allowance(sample, blank):
     ends = {'1024': {'empty': '两侧各 ≤ 10%'}, '1920': {'empty': blank}}
-    reason = _layout_reason(sample, [{'rule': '消息列 820px 居中', 'ends': ends}])
+    reason = _layout_reason(sample, [{**PINNED, 'ends': ends}])
     assert reason and 'empty' in reason
 
 
 @pytest.mark.parametrize('text', ['消息列 820 像素 居中', 'column 820 pixels centred', '主列 51.25rem 居中',
                                   '消息列 max-width: 820，居中'])
-def test_a_width_written_around_the_literal_is_still_pinned(sample, text):
-    reason = _layout_reason(sample, [text])
-    assert reason and '两端' in reason
+def test_a_width_written_around_the_literal_is_still_a_width(sample, text):
+    reason = _layout_reason(sample, [{'rule': text, 'pinned': False}])
+    assert reason and '流式' in reason
 
 
 def test_capture_must_read_back_the_width_it_claims(sample):
     """A device value is a claim about the window; only the app can say how wide it actually rendered."""
-    rule = {'rule': '消息列 820px 居中', 'ends': GOOD_ENDS}
+    rule = PINNED
     assert _layout_reason(sample, [rule], readback_width=1024) is None
     reason = _layout_reason(sample, [rule], readback_width=None)
     assert reason and 'width' in reason

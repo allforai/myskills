@@ -166,32 +166,40 @@ def _rule_text(rule):
     return rule if isinstance(rule, str) else json.dumps(rule, ensure_ascii=False)[:120]
 
 
+LAYOUT_SHAPES = '{rule, pinned: false} 或 {rule, pinned: true, ends}'
+
+
 def pinned_layout_reason(baseline_obj, inventory):
-    """A layout rule that pins a width (a width literal in its text, or an `ends` mapping) is *pinned*: it
-    must be an object {rule, ends} whose ends are the applicable width range's min and max, each with a
-    non-empty allowed empty area. Otherwise "820px centered" freezes as a rule a wide window trivially
-    satisfies and the reviewer has no sentence to cite. Returns '' or the refusal reason."""
+    """Every layout rule declares whether it pins a width: {rule, pinned: false} is fluid, {rule, pinned:
+    true, ends} pins one and its ends must be the applicable width range's min and max, each with a
+    non-empty allowed empty area. The declaration is the decision; the width literal only guards it (a
+    fluid rule that names a width is a contradiction). Otherwise "820px centered" freezes as a rule a wide
+    window trivially satisfies and the reviewer has no sentence to cite. Returns '' or the refusal reason."""
     rules = ((baseline_obj.get('categories') or {}).get('layout') or {}).get('rules')
     if rules is not None and not isinstance(rules, list):
         return 'layout 规则须是列表'
     for rule in rules or []:
         if isinstance(rule, str):
-            if WIDTH_LITERAL.search(rule):
-                return 'layout 规则钉死了宽度却没写两端空区（须写成 {rule, ends} 对象）: ' + rule
-            continue
+            return 'layout 规则不能是字符串，须写成 %s 对象: %s' % (LAYOUT_SHAPES, rule)
         if not isinstance(rule, dict) or not isinstance(rule.get('rule'), str) or not rule['rule'].strip():
             return 'layout 规则形状无效: ' + _rule_text(rule)
         text = rule['rule']
+        if not isinstance(rule.get('pinned'), bool):
+            return 'layout 规则须声明 pinned（%s）: %s' % (LAYOUT_SHAPES, text)
         rng = inventory.get('width_range')
         if 'surface' in rule:
             surfaces = {sf.get('id'): sf for sf in inventory.get('surfaces') or [] if isinstance(sf, dict)}
             if not isinstance(rule['surface'], str) or rule['surface'] not in surfaces:
                 return 'layout 规则指向 inventory 里没有的页面 %s: %s' % (rule['surface'], text)
             rng = surfaces[rule['surface']].get('width_range') or rng
-        if 'ends' not in rule:
+        if not rule['pinned']:
             if WIDTH_LITERAL.search(text):
-                return 'layout 规则钉死了宽度却没写两端空区（须写成 {rule, ends} 对象）: ' + text
+                return 'layout 规则声明为流式（pinned: false）却写了宽度: ' + text
+            if 'ends' in rule:
+                return 'layout 规则声明为流式（pinned: false）却带 ends: ' + text
             continue
+        if 'ends' not in rule:
+            return 'layout 规则声明钉死（pinned: true）却没写两端空区 ends: ' + text
         if not isinstance(rng, dict) or any(not isinstance(rng.get(k), int) or isinstance(rng.get(k), bool)
                                              for k in ('min', 'max')):
             return 'layout 规则钉死了宽度但 inventory 未声明 width_range: ' + text
