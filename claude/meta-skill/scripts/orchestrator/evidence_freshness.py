@@ -276,29 +276,38 @@ def scope_blockers(root, workflow):
     return grouped
 
 
-def external_conflicts(root):
-    """Currently detected external changes that need a user decision.
+def routed_external_changes(root):
+    """Detected external changes grouped by the delivery they reach.
 
-    The boundary comparison belongs to the gates themselves: a change is detected,
-    classified and settled here, so drift reaches its repair owner without an
-    earlier explicit ``external-changes`` invocation. Only a change whose identity
-    is still present in the source and whose classification is a conflict appears;
-    a verified fact update is not a decision.
+    The boundary comparison belongs to the gates themselves, so drift reaches its
+    repair owner without an earlier explicit ``external-changes`` invocation. The
+    comparison is an observation: it reads the recorded verdicts and never executes
+    the project's acceptance, because running project argv against live source is an
+    act a gate has no mandate for. Two groups come back — changes a standing
+    verification classified as needing a decision, and changes no current
+    verification covers, which are unknown rather than harmless.
+
+    A comparison that cannot be completed is not an absence of conflict. It raises,
+    so every gate fails closed on the undeterminable state, rather than returning an
+    empty result that silently hands affected work back to its node.
     """
-    try:
-        detected, _ = resolve_external_changes(root)
-    except (ValueError, KeyError, TypeError, AttributeError, OSError, StopIteration):
-        # Other gates already fail closed on the same unreadable state; an
-        # undeterminable comparison never invents or hides a user decision.
-        return {}
-    result: dict[str, list[dict[str, Any]]] = {}
+    detected, _, _ = standing_changes(root)
+    conflicts: dict[str, list[dict[str, Any]]] = {}
+    unverified: dict[str, list[dict[str, Any]]] = {}
     for change in detected:
-        if change['classification'] in (None, 'fact-update'):
+        group = (conflicts if change['classification'] in ('product-conflict', 'uncertain')
+                 else unverified if change['classification'] is None else None)
+        if group is None:
             continue
         # An unmapped change belongs to every delivery whose provenance it touches.
         for target in ([change['node_id']] if change['node_id'] else change['impact']['tasks']):
-            result.setdefault(target, []).append(change)
-    return result
+            group.setdefault(target, []).append(change)
+    return conflicts, unverified
+
+
+def external_conflicts(root):
+    """Currently detected external changes a standing verification says need a decision."""
+    return routed_external_changes(root)[0]
 
 
 def undecided_conflicts(external, node_id):
@@ -502,34 +511,104 @@ def classify_external_change(root, record):
              'stdout': verified.stdout, 'stderr': verified.stderr})
 
 
-def resolve_external_changes(root):
-    """Detect, verify and record source changed outside the delivery flow.
+def classification_basis(record, source):
+    """What a verification was run against, so a stale verdict is not reused.
 
-    Recorded user resolutions are preserved: redetecting the same change never
-    reopens a settled decision, and detection never writes to the product journal.
-    Classification executes the delivery's own recorded acceptance, so it runs once
-    per change identity and is reused afterwards: an unchanged source repeats
-    identically, and a record the source has moved past keeps its history.
+    A verdict is not a property of the changed file alone: it executes the
+    delivery's recorded acceptance, which reads the rest of the source and can be
+    republished with a different command. When either moves, the recorded verdict
+    answers a question nobody is asking. It deliberately excludes the confirmed
+    requirement content, which cannot change what the acceptance does — whether a
+    recorded *decision* still applies to revised intent is ``carried_resolution``'s
+    question. The basis also stays out of ``change_identity``: a decision is about
+    this source, and unrelated source moving must not orphan it.
+
+    What the basis cannot observe — an installed dependency, a service, the
+    environment — is why re-running the verification is always a fresh execution.
     """
+    return digest({'command': ((record or {}).get('verification') or {}).get('command'), 'source': source})
+
+
+def cache_classifications(root, changes):
+    """Persist derived classifications; report whether the cache was written.
+
+    This store holds two different kinds of content under one file. A
+    classification is derived: it is recomputed from the current source whenever
+    it is missing, so failing to write it costs a rerun and nothing else. A user's
+    resolution is authoritative, and only the interactive decision path writes one
+    — never this function, which merely carries forward what the store already
+    holds. Persistence failure is therefore reported and not raised: a store the
+    project cannot write must not delete a detected conflict from the gates.
+    """
+    try:
+        write_json(root, EXTERNAL, {'schema_version': '1.0', 'changes': changes})
+    except OSError:
+        return False
+    return True
+
+
+def standing_changes(root):
+    """Detected changes, each carrying the verdict that currently stands for it.
+
+    This observes and never acts: it reads the recorded store, keeps a verdict only
+    while the basis it was established against still holds, and never executes the
+    project's acceptance. A change with no standing verdict carries
+    ``classification: None`` — unknown, which the gates route as unverified rather
+    than repeating a verdict for a state nobody verified. Recorded user resolutions
+    are carried forward regardless: a decision was made about this change identity
+    and the intent of that moment, not about the freshness of a classification.
+    """
+    workflow = read_json(root, WORKFLOW, {})
     state = read_json(root, STATE, {'nodes': {}})
     store = read_json(root, EXTERNAL, {}) or {}
     recorded = store.get('changes', {}) if isinstance(store.get('changes'), dict) else {}
-    changes = dict(recorded)
     detected = detect_external_changes(root)
+    source = digest(source_tree(root))
     for change in detected:
+        record = state['nodes'].get(change['node_id']) if change['node_id'] else None
+        basis = classification_basis(record, source)
         previous = recorded.get(change['change_id']) or {}
         previous = previous if isinstance(previous, dict) else {}
-        if previous.get('classification') in ('fact-update', 'product-conflict', 'uncertain'):
-            classification, verification = previous['classification'], previous.get('verification')
-        else:
-            classification, verification = classify_external_change(
-                root, state['nodes'].get(change['node_id']) if change['node_id'] else None)
+        standing = (previous['classification']
+                    if previous.get('classification') in ('fact-update', 'product-conflict', 'uncertain')
+                    and previous.get('classification_basis') == basis else None)
         resolution, history = carried_resolution(previous, change['requirement_binding'])
-        change.update(classification=classification, verification=verification, resolution=resolution)
+        change.update(classification=standing, classification_basis=basis, resolution=resolution,
+                      verification=previous.get('verification') if standing else None)
         if history:
             change['superseded_resolutions'] = history
+    return detected, recorded, source
+
+
+def resolve_external_changes(root):
+    """Verify detected external changes and record the result.
+
+    This is the one path that executes the delivery's own recorded acceptance,
+    because running project argv against live source is an act rather than an
+    observation, and only an explicit request carries the mandate for it. It always
+    establishes fresh evidence instead of repeating a memo, so re-running it is how
+    a user re-verifies when something the comparison cannot observe — an installed
+    dependency, a service, the environment — may have moved underneath a verdict.
+    Detection never writes to the product journal, and a recorded user resolution is
+    carried, never recomputed.
+    """
+    state = read_json(root, STATE, {'nodes': {}})
+    detected, recorded, source = standing_changes(root)
+    changes = dict(recorded)
+    for change in detected:
+        classification, verification = classify_external_change(
+            root, state['nodes'].get(change['node_id']) if change['node_id'] else None)
+        change.update(classification=classification, verification=verification)
         changes[change['change_id']] = change
-    write_json(root, EXTERNAL, {'schema_version': '1.0', 'changes': changes})
+    if detected and digest(source_tree(root)) != source:
+        # Verification runs source that changed outside the flow, so the check can
+        # move its own subject. A verdict for a snapshot that no longer exists is not
+        # evidence: nothing is recorded and the comparison fails closed. The source is
+        # left in the state the command left it: rolling it back would hide the move and
+        # discard a change nobody decided.
+        raise ValueError('Recorded acceptance modified the source it verifies; a check reads, it does not '
+                         'modify. Reconcile the changed source before its impact can be classified')
+    cache_classifications(root, changes)
     return detected, changes
 
 
@@ -544,20 +623,29 @@ def external_changes(root):
     return {'status': status, 'changes': detected}
 
 
-def inventory(root, workflow):
-    generated = {item['path'] if isinstance(item, dict) else item
-                 for node in workflow.get('nodes', []) for item in node.get('exit_artifacts', [])}
-    generated.update(workflow.get('generated_outputs', []))
-    generated.update(p for node in workflow.get('nodes', []) for p in node.get('required_documents', []))
+def source_tree(root):
+    """Every project file outside the flow's own working directories.
+
+    Workflow-independent on purpose: it is the state a verification was run
+    against, so replanning or refreezing must not appear to move it.
+    """
     result = {}
     for directory, dirs, files in os.walk(root):
         dirs[:] = sorted(d for d in dirs if d not in {'.git', '.allforai', '.claude', '.codex',
                                                       '__pycache__', '.pytest_cache', 'node_modules', '.venv'})
         for name in sorted(files):
             path = (Path(directory) / name).relative_to(root).as_posix()
-            if path not in generated and name != '.git':
+            if name != '.git':
                 result[path] = fingerprint(root, path)
     return result
+
+
+def inventory(root, workflow):
+    generated = {item['path'] if isinstance(item, dict) else item
+                 for node in workflow.get('nodes', []) for item in node.get('exit_artifacts', [])}
+    generated.update(workflow.get('generated_outputs', []))
+    generated.update(p for node in workflow.get('nodes', []) for p in node.get('required_documents', []))
+    return {path: value for path, value in source_tree(root).items() if path not in generated}
 
 
 def evaluate(root):
@@ -568,7 +656,7 @@ def evaluate(root):
     owned = owned_inputs(root, workflow, state)
     uncertain_inputs = set()
     blockers = scope_blockers(root, workflow)
-    external = external_conflicts(root)
+    external, unverified_external = routed_external_changes(root)
     for node in workflow.get('nodes', []):
         evidence = state['nodes'].get(node['node_id'])
         contract = state.get('contracts', {}).get(node['node_id'])
@@ -622,6 +710,14 @@ def evaluate(root):
                     entry['repair'] = repair_responsibility(root, node, stale_diff, blockers, external)
             if any(result.get(dep, {}).get('readiness_status') != 'valid' for dep in dependencies(root, node, workflow)):
                 result[node['node_id']]['readiness_status'] = 'stale'
+    for node_id, entry in result.items():
+        # Every gate reading this must be able to tell drift whose impact a verification
+        # established from drift whose impact nothing has: the second is unknown, not
+        # ordinary implementation repair, however similar the diff looks.
+        if undecided_conflicts(external, node_id):
+            entry['external'] = 'conflict'
+        elif unverified_external.get(node_id):
+            entry['external'] = 'unverified'
     return {'nodes': result, 'uncertain_inputs': sorted(uncertain_inputs)}
 
 

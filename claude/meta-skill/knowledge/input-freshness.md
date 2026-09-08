@@ -96,12 +96,26 @@ recorded acceptance argv against the changed code, and records what it found in
 not a background watcher, and it never writes the decision journal.
 
 The freshness `check`, `check_artifacts.py`, reconciliation and readiness gates run
-that same comparison themselves, so drift reaches its repair owner even when the
-explicit operation was never sent: no gate depends on someone having refreshed the
-store first, and none of them interviews or decides. Classification executes the
-delivery's own recorded acceptance once per change identity and reuses it
-afterwards, so repeated boundary checks on unchanged source are stable and leave
-the store byte-identical.
+the detection themselves, so drift reaches them even when the explicit operation was
+never sent, and none of them interviews or decides. What they do not do is execute
+the project's acceptance: running project argv against live source is an act, not an
+observation, and a gate that performs it can destroy the very out-of-flow edit it is
+reporting on — a self-healing acceptance would regenerate the file and the drift
+would disappear into a fact update nobody decided. A gate therefore reads the
+recorded verdict and keeps it only while the basis it was established against — that
+acceptance argv, that project source — still holds. Detected drift with no verdict
+standing is `unverified_external_change`: unknown impact, affected work withheld, no
+product decision demanded. Repeated boundary checks are read-only and leave the
+store byte-identical.
+
+The explicit operation is the verification, and it always executes afresh rather than
+repeating what the store remembers. Whatever an acceptance depends on beyond the
+project source — an installed dependency, a service, the environment — can move
+without anything observable changing, so re-running `external-changes` is how a user
+re-establishes a verdict they have reason to doubt. If the recorded acceptance moves
+the source while it runs, no verdict is recorded: the run reports the move and leaves
+the source in the state the command left it, since rolling it back would hide the move
+and discard a change nobody decided.
 
 - Recorded acceptance still passes: `fact-update`. The change is implementation
   only. Update the required fact documents and republish evidence; no product
@@ -112,6 +126,14 @@ the store byte-identical.
 - Changed source that no node declares: `uncertain`, reported against every
   delivery whose provenance it touches. Coordinate the input mapping and the
   affected documents; zero impact is never assumed and nothing is rebuilt wholesale.
+- No verification standing for the current source: readiness reports
+  `unverified_external_change`, `check` and `check_artifacts.py` carry
+  `external: unverified`, reconciliation carries `external_change: unverified`, and
+  the affected work is withheld. This is unknown impact, not an implementation-only
+  change and not yet a product question: verify the scoped drift and let the result
+  decide whether a decision is needed. Repair routing stays with the owning node, so
+  an implementation fact still recovers through documents and republication without
+  anyone being interviewed.
 
 A conflict is settled only by the user, through `product_intent.py` with
 `{"operation":"external-change","change_id":...,"resolution":"accept|reject|defer"}`

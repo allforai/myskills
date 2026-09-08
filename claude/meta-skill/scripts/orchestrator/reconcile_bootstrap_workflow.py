@@ -305,6 +305,10 @@ def _repair_fields(freshness: dict | None) -> dict[str, Any]:
         if isinstance(freshness.get("repair"), dict):
             fields["repair_owner"] = freshness["repair"].get("owner")
             fields["repair_responsibilities"] = freshness["repair"].get("responsibilities", [])
+        # Source changed outside the flow is carried as its own state: an unverified
+        # impact is not the ordinary repair its diff resembles.
+        if freshness.get("external") in ("conflict", "unverified"):
+            fields["external_change"] = freshness["external"]
     return fields
 
 

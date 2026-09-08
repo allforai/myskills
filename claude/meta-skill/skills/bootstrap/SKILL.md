@@ -400,9 +400,16 @@ Invalidated items name a `diff` and `repair_owner`: resolve `interactive-bootstr
 items here (answer the pending decision, or refreeze and replan the recorded
 change), and leave node-owned items for `/run` to repair and republish.
 
-At the same boundary, send `{"operation":"external-changes"}` to detect code
-changed outside the delivery flow. A change whose recorded acceptance still passes
-is an implementation fact: resynchronize its documents and republish. A failing one,
+At the same boundary, send `{"operation":"external-changes"}` to verify code changed
+outside the delivery flow. This operation is the only one that executes the project's
+recorded acceptance; the gates detect drift but never run it, so they report
+`unverified_external_change` until this has established what the change means. It
+always verifies afresh, so re-run it whenever something it cannot observe — an
+installed dependency, a service — may have moved under an earlier verdict. Verify the
+scoped drift first and let the result decide whether a product question exists at all;
+never open a product interview on unverified drift, and never widen one beyond the
+deliveries the change reaches. A change whose recorded acceptance still passes is an
+implementation fact: resynchronize its documents and republish. A failing one,
 or changed source no node declares, is a conflict reported to the user, never a new
 requirement. Record the user's `accept` (with the explicit desired intent it
 establishes), `reject` (baseline kept, scoped implementation repair) or `defer`

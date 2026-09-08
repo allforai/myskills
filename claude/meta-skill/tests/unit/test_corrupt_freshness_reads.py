@@ -122,8 +122,11 @@ def test_public_gates_stay_blocked_on_corrupt_read_register(tmp_path, host, labe
     assert "observed-input-dependencies.json" in checked["freshness"]["reason"]
     code, report = _readiness(tmp_path)
     assert code == 1 and report["status"] == "not_ready"
-    blocked = [b for b in report["blockers"] if b["node_id"] == NODE]
-    assert blocked and all("observed-input-dependencies.json" in b["message"] for b in blocked), report["blockers"]
+    # A corrupt register also leaves the external-change comparison undeterminable,
+    # which is a project-wide blocker rather than one node's.
+    blocked = [b for b in report["blockers"] if b.get("node_id") == NODE]
+    assert blocked, report["blockers"]
+    assert all("observed-input-dependencies.json" in b["message"] for b in report["blockers"]), report["blockers"]
     node, plan = _reconcile(tmp_path)
     assert node["artifact_readiness"] == "blocked" and plan["action"] == "invalidate"
     result = gate(tmp_path, "validate_bootstrap.py")

@@ -350,8 +350,26 @@ def validate_unattended_readiness(project_root: Path) -> dict:
         # A product conflict raised by an external source change is a user decision.
         # Unattended execution reports it and refuses the affected work; it never
         # interviews, and it never reads changed code as an approved requirement.
-        from evidence_freshness import external_conflicts, rejected_conflicts, undecided_conflicts
-        conflicts = external_conflicts(project_root)
+        from evidence_freshness import rejected_conflicts, routed_external_changes, undecided_conflicts
+        try:
+            conflicts, unverified = routed_external_changes(project_root)
+        except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError, StopIteration) as exc:
+            # An undeterminable comparison is not a clear one: unattended execution
+            # cannot show that no product conflict is waiting for the user.
+            conflicts, unverified = {}, {}
+            _add(blockers, "undetermined_external_change",
+                 "External source changes cannot be determined, so no delivery can be shown to be free of an "
+                 f"unresolved product conflict; resolve it at the interactive bootstrap entry: {exc}")
+        for node_id in sorted(unverified):
+            for change in unverified[node_id]:
+                # The gate observes; it never runs the project's acceptance to find out.
+                # Unknown impact is withheld work, not an implementation-only change.
+                _add(blockers, "unverified_external_change",
+                     f"External source change {change['change_id']} to "
+                     f"{', '.join(sorted(change['files']))} has no current verification of its impact; run the "
+                     "external-changes verification at the interactive bootstrap entry. Unattended execution "
+                     "cannot verify it, and it is not assumed to be implementation-only.",
+                     node_id=node_id)
         for node_id in sorted(conflicts):
             for change in undecided_conflicts(conflicts, node_id):
                 state = ("deferred" if (change["resolution"] or {}).get("resolution") == "defer"

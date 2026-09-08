@@ -6,6 +6,7 @@ either synchronized as a fact update or presented as a product conflict the user
 accepts, rejects or defers. These drive the copied gate CLIs in temporary
 projects on both host adapters; they are not real Claude/Codex host dialogue evidence.
 """
+from contextlib import contextmanager
 import json
 import subprocess
 import sys
@@ -378,6 +379,9 @@ def test_unreadable_freshness_state_cannot_report_or_decide_external_changes(tmp
     code, readiness = _readiness(tmp_path)
     assert code == 1 and readiness["status"] == "not_ready" and readiness["blockers"]
     assert not [b for b in readiness["blockers"] if b["code"] == "external_change_repair_pending"]
+    # An undeterminable comparison is reported as its own blocker, not as a clear one.
+    assert [b["code"] for b in readiness["blockers"] if "external" in b["code"]] == \
+        ["undetermined_external_change"]
 
 
 @pytest.mark.parametrize("host", HOSTS)
@@ -513,20 +517,44 @@ def test_a_revised_confirmed_intent_supersedes_the_earlier_decision(tmp_path, ho
 
 
 @pytest.mark.parametrize("host", HOSTS)
-def test_drift_reaches_the_product_decision_owner_without_a_prior_detection_call(tmp_path, host):
-    """The bootstrap/resume gates own the boundary comparison themselves: a conflict
-    is routed to the interactive product decision even when nothing ran detection."""
+def test_drift_reaches_the_gates_as_unverified_and_verification_routes_it_to_its_owner(tmp_path, host):
+    """The bootstrap/resume gates own the boundary comparison, and a comparison observes.
+
+    Drift reaches them without a prior detection call, and they withhold the affected
+    work as unverified rather than running the project's acceptance to find out what it
+    means. The explicit verification establishes the classification; from then on the
+    same gates route the conflict to its product decision owner without redetecting."""
     drift_project(tmp_path, host)
     journal_before = (tmp_path / JOURNAL).read_bytes()
     (tmp_path / "orders.py").write_text(CONFLICTING)
 
     code, readiness = _readiness(tmp_path)
     assert code == 1 and readiness["status"] == "not_ready"
+    unverified = next(b for b in readiness["blockers"] if b["code"] == "unverified_external_change")
+    assert unverified["node_id"] == NODE and "orders.py" in unverified["message"]
+    assert "external-changes" in unverified["message"]
+    assert not [b for b in readiness["blockers"] if b["code"] == "unresolved_external_change"]
+    assert not (tmp_path / STORE).exists(), "an observation establishes no verdict to record"
+    assert (tmp_path / JOURNAL).read_bytes() == journal_before
+    assert (tmp_path / "orders.py").read_text() == CONFLICTING, "the gates leave the edit alone"
+    assert _artifacts(tmp_path)["freshness"]["external"] == "unverified"
+    assert _reconcile(tmp_path)[1]["external_change"] == "unverified"
+    _unrelated_is_valid(tmp_path)
+
+    # The explicit verification runs the recorded acceptance and settles what it means.
+    result, report = external(tmp_path)
+    assert result.returncode == 1 and report["status"] == "conflict", report
+
+    code, readiness = _readiness(tmp_path)
+    assert code == 1
     blocker = next(b for b in readiness["blockers"] if b["code"] == "unresolved_external_change")
     assert blocker["node_id"] == NODE and "interactive" in blocker["message"]
+    assert not [b for b in readiness["blockers"] if b["code"] == "unverified_external_change"]
     assert _artifacts(tmp_path)["freshness"]["repair"] == {"owner": "interactive-bootstrap",
                                                           "responsibilities": ["product-decision"]}
+    assert _artifacts(tmp_path)["freshness"]["external"] == "conflict"
     assert _reconcile(tmp_path)[1]["repair_owner"] == "interactive-bootstrap"
+    assert _reconcile(tmp_path)[1]["external_change"] == "conflict"
 
     # Nothing was decided or interviewed on the way, and the repeat is stable.
     assert (tmp_path / JOURNAL).read_bytes() == journal_before
@@ -540,7 +568,7 @@ def test_drift_reaches_the_product_decision_owner_without_a_prior_detection_call
     change_id = next(iter(json.loads((tmp_path / STORE).read_text())["changes"]))
     assert _reject(tmp_path, change_id).returncode == 0
     assert [b["code"] for b in _readiness(tmp_path)[1]["blockers"]
-            if b["node_id"] == NODE and b["code"].startswith("external")] == ["external_change_repair_pending"]
+            if b["node_id"] == NODE and "external" in b["code"]] == ["external_change_repair_pending"]
 
 
 @pytest.mark.parametrize("host", HOSTS)
@@ -569,3 +597,245 @@ def test_implementation_only_drift_keeps_its_node_owner_at_the_same_gates(tmp_pa
     assert code == 0 and published["status"] == "valid", published
     assert _readiness(tmp_path)[1]["status"] == "ready"
     _unrelated_is_valid(tmp_path)
+
+
+# The confirmed acceptance also reads source this delivery does not declare as its input.
+COUPLED = [sys.executable, "-c",
+           "import json; from orders import list_orders; from warehouse import stock;"
+           " assert json.load(open('" + REPORT + "'))['status'] == 'passed';"
+           " assert all(o == 'acme' for o in list_orders('acme')), list_orders('acme');"
+           " assert stock == 10, stock"]
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_a_classification_is_not_reused_once_the_source_it_was_established_against_moves(tmp_path, host):
+    """A verdict is a claim about the whole current source, not about one file.
+
+    The recorded acceptance reads more than the file whose content names the change,
+    so reusing a verdict after that other source moved reports a verified fact update
+    for a state nobody verified, and the product conflict never reaches the user."""
+    drift_project(tmp_path, host)
+    code, published = _publish_evidence(tmp_path, command=COUPLED)
+    assert code == 0 and published["status"] == "valid", published
+
+    (tmp_path / "orders.py").write_text("def list_orders(account): return [account, account]\n")
+    change = next(c for c in external(tmp_path)[1]["changes"] if c["node_id"] == NODE)
+    assert change["classification"] == "fact-update" and change["verification"]["returncode"] == 0
+    repair = _artifacts(tmp_path)["freshness"]["repair"]
+    assert repair["owner"] == NODE and "implementation" in repair["responsibilities"]
+
+    # This delivery's own change is unmoved, but the source its acceptance also reads
+    # is not: the confirmed behavior no longer holds and the verdict must be reasked.
+    (tmp_path / "warehouse.py").write_text("stock = 0\n")
+    again = next(c for c in external(tmp_path)[1]["changes"] if c["node_id"] == NODE)
+    assert again["change_id"] == change["change_id"], "the decision identity is unchanged"
+    assert again["classification"] == "product-conflict"
+    assert again["verification"]["returncode"] != 0
+    assert again["resolution"] is None
+    assert _artifacts(tmp_path)["freshness"]["repair"] == {"owner": "interactive-bootstrap",
+                                                          "responsibilities": ["product-decision"]}
+    blocker = next(b for b in _readiness(tmp_path)[1]["blockers"]
+                   if b["code"] == "unresolved_external_change" and b["node_id"] == NODE)
+    assert again["change_id"] in blocker["message"]
+
+    # Restoring the source it was verified against repeats the original verdict.
+    (tmp_path / "warehouse.py").write_text("stock = 10\n")
+    restored = next(c for c in external(tmp_path)[1]["changes"] if c["node_id"] == NODE)
+    assert restored["classification"] == "fact-update"
+
+
+# An installed dependency the recorded acceptance reads. The comparison cannot observe
+# it: it is not project source, and no fingerprint of the flow's inputs covers it.
+INSTALLED = "node_modules/limits.json"
+DEPENDENT = [sys.executable, "-c",
+             "import json; from orders import list_orders;"
+             " assert json.load(open('" + INSTALLED + "'))['max_accounts'] == 1;"
+             " assert all(o == 'acme' for o in list_orders('acme')), list_orders('acme')"]
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_a_verdict_is_re_established_by_verifying_again_not_repeated_from_the_record(tmp_path, host):
+    """A recorded verdict is what a past verification found, not a standing fact.
+
+    Whatever the acceptance depends on beyond the project source can move without
+    anything observable changing, so re-running the verification must execute it
+    afresh. Repeating the memo instead reports a live product conflict as a verified
+    implementation fact and leaves the user no way to establish otherwise."""
+    drift_project(tmp_path, host)
+    (tmp_path / "node_modules").mkdir()
+    (tmp_path / INSTALLED).write_text('{"max_accounts": 1}\n')
+    code, published = _publish_evidence(tmp_path, command=DEPENDENT)
+    assert code == 0 and published["status"] == "valid", published
+
+    (tmp_path / "orders.py").write_text("def list_orders(account): return [account, account]\n")
+    change = next(c for c in external(tmp_path)[1]["changes"] if c["node_id"] == NODE)
+    assert change["classification"] == "fact-update"
+    repair = _artifacts(tmp_path)["freshness"]["repair"]
+    assert repair["owner"] == NODE and "implementation" in repair["responsibilities"]
+
+    # The installed dependency regresses. No project source moved, so the recorded
+    # verdict still stands at the gates: they observe, and this is beyond observation.
+    (tmp_path / INSTALLED).write_text('{"max_accounts": 5}\n')
+    assert _artifacts(tmp_path)["freshness"]["repair"]["owner"] == NODE
+
+    # Verifying again is how the user establishes the current answer.
+    result, report = external(tmp_path)
+    assert result.returncode == 1 and report["status"] == "conflict", report
+    again = next(c for c in report["changes"] if c["node_id"] == NODE)
+    assert again["change_id"] == change["change_id"], "the decision identity is unchanged"
+    assert again["classification"] == "product-conflict" and again["resolution"] is None
+    assert _artifacts(tmp_path)["freshness"]["repair"] == {"owner": "interactive-bootstrap",
+                                                          "responsibilities": ["product-decision"]}
+    assert [b["node_id"] for b in _readiness(tmp_path)[1]["blockers"]
+            if b["code"] == "unresolved_external_change"] == [NODE]
+
+    # Restoring the dependency and verifying again re-establishes the fact update, and
+    # the delivery closes through its ordinary synchronization loop: no interview.
+    (tmp_path / INSTALLED).write_text('{"max_accounts": 1}\n')
+    assert next(c for c in external(tmp_path)[1]["changes"]
+                if c["node_id"] == NODE)["classification"] == "fact-update"
+    (tmp_path / DOC).write_text(_doc("['acme', 'acme']"))
+    code, published = _publish_evidence(tmp_path, command=DEPENDENT)
+    assert code == 0 and published["status"] == "valid", published
+    assert _readiness(tmp_path)[1]["status"] == "ready"
+    _unrelated_is_valid(tmp_path)
+
+
+# A recorded acceptance that regenerates before it verifies — a codegen or format step.
+# Publishing it is legitimate: on the confirmed source it rewrites the same bytes.
+SELF_HEALING = [sys.executable, "-c",
+                "import json, pathlib;"
+                " pathlib.Path('orders.py').write_text('def list_orders(account): return [account]\\n');"
+                " import orders;"
+                " assert json.load(open('" + REPORT + "'))['status'] == 'passed';"
+                " assert all(o == 'acme' for o in orders.list_orders('acme'))"]
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_a_gate_never_runs_project_acceptance_over_an_out_of_flow_edit(tmp_path, host):
+    """Running the project's recorded acceptance is an act, not an observation.
+
+    A gate that executes it can destroy the very edit it is reporting on — a
+    self-healing acceptance regenerates the file and the drift disappears into a
+    verified fact update nobody decided. The gates observe the edit and withhold the
+    work; only the explicit verification executes anything."""
+    drift_project(tmp_path, host)
+    code, published = _publish_evidence(tmp_path, command=SELF_HEALING)
+    assert code == 0 and published["status"] == "valid", published
+    journal_before = (tmp_path / JOURNAL).read_bytes()
+
+    (tmp_path / "orders.py").write_text(CONFLICTING)
+    checked = _artifacts(tmp_path)
+    code, readiness = _readiness(tmp_path)
+    freshness_check = freshness(tmp_path, "check")[1]
+    node, plan = _reconcile(tmp_path)
+
+    # The user's out-of-flow edit is exactly as they left it: no gate ran the acceptance.
+    assert (tmp_path / "orders.py").read_text() == CONFLICTING
+    assert not (tmp_path / STORE).exists() and (tmp_path / JOURNAL).read_bytes() == journal_before
+    assert code == 1 and readiness["status"] == "not_ready"
+    assert [b["code"] for b in readiness["blockers"] if "external" in b["code"]] == ["unverified_external_change"]
+    assert checked["all_exist"] is False
+
+    # Every gate carries the unknown as its own state, so cold drift cannot pass for
+    # ordinary implementation repair anywhere in the routing.
+    assert checked["freshness"]["external"] == "unverified"
+    assert freshness_check["nodes"][NODE]["status"] == "stale"
+    assert freshness_check["nodes"][NODE]["external"] == "unverified"
+    assert plan["action"] == "invalidate" and node["artifact_readiness"] == "blocked"
+    assert plan["external_change"] == "unverified"
+
+    # Only the explicit verification executes it. The acceptance regenerates the file,
+    # so its verdict belongs to a source that no longer exists: none is recorded, and
+    # the move is reported rather than hidden or rolled back.
+    result, report = external(tmp_path)
+    assert result.returncode == 1 and report["status"] == "invalid", report
+    assert "modif" in report["reason"] and not result.stderr
+    assert not (tmp_path / STORE).exists(), "no verdict is recorded for a vanished snapshot"
+    assert (tmp_path / JOURNAL).read_bytes() == journal_before
+    assert (tmp_path / "orders.py").read_text() != CONFLICTING, "the run reports the move; it does not undo it"
+
+    # The source stops moving, so the delivery recovers through its ordinary loop.
+    assert external(tmp_path)[1] == {"status": "clear", "changes": []}
+    assert _readiness(tmp_path)[1]["status"] == "ready"
+    _unrelated_is_valid(tmp_path)
+
+
+@contextmanager
+def _unwritable_bootstrap(root):
+    """The bootstrap directory cannot be written while the gates run."""
+    directory = root / ".allforai/bootstrap"
+    mode = directory.stat().st_mode
+    directory.chmod(0o555)
+    try:
+        yield
+    finally:
+        directory.chmod(mode)
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_an_unwritable_store_keeps_the_conflict_it_could_not_record(tmp_path, host):
+    """The recorded store holds a derived verdict; it is not itself the conflict.
+
+    Failing to write it must never delete a detected product conflict from the report
+    or from the gates, because that hands the affected work back to its node as
+    ordinary implementation drift and lets unattended execution run past a decision the
+    user never made. Nor may it let an unrecordable decision pass as consent."""
+    drift_project(tmp_path, host)
+    _readiness(tmp_path)  # The report file exists, so only the store write is denied below.
+    (tmp_path / "orders.py").write_text(CONFLICTING)
+
+    with _unwritable_bootstrap(tmp_path):
+        # Nothing has been recorded yet, and nothing can be: the gates still refuse to
+        # call the change clean or implementation-only.
+        code, readiness = _readiness(tmp_path)
+        assert code == 1 and readiness["status"] == "not_ready"
+        assert [b["code"] for b in readiness["blockers"] if "external" in b["code"]] == \
+            ["unverified_external_change"]
+        assert _artifacts(tmp_path)["all_exist"] is False
+
+        # Verification reports the conflict it cannot record, rather than losing it.
+        result, report = external(tmp_path)
+        assert result.returncode == 1 and report["status"] == "conflict", report
+        assert report["changes"][0]["classification"] == "product-conflict"
+        assert not (tmp_path / STORE).exists()
+
+        # An unrecordable decision is refused; it never passes as consent.
+        refused = _reject(tmp_path, report["changes"][0]["change_id"], batch="external-unwritable")
+        assert refused.returncode == 1 and not refused.stderr
+        assert json.loads(refused.stdout)["status"] == "blocked"
+        assert not [b for b in json.loads((tmp_path / JOURNAL).read_text())["batches"]
+                    if b["batch_id"] == "external-unwritable"]
+
+    assert external(tmp_path)[1]["status"] == "conflict"
+    store_before = (tmp_path / STORE).read_bytes()
+
+    with _unwritable_bootstrap(tmp_path):
+        # The standing verdict still routes the affected work to its decision owner.
+        checked = _artifacts(tmp_path)
+        assert checked["all_exist"] is False
+        assert checked["freshness"]["repair"] == {"owner": "interactive-bootstrap",
+                                                  "responsibilities": ["product-decision"]}
+        code, readiness = _readiness(tmp_path)
+        assert code == 1 and readiness["status"] == "not_ready"
+        blocker = next(b for b in readiness["blockers"] if b["code"] == "unresolved_external_change")
+        assert blocker["node_id"] == NODE and "orders.py" in blocker["message"]
+
+        # Re-verifying reports the conflict it could not record, rather than losing it.
+        result, report = external(tmp_path)
+        assert result.returncode == 1 and report["status"] == "conflict", report
+        change = report["changes"][0]
+        assert change["classification"] == "product-conflict" and change["resolution"] is None
+
+        # A decision that cannot be recorded is refused; nothing was half-written.
+        refused = _reject(tmp_path, change["change_id"], batch="external-unwritable-2")
+        assert refused.returncode == 1 and not refused.stderr
+        assert json.loads(refused.stdout)["status"] == "blocked"
+        assert (tmp_path / STORE).read_bytes() == store_before
+
+    # The refused decision left no standing consent behind it, and the conflict survives.
+    assert (tmp_path / STORE).read_bytes() == store_before
+    assert external(tmp_path)[1]["changes"][0]["resolution"] is None
+    assert [b["code"] for b in _readiness(tmp_path)[1]["blockers"]
+            if b["node_id"] == NODE and "external" in b["code"]] == ["unresolved_external_change"]
+    assert _reject(tmp_path, external(tmp_path)[1]["changes"][0]["change_id"]).returncode == 0

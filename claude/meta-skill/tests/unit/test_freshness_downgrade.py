@@ -178,8 +178,11 @@ def test_retained_out_of_scope_history_stays_legacy_without_invented_provenance(
     assert "warehouse" not in json.loads((tmp_path / STATE).read_text()).get("nodes", {})
 
     # Changing the current product source does not touch history nobody claims to trace.
+    # The declared node is stale, and the impact of the out-of-flow edit is unverified
+    # until the explicit verification runs; neither reaches the retained legacy node.
     (tmp_path / "orders.py").write_text("def list_orders(account): return [42]\n")
-    _assert_admitted_legacy(tmp_path, "warehouse", other_blockers=[("stale_evidence", NODE)])
+    _assert_admitted_legacy(tmp_path, "warehouse", other_blockers=[("stale_evidence", NODE),
+                                                                  ("unverified_external_change", NODE)])
     assert _artifacts(tmp_path)["freshness"]["status"] == "stale"
 
 
