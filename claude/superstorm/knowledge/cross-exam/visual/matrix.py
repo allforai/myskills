@@ -164,13 +164,32 @@ def check_axis_support(surface, axis, spec):
             raise ValueError('invalid surface %s scope (needs only[] within supported and basis): %s'
                              % ('locales' if axis == 'locale' else axis, sid))
         required = [v for v in required if v in scope['only']]
-    present = set()
-    for v in surface['axes'][axis]:
-        present |= value_tokens(v)
-    missing = [v for v in required if v not in present]
+    tokens = [value_tokens(v) for v in surface['axes'][axis]]
+    noun = 'shipped locale' if axis == 'locale' else 'supported value'
+    missing = [v for v in required if not any(v in t for t in tokens)]
     if missing:
-        raise ValueError('%s axis misses %s %s: %s' % (axis, 'shipped locale' if axis == 'locale' else 'supported value',
-                                                     ', '.join(missing), sid))
+        raise ValueError('%s axis misses %s %s: %s' % (axis, noun, ', '.join(missing), sid))
+    # a compound value ("系统 dark + 应用内 light") is one case whose readback proves one of its tokens, so
+    # every supported value needs its own case: an injective assignment of values to axis entries
+    unmatched = _unmatched(required, tokens)
+    if unmatched:
+        raise ValueError('%s axis misses %s %s (a compound value is one case and proves one value): %s'
+                         % (axis, noun, ', '.join(unmatched), sid))
+
+
+def _unmatched(required, tokens):
+    """Values that cannot get an axis entry of their own once each entry is used at most once."""
+    taken = {}
+
+    def place(value, seen):
+        for i, t in enumerate(tokens):
+            if value in t and i not in seen:
+                seen.add(i)
+                if i not in taken or place(taken[i], seen):
+                    taken[i] = value
+                    return True
+        return False
+    return [v for v in required if not place(v, set())]
 
 
 def check_locales(surface, locales):
@@ -232,7 +251,9 @@ def expand(surfaces, layout_thresholds=None, width_range=None, devices=None, loc
            abstractions=None, anchor=None, platform=None, form_factor=None):
     if platform is not None and platform not in PLATFORMS:
         raise ValueError('unknown platform %r (web|ios|android|macos)' % (platform,))
-    check_desktop_floor(width_range, effective_form_factor(platform, form_factor))
+    ff = effective_form_factor(platform, form_factor)
+    check_desktop_floor(width_range, ff)
+    resizable = ff in ('desktop', 'both') and not (width_range or {}).get('fixed_window')
     cases = []
     seen = set()
     reached_max = width_range is None
@@ -260,6 +281,10 @@ def expand(surfaces, layout_thresholds=None, width_range=None, devices=None, loc
             rng = check_widths(surface, layout_thresholds, width_range, devices)
             if width_range is not None and rng is not None and rng['max'] >= width_range['max']:
                 reached_max = True
+            if resizable and rng is not None and rng['min'] < rng['max'] and not any(
+                    isinstance(st, str) and st.startswith('resize-') for st in axes['state']):
+                raise ValueError('resizable desktop surface without a resize- state (the reflow while dragging '
+                                 'is not in any static capture): ' + sid)
         for axis, spec in merged_support(axis_support, locales).items():
             check_axis_support(surface, axis, spec)
         plan, anchors = _abstraction_plan(surface, abstractions, anchor)

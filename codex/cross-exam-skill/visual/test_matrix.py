@@ -301,6 +301,7 @@ def test_expand_inventory_reads_every_top_level_key():
 def _desktop_inventory(platform='web', form_factor='desktop', max_width=1440, **extra):
     axes = {a: ['default'] for a in AXES}
     axes['device'] = ['1024x768@1', '%dx900@2' % max_width]
+    axes['state'] = ['default', 'resize-grow-to-max']
     surface = {'id': 'home', 'axes': axes, 'scrollable': False}
     inv = {'platform': platform, 'width_range': {'min': 1024, 'max': max_width, 'basis': 'minWidth + display'},
            'surfaces': [surface], **extra}
@@ -436,3 +437,30 @@ def test_a_window_that_cannot_be_resized_is_exempt_from_the_floor():
     del inv['width_range']['fixed_window']
     with pytest.raises(ValueError, match='1920'):
         expand_inventory(inv)
+
+
+def test_a_compound_value_proves_only_one_supported_value_per_axis():
+    """'系统 dark + 应用内 light' is one case; it cannot stand in for both light and dark coverage."""
+    axes = {a: ['default'] for a in AXES}
+    axes['appearance'] = ['系统 dark + 应用内 light']
+    support = {'appearance': {'supported': ['light', 'dark'], 'basis': 'tailwind darkMode: class'}}
+    with pytest.raises(ValueError, match='appearance axis misses supported value'):
+        expand([{'id': 'home', 'axes': axes}], axis_support=support)
+    axes['appearance'] = ['系统 dark + 应用内 light', '系统 light + 应用内 dark']
+    assert expand([{'id': 'home', 'axes': axes}], axis_support=support)   # two cases, one value each
+    axes['appearance'] = ['light', '系统 dark + 应用内 dark']
+    assert expand([{'id': 'home', 'axes': axes}], axis_support=support)
+
+
+def test_resizable_desktop_surface_needs_a_resize_state():
+    from matrix import expand_inventory
+    inv = _desktop_inventory(max_width=1920)
+    inv['surfaces'][0]['axes']['state'] = ['default']
+    with pytest.raises(ValueError, match='resize-'):
+        expand_inventory(inv)
+    inv['surfaces'][0]['axes']['state'] = ['default', 'resize-shrink-to-min']
+    assert expand_inventory(inv)
+    fixed = _desktop_inventory(max_width=1200)
+    fixed['width_range'] = {'min': 1200, 'max': 1200, 'basis': 'resizable:false', 'fixed_window': True}
+    fixed['surfaces'][0]['axes']['device'] = ['1200x800@2']
+    assert expand_inventory(fixed)

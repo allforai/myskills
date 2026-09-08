@@ -905,3 +905,21 @@ def test_capture_must_read_back_the_width_it_claims(sample):
     assert reason and 'width' in reason
     reason = _layout_reason(sample, [rule], readback_width=2000)
     assert reason and '1024' in reason
+
+
+def test_hidden_width_is_refused_even_when_layout_category_has_no_rules(sample):
+    """Omitting the layout category entirely must not open a door for width literals elsewhere."""
+    root, write, cfg, case, report, entry, ledger = sample
+    baseline = json.loads((root / cfg['baseline_ref']).read_text())
+    baseline['categories']['layout'] = {'rules': [], 'reason': '无布局规则', 'confirmation': 'ok',
+                                        'confirmed_at': '2026-09-06', 'reference_images': {}}
+    del baseline['categories']['layout']['rules']
+    baseline['categories']['spacing']['rules'] = ['侧栏与主列间距 0px']
+    cfg['baseline_digest'] = cfg['interaction_digest'] = write(cfg['baseline_ref'], baseline)
+    for ref in ('evidence/q1/manifest.json', 'evidence/q1/review.json'):
+        obj = json.loads((root / ref).read_text())
+        for holder in obj.get('captures', [obj]):
+            holder['baseline_digest'] = holder['interaction_digest'] = cfg['baseline_digest']
+        write(ref, obj)
+    reason = visual_reason(entry, ledger, root)
+    assert reason and 'spacing' in reason

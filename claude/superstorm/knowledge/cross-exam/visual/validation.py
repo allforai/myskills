@@ -172,11 +172,9 @@ def pinned_layout_reason(baseline_obj, inventory):
     non-empty allowed empty area. Otherwise "820px centered" freezes as a rule a wide window trivially
     satisfies and the reviewer has no sentence to cite. Returns '' or the refusal reason."""
     rules = ((baseline_obj.get('categories') or {}).get('layout') or {}).get('rules')
-    if rules is None:
-        return ''
-    if not isinstance(rules, list):
+    if rules is not None and not isinstance(rules, list):
         return 'layout 规则须是列表'
-    for rule in rules:
+    for rule in rules or []:
         if isinstance(rule, str):
             if WIDTH_LITERAL.search(rule):
                 return 'layout 规则钉死了宽度却没写两端空区（须写成 {rule, ends} 对象）: ' + rule
