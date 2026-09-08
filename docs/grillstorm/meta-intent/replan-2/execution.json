@@ -40,7 +40,9 @@
         10
       ],
       "base": "88e7becaf30522ef29dd2fa168b62045affcb782",
-      "candidate": "67446ad15a5e8adc329a0b0c9f8f3c45d1d359e9"
+      "original_builder_candidate": "67446ad15a5e8adc329a0b0c9f8f3c45d1d359e9",
+      "candidate": "2916e1833fb3267b335b3d666d0831e52b03cb8e",
+      "acceptance_blocker": "601 combined Python/Codex-flow, 55 Node and 577 hook tests passed; independent fixed-candidate Standards/Spec review pending"
     },
     "12": {
       "status": "implementation_accepted",
@@ -58,7 +60,9 @@
       "root_findings_corrections": "Independent final review accepts #12/A1/C2; non-blocking all-legacy READS short-circuit note carried to #13; #11 C1-prime remains separate"
     },
     "13": {
-      "status": "running",
+      "status": "correction_running",
+      "candidate": "705ec156",
+      "coordinator_findings": "T11-T13-inflight-checkpoint.md; required-document semantic synchronization negative case remains an acceptance gate",
       "base": "ed430dfcebed485b913b54d7785f02cc86998303",
       "checkout": "meta-intent-t13",
       "dependencies": [
@@ -110,17 +114,10 @@
       "role": "evaluator"
     },
     {
-      "issue": 11,
-      "role": "legacy_profile_correction",
-      "task": "task_4c9efd633470",
-      "dispatch": "ctx_8ae581fcb4a6",
-      "checkout": "meta-intent-t12"
-    },
-    {
       "issue": 13,
-      "role": "implementation",
-      "task": "task_0b9e3008065b",
-      "dispatch": "ctx_592495fd6926",
+      "role": "document_sync_correction",
+      "task": "task_2515b182fb17",
+      "dispatch": "ctx_a8e7d8ab1885",
       "checkout": "meta-intent-t13"
     }
   ],
