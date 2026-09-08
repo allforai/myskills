@@ -210,6 +210,78 @@ def pinned_layout_reason(baseline_obj, inventory):
     return ''
 
 
+def _int_range(rng):
+    """min/max as ints, or None when the shape is not a width range (bool is not a width)."""
+    if not isinstance(rng, dict) or any(not isinstance(rng.get(k), int) or isinstance(rng.get(k), bool)
+                                         for k in ('min', 'max')):
+        return None
+    return rng['min'], rng['max']
+
+
+def _census_surface(surface, read):
+    """The census entry this inventory surface came from: same id, or the same entry when ids were renamed."""
+    for cs in read:
+        if isinstance(cs, dict) and (cs.get('id') == surface.get('id')
+                                     or (surface.get('entry') and cs.get('entry') == surface.get('entry'))):
+            return cs
+    return None
+
+
+def census_width_reason(ledger, inventory):
+    """The census's form factor, width range, thresholds and per-surface width bands sit verbatim on the
+    ledger top level; the inventory may widen every one of them (the user may know a display the code does
+    not) but never narrow one, or the wide end leaves the matrix on the interrogator's say-so. A key the
+    ledger does not carry is not checked. Returns '' or the refusal reason."""
+    read_ff = ledger.get('form_factor')
+    if read_ff is not None:
+        if isinstance(read_ff, dict):          # the census writes {value, basis}; the inventory a bare value
+            read_ff = read_ff.get('value')
+        if read_ff not in _matrix.FORM_FACTORS:
+            return '普查官的 form_factor 形状无效: ' + str(read_ff)
+        declared = _matrix.effective_form_factor(inventory.get('platform'), inventory.get('form_factor'))
+        if read_ff in ('desktop', 'both') and declared == 'mobile':
+            return 'inventory 的 form_factor %s 弱于普查官读出的 %s' % (declared, read_ff)
+    read_range = ledger.get('width_range')
+    if read_range is not None:
+        got = _int_range(read_range)
+        if got is None:
+            return '普查官的 width_range 形状无效'
+        mine = _int_range(inventory.get('width_range'))
+        if mine is None:
+            return 'inventory 未声明 width_range，普查官读出 %d..%d' % got
+        if mine[1] < got[1]:
+            return 'inventory 的 width_range.max %d 低于普查官读出的 %d' % (mine[1], got[1])
+        if mine[0] > got[0]:
+            return 'inventory 的 width_range.min %d 高于普查官读出的 %d' % (mine[0], got[0])
+        read_surfaces = ledger.get('ui_surfaces', [])
+        if not isinstance(read_surfaces, list):
+            return '普查官的 ui_surfaces 形状无效'
+        for sf in inventory.get('surfaces') or []:
+            if not isinstance(sf, dict) or sf.get('width_range') is None:
+                continue
+            sid = str(sf.get('id', '?'))
+            narrowed = _int_range(sf['width_range'])
+            counterpart = _census_surface(sf, read_surfaces)
+            if counterpart is None or counterpart.get('width_range') is None:
+                return '页面 %s 收窄了 width_range，普查官没有从代码读到该页面的宽度限制' % sid
+            band = _int_range(counterpart['width_range'])
+            if band is None:
+                return '普查官的 ui_surfaces[%s].width_range 形状无效' % sid
+            if narrowed is not None and (narrowed[0] > band[0] or narrowed[1] < band[1]):
+                return '页面 %s 的 width_range %d..%d 窄于普查官读出的 %d..%d' % (sid, *narrowed, *band)
+    read_thresholds = ledger.get('layout_thresholds')
+    if read_thresholds is not None:
+        if not isinstance(read_thresholds, list) or any(
+                not isinstance(t, dict) or not isinstance(t.get('width'), int) or isinstance(t.get('width'), bool)
+                for t in read_thresholds):
+            return '普查官的 layout_thresholds 形状无效'
+        kept = {t.get('width') for t in inventory.get('layout_thresholds') or [] if isinstance(t, dict)}
+        dropped = sorted({t['width'] for t in read_thresholds} - kept)
+        if dropped:
+            return 'inventory 删掉了普查官读出的布局阈值: ' + ', '.join(str(w) for w in dropped)
+    return ''
+
+
 ENV_AXES = tuple(a for a in AXES if a != 'state')
 
 
@@ -335,6 +407,10 @@ def visual_reason(entry, ledger, run):
             if dropped:
                 noun = '语言' if axis == 'locale' else axis + ' 值'
                 raise ValueError('inventory 删掉了普查官列出的%s: %s' % (noun, ', '.join(sorted(dropped))))
+        # same for what the census read about width: the inventory may widen, never narrow
+        problem = census_width_reason(ledger, inventory)
+        if problem:
+            raise ValueError(problem)
         reference_images, docs = baseline(run, config)
         # the interaction baseline's layout category holds gesture distances, not window widths
         problem = pinned_layout_reason(docs['baseline'], inventory)
