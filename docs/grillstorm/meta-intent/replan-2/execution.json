@@ -35,14 +35,16 @@
       ]
     },
     "11": {
-      "status": "candidate_pending_review",
+      "status": "implementation_accepted",
       "dependencies": [
         10
       ],
       "base": "88e7becaf30522ef29dd2fa168b62045affcb782",
       "original_builder_candidate": "67446ad15a5e8adc329a0b0c9f8f3c45d1d359e9",
-      "candidate": "2916e1833fb3267b335b3d666d0831e52b03cb8e",
-      "acceptance_blocker": "601 combined Python/Codex-flow, 55 Node and 577 hook tests passed; independent fixed-candidate Standards/Spec review pending"
+      "candidate": "d622402c",
+      "integration_commit": "0340eccf277f6727b2b49e67a45178f1c57b9a7c",
+      "acceptance_notes": "d622402c: both reviews settled/released. Standards0hard/3optional. Spec accepts A1/C1 and no regression. A2 independently reproduced/adjudicated as the existing host truthfulness boundary, not a deterministic runtime defect; report3c6e1201 preserves rationale. User y accepted continuation. Actual dialogue proof still required",
+      "proof_pending": [16]
     },
     "12": {
       "status": "implementation_accepted",
@@ -60,9 +62,11 @@
       "root_findings_corrections": "Independent final review accepts #12/A1/C2; non-blocking all-legacy READS short-circuit note carried to #13; #11 C1-prime remains separate"
     },
     "13": {
-      "status": "correction_running",
-      "candidate": "705ec156",
-      "coordinator_findings": "T11-T13-inflight-checkpoint.md; required-document semantic synchronization negative case remains an acceptance gate",
+      "status": "implementation_accepted",
+      "candidate": "bc513f918422b616b7e11b4984b7584758c25f16",
+      "integration_commit": "1aee9637bc5d12919966fca9b36b7859a6f05591",
+      "proof_pending": [17],
+      "coordinator_findings": "Spec passed all corrective deltas; Standards confirms value-parity correction, reports pre-existing quality-field diagnostic drift. Retained as nonblocking maintenance: actual authoritative gate rejects these reports and no completion shortcut was introduced. Original reports preserved separately. Joint integration hook verification pending",
       "base": "ed430dfcebed485b913b54d7785f02cc86998303",
       "checkout": "meta-intent-t13",
       "dependencies": [
@@ -77,8 +81,8 @@
       ]
     },
     "15": {
-      "status": "preparing_actual_host_tests",
-      "host_prompt": "Codex evaluator waits for user to select Keep current model; Orca terminal input rejected with agent_prompt_blocked, no model change applied",
+      "status": "prepared_host_execution_blocked",
+      "host_prompt": "Opus evaluator preparation settled and released, HEAD 7384de45. 20 harness tests reported green; 0/14 actual host cells verified. Two Claude actor launches failed at workspace trust before dispatch input; both released, project files unchanged. All Codex cells unverified. Preparation completion is not ticket acceptance",
       "dependencies": [
         9,
         10
@@ -86,7 +90,8 @@
       "base": "88e7becaf30522ef29dd2fa168b62045affcb782"
     },
     "16": {
-      "status": "pending",
+      "status": "preparing_actual_host_tests",
+      "preparation_candidate": "0340eccf277f6727b2b49e67a45178f1c57b9a7c",
       "dependencies": [
         11
       ]
@@ -107,24 +112,21 @@
   },
   "active": [
     {
-      "issue": 15,
-      "task": "task_53c1b6f2754a",
-      "dispatch": "ctx_50de403c39ba",
+      "issue": 16,
+      "role": "evaluator_preparation",
+      "task": "task_64d0001b9228",
+      "dispatch": "ctx_8a0e22cd1f62",
       "checkout": "meta-intent-t9",
-      "role": "evaluator"
-    },
-    {
-      "issue": 13,
-      "role": "document_sync_correction",
-      "task": "task_2515b182fb17",
-      "dispatch": "ctx_a8e7d8ab1885",
-      "checkout": "meta-intent-t13"
+      "agent": "claude",
+      "model": "opus"
     }
   ],
   "completed": [
     9,
     10,
-    12
+    11,
+    12,
+    13
   ],
   "historical_records": "../workflow-state.json tasks and ../reviews remain historical; no old acceptance reused",
   "completion_scope": "Implementation acceptance unlocks DAG; actual host proof and final tracker closure remain separate.",
