@@ -14,7 +14,7 @@ import pytest
 from .test_bootstrap_scope import ATTENTION_CONTRACT_BODY, codex_transition, project, publish_contract, write
 from .test_product_intent_session import decide, invoke
 from .test_evidence_freshness import invoke as freshness
-from .test_freshness_admission_corrections import _artifacts, _readiness, _reconcile, HOSTS, NODE
+from .test_freshness_admission_corrections import _artifacts, _bootstrap, _readiness, _reconcile, _set_node, HOSTS, NODE
 
 REPORT = ".allforai/bootstrap/export-report.json"
 EXISTS = [sys.executable, "-c", "import os; assert os.path.exists('" + REPORT + "')"]
@@ -34,8 +34,20 @@ def test_accepted_with_gaps_is_a_qualified_run_outcome_not_completion(tmp_path, 
 
 
 DOC = "docs/orders-export.md"
+# The document's stated behavior is executed against the current code; a stale claim fails.
+DOC_CHECK = [sys.executable, "-m", "doctest", DOC]
 WORKFLOW = ".allforai/bootstrap/workflow.json"
 ACCEPTANCE = [sys.executable, "-c", "import json; assert json.load(open('" + REPORT + "'))['status'] == 'passed'"]
+
+
+def _doc(returned, header=None):
+    """The fact document: what list_orders returns for one account, as a runnable example."""
+    lines = ["# Orders export", "", "`list_orders(account)` returns only that account's orders:", "",
+             "    >>> from orders import list_orders", "    >>> list_orders('acme')", "    " + returned]
+    if header:
+        lines += ["", "The CSV starts with a header row:", "", "    >>> from orders import HEADER",
+                  "    >>> HEADER", "    " + header]
+    return "\n".join(lines) + "\n"
 WAREHOUSE_EVIDENCE = [sys.executable, "-c",
                       "import json; assert json.load(open('.allforai/bootstrap/stock.json'))['status'] == 'passed'"]
 EXPORT = {"id": "export", "topic": "scenarios", "goal": "Export the current account's orders as CSV",
@@ -64,6 +76,7 @@ def _plan(root):
                           "intent_ids": ["export"],
                           "responsibilities": ["implementation", "documentation", "verification"],
                           "source_inputs": ["orders.py"], "required_documents": [DOC],
+                          "document_verification": {DOC: DOC_CHECK},
                           "exit_artifacts": [REPORT], "body": ATTENTION_CONTRACT_BODY},
                          dict(WAREHOUSE, body=ATTENTION_CONTRACT_BODY)]}
     result = invoke(root, request)
@@ -132,30 +145,19 @@ def test_local_feature_closure_refuses_inconsistency_and_recovers(tmp_path, host
     assert code == 0 and report["status"] == "ready", report["blockers"]  # Contract readiness permits the work.
     _assert_valid_unrelated(tmp_path)
 
-    # Correction: the fact document is written and the acceptance command reverifies.
+    # Correction: the fact document is written; acceptance and the document check both execute.
     (tmp_path / DOC).parent.mkdir(parents=True, exist_ok=True)
-    (tmp_path / DOC).write_text("# Orders export\n\nlist_orders(account) returns only that account's orders.\n")
+    (tmp_path / DOC).write_text(_doc("[]"))
     code, published = _publish_evidence(tmp_path)
     assert code == 0 and published["status"] == "valid", published
+    assert published["verified_documents"] == [DOC]
     checked = _artifacts(tmp_path)
     assert checked["all_exist"] is True and checked["freshness"]["diff"] == {}
     assert _reconcile(tmp_path)[1]["action"] == "keep"
     _assert_valid_unrelated(tmp_path)
 
-    # A fact document edited after publication is an inconsistency owned by the node's documentation.
-    (tmp_path / DOC).write_text("# Orders export\n\nlist_orders(account) returns every order.\n")
-    checked = _artifacts(tmp_path)
-    assert checked["all_exist"] is False and checked["freshness"]["status"] == "stale"
-    assert checked["freshness"]["diff"] == {"outputs": {DOC: "changed"}}
-    assert checked["freshness"]["repair"] == {"owner": NODE, "responsibilities": ["documentation"]}
-    code, report = _readiness(tmp_path)
-    assert code == 1 and report["status"] == "not_ready"
-    blocker = next(b for b in report["blockers"] if b["code"] == "stale_evidence" and b["node_id"] == NODE)
-    assert "repair owner " + NODE + " (documentation)" in blocker["message"] and DOC in blocker["message"]
-    code, published = _publish_evidence(tmp_path)
-    assert code == 0 and published["status"] == "valid"
-
-    # Implementation changes: the facts and evidence bound to the old code no longer prove delivery.
+    # Decisive negative: the code changes, the required document is retained unchanged, the current
+    # inputs are observed and a code-only acceptance passes. The outdated document keeps delivery blocked.
     (tmp_path / "orders.py").write_text("def list_orders(account): return [account]\n")
     checked = _artifacts(tmp_path)
     assert checked["all_exist"] is False
@@ -164,7 +166,46 @@ def test_local_feature_closure_refuses_inconsistency_and_recovers(tmp_path, host
     node, plan = _reconcile(tmp_path)
     assert plan["action"] == "invalidate" and plan["repair_owner"] == NODE
     assert plan["repair_responsibilities"] == ["implementation"] and plan["diff"] == {"files": {"orders.py": "changed"}}
+    outdated = (tmp_path / DOC).read_bytes()
+    code, refused = _publish_evidence(tmp_path)
+    assert code == 1 and refused["status"] == "failed_verification", refused
+    assert refused["document"] == DOC and refused["command"] == DOC_CHECK
+    assert refused["repair"] == {"owner": NODE, "responsibilities": ["documentation"]}
+    assert (tmp_path / DOC).read_bytes() == outdated  # Verification reads the document; it never rewrites it.
+    checked = _artifacts(tmp_path)
+    assert checked["all_exist"] is False and checked["freshness"]["status"] == "stale"
+    assert _readiness(tmp_path)[0] == 1 and _reconcile(tmp_path)[1]["action"] == "invalidate"
+    # Touching the document without correcting its facts is not synchronization either.
+    (tmp_path / DOC).write_text(_doc("[]") + "\nRefreshed after the change.\n")
+    code, refused = _publish_evidence(tmp_path)
+    assert code == 1 and refused["status"] == "failed_verification" and refused["document"] == DOC
+    assert _artifacts(tmp_path)["all_exist"] is False
     _assert_valid_unrelated(tmp_path)
+
+    # Synchronization: the document states the current behavior and its check executes against the code.
+    (tmp_path / DOC).write_text(_doc("['acme']"))
+    code, published = _publish_evidence(tmp_path)
+    assert code == 0 and published["status"] == "valid", published
+    checked = _artifacts(tmp_path)
+    assert checked["all_exist"] is True and checked["freshness"]["diff"] == {}
+    assert _reconcile(tmp_path)[1]["action"] == "keep"
+    _assert_valid_unrelated(tmp_path)
+
+    # A fact document edited after publication to contradict the code is a documentation inconsistency.
+    (tmp_path / DOC).write_text(_doc("['acme', 'other-account']"))
+    checked = _artifacts(tmp_path)
+    assert checked["all_exist"] is False and checked["freshness"]["status"] == "stale"
+    assert checked["freshness"]["diff"] == {"outputs": {DOC: "changed"}}
+    assert checked["freshness"]["repair"] == {"owner": NODE, "responsibilities": ["documentation"]}
+    code, report = _readiness(tmp_path)
+    assert code == 1 and report["status"] == "not_ready"
+    blocker = next(b for b in report["blockers"] if b["code"] == "stale_evidence" and b["node_id"] == NODE)
+    assert "repair owner " + NODE + " (documentation)" in blocker["message"] and DOC in blocker["message"]
+    code, refused = _publish_evidence(tmp_path)
+    assert code == 1 and refused["status"] == "failed_verification" and refused["document"] == DOC
+    (tmp_path / DOC).write_text(_doc("['acme']"))
+    code, published = _publish_evidence(tmp_path)
+    assert code == 0 and published["status"] == "valid"
 
     # SG01 inside synchronization: inputs observed as A, changed to B before publication.
     result, observed = freshness(tmp_path, "observe", node_id=NODE, kind="evidence")
@@ -172,7 +213,7 @@ def test_local_feature_closure_refuses_inconsistency_and_recovers(tmp_path, host
     (tmp_path / "orders.py").write_text("def list_orders(account): return [account, 'csv']\n")
     result, rejected = freshness(tmp_path, "publish", observation=observed["observation"], verification_command=ACCEPTANCE)
     assert result.returncode == 1 and rejected["status"] == "stale"
-    (tmp_path / DOC).write_text("# Orders export\n\nlist_orders(account) returns the account and a CSV marker.\n")
+    (tmp_path / DOC).write_text(_doc("['acme', 'csv']"))
     code, published = _publish_evidence(tmp_path)
     assert code == 0 and published["status"] == "valid"
     state = tmp_path / ".allforai/bootstrap/evidence-freshness.json"
@@ -210,7 +251,7 @@ def test_local_feature_closure_refuses_inconsistency_and_recovers(tmp_path, host
     code, report = _readiness(tmp_path)
     assert code == 0 and report["status"] == "ready", report["blockers"]
     (tmp_path / "orders.py").write_text("HEADER = 'id,total'\ndef list_orders(account): return [account, 'csv']\n")
-    (tmp_path / DOC).write_text("# Orders export\n\nCSV starts with HEADER; only the account's orders follow.\n")
+    (tmp_path / DOC).write_text(_doc("['acme', 'csv']", header="'id,total'"))
     code, published = _publish_evidence(tmp_path)
     assert code == 0 and published["status"] == "valid", published
     assert _artifacts(tmp_path)["all_exist"] is True
@@ -259,6 +300,109 @@ def test_local_feature_closure_refuses_inconsistency_and_recovers(tmp_path, host
     _assert_valid_unrelated(tmp_path)
     history = json.loads((tmp_path / ".allforai/bootstrap/local-requirements.json").read_text())["requirements"]
     assert [item["revision"] for item in history] == [1, 2, 3]  # Prior revisions are retained.
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_required_document_without_verification_is_refused_at_every_gate(tmp_path, host):
+    """Declaring a fact document is a responsibility, not proof: planning must also
+    declare how that document is checked against the current source."""
+    project(tmp_path, confirmed=True, host=host)
+    _set_node(tmp_path, required_documents=[DOC])
+    (tmp_path / DOC).parent.mkdir(parents=True, exist_ok=True)
+    (tmp_path / DOC).write_text(_doc("[]"))
+    write(tmp_path, REPORT, {"status": "passed"})
+    code, errors = _bootstrap(tmp_path)
+    assert code == 1 and any(NODE in e and "document_verification" in e for e in errors), errors
+    code, report = _readiness(tmp_path)
+    assert code == 1 and NODE in [b["node_id"] for b in report["blockers"] if b["code"] == "missing_document_verification"]
+    checked = _artifacts(tmp_path)
+    assert checked["all_exist"] is False and checked["freshness"]["admission"] == "invalid"
+    assert _reconcile(tmp_path)[1]["action"] == "invalidate"
+    code, refused = _publish_evidence(tmp_path)
+    assert code == 1 and refused["status"] == "inconsistent", refused
+    assert refused["diff"] == {"documents": {DOC: "unverified"}}
+    assert refused["repair"] == {"owner": NODE, "responsibilities": ["documentation", "verification"]}
+
+    _set_node(tmp_path, required_documents=[DOC], document_verification={DOC: DOC_CHECK})
+    publish_contract(tmp_path)
+    assert _bootstrap(tmp_path)[0] == 0 and _readiness(tmp_path)[1]["status"] == "ready"
+    code, published = _publish_evidence(tmp_path)
+    assert code == 0 and published["status"] == "valid", published
+    assert _artifacts(tmp_path)["all_exist"] is True
+
+
+MUTATE_SOURCE = [sys.executable, "-c", "open('orders.py', 'a').write('\\n# rewritten by a document check\\n')"]
+
+
+@pytest.mark.parametrize("host", HOSTS)
+@pytest.mark.parametrize("target", ["own-source", "upstream-source"])
+def test_document_check_that_changes_inputs_cannot_publish_proof_for_the_old_state(tmp_path, host, target):
+    """A document check reads; a check that rewrites source A into B while the
+    observation still describes A cannot publish A's evidence as valid."""
+    project(tmp_path, confirmed=True, host=host)
+    write(tmp_path, REPORT, {"status": "passed"})
+    publish_contract(tmp_path, kind="evidence", verification_command=ACCEPTANCE)
+    (tmp_path / DOC).parent.mkdir(parents=True, exist_ok=True)
+    (tmp_path / DOC).write_text(_doc("[]"))
+    if target == "own-source":
+        node_id, acceptance = NODE, ACCEPTANCE
+        _set_node(tmp_path, required_documents=[DOC], document_verification={DOC: MUTATE_SOURCE})
+    else:
+        node_id = "verify-export"
+        acceptance = [sys.executable, "-c", "import json; assert json.load(open('.allforai/bootstrap/verify.json'))['status'] == 'passed'"]
+        workflow = json.loads((tmp_path / WORKFLOW).read_text())
+        consumer = {"node_id": node_id, "goal": "Verify the export", "capability": "verify", "decision_inputs": [],
+                    "source_inputs": [], "hard_blocked_by": [NODE], "required_documents": [DOC],
+                    "document_verification": {DOC: MUTATE_SOURCE}, "exit_artifacts": [".allforai/bootstrap/verify.json"]}
+        workflow["nodes"].append(consumer)
+        write(tmp_path, WORKFLOW, workflow)
+        (tmp_path / ".allforai/bootstrap/node-specs" / (node_id + ".md")).write_text(
+            "---\n" + json.dumps(consumer) + "\n---\n" + ATTENTION_CONTRACT_BODY)
+        write(tmp_path, ".allforai/bootstrap/verify.json", {"status": "passed"})
+    state = tmp_path / ".allforai/bootstrap/evidence-freshness.json"
+    recorded = state.read_bytes()
+    source = (tmp_path / "orders.py").read_bytes()
+    code, rejected = _publish_evidence(tmp_path, node_id, command=acceptance)
+    assert code == 1 and rejected["status"] == "stale", rejected
+    assert (tmp_path / "orders.py").read_bytes() != source  # The mutation is visible, never hidden.
+    assert state.read_bytes() == recorded  # Nothing was published for either state.
+    assert _artifacts(tmp_path, node_id)["all_exist"] is False
+    if target == "upstream-source":
+        assert _artifacts(tmp_path)["freshness"]["status"] == "stale"  # The producer's evidence is also stale now.
+
+
+@pytest.mark.parametrize("host", HOSTS)
+@pytest.mark.parametrize("spelling", ["relative", "dot-relative", "absolute-in-project"])
+def test_document_check_script_is_a_consumed_input(tmp_path, host, spelling):
+    """A project checker script is part of the delivery's inputs whatever its argv
+    spelling: an unobserved checker cannot verify, and weakening a tracked checker
+    invalidates the evidence."""
+    project(tmp_path, confirmed=True, host=host)
+    script = "scripts/check_orders_doc.py"
+    argv_path = {"relative": script, "dot-relative": "./" + script,
+                 "absolute-in-project": str(tmp_path / script)}[spelling]
+    (tmp_path / script).parent.mkdir(parents=True, exist_ok=True)
+    (tmp_path / script).write_text("import doctest, sys\n"
+                                   "sys.path.insert(0, '.')\n"
+                                   "failed, _ = doctest.testfile('" + DOC + "', module_relative=False)\n"
+                                   "sys.exit(1 if failed else 0)\n")
+    (tmp_path / DOC).parent.mkdir(parents=True, exist_ok=True)
+    (tmp_path / DOC).write_text(_doc("[]"))
+    write(tmp_path, REPORT, {"status": "passed"})
+    _set_node(tmp_path, required_documents=[DOC], document_verification={DOC: [sys.executable, argv_path]})
+    code, refused = _publish_evidence(tmp_path)
+    assert code == 1 and refused["status"] == "inconsistent", refused
+    assert refused["diff"] == {"documents": {DOC: "unobserved-check:" + script}}
+    assert refused["repair"]["owner"] == NODE
+
+    _set_node(tmp_path, required_documents=[DOC], document_verification={DOC: [sys.executable, argv_path]},
+              input_dependencies=[script])
+    code, published = _publish_evidence(tmp_path)
+    assert code == 0 and published["status"] == "valid", published
+    assert _artifacts(tmp_path)["all_exist"] is True
+    (tmp_path / script).write_text("import sys\nsys.exit(0)\n")  # A weakened checker is a changed input.
+    checked = _artifacts(tmp_path)
+    assert checked["all_exist"] is False and checked["freshness"]["diff"] == {"files": {script: "changed"}}
 
 
 @pytest.mark.parametrize("host", HOSTS)

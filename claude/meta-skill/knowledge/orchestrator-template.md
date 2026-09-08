@@ -88,9 +88,13 @@ but does not prove completion. The independent artifact gate consumes this state
 A withheld completion carries `freshness.diff` and `freshness.repair`: repair at
 the named `owner` (the node, a stale producer, or `interactive-bootstrap` for a
 pending or unreplanned product decision), then re-observe and republish. A
-missing or drifted required document is a documentation inconsistency of that
-node; a product-decision owner is a preflight blocker for the next `/run`, never
-something to answer or invent inside the run.
+missing, drifted or outdated required document is a documentation inconsistency
+of that node: publication executes each document's declared
+`document_verification` against the current source, so a code-only acceptance
+cannot complete a delivery whose facts are stale; rewriting a document without
+correcting its facts fails the same check. A product-decision owner is a
+preflight blocker for the next `/run`, never something to answer or invent
+inside the run.
 A node whose freshness is `undeclared` (missing `source_inputs`) or `invalid`
 (malformed declaration) cannot start or be committed: return it to interactive
 bootstrap to declare its product source (explicit `[]` only when none applies).

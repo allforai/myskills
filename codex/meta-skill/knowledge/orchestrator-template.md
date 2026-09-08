@@ -142,8 +142,11 @@ On the first iteration, if `transition_log` is non-empty:
 - A node withheld by freshness carries `freshness.diff` and `freshness.repair`:
   repair at the named `owner` (the node, a stale producer, or `interactive-bootstrap`
   for a pending or unreplanned product decision), re-observe and republish. A
-  missing or drifted required document is that node's documentation inconsistency;
-  a product-decision owner returns to `bootstrap`, never to an in-run answer.
+  missing, drifted or outdated required document is that node's documentation
+  inconsistency: publication executes each document's declared `document_verification`
+  against the current source, so a code-only acceptance cannot complete a delivery
+  whose facts are stale, and rewriting a document without correcting its facts fails
+  the same check. A product-decision owner returns to `bootstrap`, never to an in-run answer.
 - for goal-based replication workflows, do not treat an accepted current slice as final success when the acceptance artifact says major requested fidelity surfaces remain open
 - User interrupts: the next run resumes from `workflow.json`
 

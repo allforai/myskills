@@ -222,6 +222,47 @@ def missing_outputs(current):
     return {path: 'missing' for path, value in current.items() if value is None}
 
 
+def document_checks(node):
+    """Declared project-specific verification argv per required document.
+
+    A document is synchronized only when its stated facts are executed against
+    the current source; a fingerprint, timestamp or report refresh proves nothing.
+    """
+    declared = node.get('document_verification')
+    checks = {}
+    for path in node.get('required_documents', []):
+        argv = declared.get(path) if isinstance(declared, dict) else None
+        if isinstance(argv, list) and argv and all(isinstance(s, str) and s for s in argv):
+            checks[path] = argv
+    return checks
+
+
+def project_file_identity(root, token):
+    """The project-relative identity of an argv token naming an existing project
+    file (relative, ./relative or absolute inside the project), else None.
+    Files outside the project are not read or resolved further."""
+    if not isinstance(token, str) or not token:
+        return None
+    candidate = Path(token) if Path(token).is_absolute() else root / token
+    try:
+        if not candidate.is_file():
+            return None
+        resolved = candidate.resolve()
+    except OSError:
+        return None
+    if not resolved.is_relative_to(root.resolve()):
+        return None
+    return resolved.relative_to(root.resolve()).as_posix()
+
+
+def unverified_documents(node, record):
+    """Required documents whose declared check did not verify this record."""
+    checks = document_checks(node)
+    verified = ((record or {}).get('verification') or {}).get('documents', {})
+    return {path: 'unverified' for path in node.get('required_documents', [])
+            if path not in checks or (record is not None and verified.get(path, {}).get('command') != checks[path])}
+
+
 def scope_blockers(root, workflow):
     """The shared scope contract's blockers, keyed by consuming node (None = global)."""
     try:
@@ -262,9 +303,10 @@ def repair_responsibility(root, node, diff, blockers=None):
         responsibilities.append('contract')
     if 'files' in diff:
         responsibilities.append('implementation')
-    if any(path in documents for path in changed_outputs):
+    if any(path in documents for path in changed_outputs) or diff.get('documents'):
         responsibilities.append('documentation')
-    if any(path not in documents and path != spec for path in changed_outputs) or diff.get('evidence') == 'unpublished':
+    if (any(path not in documents and path != spec for path in changed_outputs) or diff.get('evidence') == 'unpublished'
+            or diff.get('documents')):
         responsibilities.append('verification')
     return {'owner': node['node_id'], 'responsibilities': responsibilities}
 
@@ -322,6 +364,10 @@ def evaluate(root):
                 changed.update(missing_outputs(outputs(root, node)))
             if changed:
                 diff['outputs'] = changed
+            unverified = unverified_documents(node, evidence)
+            if unverified:
+                diff['documents'] = unverified
+                evidence_valid = False
         result[node['node_id']] = {'status': 'valid' if evidence_valid else 'stale',
                                   'readiness_status': 'valid' if valid else 'stale', 'diff': diff}
         if not evidence_valid:
@@ -428,13 +474,53 @@ def session(root, request):
                 diff = {'outputs': missing_outputs(observation['outputs'])}
                 return {'status': 'inconsistent', 'diff': diff, 'repair': repair_responsibility(root, node, diff),
                         'reason': 'Required documents or evidence are missing; delivery is incomplete'}
+            if observation['kind'] == 'evidence':
+                checks = document_checks(node)
+                undeclared = {p: 'unverified' for p in node.get('required_documents', []) if p not in checks}
+                if undeclared:
+                    diff = {'documents': undeclared}
+                    return {'status': 'inconsistent', 'diff': diff, 'repair': repair_responsibility(root, node, diff),
+                            'reason': 'Required documents need a declared project-specific verification against '
+                                      'current source; declare document_verification at planning'}
+                # A checker script is part of the delivery's inputs: an unobserved one
+                # could change without invalidating the evidence it produced.
+                unobserved: dict[str, str] = {}
+                for path, argv in checks.items():
+                    for token in argv:
+                        identity = project_file_identity(root, token)
+                        if (identity is not None and identity not in observation['outputs']
+                                and identity not in observation['inputs']['files']):
+                            unobserved.setdefault(path, 'unobserved-check:' + identity)
+                if unobserved:
+                    diff = {'documents': unobserved}
+                    return {'status': 'inconsistent', 'diff': diff, 'repair': repair_responsibility(root, node, diff),
+                            'reason': 'Document verification scripts must be consumed inputs; declare them in '
+                                      'input_dependencies or register them with read, then reobserve'}
+                documents = {}
+                for path, argv in checks.items():
+                    checked = subprocess.run(argv, cwd=root, capture_output=True, text=True, timeout=300)
+                    if checked.returncode:
+                        return {'status': 'failed_verification', 'document': path, 'command': argv,
+                                'returncode': checked.returncode, 'stdout': checked.stdout, 'stderr': checked.stderr,
+                                'repair': {'owner': node['node_id'], 'responsibilities': ['documentation']},
+                                'reason': 'Required document does not verify against the current source; '
+                                          'synchronize its facts, then reverify'}
+                    documents[path] = {'command': argv, 'returncode': 0}
+                # Recheck every current input after the last check ran: a checker that
+                # rewrites source A into B must not publish A's evidence for B.
+                if (observation['inputs'] != snapshot(root, node, observation.get('extra', []))
+                        or observation['source_snapshot'] != inventory(root, workflow)
+                        or outputs(root, node, observation['kind']) != observation['outputs']):
+                    return {'status': 'stale', 'reason': 'Inputs or outputs changed during document verification; '
+                                                         'a check reads, it does not modify; reobserve current inputs'}
+                observation['verification']['documents'] = documents
             state = read_json(root, STATE, {'nodes': {}})
             bucket = 'contracts' if observation['kind'] == 'contract' else 'nodes'
             state.setdefault(bucket, {})[node['node_id']] = observation
             if bucket == 'nodes':
                 state.get('contracts', {}).pop(node['node_id'], None)
             write_json(root, STATE, state)
-        return {'status': 'valid'}
+        return {'status': 'valid', 'verified_documents': sorted(observation['verification'].get('documents', {}))}
     raise ValueError('Unknown operation')
 
 

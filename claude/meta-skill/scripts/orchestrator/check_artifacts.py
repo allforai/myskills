@@ -313,6 +313,35 @@ def input_declaration_errors(node: dict) -> list:
         for path in value:
             if os.path.isabs(path) or ".." in path.replace(os.sep, "/").split("/"):
                 errors.append(f"'{field}' entry {path!r} must be a relative project path without '..'")
+    errors.extend(document_verification_errors(node))
+    return errors
+
+
+def document_verification_errors(node: dict) -> list:
+    """A required document must declare how it is checked against current source.
+
+    ``document_verification`` maps each ``required_documents`` path to a non-empty
+    argv that executes the document's stated facts against the code. Declaring
+    the document alone is a responsibility, not proof of synchronization.
+    """
+    errors = []
+    documents = node.get("required_documents")
+    documents = [p for p in documents if isinstance(p, str) and p.strip()] if isinstance(documents, list) else []
+    declared = node.get("document_verification")
+    if "document_verification" in node and not isinstance(declared, dict):
+        errors.append("'document_verification' must be an object mapping required documents to argv lists")
+        declared = {}
+    declared = declared if isinstance(declared, dict) else {}
+    for path, argv in declared.items():
+        if path not in documents:
+            errors.append(f"'document_verification' entry {path!r} is not a declared required document")
+        if not isinstance(argv, list) or not argv or any(not isinstance(s, str) or not s.strip() for s in argv):
+            errors.append(f"'document_verification' for {path!r} must be a non-empty argv list that checks "
+                          "the document against current source")
+    for path in documents:
+        if path not in declared:
+            errors.append(f"'required_documents' entry {path!r} has no document_verification argv; declare a "
+                          "project-specific check of that document against current source")
     return errors
 
 

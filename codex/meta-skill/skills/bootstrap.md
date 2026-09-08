@@ -141,10 +141,14 @@ Copy `knowledge/input-freshness.md` from the canonical root into
 `.allforai/bootstrap/protocols/`. Follow it on every bootstrap/resume, including
 unchanged product intent: declare each scoped node's `source_inputs` (project-relative
 product source files, directories or globs; explicit `[]` only when no product source is
-relevant) plus consumed `input_dependencies` and `required_documents`, observe
+relevant) plus consumed `input_dependencies` and `required_documents`, each mapped in
+`document_verification` to a project-specific argv that executes the document's stated facts
+against the current source (never existence or a status field), observe
 before generating documents, publish verified contract observations, then consume
 reconciliation and readiness. The shared gates refuse a scoped node that omits or
-malforms these declarations; freshness is never opt-in. Use the same evidence publication CLI after actual
+malforms these declarations (`missing_document_verification` for an unchecked document);
+freshness is never opt-in, and evidence publication runs every document check so a code-only
+acceptance cannot complete a delivery whose facts are outdated. Use the same evidence publication CLI after actual
 verification; preserve journal authority and unrelated valid work. Invalidated items name a `diff` and
 `repair_owner`: resolve `interactive-bootstrap` items here (answer the pending decision, or refreeze and
 replan the recorded change) and leave node-owned items for the run to repair and republish.

@@ -7,7 +7,12 @@ these same helpers. This is a boundary check, not a background watcher.
 For each workflow node, declare `source_inputs` as project-relative files,
 directories or globs (explicit `[]` only when no product source is relevant),
 `input_dependencies` for additional consumed files, and `required_documents`
-for generated fact documents that must accompany delivery. Keep existing
+for generated fact documents that must accompany delivery, each mapped in
+`document_verification` to a project-specific argv that executes the document's
+stated facts against the current source (documented examples, interfaces or
+behaviors run against the code; existence, a hash or a status field is not a
+check). A required document without that mapping is refused by every gate as
+`missing_document_verification`. Keep existing
 `requirement_refs`, `decision_inputs` and `hard_blocked_by` contracts. Declare
 other generated files in workflow `generated_outputs`; never classify product
 source as generated merely to silence drift. Missing dependency knowledge is
@@ -55,7 +60,20 @@ Use JSON on stdin to `python3 .allforai/bootstrap/scripts/evidence_freshness.py 
    If the source changes, re-observe and actually reverify the new state. A
    missing required document or exit artifact returns `inconsistent` with the
    missing `diff.outputs` and its `repair` owner: passing tests do not complete
-   a delivery whose facts are absent.
+   a delivery whose facts are absent. The helper then executes every declared
+   `document_verification` against the observed source; a document whose facts
+   no longer hold returns `failed_verification` naming the `document` with the
+   node as documentation owner, whatever the acceptance command reported. An
+   evidence record whose documents were not verified under the currently
+   declared check is `stale` with `diff.documents`. A check reads; after the last
+   check the helper rechecks every current input and output, and a check that
+   changed any source, upstream input or output is rejected as `stale` so proof
+   observed for state A is never published for state B. A project checker script
+   named in the argv must itself be a consumed input (`input_dependencies` or a
+   registered `read`); otherwise publication returns `inconsistent` with
+   `unobserved-check`, and a weakened checker later shows as a changed input.
+   Correct the facts, re-observe and republish: only the affected node's record
+   changes.
 5. On bootstrap/resume send `{"operation":"check"}`, then run reconciliation
    with `--write`. `check_artifacts.py` consumes evidence freshness and
    `validate_unattended_readiness.py` consumes contract readiness. Do not bypass

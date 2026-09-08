@@ -292,7 +292,11 @@ def test_same_commit_distinct_dirty_states_and_unrelated_baseline_revisions(tmp_
 def test_broad_source_selection_excludes_generated_documents_and_copied_helpers(tmp_path, host):
     setup(tmp_path, host)
     workflow = json.loads((tmp_path / WORKFLOW).read_text())
-    workflow['nodes'][0].update(source_inputs=['.'], required_documents=['docs/order-facts.md'])
+    workflow['nodes'][0].update(source_inputs=['.'], required_documents=['docs/order-facts.md'],
+                                document_verification={'docs/order-facts.md': [sys.executable, '-c',
+        "from pathlib import Path\n"
+        "namespace = {}; exec(Path('orders.py').read_text(), namespace)\n"
+        "assert ('empty list' in Path('docs/order-facts.md').read_text()) == (namespace['list_orders']('account') == [])\n"]})
     write(tmp_path, WORKFLOW, workflow)
     _, observed = invoke(tmp_path, 'observe', node_id='deliver-export')
     verifier = [sys.executable, '-c',

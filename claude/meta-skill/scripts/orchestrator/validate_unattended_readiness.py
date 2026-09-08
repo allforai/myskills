@@ -321,14 +321,18 @@ def validate_unattended_readiness(project_root: Path) -> dict:
 
     scope_blockers = validate_scope(project_root, workflow)
     blockers.extend(scope_blockers)
-    from check_artifacts import freshness_states
+    from check_artifacts import document_verification_errors, freshness_states
     # Freshness needs a well-formed node list; shape rejection above already fails closed.
     well_formed = (isinstance(workflow, dict) and isinstance(workflow.get("nodes"), list)
                    and all(isinstance(n, dict) for n in workflow["nodes"]))
+    by_id = ({n["node_id"]: n for n in workflow["nodes"] if isinstance(n.get("node_id"), str)}
+             if well_formed else {})
     for node_id, freshness in (freshness_states(project_root, workflow) if well_formed else {}).items():
         admission = freshness.get("admission")
         if admission == "invalid":
-            _add(blockers, "invalid_source_inputs", freshness["reason"], node_id=node_id)
+            code = ("missing_document_verification" if document_verification_errors(by_id.get(node_id, {}))
+                    else "invalid_source_inputs")
+            _add(blockers, code, freshness["reason"], node_id=node_id)
         elif admission == "missing":
             _add(blockers, "missing_source_inputs", freshness["reason"], node_id=node_id)
         elif admission == "legacy" and freshness.get("readiness_status") == "undeclared":
