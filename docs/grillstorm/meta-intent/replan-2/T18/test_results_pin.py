@@ -26,13 +26,28 @@ def test_ledger_pins_the_tree_it_claims_to_have_exported(tmp_path):
         "the ledger hash must be recomputable from its own pinned commit")
 
 
-def test_the_reference_candidate_is_never_recorded_as_accepted():
+def test_the_reference_candidate_is_never_recorded_as_accepted(tmp_path):
     recorded = ledger()
-    assert recorded["candidate_accepted"] is False
-    assert recorded["launch_candidate"] is None, (
-        "no candidate may be pinned for launch while the production repair is open")
-    assert recorded["launch_packet_root"] is None, (
-        "the reference export is preparation output, never a launch root")
+    if recorded["launch_candidate"] is not None:
+        assert recorded["launch_candidate"] != recorded["reference_commit"]
+        assert recorded["launch_packet_root"] != recorded["reference_packet_root"]
+        exported = load_exporter().candidate(tmp_path / "candidate", recorded["launch_candidate"])
+        assert exported["tree_sha256"] == recorded["launch_candidate_tree_sha256"]
+        manifest = json.loads((Path(recorded["launch_packet_root"]) / "candidate-manifest.json").read_text())
+        assert manifest["source_commit"] == recorded["launch_candidate"]
+        assert manifest["tree_sha256"] == exported["tree_sha256"]
+        if not recorded["candidate_accepted"]:
+            assert recorded["candidate_refresh_required"] is True
+            withdrawal = recorded["candidate_acceptance_withdrawal"]
+            assert withdrawal["previously_accepted_for_launch"] is True
+            assert withdrawal["candidate"] == recorded["launch_candidate"]
+            assert withdrawal["tree_sha256"] == exported["tree_sha256"]
+            assert withdrawal["reason"]
+            assert (HERE.parent / withdrawal["evidence"]).is_file()
+    else:
+        assert recorded["candidate_accepted"] is False
+        assert recorded["launch_packet_root"] is None, (
+            "the reference export is preparation output, never a launch root")
     assert recorded["launch_precondition"], "the ledger must say what must happen before a launch"
     for word in ("regenerat", "fingerprint"):
         assert word in recorded["launch_precondition"].lower(), (

@@ -11,7 +11,7 @@ import sys
 
 import pytest
 
-from .test_bootstrap_scope import REQUIREMENTS, project, gate, publish_contract, write
+from .test_bootstrap_scope import REQUIREMENTS, confirm_plan, project, gate, publish_contract, write
 from .test_product_intent_session import invoke, decide, JOURNAL
 from .test_validate_bootstrap import ATTENTION_CONTRACT_BODY
 
@@ -157,6 +157,7 @@ def test_user_confirmation_recovers_legacy_profile_without_deleting_old_local_fi
         "responsibilities": ["implementation", "documentation", "verification"], "source_inputs": ["orders.py"],
         "exit_artifacts": [".allforai/bootstrap/export-result.json"], "body": ATTENTION_CONTRACT_BODY}]})
     assert planned.returncode == 0, planned.stdout
+    confirm_plan(tmp_path, stage="plan-projection", reason="Presented the projected plan")
     publish_contract(tmp_path, "export")
     for name, result in run_gates(tmp_path).items():
         assert result.returncode == 0, (name, result.stdout)
@@ -279,6 +280,7 @@ def test_mixed_legacy_history_enters_the_session_lifecycle_without_an_interview(
         "responsibilities": ["implementation", "documentation", "verification"], "source_inputs": ["orders.py"],
         "exit_artifacts": [".allforai/bootstrap/deliver-result.json"], "body": ATTENTION_CONTRACT_BODY}]})
     assert planned.returncode == 0, planned.stdout
+    confirm_plan(tmp_path, stage="plan-projection", reason="Presented the projected plan")
     publish_contract(tmp_path, "deliver")
     for name, result in run_gates(tmp_path).items():
         assert result.returncode == 0, (name, result.stdout)

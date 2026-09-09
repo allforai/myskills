@@ -1,5 +1,51 @@
 # T17 actor launch request
 
+## Launch suspended — candidate acceptance withdrawn
+
+Do not launch the packets listed below. Later host evaluations and repair reviews
+found unresolved production defects. Their old commit, hashes and paths remain
+historical evidence, not permission for new launches or pass admission. After the
+repairs are accepted, regenerate and re-fingerprint a fresh candidate, update the
+bindings, and rerun the required host scenarios. See `results.json` field
+`candidate_acceptance_withdrawal` and `../T15-coordinator-boundary-review.md`.
+
+## Historical launch binding — superseded by the suspension above
+
+Historical prompt files:
+
+- claude T17/two-dirty-states: `/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/two-dirty-states/actor-input.md`
+- codex T17/two-dirty-states: `/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/two-dirty-states/actor-input.md`
+- claude T17/baseline-only-change: `/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/baseline-only-change/actor-input.md`
+- codex T17/baseline-only-change: `/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/baseline-only-change/actor-input.md`
+- claude T17/generated-sync-no-loop: `/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/generated-sync-no-loop/actor-input.md`
+  Resume: `/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/generated-sync-no-loop/actor-input-phase2.md`
+- codex T17/generated-sync-no-loop: `/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/generated-sync-no-loop/actor-input.md`
+  Resume: `/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/generated-sync-no-loop/actor-input-phase2.md`
+- claude T17/tests-pass-docs-stale: `/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/tests-pass-docs-stale/actor-input.md`
+- codex T17/tests-pass-docs-stale: `/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/tests-pass-docs-stale/actor-input.md`
+- claude T17/transitive-unrelated-impact: `/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/transitive-unrelated-impact/actor-input.md`
+- codex T17/transitive-unrelated-impact: `/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/transitive-unrelated-impact/actor-input.md`
+- claude T17/copied-old-evidence: `/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/copied-old-evidence/actor-input.md`
+- codex T17/copied-old-evidence: `/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/copied-old-evidence/actor-input.md`
+- claude T17/unchanged-idempotency: `/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/unchanged-idempotency/actor-input.md`
+  Resume: `/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/unchanged-idempotency/actor-input-phase2.md`
+- codex T17/unchanged-idempotency: `/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/unchanged-idempotency/actor-input.md`
+  Resume: `/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/unchanged-idempotency/actor-input-phase2.md`
+- claude T17/uncertain-impact: `/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/uncertain-impact/actor-input.md`
+- codex T17/uncertain-impact: `/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/uncertain-impact/actor-input.md`
+
+Candidate `e30ccc7cec9120815f0d9bc92204adf465f666d4` includes accepted #9–#14
+implementation and main `4e34c684`. Fresh packet root:
+`/private/tmp/meta-intent-host-campaign.XX6yRo/T17`.
+Candidate tree SHA-256:
+`c1114a94d89c2ea8d8e7bc8c496576b9750957e347769980dc75dee006704fc4`.
+
+Use the current `results.json` cell paths and this root's manifest, never the old
+paths below. Every cell remains unverified. Historical trust/quota observations
+must be revalidated on these projects; do not bypass a security prompt. Deliver
+the entire current cell's actor-input.md verbatim. The remaining text preserves
+the original preparation history and the unchanged blind-testing protocol.
+
 Prepared by the dispatched T17 worker (evaluation role). **The coordinator alone launches the
 scenario actors.** This file carries only launch inputs; the evaluator criteria and the scripted
 user replies stay in `evaluator-private.md` and are never sent to a tested context.

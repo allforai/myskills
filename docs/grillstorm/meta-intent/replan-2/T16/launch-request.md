@@ -1,5 +1,49 @@
 # T16 actor launch request
 
+## Launch suspended — candidate acceptance withdrawn
+
+Do not launch the packets listed below. Later host evaluations and repair reviews
+found unresolved production defects. Their old commit, hashes and paths remain
+historical evidence, not permission for new launches or pass admission. After the
+repairs are accepted, regenerate and re-fingerprint a fresh candidate, update the
+bindings, and rerun the required host scenarios. See `results.json` field
+`candidate_acceptance_withdrawal` and `../T15-coordinator-boundary-review.md`.
+
+## Historical launch binding — superseded by the suspension above
+
+Historical prompt files:
+
+- claude T16/no-answer: `/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/no-answer/actor-input.md`
+  Resume: `/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/no-answer/actor-input-phase2.md`
+- codex T16/no-answer: `/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/no-answer/actor-input.md`
+  Resume: `/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/no-answer/actor-input-phase2.md`
+- claude T16/partial-resume: `/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/partial-resume/actor-input.md`
+- codex T16/partial-resume: `/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/partial-resume/actor-input.md`
+- claude T16/reverse-prior-decision: `/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/reverse-prior-decision/actor-input.md`
+- codex T16/reverse-prior-decision: `/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/reverse-prior-decision/actor-input.md`
+- claude T16/legacy-provenance: `/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/legacy-provenance/actor-input.md`
+- codex T16/legacy-provenance: `/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/legacy-provenance/actor-input.md`
+- claude T16/removed-not-resurrected: `/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/removed-not-resurrected/actor-input.md`
+- codex T16/removed-not-resurrected: `/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/removed-not-resurrected/actor-input.md`
+- claude T16/discussion-preserves-source: `/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/discussion-preserves-source/actor-input.md`
+- codex T16/discussion-preserves-source: `/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/discussion-preserves-source/actor-input.md`
+- claude T16/unattended-pending: `/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/unattended-pending/actor-input.md`
+  Resume: `/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/unattended-pending/actor-input-phase2.md`
+- codex T16/unattended-pending: `/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/unattended-pending/actor-input.md`
+  Resume: `/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/unattended-pending/actor-input-phase2.md`
+
+Candidate `e30ccc7cec9120815f0d9bc92204adf465f666d4` includes accepted #9–#14
+implementation and main `4e34c684`. Fresh packet root:
+`/private/tmp/meta-intent-host-campaign.XX6yRo/T16`.
+Candidate tree SHA-256:
+`c1114a94d89c2ea8d8e7bc8c496576b9750957e347769980dc75dee006704fc4`.
+
+Use the current `results.json` cell paths and this root's manifest, never the old
+paths below. Every cell remains unverified. Historical trust/quota observations
+must be revalidated on these projects; do not bypass a security prompt. Deliver
+the entire current cell's actor-input.md verbatim. The remaining text preserves
+the original preparation history and the unchanged blind-testing protocol.
+
 Prepared by the dispatched T16 worker (evaluation role). **The coordinator alone launches the
 scenario actors.** This file carries only launch inputs; the evaluator oracle and the scripted
 user replies stay in `evaluator-private.md` and are never sent to a tested context.

@@ -627,6 +627,11 @@ When writing each node into `workflow.json`, add:
 - `decision_inputs`: paths to the `.allforai/<domain>/decision-<id>.json` artifacts this node consumes (the former `human_gate` is re-expressed here — see below).
 - `source_inputs`: the product source (files, directories or globs, project-relative) that this node's documents, contract and evidence trace to. Required on every node that consumes `requirement_refs`; write explicit `[]` only when no product source is relevant. Omission or a malformed value is refused by all public gates (`missing_source_inputs` / `invalid_source_inputs`) — never a silent skip of freshness. Do not declare the whole repository to silence drift; extra files consumed during execution are registered through the freshness `read` operation. Retained completed legacy nodes keep their historical contract and no provenance is invented for them.
 - `input_dependencies`: additional consumed files (generated artifacts, policies) beyond `source_inputs`; `required_documents`: generated fact documents that must accompany delivery; `document_verification`: for each required document, a project-specific argv that executes its stated facts against the current source (a doctest of its examples, an interface or schema comparison, a behavior probe), never mere existence or a status field. Every gate refuses a required document without it (`missing_document_verification`), and evidence publication runs it so a code-only acceptance cannot complete a delivery with outdated facts. Mirror all four in the Node-spec frontmatter.
+- `downstream_effect_owner` (optional): the node that proves this node's full effect when
+  the deliverable is split so the effect first exists downstream (production wiring,
+  integration, deployment). Omit it when the node proves its effect at its own stage. The
+  named node must exist, run after this one, and carry its own Effect Verification; mirror
+  it in the Node-spec frontmatter. An unowned deferral is refused as `unowned_effect_stage`.
 - `closure_verify`: closure types to verify (e.g. `["audio"]`, `["save-load"]`, `["2d-placeholder"]`) when applicable; else omit or `[]`.
 - `soft_retry_max`: integer (default 2) — leave unset to use the engine default.
 
@@ -678,10 +683,19 @@ Bootstrap 完成。
 
 User confirms → proceed to Step 4.
 
+Persist what you presented and what the user answered, in
+`.allforai/bootstrap/plan-confirmation.json` with its decision in
+`.allforai/bootstrap/plan-confirmation-journal.json` — schema, provenance and
+append-only revision rules in `knowledge/bootstrap-audits.md` (Phase A). The record
+carries the node ids and their `hard_blocked_by` edges; a boolean approval flag is not
+a plan, and free text is not provenance. Never write the product decision journal for
+this.
+
 This confirmation is provisional: the Step 3.5–3.8 audits may still change the node
 set or the dependency edges. Every such change is queued and presented as a delta
-against this list in Phase A (`knowledge/bootstrap-audits.md`) before the three-lens
-gate. Do not treat this confirmation as approval of a plan the audits later grew.
+against this record in Phase A and appended as the next revision. Do not treat this
+confirmation as approval of a plan the audits later grew: `validate_bootstrap.py` and
+`validate_unattended_readiness.py` recompute the delta and hold the nodes it affects.
 
 ---
 
@@ -734,6 +748,8 @@ mkdir -p .allforai/bootstrap/learned   # preserved across re-bootstrap
 **Re-bootstrap behavior:**
 If `.allforai/bootstrap/` already exists (previous run):
 - **Preserve**: `.allforai/bootstrap/learned/` (project experience, never delete)
+- **Preserve**: `plan-confirmation.json` and `plan-confirmation-journal.json`
+  (what the user confirmed, and when — appended to, never rewritten)
 - **Preserve for audit**: `transition_log[]`, `run-log.jsonl`,
   `workflow-state-index.json`, `workflow-reconciliation-plan.json`, and
   `workflow-reconciliation-plan.md`
@@ -784,29 +800,30 @@ Persist the validated files from Steps 3–5 and required runtime assets:
 
 1. `.allforai/bootstrap/bootstrap-profile.json`
 2. `.allforai/bootstrap/workflow.json`
-3. `.allforai/bootstrap/coverage-matrix.json` (from Step 3.5, only if product-concept.json exists)
-4. `.allforai/bootstrap/node-specs/*.md` — update only as authorized by the reconciliation plan
-5. `.claude/commands/run.md`
-6. `.allforai/bootstrap/scripts/check_artifacts.py`
-7. `.allforai/bootstrap/scripts/validate_bootstrap.py`
-8. `.allforai/bootstrap/scripts/expand_game_2d_production.py`
-9. `.allforai/bootstrap/scripts/validate_unattended_readiness.py`
-10. `.allforai/bootstrap/scripts/record_meta_skill_feedback.py`
-11. `.allforai/bootstrap/scripts/record_run_event.py`
-12. `.allforai/bootstrap/scripts/summarize_run_log.py`
-13. `.allforai/bootstrap/unattended-run-readiness-spec.json`：声明本次 workflow 在 `/run` 前必须满足的无人值守能力、审批、工具、Key、运行时、长任务恢复、视觉验收和禁止降级完成规则。读取并遵循 `${CLAUDE_PLUGIN_ROOT}/skills/meta-orchestration/40-qa/unattended-run-readiness-qa/SKILL.md`。
+3. `.allforai/bootstrap/plan-confirmation.json` + `.allforai/bootstrap/plan-confirmation-journal.json` (Step 3.4 and every Phase A delta the user confirmed)
+4. `.allforai/bootstrap/coverage-matrix.json` (from Step 3.5, only if product-concept.json exists)
+5. `.allforai/bootstrap/node-specs/*.md` — update only as authorized by the reconciliation plan
+6. `.claude/commands/run.md`
+7. `.allforai/bootstrap/scripts/check_artifacts.py`
+8. `.allforai/bootstrap/scripts/validate_bootstrap.py`
+9. `.allforai/bootstrap/scripts/expand_game_2d_production.py`
+10. `.allforai/bootstrap/scripts/validate_unattended_readiness.py`
+11. `.allforai/bootstrap/scripts/record_meta_skill_feedback.py`
+12. `.allforai/bootstrap/scripts/record_run_event.py`
+13. `.allforai/bootstrap/scripts/summarize_run_log.py`
+14. `.allforai/bootstrap/unattended-run-readiness-spec.json`：声明本次 workflow 在 `/run` 前必须满足的无人值守能力、审批、工具、Key、运行时、长任务恢复、视觉验收和禁止降级完成规则。读取并遵循 `${CLAUDE_PLUGIN_ROOT}/skills/meta-orchestration/40-qa/unattended-run-readiness-qa/SKILL.md`。
     每一条 QA → repair → closure 回路都必须在 `required_repair_loops` 里声明
     `{scope, qa_node_ids, repair_node_id, closure_node_ids, max_attempts}`：
     `hard_blocked_by` 边只表达顺序，失败的 QA 节点永远不会 complete，两个 orchestrator
     都从这份声明去派发 repair 并在 QA 重跑通过前拦住 closure。只连边不声明 = 修复不可达。
-14. `.allforai/bootstrap/unattended-run-readiness.json` 和 `.allforai/bootstrap/unattended-run-readiness.md`：bootstrap 结束前运行一次：
+15. `.allforai/bootstrap/unattended-run-readiness.json` 和 `.allforai/bootstrap/unattended-run-readiness.md`：bootstrap 结束前运行一次：
     ```bash
     python3 .allforai/bootstrap/scripts/validate_unattended_readiness.py . --write-report
     ```
     允许 `status: "not_ready"`，但必须把 blocker 前置暴露给用户。`/run` 会再次执行同一检查；未 ready 时不得启动长任务。
-15. `.allforai/bootstrap/protocols/*.md`
-16. `.allforai/game-design/approval-records.json`：为每个 `human_gate: true` 的游戏设计节点初始化一条 `pending` 记录。**重建时（goals 包含 `create` 或 `rebuild`）如果文件已存在，重置所有记录为 `gate_status: "pending"`，清空 `approved_by`、`approved_at`、`reviewer_notes`、`revision_notes`。保留节点列表结构，但重置审批状态。**首次 bootstrap 时创建新文件。`human_gate: false` 的节点（art-concept、concept-freeze、architecture-concept-validation）不写入审批记录。
-17. `.allforai/game-design/review-dashboard.html`：在生成 `approval-records.json` 后立即渲染，并且必须早于任何 game-design 节点执行：
+16. `.allforai/bootstrap/protocols/*.md`
+17. `.allforai/game-design/approval-records.json`：为每个 `human_gate: true` 的游戏设计节点初始化一条 `pending` 记录。**重建时（goals 包含 `create` 或 `rebuild`）如果文件已存在，重置所有记录为 `gate_status: "pending"`，清空 `approved_by`、`approved_at`、`reviewer_notes`、`revision_notes`。保留节点列表结构，但重置审批状态。**首次 bootstrap 时创建新文件。`human_gate: false` 的节点（art-concept、concept-freeze、architecture-concept-validation）不写入审批记录。
+18. `.allforai/game-design/review-dashboard.html`：在生成 `approval-records.json` 后立即渲染，并且必须早于任何 game-design 节点执行：
     ```bash
     python3 .allforai/bootstrap/scripts/render_approval_dashboard.py \
       --approval .allforai/game-design/approval-records.json \

@@ -1,5 +1,45 @@
 # T15 actor launch request
 
+## Launch suspended — candidate acceptance withdrawn
+
+Do not launch the packets listed below. Later host evaluations and repair reviews
+found unresolved production defects. Their old commit, hashes and paths remain
+historical evidence, not permission for new launches or pass admission. After the
+repairs are accepted, regenerate and re-fingerprint a fresh candidate, update the
+bindings, and rerun the required host scenarios. See `results.json` field
+`candidate_acceptance_withdrawal` and `../T15-coordinator-boundary-review.md`.
+
+## Historical launch binding — superseded by the suspension above
+
+Historical prompt files:
+
+- claude T15/large-code-local-button: `/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/large-code-local-button/actor-input.md`
+- codex T15/large-code-local-button: `/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/large-code-local-button/actor-input.md`
+- claude T15/missing-product-docs: `/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/missing-product-docs/actor-input.md`
+- codex T15/missing-product-docs: `/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/missing-product-docs/actor-input.md`
+- claude T15/reshape-business-model: `/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/reshape-business-model/actor-input.md`
+- codex T15/reshape-business-model: `/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/reshape-business-model/actor-input.md`
+- claude T15/add-unimplemented-need: `/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/add-unimplemented-need/actor-input.md`
+- codex T15/add-unimplemented-need: `/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/add-unimplemented-need/actor-input.md`
+- claude T15/deny-inferred-intent: `/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/deny-inferred-intent/actor-input.md`
+- codex T15/deny-inferred-intent: `/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/deny-inferred-intent/actor-input.md`
+- claude T15/interrupted-confirmation: `/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/interrupted-confirmation/actor-input.md`
+- codex T15/interrupted-confirmation: `/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/interrupted-confirmation/actor-input.md`
+- claude T15/new-product: `/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/new-product/actor-input.md`
+- codex T15/new-product: `/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/new-product/actor-input.md`
+
+Candidate `e30ccc7cec9120815f0d9bc92204adf465f666d4` includes accepted #9–#14
+implementation and main `4e34c684`. Fresh packet root:
+`/private/tmp/meta-intent-host-campaign.XX6yRo/T15`.
+Candidate tree SHA-256:
+`c1114a94d89c2ea8d8e7bc8c496576b9750957e347769980dc75dee006704fc4`.
+
+Use the current `results.json` cell paths and this root's manifest, never the old
+paths below. Every cell remains unverified. Historical trust/quota observations
+must be revalidated on these projects; do not bypass a security prompt. Deliver
+the entire current cell's actor-input.md verbatim. The remaining text preserves
+the original preparation history and the unchanged blind-testing protocol.
+
 Prepared by the dispatched T15 worker (evaluation role). **The coordinator alone launches
 the scenario actors.** This file carries only launch inputs; evaluator oracles stay private
 and are never sent to a tested context.

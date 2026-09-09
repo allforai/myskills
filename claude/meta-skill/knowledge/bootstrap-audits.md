@@ -17,6 +17,9 @@ or changed choices. Code observations never authorize product changes.
 
 Before offering `/run`, execute the copied `validate_bootstrap.py`,
 `check_decision_inputs.py <project_base>` and `validate_unattended_readiness.py`.
+Both the bootstrap validator and the readiness gate also judge the persisted plan
+confirmation (see Phase A); an unconfirmed node set or dependency edge blocks the
+nodes it affects.
 They share `product_intent.py` for scope and requirement validation. A pending,
 stale, conflicting or malformed requirement blocks its requested work; file
 existence or a code-derived "confirmed" label does not satisfy this gate.
@@ -304,6 +307,45 @@ re-wired, with the reason), and present it even when the queue is otherwise empt
 confirmed a plan, not a licence to grow one: an unconfirmed node set is a planning error, and
 `/run` is not offered until the delta has been shown and accepted.
 
+The delta is computed against a record, not a memory. Step 3.4 persists the graph it
+presented to `.allforai/bootstrap/plan-confirmation.json`, and each later confirmation
+appends the next revision:
+
+```json
+{"schema_version": "1.0", "confirmations": [
+  {"revision": 1, "stage": "step-3.4", "presented_at": "<iso8601>",
+   "plan": {"<node_id>": ["<hard_blocked_by node ids>"]},
+   "confirmation": {"source": "user",
+                    "reference": ".allforai/bootstrap/plan-confirmation-journal.json#<batch_id>/decisions/<index>",
+                    "reason": "<what the user was shown and why they accepted it>"}},
+  {"revision": 2, "stage": "phase-a-delta", "presented_at": "<iso8601>", "plan": {"...": []},
+   "delta": {"added": [], "removed": [], "rewired": []},
+   "confirmation": {"source": "user", "reference": "...", "reason": "..."}}]}
+```
+
+The reference resolves in `.allforai/bootstrap/plan-confirmation-journal.json` — a schema-1.0
+journal in the same batch/decision shape as the product decision journal, written by planning
+for planning confirmations. Never write the product decision journal for a plan or run choice;
+a product journal reference is valid only when the plan was genuinely confirmed there. The
+batch is a `user_session` batch with the user's own reference, the decision records an explicit
+`question`/`chosen`, and its `intent` is `{"plan": <the presented graph>}`, so the reference
+binds the user's choice to the exact node set and edges. `source: "user"` over free text, an
+`approved: true` flag, or an empty file is not authority.
+
+Revisions are append-only history. A later revision records the next graph; it does not
+supersede the earlier one, so earlier revisions stay valid and unchanged nodes are never
+re-confirmed. Supersession is how a recorded confirmation is retracted, and a retracted
+revision invalidates the chain from that point. A revision that changes nothing is not a
+revision. Work already completed is left alone — an unrecorded plan is demanded of the nodes
+that have yet to execute — but completing a node that was inserted after the confirmation
+does not confirm it.
+
+`validate_bootstrap.py` enforces this and `validate_unattended_readiness.py` re-checks it at
+the `/run` boundary, so a plan cannot execute on the assumption that bootstrap ran and passed:
+`unconfirmed_plan` (no record for unfinished work), `invalid_plan_confirmation` (unresolvable
+provenance, a malformed recorded graph, a rewritten history) and `unconfirmed_plan_delta`
+(bound to each node added or re-wired since the confirmed revision) all route back here.
+
 Generation-before: each decision is gathered BEFORE the node that consumes it (the node
 references it via `decision_inputs`). When the queue is empty, every decision artifact is
 on disk and wired — proceed to the final invariant gate. `/run` asks its Run Policy questions once before the first node and is fully autonomous after that.
@@ -320,7 +362,20 @@ planning time, instead of mid-run as a C3 `deadlock`/`needs_diagnosis` (which wo
 **1. 闭环 — decision closure (deterministic, BLOCK).**
 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/check_decision_inputs.py <project_base>`
 Both directions (fix C4): every node's `decision_inputs` artifact exists AND every gathered
-`decision-*.json` is referenced by ≥1 node (no orphan decisions). BLOCKED → return to Phase A.
+decision record is referenced by ≥1 node (no orphan decisions). BLOCKED → return to Phase A.
+
+Identity is the artifact's shape, not its filename. `decision-*.json` is a name several
+families share, and the ones that record no product choice — this section's own
+`decision-coverage.json`, a recorded CLI request envelope, a requirement source — are not
+orphan decisions. Anything else under that name is a decision record, including one that is
+unreadable, partial or an empty placeholder: a shape test discriminates families, it never
+dismisses a decision it cannot read.
+
+Presence is also not resolution. A wired decision artifact whose `decision` is absent, empty
+or still `pending` is a `pending_decision` blocker at this gate, at
+`validate_unattended_readiness.py` and at the freshness repair owner, which routes it to
+interactive bootstrap as a `product-decision`. An unattended run never makes the choice, and
+resolving it re-observes and republishes the evidence that consumed it.
 
 **2. 大小循环 — DAG structure (deterministic, BLOCK).**
 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/validate_dag_structure.py <project_base>`

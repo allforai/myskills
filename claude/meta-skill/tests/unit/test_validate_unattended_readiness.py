@@ -2,6 +2,8 @@ import json
 import os
 import sys
 
+import pytest
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/orchestrator"))
 from validate_unattended_readiness import validate_unattended_readiness
 
@@ -137,6 +139,72 @@ def test_unattended_readiness_blocks_broken_repair_loop_contract(tmp_path):
 
     assert report["status"] == "not_ready"
     assert any(item["code"] == "missing_repair_loop_node" for item in report["blockers"])
+
+
+def _project_with_repair_loop(tmp_path, loop):
+    """Minimal project whose one node is both the QA node and its own repair target."""
+    workflow = {
+        "nodes": [
+            {"node_id": "runtime-qa", "goal": "qa", "capability": "qa",
+             "exit_artifacts": [{"path": ".allforai/quality-checks/qa.json"}]},
+            {"node_id": "runtime-repair", "goal": "repair", "capability": "qa",
+             "hard_blocked_by": ["runtime-qa"],
+             "exit_artifacts": [{"path": ".allforai/quality-checks/repair.json"}]},
+            {"node_id": "closure-qa", "goal": "closure", "capability": "qa",
+             "hard_blocked_by": ["runtime-repair"],
+             "exit_artifacts": [{"path": ".allforai/quality-checks/closure.json"}]},
+        ]
+    }
+    _minimal_project(tmp_path)
+    _write(tmp_path, ".allforai/bootstrap/workflow.json", json.dumps(workflow))
+    for node_id in ("runtime-qa", "runtime-repair", "closure-qa"):
+        _write(tmp_path, f".allforai/bootstrap/node-specs/{node_id}.md", "non interactive work")
+    spec = json.loads((tmp_path / ".allforai/bootstrap/unattended-run-readiness-spec.json").read_text())
+    spec["required_repair_loops"] = [loop]
+    _write(tmp_path, ".allforai/bootstrap/unattended-run-readiness-spec.json", json.dumps(spec))
+
+
+def _repair_loop(**overrides):
+    loop = {
+        "scope": "runtime-qa",
+        "qa_node_ids": ["runtime-qa"],
+        "repair_node_id": "runtime-repair",
+        "closure_node_ids": ["closure-qa"],
+        "max_attempts": 3,
+    }
+    loop.update(overrides)
+    return loop
+
+
+def test_unattended_readiness_accepts_a_bounded_repair_loop(tmp_path):
+    _project_with_repair_loop(tmp_path, _repair_loop())
+
+    report = validate_unattended_readiness(tmp_path)
+
+    assert report["blockers"] == []
+
+
+@pytest.mark.parametrize("max_attempts", [0, -1, "3", None, True, 3.0])
+def test_unattended_readiness_blocks_an_unbounded_repair_budget(tmp_path, max_attempts):
+    # The orchestrators refuse to route a loop whose declared budget is unusable;
+    # readiness must surface that before /run rather than after the first QA failure.
+    _project_with_repair_loop(tmp_path, _repair_loop(max_attempts=max_attempts))
+
+    report = validate_unattended_readiness(tmp_path)
+
+    assert report["status"] == "not_ready"
+    assert any(item["code"] == "invalid_repair_loop_budget" for item in report["blockers"])
+
+
+def test_unattended_readiness_warns_when_a_repair_budget_is_omitted(tmp_path):
+    loop = _repair_loop()
+    del loop["max_attempts"]
+    _project_with_repair_loop(tmp_path, loop)
+
+    report = validate_unattended_readiness(tmp_path)
+
+    assert report["blockers"] == []
+    assert any(w["code"] == "repair_loop_budget_defaulted" for w in report["warnings"])
 
 
 def test_missing_codex_cli_is_a_warning_not_a_blocker(tmp_path, monkeypatch):

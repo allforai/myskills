@@ -82,6 +82,24 @@ def synthetic_receipt(tmp_path):
     return root, manifest, receipt, record
 
 
+@pytest.mark.parametrize("extra", ["__pycache__/loaded.pyc", ".hidden", "extra-link"])
+def test_unmanifested_candidate_files_are_rejected(tmp_path, extra):
+    root, manifest, receipt, record = synthetic_receipt(tmp_path)
+    path = root / extra
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if extra == "extra-link":
+        path.symlink_to("nonexistent-target")
+    else:
+        path.write_bytes(b"unrecorded candidate content")
+    result = subprocess.run([sys.executable, str(CLI), str(manifest), str(root), str(receipt)],
+                            capture_output=True, text=True)
+    assert result.returncode == 1, result.stdout
+    report = json.loads(result.stdout)
+    assert "candidate-extra-files" in report["reasons"]
+    assert report["extra_files"] == [extra]
+    assert report["semantic_verdict"] == "not-evaluated"
+
+
 @pytest.mark.parametrize("fault", ["installed-root", "loaded-hash"])
 def test_rejects_candidate_mismatch_then_admits_only_for_semantic_review(tmp_path, fault):
     root, manifest, receipt, record = synthetic_receipt(tmp_path)

@@ -15,7 +15,8 @@ import sys
 
 import pytest
 
-from .test_bootstrap_scope import ATTENTION_CONTRACT_BODY, REF, codex_transition, project, publish_contract, write
+from .test_bootstrap_scope import (ATTENTION_CONTRACT_BODY, REF, codex_transition, confirm_plan,
+                                   project, publish_contract, write)
 from .test_freshness_admission_corrections import (
     _ABSENT, _artifacts, _blockers, _bootstrap, _readiness, _reconcile, _set_node, HOSTS, NODE, WORKFLOW)
 
@@ -36,10 +37,13 @@ def _complete(root, node_id, host):
     write(root, WORKFLOW, workflow)
 
 
-def _append_node(root, node):
+def _append_node(root, node, *, confirmed=True):
+    """Add a node to the plan. `confirmed=False` scripts a plan the user never saw."""
     workflow = json.loads((root / WORKFLOW).read_text())
     workflow["nodes"].append(node)
     write(root, WORKFLOW, workflow)
+    if confirmed:
+        confirm_plan(root, reason="Presented the retained node with the plan")
     (root / ".allforai/bootstrap/node-specs" / (node["node_id"] + ".md")).write_text(
         "---\n" + json.dumps(node) + "\n---\n" + ATTENTION_CONTRACT_BODY)
 

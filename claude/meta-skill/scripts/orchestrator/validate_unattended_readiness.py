@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from product_intent import validate_scope
+from validate_bootstrap import plan_confirmation_blockers
 
 
 BLOCKING_STATUS = "not_ready"
@@ -248,7 +249,8 @@ def _validate_required_capabilities(
             })
 
 
-def _validate_repair_loop_spec(spec: dict, nodes: list[dict], blockers: list[dict]) -> None:
+def _validate_repair_loop_spec(spec: dict, nodes: list[dict], blockers: list[dict],
+                               warnings: list[dict]) -> None:
     if not spec or not isinstance(spec.get("required_repair_loops"), list):
         return
     node_ids = {node.get("node_id") for node in nodes if node.get("node_id")}
@@ -267,6 +269,24 @@ def _validate_repair_loop_spec(spec: dict, nodes: list[dict], blockers: list[dic
         if repair_node_id not in node_ids:
             _add(blockers, "missing_repair_loop_node", f"repair loop node '{repair_node_id}' missing from workflow")
             continue
+        # Both orchestrators refuse to route a loop whose declared budget is unusable, so
+        # an unbounded loop is reported here instead of at the first QA failure. An omitted
+        # budget is the one legitimate fallback: it takes the documented default of 3.
+        if "max_attempts" not in loop:
+            warnings.append({
+                "code": "repair_loop_budget_defaulted",
+                "message": f"repair loop '{repair_node_id}' declares no max_attempts; "
+                           "the documented default of 3 attempts per QA node applies",
+            })
+        else:
+            budget = loop.get("max_attempts")
+            if isinstance(budget, bool) or not isinstance(budget, int) or budget <= 0:
+                _add(
+                    blockers,
+                    "invalid_repair_loop_budget",
+                    f"repair loop '{repair_node_id}' max_attempts must be a positive integer, "
+                    f"got {budget!r}; the loop is unbounded and routes nothing",
+                )
         for qa_node_id in qa_nodes:
             if qa_node_id not in node_ids:
                 _add(blockers, "missing_repair_loop_source", f"QA node '{qa_node_id}' missing from workflow")
@@ -302,6 +322,9 @@ def validate_unattended_readiness(project_root: Path) -> dict:
 
     readiness_spec = _load_readiness_spec(spec_path, blockers)
     _validate_policy_spec(readiness_spec, blockers, warnings)
+    # `/run` must not assume bootstrap ran and passed: the plan the user confirmed is
+    # re-checked at the run boundary, scoped to the nodes an unconfirmed change affects.
+    blockers.extend(plan_confirmation_blockers(project_root))
 
     if not workflow_path.exists():
         _add(blockers, "missing_workflow", f"{workflow_path} does not exist")
@@ -460,7 +483,7 @@ def validate_unattended_readiness(project_root: Path) -> dict:
 
     _validate_required_capabilities(project_root, readiness_spec, blockers, warnings, external_tool_findings)
     if not scope_blockers:
-        _validate_repair_loop_spec(readiness_spec, nodes, blockers)
+        _validate_repair_loop_spec(readiness_spec, nodes, blockers, warnings)
 
     if "codex" in lower_blob or "visual-acceptance" in lower_blob or "screenshot" in lower_blob:
         codex_path = shutil.which("codex")

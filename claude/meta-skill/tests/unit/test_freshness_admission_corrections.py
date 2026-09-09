@@ -13,7 +13,8 @@ import sys
 
 import pytest
 
-from .test_bootstrap_scope import ATTENTION_CONTRACT_BODY, gate, project, publish_contract, write
+from .test_bootstrap_scope import (ATTENTION_CONTRACT_BODY, confirm_plan, gate, project,
+                                   publish_contract, write)
 from .test_evidence_freshness import invoke as freshness_invoke
 
 WORKFLOW = ".allforai/bootstrap/workflow.json"
@@ -199,6 +200,7 @@ def test_retained_legacy_node_keeps_gate_behavior_without_invented_provenance(tm
     workflow["nodes"].append(legacy)
     workflow["transition_log"] = [{"node" if host == "codex" else "node_id": "warehouse", "status": "completed"}]
     write(tmp_path, WORKFLOW, workflow)
+    confirm_plan(tmp_path, reason="Presented the retained warehouse node with the plan")
     (tmp_path / ".allforai/bootstrap/node-specs/warehouse.md").write_text(
         "---\n" + json.dumps(legacy) + "\n---\n" + ATTENTION_CONTRACT_BODY)
     write(tmp_path, ".allforai/bootstrap/stock.json", {"status": "passed"})
@@ -209,8 +211,11 @@ def test_retained_legacy_node_keeps_gate_behavior_without_invented_provenance(tm
     assert [w["node_id"] for w in report["warnings"] if w["code"] == "undeclared_source_inputs"] == ["warehouse"]
     checked = _artifacts(tmp_path, "warehouse")
     assert checked["all_exist"] is True
+    # The read-only measurement fields are reported for every node; a retained legacy
+    # node has no recorded observation, so its binding is null rather than invented.
     assert checked["freshness"] == {"status": "undeclared", "readiness_status": "undeclared", "admission": "legacy",
-                                    "reason": checked["freshness"]["reason"]}
+                                    "reason": checked["freshness"]["reason"],
+                                    "binding_identity": None, "binding_kind": None}
     node, plan = _reconcile(tmp_path, "warehouse")
     assert node["artifact_readiness"] == "complete" and plan["action"] == "keep"
     assert node["freshness"]["status"] == "undeclared" and node["artifacts"][0]["blockers"] == []

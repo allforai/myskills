@@ -23,6 +23,13 @@ def main():
     reasons = []
     git_modes = manifest.get("git_modes", {})
     links = manifest.get("symlinks", {})
+    # rglob does not recurse into directory symlinks: compare the exported link
+    # itself, not a second alias of its target. Include hidden and broken links.
+    observed = {str(path.relative_to(root)) for path in root.rglob("*")
+                if path.is_file() or path.is_symlink()}
+    extra_files = sorted(observed - set(manifest.get("sha256", {})) - set(links))
+    if extra_files:
+        reasons.append("candidate-extra-files")
     if set(git_modes) != set(manifest.get("sha256", {})) | set(links):
         reasons.append("missing-manifest-git-modes")
     mode_mismatches = []
@@ -72,7 +79,8 @@ def main():
         reasons.append("candidate-mismatch")
     print(json.dumps({"status": "unverified" if reasons else "admissible-for-evaluation",
                       "reasons": sorted(set(reasons)), "semantic_verdict": "not-evaluated",
-                      "mode_mismatches": mode_mismatches, "symlink_mismatches": symlink_mismatches}))
+                      "mode_mismatches": mode_mismatches, "symlink_mismatches": symlink_mismatches,
+                      "extra_files": extra_files}))
     return 1 if reasons else 0
 
 

@@ -12,7 +12,7 @@ import sys
 
 import pytest
 
-from .test_bootstrap_scope import project as shared_project, gate, write, SCRIPTS
+from .test_bootstrap_scope import confirm_plan, project as shared_project, gate, write, SCRIPTS
 from .test_product_intent_session import invoke, draft, decide, CONCEPT, JOURNAL
 from .test_product_intent_session import TOPICS as SHARED_TOPICS
 from .test_validate_bootstrap import ATTENTION_CONTRACT_BODY
@@ -64,6 +64,7 @@ def two_node_plan(root, batch="scope"):
     planned = invoke(root, {"operation": "plan", "not_applicable": {"experience": "Headless API"},
                             "nodes": [node("node-a", TOPICS[:3]), node("node-b", TOPICS[3:])]})
     assert planned.returncode == 0, planned.stdout
+    confirm_plan(root, stage="plan-projection", reason="Presented the projected plan")
     for identity in ("node-a", "node-b"):
         publish(root, identity)
     return planned

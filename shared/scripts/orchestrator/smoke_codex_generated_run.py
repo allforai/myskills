@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Behavior-level smoke check for Codex generated run template.
+"""Materialization and static contract smoke check for the Codex run template.
 
 This does not execute a real bootstrap engine. Instead, it materializes the
 Codex orchestrator template into a temporary target project and validates that
@@ -62,8 +62,12 @@ def main() -> int:
             errors.append("generated run still references .claude/commands/run.md")
         if "${CLAUDE_PLUGIN_ROOT}" in text:
             errors.append("generated run still references ${CLAUDE_PLUGIN_ROOT}")
-        if "--dangerously-bypass-approvals-and-sandbox" not in flow_text:
-            errors.append("flow template does not use Codex highest-permission execution")
+        if "--dangerously-bypass-approvals-and-sandbox" in flow_text:
+            errors.append("flow template must not automatically bypass approvals and sandbox")
+        if '"--sandbox", policy["sandbox"]' not in flow_text:
+            errors.append("flow template does not use its explicit sandbox policy")
+        if 'policy["sandbox"] not in {"read-only", "workspace-write"}' not in flow_text:
+            errors.append("flow template does not reject unsupported sandbox escalation")
         if ".allforai/bootstrap/workflow.json" not in flow_text:
             errors.append("flow template does not reference workflow.json")
         if "MAX_CONSECUTIVE_FAILURES_PER_NODE = 3" not in flow_text:

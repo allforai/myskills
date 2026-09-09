@@ -36,6 +36,7 @@ def test_retained_input_shape_rejects_stale_ready_and_recovers(tmp_path, host, m
     for inputs, expected in [([], 0), (malformed, 1), ([], 0)]:
         retained["decision_inputs"] = inputs
         write(tmp_path, workflow_path, workflow)
+        confirm_plan(tmp_path, reason="Presented the retained node with the plan")
         (tmp_path / ".allforai/bootstrap/node-specs/warehouse.md").write_text(
             "---\n" + json.dumps(retained) + "\n---\n" + ATTENTION_CONTRACT_BODY)
         for name in ("validate_bootstrap.py", "check_decision_inputs.py", "validate_unattended_readiness.py"):
@@ -95,6 +96,7 @@ def project(root, *, confirmed=False, documents=False, host="claude", source_inp
     if source_inputs is not None:
         node["source_inputs"] = list(source_inputs)
     write(root, ".allforai/bootstrap/workflow.json", {"nodes": [node], "transition_log": []})
+    confirm_plan(root, stage="step-3.4", reason="Presented this node list at Step 3.4")
     (root / ".allforai/bootstrap/node-specs/design.md").unlink()
     spec = "---\n" + json.dumps(node) + "\n---\n" + ATTENTION_CONTRACT_BODY
     (root / ".allforai/bootstrap/node-specs/deliver-export.md").write_text(spec)
@@ -103,6 +105,53 @@ def project(root, *, confirmed=False, documents=False, host="claude", source_inp
         publish_contract(root, verification_command=None if confirmed else [
             sys.executable, "-c", "import json; json.load(open('.allforai/bootstrap/workflow.json'))['nodes']"])
     return requirement
+
+
+PLAN_JOURNAL = ".allforai/bootstrap/plan-confirmation-journal.json"
+PLAN_CONFIRMATION = ".allforai/bootstrap/plan-confirmation.json"
+
+
+def confirm_plan(root, *, stage="phase-a-delta", reason="Confirmed the presented plan"):
+    """Script one user confirmation of the current graph, as Step 3.4 / Phase A records it.
+
+    Call it only where the scripted dialogue actually re-presents the plan. A plan the
+    fixture changed without calling this stays unconfirmed on purpose, which is what the
+    gate must catch. Never touches the product decision journal.
+    """
+    workflow = json.loads((root / ".allforai/bootstrap/workflow.json").read_text())
+    plan = {node["node_id"]: sorted(node.get("hard_blocked_by") or [])
+            for node in workflow["nodes"] if node.get("node_id")}
+    record = (json.loads((root / PLAN_CONFIRMATION).read_text())
+              if (root / PLAN_CONFIRMATION).exists()
+              else {"schema_version": "1.0", "confirmations": []})
+    previous = record["confirmations"][-1]["plan"] if record["confirmations"] else None
+    if previous == plan:
+        return record
+    revision = len(record["confirmations"]) + 1
+    batch_id = f"plan-revision-{revision}"
+    journal = (json.loads((root / PLAN_JOURNAL).read_text()) if (root / PLAN_JOURNAL).exists()
+               else {"schema_version": "1.0", "batches": []})
+    journal["batches"].append({
+        "batch_id": batch_id, "source": "user_session", "topic": "Workflow plan",
+        "user_reference": "bootstrap plan confirmation turn",
+        "decisions": [{"question": "Is this the plan to execute?", "chosen": "Confirmed as presented",
+                       "rationale": reason, "supersedes": None, "intent": {"plan": plan}}],
+    })
+    write(root, PLAN_JOURNAL, journal)
+    entry = {"revision": revision, "stage": "step-3.4" if previous is None else stage,
+             "presented_at": "2026-09-09T10:00:00Z", "plan": plan,
+             "confirmation": {"source": "user",
+                              "reference": f"{PLAN_JOURNAL}#{batch_id}/decisions/0",
+                              "reason": reason}}
+    if previous is not None:
+        entry["delta"] = {
+            "added": sorted(set(plan) - set(previous)),
+            "removed": sorted(set(previous) - set(plan)),
+            "rewired": sorted(k for k in set(plan) & set(previous) if plan[k] != previous[k]),
+        }
+    record["confirmations"].append(entry)
+    write(root, PLAN_CONFIRMATION, record)
+    return record
 
 
 def freshness(root, request):
@@ -413,6 +462,7 @@ def test_confirmed_local_change_reuses_decision_and_preserves_unrelated_work(tmp
     workflow["transition_log"] = ([] if host == "codex" else
                                   [{"node_id": "warehouse", "status": "completed"}])
     write(tmp_path, ".allforai/bootstrap/workflow.json", workflow)
+    confirm_plan(tmp_path, reason="Presented the retained warehouse node with the plan")
     if host == "codex":
         codex_transition(tmp_path, "warehouse", "completed")
     (tmp_path / ".allforai/bootstrap/node-specs/warehouse.md").write_text(
@@ -445,6 +495,7 @@ def test_malformed_workflow_replaces_ready_report_and_allows_corrected_reentry(t
     workflow["nodes"].append(retained)
     workflow["transition_log"] = [{"node_id": "warehouse", "status": "completed"}]
     write(tmp_path, ".allforai/bootstrap/workflow.json", workflow)
+    confirm_plan(tmp_path, reason="Presented the retained warehouse node with the plan")
     write(tmp_path, ".allforai/bootstrap/stock.json", {"status": "passed", "count": 3})
     (tmp_path / ".allforai/bootstrap/node-specs/warehouse.md").write_text(
         "---\n" + json.dumps(retained) + "\n---\n" + ATTENTION_CONTRACT_BODY)
@@ -501,6 +552,7 @@ def test_new_unscoped_work_is_rejected_but_scoped_prerequisite_can_reenter(tmp_p
 
     def publish():
         write(tmp_path, ".allforai/bootstrap/workflow.json", workflow)
+        confirm_plan(tmp_path, reason="Presented the prerequisite node with the plan")
         for item in workflow["nodes"]:
             (spec_dir / (item["node_id"] + ".md")).write_text(
                 "---\n" + json.dumps(item) + "\n---\n" + ATTENTION_CONTRACT_BODY)
@@ -534,6 +586,7 @@ def test_mixed_native_history_uses_latest_state_without_changing_authority(tmp_p
                 "capability": "implement", "exit_artifacts": [".allforai/bootstrap/stock.json"]}
     workflow["nodes"].append(retained)
     write(tmp_path, ".allforai/bootstrap/workflow.json", workflow)
+    confirm_plan(tmp_path, reason="Presented the retained warehouse node with the plan")
     write(tmp_path, ".allforai/bootstrap/stock.json", {"status": "passed", "count": 3})
     (tmp_path / ".allforai/bootstrap/node-specs/warehouse.md").write_text(
         "---\n" + json.dumps(retained) + "\n---\n" + ATTENTION_CONTRACT_BODY)

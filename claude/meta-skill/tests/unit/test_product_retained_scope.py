@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from .test_bootstrap_scope import project, write, gate, codex_transition, publish_contract
+from .test_bootstrap_scope import confirm_plan, project, write, gate, codex_transition, publish_contract
 from .test_product_intent_session import invoke, draft, decide, TOPICS
 from .test_validate_bootstrap import ATTENTION_CONTRACT_BODY
 
@@ -59,6 +59,7 @@ def test_product_plan_preserves_unrelated_completed_work_and_provenance(tmp_path
     paths = [".allforai/bootstrap/node-specs/warehouse.md", ".allforai/bootstrap/stock.json", "orders.py"]
     before = {p: (tmp_path / p).read_bytes() for p in paths}
     result = invoke(tmp_path, plan)
+    confirm_plan(tmp_path, stage="plan-projection", reason="Presented the projected plan")
     assert result.returncode == 0, (result.stdout, result.stderr)
     workflow = json.loads(result.stdout)["workflow"]
     assert workflow["nodes"][0] == plan["nodes"][0]
@@ -76,6 +77,7 @@ def test_product_plan_preserves_unrelated_completed_work_and_provenance(tmp_path
 def test_completed_history_does_not_exempt_new_reopened_or_current_scope_work(tmp_path, host, change):
     plan = prepared_plan(tmp_path, host)
     assert invoke(tmp_path, plan).returncode == 0
+    confirm_plan(tmp_path, stage="plan-projection", reason="Presented the projected plan")
     workflow = json.loads((tmp_path / WORKFLOW).read_text())
     if change == "inserted":
         node = {"node_id": "unapproved", "capability": "implement", "goal": "Unapproved feature",
@@ -118,6 +120,7 @@ def test_supplied_completed_brief_keeps_historical_acceptance(tmp_path, host):
     spec = tmp_path / ".allforai/bootstrap/node-specs/warehouse.md"
     spec.unlink()
     result = invoke(tmp_path, plan)
+    confirm_plan(tmp_path, stage="plan-projection", reason="Presented the projected plan")
     assert result.returncode == 0, (result.stdout, result.stderr)
     historical = json.loads(result.stdout)["workflow"]["nodes"][0]
     assert historical["product_goals"] == ["Historical warehouse goal"]

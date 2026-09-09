@@ -125,19 +125,59 @@ The in-node loop above repairs what a node owns. A QA node whose finding belongs
 another node cannot repair itself, and it never completes, so a repair successor wired
 only through `hard_blocked_by` would be unreachable. The route is the declared one:
 `unattended-run-readiness-spec.json.required_repair_loops` — `{scope, qa_node_ids,
-repair_node_id, closure_node_ids, max_attempts}`, already shape-validated by
-`validate_unattended_readiness.py`. The engine loads it as `repair_loops[]` and applies it:
+repair_node_id, closure_node_ids, max_attempts}`. `validate_unattended_readiness.py`
+checks that shape before the run: every QA, repair and closure node exists, the repair
+node is `hard_blocked_by` each QA node, each closure node is `hard_blocked_by` the repair
+node, and a declared `max_attempts` is a positive integer. It does not check that the
+declared repair can actually fix the finding. The engine loads it as `repair_loops[]`
+and applies it:
 
 - A QA node that failed **with its own current report published** satisfies the declared
   `repair_node_id`'s dependency on it — for that repair node only, for at most
-  `max_attempts` attempts. A QA node that never ran, published nothing, or failed on an
+  `max_attempts` attempts **of its own**. The budget is per QA node, so one repair node
+  serving several QA nodes owes each of them a full budget; attempts spent on one are
+  never charged to a sibling. A QA node that never ran, published nothing, or failed on an
   environment, authority, readiness or gate error has no verdict to repair against: it is
   a diagnosis case, never a repair route.
+- Attempts already granted are read back from `transition_log` when the DAG loads, so a
+  resumed run continues the spent budget instead of handing the same attempts out again.
+  Every declared QA node states its attempts, explicit `0` included. A history that cannot
+  be read, or that omits a declared QA node, is a hard failure: the remaining budget is
+  unknown, and guessing it would hand a resumed run the attempts it already spent.
+- A loop that declares no `max_attempts` takes the documented default of three attempts
+  per QA node. A declared `max_attempts` that is not a positive integer is unbounded, not
+  a request for that default: the loop routes nothing and the QA failure goes to diagnosis.
 - No other successor may proceed on a failed dependency. A failed node is never
   `completed`, and its report is never edited to make it look passed.
-- When the repair node finishes, the QA node **reruns**. Every `closure_node_ids` entry
-  stays blocked until that QA node itself completes — a delivered repair is not a passing
-  QA, and the rerun is the only way past the loop.
+- A repair opened for one node never absorbs another node's verdict in the same wave. An
+  `accepted_with_gaps` result or a stopped one-shot iteration repair still ends the run
+  under the recorded Run Policy, and neither node is re-run into a passing verdict.
+- When the repair node **delivers**, the QA node **reruns**. Delivery, not completion, is
+  the signal, and the difference is structural. A declared repair node is
+  `hard_blocked_by` the QA node it repairs, and `check_artifacts.py` folds the recorded
+  freshness state into `all_exist`, so while that QA node is failing the repair node's own
+  evidence is stale and its independent gate withholds it by construction. Retrying inside
+  the node would burn the artifact repair budget against something no repair can fix, and
+  the run would end `needs_diagnosis` with `exhausted_repair_loop` on the repair node.
+  So for the declared repair node of an open loop, a **withheld** gate is a delivery: the
+  engine records it and moves on. An environment, authority or cross-node blocker is still
+  `hard_fail` and still stops the run.
+
+  A delivery is **measured, never asserted**. The engine holds no filesystem, so its only
+  independent measurement is the gate step running `check_artifacts.py --json` and
+  reporting what it printed; the node's own result is never the evidence. The same step
+  runs once before the node and once after, and a delivery requires all of: every declared
+  exit artifact present with no status error, the gate withheld only by this loop's own QA
+  node, one input-binding identity unchanged across the attempt, and at least one artifact
+  whose content digest moved. Anything less — an absent measurement, a missing field, a
+  touched or pre-existing artifact, a blocked report, a drifted snapshot — is
+  `unmeasured_repair_delivery`, a hard failure, never a quiet advance.
+
+  Nothing is waived. A delivery never commits, so the repair node stays out of `done`; it
+  is dispatched again once the QA node passes, and must pass this same independent gate on
+  its own merits before anything commits it. Every `closure_node_ids` entry stays blocked
+  until the QA node itself completes — a delivered repair is not a passing QA, and the
+  rerun is the only way past the loop. The Codex driver applies the same lifecycle.
 - When the budget is spent and the QA node still fails, that is a hard failure with the
   original findings; report it, never waive it.
 

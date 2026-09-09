@@ -5,7 +5,7 @@ import sys
 
 import pytest
 
-from .test_bootstrap_scope import project, write, gate, publish_contract
+from .test_bootstrap_scope import confirm_plan, project, write, gate, publish_contract
 from .test_validate_bootstrap import ATTENTION_CONTRACT_BODY
 
 CONCEPT = ".allforai/product-concept/product-concept.json"
@@ -65,6 +65,7 @@ def test_revised_baseline_generates_full_applicable_plan_and_gates_reject_drift(
             "not_applicable": {"experience": "Headless API; no user interface in this scope"}}
     result = invoke(tmp_path, plan)
     assert result.returncode == 0, (result.stdout, result.stderr)
+    confirm_plan(tmp_path, stage="plan-projection", reason="Presented the projected plan")
     publish_contract(tmp_path, "deliver-orders")  # Planned work observes its declared source before readiness.
     workflow = json.loads((tmp_path / ".allforai/bootstrap/workflow.json").read_text())
     node = workflow["nodes"][0]

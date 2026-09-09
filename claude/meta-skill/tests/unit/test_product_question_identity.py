@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from .test_bootstrap_scope import project, write, gate, publish_contract
+from .test_bootstrap_scope import confirm_plan, project, write, gate, publish_contract
 from .test_product_intent_session import CONCEPT, JOURNAL, TOPICS, draft, invoke, decide
 from .test_validate_bootstrap import ATTENTION_CONTRACT_BODY
 
@@ -76,6 +76,7 @@ def test_public_gates_reject_persisted_question_alias_and_restore_readiness(tmp_
         "intent_ids": TOPICS, "responsibilities": ["product", "experience", "technical",
             "implementation", "documentation", "verification"], "source_inputs": ["orders.py"],
         "exit_artifacts": [".allforai/bootstrap/delivery.json"], "body": ATTENTION_CONTRACT_BODY}]}).returncode == 0
+    confirm_plan(tmp_path, stage="plan-projection", reason="Presented the projected plan")
     concept = json.loads((tmp_path / CONCEPT).read_text())
     alias = {"id": "tradeoffs", "topic": "tradeoffs", "question": "An unresolved choice",
              "depends_on": [], "status": "pending"}

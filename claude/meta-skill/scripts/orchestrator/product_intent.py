@@ -41,19 +41,22 @@ def validate_scope(project_root, workflow, *, consumed_sources=None):
             if not isinstance(event.get("status"), str) or not event["status"].strip():
                 raise ValueError(f"transition_log[{index}] needs a non-empty status")
         scoped_nodes = any("requirement_refs" in node for node in nodes)
+        # A wired but unmade product choice holds every route, including a project
+        # that has no scope contract yet; it is never resolved by reaching a later gate.
+        pending = _pending_decisions(root, workflow)
         if not path.exists():
-            return ([{"code": "invalid_scope", "message": "Scoped nodes require bootstrap-profile.json"}]
-                    if scoped_nodes else [])
+            return pending + ([{"code": "invalid_scope", "message": "Scoped nodes require bootstrap-profile.json"}]
+                              if scoped_nodes else [])
         profile = json.loads(path.read_text(encoding="utf-8"))
         scope = profile.get("task_scope")
         if "task_scope" not in profile and "task_route" not in profile:
             if scoped_nodes:
                 raise ValueError("Scoped nodes require task_route and task_scope")
-            return []
+            return pending
         if profile.get("task_route") not in (
                 "local-change", "product-reconstruction", "new-product"):
-            return [{"code": "pending_task_route", "message":
-                     "Clarify the user's goal at interactive bootstrap; file presence cannot choose the route"}]
+            return pending + [{"code": "pending_task_route", "message":
+                               "Clarify the user's goal at interactive bootstrap; file presence cannot choose the route"}]
         if not isinstance(profile.get("task_goal"), str) or not profile["task_goal"].strip():
             raise ValueError("task_goal must be a non-empty user goal")
         if (not isinstance(scope, dict) or not isinstance(scope.get("areas"), list)
@@ -76,7 +79,7 @@ def validate_scope(project_root, workflow, *, consumed_sources=None):
         # Claude records node_id; the native Codex producer records node.
         # Fold both histories together in log order so reopened work is not retained.
         retained = _retained_nodes(workflow, scope["requirement_refs"])
-        blockers = []
+        blockers = list(pending)
         if profile.get("intent_session_path") == LOCAL and scope["requirement_refs"]:
             blockers.extend(_local_contract(root, workflow, profile, retained=retained))
         if profile["task_route"] in ("product-reconstruction", "new-product") and scope["requirement_refs"]:
@@ -150,6 +153,18 @@ def validate_scope(project_root, workflow, *, consumed_sources=None):
                 if ref not in scope["requirement_refs"] or ref["path"] not in node.get("decision_inputs", []):
                     blockers.append({"code": "scope_requirement_unwired", "node_id": node.get("node_id"),
                                      "message": "Node requirement must be in task_scope and consumed through decision_inputs"})
+            # A node proves the inherited acceptance its own stage can reach; deferring the
+            # full effect is allowed, losing it is not. The named owner must carry the same
+            # confirmed requirements, so the user's acceptance keeps a final holder. Whether
+            # that owner exists, runs later and proves an effect stays the bootstrap gate's
+            # structural check on the same declaration.
+            if "downstream_effect_owner" in node:
+                owner_id = node["downstream_effect_owner"]
+                owners = [n for n in workflow.get("nodes", []) if n.get("node_id") == owner_id]
+                if len(owners) == 1 and any(ref not in owners[0].get("requirement_refs", []) for ref in refs):
+                    blockers.append({"code": "unowned_effect_stage", "node_id": node.get("node_id"), "message":
+                                     f"{node.get('node_id')}: deferred full effect names '{owner_id}', which does not "
+                                     "consume this node's confirmed requirements; the owner must carry them"})
         if profile["task_route"] == "local-change":
             for ref in scope.get("requirement_refs", []):
                 responsibilities = set()
@@ -163,6 +178,129 @@ def validate_scope(project_root, workflow, *, consumed_sources=None):
         return blockers
     except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError) as exc:
         return [{"code": "invalid_scope", "message": f"{path}: {exc}"}]
+
+
+DECISION_KEYS = ("id", "decision", "rationale")  # bootstrap-audits.md:287 Phase A decision artifact
+PENDING_STATUSES = ("pending", "unresolved", "open", "deferred")
+
+
+def _filled(value):
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _claims_decision(payload):
+    """Markers that make a record a product choice whatever else its keys look like.
+
+    A queued status is one of them: an artifact that says the choice is still open is a
+    choice, and no sibling family's keys may hide it.
+    """
+    return (any(key in payload for key in ("decision", "rationale"))
+            or payload.get("status") in PENDING_STATUSES)
+
+
+def _coverage_audit(payload):
+    """The A0 output `bootstrap-audits.md:264` requires:
+    {captured: [{id, node_id}], missing: [{id, rationale, consumer_node}]}."""
+    return ("id" not in payload and isinstance(payload.get("captured"), list)
+            and isinstance(payload.get("missing"), list)
+            and all(isinstance(item, dict)
+                    and all(_filled(item.get(key)) for key in ("id", "rationale", "consumer_node"))
+                    for item in payload["missing"]))
+
+
+def _cli_request(payload):
+    """A recorded CLI request envelope: it names an operation and has no decision identity."""
+    return "id" not in payload and _filled(payload.get("operation"))
+
+
+def _requirement_source(payload):
+    """A requirement file read as an input: {"requirements": [{id, ...}, ...]}."""
+    items = payload.get("requirements")
+    return ("id" not in payload and isinstance(items, list) and bool(items)
+            and all(isinstance(item, dict) and _filled(item.get("id")) for item in items))
+
+
+def _journal_record(payload):
+    """The confirmation journal: a schema version and recorded decision batches."""
+    batches = payload.get("batches")
+    return (_filled(payload.get("schema_version")) and isinstance(batches, list) and bool(batches)
+            and all(isinstance(batch, dict) and _filled(batch.get("batch_id"))
+                    and isinstance(batch.get("decisions"), list) for batch in batches))
+
+
+# Sibling families that share the `decision-*.json` name and record no single product
+# choice. Each is recognised by its full contract shape, never by the presence of one
+# key: a malformed or half-written sibling is not a licence to stop checking.
+NON_DECISION_FAMILIES = (_coverage_audit, _cli_request, _requirement_source)
+
+
+def decision_record(project_root, path):
+    """The object a `decision-*.json` path holds, or None when it is a sibling family
+    that records no product choice.
+
+    Identity is the artifact's own shape, not its filename, and a decision marker beats
+    every sibling shape. Content that cannot be read comes back as an empty record
+    rather than None: a malformed, partial or placeholder artifact must stay visible to
+    the gates, never be dismissed as another family.
+    """
+    if not str(path).replace("\\", "/").rsplit("/", 1)[-1].startswith("decision-"):
+        return None
+    try:
+        payload = json.loads((Path(project_root) / path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    if _claims_decision(payload):
+        return payload
+    return None if any(family(payload) for family in NON_DECISION_FAMILIES) else payload
+
+
+def _decision_artifact(project_root, path):
+    """One Phase A decision whose resolution a gate can judge. A well-formed confirmation
+    journal is a batch record of many choices, not one; a malformed one is not a journal."""
+    record = decision_record(project_root, path)
+    if record is None or (not _claims_decision(record) and _journal_record(record)):
+        return None
+    return record
+
+
+def _unresolved(artifact):
+    """Presence is not resolution. A queued status, a missing schema key and an empty
+    choice all leave the product decision unmade."""
+    if artifact.get("status") in PENDING_STATUSES:
+        return True
+    if any(key not in artifact for key in DECISION_KEYS):
+        return True
+    choice = artifact["decision"]
+    if isinstance(choice, str):
+        return not choice.strip()
+    return choice is None or choice == [] or choice == {}
+
+
+def _pending_decisions(project_root, workflow):
+    """Blockers for wired decisions the user has not made.
+
+    A decision artifact is the only place a product choice is recorded, and an
+    unattended run never makes one. A requirement reference carries its own
+    confirmation contract, so it is not read as a choice here.
+    """
+    blockers = []
+    for node in workflow.get("nodes", []):
+        refs = node.get("requirement_refs") or []
+        paths = {ref["path"] for ref in refs
+                 if isinstance(ref, dict) and isinstance(ref.get("path"), str)} if isinstance(refs, list) else set()
+        for path in node.get("decision_inputs", []) or []:
+            if path in paths:
+                continue
+            artifact = _decision_artifact(project_root, path)
+            if artifact is None or not _unresolved(artifact):
+                continue
+            node_id = node.get("node_id")
+            blockers.append({"code": "pending_decision", "node_id": node_id, "message":
+                             f"{node_id}: {path}: the product choice is not made; return to "
+                             "interactive bootstrap. An unattended run never chooses it."})
+    return blockers
 
 
 CONCEPT = ".allforai/product-concept/product-concept.json"
@@ -447,6 +585,35 @@ def _scoped(blockers, code, message, node_ids):
         blockers.append({"code": code, "message": message})
     for node_id in node_ids:
         blockers.append({"code": code, "node_id": node_id, "message": f"{node_id}: {message}"})
+
+
+def _stage_obligation(node):
+    """Separate the inherited product acceptance from this node's own evidence duty.
+
+    The generated list is the user's complete confirmed acceptance and stays verbatim: it
+    is the scope this node serves, not a claim that this stage proves all of it. What the
+    node owes here is the evidence its declared responsibilities can actually produce at
+    its own stage; a statement whose full product effect first exists later is deferred
+    through the existing `downstream_effect_owner` declaration, never dropped or reworded.
+    """
+    duties = ", ".join(r for r in node.get("responsibilities", []) if _text(r)) or "declared on this node"
+    return (
+        "\nStage obligation:\n"
+        "- The acceptance above is the complete user-confirmed acceptance of the requirements this "
+        "node consumes. It is the scope this node serves, not a claim that this node proves all of "
+        "it. Nothing in it may be dropped, reworded or narrowed here; acceptance that differs from "
+        "the confirmed requirement is refused as stale_requirement.\n"
+        f"- Prove what this node's declared responsibilities ({duties}) can actually produce at this "
+        "stage, against those same statements, and record it under Quality Acceptance and Effect "
+        "Verification. Documentation proves that the documents describe current behavior accurately "
+        "and passes its declared document_verification; writing a guide is not proof that the "
+        "behavior it describes was built.\n"
+        "- Where a statement's full product effect first exists at a later stage, state the "
+        "stage-local proof in Effect Verification and name the node that proves the full effect as "
+        "downstream_effect_owner; a deferral with no owner, or one whose owner does not carry these "
+        "requirements, is refused as unowned_effect_stage. A stage-local pass is not product "
+        "completion: the nodes holding the implementation and verification responsibilities for "
+        "these requirements still owe the full effect.\n")
 
 
 def _reuse_legacy_choice(root, item):
@@ -897,7 +1064,8 @@ def session(root, request):
                     path.write_text("---\n" + json.dumps(node, ensure_ascii=False) + "\n---\n" + bodies[node["node_id"]], encoding="utf-8")
                 continue
             body = bodies[node["node_id"]] + "\n\nConfirmed product goals:\n" + "\n".join("- " + v for v in node["product_goals"])
-            body += "\n\nAcceptance:\n" + "\n".join("- " + v for v in node["acceptance"]) + "\n"
+            body += ("\n\nConfirmed acceptance (inherited requirement scope, complete and unmodifiable):\n"
+                     + "\n".join("- " + v for v in node["acceptance"]) + "\n" + _stage_obligation(node))
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("---\n" + json.dumps(node, ensure_ascii=False) + "\n---\n" + body, encoding="utf-8")
         for path in (root / ".allforai/bootstrap/node-specs").glob("*.md"):

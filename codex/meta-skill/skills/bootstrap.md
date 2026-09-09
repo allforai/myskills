@@ -46,7 +46,14 @@ approves intent.
 The canonical Step 3.4 node-list confirmation is provisional on Codex too: any node-set
 or `hard_blocked_by` change the later audits make is presented as a delta against the
 confirmed list in Phase A before the three-lens gate. Assume-and-declare cannot approve
-a plan the user never saw.
+a plan the user never saw. Persist the presented graph and the user's answer in
+`.allforai/bootstrap/plan-confirmation.json`, with its decision in the planning journal
+`.allforai/bootstrap/plan-confirmation-journal.json` (schema, provenance and append-only
+revision rules in the canonical `knowledge/bootstrap-audits.md` Phase A section). Never
+write the product decision journal for a plan or run choice. The copied
+`validate_bootstrap.py` and `validate_unattended_readiness.py` recompute the delta at
+both boundaries, so an unconfirmed node set or dependency edge holds the nodes it
+affects until the delta is presented and confirmed.
 
 On re-entry, present only the CLI's pending topics, restoring its history,
 reasons and explicit exclusions as context. For local requests with legacy

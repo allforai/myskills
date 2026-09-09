@@ -9,7 +9,7 @@ import json
 
 import pytest
 
-from .test_bootstrap_scope import project as shared_project, gate, write, publish_contract
+from .test_bootstrap_scope import confirm_plan, project as shared_project, gate, write, publish_contract
 from .test_product_intent_session import invoke, decide, JOURNAL
 from .test_validate_bootstrap import ATTENTION_CONTRACT_BODY
 
@@ -50,7 +50,10 @@ def node(identity, intents):
 
 
 def plan(root):
-    return invoke(root, {"operation": "plan", "nodes": [node("node-a", ["export"]), node("node-b", ["archive"])]})
+    planned = invoke(root, {"operation": "plan", "nodes": [node("node-a", ["export"]), node("node-b", ["archive"])]})
+    if planned.returncode == 0:
+        confirm_plan(root, stage="plan-projection", reason="Presented the projected plan")
+    return planned
 
 
 def freeze_and_plan(root, batch, publish=NODES):

@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from .test_bootstrap_scope import project, gate, publish_contract, write
+from .test_bootstrap_scope import confirm_plan, project, gate, publish_contract, write
 from .test_product_intent_resume import freeze_and_plan
 from .test_product_intent_session import invoke, draft, decide, TOPICS, JOURNAL
 from .test_validate_bootstrap import ATTENTION_CONTRACT_BODY
@@ -127,6 +127,7 @@ def test_identical_local_refreeze_converges_and_narrowed_selection_invalidates(t
         "responsibilities": ["implementation", "documentation", "verification"], "source_inputs": ["orders.py"],
         "exit_artifacts": [".allforai/bootstrap/orders-result.json"], "body": ATTENTION_CONTRACT_BODY}]})
     assert planned.returncode == 0, planned.stdout
+    confirm_plan(tmp_path, stage="plan-projection", reason="Presented the projected plan")
     publish_contract(tmp_path, "orders")
     for name in GATES:
         assert gate(tmp_path, name).returncode == 0

@@ -10,6 +10,11 @@ Checks:
   - human_gate workflow nodes have matching approval records
   - app-design workflow closure emits handoff/QA artifacts and routes execution through concept-freeze
   - bootstrap-profile.json + workflow.json: mobile UI modules have platform UI automation
+  - plan-confirmation.json: the delivered node set and hard_blocked_by edges match the plan
+    the user actually confirmed, with user provenance and retained revision history
+  - unattended-run-readiness-spec.json: each declared repair loop routes findings into the
+    repair and holds closure for the QA rerun
+  - workflow.json: a deferred effect proof names an existing downstream owner
   - node-specs/*.md: YAML frontmatter parseable, node_id field present
 """
 
@@ -19,7 +24,7 @@ from pathlib import Path
 import re
 import sys
 
-from product_intent import validate_scope
+from product_intent import JOURNAL as PRODUCT_JOURNAL, _journal_decision, validate_scope
 from check_artifacts import DECLARE_HINT, freshness_admission, input_declaration_errors
 
 try:
@@ -1070,8 +1075,23 @@ def validate_node_spec_contracts(bdir: str) -> list:
             if node.get("requirement_refs") and data.get(field) != node.get(field):
                 errors.append(f"node-specs/{node_id}.md: frontmatter {field} must match workflow {field}")
 
-        for field in ('source_inputs', 'input_dependencies', 'required_documents', 'document_verification'):
-            if field in node and data.get(field) != node[field]:
+        # Both directions: a contract declared on one side only is invisible to the gates
+        # that read the other. A document promised in the spec alone has no workflow
+        # entry to verify, and a deferred effect owner named there alone routes nothing.
+        for field in ('source_inputs', 'input_dependencies', 'required_documents',
+                      'document_verification', 'downstream_effect_owner'):
+            if field not in node and field not in data:
+                continue
+            if data.get(field) == node.get(field):
+                continue
+            if field not in node:
+                code = ("missing_document_contract" if field.startswith(("required_doc", "document_"))
+                        else "unowned_effect_stage" if field == "downstream_effect_owner" else "")
+                errors.append(
+                    f"{code + ': ' if code else ''}node-specs/{node_id}.md: frontmatter {field} "
+                    f"is not declared on the workflow node; declare it in both or in neither"
+                )
+            else:
                 errors.append(f"node-specs/{node_id}.md: frontmatter {field} must match workflow {field}")
 
         for term in NODE_SPEC_REQUIRED_ATTENTION_TERMS:
@@ -1330,6 +1350,483 @@ def validate_game_2d_production_flow(bdir: str) -> list:
     return errors
 
 
+PLAN_CONFIRMATION = "plan-confirmation.json"
+PLAN_JOURNAL = ".allforai/bootstrap/plan-confirmation-journal.json"
+CANONICAL_ROUTES = ("local-change", "product-reconstruction", "new-product")
+RETURN_TO_BOOTSTRAP = "return to interactive /bootstrap Phase A"
+
+
+def _text(value) -> bool:
+    """True when a recorded field carries actual content rather than a placeholder."""
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _completed_node_ids(workflow: dict) -> set:
+    """Node ids whose latest recorded transition is completed, folding both log formats."""
+    latest = {}
+    history = workflow.get("transition_log")
+    for event in history if isinstance(history, list) else []:
+        if not isinstance(event, dict):
+            continue
+        node_id = event.get("node_id") or event.get("node")
+        if _text(node_id):
+            latest[node_id] = event.get("status")
+    return {node_id for node_id, status in latest.items() if status == "completed"}
+
+
+def _plan_shape(nodes) -> dict:
+    """The plan a user can actually confirm: node ids plus their hard_blocked_by edges."""
+    shape = {}
+    for node in nodes if isinstance(nodes, list) else []:
+        if not isinstance(node, dict):
+            continue
+        node_id = _node_id(node)
+        if not _text(node_id):
+            continue
+        edges = node.get("hard_blocked_by") or []
+        shape[node_id] = sorted(e for e in edges if _text(e)) if isinstance(edges, list) else []
+    return shape
+
+
+def _plan_shape_errors(plan, label: str) -> list:
+    """Structural faults in a recorded graph. Malformed shapes are refused, never repaired:
+    sanitizing a null, a string or a mixed edge list into `[]` would let a malformed record
+    compare equal to a valid plan and become authority."""
+    if not isinstance(plan, dict) or not plan:
+        return [f"{label} must map each presented node id to its hard_blocked_by node ids"]
+    errors = []
+    for node_id, edges in plan.items():
+        if not _text(node_id):
+            errors.append(f"{label} has an empty node id")
+        elif not isinstance(edges, list) or any(not _text(e) for e in edges):
+            errors.append(f"{label}['{node_id}'] must be a list of non-empty hard_blocked_by node ids")
+        elif len(set(edges)) != len(edges):
+            errors.append(f"{label}['{node_id}'] repeats a hard_blocked_by node id")
+        elif any(e not in plan for e in edges):
+            errors.append(f"{label}['{node_id}'] depends on a node outside the recorded plan")
+    return errors
+
+
+def _normalized_plan(plan) -> dict:
+    """Canonical edge order for a plan already proven well-formed by _plan_shape_errors."""
+    return {node_id: sorted(edges) for node_id, edges in plan.items()}
+
+
+def _plan_delta(before: dict, after: dict) -> dict:
+    """The change one revision records against the previous confirmed plan."""
+    return {
+        "added": sorted(set(after) - set(before)),
+        "removed": sorted(set(before) - set(after)),
+        "rewired": sorted(node_id for node_id in set(before) & set(after)
+                          if before[node_id] != after[node_id]),
+    }
+
+
+def _declared_delta(delta) -> dict:
+    """Read a recorded delta in either the id-list or the {node_id, ...} entry form."""
+    if not isinstance(delta, dict):
+        return {}
+    read = {}
+    for key in ("added", "removed", "rewired"):
+        entries = delta.get(key) or []
+        if not isinstance(entries, list):
+            return {}
+        ids = []
+        for entry in entries:
+            if _text(entry):
+                ids.append(entry)
+            elif isinstance(entry, dict) and _text(entry.get("node_id")):
+                ids.append(entry["node_id"])
+            else:
+                return {}
+        read[key] = sorted(ids)
+    return read
+
+
+PLAN_CONFIRMATION_CODES = ("unconfirmed_plan", "invalid_plan_confirmation", "unconfirmed_plan_delta")
+
+
+def _finding(code: str, message: str, node_id: str = "") -> dict:
+    finding = {"code": code, "message": message}
+    if node_id:
+        finding["node_id"] = node_id
+        finding["message"] = f"{node_id}: {message}"
+    return finding
+
+
+def _plan_provenance_findings(root: Path, label: str, entry, plan) -> list:
+    """The confirmation must resolve to a recorded user decision that carries this plan.
+
+    Provenance is resolved by the contract the gates already enforce: the reference
+    selects one decision in a schema-1.0 journal — `plan-confirmation-journal.json`,
+    the planning journal bootstrap writes, or the product decision journal when the
+    plan was genuinely confirmed there — and `product_intent._journal_decision` verifies
+    it (user-session batch, explicit question and choice, not pending, removed or
+    superseded). The decision's `intent` must record the exact graph presented,
+    `{"plan": {node_id: [hard_blocked_by]}}`, so the reference binds the user's choice
+    to this node set and, through the previous revision, to the delta they were shown.
+    A `source: "user"` flag with free text is a self-asserted approval lane, not
+    authority. Planning never writes the product journal for a local plan or run choice.
+    """
+    confirmation = entry.get("confirmation")
+    confirmation = confirmation if isinstance(confirmation, dict) else {}
+    reference = confirmation.get("reference")
+    if (confirmation.get("source") != "user" or not _text(reference)
+            or not _text(confirmation.get("reason"))):
+        return [_finding("invalid_plan_confirmation",
+                         f"{label} needs confirmation.source 'user' with the canonical "
+                         f"decision-journal reference of the user's confirmation and the recorded "
+                         f"reason; a boolean approval flag or an empty record is not user authority")]
+    if not any(reference.startswith(journal + "#") for journal in (PLAN_JOURNAL, PRODUCT_JOURNAL)):
+        return [_finding("invalid_plan_confirmation",
+                         f"{label} confirmation.reference must select one decision in "
+                         f"'{PLAN_JOURNAL}' (or in the product decision journal when the plan was "
+                         f"genuinely confirmed there) as '<journal>#<batch_id>/decisions/<index>'; "
+                         f"an arbitrary string is not a resolvable record of what the user "
+                         f"confirmed — {RETURN_TO_BOOTSTRAP}")]
+    try:
+        _, decision = _journal_decision(root, reference)
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError) as exc:
+        return [_finding("invalid_plan_confirmation",
+                         f"{label} confirmation.reference does not resolve to a confirmed, "
+                         f"current user decision: {exc}")]
+    if plan is None:
+        return []
+    recorded = decision.get("intent")
+    if not isinstance(recorded, dict) or set(recorded) != {"plan"}:
+        return [_finding("invalid_plan_confirmation",
+                         f"{label} references a decision that records no plan; the confirmed "
+                         f'decision must carry intent {{"plan": {{node_id: hard_blocked_by}}}}')]
+    shape_errors = _plan_shape_errors(recorded["plan"], f"{label} referenced decision intent.plan")
+    if shape_errors:
+        return [_finding("invalid_plan_confirmation", message) for message in shape_errors]
+    if _normalized_plan(recorded["plan"]) != plan:
+        return [_finding("invalid_plan_confirmation",
+                         f"{label} plan differs from the graph recorded in the referenced "
+                         f"decision; the user confirmed a different node set or dependency edges")]
+    return []
+
+
+def _plan_confirmation_entry_findings(root: Path, index: int, entry, previous) -> tuple:
+    """Validate one recorded confirmation; return (findings, this revision's plan)."""
+    label = f"{PLAN_CONFIRMATION} confirmations[{index}]"
+    if not isinstance(entry, dict):
+        return [_finding("invalid_plan_confirmation", f"{label} must be an object")], None
+
+    findings = []
+    revision = entry.get("revision")
+    if isinstance(revision, bool) or not isinstance(revision, int) or revision != index + 1:
+        findings.append(_finding(
+            "invalid_plan_confirmation",
+            f"{label} revision must be {index + 1}; earlier revisions are retained in order, "
+            f"never renumbered or replaced"))
+    if not _text(entry.get("stage")):
+        findings.append(_finding("invalid_plan_confirmation",
+                                 f"{label} needs the stage that presented this plan"))
+
+    plan = entry.get("plan")
+    shape_errors = _plan_shape_errors(plan, f"{label} plan")
+    if shape_errors:
+        findings.extend(_finding("invalid_plan_confirmation", f"{message}; an approval flag is not "
+                                 f"a confirmed plan") for message in shape_errors[:1])
+        findings.extend(_finding("invalid_plan_confirmation", message) for message in shape_errors[1:])
+        plan = None
+    else:
+        plan = _normalized_plan(plan)
+
+    findings.extend(_plan_provenance_findings(root, label, entry, plan))
+
+    if plan is not None:
+        if previous is None:
+            if _declared_delta(entry.get("delta")) not in ({}, {"added": [], "removed": [], "rewired": []}):
+                findings.append(_finding(
+                    "invalid_plan_confirmation",
+                    f"{label} is the first confirmation and has no earlier plan to record a "
+                    f"delta against"))
+        else:
+            actual = _plan_delta(previous, plan)
+            if not any(actual.values()):
+                findings.append(_finding(
+                    "invalid_plan_confirmation",
+                    f"{label} records no change against revision {index}; a re-confirmation "
+                    f"without a delta is not a revision"))
+            elif "delta" not in entry:
+                findings.append(_finding(
+                    "invalid_plan_confirmation",
+                    f"{label} must state the delta the user was shown against revision "
+                    f"{index}: {actual}"))
+            elif _declared_delta(entry.get("delta")) != actual:
+                findings.append(_finding(
+                    "invalid_plan_confirmation",
+                    f"{label} delta does not match the change against revision {index}; the "
+                    f"actual change is {actual}"))
+    return findings, plan
+
+
+def plan_confirmation_findings(bdir: str) -> list:
+    """The plan the audits deliver must be the plan the user actually confirmed.
+
+    Step 3.4 presents a node list; every later audit may change it. This gate reads
+    the persisted record of what was presented and confirmed, recomputes the delta
+    against the current graph, and refuses a node set or dependency edge the user
+    never saw. Findings are typed and, for a delta, bound to the node that changed,
+    so the confirmed part of a plan stays executable.
+
+    Revisions are append-only history: each records the plan confirmed at that point, in
+    order, and a normal later revision does not supersede the earlier one — it records the
+    next graph, so earlier history stays valid and unchanged nodes are never re-confirmed.
+    Supersession is reserved for retracting a recorded confirmation, and retracting one
+    invalidates the chain from that point, which is why every revision must still resolve.
+    A revision that changes nothing is not a revision. Work that is already finished is left alone — an unrecorded plan
+    is demanded of the unfinished nodes, the ones that have yet to execute. Completion is
+    never an exemption from a change, though: a node added or re-wired after the confirmed
+    revision is reported even once it is marked complete, or mutating and then completing a
+    record would license any graph change after the fact.
+
+    Legacy inputs without the route contract are out of scope here: their scope
+    provenance is already reported by validate_scope.
+    """
+    workflow_path = os.path.join(bdir, "workflow.json")
+    profile_path = os.path.join(bdir, "bootstrap-profile.json")
+    if not os.path.exists(workflow_path) or not os.path.exists(profile_path):
+        return []
+    try:
+        workflow = _load_json(workflow_path)
+        profile = _load_json(profile_path)
+    except Exception:
+        return []
+    if not isinstance(workflow, dict) or not isinstance(profile, dict):
+        return []  # A malformed workflow is reported by the scope gate, and never crashes this one.
+    if profile.get("task_route") not in CANONICAL_ROUTES:
+        return []
+
+    root = Path(_project_root_from_bootstrap_dir(bdir))
+    current = _plan_shape(workflow.get("nodes"))
+    if not current:
+        return []
+    unfinished = sorted(set(current) - _completed_node_ids(workflow))
+
+    record_path = os.path.join(bdir, PLAN_CONFIRMATION)
+    if not os.path.exists(record_path):
+        return [_finding(
+            "unconfirmed_plan",
+            f"{PLAN_CONFIRMATION} not found; Step 3.4 must persist the node ids and "
+            f"hard_blocked_by edges presented to the user with their confirmation provenance, "
+            f"so the audits' changes can be presented as a delta against it — "
+            f"{RETURN_TO_BOOTSTRAP}", node_id)
+            for node_id in unfinished]
+    try:
+        record = _load_json(record_path)
+    except Exception as exc:
+        return [_finding("invalid_plan_confirmation", f"{PLAN_CONFIRMATION} cannot be parsed: {exc}")]
+    if not isinstance(record, dict) or record.get("schema_version") != "1.0":
+        return [_finding("invalid_plan_confirmation", f"{PLAN_CONFIRMATION} needs schema_version '1.0'")]
+    confirmations = record.get("confirmations")
+    if not isinstance(confirmations, list) or not confirmations:
+        return [_finding(
+            "invalid_plan_confirmation",
+            f"{PLAN_CONFIRMATION} confirmations must list every plan presented to the user, "
+            f"oldest first; earlier revisions are kept, not overwritten")]
+
+    findings = []
+    previous = None
+    for index, entry in enumerate(confirmations):
+        entry_findings, plan = _plan_confirmation_entry_findings(root, index, entry, previous)
+        findings.extend(entry_findings)
+        if plan is None:
+            return findings
+        previous = plan
+
+    delta = _plan_delta(previous, current)
+    revision = len(confirmations)
+    # A change made after the confirmation is reported whatever its status: completing a
+    # node that was inserted without authority is the mutation, not an exemption from it.
+    for node_id in delta["added"]:
+        findings.append(_finding(
+            "unconfirmed_plan_delta",
+            f"added to the workflow after confirmed revision {revision}; present the delta and "
+            f"record the user's confirmation before this node executes — {RETURN_TO_BOOTSTRAP}",
+            node_id))
+    for node_id in delta["rewired"]:
+        findings.append(_finding(
+            "unconfirmed_plan_delta",
+            f"hard_blocked_by changed from {previous[node_id]} to {current[node_id]} after "
+            f"confirmed revision {revision}; present the delta and record the user's confirmation "
+            f"before this node executes — {RETURN_TO_BOOTSTRAP}", node_id))
+    if delta["removed"]:
+        findings.append(_finding(
+            "unconfirmed_plan_delta",
+            f"nodes {delta['removed']} were dropped from the workflow after confirmed revision "
+            f"{revision}; a removal the user never saw is an unconfirmed plan change — "
+            f"{RETURN_TO_BOOTSTRAP}"))
+    return findings
+
+
+def validate_plan_confirmation(bdir: str) -> list:
+    """Rendered plan-confirmation errors for the bootstrap validator CLI."""
+    return [f"{finding['code']}: {finding['message']}" for finding in plan_confirmation_findings(bdir)]
+
+
+def plan_confirmation_blockers(project_root) -> list:
+    """Typed plan-confirmation blockers for a run-time entry.
+
+    The readiness gate and any other `/run` driver consume the same record through this
+    call instead of assuming `/bootstrap` ran and passed: each blocker carries `code`,
+    `message` and, for a delta, the `node_id` it holds, matching the blocker shape the
+    readiness report already publishes.
+    """
+    return plan_confirmation_findings(os.path.join(str(project_root), ".allforai", "bootstrap"))
+
+
+def validate_repair_loop_declaration(bdir: str) -> list:
+    """A declared repair loop must describe a route the orchestrators can actually run.
+
+    `validate_unattended_readiness.py` checks the declaration against the graph: a
+    declared QA or closure node must carry its `hard_blocked_by` edge. This checks
+    that the declaration itself routes something: a failed QA node never completes,
+    so both engines dispatch the repair from this declaration and hold closure until
+    the QA node reruns. A loop with no QA source, no closure holder, or a closure that
+    never waits for the QA rerun wires an edge and routes nothing.
+    """
+    errors = []
+    workflow_path = os.path.join(bdir, "workflow.json")
+    spec_path = os.path.join(bdir, "unattended-run-readiness-spec.json")
+    if not os.path.exists(workflow_path) or not os.path.exists(spec_path):
+        return errors
+    try:
+        workflow = _load_json(workflow_path)
+        spec = _load_json(spec_path)
+    except Exception:
+        return errors
+    if (not isinstance(workflow, dict) or not isinstance(spec, dict)
+            or not isinstance(spec.get("required_repair_loops"), list)):
+        return errors
+
+    raw_nodes = workflow.get("nodes")
+    nodes = {_node_id(node): node for node in (raw_nodes if isinstance(raw_nodes, list) else [])
+             if isinstance(node, dict) and _node_id(node)}
+    for index, loop in enumerate(spec["required_repair_loops"]):
+        if not isinstance(loop, dict):
+            continue
+        repair_node_id = loop.get("repair_node_id")
+        if not _text(repair_node_id):
+            continue
+        label = f"required_repair_loops[{index}]"
+        qa_nodes = [n for n in (loop.get("qa_node_ids") or loop.get("qa_nodes") or []) if _text(n)]
+        closure_nodes = [n for n in (loop.get("closure_node_ids") or loop.get("closure_nodes") or [])
+                         if _text(n)]
+        if not qa_nodes:
+            errors.append(
+                f"undeclared_repair_loop_routing: {label} names repair node "
+                f"'{repair_node_id}' with no qa_node_ids; nothing routes findings into it"
+            )
+        if not closure_nodes:
+            errors.append(
+                f"undeclared_repair_loop_routing: {label} names repair node "
+                f"'{repair_node_id}' with no closure_node_ids; nothing waits for the QA rerun"
+            )
+        if repair_node_id in qa_nodes or repair_node_id in closure_nodes:
+            errors.append(
+                f"undeclared_repair_loop_routing: {label} lists repair node "
+                f"'{repair_node_id}' as its own QA or closure node"
+            )
+        for closure_node_id in closure_nodes:
+            node = nodes.get(closure_node_id)
+            if node is None:
+                continue
+            edges = node.get("hard_blocked_by") or []
+            edges = edges if isinstance(edges, list) else []
+            missing = [qa for qa in qa_nodes if qa in nodes and qa not in edges]
+            if missing:
+                errors.append(
+                    f"undeclared_repair_loop_routing: {label} closure node "
+                    f"'{closure_node_id}' is not hard_blocked_by QA node(s) {missing}; it would "
+                    f"close on the repair alone, without the QA rerun that proves it"
+                )
+    return errors
+
+
+def _downstream_of(nodes: dict, node_id: str, owner_id: str) -> bool:
+    """True when owner_id transitively depends on node_id through hard_blocked_by."""
+    seen = set()
+    frontier = [owner_id]
+    while frontier:
+        current = frontier.pop()
+        if current in seen:
+            continue
+        seen.add(current)
+        edges = nodes.get(current, {}).get("hard_blocked_by") or []
+        for edge in edges if isinstance(edges, list) else []:
+            if edge == node_id:
+                return True
+            frontier.append(edge)
+    return False
+
+
+def validate_effect_stage_ownership(bdir: str) -> list:
+    """A deferred effect proof must name a downstream node that actually proves it.
+
+    A node whose full effect first exists after a later node declares
+    `downstream_effect_owner`. The named node must exist, run after this one, and
+    carry its own Effect Verification. Whether a node needed to defer at all stays
+    a semantic judgment for the node-spec audit; an unowned deferral is structural.
+    """
+    errors = []
+    workflow_path = os.path.join(bdir, "workflow.json")
+    specs_dir = os.path.join(bdir, "node-specs")
+    if not os.path.exists(workflow_path):
+        return errors
+    try:
+        workflow = _load_json(workflow_path)
+    except Exception:
+        return errors
+
+    if not isinstance(workflow, dict):
+        return errors
+    nodes = {_node_id(node): node for node in workflow.get("nodes", [])
+             if isinstance(node, dict) and _node_id(node)}
+    for node_id, node in sorted(nodes.items()):
+        if "downstream_effect_owner" not in node:
+            continue
+        owner_id = node.get("downstream_effect_owner")
+        if not _text(owner_id):
+            errors.append(
+                f"unowned_effect_stage: workflow.json {node_id} downstream_effect_owner must "
+                f"name the node that proves the full effect; omit the field when this node "
+                f"proves it at its own stage"
+            )
+            continue
+        if owner_id == node_id:
+            errors.append(
+                f"unowned_effect_stage: workflow.json {node_id} defers its effect proof to itself"
+            )
+            continue
+        if owner_id not in nodes:
+            errors.append(
+                f"unowned_effect_stage: workflow.json {node_id} defers its effect proof to "
+                f"non-existent node '{owner_id}'"
+            )
+            continue
+        if not _downstream_of(nodes, node_id, owner_id):
+            errors.append(
+                f"unowned_effect_stage: workflow.json {node_id} defers its effect proof to "
+                f"'{owner_id}', which does not run after it; a deferred effect needs a "
+                f"downstream owner, not a parallel one"
+            )
+            continue
+        owner_spec = os.path.join(specs_dir, f"{owner_id}.md")
+        if not os.path.exists(owner_spec):
+            continue
+        _, owner_text, spec_errors = _read_node_spec(owner_spec)
+        if spec_errors:
+            continue
+        if "## Effect Verification" not in owner_text:
+            errors.append(
+                f"unowned_effect_stage: node-specs/{owner_id}.md accepts the deferred effect of "
+                f"'{node_id}' but carries no Effect Verification section to prove it"
+            )
+    return errors
+
 def validate_node_spec(path: str) -> list:
     """Validate a single node-spec markdown file."""
     data, text, errors = _read_node_spec(path)
@@ -1374,6 +1871,9 @@ def main():
             errors.extend(validate_canvas2d_game_client_profile_flow(bdir))
             errors.extend(validate_game_visual_acceptance_standard_flow(bdir))
             errors.extend(validate_mobile_ui_coverage(bdir))
+            errors.extend(validate_plan_confirmation(bdir))
+            errors.extend(validate_repair_loop_declaration(bdir))
+            errors.extend(validate_effect_stage_ownership(bdir))
     else:
         sm_path = os.path.join(bdir, "state-machine.json")
         if os.path.exists(sm_path):
@@ -1406,6 +1906,11 @@ __all__ = [
     "validate_canvas2d_game_client_profile_flow",
     "validate_game_visual_acceptance_standard_flow",
     "validate_mobile_ui_coverage",
+    "validate_plan_confirmation",
+    "plan_confirmation_findings",
+    "plan_confirmation_blockers",
+    "validate_repair_loop_declaration",
+    "validate_effect_stage_ownership",
 ]
 
 

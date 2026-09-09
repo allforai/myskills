@@ -11,7 +11,8 @@ import sys
 
 import pytest
 
-from .test_bootstrap_scope import ATTENTION_CONTRACT_BODY, codex_transition, project, publish_contract, write
+from .test_bootstrap_scope import (ATTENTION_CONTRACT_BODY, codex_transition, confirm_plan,
+                                   project, publish_contract, write)
 from .test_product_intent_session import decide, invoke
 from .test_evidence_freshness import invoke as freshness
 from .test_freshness_admission_corrections import _artifacts, _bootstrap, _readiness, _reconcile, _set_node, HOSTS, NODE
@@ -81,6 +82,8 @@ def _plan(root):
                          dict(WAREHOUSE, body=ATTENTION_CONTRACT_BODY)]}
     result = invoke(root, request)
     assert result.returncode == 0, (result.stdout, result.stderr)
+    # The projected plan is presented and confirmed before anything executes under it.
+    confirm_plan(root, stage="plan-projection", reason="Presented the projected plan")
     return json.loads(result.stdout)["workflow"]
 
 

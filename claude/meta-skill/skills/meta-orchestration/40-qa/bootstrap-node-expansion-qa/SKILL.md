@@ -199,6 +199,22 @@ Allowed blocker codes:
 - `unowned_effect_stage`
 - `missing_document_contract`
 
+## What the gates already prove, and what this audit must judge
+
+Part of the closure, effect and documentation contracts is structured enough for the
+copied `validate_bootstrap.py` to decide, and it does — before this audit runs, at both
+the bootstrap and `/run` boundaries:
+
+| Structured contract, enforced by the gate | Semantic judgment, yours |
+|---|---|
+| A declared `required_repair_loops` entry with no QA source, no closure holder, a repair node listed as its own QA/closure, or a closure node that does not wait for the QA rerun (`undeclared_repair_loop_routing`); `validate_unattended_readiness.py` checks the opposite direction, that a declared QA/closure node carries its `hard_blocked_by` edge | Whether a graph shape *is* a QA loop that needs declaring at all — which node produces repairable findings, which repair answers them, which closure must wait |
+| A `downstream_effect_owner` that names a missing node, the node itself, a node that does not run after it, or one whose spec has no Effect Verification (`unowned_effect_stage`) | Whether a node's Effect Verification demands proof its own stage cannot produce, so a deferral (or a merge) was needed in the first place |
+| A `required_documents` entry with no `document_verification` argv, and a document contract declared on the node-spec but not on the workflow node (`missing_document_contract`) | Whether a node's Task promises a document it never declared. Documentation responsibility alone is not that promise: a node may own updates to documents that already exist, and forcing a new fact document on every `documentation` responsibility is a false finding |
+
+Report a structured failure under its code if you see it, but do not stop at the codes
+the gate can decide: the judgments in the right-hand column are the reason this audit
+exists, and they are read from the node-spec's own prose.
+
 ## Automatic Validation
 
 Reject the workflow when any production node-spec matches one of these:
@@ -252,7 +268,8 @@ Reject the workflow when any production node-spec matches one of these:
   stage-local proof and no downstream owner. Either the deliverable is one node,
   or this node states the effect observable at its own stage and names the
   downstream node that proves the full effect — and that node's spec accepts it.
-  An unowned deferral is `unowned_effect_stage`;
+  An unowned deferral is `unowned_effect_stage`, and the owner is declared as the node's
+  `downstream_effect_owner` so the deferral is checkable rather than only described;
 - a node whose `responsibilities` include `documentation`, or whose Task promises
   a document it will write, carries an empty `required_documents` (or a required
   document without its `document_verification` argv). Deferring that declaration

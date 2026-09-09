@@ -20,7 +20,7 @@
     "meta-intent-t13": ["T13-bc513-spec.md", "T13-bc513-standards.md"],
     "result": "All 9 reports are byte-identical to preserved integration copies. Recheck worktree status and branch containment after final acceptance before removal; no worktree removed."
   },
-  "preparation_verification": {"T15": 20, "T16": 22, "T17": 31, "T18": 31, "actual_host_passed": 0, "actual_host_required": 60, "candidate_refresh_required": true},
+  "preparation_verification": {"T15": 20, "T16": 22, "T17": 31, "T18": 31, "actual_host_passed": 0, "actual_host_required": 60, "candidate_refresh_required": false, "candidate": "e30ccc7cec9120815f0d9bc92204adf465f666d4", "refresh_check": "All four exports share current candidate fingerprint. Initial refreshed-ledger checks exposed six metadata/phase-guard failures; corrected at existing boundary. All 37 results-pin tests now pass; unchanged remaining 67 helper tests passed in preceding runs. This is preparation validation, not host proof."},
   "main_base": "a37ca40a548bd748b416b908157223a7287ad720",
   "max_concurrency": 3,
   "status": "running",
@@ -151,6 +151,33 @@
         14
       ]
     }
+  },
+  "candidate_after_main_sync": "e30ccc7cec9120815f0d9bc92204adf465f666d4",
+  "candidate_sync_verification": "Normal merge commit hook passed 647 unit tests in 239.18 seconds plus all validators; production merge matched independently tested tree. Main itself remains untouched.",
+  "current_host_campaign": {
+    "root": "/private/tmp/meta-intent-host-campaign.XX6yRo",
+    "candidate_tree_sha256": "c1114a94d89c2ea8d8e7bc8c496576b9750957e347769980dc75dee006704fc4",
+    "packets": [15, 16, 17, 18],
+    "required_cells": 60,
+    "passed_cells": 0,
+    "claude": "Current missing-product-docs launch failed at workspace trust before prompt delivery, ctx_711325d4829c; captured and released. User asked for manual trust confirmation.",
+    "codex": "Three actual T15 actors completed and were independently evaluated. All actor/evaluator terminals released; no semantic passes admitted. Large-code BOM rejection/recovery is corroborated, but question precision, incomplete evidence and shared planning defects remain. Both fixed-commit reviews rejected 2cc347af. Decision-gate repair is complete and released; runtime and planning corrections remain active. Fresh candidate exports and affected real-host tests are required after corrections settle."
+  },
+  "correction_verification_checkpoint": {
+    "base_commit": "2cc347afc4cfdbfac8c628eb0f652b02ac476e81",
+    "base_accepted": false,
+    "tree_state": "Concurrent in-flight corrections; not a fixed accepted candidate",
+    "coordinator_report": "T15-coordinator-boundary-review.md",
+    "decision_gate_tests": {"passed": 42, "seconds": 14.43},
+    "decision_gate_worker": {"task": "task_3b4fa906aeab", "dispatch": "ctx_18ef736a8d9b", "completion": "msg_9ed7af76de10", "state": "completed_and_released", "report": "T15-decision-gate-repair-report.md", "reported_isolated_tests": {"claude_unit": 689, "codex_adapter": 43, "shared": 109}, "combined_acceptance": false},
+    "t15_helper_tests": {"passed": 23, "seconds": 51.88},
+    "decision_discriminator_bypasses": "Both exact reported probes now remain unresolved decisions; combined regression and real-host proof still pending",
+    "plan_confirmation_provenance": "Coordinator reran new test_plan_confirmation_gate.py: 34 passed in 7.59s on the in-flight tree, covering confirmation provenance, malformed recorded graphs, altered plans, retraction and historical revisions. Combined regression, semantic coverage review and host proof remain pending; implicit confirmation in generic test wrappers remains prohibited.",
+    "qa_report_attempt_provenance": "All workers settled/released. Coordinator corrected omitted FIFO/invalid-UTF8 failures with two red-to-green tests. Stable combined Claude unit + Codex flow/install: 911 passed in 317.41s. Measurement 50 passed, Node 95 passed, shared 122 passed, campaign harness 111 passed in 165.46s. Fixed-commit independent review and actual-host acceptance still pending.",
+    "campaign_launch_acceptance": "T15-T18 old candidate acceptance withdrawn; original launch pins and evidence preserved; fresh export and host runs required after accepted repairs",
+    "actual_host_passed": 0,
+    "actual_host_required": 60,
+    "fresh_candidate_required": true
   },
   "active": [],
   "completed": [

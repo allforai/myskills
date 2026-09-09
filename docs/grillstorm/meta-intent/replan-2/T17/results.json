@@ -1,23 +1,23 @@
 {
   "task": "T17",
   "issue": "docs/grillstorm/meta-intent/replan-2/issues/17.md",
-  "source_commit": "1ed30ee5819adf95cf4f2b64c08956ec4c751b1d",
-  "production_commit": "1ed30ee5819adf95cf4f2b64c08956ec4c751b1d",
-  "candidate_status": "preliminary",
+  "source_commit": "e30ccc7cec9120815f0d9bc92204adf465f666d4",
+  "production_commit": "e30ccc7cec9120815f0d9bc92204adf465f666d4",
+  "candidate_status": "acceptance withdrawn; historical export preserved; repaired candidate and fresh host proof required",
   "candidate_refresh_required": true,
-  "candidate_refresh_reason": "The #14 repair is still in flight. This export exists so the packets, seeded state and guards can be built and tested; it is not the candidate any actor may be judged on. Re-export from the final accepted repaired commit and re-pin this ledger, launch-request.md and evaluator-private.md before launching a single actor.",
+  "candidate_refresh_reason": "Later host evaluations and repair reviews found unresolved production defects. Preserve this historical export; re-export a fixed accepted candidate and regenerate affected host evidence before admission.",
   "accepted_producer": {
     "integrated_as": "1ed30ee5819adf95cf4f2b64c08956ec4c751b1d",
     "note": "Accepted preliminary producer available in the shared Git object store; the final repaired candidate is not yet accepted."
   },
-  "packet_root": "/private/tmp/meta-intent-T17-1ed30ee5",
-  "candidate_tree_sha256": "9f4945c479cdfc7560d92481c96d087223060285afa0d40a6357a97f1cd14480",
+  "packet_root": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17",
+  "candidate_tree_sha256": "c1114a94d89c2ea8d8e7bc8c496576b9750957e347769980dc75dee006704fc4",
   "candidate_entries": {
     "claude": "claude/meta-skill/skills/bootstrap/SKILL.md",
     "codex": "codex/meta-skill/SKILL.md"
   },
   "candidate_entry_sha256": {
-    "claude": "80e85064e59bf3b9c48b35948f06a30cf4f4be2d95f2169866e7a96087fcc37f",
+    "claude": "3938723850b5bff08f8b20c32e702f43f46e42519e9b51166b8a2cfdb670df26",
     "codex": "526dc0958a9c174a07d9b98d54de8cd1f2561790dbbf759853b45e13086c6065"
   },
   "required_cells": 16,
@@ -25,7 +25,7 @@
   "passed_cells": 0,
   "host_evidence": "0/16",
   "preparation_status": "prepared; 16 candidate-bound blind packets exported and guarded by tests",
-  "proof_status": "no host evidence; no actor has run; issue #17 is not accepted as complete",
+  "proof_status": "unverified",
   "evidence_boundary": "Preparation only. The exported tree is the preliminary producer, not the final repaired candidate, so no evidence gathered against this tree hash could be counted even if an actor had run.",
   "launch_ownership": "coordinator only; this worker never launches actors or nested dispatches",
   "cells": [
@@ -39,10 +39,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "No actor launched. The coordinator alone launches real actors; the candidate must first be re-exported from the final repaired commit, and the known host blocker is that new synthetic Claude projects stop at the workspace trust prompt, which must not be bypassed.",
-      "packet": "/private/tmp/meta-intent-T17-1ed30ee5/claude/two-dirty-states/actor-input.md",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/two-dirty-states/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-T17-1ed30ee5/claude/two-dirty-states/project",
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/two-dirty-states/project",
       "attempts": []
     },
     {
@@ -55,10 +55,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "No actor launched. The coordinator alone launches real actors; the candidate must first be re-exported from the final repaired commit, and the known host blocker is Codex quota, which must not be bypassed.",
-      "packet": "/private/tmp/meta-intent-T17-1ed30ee5/codex/two-dirty-states/actor-input.md",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/two-dirty-states/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-T17-1ed30ee5/codex/two-dirty-states/project",
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/two-dirty-states/project",
       "attempts": []
     },
     {
@@ -72,10 +72,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "No actor launched. The coordinator alone launches real actors; the candidate must first be re-exported from the final repaired commit, and the known host blocker is that new synthetic Claude projects stop at the workspace trust prompt, which must not be bypassed.",
-      "packet": "/private/tmp/meta-intent-T17-1ed30ee5/claude/baseline-only-change/actor-input.md",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/baseline-only-change/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-T17-1ed30ee5/claude/baseline-only-change/project",
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/baseline-only-change/project",
       "attempts": []
     },
     {
@@ -89,10 +89,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "No actor launched. The coordinator alone launches real actors; the candidate must first be re-exported from the final repaired commit, and the known host blocker is Codex quota, which must not be bypassed.",
-      "packet": "/private/tmp/meta-intent-T17-1ed30ee5/codex/baseline-only-change/actor-input.md",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/baseline-only-change/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-T17-1ed30ee5/codex/baseline-only-change/project",
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/baseline-only-change/project",
       "attempts": []
     },
     {
@@ -105,10 +105,10 @@
         "R30"
       ],
       "phases": 2,
-      "reason": "No actor launched. The coordinator alone launches real actors; the candidate must first be re-exported from the final repaired commit, and the known host blocker is that new synthetic Claude projects stop at the workspace trust prompt, which must not be bypassed.",
-      "packet": "/private/tmp/meta-intent-T17-1ed30ee5/claude/generated-sync-no-loop/actor-input.md",
-      "phase2_packet": "/private/tmp/meta-intent-T17-1ed30ee5/claude/generated-sync-no-loop/actor-input-phase2.md",
-      "project": "/private/tmp/meta-intent-T17-1ed30ee5/claude/generated-sync-no-loop/project",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/generated-sync-no-loop/actor-input.md",
+      "phase2_packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/generated-sync-no-loop/actor-input-phase2.md",
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/generated-sync-no-loop/project",
       "attempts": []
     },
     {
@@ -121,10 +121,10 @@
         "R30"
       ],
       "phases": 2,
-      "reason": "No actor launched. The coordinator alone launches real actors; the candidate must first be re-exported from the final repaired commit, and the known host blocker is Codex quota, which must not be bypassed.",
-      "packet": "/private/tmp/meta-intent-T17-1ed30ee5/codex/generated-sync-no-loop/actor-input.md",
-      "phase2_packet": "/private/tmp/meta-intent-T17-1ed30ee5/codex/generated-sync-no-loop/actor-input-phase2.md",
-      "project": "/private/tmp/meta-intent-T17-1ed30ee5/codex/generated-sync-no-loop/project",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/generated-sync-no-loop/actor-input.md",
+      "phase2_packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/generated-sync-no-loop/actor-input-phase2.md",
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/generated-sync-no-loop/project",
       "attempts": []
     },
     {
@@ -138,10 +138,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "No actor launched. The coordinator alone launches real actors; the candidate must first be re-exported from the final repaired commit, and the known host blocker is that new synthetic Claude projects stop at the workspace trust prompt, which must not be bypassed.",
-      "packet": "/private/tmp/meta-intent-T17-1ed30ee5/claude/tests-pass-docs-stale/actor-input.md",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/tests-pass-docs-stale/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-T17-1ed30ee5/claude/tests-pass-docs-stale/project",
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/tests-pass-docs-stale/project",
       "attempts": []
     },
     {
@@ -155,10 +155,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "No actor launched. The coordinator alone launches real actors; the candidate must first be re-exported from the final repaired commit, and the known host blocker is Codex quota, which must not be bypassed.",
-      "packet": "/private/tmp/meta-intent-T17-1ed30ee5/codex/tests-pass-docs-stale/actor-input.md",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/tests-pass-docs-stale/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-T17-1ed30ee5/codex/tests-pass-docs-stale/project",
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/tests-pass-docs-stale/project",
       "attempts": []
     },
     {
@@ -170,10 +170,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "No actor launched. The coordinator alone launches real actors; the candidate must first be re-exported from the final repaired commit, and the known host blocker is that new synthetic Claude projects stop at the workspace trust prompt, which must not be bypassed.",
-      "packet": "/private/tmp/meta-intent-T17-1ed30ee5/claude/transitive-unrelated-impact/actor-input.md",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/transitive-unrelated-impact/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-T17-1ed30ee5/claude/transitive-unrelated-impact/project",
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/transitive-unrelated-impact/project",
       "attempts": []
     },
     {
@@ -185,10 +185,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "No actor launched. The coordinator alone launches real actors; the candidate must first be re-exported from the final repaired commit, and the known host blocker is Codex quota, which must not be bypassed.",
-      "packet": "/private/tmp/meta-intent-T17-1ed30ee5/codex/transitive-unrelated-impact/actor-input.md",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/transitive-unrelated-impact/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-T17-1ed30ee5/codex/transitive-unrelated-impact/project",
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/transitive-unrelated-impact/project",
       "attempts": []
     },
     {
@@ -201,10 +201,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "No actor launched. The coordinator alone launches real actors; the candidate must first be re-exported from the final repaired commit, and the known host blocker is that new synthetic Claude projects stop at the workspace trust prompt, which must not be bypassed.",
-      "packet": "/private/tmp/meta-intent-T17-1ed30ee5/claude/copied-old-evidence/actor-input.md",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/copied-old-evidence/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-T17-1ed30ee5/claude/copied-old-evidence/project",
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/copied-old-evidence/project",
       "attempts": []
     },
     {
@@ -217,10 +217,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "No actor launched. The coordinator alone launches real actors; the candidate must first be re-exported from the final repaired commit, and the known host blocker is Codex quota, which must not be bypassed.",
-      "packet": "/private/tmp/meta-intent-T17-1ed30ee5/codex/copied-old-evidence/actor-input.md",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/copied-old-evidence/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-T17-1ed30ee5/codex/copied-old-evidence/project",
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/copied-old-evidence/project",
       "attempts": []
     },
     {
@@ -233,10 +233,10 @@
         "R30"
       ],
       "phases": 2,
-      "reason": "No actor launched. The coordinator alone launches real actors; the candidate must first be re-exported from the final repaired commit, and the known host blocker is that new synthetic Claude projects stop at the workspace trust prompt, which must not be bypassed.",
-      "packet": "/private/tmp/meta-intent-T17-1ed30ee5/claude/unchanged-idempotency/actor-input.md",
-      "phase2_packet": "/private/tmp/meta-intent-T17-1ed30ee5/claude/unchanged-idempotency/actor-input-phase2.md",
-      "project": "/private/tmp/meta-intent-T17-1ed30ee5/claude/unchanged-idempotency/project",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/unchanged-idempotency/actor-input.md",
+      "phase2_packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/unchanged-idempotency/actor-input-phase2.md",
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/unchanged-idempotency/project",
       "attempts": []
     },
     {
@@ -249,10 +249,10 @@
         "R30"
       ],
       "phases": 2,
-      "reason": "No actor launched. The coordinator alone launches real actors; the candidate must first be re-exported from the final repaired commit, and the known host blocker is Codex quota, which must not be bypassed.",
-      "packet": "/private/tmp/meta-intent-T17-1ed30ee5/codex/unchanged-idempotency/actor-input.md",
-      "phase2_packet": "/private/tmp/meta-intent-T17-1ed30ee5/codex/unchanged-idempotency/actor-input-phase2.md",
-      "project": "/private/tmp/meta-intent-T17-1ed30ee5/codex/unchanged-idempotency/project",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/unchanged-idempotency/actor-input.md",
+      "phase2_packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/unchanged-idempotency/actor-input-phase2.md",
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/unchanged-idempotency/project",
       "attempts": []
     },
     {
@@ -266,10 +266,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "No actor launched. The coordinator alone launches real actors; the candidate must first be re-exported from the final repaired commit, and the known host blocker is that new synthetic Claude projects stop at the workspace trust prompt, which must not be bypassed.",
-      "packet": "/private/tmp/meta-intent-T17-1ed30ee5/claude/uncertain-impact/actor-input.md",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/uncertain-impact/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-T17-1ed30ee5/claude/uncertain-impact/project",
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/claude/uncertain-impact/project",
       "attempts": []
     },
     {
@@ -283,18 +283,35 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "No actor launched. The coordinator alone launches real actors; the candidate must first be re-exported from the final repaired commit, and the known host blocker is Codex quota, which must not be bypassed.",
-      "packet": "/private/tmp/meta-intent-T17-1ed30ee5/codex/uncertain-impact/actor-input.md",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/uncertain-impact/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-T17-1ed30ee5/codex/uncertain-impact/project",
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17/codex/uncertain-impact/project",
       "attempts": []
     }
   ],
   "issue_accepted_complete": false,
-  "launch_decision": "Not launched. This dispatch prepared execution packets only while the #14 repair proceeds; the coordinator owns the launch, and it must wait for the final repaired candidate.",
+  "launch_decision": "Refreshed against e30ccc7c after independent reviews and main synchronization. Coordinator will revalidate one actual cell per host; historical trust/quota limitations are not current findings.",
   "blockers": [
-    "The final repaired candidate is not accepted yet; the packets must be re-exported from it before any actor runs.",
-    "New synthetic Claude projects stop at the workspace trust prompt; not bypassed.",
-    "Codex quota on the previously observed account; not bypassed and not claimed to be permanent or universal."
-  ]
+    "The rejected candidate must be re-exported from a fixed accepted commit before new host launches.",
+    "Claude workspace-trust stopped the current T15 pilot before prompt delivery; requires human confirmation per project.",
+    "Three historical Codex T15 actors have completed evaluation; no passes were admitted. T17 cells remain unexecuted."
+  ],
+  "previous_preparation_record": {
+    "commit": "e30ccc7cec9120815f0d9bc92204adf465f666d4",
+    "path": "docs/grillstorm/meta-intent/replan-2/T17/results.json",
+    "note": "Original preparation and historical failed launches remain recoverable in this committed version; no host pass was recorded."
+  },
+  "launch_candidate": "e30ccc7cec9120815f0d9bc92204adf465f666d4",
+  "launch_candidate_tree_sha256": "c1114a94d89c2ea8d8e7bc8c496576b9750957e347769980dc75dee006704fc4",
+  "launch_packet_root": "/private/tmp/meta-intent-host-campaign.XX6yRo/T17",
+  "candidate_accepted": false,
+  "candidate_acceptance_withdrawal": {
+    "previously_accepted_for_launch": true,
+    "candidate": "e30ccc7cec9120815f0d9bc92204adf465f666d4",
+    "tree_sha256": "c1114a94d89c2ea8d8e7bc8c496576b9750957e347769980dc75dee006704fc4",
+    "reason": "Actual host evaluations found planning and decision-gate defects; the subsequent 2cc347af repair was also rejected in review. Preserve historical evidence but do not launch or admit passes against this candidate.",
+    "evidence": "T15-coordinator-boundary-review.md"
+  },
+  "status": "prepared for current-host revalidation; zero scenario passes"
 }

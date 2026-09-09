@@ -336,7 +336,7 @@ def repair_responsibility(root, node, diff, blockers=None, external=None):
     if blockers is None:
         blockers = scope_blockers(root, read_json(root, WORKFLOW, {}))
     codes = blockers.get(None, set()) | blockers.get(node['node_id'], set())
-    if 'pending_requirement' in codes or 'pending_product_confirmation' in codes:
+    if codes & {'pending_requirement', 'pending_product_confirmation', 'pending_decision'}:
         return {'owner': 'interactive-bootstrap', 'responsibilities': ['product-decision']}
     if 'stale_requirement' in codes:
         return {'owner': 'interactive-bootstrap', 'responsibilities': ['replan']}

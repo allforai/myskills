@@ -98,22 +98,139 @@ A QA node whose finding belongs to another node cannot repair itself, and a fail
 never completes, so a repair successor wired only through `hard_blocked_by` would be
 unreachable exactly when it is needed. The route is the declared one:
 `.allforai/bootstrap/unattended-run-readiness-spec.json.required_repair_loops` —
-`{scope, qa_node_ids, repair_node_id, closure_node_ids, max_attempts}`, already
-shape-validated by `validate_unattended_readiness.py`. `flow.py` and this loop apply it:
+`{scope, qa_node_ids, repair_node_id, closure_node_ids, max_attempts}`.
+`validate_unattended_readiness.py` checks that shape before the run: every QA, repair and
+closure node exists, the repair node is `hard_blocked_by` each QA node, each closure node
+is `hard_blocked_by` the repair node, and a declared `max_attempts` is a positive integer.
+It does not check that the declared repair can actually fix the finding. `flow.py` and
+this loop apply it:
 
 - A QA node that failed **with its own current report published and readable** routes to
-  its declared `repair_node_id`, for at most `max_attempts` attempts. A QA node that never
+  its declared `repair_node_id`, for at most `max_attempts` attempts **of its own**. The
+  budget is per QA node, so one repair node serving several QA nodes owes each of them a
+  full budget; attempts spent on one are never charged to a sibling. A QA node that never
   ran, published nothing, or whose report cannot be read has no verdict to repair against:
   re-run it instead.
+- "Current" is bound to the run being judged and to the inputs it judged, and existence
+  plus parseability is proof of neither. Three things must hold together:
+  - **A failed attempt on record.** This node's latest `transition_log` entry is `failed`,
+    and the report was written no earlier than that entry's `started_at`. A node that never
+    ran, or whose latest attempt completed, has no failure to repair.
+  - **That attempt produced the report.** The driver records `qa_evidence` on every failed
+    transition of a declared QA node: `produced`, the exit artifacts written while the
+    attempt ran, each with its digest, and `binding`, the identity of the input snapshot
+    the node was observed against. The route needs a non-empty `produced` whose digests
+    still match what is on disk. An artifact counts as produced when its **content** changed
+    between the two measurements the driver took around the attempt. A write time is not
+    proof of execution: `touch` moves it without any report being generated, so it never
+    admits anything on its own. A leftover report therefore cannot open a repair however
+    recently it was touched, and a report edited after the attempt that wrote it no longer
+    matches its digest.
+
+    Only the driver writes this. It also keeps its own entry as the node's latest
+    transition, dropping any the worker appended behind it: the process being judged does
+    not get to file the evidence. A transition with no `qa_evidence` — an older log, or one
+    written by something else — carries no proof and does not qualify.
+
+    One case cannot be decided from outside: content that did not change while something
+    did write the file. A node that re-ran and reached the same verdict looks exactly like a
+    file nobody produced. The driver guesses neither way — it records `ambiguous` on the
+    transition and says so in the error line, the repair route stays shut, and repeated
+    failure is diagnosed. **A QA node that can repeat a verdict must say which attempt
+    reached it**: put a run or attempt identifier in the report, so the same finding twice is
+    two distinct verdicts and nothing has to be inferred from a timestamp.
+  - **Inputs still current.** The recorded freshness state — the same one the independent
+    artifact gate reads, through `check_artifacts.py --json`'s `freshness` — reports
+    `readiness_status: valid` for the node. That field, not `status`, is the test: `status`
+    tracks published *evidence*, which a failing QA node has none of and can never produce,
+    so requiring it would refuse every repair the loop exists for. `readiness_status` is the
+    contract-level answer — the node's most recent binding, contract preferred over older
+    evidence, still matches its inputs, with no undecided external change. So a node that
+    once delivered and published passing evidence, whose inputs have since moved, is not
+    denied forever by that stale snapshot: observing its contract against the inputs as they
+    are now restores the binding. Touching a file restores nothing — provenance is recorded
+    at observation, not at mtime.
+
+    `binding` names the snapshot, not the answer to a question about it. Two independent
+    "the inputs are current" answers do not prove they describe the same inputs — a source
+    can change and be re-observed between them, and both say yes. The driver records the
+    identity at the start of the attempt and again at the end, keeps it only if it did not
+    move, and admission requires the node to still be bound to that same identity. So a
+    contract observation published after a report exists, or a source changed and
+    republished either during or after the attempt, can never turn that report into a
+    current verdict: it binds inputs, not history.
+
+    A state that claims no provenance is not a pass here. `freshness: null` (a project with
+    no freshness state), a `legacy` node's `undeclared`, a `missing` or `invalid`
+    declaration, and an `uncertain` status all refuse the route. This does not change what
+    completes: a legacy node still completes on the pre-freshness gate, exactly as before.
+    It changes only what may be started automatically — an unattended repair is work this
+    run begins on the strength of a report, so the absence of proof is not permission to
+    begin it. Such a QA node is re-run, and repeated failure is diagnosed under the
+    recorded Run Policy, the same route as any other unrepairable QA failure.
+
+  - **A positive QA verdict.** The report states a failing outcome the node itself reached,
+    or lists non-empty gaps or findings. An empty document, empty gap arrays, a report that
+    states no outcome, or an environment, authority or never-ran status (`failed_env`,
+    `blocked`, `not_ready`, `not_generated`, `existence_only`, `blocked_by_*`) carries
+    nothing for a repair node to act on — the same exclusion the engine applies through
+    `NON_QA_FAILURE_TYPES`.
+
+  Anything short of all four is re-run or diagnosed, never repaired against.
+
+- Attempts are counted from `transition_log`, which is durable: a restarted driver
+  resumes the spent budget instead of handing the same attempts out again. An attempt is
+  a repair dispatch that completed while that QA node was waiting on it.
+- A loop that declares no `max_attempts` takes the documented default of three attempts
+  per QA node. A declared `max_attempts` that is not a positive integer is unbounded, not
+  a request for that default: the loop routes nothing and the QA node is re-run instead.
 - Only the declared repair node may proceed on that failed QA node. No other successor
   advances on a failed dependency, a failed node is never recorded `completed`, and its
   report is never edited to look passed.
-- When the repair node delivers, the QA node **re-runs**. Every `closure_node_ids` entry
-  stays blocked until that QA node itself completes; a delivered repair is not a passing QA.
+- When the repair node **delivers**, the QA node **re-runs**. Delivery, not completion, is
+  the signal, and the difference is structural rather than a shortcut: a declared repair
+  node is `hard_blocked_by` the QA node it repairs, so while that QA node is failing the
+  repair node's own evidence is stale by definition and the freshness gate refuses it.
+  Waiting for the repair node to complete first would invert the loop and hang it. A repair
+  attempt has delivered when it wrote the repair node's declared exit artifacts, which the
+  driver records the same way it records a QA attempt's.
+
+  Nothing is waived by that. The repair transition stays `failed`, the node stays
+  incomplete, the attempt still spends a budgeted attempt, and the QA rerun — never this
+  record — decides whether the repair worked. Once the rerun passes, the repair node is
+  dispatched again as an ordinary node, publishes its evidence with its upstream now valid,
+  and completes on its own merits; only then does closure become reachable. Every
+  `closure_node_ids` entry stays blocked until the QA node itself completes; a delivered
+  repair is not a passing QA.
 - When the budget is spent and the QA node still fails, it is a normal repeated failure:
   diagnose and stop under the recorded Run Policy. Never waive it.
 - When no node is dispatchable but pending nodes remain, the graph is blocked. Report the
   blocked nodes; that state is never a completed workflow.
+
+#### Recovering a legacy node's repair route
+
+A legacy QA node that genuinely needs its declared repair loop is one declaration and one
+observation away from it:
+
+1. Add `source_inputs` to the node in `workflow.json` — the product sources it judges, or
+   an explicit `[]` when none applies — and `input_dependencies` for the files it reads.
+2. Observe and publish the node once through the generated helper:
+
+   ```bash
+   echo '{"operation":"observe","node_id":"<qa-node>","kind":"contract"}' \
+     | python3 .allforai/bootstrap/scripts/evidence_freshness.py .
+   echo '{"operation":"publish","observation":"<token>","verification_command":[...]}' \
+     | python3 .allforai/bootstrap/scripts/evidence_freshness.py .
+   ```
+
+3. Let the QA node **run again**. The binding applies to attempts that start after it, so
+   the route opens on the next attempt's own report — never on the one that was already on
+   disk when you observed. If an input moves afterwards, the route closes again until the
+   node is reobserved.
+
+Declare the inputs at planning time rather than mid-run wherever the node still exists in
+the plan; step 1 inside `/run` is a migration for retained history, not a way to open a
+route for work that never declared what it judges.
 
 ## Recording Transitions
 

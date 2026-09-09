@@ -40,6 +40,15 @@ const DAG_SCHEMA = {
         repair_node_id: { type: 'string' },
         closure_node_ids: { type: 'array', items: { type: 'string' } },
         max_attempts: { type: 'integer' }
+      } } },
+    // Repair dispatches already granted, read back from the durable transition_log so a
+    // resumed run continues the same budget instead of restarting it.
+    repair_attempts: { type: 'array', items: { type: 'object',
+      required: ['repair_node_id', 'qa_node_id', 'attempts'],
+      properties: {
+        repair_node_id: { type: 'string' },
+        qa_node_id: { type: 'string' },
+        attempts: { type: 'integer' }
       } } }
   }
 }
@@ -78,7 +87,26 @@ const NODE_GATE_SCHEMA = {
   properties: {
     node_id: { type: 'string' },
     status: { type: 'string', enum: ['passed', 'repair', 'hard_fail'] },
-    blocking_findings: { type: 'array', items: { type: 'object' } }
+    blocking_findings: { type: 'array', items: { type: 'object' } },
+    // The checker's structured output, reported verbatim by the gate step. This is the
+    // engine's only independent measurement: it has no filesystem of its own, so a
+    // declared repair node's delivery is judged from what a separate agent read out of
+    // `check_artifacts.py --json`, never from the node's own claim about itself.
+    measurement: { type: 'object',
+      properties: {
+        withheld_by: { type: 'array', items: { type: 'string' } }, // node ids whose evidence withholds this one
+        artifacts: { type: 'array', items: { type: 'object',
+          properties: {
+            path: { type: 'string' },
+            exists: { type: 'boolean' },
+            status_error: { type: 'string' },
+            digest: { type: 'string' },        // sha256 of the bytes, null when unreadable
+            digest_error: { type: 'string' }   // why the digest is null, when it is
+          } } },
+        binding_identity: { type: 'string' },  // identity of the recorded observation
+        binding_kind: { type: 'string' },      // contract | evidence
+        readiness_status: { type: 'string' }   // the node's current readiness
+      } }
   }
 }
 
@@ -89,6 +117,16 @@ const READINESS_SCHEMA = {
     status: { type: 'string', enum: ['ready', 'not_ready'] },
     blockers: { type: 'array', items: { type: 'object' } }
   }
+}
+
+// The documented fallback for a loop that declares no budget at all. A declared
+// budget always wins; an unusable one is never replaced by this.
+// The checker's structured output on its own, for the before half of a delivery
+// measurement. Same command, same independent step, no node result involved.
+const MEASUREMENT_SCHEMA = {
+  type: 'object',
+  required: ['measurement'],
+  properties: { measurement: NODE_GATE_SCHEMA.properties.measurement }
 }
 
 const DEFAULT_REPAIR_ATTEMPTS = 3
@@ -114,9 +152,14 @@ function repairLoopFor(loops, qaNodeId) {
     (loop.qa_node_ids || loop.qa_nodes || []).includes(qaNodeId)) || null
 }
 
+// null = this loop has no usable bound. An explicitly declared budget that is not a
+// positive integer is a planning error, not a request for the default: falling back
+// there would grant attempts the plan never authorized, so the loop routes nothing.
+// `validate_unattended_readiness.py` blocks the same shape before /run starts.
 function repairBudget(loop) {
-  const declared = loop && loop.max_attempts
-  return Number.isInteger(declared) && declared > 0 ? declared : DEFAULT_REPAIR_ATTEMPTS
+  if (!loop || loop.max_attempts === undefined) return DEFAULT_REPAIR_ATTEMPTS
+  const declared = loop.max_attempts
+  return Number.isInteger(declared) && declared > 0 ? declared : null
 }
 
 // repair: { loops: declared required_repair_loops, open: Map<qa_node_id, loop> }.
@@ -192,6 +235,10 @@ function loadDagPrompt() {
     'Also read .allforai/bootstrap/unattended-run-readiness-spec.json and return its',
     'required_repair_loops verbatim as repair_loops[] (each with qa_node_ids, repair_node_id,',
     'closure_node_ids, max_attempts); return [] when the spec declares none.',
+    'Also return repair_attempts[] = one {repair_node_id, qa_node_id, attempts} per declared',
+    'qa_node_id, where attempts is the number of transition_log entries for that QA node with',
+    'status "failed" — the repair dispatches this run already granted it. Count them; do not',
+    'estimate, and return 0 only when the log truly holds none.',
     'Do not execute any node. Read and summarize only.'
   ].join(' ')
 }
@@ -223,7 +270,25 @@ function gateNodePrompt(node) {
     'Return status "passed" only when all_exist is true and there are no unresolved gaps.',
     'Any code_gaps or test_gaps, conditional/partial/warning status, placeholder, fallback,',
     'missing side effect, or failed validation returns status "repair". Cross-node,',
-    'environment, authority, or unsafe blockers return "hard_fail".'
+    'environment, authority, or unsafe blockers return "hard_fail".',
+    'Also return measurement: {artifacts: the checker\'s artifacts[] verbatim (path, exists,',
+    'status_error, digest, digest_error), binding_identity, binding_kind and readiness_status',
+    'copied from the checker\'s freshness object, and withheld_by: the node ids it reports',
+    'this node as waiting on (freshness.diff.upstream)}. Report what the command printed; do',
+    'not compute, infer or fill in any of it yourself, and omit a field it did not print.'
+  ].join(' ')
+}
+
+function measurePrompt(node) {
+  return [
+    `Run python3 .allforai/bootstrap/scripts/check_artifacts.py`,
+    `.allforai/bootstrap/workflow.json --node ${node.node_id} --json.`,
+    'Return only measurement: {artifacts: the artifacts[] it printed verbatim (path, exists,',
+    'status_error, digest, digest_error), binding_identity, binding_kind and readiness_status',
+    'copied from the freshness object it printed, and withheld_by: the node ids it reports',
+    'this node as waiting on (freshness.diff.upstream)}.',
+    'Do not run the node, do not change anything, and do not compute, infer or fill in any',
+    'field the command did not print.'
   ].join(' ')
 }
 
@@ -297,7 +362,55 @@ function commitFailuresPrompt(hardFailures) {
   ].join(' ')
 }
 
-async function runNode(node, agent, policy = {}) {
+// A delivery has to be measured, not asserted. The engine holds no filesystem, so every
+// fact below comes from the gate step reading `check_artifacts.py --json`; the node's own
+// NODE_RESULT is never the evidence. Fails closed: a measurement that is absent, that does
+// not cover every declared exit artifact, that reports one missing or carrying a status
+// error, or that does not name the loop's own QA node as the sole reason the gate withheld
+// this node, is not a delivery.
+function measuredDelivery(node, gate, open) {
+  const m = gate && gate.measurement
+  if (!m || !Array.isArray(m.artifacts) || !Array.isArray(m.withheld_by)) return null
+  const declared = (node.exit_artifacts || []).map(a => (a && a.path) || a).filter(Boolean)
+  if (declared.length === 0) return null
+  const measured = new Map(m.artifacts.filter(a => a && a.path).map(a => [a.path, a]))
+  for (const rel of declared) {
+    const entry = measured.get(rel)
+    if (!entry || entry.exists !== true || entry.status_error) return null
+  }
+  // The gate must be withholding this node for the loop's own reason and nothing else.
+  const expected = new Set((open && open.qa) || [])
+  if (m.withheld_by.length === 0 || !m.withheld_by.every(id => expected.has(id))) return null
+  // A digest is always printed for a readable file inside the project, so a null one means
+  // missing, outside the project root, or unreadable — never a delivery, whatever `exists`
+  // says about a symlink.
+  if (declared.some(rel => !measured.get(rel).digest)) return null
+  // Content identity and input binding answer different questions and both are required:
+  // the bytes moved, and they were judged against inputs that are current now. A digest
+  // alone cannot establish a rebinding after a source change.
+  if (!m.binding_identity) return null
+  if (m.readiness_status !== 'valid') return null
+  // Measured across the attempt, by the same independent step: something the attempt wrote
+  // has to differ from what was there before it ran. A pre-existing or touched artifact is
+  // not a delivery.
+  const before = open && open.before
+  if (!before || !Array.isArray(before.artifacts)) return null
+  if (before.binding_identity !== m.binding_identity) return null   // inputs moved mid-attempt
+  const wasThere = new Map(before.artifacts.filter(a => a && a.path).map(a => [a.path, a.digest]))
+  const produced = declared.filter(rel => wasThere.get(rel) !== measured.get(rel).digest)
+  if (produced.length === 0) return null
+  return { binding_identity: m.binding_identity,
+           produced: Object.fromEntries(produced.map(rel => [rel, measured.get(rel).digest])) }
+}
+
+// deliveryOnly: this node is the declared repair node of a currently open loop. Its
+// independent gate cannot pass yet — it is `hard_blocked_by` the QA node it repairs, so
+// while that node is failing the repair node's own evidence is stale and the gate
+// withholds it by construction. Retrying inside the node would burn the artifact repair
+// budget against something no repair can fix. Its delivery closes the loop instead, the
+// QA rerun is the check, and the node is dispatched again afterwards as an ordinary node
+// and must pass this same gate on its own merits before anything commits it.
+async function runNode(node, agent, policy = {}, deliveryOnly = null) {
   const max = node.soft_retry_max ?? 2
   const repairMax = node.repair_retry_max ?? 3
   let attempt = 0
@@ -342,6 +455,19 @@ async function runNode(node, agent, policy = {}) {
       if (gate.status === 'passed' && (gate.blocking_findings || []).length === 0) return iterationRepair ? { ...r, iteration_repair_stopped: true } : r
       if (gate.status === 'hard_fail') {
         return { ...r, outcome: 'hard_fail', blocking_findings: gate.blocking_findings || [] }
+      }
+      // A withheld gate on an open loop's repair node is the expected state, not a gap to
+      // retry. An environment, authority or cross-node blocker is still a hard failure
+      // above, so this defers nothing that a repair could have fixed — and the delivery
+      // itself must be measured by the gate step before it counts.
+      if (deliveryOnly) {
+        const delivery = measuredDelivery(node, gate, deliveryOnly)
+        if (delivery) return { ...r, delivered: true, delivery, gate_findings: gate.blocking_findings || [] }
+        return { ...r, outcome: 'hard_fail', blocking_findings: [{
+          type: 'unmeasured_repair_delivery',
+          detail: 'the gate did not measure this repair as having delivered its declared exit ' +
+                  'artifacts, bound to an input snapshot, withheld only by its own QA node'
+        }] }
       }
       if (repairAttempt >= repairMax) {
         return { ...r, outcome: 'hard_fail', blocking_findings: [{
@@ -391,7 +517,41 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
   const dag = await agent(loadDagPrompt(), { schema: DAG_SCHEMA, label: 'load-dag' })
   const done = new Set(dag.completed || [])
   const repair = { loops: dag.repair_loops || [], open: new Map() }
-  const repairAttempts = new Map()   // `${repair_node_id}::${qa_node_id}` -> attempts spent
+  // `${repair_node_id}::${qa_node_id}` -> repair dispatches already granted to that QA node.
+  // Keyed by the pair because one repair node may serve several QA nodes and each carries
+  // its own declared budget; seeded from the recorded history so a restart resumes it.
+  const repairAttempts = new Map()
+  const recordedAttempts = dag.repair_attempts === undefined ? [] : dag.repair_attempts
+  if (!Array.isArray(recordedAttempts)) {
+    return { status: 'needs_diagnosis', hardFailures: [{
+      node_id: 'repair-attempt-history', outcome: 'hard_fail',
+      blocking_findings: [{ type: 'invalid_repair_attempt_history',
+        detail: 'repair_attempts is not an array; the spent budget cannot be read' }] }] }
+  }
+  for (const entry of recordedAttempts) {
+    // Unreadable history means the remaining budget is unknown. Restarting it would hand
+    // out attempts the plan already spent, so the run stops instead.
+    if (!entry || !entry.repair_node_id || !entry.qa_node_id ||
+        !Number.isInteger(entry.attempts) || entry.attempts < 0) {
+      return { status: 'needs_diagnosis', hardFailures: [{
+        node_id: 'repair-attempt-history', outcome: 'hard_fail',
+        blocking_findings: [{ type: 'invalid_repair_attempt_history',
+          detail: `unreadable recorded repair attempts: ${JSON.stringify(entry)}` }] }] }
+    }
+    repairAttempts.set(`${entry.repair_node_id}::${entry.qa_node_id}`, entry.attempts)
+  }
+  // Every declared QA node must state its attempts, explicit 0 included. An absent
+  // entry is missing history, not a fresh budget: assuming zero would silently hand a
+  // resumed run the attempts it already spent.
+  for (const loop of repair.loops) {
+    for (const qaNodeId of ((loop && (loop.qa_node_ids || loop.qa_nodes)) || [])) {
+      if (repairAttempts.has(`${loop.repair_node_id}::${qaNodeId}`)) continue
+      return { status: 'needs_diagnosis', hardFailures: [{
+        node_id: 'repair-attempt-history', outcome: 'hard_fail',
+        blocking_findings: [{ type: 'invalid_repair_attempt_history',
+          detail: `no recorded repair attempts for QA node ${qaNodeId} of loop ${loop.repair_node_id}` }] }] }
+    }
+  }
 
   phase('Execute')
   while (true) {
@@ -425,17 +585,39 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
     const ready = computeReady(dag.nodes, done, repair)
     if (ready.length === 0) break
     log(`running ${ready.length} ready node(s)`)
+    // repair_node_id -> the QA node ids whose failure it is answering right now.
+    const openRepairNodes = new Map()
+    for (const [qaNodeId, loop] of repair.open) {
+      const seen = openRepairNodes.get(loop.repair_node_id) || []
+      openRepairNodes.set(loop.repair_node_id, [...seen, qaNodeId])
+    }
+    // The before half of the delivery measurement, taken by the same independent step
+    // before the node runs. Without it a delivery cannot be measured and is refused.
+    const openDelivery = new Map()
+    for (const [repairNodeId, qaIds] of openRepairNodes) {
+      const node = ready.find(n => n.node_id === repairNodeId)
+      if (!node) continue
+      const before = await agent(measurePrompt(node), {
+        schema: MEASUREMENT_SCHEMA, label: `measure:${repairNodeId}`
+      })
+      openDelivery.set(repairNodeId, { qa: qaIds, before: (before && before.measurement) || null })
+    }
     const outcomes = await pipeline(
       ready,
-      node => runNode(node, agent, policy),
-      result => routeOutcome(result) === 'done'
+      node => runNode(node, agent, policy, openDelivery.get(node.node_id) || null),
+      // A delivery is not a completion: it never commits, so the repair node stays out of
+      // `done` and must still pass its own gate later.
+      result => routeOutcome(result) === 'done' && !result.delivered
         ? serializeCommit(() => commitNode(result, agent, done)).then(() => result)  // fix C1: serialized
         : result,
-      result => routeOutcome(result) === 'done' && !result.iteration_repair_stopped ? null : result
+      result => routeOutcome(result) === 'done' && !result.iteration_repair_stopped && !result.delivered
+        ? null : result
     )
-    // A repair node that finished this wave closes its loop; the QA node reruns next.
+    // A repair node that delivered or completed this wave closes its loop; the QA node
+    // reruns next, and that rerun — not the delivery — is what releases closure.
+    const delivered = new Set(outcomes.filter(r => r && r.delivered).map(r => r.node_id))
     for (const [qaNodeId, loop] of [...repair.open]) {
-      if (done.has(loop.repair_node_id)) repair.open.delete(qaNodeId)
+      if (done.has(loop.repair_node_id) || delivered.has(loop.repair_node_id)) repair.open.delete(qaNodeId)
     }
     const hardFailures = outcomes.filter(r => r && routeOutcome(r) === 'hard')
     if (hardFailures.length > 0) {
@@ -443,9 +625,11 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
       for (const failure of hardFailures) {
         const loop = repairLoopFor(repair.loops, failure.node_id)
         if (!loop || !qaReportUsable(failure)) continue
+        const budget = repairBudget(loop)
+        if (budget === null) continue          // unusable declared budget: route nothing
         const key = `${loop.repair_node_id}::${failure.node_id}`
         const spent = repairAttempts.get(key) || 0
-        if (spent >= repairBudget(loop)) continue
+        if (spent >= budget) continue
         repairAttempts.set(key, spent + 1)
         repair.open.set(failure.node_id, loop)
         await agent(repairRoutePrompt(failure.node_id, loop, spent + 1), {
@@ -460,8 +644,10 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
         await agent(commitFailuresPrompt(hardFailures), { label: 'commit-failures' })
         return { status: 'needs_diagnosis', hardFailures }
       }
-      continue
     }
+    // Checked after routing, never instead of it: a repair opened for one node cannot
+    // absorb another node's terminal verdict. Both are recorded Run Policy outcomes and
+    // neither node is ever re-run into a passing verdict, so neither may become complete.
     if (outcomes.some(r => r && routeOutcome(r) === 'accepted')) {
       return { status: 'accepted_with_gaps', verified: false }
     }

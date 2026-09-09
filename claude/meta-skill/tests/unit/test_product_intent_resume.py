@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from .test_bootstrap_scope import project, gate, publish_contract
+from .test_bootstrap_scope import confirm_plan, project, gate, publish_contract
 from .test_product_intent_session import invoke, draft, decide, TOPICS, CONCEPT, JOURNAL
 from .test_validate_bootstrap import ATTENTION_CONTRACT_BODY
 from .test_bootstrap_scope import write
@@ -20,6 +20,7 @@ def freeze_and_plan(root, batch="scope"):
         "exit_artifacts": [".allforai/bootstrap/verified.json"], "body": ATTENTION_CONTRACT_BODY}],
         "not_applicable": {"experience": "Headless API"}})
     if planned.returncode == 0:
+        confirm_plan(root, stage="plan-projection", reason="Presented the projected plan")
         publish_contract(root, "deliver")
     return planned
 
@@ -187,6 +188,7 @@ def test_local_legacy_admission_reuses_only_supported_choice_and_preserves_old_d
         "source_inputs": ["orders.py"],
         "exit_artifacts": [".allforai/bootstrap/export-result.json"], "body": ATTENTION_CONTRACT_BODY}]})
     assert planned.returncode == 0, planned.stdout
+    confirm_plan(tmp_path, stage="plan-projection", reason="Presented the projected plan")
     publish_contract(tmp_path, "export")
     for name in ("validate_bootstrap.py", "check_decision_inputs.py", "validate_unattended_readiness.py"):
         result = gate(tmp_path, name)

@@ -6,11 +6,20 @@ Usage:
 
 Without --node: checks all nodes, prints summary.
 With --node: checks one node's exit_artifacts.
+
+The --json output additionally carries a read-only measurement surface an independent
+gate can compare across an attempt: ``artifacts[].digest`` (sha256 of the file bytes,
+null when the target is missing, unreadable or outside the project) and, on the node's
+freshness object, ``binding_identity``/``binding_kind`` (the identity of the recorded
+observation its ``readiness_status`` is judged against). Measuring never observes,
+registers a read, or publishes anything.
 """
 
 import argparse
+import hashlib
 import json
 import os
+import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -150,6 +159,147 @@ def _resolve_path(path: str, project_root: Path | None = None) -> str:
     if os.path.isabs(path) or project_root is None:
         return path
     return str(project_root / path)
+
+
+DIGEST_CHUNK = 1 << 20
+
+
+def _contained(resolved, project_root: Path | None) -> bool:
+    """True when the target stays inside the project, following symlinks.
+
+    An artifact reached through a symlink that leaves the project is not this
+    project's evidence, so it is refused rather than measured.
+    """
+    if project_root is None:
+        return True
+    try:
+        return Path(resolved).resolve().is_relative_to(project_root.resolve())
+    except OSError:
+        return False
+
+
+def artifact_digest(path: str, project_root: Path | None = None) -> tuple:
+    """(sha256 of the file bytes, reason) for one artifact; never both set.
+
+    Read-only and fail-closed: a missing, unreadable or escaped target measures as
+    ``None`` with the reason why, never as an omitted field or a silent pass.
+
+    The bytes are read from the descriptor the containment check accepted, and the
+    resolved path is re-stat'ed against that descriptor's identity, so a target
+    swapped between the check and the read is refused rather than measured. A swap
+    inside a parent directory during the read window remains possible; a project
+    that can rewrite its own tree mid-measurement is outside what this can prove.
+    """
+    try:
+        resolved = Path(path).resolve()
+    except OSError as exc:
+        return None, "unreadable: " + str(exc)
+    if not _contained(resolved, project_root):
+        return None, "outside project root"
+    handle = None
+    try:
+        # A FIFO must reach fstat without waiting for a writer. Nonblocking mode
+        # has no effect on regular-file reads; non-regular descriptors are refused.
+        handle = os.open(resolved, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0))
+        opened = os.fstat(handle)
+        if not stat.S_ISREG(opened.st_mode):
+            return None, "missing"
+        named = os.stat(resolved)
+        if (named.st_dev, named.st_ino) != (opened.st_dev, opened.st_ino):
+            return None, "unreadable: target changed while it was being measured"
+        digest = hashlib.sha256()
+        while True:
+            chunk = os.read(handle, DIGEST_CHUNK)
+            if not chunk:
+                break
+            digest.update(chunk)
+    except FileNotFoundError:
+        return None, "missing"
+    except IsADirectoryError:
+        return None, "missing"
+    except OSError as exc:
+        return None, "unreadable: " + str(exc)
+    finally:
+        if handle is not None:
+            os.close(handle)
+    return digest.hexdigest(), None
+
+
+# The recorded observation's shape, owned by evidence_freshness: ``snapshot`` builds
+# exactly these keys, ``session`` refuses any kind outside this set, and ``evaluate``
+# reads an absent kind as evidence. Measuring validates against that contract instead
+# of asserting one of its own; a record that does not match it can never equal a
+# current snapshot, so it is refused rather than digested into an identity.
+SNAPSHOT_CONTAINERS = ("files", "requirements", "baseline_scope", "upstream")
+OBSERVATION_KINDS = ("contract", "evidence")
+DEFAULT_OBSERVATION_KIND = "evidence"
+
+
+def _recorded_observation(record) -> tuple:
+    """(inputs, kind) of a well-formed record, or (None, None)."""
+    if not isinstance(record, dict) or not isinstance(record.get("inputs"), dict):
+        return None, None
+    inputs = record["inputs"]
+    if any(not isinstance(inputs.get(key), dict) for key in SNAPSHOT_CONTAINERS):
+        return None, None
+    if not isinstance(inputs.get("contract"), str) or not inputs["contract"]:
+        return None, None
+    kind = record.get("kind", DEFAULT_OBSERVATION_KIND)
+    if kind not in OBSERVATION_KINDS:
+        return None, None
+    return inputs, kind
+
+
+def recorded_binding(project_root: Path | None, node_id: str, state_text: str | None = None) -> tuple:
+    """(identity, kind) of the observation this node's freshness is judged against.
+
+    The identity is a stable digest over the recorded observation's inputs and its
+    kind — the same record and the same precedence ``evidence_freshness.evaluate``
+    uses for ``readiness_status``, so the two answer different questions about the
+    same observation: what the node is bound to, and whether that binding still
+    holds. A digest of the delivered bytes cannot answer either.
+
+    Reading the state has no side effect. Pass ``state_text`` to measure the exact
+    bytes a caller already read, so the identity and the readiness judged beside it
+    describe one observation. An unreadable state, a record whose shape is not the
+    recorded observation ``evidence_freshness`` writes, a kind outside its own set,
+    or a node with no record all measure as ``(None, None)``.
+    """
+    if project_root is None or not node_id:
+        return None, None
+    try:
+        from evidence_freshness import digest as canonical_digest
+    except ImportError:
+        return None, None
+    if state_text is None:
+        state_text = read_state_text(project_root)
+    if state_text is None:
+        return None, None
+    try:
+        state = json.loads(state_text)
+    except ValueError:
+        return None, None
+    if not isinstance(state, dict):
+        return None, None
+    contracts = state.get("contracts") if isinstance(state.get("contracts"), dict) else {}
+    nodes = state.get("nodes") if isinstance(state.get("nodes"), dict) else {}
+    inputs, kind = _recorded_observation(contracts.get(node_id) or nodes.get(node_id))
+    if inputs is None:
+        return None, None
+    try:
+        return canonical_digest({"kind": kind, "inputs": inputs}), kind
+    except (TypeError, ValueError):
+        return None, None
+
+
+def read_state_text(project_root: Path | None) -> str | None:
+    """The freshness state exactly as it is on disk, or None when it cannot be read."""
+    if project_root is None:
+        return None
+    try:
+        return (project_root / FRESHNESS_STATE).read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
+        return None
 
 
 def _artifact_status_error(path: str, project_root: Path | None = None) -> dict | None:
@@ -544,6 +694,11 @@ def check_node_artifacts(node: dict, project_root: Path | None = None) -> dict:
             validation_commands = []
         resolved_path = _resolve_path(path, project_root)
         entry = {"path": path, "exists": os.path.isfile(resolved_path)}
+        # Additive measurement: existence cannot tell a fresh delivery from a
+        # pre-existing or touched leftover, and mtime is not content.
+        entry["digest"], digest_error = artifact_digest(resolved_path, project_root)
+        if digest_error:
+            entry["digest_error"] = digest_error
         if entry["exists"]:
             status_error = _artifact_status_error(resolved_path, project_root)
             if status_error:
@@ -588,7 +743,18 @@ def check_node_artifacts(node: dict, project_root: Path | None = None) -> dict:
             workflow = {"nodes": [node]}
         elif not any(isinstance(n, dict) and n.get("node_id") == node_id for n in workflow.get("nodes") or []):
             workflow = {**workflow, "nodes": [*(workflow.get("nodes") or []), node]}
+        # The pair must describe one observation: readiness is evaluated between two
+        # reads of the same state bytes, and a rebind landing in that window fails
+        # closed to a null binding rather than reporting new identity beside old
+        # readiness. freshness_states itself is untouched — the readiness and
+        # reconciliation gates consume it unchanged.
+        before = read_state_text(project_root)
         freshness = freshness_states(project_root, workflow).get(node_id)
+        if isinstance(freshness, dict):
+            identity, kind = (None, None)
+            if before is not None and before == read_state_text(project_root):
+                identity, kind = recorded_binding(project_root, node_id, before)
+            freshness = {**freshness, "binding_identity": identity, "binding_kind": kind}
     return {
         "node_id": node_id,
         "goal": node.get("goal", ""),

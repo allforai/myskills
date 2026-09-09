@@ -17,6 +17,19 @@ confirmation provenance. Derive Quality Acceptance from its goal/business rules/
 acceptance, never from what the current code happens to do. A pending, stale or
 unconfirmed requirement returns a blocker to interactive bootstrap.
 
+The generated brief reproduces the inherited requirement acceptance complete and
+verbatim under `Confirmed acceptance (inherited requirement scope, complete and
+unmodifiable)`. That list is the scope the node serves, not the list of proofs this
+node produces: it is identical on every node consuming the requirement, and deleting a
+statement here is refused as `stale_requirement` rather than accepted as a way to
+reduce product scope. Quality Acceptance is where the node states the evidence its own
+declared `responsibilities` can produce at this stage against those same statements —
+a documentation node proves its documents describe current behavior accurately and
+passes its `document_verification`; it does not claim the behavior was implemented
+because a guide describes it. Where a statement's full product effect first exists at a
+later stage, Effect Verification states the stage-local proof and names the owner of the
+full effect. A stage-local pass is never product completion.
+
 For local changes specify the relevant source boundary, document paths to update,
 verification command or observable journey, and repair responsibility. Preserve
 unrelated product directions and completed work. These obligations may share a
@@ -128,8 +141,14 @@ is split so that the full effect first exists downstream (production wiring,
 integration, deployment), either merge the nodes — local-change obligations may
 share one node — or state here the stage-local effect this node proves and name
 the downstream node responsible for proving the full effect. That downstream
-node's Effect Verification must then carry it. A deferred effect with no named
-owner is a planning gap, not a lighter bar.>
+node's Effect Verification must then carry it, and this node declares it as
+`downstream_effect_owner: <node_id>` in the YAML frontmatter, mirrored on the workflow
+node. The named node must exist and run after this one, and on a scoped node it must
+consume the same confirmed `requirement_refs`, so the inherited acceptance keeps a final
+holder. A deferred effect with no named owner, or one whose owner does not carry those
+requirements, is a planning gap, not a lighter bar, and the gates refuse it as
+`unowned_effect_stage`. Omit the field entirely when the node proves its effect at its
+own stage — most nodes do, and declaring an owner you do not need invents a dependency.>
 
 ## Quality Acceptance
 <Required for every production deliverable. State the project-specific
@@ -138,7 +157,8 @@ them, and the failure codes that keep the node incomplete. This must be derived
 from upstream concept, design, runtime, art, UI, audio, content, platform, or
 business contracts as applicable. The node must not ask only whether something
 exists; it must ask whether the delivered effect is good enough for the approved
-project promise. Non-empty `quality_gaps`, `effect_gaps`,
+project promise. On a scoped node this is where the inherited acceptance becomes this
+stage's evidence obligation; restating the inherited list is not a Quality Acceptance. Non-empty `quality_gaps`, `effect_gaps`,
 `experience_gaps`, `visual_quality_gaps`, or `perceptual_gaps` block
 completion and route to repair/revalidation.>
 

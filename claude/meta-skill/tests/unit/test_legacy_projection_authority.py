@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from .test_bootstrap_scope import project, gate, publish_contract, write
+from .test_bootstrap_scope import confirm_plan, project, gate, publish_contract, write
 from .test_product_intent_session import invoke, draft, decide, TOPICS, CONCEPT, JOURNAL
 from .test_validate_bootstrap import ATTENTION_CONTRACT_BODY
 
@@ -32,6 +32,13 @@ def pending_items(output):
 
 
 def local_plan(root):
+    planned = _local_plan(root)
+    if planned.returncode == 0:
+        confirm_plan(root, stage="plan-projection", reason="Presented the projected plan")
+    return planned
+
+
+def _local_plan(root):
     return invoke(root, {"operation": "plan", "nodes": [{"node_id": "export", "capability": "implement",
         "goal": "Deliver CSV export", "intent_ids": ["export"],
         "responsibilities": ["implementation", "documentation", "verification"], "source_inputs": ["orders.py"],
