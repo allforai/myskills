@@ -119,6 +119,28 @@ freshness state are readable and valid; no provenance is claimed for them.
 Malformed declarations or unreadable freshness state block even retained nodes:
 dependency impact is unknown, so legacy compatibility cannot waive that failure.
 
+### Declared cross-node repair loop
+
+The in-node loop above repairs what a node owns. A QA node whose finding belongs to
+another node cannot repair itself, and it never completes, so a repair successor wired
+only through `hard_blocked_by` would be unreachable. The route is the declared one:
+`unattended-run-readiness-spec.json.required_repair_loops` — `{scope, qa_node_ids,
+repair_node_id, closure_node_ids, max_attempts}`, already shape-validated by
+`validate_unattended_readiness.py`. The engine loads it as `repair_loops[]` and applies it:
+
+- A QA node that failed **with its own current report published** satisfies the declared
+  `repair_node_id`'s dependency on it — for that repair node only, for at most
+  `max_attempts` attempts. A QA node that never ran, published nothing, or failed on an
+  environment, authority, readiness or gate error has no verdict to repair against: it is
+  a diagnosis case, never a repair route.
+- No other successor may proceed on a failed dependency. A failed node is never
+  `completed`, and its report is never edited to make it look passed.
+- When the repair node finishes, the QA node **reruns**. Every `closure_node_ids` entry
+  stays blocked until that QA node itself completes — a delivered repair is not a passing
+  QA, and the rerun is the only way past the loop.
+- When the budget is spent and the QA node still fails, that is a hard failure with the
+  original findings; report it, never waive it.
+
 After a node reports success, independently run `check_artifacts.py --node <node_id> --json`.
 Non-empty `code_gaps` or `test_gaps`, partial/conditional status, placeholders, failed
 validation, or other blocking findings cannot be committed as complete. Invoke the
@@ -132,7 +154,8 @@ never waive, downgrade, or hide a gap.
 
 1. Invoke the Workflow engine script at
    `${CLAUDE_PLUGIN_ROOT}/knowledge/run-engine/run-engine.workflow.js`.
-   It reads `workflow.json`, schedules ready nodes (alignment_refs run in parallel),
+   It reads `workflow.json` plus `unattended-run-readiness-spec.json.required_repair_loops`,
+   schedules ready nodes (alignment_refs run in parallel),
    self-heals soft failures, commits each node immediately, and returns one of:
    - `{ status: "complete" }`
    - `{ status: "needs_diagnosis", hardFailures: [...] }`

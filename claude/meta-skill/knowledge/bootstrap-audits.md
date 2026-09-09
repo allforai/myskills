@@ -294,6 +294,16 @@ gate then verifies both directions: no missing, no orphan.)
 confirmations. If the user OVERTURNS a G0 split/merge, the node set changed, so **re-run A0**
 on the corrected graph (decision coverage may have shifted) before finalizing the queue.
 
+**Post-confirmation plan delta → re-confirm (all of it, not only G0):** Step 3.4 confirmed a
+specific node list, and every audit from Coverage Self-Check onward may change it. Any change
+to the node set or to any node's `hard_blocked_by` made after Step 3.4 — a G0 split/merge, a
+node added by Coverage Self-Check or the reverse critic, a new dependency edge, a repair or
+closure node added for the loop wiring — enters this Phase A queue and is presented before
+the three-lens gate. Present it as the delta against what the user confirmed (added, removed,
+re-wired, with the reason), and present it even when the queue is otherwise empty. The user
+confirmed a plan, not a licence to grow one: an unconfirmed node set is a planning error, and
+`/run` is not offered until the delta has been shown and accepted.
+
 Generation-before: each decision is gathered BEFORE the node that consumes it (the node
 references it via `decision_inputs`). When the queue is empty, every decision artifact is
 on disk and wired — proceed to the final invariant gate. `/run` asks its Run Policy questions once before the first node and is fully autonomous after that.

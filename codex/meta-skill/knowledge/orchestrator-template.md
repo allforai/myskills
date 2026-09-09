@@ -80,6 +80,8 @@ Before every execution wave, run every idempotent expander declared by `workflow
    - parallelize only when exit artifacts do not overlap
    - skip a node only when the same independent artifact gate passes on current project state
    - re-run a failed node only after addressing the cause
+   - a failed QA node with a declared repair loop routes to that repair node first
+     (see Declared cross-node repair loop below), then re-runs
 5. Read `.allforai/bootstrap/node-specs/<node-id>.md`
 6. Dispatch execution using that node-spec as the task contract
 7. After the node reports success, independently run:
@@ -89,6 +91,29 @@ Before every execution wave, run every idempotent expander declared by `workflow
 8. On success: append a completed transition entry to `workflow.json`
 9. On failure: append a failed transition entry, then read `.allforai/bootstrap/protocols/diagnosis.md`
 10. Repeat
+
+## Declared cross-node repair loop
+
+A QA node whose finding belongs to another node cannot repair itself, and a failed node
+never completes, so a repair successor wired only through `hard_blocked_by` would be
+unreachable exactly when it is needed. The route is the declared one:
+`.allforai/bootstrap/unattended-run-readiness-spec.json.required_repair_loops` —
+`{scope, qa_node_ids, repair_node_id, closure_node_ids, max_attempts}`, already
+shape-validated by `validate_unattended_readiness.py`. `flow.py` and this loop apply it:
+
+- A QA node that failed **with its own current report published and readable** routes to
+  its declared `repair_node_id`, for at most `max_attempts` attempts. A QA node that never
+  ran, published nothing, or whose report cannot be read has no verdict to repair against:
+  re-run it instead.
+- Only the declared repair node may proceed on that failed QA node. No other successor
+  advances on a failed dependency, a failed node is never recorded `completed`, and its
+  report is never edited to look passed.
+- When the repair node delivers, the QA node **re-runs**. Every `closure_node_ids` entry
+  stays blocked until that QA node itself completes; a delivered repair is not a passing QA.
+- When the budget is spent and the QA node still fails, it is a normal repeated failure:
+  diagnose and stop under the recorded Run Policy. Never waive it.
+- When no node is dispatchable but pending nodes remain, the graph is blocked. Report the
+  blocked nodes; that state is never a completed workflow.
 
 ## Recording Transitions
 

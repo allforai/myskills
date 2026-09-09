@@ -121,7 +121,15 @@ runtime probe values, decoded audio buffers, production consumer/import/init
 proof, real request/response, storage round trip, simulator evidence, or engine
 run evidence. Code written, file exists, exported function exists, or mock-only
 assertions are not sufficient completion evidence. If the effect cannot be
-verified, return a blocking status instead of marking the node complete.>
+verified, return a blocking status instead of marking the node complete.
+
+The required proof must be observable at this node's own stage. When a deliverable
+is split so that the full effect first exists downstream (production wiring,
+integration, deployment), either merge the nodes — local-change obligations may
+share one node — or state here the stage-local effect this node proves and name
+the downstream node responsible for proving the full effect. That downstream
+node's Effect Verification must then carry it. A deferred effect with no named
+owner is a planning gap, not a lighter bar.>
 
 ## Quality Acceptance
 <Required for every production deliverable. State the project-specific

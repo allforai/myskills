@@ -15,6 +15,6 @@ under `docs/superpowers/retired/`.
     node --test 'claude/meta-skill/knowledge/run-engine/tests/**/*.test.js'
 
 (Node v26+ resolves a bare directory path as a single require() target, not a
-test-glob root — use the quoted glob form above. Currently 41/41 green.)
+test-glob root — use the quoted glob form above. Currently 70/70 green.)
 
 All suites must be green before invoking the Workflow shell in a real run.

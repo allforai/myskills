@@ -184,3 +184,123 @@ def test_standalone_installer_keeps_canonical_entry(tmp_path):
     assert list(target.rglob('SKILL.md')) == [target / 'SKILL.md']
     assert str(bundle) in (target / 'SKILL.md').read_text()
     assert not any(p.is_symlink() for p in target.rglob('*'))
+
+
+# --- declared QA repair loops (unattended-run-readiness-spec.required_repair_loops) ---
+
+def repair_project(tmp_path, *, qa_report=None, transition_log=None, max_attempts=2):
+    """Four-node loop: implement -> verify(QA) -> repair -> accept(closure)."""
+    nodes = [
+        {'node_id': 'implement', 'hard_blocked_by': [], 'exit_artifacts': ['impl.json']},
+        {'node_id': 'verify', 'hard_blocked_by': ['implement'], 'exit_artifacts': ['verify.json']},
+        {'node_id': 'repair', 'hard_blocked_by': ['verify'], 'exit_artifacts': ['repair.json']},
+        {'node_id': 'accept', 'hard_blocked_by': ['repair'], 'exit_artifacts': ['accept.json']},
+    ]
+    workflow = {'nodes': nodes, 'transition_log': transition_log or []}
+    write(tmp_path / '.allforai/bootstrap/workflow.json', workflow)
+    write(tmp_path / '.allforai/bootstrap/unattended-run-readiness-spec.json', {
+        'version': 1,
+        'required_repair_loops': [{
+            'scope': 'orders-export',
+            'qa_node_ids': ['verify'],
+            'repair_node_id': 'repair',
+            'closure_node_ids': ['accept'],
+            'max_attempts': max_attempts,
+        }],
+    })
+    write(tmp_path / 'impl.json', {'status': 'passed'})
+    if qa_report is not None:
+        write(tmp_path / 'verify.json', qa_report)
+    return workflow
+
+
+def gate_by_ready_artifacts(tmp_path, monkeypatch):
+    """Real artifact-status semantics without spawning check_artifacts.py."""
+    def gate(project_root, node_id):
+        workflow = flow.load_json(tmp_path / '.allforai/bootstrap/workflow.json')
+        node = next(n for n in workflow['nodes'] if n['node_id'] == node_id)
+        return all(flow.artifact_ready(project_root, flow.artifact_path(a))
+                   for a in node['exit_artifacts'])
+    monkeypatch.setattr(flow, 'independent_artifact_gate', gate)
+
+
+def test_failed_qa_with_a_current_report_reaches_its_declared_repair(tmp_path, monkeypatch):
+    workflow = repair_project(tmp_path, qa_report={'status': 'failed', 'gaps': ['missing column']})
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    node = flow.first_pending_node(tmp_path, workflow)
+    assert node['node_id'] == 'repair'
+
+
+def test_failed_qa_without_a_report_is_retried_not_routed(tmp_path, monkeypatch):
+    workflow = repair_project(tmp_path, qa_report=None)
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    node = flow.first_pending_node(tmp_path, workflow)
+    assert node['node_id'] == 'verify'
+
+
+def test_unreadable_qa_report_is_not_a_usable_repair_trigger(tmp_path, monkeypatch):
+    workflow = repair_project(tmp_path, qa_report={'status': 'failed'})
+    (tmp_path / 'verify.json').write_text('{broken')
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    node = flow.first_pending_node(tmp_path, workflow)
+    assert node['node_id'] == 'verify'
+
+
+def test_repair_delivery_requeues_qa_before_closure(tmp_path, monkeypatch):
+    workflow = repair_project(tmp_path, qa_report={'status': 'failed'},
+                              transition_log=[{'node': 'repair', 'status': 'completed'}])
+    write(tmp_path / 'repair.json', {'status': 'passed'})
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    node = flow.first_pending_node(tmp_path, workflow)
+    assert node['node_id'] == 'repair', 'attempt 2 of 2 is still within the declared budget'
+    workflow['transition_log'].append({'node': 'repair', 'status': 'completed'})
+    write(tmp_path / '.allforai/bootstrap/workflow.json', workflow)
+    node = flow.first_pending_node(tmp_path, workflow)
+    assert node['node_id'] == 'verify', 'budget spent: the QA node itself must run again'
+
+
+def test_closure_never_starts_while_its_qa_node_is_failed(tmp_path, monkeypatch):
+    workflow = repair_project(tmp_path, qa_report={'status': 'failed'},
+                              transition_log=[{'node': 'repair', 'status': 'completed'}] * 2)
+    write(tmp_path / 'repair.json', {'status': 'passed'})
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    for _ in range(3):
+        node = flow.first_pending_node(tmp_path, workflow)
+        assert node['node_id'] != 'accept', 'closure requires a passing QA rerun'
+    write(tmp_path / 'verify.json', {'status': 'passed'})
+    assert flow.first_pending_node(tmp_path, workflow)['node_id'] == 'accept'
+
+
+def test_an_undeclared_successor_never_runs_on_a_failed_dependency(tmp_path, monkeypatch):
+    workflow = repair_project(tmp_path, qa_report={'status': 'failed'})
+    workflow['nodes'].append({'node_id': 'ship', 'hard_blocked_by': ['verify'],
+                              'exit_artifacts': ['ship.json']})
+    write(tmp_path / '.allforai/bootstrap/workflow.json', workflow)
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    seen = set()
+    for _ in range(3):
+        seen.add(flow.first_pending_node(tmp_path, workflow)['node_id'])
+    assert 'ship' not in seen
+
+
+def test_blocked_pending_nodes_are_not_reported_as_a_finished_workflow(tmp_path, monkeypatch, capsys):
+    workflow = {'nodes': [{'node_id': 'orphan', 'hard_blocked_by': ['ghost'],
+                           'exit_artifacts': ['orphan.json']}], 'transition_log': []}
+    write(tmp_path / '.allforai/bootstrap/workflow.json', workflow)
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    assert flow.first_pending_node(tmp_path, workflow) is None
+    assert 'orphan' in flow.blocked_pending_nodes(tmp_path, workflow)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, 'argv', ['flow.py'])
+    monkeypatch.setattr(flow, 'run_preflight', lambda *a: 0)
+    monkeypatch.setattr(flow, 'run_expanders', lambda *a: True)
+    monkeypatch.setattr(flow, 'run_post_checks', lambda *a: True)
+    assert flow.main() == 6
+    assert json.loads(capsys.readouterr().err)['done'] is False
+
+
+def test_missing_repair_spec_keeps_current_selection(tmp_path, monkeypatch):
+    workflow = repair_project(tmp_path, qa_report={'status': 'failed'})
+    (tmp_path / '.allforai/bootstrap/unattended-run-readiness-spec.json').write_text('{broken')
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    assert flow.first_pending_node(tmp_path, workflow)['node_id'] == 'verify'

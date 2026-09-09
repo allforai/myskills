@@ -678,6 +678,11 @@ Bootstrap 完成。
 
 User confirms → proceed to Step 4.
 
+This confirmation is provisional: the Step 3.5–3.8 audits may still change the node
+set or the dependency edges. Every such change is queued and presented as a delta
+against this list in Phase A (`knowledge/bootstrap-audits.md`) before the three-lens
+gate. Do not treat this confirmation as approval of a plan the audits later grew.
+
 ---
 
 
@@ -790,6 +795,10 @@ Persist the validated files from Steps 3–5 and required runtime assets:
 11. `.allforai/bootstrap/scripts/record_run_event.py`
 12. `.allforai/bootstrap/scripts/summarize_run_log.py`
 13. `.allforai/bootstrap/unattended-run-readiness-spec.json`：声明本次 workflow 在 `/run` 前必须满足的无人值守能力、审批、工具、Key、运行时、长任务恢复、视觉验收和禁止降级完成规则。读取并遵循 `${CLAUDE_PLUGIN_ROOT}/skills/meta-orchestration/40-qa/unattended-run-readiness-qa/SKILL.md`。
+    每一条 QA → repair → closure 回路都必须在 `required_repair_loops` 里声明
+    `{scope, qa_node_ids, repair_node_id, closure_node_ids, max_attempts}`：
+    `hard_blocked_by` 边只表达顺序，失败的 QA 节点永远不会 complete，两个 orchestrator
+    都从这份声明去派发 repair 并在 QA 重跑通过前拦住 closure。只连边不声明 = 修复不可达。
 14. `.allforai/bootstrap/unattended-run-readiness.json` 和 `.allforai/bootstrap/unattended-run-readiness.md`：bootstrap 结束前运行一次：
     ```bash
     python3 .allforai/bootstrap/scripts/validate_unattended_readiness.py . --write-report

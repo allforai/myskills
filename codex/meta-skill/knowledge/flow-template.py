@@ -264,11 +264,129 @@ def diagnosis_protocol_path(project_root: Path) -> Path:
     return project_root / ".allforai/bootstrap/protocols/diagnosis.md"
 
 
+def node_identity(node: dict) -> str:
+    return str(node.get("node_id") or node.get("id") or "")
+
+
+def declared_repair_loops(project_root: Path) -> list[dict]:
+    """`required_repair_loops` from the readiness spec; unreadable state declares nothing."""
+    path = project_root / ".allforai/bootstrap/unattended-run-readiness-spec.json"
+    if not path.exists():
+        return []
+    try:
+        loops = load_json(path).get("required_repair_loops")
+    except (OSError, ValueError, AttributeError):
+        return []
+    if not isinstance(loops, list):
+        return []
+    return [loop for loop in loops if isinstance(loop, dict) and loop.get("repair_node_id")]
+
+
+def loop_nodes(loop: dict, *primary_keys: str) -> list[str]:
+    for key in primary_keys:
+        value = loop.get(key)
+        if isinstance(value, list):
+            return [str(item) for item in value]
+    return []
+
+
+def repair_budget(loop: dict) -> int:
+    budget = loop.get("max_attempts")
+    return budget if isinstance(budget, int) and budget > 0 else MAX_CONSECUTIVE_FAILURES_PER_NODE
+
+
+def repair_attempts_spent(workflow: dict, repair_node_id: str) -> int:
+    return sum(1 for entry in workflow.get("transition_log", [])
+               if entry.get("node") == repair_node_id and entry.get("status") == "completed")
+
+
+def qa_report_usable(project_root: Path, node: dict) -> bool:
+    """A failed QA node can only be routed to repair when its own verdict is on disk.
+
+    A QA node that never published, or whose report cannot be read, has nothing to
+    repair against; it is rerun instead.
+    """
+    artifacts = node.get("exit_artifacts") or []
+    if not artifacts:
+        return False
+    for item in artifacts:
+        path = project_root / artifact_path(item)
+        if not path.exists():
+            return False
+        if path.suffix == ".json":
+            try:
+                load_json(path)
+            except (OSError, ValueError):
+                return False
+    return True
+
+
+def open_repair_loops(project_root: Path, workflow: dict, complete: dict[str, bool]) -> dict[str, dict]:
+    """QA nodes currently routed to their declared repair node, keyed by QA node id."""
+    nodes = {node_identity(n): n for n in workflow.get("nodes", [])}
+    routed: dict[str, dict] = {}
+    for loop in declared_repair_loops(project_root):
+        repair_node_id = str(loop["repair_node_id"])
+        if repair_node_id not in nodes:
+            continue
+        if repair_attempts_spent(workflow, repair_node_id) >= repair_budget(loop):
+            continue
+        for qa_node_id in loop_nodes(loop, "qa_node_ids", "qa_nodes"):
+            qa_node = nodes.get(qa_node_id)
+            if qa_node is None or complete.get(qa_node_id):
+                continue
+            if qa_report_usable(project_root, qa_node):
+                routed[qa_node_id] = loop
+    return routed
+
+
+def _pending_state(project_root: Path, workflow: dict) -> tuple[dict | None, list[str]]:
+    """(next dispatchable node, ids of pending nodes nothing may dispatch yet)."""
+    nodes = workflow.get("nodes", [])
+    complete = {node_identity(n): independent_artifact_gate(project_root, node_identity(n)) for n in nodes}
+    routed = open_repair_loops(project_root, workflow, complete)
+    repair_nodes = {str(loop["repair_node_id"]) for loop in routed.values()}
+    # Closure waits for its QA node itself, never for the repair alone: only a
+    # passing rerun releases it.
+    closure_blocked = {
+        closure
+        for loop in declared_repair_loops(project_root)
+        for closure in loop_nodes(loop, "closure_node_ids", "closure_nodes")
+        if any(not complete.get(qa) for qa in loop_nodes(loop, "qa_node_ids", "qa_nodes"))
+    }
+    blocked: list[str] = []
+    selected: dict | None = None
+    for node in nodes:
+        node_id = node_identity(node)
+        if node_id in repair_nodes:
+            if selected is None:
+                selected = node
+            continue
+        if complete.get(node_id):
+            continue
+        if node_id in routed or node_id in closure_blocked:
+            blocked.append(node_id)
+            continue
+        dependencies = node.get("hard_blocked_by") or []
+        dispatchable = all(
+            complete.get(dependency)
+            or str((routed.get(dependency) or {}).get("repair_node_id") or "") == node_id
+            for dependency in dependencies
+        )
+        if not dispatchable:
+            blocked.append(node_id)
+            continue
+        if selected is None:
+            selected = node
+    return selected, blocked
+
+
 def first_pending_node(project_root: Path, workflow: dict) -> dict | None:
-    for node in workflow.get("nodes", []):
-        if not independent_artifact_gate(project_root, str(node.get("node_id") or node.get("id") or "")):
-            return node
-    return None
+    return _pending_state(project_root, workflow)[0]
+
+
+def blocked_pending_nodes(project_root: Path, workflow: dict) -> list[str]:
+    return _pending_state(project_root, workflow)[1]
 
 
 def append_transition_if_missing(
@@ -682,6 +800,13 @@ def main() -> int:
             return 6
         workflow = load_json(workflow_path)
         node = first_pending_node(project_root, workflow)
+        if node is None:
+            blocked = blocked_pending_nodes(project_root, workflow)
+            if blocked:
+                print(json.dumps({"passed": False, "done": False,
+                                  "error": "no dispatchable node; pending nodes remain blocked",
+                                  "blocked_nodes": blocked}), file=sys.stderr)
+                return 6
         acceptance_node = node is None or any(artifact_path(a) == ".allforai/concept-acceptance/acceptance-report.json"
                                                for a in node.get("exit_artifacts", []))
         if acceptance_node and acceptance_requires_iteration(project_root):

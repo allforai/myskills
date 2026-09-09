@@ -19,7 +19,18 @@ const DAG_SCHEMA = {
         soft_retry_max: { type: 'integer' }
       } } },
     completed: { type: 'array', items: { type: 'string' } },
-    expanders: { type: 'array', items: { type: 'string' } }
+    expanders: { type: 'array', items: { type: 'string' } },
+    // required_repair_loops, verbatim from unattended-run-readiness-spec.json:
+    // the declared route from a failed QA node to its repair node and back.
+    repair_loops: { type: 'array', items: { type: 'object',
+      required: ['repair_node_id'],
+      properties: {
+        scope: { type: 'string' },
+        qa_node_ids: { type: 'array', items: { type: 'string' } },
+        repair_node_id: { type: 'string' },
+        closure_node_ids: { type: 'array', items: { type: 'string' } },
+        max_attempts: { type: 'integer' }
+      } } }
   }
 }
 
@@ -70,10 +81,58 @@ const READINESS_SCHEMA = {
   }
 }
 
-function computeReady(nodes, done) {
-  return nodes.filter(n =>
-    !done.has(n.node_id) &&
-    (n.hard_blocked_by || []).every(dep => done.has(dep)))
+const DEFAULT_REPAIR_ATTEMPTS = 3
+
+// A failure only opens a repair loop when the QA node reached its own verdict and
+// published it. An infrastructure, authority or never-ran failure has no current
+// report to repair against, so it stays a diagnosis case.
+const NON_QA_FAILURE_TYPES = new Set([
+  'invalid_artifact_gate', 'invalid_readiness_gate', 'deadlock',
+  'safety_warning', 'needs_iteration', 'exhausted_retries'
+])
+
+function qaReportUsable(result) {
+  if (!result || result.outcome !== 'hard_fail') return false
+  const findings = result.blocking_findings || []
+  if (findings.length === 0) return false
+  if (findings.some(f => f && NON_QA_FAILURE_TYPES.has(f.type))) return false
+  return (result.artifacts_written || []).length > 0
+}
+
+function repairLoopFor(loops, qaNodeId) {
+  return (loops || []).find(loop => loop && loop.repair_node_id &&
+    (loop.qa_node_ids || loop.qa_nodes || []).includes(qaNodeId)) || null
+}
+
+function repairBudget(loop) {
+  const declared = loop && loop.max_attempts
+  return Number.isInteger(declared) && declared > 0 ? declared : DEFAULT_REPAIR_ATTEMPTS
+}
+
+// repair: { loops: declared required_repair_loops, open: Map<qa_node_id, loop> }.
+// `open` holds the QA failures currently routed to their declared repair node.
+function computeReady(nodes, done, repair) {
+  const loops = (repair && repair.loops) || []
+  const open = (repair && repair.open instanceof Map) ? repair.open : new Map()
+  // Closure never starts on a repair alone: every QA node of its loop must itself
+  // have completed, so a rerun QA pass is the only way past a declared loop.
+  const closureBlocked = new Set()
+  for (const loop of loops) {
+    if (!loop) continue
+    const qaOpen = (loop.qa_node_ids || loop.qa_nodes || []).some(qa => !done.has(qa))
+    if (!qaOpen) continue
+    for (const closure of (loop.closure_node_ids || loop.closure_nodes || [])) closureBlocked.add(closure)
+  }
+  return nodes.filter(n => {
+    if (done.has(n.node_id)) return false
+    if (open.has(n.node_id)) return false          // the QA node waits for its declared repair
+    if (closureBlocked.has(n.node_id)) return false
+    return (n.hard_blocked_by || []).every(dep => {
+      if (done.has(dep)) return true
+      const loop = open.get(dep)                   // only the declared repair node may
+      return Boolean(loop) && loop.repair_node_id === n.node_id  // proceed on a failed QA dep
+    })
+  })
 }
 
 function routeOutcome(result) {
@@ -120,6 +179,9 @@ function loadDagPrompt() {
     'and a profile_slice carrying only the bootstrap-profile fields that node needs — tech stack,',
     'scenario, target paths); completed[] = node_ids whose transition_log status is "completed";',
     'expanders[] = the declared idempotent expander scripts.',
+    'Also read .allforai/bootstrap/unattended-run-readiness-spec.json and return its',
+    'required_repair_loops verbatim as repair_loops[] (each with qa_node_ids, repair_node_id,',
+    'closure_node_ids, max_attempts); return [] when the spec declares none.',
     'Do not execute any node. Read and summarize only.'
   ].join(' ')
 }
@@ -205,6 +267,17 @@ function commitPrompt(result) {
     ad.length ? `Also append these to .allforai/bootstrap/assumed-decisions.json: ${JSON.stringify(ad)}.` : '',
     'Append only; do not touch other entries.'
   ].filter(Boolean).join(' ')
+}
+
+function repairRoutePrompt(qaNodeId, loop, attempt) {
+  return [
+    `Append a failed transition for ${qaNodeId} to .allforai/bootstrap/workflow.json transition_log`,
+    `with error "QA failed; routed to declared repair node ${loop.repair_node_id}`,
+    `(attempt ${attempt} of ${repairBudget(loop)})".`,
+    'Do NOT mark the QA node completed and do not edit its report: the declared repair node runs',
+    'next, this QA node then reruns, and no closure node of this loop may start until that rerun',
+    'passes. Append only; do not touch other entries.'
+  ].join(' ')
 }
 
 function commitFailuresPrompt(hardFailures) {
@@ -307,6 +380,8 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
   }
   const dag = await agent(loadDagPrompt(), { schema: DAG_SCHEMA, label: 'load-dag' })
   const done = new Set(dag.completed || [])
+  const repair = { loops: dag.repair_loops || [], open: new Map() }
+  const repairAttempts = new Map()   // `${repair_node_id}::${qa_node_id}` -> attempts spent
 
   phase('Execute')
   while (true) {
@@ -335,7 +410,9 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
       }
     }
     phase('Execute')
-    const ready = computeReady(dag.nodes, done)
+    // A repair node that already ran for an earlier attempt must run again for this one.
+    for (const loop of repair.open.values()) done.delete(loop.repair_node_id)
+    const ready = computeReady(dag.nodes, done, repair)
     if (ready.length === 0) break
     log(`running ${ready.length} ready node(s)`)
     const outcomes = await pipeline(
@@ -346,10 +423,34 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
         : result,
       result => routeOutcome(result) === 'done' && !result.iteration_repair_stopped ? null : result
     )
+    // A repair node that finished this wave closes its loop; the QA node reruns next.
+    for (const [qaNodeId, loop] of [...repair.open]) {
+      if (done.has(loop.repair_node_id)) repair.open.delete(qaNodeId)
+    }
     const hardFailures = outcomes.filter(r => r && routeOutcome(r) === 'hard')
     if (hardFailures.length > 0) {
-      await agent(commitFailuresPrompt(hardFailures), { label: 'commit-failures' })
-      return { status: 'needs_diagnosis', hardFailures }
+      const routed = []
+      for (const failure of hardFailures) {
+        const loop = repairLoopFor(repair.loops, failure.node_id)
+        if (!loop || !qaReportUsable(failure)) continue
+        const key = `${loop.repair_node_id}::${failure.node_id}`
+        const spent = repairAttempts.get(key) || 0
+        if (spent >= repairBudget(loop)) continue
+        repairAttempts.set(key, spent + 1)
+        repair.open.set(failure.node_id, loop)
+        await agent(repairRoutePrompt(failure.node_id, loop, spent + 1), {
+          label: `repair-route:${failure.node_id}:${spent + 1}`
+        })
+        routed.push(failure.node_id)
+      }
+      // Every failure must be a declared, budgeted, report-backed QA failure to
+      // continue; anything else is a real stop.
+      if (routed.length !== hardFailures.length) {
+        for (const qaNodeId of routed) repair.open.delete(qaNodeId)
+        await agent(commitFailuresPrompt(hardFailures), { label: 'commit-failures' })
+        return { status: 'needs_diagnosis', hardFailures }
+      }
+      continue
     }
     if (outcomes.some(r => r && routeOutcome(r) === 'accepted')) {
       return { status: 'accepted_with_gaps', verified: false }
@@ -357,6 +458,16 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
     if (outcomes.some(result => result && result.iteration_repair_stopped)) return { status: 'iteration_repair_stopped' }
   }
   const remaining = dag.nodes.filter(n => !done.has(n.node_id))
+  if (remaining.length > 0 && repair.open.size > 0) {
+    // The repair budget is spent and the QA node still has not passed.
+    const hardFailures = [...repair.open].map(([qaNodeId, loop]) => ({
+      node_id: qaNodeId, outcome: 'hard_fail',
+      blocking_findings: [{ type: 'exhausted_repair_loop',
+        detail: `declared repair loop ${loop.repair_node_id} exhausted after ${repairBudget(loop)} attempts` }]
+    }))
+    await agent(commitFailuresPrompt(hardFailures), { label: 'commit-failures' })
+    return { status: 'needs_diagnosis', hardFailures }
+  }
   if (pickExit(remaining, []) === 'needs_diagnosis') {
     // fix C3: stuck graph (cycle / missing dep) — synthesize a deadlock failure so the
     // /run handler always receives a non-empty hardFailures[].
@@ -373,7 +484,8 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
 module.exports = {
   DAG_SCHEMA, NODE_RESULT_SCHEMA, EXPAND_SCHEMA, NODE_GATE_SCHEMA, READINESS_SCHEMA,
   computeReady, routeOutcome, mergeExpanded, pickExit, convergenceCheck,
+  qaReportUsable, repairLoopFor, repairBudget,
   serializeCommit, runNode, commitNode, runEngine,
   loadDagPrompt, expandPrompt, readinessPrompt, gateNodePrompt, repairPrompt,
-  runNodePrompt, commitPrompt, commitFailuresPrompt
+  runNodePrompt, commitPrompt, commitFailuresPrompt, repairRoutePrompt
 }

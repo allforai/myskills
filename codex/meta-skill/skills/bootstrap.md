@@ -43,6 +43,11 @@ For product reconstruction and new products, execute the canonical
 resume, journal-backed decisions, scope freezing and plan projection. The native
 Codex adapter uses the same copied `product_intent.py`; assume-and-declare never
 approves intent.
+The canonical Step 3.4 node-list confirmation is provisional on Codex too: any node-set
+or `hard_blocked_by` change the later audits make is presented as a delta against the
+confirmed list in Phase A before the three-lens gate. Assume-and-declare cannot approve
+a plan the user never saw.
+
 On re-entry, present only the CLI's pending topics, restoring its history,
 reasons and explicit exclusions as context. For local requests with legacy
 documents, use the canonical `admit` operation for relevant projections and
