@@ -2,6 +2,25 @@
   "schema_version": 1,
   "protocol": "implement",
   "authorization": "$implement 并发",
+  "completion_authorization": "User requires fixes, thought tests, then merge all into main and clean this task's worktrees. No remote push authorized. Preserve unmerged or untracked work before cleanup.",
+  "preparation_integration_commit": "11f9a44cf712fad200c99fe4ee402dc05a5d5a9f",
+  "main_merge_preflight": {
+    "main": "4e34c684a7384abf05b267d4197d8ee67bf8aa03",
+    "candidate": "526ef960e8c85fabbdf8862608a65c942413d1bb",
+    "command": "git merge-tree --write-tree main 526ef960e8c85fabbdf8862608a65c942413d1bb",
+    "result_tree": "0d3047999b46eef9b0f8ff89bc6bb42d248dd644",
+    "test_directory": "/private/tmp/meta-intent-526e-merge-check.MLCYes",
+    "verification": "682 Python/Codex tests passed in 248.35 seconds and 55 Node tests passed. Fixture-only enclosing Git context supplied for isolation tests. Evidence applies only to this preflight tree, not future corrections or actual host dialogue.",
+    "status": "No textual conflicts at these SHAs; no checkout changed or merge applied. Revalidate merged behavior and full host proof before main integration."
+  },
+  "cleanup_preservation_preflight": {
+    "integration_commit": "11f9a44cf712fad200c99fe4ee402dc05a5d5a9f",
+    "method": "cmp each untracked report against the integration copy; git diff --exit-code HEAD confirms the integration copies are unchanged committed content",
+    "meta-intent-t12": ["T11-T12-spec-final-repro.md", "T11-T12-spec-final.md", "T11-T12-spec-recheck.md", "T11-T12-standards-final.md", "T11-T12-standards-recheck.md", "T11-d622-spec.md", "T11-d622-standards.md"],
+    "meta-intent-t13": ["T13-bc513-spec.md", "T13-bc513-standards.md"],
+    "result": "All 9 reports are byte-identical to preserved integration copies. Recheck worktree status and branch containment after final acceptance before removal; no worktree removed."
+  },
+  "preparation_verification": {"T15": 20, "T16": 22, "T17": 31, "T18": 31, "actual_host_passed": 0, "actual_host_required": 60, "candidate_refresh_required": true},
   "main_base": "a37ca40a548bd748b416b908157223a7287ad720",
   "max_concurrency": 3,
   "status": "running",
@@ -74,7 +93,15 @@
       ]
     },
     "14": {
-      "status": "pending",
+      "status": "implementation_accepted_host_proof_pending",
+      "resolution_sync_review": "Independent Standards: 0 hard breaches, 3 advisory smell bullets, 42 recovery tests pass. Independent Spec: no product defects, 647 tests pass; separate 2-adapter probe without intervening external() call resolves the report evidence gap. Both reviewers completed and released. Root merged-tree preflight: 682 Python/Codex + 55 Node pass. Full two-axis reports and disposition preserved in T14-526e-review-disposition.md. Actual host proof remains 0/16 for #14 and 0/60 overall.",
+      "candidate": "526ef960e8c85fabbdf8862608a65c942413d1bb",
+      "previous_candidate": "9bade2ffe869395b7b59e71080b5e17243985782",
+      "resolution_sync_verification": "526ef960 committed with normal hook exit 0. Builder reports 116 targeted, 647 full Python, 35 Codex adapter and 55 Node tests, plus mypy clean on 3 core files. Independent Standards and Spec reviews started on the pinned delta from 9bade2ff. Root identified report precision gap: accept test invokes external-changes after document sync although report claims no extra verification; Spec reviewer assigned separate no-reverification recovery proof. Acceptance and actual host proof remain unclaimed; main not merged.",
+      "initial_candidate": "5c02e24cf993c36591458f87f1c7dcfb66be3a35",
+      "review_findings": ["resolution_orphaned_after_refreeze", "resume_missing_external_change_detection"],
+      "verification": "9bade2ff closes all three 00b5 blockers; builder reports 108 targeted, 639 full Python, 35 Codex adapter tests and final commit hook passing, mypy 2.3.1 clean on 3 core files. Root independently passed 55 Node and 108 targeted tests (65.50 seconds). Independent Standards found one missing blocker description plus optional smells; Spec reproduced a new major: document synchronization invalidates the classification basis and loses accepted/rejected/deferred recovery state. Both reports T14-9bade-standards.md and T14-9bade-spec.md preserved. Fix assigned to task_8d906f40b0df; acceptance and actual host proof remain unclaimed.",
+      "proof_pending": [18],
       "dependencies": [
         11,
         13
@@ -90,43 +117,49 @@
       "base": "88e7becaf30522ef29dd2fa168b62045affcb782"
     },
     "16": {
-      "status": "preparing_actual_host_tests",
+      "status": "prepared_host_execution_blocked",
+      "preparation_commit": "98cc89177663caf17d884cc68061ebdbb2bf57b8",
+      "actual_host_passed": 0,
       "preparation_candidate": "0340eccf277f6727b2b49e67a45178f1c57b9a7c",
       "dependencies": [
         11
       ]
     },
     "17": {
-      "status": "pending",
+      "status": "prepared_candidate_refresh_and_host_execution_pending",
+      "preparation_commit": "fa541f26",
+      "actual_host_passed": 0,
       "dependencies": [
         12,
         13
       ]
     },
     "18": {
-      "status": "pending",
+      "status": "prepared_candidate_refresh_and_host_execution_pending",
+      "preparation_commit": "e904850d",
+      "actual_host_passed": 0,
+      "trial_packet_export": {
+        "candidate": "9bade2ffe869395b7b59e71080b5e17243985782",
+        "root": "/private/tmp/meta-intent-T18-candidate-check.3cUixu/packets",
+        "tree_sha256": "22aed75e2eea28f80cdc0669723c28547d3c44b7a3d9c521289ec5c98e5f2604",
+        "cells": 16,
+        "executed": 0,
+        "not_for_launch": true,
+        "note": "Root exercised the existing packet generator during correction work. This rejected candidate is not accepted; regenerate and update launch/result pins after final correction and main synchronization."
+      },
       "dependencies": [
         14
       ]
     }
   },
-  "active": [
-    {
-      "issue": 16,
-      "role": "evaluator_preparation",
-      "task": "task_64d0001b9228",
-      "dispatch": "ctx_8a0e22cd1f62",
-      "checkout": "meta-intent-t9",
-      "agent": "claude",
-      "model": "opus"
-    }
-  ],
+  "active": [],
   "completed": [
     9,
     10,
     11,
     12,
-    13
+    13,
+    14
   ],
   "historical_records": "../workflow-state.json tasks and ../reviews remain historical; no old acceptance reused",
   "completion_scope": "Implementation acceptance unlocks DAG; actual host proof and final tracker closure remain separate.",
@@ -135,7 +168,7 @@
     "dispatch": "ctx_6a592f7a670e",
     "scenario_proof": false
   },
-  "review_scope": {
+  "historical_review_scope": {
     "base": "a37ca40a548bd748b416b908157223a7287ad720",
     "previous_accepted_scope_base": "88e7becaf30522ef29dd2fa168b62045affcb782",
     "issues": [

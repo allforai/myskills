@@ -1,8 +1,11 @@
 # claude/cross-exam/scripts/test_render_report.py
 import json
+import os
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
+from unittest import mock
 
 from render_report import render
 
@@ -893,6 +896,98 @@ class TestLedgerV2ContentGate(unittest.TestCase):
             run = _mk_run(tmp, self.FACETS, [e], make_evidence=False)
             d = run / "evidence/q1"; d.mkdir(parents=True); (d / "note.txt").write_text("看过了", encoding="utf-8")
             self.assertNotIn("违规裁决", render(run))
+
+
+class TestProbeWindow(unittest.TestCase):
+    """探测窗口：证据文件的修改时间必须落在 [probed_at, transcript mtime + 容差] 内，点了名也一样。"""
+    FACETS = [{"id": "F1", "name": "面一", "status": "examined"}]
+    PROBED_AT = "2026-09-07T10:00:00+08:00"
+    T0 = datetime.fromisoformat(PROBED_AT).timestamp()
+
+    def _run(self, tmp, transcript_body, files, transcript_mtime, probed_at=PROBED_AT):
+        """files: {name: 相对 T0 的秒数}；transcript_mtime 同样相对 T0；None 表示不落 transcript 文件。"""
+        transcript = Path(tmp) / "agent.output"
+        e = _entry("q-w"); e["medium"] = "code"; e["agent_task"] = {"output_file": str(transcript)}
+        e["probed_at"] = probed_at
+        run = TestLedgerV2ContentGate._run(TestLedgerV2ContentGate(), tmp, e,
+                                           {name: "a/b.ts:1 x" for name in files})
+        for name, offset in files.items():
+            os.utime(run / "evidence/q1" / name, (self.T0 + offset, self.T0 + offset))
+        if transcript_mtime is not None:
+            transcript.write_text(transcript_body, encoding="utf-8")
+            os.utime(transcript, (self.T0 + transcript_mtime, self.T0 + transcript_mtime))
+        return run
+
+    def test_file_after_window_is_refused_naming_file_and_window(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report = render(self._run(tmp, "Files written to evidence/q1/.", {"q01-late.md": 600 + 200}, 600))
+            self.assertIn("证据文件写于探测窗口之外", report)
+            self.assertIn("q01-late.md（2026-09-07T10:13:20+08:00）", report)
+            self.assertIn("窗口 [2026-09-07T10:00:00+08:00, 2026-09-07T10:12:00+08:00]", report)
+            self.assertIn("实证完成：0", report)
+
+    def test_naive_probed_at_is_refused_before_the_window_is_computed(self):
+        # a probed_at without an offset means a different window on every machine that renders the run
+        with tempfile.TemporaryDirectory() as tmp:
+            report = render(self._run(tmp, "Files written to evidence/q1/.", {"q01.md": 60}, 600,
+                                      probed_at="2026-09-07T10:00:00"))
+            self.assertIn("probed_at 缺时区偏移", report)
+            self.assertIn("实证完成：0", report)
+
+    def test_every_offending_file_is_named(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report = render(self._run(tmp, "Files written to evidence/q1/.",
+                                      {"q01-a.md": 900, "q01-b.md": 901, "q01-ok.md": 60}, 600))
+            self.assertIn("q01-a.md", report); self.assertIn("q01-b.md", report)
+            self.assertNotIn("q01-ok.md（", report)
+
+    def test_file_before_probed_at_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report = render(self._run(tmp, "Files written to evidence/q1/.", {"q01-stale.md": -60}, 600))
+            self.assertIn("证据文件写于探测窗口之外", report)
+            self.assertIn("q01-stale.md", report)
+
+    def test_file_inside_window_by_directory_mention_passes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report = render(self._run(tmp, "Files written to evidence/q1/.", {"q01-00.md": 300, "q01-01.md": 599}, 600))
+            self.assertNotIn("违规裁决", report)
+
+    def test_file_named_in_transcript_but_outside_window_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report = render(self._run(tmp, "wrote evidence/q1/q01-excerpt.md", {"q01-excerpt.md": 900}, 600))
+            self.assertIn("证据文件写于探测窗口之外", report)
+            self.assertIn("q01-excerpt.md", report)
+
+    def test_file_within_tolerance_after_transcript_passes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report = render(self._run(tmp, "wrote evidence/q1/q01-excerpt.md", {"q01-excerpt.md": 600 + 60}, 600))
+            self.assertNotIn("违规裁决", report)
+
+    def test_probed_at_after_transcript_is_an_empty_window(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report = render(self._run(tmp, "Files written to evidence/q1/.", {"q01-00.md": -50}, -100))
+            self.assertIn("证据文件写于探测窗口之外", report)
+
+    def test_missing_transcript_keeps_note_and_refuses_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report = render(self._run(tmp, "", {"q01-late.md": 9999}, None))
+            self.assertNotIn("违规裁决", report)
+            self.assertIn("transcript 不可核（文件不在）", report)
+
+    def test_unreadable_mtime_is_a_note_not_a_refusal(self):
+        import render_report
+        real = render_report._mtime
+
+        def flaky(path):
+            if path.name == "q01-00.md":
+                raise OSError("no mtime")
+            return real(path)
+        with tempfile.TemporaryDirectory() as tmp:
+            run = self._run(tmp, "Files written to evidence/q1/.", {"q01-00.md": 300, "q01-01.md": 300}, 600)
+            with mock.patch.object(render_report, "_mtime", flaky):
+                report = render(run)
+            self.assertNotIn("违规裁决", report)
+            self.assertIn("证据文件时间不可读，探测窗口未核：q01-00.md", report)
 
 
 class TestSmallHonestyFixes(unittest.TestCase):

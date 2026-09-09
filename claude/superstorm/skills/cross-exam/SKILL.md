@@ -115,8 +115,10 @@ reviewer）和作者自审时的复核官永远继承会话模型。哪怕降了
    是最省的播种法。不要即兴写普查 prompt：措辞变了，覆盖面就变了。**普查官返回后把 `surfaces`
    原样写进 ledger 顶层 `surfaces[]`**（`dead_contracts` 也各作一行，`entry` 用它的 `defined_at`），
    不改名、不合并、不删：这是操作面的分母，渲染器据此算"操作面 K 个，裁决触及 T 个，未触及逐个
-   点名"。分母不入账，覆盖就没有数，只剩盘问官一句"盘过了"。UI 目标的 `locales`、`axis_support`、`translation_keys`、
-   `dark_variant_gaps` 同样原样入账（顶层同名键）：`translation_keys.missing` 或 `dark_variant_gaps` 非空时按
+   点名"。分母不入账，覆盖就没有数，只剩盘问官一句"盘过了"。UI 目标的 `form_factor`、`width_range`、`layout_thresholds`、
+   `ui_surfaces`、`locales`、`axis_support`、`translation_keys`、`dark_variant_gaps` 同样原样入账（顶层同名键），**并把普查官的整份返回原样另存为 run 下
+   `visual/census.json`，`visual_acceptance.census_ref` / `census_digest` 按摘要绑定它**——校验器从这个文件读原件比对
+   inventory，顶层同名键只是副本，与文件不一致或删了键都关不掉检查；宽度与支持值只许放宽不许收窄，见 visual-acceptance.md）：`translation_keys.missing` 或 `dark_variant_gaps` 非空时按
    "孤例还是一类"直接建 pattern（hypothesis "某语言翻译回落" / "深色模式资源半做"，sites = 缺失 key / 无深色
    变体的资源），不等哪张牌碰巧撞上；语言、深浅色、字号、方向要不要验收，由用户在视觉验收的 environment 类
    逐轴确认，放弃的值记 `declined` 带原话，报告列"未验收"，不进计数（见 visual-acceptance.md）。

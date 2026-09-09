@@ -1,5 +1,6 @@
 """Expand explicitly approved per-surface axes; never sample or cap cases."""
 import argparse
+import inspect
 import itertools
 import hashlib
 import json
@@ -34,6 +35,42 @@ def effective_width(device, orientation, devices=None):
     return w
 
 
+PLATFORMS = ('web', 'ios', 'android', 'macos')
+DESKTOP_WIDTH_FLOOR = 1920           # an external display; the widest common desktop window
+FORM_FACTORS = ('desktop', 'mobile', 'both')
+IMPLIED_FORM_FACTOR = {'macos': 'desktop', 'ios': 'mobile', 'android': 'mobile'}
+
+
+def effective_form_factor(platform, form_factor):
+    """web must say whether it targets a desktop window, a phone, or both; native platforms imply it."""
+    implied = IMPLIED_FORM_FACTOR.get(platform)
+    if form_factor is None:
+        if platform == 'web':
+            raise ValueError('web inventory must declare form_factor desktop|mobile|both')
+        return implied
+    if form_factor not in FORM_FACTORS:
+        raise ValueError('invalid form_factor (desktop|mobile|both): ' + str(form_factor))
+    if implied and form_factor not in (implied, 'both'):
+        raise ValueError('form_factor %s contradicts platform %s (implies %s)' % (form_factor, platform, implied))
+    return form_factor
+
+
+def check_desktop_floor(width_range, form_factor):
+    """A desktop target that never reaches a wide display has an untested wide end by construction."""
+    if form_factor in ('desktop', 'both'):
+        if width_range is None:
+            raise ValueError('%s inventory must declare a global width_range (its max is checked against '
+                             'the desktop floor %d)' % (form_factor, DESKTOP_WIDTH_FLOOR))
+        _check_range(width_range, 'inventory')
+        if width_range.get('fixed_window') is True:
+            if width_range['min'] != width_range['max']:
+                raise ValueError('fixed_window width_range must have min == max')
+            return          # a window the user cannot resize has no wide end to test
+        if width_range['max'] < DESKTOP_WIDTH_FLOOR:
+            raise ValueError('desktop width floor %d not reached: width_range.max is %d'
+                             % (DESKTOP_WIDTH_FLOOR, width_range['max']))
+
+
 def _check_range(rng, label):
     if not isinstance(rng, dict) or not all(isinstance(rng.get(k), int) and rng[k] > 0 for k in ('min', 'max')) \
             or rng['min'] > rng['max'] or not isinstance(rng.get('basis'), str) or not rng['basis']:
@@ -41,16 +78,25 @@ def _check_range(rng, label):
 
 
 def check_widths(surface, thresholds, width_range, devices):
-    """The device axis must straddle every layout threshold and reach both ends of the width range,
-    or the adaptive layout at those widths is untested by construction."""
+    """The device axis must straddle every layout threshold, reach both ends of the width range and stay
+    inside it, or the adaptive layout at those widths is untested by construction. Returns the range the
+    surface was checked against (its own narrowed one, or the global one)."""
     sid = surface['id']
     axes = surface['axes']
     widths = {effective_width(d, o, devices) for d in axes['device'] for o in axes['orientation']}
-    rng = surface.get('width_range', width_range)
+    rng = surface.get('width_range') or width_range
     if rng is not None:
         _check_range(rng, sid)
+        if width_range is not None and rng is not width_range:
+            _check_range(width_range, 'inventory')
+            if rng['min'] < width_range['min'] or rng['max'] > width_range['max']:
+                raise ValueError('surface width_range %d..%d outside the global width_range %d..%d: %s'
+                                 % (rng['min'], rng['max'], width_range['min'], width_range['max'], sid))
         if min(widths) > rng['min'] or max(widths) < rng['max']:
             raise ValueError('device axis misses width range end %d..%d: %s' % (rng['min'], rng['max'], sid))
+        if min(widths) < rng['min'] or max(widths) > rng['max']:
+            raise ValueError('device axis outside width range %d..%d (widen the range or drop the device): %s'
+                             % (rng['min'], rng['max'], sid))
     for t in thresholds or []:
         if not isinstance(t, dict) or not isinstance(t.get('width'), int) or t['width'] <= 0 \
                 or not isinstance(t.get('basis'), str) or not t['basis']:
@@ -60,6 +106,7 @@ def check_widths(surface, thresholds, width_range, devices):
             continue   # outside this surface's declared width range: cannot be hit
         if not any(x < w for x in widths) or not any(x >= w for x in widths):
             raise ValueError('device axis misses layout threshold %d: %s' % (w, sid))
+    return rng
 
 
 SEGMENT_SPLIT = re.compile(r'[+/,;]')
@@ -117,13 +164,32 @@ def check_axis_support(surface, axis, spec):
             raise ValueError('invalid surface %s scope (needs only[] within supported and basis): %s'
                              % ('locales' if axis == 'locale' else axis, sid))
         required = [v for v in required if v in scope['only']]
-    present = set()
-    for v in surface['axes'][axis]:
-        present |= value_tokens(v)
-    missing = [v for v in required if v not in present]
+    tokens = [value_tokens(v) for v in surface['axes'][axis]]
+    noun = 'shipped locale' if axis == 'locale' else 'supported value'
+    missing = [v for v in required if not any(v in t for t in tokens)]
     if missing:
-        raise ValueError('%s axis misses %s %s: %s' % (axis, 'shipped locale' if axis == 'locale' else 'supported value',
-                                                     ', '.join(missing), sid))
+        raise ValueError('%s axis misses %s %s: %s' % (axis, noun, ', '.join(missing), sid))
+    # a compound value ("系统 dark + 应用内 light") is one case whose readback proves one of its tokens, so
+    # every supported value needs its own case: an injective assignment of values to axis entries
+    unmatched = _unmatched(required, tokens)
+    if unmatched:
+        raise ValueError('%s axis misses %s %s (a compound value is one case and proves one value): %s'
+                         % (axis, noun, ', '.join(unmatched), sid))
+
+
+def _unmatched(required, tokens):
+    """Values that cannot get an axis entry of their own once each entry is used at most once."""
+    taken = {}
+
+    def place(value, seen):
+        for i, t in enumerate(tokens):
+            if value in t and i not in seen:
+                seen.add(i)
+                if i not in taken or place(taken[i], seen):
+                    taken[i] = value
+                    return True
+        return False
+    return [v for v in required if not place(v, set())]
 
 
 def check_locales(surface, locales):
@@ -181,10 +247,16 @@ def _abstracted_by(row, plan, anchors):
     return sorted(off_independent)
 
 
-def expand(surfaces, thresholds=None, width_range=None, devices=None, locales=None, axis_support=None,
-           abstractions=None, anchor=None, platform=None):
+def expand(surfaces, layout_thresholds=None, width_range=None, devices=None, locales=None, axis_support=None,
+           abstractions=None, anchor=None, platform=None, form_factor=None):
+    if platform is not None and platform not in PLATFORMS:
+        raise ValueError('unknown platform %r (web|ios|android|macos)' % (platform,))
+    ff = effective_form_factor(platform, form_factor)
+    check_desktop_floor(width_range, ff)
+    resizable = ff in ('desktop', 'both') and not (width_range or {}).get('fixed_window')
     cases = []
     seen = set()
+    reached_max = width_range is None
     for surface in surfaces:
         if platform == 'web' and not isinstance(surface.get('scrollable'), bool):
             raise ValueError('web surface must declare scrollable true|false: ' + surface['id'])
@@ -205,8 +277,14 @@ def expand(surfaces, thresholds=None, width_range=None, devices=None, locales=No
                 raise ValueError('missing concrete axis: ' + sid + '/' + axis)
             if len(set(values)) != len(values):
                 raise ValueError('duplicate axis values: ' + axis)
-        if thresholds or width_range or surface.get('width_range'):
-            check_widths(surface, thresholds, width_range, devices)
+        if layout_thresholds or width_range or surface.get('width_range'):
+            rng = check_widths(surface, layout_thresholds, width_range, devices)
+            if width_range is not None and rng is not None and rng['max'] >= width_range['max']:
+                reached_max = True
+            if resizable and rng is not None and rng['min'] < rng['max'] and not any(
+                    isinstance(st, str) and st.startswith('resize-') for st in axes['state']):
+                raise ValueError('resizable desktop surface without a resize- state (the reflow while dragging '
+                                 'is not in any static capture): ' + sid)
         for axis, spec in merged_support(axis_support, locales).items():
             check_axis_support(surface, axis, spec)
         plan, anchors = _abstraction_plan(surface, abstractions, anchor)
@@ -220,7 +298,22 @@ def expand(surfaces, thresholds=None, width_range=None, devices=None, locales=No
             if plan:
                 case['abstracted_by'] = _abstracted_by(row, plan, anchors)
             cases.append(case)
+    if not reached_max:
+        raise ValueError('no surface reaches width_range.max %d: every surface narrowed its range, so the wide '
+                         'end is untested' % width_range['max'])
     return cases
+
+
+# every keyword of expand() is an inventory top-level key of the same name
+INVENTORY_KEYS = tuple(p for p in inspect.signature(expand).parameters if p != 'surfaces')
+
+
+def expand_inventory(inventory):
+    """Expand a surface inventory as frozen on disk: the one place that knows which top-level keys feed
+    expansion, so the CLI and the validator's replay cannot drift apart."""
+    if not isinstance(inventory.get('platform'), str):
+        raise ValueError('inventory must declare platform (web|ios|android|macos)')
+    return expand(inventory['surfaces'], **{k: inventory.get(k) for k in INVENTORY_KEYS})
 
 
 if __name__ == '__main__':
@@ -228,9 +321,7 @@ if __name__ == '__main__':
     p.add_argument('inventory')
     args = p.parse_args()
     inv = json.loads(Path(args.inventory).read_text())
-    rows = expand(inv['surfaces'], inv.get('layout_thresholds'), inv.get('width_range'), inv.get('devices'),
-                  inv.get('locales'), inv.get('axis_support'), inv.get('abstractions'), inv.get('anchor'),
-                  inv.get('platform'))
+    rows = expand_inventory(inv)
     kept = [c for c in rows if not c.get('abstracted_by')]
     import sys
     print('cases: %d total, %d to capture, %d abstracted' % (len(rows), len(kept), len(rows) - len(kept)), file=sys.stderr)

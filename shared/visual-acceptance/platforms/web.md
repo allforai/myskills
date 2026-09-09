@@ -10,20 +10,20 @@ inventory 顶层写 `platform: "web"`：校验器据此要求每个页面声明 
 - device：视口宽高加设备像素比，如 `1440x900@2`、`390x844@3`；不写"桌面"或"所有手机"。取值下限见下文"布局阈值"。
 - os：浏览器引擎与主版本，如 `Chromium 131`、`WebKit 18`；同一引擎不同版本按用户确认是否分列。
 - appearance：`prefers-color-scheme` 的 light / dark，另加站点自身主题开关的值（如果有）；两者是两个值，轴值写"系统 dark + 站点 light"。支持哪些由代码定（普查官 `axis_support.appearance`：`prefers-color-scheme` 媒体查询、Tailwind `darkMode`、`data-theme` / `class="dark"` 切换点），没有任何深色代码就是单值 light 带出处；读回 `matchMedia('(prefers-color-scheme: dark)').matches` 与 `document.documentElement` 的 `data-theme` / `class`，写进 `readback.appearance`。
-- dynamic_type：浏览器缩放或根字号，如 `zoom 100%`、`zoom 150%`、`font-size 20px`；站点不响应缩放时取单一值 `zoom 100%`，依据（例如 CSS 未使用 rem/em）记在 environment 类的确认里。支持档位来自普查官 `axis_support.dynamic_type`（rem / em / `clamp()` 用法、`font-size` 设置点）；读回计算后的根字号与 `visualViewport.scale`，写进 `readback.dynamic_type`。
+- dynamic_type：浏览器缩放或根字号，如 `zoom 100%`、`zoom 150%`、`font-size 20px`；站点不响应缩放时取单一值 `zoom 100%`，依据（例如 CSS 未使用 rem/em）记在 environment 类的确认里。支持档位来自普查官 `axis_support.dynamic_type`（rem / em / `clamp()` 用法、`font-size` 设置点）；全站按 rem 缩放而没有离散档位的站点，档位就是浏览器缩放级别，普查官写 `supported: ["zoom 100%", "zoom 150%"]` 之类，basis 写 rem 用法的出处并注明 150% 是浏览器档位而非代码档位，再在 environment 类由用户加减；读回计算后的根字号与 `visualViewport.scale`，写进 `readback.dynamic_type`。
 - locale：浏览器语言加站点语言开关的值。取值下限见下文"打包语言"。
 - orientation：`landscape` / `portrait`；桌面视口取单一值 `landscape`，依据记在 environment 类的确认里。移动 Web 的支持值来自 `axis_support.orientation`（CSS `(orientation:)` 查询、`screen.orientation.lock`）；读回 `screen.orientation.type`，写进 `readback.orientation`。
 - state：加载、空、错误、权限拒绝、离线、键盘弹出（移动）等，按页面归入。
 
 维度没有"不适用"：每个维度都是非空的具体值列表，某维度对该产品无意义就取一个值并记依据。整条用例的 applicability: not_applicable 只留给组合本身不可能存在的情况（如某页面在某设备上根本不可达），须有 reason 与 basis。
 
-施加与核对：优先本机可见窗口工具或页面自动化工具（Playwright MCP、Chrome DevTools MCP、playwright-cli），用它们的 resize / emulate / 颜色方案 / locale 接口设置维度，然后在页面里核对真正生效（`window.innerWidth`、`matchMedia('(prefers-color-scheme: dark)')`、`document.documentElement.lang`、计算后的根字号），核对结果写进 capture。无法施加的维度记无法自证，不凭截图元数据补。motion 用录屏或按时间戳抓帧，静态截图不证明动画。截图模式见下一节：全页与视口不是两种存法，是两种不同的画面。
+施加与核对：优先本机可见窗口工具或页面自动化工具（Playwright MCP、Chrome DevTools MCP、playwright-cli），用它们的 resize / emulate / 颜色方案 / locale 接口设置维度，然后在页面里核对真正生效（`window.innerWidth` 写进 `readback.width`：它是窗口的逻辑宽度，含原生滚动条 gutter，与 device 值——同样是窗口逻辑宽度，不乘 scale——同口径比较；Electron / Tauri 里读 webview 的 `innerWidth`，不读 `screen.width`；inventory 有 `width_range` 时校验器拒缺项与不符项、`matchMedia('(prefers-color-scheme: dark)')`、`document.documentElement.lang`、计算后的根字号），核对结果写进 capture。无法施加的维度记无法自证，不凭截图元数据补。motion 用录屏或按时间戳抓帧，静态截图不证明动画。截图模式见下一节：全页与视口不是两种存法，是两种不同的画面。
 
 ## 布局阈值：device 轴从代码来，不从用户的屏幕来
 
-普查时从代码读出 `layout_thresholds`，每条带出处：CSS `@media (min-width|max-width)` 与 `@container` 的宽度；Tailwind / UnoCSS / MUI / Ant 等框架的 `screens` / `breakpoints` 配置；主内容列的 `max-width`（列被截住居中之后，比它宽的窗口都是另一副样子，所以 max-width 本身是一个阈值）；JS 里对 `window.innerWidth` / `matchMedia` 的条件分支；侧栏折叠、栅格列数变化的宽度。`width_range`：桌面 Web 与 Electron / Tauri 的最小值取 `minWidth`（没有声明就取代码里最小的阈值之下一档），最大值不小于 1920（外接显示器），用户有更宽的显示器就取那个；移动 Web 的最小值取最窄的目标设备。
+普查时从代码读出 `layout_thresholds`，每条带出处：CSS `@media (min-width|max-width)` 与 `@container` 的宽度；Tailwind / UnoCSS / MUI / Ant 等框架的 `screens` / `breakpoints` 配置；主内容列的 `max-width`（列被截住居中之后，比它宽的窗口都是另一副样子，所以 max-width 本身是一个阈值）；JS 里对 `window.innerWidth` / `matchMedia` 的条件分支；侧栏折叠、栅格列数变化的宽度。`width_range`：桌面 Web 与 Electron / Tauri 的最小值取 `minWidth`（没有声明就取代码里最小的阈值之下一档），最大值不小于 1920（外接显示器；inventory 顶层 `form_factor` 为 desktop 或 both 时 `matrix.py` 按常量 `DESKTOP_WIDTH_FLOOR` 拒绝更小的 max），用户有更宽的显示器就取那个；移动 Web（`form_factor: mobile`）的最小值取最窄的目标设备，不受桌面下限约束。Web 的 inventory 必须写 `form_factor`：桌面窗口 `desktop`、手机 `mobile`、两者都发 `both`。
 
-device 轴每个阈值两侧各一个值、并触到 `width_range` 两端，`matrix.py` 拒绝不满足的清单。用户说"我用 1512x982"，那只是其中一个值。可拉伸的桌面窗口另加 `resize-` 开头的状态（如 `resize-shrink-to-min`、`resize-grow-to-max`），录屏取证：拉动过程中的布局抖动和拉完后的重排是静态图看不到的。
+device 轴每个阈值两侧各一个值、并触到 `width_range` 两端，`matrix.py` 拒绝不满足的清单。用户说"我用 1512x982"，那只是其中一个值。可拉伸的桌面窗口（form_factor desktop / both 且 `width_range` 不是 `fixed_window`）每个宽度会变的页面另加 `resize-` 开头的状态（如 `resize-shrink-to-min`、`resize-grow-to-max`），`matrix.py` 拒绝缺它的页面，录屏取证：拉动过程中的布局抖动和拉完后的重排是静态图看不到的。
 
 ## 打包语言：locale 轴从 i18n 资源来，不从用户的母语来
 

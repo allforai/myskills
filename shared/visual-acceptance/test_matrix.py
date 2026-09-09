@@ -278,5 +278,189 @@ def test_anchor_can_be_chosen():
 def test_web_platform_requires_scrollable_declaration():
     axes = {a: ['default'] for a in AXES}
     with pytest.raises(ValueError, match='web surface must declare scrollable'):
-        expand([{'id': 'home', 'axes': axes}], platform='web')
-    expand([{'id': 'home', 'scrollable': False, 'axes': axes}], platform='web')
+        expand([{'id': 'home', 'axes': axes}], platform='web', form_factor='mobile')
+    expand([{'id': 'home', 'scrollable': False, 'axes': axes}], platform='web', form_factor='mobile')
+
+
+def test_expand_inventory_reads_every_top_level_key():
+    from matrix import expand_inventory
+    axes = {a: ['default'] for a in AXES}
+    inv = {'platform': 'web', 'form_factor': 'mobile', 'surfaces': [{'id': 'home', 'axes': axes}]}
+    with pytest.raises(ValueError, match='must declare scrollable'):
+        expand_inventory(inv)
+    inv['surfaces'][0]['scrollable'] = False
+    inv['width_range'] = {'min': 1024, 'max': 1024, 'basis': 'x'}
+    inv['surfaces'][0]['axes']['device'] = ['1440x900@2']
+    with pytest.raises(ValueError, match='misses width range end'):
+        expand_inventory(inv)
+    inv['surfaces'][0]['axes']['device'] = ['1024x768@1']
+    assert expand_inventory(inv) == expand(inv['surfaces'], width_range=inv['width_range'], platform='web',
+                                           form_factor='mobile')
+
+
+def _desktop_inventory(platform='web', form_factor='desktop', max_width=1440, **extra):
+    axes = {a: ['default'] for a in AXES}
+    axes['device'] = ['1024x768@1', '%dx900@2' % max_width]
+    axes['state'] = ['default', 'resize-grow-to-max']
+    surface = {'id': 'home', 'axes': axes, 'scrollable': False}
+    inv = {'platform': platform, 'width_range': {'min': 1024, 'max': max_width, 'basis': 'minWidth + display'},
+           'surfaces': [surface], **extra}
+    if form_factor is not None:
+        inv['form_factor'] = form_factor
+    return inv
+
+
+def test_web_inventory_must_declare_form_factor():
+    from matrix import expand_inventory
+    with pytest.raises(ValueError, match='form_factor'):
+        expand_inventory(_desktop_inventory(form_factor=None))
+    with pytest.raises(ValueError, match='form_factor'):
+        expand_inventory(_desktop_inventory(form_factor='tablet'))
+
+
+def test_desktop_width_range_must_reach_the_floor():
+    from matrix import expand_inventory, DESKTOP_WIDTH_FLOOR
+    assert DESKTOP_WIDTH_FLOOR == 1920
+    with pytest.raises(ValueError, match='1920.*1440'):
+        expand_inventory(_desktop_inventory())
+    with pytest.raises(ValueError, match='1920'):
+        expand_inventory(_desktop_inventory(form_factor='both'))
+    assert expand_inventory(_desktop_inventory(form_factor='mobile'))
+    assert expand_inventory(_desktop_inventory(max_width=1920))
+
+
+def test_platform_implies_form_factor():
+    from matrix import expand_inventory
+    with pytest.raises(ValueError, match='1920'):
+        expand_inventory(_desktop_inventory(platform='macos', form_factor=None))
+    assert expand_inventory(_desktop_inventory(platform='ios', form_factor=None))
+    with pytest.raises(ValueError, match='form_factor.*ios'):
+        expand_inventory(_desktop_inventory(platform='ios', form_factor='desktop'))
+    assert expand_inventory(_desktop_inventory(platform='android', form_factor='mobile'))
+
+
+def test_surface_range_may_narrow_below_the_floor():
+    from matrix import expand_inventory
+    inv = _desktop_inventory(max_width=1920)
+    admin = {'id': 'admin', 'scrollable': False, 'width_range': {'min': 1024, 'max': 1440, 'basis': 'admin page'},
+             'axes': {**inv['surfaces'][0]['axes'], 'device': ['1024x768@1', '1440x900@2']}}
+    inv['surfaces'].append(admin)
+    assert expand_inventory(inv)
+
+
+def test_desktop_inventory_must_declare_a_width_range():
+    from matrix import expand_inventory
+    inv = _desktop_inventory(max_width=1920)
+    del inv['width_range']
+    with pytest.raises(ValueError, match='width_range'):
+        expand_inventory(inv)
+    inv['form_factor'] = 'mobile'
+    assert expand_inventory(inv)
+
+
+def test_platform_is_validated_and_required_on_disk():
+    from matrix import expand_inventory
+    for bad in ('electron', 'Web', 'macOS'):
+        with pytest.raises(ValueError, match='platform'):
+            expand_inventory(_desktop_inventory(platform=bad, form_factor=None, max_width=1920))
+    inv = _desktop_inventory(max_width=1920)
+    del inv['platform']
+    with pytest.raises(ValueError, match='platform'):
+        expand_inventory(inv)
+
+
+def test_surface_null_width_range_falls_back_to_global():
+    from matrix import expand_inventory
+    inv = _desktop_inventory(max_width=1920)
+    inv['surfaces'][0]['width_range'] = None
+    inv['surfaces'][0]['axes']['device'] = ['500x500@1']
+    with pytest.raises(ValueError, match='misses width range end'):
+        expand_inventory(inv)
+
+
+def test_surface_range_must_sit_inside_the_global_range():
+    from matrix import expand_inventory
+    inv = _desktop_inventory(max_width=1920)
+    inv['surfaces'][0]['width_range'] = {'min': 320, 'max': 800, 'basis': 'phone only'}
+    inv['surfaces'][0]['axes']['device'] = ['320x600@1', '800x600@1']
+    with pytest.raises(ValueError, match='outside the global width_range'):
+        expand_inventory(inv)
+
+
+def test_some_surface_must_reach_the_global_max():
+    from matrix import expand_inventory
+    inv = _desktop_inventory(max_width=1920)
+    inv['surfaces'][0]['width_range'] = {'min': 1024, 'max': 1440, 'basis': 'narrowed'}
+    inv['surfaces'][0]['axes']['device'] = ['1024x768@1', '1440x900@1']
+    with pytest.raises(ValueError, match='no surface reaches width_range.max 1920'):
+        expand_inventory(inv)
+    inv['surfaces'].append({'id': 'home2', 'axes': {**inv['surfaces'][0]['axes'], 'device': ['1024x768@1', '1920x1080@1']},
+                            'scrollable': False})
+    assert expand_inventory(inv)
+
+
+def test_device_axis_must_stay_inside_the_width_range():
+    from matrix import expand_inventory
+    inv = _desktop_inventory(max_width=1920)
+    inv['surfaces'][0]['axes']['device'] = ['1024x768@1', '1920x1080@1', '2560x1440@1']
+    with pytest.raises(ValueError, match='outside width range'):
+        expand_inventory(inv)
+    inv['surfaces'][0]['axes']['device'] = ['800x600@1', '1024x768@1', '1920x1080@1']
+    with pytest.raises(ValueError, match='outside width range'):
+        expand_inventory(inv)
+
+
+def test_inventory_keys_track_expand_signature():
+    import inspect
+    from matrix import INVENTORY_KEYS, expand
+    params = [p for p in inspect.signature(expand).parameters if p != 'surfaces']
+    assert sorted(INVENTORY_KEYS) == sorted(params)
+
+
+def test_tablet_and_desktop_modes_may_declare_both():
+    from matrix import expand_inventory
+    assert expand_inventory(_desktop_inventory(platform='ios', form_factor='both', max_width=1920))
+    assert expand_inventory(_desktop_inventory(platform='android', form_factor='both', max_width=1920))
+    assert expand_inventory(_desktop_inventory(platform='macos', form_factor='both', max_width=1920))
+    with pytest.raises(ValueError, match='contradicts'):
+        expand_inventory(_desktop_inventory(platform='ios', form_factor='desktop', max_width=1920))
+    with pytest.raises(ValueError, match='contradicts'):
+        expand_inventory(_desktop_inventory(platform='macos', form_factor='mobile'))
+
+
+def test_a_window_that_cannot_be_resized_is_exempt_from_the_floor():
+    from matrix import expand_inventory
+    inv = _desktop_inventory(max_width=1200)
+    inv['width_range'] = {'min': 1200, 'max': 1200, 'basis': 'BrowserWindow resizable:false', 'fixed_window': True}
+    inv['surfaces'][0]['axes']['device'] = ['1200x800@2']
+    assert expand_inventory(inv)
+    del inv['width_range']['fixed_window']
+    with pytest.raises(ValueError, match='1920'):
+        expand_inventory(inv)
+
+
+def test_a_compound_value_proves_only_one_supported_value_per_axis():
+    """'系统 dark + 应用内 light' is one case; it cannot stand in for both light and dark coverage."""
+    axes = {a: ['default'] for a in AXES}
+    axes['appearance'] = ['系统 dark + 应用内 light']
+    support = {'appearance': {'supported': ['light', 'dark'], 'basis': 'tailwind darkMode: class'}}
+    with pytest.raises(ValueError, match='appearance axis misses supported value'):
+        expand([{'id': 'home', 'axes': axes}], axis_support=support)
+    axes['appearance'] = ['系统 dark + 应用内 light', '系统 light + 应用内 dark']
+    assert expand([{'id': 'home', 'axes': axes}], axis_support=support)   # two cases, one value each
+    axes['appearance'] = ['light', '系统 dark + 应用内 dark']
+    assert expand([{'id': 'home', 'axes': axes}], axis_support=support)
+
+
+def test_resizable_desktop_surface_needs_a_resize_state():
+    from matrix import expand_inventory
+    inv = _desktop_inventory(max_width=1920)
+    inv['surfaces'][0]['axes']['state'] = ['default']
+    with pytest.raises(ValueError, match='resize-'):
+        expand_inventory(inv)
+    inv['surfaces'][0]['axes']['state'] = ['default', 'resize-shrink-to-min']
+    assert expand_inventory(inv)
+    fixed = _desktop_inventory(max_width=1200)
+    fixed['width_range'] = {'min': 1200, 'max': 1200, 'basis': 'resizable:false', 'fixed_window': True}
+    fixed['surfaces'][0]['axes']['device'] = ['1200x800@2']
+    assert expand_inventory(fixed)

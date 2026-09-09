@@ -5,7 +5,9 @@
 视觉模式的数据合同见 [visual/visual-acceptance.md](visual/visual-acceptance.md)。
 新增 visual_acceptance、visual_cases，以及 entry 的 visual_case_ids、
 evidence_manifest、review_reports、review_mode、reconciliation_ref、degradation_ref、
-visual_failure_ref。旧 ledger 无需这些字段。所有视觉 facet 必须登记 facet_ids，
+visual_failure_ref。visual_acceptance 里引用与摘要成对：baseline_ref / baseline_digest、interaction_ref /
+interaction_digest、inventory_ref / inventory_digest、matrix_ref / matrix_digest、census_ref / census_digest
+（普查官返回原样保存的文件，run 下 visual/census.json；顶层的 form_factor 等原件键只是它的副本）。旧 ledger 无需这些字段。所有视觉 facet 必须登记 facet_ids，
 防止遗漏 visual_case_ids 绕过证据校验。基线引用相对 run，其余视觉文件引用相对
 run/evidence；现有 evidence.dir 仍遵循原合同。
 
@@ -88,9 +90,16 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
   - `agent_task.output_file` 存在时，transcript 必须能证明证据是实测官写的：证据目录里每个文件名都出现在
     transcript 里，**或** transcript 提到过该证据目录路径（脚本循环生成的文件名不会逐个出现在 transcript 里，
     但写入目录会）；两者都没有才拒渲。文件不在（换机器、临时目录已清）只在报告标"transcript 不可核"，不拒渲。
+    名字过了关，再核**探测窗口**：`[probed_at, transcript 文件 mtime + 120 秒]`，即实测官从开始到返回的这段
+    时间（容差是渲染器里一个具名常量，吸收最后一张截图与 transcript 收尾落盘之间的偏差）。证据目录里**每个**
+    文件的修改时间都要落在窗口内，transcript 点了名的也不例外——点名只证明实测官打算写它，不证明这一份就是
+    它写的；窗口外的文件拒渲，理由点名文件、文件时间和窗口。`probed_at` 晚于 transcript 落盘即窗口为空，
+    一个文件都不认。transcript 不在就不核窗口（渲染器不会拿 ledger 自己的时间戳凑一个）；文件时间读不到只在
+    报告标"探测窗口未核"并点名文件，不拒渲。重派的 entry 按自己的 transcript 和自己的 `probed_at` 核，
+    `qNN.rejected-N/` 里的首派产物既不帮它也不害它。
   - 重派前首派产物挪到 `evidence/qNN.rejected-N/`，不被任何 entry 引用；渲染器只读 entry 引用的目录。
     重派后落账的 entry 带 `redispatched: N`（可选，纯记录）；首派是降档模型时再带 `first_agent_model`。
-  - `probed_at` 每条必写（ISO 8601）；渲染器在总览打印首末问时间与最短间隔，间隔不足 60 秒的 runtime 相邻问点名。
+  - `probed_at` 每条必写（ISO 8601，**必带时区偏移**，如 `+08:00`；无偏移的值拒渲——探测窗口的下界不能随渲染机的时区变）；渲染器在总览打印首末问时间与最短间隔，间隔不足 60 秒的 runtime 相邻问点名。
 - 顶层 `target_backend`：intake 安全确认时一并确认开发实例的后端是真实服务、mock 还是混合，记 `kind` 与依据；
   `mock` 或 `mixed` 时报告总览点明"本 run 的 runtime 裁决经过 mock 层"。
 - 顶层 `model_policy`（可选；缺省 = 全部继承会话模型）：定靶时用户选择的成本策略。`observation` 是取证类角色
@@ -191,7 +200,7 @@ N 步 / 卡在第 K 步加卡死类型 / 绕过的 waypoint / 无法自证原因
    同理；缺一个整条拒渲并点名缺的文件——编造的步骤列表过不了渲染器。
 5. 目录非空不是证据（v2）：代码摘录要有 路径:行号，运行时要有截图或输出且不少于要求的状态数并记请求去向，
    经 mock 层的 runtime 不得 done，无法自证要有像样的原因；记了 transcript 的 entry，证据文件名必须出现在
-   transcript 里。
+   transcript 里，且每个证据文件都写于探测窗口之内。
 6. 覆盖的**链接**仍是盘问官声明：entry 的 `surfaces` / `requirement_refs` 说的是"这份证据我归到哪个面、哪条需求"，
    渲染器核对 id 存在、只认被采信 entry，不核对证据内容确实触及了那个面——这是已知残余，报告读者据此理解
    "触及"二字的分量。

@@ -8,7 +8,10 @@ all user decisions were front-loaded in Phase 0.
 1. Read the module spec and the cross-module overview (interfaces of sibling modules).
 2. Design units with clear boundaries: for each unit state what it does, its interface,
    its dependencies. Apply YAGNI — no unrequested features.
-3. Cover: architecture, components, data flow, error handling, testing.
+3. Cover: architecture, components, data flow, error handling, testing. A module with a UI
+   surface also states the width range it supports (narrowest target window or device;
+   widest common display, at least 1920 wide for desktop) and what its layout does at each
+   end — a fixed-width centered column with nothing said about the wide end is not a design.
 4. Write the design to `docs/superpowers/specs/<date>-<module>-design.md` (standard format).
 
 ## Decision boundary (spec §3 classifier)

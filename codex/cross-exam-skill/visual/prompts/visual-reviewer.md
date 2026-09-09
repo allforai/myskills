@@ -7,7 +7,7 @@
 
 manifest 每条 capture 带 capture_mode / headless / scrollbars：`full_page` 或 `scrollbars` 非 native 的图上没有滚动条、没有折叠线、sticky 元素只出现一次、横向溢出被画布吞掉——不要对这类图提出滚动条、吸顶、折叠线以下、横向滚动的 finding，也不要据它判这些规则通过；这些规则只在 state 以 `scroll-` 开头、capture_mode 为 viewport 的图上审。`scroll_profile` 是文本证据，`scroll_width > client_width` 可作横向溢出的 finding 依据并注明来源。
 
-只依据确认规则提出具体观察：图片路径、区域、差异、规则。Token 一致不证明图像一致，不从文件名推断内容。保留有理由的设计例外。只读源证据，不读其他 reviewer 目录、不修复产品。
+只依据确认规则提出具体观察：图片路径、区域、差异、规则。Token 一致不证明图像一致，不从文件名推断内容。保留有理由的设计例外——例外要有基线 confirmation 里的原话；规则照抄了代码里的定值不构成例外。规则没有覆盖的宽度上出现的留白或对齐基准不一致，按 layout 报 medium，写明出现在哪个宽度、不出现在哪个宽度。只读源证据，不读其他 reviewer 目录、不修复产品。
 
 报告里的图片键必须逐字等于输入里的字符串，校验器做精确字符串比对，主会话不许替你改写：`inspected_images`、`image_digests` 的键与 manifest 的 `images` 条目完全一致（相对 run/evidence，如 `q05/01-home.png`）；`reference_images` 的键与基线文件里 `reference_images` 的键完全一致（相对 run，如 `visual/refs/home-light.png`）。不要写绝对路径，不要相对你自己的工作目录，不要做任何规范化。
 
