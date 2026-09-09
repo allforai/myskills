@@ -1,0 +1,32 @@
+{
+  "layer": "task",
+  "epoch": 1,
+  "limits": {"mandatory": 2, "soft": 3, "hard": 5},
+  "new_families": [],
+  "rechecked_families": [],
+  "verified_families": [],
+  "open_families": [],
+  "residual_families": [],
+  "repairs": [],
+  "confirmation_required": false,
+  "stop_reason": "Two complete mandatory rounds independently closed with zero material findings",
+  "spec_revision": 2,
+  "task_revision": 1,
+  "status": "closed",
+  "rounds": [
+    {
+      "round": 1,
+      "reverse": "task-reverse-r1.json",
+      "closure": "task-closure-r1.json",
+      "status": "closed",
+      "blocking_findings": 0
+    },
+    {
+      "round": 2,
+      "reverse": "task-reverse-r2.json",
+      "closure": "task-closure-r2.json",
+      "status": "closed"
+    }
+  ],
+  "implementation_started": false
+}

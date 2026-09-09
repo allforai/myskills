@@ -2,8 +2,10 @@ import json
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/orchestrator"))
-from analyze_skill_update_impact import analyze, main, write_reports
+from ..module_isolation import load
+
+_impact = load("analyze_skill_update_impact")
+analyze, main, write_reports = _impact.analyze, _impact.main, _impact.write_reports
 
 
 def _write(root, rel, text):

@@ -42,7 +42,11 @@ Every production workflow must be expanded through these lenses:
   applies it per node and reports what they missed as under-expansion.
 - **Closure loops**: every QA, visual review, runtime smoke, platform test, or
   artifact audit must route repairable findings into a repair-and-revalidation
-  loop with a bounded retry budget, and closure must depend on that loop.
+  loop with a bounded retry budget, and closure must depend on that loop. A wired
+  edge is not yet a reachable route: a failed QA node never completes, so the
+  repair must also be declared in
+  `unattended-run-readiness-spec.json.required_repair_loops`, which is what the
+  orchestrators consume to dispatch it. Audit reachability, not only topology.
 - **Acceptance-driven execution**: node completion must include effect
   verification. "Code was written", "file exists", or "function is callable" is
   implementation evidence, not completion evidence.
@@ -104,7 +108,14 @@ Every production workflow must be expanded through these lenses:
 - **Closure wiring**: every QA, visual review, runtime smoke, platform test, or
   artifact audit node routes repairable findings into a repair-and-revalidation
   node with a bounded retry budget, and final acceptance or closure is
-  hard-blocked by that repair node.
+  hard-blocked by that repair node. The same loop is declared in
+  `unattended-run-readiness-spec.json.required_repair_loops` as
+  `{scope, qa_node_ids, repair_node_id, closure_node_ids, max_attempts}`, so the
+  repair is reachable while its QA node is failed and closure still waits for the
+  QA rerun.
+- **Documentation contract**: a node that promises a generated fact document
+  declares it at planning time in `required_documents`, with its
+  `document_verification` argv. A document promised only in prose has no gate.
 
 ## Input Contract
 
@@ -184,6 +195,25 @@ Allowed blocker codes:
 - `repair_loop_not_blocked_by_qa`
 - `acceptance_not_blocked_by_repair_loop`
 - `qa_report_without_revalidation`
+- `undeclared_repair_loop_routing`
+- `unowned_effect_stage`
+- `missing_document_contract`
+
+## What the gates already prove, and what this audit must judge
+
+Part of the closure, effect and documentation contracts is structured enough for the
+copied `validate_bootstrap.py` to decide, and it does — before this audit runs, at both
+the bootstrap and `/run` boundaries:
+
+| Structured contract, enforced by the gate | Semantic judgment, yours |
+|---|---|
+| A declared `required_repair_loops` entry with no QA source, no closure holder, a repair node listed as its own QA/closure, or a closure node that does not wait for the QA rerun (`undeclared_repair_loop_routing`); `validate_unattended_readiness.py` checks the opposite direction, that a declared QA/closure node carries its `hard_blocked_by` edge | Whether a graph shape *is* a QA loop that needs declaring at all — which node produces repairable findings, which repair answers them, which closure must wait |
+| A `downstream_effect_owner` that names a missing node, the node itself, a node that does not run after it, or one whose spec has no Effect Verification (`unowned_effect_stage`) | Whether a node's Effect Verification demands proof its own stage cannot produce, so a deferral (or a merge) was needed in the first place |
+| A `required_documents` entry with no `document_verification` argv, and a document contract declared on the node-spec but not on the workflow node (`missing_document_contract`) | Whether a node's Task promises a document it never declared. Documentation responsibility alone is not that promise: a node may own updates to documents that already exist, and forcing a new fact document on every `documentation` responsibility is a false finding |
+
+Report a structured failure under its code if you see it, but do not stop at the codes
+the gate can decide: the judgments in the right-hand column are the reason this audit
+exists, and they are read from the node-spec's own prose.
 
 ## Automatic Validation
 
@@ -225,7 +255,26 @@ Reject the workflow when any production node-spec matches one of these:
 - a QA node's repairable findings have no repair-and-revalidation node, or that
   node is not `hard_blocked_by` the QA node;
 - final acceptance or closure is not `hard_blocked_by` the repair node;
-- a QA node may pass on a prior report without rerunning after repair.
+- a QA node may pass on a prior report without rerunning after repair;
+- that repair loop is not declared in
+  `.allforai/bootstrap/unattended-run-readiness-spec.json.required_repair_loops`
+  with this QA node in `qa_node_ids`, the repair node as `repair_node_id`, the
+  closure nodes in `closure_node_ids`, and a bounded `max_attempts`. The
+  `hard_blocked_by` edge alone makes the repair unreachable: a failed QA node
+  never completes, and both orchestrators dispatch the repair from this
+  declaration. Report it as `undeclared_repair_loop_routing`;
+- a node's Effect Verification demands proof of an effect that only exists after
+  a later node (production wiring, integration, deployment) while naming no
+  stage-local proof and no downstream owner. Either the deliverable is one node,
+  or this node states the effect observable at its own stage and names the
+  downstream node that proves the full effect — and that node's spec accepts it.
+  An unowned deferral is `unowned_effect_stage`, and the owner is declared as the node's
+  `downstream_effect_owner` so the deferral is checkable rather than only described;
+- a node whose `responsibilities` include `documentation`, or whose Task promises
+  a document it will write, carries an empty `required_documents` (or a required
+  document without its `document_verification` argv). Deferring that declaration
+  to run time is a planning gap, not a run-time detail: no gate can demand a
+  document nobody declared. Report it as `missing_document_contract`.
 
 ## Runtime Specialization
 

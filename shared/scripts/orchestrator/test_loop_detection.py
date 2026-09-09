@@ -7,7 +7,10 @@ import tempfile
 import shutil
 import unittest
 
-from loop_detection import check_loop, record_iteration
+from _module_isolation import load, module_dir
+
+_loop_detection = load(module_dir(), "loop_detection")
+check_loop, record_iteration = _loop_detection.check_loop, _loop_detection.record_iteration
 
 
 class TestLoopDetection(unittest.TestCase):

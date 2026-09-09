@@ -1,0 +1,10 @@
+# T9 malformed workflow diagnosis
+Candidate c93fc9419db540277aa6925aae0b588f3b7a6128. Method: official diagnosing-bugs; no source edits during diagnosis.
+- Tight loop: python3 reviews/probes/T9-malformed-node.py <candidate-worktree>; two runs returned1 in0.12/0.14s, all three CLI stdout empty with AttributeError, prior ready retained, corrected input ready. Full logs: T9-malformed-feedback-red.json.
+- Minimized fault payload: {"nodes":[null]}; removing the sole bad element to {"nodes":[]} makes the failure-contract assertion green (all gates typed blockers, report not_ready, corrected reentryready). The valid-project setup remains the public copied-CLI positive fixture so this tests prior-ready recovery, not a private helper alone; no claim of globally minimizing those standard fixture assets.
+- Ranked predictions disclosed before probes: H1 caller traversal before/after ignored shape rejection causes crash; H2 copied old helper would differ in hash/shape verdict; H3 wrong report path would leave old report despite a computed not_ready result.
+- Probe: candidate and copied product_intent.py hash both eac6454de23d61ea97d1260be7bfaf2d78f8874fd7013ae7478da2b5dc3cd664. Shared validate_scope returns invalid_scope for nodes:[null]. H2 rejected.
+- Stack and main boundary: readiness computation raises at _node_id before it returns to --write-report; same configured output path worked for ready and empty-node typed failure. H3 rejected.
+- H1 confirmed: validate_bootstrap calls unsafe validate_workflow first, check_decision_inputs traverses before shared validation, readiness appends blockers but continues raw-node traversal. Guard all consumer traversals, preserve typed errors and publish current not_ready; never normalize malformed input into successful empty work.
+- No debug logs/prototypes added to production. Run-owned probe is retained under explicitly named reviews/probes as regression evidence, not a product subsystem. Repair uses existing public copied-CLI test seam, red first, original loop and compatibility positives afterward.
+

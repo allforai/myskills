@@ -9,13 +9,14 @@ import sys
 import tempfile
 import unittest
 
-from check_requires import (
-    file_exists,
-    command_succeeds,
-    json_field_gte,
-    json_array_length_gte,
-    evaluate_node,
-)
+from _module_isolation import load, module_dir
+
+_check_requires = load(module_dir(), "check_requires")
+file_exists = _check_requires.file_exists
+command_succeeds = _check_requires.command_succeeds
+json_field_gte = _check_requires.json_field_gte
+json_array_length_gte = _check_requires.json_array_length_gte
+evaluate_node = _check_requires.evaluate_node
 
 
 # ---------------------------------------------------------------------------

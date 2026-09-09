@@ -1,0 +1,513 @@
+{
+  "status": "needs_work",
+  "reverse_outcomes_checked": [
+    "O1",
+    "O2",
+    "O3"
+  ],
+  "issues": [
+    {
+      "id": "SG-01",
+      "lens": "proof",
+      "classification": "spec-repair",
+      "broken_reverse_chain": "O2 current delivery proof <- I-sync acceptance stamp <- exact inputs actually observed by verification <- synchronization #12/#13 <- #8 R21/R27/R28. program-spec.md:29,31,37 require current hashes, verification before stamping and single-writer snapshot publication, but do not explicitly require verification to consume that frozen snapshot or reject an intervening source edit. An external edit can occur after verification reads state A and before the stamp hashes state B; serializing baseline/snapshot writers does not serialize external source writers.",
+      "question": "",
+      "recommended_answer": "Make the existing I-freshness/I-sync contract bind each observation to the exact source/baseline/dependency manifest consumed by that observation, never a manifest computed only afterward. Verification must use immutable captured inputs or establish their stability through publication; at completion compare that observed manifest with current relevant inputs and mark only the affected closure stale on mismatch. Preserve the old evidence as historical, reconcile/sync the changed inputs, reverify, then publish accepted evidence for the new manifest. Prove at the public completion/reconciliation seam by interleaving an A-to-B relevant source change between inspection and stamping: A's result must not certify B, the unrelated branch stays accepted, and fresh B verification followed by an unchanged rerun converges. Record consumed and current manifests plus the typed blocker and recovery evidence. This specifies the existing freshness promise, without adding a watcher or requiring global source locking.",
+      "main_tradeoff": "Requires an explicit verification-to-publication identity boundary and a bounded interleaving test; prevents valid-looking hashes from certifying unobserved content.",
+      "blast_radius": "contract",
+      "affected_artifacts": [
+        "docs/grillstorm/meta-intent/program-spec.md:I-freshness/I-sync",
+        "docs/grillstorm/meta-intent/modules/synchronization-spec.md",
+        "docs/grillstorm/meta-intent/sources/issue-8.json:R21,R27,R28",
+        "docs/grillstorm/meta-intent/sources/issue-12.json",
+        "docs/grillstorm/meta-intent/sources/issue-13.json",
+        "docs/grillstorm/meta-intent/sources/issue-17.json"
+      ],
+      "blocks": []
+    },
+    {
+      "id": "SG-02",
+      "lens": "proof",
+      "classification": "spec-repair",
+      "broken_reverse_chain": "O3 equivalent shipped semantics <- actual Claude/Codex scenario results <- resolved candidate Skill/adapters/shared scripts <- proof #15-#18 <- #8 R30 and #15-#18 tested-version requirements. modules/proof-spec.md:5 says current Skill and provider/version, while program-spec.md:19 describes shared symlink/bundle reuse and :43 forbids installed updates. Neither defines how fresh subjects resolve the candidate checkout rather than an older installed Skill, nor how scenario evidence remains applicable after later integration changes. A provider version and successful session do not identify the tested Skill bytes.",
+      "question": "",
+      "recommended_answer": "Require each subject to resolve the run-owned candidate Skill, its host adapter and canonical helper dependencies through an isolated loading arrangement that does not modify installed skills. Record the resolved paths and candidate content/revision identity separately from provider/model version and session identity, and verify those are the artifacts actually loaded. Bind evaluator results to that manifest; at final integration retain evidence only for unchanged relevant candidate inputs and freshly retest affected scenarios on both actual hosts after changes. Missing loading/provenance capability remains unverified. Prove a deliberate installed/candidate mismatch is detected rather than credited and a changed relevant adapter invalidates its prior scenario evidence; retain raw dialogues and independent outcome assertions. Reuse existing fixture/session launch and evidence-index responsibilities, with no new harness dependency or altered approved scenario criteria.",
+      "main_tradeoff": "Adds candidate provenance and scoped proof invalidation to existing scenario execution; avoids both installed-skill mutation and testing a different revision from the delivered one.",
+      "blast_radius": "contract",
+      "affected_artifacts": [
+        "docs/grillstorm/meta-intent/program-spec.md:Proof and authority",
+        "docs/grillstorm/meta-intent/modules/proof-spec.md",
+        "docs/grillstorm/meta-intent/sources/issue-8.json:R30",
+        "docs/grillstorm/meta-intent/sources/issue-15.json",
+        "docs/grillstorm/meta-intent/sources/issue-16.json",
+        "docs/grillstorm/meta-intent/sources/issue-17.json",
+        "docs/grillstorm/meta-intent/sources/issue-18.json"
+      ],
+      "blocks": []
+    }
+  ],
+  "failure_classification": [
+    {
+      "mode": "invalid-input",
+      "outcome": "O1",
+      "damage": "reenterable",
+      "reentry_proof": "Correct the rejected payload and reenter bootstrap with unchanged approved journal/baseline; the same scoped questions and eligibility are recomputed.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Malformed goal, ambiguous route or invalid decision payload is an ordinary bootstrap input; program-spec.md I-scope and State/failure require validation before writes.",
+      "expansion": "guard-only",
+      "note": "One guard: pre-write contract validation. Proof requirement: submit a malformed decision or empty acceptance at bootstrap, observe a specific diagnostic and byte-identical prior authority, then correct it and obtain the intended scoped workflow; #9/#10 public boundary."
+    },
+    {
+      "mode": "partial-failure",
+      "outcome": "O1",
+      "damage": "durable",
+      "reentry_proof": "Reenter I-intent with the original decision ID; detect incomplete staged projection, block its dependents, finish the consistent projection and publish authority last.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "I-intent explicitly spans journal and baseline writes and supports interrupted sessions; no atomic-filesystem guarantee is declared.",
+      "expansion": "full",
+      "note": "Full: proposed decision -> staged journal/projection -> consistent published revision. On partial write keep old authority/history; recover the recorded decision before readiness recomputation, never infer a missing answer. Inject interruption between journal/projection publication; inspect IDs, old/new revisions, no product-source diff and dependent/unrelated readiness before and after recovery (#10/#11/#16)."
+    },
+    {
+      "mode": "timeout",
+      "outcome": "O1",
+      "damage": "durable",
+      "reentry_proof": "Resume the same journal decision; distinguish committed answer from unanswered question before projecting baseline and recomputing eligibility.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Program I-intent/I-resume and #16 explicitly support leaving and resuming discussions; a timeout can coincide with persisting an answered decision.",
+      "expansion": "full",
+      "note": "Full: timed-out interaction remains pending unless a valid decision was persisted; persisted decisions survive even if acknowledgement was lost. Reconcile incomplete projection before publication; then ask only missing relevant questions. Exercise timeout after a scripted answer and before acknowledgement, capture transcript and journal lineage, resume to one decision and stable readiness (#11/#16)."
+    },
+    {
+      "mode": "cancellation",
+      "outcome": "O1",
+      "damage": "durable",
+      "reentry_proof": "Bootstrap loads confirmed history and pending questions, completes only consistent projections and recomputes the affected hard-dependency closure.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "#16 requires interruption before answers and after partial confirmation; cancel can leave a persisted subset.",
+      "expansion": "full",
+      "note": "Full: preserve confirmed subset and explicit exclusions, leave unanswered items pending, and do not roll back unrelated completed branches or mutate product code. Cancel before and after a decision write, resume with persisted artifacts only, and assert no fabricated approval or repeated full interview using dialogue, baseline diff and readiness (#11/#16)."
+    },
+    {
+      "mode": "retry",
+      "outcome": "O1",
+      "damage": "durable",
+      "reentry_proof": "Reapply the recorded stable decision identity, reuse its published result, and recompute eligibility without a new revision.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Program I-intent explicitly permits replay and I-resume reentry; acknowledgement loss can cause repeated confirm/add/adjust/remove submissions.",
+      "expansion": "full",
+      "note": "Full: validate identity/content, reuse identical recorded decision, reject incompatible revision, recover staged projection before publishing; retain superseded/removed history. Replay each operation at the public journal/bootstrap seam after interrupted acknowledgement and verify one effective change and unchanged history/Node-spec references (#10/#11/#16)."
+    },
+    {
+      "mode": "idempotency",
+      "outcome": "O1",
+      "damage": "durable",
+      "reentry_proof": "Reentry resolves the same item/decision lineage to the same effective revision and output eligibility.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Same decision and unchanged bootstrap/resume are normal supported inputs in I-intent and #11.",
+      "expansion": "full",
+      "note": "Full: recorded -> projected -> published identity must converge across repeated application, including add without code and remove followed by reverse inference. Preserve historical tombstone/lineage, never resurrect removed intent; exercise both repeat and later reconstruction, inspect baseline/journal, graph and untouched source (#10/#11/#16)."
+    },
+    {
+      "mode": "concurrency-race",
+      "outcome": "O1",
+      "damage": "durable",
+      "reentry_proof": "A rejected competing revision reenters bootstrap against the current approved revision; previously accepted journal entries remain intact.",
+      "frequency": "rare",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Structural: program-spec.md State/failure imposes a per-project single logical writer for baseline publication and frozen downstream readers; this limits competing authorized publishers, not external source edits covered by O2.",
+      "expansion": "guard-only",
+      "note": "One guard: expected-current-revision precondition at authority publication. Proof requirement: two submissions from the same prior revision cannot both publish conflicting successors; observe conflict rejection and intact current lineage at I-intent (#10/#11)."
+    },
+    {
+      "mode": "stale-data",
+      "outcome": "O1",
+      "damage": "durable",
+      "reentry_proof": "Load journal provenance/current lineage, retain legacy data as unverified where relevant, and request only missing scoped confirmation.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "#11 and #16 explicitly cover old baselines, missing provenance and latest user decisions superseding old artifacts.",
+      "expansion": "full",
+      "note": "Full: old/unverified -> relevant pending -> explicit confirmation -> current projected baseline -> recomputed dependent eligibility. Preserve old history and unrelated work; never upgrade code inference or removed items by file presence. Exercise conflicting old baseline, unsupported legacy record and removed intent on reentry; inspect dialogue, lineage and graph (#11/#16)."
+    },
+    {
+      "mode": "external-outage",
+      "outcome": "O1",
+      "damage": "reenterable",
+      "reentry_proof": "Retry interactive bootstrap with the existing recorded history when the host is available; no response means the same item remains pending.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Bootstrap depends on an actual interactive host; no provider availability SLA is supplied. This record concerns unavailable inference/input before a new decision write; interrupted writes are partial-failure.",
+      "expansion": "guard-only",
+      "note": "One guard: preserve the pending prerequisite on missing host response. Proof requirement: simulate unavailable host before confirmation, observe no new authoritative decision, restore access and exercise scoped reentry without repeating confirmed topics (#11)."
+    },
+    {
+      "mode": "permission-denial",
+      "outcome": "O1",
+      "damage": "durable",
+      "reentry_proof": "Restore access and reenter I-intent with the same decision identity; detect incomplete projection before any dependent readiness.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Baseline and journal are separate required writable artifacts; permissions can fail after one persistent write and no permission guarantee is declared.",
+      "expansion": "full",
+      "note": "Full: permission failure during staging/publication preserves prior usable authority and reports the blocked write; reconcile recorded journal/projection before publishing current authority. Deny one projection write after journal persistence, inspect fail-closed dependent readiness, restore permission and resume to one effective decision without lost history (#10/#11)."
+    },
+    {
+      "mode": "cleanup",
+      "outcome": "O1",
+      "damage": "durable",
+      "reentry_proof": "Reentry ignores non-authoritative staging debris and uses preserved journal/baseline; any incomplete projection stays blocked until recovered.",
+      "frequency": "rare",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Structural: program I-intent retains old journal batches/history and forbids discussion source mutation; cleanup therefore has no authority to delete approved history or target product files.",
+      "expansion": "guard-only",
+      "note": "One guard: cleanup target must be non-authoritative run-owned staging material. Proof requirement: cleanup attempted against journal history, current baseline or product source is refused while disposable staging can be removed without changing effective decisions (#10/#11)."
+    },
+    {
+      "mode": "degraded-operation",
+      "outcome": "O1",
+      "damage": "reenterable",
+      "reentry_proof": "Return to interactive bootstrap, supply the missing relevant decision, then recompute readiness; independent valid branches keep their proof.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Program I-resume explicitly treats missing product decisions as scoped prerequisites and forbids implicit degraded product behavior.",
+      "expansion": "guard-only",
+      "note": "One guard: pending product prerequisites exclude their hard-dependency closure from eligibility. Proof requirement: unattended entry emits no interview or invented decision, unrelated work stays eligible, and interactive resolution restores affected work (#11/#16)."
+    },
+    {
+      "mode": "observability",
+      "outcome": "O1",
+      "damage": "durable",
+      "reentry_proof": "Resume from the journal and current item revisions; missing confirmation evidence remains a relevant prerequisite, not inferred approval.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Decision reasons, provenance and lineage are required persistent authority inputs in #8 Confirmation contract and #10/#11.",
+      "expansion": "full",
+      "note": "Full: observed fact/inference -> pending -> recorded user decision with reason/provenance -> projection. Reject incomplete confirmation before authority publication, preserve historical entries, and resume only supported decisions. Inspect raw scripted turns against stable IDs, reasons, lineage and dependent Node-spec references; missing provenance must block only relevant work (#10/#11/#16)."
+    },
+    {
+      "mode": "recovery",
+      "outcome": "O1",
+      "damage": "durable",
+      "reentry_proof": "Bootstrap loads history, repairs incomplete projection, resolves only outstanding relevant decisions, then recomputes readiness in that order.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Interrupted, partial and legacy bootstrap recovery is the explicit purpose of #11/#16.",
+      "expansion": "full",
+      "note": "Full: pending/staged -> consistent confirmed projection -> eligible dependency closure. Retain removal/supersession and explicit exclusions; never roll back unrelated source/work. Walk interruption -> persisted-state-only resume -> missing answer -> scoped execution readiness with real host dialogue and artifact diffs (#11/#16)."
+    },
+    {
+      "mode": "invalid-input",
+      "outcome": "O2",
+      "damage": "reenterable",
+      "reentry_proof": "Correct the rejected contract/report and rerun the existing reconciliation/completion boundary; prior accepted state remains historical, never newly fresh.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "I-freshness/I-sync require explicit dependency declarations and meaningful reports; malformed or empty reports are expected adversarial inputs (#17).",
+      "expansion": "guard-only",
+      "note": "One guard: validate required contracts/reports before acceptance writes. Proof requirement: empty JSON or malformed dependency input receives a typed blocker and cannot stamp completion; valid replacement plus actual verification allows reentry (#12/#13/#17)."
+    },
+    {
+      "mode": "partial-failure",
+      "outcome": "O2",
+      "damage": "durable",
+      "reentry_proof": "Resume the existing gate, detect differences, finish owner-directed repair and synchronization, then verify current inputs before acceptance.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "I-sync updates fact documents, contracts and evidence across multiple artifacts; #18 includes report-only incomplete recovery.",
+      "expansion": "full",
+      "note": "Full: changed -> stale -> repair/sync -> verified -> accepted. Partial document/report writes never authorize completion; retain old evidence as historical and preserve unaffected branches. Interrupt after one doc write, observe typed blockers, complete remaining sync then reverify; inspect content diffs, owner and current manifests (#13/#17/#18; SG-01)."
+    },
+    {
+      "mode": "timeout",
+      "outcome": "O2",
+      "damage": "durable",
+      "reentry_proof": "Reenter reconciliation using current actual inputs; incomplete verification remains non-accepted and resumes through the existing bounded retry/failure mechanism.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Verification and repair are real operations under #13; no runtime-duration guarantee makes timeout rare.",
+      "expansion": "full",
+      "note": "Full: verifying -> timed-out/blocked -> owner repair or retry -> sync -> fresh verification -> acceptance. Preserve actual source edits and historical reports, never roll back unrelated files or accept partial output. Time out verification after sync and assert blocked completion, then successful recheck bound to observed inputs (#13/#17; SG-01)."
+    },
+    {
+      "mode": "cancellation",
+      "outcome": "O2",
+      "damage": "durable",
+      "reentry_proof": "Resume I-drift from recorded disposition and current inputs, complete the same repair/sync path, then pass I-sync.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "#14/#18 explicitly require interrupted external-conflict handling and continuing already-recorded accept/reject decisions.",
+      "expansion": "full",
+      "note": "Full: discovered conflict -> pending or recorded accept/reject -> partial recovery -> sync/reverify -> accepted. Cancellation retains conflicts, decisions and repair ownership, neither creates approval nor repeats a recorded choice. Cancel at decision and repair boundaries; inspect preserved baseline, one repair responsibility, transcript and final current evidence (#14/#18)."
+    },
+    {
+      "mode": "retry",
+      "outcome": "O2",
+      "damage": "durable",
+      "reentry_proof": "Retry the same affected contract/resolution against current inputs via I-sync; reuse recorded disposition and repair work.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "#13 retains existing bounded retries and #18 requires repeated recovery not create duplicate decisions or tasks.",
+      "expansion": "full",
+      "note": "Full: failed repair/sync -> bounded retry or explicit failure -> synchronized verified acceptance. Deduplicate repeated resolution/task creation; preserve baseline unless a recorded accept authorizes change. Replay after interrupted acknowledgement, observe unchanged decision/task identities and no accepted evidence until current verification (#13/#14/#18)."
+    },
+    {
+      "mode": "idempotency",
+      "outcome": "O2",
+      "damage": "durable",
+      "reentry_proof": "Reconciliation recomputes content-based relevant inputs and reaches the same semantic state when unchanged, ignoring diagnostic timestamps.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "#12/#17/#18 expressly require unchanged repeated bootstrap and completed recovery stability.",
+      "expansion": "full",
+      "note": "Full: accepted -> unchanged check -> same accepted state, with no new decisions/tasks/replan. Generated reports must not alter product input identity; real producer changes still invalidate downstream. Repeat sync that writes reports, compare state and IDs over multiple runs, and contrast a genuine dependency change (#12/#17/#18)."
+    },
+    {
+      "mode": "concurrency-race",
+      "outcome": "O2",
+      "damage": "durable",
+      "reentry_proof": "After observed/current input mismatch reject acceptance for the affected closure, reconcile actual changes, sync and verify the new snapshot.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Program single-writer rule covers baseline/snapshot publication, while #8 R23 and #14 allow external product-source writers; no immutable verification-input boundary is specified.",
+      "expansion": "full",
+      "note": "Full: SG-01 closes the gap. Interleave a relevant source edit after verification consumes A but before evidence publication reads B; refuse to stamp A's proof for B, preserve unrelated proof, and accept only a new observation of B. Runtime evidence must include consumed/current manifests, blocker, owner-directed recovery and unchanged rerun (#12/#13/#17)."
+    },
+    {
+      "mode": "stale-data",
+      "outcome": "O2",
+      "damage": "durable",
+      "reentry_proof": "Recompute actual source/baseline/dependency manifests, mark direct plus hard-dependent evidence stale, repair/sync/reverify affected work.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "#12/#17 cover two dirty states on one commit, changed baseline, copied old reports and transitive impacts.",
+      "expansion": "full",
+      "note": "Full: accepted-old -> detected stale/uncertain -> reconciled -> verified-current -> accepted. Keep unrelated proof and historical evidence; neither mtime nor copied pass status refreshes evidence. Exercise dirty-state, baseline-only and transitive-input edits plus copied report, inspecting exact invalidation closure and new observed manifests (#12/#13/#17; SG-01)."
+    },
+    {
+      "mode": "external-outage",
+      "outcome": "O2",
+      "damage": "durable",
+      "reentry_proof": "Once the tool is available, rerun the existing completion boundary over actual partial state, finish sync and verification before acceptance.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Real host/verification tools may be unavailable during multi-artifact synchronization; no external SLA is declared and partial writes remain possible.",
+      "expansion": "full",
+      "note": "Full: syncing/verifying -> explicitly blocked -> repair/sync -> successful current verification. Retain partial work and previous historical evidence; unavailable inspection never qualifies as verified fact-only change. Fail tool access after a doc update and before verification, observe scoped blocker, restore and demonstrate recovery (#13/#14)."
+    },
+    {
+      "mode": "permission-denial",
+      "outcome": "O2",
+      "damage": "durable",
+      "reentry_proof": "Restore required access, reread actual inputs, repair/sync partial outputs and reverify before acceptance.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "I-freshness requires unreadable inputs to be invalid and I-sync writes multiple documents; no permission guarantee is declared.",
+      "expansion": "full",
+      "note": "Full: unreadable/partially writable -> uncertain/blocked -> accessible/current -> synchronized -> verified. Do not default missing bytes to empty/fresh or discard old evidence. Deny a relevant input read and a later doc write, inspect explicit paths/owner and affected readiness, then recover through the same gate with unrelated proof preserved (#12/#13)."
+    },
+    {
+      "mode": "cleanup",
+      "outcome": "O2",
+      "damage": "durable",
+      "reentry_proof": "Rerun reconciliation after removing only disposable staging; prior historical/current inputs and evidence remain available for the gate.",
+      "frequency": "rare",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Structural: program forbids global rollback of unrelated product files and requires original proof/history preservation; cleanup is limited to non-authoritative generated staging.",
+      "expansion": "guard-only",
+      "note": "One guard: cleanup target must be declared disposable run-owned output, never product input, baseline, required evidence or unrelated file. Proof requirement: reject deletion of each protected class at the existing cleanup boundary and demonstrate unchanged authoritative fingerprints; no separate recovery engine (#12/#13)."
+    },
+    {
+      "mode": "degraded-operation",
+      "outcome": "O2",
+      "damage": "durable",
+      "reentry_proof": "Preserve uncertainty/conflict and its affected closure, return product decisions to interactive bootstrap, then reuse sync/reverification.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "#12/#17 explicitly include unknown impact and #14/#18 include deferred conflicts; silently treating these as zero-impact can persist false completion.",
+      "expansion": "full",
+      "note": "Full: uncertain/conflicting -> scoped blocked -> verified fact-only observation or explicit accept/reject -> sync/repair -> current acceptance. Preserve unaffected work and never use global rebuild as a substitute for scope reasoning. Exercise ambiguous semantic edit, deferred user decision and later resolution, observing typed remaining responsibility and stable unrelated proof (#12/#14/#17/#18)."
+    },
+    {
+      "mode": "observability",
+      "outcome": "O2",
+      "damage": "durable",
+      "reentry_proof": "Use exact blocker differences and responsible node to repair/sync, then produce a new observation bound to actual inputs.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "#13 requires explicit differences/repair responsibility; #17/#18 challenge report-only success and copied evidence.",
+      "expansion": "full",
+      "note": "Full: mismatch -> typed blocker with source/baseline/dependency difference and owner -> repaired/synchronized -> verified-current. Reject report-only closure; retain observations and historical evidence. Inspect missing-doc and external-conflict reports against actual fixture diff, then walk owner repair to current evidence and readiness; SG-01 supplies observation identity (#13/#14/#17/#18)."
+    },
+    {
+      "mode": "recovery",
+      "outcome": "O2",
+      "damage": "durable",
+      "reentry_proof": "Resume recorded conflict/disposition; accept projects the recorded baseline, reject repairs code to preserved baseline, defer remains blocked; each resolved path uses I-sync.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "#14/#18 explicitly require accept, reject, defer, interruption and stable repeated completed recovery.",
+      "expansion": "full",
+      "note": "Full: detect -> classify -> recorded accept/reject or pending -> scoped repair/sync -> actual reverify -> eligible. Never infer approval or roll back unrelated work; retain historical decisions and deduplicate recovery tasks. Walk all approved paths with exact artifacts, source/baseline diffs, remaining owner, current evidence and unchanged repeat on both hosts (#14/#18; SG-01)."
+    },
+    {
+      "mode": "invalid-input",
+      "outcome": "O3",
+      "damage": "reenterable",
+      "reentry_proof": "Reject invalid scenario setup before subject execution, correct it and start a fresh actual host session; no prior result becomes a pass.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Proof module requires independent evaluator inputs and minimal raw subject scenarios; malformed fixture/launch inputs can occur without any declared rarity constraint.",
+      "expansion": "guard-only",
+      "note": "One guard: scenario input admission must require host/scenario/candidate identity and valid raw fixture without evaluator oracle. Proof requirement: invalid setup yields explicit unverified/failure and corrected setup executes an independent session; SG-02 specifies candidate identity (#15-#18)."
+    },
+    {
+      "mode": "partial-failure",
+      "outcome": "O3",
+      "damage": "durable",
+      "reentry_proof": "Retain the incomplete run as incomplete, restart only the affected scenario in a fresh actual session, and evaluate full evidence independently.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "A real subject writes dialogues and artifacts before final evaluation; proof module explicitly requires full scenario denominator and permits unverified outcomes.",
+      "expansion": "full",
+      "note": "Full: scheduled -> running -> partial/unverified -> fresh rerun -> evaluated pass/fail. Do not combine missing host evidence into a synthetic pass or discard failure history. Interrupt artifact capture, show incomplete status and unchanged denominator, rerun with new session identity and full manifest/dialogue/assertions (#15-#18; SG-02)."
+    },
+    {
+      "mode": "timeout",
+      "outcome": "O3",
+      "damage": "durable",
+      "reentry_proof": "Keep the timed-out attempt non-passing with captured artifacts and start a fresh affected host scenario when execution is available.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Actual provider sessions are required and no duration SLA is supplied; a timeout may occur after persistent artifacts exist.",
+      "expansion": "full",
+      "note": "Full: running -> timeout/unverified -> fresh attempt -> independently evaluated outcome. Preserve failure/reproduction and avoid treating CLI startup or partial transcript as execution. Timeout a subject before decisive acceptance, inspect denominator/status and fresh-run identity, then capture full tool behavior and assertions (#15-#18)."
+    },
+    {
+      "mode": "cancellation",
+      "outcome": "O3",
+      "damage": "durable",
+      "reentry_proof": "For prescribed interruption carry only scenario-appropriate persistent state into the fresh continuation; for harness cancellation record incomplete attempt and rerun fresh.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Subjects include explicit interruption/resume scenarios in #15/#16/#18 and evaluator sessions can also be cancelled after partial evidence.",
+      "expansion": "full",
+      "note": "Full: distinguish scenario interruption from harness abort in evidence; neither absence of answers nor truncated evaluation is a pass. Preserve transcript/artifacts and scenario continuation state; walk interrupted decision on each host with no oracle/history leakage, then independently assert pending versus confirmed state (#15/#16/#18)."
+    },
+    {
+      "mode": "retry",
+      "outcome": "O3",
+      "damage": "durable",
+      "reentry_proof": "Link failed attempt and owning implementation ticket, then evaluate a fresh subject attempt on the corrected candidate for the same scenario/host.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Proof module mandates fresh-context retest after repair; repeat attempts are an intended workflow.",
+      "expansion": "full",
+      "note": "Full: failed -> linked scoped repair -> new candidate/run -> independently evaluated retest. Keep old failures and do not add retries as extra passing scenarios. Exercise a known failed attempt then retest, inspecting distinct session IDs, candidate manifests, before/after behavior and unchanged required denominator (#15-#18; SG-02)."
+    },
+    {
+      "mode": "idempotency",
+      "outcome": "O3",
+      "damage": "durable",
+      "reentry_proof": "Recompute completion by required scenario/host and applicable candidate identity, retaining attempt history without counting duplicates.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Proof module aggregates a full required scenario denominator on both hosts; repeated execution must not substitute duplicate passes for missing cases.",
+      "expansion": "full",
+      "note": "Full: attempts append to history; only independent passing evidence applicable to the current candidate satisfies each required scenario/host. Repeating one case must not close an unexecuted case or host. Feed duplicate and missing-host results through the evidence index/evaluator boundary and inspect non-completion, then execute missing cases (#15-#18; SG-02)."
+    },
+    {
+      "mode": "concurrency-race",
+      "outcome": "O3",
+      "damage": "durable",
+      "reentry_proof": "A refused conflicting fixture/resource claim is rerun in its own isolated session; existing other-scenario evidence is preserved.",
+      "frequency": "rare",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Structural: proof-spec.md:7 mandates unique fixture directories and explicit mutex for shared physical resources; :5 prohibits installed/unrelated workspace outputs.",
+      "expansion": "guard-only",
+      "note": "One guard: exclusive ownership of the resolved fixture/shared-resource target during a subject run. Proof requirement: competing subject using the same target is denied rather than overwriting another transcript, .allforai state or result; inspect distinct retained session/fixture provenance (#15-#18)."
+    },
+    {
+      "mode": "stale-data",
+      "outcome": "O3",
+      "damage": "durable",
+      "reentry_proof": "Resolve and record the actual candidate inputs, invalidate only affected prior scenario results, rerun those cases on both hosts and independently compare behaviors.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Implementation tickets integrate before global closure and proof-spec says only current Skill/provider version; installed Skill and candidate checkout can differ without an installed update.",
+      "expansion": "full",
+      "note": "Full: SG-02 closes the gap. Candidate A scenario pass -> relevant adapter/helper change B -> A proof inapplicable -> fresh B sessions -> current applicable pass. Prove installed/candidate mismatch detection and manifest binding, inspect loaded paths plus raw behavior, and preserve unaffected applicable evidence without crediting old versions (#15-#18)."
+    },
+    {
+      "mode": "external-outage",
+      "outcome": "O3",
+      "damage": "durable",
+      "reentry_proof": "Mark the affected host/scenario unverified, preserve captured attempt evidence and rerun it in a fresh actual session when available.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Proof module explicitly anticipates unavailable actual hosts; no external availability SLA exists and partial evidence may already be persisted.",
+      "expansion": "full",
+      "note": "Full: scheduled/running -> host unavailable -> unverified -> actual rerun -> independent evaluation. No other-host substitution or role-play; global closure stays incomplete while a required host is absent. Deny one host launch mid-batch, inspect exact missing denominator, restore and record genuine provider/session/tool evidence (#15-#18)."
+    },
+    {
+      "mode": "permission-denial",
+      "outcome": "O3",
+      "damage": "durable",
+      "reentry_proof": "Retain non-passing attempt evidence, restore only authorized fixture/tool access, then rerun the affected host/scenario fresh.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Actual session tools and fixture/evidence writes require permissions; no guarantee prevents failure after partial output.",
+      "expansion": "full",
+      "note": "Full: launch/write denied -> explicit unverified/failed setup or attempt -> restored isolated capability -> fresh execution/evaluation. Never broaden to installed-skill or real-product writes. Deny fixture output or required tool, inspect failure provenance and incomplete global state, restore scoped access and capture complete behavior (#15-#18)."
+    },
+    {
+      "mode": "cleanup",
+      "outcome": "O3",
+      "damage": "durable",
+      "reentry_proof": "A refused cleanup leaves evidence intact; disposable fixture data may be recreated for a fresh scenario after required evidence is durably retained.",
+      "frequency": "rare",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Structural: proof-spec.md:5 confines fixtures to isolated temporary directories and requires preserved raw dialogue/artifacts; program forbids installed and unrelated workspace mutation.",
+      "expansion": "guard-only",
+      "note": "One guard: cleanup target must be disposable run-owned fixture material whose required evidence has been preserved outside the deletion set. Proof requirement: cleanup refuses installed/unrelated paths and the only copy of decisive evidence, while permitted cleanup leaves referenced evidence readable (#15-#18)."
+    },
+    {
+      "mode": "degraded-operation",
+      "outcome": "O3",
+      "damage": "durable",
+      "reentry_proof": "Keep incomplete scenario/host results explicit and execute the missing actual sessions before global proof closure.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Proof module explicitly states unavailable environment is unverified and no skipped scenario counts as passing.",
+      "expansion": "full",
+      "note": "Full: partial platform coverage -> explicit unverified overall -> missing actual host execution -> independent equivalent-semantic assessment. Never substitute startup, role-play, wording tests or other-host results. Exercise one-host-only evidence through global evaluation, require incomplete status, then complete actual other-host run with decisive output assertions (#8 R30; #15-#18)."
+    },
+    {
+      "mode": "observability",
+      "outcome": "O3",
+      "damage": "durable",
+      "reentry_proof": "Reevaluate only from preserved actual evidence tied to resolved candidate/session identity; missing decisive observation requires a fresh affected run.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "#15-#18 require raw questions/tools/artifacts and evaluator-owned criteria; absent or misleading evidence can persist a false parity claim.",
+      "expansion": "full",
+      "note": "Full: capture raw scenario/user turns and tool outcomes -> independent expected/observed comparison -> auditable pass/fail/unverified. Preserve minimal reproduction and owning ticket on failure, redact credentials without deleting decisive behavior. Inspect each host result against raw artifacts and candidate manifest; self-report or provider version alone cannot close it (#15-#18; SG-02)."
+    },
+    {
+      "mode": "recovery",
+      "outcome": "O3",
+      "damage": "durable",
+      "reentry_proof": "Keep failing evidence and owner link, integrate scoped repair, then restart affected scenarios with fresh host contexts and only scenario-authorized persisted state.",
+      "frequency": "routine",
+      "frequency_basis": "structural",
+      "frequency_basis_evidence": "Proof module requires repairs through owning implementation tickets and fresh retesting, and #16/#18 prescribe product recovery journeys.",
+      "expansion": "full",
+      "note": "Full: failure/unverified -> owner repair or environment recovery -> fresh applicable candidate sessions -> independent assertions -> full required denominator. Do not fix production from read-only evaluation or leak prior oracle; inspect before/after transcripts, actual loaded inputs, fixture diffs and final applicable evidence (#15-#18; SG-02)."
+    }
+  ]
+}

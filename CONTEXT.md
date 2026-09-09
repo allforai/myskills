@@ -24,6 +24,26 @@ _Avoid_: skill, capability, design spec
 An idempotent project-local script that may add or repair nodes after planning, without being a substitute for bootstrap's goal analysis.
 _Avoid_: node injection, template
 
+**Cross-host behavioral parity**:
+Agreement between execution hosts on workflow admission, repair-budget authorization, acceptance, and stopping decisions for equivalent logical task graphs, evidence, and events. It does not require identical scheduling, execution traces, or host mechanisms.
+_Avoid_: identical engines, identical execution order
+
+**Per-QA repair budget**:
+The maximum repair authorizations available to an individual QA obligation in its declared repair loop. Sharing a repair task with another QA obligation does not pool their budgets or discharge an exhausted obligation.
+_Avoid_: shared retry pool, repair-task success
+
+**Untrusted run state**:
+Run evidence insufficient to establish whether execution may safely continue, including an unreliable readiness verdict or unknown prior repair consumption. It is neither permission to proceed nor evidence of unused budget.
+_Avoid_: ready by default, zero attempts by default
+
+**Repair authorization**:
+A uniquely identified grant to perform a repair attempt against specified QA obligations. It consumes the applicable budgets when durably granted, not when the repair succeeds, and repeated recording of the same grant is not another attempt.
+_Avoid_: successful repair, QA acceptance
+
+**Safety halt**:
+A run-wide prohibition on new task dispatch after a safety condition requires stopping. Work already in flight is not exempt from subsequent safety and acceptance checks.
+_Avoid_: ordinary QA failure, branch-only pause
+
 **Suppress rule**:
 A detection-triggered prohibition on emitting a class of nodes (for example library-sdk omits demo-forge). Breaking it is a planning error, not a style choice.
 _Avoid_: skip, omit, optional
@@ -31,4 +51,3 @@ _Avoid_: skip, omit, optional
 **Bundled**:
 A skill or pack shipped inside meta-skill. Nothing bundled is auto-invoked: a skill runs when a node-spec names its canonical path from the pack's `PACK.md`, and bootstrap finds those paths through capability Sub-Skill Mapping tables and the planning protocols. `retired` marks a tombstone kept only so old node-specs resolve.
 _Avoid_: wired, inactive, active
-

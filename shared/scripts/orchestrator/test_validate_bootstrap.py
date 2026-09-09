@@ -18,7 +18,11 @@ import sys
 import tempfile
 import unittest
 
-from validate_bootstrap import validate_workflow, validate_node_spec
+from _module_isolation import load, module_dir
+
+_validate_bootstrap = load(module_dir(), "validate_bootstrap")
+validate_workflow = _validate_bootstrap.validate_workflow
+validate_node_spec = _validate_bootstrap.validate_node_spec
 
 
 def _write_json(path, obj):

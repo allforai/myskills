@@ -1,0 +1,10 @@
+{
+  "layer": "orientation",
+  "epoch": 1,
+  "limits": {"mandatory": 1, "soft": 2, "hard": 3},
+  "rounds": [
+    {"round": 1, "dispatch": "ctx_1b9dfaf196d3", "status": "continue", "open_families": ["OF-001", "OF-002"], "residual_families": ["OF-003"], "repair": "Expanded current gate/journal/reverse-concept sequencing evidence; no implementation changes", "confirmation_required": true},
+    {"round": 2, "dispatch": "ctx_1df73c9b6a43", "status": "closed", "reason": "Initial transport lacked structured verdict; one infrastructure retry persisted complete coverage", "infrastructure_retry": "ctx_adca3d24d5e5", "retry_status": "complete", "verified_families": ["OF-001", "OF-002"], "confirmation_required": false}
+  ],
+  "status": "closed"
+}

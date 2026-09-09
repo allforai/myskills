@@ -32,6 +32,38 @@ Rules:
 - do not let `flow.py` become the first place where the real task goal appears
 - the captured task goal must shape workflow design, specialization detection, and node selection
 - write the captured task goal into `.allforai/bootstrap/bootstrap-profile.json`
+- use canonical `task_route` and `task_scope` semantics and the requirement contract
+  in `<canonical-root>/knowledge/bootstrap-planning.md`; local missing documents
+  never trigger full reconstruction, and code inference never confirms intent
+- use real recorded user decisions for local requirements and keep unanswered
+  choices pending; the Codex assume-and-declare convention cannot supply consent
+
+For product reconstruction and new products, execute the canonical
+`knowledge/product-intent-confirmation.md` interactive CLI protocol, including
+resume, journal-backed decisions, scope freezing and plan projection. The native
+Codex adapter uses the same copied `product_intent.py`; assume-and-declare never
+approves intent.
+The canonical Step 3.4 node-list confirmation is provisional on Codex too: any node-set
+or `hard_blocked_by` change the later audits make is presented as a delta against the
+confirmed list in Phase A before the three-lens gate. Assume-and-declare cannot approve
+a plan the user never saw. Persist the presented graph and the user's answer in
+`.allforai/bootstrap/plan-confirmation.json`, with its decision in the planning journal
+`.allforai/bootstrap/plan-confirmation-journal.json` (schema, provenance and append-only
+revision rules in the canonical `knowledge/bootstrap-audits.md` Phase A section). Never
+write the product decision journal for a plan or run choice. The copied
+`validate_bootstrap.py` and `validate_unattended_readiness.py` recompute the delta at
+both boundaries, so an unconfirmed node set or dependency edge holds the nodes it
+affects until the delta is presented and confirmed.
+
+On re-entry, present only the CLI's pending topics, restoring its history,
+reasons and explicit exclusions as context. For local requests with legacy
+documents, use the canonical `admit` operation for relevant projections and
+then local decide/freeze/plan; preserve the old concept and baseline files.
+Unsupported legacy approval remains pending, without whole-product questions.
+An existing hand-projected `local-requirements.json` without `intent_session_path`
+is resumed with `resume`, not re-admitted; a goal-only journal batch (the shape
+the `journal` command records) evidences the goal alone, so the CLI presents that
+item pending with `legacy_reuse` and one `confirm` recovers the gates in place.
 
 For replication and migration work, task capture must also classify fidelity intent before workflow generation.
 
@@ -110,6 +142,10 @@ When product inference is emitted, include a project-local `check_product_summar
 Copy the current orchestrator helper set from `./scripts/orchestrator/` (the shared Claude tree via this adapter's symlink), at least:
 
 - `check_artifacts.py`
+- `product_intent.py`
+- `evidence_freshness.py`
+- `repair_authorization.py`
+- `run_safety.py`
 - `validate_bootstrap.py`
 - `expand_game_2d_production.py`
 - `reconcile_bootstrap_workflow.py`
@@ -118,6 +154,52 @@ Copy the current orchestrator helper set from `./scripts/orchestrator/` (the sha
 - `summarize_run_log.py`
 - `record_meta_skill_feedback.py`
 - `check_product_summary.py` when product inference is emitted
+
+Preserve existing `repair-authorizations.json` and `safety-quarantine.json`
+during re-bootstrap. Regenerating a plan does not authorize clearing a safety
+halt, resetting repair consumption, or replaying an uncertain dispatch.
+
+Copy `knowledge/input-freshness.md` from the canonical root into
+`.allforai/bootstrap/protocols/`. Follow it on every bootstrap/resume, including
+unchanged product intent: declare each scoped node's `source_inputs` (project-relative
+product source files, directories or globs; explicit `[]` only when no product source is
+relevant) plus consumed `input_dependencies` and `required_documents`, each mapped in
+`document_verification` to a project-specific argv that executes the document's stated facts
+against the current source (never existence or a status field), observe
+before generating documents, publish verified contract observations, then consume
+reconciliation and readiness. The shared gates refuse a scoped node that omits or
+malforms these declarations (`missing_document_verification` for an unchecked document);
+freshness is never opt-in, and evidence publication runs every document check so a code-only
+acceptance cannot complete a delivery whose facts are outdated. Use the same evidence publication CLI after actual
+verification; preserve journal authority and unrelated valid work. Invalidated items name a `diff` and
+`repair_owner`: resolve `interactive-bootstrap` items here (answer the pending decision, or refreeze and
+replan the recorded change) and leave node-owned items for the run to repair and republish.
+
+At the same boundary, send `{"operation":"external-changes"}` to verify code changed
+outside the delivery flow. This operation is the only one that executes the project's
+recorded acceptance; the gates detect drift but never run it, so they report
+`unverified_external_change` until this has established what the change means. It
+always verifies afresh, so re-run it whenever something it cannot observe — an
+installed dependency, a service — may have moved under an earlier verdict. Verify the
+scoped drift first and let the result decide whether a product question exists at all;
+never open a product interview on unverified drift, and never widen one beyond the
+deliveries the change reaches. A change whose recorded acceptance still passes is an
+implementation fact: resynchronize its documents and republish. A failing one,
+or changed source no node declares, is a conflict reported to the user, never a new
+requirement. Record the user's `accept` (with the explicit desired intent it
+establishes), `reject` (baseline kept, scoped implementation repair) or `defer`
+through `product_intent.py`'s `external-change` operation with an actual user
+reference and reason. A deferred or interrupted decision keeps the conflict and
+blocks only the work that depends on it; unrelated valid records are preserved.
+A Run Policy `accept` is a run choice and never accepts a product behavior change.
+The freshness, artifact, reconciliation and readiness gates run the same
+comparison themselves, so an interrupted boundary still routes the conflict to
+the interactive decision instead of reporting it as node-owned repair.
+
+Also copy `<canonical-root>/scripts/check_decision_inputs.py` into the same
+project-local scripts directory. It imports the same scope owner there.
+Run all three shared gates (bootstrap, decision inputs, unattended readiness)
+against the generated project before presenting it as executable.
 
 Codex-only runtime helpers must not be mixed into the shared bootstrap tree.
 
@@ -224,7 +306,11 @@ Important:
 
 ### 9. Reverse Product Inference
 
-When the repository contains enough evidence to infer the product shape:
+Only when the selected task needs product inference: for reconstruction use the
+relevant product evidence; for a local change restrict inference to its affected
+scope, and omit a whole-product summary when it does not help that task.
+New-product work starts from user intent without a reconstruction phase.
+When relevant repository evidence exists:
 
 - read `../knowledge/product-inference.md`
 - synthesize an evidence-backed product picture from real code, protocols, UI/page names, configs, and runtime modules
@@ -232,7 +318,7 @@ When the repository contains enough evidence to infer the product shape:
 
 Rules:
 
-- this is a standard bootstrap output when supported by evidence
+- this is supporting evidence when needed by the selected scope, never approval
 - prefer generating `product-summary.json` during bootstrap itself when the evidence is already obvious from repository docs and current artifacts
 - do not spend a mainline workflow node on product inference if it does not unblock the next implementation or verification decision
 - it should describe user-facing systems, not just tech stacks
@@ -253,7 +339,7 @@ Rules:
 - `## Spec` defines goal, evidence scope, exit artifacts, and acceptance constraints
 - `## Design` records current approach, tradeoffs, and open risks
 - `## Task` defines the immediate executable work
-- YAML frontmatter with `node:` remains required
+- YAML frontmatter with `node_id:` remains required; mirror scoped requirement fields from the canonical contract
 - generated run continues to read `node-specs/*.md` first during this phase
 
 For UI-related replication nodes, `## Spec` must additionally include:
@@ -301,7 +387,7 @@ Recommended shape:
 
 ```md
 ---
-node: <node-id>
+node_id: <node-id>
 ---
 
 # Node
@@ -353,7 +439,7 @@ For Phase 1 structured node-spec migration, also verify:
 - each non-trivial node-spec includes `## Design`
 - each non-trivial node-spec includes `## Task`
 
-When product inference is supported by repository evidence, also verify:
+When scoped product inference is emitted, also verify:
 
 - `.allforai/bootstrap/product-summary.json` exists
 - `.allforai/bootstrap/scripts/check_product_summary.py` exists

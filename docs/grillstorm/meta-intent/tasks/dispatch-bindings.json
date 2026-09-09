@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "spec_revision": 2,
+  "task_revision": 1,
+  "workflow_revision": 2,
+  "files": {
+    "program-spec.md": "b860a0a357babf5264196ab57edb360fd6c647952324b49360cfa7ed02827237",
+    "modules/intent-spec.md": "5a564dc8af7021342530e108df7558bf65afa6567a8cccb89f00706a5987eee4",
+    "tasks/catalog.md": "64498f549e3abe7f35cd07d7fcb72cfd00a733540bddb292d5a8e8af11a8d3a0",
+    "tasks/intent.md": "be7cc1a0894963152224bccf4d52a62357aa0ca14d39117fdf943de5bfa6aeeb",
+    "sources/issue-8.json": "09a6d044aaf4ec293f75ba3d5b51a1a8576435b270764f9cbcdf6ec0e7dfc773",
+    "sources/issue-9.json": "aaf6ca7617c4711156c43e978d358d7e461ea62da624ae456c38f50f216c45c6",
+    "reviews/failure-classification.json": "009a855705833537679250e9f6822a9e7fa4f7adf0503a0b503995800dc2ec07",
+    "tasks/dispatch-contract.md": "b1adb504b324acbe783870a38d1d9a1ff6bd8e13816205e008e9db0aa734b02d",
+    "tasks/scenario-matrix.json": "d8d3b9dd401a961375bafa3b684d1f912155dd7a6e08d0e24535d1b0818bf9a5",
+    "sources/issue-10.json": "0c9956e19122fbd7c97d04652e28d1dadf2a0ab28094b92c777e4a8336741a2b",
+    "sources/issue-11.json": "9e34baa6096e37efad49a9e41e2ec4024c4177679e62b5e6066089887a5d2ac7",
+    "modules/synchronization-spec.md": "6b0e8ceaaf142bd0e9d0746ac4099627fb0ebf90d133f537ce8909061dcfb93a",
+    "tasks/synchronization.md": "7068202c28a8ef4075e14377555f5fcf2fba654ac1dbb7b5e278a34f4d6899c8",
+    "sources/issue-12.json": "64616b1c159f9f0a1f2282b39d6acbb871cadddf3ccf353c4a907bbda9555669",
+    "sources/issue-13.json": "16a3c71f4ac9b171250c07c3e3b4ed525eff51aec873e7ef49c88d3c2c4414df",
+    "sources/issue-14.json": "4af112258abcc92e6c54dfaca171a5681542c52787827b4d91d3a1a59aa15e06",
+    "modules/proof-spec.md": "b92994303e5c4bc171bc8c0ad85d6cb2fa0a59897dba221fa14e69182d3cd67e",
+    "tasks/proof.md": "e81f3139af8fa083db62ba783d8dc1c7120d20f3f90073b0519b3062d98204ff",
+    "sources/issue-15.json": "d64be7c35363f8b6e71279067e8fbf79b2fe5891839acfec15dec7c54f1a1689",
+    "sources/issue-16.json": "8658493ae9afcecfcaecc0b21566771a9affda68a220c18b52c251d3ee98f403",
+    "sources/issue-17.json": "33b35986e291c5d4220de8a40def0f2cb47d58ac2fcddd9ca6cf2bb7daf5a846",
+    "sources/issue-18.json": "4ed62fcfe9e90fa52a4ffdaf24a654d2c384e63b813d77f57cfa203810fcc867"
+  }
+}

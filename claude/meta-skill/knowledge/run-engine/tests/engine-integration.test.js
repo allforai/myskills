@@ -153,8 +153,8 @@ test('L2.3 hard-fail bubbles: C cross_node -> needs_diagnosis, C not retried', a
   assert.equal(agent.counters.C, 1) // not retried
 })
 
-test('L2.4 mid-batch commit does not corrupt the in-flight batch', async () => {
-  // C is slow (deferred). A passes fast and commits while C is still running.
+test('L2.4 a slow sibling does not cause completed work to be dispatched twice', async () => {
+  // C is slow (deferred). A passes fast, but completion waits for wave safety.
   // Assert: each ready node runs exactly once; the batch is not recomputed mid-flight.
   const cGate = makeDeferred()
   const agent = makeFakeAgent({
@@ -166,8 +166,7 @@ test('L2.4 mid-batch commit does not corrupt the in-flight batch', async () => {
   })
   const runPromise = core.runEngine({ agent, pipeline })
   await Promise.resolve()
-  // A and B already committed while C is parked:
-  // resolve C only after the others have progressed
+  // Resolve C after the others have progressed; no mid-flight rescheduling.
   cGate.resolve(passed('C'))
   const res = await runPromise
   assert.equal(res.status, 'complete')

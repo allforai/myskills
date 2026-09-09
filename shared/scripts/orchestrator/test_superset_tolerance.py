@@ -1,5 +1,7 @@
 import json, tempfile, os, unittest, subprocess, sys
 
+from _module_isolation import load, module_dir
+
 SUPERSET_NODE = {
     "node_id": "n1", "capability": "x", "hard_blocked_by": [], "exit_artifacts": [],
     # CC-only superset fields that Codex validators must IGNORE, not choke on:
@@ -17,7 +19,7 @@ class TestSupersetTolerance(unittest.TestCase):
         return path
 
     def test_validate_bootstrap_tolerates_superset(self):
-        import validate_bootstrap
+        validate_bootstrap = load(module_dir(), "validate_bootstrap")
         with tempfile.TemporaryDirectory() as d:
             wf_path = self._write_wf(d)
             with open(wf_path) as f:

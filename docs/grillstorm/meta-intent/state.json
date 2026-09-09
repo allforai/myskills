@@ -1,0 +1,26 @@
+{
+  "status": "incomplete",
+  "phase": 5,
+  "route": "program",
+  "starting_ref": "81acdddca29ab6dde95a1ab72decc2067f3a0f9a",
+  "preexisting_dirty_paths": [],
+  "orca_run": "run_a2a61121adfb",
+  "spec_revision": 2,
+  "task_revision": 1,
+  "workflow_revision": 2,
+  "launch_revision": 1,
+  "resume_pointer": "workflow-state.json",
+  "source_spec": 8,
+  "tickets": [
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+  ]
+}

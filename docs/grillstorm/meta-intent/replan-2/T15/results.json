@@ -1,0 +1,285 @@
+{
+  "task": "T15",
+  "source_commit": "e30ccc7cec9120815f0d9bc92204adf465f666d4",
+  "production_commit": "e30ccc7cec9120815f0d9bc92204adf465f666d4",
+  "packet_root": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15",
+  "candidate_tree_sha256": "c1114a94d89c2ea8d8e7bc8c496576b9750957e347769980dc75dee006704fc4",
+  "candidate_entries": {
+    "claude": "claude/meta-skill/skills/bootstrap/SKILL.md",
+    "codex": "codex/meta-skill/SKILL.md"
+  },
+  "required_cells": 14,
+  "executed_cells": 3,
+  "passed_cells": 0,
+  "status": "Three historical Codex actors independently evaluated, no passes admitted; old candidate acceptance withdrawn; decision-gate correction completed but combined planning/runtime repairs and fresh candidate review remain pending; Claude scenario launch previously stopped at workspace trust",
+  "evaluation_owner": "Claude Opus evaluator replacement, authorized by the user for evaluation only",
+  "superseded_preparation": {
+    "packet_root": "/private/tmp/meta-intent-T15-88e7beca",
+    "source_commit": "88e7becaf30522ef29dd2fa168b62045affcb782",
+    "recorded_tree_sha256": "4977a12b3759ebe704c29280d5df5262bafcc3352e81d3349a7bb4315083106a",
+    "reason": "Superseded by accepted producer ed430dfc; its recorded hash is also not reproducible from its own pinned commit under the current manifest format",
+    "host_proof": "none"
+  },
+  "cells": [
+    {
+      "scenario": "T15/large-code-local-button",
+      "host": "claude",
+      "status": "unverified",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/large-code-local-button/actor-input.md",
+      "attempts": [],
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/large-code-local-button/project"
+    },
+    {
+      "scenario": "T15/large-code-local-button",
+      "host": "codex",
+      "status": "unverified",
+      "reason": "Independent evaluation corroborates BOM rejection/recovery and preservation, but question precision and incomplete evidence remain. Root also withholds executable-plan acceptance pending shared QA-routing repair review; no scenario pass admitted.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/large-code-local-button/actor-input.md",
+      "attempts": [
+        {
+          "host": "codex",
+          "candidate": "e30ccc7cec9120815f0d9bc92204adf465f666d4",
+          "candidate_tree_sha256": "c1114a94d89c2ea8d8e7bc8c496576b9750957e347769980dc75dee006704fc4",
+          "task": "task_1f6124b04caa",
+          "dispatch": "ctx_d19bc67f4ff4",
+          "status": "actor_completed_evaluation_pending",
+          "capture": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/large-code-local-button/capture-001/capture.json",
+          "completion_message": "msg_5383962153be",
+          "final_capture": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/large-code-local-button/capture-003/capture.json",
+          "bom_record_dispatch": "ctx_2492b68bb8e4",
+          "bom_recovery_dispatch": "ctx_ecaa06f0f8de",
+          "bom_recovery_completion": "msg_47cd17008d66",
+          "bom_recovery_capture": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/large-code-local-button/capture-bom-recovery-001/capture.json",
+          "evaluation_dispatch": "ctx_6d4a39e2cef8",
+          "evaluation_completion": "msg_22136658223a",
+          "evaluation_report": "../T15-codex-large-code-evaluation.md",
+          "semantic_verdict": "not_admitted",
+          "released": true
+        }
+      ],
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/large-code-local-button/project"
+    },
+    {
+      "scenario": "T15/missing-product-docs",
+      "host": "claude",
+      "status": "unverified",
+      "reason": "agent_prompt_stalled at workspace trust; no scenario input accepted; failed worker released. User asked to confirm trust manually.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/missing-product-docs/actor-input.md",
+      "attempts": [],
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/missing-product-docs/project"
+    },
+    {
+      "scenario": "T15/missing-product-docs",
+      "host": "codex",
+      "status": "unverified",
+      "reason": "Independent evaluation rejects scenario pass: scoped routing and source preservation hold, but four planning defects and incomplete dialogue evidence remain. Missing runtime prerequisites are not defects.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/missing-product-docs/actor-input.md",
+      "attempts": [
+        {
+          "candidate": "e30ccc7cec9120815f0d9bc92204adf465f666d4",
+          "task": "task_e7b6a9f84198",
+          "dispatch": "ctx_99be2c71a3e0",
+          "status": "failed",
+          "capture": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/missing-product-docs/capture-001/capture.json",
+          "note": "Real Codex host accepted prompt and asked local scope question; scripted answer delivered after project snapshot. Transcript capture is hook-attested but reports clipped oversized text, so full-history admission remains pending.",
+          "host": "codex",
+          "candidate_tree_sha256": "c1114a94d89c2ea8d8e7bc8c496576b9750957e347769980dc75dee006704fc4",
+          "completion_message": "msg_49d140cce244",
+          "final_capture": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/missing-product-docs/capture-004/capture.json",
+          "evaluation_dispatch": "ctx_7499e12c795d",
+          "evaluation_completion": "msg_6a6166609eff",
+          "semantic_verdict": "failed",
+          "evaluation_report": "../T15-codex-missing-docs-evaluation.md",
+          "released": true
+        }
+      ],
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/missing-product-docs/project"
+    },
+    {
+      "scenario": "T15/reshape-business-model",
+      "host": "claude",
+      "status": "unverified",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/reshape-business-model/actor-input.md",
+      "attempts": [],
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/reshape-business-model/project"
+    },
+    {
+      "scenario": "T15/reshape-business-model",
+      "host": "codex",
+      "status": "unverified",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/reshape-business-model/actor-input.md",
+      "attempts": [],
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/reshape-business-model/project"
+    },
+    {
+      "scenario": "T15/add-unimplemented-need",
+      "host": "claude",
+      "status": "unverified",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/add-unimplemented-need/actor-input.md",
+      "attempts": [],
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/add-unimplemented-need/project"
+    },
+    {
+      "scenario": "T15/add-unimplemented-need",
+      "host": "codex",
+      "status": "unverified",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/add-unimplemented-need/actor-input.md",
+      "attempts": [],
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/add-unimplemented-need/project"
+    },
+    {
+      "scenario": "T15/deny-inferred-intent",
+      "host": "claude",
+      "status": "unverified",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/deny-inferred-intent/actor-input.md",
+      "attempts": [],
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/deny-inferred-intent/project"
+    },
+    {
+      "scenario": "T15/deny-inferred-intent",
+      "host": "codex",
+      "status": "unverified",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/deny-inferred-intent/actor-input.md",
+      "attempts": [],
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/deny-inferred-intent/project"
+    },
+    {
+      "scenario": "T15/interrupted-confirmation",
+      "host": "claude",
+      "status": "unverified",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/interrupted-confirmation/actor-input.md",
+      "attempts": [],
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/interrupted-confirmation/project"
+    },
+    {
+      "scenario": "T15/interrupted-confirmation",
+      "host": "codex",
+      "status": "unverified",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/interrupted-confirmation/actor-input.md",
+      "attempts": [],
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/interrupted-confirmation/project"
+    },
+    {
+      "scenario": "T15/new-product",
+      "host": "claude",
+      "status": "unverified",
+      "reason": "Current candidate prepared; no actor execution proven yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/new-product/actor-input.md",
+      "attempts": [],
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/new-product/project"
+    },
+    {
+      "scenario": "T15/new-product",
+      "host": "codex",
+      "status": "unverified",
+      "reason": "Independent evaluation rejects scenario pass: intent provenance holds, but downstream capability routing, pending-choice gating and required audit execution are incomplete. Do not invent unresolved user choices.",
+      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/new-product/actor-input.md",
+      "attempts": [
+        {
+          "host": "codex",
+          "candidate": "e30ccc7cec9120815f0d9bc92204adf465f666d4",
+          "candidate_tree_sha256": "c1114a94d89c2ea8d8e7bc8c496576b9750957e347769980dc75dee006704fc4",
+          "task": "task_04209e89dedd",
+          "dispatch": "ctx_0cc4dd1dd6c8",
+          "status": "actor_completed_evaluation_pending",
+          "capture": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/new-product/capture-001/capture.json",
+          "completion_message": "msg_2b2f70e96861",
+          "actor_outcome": "succeeded",
+          "released": true,
+          "final_capture": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/new-product/capture-003/capture.json",
+          "evaluation_dispatch": "ctx_e7b30781011f",
+          "diagnosis_corrections": "../T15-decision-gate-diagnosis.md",
+          "evaluation_completion": "msg_e387ae227339",
+          "semantic_verdict": "failed",
+          "evaluation_report": "../T15-codex-new-product-evaluation.md"
+        }
+      ],
+      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/codex/new-product/project"
+    }
+  ],
+  "launch_failures": [
+    {
+      "scenario": "T15/large-code-local-button",
+      "host": "claude",
+      "task": "task_740bad25b0e1",
+      "dispatch": "ctx_b01c8c14e0cd",
+      "stage": "dispatch_input",
+      "error": "agent_prompt_stalled",
+      "observed": "Claude workspace trust safety check then shell prompt; the actor-input prompt was never delivered",
+      "scenario_executed": false
+    },
+    {
+      "scenario": "T15/missing-product-docs",
+      "host": "claude",
+      "task": "task_7e078fb1f7c3",
+      "dispatch": "ctx_953577ecf61b",
+      "stage": "dispatch_input",
+      "error": "agent_prompt_stalled",
+      "observed": "Claude workspace trust safety check then shell prompt; the actor-input prompt was never delivered",
+      "scenario_executed": false
+    }
+  ],
+  "packet_integrity_after_failed_launches": {
+    "checked": [
+      "T15/large-code-local-button claude",
+      "T15/missing-product-docs claude"
+    ],
+    "result": "every project file still matches source-before.json; no receipt.json exists",
+    "only_difference": ".git metadata the coordinator initialized for Orca registration",
+    "conclusion": "launch failures produced no host evidence and did not contaminate the packets"
+  },
+  "previous_preparation_record": {
+    "commit": "e30ccc7cec9120815f0d9bc92204adf465f666d4",
+    "path": "docs/grillstorm/meta-intent/replan-2/T15/results.json",
+    "note": "Original preparation and historical failed launches remain recoverable in this committed version; no host pass was recorded."
+  },
+  "launch_candidate": "e30ccc7cec9120815f0d9bc92204adf465f666d4",
+  "launch_candidate_tree_sha256": "c1114a94d89c2ea8d8e7bc8c496576b9750957e347769980dc75dee006704fc4",
+  "launch_packet_root": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15",
+  "candidate_entry_sha256": {
+    "claude": "3938723850b5bff08f8b20c32e702f43f46e42519e9b51166b8a2cfdb670df26",
+    "codex": "526dc0958a9c174a07d9b98d54de8cd1f2561790dbbf759853b45e13086c6065"
+  },
+  "candidate_accepted": false,
+  "candidate_acceptance_withdrawal": {
+    "previously_accepted_for_launch": true,
+    "candidate": "e30ccc7cec9120815f0d9bc92204adf465f666d4",
+    "tree_sha256": "c1114a94d89c2ea8d8e7bc8c496576b9750957e347769980dc75dee006704fc4",
+    "reason": "Actual host evaluations found planning and decision-gate defects; the subsequent 2cc347af repair was also rejected in review. Preserve historical evidence but do not launch or admit passes against this candidate.",
+    "evidence": "T15-coordinator-boundary-review.md"
+  },
+  "candidate_refresh_required": true,
+  "candidate_status": "acceptance withdrawn; historical export preserved; repaired candidate and fresh host proof required",
+  "launch_decision": "Refreshed against e30ccc7c after independent reviews and main synchronization. Coordinator will revalidate one actual cell per host; historical trust/quota limitations are not current findings.",
+  "proof_status": "unverified",
+  "blockers": [
+    {
+      "code": "claude-workspace-trust",
+      "status": "historic-unrevalidated"
+    },
+    {
+      "code": "codex-quota",
+      "status": "historic-unrevalidated"
+    }
+  ],
+  "current_launch_failures": [
+    {
+      "candidate": "e30ccc7cec9120815f0d9bc92204adf465f666d4",
+      "task": "task_0183f16263ac",
+      "dispatch": "ctx_711325d4829c",
+      "status": "launch_failed",
+      "capture": "/private/tmp/meta-intent-host-campaign.XX6yRo/T15/claude/missing-product-docs/capture-001/capture.json",
+      "note": "agent_prompt_stalled at workspace trust; no scenario input accepted; failed worker released. User asked to confirm trust manually.",
+      "host": "claude"
+    }
+  ]
+}

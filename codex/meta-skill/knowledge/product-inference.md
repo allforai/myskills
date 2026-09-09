@@ -1,6 +1,21 @@
 # Product Inference (Codex)
 
-Use this guidance when bootstrap can infer the target product from the real codebase.
+Use this guidance when the user's selected bootstrap goal needs code-based
+product evidence. Follow canonical `task_route` and `task_scope`: local work
+reads only relevant evidence, even when product documents are missing;
+new-product starts from user intent without reverse inference. Do not emit a
+whole-product summary merely because code exists.
+
+Observed behavior and inferred intent are provisional evidence. High confidence
+is not user confirmation. Existing confirmed decisions retain authority within
+their applicable scope, and new/changed requirements need recorded user consent
+under the canonical bootstrap planning contract. This summary never replaces
+that contract or supplies acceptance criteria from implementation alone.
+
+For reconstruction, supply the six-topic draft, source quotes, uncertainties and
+contradiction/gap questions to canonical `product-intent-confirmation.md`. Its
+interactive copied CLI owns persistence and resume; inferred summary fields never
+substitute for the journal-backed frozen product baseline.
 
 ## Goal
 
@@ -47,7 +62,7 @@ Recommended shape:
    - runtime modules
    - config and deployment surfaces
 2. Use LLM synthesis to connect evidence into a product picture.
-3. Do not invent product claims that are not supported by code or artifacts.
+3. Label code-based product claims as observed or inferred; user-added desired requirements need no code evidence and belong in the confirmed requirement path.
 4. If evidence is weak or conflicting, lower confidence and record open questions.
 
 Important:

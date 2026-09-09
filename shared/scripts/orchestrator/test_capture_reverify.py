@@ -4,8 +4,11 @@ import sys
 import tempfile
 import unittest
 
-from capture_evidence import capture, write_capture
-from reverify import reverify
+from _module_isolation import load, module_dir
+
+_capture_evidence, _reverify = load(module_dir(), "capture_evidence", "reverify")
+capture, write_capture = _capture_evidence.capture, _capture_evidence.write_capture
+reverify = _reverify.reverify
 
 
 class TestCapture(unittest.TestCase):

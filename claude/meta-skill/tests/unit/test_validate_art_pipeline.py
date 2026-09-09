@@ -1,8 +1,10 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/orchestrator"))
-from validate_art_pipeline import validate_art_pipeline
+from ..module_isolation import load
+
+_art_pipeline = load("validate_art_pipeline")
+validate_art_pipeline = _art_pipeline.validate_art_pipeline
 
 
 def _write(root, rel, text):
@@ -776,7 +778,7 @@ def test_validate_art_pipeline_rejects_missing_engine_ready_consumer(tmp_path):
     assert any("does not consume engine-ready manifest" in error for error in errors)
 
 
-from validate_art_pipeline import ADR3_NEUTRAL as _ADR3_NEUTRAL
+_ADR3_NEUTRAL = _art_pipeline.ADR3_NEUTRAL
 
 
 def _migrate_fixture_to_neutral_names(tmp_path):

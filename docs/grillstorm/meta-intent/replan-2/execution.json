@@ -1,0 +1,229 @@
+{
+  "schema_version": 1,
+  "protocol": "implement",
+  "authorization": "$implement 并发",
+  "completion_authorization": "User requires fixes, thought tests, then merge all into main and clean this task's worktrees. No remote push authorized. Preserve unmerged or untracked work before cleanup.",
+  "preparation_integration_commit": "11f9a44cf712fad200c99fe4ee402dc05a5d5a9f",
+  "main_merge_preflight": {
+    "main": "4e34c684a7384abf05b267d4197d8ee67bf8aa03",
+    "candidate": "526ef960e8c85fabbdf8862608a65c942413d1bb",
+    "command": "git merge-tree --write-tree main 526ef960e8c85fabbdf8862608a65c942413d1bb",
+    "result_tree": "0d3047999b46eef9b0f8ff89bc6bb42d248dd644",
+    "test_directory": "/private/tmp/meta-intent-526e-merge-check.MLCYes",
+    "verification": "682 Python/Codex tests passed in 248.35 seconds and 55 Node tests passed. Fixture-only enclosing Git context supplied for isolation tests. Evidence applies only to this preflight tree, not future corrections or actual host dialogue.",
+    "status": "No textual conflicts at these SHAs; no checkout changed or merge applied. Revalidate merged behavior and full host proof before main integration."
+  },
+  "cleanup_preservation_preflight": {
+    "integration_commit": "11f9a44cf712fad200c99fe4ee402dc05a5d5a9f",
+    "method": "cmp each untracked report against the integration copy; git diff --exit-code HEAD confirms the integration copies are unchanged committed content",
+    "meta-intent-t12": ["T11-T12-spec-final-repro.md", "T11-T12-spec-final.md", "T11-T12-spec-recheck.md", "T11-T12-standards-final.md", "T11-T12-standards-recheck.md", "T11-d622-spec.md", "T11-d622-standards.md"],
+    "meta-intent-t13": ["T13-bc513-spec.md", "T13-bc513-standards.md"],
+    "result": "All 9 reports are byte-identical to preserved integration copies. Recheck worktree status and branch containment after final acceptance before removal; no worktree removed."
+  },
+  "preparation_verification": {"T15": 20, "T16": 22, "T17": 31, "T18": 31, "actual_host_passed": 0, "actual_host_required": 60, "candidate_refresh_required": true, "candidate": "e30ccc7cec9120815f0d9bc92204adf465f666d4", "historical_candidate_refresh_required": false, "status": "historical_preparation_only_candidate_withdrawn", "refresh_check": "Historical e30 preparation: all four exports then shared its fingerprint; 37 results-pin and 67 preceding helper tests passed. This is not current candidate acceptance or host proof. Fresh export and actual-host verification are required after the current repairs are accepted."},
+  "main_base": "a37ca40a548bd748b416b908157223a7287ad720",
+  "max_concurrency": 3,
+  "status": "running",
+  "tasks": {
+    "9": {
+      "status": "implementation_accepted",
+      "candidate": "ea046abc8e0a479d736d332e5e5d15514d3ff294",
+      "dependencies": [],
+      "review_corrections": [
+        "T9-SPEC-02"
+      ],
+      "integration_commit": "54ba9127a07506024700fde12ddd273f3690b963",
+      "proof_pending": [
+        15
+      ]
+    },
+    "10": {
+      "status": "implementation_accepted",
+      "dependencies": [
+        9
+      ],
+      "base": "54ba9127a07506024700fde12ddd273f3690b963",
+      "candidate": "3f66d7acc367cdb39ee12ae10827c8d81298ae0a",
+      "findings": [
+        "question_identity_collision",
+        "retained_unrelated_product_nodes"
+      ],
+      "findings_resolved": true,
+      "proof_pending": [
+        15
+      ]
+    },
+    "11": {
+      "status": "implementation_accepted",
+      "dependencies": [
+        10
+      ],
+      "base": "88e7becaf30522ef29dd2fa168b62045affcb782",
+      "original_builder_candidate": "67446ad15a5e8adc329a0b0c9f8f3c45d1d359e9",
+      "candidate": "d622402c",
+      "integration_commit": "0340eccf277f6727b2b49e67a45178f1c57b9a7c",
+      "acceptance_notes": "d622402c: both reviews settled/released. Standards0hard/3optional. Spec accepts A1/C1 and no regression. A2 independently reproduced/adjudicated as the existing host truthfulness boundary, not a deterministic runtime defect; report3c6e1201 preserves rationale. User y accepted continuation. Actual dialogue proof still required",
+      "proof_pending": [16]
+    },
+    "12": {
+      "status": "implementation_accepted",
+      "dependencies": [
+        10
+      ],
+      "base": "88e7becaf30522ef29dd2fa168b62045affcb782",
+      "candidate": "ed430dfcebed485b913b54d7785f02cc86998303",
+      "original_builder_candidate": "b6357a013415db2012b73d89792955f2afc5d4aa",
+      "proof_pending": [17],
+      "root_findings": [
+        "selected_baseline_payload_freshness",
+        "fixture_git_context_escape"
+      ],
+      "root_findings_corrections": "Independent final review accepts #12/A1/C2; non-blocking all-legacy READS short-circuit note carried to #13; #11 C1-prime remains separate"
+    },
+    "13": {
+      "status": "implementation_accepted",
+      "candidate": "bc513f918422b616b7e11b4984b7584758c25f16",
+      "integration_commit": "1aee9637bc5d12919966fca9b36b7859a6f05591",
+      "proof_pending": [17],
+      "coordinator_findings": "Spec passed all corrective deltas; Standards confirms value-parity correction, reports pre-existing quality-field diagnostic drift. Retained as nonblocking maintenance: actual authoritative gate rejects these reports and no completion shortcut was introduced. Original reports preserved separately. Joint integration hook verification pending",
+      "base": "ed430dfcebed485b913b54d7785f02cc86998303",
+      "checkout": "meta-intent-t13",
+      "dependencies": [
+        12
+      ]
+    },
+    "14": {
+      "status": "implementation_accepted_host_proof_pending",
+      "resolution_sync_review": "Independent Standards: 0 hard breaches, 3 advisory smell bullets, 42 recovery tests pass. Independent Spec: no product defects, 647 tests pass; separate 2-adapter probe without intervening external() call resolves the report evidence gap. Both reviewers completed and released. Root merged-tree preflight: 682 Python/Codex + 55 Node pass. Full two-axis reports and disposition preserved in T14-526e-review-disposition.md. Actual host proof remains 0/16 for #14 and 0/60 overall.",
+      "candidate": "526ef960e8c85fabbdf8862608a65c942413d1bb",
+      "previous_candidate": "9bade2ffe869395b7b59e71080b5e17243985782",
+      "resolution_sync_verification": "526ef960 committed with normal hook exit 0. Builder reports 116 targeted, 647 full Python, 35 Codex adapter and 55 Node tests, plus mypy clean on 3 core files. Independent Standards and Spec reviews started on the pinned delta from 9bade2ff. Root identified report precision gap: accept test invokes external-changes after document sync although report claims no extra verification; Spec reviewer assigned separate no-reverification recovery proof. Acceptance and actual host proof remain unclaimed; main not merged.",
+      "initial_candidate": "5c02e24cf993c36591458f87f1c7dcfb66be3a35",
+      "review_findings": ["resolution_orphaned_after_refreeze", "resume_missing_external_change_detection"],
+      "verification": "9bade2ff closes all three 00b5 blockers; builder reports 108 targeted, 639 full Python, 35 Codex adapter tests and final commit hook passing, mypy 2.3.1 clean on 3 core files. Root independently passed 55 Node and 108 targeted tests (65.50 seconds). Independent Standards found one missing blocker description plus optional smells; Spec reproduced a new major: document synchronization invalidates the classification basis and loses accepted/rejected/deferred recovery state. Both reports T14-9bade-standards.md and T14-9bade-spec.md preserved. Fix assigned to task_8d906f40b0df; acceptance and actual host proof remain unclaimed.",
+      "proof_pending": [18],
+      "dependencies": [
+        11,
+        13
+      ]
+    },
+    "15": {
+      "status": "prepared_host_execution_blocked",
+      "host_prompt": "Opus evaluator preparation settled and released, HEAD 7384de45. 20 harness tests reported green; 0/14 actual host cells verified. Two Claude actor launches failed at workspace trust before dispatch input; both released, project files unchanged. All Codex cells unverified. Preparation completion is not ticket acceptance",
+      "dependencies": [
+        9,
+        10
+      ],
+      "base": "88e7becaf30522ef29dd2fa168b62045affcb782"
+    },
+    "16": {
+      "status": "prepared_host_execution_blocked",
+      "preparation_commit": "98cc89177663caf17d884cc68061ebdbb2bf57b8",
+      "actual_host_passed": 0,
+      "preparation_candidate": "0340eccf277f6727b2b49e67a45178f1c57b9a7c",
+      "dependencies": [
+        11
+      ]
+    },
+    "17": {
+      "status": "prepared_candidate_refresh_and_host_execution_pending",
+      "preparation_commit": "fa541f26",
+      "actual_host_passed": 0,
+      "dependencies": [
+        12,
+        13
+      ]
+    },
+    "18": {
+      "status": "prepared_candidate_refresh_and_host_execution_pending",
+      "preparation_commit": "e904850d",
+      "actual_host_passed": 0,
+      "trial_packet_export": {
+        "candidate": "9bade2ffe869395b7b59e71080b5e17243985782",
+        "root": "/private/tmp/meta-intent-T18-candidate-check.3cUixu/packets",
+        "tree_sha256": "22aed75e2eea28f80cdc0669723c28547d3c44b7a3d9c521289ec5c98e5f2604",
+        "cells": 16,
+        "executed": 0,
+        "not_for_launch": true,
+        "note": "Root exercised the existing packet generator during correction work. This rejected candidate is not accepted; regenerate and update launch/result pins after final correction and main synchronization."
+      },
+      "dependencies": [
+        14
+      ]
+    }
+  },
+  "candidate_after_main_sync": "e30ccc7cec9120815f0d9bc92204adf465f666d4",
+  "candidate_sync_verification": "Normal merge commit hook passed 647 unit tests in 239.18 seconds plus all validators; production merge matched independently tested tree. Main itself remains untouched.",
+  "current_host_campaign": {
+    "root": "/private/tmp/meta-intent-host-campaign.XX6yRo",
+    "candidate_tree_sha256": "c1114a94d89c2ea8d8e7bc8c496576b9750957e347769980dc75dee006704fc4",
+    "packets": [15, 16, 17, 18],
+    "required_cells": 60,
+    "passed_cells": 0,
+    "claude": "Current missing-product-docs launch failed at workspace trust before prompt delivery, ctx_711325d4829c; captured and released. User asked for manual trust confirmation.",
+    "codex": "Three actual T15 actors completed and were independently evaluated. All actor/evaluator terminals released; no semantic passes admitted. Large-code BOM rejection/recovery is corroborated, but question precision, incomplete evidence and shared planning defects remain. Both fixed-commit reviews rejected 2cc347af. Decision-gate repair is complete and released; runtime and planning corrections remain active. Fresh candidate exports and affected real-host tests are required after corrections settle."
+  },
+  "correction_verification_checkpoint": {
+    "base_commit": "2cc347afc4cfdbfac8c628eb0f652b02ac476e81",
+    "base_accepted": false,
+    "tree_state": "Concurrent in-flight corrections; not a fixed accepted candidate",
+    "coordinator_report": "T15-coordinator-boundary-review.md",
+    "decision_gate_tests": {"passed": 42, "seconds": 14.43},
+    "decision_gate_worker": {"task": "task_3b4fa906aeab", "dispatch": "ctx_18ef736a8d9b", "completion": "msg_9ed7af76de10", "state": "completed_and_released", "report": "T15-decision-gate-repair-report.md", "reported_isolated_tests": {"claude_unit": 689, "codex_adapter": 43, "shared": 109}, "combined_acceptance": false},
+    "t15_helper_tests": {"passed": 23, "seconds": 51.88},
+    "decision_discriminator_bypasses": "Both exact reported probes now remain unresolved decisions; combined regression and real-host proof still pending",
+    "plan_confirmation_provenance": "Coordinator reran new test_plan_confirmation_gate.py: 34 passed in 7.59s on the in-flight tree, covering confirmation provenance, malformed recorded graphs, altered plans, retraction and historical revisions. Combined regression, semantic coverage review and host proof remain pending; implicit confirmation in generic test wrappers remains prohibited.",
+    "qa_report_attempt_provenance": "All workers settled/released. Coordinator corrected omitted FIFO/invalid-UTF8 failures with two red-to-green tests. Stable combined Claude unit + Codex flow/install: 911 passed in 317.41s. Measurement 50 passed, Node 95 passed, shared 122 passed, campaign harness 111 passed in 165.46s. Fixed-commit independent review and actual-host acceptance still pending.",
+    "campaign_launch_acceptance": "T15-T18 old candidate acceptance withdrawn; original launch pins and evidence preserved; fresh export and host runs required after accepted repairs",
+    "actual_host_passed": 0,
+    "actual_host_required": 60,
+    "fresh_candidate_required": true
+  },
+  "active": [
+    {"role": "authorization_foundation", "task": "task_21317d2a591d", "dispatch": "ctx_a4b208370c55", "base": "47ea2855e4ababe2c4f00135eda6946a40023da8", "agent": "claude", "model": "opus", "checkout": "grillstorm-meta-intent"},
+    {"role": "test_import_isolation", "task": "task_a5fff6a18224", "dispatch": "ctx_9d7a52e384b3", "base": "47ea2855e4ababe2c4f00135eda6946a40023da8", "agent": "claude", "model": "opus", "checkout": "grillstorm-meta-intent"},
+    {"role": "structural_gate_robustness", "task": "task_7005827db79b", "dispatch": "ctx_51bb7288559e", "base": "47ea2855e4ababe2c4f00135eda6946a40023da8", "agent": "claude", "model": "opus", "checkout": "grillstorm-meta-intent"}
+  ],
+  "completed": [
+    9,
+    10,
+    11,
+    12,
+    13,
+    14
+  ],
+  "historical_records": "../workflow-state.json tasks and ../reviews remain historical; no old acceptance reused",
+  "completion_scope": "Implementation acceptance unlocks DAG; actual host proof and final tracker closure remain separate.",
+  "claude_host_available": {
+    "task": "task_83a7942a3a09",
+    "dispatch": "ctx_6a592f7a670e",
+    "scenario_proof": false
+  },
+  "historical_review_scope": {
+    "base": "a37ca40a548bd748b416b908157223a7287ad720",
+    "previous_accepted_scope_base": "88e7becaf30522ef29dd2fa168b62045affcb782",
+    "issues": [
+      11,
+      12
+    ],
+    "status": "12_accepted_11_legacy_profile_correction_running",
+    "formal_standards_result": "ed430dfc: 0 hard breaches, 0 soft, 0 nits; 6 optional smell judgements, not acceptance blockers",
+    "formal_spec_result": "ed430dfc: #12/A1/C2 accepted; #11 C1 fixed on CLI routes, C1-prime documented hand-projection route remains blocking. See final report and repro.",
+    "preparation_tests": {"passed": 17, "actual_host_proof": false, "candidate_argument_required": true},
+    "correction_results": {"python": 581, "node": 55, "typechecked_core_files": 3, "independent_recheck_pending": true},
+    "integration_before_main_refresh": "0c10c285",
+    "candidate": "ed430dfcebed485b913b54d7785f02cc86998303",
+    "delta_base": "90257b1504d1c009d6e0f8a920fe0cf389f18463",
+    "correction_commit_hook_python": 557,
+    "regression_results": {"python": 519, "node": 55, "commit_hook_python": 495},
+    "unorchestrated_worker_recheck": "Supplemental only; excluded from formal acceptance. See T11-local-reopen-corrections.md attribution correction."
+  },
+  "initial_main_base": "fa2447b20199fa6f8199cdbbe2c05692e283f08c",
+  "synchronized_related_issues": [
+    24,
+    25,
+    27,
+    40,
+    41
+  ]
+}

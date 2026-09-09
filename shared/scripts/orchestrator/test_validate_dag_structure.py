@@ -1,5 +1,10 @@
 import unittest
-from validate_dag_structure import find_cycles, find_missing_deps, validate_dag_structure
+from _module_isolation import load, module_dir
+
+_validate_dag_structure = load(module_dir(), "validate_dag_structure")
+find_cycles = _validate_dag_structure.find_cycles
+find_missing_deps = _validate_dag_structure.find_missing_deps
+validate_dag_structure = _validate_dag_structure.validate_dag_structure
 
 
 def _n(nid, deps=None):

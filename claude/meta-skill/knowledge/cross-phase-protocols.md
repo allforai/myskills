@@ -36,6 +36,14 @@ After the concept phase completes, a compact **concept-baseline.json** is automa
 - **Compact**: kept under 2KB so every phase can load it without budget pressure
 - **Full push**: every downstream phase's pre-check automatically loads this file
 
+For bootstrap product reconstruction/new-product routes, automatic extraction
+only projects already confirmed intent; it never confirms inferred code behavior.
+Preserve the `intent_baseline` extension from `product-intent-confirmation.md`:
+its scope/version and canonical journal reference govern downstream requirements.
+Legacy fields without matching confirmation remain contextual evidence. Synthesis
+of mission/roles must reflect included intent and explicit removals and must not
+replace the frozen extension or introduce unapproved product choices.
+
 #### Baseline Schema (fixed)
 
 ```json

@@ -48,8 +48,13 @@ Before stopping, record `preflight_blocked` with
 ## Run Policy (the only questions `/run` asks, and only before the first node)
 
 Everything a human could be asked mid-run is asked here instead, once, in one
-`AskUserQuestion`, and written to `.allforai/bootstrap/run-policy.json`. If that file already
-exists (a resumed run), reuse it without asking. Three decisions, each with a default:
+`AskUserQuestion`, and written to `.allforai/bootstrap/run-policy.json` through
+the shared copied CLI. First run `python3 .allforai/bootstrap/scripts/product_intent.py . --run-policy`.
+If it returns `run_policy_ready`, reuse the validated policy without asking.
+For `needs_run_policy`, collect the three answers and submit JSON operation
+`run-policy` with `answers` and the actual `user_reference`. Invalid policy blocks
+for interactive repair. Three decisions, each with a displayed default (never
+submitted automatically):
 
 | key | question | options (first = default) |
 |---|---|---|
@@ -59,6 +64,10 @@ exists (a resumed run), reuse it without asking. Three decisions, each with a de
 
 After this section there are no more questions: every later branch reads
 `run-policy.json`, and a branch that would need a fourth answer halts with a report instead.
+The Workflow engine checks this policy before loading the DAG and consumes
+`product_intent.py . --policy-event on_needs_iteration` for durable one-repair
+semantics. Run Policy is never a product decision: unresolved decision_inputs
+return to interactive bootstrap and cannot be approved by continue/accept.
 
 ### Dynamic preflight reconciliation
 
@@ -69,6 +78,158 @@ rerun `validate_unattended_readiness.py`; do not execute newly exposed work when
 is not `ready`.
 
 ### Generic QA repair loop
+
+Every node follows `.allforai/bootstrap/protocols/input-freshness.md`: after its
+implementation settles, observe current inputs, track newly consumed files with
+the public `read` operation, refresh required documents and publish evidence with
+its actual acceptance command. A stale publication requires re-observation and
+reverification, never a success transition. Contract-only freshness permits work
+but does not prove completion. The independent artifact gate consumes this state.
+A withheld completion carries `freshness.diff` and `freshness.repair`: repair at
+the named `owner` (the node, a stale producer, or `interactive-bootstrap` for a
+pending or unreplanned product decision), then re-observe and republish. A
+missing, drifted or outdated required document is a documentation inconsistency
+of that node: publication executes each document's declared
+`document_verification` against the current source, so a code-only acceptance
+cannot complete a delivery whose facts are stale; rewriting a document without
+correcting its facts fails the same check. A product-decision owner is a
+preflight blocker for the next `/run`, never something to answer or invent
+inside the run.
+An `unresolved_external_change`, `unverified_external_change`,
+`external_change_repair_pending` or `undetermined_external_change` readiness blocker
+is source changed outside the delivery flow. All four are preflight blockers for the
+next `/run`: report and refuse the affected work. An `unverified_external_change`
+means no verification stands for the current source; the gates deliberately do not
+run the project's acceptance to find out, so it is settled at the interactive
+bootstrap entry, never by executing anything inside the run. An
+`undetermined_external_change` is project-wide rather than node-scoped: the
+comparison itself could not be completed, so no delivery can be shown to be free of a
+waiting product conflict. Repair the unreadable state at the interactive bootstrap
+entry; never read an undeterminable comparison as a clear one. Never interview the user
+inside the run, never treat the changed code as the approved requirement, and never
+let a Run Policy `accept` stand in for that decision. The user resolves it at the
+interactive bootstrap entry; a rejected change leaves scoped implementation repair
+whose confirmed acceptance must republish before the node completes.
+A node whose freshness is `undeclared` (missing `source_inputs`) or `invalid`
+(malformed declaration) cannot start or be committed: return it to interactive
+bootstrap to declare its product source (explicit `[]` only when none applies).
+Never add a declaration inside `/run` to pass the gate. Retained legacy nodes
+report `undeclared` as a warning only when dependency declarations and recorded
+freshness state are readable and valid; no provenance is claimed for them.
+Malformed declarations or unreadable freshness state block even retained nodes:
+dependency impact is unknown, so legacy compatibility cannot waive that failure.
+
+### Declared cross-node repair loop
+
+The in-node loop above repairs what a node owns. A QA node whose finding belongs to
+another node cannot repair itself, and it never completes, so a repair successor wired
+only through `hard_blocked_by` would be unreachable. The route is the declared one:
+`unattended-run-readiness-spec.json.required_repair_loops` — `{scope, qa_node_ids,
+repair_node_id, closure_node_ids, max_attempts}`. `validate_unattended_readiness.py`
+checks that shape before the run: every QA, repair and closure node exists, the repair
+node is `hard_blocked_by` each QA node, each closure node is `hard_blocked_by` the repair
+node, and a declared `max_attempts` is a positive integer. It does not check that the
+declared repair can actually fix the finding. The engine loads it as `repair_loops[]`
+and applies it:
+
+- A QA node that failed **with its own current report published** satisfies the declared
+  `repair_node_id`'s dependency on it — for that repair node only, for at most
+  `max_attempts` attempts **of its own**. The budget is per QA node, so one repair node
+  serving several QA nodes owes each of them a full budget; attempts spent on one are
+  never charged to a sibling. A QA node that never ran, published nothing, or failed on an
+  environment, authority, readiness or gate error has no verdict to repair against: it is
+  a diagnosis case, never a repair route.
+- **An attempt is spent when a repair dispatch is authorized, not when it succeeds.** The
+  canonical ledger is `.allforai/bootstrap/repair-authorizations.json`, its own document,
+  and both hosts reach it only through `repair_authorization.py`. The engine has no
+  filesystem: every ledger operation is a prompt that runs that CLI and returns its verdict
+  verbatim, which is then checked against what was asked. A verdict that names another
+  dispatch, another repair node, or an answer nobody asked for is a forged receipt and
+  nothing executes on it — otherwise "the ledger said so" would mean only "the agent said
+  so".
+
+  A dispatch is two durable steps, both before the executor. `authorize` charges every
+  eligible obligation atomically and is **never** permission to run; `start` claims the one
+  execution that charge paid for, and only the first claim is granted. Two consequences
+  follow, and the Codex driver shares both. A repair whose executor errors, or that writes
+  nothing, costs the same one attempt as one that delivered and did not fix the finding: a
+  budget that only charged for success would bound neither, and the loop could repeat
+  without end. And an interruption between the charge and the work leaves the attempt
+  spent — re-granting it would hand out an attempt whose work may already be in the tree.
+  A route that opens and is interrupted before any dispatch costs nothing, on either host.
+
+  Opening the route is not the charge. The QA node's failed `transition_log` entry records
+  that this QA node failed and was routed; it is the QA node's history, never the budget.
+- **Only an execution the engine watched end is settled.** Settling records an outcome and
+  returns no budget. An attempt whose stage threw, whose host died, or whose wave was
+  quarantined by a safety halt is deliberately left unresolved: whether it ran is then a
+  question for `reconcile` and evidence that can be checked, not something to guess. The
+  two guesses fail in opposite unsafe directions — assume it ran and a needed repair is
+  skipped; assume it did not and duplicate side effects replay on a budget already spent.
+- **Consumption first; initialize only a ledger that does not exist.** The spent budget is
+  read from the ledger before any node runs, never summarized out of `workflow.json` by the
+  agent that loads the DAG — a count inferred by reading a file is not accounting. A ledger
+  that is unreadable, belongs to another run, or carries an ambiguous history is untrusted
+  state and stops the run. Only `missing_ledger` may be initialized, and the helper itself
+  reads `workflow.json` and refuses to record zero for a run that already shows execution.
+  Because that origin is proved, an obligation the ledger does not list really has spent
+  nothing — absence is trustworthy here only because the document is.
+- **An unresolved grant at startup blocks.** A charge that never reached an outcome leaves
+  it unknown whether that attempt ran, so a resumed run stops for reconciliation rather
+  than replaying uncertain work or refunding an attempt that may already have been spent.
+- A loop that declares no `max_attempts` takes the documented default of three attempts
+  per QA node. A declared `max_attempts` that is not a positive integer is unbounded, not
+  a request for that default: nothing is routed, and a QA node that has already failed is
+  **not re-run** — re-running it would reproduce the same failure with nothing able to fix
+  it and bury the planning error in a busy run. The engine stops with that QA failure in
+  `needs_diagnosis`; the Codex driver blocks the node and reports it with
+  `unbounded_repair_loops`. Both validators reject the shape before the run starts; this is
+  only what happens if one ever gets past them.
+- No other successor may proceed on a failed dependency. A failed node is never
+  `completed`, and its report is never edited to make it look passed.
+- A repair opened for one node never absorbs another node's verdict in the same wave. An
+  `accepted_with_gaps` result or a stopped one-shot iteration repair still ends the run
+  under the recorded Run Policy, and neither node is re-run into a passing verdict.
+- When the repair node **delivers**, the QA node **reruns**. Delivery, not completion, is
+  the signal, and the difference is structural. A declared repair node is
+  `hard_blocked_by` the QA node it repairs, and `check_artifacts.py` folds the recorded
+  freshness state into `all_exist`, so while that QA node is failing the repair node's own
+  evidence is stale and its independent gate withholds it by construction. Retrying inside
+  the node would burn the artifact repair budget against something no repair can fix, and
+  the run would end `needs_diagnosis` with `exhausted_repair_loop` on the repair node.
+  So for the declared repair node of an open loop, a **withheld** gate is a delivery: the
+  engine records it and moves on. An environment, authority or cross-node blocker is still
+  `hard_fail` — never a delivery, never an advance — and it stops the run once the loop's
+  declared budget is spent, bounded like any other dispatch that produced nothing. The
+  exception is a `NON_QA_FAILURE_TYPES` verdict (`invalid_artifact_gate`,
+  `invalid_readiness_gate`, `deadlock`, `safety_warning`, `needs_iteration`,
+  `exhausted_retries`): structural, environmental or policy answers are not attempts that
+  fell short, so they stop the run immediately, on the same reasoning that keeps them from
+  opening a repair route in the first place.
+
+  A delivery is **measured, never asserted**. The engine holds no filesystem, so its only
+  independent measurement is the gate step running `check_artifacts.py --json` and
+  reporting what it printed; the node's own result is never the evidence. The same step
+  runs once before the node and once after, and a delivery requires all of: every declared
+  exit artifact present with no status error, the gate withheld only by this loop's own QA
+  node, one input-binding identity unchanged across the attempt, and at least one artifact
+  whose content digest moved. Anything less — an absent measurement, a missing field, a
+  touched or pre-existing artifact, a blocked report, a drifted snapshot — is
+  `unmeasured_repair_delivery`, a hard failure, never a quiet advance.
+
+  Nothing is waived. A delivery never commits, so the repair node stays out of `done`; it
+  is dispatched again once the QA node passes, and must pass this same independent gate on
+  its own merits before anything commits it. Every `closure_node_ids` entry stays blocked
+  until the QA node itself completes — a delivered repair is not a passing QA, and the
+  rerun is the only way past the loop. The Codex driver applies the same lifecycle.
+- A dispatch of the repair node that itself hard-fails inside its still-open loop — an
+  `unmeasured_repair_delivery`, say — is not a terminal verdict while that loop has budget
+  left. Its attempt is already charged, so the next one is dispatched; when the budget is
+  gone the failure stops the run with its own findings. The declared `max_attempts` is
+  therefore the single bound on every repair dispatch for that QA node, whatever the
+  dispatch produced. The Codex driver applies the same bound.
+- When the budget is spent and the QA node still fails, that is a hard failure with the
+  original findings; report it, never waive it.
 
 After a node reports success, independently run `check_artifacts.py --node <node_id> --json`.
 Non-empty `code_gaps` or `test_gaps`, partial/conditional status, placeholders, failed
@@ -83,7 +244,8 @@ never waive, downgrade, or hide a gap.
 
 1. Invoke the Workflow engine script at
    `${CLAUDE_PLUGIN_ROOT}/knowledge/run-engine/run-engine.workflow.js`.
-   It reads `workflow.json`, schedules ready nodes (alignment_refs run in parallel),
+   It reads `workflow.json` plus `unattended-run-readiness-spec.json.required_repair_loops`,
+   schedules ready nodes (alignment_refs run in parallel),
    self-heals soft failures, commits each node immediately, and returns one of:
    - `{ status: "complete" }`
    - `{ status: "needs_diagnosis", hardFailures: [...] }`
@@ -163,7 +325,9 @@ On first iteration if transition_log is non-empty:
   `halt_with_report` writes acceptance-report.md (with the fix / re-bootstrap / accept options
   listed for the human to pick afterwards) and stops; `auto_fix_once` runs one repair loop on
   the named gaps, re-runs concept-acceptance, then stops whatever the verdict; `accept` records
-  `accepted_with_gaps` in assumed-decisions.json and continues to the success report. Never ask here.
+  `accepted_with_gaps` in assumed-decisions.json and returns a qualified outcome,
+  without marking that node completed or verified; the artifact gate treats an
+  `accepted_with_gaps` report status as blocking. Never ask here.
 - User interrupts → transition_log is already saved, resume with /run
 - Safety warning → apply `run-policy.json.on_safety_warning`: `continue` logs it and goes on,
   `halt` stops with the warning in the report. Never ask here.

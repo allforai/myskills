@@ -2,9 +2,11 @@ import json
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/orchestrator"))
-from record_run_event import record_event
-from summarize_run_log import summarize, write_reports
+from ..module_isolation import load
+
+_record_run_event, _summarize_run_log = load("record_run_event", "summarize_run_log")
+record_event = _record_run_event.record_event
+summarize, write_reports = _summarize_run_log.summarize, _summarize_run_log.write_reports
 
 
 def test_record_run_event_appends_jsonl(tmp_path):

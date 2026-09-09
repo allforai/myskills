@@ -1,0 +1,31 @@
+{
+  "fixture": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/meta-intent-t9-unscoped-cv0k8hp8",
+  "expected": "new work without any scoped requirement is rejected",
+  "unscoped_work_accepted": true,
+  "results": [
+    {
+      "command": [
+        "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/meta-intent-t9-unscoped-cv0k8hp8/.allforai/bootstrap/scripts/validate_bootstrap.py"
+      ],
+      "exit_code": 0,
+      "stdout": "{\n  \"errors\": [],\n  \"passed\": true\n}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/meta-intent-t9-unscoped-cv0k8hp8/.allforai/bootstrap/scripts/validate_unattended_readiness.py"
+      ],
+      "exit_code": 0,
+      "stdout": "{\n  \"status\": \"ready\",\n  \"checked_at\": \"2026-09-07T09:21:38.597661+00:00\",\n  \"blockers\": [],\n  \"warnings\": [],\n  \"required_capabilities\": [],\n  \"approval_gate_findings\": [],\n  \"non_interactive_findings\": [],\n  \"external_tool_findings\": [],\n  \"fallback_findings\": [],\n  \"long_task_findings\": [],\n  \"recommended_pre_run_actions\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/meta-intent-t9-unscoped-cv0k8hp8/.allforai/bootstrap/scripts/check_decision_inputs.py"
+      ],
+      "exit_code": 0,
+      "stdout": "OK: decision_inputs present and every decision is wired to a consumer\n",
+      "stderr": ""
+    }
+  ]
+}

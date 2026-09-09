@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "purpose": "Cross-host business decisions, not identical scheduling traces",
+  "scenarios": [
+    {"id": "shared_repair_asymmetric_budget", "given": {"repair": "repair", "spent": {"qa-a": 2, "qa-b": 1}, "budgets": {"qa-a": 2, "qa-b": 2}}, "expect": {"eligible_obligations": ["qa-b"], "blocked_obligations": ["qa-a"], "final_acceptance": false}},
+    {"id": "duplicate_authorization", "given": {"same_authorization_id": true, "same_payload": true}, "expect": {"additional_charges": 0, "replay_execution_allowed": false}},
+    {"id": "conflicting_authorization_replay", "given": {"same_authorization_id": true, "same_payload": false}, "expect": {"blocked": true, "additional_charges": 0}},
+    {"id": "partial_shared_charge_crash", "given": {"obligations": ["qa-a", "qa-b"], "crash_during_accounting": true}, "expect": {"partial_charge_allowed": false, "execution_without_durable_grant": false}},
+    {"id": "unknown_execution_after_crash", "given": {"durable_authorization": true, "execution_outcome_known": false}, "expect": {"automatic_refund": false, "automatic_reexecution": false, "reconciliation_required": true}},
+    {"id": "missing_historical_ledger", "given": {"historical_run": true, "ledger_present": false, "complete_attributable_evidence": false}, "expect": {"blocked": true, "assume_zero_consumption": false}},
+    {"id": "repair_delivery_is_not_acceptance", "given": {"repair_delivered": true, "independent_qa_passed": false}, "expect": {"closure_allowed": false, "final_acceptance": false}},
+    {"id": "overlapping_roles_and_terminal_failure", "given": {"same_node_in_multiple_failure_categories": true, "another_unhandled_terminal_failure": true}, "expect": {"terminal_failure_masked": false}},
+    {"id": "late_wave_safety_halt", "given": {"one_sibling_passed": true, "another_sibling_later_halts": true}, "expect": {"new_dispatch_allowed": false, "same_wave_acceptance_allowed": false, "quarantine_required": true}},
+    {"id": "hard_qa_with_safety_warning", "given": {"qa_hard_failed": true, "safety_warning": true, "policy": "halt"}, "expect": {"repair_route_allowed": false, "new_dispatch_allowed": false}},
+    {"id": "ordinary_qa_failure_with_independent_branch", "given": {"qa_hard_failed": true, "safety_warning": false, "independent_branch_pending": true}, "expect": {"failed_qa_successors_allowed": false, "independent_branch_allowed": true, "final_acceptance": false}},
+    {"id": "malformed_input_with_stale_ready", "given": {"current_workflow_malformed": true, "old_ready_report_present": true}, "expect": {"admission_allowed": false, "typed_current_blocker_required": true}},
+    {"id": "same_named_test_modules", "given": {"claude_and_shared_suites_collected_together": true}, "expect": {"each_suite_uses_owned_validator": true}}
+  ]
+}

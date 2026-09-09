@@ -1,8 +1,9 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/orchestrator"))
-from validate_game_creative_pipeline import validate_game_creative_pipeline
+from ..module_isolation import load
+
+validate_game_creative_pipeline = load("validate_game_creative_pipeline").validate_game_creative_pipeline
 
 
 def _write(root, rel, text):

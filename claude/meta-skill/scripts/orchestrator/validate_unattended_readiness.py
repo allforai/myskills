@@ -10,9 +10,17 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
+from product_intent import validate_scope
+from validate_bootstrap import (plan_confirmation_blockers, structural_gate_blockers,
+                               workflow_shape_blockers)
+
 
 BLOCKING_STATUS = "not_ready"
 READY_STATUS = "ready"
+
+SAFETY_MARKER = "safety-quarantine.json"
+SAFETY_LOCK = "safety-quarantine.lock"
+LEDGER_LOCK = "repair-authorizations.lock"
 
 
 def _load_json(path: Path):
@@ -21,8 +29,43 @@ def _load_json(path: Path):
 
 
 def _write_json(path: Path, data: dict) -> None:
+    _publish(path, json.dumps(data, ensure_ascii=False, indent=2) + "\n")
+
+
+def _publish(path: Path, text: str) -> None:
+    """Replace a published report, or leave nothing behind that could be read as one.
+
+    The report on disk is a verdict about the current graph, and both hosts read it: a
+    previous `ready` that survives this run is a stale verdict presented as a current
+    one. So the new text replaces the old atomically where it can, falls back to writing
+    the file in place when only the file is writable, and, when neither works, removes
+    the superseded report rather than leaving it standing. If even that fails the caller
+    still refuses the run — a non-zero exit is the guarantee that does not depend on the
+    filesystem — but nothing here silently preserves an obsolete verdict.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    temp = path.with_name(path.name + ".tmp")
+    try:
+        temp.write_text(text, encoding="utf-8")
+        os.replace(temp, path)
+        return
+    except OSError:
+        try:
+            temp.unlink()
+        except OSError:
+            pass
+    try:
+        path.write_text(text, encoding="utf-8")
+        return
+    except OSError as exc:
+        published = exc
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
+    except OSError:
+        pass
+    raise published
 
 
 def _artifact_path(item) -> str:
@@ -32,7 +75,16 @@ def _artifact_path(item) -> str:
 
 
 def _node_id(node: dict) -> str:
-    return node.get("node_id") or "<missing-node-id>"
+    """The identifier this node is reported under.
+
+    Only a node the graph can address reaches the per-node checks below; the placeholder
+    keeps a report readable if one ever arrives by another route, and never becomes a
+    real identifier that could match a spec file or a blocker.
+    """
+    if not isinstance(node, dict):
+        return "<missing-node-id>"
+    node_id = node.get("node_id")
+    return node_id if isinstance(node_id, str) and node_id.strip() else "<missing-node-id>"
 
 
 def _add(blockers: list[dict], code: str, message: str, *, node_id: str | None = None) -> None:
@@ -65,6 +117,73 @@ def _as_bool(value) -> bool:
 def _contains_any(text: str, terms: tuple[str, ...]) -> bool:
     lower = text.lower()
     return any(term.lower() in lower for term in terms)
+
+
+def _safety_halt_blockers(bootstrap_root: Path, blockers: list[dict]) -> None:
+    """A recorded safety halt refuses the whole run until a person reconciles it.
+
+    A safety halt is run-wide, so it is decided before anything about the plan: no graph,
+    policy or freshness verdict can qualify it. Two records, both fences:
+
+    `safety-quarantine.json` names outputs that were produced but never revalidated. Its
+    mere presence blocks — a marker that cannot be read, or that has been replaced by a
+    symlink or a directory, is a stronger reason to stop, not a reason to continue, so the
+    content is read only to say what is quarantined and never to decide whether it counts.
+
+    `safety-quarantine.lock` is left behind when a quarantine could not be published, by
+    failure or by a crash. The missing marker is then exactly what is untrustworthy: the
+    absence of a record is not evidence that nothing had to be recorded.
+
+    Neither is cleared here. Clearing one is a reconciliation decision that requires
+    independent revalidation of the quarantined work; this gate only refuses to run.
+    """
+    marker = bootstrap_root / SAFETY_MARKER
+    if os.path.lexists(marker):
+        quarantined = None
+        try:
+            recorded = _load_json(marker)
+            if (isinstance(recorded, dict) and recorded.get("schema_version") == 1
+                    and recorded.get("status") == "quarantined"
+                    and isinstance(recorded.get("node_ids"), list)
+                    and isinstance(recorded.get("events"), list)
+                    and all(isinstance(node_id, str) for node_id in recorded["node_ids"])
+                    and not marker.is_symlink()):
+                quarantined = sorted(recorded["node_ids"])
+        except (OSError, ValueError):
+            quarantined = None
+        if quarantined is None:
+            _add(blockers, "invalid_safety_quarantine",
+                 f"{marker} exists but is not a readable quarantine record, so the work it "
+                 f"holds cannot be identified; an unreadable halt is a stronger reason to "
+                 f"stop than a legible one. Reconcile it at the interactive entry.")
+        _add(blockers, "unresolved_safety_quarantine",
+             f"A safety halt is recorded in {marker}"
+             + (f" for {', '.join(quarantined)}" if quarantined else "")
+             + "; those outputs were produced but never independently revalidated. The run "
+               "stays blocked until they are, and this marker is never cleared by a policy "
+               "change or by a worker reporting success.")
+    if os.path.lexists(bootstrap_root / LEDGER_LOCK):
+        # The repair-authorization ledger fences itself the same way, and for the same
+        # reason: the lock outlives a writer that died mid-update, so what the ledger says
+        # about spent budget may be a read taken across an unfinished write. Refused, never
+        # removed — clearing it is a reconciliation decision about a specific interrupted
+        # grant, and this gate cannot know which one.
+        #
+        # Deliberately not paired with a missing-ledger blocker. A run that has not yet
+        # recorded its origin has no ledger, and that is the ordinary state of every new
+        # run before `initialize` proves zero from the workflow; blocking on it here would
+        # refuse every legitimate run at its first readiness check.
+        _add(blockers, "unreconciled_repair_accounting",
+             f"{bootstrap_root / LEDGER_LOCK} is held, so a repair-authorization write was "
+             f"begun and never completed. Whether that attempt was charged, and whether it "
+             f"ran, is exactly what is unknown. Reconcile the interrupted authorization and "
+             f"remove the fence deliberately; execution does not resume by deleting it.")
+    if os.path.lexists(bootstrap_root / SAFETY_LOCK):
+        _add(blockers, "unreconciled_safety_halt",
+             f"{bootstrap_root / SAFETY_LOCK} is held, so a safety quarantine was begun and "
+             f"never durably published. What it would have named is unknown, and an absent "
+             f"marker is not evidence that nothing needed quarantining. Reconcile the run "
+             f"and remove the fence deliberately; execution does not resume by deleting it.")
 
 
 def _load_readiness_spec(path: Path, blockers: list[dict]) -> dict:
@@ -246,11 +365,16 @@ def _validate_required_capabilities(
             })
 
 
-def _validate_repair_loop_spec(spec: dict, nodes: list[dict], blockers: list[dict]) -> None:
+def _validate_repair_loop_spec(spec: dict, nodes: list[dict], blockers: list[dict],
+                               warnings: list[dict]) -> None:
     if not spec or not isinstance(spec.get("required_repair_loops"), list):
         return
-    node_ids = {node.get("node_id") for node in nodes if node.get("node_id")}
-    node_by_id = {node.get("node_id"): node for node in nodes if node.get("node_id")}
+    # Only addressable nodes reach here (the shape gate defers this check otherwise);
+    # rebuilding the map on that rule keeps the assumption local rather than inherited.
+    node_by_id = {node["node_id"]: node for node in nodes
+                  if isinstance(node, dict) and isinstance(node.get("node_id"), str)
+                  and node["node_id"].strip()}
+    node_ids = set(node_by_id)
 
     for index, loop in enumerate(spec.get("required_repair_loops") or []):
         if not isinstance(loop, dict):
@@ -259,25 +383,64 @@ def _validate_repair_loop_spec(spec: dict, nodes: list[dict], blockers: list[dic
         repair_node_id = loop.get("repair_node_id")
         qa_nodes = loop.get("qa_node_ids") or loop.get("qa_nodes") or []
         closure_nodes = loop.get("closure_node_ids") or loop.get("closure_nodes") or []
+        for label, declared in (("qa_node_ids", qa_nodes), ("closure_node_ids", closure_nodes)):
+            if not isinstance(declared, list):
+                _add(blockers, "invalid_repair_loop_spec",
+                     f"required_repair_loops[{index}] {label} must be a list of node ids, "
+                     f"got {declared!r}")
+        qa_nodes = qa_nodes if isinstance(qa_nodes, list) else []
+        closure_nodes = closure_nodes if isinstance(closure_nodes, list) else []
         if not repair_node_id:
             _add(blockers, "missing_repair_loop_node", f"required_repair_loops[{index}] missing repair_node_id")
             continue
-        if repair_node_id not in node_ids:
+        if not isinstance(repair_node_id, str) or repair_node_id not in node_ids:
             _add(blockers, "missing_repair_loop_node", f"repair loop node '{repair_node_id}' missing from workflow")
             continue
+        # Both orchestrators refuse to route a loop whose declared budget is unusable, so
+        # an unbounded loop is reported here instead of at the first QA failure. An omitted
+        # budget is the one legitimate fallback: it takes the documented default of 3.
+        if "max_attempts" not in loop:
+            warnings.append({
+                "code": "repair_loop_budget_defaulted",
+                "message": f"repair loop '{repair_node_id}' declares no max_attempts; "
+                           "the documented default of 3 attempts per QA node applies",
+            })
+        else:
+            budget = loop.get("max_attempts")
+            if isinstance(budget, bool) or not isinstance(budget, int) or budget <= 0:
+                _add(
+                    blockers,
+                    "invalid_repair_loop_budget",
+                    f"repair loop '{repair_node_id}' max_attempts must be a positive integer, "
+                    f"got {budget!r}; the loop is unbounded and routes nothing",
+                )
+        repair_edges = node_by_id[repair_node_id].get("hard_blocked_by")
+        repair_edges = repair_edges if isinstance(repair_edges, list) else []
         for qa_node_id in qa_nodes:
-            if qa_node_id not in node_ids:
+            if not isinstance(qa_node_id, str) or not qa_node_id.strip():
+                _add(blockers, "missing_repair_loop_source",
+                     f"repair loop '{repair_node_id}' names QA node {qa_node_id!r}, which "
+                     f"identifies no node in the workflow")
+            elif qa_node_id not in node_ids:
                 _add(blockers, "missing_repair_loop_source", f"QA node '{qa_node_id}' missing from workflow")
-            elif qa_node_id not in (node_by_id[repair_node_id].get("hard_blocked_by") or []):
+            elif qa_node_id not in repair_edges:
                 _add(
                     blockers,
                     "repair_loop_not_blocked_by_qa",
                     f"repair loop '{repair_node_id}' must hard_blocked_by QA node '{qa_node_id}'",
                 )
         for closure_node_id in closure_nodes:
+            if not isinstance(closure_node_id, str) or not closure_node_id.strip():
+                _add(blockers, "missing_repair_loop_closure",
+                     f"repair loop '{repair_node_id}' names closure node {closure_node_id!r}, "
+                     f"which identifies no node in the workflow")
+                continue
             if closure_node_id not in node_ids:
                 _add(blockers, "missing_repair_loop_closure", f"closure node '{closure_node_id}' missing from workflow")
-            elif repair_node_id not in (node_by_id[closure_node_id].get("hard_blocked_by") or []):
+                continue
+            closure_edges = node_by_id[closure_node_id].get("hard_blocked_by")
+            closure_edges = closure_edges if isinstance(closure_edges, list) else []
+            if repair_node_id not in closure_edges:
                 _add(
                     blockers,
                     "closure_not_blocked_by_repair_loop",
@@ -298,8 +461,26 @@ def validate_unattended_readiness(project_root: Path) -> dict:
     fallback_findings: list[dict] = []
     long_task_findings: list[dict] = []
 
+    # A safety halt is run-wide and answers to nothing below it, so it is decided first.
+    _safety_halt_blockers(bootstrap_root, blockers)
     readiness_spec = _load_readiness_spec(spec_path, blockers)
     _validate_policy_spec(readiness_spec, blockers, warnings)
+    # `/run` must not assume bootstrap ran and passed: the plan the user confirmed is
+    # re-checked at the run boundary, scoped to the nodes an unconfirmed change affects.
+    blockers.extend(plan_confirmation_blockers(project_root))
+    # The structural rules the bootstrap gate decides — a declared repair loop that routes
+    # nothing, a deferred effect proof with no downstream owner — hold at this boundary too,
+    # read from that one implementation. Claude's `/run` reaches them only here.
+    #
+    # Shape precedes the rules that assume it. A node identifier that is not a non-empty
+    # string cannot key a graph, and every check below the load either indexes by
+    # identifier or names one in a blocker. The shape verdict is taken first, from the same
+    # implementation the bootstrap gate uses, and while it holds the graph-reading checks
+    # are deferred rather than answered from the addressable subset of a broken graph.
+    shape_blockers = workflow_shape_blockers(project_root)
+    blockers.extend(shape_blockers)
+    if not shape_blockers:
+        blockers.extend(structural_gate_blockers(project_root))
 
     if not workflow_path.exists():
         _add(blockers, "missing_workflow", f"{workflow_path} does not exist")
@@ -308,14 +489,90 @@ def validate_unattended_readiness(project_root: Path) -> dict:
     else:
         try:
             workflow = _load_json(workflow_path)
-            nodes = workflow.get("nodes") if isinstance(workflow, dict) else []
-            if not isinstance(nodes, list):
+            raw_nodes = workflow.get("nodes") if isinstance(workflow, dict) else []
+            if isinstance(raw_nodes, list):
+                nodes = raw_nodes
+            else:
                 _add(blockers, "missing_workflow", "workflow.json nodes must be a list")
                 nodes = []
         except Exception as exc:
             _add(blockers, "missing_workflow", f"workflow.json cannot be parsed: {exc}")
             workflow = {}
             nodes = []
+
+    scope_blockers = validate_scope(project_root, workflow)
+    blockers.extend(scope_blockers)
+    from check_artifacts import document_verification_errors, freshness_states
+    # Freshness needs a well-formed node list; shape rejection above already fails closed.
+    # It indexes by node identifier, so an unaddressable one is a shape fault here too.
+    well_formed = (not shape_blockers
+                   and isinstance(workflow, dict) and isinstance(workflow.get("nodes"), list)
+                   and all(isinstance(n, dict) for n in workflow["nodes"]))
+    by_id = ({n["node_id"]: n for n in workflow["nodes"] if isinstance(n.get("node_id"), str)}
+             if well_formed else {})
+    for node_id, freshness in (freshness_states(project_root, workflow) if well_formed else {}).items():
+        admission = freshness.get("admission")
+        if admission == "invalid":
+            code = ("missing_document_verification" if document_verification_errors(by_id.get(node_id, {}))
+                    else "invalid_source_inputs")
+            _add(blockers, code, freshness["reason"], node_id=node_id)
+        elif admission == "missing":
+            _add(blockers, "missing_source_inputs", freshness["reason"], node_id=node_id)
+        elif admission == "legacy" and freshness.get("readiness_status") == "undeclared":
+            _add(warnings, "undeclared_source_inputs", freshness["reason"], node_id=node_id)
+        elif freshness.get("readiness_status") != "valid":
+            message = freshness.get("reason") or "Reconcile inputs and reverify affected evidence"
+            repair = freshness.get("repair") if isinstance(freshness.get("repair"), dict) else None
+            if repair:
+                message += (f"; repair owner {repair.get('owner')} "
+                            f"({', '.join(repair.get('responsibilities') or [])}); diff {json.dumps(freshness.get('diff', {}), ensure_ascii=False)}")
+            _add(blockers, "stale_evidence", message, node_id=node_id)
+    if well_formed:
+        # A product conflict raised by an external source change is a user decision.
+        # Unattended execution reports it and refuses the affected work; it never
+        # interviews, and it never reads changed code as an approved requirement.
+        from evidence_freshness import rejected_conflicts, routed_external_changes, undecided_conflicts
+        try:
+            conflicts, unverified = routed_external_changes(project_root)
+        except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError, StopIteration) as exc:
+            # An undeterminable comparison is not a clear one: unattended execution
+            # cannot show that no product conflict is waiting for the user.
+            conflicts, unverified = {}, {}
+            _add(blockers, "undetermined_external_change",
+                 "External source changes cannot be determined, so no delivery can be shown to be free of an "
+                 f"unresolved product conflict; resolve it at the interactive bootstrap entry: {exc}")
+        for node_id in sorted(unverified):
+            for change in unverified[node_id]:
+                # The gate observes; it never runs the project's acceptance to find out.
+                # Unknown impact is withheld work, not an implementation-only change.
+                _add(blockers, "unverified_external_change",
+                     f"External source change {change['change_id']} to "
+                     f"{', '.join(sorted(change['files']))} has no current verification of its impact; run the "
+                     "external-changes verification at the interactive bootstrap entry. Unattended execution "
+                     "cannot verify it, and it is not assumed to be implementation-only.",
+                     node_id=node_id)
+        for node_id in sorted(conflicts):
+            for change in undecided_conflicts(conflicts, node_id):
+                state = ("deferred" if (change["resolution"] or {}).get("resolution") == "defer"
+                         else "reopened, because the requirement its earlier decision was made against was revised"
+                         if change.get("superseded_resolutions") else "undecided")
+                _add(blockers, "unresolved_external_change",
+                     f"External source change {change['change_id']} ({change['classification']}) to "
+                     f"{', '.join(sorted(change['files']))} is "
+                     f"{state}; resolve it at the interactive bootstrap entry "
+                     "(accept, reject or defer). Unattended execution cannot decide it or assume acceptance.",
+                     node_id=node_id)
+            for change in rejected_conflicts(conflicts, node_id):
+                task = (change["resolution"] or {}).get("repair_task", {})
+                _add(blockers, "external_change_repair_pending",
+                     f"The user rejected external source change {change['change_id']}; restore the confirmed "
+                     f"behavior in {', '.join(sorted(change['files']))}, resynchronize the affected documents and "
+                     "republish the confirmed acceptance "
+                     f"({' '.join(task.get('restore_acceptance') or []) or 'recorded acceptance unavailable'}).",
+                     node_id=node_id)
+    if scope_blockers or shape_blockers:
+        # Defer shape-dependent checks, retaining rejection in the report below.
+        nodes = []
 
     for rel in (
         "scripts/validate_bootstrap.py",
@@ -333,7 +590,16 @@ def validate_unattended_readiness(project_root: Path) -> dict:
         if not spec_path.exists():
             _add(blockers, "missing_node_spec", f"{spec_path} is missing", node_id=nid)
             continue
-        text = spec_path.read_text(encoding="utf-8")
+        try:
+            text = spec_path.read_text(encoding="utf-8")
+        except (OSError, ValueError) as exc:
+            # An unreadable brief is not an absent one and not an accepted one: the
+            # non-interactive, fallback and long-task rules below are all decided from
+            # this text, so a node whose brief cannot be read has no verdict to give.
+            _add(blockers, "unreadable_node_spec",
+                 f"{spec_path} cannot be read as UTF-8 text, so its non-interactive, "
+                 f"fallback and long-task obligations cannot be checked: {exc}", node_id=nid)
+            continue
         all_node_text.append(text)
 
         if _contains_any(text, ("AskUserQuestion", "request user input", "ask the user", "询问用户")):
@@ -367,6 +633,14 @@ def validate_unattended_readiness(project_root: Path) -> dict:
 
         if node.get("human_gate") is True:
             approval_path = node.get("approval_record_path")
+            if approval_path is not None and not isinstance(approval_path, str):
+                _add(blockers, "pending_human_gate",
+                     f"human_gate node declares approval_record_path {approval_path!r}, which "
+                     f"names no file; an approval that cannot be located is not an approval",
+                     node_id=nid)
+                approval_gate_findings.append({"node_id": nid, "approval_record_path": approval_path,
+                                               "gate_status": None})
+                continue
             record = _read_approval(project_root / approval_path, nid) if approval_path else None
             gate_status = record.get("gate_status") if record else None
             finding = {"node_id": nid, "approval_record_path": approval_path, "gate_status": gate_status}
@@ -383,7 +657,8 @@ def validate_unattended_readiness(project_root: Path) -> dict:
     lower_blob = blob.lower()
 
     _validate_required_capabilities(project_root, readiness_spec, blockers, warnings, external_tool_findings)
-    _validate_repair_loop_spec(readiness_spec, nodes, blockers)
+    if not scope_blockers and not shape_blockers:
+        _validate_repair_loop_spec(readiness_spec, nodes, blockers, warnings)
 
     if "codex" in lower_blob or "visual-acceptance" in lower_blob or "screenshot" in lower_blob:
         codex_path = shutil.which("codex")
@@ -479,8 +754,26 @@ def write_markdown(path: Path, report: dict) -> None:
     actions = report.get("recommended_pre_run_actions") or ["Ready for unattended /run."]
     for action in actions:
         lines.append(f"- {action}")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    _publish(path, "\n".join(lines) + "\n")
+
+
+def _blocked_report(code: str, message: str) -> dict:
+    """A current, structured refusal for a fault that has no per-node verdict."""
+    return {
+        "status": BLOCKING_STATUS,
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "blockers": [{"code": code, "message": message}],
+        "warnings": [],
+        "required_capabilities": [],
+        "approval_gate_findings": [],
+        "non_interactive_findings": [],
+        "external_tool_findings": [],
+        "fallback_findings": [],
+        "long_task_findings": [],
+        "recommended_pre_run_actions": [
+            "Repair the reported fault and re-run validate_unattended_readiness.py before /run.",
+        ],
+    }
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -490,11 +783,30 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     root = Path(args.project_root)
-    report = validate_unattended_readiness(root)
+    try:
+        report = validate_unattended_readiness(root)
+    except Exception as exc:
+        # A gate that raises has decided nothing, and a traceback is not a verdict a host
+        # can read. The refusal is published in the report's own shape so both hosts reach
+        # it by the path they already use, and the stale report is replaced rather than
+        # left standing as this run's answer.
+        report = _blocked_report(
+            "readiness_gate_error",
+            f"The readiness gate could not reach a verdict on this project: "
+            f"{type(exc).__name__}: {exc}. Nothing is admitted on an undecided gate.")
     if args.write_report:
         out = root / ".allforai/bootstrap/unattended-run-readiness.json"
-        _write_json(out, report)
-        write_markdown(root / ".allforai/bootstrap/unattended-run-readiness.md", report)
+        try:
+            _write_json(out, report)
+            write_markdown(root / ".allforai/bootstrap/unattended-run-readiness.md", report)
+        except OSError as exc:
+            report = _blocked_report(
+                "unpublished_readiness_report",
+                f"The readiness verdict could not be published to {out}: {exc}. Any report "
+                f"still on disk is from an earlier run and does not describe this graph; "
+                f"treat this refusal, not that file, as the current verdict.")
+            print(json.dumps(report, ensure_ascii=False, indent=2))
+            return 1
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0 if report["status"] == READY_STATUS else 1
 

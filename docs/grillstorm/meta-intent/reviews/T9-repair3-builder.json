@@ -1,0 +1,87 @@
+{
+  "taskId": "task_b37e4efa9135",
+  "dispatchId": "ctx_7494636dcc17",
+  "finding": "T9-S3-01",
+  "base": "405705f97213397c4f8c53d7eb2e27c1df6c44ca",
+  "candidate": "44b3bb645ed2dd065bc2c5433c22bb9b9a12db84",
+  "changed_paths": [
+    "claude/meta-skill/scripts/orchestrator/product_intent.py",
+    "claude/meta-skill/tests/unit/test_bootstrap_scope.py"
+  ],
+  "sha256": {
+    "claude/meta-skill/scripts/orchestrator/product_intent.py": "caf49082a1156c739ff4ee6187aa59bda4eefc107a65f9b2b76a680fe24e20a5",
+    "claude/meta-skill/tests/unit/test_bootstrap_scope.py": "635fd774386f78a32d9b12dbc5445d3066ffdb3fede7a20ad8811821652add16"
+  },
+  "change": "Shared scope consumer accepts existing node_id and native Codex node transitions in log order; no authority rewriting or second acceptance owner.",
+  "tdd": [
+    {
+      "command": "python3 -m pytest claude/meta-skill/tests/unit/test_bootstrap_scope.py -q -k confirmed_local_change_reuses",
+      "phase": "red before production edit",
+      "exit": 1,
+      "result": "6 failed, 6 passed, 58 deselected; actual copied Codex append_transition_if_missing produced node events rejected as scope_requirement_unwired"
+    },
+    {
+      "command": "python3 -m pytest claude/meta-skill/tests/unit/test_bootstrap_scope.py -q -k confirmed_local_change_reuses",
+      "phase": "green",
+      "exit": 0,
+      "result": "12 passed, 58 deselected"
+    },
+    {
+      "command": "python3 -m pytest claude/meta-skill/tests/unit/test_bootstrap_scope.py -q -k mixed_native_history",
+      "phase": "additional regression",
+      "exit": 0,
+      "result": "4 passed, 70 deselected"
+    }
+  ],
+  "focused_checks": [
+    {
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "claude/meta-skill/tests/unit/test_bootstrap_scope.py",
+        "-q",
+        "--basetemp",
+        "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-repair3-evidence-h2l3paii/fixtures"
+      ],
+      "exit": 0,
+      "stdout": "........................................................................ [ 97%]\n..                                                                       [100%]\n74 passed in 10.20s\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "claude/meta-skill/tests/unit/test_validate_bootstrap.py",
+        "claude/meta-skill/tests/unit/test_validate_unattended_readiness.py",
+        "claude/meta-skill/tests/unit/test_check_artifacts.py",
+        "claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py",
+        "-q"
+      ],
+      "exit": 0,
+      "stdout": "...............................................................          [100%]\n63 passed in 0.15s\n",
+      "stderr": ""
+    }
+  ],
+  "gate_reproduction": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-repair3-evidence-h2l3paii/gate-reproduction.json",
+  "fixtures": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-repair3-evidence-h2l3paii/fixtures",
+  "observations": [
+    "Both adapter copies admit historical references present, absent and empty using native producer for Codex.",
+    "Both mixed history orders completed/failed/completed pass/block/pass across all three copied gates and replace readiness ready/not_ready/ready.",
+    "Other-node events do not override retained node state; historical workflow, authority, source, unrelated artifacts and node-specs remain unchanged by gates.",
+    "Actual copied flow.py with zero iterations passes preflight then returns bounded iteration exit 2 for retained work; returns preflight exit 6 for reopened unscoped work. No host is invoked.",
+    "Existing malformed and new-unscoped rejection/reentry cases remain passing."
+  ],
+  "commit_hook": {
+    "trigger": "git commit -m fix(meta-skill): retain native Codex completion history (#9)",
+    "exit": 0,
+    "observed": "Repository hook automatically ran py_compile, 174 unit tests (174 passed in 10.53s), bundled skills/art pipeline/frontend/2D/creative/cross-file/specialization/generalization/node_id validations; all passed. This broader suite was hook-triggered, not an independently scheduled worker module gate."
+  },
+  "limitations": [
+    "Candidate only, not task verified; fresh supervisor, Standards/Spec and root integration remain.",
+    "No actual host dialogue evaluation; T15-T18 retain that responsibility.",
+    "No later resume/freshness semantics changed."
+  ],
+  "working_tree_clean": true
+}

@@ -1,0 +1,98 @@
+{
+  "status": "stable",
+  "decisions": [
+    {
+      "concept": "Confirmed intention and its downstream baseline projections",
+      "recommendation": "extend",
+      "evidence": [
+        "program-spec.md revision 2 I-intent and modules/intent-spec.md assign confirmed intent, journal projection and publication consistency to intent; source #8 explicitly rejects a second document system.",
+        "claude/meta-skill/internal/commands/journal.md appends batches; journal-merge.md projects into product-concept.json and separately writes merge-audit.json and concept-drift.json using last_merged_batch.",
+        "claude/meta-skill/knowledge/capabilities/product-concept.md:401-405 names actual consumers of product-concept.json and concept-baseline.json, including product-analysis, experience-map, translate and product-verify; reverse-concept.md:71 and :153 currently populate that downstream baseline from code."
+      ],
+      "proposed_owner": "intent / I-intent (#10, with #11 resume)",
+      "interface_and_seam": "Extend the existing journal and product-concept responsibility so product-concept.json and concept-baseline.json are consistent projections of the same confirmed item/revision lineage, not independent approval stores. All downstream baseline references must resolve to that lineage; code-derived drafts and retained legacy artifacts remain non-authoritative where confirmation is missing. Exercise four operations, addition without code, removal followed by reconstruction, and interruption between journal and projection writes through bootstrap/journal resume, checking both baseline consumers and scoped readiness. The frozen spec already supplies the owner and publication ordering; these are concrete implementation consumers of that contract.",
+      "tradeoff": "Schema-compatible derived views and legacy journal batches remain useful, but their presence cannot confer approval. Updating projection consumers costs more than adding a new intent file, while avoiding a competing source of truth and preserving history.",
+      "blocking": false
+    },
+    {
+      "concept": "One completion and freshness judgment across reconciliation, execution and evidence summaries",
+      "recommendation": "extend",
+      "evidence": [
+        "program-spec.md I-freshness/I-sync and modules/synchronization-spec.md assign current evidence, meaningful reports and completion to synchronization; reuse-radar.md explicitly identifies the empty-report discrepancy.",
+        "claude/meta-skill/scripts/orchestrator/check_artifacts.py:_artifact_status_error rejects empty JSON and check_node_artifacts checks declared fields/statuses/commands, while reconcile_bootstrap_workflow.py:_scan_report_status accepts an empty object and maintains different status/gap rules.",
+        "codex/meta-skill/knowledge/flow-template.py:artifact_status_error and stale_runtime_artifact_error duplicate report and mtime rules, although first_pending_node and the final per-node verdict already call independent_artifact_gate, which invokes canonical check_artifacts.py.",
+        "claude/meta-skill/scripts/check_evidence.py:derive_state checks evidence existence, capture shape and verifier identity without source freshness; compute_completeness.py consumes it, and run-engine/engine-core.js:commitPrompt explicitly names that completeness consumer."
+      ],
+      "proposed_owner": "synchronization / I-freshness and I-sync (#12/#13), canonical shared script package",
+      "interface_and_seam": "Keep check_artifacts as the public completion boundary and give the canonical package one current-evidence judgment consumed by reconciliation, readiness and both engines. Reconciliation remains an audit projection. Route check_evidence/compute_completeness through current applicability when reporting current verified work, preserving historical evidence and their existing capture/verifier checks. Remove competing adapter freshness/status verdicts or make their diagnostics consume the same result. Public tests should compare empty, blocked, stale and current evidence across these actual consumers, including unchanged input and preserved unrelated proof. No separate verification engine is needed.",
+      "tradeoff": "Sharing semantic verdicts is warranted by existing consumers, unlike extracting generic JSON/file utilities. Diagnostic formats and platform execution remain local; mtime scans cannot remain a competing authority for the new content-based contract. Existing implementation gaps are explicitly covered by the frozen synchronization owner, not new specification blockers.",
+      "blocking": false
+    },
+    {
+      "concept": "Verification must describe the inputs actually observed",
+      "recommendation": "extend",
+      "evidence": [
+        "program-spec.md SG-01 requires consumed manifests, immutable or stable verification inputs, current comparison, scoped invalidation and actual B re-verification; modules/synchronization-spec.md explicitly owns SG-01.",
+        "check_artifacts.py:check_node_artifacts executes validation_commands before returning a verdict; Codex flow-template.py runs the worker, calls independent_artifact_gate and then appends completion; Claude engine-core.js separates runNode, gateNodePrompt and commitNode.",
+        "failure-classification.json O2 concurrency-race and stale-data are full expansion and explicitly require the A-observation/B-publication interleaving through the existing gate."
+      ],
+      "proposed_owner": "synchronization / SG-01, using I-freshness manifests and I-sync acceptance",
+      "interface_and_seam": "Bind an observation to the exact declared source, baseline and dependency inputs consumed before accepting it, and carry that identity through the existing gate-to-publication seam on both hosts. A later filesystem scan cannot relabel an earlier observation. Test a relevant A-to-B edit between observation and publication, reject A for B, retain unaffected results and historical A, then synchronize and actually verify B before the unchanged rerun. Revision 2 closes the ownership and boundary gap without requiring a new module.",
+      "tradeoff": "A captured or verified-stable input boundary adds necessary identity bookkeeping; a global source lock, watcher, transaction framework or separate race-recovery engine would exceed the approved need.",
+      "blocking": false
+    },
+    {
+      "concept": "Scoped decision eligibility without an alternate approval channel",
+      "recommendation": "extend",
+      "evidence": [
+        "program-spec.md I-resume assigns decision eligibility to intent and distinguishes global unsafe blockers from pending product prerequisites; source #11 requires independent work preservation and interactive reentry.",
+        "claude/meta-skill/scripts/check_decision_inputs.py currently validates path existence and orphan wiring, not approval provenance or current item revision.",
+        "validate_unattended_readiness.py aggregates blockers into a single ready/not_ready status; Claude engine-core.js:readinessPrompt and Codex flow-template.py:run_preflight consume that global status.",
+        "Claude engine-core.js:runNodePrompt currently permits unforeseen sensible defaults and commitPrompt persists assumed-decisions.json; this existing runtime path must not become confirmation authority for unresolved product intent."
+      ],
+      "proposed_owner": "intent / I-resume (#11), with synchronization consuming its eligibility contract",
+      "interface_and_seam": "Extend decision admission to validate item/revision/provenance through I-intent and expose the affected hard-dependency closure to existing scheduler adapters. Engines consume that eligibility result while retaining global environment checks and existing bounded execution. Product unknowns return to interactive bootstrap; any retained execution-assumption record is not a user decision. Prove pending branch plus independent eligible branch, no unattended interview or fabricated answer, and scoped restoration after resume. This is already required by I-resume and #13, not a new approval subsystem.",
+      "tradeoff": "Host scheduling implementations remain different, but the meaning of pending approval must not be reimplemented in JavaScript and Python. Preserve the existing human approval/dashboard machinery and avoid a generic policy or workflow framework.",
+      "blocking": false
+    },
+    {
+      "concept": "External drift disposition uses the existing authority and synchronization path",
+      "recommendation": "reuse",
+      "evidence": [
+        "program-spec.md I-drift expressly reuses I-intent, I-resume and I-sync; source #14 rejects an external-change-specific acceptance system.",
+        "claude/meta-skill/internal/commands/journal-merge.md already records accepted changes, merge history and unresolved concept-drift; bootstrap/SKILL.md:418 onward consumes concept drift and reconciliation before replanning.",
+        "reconcile_bootstrap_workflow.py documents that it summarizes workflow facts and does not decide product scope."
+      ],
+      "proposed_owner": "synchronization / I-drift (#14), consuming intent authority",
+      "interface_and_seam": "Keep semantic effect assessment in the bootstrap agent procedure. A verified implementation-only observation can refresh facts; ambiguous or changed behavior stays a conflict. Accept records an I-intent decision then synchronizes, reject preserves the baseline and creates scoped repair, and defer preserves pending context. Exercise all dispositions and interrupted replay through the same I-sync gate and inspect stable decision/repair identities. Do not turn reconciliation hashes into product decisions.",
+      "tradeoff": "Reusing journal-backed resolution requires reconciling legacy batch/drift projections with stable identities, but avoids a second conflict journal, acceptance gate or deterministic semantic classifier.",
+      "blocking": false
+    },
+    {
+      "concept": "Actual candidate identity for independent cross-host proof",
+      "recommendation": "keep-local",
+      "evidence": [
+        "program-spec.md SG-02 and modules/proof-spec.md explicitly assign loaded-candidate identity and applicability to existing scenario fixtures/evidence indexes; thought issues #15-#18 remain independent consumers with no hidden shared harness dependency.",
+        "codex/meta-skill/skills/bootstrap.md resolves canonical assets from the source checkout or standalone canonical snapshot; codex/meta-skill/scripts and tests are symlinks to the Claude canonical package in this checkout.",
+        "codex/meta-skill/install_bundle.py copies a standalone payload and emits an installed discovery router pointing at its bundle, demonstrating why provider/model identity or an installed entry alone does not identify the candidate under review."
+      ],
+      "proposed_owner": "proof / SG-02 (#15-#18 scenario definitions and evidence indexes)",
+      "interface_and_seam": "Record resolved loaded bootstrap/adapter/helper paths and hashes independently of host identity in each existing scenario result. Reject installed/candidate mismatch, and make relevant candidate changes invalidate affected scenario results until fresh actual sessions run on both hosts. Keep expected outcomes outside subject context and count the full required scenario/host denominator rather than attempts. Revision 2 supplies this invariant owner; no new production candidate registry or independent test platform is justified.",
+      "tradeoff": "Small scenario-local launch/evaluation plumbing is preferable to creating a producer dependency among independent thought tickets. Extract a shared fixture helper only for demonstrated consumers with an explicit revalidated producer edge; installation updates remain outside this run.",
+      "blocking": false
+    },
+    {
+      "concept": "Failure coverage expands existing invariant owners rather than creating per-mode systems",
+      "recommendation": "keep-local",
+      "evidence": [
+        "failure-classification.json classifies O1/O2/O3 modes and assigns replay, interruption, permissions and stale state to existing authority, synchronization and proof seams.",
+        "Installed grillstorm/references/failure-proportionality.md limits guard-only to one defense plus proof and prohibits expansion for none; program-spec.md revision 2 explicitly requires public seams/controlled fault injection rather than a new production feature per failure.",
+        "Current reconciliation and journal procedures have no general cleanup/recovery API; concrete cleanup in expand_game_2d_production.py removes orphan generated specs, while install_bundle.py cleanup belongs to installation, which this run does not authorize."
+      ],
+      "proposed_owner": "intent, synchronization and proof within their already-declared public boundaries",
+      "interface_and_seam": "Exercise full failure transitions through the same journal publication, completion and scenario evidence paths. Keep cleanup and competing-publication guard proofs attached to actual run-owned staging/resource boundaries when those paths exist; do not implement an otherwise-unused cleanup API merely to manufacture a rejection test. Reuse an invariant proof across ledger modes where the same public journey establishes it, retaining explicit mode-to-proof coverage. The ledger does not create additional modules or tasks by itself.",
+      "tradeoff": "Failure analysis remains complete while guard-only cases stay bounded. A universal recovery orchestrator, cleanup service or failure-mode plugin system would add ownership and interfaces unsupported by the approved consumers.",
+      "blocking": false
+    }
+  ]
+}

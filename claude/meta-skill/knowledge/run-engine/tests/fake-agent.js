@@ -14,12 +14,22 @@ function makeFakeAgent(responses) {
     counters[label] = (counters[label] || 0) + 1
     const idx = counters[label] - 1
     let spec = responses[label]
+    if (spec === undefined && label === 'run-policy') {
+      spec = { status: 'run_policy_ready', policy: {
+        on_repeated_failure: 'halt', on_needs_iteration: 'halt_with_report', on_safety_warning: 'continue'
+      } }
+    }
     if (spec === undefined && label.startsWith('verify:')) {
       spec = {
         node_id: label.slice('verify:'.length),
         status: 'passed',
         blocking_findings: []
       }
+    }
+    // Unknown labels may be answered by a fallback: the ledger double registers one,
+    // because the engine's authorize/start/settle labels carry the repair node id.
+    if (spec === undefined && typeof responses.__fallback === 'function') {
+      spec = responses.__fallback(label, prompt, idx)
     }
     if (typeof spec === 'function') spec = spec(idx, prompt)
     if (Array.isArray(spec)) spec = spec[Math.min(idx, spec.length - 1)]

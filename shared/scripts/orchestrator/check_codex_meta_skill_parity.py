@@ -38,6 +38,7 @@ def main() -> int:
         (CODEX_META / "agents" / "openai.yaml", "agents/openai.yaml"),
         (CODEX_META / ".mcp.json", ".mcp.json"),
         (CODEX_META / "install.sh", "install.sh"),
+        (CODEX_META / "install_bundle.py", "install_bundle.py"),
         (CODEX_META / "commands" / "bootstrap.md", "commands/bootstrap.md"),
         (CODEX_META / "commands" / "setup.md", "commands/setup.md"),
         (CODEX_META / "commands" / "journal.md", "commands/journal.md"),
@@ -81,7 +82,7 @@ def main() -> int:
     flow_template_text = read_text(CODEX_META / "knowledge" / "flow-template.py") if (CODEX_META / "knowledge" / "flow-template.py").exists() else ""
 
     # Release and invocation parity.
-    claude_bootstrap = CLAUDE_META / "skills" / "bootstrap.md"
+    claude_bootstrap = CLAUDE_META / "skills" / "bootstrap" / "SKILL.md"
     claude_bootstrap_text = read_text(claude_bootstrap) if claude_bootstrap.exists() else ""
     claude_version = re.search(r'^\s*version:\s*["\']?([^"\'\n]+)', claude_bootstrap_text, re.MULTILINE)
     codex_version = re.search(r'^\s*version:\s*["\']?([^"\'\n]+)', skill_text, re.MULTILINE)
@@ -160,8 +161,12 @@ def main() -> int:
     if ".allforai/codex/flow.py" not in skill_text + agents_text + playbook_text + bootstrap_text + flow_template_text:
         errors.append("Codex non-stop flow driver contract is not fully documented")
 
-    if "--dangerously-bypass-approvals-and-sandbox" not in flow_template_text:
-        errors.append("flow template does not use Codex highest-permission execution")
+    if "--dangerously-bypass-approvals-and-sandbox" in flow_template_text:
+        errors.append("flow template must not automatically bypass approvals and sandbox")
+    if '"--sandbox", policy["sandbox"]' not in flow_template_text:
+        errors.append("flow template does not pass its explicit sandbox policy to Codex")
+    if 'policy["sandbox"] not in {"read-only", "workspace-write"}' not in flow_template_text:
+        errors.append("flow template does not reject unsupported sandbox escalation")
     if "MAX_CONSECUTIVE_FAILURES_PER_NODE = 3" not in flow_template_text:
         errors.append("flow template does not enforce a repeated-failure threshold")
     if "MAX_STAGNANT_ITERATIONS = 5" not in flow_template_text:
@@ -176,21 +181,21 @@ def main() -> int:
         errors.append("Codex run contract does not wire check_artifacts.py")
 
     install_text = read_text(CODEX_META / "install.sh") if (CODEX_META / "install.sh").exists() else ""
-    if 'copy_dir "$CANONICAL_SOURCE/skills" "$INSTALL_DIR/canonical/skills"' not in install_text:
-        errors.append("install.sh does not bundle canonical skills")
-    if 'copy_dir "$CANONICAL_SOURCE/knowledge" "$INSTALL_DIR/canonical/knowledge"' not in install_text:
-        errors.append("install.sh does not bundle canonical knowledge")
-    if (
-        "~/.codex/skills/meta-skill" not in install_text
-        and ".codex/skills/meta-skill" not in install_text
-        and "$HOME/.codex/skills/meta-skill" not in install_text
-        and '${CODEX_HOME:-$HOME/.codex}/skills/meta-skill' not in install_text
-    ):
-        errors.append("install.sh does not install into the local Codex skills directory")
-    if ".install-source" not in install_text:
-        errors.append("install.sh does not record installation source metadata")
-    if ".allforai/codex/flow.py" not in install_text:
-        errors.append("install.sh usage text does not mention the Codex non-stop driver")
+    installer_path = CODEX_META / "install_bundle.py"
+    installer_text = read_text(installer_path) if installer_path.exists() else ""
+    if 'exec python3 "$SCRIPT_DIR/install_bundle.py"' not in install_text:
+        errors.append("install.sh does not delegate to the bundle installer")
+    for tree in ("skills", "knowledge"):
+        if f"shutil.copytree(canonical / '{tree}', payload / 'canonical/{tree}'" not in installer_text:
+            errors.append(f"install_bundle.py does not bundle canonical {tree}")
+    if "CODEX_HOME" not in installer_text or "root / 'skills/meta-skill'" not in installer_text:
+        errors.append("install_bundle.py does not install a local Codex discovery entry")
+    if "entry.parent.parent / 'skill-bundles/meta-skill'" not in installer_text:
+        errors.append("install_bundle.py does not keep the bundle outside skill discovery")
+    if ".install-source" not in installer_text:
+        errors.append("install_bundle.py does not record installation source metadata")
+    if ".allforai/codex/flow.py" not in skill_text:
+        errors.append("SKILL.md does not document the installed Codex non-stop driver")
 
     # Validate .mcp.json shape.
     mcp_path = CODEX_META / ".mcp.json"

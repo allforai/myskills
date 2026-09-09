@@ -1,18 +1,18 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/orchestrator"))
-from validate_game_2d_production_pipeline import (
-    CHILD_REFS,
-    REQUIRED_BOOTSTRAP_TERMS,
-    REQUIRED_CLOSURE_TERMS,
-    REQUIRED_GAME_DESIGN_TERMS,
-    REQUIRED_GAME_PRODUCTION_TERMS,
-    REQUIRED_PARENT_TERMS,
-    REQUIRED_ASSET_BINDING_TERMS,
-    REQUIRED_ASSET_CONTRACT_TERMS,
-    validate_game_2d_production_pipeline,
-)
+from ..module_isolation import load
+
+_pipeline = load("validate_game_2d_production_pipeline")
+CHILD_REFS = _pipeline.CHILD_REFS
+REQUIRED_BOOTSTRAP_TERMS = _pipeline.REQUIRED_BOOTSTRAP_TERMS
+REQUIRED_CLOSURE_TERMS = _pipeline.REQUIRED_CLOSURE_TERMS
+REQUIRED_GAME_DESIGN_TERMS = _pipeline.REQUIRED_GAME_DESIGN_TERMS
+REQUIRED_GAME_PRODUCTION_TERMS = _pipeline.REQUIRED_GAME_PRODUCTION_TERMS
+REQUIRED_PARENT_TERMS = _pipeline.REQUIRED_PARENT_TERMS
+REQUIRED_ASSET_BINDING_TERMS = _pipeline.REQUIRED_ASSET_BINDING_TERMS
+REQUIRED_ASSET_CONTRACT_TERMS = _pipeline.REQUIRED_ASSET_CONTRACT_TERMS
+validate_game_2d_production_pipeline = _pipeline.validate_game_2d_production_pipeline
 
 
 def _write(root, rel, text):

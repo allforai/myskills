@@ -7,11 +7,12 @@ import shutil
 import tempfile
 import unittest
 
-from check_requires import evaluate_node
-from validate_bootstrap import (
-    validate_node_spec,
-    validate_workflow,
-)
+from _module_isolation import load, module_dir
+
+_check_requires, _validate_bootstrap = load(module_dir(), "check_requires", "validate_bootstrap")
+evaluate_node = _check_requires.evaluate_node
+validate_node_spec = _validate_bootstrap.validate_node_spec
+validate_workflow = _validate_bootstrap.validate_workflow
 
 
 class TestIntegration(unittest.TestCase):

@@ -15,6 +15,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from check_artifacts import freshness_admits, freshness_states
+
 
 BOOTSTRAP_DIR = Path(".allforai/bootstrap")
 WORKFLOW_PATH = BOOTSTRAP_DIR / "workflow.json"
@@ -35,6 +37,7 @@ BLOCKING_STATUS_VALUES = {
     "invalid",
     "partial",
     "conditional_pass",
+    "accepted_with_gaps",
     "accepted_with_warnings",
     "passed_with_warnings",
     "existence_only",
@@ -214,9 +217,11 @@ def build_state_index(project_root: Path, workflow_path: Path | None = None) -> 
     workflow = _load_json(workflow_path)
     if not isinstance(workflow, dict):
         workflow = {"nodes": []}
-    nodes = workflow.get("nodes") if isinstance(workflow.get("nodes"), list) else []
+    raw_nodes = workflow.get("nodes")
+    nodes = raw_nodes if isinstance(raw_nodes, list) else []
     run_latest = _load_run_log(project_root)
     specs_dir = project_root / NODE_SPECS_DIR
+    freshness = freshness_states(project_root, workflow)
 
     indexed_nodes = []
     workflow_node_ids: set[str] = set()
@@ -237,6 +242,12 @@ def build_state_index(project_root: Path, workflow_path: Path | None = None) -> 
             readiness = "blocked"
         else:
             readiness = "complete"
+        node_freshness = freshness.get(node_id)
+        if not freshness_admits(node_freshness):
+            readiness = 'blocked'
+            for artifact in artifacts:
+                artifact['status'] = 'stale'
+                artifact['blockers'].append(_freshness_blocker(node_freshness))
         indexed_nodes.append({
             "node_id": node_id,
             "goal": node.get("goal"),
@@ -248,6 +259,7 @@ def build_state_index(project_root: Path, workflow_path: Path | None = None) -> 
             "spec_hash": _sha256_text(spec_text) if spec_text else None,
             "spec_frontmatter": _frontmatter(spec_text),
             "artifact_readiness": readiness,
+            "freshness": node_freshness,
             "artifacts": artifacts,
             "latest_run_event": run_latest.get(node_id),
         })
@@ -275,13 +287,39 @@ def build_state_index(project_root: Path, workflow_path: Path | None = None) -> 
     }
 
 
+def _freshness_blocker(freshness: dict | None) -> str:
+    admission = (freshness or {}).get("admission")
+    if admission == "invalid":
+        return "invalid_source_inputs"
+    if admission == "missing":
+        return "missing_source_inputs"
+    return "input_freshness"
+
+
+def _repair_fields(freshness: dict | None) -> dict[str, Any]:
+    """The explicit difference and repair owner of withheld completion, when known."""
+    fields: dict[str, Any] = {}
+    if isinstance(freshness, dict):
+        if isinstance(freshness.get("diff"), dict):
+            fields["diff"] = freshness["diff"]
+        if isinstance(freshness.get("repair"), dict):
+            fields["repair_owner"] = freshness["repair"].get("owner")
+            fields["repair_responsibilities"] = freshness["repair"].get("responsibilities", [])
+        # Source changed outside the flow is carried as its own state: an unverified
+        # impact is not the ordinary repair its diff resembles.
+        if freshness.get("external") in ("conflict", "unverified"):
+            fields["external_change"] = freshness["external"]
+    return fields
+
+
 def _candidate_nodes(project_root: Path, candidate_workflow: Path | None) -> dict[str, dict[str, Any]]:
     if not candidate_workflow:
         return {}
     workflow = _load_json(candidate_workflow)
     if not isinstance(workflow, dict):
         return {}
-    nodes = workflow.get("nodes") if isinstance(workflow.get("nodes"), list) else []
+    raw_nodes = workflow.get("nodes")
+    nodes = raw_nodes if isinstance(raw_nodes, list) else []
     return {
         str(node.get("node_id")): node
         for node in nodes
@@ -310,7 +348,12 @@ def build_reconciliation_plan(project_root: Path, state_index: dict[str, Any], c
                     reasons.append("exit_artifacts_changed")
                 if current.get("artifact_readiness") in {"blocked", "missing"}:
                     reasons.append(f"current_artifacts_{current.get('artifact_readiness')}")
-                plan_items.append({"node_id": node_id, "action": action, "reasons": reasons})
+                item = {"node_id": node_id, "action": action, "reasons": reasons}
+                if not freshness_admits(current.get('freshness')):
+                    item["action"] = 'invalidate'
+                    reasons.append(_freshness_blocker(current['freshness']))
+                    item.update(_repair_fields(current['freshness']))
+                plan_items.append(item)
             elif candidate:
                 plan_items.append({"node_id": node_id, "action": "add", "reasons": ["candidate_only"]})
             else:
@@ -328,7 +371,12 @@ def build_reconciliation_plan(project_root: Path, state_index: dict[str, Any], c
             if readiness in {"blocked", "missing"}:
                 action = "invalidate"
                 reasons.append(f"artifact_readiness={readiness}")
-            plan_items.append({"node_id": node["node_id"], "action": action, "reasons": reasons})
+            item = {"node_id": node["node_id"], "action": action, "reasons": reasons}
+            if not freshness_admits(node.get("freshness")):
+                item["action"] = "invalidate"
+                reasons.append(_freshness_blocker(node.get("freshness")))
+                item.update(_repair_fields(node.get("freshness")))
+            plan_items.append(item)
 
     for orphan in state_index.get("orphan_specs", []):
         plan_items.append({
